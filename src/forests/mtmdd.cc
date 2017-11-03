@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -27,8 +25,8 @@
 #include "../unique_table.h"
 
 MEDDLY::mtmdd_forest
-::mtmdd_forest(int dsl, domain* d, range_type t, const policies &p)
- : mt_forest(dsl, d, false, t, p)
+::mtmdd_forest(int dsl, domain* d, range_type t, const policies &p, int* level_reduction_rule)
+ : mt_forest(dsl, d, false, t, p, level_reduction_rule)
 {
   // anything to construct?
 }
@@ -192,10 +190,10 @@ void MEDDLY::mtmdd_forest::dynamicReorderVariables(int top, int bottom)
     vars.push_back(getVarByLevel(i));
   }
 
-  for (int i = 0; i < vars.size(); i++) {
+  for (unsigned int i = 0; i < vars.size(); i++) {
     int max = i;
     unsigned max_num = unique->getNumEntries(vars[max]);
-    for (int j = i + 1; j < vars.size(); j++){
+    for (unsigned int j = i + 1; j < vars.size(); j++){
       if (unique->getNumEntries(vars[j]) > max_num) {
         max = j;
         max_num = unique->getNumEntries(vars[j]);
@@ -216,7 +214,7 @@ void MEDDLY::mtmdd_forest::sifting(int var, int top, int bottom)
 
   MEDDLY_DCASSERT(level <= top && level >= bottom);
 
-  int num = getCurrentNumNodes();
+  long num = getCurrentNumNodes();
   if(level <= (top + bottom) / 2) {
     // Move to the bottom
     while(level > bottom) {
@@ -304,7 +302,7 @@ void MEDDLY::mtmdd_forest::sifting(int var, int top, int bottom)
 
   MEDDLY_DCASSERT(getCurrentNumNodes() <= num);
   if(getCurrentNumNodes() > num) {
-    printf("Error: %d > %d\n", getCurrentNumNodes(), num);
+    printf("Error: %ld > %ld\n", getCurrentNumNodes(), num);
   }
 }
 
@@ -326,7 +324,7 @@ MEDDLY::mtmdd_forest::mtmdd_iterator::~mtmdd_iterator()
 bool MEDDLY::mtmdd_forest::mtmdd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
   return first(maxLevel, e.getNode());
 }

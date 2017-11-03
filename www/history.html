@@ -1,0 +1,870 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>MEDDLY: Multi-terminal and Edge-valued Decision Diagram LibrarY</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="meddly.css">
+<link rel="stylesheet" type="text/css" media="print" href="print.css">
+</head>
+<body>
+
+<div id="content">
+
+<h1 id="hometitle">Version History</h1>
+
+<h2>Changes since last release</h2>
+
+<h3>Implementation</h3>
+<ul>
+  <li>
+  Moved <tt>node_headers</tt> out of <tt>expert_forest</tt>.
+  </li>
+  <li>
+  Node header now includes incoming count.
+  </li>
+  <li>
+  Separated memory management out of node storage,
+  into its own style that can be set at runtime.
+  </li>
+  <li>
+  Error class now tracks filename and line number
+  of source code that threw the error.
+  </li>
+</ul>
+
+
+<h2>New in Version 0.14.818 (2017 July 05)</h2>
+
+<h3>Simple interface</h3>
+<ul>
+  <li>
+  Class <tt>node_storage</tt> factory portion split into
+  new class, <tt>node_storage_style</tt>.
+  Interface updated.
+  </li>
+
+  <li>
+  Forest policies must be constructed after library initialization,
+  because node storage styles will not be known before this.
+  A new empty constructor, and method <tt>useDefaults</tt>, have
+  been added to class <tt>forest::policies</tt> to allow this.
+  </li>
+
+  <li>
+  Changed error code <tt>OVERFLOW</tt> to <tt>VALUE_OVERFLOW</tt>
+  to avoid name issues with math macro.
+  </li>
+</ul>
+
+<h3>Expert interface</h3>
+<ul>
+  <li>
+  Default policies for MDD and MXD forests moved from
+  class <tt>settings</tt>
+  to class <tt>forest</tt> as static members.
+  This allows the defaults to be changed after library initialization.
+  </li>
+
+  <li>
+  Initialization sequence has been removed from class <tt>settings</tt>,
+  and is instead passed to the MEDDLY initialization function explicitly.
+  </li>
+
+  <li>
+  Class <tt>op_initializer</tt> has been converted into
+  a generic library initialization class, <tt>initializer_list</tt>.
+  </li>
+
+  <li>
+  Class <tt>cleanup_procedure</tt> has been removed;
+  use <tt>initializer_list</tt> instead.
+  </li>
+
+  <li>
+  Compute table initialization is now handled by an initializer,
+  class <tt>ct_initializer</tt>.
+  The compute table settings have been moved from class <tt>settings</tt>,
+  and into this new class.
+  To change the default compute table settings, you should
+  <ol>
+    <li>
+    Build and save the default initializer list, 
+    using <tt>defaultInitializerList()</tt>.
+    </li>
+
+    <li>
+    Change the compute table settings, using static methods of class
+    <tt>ct_initializer</tt>.
+    </li>
+
+    <li>
+    Initialize the library, using the initializer list that was saved
+    in step 1.
+    </li>
+  </ol>
+  </li>
+
+  <li>
+  The old class <tt>settings</tt> has been removed, 
+  since it has become empty.
+  </li>
+
+</ul>
+
+<h3>Implementation</h3>
+<ul>
+  <li>
+  Node storage styles are now set up using an <tt>initializer_list</tt>.
+  </li>
+</ul>
+
+<h2>New in Version 0.13.685 (2016 June 15)</h2>
+
+<h3>Simple interface</h3>
+<ul>
+  <li>
+  New abstract interfaces for I/O (classes <tt>input</tt> and <tt>output</tt>)
+  for all library I/O (except for internal debugging I/O).
+  Use classes <tt>FILE_input</tt> and <tt>FILE_output</tt> for C-style
+  <tt>FILE*</tt> I/O,
+  and classes <tt>istream_input</tt> and <tt>ostream_output</tt>
+  for C++-style <tt>iostream</tt> I/O.
+  <tt>meddly.h</tt> now includes both <tt>cstdio</tt> and <tt>iostream</tt>.
+  These can be disabled if necessary 
+  by defining <tt>_MEDDLY_WITHOUT_CSTDIO_</tt>
+  or <tt>_MEDDLY_WITHOUT_IOSTREAM_</tt>, respectively,
+  before including <tt>meddly.h</tt>.
+  </li>
+
+</ul>
+<h3>Expert interface</h3>
+<ul>
+  <li>
+  Class <tt>node_reader</tt> is now class <tt>unpacked_node</tt>,
+  and methods to initialize a node reader have been moved into
+  the <tt>unpacked_node</tt> class.
+  </li>
+
+  <li>
+  Class <tt>node_builder</tt> has been eliminated;
+  all functionality has been moved to class <tt>unpacked_node</tt>.
+  </li>
+
+  <li>
+  Class <tt>node_header</tt> is now a private inner class
+  for class <tt>expert_forest</tt>;
+  all access to node header information 
+  should be through getter and setter helper functions.
+  </li>
+
+  <li>
+  Prototype implementation of saturation on partitioned transition relations.
+  See operation <tt>SATURATION_FORWARD</tt> and class
+  <tt>satpregen_opname</tt>.
+  </li>
+
+  <li>
+  Prototype implementation of on-the-fly saturation.
+  See operation <tt>SATURATION_OTF_FORWARD</tt> and class
+  <tt>satotf_opname</tt>.
+  </li>
+</ul>
+<h3>Implementation</h3>
+<ul>
+  <li>  Fixed several bugs with node reference counts.
+  </li>
+</ul>
+
+<h2>New in Version 0.12.625 (2015 April 25)</h2>
+
+<h3>Simple interface</h3>
+<ul>
+  <li>
+  More careful and more strict use of
+  <tt>set</tt> methods in class <tt>dd_edge</tt>:
+  for multi-terminal forests, use <tt>set</tt>
+  with a single argument;
+  for edge-valued forsts, use the appropriate
+  two-argument version of <tt>set</tt>.
+  </li>
+
+  <li>  Added new edge labeling possiblity, <tt>INDEX_SET</tt>.
+        From now on, this should be used instead of <tt>EVPLUS</tt>
+        whenever an indexed set is constructed
+        with operation <tt>CONVERT_TO_INDEX_SET</tt>,
+        otherwise the library will throw an exception.
+  </li>
+
+  <li> Added operations <tt>VM_MULTIPLY</tt>, <tt>MV_MULTIPLY</tt>
+       and <tt>MM_MULTIPLY</tt> for MTMxDs.
+  </li>
+
+  <li> Changed design of the <tt>enumerator</tt> class.
+       Regular enumerators can be initialized as usual (constructor
+       with a <tt>dd_edge</tt>).
+       Otherwise, use a constructor (or initialize later)
+       by passing the enumeration type and forest.
+       Note that now, the forest for an enumerator is fixed for its life.
+  </li>
+
+  <li> Added support for EV*MxDs.
+  </li>
+
+  <li> Added mechanism to log forest changes to a file,
+       to be utilized by other utilities
+       (see class <tt>logger</tt> within class <tt>forest</tt>).
+  </li>
+       
+  <li> Cleaned up the header file.
+  </li>
+
+</ul>
+
+<h3>Expert interface</h3>
+<ul>
+  <li> 
+  Added classes <tt>int_EVencoder</tt> and <tt>float_EVencoder</tt>
+  for a centralized mechanism for storing edge values within nodes.
+  </li>
+
+  <li> 
+  Classes <tt>bool_encoder</tt>, <tt>int_encoder</tt>, and
+  <tt>float_encoder</tt> have been renamed <tt>bool_Tencoder</tt>,
+  <tt>int_Tencoder</tt>, and <tt>float_Tencoder</tt> for consistency.
+  </li>
+
+  <li> Vector-matrix and matrix-vector multiply can now use
+       <tt>INDEX_SET</tt> or <tt>EVPLUS</tt> forests.
+       Currently, it is better to use <tt>INDEX_SET</tt>
+       forests if possible.
+  </li>
+
+  <li>  Changed names <tt>VECT_MATR_MULT</tt> and <tt>MATR_VECT_MULT</tt>,
+  to <tt>EXPLVECT_MATR_MULT</tt> and <tt>MATR_EXPLVECT_MULT</tt>,
+  to emphasize that vectors are stored explicitly.
+  </li>
+
+  <li>  Completely re-designed the compute table interface.
+  Large impact on implementation of operations;
+  little to no impact on everything else.
+  The new interface completely hides the compute table
+  storage mechanism, so we will be able to plug in different
+  storage schemes without changing any operation code
+  (at least, in theory).
+  Part of the gradual shift toward 64-bit node handles.
+  </li>
+
+  <li> Class <tt>numerical_operation</tt> is removed and should be
+       replaced by <tt>specialized_operation</tt>.
+  </li>
+
+  <li> Added a <tt>specialized_operation</tt> for saturation,
+       which allows the use of partitioned transition relations
+       with options for organizing and combining them.
+       See class <tt>satpregen_opname</tt>,
+       and <tt>SATURATION_FORWARD</tt>.
+  </li>
+
+  <li> Cleaned up the header file.
+  </li>
+
+</ul>
+
+<h3>Implementation</h3>
+<ul>
+  <li>  New implementation of <tt>COPY</tt>.
+        It should now be possible to copy between almost any two 
+        forests over the same domain
+        (assuming they are either both for sets, or both for relations).
+  </li>
+  <li>  Added test applications for <tt>COPY</tt>, and EV*MxDs.
+  </li>
+</ul>
+
+<h2>New in Version 0.11.486 (2014 February 04)</h2>
+
+<h3>Simple interface</h3>
+
+<ul>
+  <li> Added <tt>const</tt> to array of terminal values,
+       in parameter to <tt>createEdgeForVar</tt> methods.
+       This should have minimal, if any, impact on applications.
+  </li>
+
+  <li> Added constants <tt>DONT_CARE</tt>
+       and <tt>DONT_CHANGE</tt>,
+       which should be used instead of raw values,
+       for calls to <tt>createEdge()</tt> methods.
+       In particular, <tt>DONT_CHANGE</tt> should <b>NOT</b>
+       be used for unprimed levels.
+  </li>
+
+</ul>
+
+<h3>Expert interface</h3>
+
+<p>
+The mechanism for encoding and decoding terminal nodes
+(for multi-terminal forests) has been changed.
+The following methods of <tt>expert_forest</tt> were removed:
+</p>
+<ul>
+  <li> <tt>getBoolean()</tt> </li>
+  <li> <tt>getInteger()</tt> </li>
+  <li> <tt>getReal()</tt> </li>
+  <li> <tt>getTerminalNode()</tt> </li>
+  <li> <tt>isValidTerminalValue()</tt> </li>
+</ul>
+<p>
+Terminal encoding is now handled by classes <tt>bool_encoder</tt>,
+<tt>int_encoder</tt>, and <tt>float_encoder</tt>
+inside <tt>expert_forest</tt>, allowing the use of templates if desired.
+The following methods have been added for convenience:
+</p>
+<ul>
+  <li> <tt>handleForValue()</tt> </li>
+  <li> <tt>getValueFromHandle()</tt> </li>
+  <li> <tt>getBooleanFromHandle()</tt> </li>
+  <li> <tt>getIntegerFromHandle()</tt> </li>
+  <li> <tt>getRealFromHandle()</tt> </li>
+</ul>
+
+<h3>Implementation</h3>
+<ul>
+  <li> Reorganized (and reimplemented) mutli-terminal hierarchy </li>
+  <li> A few bug fixes </li>
+</ul>
+
+
+<h2>New in Version 0.10.456 (2013 July 30)</h2>
+
+<ul>
+<li> Added <tt>typedef</tt>s for node handles and addresses,
+     updated the interface and code to use these.
+</li>
+
+<li> Switched to one pool of nodes per forest,
+     instead of one pool per level.
+</li>
+
+<li> Changed free list representation for node handles.
+</li>
+
+<li>  The node storage mechanism is now loosely coupled,
+      and may be selected at runtime.
+</li>
+
+<li>  The node memory recycling mechanism is now loosely coupled.
+      There are a few mechanisms to choose from.
+</li>
+
+<li>  Added a new node storage mechanism that uses compression.
+</li>
+
+<li>  Added ability to read and write DDs to a file.
+</li>
+
+</ul>
+
+<h4>SIMPLE INTERFACE CHANGES</h4>
+<ul>
+<li> The forest policy for specifying full vs sparse node storage has changed.
+     Now, this is specified via <tt>storage_flags</tt>
+     by combining flags <tt>ALLOW_FULL_STORAGE</tt>
+     and <tt>ALLOW_SPARSE_STORAGE</tt> as appropriate.
+</li>
+<li>  The node storage scheme may be changed on a per forest basis,
+      at runtime, by setting the forest <tt>policy</tt> as appropriate
+      (member <tt>nodestor</tt>).
+</li>
+<li>
+      Removed forest policy <tt>recycleNodeStorageHoles</tt>,
+      since the new policy <tt>nodestor</tt> 
+      allows to specify how nodes are stored and how holes are
+      tracked (if at all).
+</li>
+<li>  In the <tt>forest</tt> class, added methods
+  <ul>
+  <li>  <tt>writeEdges</tt>, to write one or more edges
+        (and all nodes below) to a file in a machine readable format
+  </li>
+  <li>  <tt>readEdges</tt>, to read one or more edges
+        (and all nodes below) from a file
+  </li>
+  </ul> 
+</li>
+</ul>
+
+<h4>EXPERT INTERFACE CHANGES</h4>
+<ul>
+<li> The node storage interface has changed.
+     This is likely to affect forest implementations, and not much else.
+</li>
+<li>  Different node storage schemes are implemented in the
+      <tt>storage</tt> subdirectory.
+      Motivated users may invent and use their own schemes.
+</li>
+<li>  In the <tt>expert_forest</tt> class, method <tt>reportMemoryUsage</tt>
+      has been replaced by method <tt>reportStats</tt>.
+</li>
+<li>  <tt>expert_forest::markNodesInSubgraph</tt> and
+      <tt>expert_forest::showNodeGraph</tt>
+      now take an array of root nodes, instead of a single one.
+</li>
+</ul>
+
+<h2>New in Version 0.9.397 (2012 July 26)</h2>
+
+<ul>
+<li> New unique table.
+</li>
+<li> New iterator implementation for dd_edge class.
+</li>
+<li> Using fine-grained identity reduction rules.
+</li>
+<li> Lots of code reorganization and cleanup.
+</li>
+</ul>
+
+<h4>SIMPLE INTERFACE CHANGES</h4>
+<ul>
+<li> Iterators have been replaced with enumerators.
+The old code segment
+      <pre>
+      for (dd_edge::const_iterator i = e.begin(); i; ++i) 
+      </pre>
+      should be replaced by
+      <pre>
+      for (enumerator i(e); i; ++i) 
+      </pre>
+      and most other <tt>iterator</tt> functionality has been included 
+      in the <tt>enumerator</tt> class.
+</li>
+<li> Removed <tt>findFirstElement</tt> methods,
+the same behavior can be obtained with enumerators.
+</li>
+<li> Removed <tt>createSubmatrix</tt> methods,
+the same behavior can be obtained with the cross product
+and intersection operators.
+</ul>
+
+<h4>EXPERT INTERFACE CHANGES</h4>
+<ul>
+<li> Added <tt>node_builder</tt> subclass, updated operations to use it.
+    This is the mechanism to use for building new nodes.
+</li>
+<li> Added <tt>node_reader</tt> subclass, updated operations to use it.
+    This is the mechanism to use for reading nodes in a forest.
+</li>
+<li> Removed most of the old interface for accessing nodes.
+</li>
+<li> Removed temporary edges.
+</li>
+</ul>
+
+<h2>New in Version 0.8.311 (2012 June 18)</h2>
+
+<ul>
+<li>  Improved documentation generation (automatically updates library version number).
+</li>
+<li>  Added complete technical documentation under a new <tt>docs-devel</tt> directory.
+</li>
+<li>  Reorganized forest class hierarchy, in directory <tt>src/forests</tt>.
+</li>
+<li>  More thorough library cleanup in <tt>MEDDLY::cleanup()</tt>.
+</li>
+<li>  New version of <tt>MULTIPLY</tt> identifies more terminal cases.
+</li>
+</ul>
+
+<h4>INTERFACE CHANGES</h4>
+
+<ul>
+<li>  Policy settings for a forest are now specified when the forest
+      is constructed.
+      The old code segment
+      <pre>
+      forest *f = d->createForest(false, forest::BOOLEAN,
+        forest::MULTI_TERMINAL);
+      f->setReductionRule(forest::FULLY_REDUCED);
+      f->setNodeStorage(forest::FULL_OR_SPARSE_STORAGE);
+      f->setNodeDeletion(forest::PESSIMISTIC_DELETION);
+      </pre>
+      can be replaced by
+      <pre>
+      forest::policies fp(false); // false: not a relation
+      fp.setFullyReduced();
+      fp.setCompactStorage();
+      fp.setPessimistic();
+      forest *f = d->createForest(false, forest::BOOLEAN,
+        forest::MULTI_TERMINAL, fp);
+      </pre>
+      The default settings for the forest::policies struct 
+      may be found by examining the header file <tt>meddly.h</tt>,
+      and of course it is only necessary to specify a desired
+      policy that differs from its default.
+      Alternatively, a forest may be created using
+      <pre>
+      forest *f = d->createForest(false, forest::BOOLEAN,
+        forest::MULTI_TERMINAL);
+      </pre>
+      which will use the library-wide default policies,
+      based on whether the new forest is a relation or not.
+      The library-wide defaults, if not specified, 
+      will be equal to the default <tt>forest::policies</tt>
+      initialization;
+      otherwise, they may be changed by adjusting
+      <tt>mddDefaults</tt> and <tt>mxdDefaults</tt>
+      in <tt>MEDDLY::settings</tt> (in the expert interface)
+      before the library is initialized.
+</li>
+
+<li>  In class <tt>domain</tt>,
+      old methods <tt>getVar</tt> and <tt>readVar</tt>
+      are changed to <tt>useVar</tt> and <tt>getVar</tt>, for consistency.
+</li>
+
+<li>  Added a better statistics mechanism for forests.
+      The old interface is stil present, for compatability.
+      More information may be obtained using
+      <tt>forest::getStats()</tt>.
+</li>
+</ul>
+
+
+<h2>New in version 0.7.254 (2011 July 15)</h2>
+
+<ul>
+<li>  No changes to the simple interface.
+</li>
+<li>  The compute table class is now visible in the expert interface.
+      This should allow operations to be defined outside the library
+      and still use the built-in compute tables.
+</li>
+<li>  The compute table mechanism has been redesigned
+      and reimplemented.
+      The compute table interface has changed significantly;
+      this will affect anyone who implements their own operations.
+</li>
+<li>  Different compute tables may be selected at library
+      initialization time.
+</li>
+<li>  Some of the globally visible functions and macros
+      have been renamed or moved into the MEDDLY namespace
+      to avoid conflicts.
+</li>
+<li>  Several example applications run faster now.
+      This resolves the known issue under version 0.6.233.
+</li>
+</ul>
+
+<h2>New in version 0.6.233 (2011 July 05)</h2>
+
+<h4>CHANGES TO THE SIMPLE INTERFACE</h4>
+<ul>
+<li>  The compute manager class has been removed; 
+      all its functionality has been moved to
+      the <tt>MEDDLY</tt> namespace.
+      For example, the old code segment
+      <pre>
+      compute_manager* CM = getComputeManager();
+      CM->apply(compute_manager::UNION, x, y, z);
+      </pre>
+      can be replaced by
+      <pre>
+      apply(UNION, x, y, z);
+      </pre>
+</li>
+<li>  The types of the operation codes (e.g., <tt>UNION</tt>)
+      have changed.
+      Most applications should not be affected by this;
+      however, the change <em>is</em> visible to the simple interface.
+</li>
+<li>  A call to <tt>MEDDLY::cleanup()</tt> will automatically
+      destroy any remaining domains, forests, or other objects
+      created by MEDDLY.
+      (This <em>known issue</em> listed under version 0.5
+      seems to be resolved.)
+</li>
+<li>  A few operation names have changed: 
+      old <tt>MIN</tt> is now <tt>MINIMUM</tt>
+      and old <tt>MAX</tt> is now <tt>MAXIMUM</tt>.
+</li>
+</ul>
+
+<h4>CHANGES TO THE EXPERT INTERFACE</h4>
+<ul>
+<li>  Operation codes are now classes instead of an enumerated type.
+      Each operation knows its own name and how to build an operation
+      for specified forests (more on that, below).
+</li>
+<li>  The old <tt>operation</tt> and <tt>op_info</tt> classes
+      have been merged together into a new <tt>operation</tt> class.
+      Each instance of <tt>operation</tt> is tied to specific forests.
+</li>
+<li>  There are <tt>operation</tt> subclasses for unary, binary, 
+      and numerical operations.
+      A numerical operation is tied to specific forest <em>edges</em>.
+</li>
+<li>  Numerical operations have moved to the expert interface,
+      and are accessed as follows.
+      Old code:
+      <pre>
+        // preprocessing
+        compute_manager* CM = getComputeManager();
+        // ...
+        // critical
+        CM->vectorMatrixMultiply(y, y_ind, x, x_ind, A);
+      </pre>
+      New code:
+      <pre>
+        // preprocessing
+        numerical_operation* VM = VECT_MATR_MULT->buildOperation(y_ind, A, x_ind);
+        // ...
+        // critical
+        VM->compute(y, x);
+      </pre>
+</li>
+<li>  Users may define their own operations in user space,
+      and initialize them with the same mechanism as the
+      built-in operations.
+      To do this:
+      <ol>
+      <li> Derive a class from <tt>op_initializer</tt>
+           and implement the required virtual functions.  </li>
+      <li> Insert your initializer into the instance of
+            <tt>settings</tt> used to initialize the library.
+            If you want to initialize the builtin operations,
+            you should use something like <pre>
+          MEDDLY::settings s;
+          s.operationBuilder = new my_initializer(s.operationBuilder);
+          MEDDLY::initialize(s);
+          </pre>
+      </li>
+      <li> Your initializer's <tt>initChain</tt>
+           method will be called during the call to
+           <tt>MEDDLY::initialize(s);</tt>
+      </li>
+      <li>  Your initializer's <tt>cleanupChain</tt>
+            method will ne called during the call to
+            <tt>MEDDLY::cleanup();</tt>
+      </li>
+      </ol>
+</li>
+</ul>
+
+<h4>KNOWN ISSUES</h4>
+<ul>
+<li>  The current compute table is not as fast as the old one for some operations.
+</li>
+</ul>
+
+<h2>New in version 0.5.186 (2011 June 16)</h2>
+
+<h4>NEW FEATURES</h4>
+<ul>
+<li>  Variables in domains are represented by
+      instances of class <tt>variable</tt>, instead of integers.
+      The same variable may appear in more than one domain.
+</li>
+
+<li>  Domain levels are always in the order: topmost, &hellip;, 2, 1, 0
+      where level 0 is for terminal nodes.
+      As such, level mapping is no longer necessary.
+</li>
+
+<li>  For convenience, there is a new function
+      <pre>
+      MEDDLY::createDomainBottomUp(&hellip;)
+      </pre>
+      which combines domain creation and variable initialization.
+</li>
+
+<li>  There are new functions to destroy objects,
+      <pre>
+      MEDDLY::destroyDomain(&hellip;)
+      MEDDLY::destroyForest(&hellip;)
+      </pre>
+      and these must be used instead of <tt>delete</tt>.
+</li>
+
+</ul>
+<h4>DEPRECATED FUNCTIONS</h4>
+
+<table>
+<tr>
+  <th>Now deprecated</th>
+  <th>Equivalent replacement</th>
+</tr>
+<tr>
+  <td align="center"><tt>domain::getTopVariable()</tt></td>
+  <td align="center"><tt>domain::getNumVariables()</tt></td>
+</tr>
+<tr>
+  <td align="center"><tt>domain::getVariableAbove(v)</tt></td>
+  <td align="center"><tt>v+1</tt></td>
+</tr>
+<tr>
+  <td align="center"><tt>domain::getVariableBelow(v)</tt></td>
+  <td align="center"><tt>v-1</tt></td>
+</tr>
+<tr>
+  <td align="center"><tt>expert_domain::getVariableHeight(v)</tt></td>
+  <td align="center"><tt>v</tt></td>
+</tr>
+<tr>
+  <td align="center"><tt>expert_domain::getVariableWithHeight(h)</tt></td>
+  <td align="center"><tt>h</tt></td>
+</tr>
+</table>
+
+<h4>KNOWN ISSUES</h4>
+<ul>
+<li>  Calling <tt>MEDDLY::cleanup()</tt> can sometimes cause 
+      a segmentation fault.
+      Destroying all domains before calling <tt>cleanup()</tt>
+      seems to fix this.
+</li>
+</ul>
+
+<h2>New in version 0.4.174 (2011 June 13)</h2>
+<h4>CHANGES TO THE SIMPLE INTERFACE</h4>
+<ul>
+
+<li> Functions and classes are now contained in a <tt>MEDDLY</tt> 
+namespace. 
+</li>
+<br>
+<li> Top-level functions named <tt>MEDDLY_function</tt> 
+have been renamed as <tt>function</tt>.  
+For example,
+<tt>
+MEDDLY_createDomain()
+</tt>
+can now be called as
+<tt>
+MEDDLY::createDomain()</tt>,
+or as
+<tt>
+createDomain()
+</tt>
+inside a <tt>using namespace MEDDLY</tt> block.
+</li>
+<br>
+<li>
+There is a single, centralized <tt>error</tt> class.
+All methods that previously returned <tt>error</tt>
+now return <tt>void</tt>,
+and any errors are passed back to the user using <tt>throw</tt>.
+For example, the old code fragment
+<pre>
+  domain::error e = dom-&gt;createVariablesBottomUp(vars, N); 
+  if (e != domain::SUCCESS) { 
+    fprintf(stderr, &quot;Error: %s\n&quot;, domain::getErrorCodeName(e)); 
+    exit(1); 
+  } 
+</pre>
+now becomes
+<pre>
+  try { 
+    dom-&gt;createVariablesBottomUp(vars, N); 
+  } 
+  catch (MEDDLY::error e) { 
+    fprintf(stderr, &quot;Error: %s\n&quot;, e.getName()); 
+    exit(1); 
+  } 
+</pre>
+</li>
+
+<li> The library must be initialized before use.
+(Most operations will fail and throw an appropriate error, otherwise.)
+This can be done via 
+<pre>
+  MEDDLY::initialize(); 
+</pre>
+</tt><br>
+which uses default settings.
+To use different settings: 
+<pre>
+  MEDDLY::settings s; 
+  // change members of s here; 
+  // the constructor will fill everything with default values so 
+  // it is only necessary to specify the non-default values. 
+  MEDDLY::initialize(s); <br>
+</pre>
+</li>
+
+<li> <tt>compute_manager::setHashTablePolicy()</tt> has been
+removed, as this functionality is now provided using the appropriate
+settings during library initialization.
+</li>
+<br>
+<li> Library memory may be released using 
+<pre>
+  MEDDLY::cleanup(); 
+</pre>
+Most operations will fail and throw an appropriate error after
+<tt>cleanup()</tt> is called.
+If desired, the library may be initialized again.
+</li>
+
+</ul>
+
+<h2>New in version 0.3.165 (2011 June 08)</h2>
+<ul>
+<li> Added row-wise and column-wise iterators for Matrix Diagrams.</li>
+<li> Iterators can now return the terminal value of the corresponding
+minterm.</li>
+<br>
+<li> Added (basic) vector matrix multiplication operations.</li>
+<br>
+<li> Improved batch addition of minterms based on Radix Sort (speed).</li>
+<li> Added mechanism for building temporary nodes.</li>
+<li> Added another option for batch addition of minterms based on
+temporary nodes.</li>
+<br>
+<li> Added reverse reachability (all states that can reach a given set of
+states using a given next-state function).</li>
+<li> Added the traditional reachability algorithm and a saturation-based
+algorithm for reverse reachability.</li>
+<br>
+<li> Added test directory and files for <tt>make check</tt>.</li>
+<li> Reorganization of source files.</li>
+</ul>
+
+<h2>0.2.101 (2010 June 11)</h2>
+<ul>
+<li>First tarball release</li>
+<li>CTL model checking functionality is complete
+(some advanced features are still in development)
+</ul>
+
+
+<!-- Common sections of all pages -->
+
+
+<div id="footer">
+<p id="copyright">Copyright &copy; 2009-2010, Iowa State University Research Foundation, Inc.</p>
+</div>
+</div>
+
+<div id="sidebar">
+
+<ul class="navlist">
+<li><a href="index.html">Home</a></li>
+<li><a href="obtain.html">Obtain MEDDLY</a></li>
+<li><a href="build.html">Build MEDDLY</a></li>
+<li><a href="features.html">Features</a></li>
+<li><a href="history.html" class="current">Version History</a></li>
+<li><a href="papers.html">Publications</a></li>
+</ul>
+
+
+<p id="sflogo">
+Hosted by:<br>
+<a href="http://sourceforge.net/projects/meddly"><img src="http://sflogo.sourceforge.net/sflogo.php?group_id=255553&amp;type=16" width="150" height="40" alt="Get Decision diagram library at SourceForge.net. Fast, secure and Free Open Source software downloads" /></a>
+</p>
+
+</div>
+</body>
+</html>

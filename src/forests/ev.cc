@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -33,8 +31,8 @@ int* MEDDLY::ev_forest::order;
 int  MEDDLY::ev_forest::order_size;
 
 MEDDLY::ev_forest::ev_forest(int dsl, domain *d, bool rel,
-  range_type t, edge_labeling ev, const policies &p)
-: expert_forest(dsl, d, rel, t, ev, p)
+  range_type t, edge_labeling ev, const policies &p, int* level_reduction_rule)
+: expert_forest(dsl, d, rel, t, ev, p, level_reduction_rule)
 {
   MEDDLY_DCASSERT(ev != MULTI_TERMINAL);
 
@@ -60,7 +58,7 @@ MEDDLY::node_handle MEDDLY::ev_forest::readTerminal(input &s)
   if ('t' == c) {
     return -s.get_integer();
   }
-  throw error(error::INVALID_FILE);
+  throw error(error::INVALID_FILE, __FILE__, __LINE__);
 }
 
 // statics
@@ -79,7 +77,7 @@ void MEDDLY::ev_forest::enlargeStatics(int n)
     //terminals = (node_handle*) realloc(terminals, n*sizeof(node_handle));
     //if (0==order || 0==terminals) {
     if (0==order) {
-      throw error(error::INSUFFICIENT_MEMORY);
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
     order_size = n;
   }

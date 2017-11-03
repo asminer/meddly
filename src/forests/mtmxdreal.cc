@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -22,8 +20,8 @@
 
 #include "mtmxdreal.h"
 
-MEDDLY::mt_mxd_real::mt_mxd_real(int dsl, domain *d, const policies &p, float tv)
-: mtmxd_forest(dsl, d, REAL, p)
+MEDDLY::mt_mxd_real::mt_mxd_real(int dsl, domain *d, const policies &p, int* level_reduction_rule, float tv)
+: mtmxd_forest(dsl, d, REAL, p, level_reduction_rule)
 { 
   initializeForest();
 
@@ -54,11 +52,11 @@ void MEDDLY::mt_mxd_real
   // Create vlist and vplist following the mapping between variable and level
   int** ordered_vlist=static_cast<int**>(malloc(N*sizeof(int*)+(num_vars+1)*N*sizeof(int)));
   if(ordered_vlist==0){
-	  throw error(error::INSUFFICIENT_MEMORY);
+	  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   int** ordered_vplist=static_cast<int**>(malloc(N*sizeof(int*)+(num_vars+1)*N*sizeof(int)));
   if(ordered_vplist==0){
-	  throw error(error::INSUFFICIENT_MEMORY);
+	  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 
   ordered_vlist[0]=reinterpret_cast<int*>(&ordered_vlist[N]);

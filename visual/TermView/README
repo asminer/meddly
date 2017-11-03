@@ -1,6 +1,4 @@
 
-$Id$
-
 Terminal-based visualization tool for MEDDLY.  Requires curses.
 
 Building the tool:

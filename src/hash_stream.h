@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -119,7 +117,7 @@ class MEDDLY::hash_stream {
                 slot = 0;
                 return;
 
-            default: throw error(error::MISCELLANEOUS);
+            default: throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         };
     }
     inline void push(unsigned v1, unsigned v2, unsigned v3) {
@@ -148,7 +146,7 @@ class MEDDLY::hash_stream {
                 z[2] += v3;
                 return;
 
-            default: throw error(error::MISCELLANEOUS);
+            default: throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         };
     }
     inline void push(const void* data, size_t bytes) {
@@ -244,7 +242,7 @@ class MEDDLY::hash_stream {
             return;
 
         default:
-            throw error(error::MISCELLANEOUS);
+            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
       }
     }
 }; 

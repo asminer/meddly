@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -26,8 +24,8 @@
 #include "../unique_table.h"
 
 MEDDLY::mtmxd_forest
-::mtmxd_forest(int dsl, domain* d, range_type t, const policies &p)
- : mt_forest(dsl, d, true, t, p)
+::mtmxd_forest(int dsl, domain* d, range_type t, const policies &p, int* level_reduction_rule)
+ : mt_forest(dsl, d, true, t, p, level_reduction_rule)
 {
   // anything to construct?
 }
@@ -62,7 +60,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
   int hvar = getVarByLevel(level+1);
   int lvar = getVarByLevel(level);
   int hsize = getVariableSize(hvar);
-  int lsize = getVariableSize(lvar);
+  // int lsize = getVariableSize(lvar);
 
   // Renumber the level of nodes for VarHigh
   int hnum = unique->getNumEntries(hvar);
@@ -344,7 +342,7 @@ MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesOf(node_handle no
     }
   }
   else {
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
   }
 
   return createReducedNode(-1, hnb);
@@ -361,7 +359,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByLevelSwap(int level)
   MEDDLY_DCASSERT(level < getNumVariables());
 
   if(!isFullyReduced() && !isQuasiReduced()){
-    throw error(error::INVALID_OPERATION);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
   }
 
   // x > x' > y > y'
@@ -377,7 +375,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByLevelSwap(int level)
 
 void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
 {
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
 //  MEDDLY_DCASSERT(ABS(level) >= 1);
 //  MEDDLY_DCASSERT(ABS(level) <= getNumVariables());
@@ -509,7 +507,9 @@ void MEDDLY::mtmxd_forest::sifting(int var, int top, int bottom)
 
   MEDDLY_DCASSERT(level <= top && level >= bottom);
 
+#ifdef DEVELOPMENT_CODE
   int num = getCurrentNumNodes();
+#endif
   if(level <= (top + bottom) / 2) {
     // Move to the bottom
     while(level > bottom) {
@@ -586,12 +586,12 @@ void MEDDLY::mtmxd_forest::sifting(int var, int top, int bottom)
 
 void MEDDLY::mtmxd_forest::moveDownVariable(int high, int low)
 {
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::mtmxd_forest::moveUpVariable(int low, int high)
 {
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 MEDDLY::mtmxd_forest::mtmxd_iterator::~mtmxd_iterator()
@@ -601,7 +601,7 @@ MEDDLY::mtmxd_forest::mtmxd_iterator::~mtmxd_iterator()
 bool MEDDLY::mtmxd_forest::mtmxd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
   return first(maxLevel, e.getNode());
 }
@@ -694,7 +694,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter
 ::start(const dd_edge &e, const int* minterm)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
   for (int k=1; k<=maxLevel; k++) {
     index[k] = minterm[k];
@@ -809,7 +809,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter
 ::start(const dd_edge &e, const int* minterm)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
   
   for (int k=1; k<=maxLevel; k++) {

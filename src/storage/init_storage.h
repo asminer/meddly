@@ -1,6 +1,4 @@
 
-// $Id: init_builtin.h 700 2016-07-07 21:06:50Z asminer $
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -25,14 +23,9 @@ namespace MEDDLY {
 
 class MEDDLY::storage_initializer : public initializer_list {
 
-    node_storage_style* classic;
+    node_storage_style* simple;
 
-    node_storage_style* simple_grid;
-    node_storage_style* simple_array;
-    node_storage_style* simple_heap;
-    node_storage_style* simple_none;
-
-    node_storage_style* compact_grid;
+    // TBD - build a new compact style
 
   public:
     storage_initializer(initializer_list *p);

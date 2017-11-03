@@ -1,4 +1,3 @@
-// $Id$
 
 #include "defines.h"
 #include "meddly.h"
@@ -33,7 +32,7 @@ MEDDLY::global_rebuilder::global_rebuilder(expert_forest* source,
     expert_forest* target) :
     _source(source), _target(target), _hit(0), _total(0) {
   if (_source->getDomain() != _target->getDomain()) {
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
   }
 
   _sg = new TopDownSignatureGenerator(*this);
@@ -121,7 +120,7 @@ int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) 
 
 MEDDLY::dd_edge MEDDLY::global_rebuilder::rebuild(const dd_edge& e) {
   if (e.getForest() != _source) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
   int num_var = e.getForest()->getDomain()->getNumVariables();
@@ -153,7 +152,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::transform(node_handle p,
 //  FILE_output output(stdout);
 //  _source->showNodeGraph(output, &p, 1);
 
-  int level = target_level;
+  // int level = target_level;
   int top_var = check_dependency(p, target_level);
   target_level = _target->getLevelByVar(top_var);
 
@@ -526,10 +525,10 @@ int MEDDLY::global_rebuilder::TopDownSignatureGenerator::signature(
     node_handle p) {
   expert_forest* source = _gr._source;
   if (source->getNumVariables() > 999) {
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
   }
   if (!source->isActiveNode(p)) {
-    throw error(error::INVALID_ARGUMENT);
+    throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
   }
 
   auto comp =
@@ -602,10 +601,10 @@ int MEDDLY::global_rebuilder::BottomUpSignatureGenerator::signature(node_handle 
 {
   expert_forest* source = _gr._source;
   if (source->getNumVariables() > 999) {
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
   }
   if (!source->isActiveNode(p)) {
-    throw error(error::INVALID_ARGUMENT);
+    throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
   }
 
   int sig = rec_signature(p);

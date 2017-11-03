@@ -1,6 +1,4 @@
 
-// $Id: check_xA.cc 260 2011-07-20 19:05:35Z asminer $
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.

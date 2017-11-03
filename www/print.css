@@ -1,0 +1,16 @@
+
+/*** basic layout ***/
+
+body {
+  background: #fff;
+  margin: 0;
+}
+#logobar, #sidebar {
+  display: none;
+}
+#content {
+  padding: 0 1em;  /* allow for h2 outdent */
+  margin: 0;
+}
+
+/* EOF */

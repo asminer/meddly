@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -22,8 +20,8 @@
 
 #include "mtmddint.h"
 
-MEDDLY::mt_mdd_int::mt_mdd_int(int dsl, domain *d, const policies &p, int tv)
-: mtmdd_forest(dsl, d, INTEGER, p)
+MEDDLY::mt_mdd_int::mt_mdd_int(int dsl, domain *d, const policies &p, int* level_reduction_rule, int tv)
+: mtmdd_forest(dsl, d, INTEGER, p, level_reduction_rule)
 { 
   initializeForest();
 
@@ -52,7 +50,7 @@ void MEDDLY::mt_mdd_int::createEdge(const int* const* vlist, const int* terms, i
   // Create vlist following the mapping between variable and level
   int** ordered_vlist=static_cast<int**>(malloc(N*sizeof(int*)+(num_vars+1)*N*sizeof(int)));
   if(ordered_vlist==0){
-	  throw error(error::INSUFFICIENT_MEMORY);
+	  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 
   ordered_vlist[0]=reinterpret_cast<int*>(&ordered_vlist[N]);

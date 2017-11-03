@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -178,7 +176,7 @@ void MEDDLY::simple_logger::logForestInfo(const forest* f, const char* name)
     /* Increase forest dimension if needed */
     if (recordingNodeCounts()) {
       active_delta = (long**) realloc(active_delta, bf * sizeof(long*));
-      if (0==active_delta) throw error(error::INSUFFICIENT_MEMORY);
+      if (0==active_delta) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
       for (int i=batch_forests; i<bf; i++) {
         active_delta[i] = 0;
       }
@@ -186,9 +184,9 @@ void MEDDLY::simple_logger::logForestInfo(const forest* f, const char* name)
 
     /* Increase left and right arrays */
     left = (int*) realloc(left, bf * sizeof(int));
-    if (0==left) throw error(error::INSUFFICIENT_MEMORY);
+    if (0==left) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     right = (int*) realloc(right, bf * sizeof(int));
-    if (0==right) throw error(error::INSUFFICIENT_MEMORY);
+    if (0==right) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     for (int i=batch_forests; i<bf; i++) {
       left[i] = right[i] = 0;
     }

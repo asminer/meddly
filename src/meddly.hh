@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -46,36 +44,9 @@ inline void MEDDLY::apply(const unary_opname* op, const dd_edge &a, mpz_t &c) {
 
 // error::
 
-inline MEDDLY::error::error(MEDDLY::error::code c) { errcode = c; }
 inline MEDDLY::error::code MEDDLY::error::getCode() const { return errcode; }
-inline const char* MEDDLY::error::getName() const {
-  switch (errcode) {
-      case  MEDDLY::error::UNINITIALIZED:        return "Uninitialized";
-      case  MEDDLY::error::ALREADY_INITIALIZED:  return "Already initialized";
-      case  MEDDLY::error::NOT_IMPLEMENTED:      return "Not implemented";
-      case  MEDDLY::error::INSUFFICIENT_MEMORY:  return "Insufficient memory";
-      case  MEDDLY::error::INVALID_OPERATION:    return "Invalid operation";
-      case  MEDDLY::error::INVALID_VARIABLE:     return "Invalid variable";
-      case  MEDDLY::error::INVALID_LEVEL:        return "Invalid level";
-      case  MEDDLY::error::INVALID_BOUND:        return "Invalid bound";
-      case  MEDDLY::error::DOMAIN_NOT_EMPTY:     return "Domain not empty";
-      case  MEDDLY::error::UNKNOWN_OPERATION:    return "Unknown operation";
-      case  MEDDLY::error::DOMAIN_MISMATCH:      return "Domain mismatch";
-      case  MEDDLY::error::FOREST_MISMATCH:      return "Forest mismatch";
-      case  MEDDLY::error::TYPE_MISMATCH:        return "Type mismatch";
-      case  MEDDLY::error::WRONG_NUMBER:         return "Wrong number";
-      case  MEDDLY::error::VALUE_OVERFLOW:       return "Overflow";
-      case  MEDDLY::error::DIVIDE_BY_ZERO:       return "Divide by zero";
-      case  MEDDLY::error::INVALID_POLICY:       return "Invalid policy";
-      case  MEDDLY::error::INVALID_ASSIGNMENT:   return "Invalid assignment";
-      case  MEDDLY::error::INVALID_ARGUMENT:     return "Invalid argument";
-      case  MEDDLY::error::INVALID_FILE:         return "Invalid file";
-      case  MEDDLY::error::COULDNT_WRITE:        return "Couldn't write to file";
-      case  MEDDLY::error::COULDNT_READ:         return "Couldn't read from file";
-      case  MEDDLY::error::MISCELLANEOUS:        return "Miscellaneous";
-      default:                           return "Unknown error";
-  }
-}
+inline const char* MEDDLY::error::getFile() const { return fname; }
+inline int MEDDLY::error::getLine() const { return lineno; }
 
 // ******************************************************************
 // *                                                                *
@@ -169,25 +140,31 @@ inline void MEDDLY::forest::statset::incActive(long b) {
   active_nodes += b;
   if (active_nodes > peak_active) 
     peak_active = active_nodes;
+  MEDDLY_DCASSERT(active_nodes >= 0);
 }
 inline void MEDDLY::forest::statset::decActive(long b) {
   active_nodes -= b;
+  MEDDLY_DCASSERT(active_nodes >= 0);
 }
 inline void MEDDLY::forest::statset::incMemUsed(long b) {
   memory_used += b;
   if (memory_used > peak_memory_used) 
     peak_memory_used = memory_used;
+  MEDDLY_DCASSERT(memory_used >= 0);
 }
 inline void MEDDLY::forest::statset::decMemUsed(long b) {
   memory_used -= b;
+  MEDDLY_DCASSERT(memory_used >= 0);
 }
 inline void MEDDLY::forest::statset::incMemAlloc(long b) {
   memory_alloc += b;
   if (memory_alloc > peak_memory_alloc) 
     peak_memory_alloc = memory_alloc;
+  MEDDLY_DCASSERT(memory_alloc >= 0);
 }
 inline void MEDDLY::forest::statset::decMemAlloc(long b) {
   memory_alloc -= b;
+  MEDDLY_DCASSERT(memory_alloc >= 0);
 }
 inline void MEDDLY::forest::statset::sawUTchain(int c) {
   if (c > max_UT_chain)
@@ -316,17 +293,51 @@ inline MEDDLY::forest::policies::reduction_rule MEDDLY::forest::getReductionRule
   return deflt.reduction;
 }
 
+
 inline bool MEDDLY::forest::isFullyReduced() const {
-  return MEDDLY::forest::policies::FULLY_REDUCED == deflt.reduction;
+    return MEDDLY::forest::policies::FULLY_REDUCED == deflt.reduction;
 }
 
 inline bool MEDDLY::forest::isQuasiReduced() const {
-  return MEDDLY::forest::policies::QUASI_REDUCED == deflt.reduction;
+    return MEDDLY::forest::policies::QUASI_REDUCED == deflt.reduction;
 }
 
 inline bool MEDDLY::forest::isIdentityReduced() const {
-  return MEDDLY::forest::policies::IDENTITY_REDUCED == deflt.reduction;
+    return MEDDLY::forest::policies::IDENTITY_REDUCED == deflt.reduction;
 }
+
+inline bool MEDDLY::forest::isUserDefinedReduced() const {
+    return MEDDLY::forest::policies::USER_DEFINED == deflt.reduction;
+}
+
+inline int* MEDDLY::forest::getLevelReductionRule() const{
+    return level_reduction_rule;
+    
+}
+
+inline bool MEDDLY::forest::isFullyReduced(int k) const {
+    if(k<0)
+        return getLevelReductionRule()[2*(-k)]==-1;
+    else
+        return getLevelReductionRule()[2*(k) - 1]==-1;
+    
+}
+
+inline bool MEDDLY::forest::isQuasiReduced(int k) const {
+    if(k<0)
+        return getLevelReductionRule()[2*(-k)]==-2;
+    else
+        return getLevelReductionRule()[2*(k) - 1]==-2;
+}
+
+inline bool MEDDLY::forest::isIdentityReduced(int k) const {
+    if(k<0)
+        return getLevelReductionRule()[2*(-k)]==-3;
+    else
+        return false;
+}
+
+
 
 inline MEDDLY::node_storage_flags MEDDLY::forest::getNodeStorage() const {
   return deflt.storage_flags;
@@ -383,7 +394,7 @@ inline void MEDDLY::forest::createEdgeForVar(int vh, bool pr, dd_edge& a) {
     case BOOLEAN:   createEdgeForVar(vh, pr, (bool*)  0, a);  break;
     case INTEGER:   createEdgeForVar(vh, pr, (int*)   0, a);  break;
     case REAL:      createEdgeForVar(vh, pr, (float*) 0, a);  break;
-    default:        throw error(error::MISCELLANEOUS);
+    default:        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   }
 };
 
@@ -414,11 +425,14 @@ inline int MEDDLY::variable::getBound(bool primed) const {
   return primed ? pr_bound : un_bound; 
 }
 inline const char* MEDDLY::variable::getName() const { return name; }
+inline bool MEDDLY::variable::isExtensible() const { 
+  return is_extensible;
+}
 
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                         variable order class                         *
+// *                         variable order class                   *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
@@ -560,6 +574,10 @@ inline const int* MEDDLY::enumerator::getPrimedAssignments() const {
 }
 
 inline void MEDDLY::enumerator::getValue(int &v) const {
+  if (I && is_valid) I->getValue(v);
+}
+
+inline void MEDDLY::enumerator::getValue(long &v) const {
   if (I && is_valid) I->getValue(v);
 }
 

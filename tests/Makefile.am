@@ -1,10 +1,9 @@
-## $Id$
 
 ## Makefile.am -- Process this file with automake to produce Makefile.in
 
 ## compile library
 
-check_PROGRAMS = \
+noinst_PROGRAMS = \
   enctest \
   bug_00 \
   bug_01 \

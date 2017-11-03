@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.
@@ -35,22 +33,22 @@
 // #define DUMP_REACHABLE
 
 const char* kanban[] = {
-  "X-+..............",  // Tin1
-  "X.-+.............",  // Tr1
-  "X.+-.............",  // Tb1
-  "X.-.+............",  // Tg1
-  "X.....-+.........",  // Tr2
-  "X.....+-.........",  // Tb2
-  "X.....-.+........",  // Tg2
-  "X+..--+..-+......",  // Ts1_23
-  "X.........-+.....",  // Tr3
-  "X.........+-.....",  // Tb3
-  "X.........-.+....",  // Tg3
-  "X....+..-+..--+..",  // Ts23_4
-  "X.............-+.",  // Tr4
-  "X.............+-.",  // Tb4
-  "X............+..-",  // Tout4
-  "X.............-.+"   // Tg4
+  "X-+..............",  // Tin1 TA
+  "X.-+.............",  // Tr1 TB
+  "X.+-.............",  // Tb1 TC
+  "X.-.+............",  // Tg1 TD
+  "X.....-+.........",  // Tr2 TE
+  "X.....+-.........",  // Tb2 TF
+  "X.....-.+........",  // Tg2 TG
+  "X+..--+..-+......",  // Ts1_23 TH
+  "X.........-+.....",  // Tr3 TI
+  "X.........+-.....",  // Tb3 TJ
+  "X.........-.+....",  // Tg3 TK
+  "X....+..-+..--+..",  // Ts23_4 TL
+  "X.............-+.",  // Tr4 TM
+  "X.............+-.",  // Tb4 TN
+  "X............+..-",  // Tout4 TO
+  "X.............-.+"   // Tg4 TP
 };
 
 using namespace MEDDLY;
@@ -74,6 +72,7 @@ int usage(const char* who)
   printf("\t-exp: use explicit (very slow)\n\n");
   printf("\t--batch b: specify explicit batch size\n\n");
   printf("\t -l lfile: Write logging information to specified file\n\n");
+  printf("\t-pdf: write the MDD representing the reachable states to Kanban.pdf\n\n");
   return 1;
 }
 
@@ -84,7 +83,8 @@ void printStats(const char* who, const forest* f)
   ef->reportStats(meddlyout, "\t",
     expert_forest::HUMAN_READABLE_MEMORY  |
     expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
-    expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
+    expert_forest::STORAGE_STATS | 
+    expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED
   );
 }
 
@@ -95,6 +95,7 @@ int main(int argc, const char** argv)
   char method = 'm';
   int batchsize = 256;
   const char* lfile = 0;
+  bool build_pdf = false;
 
   for (int i=1; i<argc; i++) {
     if (strcmp("-bfs", argv[i])==0) {
@@ -129,6 +130,10 @@ int main(int argc, const char** argv)
     if (strcmp("--batch", argv[i])==0) {
       i++;
       if (argv[i]) batchsize = atoi(argv[i]);
+      continue;
+    }
+    if (strcmp("-pdf", argv[i])==0) {
+      build_pdf = true;
       continue;
     }
     N = atoi(argv[i]);
@@ -250,11 +255,11 @@ int main(int argc, const char** argv)
         else              printf(" by events\n");
         fflush(stdout);
         if (0==SATURATION_FORWARD) {
-          throw error(error::UNKNOWN_OPERATION);
+          throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
         }
         sat = SATURATION_FORWARD->buildOperation(ensf);
         if (0==sat) {
-          throw error(error::INVALID_OPERATION);
+          throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
         }
         sat->compute(init_state, reachable);
         break;
@@ -282,6 +287,11 @@ int main(int argc, const char** argv)
     operation::showAllComputeTables(meddlyout, 3);
 
     printf("Approx. %g reachable states\n", c);
+
+    if (build_pdf) {
+      reachable.writePicture("kanban", "pdf");
+      if ('m' == method) nsf.writePicture("kanban-nsf", "pdf");
+    }
 
     // cleanup
     if (LOG) {

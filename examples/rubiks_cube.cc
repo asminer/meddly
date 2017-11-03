@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -998,9 +996,9 @@ int doDfs(const moves& m, char saturation_type, bool split)
 
   // Perform Reacability via "saturation".
   if (ensf) {
-    if (0==SATURATION_FORWARD) throw error(error::UNKNOWN_OPERATION);
+    if (0==SATURATION_FORWARD) throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
     specialized_operation *sat = SATURATION_FORWARD->buildOperation(ensf);
-    if (0==sat) throw error(error::INVALID_OPERATION);
+    if (0==sat) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
     sat->compute(initial, initial);
   } else {
     apply(REACHABLE_STATES_DFS, initial, nsf, initial);

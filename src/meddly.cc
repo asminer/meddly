@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -31,6 +29,7 @@
 #include "defines.h"
 #include "revision.h"
 // #include "compute_table.h"
+#include "memory_managers/init_managers.h"
 #include "operations/init_builtin.h"
 #include "forests/init_forests.h"
 #include "storage/init_storage.h"
@@ -88,9 +87,9 @@ MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code,
   expert_forest* arg, expert_forest* res)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
-    throw error(error::INVALID_OPERATION);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 
   operation* curr;
   operation* prev = 0;
@@ -121,9 +120,9 @@ MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code,
   expert_forest* arg, opnd_type res)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
-    throw error(error::INVALID_OPERATION);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 
   operation* curr;
   operation* prev = 0;
@@ -154,9 +153,9 @@ MEDDLY::binary_operation* MEDDLY::getOperation(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
-    throw error(error::INVALID_OPERATION);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 
   operation* curr;
   operation* prev = 0;
@@ -187,7 +186,7 @@ void MEDDLY::removeOperationFromCache(operation* op)
 {
   if (0==op || 0==op_cache) return;
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   const opname* code = op->getOpName();
 
   operation* curr;
@@ -209,9 +208,9 @@ void MEDDLY::removeOperationFromCache(operation* op)
 void MEDDLY::apply(const unary_opname* code, const dd_edge &a, dd_edge &c)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)  
-    throw error(error::UNKNOWN_OPERATION);
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   unary_operation* op = getOperation(code, a, c);
   op->compute(a, c);
 }
@@ -219,9 +218,9 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, dd_edge &c)
 void MEDDLY::apply(const unary_opname* code, const dd_edge &a, long &c)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
-    throw error(error::UNKNOWN_OPERATION);
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   unary_operation* op = getOperation(code, a, INTEGER);
   op->compute(a, c);
 }
@@ -229,9 +228,9 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, long &c)
 void MEDDLY::apply(const unary_opname* code, const dd_edge &a, double &c)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
-    throw error(error::UNKNOWN_OPERATION);
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   unary_operation* op = getOperation(code, a, REAL);
   op->compute(a, c);
 }
@@ -240,9 +239,9 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, opnd_type cr,
   ct_object &c)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
-    throw error(error::UNKNOWN_OPERATION);
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   unary_operation* op = getOperation(code, a, cr);
   op->compute(a, c);
 }
@@ -251,9 +250,9 @@ void MEDDLY::apply(const binary_opname* code, const dd_edge &a,
   const dd_edge &b, dd_edge &c)
 {
   if (!libraryRunning) 
-    throw error(error::UNINITIALIZED);
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
-    throw error(error::UNKNOWN_OPERATION);
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   binary_operation* op = getOperation(code, a, b, c);
   op->compute(a, b, c);
 }
@@ -264,19 +263,19 @@ void MEDDLY::apply(const binary_opname* code, const dd_edge &a,
 
 MEDDLY::variable* MEDDLY::createVariable(int bound, char* name)
 {
-  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   return new expert_variable(bound, name);
 }
 
 MEDDLY::domain* MEDDLY::createDomain(variable** vars, int N)
 {
-  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   return new expert_domain(vars, N);
 }
 
 MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
 {
-  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   domain* d = new expert_domain(0, 0);
   d->createVariablesBottomUp(bounds, N);
   return d;
@@ -285,7 +284,7 @@ MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
 void MEDDLY::destroyDomain(MEDDLY::domain* &d)
 {
   if (0==d) return;
-  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   d->markForDeletion();
   purgeMarkedOperations();
   delete d;
@@ -295,7 +294,7 @@ void MEDDLY::destroyDomain(MEDDLY::domain* &d)
 void MEDDLY::destroyForest(MEDDLY::forest* &f)
 {
   if (0==f) return;
-  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   f->markForDeletion();
   purgeMarkedOperations();
   delete f;
@@ -317,7 +316,7 @@ void MEDDLY::purgeMarkedOperations()
 inline void MEDDLY::destroyOpInternal(MEDDLY::operation* op)
 {
   if (0==op) return;
-  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   removeOperationFromCache(op);
   if (!op->isMarkedForDeletion()) {
     op->markForDeletion();
@@ -353,6 +352,7 @@ void MEDDLY::destroyOperation(MEDDLY::specialized_operation* &op)
 
 MEDDLY::initializer_list* MEDDLY::defaultInitializerList(initializer_list* prev)
 {
+  prev = new memman_initializer(prev);
   prev = new ct_initializer(prev);
   prev = new storage_initializer(prev);
   prev = new builtin_initializer(prev);
@@ -364,7 +364,7 @@ MEDDLY::initializer_list* MEDDLY::defaultInitializerList(initializer_list* prev)
 // void MEDDLY::initialize(const settings &s, initializer_list* L)
 void MEDDLY::initialize(initializer_list* L)
 {
-  if (libraryRunning) throw error(error::ALREADY_INITIALIZED);
+  if (libraryRunning) throw error(error::ALREADY_INITIALIZED, __FILE__, __LINE__);
 
   opname::next_index = 0;
 
@@ -388,7 +388,7 @@ void MEDDLY::initialize()
 
 void MEDDLY::cleanup()
 {
-  if (!libraryRunning) throw error(error::UNINITIALIZED);
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
 
 #ifdef STATS_ON_DESTROY
   if (operation::Monolithic_CT) {
@@ -432,25 +432,14 @@ const char* MEDDLY::getLibraryInfo(int what)
     case 0:
       if (!title) {
         title = new char[80];
-        if (REVISION_NUMBER) {
-          snprintf(title, 80, 
+        snprintf(title, 80, 
 #ifdef DEVELOPMENT_CODE
-            "%s version %s.%d.dev", 
+          "%s version %s.dev", 
 #else
-            "%s version %s.%d", 
-#endif
-            PACKAGE_NAME, VERSION, REVISION_NUMBER
-          );
-        } else {
-          snprintf(title, 80, 
-#ifdef DEVELOPMENT_CODE
-            "%s version %s.dev", 
-#else
-            "%s version %s", 
+          "%s version %s", 
 #endif
             PACKAGE_NAME, VERSION
-          );
-        }
+        );
       }
       return title;
 
@@ -478,7 +467,7 @@ const char* MEDDLY::getLibraryInfo(int what)
 ";
 
     case 5:
-      return REVISION_DATE;
+      return MEDDLY_DATE;
   }
   return 0;
 }

@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.
@@ -300,7 +298,10 @@ int main()
       fflush(stdout);
       long c = writeReachset(s, n);
       printf("%12ld states\n", c);
-      if (c !=expected[n]) throw 1;
+      if (c !=expected[n]) {
+        printf("Wrong number of states!\n");
+        throw 1;
+      }
     }
     fclose(s);
 

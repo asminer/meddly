@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -32,6 +30,7 @@ namespace MEDDLY {
   class generic_binbylevel_mxd;
   class generic_binary_ev;
   class generic_binary_evplus;
+  class generic_binary_evplus_mxd;
   class generic_binary_evtimes;
 }
 
@@ -53,7 +52,11 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     virtual node_handle compute(node_handle a, node_handle b);
 
   protected:
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
 
     inline compute_table::search_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
@@ -113,7 +116,11 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     node_handle compute_r(int i, int k, node_handle a, node_handle b);
 
   protected:
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
 
     inline compute_table::search_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
@@ -169,7 +176,11 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     virtual node_handle compute(int level, node_handle a, node_handle b);
 
   protected:
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
 
     inline compute_table::search_key* 
     findResult(int k, node_handle a, node_handle b, node_handle &c) 
@@ -225,7 +236,11 @@ class MEDDLY::generic_binary_ev : public binary_operation {
     virtual void discardEntry(const node_handle* entryData);
 
   protected:
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
 };
 
 // ******************************************************************
@@ -242,11 +257,11 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     virtual void showEntry(output &strm, const node_handle *entryData) const;
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
-    virtual void compute(int aev, node_handle a, int bev, node_handle b, int& cev, node_handle &c);
+    virtual void compute(long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
 
   protected:
-    inline compute_table::search_key* findResult(int aev, node_handle a, 
-      int bev, node_handle b, int& cev, node_handle &c) 
+    virtual compute_table::search_key* findResult(long aev, node_handle a,
+      long bev, node_handle b, long& cev, node_handle &c)
     {
       compute_table::search_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
@@ -270,8 +285,8 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
       return 0;
     }
 
-    inline void saveResult(compute_table::search_key* Key, 
-      int aev, node_handle a, int bev, node_handle b, int cev, node_handle c) 
+    virtual void saveResult(compute_table::search_key* Key,
+      long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
     {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
@@ -284,8 +299,71 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
   protected:
     // If terminal condition is reached, returns true and the result in c.
     // Must be provided in derived classes.
-    virtual bool checkTerminals(int aev, node_handle a, int bev, node_handle b, 
-      int &cev, node_handle &c) = 0;
+    virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
+      long &cev, node_handle &c) = 0;
+};
+
+// ******************************************************************
+
+class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
+  public:
+    generic_binary_evplus_mxd(const binary_opname* code, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+  protected:
+    virtual ~generic_binary_evplus_mxd();
+
+  public:
+    virtual void showEntry(output &strm, const node_handle *entryData) const;
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+
+    virtual void compute(long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
+
+  protected:
+    void compute_r(int in, int level, long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
+
+  protected:
+    virtual compute_table::search_key* findResult(long aev, node_handle a,
+      long bev, node_handle b, long& cev, node_handle &c)
+    {
+      compute_table::search_key* CTsrch = useCTkey();
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->reset();
+      if (can_commute && a > b) {
+        CTsrch->write(bev);
+        CTsrch->writeNH(b);
+        CTsrch->write(aev);
+        CTsrch->writeNH(a);
+      } else {
+        CTsrch->write(aev);
+        CTsrch->writeNH(a);
+        CTsrch->write(bev);
+        CTsrch->writeNH(b);
+      }
+      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      if (!cacheFind) return CTsrch;
+      cacheFind.read(cev);
+      c = resF->linkNode(cacheFind.readNH());
+      doneCTkey(CTsrch);
+      return 0;
+    }
+
+    virtual void saveResult(compute_table::search_key* Key,
+      long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
+    {
+      arg1F->cacheNode(a);
+      arg2F->cacheNode(b);
+      compute_table::entry_builder &entry = CT->startNewEntry(Key);
+      entry.writeResult(cev);
+      entry.writeResultNH(resF->cacheNode(c));
+      CT->addEntry();
+    }
+
+  protected:
+    // If terminal condition is reached, returns true and the result in c.
+    // Must be provided in derived classes.
+    virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
+      long &cev, node_handle &c) = 0;
 };
 
 // ******************************************************************

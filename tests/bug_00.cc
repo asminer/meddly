@@ -1,10 +1,8 @@
 
-// $Id$
-
 #include "meddly.h"
 #include "simple_model.h"
 
-// #define VERBOSE
+#define VERBOSE
 
 using namespace MEDDLY;
 
@@ -50,17 +48,18 @@ int main()
 
   // Display everything
 #ifdef VERBOSE
+  FILE_output out(stdout);
   printf("Initial state:\n");
-  init_state.show(stdout, 2);
+  init_state.show(out, 2);
 
   printf("NSF:\n");
-  nsf.show(stdout, 2);
+  nsf.show(out, 2);
 
   printf("DFS states:\n");
-  reachable1.show(stdout, 2);
+  reachable1.show(out, 2);
 
   printf("BFS states:\n");
-  reachable2.show(stdout, 2);
+  reachable2.show(out, 2);
 #endif
 
   int retval;

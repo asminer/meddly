@@ -10,37 +10,13 @@
  * from the log files and returns a new forest
  * QVector.
  */
-QVector<int> *setupRelation(QStringList &list)
+QVector<int> *setuplist(QStringList &list)
 {
     QVector<int> *forest = new QVector<int>();
 
     int value = 0;
     QString temp = NULL;
 
-    for (int var = 5; var < list.size(); ++var)
-    {
-        temp = list.at(var);
-        value = temp.toInt();
-        forest->append(value);
-    }
-    return forest;
-}
-
-/*
- * This does the same as setupRelation.
- * This is here as sets and relations
- * were set up differently in the past.
- * SetupSet and setupRelation need to be combinded
- * in the future.
- */
-QVector<int> *setupSet(QStringList &list)
-{
-    QVector<int> *forest = new QVector<int>();
-
-    int value = 0;
-    QString temp = NULL;
-
-    //forest->append(1);
     for (int var = 5; var < list.size(); ++var)
     {
         temp = list.at(var);
@@ -61,9 +37,6 @@ QVector<int> *setupForest1(Parser *parser
                            , int &f1PenHeight
                            , QString &f1Name)
 {
-    //This is to skip the comment line.
-    parser->readLine();
-
     //The first F line
     QString line = parser->readLine();
 
@@ -74,7 +47,6 @@ QVector<int> *setupForest1(Parser *parser
 
     //Setting the forest number and name
     f1Name = "Forest 1 " + list.at(2);
-
     QString n = list.at(3);
     f1base = n.toInt();
     if(f1base > 0)
@@ -83,14 +55,14 @@ QVector<int> *setupForest1(Parser *parser
         QString d = list.at(4);
         f1PenHeight = generatePenHeight(d.toInt());
 
-        return setupSet(list);
+        return setuplist(list);
     }else
     {
         //Call generatePenHeight
         QString d = list.at(4);
         f1PenHeight = generatePenHeight(d.toInt() * 2);
 
-        return setupRelation(list);
+        return setuplist(list);
     }
 }
 
@@ -121,14 +93,14 @@ QVector<int> *setupForest2(Parser *parser
         QString d = list.at(4);
         f2PenHeight = generatePenHeight(d.toInt());
 
-        return setupSet(list);
+        return setuplist(list);
     }else
     {
         //Call generatePenHeight
         QString d = list.at(4);
         f2PenHeight = generatePenHeight(d.toInt() * 2);
 
-        return setupRelation(list);
+        return setuplist(list);
     }
 }
 
@@ -167,29 +139,40 @@ void playForests(Parser *parser
     {
         QString line = parser->readLine();
 
+        //End of File.
         if (line.length() <1)
         {
-            //QMessageBox::information(NULL,"File Name", "End of file");
+            //QMessageBox::information(NULL,"File Name",
+            //                            "End of file");
             endOfFile = true;
 
             //Empty the last of the updates
             drawUpdates(forest1
-                        , forest2
                         , isInForest1Updates
-                        , isInForest2Updates
                         , Forest1Updates
-                        , Forest2Updates
                         , forest1Scene
-                        , forest2Scene
                         , f1PenHeight
-                        , f2PenHeight
                         , f1base
-                        , f2base
-                        , f1HorizontalReductionValue
-                        , f2HorizontalReductionValue);
+                        , f1HorizontalReductionValue);
+
+            //This checks to see if forest 2 exist before
+            //emptying it and deleting it.
+            if(forest2->size() > 1)
+            {
+                drawUpdates(forest2
+                            , isInForest2Updates
+                            , Forest2Updates
+                            , forest2Scene
+                            , f2PenHeight
+                            , f2base
+                            , f2HorizontalReductionValue);
+
+                delete forest2;
+            }
+
             delete parser;
             delete forest1;
-            delete forest2;
+
 
             break;
         }
@@ -198,12 +181,11 @@ void playForests(Parser *parser
         int u = t.toLatin1();
 
         switch (u)
-        {
+        {        
         /*
          * This is the p line
          * This case sets the lables with the correct message
          */
-
         case 112:
         {
             QChar fNumber = line.at(2);
@@ -224,8 +206,8 @@ void playForests(Parser *parser
         }
         /*
          * This is the 'a' line
-         * This function uses boolean arrays to indicate if an update is already
-         * in the forest update list.
+         * This function uses boolean arrays to indicate if an update
+         * is already in the forest update list.
          */
         case 97:
         {
@@ -280,8 +262,6 @@ void playForests(Parser *parser
          * This is the t line.
          * This function will calculate the time to wait in microseconds
          * then convert it to miliseconds.
-         *
-         *
          */
         case 116:
         {
@@ -297,9 +277,10 @@ void playForests(Parser *parser
 
             int tempTimeToWait = tempSeconds * 1000000 + tempMicroseconds;
 
-            /*
-             *
-             */
+            //The idea here is that when you slow the speed of the graph
+            //display, you lower the time to wait. This will increase the
+            //resolution of the data being displayed. You will see more
+            //of the udates separately.
             if(tempTimeToWait >= (100000 / speedFactorValue))
             {
                 oldSeconds = newSeconds;
@@ -313,22 +294,32 @@ void playForests(Parser *parser
                 //convert mili to micro
                 int tempMiliseconds = tempMicroseconds/1000;
 
+                //This will slow down the progress through the log
+                //when you increase the speedFactorValue.
                 delayMili(tempMiliseconds*speedFactorValue);
 
                 drawUpdates(forest1
-                            , forest2
                             , isInForest1Updates
-                            , isInForest2Updates
                             , Forest1Updates
-                            , Forest2Updates
                             , forest1Scene
-                            , forest2Scene
                             , f1PenHeight
-                            , f2PenHeight
                             , f1base
-                            , f2base
-                            , f1HorizontalReductionValue
-                            , f2HorizontalReductionValue);
+                            , f1HorizontalReductionValue);
+
+                //This first checks to see if
+                if(forest2->size() > 1)
+                {
+                    drawUpdates(forest2
+                                , isInForest2Updates
+                                , Forest2Updates
+                                , forest2Scene
+                                , f2PenHeight
+                                , f2base
+                                , f2HorizontalReductionValue);
+                }
+
+
+
 
             }
             continueLoop = false;
@@ -342,7 +333,7 @@ void playForests(Parser *parser
 }
 
 /*
- * This function will clear the forestScene then call either
+ * This function clears the forestScene, then calls either
  * drawSet or drawRelation in drawfunctions.cpp.
  */
 void redrawForest(QGraphicsScene *forestScene

@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -70,7 +68,8 @@
 namespace MEDDLY {
   // const int INF = std::numeric_limits<int>::max();
   // const float NAN = std::numeric_limits<float>::quiet_NaN();
-  inline int Inf()    { return std::numeric_limits<int>::max(); }
+  template<typename T>
+  inline T Inf()    { return std::numeric_limits<T>::max(); }
   inline float Nan()  { return std::numeric_limits<float>::quiet_NaN(); }
   inline bool isNan(float t) { return t != t; }
   inline bool isNan(int t) { return false; }

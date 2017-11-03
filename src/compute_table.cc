@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -66,7 +64,7 @@ MEDDLY::ct_initializer::~ct_initializer()
 
 void MEDDLY::ct_initializer::setup()
 {
-  if (0==ct_factory) throw error(error::INVALID_ASSIGNMENT);
+  if (0==ct_factory) throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
 
   if (ct_factory->usesMonolithic()) {
     operation::Monolithic_CT = ct_factory->create(the_settings);
@@ -152,7 +150,7 @@ MEDDLY::compute_table*
 MEDDLY::compute_table_style::create(const ct_initializer::settings &s)
       const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 
@@ -160,7 +158,7 @@ MEDDLY::compute_table*
 MEDDLY::compute_table_style::create(const ct_initializer::settings &s, 
       operation* op) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 // **********************************************************************
@@ -173,7 +171,7 @@ MEDDLY::compute_table::compute_table(const ct_initializer::settings &s)
 {
   maxSize = s.maxSize;
   if (0==maxSize)
-    throw error(error::INVALID_ASSIGNMENT);
+    throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
 
   switch (s.staleRemoval) {
     case ct_initializer::Aggressive:

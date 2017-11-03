@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -90,9 +88,9 @@ void MEDDLY::mpz_object::enlargeBuffer(int digits)
 {
   if (digits > bufsize) {
     int newbufsize = (1+digits / 1024) * 1024;
-    if (newbufsize <= 0) throw error(error::MISCELLANEOUS);
+    if (newbufsize <= 0) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     char* newbuf = (char*) realloc(buffer, newbufsize);
-    if (0==newbuf) throw error(error::INSUFFICIENT_MEMORY);
+    if (0==newbuf) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     buffer = newbuf;
     bufsize = newbufsize;
   }

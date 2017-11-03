@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -80,12 +78,12 @@ MEDDLY::enumerator::iterator::~iterator()
 
 bool MEDDLY::enumerator::iterator::start(const dd_edge &e)
 {
-  throw error(error::INVALID_OPERATION);
+  throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 }
 
 bool MEDDLY::enumerator::iterator::start(const dd_edge &e, const int* m)
 {
-  throw error(error::INVALID_OPERATION);
+  throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 }
 
 const int* MEDDLY::enumerator::iterator::getPrimedAssignments()
@@ -105,12 +103,17 @@ const int* MEDDLY::enumerator::iterator::getPrimedAssignments()
 
 void MEDDLY::enumerator::iterator::getValue(int &) const
 {
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::enumerator::iterator::getValue(long &) const
+{
   throw error(error::TYPE_MISMATCH);
 }
 
 void MEDDLY::enumerator::iterator::getValue(float &) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 // ******************************************************************
@@ -185,7 +188,7 @@ void MEDDLY::enumerator::init(type t, const forest* f)
 void MEDDLY::enumerator::start(const dd_edge &e)
 {
   if (0==I) return;
-  if (FULL != T) throw error(error::MISCELLANEOUS);
+  if (FULL != T) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   MEDDLY_DCASSERT(I);
   is_valid = I->start(e);
 }
@@ -193,7 +196,7 @@ void MEDDLY::enumerator::start(const dd_edge &e)
 void MEDDLY::enumerator::startFixedRow(const dd_edge &e, const int* minterm)
 {
   if (0==I) return;
-  if (ROW_FIXED != T) throw error(error::MISCELLANEOUS);
+  if (ROW_FIXED != T) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   MEDDLY_DCASSERT(I);
   is_valid = I->start(e, minterm);
 }
@@ -201,7 +204,7 @@ void MEDDLY::enumerator::startFixedRow(const dd_edge &e, const int* minterm)
 void MEDDLY::enumerator::startFixedColumn(const dd_edge &e, const int* minterm)
 {
   if (0==I) return;
-  if (COL_FIXED != T) throw error(error::MISCELLANEOUS);
+  if (COL_FIXED != T) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   MEDDLY_DCASSERT(I);
   is_valid = I->start(e, minterm);
 }

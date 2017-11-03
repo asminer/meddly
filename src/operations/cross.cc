@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -48,7 +46,11 @@ class MEDDLY::cross_bool : public binary_operation {
     cross_bool(const binary_opname* oc, expert_forest* a1,
       expert_forest* a2, expert_forest* res);
 
-    virtual bool isStaleEntry(const node_handle* entryData);
+#ifndef USE_NODE_STATUS
+    virtual bool isStaleEntry(const node_handle*);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
+#endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -67,6 +69,7 @@ MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
   // data[RESLT_INDEX] : c
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::cross_bool::isStaleEntry(const node_handle* data)
 {
   // data[0] is the level number
@@ -74,6 +77,26 @@ bool MEDDLY::cross_bool::isStaleEntry(const node_handle* data)
          arg2F->isStale(data[OPNDB_INDEX]) ||
          resF->isStale(data[RESLT_INDEX]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::cross_bool::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[OPNDA_INDEX]);
+  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[OPNDB_INDEX]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[RESLT_INDEX]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      b == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      b == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::cross_bool::discardEntry(const node_handle* data)
 {
@@ -224,7 +247,7 @@ MEDDLY::cross_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     a1->isForRelations()  ||
@@ -237,7 +260,7 @@ MEDDLY::cross_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (r->getRangeType() != forest::BOOLEAN) ||
     (r->getEdgeLabeling() != forest::MULTI_TERMINAL)
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   return new cross_bool(this, a1, a2, r);
 }

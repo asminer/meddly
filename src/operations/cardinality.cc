@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -69,18 +67,22 @@ public:
   card_int(const unary_opname* oc, expert_forest* arg);
 
   // common
+#ifndef USE_NODE_STATUS
   virtual bool isStaleEntry(const node_handle* entryData);
+#else
+  virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* data);
+#endif
   virtual void discardEntry(const node_handle* entryData);
   virtual void showEntry(output &strm, const node_handle* entryData) const;
 
 protected:
   static inline void overflow_acc(long &a, long x) {
     a += x;
-    if (a < x) throw error(error::VALUE_OVERFLOW);
+    if (a < x) throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
   }
   static inline long overflow_mult(long a, long x) {
     a *= x;
-    if (a < x) throw error(error::VALUE_OVERFLOW);
+    if (a < x) throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
     return a;
   }
 };
@@ -90,10 +92,25 @@ MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
 {
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::card_int::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::card_int::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+
+  if (a == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::card_int::discardEntry(const node_handle* data)
 {
@@ -261,7 +278,11 @@ public:
   card_real(const unary_opname* oc, expert_forest* arg);
 
   // common
-  virtual bool isStaleEntry(const node_handle* entryData);
+#ifndef USE_NODE_STATUS
+    virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
+#endif
   virtual void discardEntry(const node_handle* entryData);
   virtual void showEntry(output &strm, const node_handle* entryData) const;
 };
@@ -271,10 +292,25 @@ MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
 {
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::card_real::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::card_real::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+
+  if (a == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::card_real::discardEntry(const node_handle* data)
 {
@@ -453,7 +489,11 @@ public:
   card_mpz(const unary_opname* oc, expert_forest* arg);
 
   // common
+#ifndef USE_NODE_STATUS
   virtual bool isStaleEntry(const node_handle* entryData);
+#else
+  virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
+#endif
   virtual void discardEntry(const node_handle* entryData);
   virtual void showEntry(output &strm, const node_handle* entryData) const;
 };
@@ -463,10 +503,25 @@ MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
 {
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::card_mpz::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::card_mpz::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+
+  if (a == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::card_mpz::discardEntry(const node_handle* data)
 {
@@ -544,6 +599,7 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 
   // Initialize node reader
   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  MEDDLY_DCASSERT(!A->isExtensible());
 
   // Recurse
   mpz_object tmp;
@@ -714,7 +770,7 @@ MEDDLY::card_opname::buildOperation(expert_forest* arg, opnd_type res) const
 #endif
 
     default:
-      throw error(error::TYPE_MISMATCH);
+      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   }
 }
 

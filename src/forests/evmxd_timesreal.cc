@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -29,8 +27,8 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmxd_timesreal::evmxd_timesreal(int dsl, domain *d, const policies &p)
- : evmxd_forest(dsl, d, REAL, EVTIMES, p)
+MEDDLY::evmxd_timesreal::evmxd_timesreal(int dsl, domain *d, const policies &p, int* level_reduction_rule)
+ : evmxd_forest(dsl, d, REAL, EVTIMES, p, level_reduction_rule)
 {
   // Edge's are floats and are NOT hashed.
   setEdgeSize(sizeof(float), false);
@@ -85,6 +83,19 @@ void MEDDLY::evmxd_timesreal
   float &term) const
 {
   evaluateT<OP, float>(f, vlist, vplist, term);
+}
+
+bool MEDDLY::evmxd_timesreal
+::isTransparentEdge(node_handle ep, const void* ev) const
+{
+  if (ep) return false;
+  return OP::isTransparentEdge(ev);
+}
+
+void MEDDLY::evmxd_timesreal
+::getTransparentEdge(node_handle &ep, void* ev) const
+{
+  OP::makeEmptyEdge(ep, ev);
 }
 
 bool MEDDLY::evmxd_timesreal
@@ -188,7 +199,7 @@ void MEDDLY::evmxd_timesreal::evtrmxd_baseiter::getValue(float &tv) const
 bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
   MEDDLY_DCASSERT(acc_evs);
@@ -282,7 +293,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter
 ::start(const dd_edge &e, const int* minterm)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
   MEDDLY_DCASSERT(acc_evs);
@@ -408,7 +419,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter
 ::start(const dd_edge &e, const int* minterm)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
   MEDDLY_DCASSERT(acc_evs);

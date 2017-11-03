@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -32,7 +30,7 @@ MEDDLY::unique_table::unique_table(expert_forest* ef)
     if(tables==0){
       fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
           (2*num_vars+1)*sizeof(subtable), __FILE__, __LINE__);
-      throw error(error::INSUFFICIENT_MEMORY);
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
     tables += num_vars;
 
@@ -44,7 +42,7 @@ MEDDLY::unique_table::unique_table(expert_forest* ef)
   else{
     tables = new subtable[num_vars+1];
     if(tables==0){
-      throw error(error::INSUFFICIENT_MEMORY);
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
 
     for(int i=1; i<=num_vars; i++){
@@ -188,7 +186,7 @@ void MEDDLY::unique_table::subtable::init(expert_forest *ef)
 
   table = static_cast<node_handle*>(calloc(size, sizeof(node_handle)));
   if (table == nullptr) {
-    throw error(error::INSUFFICIENT_MEMORY);
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 
   next_expand = 2 * size;
@@ -233,6 +231,7 @@ MEDDLY::node_handle MEDDLY::unique_table::subtable::remove(unsigned hash, node_h
     }
     prev = ptr;
   }
+  MEDDLY_DCASSERT(false);
   return 0;
 }
 
@@ -313,7 +312,7 @@ void MEDDLY::unique_table::subtable::expand()
   if (0==temp){
     fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
         newSize * sizeof(node_handle), __FILE__, __LINE__);
-    throw error(error::INSUFFICIENT_MEMORY);
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 
   table = temp;
@@ -341,7 +340,7 @@ void MEDDLY::unique_table::subtable::shrink()
   if (0==temp) {
     fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
         newSize * sizeof(node_handle), __FILE__, __LINE__);
-    throw error(error::INSUFFICIENT_MEMORY);
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   table = temp;
   next_expand = size;

@@ -1,4 +1,3 @@
-/* $Id: center.c 272 2006-09-29 14:17:16Z asminer $ */
 
 /* 
     A fancier curses example (number 2).

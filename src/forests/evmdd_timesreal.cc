@@ -1,6 +1,4 @@
 
-// $Id$
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -29,8 +27,8 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmdd_timesreal::evmdd_timesreal(int dsl, domain *d, const policies &p)
- : evmdd_forest(dsl, d, REAL, EVTIMES, p)
+MEDDLY::evmdd_timesreal::evmdd_timesreal(int dsl, domain *d, const policies &p, int* level_reduction_rule)
+ : evmdd_forest(dsl, d, REAL, EVTIMES, p, level_reduction_rule)
 {
   setEdgeSize(sizeof(float), true);
   initializeForest();
@@ -82,6 +80,18 @@ void MEDDLY::evmdd_timesreal
   evaluateT<OP, float>(f, vlist, term);
 }
 
+bool MEDDLY::evmdd_timesreal
+::isTransparentEdge(node_handle ep, const void* ev) const
+{
+  if (ep) return false;
+  return OP::isTransparentEdge(ev);
+}
+
+void MEDDLY::evmdd_timesreal
+::getTransparentEdge(node_handle &ep, void* ev) const
+{
+  OP::makeEmptyEdge(ep, ev);
+}
 
 bool MEDDLY::evmdd_timesreal
 ::areEdgeValuesEqual(const void* eva, const void* evb) const
@@ -173,7 +183,7 @@ void MEDDLY::evmdd_timesreal::evtrmdd_iterator::getValue(float &tv) const
 bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
   MEDDLY_DCASSERT(acc_evs);

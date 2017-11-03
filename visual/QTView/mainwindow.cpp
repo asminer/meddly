@@ -7,10 +7,9 @@
 #include <QtDebug>
 
 /*
- *
- * This function sets up the initial states of all the buttons.
- * This creates the 2 scenes and attaches them to the graphics views.
- *
+ * This function sets up the initial states of all the
+ * buttons. This creates the 2 scenes and attaches
+ * them to the graphics views.
  * */
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -58,9 +57,10 @@ MainWindow::MainWindow(QWidget *parent) :
 }
 
 /*
- * This function alows the user to search for a log file and load into the program.
- * It checks for T simple then starts to set up the forests by calling setupForest in the miscForestOperations.cpp.
+ * This function allows the user to search for a log file and load into the program.
  * It creates the parser to be used for the rest of the lifetime of the log.
+ * It checks the first line for "T simple", then starts to set up the forests by
+ * calling setupForest in the miscForestOperations.cpp.
  *
  * This functions also activate the relevent buttons and sliders.
  * */
@@ -82,6 +82,9 @@ void MainWindow::on_actionOpen_triggered()
 
     if (newLine.compare("T simple") ==0 )
     {
+        //This is to skip the comment line.
+        parser->readLine();
+
         MainWindow::forest1 = setupForest1(
                     MainWindow::parser
                     , MainWindow::f1base
@@ -106,9 +109,15 @@ void MainWindow::on_actionOpen_triggered()
 
         MainWindow::forest1Hidden = false;
 
+        //This is a boolean list representing whether or not
+        //an index is already marked for redraw or not.
+        //This means that if ther are more than one update for
+        //the same line, it is not added twice to the list.
+        //This will avoid the line being redrawn multiple times.
         MainWindow::isInUpdateForest1
                 = QVector<int>(MainWindow::forest1->size());
 
+        //This call draws the initial bar graph for the first forest.
         redrawForest(MainWindow::forest1Scene
                      , MainWindow::forest1
                      , MainWindow::f1base
@@ -161,7 +170,6 @@ MainWindow::~MainWindow()
 }
 
 /*
- *
  * This will hide and show forest one when the show/hide forest1 button is clicked.
  * */
 void MainWindow::on_hideForest1_clicked()
@@ -203,7 +211,7 @@ void MainWindow::on_hideForest2_clicked()
 }
 
 /*
- * if paused this function will unpause and if unpause it will pause.
+ * If paused, this function will unpause and if unpaused it will pause.
  * Play works by calling on_step_clicked() in a while loop.
  *
  * */
@@ -231,7 +239,7 @@ void MainWindow::on_play_clicked()
         }
     }else
     {
-        //forests are not palying
+        //forests are not playing
         //isPaused goes to true
         //enable step button
         ui->play->setText("Play");
@@ -495,6 +503,7 @@ void MainWindow::on_replayButton_clicked()
 
 /*
  * This function changes the value of the factor multiplied with the time stamp.
+ * This needs expanded.
  * */
 void MainWindow::on_speedFactorDial_valueChanged(int value)
 {
