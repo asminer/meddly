@@ -40,7 +40,6 @@
 #include <algorithm>
 
 // #define SHOW_ALL_SOLUTIONS
-#define BATCHED_MULTIPLY
 #define USE_HEAP
 #define USE_NODE_COUNT
 
@@ -55,9 +54,17 @@ int* scratch;
 const char* lfile;
 
 bool use_folding;
+bool use_batches;
 
-#ifdef BATCHED_MULTIPLY
+typedef enum {
+  node_count,
+  edge_count,
+  cardinality
+} batch_heuristic;
+batch_heuristic heuristic;
 
+
+#if 0
 #ifdef USE_NODE_COUNT
 #define COMPARISON_OPERATION NODE_COUNT
 #define RESULT_TYPE long
@@ -69,146 +76,169 @@ const bool descending_order = false;
 #define MEDDLY_RESULT_TYPE REAL
 const bool descending_order = true;
 #endif
+#endif
 
 class sorter {
+  MEDDLY::forest* f;
+  batch_heuristic heuristic;
+  MEDDLY::opnd_type op_type;
   MEDDLY::unary_operation *op;
   int level;
   bool descending;
 
   public:
 
-  sorter(MEDDLY::unary_operation *op)
-    : op(op), level(0), descending(false) {}
+  sorter(forest* f, batch_heuristic h)
+  : f(f), heuristic(h), level(0)
+  {
+    switch (heuristic) {
+      case node_count:
+        op_type = INTEGER;
+        op = getOperation(NODE_COUNT, f, op_type);
+        descending = false;
+        break;
+      case cardinality:
+        op_type = REAL;
+        op = getOperation(CARDINALITY, f, op_type);
+        descending = true;
+        break;
+      default:
+        assert(false);
+    }
+    assert(op);
+#ifdef USE_HEAP
+    descending = !descending;   // since this pulls from the back
+#endif
+  }
 
   void setLevel(int k) { level = k; }
   void setDescending(bool d) { descending = d; }
 
+  template<typename T>
+  bool lessThan(MEDDLY::node_handle a, MEDDLY::node_handle b) const {
+    T val_a;
+    T val_b;
+    op->compute(level, a, val_a);
+    op->compute(level, b, val_b);
+    return (val_a < val_b);
+  }
+
   // returns true if a must be placed before b in the sorted order
   bool operator()(MEDDLY::node_handle a, MEDDLY::node_handle b) const {
-    if (descending) {
-      // descending order
-      // returns true if a > b
-      if (a == b || b == -1 || a == 0) return false;
-      if (b == 0 || a == -1) return true;
-      RESULT_TYPE card_a = 0, card_b = 0;
-      op->compute(level, a, card_a);
-      op->compute(level, b, card_b);
-      return card_a > card_b;
-    }
+    if (a == b) return false;
+    if (descending) { MEDDLY::node_handle t=a; a=b; b=t; }
     // ascending order
     // returns true if a < b
-    if (a == b || a == -1 || b == 0) return false;
+    if (a == -1 || b == 0) return false;
     if (a == 0 || b == -1) return true;
-    RESULT_TYPE card_a = 0, card_b = 0;
-    op->compute(level, a, card_a);
-    op->compute(level, b, card_b);
-    return card_a < card_b;
+    if (op_type == INTEGER)
+      return lessThan<long int>(a, b);
+    else 
+      return lessThan<double>(a, b);
   }
 };
 
 void intersect_acc(dd_edge** A, int L)
 {
-  expert_forest* f = 0;
-  std::vector<MEDDLY::node_handle> q;
-  for (int i=0; i<L; i++) {
-    if (A[i]) {
-      if (0 == f) { f = dynamic_cast<expert_forest*>(A[i]->getForest()); }
-      q.push_back(A[i]->getNode());
-      f->linkNode(A[i]->getNode());
-      delete A[i];
-      A[i] = 0;
+  if (!use_batches) {
+
+    // Original code, without batched operations
+
+    if (0==A[0]) {
+      // find first non-zero and swap
+      for (int i=1; i<L; i++) {
+        if (A[i]) {
+          A[0] = A[i];
+          A[i] = 0;
+          break;
+        }
+      }
+      if (0==A[0]) return;
     }
-  }
-  if (q.size() == 0) return;
-  assert(0 != f);
-
-  fprintf(stderr, "Original Order:\t ");
-  for (unsigned i=0; i<q.size(); i++) {
-    fprintf(stderr, "%lu ", q.size()-i);
-    fprintf(stderr, "(%d) ", q[i]);
-  }
-  fprintf(stderr, "\n");
-
-  // sort by cardinality
-  unary_operation* mddCardinality = getOperation(COMPARISON_OPERATION, f, MEDDLY_RESULT_TYPE);
-  assert(mddCardinality);
-  binary_operation* mddMultiply = getOperation(MULTIPLY, f, f, f);
-  assert(mddMultiply);
-
-  sorter mdd_sorter(mddCardinality);
-  mdd_sorter.setLevel(f->getNumVariables());
-  MEDDLY::node_handle result = 0;
-  fprintf(stderr, "\t");
-#ifdef USE_HEAP
-  mdd_sorter.setDescending(!descending_order);  // since this heap pulls from the "back"
-  std::priority_queue<node_handle, std::vector<node_handle>, sorter> pq(mdd_sorter);
-  for (auto n : q) pq.push(n);
-  result = pq.top();
-  pq.pop();
-  while (!pq.empty()) {
-    fprintf(stderr, "%lu ", pq.size());
-    MEDDLY::node_handle next = pq.top();
-    fprintf(stderr, "(%d) ", result);
-    fprintf(stderr, "(%d)\n", next);
-    pq.pop();
-    MEDDLY::node_handle temp = mddMultiply->compute(result, next);
-    f->unlinkNode(result);
-    f->unlinkNode(next);
-    pq.push(temp);
-    result = pq.top();
-    pq.pop();
-  }
-#else
-  mdd_sorter.setDescending(descending_order);
-  std::sort(q.begin(), q.end(), mdd_sorter);
-  result = q[0];
-  fprintf(stderr, "(%d) ", result);
-  for (unsigned i=1; i<q.size(); i++) {
-    fprintf(stderr, "%lu ", q.size()-i);
-    fprintf(stderr, "(%d) ", q[i]);
-    MEDDLY::node_handle temp = mddMultiply->compute(result, q[i]);
-    f->unlinkNode(result);
-    f->unlinkNode(q[i]);
-    result = temp;
-  }
-#endif
-
-  A[0] = new dd_edge(f);
-  A[0]->set(result);
-  fprintf(stderr, "\n");
-}
-
-#else
-
-// Original code, without batched operations
-
-void intersect_acc(dd_edge** A, int L)
-{
-  if (0==A[0]) {
-    // find first non-zero and swap
+    fprintf(stderr, "\t");
     for (int i=1; i<L; i++) {
+      fprintf(stderr, "%d ", L-i);
       if (A[i]) {
-        A[0] = A[i];
+        apply(MULTIPLY, *A[0], *A[i], *A[0]);
+        delete A[i];
         A[i] = 0;
-        break;
+        // operation::removeStalesFromMonolithic();
       }
     }
-    if (0==A[0]) return;
+    fprintf(stderr, "\n");
   }
-  fprintf(stderr, "\t");
-  for (int i=1; i<L; i++) {
-    fprintf(stderr, "%d ", L-i);
-    if (A[i]) {
-      apply(MULTIPLY, *A[0], *A[i], *A[0]);
-      delete A[i];
-      A[i] = 0;
-      // operation::removeStalesFromMonolithic();
-    }
-  }
-  fprintf(stderr, "\n");
-}
+  else
+  {
 
+    // Modified code, with batched operations
+
+    expert_forest* f = 0;
+    std::vector<MEDDLY::node_handle> q;
+    for (int i=0; i<L; i++) {
+      if (A[i]) {
+        if (0 == f) { f = dynamic_cast<expert_forest*>(A[i]->getForest()); }
+        q.push_back(A[i]->getNode());
+        f->linkNode(A[i]->getNode());
+        delete A[i];
+        A[i] = 0;
+      }
+    }
+    if (q.size() == 0) return;
+    assert(0 != f);
+
+    fprintf(stderr, "Original Order:\t ");
+    for (unsigned i=0; i<q.size(); i++) {
+      fprintf(stderr, "%lu ", q.size()-i);
+      fprintf(stderr, "(%d) ", q[i]);
+    }
+    fprintf(stderr, "\n");
+
+    // sort by cardinality
+    binary_operation* mddMultiply = getOperation(MULTIPLY, f, f, f);
+    assert(mddMultiply);
+
+    sorter mdd_sorter(f, heuristic);
+    mdd_sorter.setLevel(f->getNumVariables());
+    MEDDLY::node_handle result = 0;
+#ifdef USE_HEAP
+    std::priority_queue<node_handle, std::vector<node_handle>, sorter> pq(mdd_sorter);
+    for (auto n : q) pq.push(n);
+    result = pq.top();
+    pq.pop();
+    while (!pq.empty()) {
+      fprintf(stderr, "\t");
+      fprintf(stderr, "%lu ", pq.size());
+      MEDDLY::node_handle next = pq.top();
+      fprintf(stderr, "(%d) ", result);
+      fprintf(stderr, "(%d)\n", next);
+      pq.pop();
+      MEDDLY::node_handle temp = mddMultiply->compute(result, next);
+      f->unlinkNode(result);
+      f->unlinkNode(next);
+      pq.push(temp);
+      result = pq.top();
+      pq.pop();
+    }
+#else
+    fprintf(stderr, "\t");
+    std::sort(q.begin(), q.end(), mdd_sorter);
+    result = q[0];
+    fprintf(stderr, "(%d) ", result);
+    for (unsigned i=1; i<q.size(); i++) {
+      fprintf(stderr, "%lu ", q.size()-i);
+      fprintf(stderr, "(%d) ", q[i]);
+      MEDDLY::node_handle temp = mddMultiply->compute(result, q[i]);
+      f->unlinkNode(result);
+      f->unlinkNode(q[i]);
+      result = temp;
+    }
 #endif
+
+    A[0] = new dd_edge(f);
+    A[0]->set(result);
+    fprintf(stderr, "\n");
+  }
+}
 
 
 void intersect_fold(dd_edge** A, int L)
@@ -271,6 +301,8 @@ bool processArgs(int argc, const char** argv, forest::policies &p)
   p.setPessimistic();
   bool setN = false;
   use_folding = false;
+  use_batches = false;
+  heuristic = node_count;
   for (int i=1; i<argc; i++) {
     if ('-' == argv[i][0]) {
       if (strcmp("-acc", argv[i])==0) {
@@ -279,6 +311,16 @@ bool processArgs(int argc, const char** argv, forest::policies &p)
       }
       if (strcmp("-fold", argv[i])==0) {
         use_folding = true;
+        continue;
+      }
+      if (strcmp("-node_count", argv[i])==0) {
+        use_batches = true;
+        heuristic = node_count;
+        continue;
+      }
+      if (strcmp("-cardinality", argv[i])==0) {
+        use_batches = true;
+        heuristic = cardinality;
         continue;
       }
       if (strcmp("-opt", argv[i])==0) {
@@ -313,12 +355,14 @@ int usage(const char* who)
     if ('/' == *ptr) name = ptr+1;
   }
   printf("Usage: %s [options] N\n\n", name);
-  printf("\t       N:  board dimension\n");
-  printf("\t    -acc:  Accumulate constraints in order (default)\n");
-  printf("\t   -fold:  Accumulate constraints in pairs\n");
-  printf("\t    -opt:  Optimistic node deletion\n");
-  printf("\t   -pess:  Pessimistic node deletion (default)\n");
-  printf("\t-l lfile:  Write logging information to specified file\n\n");
+  printf("\t           N:  board dimension\n");
+  printf("\t        -acc:  Accumulate constraints in order (default)\n");
+  printf("\t       -fold:  Accumulate constraints in pairs\n");
+  printf("\t -node_count:  Accumulate constraints in batches, with node_count as heuristic\n");
+  printf("\t-cardinality:  Accumulate constraints in batches, with cardinality as heuristic\n");
+  printf("\t        -opt:  Optimistic node deletion\n");
+  printf("\t       -pess:  Pessimistic node deletion (default)\n");
+  printf("\t    -l lfile:  Write logging information to specified file\n\n");
   return 1;
 }
 
