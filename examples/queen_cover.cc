@@ -253,7 +253,8 @@ class emptiness_checker {
 
       // a s_next per i
       std::vector<std::set<node_handle>> s_next(f->getLevelSize(k));
-      bool is_zero[f->getLevelSize(k)] = {false};
+      bool is_zero[f->getLevelSize(k)];
+      for (auto i : is_zero) { i = false; }
       for (auto n : s) {
         if (f->getNodeLevel(n) == k) {
           unpacked_node* node = unpacked_node::newFromNode(f, n, true);
@@ -323,7 +324,8 @@ class emptiness_checker {
 
       // a s_next per i
       std::vector<std::set<node_handle>> s_next(f->getLevelSize(k));
-      bool is_zero[f->getLevelSize(k)] = {false};
+      bool is_zero[f->getLevelSize(k)];
+      for (auto i : is_zero) { i = false; }
       for (auto n : s) {
         if (f->getNodeLevel(n) == k) {
           unpacked_node* node = unpacked_node::newFromNode(f, n, true);
