@@ -458,7 +458,7 @@ void MEDDLY::simple_separated::unlinkDownAndRecycle(node_address addr)
 bool MEDDLY::simple_separated
 ::areDuplicates(node_address addr, const unpacked_node &n) const
 {
-  MEDDLY_DCASSERT(!n.isExtensible() || n.isTrim());
+  MEDDLY_DCASSERT(n.isTrim());
   const node_handle* chunk = getChunkAddress(addr);
   MEDDLY_DCASSERT(chunk);
 
