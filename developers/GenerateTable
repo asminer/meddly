@@ -1,17 +1,18 @@
 #!/bin/bash
 #
 # Builds a table of run times for various versions of Meddly.
-# The versions to run tests on must be held in a directory
-# with name Meddly-<something>, in the home directory.
-# This is because some versions need to be tweaked to run
-# correctly with the script.
+# The different versions are obtained from the git repository.
+# Compiles each version, runs the benchmark script, and
+# collects the results.
 # 
-# Simply runs the benchmark script in each directory,
-# and collects the results.
-#
 
 if [ $# -ne "1" ]; then
   echo "Usage: $0 <file.html>"
+  exit 1
+fi
+
+if [ ! -f autogen.sh ]; then
+  echo "Are you running this in the Meddly root directory?"
   exit 1
 fi
 
@@ -19,27 +20,11 @@ OUT="`pwd`/$1"
 echo "Writing to $OUT"
 
 #
-# Rebuild everything
+# Copy RunBenchmarks to working directory
+# because when we switch to other versions, it may get clobbered
 #
 
-for dir in $HOME/Meddly-*; do
-  cd $dir
-  echo "Building $dir" 1>&2
-  if make clean all check 1>&2; then
-    echo "============================================================"
-    echo "|                                                          |"
-    echo "|    Build of $dir was successful"
-    echo "|                                                          |"
-    echo "============================================================"
-  else
-    echo "============================================================"
-    echo "|                                                          |"
-    echo "|    Build of $dir FAILED"
-    echo "|                                                          |"
-    echo "============================================================"
-    exit 1
-  fi
-done
+cp developers/RunBenchmarks .
 
 #
 # Run everything and generate table
@@ -109,12 +94,50 @@ cat >> $OUT <<EOF
 <!-- Data here -->
 EOF
 
+#
+# Old releases - are branches
+#
 
-for dir in $HOME/Meddly-*; do
-  cd $dir
-  MeddlyBenchmarks -h $OUT
+for oldrel in v0.02 v0.03 v0.04 v0.05 v0.06 v0.07 v0.08 v0.09 v0.10 v0.11 v0.12 v0.13 v0.14; do
+  if git checkout releases/$oldrel; then
+    echo "Checkout of $oldrel succeeded"
+  else
+    echo "Checkout of $oldrel failed"
+    exit 1
+  fi
+  ./autogen.sh
+  if make clean all check; then
+    echo "Build of version $oldrel succeeded"
+  else
+    echo "Build of version $oldrel failed"
+    exit 1
+  fi
+  ./RunBenchmarks -h $OUT
 done
-cd $HOME
+
+#
+# New releases 
+#
+
+for newrel in master; do
+  if git checkout $newrel; then
+    echo "Checkout of $newrel succeeded"
+  else
+    echo "Checkout of $newrel failed"
+    exit 1
+  fi
+  ./autogen.sh
+  if make clean all check; then
+    echo "Build of version $newrel succeeded"
+  else
+    echo "Build of version $newrel failed"
+    exit 1
+  fi
+  ./RunBenchmarks -h $OUT
+done
+
+
+rm RunBenchmarks
 
 cat >> $OUT <<EOF
 <!-- Done data -->

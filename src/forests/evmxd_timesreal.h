@@ -29,7 +29,7 @@ namespace MEDDLY {
 
 class MEDDLY::evmxd_timesreal : public evmxd_forest {
   public:
-    class OP : public float_EVencoder {
+    class OP : public EVencoder<float> {
       public:
         static inline void setEdge(void* ptr, float v) {
           writeValue(ptr, v);
@@ -38,6 +38,11 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
           float ev;
           readValue(p, ev);
           return !notClose(ev, 1.0);
+        }
+        static inline bool isTransparentEdge(const void* p) {
+          float ev;
+          readValue(p, ev);
+          return (0.0 == ev);
         }
         static inline double getRedundantEdge() {
           return 1.0f;
@@ -48,6 +53,10 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
         static inline void makeEmptyEdge(float &ev, node_handle &ep) {
           ev = 0;
           ep = 0;
+        }
+        static inline void makeEmptyEdge(node_handle &ep, void* ev) {
+          ep = 0;
+          writeValue(ev, 0);
         }
         static inline void unionEq(float &a, float b) {
           a += b;
@@ -64,7 +73,7 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
     };
 
   public:
-    evmxd_timesreal(int dsl, domain *d, const policies &p,int* level_reduction_rule=NULL);
+    evmxd_timesreal(int dsl, domain *d, const policies &p, int* level_reduction_rule=NULL);
     ~evmxd_timesreal();
 
     virtual void createEdge(float val, dd_edge &e);
@@ -75,6 +84,8 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
     virtual void evaluate(const dd_edge &f, const int* vlist,
       const int* vplist, float &term) const;
 
+    virtual bool isTransparentEdge(node_handle p, const void* v) const;
+    virtual void getTransparentEdge(node_handle &p, void* v) const;
     virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
     virtual bool isRedundant(const unpacked_node &nb) const;
     virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;

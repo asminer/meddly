@@ -117,7 +117,7 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   //
   a_size = a_min_size;
   address = (node_header *) malloc(a_size * sizeof(node_header));
-  if (0 == address) throw error(error::INSUFFICIENT_MEMORY);
+  if (0 == address) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   parent.stats.incMemAlloc(a_size * sizeof(node_header));
   memset(address, 0, a_size * sizeof(node_header));
   a_last = a_next_shrink = 0;
@@ -273,6 +273,12 @@ void MEDDLY::node_headers::dumpInternal(output &s) const
     s.put(long(address[p].offset), awidth);
   }
   s << "]\n";
+  s << "\n   Incount : [";
+  for (node_handle p=1; p<=a_last; p++) {
+    if (p>1) s.put('|');
+    s.put(long(address[p].incoming_count), awidth);
+  }
+  s << "]\n";
   s << "\n    Cache  : [";
   for (node_handle p=1; p<=a_last; p++) {
     if (p>1) s.put('|');
@@ -295,7 +301,7 @@ void MEDDLY::node_headers::expandHandleList()
     fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
         (a_size+delta) * sizeof(node_header), __FILE__, __LINE__);
     */
-    throw error(error::INSUFFICIENT_MEMORY);
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   address = new_address;
   parent.stats.incMemAlloc(delta * sizeof(node_header));
@@ -354,7 +360,7 @@ void MEDDLY::node_headers::shrinkHandleList()
     fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
         new_size*sizeof(node_header), __FILE__, __LINE__);
     */
-    throw error(error::INSUFFICIENT_MEMORY);
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   address = new_address;
   parent.stats.decMemAlloc(delta * sizeof(node_header));

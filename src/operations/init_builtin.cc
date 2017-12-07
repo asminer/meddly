@@ -28,6 +28,8 @@
 #include "complement.h"
 #include "maxmin_range.h"
 #include "mdd2index.h"
+#include "cycle.h"
+#include "select.h"
 
 #include "union.h"
 #include "intersection.h"
@@ -48,16 +50,21 @@
 #include "comp_gt.h"
 #include "comp_ge.h"
 
+#include "prepostplus.h"
+
 #include "prepostimage.h"
 #include "reach_bfs.h"
 #include "reach_dfs.h"
 #include "sat_pregen.h"
 #include "sat_otf.h"
+#include "sat_impl.h"
 
 #include "vect_matr.h"
 
 #include "mm_mult.h"
 
+#include "constrained.h"
+#include "transitive_closure.h"
 
 #include "mpz_object.h"
 
@@ -71,6 +78,8 @@ namespace MEDDLY {
   const unary_opname* MAX_RANGE = 0;
   const unary_opname* MIN_RANGE = 0;
   const unary_opname* CONVERT_TO_INDEX_SET = 0;
+  const unary_opname* CYCLE = 0;
+  const unary_opname* SELECT = 0;
 
   // binary operation "codes"
 
@@ -94,8 +103,12 @@ namespace MEDDLY {
   const binary_opname* GREATER_THAN = 0;
   const binary_opname* GREATER_THAN_EQUAL = 0;
 
+  const binary_opname* PRE_PLUS = 0;
+  const binary_opname* POST_PLUS = 0;
+
   const binary_opname* PRE_IMAGE = 0;
   const binary_opname* POST_IMAGE = 0;
+  const binary_opname* TC_POST_IMAGE = 0;
   const binary_opname* REACHABLE_STATES_DFS = 0;
   const binary_opname* REACHABLE_STATES_BFS = 0;
   const binary_opname* REVERSE_REACHABLE_DFS = 0;
@@ -116,6 +129,12 @@ namespace MEDDLY {
   const satpregen_opname* SATURATION_FORWARD = 0;
   const satpregen_opname* SATURATION_BACKWARD = 0;
   const satotf_opname* SATURATION_OTF_FORWARD = 0;
+  const satimpl_opname* SATURATION_IMPL_FORWARD = 0;
+
+  // minimum witness operation "codes"
+  const constrained_opname* CONSTRAINED_BACKWARD_BFS = 0;
+  const constrained_opname* CONSTRAINED_BACKWARD_DFS = 0;
+  const constrained_opname* TRANSITIVE_CLOSURE_DFS = 0;
 };
 
 
@@ -142,6 +161,8 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::MAX_RANGE,            MAXRANGE,   initializeMaxRange()      );
   initP(MEDDLY::MIN_RANGE,            MINRANGE,   initializeMaxRange()      );
   initP(MEDDLY::CONVERT_TO_INDEX_SET, MDD2INDEX,  initializeMDD2INDEX()     );
+  initP(MEDDLY::CYCLE,                CYCLE,      initializeCycle()         );
+  initP(MEDDLY::SELECT,               SELECT,     initializeSelect()        );
 
   initP(MEDDLY::UNION,                UNION,      initializeUnion()         );
   initP(MEDDLY::INTERSECTION,         INTERSECT,  initializeIntersection()  );
@@ -163,8 +184,12 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::GREATER_THAN,         GT,           initializeGT()          );
   initP(MEDDLY::GREATER_THAN_EQUAL,   GE,           initializeGE()          );
 
+  initP(MEDDLY::PRE_PLUS,             PRE_PLUS,     initializePrePlus()     );
+  initP(MEDDLY::POST_PLUS,            POST_PLUS,    initializePostPlus()    );
+
   initP(MEDDLY::PRE_IMAGE,            PRE_IMAGE,    initializePreImage()    );
   initP(MEDDLY::POST_IMAGE,           POST_IMAGE,   initializePostImage()   );
+  initP(MEDDLY::TC_POST_IMAGE,        TC_POST_IMAGE,initializeTCPostImage() );
   initP(MEDDLY::REACHABLE_STATES_DFS, FORWARD_DFS,  initializeForwardDFS()  );
   initP(MEDDLY::REACHABLE_STATES_BFS, FORWARD_BFS,  initializeForwardBFS()  );
   initP(MEDDLY::REVERSE_REACHABLE_DFS,BACKWARD_DFS, initializeBackwardDFS() );
@@ -181,6 +206,10 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::SATURATION_FORWARD,   SATURATION_FORWARD,   initSaturationForward()   );
   initP(MEDDLY::SATURATION_BACKWARD,  SATURATION_BACKWARD,  initSaturationBackward()  );
   initP(MEDDLY::SATURATION_OTF_FORWARD,   SATURATION_OTF_FORWARD,   initOtfSaturationForward()  );
+  initP(MEDDLY::SATURATION_IMPL_FORWARD, SATURATION_IMPL_FORWARD, initImplSaturationForward()  );
+  initP(MEDDLY::CONSTRAINED_BACKWARD_BFS,   CONSTRAINED_BACKWARD_BFS,   initConstrainedBFSBackward()  );
+  initP(MEDDLY::CONSTRAINED_BACKWARD_DFS,   CONSTRAINED_BACKWARD_DFS,   initConstrainedDFSBackward()  );
+  initP(MEDDLY::TRANSITIVE_CLOSURE_DFS,   TRANSITIVE_CLOSURE_DFS,   initTransitiveClosureDFS()  );
 
 #ifdef HAVE_LIBGMP
   mpz_object::initBuffer();
@@ -204,6 +233,7 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(MAXRANGE,       MEDDLY::MAX_RANGE);
   cleanPair(MINRANGE,       MEDDLY::MIN_RANGE);
   cleanPair(MDD2INDEX,      MEDDLY::CONVERT_TO_INDEX_SET);
+  cleanPair(CYCLE,          MEDDLY::CYCLE);
 
   cleanPair(UNION,          MEDDLY::UNION);
   cleanPair(INTERSECT,      MEDDLY::INTERSECTION);
@@ -225,8 +255,12 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(GT,             MEDDLY::GREATER_THAN);
   cleanPair(GE,             MEDDLY::GREATER_THAN_EQUAL);
 
+  cleanPair(PRE_PLUS,       MEDDLY::PRE_PLUS);
+  cleanPair(POST_PLUS,      MEDDLY::POST_PLUS);
+
   cleanPair(PRE_IMAGE,      MEDDLY::PRE_IMAGE);
   cleanPair(POST_IMAGE,     MEDDLY::POST_IMAGE);
+  cleanPair(TC_POST_IMAGE,  MEDDLY::TC_POST_IMAGE);
   cleanPair(FORWARD_DFS,    MEDDLY::REACHABLE_STATES_DFS);
   cleanPair(FORWARD_BFS,    MEDDLY::REACHABLE_STATES_BFS);
   cleanPair(BACKWARD_DFS,   MEDDLY::REVERSE_REACHABLE_DFS);
@@ -235,6 +269,7 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(SATURATION_BACKWARD,      MEDDLY::SATURATION_BACKWARD );
   cleanPair(SATURATION_FORWARD,       MEDDLY::SATURATION_FORWARD  );
   cleanPair(SATURATION_OTF_FORWARD,   MEDDLY::SATURATION_OTF_FORWARD  );
+  cleanPair(SATURATION_IMPL_FORWARD,   MEDDLY::SATURATION_IMPL_FORWARD  );
 
   cleanPair(EXPLVECT_MATR_MULT, MEDDLY::EXPLVECT_MATR_MULT);
   cleanPair(MATR_EXPLVECT_MULT, MEDDLY::MATR_EXPLVECT_MULT);

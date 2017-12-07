@@ -49,6 +49,33 @@
 #include <memory>
 #include <cassert>
 
+// Flags for development version only. Significant reduction in performance.
+#ifdef DEVELOPMENT_CODE
+#define RANGE_CHECK_ON
+#define DCASSERTS_ON
+#endif
+
+
+// #define TRACK_DELETIONS
+// #define TRACK_CACHECOUNT
+
+// Use this for assertions that will fail only when your
+// code is wrong.  Handy for debugging.
+#ifdef DCASSERTS_ON
+#define MEDDLY_DCASSERT(X) assert(X)
+#else
+#define MEDDLY_DCASSERT(X)
+#endif
+
+// Use this for range checking assertions that should succeed.
+#ifdef RANGE_CHECK_ON
+#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX) { assert(VALUE < MAX); assert(VALUE >= MIN); }
+#else
+#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
+#endif
+
+
+
 namespace MEDDLY {
   /** Special value for minterms: don't care what this variable does.
       I.e., do the same thing for all possible assignments for a variable.
@@ -59,7 +86,6 @@ namespace MEDDLY {
       Undefined for unprimed variables.
   */
   const int DONT_CHANGE = -2;
-
 
   // Typedefs
   typedef unsigned char node_storage_flags;
@@ -81,7 +107,7 @@ namespace MEDDLY {
       The typedef is given simply to clarify the code
       (hopefully :^)
   */
-  typedef long node_address;
+  typedef unsigned long node_address;
 
   // Classes
 
@@ -97,6 +123,7 @@ namespace MEDDLY {
   class expert_forest;
   class unpacked_node;
 
+  class memory_manager_style;
   class node_storage_style;
 
   class variable;
@@ -132,8 +159,30 @@ namespace MEDDLY {
 #endif
 
   // ******************************************************************
+  // *                    Memory management schemes                   *
+  // ******************************************************************
+
+  extern const memory_manager_style* ORIGINAL_GRID;
+  extern const memory_manager_style* ARRAY_PLUS_GRID;
+  extern const memory_manager_style* MALLOC_MANAGER;
+  extern const memory_manager_style* HEAP_MANAGER;
+
+  // ******************************************************************
   // *                     Node storage mechanisms                    *
   // ******************************************************************
+
+  /**
+    New, "simple" style with memory manager removed.
+    This node storage mechanism relies on the 
+    memory_manager_style for memory management.
+  */
+  extern const node_storage_style* SIMPLE_STORAGE;
+
+
+  // 
+  // From here are "old" mechanisms for node storage,
+  // with built-in memory managers.
+  //
 
   /** "Classic" node storage mechanism.
       The node storage mechanism from early versions of this library.
@@ -191,6 +240,12 @@ namespace MEDDLY {
 
   /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
   extern const unary_opname* CONVERT_TO_INDEX_SET;
+
+  /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
+  extern const unary_opname* CYCLE;
+
+  /// Randomly select one state from a set of states
+  extern const unary_opname* SELECT;
 
   // ******************************************************************
   // *                    Named  binary operations                    *
@@ -254,17 +309,27 @@ namespace MEDDLY {
   /// belong to the same forest.
   extern const binary_opname* GREATER_THAN_EQUAL;
 
+  /** Plus operation used to compute transitive closure and further
+      minimum witness. The first operand must be an EV+MxD and the second
+      operand must be an EV+MDD. The result is an EV+MxD.
+   */
+  extern const binary_opname* PRE_PLUS;
+  extern const binary_opname* POST_PLUS;
+
   /** Image operations on a set-of-states with a transition function.
       The first operand must be the set-of-states and the second operand
       must be the transition function. The result is a set-of-states that
       must be stored in the same forest as the first operand.
       
       Applies to:
-      PRE_IMAGE, POST_IMAGE, REACHABLE_STATES_DFS, REACHABLE_STATES_BFS,
+      PRE_IMAGE, POST_IMAGE,
+      TC_POST_IMAGE,
+      REACHABLE_STATES_DFS, REACHABLE_STATES_BFS,
       REVERSE_REACHABLE_DFS, REVERSE_REACHABLE_BFS.
   */
   extern const binary_opname* PRE_IMAGE;
   extern const binary_opname* POST_IMAGE;
+  extern const binary_opname* TC_POST_IMAGE;
   extern const binary_opname* REACHABLE_STATES_DFS;
   extern const binary_opname* REACHABLE_STATES_BFS;
   extern const binary_opname* REVERSE_REACHABLE_DFS;
@@ -323,7 +388,10 @@ namespace MEDDLY {
 
   /** Front-end function to create a variable.
       This is required because variable is an abstract class.
-        @param  bound   The initial bound for the varaible.
+        @param  bound   The initial bound for the variable.
+                        If bound<=0, the variable is marked as extensible,
+                        with initial bound as abs(bound).
+                        Note: an extensible variable has a range [1 .. +infinity].
         @param  name    Variable name (used only in display / debugging), or 0.
         @return A new variable, or 0 on error.
   */
@@ -352,6 +420,9 @@ namespace MEDDLY {
         @param  bounds  variable bounds.
                         bounds[i] gives the bound for the variable
                         at level i+1.
+                        If bound<=0, the variable is marked as extensible,
+                        with initial bound as abs(bound).
+                        Note: an extensible variable has a range [1 .. +infinity].
         @param  N       Number of variables.
 
         @return A new domain.
@@ -519,10 +590,15 @@ class MEDDLY::error {
     };
   public:
     error(code c);
+    error(code c, const char* fn, int ln);
     code getCode() const;
     const char* getName() const;
+    const char* getFile() const;
+    int getLine() const;
   private:
     code errcode;
+    const char* fname;
+    int lineno;
 };
 
 
@@ -724,6 +800,14 @@ class MEDDLY::output {
     virtual void put(long x, int w=0) = 0;
 
     /**
+        Write an unsigned, decimal integer to the output stream.
+          @param  x   Integer to write
+          @param  w   Width for formatting
+          @throws     An appropriate error
+    */
+    virtual void put(unsigned long x, int w=0) = 0;
+
+    /**
         Write hex digits to the output stream.
           @param  x   Value to write
           @param  w   Width for formatting
@@ -774,11 +858,12 @@ class MEDDLY::output {
   These will let us do C++ style output, with our class.
 */
 
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, char x)        { s.put(x); return s; }
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, const char* x) { s.put(x); return s; }
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, int x)         { s.put(long(x)); return s; }
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, long x)        { s.put(x); return s; }
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, double x)      { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, char x)            { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, const char* x)     { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, int x)             { s.put(long(x)); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, long x)            { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, unsigned long x)   { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, double x)          { s.put(x); return s; }
 
 
 // ******************************************************************
@@ -802,6 +887,7 @@ class MEDDLY::FILE_output : public MEDDLY::output {
     virtual void put(char x);
     virtual void put(const char*, int w);
     virtual void put(long x, int w);
+    virtual void put(unsigned long x, int w);
     virtual void put_hex(unsigned long x, int w);
     virtual void put(double x, int w, int p, char f);
     virtual int write(int bytes, const unsigned char* buffer);
@@ -834,6 +920,7 @@ class MEDDLY::ostream_output : public MEDDLY::output {
     virtual void put(char x);
     virtual void put(const char*, int w);
     virtual void put(long x, int w);
+    virtual void put(unsigned long x, int w);
     virtual void put_hex(unsigned long x, int w);
     virtual void put(double x, int w, int p, char f);
     virtual int write(int bytes, const unsigned char* buffer);
@@ -901,6 +988,19 @@ class MEDDLY::forest {
       // TBD: there may be others in the future :^)
     };
 
+    /// Status indicators for nodes.
+    enum node_status {
+      /// Node is active: it can be used without issue.
+      ACTIVE,
+      /// Node is recoverable: it has been marked for garbage collection
+      /// but it can still be used without issue.
+      RECOVERABLE,
+      /// Node is not-recoverable: it has been marked for garbage collection
+      /// and it cannot be used.
+      DEAD
+    };
+
+
     /// Collection of forest policies.
     struct policies {
 
@@ -920,8 +1020,8 @@ class MEDDLY::forest {
           QUASI_REDUCED,
           /// Nodes are identity-reduced.
           IDENTITY_REDUCED,
-	 /// Nodes are user-defined reduced
-	  USER_DEFINED
+          /// Nodes are user-defined reduced
+          USER_DEFINED
       };
 
       // Supported node storage meachanisms.
@@ -984,6 +1084,9 @@ class MEDDLY::forest {
       reordering_type reorder;
       // Default variable swap strategy.
       variable_swap_type swap;
+
+      /// Backend memory management mechanism for nodes.
+      const memory_manager_style* nodemm;
 
       /// Backend storage mechanism for nodes.
       const node_storage_style* nodestor;
@@ -1175,9 +1278,10 @@ class MEDDLY::forest {
       @param  t       the range of the functions represented in this forest.
       @param  ev      edge annotation.
       @param  p       Polcies for reduction, storage, deletion.
+      @param  level_reduction_rule       Rules for reduction on different levels.
     */
     forest(int dslot, domain* d, bool rel, range_type t, edge_labeling ev, 
-      const policies &p,int* level_reduction_rule);
+      const policies &p, int* level_reduction_rule);
 
     /// Destructor.
     virtual ~forest();  
@@ -1669,6 +1773,7 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN.
     */
     virtual void createEdge(int val, dd_edge &e);
+    virtual void createEdge(long val, dd_edge &e);
 
     /** Create an edge for an integer constant.
         @param  val   Requested constant.
@@ -1759,6 +1864,8 @@ class MEDDLY::forest {
     */
     virtual void evaluate(const dd_edge& f, const int* vlist,
       const int* vplist, int &term) const;
+    virtual void evaluate(const dd_edge& f, const int* vlist,
+      const int* vplist, long &term) const;
 
     /** Evaluate the function encoded by an edge.
         @param  f       Edge (function) to evaluate.
@@ -1789,6 +1896,7 @@ class MEDDLY::forest {
         @throws       INVALID_OPERATION, if this is not an Index Set EV+MDD.
     */
     virtual void getElement(const dd_edge& a, int index, int* e);
+    virtual void getElement(const dd_edge& a, long index, int* e);
 
   // ------------------------------------------------------------
   // abstract virtual.
@@ -1974,7 +2082,7 @@ class MEDDLY::forest {
     A single variable object is used to describe both 
     the primed and unprimed versions of the variable.
 
-    Note: variables are automatically deleted when
+    Note1: variables are automatically deleted when
     removed from their last domain.
 
     Additional features are provided in the expert interface.
@@ -1982,15 +2090,16 @@ class MEDDLY::forest {
 class MEDDLY::variable {
   protected:
     variable(int bound, char* name);
-  protected:
     virtual ~variable();
   public:
     int getBound(bool primed) const;
     const char* getName() const;
     void setName(char* newname);
+    bool isExtensible() const;
   protected:
     int un_bound;
     int pr_bound;
+    bool is_extensible;
   private:
     char* name;
 };
@@ -2053,6 +2162,9 @@ class MEDDLY::domain {
         @param  bounds  variable bounds.
                         bounds[i] gives the bound for the variable
                         at level i+1.
+                        If bound<=0, the variable is marked as extensible,
+                        with initial bound as abs(bound).
+                        Note: an extensible variable has a range [1 .. +infinity].
         @param  N       Number of variables.
     */
     virtual void createVariablesBottomUp(const int* bounds, int N) = 0;
@@ -2073,10 +2185,11 @@ class MEDDLY::domain {
                         edge-valued with plus/times decision diagram forest.
         @param  p       Policies to use within the forest.
         @param  tv      Transparent value.
+        @param  level_reduction_rule       Rules for reduction on different levels.
         @return 0       if an error occurs, a new forest otherwise.
     */
     forest* createForest(bool rel, forest::range_type t,
-      forest::edge_labeling ev, const forest::policies &p,int* level_reduction_rule=NULL, int tv=0);
+      forest::edge_labeling ev, const forest::policies &p, int* level_reduction_rule=NULL, int tv=0);
 
     /// Create a forest using the library default policies.
     forest* createForest(bool rel, forest::range_type t,
@@ -2256,7 +2369,8 @@ class MEDDLY::dd_edge {
     node_handle getNode() const;
 
     /// Get this dd_edge's edge value (only valid for edge-valued MDDs).
-    void getEdgeValue(int& ev) const;
+//    void getEdgeValue(int& ev) const;
+    void getEdgeValue(long& ev) const;
 
     /// Get this dd_edge's edge value (only valid for edge-valued MDDs).
     void getEdgeValue(float& ev) const;
@@ -2305,6 +2419,7 @@ class MEDDLY::dd_edge {
                         for edge-valued MDDs)
     */
     void set(node_handle node, int value);
+    void set(node_handle node, long value);
 
     /** Modifies the dd_edge fields.
         The dd_edge is cleared (it will still belong to the same forest),
@@ -2314,6 +2429,14 @@ class MEDDLY::dd_edge {
                         for edge-valued MDDs)
     */
     void set(node_handle node, float value);
+
+    /** Modifies the edge value only.
+        @param  value  value of edge coming into the node (only useful
+                       for edge-valued MDDs)
+     */
+    void setEdgeValue(int value);
+    void setEdgeValue(long value);
+    void setEdgeValue(float value);
 
     /** Check for equality.
         @return true    iff this edge has the same parent and refers to
@@ -2397,6 +2520,12 @@ class MEDDLY::dd_edge {
     */
     void show(output &s, int verbosity = 0) const;
 
+    /** Draws a pictographical representation of the graph with this node as the root.
+        @param  filename  Name of output file (without extension)
+        @param  extension File extension (without "."). E.g. "pdf", "ps"
+    */
+    void writePicture(const char* filename, const char* extension) const;
+
     /// Write to a file
     void write(output &s, const node_handle* map) const;
 
@@ -2413,7 +2542,7 @@ class MEDDLY::dd_edge {
     int index;  //  our slot number in the parent forest's list
 
     node_handle node;
-    node_handle raw_value;
+    long raw_value;
 
     binary_operation* opPlus;
     binary_operation* opStar;
@@ -2469,6 +2598,9 @@ class MEDDLY::enumerator {
 
         /// For integer-ranged edges, get the current non-zero value.
         virtual void getValue(int& edgeValue) const;
+
+        /// For integer-ranged edges, get the current non-zero value.
+        virtual void getValue(long& edgeValue) const;
     
         /// For real-ranged edges, get the current non-zero value.
         virtual void getValue(float& edgeValue) const;
@@ -2567,6 +2699,7 @@ class MEDDLY::enumerator {
     const int* getPrimedAssignments() const;
 
     void getValue(int &v) const;
+    void getValue(long &v) const;
     void getValue(float &v) const;
 
     int levelChanged() const;

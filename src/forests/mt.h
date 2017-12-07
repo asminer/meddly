@@ -39,9 +39,12 @@ namespace MEDDLY {
 */
 class MEDDLY::mt_forest : public expert_forest {
   protected:
-    mt_forest(int dsl, domain *d, bool rel, range_type t, const policies &p,int* level_reduction_rule=NULL);
+    mt_forest(int dsl, domain *d, bool rel, range_type t, const policies &p, int* level_reduction_rule=NULL);
 
   public:
+    virtual bool isTransparentEdge(node_handle p, const void* v) const;
+    virtual void getTransparentEdge(node_handle &p, void* v) const;
+    virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
     virtual bool isRedundant(const unpacked_node &nb) const;
     virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;
 
@@ -68,7 +71,11 @@ class MEDDLY::mt_forest : public expert_forest {
         }
         if (maxv < 1) continue;
         if (maxv >= getDomain()->getVariableBound(k, primed)) {
-          useExpertDomain()->enlargeVariableBound(k, primed, maxv+1);
+          expert_variable* vh = useExpertDomain()->getExpertVar(k);
+          if (vh->isExtensible())
+            vh->enlargeBound(primed, -(maxv+1));
+          else
+            vh->enlargeBound(primed, (maxv+1));
         }
       }
     }
@@ -81,23 +88,25 @@ class MEDDLY::mt_forest : public expert_forest {
           Sanity checks
       */
       if (vh < 0 || vh > getNumVariables())
-          throw error(error::INVALID_VARIABLE);
+          throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
       if (result.getForest() != this) 
-          throw error(error::INVALID_OPERATION);
+          throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
       if (!isForRelations() && pr) 
-          throw error(error::INVALID_ASSIGNMENT);
+          throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
+
+      int level = getLevelByVar(vh);
 
       /*
           Get info for node we're building
       */
-      int k = pr ? -getLevelByVar(vh): getLevelByVar(vh);
+      int k = pr ? -level : level;
       int km1;
       if (isForRelations()) {
         km1 = (k<0) ? (-k)-1 : -k;
       } else {
         km1 = k-1;
       }
-      int sz = getLevelSize(getLevelByVar(vh));
+      int sz = getLevelSize(level);
 
       /*
           Make this node
@@ -120,7 +129,7 @@ class MEDDLY::mt_forest : public expert_forest {
 
     template <class ENCODER, class T>
     inline void createEdgeTempl(T term, dd_edge& e) {
-      if (e.getForest() != this) throw error(error::INVALID_OPERATION);
+      if (e.getForest() != this) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
       e.set(makeNodeAtTop(ENCODER::value2handle(term)));
     }
 

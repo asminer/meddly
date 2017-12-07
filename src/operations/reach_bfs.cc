@@ -32,6 +32,10 @@ namespace MEDDLY {
   class forwd_bfs_mt;
   class bckwd_bfs_mt;
 
+  class common_bfs_evplus;
+  class forwd_bfs_evplus;
+  class bckwd_bfs_evplus;
+
   class forwd_bfs_opname;
   class bckwd_bfs_opname;
 };
@@ -47,7 +51,11 @@ class MEDDLY::common_bfs_mt : public binary_operation {
     common_bfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -108,21 +116,30 @@ MEDDLY::common_bfs_mt::common_bfs_mt(const binary_opname* oc, expert_forest* a1,
   imageOp = 0;
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::common_bfs_mt::isStaleEntry(const node_handle* entryData)
+{
+  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+  // this operation won't add any CT entries.
+}
+#else
+MEDDLY::forest::node_status
+MEDDLY::common_bfs_mt::getStatusOfEntry(const node_handle* data)
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.
 }
+#endif
 
 void MEDDLY::common_bfs_mt::discardEntry(const node_handle* entryData)
 {
-  throw error(error::MISCELLANEOUS);
+  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   // this operation won't add any CT entries.
 }
 
 void MEDDLY::common_bfs_mt::showEntry(output &strm, const node_handle* entryData) const
 {
-  throw error(error::MISCELLANEOUS);
+  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   // this operation won't add any CT entries.
 }
 
@@ -196,6 +213,171 @@ MEDDLY::node_handle MEDDLY::bckwd_bfs_mt::compute(node_handle a, node_handle b)
   return iterate(a, b);
 }
 
+// ******************************************************************
+// *                                                                *
+// *                    common_bfs_evplus  class                    *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::common_bfs_evplus : public binary_operation {
+  public:
+  common_bfs_evplus(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+    virtual bool isStaleEntry(const node_handle* entryData);
+    virtual void discardEntry(const node_handle* entryData);
+    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void compute(long aev, node_handle a, node_handle b, long& resEv, node_handle& resEvmdd) = 0;
+  protected:
+    binary_operation* unionMinOp;
+    binary_operation* imageOp;
+
+    inline void iterate(long ev, node_handle init, node_handle mxd, long& resEv, node_handle& resEvmdd) {
+      resEv = ev;
+      resEvmdd = arg1F->linkNode(init);
+
+      node_handle prevReachable = 0;
+#ifdef DEBUG_BFS
+      fprintf(stderr, "Relation: %d\n", mxd);
+      arg2F->showNodeGraph(stderr, mxd);
+      fprintf(stderr, "Initial states: <%ld, %d>\n", ev, init);
+      arg1F->showNodeGraph(stderr, init);
+      long iters = 0;
+#endif
+#ifdef VERBOSE_BFS
+      long iters = 0;
+#endif
+      while (prevReachable != resEvmdd) {
+#ifdef VERBOSE_BFS
+        iters++;
+        fprintf(stimageOpderr, "Iteration %d:\n", iters);
+#endif
+        resF->unlinkNode(prevReachable);
+        prevReachable = resEvmdd;
+        long front_ev = Inf<long>();
+        node_handle front = 0;
+        imageOp->compute(resEv, resEvmdd, mxd, front_ev, front);
+#ifdef VERBOSE_BFS
+        fprintf(stderr, "\timage done <%ld, %d>\n", front_ev, front);
+#endif
+#ifdef DEBUG_BFS
+        iters++;
+        fprintf(stderr, "Iteration %d\npseudo-frontier: <%ld, %d>\n", iters, front_ev, front);
+        arg1F->showNodeGraph(stderr, front);
+#endif
+        unionMinOp->compute(resEv, resEvmdd, front_ev, front, resEv, resEvmdd);
+#ifdef VERBOSE_BFS
+        fprintf(stderr, "\tunion done <%ld, %d>\n", resEv, resEvmdd);
+#endif
+#ifdef DEBUG_BFS
+        fprintf(stderr, "Reachable so far: <%ld, %d>\n", resEv, resEvmdd);
+        arg1F->showNodeGraph(stderr, resEvmdd);
+#endif
+        resF->unlinkNode(front);
+      }
+      resF->unlinkNode(prevReachable);
+    }
+};
+
+MEDDLY::common_bfs_evplus::common_bfs_evplus(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res)
+: binary_operation(oc, 0, 0, a1, a2, res)
+{
+  unionMinOp = 0;
+  imageOp = 0;
+}
+
+bool MEDDLY::common_bfs_evplus::isStaleEntry(const node_handle* entryData)
+{
+  throw error(error::MISCELLANEOUS);
+  // this operation won't add any CT entries.
+}
+
+void MEDDLY::common_bfs_evplus::discardEntry(const node_handle* entryData)
+{
+  throw error(error::MISCELLANEOUS);
+  // this operation won't add any CT entries.
+}
+
+void MEDDLY::common_bfs_evplus::showEntry(output &strm, const node_handle* entryData) const
+{
+  throw error(error::MISCELLANEOUS);
+  // this operation won't add any CT entries.
+}
+
+void MEDDLY::common_bfs_evplus::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
+{
+  long aev = Inf<long>();
+  a.getEdgeValue(aev);
+  long cev = Inf<long>();
+  node_handle cnode = 0;
+  compute(aev, a.getNode(), b.getNode(), cev, cnode);
+  c.set(cnode, cev);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                     forwd_bfs_evplus class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::forwd_bfs_evplus : public common_bfs_evplus {
+  public:
+  forwd_bfs_evplus(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+    virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
+};
+
+MEDDLY::forwd_bfs_evplus::forwd_bfs_evplus(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res) : common_bfs_evplus(oc, a1, a2, res)
+{
+}
+
+void MEDDLY::forwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd)
+{
+  if (resF->getRangeType() == forest::INTEGER) {
+    unionMinOp = getOperation(UNION, resF, resF, resF);
+  } else {
+    throw error(error::INVALID_OPERATION);
+  }
+  imageOp = getOperation(POST_IMAGE, arg1F, arg2F, resF);
+
+  iterate(ev, evmdd, mxd, resEv, resEvmdd);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                     bckwd_bfs_evplus class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::bckwd_bfs_evplus : public common_bfs_evplus {
+  public:
+    bckwd_bfs_evplus(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+    virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
+};
+
+MEDDLY::bckwd_bfs_evplus::bckwd_bfs_evplus(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res) : common_bfs_evplus(oc, a1, a2, res)
+{
+}
+
+void MEDDLY::bckwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd)
+{
+  if (resF->getRangeType() == forest::INTEGER) {
+    unionMinOp = getOperation(UNION, resF, resF, resF);
+  } else {
+    throw error(error::INVALID_OPERATION);
+  }
+  imageOp = getOperation(PRE_IMAGE, arg1F, arg2F, resF);
+
+  iterate(ev, evmdd, mxd, resEv, resEvmdd);
+}
+
 
 // ******************************************************************
 // *                                                                *
@@ -225,21 +407,27 @@ MEDDLY::forwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     a1->isForRelations()    ||
     !a2->isForRelations()   ||
     r->isForRelations()     ||
     (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType()) ||
-    (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
-    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
-    (r->getEdgeLabeling() != forest::MULTI_TERMINAL)
+    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
+    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL)
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  return new forwd_bfs_mt(this, a1, a2, r);
+  if (a1->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+    return new forwd_bfs_mt(this, a1, a2, r);
+  }
+  else if (a1->getEdgeLabeling() == forest::EVPLUS) {
+    return new forwd_bfs_evplus(this, a1, a2, r);
+  }
+  else {
+    throw error(error::TYPE_MISMATCH);
+  }
 }
 
 // ******************************************************************
@@ -270,21 +458,30 @@ MEDDLY::bckwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (a1 != r)
-    throw error(error::FOREST_MISMATCH);
+    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
 
   if (
     a1->isForRelations()    ||
     !a2->isForRelations()   ||
-    (a1->getRangeType() != a2->getRangeType()) ||
-    (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    r->isForRelations()     ||
+    (a1->getRangeType() != r->getRangeType()) ||
+    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) 
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  return new bckwd_bfs_mt(this, a1, a2, r);
+  if (a1->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+    return new bckwd_bfs_mt(this, a1, a2, r);
+  }
+  else if (a1->getEdgeLabeling() == forest::EVPLUS) {
+    return new bckwd_bfs_evplus(this, a1, a2, r);
+  }
+  else {
+    throw error(error::TYPE_MISMATCH);
+  }
 }
 
 // ******************************************************************

@@ -5,6 +5,7 @@ build_expression
 dining_phils
 graphs_to_mdds
 kanban
+.libs
 libinfo
 life
 nqueens
@@ -20,6 +21,7 @@ slot_phase
 square1
 swaps
 test_evmdd
+test_memory
 test_mtmdd
 test_mtmxd
 test_reorder_evmdd

@@ -113,17 +113,11 @@ namespace MEDDLY {
 class MEDDLY::compact_storage : public node_storage {
   // required interface
   public:
-    compact_storage(expert_forest* f, holeman* hm, const char* sN);
+    compact_storage(const char* n, expert_forest* f, holeman* hm);
     virtual ~compact_storage();
 
     virtual void collectGarbage(bool shrink);
     virtual void reportStats(output &s, const char* pad, unsigned flags) const;
-
-    /*
-    virtual void showNode(output &s, node_address addr, bool verb) const;
-    virtual void writeNode(output &s, node_address addr, const node_handle* map)
-    const;
-    */
 
     virtual node_address makeNode(node_handle p, const unpacked_node &nb, 
         node_storage_flags opt);
@@ -133,9 +127,11 @@ class MEDDLY::compact_storage : public node_storage {
     virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
     virtual void fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style) const;
     virtual unsigned hashNode(int level, node_address addr) const;
+    virtual bool isExtensible(node_address addr) const { assert(false); return false; }
     virtual int getSingletonIndex(node_address addr, node_handle &down) const;
     virtual node_handle getDownPtr(node_address addr, int index) const;
     virtual void getDownPtr(node_address addr, int ind, int& ev, node_handle& dn) const;
+    virtual void getDownPtr(node_address addr, int ind, long& ev, node_handle& dn) const;
     virtual void getDownPtr(node_address addr, int ind, float& ev, node_handle& dn) const;
     virtual const void* getUnhashedHeaderOf(node_address addr) const;
     virtual const void* getHashedHeaderOf(node_address addr) const;
@@ -144,6 +140,7 @@ class MEDDLY::compact_storage : public node_storage {
     virtual void updateData(node_handle* d);
     virtual int smallestNode() const;
     virtual void dumpInternalInfo(output &) const;
+    virtual node_address firstNodeAddress() const;
     virtual node_address 
     dumpInternalNode(output &, node_address addr, unsigned flags) const;
     virtual void dumpInternalTail(output &) const;
@@ -262,7 +259,7 @@ class MEDDLY::compact_storage : public node_storage {
             case 8:   return  copyFullIntoFull<8>(nb, size, addr);
             default:
                 MEDDLY_DCASSERT(0);
-                throw error(error::MISCELLANEOUS);
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
       }
 
@@ -308,7 +305,7 @@ class MEDDLY::compact_storage : public node_storage {
             case 8:   return  copySparseIntoFull<8>(nb, size, addr);
             default:
                 MEDDLY_DCASSERT(0);
-                throw error(error::MISCELLANEOUS);
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
       }
 
@@ -347,7 +344,7 @@ class MEDDLY::compact_storage : public node_storage {
             case 4:   return  copySparseIntoSparse<pbytes, 4>(nb, size, addr);
             default:
                 MEDDLY_DCASSERT(0);
-                throw error(error::MISCELLANEOUS);
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
       }
 
@@ -366,7 +363,7 @@ class MEDDLY::compact_storage : public node_storage {
             case 8:   return  copySparseIntoSparse<8>(ibytes, nb, size, addr);
             default:
                 MEDDLY_DCASSERT(0);
-                throw error(error::MISCELLANEOUS);
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
       }
 
@@ -415,7 +412,7 @@ class MEDDLY::compact_storage : public node_storage {
             case 4:   return  copyFullIntoSparse<pbytes, 4>(nb, addr);
             default:
                 MEDDLY_DCASSERT(0);
-                throw error(error::MISCELLANEOUS);
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
       }
 
@@ -434,7 +431,7 @@ class MEDDLY::compact_storage : public node_storage {
             case 8:   return  copyFullIntoSparse<8>(ibytes, nb, addr);
             default:
                 MEDDLY_DCASSERT(0);
-                throw error(error::MISCELLANEOUS);
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
       }
 
@@ -464,7 +461,7 @@ class MEDDLY::compact_storage : public node_storage {
               case 8:   return  unlinkDown<8>(down, size);
               default:
                   MEDDLY_DCASSERT(0);
-                  throw error(error::MISCELLANEOUS);
+                  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
           }
       }
 
@@ -565,7 +562,7 @@ class MEDDLY::compact_storage : public node_storage {
             case 4:   return  sparseEqualsFull<pbytes, 4>(addr, nnzs, n);
             default:
                 MEDDLY_DCASSERT(0);
-                throw error(error::MISCELLANEOUS);
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
       }
 
@@ -586,7 +583,7 @@ class MEDDLY::compact_storage : public node_storage {
             case 8:   return sparseEqualsFull<8>(ibytes, addr, nnzs, n);
             default:
                 MEDDLY_DCASSERT(0);
-                throw error(error::MISCELLANEOUS);
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
       }
 
@@ -649,7 +646,7 @@ class MEDDLY::compact_storage : public node_storage {
             case 4:   return  sparseEqualsSparse<pbytes, 4>(addr, nnzs, n);
             default:
                 MEDDLY_DCASSERT(0);
-                throw error(error::MISCELLANEOUS);
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
       }
 
@@ -672,7 +669,7 @@ class MEDDLY::compact_storage : public node_storage {
             case 8:   return sparseEqualsSparse<8>(ibytes, addr, nnzs, n);
             default:
                 MEDDLY_DCASSERT(0);
-                throw error(error::MISCELLANEOUS);
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
       }
 
@@ -737,7 +734,7 @@ class MEDDLY::compact_storage : public node_storage {
               case 8:   return fullEqualsFull<8>(addr, size, n);
               default:
                   MEDDLY_DCASSERT(0);
-                  throw error(error::MISCELLANEOUS);
+                  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
           }
       }
 
@@ -797,7 +794,7 @@ class MEDDLY::compact_storage : public node_storage {
               case 8:   return fullEqualsSparse<8>(addr, size, n);
               default:
                   MEDDLY_DCASSERT(0);
-                  throw error(error::MISCELLANEOUS);
+                  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
           }
       }
 
@@ -856,7 +853,7 @@ class MEDDLY::compact_storage : public node_storage {
               case 8:   return readFullFromFull<8>(addr, size, nr, shrink);
               default:
                   MEDDLY_DCASSERT(0);
-                  throw error(error::MISCELLANEOUS);
+                  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
           }
       }
 
@@ -912,7 +909,7 @@ class MEDDLY::compact_storage : public node_storage {
               case 8:   return readSparseFromFull<8>(addr, size, nr);
               default:
                   MEDDLY_DCASSERT(0);
-                  throw error(error::MISCELLANEOUS);
+                  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
           }
       }
 
@@ -964,7 +961,7 @@ class MEDDLY::compact_storage : public node_storage {
             case 4:   return  readFullFromSparse<pbytes, 4>(addr, nnzs, nr);
             default:
                 MEDDLY_DCASSERT(0);
-                throw error(error::MISCELLANEOUS);
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
       }
 
@@ -982,7 +979,7 @@ class MEDDLY::compact_storage : public node_storage {
               case 8:   return readFullFromSparse<8>(ibytes, addr, nnzs, nr);
               default:
                   MEDDLY_DCASSERT(0);
-                  throw error(error::MISCELLANEOUS);
+                  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
           }
       }
 
@@ -1032,7 +1029,7 @@ class MEDDLY::compact_storage : public node_storage {
             case 4:   return  readSparseFromSparse<pbytes, 4>(addr, nnzs, nr);
             default:
                 MEDDLY_DCASSERT(0);
-                throw error(error::MISCELLANEOUS);
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
       }
 
@@ -1050,7 +1047,7 @@ class MEDDLY::compact_storage : public node_storage {
               case 8:   return readSparseFromSparse<8>(ibytes, addr, nnzs, nr);
               default:
                   MEDDLY_DCASSERT(0);
-                  throw error(error::MISCELLANEOUS);
+                  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
           }
       }
 
@@ -1099,7 +1096,7 @@ class MEDDLY::compact_storage : public node_storage {
             case 4:   return  hashSparse<pbytes, 4>(s, addr, nnzs);
             default:
                 MEDDLY_DCASSERT(0);
-                throw error(error::MISCELLANEOUS);
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
       }
       
@@ -1118,7 +1115,7 @@ class MEDDLY::compact_storage : public node_storage {
             case 8:   return hashSparse<8>(ibytes, s, addr, nnzs);
             default:
                 MEDDLY_DCASSERT(0);
-                throw error(error::MISCELLANEOUS);
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
       }
 
@@ -1167,7 +1164,7 @@ class MEDDLY::compact_storage : public node_storage {
             case 8:   return hashFull<8>(s, addr, size);
             default:
                 MEDDLY_DCASSERT(0);
-                throw error(error::MISCELLANEOUS);
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
       }
 
@@ -1206,7 +1203,7 @@ class MEDDLY::compact_storage : public node_storage {
               case 8:   return getSingletonFull<8>(addr, size, down);
               default:
                   MEDDLY_DCASSERT(0);
-                  throw error(error::MISCELLANEOUS);
+                  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
           }
       }
 
@@ -1242,7 +1239,7 @@ class MEDDLY::compact_storage : public node_storage {
               case 4:   return findSparseIndex<4>(addr, nnz, i);
               default:
                   MEDDLY_DCASSERT(0);
-                  throw error(error::MISCELLANEOUS);
+                  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
           }
       }
 
@@ -1327,7 +1324,7 @@ class MEDDLY::compact_storage : public node_storage {
       static const int extraSlots = 3;
   private:
     /// what we are, for display purposes
-    const char* storageName;
+    // const char* storageName;
 
     /// the data array
     node_handle* data;
@@ -1361,9 +1358,10 @@ class MEDDLY::compact_storage : public node_storage {
 
 class MEDDLY::compact_grid_style : public node_storage_style {
   public:
-    compact_grid_style();
+    compact_grid_style(const char* n);
     virtual ~compact_grid_style();
-    virtual node_storage* createForForest(expert_forest* f) const;
+    virtual node_storage* createForForest(expert_forest* f, 
+        const memory_manager_style* mst) const;
 };
 
 

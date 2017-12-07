@@ -12,6 +12,8 @@ test_union_mxd \
 test_mtmdd \
 test_mtmxd \
 test_evmdd \
+test_xdds \
+test_otf_sat \
 build_expression \
 dining_phils \
 rubiks_cube \
@@ -30,7 +32,12 @@ rebuild_mdd \
 test_reorder_mtmxd \
 test_reorder_evmdd \
 rubiks_cube_phase \
-slot_phase
+slot_phase \
+test_memory \
+test_implicit_kanban \
+test_implicit_pool \
+test_implicit_smallos
+
 
 # test_user_operation 
 
@@ -55,6 +62,12 @@ test_mtmdd_LDADD = ../src/libmeddly.la
 
 test_mtmxd_SOURCES = test_mtmxd.cc
 test_mtmxd_LDADD = ../src/libmeddly.la
+
+test_xdds_SOURCES = test_xdds.cc
+test_xdds_LDADD = ../src/libmeddly.la
+
+test_otf_sat_SOURCES = test_otf_sat.cc
+test_otf_sat_LDADD = ../src/libmeddly.la
 
 build_expression_SOURCES = build_expression.cc
 build_expression_LDADD = ../src/libmeddly.la
@@ -116,6 +129,18 @@ rubiks_cube_phase_LDADD = ../src/libmeddly.la
 slot_phase_SOURCES = slot_phase.cc simple_model.h simple_model.cc
 slot_phase_LDADD = ../src/libmeddly.la
 
+test_implicit_kanban_SOURCES = test_implicit_kanban.cc simple_model.h simple_model.cc
+test_implicit_kanban_LDADD = ../src/libmeddly.la
+
+test_implicit_pool_SOURCES = test_implicit_pool.cc simple_model.h simple_model.cc
+test_implicit_pool_LDADD = ../src/libmeddly.la
+
+test_implicit_smallos_SOURCES = test_implicit_smallos.cc simple_model.h simple_model.cc
+test_implicit_smallos_LDADD = ../src/libmeddly.la
+
 # test_user_operation_SOURCES = test_user_operation.cc
 # test_user_operation_LDADD = ../src/libmeddly.la
+
+test_memory_SOURCES = test_memory.cc
+test_memory_LDADD = ../src/libmeddly.la
 

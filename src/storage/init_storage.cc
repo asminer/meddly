@@ -23,66 +23,26 @@
 #include "../defines.h"
 #include "init_storage.h"
 
-#include "old_scheme.h"
 #include "simple.h"
-#include "compact.h"
 
 namespace MEDDLY {
-  const node_storage_style* CLASSIC_STORAGE = 0;
-
-  const node_storage_style* SIMPLE_GRID = 0;
-  const node_storage_style* SIMPLE_ARRAY = 0;
-  const node_storage_style* SIMPLE_HEAP = 0;
-  const node_storage_style* SIMPLE_NONE = 0;
-
-  const node_storage_style* COMPACT_GRID = 0;
+  const node_storage_style* SIMPLE_STORAGE = 0;
 };
-
-
-
 
 MEDDLY::storage_initializer::storage_initializer(initializer_list *p)
  : initializer_list(p)
 {
-  classic = 0;
-
-  simple_grid = 0;
-  simple_array = 0;
-  simple_heap = 0;
-  simple_none = 0;
-
-  compact_grid = 0;
+  simple = 0;
 }
 
 void MEDDLY::storage_initializer::setup()
 {
-  CLASSIC_STORAGE = (classic = new old_node_storage_style);
-
-  SIMPLE_GRID  = (simple_grid  = new simple_grid_style);
-  SIMPLE_ARRAY = (simple_array = new simple_array_style);
-  SIMPLE_HEAP  = (simple_heap  = new simple_heap_style);
-  SIMPLE_NONE  = (simple_none  = new simple_none_style);
-
-  COMPACT_GRID = (compact_grid = new compact_grid_style);
+  SIMPLE_STORAGE = (simple = new simple_separated_style("SIMPLE_STORAGE")); 
 }
 
 void MEDDLY::storage_initializer::cleanup()
 {
-  delete classic;
-  CLASSIC_STORAGE = (classic = 0);
-
-  delete simple_grid;
-  delete simple_array;
-  delete simple_heap;
-  delete simple_none;
-
-  SIMPLE_GRID  = (simple_grid  = 0);
-  SIMPLE_ARRAY = (simple_array = 0);
-  SIMPLE_HEAP  = (simple_heap  = 0);
-  SIMPLE_NONE  = (simple_none  = 0);
-
-
-  delete compact_grid;
-  COMPACT_GRID = (compact_grid = 0);
+  delete simple;
+  SIMPLE_STORAGE = (simple = 0);
 }
 

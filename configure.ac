@@ -54,7 +54,7 @@ AC_FUNC_MEMCMP
 AC_FUNC_REALLOC
 AC_TYPE_SIGNAL
 AC_FUNC_STRTOD
-AC_CHECK_FUNCS([getrusage gettimeofday memmove memset strtol])
+AC_CHECK_FUNCS([getrusage gettimeofday memmove memset strtol malloc_size malloc_good_size malloc_usable_size])
 
 AC_CONFIG_FILES([Makefile
                  examples/Makefile

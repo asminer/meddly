@@ -21,6 +21,8 @@
 
 // TODO: Testing
 
+#include <fstream>
+#include <sstream>
 #include "defines.h"
 #include "unique_table.h"
 #include "hash_stream.h"
@@ -70,6 +72,7 @@ const unsigned char MEDDLY::forest::policies::ALLOW_SPARSE_STORAGE  = 0x02;
 
 MEDDLY::forest::policies::policies()
 {
+  nodemm = 0;   // 
   nodestor = 0; // should cause an exception later
 }
 
@@ -91,12 +94,13 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
   compactAfterGC = false;
   compactBeforeExpand = true;
 
-  // nodestor = CLASSIC_STORAGE;
-  nodestor = SIMPLE_GRID;
-  // nodestor = SIMPLE_ARRAY;
-  // nodestor = SIMPLE_HEAP;
-  // nodestor = SIMPLE_NONE;
-  // nodestor = COMPACT_GRID;
+  // nodemm = ORIGINAL_GRID;
+  nodemm = ARRAY_PLUS_GRID;
+  // nodemm = MALLOC_MANAGER;
+  // nodemm = HEAP_MANAGER;
+
+  nodestor = SIMPLE_STORAGE;
+
   reorder = reordering_type::SINK_DOWN;
   swap = variable_swap_type::VAR;
 }
@@ -211,7 +215,7 @@ MEDDLY::forest
     if(lrr==NULL){
        
         if(isUserDefinedReduced()){
-		throw error(error::INVALID_POLICY);
+		throw error(error::INVALID_POLICY, __FILE__, __LINE__);
         }
 
 	else{
@@ -257,7 +261,7 @@ MEDDLY::forest
     	level_reduction_rule=lrr;
     }
 	else
-		throw error(error::INVALID_POLICY);
+		throw error(error::INVALID_POLICY, __FILE__, __LINE__);
     
     
     
@@ -265,11 +269,11 @@ MEDDLY::forest
   // check policies
   if (!isRelation) {
     if (policies::IDENTITY_REDUCED == deflt.reduction)
-      throw error(error::INVALID_POLICY);
+      throw error(error::INVALID_POLICY, __FILE__, __LINE__);
       
     for(int i=1;i<=d->getNumVariables();i++)
         if(level_reduction_rule[i]==-3)              //isIdentityReduced()
-         throw error(error::INVALID_POLICY);
+         throw error(error::INVALID_POLICY, __FILE__, __LINE__);
   }
   //
   // Initialize array of operations
@@ -334,92 +338,103 @@ void MEDDLY::forest::markForDeletion()
 
 void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::createEdge(const int* const* vlist, int N, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
 ::createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
 ::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
 ::createEdge(const int* const* vl, const int* const* vpl, int N, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
 ::createEdge(const int* const* vlist, const int* const* vplist, const int* terms, int N, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
 ::createEdge(const int* const* vlist, const int* const* vplist, const float* terms, int N, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::createEdge(bool val, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::createEdge(int val, dd_edge &e)
+{
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::forest::createEdge(long val, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH);
 }
 
 void MEDDLY::forest::createEdge(float val, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, bool &t) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, int &t) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, float &t) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
 ::evaluate(const dd_edge& f, const int* vl, const int* vpl, bool &t) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
 ::evaluate(const dd_edge& f, const int* vl, const int* vpl, int &t) const
+{
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::forest
+::evaluate(const dd_edge& f, const int* vl, const int* vpl, long &t) const
 {
   throw error(error::TYPE_MISMATCH);
 }
@@ -427,12 +442,17 @@ void MEDDLY::forest
 void MEDDLY::forest
 ::evaluate(const dd_edge& f, const int* vl, const int* vpl, float &t) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::getElement(const dd_edge& a, int index, int* e)
 {
-  throw error(error::INVALID_OPERATION);
+  throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+}
+
+void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
+{
+  throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::removeStaleComputeTableEntries()
@@ -484,7 +504,7 @@ void MEDDLY::forest::registerOperation(const operation* op)
     // need to expand
     int newSize = ((op->getIndex() / 16) +1 )*16; // expand in chunks of 16
     int* tmp = (int*) realloc(opCount, newSize * sizeof(int));
-    if (0==tmp) throw error(error::INSUFFICIENT_MEMORY);
+    if (0==tmp) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     for ( ; szOpCount < newSize; szOpCount++) {
       tmp[szOpCount] = 0;
     }
@@ -519,7 +539,7 @@ void MEDDLY::forest::registerEdge(dd_edge& e)
       int new_sz = sz * 2;
       edge_data* new_edge =
           (edge_data*) realloc(edge, new_sz * sizeof(edge_data));
-      if (0 == new_edge) throw error(error::INSUFFICIENT_MEMORY);
+      if (0 == new_edge) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
       edge = new_edge;
       for (int i = sz; i < new_sz; ++i)
       {
@@ -607,7 +627,7 @@ MEDDLY::node_handle MEDDLY::expert_forest::bool_Tencoder::read(input &s)
   int c = s.get_char();
   if ('T' == c) return value2handle(true);
   if ('F' == c) return value2handle(false);
-  throw error(error::INVALID_FILE);
+  throw error(error::INVALID_FILE, __FILE__, __LINE__);
 }
 
 // ******************************************************************
@@ -626,7 +646,7 @@ MEDDLY::node_handle MEDDLY::expert_forest::int_Tencoder::read(input &s)
 {
   s.stripWS();
   int c = s.get_char();
-  if ('t' != c) throw error(error::INVALID_FILE);
+  if ('t' != c) throw error(error::INVALID_FILE, __FILE__, __LINE__);
   return value2handle(s.get_integer());
 }
 
@@ -647,51 +667,8 @@ MEDDLY::node_handle MEDDLY::expert_forest::float_Tencoder::read(input &s)
 {
   s.stripWS();
   int c = s.get_char();
-  if ('t' != c) throw error(error::INVALID_FILE);
+  if ('t' != c) throw error(error::INVALID_FILE, __FILE__, __LINE__);
   return value2handle(s.get_real());
-}
-
-// ******************************************************************
-// ******************************************************************
-
-void MEDDLY::expert_forest::int_EVencoder::show(output &s, const void* ptr)
-{
-  int val;
-  readValue(ptr, val);
-  s << val;
-}
-
-void MEDDLY::expert_forest::int_EVencoder::write(output &s, const void* ptr)
-{
-  int val;
-  readValue(ptr, val);
-  s << val;
-}
-
-void MEDDLY::expert_forest::int_EVencoder::read(input &s, void* ptr)
-{
-  writeValue(ptr, int(s.get_integer()));
-}
-
-// ******************************************************************
-
-void MEDDLY::expert_forest::float_EVencoder::show(output &s, const void* ptr)
-{
-  float val;
-  readValue(ptr, val);
-  s << val;
-}
-
-void MEDDLY::expert_forest::float_EVencoder::write(output &s, const void* ptr)
-{
-  float val;
-  readValue(ptr, val);
-  s.put(val, 8, 8, 'e');
-}
-
-void MEDDLY::expert_forest::float_EVencoder::read(input &s, void* ptr)
-{
-  writeValue(ptr, float(s.get_real()));
 }
 
 // ******************************************************************
@@ -725,8 +702,8 @@ const unsigned int MEDDLY::expert_forest::SHOW_TERMINALS  = 0x01;
 
 
 MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
-  edge_labeling ev, const policies &p,int* level_reduction_rule)
-: forest(ds, d, rel, t, ev, p,level_reduction_rule), nodeHeaders(*this)
+  edge_labeling ev, const policies &p, int* level_reduction_rule)
+: forest(ds, d, rel, t, ev, p, level_reduction_rule), nodeHeaders(*this)
 {
   nodeHeaders.setPessimistic(isPessimistic());
 
@@ -736,7 +713,11 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   //
   // Initialize misc. protected data
   //
+#ifndef USE_NODE_STATUS
   terminalNodesAreStale = false;
+#else
+  terminalNodesStatus = MEDDLY::forest::ACTIVE;
+#endif
 
   //
   // Initialize misc. private data
@@ -776,13 +757,13 @@ MEDDLY::expert_forest::~expert_forest()
 void MEDDLY::expert_forest::initializeForest()
 {
   if (!deflt.nodestor) {
-    throw error(error::MISCELLANEOUS);
+    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   }
 
   //
   // Initialize node storage
   //
-  nodeMan = deflt.nodestor->createForForest(this);
+  nodeMan = deflt.nodestor->createForForest(this, deflt.nodemm);
 
 }
 
@@ -808,9 +789,9 @@ void MEDDLY::expert_forest::dumpInternal(output &s) const
 
   nodeHeaders.dumpInternal(s);
 
-  nodeMan->dumpInternal(s, 0x03);
+  nodeMan->dumpInternal(s, 0x03); 
  
-  unique->show(s);
+  // unique->show(s);
   s.flush();
 }
 
@@ -870,7 +851,7 @@ void MEDDLY::expert_forest::validateIncounts(bool exact)
       printf("For node %ld\n\tcount: %ld\n\tnode:  %ld\n", l_i, l_v, l_c);
       dump(stdout, SHOW_DETAILS);
       MEDDLY_DCASSERT(0);
-      throw error(error::MISCELLANEOUS);
+      throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     }
     // Note - might not be exactly equal
     // because there could be dd_edges that refer to nodes
@@ -949,7 +930,7 @@ MEDDLY::expert_forest
           msize += 1024;
           node_handle* new_marked = (node_handle*) 
             realloc(marked, msize*sizeof(node_handle));
-          if (0==new_marked) throw error(error::INSUFFICIENT_MEMORY);
+          if (0==new_marked) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
           marked = new_marked;
       }
       inList[M->d(i)] = true;
@@ -1062,7 +1043,7 @@ bool MEDDLY::expert_forest
     }
     s.put( (getNodeLevel(p) < 0) ? '\'' : ' ' );
     s << " in: " << getNodeInCount(p);
-    s << " cc: " << getNodeCacheCount(p);
+    s << " cc: " << nodeHeaders.getNodeCacheCount(p);
   } else {
     s << "node: " << long(p);
   }
@@ -1110,6 +1091,136 @@ void MEDDLY::expert_forest
   } // for k
 
   free(list);
+}
+
+void MEDDLY::expert_forest
+::writeNodeGraphPicture(const char* filename, const char *ext,
+    const node_handle* p, int n) const
+{
+  if (filename == NULL || ext == NULL || p == NULL) return;
+  if (!isMultiTerminal()) {
+    fprintf(stderr,
+        "%s: Error. Only implemented for Multi-Terminal MDDs\n",
+        __func__);
+    return;
+  }
+  node_handle* list = markNodesInSubgraph(p, n, true);
+  if (0==list) return;
+
+  std::string dot_fn(filename);
+  dot_fn += ".dot";
+  std::ofstream s(dot_fn.c_str());
+
+  if (!s.is_open()) {
+    std::cerr << __func__ << ": Error opening file " << dot_fn << "\n";
+    exit(1);
+  }
+  
+  // initialize the dot file
+  s << "digraph structs {\n";
+  // s << "  rankdir=LR;\n";
+  s << "  size=\"5,5\";\n";
+  s << "  node [shape=record, height=0.5, width=0.5];\n";
+  
+  const char blue[] = "blue";
+  // const char black[] = "black";
+  // const char white[] = "transparent";
+
+  // Print by levels
+  // s << "  l0 [label=\"<0>level 0 \"];\n";
+  // s << "  {rank=same; l0 s0;}\n";
+  // s << "  s0 [label=\"<0>1\"];\n";
+  bool lowest_level = true;
+  for (int k = (isForRelations()? -1: 1); ABS(k) <= getNumVariables(); ) {
+    int map_k = ((k < 0)? (-k)*2 - 1: k*2);
+
+    // write the level node (to identify the height at which the rest of the nodes
+    // are to be displayed)
+    s << "  l" << map_k << " [label=\"<0>level: ";
+    
+    const variable* v = getDomain()->getVar(getVarByLevel(ABS(k)));
+    if (v->getName()) {
+      s << v->getName();
+    } else {
+      s << ABS(k);
+    }
+    if (k < 0) s << "' ";
+    s << "\"];\n";
+    
+    MEDDLY_DCASSERT(map_k > 0);
+    bool do_once = true;
+
+    // write rank info for all nodes at this level
+    for (long i=0; list[i]; i++) {
+      if (getNodeLevel(list[i]) != k) continue;
+      if (do_once) {
+        if (lowest_level) {
+          lowest_level = false;
+        } else {
+          s << "  edge [color=transparent];\n";
+          s << "  l" << map_k << ":0 -> l" << (isForRelations()? map_k-1: map_k-2) << ":0;\n";
+          s << "  edge [color=black];\n";
+        }
+        s << "  {rank=same; l" << map_k << " ";
+        do_once = false;
+      }
+      s << "s" << list[i] << " ";
+    }
+    if (!do_once) {
+      s << ";}\n";
+
+      // write label info for all nodes at this level
+      for (long i=0; list[i]; i++) {
+        if (getNodeLevel(list[i]) != k) continue;
+
+        s << " s" << list[i] << " [label=\"";
+        unpacked_node* un = unpacked_node::newFromNode(this, list[i], unpacked_node::SPARSE_NODE);
+
+        // print index pointers
+        MEDDLY_DCASSERT(isMultiTerminal());
+        bool first_index = true;
+        for (int j = 0; j < un->getNNZs(); j++) {
+          if (first_index) first_index=false; else s << "|";
+          s << "<" << j << ">";
+          s << un->i(j);
+          if (-1 == un->d(j)) s <<":T";
+        }
+        s << "\"];\n";
+
+        // print down pointers
+        for (int j = 0; j < un->getNNZs(); j++) {
+          if (-1 == un->d(j)) continue;
+          s << "  edge [color=" << blue /*((un->i(j) % 2 == 0)? black: blue)*/ << "];\n";
+          s << "  s" << list[i] << ":" << j;
+          s << " -> s" << un->d(j);
+          s << ":0 [samehead = true];\n";
+        }
+
+        unpacked_node::recycle(un);
+      }
+    }
+    
+    // next level
+    if (isForRelations()) {
+      k = (k >= 0)? -(k+1): -k;
+    } else {
+      k++;
+    }
+  } // for k
+
+  s << "}\n";
+
+  free(list);
+  s.close();
+
+  // convert dot file to extension
+  std::stringstream cmd;
+  cmd << "dot -T" << ext << " -o \"" << filename << "." << ext << "\" \"" << dot_fn << "\"";
+  if (system(cmd.str().c_str())) {
+    std::cerr << __func__ << ": Error executing DOT command: ";
+    std::cerr << cmd.str().c_str() << "\n";
+    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+  }
 }
 
 void MEDDLY::expert_forest
@@ -1271,7 +1382,7 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
       s.stripWS();
       int k = s.get_integer();
       if (!isValidLevel(k)) {
-        throw error(error::INVALID_LEVEL);
+        throw error(error::INVALID_LEVEL, __FILE__, __LINE__);
       }
 
 #ifdef DEBUG_READ
@@ -1318,7 +1429,7 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
           long down = s.get_integer();
           MEDDLY_DCASSERT(down>=0);
           if (down >= node_index) {
-            throw error(error::INVALID_ASSIGNMENT);
+            throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
           }
           nb->d_ref(i) = linkNode(map[down]);
         } else {
@@ -1404,7 +1515,7 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
         __FILE__, __LINE__, n, num_ptrs);
       fflush(stdout);
 #endif
-      throw error(error::INVALID_ASSIGNMENT);
+      throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
     }
     for (int i=0; i<num_ptrs; i++) {
       E[i].read(this, s, map);
@@ -1516,21 +1627,15 @@ void MEDDLY::expert_forest::showInfo(output &s, int verb)
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-bool MEDDLY::expert_forest
-::areEdgeValuesEqual(const void* eva, const void* evb) const
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
 MEDDLY::enumerator::iterator* MEDDLY::expert_forest::makeFixedRowIter() const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 MEDDLY::enumerator::iterator*
 MEDDLY::expert_forest::makeFixedColumnIter() const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 const char* MEDDLY::expert_forest::codeChars() const
@@ -1540,12 +1645,17 @@ const char* MEDDLY::expert_forest::codeChars() const
 
 void MEDDLY::expert_forest::normalize(unpacked_node &nb, int& ev) const
 {
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::expert_forest::normalize(unpacked_node &nb, long& ev) const
+{
   throw error(error::TYPE_MISMATCH);
 }
 
 void MEDDLY::expert_forest::normalize(unpacked_node &nb, float& ev) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::expert_forest::reportForestStats(output &s, const char* pad) const
@@ -1555,62 +1665,62 @@ void MEDDLY::expert_forest::reportForestStats(output &s, const char* pad) const
 
 void MEDDLY::expert_forest::showTerminal(output &s, node_handle tnode) const
 {
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::expert_forest::writeTerminal(output &s, node_handle tnode) const
 {
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 MEDDLY::node_handle MEDDLY::expert_forest::readTerminal(input &s)
 {
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::expert_forest::showEdgeValue(output &s, const void* edge) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::expert_forest::writeEdgeValue(output &s, const void* edge) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::expert_forest::readEdgeValue(input &s, void* edge)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::expert_forest::showHashedHeader(output &s, const void* hh) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::expert_forest::writeHashedHeader(output &s, const void* hh) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::expert_forest::readHashedHeader(input &s, unpacked_node &nb) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::expert_forest::showUnhashedHeader(output &s, const void* uh) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::expert_forest::writeUnhashedHeader(output &s, const void* uh) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::expert_forest::readUnhashedHeader(input &s, unpacked_node &nb) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::expert_forest::reorderVariables(const int* level2var)
@@ -1671,6 +1781,8 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
   unique->remove(h, p);
 #endif
 
+  stats.decActive(1);
+
 #ifdef TRACK_DELETIONS
   // start at one, because we have incremented the depth
   for (int i=1; i<delete_depth; i++) printf(" "); 
@@ -1697,11 +1809,17 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 
 
 MEDDLY::node_handle MEDDLY::expert_forest
-::createReducedHelper(int in, const unpacked_node &nb)
+::createReducedHelper(int in, unpacked_node &nb)
 {
 #ifdef DEVELOPMENT_CODE
   validateDownPointers(nb);
 #endif
+
+  // check is the node is written in order,
+  // if not rearrange it in ascending order of indices.
+  if (nb.isSparse()) nb.sort();
+
+  if (nb.isExtensible()) return createReducedExtensibleNodeHelper(in, nb);
 
   // get sparse, truncated full sizes and check
   // for redundant / identity reductions.
@@ -1728,7 +1846,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
     }
 
     // Check for redundant nodes
-    if (nnz == getLevelSize(nb.getLevel())) {
+    if (nnz == getLevelSize(nb.getLevel()) && !isExtensibleLevel(nb.getLevel())) {
       if (isRedundant(nb)) {
         // unlink downward pointers, except the one we're returning.
         for (int i = 1; i<nnz; i++)  unlinkNode(nb.d(i));  
@@ -1751,7 +1869,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
     // Check for identity nodes
     if (1==nnz) {
-      if (isIdentityEdge(nb, in)) {
+      if (in < nb.getSize() && isIdentityEdge(nb, in)) {
 #ifdef DEBUG_CREATE_REDUCED
         printf("Identity node ");
         showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
@@ -1762,7 +1880,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
     }
 
     // Check for redundant nodes
-    if (nnz == getLevelSize(nb.getLevel())) {
+    if (nnz == getLevelSize(nb.getLevel()) && !isExtensibleLevel(nb.getLevel())) {
       if (isRedundant(nb)) {
         // unlink downward pointers, except the one we're returning.
         for (int i = 1; i<nb.getSize(); i++)  unlinkNode(nb.d(i));
@@ -1815,6 +1933,105 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   // All of the work is in nodeMan now :^)
   nodeHeaders.setNodeAddress(p, nodeMan->makeNode(p, nb, getNodeStorage()));
+  linkNode(p);
+
+  // add to UT
+  unique->add(nb.hash(), p);
+
+#ifdef DEVELOPMENT_CODE
+  unpacked_node* key = unpacked_node::newFromNode(this, p, false);
+  key->computeHash();
+  MEDDLY_DCASSERT(key->hash() == nb.hash());
+  node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
+  MEDDLY_DCASSERT(f == p);
+  unpacked_node::recycle(key);
+#endif
+#ifdef DEBUG_CREATE_REDUCED
+  printf("Created node ");
+  showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
+  printf("\n");
+#endif
+
+  return p;
+}
+
+MEDDLY::node_handle MEDDLY::expert_forest
+::createReducedExtensibleNodeHelper(int in, unpacked_node &nb)
+{
+#ifdef DEVELOPMENT_CODE
+  validateDownPointers(nb);
+#endif
+  MEDDLY_DCASSERT(nb.isExtensible());
+  MEDDLY_DCASSERT(nb.isTrim());
+
+  // NOTE: Identity reduction not possible for nodes marked as extensible.
+  //       Fully-Identity reduction is still possible when
+  //       prime-level nodes are non-extensible, and get Identity reduced.
+
+  // get sparse, truncated full sizes and check
+  // for redundant / identity reductions.
+  int nnz = 0;
+  const int rawsize = nb.isSparse()? nb.getNNZs(): nb.getSize();
+  for (int i=0; i<rawsize; i++) {
+    if (nb.d(i)!=getTransparentNode()) nnz++;
+  } // for i
+
+  // Is this a transparent node?
+  if (0==nnz) {
+    // no need to unlink
+    return getTransparentNode();
+  }
+
+  // Check for redundant nodes
+  if (isRedundant(nb)) {
+    MEDDLY_DCASSERT(nnz == 1 && nb.ext_i() == 0);
+#ifdef DEBUG_CREATE_REDUCED
+    printf("Redundant node ");
+    showNode(stdout, nb.ext_d(), SHOW_DETAILS | SHOW_INDEX);
+    printf("\n");
+#endif
+    return nb.ext_d();
+  }
+
+  // check for duplicates in unique table
+  node_handle q = unique->find(nb, getVarByLevel(nb.getLevel()));
+  if (q) {
+    // unlink all downward pointers
+    for (int i = 0; i<rawsize; i++)  unlinkNode(nb.d(i));
+    return linkNode(q);
+  }
+
+  // 
+  // Not eliminated by reduction rule.
+  // Not a duplicate.
+  //
+  // We need to create a new node for this.
+
+  // NOW is the best time to run the garbage collector, if necessary.
+#ifndef GC_OFF
+  if (isTimeToGc()) garbageCollect();
+#endif
+
+  // Expand level size
+  const int nb_ext_i = nb.ext_i();
+  if (nb_ext_i >= getLevelSize(nb.getLevel())) {
+    useExpertDomain()->enlargeVariableBound(nb.getLevel(), false, nb_ext_i+1);
+  }
+
+  // Grab a new node
+  node_handle p = nodeHeaders.getFreeNodeHandle();
+  nodeHeaders.setNodeLevel(p, nb.getLevel());
+  MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
+  MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
+
+  stats.incActive(1);
+  if (theLogger && theLogger->recordingNodeCounts()) {
+    theLogger->addToActiveNodeCount(this, nb.getLevel(), 1);
+  }
+
+  // All of the work is in nodeMan now :^)
+  nodeHeaders.setNodeAddress(p, nodeMan->makeNode(p, nb, getNodeStorage()));
+  // TODO: need to link?
   linkNode(p);
 
   // add to UT
@@ -1918,7 +2135,7 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
       break;
 
     default:
-      throw error(error::NOT_IMPLEMENTED);
+      throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
   }
 
 }

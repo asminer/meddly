@@ -923,9 +923,9 @@ class rubiks {
       // Perform Reacability via "saturation".
       start.note_time();
       if (ensf) {
-        if (0==SATURATION_FORWARD) throw error(error::UNKNOWN_OPERATION);
+        if (0==SATURATION_FORWARD) throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
         specialized_operation *sat = SATURATION_FORWARD->buildOperation(ensf);
-        if (0==sat) throw error(error::INVALID_OPERATION);
+        if (0==sat) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
         sat->compute(initial, initial);
       } else {
         apply(REACHABLE_STATES_DFS, initial, nsf, initial);
@@ -1196,8 +1196,10 @@ class rubiks {
       ef->reportStats(out, "\t",
           expert_forest::HUMAN_READABLE_MEMORY  |
           expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
-          expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS |
-          expert_forest::UNIQUE_TABLE_STATS
+          expert_forest::UNIQUE_TABLE_STATS |
+          expert_forest::STORAGE_STATS | 
+          expert_forest::HOLE_MANAGER_STATS | 
+          expert_forest::HOLE_MANAGER_DETAILED
           );
     }
 

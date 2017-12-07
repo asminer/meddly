@@ -41,36 +41,6 @@
 #include <vector>
 #include <cstdint>
 
-// Flags for development version only. Significant reduction in performance.
-#ifdef DEVELOPMENT_CODE
-#define RANGE_CHECK_ON
-#define DCASSERTS_ON
-#endif
-
-
-#define INLINED_COUNT
-#define INLINED_NEXT
-
-// #define TRACK_DELETIONS
-// #define TRACK_CACHECOUNT
-
-// Use this for assertions that will fail only when your
-// code is wrong.  Handy for debugging.
-#ifdef DCASSERTS_ON
-#define MEDDLY_DCASSERT(X) assert(X)
-#else
-#define MEDDLY_DCASSERT(X)
-#endif
-
-// Use this for range checking assertions that should succeed.
-#ifdef RANGE_CHECK_ON
-#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX) { assert(VALUE < MAX); assert(VALUE >= MIN); }
-#else
-#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
-#endif
-
-
-
 namespace MEDDLY {
 
   // classes defined here
@@ -99,6 +69,10 @@ namespace MEDDLY {
     Subsumed by class initializer_list.
   */
 
+  // Memory managers, for node storage and compute tables
+  class memory_manager_style;
+  class memory_manager;
+
   // Node header storage
   class node_headers;
 
@@ -115,6 +89,8 @@ namespace MEDDLY {
   class numerical_opname;
   class satpregen_opname;
   class satotf_opname;
+  class satimpl_opname;
+  class constrained_opname;
 
   class ct_initializer;
   class compute_table_style;
@@ -176,6 +152,17 @@ namespace MEDDLY {
       will be built along with reachability set.
   */
   extern const satotf_opname* SATURATION_OTF_FORWARD;
+
+  /** Forward reachability using saturation.
+      Transition relation is specified implicitly.
+  */
+  extern const satimpl_opname* SATURATION_IMPL_FORWARD;
+
+  /** Minimum-witness operations.
+  */
+  extern const constrained_opname* CONSTRAINED_BACKWARD_BFS;
+  extern const constrained_opname* CONSTRAINED_BACKWARD_DFS;
+  extern const constrained_opname* TRANSITIVE_CLOSURE_DFS;
 
   // ******************************************************************
   // *                                                                *
@@ -272,10 +259,10 @@ namespace MEDDLY {
   // ******************************************************************
 
   /*
-  /// Builds an initializer for MEDDLY's builtin operations.
-  op_initializer* makeBuiltinInitializer();
+    /// Builds an initializer for MEDDLY's builtin operations.
+    /// Use defaultInitializerList() instead
+    op_initializer* makeBuiltinInitializer();
 
-    Use defaultInitializerList() instead
   */
 
   /**
@@ -325,6 +312,9 @@ class MEDDLY::expert_variable : public variable {
                       the primed and unprimed are enlarged.
       @param  b       New bound, if less than the current bound
                       an error is thrown.
+                      If bound<=0, the variable is marked as extensible,
+                      with initial bound as abs(bound).
+                      Note: an extensible variable has a range [1 .. +infinity].
     */
     void enlargeBound(bool prime, int b);
 
@@ -366,6 +356,9 @@ class MEDDLY::expert_domain : public domain {
                       bounds[0] gives the bound for the top-most variable,
                       and bounds[N-1] gives the bound for the bottom-most
                       variable.
+                      If bound<=0, the variable is marked as extensible,
+                      with initial bound as abs(bound).
+                      Note: an extensible variable has a range [1 .. +infinity].
       @param  N       Number of variables.
     */
     void createVariablesTopDown(const int* bounds, int N);
@@ -428,6 +421,9 @@ class MEDDLY::expert_domain : public domain {
                       the primed and unprimed are enlarged.
       @param  b       New bound, if less than the current bound
                       an error code is returned.
+                      If bound<=0, the variable is marked as extensible,
+                      with initial bound as abs(bound).
+                      Note: an extensible variable has a range [1 .. +infinity].
     */
     void enlargeVariableBound(int vh, bool prime, int b);
 
@@ -504,10 +500,12 @@ class MEDDLY::unpacked_node {
 
     void initRedundant(const expert_forest *f, int k, node_handle node, bool full);
     void initRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full);
+    void initRedundant(const expert_forest *f, int k, long ev, node_handle node, bool full);
     void initRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full);
 
     void initIdentity(const expert_forest *f, int k, int i, node_handle node, bool full);
     void initIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full);
+    void initIdentity(const expert_forest *f, int k, int i, long ev, node_handle node, bool full);
     void initIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full);
 
   /* Create blank node, primarily for writing */
@@ -522,11 +520,13 @@ class MEDDLY::unpacked_node {
     static unpacked_node* newFromNode(const expert_forest *f, node_handle node, storage_style st2);
 
     static unpacked_node* newRedundant(const expert_forest *f, int k, node_handle node, bool full);
-    static unpacked_node* newRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full);
+//    static unpacked_node* newRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full);
+    static unpacked_node* newRedundant(const expert_forest *f, int k, long ev, node_handle node, bool full);
     static unpacked_node* newRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full);
 
     static unpacked_node* newIdentity(const expert_forest *f, int k, int i, node_handle node, bool full);
-    static unpacked_node* newIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full);
+    static unpacked_node* newIdentity(const expert_forest *f, int k, int i, long ev, node_handle node, bool full);
+//    static unpacked_node* newIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full);
     static unpacked_node* newIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full);
 
     static unpacked_node* newFull(const expert_forest *f, int level, int tsz);
@@ -603,22 +603,60 @@ class MEDDLY::unpacked_node {
     void* eptr_write(int i);
 
     /// Get the edge value, as an integer.
-    void getEdge(int i, int& ev) const;
+//    void getEdge(int i, int& ev) const;
+    void getEdge(int i, long& ev) const;
 
     /// Get the edge value, as a float.
     void getEdge(int i, float& ev) const;
 
     /// Set the edge value, as an integer.
-    void setEdge(int i, int ev);
+    void setEdge(int i, long ev);
 
     /// Set the edge value, as a float.
     void setEdge(int i, float ev);
 
     /// Get the edge value, as an integer.
-    int ei(int i) const;
+    long ei(int i) const;
 
     /// Get the edge value, as a float.
     float ef(int i) const;
+
+    // -------------------------------------------------------------------------
+    // Methods to access the extensible portion of the node
+    //
+    // Note: Only nodes that belong to an extensible level can be extensible.
+    // 
+    // Extensible node  : (Regular part, Extensible part).
+    // Regular Part     : same as non-extensible nodes.
+    // Extensible Part  : a single edge, i.e. a tuple <index, node, edge-value>,
+    //                    for all indices in [extensible_index, +infinity].
+    // 
+    // Example:
+    // The node
+    //    [0:n0:ev0, 1:n1:ev1, 2:n2:ev2, 3:n2:ev2, ..., +infinity:n2:ev2]
+    // is represented as the following extensible node:
+    //    ([0:n0:ev0, 1:n1:ev1], Extensible: [2:n2:ev2])
+    // with,
+    //    size of node           : 2
+    //    extensible index       : 2
+    //    extensible node_handle : n2
+    //    extensible edge-value  : ev2
+    // -------------------------------------------------------------------------
+
+    /// Does this reader store an extensible edge?
+    /// Note: in an extensible node, all edges starting from
+    ///       index to +infinity refer to the same edge, i.e. (node, edge-value).
+    bool isExtensible() const;
+
+    void markAsExtensible();
+    void markAsNotExtensible();
+
+    int ext_d() const;
+    int ext_i() const;
+    int ext_ei() const;
+    float ext_ef() const;
+
+    // -------------------- End of extensible portion --------------------------
 
     /// Get the level number of this node.
     int getLevel() const;
@@ -650,6 +688,21 @@ class MEDDLY::unpacked_node {
     void setHash(unsigned H);
 
     void computeHash();
+
+    /// Removes redundant trailing edges.
+    /// If the unpacked node is sparse, it assumes its indices to be in ascending order.
+    void trim();
+
+    /// If the unpacked node is sparse, it is sorted so that the
+    /// indices are in ascending order.
+    void sort();
+
+    /// Checks if the node is has no trailing redundant edges
+    bool isTrim() const;
+
+    // checks if the node indices are in ascending order
+    bool isSorted() const;
+
 
   public:
 
@@ -703,6 +756,7 @@ class MEDDLY::unpacked_node {
     node_handle* down;
     int* index;
     void* edge;
+    bool is_extensible;
     int alloc;
     int ealloc;
     int size;
@@ -887,6 +941,242 @@ class MEDDLY::initializer_list {
 
 // ******************************************************************
 // *                                                                *
+// *                   memory_manager_style class                   *
+// *                                                                *
+// ******************************************************************
+
+/** Abstract base class for memory manager factories.
+    
+    This allows us to use specialized implementations of
+    memory managers (say, using templates) based on the granularity.
+
+    Implementation is in memory_managers/base_manager.cc
+*/
+class MEDDLY::memory_manager_style {
+    const char* name; 
+  public:
+    memory_manager_style(const char* n);
+    virtual ~memory_manager_style();
+
+    /**
+        Build a new memory manager.
+        
+          @param  granularity   Unit of storage, in bytes.
+                                Must be greater than 0.
+                                All sizes specified to the memory manager,
+                                for allocating and freeing chunks, are in
+                                terms of the granularity.  For example, to
+                                manage a collection of arrays of integers,
+                                set the granularity to be sizeof(int) and
+                                use sizes equal to the number of integers.
+                                For behavior exactly the same as malloc,
+                                use a granularity of 1.
+
+
+          @param  minsize       The smallest size chunk that will ever be
+                                requested.  Must be greater than 0.
+                                This is specified here in case
+                                that information can help the memory manager.
+
+          @param  stats         Structure to use for updating memory stats.
+
+          @return   A pointer to a new instance of a memory manager, or 0
+                    if some error occurred, for example if the requested
+                    granularity cannot be supported by this type of memory
+                    manager.
+    */
+    virtual memory_manager* initManager(unsigned char granularity, 
+      unsigned char minsize, forest::statset& stats) const = 0;
+
+
+    const char* getName() const;
+
+  // TBD - const char* for name?
+};
+
+// ******************************************************************
+// *                                                                *
+// *                      memory_manager class                      *
+// *                                                                *
+// ******************************************************************
+
+/** 
+    Interface for memory managers.
+
+    Implementation is in memory_managers/base_manager.cc
+*/
+class MEDDLY::memory_manager {
+
+  public:
+    memory_manager(const char* sn, forest::statset& stats);
+    virtual ~memory_manager();
+
+    /**
+        Is this memory manager unable to free everything on its own?
+
+          @return   True, if destroying the memory manager DOES NOT
+                    automatically recycle all non-freed requested chunks
+                    (because the memory manager does not track them).
+
+                    False, if destroying the memory manager DOES
+                    automatically recycle all non-freed requested chunks.
+    */
+    virtual bool mustRecycleManually() const = 0;
+
+    /**
+        Does the memory manager require that the most significant bit
+        of the first slot is cleared?
+
+        (If true, the memory manager sets this bit for recycled chunks.)
+
+          @return   True, if the first slot of a chunk must hold a value 
+                    such that the most significant bit is cleared.
+                    If this cannot be guaranteed by what is stored there,
+                    then you must allocate an extra slot and not use the
+                    first one.
+
+                    False, if there are no restrictions on what may be
+                    stored in the first slot of a chunk.
+    */
+    virtual bool firstSlotMustClearMSB() const = 0;
+
+    /**
+        Does the memory manager require that the most significant bit
+        of the last slot is cleared?
+
+        (If true, the memory manager sets this bit for recycled chunks.)
+
+          @return   True, if the last slot of a chunk must hold a value 
+                    such that the most significant bit is cleared.
+                    If this cannot be guaranteed by what is stored there,
+                    then you must allocate an extra slot and not use the
+                    last one.
+
+                    False, if there are no restrictions on what may be
+                    stored in the last slot of a chunk.
+    */
+    virtual bool lastSlotMustClearMSB() const = 0;
+
+
+    /**
+        Request a chunk of memory.
+
+          @param  numSlots    Number of slots.  
+                              INPUT: number of requested slots.
+                              OUTPUT: number of slots in the given chunk,
+                              might be larger than the number requested.
+                              Will not be smaller than the number requested,
+                              unless a failure occurred, in which case 
+                              it will be set to zero.
+
+          @return   A non-zero handle for a new chunk of memory, containing
+                    numSlots slots (and requiring numSlots * granularity
+                    bytes), on success.
+                    Zero, on failure.
+
+    */
+    virtual node_address requestChunk(size_t &numSlots) = 0;
+    
+    /**
+        Recycle a chunk of memory.
+        
+          @param  h           Handle of the chunk, as returned by 
+                              method requestChunk().
+
+          @param  numSlots    Total number of slots in the chunk.
+    */
+    virtual void recycleChunk(node_address h, size_t numSlots) = 0;
+
+    /**
+        Convert a handle to an actual pointer we can use.
+
+          @param  h     Handle of the chunk, as returned by requestChunk(), or 0.
+
+          @return       If h is 0, then we return 0.  Otherwise, we return
+                        a pointer to the chunk given by handle h.
+                        This pointer is guaranteed to be fixed until the next
+                        call to requestChunk() or recycleChunk(); after that,
+                        the pointer for a handle could change.
+    */
+    virtual void* getChunkAddress(node_address h) const = 0;
+
+
+    /** Show various statistics.
+          @param  s         Output stream to write to
+          @param  pad       Padding string, written at the start of
+                            each output line.
+          @param  human     If false, just display raw byte counts. 
+                            If true, use units (e.g., Mbytes, Kbytes).
+          @param  details   If false, just display basic statistics.
+                            If true, display details.
+    */
+    virtual void reportStats(output &s, const char* pad, 
+      bool human, bool details) const = 0;
+
+
+    /** Display manager-specific internals.
+        For debugging.
+          @param  s       Output stream to use
+    */
+    virtual void dumpInternal(output &s) const = 0;
+
+
+  
+    /** Get first address.
+        Used to cycle through all addresses, if we can.
+        If we cannot, then always return 0.
+    */
+    virtual node_address getFirstAddress() const = 0;
+
+    /** Is a given address in use?
+        Best effort answer only.
+        If unsure, return false.
+    */
+    virtual bool isAddressInUse(node_address addr) const = 0;
+
+    /** Get the next address.
+        Used to cycle through all addresses, if we can.
+        If we cannot, then always return 0.
+          @param  addr    An address given by any of the methods that
+                          "cycle through addresses", and one where
+                          isAddressInUse() returned false.
+
+          @return   Next address to check,  Presumably this address
+                    is unused and is a hole of some kind.
+    */
+    virtual node_address getNextAddress(node_address addr) const = 0;
+
+    /** Show information about an unused address.
+        If we do not track unused addresses, then do nothing. 
+          @param  addr    An address given by any of the methods that
+                          "cycle through addresses", and one where
+                          isAddressInUse() returned false.
+    */
+    virtual void dumpInternalUnused(output &s, node_address addr) const = 0;
+
+  protected:
+    void incMemUsed(long b);
+    void decMemUsed(long b);
+    void incMemAlloc(long b);
+    void decMemAlloc(long b);
+
+
+
+  public:
+    /**
+        Return the name of the style that created us.
+    */
+    const char* getStyleName() const;
+
+  private:
+    /// Name of the style that invoked us
+    const char* style_name;
+    forest::statset &my_mem;
+};
+
+
+// ******************************************************************
+// *                                                                *
 // *                       node_headers class                       *
 // *                                                                *
 // ******************************************************************
@@ -910,9 +1200,9 @@ class MEDDLY::initializer_list {
                                 node has been deleted, but we cannot recycle the
                                 node handle yet (probably because it might be
                                 contained in a compute table somewhere).
-      integer       cache_count Optional (i.e., can be turned on/off for all nodes).
+      natural       cache_count Optional (i.e., can be turned on/off for all nodes).
                                 Number of compute table references to this handle.
-      integer       incoming    Optional (i.e., can be turned on/off for all nodes).
+      natural       incoming    Optional (i.e., can be turned on/off for all nodes).
                                 Number of incoming edges to the node referred to
                                 by this handle.
 
@@ -988,6 +1278,16 @@ class MEDDLY::node_headers {
     */
     void swapNodes(node_handle p, node_handle q, bool swap_incounts);
 
+  public: // node status
+    bool isActive(node_handle p) const;
+    /// Is this a zombie node (dead but not able to be deleted yet)
+    bool isZombie(node_handle p) const;
+    /// Is this a deleted node
+    bool isDeleted(node_handle p) const;
+    /// Deactivated: 0 address
+    bool isDeactivated(node_handle p) const;
+
+
   public: // address stuff
 
     /// Get the address for node p.
@@ -1016,7 +1316,7 @@ class MEDDLY::node_headers {
     bool trackingCacheCounts() const;
 
     /// Get the cache count for node p.
-    long getNodeCacheCount(node_handle p) const;
+    unsigned long getNodeCacheCount(node_handle p) const;
 
     /// Increment the cache count for node p and return p.
     node_handle cacheNode(node_handle p);
@@ -1030,7 +1330,7 @@ class MEDDLY::node_headers {
     bool trackingIncomingCounts() const;
 
     /// Get the incoming count for node p.
-    long getIncomingCount(node_handle p) const;
+    unsigned long getIncomingCount(node_handle p) const;
 
     /// Increment the incoming count for node p and return p.
     node_handle linkNode(node_handle p);
@@ -1045,6 +1345,8 @@ class MEDDLY::node_headers {
     void dumpInternal(output &s) const;
 
   private:  // helper methods
+//    virtual void getDownPtr(node_address addr, int ind, long& ev,
+//                            node_handle& dn) const = 0;
 
     /// Increase the number of node handles.
     void expandHandleList();
@@ -1058,8 +1360,6 @@ class MEDDLY::node_headers {
     node_handle getNextOf(node_handle p) const;
     void setNextOf(node_handle p, node_handle n);
     void deactivate(node_handle p);
-  public:
-    bool isDeactivated(node_handle p) const;
 
   private:
     
@@ -1069,7 +1369,7 @@ class MEDDLY::node_headers {
     struct node_header {
           /** Offset to node's data in the corresponding node storage structure.
               If the node is active, this is the offset (>0) in the data array.
-              If the node is deleted, this is -next deleted node
+              If the node is deleted, this is the next deleted node
               (part of the unused address list).
           */
           node_address offset;
@@ -1081,14 +1381,14 @@ class MEDDLY::node_headers {
 
           /** Cache count
               The number of cache entries that refer to this node (excl. unique
-              table). If this node is a zombie, cache_count is negative.
+              table). 
           */
-          int cache_count;
+          unsigned int cache_count;
 
           /** Incoming count
               The number of incoming edges to this node.
           */
-          int incoming_count;
+          unsigned int incoming_count;
 
           /// Is node marked.  This is pretty horrible, but is only temporary
           // bool marked;
@@ -1136,20 +1436,24 @@ class MEDDLY::node_headers {
 
 */
 class MEDDLY::node_storage_style {
+    const char* name;
   public:
-    node_storage_style();
+    node_storage_style(const char* n);
     virtual ~node_storage_style();
 
 
     /** Build a new node storage mechanism, bound to the given forest.
 
           @param  f   Forest to bind to
+          @param  mm  Memory manager style to use
 
           @return     A pointer to a node storage class,
                       initialized for forest f.
     */
-    virtual node_storage* createForForest(expert_forest* f) const = 0;
+    virtual node_storage* createForForest(expert_forest* f, 
+        const memory_manager_style* mmst) const = 0;
 
+    const char* getName() const;
 };
 
 // ******************************************************************
@@ -1177,7 +1481,7 @@ class MEDDLY::node_storage_style {
 */
 class MEDDLY::node_storage {
   public:
-    node_storage(expert_forest* f);
+    node_storage(const char* sn, expert_forest* f);
     virtual ~node_storage();
 
     /** Go through and collect any garbage.
@@ -1195,29 +1499,6 @@ class MEDDLY::node_storage {
     */
     virtual void reportStats(output &s, const char* pad, unsigned flags) const = 0;
 
-    /** Write a node in human-readable format.
-
-        Ideally, the output format for each node is the same
-        regardless of how it is stored.
-
-        @param  s       Output stream.
-        @param  addr    Address of the node we care about.
-        @param  details Should we show "details" or not.
-    */
-    // virtual void showNode(output &s, node_address addr, bool details) const = 0;
-
-    /** Write a node in machine-readable format.
-
-        Ideally, the output format for each node is the same
-        regardless of how it is stored.
-
-        @param  s       Output stream.
-        @param  addr    Address of the node we care about.
-        @param  map     Translation to use on node handles.
-                        Allows us to renumber nodes as we write them.
-    */
-    // virtual void writeNode(output &s, node_address addr, const node_handle* map) const;
-
     /** Dump the internal storage details.
         Primarily used for debugging.
 
@@ -1225,6 +1506,8 @@ class MEDDLY::node_storage {
           @param  flags   What to show.
                             0x01  Show active memory
                             0x02  Show memory "holes"
+
+        TBD - remove this
     */
     void dumpInternal(output &s, unsigned flags) const;
 
@@ -1257,8 +1540,8 @@ class MEDDLY::node_storage {
 
           @return true    iff the nodes are duplicates
     */
-    virtual bool
-        areDuplicates(node_address addr, const unpacked_node &nr) const = 0;
+    virtual bool areDuplicates(node_address addr, const unpacked_node &nr) 
+        const = 0;
 
     /**
         Copy the node at the specified address, into an unpacked node.
@@ -1266,7 +1549,8 @@ class MEDDLY::node_storage {
           @param  un      Result will be stored here.  Will be resized if needed.
           @param  addr    Node address in this structure.
     */
-    virtual void fillUnpacked(unpacked_node &un, node_address addr, unpacked_node::storage_style st2) const = 0;
+    virtual void fillUnpacked(unpacked_node &un, node_address addr, 
+        unpacked_node::storage_style st2) const = 0;
 
     /** Compute the hash value for a node.
         Should give the same answer as filling a unpacked_node
@@ -1276,6 +1560,13 @@ class MEDDLY::node_storage {
           @param  addr  Address of the node of interest
     */
     virtual unsigned hashNode(int level, node_address addr) const = 0;
+
+    /** Determine if this is an extensible node.
+          @param  addr    Node Address
+          @return         True if the node stores an extensible edge,
+                          False otherwise.
+    */
+    virtual bool isExtensible(node_address addr) const = 0;
 
     /** Determine if this is a singleton node.
         Used for identity reductions.
@@ -1287,8 +1578,8 @@ class MEDDLY::node_storage {
                     then return the index for that pointer.
                     Otherwise, return a negative value.
     */
-    virtual int
-        getSingletonIndex(node_address addr, node_handle &down) const = 0;
+    virtual int getSingletonIndex(node_address addr, node_handle &down) 
+        const = 0;
 
 
     /** Get the specified downward pointer for a node.
@@ -1309,7 +1600,9 @@ class MEDDLY::node_storage {
           @param  dn      Output: downward pointer at that index.
     */
     virtual void getDownPtr(node_address addr, int ind, int& ev,
-                            node_handle& dn) const = 0;
+          node_handle& dn) const = 0;
+    virtual void getDownPtr(node_address addr, int ind, long& ev,
+              node_handle& dn) const = 0;
 
     /** Get the specified outgoing edge for a node.
         Fast if we just want one.
@@ -1320,7 +1613,7 @@ class MEDDLY::node_storage {
           @param  dn      Output: downward pointer at that index.
     */
     virtual void getDownPtr(node_address addr, int ind, float& ev,
-                            node_handle& dn) const = 0;
+          node_handle& dn) const = 0;
 
 
     /** Read the unhashed header portion of a node.
@@ -1336,40 +1629,63 @@ class MEDDLY::node_storage {
     virtual const void* getHashedHeaderOf(node_address addr) const = 0;
 
 
-    // --------------------------------------------------
-    // next pointer data
-    // --------------------------------------------------
+    /**
+        Get next pointer for node at this address.
+        Used by unique table in case of chaining.
+          @param  addr    Address of node
+          @return         Handle of next node, or 0.
+    */
+    virtual node_handle getNextOf(node_address addr) const = 0;
 
-#ifdef INLINED_NEXT
-    node_handle getNextOf(node_address addr) const;
-    void setNextOf(node_address addr, node_handle n);
-#else
-    virtual node_handle getNextOf(node_address addr) const;
-    virtual void setNextOf(node_address addr, node_handle n);
-#endif
+
+    /**
+        Set next pointer for node at this address.
+        Used by unique table in case of chaining.
+          @param  addr    Address of node
+          @param  n       Non-negative.  Handle of
+                          next node in a unique table chain,
+                          or 0 if none.
+    */
+    virtual void setNextOf(node_address addr, node_handle n) = 0;
+
+
+    /**
+        Return the name of the style that created us.
+    */
+    const char* getStyleName() const;
 
   protected:
+    /// TBD - remove this
     /// Dump information not related to individual nodes.
     virtual void dumpInternalInfo(output &s) const = 0;
+
+    /** Get the first interesting address.
+        If this cannot be determined, return 0.
+        TBD - remove this
+    */
+    virtual node_address firstNodeAddress() const = 0;
 
     /** Dump the node/hole information at the given address.
           @param  s       Output stream to use
           @param  addr    Address
           @param  flags   What chunks should be displayed
 
-          @return   Next interesting address.
+          @return   Next interesting address, if we can determine this; otherwise 0.
+
+        TBD - make this public
     */
     virtual node_address dumpInternalNode(output &s, node_address addr,
-                                          unsigned flags) const = 0;
+        unsigned flags) const = 0;
 
+    /// TBD - remove this
     /// Dump final info (after node info)
     virtual void dumpInternalTail(output &s) const = 0;
 
     // Hooks from other classes, so we don't need to make
     // all the derived classes "friends".
 
-    void moveNodeOffset(node_handle node, node_address old_addr,
-                        node_address new_addr);
+    void moveNodeOffset(node_handle node, node_address old_addr, 
+        node_address new_addr);
 
     //
     // Methods for derived classes to deal with
@@ -1379,34 +1695,12 @@ class MEDDLY::node_storage {
     const expert_forest* getParent() const;
     expert_forest* getParent();
 
-    void incMemUsed(long delta);
-    void decMemUsed(long delta);
-    void incMemAlloc(long delta);
-    void decMemAlloc(long delta);
-    void incCompactions();
-    void updateNextArray(node_handle* nptr);
-
-    //
-    // Hooks for hole managers
-    //
-
-    // Change the data array
-    virtual void updateData(node_handle* data) = 0;
-
-    // How small can a node be?
-    virtual int smallestNode() const = 0;
-
-    friend class holeman;
-
   private:
+    /// Name of the style that invoked us
+    const char* style_name;
+
     /// Parent forest.
     expert_forest* parent;
-
-    /// Memory stats
-    forest::statset* stats;
-
-    /// Next array, so that nexts[addr] gives the next value for node at addr.
-    node_handle* nexts;
 };
 
 
@@ -1501,22 +1795,12 @@ class MEDDLY::expert_forest: public forest
     };
     // preferred way to encode and decode edge values
     // (classes so we can use them in template functions)
-    /** Encoding for ints into (edge value) node handles */
-    class int_EVencoder {
+    template<typename T>
+    class EVencoder {
       public:
         static size_t edgeBytes();
-        static void writeValue(void* ptr, int val);
-        static void readValue(const void* ptr, int &val);
-        static void show(output &s, const void* ptr);
-        static void write(output &s, const void* ptr);
-        static void read(input &s, void* ptr);
-    };
-    /** Encoding for floats into (edge value) node handles */
-    class float_EVencoder {
-      public:
-        static size_t edgeBytes();
-        static void writeValue(void* ptr, float val);
-        static void readValue(const void* ptr, float &val);
+        static void writeValue(void* ptr, T val);
+        static void readValue(const void* ptr, T &val);
         static void show(output &s, const void* ptr);
         static void write(output &s, const void* ptr);
         static void read(input &s, void* ptr);
@@ -1532,9 +1816,10 @@ class MEDDLY::expert_forest: public forest
       @param  t       the range of the functions represented in this forest.
       @param  ev      edge annotation.
       @param  p       Polcies for reduction, storage, deletion.
+      @param  level_reduction_rule       Rules for reduction on different levels.
     */
     expert_forest(int dslot, domain *d, bool rel, range_type t,
-                  edge_labeling ev, const policies &p,int* level_reduction_rule);
+                  edge_labeling ev, const policies &p, int* level_reduction_rule);
 
   // ------------------------------------------------------------
   // inlined helpers.
@@ -1624,6 +1909,7 @@ class MEDDLY::expert_forest: public forest
     // returns 0 or -K 
     int getMinLevelIndex() const;
     bool isValidLevel(int k) const;
+    bool isExtensibleLevel(int k) const;
 
     /// The maximum size (number of indices) a node at this level can have
     int getLevelSize(int lh) const;
@@ -1641,14 +1927,14 @@ class MEDDLY::expert_forest: public forest
     bool trackingInCounts() const;
 
     /// Returns the in-count for a node.
-    // long readInCount(node_handle p) const;
-    int getNodeInCount(node_handle p) const;
+    unsigned long getNodeInCount(node_handle p) const;
 
     /** Increase the link count to this node. Call this when another node is
         made to point to this node.
           @return p, for convenience.
     */
     node_handle linkNode(node_handle p);
+    void getDownPtr(node_handle p, int index, long& ev, node_handle& dn) const;
 
     /** Decrease the link count to this node. If link count reduces to 0, this
         node may get marked for deletion. Call this when another node releases
@@ -1664,7 +1950,7 @@ class MEDDLY::expert_forest: public forest
     bool trackingCacheCounts() const;
 
     /// Returns the cache count for a node.
-    int getNodeCacheCount(node_handle p) const;
+    // long getNodeCacheCount(node_handle p) const;
 
     /** Increase the cache count for this node. Call this whenever this node
         is added to a cache.
@@ -1678,27 +1964,6 @@ class MEDDLY::expert_forest: public forest
           @param  p     Node we care about.
     */
     void uncacheNode(node_handle p);
-
-  // --------------------------------------------------
-  // Marking and unmarking nodes
-  // --------------------------------------------------
-  public:
-    /*
-    /// Set all nodes as marked
-    void markAllNodes();
-
-    /// Set all nodes as unmarked
-    void unmarkAllNodes();
-
-    /// Mark a particular node
-    void markNode(node_handle p);
-
-    /// Unmark a particular node
-    void unmarkNode(node_handle p);
-
-    /// Determine if a node is marked
-    bool isNodeMarked(node_handle p) const;
-    */
 
 
   // --------------------------------------------------
@@ -1715,6 +1980,15 @@ class MEDDLY::expert_forest: public forest
     bool isValidNodeIndex(node_handle p) const;
     node_handle getLastNode() const;
 
+    // --------------------------------------------------
+    // Extensible Node Information:
+    // --------------------------------------------------
+    /// Is this an extensible node
+    bool isExtensible(node_handle p) const;
+    /// If \a p is an extensible node, this returns an index
+    /// that can be used by getDownPtr(...) to access the
+    /// extensible portion of this node.
+    int getExtensibleIndex(node_handle p) const;
 
   public:
 
@@ -1735,7 +2009,11 @@ class MEDDLY::expert_forest: public forest
     ///   in-count and cache-count are zero.
     /// Pessimistic deletion: A node is said to be stale when the in-count
     ///  is zero regardless of the cache-count.
+#ifndef USE_NODE_STATUS
     bool isStale(node_handle node) const;
+#else
+    MEDDLY::forest::node_status getNodeStatus(node_handle node) const;
+#endif
 
   // ------------------------------------------------------------
   // non-virtual, handy methods for debugging or logging.
@@ -1800,6 +2078,11 @@ class MEDDLY::expert_forest: public forest
 
     /// Show all the nodes in the subgraph below the given nodes.
     void showNodeGraph(output &s, const node_handle* node, int n) const;
+
+    /// Write all the nodes in the subgraph below the given nodes
+    /// in a graphical format specified by the extension.
+    void writeNodeGraphPicture(const char* filename, const char *extension,
+        const node_handle* node, int n) const;
 
 
     /** Show various stats for this forest.
@@ -1880,6 +2163,10 @@ class MEDDLY::expert_forest: public forest
     */
     void getDownPtr(node_handle p, int index, float& ev, node_handle& dn) const;
 
+    /**
+        Get the transparent node.
+        This is the default node value for "skipped" edges in sparse nodes.
+    */
     node_handle getTransparentNode() const;
 
   // ------------------------------------------------------------
@@ -1950,6 +2237,25 @@ class MEDDLY::expert_forest: public forest
   // abstract virtual, must be overridden.
   //
 
+    /**
+        Is the given edge transparent?
+        If so it may be "skipped" in a sparse node.
+        Should not be called for multi-terminal; it is better to simply
+        compare with the transparent node as given by getTransparentNode().
+          @param  ep    Node part of the edge to check
+          @param  ev    Value part of the edge to check
+    */
+    virtual bool isTransparentEdge(node_handle ep, const void* ev) const = 0;
+
+    /**
+        Get the transparent edge value.
+        This is the default edge value for "skipped" edges in sparse nodes.
+        Copy the transparent edge value into the parameters.
+          @param  ep      Put node part of the edge here.
+          @param  ev      Put value part of the edge here.
+    */
+    virtual void getTransparentEdge(node_handle &ep, void* ptr) const = 0;
+
     /** Are the given edge values "duplicates".
         I.e., when determining if two nodes are duplicates,
         do the given edge values qualify as duplicate values.
@@ -1960,8 +2266,9 @@ class MEDDLY::expert_forest: public forest
           @throws     A TYPE_MISMATCH error if the forest
                       does not store edge values.
     */
-    virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
+    virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const = 0;
 
+    virtual void normalize(unpacked_node &nb, long& ev) const;
 
     /** Discover duplicate nodes.
         Right now, used for sanity checks only.
@@ -2043,7 +2350,7 @@ class MEDDLY::expert_forest: public forest
     virtual void moveUpVariable(int low, int high) = 0;
 
     virtual void dynamicReorderVariables(int top, int bottom) {
-    	throw error(error::NOT_IMPLEMENTED);
+    	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
     /** Show a terminal node.
@@ -2200,15 +2507,6 @@ class MEDDLY::expert_forest: public forest
 
     bool isTimeToGc() const;
 
-    /// Increment and return the in-count for a node
-    // long incInCount(node_handle p);
-    /// Decrement and return the in-count for a node
-    // long decInCount(node_handle p);
-    /// Returns the (modifiable) cache-count for a node
-    // int& cacheCount(node_handle p);
-    /// Returns the cache-count for a node
-    // int getCacheCount(node_handle p) const;
-
     /** Change the location of a node.
         Used by node_storage during compaction.
         Should not be called by anything else.
@@ -2238,7 +2536,16 @@ class MEDDLY::expert_forest: public forest
           @param  un    Unpacked node.
           @return       Handle to a node that encodes the same thing.
     */
-    node_handle createReducedHelper(int in, const unpacked_node &nb);
+    node_handle createReducedHelper(int in, unpacked_node &nb);
+
+    /** Apply reduction rule to the temporary extensible node and finalize it. 
+        Once a node is reduced, its contents cannot be modified.
+          @param  in    Incoming index, used only for identity reduction;
+                        Or -1.
+          @param  un    Unpacked extensible node. Must be sorted by indices if sparse.
+          @return       Handle to a node that encodes the same thing.
+    */
+    node_handle createReducedExtensibleNodeHelper(int in, unpacked_node &nb);
 
     // Sanity check; used in development code.
     void validateDownPointers(const unpacked_node &nb) const;
@@ -2255,7 +2562,11 @@ class MEDDLY::expert_forest: public forest
 
     /// Should a terminal node be considered a stale entry in the compute table.
     /// per-forest policy, derived classes may change as appropriate.
+#ifndef USE_NODE_STATUS
     bool terminalNodesAreStale;
+#else
+    MEDDLY::forest::node_status terminalNodesStatus;
+#endif
 
     /// Class that stores nodes.
     node_storage* nodeMan;
@@ -2639,6 +2950,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
       protected:
         bool addMinterm(const int* from, const int* to);
+        bool usesExtensibleVariables() const;
 
         int* vars;
         int num_vars;
@@ -2650,6 +2962,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
         int num_minterms;
         int size_minterms;
         bool is_firing;
+        bool uses_extensible_variables;
 
     };  // end of class subevent
 
@@ -2867,6 +3180,328 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
 // ******************************************************************
 // *                                                                *
+// *                      satimpl_opname class                      *
+// *                                                                *
+// ******************************************************************
+
+/// Saturation, transition relations stored implcitly, operation names.
+typedef int rel_node_handle;
+class MEDDLY::satimpl_opname:public specialized_opname {
+      public:
+
+      satimpl_opname(const char* n);
+      virtual ~satimpl_opname();
+
+      /// Arguments should have type "implicit_relation", below
+      virtual specialized_operation* buildOperation(arguments* a) const;
+
+      public:
+      /**
+       Pieces of an implicit relation.
+       
+       Each piece (this class) is a function of a single variable.
+       The function specifies the "next state" for the given
+       current state, but we are only allowed to depend on one
+       state variable.
+       
+       This is an abstract base class.  The function is specified
+       by deriving a class from this one, and specifying method
+       nextOf().
+       TBD - Need a bogus value for nextOf()...
+       
+       Additionally, you must specify method equals(), which is used
+       to detect when two nodes actually represent the same function.
+       
+       */
+      class relation_node {
+      public:
+        /**
+         Constructor.
+         @param  signature   Hash for this node, such that
+         two equal nodes must have the same
+         signature.
+         @param  level          Level affected.
+         @param  down           Handle to a relation node below us. 
+	*/
+        relation_node(unsigned long signature, int level, rel_node_handle down);
+        virtual ~relation_node();
+        
+        // the following should be inlined in meddly_expert.hh
+        
+        /**
+         A signature for this function.
+         This helps class implicit_relation to detect duplicate
+         functions (using a hash table where the signature
+         is taken as the hash value).
+         */
+         unsigned long getSignature() const;
+        
+        /**
+         The state variable affected by this part of the relation.
+         */
+        int getLevel() const;
+        
+        /**
+         Pointer to the (ID of the) next piece of the relation.
+         */
+        rel_node_handle getDown() const;
+        
+        /**
+         The unique ID for this piece.
+         */
+        rel_node_handle getID() const;
+        
+        /**
+         Set the unique ID for this piece.
+         */
+        void setID(rel_node_handle ID);
+        
+        /**
+         The token_update array for this piece.
+         */
+        long* getTokenUpdate() const;
+        
+        /**
+         Set the token_update array for this piece.
+         */
+        void setTokenUpdate(long* token_update);
+        
+        /**
+         The size of token_update array for this piece.
+         */
+        long getPieceSize() const;
+        
+        /**
+         Set the size of token_update array for this piece.
+         */
+        void setPieceSize(long pS);
+        
+        /**
+         Expand the tokenUpdate array as the variable increases
+         */
+        void expandTokenUpdate(long i);
+        
+        /**
+         Set the tokenUpdate array at location i to val
+         */
+        void setTokenUpdateAtIndex(long i,long val);
+        /**
+         Get arc count
+         */
+        long getArcCounts();
+        
+        // the following must be provided in derived classes.
+        
+        /**
+         If the variable at this level has value i,
+         what should the new value be?
+         */
+        virtual long nextOf(long i);
+        
+        
+        /**
+         Determine if this node is equal to another one.
+         */
+        virtual bool equals(const relation_node* n) const;
+        
+      private:
+        unsigned long signature;
+        int level;
+        rel_node_handle down;
+        rel_node_handle ID;
+        long* token_update;
+        long piece_size;        
+        
+        // used by the hash table in implicit_relation
+        relation_node* hash_chain;
+        
+        friend class implicit_relation;
+      };  // class relation_node
+
+      public:
+
+      /**
+       An implicit relation, as a DAG of relation_nodes.
+       
+       The relation is partitioned by "events", where each event
+       is the conjunction of local functions, and each local function
+       is specified as a single relation_node.  The relation_nodes
+       are chained together with at most one relation_node per state
+       variable, and any skipped variables are taken to be unchanged
+       by the event.
+       
+       If the bottom portion (suffix) of two events are identical,
+       then they are merged.  This is done by "registering" nodes
+       which assigns a unique ID to each node, not unlike an MDD forest.
+       
+       Note: node handles 0 and 1 are reserved.
+       0 means null node.
+       1 means special bottom-level "terminal" node
+       (in case we need to distinguish 0 and 1).
+       */
+      class implicit_relation : public specialized_opname::arguments {
+      public:
+        /**
+         Constructor.
+         
+         @param  inmdd       MDD forest containing initial states
+         @param  outmdd      MDD forest containing result
+         
+         Not 100% sure we need these...
+         
+         */
+        implicit_relation(forest* inmdd, forest* outmdd);
+        virtual ~implicit_relation();
+        
+        /// Returns the MDD forest that stores the initial set of states
+        expert_forest* getInForest() const;
+        
+        
+        /// Returns the MDD forest that stores the resultant set of states
+        expert_forest* getOutForest() const;
+        
+        
+        /**
+         Register a relation node.
+         If we have seen an equivalent node before, then
+         return its handle and destroy n.
+         Otherwise, add n to the unique table, assign it a unique
+         identifier, and return that identifier.
+         
+         @param  is_event_top    If true, this is also the top
+         node of some event; register it
+         in the list of events.
+         
+         @param  n               The relation node to register.
+         
+         @return Unique identifier to use to refer to n.
+         */
+        rel_node_handle registerNode(bool is_event_top, relation_node* n);
+        
+        /**
+         Check if the relation node is unique
+         @param n  The relation node.
+         @return   If unique, 0
+                   Else, existing node handle
+         */
+        rel_node_handle isUniqueNode(relation_node* n);
+        
+        /**
+         Resize the node_array
+         */
+        void resizeNodeArray(int n);
+        
+        /**
+         Indicate that there will be no more registered nodes.
+         Allows us to preprocess the events or cleanup or convert
+         to a more useful representation for saturation.
+         */
+        
+        //void finalizeNodes();
+        
+        /**
+         Get the relation node associated with the given handle.
+         
+         Should be a fast, inlined implementation.
+         */
+        relation_node* nodeExists(rel_node_handle n);
+        
+        /**
+         Get the relation node associated with the given handle.
+         
+         Should be a fast, inlined implementation.
+         */
+        bool isReserved(rel_node_handle n);
+        
+      private:
+        expert_forest* insetF;
+        expert_forest* outsetF;
+        int num_levels;
+        
+      private:
+        //
+        // List of relation nodes.  The node handle is the array index,
+        // except we ensure that handle 0 refers to a null node.
+        //
+        
+        /// Expanding array of pointers to relation nodes.
+        relation_node* node_array;
+        
+        /// Current size of \a node_array.
+        long node_array_alloc;
+        
+        /// Last used element in \a node_array.
+        long last_in_node_array;
+        
+      private:
+        // TBD - add a data structure for the "uniqueness table"
+        // of relation_nodes, so if we register a node that
+        // is already present in a node_array, we can detect it.
+        
+        std::unordered_map<rel_node_handle, relation_node*> impl_unique;
+        
+      private:
+        // TBD - add a data structure for list of events with top level k,
+        // for all possible k.
+        // Possibly this data structure is built by method
+        // finalizeNodes().
+        
+        rel_node_handle** event_list;
+        long* event_list_alloc; // allocated space
+        long* event_added; //how many events added so far
+        
+      public:
+        
+        /*
+         Resizes the Event List
+         */
+        void resizeEventArray(int level);
+        
+        /*
+         Returns the number of events that have this level as top
+         */
+        long lengthForLevel(int level) const;
+        
+        /*
+         Returns the array of events that have this level as top
+         */
+        rel_node_handle* arrayForLevel(int level) const;
+        
+      public:
+        /*
+          Prints the implicit relation
+         */
+        void show();
+        /*
+         Gets the arc counts from all implicit nodes
+         */
+        long getAllArcCounts(int level);
+        
+      };  // class implicit_relation
+
+
+
+      };
+class MEDDLY::constrained_opname : public specialized_opname {
+public:
+	constrained_opname(const char* n);
+
+	class constrained_args : public specialized_opname::arguments {
+	public:
+	  forest* consForest;
+	  forest* inForest;
+	  forest* relForest;
+	  forest* outForest;
+
+	  constrained_args(forest* consF, forest* inF, forest* relF, forest* outF)
+	    : consForest(consF), inForest(inF), relForest(relF), outForest(outF)
+	  {
+	  }
+	};
+};
+
+// ******************************************************************
+// *                                                                *
 // *                         ct_object class                        *
 // *                                                                *
 // ******************************************************************
@@ -3053,6 +3688,7 @@ class MEDDLY::compute_table {
           virtual void reset() = 0;
           virtual void writeNH(node_handle nh) = 0;
           virtual void write(int i) = 0;
+          virtual void write(long i) = 0;
           virtual void write(float f) = 0;
       };
 
@@ -3099,6 +3735,7 @@ class MEDDLY::compute_table {
 
       // convenience methods, for grabbing edge values
       static void readEV(const node_handle* p, int &ev);
+      static void readEV(const node_handle* p, long &ev);
       static void readEV(const node_handle* p, float &ev);
 
       /// Constructor
@@ -3208,7 +3845,11 @@ class MEDDLY::operation {
     void markForDeletion();
     void registerInForest(forest* f);
     void unregisterInForest(forest* f);
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entry) = 0;
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entry) = 0;
+#endif
     compute_table::search_key* useCTkey();
     void allocEntryForests(int nf);
     void addEntryForest(int index, expert_forest* f);
@@ -3271,8 +3912,13 @@ class MEDDLY::operation {
     /// Number of ints that make up the entire record (key + answer)
     int getCacheEntryLength() const;
 
+#ifndef USE_NODE_STATUS
     /// Checks if the cache entry (in entryData[]) is stale.
     bool isEntryStale(const node_handle* data);
+#else
+    /// Returns the status of the compute table entry
+    MEDDLY::forest::node_status getEntryStatus(const node_handle* data);
+#endif
 
     void doneCTkey(compute_table::search_key* K);
 
@@ -3376,6 +4022,10 @@ class MEDDLY::binary_operation : public operation {
     /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
     virtual void compute(int av, node_handle ap, int bv, node_handle bp,
       int &cv, node_handle &cp);
+    virtual void compute(long av, node_handle ap, long bv, node_handle bp,
+      long &cv, node_handle &cp);
+    virtual void compute(long av, node_handle ap, node_handle bp,
+      long &cv, node_handle &cp);
 
     /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
     virtual void compute(float av, node_handle ap, float bv, node_handle bp,
@@ -3415,6 +4065,12 @@ class MEDDLY::specialized_operation : public operation {
         Default behavior is to throw an exception.
     */
     virtual void compute(double* y, const double* x);
+
+    /** For tenary (like) operations.
+        Note that there could be other "built in" operands.
+        Default behavior is to throw an exception.
+    */
+    virtual void compute(const dd_edge &ar1, const dd_edge &ar2, const dd_edge &ar3, dd_edge &res);
 };
 
 // ******************************************************************
@@ -3534,3 +4190,4 @@ public:
 
 #include "meddly_expert.hh"
 #endif
+
