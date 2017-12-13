@@ -3129,6 +3129,14 @@ class MEDDLY::satotf_opname : public specialized_opname {
           */
         bool rebuildEvent(int level, int i);
 
+        /** Build a Monolithic Next State Function that is equivalent to
+            the union of all events while restricting the size of each
+            variable to that of the largest confirmed index.
+
+            @return             union of bounded OTF events.
+        */
+        node_handle getBoundedMonolithicNSF();
+
         /// For Debugging
         void showInfo(output &strm) const;
 
@@ -3138,6 +3146,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
       protected:
         void enlargeConfirmedArrays(int level, int sz);
+        node_handle getBoundedMxd(node_handle mxd, const int* bounds_array, int sz,
+            std::unordered_map<node_handle, node_handle>& cache);
 
       private:
         expert_forest* insetF;
