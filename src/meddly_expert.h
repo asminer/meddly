@@ -3285,10 +3285,6 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          Set the tokenUpdate array at location i to val
          */
         void setTokenUpdateAtIndex(long i,long val);
-        /**
-         Get arc count
-         */
-        long getArcCounts();
         
         // the following must be provided in derived classes.
         
@@ -3453,6 +3449,11 @@ class MEDDLY::satimpl_opname:public specialized_opname {
       public:
         
         /*
+         Get total number of events upto given level
+         */
+        long getTotalEvent(int level);
+        
+        /*
          Resizes the Event List
          */
         void resizeEventArray(int level);
@@ -3472,10 +3473,20 @@ class MEDDLY::satimpl_opname:public specialized_opname {
           Prints the implicit relation
          */
         void show();
+        
         /*
-         Gets the arc counts from all implicit nodes
+         Build mxd forest
          */
-        long getAllArcCounts(int level);
+        dd_edge buildMxdForest();
+        
+        /*
+         Build each event_mxd
+         */
+        dd_edge buildEventMxd(rel_node_handle event_top, forest *mxd, forest *event_mxd);
+    
+        
+      private:
+        dd_edge mxd;
         
       };  // class implicit_relation
 
