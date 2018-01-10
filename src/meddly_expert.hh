@@ -2037,7 +2037,6 @@ MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
   int nVars = outsetF->getDomain()->getNumVariables();
   int nEvents = getTotalEvent(nVars);
   
-  printf("\n Total events = %d", nEvents);
   
   rel_node_handle* event_tops = (rel_node_handle*)malloc((nEvents)*sizeof(rel_node_handle));
   int e = 0;
@@ -2048,7 +2047,6 @@ MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
     for(int j = 0;j<num_events_at_this_level;j++)
       event_tops[e++]=arrayForLevel(i)[j];
     }
-  printf("\n Total events = %d", e);
   
   domain *d = outsetF->useDomain();
   
