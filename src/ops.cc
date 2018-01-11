@@ -698,7 +698,10 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
     int level = vars[i];
     // expand "to" since the set of unconfirmed local states is always larger
     if (to[level] > 0 && to[level] >= f->getLevelSize(-level)) {
-      d->enlargeVariableBound(level, false, 1+to[level]);
+      if (f->isExtensibleLevel(level))
+        d->enlargeVariableBound(level, false, -(1+to[level]));
+      else
+        d->enlargeVariableBound(level, false, 1+to[level]);
     }
   }
   num_minterms++;
@@ -1249,17 +1252,7 @@ long MEDDLY::satotf_opname::otf_relation::mintermMemoryUsage() const {
   return usage;
 }
 
-MEDDLY::node_handle MEDDLY::satotf_opname::otf_relation::getBoundedMonolithicNSF() {
-  //
-  // Build the union all events
-  //
-  dd_edge monolithic_nsf(mxdF);
-  for (int i = 1; i < num_levels; i++) {
-    for (int ei = 0; ei < getNumOfEvents(i); ei++) {
-      monolithic_nsf += events_by_top_level[i][ei]->getRoot();
-    }
-  }
-
+void MEDDLY::satotf_opname::otf_relation::bindExtensibleVariables() {
   //
   // Find the bounds for each extensbile variable
   //
@@ -1276,18 +1269,61 @@ MEDDLY::node_handle MEDDLY::satotf_opname::otf_relation::getBoundedMonolithicNSF
   for (int i = 1; i < num_levels; i++) {
     ed->enlargeVariableBound(i, false, bounds[i]);
   }
+}
+
+
+MEDDLY::node_handle MEDDLY::satotf_opname::otf_relation::getBoundedMonolithicNSF() {
+  //
+  // Build the union all events
+  //
+  dd_edge* monolithic_nsf = new dd_edge(mxdF);
+  for (int i = 1; i < num_levels; i++) {
+    for (int ei = 0; ei < getNumOfEvents(i); ei++) {
+      (*monolithic_nsf) += events_by_top_level[i][ei]->getRoot();
+    }
+  }
 
   //
-  // Convert monolithic_nsf to a bounded event based on confirmed local states
-  // - Recursively build a new MDD while pruning all extensible nodes
-  //   to the size of the bounded variables.
+  // Find the bounds for each extensbile variable
   //
-  std::unordered_map<MEDDLY::node_handle, MEDDLY::node_handle> cache;
-  MEDDLY::node_handle bounded_monolithic_nsf =
-    getBoundedMxd(monolithic_nsf.getNode(), bounds, num_levels, cache);
-  for (auto i : cache) {
-    mxdF->unlinkNode(i.second);
+  int i = 1;
+  for ( ; i < num_levels && !mxdF->isExtensibleLevel(i); i++);
+  const bool found_extensible_variable = (i < num_levels);
+
+  MEDDLY::node_handle bounded_monolithic_nsf = 0;
+
+  if (!found_extensible_variable) {
+    bounded_monolithic_nsf = mxdF->linkNode(monolithic_nsf->getNode());
+  } else {
+    int bounds[num_levels];
+    bounds[0] = 0;
+    for (int i = 1; i < num_levels; i++) {
+      int j = 0;
+      for (j = size_confirmed[i]-1; j >= 0 && !confirmed[i][j]; j--);
+      bounds[i] = j+1;
+      MEDDLY_DCASSERT(bounds[i] > 0);
+    }
+
+    //
+    // Convert monolithic_nsf to a bounded event based on confirmed local states
+    // - Recursively build a new MDD while pruning all extensible nodes
+    //   to the size of the bounded variables.
+    //
+    std::unordered_map<MEDDLY::node_handle, MEDDLY::node_handle> cache;
+    bounded_monolithic_nsf =
+      getBoundedMxd(monolithic_nsf->getNode(), bounds, num_levels, cache);
+
+    // clear cache
+    for (auto i : cache) mxdF->unlinkNode(i.second);
+
+    // set bounded variable sizes
+    expert_domain* ed = mxdF->useExpertDomain();
+    for (int i = 1; i < num_levels; i++) {
+      ed->enlargeVariableBound(i, false, bounds[i]);
+    }
   }
+  delete monolithic_nsf;
+
   return bounded_monolithic_nsf;
 }
 
@@ -1312,15 +1348,16 @@ MEDDLY::node_handle MEDDLY::satotf_opname::otf_relation::getBoundedMxd(
   int result_size = bounds[ABS(mxd_level)];
   unpacked_node *mxd_node = unpacked_node::newFromNode(mxdF, mxd, true);
   unpacked_node *bounded_node = unpacked_node::newFull(mxdF, mxd_level, result_size);
-  int mxd_size = MIN(result_size, mxd_node->getSize());
   MEDDLY::node_handle ext_d = mxd_node->ext_d();
 
   int i = 0;
-  for ( ; i < mxd_size; i++) bounded_node->d_ref(i) = mxdF->linkNode(mxd_node->d(i));
+  for ( ; i < mxd_node->getSize(); i++) bounded_node->d_ref(i) = mxdF->linkNode(mxd_node->d(i));
   for ( ; i < result_size; i++) bounded_node->d_ref(i) = mxdF->linkNode(ext_d);
+  bounded_node->markAsNotExtensible();
 
   MEDDLY::node_handle result = mxdF->createReducedNode(-1, bounded_node);
   cache[mxd] = mxdF->linkNode(result);
+  unpacked_node::recycle(mxd_node);
 
   return result;
 }

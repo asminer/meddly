@@ -3137,6 +3137,11 @@ class MEDDLY::satotf_opname : public specialized_opname {
         */
         node_handle getBoundedMonolithicNSF();
 
+        /** Bound all extensible variables
+            using the maximum confirmed local state as the bound.
+        */
+        void bindExtensibleVariables();
+
         /// For Debugging
         void showInfo(output &strm) const;
 
