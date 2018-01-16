@@ -1781,18 +1781,20 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
-  unpacked_node* key = unpacked_node::newFromNode(this, p, false);
-  key->computeHash();
-  if (unique->find(*key, getVarByLevel(key->getLevel())) != p) {
-    fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
-      static_cast<long>(unique->find(*key, getVarByLevel(key->getLevel()))), static_cast<long>(p));
-    FILE_output myout(stdout);
-    dumpInternal(myout);
-    MEDDLY_DCASSERT(false);
+  if (!isExtensible(p) || isExtensibleLevel(getNodeLevel(p))) {
+    unpacked_node* key = unpacked_node::newFromNode(this, p, false);
+    key->computeHash();
+    if (unique->find(*key, getVarByLevel(key->getLevel())) != p) {
+      fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
+          static_cast<long>(unique->find(*key, getVarByLevel(key->getLevel()))), static_cast<long>(p));
+      FILE_output myout(stdout);
+      dumpInternal(myout);
+      MEDDLY_DCASSERT(false);
+    }
+    node_handle x = unique->remove(h, p);
+    MEDDLY_DCASSERT(p == x);
+    unpacked_node::recycle(key);
   }
-  node_handle x = unique->remove(h, p);
-  MEDDLY_DCASSERT(p == x);
-  unpacked_node::recycle(key);
 #else
   unique->remove(h, p);
 #endif
@@ -2031,7 +2033,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   // Expand level size
   const int nb_ext_i = nb.ext_i();
   if (nb_ext_i >= getLevelSize(nb.getLevel())) {
-    useExpertDomain()->enlargeVariableBound(nb.getLevel(), false, nb_ext_i+1);
+    useExpertDomain()->enlargeVariableBound(nb.getLevel(), false, -(nb_ext_i+1));
   }
 
   // Grab a new node

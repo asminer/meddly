@@ -3134,6 +3134,19 @@ class MEDDLY::satotf_opname : public specialized_opname {
           */
         bool rebuildEvent(int level, int i);
 
+        /** Build a Monolithic Next State Function that is equivalent to
+            the union of all events while restricting the size of each
+            variable to that of the largest confirmed index.
+
+            @return             union of bounded OTF events.
+        */
+        node_handle getBoundedMonolithicNSF();
+
+        /** Bound all extensible variables
+            using the maximum confirmed local state as the bound.
+        */
+        void bindExtensibleVariables();
+
         /// For Debugging
         void showInfo(output &strm) const;
 
@@ -3143,6 +3156,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
       protected:
         void enlargeConfirmedArrays(int level, int sz);
+        node_handle getBoundedMxd(node_handle mxd, const int* bounds_array, int sz,
+            std::unordered_map<node_handle, node_handle>& cache);
 
       private:
         expert_forest* insetF;
@@ -3290,10 +3305,6 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          Set the tokenUpdate array at location i to val
          */
         void setTokenUpdateAtIndex(long i,long val);
-        /**
-         Get arc count
-         */
-        long getArcCounts();
         
         // the following must be provided in derived classes.
         
@@ -3458,6 +3469,11 @@ class MEDDLY::satimpl_opname:public specialized_opname {
       public:
         
         /*
+         Get total number of events upto given level
+         */
+        long getTotalEvent(int level);
+        
+        /*
          Resizes the Event List
          */
         void resizeEventArray(int level);
@@ -3477,10 +3493,20 @@ class MEDDLY::satimpl_opname:public specialized_opname {
           Prints the implicit relation
          */
         void show();
+        
         /*
-         Gets the arc counts from all implicit nodes
+         Build mxd forest
          */
-        long getAllArcCounts(int level);
+        dd_edge buildMxdForest();
+        
+        /*
+         Build each event_mxd
+         */
+        dd_edge buildEventMxd(rel_node_handle event_top, forest *mxd, forest *event_mxd);
+    
+        
+      private:
+        dd_edge mxd;
         
       };  // class implicit_relation
 

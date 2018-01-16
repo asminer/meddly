@@ -179,7 +179,14 @@ void MEDDLY::expert_variable::removeFromList(const domain* d)
 
 void MEDDLY::expert_variable::enlargeBound(bool prime, int b)
 {
-  if (b < 1) { is_extensible = true; b = -b; }
+  if (b < 1) {
+    is_extensible = true;
+    b = -b;
+  } else if (is_extensible && b > 0) {
+    // changing from extensible to non-extensible
+    is_extensible = false;
+  }
+
   if (prime) {
     // set prime bound
     if (b > pr_bound) pr_bound = b;

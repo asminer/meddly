@@ -241,7 +241,13 @@ if('i' == method)
   operation::showAllComputeTables(meddlyout, 3);
 
   printf("Approx. %g reachable states\n", c);
-
+  
+  
+  /* Building Mxd From Implicit */
+  dd_edge mxd_edge_all = T->buildMxdForest();
+  
+  mxd_edge_all.show(meddlyout,2);
+  
 }
 
 return 0;

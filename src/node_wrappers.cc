@@ -105,7 +105,7 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
     for (int i=0; i<nsize; i++) index[i] = i;
     nnzs = nsize;
   }
-  if (f->isExtensibleLevel(k)) markAsExtensible();
+  is_extensible = f->isExtensibleLevel(k);
 }
 
 void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k, 
@@ -563,6 +563,8 @@ void MEDDLY::unpacked_node::trim()
       shrinkFull(z+1);
     }
   }
+
+  MEDDLY_DCASSERT(isExtensible() && isTrim());
 }
 
 // checks if the node is has no trailing redundant edges

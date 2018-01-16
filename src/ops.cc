@@ -698,7 +698,10 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
     int level = vars[i];
     // expand "to" since the set of unconfirmed local states is always larger
     if (to[level] > 0 && to[level] >= f->getLevelSize(-level)) {
-      d->enlargeVariableBound(level, false, 1+to[level]);
+      if (f->isExtensibleLevel(level))
+        d->enlargeVariableBound(level, false, -(1+to[level]));
+      else
+        d->enlargeVariableBound(level, false, 1+to[level]);
     }
   }
   num_minterms++;
@@ -1249,6 +1252,116 @@ long MEDDLY::satotf_opname::otf_relation::mintermMemoryUsage() const {
   return usage;
 }
 
+void MEDDLY::satotf_opname::otf_relation::bindExtensibleVariables() {
+  //
+  // Find the bounds for each extensbile variable
+  //
+  int bounds[num_levels];
+  bounds[0] = 0;
+  for (int i = 1; i < num_levels; i++) {
+    int j = 0;
+    for (j = size_confirmed[i]-1; j >= 0 && !confirmed[i][j]; j--);
+    bounds[i] = j+1;
+    MEDDLY_DCASSERT(bounds[i] > 0);
+  }
+
+  expert_domain* ed = mxdF->useExpertDomain();
+  for (int i = 1; i < num_levels; i++) {
+    ed->enlargeVariableBound(i, false, bounds[i]);
+  }
+}
+
+
+MEDDLY::node_handle MEDDLY::satotf_opname::otf_relation::getBoundedMonolithicNSF() {
+  //
+  // Build the union all events
+  //
+  dd_edge* monolithic_nsf = new dd_edge(mxdF);
+  for (int i = 1; i < num_levels; i++) {
+    for (int ei = 0; ei < getNumOfEvents(i); ei++) {
+      (*monolithic_nsf) += events_by_top_level[i][ei]->getRoot();
+    }
+  }
+
+  //
+  // Find the bounds for each extensbile variable
+  //
+  int i = 1;
+  for ( ; i < num_levels && !mxdF->isExtensibleLevel(i); i++);
+  const bool found_extensible_variable = (i < num_levels);
+
+  MEDDLY::node_handle bounded_monolithic_nsf = 0;
+
+  if (!found_extensible_variable) {
+    bounded_monolithic_nsf = mxdF->linkNode(monolithic_nsf->getNode());
+  } else {
+    int bounds[num_levels];
+    bounds[0] = 0;
+    for (int i = 1; i < num_levels; i++) {
+      int j = 0;
+      for (j = size_confirmed[i]-1; j >= 0 && !confirmed[i][j]; j--);
+      bounds[i] = j+1;
+      MEDDLY_DCASSERT(bounds[i] > 0);
+    }
+
+    //
+    // Convert monolithic_nsf to a bounded event based on confirmed local states
+    // - Recursively build a new MDD while pruning all extensible nodes
+    //   to the size of the bounded variables.
+    //
+    std::unordered_map<MEDDLY::node_handle, MEDDLY::node_handle> cache;
+    bounded_monolithic_nsf =
+      getBoundedMxd(monolithic_nsf->getNode(), bounds, num_levels, cache);
+
+    // clear cache
+    for (auto i : cache) mxdF->unlinkNode(i.second);
+
+    // set bounded variable sizes
+    expert_domain* ed = mxdF->useExpertDomain();
+    for (int i = 1; i < num_levels; i++) {
+      ed->enlargeVariableBound(i, false, bounds[i]);
+    }
+  }
+  delete monolithic_nsf;
+
+  return bounded_monolithic_nsf;
+}
+
+MEDDLY::node_handle MEDDLY::satotf_opname::otf_relation::getBoundedMxd(
+    MEDDLY::node_handle mxd,
+    const int* bounds,
+    int num_levels,
+    std::unordered_map<MEDDLY::node_handle, MEDDLY::node_handle>& cache
+    ) {
+  if (mxdF->isTerminalNode(mxd)) return mxd;
+  if (!mxdF->isExtensible(mxd)) return mxdF->linkNode(mxd);
+
+  // mxd is an extensible node:
+  //    use bounds[] to make build a non-extensible version and return it
+
+  std::unordered_map<MEDDLY::node_handle, MEDDLY::node_handle>::iterator iter = cache.find(mxd);
+  if (iter != cache.end()) {
+    return mxdF->linkNode(iter->second);
+  }
+
+  int mxd_level = mxdF->getNodeLevel(mxd);
+  int result_size = bounds[ABS(mxd_level)];
+  unpacked_node *mxd_node = unpacked_node::newFromNode(mxdF, mxd, true);
+  unpacked_node *bounded_node = unpacked_node::newFull(mxdF, mxd_level, result_size);
+  MEDDLY::node_handle ext_d = mxd_node->ext_d();
+
+  int i = 0;
+  for ( ; i < mxd_node->getSize(); i++) bounded_node->d_ref(i) = mxdF->linkNode(mxd_node->d(i));
+  for ( ; i < result_size; i++) bounded_node->d_ref(i) = mxdF->linkNode(ext_d);
+  bounded_node->markAsNotExtensible();
+
+  MEDDLY::node_handle result = mxdF->createReducedNode(-1, bounded_node);
+  cache[mxd] = mxdF->linkNode(result);
+  unpacked_node::recycle(mxd_node);
+
+  return result;
+}
+
 // ******************************************************************
 // *                                                                *
 // *                 minimum_witness_opname methods                 *
@@ -1329,15 +1442,6 @@ MEDDLY::satimpl_opname::relation_node::setTokenUpdateAtIndex(long i,long val)
 {
   MEDDLY_DCASSERT(i<getPieceSize());
   token_update[i] = val;
-}
-
-long
-MEDDLY::satimpl_opname::relation_node::getArcCounts()
-{
-  int arc_count = 0;
-  for(int i = 0; i<piece_size; i++)
-    if(token_update[i]!=NOT_KNOWN) arc_count +=1;
-  return arc_count;
 }
 // ******************************************************************
 
@@ -1550,31 +1654,109 @@ MEDDLY::satimpl_opname::implicit_relation::show()
   
 }
 
-long
-MEDDLY::satimpl_opname::implicit_relation::getAllArcCounts(int level)
+MEDDLY::dd_edge
+MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTop, forest *mxd, forest *event_mxd)//, dd_edge &a)
 {
-  int all_arc_count = 0;
-  for(int l = level;l>=1;l--)
+  //mxd is built on a domain obtained from result of saturation
+  int nVars = outsetF->getDomain()->getNumVariables();
+  //int* sizes = new int[nVars];
+  relation_node* Rnode = nodeExists(eventTop);
+  rel_node_handle* rnh_array = (rel_node_handle*)malloc((nVars+1)*sizeof(rel_node_handle));
+  int top_level = Rnode->getLevel();
+  
+  domain* d = outsetF->useDomain();
+  
+  //Get relation node handles
+  for (int i=nVars; i>=1; i--)
     {
-     //get the events tops this level
-     for(int r_num = 0; r_num<lengthForLevel(l); r_num++)
-       {
-       //for each event, travel down till terminal
-        relation_node* r = nodeExists(event_list[l][r_num]);
-        while(r->getID()!=1)
-          {
-            all_arc_count+=r->getArcCounts();
-            rel_node_handle next = r->getDown();
-            r = nodeExists(next);
-          }
-       }
-
-    
+    if(Rnode->getLevel()==i)// if variable i is a part of this event
+      {
+      rnh_array[i] = Rnode->getID(); // keep track of node_handles that are part of this event
+      Rnode = nodeExists(Rnode->getDown()); // move to next variable in the event
+      }
+    else // if not, then
+      {
+      rnh_array[i] = -1; // node handle of the variable i in the event
+      }
     }
- 
- 
-  return all_arc_count;
+  
+  
+  /*forest* event_mxd = d->createForest(true, forest::INTEGER, forest::MULTI_TERMINAL);
+  forest* mxd = d->createForest(true,forest::BOOLEAN, forest::MULTI_TERMINAL);*/
+  dd_edge nsf(mxd);
+  
+  int* minterm = new int[nVars+1];
+  int* mtprime = new int[nVars+1];
+  dd_edge** varP  = new dd_edge*[nVars+1];
+  varP[0] = 0;
+  dd_edge** varUP = new dd_edge*[nVars+1];
+  varUP[0] = 0;
+  
+  
+  // Create edge for each prime variable of the event
+  for (int i=1; i<=nVars; i++) {
+    //if(rnh_array[i]==-1) continue;
+   // else
+      {
+        varP[i] = new dd_edge(event_mxd);
+        event_mxd->createEdgeForVar(i, true, varP[i][0]);
+      }
+  }
+  
+  
+  // Create edge for each unprimed variable of the event
+  for (int i=1; i<=nVars; i++) {
+    if(rnh_array[i]==-1)
+      {
+      int* temp = new int[d->getVariableBound(i,false)];
+      for(int j = 0;j<d->getVariableBound(i,false);j++)
+        temp[j] = j;
+      varUP[i] = new dd_edge(event_mxd);
+      event_mxd->createEdgeForVar(i, false, temp, varUP[i][0]);
+      }
+    else
+    {
+      Rnode = nodeExists(rnh_array[i]);
+      int* temp = new int[d->getVariableBound(i,false)];
+      for(int j = 0;j<Rnode->getPieceSize();j++)
+        temp[j] = (int)Rnode->getTokenUpdate()[j];
+    for( int j = Rnode->getPieceSize(); j<d->getVariableBound(i,false); j++)
+       temp[j] =  j;
+      varUP[i] = new dd_edge(event_mxd);
+      event_mxd->createEdgeForVar(i, false, temp, varUP[i][0]);
+    }
+  }
+  
+  
+  mxd->createEdge(false, nsf);
+  
+  dd_edge nsf_ev(mxd);
+  dd_edge term(mxd);
+  
+  for (int i=1; i<=nVars; i++) {
+    if (-1 == rnh_array[i]) {
+      minterm[i] = DONT_CARE;
+      mtprime[i] = DONT_CHANGE;
+    } else {
+      minterm[i] = DONT_CARE;
+      mtprime[i] = DONT_CARE;
+    }
+  }
+  mxd->createEdge(&minterm, &mtprime, 1, nsf_ev);
+  
+  for (int i=1; i<=nVars; i++) {
+    dd_edge docare(event_mxd);
+    if (-1 == rnh_array[i]) continue;
+    else
+      apply(EQUAL, varP[i][0], varUP[i][0], docare);
+    apply(COPY, docare, term);
+    nsf_ev *= term;
+  } // for i
+  
+
+  return nsf_ev;
 }
+
 
 // ******************************************************************
 // *                       operation  methods                       *
