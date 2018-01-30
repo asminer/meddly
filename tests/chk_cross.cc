@@ -151,17 +151,18 @@ void test(forest* mdd, forest* mxd, int nmt)
   makeRandomRows(mxd, nmt, rr);
 
 #ifdef DEBUG_RANDSET
+  FILE_output out(stdout);
   printf("Generated random set:\n");
-  rs.show(stdout, 2);
+  rs.show(out, 2);
   printf("Generated random rows:\n");
-  rr.show(stdout, 2);
+  rr.show(out, 2);
 #endif
 
   // check: generate rr from rs, make sure they match
   apply(CROSS, rs, one, tmp);
 #ifdef DEBUG_RANDSET
   printf("rs x 1:\n");
-  tmp.show(stdout, 2);
+  tmp.show(out, 2);
 #endif
   assert(tmp == rr);
 
@@ -173,16 +174,16 @@ void test(forest* mdd, forest* mxd, int nmt)
 
 #ifdef DEBUG_RANDSET
   printf("Generated random set:\n");
-  cs.show(stdout, 2);
+  cs.show(out, 2);
   printf("Generated random cols:\n");
-  cr.show(stdout, 2);
+  cr.show(out, 2);
 #endif
   
   // check: generate cr from cs, make sure they match
   apply(CROSS, one, cs, tmp);
 #ifdef DEBUG_RANDSET
   printf("cs x 1:\n");
-  tmp.show(stdout, 2);
+  tmp.show(out, 2);
 #endif
   assert(tmp == cr);
 
@@ -190,12 +191,12 @@ void test(forest* mdd, forest* mxd, int nmt)
   apply(CROSS, rs, cs, rcr);
 #ifdef DEBUG_RANDSET
   printf("rs x cs:\n");
-  rcr.show(stdout, 2);
+  rcr.show(out, 2);
 #endif
   tmp = rr * cr;
 #ifdef DEBUG_RANDSET
   printf("rr * cr:\n");
-  tmp.show(stdout, 2);
+  tmp.show(out, 2);
 #endif
   assert(tmp == rcr);
 }

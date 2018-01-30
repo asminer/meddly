@@ -42,7 +42,12 @@ class MEDDLY::copy_MT : public unary_operation {
   public:
     copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
+#endif
+
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
@@ -80,12 +85,30 @@ MEDDLY::copy_MT
   // mtres = res;
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::copy_MT::isStaleEntry(const node_handle* entryData)
 {
   return 
     argF->isStale(entryData[0]) ||
     resF->isStale(entryData[1]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::copy_MT::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+  MEDDLY::forest::node_status c = resF->getNodeStatus(data[1]);
+
+  if (a == MEDDLY::forest::DEAD ||
+      c == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE ||
+      c == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::copy_MT::discardEntry(const node_handle* entryData)
 {
@@ -255,31 +278,55 @@ namespace MEDDLY {
   class copy_MT2EV : public unary_operation {
     public:
       copy_MT2EV(const unary_opname* oc, expert_forest* arg, 
-        expert_forest* res) : unary_operation(oc, 1, 2, arg, res)
+        expert_forest* res) : unary_operation(oc,
+          sizeof(node_handle) / sizeof(node_handle),
+          (sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle),
+          arg, res)
       {
         // entry[0]: mt node 
         // entry[1]: EV value (output)
         // entry[2]: EV node (output)
       }
 
+#ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
           argF->isStale(entryData[0]) ||
-          resF->isStale(entryData[2]);
+          resF->isStale(entryData[(sizeof(node_handle) + sizeof(TYPE)) / sizeof(node_handle)]);
       }
+#else
+      virtual MEDDLY::forest::node_status
+      getStatusOfEntry(const node_handle* data)
+      {
+        MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+        MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
+
+        if (a == MEDDLY::forest::DEAD ||
+            c == MEDDLY::forest::DEAD)
+          return MEDDLY::forest::DEAD;
+        else if (a == MEDDLY::forest::RECOVERABLE ||
+            c == MEDDLY::forest::RECOVERABLE)
+          return MEDDLY::forest::RECOVERABLE;
+        else
+          return MEDDLY::forest::ACTIVE;
+      }
+#endif
+
       virtual void discardEntry(const node_handle* entryData) {
         argF->uncacheNode(entryData[0]);
-        resF->uncacheNode(entryData[2]);
+        resF->uncacheNode(entryData[(sizeof(node_handle) + sizeof(TYPE)) / sizeof(node_handle)]);
       }
       virtual void showEntry(output &strm, const node_handle* entryData) const {
         TYPE ev;
-        compute_table::readEV(entryData+1, ev);
-        strm << "[" << getName() << "(" << long(entryData[0]) << ") <"
-             << ev << ", " << long(entryData[2]) << ">]";
+        compute_table::readEV(entryData + sizeof(node_handle) / sizeof(node_handle), ev);
+        strm << "[" << getName()
+          << "(" << long(entryData[0])
+          << ") <" << ev << ", " << long(entryData[(sizeof(node_handle) + sizeof(TYPE)) / sizeof(node_handle)])
+          << ">]";
       }
       virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         node_handle b;
-        TYPE bev;
+        TYPE bev = Inf<TYPE>();
         if (argF->getReductionRule() == resF->getReductionRule()) {
           computeSkip(-1, arg.getNode(), b, bev);  // same skipping rule, ok
         } else {
@@ -312,6 +359,8 @@ namespace MEDDLY {
       inline void addToCache(compute_table::search_key* Key,
         node_handle a, node_handle b, TYPE bev) 
       {
+        MEDDLY_DCASSERT(bev != Inf<TYPE>());
+
         argF->cacheNode(a);
         compute_table::entry_builder &entry = CT->startNewEntry(Key);
         // entry.writeKeyNH(argF->cacheNode(a));
@@ -330,7 +379,13 @@ void MEDDLY::copy_MT2EV<TYPE>
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    argF->getValueFromHandle(a, bev);
+    MEDDLY_DCASSERT(a != argF->getTransparentNode());
+    if (argF->getRangeType() == forest::BOOLEAN) {
+      bev = 0;
+    }
+    else {
+      argF->getValueFromHandle(a, bev);
+    }
     b = expert_forest::bool_Tencoder::value2handle(true);
     return;
   }
@@ -350,7 +405,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   // recurse
   for (int z=0; z<A->getNNZs(); z++) {
     node_handle d;
-    TYPE dev;
+    TYPE dev = Inf<TYPE>();
     computeSkip(A->i(z), A->d(z), d, dev);
     nb->i_ref(z) = A->i(z);
     nb->d_ref(z) = d;
@@ -373,7 +428,13 @@ void MEDDLY::copy_MT2EV<TYPE>
 {
   // Check terminals
   if (0==k) {
-    argF->getValueFromHandle(a, bev);
+    MEDDLY_DCASSERT(a != argF->getTransparentNode());
+    if (argF->getRangeType() == forest::BOOLEAN) {
+      bev = 0;
+    }
+    else {
+      argF->getValueFromHandle(a, bev);
+    }
     b = expert_forest::bool_Tencoder::value2handle(true);
     return;
   }
@@ -441,27 +502,48 @@ namespace MEDDLY {
   class copy_EV2MT : public unary_operation {
     public:
       copy_EV2MT(const unary_opname* oc, expert_forest* arg, 
-        expert_forest* res) : unary_operation(oc, 2, 1, arg, res)
+        expert_forest* res) : unary_operation(oc,
+          (sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle),
+          sizeof(node_handle) / sizeof(node_handle),
+          arg, res)
       {
         // entry[0]: EV value
         // entry[1]: EV node
         // entry[2]: mt node (output)
       }
 
+#ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
-          argF->isStale(entryData[1]) ||
-          resF->isStale(entryData[2]);
+          argF->isStale(entryData[sizeof(TYPE) / sizeof(node_handle)]) ||
+          resF->isStale(entryData[(sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle)]);
       }
+#else
+      virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* data) {
+        MEDDLY::forest::node_status a = argF->getNodeStatus(data[1]);
+        MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
+
+        if (a == MEDDLY::forest::DEAD ||
+            c == MEDDLY::forest::DEAD)
+          return MEDDLY::forest::DEAD;
+        else if (a == MEDDLY::forest::RECOVERABLE ||
+            c == MEDDLY::forest::RECOVERABLE)
+          return MEDDLY::forest::RECOVERABLE;
+        else
+          return MEDDLY::forest::ACTIVE;
+      }
+#endif
       virtual void discardEntry(const node_handle* entryData) {
-        argF->uncacheNode(entryData[1]);
-        resF->uncacheNode(entryData[2]);
+        argF->uncacheNode(entryData[sizeof(TYPE) / sizeof(node_handle)]);
+        resF->uncacheNode(entryData[(sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle)]);
       }
       virtual void showEntry(output &strm, const node_handle* entryData) const {
         TYPE ev;
         compute_table::readEV(entryData, ev);
-        strm  << "[" << getName() << "(<" << ev << "," << long(entryData[1])
-              << "> " << long(entryData[2]) << "]"; 
+        strm << "[" << getName()
+          << "(<" << ev << "," << long(entryData[sizeof(TYPE) / sizeof(node_handle)])
+          << ">) " << long(entryData[(sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle)])
+          << "]";
       }
       virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         TYPE ev;
@@ -519,7 +601,13 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    return resF->handleForValue(ev);
+    MEDDLY_DCASSERT(a != argF->getTransparentNode());
+    if (resF->getRangeType() == forest::BOOLEAN) {
+      return expert_forest::bool_Tencoder::value2handle(true);
+    }
+    else {
+      return resF->handleForValue(ev);
+    }
   }
 
   // Check compute table
@@ -560,7 +648,13 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
 {
   // Check terminals
   if (0==k) {
-    return resF->handleForValue(ev);
+    MEDDLY_DCASSERT(a != argF->getTransparentNode());
+    if (resF->getRangeType() == forest::BOOLEAN) {
+      return expert_forest::bool_Tencoder::value2handle(true);
+    }
+    else {
+      return resF->handleForValue(ev);
+    }
   }
 
   // Get level number
@@ -633,23 +727,44 @@ namespace MEDDLY {
   class copy_EV2EV_fast : public unary_operation {
     public:
       copy_EV2EV_fast(const unary_opname* oc, expert_forest* arg, 
-        expert_forest* res) : unary_operation(oc, 1, 1, arg, res)
+        expert_forest* res) : unary_operation(oc,
+          sizeof(node_handle) / sizeof(node_handle),
+          sizeof(node_handle) / sizeof(node_handle),
+          arg, res)
       {
         // entry[0]: EV node
         // entry[1]: EV node 
       }
+#ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
           argF->isStale(entryData[0]) ||
           resF->isStale(entryData[1]);
       }
+#else
+      virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* data) {
+        MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+        MEDDLY::forest::node_status c = resF->getNodeStatus(data[1]);
+
+        if (a == MEDDLY::forest::DEAD ||
+            c == MEDDLY::forest::DEAD)
+          return MEDDLY::forest::DEAD;
+        else if (a == MEDDLY::forest::RECOVERABLE ||
+            c == MEDDLY::forest::RECOVERABLE)
+          return MEDDLY::forest::RECOVERABLE;
+        else
+          return MEDDLY::forest::ACTIVE;
+      }
+#endif
       virtual void discardEntry(const node_handle* entryData) {
         argF->uncacheNode(entryData[0]);
         resF->uncacheNode(entryData[1]);
       }
       virtual void showEntry(output &strm, const node_handle* entryData) const {
-        strm  << "[" << getName() << "(<?," << long(entryData[0]) 
-              << ">) <?," << long(entryData[1]) << ">]";
+        strm << "[" << getName()
+          << "(<?," << long(entryData[0])
+          << ">) <?," << long(entryData[1])
+          << ">]";
       }
       virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         INTYPE av;
@@ -698,7 +813,7 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    return expert_forest::bool_Tencoder::value2handle(true);
+    return expert_forest::bool_Tencoder::value2handle(a != 0);
   }
 
   // Check compute table
@@ -750,7 +865,10 @@ namespace MEDDLY {
   class copy_EV2EV_slow : public unary_operation {
     public:
       copy_EV2EV_slow(const unary_opname* oc, expert_forest* arg, 
-        expert_forest* res) : unary_operation(oc, 2, 2, arg, res)
+        expert_forest* res) : unary_operation(oc,
+          (sizeof(INTYPE) + sizeof(node_handle)) / sizeof(node_handle),
+          (sizeof(OUTTYPE) + sizeof(node_handle)) / sizeof(node_handle),
+          arg, res)
       {
         // entry[0]: EV value
         // entry[1]: EV node
@@ -758,22 +876,43 @@ namespace MEDDLY {
         // entry[3]: EV node 
       }
 
+#ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
-          argF->isStale(entryData[1]) ||
-          resF->isStale(entryData[3]);
+          argF->isStale(entryData[sizeof(INTYPE) / sizeof(node_handle)]) ||
+          resF->isStale(entryData[(sizeof(INTYPE) + sizeof(node_handle) + sizeof(OUTTYPE)) / sizeof(node_handle)]);
       }
+#else
+      virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* data) {
+        MEDDLY::forest::node_status a = argF->getNodeStatus(data[1]);
+        MEDDLY::forest::node_status c = resF->getNodeStatus(data[3]);
+
+        if (a == MEDDLY::forest::DEAD ||
+            c == MEDDLY::forest::DEAD)
+          return MEDDLY::forest::DEAD;
+        else if (a == MEDDLY::forest::RECOVERABLE ||
+            c == MEDDLY::forest::RECOVERABLE)
+          return MEDDLY::forest::RECOVERABLE;
+        else
+          return MEDDLY::forest::ACTIVE;
+      }
+#endif
       virtual void discardEntry(const node_handle* entryData) {
-        argF->uncacheNode(entryData[1]);
-        resF->uncacheNode(entryData[3]);
+        argF->uncacheNode(entryData[sizeof(INTYPE) / sizeof(node_handle)]);
+        resF->uncacheNode(entryData[(sizeof(INTYPE) + sizeof(node_handle) + sizeof(OUTTYPE)) / sizeof(node_handle)]);
       }
       virtual void showEntry(output &strm, const node_handle* entryData) const {
         INTYPE ev1;
         compute_table::readEV(entryData, ev1);
-        OUTTYPE ev2; 
-        compute_table::readEV(entryData+2, ev2);
-        strm << "[" << getName() << "(<" << ev1 << "," << long(entryData[1])
-             << "> <" << ev2 << "," << long(entryData[3]) << ">]";
+        node_handle n1 = entryData[sizeof(INTYPE) / sizeof(node_handle)];
+        OUTTYPE ev2;
+        compute_table::readEV(entryData + (sizeof(INTYPE) + sizeof(node_handle)) / sizeof(node_handle), ev2);
+        node_handle n2 = entryData[(sizeof(INTYPE) + sizeof(node_handle) + sizeof(OUTTYPE)) / sizeof(node_handle)];
+
+        strm << "[" << getName()
+          << "(<" << ev1 << "," << n1
+          << ">) <" << ev2 << "," << n2
+          << ">]";
       }
       virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         INTYPE av;
@@ -781,8 +920,14 @@ namespace MEDDLY {
         OUTTYPE bv;
         arg.getEdgeValue(av);
         an = arg.getNode();
-        // need to visit every level...
-        computeAll(-1, resF->getNumVariables(), av, an, bv, bn);
+
+        if (argF->isTransparentEdge(an, &av) && argF->getTransparentNode() == resF->getTransparentNode()) {
+          resF->getTransparentEdge(bn, &bv);
+        }
+        else {
+          // need to visit every level...
+          computeAll(-1, resF->getNumVariables(), av, an, bv, bn);
+        }
         res.set(bn, bv);
       }
       void computeAll(int in, int k, INTYPE av, node_handle an,
@@ -833,7 +978,7 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   // Check terminals
   if (0==k) {
     bv = av;
-    bn = expert_forest::bool_Tencoder::value2handle(true);
+    bn = expert_forest::bool_Tencoder::value2handle(an != 0);
     return;
   }
 
@@ -936,10 +1081,10 @@ MEDDLY::copy_opname
   if (0==arg || 0==res) return 0;
 
   if (arg->getDomain() != res->getDomain())
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (arg->isForRelations() != res->isForRelations())
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   if (arg->isMultiTerminal() && res->isMultiTerminal())
   {
@@ -958,7 +1103,7 @@ MEDDLY::copy_opname
 
 
       default:  // any other types?
-        throw error(error::NOT_IMPLEMENTED);
+        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
     };
   }
 
@@ -974,13 +1119,13 @@ MEDDLY::copy_opname
     //
     switch (res->getRangeType()) {
       case forest::INTEGER:
-        return new copy_MT2EV<int>(this, arg, res);
+        return new copy_MT2EV<long>(this, arg, res);
 
       case forest::REAL:
         return new copy_MT2EV<float>(this, arg, res);
 
       default:
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     };
   }
 
@@ -991,13 +1136,13 @@ MEDDLY::copy_opname
     //
     switch (arg->getRangeType()) {
       case forest::INTEGER:
-        return new copy_EV2MT<int,PLUS>(this, arg, res);
+        return new copy_EV2MT<long,PLUS>(this, arg, res);
 
       case forest::REAL:
         return new copy_EV2MT<float,PLUS>(this, arg, res);
 
       default:
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     };
   }
 
@@ -1008,13 +1153,13 @@ MEDDLY::copy_opname
     //
     switch (arg->getRangeType()) {
       case forest::INTEGER:
-        return new copy_EV2MT<int,TIMES>(this, arg, res);
+        return new copy_EV2MT<long,TIMES>(this, arg, res);
 
       case forest::REAL:
         return new copy_EV2MT<float,TIMES>(this, arg, res);
 
       default:
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     };
   }
 
@@ -1022,7 +1167,7 @@ MEDDLY::copy_opname
   // That's it for any MT arguments
   //
   if (res->isMultiTerminal() || arg->isMultiTerminal()) {
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
   }
 
   //
@@ -1038,11 +1183,11 @@ MEDDLY::copy_opname
         case forest::INTEGER:
             switch (res->getRangeType()) {
                 case forest::INTEGER:
-                    return new copy_EV2EV_fast<int,int>(this, arg, res);
+                    return new copy_EV2EV_fast<long,long>(this, arg, res);
                 case forest::REAL:
-                    return new copy_EV2EV_fast<int,float>(this, arg, res);
+                    return new copy_EV2EV_fast<long,float>(this, arg, res);
                 default:
-                    throw error(error::TYPE_MISMATCH);
+                    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
             };
             break;    // in case anything falls through
 
@@ -1053,12 +1198,12 @@ MEDDLY::copy_opname
                 case forest::REAL:
                     return new copy_EV2EV_fast<float,float>(this, arg, res);
                 default:
-                    throw error(error::TYPE_MISMATCH);
+                    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
             };
             break;    // things may fall through
 
         default:
-            throw error(error::TYPE_MISMATCH);
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       };
     }
 
@@ -1074,25 +1219,25 @@ MEDDLY::copy_opname
       case forest::INTEGER:
           switch (res->getRangeType()) {
             case forest::INTEGER:
-                return new copy_EV2EV_slow<int,PLUS,int>(this, arg, res);
+                return new copy_EV2EV_slow<long,PLUS,long>(this, arg, res);
             case forest::REAL:
-                return new copy_EV2EV_slow<int,PLUS,float>(this, arg, res);
+                return new copy_EV2EV_slow<long,PLUS,float>(this, arg, res);
             default:
-                throw error(error::TYPE_MISMATCH);
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
         
       case forest::REAL:
           switch (res->getRangeType()) {
             case forest::INTEGER:
-                return new copy_EV2EV_slow<float,PLUS,int>(this, arg, res);
+                return new copy_EV2EV_slow<float,PLUS,long>(this, arg, res);
             case forest::REAL:
                 return new copy_EV2EV_slow<float,PLUS,float>(this, arg, res);
             default:
-                throw error(error::TYPE_MISMATCH);
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
 
       default:
-          throw error(error::TYPE_MISMATCH);
+          throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
   }
 
@@ -1106,32 +1251,32 @@ MEDDLY::copy_opname
       case forest::INTEGER:
           switch (res->getRangeType()) {
             case forest::INTEGER:
-                return new copy_EV2EV_slow<int,TIMES,int>(this, arg, res);
+                return new copy_EV2EV_slow<long,TIMES,long>(this, arg, res);
             case forest::REAL:
-                return new copy_EV2EV_slow<int,TIMES,float>(this, arg, res);
+                return new copy_EV2EV_slow<long,TIMES,float>(this, arg, res);
             default:
-                throw error(error::TYPE_MISMATCH);
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
         
       case forest::REAL:
           switch (res->getRangeType()) {
             case forest::INTEGER:
-                return new copy_EV2EV_slow<float,TIMES,int>(this, arg, res);
+                return new copy_EV2EV_slow<float,TIMES,long>(this, arg, res);
             case forest::REAL:
                 return new copy_EV2EV_slow<float,TIMES,float>(this, arg, res);
             default:
-                throw error(error::TYPE_MISMATCH);
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
 
       default:
-          throw error(error::TYPE_MISMATCH);
+          throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
   }
 
   //
   // Catch all for any other cases
   //
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
 }
 

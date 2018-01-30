@@ -146,8 +146,13 @@ class MEDDLY::plus_evplus : public generic_binary_evplus {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(int aev, node_handle a, int bev, node_handle b, 
-      int& cev, node_handle& c);
+    virtual compute_table::search_key* findResult(long aev, node_handle a,
+      long bev, node_handle b, long& cev, node_handle &c);
+    virtual void saveResult(compute_table::search_key* key,
+      long aev, node_handle a, long bev, node_handle b, long cev, node_handle c);
+
+    virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
+      long& cev, node_handle& c);
 };
 
 MEDDLY::plus_evplus::plus_evplus(const binary_opname* opcode, 
@@ -157,37 +162,69 @@ MEDDLY::plus_evplus::plus_evplus(const binary_opname* opcode,
   operationCommutes();
 }
 
-bool MEDDLY::plus_evplus::checkTerminals(int aev, node_handle a, int bev, node_handle b,
-  int& cev, node_handle& c)
+MEDDLY::compute_table::search_key* MEDDLY::plus_evplus::findResult(long aev, node_handle a,
+  long bev, node_handle b, long& cev, node_handle &c)
+{
+  compute_table::search_key* CTsrch = useCTkey();
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->reset();
+  if (can_commute && a > b) {
+    CTsrch->write(0L);
+    CTsrch->writeNH(b);
+    CTsrch->write(0L);
+    CTsrch->writeNH(a);
+  } else {
+    CTsrch->write(0L);
+    CTsrch->writeNH(a);
+    CTsrch->write(0L);
+    CTsrch->writeNH(b);
+  }
+  compute_table::search_result &cacheFind = CT->find(CTsrch);
+  if (!cacheFind) return CTsrch;
+  cacheFind.read(cev);
+  c = resF->linkNode(cacheFind.readNH());
+  if (c != 0) {
+    cev += aev + bev;
+  }
+  else {
+    MEDDLY_DCASSERT(cev == 0);
+  }
+  doneCTkey(CTsrch);
+  return 0;
+}
+
+void MEDDLY::plus_evplus::saveResult(compute_table::search_key* key,
+  long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
+{
+  arg1F->cacheNode(a);
+  arg2F->cacheNode(b);
+  compute_table::entry_builder &entry = CT->startNewEntry(key);
+  entry.writeResult(c == 0 ? 0L : cev - aev - bev);
+  entry.writeResultNH(resF->cacheNode(c));
+  CT->addEntry();
+}
+
+bool MEDDLY::plus_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,
+  long& cev, node_handle& c)
 {
   if (a == -1 && b == -1) {
-    c = -1; cev = aev + bev;
+    c = -1;
+    cev = aev + bev;
+    MEDDLY_DCASSERT(cev >= 0);
     return true;
   }
-  if (0 == a && 0 == b) {
-    c = 0; 
+  if (a == 0 || b == 0) {
+    c = 0;
     cev = 0;
     return true;
   }
-  if (0 == a) {
-    if (arg2F == resF) {
-      c = resF->linkNode(b);
-      cev = bev;
-      return true;
-    }
-    return false;
-  }
-  if (0 == b) {
-    if (arg1F == resF) {
-      c = resF->linkNode(a);
-      cev = aev;
-      return true;
-    }
-    return false;
+  if (a == b && arg1F == arg2F && arg2F == resF) {
+    c = resF->linkNode(a);
+    cev = aev + bev;
+    return true;
   }
   return false;
 }
-
 
 
 // ******************************************************************
@@ -275,7 +312,7 @@ MEDDLY::plus_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getDomain() != r->getDomain()) || 
     (a2->getDomain() != r->getDomain()) 
   )
-    throw error(error::DOMAIN_MISMATCH);
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     (a1->isForRelations() != r->isForRelations()) ||
@@ -284,7 +321,7 @@ MEDDLY::plus_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (r->getRangeType() == forest::BOOLEAN)
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
     if (r->isForRelations())
@@ -297,7 +334,7 @@ MEDDLY::plus_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->getRangeType() != r->getRangeType()) ||
     (a2->getRangeType() != r->getRangeType()) 
   )
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
 
   if (r->getEdgeLabeling() == forest::EVPLUS)
@@ -306,7 +343,7 @@ MEDDLY::plus_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   if (r->getEdgeLabeling() == forest::EVTIMES)
     return new plus_evtimes(this, a1, a2, r);
 
-  throw error(error::NOT_IMPLEMENTED);
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 // ******************************************************************

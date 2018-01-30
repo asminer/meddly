@@ -28,6 +28,8 @@ class MEDDLY::builtin_initializer : public initializer_list {
   unary_opname* MAXRANGE;
   unary_opname* MINRANGE;
   unary_opname* MDD2INDEX;
+  unary_opname* CYCLE;
+  unary_opname* SELECT;
 
   binary_opname* UNION;
   binary_opname* INTERSECT;
@@ -49,8 +51,12 @@ class MEDDLY::builtin_initializer : public initializer_list {
   binary_opname* GT;
   binary_opname* GE;
 
+  binary_opname* PRE_PLUS;
+  binary_opname* POST_PLUS;
+
   binary_opname* PRE_IMAGE;
   binary_opname* POST_IMAGE;
+  binary_opname* TC_POST_IMAGE;
   binary_opname* FORWARD_DFS;
   binary_opname* FORWARD_BFS;
   binary_opname* BACKWARD_DFS;
@@ -67,6 +73,11 @@ class MEDDLY::builtin_initializer : public initializer_list {
   satpregen_opname* SATURATION_FORWARD;
   satpregen_opname* SATURATION_BACKWARD;
   satotf_opname* SATURATION_OTF_FORWARD;
+  satimpl_opname* SATURATION_IMPL_FORWARD;
+
+  constrained_opname* CONSTRAINED_BACKWARD_BFS;
+  constrained_opname* CONSTRAINED_BACKWARD_DFS;
+  constrained_opname* TRANSITIVE_CLOSURE_DFS;
 
 public:
   builtin_initializer(initializer_list *p);

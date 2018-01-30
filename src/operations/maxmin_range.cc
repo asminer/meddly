@@ -50,7 +50,11 @@ class MEDDLY::range_int : public unary_operation {
     range_int(const unary_opname* oc, expert_forest* arg);
 
     // common
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
   
@@ -85,10 +89,25 @@ MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
 {
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::range_int::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::range_int::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+
+  if (a == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::range_int::discardEntry(const node_handle* data)
 {
@@ -114,7 +133,11 @@ class MEDDLY::range_real : public unary_operation {
     range_real(const unary_opname* oc, expert_forest* arg);
 
     // common
+#ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
+#else
+    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
+#endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
 
@@ -146,10 +169,25 @@ MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
 {
 }
 
+#ifndef USE_NODE_STATUS
 bool MEDDLY::range_real::isStaleEntry(const node_handle* data)
 {
   return argF->isStale(data[0]);
 }
+#else
+MEDDLY::forest::node_status
+MEDDLY::range_real::getStatusOfEntry(const node_handle* data)
+{
+  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+
+  if (a == MEDDLY::forest::DEAD)
+    return MEDDLY::forest::DEAD;
+  else if (a == MEDDLY::forest::RECOVERABLE)
+    return MEDDLY::forest::RECOVERABLE;
+  else
+    return MEDDLY::forest::ACTIVE;
+}
+#endif
 
 void MEDDLY::range_real::discardEntry(const node_handle* data)
 {
@@ -369,24 +407,24 @@ MEDDLY::maxrange_opname::buildOperation(expert_forest* ar, opnd_type res) const
   if (0==ar) return 0;
 
   if (ar->getEdgeLabeling() != forest::MULTI_TERMINAL)
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
   switch (res) {
     case INTEGER:
       if (forest::INTEGER != ar->getRangeType())
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       return new maxrange_int(this,  ar);
 
     case REAL:
       if (forest::REAL != ar->getRangeType())
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       return new maxrange_real(this,  ar);
 
     default:
-      throw error(error::TYPE_MISMATCH);
+      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   } // switch
 
-  throw error(error::MISCELLANEOUS);
+  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 }
 
 // ******************************************************************
@@ -412,24 +450,24 @@ MEDDLY::minrange_opname::buildOperation(expert_forest* ar, opnd_type res) const
   if (0==ar) return 0;
 
   if (ar->getEdgeLabeling() != forest::MULTI_TERMINAL)
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
   switch (res) {
     case INTEGER:
       if (forest::INTEGER != ar->getRangeType())
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       return new minrange_int(this,  ar);
 
     case REAL:
       if (forest::REAL != ar->getRangeType())
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       return new minrange_real(this,  ar);
 
     default:
-      throw error(error::TYPE_MISMATCH);
+      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   } // switch
 
-  throw error(error::MISCELLANEOUS);
+  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 }
 
 
