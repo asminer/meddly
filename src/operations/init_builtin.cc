@@ -56,6 +56,7 @@
 #include "reach_bfs.h"
 #include "reach_dfs.h"
 #include "sat_pregen.h"
+#include "sat2_pregen.h"
 #include "sat_otf.h"
 #include "sat_impl.h"
 
@@ -128,6 +129,8 @@ namespace MEDDLY {
 
   const satpregen_opname* SATURATION_FORWARD = 0;
   const satpregen_opname* SATURATION_BACKWARD = 0;
+  const satpregen_opname* SATURATION2_FORWARD = 0;
+  const satpregen_opname* SATURATION2_BACKWARD = 0;
   const satotf_opname* SATURATION_OTF_FORWARD = 0;
   const satimpl_opname* SATURATION_IMPL_FORWARD = 0;
 
@@ -205,6 +208,8 @@ void MEDDLY::builtin_initializer::setup()
 
   initP(MEDDLY::SATURATION_FORWARD,   SATURATION_FORWARD,   initSaturationForward()   );
   initP(MEDDLY::SATURATION_BACKWARD,  SATURATION_BACKWARD,  initSaturationBackward()  );
+  initP(MEDDLY::SATURATION2_FORWARD,   SATURATION2_FORWARD,   initSaturation2Forward()   );
+  initP(MEDDLY::SATURATION2_BACKWARD,  SATURATION2_BACKWARD,  initSaturation2Backward()  );
   initP(MEDDLY::SATURATION_OTF_FORWARD,   SATURATION_OTF_FORWARD,   initOtfSaturationForward()  );
   initP(MEDDLY::SATURATION_IMPL_FORWARD, SATURATION_IMPL_FORWARD, initImplSaturationForward()  );
   initP(MEDDLY::CONSTRAINED_BACKWARD_BFS,   CONSTRAINED_BACKWARD_BFS,   initConstrainedBFSBackward()  );
@@ -268,6 +273,8 @@ void MEDDLY::builtin_initializer::cleanup()
 
   cleanPair(SATURATION_BACKWARD,      MEDDLY::SATURATION_BACKWARD );
   cleanPair(SATURATION_FORWARD,       MEDDLY::SATURATION_FORWARD  );
+  cleanPair(SATURATION2_BACKWARD,      MEDDLY::SATURATION2_BACKWARD );
+  cleanPair(SATURATION2_FORWARD,       MEDDLY::SATURATION2_FORWARD  );
   cleanPair(SATURATION_OTF_FORWARD,   MEDDLY::SATURATION_OTF_FORWARD  );
   cleanPair(SATURATION_IMPL_FORWARD,   MEDDLY::SATURATION_IMPL_FORWARD  );
 
