@@ -480,8 +480,6 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
           // determine new states to be added (recursively)
           // and add them
           
-          node_handle newstates = recFire(A->d(i), relNode->getDown());
-          if (0==newstates) continue;
           if (0==nb->d(j)) {
             nb->d_ref(j) = newstates;
             continue;
