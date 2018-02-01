@@ -2066,6 +2066,32 @@ MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
   return nsf;
   }
 
+
+inline long
+MEDDLY::satimpl_opname::implicit_relation::getConfirmedStates(int level) const
+{
+  return confirm_states[level];
+}
+
+inline void
+MEDDLY::satimpl_opname::implicit_relation::setConfirmedStates(int level,int i)
+{
+  resizeConfirmedArray(level,i);
+  MEDDLY_DCASSERT(confirmed_array_size[level]>i);
+  if(!isConfirmedState(level,i))
+    {
+      confirmed[level][i]=true;
+      confirm_states[level]++;
+    }
+}
+
+inline bool
+MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
+{
+
+  return (i < insetF->getLevelSize(level) && confirmed[level][i]);
+}
+
 // ******************************************************************
 // *                                                                *
 // *                 inlined  compute_table methods                 *

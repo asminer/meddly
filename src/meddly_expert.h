@@ -3460,7 +3460,12 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         rel_node_handle** event_list;
         long* event_list_alloc; // allocated space
         long* event_added; //how many events added so far
-        
+       
+	long* confirm_states; //total no. of confirmed states of a level
+        bool** confirmed; // stores whether a particular local state is confirmed
+        long* confirmed_array_size; // stores size of confirmed array
+
+ 
       public:
         
         /*
@@ -3483,6 +3488,27 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          */
         rel_node_handle* arrayForLevel(int level) const;
         
+	/*
+         Returns the number of confirmed states at a level
+         */
+        long getConfirmedStates(int level) const;
+
+        /*
+         Sets the number of confirmed states at a level
+         */
+        void setConfirmedStates(int level, int i);
+
+        /*
+         Checks if i is confirmed
+         */
+        bool isConfirmedState(int level, int i);
+
+        /*
+         Expand confirm array
+         */
+        void resizeConfirmedArray(int level, int index);
+
+
       public:
         /*
           Prints the implicit relation
