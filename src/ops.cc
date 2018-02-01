@@ -1470,7 +1470,7 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   
   // Forests are good; set number of variables
-  num_levels = insetF->getDomain()->getNumVariables() + 1;
+  num_levels = insetF->getDomain()->getNumVariables();
   
   //Allocate node_array
   node_array = (relation_node*) malloc(8*sizeof(relation_node));
@@ -1478,16 +1478,28 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
   
   
   //Allocate event_list
-  event_list = (rel_node_handle**)malloc(num_levels*sizeof(rel_node_handle*));
-  event_list_alloc = (long*)malloc(num_levels*sizeof(long));
-  event_added = (long*)malloc(num_levels*sizeof(long));
+  event_list = (rel_node_handle**)malloc((num_levels+1)*sizeof(rel_node_handle*));
+  event_list_alloc = (long*)malloc((num_levels+1)*sizeof(long));
+  event_added = (long*)malloc((num_levels+1)*sizeof(long));
+
   
-  for(int i = 1;i < num_levels;i++)
+  confirm_states = (long*)malloc((num_levels+1)*sizeof(long));
+  confirmed_array_size = (long*)malloc((num_levels+1)*sizeof(long));
+  confirmed = (bool**) malloc((num_levels+1)*sizeof(bool));
+  
+  for(int i = 1;i<=num_levels;i++)
     {
     event_list[i] = (rel_node_handle*)malloc(8*sizeof(rel_node_handle));
+    confirmed[i] = (bool*)malloc(insetF->getVariableSize(i)*sizeof(bool));
     event_list_alloc[i] = 8;
-    event_added[i] = 0;
+    event_added[i] = 0; 
+    confirm_states[i] = 0;
+    
+    confirmed_array_size[i]=insetF->getVariableSize(i);
+    for(int j = 0;j<insetF->getVariableSize(i);j++)
+      confirmed[i][j]=false;
     }
+
   
   
   //create the terminal node
@@ -1531,16 +1543,45 @@ MEDDLY::satimpl_opname::implicit_relation::resizeEventArray(int level)
   }
 }
 
+void
+MEDDLY::satimpl_opname::implicit_relation::resizeConfirmedArray(int level,int index)
+{
+  
+  if(confirmed_array_size[level]==1)
+    {
+    confirmed[level] = (bool*)malloc(2*sizeof(bool));
+    if (0==confirmed[level]) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    confirmed[level][0]=false;
+    confirmed[level][1]=false;
+    confirmed_array_size[level]=2;
+    }
+  
+  if((index>=confirmed_array_size[level]))
+    {
+    MEDDLY_DCASSERT((index+1) > confirmed_array_size[level]);
+    MEDDLY_DCASSERT((index+1) > 0);
+    confirmed[level] = (bool*) realloc(confirmed[level], (index+1)*sizeof(bool));
+    if (0==confirmed[level]) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    for(int i = confirmed_array_size[level]; i<index+1;i++)
+      confirmed[level][i]=false;
+    confirmed_array_size[level]=index+1;
+    }
+  
+  
+}
 
 MEDDLY::satimpl_opname::implicit_relation::~implicit_relation()
 {
   last_in_node_array = 0;
   impl_unique.clear();
   
-  for(int i = 0; i < num_levels; i++) delete[] event_list[i];
+  for(int i = 0; i < num_levels; i++) {delete[] event_list[i]; delete[] confirmed[i];}
   delete[] event_list;
   delete[] event_added;
   delete[] event_list_alloc;
+  delete[] confirmed;
+  delete[] confirm_states;
+  delete[] confirmed_array_size;
 }
 
 
@@ -1706,25 +1747,20 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
   
   // Create edge for each unprimed variable of the event
   for (int i=1; i<=nVars; i++) {
-    if(rnh_array[i]==-1)
-      {
-      int* temp = new int[d->getVariableBound(i,false)];
-      for(int j = 0;j<d->getVariableBound(i,false);j++)
-        temp[j] = j;
-      varUP[i] = new dd_edge(event_mxd);
-      event_mxd->createEdgeForVar(i, false, temp, varUP[i][0]);
+    if(rnh_array[i]!=-1)
+      { 
+        Rnode = nodeExists(rnh_array[i]);
+        int* temp = new int[d->getVariableBound(i,false)];
+        for(int j = 0;j<Rnode->getPieceSize();j++)
+          temp[j] = (int)Rnode->getTokenUpdate()[j];
+        if(Rnode->getPieceSize()<d->getVariableBound(i,false))  
+          for( int j = Rnode->getPieceSize(); j<d->getVariableBound(i,false); j++)
+            temp[j] =  DONT_CARE;
+        
+        varUP[i] = new dd_edge(event_mxd);
+        event_mxd->createEdgeForVar(i, false, temp, varUP[i][0]);
+        //delete[] temp;
       }
-    else
-    {
-      Rnode = nodeExists(rnh_array[i]);
-      int* temp = new int[d->getVariableBound(i,false)];
-      for(int j = 0;j<Rnode->getPieceSize();j++)
-        temp[j] = (int)Rnode->getTokenUpdate()[j];
-    for( int j = Rnode->getPieceSize(); j<d->getVariableBound(i,false); j++)
-       temp[j] =  j;
-      varUP[i] = new dd_edge(event_mxd);
-      event_mxd->createEdgeForVar(i, false, temp, varUP[i][0]);
-    }
   }
   
   

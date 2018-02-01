@@ -297,18 +297,18 @@ MEDDLY::forwd_impl_dfs_by_events_mt::forwd_impl_dfs_by_events_mt(
 void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 {
   
-  
   int nEventsAtThisLevel = rel->lengthForLevel(nb.getLevel());
   
   if (0 == nEventsAtThisLevel) return;
   
   // Initialize mxd readers, note we might skip the unprimed level
-  node_handle* events = rel->arrayForLevel(nb.getLevel());
+  const int level = nb.getLevel();
+  node_handle* events = rel->arrayForLevel(level);
   satimpl_opname::relation_node** Ru = new satimpl_opname::relation_node*[nEventsAtThisLevel];
   for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
     Ru[ei] = rel->nodeExists(events[ei]);
     int eventLevel = Ru[ei]->getLevel();
-    MEDDLY_DCASSERT(ABS(eventLevel) == nb.getLevel());
+    MEDDLY_DCASSERT(ABS(eventLevel) == level);
   }
   
   expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
@@ -329,6 +329,15 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       
       int j = Ru[ei]->nextOf(i);
       if(j==-1) continue;
+      if (j < nb.getSize() && -1==nb.d(j)) continue; // nothing can be added to this set
+      
+      node_handle rec = recFire(nb.d(i), Ru[ei]->getDown());
+      
+      if (rec == 0) continue;
+      
+      //confirm local state
+      rel->setConfirmedStates(level,j);
+      
       if(j>=nb.getSize())
         {
         dm->enlargeVariableBound(nb.getLevel(), false, j+1);
@@ -337,14 +346,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
         queue->resize(nb.getSize());
         }
-      if (-1==nb.d(j)) continue;  // nothing can be added to this set
       
-      
-      
-      node_handle rec = recFire(nb.d(i), Ru[ei]->getDown());
-      
-      
-      if (rec == 0) continue;
       if (rec == nb.d(j)) {
         resF->unlinkNode(rec);
         continue;
@@ -459,12 +461,21 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
           // loop over mxd "columns"
           int j = relNode->nextOf(i);
           if(j==-1) continue;
-          if (j >= nb->getSize()) {
-            dm->enlargeVariableBound(nb->getLevel(), false, j+1);
-            int oldSize = nb->getSize();
-            nb->resize(j+1);
-            while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
-          }
+          
+          node_handle newstates = recFire(A->d(i), relNode->getDown());
+          if (0==newstates) continue;
+          
+          //confirm local state
+          if(!rel->isConfirmedState(rLevel,j)) // if not confirmed before
+            {
+            rel->setConfirmedStates(rLevel,j); // confirm and enlarge
+            if (j >= nb->getSize()) {
+              dm->enlargeVariableBound(nb->getLevel(), false, j+1);
+              int oldSize = nb->getSize();
+              nb->resize(j+1);
+              while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
+            }
+            }
           // ok, there is an i->j "edge".
           // determine new states to be added (recursively)
           // and add them
