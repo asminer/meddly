@@ -1485,8 +1485,9 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
   
   confirm_states = (long*)malloc((num_levels+1)*sizeof(long));
   confirmed_array_size = (long*)malloc((num_levels+1)*sizeof(long));
-  confirmed = (bool**) malloc((num_levels+1)*sizeof(bool));
+  confirmed = new bool*[num_levels+1];
   
+  confirmed[0]=0;
   for(int i = 1;i<=num_levels;i++)
     {
     event_list[i] = (rel_node_handle*)malloc(8*sizeof(rel_node_handle));
@@ -1546,25 +1547,27 @@ MEDDLY::satimpl_opname::implicit_relation::resizeEventArray(int level)
 void
 MEDDLY::satimpl_opname::implicit_relation::resizeConfirmedArray(int level,int index)
 {
-  
-  if(confirmed_array_size[level]==1)
+  int nalloc = index+1;
+ if(nalloc>confirmed_array_size[level])
     {
-    confirmed[level] = (bool*)malloc(2*sizeof(bool));
-    if (0==confirmed[level]) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    confirmed[level][0]=false;
-    confirmed[level][1]=false;
-    confirmed_array_size[level]=2;
-    }
-  
-  if((index>=confirmed_array_size[level]))
-    {
-    MEDDLY_DCASSERT((index+1) > confirmed_array_size[level]);
-    MEDDLY_DCASSERT((index+1) > 0);
-    confirmed[level] = (bool*) realloc(confirmed[level], (index+1)*sizeof(bool));
-    if (0==confirmed[level]) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    for(int i = confirmed_array_size[level]; i<index+1;i++)
-      confirmed[level][i]=false;
-    confirmed_array_size[level]=index+1;
+       
+       MEDDLY_DCASSERT(nalloc > 0);
+       MEDDLY_DCASSERT(confirmed_array_size[level] >= 0);
+       if(confirmed_array_size[level]==0)
+         {
+           confirmed[level] = (bool*)malloc(nalloc*sizeof(bool));
+           if (0==confirmed[level]) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+         }
+        else
+          {
+            confirmed[level] = (bool*)realloc(confirmed[level], nalloc*sizeof(bool));
+            if (0==confirmed[level]) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+          }
+        
+        for(int i = confirmed_array_size[level];i<nalloc;i++)
+          confirmed[level][i]=false;
+        
+         confirmed_array_size[level]=nalloc;
     }
   
   
@@ -1575,7 +1578,7 @@ MEDDLY::satimpl_opname::implicit_relation::~implicit_relation()
   last_in_node_array = 0;
   impl_unique.clear();
   
-  for(int i = 0; i < num_levels; i++) {delete[] event_list[i]; delete[] confirmed[i];}
+  for(int i = 0; i <=num_levels; i++) {delete[] event_list[i]; delete[] confirmed[i];}
   delete[] event_list;
   delete[] event_added;
   delete[] event_list_alloc;
@@ -1642,23 +1645,23 @@ MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relat
 void
 MEDDLY::satimpl_opname::implicit_relation::show()
 {
-  rel_node_handle** event_list_copy = (rel_node_handle**)malloc(num_levels*sizeof(rel_node_handle*));
+  rel_node_handle** event_list_copy = (rel_node_handle**)malloc((num_levels+1)*sizeof(rel_node_handle*));
   if (0==event_list_copy) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   long total_events = 0;
-  for(int i = 0;i<num_levels;i++) total_events +=event_added[i];
-  for(int i = 0;i<num_levels;i++)
+  for(int i = 1;i<=num_levels;i++) total_events +=event_added[i];
+  for(int i = 1;i<=num_levels;i++)
     {
      event_list_copy[i] = (rel_node_handle*)malloc(total_events*sizeof(rel_node_handle));
      if (0==event_list_copy[i]) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
 
-  for(int i = num_levels-1;i>=0;i--)
+  for(int i = num_levels;i>=1;i--)
     for(int j=0;j<total_events;j++)
       event_list_copy[i][j]=0;
   
   
   int eid = 0;
-  for(int i = num_levels-1;i>=0;i--)
+  for(int i = num_levels;i>=1;i--)
     {
      int k = 0;
      std::cout<<"\n [";
@@ -1690,7 +1693,7 @@ MEDDLY::satimpl_opname::implicit_relation::show()
      std::cout<<"]";
     }
   
-  for(int i = 0;i<num_levels;i++) delete event_list_copy[i];
+  for(int i = 0;i<num_levels+1;i++) delete event_list_copy[i];
   delete[] event_list_copy;
   
 }
