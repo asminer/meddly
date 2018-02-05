@@ -3461,7 +3461,7 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         long* event_list_alloc; // allocated space
         long* event_added; //how many events added so far
        
-	long* confirm_states; //total no. of confirmed states of a level
+	      long* confirm_states; //total no. of confirmed states of a level
         bool** confirmed; // stores whether a particular local state is confirmed
         long* confirmed_array_size; // stores size of confirmed array
 
