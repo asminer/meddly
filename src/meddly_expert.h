@@ -3397,10 +3397,6 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          */
         rel_node_handle isUniqueNode(relation_node* n);
         
-        /**
-         Resize the node_array
-         */
-        void resizeNodeArray(int n);
         
         /**
          Indicate that there will be no more registered nodes.
@@ -3430,18 +3426,8 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         int num_levels;
         
       private:
-        //
-        // List of relation nodes.  The node handle is the array index,
-        // except we ensure that handle 0 refers to a null node.
-        //
         
-        /// Expanding array of pointers to relation nodes.
-        relation_node* node_array;
-        
-        /// Current size of \a node_array.
-        long node_array_alloc;
-        
-        /// Last used element in \a node_array.
+        /// Last used ID of \a relation node.
         long last_in_node_array;
         
       private:

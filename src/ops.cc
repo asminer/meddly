@@ -1472,9 +1472,6 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
   // Forests are good; set number of variables
   num_levels = insetF->getDomain()->getNumVariables();
   
-  //Allocate node_array
-  node_array = (relation_node*) malloc(8*sizeof(relation_node));
-  node_array_alloc = 8;
   
   
   //Allocate event_list
@@ -1508,26 +1505,10 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
   Terminal->setID(TERMINAL_NODE);
   std::pair<rel_node_handle, relation_node*> TerminalNode(TERMINAL_NODE,Terminal);
   impl_unique.insert(TerminalNode);
-  resizeNodeArray(1);
-  node_array[1] = *Terminal;
   last_in_node_array = TERMINAL_NODE;
   
 }
 
-void
-MEDDLY::satimpl_opname::implicit_relation::resizeNodeArray(int nh)
-{
-  last_in_node_array = nh;
-  if (last_in_node_array >= node_array_alloc) {
-    int nalloc = ((nh/8)+1)*8;
-    MEDDLY_DCASSERT(nalloc > nh);
-    MEDDLY_DCASSERT(nalloc > 0);
-    MEDDLY_DCASSERT(nalloc > node_array_alloc);
-    node_array = (relation_node*) realloc(node_array, nalloc*sizeof(relation_node));
-    if (0==node_array) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    node_array_alloc = nalloc;
-  }
-}
 
 void
 MEDDLY::satimpl_opname::implicit_relation::resizeEventArray(int level)
@@ -1624,8 +1605,6 @@ MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relat
     {
       last_in_node_array = n_ID;
       n->setID(n_ID);
-      resizeNodeArray(n_ID);
-      node_array[n_ID] = *n;
     }
   }
   else //Delete the node
