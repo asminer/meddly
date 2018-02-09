@@ -3142,6 +3142,18 @@ class MEDDLY::satotf_opname : public specialized_opname {
         */
         void bindExtensibleVariables();
 
+        /** Get the number of arcs in the OTF relation
+            restricted by the confirmed local states.
+
+            Only works with non-extensible variables (call
+            bindExtensibleVariables() prior to calling this).
+
+            @param    count_duplicates  if false, counts arcs that are common
+                                          to mutiple transitions as one.
+            @return                     the number of arcs in the OTF relation.
+        */
+        double getArcCount(bool count_duplicates);
+
         /// For Debugging
         void showInfo(output &strm) const;
 
@@ -3153,6 +3165,9 @@ class MEDDLY::satotf_opname : public specialized_opname {
         void enlargeConfirmedArrays(int level, int sz);
         node_handle getBoundedMxd(node_handle mxd, const int* bounds_array, int sz,
             std::unordered_map<node_handle, node_handle>& cache);
+        double getArcCount(int level, node_handle mxd);
+
+        void clearArcCountCache();
 
       private:
         expert_forest* insetF;
@@ -3188,6 +3203,9 @@ class MEDDLY::satotf_opname : public specialized_opname {
         bool** confirmed;
         int* size_confirmed;
         int* num_confirmed;
+
+        // Arc Count cache
+        std::unordered_map<node_handle, double> arc_count_cache;
 
     };  // end of class otf_relation
 

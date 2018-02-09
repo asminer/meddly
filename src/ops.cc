@@ -1080,6 +1080,7 @@ MEDDLY::satotf_opname::otf_relation::~otf_relation()
 {
   // ostream_output out(std::cout);
   // showInfo(out);
+  clearArcCountCache();
 
   for (int i = 0; i < num_levels; i++) {
     delete[] subevents_by_level[i];
@@ -1096,6 +1097,12 @@ MEDDLY::satotf_opname::otf_relation::~otf_relation()
   delete[] confirmed;
   delete[] size_confirmed;
   delete[] num_confirmed;
+}
+
+void MEDDLY::satotf_opname::otf_relation::clearArcCountCache()
+{
+  for (auto i : arc_count_cache) mxdF->unlinkNode(i.first);
+  arc_count_cache.clear();
 }
 
 void MEDDLY::satotf_opname::otf_relation::clearMinterms()
@@ -1256,21 +1263,92 @@ void MEDDLY::satotf_opname::otf_relation::bindExtensibleVariables() {
   //
   // Find the bounds for each extensbile variable
   //
-  int bounds[num_levels];
-  bounds[0] = 0;
-  for (int i = 1; i < num_levels; i++) {
-    int j = 0;
-    for (j = size_confirmed[i]-1; j >= 0 && !confirmed[i][j]; j--);
-    bounds[i] = j+1;
-    MEDDLY_DCASSERT(bounds[i] > 0);
-  }
-
   expert_domain* ed = mxdF->useExpertDomain();
-  for (int i = 1; i < num_levels; i++) {
-    ed->enlargeVariableBound(i, false, bounds[i]);
+  for (int k = 1; k < num_levels; k++) {
+    int bound = 0;
+    int n_confirmed = 0;
+
+    for (int j = 0; j < size_confirmed[k]; j++) {
+      if (confirmed[k][j]) { bound = j+1; n_confirmed++; }
+    }
+
+    MEDDLY_DCASSERT(bound > 0);
+    MEDDLY_DCASSERT(n_confirmed == num_confirmed[k]);
+    ed->enlargeVariableBound(k, false, bound);
   }
 }
 
+
+double MEDDLY::satotf_opname::otf_relation::getArcCount(bool count_duplicates) {
+  double arc_count = 0;
+  if (count_duplicates) {
+    for (int i = 1; i < num_levels; i++) {
+      for (int ei = 0; ei < getNumOfEvents(i); ei++) {
+        // start with (num_level-1) to correctly count edges in skipped levels
+        arc_count += getArcCount(num_levels-1, events_by_top_level[i][ei]->getRoot().getNode());
+      }
+    }
+  }
+  else {
+    // build monolithic 
+    dd_edge monolithic_nsf(mxdF);
+    for (int i = 1; i < num_levels; i++) {
+      dd_edge nsf_i(mxdF);
+      for (int ei = 0; ei < getNumOfEvents(i); ei++) {
+        nsf_i += events_by_top_level[i][ei]->getRoot();
+      }
+      monolithic_nsf += nsf_i;
+    }
+    arc_count = getArcCount(num_levels-1, monolithic_nsf.getNode());
+  }
+  clearArcCountCache();
+  return arc_count;
+}
+
+
+double MEDDLY::satotf_opname::otf_relation::getArcCount(int level, MEDDLY::node_handle mxd) {
+  if (0 == mxd) return 0;
+  if (0 == level) return 1;
+
+  MEDDLY_DCASSERT(!mxdF->isExtensibleLevel(level));
+
+  // Quickly deal with skipped levels
+  const int mxd_level = mxdF->getNodeLevel(mxd);
+  if (isLevelAbove(level, mxd_level)) {
+    if (level < 0 && mxdF->isIdentityReduced()) {
+      // identity node
+      return getArcCount(mxdF->downLevel(level), mxd);
+    }
+    // redundant node
+    return getArcCount(mxdF->downLevel(level), mxd) * num_confirmed[level];
+  }
+
+  // Check compute table
+  std::unordered_map<MEDDLY::node_handle, double>::iterator iter = arc_count_cache.find(mxd);
+  if (iter != arc_count_cache.end()) return iter->second;
+
+  // Initialize node reader
+  MEDDLY_DCASSERT(mxd_level == level);
+  unpacked_node *mxd_node = unpacked_node::newFromNode(mxdF, mxd, false);
+
+  // Recurse
+  double arc_count = 0;
+  const int down_level = mxdF->downLevel(level);
+  const int abs_level = ABS(level);
+  for (int z = 0; z < mxd_node->getNNZs(); z++) {
+    if (confirmed[abs_level][mxd_node->i(z)])
+      arc_count += getArcCount(down_level, mxd_node->d(z));
+  }
+
+  // Cleanup
+  unpacked_node::recycle(mxd_node);
+
+  // Add entry to compute table
+  mxdF->linkNode(mxd);
+  arc_count_cache[mxd] = arc_count;
+
+  return arc_count;
+}
 
 MEDDLY::node_handle MEDDLY::satotf_opname::otf_relation::getBoundedMonolithicNSF() {
   //
@@ -1703,7 +1781,7 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
   //int* sizes = new int[nVars];
   relation_node* Rnode = nodeExists(eventTop);
   rel_node_handle* rnh_array = (rel_node_handle*)malloc((nVars+1)*sizeof(rel_node_handle));
-  int top_level = Rnode->getLevel();
+  // int top_level = Rnode->getLevel();
   
   domain* d = outsetF->useDomain();
   
