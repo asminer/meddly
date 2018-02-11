@@ -1678,7 +1678,7 @@ MEDDLY::satimpl_opname::implicit_relation::show()
 }
 
 MEDDLY::dd_edge
-MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTop, forest *mxd, forest *event_mxd)//, dd_edge &a)
+MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTop, forest *mxd)
 {
   //mxd is built on a domain obtained from result of saturation
   int nVars = outsetF->getDomain()->getNumVariables();
@@ -1688,91 +1688,62 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
   int top_level = Rnode->getLevel();
   
   domain* d = outsetF->useDomain();
+  expert_forest* ef = (expert_forest*) mxd;
   
   //Get relation node handles
   for (int i=nVars; i>=1; i--)
     {
-    if(Rnode->getLevel()==i)// if variable i is a part of this event
-      {
-      rnh_array[i] = Rnode->getID(); // keep track of node_handles that are part of this event
-      Rnode = nodeExists(Rnode->getDown()); // move to next variable in the event
-      }
-    else // if not, then
-      {
-      rnh_array[i] = -1; // node handle of the variable i in the event
-      }
+    
+      if(Rnode->getLevel()==i)// if variable i is a part of this event
+        {
+          rnh_array[i] = Rnode->getID(); // keep track of node_handles that are part of this event
+          Rnode = nodeExists(Rnode->getDown()); // move to next variable in the event
+        }
+      else // if not, then
+        {
+        rnh_array[i] = -1; // node handle of the variable i in the event
+        continue;
+        }
     }
   
+  node_handle below = -1; // Terminal true node 
   
-  /*forest* event_mxd = d->createForest(true, forest::INTEGER, forest::MULTI_TERMINAL);
-  forest* mxd = d->createForest(true,forest::BOOLEAN, forest::MULTI_TERMINAL);*/
-  dd_edge nsf(mxd);
-  
-  int* minterm = new int[nVars+1];
-  int* mtprime = new int[nVars+1];
-  dd_edge** varP  = new dd_edge*[nVars+1];
-  varP[0] = 0;
-  dd_edge** varUP = new dd_edge*[nVars+1];
-  varUP[0] = 0;
-  
-  
-  // Create edge for each prime variable of the event
-  for (int i=1; i<=nVars; i++) {
-    //if(rnh_array[i]==-1) continue;
-   // else
-      {
-        varP[i] = new dd_edge(event_mxd);
-        event_mxd->createEdgeForVar(i, true, varP[i][0]);
-      }
-  }
-  
-  
-  // Create edge for each unprimed variable of the event
-  for (int i=1; i<=nVars; i++) {
-    if(rnh_array[i]!=-1)
-      { 
-        Rnode = nodeExists(rnh_array[i]);
-        int* temp = new int[d->getVariableBound(i,false)];
-        for(int j = 0;j<Rnode->getPieceSize();j++)
-          temp[j] = (int)Rnode->getTokenUpdate()[j];
-        if(Rnode->getPieceSize()<d->getVariableBound(i,false))  
-          for( int j = Rnode->getPieceSize(); j<d->getVariableBound(i,false); j++)
-            temp[j] =  DONT_CARE;
+  for (int i=1; i<=nVars; i++)
+    {
+        if(rnh_array[i]!=-1)
+          {
+            Rnode = nodeExists(rnh_array[i]);
+            //Create a new unprimed node for variable i
+            unpacked_node* UP_var = unpacked_node::newFull(ef, i, Rnode->getPieceSize());
         
-        varUP[i] = new dd_edge(event_mxd);
-        event_mxd->createEdgeForVar(i, false, temp, varUP[i][0]);
-        //delete[] temp;
-      }
-  }
-  
-  
-  mxd->createEdge(false, nsf);
-  
-  dd_edge nsf_ev(mxd);
-  dd_edge term(mxd);
-  
-  for (int i=1; i<=nVars; i++) {
-    if (-1 == rnh_array[i]) {
-      minterm[i] = DONT_CARE;
-      mtprime[i] = DONT_CHANGE;
-    } else {
-      minterm[i] = DONT_CARE;
-      mtprime[i] = DONT_CARE;
+            for (int j=0; j<Rnode->getPieceSize(); j++) {
+              
+             
+              long new_j = Rnode->getTokenUpdate()[j];
+              
+              if(new_j>=0) 
+                {
+                   //Create primed node for each valid index of the unprimed node
+                  unpacked_node* P_var = unpacked_node::newSparse(ef, -i, 1);
+                  P_var->i_ref(0) = new_j;
+                  P_var->d_ref(0) = below; // primed node for new_j index points to terminal or unprime node
+                  node_handle result = ef->createReducedNode(-1, P_var);
+                  UP_var->d_ref(j) = result; // unprimed node for j index points to primed node for new_j
+                }
+              else
+                UP_var->d_ref(j) = 0; // unprimed node for j index points to false
+              
+              }
+          
+              below = ef->createReducedNode(-1, UP_var);
+              
+          }
     }
-  }
-  mxd->createEdge(&minterm, &mtprime, 1, nsf_ev);
+    
+  dd_edge nsf(mxd);
+  nsf.set(below);
   
-  for (int i=1; i<=nVars; i++) {
-    dd_edge docare(event_mxd);
-    if (-1 == rnh_array[i]) continue;
-    else
-      apply(EQUAL, varP[i][0], varUP[i][0], docare);
-    apply(COPY, docare, term);
-    nsf_ev *= term;
-  } // for i
-  
-
-  return nsf_ev;
+  return nsf;
 }
 
 
