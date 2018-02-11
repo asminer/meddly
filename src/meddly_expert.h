@@ -3527,7 +3527,7 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         /*
          Build each event_mxd
          */
-        dd_edge buildEventMxd(rel_node_handle event_top, forest *mxd, forest *event_mxd);
+        dd_edge buildEventMxd(rel_node_handle event_top, forest *mxd);
     
         
       private:

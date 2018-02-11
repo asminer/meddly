@@ -2051,16 +2051,13 @@ MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
   domain *d = outsetF->useDomain();
   
   forest* mxd = d->createForest(true,forest::BOOLEAN, forest::MULTI_TERMINAL);
-  forest* event_mxd = d->createForest(true, forest::INTEGER, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
-  mxd->createEdge(false, nsf);
-  
  
   for(int i = 0; i<nEvents;i++)
    {
    dd_edge nsf_ev(mxd);
-   nsf_ev = buildEventMxd(event_tops[i],mxd,event_mxd);
-   nsf +=nsf_ev;
+   nsf_ev = buildEventMxd(event_tops[i],mxd);
+   apply(UNION, nsf, nsf_ev, nsf);
    }
   
   return nsf;
