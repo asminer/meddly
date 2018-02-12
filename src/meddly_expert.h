@@ -3498,10 +3498,16 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         long getConfirmedStates(int level) const;
 
         /*
-         Sets the number of confirmed states at a level
+         Confirms the local states at a level
          */
         void setConfirmedStates(int level, int i);
+        
+        /*
+         Confirms the local states in the given MDD
+         */
+        void setConfirmedStates(const dd_edge &set);
 
+        
         /*
          Checks if i is confirmed
          */

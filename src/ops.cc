@@ -1629,8 +1629,63 @@ MEDDLY::satimpl_opname::implicit_relation::resizeConfirmedArray(int level,int in
          confirmed_array_size[level]=nalloc;
     }
   
+}
+
+void findConfirmedStatesImpl(MEDDLY::satimpl_opname::implicit_relation* rel,
+                             bool** confirmed, long* confirm_states,
+                             MEDDLY::node_handle mdd, int level,
+                             std::set<MEDDLY::node_handle>& visited) {
+  if (level == 0) return;
+  if (visited.find(mdd) != visited.end()) return;
+  
+  MEDDLY::expert_forest* insetF = rel->getInForest();
+  int mdd_level = insetF->getNodeLevel(mdd);
+  if (MEDDLY::isLevelAbove(level, mdd_level)) {
+    // skipped level; confirm all local states at this level
+    // go to the next level
+    int level_size = insetF->getLevelSize(level);
+    for (int i = 0; i < level_size; i++) {
+      if (!confirmed[level][i]) {
+        rel->setConfirmedStates(level, i);
+      }
+    }
+    findConfirmedStatesImpl(rel, confirmed, confirm_states, mdd, level-1, visited);
+  } else {
+    if (MEDDLY::isLevelAbove(mdd_level, level)) {
+      throw MEDDLY::error(MEDDLY::error::INVALID_VARIABLE, __FILE__, __LINE__);
+    }
+    // mdd_level == level
+    visited.insert(mdd);
+    MEDDLY::unpacked_node *nr = MEDDLY::unpacked_node::newFromNode(insetF, mdd, false);
+    for (int i = 0; i < nr->getNNZs(); i++) {
+      if (!confirmed[level][nr->i(i)]) {
+        rel->setConfirmedStates(level, nr->i(i));
+      }
+      findConfirmedStatesImpl(rel, confirmed, confirm_states, nr->d(i), level-1, visited);
+    }
+    MEDDLY::unpacked_node::recycle(nr);
+  }
+}
+
+void MEDDLY::satimpl_opname::implicit_relation::setConfirmedStates(const dd_edge& set)
+{
+  // Perform a depth-first traversal of set:
+  //    At each level, mark all enabled states as confirmed.
+  
+  // Enlarge the confirmed arrays if needed
+  for (int i = 1 ; i<=num_levels; i++) 
+    {
+      int levelSize = getInForest()->getLevelSize(i);
+      resizeConfirmedArray(i, levelSize);
+    }
+  
+    std::set<node_handle> visited;
+    findConfirmedStatesImpl(const_cast<implicit_relation*>(this),
+                      confirmed, confirm_states, set.getNode(), num_levels, visited);
   
 }
+
+
 
 MEDDLY::satimpl_opname::implicit_relation::~implicit_relation()
 {
