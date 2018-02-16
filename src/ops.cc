@@ -75,6 +75,7 @@ namespace MEDDLY {
   }
 }
 
+
 // ******************************************************************
 // *                         opname methods                         *
 // ******************************************************************
@@ -798,7 +799,11 @@ MEDDLY::satotf_opname::event::event(subevent** p, int np)
 
   MEDDLY_DCASSERT(all_enabling_subevents || !firingVars.empty());
 
+#if 0
   is_disabled = (all_enabling_subevents || all_firing_subevents);
+#else
+  is_disabled = false;
+#endif
 
   num_vars = sVars.size();
   vars = new int[num_vars];
@@ -858,6 +863,7 @@ void MEDDLY::satotf_opname::event::buildEventMask()
   event_mask.show(out, 2);
 #endif
 }
+
 
 bool MEDDLY::satotf_opname::event::rebuild()
 {
@@ -1080,8 +1086,6 @@ MEDDLY::satotf_opname::otf_relation::~otf_relation()
 {
   // ostream_output out(std::cout);
   // showInfo(out);
-  clearArcCountCache();
-
   for (int i = 0; i < num_levels; i++) {
     delete[] subevents_by_level[i];
     delete[] events_by_level[i];
@@ -1097,12 +1101,6 @@ MEDDLY::satotf_opname::otf_relation::~otf_relation()
   delete[] confirmed;
   delete[] size_confirmed;
   delete[] num_confirmed;
-}
-
-void MEDDLY::satotf_opname::otf_relation::clearArcCountCache()
-{
-  for (auto i : arc_count_cache) mxdF->unlinkNode(i.first);
-  arc_count_cache.clear();
 }
 
 void MEDDLY::satotf_opname::otf_relation::clearMinterms()
@@ -1279,17 +1277,49 @@ void MEDDLY::satotf_opname::otf_relation::bindExtensibleVariables() {
 }
 
 
-double MEDDLY::satotf_opname::otf_relation::getArcCount(bool count_duplicates) {
+double MEDDLY::satotf_opname::otf_relation::getArcCount(
+  const dd_edge& mask,
+  bool count_duplicates)
+{
+  MEDDLY_DCASSERT(outsetF->isQuasiReduced());
+  MEDDLY_DCASSERT(mxdF->isIdentityReduced());
+
   double arc_count = 0;
+  dd_edge mxd_mask(mxdF);
+
+  // Build confirmed mask
+  dd_edge confirmed_local_states(outsetF);
+  confirmed_local_states.set(MEDDLY::expert_forest::bool_Tencoder::value2handle(true));
+  for (int i = 1; i < num_levels; i++) {
+    node_handle current_node = confirmed_local_states.getNode();
+    int current_level = outsetF->getNodeLevel(current_node);
+    int next_level = outsetF->upLevel(outsetF->upLevel(current_level));
+    MEDDLY_DCASSERT(next_level >= 0);
+    unpacked_node* node =
+      unpacked_node::newFull(outsetF, next_level, outsetF->getLevelSize(next_level));
+    for (int i = 0; i < node->getSize(); i++) {
+      node->d_ref(i) =
+        confirmed[next_level][i]
+        ? outsetF->linkNode(current_node)
+        : 0;
+    }
+    node_handle next_node = outsetF->createReducedNode(-1, node);
+    confirmed_local_states.set(next_node);
+  }
+
+  dd_edge confirmed_local_states_mask = mask * confirmed_local_states;
+  MEDDLY::apply(MEDDLY::CROSS, confirmed_local_states_mask, confirmed_local_states_mask, mxd_mask);
+
   if (count_duplicates) {
     for (int i = 1; i < num_levels; i++) {
       for (int ei = 0; ei < getNumOfEvents(i); ei++) {
         // start with (num_level-1) to correctly count edges in skipped levels
-        arc_count += getArcCount(num_levels-1, events_by_top_level[i][ei]->getRoot().getNode());
+        dd_edge rg_ei = events_by_top_level[i][ei]->getRoot();
+        rg_ei *= mxd_mask;
+        arc_count += rg_ei.getCardinality();
       }
     }
-  }
-  else {
+  } else {
     // build monolithic 
     dd_edge monolithic_nsf(mxdF);
     for (int i = 1; i < num_levels; i++) {
@@ -1299,56 +1329,12 @@ double MEDDLY::satotf_opname::otf_relation::getArcCount(bool count_duplicates) {
       }
       monolithic_nsf += nsf_i;
     }
-    arc_count = getArcCount(num_levels-1, monolithic_nsf.getNode());
+    monolithic_nsf *= mxd_mask;
+    arc_count = monolithic_nsf.getCardinality();
   }
-  clearArcCountCache();
   return arc_count;
 }
 
-
-double MEDDLY::satotf_opname::otf_relation::getArcCount(int level, MEDDLY::node_handle mxd) {
-  if (0 == mxd) return 0;
-  if (0 == level) return 1;
-
-  MEDDLY_DCASSERT(!mxdF->isExtensibleLevel(level));
-
-  // Quickly deal with skipped levels
-  const int mxd_level = mxdF->getNodeLevel(mxd);
-  if (isLevelAbove(level, mxd_level)) {
-    if (level < 0 && mxdF->isIdentityReduced()) {
-      // identity node
-      return getArcCount(mxdF->downLevel(level), mxd);
-    }
-    // redundant node
-    return getArcCount(mxdF->downLevel(level), mxd) * num_confirmed[level];
-  }
-
-  // Check compute table
-  std::unordered_map<MEDDLY::node_handle, double>::iterator iter = arc_count_cache.find(mxd);
-  if (iter != arc_count_cache.end()) return iter->second;
-
-  // Initialize node reader
-  MEDDLY_DCASSERT(mxd_level == level);
-  unpacked_node *mxd_node = unpacked_node::newFromNode(mxdF, mxd, false);
-
-  // Recurse
-  double arc_count = 0;
-  const int down_level = mxdF->downLevel(level);
-  const int abs_level = ABS(level);
-  for (int z = 0; z < mxd_node->getNNZs(); z++) {
-    if (confirmed[abs_level][mxd_node->i(z)])
-      arc_count += getArcCount(down_level, mxd_node->d(z));
-  }
-
-  // Cleanup
-  unpacked_node::recycle(mxd_node);
-
-  // Add entry to compute table
-  mxdF->linkNode(mxd);
-  arc_count_cache[mxd] = arc_count;
-
-  return arc_count;
-}
 
 MEDDLY::node_handle MEDDLY::satotf_opname::otf_relation::getBoundedMonolithicNSF() {
   //

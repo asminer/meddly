@@ -32,6 +32,7 @@ namespace MEDDLY {
   class inter_opname;
 };
 
+
 // ******************************************************************
 // *                                                                *
 // *                        inter_mdd  class                        *
