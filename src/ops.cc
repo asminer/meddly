@@ -1474,6 +1474,12 @@ long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
+long MEDDLY::satimpl_opname::relation_node::enableCondition()
+{
+  //to be defined for the example you use & comment this definition
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
 bool
 MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
 {

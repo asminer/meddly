@@ -3320,6 +3320,11 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          what should the new value be?
          */
         virtual long nextOf(long i);
+        /**
+         What should be the enabling condition of the variable
+         Returns the lower bound
+         */
+        virtual long enableCondition();
         
         
         /**
