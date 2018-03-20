@@ -458,7 +458,7 @@ void MEDDLY::simple_separated::unlinkDownAndRecycle(node_address addr)
 bool MEDDLY::simple_separated
 ::areDuplicates(node_address addr, const unpacked_node &n) const
 {
-  MEDDLY_DCASSERT(!n.isExtensible() || n.isTrim());
+  MEDDLY_DCASSERT(n.isTrim());
   const node_handle* chunk = getChunkAddress(addr);
   MEDDLY_DCASSERT(chunk);
 
@@ -632,7 +632,7 @@ void MEDDLY::simple_separated
   MEDDLY_DCASSERT(chunk);
 
   MEDDLY_DCASSERT(nr.hasEdges() == (slots_per_edge>0) );
-  
+
   //
   // Copy any extra header information
   //
@@ -643,7 +643,7 @@ void MEDDLY::simple_separated
   if (hashed_slots) {
     memcpy(nr.HHdata(), chunk + hashed_start, nr.HHbytes());
   }
-  
+
   //
   // Copy everything else
   //
@@ -655,17 +655,21 @@ void MEDDLY::simple_separated
   const node_handle* down = chunk + down_start;
 
   /*
-      Set the unpacked node storage style based on settings
-  */
+     Set the unpacked node storage style based on settings
+     */
   switch (st2) {
-      case unpacked_node::FULL_NODE:     nr.bind_as_full(true);    break;
-      case unpacked_node::SPARSE_NODE:   nr.bind_as_full(false);   break;
-      case unpacked_node::AS_STORED:     nr.bind_as_full(is_sparse); break;
+    case unpacked_node::FULL_NODE:     nr.bind_as_full(true);    break;
+    case unpacked_node::SPARSE_NODE:   nr.bind_as_full(false);   break;
+    case unpacked_node::AS_STORED:     nr.bind_as_full(is_sparse); break;
 
-      default:            assert(0);
+    default:            assert(0);
   };
 
-  if (is_extensible) nr.markAsExtensible(); else nr.markAsNotExtensible();
+  // if (is_extensible) nr.markAsExtensible(); else nr.markAsNotExtensible();
+  if (is_extensible && getParent()->isExtensibleLevel(nr.getLevel()))
+    nr.markAsExtensible();
+  else 
+    nr.markAsNotExtensible();
 
   // Make sure that when an extensible node is unpacked that the trailing edges
   // are filled correctly (regardless of the storage scheme of the unpacked node)
@@ -679,14 +683,14 @@ void MEDDLY::simple_separated
     int nnz = size;
     const node_handle* index = down + nnz;
     const node_handle* edge = slots_per_edge ? (index + nnz) : 0;
+    const int ext_i = index[nnz-1];
+    const int ext_d = is_extensible? down[nnz-1]: tv;
+    const void* ext_ptr = is_extensible? (edge + (nnz-1)*slots_per_edge): 0;
 
     if (nr.isFull()) {
       //
       // Copying into a full node
       //
-      const int ext_i = index[nnz-1];
-      const int ext_d = is_extensible? down[nnz-1]: tv;
-      const void* ext_ptr = is_extensible? (edge + (nnz-1)*slots_per_edge): 0;
 
       // Clear locations [0, ext_i]
       for (int i=0; i<=ext_i; i++) {
@@ -725,7 +729,23 @@ void MEDDLY::simple_separated
           memcpy(nr.eptr_write(z), edge + z*slots_per_edge, nr.edgeBytes());
         }
       } // for z
-      nr.shrinkSparse(nnz);
+      if (nr.isExtensible() == is_extensible) {
+        nr.shrinkSparse(nnz);
+      } else {
+        MEDDLY_DCASSERT(is_extensible);
+        MEDDLY_DCASSERT(!nr.isExtensible());
+        int i = ext_i+1;
+        for (int z=nnz; z<nr.getNNZs(); z++, i++) {
+          nr.i_ref(z) = i;
+          nr.d_ref(z) = ext_d;
+          if (nr.hasEdges()) {
+            if (ext_ptr)
+              memcpy(nr.eptr_write(z), ext_ptr, nr.edgeBytes());
+            else
+              memset(nr.eptr_write(z), 0, nr.edgeBytes());
+          }
+        }
+      }
     }
   } else {
     //
@@ -744,7 +764,7 @@ void MEDDLY::simple_separated
           memcpy(nr.eptr_write(i), edge + i*slots_per_edge, nr.edgeBytes());
         }
       }
-      if (unpacked_node::AS_STORED == st2) {
+      if (unpacked_node::AS_STORED == st2 && is_extensible == nr.isExtensible()) {
         nr.shrinkFull(size);
       } else {
         const int ext_d = is_extensible? down[size-1]: tv;
@@ -773,7 +793,24 @@ void MEDDLY::simple_separated
         }
         z++;
       } // for i
-      nr.shrinkSparse(z);
+      if (nr.isExtensible() == is_extensible) nr.shrinkSparse(z);
+      else {
+        MEDDLY_DCASSERT(is_extensible);
+        MEDDLY_DCASSERT(!nr.isExtensible());
+        const int ext_i = size-1;
+        const int ext_d = down[ext_i];
+        const void* ext_ptr = (edge + (ext_i)*slots_per_edge);
+        for (int i = ext_i + 1 ; z<nr.getNNZs(); z++, i++) {
+          nr.i_ref(z) = i;
+          nr.d_ref(z) = ext_d;
+          if (nr.hasEdges()) {
+            if (ext_ptr)
+              memcpy(nr.eptr_write(z), ext_ptr, nr.edgeBytes());
+            else
+              memset(nr.eptr_write(z), 0, nr.edgeBytes());
+          }
+        }
+      }
     }
   }
 
@@ -783,18 +820,24 @@ void MEDDLY::simple_separated
   printf("\n");
   fflush(stdout);
 #endif
+
+#ifdef DEVELOPMENT_CODE
+  if (!is_extensible || getParent()->isExtensibleLevel(nr.getLevel())) {
 #ifdef VERIFY_DECODING
-  if (!areDuplicates(addr, nr)) {
-    FILE_output out(stdout);
-    printf("Error decoding packed node: ");
-    dumpInternalNode(out, addr, 0x03);
-    printf("Unpacked to: ");
-    nr.show(out, true);
-    printf("\n");
-    fflush(stdout);
+    if (!areDuplicates(addr, nr)) {
+      FILE_output out(stdout);
+      printf("Error decoding packed node: ");
+      dumpInternalNode(out, addr, 0x03);
+      printf("Unpacked to: ");
+      nr.show(out, true);
+      printf("\n");
+      fflush(stdout);
+    }
+#else
+    MEDDLY_DCASSERT(areDuplicates(addr, nr));
+#endif
   }
 #endif
-  MEDDLY_DCASSERT(areDuplicates(addr, nr));
 }
 
 
@@ -1321,6 +1364,7 @@ MEDDLY::simple_separated
 //
 // Helpers
 //
+
 
 MEDDLY::node_address MEDDLY::simple_separated
 ::makeFullNode(node_handle p, int size, const unpacked_node &nb)

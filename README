@@ -80,7 +80,12 @@ Build the documentation:
 Configuration Options
 ---------------------
 Several environment variables may be set before running configure.
-For example, to build an optimized version of the library:
+For example, to build a version of the library with support for
+Extensible Decision Diagrams (XDDs):
+
+$ ./configure CPPFLAGS="-DUSE_XDDS"
+
+To build an optimized version of the library:
 
 $ ./configure CXXFLAGS="-O3"
 

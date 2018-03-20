@@ -264,16 +264,18 @@ MEDDLY::union_mxd::compute(node_handle a, node_handle b)
     } else {
       C->markAsNotExtensible();
     }
+  } else {
+    C->markAsNotExtensible();
   }
   C->shrinkSparse(nnz);
-
-  // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
 
   // reduce and save result
   result = resF->createReducedNode(-1, C);
   saveResult(Key, a, b, result);
+
+  // cleanup
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);

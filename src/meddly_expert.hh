@@ -2006,6 +2006,16 @@ MEDDLY::satimpl_opname::implicit_relation::getOutForest() const
 // ***********************************************************************
 
 inline long
+MEDDLY::satimpl_opname::implicit_relation::getTotalEvent(int level)
+{
+  int total_event = 0;
+  for(int i=1;i<=level;i++)
+    total_event +=  lengthForLevel(i);
+  
+  return total_event;
+}
+
+inline long
 MEDDLY::satimpl_opname::implicit_relation::lengthForLevel(int level) const
 {
   return event_added[level];
@@ -2017,6 +2027,67 @@ MEDDLY::satimpl_opname::implicit_relation::arrayForLevel(int level) const
   return event_list[level];
 }
 
+// ****************************************************************************
+
+inline MEDDLY::dd_edge
+MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
+{
+  
+  //Get number of Variables and Events
+  int nVars = outsetF->getDomain()->getNumVariables();
+  int nEvents = getTotalEvent(nVars);
+  
+  
+  rel_node_handle* event_tops = (rel_node_handle*)malloc((nEvents)*sizeof(rel_node_handle));
+  int e = 0;
+  
+  for(int i = 1 ;i<=nVars;i++)
+    {
+    int num_events_at_this_level = lengthForLevel(i);
+    for(int j = 0;j<num_events_at_this_level;j++)
+      event_tops[e++]=arrayForLevel(i)[j];
+    }
+  
+  domain *d = outsetF->useDomain();
+  
+  forest* mxd = d->createForest(true,forest::BOOLEAN, forest::MULTI_TERMINAL);
+  dd_edge nsf(mxd);
+ 
+  for(int i = 0; i<nEvents;i++)
+   {
+   dd_edge nsf_ev(mxd);
+   nsf_ev = buildEventMxd(event_tops[i],mxd);
+   apply(UNION, nsf, nsf_ev, nsf);
+   }
+  
+  return nsf;
+  }
+
+
+inline long
+MEDDLY::satimpl_opname::implicit_relation::getConfirmedStates(int level) const
+{
+  return confirm_states[level];
+}
+
+inline void
+MEDDLY::satimpl_opname::implicit_relation::setConfirmedStates(int level,int i)
+{
+  resizeConfirmedArray(level,i);
+  MEDDLY_DCASSERT(confirmed_array_size[level]>i);
+  if(!isConfirmedState(level,i))
+    {
+      confirmed[level][i]=true;
+      confirm_states[level]++;
+    }
+}
+
+inline bool
+MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
+{
+
+  return (i < insetF->getLevelSize(level) && confirmed[level][i]);
+}
 
 // ******************************************************************
 // *                                                                *

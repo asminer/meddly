@@ -3129,6 +3129,31 @@ class MEDDLY::satotf_opname : public specialized_opname {
           */
         bool rebuildEvent(int level, int i);
 
+        /** Build a Monolithic Next State Function that is equivalent to
+            the union of all events while restricting the size of each
+            variable to that of the largest confirmed index.
+
+            @return             union of bounded OTF events.
+        */
+        node_handle getBoundedMonolithicNSF();
+
+        /** Bound all extensible variables
+            using the maximum confirmed local state as the bound.
+        */
+        void bindExtensibleVariables();
+
+        /** Get the number of arcs in the OTF relation
+            restricted by the confirmed local states.
+
+            Only works with non-extensible variables (call
+            bindExtensibleVariables() prior to calling this).
+
+            @param    count_duplicates  if false, counts arcs that are common
+                                          to mutiple transitions as one.
+            @return                     the number of arcs in the OTF relation.
+        */
+        double getArcCount(const dd_edge& mask, bool count_duplicates);
+
         /// For Debugging
         void showInfo(output &strm) const;
 
@@ -3138,6 +3163,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
       protected:
         void enlargeConfirmedArrays(int level, int sz);
+        node_handle getBoundedMxd(node_handle mxd, const int* bounds_array, int sz,
+            std::unordered_map<node_handle, node_handle>& cache);
 
       private:
         expert_forest* insetF;
@@ -3285,10 +3312,6 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          Set the tokenUpdate array at location i to val
          */
         void setTokenUpdateAtIndex(long i,long val);
-        /**
-         Get arc count
-         */
-        long getArcCounts();
         
         // the following must be provided in derived classes.
         
@@ -3297,6 +3320,11 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          what should the new value be?
          */
         virtual long nextOf(long i);
+        /**
+         What should be the enabling condition of the variable
+         Returns the lower bound
+         */
+        virtual long enableCondition();
         
         
         /**
@@ -3386,10 +3414,6 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          */
         rel_node_handle isUniqueNode(relation_node* n);
         
-        /**
-         Resize the node_array
-         */
-        void resizeNodeArray(int n);
         
         /**
          Indicate that there will be no more registered nodes.
@@ -3419,18 +3443,8 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         int num_levels;
         
       private:
-        //
-        // List of relation nodes.  The node handle is the array index,
-        // except we ensure that handle 0 refers to a null node.
-        //
         
-        /// Expanding array of pointers to relation nodes.
-        relation_node* node_array;
-        
-        /// Current size of \a node_array.
-        long node_array_alloc;
-        
-        /// Last used element in \a node_array.
+        /// Last used ID of \a relation node.
         long last_in_node_array;
         
       private:
@@ -3449,8 +3463,18 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         rel_node_handle** event_list;
         long* event_list_alloc; // allocated space
         long* event_added; //how many events added so far
-        
+       
+	      long* confirm_states; //total no. of confirmed states of a level
+        bool** confirmed; // stores whether a particular local state is confirmed
+        long* confirmed_array_size; // stores size of confirmed array
+
+ 
       public:
+        
+        /*
+         Get total number of events upto given level
+         */
+        long getTotalEvent(int level);
         
         /*
          Resizes the Event List
@@ -3467,15 +3491,52 @@ class MEDDLY::satimpl_opname:public specialized_opname {
          */
         rel_node_handle* arrayForLevel(int level) const;
         
+	/*
+         Returns the number of confirmed states at a level
+         */
+        long getConfirmedStates(int level) const;
+
+        /*
+         Confirms the local states at a level
+         */
+        void setConfirmedStates(int level, int i);
+        
+        /*
+         Confirms the local states in the given MDD
+         */
+        void setConfirmedStates(const dd_edge &set);
+
+        
+        /*
+         Checks if i is confirmed
+         */
+        bool isConfirmedState(int level, int i);
+
+        /*
+         Expand confirm array
+         */
+        void resizeConfirmedArray(int level, int index);
+
+
       public:
         /*
           Prints the implicit relation
          */
         void show();
+        
         /*
-         Gets the arc counts from all implicit nodes
+         Build mxd forest
          */
-        long getAllArcCounts(int level);
+        dd_edge buildMxdForest();
+        
+        /*
+         Build each event_mxd
+         */
+        dd_edge buildEventMxd(rel_node_handle event_top, forest *mxd);
+    
+        
+      private:
+        dd_edge mxd;
         
       };  // class implicit_relation
 
