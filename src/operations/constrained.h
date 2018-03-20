@@ -27,13 +27,13 @@ namespace MEDDLY {
   class common_constrained;
 
   class constrained_bfs_opname;
-  class constrained_bckwd_bfs;
+  class constrained_bckwd_bfs_evplus;
 
   class constrained_dfs_opname;
-  class constrained_bckwd_dfs;
+  class constrained_bckwd_dfs_evplus;
 
   //class constraint_sat_opname;
-  class constrained_saturation;
+  class constrained_saturation_evplus;
 
   constrained_opname* initConstrainedBFSBackward();
   constrained_opname* initConstrainedDFSBackward();
@@ -66,7 +66,7 @@ public:
   virtual specialized_operation* buildOperation(arguments* a) const;
 };
 
-class MEDDLY::constrained_bckwd_bfs: public common_constrained
+class MEDDLY::constrained_bckwd_bfs_evplus: public common_constrained
 {
 protected:
   binary_operation* imageOp;
@@ -80,7 +80,7 @@ protected:
   virtual void showEntry(output &strm, const node_handle* entryData) const;
 
 public:
-  constrained_bckwd_bfs(const constrained_opname* code,
+  constrained_bckwd_bfs_evplus(const constrained_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
   virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
@@ -96,7 +96,7 @@ public:
   virtual specialized_operation* buildOperation(arguments* a) const;
 };
 
-class MEDDLY::constrained_bckwd_dfs: public common_constrained
+class MEDDLY::constrained_bckwd_dfs_evplus: public common_constrained
 {
 protected:
   static const int NODE_INDICES_IN_KEY[4];
@@ -120,7 +120,7 @@ protected:
   virtual void showEntry(output &strm, const node_handle *data) const;
 
 public:
-  constrained_bckwd_dfs(const constrained_opname* code,
+  constrained_bckwd_dfs_evplus(const constrained_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
   virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
@@ -129,18 +129,18 @@ public:
   void saturateHelper(long aev, node_handle a, unpacked_node& nb);
 };
 
-class MEDDLY::constrained_saturation: public specialized_operation
+class MEDDLY::constrained_saturation_evplus: public specialized_operation
 {
 protected:
   int NODE_INDICES_IN_KEY[3];
 
-  constrained_bckwd_dfs* parent;
+  constrained_bckwd_dfs_evplus* parent;
 
   expert_forest* consF;
   expert_forest* argF;
   expert_forest* resF;
 
-  virtual ~constrained_saturation();
+  virtual ~constrained_saturation_evplus();
 
   // Check if the variables orders of relevant forests are compatible
   virtual bool checkForestCompatibility() const;
@@ -157,7 +157,7 @@ protected:
   virtual void showEntry(output &strm, const node_handle *data) const;
 
 public:
-  constrained_saturation(constrained_bckwd_dfs* p,
+  constrained_saturation_evplus(constrained_bckwd_dfs_evplus* p,
     expert_forest* cons, expert_forest* arg, expert_forest* res);
 
   bool matches(const expert_forest* arg1, const expert_forest* arg2,

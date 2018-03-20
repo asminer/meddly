@@ -91,7 +91,7 @@ MEDDLY::specialized_operation* MEDDLY::constrained_bfs_opname::buildOperation(ar
     throw error(error::NOT_IMPLEMENTED);
   }
   else {
-    op = new constrained_bckwd_bfs(this,
+    op = new constrained_bckwd_bfs_evplus(this,
       static_cast<expert_forest*>(args->consForest),
       static_cast<expert_forest*>(args->inForest),
       static_cast<expert_forest*>(args->relForest),
@@ -106,7 +106,7 @@ MEDDLY::specialized_operation* MEDDLY::constrained_bfs_opname::buildOperation(ar
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constrained_bckwd_bfs::constrained_bckwd_bfs(const constrained_opname* code,
+MEDDLY::constrained_bckwd_bfs_evplus::constrained_bckwd_bfs_evplus(const constrained_opname* code,
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
   : common_constrained(code, 0, 0, cons, arg, trans, res)
 {
@@ -119,7 +119,7 @@ MEDDLY::constrained_bckwd_bfs::constrained_bckwd_bfs(const constrained_opname* c
   imageOp = getOperation(PRE_IMAGE, argF, transF, resF);
 }
 
-void MEDDLY::constrained_bckwd_bfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
+void MEDDLY::constrained_bckwd_bfs_evplus::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
 {
   MEDDLY_DCASSERT(res.getForest() == resF);
 
@@ -142,7 +142,7 @@ void MEDDLY::constrained_bckwd_bfs::compute(const dd_edge& a, const dd_edge& b, 
   res.set(cnode, cev);
 }
 
-void MEDDLY::constrained_bckwd_bfs::iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
+void MEDDLY::constrained_bckwd_bfs_evplus::iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
 {
   cev = bev;
   MEDDLY_DCASSERT(argF == resF);
@@ -164,19 +164,19 @@ void MEDDLY::constrained_bckwd_bfs::iterate(long aev, node_handle a, long bev, n
   resF->unlinkNode(prev);
 }
 
-bool MEDDLY::constrained_bckwd_bfs::isStaleEntry(const node_handle* entryData)
+bool MEDDLY::constrained_bckwd_bfs_evplus::isStaleEntry(const node_handle* entryData)
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.
 }
 
-void MEDDLY::constrained_bckwd_bfs::discardEntry(const node_handle* entryData)
+void MEDDLY::constrained_bckwd_bfs_evplus::discardEntry(const node_handle* entryData)
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.
 }
 
-void MEDDLY::constrained_bckwd_bfs::showEntry(output &strm, const node_handle* entryData) const
+void MEDDLY::constrained_bckwd_bfs_evplus::showEntry(output &strm, const node_handle* entryData) const
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.
@@ -202,7 +202,7 @@ MEDDLY::specialized_operation* MEDDLY::constrained_dfs_opname::buildOperation(ar
     throw error(error::NOT_IMPLEMENTED);
   }
   else {
-    op = new constrained_bckwd_dfs(this,
+    op = new constrained_bckwd_dfs_evplus(this,
       static_cast<expert_forest*>(args->consForest),
       static_cast<expert_forest*>(args->inForest),
       static_cast<expert_forest*>(args->relForest),
@@ -217,14 +217,14 @@ MEDDLY::specialized_operation* MEDDLY::constrained_dfs_opname::buildOperation(ar
 // *                                                                *
 // ******************************************************************
 
-const int MEDDLY::constrained_bckwd_dfs::NODE_INDICES_IN_KEY[4] = {
+const int MEDDLY::constrained_bckwd_dfs_evplus::NODE_INDICES_IN_KEY[4] = {
   sizeof(long) / sizeof(node_handle),
   (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
   (sizeof(long) + 2 * sizeof(node_handle)) / sizeof(node_handle),
   (3 * sizeof(node_handle) + 2 * sizeof(long)) / sizeof(node_handle)
 };
 
-MEDDLY::constrained_bckwd_dfs::constrained_bckwd_dfs(const constrained_opname* code,
+MEDDLY::constrained_bckwd_dfs_evplus::constrained_bckwd_dfs_evplus(const constrained_opname* code,
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
   : common_constrained(code,
       (sizeof(long) + 3 * sizeof(node_handle)) / sizeof(node_handle),
@@ -238,7 +238,7 @@ MEDDLY::constrained_bckwd_dfs::constrained_bckwd_dfs(const constrained_opname* c
   splits = nullptr;
 }
 
-MEDDLY::compute_table::search_key* MEDDLY::constrained_bckwd_dfs::findResult(long aev, node_handle a,
+MEDDLY::compute_table::search_key* MEDDLY::constrained_bckwd_dfs_evplus::findResult(long aev, node_handle a,
     long bev, node_handle b, node_handle c, long& dev, node_handle &d)
 {
   compute_table::search_key* key = useCTkey();
@@ -267,7 +267,7 @@ MEDDLY::compute_table::search_key* MEDDLY::constrained_bckwd_dfs::findResult(lon
   return 0;
 }
 
-void MEDDLY::constrained_bckwd_dfs::saveResult(compute_table::search_key* key,
+void MEDDLY::constrained_bckwd_dfs_evplus::saveResult(compute_table::search_key* key,
   long aev, node_handle a, long bev, node_handle b, node_handle c, long dev, node_handle d)
 {
   consF->cacheNode(a);
@@ -285,7 +285,7 @@ void MEDDLY::constrained_bckwd_dfs::saveResult(compute_table::search_key* key,
   CT->addEntry();
 }
 
-bool MEDDLY::constrained_bckwd_dfs::isStaleEntry(const node_handle* data)
+bool MEDDLY::constrained_bckwd_dfs_evplus::isStaleEntry(const node_handle* data)
 {
   return consF->isStale(data[NODE_INDICES_IN_KEY[0]])
     || argF->isStale(data[NODE_INDICES_IN_KEY[1]])
@@ -293,7 +293,7 @@ bool MEDDLY::constrained_bckwd_dfs::isStaleEntry(const node_handle* data)
     || resF->isStale(data[NODE_INDICES_IN_KEY[3]]);
 }
 
-void MEDDLY::constrained_bckwd_dfs::discardEntry(const node_handle* data)
+void MEDDLY::constrained_bckwd_dfs_evplus::discardEntry(const node_handle* data)
 {
   consF->uncacheNode(data[NODE_INDICES_IN_KEY[0]]);
   argF->uncacheNode(data[NODE_INDICES_IN_KEY[1]]);
@@ -301,7 +301,7 @@ void MEDDLY::constrained_bckwd_dfs::discardEntry(const node_handle* data)
   resF->uncacheNode(data[NODE_INDICES_IN_KEY[3]]);
 }
 
-void MEDDLY::constrained_bckwd_dfs::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::constrained_bckwd_dfs_evplus::showEntry(output &strm, const node_handle* data) const
 {
   strm << "[" << getName()
     << "(" << long(data[NODE_INDICES_IN_KEY[0]])
@@ -312,7 +312,7 @@ void MEDDLY::constrained_bckwd_dfs::showEntry(output &strm, const node_handle* d
 }
 
 // Partition the nsf based on "top level"
-void MEDDLY::constrained_bckwd_dfs::splitMxd(node_handle mxd)
+void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(node_handle mxd)
 {
   MEDDLY_DCASSERT(transF);
   MEDDLY_DCASSERT(splits == nullptr);
@@ -384,7 +384,7 @@ void MEDDLY::constrained_bckwd_dfs::splitMxd(node_handle mxd)
 #endif
 }
 
-void MEDDLY::constrained_bckwd_dfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
+void MEDDLY::constrained_bckwd_dfs_evplus::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
 {
   MEDDLY_DCASSERT(res.getForest() == resF);
 
@@ -399,14 +399,14 @@ void MEDDLY::constrained_bckwd_dfs::compute(const dd_edge& a, const dd_edge& b, 
   res.set(c, cev);
 }
 
-void MEDDLY::constrained_bckwd_dfs::compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
+void MEDDLY::constrained_bckwd_dfs_evplus::compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
   long& cev, node_handle& c)
 {
   // Partition NSF by levels
   splitMxd(r);
 
   // Execute saturation operation
-  constrained_saturation* bckwdSatOp = new constrained_saturation(this, consF, argF, resF);
+  constrained_saturation_evplus* bckwdSatOp = new constrained_saturation_evplus(this, consF, argF, resF);
   bckwdSatOp->saturate(aev, a, bev, b, cev, c);
 
   // Cleanup
@@ -420,7 +420,7 @@ void MEDDLY::constrained_bckwd_dfs::compute(int aev, node_handle a, int bev, nod
   splits = nullptr;
 }
 
-void MEDDLY::constrained_bckwd_dfs::saturateHelper(long aev, node_handle a, unpacked_node& nb)
+void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle a, unpacked_node& nb)
 {
   MEDDLY_DCASSERT(a != 0);
 
@@ -551,7 +551,7 @@ void MEDDLY::constrained_bckwd_dfs::saturateHelper(long aev, node_handle a, unpa
   unpacked_node::recycle(A);
 }
 
-void MEDDLY::constrained_bckwd_dfs::recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
+void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
 {
   // termination conditions
   if (a == 0 || b == 0 || r == 0) {
@@ -686,7 +686,7 @@ void MEDDLY::constrained_bckwd_dfs::recFire(long aev, node_handle a, long bev, n
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constrained_saturation::constrained_saturation(constrained_bckwd_dfs* p,
+MEDDLY::constrained_saturation_evplus::constrained_saturation_evplus(constrained_bckwd_dfs_evplus* p,
   expert_forest* cons, expert_forest* arg, expert_forest* res)
   : specialized_operation(nullptr,
       (arg->isFullyReduced()
@@ -722,14 +722,14 @@ MEDDLY::constrained_saturation::constrained_saturation(constrained_bckwd_dfs* p,
   }
 }
 
-MEDDLY::constrained_saturation::~constrained_saturation()
+MEDDLY::constrained_saturation_evplus::~constrained_saturation_evplus()
 {
   unregisterInForest(consF);
   unregisterInForest(argF);
   unregisterInForest(resF);
 }
 
-bool MEDDLY::constrained_saturation::checkForestCompatibility() const
+bool MEDDLY::constrained_saturation_evplus::checkForestCompatibility() const
 {
   auto o1 = consF->variableOrder();
   auto o2 = argF->variableOrder();
@@ -738,7 +738,7 @@ bool MEDDLY::constrained_saturation::checkForestCompatibility() const
     && o1->is_compatible_with(*o3);
 }
 
-bool MEDDLY::constrained_saturation::checkTerminals(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c)
+bool MEDDLY::constrained_saturation_evplus::checkTerminals(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c)
 {
   if (a == -1 && b == -1) {
     c = -1;
@@ -753,7 +753,7 @@ bool MEDDLY::constrained_saturation::checkTerminals(int aev, node_handle a, int 
   return false;
 }
 
-MEDDLY::compute_table::search_key* MEDDLY::constrained_saturation::findResult(long aev, node_handle a,
+MEDDLY::compute_table::search_key* MEDDLY::constrained_saturation_evplus::findResult(long aev, node_handle a,
     long bev, node_handle b, int level, long& cev, node_handle &c)
 {
   compute_table::search_key* key = useCTkey();
@@ -783,7 +783,7 @@ MEDDLY::compute_table::search_key* MEDDLY::constrained_saturation::findResult(lo
   return 0;
 }
 
-void MEDDLY::constrained_saturation::saveResult(compute_table::search_key* key,
+void MEDDLY::constrained_saturation_evplus::saveResult(compute_table::search_key* key,
   long aev, node_handle a, long bev, node_handle b, int level, long cev, node_handle c)
 {
   consF->cacheNode(a);
@@ -801,21 +801,21 @@ void MEDDLY::constrained_saturation::saveResult(compute_table::search_key* key,
   CT->addEntry();
 }
 
-bool MEDDLY::constrained_saturation::isStaleEntry(const node_handle* data)
+bool MEDDLY::constrained_saturation_evplus::isStaleEntry(const node_handle* data)
 {
   return consF->isStale(data[NODE_INDICES_IN_KEY[0]])
     || argF->isStale(data[NODE_INDICES_IN_KEY[1]])
     || resF->isStale(data[NODE_INDICES_IN_KEY[2]]);
 }
 
-void MEDDLY::constrained_saturation::discardEntry(const node_handle* data)
+void MEDDLY::constrained_saturation_evplus::discardEntry(const node_handle* data)
 {
   consF->uncacheNode(data[NODE_INDICES_IN_KEY[0]]);
   argF->uncacheNode(data[NODE_INDICES_IN_KEY[1]]);
   resF->uncacheNode(data[NODE_INDICES_IN_KEY[2]]);
 }
 
-void MEDDLY::constrained_saturation::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::constrained_saturation_evplus::showEntry(output &strm, const node_handle* data) const
 {
   strm << "[" << getName()
     << "(" << long(data[NODE_INDICES_IN_KEY[0]])
@@ -824,12 +824,12 @@ void MEDDLY::constrained_saturation::showEntry(output &strm, const node_handle* 
     << "]";
 }
 
-void MEDDLY::constrained_saturation::saturate(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c)
+void MEDDLY::constrained_saturation_evplus::saturate(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c)
 {
   saturate(aev, a, bev, b, argF->getNumVariables(), cev, c);
 }
 
-void MEDDLY::constrained_saturation::saturate(int aev, node_handle a, int bev, node_handle b, int level, long& cev, node_handle& c)
+void MEDDLY::constrained_saturation_evplus::saturate(int aev, node_handle a, int bev, node_handle b, int level, long& cev, node_handle& c)
 {
   if (checkTerminals(aev, a, bev, b, cev, c)) {
     return;
