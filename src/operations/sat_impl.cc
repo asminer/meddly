@@ -340,7 +340,8 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       
       if(j>=nb.getSize())
         {
-        dm->enlargeVariableBound(nb.getLevel(), false, j+1);
+        int new_var_bound = resF->isExtensibleLevel(nb.getLevel())? -(j+1): (j+1);
+        dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
         int oldSize = nb.getSize();
         nb.resize(j+1);
         while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
@@ -470,7 +471,8 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
             {
             rel->setConfirmedStates(rLevel,j); // confirm and enlarge
             if (j >= nb->getSize()) {
-              dm->enlargeVariableBound(nb->getLevel(), false, j+1);
+              int new_var_bound = resF->isExtensibleLevel(nb->getLevel())? -(j+1): (j+1);
+              dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);
               int oldSize = nb->getSize();
               nb->resize(j+1);
               while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
