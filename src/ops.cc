@@ -1802,6 +1802,26 @@ MEDDLY::satimpl_opname::implicit_relation::show()
   
 }
 
+void MEDDLY::satimpl_opname::implicit_relation::bindExtensibleVariables() {
+  //
+  // Find the bounds for each extensbile variable
+  //
+  expert_domain* ed = static_cast<expert_domain*>(outsetF->useDomain());
+  
+  for (int k = 1; k <= num_levels; k++) {
+    int bound = 0;
+    int n_confirmed = 0;
+
+    for (int j = 0; j < confirmed_array_size[k]; j++) {
+      if (confirmed[k][j]) { bound = j+1; n_confirmed++; }
+    }
+
+    MEDDLY_DCASSERT(bound > 0);
+    MEDDLY_DCASSERT(n_confirmed == confirm_states[k]);
+    ed->enlargeVariableBound(k, false, bound);
+  }
+}
+
 MEDDLY::dd_edge
 MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTop, forest *mxd)
 {
@@ -1812,7 +1832,7 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
   rel_node_handle* rnh_array = (rel_node_handle*)malloc((nVars+1)*sizeof(rel_node_handle));
   // int top_level = Rnode->getLevel();
   
-  domain* d = outsetF->useDomain();
+  // domain* d = outsetF->useDomain();
   expert_forest* ef = (expert_forest*) mxd;
   
   //Get relation node handles
@@ -2176,6 +2196,11 @@ MEDDLY::specialized_operation::~specialized_operation()
 }
 
 void MEDDLY::specialized_operation::compute(const dd_edge &arg, dd_edge &res)
+{
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::specialized_operation::compute(const dd_edge &arg, bool &res)
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
