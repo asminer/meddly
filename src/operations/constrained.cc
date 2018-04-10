@@ -486,7 +486,6 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
         MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == 0) {
-          MEDDLY_DCASSERT(recev == 0);
           continue;
         }
 
@@ -621,7 +620,6 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
         recFire(A->d(i), B->d(j), Rp->d(jz), n);
 
         if (n == 0) {
-          MEDDLY_DCASSERT(nev == 0);
           continue;
         }
 
