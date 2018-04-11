@@ -5,7 +5,7 @@
 
  This library is free software: you can redistribute it and/or modify
  it under the terms of the GNU Lesser General Public License as published
- by the Free Software Foundation, either version 3 of the License, or
+ by the Free Software Foundation, either version 3 of the License, orf
  (at your option) any later version.
 
  This library is distributed in the hope that it will be useful,
@@ -2029,7 +2029,13 @@ MEDDLY::satimpl_opname::implicit_relation::arrayForLevel(int level) const
 
 // ****************************************************************************
 
-inline MEDDLY::dd_edge
+inline MEDDLY::expert_forest*
+MEDDLY::satimpl_opname::implicit_relation::getRelForest() const
+{
+  return mxdF;
+}
+
+inline MEDDLY::node_handle
 MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
 {
   
@@ -2053,14 +2059,23 @@ MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
   forest* mxd = d->createForest(true,forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
  
-  for(int i = 0; i<nEvents;i++)
+  dd_edge* monolithic_nsf = new dd_edge(mxd);
+  for(int i=0;i<nEvents;i++)
+    {
+      (*monolithic_nsf) += buildEventMxd(event_tops[i],mxd);
+    }
+  
+  node_handle monolithic_nsf_handle = monolithic_nsf->getNode();
+  mxdF = (expert_forest*)mxd;
+  
+  /*for(int i = 0; i<nEvents;i++)
    {
    dd_edge nsf_ev(mxd);
    nsf_ev = buildEventMxd(event_tops[i],mxd);
    apply(UNION, nsf, nsf_ev, nsf);
-   }
+   }*/
   
-  return nsf;
+  return monolithic_nsf_handle;
   }
 
 

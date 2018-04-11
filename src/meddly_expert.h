@@ -3486,16 +3486,17 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         void show();
 
         /// Build mxd forest
-        dd_edge buildMxdForest();
+        MEDDLY::node_handle buildMxdForest();
 
         /// Build each event_mxd
-        dd_edge buildEventMxd(rel_node_handle event_top, forest *mxd);
+        dd_edge& buildEventMxd(rel_node_handle event_top, forest *mxd);
 
-        /// Build disabling 
+        /// Get relation forest  
+        expert_forest* getRelForest() const;
 
 
       private:
-        dd_edge mxd;
+        expert_forest* mxdF;
 
     };  // class implicit_relation
 

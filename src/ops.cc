@@ -1822,7 +1822,7 @@ void MEDDLY::satimpl_opname::implicit_relation::bindExtensibleVariables() {
   }
 }
 
-MEDDLY::dd_edge
+MEDDLY::dd_edge&
 MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTop, forest *mxd)
 {
   //mxd is built on a domain obtained from result of saturation
