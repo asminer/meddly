@@ -3489,7 +3489,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         MEDDLY::node_handle buildMxdForest();
 
         /// Build each event_mxd
-        dd_edge& buildEventMxd(rel_node_handle event_top, forest *mxd);
+        dd_edge buildEventMxd(rel_node_handle event_top, forest *mxd);
 
         /// Get relation forest  
         expert_forest* getRelForest() const;

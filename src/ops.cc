@@ -1822,7 +1822,7 @@ void MEDDLY::satimpl_opname::implicit_relation::bindExtensibleVariables() {
   }
 }
 
-MEDDLY::dd_edge&
+MEDDLY::dd_edge
 MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTop, forest *mxd)
 {
   //mxd is built on a domain obtained from result of saturation
@@ -1851,7 +1851,7 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
         }
     }
   
-  node_handle below = -1; // Terminal true node 
+  node_handle below = ef->handleForValue(1); // Terminal true node 
   
   for (int i=1; i<=nVars; i++)
     {
@@ -1871,17 +1871,16 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
                    //Create primed node for each valid index of the unprimed node
                   unpacked_node* P_var = unpacked_node::newSparse(ef, -i, 1);
                   P_var->i_ref(0) = new_j;
-                  P_var->d_ref(0) = below; // primed node for new_j index points to terminal or unprime node
-                  node_handle result = ef->createReducedNode(-1, P_var);
-                  UP_var->d_ref(j) = result; // unprimed node for j index points to primed node for new_j
+                  P_var->d_ref(0) = ef->linkNode(below); // primed node for new_j index points to terminal or unprime node
+                  UP_var->d_ref(j) = ef->createReducedNode(j, P_var);
                 }
               else
-                UP_var->d_ref(j) = 0; // unprimed node for j index points to false
+                UP_var->d_ref(j) = ef->handleForValue(0); // unprimed node for j index points to false
               
               }
           
-              below = ef->createReducedNode(-1, UP_var);
-              
+              ef->unlinkNode(below);
+              below =ef->createReducedNode(-1, UP_var);
           }
     }
     
