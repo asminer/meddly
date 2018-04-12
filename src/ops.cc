@@ -1859,12 +1859,12 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
           {
             Rnode = nodeExists(rnh_array[i]);
             //Create a new unprimed node for variable i
+            MEDDLY_DCASSERT(outsetF->getVariableSize(i)>=Rnode->getPieceSize());
             unpacked_node* UP_var = unpacked_node::newFull(ef, i, Rnode->getPieceSize());
-        
+          
             for (int j=0; j<Rnode->getPieceSize(); j++) {
-              
-             
-              long new_j = Rnode->getTokenUpdate()[j];
+          
+              long new_j = confirmed[i][Rnode->getTokenUpdate()[j]]? Rnode->getTokenUpdate()[j] : -2;
               
               if(new_j>=0) 
                 {
@@ -1876,11 +1876,10 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
                 }
               else
                 UP_var->d_ref(j) = ef->handleForValue(0); // unprimed node for j index points to false
-              
               }
           
               ef->unlinkNode(below);
-              below =ef->createReducedNode(-1, UP_var);
+              below = ef->createReducedNode(-1, UP_var);
           }
     }
     
