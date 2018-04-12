@@ -34,11 +34,6 @@ MEDDLY::common_constrained::common_constrained(const constrained_opname* code,
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
   : specialized_operation(code, kl, al)
 {
-  MEDDLY_DCASSERT(cons->isEVPlus());
-  MEDDLY_DCASSERT(arg->isEVPlus());
-  MEDDLY_DCASSERT(trans->isMultiTerminal() && trans->isForRelations());
-  MEDDLY_DCASSERT(res->isEVPlus());
-
   consF = cons;
   argF = arg;
   transF = trans;
@@ -437,7 +432,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
     : unpacked_node::newFromNode(transF, mxd, false);
 
   unpacked_node* A = isLevelAbove(nb.getLevel(), consF->getNodeLevel(a))
-    ? unpacked_node::newRedundant(consF, nb.getLevel(), 0L, a, true)
+    ? unpacked_node::newRedundant(consF, nb.getLevel(), a, true)
     : unpacked_node::newFromNode(consF, a, true);
 
   // indices to explore
@@ -565,10 +560,10 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
 
   // Initialize evmdd reader
   unpacked_node* A = isLevelAbove(level, aLevel)
-    ? unpacked_node::newRedundant(consF, level, 0L, a, true)
+    ? unpacked_node::newRedundant(consF, level, a, true)
     : unpacked_node::newFromNode(consF, a, true);
   unpacked_node* B = isLevelAbove(level, bLevel)
-    ? unpacked_node::newRedundant(argF, level, 0L, b, true)
+    ? unpacked_node::newRedundant(argF, level, b, true)
     : unpacked_node::newFromNode(argF, b, true);
 
   unpacked_node* T = unpacked_node::newFull(resF, level, size);
@@ -799,10 +794,10 @@ void MEDDLY::constrained_saturation_mt::saturate(node_handle a, node_handle b, i
   const int bLevel = argF->getNodeLevel(b);
 
   unpacked_node* A = (aLevel < level)
-    ? unpacked_node::newRedundant(consF, level, 0L, a, true)
+    ? unpacked_node::newRedundant(consF, level, a, true)
     : unpacked_node::newFromNode(consF, a, true);
   unpacked_node* B = (bLevel < level)
-    ? unpacked_node::newRedundant(argF, level, 0L, b, true)
+    ? unpacked_node::newRedundant(argF, level, b, true)
     : unpacked_node::newFromNode(argF, b, true);
 
   // Do computation
