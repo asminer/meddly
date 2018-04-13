@@ -1851,9 +1851,9 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
         }
     }
   
-  node_handle below = ef->handleForValue(1); // Terminal true node 
+  node_handle below = ef->handleForValue(true); // Terminal true node 
   
-  for (int i=1; i<=nVars; i++)
+  for (int i=1; (i<=nVars)&&(below!=0); i++)
     {
         if(rnh_array[i]!=-1)
           {
@@ -1875,7 +1875,7 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
                   UP_var->d_ref(j) = ef->createReducedNode(j, P_var);
                 }
               else
-                UP_var->d_ref(j) = ef->handleForValue(0); // unprimed node for j index points to false
+                UP_var->d_ref(j) = ef->handleForValue(false); // unprimed node for j index points to false
               }
           
               ef->unlinkNode(below);
