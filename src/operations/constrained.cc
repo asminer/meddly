@@ -708,12 +708,8 @@ bool MEDDLY::constrained_saturation_mt::checkForestCompatibility() const
 
 bool MEDDLY::constrained_saturation_mt::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-  if (a == -1 && b == -1) {
-    c = -1;
-    return true;
-  }
-  if (a == 0 || b == 0) {
-    c = 0;
+  if (argF->isTerminalNode(b)) {
+    c = b;
     return true;
   }
   return false;
