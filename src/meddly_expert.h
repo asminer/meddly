@@ -3369,6 +3369,13 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         /// Returns the MDD forest that stores the resultant set of states
         expert_forest* getOutForest() const;
 
+        /// Returns true if a deadlock state is reachable
+        bool hasDeadlock(const dd_edge& initial_states);
+
+        /// Builds a extensible decision diagram in forest \a f representing the
+        /// potential deadlock states for this implicit relation
+        dd_edge buildPotentialDeadlockStates(forest* f);
+
 
         /** Register a relation node.
 
@@ -3378,8 +3385,8 @@ class MEDDLY::satimpl_opname: public specialized_opname {
             identifier, and return that identifier.
 
             @param  is_event_top    If true, this is also the top
-            node of some event; register it
-            in the list of events.
+                                    node of some event; register it
+                                    in the list of events.
 
             @param  n               The relation node to register.
 

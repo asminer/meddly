@@ -21,6 +21,7 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "../forests/mt.h"
 #include "apply_base.h"
 
 // #define TRACE_ALL_OPS
@@ -278,6 +279,17 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
   unpacked_node::recycle(B);
   unpacked_node::recycle(A);
 
+  if (resF->isQuasiReduced()) {
+    int nextLevel = resultLevel - 1;
+    for (int i = 0; i < C->getNNZs(); i++) {
+      if (resF->getNodeLevel(C->d(i)) < nextLevel) {
+        node_handle temp = ((mt_forest*)resF)->makeNodeAtLevel(nextLevel, C->d(i));
+        resF->unlinkNode(C->d(i));
+        C->d_ref(i) = temp;
+      }
+    }
+  }
+
   // reduce and save result
   result = resF->createReducedNode(-1, C);
   saveResult(Key, a, b, result);
@@ -375,6 +387,17 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
   // cleanup
   unpacked_node::recycle(B);
   unpacked_node::recycle(A);
+
+  if (resF->isQuasiReduced()) {
+    int nextLevel = resultLevel - 1;
+    for (int i = 0; i < C->getSize(); i++) {
+      if (resF->getNodeLevel(C->d(i)) < nextLevel) {
+        node_handle temp = ((mt_forest*)resF)->makeNodeAtLevel(nextLevel, C->d(i));
+        resF->unlinkNode(C->d(i));
+        C->d_ref(i) = temp;
+      }
+    }
+  }
 
   // reduce and save result
   result = resF->createReducedNode(-1, C);

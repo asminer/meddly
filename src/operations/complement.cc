@@ -124,7 +124,15 @@ void MEDDLY::compl_mdd::showEntry(output &strm, const node_handle* data) const
 
 void MEDDLY::compl_mdd::computeDDEdge(const dd_edge& a, dd_edge& b) 
 {
-  int result = compute_r(a.getNode());
+  node_handle result = compute_r(a.getNode());
+  if (resF->isQuasiReduced()) {
+    const int num_levels = resF->getDomain()->getNumVariables();
+    if (resF->getNodeLevel(result) < num_levels) {
+    	node_handle temp = ((mt_forest*)resF)->makeNodeAtLevel(num_levels, result);
+      resF->unlinkNode(result);
+      result = temp;
+    }
+  }
   b.set(result);
 }
 

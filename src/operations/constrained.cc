@@ -389,7 +389,11 @@ void MEDDLY::constrained_bckwd_dfs_mt::compute(const dd_edge& a, const dd_edge& 
   MEDDLY_DCASSERT(res.getForest() == resF);
 
   node_handle c = 0;
-  compute(a.getNode(), b.getNode(), r.getNode(), c);
+  if (a.getNode() == 0) {
+    c = smart_cast<expert_forest*>(resF)->linkNode(b.getNode());
+  } else {
+    compute(a.getNode(), b.getNode(), r.getNode(), c);
+  }
   res.set(c);
 }
 
@@ -469,7 +473,6 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
     for (int iz = 0; iz < Ru->getNNZs(); iz++) {
       const int i = Ru->i(iz);
       if (A->d(i) == 0) {
-        MEDDLY_DCASSERT(A->ei(i) == 0);
         continue;
       }
 
@@ -596,7 +599,6 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
     for (int iz = 0; iz < Ru->getNNZs(); iz++) {
       const int i = Ru->i(iz);
       if (A->d(i) == 0) {
-        MEDDLY_DCASSERT(A->ei(i) == 0);
         continue;
       }
 
