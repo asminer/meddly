@@ -92,6 +92,12 @@ void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &
   dd_edge &c)
 {
   node_handle cnode = compute(a.getNode(), b.getNode());
+  const int num_levels = resF->getDomain()->getNumVariables();
+  if (resF->isQuasiReduced() && resF->getNodeLevel(cnode) < num_levels) {
+    node_handle temp = ((mt_forest*)resF)->makeNodeAtLevel(num_levels, cnode);
+    resF->unlinkNode(cnode);
+    cnode = temp;
+  }
   c.set(cnode);
 #ifdef TRACE_ALL_OPS
   printf("completed %s(%d, %d) = %d\n", 
