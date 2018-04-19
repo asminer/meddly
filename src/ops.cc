@@ -1468,7 +1468,7 @@ MEDDLY::satimpl_opname::relation_node::~relation_node()
 {
 }
 
-long MEDDLY::satimpl_opname::relation_node::valueOf(long i)
+int MEDDLY::satimpl_opname::relation_node::valueOf(long i)
 {
   //to be defined for the example you use & comment this definition
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);

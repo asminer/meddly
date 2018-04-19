@@ -3305,7 +3305,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         /** If the variable at this level has value i,
             what should the new value be?
         */
-        virtual long valueOf(long i);
+        virtual int valueOf(long i);
       
         /** Returns the value of variable at this level for index i,
          */
