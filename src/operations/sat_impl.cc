@@ -31,6 +31,9 @@ namespace MEDDLY {
   class forwd_impl_dfs_by_events_mt;
 };
 
+// #define DEBUG_INITIAL
+// #define DEBUG_HAS_DEADLOCK
+
 // ******************************************************************
 // *                                                                *
 // *               saturation_impl_by_events_opname  class               *
@@ -641,7 +644,9 @@ bool MEDDLY::common_impl_dfs_by_events_mt
   
 #ifdef DEBUG_INITIAL
   printf("Calling hasDeadlock for states:\n");
-  a.show(stdout, 2);
+  ostream_output s(std::cout);
+  a.show(s, 2);
+  std::cout.flush();
 #endif
   
   // Execute saturation operation
@@ -677,10 +682,12 @@ void MEDDLY::common_impl_dfs_by_events_mt
    mxdDifference = getOperation(DIFFERENCE, arg2F, arg2F, arg2F);
    MEDDLY_DCASSERT(mxdDifference);*/
   
-  #ifdef DEBUG_INITIAL
+#ifdef DEBUG_INITIAL
   printf("Calling saturate for states:\n");
-  a.show(stdout, 2);
-  #endif
+  ostream_output s(std::cout);
+  a.show(s, 2);
+  std::cout.flush();
+#endif
 #ifdef DEBUG_NSF
   printf("Calling saturate for NSF:\n");
   // b.show(stdout, 2);
@@ -809,6 +816,12 @@ MEDDLY::saturation_impl_by_events_op::~saturation_impl_by_events_op()
 MEDDLY::node_handle MEDDLY::saturation_impl_by_events_op::saturate(MEDDLY::node_handle mdd)
 {
   // Saturate
+#ifdef DEBUG_INITIAL
+  printf("Calling saturate for states:\n");
+  ostream_output s(std::cout);
+  argF->showNodeGraph(s, &mdd, 1);
+  std::cout.flush();
+#endif
   return saturate(mdd, argF->getNumVariables());
 }
 
@@ -1452,7 +1465,15 @@ struct int_pair {
   int_pair(int k, int v) : level(k), value(v) {}
 };
 
-void createEdge(MEDDLY::forest* mdd, int var, int value, MEDDLY::dd_edge& result) {
+// TODO: change this to call the implicit relation's indexOf() that will map tokens
+// to the respective index.
+// We need this to be able to represent the deadlock conditions correctly.
+void createEdge(
+  const MEDDLY::satimpl_opname::implicit_relation* rel,
+  MEDDLY::forest* mdd,
+  int var,
+  int value,
+  MEDDLY::dd_edge& result) {
   // one minterm per index
   const int nVars = mdd->useDomain()->getNumVariables();
   int** minterms = new int*[value];
@@ -1461,7 +1482,10 @@ void createEdge(MEDDLY::forest* mdd, int var, int value, MEDDLY::dd_edge& result
     for (int j = 0; j <= nVars; j++) {
       minterms[i][j] = MEDDLY::DONT_CARE;
     }
-    minterms[i][var] = i;
+    // minterms[i][var] = i;
+    const long index = rel->getIndexOf(var, i);
+    MEDDLY_DCASSERT(index >= 0);
+    minterms[i][var] = index;
   }
   mdd->createEdge(minterms, value, result);
   for (int i = 0; i < value; i++) delete [] minterms[i];
@@ -1569,7 +1593,7 @@ MEDDLY::satimpl_opname::implicit_relation::buildPotentialDeadlockStates(MEDDLY::
     dd_edge i_union(mdd);
     for (auto j : i) {
       dd_edge expr(mdd);
-      if (j.value) createEdge(mdd, j.level, j.value, expr);
+      if (j.value) createEdge(this, mdd, j.level, j.value, expr);
       i_union += expr;
     }
     disabling_ddedges.push_back(i_union);
@@ -1595,8 +1619,13 @@ MEDDLY::satimpl_opname::implicit_relation::hasDeadlock(const dd_edge& initial_st
   forwd_impl_dfs_by_events_mt* op = dynamic_cast<forwd_impl_dfs_by_events_mt*>(satop);
   MEDDLY_DCASSERT(op);
   dd_edge constraint = buildPotentialDeadlockStates(initial_states.getForest());
-  // std::cout << "Built potential deadlock states\n";
-  // std::cout.flush();
+#ifdef DEBUG_HAS_DEADLOCK
+  std::cout << "Built potential deadlock states\n";
+  std::cout << "Disabling dd_edge:\n";
+  ostream_output s(std::cout);
+  constraint.show(s, 2);
+  std::cout.flush();
+#endif
   return op->hasDeadlock(initial_states, constraint);
 }
 

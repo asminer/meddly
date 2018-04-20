@@ -2105,17 +2105,17 @@ MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
 }
 
 inline long
-MEDDLY::satimpl_opname::implicit_relation::getIndexOf(long level,int token)
+MEDDLY::satimpl_opname::implicit_relation::getIndexOf(long level,int token) const
 {
-  
-  return indexOf[std::pair<long,int>(level,token)];
+  auto search = indexOf.find(std::pair<long,int>(level,token));
+  return search == indexOf.end() ? -1L : search->second;
 }
 
 inline int
-MEDDLY::satimpl_opname::implicit_relation::getValueOf(long level,long i)
+MEDDLY::satimpl_opname::implicit_relation::getValueOf(long level,long i) const
 {
-  
-  return valueOf[std::pair<long,long>(level,i)];
+  auto search = valueOf.find(std::pair<long,long>(level,i));
+  return search == valueOf.end() ? -1L : search->second;
 }
 
 // ******************************************************************

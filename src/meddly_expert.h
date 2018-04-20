@@ -3510,8 +3510,8 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       std::map<std::pair<int,long>,int> valueOf;
       std::map<std::pair<int,int>,long> indexOf;
       
-      long getIndexOf(long level,int token);
-      int getValueOf(long level,long i);
+      long getIndexOf(long level,int token) const;
+      int getValueOf(long level,long i) const;
       
 
     };  // class implicit_relation
