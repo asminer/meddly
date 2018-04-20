@@ -40,6 +40,7 @@
 #include <unordered_map>
 #include <vector>
 #include <cstdint>
+#include <map>
 
 namespace MEDDLY {
 
@@ -3305,10 +3306,6 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         /** If the variable at this level has value i,
             what should the new value be?
         */
-        virtual int valueOf(long i);
-      
-        /** Returns the value of variable at this level for index i,
-         */
         virtual long nextOf(long i);
         /** What should be the enabling condition of the variable
             Returns the lower bound
@@ -3508,6 +3505,14 @@ class MEDDLY::satimpl_opname: public specialized_opname {
 
       private:
         expert_forest* mxdF;
+      
+      public:
+      std::map<std::pair<int,long>,int> valueOf;
+      std::map<std::pair<int,int>,long> indexOf;
+      
+      long getIndexOf(long level,int token);
+      int getValueOf(long level,long i);
+      
 
     };  // class implicit_relation
 

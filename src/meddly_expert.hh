@@ -2104,6 +2104,20 @@ MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
   return (i < insetF->getLevelSize(level) && confirmed[level][i]);
 }
 
+inline long
+MEDDLY::satimpl_opname::implicit_relation::getIndexOf(long level,int token)
+{
+  
+  return indexOf[std::pair<long,int>(level,token)];
+}
+
+inline int
+MEDDLY::satimpl_opname::implicit_relation::getValueOf(long level,long i)
+{
+  
+  return valueOf[std::pair<long,long>(level,i)];
+}
+
 // ******************************************************************
 // *                                                                *
 // *                 inlined  compute_table methods                 *
