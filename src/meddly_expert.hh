@@ -2104,6 +2104,22 @@ MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
   return (i < insetF->getLevelSize(level) && confirmed[level][i]);
 }
 
+
+inline void
+MEDDLY::satimpl_opname::implicit_relation::setIndexOf(long level,int token,long i){
+std::pair<long,int> key = std::pair<long,int>(level,token);
+indexOf.insert(std::pair<std::pair<long,int>,long>(key,i));
+  
+}
+inline void 
+MEDDLY::satimpl_opname::implicit_relation::setValueOf(long level,long i, int token){
+
+std::pair<long,long> key = std::pair<long,long>(level,i);
+valueOf.insert(std::pair<std::pair<long,long>,int>(key,token));
+  
+}
+
+
 inline long
 MEDDLY::satimpl_opname::implicit_relation::getIndexOf(long level,int token) const
 {

@@ -351,7 +351,12 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
   for (int i = 0; i < nb.getSize(); i++) {
-    if (nb.d(i)) queue->add(i);
+    if (nb.d(i)) {
+      queue->add(i);
+       for (int ei = 0; ei < nEventsAtThisLevel; ei++)
+         if(rel->getValueOf(level,i)==-1)
+           Ru[ei]->registerIndex(i);
+      }
   }
   
   // explore indexes
@@ -485,7 +490,11 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     // Need to process this level in the MXD.
     MEDDLY_DCASSERT(mxdLevel >= mddLevel);
     // clear out result (important!)
-    for (int i=0; i<rSize; i++) nb->d_ref(i) = 0;
+    for (int i=0; i<rSize; i++) {
+              nb->d_ref(i) = 0;
+      if(rel->getValueOf(mxdLevel,i)==-1)
+              relNode->registerIndex(i);
+      }
     
     // Initialize mxd readers, note we might skip the unprimed level
     
@@ -1177,7 +1186,12 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
   for (int i = 0; i < nb.getSize(); i++) {
-    if (nb.d(i)) queue->add(i);
+    if (nb.d(i)) {
+      queue->add(i);
+      for (int ei = 0; ei < nEventsAtThisLevel; ei++)
+        if(rel->getValueOf(level,i)==-1)
+          Ru[ei]->registerIndex(i);
+      }
   }
   
   // explore indexes
@@ -1359,7 +1373,11 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     // Need to process this level in the MXD.
     MEDDLY_DCASSERT(mxdLevel >= mddLevel);
     // clear out result (important!)
-    for (int i=0; i<rSize; i++) nb->d_ref(i) = 0;
+    for (int i=0; i<rSize; i++) {
+      nb->d_ref(i) = 0;
+      if(rel->getValueOf(mxdLevel,i)==-1)
+         relNode->registerIndex(i);
+      }
     
     // Initialize mxd readers, note we might skip the unprimed level
     
