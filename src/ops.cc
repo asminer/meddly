@@ -1468,19 +1468,8 @@ MEDDLY::satimpl_opname::relation_node::~relation_node()
 {
 }
 
-void MEDDLY::satimpl_opname::relation_node::registerIndex(long i)
-{
-  //to be defined for the example you use & comment this definition
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
 
 long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
-{
-  //to be defined for the example you use & comment this definition
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-long MEDDLY::satimpl_opname::relation_node::enableCondition()
 {
   //to be defined for the example you use & comment this definition
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);

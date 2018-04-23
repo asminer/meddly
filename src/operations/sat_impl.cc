@@ -353,10 +353,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   for (int i = 0; i < nb.getSize(); i++) {
     if (nb.d(i)) {
       queue->add(i);
-       for (int ei = 0; ei < nEventsAtThisLevel; ei++)
-         if(rel->getValueOf(level,i)==-1)
-           Ru[ei]->registerIndex(i);
-      }
+    }
   }
   
   // explore indexes
@@ -491,10 +488,8 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     MEDDLY_DCASSERT(mxdLevel >= mddLevel);
     // clear out result (important!)
     for (int i=0; i<rSize; i++) {
-              nb->d_ref(i) = 0;
-      if(rel->getValueOf(mxdLevel,i)==-1)
-              relNode->registerIndex(i);
-      }
+      nb->d_ref(i) = 0;
+    }
     
     // Initialize mxd readers, note we might skip the unprimed level
     
@@ -1188,10 +1183,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
   for (int i = 0; i < nb.getSize(); i++) {
     if (nb.d(i)) {
       queue->add(i);
-      for (int ei = 0; ei < nEventsAtThisLevel; ei++)
-        if(rel->getValueOf(level,i)==-1)
-          Ru[ei]->registerIndex(i);
-      }
+    }
   }
   
   // explore indexes
@@ -1375,9 +1367,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     // clear out result (important!)
     for (int i=0; i<rSize; i++) {
       nb->d_ref(i) = 0;
-      if(rel->getValueOf(mxdLevel,i)==-1)
-         relNode->registerIndex(i);
-      }
+    }
     
     // Initialize mxd readers, note we might skip the unprimed level
     
@@ -1500,10 +1490,13 @@ void createEdge(
     for (int j = 0; j <= nVars; j++) {
       minterms[i][j] = MEDDLY::DONT_CARE;
     }
-    // minterms[i][var] = i;
+#if 0
     const long index = rel->getIndexOf(var, i);
     MEDDLY_DCASSERT(index >= 0);
     minterms[i][var] = index;
+#else
+    minterms[i][var] = i;
+#endif
   }
   mdd->createEdge(minterms, value, result);
   for (int i = 0; i < value; i++) delete [] minterms[i];
@@ -1545,6 +1538,10 @@ void buildPotentialDeadlockStates(MEDDLY::forest* mdd,
 
 MEDDLY::dd_edge
 MEDDLY::satimpl_opname::implicit_relation::buildPotentialDeadlockStates(MEDDLY::forest* mdd) {
+#if 1
+  dd_edge result(mdd);
+  return result;
+#else
   using namespace MEDDLY;
   MEDDLY_DCASSERT(!mdd->isForRelations());
 
@@ -1626,6 +1623,7 @@ MEDDLY::satimpl_opname::implicit_relation::buildPotentialDeadlockStates(MEDDLY::
     result *= i;
   }
   return result;
+#endif
 }
 
 bool

@@ -3303,20 +3303,10 @@ class MEDDLY::satimpl_opname: public specialized_opname {
 
         // the following must be provided in derived classes.
 
-        /** Registers the index i of the variable
-         */
-        virtual void registerIndex(long i);
-      
-      
         /** If the variable at this level has value i,
             what should the new value be?
         */
         virtual long nextOf(long i);
-        /** What should be the enabling condition of the variable
-            Returns the lower bound
-        */
-        virtual long enableCondition();
-
 
         /** Determine if this node is equal to another one.
         */
@@ -3511,17 +3501,6 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       private:
         expert_forest* mxdF;
       
-      private:
-      std::map<std::pair<int,long>,int> valueOf;
-      std::map<std::pair<int,int>,long> indexOf;
-      
-      public:
-      void setIndexOf(long level,int token,long i);
-      void setValueOf(long level,long i, int token);
-      
-      long getIndexOf(long level,int token) const;
-      int getValueOf(long level,long i) const;      
-
     };  // class implicit_relation
 
 

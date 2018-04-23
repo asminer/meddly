@@ -2105,35 +2105,6 @@ MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
 }
 
 
-inline void
-MEDDLY::satimpl_opname::implicit_relation::setIndexOf(long level,int token,long i){
-std::pair<long,int> key = std::pair<long,int>(level,token);
-indexOf.insert(std::pair<std::pair<long,int>,long>(key,i));
-  
-}
-inline void 
-MEDDLY::satimpl_opname::implicit_relation::setValueOf(long level,long i, int token){
-
-std::pair<long,long> key = std::pair<long,long>(level,i);
-valueOf.insert(std::pair<std::pair<long,long>,int>(key,token));
-  
-}
-
-
-inline long
-MEDDLY::satimpl_opname::implicit_relation::getIndexOf(long level,int token) const
-{
-  auto search = indexOf.find(std::pair<long,int>(level,token));
-  return search == indexOf.end() ? -1L : search->second;
-}
-
-inline int
-MEDDLY::satimpl_opname::implicit_relation::getValueOf(long level,long i) const
-{
-  auto search = valueOf.find(std::pair<long,long>(level,i));
-  return search == valueOf.end() ? -1L : search->second;
-}
-
 // ******************************************************************
 // *                                                                *
 // *                 inlined  compute_table methods                 *
