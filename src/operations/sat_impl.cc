@@ -32,7 +32,7 @@ namespace MEDDLY {
 };
 
 // #define DEBUG_INITIAL
-// #define DEBUG_HAS_DEADLOCK
+// #define DEBUG_IS_REACHABLE
 
 // ******************************************************************
 // *                                                                *
@@ -1020,6 +1020,15 @@ bool MEDDLY::saturation_impl_by_events_op::isReachable(MEDDLY::node_handle mdd, 
   }
   intersection_cache.clear();
 
+#ifdef DEBUG_IS_REACHABLE
+  if (false == result) {
+    printf("isReachable return false, reachable states:\n");
+    ostream_output s(std::cout);
+    argF->showNodeGraph(s, &saturation_result, 1);
+    std::cout.flush();
+  }
+#endif
+
   if (saturation_result) argF->unlinkNode(saturation_result);
 
   return result;
@@ -1473,7 +1482,7 @@ MEDDLY::satimpl_opname::implicit_relation::isReachable(const dd_edge& initial_st
   MEDDLY_DCASSERT(satop);
   forwd_impl_dfs_by_events_mt* op = dynamic_cast<forwd_impl_dfs_by_events_mt*>(satop);
   MEDDLY_DCASSERT(op);
-#ifdef DEBUG_HAS_DEADLOCK
+#ifdef DEBUG_IS_REACHABLE
   std::cout << "[In " << __func__ << "] constraint dd_edge:\n";
   ostream_output s(std::cout);
   constraint.show(s, 2);

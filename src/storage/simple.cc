@@ -834,7 +834,7 @@ void MEDDLY::simple_separated
       fflush(stdout);
     }
 #else
-    MEDDLY_DCASSERT(areDuplicates(addr, nr));
+    MEDDLY_DCASSERT(!nr.isTrim() || areDuplicates(addr, nr));
 #endif
   }
 #endif

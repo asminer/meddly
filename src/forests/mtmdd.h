@@ -172,6 +172,7 @@ namespace MEDDLY {
           for (int v = 0; v<lastV; v++) {
         	  nb->d_ref(v)=F->linkNode(dontcares);
           }
+          if (F->isExtensibleLevel(k)) nb->markAsExtensible();
           node_handle built=F->createReducedNode(-1, nb);
           F->unlinkNode(dontcares);
           dontcares=built;
@@ -244,6 +245,15 @@ namespace MEDDLY {
 			        v++;
 			      }
 		      }
+
+          if (F->isExtensibleLevel(k)) {
+            nb->resize(lastV+1);
+            nb->i_ref(z)=v;
+            nb->d_ref(z)=F->linkNode(zero);
+            z++;
+            v++;
+            nb->markAsExtensible();
+          }
 
 		      F->unlinkNode(zero);
 		    }
@@ -320,10 +330,12 @@ namespace MEDDLY {
               for (int v=1; v<sz; v++) {
                 nb->d_ref(v) = F->linkNode(bottom);
               }
+              if (F->isExtensibleLevel(i)) nb->markAsExtensible();
               bottom = F->createReducedNode(-1, nb);
             } else {
               if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
                 int sz = F->getLevelSize(i);
+                if (F->isExtensibleLevel(i) && (sz == vlist[i]+1)) sz++;
                 unpacked_node* nb = unpacked_node::newFull(F, i, sz);
                 node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
                 // add opaque zero nodes
@@ -331,6 +343,7 @@ namespace MEDDLY {
                   nb->d_ref(v)=(v==vlist[i] ? bottom : F->linkNode(zero));
                 }
                 F->unlinkNode(zero);
+                if (F->isExtensibleLevel(i)) nb->markAsExtensible();
                 bottom=F->createReducedNode(-1, nb);
               }
               else{
