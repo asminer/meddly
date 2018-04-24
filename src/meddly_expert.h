@@ -3365,13 +3365,10 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         /// Returns the MDD forest that stores the resultant set of states
         expert_forest* getOutForest() const;
 
-        /// Returns true if a deadlock state is reachable
-        bool hasDeadlock(const dd_edge& initial_states);
-
-        /// Builds a extensible decision diagram in forest \a f representing the
-        /// potential deadlock states for this implicit relation
-        dd_edge buildPotentialDeadlockStates(forest* f);
-
+        /// Returns true iff a state in \a constraint is reachable
+        /// from the states in \a initial_states
+        /// Note: \a constraint can be an XDD
+        bool isReachable(const dd_edge& initial_states, const dd_edge& constraint);
 
         /** Register a relation node.
 

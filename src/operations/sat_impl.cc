@@ -80,11 +80,11 @@ public:
   node_handle saturate(node_handle mdd);
   node_handle saturate(node_handle mdd, int level);
 
-  // for deadlock detection
-  bool hasDeadlock(
+  // for reachable state in constraint detection
+  bool isReachable(
     node_handle mdd,
     node_handle constraint);
-  bool hasDeadlock(
+  bool isReachable(
     node_handle mdd,
     int k,
     node_handle constraint,
@@ -148,9 +148,9 @@ public:
   virtual void discardEntry(const node_handle* entryData);
   virtual void showEntry(output &strm, const node_handle* entryData) const;
   virtual void compute(const dd_edge& a, dd_edge &c);
-  virtual bool hasDeadlock(const dd_edge& a, const dd_edge& constraint);
+  virtual bool isReachable(const dd_edge& a, const dd_edge& constraint);
   virtual void saturateHelper(unpacked_node& mdd) = 0;
-  // for detecting deadlocks
+  // for detecting reachable state in constraint
   virtual bool saturateHelper(unpacked_node& mdd, node_handle constraint) = 0;
   
 protected:
@@ -310,7 +310,7 @@ protected:
   virtual void saturateHelper(unpacked_node& mdd);
   node_handle recFire(node_handle mdd, rel_node_handle mxd);
 
-  // for deadlock detection
+  // for reachable state in constraint detection
   bool saturateHelper(
       unpacked_node& nb,
       node_handle constraint);
@@ -638,7 +638,7 @@ void MEDDLY::common_impl_dfs_by_events_mt::showEntry(output &strm,
 }
 
 bool MEDDLY::common_impl_dfs_by_events_mt
-::hasDeadlock(const dd_edge &a, const dd_edge& constraint)
+::isReachable(const dd_edge &a, const dd_edge& constraint)
 {
   // Initialize operations
   if (0 == mddUnion) {
@@ -647,7 +647,7 @@ bool MEDDLY::common_impl_dfs_by_events_mt
   }
   
 #ifdef DEBUG_INITIAL
-  printf("Calling hasDeadlock for states:\n");
+  printf("Calling isReachable for states:\n");
   ostream_output s(std::cout);
   a.show(s, 2);
   std::cout.flush();
@@ -655,7 +655,7 @@ bool MEDDLY::common_impl_dfs_by_events_mt
   
   // Execute saturation operation
   saturation_impl_by_events_op* so = new saturation_impl_by_events_op(this, arg1F, resF);
-  bool has_deadlock = so->hasDeadlock(a.getNode(), constraint.getNode());
+  bool is_reachable = so->isReachable(a.getNode(), constraint.getNode());
 
   // Cleanup
   while (freeqs) {
@@ -670,7 +670,7 @@ bool MEDDLY::common_impl_dfs_by_events_mt
   }
 
   delete so;
-  return has_deadlock;
+  return is_reachable;
 }
 
 void MEDDLY::common_impl_dfs_by_events_mt
@@ -1002,13 +1002,16 @@ bool isIntersectionEmpty(
   return result;
 }
 
-bool MEDDLY::saturation_impl_by_events_op::hasDeadlock(MEDDLY::node_handle mdd, MEDDLY::node_handle constraint)
+bool MEDDLY::saturation_impl_by_events_op::isReachable(MEDDLY::node_handle mdd, MEDDLY::node_handle constraint)
 {
-  // Saturate and check for deadlocks
+  // Saturate and check is any element in constraint is reachable
+  MEDDLY::node_handle saturation_result = 0;
   bool result = 
     isIntersectionEmpty(argF, mdd, constraint)
-    ? hasDeadlock(mdd, argF->getNumVariables())   // no deadlock in initial state, continue exploring
-    : true;                                       // found deadlock in initial state
+    ? isReachable(mdd, argF->getNumVariables(), constraint, saturation_result)
+      // nothing reachable in initial state, continue exploring
+    : true;
+      // found reachable state in initial state
 
   // clear cache
   for (auto i : intersection_cache) {
@@ -1017,21 +1020,23 @@ bool MEDDLY::saturation_impl_by_events_op::hasDeadlock(MEDDLY::node_handle mdd, 
   }
   intersection_cache.clear();
 
+  if (saturation_result) argF->unlinkNode(saturation_result);
+
   return result;
 }
 
-// Modified version of saturate() for detecting deadlocks.
-// Recursively calls hasDeadlock (similar to saturate() calling saturate()),
+// Modified version of saturate() for detecting reachability.
+// Recursively calls isReachable (similar to saturate() calling saturate()),
 // and finally saturates the new node before returning result of saturation.
-// Note that if hasDeadlock returns false, then the information returned via
+// Note that if isReachable returns false, then the information returned via
 // saturation_result is the saturated node,
-// and if hasDeadlock returns true, then there are no guarantees for the information
+// and if isReachable returns true, then there are no guarantees for the information
 // returned via saturated_result.
 bool
-MEDDLY::saturation_impl_by_events_op::hasDeadlock(
+MEDDLY::saturation_impl_by_events_op::isReachable(
   node_handle mdd,
   int k,
-  node_handle constraint,         // potential deadlock states
+  node_handle constraint,         // set of states we are looking to reach
   node_handle& saturation_result)
 {
 #ifdef DEBUG_DFS
@@ -1044,10 +1049,10 @@ MEDDLY::saturation_impl_by_events_op::hasDeadlock(
     return !isIntersectionEmpty(argF, saturation_result, constraint);
   }
 
-  // If no deadlock states are discoverable then return false
+  // If no states in constraint are reachable then return false
   if (argF->isTerminalNode(constraint)) {
-    // if constraint is 0, then no deadlocks can be discovered, return false.
-    // if constraint is 1, then there is at least one deadlock, return true.
+    // if constraint is 0, then no state in constraint can be discovered, return false.
+    // if constraint is 1, then there is at least one reachable state in constraint, return true.
     MEDDLY_DCASSERT(!argF->isTerminalNode(mdd));
     if (0 == constraint) {
       saturation_result = saturate(mdd, k);
@@ -1099,8 +1104,8 @@ MEDDLY::saturation_impl_by_events_op::hasDeadlock(
   for (int i=0; i<sz; i++) {
     node_handle temp = 0;
     node_handle cons_i = (i < consDptrs->getSize() ? consDptrs->d(i) : ext_d);
-    if (hasDeadlock(mddDptrs->d(i), k-1, cons_i, temp)) {
-      // found deadlock, cleanup and return true
+    if (isReachable(mddDptrs->d(i), k-1, cons_i, temp)) {
+      // found reachable state in constraint, cleanup and return true
       for (int j = 0; j < i; j++) {
         if (nb->d(j)) { argF->unlinkNode(nb->d(j)); nb->d_ref(j) = 0; }
       }
@@ -1120,7 +1125,7 @@ MEDDLY::saturation_impl_by_events_op::hasDeadlock(
 
   // Reduce nb and save in compute table
   if (parent->saturateHelper(*nb, constraint)) {
-    // found a deadlock
+    // found a reachable state in constraint
     for (int j = 0; j < sz; j++) {
       if (nb->d(j)) { argF->unlinkNode(nb->d(j)); nb->d_ref(j) = 0; }
     }
@@ -1147,7 +1152,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
 {
 
   if (0 == constraint) {
-    // no deadlocks possible
+    // no reachable state in constraint possible
     saturateHelper(nb);
     return false;
   }
@@ -1201,9 +1206,10 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
       const node_handle cons_j = (j < consDptrs->getSize() ? consDptrs->d(j) : cons_ext_d);
       node_handle rec = 0;
       if (recFire(nb.d(i), Ru[ei]->getDown(), cons_j, rec)) {
-        // found deadlock
+        // found reachable state in constraint
         unpacked_node::recycle(consDptrs);
         delete[] Ru;
+        while (!queue->isEmpty()) queue->remove();
         recycle(queue);
         return true;
       }
@@ -1271,7 +1277,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
 {
   
   if (0 == constraint) {
-    // no deadlocks possible
+    // no reachable state in constraint possible
     result = recFire(mdd, mxd);
     return false;
   }
@@ -1348,7 +1354,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
       const node_handle cons_i = (i < consDptrs->getSize() ? consDptrs->d(i) : cons_ext_d);
       node_handle temp = 0;
       if (recFire(A->d(i), mxd, cons_i, temp)) {
-        // found deadlock: abort, cleanup and return true
+        // found reachable state in constraint: abort, cleanup and return true
         for (int j = 0; j < nb->getSize(); j++) {
           if (nb->d(j)) { arg1F->unlinkNode(nb->d(j)); nb->d_ref(j) = 0; }
         }
@@ -1383,7 +1389,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
           node_handle newstates = 0;
           const node_handle cons_j = (j < consDptrs->getSize() ? consDptrs->d(j) : cons_ext_d);
           if (recFire(A->d(i), relNode->getDown(), cons_j, newstates)) {
-            // found deadlock: abort, cleanup and return true
+            // found reachable state in constraint: abort, cleanup and return true
             for (int k = 0; k < nb->getSize(); k++) {
               if (nb->d(k)) { arg1F->unlinkNode(nb->d(k)); nb->d_ref(k) = 0; }
             }
@@ -1431,8 +1437,8 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   unpacked_node::recycle(A);
   unpacked_node::recycle(consDptrs);
   
-  if (saturateHelper(*nb), constraint) {
-    // found deadlock
+  if (saturateHelper(*nb, constraint)) {
+    // found reachable state in constraint
     const int sz = nb->getSize();
     for (int j = 0; j < sz; j++) {
       if (nb->d(j)) { arg1F->unlinkNode(nb->d(j)); nb->d_ref(j) = 0; }
@@ -1458,190 +1464,21 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   return !isIntersectionEmpty(arg1F, result, constraint);
 }
 
-// disabling expressions for transitions:
-// {
-// (k_a:v_a, k_b:v_b, ...), // t1: k_a < v_a | k_b < v_b | ...
-// (k_c:v_c, k_d:v_d, ...), // t2: k_c < v_c | k_d < v_d | ...
-// ...
-// }
-// 
-// potential deadlock states = conjunction of transition disabling expressions
-
-struct int_pair {
-  int level;
-  int value;
-  int_pair(int k, int v) : level(k), value(v) {}
-};
-
-// TODO: change this to call the implicit relation's indexOf() that will map tokens
-// to the respective index.
-// We need this to be able to represent the deadlock conditions correctly.
-void createEdge(
-  const MEDDLY::satimpl_opname::implicit_relation* rel,
-  MEDDLY::forest* mdd,
-  int var,
-  int value,
-  MEDDLY::dd_edge& result) {
-  // one minterm per index
-  const int nVars = mdd->useDomain()->getNumVariables();
-  int** minterms = new int*[value];
-  for (int i = 0; i < value; i++) {
-    minterms[i] = new int[nVars+1];
-    for (int j = 0; j <= nVars; j++) {
-      minterms[i][j] = MEDDLY::DONT_CARE;
-    }
-#if 0
-    const long index = rel->getIndexOf(var, i);
-    MEDDLY_DCASSERT(index >= 0);
-    minterms[i][var] = index;
-#else
-    minterms[i][var] = i;
-#endif
-  }
-  mdd->createEdge(minterms, value, result);
-  for (int i = 0; i < value; i++) delete [] minterms[i];
-  delete [] minterms;
-}
-
-#if 0
-// incorporated into implicit_relation::buildPotentialDeadlockStates
-void buildPotentialDeadlockStates(MEDDLY::forest* mdd,
-    std::vector<std::vector<int_pair>>& disabling_expressions,
-    MEDDLY::dd_edge& result) {
-  using namespace MEDDLY;
-  MEDDLY_DCASSERT(mdd && !mdd->isForRelations());
-
-  if (disabling_expressions.size() == 0) return;
-
-  std::vector<dd_edge> disabling_ddedges;
-
-  for (auto i : disabling_expressions) {
-    dd_edge i_union(mdd);
-    for (auto j : i) {
-      dd_edge expr(mdd);
-      createEdge(mdd, j.level, j.value, expr);
-      i_union += expr;
-    }
-    disabling_ddedges.push_back(i_union);
-  }
-
-  ostream_output s(std::cout);
-  MEDDLY_DCASSERT(disabling_ddedges.size() > 0);
-  result = disabling_ddedges[0];
-  for (auto i : disabling_ddedges) {
-    std::cout << "\nDisabling dd_edge:\n";
-    i.show(s, 2);
-    result *= i;
-  }
-}
-#endif
-
-MEDDLY::dd_edge
-MEDDLY::satimpl_opname::implicit_relation::buildPotentialDeadlockStates(MEDDLY::forest* mdd) {
-#if 1
-  dd_edge result(mdd);
-  return result;
-#else
-  using namespace MEDDLY;
-  MEDDLY_DCASSERT(!mdd->isForRelations());
-
-#if 0
-  // example usage
-
-
-  // building potential deadlock states
-  // disabling expressions per transition:
-  // t1 : k1 < 3 or k2 < 4
-  // t2 : k1 < 2 or k3 < 2
-  // t3 : k2 < 1
-  std::vector<int_pair> t1;
-  t1.emplace_back(1, 3);
-  t1.emplace_back(2, 4);
-  std::vector<int_pair> t2;
-  t2.emplace_back(1, 2);
-  t2.emplace_back(3, 2);
-  std::vector<int_pair> t3;
-  t3.emplace_back(2, 1);
-  disabling_expressions.push_back(t1);
-  disabling_expressions.push_back(t2);
-  disabling_expressions.push_back(t3);
-
-  buildPotentialDeadlockStates(mdd, disabling_expressions, result);
-  std::cout << "\nPotential deadlock states dd_edge:\n";
-  result.show(s, 2);
-#endif
-
-  // for each level, k
-  //    for each event, e, that starts at level k
-  //      traverse relation nodes and build disabling expression for e
-  //      add disabling expression to vector of disabling expressions
-  //    end for
-  //  end for
-  //  call buildPotentialDeadlockStates()
-
-  std::vector<std::vector<int_pair>> disabling_expressions;
-  for (int k = 1; k <= num_levels; k++) {
-    int n_events_at_k = lengthForLevel(k);
-    if (n_events_at_k == 0) continue;
-    rel_node_handle* events_at_k = arrayForLevel(k);
-    for (int ei = 0; ei < n_events_at_k; ei++) {
-      // build disabling expression for this event
-      // printf("Processing event %d of %d at level %d\n", ei, n_events_at_k, k);
-      std::vector<int_pair> t;
-      rel_node_handle current = events_at_k[ei];
-      while (current != 0 && current != 1) {
-        relation_node* event_i = nodeExists(current);
-        MEDDLY_DCASSERT(event_i != NULL);
-        t.emplace_back(event_i->getLevel(), event_i->enableCondition());
-        // printf("\t At level %d\n", event_i->getLevel());
-        current = event_i->getDown();
-      }
-      disabling_expressions.push_back(t);
-    }
-  }
-
-  dd_edge result(mdd);
-  if (disabling_expressions.size() == 0) return result;
-
-  std::vector<dd_edge> disabling_ddedges;
-  for (auto i : disabling_expressions) {
-    dd_edge i_union(mdd);
-    for (auto j : i) {
-      dd_edge expr(mdd);
-      if (j.value) createEdge(this, mdd, j.level, j.value, expr);
-      i_union += expr;
-    }
-    disabling_ddedges.push_back(i_union);
-  }
-
-  ostream_output s(std::cout);
-  MEDDLY_DCASSERT(disabling_ddedges.size() > 0);
-  result = disabling_ddedges[0];
-  for (auto i : disabling_ddedges) {
-    // std::cout << "\nDisabling dd_edge:\n";
-    // i.show(s, 2);
-    result *= i;
-  }
-  return result;
-#endif
-}
 
 bool
-MEDDLY::satimpl_opname::implicit_relation::hasDeadlock(const dd_edge& initial_states)
+MEDDLY::satimpl_opname::implicit_relation::isReachable(const dd_edge& initial_states, const dd_edge& constraint)
 {
   // build implicit saturation operation operation
   specialized_operation* satop = SATURATION_IMPL_FORWARD->buildOperation(this);
   MEDDLY_DCASSERT(satop);
   forwd_impl_dfs_by_events_mt* op = dynamic_cast<forwd_impl_dfs_by_events_mt*>(satop);
   MEDDLY_DCASSERT(op);
-  dd_edge constraint = buildPotentialDeadlockStates(initial_states.getForest());
 #ifdef DEBUG_HAS_DEADLOCK
-  std::cout << "Built potential deadlock states\n";
-  std::cout << "Disabling dd_edge:\n";
+  std::cout << "[In " << __func__ << "] constraint dd_edge:\n";
   ostream_output s(std::cout);
   constraint.show(s, 2);
   std::cout.flush();
 #endif
-  return op->hasDeadlock(initial_states, constraint);
+  return op->isReachable(initial_states, constraint);
 }
 
