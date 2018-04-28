@@ -185,6 +185,9 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handl
     nb->d_ref(z) = computeSkip(A->i(z), A->d(z));
   }
 
+  // Handle extensible edge, if any
+  if (A->isExtensible()) nb->markAsExtensible();
+
   // Cleanup
   unpacked_node::recycle(A);
 
@@ -252,6 +255,9 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
     nb->i_ref(z) = A->i(z);
     nb->d_ref(z) = computeAll(A->i(z), nextk, A->d(z));
   }
+
+  // Handle extensible edge, if any
+  if (A->isExtensible()) nb->markAsExtensible();
 
   // Cleanup
   unpacked_node::recycle(A);

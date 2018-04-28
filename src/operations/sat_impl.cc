@@ -943,6 +943,8 @@ bool operator<(const node_pair& l, const node_pair& r) {
 }
 
 std::map<node_pair, bool> intersection_cache;
+int time_since_gc = 0;
+
 bool isIntersectionEmpty(
     MEDDLY::expert_forest* mddF,
     MEDDLY::node_handle node_A,
@@ -994,10 +996,28 @@ bool isIntersectionEmpty(
   MEDDLY::unpacked_node::recycle(unp_B);
 
   // cache result
-  mddF->linkNode(node_A);
-  mddF->linkNode(node_B);
+  mddF->cacheNode(node_A);
+  mddF->cacheNode(node_B);
   intersection_cache.emplace(std::make_pair(key, result));
   MEDDLY_DCASSERT(result == intersection_cache[key]);
+
+  // garbage collection on intersection cache
+  if (++time_since_gc > 1000000) {
+    std::map<node_pair, bool> temp_intersection_cache;
+    for (auto& i : intersection_cache) {
+      const node_pair& p = i.first;
+      if (!mddF->isActiveNode(p.first) || !mddF->isActiveNode(p.second)) {
+        mddF->uncacheNode(p.first);
+        mddF->uncacheNode(p.second);
+      } else {
+        temp_intersection_cache.emplace_hint(
+            temp_intersection_cache.end(),
+            std::make_pair(p, i.second));
+      }
+    }
+    intersection_cache.swap(temp_intersection_cache);
+    time_since_gc = 0;
+  }
 
   return result;
 }
@@ -1014,7 +1034,7 @@ bool MEDDLY::saturation_impl_by_events_op::isReachable(MEDDLY::node_handle mdd, 
       // found reachable state in initial state
 
   // clear cache
-  for (auto i : intersection_cache) {
+  for (auto& i : intersection_cache) {
     argF->unlinkNode(i.first.first);
     argF->unlinkNode(i.first.second);
   }
@@ -1180,7 +1200,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
     consDptrs->initFromNode(arg1F, constraint, true);
   }
   const node_handle cons_ext_d = consDptrs->isExtensible() ? consDptrs->ext_d() : 0;
-  
+
   // Initialize mxd readers, note we might skip the unprimed level
   node_handle* events = rel->arrayForLevel(level);
   satimpl_opname::relation_node** Ru = new satimpl_opname::relation_node*[nEventsAtThisLevel];
@@ -1189,9 +1209,9 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
     int eventLevel = Ru[ei]->getLevel();
     MEDDLY_DCASSERT(ABS(eventLevel) == level);
   }
-  
+
   expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
-  
+
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
   for (int i = 0; i < nb.getSize(); i++) {
@@ -1199,13 +1219,13 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
       queue->add(i);
     }
   }
-  
+
   // explore indexes
   while (!queue->isEmpty()) {
     int i = queue->remove();
-    
+
     MEDDLY_DCASSERT(nb.d(i));
-    
+
     for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
 
       int j = Ru[ei]->nextOf(i);
@@ -1266,11 +1286,11 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
       }
 
       if (updated) queue->add(j);
-      
+
     } // for all events, ei
-    
+
   }// more indexes to explore
-  
+
   delete[] Ru;
   recycle(queue);
   return false;
@@ -1284,7 +1304,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
      MEDDLY::node_handle constraint,
      MEDDLY::node_handle& result)
 {
-  
+
   if (0 == constraint) {
     // no reachable state in constraint possible
     result = recFire(mdd, mxd);
@@ -1296,7 +1316,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     result = 0;
     return false;
   }
-  
+
   if (mxd==1) {
     if (arg1F->isTerminalNode(mdd) || arg1F == resF) {
       result = 
@@ -1306,25 +1326,25 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
       return !isIntersectionEmpty(arg1F, result, constraint);
     }
   }
-  
+
   satimpl_opname::relation_node* relNode = rel->nodeExists(mxd); // The relation node
- 
+
   // check the cache
   result = 0;
   compute_table::search_key* Key = findResult(mdd, mxd, result);
   if (0==Key) {
     return !isIntersectionEmpty(arg1F, result, constraint);
   }
-  
-  #ifdef TRACE_RECFIRE
+
+#ifdef TRACE_RECFIRE
   printf("computing recFire(%d, %d)\n", mdd, mxd);
   printf("  node %3d ", mdd);
   arg1F->showNode(stdout, mdd, 1);
   printf("\n  node %3d ", mxd);
   arg2F->showNode(stdout, mxd, 1);
   printf("\n");
-  #endif
-  
+#endif
+
   // check if mxd and mdd are at the same level
   const int mddLevel = arg1F->getNodeLevel(mdd);
   const int mxdLevel = relNode->getLevel();
@@ -1333,7 +1353,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   int rSize = resF->getLevelSize(rLevel);
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
   expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
-  
+
   // Initialize mdd reader
   unpacked_node *A = unpacked_node::useUnpackedNode();
   if (mddLevel < rLevel) {
@@ -1351,20 +1371,18 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   }
   const node_handle cons_ext_d = consDptrs->isExtensible() ? consDptrs->ext_d() : 0;
 
-  // TODO: finish including constraint in recFire()
-  
   //Re-Think
   if (mddLevel > mxdLevel) {
     //
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
-    
+
     for (int i=0; i<rSize; i++) {
       const node_handle cons_i = (i < consDptrs->getSize() ? consDptrs->d(i) : cons_ext_d);
       node_handle temp = 0;
       if (recFire(A->d(i), mxd, cons_i, temp)) {
         // found reachable state in constraint: abort, cleanup and return true
-        for (int j = 0; j < nb->getSize(); j++) {
+        for (int j = 0; j < i; j++) {
           if (nb->d(j)) { arg1F->unlinkNode(nb->d(j)); nb->d_ref(j) = 0; }
         }
         unpacked_node::recycle(nb);
@@ -1374,7 +1392,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
       }
       nb->d_ref(i) = temp;
     }
-    
+
   } else {
     //
     // Need to process this level in the MXD.
@@ -1383,69 +1401,69 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     for (int i=0; i<rSize; i++) {
       nb->d_ref(i) = 0;
     }
-    
+
     // Initialize mxd readers, note we might skip the unprimed level
-    
+
     // loop over mxd "rows"
-        for (int iz=0; iz<rSize; iz++) {
-          int i = iz; // relation_node enabling condition
-          if (0==A->d(i))   continue;
-          
-          // loop over mxd "columns"
-          int j = relNode->nextOf(i);
-          if(j==-1) continue;
-          
-          node_handle newstates = 0;
-          const node_handle cons_j = (j < consDptrs->getSize() ? consDptrs->d(j) : cons_ext_d);
-          if (recFire(A->d(i), relNode->getDown(), cons_j, newstates)) {
-            // found reachable state in constraint: abort, cleanup and return true
-            for (int k = 0; k < nb->getSize(); k++) {
-              if (nb->d(k)) { arg1F->unlinkNode(nb->d(k)); nb->d_ref(k) = 0; }
-            }
-            unpacked_node::recycle(nb);
-            unpacked_node::recycle(A);
-            unpacked_node::recycle(consDptrs);
-            return true;
-          }
+    for (int iz=0; iz<rSize; iz++) {
+      int i = iz; // relation_node enabling condition
+      if (0==A->d(i))   continue;
 
-          if (0==newstates) continue;
-          
-          //confirm local state
-          if(!rel->isConfirmedState(rLevel,j)) // if not confirmed before
-            {
-            rel->setConfirmedStates(rLevel,j); // confirm and enlarge
-            if (j >= nb->getSize()) {
-              int new_var_bound = resF->isExtensibleLevel(nb->getLevel())? -(j+1): (j+1);
-              dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);
-              int oldSize = nb->getSize();
-              nb->resize(j+1);
-              while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
-            }
-            }
-          // ok, there is an i->j "edge".
-          // determine new states to be added (recursively)
-          // and add them
-          
-          if (0==nb->d(j)) {
-            nb->d_ref(j) = newstates;
-            continue;
-          }
-          // there's new states and existing states; union them.
-          int oldj = nb->d(j);
-          nb->d_ref(j) = mddUnion->compute(newstates, oldj);
-          resF->unlinkNode(oldj);
-          resF->unlinkNode(newstates);
-          
-          
-        } // for i
+      // loop over mxd "columns"
+      int j = relNode->nextOf(i);
+      if(j==-1) continue;
 
-    
+      node_handle newstates = 0;
+      const node_handle cons_j = (j < consDptrs->getSize() ? consDptrs->d(j) : cons_ext_d);
+      if (recFire(A->d(i), relNode->getDown(), cons_j, newstates)) {
+        // found reachable state in constraint: abort, cleanup and return true
+        for (int k = 0; k < nb->getSize(); k++) {
+          if (nb->d(k)) { arg1F->unlinkNode(nb->d(k)); nb->d_ref(k) = 0; }
+        }
+        unpacked_node::recycle(nb);
+        unpacked_node::recycle(A);
+        unpacked_node::recycle(consDptrs);
+        return true;
+      }
+
+      if (0==newstates) continue;
+
+      //confirm local state
+      if(!rel->isConfirmedState(rLevel,j)) // if not confirmed before
+      {
+        rel->setConfirmedStates(rLevel,j); // confirm and enlarge
+        if (j >= nb->getSize()) {
+          int new_var_bound = resF->isExtensibleLevel(nb->getLevel())? -(j+1): (j+1);
+          dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);
+          int oldSize = nb->getSize();
+          nb->resize(j+1);
+          while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
+        }
+      }
+      // ok, there is an i->j "edge".
+      // determine new states to be added (recursively)
+      // and add them
+
+      if (0==nb->d(j)) {
+        nb->d_ref(j) = newstates;
+        continue;
+      }
+      // there's new states and existing states; union them.
+      int oldj = nb->d(j);
+      nb->d_ref(j) = mddUnion->compute(newstates, oldj);
+      resF->unlinkNode(oldj);
+      resF->unlinkNode(newstates);
+
+
+    } // for i
+
+
   } // else
-  
+
   // cleanup mdd reader
   unpacked_node::recycle(A);
   unpacked_node::recycle(consDptrs);
-  
+
   if (saturateHelper(*nb, constraint)) {
     // found reachable state in constraint
     const int sz = nb->getSize();
@@ -1458,17 +1476,17 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   }
 
   result = resF->createReducedNode(-1, nb);
-  
-  #ifdef TRACE_ALL_OPS
+
+#ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
-  #endif
+#endif
 #ifdef TRACE_RECFIRE
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
   printf("  node %3d ", result);
   resF->showNode(stdout, result, 1);
   printf("\n");
 #endif
-  
+
   saveResult(Key, mdd, mxd, result);
   return !isIntersectionEmpty(arg1F, result, constraint);
 }
