@@ -47,6 +47,7 @@ using namespace MEDDLY;
 int N;
 FILE* outfile;
 const char* lfile;
+bool build_pdf;
 
 dd_edge** qic;
 dd_edge** qidp;
@@ -158,6 +159,7 @@ void queenInDiagM(forest* f, int d, dd_edge &e)
 
 bool processArgs(int argc, const char** argv, forest::policies &p)
 {
+  build_pdf = false;
   lfile = 0;
   p.setPessimistic();
   N = -1;
@@ -174,6 +176,10 @@ bool processArgs(int argc, const char** argv, forest::policies &p)
     if (strcmp("-l", argv[i])==0) {
       lfile = argv[i+1];
       i++;
+      continue;
+    }
+    if (strcmp("-pdf", argv[i])==0) {
+      build_pdf = true;
       continue;
     }
     N = atoi(argv[i]);
@@ -203,6 +209,7 @@ int usage(const char* who)
   printf("\t     -opt:  Optimistic node deletion\n");
   printf("\t    -pess:  Pessimistic node deletion (default)\n");
   printf("\t -l lfile:  Write logging information to specified file\n");
+  printf("\t     -pdf:  Write MDD of solutions to out.pdf\n\n");
   printf("\t<outfile>:  if specified, we write all solutions to this file\n\n");
   return 1;
 }
@@ -357,6 +364,10 @@ int main(int argc, const char** argv)
       fprintf(outfile, "\n");
     } // for iter
     fprintf(outfile, "\n");
+  }
+
+  if (build_pdf) {
+    solutions.writePicture("out", "pdf");
   }
 
   if (LOG) LOG->newPhase(f, "Cleanup");

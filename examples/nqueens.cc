@@ -44,6 +44,7 @@ using namespace MEDDLY;
 int N;
 int* scratch;
 const char* lfile;
+bool build_pdf;
 
 bool use_folding;
 
@@ -132,6 +133,7 @@ void createQueenNodes(forest* f, int q, dd_edge &col, dd_edge &cp, dd_edge &cm)
 bool processArgs(int argc, const char** argv, forest::policies &p)
 {
   lfile = 0;
+  build_pdf = false;
   p.setPessimistic();
   bool setN = false;
   use_folding = false;
@@ -158,6 +160,10 @@ bool processArgs(int argc, const char** argv, forest::policies &p)
         i++;
         continue;
       }
+      if (strcmp("-pdf", argv[i])==0) {
+        build_pdf = true;
+        continue;
+      }
       return false;
     }
     if (setN) return false;
@@ -182,7 +188,8 @@ int usage(const char* who)
   printf("\t   -fold:  Accumulate constraints in pairs\n");
   printf("\t    -opt:  Optimistic node deletion\n");
   printf("\t   -pess:  Pessimistic node deletion (default)\n");
-  printf("\t-l lfile:  Write logging information to specified file\n\n");
+  printf("\t-l lfile:  Write logging information to specified file\n");
+  printf("\t    -pdf:  Write MDD of solutions to out.pdf\n\n");
   return 1;
 }
 
@@ -341,6 +348,9 @@ int main(int argc, const char** argv)
     }
   }
 #endif
+  if (build_pdf) {
+    solutions->writePicture("out", "pdf");
+  }
   delete solutions;
   operation::showAllComputeTables(myout, 3);
   if (LOG) {

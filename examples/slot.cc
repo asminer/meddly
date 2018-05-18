@@ -47,6 +47,7 @@ int usage(const char* who)
   printf("\t-ksat: use saturation by levels\n");
   printf("\t-msat: use monolithic saturation (default)\n\n");
   printf("\t-exp: use explicit (very slow)\n");
+  printf("\t-pdf: Write MDD for reachable states to out.pdf\n\n");
   printf("\t--batch b: specify explicit batch size\n\n");
   printf("\t -l lfile: Write logging information to specified file\n\n");
   return 1;
@@ -156,7 +157,7 @@ char* Go(int i, int N)
   return t;
 }
 
-void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
+void runWithArgs(int N, char method, int batchsize, bool build_pdf, forest::logger* LOG)
 {
   timer start;
 
@@ -316,6 +317,10 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   destroyOperation(sat);
   // or, don't, and let cleanup() take care of it?
 
+  if (build_pdf) {
+    reachable.writePicture("out", "pdf");
+  }
+
   if (LOG) {
     LOG->newPhase(mdd, "Cleanup");
     LOG->newPhase(mxd, "Cleanup");
@@ -329,6 +334,7 @@ int main(int argc, const char** argv)
   char method = 'm';
   int batchsize = 256;
   const char* lfile = 0;
+  bool build_pdf = false;
 
   for (int i=1; i<argc; i++) {
     if (strcmp("-bfs", argv[i])==0) {
@@ -358,6 +364,10 @@ int main(int argc, const char** argv)
     if (strcmp("-l", argv[i])==0) {
       lfile = argv[i+1];
       i++;
+      continue;
+    }
+    if (strcmp("-pdf", argv[i])==0) {
+      build_pdf = true;
       continue;
     }
     if (strcmp("--batch", argv[i])==0) {
@@ -392,7 +402,7 @@ int main(int argc, const char** argv)
   }
 
   try {
-    runWithArgs(N, method, batchsize, LOG);
+    runWithArgs(N, method, batchsize, build_pdf, LOG);
     delete LOG;
     MEDDLY::cleanup();
     return 0;
