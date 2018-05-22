@@ -51,6 +51,19 @@ Nothing yet
   Error class now tracks filename and line number
   of source code that threw the error.
   </li>
+  <li>
+  Updated garbage collection of compute table entries.
+  Compute table entry status is now one of: dead, recoverable, active.
+  </li>
+  <li>
+  Support for <i>extensible</i> variables:
+  <ul>
+    <li> To enable, give the variable a negative bound  </li>
+    <li> Can mix extensible and non-extensible variables in the same domain </li>
+    <li> Supported in multi-terminal forests for sets and relations  </li>
+    <li> Compatible with Apply operations and saturation</li>
+  </ul>
+  </li>
 </ul>
 
 
