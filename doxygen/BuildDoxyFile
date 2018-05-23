@@ -1,0 +1,4 @@
+#!/bin/bash
+
+VER=$(awk '/AC_INIT/{print $2}' ../configure.ac | tr -d "[],")
+sed "s/MEDDLYVERSION/$VER/" Doxyfile.skel > Doxyfile

@@ -4,4 +4,4 @@
 ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = src examples tests
-DIST_SUBDIRS = $(SUBDIRS) doxy doxy-devel
+DIST_SUBDIRS = $(SUBDIRS) doxygen doxygen-devel
