@@ -21,6 +21,7 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "../forests/mt.h"
 #include "apply_base.h"
 
 // #define TRACE_ALL_OPS
@@ -91,6 +92,13 @@ void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &
   dd_edge &c)
 {
   node_handle cnode = compute(a.getNode(), b.getNode());
+  const int num_levels = resF->getDomain()->getNumVariables();
+  if (resF->isQuasiReduced() && cnode != resF->getTransparentNode()
+    && resF->getNodeLevel(cnode) < num_levels) {
+    node_handle temp = ((mt_forest*)resF)->makeNodeAtLevel(num_levels, cnode);
+    resF->unlinkNode(cnode);
+    cnode = temp;
+  }
   c.set(cnode);
 #ifdef TRACE_ALL_OPS
   printf("completed %s(%d, %d) = %d\n", 
@@ -101,6 +109,7 @@ void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &
 #endif
 }
 
+#ifndef USE_XDDS
 
 MEDDLY::node_handle 
 MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
@@ -155,6 +164,262 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
 #endif
   return result;
 }
+
+#else
+
+#ifdef USING_SPARSE
+
+MEDDLY::node_handle 
+MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b) 
+{
+  //  Compute for the unprimed levels.
+  //
+  node_handle result = 0;
+  if (checkTerminals(a, b, result))
+    return result;
+
+  compute_table::search_key* Key = findResult(a, b, result);
+  if (0==Key) return result;
+
+  // Get level information
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+  int resultLevel = topLevel(aLevel, bLevel);
+
+  // Initialize readers
+  unpacked_node *A = (aLevel < resultLevel) 
+    ? unpacked_node::newRedundant(arg1F, resultLevel, a, false)
+    : unpacked_node::newFromNode(arg1F, a, false)
+    ;
+  const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
+  int last_nz = A->getNNZs()-1;
+  for ( ; last_nz >= 0 && A->d(last_nz) == 0; last_nz--);
+  const int A_last_index = last_nz >= 0? A->i(last_nz): -1;
+
+  unpacked_node *B = (bLevel < resultLevel)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, false)
+    : unpacked_node::newFromNode(arg2F, b, false)
+    ;
+  const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
+  last_nz = B->getNNZs()-1;
+  for ( ; last_nz >= 0 && B->d(last_nz) == 0; last_nz--);
+  const int B_last_index = last_nz >= 0? B->i(last_nz): -1;
+
+  const int min_a_b_last_index = MIN(A_last_index, B_last_index);
+  const int max_a_b_last_index = MAX(A_last_index, B_last_index);
+
+  const node_handle C_ext_d =
+    (A->isExtensible() || B->isExtensible())
+    ? compute(A_ext_d, B_ext_d)
+    : 0;
+  const bool C_is_extensible = (C_ext_d != 0);
+
+  //
+  // Three loops to reduce the amount of checking needed:
+  //
+  // Loop 1: deal with indices in
+  //         [0,min(a_last_index,b_last_index)]
+  // Loop 2: deal with indices in
+  //         [min(a_last_index,b_last_index)+1, max(a_last_index,b_last_index)]
+  // 
+  // Last index: result of A_ext_d and B_ext_d
+
+  int resultSize = max_a_b_last_index + 1 + (C_is_extensible? 1: 0);
+  unpacked_node* C = unpacked_node::newSparse(resF, resultLevel, resultSize);
+
+  //
+  // Loop 1: [0, min(a_last_index,b_last_index)]
+  //
+  int A_curr_index = 0;
+  int B_curr_index = 0;
+  int j = 0;
+  int nnz = 0;
+  for ( ; j <= min_a_b_last_index; j++) {
+    const int a_d = ((j == A->i(A_curr_index))? A->d(A_curr_index++): 0);
+    const int b_d = ((j == B->i(B_curr_index))? B->d(B_curr_index++): 0);
+    node_handle down = compute(a_d, b_d);
+    if (down) {
+      C->d_ref(nnz) = down;
+      C->i_ref(nnz) = j;
+      nnz++;
+    }
+  }
+
+  //
+  // At most one of the next two loops will execute
+  // Loop 2: [min(a_last_index,b_last_index)+1, max(a_last_index,b_last_index)]
+  //
+  for ( ; j <= A_last_index; j++) {
+    const int a_d = ((j == A->i(A_curr_index))? A->d(A_curr_index++): 0);
+    node_handle down = compute(a_d, B_ext_d);
+    if (down) {
+      C->d_ref(nnz) = down;
+      C->i_ref(nnz) = j;
+      nnz++;
+    }
+  }
+  for ( ; j <= B_last_index; j++) {
+    const int b_d = ((j == B->i(B_curr_index))? B->d(B_curr_index++): 0);
+    node_handle down = compute(A_ext_d, b_d);
+    if (down) {
+      C->d_ref(nnz) = down;
+      C->i_ref(nnz) = j;
+      nnz++;
+    }
+  }
+  MEDDLY_DCASSERT(j == max_a_b_last_index+1);
+
+  //
+  // Last index
+  //
+  MEDDLY_DCASSERT(!C->isExtensible());  // default: not extensible
+  if (C_is_extensible) {
+    MEDDLY_DCASSERT(C_ext_d);
+    C->d_ref(nnz) = C_ext_d;
+    C->i_ref(nnz) = j;
+    nnz++;
+    C->markAsExtensible();
+  }
+  C->shrinkSparse(nnz);
+
+  // cleanup
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
+
+  if (resF->isQuasiReduced()) {
+    int nextLevel = resultLevel - 1;
+    for (int i = 0; i < C->getNNZs(); i++) {
+      if (resF->getNodeLevel(C->d(i)) < nextLevel) {
+        node_handle temp = ((mt_forest*)resF)->makeNodeAtLevel(nextLevel, C->d(i));
+        resF->unlinkNode(C->d(i));
+        C->d_ref(i) = temp;
+      }
+    }
+  }
+
+  // reduce and save result
+  result = resF->createReducedNode(-1, C);
+  saveResult(Key, a, b, result);
+
+#ifdef TRACE_ALL_OPS
+  printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
+#endif
+
+  return result;
+}
+
+#else // ifdef USING_SPARSE
+
+MEDDLY::node_handle 
+MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b) 
+{
+  //  Compute for the unprimed levels.
+  //
+  node_handle result = 0;
+  if (checkTerminals(a, b, result))
+    return result;
+
+  compute_table::search_key* Key = findResult(a, b, result);
+  if (0==Key) return result;
+
+  // Get level information
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
+  int resultLevel = ABS(topLevel(aLevel, bLevel));
+
+  // Initialize readers
+  unpacked_node *A = (aLevel < resultLevel) 
+    ? unpacked_node::newRedundant(arg1F, resultLevel, a, true)
+    : unpacked_node::newFromNode(arg1F, a, true)
+    ;
+  const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
+
+  unpacked_node *B = (bLevel < resultLevel)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, true)
+    : unpacked_node::newFromNode(arg2F, b, true)
+    ;
+  const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
+
+  const int min_size = MIN(A->getSize(), B->getSize());
+  const int max_size = MAX(A->getSize(), B->getSize());
+
+  const node_handle C_ext_d =
+    (A->isExtensible() || B->isExtensible())
+    ? compute(A_ext_d, B_ext_d)
+    : 0;
+  const bool C_is_extensible = (C_ext_d != 0);
+
+  //
+  // Three loops to reduce the amount of checking needed:
+  //
+  // Loop 1: deal with indices in
+  //         [0,min(a_last_index,b_last_index)]
+  // Loop 2: deal with indices in
+  //         [min(a_last_index,b_last_index)+1, max(a_last_index,b_last_index)]
+  // 
+  // Last index: result of A_ext_d and B_ext_d
+
+  int resultSize = max_size + (C_is_extensible? 1: 0);
+  unpacked_node* C = unpacked_node::newFull(resF, resultLevel, resultSize);
+
+  //
+  // Loop 1: [0, min(a_last_index,b_last_index)]
+  //
+  int j = 0;
+  for ( ; j < min_size; j++) {
+    C->d_ref(j) = compute(A->d(j), B->d(j));
+  }
+
+  //
+  // At most one of the next two loops will execute
+  // Loop 2: [min(a_last_index,b_last_index)+1, max(a_last_index,b_last_index)]
+  //
+  for ( ; j < A->getSize(); j++) {
+    C->d_ref(j) = compute(A->d(j), B_ext_d);
+  }
+  for ( ; j < B->getSize(); j++) {
+    C->d_ref(j) = compute(A_ext_d, B->d(j));
+  }
+  MEDDLY_DCASSERT(j == max_size);
+
+  //
+  // Last index
+  //
+  MEDDLY_DCASSERT(!C->isExtensible());  // default: not extensible
+  if (C_is_extensible) {
+    C->d_ref(j) = C_ext_d;
+    C->markAsExtensible();
+  }
+
+  // cleanup
+  unpacked_node::recycle(B);
+  unpacked_node::recycle(A);
+
+  if (resF->isQuasiReduced()) {
+    int nextLevel = resultLevel - 1;
+    for (int i = 0; i < C->getSize(); i++) {
+      if (resF->getNodeLevel(C->d(i)) < nextLevel) {
+        node_handle temp = ((mt_forest*)resF)->makeNodeAtLevel(nextLevel, C->d(i));
+        resF->unlinkNode(C->d(i));
+        C->d_ref(i) = temp;
+      }
+    }
+  }
+
+  // reduce and save result
+  result = resF->createReducedNode(-1, C);
+  saveResult(Key, a, b, result);
+
+#ifdef TRACE_ALL_OPS
+  printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
+#endif
+
+  return result;
+}
+
+#endif // end of #ifdef use_sparse
+
+#endif // end of #ifndef use_xdds
 
 
 

@@ -153,7 +153,7 @@ bool MEDDLY::minus_evplus::checkTerminals(long aev, node_handle a, long bev, nod
     c = -1; cev = aev - bev;
     return true;
   }
-  if (0 == a && 0 == b) {
+  if (0 == a || 0 == b) {
     c = 0;
     cev = 0;
     return true;

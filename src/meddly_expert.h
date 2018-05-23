@@ -40,6 +40,7 @@
 #include <unordered_map>
 #include <vector>
 #include <cstdint>
+#include <map>
 
 namespace MEDDLY {
 
@@ -3129,6 +3130,31 @@ class MEDDLY::satotf_opname : public specialized_opname {
           */
         bool rebuildEvent(int level, int i);
 
+        /** Build a Monolithic Next State Function that is equivalent to
+            the union of all events while restricting the size of each
+            variable to that of the largest confirmed index.
+
+            @return             union of bounded OTF events.
+        */
+        node_handle getBoundedMonolithicNSF();
+
+        /** Bound all extensible variables
+            using the maximum confirmed local state as the bound.
+        */
+        void bindExtensibleVariables();
+
+        /** Get the number of arcs in the OTF relation
+            restricted by the confirmed local states.
+
+            Only works with non-extensible variables (call
+            bindExtensibleVariables() prior to calling this).
+
+            @param    count_duplicates  if false, counts arcs that are common
+                                          to mutiple transitions as one.
+            @return                     the number of arcs in the OTF relation.
+        */
+        double getArcCount(const dd_edge& mask, bool count_duplicates);
+
         /// For Debugging
         void showInfo(output &strm) const;
 
@@ -3138,6 +3164,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
       protected:
         void enlargeConfirmedArrays(int level, int sz);
+        node_handle getBoundedMxd(node_handle mxd, const int* bounds_array, int sz,
+            std::unordered_map<node_handle, node_handle>& cache);
 
       private:
         expert_forest* insetF;
@@ -3186,124 +3214,104 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
 /// Saturation, transition relations stored implcitly, operation names.
 typedef int rel_node_handle;
-class MEDDLY::satimpl_opname:public specialized_opname {
-      public:
+class MEDDLY::satimpl_opname: public specialized_opname {
+  public:
 
-      satimpl_opname(const char* n);
-      virtual ~satimpl_opname();
+    satimpl_opname(const char* n);
+    virtual ~satimpl_opname();
 
-      /// Arguments should have type "implicit_relation", below
-      virtual specialized_operation* buildOperation(arguments* a) const;
+    /// Arguments should have type "implicit_relation", below
+    virtual specialized_operation* buildOperation(arguments* a) const;
 
+  public:
+    /** Pieces of an implicit relation.
+
+        Each piece (this class) is a function of a single variable.
+        The function specifies the "next state" for the given
+        current state, but we are only allowed to depend on one
+        state variable.
+
+        This is an abstract base class.  The function is specified
+        by deriving a class from this one, and specifying method
+        nextOf().
+        TBD - Need a bogus value for nextOf()...
+
+        Additionally, you must specify method equals(), which is used
+        to detect when two nodes actually represent the same function.
+
+    */
+    class relation_node {
       public:
-      /**
-       Pieces of an implicit relation.
-       
-       Each piece (this class) is a function of a single variable.
-       The function specifies the "next state" for the given
-       current state, but we are only allowed to depend on one
-       state variable.
-       
-       This is an abstract base class.  The function is specified
-       by deriving a class from this one, and specifying method
-       nextOf().
-       TBD - Need a bogus value for nextOf()...
-       
-       Additionally, you must specify method equals(), which is used
-       to detect when two nodes actually represent the same function.
-       
-       */
-      class relation_node {
-      public:
-        /**
-         Constructor.
-         @param  signature   Hash for this node, such that
-         two equal nodes must have the same
-         signature.
-         @param  level          Level affected.
-         @param  down           Handle to a relation node below us. 
-	*/
+        /** Constructor.
+            @param  signature   Hash for this node, such that
+            two equal nodes must have the same
+            signature.
+            @param  level          Level affected.
+            @param  down           Handle to a relation node below us. 
+        */
         relation_node(unsigned long signature, int level, rel_node_handle down);
         virtual ~relation_node();
-        
+
         // the following should be inlined in meddly_expert.hh
-        
-        /**
-         A signature for this function.
-         This helps class implicit_relation to detect duplicate
-         functions (using a hash table where the signature
-         is taken as the hash value).
-         */
-         unsigned long getSignature() const;
-        
-        /**
-         The state variable affected by this part of the relation.
-         */
+
+        /** A signature for this function.
+            This helps class implicit_relation to detect duplicate
+            functions (using a hash table where the signature
+            is taken as the hash value).
+        */
+        unsigned long getSignature() const;
+
+        /** The state variable affected by this part of the relation.
+        */
         int getLevel() const;
-        
-        /**
-         Pointer to the (ID of the) next piece of the relation.
-         */
+
+        /** Pointer to the (ID of the) next piece of the relation.
+        */
         rel_node_handle getDown() const;
-        
-        /**
-         The unique ID for this piece.
-         */
+
+        /** The unique ID for this piece.
+        */
         rel_node_handle getID() const;
-        
-        /**
-         Set the unique ID for this piece.
-         */
+
+        /** Set the unique ID for this piece.
+        */
         void setID(rel_node_handle ID);
-        
-        /**
-         The token_update array for this piece.
-         */
+
+        /** The token_update array for this piece.
+        */
         long* getTokenUpdate() const;
-        
-        /**
-         Set the token_update array for this piece.
-         */
+
+        /** Set the token_update array for this piece.
+        */
         void setTokenUpdate(long* token_update);
-        
-        /**
-         The size of token_update array for this piece.
-         */
+
+        /** The size of token_update array for this piece.
+        */
         long getPieceSize() const;
-        
-        /**
-         Set the size of token_update array for this piece.
-         */
+
+        /** Set the size of token_update array for this piece.
+        */
         void setPieceSize(long pS);
-        
-        /**
-         Expand the tokenUpdate array as the variable increases
-         */
+
+        /** Expand the tokenUpdate array as the variable increases
+        */
         void expandTokenUpdate(long i);
-        
-        /**
-         Set the tokenUpdate array at location i to val
-         */
+
+        /** Set the tokenUpdate array at location i to val
+        */
         void setTokenUpdateAtIndex(long i,long val);
-        /**
-         Get arc count
-         */
-        long getArcCounts();
-        
+
         // the following must be provided in derived classes.
-        
-        /**
-         If the variable at this level has value i,
-         what should the new value be?
-         */
+
+        /** If the variable at this level has value i,
+            what should the new value be?
+        */
         virtual long nextOf(long i);
-        
-        
-        /**
-         Determine if this node is equal to another one.
-         */
+
+        /** Determine if this node is equal to another one.
+        */
         virtual bool equals(const relation_node* n) const;
-        
+
       private:
         unsigned long signature;
         int level;
@@ -3311,177 +3319,190 @@ class MEDDLY::satimpl_opname:public specialized_opname {
         rel_node_handle ID;
         long* token_update;
         long piece_size;        
-        
+
         // used by the hash table in implicit_relation
         relation_node* hash_chain;
-        
+
         friend class implicit_relation;
-      };  // class relation_node
+    };  // class relation_node
 
-      public:
+  public:
 
-      /**
-       An implicit relation, as a DAG of relation_nodes.
-       
-       The relation is partitioned by "events", where each event
-       is the conjunction of local functions, and each local function
-       is specified as a single relation_node.  The relation_nodes
-       are chained together with at most one relation_node per state
-       variable, and any skipped variables are taken to be unchanged
-       by the event.
-       
-       If the bottom portion (suffix) of two events are identical,
-       then they are merged.  This is done by "registering" nodes
-       which assigns a unique ID to each node, not unlike an MDD forest.
-       
-       Note: node handles 0 and 1 are reserved.
-       0 means null node.
-       1 means special bottom-level "terminal" node
-       (in case we need to distinguish 0 and 1).
-       */
-      class implicit_relation : public specialized_opname::arguments {
+    /** An implicit relation, as a DAG of relation_nodes.
+
+        The relation is partitioned by "events", where each event
+        is the conjunction of local functions, and each local function
+        is specified as a single relation_node.  The relation_nodes
+        are chained together with at most one relation_node per state
+        variable, and any skipped variables are taken to be unchanged
+        by the event.
+
+        If the bottom portion (suffix) of two events are identical,
+        then they are merged.  This is done by "registering" nodes
+        which assigns a unique ID to each node, not unlike an MDD forest.
+
+        Note: node handles 0 and 1 are reserved.
+        0 means null node.
+        1 means special bottom-level "terminal" node
+        (in case we need to distinguish 0 and 1).
+    */
+    class implicit_relation : public specialized_opname::arguments {
       public:
-        /**
-         Constructor.
-         
-         @param  inmdd       MDD forest containing initial states
-         @param  outmdd      MDD forest containing result
-         
-         Not 100% sure we need these...
-         
-         */
+        /** Constructor.
+
+            @param  inmdd       MDD forest containing initial states
+            @param  outmdd      MDD forest containing result
+
+            Not 100% sure we need these...
+        */
         implicit_relation(forest* inmdd, forest* outmdd);
         virtual ~implicit_relation();
-        
+
         /// Returns the MDD forest that stores the initial set of states
         expert_forest* getInForest() const;
-        
-        
+
+
         /// Returns the MDD forest that stores the resultant set of states
         expert_forest* getOutForest() const;
-        
-        
-        /**
-         Register a relation node.
-         If we have seen an equivalent node before, then
-         return its handle and destroy n.
-         Otherwise, add n to the unique table, assign it a unique
-         identifier, and return that identifier.
-         
-         @param  is_event_top    If true, this is also the top
-         node of some event; register it
-         in the list of events.
-         
-         @param  n               The relation node to register.
-         
-         @return Unique identifier to use to refer to n.
-         */
+
+        /// Returns true iff a state in \a constraint is reachable
+        /// from the states in \a initial_states
+        /// Note: \a constraint can be an XDD
+        bool isReachable(const dd_edge& initial_states, const dd_edge& constraint);
+
+        /** Register a relation node.
+
+            If we have seen an equivalent node before, then
+            return its handle and destroy n.
+            Otherwise, add n to the unique table, assign it a unique
+            identifier, and return that identifier.
+
+            @param  is_event_top    If true, this is also the top
+                                    node of some event; register it
+                                    in the list of events.
+
+            @param  n               The relation node to register.
+
+            @return Unique identifier to use to refer to n.
+        */
         rel_node_handle registerNode(bool is_event_top, relation_node* n);
-        
-        /**
-         Check if the relation node is unique
-         @param n  The relation node.
-         @return   If unique, 0
-                   Else, existing node handle
-         */
+
+        /** Check if the relation node is unique
+            @param n  The relation node.
+            @return   If unique, 0
+                      Else, existing node handle
+        */
         rel_node_handle isUniqueNode(relation_node* n);
-        
-        /**
-         Resize the node_array
-         */
-        void resizeNodeArray(int n);
-        
-        /**
-         Indicate that there will be no more registered nodes.
-         Allows us to preprocess the events or cleanup or convert
-         to a more useful representation for saturation.
-         */
-        
+
+
+        /** Indicate that there will be no more registered nodes.
+            Allows us to preprocess the events or cleanup or convert
+            to a more useful representation for saturation.
+        */
+
         //void finalizeNodes();
-        
-        /**
-         Get the relation node associated with the given handle.
-         
-         Should be a fast, inlined implementation.
-         */
+
+        /** Get the relation node associated with the given handle.
+
+            Should be a fast, inlined implementation.
+        */
         relation_node* nodeExists(rel_node_handle n);
-        
-        /**
-         Get the relation node associated with the given handle.
-         
-         Should be a fast, inlined implementation.
-         */
+
+        /** Get the relation node associated with the given handle.
+
+            Should be a fast, inlined implementation.
+        */
         bool isReserved(rel_node_handle n);
-        
+
       private:
         expert_forest* insetF;
         expert_forest* outsetF;
         int num_levels;
-        
+
       private:
-        //
-        // List of relation nodes.  The node handle is the array index,
-        // except we ensure that handle 0 refers to a null node.
-        //
-        
-        /// Expanding array of pointers to relation nodes.
-        relation_node* node_array;
-        
-        /// Current size of \a node_array.
-        long node_array_alloc;
-        
-        /// Last used element in \a node_array.
+
+        /// Last used ID of \a relation node.
         long last_in_node_array;
-        
+
       private:
         // TBD - add a data structure for the "uniqueness table"
         // of relation_nodes, so if we register a node that
         // is already present in a node_array, we can detect it.
-        
+
         std::unordered_map<rel_node_handle, relation_node*> impl_unique;
-        
+
       private:
         // TBD - add a data structure for list of events with top level k,
         // for all possible k.
         // Possibly this data structure is built by method
         // finalizeNodes().
-        
+
         rel_node_handle** event_list;
         long* event_list_alloc; // allocated space
         long* event_added; //how many events added so far
-        
+
+        long* confirm_states; //total no. of confirmed states of a level
+        bool** confirmed; // stores whether a particular local state is confirmed
+        long* confirmed_array_size; // stores size of confirmed array
+
+
       public:
-        
-        /*
-         Resizes the Event List
-         */
+
+        /// Get total number of events upto given level
+        long getTotalEvent(int level);
+
+        /// Resizes the Event List
         void resizeEventArray(int level);
-        
-        /*
-         Returns the number of events that have this level as top
-         */
+
+        /// Returns the number of events that have this level as top
         long lengthForLevel(int level) const;
-        
-        /*
-         Returns the array of events that have this level as top
-         */
+
+        /// Returns the array of events that have this level as top
         rel_node_handle* arrayForLevel(int level) const;
-        
+
+        /// Returns the number of confirmed states at a level
+        long getConfirmedStates(int level) const;
+
+        /// Confirms the local states at a level
+        void setConfirmedStates(int level, int i);
+
+        /// Confirms the local states in the given MDD
+        void setConfirmedStates(const dd_edge &set);
+
+
+        /// Checks if i is confirmed
+        bool isConfirmedState(int level, int i);
+
+        /// Expand confirm array
+        void resizeConfirmedArray(int level, int index);
+
+        /** Bound all extensible variables
+            using the maximum confirmed local state as the bound.
+        */
+        void bindExtensibleVariables();
+
       public:
-        /*
-          Prints the implicit relation
-         */
+        /// Prints the implicit relation
         void show();
-        /*
-         Gets the arc counts from all implicit nodes
-         */
-        long getAllArcCounts(int level);
-        
-      };  // class implicit_relation
+
+        /// Build mxd forest
+        MEDDLY::node_handle buildMxdForest();
+
+        /// Build each event_mxd
+        dd_edge buildEventMxd(rel_node_handle event_top, forest *mxd);
+
+        /// Get relation forest  
+        expert_forest* getRelForest() const;
+
+
+      private:
+        expert_forest* mxdF;
+      
+    };  // class implicit_relation
 
 
 
-      };
+};
 class MEDDLY::constrained_opname : public specialized_opname {
 public:
 	constrained_opname(const char* n);
@@ -4053,6 +4074,12 @@ class MEDDLY::specialized_operation : public operation {
         Default behavior is to throw an exception.
     */
     virtual void compute(const dd_edge &arg, dd_edge &res);
+
+    /** For unary (like) operations with boolean results.
+        Note that there could be other "built in" operands.
+        Default behavior is to throw an exception.
+    */
+    virtual void compute(const dd_edge &arg, bool &res);
 
     /** For binary (like) operations.
         Note that there could be other "built in" operands.

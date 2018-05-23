@@ -75,6 +75,7 @@ namespace MEDDLY {
   }
 }
 
+
 // ******************************************************************
 // *                         opname methods                         *
 // ******************************************************************
@@ -698,7 +699,10 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
     int level = vars[i];
     // expand "to" since the set of unconfirmed local states is always larger
     if (to[level] > 0 && to[level] >= f->getLevelSize(-level)) {
-      d->enlargeVariableBound(level, false, 1+to[level]);
+      if (f->isExtensibleLevel(level))
+        d->enlargeVariableBound(level, false, -(1+to[level]));
+      else
+        d->enlargeVariableBound(level, false, 1+to[level]);
     }
   }
   num_minterms++;
@@ -795,7 +799,11 @@ MEDDLY::satotf_opname::event::event(subevent** p, int np)
 
   MEDDLY_DCASSERT(all_enabling_subevents || !firingVars.empty());
 
+#if 0
   is_disabled = (all_enabling_subevents || all_firing_subevents);
+#else
+  is_disabled = false;
+#endif
 
   num_vars = sVars.size();
   vars = new int[num_vars];
@@ -855,6 +863,7 @@ void MEDDLY::satotf_opname::event::buildEventMask()
   event_mask.show(out, 2);
 #endif
 }
+
 
 bool MEDDLY::satotf_opname::event::rebuild()
 {
@@ -1077,7 +1086,6 @@ MEDDLY::satotf_opname::otf_relation::~otf_relation()
 {
   // ostream_output out(std::cout);
   // showInfo(out);
-
   for (int i = 0; i < num_levels; i++) {
     delete[] subevents_by_level[i];
     delete[] events_by_level[i];
@@ -1249,6 +1257,175 @@ long MEDDLY::satotf_opname::otf_relation::mintermMemoryUsage() const {
   return usage;
 }
 
+void MEDDLY::satotf_opname::otf_relation::bindExtensibleVariables() {
+  //
+  // Find the bounds for each extensbile variable
+  //
+  expert_domain* ed = mxdF->useExpertDomain();
+  for (int k = 1; k < num_levels; k++) {
+    int bound = 0;
+    int n_confirmed = 0;
+
+    for (int j = 0; j < size_confirmed[k]; j++) {
+      if (confirmed[k][j]) { bound = j+1; n_confirmed++; }
+    }
+
+    MEDDLY_DCASSERT(bound > 0);
+    MEDDLY_DCASSERT(n_confirmed == num_confirmed[k]);
+    ed->enlargeVariableBound(k, false, bound);
+  }
+}
+
+
+double MEDDLY::satotf_opname::otf_relation::getArcCount(
+  const dd_edge& mask,
+  bool count_duplicates)
+{
+  MEDDLY_DCASSERT(outsetF->isQuasiReduced());
+  MEDDLY_DCASSERT(mxdF->isIdentityReduced());
+
+  double arc_count = 0;
+  dd_edge mxd_mask(mxdF);
+
+  // Build confirmed mask
+  dd_edge confirmed_local_states(outsetF);
+  confirmed_local_states.set(MEDDLY::expert_forest::bool_Tencoder::value2handle(true));
+  for (int i = 1; i < num_levels; i++) {
+    node_handle current_node = confirmed_local_states.getNode();
+    int current_level = outsetF->getNodeLevel(current_node);
+    int next_level = outsetF->upLevel(outsetF->upLevel(current_level));
+    MEDDLY_DCASSERT(next_level >= 0);
+    unpacked_node* node =
+      unpacked_node::newFull(outsetF, next_level, outsetF->getLevelSize(next_level));
+    for (int i = 0; i < node->getSize(); i++) {
+      node->d_ref(i) =
+        confirmed[next_level][i]
+        ? outsetF->linkNode(current_node)
+        : 0;
+    }
+    node_handle next_node = outsetF->createReducedNode(-1, node);
+    confirmed_local_states.set(next_node);
+  }
+
+  dd_edge confirmed_local_states_mask = mask * confirmed_local_states;
+  MEDDLY::apply(MEDDLY::CROSS, confirmed_local_states_mask, confirmed_local_states_mask, mxd_mask);
+
+  if (count_duplicates) {
+    for (int i = 1; i < num_levels; i++) {
+      for (int ei = 0; ei < getNumOfEvents(i); ei++) {
+        // start with (num_level-1) to correctly count edges in skipped levels
+        dd_edge rg_ei = events_by_top_level[i][ei]->getRoot();
+        rg_ei *= mxd_mask;
+        arc_count += rg_ei.getCardinality();
+      }
+    }
+  } else {
+    // build monolithic 
+    dd_edge monolithic_nsf(mxdF);
+    for (int i = 1; i < num_levels; i++) {
+      dd_edge nsf_i(mxdF);
+      for (int ei = 0; ei < getNumOfEvents(i); ei++) {
+        nsf_i += events_by_top_level[i][ei]->getRoot();
+      }
+      monolithic_nsf += nsf_i;
+    }
+    monolithic_nsf *= mxd_mask;
+    arc_count = monolithic_nsf.getCardinality();
+  }
+  return arc_count;
+}
+
+
+MEDDLY::node_handle MEDDLY::satotf_opname::otf_relation::getBoundedMonolithicNSF() {
+  //
+  // Build the union all events
+  //
+  dd_edge* monolithic_nsf = new dd_edge(mxdF);
+  for (int i = 1; i < num_levels; i++) {
+    for (int ei = 0; ei < getNumOfEvents(i); ei++) {
+      (*monolithic_nsf) += events_by_top_level[i][ei]->getRoot();
+    }
+  }
+
+  //
+  // Find the bounds for each extensbile variable
+  //
+  int i = 1;
+  for ( ; i < num_levels && !mxdF->isExtensibleLevel(i); i++);
+  const bool found_extensible_variable = (i < num_levels);
+
+  MEDDLY::node_handle bounded_monolithic_nsf = 0;
+
+  if (!found_extensible_variable) {
+    bounded_monolithic_nsf = mxdF->linkNode(monolithic_nsf->getNode());
+  } else {
+    int bounds[num_levels];
+    bounds[0] = 0;
+    for (int i = 1; i < num_levels; i++) {
+      int j = 0;
+      for (j = size_confirmed[i]-1; j >= 0 && !confirmed[i][j]; j--);
+      bounds[i] = j+1;
+      MEDDLY_DCASSERT(bounds[i] > 0);
+    }
+
+    //
+    // Convert monolithic_nsf to a bounded event based on confirmed local states
+    // - Recursively build a new MDD while pruning all extensible nodes
+    //   to the size of the bounded variables.
+    //
+    std::unordered_map<MEDDLY::node_handle, MEDDLY::node_handle> cache;
+    bounded_monolithic_nsf =
+      getBoundedMxd(monolithic_nsf->getNode(), bounds, num_levels, cache);
+
+    // clear cache
+    for (auto i : cache) mxdF->unlinkNode(i.second);
+
+    // set bounded variable sizes
+    expert_domain* ed = mxdF->useExpertDomain();
+    for (int i = 1; i < num_levels; i++) {
+      ed->enlargeVariableBound(i, false, bounds[i]);
+    }
+  }
+  delete monolithic_nsf;
+
+  return bounded_monolithic_nsf;
+}
+
+MEDDLY::node_handle MEDDLY::satotf_opname::otf_relation::getBoundedMxd(
+    MEDDLY::node_handle mxd,
+    const int* bounds,
+    int num_levels,
+    std::unordered_map<MEDDLY::node_handle, MEDDLY::node_handle>& cache
+    ) {
+  if (mxdF->isTerminalNode(mxd)) return mxd;
+  if (!mxdF->isExtensible(mxd)) return mxdF->linkNode(mxd);
+
+  // mxd is an extensible node:
+  //    use bounds[] to make build a non-extensible version and return it
+
+  std::unordered_map<MEDDLY::node_handle, MEDDLY::node_handle>::iterator iter = cache.find(mxd);
+  if (iter != cache.end()) {
+    return mxdF->linkNode(iter->second);
+  }
+
+  int mxd_level = mxdF->getNodeLevel(mxd);
+  int result_size = bounds[ABS(mxd_level)];
+  unpacked_node *mxd_node = unpacked_node::newFromNode(mxdF, mxd, true);
+  unpacked_node *bounded_node = unpacked_node::newFull(mxdF, mxd_level, result_size);
+  MEDDLY::node_handle ext_d = mxd_node->ext_d();
+
+  int i = 0;
+  for ( ; i < mxd_node->getSize(); i++) bounded_node->d_ref(i) = mxdF->linkNode(mxd_node->d(i));
+  for ( ; i < result_size; i++) bounded_node->d_ref(i) = mxdF->linkNode(ext_d);
+  bounded_node->markAsNotExtensible();
+
+  MEDDLY::node_handle result = mxdF->createReducedNode(-1, bounded_node);
+  cache[mxd] = mxdF->linkNode(result);
+  unpacked_node::recycle(mxd_node);
+
+  return result;
+}
+
 // ******************************************************************
 // *                                                                *
 // *                 minimum_witness_opname methods                 *
@@ -1291,6 +1468,7 @@ MEDDLY::satimpl_opname::relation_node::~relation_node()
 {
 }
 
+
 long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
 {
   //to be defined for the example you use & comment this definition
@@ -1330,15 +1508,6 @@ MEDDLY::satimpl_opname::relation_node::setTokenUpdateAtIndex(long i,long val)
   MEDDLY_DCASSERT(i<getPieceSize());
   token_update[i] = val;
 }
-
-long
-MEDDLY::satimpl_opname::relation_node::getArcCounts()
-{
-  int arc_count = 0;
-  for(int i = 0; i<piece_size; i++)
-    if(token_update[i]!=NOT_KNOWN) arc_count +=1;
-  return arc_count;
-}
 // ******************************************************************
 
 MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
@@ -1366,24 +1535,34 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   
   // Forests are good; set number of variables
-  num_levels = insetF->getDomain()->getNumVariables() + 1;
+  num_levels = insetF->getDomain()->getNumVariables();
   
-  //Allocate node_array
-  node_array = (relation_node*) malloc(8*sizeof(relation_node));
-  node_array_alloc = 8;
   
   
   //Allocate event_list
-  event_list = (rel_node_handle**)malloc(num_levels*sizeof(rel_node_handle*));
-  event_list_alloc = (long*)malloc(num_levels*sizeof(long));
-  event_added = (long*)malloc(num_levels*sizeof(long));
+  event_list = (rel_node_handle**)malloc((num_levels+1)*sizeof(rel_node_handle*));
+  event_list_alloc = (long*)malloc((num_levels+1)*sizeof(long));
+  event_added = (long*)malloc((num_levels+1)*sizeof(long));
+
   
-  for(int i = 1;i < num_levels;i++)
+  confirm_states = (long*)malloc((num_levels+1)*sizeof(long));
+  confirmed_array_size = (long*)malloc((num_levels+1)*sizeof(long));
+  confirmed = new bool*[num_levels+1];
+  
+  confirmed[0]=0;
+  for(int i = 1;i<=num_levels;i++)
     {
     event_list[i] = (rel_node_handle*)malloc(8*sizeof(rel_node_handle));
+    confirmed[i] = (bool*)malloc(insetF->getVariableSize(i)*sizeof(bool));
     event_list_alloc[i] = 8;
-    event_added[i] = 0;
+    event_added[i] = 0; 
+    confirm_states[i] = 0;
+    
+    confirmed_array_size[i]=insetF->getVariableSize(i);
+    for(int j = 0;j<insetF->getVariableSize(i);j++)
+      confirmed[i][j]=false;
     }
+
   
   
   //create the terminal node
@@ -1391,26 +1570,10 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
   Terminal->setID(TERMINAL_NODE);
   std::pair<rel_node_handle, relation_node*> TerminalNode(TERMINAL_NODE,Terminal);
   impl_unique.insert(TerminalNode);
-  resizeNodeArray(1);
-  node_array[1] = *Terminal;
   last_in_node_array = TERMINAL_NODE;
   
 }
 
-void
-MEDDLY::satimpl_opname::implicit_relation::resizeNodeArray(int nh)
-{
-  last_in_node_array = nh;
-  if (last_in_node_array >= node_array_alloc) {
-    int nalloc = ((nh/8)+1)*8;
-    MEDDLY_DCASSERT(nalloc > nh);
-    MEDDLY_DCASSERT(nalloc > 0);
-    MEDDLY_DCASSERT(nalloc > node_array_alloc);
-    node_array = (relation_node*) realloc(node_array, nalloc*sizeof(relation_node));
-    if (0==node_array) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    node_array_alloc = nalloc;
-  }
-}
 
 void
 MEDDLY::satimpl_opname::implicit_relation::resizeEventArray(int level)
@@ -1427,16 +1590,102 @@ MEDDLY::satimpl_opname::implicit_relation::resizeEventArray(int level)
   }
 }
 
+void
+MEDDLY::satimpl_opname::implicit_relation::resizeConfirmedArray(int level,int index)
+{
+  int nalloc = index+1;
+ if(nalloc>confirmed_array_size[level])
+    {
+       
+       MEDDLY_DCASSERT(nalloc > 0);
+       MEDDLY_DCASSERT(confirmed_array_size[level] >= 0);
+       if(confirmed_array_size[level]==0)
+         {
+           confirmed[level] = (bool*)malloc(nalloc*sizeof(bool));
+           if (0==confirmed[level]) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+         }
+        else
+          {
+            confirmed[level] = (bool*)realloc(confirmed[level], nalloc*sizeof(bool));
+            if (0==confirmed[level]) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+          }
+        
+        for(int i = confirmed_array_size[level];i<nalloc;i++)
+          confirmed[level][i]=false;
+        
+         confirmed_array_size[level]=nalloc;
+    }
+  
+}
+
+void findConfirmedStatesImpl(MEDDLY::satimpl_opname::implicit_relation* rel,
+                             bool** confirmed, long* confirm_states,
+                             MEDDLY::node_handle mdd, int level,
+                             std::set<MEDDLY::node_handle>& visited) {
+  if (level == 0) return;
+  if (visited.find(mdd) != visited.end()) return;
+  
+  MEDDLY::expert_forest* insetF = rel->getInForest();
+  int mdd_level = insetF->getNodeLevel(mdd);
+  if (MEDDLY::isLevelAbove(level, mdd_level)) {
+    // skipped level; confirm all local states at this level
+    // go to the next level
+    int level_size = insetF->getLevelSize(level);
+    for (int i = 0; i < level_size; i++) {
+      if (!confirmed[level][i]) {
+        rel->setConfirmedStates(level, i);
+      }
+    }
+    findConfirmedStatesImpl(rel, confirmed, confirm_states, mdd, level-1, visited);
+  } else {
+    if (MEDDLY::isLevelAbove(mdd_level, level)) {
+      throw MEDDLY::error(MEDDLY::error::INVALID_VARIABLE, __FILE__, __LINE__);
+    }
+    // mdd_level == level
+    visited.insert(mdd);
+    MEDDLY::unpacked_node *nr = MEDDLY::unpacked_node::newFromNode(insetF, mdd, false);
+    for (int i = 0; i < nr->getNNZs(); i++) {
+      if (!confirmed[level][nr->i(i)]) {
+        rel->setConfirmedStates(level, nr->i(i));
+      }
+      findConfirmedStatesImpl(rel, confirmed, confirm_states, nr->d(i), level-1, visited);
+    }
+    MEDDLY::unpacked_node::recycle(nr);
+  }
+}
+
+void MEDDLY::satimpl_opname::implicit_relation::setConfirmedStates(const dd_edge& set)
+{
+  // Perform a depth-first traversal of set:
+  //    At each level, mark all enabled states as confirmed.
+  
+  // Enlarge the confirmed arrays if needed
+  for (int i = 1 ; i<=num_levels; i++) 
+    {
+      int levelSize = getInForest()->getLevelSize(i);
+      resizeConfirmedArray(i, levelSize);
+    }
+  
+    std::set<node_handle> visited;
+    findConfirmedStatesImpl(const_cast<implicit_relation*>(this),
+                      confirmed, confirm_states, set.getNode(), num_levels, visited);
+  
+}
+
+
 
 MEDDLY::satimpl_opname::implicit_relation::~implicit_relation()
 {
   last_in_node_array = 0;
   impl_unique.clear();
   
-  for(int i = 0; i < num_levels; i++) delete[] event_list[i];
+  for(int i = 0; i <=num_levels; i++) {delete[] event_list[i]; delete[] confirmed[i];}
   delete[] event_list;
   delete[] event_added;
   delete[] event_list_alloc;
+  delete[] confirmed;
+  delete[] confirm_states;
+  delete[] confirmed_array_size;
 }
 
 
@@ -1476,8 +1725,6 @@ MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relat
     {
       last_in_node_array = n_ID;
       n->setID(n_ID);
-      resizeNodeArray(n_ID);
-      node_array[n_ID] = *n;
     }
   }
   else //Delete the node
@@ -1497,23 +1744,23 @@ MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relat
 void
 MEDDLY::satimpl_opname::implicit_relation::show()
 {
-  rel_node_handle** event_list_copy = (rel_node_handle**)malloc(num_levels*sizeof(rel_node_handle*));
+  rel_node_handle** event_list_copy = (rel_node_handle**)malloc((num_levels+1)*sizeof(rel_node_handle*));
   if (0==event_list_copy) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   long total_events = 0;
-  for(int i = 0;i<num_levels;i++) total_events +=event_added[i];
-  for(int i = 0;i<num_levels;i++)
+  for(int i = 1;i<=num_levels;i++) total_events +=event_added[i];
+  for(int i = 1;i<=num_levels;i++)
     {
      event_list_copy[i] = (rel_node_handle*)malloc(total_events*sizeof(rel_node_handle));
      if (0==event_list_copy[i]) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
 
-  for(int i = num_levels-1;i>=0;i--)
+  for(int i = num_levels;i>=1;i--)
     for(int j=0;j<total_events;j++)
       event_list_copy[i][j]=0;
   
   
   int eid = 0;
-  for(int i = num_levels-1;i>=0;i--)
+  for(int i = num_levels;i>=1;i--)
     {
      int k = 0;
      std::cout<<"\n [";
@@ -1545,36 +1792,100 @@ MEDDLY::satimpl_opname::implicit_relation::show()
      std::cout<<"]";
     }
   
-  for(int i = 0;i<num_levels;i++) delete event_list_copy[i];
+  for(int i = 0;i<num_levels+1;i++) delete event_list_copy[i];
   delete[] event_list_copy;
   
 }
 
-long
-MEDDLY::satimpl_opname::implicit_relation::getAllArcCounts(int level)
-{
-  int all_arc_count = 0;
-  for(int l = level;l>=1;l--)
-    {
-     //get the events tops this level
-     for(int r_num = 0; r_num<lengthForLevel(l); r_num++)
-       {
-       //for each event, travel down till terminal
-        relation_node* r = nodeExists(event_list[l][r_num]);
-        while(r->getID()!=1)
-          {
-            all_arc_count+=r->getArcCounts();
-            rel_node_handle next = r->getDown();
-            r = nodeExists(next);
-          }
-       }
+void MEDDLY::satimpl_opname::implicit_relation::bindExtensibleVariables() {
+  //
+  // Find the bounds for each extensbile variable
+  //
+  expert_domain* ed = static_cast<expert_domain*>(outsetF->useDomain());
+  
+  for (int k = 1; k <= num_levels; k++) {
+    int bound = 0;
+    int n_confirmed = 0;
 
-    
+    for (int j = 0; j < confirmed_array_size[k]; j++) {
+      if (confirmed[k][j]) { bound = j+1; n_confirmed++; }
     }
- 
- 
-  return all_arc_count;
+
+    MEDDLY_DCASSERT(bound > 0);
+    MEDDLY_DCASSERT(n_confirmed == confirm_states[k]);
+    ed->enlargeVariableBound(k, false, bound);
+  }
 }
+
+MEDDLY::dd_edge
+MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTop, forest *mxd)
+{
+  //mxd is built on a domain obtained from result of saturation
+  int nVars = outsetF->getDomain()->getNumVariables();
+  //int* sizes = new int[nVars];
+  relation_node* Rnode = nodeExists(eventTop);
+  rel_node_handle* rnh_array = (rel_node_handle*)malloc((nVars+1)*sizeof(rel_node_handle));
+  // int top_level = Rnode->getLevel();
+  
+  // domain* d = outsetF->useDomain();
+  expert_forest* ef = (expert_forest*) mxd;
+  
+  //Get relation node handles
+  for (int i=nVars; i>=1; i--)
+    {
+    
+      if(Rnode->getLevel()==i)// if variable i is a part of this event
+        {
+          rnh_array[i] = Rnode->getID(); // keep track of node_handles that are part of this event
+          Rnode = nodeExists(Rnode->getDown()); // move to next variable in the event
+        }
+      else // if not, then
+        {
+        rnh_array[i] = -1; // node handle of the variable i in the event
+        continue;
+        }
+    }
+  
+  node_handle below = ef->handleForValue(true); // Terminal true node 
+  
+  for (int i=1; (i<=nVars)&&(below!=0); i++)
+    {
+        if(rnh_array[i]!=-1)
+          {
+            Rnode = nodeExists(rnh_array[i]);
+            //Create a new unprimed node for variable i
+            MEDDLY_DCASSERT(outsetF->getVariableSize(i)>=Rnode->getPieceSize());
+            unpacked_node* UP_var = unpacked_node::newFull(ef, i, Rnode->getPieceSize());
+          
+            for (int j=0; j<Rnode->getPieceSize(); j++) {
+          
+              long new_j = confirmed[i][Rnode->getTokenUpdate()[j]]? Rnode->getTokenUpdate()[j] : -2;
+              
+              if(new_j>=0) 
+                {
+                   //Create primed node for each valid index of the unprimed node
+                  unpacked_node* P_var = unpacked_node::newSparse(ef, -i, 1);
+                  P_var->i_ref(0) = new_j;
+                  P_var->d_ref(0) = ef->linkNode(below); // primed node for new_j index points to terminal or unprime node
+                  UP_var->d_ref(j) = ef->createReducedNode(j, P_var);
+                }
+              else
+                UP_var->d_ref(j) = ef->handleForValue(false); // unprimed node for j index points to false
+              }
+          
+              ef->unlinkNode(below);
+              below = ef->createReducedNode(-1, UP_var);
+          }
+    }
+    
+  dd_edge nsf(mxd);
+  nsf.set(below);
+  
+  return nsf;
+}
+
+
+
 
 // ******************************************************************
 // *                       operation  methods                       *
@@ -1880,6 +2191,11 @@ MEDDLY::specialized_operation::~specialized_operation()
 }
 
 void MEDDLY::specialized_operation::compute(const dd_edge &arg, dd_edge &res)
+{
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::specialized_operation::compute(const dd_edge &arg, bool &res)
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
