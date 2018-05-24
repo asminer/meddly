@@ -27,6 +27,7 @@ nextver=`awk -F. '{for (i=1; i<NF; i++) printf($i"."); print $NF+1}' <<< $versio
 git add src/revision.h
 git commit -m "Updated release date for $version"
 git push
+git push sourceforge
 
 #
 # Create and publish a tag for $version
@@ -34,6 +35,7 @@ git push
 
 git tag -a "v$version" -m "Tag for release $version"
 git push origin v$version
+git push sourceforge v$version
  
  
 #
