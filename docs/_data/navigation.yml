@@ -1,0 +1,22 @@
+side:
+  - title: "About"
+    children:
+      - title: "Features"
+        url: "/basics/00_features/"
+      - title: "Publications"
+        url: "/basics/01_publications/"
+
+  - title: "Getting Started"
+    children:
+      - title: "Downloading"
+        url: "/basics/02_downloading/"
+      - title: "Building"
+        url: "/basics/03_building/"
+      
+#  - title: "Examples"
+#    children:
+#      - title: "TBD 1"
+#      - title: "TBD 2"
+
+#  - title: "Releases"
+
