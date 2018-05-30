@@ -22,13 +22,13 @@ whitelist:
 collections:
   basics:
     output: true
-    permalink: /:collection/:path/
+    permalink: /:collection/:path
   examples:
     output: true
     permalink: /:collection/:path/
   releases:
     output: true
-    permalink: /:collection/:path/
+    permalink: /:collection/:path
 
 defaults:
   # _pages
@@ -52,7 +52,7 @@ defaults:
       path: ""
       type: releases
     values:
-      layout: single
+      layout: singdate
       sidebar:
         nav: "side"
   # _examples
