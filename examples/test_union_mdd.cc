@@ -27,8 +27,8 @@
 
 #include <cstdlib>
 #include <iostream>
-#include "meddly.h"
-#include "timer.h"
+#include "../src/meddly.h"
+#include "../src/timer.h"
 
 using namespace MEDDLY;
 

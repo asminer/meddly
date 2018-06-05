@@ -25,7 +25,7 @@
   Test1: Test fully reduced MDDs with Saturation.
 */
 
-#include "meddly.h"
+#include "../src/meddly.h"
 #include <cstdlib>
 
 #define VERBOSE

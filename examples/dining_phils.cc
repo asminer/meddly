@@ -93,10 +93,10 @@
   #include <gmp.h>
 #endif
 
-#include "meddly.h"
-#include "meddly_expert.h"
-#include "timer.h"
-#include "loggers.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
+#include "../src/timer.h"
+#include "../src/loggers.h"
 
 
 using namespace MEDDLY;

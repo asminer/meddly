@@ -37,10 +37,10 @@
 #include <cstdlib>
 #include <fstream>
 
-#include "meddly.h"
-#include "meddly_expert.h"
-#include "loggers.h"
-#include "timer.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
+#include "../src/loggers.h"
+#include "../src/timer.h"
 
 using namespace MEDDLY;
 

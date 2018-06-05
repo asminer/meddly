@@ -22,11 +22,11 @@
 #include <string.h>
 #include <fstream>
 
-#include "meddly.h"
-#include "meddly_expert.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
 #include "simple_model.h"
-#include "timer.h"
-#include "loggers.h"
+#include "../src/timer.h"
+#include "../src/loggers.h"
 
 using namespace MEDDLY;
 

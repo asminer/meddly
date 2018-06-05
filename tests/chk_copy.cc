@@ -25,7 +25,7 @@
 #include <cstdlib>
 #include <time.h>
 
-#include "meddly.h"
+#include "../src/meddly.h"
 
 #define CHECK_ALL_MTMDDS
 #define CHECK_ALL_MTMXDS

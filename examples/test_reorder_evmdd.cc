@@ -31,17 +31,17 @@
 #include <random>
 #include <chrono>
 
-#include "meddly.h"
+#include "../src/meddly.h"
 
 // #define USE_EXPERT_INTERFACE
 #ifdef USE_EXPERT_INTERFACE
-#include "meddly_expert.h"
+#include "../src/meddly_expert.h"
 #endif
 
 using namespace MEDDLY;
 
 // Timer class
-#include "timer.h"
+#include "../src/timer.h"
 
 #define TEST_INDEX_SET
 #define USE_SEQUENTIAL_PLUS 0

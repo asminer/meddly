@@ -37,9 +37,9 @@
 #include <cstdlib>
 #include <fstream>
 
-#include "meddly.h"
-#include "meddly_expert.h"
-#include "loggers.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
+#include "../src/loggers.h"
 
 // #define SET_VAR_NAMES
 // #define DEBUG_VARS

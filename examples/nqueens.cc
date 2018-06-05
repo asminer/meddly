@@ -32,10 +32,10 @@
 #include <cstdio>
 #include <fstream>
 
-#include "meddly.h"
-#include "meddly_expert.h"
-#include "timer.h"
-#include "loggers.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
+#include "../src/timer.h"
+#include "../src/loggers.h"
 
 // #define SHOW_ALL_SOLUTIONS
 

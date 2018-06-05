@@ -28,9 +28,9 @@
 
 #define _MEDDLY_WITHOUT_CSTDIO_
 
-#include "meddly.h"
-#include "meddly_expert.h"
-#include "timer.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
+#include "../src/timer.h"
 
 // #define DEBUG_INPUT
 // #define DEBUG_NUM_TRUE

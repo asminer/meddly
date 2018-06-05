@@ -28,8 +28,8 @@
 #include <stdlib.h>
 #include <iostream>
 #include <string.h>
-#include "meddly.h"
-#include "meddly_expert.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
 #include "reorder.h"
 
 using namespace MEDDLY;
@@ -42,7 +42,7 @@ using namespace MEDDLY;
 // #include "operation_ext.h"
 
 // Timer class
-#include "timer.h"
+#include "../src/timer.h"
 
 #define USE_REALS 0
 

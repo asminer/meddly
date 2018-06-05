@@ -20,7 +20,7 @@
 #include <cstdlib>
 #include <string.h>
 
-#include "meddly.h"
+#include "../src/meddly.h"
 #include "simple_model.h"
 
 const char* kanban[] = {

@@ -29,8 +29,8 @@
 #include <iostream>
 #include <stdlib.h>
 #include <string.h>
-#include <meddly.h>
-#include <meddly_expert.h>
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
 
 using namespace MEDDLY;
 

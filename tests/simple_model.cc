@@ -17,7 +17,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "meddly.h"
+#include "../src/meddly.h"
 #include "simple_model.h"
 
 // #define DEBUG_EVENTS
