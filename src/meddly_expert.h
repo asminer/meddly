@@ -1339,7 +1339,13 @@ class MEDDLY::node_headers {
     /// Decrement the incoming count for node p.
     void unlinkNode(node_handle p);
     
-  
+  public: // is node saturated stuff
+
+    /// Get the saturation status of node p.
+    bool isNodeSaturated(node_handle p) const;
+
+    /// Set the saturation status of node p.
+    void setSaturationStatus(node_handle p, bool status);
 
   public: // for debugging
 
@@ -1393,6 +1399,7 @@ class MEDDLY::node_headers {
 
           /// Is node marked.  This is pretty horrible, but is only temporary
           // bool marked;
+          bool is_saturated;
 
     };
 
@@ -1966,6 +1973,15 @@ class MEDDLY::expert_forest: public forest
     */
     void uncacheNode(node_handle p);
 
+  // --------------------------------------------------
+  // Node saturation status
+  // --------------------------------------------------
+  public:
+    /// Get the saturation status of node p.
+    bool isNodeSaturated(node_handle p) const;
+
+    /// Set the saturation status of node p.
+    void setSaturationStatus(node_handle p, bool status);
 
   // --------------------------------------------------
   // Node status
@@ -3368,7 +3384,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         /// Returns true iff a state in \a constraint is reachable
         /// from the states in \a initial_states
         /// Note: \a constraint can be an XDD
-        bool isReachable(const dd_edge& initial_states, const dd_edge& constraint);
+        bool isReachable(const dd_edge& initial_states, const dd_edge& constraint, bool allow_partial_results);
 
         /** Register a relation node.
 

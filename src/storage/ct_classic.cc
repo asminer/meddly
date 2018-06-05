@@ -876,6 +876,28 @@ class MEDDLY::monolithic_chained : public base_chained {
     virtual void listToTable(int h);
     virtual void showEntry(output &s, int h) const;
 
+    // Deletes "curr" from the list;
+    // updates "prev->next" to "curr->next", or
+    // if curr is at the head of the list, updates the head; and
+    // returns "curr->next".
+    inline int discardEntry(int curr, int prev, unsigned h) {
+      MEDDLY_DCASSERT(curr);
+      // Update pointers to skip "curr"
+      int next = entries[curr];
+      if (prev) { entries[prev] = next; } else { table[h] = next; }
+
+      // Delete "curr"
+      operation* currop = operation::getOpWithIndex(entries[curr+1]);
+      MEDDLY_DCASSERT(currop);
+      currop->discardEntry(entries+curr+2);
+      int length = currop->getCacheEntryLength();
+      recycleEntry(curr, length+2);
+
+      // Return curr->next
+      return next;
+    }
+
+
     // TODO: Modify the compute table policy to use node status via getEntryStatus()
     //       Delete a node if it is marked DEAD,
     //       Otherwise,
@@ -898,27 +920,6 @@ class MEDDLY::monolithic_chained : public base_chained {
         return false;
     }
 #else
-    // Deletes "curr" from the list;
-    // updates "prev->next" to "curr->next", or
-    // if curr is at the head of the list, updates the head; and
-    // returns "curr->next".
-    inline int discardEntry(int curr, int prev, unsigned h) {
-      MEDDLY_DCASSERT(curr);
-      // Update pointers to skip "curr"
-      int next = entries[curr];
-      if (prev) { entries[prev] = next; } else { table[h] = next; }
-
-      // Delete "curr"
-      operation* currop = operation::getOpWithIndex(entries[curr+1]);
-      MEDDLY_DCASSERT(currop);
-      currop->discardEntry(entries+curr+2);
-      int length = currop->getCacheEntryLength();
-      recycleEntry(curr, length+2);
-
-      // Return curr->next
-      return next;
-    }
-
     inline MEDDLY::forest::node_status getEntryStatus(int curr) {
       operation* currop = operation::getOpWithIndex(entries[curr+1]);
       MEDDLY_DCASSERT(currop);
@@ -954,6 +955,128 @@ MEDDLY::monolithic_chained::initializeSearchKey(operation* op)
 
 MEDDLY::compute_table::search_result& 
 MEDDLY::monolithic_chained::find(search_key *k)
+{
+  static old_search_result ANS;
+  old_search_key* key = smart_cast <old_search_key*>(k);
+  MEDDLY_DCASSERT(key);
+  perf.pings++;
+  unsigned h = hash(key);
+  int prev = 0;
+  int curr = table[h];
+  int chain = 0;
+  ANS.setInvalid();
+  while (curr) {
+    chain++;
+    //
+    // Check for match
+    //
+
+#ifndef USE_NODE_STATUS
+
+    if (equal_sw(entries+curr+1, key->rawData(), key->dataLength())) {
+      if (key->getOp()->shouldStaleCacheHitsBeDiscarded()) {
+        if (checkStale(h, prev, curr)) {
+          // The match is stale.
+          // Since there can NEVER be more than one match
+          // in the table, we're done!
+          break;
+        }
+      }
+      // "Hit"
+      perf.hits++;
+      if (prev) {
+        // not at the front; move it there
+        entries[prev] = entries[curr];
+        entries[curr] = table[h];
+        table[h] = curr;
+      }
+#ifdef DEBUG_CT
+      printf("Found CT entry ");
+      key->getOp()->showEntry(stdout, entries + curr + 2);
+      // fprintf(stderr, " in slot %u", h);
+      printf("\n");
+#endif
+      ANS.setResult(entries+curr+1+key->dataLength(), key->getOp()->getAnsLength());
+      break;
+    }
+    //
+    // No match; maybe check stale
+    //
+    if (checkStalesOnFind) {
+      if (checkStale(h, prev, curr)) continue;
+    }
+
+    // advance pointers
+    prev = curr;
+    curr = entries[prev];
+#else
+
+    // |-----------||--------|-------------|---------|
+    // | status    || active | recoverable | dead    |
+    // |-----------||--------|-------------|---------|
+    // | equal     || use    | use         | discard |
+    // |-----------||--------|-------------|---------|
+    // | not equal || keep   | discard     | discard |
+    // |-----------||--------|-------------|---------|
+    //
+    // if (equal)
+    //    if (dead) discard
+    //    else use
+    // else
+    //    if (!active) discard
+    //    else do nothing
+
+    MEDDLY::forest::node_status status = getEntryStatus(curr);
+    bool is_dead = status == MEDDLY::forest::node_status::DEAD;
+    bool is_active = status == MEDDLY::forest::node_status::ACTIVE;
+    bool is_equal = equal_sw(entries+curr+1, key->rawData(), key->dataLength());
+
+    if (is_equal) {
+      if (is_dead) {
+        discardEntry(curr, prev, h);
+      } else {
+        // "Hit"
+        perf.hits++;
+        if (prev) {
+          // not at the front; move it there
+          entries[prev] = entries[curr];
+          entries[curr] = table[h];
+          table[h] = curr;
+        }
+#ifdef DEBUG_CT
+        printf("Found CT entry ");
+        key->getOp()->showEntry(stdout, entries + curr + 2);
+        // fprintf(stderr, " in slot %u", h);
+        printf("\n");
+#endif
+        ANS.setResult(entries+curr+1+key->dataLength(), key->getOp()->getAnsLength());
+      }
+      // Stop iterating since there can only be one match
+      break;
+    }
+
+    MEDDLY_DCASSERT(!is_equal);
+
+    //
+    // Update pointers for the next iteration
+    //
+    if (!is_active) {
+      curr = discardEntry(curr, prev, h);
+      // Note: discardEntry() updates prev
+    } else {
+      prev = curr;
+      curr = entries[prev];
+    }
+
+#endif
+  }
+  sawSearch(chain);
+  return ANS;
+}
+
+
+MEDDLY::compute_table::search_result& 
+MEDDLY::monolithic_chained::erase(search_key *k)
 {
   static old_search_result ANS;
   old_search_key* key = smart_cast <old_search_key*>(k);
