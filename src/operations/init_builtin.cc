@@ -133,6 +133,7 @@ namespace MEDDLY {
 
   // minimum witness operation "codes"
   const constrained_opname* CONSTRAINED_BACKWARD_BFS = 0;
+  const constrained_opname* CONSTRAINED_FORWARD_DFS = 0;
   const constrained_opname* CONSTRAINED_BACKWARD_DFS = 0;
   const constrained_opname* TRANSITIVE_CLOSURE_DFS = 0;
 };
@@ -208,6 +209,7 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::SATURATION_OTF_FORWARD,   SATURATION_OTF_FORWARD,   initOtfSaturationForward()  );
   initP(MEDDLY::SATURATION_IMPL_FORWARD, SATURATION_IMPL_FORWARD, initImplSaturationForward()  );
   initP(MEDDLY::CONSTRAINED_BACKWARD_BFS,   CONSTRAINED_BACKWARD_BFS,   initConstrainedBFSBackward()  );
+  initP(MEDDLY::CONSTRAINED_FORWARD_DFS,   CONSTRAINED_FORWARD_DFS,   initConstrainedDFSForward()  );
   initP(MEDDLY::CONSTRAINED_BACKWARD_DFS,   CONSTRAINED_BACKWARD_DFS,   initConstrainedDFSBackward()  );
   initP(MEDDLY::TRANSITIVE_CLOSURE_DFS,   TRANSITIVE_CLOSURE_DFS,   initTransitiveClosureDFS()  );
 

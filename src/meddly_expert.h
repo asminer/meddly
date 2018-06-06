@@ -162,6 +162,7 @@ namespace MEDDLY {
   /** Minimum-witness operations.
   */
   extern const constrained_opname* CONSTRAINED_BACKWARD_BFS;
+  extern const constrained_opname* CONSTRAINED_FORWARD_DFS;
   extern const constrained_opname* CONSTRAINED_BACKWARD_DFS;
   extern const constrained_opname* TRANSITIVE_CLOSURE_DFS;
 
