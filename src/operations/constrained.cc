@@ -194,7 +194,17 @@ MEDDLY::specialized_operation* MEDDLY::constrained_dfs_opname::buildOperation(ar
   constrained_opname::constrained_args* args = dynamic_cast<constrained_opname::constrained_args*>(a);
   specialized_operation* op = 0;
   if (forward) {
-    throw error(error::NOT_IMPLEMENTED);
+    if (args->consForest->isMultiTerminal() && args->inForest->isMultiTerminal()
+      && args->relForest->isMultiTerminal() && args->outForest->isMultiTerminal()) {
+      op = new constrained_forwd_dfs_mt(this,
+        static_cast<expert_forest*>(args->consForest),
+        static_cast<expert_forest*>(args->inForest),
+        static_cast<expert_forest*>(args->relForest),
+        static_cast<expert_forest*>(args->outForest));
+    }
+    else {
+      throw error(error::NOT_IMPLEMENTED);
+    }
   }
   else {
     if (args->consForest->isMultiTerminal() && args->inForest->isMultiTerminal()
@@ -227,14 +237,14 @@ MEDDLY::specialized_operation* MEDDLY::constrained_dfs_opname::buildOperation(ar
 // *                                                                *
 // ******************************************************************
 
-const int MEDDLY::constrained_bckwd_dfs_mt::NODE_INDICES_IN_KEY[4] = {
+const int MEDDLY::constrained_dfs_mt::NODE_INDICES_IN_KEY[4] = {
   0 / sizeof(node_handle),
   sizeof(node_handle) / sizeof(node_handle),
   2 * sizeof(node_handle) / sizeof(node_handle),
   3 * sizeof(node_handle) / sizeof(node_handle)
 };
 
-MEDDLY::constrained_bckwd_dfs_mt::constrained_bckwd_dfs_mt(const constrained_opname* code,
+MEDDLY::constrained_dfs_mt::constrained_dfs_mt(const constrained_opname* code,
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
   : common_constrained(code,
       3 * sizeof(node_handle) / sizeof(node_handle),
@@ -253,7 +263,7 @@ MEDDLY::constrained_bckwd_dfs_mt::constrained_bckwd_dfs_mt(const constrained_opn
   splits = nullptr;
 }
 
-MEDDLY::compute_table::search_key* MEDDLY::constrained_bckwd_dfs_mt::findResult(
+MEDDLY::compute_table::search_key* MEDDLY::constrained_dfs_mt::findResult(
     node_handle a, node_handle b, node_handle r, node_handle &c)
 {
   compute_table::search_key* key = useCTkey();
@@ -274,7 +284,7 @@ MEDDLY::compute_table::search_key* MEDDLY::constrained_bckwd_dfs_mt::findResult(
   return 0;
 }
 
-void MEDDLY::constrained_bckwd_dfs_mt::saveResult(compute_table::search_key* key,
+void MEDDLY::constrained_dfs_mt::saveResult(compute_table::search_key* key,
   node_handle a, node_handle b, node_handle r, node_handle c)
 {
   consF->cacheNode(a);
@@ -285,7 +295,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::saveResult(compute_table::search_key* key
   CT->addEntry();
 }
 
-bool MEDDLY::constrained_bckwd_dfs_mt::isStaleEntry(const node_handle* data)
+bool MEDDLY::constrained_dfs_mt::isStaleEntry(const node_handle* data)
 {
   return consF->isStale(data[NODE_INDICES_IN_KEY[0]])
     || argF->isStale(data[NODE_INDICES_IN_KEY[1]])
@@ -293,7 +303,7 @@ bool MEDDLY::constrained_bckwd_dfs_mt::isStaleEntry(const node_handle* data)
     || resF->isStale(data[NODE_INDICES_IN_KEY[3]]);
 }
 
-void MEDDLY::constrained_bckwd_dfs_mt::discardEntry(const node_handle* data)
+void MEDDLY::constrained_dfs_mt::discardEntry(const node_handle* data)
 {
   consF->uncacheNode(data[NODE_INDICES_IN_KEY[0]]);
   argF->uncacheNode(data[NODE_INDICES_IN_KEY[1]]);
@@ -301,7 +311,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::discardEntry(const node_handle* data)
   resF->uncacheNode(data[NODE_INDICES_IN_KEY[3]]);
 }
 
-void MEDDLY::constrained_bckwd_dfs_mt::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::constrained_dfs_mt::showEntry(output &strm, const node_handle* data) const
 {
   strm << "[" << getName()
     << "(" << long(data[NODE_INDICES_IN_KEY[0]])
@@ -312,7 +322,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::showEntry(output &strm, const node_handle
 }
 
 // Partition the nsf based on "top level"
-void MEDDLY::constrained_bckwd_dfs_mt::splitMxd(node_handle mxd)
+void MEDDLY::constrained_dfs_mt::splitMxd(node_handle mxd)
 {
   MEDDLY_DCASSERT(transF);
   MEDDLY_DCASSERT(splits == nullptr);
@@ -384,7 +394,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::splitMxd(node_handle mxd)
 #endif
 }
 
-void MEDDLY::constrained_bckwd_dfs_mt::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
+void MEDDLY::constrained_dfs_mt::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
 {
   MEDDLY_DCASSERT(res.getForest() == resF);
 
@@ -397,7 +407,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::compute(const dd_edge& a, const dd_edge& 
   res.set(c);
 }
 
-void MEDDLY::constrained_bckwd_dfs_mt::compute(node_handle a, node_handle b, node_handle r,
+void MEDDLY::constrained_dfs_mt::compute(node_handle a, node_handle b, node_handle r,
   node_handle& c)
 {
   // Partition NSF by levels
@@ -416,6 +426,261 @@ void MEDDLY::constrained_bckwd_dfs_mt::compute(node_handle a, node_handle b, nod
   }
   delete[] splits;
   splits = nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                   constrained_forwd_dfs_mt                     *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::constrained_forwd_dfs_mt::constrained_forwd_dfs_mt(const constrained_opname* code,
+  expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
+  : constrained_dfs_mt(code, cons, arg, trans, res)
+{
+}
+
+void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_node& nb)
+{
+  MEDDLY_DCASSERT(a != 0);
+
+  node_handle mxd = splits[nb.getLevel()];
+  if (mxd == 0) {
+    return;
+  }
+
+  const int mxdLevel = transF->getNodeLevel(mxd);
+  MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
+
+  // Initialize mxd readers, note we might skip the unprimed level
+  unpacked_node* Ru = (mxdLevel < 0)
+    ? unpacked_node::newRedundant(transF, nb.getLevel(), mxd, true)
+    : unpacked_node::newFromNode(transF, mxd, true);
+
+  unpacked_node* A = isLevelAbove(nb.getLevel(), consF->getNodeLevel(a))
+    ? unpacked_node::newRedundant(consF, nb.getLevel(), a, true)
+    : unpacked_node::newFromNode(consF, a, true);
+
+  // indices to explore
+  std::deque<int> queue;
+  std::vector<bool> waiting(nb.getSize(), false);
+  for (int i = 0; i < nb.getSize(); i++) {
+    if (nb.d(i) != 0 && Ru->d(i) != 0) {
+      queue.push_back(i);
+      waiting[i] = true;
+    }
+  }
+
+  unpacked_node** Rps = new unpacked_node*[Ru->getSize()];
+  for (int i = 0; i < Ru->getSize(); i++) {
+    if (Ru->d(i) == 0) {
+      Rps[i] = nullptr;
+    }
+    else {
+      Rps[i] = (transF->getNodeLevel(Ru->d(i)) == -nb.getLevel())
+        ? unpacked_node::newFromNode(transF, Ru->d(i), false)
+        : unpacked_node::newIdentity(transF, -nb.getLevel(), i, Ru->d(i), false);
+    }
+  }
+
+  // explore indexes
+  while (!queue.empty()) {
+    const int i = queue.front();
+    queue.pop_front();
+    waiting[i] = false;
+
+    MEDDLY_DCASSERT(nb.d(i) != 0 && Rps[i] != nullptr);
+
+    for (int jz = 0; jz < Rps[i]->getNNZs(); jz++) {
+      const int j = Rps[i]->i(jz);
+      if (A->d(j) == 0) {
+        continue;
+      }
+
+      if (Rps[i]->d(jz) != 0) {
+        node_handle rec = 0;
+        recFire(A->d(j), nb.d(i), Rps[i]->d(jz), rec);
+        MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
+
+        if (rec == 0) {
+          continue;
+        }
+
+        MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
+
+        if (rec == nb.d(j)) {
+          resF->unlinkNode(rec);
+          continue;
+        }
+
+        bool updated = true;
+
+        if (nb.d(j) == 0) {
+          nb.d_ref(j) = rec;
+        }
+        else {
+          node_handle acc = unionOp->compute(nb.d(j), rec);
+          resF->unlinkNode(rec);
+          if (acc != nb.d(j)) {
+            resF->unlinkNode(nb.d(j));
+            nb.d_ref(j) = acc;
+          }
+          else {
+            resF->unlinkNode(acc);
+            updated = false;
+          }
+        }
+
+        if (updated) {
+          if (j == i) {
+            // Restart inner for-loop.
+            jz = -1;
+          }
+          else {
+            if (!waiting[j] && Rps[j] != nullptr) {
+              queue.push_back(j);
+              waiting[j] = true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  unpacked_node::recycle(Ru);
+  for (int i = 0; i < Ru->getSize(); i++) {
+    if (Rps[i] != nullptr) {
+      unpacked_node::recycle(Rps[i]);
+    }
+  }
+  delete[] Rps;
+  unpacked_node::recycle(A);
+}
+
+void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, node_handle r, node_handle& c)
+{
+  // termination conditions
+  if (a == 0 || b == 0 || r == 0) {
+    c = 0;
+    return;
+  }
+  if ((a == -1 || a == b) && r == -1) {
+    c = resF->linkNode(b);
+    return;
+  }
+
+  // check the cache
+  compute_table::search_key* key = findResult(a, b, r, c);
+  if (key == 0) {
+    return;
+  }
+
+  // check if mxd and evmdd are at the same level
+  const int aLevel = consF->getNodeLevel(a);
+  const int bLevel = argF->getNodeLevel(b);
+  const int rLevel = transF->getNodeLevel(r);
+  const int level = MAX(MAX(ABS(rLevel), bLevel), aLevel);
+  const int size = resF->getLevelSize(level);
+
+  // Initialize evmdd reader
+  unpacked_node* A = isLevelAbove(level, aLevel)
+    ? unpacked_node::newRedundant(consF, level, a, true)
+    : unpacked_node::newFromNode(consF, a, true);
+  unpacked_node* B = isLevelAbove(level, bLevel)
+    ? unpacked_node::newRedundant(argF, level, b, true)
+    : unpacked_node::newFromNode(argF, b, true);
+
+  unpacked_node* T = unpacked_node::newFull(resF, level, size);
+  if (ABS(rLevel) < level) {
+    // Assume identity reduction
+    // Skipped levels in the MXD,
+    // that's an important special case that we can handle quickly.
+
+    for (int i = 0; i < size; i++) {
+      node_handle t = 0;
+      recFire(A->d(i), B->d(i), r, t);
+      T->d_ref(i) = t;
+    }
+  }
+  else {
+    //
+    // Need to process this level in the MXD.
+
+    // clear out result (important!)
+    for (int i = 0; i < size; i++) {
+      T->d_ref(i) = 0;
+    }
+
+    // Initialize mxd readers, note we might skip the unprimed level
+    unpacked_node* Ru = (rLevel < 0)
+      ? unpacked_node::newRedundant(transF, -rLevel, r, false)
+      : unpacked_node::newFromNode(transF, r, false);
+
+    // loop over mxd "rows"
+    for (int iz = 0; iz < Ru->getNNZs(); iz++) {
+      const int i = Ru->i(iz);
+
+      unpacked_node* Rp = isLevelAbove(-level, transF->getNodeLevel(Ru->d(iz)))
+        ? unpacked_node::newIdentity(transF, -level, i, Ru->d(iz), false)
+        : unpacked_node::newFromNode(transF, Ru->d(iz), false);
+
+      // loop over mxd "columns"
+      for (int jz = 0; jz < Rp->getNNZs(); jz++) {
+        const int j = Rp->i(jz);
+        if (A->d(j) == 0) {
+          continue;
+        }
+
+        // ok, there is an i->j "edge".
+        // determine new states to be added (recursively)
+        // and add them
+        node_handle n = 0;
+        recFire(A->d(j), B->d(i), Rp->d(jz), n);
+
+        if (n == 0) {
+          continue;
+        }
+
+        if (T->d(j) == 0) {
+          T->d_ref(j) = n;
+          continue;
+        }
+
+        // there's new states and existing states; union them.
+        const node_handle oldj = T->d(j);
+        node_handle newstates = unionOp->compute(n, oldj);
+        T->d_ref(j) = newstates;
+
+        resF->unlinkNode(oldj);
+        resF->unlinkNode(n);
+      } // for j
+
+      unpacked_node::recycle(Rp);
+    } // for i
+
+    unpacked_node::recycle(Ru);
+  } // else
+
+  // cleanup mdd reader
+  unpacked_node::recycle(A);
+  unpacked_node::recycle(B);
+
+  saturateHelper(a, *T);
+  c = resF->createReducedNode(-1, T);
+
+  saveResult(key, a, b, r, c);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                   constrained_bckwd_dfs_mt                     *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::constrained_bckwd_dfs_mt::constrained_bckwd_dfs_mt(const constrained_opname* code,
+  expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
+  : constrained_dfs_mt(code, cons, arg, trans, res)
+{
 }
 
 void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_node& nb)
@@ -608,7 +873,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
 
       // loop over mxd "columns"
       for (int jz = 0; jz < Rp->getNNZs(); jz++) {
-        int j = Rp->i(jz);
+        const int j = Rp->i(jz);
 
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
@@ -652,11 +917,11 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
 
 // ******************************************************************
 // *                                                                *
-// *                    constraint_bckwd_sat_mt                     *
+// *                  constrained_saturation_mt                     *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constrained_saturation_mt::constrained_saturation_mt(constrained_bckwd_dfs_mt* p,
+MEDDLY::constrained_saturation_mt::constrained_saturation_mt(constrained_dfs_mt* p,
   expert_forest* cons, expert_forest* arg, expert_forest* res)
   : specialized_operation(nullptr,
       (arg->isFullyReduced()
@@ -1506,6 +1771,11 @@ void MEDDLY::constrained_saturation_evplus::saturate(int aev, node_handle a, int
 MEDDLY::constrained_opname* MEDDLY::initConstrainedBFSBackward()
 {
   return new constrained_bfs_opname(false);
+}
+
+MEDDLY::constrained_opname* MEDDLY::initConstrainedDFSForward()
+{
+  return new constrained_dfs_opname(true);
 }
 
 MEDDLY::constrained_opname* MEDDLY::initConstrainedDFSBackward()
