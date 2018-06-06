@@ -221,7 +221,7 @@ void testEVTimesMXD(forest* srcF, forest* destF)
         if (destF->getRangeType() == forest::INTEGER) {
           // convert destE to boolean
           dd_edge zero(destF);
-          destF->createEdge(int(0), zero);
+          destF->createEdge(long(0), zero);
           apply(NOT_EQUAL, destE, zero, destE);
         }
         if (destF->getRangeType() == forest::REAL) {

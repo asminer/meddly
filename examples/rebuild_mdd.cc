@@ -49,7 +49,7 @@ using namespace MEDDLY;
 #if USE_REALS
   typedef float element_type;
 #else
-  typedef int element_type;
+  typedef long element_type;
 #endif
 
 
@@ -205,7 +205,7 @@ void reorderVariablesByRebuilding(dd_edge &e)
 	  printf("Final: %d\n", e2.getNodeCount());
 	}
 
-	f->createEdge(0, e);
+	f->createEdge(long(0), e);
 	printf("Source Discarded: %d\n", e.getNodeCount());
 
 	{
@@ -315,7 +315,7 @@ int main(int argc, char *argv[])
 #if USE_REALS
       printf(": %f]\n", terms[i]);
 #else
-      printf(": %d]\n", terms[i]);
+      printf(": %ld]\n", terms[i]);
 #endif
     }
   }

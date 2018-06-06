@@ -100,7 +100,7 @@ void hasQueen(forest* f, int i, int j, dd_edge &e)
 
 void queenInRow(forest* f, int r, dd_edge &e)
 {
-  f->createEdge(int(0), e);
+  f->createEdge(long(0), e);
   if (r<0 || r>=N) return;
   for (int j=0; j<N; j++) {
     dd_edge tmp(f);
@@ -115,7 +115,7 @@ void queenInCol(forest* f, int c, dd_edge &e)
     e = *qic[c];
     return;
   }
-  f->createEdge(int(0), e);
+  f->createEdge(long(0), e);
   if (c<0 || c>=N) return;
   for (int i=0; i<N; i++) {
     dd_edge tmp(f);
@@ -131,7 +131,7 @@ void queenInDiagP(forest* f, int d, dd_edge &e)
     e = *qidp[d];
     return;
   }
-  f->createEdge(int(0), e);
+  f->createEdge(long(0), e);
   if (d<0 || d>=2*N-1) return;
   for (int i=0; i<N; i++) for (int j=0; j<N; j++) if (i+j==d) {
     dd_edge tmp(f);
@@ -147,7 +147,7 @@ void queenInDiagM(forest* f, int d, dd_edge &e)
     e = *qidm[d+N-1];
     return;
   }
-  f->createEdge(int(0), e);
+  f->createEdge(long(0), e);
   if (d<=-N || d>=N) return;
   for (int i=0; i<N; i++) for (int j=0; j<N; j++) if (i-j==d) {
     dd_edge tmp(f);
@@ -247,7 +247,7 @@ int main(int argc, const char** argv)
   }
 
   dd_edge num_queens(f);
-  f->createEdge(int(0), num_queens);
+  f->createEdge(long(0), num_queens);
   for (int i=0; i<N; i++) for (int j=0; j<N; j++) {
     dd_edge tmp(f);
     hasQueen(f, i, j, tmp);
@@ -275,7 +275,7 @@ int main(int argc, const char** argv)
 
     // Build all possible placements of q queens:
     dd_edge qqueens(f);
-    f->createEdge(q, qqueens);
+    f->createEdge(long(q), qqueens);
     apply(EQUAL, qqueens, num_queens, qqueens);
     solutions = qqueens;
 

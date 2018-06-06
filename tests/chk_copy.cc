@@ -98,7 +98,7 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
       randomizeMinterm(true, 4, minprime, Vars+1);
       adjustMinterms(minterm, minprime, Vars+1);
     }
-    int i_value = Equilikely(1, 5);
+    long i_value = Equilikely(1, 5);
     float f_value = i_value;
 
     dd_edge temp(out);
@@ -217,7 +217,7 @@ void testCopy(forest* srcF, forest* destF)
         if (destF->getRangeType() == forest::INTEGER) {
           // convert destE to boolean
           dd_edge zero(destF);
-          destF->createEdge(int(0), zero);
+          destF->createEdge(long(0), zero);
           apply(NOT_EQUAL, destE, zero, destE);
         }
         if (destF->getRangeType() == forest::REAL) {

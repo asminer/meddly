@@ -48,7 +48,7 @@ bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
   // Build state indexes
 
   int* sslist[] = { R, N, S };
-  int indexes[] = { 0, 1, 2 };
+  long indexes[] = { 0, 1, 2 };
 
   try {
     indf->createEdge(sslist, indexes, 3, ss);

@@ -37,11 +37,11 @@ class MEDDLY::mt_mxd_int : public mtmxd_forest {
     mt_mxd_int(int dsl, domain *d, const policies &p, int* level_reduction_rule=NULL, int tv=0);
     ~mt_mxd_int();
 
-    void createEdge(int val, dd_edge &e);
-    void createEdge(const int* const* vlist, const int* const* vplist, const int* terms, int N, dd_edge& e);
-    virtual void createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a);
+    void createEdge(long val, dd_edge &e);
+    void createEdge(const int* const* vlist, const int* const* vplist, const long* terms, int N, dd_edge& e);
+    virtual void createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a);
     void evaluate(const dd_edge& f, const int* vlist, const int* vplist,
-        int &term) const;
+        long &term) const;
 
     virtual void showTerminal(output &s, node_handle tnode) const;
     virtual void writeTerminal(output &s, node_handle tnode) const;

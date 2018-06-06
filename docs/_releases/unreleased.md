@@ -4,5 +4,11 @@ number: changes
 layout: single
 ---
 
-No changes yet
+### Simple Interface Changes
+
+* For forests with range of ```INTEGER```,
+  function values are now ```long``` instead of ```int```.
+  The interface has been updated appropriately
+  (methods ```createEdge```, ```createEdgeForVar```, and ```evaluate```).
+
 

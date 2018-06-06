@@ -48,7 +48,7 @@ using namespace MEDDLY;
 #if USE_REALS
   typedef float element_type;
 #else
-  typedef int element_type;
+  typedef long element_type;
 #endif
 
 
@@ -180,7 +180,7 @@ void printElements(int** elements, element_type* terms, int nElements,
 #if USE_REALS
     printf(": %f]\n", terms[i]);
 #else
-    printf(": %d]\n", terms[i]);
+    printf(": %ld]\n", terms[i]);
 #endif
   }
 }

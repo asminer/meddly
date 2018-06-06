@@ -24,7 +24,7 @@
  *
  * Demonstrates use of
  *   createEdgeForVar(int, bool, dd_edge&), and
- *   createEdgeForVar(int, bool, int*, dd_edge&)
+ *   createEdgeForVar(int, bool, long*, dd_edge&)
  *   createEdgeForVar(int, bool, float*, dd_edge&)
  */
 
@@ -41,7 +41,7 @@ using namespace MEDDLY;
 #if USE_REALS
   typedef float element_type;
 #else
-  typedef int element_type;
+  typedef long element_type;
 #endif
 
 const int nVariables = 3;

@@ -102,10 +102,10 @@ bool checkReachset(int N)
   int c = 0;
   for (enumerator s(reachable); s; ++s) {
     const int* state = s.getAssignments();
-    int index;
+    long index;
     evmdd->evaluate(reach_index, state, index);
     if (c != index) {
-      printf("\nState number %d has index %d\n", c, index);
+      printf("\nState number %d has index %ld\n", c, index);
       return false;
     }
     c++;

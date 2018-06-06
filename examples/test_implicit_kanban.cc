@@ -134,8 +134,6 @@ void printStats(const char* who, const forest* f)
 int main(int argc, const char** argv)
 {
   char method ;
-  int batchsize = 256;
-  const char* lfile = 0;
   
   for (int i=1; i<argc; i++)
     {

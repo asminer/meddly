@@ -263,7 +263,7 @@ void queeniPlusd(const varorder &V, int i, int d, dd_edge &e)
 
   F->createEdgeForVar(V.queenRow(i), false, qr);
   F->createEdgeForVar(V.queenCol(i), false, qc);
-  F->createEdge(d, constd);
+  F->createEdge(long(d), constd);
 
   apply(PLUS, qr, qc, e);
   apply(EQUAL, e, constd, e);
@@ -281,7 +281,7 @@ void queeniMinusd(const varorder &V, int i, int d, dd_edge &e)
 
   F->createEdgeForVar(V.queenRow(i), false, qr);
   F->createEdgeForVar(V.queenCol(i), false, qc);
-  F->createEdge(d, constd);
+  F->createEdge(long(d), constd);
 
   apply(MINUS, qr, qc, e);
   apply(EQUAL, e, constd, e);
@@ -441,7 +441,7 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
     Build row ordering constraint
   */
   dd_edge roworder(F);
-  F->createEdge(1, roworder);
+  F->createEdge(long(1), roworder);
   for (int i=V.queens()-1; i; i--) {
     dd_edge rowi(F), rowim1(F), tmp(F);
     F->createEdgeForVar(V.queenRow(i), false, rowi);
@@ -464,7 +464,7 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
     Build column ordering constraint
   */
   dd_edge colorder(F);
-  F->createEdge(1, colorder);
+  F->createEdge(long(1), colorder);
   for (int i=V.queens()-1; i; i--) {
     dd_edge rowi(F), rowim1(F), coli(F), colim1(F), rowsequal(F), tmp(F);
     F->createEdgeForVar(V.queenRow(i), false, rowi);
@@ -478,7 +478,7 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
     apply(MULTIPLY, tmp, rowsequal, tmp);
     // ...if the rows are equal
     dd_edge one(F);
-    F->createEdge(1, one);
+    F->createEdge(long(1), one);
     apply(MINUS, one, rowsequal, rowsequal);
     // rowsequal: negated
     apply(MAXIMUM, rowsequal, tmp, tmp);
@@ -524,7 +524,7 @@ void AndList(dd_edge *A, int n, bool dots)
   printf("Accumulating constraints\n");
   for (int i=n-2; i>=0; i--) {
     apply(MULTIPLY, A[i], A[i+1], A[i]);
-    A[i+1].getForest()->createEdge(1, A[i+1]);
+    A[i+1].getForest()->createEdge(long(1), A[i+1]);
     if (dots) {
       if (A[i].getNode()) putc(',', stdout);
       else                putc('0', stdout);
@@ -549,10 +549,10 @@ void AndSublists(dd_edge *A, int N, int n, bool dots)
     int stop = i+n;
     if (stop > N) stop = N;
     result = A[i];
-    A[i].getForest()->createEdge(1, A[i]);
+    A[i].getForest()->createEdge(long(1), A[i]);
     for (i++; i<stop; i++) {
       apply(MULTIPLY, result, A[i], result);
-      A[i].getForest()->createEdge(1, A[i]);
+      A[i].getForest()->createEdge(long(1), A[i]);
       if (dots) {
         if (result.getNode()) putc(',', stdout);
         else                  putc('0', stdout);
@@ -584,14 +584,14 @@ void FoldList(dd_edge *A, int n, bool dots)
         result = A[i];
       } else {
         apply(MULTIPLY, A[i], A[i+1], result);
-        A[i+1].getForest()->createEdge(1, A[i+1]);
+        A[i+1].getForest()->createEdge(long(1), A[i+1]);
         if (dots) {
           if (result.getNode()) putc(',', stdout);
           else                  putc('0', stdout);
           fflush(stdout);
         }
       }
-      A[i].getForest()->createEdge(1, A[i]);
+      A[i].getForest()->createEdge(long(1), A[i]);
       A[res] = result;
       res++;
     }

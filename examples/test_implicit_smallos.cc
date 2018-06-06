@@ -123,8 +123,6 @@ expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
 int main(int argc, const char** argv)
 {
 char method ;
-int batchsize = 256;
-const char* lfile = 0;
 
 for (int i=1; i<argc; i++)
 {

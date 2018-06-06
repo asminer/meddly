@@ -76,7 +76,7 @@ enum class Face { F, B, L, R, U, D };
 enum class Direction { CW, CCW, FLIP };
 
 // Number of variables of each type
-const int NUM_TYPE1 = 6;
+// const int NUM_TYPE1 = 6;  // centers, unused
 const int NUM_TYPE2 = 12;
 const int NUM_TYPE3 = 8;
 

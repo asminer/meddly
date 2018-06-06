@@ -63,7 +63,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   forest* mtmxd = d->createForest(
     true, forest::INTEGER, forest::MULTI_TERMINAL
   );
-  int* temp = new int[maxBound];
+  long* temp = new long[maxBound];
 #endif
 
 

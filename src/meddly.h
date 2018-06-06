@@ -1544,7 +1544,7 @@ class MEDDLY::forest {
         
         @throws       TYPE_MISMATCH, if the forest's range is not INTEGER.
     */
-    virtual void createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a);
+    virtual void createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a);
 
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
@@ -1634,7 +1634,7 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER,
                         or the forest is for relations.
     */
-    virtual void createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e);
 
     /** Create an edge as the union of several vectors and return values.
         @param  vlist Array of vectors. Each vector has dimension equal
@@ -1718,7 +1718,7 @@ class MEDDLY::forest {
                         or the forest is not for relations.
     */
     virtual void createEdge(const int* const* vlist, const int* const* vplist, 
-        const int* terms, int N, dd_edge &e);
+        const long* terms, int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
@@ -1772,7 +1772,6 @@ class MEDDLY::forest {
         @throws       TYPE_MISMATCH, if
                         the range type of the forest is not BOOLEAN.
     */
-    virtual void createEdge(int val, dd_edge &e);
     virtual void createEdge(long val, dd_edge &e);
 
     /** Create an edge for an integer constant.
@@ -1810,7 +1809,7 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER,
                         or the forest is for relations.
     */
-    virtual void evaluate(const dd_edge &f, const int* vlist, int &term)
+    virtual void evaluate(const dd_edge &f, const int* vlist, long &term)
       const;
 
     /** Evaluate the function encoded by an edge.
@@ -1862,8 +1861,6 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER, 
                         or the forest is not for relations.
     */
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-      const int* vplist, int &term) const;
     virtual void evaluate(const dd_edge& f, const int* vlist,
       const int* vplist, long &term) const;
 

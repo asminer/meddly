@@ -39,7 +39,7 @@ using namespace MEDDLY;
 // Timer class
 #include "../src/timer.h"
 
-typedef int element_type;
+typedef long element_type;
 
 void printUsage(FILE *outputStream)
 {
