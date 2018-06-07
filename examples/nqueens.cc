@@ -32,17 +32,17 @@
 #include <cstdio>
 #include <fstream>
 
-#include "meddly.h"
-#include "meddly_expert.h"
-#include "timer.h"
-#include "loggers.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
+#include "../src/timer.h"
+#include "../src/loggers.h"
 
 // #define SHOW_ALL_SOLUTIONS
 
 using namespace MEDDLY;
 
 int N;
-int* scratch;
+long* scratch;
 const char* lfile;
 bool build_pdf;
 
@@ -201,7 +201,7 @@ int main(int argc, const char** argv)
   timer watch;
   printf("Using %s\n", getLibraryInfo(0));
   printf("%d-Queens solutions.\n", N);
-  scratch = new int[N+1];
+  scratch = new long[N+1];
   
   watch.note_time();
   printf("Initializing domain and forest\n");
@@ -221,11 +221,13 @@ int main(int argc, const char** argv)
   }
   printf("\tUsing %s policy\n", ndp);
 
+  int* varsizes = new int[N+1];
   for (int i=0; i<N; i++) {
-    scratch[i] = N;
+    varsizes[i] = N;
   }
-  domain* d = createDomainBottomUp(scratch, N);
+  domain* d = createDomainBottomUp(varsizes, N);
   assert(d);
+  delete[] varsizes;
   expert_forest* f = (expert_forest*)
     d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL, p);
   assert(f);
@@ -262,7 +264,7 @@ int main(int argc, const char** argv)
     dgm[i] = new dd_edge(f);
     createQueenNodes(f, i+1, *col[i], *dgp[i], *dgm[i]);
     constr[i] = new dd_edge(f);
-    f->createEdge(int(1), *constr[i]);
+    f->createEdge(long(1), *constr[i]);
   }
   constr[N] = 0;
 

@@ -41,7 +41,6 @@ test_implicit_smallos
 
 # test_user_operation 
 
-AM_CPPFLAGS = -I../src -I../src/operations
 AM_CXXFLAGS = -Wall
 
 ## testmddlib_SOURCES = `$(CXX) testmddlib.cc -MM`

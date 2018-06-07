@@ -24,11 +24,11 @@ along with this library.  If not, see <http://www.gnu.org/licenses/>.
 
 #define _MEDDLY_WITHOUT_IOSTREAM_
 
-#include "meddly.h"
-#include "meddly_expert.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
 #include "simple_model.h"
-#include "timer.h"
-#include "loggers.h"
+#include "../src/timer.h"
+#include "../src/loggers.h"
 
 // #define DUMP_NSF
 // #define DUMP_REACHABLE
@@ -123,8 +123,6 @@ expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
 int main(int argc, const char** argv)
 {
 char method ;
-int batchsize = 256;
-const char* lfile = 0;
 
 for (int i=1; i<argc; i++)
 {

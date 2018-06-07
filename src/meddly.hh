@@ -392,7 +392,7 @@ inline bool MEDDLY::forest::isMarkedForDeletion() const {
 inline void MEDDLY::forest::createEdgeForVar(int vh, bool pr, dd_edge& a) {
   switch (rangeType) {
     case BOOLEAN:   createEdgeForVar(vh, pr, (bool*)  0, a);  break;
-    case INTEGER:   createEdgeForVar(vh, pr, (int*)   0, a);  break;
+    case INTEGER:   createEdgeForVar(vh, pr, (long*)  0, a);  break;
     case REAL:      createEdgeForVar(vh, pr, (float*) 0, a);  break;
     default:        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   }

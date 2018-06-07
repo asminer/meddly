@@ -19,7 +19,7 @@
 
 #include <cstdlib>
 #include <iostream>
-#include "meddly.h"
+#include "../src/meddly.h"
 
 using namespace MEDDLY;
 

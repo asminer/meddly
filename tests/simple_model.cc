@@ -17,7 +17,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "meddly.h"
+#include "../src/meddly.h"
 #include "simple_model.h"
 
 // #define DEBUG_EVENTS
@@ -63,7 +63,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   forest* mtmxd = d->createForest(
     true, forest::INTEGER, forest::MULTI_TERMINAL
   );
-  int* temp = new int[maxBound];
+  long* temp = new long[maxBound];
 #endif
 
 

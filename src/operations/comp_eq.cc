@@ -57,11 +57,9 @@ template <typename T>
 bool equal_mdd<T>
 ::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-  if (a == b) {
-    if (arg1F == arg2F) {
-      c = resF->handleForValue(true);
-      return true;
-    }
+  if (a == b && arg1F == arg2F) {
+    c = resF->handleForValue(true);
+    return true;
   }
   if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
     T av, bv;

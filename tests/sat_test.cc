@@ -24,7 +24,7 @@
 */
 
 #include <cstdlib>
-#include "meddly.h"
+#include "../src/meddly.h"
 
 using namespace MEDDLY;
 

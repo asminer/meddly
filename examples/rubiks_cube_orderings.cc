@@ -69,10 +69,10 @@
 #include <sys/time.h>           // struct timeval -- helps portability
 #include <sys/resource.h>       // getrusage
 
-#include <domain.h>
-#include <forest.h>
-#include <dd_edge.h>
-#include <ophandle.h>
+#include "../src/domain.h"
+#include "../src/forest.h"
+#include "../src/dd_edge.h"
+#include "../src/ophandle.h"
 
 
 // Faces on the Rubik's cube

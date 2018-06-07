@@ -20,7 +20,6 @@ TESTS = \
   sat_test nqueens check_xA chk_copy chk_cross \
   kanban kan_show kan_batch kan_index kan_io
 
-AM_CPPFLAGS = -I../src -I../src/operations
 AM_CXXFLAGS = -Wall
 
 enctest_SOURCES = enctest.cc

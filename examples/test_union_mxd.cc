@@ -26,8 +26,8 @@
  */
 
 #include <iostream>
-#include "meddly.h"
-#include "timer.h"
+#include "../src/meddly.h"
+#include "../src/timer.h"
 
 #define CACHE_SIZE 262144u
 

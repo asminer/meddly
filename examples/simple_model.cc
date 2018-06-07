@@ -17,8 +17,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "meddly.h"
-#include "meddly_expert.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
 #include "simple_model.h"
 
 #define VERBOSE
@@ -79,7 +79,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
     maxBound = MAX(maxBound, d->getVariableBound(i, false));
   }
   maxBound++;
-  int* temp = new int[maxBound];
+  long* temp = new long[maxBound];
   int* minterm = new int[nVars+1];
   int* mtprime = new int[nVars+1];
   dd_edge** varP  = new dd_edge*[nVars+1];

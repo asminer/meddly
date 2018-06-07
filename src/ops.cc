@@ -1709,12 +1709,16 @@ MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relat
 {
   
   rel_node_handle nLevel = n->getLevel();
+
+#ifdef DEVELOPMENT_CODE
   rel_node_handle downHandle = n->getDown();
   relation_node* downNode = nodeExists(downHandle);
   rel_node_handle downLevel = downNode->getLevel();
-  
-  
-  MEDDLY_DCASSERT( ( ( downNode!=NULL ) && ( nLevel > downLevel ) ) || ( downLevel == 0 ) );
+  MEDDLY_DCASSERT( ( ( downNode!=NULL ) && ( nLevel > downLevel ) ) 
+                    || 
+                   ( downLevel == 0 ) );
+#endif
+
   rel_node_handle n_ID = isUniqueNode(n);
   if(n_ID==0) // Add new node
    {

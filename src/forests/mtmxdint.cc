@@ -31,16 +31,16 @@ MEDDLY::mt_mxd_int::mt_mxd_int(int dsl, domain *d, const policies &p, int* level
 MEDDLY::mt_mxd_int::~mt_mxd_int()
 { }
 
-void MEDDLY::mt_mxd_int::createEdge(int term, dd_edge& e)
+void MEDDLY::mt_mxd_int::createEdge(long term, dd_edge& e)
 {
-  createEdgeTempl<int_Tencoder, int>(term, e);
+  createEdgeTempl<int_Tencoder, long>(term, e);
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
 }
 
 void MEDDLY::mt_mxd_int
-::createEdge(const int* const* vlist, const int* const* vplist, const int* terms, int N, dd_edge &e)
+::createEdge(const int* const* vlist, const int* const* vplist, const long* terms, int N, dd_edge &e)
 {
   binary_operation* unionOp = getOperation(PLUS, this, this, this);
   enlargeStatics(N);
@@ -73,7 +73,7 @@ void MEDDLY::mt_mxd_int
 	  }
   }
 
-  mtmxd_edgemaker<int_Tencoder, int>
+  mtmxd_edgemaker<int_Tencoder, long>
   EM(this, ordered_vlist, ordered_vplist, terms, order, N, num_vars, unionOp);
 
   e.set(EM.createEdge());
@@ -87,16 +87,16 @@ void MEDDLY::mt_mxd_int
 }
 
 void MEDDLY::mt_mxd_int::
-createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a)
+createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 {
-  createEdgeForVarTempl<int_Tencoder, int>(vh, vp, terms, a);
+  createEdgeForVarTempl<int_Tencoder, long>(vh, vp, terms, a);
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
 }
 
 void MEDDLY::mt_mxd_int::evaluate(const dd_edge &f, const int* vlist, 
-  const int* vplist, int &term) const
+  const int* vplist, long &term) const
 {
   term = int_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));
 }

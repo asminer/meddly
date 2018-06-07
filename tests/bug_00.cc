@@ -1,5 +1,5 @@
 
-#include "meddly.h"
+#include "../src/meddly.h"
 #include "simple_model.h"
 
 #define VERBOSE

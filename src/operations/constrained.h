@@ -30,6 +30,8 @@ namespace MEDDLY {
   class constrained_bckwd_bfs_evplus;
 
   class constrained_dfs_opname;
+  class constrained_dfs_mt;
+  class constrained_forwd_dfs_mt;
   class constrained_bckwd_dfs_mt;
   class constrained_bckwd_dfs_evplus;
 
@@ -37,6 +39,7 @@ namespace MEDDLY {
   class constrained_saturation_evplus;
 
   constrained_opname* initConstrainedBFSBackward();
+  constrained_opname* initConstrainedDFSForward();
   constrained_opname* initConstrainedDFSBackward();
 }
 
@@ -97,7 +100,7 @@ public:
   virtual specialized_operation* buildOperation(arguments* a) const;
 };
 
-class MEDDLY::constrained_bckwd_dfs_mt: public common_constrained
+class MEDDLY::constrained_dfs_mt: public common_constrained
 {
 protected:
   static const int NODE_INDICES_IN_KEY[4];
@@ -113,20 +116,43 @@ protected:
     node_handle a, node_handle b, node_handle r, node_handle c);
 
   void splitMxd(node_handle mxd);
-  void recFire(node_handle a, node_handle b, node_handle r, node_handle& c);
 
   virtual bool isStaleEntry(const node_handle* data);
   virtual void discardEntry(const node_handle* data);
   virtual void showEntry(output &strm, const node_handle *data) const;
 
 public:
-  constrained_bckwd_dfs_mt(const constrained_opname* code,
+  constrained_dfs_mt(const constrained_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
   virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
   void compute(node_handle a, node_handle b, node_handle r, node_handle& c);
 
-  void saturateHelper(node_handle a, unpacked_node& nb);
+  virtual void saturateHelper(node_handle a, unpacked_node& nb) = 0;
+};
+
+class MEDDLY::constrained_forwd_dfs_mt: public constrained_dfs_mt
+{
+protected:
+  void recFire(node_handle a, node_handle b, node_handle r, node_handle& c);
+
+public:
+  constrained_forwd_dfs_mt(const constrained_opname* code,
+    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+
+  virtual void saturateHelper(node_handle a, unpacked_node& nb) override;
+};
+
+class MEDDLY::constrained_bckwd_dfs_mt: public constrained_dfs_mt
+{
+protected:
+  void recFire(node_handle a, node_handle b, node_handle r, node_handle& c);
+
+public:
+  constrained_bckwd_dfs_mt(const constrained_opname* code,
+    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+
+  virtual void saturateHelper(node_handle a, unpacked_node& nb) override;
 };
 
 class MEDDLY::constrained_saturation_mt: public specialized_operation
@@ -134,7 +160,7 @@ class MEDDLY::constrained_saturation_mt: public specialized_operation
 protected:
   int NODE_INDICES_IN_KEY[3];
 
-  constrained_bckwd_dfs_mt* parent;
+  constrained_dfs_mt* parent;
 
   expert_forest* consF;
   expert_forest* argF;
@@ -156,7 +182,7 @@ protected:
   virtual void showEntry(output &strm, const node_handle *data) const;
 
 public:
-  constrained_saturation_mt(constrained_bckwd_dfs_mt* p,
+  constrained_saturation_mt(constrained_dfs_mt* p,
     expert_forest* cons, expert_forest* arg, expert_forest* res);
 
   bool matches(const expert_forest* arg1, const expert_forest* arg2,

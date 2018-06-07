@@ -341,7 +341,7 @@ void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const bool* terms, dd_edg
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a)
+void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -357,7 +357,7 @@ void MEDDLY::forest::createEdge(const int* const* vlist, int N, dd_edge &e)
 }
 
 void MEDDLY::forest
-::createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
+::createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -375,7 +375,7 @@ void MEDDLY::forest
 }
 
 void MEDDLY::forest
-::createEdge(const int* const* vlist, const int* const* vplist, const int* terms, int N, dd_edge &e)
+::createEdge(const int* const* vlist, const int* const* vplist, const long* terms, int N, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -391,14 +391,9 @@ void MEDDLY::forest::createEdge(bool val, dd_edge &e)
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::forest::createEdge(int val, dd_edge &e)
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
 void MEDDLY::forest::createEdge(long val, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::createEdge(float val, dd_edge &e)
@@ -411,7 +406,7 @@ void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, bool &t) const
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, int &t) const
+void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, long &t) const
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -423,12 +418,6 @@ void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, float &t) const
 
 void MEDDLY::forest
 ::evaluate(const dd_edge& f, const int* vl, const int* vpl, bool &t) const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest
-::evaluate(const dd_edge& f, const int* vl, const int* vpl, int &t) const
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }

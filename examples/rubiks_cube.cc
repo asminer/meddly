@@ -71,9 +71,9 @@
 #include <cstring>
 #include <vector>
 
-#include "meddly.h"
-#include "meddly_expert.h"
-#include "timer.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
+#include "../src/timer.h"
 
 using namespace std;
 using namespace MEDDLY;
@@ -86,7 +86,7 @@ int* sizes = NULL;
 int** initst = NULL;
 
 // Number of variables of each type
-const int NUM_TYPE1 = 6;
+// const int NUM_TYPE1 = 6;   // centers, not needed
 const int NUM_TYPE2 = 12;
 const int NUM_TYPE3 = 8;
 
