@@ -57,7 +57,7 @@ template <typename T>
 bool equal_mdd<T>
 ::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-  if (a == b && resF->isFullyReduced() && arg1F == arg2F) {
+  if (a == b && arg1F == arg2F) {
     c = resF->handleForValue(true);
     return true;
   }

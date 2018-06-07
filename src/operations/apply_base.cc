@@ -150,6 +150,17 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
     C->d_ref(i) = compute(A->d(i), B->d(i));
   }
 
+  if (resF->isQuasiReduced()) {
+    int nextLevel = resultLevel - 1;
+    for (int i = 0; i < C->getSize(); i++) {
+      if (resF->getNodeLevel(C->d(i)) < nextLevel) {
+        node_handle temp = ((mt_forest*)resF)->makeNodeAtLevel(nextLevel, C->d(i));
+        resF->unlinkNode(C->d(i));
+        C->d_ref(i) = temp;
+      }
+    }
+  }
+
   // cleanup
   unpacked_node::recycle(B);
   unpacked_node::recycle(A);
