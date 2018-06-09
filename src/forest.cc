@@ -1943,8 +1943,6 @@ MEDDLY::node_handle MEDDLY::expert_forest
   printf("\n");
 #endif
 
-  nodeHeaders.setSaturationStatus(p, false);
-
   return p;
 }
 
@@ -2043,8 +2041,6 @@ MEDDLY::node_handle MEDDLY::expert_forest
   showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
   printf("\n");
 #endif
-
-  nodeHeaders.setSaturationStatus(p, false);
 
   return p;
 }

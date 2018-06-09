@@ -83,13 +83,11 @@ public:
   // for reachable state in constraint detection
   bool isReachable(
     node_handle mdd,
-    node_handle constraint,
-    bool allow_partial_results);
+    node_handle constraint);
   bool isReachable(
     node_handle mdd,
     int k,
     node_handle constraint,
-    bool allow_partial_results,
     node_handle& saturation_result);
 
   
@@ -150,7 +148,7 @@ public:
   virtual void discardEntry(const node_handle* entryData);
   virtual void showEntry(output &strm, const node_handle* entryData) const;
   virtual void compute(const dd_edge& a, dd_edge &c);
-  virtual bool isReachable(const dd_edge& a, const dd_edge& constraint, bool allow_partial_results);
+  virtual bool isReachable(const dd_edge& a, const dd_edge& constraint);
   virtual void saturateHelper(unpacked_node& mdd) = 0;
   // for detecting reachable state in constraint
   virtual bool saturateHelper(unpacked_node& mdd, node_handle constraint) = 0;
@@ -640,7 +638,7 @@ void MEDDLY::common_impl_dfs_by_events_mt::showEntry(output &strm,
 }
 
 bool MEDDLY::common_impl_dfs_by_events_mt
-::isReachable(const dd_edge &a, const dd_edge& constraint, bool allow_partial_results)
+::isReachable(const dd_edge &a, const dd_edge& constraint)
 {
   // Initialize operations
   if (0 == mddUnion) {
@@ -657,7 +655,7 @@ bool MEDDLY::common_impl_dfs_by_events_mt
   
   // Execute saturation operation
   saturation_impl_by_events_op* so = new saturation_impl_by_events_op(this, arg1F, resF);
-  bool is_reachable = so->isReachable(a.getNode(), constraint.getNode(), allow_partial_results);
+  bool is_reachable = so->isReachable(a.getNode(), constraint.getNode());
 
   // Cleanup
   while (freeqs) {
@@ -935,9 +933,6 @@ void MEDDLY::saturation_impl_by_events_op::showEntry(output &strm,
 // Deadlock detection
 // ------------------
 
-// Cache for checking is a node is saturated
-std::unordered_set<node_handle> is_saturated_cache;
-
 struct node_pair {
   MEDDLY::node_handle first;
   MEDDLY::node_handle second;
@@ -1027,13 +1022,13 @@ bool isIntersectionEmpty(
   return result;
 }
 
-bool MEDDLY::saturation_impl_by_events_op::isReachable(MEDDLY::node_handle mdd, MEDDLY::node_handle constraint, bool allow_partial_results)
+bool MEDDLY::saturation_impl_by_events_op::isReachable(MEDDLY::node_handle mdd, MEDDLY::node_handle constraint)
 {
   // Saturate and check is any element in constraint is reachable
   MEDDLY::node_handle saturation_result = 0;
   bool result = 
     isIntersectionEmpty(argF, mdd, constraint)
-    ? isReachable(mdd, argF->getNumVariables(), constraint, allow_partial_results, saturation_result)
+    ? isReachable(mdd, argF->getNumVariables(), constraint, saturation_result)
       // nothing reachable in initial state, continue exploring
     : true;
       // found reachable state in initial state
@@ -1044,12 +1039,6 @@ bool MEDDLY::saturation_impl_by_events_op::isReachable(MEDDLY::node_handle mdd, 
     argF->unlinkNode(i.first.second);
   }
   intersection_cache.clear();
-
-  // clear is_saturated cache
-  for (auto& i : is_saturated_cache) {
-    argF->unlinkNode(i);
-  }
-  is_saturated_cache.clear();
 
 #ifdef DEBUG_IS_REACHABLE
   if (false == result) {
@@ -1079,7 +1068,6 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   node_handle mdd,
   int k,
   node_handle constraint,         // set of states we are looking to reach
-  bool allow_partial_results,     // can store retreive partially saturated nodes
   node_handle& saturation_result)
 {
 #ifdef DEBUG_DFS
@@ -1098,11 +1086,7 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
     // if constraint is 1, then there is at least one reachable state in constraint, return true.
     MEDDLY_DCASSERT(!argF->isTerminalNode(mdd));
     if (0 == constraint) {
-      if (allow_partial_results) {
-        saturation_result = mdd;
-      } else {
-        saturation_result = saturate(mdd, k);
-      }
+      saturation_result = saturate(mdd, k);
       return false;
     }
     return true;
@@ -1114,16 +1098,6 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   if (0==Key) {
     saturation_result = n;
     return !isIntersectionEmpty(argF, saturation_result, constraint);
-  }
-
-  // search for partial saturation
-  node_handle old_mdd = mdd;
-  if (allow_partial_results) {
-    auto search_result = partial_saturate_cache.find(std::make_pair<mdd, k>);
-    if (search_result != partial_saturate_cache.end()) {
-      // found cached entry
-      mdd = search_result->second;
-    }
   }
 
   const int mdd_level = argF->getNodeLevel(mdd);
@@ -1161,7 +1135,7 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   for (int i=0; i<sz; i++) {
     node_handle temp = 0;
     node_handle cons_i = (i < consDptrs->getSize() ? consDptrs->d(i) : ext_d);
-    if (isReachable(mddDptrs->d(i), k-1, cons_i, allow_partial_results, temp)) {
+    if (isReachable(mddDptrs->d(i), k-1, cons_i, temp)) {
       // found reachable state in constraint, cleanup and return true
       for (int j = 0; j < i; j++) {
         if (nb->d(j)) { argF->unlinkNode(nb->d(j)); nb->d_ref(j) = 0; }
@@ -1191,39 +1165,8 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
     return true;
   }
   
-  bool is_saturated_node = true;
-
-  // If any child node is not a saturated node, save result into partial cache
-  for (int j = 0; j < sz && is_saturated_node; j++) {
-    if (nb->d(j) && !argF->isNodeSaturated(nb->d(j))) {
-      is_saturated_node = false;
-    }
-  }
-
   n = resF->createReducedNode(-1, nb);
-  resF->setSaturationStatus(n, is_saturated_node);
-
-  // If any child node is not a saturated node, save result into partial cache
-  if (is_saturated_node) {
-    saveSaturateResult(Key, n);
-    if (old_mdd != mdd) {
-      // erase old result
-      partial_saturate_cache.erase(std::make_pair<old_mdd, k>);
-      argF->unlinkNode(old_mdd);
-      argF->unlinkNode(mdd);
-    }
-  }
-  else {
-    partial_saturate_cache[std::make_pair<old_mdd, k>] = n;
-    argF->linkNode(n);
-    if (old_mdd != mdd) {
-      // overwriting partial saturation result, so unlink old result
-      argF->unlinkNode(mdd);
-    } else {
-      // adding new partial saturation result, link to new nodes
-      argF->linkNode(old_mdd);
-    }
-  }
+  saveSaturateResult(Key, mdd, n);
 
 #ifdef DEBUG_DFS
   resF->showNodeGraph(stdout, n);
@@ -1551,7 +1494,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
 
 
 bool
-MEDDLY::satimpl_opname::implicit_relation::isReachable(const dd_edge& initial_states, const dd_edge& constraint, bool allow_partial_results)
+MEDDLY::satimpl_opname::implicit_relation::isReachable(const dd_edge& initial_states, const dd_edge& constraint)
 {
   // build implicit saturation operation operation
   specialized_operation* satop = SATURATION_IMPL_FORWARD->buildOperation(this);
@@ -1564,6 +1507,6 @@ MEDDLY::satimpl_opname::implicit_relation::isReachable(const dd_edge& initial_st
   constraint.show(s, 2);
   std::cout.flush();
 #endif
-  return op->isReachable(initial_states, constraint, allow_partial_results);
+  return op->isReachable(initial_states, constraint);
 }
 

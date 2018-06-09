@@ -864,34 +864,6 @@ MEDDLY::node_headers::deactivate(node_handle p)
 }
 
 // ******************************************************************
-
-inline void
-MEDDLY::node_headers::setSaturationStatus(node_handle p, bool status)
-{
-  if (p<1) return; // terminal node
-  MEDDLY_DCASSERT(address);
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
-  MEDDLY_DCASSERT(address[p].offset);
-  address[p].is_saturated = status;
-}
-
-
-// ******************************************************************
-
-inline bool
-MEDDLY::node_headers::isNodeSaturated(node_handle p)
-{
-  if (p<1) return true; // terminal node
-  MEDDLY_DCASSERT(address);
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
-  MEDDLY_DCASSERT(address[p].offset);
-  return address[p].is_saturated;
-}
-
-
-// ******************************************************************
 // *                                                                *
 // *              inlined memory_manager_style methods              *
 // *                                                                *
@@ -1281,13 +1253,6 @@ MEDDLY::expert_forest::setNodeAddress(node_handle p, node_address a)
 // Node level information
 // --------------------------------------------------
 
-inline bool
-MEDDLY::expert_forest::isNodeSaturated(node_handle p) const
-{
-  if (isTerminalNode(p)) return true;
-  return nodeHeaders.isNodeSaturated(p);
-}
-
 inline int
 MEDDLY::expert_forest::getNodeLevel(node_handle p) const
 {
@@ -1383,18 +1348,6 @@ inline void
 MEDDLY::expert_forest::unlinkNode(MEDDLY::node_handle p)
 {
   nodeHeaders.unlinkNode(p);
-}
-
-inline void
-MEDDLY::expert_forest::setSaturationStatus(MEDDLY::node_handle p, bool status)
-{
-  nodeHeaders.setSaturationStatus(p, status);
-}
-
-inline bool
-MEDDLY::expert_forest::isNodeSaturated(MEDDLY::node_handle p)
-{
-  return nodeHeaders.isNodeSaturated(p);
 }
 
 // --------------------------------------------------
