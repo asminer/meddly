@@ -1035,8 +1035,8 @@ bool MEDDLY::saturation_impl_by_events_op::isReachable(MEDDLY::node_handle mdd, 
 
   // clear cache
   for (auto& i : intersection_cache) {
-    argF->unlinkNode(i.first.first);
-    argF->unlinkNode(i.first.second);
+    argF->uncacheNode(i.first.first);
+    argF->uncacheNode(i.first.second);
   }
   intersection_cache.clear();
 

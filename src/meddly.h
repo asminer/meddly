@@ -74,6 +74,8 @@
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
 #endif
 
+// Use this for enabling extensible decision diagrams.
+#define USE_XDDS
 
 
 namespace MEDDLY {
