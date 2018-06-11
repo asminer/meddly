@@ -49,7 +49,9 @@ int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) 
   MEDDLY_DCASSERT(!_source->isTerminalNode(p));
   MEDDLY_DCASSERT(target_level > 0);
 
-  // int level = target_level;
+#ifdef DEVELOPMENT_CODE
+  int level = target_level;
+#endif
 
   auto comp =
       [this](const node_handle& x, const node_handle& y) {
