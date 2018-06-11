@@ -124,7 +124,7 @@ public:
     expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
 
   virtual void compute(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res);
-  void compute(int aev, node_handle a, int bev, node_handle b, node_handle r, long& cev, node_handle& c);
+  void _compute(int aev, node_handle a, int bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
   virtual void saturateHelper(long aev, node_handle a, int in, unpacked_node& nb) = 0;
 };

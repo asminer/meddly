@@ -402,12 +402,12 @@ void MEDDLY::constrained_dfs_mt::compute(const dd_edge& a, const dd_edge& b, con
   if (a.getNode() == 0) {
     c = smart_cast<expert_forest*>(resF)->linkNode(b.getNode());
   } else {
-    compute(a.getNode(), b.getNode(), r.getNode(), c);
+    _compute(a.getNode(), b.getNode(), r.getNode(), c);
   }
   res.set(c);
 }
 
-void MEDDLY::constrained_dfs_mt::compute(node_handle a, node_handle b, node_handle r,
+void MEDDLY::constrained_dfs_mt::_compute(node_handle a, node_handle b, node_handle r,
   node_handle& c)
 {
   // Partition NSF by levels
@@ -1276,12 +1276,12 @@ void MEDDLY::constrained_bckwd_dfs_evplus::compute(const dd_edge& a, const dd_ed
   b.getEdgeValue(bev);
   long cev = Inf<long>();
   node_handle c = 0;
-  compute(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, c);
+  _compute(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, c);
 
   res.set(c, cev);
 }
 
-void MEDDLY::constrained_bckwd_dfs_evplus::compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
+void MEDDLY::constrained_bckwd_dfs_evplus::_compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
   long& cev, node_handle& c)
 {
   // Partition NSF by levels

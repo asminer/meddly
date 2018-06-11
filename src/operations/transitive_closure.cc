@@ -372,12 +372,12 @@ void MEDDLY::transitive_closure_dfs::compute(const dd_edge& a, const dd_edge& b,
   b.getEdgeValue(bev);
   long cev = Inf<long>();
   node_handle c = 0;
-  compute(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, c);
+  _compute(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, c);
 
   res.set(c, cev);
 }
 
-void MEDDLY::transitive_closure_dfs::compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
+void MEDDLY::transitive_closure_dfs::_compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
   long& cev, node_handle& c)
 {
   // Partition NSF by levels
