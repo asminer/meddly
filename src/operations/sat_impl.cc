@@ -342,8 +342,10 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   satimpl_opname::relation_node** Ru = new satimpl_opname::relation_node*[nEventsAtThisLevel];
   for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
     Ru[ei] = rel->nodeExists(events[ei]);
+#ifdef DEVELOPMENT_CODE
     int eventLevel = Ru[ei]->getLevel();
     MEDDLY_DCASSERT(ABS(eventLevel) == level);
+#endif
   }
   
   expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
@@ -1206,8 +1208,10 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
   satimpl_opname::relation_node** Ru = new satimpl_opname::relation_node*[nEventsAtThisLevel];
   for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
     Ru[ei] = rel->nodeExists(events[ei]);
+#ifdef DEVELOPMENT_CODE
     int eventLevel = Ru[ei]->getLevel();
     MEDDLY_DCASSERT(ABS(eventLevel) == level);
+#endif
   }
 
   expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());

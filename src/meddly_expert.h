@@ -4159,6 +4159,7 @@ private:
 
   public:
     SignatureGenerator(global_rebuilder& gr);
+    virtual ~SignatureGenerator();
     virtual void precompute() = 0;
     virtual int signature(node_handle p) = 0;
   };
