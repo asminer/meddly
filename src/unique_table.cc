@@ -243,9 +243,9 @@ void MEDDLY::unique_table::subtable::clear()
   }
 }
 
-int MEDDLY::unique_table::subtable::getItems(node_handle* items, int sz) const
+unsigned MEDDLY::unique_table::subtable::getItems(node_handle* items, unsigned sz) const
 {
-  int k = 0;
+  unsigned k = 0;
   for (unsigned i = 0; i < size; i++) {
     node_handle curr = table[i];
     while (curr != 0) {

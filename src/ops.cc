@@ -781,8 +781,12 @@ MEDDLY::satotf_opname::event::event(subevent** p, int np)
   // Not efficient. p[i] is a sorted list of integers.
   // Should be able to insert in O(n) time
   // where n is the sum(p[i]->getNumVars).
-  bool all_enabling_subevents = true;
+#if 0
   bool all_firing_subevents = true;
+#endif
+#ifdef DEVELOPMENT_CODE
+  bool all_enabling_subevents = true;
+#endif
   std::set<int> sVars;
   std::set<int> firingVars;
 
@@ -790,10 +794,14 @@ MEDDLY::satotf_opname::event::event(subevent** p, int np)
     const int* subeventVars = p[i]->getVars();
     sVars.insert(subeventVars, subeventVars+p[i]->getNumVars());
     if (p[i]->isFiring()) {
+#ifdef DEVELOPMENT_CODE
       all_enabling_subevents = false;
+#endif
       firingVars.insert(subeventVars, subeventVars+p[i]->getNumVars());
     } else {
+#if 0
       all_firing_subevents = false;
+#endif
     }
   }
 
