@@ -398,13 +398,17 @@ int main(int argc, char *argv[])
   if (true) {
     enumerator beginIter(result);
     const int* element = beginIter.getAssignments();
+#if 0
     const int* curr = 0;
     const int* end = 0;
+#endif
 
     while (beginIter) {
       // Print minterm
+#if 0
       curr = element + nVariables;
       end = element + 1;
+#endif
       printf("[%d", element[1]);
       for (int i=2; i<=nVariables; i++) printf(" %d", element[i]);
       printf("]\n");
