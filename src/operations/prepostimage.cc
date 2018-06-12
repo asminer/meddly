@@ -530,6 +530,27 @@ namespace MEDDLY {
       }
 
   };
+
+  template <>
+  class mtmatr_mtvect<bool> : public relXset_mdd {
+    public:
+      mtmatr_mtvect(const binary_opname* opcode, expert_forest* arg1,
+        expert_forest* arg2, expert_forest* res, binary_operation* acc)
+        : relXset_mdd(opcode, arg1, arg2, res, acc) { }
+
+    protected:
+      virtual node_handle processTerminals(node_handle mdd, node_handle mxd)
+      {
+        bool mddval;
+        bool mxdval;
+        bool rval;
+        argV->getValueFromHandle(mdd, mddval);
+        argM->getValueFromHandle(mxd, mxdval);
+        rval = mddval && mxdval;
+        return resF->handleForValue(rval);
+      }
+
+  };
 };
 
 
@@ -563,6 +584,27 @@ namespace MEDDLY {
         argV->getValueFromHandle(mdd, mddval);
         argM->getValueFromHandle(mxd, mxdval);
         rval = mddval * mxdval;
+        return resF->handleForValue(rval);
+      }
+
+  };
+
+  template <>
+  class mtvect_mtmatr<bool> : public setXrel_mdd {
+    public:
+      mtvect_mtmatr(const binary_opname* opcode, expert_forest* arg1,
+        expert_forest* arg2, expert_forest* res, binary_operation* acc)
+        : setXrel_mdd(opcode, arg1, arg2, res, acc) { }
+
+    protected:
+      virtual node_handle processTerminals(node_handle mdd, node_handle mxd)
+      {
+        bool mddval;
+        bool mxdval;
+        bool rval;
+        argV->getValueFromHandle(mdd, mddval);
+        argM->getValueFromHandle(mxd, mxdval);
+        rval = mddval && mxdval;
         return resF->handleForValue(rval);
       }
 

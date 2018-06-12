@@ -4866,7 +4866,7 @@ private:
   node_handle transform(node_handle p, int target_level, std::vector<int>& pa);
   node_handle restrict(node_handle p, std::vector<int>& pa);
 
-  bool restrict_exist(node_handle p, const std::vector<int>& pa, int start,
+  bool restrict_exist(node_handle p, const std::vector<int>& pa, unsigned start,
       node_handle& result);
   int signature(node_handle p) const;
 
