@@ -1171,12 +1171,14 @@ class MEDDLY::forest {
 
       // unique table stats
 
+      /*
       /// Current memory for UT
       long memory_UT;
       /// Peak memory for UT
       long peak_memory_UT;
       /// Longest chain search in UT
       int max_UT_chain;
+      */
 
       statset();
 
@@ -1188,7 +1190,7 @@ class MEDDLY::forest {
       void decMemUsed(long b);
       void incMemAlloc(long b);
       void decMemAlloc(long b);
-      void sawUTchain(int c);
+      // void sawUTchain(int c);
     };
 
     /**

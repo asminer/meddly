@@ -124,9 +124,11 @@ MEDDLY::forest::statset::statset()
   memory_alloc = 0;
   peak_memory_used = 0;
   peak_memory_alloc = 0;
+  /*
   memory_UT = 0;
   peak_memory_UT = 0;
   max_UT_chain = 0;
+  */
 }
 
 // ******************************************************************

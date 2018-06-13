@@ -166,10 +166,12 @@ inline void MEDDLY::forest::statset::decMemAlloc(long b) {
   memory_alloc -= b;
   MEDDLY_DCASSERT(memory_alloc >= 0);
 }
+/*
 inline void MEDDLY::forest::statset::sawUTchain(int c) {
   if (c > max_UT_chain)
     max_UT_chain = c;
 }
+*/
 // end of forest::statset
 
 // forest::logger::
