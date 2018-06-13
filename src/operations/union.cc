@@ -105,9 +105,7 @@ class MEDDLY::union_mxd : public generic_binary_mxd {
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-#ifdef USE_XDDS
-    virtual MEDDLY::node_handle compute(node_handle a, node_handle b);
-#endif
+    virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
 };
 
 MEDDLY::union_mxd::union_mxd(const binary_opname* opcode, 
@@ -154,23 +152,16 @@ bool MEDDLY::union_mxd::checkTerminals(node_handle a, node_handle b, node_handle
   return false;
 }
 
-#ifdef USE_XDDS
 MEDDLY::node_handle 
-MEDDLY::union_mxd::compute(node_handle a, node_handle b) 
+MEDDLY::union_mxd::compute_ext(node_handle a, node_handle b) 
 {
-  //  Compute for the unprimed levels.
-  //
-  node_handle result = 0;
-  if (checkTerminals(a, b, result))
-    return result;
-
-  compute_table::search_key* Key = findResult(a, b, result);
-  if (0==Key) return result;
-
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
   int resultLevel = ABS(topLevel(aLevel, bLevel));
+
+  MEDDLY_DCASSERT(resF->isExtensibleLevel(resultLevel));
+
   const int dwnLevel = resF->downLevel(resultLevel);
 
   // Initialize readers
@@ -178,16 +169,22 @@ MEDDLY::union_mxd::compute(node_handle a, node_handle b)
     ? unpacked_node::newRedundant(arg1F, resultLevel, a, false)
     : unpacked_node::newFromNode(arg1F, a, false)
     ;
+
+  unpacked_node *B = (bLevel < resultLevel)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, false)
+    : unpacked_node::newFromNode(arg2F, b, false)
+    ;
+
+  // Initialize result writer
+  int resultSize = A->getNNZs() + B->getNNZs() + 1 + 1;
+  unpacked_node* C = unpacked_node::newSparse(resF, resultLevel, resultSize);
+
   const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
   int last_nz = A->getNNZs()-1;
   for ( ; last_nz >= 0 && A->d(last_nz) == 0; last_nz--);
   const int A_nnzs = last_nz + 1;
   const int A_last_index = last_nz >= 0? A->i(last_nz): -1;
 
-  unpacked_node *B = (bLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg2F, resultLevel, b, false)
-    : unpacked_node::newFromNode(arg2F, b, false)
-    ;
   const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
   last_nz = B->getNNZs()-1;
   for ( ; last_nz >= 0 && B->d(last_nz) == 0; last_nz--);
@@ -195,9 +192,6 @@ MEDDLY::union_mxd::compute(node_handle a, node_handle b)
   const int B_last_index = last_nz >= 0? B->i(last_nz): -1;
 
   const int max_a_b_last_index = MAX(A_last_index, B_last_index);
-
-  int resultSize = A->getNNZs() + B->getNNZs() + 1 + 1;
-  unpacked_node* C = unpacked_node::newSparse(resF, resultLevel, resultSize);
 
   int nnz = 0;
   int A_curr_index = 0;
@@ -269,21 +263,14 @@ MEDDLY::union_mxd::compute(node_handle a, node_handle b)
   }
   C->shrinkSparse(nnz);
 
-  // reduce and save result
-  result = resF->createReducedNode(-1, C);
-  saveResult(Key, a, b, result);
-
   // cleanup
   unpacked_node::recycle(B);
   unpacked_node::recycle(A);
 
-#ifdef TRACE_ALL_OPS
-  printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
-#endif
-
+  // reduce result
+  node_handle result = resF->createReducedNode(-1, C);
   return result;
 }
-#endif
 
 // ******************************************************************
 // *                                                                *

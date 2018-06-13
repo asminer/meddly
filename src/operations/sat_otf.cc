@@ -33,8 +33,6 @@ namespace MEDDLY {
 };
 
 
-
-
 // ******************************************************************
 // *                                                                *
 // *                    otfsat_by_events_opname  class              *
@@ -669,15 +667,9 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       // check if row i of the event ei is empty
       if (0 == Ru[ei]) continue;
       MEDDLY_DCASSERT(!Ru[ei]->isExtensible());
-#ifndef USE_XDDS
-      node_handle ei_i = (i < Ru[ei]->getSize())
-                        ? Ru[ei]->d(i)
-                        : 0;
-#else
       node_handle ei_i = (i < Ru[ei]->getSize())
                         ? Ru[ei]->d(i)
                         : (Ru[ei]->isExtensible() ? Ru[ei]->ext_d() : 0);
-#endif
       if (0 == ei_i) continue;
 
       // grab column (TBD: build these ahead of time?)
@@ -689,9 +681,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         Rp->initIdentity(arg2F, -level, i, ei_i, false);
       }
 
-#ifdef USE_XDDS
       MEDDLY_DCASSERT(!Rp->isExtensible());
-#endif
 
       for (int jz=0; jz<Rp->getNNZs(); jz++) {
         const int j = Rp->i(jz);
@@ -870,7 +860,6 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
       if (0==A->d(i)) continue; 
       recFireHelper(i, rLevel, Ru->d(iz), A->d(i), Rp, nb);
     }
-#ifdef USE_XDDS
     // loop over the extensible portion of mxd (if any)
     MEDDLY_DCASSERT(!Ru->isExtensible());
     if (Ru->isExtensible()) {
@@ -880,7 +869,6 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
         recFireHelper(i, rLevel, pnode, A->d(i), Rp, nb);
       }
     }
-#endif
 #endif
 
     unpacked_node::recycle(Rp);
@@ -919,9 +907,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::recFireHelper(
     Rp->initFromNode(arg2F, Ru_i, false);
   }
 
-#ifdef USE_XDDS
   MEDDLY_DCASSERT(!Rp->isExtensible());
-#endif
 
   // loop over mxd "columns"
   for (int jz=0; jz<Rp->getNNZs(); jz++) {
