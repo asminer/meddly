@@ -56,42 +56,58 @@ inline int MEDDLY::error::getLine() const { return lineno; }
 
 inline void MEDDLY::memstats::incMemUsed(size_t b)
 {
+// #ifdef TRACK_LOCAL_MEMORY
   memory_used += b;
   if (memory_used > peak_memory_used) {
     peak_memory_used = memory_used;
   }
+// #endif
+// #ifdef TRACK_GLOBAL_MEMORY
   global_memory_used += b;
   if (global_memory_used > global_peak_used) {
     global_peak_used = global_memory_used;
   }
+// #endif
 }
 
 inline void MEDDLY::memstats::decMemUsed(size_t b)
 {
+// #ifdef TRACK_LOCAL_MEMORY
   MEDDLY_DCASSERT(memory_used >= b);
   memory_used -= b;
+// #endif
+// #ifdef TRACK_GLOBAL_MEMORY
   MEDDLY_DCASSERT(global_memory_used >= b);
   global_memory_used -= b;
+// #endif
 }
 
 inline void MEDDLY::memstats::incMemAlloc(size_t b)
 {
+// #ifdef TRACK_LOCAL_MEMORY
   memory_alloc += b;
   if (memory_alloc > peak_memory_alloc) {
     peak_memory_alloc = memory_alloc;
   }
+// #endif
+// #ifdef TRACK_GLOBAL_MEMORY
   global_memory_alloc += b;
   if (global_memory_alloc > global_peak_alloc) {
     global_peak_alloc = global_memory_alloc;
   }
+// #endif
 }
 
 inline void MEDDLY::memstats::decMemAlloc(size_t b)
 {
+// #ifdef TRACK_LOCAL_MEMORY
   MEDDLY_DCASSERT(memory_alloc >= b);
   memory_alloc -= b;
+// #endif
+// #ifdef TRACK_GLOBAL_MEMORY
   MEDDLY_DCASSERT(global_memory_alloc >= b);
   global_memory_alloc -= b;
+// #endif
 }
 
 inline size_t MEDDLY::memstats::getMemUsed() const
