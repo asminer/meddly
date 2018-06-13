@@ -107,9 +107,7 @@ class MEDDLY::inter_mxd : public generic_binary_mxd {
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-#ifdef USE_XDDS
-    virtual MEDDLY::node_handle compute(node_handle a, node_handle b);
-#endif
+    virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
 };
 
 MEDDLY::inter_mxd::inter_mxd(const binary_opname* opcode, 
@@ -256,24 +254,16 @@ bool MEDDLY::inter_max_evplus::checkTerminals(long aev, node_handle a, long bev,
   return false;
 }
 
-#ifdef USE_XDDS
 MEDDLY::node_handle 
-MEDDLY::inter_mxd::compute(node_handle a, node_handle b) 
+MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b) 
 {
-  //  Compute for the unprimed levels.
-  //
-  node_handle result = 0;
-  if (checkTerminals(a, b, result))
-    return result;
-
-  compute_table::search_key* Key = findResult(a, b, result);
-  if (0==Key) return result;
-
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
   int resultLevel = ABS(topLevel(aLevel, bLevel));
   const int dwnLevel = resF->downLevel(resultLevel);
+
+  MEDDLY_DCASSERT(resF->isExtensibleLevel(resultLevel));
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel) 
@@ -377,17 +367,10 @@ MEDDLY::inter_mxd::compute(node_handle a, node_handle b)
   unpacked_node::recycle(B);
   unpacked_node::recycle(A);
 
-  // reduce and save result
-  result = resF->createReducedNode(-1, C);
-  saveResult(Key, a, b, result);
-
-#ifdef TRACE_ALL_OPS
-  printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
-#endif
-
+  // reduce result
+  node_handle result = resF->createReducedNode(-1, C);
   return result;
 }
-#endif
 
 
 // ******************************************************************

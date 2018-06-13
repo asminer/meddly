@@ -50,6 +50,8 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual node_handle compute(node_handle a, node_handle b);
+    virtual node_handle compute_normal(node_handle a, node_handle b);
+    virtual node_handle compute_ext(node_handle a, node_handle b);
 
   protected:
 #ifndef USE_NODE_STATUS
@@ -111,9 +113,13 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual node_handle compute(node_handle a, node_handle b);
+    virtual node_handle compute_normal(node_handle a, node_handle b);
+    virtual node_handle compute_ext(node_handle a, node_handle b);
 
   protected:
     node_handle compute_r(int i, int k, node_handle a, node_handle b);
+    node_handle compute_r_normal(int i, int k, node_handle a, node_handle b);
+    node_handle compute_r_ext(int i, int k, node_handle a, node_handle b);
 
   protected:
 #ifndef USE_NODE_STATUS

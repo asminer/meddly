@@ -618,14 +618,12 @@ MEDDLY::satotf_opname::subevent::subevent(forest* f, int* v, int nv, bool firing
   }
 
   uses_extensible_variables = false;
-#ifdef USE_XDDS
   for (int i = 0; i < num_vars; i++) {
     if (this->f->isExtensibleLevel(vars[i])) {
       uses_extensible_variables = true;
       break;
     }
   }
-#endif
 
   unpminterms = pminterms = 0;
   num_minterms = size_minterms = 0;
