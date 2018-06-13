@@ -112,6 +112,8 @@ namespace MEDDLY {
   // Classes
 
   class error;
+  class memstats;
+  class initializer_list;
   class input;
   class FILE_input;
   class istream_input;
@@ -601,6 +603,54 @@ class MEDDLY::error {
     int lineno;
 };
 
+// ******************************************************************
+// ******************************************************************
+
+
+// ******************************************************************
+// *                                                                *
+// *                         memstats class                         *
+// *                                                                *
+// ******************************************************************
+ 
+  /**
+    Class for memory statistics.
+  */
+  class MEDDLY::memstats {
+    public:
+      memstats();
+
+      void incMemUsed(size_t b);
+      void decMemUsed(size_t b);
+      void incMemAlloc(size_t b);
+      void decMemAlloc(size_t b);
+
+      size_t getMemUsed() const;
+      size_t getMemAlloc() const;
+      size_t getPeakMemUsed() const;
+      size_t getPeakMemAlloc() const;
+
+      static size_t getGlobalMemUsed();
+      static size_t getGlobalMemAlloc();
+      static size_t getGlobalPeakMemUsed();
+      static size_t getGlobalPeakMemAlloc();
+
+    private:
+      /// Current memory used 
+      size_t memory_used;
+      /// Current memory allocated 
+      size_t memory_alloc;
+      /// Peak memory used 
+      size_t peak_memory_used;
+      /// Peak memory allocated 
+      size_t peak_memory_alloc;
+
+      // global memory usage
+      static size_t global_memory_used;
+      static size_t global_memory_alloc;
+      static size_t global_peak_used;
+      static size_t global_peak_alloc;
+  };
 
 // ******************************************************************
 // ******************************************************************
@@ -1160,6 +1210,7 @@ class MEDDLY::forest {
       /// Peak number of active nodes
       long peak_active;
 
+      /*
       /// Current memory used for nodes
       long memory_used;
       /// Current memory allocated for nodes
@@ -1168,6 +1219,7 @@ class MEDDLY::forest {
       long peak_memory_used;
       /// Peak memory allocated for nodes
       long peak_memory_alloc;
+      */
 
       // unique table stats
 
@@ -1186,11 +1238,13 @@ class MEDDLY::forest {
 
       void incActive(long b);
       void decActive(long b);
+      /*
       void incMemUsed(long b);
       void decMemUsed(long b);
       void incMemAlloc(long b);
       void decMemAlloc(long b);
-      // void sawUTchain(int c);
+      void sawUTchain(int c);
+      */
     };
 
     /**
@@ -1426,6 +1480,9 @@ class MEDDLY::forest {
     /// Get forest performance stats.
     const statset& getStats() const;
 
+    /// Get forest memory stats.
+    const memstats& getMemoryStats() const;
+
     /** Get the current number of nodes in the forest, at all levels.
         @return     The current number of nodes, not counting deleted or
                     marked for deletion nodes.
@@ -1437,14 +1494,14 @@ class MEDDLY::forest {
         over all variables.
         @return     Current memory used by the forest.
     */
-    long getCurrentMemoryUsed() const;
+    size_t getCurrentMemoryUsed() const;
 
     /** Get the current total memory allocated by the forest.
         This should be equal to summing getMemoryAllocatedForVariable()
         over all variables.
         @return     Current total memory allocated by the forest.
     */
-    long getCurrentMemoryAllocated() const;
+    size_t getCurrentMemoryAllocated() const;
 
     /** Get the peak number of nodes in the forest, at all levels.
         This will be at least as large as calling getNumNodes() after
@@ -1463,18 +1520,20 @@ class MEDDLY::forest {
     /** Get the peak memory used by the forest.
         @return     Peak total memory used by the forest.
     */
-    long getPeakMemoryUsed() const;
+    size_t getPeakMemoryUsed() const;
 	
 	/** Set the peak memory to the current memory.
 	*/
+  /*
 	inline void resetPeakMemoryUsed() {
 	  stats.peak_memory_used = stats.memory_used;
 	}
+  */
 
     /** Get the peak memory allocated by the forest.
         @return     Peak memory allocated by the forest.
     */
-    long getPeakMemoryAllocated() const;
+    size_t getPeakMemoryAllocated() const;
 
     /// Are we about to be deleted?
     bool isMarkedForDeletion() const;
@@ -1986,6 +2045,7 @@ class MEDDLY::forest {
   protected:
     policies deflt;
     statset stats;
+    memstats mstats;
     logger *theLogger;
 
   // ------------------------------------------------------------

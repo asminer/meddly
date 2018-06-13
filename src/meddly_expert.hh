@@ -1191,10 +1191,10 @@ MEDDLY::expert_forest::getRealFromHandle(MEDDLY::node_handle n) const
   }
 }
 
-inline MEDDLY::expert_forest::statset&
-MEDDLY::expert_forest::changeStats()
+inline MEDDLY::memstats&
+MEDDLY::expert_forest::changeMemStats()
 {
-  return stats;
+  return mstats;
 }
 
 inline char

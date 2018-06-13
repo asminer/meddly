@@ -42,7 +42,7 @@ namespace MEDDLY {
 */
 class MEDDLY::malloc_manager : public memory_manager {
   public:
-    malloc_manager(const char* n, forest::statset &stats, unsigned char gran);
+    malloc_manager(const char* n, memstats &stats, unsigned char gran);
     virtual ~malloc_manager();
 
     virtual bool mustRecycleManually() const {
@@ -81,7 +81,7 @@ class MEDDLY::malloc_manager : public memory_manager {
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::malloc_manager::malloc_manager(const char* n, forest::statset &stats, 
+MEDDLY::malloc_manager::malloc_manager(const char* n, memstats &stats, 
   unsigned char gran) : memory_manager(n, stats)
 {
   granularity = gran;
@@ -194,7 +194,7 @@ MEDDLY::malloc_style::~malloc_style()
 
 MEDDLY::memory_manager*
 MEDDLY::malloc_style::initManager(unsigned char granularity, 
-  unsigned char minsize, forest::statset &stats) const
+  unsigned char minsize, memstats &stats) const
 {
   return new malloc_manager(getName(), stats, granularity);
 }

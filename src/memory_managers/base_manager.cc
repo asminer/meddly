@@ -40,7 +40,7 @@ MEDDLY::memory_manager_style::~memory_manager_style()
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::memory_manager::memory_manager(const char* n, forest::statset &stats)
+MEDDLY::memory_manager::memory_manager(const char* n, memstats &stats)
  : my_mem(stats)
 {
   style_name = n;

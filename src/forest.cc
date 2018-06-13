@@ -120,10 +120,12 @@ MEDDLY::forest::statset::statset()
   orphan_nodes = 0;
   active_nodes = 0;
   peak_active = 0;
+  /*
   memory_used = 0;
   memory_alloc = 0;
   peak_memory_used = 0;
   peak_memory_alloc = 0;
+  */
   /*
   memory_UT = 0;
   peak_memory_UT = 0;

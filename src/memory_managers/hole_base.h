@@ -57,7 +57,7 @@ namespace MEDDLY {
   template <class INT>
   class hole_manager : public memory_manager {
     public:
-      hole_manager(const char* n, forest::statset &stats);
+      hole_manager(const char* n, memstats &stats);
       virtual ~hole_manager();
 
       // common stuff!
@@ -192,7 +192,7 @@ namespace MEDDLY {
 // ******************************************************************
 
 template <class INT>
-MEDDLY::hole_manager<INT>::hole_manager(const char* n, forest::statset &stats)
+MEDDLY::hole_manager<INT>::hole_manager(const char* n, memstats &stats)
   : memory_manager(n, stats)
 {
   data = 0;

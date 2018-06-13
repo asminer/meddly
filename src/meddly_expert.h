@@ -988,7 +988,7 @@ class MEDDLY::memory_manager_style {
                     manager.
     */
     virtual memory_manager* initManager(unsigned char granularity, 
-      unsigned char minsize, forest::statset& stats) const = 0;
+      unsigned char minsize, memstats& stats) const = 0;
 
 
     const char* getName() const;
@@ -1010,7 +1010,7 @@ class MEDDLY::memory_manager_style {
 class MEDDLY::memory_manager {
 
   public:
-    memory_manager(const char* sn, forest::statset& stats);
+    memory_manager(const char* sn, memstats& stats);
     virtual ~memory_manager();
 
     /**
@@ -1173,7 +1173,7 @@ class MEDDLY::memory_manager {
   private:
     /// Name of the style that invoked us
     const char* style_name;
-    forest::statset &my_mem;
+    memstats &my_mem;
 };
 
 
@@ -1870,7 +1870,7 @@ class MEDDLY::expert_forest: public forest
     */
     float getRealFromHandle(node_handle n) const;
 
-    statset& changeStats();
+    memstats& changeMemStats();
     /// Number of bytes for an edge value.
     char edgeBytes() const;
     /// Are edge values included when computing the hash.

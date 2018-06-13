@@ -274,7 +274,7 @@ MEDDLY::simple_separated
 ::simple_separated(const char* n, expert_forest* f, const memory_manager_style* mst)
 : node_storage(n, f)
 {
-  MM = mst->initManager(sizeof(node_handle), slotsForNode(0, false), f->changeStats());
+  MM = mst->initManager(sizeof(node_handle), slotsForNode(0, false), f->changeMemStats());
 
   unhashed_start = header_slots;
   unhashed_slots = slotsForBytes(f->unhashedHeaderBytes());
