@@ -1819,6 +1819,50 @@ void MEDDLY::satimpl_opname::implicit_relation::bindExtensibleVariables() {
   }
 }
 
+MEDDLY::node_handle
+MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
+{
+  
+  //Get number of Variables and Events
+  int nVars = outsetF->getDomain()->getNumVariables();
+  int nEvents = getTotalEvent(nVars);
+  
+  
+  rel_node_handle* event_tops = (rel_node_handle*)malloc((nEvents)*sizeof(rel_node_handle));
+  int e = 0;
+  
+  for(int i = 1 ;i<=nVars;i++)
+    {
+    int num_events_at_this_level = lengthForLevel(i);
+    for(int j = 0;j<num_events_at_this_level;j++)
+      event_tops[e++]=arrayForLevel(i)[j];
+    }
+  
+  domain *d = outsetF->useDomain();
+  
+  forest* mxd = d->createForest(true,forest::BOOLEAN, forest::MULTI_TERMINAL);
+  dd_edge nsf(mxd);
+  
+  dd_edge* monolithic_nsf = new dd_edge(mxd);
+  for(int i=0;i<nEvents;i++)
+    {
+    (*monolithic_nsf) += buildEventMxd(event_tops[i],mxd);
+    }
+  
+  node_handle monolithic_nsf_handle = monolithic_nsf->getNode();
+  mxdF = (expert_forest*)mxd;
+  
+  /*for(int i = 0; i<nEvents;i++)
+   {
+   dd_edge nsf_ev(mxd);
+   nsf_ev = buildEventMxd(event_tops[i],mxd);
+   apply(UNION, nsf, nsf_ev, nsf);
+   }*/
+  
+  return monolithic_nsf_handle;
+}
+
+
 MEDDLY::dd_edge
 MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTop, forest *mxd)
 {
