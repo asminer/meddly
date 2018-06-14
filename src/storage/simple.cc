@@ -1644,7 +1644,6 @@ MEDDLY::simple_separated_style::~simple_separated_style()
 MEDDLY::node_storage* MEDDLY::simple_separated_style
 ::createForForest(expert_forest* f, const memory_manager_style* mst) const
 {
-//  return 0;
   return new simple_separated(getName(), f, mst);
 }
 

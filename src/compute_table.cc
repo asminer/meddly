@@ -54,6 +54,7 @@ MEDDLY::ct_initializer::ct_initializer(initializer_list* prev) : initializer_lis
   setBuiltinStyle(MonolithicUnchainedHash);
   setMaxSize(16777216);
   setStaleRemoval(Moderate);
+  setMemoryManager(0);  // TBD
 }
 
 MEDDLY::ct_initializer::~ct_initializer()
@@ -121,6 +122,11 @@ void MEDDLY::ct_initializer::setUserStyle(const compute_table_style* cts)
   delete builtin_ct_factory;
   builtin_ct_factory = 0;
   ct_factory = cts;
+}
+
+void MEDDLY::ct_initializer::setMemoryManager(const memory_manager_style* mms)
+{
+  the_settings.MMS = mms;
 }
 
 MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(operation* op)

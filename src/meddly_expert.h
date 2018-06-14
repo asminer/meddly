@@ -991,9 +991,11 @@ class MEDDLY::memory_manager_style {
       unsigned char minsize, memstats& stats) const = 0;
 
 
+    /**
+        Human readable name.
+        Used for debugging and reporting.
+    */
     const char* getName() const;
-
-  // TBD - const char* for name?
 };
 
 // ******************************************************************
@@ -3595,8 +3597,15 @@ class MEDDLY::ct_initializer : public initializer_list {
     };
 
     struct settings {
-      staleRemovalOption staleRemoval;
-      unsigned maxSize;
+        /// Memory manager to use for compute table entries
+        const memory_manager_style *MMS;
+        /// Stale removal policy
+        staleRemovalOption staleRemoval;
+        /// Maximum compute table size
+        size_t maxSize;
+      settings() {
+        MMS = 0;
+      }
     };
 
   public:
@@ -3606,6 +3615,7 @@ class MEDDLY::ct_initializer : public initializer_list {
   protected:
     virtual void setup();
     virtual void cleanup();
+    static void setMemoryManager(const memory_manager_style*);
 
   // use these to change defaults, before library initialization
   public:
