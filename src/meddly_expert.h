@@ -1159,10 +1159,10 @@ class MEDDLY::memory_manager {
     virtual void dumpInternalUnused(output &s, node_address addr) const = 0;
 
   protected:
-    void incMemUsed(long b);
-    void decMemUsed(long b);
-    void incMemAlloc(long b);
-    void decMemAlloc(long b);
+    void incMemUsed(size_t b);
+    void decMemUsed(size_t b);
+    void incMemAlloc(size_t b);
+    void decMemAlloc(size_t b);
 
 
 

@@ -886,22 +886,22 @@ inline const char* MEDDLY::memory_manager::getStyleName() const
   return style_name;
 }
 
-inline void MEDDLY::memory_manager::incMemUsed(long b)
+inline void MEDDLY::memory_manager::incMemUsed(size_t b)
 {
   my_mem.incMemUsed(b);
 }
 
-inline void MEDDLY::memory_manager::decMemUsed(long b)
+inline void MEDDLY::memory_manager::decMemUsed(size_t b)
 {
   my_mem.decMemUsed(b);
 }
 
-inline void MEDDLY::memory_manager::incMemAlloc(long b)
+inline void MEDDLY::memory_manager::incMemAlloc(size_t b)
 {
   my_mem.incMemAlloc(b);
 }
 
-inline void MEDDLY::memory_manager::decMemAlloc(long b)
+inline void MEDDLY::memory_manager::decMemAlloc(size_t b)
 {
   my_mem.decMemAlloc(b);
 }
