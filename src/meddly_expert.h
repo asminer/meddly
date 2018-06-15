@@ -1164,7 +1164,8 @@ class MEDDLY::memory_manager {
     void incMemAlloc(size_t b);
     void decMemAlloc(size_t b);
 
-
+    void zeroMemUsed();
+    void zeroMemAlloc();
 
   public:
     /**

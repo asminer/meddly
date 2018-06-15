@@ -65,6 +65,7 @@ libmeddly_la_SOURCES = \
   memory_managers/orig_grid.h         memory_managers/orig_grid.cc  \
   memory_managers/malloc_style.h      memory_managers/malloc_style.cc  \
   memory_managers/heap_manager.h      memory_managers/heap_manager.cc  \
+  memory_managers/freelists.h         memory_managers/freelists.cc  \
   \
   operations/apply_base.h     operations/apply_base.cc   \
   operations/mpz_object.h     operations/mpz_object.cc   \

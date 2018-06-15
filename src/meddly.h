@@ -625,6 +625,9 @@ class MEDDLY::error {
       void incMemAlloc(size_t b);
       void decMemAlloc(size_t b);
 
+      void zeroMemUsed();
+      void zeroMemAlloc();
+
       size_t getMemUsed() const;
       size_t getMemAlloc() const;
       size_t getPeakMemUsed() const;

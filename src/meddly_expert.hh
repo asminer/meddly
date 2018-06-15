@@ -906,6 +906,16 @@ inline void MEDDLY::memory_manager::decMemAlloc(size_t b)
   my_mem.decMemAlloc(b);
 }
 
+inline void MEDDLY::memory_manager::zeroMemUsed()
+{
+  my_mem.zeroMemUsed();
+}
+
+inline void MEDDLY::memory_manager::zeroMemAlloc()
+{
+  my_mem.zeroMemAlloc();
+}
+
 // ******************************************************************
 // *                                                                *
 // *               inlined node_storage_style methods               *

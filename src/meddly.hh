@@ -110,6 +110,20 @@ inline void MEDDLY::memstats::decMemAlloc(size_t b)
 // #endif
 }
 
+inline void MEDDLY::memstats::zeroMemUsed()
+{
+  MEDDLY_DCASSERT(global_memory_used >= memory_used);
+  global_memory_used -= memory_used;
+  memory_used = 0;
+}
+
+inline void MEDDLY::memstats::zeroMemAlloc()
+{
+  MEDDLY_DCASSERT(global_memory_alloc >= memory_alloc);
+  global_memory_alloc -= memory_alloc;
+  memory_alloc = 0;
+}
+
 inline size_t MEDDLY::memstats::getMemUsed() const
 {
   return memory_used;
