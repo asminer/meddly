@@ -193,6 +193,29 @@ template <class INT>
 void MEDDLY::freelist_manager<INT>::reportStats(output &s, const char* pad, 
   bool human, bool details) const
 {
+  s << pad << "Report for freelist memory manager:\n";
+  if (details) {
+    s << pad << "  Current #holes: \n";
+  }
+  long total = 0;
+  long tbytes = 0;
+  for (int i=0; i<maxEntrySize; i++) {
+    long count=0;
+    for (INT ptr = freeList[i]; ptr; ptr = entries[ptr]) {
+      count++;
+    }
+    if (0==count) continue;
+    if (details) {
+      s << pad << "    size " << i << ": " << count << "\n";
+    }
+    total += count;
+    tbytes += count * i * sizeof(INT);
+  }
+  if (details) {
+    s << pad << "  total " << total << " holes, " << tbytes << " bytes\n";
+  } else {
+    s << pad << "  Current #holes: " << total << ", " << tbytes << " bytes\n";
+  }
 }
 
 // ******************************************************************
@@ -200,6 +223,24 @@ void MEDDLY::freelist_manager<INT>::reportStats(output &s, const char* pad,
 template <class INT>
 void MEDDLY::freelist_manager<INT>::dumpInternal(output &s) const
 {
+  if (0==entries) {
+    s << "Entries: null\n";
+  } else {
+    s << "Entries: [" << long(entries[0]);
+    for (int i=1; i<entriesSize; i++) {
+      s << ", " << long(entries[i]);
+    }
+    s << "]\n";
+  }
+  if (0==freeList) {
+    s << "Free: null\n";
+  } else {
+    s << "Free: [" << long(freeList[0]);
+    for (int i=1; i<=maxEntrySize; i++) {
+      s << ", " << long(freeList[i]);
+    }
+    s << "]\n";
+  }
 }
 
 // ******************************************************************
@@ -231,7 +272,7 @@ MEDDLY::node_address MEDDLY::freelist_manager<INT>::getNextAddress(node_address 
 template <class INT>
 void MEDDLY::freelist_manager<INT>::dumpInternalUnused(output &s, node_address addr) const
 {
-  // TBD - dump free lists here?
+  s << "Free: [ next: " << long(entries[addr]) << " ]\n";
 }
 
 
