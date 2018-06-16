@@ -27,6 +27,7 @@ class MEDDLY::memman_initializer : public initializer_list {
     memory_manager_style* array_plus_grid;
     memory_manager_style* malloc_manager;
     memory_manager_style* heap_manager;
+    memory_manager_style* freelists;
 
   public:
     memman_initializer(initializer_list *p);

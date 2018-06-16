@@ -54,7 +54,7 @@ MEDDLY::ct_initializer::ct_initializer(initializer_list* prev) : initializer_lis
   setBuiltinStyle(MonolithicUnchainedHash);
   setMaxSize(16777216);
   setStaleRemoval(Moderate);
-  setMemoryManager(0);  // TBD
+  setMemoryManager(0);  // wait on this one
 }
 
 MEDDLY::ct_initializer::~ct_initializer()
@@ -66,6 +66,9 @@ MEDDLY::ct_initializer::~ct_initializer()
 void MEDDLY::ct_initializer::setup()
 {
   if (0==ct_factory) throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
+
+  MEDDLY_DCASSERT(FREELISTS);
+  setMemoryManager(FREELISTS);
 
   if (ct_factory->usesMonolithic()) {
     operation::Monolithic_CT = ct_factory->create(the_settings);

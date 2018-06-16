@@ -168,6 +168,7 @@ namespace MEDDLY {
   extern const memory_manager_style* ARRAY_PLUS_GRID;
   extern const memory_manager_style* MALLOC_MANAGER;
   extern const memory_manager_style* HEAP_MANAGER;
+  extern const memory_manager_style* FREELISTS;   // used for compute tables
 
   // ******************************************************************
   // *                     Node storage mechanisms                    *
