@@ -32,6 +32,7 @@
 // #define DEBUG_REMOVESTALES
 // #define SUMMARY_STALES
 
+#define INTEGRATED_MEMMAN
 
 namespace MEDDLY {
   /// base class for all compute tables here;
@@ -269,13 +270,17 @@ class MEDDLY::base_table : public compute_table {
       }
       if (c>perf.maxSearchLength) perf.maxSearchLength = c;
     }
-    int newEntry(int size);
-    inline void recycleEntry(int h, int size) {
+    node_address newEntry(unsigned size);
+    inline void recycleEntry(node_address h, unsigned size) {
 #ifdef DEBUG_CTALLOC
-      fprintf(stderr, "Recycling entry %d size %d\n", h, size);
+      fprintf(stderr, "Recycling entry %ld size %u\n", long(h), size);
 #endif
+#ifdef INTEGRATED_MEMMAN
       entries[h] = freeList[size];
       freeList[size] = h;
+#else
+      MMAN->recycleChunk(h, size);
+#endif
       perf.numEntries--;
     }
     void dumpInternal(output &s, int verbLevel) const;
@@ -319,7 +324,11 @@ class MEDDLY::base_table : public compute_table {
       currEntry.hash_value = Key->getHash();
       currEntry.resSlot = 0;
       currEntry.handle = newEntry(op->getCacheEntryLength()+C+M);
+#ifdef INTEGRATED_MEMMAN
       currEntry.entry = entries + currEntry.handle;
+#else
+      currEntry.entry = (int*) MMAN->getChunkAddress(currEntry.handle);
+#endif
       memcpy(currEntry.entry+C, Key->rawData(), Key->dataLength()*sizeof(node_handle));
       currEntry.res_entry = currEntry.entry + Key->dataLength() + C;
 #ifdef DEVELOPMENT_CODE
@@ -348,6 +357,7 @@ class MEDDLY::base_table : public compute_table {
       return data;
     }
     
+#ifdef INTEGRATED_MEMMAN
   protected:
     int*  entries;
     int entriesSize;
@@ -359,6 +369,11 @@ class MEDDLY::base_table : public compute_table {
     static const int maxEntrySize = 15;
     static const int maxEntryBytes = sizeof(int) * maxEntrySize;
     int* freeList;
+#else
+  protected:
+    memory_manager* MMAN;
+    memstats mstats;
+#endif
 };
 
 
@@ -392,6 +407,7 @@ MEDDLY::base_table::old_search_key::~old_search_key()
 MEDDLY::base_table::base_table(const ct_initializer::settings &s)
  : compute_table(s)
 {
+#ifdef INTEGRATED_MEMMAN
   entriesAlloc = 1024;
   entries = (int*) malloc(entriesAlloc * sizeof(int));
   entriesSize = 1;
@@ -403,16 +419,25 @@ MEDDLY::base_table::base_table(const ct_initializer::settings &s)
 
   currMemory = entriesAlloc * sizeof(int) + (1+maxEntrySize) * sizeof(int);
   peakMemory = currMemory;
+#else
+  MEDDLY_DCASSERT(s.MMS);
+  MMAN = s.MMS->initManager(sizeof(int), 1, mstats);
+#endif
 }
 
 MEDDLY::base_table::~base_table()
 {
+#ifdef INTEGRATED_MEMMAN
   free(entries);
   delete[] freeList;
+#else
+  delete MMAN;
+#endif
 }
 
-int MEDDLY::base_table::newEntry(int size)
+MEDDLY::node_address MEDDLY::base_table::newEntry(unsigned size)
 {
+#ifdef INTEGRATED_MEMMAN
   // check free list
   if (size > maxEntrySize) {
     fprintf(stderr, "MEDDLY error: request for compute table entry larger than max size\n");
@@ -421,7 +446,7 @@ int MEDDLY::base_table::newEntry(int size)
   if (size<1) return 0;
   perf.numEntries++;
   if (freeList[size]) {
-    int h = freeList[size];
+    node_address h = freeList[size];
     freeList[size] = entries[h];
 #ifdef DEBUG_CTALLOC
     fprintf(stderr, "Re-used entry %d size %d\n", h, size);
@@ -444,17 +469,24 @@ int MEDDLY::base_table::newEntry(int size)
     entriesAlloc = neA;
   }
   MEDDLY_DCASSERT(entriesSize + size <= entriesAlloc);
-  int h = entriesSize;
+  node_address h = entriesSize;
   entriesSize += size;
 #ifdef DEBUG_CTALLOC
   fprintf(stderr, "New entry %d size %d\n", h, size);
 #endif
   return h;
+
+#else
+  perf.numEntries++;
+  size_t the_size = size;
+  return MMAN->requestChunk(the_size);
+#endif
 }
 
 void MEDDLY::base_table::dumpInternal(output &s, int verbLevel) const
 {
   if (verbLevel < 1) return;
+#ifdef INTEGRATED_MEMMAN
   if (0==entries) {
     s << "Entries: null\n";
   } else {
@@ -473,6 +505,9 @@ void MEDDLY::base_table::dumpInternal(output &s, int verbLevel) const
     }
     s << "]\n";
   }
+#else
+  if (MMAN) MMAN->dumpInternal(s);
+#endif
 }
 
 void MEDDLY::base_table
@@ -481,10 +516,17 @@ void MEDDLY::base_table
   if (level < 1) return;
   s.put("", indent);
   s << "Number of entries :\t" << long(perf.numEntries) << "\n";
+#ifdef INTEGRATED_MEMMAN
   s.put("", indent);
   s << "Entry array size  :\t" << long(entriesSize) << "\n";
   s.put("", indent);
   s << "Entry array alloc :\t" << long(entriesAlloc) << "\n";
+#else
+  s.put("", indent);
+  s << "Entries bytes used  :\t" << mstats.getMemUsed() << "\n";
+  s.put("", indent);
+  s << "Entries bytes alloc :\t" << mstats.getMemAlloc() << "\n";
+#endif
 
   if (--level < 1) return;
 
@@ -593,8 +635,12 @@ MEDDLY::base_hash::base_hash(const ct_initializer::settings &s,
   if (0==table) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   for (unsigned i=0; i<tableSize; i++) table[i] = 0;
 
+#ifdef INTEGRATED_MEMMAN
   currMemory += tableSize * sizeof(int);
   peakMemory = currMemory;
+#else
+  mstats.incMemUsed(tableSize * sizeof(int));
+#endif
 }
 
 MEDDLY::base_hash::~base_hash()
@@ -744,8 +790,12 @@ void MEDDLY::base_chained::addEntry()
 
   for (unsigned i=tableSize; i<newsize; i++) newt[i] = 0;
 
+#ifdef INTEGRATED_MEMMAN
   currMemory += (newsize - tableSize) * sizeof(int);
   if (currMemory > peakMemory) peakMemory = currMemory;
+#else
+  mstats.incMemUsed( (newsize - tableSize) * sizeof(int) );
+#endif
 
   table = newt;
   tableSize = newsize;
@@ -782,7 +832,11 @@ void MEDDLY::base_chained::removeStales()
       throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__); 
     }
 
+#ifdef INTEGRATED_MEMMAN
     currMemory -= (tableSize - newsize) * sizeof(int);  
+#else
+    mstats.decMemUsed( (tableSize - newsize) * sizeof(int) );
+#endif
 
     table = newt;
     tableSize = newsize;
@@ -805,6 +859,8 @@ void MEDDLY::base_chained::dumpInternal(output &s, int verbLevel) const
 {
   if (verbLevel < 1) return;
 
+#ifdef INTEGRATED_MEMMAN
+
   s << "Hash table chains:\n";
 
   for (unsigned i=0; i<tableSize; i++) {
@@ -820,6 +876,27 @@ void MEDDLY::base_chained::dumpInternal(output &s, int verbLevel) const
     s.put('\n');
   }
 
+#else
+
+  s << "Hash table chains:\n";
+
+  for (unsigned i=0; i<tableSize; i++) {
+    if (0==table[i]) continue;
+    s << "table[";
+    s.put(long(i), 9);
+    node_address curr = table[i];
+    s << "]: " << curr;
+    int* data = (int*) MMAN->getChunkAddress(curr);
+    while (data[0]) {
+      curr = data[0];
+      s << " -> " << curr;
+      data = (int*) MMAN->getChunkAddress(curr);
+    }
+    s.put('\n');
+  }
+
+#endif
+
   s << "\nHash table nodes:\n";
   
   for (unsigned i=0; i<tableSize; i++) {
@@ -830,7 +907,12 @@ void MEDDLY::base_chained::dumpInternal(output &s, int verbLevel) const
       s << ":  ";
       showEntry(s, curr);
       s.put('\n');
+#ifdef INTEGRATED_MEMMAN
       curr = entries[curr];
+#else
+      int* data = (int*) MMAN->getChunkAddress(curr);
+      curr = data[0];
+#endif
     }
   }
   s.put('\n');
@@ -883,6 +965,7 @@ class MEDDLY::monolithic_chained : public base_chained {
     //          Otherwise, if it is marked RECOVERABLE, delete it.
 #ifndef USE_NODE_STATUS
     inline bool checkStale(unsigned h, int prev, int &curr) {
+#ifdef INTEGRATED_MEMMAN
         operation* currop = operation::getOpWithIndex(entries[curr+1]);
         MEDDLY_DCASSERT(currop);
         if (currop->isEntryStale(entries+curr+2)) {
@@ -896,6 +979,27 @@ class MEDDLY::monolithic_chained : public base_chained {
           return true;
         }
         return false;
+#else
+        const int* entry = (const int*) MMAN->getChunkAddress(curr);
+        operation* currop = operation::getOpWithIndex(entry[1]);
+        MEDDLY_DCASSERT(currop);
+        if (currop->isEntryStale(entry+2)) {
+          currop->discardEntry(entry+2);
+          int next = entry[0];
+          if (prev) {
+            int* preventry = (int*) MMAN->getChunkAddress(prev);
+            preventry[0] = next;
+          }
+          else {
+            table[h] = next;
+          }
+          int length = currop->getCacheEntryLength();
+          recycleEntry(curr, length+2);
+          curr = next;
+          return true;
+        }
+        return false;
+#endif
     }
 #else
     // Deletes "curr" from the list;
@@ -925,6 +1029,27 @@ class MEDDLY::monolithic_chained : public base_chained {
       return currop->getEntryStatus(entries+curr+2);
     }
 #endif
+
+    inline void moveToFront(unsigned h, int curr, int prev) {
+#ifdef INTEGRATED_MEMMAN
+      if (prev) {
+        // not at the front; move it there
+        entries[prev] = entries[curr];
+        entries[curr] = table[h];
+        table[h] = curr;
+      }
+#else
+      if (prev){
+        // not at the front; move it there
+        int* prev_entry = (int*) MMAN->getChunkAddress(prev);
+        int* curr_entry = (int*) MMAN->getChunkAddress(curr);
+
+        prev_entry[0] = curr_entry[0];
+        curr_entry[0] = table[h];
+        table[h] = curr;
+      }
+#endif
+    }
 };
 
 
@@ -983,12 +1108,7 @@ MEDDLY::monolithic_chained::find(search_key *k)
       }
       // "Hit"
       perf.hits++;
-      if (prev) {
-        // not at the front; move it there
-        entries[prev] = entries[curr];
-        entries[curr] = table[h];
-        table[h] = curr;
-      }
+      moveToFront(h, curr, prev);
 #ifdef DEBUG_CT
       printf("Found CT entry ");
       key->getOp()->showEntry(stdout, entries + curr + 2);
@@ -1036,12 +1156,7 @@ MEDDLY::monolithic_chained::find(search_key *k)
       } else {
         // "Hit"
         perf.hits++;
-        if (prev) {
-          // not at the front; move it there
-          entries[prev] = entries[curr];
-          entries[curr] = table[h];
-          table[h] = curr;
-        }
+        moveToFront(h, curr, prev);
 #ifdef DEBUG_CT
         printf("Found CT entry ");
         key->getOp()->showEntry(stdout, entries + curr + 2);
