@@ -725,6 +725,46 @@ class MEDDLY::base_chained : public base_hash {
     virtual int convertToList(bool removeStales) = 0;
     virtual void listToTable(int h) = 0;
     virtual void showEntry(output &s, int h) const = 0;
+
+    inline void showChain(output &s, int L) const {
+      s << L;
+      while (L) {
+#ifdef INTEGRATED_MEMMAN
+        const int* entry = entries+L;
+#else
+        const int* entry = (const int*) MMAN->getChunkAddress(L);
+#endif
+        L = entry[0];
+        s << "->" << L;
+      } 
+      s << "\n";
+    }
+
+    inline void showChain(FILE* out, int L) const {
+      FILE_output foo(out);
+      showChain(foo, L);
+    }
+
+    inline void moveToFront(unsigned h, int curr, int prev) {
+#ifdef INTEGRATED_MEMMAN
+      if (prev) {
+        // not at the front; move it there
+        entries[prev] = entries[curr];
+        entries[curr] = table[h];
+        table[h] = curr;
+      }
+#else
+      if (prev){
+        // not at the front; move it there
+        int* prev_entry = (int*) MMAN->getChunkAddress(prev);
+        int* curr_entry = (int*) MMAN->getChunkAddress(curr);
+
+        prev_entry[0] = curr_entry[0];
+        curr_entry[0] = table[h];
+        table[h] = curr;
+      }
+#endif
+    }
 };
 
 
@@ -859,43 +899,15 @@ void MEDDLY::base_chained::dumpInternal(output &s, int verbLevel) const
 {
   if (verbLevel < 1) return;
 
-#ifdef INTEGRATED_MEMMAN
-
   s << "Hash table chains:\n";
 
   for (unsigned i=0; i<tableSize; i++) {
     if (0==table[i]) continue;
     s << "table[";
     s.put(long(i), 9);
-    s << "]: " << long(table[i]);
-    int curr = entries[table[i]];
-    while (curr) {
-      s << " -> " << long(curr);
-      curr = entries[curr];
-    }
-    s.put('\n');
+    s << "]: ";
+    showChain(s, table[i]);
   }
-
-#else
-
-  s << "Hash table chains:\n";
-
-  for (unsigned i=0; i<tableSize; i++) {
-    if (0==table[i]) continue;
-    s << "table[";
-    s.put(long(i), 9);
-    node_address curr = table[i];
-    s << "]: " << curr;
-    int* data = (int*) MMAN->getChunkAddress(curr);
-    while (data[0]) {
-      curr = data[0];
-      s << " -> " << curr;
-      data = (int*) MMAN->getChunkAddress(curr);
-    }
-    s.put('\n');
-  }
-
-#endif
 
   s << "\nHash table nodes:\n";
   
@@ -910,8 +922,8 @@ void MEDDLY::base_chained::dumpInternal(output &s, int verbLevel) const
 #ifdef INTEGRATED_MEMMAN
       curr = entries[curr];
 #else
-      int* data = (int*) MMAN->getChunkAddress(curr);
-      curr = data[0];
+      const int* entry = (const int*) MMAN->getChunkAddress(curr);
+      curr = entry[0];
 #endif
     }
   }
@@ -1030,26 +1042,6 @@ class MEDDLY::monolithic_chained : public base_chained {
     }
 #endif
 
-    inline void moveToFront(unsigned h, int curr, int prev) {
-#ifdef INTEGRATED_MEMMAN
-      if (prev) {
-        // not at the front; move it there
-        entries[prev] = entries[curr];
-        entries[curr] = table[h];
-        table[h] = curr;
-      }
-#else
-      if (prev){
-        // not at the front; move it there
-        int* prev_entry = (int*) MMAN->getChunkAddress(prev);
-        int* curr_entry = (int*) MMAN->getChunkAddress(curr);
-
-        prev_entry[0] = curr_entry[0];
-        curr_entry[0] = table[h];
-        table[h] = curr;
-      }
-#endif
-    }
 };
 
 
@@ -1097,7 +1089,12 @@ MEDDLY::monolithic_chained::find(search_key *k)
 
 #ifndef USE_NODE_STATUS
 
-    if (equal_sw(entries+curr+1, key->rawData(), key->dataLength())) {
+#ifdef INTEGRATED_MEMMAN
+    const int* entry = entries + curr;
+#else
+    const int* entry = (const int*) MMAN->getChunkAddress(curr);
+#endif
+    if (equal_sw(entry+1, key->rawData(), key->dataLength())) {
       if (key->getOp()->shouldStaleCacheHitsBeDiscarded()) {
         if (checkStale(h, prev, curr)) {
           // The match is stale.
@@ -1115,7 +1112,7 @@ MEDDLY::monolithic_chained::find(search_key *k)
       // fprintf(stderr, " in slot %u", h);
       printf("\n");
 #endif
-      ANS.setResult(entries+curr+1+key->dataLength(), key->getOp()->getAnsLength());
+      ANS.setResult(entry+1+key->dataLength(), key->getOp()->getAnsLength());
       break;
     }
     //
@@ -1127,7 +1124,7 @@ MEDDLY::monolithic_chained::find(search_key *k)
 
     // advance pointers
     prev = curr;
-    curr = entries[prev];
+    curr = entry[0];
 #else
 
     // |-----------||--------|-------------|---------|
@@ -1202,10 +1199,15 @@ void MEDDLY::monolithic_chained::removeAll()
   for (unsigned i=0; i<tableSize; i++) {
     while (table[i]) {
       int curr = table[i];
-      table[i] = entries[curr];
-      operation* currop = operation::getOpWithIndex(entries[curr+1]);
+#ifdef INTEGRATED_MEMMAN
+      const int* entry = entries + curr;
+#else
+      const int* entry = (const int*) MMAN->getChunkAddress(curr);
+#endif
+      table[i] = entry[0];
+      operation* currop = operation::getOpWithIndex(entry[1]);
       MEDDLY_DCASSERT(currop);
-      currop->discardEntry(entries + curr + 2);
+      currop->discardEntry(entry + 2);
       recycleEntry(curr, 2+currop->getCacheEntryLength());
     } // while
   } // for i
@@ -1215,10 +1217,17 @@ void MEDDLY::monolithic_chained::show(output &s, int verbLevel)
 {
   if (verbLevel < 1) return;
   s << "Monolithic compute table\n";
+#ifdef INTEGRATED_MEMMAN
   s.put("", 6);
   s << "Current CT memory :\t" << long(currMemory) << " bytes\n";
   s.put("", 6);
   s << "Peak    CT memory :\t" << long(peakMemory) << " bytes\n";
+#else
+  s.put("", 6);
+  s << "Current CT memory :\t" << mstats.getMemUsed() << " bytes\n";
+  s.put("", 6);
+  s << "Peak    CT memory :\t" << mstats.getPeakMemUsed() << " bytes\n";
+#endif
   // verbLevel--;
   report(s, 6, verbLevel);
   verbLevel--;
@@ -1232,25 +1241,29 @@ int MEDDLY::monolithic_chained::convertToList(bool removeStales)
   for (unsigned i=0; i<tableSize; i++) {
     while (table[i]) {
       int curr = table[i];
-      table[i] = entries[curr];
+#ifdef INTEGRATED_MEMMAN
+      int* entry = entries + curr;
+#else
+      int* entry = (int*) MMAN->getChunkAddress(curr);
+#endif
+      table[i] = entry[0];
       if (removeStales) {
-        operation* currop = operation::getOpWithIndex(entries[curr+1]);
+        operation* currop = operation::getOpWithIndex(entry[1]);
         MEDDLY_DCASSERT(currop);
-        const int* entry = entries + curr + 2;
         //
         // Check for stale
         //
 #ifndef USE_NODE_STATUS
-        if (currop->isEntryStale(entry)) {
+        if (currop->isEntryStale(entry+2)) {
 #else
-        if (currop->getEntryStatus(entry)) {
+        if (currop->getEntryStatus(entry+2)) {
 #endif
 #ifdef DEBUG_TABLE2LIST
           printf("\tstale ");
-          currop->showEntry(stdout, entry);
+          currop->showEntry(stdout, entry+2);
           printf(" (handle %d slot %d)\n", curr, i);
 #endif
-          currop->discardEntry(entry);
+          currop->discardEntry(entry+2);
           recycleEntry(curr, 2+currop->getCacheEntryLength());
           continue;
         }
@@ -1260,18 +1273,16 @@ int MEDDLY::monolithic_chained::convertToList(bool removeStales)
       //
 #ifdef DEBUG_TABLE2LIST
       printf("\tkeep  ");
-      currop->showEntry(stdout, entry);
+      currop->showEntry(stdout, entry+2);
       printf(" (handle %d slot %d)\n", curr, i);
 #endif
-      entries[curr] = list;
+      entry[0] = list;
       list = curr;
     } // while
   } // for i
 #ifdef DEBUG_TABLE2LIST
-  printf("Built list: %d", list);
-  if (list ) for (int L=entries[list]; L; L=entries[L])
-    printf("->%d", L);
-  printf("\n");
+  printf("Built list: ");
+  showChain(stdout, list);
 #endif
   return list;
 }
@@ -1279,23 +1290,26 @@ int MEDDLY::monolithic_chained::convertToList(bool removeStales)
 void MEDDLY::monolithic_chained::listToTable(int L)
 {
 #ifdef DEBUG_LIST2TABLE
-  printf("Recovering  list: %d", L);
-  if (L) for (int i=entries[L]; i; i=entries[i])
-    printf("->%d", i);
-  printf("\n");
+  printf("Recovering  list: ");
+  showChain(stdout, L);
 #endif
   while (L) {
-    int curr = L;
-    L = entries[L];
-    operation* currop = operation::getOpWithIndex(entries[curr+1]);
+#ifdef INTEGRATED_MEMMAN
+    int* entry = entries+L;
+#else
+    int* entry = (int*) MMAN->getChunkAddress(L);
+#endif
+    const int curr = L;
+    L = entry[0];
+    operation* currop = operation::getOpWithIndex(entry[1]);
     MEDDLY_DCASSERT(currop);
-    int hashlength = 1+currop->getKeyLength();
-    unsigned h = hash(entries + curr + 1, hashlength);
-    entries[curr] = table[h];
+    const int hashlength = 1+currop->getKeyLength();
+    const unsigned h = hash(entry + 1, hashlength);
+    entry[0] = table[h];
     table[h] = curr;
 #ifdef DEBUG_LIST2TABLE
     printf("\tsave  ");
-    currop->showEntry(stdout, entries + curr + 2);
+    currop->showEntry(stdout, entry+2);
     printf(" (handle %d slot %d)\n", curr, h);
 #endif
   }
@@ -1303,8 +1317,14 @@ void MEDDLY::monolithic_chained::listToTable(int L)
 
 void MEDDLY::monolithic_chained::showEntry(output &s, int curr) const
 { 
+#ifdef INTEGRATED_MEMMAN
   operation* op = operation::getOpWithIndex(entries[curr+1]);
   op->showEntry(s, entries + curr + 2);
+#else
+  const int* entry = (const int*) MMAN->getChunkAddress(curr);
+  operation* op = operation::getOpWithIndex(entry[1]);
+  op->showEntry(s, entry+2);
+#endif
 }
 
 
@@ -1342,11 +1362,17 @@ class MEDDLY::operation_chained : public base_chained {
     virtual int convertToList(bool removeStales);
     virtual void listToTable(int h);
     virtual void showEntry(output &s, int h) const { 
+#ifdef INTEGRATED_MEMMAN
       global_op->showEntry(s, entries + h + 1);
+#else
+      const int* entry = (const int*) MMAN->getChunkAddress(h);
+      global_op->showEntry(s, entry+1);
+#endif
     }
 
 #ifndef USE_NODE_STATUS
     inline bool checkStale(unsigned h, int prev, int &curr) {
+#ifdef INTEGRATED_MEMMAN
         if (global_op->isEntryStale(entries+curr+1)) {
           global_op->discardEntry(entries+curr+1);
           int next = entries[curr];
@@ -1357,6 +1383,23 @@ class MEDDLY::operation_chained : public base_chained {
           curr = next;
           return true;
         }
+#else
+        const int* entry = (const int*) MMAN->getChunkAddress(curr);
+        if (global_op->isEntryStale(entry+1)) {
+          global_op->discardEntry(entry+1);
+          int next = entry[0];
+          if (prev) {
+            int* preventry = (int*) MMAN->getChunkAddress(prev);
+            preventry[0] = next;
+          } else {
+            table[h] = next;
+          }
+          int length = global_op->getCacheEntryLength();
+          recycleEntry(curr, length+1);
+          curr = next;
+          return true;
+        }
+#endif
         return false;
     }
 #else
@@ -1429,8 +1472,13 @@ void MEDDLY::operation_chained::removeAll()
   for (unsigned i=0; i<tableSize; i++) {
     while (table[i]) {
       int curr = table[i];
-      table[i] = entries[curr];
-      global_op->discardEntry(entries + curr + 1);
+#ifdef INTEGRATED_MEMMAN
+      const int* entry = entries + curr;
+#else
+      const int* entry = (const int*) MMAN->getChunkAddress(curr);
+#endif
+      table[i] = entry[0];
+      global_op->discardEntry(entry + 1);
       recycleEntry(curr, 1+global_op->getCacheEntryLength());
     } // while
   } // for i
@@ -1441,10 +1489,17 @@ void MEDDLY::operation_chained::show(output &s, int verbLevel)
   if (verbLevel < 1) return;
   s << "Compute table for " << global_op->getName() << " (index " 
     << long(global_op->getIndex()) << ")\n";
+#ifdef INTEGRATED_MEMMAN
   s.put("", 6);
   s << "Current CT memory :\t" << long(currMemory) << " bytes\n";
   s.put("", 6);
   s << "Peak    CT memory :\t" << long(peakMemory) << " bytes\n";
+#else
+  s.put("", 6);
+  s << "Current CT memory :\t" << mstats.getMemUsed() << " bytes\n";
+  s.put("", 6);
+  s << "Peak    CT memory :\t" << mstats.getPeakMemUsed() << " bytes\n";
+#endif
   // verbLevel--;
   report(s, 6, verbLevel);
   verbLevel--;
@@ -1458,18 +1513,22 @@ int MEDDLY::operation_chained::convertToList(bool removeStales)
   for (unsigned i=0; i<tableSize; i++) {
     while (table[i]) {
       int curr = table[i];
-      table[i] = entries[curr];
+#ifdef INTEGRATED_MEMMAN
+      int* entry = entries + curr;
+#else
+      int* entry = (int*) MMAN->getChunkAddress(curr);
+#endif
+      table[i] = entry[0];
       if (removeStales) {
-        const int* entry = entries + curr + 1;
         //
         // Check for stale
         //
 #ifndef USE_NODE_STATUS
-        if (global_op->isEntryStale(entry)) {
+        if (global_op->isEntryStale(entry+1)) {
 #else
-        if (global_op->getEntryStatus(entry) != MEDDLY::forest::node_status::ACTIVE) {
+        if (global_op->getEntryStatus(entry+1) != MEDDLY::forest::node_status::ACTIVE) {
 #endif
-          global_op->discardEntry(entry);
+          global_op->discardEntry(entry+1);
           recycleEntry(curr, 1+global_op->getCacheEntryLength());
           continue;
         }
@@ -1477,7 +1536,7 @@ int MEDDLY::operation_chained::convertToList(bool removeStales)
       //
       // Not stale, move to list
       //
-      entries[curr] = list;
+      entry[0] = list;
       list = curr;
     } // while
   } // for i
@@ -1487,11 +1546,16 @@ int MEDDLY::operation_chained::convertToList(bool removeStales)
 void MEDDLY::operation_chained::listToTable(int L)
 {
   while (L) {
-    int curr = L;
-    L = entries[L];
+#ifdef INTEGRATED_MEMMAN
+    int* entry = entries+L;
+#else
+    int* entry = (int*) MMAN->getChunkAddress(L);
+#endif
+    const int curr = L;
+    L = entry[0];
     int hashlength = global_op->getKeyLength();
-    int h = hash(entries + curr + 1, hashlength);
-    entries[curr] = table[h];
+    int h = hash(entry + 1, hashlength);
+    entry[0] = table[h];
     table[h] = curr;
   }
 }
@@ -1542,7 +1606,13 @@ MEDDLY::operation_chained_fast<N>::find(search_key *k)
     // Check for match
     //
 #ifndef USE_NODE_STATUS
-    if (equal_sw(entries+curr+1, key->rawData(), N)) {
+
+#ifdef INTEGRATED_MEMMAN
+    const int* entry = entries + curr;
+#else
+    const int* entry = (const int*) MMAN->getChunkAddress(curr);
+#endif
+    if (equal_sw(entry+1, key->rawData(), N)) {
       if (global_op->shouldStaleCacheHitsBeDiscarded()) {
         if (checkStale(h, prev, curr)) {
           // The match is stale.
@@ -1553,18 +1623,13 @@ MEDDLY::operation_chained_fast<N>::find(search_key *k)
       } 
       // "Hit"
       perf.hits++;
-      if (prev) {
-        // not at the front; move it there
-        entries[prev] = entries[curr];
-        entries[curr] = table[h];
-        table[h] = curr;
-      }
+      moveToFront(h, curr, prev);
 #ifdef DEBUG_CT
       printf("Found CT entry ");
       global_op->showEntry(stdout, entries + curr + 1);
       printf("\n");
 #endif
-      ANS.setResult(entries+curr+1+key->dataLength(), global_op->getAnsLength());
+      ANS.setResult(entry+1+key->dataLength(), global_op->getAnsLength());
       break;
     };
     //
@@ -1576,7 +1641,7 @@ MEDDLY::operation_chained_fast<N>::find(search_key *k)
 
     // advance pointers
     prev = curr;
-    curr = entries[curr];
+    curr = entry[0];
 #else
 
     // |-----------||--------|-------------|---------|
@@ -1605,12 +1670,7 @@ MEDDLY::operation_chained_fast<N>::find(search_key *k)
       } else {
         // "Hit"
         perf.hits++;
-        if (prev) {
-          // not at the front; move it there
-          entries[prev] = entries[curr];
-          entries[curr] = table[h];
-          table[h] = curr;
-        }
+        moveToFront(h, curr, prev);
 #ifdef DEBUG_CT
         printf("Found CT entry ");
         global_op->showEntry(stdout, entries + curr + 1);
@@ -1667,16 +1727,21 @@ class MEDDLY::base_unchained : public base_hash {
     inline void remove(unsigned hash) {
       int curr = table[hash];
       MEDDLY_DCASSERT(curr);
+#ifdef INTEGRATED_MEMMAN
+      int* entry = entries + curr;
+#else
+      int* entry = (int*) MMAN->getChunkAddress(curr);
+#endif
       operation* currop = M 
-        ?   operation::getOpWithIndex(entries[curr])
+        ?   operation::getOpWithIndex(entry[0])
         :   global_op;
       MEDDLY_DCASSERT(currop);
 #ifdef DEBUG_CT
       printf("Removing CT entry ");
-      currop->showEntry(stdout, entries+curr+M);
+      currop->showEntry(stdout, entry+M);
       printf("\n");
 #endif  
-      currop->discardEntry(entries+curr+M);
+      currop->discardEntry(entry+M);
       int length = currop->getCacheEntryLength();
       recycleEntry(curr, length+M);
       table[hash] = 0;
@@ -1700,17 +1765,22 @@ class MEDDLY::base_unchained : public base_hash {
 #ifndef USE_NODE_STATUS
     template <int M>
     inline bool checkStale(unsigned h, int curr) {
+#ifdef INTEGRATED_MEMMAN
+        const int* entry = entries + curr;
+#else
+        const int* entry = (const int*) MMAN->getChunkAddress(curr);
+#endif
         operation* currop = M 
-          ?   operation::getOpWithIndex(entries[curr])
+          ?   operation::getOpWithIndex(entry[0])
           :   global_op;
         MEDDLY_DCASSERT(currop);
-        if (currop->isEntryStale(entries+curr+M)) {
+        if (currop->isEntryStale(entry+M)) {
 #ifdef DEBUG_CT
           printf("Removing CT stale entry ");
-          currop->showEntry(stdout, entries+curr+M);
+          currop->showEntry(stdout, entry+M);
           printf("\n");
 #endif  
-          currop->discardEntry(entries+curr+M);
+          currop->discardEntry(entry+M);
           table[h] = 0;
           int length = currop->getCacheEntryLength();
           recycleEntry(curr, length+M);
@@ -1722,25 +1792,33 @@ class MEDDLY::base_unchained : public base_hash {
     template <int M>
     inline MEDDLY::forest::node_status getEntryStatus(unsigned hash) {
       MEDDLY_DCASSERT(table[hash]);
-      int entry = table[hash];
+#ifdef INTEGRATED_MEMMAN
+      const int* entry = entries + table[hash];
+#else
+      const int* entry = (const int*) MMAN->getChunkAddress(table[hash]);
+#endif
       operation* entry_op = M
-        ? operation::getOpWithIndex(entries[entry])
+        ? operation::getOpWithIndex(entry[0])
         : global_op;
       MEDDLY_DCASSERT(entry_op);
-      return entry_op->getEntryStatus(entries+entry+M);
+      return entry_op->getEntryStatus(entry+M);
     }
     template <int M>
     inline void discardEntry(unsigned hash) {
       MEDDLY_DCASSERT(table[hash]);
-      int entry = table[hash];
+#ifdef INTEGRATED_MEMMAN
+      const int* entry = entries + table[hash];
+#else
+      const int* entry = (const int*) MMAN->getChunkAddress(table[hash]);
+#endif
       operation* entry_op = M
-        ? operation::getOpWithIndex(entries[entry])
+        ? operation::getOpWithIndex(entry[0])
         : global_op;
       MEDDLY_DCASSERT(entry_op);
-      entry_op->discardEntry(entries+entry+M);
-      table[hash] = 0;
+      entry_op->discardEntry(entry+M);
       int length = entry_op->getCacheEntryLength();
-      recycleEntry(entry, length+M);
+      recycleEntry(table[hash], length+M);
+      table[hash] = 0;
     }
 #endif
 
@@ -1762,12 +1840,17 @@ class MEDDLY::base_unchained : public base_hash {
       for (unsigned i=0; i<oldS; i++) {
         int curr = oldT[i];
         if (0==curr) continue;
+#ifdef INTEGRATED_MEMMAN
+        const int* entry = entries + curr;
+#else
+        const int* entry = (const int*) MMAN->getChunkAddress(curr);
+#endif
         operation* currop = M 
-          ? operation::getOpWithIndex(entries[curr])
+          ? operation::getOpWithIndex(entry[0])
           : global_op;
         MEDDLY_DCASSERT(currop);
         int hashlength = M+currop->getKeyLength();
-        unsigned h = hash(entries + curr, hashlength);
+        unsigned h = hash(entry, hashlength);
         setTable<M>(h, curr);
       }
     }
@@ -1822,13 +1905,21 @@ class MEDDLY::base_unchained : public base_hash {
       }
       for (unsigned i=0; i<newsize; i++) table[i] = 0;
 
+#ifdef INTEGRATED_MEMMAN
       currMemory += newsize * sizeof(int);
+      if (currMemory > peakMemory) peakMemory = currMemory;
+#else
+      mstats.incMemUsed(newsize * sizeof(int));
+#endif
 
       rehashTable<M>(oldT, oldSize);
       free(oldT);
 
+#ifdef INTEGRATED_MEMMAN
       currMemory -= oldSize * sizeof(int);
-      if (currMemory > peakMemory) peakMemory = currMemory;
+#else
+      mstats.decMemUsed(oldSize * sizeof(int));
+#endif
 
       if (tableSize == maxSize) {
         tableExpand = INT_MAX;
@@ -1869,13 +1960,21 @@ class MEDDLY::base_unchained : public base_hash {
             throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
           }
           for (unsigned i=0; i<newsize; i++) table[i] = 0;
+#ifdef INTEGRATED_MEMMAN
           currMemory += newsize * sizeof(int);
+          if (currMemory > peakMemory) peakMemory = currMemory;
+#else
+          mstats.incMemUsed(newsize * sizeof(int));
+#endif  
     
           rehashTable<M>(oldT, oldSize);
           free(oldT);
       
+#ifdef INTEGRATED_MEMMAN
           currMemory -= oldSize * sizeof(int);
-          if (currMemory > peakMemory) peakMemory = currMemory;
+#else
+          mstats.decMemUsed(oldSize * sizeof(int));
+#endif
     
           tableExpand = tableSize / 2;
           if (1024 == tableSize) {
@@ -1925,10 +2024,17 @@ void MEDDLY::base_unchained::show(output &s, int verbLevel)
 {
   if (verbLevel < 1) return;
   showTitle(s);
+#ifdef INTEGRATED_MEMMAN
   s.put("", 6);
   s << "Current CT memory :\t" << long(currMemory) << " bytes\n";
   s.put("", 6);
   s << "Peak    CT memory :\t" << long(peakMemory) << " bytes\n";
+#else
+  s.put("", 6);
+  s << "Current CT memory :\t" << mstats.getMemUsed() << " bytes\n";
+  s.put("", 6);
+  s << "Peak    CT memory :\t" << mstats.getPeakMemUsed() << " bytes\n";
+#endif
   // verbLevel--;
   // if (verbLevel < 1) return;
   s.put("", 6);
