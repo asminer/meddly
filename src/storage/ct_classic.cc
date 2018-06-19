@@ -32,7 +32,7 @@
 // #define DEBUG_REMOVESTALES
 // #define SUMMARY_STALES
 
-#define INTEGRATED_MEMMAN
+// #define INTEGRATED_MEMMAN
 
 namespace MEDDLY {
   /// base class for all compute tables here;
@@ -2134,10 +2134,15 @@ MEDDLY::monolithic_unchained::find(search_key *k)
   for (chain=0; chain<=maxCollisionSearch; chain++, incMod(hcurr) ) {
     int curr = table[hcurr];
     if (0==curr) continue;
+#ifdef INTEGRATED_MEMMAN
+    const int* entry = entries + curr;
+#else
+    const int* entry = (const int*) MMAN->getChunkAddress(curr);
+#endif
     //
     // Check for match
     //
-    if (equal_sw(entries+curr, key->rawData(), key->dataLength())) {
+    if (equal_sw(entry, key->rawData(), key->dataLength())) {
       if (key->getOp()->shouldStaleCacheHitsBeDiscarded()) {
 #ifndef USE_NODE_STATUS
         if (checkStale<1>(hcurr, curr)) {
@@ -2160,11 +2165,11 @@ MEDDLY::monolithic_unchained::find(search_key *k)
       perf.hits++;
 #ifdef DEBUG_CT
       printf("Found CT entry ");
-      key->getOp()->showEntry(stdout, entries + curr + 1);
+      key->getOp()->showEntry(stdout, entry + 1);
       // fprintf(stderr, " in slot %u", h);
       printf("\n");
 #endif
-      ANS.setResult(entries+curr+key->dataLength(), key->getOp()->getAnsLength());
+      ANS.setResult(entry+key->dataLength(), key->getOp()->getAnsLength());
       break;
     };
     //
@@ -2217,8 +2222,14 @@ void MEDDLY::monolithic_unchained::showTitle(output &s) const
 
 void MEDDLY::monolithic_unchained::showEntry(output &s, int curr) const 
 { 
+#ifdef INTEGRATED_MEMMAN
   operation* op = operation::getOpWithIndex(entries[curr]);
   op->showEntry(s, entries + curr + 1);
+#else
+  const int* entry = (const int*) MMAN->getChunkAddress(curr);
+  operation* op = operation::getOpWithIndex(entry[0]);
+  op->showEntry(s, entry+1);
+#endif
 }
 
 // **********************************************************************
@@ -2316,7 +2327,12 @@ void MEDDLY::operation_unchained::showTitle(output &s) const
 
 void MEDDLY::operation_unchained::showEntry(output &s, int curr) const 
 { 
+#ifdef INTEGRATED_MEMMAN
   global_op->showEntry(s, entries + curr);
+#else
+  const int* entry = (const int*) MMAN->getChunkAddress(curr);
+  global_op->showEntry(s, entry);
+#endif
 }
 
 
@@ -2362,10 +2378,15 @@ MEDDLY::operation_unchained_fast<N>::find(search_key *k)
   for (chain=0; chain<=maxCollisionSearch; chain++, incMod(hcurr) ) {
     int curr = table[hcurr];
     if (0==curr) continue;
+#ifdef INTEGRATED_MEMMAN
+    const int* entry = entries + curr;
+#else
+    const int* entry = (const int*) MMAN->getChunkAddress(curr);
+#endif
     //
     // Check for match
     //
-    if (equal_sw(entries+curr, key->rawData(), N)) {
+    if (equal_sw(entry, key->rawData(), N)) {
       if (key->getOp()->shouldStaleCacheHitsBeDiscarded()) {
 #ifndef USE_NODE_STATUS
         if (checkStale<0>(hcurr, curr)) {
@@ -2388,11 +2409,11 @@ MEDDLY::operation_unchained_fast<N>::find(search_key *k)
       perf.hits++;
 #ifdef DEBUG_CT
       printf("Found CT entry ");
-      global_op->showEntry(stdout, entries + curr);
+      global_op->showEntry(stdout, entry);
       // fprintf(stderr, " in slot %u", h);
       printf("\n");
 #endif
-      ANS.setResult(entries+curr+key->dataLength(), global_op->getAnsLength());
+      ANS.setResult(entry+key->dataLength(), global_op->getAnsLength());
       break;
     };
     //
