@@ -23,7 +23,7 @@
 #include "../defines.h"
 #include "freelists.h"
 
-#define DEBUG_FREELISTS
+// #define DEBUG_FREELISTS
 
 // ******************************************************************
 // *                                                                *
@@ -162,6 +162,7 @@ MEDDLY::node_address MEDDLY::freelist_manager<INT>::requestChunk(size_t &numSlot
 #ifdef DEBUG_FREELISTS
   fprintf(stderr, "New entry %ld size %ld\n", h, numSlots);
 #endif
+  incMemUsed(numSlots * sizeof(INT));
   return h;
 
 }

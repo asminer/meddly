@@ -515,12 +515,12 @@ void MEDDLY::base_table
 {
   if (level < 1) return;
   s.put("", indent);
-  s << "Number of entries :\t" << long(perf.numEntries) << "\n";
+  s << "Number of entries   :\t" << long(perf.numEntries) << "\n";
 #ifdef INTEGRATED_MEMMAN
   s.put("", indent);
-  s << "Entry array size  :\t" << long(entriesSize) << "\n";
+  s << "Entry array size    :\t" << long(entriesSize) << "\n";
   s.put("", indent);
-  s << "Entry array alloc :\t" << long(entriesAlloc) << "\n";
+  s << "Entry array alloc   :\t" << long(entriesAlloc) << "\n";
 #else
   s.put("", indent);
   s << "Entries bytes used  :\t" << mstats.getMemUsed() << "\n";
@@ -531,9 +531,9 @@ void MEDDLY::base_table
   if (--level < 1) return;
 
   s.put("", indent);
-  s << "Pings             :\t" << long(perf.pings) << "\n";
+  s << "Pings               :\t" << long(perf.pings) << "\n";
   s.put("", indent);
-  s << "Hits              :\t" << long(perf.hits) << "\n";
+  s << "Hits                :\t" << long(perf.hits) << "\n";
 
   if (--level < 1) return;
 
@@ -640,6 +640,7 @@ MEDDLY::base_hash::base_hash(const ct_initializer::settings &s,
   peakMemory = currMemory;
 #else
   mstats.incMemUsed(tableSize * sizeof(int));
+  mstats.incMemAlloc(tableSize * sizeof(int));
 #endif
 }
 
@@ -668,7 +669,7 @@ void MEDDLY::base_hash
 {
   if (level < 1) return;
   s.put("", indent);
-  s << "Hash table size   :\t" << long(tableSize) << "\n";
+  s << "Hash table size     :\t" << long(tableSize) << "\n";
   base_table::report(s, indent, level);
 }
 
@@ -834,7 +835,9 @@ void MEDDLY::base_chained::addEntry()
   currMemory += (newsize - tableSize) * sizeof(int);
   if (currMemory > peakMemory) peakMemory = currMemory;
 #else
+  MEDDLY_DCASSERT(newsize > tableSize);
   mstats.incMemUsed( (newsize - tableSize) * sizeof(int) );
+  mstats.incMemAlloc( (newsize - tableSize) * sizeof(int) );
 #endif
 
   table = newt;
@@ -875,7 +878,9 @@ void MEDDLY::base_chained::removeStales()
 #ifdef INTEGRATED_MEMMAN
     currMemory -= (tableSize - newsize) * sizeof(int);  
 #else
+    MEDDLY_DCASSERT(tableSize > newsize);
     mstats.decMemUsed( (tableSize - newsize) * sizeof(int) );
+    mstats.decMemAlloc( (tableSize - newsize) * sizeof(int) );
 #endif
 
     table = newt;
@@ -1219,14 +1224,18 @@ void MEDDLY::monolithic_chained::show(output &s, int verbLevel)
   s << "Monolithic compute table\n";
 #ifdef INTEGRATED_MEMMAN
   s.put("", 6);
-  s << "Current CT memory :\t" << long(currMemory) << " bytes\n";
+  s << "Current CT memory   :\t" << long(currMemory) << " bytes\n";
   s.put("", 6);
-  s << "Peak    CT memory :\t" << long(peakMemory) << " bytes\n";
+  s << "Peak    CT memory   :\t" << long(peakMemory) << " bytes\n";
 #else
   s.put("", 6);
-  s << "Current CT memory :\t" << mstats.getMemUsed() << " bytes\n";
+  s << "Current CT memory   :\t" << mstats.getMemUsed() << " bytes\n";
   s.put("", 6);
-  s << "Peak    CT memory :\t" << mstats.getPeakMemUsed() << " bytes\n";
+  s << "Peak    CT memory   :\t" << mstats.getPeakMemUsed() << " bytes\n";
+  s.put("", 6);
+  s << "Current CT alloc'd  :\t" << mstats.getMemAlloc() << " bytes\n";
+  s.put("", 6);
+  s << "Peak    CT alloc'd  :\t" << mstats.getPeakMemAlloc() << " bytes\n";
 #endif
   // verbLevel--;
   report(s, 6, verbLevel);
@@ -1491,14 +1500,18 @@ void MEDDLY::operation_chained::show(output &s, int verbLevel)
     << long(global_op->getIndex()) << ")\n";
 #ifdef INTEGRATED_MEMMAN
   s.put("", 6);
-  s << "Current CT memory :\t" << long(currMemory) << " bytes\n";
+  s << "Current CT memory   :\t" << long(currMemory) << " bytes\n";
   s.put("", 6);
-  s << "Peak    CT memory :\t" << long(peakMemory) << " bytes\n";
+  s << "Peak    CT memory   :\t" << long(peakMemory) << " bytes\n";
 #else
   s.put("", 6);
-  s << "Current CT memory :\t" << mstats.getMemUsed() << " bytes\n";
+  s << "Current CT memory   :\t" << mstats.getMemUsed() << " bytes\n";
   s.put("", 6);
-  s << "Peak    CT memory :\t" << mstats.getPeakMemUsed() << " bytes\n";
+  s << "Peak    CT memory   :\t" << mstats.getPeakMemUsed() << " bytes\n";
+  s.put("", 6);
+  s << "Current CT alloc'd  :\t" << mstats.getMemAlloc() << " bytes\n";
+  s.put("", 6);
+  s << "Peak    CT alloc'd  :\t" << mstats.getPeakMemAlloc() << " bytes\n";
 #endif
   // verbLevel--;
   report(s, 6, verbLevel);
@@ -1910,6 +1923,7 @@ class MEDDLY::base_unchained : public base_hash {
       if (currMemory > peakMemory) peakMemory = currMemory;
 #else
       mstats.incMemUsed(newsize * sizeof(int));
+      mstats.incMemAlloc(newsize * sizeof(int));
 #endif
 
       rehashTable<M>(oldT, oldSize);
@@ -1919,6 +1933,7 @@ class MEDDLY::base_unchained : public base_hash {
       currMemory -= oldSize * sizeof(int);
 #else
       mstats.decMemUsed(oldSize * sizeof(int));
+      mstats.decMemAlloc(oldSize * sizeof(int));
 #endif
 
       if (tableSize == maxSize) {
@@ -1965,6 +1980,7 @@ class MEDDLY::base_unchained : public base_hash {
           if (currMemory > peakMemory) peakMemory = currMemory;
 #else
           mstats.incMemUsed(newsize * sizeof(int));
+          mstats.incMemAlloc(newsize * sizeof(int));
 #endif  
     
           rehashTable<M>(oldT, oldSize);
@@ -1974,6 +1990,7 @@ class MEDDLY::base_unchained : public base_hash {
           currMemory -= oldSize * sizeof(int);
 #else
           mstats.decMemUsed(oldSize * sizeof(int));
+          mstats.decMemAlloc(oldSize * sizeof(int));
 #endif
     
           tableExpand = tableSize / 2;
@@ -2026,19 +2043,23 @@ void MEDDLY::base_unchained::show(output &s, int verbLevel)
   showTitle(s);
 #ifdef INTEGRATED_MEMMAN
   s.put("", 6);
-  s << "Current CT memory :\t" << long(currMemory) << " bytes\n";
+  s << "Current CT memory   :\t" << long(currMemory) << " bytes\n";
   s.put("", 6);
-  s << "Peak    CT memory :\t" << long(peakMemory) << " bytes\n";
+  s << "Peak    CT memory   :\t" << long(peakMemory) << " bytes\n";
 #else
   s.put("", 6);
-  s << "Current CT memory :\t" << mstats.getMemUsed() << " bytes\n";
+  s << "Current CT memory   :\t" << mstats.getMemUsed() << " bytes\n";
   s.put("", 6);
-  s << "Peak    CT memory :\t" << mstats.getPeakMemUsed() << " bytes\n";
+  s << "Peak    CT memory   :\t" << mstats.getPeakMemUsed() << " bytes\n";
+  s.put("", 6);
+  s << "Current CT alloc'd  :\t" << mstats.getMemAlloc() << " bytes\n";
+  s.put("", 6);
+  s << "Peak    CT alloc'd  :\t" << mstats.getPeakMemAlloc() << " bytes\n";
 #endif
   // verbLevel--;
   // if (verbLevel < 1) return;
   s.put("", 6);
-  s << "Collisions        :\t" << long(collisions) << "\n";
+  s << "Collisions          :\t" << long(collisions) << "\n";
   report(s, 6, verbLevel);
   verbLevel--;
   if (verbLevel < 1) return;
