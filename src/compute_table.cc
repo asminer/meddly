@@ -54,7 +54,12 @@ MEDDLY::ct_initializer::ct_initializer(initializer_list* prev) : initializer_lis
   setBuiltinStyle(MonolithicUnchainedHash);
   setMaxSize(16777216);
   setStaleRemoval(Moderate);
-  setMemoryManager(0);  // wait on this one
+
+  //
+  // Set to null for now.
+  // Set to the proper manager in setup()
+  //
+  setMemoryManager(0);  
 }
 
 MEDDLY::ct_initializer::~ct_initializer()

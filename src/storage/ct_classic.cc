@@ -17,6 +17,15 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+//
+// To do:
+//   (1) check CT implementations
+//   (2) speed comparison
+//   (3) integrate with ../hash_stream.h; compare speed
+//   (4) see about redesigning class hierarchy into one
+//       huge template class along the lines of
+//       startIndexedEntry()
+//
 
 #include "ct_classic.h"
 
