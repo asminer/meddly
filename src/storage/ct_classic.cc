@@ -41,7 +41,7 @@
 // #define DEBUG_REMOVESTALES
 // #define SUMMARY_STALES
 
-// #define INTEGRATED_MEMMAN
+#define INTEGRATED_MEMMAN
 
 namespace MEDDLY {
   /// base class for all compute tables here;
@@ -287,6 +287,7 @@ class MEDDLY::base_table : public compute_table {
 #ifdef INTEGRATED_MEMMAN
       entries[h] = freeList[size];
       freeList[size] = h;
+      mstats.decMemUsed( size * sizeof(int) );
 #else
       MMAN->recycleChunk(h, size);
 #endif
@@ -372,8 +373,6 @@ class MEDDLY::base_table : public compute_table {
     int entriesSize;
     int entriesAlloc;
 
-    unsigned long currMemory;
-    unsigned long peakMemory;
   private:
     static const int maxEntrySize = 15;
     static const int maxEntryBytes = sizeof(int) * maxEntrySize;
@@ -381,8 +380,9 @@ class MEDDLY::base_table : public compute_table {
 #else
   protected:
     memory_manager* MMAN;
-    memstats mstats;
 #endif
+  protected:
+    memstats mstats;
 };
 
 
@@ -417,17 +417,21 @@ MEDDLY::base_table::base_table(const ct_initializer::settings &s)
  : compute_table(s)
 {
 #ifdef INTEGRATED_MEMMAN
-  entriesAlloc = 1024;
-  entries = (int*) malloc(entriesAlloc * sizeof(int));
-  entriesSize = 1;
-  // entries[0] is never, ever, used.
-  if (0==entries) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  // for recycling entries
   freeList = new int[1+maxEntrySize];
-  for (int i=0; i<=maxEntrySize; i++) freeList[i] = 0;
+  for (int i=0; i<=maxEntrySize; i++) {
+    freeList[i] = 0;
+  }
+  mstats.incMemUsed( (1+maxEntrySize) * sizeof(int) );
+  mstats.incMemAlloc( (1+maxEntrySize) * sizeof(int) );
 
-  currMemory = entriesAlloc * sizeof(int) + (1+maxEntrySize) * sizeof(int);
-  peakMemory = currMemory;
+  entriesAlloc = 1024;
+  entriesSize = 1;    
+  entries = (int*) malloc(entriesAlloc * sizeof(int) );
+  if (0==entries) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  entries[0] = 0;     // NEVER USED; set here for sanity.
+
+  mstats.incMemUsed( entriesSize * sizeof(int) );
+  mstats.incMemAlloc( entriesAlloc * sizeof(int) );
 #else
   MEDDLY_DCASSERT(s.MMS);
   MMAN = s.MMS->initManager(sizeof(int), 1, mstats);
@@ -460,6 +464,7 @@ MEDDLY::node_address MEDDLY::base_table::newEntry(unsigned size)
 #ifdef DEBUG_CTALLOC
     fprintf(stderr, "Re-used entry %d size %d\n", h, size);
 #endif
+    mstats.incMemUsed( size * sizeof(int) );
     return h;
   }
   if (entriesSize + size > entriesAlloc) {
@@ -472,8 +477,7 @@ MEDDLY::node_address MEDDLY::base_table::newEntry(unsigned size)
           neA * sizeof(int), __FILE__, __LINE__);
       throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
-    currMemory += (neA - entriesAlloc) * sizeof(int);
-    if (currMemory > peakMemory) peakMemory = currMemory;
+    mstats.incMemAlloc( (entriesAlloc / 2) * sizeof(int) );
     entries = ne;
     entriesAlloc = neA;
   }
@@ -483,6 +487,7 @@ MEDDLY::node_address MEDDLY::base_table::newEntry(unsigned size)
 #ifdef DEBUG_CTALLOC
   fprintf(stderr, "New entry %d size %d\n", h, size);
 #endif
+  mstats.incMemUsed( size * sizeof(int) );
   return h;
 
 #else
@@ -525,6 +530,7 @@ void MEDDLY::base_table
   if (level < 1) return;
   s.put("", indent);
   s << "Number of entries   :\t" << long(perf.numEntries) << "\n";
+  /*
 #ifdef INTEGRATED_MEMMAN
   s.put("", indent);
   s << "Entry array size    :\t" << long(entriesSize) << "\n";
@@ -536,6 +542,7 @@ void MEDDLY::base_table
   s.put("", indent);
   s << "Entries bytes alloc :\t" << mstats.getMemAlloc() << "\n";
 #endif
+  */
 
   if (--level < 1) return;
 
@@ -644,13 +651,8 @@ MEDDLY::base_hash::base_hash(const ct_initializer::settings &s,
   if (0==table) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   for (unsigned i=0; i<tableSize; i++) table[i] = 0;
 
-#ifdef INTEGRATED_MEMMAN
-  currMemory += tableSize * sizeof(int);
-  peakMemory = currMemory;
-#else
   mstats.incMemUsed(tableSize * sizeof(int));
   mstats.incMemAlloc(tableSize * sizeof(int));
-#endif
 }
 
 MEDDLY::base_hash::~base_hash()
@@ -840,14 +842,9 @@ void MEDDLY::base_chained::addEntry()
 
   for (unsigned i=tableSize; i<newsize; i++) newt[i] = 0;
 
-#ifdef INTEGRATED_MEMMAN
-  currMemory += (newsize - tableSize) * sizeof(int);
-  if (currMemory > peakMemory) peakMemory = currMemory;
-#else
   MEDDLY_DCASSERT(newsize > tableSize);
   mstats.incMemUsed( (newsize - tableSize) * sizeof(int) );
   mstats.incMemAlloc( (newsize - tableSize) * sizeof(int) );
-#endif
 
   table = newt;
   tableSize = newsize;
@@ -884,13 +881,9 @@ void MEDDLY::base_chained::removeStales()
       throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__); 
     }
 
-#ifdef INTEGRATED_MEMMAN
-    currMemory -= (tableSize - newsize) * sizeof(int);  
-#else
     MEDDLY_DCASSERT(tableSize > newsize);
     mstats.decMemUsed( (tableSize - newsize) * sizeof(int) );
     mstats.decMemAlloc( (tableSize - newsize) * sizeof(int) );
-#endif
 
     table = newt;
     tableSize = newsize;
@@ -1231,12 +1224,6 @@ void MEDDLY::monolithic_chained::show(output &s, int verbLevel)
 {
   if (verbLevel < 1) return;
   s << "Monolithic compute table\n";
-#ifdef INTEGRATED_MEMMAN
-  s.put("", 6);
-  s << "Current CT memory   :\t" << long(currMemory) << " bytes\n";
-  s.put("", 6);
-  s << "Peak    CT memory   :\t" << long(peakMemory) << " bytes\n";
-#else
   s.put("", 6);
   s << "Current CT memory   :\t" << mstats.getMemUsed() << " bytes\n";
   s.put("", 6);
@@ -1245,7 +1232,6 @@ void MEDDLY::monolithic_chained::show(output &s, int verbLevel)
   s << "Current CT alloc'd  :\t" << mstats.getMemAlloc() << " bytes\n";
   s.put("", 6);
   s << "Peak    CT alloc'd  :\t" << mstats.getPeakMemAlloc() << " bytes\n";
-#endif
   // verbLevel--;
   report(s, 6, verbLevel);
   verbLevel--;
@@ -1507,12 +1493,6 @@ void MEDDLY::operation_chained::show(output &s, int verbLevel)
   if (verbLevel < 1) return;
   s << "Compute table for " << global_op->getName() << " (index " 
     << long(global_op->getIndex()) << ")\n";
-#ifdef INTEGRATED_MEMMAN
-  s.put("", 6);
-  s << "Current CT memory   :\t" << long(currMemory) << " bytes\n";
-  s.put("", 6);
-  s << "Peak    CT memory   :\t" << long(peakMemory) << " bytes\n";
-#else
   s.put("", 6);
   s << "Current CT memory   :\t" << mstats.getMemUsed() << " bytes\n";
   s.put("", 6);
@@ -1521,7 +1501,6 @@ void MEDDLY::operation_chained::show(output &s, int verbLevel)
   s << "Current CT alloc'd  :\t" << mstats.getMemAlloc() << " bytes\n";
   s.put("", 6);
   s << "Peak    CT alloc'd  :\t" << mstats.getPeakMemAlloc() << " bytes\n";
-#endif
   // verbLevel--;
   report(s, 6, verbLevel);
   verbLevel--;
@@ -1927,23 +1906,14 @@ class MEDDLY::base_unchained : public base_hash {
       }
       for (unsigned i=0; i<newsize; i++) table[i] = 0;
 
-#ifdef INTEGRATED_MEMMAN
-      currMemory += newsize * sizeof(int);
-      if (currMemory > peakMemory) peakMemory = currMemory;
-#else
       mstats.incMemUsed(newsize * sizeof(int));
       mstats.incMemAlloc(newsize * sizeof(int));
-#endif
 
       rehashTable<M>(oldT, oldSize);
       free(oldT);
 
-#ifdef INTEGRATED_MEMMAN
-      currMemory -= oldSize * sizeof(int);
-#else
       mstats.decMemUsed(oldSize * sizeof(int));
       mstats.decMemAlloc(oldSize * sizeof(int));
-#endif
 
       if (tableSize == maxSize) {
         tableExpand = INT_MAX;
@@ -1984,23 +1954,14 @@ class MEDDLY::base_unchained : public base_hash {
             throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
           }
           for (unsigned i=0; i<newsize; i++) table[i] = 0;
-#ifdef INTEGRATED_MEMMAN
-          currMemory += newsize * sizeof(int);
-          if (currMemory > peakMemory) peakMemory = currMemory;
-#else
           mstats.incMemUsed(newsize * sizeof(int));
           mstats.incMemAlloc(newsize * sizeof(int));
-#endif  
     
           rehashTable<M>(oldT, oldSize);
           free(oldT);
       
-#ifdef INTEGRATED_MEMMAN
-          currMemory -= oldSize * sizeof(int);
-#else
           mstats.decMemUsed(oldSize * sizeof(int));
           mstats.decMemAlloc(oldSize * sizeof(int));
-#endif
     
           tableExpand = tableSize / 2;
           if (1024 == tableSize) {
@@ -2050,12 +2011,6 @@ void MEDDLY::base_unchained::show(output &s, int verbLevel)
 {
   if (verbLevel < 1) return;
   showTitle(s);
-#ifdef INTEGRATED_MEMMAN
-  s.put("", 6);
-  s << "Current CT memory   :\t" << long(currMemory) << " bytes\n";
-  s.put("", 6);
-  s << "Peak    CT memory   :\t" << long(peakMemory) << " bytes\n";
-#else
   s.put("", 6);
   s << "Current CT memory   :\t" << mstats.getMemUsed() << " bytes\n";
   s.put("", 6);
@@ -2064,7 +2019,6 @@ void MEDDLY::base_unchained::show(output &s, int verbLevel)
   s << "Current CT alloc'd  :\t" << mstats.getMemAlloc() << " bytes\n";
   s.put("", 6);
   s << "Peak    CT alloc'd  :\t" << mstats.getPeakMemAlloc() << " bytes\n";
-#endif
   // verbLevel--;
   // if (verbLevel < 1) return;
   s.put("", 6);
