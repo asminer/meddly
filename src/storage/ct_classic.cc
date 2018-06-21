@@ -530,19 +530,6 @@ void MEDDLY::base_table
   if (level < 1) return;
   s.put("", indent);
   s << "Number of entries   :\t" << long(perf.numEntries) << "\n";
-  /*
-#ifdef INTEGRATED_MEMMAN
-  s.put("", indent);
-  s << "Entry array size    :\t" << long(entriesSize) << "\n";
-  s.put("", indent);
-  s << "Entry array alloc   :\t" << long(entriesAlloc) << "\n";
-#else
-  s.put("", indent);
-  s << "Entries bytes used  :\t" << mstats.getMemUsed() << "\n";
-  s.put("", indent);
-  s << "Entries bytes alloc :\t" << mstats.getMemAlloc() << "\n";
-#endif
-  */
 
   if (--level < 1) return;
 

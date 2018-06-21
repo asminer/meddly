@@ -886,6 +886,15 @@ inline const char* MEDDLY::memory_manager::getStyleName() const
   return style_name;
 }
 
+inline void* MEDDLY::memory_manager::getChunkAddress(node_address h) const
+{
+  MEDDLY_DCASSERT(isValidHandle(h));
+
+  return chunk_multiplier 
+    ?  chunk_base + chunk_multiplier * h
+    :  slowChunkAddress(h);
+}
+
 inline void MEDDLY::memory_manager::incMemUsed(size_t b)
 {
   my_mem.incMemUsed(b);
@@ -915,6 +924,17 @@ inline void MEDDLY::memory_manager::zeroMemAlloc()
 {
   my_mem.zeroMemAlloc();
 }
+
+inline void MEDDLY::memory_manager::setChunkBase(void* p)
+{
+  chunk_base = (char*) p;
+}
+
+inline void MEDDLY::memory_manager::setChunkMultiplier(unsigned int m)
+{
+  chunk_multiplier = m;
+}
+
 
 // ******************************************************************
 // *                                                                *

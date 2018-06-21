@@ -1094,6 +1094,39 @@ class MEDDLY::memory_manager {
     /**
         Convert a handle to an actual pointer we can use.
 
+        A default, fast, inlined implementation that will work for
+        most memory managers is implemented here, based on
+          address = base + m * h
+        where m*h is the number of bytes to shift base by.
+        This requires derived classes to maintain the pointer "base"
+        and multiplier "m" by calling protected methods
+            void setChunkBase(void* base)
+            void setChunkMultiplier(unsigned int m)
+        Note that if m is zero (its default value), this method
+        will fall back to slowChunkAddress().
+
+          @param  h     Non-null handle of the chunk, as returned by requestChunk().
+
+          @return       If h is 0, or an invalid handle, then the result is 
+                        undefined.  Otherwise, we return a pointer to the 
+                        chunk given by handle h.
+                        This pointer is guaranteed to be fixed until the next
+                        call to requestChunk() or recycleChunk(); after that,
+                        the pointer for a handle could change.
+    */
+    void* getChunkAddress(node_address h) const;
+
+
+  protected:
+    /**
+        See getChunkAddress.
+        This method (default behavior is assert(false))
+        should be overridden in derived classes when
+        the mapping from node address h to pointer
+        does not follow the formula used by getChunkAddress().
+
+        Convert a handle to an actual pointer we can use.
+
           @param  h     Handle of the chunk, as returned by requestChunk(), or 0.
 
           @return       If h is 0, then we return 0.  Otherwise, we return
@@ -1102,8 +1135,19 @@ class MEDDLY::memory_manager {
                         call to requestChunk() or recycleChunk(); after that,
                         the pointer for a handle could change.
     */
-    virtual void* getChunkAddress(node_address h) const = 0;
+    virtual void* slowChunkAddress(node_address h) const;
 
+
+  public:
+    /**
+        Check if a handle is valid (non-null or otherwise).
+        Since this is not always possible,
+        this method is conservative.
+
+        @return   false if h is null or definitely invalid;
+                  true otherwise.
+    */
+    virtual bool isValidHandle(node_address h) const = 0;
 
     /** Show various statistics.
           @param  s         Output stream to write to
@@ -1167,6 +1211,17 @@ class MEDDLY::memory_manager {
     void zeroMemUsed();
     void zeroMemAlloc();
 
+    /**
+        Set base pointer used for fast getChunkAddress().
+    */
+    void setChunkBase(void* p);
+
+    /*
+        Set multiplier used for fast getChunkAddress().
+        If zero, we call getSlowChunkAddress().
+    */
+    void setChunkMultiplier(unsigned int m);
+
   public:
     /**
         Return the name of the style that created us.
@@ -1177,6 +1232,12 @@ class MEDDLY::memory_manager {
     /// Name of the style that invoked us
     const char* style_name;
     memstats &my_mem;
+
+    /// Base pointer for getChunkAddress
+    char* chunk_base;
+
+    /// Handle multiplier for getChunkAddress; if zero must call virtual function
+    unsigned int chunk_multiplier;
 };
 
 

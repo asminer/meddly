@@ -25,6 +25,8 @@
 
 // #define DEBUG_FREELISTS
 
+// #define USE_SLOW_GET_CHUNK_ADDRESS
+
 // ******************************************************************
 // *                                                                *
 // *                     freelist_manager class                     *
@@ -58,7 +60,10 @@ class freelist_manager : public memory_manager {
 
     virtual node_address requestChunk(size_t &numSlots);
     virtual void recycleChunk(node_address h, size_t numSlots);
-    virtual void* getChunkAddress(node_address h) const;
+#ifdef USE_SLOW_GET_CHUNK_ADDRESS
+    virtual void* slowChunkAddress(node_address h) const;
+#endif
+    virtual bool isValidHandle(node_address h) const;
 
     virtual void reportStats(output &s, const char* pad, bool human, bool details) const;
     virtual void dumpInternal(output &s) const;
@@ -105,6 +110,11 @@ MEDDLY::freelist_manager<INT>::freelist_manager(const char* n, memstats &stats)
 
   incMemUsed( entriesSize * sizeof(INT) );
   incMemAlloc( entriesAlloc * sizeof(INT) );
+
+#ifndef USE_SLOW_GET_CHUNK_ADDRESS
+  setChunkBase(entries);
+  setChunkMultiplier(sizeof(INT));
+#endif
 }
 
 // ******************************************************************
@@ -155,6 +165,10 @@ MEDDLY::node_address MEDDLY::freelist_manager<INT>::requestChunk(size_t &numSlot
 
     entries = ne;
     entriesAlloc = neA;
+
+#ifndef USE_SLOW_GET_CHUNK_ADDRESS
+    setChunkBase(entries);
+#endif
   }
   MEDDLY_DCASSERT(entriesSize + numSlots <= entriesAlloc);
   node_address h = entriesSize;
@@ -182,10 +196,22 @@ void MEDDLY::freelist_manager<INT>::recycleChunk(node_address h, size_t numSlots
 
 // ******************************************************************
 
+#ifdef USE_SLOW_GET_CHUNK_ADDRESS
+
 template <class INT>
-void* MEDDLY::freelist_manager<INT>::getChunkAddress(node_address h) const
+void* MEDDLY::freelist_manager<INT>::slowChunkAddress(node_address h) const
 {
   return (void*)(entries + h);
+}
+
+#endif
+
+// ******************************************************************
+
+template <class INT>
+bool MEDDLY::freelist_manager<INT>::isValidHandle(node_address h) const
+{
+  return (h >= 1) && (h < entriesSize);
 }
 
 // ******************************************************************

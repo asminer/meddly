@@ -44,9 +44,17 @@ MEDDLY::memory_manager::memory_manager(const char* n, memstats &stats)
  : my_mem(stats)
 {
   style_name = n;
+  chunk_base = 0;
+  chunk_multiplier = 0;
 }
 
 MEDDLY::memory_manager::~memory_manager()
 {
+}
+
+void* MEDDLY::memory_manager::slowChunkAddress(node_address h) const
+{
+  MEDDLY_DCASSERT(0);
+  return 0;
 }
 

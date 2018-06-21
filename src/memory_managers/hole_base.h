@@ -32,6 +32,7 @@
 #endif
 #endif
 
+// #define USE_SLOW_GET_CHUNK_ADDRESS
 
 namespace MEDDLY {
 
@@ -74,10 +75,16 @@ namespace MEDDLY {
         return true;
       }
 
-      virtual void* getChunkAddress(node_address h) const {
+#ifdef USE_SLOW_GET_CHUNK_ADDRESS
+      virtual void* slowChunkAddress(node_address h) const {
         MEDDLY_DCASSERT(data);
         MEDDLY_CHECK_RANGE(1, h, data_alloc);
         return data + h;
+      }
+#endif
+
+      virtual bool isValidHandle(node_address h) const {
+        return (h >= 1) && (h<data_alloc);
       }
 
       virtual node_address getFirstAddress() const {
@@ -201,6 +208,10 @@ MEDDLY::hole_manager<INT>::hole_manager(const char* n, memstats &stats)
 
   MSB = 1;
   MSB <<= (8*sizeof(INT) - 1);
+#ifndef USE_SLOW_GET_CHUNK_ADDRESS
+  setChunkBase(data);
+  setChunkMultiplier(sizeof(INT));
+#endif
 }
 
 // ******************************************************************
@@ -337,6 +348,11 @@ bool MEDDLY::hole_manager<INT>::resize(long new_alloc)
 
   data_alloc = new_alloc;
   data = new_data;
+
+#ifndef USE_SLOW_GET_CHUNK_ADDRESS
+  setChunkBase(data);
+#endif
+
   return true;
 }
 
