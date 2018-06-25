@@ -1713,21 +1713,20 @@ MEDDLY::satimpl_opname::implicit_relation::isUniqueNode(relation_node* n)
 rel_node_handle
 MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relation_node* n)
 {
-  
-  rel_node_handle nLevel = n->getLevel();
+  int nLevel = n->getLevel();
 
 #ifdef DEVELOPMENT_CODE
   rel_node_handle downHandle = n->getDown();
   relation_node* downNode = nodeExists(downHandle);
-  rel_node_handle downLevel = downNode->getLevel();
+  int downLevel = downNode->getLevel();
   MEDDLY_DCASSERT( ( ( downNode!=NULL ) && ( nLevel > downLevel ) ) 
-                    || 
-                   ( downLevel == 0 ) );
+      || 
+      ( downLevel == 0 ) );
 #endif
 
   rel_node_handle n_ID = isUniqueNode(n);
   if(n_ID==0) // Add new node
-   {
+  {
     n_ID  = last_in_node_array + 1;
     std::pair<rel_node_handle, relation_node*> add_node(n_ID,n);
     impl_unique.insert(add_node);
@@ -1738,16 +1737,16 @@ MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relat
     }
   }
   else //Delete the node
-    {
-     delete n;
-    }
-  
+  {
+    delete n;
+  }
+
   if(is_event_top)
-    {
+  {
     resizeEventArray(nLevel);
     event_list[nLevel][event_added[nLevel] - 1] = n_ID;
-    }
-  
+  }
+
   return n_ID;
 }
 
