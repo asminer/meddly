@@ -81,7 +81,7 @@ namespace MEDDLY {
     protected:
       // ************************************************************
       class our_search_key : public compute_table::search_key {
-          friend class MEDDLY::base_table;
+        public:
           unsigned hash_value;
           node_handle* data;
           bool killData;
@@ -201,7 +201,7 @@ namespace MEDDLY {
 
       // ************************************************************
       class our_temp_entry : public compute_table::entry_builder {
-          friend class MEDDLY::base_table;
+        public:
           int handle;
           unsigned hash_value;
 #ifdef DEVELOPMENT_CODE
@@ -283,8 +283,8 @@ namespace MEDDLY {
       virtual search_result& find(search_key *key);
       virtual entry_builder& startNewEntry(search_key* k);
       virtual void addEntry();
-      // virtual void removeStales();
-      // virtual void removeAll();
+      virtual void removeStales();
+      virtual void removeAll();
       virtual void show(output &s, int verbLevel = 0);
 
     private:  // helper methods
@@ -652,59 +652,6 @@ MEDDLY::ct_template<MONOLITHIC, CHAINED>::~ct_template()
 // **********************************************************************
 
 template <bool MONOLITHIC, bool CHAINED>
-MEDDLY::node_address MEDDLY::ct_template<MONOLITHIC, CHAINED>
-::newEntry(unsigned size)
-{
-#ifdef INTEGRATED_MEMMAN
-  // check free list
-  if (size > maxEntrySize) {
-    fprintf(stderr, "MEDDLY error: request for compute table entry larger than max size\n");
-    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);  // best we can do
-  }
-  if (size<1) return 0;
-  perf.numEntries++;
-  if (freeList[size]) {
-    node_address h = freeList[size];
-    freeList[size] = entries[h];
-#ifdef DEBUG_CTALLOC
-    fprintf(stderr, "Re-used entry %d size %d\n", h, size);
-#endif
-    mstats.incMemUsed( size * sizeof(int) );
-    return h;
-  }
-  if (entriesSize + size > entriesAlloc) {
-    // Expand by a factor of 1.5
-    int neA = entriesAlloc + (entriesAlloc/2);
-    int* ne = (int*) realloc(entries, neA * sizeof(int));
-    if (0==ne) {
-      fprintf(stderr,
-          "Error in allocating array of size %lu at %s, line %d\n",
-          neA * sizeof(int), __FILE__, __LINE__);
-      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    }
-    mstats.incMemAlloc( (entriesAlloc / 2) * sizeof(int) );
-    entries = ne;
-    entriesAlloc = neA;
-  }
-  MEDDLY_DCASSERT(entriesSize + size <= entriesAlloc);
-  node_address h = entriesSize;
-  entriesSize += size;
-#ifdef DEBUG_CTALLOC
-  fprintf(stderr, "New entry %d size %d\n", h, size);
-#endif
-  mstats.incMemUsed( size * sizeof(int) );
-  return h;
-
-#else
-  perf.numEntries++;
-  size_t the_size = size;
-  return MMAN->requestChunk(the_size);
-#endif
-}
-
-// **********************************************************************
-
-template <bool MONOLITHIC, bool CHAINED>
 MEDDLY::compute_table::search_key* MEDDLY::ct_template<MONOLITHIC, CHAINED>
 ::initializeSearchKey(operation* op)
 {
@@ -1054,6 +1001,135 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry()
 // **********************************************************************
 
 template <bool MONOLITHIC, bool CHAINED>
+void MEDDLY::ct_template<MONOLITHIC, CHAINED>::removeStales()
+{
+#ifdef DEBUG_SLOW
+  fprintf(stdout, "Removing stales in CT (size %d, entries %ld)\n", 
+        tableSize, perf.numEntries
+  );
+#endif
+
+  if (CHAINED) {
+
+    //
+    // Chained 
+    //
+    int list = convertToList(true);
+
+    if (perf.numEntries < tableShrink) {
+      //
+      // Time to shrink table
+      //
+      int newsize = tableSize / 2;
+      if (newsize < 1024) newsize = 1024;
+      int* newt = (int*) realloc(table, newsize * sizeof(int));
+      if (0==newt) {
+        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__); 
+      }
+
+      MEDDLY_DCASSERT(tableSize > newsize);
+      mstats.decMemUsed( (tableSize - newsize) * sizeof(int) );
+      mstats.decMemAlloc( (tableSize - newsize) * sizeof(int) );
+
+      table = newt;
+      tableSize = newsize;
+      tableExpand = 4*tableSize;
+      if (1024 == tableSize) {
+        tableShrink = 0;
+      } else {
+        tableShrink = tableSize / 2;
+      }
+    }
+
+    listToTable(list);
+
+  } else {
+
+    //
+    // Unchained
+    //
+
+    scanForStales();
+
+    if (perf.numEntries < tableShrink) {
+      //
+      // Time to shrink table
+      //
+      unsigned newsize = tableSize / 2;
+      if (newsize < 1024) newsize = 1024;
+      if (newsize < tableSize) {
+          int* oldT = table;
+          unsigned oldSize = tableSize;
+          tableSize = newsize;
+          table = (int*) malloc(newsize * sizeof(int));
+          if (0==table) {
+            table = oldT;
+            tableSize = oldSize;
+            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+          }
+          for (unsigned i=0; i<newsize; i++) table[i] = 0;
+          mstats.incMemUsed(newsize * sizeof(int));
+          mstats.incMemAlloc(newsize * sizeof(int));
+    
+          rehashTable(oldT, oldSize);
+          free(oldT);
+      
+          mstats.decMemUsed(oldSize * sizeof(int));
+          mstats.decMemAlloc(oldSize * sizeof(int));
+    
+          tableExpand = tableSize / 2;
+          if (1024 == tableSize) {
+            tableShrink = 0;
+          } else {
+            tableShrink = tableSize / 8;
+          }
+      } // if different size
+    }
+  } // if CHAINED
+    
+#ifdef DEBUG_SLOW
+  fprintf(stdout, "Done removing CT stales (size %d, entries %ld)\n", 
+    tableSize, perf.numEntries
+  );
+#endif
+}
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED>
+void MEDDLY::ct_template<MONOLITHIC, CHAINED>::removeAll()
+{
+  const int SHIFT = (MONOLITHIC?1:0) + (CHAINED?1:0);
+
+  for (unsigned i=0; i<tableSize; i++) {
+    while (table[i]) {
+      int curr = table[i];
+#ifdef INTEGRATED_MEMMAN
+      const int* entry = entries + curr;
+#else
+      const int* entry = (const int*) MMAN->getChunkAddress(curr);
+#endif
+
+      if (CHAINED) {
+        table[i] = entry[0];
+      } else {
+        table[i] = 0;
+      }
+
+      operation* currop = MONOLITHIC
+          ?   operation::getOpWithIndex(entry[CHAINED ? 1 : 0])
+          :   global_op;
+      MEDDLY_DCASSERT(currop);
+
+      currop->discardEntry(entry + SHIFT);
+      recycleEntry(curr, SHIFT+currop->getCacheEntryLength());
+    } // while
+  } // for i
+}
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_template<MONOLITHIC, CHAINED>
 ::show(output &s, int verbLevel)
 {
@@ -1333,6 +1409,59 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::rehashTable(const int* oldT, unsi
     unsigned h = hash(entry, hashlength);
     setTable(h, curr);
   }
+}
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED>
+MEDDLY::node_address MEDDLY::ct_template<MONOLITHIC, CHAINED>
+::newEntry(unsigned size)
+{
+#ifdef INTEGRATED_MEMMAN
+  // check free list
+  if (size > maxEntrySize) {
+    fprintf(stderr, "MEDDLY error: request for compute table entry larger than max size\n");
+    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);  // best we can do
+  }
+  if (size<1) return 0;
+  perf.numEntries++;
+  if (freeList[size]) {
+    node_address h = freeList[size];
+    freeList[size] = entries[h];
+#ifdef DEBUG_CTALLOC
+    fprintf(stderr, "Re-used entry %d size %d\n", h, size);
+#endif
+    mstats.incMemUsed( size * sizeof(int) );
+    return h;
+  }
+  if (entriesSize + size > entriesAlloc) {
+    // Expand by a factor of 1.5
+    int neA = entriesAlloc + (entriesAlloc/2);
+    int* ne = (int*) realloc(entries, neA * sizeof(int));
+    if (0==ne) {
+      fprintf(stderr,
+          "Error in allocating array of size %lu at %s, line %d\n",
+          neA * sizeof(int), __FILE__, __LINE__);
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+    mstats.incMemAlloc( (entriesAlloc / 2) * sizeof(int) );
+    entries = ne;
+    entriesAlloc = neA;
+  }
+  MEDDLY_DCASSERT(entriesSize + size <= entriesAlloc);
+  node_address h = entriesSize;
+  entriesSize += size;
+#ifdef DEBUG_CTALLOC
+  fprintf(stderr, "New entry %d size %d\n", h, size);
+#endif
+  mstats.incMemUsed( size * sizeof(int) );
+  return h;
+
+#else
+  perf.numEntries++;
+  size_t the_size = size;
+  return MMAN->requestChunk(the_size);
+#endif
 }
 
 // ******************************************************************************************************************************************************************************************************************
