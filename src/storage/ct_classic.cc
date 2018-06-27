@@ -43,7 +43,7 @@
 
 #define INTEGRATED_MEMMAN
 
-// #define USE_CT_TEMPLATE
+#define USE_CT_TEMPLATE
 
 namespace MEDDLY {
   /// base class for all compute tables here;
@@ -576,9 +576,9 @@ MEDDLY::ct_template<MONOLITHIC, CHAINED>::ct_template(
   const ct_initializer::settings &s, operation* op) : compute_table(s)
 {
   if (MONOLITHIC) {
-    MEDDLY_DCASSERT(op);
-  } else {
     MEDDLY_DCASSERT(0==op);
+  } else {
+    MEDDLY_DCASSERT(op);
   }
   global_op = op;
 
@@ -708,12 +708,13 @@ MEDDLY::compute_table::search_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
   int* preventry = 0;
   unsigned hcurr = h;
   int curr = table[hcurr];
-  for (chain=0; ; chain++) {
-    
+  for (chain=0; ; ) {
+
     if (0==curr) {
       if (CHAINED) break;
-      if (chain >= maxCollisionSearch) break;
+      if (++chain > maxCollisionSearch) break;
       incMod(hcurr);
+      curr = table[hcurr];
       continue;
     }
 
@@ -825,8 +826,11 @@ MEDDLY::compute_table::search_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
       curr = entry[0];
       preventry = entry;
     } else {
+      if (++chain > maxCollisionSearch) break;
       incMod(hcurr);
+      curr = table[hcurr];
     }
+    
   } // for chain
 
   sawSearch(chain);
