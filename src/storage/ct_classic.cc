@@ -45,6 +45,9 @@
 
 #define USE_CT_TEMPLATE
 
+
+#ifndef USE_CT_TEMPLATE
+
 namespace MEDDLY {
   /// base class for all compute tables here;
   /// handles allocation of entries :^)
@@ -64,8 +67,10 @@ namespace MEDDLY {
 
   class base_map;
 }
+#endif  // ifndef USE_CT_TEMPLATE
 
 
+#ifdef USE_CT_TEMPLATE
 
 // **********************************************************************
 // *                                                                    *
@@ -1506,9 +1511,13 @@ MEDDLY::node_address MEDDLY::ct_template<MONOLITHIC, CHAINED>
 #endif
 }
 
+#endif  // ifdef USE_CT_TEMPLATE
+
 // ******************************************************************************************************************************************************************************************************************
 // ******************************************************************************************************************************************************************************************************************
 // ******************************************************************************************************************************************************************************************************************
+
+#ifndef USE_CT_TEMPLATE
 
 // **********************************************************************
 // *                                                                    *
@@ -4150,7 +4159,7 @@ void MEDDLY::operation_map<K>::show(output &s, int verbLevel)
   dumpInternal(s, verbLevel);
 }
 
-
+#endif  // ifndef USE_CT_TEMPLATE
 
 
 // **********************************************************************
@@ -4297,6 +4306,9 @@ MEDDLY::operation_map_style::operation_map_style()
 MEDDLY::compute_table* 
 MEDDLY::operation_map_style::create(const ct_initializer::settings &s, operation* op) const 
 {
+#ifdef USE_CT_TEMPLATE
+  return 0;
+#else
   switch (op->getKeyLength()) {
     case 8:   return new operation_map<8>(s, op);
     case 7:   return new operation_map<7>(s, op);
@@ -4311,6 +4323,7 @@ MEDDLY::operation_map_style::create(const ct_initializer::settings &s, operation
   }
   assert(0);
   return 0;
+#endif
 }
 
 bool MEDDLY::operation_map_style::usesMonolithic() const 
