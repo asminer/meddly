@@ -137,6 +137,15 @@ namespace MEDDLY {
             MEDDLY_DCASSERT(has_hash);
             return hash_value;
           }
+
+          inline void show(output &s, int len) const {
+            s << "[";
+            for (int i=0; i<len; i++) {
+              if (i) s << ", ";
+              s << data[i];
+            }
+            s << " : ? ]";
+          }
       };  // class our_search_key
       // ************************************************************
 
@@ -400,8 +409,9 @@ namespace MEDDLY {
         // full; remove entry at our slot.
 #ifdef DEBUG_CT
         printf("Collision; removing CT entry ");
-        showEntry(stdout, table[h]);
-        printf("\n");
+        FILE_output out(stdout);
+        showEntry(out, table[h]);
+        printf(" in slot %u\n", h);
 #endif
         collisions++;    
         //
@@ -701,6 +711,16 @@ MEDDLY::compute_table::search_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
   ANS.setInvalid();
   our_search_key* key = smart_cast <our_search_key*>(_key);
   MEDDLY_DCASSERT(key);
+
+  /*
+#ifdef DEBUG_CT
+  printf("Searching for CT entry ");
+  FILE_output out(stdout);
+  key->show(out, key->dataLength());
+  printf("\n");
+#endif
+  */
+
   perf.pings++;
   unsigned h = hash(key);
   int chain;
@@ -716,6 +736,8 @@ MEDDLY::compute_table::search_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
       incMod(hcurr);
       curr = table[hcurr];
       continue;
+    } else {
+      if (CHAINED) chain++;
     }
 
 #ifdef INTEGRATED_MEMMAN
@@ -727,7 +749,7 @@ MEDDLY::compute_table::search_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
     //
     // Check for match
     //
-    if (equal_sw(entry, key->rawData(), key->dataLength())) {
+    if (equal_sw(entry + (CHAINED?1:0), key->rawData(), key->dataLength())) {
       if (key->getOp()->shouldStaleCacheHitsBeDiscarded()) {
 #ifndef USE_NODE_STATUS
         const bool stale = key->getOp()->isEntryStale(entry+SHIFT);
@@ -740,6 +762,12 @@ MEDDLY::compute_table::search_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
           // The match is stale.
           // Delete the entry.
           //
+#ifdef DEBUG_CT
+          printf("Removing stale CT hit ");
+          FILE_output out(stdout);
+          key->getOp()->showEntry(out, entry + SHIFT);
+          printf(" in slot %u\n", hcurr);
+#endif
           key->getOp()->discardEntry(entry+SHIFT);
           if (CHAINED) {
             if (preventry) {
@@ -756,7 +784,7 @@ MEDDLY::compute_table::search_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
           // in the table, we're done!
           break;
         }
-      }
+      } // shouldStaleCacheHitsBeDiscarded
 
       //
       // "Hit"
@@ -770,14 +798,14 @@ MEDDLY::compute_table::search_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
         if (preventry) {
           preventry[0] = entry[0];
           entry[0] = table[hcurr];
-          table[hcurr] = entry[0];
+          table[hcurr] = curr;
         }
       }
 #ifdef DEBUG_CT
       printf("Found CT entry ");
-      key->getOp()->showEntry(stdout, entry + SHIFT);
-      // fprintf(stderr, " in slot %u", h);
-      printf("\n");
+      FILE_output out(stdout);
+      key->getOp()->showEntry(out, entry + SHIFT);
+      printf(" in slot %u\n", hcurr);
 #endif
       ANS.setResult(entry+(CHAINED?1:0)+key->dataLength(), key->getOp()->getAnsLength());
       break;
@@ -803,6 +831,12 @@ MEDDLY::compute_table::search_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
         //
         // Delete the entry
         //
+#ifdef DEBUG_CT
+        printf("Removing stale CT entry ");
+        FILE_output out(stdout);
+        op->showEntry(out, entry + SHIFT);
+        printf(" in slot %u\n", hcurr);
+#endif
         op->discardEntry(entry+SHIFT);
         if (CHAINED) {
           if (preventry) {
@@ -885,9 +919,9 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry()
 
 #ifdef DEBUG_CT
   printf("Adding CT entry ");
-  showEntry(stdout, currEntry.readHandle());
-  // fprintf(stderr, " to slot %u", h);
-  printf("\n");
+  FILE_output out(stdout);
+  showEntry(out, currEntry.readHandle());
+  printf(" in slot %u\n", h);
 #endif
 
   if (CHAINED) {
@@ -905,7 +939,7 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry()
   //
 
 #ifdef DEBUG_SLOW
-  fprintf(stdout, "Running GC in compute table (size %d, entries %ld)\n", 
+  fprintf(stdout, "Running GC in compute table (size %d, entries %u)\n", 
     tableSize, perf.numEntries
   );
 #endif
@@ -916,7 +950,7 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry()
     if (perf.numEntries < tableSize) {
       listToTable(list);
 #ifdef DEBUG_SLOW
-      fprintf(stdout, "Done CT GC, no resizing (now entries %ld)\n", perf.numEntries);
+      fprintf(stdout, "Done CT GC, no resizing (now entries %u)\n", perf.numEntries);
 #endif
       return;
     }
@@ -924,7 +958,7 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry()
     scanForStales();
     if (perf.numEntries < tableExpand / 4) {
 #ifdef DEBUG_SLOW
-      fprintf(stdout, "Done CT GC, no resizing (now entries %ld)\n", perf.numEntries);
+      fprintf(stdout, "Done CT GC, no resizing (now entries %u)\n", perf.numEntries);
 #endif
       return;
     }
@@ -1008,7 +1042,7 @@ template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_template<MONOLITHIC, CHAINED>::removeStales()
 {
 #ifdef DEBUG_SLOW
-  fprintf(stdout, "Removing stales in CT (size %d, entries %ld)\n", 
+  fprintf(stdout, "Removing stales in CT (size %d, entries %u)\n", 
         tableSize, perf.numEntries
   );
 #endif
@@ -1092,7 +1126,7 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::removeStales()
   } // if CHAINED
     
 #ifdef DEBUG_SLOW
-  fprintf(stdout, "Done removing CT stales (size %d, entries %ld)\n", 
+  fprintf(stdout, "Done removing CT stales (size %d, entries %u)\n", 
     tableSize, perf.numEntries
   );
 #endif
@@ -1288,7 +1322,8 @@ int MEDDLY::ct_template<MONOLITHIC, CHAINED>::convertToList(bool removeStales)
 #endif
 #ifdef DEBUG_TABLE2LIST
           printf("\tstale ");
-          currop->showEntry(stdout, entry+SHIFT);
+          FILE_output out(stdout);
+          currop->showEntry(out, entry+SHIFT);
           printf(" (handle %d slot %d)\n", curr, i);
 #endif
           currop->discardEntry(entry+SHIFT);
@@ -1301,7 +1336,8 @@ int MEDDLY::ct_template<MONOLITHIC, CHAINED>::convertToList(bool removeStales)
       //
 #ifdef DEBUG_TABLE2LIST
       printf("\tkeep  ");
-      currop->showEntry(stdout, entry+SHIFT);
+      FILE_output out(stdout);
+      currop->showEntry(out, entry+SHIFT);
       printf(" (handle %d slot %d)\n", curr, i);
 #endif
       entry[0] = list;
@@ -1344,7 +1380,8 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::listToTable(int L)
     table[h] = curr;
 #ifdef DEBUG_LIST2TABLE
     printf("\tsave  ");
-    currop->showEntry(stdout, entry+M+1);
+    FILE_output out(stdout);
+    currop->showEntry(out, entry+M+1);
     printf(" (handle %d slot %d)\n", curr, h);
 #endif
   }
@@ -1381,8 +1418,9 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::scanForStales()
 
 #ifdef DEBUG_CT
     printf("Removing CT stale entry ");
-    currop->showEntry(stdout, entry + M );
-    printf("\n");
+    FILE_output out(stdout);
+    currop->showEntry(out, entry + M );
+    printf(" in slot %u\n", i);
 #endif  
     currop->discardEntry(entry + M );
     int length = currop->getCacheEntryLength();
@@ -2198,7 +2236,8 @@ void MEDDLY::base_chained::addEntry()
 
 #ifdef DEBUG_CT
   printf("Adding CT entry ");
-  showEntry(stdout, currEntry.readHandle());
+  FILE_output out(stdout);
+  showEntry(out, currEntry.readHandle());
   // fprintf(stderr, " to slot %u", h);
   printf("\n");
 #endif
@@ -2206,7 +2245,7 @@ void MEDDLY::base_chained::addEntry()
   if (perf.numEntries < tableExpand) return;
 
 #ifdef DEBUG_SLOW
-  fprintf(stdout, "Running GC in compute table (size %d, entries %ld)\n", 
+  fprintf(stdout, "Running GC in compute table (size %d, entries %u)\n", 
     tableSize, perf.numEntries
   );
 #endif
@@ -2216,7 +2255,7 @@ void MEDDLY::base_chained::addEntry()
     // Don't need to expand
     listToTable(list);
 #ifdef DEBUG_SLOW
-    fprintf(stdout, "Done CT GC, no resizing (now entries %ld)\n", 
+    fprintf(stdout, "Done CT GC, no resizing (now entries %u)\n", 
       perf.numEntries
     );
 #endif
@@ -2258,7 +2297,7 @@ void MEDDLY::base_chained::addEntry()
 void MEDDLY::base_chained::removeStales()
 {
 #ifdef DEBUG_SLOW
-  fprintf(stdout, "Removing stales in CT (size %d, entries %ld)\n", 
+  fprintf(stdout, "Removing stales in CT (size %d, entries %u)\n", 
     tableSize, perf.numEntries
   );
 #endif
@@ -2290,7 +2329,7 @@ void MEDDLY::base_chained::removeStales()
   }
   listToTable(list);
 #ifdef DEBUG_SLOW
-  fprintf(stdout, "Done removing CT stales (size %d, entries %ld)\n", 
+  fprintf(stdout, "Done removing CT stales (size %d, entries %u)\n", 
     tableSize, perf.numEntries
   );
 #endif
@@ -2509,7 +2548,8 @@ MEDDLY::monolithic_chained::find(search_key *k)
       moveToFront(h, curr, prev);
 #ifdef DEBUG_CT
       printf("Found CT entry ");
-      key->getOp()->showEntry(stdout, entries + curr + 2);
+      FILE_output out(stdout);
+      key->getOp()->showEntry(out, entries + curr + 2);
       // fprintf(stderr, " in slot %u", h);
       printf("\n");
 #endif
@@ -2557,7 +2597,8 @@ MEDDLY::monolithic_chained::find(search_key *k)
         moveToFront(h, curr, prev);
 #ifdef DEBUG_CT
         printf("Found CT entry ");
-        key->getOp()->showEntry(stdout, entries + curr + 2);
+        FILE_output out(stdout);
+        key->getOp()->showEntry(out, entries + curr + 2);
         // fprintf(stderr, " in slot %u", h);
         printf("\n");
 #endif
@@ -2658,7 +2699,8 @@ int MEDDLY::monolithic_chained::convertToList(bool removeStales)
 #endif
 #ifdef DEBUG_TABLE2LIST
           printf("\tstale ");
-          currop->showEntry(stdout, entry+2);
+          FILE_output out(stdout);
+          currop->showEntry(out, entry+2);
           printf(" (handle %d slot %d)\n", curr, i);
 #endif
           currop->discardEntry(entry+2);
@@ -2671,7 +2713,8 @@ int MEDDLY::monolithic_chained::convertToList(bool removeStales)
       //
 #ifdef DEBUG_TABLE2LIST
       printf("\tkeep  ");
-      currop->showEntry(stdout, entry+2);
+      FILE_output out(stdout);
+      currop->showEntry(out, entry+2);
       printf(" (handle %d slot %d)\n", curr, i);
 #endif
       entry[0] = list;
@@ -2707,7 +2750,8 @@ void MEDDLY::monolithic_chained::listToTable(int L)
     table[h] = curr;
 #ifdef DEBUG_LIST2TABLE
     printf("\tsave  ");
-    currop->showEntry(stdout, entry+2);
+    FILE_output out(stdout);
+    currop->showEntry(out, entry+2);
     printf(" (handle %d slot %d)\n", curr, h);
 #endif
   }
@@ -3021,7 +3065,8 @@ MEDDLY::operation_chained_fast<N>::find(search_key *k)
       moveToFront(h, curr, prev);
 #ifdef DEBUG_CT
       printf("Found CT entry ");
-      global_op->showEntry(stdout, entries + curr + 1);
+      FILE_output out(stdout);
+      global_op->showEntry(out, entries + curr + 1);
       printf("\n");
 #endif
       ANS.setResult(entry+1+key->dataLength(), global_op->getAnsLength());
@@ -3068,7 +3113,8 @@ MEDDLY::operation_chained_fast<N>::find(search_key *k)
         moveToFront(h, curr, prev);
 #ifdef DEBUG_CT
         printf("Found CT entry ");
-        global_op->showEntry(stdout, entries + curr + 1);
+        FILE_output out(stdout);
+        global_op->showEntry(out, entries + curr + 1);
         printf("\n");
 #endif
         ANS.setResult(entries+curr+1+key->dataLength(), global_op->getAnsLength());
@@ -3133,7 +3179,8 @@ class MEDDLY::base_unchained : public base_hash {
       MEDDLY_DCASSERT(currop);
 #ifdef DEBUG_CT
       printf("Removing CT entry ");
-      currop->showEntry(stdout, entry+M);
+      FILE_output out(stdout);
+      currop->showEntry(out, entry+M);
       printf("\n");
 #endif  
       currop->discardEntry(entry+M);
@@ -3172,7 +3219,8 @@ class MEDDLY::base_unchained : public base_hash {
         if (currop->isEntryStale(entry+M)) {
 #ifdef DEBUG_CT
           printf("Removing CT stale entry ");
-          currop->showEntry(stdout, entry+M);
+          FILE_output out(stdout);
+          currop->showEntry(out, entry+M);
           printf("\n");
 #endif  
           currop->discardEntry(entry+M);
@@ -3255,7 +3303,8 @@ class MEDDLY::base_unchained : public base_hash {
 
 #ifdef DEBUG_CT
       printf("Adding CT entry ");
-      showEntry(stdout, currEntry.readHandle());
+      FILE_output out(stdout);
+      showEntry(out, currEntry.readHandle());
       // fprintf(stderr, " to slot %u", h);
       printf("\n");
 #endif
@@ -3265,7 +3314,7 @@ class MEDDLY::base_unchained : public base_hash {
       if (perf.numEntries < tableExpand) return;
 
 #ifdef DEBUG_SLOW
-      fprintf(stdout, "Running GC in compute table (size %d, entries %ld)\n", 
+      fprintf(stdout, "Running GC in compute table (size %d, entries %u)\n", 
         tableSize, perf.numEntries
       );
 #endif
@@ -3274,7 +3323,7 @@ class MEDDLY::base_unchained : public base_hash {
         scanForStales<M>();
         if (perf.numEntries < tableExpand / 4) {
 #ifdef DEBUG_SLOW
-          fprintf(stdout, "Done CT GC, no resizing (now entries %ld)\n", 
+          fprintf(stdout, "Done CT GC, no resizing (now entries %u)\n", 
             perf.numEntries
           );
 #endif
@@ -3323,7 +3372,7 @@ class MEDDLY::base_unchained : public base_hash {
     template <int M>
     inline void removeStalesT() {
 #ifdef DEBUG_SLOW
-      fprintf(stdout, "Removing stales in CT (size %d, entries %ld)\n", 
+      fprintf(stdout, "Removing stales in CT (size %d, entries %u)\n", 
         tableSize, perf.numEntries
       );
 #endif
@@ -3367,7 +3416,7 @@ class MEDDLY::base_unchained : public base_hash {
       }
     
 #ifdef DEBUG_SLOW
-      fprintf(stdout, "Done removing CT stales (size %d, entries %ld)\n", 
+      fprintf(stdout, "Done removing CT stales (size %d, entries %u)\n", 
         tableSize, perf.numEntries
       );
 #endif
@@ -3543,7 +3592,8 @@ MEDDLY::monolithic_unchained::find(search_key *k)
       perf.hits++;
 #ifdef DEBUG_CT
       printf("Found CT entry ");
-      key->getOp()->showEntry(stdout, entry + 1);
+      FILE_output out(stdout);
+      key->getOp()->showEntry(out, entry + 1);
       // fprintf(stderr, " in slot %u", h);
       printf("\n");
 #endif
@@ -3787,7 +3837,8 @@ MEDDLY::operation_unchained_fast<N>::find(search_key *k)
       perf.hits++;
 #ifdef DEBUG_CT
       printf("Found CT entry ");
-      global_op->showEntry(stdout, entry);
+      FILE_output out(stdout);
+      global_op->showEntry(out, entry);
       // fprintf(stderr, " in slot %u", h);
       printf("\n");
 #endif
@@ -3990,7 +4041,8 @@ MEDDLY::operation_map<K>::find(search_key *k)
   }
 #ifdef DEBUG_CT
   printf("Found CT entry ");
-  global_op->showEntry(stdout, h);
+  FILE_output out(stdout);
+  global_op->showEntry(out, h);
   printf("\n");
 #endif
   perf.hits++;
@@ -4004,7 +4056,8 @@ void MEDDLY::operation_map<K>::addEntry()
 {
 #ifdef DEBUG_CT
   printf("Adding CT entry ");
-  showEntry(stdout, current);
+  FILE_output out(stdout);
+  showEntry(out, current);
   printf("\n");
 #endif
 #ifdef DEVELOPMENT_CODE
@@ -4023,7 +4076,7 @@ template <int K>
 void MEDDLY::operation_map<K>::removeStales()
 {
 #ifdef DEBUG_SLOW
-  fprintf(stdout, "Removing stales in CT (entries %ld)\n", perf.numEntries);
+  fprintf(stdout, "Removing stales in CT (entries %u)\n", perf.numEntries);
 #endif
 #ifdef SUMMARY_STALES
   int stales = 0;
@@ -4049,7 +4102,7 @@ void MEDDLY::operation_map<K>::removeStales()
   }
 
 #ifdef DEBUG_SLOW
-  fprintf(stdout, "Done removing CT stales (entries %ld)\n", perf.numEntries);
+  fprintf(stdout, "Done removing CT stales (entries %u)\n", perf.numEntries);
 #endif
 #ifdef SUMMARY_STALES
   printf("CT %s (index %d) removed %d stales\n", 
