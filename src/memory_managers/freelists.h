@@ -18,30 +18,32 @@
 */
 
 
-#ifndef HEAP_MANAGER_H
-#define HEAP_MANAGER_H
+#ifndef FREELISTS_H
+#define FREELISTS_H
 
 namespace MEDDLY {
-  class heap_style;
+  class freelist_style;
 };
 
 /**
-    Factory for a memory manager based on a heap.
-    Largest holes are at the top of the heap.
+    Factory for a memory manager based on free lists.
+
+    This memory manager is fairly limited, and is used for compute tables.
 
     All details, including the actual memory manager constructed,
     are hidden in implementation file :^)
 
 */
 
-class MEDDLY::heap_style : public memory_manager_style {
+class MEDDLY::freelist_style : public memory_manager_style {
   public:
-    heap_style(const char* n);
-    virtual ~heap_style();
+    freelist_style(const char* n);
+    virtual ~freelist_style();
 
     virtual memory_manager* initManager(unsigned char granularity,
       unsigned char minsize, memstats &stats) const;
 };
 
 #endif
+
 

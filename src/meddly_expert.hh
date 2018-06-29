@@ -886,25 +886,55 @@ inline const char* MEDDLY::memory_manager::getStyleName() const
   return style_name;
 }
 
-inline void MEDDLY::memory_manager::incMemUsed(long b)
+inline void* MEDDLY::memory_manager::getChunkAddress(node_address h) const
+{
+  MEDDLY_DCASSERT(isValidHandle(h));
+
+  return chunk_multiplier 
+    ?  chunk_base + chunk_multiplier * h
+    :  slowChunkAddress(h);
+}
+
+inline void MEDDLY::memory_manager::incMemUsed(size_t b)
 {
   my_mem.incMemUsed(b);
 }
 
-inline void MEDDLY::memory_manager::decMemUsed(long b)
+inline void MEDDLY::memory_manager::decMemUsed(size_t b)
 {
   my_mem.decMemUsed(b);
 }
 
-inline void MEDDLY::memory_manager::incMemAlloc(long b)
+inline void MEDDLY::memory_manager::incMemAlloc(size_t b)
 {
   my_mem.incMemAlloc(b);
 }
 
-inline void MEDDLY::memory_manager::decMemAlloc(long b)
+inline void MEDDLY::memory_manager::decMemAlloc(size_t b)
 {
   my_mem.decMemAlloc(b);
 }
+
+inline void MEDDLY::memory_manager::zeroMemUsed()
+{
+  my_mem.zeroMemUsed();
+}
+
+inline void MEDDLY::memory_manager::zeroMemAlloc()
+{
+  my_mem.zeroMemAlloc();
+}
+
+inline void MEDDLY::memory_manager::setChunkBase(void* p)
+{
+  chunk_base = (char*) p;
+}
+
+inline void MEDDLY::memory_manager::setChunkMultiplier(unsigned int m)
+{
+  chunk_multiplier = m;
+}
+
 
 // ******************************************************************
 // *                                                                *
@@ -1191,10 +1221,10 @@ MEDDLY::expert_forest::getRealFromHandle(MEDDLY::node_handle n) const
   }
 }
 
-inline MEDDLY::expert_forest::statset&
-MEDDLY::expert_forest::changeStats()
+inline MEDDLY::memstats&
+MEDDLY::expert_forest::changeMemStats()
 {
-  return stats;
+  return mstats;
 }
 
 inline char
