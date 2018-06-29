@@ -11,4 +11,7 @@ layout: single
   The interface has been updated appropriately
   (methods ```createEdge```, ```createEdgeForVar```, and ```evaluate```).
 
+### Implementation
+
+ * Streamlined compute table implemenation using templates.
 

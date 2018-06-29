@@ -491,19 +491,15 @@ namespace MEDDLY {
       inline void showEntry(output &s, int h) const
       {
 #ifdef INTEGRATED_MEMMAN
-        operation* op = MONOLITHIC 
-            ?   operation::getOpWithIndex(entries[h + (CHAINED ? 1 : 0)])
-            :   global_op;
-        MEDDLY_DCASSERT(op);
-        op->showEntry(s, entries + h + (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0));
+        const int* entry = entries+h;
 #else
         const int* entry = (const int*) MMAN->getChunkAddress(h);
+#endif
         operation* op = MONOLITHIC
             ?   operation::getOpWithIndex(entry[CHAINED ? 1 : 0])
             :   global_op;
         MEDDLY_DCASSERT(op);
         op->showEntry(s, entry + (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0));
-#endif
       }
 
 
