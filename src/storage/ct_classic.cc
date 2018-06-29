@@ -324,7 +324,10 @@ namespace MEDDLY {
       }
 
 
-      // HHHHHHHHHH
+      /*
+          Use our own, built-in, specialized hash
+          instead of hash_stream because it's faster.
+      */
 
       static inline unsigned rot(unsigned x, int k) {
           return (((x)<<(k)) | ((x)>>(32-(k))));
@@ -347,7 +350,6 @@ namespace MEDDLY {
           c ^= b; c -= rot(b,24);
       }
 
-      // TBD: switch to hash_stream class :^)
       static inline unsigned raw_hash(const int* k, int length) {
         unsigned a, b, c;
         a = b = c = 0xdeadbeef;
@@ -377,7 +379,6 @@ namespace MEDDLY {
         return c;
       }
 
-      // HHHHHHHHHH
     
       inline void incMod(unsigned &h) {
         h++;
