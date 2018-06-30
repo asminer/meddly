@@ -95,7 +95,7 @@ class MEDDLY::saturation_by_events_op : public unary_operation {
       CTsrch->reset();
       CTsrch->writeNH(a);
       if (argF->isFullyReduced()) CTsrch->write(level);
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       b = resF->linkNode(cacheFind.readNH()); 
       doneCTkey(CTsrch);
@@ -144,7 +144,7 @@ class MEDDLY::common_dfs_by_events_mt : public specialized_operation {
       CTsrch->reset();
       CTsrch->writeNH(a);
       CTsrch->writeNH(b);
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       c = resF->linkNode(cacheFind.readNH());
       doneCTkey(CTsrch);

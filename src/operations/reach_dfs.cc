@@ -110,7 +110,7 @@ class MEDDLY::saturation_op : public unary_operation {
       CTsrch->reset();
       CTsrch->writeNH(a);
       if (argF->isFullyReduced()) CTsrch->write(level);
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       b = resF->linkNode(cacheFind.readNH()); 
       doneCTkey(CTsrch);
@@ -154,7 +154,7 @@ class MEDDLY::saturation_evplus_op : public unary_operation {
       CTsrch->reset();
       CTsrch->writeNH(a);
       if (argF->isFullyReduced()) CTsrch->write(level);
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       cacheFind.read(bev);
       bev += aev;
@@ -204,7 +204,7 @@ class MEDDLY::common_dfs_mt : public binary_operation {
       CTsrch->reset();
       CTsrch->writeNH(a);
       CTsrch->writeNH(b);
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       c = resF->linkNode(cacheFind.readNH());
       doneCTkey(CTsrch);
@@ -354,7 +354,7 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
       CTsrch->writeNH(a);
       CTsrch->writeNH(b);
 
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       cacheFind.read(cev);
       c = resF->linkNode(cacheFind.readNH());

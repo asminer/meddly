@@ -179,7 +179,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::plus_evplus::findResult(long aev, node
     CTsrch->write(0L);
     CTsrch->writeNH(b);
   }
-  compute_table::search_result &cacheFind = CT->find(CTsrch);
+  compute_table::entry_result &cacheFind = CT->find(CTsrch);
   if (!cacheFind) return CTsrch;
   cacheFind.read(cev);
   c = resF->linkNode(cacheFind.readNH());

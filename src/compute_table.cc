@@ -236,11 +236,12 @@ MEDDLY::compute_table::entry_key::~entry_key()
 
 // **********************************************************************
 
-MEDDLY::compute_table::search_result::search_result()
+MEDDLY::compute_table::entry_result::entry_result()
 {
-
+  data = 0;
 }
-MEDDLY::compute_table::search_result::~search_result()
+
+MEDDLY::compute_table::entry_result::~entry_result()
 {
 }
 

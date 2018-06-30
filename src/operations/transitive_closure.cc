@@ -222,7 +222,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_dfs::findResult(lon
   key->writeNH(b);
   key->writeNH(c);
 
-  compute_table::search_result& cacheFind = CT->find(key);
+  compute_table::entry_result& cacheFind = CT->find(key);
   if (!cacheFind) {
     return key;
   }
@@ -788,7 +788,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_evplus::findResult(
     key->write(level);
   }
 
-  compute_table::search_result &cacheFind = CT->find(key);
+  compute_table::entry_result &cacheFind = CT->find(key);
   if (!cacheFind) return key;
 
   cacheFind.read(cev);

@@ -151,7 +151,7 @@ MEDDLY::mdd2index_operation
     MEDDLY_DCASSERT(CTsrch);
     CTsrch->reset();
     CTsrch->writeNH(a);
-    compute_table::search_result &cacheEntry = CT->find(CTsrch);
+    compute_table::entry_result &cacheEntry = CT->find(CTsrch);
     if (cacheEntry) {
       bdn = resF->linkNode(cacheEntry.readNH());
       cacheEntry.read(bcard);

@@ -72,7 +72,7 @@ class MEDDLY::mm_mult_op : public binary_operation {
       CTsrch->reset();
       CTsrch->writeNH(a);
       CTsrch->writeNH(b);
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       c = resF->linkNode(cacheFind.readNH());
       doneCTkey(CTsrch);

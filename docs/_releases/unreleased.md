@@ -16,6 +16,10 @@ layout: single
  * Class ```compute_table::search_key```
    has been renamed ```compute_table::entry_key```, and is now concrete.
 
+ * Class ```compute_table::search_result```
+   has been renamed ```compute_table::entry_result```, and is now concrete.
+
+
 ### Implementation
 
  * Streamlined compute table implemenation using templates.

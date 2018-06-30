@@ -54,7 +54,7 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       cacheFind.read(bev);
       b = resF->linkNode(cacheFind.readNH());

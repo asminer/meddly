@@ -2098,7 +2098,6 @@ MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
 // *                                                                *
 // ******************************************************************
 
-
 inline MEDDLY::operation*
 MEDDLY::compute_table::entry_key::getOp() const
 {
@@ -2172,21 +2171,78 @@ inline unsigned MEDDLY::compute_table::entry_key::getHash() const
 
 // ******************************************************************
 
+inline MEDDLY::node_handle MEDDLY::compute_table::entry_result::readNH() 
+{
+  MEDDLY_DCASSERT(currslot < ansLength);
+  return data[currslot++];
+}
+
+inline void MEDDLY::compute_table::entry_result::read(int &i) 
+{
+  MEDDLY_DCASSERT(currslot < ansLength);
+  i = data[currslot++];
+}
+
+inline void MEDDLY::compute_table::entry_result::read(float &f) 
+{
+  MEDDLY_DCASSERT(currslot < ansLength);
+  f = ((float*)(data + currslot))[0];
+  currslot++;
+}
+
+inline void MEDDLY::compute_table::entry_result::read(long &L) 
+{
+  MEDDLY_DCASSERT(currslot+sizeof(long)/sizeof(node_handle) <= ansLength);
+  memcpy(&L, data+currslot, sizeof(long));
+  currslot += sizeof(long) / sizeof(node_handle);
+}
+
+inline void MEDDLY::compute_table::entry_result::read(double &D) 
+{
+  MEDDLY_DCASSERT(currslot+sizeof(double)/sizeof(node_handle) <= ansLength);
+  memcpy(&D, data+currslot, sizeof(double));
+  currslot += sizeof(double) / sizeof(node_handle);
+}
+
+inline void MEDDLY::compute_table::entry_result::read(void* &P) 
+{
+  MEDDLY_DCASSERT(currslot+sizeof(void*)/sizeof(node_handle) <= ansLength);
+  memcpy(&P, data+currslot, sizeof(void*));
+  currslot += sizeof(void*) / sizeof(node_handle);
+}
+
+
 inline void
-MEDDLY::compute_table::search_result::setValid()
+MEDDLY::compute_table::entry_result::setValid()
 {
   is_valid = true;
 }
+
 inline void
-MEDDLY::compute_table::search_result::setInvalid()
+MEDDLY::compute_table::entry_result::setInvalid()
 {
   is_valid = false;
 }
+
 inline
-MEDDLY::compute_table::search_result::operator bool() const
+MEDDLY::compute_table::entry_result::operator bool() const
 {
   return is_valid;
 }
+
+inline
+void MEDDLY::compute_table::entry_result
+::setResult(const node_handle* d, unsigned sz)
+{
+  is_valid = true;
+  data = d;
+  currslot = 0;
+#ifdef DEVELOPMENT_CODE
+  ansLength = sz;
+#endif
+}
+
+// ******************************************************************
 
 // convenience methods, for grabbing edge values
 inline void

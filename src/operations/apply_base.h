@@ -73,7 +73,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
         CTsrch->writeNH(a);
         CTsrch->writeNH(b);
       }
-      compute_table::search_result& cacheFind = CT->find(CTsrch);
+      compute_table::entry_result& cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       c = resF->linkNode(cacheFind.readNH());
       doneCTkey(CTsrch);
@@ -141,7 +141,7 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
         CTsrch->writeNH(a);
         CTsrch->writeNH(b);
       }
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       c = resF->linkNode(cacheFind.readNH());
       doneCTkey(CTsrch);
@@ -202,7 +202,7 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
         CTsrch->writeNH(a);
         CTsrch->writeNH(b);
       }
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       c = resF->linkNode(cacheFind.readNH());
       doneCTkey(CTsrch);
@@ -283,7 +283,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
         CTsrch->write(bev);
         CTsrch->writeNH(b);
       }
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       cacheFind.read(cev);
       c = resF->linkNode(cacheFind.readNH());
@@ -346,7 +346,7 @@ class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
         CTsrch->write(bev);
         CTsrch->writeNH(b);
       }
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       cacheFind.read(cev);
       c = resF->linkNode(cacheFind.readNH());
@@ -410,7 +410,7 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
         CTsrch->write(bev);
         CTsrch->writeNH(b);
       }
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       cacheFind.read(cev);
       c = resF->linkNode(cacheFind.readNH());

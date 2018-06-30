@@ -41,11 +41,11 @@
 // #define DEBUG_REMOVESTALES
 // #define SUMMARY_STALES
 
+// #define OLD_THING
+
 #define INTEGRATED_MEMMAN
 
 #define USE_CT_TEMPLATE
-
-// #define ABSTRACT_SEARCH
 
 #ifndef USE_CT_TEMPLATE
 
@@ -85,79 +85,8 @@ namespace MEDDLY {
   template <bool MONOLITHIC, bool CHAINED>
   class ct_template : public compute_table {
     protected:
-      // ************************************************************
-#ifdef ABSTRACT_SEARCH
-      class our_search_key : public compute_table::search_key {
-        public:
-          unsigned hash_value;
-          node_handle* data;
-          bool killData;
-          node_handle* key_data;
-          int currslot;
-#ifdef DEVELOPMENT_CODE
-          /// used only for range checking during "development".
-          int keyLength;  
-          bool has_hash;
-#endif
-        public:
-          our_search_key(operation* op);
-          virtual ~our_search_key();
 
-          virtual void reset() {
-            currslot = 0;
-#ifdef DEVELOPMENT_CODE
-            has_hash = false;
-#endif
-          }
-
-          virtual void writeNH(node_handle nh) {
-            MEDDLY_CHECK_RANGE(0, currslot, keyLength);
-            key_data[currslot++] = nh;
-          }
-          virtual void write(int i) {
-            MEDDLY_CHECK_RANGE(0, currslot, keyLength);
-            key_data[currslot++] = i;
-          }
-          virtual void write(long i) {
-            MEDDLY_CHECK_RANGE(0, currslot, keyLength);
-            memcpy(&key_data[currslot], &i, sizeof(long));
-            currslot += sizeof(long) / sizeof(node_handle);
-          }
-          virtual void write(float f) {
-            MEDDLY_CHECK_RANGE(0, currslot, keyLength);
-            float* x = (float*) (key_data+currslot);
-            x[0] = f;
-            currslot++;
-          }
-
-          inline node_handle* rawData() const { return data; }
-          // inline int dataLength() const { return hashLength; }
-          inline int dataLength() const { return currslot + (key_data - data);}
-
-          inline void setHash(unsigned h) {
-            hash_value = h;
-#ifdef DEVELOPMENT_CODE
-            has_hash = true;
-#endif
-          }
-          inline unsigned getHash() const {
-            MEDDLY_DCASSERT(has_hash);
-            return hash_value;
-          }
-
-          inline void show(output &s, int len) const {
-            s << "[";
-            for (int i=0; i<len; i++) {
-              if (i) s << ", ";
-              s << data[i];
-            }
-            s << " : ? ]";
-          }
-      };  // class our_search_key
-#endif  // ifdef ABSTRACT_SEARCH
-      // ************************************************************
-
-
+#ifdef OLD_THING
       // ************************************************************
       class our_search_result : public compute_table::search_result {
           const node_handle* data;
@@ -215,6 +144,7 @@ namespace MEDDLY {
 
       };  // class our_search_result
       // ************************************************************
+#endif
 
       // ************************************************************
       class our_temp_entry : public compute_table::entry_builder {
@@ -297,7 +227,7 @@ namespace MEDDLY {
 
       virtual bool isOperationTable() const   { return !MONOLITHIC; }
       virtual entry_key* initializeSearchKey(operation* op);
-      virtual search_result& find(entry_key *key);
+      virtual entry_result& find(entry_key *key);
       virtual entry_builder& startNewEntry(entry_key* k);
       virtual void addEntry();
       virtual void removeStales();
@@ -320,16 +250,9 @@ namespace MEDDLY {
       }
 
       inline unsigned hash(entry_key* k) const {
-#ifdef ABSTRACT_SEARCH
-        our_search_key* key = smart_cast<our_search_key*>(k);
-        MEDDLY_DCASSERT(key);
-        key->setHash(raw_hash(key->rawData(), key->dataLength()));
-        return key->getHash() % tableSize;
-#else
         MEDDLY_DCASSERT(k);
         k->setHash(raw_hash(k->rawData(), k->dataLength()));
         return k->getHash() % tableSize;
-#endif
       }
 
 
@@ -562,33 +485,6 @@ namespace MEDDLY {
   }; // class ct_template
 } // namespace
 
-// **********************************************************************
-// *                                                                    *
-// *                ct_template::our_search_key  methods                *
-// *                                                                    *
-// **********************************************************************
-
-#ifdef ABSTRACT_SEARCH
-
-template <bool MONOLITHIC, bool CHAINED>
-MEDDLY::ct_template<MONOLITHIC, CHAINED>::our_search_key::our_search_key(operation* op)
- : search_key(op)
-{
-  // hashLength = 0;
-  data = 0;
-  key_data = 0;
-  killData = false;
-}
-
-// **********************************************************************
-
-template <bool MONOLITHIC, bool CHAINED>
-MEDDLY::ct_template<MONOLITHIC, CHAINED>::our_search_key::~our_search_key()
-{
-  if (killData) delete[] data;
-}
-
-#endif
 
 // **********************************************************************
 // *                                                                    *
@@ -685,33 +581,18 @@ MEDDLY::compute_table::entry_key* MEDDLY::ct_template<MONOLITHIC, CHAINED>
       throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
     }
   }
-#ifdef ABSTRACT_SEARCH
-  our_search_key* key = new our_search_key(op);
-  MEDDLY_DCASSERT(0==key->data);
-  key->data = new int[op->getKeyLength() + (MONOLITHIC ? 1 : 0)];
-  key->killData = true;
-  key->key_data = key->data + (MONOLITHIC ? 1 : 0);
-  if (MONOLITHIC) {
-    key->data[0] = op->getIndex();
-  }
-#ifdef DEVELOPMENT_CODE
-  key->keyLength = op->getKeyLength();
-#endif
-#else
-
   entry_key* key = new entry_key(op, MONOLITHIC ? 1 : 0, op->getKeyLength());
   if (MONOLITHIC) {
     key->setExtra(0, op->getIndex());
   }
-#endif
   return key;
 }
 
 // **********************************************************************
 
 template <bool MONOLITHIC, bool CHAINED>
-MEDDLY::compute_table::search_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
-::find(entry_key *_key)
+MEDDLY::compute_table::entry_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
+::find(entry_key *key)
 {
   // |-----------||--------|-------------|---------|
   // | status    || active | recoverable | dead    |
@@ -730,14 +611,8 @@ MEDDLY::compute_table::search_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
 
   const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
 
-  static our_search_result ANS;
+  static entry_result ANS;
   ANS.setInvalid();
-#ifdef ABSTRACT_SEARCH
-  our_search_key* key = smart_cast <our_search_key*>(_key);
-  MEDDLY_DCASSERT(key);
-#else
-  entry_key* key = _key;   // Eventually, simplify this
-#endif
 
   /*
 #ifdef DEBUG_CT

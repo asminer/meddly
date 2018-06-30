@@ -61,7 +61,7 @@ class MEDDLY::copy_MT : public unary_operation {
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       b = resF->linkNode(cacheFind.readNH());
       doneCTkey(CTsrch);
@@ -352,7 +352,7 @@ namespace MEDDLY {
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->reset();
         CTsrch->writeNH(a);
-        compute_table::search_result &cacheFind = CT->find(CTsrch);
+        compute_table::entry_result &cacheFind = CT->find(CTsrch);
         if (cacheFind) {
           cacheFind.read(bev);
           b = resF->linkNode(cacheFind.readNH());
@@ -575,7 +575,7 @@ namespace MEDDLY {
         CTsrch->reset();
         CTsrch->write(ev);
         CTsrch->writeNH(a);
-        compute_table::search_result &cacheFind = CT->find(CTsrch);
+        compute_table::entry_result &cacheFind = CT->find(CTsrch);
         if (cacheFind) {
           b = resF->linkNode(cacheFind.readNH());
           doneCTkey(CTsrch);
@@ -791,7 +791,7 @@ namespace MEDDLY {
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->reset();
         CTsrch->writeNH(a);
-        compute_table::search_result &cacheFind = CT->find(CTsrch);
+        compute_table::entry_result &cacheFind = CT->find(CTsrch);
         if (!cacheFind) return CTsrch;
         b = resF->linkNode(cacheFind.readNH());
         doneCTkey(CTsrch);
@@ -948,7 +948,7 @@ namespace MEDDLY {
         CTsrch->reset();
         CTsrch->write(av);
         CTsrch->writeNH(an);
-        compute_table::search_result &cacheFind = CT->find(CTsrch);
+        compute_table::entry_result &cacheFind = CT->find(CTsrch);
         if (cacheFind) {
           cacheFind.read(bv);
           bn = resF->linkNode(cacheFind.readNH());

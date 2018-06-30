@@ -3763,16 +3763,15 @@ class MEDDLY::compute_table {
       };
 
       //
-      // TBD - 
-      //  (1) Can we rename "search_key" to "entry_key", its the
-      //      unpacked "key portion" of a CT entry.
-      //  (2) Can we rename and combine "search_result" and "entry_builder",
-      //      as the unpacked "result portion" of a CT entry.
-      //  If so, update interface accordingly
+      // ******************************************************************
+      //
 
-      //
-      // Something to search for in the CT.
-      //
+      /** 
+        The key portion of an entry.
+        Internally, in the compute table, we may store
+        entries differently.  This class is used to build
+        keys for searching and constructing CT entries.
+      */
       class entry_key {
         public:
           /**
@@ -3792,7 +3791,7 @@ class MEDDLY::compute_table {
           void write(long i);
           void write(float f);
 
-        public: // for now; eventually make protected and compute_table is a friend
+        public: // for now; eventually protect and compute_table is a friend
           // interface, for compute_table.  All inlined in meddly_expert.hh
           const node_handle* rawData() const;
           int dataLength() const;
@@ -3819,27 +3818,50 @@ class MEDDLY::compute_table {
       };
 
       //
-      // Result of a search
+      // ******************************************************************
       //
-      class search_result {
-          bool is_valid;
 
-        protected:
-          search_result();
-          virtual ~search_result();
+      /** 
+        The result portion of an entry.
+        Internally, in the compute table, we may store
+        entries differently.  This class is used to return 
+        results from searches and for constructing CT entries.
+      */
+      class entry_result {
+        public:
+          entry_result();
+          ~entry_result();
 
         public:
+          // interface, for operations.
+          node_handle readNH();
+          void read(int &i);
+          void read(float &f);
+          void read(long &l);
+          void read(double &d);
+          void read(void* &ptr);
+
+          // interface, for compute tables.
           void setValid();
           void setInvalid();
           operator bool() const;
 
-          virtual node_handle readNH() = 0;
-          virtual void read(int &i) = 0;
-          virtual void read(float &f) = 0;
-          virtual void read(long &l) = 0;
-          virtual void read(double &d) = 0;
-          virtual void read(void* &ptr) = 0;
+          void setResult(const node_handle* d, unsigned sz);
+
+        private:
+          bool is_valid;
+          const node_handle* data;
+          unsigned currslot;
+#ifdef DEVELOPMENT_CODE
+          unsigned ansLength;
+#endif
       };
+
+  // HERE - TBD
+
+      //
+      // ******************************************************************
+      //
 
       //
       // Building a new CT entry.
@@ -3881,9 +3903,9 @@ class MEDDLY::compute_table {
 
       /** Find an entry in the compute table based on the key provided.
           @param  key   Key to search for.
-          @return       An appropriate search_result.
+          @return       An appropriate entry_result.
       */
-      virtual search_result& find(entry_key *key) = 0;
+      virtual entry_result& find(entry_key *key) = 0;
 
       /** Start a new compute table entry.
           The operation should "fill in" the values for the entry,

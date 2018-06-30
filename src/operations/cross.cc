@@ -140,7 +140,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   CTsrch->write(k);
   CTsrch->writeNH(a);
   CTsrch->writeNH(b);
-  compute_table::search_result &cacheFind = CT->find(CTsrch);
+  compute_table::entry_result &cacheFind = CT->find(CTsrch);
   if (cacheFind) {
     doneCTkey(CTsrch);
     return resF->linkNode(cacheFind.readNH());

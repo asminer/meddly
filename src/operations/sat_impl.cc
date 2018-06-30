@@ -107,7 +107,7 @@ protected:
     CTsrch->reset();
     CTsrch->writeNH(a);
     if (argF->isFullyReduced()) CTsrch->write(level);
-    compute_table::search_result &cacheFind = CT->find(CTsrch);
+    compute_table::entry_result &cacheFind = CT->find(CTsrch);
     if (!cacheFind) return CTsrch;
     b = resF->linkNode(cacheFind.readNH());
     doneCTkey(CTsrch);
@@ -162,7 +162,7 @@ protected:
   CTsrch->reset();
   CTsrch->writeNH(a);
   CTsrch->writeNH(b);
-  compute_table::search_result &cacheFind = CT->find(CTsrch);
+  compute_table::entry_result &cacheFind = CT->find(CTsrch);
   if (!cacheFind) return CTsrch;
   c = resF->linkNode(cacheFind.readNH());
   doneCTkey(CTsrch);
@@ -970,10 +970,10 @@ bool isIntersectionEmpty(
 
   // search cache
   node_pair key = {node_A, node_B};
-  auto search_result = intersection_cache.find(key);
-  if (search_result != intersection_cache.end()) {
+  auto entry_result = intersection_cache.find(key);
+  if (entry_result != intersection_cache.end()) {
     // found cached entry
-    return search_result->second;
+    return entry_result->second;
   }
 
   // unpack nodes
