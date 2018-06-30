@@ -145,7 +145,7 @@ MEDDLY::mdd2index_operation
   MEDDLY_DCASSERT(aLevel <= k);
 
   // Check compute table
-  compute_table::search_key* CTsrch = 0;
+  compute_table::entry_key* CTsrch = 0;
   if (aLevel == k) {
     CTsrch = useCTkey();
     MEDDLY_DCASSERT(CTsrch);

@@ -88,9 +88,9 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
     virtual void showEntry(output &strm, const node_handle* entryData) const;
 
   protected:
-    inline compute_table::search_key* 
+    inline compute_table::entry_key* 
     findSaturateResult(node_handle a, int level, node_handle& b) {
-      compute_table::search_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
@@ -101,7 +101,7 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
       doneCTkey(CTsrch);
       return 0;
     }
-    inline node_handle saveSaturateResult(compute_table::search_key* Key,
+    inline node_handle saveSaturateResult(compute_table::entry_key* Key,
       node_handle a, node_handle b) 
     {
       argF->cacheNode(a);
@@ -136,10 +136,10 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
     virtual void saturateHelper(unpacked_node& mdd) = 0;
 
   protected:
-    inline compute_table::search_key* 
+    inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-      compute_table::search_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
@@ -150,7 +150,7 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
       doneCTkey(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::search_key* Key,
+    inline node_handle saveResult(compute_table::entry_key* Key,
       node_handle a, node_handle b, node_handle c) 
     {
       arg1F->cacheNode(a);
@@ -314,7 +314,7 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
 
   // search compute table
   node_handle n = 0;
-  compute_table::search_key* Key = findSaturateResult(mdd, k, n);
+  compute_table::entry_key* Key = findSaturateResult(mdd, k, n);
   if (0==Key) return n;
 
   const int sz = argF->getLevelSize(k);               // size
@@ -755,7 +755,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
 
   // check the cache
   node_handle result = 0;
-  compute_table::search_key* Key = findResult(mdd, mxd, result);
+  compute_table::entry_key* Key = findResult(mdd, mxd, result);
   if (0==Key) return result;
 
 #ifdef TRACE_RECFIRE

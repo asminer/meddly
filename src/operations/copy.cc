@@ -54,10 +54,10 @@ class MEDDLY::copy_MT : public unary_operation {
   protected:
     virtual node_handle compute_r(node_handle a) = 0;
 
-    inline compute_table::search_key* 
+    inline compute_table::entry_key* 
     findResult(node_handle a, node_handle &b) 
     {
-      compute_table::search_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
@@ -67,7 +67,7 @@ class MEDDLY::copy_MT : public unary_operation {
       doneCTkey(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::search_key* Key, 
+    inline node_handle saveResult(compute_table::entry_key* Key, 
       node_handle a, node_handle b) 
     {
       argF->cacheNode(a);
@@ -168,7 +168,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handl
 
   // Check compute table
   node_handle b;
-  compute_table::search_key* Key = findResult(a, b);
+  compute_table::entry_key* Key = findResult(a, b);
   if (0==Key) return b;
 
   // Initialize node reader
@@ -223,7 +223,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
 
   // Check compute table
   node_handle b;
-  compute_table::search_key* Key = 0;
+  compute_table::entry_key* Key = 0;
   if (k == aLevel && k>0) {
     Key = findResult(a, b);
     if (0==Key) return b;
@@ -345,10 +345,10 @@ namespace MEDDLY {
       void computeAll(int in, int k, node_handle a, node_handle &b, TYPE &bev);
 
     protected:
-      inline compute_table::search_key* 
+      inline compute_table::entry_key* 
       inCache(node_handle a, node_handle &b, TYPE &bev) 
       {
-        compute_table::search_key* CTsrch = useCTkey();
+        compute_table::entry_key* CTsrch = useCTkey();
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->reset();
         CTsrch->writeNH(a);
@@ -362,7 +362,7 @@ namespace MEDDLY {
         return CTsrch;
       }
 
-      inline void addToCache(compute_table::search_key* Key,
+      inline void addToCache(compute_table::entry_key* Key,
         node_handle a, node_handle b, TYPE bev) 
       {
         MEDDLY_DCASSERT(bev != Inf<TYPE>());
@@ -397,7 +397,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   }
 
   // Check compute table
-  compute_table::search_key* Key = inCache(a, b, bev);
+  compute_table::entry_key* Key = inCache(a, b, bev);
   if (0==Key) return;
 
   // Initialize sparse node reader
@@ -449,7 +449,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   const int aLevel = argF->getNodeLevel(a);
 
   // Check compute table
-  compute_table::search_key* Key = 0;
+  compute_table::entry_key* Key = 0;
   if (k == aLevel && k>0) {
     Key = inCache(a, b, bev);
     if (0==Key) return;
@@ -567,10 +567,10 @@ namespace MEDDLY {
       node_handle computeAll(int in, int k, TYPE ev, node_handle a);
 
     protected:
-      inline compute_table::search_key* 
+      inline compute_table::entry_key* 
       inCache(TYPE ev, node_handle a, node_handle &b) 
       {
-        compute_table::search_key* CTsrch = useCTkey();
+        compute_table::entry_key* CTsrch = useCTkey();
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->reset();
         CTsrch->write(ev);
@@ -584,7 +584,7 @@ namespace MEDDLY {
         return CTsrch;
       }
 
-      inline void addToCache(compute_table::search_key* Key, 
+      inline void addToCache(compute_table::entry_key* Key, 
         TYPE ev, node_handle a, node_handle b) 
       {
         argF->cacheNode(a);
@@ -618,7 +618,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
 
   // Check compute table
   node_handle b;
-  compute_table::search_key* Key = inCache(ev, a, b);
+  compute_table::entry_key* Key = inCache(ev, a, b);
   if (0==Key) return b;
 
   // Initialize sparse node reader
@@ -668,7 +668,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
 
   // Check compute table
   node_handle b;
-  compute_table::search_key* Key = 0;
+  compute_table::entry_key* Key = 0;
   if (k == aLevel && k>0) {
     Key = inCache(ev, a, b);
     if (0==Key) return b;
@@ -784,10 +784,10 @@ namespace MEDDLY {
       node_handle computeSkip(int in, node_handle a);
 
     protected:
-      inline compute_table::search_key* 
+      inline compute_table::entry_key* 
       findResult(node_handle a, node_handle &b) 
       {
-        compute_table::search_key* CTsrch = useCTkey();
+        compute_table::entry_key* CTsrch = useCTkey();
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->reset();
         CTsrch->writeNH(a);
@@ -797,7 +797,7 @@ namespace MEDDLY {
         doneCTkey(CTsrch);
         return 0;
       }
-      inline node_handle saveResult(compute_table::search_key* Key,
+      inline node_handle saveResult(compute_table::entry_key* Key,
         node_handle a, node_handle b) 
       {
         argF->cacheNode(a);
@@ -824,7 +824,7 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
 
   // Check compute table
   node_handle b;
-  compute_table::search_key* Key = findResult(a, b);
+  compute_table::entry_key* Key = findResult(a, b);
   if (0==Key) return b;
 
   // Initialize node reader
@@ -940,10 +940,10 @@ namespace MEDDLY {
         OUTTYPE &bv, node_handle &bn);
 
     protected:
-      inline compute_table::search_key* 
+      inline compute_table::entry_key* 
       inCache(INTYPE av, node_handle an, OUTTYPE &bv, node_handle &bn) 
       {
-        compute_table::search_key* CTsrch = useCTkey();
+        compute_table::entry_key* CTsrch = useCTkey();
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->reset();
         CTsrch->write(av);
@@ -958,7 +958,7 @@ namespace MEDDLY {
         return CTsrch;
       }
 
-      inline void addToCache(compute_table::search_key* Key, 
+      inline void addToCache(compute_table::entry_key* Key, 
         INTYPE av, node_handle an, OUTTYPE bv, node_handle &bn) 
       {
         argF->cacheNode(an);
@@ -992,7 +992,7 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   const int aLevel = argF->getNodeLevel(an);
 
   // Check compute table
-  compute_table::search_key* Key = 0;
+  compute_table::entry_key* Key = 0;
   if (k == aLevel && k>0) {
     Key = inCache(av, an, bv, bn);
     if (0==Key) return;

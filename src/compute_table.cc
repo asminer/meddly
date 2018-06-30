@@ -217,13 +217,21 @@ MEDDLY::compute_table::~compute_table()
 
 // **********************************************************************
 
-MEDDLY::compute_table::search_key::search_key(operation* _op)
+MEDDLY::compute_table::entry_key::entry_key(operation* _op, 
+  unsigned extra, unsigned keysz)
 {
   op = _op;
+  data = new int[extra + keysz];
+  key_data = data + extra;
+#ifdef DEVELOPMENT_CODE
+  extraLength = extra;
+  keyLength = keysz;
+#endif
 }
 
-MEDDLY::compute_table::search_key::~search_key()
+MEDDLY::compute_table::entry_key::~entry_key()
 {
+  delete[] data;
 }
 
 // **********************************************************************

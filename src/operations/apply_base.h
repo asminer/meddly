@@ -60,10 +60,10 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
 #endif
 
-    inline compute_table::search_key* 
+    inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-      compute_table::search_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       if (can_commute && a > b) {
@@ -80,7 +80,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
       return 0;
     }
 
-    inline void saveResult(compute_table::search_key* K, 
+    inline void saveResult(compute_table::entry_key* K, 
       node_handle a, node_handle b, node_handle c) 
     {
       arg1F->cacheNode(a);
@@ -128,10 +128,10 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
 #endif
 
-    inline compute_table::search_key* 
+    inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-      compute_table::search_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       if (can_commute && a > b) {
@@ -148,7 +148,7 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
       return 0;
     }
 
-    inline void saveResult(compute_table::search_key* Key, 
+    inline void saveResult(compute_table::entry_key* Key, 
       node_handle a, node_handle b, node_handle c) 
     {
       arg1F->cacheNode(a);
@@ -188,10 +188,10 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
 #endif
 
-    inline compute_table::search_key* 
+    inline compute_table::entry_key* 
     findResult(int k, node_handle a, node_handle b, node_handle &c) 
     {
-      compute_table::search_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->write(k);
@@ -209,7 +209,7 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
       return 0;
     }
 
-    inline void saveResult(compute_table::search_key* Key,
+    inline void saveResult(compute_table::entry_key* Key,
       int k, node_handle a, node_handle b, node_handle c) 
     {
       arg1F->cacheNode(a);
@@ -266,10 +266,10 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     virtual void compute(long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
 
   protected:
-    virtual compute_table::search_key* findResult(long aev, node_handle a,
+    virtual compute_table::entry_key* findResult(long aev, node_handle a,
       long bev, node_handle b, long& cev, node_handle &c)
     {
-      compute_table::search_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       if (can_commute && a > b) {
@@ -291,7 +291,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
       return 0;
     }
 
-    virtual void saveResult(compute_table::search_key* Key,
+    virtual void saveResult(compute_table::entry_key* Key,
       long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
     {
       arg1F->cacheNode(a);
@@ -329,10 +329,10 @@ class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
     void compute_r(int in, int level, long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
 
   protected:
-    virtual compute_table::search_key* findResult(long aev, node_handle a,
+    virtual compute_table::entry_key* findResult(long aev, node_handle a,
       long bev, node_handle b, long& cev, node_handle &c)
     {
-      compute_table::search_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       if (can_commute && a > b) {
@@ -354,7 +354,7 @@ class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
       return 0;
     }
 
-    virtual void saveResult(compute_table::search_key* Key,
+    virtual void saveResult(compute_table::entry_key* Key,
       long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
     {
       arg1F->cacheNode(a);
@@ -393,10 +393,10 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
       float bev, node_handle b, float& cev, node_handle& c);
 
   protected:
-    inline compute_table::search_key* findResult(float aev, node_handle a, 
+    inline compute_table::entry_key* findResult(float aev, node_handle a, 
       float bev, node_handle b, float& cev, node_handle &c) 
     {
-      compute_table::search_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       if (can_commute && a > b) {
@@ -418,7 +418,7 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
       return 0;
     }
 
-    inline void saveResult(compute_table::search_key* Key, float aev, 
+    inline void saveResult(compute_table::entry_key* Key, float aev, 
       node_handle a, float bev, node_handle b, float cev, node_handle c) 
     {
       arg1F->cacheNode(a);

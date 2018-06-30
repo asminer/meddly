@@ -11,6 +11,11 @@ layout: single
   The interface has been updated appropriately
   (methods ```createEdge```, ```createEdgeForVar```, and ```evaluate```).
 
+### Simple Interface Changes
+
+ * Class ```compute_table::search_key```
+   has been renamed ```compute_table::entry_key```, and is now concrete.
+
 ### Implementation
 
  * Streamlined compute table implemenation using templates.

@@ -2100,10 +2100,77 @@ MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
 
 
 inline MEDDLY::operation*
-MEDDLY::compute_table::search_key::getOp() const
+MEDDLY::compute_table::entry_key::getOp() const
 {
   return op;
 }
+
+inline void MEDDLY::compute_table::entry_key::reset()
+{
+  currslot = 0;
+#ifdef DEVELOPMENT_CODE
+  has_hash = false;
+#endif
+}
+
+inline void MEDDLY::compute_table::entry_key::writeNH(node_handle nh) 
+{
+  MEDDLY_CHECK_RANGE(0, currslot, keyLength);
+  key_data[currslot++] = nh;
+}
+
+inline void MEDDLY::compute_table::entry_key::write(int i) 
+{
+  MEDDLY_CHECK_RANGE(0, currslot, keyLength);
+  key_data[currslot++] = i;
+}
+
+inline void MEDDLY::compute_table::entry_key::write(long i) 
+{
+  MEDDLY_CHECK_RANGE(0, currslot, keyLength);
+  memcpy(&key_data[currslot], &i, sizeof(long));
+  currslot += sizeof(long) / sizeof(node_handle);
+}
+
+inline void MEDDLY::compute_table::entry_key::write(float f) 
+{
+  MEDDLY_CHECK_RANGE(0, currslot, keyLength);
+  float* x = (float*) (key_data+currslot);
+  x[0] = f;
+  currslot++;
+}
+
+inline const MEDDLY::node_handle* MEDDLY::compute_table::entry_key::rawData() const 
+{ 
+  return data; 
+}
+
+inline int MEDDLY::compute_table::entry_key::dataLength() const
+{ 
+  return currslot + (key_data - data);
+}
+
+inline void MEDDLY::compute_table::entry_key::setExtra(unsigned i, node_handle d)
+{ 
+  MEDDLY_CHECK_RANGE(0, i, extraLength);
+  data[i] = d;
+}
+
+inline void MEDDLY::compute_table::entry_key::setHash(unsigned h)
+{
+  hash_value = h;
+#ifdef DEVELOPMENT_CODE
+  has_hash = true;
+#endif
+}
+
+inline unsigned MEDDLY::compute_table::entry_key::getHash() const
+{
+  MEDDLY_DCASSERT(has_hash);
+  return hash_value;
+}
+
+// ******************************************************************
 
 inline void
 MEDDLY::compute_table::search_result::setValid()
@@ -2175,11 +2242,11 @@ MEDDLY::operation::unregisterInForest(MEDDLY::forest* f)
     f->unregisterOperation(this);
 }
 
-inline MEDDLY::compute_table::search_key*
+inline MEDDLY::compute_table::entry_key*
 MEDDLY::operation::useCTkey()
 {
   MEDDLY_DCASSERT(CT);
-  compute_table::search_key* ans;
+  compute_table::entry_key* ans;
   if (CT_free_keys) {
     ans = CT_free_keys;
     CT_free_keys = ans->next;
@@ -2280,7 +2347,7 @@ MEDDLY::operation::getEntryStatus(const MEDDLY::node_handle* data)
 #endif
 
 inline void
-MEDDLY::operation::doneCTkey(compute_table::search_key* K)
+MEDDLY::operation::doneCTkey(compute_table::entry_key* K)
 {
   MEDDLY_DCASSERT(K);
   K->next = CT_free_keys;

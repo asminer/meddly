@@ -3741,6 +3741,7 @@ class MEDDLY::compute_table_style {
 /** Interface for compute tables.
     Anyone implementing an operation (see below) will
     probably want to use this.
+    Implementation is in compute_table.cc.
 */
 class MEDDLY::compute_table {
     public:
@@ -3762,28 +3763,59 @@ class MEDDLY::compute_table {
       };
 
       //
-      // Something to search for in the CT.
-      // This is an interface now!
+      // TBD - 
+      //  (1) Can we rename "search_key" to "entry_key", its the
+      //      unpacked "key portion" of a CT entry.
+      //  (2) Can we rename and combine "search_result" and "entry_builder",
+      //      as the unpacked "result portion" of a CT entry.
+      //  If so, update interface accordingly
+
       //
-      class search_key {
+      // Something to search for in the CT.
+      //
+      class entry_key {
+        public:
+          /**
+            Constructor.
+              @param  op        Operator that owns this key.
+              @param  extra     Number of slots needed in addition to the actual key.
+              @param  keysz     Number of data slots needed for the key.
+          */
+          entry_key(operation* op, unsigned extra, unsigned keysz);
+          ~entry_key();
+          operation* getOp() const;
+
+          // interface, for operations.  All inlined in meddly_expert.hh
+          void reset();
+          void writeNH(node_handle nh);
+          void write(int i);
+          void write(long i);
+          void write(float f);
+
+        public: // for now; eventually make protected and compute_table is a friend
+          // interface, for compute_table.  All inlined in meddly_expert.hh
+          const node_handle* rawData() const;
+          int dataLength() const;
+          void setExtra(unsigned i, node_handle d);
+          void setHash(unsigned h);
+          unsigned getHash() const;
+
+        private:
           operation* op;
 
-        protected:
-          search_key(operation* op);
-
+          unsigned hash_value;
+          node_handle* data;
+          node_handle* key_data;
+          int currslot;
+#ifdef DEVELOPMENT_CODE
+          // Range checking during "development"
+          unsigned extraLength;
+          unsigned keyLength;
+          bool has_hash;
+#endif
         public:
           /// Used for linked-list of recycled search keys in an operation.
-          search_key* next;
-
-          operation* getOp() const;
-          virtual ~search_key();
-
-          // interface, for operations
-          virtual void reset() = 0;
-          virtual void writeNH(node_handle nh) = 0;
-          virtual void write(int i) = 0;
-          virtual void write(long i) = 0;
-          virtual void write(float f) = 0;
+          entry_key* next;
       };
 
       //
@@ -3845,19 +3877,19 @@ class MEDDLY::compute_table {
       virtual bool isOperationTable() const = 0;
 
       /// Initialize a search key for a given operation.
-      virtual search_key* initializeSearchKey(operation* op) = 0;
+      virtual entry_key* initializeSearchKey(operation* op) = 0;
 
       /** Find an entry in the compute table based on the key provided.
           @param  key   Key to search for.
           @return       An appropriate search_result.
       */
-      virtual search_result& find(search_key *key) = 0;
+      virtual search_result& find(entry_key *key) = 0;
 
       /** Start a new compute table entry.
           The operation should "fill in" the values for the entry,
           then call \a addEntry().
       */
-      virtual entry_builder& startNewEntry(search_key* k) = 0;
+      virtual entry_builder& startNewEntry(entry_key* k) = 0;
 
       /** Add the "current" new entry to the compute table.
           The entry may be specified by filling in the values
@@ -3904,7 +3936,7 @@ class MEDDLY::operation {
     int key_length;
     int ans_length;
     /// List of free search_keys
-    compute_table::search_key* CT_free_keys;
+    compute_table::entry_key* CT_free_keys;
 
     // declared and initialized in meddly.cc
     static compute_table* Monolithic_CT;
@@ -3926,7 +3958,7 @@ class MEDDLY::operation {
     /// Compute table to use, if any.
     compute_table* CT;
     /// Struct for CT searches.
-    // compute_table::search_key* CTsrch;
+    // compute_table::entry_key* CTsrch;
     // for cache of operations.
     operation* next;
     // must stale compute table hits be discarded.
@@ -3944,7 +3976,7 @@ class MEDDLY::operation {
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entry) = 0;
 #endif
-    compute_table::search_key* useCTkey();
+    compute_table::entry_key* useCTkey();
     void allocEntryForests(int nf);
     void addEntryForest(int index, expert_forest* f);
     void allocEntryObjects(int no);
@@ -4014,7 +4046,7 @@ class MEDDLY::operation {
     MEDDLY::forest::node_status getEntryStatus(const node_handle* data);
 #endif
 
-    void doneCTkey(compute_table::search_key* K);
+    void doneCTkey(compute_table::entry_key* K);
 
     /// Removes the cache entry (in entryData[]) by informing the
     /// applicable forests that the nodes in this entry are being removed

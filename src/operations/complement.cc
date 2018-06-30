@@ -55,10 +55,10 @@ class MEDDLY::compl_mdd : public unary_operation {
   protected:
     node_handle compute_r(node_handle a);
 
-    inline compute_table::search_key* 
+    inline compute_table::entry_key* 
     findResult(node_handle a, node_handle &b) 
     {
-      compute_table::search_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
@@ -68,7 +68,7 @@ class MEDDLY::compl_mdd : public unary_operation {
       doneCTkey(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::search_key* Key, 
+    inline node_handle saveResult(compute_table::entry_key* Key, 
       node_handle a, node_handle b) 
     {
       argF->cacheNode(a);
@@ -146,7 +146,7 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
 
   // Check compute table
   node_handle b;
-  compute_table::search_key* Key = findResult(a, b);
+  compute_table::entry_key* Key = findResult(a, b);
   if (0==Key) return b;
 
   const int level = argF->getNodeLevel(a);
@@ -262,7 +262,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
     );
   }
   // Check compute table
-  compute_table::search_key* CTsrch = useCTkey();
+  compute_table::entry_key* CTsrch = useCTkey();
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->reset();
   CTsrch->write(k);

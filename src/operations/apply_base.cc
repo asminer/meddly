@@ -116,7 +116,7 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
   if (checkTerminals(a, b, result))
     return result;
 
-  compute_table::search_key* Key = findResult(a, b, result);
+  compute_table::entry_key* Key = findResult(a, b, result);
   if (0==Key) return result;
 
   // Get level information
@@ -504,7 +504,7 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
   if (checkTerminals(a, b, result))
     return result;
 
-  compute_table::search_key* Key = findResult(a, b, result);
+  compute_table::entry_key* Key = findResult(a, b, result);
   if (0==Key) return result;
 
   // Get level information
@@ -541,7 +541,7 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
   //
   // Note - we cache the primed levels, but only when "safe"
   //
-  compute_table::search_key* Key = findResult(a, b, result);
+  compute_table::entry_key* Key = findResult(a, b, result);
   if (0==Key) {
   printf("Found %s pr (%d, %d) = %d\n", getName(), a, b, result);
   printf("\tat level %d\n", k);
@@ -1157,7 +1157,7 @@ MEDDLY::generic_binbylevel_mxd
   //
   // Note - we cache the primed levels, but only when "safe"
   //
-  compute_table::search_key* Key = findResult(resultLevel, a, b, result);
+  compute_table::entry_key* Key = findResult(resultLevel, a, b, result);
   if (0==Key) return result;
 
   // Get level information
@@ -1241,7 +1241,7 @@ MEDDLY::generic_binbylevel_mxd
   //
   // Note - we cache the primed levels, but only when "safe"
   //
-  compute_table::search_key* Key = findResult(resultLevel, a, b, result);
+  compute_table::entry_key* Key = findResult(resultLevel, a, b, result);
   if (0==Key) return result;
 
   // Get level information
@@ -1469,7 +1469,7 @@ void MEDDLY::generic_binary_evplus
   if (checkTerminals(aev, a, bev, b, cev, c))
     return;
 
-  compute_table::search_key* Key = findResult(aev, a, bev, b, cev, c);
+  compute_table::entry_key* Key = findResult(aev, a, bev, b, cev, c);
   if (0==Key) return;
 
   // Get level information
@@ -1568,7 +1568,7 @@ void MEDDLY::generic_binary_evplus_mxd
     return;
   }
 
-  compute_table::search_key* Key = findResult(aev, a, bev, b, cev, c);
+  compute_table::entry_key* Key = findResult(aev, a, bev, b, cev, c);
   if (0 == Key) {
     return;
   }
@@ -1730,7 +1730,7 @@ void MEDDLY::generic_binary_evtimes
     return;
 
 #ifndef DISABLE_CACHE
-  compute_table::search_key* Key = findResult(aev, a, bev, b, cev, c);
+  compute_table::entry_key* Key = findResult(aev, a, bev, b, cev, c);
   if (0==Key) return;
 #endif
 

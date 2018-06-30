@@ -75,10 +75,10 @@ class MEDDLY::image_op : public binary_operation {
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
 
-    inline compute_table::search_key* 
+    inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-      compute_table::search_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
@@ -89,7 +89,7 @@ class MEDDLY::image_op : public binary_operation {
       doneCTkey(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::search_key* Key, 
+    inline node_handle saveResult(compute_table::entry_key* Key, 
       node_handle a, node_handle b, node_handle c) 
     {
       argV->cacheNode(a);
@@ -227,7 +227,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
 
   // check the cache
   node_handle result = 0;
-  compute_table::search_key* Key = findResult(mdd, mxd, result);
+  compute_table::entry_key* Key = findResult(mdd, mxd, result);
   if (0==Key) return result;
 
   // check if mxd and mdd are at the same level
@@ -356,7 +356,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
 
   // check the cache
   node_handle result = 0;
-  compute_table::search_key* Key = findResult(mdd, mxd, result);
+  compute_table::entry_key* Key = findResult(mdd, mxd, result);
   if (0==Key) return result;
 
   // check if mxd and mdd are at the same level
@@ -532,10 +532,10 @@ class MEDDLY::image_op_evplus : public binary_operation {
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
 
-    inline compute_table::search_key*
+    inline compute_table::entry_key*
     findResult(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle &resEvmdd)
     {
-      compute_table::search_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(evmdd);
@@ -550,7 +550,7 @@ class MEDDLY::image_op_evplus : public binary_operation {
       doneCTkey(CTsrch);
       return 0;
     }
-    inline void saveResult(compute_table::search_key* Key,
+    inline void saveResult(compute_table::entry_key* Key,
       long ev, node_handle evmdd, node_handle mxd, long resEv, node_handle resEvmdd)
     {
       argV->cacheNode(evmdd);
@@ -686,7 +686,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   }
 
   // check the cache
-  compute_table::search_key* Key = findResult(ev, evmdd, mxd, resEv, resEvmdd);
+  compute_table::entry_key* Key = findResult(ev, evmdd, mxd, resEv, resEvmdd);
   if (0==Key) {
     return;
   }
@@ -837,7 +837,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   }
 
   // check the cache
-  compute_table::search_key* Key = findResult(ev, evmdd, mxd, resEv, resEvmdd);
+  compute_table::entry_key* Key = findResult(ev, evmdd, mxd, resEv, resEvmdd);
   if (0==Key) {
     return;
   }
@@ -1060,7 +1060,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
   }
 
   // check the cache
-  compute_table::search_key* Key = findResult(ev, evmxd, mxd, resEv, resEvmdd);
+  compute_table::entry_key* Key = findResult(ev, evmxd, mxd, resEv, resEvmdd);
   if (0==Key) {
     return;
   }

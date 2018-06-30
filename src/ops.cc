@@ -2006,7 +2006,7 @@ MEDDLY::operation::~operation()
 #endif
 
   while (CT_free_keys) {
-    compute_table::search_key* next = CT_free_keys->next;
+    compute_table::entry_key* next = CT_free_keys->next;
     delete CT_free_keys;
     CT_free_keys = next;
   }

@@ -64,10 +64,10 @@ class MEDDLY::mm_mult_op : public binary_operation {
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
 
-    inline compute_table::search_key* 
+    inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-      compute_table::search_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = useCTkey();
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->reset();
       CTsrch->writeNH(a);
@@ -78,7 +78,7 @@ class MEDDLY::mm_mult_op : public binary_operation {
       doneCTkey(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::search_key* Key, 
+    inline node_handle saveResult(compute_table::entry_key* Key, 
       node_handle a, node_handle b, node_handle c) 
     {
       arg1F->cacheNode(a);
@@ -201,7 +201,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
 
   // check the cache
   node_handle result = 0;
-  compute_table::search_key* Key = findResult(a, b, result);
+  compute_table::entry_key* Key = findResult(a, b, result);
   if (0==Key) return result;
 
   /**

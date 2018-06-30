@@ -211,10 +211,10 @@ bool MEDDLY::transitive_closure_dfs::checkTerminals(int aev, node_handle a, int 
   return false;
 }
 
-MEDDLY::compute_table::search_key* MEDDLY::transitive_closure_dfs::findResult(long aev, node_handle a,
+MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_dfs::findResult(long aev, node_handle a,
     long bev, node_handle b, node_handle c, long& dev, node_handle &d)
 {
-  compute_table::search_key* key = useCTkey();
+  compute_table::entry_key* key = useCTkey();
   MEDDLY_DCASSERT(key);
   key->reset();
   key->write(aev);
@@ -241,7 +241,7 @@ MEDDLY::compute_table::search_key* MEDDLY::transitive_closure_dfs::findResult(lo
   return 0;
 }
 
-void MEDDLY::transitive_closure_dfs::saveResult(compute_table::search_key* key,
+void MEDDLY::transitive_closure_dfs::saveResult(compute_table::entry_key* key,
   long aev, node_handle a, long bev, node_handle b, node_handle c, long dev, node_handle d)
 {
   consF->cacheNode(a);
@@ -552,7 +552,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
   }
 
   // check the cache
-  compute_table::search_key* key = findResult(aev, a, bev, b, r, cev, c);
+  compute_table::entry_key* key = findResult(aev, a, bev, b, r, cev, c);
   if (key == 0) {
     MEDDLY_DCASSERT(cev >= 0);
     return;
@@ -774,10 +774,10 @@ bool MEDDLY::transitive_closure_evplus::checkTerminals(int aev, node_handle a, i
   return false;
 }
 
-MEDDLY::compute_table::search_key* MEDDLY::transitive_closure_evplus::findResult(long aev, node_handle a,
+MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_evplus::findResult(long aev, node_handle a,
     long bev, node_handle b, int level, long& cev, node_handle &c)
 {
-  compute_table::search_key* key = useCTkey();
+  compute_table::entry_key* key = useCTkey();
   MEDDLY_DCASSERT(key);
   key->reset();
   key->write(aev);
@@ -803,7 +803,7 @@ MEDDLY::compute_table::search_key* MEDDLY::transitive_closure_evplus::findResult
   return 0;
 }
 
-void MEDDLY::transitive_closure_evplus::saveResult(compute_table::search_key* key,
+void MEDDLY::transitive_closure_evplus::saveResult(compute_table::entry_key* key,
   long aev, node_handle a, long bev, node_handle b, int level, long cev, node_handle c)
 {
   consF->cacheNode(a);
@@ -857,7 +857,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
     return;
   }
 
-  compute_table::search_key* key = findResult(aev, a, bev, b, level, cev, c);
+  compute_table::entry_key* key = findResult(aev, a, bev, b, level, cev, c);
   if (key == 0) {
     return;
   }
