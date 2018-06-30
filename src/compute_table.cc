@@ -239,10 +239,18 @@ MEDDLY::compute_table::entry_key::~entry_key()
 MEDDLY::compute_table::entry_result::entry_result()
 {
   data = 0;
+  build = 0;
+}
+
+MEDDLY::compute_table::entry_result::entry_result(unsigned slots)
+{
+  data = 0;
+  build = new node_handle[slots];
 }
 
 MEDDLY::compute_table::entry_result::~entry_result()
 {
+  delete[] build;
 }
 
 // **********************************************************************

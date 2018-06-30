@@ -2212,6 +2212,59 @@ inline void MEDDLY::compute_table::entry_result::read(void* &P)
 }
 
 
+inline void MEDDLY::compute_table::entry_result::reset() 
+{
+  currslot = 0;
+}
+
+inline void MEDDLY::compute_table::entry_result::writeN(node_handle nh)
+{
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot < ansLength);
+  build[currslot++] = nh;
+}
+
+inline void MEDDLY::compute_table::entry_result::writeI(int i)
+{
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot < ansLength);
+  build[currslot++] = i;
+}
+
+inline void MEDDLY::compute_table::entry_result::writeF(float f)
+{
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot < ansLength);
+  float* x = (float*) (build + currslot);
+  x[0] = f;
+  currslot++;
+}
+
+inline void MEDDLY::compute_table::entry_result::writeL(long L)
+{
+  write_raw(&L, sizeof(long) / sizeof(node_handle));
+}
+
+inline void MEDDLY::compute_table::entry_result::writeD(double D)
+{
+  write_raw(&D, sizeof(double) / sizeof(node_handle));
+}
+
+inline void MEDDLY::compute_table::entry_result::writeP(void* P)
+{
+  write_raw(&P, sizeof(void*) / sizeof(node_handle));
+}
+
+inline void MEDDLY::compute_table::entry_result::write_raw(void* ptr, size_t slots)
+{
+  MEDDLY_DCASSERT(ptr);
+  MEDDLY_DCASSERT(slots>0);
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot+slots<=ansLength);
+  memcpy(build+currslot, ptr, slots * sizeof(node_handle));
+  currslot += slots;
+}
+
 inline void
 MEDDLY::compute_table::entry_result::setValid()
 {

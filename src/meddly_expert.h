@@ -3770,7 +3770,7 @@ class MEDDLY::compute_table {
         The key portion of an entry.
         Internally, in the compute table, we may store
         entries differently.  This class is used to build
-        keys for searching and constructing CT entries.
+        keys for searching and to construct CT entries.
       */
       class entry_key {
         public:
@@ -3825,21 +3825,32 @@ class MEDDLY::compute_table {
         The result portion of an entry.
         Internally, in the compute table, we may store
         entries differently.  This class is used to return 
-        results from searches and for constructing CT entries.
+        results from searches and to construct CT entries.
       */
       class entry_result {
         public:
           entry_result();
+          entry_result(unsigned slots);
           ~entry_result();
 
         public:
-          // interface, for operations.
+          // interface, for operations (reading).
           node_handle readNH();
           void read(int &i);
           void read(float &f);
           void read(long &l);
           void read(double &d);
           void read(void* &ptr);
+
+          // interface, for operations (building). 
+          void reset();
+          void writeN(node_handle nh);
+          void writeI(int i);
+          void writeF(float f);
+          void writeL(long L);
+          void writeD(double D);
+          void writeP(void* P);
+          void write_raw(void* data, size_t slots);
 
           // interface, for compute tables.
           void setValid();
@@ -3851,18 +3862,19 @@ class MEDDLY::compute_table {
         private:
           bool is_valid;
           const node_handle* data;
+          node_handle* build;
           unsigned currslot;
 #ifdef DEVELOPMENT_CODE
           unsigned ansLength;
 #endif
       };
 
-  // HERE - TBD
-
       //
       // ******************************************************************
       //
 
+      //
+      // TBD - clobber this class
       //
       // Building a new CT entry.
       // This is an interface now!
