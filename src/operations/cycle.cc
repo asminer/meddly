@@ -68,10 +68,11 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
       long aev, node_handle a, long bev, node_handle b)
     {
       argF->cacheNode(a);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResult(b == 0 ? 0L : bev - aev);
-      entry.writeResultNH(resF->cacheNode(b));
-      CT->addEntry();
+      static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+      result.reset();
+      result.writeL(b == 0 ? 0L : bev - aev);
+      result.writeN(resF->cacheNode(b));
+      CT->addEntry(Key, result);
       return b;
     }
 };

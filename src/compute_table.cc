@@ -240,26 +240,18 @@ MEDDLY::compute_table::entry_result::entry_result()
 {
   data = 0;
   build = 0;
+  ansLength = 0;
 }
 
 MEDDLY::compute_table::entry_result::entry_result(unsigned slots)
 {
-  data = 0;
   build = new node_handle[slots];
+  data = build;
+  ansLength = slots;
 }
 
 MEDDLY::compute_table::entry_result::~entry_result()
 {
   delete[] build;
-}
-
-// **********************************************************************
-
-MEDDLY::compute_table::entry_builder::entry_builder()
-{
-
-}
-MEDDLY::compute_table::entry_builder::~entry_builder()
-{
 }
 

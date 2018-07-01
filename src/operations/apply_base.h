@@ -85,9 +85,10 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(K);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(resF->cacheNode(c));
+      CT->addEntry(K, result);
     }
 
   protected:
@@ -153,9 +154,10 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(resF->cacheNode(c));
+      CT->addEntry(Key, result);
     }
 
   protected:
@@ -214,9 +216,10 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(resF->cacheNode(c));
+      CT->addEntry(Key, result);
     }
 
     node_handle compute_r(int i, int level, node_handle a, node_handle b);
@@ -296,10 +299,11 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResult(cev);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      static compute_table::entry_result result(1 + sizeof(long)/sizeof(node_handle));
+      result.reset();
+      result.writeL(cev);
+      result.writeN(resF->cacheNode(c));
+      CT->addEntry(Key, result);
     }
 
   protected:
@@ -359,10 +363,11 @@ class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
     {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResult(cev);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      static compute_table::entry_result result(1 + sizeof(long)/sizeof(node_handle));
+      result.reset();
+      result.writeL(cev);
+      result.writeN(resF->cacheNode(c));
+      CT->addEntry(Key, result);
     }
 
   protected:
@@ -423,10 +428,11 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
     {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResult(cev);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      static compute_table::entry_result result(2);
+      result.reset();
+      result.writeF(cev);
+      result.writeN(resF->cacheNode(c));
+      CT->addEntry(Key, result);
     }
 
   protected:

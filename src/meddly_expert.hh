@@ -2290,9 +2290,19 @@ void MEDDLY::compute_table::entry_result
   is_valid = true;
   data = d;
   currslot = 0;
-#ifdef DEVELOPMENT_CODE
   ansLength = sz;
-#endif
+}
+
+inline const MEDDLY::node_handle* MEDDLY::compute_table::entry_result
+::rawData() const
+{
+  return data;
+}
+
+inline unsigned MEDDLY::compute_table::entry_result
+::dataLength() const
+{
+  return ansLength;
 }
 
 // ******************************************************************

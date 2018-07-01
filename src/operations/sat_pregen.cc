@@ -105,9 +105,10 @@ class MEDDLY::saturation_by_events_op : public unary_operation {
       node_handle a, node_handle b) 
     {
       argF->cacheNode(a);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResultNH(resF->cacheNode(b));
-      CT->addEntry();
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(resF->cacheNode(b));
+      CT->addEntry(Key, result);
       return b;
     }
 };
@@ -155,9 +156,10 @@ class MEDDLY::common_dfs_by_events_mt : public specialized_operation {
     {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(resF->cacheNode(c));
+      CT->addEntry(Key, result);
       return c;
     }
 

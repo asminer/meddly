@@ -94,9 +94,10 @@ class MEDDLY::image_op : public binary_operation {
     {
       argV->cacheNode(a);
       argM->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(resF->cacheNode(c));
+      CT->addEntry(Key, result);
       return c;
     }
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -555,10 +556,11 @@ class MEDDLY::image_op_evplus : public binary_operation {
     {
       argV->cacheNode(evmdd);
       argM->cacheNode(mxd);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResult(resEvmdd == 0 ? 0L : resEv - ev);
-      entry.writeResultNH(resF->cacheNode(resEvmdd));
-      CT->addEntry();
+      static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+      result.reset();
+      result.writeL(resEvmdd == 0 ? 0L : resEv - ev);
+      result.writeN(resF->cacheNode(resEvmdd));
+      CT->addEntry(Key, result);
     }
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);

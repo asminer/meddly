@@ -17,15 +17,6 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-//
-// To do:
-//   (1) check CT implementations
-//   (2) speed comparison
-//   (3) integrate with ../hash_stream.h; compare speed
-//   (4) see about redesigning class hierarchy into one
-//       huge template class along the lines of
-//       startIndexedEntry()
-//
 
 #include "ct_classic.h"
 
@@ -144,7 +135,6 @@ namespace MEDDLY {
 
       };  // class our_search_result
       // ************************************************************
-#endif
 
       // ************************************************************
       class our_temp_entry : public compute_table::entry_builder {
@@ -217,7 +207,7 @@ namespace MEDDLY {
           }
       }; // class our_temp_entry
       // ************************************************************
-
+#endif // ifdef OLD_THING
 
     public:
       ct_template(const ct_initializer::settings &s, operation* op);
@@ -227,9 +217,9 @@ namespace MEDDLY {
 
       virtual bool isOperationTable() const   { return !MONOLITHIC; }
       virtual entry_key* initializeSearchKey(operation* op);
-      virtual entry_result& find(entry_key *key);
-      virtual entry_builder& startNewEntry(entry_key* k);
-      virtual void addEntry();
+      virtual entry_result& find(entry_key* key);
+      virtual void addEntry(entry_key* key, const entry_result& res);
+      virtual void updateEntry(entry_key* key, const entry_result& res);
       virtual void removeStales();
       virtual void removeAll();
       virtual void show(output &s, int verbLevel = 0);
@@ -454,7 +444,7 @@ namespace MEDDLY {
       unsigned int tableShrink;
 
       /// Space to build an entry
-      our_temp_entry currEntry;
+      // our_temp_entry currEntry;
 
 #ifdef INTEGRATED_MEMMAN
       /// Memory space for entries
@@ -775,6 +765,7 @@ MEDDLY::compute_table::entry_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
 
 // **********************************************************************
 
+/*
 template <bool MONOLITHIC, bool CHAINED>
 MEDDLY::compute_table::entry_builder& MEDDLY::ct_template<MONOLITHIC, CHAINED>
 ::startNewEntry(entry_key *_key)
@@ -814,14 +805,20 @@ MEDDLY::compute_table::entry_builder& MEDDLY::ct_template<MONOLITHIC, CHAINED>
   
   return currEntry;
 }
-
+*/
 
 // **********************************************************************
 
 template <bool MONOLITHIC, bool CHAINED>
-void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry()
+void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const entry_result &res)
 {
-  unsigned h = currEntry.getHash() % tableSize;
+  MEDDLY_DCASSERT(key);
+  if (!MONOLITHIC) {
+    if (key->getOp() != global_op)
+      throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
+  }
+
+  unsigned h = key->getHash() % tableSize;
 
 #ifdef DEBUG_CT
   printf("Adding CT entry ");
@@ -830,12 +827,48 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry()
   printf(" in slot %u\n", h);
 #endif
 
+  operation* op = key->getOp();
+  MEDDLY_DCASSERT(op);
+
+  //
+  // Allocate an entry
+  //
+
+  node_address curr = newEntry(
+    op->getCacheEntryLength() + 
+    (CHAINED ? 1 : 0) + 
+    (MONOLITHIC ? 1 : 0)
+  );
+
+#ifdef INTEGRATED_MEMMAN
+  int* entry = entries + curr;
+#else
+  int* entry = (int*) MMAN->getChunkAddress(curr);
+#endif
+
+  //
+  // Copy into the entry
+  //
+  int* key_portion = entry + (CHAINED ? 1 : 0);
+  memcpy(key_portion, key->rawData(), key->dataLength()*sizeof(node_handle));
+  int* res_portion = key_portion + key->dataLength();
+  memcpy(res_portion, res.rawData(), res.dataLength()*sizeof(node_handle));
+
+  //
+  // Recycle key
+  //
+  op->doneCTkey(key);
+
+
+  //
+  // Add entry to CT
+  //
   if (CHAINED) {
     // Add this to front of chain
-    currEntry.data(0) = table[h];
-    table[h] = currEntry.readHandle();
+    entry[0] = table[h];
+    table[h] = curr;
   } else {
-    setTable(h, currEntry.readHandle());
+    setTable(h, curr);
   }
 
   if (perf.numEntries < tableExpand) return;
@@ -940,6 +973,14 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry()
   fprintf(stdout, "CT enlarged to size %d\n", tableSize);
 #endif
 
+}
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED>
+void MEDDLY::ct_template<MONOLITHIC, CHAINED>::updateEntry(entry_key* key, const entry_result &res)
+{
+  throw 7;
 }
 
 // **********************************************************************

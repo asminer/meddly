@@ -72,9 +72,10 @@ class MEDDLY::compl_mdd : public unary_operation {
       node_handle a, node_handle b) 
     {
       argF->cacheNode(a);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResultNH(resF->cacheNode(b));
-      CT->addEntry();
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(resF->cacheNode(b));
+      CT->addEntry(Key, result);
       return b;
     }
 };
@@ -319,9 +320,10 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
   if (k<0 && 1==nnz) canSave = false;
   if (canSave) {
     argF->cacheNode(a);
-    compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
-    entry.writeResultNH(resF->cacheNode(result));
-    CT->addEntry();
+    static compute_table::entry_result res(1);
+    res.reset();
+    res.writeN(resF->cacheNode(result));
+    CT->addEntry(CTsrch, res);
   } else {
     doneCTkey(CTsrch);
   }

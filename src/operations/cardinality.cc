@@ -181,10 +181,10 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
 
   // Add entry to compute table
   argF->cacheNode(a);
-  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
-  // entry.writeKeyNH(argF->cacheNode(a));
-  entry.writeResult(card);
-  CT->addEntry();
+  static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
+  result.reset();
+  result.writeL(card);
+  CT->addEntry(CTsrch, result);
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is %ld(L)\n", a, card);
@@ -254,10 +254,10 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
 
   // Add entry to compute table
   argF->cacheNode(a);
-  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
-  // entry.writeKeyNH(argF->cacheNode(a));
-  entry.writeResult(card);
-  CT->addEntry();
+  static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
+  result.reset();
+  result.writeL(card);
+  CT->addEntry(CTsrch, result);
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is %ld(L)\n", a, card);
@@ -383,10 +383,10 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
 
   // Add entry to compute table
   argF->cacheNode(a);
-  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
-  // entry.writeKeyNH(argF->cacheNode(a));
-  entry.writeResult(card);
-  CT->addEntry();
+  static compute_table::entry_result result(sizeof(double) / sizeof(node_handle));
+  result.reset();
+  result.writeD(card);
+  CT->addEntry(CTsrch, result);
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is %le(L)\n", a, card);
@@ -457,10 +457,11 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
 
   // Add entry to compute table
   argF->cacheNode(a);
-  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
-  // entry.writeKeyNH(argF->cacheNode(a));
-  entry.writeResult(card);
-  CT->addEntry();
+  static compute_table::entry_result result(sizeof(double) / sizeof(node_handle));
+  result.reset();
+  result.writeD(card);
+  CT->addEntry(CTsrch, result);
+
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is %le\n", a, card);
@@ -612,11 +613,10 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 
   // Add entry to compute table
   argF->cacheNode(a);
-  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
-  // entry.writeKeyNH(argF->cacheNode(a));
-  mpz_object* answer = new mpz_object(card);
-  entry.writeResult(answer);
-  CT->addEntry();
+  static compute_table::entry_result result(sizeof(void*) / sizeof(node_handle));
+  result.reset();
+  result.writeP(new mpz_object(card));
+  CT->addEntry(CTsrch, result);
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is ", a);
@@ -705,11 +705,10 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 
   // Add entry to compute table
   argF->cacheNode(a);
-  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
-  // entry.writeKeyNH(argF->cacheNode(a));
-  mpz_object* answer = new mpz_object(card);
-  entry.writeResult(answer);
-  CT->addEntry();
+  static compute_table::entry_result result(sizeof(void*) / sizeof(node_handle));
+  result.reset();
+  result.writeP(new mpz_object(card));
+  CT->addEntry(CTsrch, result);
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is ", a);

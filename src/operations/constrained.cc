@@ -290,9 +290,10 @@ void MEDDLY::constrained_dfs_mt::saveResult(compute_table::entry_key* key,
   consF->cacheNode(a);
   argF->cacheNode(b);
   transF->cacheNode(r);
-  compute_table::entry_builder& entry = CT->startNewEntry(key);
-  entry.writeResultNH(resF->cacheNode(c));
-  CT->addEntry();
+  static compute_table::entry_result result(1);
+  result.reset();
+  result.writeN(resF->cacheNode(c));
+  CT->addEntry(key, result);
 }
 
 bool MEDDLY::constrained_dfs_mt::isStaleEntry(const node_handle* data)
@@ -1008,9 +1009,10 @@ void MEDDLY::constrained_saturation_mt::saveResult(compute_table::entry_key* key
 {
   consF->cacheNode(a);
   argF->cacheNode(b);
-  compute_table::entry_builder &entry = CT->startNewEntry(key);
-  entry.writeResultNH(resF->cacheNode(c));
-  CT->addEntry();
+  static compute_table::entry_result result(1);
+  result.reset();
+  result.writeN(resF->cacheNode(c));
+  CT->addEntry(key, result);
 }
 
 bool MEDDLY::constrained_saturation_mt::isStaleEntry(const node_handle* data)
@@ -1155,16 +1157,17 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saveResult(compute_table::entry_key* 
   consF->cacheNode(a);
   argF->cacheNode(b);
   transF->cacheNode(r);
-  compute_table::entry_builder& entry = CT->startNewEntry(key);
+  static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+  result.reset();
   if (c == 0) {
     // Write long
-    entry.writeResult(0L);
+    result.writeL(0);
   }
   else {
-    entry.writeResult(cev - bev);
+    result.writeL(cev - bev);
   }
-  entry.writeResultNH(resF->cacheNode(c));
-  CT->addEntry();
+  result.writeN(resF->cacheNode(c));
+  CT->addEntry(key, result);
 }
 
 bool MEDDLY::constrained_bckwd_dfs_evplus::isStaleEntry(const node_handle* data)
@@ -1670,17 +1673,18 @@ void MEDDLY::constrained_saturation_evplus::saveResult(compute_table::entry_key*
 {
   consF->cacheNode(a);
   argF->cacheNode(b);
-  compute_table::entry_builder &entry = CT->startNewEntry(key);
+  static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+  result.reset();
   if (c == 0) {
     // Write long
-    entry.writeResult(0L);
+    result.writeL(0);
   }
   else {
     MEDDLY_DCASSERT(cev - bev >= 0);
-    entry.writeResult(cev - bev);
+    result.writeL(cev - bev);
   }
-  entry.writeResultNH(resF->cacheNode(c));
-  CT->addEntry();
+  result.writeN(resF->cacheNode(c));
+  CT->addEntry(key, result);
 }
 
 bool MEDDLY::constrained_saturation_evplus::isStaleEntry(const node_handle* data)

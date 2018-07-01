@@ -207,11 +207,11 @@ MEDDLY::mdd2index_operation
   // Add to compute table
   if (CTsrch) {
     argF->cacheNode(a);
-    compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
-    // entry.writeKeyNH(argF->cacheNode(a));
-    entry.writeResultNH(resF->cacheNode(bdn));
-    entry.writeResult(bcard);
-    CT->addEntry();
+    static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+    result.reset();
+    result.writeN(resF->cacheNode(bdn));
+    result.writeL(bcard);
+    CT->addEntry(CTsrch, result);
   }
 }
 

@@ -247,17 +247,18 @@ void MEDDLY::transitive_closure_dfs::saveResult(compute_table::entry_key* key,
   consF->cacheNode(a);
   tcF->cacheNode(b);
   transF->cacheNode(c);
-  compute_table::entry_builder& entry = CT->startNewEntry(key);
+  static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+  result.reset();
   if (d == 0) {
     // Write long
-    entry.writeResult(0L);
+    result.writeL(0);
   }
   else {
     MEDDLY_DCASSERT(dev - bev >= 0);
-    entry.writeResult(dev - bev);
+    result.writeL(dev - bev);
   }
-  entry.writeResultNH(resF->cacheNode(d));
-  CT->addEntry();
+  result.writeN(resF->cacheNode(d));
+  CT->addEntry(key, result);
 }
 
 bool MEDDLY::transitive_closure_dfs::isStaleEntry(const node_handle* data)
@@ -808,17 +809,18 @@ void MEDDLY::transitive_closure_evplus::saveResult(compute_table::entry_key* key
 {
   consF->cacheNode(a);
   tcF->cacheNode(b);
-  compute_table::entry_builder &entry = CT->startNewEntry(key);
+  static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+  result.reset();
   if (c == 0) {
     // Write long
-    entry.writeResult(0L);
+    result.writeL(0);
   }
   else {
     MEDDLY_DCASSERT(cev - bev >= 0);
-    entry.writeResult(cev - bev);
+    result.writeL(cev - bev);
   }
-  entry.writeResultNH(resF->cacheNode(c));
-  CT->addEntry();
+  result.writeN(resF->cacheNode(c));
+  CT->addEntry(key, result);
 }
 
 bool MEDDLY::transitive_closure_evplus::isStaleEntry(const node_handle* data)

@@ -120,9 +120,10 @@ class MEDDLY::saturation_op : public unary_operation {
       node_handle a, node_handle b) 
     {
       argF->cacheNode(a);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResultNH(resF->cacheNode(b));
-      CT->addEntry();
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(resF->cacheNode(b));
+      CT->addEntry(Key, result);
       return b;
     }
 };
@@ -166,10 +167,11 @@ class MEDDLY::saturation_evplus_op : public unary_operation {
       long aev, node_handle a, long bev, node_handle b)
     {
       argF->cacheNode(a);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResult(bev - aev);
-      entry.writeResultNH(resF->cacheNode(b));
-      CT->addEntry();
+      static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+      result.reset();
+      result.writeL(bev - aev);
+      result.writeN(resF->cacheNode(b));
+      CT->addEntry(Key, result);
       return b;
     }
 };
@@ -215,9 +217,10 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(resF->cacheNode(c));
+      CT->addEntry(Key, result);
       return c;
     }
     void splitMxd(node_handle mxd);
@@ -369,11 +372,11 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
     {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      // Write long
-      entry.writeResult(c == 0 ? 0L : cev - aev);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+      result.reset();
+      result.writeL(c == 0 ? 0L : cev - aev);
+      result.writeN(resF->cacheNode(c));
+      CT->addEntry(Key, result);
     }
     void splitMxd(node_handle mxd);
 

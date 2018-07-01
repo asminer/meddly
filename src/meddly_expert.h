@@ -3858,40 +3858,21 @@ class MEDDLY::compute_table {
           operator bool() const;
 
           void setResult(const node_handle* d, unsigned sz);
+          const node_handle* rawData() const;
+          unsigned dataLength() const;
+
 
         private:
           bool is_valid;
           const node_handle* data;
           node_handle* build;
           unsigned currslot;
-#ifdef DEVELOPMENT_CODE
           unsigned ansLength;
-#endif
       };
 
       //
       // ******************************************************************
       //
-
-      //
-      // TBD - clobber this class
-      //
-      // Building a new CT entry.
-      // This is an interface now!
-      //
-      class entry_builder {
-        protected:
-          entry_builder();
-          virtual ~entry_builder();
-
-        public:
-          virtual void writeResultNH(node_handle) = 0;
-          virtual void writeResult(int) = 0;
-          virtual void writeResult(float) = 0;
-          virtual void writeResult(long) = 0;
-          virtual void writeResult(double) = 0;
-          virtual void writeResult(void*) = 0;
-      };
 
       // convenience methods, for grabbing edge values
       static void readEV(const node_handle* p, int &ev);
@@ -3917,19 +3898,21 @@ class MEDDLY::compute_table {
           @param  key   Key to search for.
           @return       An appropriate entry_result.
       */
-      virtual entry_result& find(entry_key *key) = 0;
+      virtual entry_result& find(entry_key* key) = 0;
 
-      /** Start a new compute table entry.
-          The operation should "fill in" the values for the entry,
-          then call \a addEntry().
+      /**
+          Add an entry (key plus result) to the compute table.
+            @param  key   Key portion of the entry.  Will be recycled.
+            @param  res   Result portion of the entry.
       */
-      virtual entry_builder& startNewEntry(entry_key* k) = 0;
+      virtual void addEntry(entry_key* key, const entry_result &res) = 0;
 
-      /** Add the "current" new entry to the compute table.
-          The entry may be specified by filling in the values
-          for the struct returned by \a startNewEntry().
+      /**
+          Update an existing entry in the compute table.
+            @param  key   Key portion of the entry.  Will be recycled.
+            @param  res   Updated result portion of the entry.
       */
-      virtual void addEntry() = 0;
+      virtual void updateEntry(entry_key* key, const entry_result &res) = 0;
 
       /** Remove all stale entries.
           Scans the table for entries that are no longer valid (i.e. they are

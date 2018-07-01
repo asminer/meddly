@@ -11,7 +11,7 @@ layout: single
   The interface has been updated appropriately
   (methods ```createEdge```, ```createEdgeForVar```, and ```evaluate```).
 
-### Simple Interface Changes
+### Expert Interface Changes
 
  * Class ```compute_table::search_key```
    has been renamed ```compute_table::entry_key```, and is now concrete.
@@ -19,6 +19,9 @@ layout: single
  * Class ```compute_table::search_result```
    has been renamed ```compute_table::entry_result```, and is now concrete.
 
+ * Class ```compute_table::entry_builder```
+   has been removed.  A compute table entry is now added by giving
+   the key portion and the result portion.
 
 ### Implementation
 

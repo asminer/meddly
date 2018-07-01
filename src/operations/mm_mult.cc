@@ -83,9 +83,10 @@ class MEDDLY::mm_mult_op : public binary_operation {
     {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(resF->cacheNode(c));
+      CT->addEntry(Key, result);
       return c;
     }
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);

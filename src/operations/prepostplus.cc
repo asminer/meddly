@@ -93,10 +93,11 @@ void MEDDLY::prepostplus_evplus::saveResult(compute_table::entry_key* Key,
 {
   arg1F->cacheNode(a);
   arg2F->cacheNode(b);
-  compute_table::entry_builder &entry = CT->startNewEntry(Key);
-  entry.writeResult(c == 0 ? 0L : cev - aev - bev);
-  entry.writeResultNH(resF->cacheNode(c));
-  CT->addEntry();
+  static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+  result.reset();
+  result.writeL(c == 0 ? 0L : cev - aev - bev);
+  result.writeN(resF->cacheNode(c));
+  CT->addEntry(Key, result);
 }
 
 bool MEDDLY::prepostplus_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,

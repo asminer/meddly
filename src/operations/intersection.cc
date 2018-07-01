@@ -202,15 +202,15 @@ void MEDDLY::inter_max_evplus::saveResult(compute_table::entry_key* key,
 {
   arg1F->cacheNode(a);
   arg2F->cacheNode(b);
-  compute_table::entry_builder &entry = CT->startNewEntry(key);
+  static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
   if (c == 0) {
-    entry.writeResult(0L);
+    result.writeL(0);
   }
   else {
-    entry.writeResult(cev - (a > b ? bev : aev));
+    result.writeL(cev - (a > b ? bev : aev));
   }
-  entry.writeResultNH(resF->cacheNode(c));
-  CT->addEntry();
+  result.writeN(resF->cacheNode(c));
+  CT->addEntry(key, result);
 }
 
 bool MEDDLY::inter_max_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,

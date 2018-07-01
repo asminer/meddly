@@ -71,9 +71,10 @@ class MEDDLY::copy_MT : public unary_operation {
       node_handle a, node_handle b) 
     {
       argF->cacheNode(a);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResultNH(resF->cacheNode(b));
-      CT->addEntry();
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(resF->cacheNode(b));
+      CT->addEntry(Key, result);
       return b;
     }
 };
@@ -363,16 +364,29 @@ namespace MEDDLY {
       }
 
       inline void addToCache(compute_table::entry_key* Key,
-        node_handle a, node_handle b, TYPE bev) 
+        node_handle a, node_handle b, long bev) 
       {
-        MEDDLY_DCASSERT(bev != Inf<TYPE>());
+        MEDDLY_DCASSERT(bev != Inf<long>());
 
         argF->cacheNode(a);
-        compute_table::entry_builder &entry = CT->startNewEntry(Key);
-        // entry.writeKeyNH(argF->cacheNode(a));
-        entry.writeResult(bev);
-        entry.writeResultNH(resF->cacheNode(b));
-        CT->addEntry();
+        static compute_table::entry_result result(1 + sizeof(long)/sizeof(node_handle));
+        result.reset();
+        result.writeL(bev);
+        result.writeN(resF->cacheNode(b));
+        CT->addEntry(Key, result);
+      }
+
+      inline void addToCache(compute_table::entry_key* Key,
+        node_handle a, node_handle b, float bev) 
+      {
+        MEDDLY_DCASSERT(bev != Inf<float>());
+
+        argF->cacheNode(a);
+        static compute_table::entry_result result(2);
+        result.reset();
+        result.writeF(bev);
+        result.writeN(resF->cacheNode(b));
+        CT->addEntry(Key, result);
       }
 
   };
@@ -588,13 +602,10 @@ namespace MEDDLY {
         TYPE ev, node_handle a, node_handle b) 
       {
         argF->cacheNode(a);
-        compute_table::entry_builder &entry = CT->startNewEntry(Key);
-        /*
-        entry.writeKey(ev);
-        entry.writeKeyNH(argF->cacheNode(a));
-        */
-        entry.writeResultNH(resF->cacheNode(b));
-        CT->addEntry();
+        static compute_table::entry_result result(1);
+        result.reset();
+        result.writeN(resF->cacheNode(b));
+        CT->addEntry(Key, result);
       }
 
   };
@@ -801,12 +812,10 @@ namespace MEDDLY {
         node_handle a, node_handle b) 
       {
         argF->cacheNode(a);
-        compute_table::entry_builder &entry = CT->startNewEntry(Key);
-        /*
-        entry.writeKeyNH(argF->cacheNode(a));
-        */
-        entry.writeResultNH(resF->cacheNode(b));
-        CT->addEntry();
+        static compute_table::entry_result result(1);
+        result.reset();
+        result.writeN(resF->cacheNode(b));
+        CT->addEntry(Key, result);
         return b;
       }
   };
@@ -958,19 +967,28 @@ namespace MEDDLY {
         return CTsrch;
       }
 
-      inline void addToCache(compute_table::entry_key* Key, 
-        INTYPE av, node_handle an, OUTTYPE bv, node_handle &bn) 
+      inline void addToCache(compute_table::entry_key* Key,
+        INTYPE av, node_handle an, long bv, node_handle &bn)
       {
         argF->cacheNode(an);
-        compute_table::entry_builder &entry = CT->startNewEntry(Key);
-        /*
-        entry.writeKey(av);
-        entry.writeKey(argF->cacheNode(an));
-        */
-        entry.writeResult(bv);
-        entry.writeResultNH(resF->cacheNode(bn));
-        CT->addEntry();
+        static compute_table::entry_result result(1 + sizeof(long)/sizeof(node_handle));
+        result.reset();
+        result.writeL(bv);
+        result.writeN(resF->cacheNode(bn));
+        CT->addEntry(Key, result);
       }
+
+      inline void addToCache(compute_table::entry_key* Key,
+        INTYPE av, node_handle a, float bv, node_handle &bn)
+      {
+        argF->cacheNode(a);
+        static compute_table::entry_result result(2);
+        result.reset();
+        result.writeF(bv);
+        result.writeN(resF->cacheNode(bn));
+        CT->addEntry(Key, result);
+      }
+
 
   };
 

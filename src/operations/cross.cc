@@ -168,9 +168,10 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
 
   arg1F->cacheNode(a);
   arg2F->cacheNode(b);
-  compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
-  entry.writeResultNH(resF->cacheNode(c));
-  CT->addEntry();
+  static compute_table::entry_result result(1);
+  result.reset();
+  result.writeN(resF->cacheNode(c));
+  CT->addEntry(CTsrch, result);
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(%d, %d, %d) = %d\n", getName(), k, a, b, c);

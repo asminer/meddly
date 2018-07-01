@@ -120,9 +120,10 @@ protected:
                                         node_handle a, node_handle b)
   {
   argF->cacheNode(a);
-  compute_table::entry_builder &entry = CT->startNewEntry(Key);
-  entry.writeResultNH(resF->cacheNode(b));
-  CT->addEntry();
+  static compute_table::entry_result result(1);
+  result.reset();
+  result.writeN(resF->cacheNode(b));
+  CT->addEntry(Key, result);
   return b;
   }
 };
@@ -175,9 +176,10 @@ protected:
                                 node_handle a, rel_node_handle b, node_handle c)
   {
   arg1F->cacheNode(a);
-  compute_table::entry_builder &entry = CT->startNewEntry(Key);
-  entry.writeResultNH(resF->cacheNode(c));
-  CT->addEntry();
+  static compute_table::entry_result result(1);
+  result.reset();
+  result.writeN(resF->cacheNode(c));
+  CT->addEntry(Key, result);
   return c;
   }
   
