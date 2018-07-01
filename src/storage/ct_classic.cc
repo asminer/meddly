@@ -32,8 +32,6 @@
 // #define DEBUG_REMOVESTALES
 // #define SUMMARY_STALES
 
-// #define OLD_THING
-
 #define INTEGRATED_MEMMAN
 
 #define USE_CT_TEMPLATE
@@ -75,143 +73,17 @@ namespace MEDDLY {
 namespace MEDDLY {
   template <bool MONOLITHIC, bool CHAINED>
   class ct_template : public compute_table {
-    protected:
-
-#ifdef OLD_THING
-      // ************************************************************
-      class our_search_result : public compute_table::search_result {
-          const node_handle* data;
-          unsigned currslot;
-#ifdef DEVELOPMENT_CODE
-          unsigned ansLength;
-#endif
-        public:
-          our_search_result() {
-            data = 0;
-          }
-          virtual ~our_search_result() {
-          }
-
-          virtual node_handle readNH() {
-            MEDDLY_DCASSERT(currslot < ansLength);
-            return data[currslot++];
-          }
-          virtual void read(int &i) {
-            MEDDLY_DCASSERT(currslot < ansLength);
-            i = data[currslot++];
-          }
-          virtual void read(float &f) {
-            MEDDLY_DCASSERT(currslot < ansLength);
-            f = ((float*)(data + currslot))[0];
-            currslot++;
-          }
-          virtual void read(long &L) {
-            MEDDLY_DCASSERT( 
-              currslot+sizeof(long)/sizeof(node_handle) <= ansLength);
-            memcpy(&L, data+currslot, sizeof(long));
-            currslot += sizeof(long) / sizeof(node_handle);
-          }
-          virtual void read(double &D) {
-            MEDDLY_DCASSERT( 
-              currslot+sizeof(double)/sizeof(node_handle) <= ansLength);
-            memcpy(&D, data+currslot, sizeof(double));
-            currslot += sizeof(double) / sizeof(node_handle);
-          }
-          virtual void read(void* &P) {
-            MEDDLY_DCASSERT( 
-              currslot+sizeof(void*)/sizeof(node_handle) <= ansLength);
-            memcpy(&P, data+currslot, sizeof(void*));
-            currslot += sizeof(void*) / sizeof(node_handle);
-          }
-
-          inline void setResult(const node_handle* d, int sz) {
-            setValid();
-            data = d;
-            currslot = 0;
-#ifdef DEVELOPMENT_CODE
-            ansLength = sz;
-#endif
-          }
-
-      };  // class our_search_result
-      // ************************************************************
-
-      // ************************************************************
-      class our_temp_entry : public compute_table::entry_builder {
-        public:
-          int handle;
-          unsigned hash_value;
-#ifdef DEVELOPMENT_CODE
-          bool has_hash_value;
-#endif
-          node_handle* entry;
-          node_handle* res_entry;
-          unsigned resSlot;
-          // The remaining entries are used only in development code
-#ifdef DEVELOPMENT_CODE
-          unsigned resLength;
-#endif
-        public:
-          our_temp_entry() { }
-          virtual ~our_temp_entry() { }
-
-          virtual void writeResultNH(node_handle nh)
-          {
-            MEDDLY_DCASSERT(resSlot < resLength);
-            res_entry[resSlot++] = nh;
-          }
-          virtual void writeResult(int i)
-          {
-            MEDDLY_DCASSERT(resSlot < resLength);
-            res_entry[resSlot++] = i;
-          }
-          virtual void writeResult(float f)
-          {
-            MEDDLY_DCASSERT(resSlot < resLength);
-            float* x = (float*) res_entry + resSlot;
-            x[0] = f;
-            resSlot++;
-          }
-        protected:
-          inline void writeResult(void* data, size_t slots)
-          {
-            MEDDLY_DCASSERT(slots>0);
-            MEDDLY_DCASSERT(resSlot+slots<=resLength);
-            memcpy(res_entry+resSlot, data, slots * sizeof(node_handle));
-            resSlot += slots;
-          }
-        public:
-          virtual void writeResult(long L)
-          {
-            writeResult(&L, sizeof(long) / sizeof(node_handle));
-          }
-          virtual void writeResult(double D)
-          {
-            writeResult(&D, sizeof(double) / sizeof(node_handle));
-          }
-          virtual void writeResult(void* P)
-          {
-            writeResult(&P, sizeof(void*) / sizeof(node_handle));
-          }
-
-
-          // The following are used by the compute table.
-          inline const node_handle* readEntry(int off) const { return entry+off; }
-          inline int readHandle() const { return handle; }
-          inline unsigned getHash() const { 
-            MEDDLY_DCASSERT(has_hash_value);
-            return hash_value; 
-          }
-          inline node_handle& data(int i) {
-            return entry[i];
-          }
-      }; // class our_temp_entry
-      // ************************************************************
-#endif // ifdef OLD_THING
-
     public:
       ct_template(const ct_initializer::settings &s, operation* op);
       virtual ~ct_template();
+
+      /**
+          Find an entry.
+          Used by find() and updateEntry().
+            @param  key   Key to search for.
+            @return Pointer to the entry, or null if not found.
+      */
+      int* findEntry(entry_key* key);
 
       // required functions
 
@@ -239,10 +111,9 @@ namespace MEDDLY {
         return raw_hash(k, length) % tableSize;
       }
 
-      inline unsigned hash(entry_key* k) const {
+      inline void hash(entry_key* k) const {
         MEDDLY_DCASSERT(k);
         k->setHash(raw_hash(k->rawData(), k->dataLength()));
-        return k->getHash() % tableSize;
       }
 
 
@@ -563,27 +434,11 @@ MEDDLY::ct_template<MONOLITHIC, CHAINED>::~ct_template()
 // **********************************************************************
 
 template <bool MONOLITHIC, bool CHAINED>
-MEDDLY::compute_table::entry_key* MEDDLY::ct_template<MONOLITHIC, CHAINED>
-::initializeSearchKey(operation* op)
+inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
+::findEntry(entry_key* key)
 {
-  if (!MONOLITHIC) {
-    if (op != global_op) {
-      throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-    }
-  }
-  entry_key* key = new entry_key(op, MONOLITHIC ? 1 : 0, op->getKeyLength());
-  if (MONOLITHIC) {
-    key->setExtra(0, op->getIndex());
-  }
-  return key;
-}
+  MEDDLY_DCASSERT(key);
 
-// **********************************************************************
-
-template <bool MONOLITHIC, bool CHAINED>
-MEDDLY::compute_table::entry_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
-::find(entry_key *key)
-{
   // |-----------||--------|-------------|---------|
   // | status    || active | recoverable | dead    |
   // |-----------||--------|-------------|---------|
@@ -601,9 +456,6 @@ MEDDLY::compute_table::entry_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
 
   const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
 
-  static entry_result ANS;
-  ANS.setInvalid();
-
   /*
 #ifdef DEBUG_CT
   printf("Searching for CT entry ");
@@ -613,12 +465,11 @@ MEDDLY::compute_table::entry_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
 #endif
   */
 
-  perf.pings++;
-  unsigned h = hash(key);
   int chain;
 
+  int* answer = 0;
   int* preventry = 0;
-  unsigned hcurr = h;
+  unsigned hcurr = key->getHash() % tableSize;
   int curr = table[hcurr];
   for (chain=0; ; ) {
 
@@ -681,7 +532,6 @@ MEDDLY::compute_table::entry_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
       //
       // "Hit"
       //
-      perf.hits++;
       if (CHAINED) {
         //
         // If the matching entry is not already at the front of the list,
@@ -699,7 +549,7 @@ MEDDLY::compute_table::entry_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
       key->getOp()->showEntry(out, entry + SHIFT);
       printf(" in slot %u\n", hcurr);
 #endif
-      ANS.setResult(entry+(CHAINED?1:0)+key->dataLength(), key->getOp()->getAnsLength());
+      answer = entry;
       break;
     } // equal_sw
 
@@ -760,52 +610,48 @@ MEDDLY::compute_table::entry_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
   } // for chain
 
   sawSearch(chain);
-  return ANS;
+
+  return answer;
 }
 
 // **********************************************************************
 
-/*
 template <bool MONOLITHIC, bool CHAINED>
-MEDDLY::compute_table::entry_builder& MEDDLY::ct_template<MONOLITHIC, CHAINED>
-::startNewEntry(entry_key *_key)
+MEDDLY::compute_table::entry_key* MEDDLY::ct_template<MONOLITHIC, CHAINED>
+::initializeSearchKey(operation* op)
 {
-#ifdef ABSTRACT_KEY
-  our_search_key* Key = smart_cast<our_search_key*>(_key);
-#else
-  entry_key* Key = _key;   // TBD - simplify
-#endif
-  MEDDLY_DCASSERT(Key);
   if (!MONOLITHIC) {
-    if (Key->getOp() != global_op)
+    if (op != global_op) {
       throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
+    }
   }
-
-  operation* op = Key->getOp();
-  MEDDLY_DCASSERT(op);
-  currEntry.hash_value = Key->getHash();
-  currEntry.resSlot = 0;
-  currEntry.handle = newEntry(
-    op->getCacheEntryLength() + 
-    (CHAINED ? 1 : 0) + 
-    (MONOLITHIC ? 1 : 0)
-  );
-#ifdef INTEGRATED_MEMMAN
-  currEntry.entry = entries + currEntry.handle;
-#else
-  currEntry.entry = (int*) MMAN->getChunkAddress(currEntry.handle);
-#endif
-  memcpy(currEntry.entry + (CHAINED ? 1 : 0), Key->rawData(), Key->dataLength()*sizeof(node_handle));
-  currEntry.res_entry = currEntry.entry + Key->dataLength() + (CHAINED ? 1 : 0);
-#ifdef DEVELOPMENT_CODE
-  currEntry.resLength = op->getAnsLength();
-  currEntry.has_hash_value = true;
-#endif
-  op->doneCTkey(Key);
-  
-  return currEntry;
+  entry_key* key = new entry_key(op, MONOLITHIC ? 1 : 0, op->getKeyLength());
+  if (MONOLITHIC) {
+    key->setExtra(0, op->getIndex());
+  }
+  return key;
 }
-*/
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED>
+MEDDLY::compute_table::entry_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
+::find(entry_key *key)
+{
+  static entry_result ANS;
+
+  hash(key);
+  int* entry = findEntry(key);
+  perf.pings++;
+
+  if (entry) {
+    perf.hits++;
+    ANS.setResult(entry+(CHAINED?1:0)+key->dataLength(), key->getOp()->getAnsLength());
+  } else {
+    ANS.setInvalid();
+  }
+  return ANS;
+}
 
 // **********************************************************************
 
@@ -980,7 +826,14 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const en
 template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_template<MONOLITHIC, CHAINED>::updateEntry(entry_key* key, const entry_result &res)
 {
-  throw 7;
+  int* entry = findEntry(key);
+  if (entry) {
+    int* key_portion = entry + (CHAINED ? 1 : 0);
+    int* res_portion = key_portion + key->dataLength();
+    memcpy(res_portion, res.rawData(), res.dataLength()*sizeof(node_handle));
+  } else {
+    throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+  }
 }
 
 // **********************************************************************
