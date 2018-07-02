@@ -2307,6 +2307,59 @@ inline unsigned MEDDLY::compute_table::entry_result
 
 // ******************************************************************
 
+inline const char* MEDDLY::compute_table::entry_type
+::getName() const
+{
+  return name;
+}
+
+inline bool MEDDLY::compute_table::entry_type::isRepeating() const
+{
+  return len_kr_type;
+}
+
+inline unsigned MEDDLY::compute_table::entry_type
+::getKeySize(unsigned reps) const
+{
+  return len_ks_type + (reps * len_kr_type);
+}
+
+inline void MEDDLY::compute_table::entry_type
+::getKeyType(unsigned i, char &t, forest* &f) const
+{
+  if (i<len_ks_type) {
+    MEDDLY_DCASSERT(ks_type);
+    MEDDLY_DCASSERT(ks_forest);
+    t = ks_type[i];
+    f = ks_forest[i];
+    return;
+  }
+  i -= len_ks_type;
+  i %= len_kr_type;
+  MEDDLY_DCASSERT(kr_type);
+  MEDDLY_DCASSERT(kr_forest);
+  t = kr_type[i];
+  f = kr_forest[i];
+}
+
+inline unsigned MEDDLY::compute_table::entry_type
+::getResultSize() const
+{
+  return len_r_type;
+}
+
+inline void MEDDLY::compute_table::entry_type
+::getResultType(unsigned i, char &t, forest* &f) const
+{
+  MEDDLY_CHECK_RANGE(0, i, len_r_type);
+  MEDDLY_DCASSERT(r_type);
+  MEDDLY_DCASSERT(r_forest);
+  t = r_type[i];
+  f = r_forest[i];
+}
+
+// ******************************************************************
+
 // convenience methods, for grabbing edge values
 inline void
 MEDDLY::compute_table::readEV(const MEDDLY::node_handle* p, int &ev)

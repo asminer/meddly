@@ -3874,6 +3874,128 @@ class MEDDLY::compute_table {
       // ******************************************************************
       //
 
+      /**
+        Type information about entries.
+        Usually there is one type of entry for each operation,
+        but there could be more than one type.
+
+        These are built by operations and then registered
+        with the compute table.
+      */
+      class entry_type {
+        public:
+          /**
+            Constructor.
+              @param  name    Name of the entry type; used only for displaying
+                              CT entries (usually while debugging).
+
+              @param  pattern Pattern for an entry.  The following characters
+                              are supported in this string:
+                                'N': node (in a forest)
+                                'I': int 
+                                'L': long 
+                                'B': bigint (if gmp support enabled)
+                                'F': float
+                                'D': double
+                                'P': generic pointer
+                                ':': separates key portion from result portion;
+                                     must appear exactly once
+                                '.': for repeating entries; can appear at most once.
+                                     Everything between '.' and ':' can repeat
+                                     zero or more times.
+
+              @throws INVALID_ARGUMENT if pattern is illegal
+          */
+          entry_type(const char* name, const char* pattern);
+          ~entry_type();
+
+          /**
+            Set the forest for 'N' items in the pattern.
+              @param  i   Slot.  Character i in the pattern must be 'N'.
+              @param  f   Forest.
+          */
+          void setForestForSlot(unsigned i, forest* f);
+          
+          //
+          // The remaining interface is for use by the compute table.
+          // All these should be inlined for speed (see meddly_expert.hh)
+          //
+
+          const char* getName() const;
+
+          /**
+              Does this entry type allow repetitions in the key?
+              I.e., was there a '.' in the pattern?
+          */
+          bool isRepeating() const;
+
+          /**
+              Get the number of items in the key.
+                @param  reps  Number of repetitions.
+                              If this is not a repeating type,
+                              then this is ignored.
+
+                @return Total number of slots in the key.
+          */
+          unsigned getKeySize(unsigned reps) const;
+
+          /**
+              Get the type for item i in the key.
+              Automatically handles repetitions.
+                @param  i   Slot number, between 0 and getKeySize().   
+
+                @param  t   On output, the type for item i.
+                @param  f   If t is 'N', the forest for item i.
+                            Otherwise, undefined.
+          */
+          void getKeyType(unsigned i, char &t, forest* &f) const;
+
+
+          /**
+              Get the number of items in the result
+          */
+          unsigned getResultSize() const;
+
+          /**
+              Get the type for item i in the result.
+                @param  i   Slot number, between 0 and getResultSize().
+
+                @param  t   On output, the type for item i.
+                @param  f   If t is 'N', the forest for item i.
+                            Otherwise, undefined.
+          */
+          void getResultType(unsigned i, char &t, forest* &f) const;
+
+
+        private:
+          const char* name;
+
+          /// Starting portion of key pattern.
+          char* ks_type;
+          /// Forests in starting portion of key.
+          forest** ks_forest;
+          /// Length of ks_type and ks_forest arrays.
+          unsigned len_ks_type;
+          /// Repeating portion of key pattern (or null for no repeats).
+          char* kr_type;
+          /// Forests in repeating portion of key (or null).
+          forest** kr_forest;
+          /// Length of kr_type and kr_forest arrays (zero if no repeats).
+          unsigned len_kr_type;
+
+          /// Result pattern
+          char* r_type;
+          /// Forests in result
+          forest** r_forest;
+          /// Length of r_type and r_forest arrays.
+          unsigned len_r_type;
+
+      };
+
+      //
+      // ******************************************************************
+      //
+
       // convenience methods, for grabbing edge values
       static void readEV(const node_handle* p, int &ev);
       static void readEV(const node_handle* p, long &ev);

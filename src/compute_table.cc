@@ -22,6 +22,8 @@
 
 #include "storage/ct_classic.h"
 
+#define DEBUG_ENTRY_TYPE
+
 // **********************************************************************
 // *                                                                    *
 // *                         ct_object  methods                         *
@@ -253,5 +255,168 @@ MEDDLY::compute_table::entry_result::entry_result(unsigned slots)
 MEDDLY::compute_table::entry_result::~entry_result()
 {
   delete[] build;
+}
+
+// **********************************************************************
+
+MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pattern)
+{
+  name = _name;
+
+  bool saw_dot = false;
+  bool saw_colon = false;
+
+  unsigned dot_slot = 0;
+  unsigned colon_slot = 0;
+
+  //
+  // First scan: find '.' and ':'
+  //
+
+  unsigned length;
+  for (length=0; name[length]; length++) {
+    if ('.' == name[length]) {
+      if (saw_dot || saw_colon) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+      saw_dot = true;
+      dot_slot = length;
+      continue;
+    }
+    if (':' == name[length]) {
+      if (saw_colon) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+      saw_colon = true;
+      colon_slot = length;
+      continue;
+    }
+  }
+
+  //
+  // Determine lengths for each portion
+  //
+
+  if (!saw_colon) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+
+  if (saw_dot) {
+    // "012.456:89"
+    len_ks_type = dot_slot; 
+    MEDDLY_DCASSERT(colon_slot > dot_slot);
+    len_kr_type = (colon_slot - dot_slot) - 1;
+  } else {
+    // "01234:67"
+    len_ks_type = colon_slot;
+    len_kr_type = 0;
+  }
+  len_r_type = (length - colon_slot) - 1;
+
+  if (
+    (saw_dot && 0==len_kr_type)             // "foo.:bar" is bad
+    ||
+    (len_ks_type + len_kr_type == 0)        // no key?
+    || 
+    (len_r_type == 0)                       // no result?
+  ) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);   
+
+  //
+  // Build starting portion of key
+  //
+  if (len_ks_type) {
+    ks_type = new char[len_ks_type];
+    ks_forest = new forest*[len_ks_type];
+    for (unsigned i=0; i<len_ks_type; i++) {
+      ks_type[i] = name[i];
+      ks_forest[i] = 0;
+    }
+  } else {
+    // This is possible if the pattern begins with .
+    ks_type = 0;
+    ks_forest = 0;
+  }
+
+  //
+  // Build repeating portion of key
+  //
+  if (len_kr_type) {
+    kr_type = new char[len_kr_type];
+    kr_forest = new forest*[len_kr_type];
+    for (unsigned i=0; i<len_kr_type; i++) {
+      kr_type[i] = name[i + dot_slot + 1];
+      kr_forest[i] = 0;
+    }
+  } else {
+    kr_type = 0;
+    kr_forest = 0;
+  }
+
+  //
+  // Build result
+  //
+  MEDDLY_DCASSERT(len_r_type);
+  r_type = new char[len_r_type];
+  r_forest = new forest*[len_r_type];
+  for (unsigned i=0; i<len_r_type; i++) {
+    r_type[i] = name[i + colon_slot + 1];
+    r_forest[i] = 0;
+  }
+
+#ifdef DEBUG_ENTRY_TYPE
+  printf("Built entry type %s with pattern %s:\n", name, pattern);
+  printf("Key start: \"");
+  for (unsigned i=0; i<len_ks_type; i++) {
+    fputc(ks_type[i], stdout);
+  }
+  printf("\"\n");
+  printf("Key repeat: \"");
+  for (unsigned i=0; i<len_kr_type; i++) {
+    fputc(kr_type[i], stdout);
+  }
+  printf("\"\n");
+  printf("Result: \"");
+  for (unsigned i=0; i<len_r_type; i++) {
+    fputc(r_type[i], stdout);
+  }
+  printf("\"\n");
+#endif
+}
+
+MEDDLY::compute_table::entry_type::~entry_type()
+{
+  delete[] ks_type;
+  delete[] ks_forest;
+  delete[] kr_type;
+  delete[] kr_forest;
+  delete[] r_type;
+  delete[] r_forest;
+}
+
+void MEDDLY::compute_table::entry_type::setForestForSlot(unsigned i, forest* f)
+{
+  if (i<len_ks_type) {
+    if ('N' != ks_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+    ks_forest[i] = f;
+    return;
+  }
+  i -= len_ks_type;
+
+  if (len_kr_type) {
+    // adjust for the .
+    i--;
+    if (i<len_kr_type) {
+      if ('N' != kr_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+      kr_forest[i] = f;
+      return;
+    }
+  }
+  
+  i -= len_kr_type;
+  // adjust for :
+  i--;
+
+  if (i < len_r_type) {
+    if ('N' != r_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+    r_forest[i] = f;
+    return;
+  }
+
+  // i is too large
+  throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
 }
 
