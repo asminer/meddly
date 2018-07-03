@@ -217,6 +217,92 @@ MEDDLY::compute_table::~compute_table()
 {
 }
 
+#ifndef OLD_OP_CT
+
+void compute_table::initialize()
+{
+  //
+  // Initialize entryInfo list
+  //
+  entryInfo = 0;
+  entryInfoAlloc = 0;
+  entryInfoSize = 0;
+  // zero that array?
+}
+
+void compute_table::destroy()
+{
+  // delete the items?  TBD
+  delete[] entryInfo;
+}
+
+void compute_table::registerOp(operation* op, unsigned num_ids)
+{
+  if (0==op) return;
+  if (0==num_ids) return;
+
+  if (1==num_ids) {
+    //
+    // Most common case, and easiest to find a hole.
+    //
+    for (unsigned i=0; i<entryInfoSize; i++) {
+      if (0==entryInfo[i]) {
+        op->setFirstETid(i);
+        return;
+      }
+    } // for i
+  } // if 1==num_ids
+
+  //
+  // No holes, or we want more than one slot so we didn't bother looking for holes.
+  // Grab slots off the end
+  //
+  op->setFirstETid(entryInfoSize);
+  entryInfoSize += num_ids;
+
+  if (entryInfoSize > entryInfoAlloc) {
+    //
+    // Need to enlarge
+    //
+    entry_type** net = new entry_type* [entryInfoAlloc+256];
+    unsigned i;
+    for (i=0; i<entryInfoAlloc; i++) {
+      net[i] = entryInfo[i];
+    }
+    entryInfoAlloc += 256;
+    for (; i<entryInfoAlloc; i++) {
+      net[i] = 0;
+    }
+    delete[] entryInfo;
+    entryInfo = net;
+  }
+}
+
+void compute_table::registerEventType(unsigned etid, entry_type* et)
+{
+  MEDDLY_CHECK_RANGE(0, etid, entryInfoSize);
+  MEDDLY_DCASSERT(0==entryInfo[etid]);
+  entryInfo[etid] = et;
+}
+
+void compute_table::unregisterOp(operation* op, unsigned num_ids)
+{
+  if (0==op) return;
+  if (0==num_ids) return;
+  MEDDLY_CHECK_RANGE(0, op->getFirstETid(), entryInfoSize);
+  unsigned stopID = op->getFirstETid()+num_ids;
+  for (unsigned i=op->getFirstETid(); i<stopID; i++) {
+    delete entryInfo[i];
+    entryInfo[i] = 0;
+  }
+  //
+  // decrement entryInfoSize if array ends in zeroes
+  //
+  while (entryInfoSize && (0==entryInfo[entryInfoSize-1])) entryInfoSize--;
+}
+
+#endif
+
 // **********************************************************************
 
 MEDDLY::compute_table::entry_key::entry_key(operation* _op, 

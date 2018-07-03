@@ -42,6 +42,10 @@
 #include <cstdint>
 #include <map>
 
+#define PUBLIC_OP_INDEXES
+
+#define OLD_OP_CT
+
 namespace MEDDLY {
 
   // classes defined here
@@ -3687,7 +3691,11 @@ class MEDDLY::ct_initializer : public initializer_list {
     static void setUserStyle(const compute_table_style*);
 
     // for convenience
+#ifdef OLD_OP_CT
     static compute_table* createForOp(operation* op);
+#else
+    static compute_table* createForOp(operation* op, unsigned slot);
+#endif
 
   private:
     static settings the_settings;
@@ -4054,8 +4062,33 @@ class MEDDLY::compute_table {
       /// For debugging.
       virtual void show(output &s, int verbLevel = 0) = 0;
 
+#ifndef OLD_OP_CT
+      static void initialize();
+      static void destroy();
+
+      /** Register an operation.
+          Sets aside a number of entry_type slots for the operation.
+      */
+      static void registerOp(operation* op, unsigned num_ids);
+
+      /// Register an entry_type.
+      static void registerEventType(unsigned etid, entry_type* et);
+
+      /** Unregister an operation.
+          Frees the entry_type slots for the operation.
+      */
+      static void unregisterOp(operation* op, unsigned num_ids);
+#endif
+
     protected:
       stats perf;
+
+#ifndef OLD_OP_CT
+    private:
+      static entry_type** entryInfo;
+      static unsigned entryInfoAlloc;
+      static unsigned entryInfoSize;
+#endif
 };
 
 // ******************************************************************
@@ -4072,8 +4105,10 @@ class MEDDLY::operation {
     const opname* theOpName;
     bool is_marked_for_deletion;
     int oplist_index;
-    int key_length;
+#ifdef OLD_OP_CT
+    int key_length;   
     int ans_length;
+#endif
     /// List of free search_keys
     compute_table::entry_key* CT_free_keys;
 
@@ -4093,20 +4128,42 @@ class MEDDLY::operation {
     // should ONLY be called during library cleanup.
     static void destroyAllOps();
 
+#ifndef OLD_OP_CT
+    /**
+      Starting slot for entry_types, assigned
+      by compute_table.
+    */
+    unsigned first_etid;
+
+    /**
+      Number of entry_types needed by this operation.
+    */
+    unsigned num_etids;
+#endif
+
   protected:
     /// Compute table to use, if any.
+#ifdef OLD_OP_CT
     compute_table* CT;
+#else
+    compute_table** CT;
+#endif
     /// Struct for CT searches.
     // compute_table::entry_key* CTsrch;
     // for cache of operations.
     operation* next;
+
+#ifdef OLD_OP_CT
     // must stale compute table hits be discarded.
     // if the result forest is using pessimistic deletion, then true.
     // otherwise, false.  MUST BE SET BY DERIVED CLASSES.
     bool discardStaleHits;
+#endif
 
     virtual ~operation();
+#ifdef OLD_OP_CT
     void setAnswerForest(const expert_forest* f);
+#endif
     void markForDeletion();
     void registerInForest(forest* f);
     void unregisterInForest(forest* f);
@@ -4123,6 +4180,11 @@ class MEDDLY::operation {
 
     virtual bool checkForestCompatibility() const = 0;
 
+#ifndef OLD_OP_CT
+    void registerEventType(unsigned slot, compute_table::entry_type* et);
+    void buildCTs();
+#endif
+
     friend class forest;
     friend void MEDDLY::destroyOpInternal(operation* op);
     friend void MEDDLY::cleanup();
@@ -4130,6 +4192,7 @@ class MEDDLY::operation {
     friend class ct_initializer;
 
   public:
+#ifdef OLD_OP_CT
     /// New constructor.
     /// @param  n   Operation "name"
     /// @param  kl  Key length of compute table entries.
@@ -4137,6 +4200,17 @@ class MEDDLY::operation {
     /// @param  al  Answer length of compute table entries.
     ///             Use 0 if this operation does not use the compute table.
     operation(const opname* n, int kl, int al);
+#else
+    /**
+        Constructor.
+          @param  n         Operation "name"
+          @param  et_slots  Number of different compute table entry types
+                            used by this operation.
+                            Derived class constructors must register
+                            exactly this many entry types.
+    */
+    operation(const opname* n, unsigned et_slots);
+#endif
 
     bool isMarkedForDeletion() const;
     void setNext(operation* n);
@@ -4154,9 +4228,15 @@ class MEDDLY::operation {
 
     // for compute tables.
 
+#ifdef PUBLIC_OP_INDEXES
     int getIndex() const;
     static operation* getOpWithIndex(int i);
     static int getOpListSize();
+#endif
+#ifndef OLD_OP_CT
+    void setFirstETid(unsigned slot);
+    unsigned getFirstETid() const;
+#endif
 
     // for debugging:
 
@@ -4168,6 +4248,7 @@ class MEDDLY::operation {
     const char* getName() const;
     const opname* getOpName() const;
 
+#ifdef OLD_OP_CT
     /// Number of ints that make up the key (usually the operands).
     int getKeyLength() const;
 
@@ -4176,6 +4257,7 @@ class MEDDLY::operation {
 
     /// Number of ints that make up the entire record (key + answer)
     int getCacheEntryLength() const;
+#endif
 
 #ifndef USE_NODE_STATUS
     /// Checks if the cache entry (in entryData[]) is stale.
@@ -4195,7 +4277,9 @@ class MEDDLY::operation {
     /// Prints a string representation of this cache entry on strm (stream).
     virtual void showEntry(output &strm, const node_handle *entryData) const = 0;
 
+#ifdef OLD_OP_CT
     bool shouldStaleCacheHitsBeDiscarded() const;
+#endif
 };
 
 // ******************************************************************

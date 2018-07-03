@@ -1937,6 +1937,8 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
 // *                       operation  methods                       *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
+
 MEDDLY::operation::operation(const opname* n, int kl, int al)
 {
 #ifdef DEBUG_CLEANUP
@@ -1998,6 +2000,71 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
   CT_free_keys = 0;
 }
 
+#else   // OLD_OP_CT
+
+MEDDLY::operation::operation(const opname* n, unsigned et_slots)
+{
+#ifdef DEBUG_CLEANUP
+  fprintf(stdout, "Creating operation %p\n", this);
+  fflush(stdout);
+#endif
+  theOpName = n;
+  num_etids = et_slots;
+
+  is_marked_for_deletion = false;
+  next = 0;
+
+  // 
+  // assign an index to this operation
+  //
+  if (free_list>=0) {
+    oplist_index = free_list;
+    free_list = op_holes[free_list];
+  } else {
+    if (list_size >= list_alloc) {
+      int nla = list_alloc + 256;
+      op_list = (operation**) realloc(op_list, nla * sizeof(void*));
+      op_holes = (int*) realloc(op_holes, nla * sizeof(int));
+      if (0==op_list || 0==op_holes) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+      for (int i=list_size; i<list_alloc; i++) {
+        op_list[i] = 0;
+        op_holes[i] = -1;
+      }
+      list_alloc = nla;
+    }
+    oplist_index = list_size;
+    list_size++;
+  }
+  op_list[oplist_index] = this;
+
+  //
+  // Delay CT initialization!
+  // The derived class hasn't set up the entry types yet!
+  //
+  CT = 0;
+  CT_free_keys = 0;
+}
+
+void MEDDLY::operation::buildCTs()
+{
+  if (0==num_etids) return;
+
+  CT = new compute_table* [num_etids];
+
+  if (Monolithic_CT) {
+    for (unsigned i=0; i<num_etids; i++) {
+      CT[i] = Monolithic_CT;
+    }
+  } else {
+    for (unsigned i=0; i<num_etids; i++) {
+      CT[i] = ct_initializer::createForOp(this, i);
+    }
+  }
+}
+
+#endif  // OLD_OP_CT
+
+
 MEDDLY::operation::~operation()
 {
 #ifdef DEBUG_CLEANUP
@@ -2011,9 +2078,18 @@ MEDDLY::operation::~operation()
     CT_free_keys = next;
   }
 
-  // delete CTsrch;
+#ifdef OLD_OP_CT
   if (CT && (CT!=Monolithic_CT)) delete CT;
-  // delete next;  // Seriously, WTF?
+#else
+  if (CT) {
+    for (unsigned i=0; i<num_etids; i++) {
+      if (CT[i] != Monolithic_CT)
+        delete CT[i];
+    }
+    delete[] CT;
+  }
+#endif
+
   if (oplist_index >= 0) {
     MEDDLY_DCASSERT(op_list[oplist_index] == this);
     op_list[oplist_index] = 0;

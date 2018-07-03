@@ -23,6 +23,9 @@ layout: single
    has been removed.  A compute table entry is now added by giving
    the key portion and the result portion.
 
+  * New class, ```compute_table::entry_type```
+    with type information for compute table entries.
+
 ### Implementation
 
  * Streamlined compute table implemenation using templates.

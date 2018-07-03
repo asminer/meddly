@@ -2393,12 +2393,14 @@ MEDDLY::compute_table::getStats()
 // ******************************************************************
 
 
+#ifdef OLD_OP_CT
 inline void
 MEDDLY::operation::setAnswerForest(const MEDDLY::expert_forest* f)
 {
   discardStaleHits = f ? f->getNodeDeletion()
       == MEDDLY::forest::policies::PESSIMISTIC_DELETION : false; // shouldn't be possible, so we'll do what's fastest.
 }
+#endif
 
 inline void
 MEDDLY::operation::registerInForest(MEDDLY::forest* f)
@@ -2429,6 +2431,15 @@ MEDDLY::operation::useCTkey()
   return ans;
 }
 
+#ifndef OLD_OP_CT
+inline void
+MEDDLY::operation::registerEventType(unsigned slot, compute_table::entry_type* et)
+{
+  MEDDLY_CHECK_RANGE(0, slot, num_etids);
+  compute_table::registerEventType(first_etid + slot, et);
+}
+#endif
+
 inline bool
 MEDDLY::operation::isMarkedForDeletion() const
 {
@@ -2453,6 +2464,7 @@ MEDDLY::operation::usesMonolithicComputeTable()
   return Monolithic_CT;
 }
 
+#ifdef PUBLIC_OP_INDEXES
 inline int
 MEDDLY::operation::getIndex() const
 {
@@ -2470,6 +2482,21 @@ MEDDLY::operation::getOpListSize()
 {
   return list_size;
 }
+#endif
+
+#ifndef OLD_OP_CT
+inline void
+MEDDLY::operation::setFirstETid(unsigned slot)
+{
+  first_etid = slot;
+}
+
+inline unsigned
+MEDDLY::operation::getFirstETid() const
+{
+  return first_etid;
+}
+#endif
 
 inline const char*
 MEDDLY::operation::getName() const
@@ -2483,6 +2510,7 @@ MEDDLY::operation::getOpName() const
   return theOpName;
 }
 
+#ifdef OLD_OP_CT
 inline int
 MEDDLY::operation::getKeyLength() const
 {
@@ -2500,6 +2528,7 @@ MEDDLY::operation::getCacheEntryLength() const
 {
   return key_length + ans_length;
 }
+#endif
 
 #ifndef USE_NODE_STATUS
 inline bool
@@ -2526,12 +2555,13 @@ MEDDLY::operation::doneCTkey(compute_table::entry_key* K)
   CT_free_keys = K;
 }
 
+#ifdef OLD_OP_CT
 inline bool
 MEDDLY::operation::shouldStaleCacheHitsBeDiscarded() const
 {
   return discardStaleHits;
 }
-
+#endif
 
 // ******************************************************************
 // *                                                                *
