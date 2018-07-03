@@ -3793,21 +3793,20 @@ class MEDDLY::compute_table {
           operation* getOp() const;
 
           // interface, for operations.  All inlined in meddly_expert.hh
-          // void reset();
           void writeNH(node_handle nh);
           void write(int i);
           void write(long i);
           void write(float f);
 
-        public: // for now; eventually protect and compute_table is a friend
+        public: 
           // interface, for compute_table.  All inlined in meddly_expert.hh
-
-          /// 
           const node_handle* rawData(bool includeOp) const;
           int dataLength(bool includeOp) const;
-          // void setExtra(unsigned i, node_handle d);
-          void setHash(unsigned h);
           unsigned getHash() const;
+
+        protected:
+          // protected interface, for compute_table.  All inlined in meddly_expert.hh
+          void setHash(unsigned h);
 
         private:
           operation* op;
@@ -3816,7 +3815,7 @@ class MEDDLY::compute_table {
           node_handle* data;
           unsigned data_alloc;
 
-          int currslot;
+          unsigned currslot;
 #ifdef DEVELOPMENT_CODE
           bool has_hash;
 #endif
@@ -4094,6 +4093,9 @@ class MEDDLY::compute_table {
 #endif
 
     protected:
+      void setHash(entry_key *k, unsigned h);
+
+    protected:
       stats perf;
 
 #ifndef OLD_OP_CT
@@ -4125,8 +4127,6 @@ class MEDDLY::operation {
     int key_length;   
     int ans_length;
 #endif
-    /// List of free search_keys
-    // compute_table::entry_key* CT_free_keys;
 
     // declared and initialized in meddly.cc
     static compute_table* Monolithic_CT;

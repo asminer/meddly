@@ -1986,18 +1986,10 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
     } else {
       CT = ct_initializer::createForOp(this);
     }
-
-    //
-    // Initialize CT search structure
-    //
-    // CTsrch = CT->initializeSearchKey(this);
-
   } else {
     MEDDLY_DCASSERT(0==ans_length);
     CT = 0;
-    // CTsrch = 0;
   }
-  // CT_free_keys = 0;
 }
 
 #else   // OLD_OP_CT
@@ -2070,14 +2062,6 @@ MEDDLY::operation::~operation()
   fprintf(stdout, "Deleting operation %p %s\n", this, getName());
   fflush(stdout);
 #endif
-
-  /*
-  while (CT_free_keys) {
-    compute_table::entry_key* next = CT_free_keys->next;
-    delete CT_free_keys;
-    CT_free_keys = next;
-  }
-  */
 
 #ifdef OLD_OP_CT
   if (CT && (CT!=Monolithic_CT)) delete CT;

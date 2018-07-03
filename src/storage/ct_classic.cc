@@ -88,7 +88,6 @@ namespace MEDDLY {
       // required functions
 
       virtual bool isOperationTable() const   { return !MONOLITHIC; }
-      // virtual entry_key* initializeSearchKey(operation* op);
       virtual entry_result& find(entry_key* key);
       virtual void addEntry(entry_key* key, const entry_result& res);
       virtual void updateEntry(entry_key* key, const entry_result& res);
@@ -110,12 +109,6 @@ namespace MEDDLY {
       inline unsigned hash(const int* k, int length) const {
         return raw_hash(k, length) % tableSize;
       }
-
-      inline void hash(entry_key* k) const {
-        MEDDLY_DCASSERT(k);
-        k->setHash(raw_hash(k->rawData(MONOLITHIC), k->dataLength(MONOLITHIC)));
-      }
-
 
       /*
           Use our own, built-in, specialized hash
@@ -616,33 +609,13 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
 
 // **********************************************************************
 
-/*
-template <bool MONOLITHIC, bool CHAINED>
-MEDDLY::compute_table::entry_key* MEDDLY::ct_template<MONOLITHIC, CHAINED>
-::initializeSearchKey(operation* op)
-{
-  if (!MONOLITHIC) {
-    if (op != global_op) {
-      throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-    }
-  }
-  entry_key* key = new entry_key(op, MONOLITHIC ? 1 : 0, op->getKeyLength());
-  if (MONOLITHIC) {
-    key->setExtra(0, op->getIndex());
-  }
-  return key;
-}
-*/
-
-// **********************************************************************
-
 template <bool MONOLITHIC, bool CHAINED>
 MEDDLY::compute_table::entry_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
 ::find(entry_key *key)
 {
   static entry_result ANS;
 
-  hash(key);
+  setHash(key, raw_hash(key->rawData(MONOLITHIC), key->dataLength(MONOLITHIC)));
   int* entry = findEntry(key);
   perf.pings++;
 
