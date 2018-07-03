@@ -147,15 +147,14 @@ MEDDLY::mdd2index_operation
   // Check compute table
   compute_table::entry_key* CTsrch = 0;
   if (aLevel == k) {
-    CTsrch = useCTkey();
+    CTsrch = CT->useEntryKey(this);
     MEDDLY_DCASSERT(CTsrch);
-    CTsrch->reset();
     CTsrch->writeNH(a);
     compute_table::entry_result &cacheEntry = CT->find(CTsrch);
     if (cacheEntry) {
       bdn = resF->linkNode(cacheEntry.readNH());
       cacheEntry.read(bcard);
-      doneCTkey(CTsrch);
+      CT->recycle(CTsrch);
       return;
     }
   }

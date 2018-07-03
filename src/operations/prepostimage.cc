@@ -78,15 +78,14 @@ class MEDDLY::image_op : public binary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-      compute_table::entry_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = CT->useEntryKey(this);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->reset();
       CTsrch->writeNH(a);
       CTsrch->writeNH(b);
       compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       c = resF->linkNode(cacheFind.readNH());
-      doneCTkey(CTsrch);
+      CT->recycle(CTsrch);
       return 0;
     }
     inline node_handle saveResult(compute_table::entry_key* Key, 
@@ -536,9 +535,8 @@ class MEDDLY::image_op_evplus : public binary_operation {
     inline compute_table::entry_key*
     findResult(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle &resEvmdd)
     {
-      compute_table::entry_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = CT->useEntryKey(this);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->reset();
       CTsrch->writeNH(evmdd);
       CTsrch->writeNH(mxd);
       compute_table::entry_result &cacheFind = CT->find(CTsrch);
@@ -548,7 +546,7 @@ class MEDDLY::image_op_evplus : public binary_operation {
       if (resEvmdd != 0) {
         resEv += ev;
       }
-      doneCTkey(CTsrch);
+      CT->recycle(CTsrch);
       return 0;
     }
     inline void saveResult(compute_table::entry_key* Key,

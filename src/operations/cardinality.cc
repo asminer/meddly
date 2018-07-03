@@ -154,15 +154,14 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = useCTkey();
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->reset();
   CTsrch->writeNH(a); 
   compute_table::entry_result &cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     long answer;
     cacheEntry.read(answer);
-    doneCTkey(CTsrch);
+    CT->recycle(CTsrch);
     return answer;
   }
 
@@ -227,15 +226,14 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = useCTkey();
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->reset();
   CTsrch->writeNH(a); 
   compute_table::entry_result &cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     long answer;
     cacheEntry.read(answer);
-    doneCTkey(CTsrch);
+    CT->recycle(CTsrch);
     return answer;
   }
 
@@ -356,15 +354,14 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = useCTkey();
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->reset();
   CTsrch->writeNH(a); 
   compute_table::entry_result &cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     double answer;
     cacheEntry.read(answer);
-    doneCTkey(CTsrch);
+    CT->recycle(CTsrch);
     return answer;
   }
 
@@ -430,15 +427,14 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = useCTkey();
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->reset();
   CTsrch->writeNH(a); 
   compute_table::entry_result &cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
     double answer;
     cacheEntry.read(answer);
-    doneCTkey(CTsrch);
+    CT->recycle(CTsrch);
     return answer;
   }
 
@@ -580,9 +576,8 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = useCTkey();
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->reset();
   CTsrch->writeNH(a);
   compute_table::entry_result &cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
@@ -590,7 +585,7 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
     cacheEntry.read(P);
     mpz_object* answer = (mpz_object*) P;
     answer->copyInto(card);
-    doneCTkey(CTsrch);
+    CT->recycle(CTsrch);
     return;
   }
 
@@ -673,9 +668,8 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = useCTkey();
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->reset();
   CTsrch->writeNH(a);
   compute_table::entry_result &cacheEntry = CT->find(CTsrch);
   if (cacheEntry) {
@@ -683,7 +677,7 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
     cacheEntry.read(P);
     mpz_object* answer = (mpz_object*) P;
     answer->copyInto(card);
-    doneCTkey(CTsrch);
+    CT->recycle(CTsrch);
     return;
   }
 

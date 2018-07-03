@@ -88,7 +88,7 @@ namespace MEDDLY {
       // required functions
 
       virtual bool isOperationTable() const   { return !MONOLITHIC; }
-      virtual entry_key* initializeSearchKey(operation* op);
+      // virtual entry_key* initializeSearchKey(operation* op);
       virtual entry_result& find(entry_key* key);
       virtual void addEntry(entry_key* key, const entry_result& res);
       virtual void updateEntry(entry_key* key, const entry_result& res);
@@ -113,7 +113,7 @@ namespace MEDDLY {
 
       inline void hash(entry_key* k) const {
         MEDDLY_DCASSERT(k);
-        k->setHash(raw_hash(k->rawData(), k->dataLength()));
+        k->setHash(raw_hash(k->rawData(MONOLITHIC), k->dataLength(MONOLITHIC)));
       }
 
 
@@ -492,7 +492,7 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
     //
     // Check for match
     //
-    if (equal_sw(entry + (CHAINED?1:0), key->rawData(), key->dataLength())) {
+    if (equal_sw(entry + (CHAINED?1:0), key->rawData(MONOLITHIC), key->dataLength(MONOLITHIC))) {
       if (key->getOp()->shouldStaleCacheHitsBeDiscarded()) {
 #ifndef USE_NODE_STATUS
         const bool stale = key->getOp()->isEntryStale(entry+SHIFT);
@@ -616,6 +616,7 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
 
 // **********************************************************************
 
+/*
 template <bool MONOLITHIC, bool CHAINED>
 MEDDLY::compute_table::entry_key* MEDDLY::ct_template<MONOLITHIC, CHAINED>
 ::initializeSearchKey(operation* op)
@@ -631,6 +632,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::ct_template<MONOLITHIC, CHAINED>
   }
   return key;
 }
+*/
 
 // **********************************************************************
 
@@ -646,7 +648,10 @@ MEDDLY::compute_table::entry_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
 
   if (entry) {
     perf.hits++;
-    ANS.setResult(entry+(CHAINED?1:0)+key->dataLength(), key->getOp()->getAnsLength());
+    ANS.setResult(
+      entry+(CHAINED?1:0)+key->dataLength(MONOLITHIC), 
+      key->getOp()->getAnsLength()
+    );
   } else {
     ANS.setInvalid();
   }
@@ -696,14 +701,14 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const en
   // Copy into the entry
   //
   int* key_portion = entry + (CHAINED ? 1 : 0);
-  memcpy(key_portion, key->rawData(), key->dataLength()*sizeof(node_handle));
-  int* res_portion = key_portion + key->dataLength();
+  memcpy(key_portion, key->rawData(MONOLITHIC), key->dataLength(MONOLITHIC)*sizeof(node_handle));
+  int* res_portion = key_portion + key->dataLength(MONOLITHIC);
   memcpy(res_portion, res.rawData(), res.dataLength()*sizeof(node_handle));
 
   //
   // Recycle key
   //
-  op->doneCTkey(key);
+  recycle(key);
 
 
   //
@@ -829,7 +834,7 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::updateEntry(entry_key* key, const
   int* entry = findEntry(key);
   if (entry) {
     int* key_portion = entry + (CHAINED ? 1 : 0);
-    int* res_portion = key_portion + key->dataLength();
+    int* res_portion = key_portion + key->dataLength(MONOLITHIC);
     memcpy(res_portion, res.rawData(), res.dataLength()*sizeof(node_handle));
   } else {
     throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);

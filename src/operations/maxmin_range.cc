@@ -62,14 +62,13 @@ class MEDDLY::range_int : public unary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, int &b) 
     {
-      compute_table::entry_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = CT->useEntryKey(this);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->reset();
       CTsrch->writeNH(a);
       compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       cacheFind.read(b);
-      doneCTkey(CTsrch);
+      CT->recycle(CTsrch);
       return 0;
     }
     inline long saveResult(compute_table::entry_key* Key, 
@@ -143,14 +142,13 @@ class MEDDLY::range_real : public unary_operation {
 
   protected:
     inline compute_table::entry_key* findResult(node_handle a, float &b) {
-      compute_table::entry_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = CT->useEntryKey(this);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->reset();
       CTsrch->writeNH(a);
       compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       cacheFind.read(b);
-      doneCTkey(CTsrch);
+      CT->recycle(CTsrch);
       return 0;
     }
     inline float saveResult(compute_table::entry_key* Key, 

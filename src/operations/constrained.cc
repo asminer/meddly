@@ -266,9 +266,8 @@ MEDDLY::constrained_dfs_mt::constrained_dfs_mt(const constrained_opname* code,
 MEDDLY::compute_table::entry_key* MEDDLY::constrained_dfs_mt::findResult(
     node_handle a, node_handle b, node_handle r, node_handle &c)
 {
-  compute_table::entry_key* key = useCTkey();
+  compute_table::entry_key* key = CT->useEntryKey(this);
   MEDDLY_DCASSERT(key);
-  key->reset();
   key->writeNH(a);
   key->writeNH(b);
   key->writeNH(r);
@@ -280,7 +279,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_dfs_mt::findResult(
 
   c = resF->linkNode(cacheFind.readNH());
 
-  doneCTkey(key);
+  CT->recycle(key);
   return 0;
 }
 
@@ -986,9 +985,8 @@ bool MEDDLY::constrained_saturation_mt::checkTerminals(node_handle a, node_handl
 MEDDLY::compute_table::entry_key* MEDDLY::constrained_saturation_mt::findResult(
     node_handle a, node_handle b, int level, node_handle &c)
 {
-  compute_table::entry_key* key = useCTkey();
+  compute_table::entry_key* key = CT->useEntryKey(this);
   MEDDLY_DCASSERT(key);
-  key->reset();
   key->writeNH(a);
   key->writeNH(b);
   if(argF->isFullyReduced()) {
@@ -1000,7 +998,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_saturation_mt::findResult(
   if (!cacheFind) return key;
   c = resF->linkNode(cacheFind.readNH());
 
-  doneCTkey(key);
+  CT->recycle(key);
   return 0;
 }
 
@@ -1125,9 +1123,8 @@ MEDDLY::constrained_bckwd_dfs_evplus::constrained_bckwd_dfs_evplus(const constra
 MEDDLY::compute_table::entry_key* MEDDLY::constrained_bckwd_dfs_evplus::findResult(long aev, node_handle a,
     long bev, node_handle b, node_handle r, long& cev, node_handle &c)
 {
-  compute_table::entry_key* key = useCTkey();
+  compute_table::entry_key* key = CT->useEntryKey(this);
   MEDDLY_DCASSERT(key);
-  key->reset();
   key->write(aev);
   key->writeNH(a);
   key->writeNH(b);
@@ -1147,7 +1144,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_bckwd_dfs_evplus::findResu
     MEDDLY_DCASSERT(cev == 0);
   }
 
-  doneCTkey(key);
+  CT->recycle(key);
   return 0;
 }
 
@@ -1641,9 +1638,8 @@ bool MEDDLY::constrained_saturation_evplus::checkTerminals(int aev, node_handle 
 MEDDLY::compute_table::entry_key* MEDDLY::constrained_saturation_evplus::findResult(long aev, node_handle a,
     long bev, node_handle b, int level, long& cev, node_handle &c)
 {
-  compute_table::entry_key* key = useCTkey();
+  compute_table::entry_key* key = CT->useEntryKey(this);
   MEDDLY_DCASSERT(key);
-  key->reset();
   key->write(aev);
   key->writeNH(a);
 //  key->write(bev);
@@ -1664,7 +1660,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_saturation_evplus::findRes
     MEDDLY_DCASSERT(cev == 0);
   }
 
-  doneCTkey(key);
+  CT->recycle(key);
   return 0;
 }
 

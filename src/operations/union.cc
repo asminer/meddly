@@ -303,9 +303,8 @@ MEDDLY::union_min_evplus::union_min_evplus(const binary_opname* opcode,
 MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus::findResult(long aev, node_handle a,
   long bev, node_handle b, long& cev, node_handle &c)
 {
-  compute_table::entry_key* CTsrch = useCTkey();
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->reset();
   if (can_commute && a > b) {
     CTsrch->write(0L);
     CTsrch->writeNH(b);
@@ -325,7 +324,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus::findResult(long aev,
   if (c != 0) {
     cev = MIN(aev, bev);
   }
-  doneCTkey(CTsrch);
+  CT->recycle(CTsrch);
   return 0;
 }
 
@@ -434,9 +433,8 @@ MEDDLY::union_min_evplus_mxd::union_min_evplus_mxd(const binary_opname* opcode,
 MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus_mxd::findResult(long aev, node_handle a,
   long bev, node_handle b, long& cev, node_handle &c)
 {
-  compute_table::entry_key* CTsrch = useCTkey();
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->reset();
   if (can_commute && a > b) {
     CTsrch->write(0L);
     CTsrch->writeNH(b);
@@ -456,7 +454,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus_mxd::findResult(long 
   if (c != 0) {
     cev = MIN(aev, bev);
   }
-  doneCTkey(CTsrch);
+  CT->recycle(CTsrch);
   return 0;
 }
 

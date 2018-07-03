@@ -80,12 +80,16 @@ void MEDDLY::ct_initializer::setup()
   if (ct_factory->usesMonolithic()) {
     operation::Monolithic_CT = ct_factory->create(the_settings);
   }
+
+  compute_table::initialize();
 }
 
 void MEDDLY::ct_initializer::cleanup()
 {
   delete operation::Monolithic_CT;
   operation::Monolithic_CT = 0;
+
+  compute_table::destroy();
 }
 
 void MEDDLY::ct_initializer::setStaleRemoval(staleRemovalOption sro)
@@ -183,6 +187,13 @@ MEDDLY::compute_table_style::create(const ct_initializer::settings &s,
 // *                                                                    *
 // **********************************************************************
 
+#ifndef OLD_OP_CT
+MEDDLY::compute_table::entry_type** MEDDLY::compute_table::entryInfo;
+unsigned MEDDLY::compute_table::entryInfoAlloc;
+unsigned MEDDLY::compute_table::entryInfoSize;
+#endif
+MEDDLY::compute_table::entry_key* MEDDLY::compute_table::free_keys;
+
 MEDDLY::compute_table::compute_table(const ct_initializer::settings &s)
 {
   maxSize = s.maxSize;
@@ -217,10 +228,10 @@ MEDDLY::compute_table::~compute_table()
 {
 }
 
-#ifndef OLD_OP_CT
-
-void compute_table::initialize()
+void MEDDLY::compute_table::initialize()
 {
+  free_keys = 0;
+#ifndef OLD_OP_CT
   //
   // Initialize entryInfo list
   //
@@ -228,15 +239,25 @@ void compute_table::initialize()
   entryInfoAlloc = 0;
   entryInfoSize = 0;
   // zero that array?
+#endif
 }
 
-void compute_table::destroy()
+void MEDDLY::compute_table::destroy()
 {
+  while (free_keys) {
+    entry_key* n = free_keys->next;
+    delete free_keys;
+    free_keys = n;
+  }
+#ifndef OLD_OP_CT
   // delete the items?  TBD
   delete[] entryInfo;
+#endif
 }
 
-void compute_table::registerOp(operation* op, unsigned num_ids)
+#ifndef OLD_OP_CT
+
+void MEDDLY::compute_table::registerOp(operation* op, unsigned num_ids)
 {
   if (0==op) return;
   if (0==num_ids) return;
@@ -278,14 +299,14 @@ void compute_table::registerOp(operation* op, unsigned num_ids)
   }
 }
 
-void compute_table::registerEventType(unsigned etid, entry_type* et)
+void MEDDLY::compute_table::registerEventType(unsigned etid, entry_type* et)
 {
   MEDDLY_CHECK_RANGE(0, etid, entryInfoSize);
   MEDDLY_DCASSERT(0==entryInfo[etid]);
   entryInfo[etid] = et;
 }
 
-void compute_table::unregisterOp(operation* op, unsigned num_ids)
+void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
 {
   if (0==op) return;
   if (0==num_ids) return;
@@ -305,21 +326,17 @@ void compute_table::unregisterOp(operation* op, unsigned num_ids)
 
 // **********************************************************************
 
-MEDDLY::compute_table::entry_key::entry_key(operation* _op, 
-  unsigned extra, unsigned keysz)
+MEDDLY::compute_table::entry_key::entry_key()
 {
-  op = _op;
-  data = new int[extra + keysz];
-  key_data = data + extra;
-#ifdef DEVELOPMENT_CODE
-  extraLength = extra;
-  keyLength = keysz;
-#endif
+  op = 0;
+  data_alloc = 8;
+  data = (int*) malloc(data_alloc * sizeof(int));
+  // malloc: because realloc later
 }
 
 MEDDLY::compute_table::entry_key::~entry_key()
 {
-  delete[] data;
+  free(data);
 }
 
 // **********************************************************************

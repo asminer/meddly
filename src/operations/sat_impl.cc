@@ -102,19 +102,18 @@ public:
 protected:
   inline compute_table::entry_key*
   findSaturateResult(node_handle a, int level, node_handle& b) {
-    compute_table::entry_key* CTsrch = useCTkey();
+    compute_table::entry_key* CTsrch = CT->useEntryKey(this);
     MEDDLY_DCASSERT(CTsrch);
-    CTsrch->reset();
     CTsrch->writeNH(a);
     if (argF->isFullyReduced()) CTsrch->write(level);
     compute_table::entry_result &cacheFind = CT->find(CTsrch);
     if (!cacheFind) return CTsrch;
     b = resF->linkNode(cacheFind.readNH());
-    doneCTkey(CTsrch);
+    CT->recycle(CTsrch);
     return 0;
   }
   inline void recycleCTKey(compute_table::entry_key* CTsrch) {
-    doneCTkey(CTsrch);
+    CT->recycle(CTsrch);
   }
   inline node_handle saveSaturateResult(compute_table::entry_key* Key,
                                         node_handle a, node_handle b)
@@ -158,19 +157,18 @@ protected:
   inline compute_table::entry_key*
   findResult(node_handle a, rel_node_handle b, node_handle &c)
   {
-  compute_table::entry_key* CTsrch = useCTkey();
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->reset();
   CTsrch->writeNH(a);
   CTsrch->writeNH(b);
   compute_table::entry_result &cacheFind = CT->find(CTsrch);
   if (!cacheFind) return CTsrch;
   c = resF->linkNode(cacheFind.readNH());
-  doneCTkey(CTsrch);
+  CT->recycle(CTsrch);
   return 0;
   }
   inline void recycleCTKey(compute_table::entry_key* CTsrch) {
-    doneCTkey(CTsrch);
+    CT->recycle(CTsrch);
   }
   inline node_handle saveResult(compute_table::entry_key* Key,
                                 node_handle a, rel_node_handle b, node_handle c)

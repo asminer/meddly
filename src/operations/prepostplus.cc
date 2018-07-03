@@ -68,9 +68,8 @@ MEDDLY::prepostplus_evplus::prepostplus_evplus(const binary_opname* opcode,
 MEDDLY::compute_table::entry_key* MEDDLY::prepostplus_evplus::findResult(long aev, node_handle a,
   long bev, node_handle b, long& cev, node_handle &c)
 {
-  compute_table::entry_key* CTsrch = useCTkey();
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->reset();
   MEDDLY_DCASSERT(!can_commute);
   CTsrch->write(0L);
   CTsrch->writeNH(a);
@@ -84,7 +83,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::prepostplus_evplus::findResult(long ae
   if (c != 0) {
     cev += aev + bev;
   }
-  doneCTkey(CTsrch);
+  CT->recycle(CTsrch);
   return 0;
 }
 

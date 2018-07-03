@@ -58,14 +58,13 @@ class MEDDLY::compl_mdd : public unary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle &b) 
     {
-      compute_table::entry_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = CT->useEntryKey(this);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->reset();
       CTsrch->writeNH(a);
       compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       b = resF->linkNode(cacheFind.readNH());
-      doneCTkey(CTsrch);
+      CT->recycle(CTsrch);
       return 0;
     }
     inline node_handle saveResult(compute_table::entry_key* Key, 
@@ -263,9 +262,8 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
     );
   }
   // Check compute table
-  compute_table::entry_key* CTsrch = useCTkey();
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->reset();
   CTsrch->write(k);
   CTsrch->writeNH(a);
   compute_table::entry_result &cacheFind = CT->find(CTsrch);
@@ -274,7 +272,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
 #ifdef DEBUG_MXD_COMPL
     fprintf(stderr, "\tin CT:   compl_mxd(%d, %d) : %d\n", ht, a, ans);
 #endif
-    doneCTkey(CTsrch);
+    CT->recycle(CTsrch);
     return resF->linkNode(ans);
   }
 
@@ -325,7 +323,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
     res.writeN(resF->cacheNode(result));
     CT->addEntry(CTsrch, res);
   } else {
-    doneCTkey(CTsrch);
+    CT->recycle(CTsrch);
   }
   return result;
 }

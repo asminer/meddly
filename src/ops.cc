@@ -1997,7 +1997,7 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
     CT = 0;
     // CTsrch = 0;
   }
-  CT_free_keys = 0;
+  // CT_free_keys = 0;
 }
 
 #else   // OLD_OP_CT
@@ -2042,7 +2042,6 @@ MEDDLY::operation::operation(const opname* n, unsigned et_slots)
   // The derived class hasn't set up the entry types yet!
   //
   CT = 0;
-  CT_free_keys = 0;
 }
 
 void MEDDLY::operation::buildCTs()
@@ -2072,11 +2071,13 @@ MEDDLY::operation::~operation()
   fflush(stdout);
 #endif
 
+  /*
   while (CT_free_keys) {
     compute_table::entry_key* next = CT_free_keys->next;
     delete CT_free_keys;
     CT_free_keys = next;
   }
+  */
 
 #ifdef OLD_OP_CT
   if (CT && (CT!=Monolithic_CT)) delete CT;

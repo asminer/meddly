@@ -134,15 +134,14 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   }
 
   // check compute table
-  compute_table::entry_key* CTsrch = useCTkey();
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->reset();
   CTsrch->write(k);
   CTsrch->writeNH(a);
   CTsrch->writeNH(b);
   compute_table::entry_result &cacheFind = CT->find(CTsrch);
   if (cacheFind) {
-    doneCTkey(CTsrch);
+    CT->recycle(CTsrch);
     return resF->linkNode(cacheFind.readNH());
   }
 

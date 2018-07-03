@@ -26,6 +26,24 @@ layout: single
   * New class, ```compute_table::entry_type```
     with type information for compute table entries.
 
+  * The list of recycled ```entry_keys``` is now maintained in 
+    class ```compute_table```.
+    When implementing an operation, old code:
+    ```c++
+    compute_table::entry_key* CTsrch = useCTkey();
+    CTsrch->reset();
+    // ...
+    doneCTkey(CTsrch);
+    ```
+    should be replaced with:
+    ```c++
+    compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+    // ...
+    CT->recycle(CTsrch);
+    ```
+
+
+
 ### Implementation
 
  * Streamlined compute table implemenation using templates.

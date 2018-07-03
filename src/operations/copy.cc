@@ -57,14 +57,13 @@ class MEDDLY::copy_MT : public unary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle &b) 
     {
-      compute_table::entry_key* CTsrch = useCTkey();
+      compute_table::entry_key* CTsrch = CT->useEntryKey(this);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->reset();
       CTsrch->writeNH(a);
       compute_table::entry_result &cacheFind = CT->find(CTsrch);
       if (!cacheFind) return CTsrch;
       b = resF->linkNode(cacheFind.readNH());
-      doneCTkey(CTsrch);
+      CT->recycle(CTsrch);
       return 0;
     }
     inline node_handle saveResult(compute_table::entry_key* Key, 
@@ -349,15 +348,14 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       inCache(node_handle a, node_handle &b, TYPE &bev) 
       {
-        compute_table::entry_key* CTsrch = useCTkey();
+        compute_table::entry_key* CTsrch = CT->useEntryKey(this);
         MEDDLY_DCASSERT(CTsrch);
-        CTsrch->reset();
         CTsrch->writeNH(a);
         compute_table::entry_result &cacheFind = CT->find(CTsrch);
         if (cacheFind) {
           cacheFind.read(bev);
           b = resF->linkNode(cacheFind.readNH());
-          doneCTkey(CTsrch);
+          CT->recycle(CTsrch);
           return 0;
         }
         return CTsrch;
@@ -584,15 +582,14 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       inCache(TYPE ev, node_handle a, node_handle &b) 
       {
-        compute_table::entry_key* CTsrch = useCTkey();
+        compute_table::entry_key* CTsrch = CT->useEntryKey(this);
         MEDDLY_DCASSERT(CTsrch);
-        CTsrch->reset();
         CTsrch->write(ev);
         CTsrch->writeNH(a);
         compute_table::entry_result &cacheFind = CT->find(CTsrch);
         if (cacheFind) {
           b = resF->linkNode(cacheFind.readNH());
-          doneCTkey(CTsrch);
+          CT->recycle(CTsrch);
           return 0;
         }
         return CTsrch;
@@ -798,14 +795,13 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       findResult(node_handle a, node_handle &b) 
       {
-        compute_table::entry_key* CTsrch = useCTkey();
+        compute_table::entry_key* CTsrch = CT->useEntryKey(this);
         MEDDLY_DCASSERT(CTsrch);
-        CTsrch->reset();
         CTsrch->writeNH(a);
         compute_table::entry_result &cacheFind = CT->find(CTsrch);
         if (!cacheFind) return CTsrch;
         b = resF->linkNode(cacheFind.readNH());
-        doneCTkey(CTsrch);
+        CT->recycle(CTsrch);
         return 0;
       }
       inline node_handle saveResult(compute_table::entry_key* Key,
@@ -952,16 +948,15 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       inCache(INTYPE av, node_handle an, OUTTYPE &bv, node_handle &bn) 
       {
-        compute_table::entry_key* CTsrch = useCTkey();
+        compute_table::entry_key* CTsrch = CT->useEntryKey(this);
         MEDDLY_DCASSERT(CTsrch);
-        CTsrch->reset();
         CTsrch->write(av);
         CTsrch->writeNH(an);
         compute_table::entry_result &cacheFind = CT->find(CTsrch);
         if (cacheFind) {
           cacheFind.read(bv);
           bn = resF->linkNode(cacheFind.readNH());
-          doneCTkey(CTsrch);
+          CT->recycle(CTsrch);
           return 0;
         }
         return CTsrch;

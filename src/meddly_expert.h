@@ -3782,18 +3782,18 @@ class MEDDLY::compute_table {
       */
       class entry_key {
         public:
-          /**
-            Constructor.
-              @param  op        Operator that owns this key.
-              @param  extra     Number of slots needed in addition to the actual key.
-              @param  keysz     Number of data slots needed for the key.
-          */
-          entry_key(operation* op, unsigned extra, unsigned keysz);
+          entry_key();
           ~entry_key();
+
+        protected:
+          /// Start using for this operation
+          void setup(operation* op, unsigned slots); 
+
+        public:
           operation* getOp() const;
 
           // interface, for operations.  All inlined in meddly_expert.hh
-          void reset();
+          // void reset();
           void writeNH(node_handle nh);
           void write(int i);
           void write(long i);
@@ -3801,9 +3801,11 @@ class MEDDLY::compute_table {
 
         public: // for now; eventually protect and compute_table is a friend
           // interface, for compute_table.  All inlined in meddly_expert.hh
-          const node_handle* rawData() const;
-          int dataLength() const;
-          void setExtra(unsigned i, node_handle d);
+
+          /// 
+          const node_handle* rawData(bool includeOp) const;
+          int dataLength(bool includeOp) const;
+          // void setExtra(unsigned i, node_handle d);
           void setHash(unsigned h);
           unsigned getHash() const;
 
@@ -3812,17 +3814,17 @@ class MEDDLY::compute_table {
 
           unsigned hash_value;
           node_handle* data;
-          node_handle* key_data;
+          unsigned data_alloc;
+
           int currslot;
 #ifdef DEVELOPMENT_CODE
-          // Range checking during "development"
-          unsigned extraLength;
-          unsigned keyLength;
           bool has_hash;
 #endif
-        public:
-          /// Used for linked-list of recycled search keys in an operation.
+        protected:
+          /// Used for linked-list of recycled search keys in compute_table
           entry_key* next;
+
+        friend class compute_table;
       };
 
       //
@@ -4018,11 +4020,22 @@ class MEDDLY::compute_table {
       */
       virtual ~compute_table();
 
+      /**
+          Start using an entry_key for the given operation.
+      */
+      static entry_key* useEntryKey(operation* op);
+
+      /**
+          Done using an entry_key.
+      */
+      static void recycle(entry_key* k);
+
+
       /// Is this a per-operation compute table?
       virtual bool isOperationTable() const = 0;
 
       /// Initialize a search key for a given operation.
-      virtual entry_key* initializeSearchKey(operation* op) = 0;
+      // virtual entry_key* initializeSearchKey(operation* op) = 0;
 
       /** Find an entry in the compute table based on the key provided.
           @param  key   Key to search for.
@@ -4062,10 +4075,10 @@ class MEDDLY::compute_table {
       /// For debugging.
       virtual void show(output &s, int verbLevel = 0) = 0;
 
-#ifndef OLD_OP_CT
       static void initialize();
       static void destroy();
 
+#ifndef OLD_OP_CT
       /** Register an operation.
           Sets aside a number of entry_type slots for the operation.
       */
@@ -4089,6 +4102,9 @@ class MEDDLY::compute_table {
       static unsigned entryInfoAlloc;
       static unsigned entryInfoSize;
 #endif
+
+    private:
+      static entry_key* free_keys;
 };
 
 // ******************************************************************
@@ -4110,7 +4126,7 @@ class MEDDLY::operation {
     int ans_length;
 #endif
     /// List of free search_keys
-    compute_table::entry_key* CT_free_keys;
+    // compute_table::entry_key* CT_free_keys;
 
     // declared and initialized in meddly.cc
     static compute_table* Monolithic_CT;
@@ -4172,7 +4188,7 @@ class MEDDLY::operation {
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entry) = 0;
 #endif
-    compute_table::entry_key* useCTkey();
+    // compute_table::entry_key* useCTkey();
     void allocEntryForests(int nf);
     void addEntryForest(int index, expert_forest* f);
     void allocEntryObjects(int no);
@@ -4267,7 +4283,7 @@ class MEDDLY::operation {
     MEDDLY::forest::node_status getEntryStatus(const node_handle* data);
 #endif
 
-    void doneCTkey(compute_table::entry_key* K);
+    // void doneCTkey(compute_table::entry_key* K);
 
     /// Removes the cache entry (in entryData[]) by informing the
     /// applicable forests that the nodes in this entry are being removed
