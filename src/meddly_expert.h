@@ -3657,9 +3657,6 @@ class MEDDLY::ct_initializer : public initializer_list {
 
       /// A hash table (no chaining) for each operation.
       OperationUnchainedHash,
-
-      /// A STL "map" for each operation.
-      OperationMap
     };
 
     struct settings {
@@ -3731,7 +3728,7 @@ class MEDDLY::compute_table_style {
         Default throws an error.
     */
     virtual compute_table* create(const ct_initializer::settings &s,
-      operation* op) const;
+      operation* op, unsigned slot) const;
 
 
     /**
@@ -4022,7 +4019,7 @@ class MEDDLY::compute_table {
       /**
           Start using an entry_key for the given operation.
       */
-      static entry_key* useEntryKey(operation* op);
+      static entry_key* useEntryKey(operation* op, unsigned slot);
 
       /**
           Done using an entry_key.
@@ -4078,18 +4075,24 @@ class MEDDLY::compute_table {
       static void destroy();
 
 #ifndef OLD_OP_CT
+    protected:
       /** Register an operation.
           Sets aside a number of entry_type slots for the operation.
       */
       static void registerOp(operation* op, unsigned num_ids);
 
       /// Register an entry_type.
-      static void registerEventType(unsigned etid, entry_type* et);
+      static void registerEntryType(unsigned etid, entry_type* et);
 
       /** Unregister an operation.
           Frees the entry_type slots for the operation.
       */
       static void unregisterOp(operation* op, unsigned num_ids);
+
+    public:
+      /// Find entry_type for operation and slot number.
+      static const entry_type* getEntryType(operation* op, unsigned slot);
+
 #endif
 
     protected:
@@ -4107,6 +4110,8 @@ class MEDDLY::compute_table {
 
     private:
       static entry_key* free_keys;
+
+    friend class operation;
 };
 
 // ******************************************************************
@@ -4188,7 +4193,6 @@ class MEDDLY::operation {
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entry) = 0;
 #endif
-    // compute_table::entry_key* useCTkey();
     void allocEntryForests(int nf);
     void addEntryForest(int index, expert_forest* f);
     void allocEntryObjects(int no);
@@ -4197,7 +4201,7 @@ class MEDDLY::operation {
     virtual bool checkForestCompatibility() const = 0;
 
 #ifndef OLD_OP_CT
-    void registerEventType(unsigned slot, compute_table::entry_type* et);
+    void registerEntryType(unsigned slot, compute_table::entry_type* et);
     void buildCTs();
 #endif
 
@@ -4252,6 +4256,7 @@ class MEDDLY::operation {
 #ifndef OLD_OP_CT
     void setFirstETid(unsigned slot);
     unsigned getFirstETid() const;
+    unsigned getNumETids() const;
 #endif
 
     // for debugging:
@@ -4283,8 +4288,7 @@ class MEDDLY::operation {
     MEDDLY::forest::node_status getEntryStatus(const node_handle* data);
 #endif
 
-    // void doneCTkey(compute_table::entry_key* K);
-
+#ifdef OLD_OP_CT
     /// Removes the cache entry (in entryData[]) by informing the
     /// applicable forests that the nodes in this entry are being removed
     /// from the cache
@@ -4292,6 +4296,7 @@ class MEDDLY::operation {
 
     /// Prints a string representation of this cache entry on strm (stream).
     virtual void showEntry(output &strm, const node_handle *entryData) const = 0;
+#endif
 
 #ifdef OLD_OP_CT
     bool shouldStaleCacheHitsBeDiscarded() const;
@@ -4318,11 +4323,19 @@ class MEDDLY::unary_operation : public operation {
     virtual bool checkForestCompatibility() const;
 
   public:
+#ifdef OLD_OP_CT
     unary_operation(const unary_opname* code, int kl, int al,
       expert_forest* arg, expert_forest* res);
 
     unary_operation(const unary_opname* code, int kl, int al,
       expert_forest* arg, opnd_type res);
+#else
+    unary_operation(const unary_opname* code, unsigned et_slots,
+      expert_forest* arg, expert_forest* res);
+
+    unary_operation(const unary_opname* code, unsigned et_slots,
+      expert_forest* arg, opnd_type res);
+#endif
 
     bool matches(const expert_forest* arg, const expert_forest* res)
       const;
@@ -4366,8 +4379,13 @@ class MEDDLY::binary_operation : public operation {
     virtual bool checkForestCompatibility() const;
 
   public:
+#ifdef OLD_OP_CT
     binary_operation(const binary_opname* code, int kl, int al,
       expert_forest* arg1, expert_forest* arg2, expert_forest* res);
+#else
+    binary_operation(const binary_opname* code, unsigned et_slots,
+      expert_forest* arg1, expert_forest* arg2, expert_forest* res);
+#endif
 
     bool matches(const expert_forest* arg1, const expert_forest* arg2,
       const expert_forest* res) const;
@@ -4408,7 +4426,11 @@ class MEDDLY::binary_operation : public operation {
 */
 class MEDDLY::specialized_operation : public operation {
   public:
+#ifdef OLD_OP_CT
     specialized_operation(const specialized_opname* code, int kl, int al);
+#else
+    specialized_operation(const specialized_opname* code, unsigned et_slots);
+#endif
   protected:
     virtual ~specialized_operation();
   public:

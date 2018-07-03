@@ -62,7 +62,7 @@ class MEDDLY::range_int : public unary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, int &b) 
     {
-      compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+      compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeNH(a);
       compute_table::entry_result &cacheFind = CT->find(CTsrch);
@@ -142,7 +142,7 @@ class MEDDLY::range_real : public unary_operation {
 
   protected:
     inline compute_table::entry_key* findResult(node_handle a, float &b) {
-      compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+      compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeNH(a);
       compute_table::entry_result &cacheFind = CT->find(CTsrch);

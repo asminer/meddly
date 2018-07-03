@@ -154,7 +154,7 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeNH(a); 
   compute_table::entry_result &cacheEntry = CT->find(CTsrch);
@@ -226,7 +226,7 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeNH(a); 
   compute_table::entry_result &cacheEntry = CT->find(CTsrch);
@@ -354,7 +354,7 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeNH(a); 
   compute_table::entry_result &cacheEntry = CT->find(CTsrch);
@@ -427,7 +427,7 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeNH(a); 
   compute_table::entry_result &cacheEntry = CT->find(CTsrch);
@@ -576,7 +576,7 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeNH(a);
   compute_table::entry_result &cacheEntry = CT->find(CTsrch);
@@ -668,7 +668,7 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeNH(a);
   compute_table::entry_result &cacheEntry = CT->find(CTsrch);

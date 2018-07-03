@@ -102,7 +102,7 @@ public:
 protected:
   inline compute_table::entry_key*
   findSaturateResult(node_handle a, int level, node_handle& b) {
-    compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+    compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
     MEDDLY_DCASSERT(CTsrch);
     CTsrch->writeNH(a);
     if (argF->isFullyReduced()) CTsrch->write(level);
@@ -157,7 +157,7 @@ protected:
   inline compute_table::entry_key*
   findResult(node_handle a, rel_node_handle b, node_handle &c)
   {
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeNH(a);
   CTsrch->writeNH(b);

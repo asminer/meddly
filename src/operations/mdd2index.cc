@@ -147,7 +147,7 @@ MEDDLY::mdd2index_operation
   // Check compute table
   compute_table::entry_key* CTsrch = 0;
   if (aLevel == k) {
-    CTsrch = CT->useEntryKey(this);
+    CTsrch = CT->useEntryKey(this, 0);
     MEDDLY_DCASSERT(CTsrch);
     CTsrch->writeNH(a);
     compute_table::entry_result &cacheEntry = CT->find(CTsrch);

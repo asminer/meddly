@@ -134,7 +134,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   }
 
   // check compute table
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->write(k);
   CTsrch->writeNH(a);

@@ -35,11 +35,24 @@
 // *                                                                *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
 MEDDLY::generic_binary_mdd::generic_binary_mdd(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : binary_operation(code, 2, 1, arg1, arg2, res)
 {
 }
+#else
+MEDDLY::generic_binary_mdd::generic_binary_mdd(const binary_opname* code,
+  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  : binary_operation(code, 1, arg1, arg2, res)
+{
+  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "NN:N");
+  et->setForestForSlot(0, arg1);
+  et->setForestForSlot(1, arg2);
+  et->setForestForSlot(3, res);
+  registerEntryType(0, et);
+}
+#endif
 
 MEDDLY::generic_binary_mdd::~generic_binary_mdd()
 {

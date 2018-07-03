@@ -122,10 +122,6 @@ void MEDDLY::ct_initializer::setBuiltinStyle(builtinCTstyle cts)
     case OperationChainedHash:
           builtin_ct_factory = new operation_chained_style;
           break;
-
-    case OperationMap:
-          builtin_ct_factory = new operation_map_style;
-          break;
   }
 
   ct_factory = builtin_ct_factory;
@@ -143,14 +139,25 @@ void MEDDLY::ct_initializer::setMemoryManager(const memory_manager_style* mms)
   the_settings.MMS = mms;
 }
 
+#ifdef OLD_OP_CT
 MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(operation* op)
 {
   if (ct_factory) {
-    return ct_factory->create(the_settings, op);
+    return ct_factory->create(the_settings, op, 0);
   } else {
     return 0;
   }
 }
+#else
+MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(operation* op, unsigned slot)
+{
+  if (ct_factory) {
+    return ct_factory->create(the_settings, op, slot);
+  } else {
+    return 0;
+  }
+}
+#endif
 
 // **********************************************************************
 // *                                                                    *
@@ -176,7 +183,7 @@ MEDDLY::compute_table_style::create(const ct_initializer::settings &s)
 
 MEDDLY::compute_table* 
 MEDDLY::compute_table_style::create(const ct_initializer::settings &s, 
-      operation* op) const
+      operation* op, unsigned slot) const
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -299,7 +306,7 @@ void MEDDLY::compute_table::registerOp(operation* op, unsigned num_ids)
   }
 }
 
-void MEDDLY::compute_table::registerEventType(unsigned etid, entry_type* et)
+void MEDDLY::compute_table::registerEntryType(unsigned etid, entry_type* et)
 {
   MEDDLY_CHECK_RANGE(0, etid, entryInfoSize);
   MEDDLY_DCASSERT(0==entryInfo[etid]);

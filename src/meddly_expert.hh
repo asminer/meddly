@@ -2384,7 +2384,7 @@ MEDDLY::compute_table::readEV(const MEDDLY::node_handle* p, float &ev)
 }
 
 inline MEDDLY::compute_table::entry_key*
-MEDDLY::compute_table::useEntryKey(operation* op)
+MEDDLY::compute_table::useEntryKey(operation* op, unsigned slot)
 {
   if (0==op) return 0;
 
@@ -2395,7 +2395,12 @@ MEDDLY::compute_table::useEntryKey(operation* op)
   } else {
     k = new entry_key();
   }
+#ifdef OLD_OP_CT
   k->setup(op, 1+op->getKeyLength());
+#else
+  const entry_type* et = getEntryType(op, slot);
+  k->setup(op, 1+et->getKeySize(0));  // TBD - repeats?
+#endif
   return k;
 }
 
@@ -2413,6 +2418,18 @@ MEDDLY::compute_table::getStats()
 {
   return perf;
 }
+
+#ifndef OLD_OP_CT
+inline const MEDDLY::compute_table::entry_type*
+MEDDLY::compute_table::getEntryType(operation* op, unsigned slot)
+{
+  MEDDLY_DCASSERT(op);
+  MEDDLY_CHECK_RANGE(0, slot, op->getNumETids());
+  unsigned etid = op->getFirstETid() + slot;
+  MEDDLY_CHECK_RANGE(0, etid, entryInfoSize);
+  return entryInfo[etid];
+}
+#endif
 
 inline void
 MEDDLY::compute_table::setHash(entry_key *k, unsigned h)
@@ -2453,10 +2470,10 @@ MEDDLY::operation::unregisterInForest(MEDDLY::forest* f)
 
 #ifndef OLD_OP_CT
 inline void
-MEDDLY::operation::registerEventType(unsigned slot, compute_table::entry_type* et)
+MEDDLY::operation::registerEntryType(unsigned slot, compute_table::entry_type* et)
 {
   MEDDLY_CHECK_RANGE(0, slot, num_etids);
-  compute_table::registerEventType(first_etid + slot, et);
+  compute_table::registerEntryType(first_etid + slot, et);
 }
 #endif
 
@@ -2516,6 +2533,13 @@ MEDDLY::operation::getFirstETid() const
 {
   return first_etid;
 }
+
+inline unsigned
+MEDDLY::operation::getNumETids() const
+{
+  return num_etids;
+}
+
 #endif
 
 inline const char*

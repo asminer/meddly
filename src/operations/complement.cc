@@ -58,7 +58,7 @@ class MEDDLY::compl_mdd : public unary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle &b) 
     {
-      compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+      compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeNH(a);
       compute_table::entry_result &cacheFind = CT->find(CTsrch);
@@ -262,7 +262,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
     );
   }
   // Check compute table
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->write(k);
   CTsrch->writeNH(a);

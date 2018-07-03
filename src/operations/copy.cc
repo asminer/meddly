@@ -57,7 +57,7 @@ class MEDDLY::copy_MT : public unary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle &b) 
     {
-      compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+      compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeNH(a);
       compute_table::entry_result &cacheFind = CT->find(CTsrch);
@@ -348,7 +348,7 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       inCache(node_handle a, node_handle &b, TYPE &bev) 
       {
-        compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+        compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->writeNH(a);
         compute_table::entry_result &cacheFind = CT->find(CTsrch);
@@ -582,7 +582,7 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       inCache(TYPE ev, node_handle a, node_handle &b) 
       {
-        compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+        compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->write(ev);
         CTsrch->writeNH(a);
@@ -795,7 +795,7 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       findResult(node_handle a, node_handle &b) 
       {
-        compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+        compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->writeNH(a);
         compute_table::entry_result &cacheFind = CT->find(CTsrch);
@@ -948,7 +948,7 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       inCache(INTYPE av, node_handle an, OUTTYPE &bv, node_handle &bn) 
       {
-        compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+        compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->write(av);
         CTsrch->writeNH(an);

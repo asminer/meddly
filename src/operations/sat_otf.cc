@@ -90,7 +90,7 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
   protected:
     inline compute_table::entry_key* 
     findSaturateResult(node_handle a, int level, node_handle& b) {
-      compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+      compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeNH(a);
       if (argF->isFullyReduced()) CTsrch->write(level);
@@ -139,7 +139,7 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-      compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+      compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeNH(a);
       CTsrch->writeNH(b);

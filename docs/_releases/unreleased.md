@@ -41,7 +41,7 @@ layout: single
     // ...
     CT->recycle(CTsrch);
     ```
-
+  * Removed ```OperationMap``` as a compute table option.
 
 
 ### Implementation

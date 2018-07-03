@@ -78,7 +78,7 @@ class MEDDLY::image_op : public binary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-      compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+      compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeNH(a);
       CTsrch->writeNH(b);
@@ -535,7 +535,7 @@ class MEDDLY::image_op_evplus : public binary_operation {
     inline compute_table::entry_key*
     findResult(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle &resEvmdd)
     {
-      compute_table::entry_key* CTsrch = CT->useEntryKey(this);
+      compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeNH(evmdd);
       CTsrch->writeNH(mxd);

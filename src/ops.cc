@@ -2106,7 +2106,15 @@ void MEDDLY::operation::markForDeletion()
 #endif
   if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
+#ifdef OLD_OP_CT
   if (CT && CT->isOperationTable()) CT->removeStales();
+#else
+  if (CT) {
+    for (unsigned i=0; i<num_etids; i++) {
+      if (CT[i] && CT[i]->isOperationTable()) CT[i]->removeStales();
+    }
+  }
+#endif
 }
 
 void MEDDLY::operation::destroyAllOps() 
@@ -2123,7 +2131,24 @@ void MEDDLY::operation::destroyAllOps()
 
 void MEDDLY::operation::removeStaleComputeTableEntries()
 {
+#ifdef OLD_OP_CT
   if (CT) CT->removeStales();
+#else
+  bool has_monolithic = false;
+  if (CT) {
+    for (unsigned i=0; i<num_etids; i++) {
+      if (0==CT[i]) continue;
+      if (CT[i]->isOperationTable()) {
+        CT[i]->removeStales();
+      } else {
+        has_monolithic = true;
+      }
+    }
+  }
+  if (has_monolithic) {
+    Monolithic_CT->removeStales();
+  }
+#endif
 }
 
 void MEDDLY::operation::removeAllComputeTableEntries()
@@ -2134,7 +2159,7 @@ void MEDDLY::operation::removeAllComputeTableEntries()
 #endif
   if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
-  if (CT) CT->removeStales();
+  removeStaleComputeTableEntries();
   is_marked_for_deletion = false;
 #ifdef DEBUG_CLEANUP
   fprintf(stdout, "Removed entries for operation %p %s\n", this, getName());
@@ -2161,12 +2186,31 @@ void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
 
 void MEDDLY::operation::showComputeTable(output &s, int verbLevel) const
 {
+#ifdef OLD_OP_CT
   if (CT) CT->show(s, verbLevel);
+#else
+  bool has_monolithic = false;
+  if (CT) {
+    for (unsigned i=0; i<num_etids; i++) {
+      if (0==CT[i]) continue;
+      if (CT[i]->isOperationTable()) {
+        CT[i]->show(s, verbLevel);
+      } else {
+        has_monolithic = true;
+      }
+    }
+  }
+  if (has_monolithic) {
+    Monolithic_CT->show(s, verbLevel);
+  }
+#endif
 }
 
 // ******************************************************************
 // *                    unary_operation  methods                    *
 // ******************************************************************
+
+#ifdef OLD_OP_CT
 
 MEDDLY::unary_operation::unary_operation(const unary_opname* code, int kl, 
   int al, expert_forest* arg, expert_forest* res) : operation(code, kl, al)
@@ -2192,6 +2236,33 @@ MEDDLY::unary_operation::unary_operation(const unary_opname* code, int kl,
 
   setAnswerForest(0);
 }
+
+#else
+
+MEDDLY::unary_operation::unary_operation(const unary_opname* code, 
+  unsigned et_slots, expert_forest* arg, expert_forest* res)
+: operation(code, et_slots)
+{
+  argF = arg;
+  resultType = FOREST;
+  resF = res;
+
+  registerInForest(argF);
+  registerInForest(resF);
+}
+
+MEDDLY::unary_operation::unary_operation(const unary_opname* code, 
+  unsigned et_slots, expert_forest* arg, opnd_type res)
+: operation(code, et_slots)
+{
+  argF = arg;
+  resultType = res;
+  resF = 0;
+
+  registerInForest(argF);
+}
+
+#endif
 
 MEDDLY::unary_operation::~unary_operation()
 {
@@ -2223,6 +2294,7 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
 // *                    binary_operation methods                    *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
 MEDDLY::binary_operation::binary_operation(const binary_opname* op, int kl, 
   int al, expert_forest* arg1, expert_forest* arg2, expert_forest* res)
 : operation(op, kl, al)
@@ -2238,6 +2310,25 @@ MEDDLY::binary_operation::binary_operation(const binary_opname* op, int kl,
   setAnswerForest(resF);
   can_commute = false;
 }
+
+#else
+
+MEDDLY::binary_operation::binary_operation(const binary_opname* op, 
+  unsigned et_slots, expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+: operation(op, et_slots)
+{
+  arg1F = arg1;
+  arg2F = arg2;
+  resF = res;
+
+  registerInForest(arg1F);
+  registerInForest(arg2F);
+  registerInForest(resF);
+
+  can_commute = false;
+}
+
+#endif
 
 MEDDLY::binary_operation::~binary_operation()
 {
@@ -2286,12 +2377,23 @@ void MEDDLY::binary_operation::compute(float av, node_handle ap,
 // *                 specialized_operation  methods                 *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
 MEDDLY::
 specialized_operation::
 specialized_operation(const specialized_opname* op, int kl, int al) 
  : operation(op, kl, al)
 {
 }
+
+#else
+MEDDLY::
+specialized_operation::
+specialized_operation(const specialized_opname* op, unsigned et_slots)
+ : operation(op, et_slots)
+{
+}
+
+#endif
 
 MEDDLY::specialized_operation::~specialized_operation()
 {
