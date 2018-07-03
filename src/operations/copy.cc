@@ -57,13 +57,25 @@ class MEDDLY::copy_MT : public unary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle &b) 
     {
+#ifdef OLD_OP_CT
       compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+#else
+      compute_table::entry_key* CTsrch = CT[0]->useEntryKey(this, 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeNH(a);
+#ifdef OLD_OP_CT
       compute_table::entry_result &cacheFind = CT->find(CTsrch);
+#else
+      compute_table::entry_result &cacheFind = CT[0]->find(CTsrch);
+#endif
       if (!cacheFind) return CTsrch;
       b = resF->linkNode(cacheFind.readNH());
+#ifdef OLD_OP_CT
       CT->recycle(CTsrch);
+#else
+      CT[0]->recycle(CTsrch);
+#endif
       return 0;
     }
     inline node_handle saveResult(compute_table::entry_key* Key, 
@@ -73,17 +85,33 @@ class MEDDLY::copy_MT : public unary_operation {
       static compute_table::entry_result result(1);
       result.reset();
       result.writeN(resF->cacheNode(b));
+#ifdef OLD_OP_CT
       CT->addEntry(Key, result);
+#else
+      CT[0]->addEntry(Key, result);
+#endif
       return b;
     }
 };
 
+#ifdef OLD_OP_CT
 MEDDLY::copy_MT
 :: copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res)
  : unary_operation(oc, 1, 1, arg, res)
 {
   // mtres = res;
 }
+#else
+MEDDLY::copy_MT
+:: copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res)
+ : unary_operation(oc, 1, arg, res)
+{
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:N");
+  et->setForestForSlot(0, arg);
+  et->setForestForSlot(2, res);
+  registerEntryType(0, et);
+}
+#endif
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::copy_MT::isStaleEntry(const node_handle* entryData)
@@ -283,6 +311,7 @@ namespace MEDDLY {
   template <typename TYPE>
   class copy_MT2EV : public unary_operation {
     public:
+#ifdef OLD_OP_CT
       copy_MT2EV(const unary_opname* oc, expert_forest* arg, 
         expert_forest* res) : unary_operation(oc,
           sizeof(node_handle) / sizeof(node_handle),
@@ -293,6 +322,23 @@ namespace MEDDLY {
         // entry[1]: EV value (output)
         // entry[2]: EV node (output)
       }
+#else
+      copy_MT2EV(const unary_opname* oc, expert_forest* arg, expert_forest* res, 
+        const char* pattern) : unary_operation(oc, 1, arg, res)
+      {
+        //
+        // Pattern should be of the form "N:xN" where x is the EV Type.
+        //
+        // entry[0]: mt node 
+        // entry[1]: EV value (output)
+        // entry[2]: EV node (output)
+        //
+        compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), pattern);
+        et->setForestForSlot(0, arg);
+        et->setForestForSlot(3, res);
+        registerEntryType(0, et);
+      }
+#endif
 
 #ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
@@ -348,14 +394,26 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       inCache(node_handle a, node_handle &b, TYPE &bev) 
       {
+#ifdef OLD_OP_CT
         compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+#else
+        compute_table::entry_key* CTsrch = CT[0]->useEntryKey(this, 0);
+#endif
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->writeNH(a);
+#ifdef OLD_OP_CT
         compute_table::entry_result &cacheFind = CT->find(CTsrch);
+#else
+        compute_table::entry_result &cacheFind = CT[0]->find(CTsrch);
+#endif
         if (cacheFind) {
           cacheFind.read(bev);
           b = resF->linkNode(cacheFind.readNH());
+#ifdef OLD_OP_CT
           CT->recycle(CTsrch);
+#else
+          CT[0]->recycle(CTsrch);
+#endif
           return 0;
         }
         return CTsrch;
@@ -371,7 +429,11 @@ namespace MEDDLY {
         result.reset();
         result.writeL(bev);
         result.writeN(resF->cacheNode(b));
+#ifdef OLD_OP_CT
         CT->addEntry(Key, result);
+#else
+        CT[0]->addEntry(Key, result);
+#endif
       }
 
       inline void addToCache(compute_table::entry_key* Key,
@@ -384,7 +446,11 @@ namespace MEDDLY {
         result.reset();
         result.writeF(bev);
         result.writeN(resF->cacheNode(b));
+#ifdef OLD_OP_CT
         CT->addEntry(Key, result);
+#else
+        CT[0]->addEntry(Key, result);
+#endif
       }
 
   };
@@ -519,6 +585,7 @@ namespace MEDDLY {
   template <typename TYPE, class OP>
   class copy_EV2MT : public unary_operation {
     public:
+#ifdef OLD_OP_CT
       copy_EV2MT(const unary_opname* oc, expert_forest* arg, 
         expert_forest* res) : unary_operation(oc,
           (sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle),
@@ -529,6 +596,23 @@ namespace MEDDLY {
         // entry[1]: EV node
         // entry[2]: mt node (output)
       }
+#else
+      copy_EV2MT(const unary_opname* oc, expert_forest* arg, expert_forest* res, 
+        const char* pattern) : unary_operation(oc, 1, arg, res)
+      {
+        //
+        // Pattern should be of the form "xN:N"
+        //
+        // entry[0]: EV value
+        // entry[1]: EV node
+        // entry[2]: mt node (output)
+        //
+        compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), pattern);
+        et->setForestForSlot(1, arg);
+        et->setForestForSlot(3, res);
+        registerEntryType(0, et);
+      }
+#endif
 
 #ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
@@ -582,14 +666,26 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       inCache(TYPE ev, node_handle a, node_handle &b) 
       {
+#ifdef OLD_OP_CT
         compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+#else
+        compute_table::entry_key* CTsrch = CT[0]->useEntryKey(this, 0);
+#endif
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->write(ev);
         CTsrch->writeNH(a);
+#ifdef OLD_OP_CT
         compute_table::entry_result &cacheFind = CT->find(CTsrch);
+#else
+        compute_table::entry_result &cacheFind = CT[0]->find(CTsrch);
+#endif
         if (cacheFind) {
           b = resF->linkNode(cacheFind.readNH());
+#ifdef OLD_OP_CT
           CT->recycle(CTsrch);
+#else
+          CT[0]->recycle(CTsrch);
+#endif
           return 0;
         }
         return CTsrch;
@@ -602,7 +698,11 @@ namespace MEDDLY {
         static compute_table::entry_result result(1);
         result.reset();
         result.writeN(resF->cacheNode(b));
+#ifdef OLD_OP_CT
         CT->addEntry(Key, result);
+#else
+        CT[0]->addEntry(Key, result);
+#endif
       }
 
   };
@@ -740,6 +840,7 @@ namespace MEDDLY {
   template <typename INTYPE, typename OUTTYPE>
   class copy_EV2EV_fast : public unary_operation {
     public:
+#ifdef OLD_OP_CT
       copy_EV2EV_fast(const unary_opname* oc, expert_forest* arg, 
         expert_forest* res) : unary_operation(oc,
           sizeof(node_handle) / sizeof(node_handle),
@@ -749,6 +850,18 @@ namespace MEDDLY {
         // entry[0]: EV node
         // entry[1]: EV node 
       }
+#else
+      copy_EV2EV_fast(const unary_opname* oc, expert_forest* arg, 
+        expert_forest* res) : unary_operation(oc, 1, arg, res)
+      {
+        // entry[0]: EV node
+        // entry[1]: EV node 
+        compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:N");
+        et->setForestForSlot(0, arg);
+        et->setForestForSlot(2, res);
+        registerEntryType(0, et);
+      }
+#endif
 #ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
@@ -795,13 +908,25 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       findResult(node_handle a, node_handle &b) 
       {
+#ifdef OLD_OP_CT
         compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+#else
+        compute_table::entry_key* CTsrch = CT[0]->useEntryKey(this, 0);
+#endif
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->writeNH(a);
+#ifdef OLD_OP_CT
         compute_table::entry_result &cacheFind = CT->find(CTsrch);
+#else
+        compute_table::entry_result &cacheFind = CT[0]->find(CTsrch);
+#endif
         if (!cacheFind) return CTsrch;
         b = resF->linkNode(cacheFind.readNH());
+#ifdef OLD_OP_CT
         CT->recycle(CTsrch);
+#else
+        CT[0]->recycle(CTsrch);
+#endif
         return 0;
       }
       inline node_handle saveResult(compute_table::entry_key* Key,
@@ -811,7 +936,11 @@ namespace MEDDLY {
         static compute_table::entry_result result(1);
         result.reset();
         result.writeN(resF->cacheNode(b));
+#ifdef OLD_OP_CT
         CT->addEntry(Key, result);
+#else
+        CT[0]->addEntry(Key, result);
+#endif
         return b;
       }
   };
@@ -875,6 +1004,7 @@ namespace MEDDLY {
   template <typename INTYPE, class INOP, typename OUTTYPE>
   class copy_EV2EV_slow : public unary_operation {
     public:
+#ifdef OLD_OP_CT
       copy_EV2EV_slow(const unary_opname* oc, expert_forest* arg, 
         expert_forest* res) : unary_operation(oc,
           (sizeof(INTYPE) + sizeof(node_handle)) / sizeof(node_handle),
@@ -886,6 +1016,24 @@ namespace MEDDLY {
         // entry[2]: EV value
         // entry[3]: EV node 
       }
+#else
+      copy_EV2EV_slow(const unary_opname* oc, expert_forest* arg, expert_forest* res, 
+        const char* pattern) : unary_operation(oc, 1, arg, res)
+      {
+        //
+        // Pattern is of the form "xN:yN"
+        //
+        // entry[0]: EV value
+        // entry[1]: EV node
+        // entry[2]: EV value
+        // entry[3]: EV node 
+        //
+        compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), pattern);
+        et->setForestForSlot(1, arg);
+        et->setForestForSlot(4, res);
+        registerEntryType(0, et);
+      }
+#endif
 
 #ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
@@ -948,15 +1096,27 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       inCache(INTYPE av, node_handle an, OUTTYPE &bv, node_handle &bn) 
       {
+#ifdef OLD_OP_CT
         compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+#else
+        compute_table::entry_key* CTsrch = CT[0]->useEntryKey(this, 0);
+#endif
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->write(av);
         CTsrch->writeNH(an);
+#ifdef OLD_OP_CT
         compute_table::entry_result &cacheFind = CT->find(CTsrch);
+#else
+        compute_table::entry_result &cacheFind = CT[0]->find(CTsrch);
+#endif
         if (cacheFind) {
           cacheFind.read(bv);
           bn = resF->linkNode(cacheFind.readNH());
+#ifdef OLD_OP_CT
           CT->recycle(CTsrch);
+#else
+          CT[0]->recycle(CTsrch);
+#endif
           return 0;
         }
         return CTsrch;
@@ -970,7 +1130,11 @@ namespace MEDDLY {
         result.reset();
         result.writeL(bv);
         result.writeN(resF->cacheNode(bn));
+#ifdef OLD_OP_CT
         CT->addEntry(Key, result);
+#else
+        CT[0]->addEntry(Key, result);
+#endif
       }
 
       inline void addToCache(compute_table::entry_key* Key,
@@ -981,7 +1145,11 @@ namespace MEDDLY {
         result.reset();
         result.writeF(bv);
         result.writeN(resF->cacheNode(bn));
+#ifdef OLD_OP_CT
         CT->addEntry(Key, result);
+#else
+        CT[0]->addEntry(Key, result);
+#endif
       }
 
 
@@ -1137,11 +1305,19 @@ MEDDLY::copy_opname
     // MT to EV conversion
     //
     switch (res->getRangeType()) {
+#ifdef OLD_OP_CT
       case forest::INTEGER:
         return new copy_MT2EV<long>(this, arg, res);
 
       case forest::REAL:
         return new copy_MT2EV<float>(this, arg, res);
+#else
+      case forest::INTEGER:
+        return new copy_MT2EV<long>(this, arg, res, "N:LN");
+
+      case forest::REAL:
+        return new copy_MT2EV<float>(this, arg, res, "N:FN");
+#endif
 
       default:
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -1154,11 +1330,19 @@ MEDDLY::copy_opname
     // EV+ to MT conversion
     //
     switch (arg->getRangeType()) {
+#ifdef OLD_OP_CT
       case forest::INTEGER:
         return new copy_EV2MT<long,PLUS>(this, arg, res);
 
       case forest::REAL:
         return new copy_EV2MT<float,PLUS>(this, arg, res);
+#else
+      case forest::INTEGER:
+        return new copy_EV2MT<long,PLUS>(this, arg, res, "LN:N");
+
+      case forest::REAL:
+        return new copy_EV2MT<float,PLUS>(this, arg, res, "FN:N");
+#endif
 
       default:
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -1171,11 +1355,19 @@ MEDDLY::copy_opname
     // EV* to MT conversion  (untested!)
     //
     switch (arg->getRangeType()) {
+#ifdef OLD_OP_CT
       case forest::INTEGER:
         return new copy_EV2MT<long,TIMES>(this, arg, res);
 
       case forest::REAL:
         return new copy_EV2MT<float,TIMES>(this, arg, res);
+#else
+      case forest::INTEGER:
+        return new copy_EV2MT<long,TIMES>(this, arg, res, "LN:N");
+
+      case forest::REAL:
+        return new copy_EV2MT<float,TIMES>(this, arg, res, "FN:N");
+#endif
 
       default:
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -1237,20 +1429,34 @@ MEDDLY::copy_opname
 
       case forest::INTEGER:
           switch (res->getRangeType()) {
+#ifdef OLD_OP_CT
             case forest::INTEGER:
                 return new copy_EV2EV_slow<long,PLUS,long>(this, arg, res);
             case forest::REAL:
                 return new copy_EV2EV_slow<long,PLUS,float>(this, arg, res);
+#else
+            case forest::INTEGER:
+                return new copy_EV2EV_slow<long,PLUS,long>(this, arg, res, "LN:LN");
+            case forest::REAL:
+                return new copy_EV2EV_slow<long,PLUS,float>(this, arg, res, "LN:FN");
+#endif
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
         
       case forest::REAL:
           switch (res->getRangeType()) {
+#ifdef OLD_OP_CT
             case forest::INTEGER:
                 return new copy_EV2EV_slow<float,PLUS,long>(this, arg, res);
             case forest::REAL:
                 return new copy_EV2EV_slow<float,PLUS,float>(this, arg, res);
+#else
+            case forest::INTEGER:
+                return new copy_EV2EV_slow<float,PLUS,long>(this, arg, res, "FN:LN");
+            case forest::REAL:
+                return new copy_EV2EV_slow<float,PLUS,float>(this, arg, res, "FN:FN");
+#endif
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
@@ -1269,20 +1475,34 @@ MEDDLY::copy_opname
 
       case forest::INTEGER:
           switch (res->getRangeType()) {
+#ifdef OLD_OP_CT
             case forest::INTEGER:
                 return new copy_EV2EV_slow<long,TIMES,long>(this, arg, res);
             case forest::REAL:
                 return new copy_EV2EV_slow<long,TIMES,float>(this, arg, res);
+#else
+            case forest::INTEGER:
+                return new copy_EV2EV_slow<long,TIMES,long>(this, arg, res, "LN:LN");
+            case forest::REAL:
+                return new copy_EV2EV_slow<long,TIMES,float>(this, arg, res, "LN:FN");
+#endif
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
         
       case forest::REAL:
           switch (res->getRangeType()) {
+#ifdef OLD_OP_CT
             case forest::INTEGER:
                 return new copy_EV2EV_slow<float,TIMES,long>(this, arg, res);
             case forest::REAL:
                 return new copy_EV2EV_slow<float,TIMES,float>(this, arg, res);
+#else
+            case forest::INTEGER:
+                return new copy_EV2EV_slow<float,TIMES,long>(this, arg, res, "FN:LN");
+            case forest::REAL:
+                return new copy_EV2EV_slow<float,TIMES,float>(this, arg, res, "FN:FN");
+#endif
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };

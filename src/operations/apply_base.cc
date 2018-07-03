@@ -443,6 +443,7 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
 // *                                                                *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
 MEDDLY::generic_binary_mxd::generic_binary_mxd(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : binary_operation(code, 2, 1, arg1, arg2, res)
@@ -451,6 +452,18 @@ MEDDLY::generic_binary_mxd::generic_binary_mxd(const binary_opname* code,
   // data[1] : arg2
   // data[2] : result
 }
+#else
+MEDDLY::generic_binary_mxd::generic_binary_mxd(const binary_opname* code,
+  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  : binary_operation(code, 1, arg1, arg2, res)
+{
+  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "NN:N");
+  et->setForestForSlot(0, arg1);
+  et->setForestForSlot(1, arg2);
+  et->setForestForSlot(3, res);
+  registerEntryType(0, et);
+}
+#endif
 
 MEDDLY::generic_binary_mxd::~generic_binary_mxd()
 {
@@ -1083,6 +1096,7 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
 // *                                                                *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
 MEDDLY::generic_binbylevel_mxd
 ::generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1, 
   expert_forest* arg2, expert_forest* res)
@@ -1090,6 +1104,20 @@ MEDDLY::generic_binbylevel_mxd
 {
   can_commute = false;
 }
+#else
+MEDDLY::generic_binbylevel_mxd
+::generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1, 
+  expert_forest* arg2, expert_forest* res)
+ : binary_operation(code, 1, arg1, arg2, res)
+{
+  can_commute = false;
+  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "INN:N");
+  et->setForestForSlot(1, arg1);
+  et->setForestForSlot(2, arg2);
+  et->setForestForSlot(4, res);
+  registerEntryType(0, et);
+}
+#endif
 
 MEDDLY::generic_binbylevel_mxd::~generic_binbylevel_mxd()
 {
@@ -1228,7 +1256,11 @@ MEDDLY::generic_binbylevel_mxd
   // save result in compute table, when we can
   if (resultLevel<0 && 1==nnz) canSaveResult = false;
   if (canSaveResult)  saveResult(Key, resultLevel, a, b, result);
+#ifdef OLD_OP_CT
   else                CT->recycle(Key);
+#else
+  else                CT[0]->recycle(Key);
+#endif
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
@@ -1383,6 +1415,7 @@ MEDDLY::generic_binbylevel_mxd
 // *                                                                *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
 MEDDLY::generic_binary_ev::generic_binary_ev(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : binary_operation(code,
@@ -1390,6 +1423,11 @@ MEDDLY::generic_binary_ev::generic_binary_ev(const binary_opname* code,
       (arg1->edgeBytes() + sizeof(node_handle) + arg2->edgeBytes() + sizeof(node_handle)) / sizeof(node_handle),
       (res->edgeBytes() + sizeof(node_handle)) / sizeof(node_handle),
       arg1, arg2, res)
+#else
+MEDDLY::generic_binary_ev::generic_binary_ev(const binary_opname* code,
+  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  : binary_operation(code, 1, arg1, arg2, res)
+#endif
 {
   can_commute = false;
 }
