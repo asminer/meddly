@@ -296,10 +296,21 @@ public:
   virtual void showEntry(output &strm, const node_handle* entryData) const;
 };
 
+#ifdef OLD_OP_CT
 MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, sizeof(double) / sizeof(node_handle), arg, REAL)
 {
 }
+#else
+MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
+ : unary_operation(oc, 1, arg, REAL)
+{
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:D");
+  et->setForestForSlot(0, arg);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::card_real::isStaleEntry(const node_handle* data)
@@ -502,10 +513,21 @@ public:
   virtual void showEntry(output &strm, const node_handle* entryData) const;
 };
 
+#ifdef OLD_OP_CT
 MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, sizeof(ct_object*) / sizeof(node_handle), arg, HUGEINT)
 {
 }
+#else
+MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
+ : unary_operation(oc, 1, arg, HUGEINT)
+{
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:H");
+  et->setForestForSlot(0, arg);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::card_mpz::isStaleEntry(const node_handle* data)

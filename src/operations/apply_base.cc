@@ -59,6 +59,8 @@ MEDDLY::generic_binary_mdd::~generic_binary_mdd()
 {
 }
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
 bool MEDDLY::generic_binary_mdd::isStaleEntry(const node_handle* data)
 {
@@ -101,6 +103,8 @@ MEDDLY::generic_binary_mdd ::showEntry(output &strm, const node_handle *data) co
   strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) 
        << "): " << long(data[2]) << "]";
 }
+
+#endif // OLD_OP_CT
 
 void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &b, 
   dd_edge &c)
@@ -471,6 +475,8 @@ MEDDLY::generic_binary_mxd::~generic_binary_mxd()
 {
 }
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
 bool MEDDLY::generic_binary_mxd::isStaleEntry(const node_handle* data)
 {
@@ -512,6 +518,8 @@ MEDDLY::generic_binary_mxd ::showEntry(output &strm, const node_handle *data) co
   strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) 
        << "): " << long(data[2]) << "]";
 }
+
+#endif // OLD_OP_CT
 
 void MEDDLY::generic_binary_mxd::computeDDEdge(const dd_edge &a, const dd_edge &b, 
   dd_edge &c)
@@ -1126,6 +1134,8 @@ MEDDLY::generic_binbylevel_mxd::~generic_binbylevel_mxd()
 {
 }
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
 bool MEDDLY::generic_binbylevel_mxd::isStaleEntry(const node_handle* data)
 {
@@ -1168,6 +1178,8 @@ MEDDLY::generic_binbylevel_mxd
   strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) 
        << ", " << long(data[2]) << "): " << long(data[3]) << "]";
 }
+
+#endif // OLD_OP_CT
 
 void MEDDLY::generic_binbylevel_mxd
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
@@ -1435,6 +1447,8 @@ MEDDLY::generic_binary_ev::~generic_binary_ev()
 {
 }
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
 bool MEDDLY::generic_binary_ev::isStaleEntry(const node_handle* data)
 {
@@ -1474,6 +1488,8 @@ void MEDDLY::generic_binary_ev::discardEntry(const node_handle* data)
   resF->uncacheNode(data[(arg1F->edgeBytes() + sizeof(node_handle) + arg2F->edgeBytes() + sizeof(node_handle) + resF->edgeBytes()) / sizeof(node_handle)]);
 }
 
+#endif // OLD_OP_CT
+
 // ******************************************************************
 // *                                                                *
 // *                 generic_binary_evplus  methods                 *
@@ -1490,6 +1506,8 @@ MEDDLY::generic_binary_evplus::~generic_binary_evplus()
 {
 }
 
+#ifdef OLD_OP_CT
+
 void MEDDLY::generic_binary_evplus
 ::showEntry(output &strm, const node_handle *data) const
 {
@@ -1497,6 +1515,8 @@ void MEDDLY::generic_binary_evplus
        << ">, <" << long(data[2]) << ":" << long(data[3]) << ">): <"
        << long(data[4]) << ":" << long(data[5]) << ">]";
 }
+
+#endif
 
 void MEDDLY::generic_binary_evplus
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
@@ -1588,6 +1608,8 @@ MEDDLY::generic_binary_evplus_mxd::~generic_binary_evplus_mxd()
 {
 }
 
+#ifdef OLD_OP_CT
+
 void MEDDLY::generic_binary_evplus_mxd
 ::showEntry(output &strm, const node_handle *data) const
 {
@@ -1595,6 +1617,8 @@ void MEDDLY::generic_binary_evplus_mxd
        << ">, <" << long(data[2]) << ":" << long(data[3]) << ">): <"
        << long(data[4]) << ":" << long(data[5]) << ">]";
 }
+
+#endif
 
 void MEDDLY::generic_binary_evplus_mxd
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
@@ -1741,6 +1765,8 @@ MEDDLY::generic_binary_evtimes::~generic_binary_evtimes()
 {
 }
 
+#ifdef OLD_OP_CT
+
 void MEDDLY::generic_binary_evtimes
 ::showEntry(output &strm, const node_handle *data) const
 {
@@ -1754,6 +1780,8 @@ void MEDDLY::generic_binary_evtimes
        << ">, <" << ev2 << ":" << long(data[3]) << ">): <"
        << ev4 << ":" << long(data[5]) << ">]";
 }
+
+#endif
 
 void MEDDLY::generic_binary_evtimes
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)

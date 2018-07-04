@@ -2574,6 +2574,8 @@ MEDDLY::operation::getCacheEntryLength() const
 }
 #endif
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
 inline bool
 MEDDLY::operation::isEntryStale(const MEDDLY::node_handle* data)
@@ -2589,15 +2591,14 @@ MEDDLY::operation::getEntryStatus(const MEDDLY::node_handle* data)
   else
     return getStatusOfEntry(data);
 }
-#endif
+#endif // USE_NODE_STATUS
 
-#ifdef OLD_OP_CT
 inline bool
 MEDDLY::operation::shouldStaleCacheHitsBeDiscarded() const
 {
   return discardStaleHits;
 }
-#endif
+#endif // OLD_OP_CT
 
 // ******************************************************************
 // *                                                                *

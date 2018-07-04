@@ -42,6 +42,7 @@ class MEDDLY::copy_MT : public unary_operation {
   public:
     copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
@@ -50,6 +51,8 @@ class MEDDLY::copy_MT : public unary_operation {
 
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
+#endif
+
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
   protected:
     virtual node_handle compute_r(node_handle a) = 0;
@@ -98,6 +101,8 @@ MEDDLY::copy_MT
 }
 #endif
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
 bool MEDDLY::copy_MT::isStaleEntry(const node_handle* entryData)
 {
@@ -133,6 +138,8 @@ void MEDDLY::copy_MT::showEntry(output &strm, const node_handle* eD) const
 {
   strm << "[" << getName() << "(" << long(eD[0]) << ") " << long(eD[1]) << "]";
 }
+
+#endif // OLD_OP_CT
 
 void MEDDLY::copy_MT::computeDDEdge(const dd_edge &arg, dd_edge &res)
 {
@@ -326,6 +333,8 @@ namespace MEDDLY {
       }
 #endif
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
@@ -362,6 +371,9 @@ namespace MEDDLY {
           << ") <" << ev << ", " << long(entryData[(sizeof(node_handle) + sizeof(TYPE)) / sizeof(node_handle)])
           << ">]";
       }
+
+#endif // OLD_OP_CT
+
       virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         node_handle b;
         TYPE bev = Inf<TYPE>();
@@ -581,6 +593,8 @@ namespace MEDDLY {
       }
 #endif
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
@@ -614,6 +628,9 @@ namespace MEDDLY {
           << ">) " << long(entryData[(sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle)])
           << "]";
       }
+
+#endif // OLD_OP_CT
+
       virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         TYPE ev;
         node_handle b;
@@ -814,6 +831,9 @@ namespace MEDDLY {
         buildCTs();
       }
 #endif
+
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
@@ -845,6 +865,9 @@ namespace MEDDLY {
           << ">) <?," << long(entryData[1])
           << ">]";
       }
+
+#endif // OLD_OP_CT
+
       virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         INTYPE av;
         node_handle bn;
@@ -972,6 +995,8 @@ namespace MEDDLY {
       }
 #endif
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
       virtual bool isStaleEntry(const node_handle* entryData) {
         return 
@@ -1010,6 +1035,9 @@ namespace MEDDLY {
           << ">) <" << ev2 << "," << n2
           << ">]";
       }
+
+#endif // OLD_OP_CT
+
       virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
         INTYPE av;
         node_handle an, bn;

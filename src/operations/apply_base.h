@@ -45,8 +45,10 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     virtual ~generic_binary_mdd();
 
   public:
+#ifdef OLD_OP_CT
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle *entryData) const;
+#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual node_handle compute(node_handle a, node_handle b);
@@ -54,10 +56,12 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     virtual node_handle compute_ext(node_handle a, node_handle b);
 
   protected:
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
 #endif
 
     inline compute_table::entry_key* 
@@ -108,8 +112,10 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     virtual ~generic_binary_mxd();
 
   public:
+#ifdef OLD_OP_CT
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle *entryData) const;
+#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual node_handle compute(node_handle a, node_handle b);
@@ -122,10 +128,12 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     node_handle compute_r_ext(int i, int k, node_handle a, node_handle b);
 
   protected:
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
 #endif
 
     inline compute_table::entry_key* 
@@ -175,17 +183,21 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     virtual ~generic_binbylevel_mxd();
 
   public:
+#ifdef OLD_OP_CT
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle *entryData) const;
+#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual node_handle compute(int level, node_handle a, node_handle b);
 
   protected:
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
 #endif
 
     inline compute_table::entry_key* 
@@ -238,6 +250,7 @@ class MEDDLY::generic_binary_ev : public binary_operation {
   protected:
     virtual ~generic_binary_ev();
 
+#ifdef OLD_OP_CT
   public:
     virtual void discardEntry(const node_handle* entryData);
 
@@ -246,6 +259,7 @@ class MEDDLY::generic_binary_ev : public binary_operation {
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
 #endif
 };
 
@@ -260,7 +274,9 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     virtual ~generic_binary_evplus();
 
   public:
+#ifdef OLD_OP_CT
     virtual void showEntry(output &strm, const node_handle *entryData) const;
+#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual void compute(long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
@@ -320,7 +336,9 @@ class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
     virtual ~generic_binary_evplus_mxd();
 
   public:
+#ifdef OLD_OP_CT
     virtual void showEntry(output &strm, const node_handle *entryData) const;
+#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual void compute(long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
@@ -383,7 +401,9 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
     virtual ~generic_binary_evtimes();
 
   public:
+#ifdef OLD_OP_CT
     virtual void showEntry(output &strm, const node_handle *entryData) const;
+#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual void compute(float aev, node_handle a, float bev, node_handle b, 

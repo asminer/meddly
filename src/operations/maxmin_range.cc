@@ -49,6 +49,7 @@ class MEDDLY::range_int : public unary_operation {
   public:
     range_int(const unary_opname* oc, expert_forest* arg);
 
+#ifdef OLD_OP_CT
     // common
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
@@ -57,6 +58,7 @@ class MEDDLY::range_int : public unary_operation {
 #endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
+#endif // OLD_OP_CT
   
   protected:
     inline compute_table::entry_key* 
@@ -83,10 +85,23 @@ class MEDDLY::range_int : public unary_operation {
     }
 };
 
+#ifdef OLD_OP_CT
 MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, 1, arg, INTEGER)
 {
 }
+#else
+MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
+ : unary_operation(oc, 1, arg, INTEGER)
+{
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:I");
+  et->setForestForSlot(0, arg);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::range_int::isStaleEntry(const node_handle* data)
@@ -119,6 +134,8 @@ void MEDDLY::range_int::showEntry(output &strm, const node_handle* data) const
         << "): " << long(data[1]) << "(L)]";
 }
 
+#endif // OLD_OP_CT
+
 
 // ******************************************************************
 // *                                                                *
@@ -131,6 +148,7 @@ class MEDDLY::range_real : public unary_operation {
   public:
     range_real(const unary_opname* oc, expert_forest* arg);
 
+#ifdef OLD_OP_CT
     // common
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
@@ -139,6 +157,7 @@ class MEDDLY::range_real : public unary_operation {
 #endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
+#endif // OLD_OP_CT
 
   protected:
     inline compute_table::entry_key* findResult(node_handle a, float &b) {
@@ -163,10 +182,23 @@ class MEDDLY::range_real : public unary_operation {
     }
 };
 
+#ifdef OLD_OP_CT
 MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, sizeof(float) / sizeof(int), arg, INTEGER)
+ : unary_operation(oc, 1, sizeof(float) / sizeof(int), arg, REAL)
 {
 }
+#else
+MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
+ : unary_operation(oc, 1, arg, REAL)
+{
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:F");
+  et->setForestForSlot(0, arg);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::range_real::isStaleEntry(const node_handle* data)
@@ -202,6 +234,7 @@ void MEDDLY::range_real::showEntry(output &strm, const node_handle* data) const
   strm.put(']');
 }
 
+#endif // OLD_OP_CT
 
 // ******************************************************************
 // *                                                                *

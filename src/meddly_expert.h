@@ -3900,7 +3900,7 @@ class MEDDLY::compute_table {
                                 'N': node (in a forest)
                                 'I': int 
                                 'L': long 
-                                'B': bigint (if gmp support enabled)
+                                'H': hugeint (if gmp support enabled)
                                 'F': float
                                 'D': double
                                 'P': generic pointer
@@ -4187,10 +4187,12 @@ class MEDDLY::operation {
     void markForDeletion();
     void registerInForest(forest* f);
     void unregisterInForest(forest* f);
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entry) = 0;
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entry) = 0;
+#endif
 #endif
     void allocEntryForests(int nf);
     void addEntryForest(int index, expert_forest* f);
@@ -4279,6 +4281,8 @@ class MEDDLY::operation {
     int getCacheEntryLength() const;
 #endif
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
     /// Checks if the cache entry (in entryData[]) is stale.
     bool isEntryStale(const node_handle* data);
@@ -4287,7 +4291,6 @@ class MEDDLY::operation {
     MEDDLY::forest::node_status getEntryStatus(const node_handle* data);
 #endif
 
-#ifdef OLD_OP_CT
     /// Removes the cache entry (in entryData[]) by informing the
     /// applicable forests that the nodes in this entry are being removed
     /// from the cache
@@ -4295,9 +4298,7 @@ class MEDDLY::operation {
 
     /// Prints a string representation of this cache entry on strm (stream).
     virtual void showEntry(output &strm, const node_handle *entryData) const = 0;
-#endif
 
-#ifdef OLD_OP_CT
     bool shouldStaleCacheHitsBeDiscarded() const;
 #endif
 };

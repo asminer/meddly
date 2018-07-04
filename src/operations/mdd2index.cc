@@ -41,6 +41,7 @@ class MEDDLY::mdd2index_operation : public unary_operation {
     mdd2index_operation(const unary_opname* oc, expert_forest* arg, 
       expert_forest* res);
 
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
@@ -48,12 +49,14 @@ class MEDDLY::mdd2index_operation : public unary_operation {
 #endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
+#endif // OLD_OP_CT
 
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
 
     void compute_r(int k, node_handle a, node_handle &bdn, long &bcard);
 };
 
+#ifdef OLD_OP_CT
 MEDDLY::mdd2index_operation::mdd2index_operation(const unary_opname* oc, 
   expert_forest* arg, expert_forest* res)
   : unary_operation(oc,
@@ -64,6 +67,22 @@ MEDDLY::mdd2index_operation::mdd2index_operation(const unary_opname* oc,
   // answer[0] : pointer
   // answer[1] : cardinality
 }
+#else
+MEDDLY::mdd2index_operation::mdd2index_operation(const unary_opname* oc, 
+  expert_forest* arg, expert_forest* res)
+  : unary_operation(oc, 1, arg, res)
+{
+  // answer[0] : node
+  // answer[1] : cardinality
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:NL");
+  et->setForestForSlot(0, arg);
+  et->setForestForSlot(2, res);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool 
@@ -108,6 +127,8 @@ MEDDLY::mdd2index_operation
   strm << "[" << getName() << " " << entryData[0] << " "
        << entryData[1] << " (card " << card << ")]";
 }
+
+#endif // OLD_OP_CT
 
 void
 MEDDLY::mdd2index_operation

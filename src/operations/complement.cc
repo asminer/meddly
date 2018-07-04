@@ -42,6 +42,8 @@ class MEDDLY::compl_mdd : public unary_operation {
   public:
     compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
@@ -50,6 +52,9 @@ class MEDDLY::compl_mdd : public unary_operation {
 
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
+
+#endif // OLD_OP_CT
+
     virtual void computeDDEdge(const dd_edge& a, dd_edge& b);
 
   protected:
@@ -79,6 +84,7 @@ class MEDDLY::compl_mdd : public unary_operation {
     }
 };
 
+#ifdef OLD_OP_CT
 MEDDLY::compl_mdd
 ::compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
  : unary_operation(oc, 1, 1, arg, res)
@@ -86,6 +92,20 @@ MEDDLY::compl_mdd
   // ct entry 0: input node
   // ct entry 1: output node
 }
+#else
+MEDDLY::compl_mdd
+::compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
+ : unary_operation(oc, 1, arg, res)
+{
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:N");
+  et->setForestForSlot(0, arg);
+  et->setForestForSlot(2, res);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::compl_mdd::isStaleEntry(const node_handle* data)
@@ -121,6 +141,8 @@ void MEDDLY::compl_mdd::showEntry(output &strm, const node_handle* data) const
   strm  << "[" << getName() << "(" << long(data[0]) 
         << "): " << long(data[1]) << "]";
 }
+
+#endif // OLD_OP_CT
 
 void MEDDLY::compl_mdd::computeDDEdge(const dd_edge& a, dd_edge& b) 
 {
@@ -185,6 +207,8 @@ class MEDDLY::compl_mxd : public unary_operation {
   public:
     compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
@@ -192,11 +216,15 @@ class MEDDLY::compl_mxd : public unary_operation {
 #endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
+
+#endif // OLD_OP_CT
+
     virtual void computeDDEdge(const dd_edge& a, dd_edge& b);
 
     node_handle compute_r(int in, int k, node_handle a);
 };
 
+#ifdef OLD_OP_CT
 MEDDLY::compl_mxd
 ::compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
  : unary_operation(oc, 2, 1, arg, res)
@@ -205,6 +233,20 @@ MEDDLY::compl_mxd
   // ct entry 1: input node
   // ct entry 2: output node
 }
+#else
+MEDDLY::compl_mxd
+::compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
+ : unary_operation(oc, 1, arg, res)
+{
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "IN:N");
+  et->setForestForSlot(1, arg);
+  et->setForestForSlot(3, res);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::compl_mxd::isStaleEntry(const node_handle* data)
@@ -240,6 +282,8 @@ void MEDDLY::compl_mxd::showEntry(output &strm, const node_handle* data) const
   strm  << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1])
         << "): " << long(data[2]) << "]";
 }
+
+#endif // OLD_OP_CT
 
 void MEDDLY::compl_mxd::computeDDEdge(const dd_edge& a, dd_edge& b) 
 {
