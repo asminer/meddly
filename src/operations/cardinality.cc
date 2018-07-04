@@ -165,26 +165,14 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-#ifdef OLD_OP_CT
   compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
-#else
-  compute_table::entry_key* CTsrch = CT[0]->useEntryKey(this, 0);
-#endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeNH(a); 
-#ifdef OLD_OP_CT
   compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
-#else
-  compute_table::entry_result &cacheEntry = CT[0]->find(CTsrch);
-#endif
   if (cacheEntry) {
     long answer;
     cacheEntry.read(answer);
-#ifdef OLD_OP_CT
     CT0->recycle(CTsrch);
-#else
-    CT[0]->recycle(CTsrch);
-#endif
     return answer;
   }
 

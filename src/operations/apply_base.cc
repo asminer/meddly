@@ -1259,11 +1259,7 @@ MEDDLY::generic_binbylevel_mxd
   // save result in compute table, when we can
   if (resultLevel<0 && 1==nnz) canSaveResult = false;
   if (canSaveResult)  saveResult(Key, resultLevel, a, b, result);
-#ifdef OLD_OP_CT
   else                CT0->recycle(Key);
-#else
-  else                CT[0]->recycle(Key);
-#endif
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);

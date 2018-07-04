@@ -57,25 +57,13 @@ class MEDDLY::copy_MT : public unary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle &b) 
     {
-#ifdef OLD_OP_CT
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
-#else
-      compute_table::entry_key* CTsrch = CT[0]->useEntryKey(this, 0);
-#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeNH(a);
-#ifdef OLD_OP_CT
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
-#else
-      compute_table::entry_result &cacheFind = CT[0]->find(CTsrch);
-#endif
       if (!cacheFind) return CTsrch;
       b = resF->linkNode(cacheFind.readNH());
-#ifdef OLD_OP_CT
       CT0->recycle(CTsrch);
-#else
-      CT[0]->recycle(CTsrch);
-#endif
       return 0;
     }
     inline node_handle saveResult(compute_table::entry_key* Key, 
@@ -85,11 +73,7 @@ class MEDDLY::copy_MT : public unary_operation {
       static compute_table::entry_result result(1);
       result.reset();
       result.writeN(resF->cacheNode(b));
-#ifdef OLD_OP_CT
       CT0->addEntry(Key, result);
-#else
-      CT[0]->addEntry(Key, result);
-#endif
       return b;
     }
 };
@@ -396,26 +380,14 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       inCache(node_handle a, node_handle &b, TYPE &bev) 
       {
-#ifdef OLD_OP_CT
         compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
-#else
-        compute_table::entry_key* CTsrch = CT[0]->useEntryKey(this, 0);
-#endif
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->writeNH(a);
-#ifdef OLD_OP_CT
         compute_table::entry_result &cacheFind = CT0->find(CTsrch);
-#else
-        compute_table::entry_result &cacheFind = CT[0]->find(CTsrch);
-#endif
         if (cacheFind) {
           cacheFind.read(bev);
           b = resF->linkNode(cacheFind.readNH());
-#ifdef OLD_OP_CT
           CT0->recycle(CTsrch);
-#else
-          CT[0]->recycle(CTsrch);
-#endif
           return 0;
         }
         return CTsrch;
@@ -431,11 +403,7 @@ namespace MEDDLY {
         result.reset();
         result.writeL(bev);
         result.writeN(resF->cacheNode(b));
-#ifdef OLD_OP_CT
         CT0->addEntry(Key, result);
-#else
-        CT[0]->addEntry(Key, result);
-#endif
       }
 
       inline void addToCache(compute_table::entry_key* Key,
@@ -448,11 +416,7 @@ namespace MEDDLY {
         result.reset();
         result.writeF(bev);
         result.writeN(resF->cacheNode(b));
-#ifdef OLD_OP_CT
         CT0->addEntry(Key, result);
-#else
-        CT[0]->addEntry(Key, result);
-#endif
       }
 
   };
@@ -669,26 +633,14 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       inCache(TYPE ev, node_handle a, node_handle &b) 
       {
-#ifdef OLD_OP_CT
         compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
-#else
-        compute_table::entry_key* CTsrch = CT[0]->useEntryKey(this, 0);
-#endif
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->write(ev);
         CTsrch->writeNH(a);
-#ifdef OLD_OP_CT
         compute_table::entry_result &cacheFind = CT0->find(CTsrch);
-#else
-        compute_table::entry_result &cacheFind = CT[0]->find(CTsrch);
-#endif
         if (cacheFind) {
           b = resF->linkNode(cacheFind.readNH());
-#ifdef OLD_OP_CT
           CT0->recycle(CTsrch);
-#else
-          CT[0]->recycle(CTsrch);
-#endif
           return 0;
         }
         return CTsrch;
@@ -701,11 +653,7 @@ namespace MEDDLY {
         static compute_table::entry_result result(1);
         result.reset();
         result.writeN(resF->cacheNode(b));
-#ifdef OLD_OP_CT
         CT0->addEntry(Key, result);
-#else
-        CT[0]->addEntry(Key, result);
-#endif
       }
 
   };
@@ -912,25 +860,13 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       findResult(node_handle a, node_handle &b) 
       {
-#ifdef OLD_OP_CT
         compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
-#else
-        compute_table::entry_key* CTsrch = CT[0]->useEntryKey(this, 0);
-#endif
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->writeNH(a);
-#ifdef OLD_OP_CT
         compute_table::entry_result &cacheFind = CT0->find(CTsrch);
-#else
-        compute_table::entry_result &cacheFind = CT[0]->find(CTsrch);
-#endif
         if (!cacheFind) return CTsrch;
         b = resF->linkNode(cacheFind.readNH());
-#ifdef OLD_OP_CT
         CT0->recycle(CTsrch);
-#else
-        CT[0]->recycle(CTsrch);
-#endif
         return 0;
       }
       inline node_handle saveResult(compute_table::entry_key* Key,
@@ -940,11 +876,7 @@ namespace MEDDLY {
         static compute_table::entry_result result(1);
         result.reset();
         result.writeN(resF->cacheNode(b));
-#ifdef OLD_OP_CT
         CT0->addEntry(Key, result);
-#else
-        CT[0]->addEntry(Key, result);
-#endif
         return b;
       }
   };
@@ -1101,27 +1033,15 @@ namespace MEDDLY {
       inline compute_table::entry_key* 
       inCache(INTYPE av, node_handle an, OUTTYPE &bv, node_handle &bn) 
       {
-#ifdef OLD_OP_CT
         compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
-#else
-        compute_table::entry_key* CTsrch = CT[0]->useEntryKey(this, 0);
-#endif
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->write(av);
         CTsrch->writeNH(an);
-#ifdef OLD_OP_CT
         compute_table::entry_result &cacheFind = CT0->find(CTsrch);
-#else
-        compute_table::entry_result &cacheFind = CT[0]->find(CTsrch);
-#endif
         if (cacheFind) {
           cacheFind.read(bv);
           bn = resF->linkNode(cacheFind.readNH());
-#ifdef OLD_OP_CT
           CT0->recycle(CTsrch);
-#else
-          CT[0]->recycle(CTsrch);
-#endif
           return 0;
         }
         return CTsrch;
@@ -1135,11 +1055,7 @@ namespace MEDDLY {
         result.reset();
         result.writeL(bv);
         result.writeN(resF->cacheNode(bn));
-#ifdef OLD_OP_CT
         CT0->addEntry(Key, result);
-#else
-        CT[0]->addEntry(Key, result);
-#endif
       }
 
       inline void addToCache(compute_table::entry_key* Key,
@@ -1150,11 +1066,7 @@ namespace MEDDLY {
         result.reset();
         result.writeF(bv);
         result.writeN(resF->cacheNode(bn));
-#ifdef OLD_OP_CT
         CT0->addEntry(Key, result);
-#else
-        CT[0]->addEntry(Key, result);
-#endif
       }
 
 
