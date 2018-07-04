@@ -51,6 +51,7 @@ MEDDLY::generic_binary_mdd::generic_binary_mdd(const binary_opname* code,
   et->setForestForSlot(1, arg2);
   et->setForestForSlot(3, res);
   registerEntryType(0, et);
+  buildCTs();
 }
 #endif
 
@@ -462,6 +463,7 @@ MEDDLY::generic_binary_mxd::generic_binary_mxd(const binary_opname* code,
   et->setForestForSlot(1, arg2);
   et->setForestForSlot(3, res);
   registerEntryType(0, et);
+  buildCTs();
 }
 #endif
 
@@ -1116,6 +1118,7 @@ MEDDLY::generic_binbylevel_mxd
   et->setForestForSlot(2, arg2);
   et->setForestForSlot(4, res);
   registerEntryType(0, et);
+  buildCTs();
 }
 #endif
 

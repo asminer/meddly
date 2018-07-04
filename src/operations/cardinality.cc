@@ -99,6 +99,7 @@ MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
   compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:L");
   et->setForestForSlot(0, arg);
   registerEntryType(0, et);
+  buildCTs();
 }
 #endif
 

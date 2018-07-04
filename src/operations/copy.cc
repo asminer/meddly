@@ -110,6 +110,7 @@ MEDDLY::copy_MT
   et->setForestForSlot(0, arg);
   et->setForestForSlot(2, res);
   registerEntryType(0, et);
+  buildCTs();
 }
 #endif
 
@@ -337,6 +338,7 @@ namespace MEDDLY {
         et->setForestForSlot(0, arg);
         et->setForestForSlot(3, res);
         registerEntryType(0, et);
+        buildCTs();
       }
 #endif
 
@@ -611,6 +613,7 @@ namespace MEDDLY {
         et->setForestForSlot(1, arg);
         et->setForestForSlot(3, res);
         registerEntryType(0, et);
+        buildCTs();
       }
 #endif
 
@@ -860,6 +863,7 @@ namespace MEDDLY {
         et->setForestForSlot(0, arg);
         et->setForestForSlot(2, res);
         registerEntryType(0, et);
+        buildCTs();
       }
 #endif
 #ifndef USE_NODE_STATUS
@@ -1032,6 +1036,7 @@ namespace MEDDLY {
         et->setForestForSlot(1, arg);
         et->setForestForSlot(4, res);
         registerEntryType(0, et);
+        buildCTs();
       }
 #endif
 
