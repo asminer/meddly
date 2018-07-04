@@ -134,14 +134,14 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   }
 
   // check compute table
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->write(k);
   CTsrch->writeNH(a);
   CTsrch->writeNH(b);
-  compute_table::entry_result &cacheFind = CT->find(CTsrch);
+  compute_table::entry_result &cacheFind = CT0->find(CTsrch);
   if (cacheFind) {
-    CT->recycle(CTsrch);
+    CT0->recycle(CTsrch);
     return resF->linkNode(cacheFind.readNH());
   }
 
@@ -170,7 +170,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   static compute_table::entry_result result(1);
   result.reset();
   result.writeN(resF->cacheNode(c));
-  CT->addEntry(CTsrch, result);
+  CT0->addEntry(CTsrch, result);
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(%d, %d, %d) = %d\n", getName(), k, a, b, c);

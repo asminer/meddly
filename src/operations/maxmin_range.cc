@@ -62,13 +62,13 @@ class MEDDLY::range_int : public unary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, int &b) 
     {
-      compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeNH(a);
-      compute_table::entry_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
       cacheFind.read(b);
-      CT->recycle(CTsrch);
+      CT0->recycle(CTsrch);
       return 0;
     }
     inline long saveResult(compute_table::entry_key* Key, 
@@ -78,7 +78,7 @@ class MEDDLY::range_int : public unary_operation {
       static compute_table::entry_result result(1);
       result.reset();
       result.writeI(b);
-      CT->addEntry(Key, result);
+      CT0->addEntry(Key, result);
       return b;
     }
 };
@@ -142,13 +142,13 @@ class MEDDLY::range_real : public unary_operation {
 
   protected:
     inline compute_table::entry_key* findResult(node_handle a, float &b) {
-      compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeNH(a);
-      compute_table::entry_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
       cacheFind.read(b);
-      CT->recycle(CTsrch);
+      CT0->recycle(CTsrch);
       return 0;
     }
     inline float saveResult(compute_table::entry_key* Key, 
@@ -158,7 +158,7 @@ class MEDDLY::range_real : public unary_operation {
       static compute_table::entry_result result(1);
       result.reset();
       result.writeF(b);
-      CT->addEntry(Key, result);
+      CT0->addEntry(Key, result);
       return b;
     }
 };

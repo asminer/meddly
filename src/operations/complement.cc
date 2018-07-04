@@ -58,13 +58,13 @@ class MEDDLY::compl_mdd : public unary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle &b) 
     {
-      compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeNH(a);
-      compute_table::entry_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
       b = resF->linkNode(cacheFind.readNH());
-      CT->recycle(CTsrch);
+      CT0->recycle(CTsrch);
       return 0;
     }
     inline node_handle saveResult(compute_table::entry_key* Key, 
@@ -74,7 +74,7 @@ class MEDDLY::compl_mdd : public unary_operation {
       static compute_table::entry_result result(1);
       result.reset();
       result.writeN(resF->cacheNode(b));
-      CT->addEntry(Key, result);
+      CT0->addEntry(Key, result);
       return b;
     }
 };
@@ -262,17 +262,17 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
     );
   }
   // Check compute table
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->write(k);
   CTsrch->writeNH(a);
-  compute_table::entry_result &cacheFind = CT->find(CTsrch);
+  compute_table::entry_result &cacheFind = CT0->find(CTsrch);
   if (cacheFind) {
     node_handle ans = cacheFind.readNH();
 #ifdef DEBUG_MXD_COMPL
     fprintf(stderr, "\tin CT:   compl_mxd(%d, %d) : %d\n", ht, a, ans);
 #endif
-    CT->recycle(CTsrch);
+    CT0->recycle(CTsrch);
     return resF->linkNode(ans);
   }
 
@@ -321,9 +321,9 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
     static compute_table::entry_result res(1);
     res.reset();
     res.writeN(resF->cacheNode(result));
-    CT->addEntry(CTsrch, res);
+    CT0->addEntry(CTsrch, res);
   } else {
-    CT->recycle(CTsrch);
+    CT0->recycle(CTsrch);
   }
   return result;
 }

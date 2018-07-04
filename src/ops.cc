@@ -1982,13 +1982,13 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
     // Initialize CT 
     //
     if (Monolithic_CT) {
-      CT = Monolithic_CT;
+      CT0 = Monolithic_CT;
     } else {
-      CT = ct_initializer::createForOp(this);
+      CT0 = ct_initializer::createForOp(this);
     }
   } else {
     MEDDLY_DCASSERT(0==ans_length);
-    CT = 0;
+    CT0 = 0;
   }
 }
 
@@ -2051,6 +2051,10 @@ void MEDDLY::operation::buildCTs()
       CT[i] = ct_initializer::createForOp(this, i);
     }
   }
+  //
+  // Most operations use only one slot
+  //
+  CT0 = CT[0];  
 }
 
 #endif  // OLD_OP_CT
@@ -2064,7 +2068,7 @@ MEDDLY::operation::~operation()
 #endif
 
 #ifdef OLD_OP_CT
-  if (CT && (CT!=Monolithic_CT)) delete CT;
+  if (CT0 && (CT0!=Monolithic_CT)) delete CT0;
 #else
   if (CT) {
     for (unsigned i=0; i<num_etids; i++) {
@@ -2107,7 +2111,7 @@ void MEDDLY::operation::markForDeletion()
   if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
 #ifdef OLD_OP_CT
-  if (CT && CT->isOperationTable()) CT->removeStales();
+  if (CT0 && CT0->isOperationTable()) CT0->removeStales();
 #else
   if (CT) {
     for (unsigned i=0; i<num_etids; i++) {
@@ -2132,7 +2136,7 @@ void MEDDLY::operation::destroyAllOps()
 void MEDDLY::operation::removeStaleComputeTableEntries()
 {
 #ifdef OLD_OP_CT
-  if (CT) CT->removeStales();
+  if (CT0) CT0->removeStales();
 #else
   bool has_monolithic = false;
   if (CT) {
@@ -2187,7 +2191,7 @@ void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
 void MEDDLY::operation::showComputeTable(output &s, int verbLevel) const
 {
 #ifdef OLD_OP_CT
-  if (CT) CT->show(s, verbLevel);
+  if (CT0) CT0->show(s, verbLevel);
 #else
   bool has_monolithic = false;
   if (CT) {

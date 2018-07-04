@@ -102,18 +102,18 @@ public:
 protected:
   inline compute_table::entry_key*
   findSaturateResult(node_handle a, int level, node_handle& b) {
-    compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+    compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
     MEDDLY_DCASSERT(CTsrch);
     CTsrch->writeNH(a);
     if (argF->isFullyReduced()) CTsrch->write(level);
-    compute_table::entry_result &cacheFind = CT->find(CTsrch);
+    compute_table::entry_result &cacheFind = CT0->find(CTsrch);
     if (!cacheFind) return CTsrch;
     b = resF->linkNode(cacheFind.readNH());
-    CT->recycle(CTsrch);
+    CT0->recycle(CTsrch);
     return 0;
   }
   inline void recycleCTKey(compute_table::entry_key* CTsrch) {
-    CT->recycle(CTsrch);
+    CT0->recycle(CTsrch);
   }
   inline node_handle saveSaturateResult(compute_table::entry_key* Key,
                                         node_handle a, node_handle b)
@@ -122,7 +122,7 @@ protected:
   static compute_table::entry_result result(1);
   result.reset();
   result.writeN(resF->cacheNode(b));
-  CT->addEntry(Key, result);
+  CT0->addEntry(Key, result);
   return b;
   }
 };
@@ -157,18 +157,18 @@ protected:
   inline compute_table::entry_key*
   findResult(node_handle a, rel_node_handle b, node_handle &c)
   {
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeNH(a);
   CTsrch->writeNH(b);
-  compute_table::entry_result &cacheFind = CT->find(CTsrch);
+  compute_table::entry_result &cacheFind = CT0->find(CTsrch);
   if (!cacheFind) return CTsrch;
   c = resF->linkNode(cacheFind.readNH());
-  CT->recycle(CTsrch);
+  CT0->recycle(CTsrch);
   return 0;
   }
   inline void recycleCTKey(compute_table::entry_key* CTsrch) {
-    CT->recycle(CTsrch);
+    CT0->recycle(CTsrch);
   }
   inline node_handle saveResult(compute_table::entry_key* Key,
                                 node_handle a, rel_node_handle b, node_handle c)
@@ -177,7 +177,7 @@ protected:
   static compute_table::entry_result result(1);
   result.reset();
   result.writeN(resF->cacheNode(c));
-  CT->addEntry(Key, result);
+  CT0->addEntry(Key, result);
   return c;
   }
   

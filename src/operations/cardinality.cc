@@ -166,14 +166,14 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   
   // Check compute table
 #ifdef OLD_OP_CT
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
 #else
   compute_table::entry_key* CTsrch = CT[0]->useEntryKey(this, 0);
 #endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeNH(a); 
 #ifdef OLD_OP_CT
-  compute_table::entry_result &cacheEntry = CT->find(CTsrch);
+  compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
 #else
   compute_table::entry_result &cacheEntry = CT[0]->find(CTsrch);
 #endif
@@ -181,7 +181,7 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
     long answer;
     cacheEntry.read(answer);
 #ifdef OLD_OP_CT
-    CT->recycle(CTsrch);
+    CT0->recycle(CTsrch);
 #else
     CT[0]->recycle(CTsrch);
 #endif
@@ -206,7 +206,7 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
   result.reset();
   result.writeL(card);
-  CT->addEntry(CTsrch, result);
+  CT0->addEntry(CTsrch, result);
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is %ld(L)\n", a, card);
@@ -249,14 +249,14 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeNH(a); 
-  compute_table::entry_result &cacheEntry = CT->find(CTsrch);
+  compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
   if (cacheEntry) {
     long answer;
     cacheEntry.read(answer);
-    CT->recycle(CTsrch);
+    CT0->recycle(CTsrch);
     return answer;
   }
 
@@ -278,7 +278,7 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
   result.reset();
   result.writeL(card);
-  CT->addEntry(CTsrch, result);
+  CT0->addEntry(CTsrch, result);
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is %ld(L)\n", a, card);
@@ -377,14 +377,14 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeNH(a); 
-  compute_table::entry_result &cacheEntry = CT->find(CTsrch);
+  compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
   if (cacheEntry) {
     double answer;
     cacheEntry.read(answer);
-    CT->recycle(CTsrch);
+    CT0->recycle(CTsrch);
     return answer;
   }
 
@@ -406,7 +406,7 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   static compute_table::entry_result result(sizeof(double) / sizeof(node_handle));
   result.reset();
   result.writeD(card);
-  CT->addEntry(CTsrch, result);
+  CT0->addEntry(CTsrch, result);
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is %le(L)\n", a, card);
@@ -450,14 +450,14 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeNH(a); 
-  compute_table::entry_result &cacheEntry = CT->find(CTsrch);
+  compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
   if (cacheEntry) {
     double answer;
     cacheEntry.read(answer);
-    CT->recycle(CTsrch);
+    CT0->recycle(CTsrch);
     return answer;
   }
 
@@ -479,7 +479,7 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
   static compute_table::entry_result result(sizeof(double) / sizeof(node_handle));
   result.reset();
   result.writeD(card);
-  CT->addEntry(CTsrch, result);
+  CT0->addEntry(CTsrch, result);
 
 
 #ifdef DEBUG_CARD
@@ -599,16 +599,16 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeNH(a);
-  compute_table::entry_result &cacheEntry = CT->find(CTsrch);
+  compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
   if (cacheEntry) {
     void* P;
     cacheEntry.read(P);
     mpz_object* answer = (mpz_object*) P;
     answer->copyInto(card);
-    CT->recycle(CTsrch);
+    CT0->recycle(CTsrch);
     return;
   }
 
@@ -634,7 +634,7 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   static compute_table::entry_result result(sizeof(void*) / sizeof(node_handle));
   result.reset();
   result.writeP(new mpz_object(card));
-  CT->addEntry(CTsrch, result);
+  CT0->addEntry(CTsrch, result);
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is ", a);
@@ -691,16 +691,16 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeNH(a);
-  compute_table::entry_result &cacheEntry = CT->find(CTsrch);
+  compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
   if (cacheEntry) {
     void* P;
     cacheEntry.read(P);
     mpz_object* answer = (mpz_object*) P;
     answer->copyInto(card);
-    CT->recycle(CTsrch);
+    CT0->recycle(CTsrch);
     return;
   }
 
@@ -725,7 +725,7 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   static compute_table::entry_result result(sizeof(void*) / sizeof(node_handle));
   result.reset();
   result.writeP(new mpz_object(card));
-  CT->addEntry(CTsrch, result);
+  CT0->addEntry(CTsrch, result);
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is ", a);

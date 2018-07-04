@@ -214,14 +214,14 @@ bool MEDDLY::transitive_closure_dfs::checkTerminals(int aev, node_handle a, int 
 MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_dfs::findResult(long aev, node_handle a,
     long bev, node_handle b, node_handle c, long& dev, node_handle &d)
 {
-  compute_table::entry_key* key = CT->useEntryKey(this, 0);
+  compute_table::entry_key* key = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(key);
   key->write(aev);
   key->writeNH(a);
   key->writeNH(b);
   key->writeNH(c);
 
-  compute_table::entry_result& cacheFind = CT->find(key);
+  compute_table::entry_result& cacheFind = CT0->find(key);
   if (!cacheFind) {
     return key;
   }
@@ -236,7 +236,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_dfs::findResult(lon
   }
   MEDDLY_DCASSERT(dev >= 0);
 
-  CT->recycle(key);
+  CT0->recycle(key);
   return 0;
 }
 
@@ -257,7 +257,7 @@ void MEDDLY::transitive_closure_dfs::saveResult(compute_table::entry_key* key,
     result.writeL(dev - bev);
   }
   result.writeN(resF->cacheNode(d));
-  CT->addEntry(key, result);
+  CT0->addEntry(key, result);
 }
 
 bool MEDDLY::transitive_closure_dfs::isStaleEntry(const node_handle* data)
@@ -777,7 +777,7 @@ bool MEDDLY::transitive_closure_evplus::checkTerminals(int aev, node_handle a, i
 MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_evplus::findResult(long aev, node_handle a,
     long bev, node_handle b, int level, long& cev, node_handle &c)
 {
-  compute_table::entry_key* key = CT->useEntryKey(this, 0);
+  compute_table::entry_key* key = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(key);
   key->write(aev);
   key->writeNH(a);
@@ -787,7 +787,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_evplus::findResult(
     key->write(level);
   }
 
-  compute_table::entry_result &cacheFind = CT->find(key);
+  compute_table::entry_result &cacheFind = CT0->find(key);
   if (!cacheFind) return key;
 
   cacheFind.read(cev);
@@ -798,7 +798,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_evplus::findResult(
   else {
     MEDDLY_DCASSERT(cev == 0);
   }
-  CT->recycle(key);
+  CT0->recycle(key);
   return 0;
 }
 
@@ -818,7 +818,7 @@ void MEDDLY::transitive_closure_evplus::saveResult(compute_table::entry_key* key
     result.writeL(cev - bev);
   }
   result.writeN(resF->cacheNode(c));
-  CT->addEntry(key, result);
+  CT0->addEntry(key, result);
 }
 
 bool MEDDLY::transitive_closure_evplus::isStaleEntry(const node_handle* data)

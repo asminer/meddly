@@ -266,20 +266,20 @@ MEDDLY::constrained_dfs_mt::constrained_dfs_mt(const constrained_opname* code,
 MEDDLY::compute_table::entry_key* MEDDLY::constrained_dfs_mt::findResult(
     node_handle a, node_handle b, node_handle r, node_handle &c)
 {
-  compute_table::entry_key* key = CT->useEntryKey(this, 0);
+  compute_table::entry_key* key = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(key);
   key->writeNH(a);
   key->writeNH(b);
   key->writeNH(r);
 
-  compute_table::entry_result& cacheFind = CT->find(key);
+  compute_table::entry_result& cacheFind = CT0->find(key);
   if (!cacheFind) {
     return key;
   }
 
   c = resF->linkNode(cacheFind.readNH());
 
-  CT->recycle(key);
+  CT0->recycle(key);
   return 0;
 }
 
@@ -292,7 +292,7 @@ void MEDDLY::constrained_dfs_mt::saveResult(compute_table::entry_key* key,
   static compute_table::entry_result result(1);
   result.reset();
   result.writeN(resF->cacheNode(c));
-  CT->addEntry(key, result);
+  CT0->addEntry(key, result);
 }
 
 bool MEDDLY::constrained_dfs_mt::isStaleEntry(const node_handle* data)
@@ -985,7 +985,7 @@ bool MEDDLY::constrained_saturation_mt::checkTerminals(node_handle a, node_handl
 MEDDLY::compute_table::entry_key* MEDDLY::constrained_saturation_mt::findResult(
     node_handle a, node_handle b, int level, node_handle &c)
 {
-  compute_table::entry_key* key = CT->useEntryKey(this, 0);
+  compute_table::entry_key* key = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(key);
   key->writeNH(a);
   key->writeNH(b);
@@ -994,11 +994,11 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_saturation_mt::findResult(
     key->write(level);
   }
 
-  compute_table::entry_result &cacheFind = CT->find(key);
+  compute_table::entry_result &cacheFind = CT0->find(key);
   if (!cacheFind) return key;
   c = resF->linkNode(cacheFind.readNH());
 
-  CT->recycle(key);
+  CT0->recycle(key);
   return 0;
 }
 
@@ -1010,7 +1010,7 @@ void MEDDLY::constrained_saturation_mt::saveResult(compute_table::entry_key* key
   static compute_table::entry_result result(1);
   result.reset();
   result.writeN(resF->cacheNode(c));
-  CT->addEntry(key, result);
+  CT0->addEntry(key, result);
 }
 
 bool MEDDLY::constrained_saturation_mt::isStaleEntry(const node_handle* data)
@@ -1123,14 +1123,14 @@ MEDDLY::constrained_bckwd_dfs_evplus::constrained_bckwd_dfs_evplus(const constra
 MEDDLY::compute_table::entry_key* MEDDLY::constrained_bckwd_dfs_evplus::findResult(long aev, node_handle a,
     long bev, node_handle b, node_handle r, long& cev, node_handle &c)
 {
-  compute_table::entry_key* key = CT->useEntryKey(this, 0);
+  compute_table::entry_key* key = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(key);
   key->write(aev);
   key->writeNH(a);
   key->writeNH(b);
   key->writeNH(r);
 
-  compute_table::entry_result& cacheFind = CT->find(key);
+  compute_table::entry_result& cacheFind = CT0->find(key);
   if (!cacheFind) {
     return key;
   }
@@ -1144,7 +1144,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_bckwd_dfs_evplus::findResu
     MEDDLY_DCASSERT(cev == 0);
   }
 
-  CT->recycle(key);
+  CT0->recycle(key);
   return 0;
 }
 
@@ -1164,7 +1164,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saveResult(compute_table::entry_key* 
     result.writeL(cev - bev);
   }
   result.writeN(resF->cacheNode(c));
-  CT->addEntry(key, result);
+  CT0->addEntry(key, result);
 }
 
 bool MEDDLY::constrained_bckwd_dfs_evplus::isStaleEntry(const node_handle* data)
@@ -1638,7 +1638,7 @@ bool MEDDLY::constrained_saturation_evplus::checkTerminals(int aev, node_handle 
 MEDDLY::compute_table::entry_key* MEDDLY::constrained_saturation_evplus::findResult(long aev, node_handle a,
     long bev, node_handle b, int level, long& cev, node_handle &c)
 {
-  compute_table::entry_key* key = CT->useEntryKey(this, 0);
+  compute_table::entry_key* key = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(key);
   key->write(aev);
   key->writeNH(a);
@@ -1649,7 +1649,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_saturation_evplus::findRes
     key->write(level);
   }
 
-  compute_table::entry_result &cacheFind = CT->find(key);
+  compute_table::entry_result &cacheFind = CT0->find(key);
   if (!cacheFind) return key;
   cacheFind.read(cev);
   c = resF->linkNode(cacheFind.readNH());
@@ -1660,7 +1660,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_saturation_evplus::findRes
     MEDDLY_DCASSERT(cev == 0);
   }
 
-  CT->recycle(key);
+  CT0->recycle(key);
   return 0;
 }
 
@@ -1680,7 +1680,7 @@ void MEDDLY::constrained_saturation_evplus::saveResult(compute_table::entry_key*
     result.writeL(cev - bev);
   }
   result.writeN(resF->cacheNode(c));
-  CT->addEntry(key, result);
+  CT0->addEntry(key, result);
 }
 
 bool MEDDLY::constrained_saturation_evplus::isStaleEntry(const node_handle* data)

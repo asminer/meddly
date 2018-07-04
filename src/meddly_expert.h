@@ -4164,9 +4164,8 @@ class MEDDLY::operation {
 
   protected:
     /// Compute table to use, if any.
-#ifdef OLD_OP_CT
-    compute_table* CT;
-#else
+    compute_table* CT0;
+#ifndef OLD_OP_CT
     compute_table** CT;
 #endif
     /// Struct for CT searches.

@@ -303,7 +303,7 @@ MEDDLY::union_min_evplus::union_min_evplus(const binary_opname* opcode,
 MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus::findResult(long aev, node_handle a,
   long bev, node_handle b, long& cev, node_handle &c)
 {
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   if (can_commute && a > b) {
     CTsrch->write(0L);
@@ -316,7 +316,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus::findResult(long aev,
     CTsrch->write(bev - aev);
     CTsrch->writeNH(b);
   }
-  compute_table::entry_result &cacheFind = CT->find(CTsrch);
+  compute_table::entry_result &cacheFind = CT0->find(CTsrch);
   if (!cacheFind) return CTsrch;
   cacheFind.read(cev);
   MEDDLY_DCASSERT(cev == 0);
@@ -324,7 +324,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus::findResult(long aev,
   if (c != 0) {
     cev = MIN(aev, bev);
   }
-  CT->recycle(CTsrch);
+  CT0->recycle(CTsrch);
   return 0;
 }
 
@@ -338,7 +338,7 @@ void MEDDLY::union_min_evplus::saveResult(compute_table::entry_key* key,
   result.reset();
   result.writeL(0);   //   Why always 0?
   result.writeN(resF->cacheNode(c));
-  CT->addEntry(key, result);
+  CT0->addEntry(key, result);
 }
 
 bool MEDDLY::union_min_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,
@@ -433,7 +433,7 @@ MEDDLY::union_min_evplus_mxd::union_min_evplus_mxd(const binary_opname* opcode,
 MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus_mxd::findResult(long aev, node_handle a,
   long bev, node_handle b, long& cev, node_handle &c)
 {
-  compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   if (can_commute && a > b) {
     CTsrch->write(0L);
@@ -446,7 +446,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus_mxd::findResult(long 
     CTsrch->write(bev - aev);
     CTsrch->writeNH(b);
   }
-  compute_table::entry_result &cacheFind = CT->find(CTsrch);
+  compute_table::entry_result &cacheFind = CT0->find(CTsrch);
   if (!cacheFind) return CTsrch;
   cacheFind.read(cev);
   MEDDLY_DCASSERT(cev == 0);
@@ -454,7 +454,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus_mxd::findResult(long 
   if (c != 0) {
     cev = MIN(aev, bev);
   }
-  CT->recycle(CTsrch);
+  CT0->recycle(CTsrch);
   return 0;
 }
 
@@ -468,7 +468,7 @@ void MEDDLY::union_min_evplus_mxd::saveResult(compute_table::entry_key* key,
   result.reset();
   result.writeL(0);   // why always 0?
   result.writeN(resF->cacheNode(c));
-  CT->addEntry(key, result);
+  CT0->addEntry(key, result);
 }
 
 bool MEDDLY::union_min_evplus_mxd::checkTerminals(long aev, node_handle a, long bev, node_handle b,

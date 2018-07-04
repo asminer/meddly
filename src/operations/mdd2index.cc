@@ -147,14 +147,14 @@ MEDDLY::mdd2index_operation
   // Check compute table
   compute_table::entry_key* CTsrch = 0;
   if (aLevel == k) {
-    CTsrch = CT->useEntryKey(this, 0);
+    CTsrch = CT0->useEntryKey(this, 0);
     MEDDLY_DCASSERT(CTsrch);
     CTsrch->writeNH(a);
-    compute_table::entry_result &cacheEntry = CT->find(CTsrch);
+    compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
     if (cacheEntry) {
       bdn = resF->linkNode(cacheEntry.readNH());
       cacheEntry.read(bcard);
-      CT->recycle(CTsrch);
+      CT0->recycle(CTsrch);
       return;
     }
   }
@@ -210,7 +210,7 @@ MEDDLY::mdd2index_operation
     result.reset();
     result.writeN(resF->cacheNode(bdn));
     result.writeL(bcard);
-    CT->addEntry(CTsrch, result);
+    CT0->addEntry(CTsrch, result);
   }
 }
 

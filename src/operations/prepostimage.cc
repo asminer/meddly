@@ -78,14 +78,14 @@ class MEDDLY::image_op : public binary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-      compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeNH(a);
       CTsrch->writeNH(b);
-      compute_table::entry_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
       c = resF->linkNode(cacheFind.readNH());
-      CT->recycle(CTsrch);
+      CT0->recycle(CTsrch);
       return 0;
     }
     inline node_handle saveResult(compute_table::entry_key* Key, 
@@ -96,7 +96,7 @@ class MEDDLY::image_op : public binary_operation {
       static compute_table::entry_result result(1);
       result.reset();
       result.writeN(resF->cacheNode(c));
-      CT->addEntry(Key, result);
+      CT0->addEntry(Key, result);
       return c;
     }
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -535,18 +535,18 @@ class MEDDLY::image_op_evplus : public binary_operation {
     inline compute_table::entry_key*
     findResult(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle &resEvmdd)
     {
-      compute_table::entry_key* CTsrch = CT->useEntryKey(this, 0);
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeNH(evmdd);
       CTsrch->writeNH(mxd);
-      compute_table::entry_result &cacheFind = CT->find(CTsrch);
+      compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
       cacheFind.read(resEv);
       resEvmdd = resF->linkNode(cacheFind.readNH());
       if (resEvmdd != 0) {
         resEv += ev;
       }
-      CT->recycle(CTsrch);
+      CT0->recycle(CTsrch);
       return 0;
     }
     inline void saveResult(compute_table::entry_key* Key,
@@ -558,7 +558,7 @@ class MEDDLY::image_op_evplus : public binary_operation {
       result.reset();
       result.writeL(resEvmdd == 0 ? 0L : resEv - ev);
       result.writeN(resF->cacheNode(resEvmdd));
-      CT->addEntry(Key, result);
+      CT0->addEntry(Key, result);
     }
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
