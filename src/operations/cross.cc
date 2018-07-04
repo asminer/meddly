@@ -38,14 +38,17 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::cross_bool : public binary_operation {
+#ifdef OLD_OP_CT
     static const int LEVEL_INDEX = 0;
     static const int OPNDA_INDEX = 1;
     static const int OPNDB_INDEX = 2;
     static const int RESLT_INDEX = 3;
+#endif
   public:
     cross_bool(const binary_opname* oc, expert_forest* a1,
       expert_forest* a2, expert_forest* res);
 
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle*);
 #else
@@ -53,12 +56,14 @@ class MEDDLY::cross_bool : public binary_operation {
 #endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
+#endif // OLD_OP_CT
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     node_handle compute_pr(int in, int ht, node_handle a, node_handle b);
     node_handle compute_un(int ht, node_handle a, node_handle b);
 };
 
+#ifdef OLD_OP_CT
 MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res) 
 : binary_operation(oc, 3, 1, a1, a2, res)
@@ -68,6 +73,21 @@ MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
   // data[OPNDB_INDEX] : b
   // data[RESLT_INDEX] : c
 }
+#else
+MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res) 
+: binary_operation(oc, 1, a1, a2, res)
+{
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "INN:N");
+  et->setForestForSlot(1, a1);
+  et->setForestForSlot(2, a2);
+  et->setForestForSlot(4, res);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::cross_bool::isStaleEntry(const node_handle* data)
@@ -113,6 +133,8 @@ MEDDLY::cross_bool ::showEntry(output &strm, const node_handle* data) const
         << long(data[2]) << ", " << long(data[3]) << "): " << long(data[4])
         << "]";
 }
+
+#endif // OLD_OP_CT
 
 void
 MEDDLY::cross_bool::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)

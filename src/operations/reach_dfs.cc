@@ -94,6 +94,7 @@ class MEDDLY::saturation_op : public unary_operation {
     node_handle saturate(node_handle mdd);
     node_handle saturate(node_handle mdd, int level);
 
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
@@ -101,6 +102,7 @@ class MEDDLY::saturation_op : public unary_operation {
 #endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
+#endif
 
   protected:
     inline compute_table::entry_key* 
@@ -129,7 +131,7 @@ class MEDDLY::saturation_op : public unary_operation {
 
 // ******************************************************************
 // *                                                                *
-// *                      saturation_evplus_op  class                      *
+// *                   saturation_evplus_op class                   *
 // *                                                                *
 // ******************************************************************
 
@@ -142,9 +144,11 @@ class MEDDLY::saturation_evplus_op : public unary_operation {
     void saturate(long ev, node_handle evmdd, long& resEv, node_handle& resEvmdd);
     void saturate(long ev, node_handle evmdd, int level, long& resEv, node_handle& resEvmdd);
 
+#ifdef OLD_OP_CT
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
+#endif
 
   protected:
     inline compute_table::entry_key*
@@ -185,6 +189,7 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     common_dfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
@@ -192,6 +197,7 @@ class MEDDLY::common_dfs_mt : public binary_operation {
 #endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
+#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual void saturateHelper(unpacked_node &mdd) = 0;
 
@@ -338,9 +344,11 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
     common_dfs_evplus(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
+#ifdef OLD_OP_CT
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
+#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual void saturateHelper(unpacked_node &mdd) = 0;
 
@@ -487,6 +495,8 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
 // *                                                                *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
+
 MEDDLY::saturation_op
 ::saturation_op(common_dfs_mt* p, expert_forest* argF, expert_forest* resF)
   : unary_operation(saturation_opname::getInstance(),
@@ -495,6 +505,33 @@ MEDDLY::saturation_op
 {
   parent = p;
 }
+
+#else
+
+MEDDLY::saturation_op
+::saturation_op(common_dfs_mt* p, expert_forest* argF, expert_forest* resF)
+  : unary_operation(saturation_opname::getInstance(), 1, argF, resF)
+{
+  parent = p;
+
+  const char* name = saturation_opname::getInstance()->getName();
+  compute_table::entry_type* et;
+
+  if (argF->isFullyReduced()) {
+    // CT entry includes level info
+    et = new compute_table::entry_type(name, "NI:N");
+    et->setForestForSlot(0, argF);
+    et->setForestForSlot(3, resF);
+  } else {
+    et = new compute_table::entry_type(name, "N:N");
+    et->setForestForSlot(0, argF);
+    et->setForestForSlot(2, resF);
+  }
+  registerEntryType(0, et);
+  buildCTs();
+}
+
+#endif
 
 MEDDLY::saturation_op::~saturation_op()
 {
@@ -557,6 +594,8 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
   return n;
 }
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
 bool MEDDLY::saturation_op::isStaleEntry(const node_handle* data)
 {
@@ -603,12 +642,15 @@ void MEDDLY::saturation_op::showEntry(output &strm, const node_handle* data) con
   }
 }
 
+#endif // OLD_OP_CT
 
 // ******************************************************************
 // *                                                                *
 // *                 saturation_evplus_op  methods                  *
 // *                                                                *
 // ******************************************************************
+
+#ifdef OLD_OP_CT
 
 MEDDLY::saturation_evplus_op
 ::saturation_evplus_op(common_dfs_evplus* p, expert_forest* argF, expert_forest* resF)
@@ -621,6 +663,33 @@ MEDDLY::saturation_evplus_op
 {
   parent = p;
 }
+
+#else
+
+MEDDLY::saturation_evplus_op
+::saturation_evplus_op(common_dfs_evplus* p, expert_forest* argF, expert_forest* resF)
+  : unary_operation(saturation_opname::getInstance(), 1, argF, resF)
+{
+  parent = p;
+
+  const char* name = saturation_opname::getInstance()->getName();
+  compute_table::entry_type* et;
+
+  if (argF->isFullyReduced()) {
+    // CT entry includes level info
+    et = new compute_table::entry_type(name, "NI:LN");
+    et->setForestForSlot(0, argF);
+    et->setForestForSlot(4, resF);
+  } else {
+    et = new compute_table::entry_type(name, "N:LN");
+    et->setForestForSlot(0, argF);
+    et->setForestForSlot(3, resF);
+  }
+  registerEntryType(0, et);
+  buildCTs();
+}
+
+#endif
 
 MEDDLY::saturation_evplus_op::~saturation_evplus_op()
 {
@@ -693,6 +762,8 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
 #endif
 }
 
+#ifdef OLD_OP_CT
+
 bool MEDDLY::saturation_evplus_op::isStaleEntry(const node_handle* data)
 {
   return (argF->isFullyReduced()
@@ -727,6 +798,7 @@ void MEDDLY::saturation_evplus_op::showEntry(output &strm, const node_handle* da
   }
 }
 
+#endif // OLD_OP_CT
 
 // ******************************************************************
 // *                                                                *
@@ -736,7 +808,11 @@ void MEDDLY::saturation_evplus_op::showEntry(output &strm, const node_handle* da
 
 MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res)
+#ifdef OLD_OP_CT
 : binary_operation(oc, 2, 1, a1, a2, res)
+#else
+: binary_operation(oc, 1, a1, a2, res)
+#endif
 {
   splits = 0;
   mddUnion = 0;
@@ -744,7 +820,17 @@ MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
   mxdDifference = 0;
   freeqs = 0;
   freebufs = 0;
+#ifndef OLD_OP_CT
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "NN:N");
+  et->setForestForSlot(0, a1);
+  et->setForestForSlot(1, a2);
+  et->setForestForSlot(3, res);
+  registerEntryType(0, et);
+  buildCTs();
+#endif
 }
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::common_dfs_mt::isStaleEntry(const node_handle* data)
@@ -785,6 +871,8 @@ void MEDDLY::common_dfs_mt::showEntry(output &strm, const node_handle* data) con
 {
   strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): " << long(data[2]) << "]";
 }
+
+#endif // OLD_OP_CT
 
 void MEDDLY::common_dfs_mt
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
@@ -1416,10 +1504,14 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
 
 MEDDLY::common_dfs_evplus::common_dfs_evplus(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res)
+#ifdef OLD_OP_CT
 : binary_operation(oc,
     (sizeof(node_handle) + sizeof(node_handle)) / sizeof(node_handle),
     (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
     a1, a2, res)
+#else
+: binary_operation(oc, 1, a1, a2, res)
+#endif
 {
   splits = 0;
   evplusUnionMin = 0;
@@ -1427,7 +1519,17 @@ MEDDLY::common_dfs_evplus::common_dfs_evplus(const binary_opname* oc, expert_for
   mxdDifference = 0;
   freeqs = 0;
   freebufs = 0;
+#ifndef OLD_OP_CT
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "NN:LN");
+  et->setForestForSlot(0, a1);
+  et->setForestForSlot(1, a2);
+  et->setForestForSlot(4, res);
+  registerEntryType(0, et);
+  buildCTs();
+#endif
 }
+
+#ifdef OLD_OP_CT
 
 bool MEDDLY::common_dfs_evplus::isStaleEntry(const node_handle* data)
 {
@@ -1451,6 +1553,8 @@ void MEDDLY::common_dfs_evplus::showEntry(output &strm, const node_handle* data)
     << "): " << long(data[(2 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)])
     << "]";
 }
+
+#endif // OLD_OP_CT
 
 void MEDDLY::common_dfs_evplus
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
