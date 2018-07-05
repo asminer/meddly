@@ -262,7 +262,7 @@ MEDDLY::pattern_storage
 : node_storage(n, f)
 {
   
-  MM = mst->initManager(sizeof(node_handle), slotsForNode(0), f->changeStats());
+  MM = mst->initManager(sizeof(node_handle), slotsForNode(0), f->changeMemStats());
   
   unhashed_start = header_slots;
   unhashed_slots = slotsForBytes(f->unhashedHeaderBytes());
