@@ -41,20 +41,27 @@ namespace MEDDLY {
 class MEDDLY::select : public unary_operation {
   public:
     select(const unary_opname* oc, expert_forest* arg, expert_forest* res);
+#ifdef OLD_OP_CT
   protected:
     virtual bool isStaleEntry(const node_handle* entry);
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
+#endif
 };
 
 MEDDLY::select
 :: select(const unary_opname* oc, expert_forest* arg, expert_forest* res)
+#ifdef OLD_OP_CT
  : unary_operation(oc, 0, 0, arg, res)
+#else
+ : unary_operation(oc, 0, arg, res)
+#endif
 {
   MEDDLY_DCASSERT(!argF->isForRelations());
   MEDDLY_DCASSERT(!resF->isForRelations());
 }
 
+#ifdef OLD_OP_CT
 bool MEDDLY::select::isStaleEntry(const node_handle* entry)
 {
   // Do not use compute table
@@ -70,6 +77,7 @@ void MEDDLY::select::showEntry(output &strm, const node_handle* entryData) const
 {
   // Do nothing
 }
+#endif
 
 // ******************************************************************
 // *                                                                *

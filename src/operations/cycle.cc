@@ -37,13 +37,17 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
   public:
     cycle_EV2EV(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
+#ifdef OLD_OP_CT
     virtual bool isStaleEntry(const node_handle* data);
     virtual void discardEntry(const node_handle* data);
     virtual void showEntry(output &strm, const node_handle* data) const;
+#endif
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
 
   protected:
+#ifdef OLD_OP_CT
     static const int NODE_INDICES_IN_KEY[2];
+#endif
 
     virtual void compute_r(long aev, node_handle a, int k, long& bev, node_handle& b);
 
@@ -76,20 +80,36 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
     }
 };
 
+#ifdef OLD_OP_CT
 const int MEDDLY::cycle_EV2EV::NODE_INDICES_IN_KEY[2] = {
   0,
   (sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)
 };
+#endif
 
 MEDDLY::cycle_EV2EV::cycle_EV2EV(const unary_opname* oc, expert_forest* arg, expert_forest* res)
+#ifdef OLD_OP_CT
   : unary_operation(oc,
       sizeof(node_handle) / sizeof(node_handle),
       (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
       arg, res)
+#else
+  : unary_operation(oc, 1, arg, res)
+#endif
 {
   MEDDLY_DCASSERT(argF->isEVPlus() && argF->isForRelations());
   MEDDLY_DCASSERT(resF->isEVPlus() && !resF->isForRelations());
+
+#ifndef OLD_OP_CT
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "LN:LN");
+  et->setForestForSlot(1, arg);
+  et->setForestForSlot(4, res);
+  registerEntryType(0, et);
+  buildCTs();
+#endif
 }
+
+#ifdef OLD_OP_CT
 
 bool MEDDLY::cycle_EV2EV::isStaleEntry(const node_handle* data)
 {
@@ -110,6 +130,8 @@ void MEDDLY::cycle_EV2EV::showEntry(output &strm, const node_handle* data) const
     << "): " << long(data[NODE_INDICES_IN_KEY[3]])
     << "]";
 }
+
+#endif
 
 void MEDDLY::cycle_EV2EV::computeDDEdge(const dd_edge &arg, dd_edge &res)
 {

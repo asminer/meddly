@@ -79,6 +79,7 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
     node_handle saturate(node_handle mdd);
     node_handle saturate(node_handle mdd, int level);
 
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
@@ -86,6 +87,7 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
 #endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
+#endif
 
   protected:
     inline compute_table::entry_key* 
@@ -125,6 +127,7 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
       satotf_opname::otf_relation* rel);
     virtual ~common_otf_dfs_by_events_mt();
 
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
@@ -132,6 +135,7 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
 #endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
+#endif
     virtual void compute(const dd_edge& a, dd_edge &c);
     virtual void saturateHelper(unpacked_node& mdd) = 0;
 
@@ -281,6 +285,7 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
 // *                                                                *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
 MEDDLY::otfsat_by_events_op
 ::otfsat_by_events_op(common_otf_dfs_by_events_mt* p,
   expert_forest* argF, expert_forest* resF)
@@ -288,8 +293,32 @@ MEDDLY::otfsat_by_events_op
     ((argF != 0 && argF->isFullyReduced())? 2: 1), 1, argF, resF)
 {
   parent = p;
-
 }
+#else
+MEDDLY::otfsat_by_events_op
+::otfsat_by_events_op(common_otf_dfs_by_events_mt* p,
+  expert_forest* argF, expert_forest* resF)
+  : unary_operation(otfsat_by_events_opname::getInstance(), 1, argF, resF)
+{
+  parent = p;
+
+  const char* name = otfsat_by_events_opname::getInstance()->getName();
+  compute_table::entry_type* et;
+
+  if (argF->isFullyReduced()) {
+    // CT entry includes level info
+    et = new compute_table::entry_type(name, "NI:N");
+    et->setForestForSlot(0, argF);
+    et->setForestForSlot(3, resF);
+  } else {
+    et = new compute_table::entry_type(name, "N:N");
+    et->setForestForSlot(0, argF);
+    et->setForestForSlot(2, resF);
+  }
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
 
 MEDDLY::otfsat_by_events_op::~otfsat_by_events_op()
 {
@@ -355,6 +384,8 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
   return n;
 }
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
 bool MEDDLY::otfsat_by_events_op::isStaleEntry(const node_handle* data)
 {
@@ -402,6 +433,7 @@ void MEDDLY::otfsat_by_events_op::showEntry(output &strm,
   }
 }
 
+#endif // OLD_OP_CT
 
 // ******************************************************************
 // *                                                                *
@@ -412,7 +444,11 @@ void MEDDLY::otfsat_by_events_op::showEntry(output &strm,
 MEDDLY::common_otf_dfs_by_events_mt::common_otf_dfs_by_events_mt(
   const satotf_opname* opcode,
   satotf_opname::otf_relation* relation)
+#ifdef OLD_OP_CT
 : specialized_operation(opcode, 2, 1)
+#else
+: specialized_operation(opcode, 1)
+#endif
 {
   mddUnion = 0;
   mxdIntersection = 0;
@@ -427,7 +463,16 @@ MEDDLY::common_otf_dfs_by_events_mt::common_otf_dfs_by_events_mt(
   registerInForest(arg1F);
   registerInForest(arg2F);
   registerInForest(resF);
+#ifdef OLD_OP_CT
   setAnswerForest(resF);
+#else
+  compute_table::entry_type* et = new compute_table::entry_type(opcode->getName(), "NN:N");
+  et->setForestForSlot(0, arg1F);
+  et->setForestForSlot(1, arg2F);
+  et->setForestForSlot(3, resF);
+  registerEntryType(0, et);
+  buildCTs();
+#endif
 }
 
 MEDDLY::common_otf_dfs_by_events_mt::~common_otf_dfs_by_events_mt()
@@ -437,6 +482,8 @@ MEDDLY::common_otf_dfs_by_events_mt::~common_otf_dfs_by_events_mt()
   unregisterInForest(arg2F);
   unregisterInForest(resF);
 }
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::common_otf_dfs_by_events_mt::isStaleEntry(const node_handle* data)
@@ -478,6 +525,8 @@ void MEDDLY::common_otf_dfs_by_events_mt::showEntry(output &strm,
 {
   strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): " << long(data[2]) << "]";
 }
+
+#endif // OLD_OP_CT
 
 void MEDDLY::common_otf_dfs_by_events_mt
 ::compute(const dd_edge &a, dd_edge &c)

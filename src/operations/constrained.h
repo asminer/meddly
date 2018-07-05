@@ -55,8 +55,13 @@ protected:
   virtual bool checkForestCompatibility() const;
 
 public:
+#ifdef OLD_OP_CT
   common_constrained(const constrained_opname* code, int kl, int al,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+#else
+  common_constrained(const constrained_opname* code, unsigned slots,
+    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+#endif
   ~common_constrained();
 };
 
@@ -79,9 +84,11 @@ protected:
 
   void iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
+#ifdef OLD_OP_CT
   virtual bool isStaleEntry(const node_handle* entryData);
   virtual void discardEntry(const node_handle* entryData);
   virtual void showEntry(output &strm, const node_handle* entryData) const;
+#endif
 
 public:
   constrained_bckwd_bfs_evplus(const constrained_opname* code,
@@ -103,7 +110,9 @@ public:
 class MEDDLY::constrained_dfs_mt: public common_constrained
 {
 protected:
+#ifdef OLD_OP_CT
   static const int NODE_INDICES_IN_KEY[4];
+#endif
 
   binary_operation* mxdDifferenceOp;
   binary_operation* mxdIntersectionOp;
@@ -117,9 +126,11 @@ protected:
 
   void splitMxd(node_handle mxd);
 
+#ifdef OLD_OP_CT
   virtual bool isStaleEntry(const node_handle* data);
   virtual void discardEntry(const node_handle* data);
   virtual void showEntry(output &strm, const node_handle *data) const;
+#endif
 
 public:
   constrained_dfs_mt(const constrained_opname* code,
@@ -158,7 +169,9 @@ public:
 class MEDDLY::constrained_saturation_mt: public specialized_operation
 {
 protected:
+#ifdef OLD_OP_CT
   int NODE_INDICES_IN_KEY[3];
+#endif
 
   constrained_dfs_mt* parent;
 
@@ -177,9 +190,11 @@ protected:
   void saveResult(compute_table::entry_key* Key,
     node_handle a, node_handle b, int level, node_handle c);
 
+#ifdef OLD_OP_CT
   virtual bool isStaleEntry(const node_handle* data);
   virtual void discardEntry(const node_handle* data);
   virtual void showEntry(output &strm, const node_handle *data) const;
+#endif
 
 public:
   constrained_saturation_mt(constrained_dfs_mt* p,
@@ -197,7 +212,9 @@ public:
 class MEDDLY::constrained_bckwd_dfs_evplus: public common_constrained
 {
 protected:
+#ifdef OLD_OP_CT
   static const int NODE_INDICES_IN_KEY[4];
+#endif
 
   binary_operation* mxdDifferenceOp;
   binary_operation* mxdIntersectionOp;
@@ -213,9 +230,11 @@ protected:
   void splitMxd(node_handle mxd);
   void recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
+#ifdef OLD_OP_CT
   virtual bool isStaleEntry(const node_handle* data);
   virtual void discardEntry(const node_handle* data);
   virtual void showEntry(output &strm, const node_handle *data) const;
+#endif
 
 public:
   constrained_bckwd_dfs_evplus(const constrained_opname* code,
@@ -230,7 +249,9 @@ public:
 class MEDDLY::constrained_saturation_evplus: public specialized_operation
 {
 protected:
+#ifdef OLD_OP_CT
   int NODE_INDICES_IN_KEY[3];
+#endif
 
   constrained_bckwd_dfs_evplus* parent;
 
@@ -250,9 +271,11 @@ protected:
   void saveResult(compute_table::entry_key* Key,
     long aev, node_handle a, long bev, node_handle b, int level, long cev, node_handle c);
 
+#ifdef OLD_OP_CT
   virtual bool isStaleEntry(const node_handle* data);
   virtual void discardEntry(const node_handle* data);
   virtual void showEntry(output &strm, const node_handle *data) const;
+#endif
 
 public:
   constrained_saturation_evplus(constrained_bckwd_dfs_evplus* p,

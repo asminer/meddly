@@ -56,6 +56,7 @@ class MEDDLY::mm_mult_op : public binary_operation {
     mm_mult_op(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
@@ -63,6 +64,7 @@ class MEDDLY::mm_mult_op : public binary_operation {
 #endif
     virtual void discardEntry(const node_handle* entryData);
     virtual void showEntry(output &strm, const node_handle* entryData) const;
+#endif
 
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
@@ -95,6 +97,7 @@ class MEDDLY::mm_mult_op : public binary_operation {
     virtual node_handle compute_rec(node_handle a, node_handle b) = 0;
 };
 
+#ifdef OLD_OP_CT
 MEDDLY::mm_mult_op::mm_mult_op(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res, binary_operation* acc)
 : binary_operation(oc, 2, 1, a1, a2, res)
@@ -104,6 +107,26 @@ MEDDLY::mm_mult_op::mm_mult_op(const binary_opname* oc, expert_forest* a1,
   if (!a1->isForRelations() || !a2->isForRelations())
     throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 }
+#else
+MEDDLY::mm_mult_op::mm_mult_op(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res, binary_operation* acc)
+: binary_operation(oc, 1, a1, a2, res)
+{
+  accumulateOp = acc;
+
+  if (!a1->isForRelations() || !a2->isForRelations())
+    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "NN:N");
+  et->setForestForSlot(0, a1);
+  et->setForestForSlot(1, a2);
+  et->setForestForSlot(3, res);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::mm_mult_op::isStaleEntry(const node_handle* data)
@@ -146,6 +169,8 @@ MEDDLY::mm_mult_op::showEntry(output &strm, const node_handle* data) const
   strm  << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1])
         << "): " << long(data[2]) << "]";
 }
+
+#endif // OLD_OP_CT
 
 void MEDDLY::mm_mult_op
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
