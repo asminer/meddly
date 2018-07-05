@@ -100,6 +100,8 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
   // nodemm = HEAP_MANAGER;
 
   nodestor = SIMPLE_STORAGE;
+  //nodestor = PATTERN_STORAGE;
+  //nodestor = BEST_STORAGE;
 
   reorder = reordering_type::SINK_DOWN;
   swap = variable_swap_type::VAR;

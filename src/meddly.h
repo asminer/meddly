@@ -180,6 +180,10 @@ namespace MEDDLY {
     memory_manager_style for memory management.
   */
   extern const node_storage_style* SIMPLE_STORAGE;
+  
+  
+   extern const node_storage_style* PATTERN_STORAGE;
+   extern const node_storage_style* BEST_STORAGE;
 
 
   // 
