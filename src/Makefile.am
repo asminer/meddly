@@ -107,9 +107,8 @@ libmeddly_la_SOURCES = \
   \
   storage/bytepack.h  \
   storage/simple.h          storage/simple.cc \
-  storage/pattern.h          storage/pattern.cc \
+  storage/pattern.h         storage/pattern.cc \
   storage/best.h            storage/best.cc \
-
   storage/ct_classic.h      storage/ct_classic.cc \
   storage/init_storage.h    storage/init_storage.cc
 
