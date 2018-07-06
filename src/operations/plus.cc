@@ -165,7 +165,11 @@ MEDDLY::plus_evplus::plus_evplus(const binary_opname* opcode,
 MEDDLY::compute_table::entry_key* MEDDLY::plus_evplus::findResult(long aev, node_handle a,
   long bev, node_handle b, long& cev, node_handle &c)
 {
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(CTsrch);
   if (can_commute && a > b) {
     CTsrch->writeL(0);
@@ -197,7 +201,11 @@ void MEDDLY::plus_evplus::saveResult(compute_table::entry_key* key,
 {
   arg1F->cacheNode(a);
   arg2F->cacheNode(b);
+#ifdef OLD_OP_CT
   static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+#else
+  static compute_table::entry_result result(etype[0]);
+#endif
   result.reset();
   result.writeL(c == 0 ? 0L : cev - aev - bev);
   result.writeN(resF->cacheNode(c));

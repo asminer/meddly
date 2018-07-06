@@ -2518,8 +2518,10 @@ MEDDLY::compute_table::readEV(const MEDDLY::node_handle* p, float &ev)
   ev = f[0];
 }
 
+#ifdef OLD_OP_CT
+
 inline MEDDLY::compute_table::entry_key*
-MEDDLY::compute_table::useEntryKey(operation* op, unsigned slot)
+MEDDLY::compute_table::useEntryKey(operation* op)
 {
   if (0==op) return 0;
 
@@ -2530,13 +2532,30 @@ MEDDLY::compute_table::useEntryKey(operation* op, unsigned slot)
   } else {
     k = new entry_key();
   }
-#ifdef OLD_OP_CT
   k->setup(op, 1+op->getKeyLength());
-#else
-  k->setup(getEntryType(op, slot), 0);  // TBD - repeats?
-#endif
   return k;
 }
+
+#else
+
+inline MEDDLY::compute_table::entry_key*
+MEDDLY::compute_table::useEntryKey(const entry_type* et, unsigned repeats)
+{
+  if (0==et) return 0;
+  MEDDLY_DCASSERT( (0==repeats) || et->isRepeating() );
+
+  entry_key* k;
+  if (free_keys) {
+    k = free_keys;
+    free_keys = free_keys->next;
+  } else {
+    k = new entry_key();
+  }
+  k->setup(et, repeats);
+  return k;
+}
+
+#endif
 
 inline void
 MEDDLY::compute_table::recycle(entry_key* k)
@@ -2607,6 +2626,9 @@ inline void
 MEDDLY::operation::registerEntryType(unsigned slot, compute_table::entry_type* et)
 {
   MEDDLY_CHECK_RANGE(0, slot, num_etids);
+  MEDDLY_DCASSERT(etype);
+  MEDDLY_DCASSERT(0==etype[slot]);
+  etype[slot] = et;
   compute_table::registerEntryType(first_etid + slot, et);
 }
 #endif

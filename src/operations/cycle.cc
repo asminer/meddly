@@ -54,7 +54,11 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
     inline compute_table::entry_key*
     findResult(long aev, node_handle a, long& bev, node_handle &b)
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
@@ -71,7 +75,11 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
       long aev, node_handle a, long bev, node_handle b)
     {
       argF->cacheNode(a);
+#ifdef OLD_OP_CT
       static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+#else
+      static compute_table::entry_result result(etype[0]);
+#endif
       result.reset();
       result.writeL(b == 0 ? 0L : bev - aev);
       result.writeN(resF->cacheNode(b));

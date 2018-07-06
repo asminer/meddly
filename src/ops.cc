@@ -2034,6 +2034,18 @@ MEDDLY::operation::operation(const opname* n, unsigned et_slots)
   // The derived class hasn't set up the entry types yet!
   //
   CT = 0;
+
+  //
+  // Set up slots to save our entry_types.
+  //
+  if (et_slots) {
+    etype = new const compute_table::entry_type* [et_slots];
+    for (unsigned i=0; i<et_slots; i++) {
+      etype[i] = 0;
+    }
+  } else {
+    etype = 0;
+  }
 }
 
 void MEDDLY::operation::buildCTs()
@@ -2077,6 +2089,8 @@ MEDDLY::operation::~operation()
     }
     delete[] CT;
   }
+  // Don't delete the entries in etype, they're owned by compute_table.
+  delete[] etype;
 #endif
 
   if (oplist_index >= 0) {

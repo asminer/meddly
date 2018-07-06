@@ -247,7 +247,11 @@ bool MEDDLY::transitive_closure_dfs::checkTerminals(int aev, node_handle a, int 
 MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_dfs::findResult(long aev, node_handle a,
     long bev, node_handle b, node_handle c, long& dev, node_handle &d)
 {
-  compute_table::entry_key* key = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+  compute_table::entry_key* key = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* key = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(key);
   key->writeL(aev);
   key->writeN(a);
@@ -279,7 +283,11 @@ void MEDDLY::transitive_closure_dfs::saveResult(compute_table::entry_key* key,
   consF->cacheNode(a);
   tcF->cacheNode(b);
   transF->cacheNode(c);
+#ifdef OLD_OP_CT
   static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+#else
+  static compute_table::entry_result result(etype[0]);
+#endif
   result.reset();
   if (d == 0) {
     // Write long
@@ -839,7 +847,11 @@ bool MEDDLY::transitive_closure_evplus::checkTerminals(int aev, node_handle a, i
 MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_evplus::findResult(long aev, node_handle a,
     long bev, node_handle b, int level, long& cev, node_handle &c)
 {
-  compute_table::entry_key* key = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+  compute_table::entry_key* key = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* key = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(key);
   key->writeL(aev);
   key->writeN(a);
@@ -869,7 +881,11 @@ void MEDDLY::transitive_closure_evplus::saveResult(compute_table::entry_key* key
 {
   consF->cacheNode(a);
   tcF->cacheNode(b);
+#ifdef OLD_OP_CT
   static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+#else
+  static compute_table::entry_result result(etype[0]);
+#endif
   result.reset();
   if (c == 0) {
     // Write long

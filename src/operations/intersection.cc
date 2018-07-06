@@ -169,7 +169,11 @@ MEDDLY::inter_max_evplus::inter_max_evplus(const binary_opname* opcode,
 MEDDLY::compute_table::entry_key* MEDDLY::inter_max_evplus::findResult(long aev, node_handle a,
   long bev, node_handle b, long& cev, node_handle &c)
 {
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(CTsrch);
   if (can_commute && a > b) {
     CTsrch->writeL(0);
@@ -201,7 +205,11 @@ void MEDDLY::inter_max_evplus::saveResult(compute_table::entry_key* key,
 {
   arg1F->cacheNode(a);
   arg2F->cacheNode(b);
+#ifdef OLD_OP_CT
   static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+#else
+  static compute_table::entry_result result(etype[0]);
+#endif
   if (c == 0) {
     result.writeL(0);
   }

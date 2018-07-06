@@ -168,7 +168,11 @@ MEDDLY::mdd2index_operation
   // Check compute table
   compute_table::entry_key* CTsrch = 0;
   if (aLevel == k) {
-    CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+    CTsrch = CT0->useEntryKey(this);
+#else
+    CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
     MEDDLY_DCASSERT(CTsrch);
     CTsrch->writeN(a);
     compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
@@ -227,7 +231,11 @@ MEDDLY::mdd2index_operation
   // Add to compute table
   if (CTsrch) {
     argF->cacheNode(a);
+#ifdef OLD_OP_CT
     static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+#else
+    static compute_table::entry_result result(etype[0]);
+#endif
     result.reset();
     result.writeN(resF->cacheNode(bdn));
     result.writeL(bcard);

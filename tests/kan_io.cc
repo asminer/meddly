@@ -28,6 +28,7 @@
 #define WRITE_MDD
 #define WRITE_EVMDD
 // #define DEBUG_FILE
+#define PROGRESS
 
 const char* kanban[] = {
   "X-+..............",  // Tin1
@@ -88,22 +89,47 @@ long writeReachset(FILE* s, int N)
   dd_edge init_state(mdd);
   buildInitial(N, mdd, init_state);
 
+#ifdef PROGRESS
+  fputc('i', stdout);
+  fflush(stdout);
+#endif
+
   // Build next-state function
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   buildNextStateFunction(kanban, 16, mxd, nsf); 
 
+#ifdef PROGRESS
+  fputc('n', stdout);
+  fflush(stdout);
+#endif
+
   // Build reachable states
   dd_edge reachable(mdd);
   apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+
+#ifdef PROGRESS
+  fputc('r', stdout);
+  fflush(stdout);
+#endif
 
   // Build index set for reachable states
   forest* evmdd = d->createForest(0, forest::INTEGER, forest::INDEX_SET);
   dd_edge reach_index(evmdd);
   apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
 
+#ifdef PROGRESS
+  fputc('x', stdout);
+  fflush(stdout);
+#endif
+
   long c;
   apply(CARDINALITY, reachable, c);
+
+#ifdef PROGRESS
+  fputc('c', stdout);
+  fflush(stdout);
+#endif
 
   FILE_output mys(s);
 #ifdef WRITE_MXD

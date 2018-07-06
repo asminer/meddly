@@ -63,7 +63,11 @@ class MEDDLY::compl_mdd : public unary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle &b) 
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
@@ -76,7 +80,11 @@ class MEDDLY::compl_mdd : public unary_operation {
       node_handle a, node_handle b) 
     {
       argF->cacheNode(a);
+#ifdef OLD_OP_CT
       static compute_table::entry_result result(1);
+#else
+      static compute_table::entry_result result(etype[0]);
+#endif
       result.reset();
       result.writeN(resF->cacheNode(b));
       CT0->addEntry(Key, result);
@@ -306,7 +314,11 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
     );
   }
   // Check compute table
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeI(k);
   CTsrch->writeN(a);
@@ -362,7 +374,11 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
   if (k<0 && 1==nnz) canSave = false;
   if (canSave) {
     argF->cacheNode(a);
+#ifdef OLD_OP_CT
     static compute_table::entry_result res(1);
+#else
+    static compute_table::entry_result res(etype[0]);
+#endif
     res.reset();
     res.writeN(resF->cacheNode(result));
     CT0->addEntry(CTsrch, res);

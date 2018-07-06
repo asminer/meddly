@@ -4078,7 +4078,11 @@ class MEDDLY::compute_table {
       /**
           Start using an entry_key for the given operation.
       */
-      static entry_key* useEntryKey(operation* op, unsigned slot);
+#ifdef OLD_OP_CT
+      static entry_key* useEntryKey(operation* op);
+#else
+      static entry_key* useEntryKey(const entry_type* et, unsigned repeats);
+#endif
 
       /**
           Done using an entry_key.
@@ -4214,18 +4218,24 @@ class MEDDLY::operation {
       by compute_table.
     */
     unsigned first_etid;
-
-    /**
-      Number of entry_types needed by this operation.
-    */
-    unsigned num_etids;
 #endif
 
   protected:
-    /// Compute table to use, if any.
+    /// Compute table to use (for entry type 0), if any.
     compute_table* CT0;
 #ifndef OLD_OP_CT
+    /// Array of compute tables, one per entry type.
     compute_table** CT;
+    /** Array of entry types.
+        Owned by the compute_table class; we have
+        these pointers for convenience.
+    */
+    const compute_table::entry_type** etype;
+    /**
+      Number of entry_types needed by this operation.
+      This gives the dimension of arrays CT and etype.
+    */
+    unsigned num_etids;
 #endif
     /// Struct for CT searches.
     // compute_table::entry_key* CTsrch;

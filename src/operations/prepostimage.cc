@@ -80,7 +80,11 @@ class MEDDLY::image_op : public binary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
@@ -95,7 +99,11 @@ class MEDDLY::image_op : public binary_operation {
     {
       argV->cacheNode(a);
       argM->cacheNode(b);
+#ifdef OLD_OP_CT
       static compute_table::entry_result result(1);
+#else
+      static compute_table::entry_result result(etype[0]);
+#endif
       result.reset();
       result.writeN(resF->cacheNode(c));
       CT0->addEntry(Key, result);
@@ -569,7 +577,11 @@ class MEDDLY::image_op_evplus : public binary_operation {
     inline compute_table::entry_key*
     findResult(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle &resEvmdd)
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(evmdd);
       CTsrch->writeN(mxd);
@@ -588,7 +600,11 @@ class MEDDLY::image_op_evplus : public binary_operation {
     {
       argV->cacheNode(evmdd);
       argM->cacheNode(mxd);
+#ifdef OLD_OP_CT
       static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+#else
+      static compute_table::entry_result result(etype[0]);
+#endif
       result.reset();
       result.writeL(resEvmdd == 0 ? 0L : resEv - ev);
       result.writeN(resF->cacheNode(resEvmdd));

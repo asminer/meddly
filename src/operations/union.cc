@@ -303,7 +303,11 @@ MEDDLY::union_min_evplus::union_min_evplus(const binary_opname* opcode,
 MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus::findResult(long aev, node_handle a,
   long bev, node_handle b, long& cev, node_handle &c)
 {
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(CTsrch);
   if (can_commute && a > b) {
     CTsrch->writeL(0);
@@ -334,7 +338,11 @@ void MEDDLY::union_min_evplus::saveResult(compute_table::entry_key* key,
   arg1F->cacheNode(a);
   arg2F->cacheNode(b);
   MEDDLY_DCASSERT(c == 0 || cev == MIN(aev, bev));
-  static compute_table::entry_result result(1 + sizeof(long)/sizeof(node_handle));
+#ifdef OLD_OP_CT
+  static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+#else
+  static compute_table::entry_result result(etype[0]);
+#endif
   result.reset();
   result.writeL(0);   //   Why always 0?
   result.writeN(resF->cacheNode(c));
@@ -433,7 +441,11 @@ MEDDLY::union_min_evplus_mxd::union_min_evplus_mxd(const binary_opname* opcode,
 MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus_mxd::findResult(long aev, node_handle a,
   long bev, node_handle b, long& cev, node_handle &c)
 {
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(CTsrch);
   if (can_commute && a > b) {
     CTsrch->writeL(0);
@@ -464,7 +476,11 @@ void MEDDLY::union_min_evplus_mxd::saveResult(compute_table::entry_key* key,
   arg1F->cacheNode(a);
   arg2F->cacheNode(b);
   MEDDLY_DCASSERT(c == 0 || cev == MIN(aev, bev));
-  static compute_table::entry_result result(1 + sizeof(long)/sizeof(node_handle));
+#ifdef OLD_OP_CT
+  static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+#else
+  static compute_table::entry_result result(etype[0]);
+#endif
   result.reset();
   result.writeL(0);   // why always 0?
   result.writeN(resF->cacheNode(c));

@@ -165,7 +165,11 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a); 
   compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
@@ -190,7 +194,11 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
 
   // Add entry to compute table
   argF->cacheNode(a);
+#ifdef OLD_OP_CT
   static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
+#else
+  static compute_table::entry_result result(etype[0]);
+#endif
   result.reset();
   result.writeL(card);
   CT0->addEntry(CTsrch, result);
@@ -236,7 +244,11 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a); 
   compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
@@ -261,7 +273,11 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
 
   // Add entry to compute table
   argF->cacheNode(a);
+#ifdef OLD_OP_CT
   static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
+#else
+  static compute_table::entry_result result(etype[0]);
+#endif
   result.reset();
   result.writeL(card);
   CT0->addEntry(CTsrch, result);
@@ -374,7 +390,11 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a); 
   compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
@@ -399,7 +419,11 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
 
   // Add entry to compute table
   argF->cacheNode(a);
+#ifdef OLD_OP_CT
   static compute_table::entry_result result(sizeof(double) / sizeof(node_handle));
+#else
+  static compute_table::entry_result result(etype[0]);
+#endif
   result.reset();
   result.writeD(card);
   CT0->addEntry(CTsrch, result);
@@ -446,7 +470,11 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a); 
   compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
@@ -471,7 +499,11 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
 
   // Add entry to compute table
   argF->cacheNode(a);
-  static compute_table::entry_result result(sizeof(double) / sizeof(node_handle));
+#ifdef OLD_OP_CT
+  static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
+#else
+  static compute_table::entry_result result(etype[0]);
+#endif
   result.reset();
   result.writeD(card);
   CT0->addEntry(CTsrch, result);
@@ -605,7 +637,11 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a);
   compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
@@ -636,7 +672,11 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 
   // Add entry to compute table
   argF->cacheNode(a);
+#ifdef OLD_OP_CT
   static compute_table::entry_result result(sizeof(void*) / sizeof(node_handle));
+#else
+  static compute_table::entry_result result(etype[0]);
+#endif
   result.reset();
   result.writeP(new mpz_object(card));
   CT0->addEntry(CTsrch, result);
@@ -696,7 +736,11 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
   
   // Check compute table
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a);
   compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
@@ -726,7 +770,11 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 
   // Add entry to compute table
   argF->cacheNode(a);
+#ifdef OLD_OP_CT
   static compute_table::entry_result result(sizeof(void*) / sizeof(node_handle));
+#else
+  static compute_table::entry_result result(etype[0]);
+#endif
   result.reset();
   result.writeP(new mpz_object(card));
   CT0->addEntry(CTsrch, result);

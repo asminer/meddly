@@ -107,7 +107,11 @@ class MEDDLY::saturation_op : public unary_operation {
   protected:
     inline compute_table::entry_key* 
     findSaturateResult(node_handle a, int level, node_handle& b) {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       if (argF->isFullyReduced()) CTsrch->writeI(level);
@@ -121,7 +125,11 @@ class MEDDLY::saturation_op : public unary_operation {
       node_handle a, node_handle b) 
     {
       argF->cacheNode(a);
+#ifdef OLD_OP_CT
       static compute_table::entry_result result(1);
+#else
+      static compute_table::entry_result result(etype[0]);
+#endif
       result.reset();
       result.writeN(resF->cacheNode(b));
       CT0->addEntry(Key, result);
@@ -153,7 +161,11 @@ class MEDDLY::saturation_evplus_op : public unary_operation {
   protected:
     inline compute_table::entry_key*
     findSaturateResult(long aev, node_handle a, int level, long& bev, node_handle& b) {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       if (argF->isFullyReduced()) CTsrch->writeI(level);
@@ -169,7 +181,11 @@ class MEDDLY::saturation_evplus_op : public unary_operation {
       long aev, node_handle a, long bev, node_handle b)
     {
       argF->cacheNode(a);
+#ifdef OLD_OP_CT
       static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+#else
+      static compute_table::entry_result result(etype[0]);
+#endif
       result.reset();
       result.writeL(bev - aev);
       result.writeN(resF->cacheNode(b));
@@ -205,7 +221,11 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
@@ -220,7 +240,11 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
+#ifdef OLD_OP_CT
       static compute_table::entry_result result(1);
+#else
+      static compute_table::entry_result result(etype[0]);
+#endif
       result.reset();
       result.writeN(resF->cacheNode(c));
       CT0->addEntry(Key, result);
@@ -356,7 +380,11 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
     inline compute_table::entry_key*
     findResult(long aev, node_handle a, node_handle b, long& cev, node_handle& c)
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
@@ -376,7 +404,11 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
     {
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
+#ifdef OLD_OP_CT
       static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+#else
+      static compute_table::entry_result result(etype[0]);
+#endif
       result.reset();
       result.writeL(c == 0 ? 0L : cev - aev);
       result.writeN(resF->cacheNode(c));
