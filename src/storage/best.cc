@@ -426,7 +426,7 @@ MEDDLY::node_address MEDDLY::best_storage
   std::map<int,node_handle> nhmap;
   std::set<node_handle> nhset;
   
-  if( nb.isExtensible()|| nb.hasEdges() || (nb.isFull() && (nb.getSize()<MAX_PATTERN_LEN)) || (nb.isSparse() && (nb.i(nb.getNNZs()-1)+1<MAX_PATTERN_LEN)) ){
+  if( ( !nb.isExtensible() && !nb.hasEdges() ) && ( (nb.isFull() && (nb.getSize()<MAX_PATTERN_LEN)) || (nb.isSparse() && (nb.i(nb.getNNZs()-1)+1<MAX_PATTERN_LEN)) ) ){
     if (nb.isSparse()) {
       //
       // nb is sparse
@@ -469,6 +469,7 @@ MEDDLY::node_address MEDDLY::best_storage
       }
     }
   }
+  std::cout<<"\n nb.hasEdges"<<nb.hasEdges()<<" nb.isExtensible()"<<nb.isExtensible()<<" uniqnnzs"<<uniqnnzs;
   
   node_address addr = 0;
   
