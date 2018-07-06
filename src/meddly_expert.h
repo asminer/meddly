@@ -3970,7 +3970,7 @@ class MEDDLY::compute_table {
         private:
 #ifdef OLD_OP_CT
           operation* op;
-#else
+#else 
           const compute_table::entry_type* etype;
 #endif
 
@@ -4002,7 +4002,11 @@ class MEDDLY::compute_table {
       class entry_result {
         public:
           entry_result();
+#ifdef OLD_OP_CT
           entry_result(unsigned slots);
+#else
+          entry_result(const entry_type* et);
+#endif
           ~entry_result();
 
         public:
@@ -4032,17 +4036,25 @@ class MEDDLY::compute_table {
           void setInvalid();
           operator bool() const;
 
+#ifdef OLD_OP_CT
           void setResult(const node_handle* d, unsigned sz);
+#else
+          void setResult(const compute_table::entry_type* et, const node_handle* d);
+#endif
           const node_handle* rawData() const;
           unsigned dataLength() const;
 
 
         private:
+#ifdef OLD_OP_CT
+          unsigned ansLength;
+#else
+          const entry_type* etype;
+#endif
           bool is_valid;
           const node_handle* data;
           node_handle* build;
           unsigned currslot;
-          unsigned ansLength;
       };
 
       //

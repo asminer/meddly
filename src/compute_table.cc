@@ -357,8 +357,14 @@ MEDDLY::compute_table::entry_result::entry_result()
 {
   data = 0;
   build = 0;
+#ifdef OLD_OP_CT
   ansLength = 0;
+#else
+  etype = 0;
+#endif
 }
+
+#ifdef OLD_OP_CT
 
 MEDDLY::compute_table::entry_result::entry_result(unsigned slots)
 {
@@ -366,6 +372,20 @@ MEDDLY::compute_table::entry_result::entry_result(unsigned slots)
   data = build;
   ansLength = slots;
 }
+
+
+#else
+
+MEDDLY::compute_table::entry_result::entry_result(const compute_table::entry_type* et)
+{
+  MEDDLY_DCASSERT(et);
+  etype = et;
+  const unsigned slots = etype->getResultSize();
+  build = new node_handle[slots];
+  data = build;
+}
+
+#endif
 
 MEDDLY::compute_table::entry_result::~entry_result()
 {
