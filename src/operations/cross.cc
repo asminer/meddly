@@ -165,7 +165,12 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   CTsrch->writeI(k);
   CTsrch->writeN(a);
   CTsrch->writeN(b);
-  compute_table::entry_result &cacheFind = CT0->find(CTsrch);
+#ifdef OLD_OP_CT
+  compute_table::entry_result& cacheFind = CT0->find(CTsrch);
+#else
+  static compute_table::entry_result cacheFind(etype[0]);
+  CT0->find(CTsrch, cacheFind);
+#endif
   if (cacheFind) {
     CT0->recycle(CTsrch);
     return resF->linkNode(cacheFind.readN());

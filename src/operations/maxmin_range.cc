@@ -71,7 +71,12 @@ class MEDDLY::range_int : public unary_operation {
 #endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
-      compute_table::entry_result &cacheFind = CT0->find(CTsrch);
+#ifdef OLD_OP_CT
+      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
+#else
+      static compute_table::entry_result cacheFind(etype[0]);
+      CT0->find(CTsrch, cacheFind);
+#endif
       if (!cacheFind) return CTsrch;
       b = cacheFind.readI();
       CT0->recycle(CTsrch);
@@ -176,7 +181,12 @@ class MEDDLY::range_real : public unary_operation {
 #endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
-      compute_table::entry_result &cacheFind = CT0->find(CTsrch);
+#ifdef OLD_OP_CT
+      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
+#else
+      static compute_table::entry_result cacheFind(etype[0]);
+      CT0->find(CTsrch, cacheFind);
+#endif
       if (!cacheFind) return CTsrch;
       b = cacheFind.readF();
       CT0->recycle(CTsrch);

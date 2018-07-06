@@ -62,7 +62,11 @@ namespace MEDDLY {
       // required functions
 
       virtual bool isOperationTable() const   { return !MONOLITHIC; }
+#ifdef OLD_OP_CT
       virtual entry_result& find(entry_key* key);
+#else
+      virtual void find(entry_key* key, entry_result &res);
+#endif
       virtual void addEntry(entry_key* key, const entry_result& res);
       virtual void updateEntry(entry_key* key, const entry_result& res);
       virtual void removeStales();
@@ -590,26 +594,36 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
 
 // **********************************************************************
 
+#ifdef OLD_OP_CT
 template <bool MONOLITHIC, bool CHAINED>
-MEDDLY::compute_table::entry_result& MEDDLY::ct_template<MONOLITHIC, CHAINED>
+MEDDLY::compute_table::entry_result& 
+MEDDLY::ct_template<MONOLITHIC, CHAINED>
 ::find(entry_key *key)
+#else
+template <bool MONOLITHIC, bool CHAINED>
+void MEDDLY::ct_template<MONOLITHIC, CHAINED>
+::find(entry_key *key, entry_result& res)
+#endif
 {
-  static entry_result ANS;
-
+#ifdef OLD_OP_CT
+  static entry_result res;
+#endif
   setHash(key, raw_hash(key->rawData(MONOLITHIC), key->dataLength(MONOLITHIC)));
   int* entry = findEntry(key);
   perf.pings++;
 
   if (entry) {
     perf.hits++;
-    ANS.setResult(
+    res.setResult(
       entry+(CHAINED?1:0)+key->dataLength(MONOLITHIC), 
       key->getOp()->getAnsLength()
     );
   } else {
-    ANS.setInvalid();
+    res.setInvalid();
   }
-  return ANS;
+#ifdef OLD_OP_CT
+  return res;
+#endif
 }
 
 // **********************************************************************

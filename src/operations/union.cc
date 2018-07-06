@@ -320,7 +320,12 @@ MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus::findResult(long aev,
     CTsrch->writeL(bev - aev);
     CTsrch->writeN(b);
   }
-  compute_table::entry_result &cacheFind = CT0->find(CTsrch);
+#ifdef OLD_OP_CT
+  compute_table::entry_result& cacheFind = CT0->find(CTsrch);
+#else
+  static compute_table::entry_result cacheFind(etype[0]);
+  CT0->find(CTsrch, cacheFind);
+#endif
   if (!cacheFind) return CTsrch;
   cev = cacheFind.readL();
   MEDDLY_DCASSERT(cev == 0);
@@ -458,7 +463,12 @@ MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus_mxd::findResult(long 
     CTsrch->writeL(bev - aev);
     CTsrch->writeN(b);
   }
-  compute_table::entry_result &cacheFind = CT0->find(CTsrch);
+#ifdef OLD_OP_CT
+  compute_table::entry_result& cacheFind = CT0->find(CTsrch);
+#else
+  static compute_table::entry_result cacheFind(etype[0]);
+  CT0->find(CTsrch, cacheFind);
+#endif
   if (!cacheFind) return CTsrch;
   cev = cacheFind.readL();
   MEDDLY_DCASSERT(cev == 0);

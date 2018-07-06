@@ -4126,11 +4126,19 @@ class MEDDLY::compute_table {
       /// Initialize a search key for a given operation.
       // virtual entry_key* initializeSearchKey(operation* op) = 0;
 
+#ifdef OLD_OP_CT
       /** Find an entry in the compute table based on the key provided.
           @param  key   Key to search for.
-          @return       An appropriate entry_result.
+          @return       Result, if found.
       */
       virtual entry_result& find(entry_key* key) = 0;
+#else
+      /** Find an entry in the compute table based on the key provided.
+          @param  key   Key to search for.
+          @param  res   Where to store the result, if any.
+      */
+      virtual void find(entry_key* key, entry_result &res) = 0;
+#endif
 
       /**
           Add an entry (key plus result) to the compute table.

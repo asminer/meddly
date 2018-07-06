@@ -307,7 +307,12 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_dfs_mt::findResult(
   key->writeN(b);
   key->writeN(r);
 
+#ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(key);
+#else
+  static compute_table::entry_result cacheFind(etype[0]);
+  CT0->find(key, cacheFind);
+#endif
   if (!cacheFind) {
     return key;
   }
@@ -1064,7 +1069,12 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_saturation_mt::findResult(
     key->writeI(level);
   }
 
-  compute_table::entry_result &cacheFind = CT0->find(key);
+#ifdef OLD_OP_CT
+  compute_table::entry_result& cacheFind = CT0->find(key);
+#else
+  static compute_table::entry_result cacheFind(etype[0]);
+  CT0->find(key, cacheFind);
+#endif
   if (!cacheFind) return key;
   c = resF->linkNode(cacheFind.readN());
 
@@ -1226,7 +1236,12 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_bckwd_dfs_evplus::findResu
   key->writeN(b);
   key->writeN(r);
 
+#ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(key);
+#else
+  static compute_table::entry_result cacheFind(etype[0]);
+  CT0->find(key, cacheFind);
+#endif
   if (!cacheFind) {
     return key;
   }
@@ -1780,7 +1795,12 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_saturation_evplus::findRes
     key->writeI(level);
   }
 
-  compute_table::entry_result &cacheFind = CT0->find(key);
+#ifdef OLD_OP_CT
+  compute_table::entry_result& cacheFind = CT0->find(key);
+#else
+  static compute_table::entry_result cacheFind(etype[0]);
+  CT0->find(key, cacheFind);
+#endif
   if (!cacheFind) return key;
   cev = cacheFind.readL();
   c = resF->linkNode(cacheFind.readN());

@@ -88,7 +88,12 @@ class MEDDLY::image_op : public binary_operation {
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
-      compute_table::entry_result &cacheFind = CT0->find(CTsrch);
+#ifdef OLD_OP_CT
+      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
+#else
+      static compute_table::entry_result cacheFind(etype[0]);
+      CT0->find(CTsrch, cacheFind);
+#endif
       if (!cacheFind) return CTsrch;
       c = resF->linkNode(cacheFind.readN());
       CT0->recycle(CTsrch);
@@ -585,7 +590,12 @@ class MEDDLY::image_op_evplus : public binary_operation {
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(evmdd);
       CTsrch->writeN(mxd);
-      compute_table::entry_result &cacheFind = CT0->find(CTsrch);
+#ifdef OLD_OP_CT
+      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
+#else
+      static compute_table::entry_result cacheFind(etype[0]);
+      CT0->find(CTsrch, cacheFind);
+#endif
       if (!cacheFind) return CTsrch;
       resEv = cacheFind.readL();
       resEvmdd = resF->linkNode(cacheFind.readN());

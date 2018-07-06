@@ -61,7 +61,12 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
 #endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
-      compute_table::entry_result &cacheFind = CT0->find(CTsrch);
+#ifdef OLD_OP_CT
+      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
+#else
+      static compute_table::entry_result cacheFind(etype[0]);
+      CT0->find(CTsrch, cacheFind);
+#endif
       if (!cacheFind) return CTsrch;
       bev = cacheFind.readL();
       b = resF->linkNode(cacheFind.readN());
