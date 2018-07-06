@@ -2126,10 +2126,10 @@ MEDDLY::compute_table::entry_key::setup(const compute_table::entry_type* et, uns
   unsigned slots = 1+et->getKeySize(repeats);
   if (slots > data_alloc) {
     data_alloc = (1+(data_alloc / 8)) * 8;   // allocate in chunks of size 8
-    data = (int*) realloc(data, data_alloc*sizeof(int));
+    data = (entry_item*) realloc(data, data_alloc*sizeof(entry_item));
     if (0==data) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
-  data[0] = et->getID();
+  data[0].U = et->getID();
   currslot = 1;
 #ifdef DEVELOPMENT_CODE
   has_hash = false;
@@ -2155,46 +2155,56 @@ MEDDLY::compute_table::entry_key::getET() const
 inline void MEDDLY::compute_table::entry_key::writeN(node_handle nh) 
 {
   MEDDLY_CHECK_RANGE(0, currslot, data_alloc);
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::NODE == etype->getKeyType(currslot));
-#endif
+#ifdef OLD_OP_CT
   data[currslot++] = nh;
+#else 
+  MEDDLY_DCASSERT(compute_table::NODE == etype->getKeyType(currslot));
+  data[currslot++].N = nh;
+#endif
 }
 
 inline void MEDDLY::compute_table::entry_key::writeI(int i) 
 {
   MEDDLY_CHECK_RANGE(0, currslot, data_alloc);
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::INTEGER == etype->getKeyType(currslot));
-#endif
+#ifdef OLD_OP_CT
   data[currslot++] = i;
+#else
+  MEDDLY_DCASSERT(compute_table::INTEGER == etype->getKeyType(currslot));
+  data[currslot++].I = i;
+#endif
 }
 
 inline void MEDDLY::compute_table::entry_key::writeL(long i) 
 {
   MEDDLY_CHECK_RANGE(0, currslot, data_alloc);
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::LONG == etype->getKeyType(currslot));
-#endif
+#ifdef OLD_OP_CT
   memcpy(data+currslot, &i, sizeof(long));
   currslot += sizeof(long) / sizeof(node_handle);
+#else
+  MEDDLY_DCASSERT(compute_table::LONG == etype->getKeyType(currslot));
+  data[currslot++].L = i;
+#endif
 }
 
 inline void MEDDLY::compute_table::entry_key::writeF(float f) 
 {
   MEDDLY_CHECK_RANGE(0, currslot, data_alloc);
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::FLOAT == etype->getKeyType(currslot));
-#endif
+#ifdef OLD_OP_CT
   float* x = (float*) (data+currslot);
   x[0] = f;
   currslot++;
+#else
+  MEDDLY_DCASSERT(compute_table::FLOAT == etype->getKeyType(currslot));
+  data[currslot++].F = f;
+#endif
 }
 
+#ifdef OLD_OP_CT
 inline const MEDDLY::node_handle* MEDDLY::compute_table::entry_key::rawData(bool includeOp) const 
 { 
   return includeOp ? data : (data+1);
 }
+#endif
 
 inline int MEDDLY::compute_table::entry_key::dataLength(bool includeOp) const
 { 
@@ -2221,66 +2231,87 @@ inline void MEDDLY::compute_table::entry_key::setHash(unsigned h)
 inline MEDDLY::node_handle MEDDLY::compute_table::entry_result::readN() 
 {
   MEDDLY_DCASSERT(currslot < dataLength());
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::NODE == etype->getResultType(currslot));
-#endif
+#ifdef OLD_OP_CT
   return data[currslot++];
+#else
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(compute_table::NODE == etype->getResultType(currslot));
+  return build[currslot++].N;
+#endif
 }
 
 inline int MEDDLY::compute_table::entry_result::readI()
 {
   MEDDLY_DCASSERT(currslot < dataLength());
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::INTEGER == etype->getResultType(currslot));
-#endif
+#ifdef OLD_OP_CT
   return data[currslot++];
+#else
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(compute_table::INTEGER == etype->getResultType(currslot));
+  return build[currslot++].I;
+#endif
 }
 
 inline float MEDDLY::compute_table::entry_result::readF()
 {
   MEDDLY_DCASSERT(currslot < dataLength());
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::FLOAT == etype->getResultType(currslot));
-#endif
+#ifdef OLD_OP_CT
   float f = ((float*)(data + currslot))[0];
   currslot++;
   return f;
+#else
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(compute_table::FLOAT == etype->getResultType(currslot));
+  return build[currslot++].F;
+#endif
 }
 
 inline long MEDDLY::compute_table::entry_result::readL()
 {
+#ifdef OLD_OP_CT
   MEDDLY_DCASSERT(currslot+sizeof(long)/sizeof(node_handle) <= dataLength());
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::LONG == etype->getResultType(currslot));
-#endif
   long L;
   memcpy(&L, data+currslot, sizeof(long));
   currslot += sizeof(long) / sizeof(node_handle);
   return L;
+#else
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot < dataLength());
+  MEDDLY_DCASSERT(compute_table::LONG == etype->getResultType(currslot));
+  return build[currslot++].L;
+#endif
 }
 
 inline double MEDDLY::compute_table::entry_result::readD()
 {
+#ifdef OLD_OP_CT
   MEDDLY_DCASSERT(currslot+sizeof(double)/sizeof(node_handle) <= dataLength());
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::DOUBLE == etype->getResultType(currslot));
-#endif
   double D;
   memcpy(&D, data+currslot, sizeof(double));
   currslot += sizeof(double) / sizeof(node_handle);
   return D;
+#else
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot < dataLength());
+  MEDDLY_DCASSERT(compute_table::DOUBLE == etype->getResultType(currslot));
+  return build[currslot++].D;
+#endif
 }
 
 inline void* MEDDLY::compute_table::entry_result::readP()
 {
+#ifdef OLD_OP_CT
   MEDDLY_DCASSERT(currslot+sizeof(void*)/sizeof(node_handle) <= dataLength());
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::POINTER == etype->getResultType(currslot));
-#endif
   void* P;
   memcpy(&P, data+currslot, sizeof(void*));
   currslot += sizeof(void*) / sizeof(node_handle);
   return P;
+#else
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot < dataLength());
+  MEDDLY_DCASSERT(compute_table::POINTER == etype->getResultType(currslot));
+  return build[currslot++].P;
+#endif
 }
 
 
@@ -2293,58 +2324,77 @@ inline void MEDDLY::compute_table::entry_result::writeN(node_handle nh)
 {
   MEDDLY_DCASSERT(build);
   MEDDLY_DCASSERT(currslot < dataLength());
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::NODE == etype->getResultType(currslot));
-#endif
+#ifdef OLD_OP_CT
   build[currslot++] = nh;
+#else
+  MEDDLY_DCASSERT(compute_table::NODE == etype->getResultType(currslot));
+  build[currslot++].N = nh;
+#endif
 }
 
 inline void MEDDLY::compute_table::entry_result::writeI(int i)
 {
   MEDDLY_DCASSERT(build);
   MEDDLY_DCASSERT(currslot < dataLength());
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::INTEGER == etype->getResultType(currslot));
-#endif
+#ifdef OLD_OP_CT
   build[currslot++] = i;
+#else
+  MEDDLY_DCASSERT(compute_table::INTEGER == etype->getResultType(currslot));
+  build[currslot++].I = i;
+#endif
 }
 
 inline void MEDDLY::compute_table::entry_result::writeF(float f)
 {
   MEDDLY_DCASSERT(build);
   MEDDLY_DCASSERT(currslot < dataLength());
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::FLOAT == etype->getResultType(currslot));
-#endif
+#ifdef OLD_OP_CT
   float* x = (float*) (build + currslot);
   x[0] = f;
   currslot++;
+#else
+  MEDDLY_DCASSERT(compute_table::FLOAT == etype->getResultType(currslot));
+  build[currslot++].F = f;
+#endif
 }
 
 inline void MEDDLY::compute_table::entry_result::writeL(long L)
 {
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::LONG == etype->getResultType(currslot));
-#endif
+#ifdef OLD_OP_CT
   write_raw(&L, sizeof(long) / sizeof(node_handle));
+#else
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot < dataLength());
+  MEDDLY_DCASSERT(compute_table::LONG == etype->getResultType(currslot));
+  build[currslot++].L = L;
+#endif
 }
 
 inline void MEDDLY::compute_table::entry_result::writeD(double D)
 {
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::DOUBLE == etype->getResultType(currslot));
-#endif
+#ifdef OLD_OP_CT
   write_raw(&D, sizeof(double) / sizeof(node_handle));
+#else
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot < dataLength());
+  MEDDLY_DCASSERT(compute_table::DOUBLE == etype->getResultType(currslot));
+  build[currslot++].D = D;
+#endif
 }
 
 inline void MEDDLY::compute_table::entry_result::writeP(void* P)
 {
-#ifndef OLD_OP_CT
-  MEDDLY_DCASSERT(compute_table::POINTER == etype->getResultType(currslot));
-#endif
+#ifdef OLD_OP_CT
   write_raw(&P, sizeof(void*) / sizeof(node_handle));
+#else
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot < dataLength());
+  MEDDLY_DCASSERT(compute_table::DOUBLE == etype->getResultType(currslot));
+  build[currslot++].P = P;
+#endif
 }
 
+#ifdef OLD_OP_CT
 inline void MEDDLY::compute_table::entry_result::write_raw(void* ptr, size_t slots)
 {
   MEDDLY_DCASSERT(ptr);
@@ -2354,6 +2404,7 @@ inline void MEDDLY::compute_table::entry_result::write_raw(void* ptr, size_t slo
   memcpy(build+currslot, ptr, slots * sizeof(node_handle));
   currslot += slots;
 }
+#endif
 
 inline void
 MEDDLY::compute_table::entry_result::setValid()
@@ -2385,6 +2436,7 @@ void MEDDLY::compute_table::entry_result
   ansLength = sz;
 }
 
+/*
 #else
 
 inline
@@ -2398,14 +2450,17 @@ void MEDDLY::compute_table::entry_result
   currslot = 0;
   // ansLength = sz;
 }
+*/
 
 #endif
 
+#ifdef OLD_OP_CT
 inline const MEDDLY::node_handle* MEDDLY::compute_table::entry_result
 ::rawData() const
 {
   return data;
 }
+#endif
 
 inline unsigned MEDDLY::compute_table::entry_result
 ::dataLength() const

@@ -336,14 +336,16 @@ void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
 
 MEDDLY::compute_table::entry_key::entry_key()
 {
+  data_alloc = 8;
 #ifdef OLD_OP_CT
   op = 0;
-#else
-  etype = 0;
-#endif
-  data_alloc = 8;
   data = (int*) malloc(data_alloc * sizeof(int));
   // malloc: because realloc later
+#else
+  etype = 0;
+  data = (entry_item*) malloc(data_alloc * sizeof(entry_item));
+  // malloc: because realloc later
+#endif
 }
 
 MEDDLY::compute_table::entry_key::~entry_key()
@@ -355,10 +357,10 @@ MEDDLY::compute_table::entry_key::~entry_key()
 
 MEDDLY::compute_table::entry_result::entry_result()
 {
-  data = 0;
   build = 0;
 #ifdef OLD_OP_CT
   ansLength = 0;
+  data = 0;
 #else
   etype = 0;
 #endif
@@ -381,8 +383,12 @@ MEDDLY::compute_table::entry_result::entry_result(const compute_table::entry_typ
   MEDDLY_DCASSERT(et);
   etype = et;
   const unsigned slots = etype->getResultSize();
+#ifdef OLD_OP_CT
   build = new node_handle[slots];
   data = build;
+#else
+  build = new entry_item[slots];
+#endif
 }
 
 #endif

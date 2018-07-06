@@ -3749,13 +3749,19 @@ class MEDDLY::compute_table_style {
     Implementation is in compute_table.cc.
 */
 class MEDDLY::compute_table {
-    public:
+    protected:
       /// The maximum size of the hash table.
       unsigned maxSize;
       /// Do we try to eliminate stales during a "find" operation
       bool checkStalesOnFind;
       /// Do we try to eliminate stales during a "resize" operation
       bool checkStalesOnResize;
+
+    public:
+
+      //
+      // ******************************************************************
+      //
 
       struct stats {
         unsigned numEntries;
@@ -3767,6 +3773,10 @@ class MEDDLY::compute_table {
         int maxSearchLength;
       };
 
+      //
+      // ******************************************************************
+      //
+
       enum typeID {
         ERROR,
         NODE,
@@ -3777,6 +3787,22 @@ class MEDDLY::compute_table {
         DOUBLE,
         POINTER
       };
+
+      //
+      // ******************************************************************
+      //
+
+#ifndef OLD_OP_CT
+      union entry_item {
+        int I;
+        long L;
+        node_handle N;
+        float F;
+        double D;
+        void* P;
+        unsigned U;
+      };
+#endif
 
       //
       // ******************************************************************
@@ -3959,7 +3985,9 @@ class MEDDLY::compute_table {
 
         public: 
           // interface, for compute_table.  All inlined in meddly_expert.hh
+#ifdef OLD_OP_CT
           const node_handle* rawData(bool includeOp) const;
+#endif
           int dataLength(bool includeOp) const;
           unsigned getHash() const;
 
@@ -3970,12 +3998,13 @@ class MEDDLY::compute_table {
         private:
 #ifdef OLD_OP_CT
           operation* op;
+          node_handle* data;
 #else 
           const compute_table::entry_type* etype;
+          entry_item* data;
 #endif
 
           unsigned hash_value;
-          node_handle* data;
           unsigned data_alloc;
 
           unsigned currslot;
@@ -4029,7 +4058,9 @@ class MEDDLY::compute_table {
           void writeL(long L);
           void writeD(double D);
           void writeP(void* P);
+#ifdef OLD_OP_CT
           void write_raw(void* data, size_t slots);
+#endif
 
           // interface, for compute tables.
           void setValid();
@@ -4038,22 +4069,21 @@ class MEDDLY::compute_table {
 
 #ifdef OLD_OP_CT
           void setResult(const node_handle* d, unsigned sz);
-#else
-          void setResult(const compute_table::entry_type* et, const node_handle* d);
-#endif
           const node_handle* rawData() const;
+#endif
           unsigned dataLength() const;
 
 
         private:
 #ifdef OLD_OP_CT
+          const node_handle* data;
+          node_handle* build;
           unsigned ansLength;
 #else
           const entry_type* etype;
+          entry_item* build;
 #endif
           bool is_valid;
-          const node_handle* data;
-          node_handle* build;
           unsigned currslot;
       };
 
