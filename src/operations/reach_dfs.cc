@@ -109,11 +109,11 @@ class MEDDLY::saturation_op : public unary_operation {
     findSaturateResult(node_handle a, int level, node_handle& b) {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeNH(a);
-      if (argF->isFullyReduced()) CTsrch->write(level);
+      CTsrch->writeN(a);
+      if (argF->isFullyReduced()) CTsrch->writeI(level);
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      b = resF->linkNode(cacheFind.readNH()); 
+      b = resF->linkNode(cacheFind.readN()); 
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -155,13 +155,13 @@ class MEDDLY::saturation_evplus_op : public unary_operation {
     findSaturateResult(long aev, node_handle a, int level, long& bev, node_handle& b) {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeNH(a);
-      if (argF->isFullyReduced()) CTsrch->write(level);
+      CTsrch->writeN(a);
+      if (argF->isFullyReduced()) CTsrch->writeI(level);
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      cacheFind.read(bev);
+      bev = cacheFind.readL();
       bev += aev;
-      b = resF->linkNode(cacheFind.readNH());
+      b = resF->linkNode(cacheFind.readN());
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -207,11 +207,11 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeNH(a);
-      CTsrch->writeNH(b);
+      CTsrch->writeN(a);
+      CTsrch->writeN(b);
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      c = resF->linkNode(cacheFind.readNH());
+      c = resF->linkNode(cacheFind.readN());
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -358,13 +358,13 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
     {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeNH(a);
-      CTsrch->writeNH(b);
+      CTsrch->writeN(a);
+      CTsrch->writeN(b);
 
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      cacheFind.read(cev);
-      c = resF->linkNode(cacheFind.readNH());
+      cev = cacheFind.readL();
+      c = resF->linkNode(cacheFind.readN());
       if (c != 0) {
         cev += aev;
       }

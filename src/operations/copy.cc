@@ -62,10 +62,10 @@ class MEDDLY::copy_MT : public unary_operation {
     {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeNH(a);
+      CTsrch->writeN(a);
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      b = resF->linkNode(cacheFind.readNH());
+      b = resF->linkNode(cacheFind.readN());
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -394,11 +394,11 @@ namespace MEDDLY {
       {
         compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
         MEDDLY_DCASSERT(CTsrch);
-        CTsrch->writeNH(a);
+        CTsrch->writeN(a);
         compute_table::entry_result &cacheFind = CT0->find(CTsrch);
         if (cacheFind) {
-          cacheFind.read(bev);
-          b = resF->linkNode(cacheFind.readNH());
+          cacheFind.read_ev(bev);
+          b = resF->linkNode(cacheFind.readN());
           CT0->recycle(CTsrch);
           return 0;
         }
@@ -652,11 +652,11 @@ namespace MEDDLY {
       {
         compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
         MEDDLY_DCASSERT(CTsrch);
-        CTsrch->write(ev);
-        CTsrch->writeNH(a);
+        CTsrch->write_ev(ev);
+        CTsrch->writeN(a);
         compute_table::entry_result &cacheFind = CT0->find(CTsrch);
         if (cacheFind) {
-          b = resF->linkNode(cacheFind.readNH());
+          b = resF->linkNode(cacheFind.readN());
           CT0->recycle(CTsrch);
           return 0;
         }
@@ -885,10 +885,10 @@ namespace MEDDLY {
       {
         compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
         MEDDLY_DCASSERT(CTsrch);
-        CTsrch->writeNH(a);
+        CTsrch->writeN(a);
         compute_table::entry_result &cacheFind = CT0->find(CTsrch);
         if (!cacheFind) return CTsrch;
-        b = resF->linkNode(cacheFind.readNH());
+        b = resF->linkNode(cacheFind.readN());
         CT0->recycle(CTsrch);
         return 0;
       }
@@ -1063,12 +1063,12 @@ namespace MEDDLY {
       {
         compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
         MEDDLY_DCASSERT(CTsrch);
-        CTsrch->write(av);
-        CTsrch->writeNH(an);
+        CTsrch->write_ev(av);
+        CTsrch->writeN(an);
         compute_table::entry_result &cacheFind = CT0->find(CTsrch);
         if (cacheFind) {
-          cacheFind.read(bv);
-          bn = resF->linkNode(cacheFind.readNH());
+          cacheFind.read_ev(bv);
+          bn = resF->linkNode(cacheFind.readN());
           CT0->recycle(CTsrch);
           return 0;
         }

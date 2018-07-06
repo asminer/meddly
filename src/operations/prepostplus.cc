@@ -71,15 +71,15 @@ MEDDLY::compute_table::entry_key* MEDDLY::prepostplus_evplus::findResult(long ae
   compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   MEDDLY_DCASSERT(!can_commute);
-  CTsrch->write(0L);
-  CTsrch->writeNH(a);
-  CTsrch->write(0L);
-  CTsrch->writeNH(b);
+  CTsrch->writeL(0);
+  CTsrch->writeN(a);
+  CTsrch->writeL(0);
+  CTsrch->writeN(b);
 
   compute_table::entry_result &cacheFind = CT0->find(CTsrch);
   if (!cacheFind) return CTsrch;
-  cacheFind.read(cev);
-  c = resF->linkNode(cacheFind.readNH());
+  cev = cacheFind.readL();
+  c = resF->linkNode(cacheFind.readN());
   if (c != 0) {
     cev += aev + bev;
   }

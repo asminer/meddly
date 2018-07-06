@@ -3767,113 +3767,15 @@ class MEDDLY::compute_table {
         int maxSearchLength;
       };
 
-      //
-      // ******************************************************************
-      //
-
-      /** 
-        The key portion of an entry.
-        Internally, in the compute table, we may store
-        entries differently.  This class is used to build
-        keys for searching and to construct CT entries.
-      */
-      class entry_key {
-        public:
-          entry_key();
-          ~entry_key();
-
-        protected:
-          /// Start using for this operation
-          void setup(operation* op, unsigned slots); 
-
-        public:
-          operation* getOp() const;
-
-          // interface, for operations.  All inlined in meddly_expert.hh
-          void writeNH(node_handle nh);
-          void write(int i);
-          void write(long i);
-          void write(float f);
-
-        public: 
-          // interface, for compute_table.  All inlined in meddly_expert.hh
-          const node_handle* rawData(bool includeOp) const;
-          int dataLength(bool includeOp) const;
-          unsigned getHash() const;
-
-        protected:
-          // protected interface, for compute_table.  All inlined in meddly_expert.hh
-          void setHash(unsigned h);
-
-        private:
-          operation* op;
-
-          unsigned hash_value;
-          node_handle* data;
-          unsigned data_alloc;
-
-          unsigned currslot;
-#ifdef DEVELOPMENT_CODE
-          bool has_hash;
-#endif
-        protected:
-          /// Used for linked-list of recycled search keys in compute_table
-          entry_key* next;
-
-        friend class compute_table;
-      };
-
-      //
-      // ******************************************************************
-      //
-
-      /** 
-        The result portion of an entry.
-        Internally, in the compute table, we may store
-        entries differently.  This class is used to return 
-        results from searches and to construct CT entries.
-      */
-      class entry_result {
-        public:
-          entry_result();
-          entry_result(unsigned slots);
-          ~entry_result();
-
-        public:
-          // interface, for operations (reading).
-          node_handle readNH();
-          void read(int &i);
-          void read(float &f);
-          void read(long &l);
-          void read(double &d);
-          void read(void* &ptr);
-
-          // interface, for operations (building). 
-          void reset();
-          void writeN(node_handle nh);
-          void writeI(int i);
-          void writeF(float f);
-          void writeL(long L);
-          void writeD(double D);
-          void writeP(void* P);
-          void write_raw(void* data, size_t slots);
-
-          // interface, for compute tables.
-          void setValid();
-          void setInvalid();
-          operator bool() const;
-
-          void setResult(const node_handle* d, unsigned sz);
-          const node_handle* rawData() const;
-          unsigned dataLength() const;
-
-
-        private:
-          bool is_valid;
-          const node_handle* data;
-          node_handle* build;
-          unsigned currslot;
-          unsigned ansLength;
+      enum typeID {
+        ERROR,
+        NODE,
+        INTEGER,
+        LONG,
+        HUGEINT,
+        FLOAT,
+        DOUBLE,
+        POINTER
       };
 
       //
@@ -3915,6 +3817,8 @@ class MEDDLY::compute_table {
           entry_type(const char* name, const char* pattern);
           ~entry_type();
 
+          unsigned getID() const;
+
           /**
             Set the forest for 'N' items in the pattern.
               @param  i   Slot.  Character i in the pattern must be 'N'.
@@ -3954,7 +3858,14 @@ class MEDDLY::compute_table {
                 @param  f   If t is 'N', the forest for item i.
                             Otherwise, undefined.
           */
-          void getKeyType(unsigned i, char &t, forest* &f) const;
+          void getKeyType(unsigned i, typeID &t, forest* &f) const;
+
+          /**
+              Get the type for item i in the key.
+              Automatically handles repetitions.
+                @param  i   Slot number, between 0 and getKeySize().   
+          */
+          typeID getKeyType(unsigned i) const;
 
 
           /**
@@ -3970,32 +3881,168 @@ class MEDDLY::compute_table {
                 @param  f   If t is 'N', the forest for item i.
                             Otherwise, undefined.
           */
-          void getResultType(unsigned i, char &t, forest* &f) const;
+          void getResultType(unsigned i, typeID &t, forest* &f) const;
 
+          /**
+              Get the type for item i in the result.
+                @param  i   Slot number, between 0 and getResultSize().
+          */
+          typeID getResultType(unsigned i) const;
 
         private:
+          /// Unique ID, set by compute table
+          unsigned etID;
+
           const char* name;
 
           /// Starting portion of key pattern.
-          char* ks_type;
+          typeID* ks_type;
           /// Forests in starting portion of key.
           forest** ks_forest;
           /// Length of ks_type and ks_forest arrays.
           unsigned len_ks_type;
           /// Repeating portion of key pattern (or null for no repeats).
-          char* kr_type;
+          typeID* kr_type;
           /// Forests in repeating portion of key (or null).
           forest** kr_forest;
           /// Length of kr_type and kr_forest arrays (zero if no repeats).
           unsigned len_kr_type;
 
           /// Result pattern
-          char* r_type;
+          typeID* r_type;
           /// Forests in result
           forest** r_forest;
           /// Length of r_type and r_forest arrays.
           unsigned len_r_type;
 
+          friend class compute_table;
+      };
+
+      //
+      // ******************************************************************
+      //
+
+      /** 
+        The key portion of an entry.
+        Internally, in the compute table, we may store
+        entries differently.  This class is used to build
+        keys for searching and to construct CT entries.
+      */
+      class entry_key {
+        public:
+          entry_key();
+          ~entry_key();
+
+        protected:
+          /// Start using for this operation
+#ifdef OLD_OP_CT
+          void setup(operation* op, unsigned slots); 
+#else
+          void setup(const compute_table::entry_type* et, unsigned repeats);
+#endif
+
+        public:
+#ifdef OLD_OP_CT
+          operation* getOp() const;
+#else
+          const compute_table::entry_type* getET() const;
+#endif
+
+          // interface, for operations.  All inlined in meddly_expert.hh
+          void writeN(node_handle nh);
+          void writeI(int i);
+          void writeL(long i);
+          void writeF(float f);
+          // For templates
+          inline void write_ev(long i)  { writeL(i); }
+          inline void write_ev(float f) { writeF(f); }
+
+        public: 
+          // interface, for compute_table.  All inlined in meddly_expert.hh
+          const node_handle* rawData(bool includeOp) const;
+          int dataLength(bool includeOp) const;
+          unsigned getHash() const;
+
+        protected:
+          // protected interface, for compute_table.  All inlined in meddly_expert.hh
+          void setHash(unsigned h);
+
+        private:
+#ifdef OLD_OP_CT
+          operation* op;
+#else
+          const compute_table::entry_type* etype;
+#endif
+
+          unsigned hash_value;
+          node_handle* data;
+          unsigned data_alloc;
+
+          unsigned currslot;
+#ifdef DEVELOPMENT_CODE
+          bool has_hash;
+#endif
+        protected:
+          /// Used for linked-list of recycled search keys in compute_table
+          entry_key* next;
+
+        friend class compute_table;
+      };
+
+      //
+      // ******************************************************************
+      //
+
+      /** 
+        The result portion of an entry.
+        Internally, in the compute table, we may store
+        entries differently.  This class is used to return 
+        results from searches and to construct CT entries.
+      */
+      class entry_result {
+        public:
+          entry_result();
+          entry_result(unsigned slots);
+          ~entry_result();
+
+        public:
+          // interface, for operations (reading).
+          node_handle readN();
+          int readI();
+          float readF();
+          long readL();
+          double readD();
+          void* readP();
+          // for templates
+          void read_ev(long &l)   { l = readL(); }
+          void read_ev(float &f)  { f = readF(); }
+
+          // interface, for operations (building). 
+          void reset();
+          void writeN(node_handle nh);
+          void writeI(int i);
+          void writeF(float f);
+          void writeL(long L);
+          void writeD(double D);
+          void writeP(void* P);
+          void write_raw(void* data, size_t slots);
+
+          // interface, for compute tables.
+          void setValid();
+          void setInvalid();
+          operator bool() const;
+
+          void setResult(const node_handle* d, unsigned sz);
+          const node_handle* rawData() const;
+          unsigned dataLength() const;
+
+
+        private:
+          bool is_valid;
+          const node_handle* data;
+          node_handle* build;
+          unsigned currslot;
+          unsigned ansLength;
       };
 
       //

@@ -66,10 +66,10 @@ class MEDDLY::range_int : public unary_operation {
     {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeNH(a);
+      CTsrch->writeN(a);
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      cacheFind.read(b);
+      b = cacheFind.readI();
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -163,10 +163,10 @@ class MEDDLY::range_real : public unary_operation {
     inline compute_table::entry_key* findResult(node_handle a, float &b) {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeNH(a);
+      CTsrch->writeN(a);
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      cacheFind.read(b);
+      b = cacheFind.readF();
       CT0->recycle(CTsrch);
       return 0;
     }

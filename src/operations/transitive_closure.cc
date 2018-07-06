@@ -249,18 +249,18 @@ MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_dfs::findResult(lon
 {
   compute_table::entry_key* key = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(key);
-  key->write(aev);
-  key->writeNH(a);
-  key->writeNH(b);
-  key->writeNH(c);
+  key->writeL(aev);
+  key->writeN(a);
+  key->writeN(b);
+  key->writeN(c);
 
   compute_table::entry_result& cacheFind = CT0->find(key);
   if (!cacheFind) {
     return key;
   }
 
-  cacheFind.read(dev);
-  d = resF->linkNode(cacheFind.readNH());
+  dev = cacheFind.readL();
+  d = resF->linkNode(cacheFind.readN());
   if (d != 0) {
     dev += bev;
   }
@@ -841,19 +841,19 @@ MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_evplus::findResult(
 {
   compute_table::entry_key* key = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(key);
-  key->write(aev);
-  key->writeNH(a);
-  key->writeNH(b);
+  key->writeL(aev);
+  key->writeN(a);
+  key->writeN(b);
   if(tcF->isFullyReduced() || tcF->isIdentityReduced()) {
     // Level is part of key for fully-reduced or identity-reduced forest
-    key->write(level);
+    key->writeI(level);
   }
 
   compute_table::entry_result &cacheFind = CT0->find(key);
   if (!cacheFind) return key;
 
-  cacheFind.read(cev);
-  c = resF->linkNode(cacheFind.readNH());
+  cev = cacheFind.readL();
+  c = resF->linkNode(cacheFind.readN());
   if (c != 0) {
     cev += bev;
   }

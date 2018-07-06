@@ -311,6 +311,7 @@ void MEDDLY::compute_table::registerEntryType(unsigned etid, entry_type* et)
   MEDDLY_CHECK_RANGE(0, etid, entryInfoSize);
   MEDDLY_DCASSERT(0==entryInfo[etid]);
   entryInfo[etid] = et;
+  et->etID = etid;
 }
 
 void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
@@ -335,7 +336,11 @@ void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
 
 MEDDLY::compute_table::entry_key::entry_key()
 {
+#ifdef OLD_OP_CT
   op = 0;
+#else
+  etype = 0;
+#endif
   data_alloc = 8;
   data = (int*) malloc(data_alloc * sizeof(int));
   // malloc: because realloc later
@@ -369,6 +374,20 @@ MEDDLY::compute_table::entry_result::~entry_result()
 
 // **********************************************************************
 
+inline MEDDLY::compute_table::typeID char2typeID(char c)
+{
+  switch (c) {
+    case 'N':   return MEDDLY::compute_table::NODE;
+    case 'I':   return MEDDLY::compute_table::INTEGER;
+    case 'L':   return MEDDLY::compute_table::LONG;
+    case 'H':   return MEDDLY::compute_table::HUGEINT;
+    case 'F':   return MEDDLY::compute_table::FLOAT;
+    case 'D':   return MEDDLY::compute_table::DOUBLE;
+    case 'P':   return MEDDLY::compute_table::POINTER;
+    default:    return MEDDLY::compute_table::ERROR;
+  }
+}
+
 MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pattern)
 {
   name = _name;
@@ -384,14 +403,14 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
   //
 
   unsigned length;
-  for (length=0; name[length]; length++) {
-    if ('.' == name[length]) {
+  for (length=0; pattern[length]; length++) {
+    if ('.' == pattern[length]) {
       if (saw_dot || saw_colon) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
       saw_dot = true;
       dot_slot = length;
       continue;
     }
-    if (':' == name[length]) {
+    if (':' == pattern[length]) {
       if (saw_colon) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
       saw_colon = true;
       colon_slot = length;
@@ -429,10 +448,10 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
   // Build starting portion of key
   //
   if (len_ks_type) {
-    ks_type = new char[len_ks_type];
+    ks_type = new typeID[len_ks_type];
     ks_forest = new forest*[len_ks_type];
     for (unsigned i=0; i<len_ks_type; i++) {
-      ks_type[i] = name[i];
+      ks_type[i] = char2typeID(pattern[i]);
       ks_forest[i] = 0;
     }
   } else {
@@ -445,10 +464,10 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
   // Build repeating portion of key
   //
   if (len_kr_type) {
-    kr_type = new char[len_kr_type];
+    kr_type = new typeID[len_kr_type];
     kr_forest = new forest*[len_kr_type];
     for (unsigned i=0; i<len_kr_type; i++) {
-      kr_type[i] = name[i + dot_slot + 1];
+      kr_type[i] = char2typeID(pattern[i + dot_slot + 1]);
       kr_forest[i] = 0;
     }
   } else {
@@ -460,10 +479,10 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
   // Build result
   //
   MEDDLY_DCASSERT(len_r_type);
-  r_type = new char[len_r_type];
+  r_type = new typeID[len_r_type];
   r_forest = new forest*[len_r_type];
   for (unsigned i=0; i<len_r_type; i++) {
-    r_type[i] = name[i + colon_slot + 1];
+    r_type[i] = char2typeID(pattern[i + colon_slot + 1]);
     r_forest[i] = 0;
   }
 
@@ -500,7 +519,7 @@ MEDDLY::compute_table::entry_type::~entry_type()
 void MEDDLY::compute_table::entry_type::setForestForSlot(unsigned i, forest* f)
 {
   if (i<len_ks_type) {
-    if ('N' != ks_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+    if (NODE != ks_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
     ks_forest[i] = f;
     return;
   }
@@ -510,7 +529,7 @@ void MEDDLY::compute_table::entry_type::setForestForSlot(unsigned i, forest* f)
     // adjust for the .
     i--;
     if (i<len_kr_type) {
-      if ('N' != kr_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+      if (NODE != kr_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
       kr_forest[i] = f;
       return;
     }
@@ -521,7 +540,7 @@ void MEDDLY::compute_table::entry_type::setForestForSlot(unsigned i, forest* f)
   i--;
 
   if (i < len_r_type) {
-    if ('N' != r_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+    if (NODE != r_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
     r_forest[i] = f;
     return;
   }

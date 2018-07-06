@@ -2099,6 +2099,8 @@ MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
 // *                                                                *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
+
 inline void
 MEDDLY::compute_table::entry_key::setup(operation* _op, unsigned slots)
 {
@@ -2115,34 +2117,75 @@ MEDDLY::compute_table::entry_key::setup(operation* _op, unsigned slots)
 #endif
 }
 
+#else
+
+inline void
+MEDDLY::compute_table::entry_key::setup(const compute_table::entry_type* et, unsigned repeats)
+{
+  etype = et;
+  unsigned slots = 1+et->getKeySize(repeats);
+  if (slots > data_alloc) {
+    data_alloc = (1+(data_alloc / 8)) * 8;   // allocate in chunks of size 8
+    data = (int*) realloc(data, data_alloc*sizeof(int));
+    if (0==data) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+  data[0] = et->getID();
+  currslot = 1;
+#ifdef DEVELOPMENT_CODE
+  has_hash = false;
+#endif
+}
+
+#endif
+
+#ifdef OLD_OP_CT
 inline MEDDLY::operation*
 MEDDLY::compute_table::entry_key::getOp() const
 {
   return op;
 }
+#else
+inline const MEDDLY::compute_table::entry_type*
+MEDDLY::compute_table::entry_key::getET() const
+{
+  return etype;
+}
+#endif
 
-inline void MEDDLY::compute_table::entry_key::writeNH(node_handle nh) 
+inline void MEDDLY::compute_table::entry_key::writeN(node_handle nh) 
 {
   MEDDLY_CHECK_RANGE(0, currslot, data_alloc);
+#ifndef OLD_OP_CT
+  MEDDLY_DCASSERT(compute_table::NODE == etype->getKeyType(currslot));
+#endif
   data[currslot++] = nh;
 }
 
-inline void MEDDLY::compute_table::entry_key::write(int i) 
+inline void MEDDLY::compute_table::entry_key::writeI(int i) 
 {
   MEDDLY_CHECK_RANGE(0, currslot, data_alloc);
+#ifndef OLD_OP_CT
+  MEDDLY_DCASSERT(compute_table::INTEGER == etype->getKeyType(currslot));
+#endif
   data[currslot++] = i;
 }
 
-inline void MEDDLY::compute_table::entry_key::write(long i) 
+inline void MEDDLY::compute_table::entry_key::writeL(long i) 
 {
   MEDDLY_CHECK_RANGE(0, currslot, data_alloc);
+#ifndef OLD_OP_CT
+  MEDDLY_DCASSERT(compute_table::LONG == etype->getKeyType(currslot));
+#endif
   memcpy(data+currslot, &i, sizeof(long));
   currslot += sizeof(long) / sizeof(node_handle);
 }
 
-inline void MEDDLY::compute_table::entry_key::write(float f) 
+inline void MEDDLY::compute_table::entry_key::writeF(float f) 
 {
   MEDDLY_CHECK_RANGE(0, currslot, data_alloc);
+#ifndef OLD_OP_CT
+  MEDDLY_DCASSERT(compute_table::FLOAT == etype->getKeyType(currslot));
+#endif
   float* x = (float*) (data+currslot);
   x[0] = f;
   currslot++;
@@ -2175,44 +2218,51 @@ inline void MEDDLY::compute_table::entry_key::setHash(unsigned h)
 
 // ******************************************************************
 
-inline MEDDLY::node_handle MEDDLY::compute_table::entry_result::readNH() 
+inline MEDDLY::node_handle MEDDLY::compute_table::entry_result::readN() 
 {
   MEDDLY_DCASSERT(currslot < ansLength);
   return data[currslot++];
 }
 
-inline void MEDDLY::compute_table::entry_result::read(int &i) 
+inline int MEDDLY::compute_table::entry_result::readI()
 {
   MEDDLY_DCASSERT(currslot < ansLength);
-  i = data[currslot++];
+  return data[currslot++];
 }
 
-inline void MEDDLY::compute_table::entry_result::read(float &f) 
+inline float MEDDLY::compute_table::entry_result::readF()
 {
   MEDDLY_DCASSERT(currslot < ansLength);
-  f = ((float*)(data + currslot))[0];
+  float f = ((float*)(data + currslot))[0];
   currslot++;
+  return f;
 }
 
-inline void MEDDLY::compute_table::entry_result::read(long &L) 
+inline long MEDDLY::compute_table::entry_result::readL()
 {
   MEDDLY_DCASSERT(currslot+sizeof(long)/sizeof(node_handle) <= ansLength);
+  long L;
   memcpy(&L, data+currslot, sizeof(long));
   currslot += sizeof(long) / sizeof(node_handle);
+  return L;
 }
 
-inline void MEDDLY::compute_table::entry_result::read(double &D) 
+inline double MEDDLY::compute_table::entry_result::readD()
 {
   MEDDLY_DCASSERT(currslot+sizeof(double)/sizeof(node_handle) <= ansLength);
+  double D;
   memcpy(&D, data+currslot, sizeof(double));
   currslot += sizeof(double) / sizeof(node_handle);
+  return D;
 }
 
-inline void MEDDLY::compute_table::entry_result::read(void* &P) 
+inline void* MEDDLY::compute_table::entry_result::readP()
 {
   MEDDLY_DCASSERT(currslot+sizeof(void*)/sizeof(node_handle) <= ansLength);
+  void* P;
   memcpy(&P, data+currslot, sizeof(void*));
   currslot += sizeof(void*) / sizeof(node_handle);
+  return P;
 }
 
 
@@ -2311,6 +2361,11 @@ inline unsigned MEDDLY::compute_table::entry_result
 
 // ******************************************************************
 
+inline unsigned MEDDLY::compute_table::entry_type::getID() const
+{
+  return etID;
+}
+
 inline const char* MEDDLY::compute_table::entry_type
 ::getName() const
 {
@@ -2329,7 +2384,7 @@ inline unsigned MEDDLY::compute_table::entry_type
 }
 
 inline void MEDDLY::compute_table::entry_type
-::getKeyType(unsigned i, char &t, forest* &f) const
+::getKeyType(unsigned i, typeID &t, forest* &f) const
 {
   if (i<len_ks_type) {
     MEDDLY_DCASSERT(ks_type);
@@ -2346,6 +2401,19 @@ inline void MEDDLY::compute_table::entry_type
   f = kr_forest[i];
 }
 
+inline MEDDLY::compute_table::typeID MEDDLY::compute_table::entry_type
+::getKeyType(unsigned i) const
+{
+  if (i<len_ks_type) {
+    MEDDLY_DCASSERT(ks_type);
+    return ks_type[i];
+  }
+  i -= len_ks_type;
+  i %= len_kr_type;
+  MEDDLY_DCASSERT(kr_type);
+  return kr_type[i];
+}
+
 inline unsigned MEDDLY::compute_table::entry_type
 ::getResultSize() const
 {
@@ -2353,13 +2421,22 @@ inline unsigned MEDDLY::compute_table::entry_type
 }
 
 inline void MEDDLY::compute_table::entry_type
-::getResultType(unsigned i, char &t, forest* &f) const
+::getResultType(unsigned i, typeID &t, forest* &f) const
 {
   MEDDLY_CHECK_RANGE(0, i, len_r_type);
   MEDDLY_DCASSERT(r_type);
   MEDDLY_DCASSERT(r_forest);
   t = r_type[i];
   f = r_forest[i];
+}
+
+inline MEDDLY::compute_table::typeID MEDDLY::compute_table::entry_type
+::getResultType(unsigned i) const
+{
+  MEDDLY_CHECK_RANGE(0, i, len_r_type);
+  MEDDLY_DCASSERT(r_type);
+  MEDDLY_DCASSERT(r_forest);
+  return r_type[i];
 }
 
 // ******************************************************************
@@ -2398,8 +2475,7 @@ MEDDLY::compute_table::useEntryKey(operation* op, unsigned slot)
 #ifdef OLD_OP_CT
   k->setup(op, 1+op->getKeyLength());
 #else
-  const entry_type* et = getEntryType(op, slot);
-  k->setup(op, 1+et->getKeySize(0));  // TBD - repeats?
+  k->setup(getEntryType(op, slot), 0);  // TBD - repeats?
 #endif
   return k;
 }

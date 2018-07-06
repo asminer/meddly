@@ -94,11 +94,11 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
     findSaturateResult(node_handle a, int level, node_handle& b) {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeNH(a);
-      if (argF->isFullyReduced()) CTsrch->write(level);
+      CTsrch->writeN(a);
+      if (argF->isFullyReduced()) CTsrch->writeI(level);
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      b = resF->linkNode(cacheFind.readNH()); 
+      b = resF->linkNode(cacheFind.readN()); 
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -145,11 +145,11 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
     {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeNH(a);
-      CTsrch->writeNH(b);
+      CTsrch->writeN(a);
+      CTsrch->writeN(b);
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      c = resF->linkNode(cacheFind.readNH());
+      c = resF->linkNode(cacheFind.readN());
       CT0->recycle(CTsrch);
       return 0;
     }

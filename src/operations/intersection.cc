@@ -172,20 +172,20 @@ MEDDLY::compute_table::entry_key* MEDDLY::inter_max_evplus::findResult(long aev,
   compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
   if (can_commute && a > b) {
-    CTsrch->write(0L);
-    CTsrch->writeNH(b);
-    CTsrch->write(aev - bev);
-    CTsrch->writeNH(a);
+    CTsrch->writeL(0);
+    CTsrch->writeN(b);
+    CTsrch->writeL(aev - bev);
+    CTsrch->writeN(a);
   } else {
-    CTsrch->write(0L);
-    CTsrch->writeNH(a);
-    CTsrch->write(bev - aev);
-    CTsrch->writeNH(b);
+    CTsrch->writeL(0);
+    CTsrch->writeN(a);
+    CTsrch->writeL(bev - aev);
+    CTsrch->writeN(b);
   }
   compute_table::entry_result &cacheFind = CT0->find(CTsrch);
   if (!cacheFind) return CTsrch;
-  cacheFind.read(cev);
-  c = resF->linkNode(cacheFind.readNH());
+  cev = cacheFind.readL();
+  c = resF->linkNode(cacheFind.readN());
   if (c != 0) {
     cev += (a > b ? bev : aev);
   }

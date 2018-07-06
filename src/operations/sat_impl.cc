@@ -106,11 +106,11 @@ protected:
   findSaturateResult(node_handle a, int level, node_handle& b) {
     compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
     MEDDLY_DCASSERT(CTsrch);
-    CTsrch->writeNH(a);
-    if (argF->isFullyReduced()) CTsrch->write(level);
+    CTsrch->writeN(a);
+    if (argF->isFullyReduced()) CTsrch->writeI(level);
     compute_table::entry_result &cacheFind = CT0->find(CTsrch);
     if (!cacheFind) return CTsrch;
-    b = resF->linkNode(cacheFind.readNH());
+    b = resF->linkNode(cacheFind.readN());
     CT0->recycle(CTsrch);
     return 0;
   }
@@ -163,11 +163,11 @@ protected:
   {
   compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->writeNH(a);
-  CTsrch->writeNH(b);
+  CTsrch->writeN(a);
+  CTsrch->writeN(b);
   compute_table::entry_result &cacheFind = CT0->find(CTsrch);
   if (!cacheFind) return CTsrch;
-  c = resF->linkNode(cacheFind.readNH());
+  c = resF->linkNode(cacheFind.readN());
   CT0->recycle(CTsrch);
   return 0;
   }

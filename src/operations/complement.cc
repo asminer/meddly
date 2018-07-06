@@ -65,10 +65,10 @@ class MEDDLY::compl_mdd : public unary_operation {
     {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeNH(a);
+      CTsrch->writeN(a);
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      b = resF->linkNode(cacheFind.readNH());
+      b = resF->linkNode(cacheFind.readN());
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -308,11 +308,11 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
   // Check compute table
   compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->write(k);
-  CTsrch->writeNH(a);
+  CTsrch->writeI(k);
+  CTsrch->writeN(a);
   compute_table::entry_result &cacheFind = CT0->find(CTsrch);
   if (cacheFind) {
-    node_handle ans = cacheFind.readNH();
+    node_handle ans = cacheFind.readN();
 #ifdef DEBUG_MXD_COMPL
     fprintf(stderr, "\tin CT:   compl_mxd(%d, %d) : %d\n", ht, a, ans);
 #endif

@@ -170,11 +170,11 @@ MEDDLY::mdd2index_operation
   if (aLevel == k) {
     CTsrch = CT0->useEntryKey(this, 0);
     MEDDLY_DCASSERT(CTsrch);
-    CTsrch->writeNH(a);
+    CTsrch->writeN(a);
     compute_table::entry_result &cacheEntry = CT0->find(CTsrch);
     if (cacheEntry) {
-      bdn = resF->linkNode(cacheEntry.readNH());
-      cacheEntry.read(bcard);
+      bdn = resF->linkNode(cacheEntry.readN());
+      bcard = cacheEntry.readL();
       CT0->recycle(CTsrch);
       return;
     }

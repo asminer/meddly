@@ -70,15 +70,15 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       if (can_commute && a > b) {
-        CTsrch->writeNH(b);
-        CTsrch->writeNH(a);
+        CTsrch->writeN(b);
+        CTsrch->writeN(a);
       } else {
-        CTsrch->writeNH(a);
-        CTsrch->writeNH(b);
+        CTsrch->writeN(a);
+        CTsrch->writeN(b);
       }
       compute_table::entry_result& cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      c = resF->linkNode(cacheFind.readNH());
+      c = resF->linkNode(cacheFind.readN());
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -142,15 +142,15 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       if (can_commute && a > b) {
-        CTsrch->writeNH(b);
-        CTsrch->writeNH(a);
+        CTsrch->writeN(b);
+        CTsrch->writeN(a);
       } else {
-        CTsrch->writeNH(a);
-        CTsrch->writeNH(b);
+        CTsrch->writeN(a);
+        CTsrch->writeN(b);
       }
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      c = resF->linkNode(cacheFind.readNH());
+      c = resF->linkNode(cacheFind.readN());
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -205,17 +205,17 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->write(k);
+      CTsrch->writeI(k);
       if (can_commute && a > b) {
-        CTsrch->writeNH(b);
-        CTsrch->writeNH(a);
+        CTsrch->writeN(b);
+        CTsrch->writeN(a);
       } else {
-        CTsrch->writeNH(a);
-        CTsrch->writeNH(b);
+        CTsrch->writeN(a);
+        CTsrch->writeN(b);
       }
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      c = resF->linkNode(cacheFind.readNH());
+      c = resF->linkNode(cacheFind.readN());
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -288,20 +288,20 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       if (can_commute && a > b) {
-        CTsrch->write(bev);
-        CTsrch->writeNH(b);
-        CTsrch->write(aev);
-        CTsrch->writeNH(a);
+        CTsrch->writeL(bev);
+        CTsrch->writeN(b);
+        CTsrch->writeL(aev);
+        CTsrch->writeN(a);
       } else {
-        CTsrch->write(aev);
-        CTsrch->writeNH(a);
-        CTsrch->write(bev);
-        CTsrch->writeNH(b);
+        CTsrch->writeL(aev);
+        CTsrch->writeN(a);
+        CTsrch->writeL(bev);
+        CTsrch->writeN(b);
       }
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      cacheFind.read(cev);
-      c = resF->linkNode(cacheFind.readNH());
+      cev = cacheFind.readL();
+      c = resF->linkNode(cacheFind.readN());
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -353,20 +353,20 @@ class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       if (can_commute && a > b) {
-        CTsrch->write(bev);
-        CTsrch->writeNH(b);
-        CTsrch->write(aev);
-        CTsrch->writeNH(a);
+        CTsrch->writeL(bev);
+        CTsrch->writeN(b);
+        CTsrch->writeL(aev);
+        CTsrch->writeN(a);
       } else {
-        CTsrch->write(aev);
-        CTsrch->writeNH(a);
-        CTsrch->write(bev);
-        CTsrch->writeNH(b);
+        CTsrch->writeL(aev);
+        CTsrch->writeN(a);
+        CTsrch->writeL(bev);
+        CTsrch->writeN(b);
       }
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      cacheFind.read(cev);
-      c = resF->linkNode(cacheFind.readNH());
+      cev = cacheFind.readL();
+      c = resF->linkNode(cacheFind.readN());
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -419,20 +419,20 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
       if (can_commute && a > b) {
-        CTsrch->write(bev);
-        CTsrch->writeNH(b);
-        CTsrch->write(aev);
-        CTsrch->writeNH(a);
+        CTsrch->writeF(bev);
+        CTsrch->writeN(b);
+        CTsrch->writeF(aev);
+        CTsrch->writeN(a);
       } else {
-        CTsrch->write(aev);
-        CTsrch->writeNH(a);
-        CTsrch->write(bev);
-        CTsrch->writeNH(b);
+        CTsrch->writeF(aev);
+        CTsrch->writeN(a);
+        CTsrch->writeF(bev);
+        CTsrch->writeN(b);
       }
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      cacheFind.read(cev);
-      c = resF->linkNode(cacheFind.readNH());
+      cev = cacheFind.readF();
+      c = resF->linkNode(cacheFind.readN());
       CT0->recycle(CTsrch);
       return 0;
     }

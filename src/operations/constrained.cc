@@ -299,16 +299,16 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_dfs_mt::findResult(
 {
   compute_table::entry_key* key = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(key);
-  key->writeNH(a);
-  key->writeNH(b);
-  key->writeNH(r);
+  key->writeN(a);
+  key->writeN(b);
+  key->writeN(r);
 
   compute_table::entry_result& cacheFind = CT0->find(key);
   if (!cacheFind) {
     return key;
   }
 
-  c = resF->linkNode(cacheFind.readNH());
+  c = resF->linkNode(cacheFind.readN());
 
   CT0->recycle(key);
   return 0;
@@ -1045,16 +1045,16 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_saturation_mt::findResult(
 {
   compute_table::entry_key* key = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(key);
-  key->writeNH(a);
-  key->writeNH(b);
+  key->writeN(a);
+  key->writeN(b);
   if(argF->isFullyReduced()) {
     // Level is part of key for fully-reduced forest
-    key->write(level);
+    key->writeI(level);
   }
 
   compute_table::entry_result &cacheFind = CT0->find(key);
   if (!cacheFind) return key;
-  c = resF->linkNode(cacheFind.readNH());
+  c = resF->linkNode(cacheFind.readN());
 
   CT0->recycle(key);
   return 0;
@@ -1201,18 +1201,18 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_bckwd_dfs_evplus::findResu
 {
   compute_table::entry_key* key = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(key);
-  key->write(aev);
-  key->writeNH(a);
-  key->writeNH(b);
-  key->writeNH(r);
+  key->writeL(aev);
+  key->writeN(a);
+  key->writeN(b);
+  key->writeN(r);
 
   compute_table::entry_result& cacheFind = CT0->find(key);
   if (!cacheFind) {
     return key;
   }
 
-  cacheFind.read(cev);
-  c = resF->linkNode(cacheFind.readNH());
+  cev = cacheFind.readL();
+  c = resF->linkNode(cacheFind.readN());
   if (c != 0) {
     cev += bev;
   }
@@ -1743,19 +1743,19 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_saturation_evplus::findRes
 {
   compute_table::entry_key* key = CT0->useEntryKey(this, 0);
   MEDDLY_DCASSERT(key);
-  key->write(aev);
-  key->writeNH(a);
+  key->writeL(aev);
+  key->writeN(a);
 //  key->write(bev);
-  key->writeNH(b);
+  key->writeN(b);
   if(argF->isFullyReduced()) {
     // Level is part of key for fully-reduced forest
-    key->write(level);
+    key->writeI(level);
   }
 
   compute_table::entry_result &cacheFind = CT0->find(key);
   if (!cacheFind) return key;
-  cacheFind.read(cev);
-  c = resF->linkNode(cacheFind.readNH());
+  cev = cacheFind.readL();
+  c = resF->linkNode(cacheFind.readN());
   if (c != 0) {
     cev += bev;
   }

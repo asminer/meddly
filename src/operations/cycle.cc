@@ -56,11 +56,11 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
     {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(this, 0);
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeNH(a);
+      CTsrch->writeN(a);
       compute_table::entry_result &cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      cacheFind.read(bev);
-      b = resF->linkNode(cacheFind.readNH());
+      bev = cacheFind.readL();
+      b = resF->linkNode(cacheFind.readN());
       if (b != 0) {
         bev += aev;
       }
