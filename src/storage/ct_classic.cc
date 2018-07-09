@@ -34,6 +34,7 @@
 
 #define INTEGRATED_MEMMAN
 
+#define DISCARD_AND_RECYCLE
 
 
 // **********************************************************************
@@ -184,6 +185,10 @@ namespace MEDDLY {
         printf(" in slot %u\n", h);
 #endif
         collisions++;    
+
+#ifdef DISCARD_AND_RECYCLE
+        discardAndRecycle(table[h]);
+#else
         //
         // Remove table[h]
         //
@@ -192,15 +197,30 @@ namespace MEDDLY {
 #else
         int* entry = (int*) MMAN->getChunkAddress(table[h]);
 #endif
+
+#ifdef OLD_OP_CT
         operation* op = MONOLITHIC
           ?   operation::getOpWithIndex(entry[0])
           :   global_op;
         MEDDLY_DCASSERT(op);
         op->discardEntry(entry + (MONOLITHIC?1:0) );  
         recycleEntry(table[h], op->getCacheEntryLength() + (MONOLITHIC?1:0));
+#else
+        const entry_type* et = MONOLITHIC
+          ?   getEntryType(entry[0])
+          :   global_et;
+        MEDDLY_DCASSERT(et);
+
+        // TBD
+        MEDDLY_DCASSERT(0);
+#endif
+#endif  // DISCARD_AND_RECYCLE
+
         //
         table[h] = curr;
       }
+
+#ifndef DISCARD_AND_RECYCLE
 
       /// Recycle an entry
       inline void recycleEntry(node_address h, unsigned size) {
@@ -216,6 +236,8 @@ namespace MEDDLY {
 #endif
         perf.numEntries--;
       }
+
+#endif  // DISCARD_AND_RECYCLE
 
       /// Check equality
       static inline bool equal_sw(const int* a, const int* b, int N) {
@@ -252,30 +274,29 @@ namespace MEDDLY {
       }
 
 
-      inline void showEntry(output &s, int h) const
-      {
-#ifdef INTEGRATED_MEMMAN
-        const int* entry = entries+h;
-#else
-        const int* entry = (const int*) MMAN->getChunkAddress(h);
-#endif
-        operation* op = MONOLITHIC
-            ?   operation::getOpWithIndex(entry[CHAINED ? 1 : 0])
-            :   global_op;
-        MEDDLY_DCASSERT(op);
-        op->showEntry(s, entry + (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0));
-      }
+      /**
+          Discard an entry and recycle the memory it used.
+            @param  h   Handle of the entry.
+      */
+      void discardAndRecycle(unsigned long h);
 
-
+      /**
+          Display an entry.
+          Used for debugging, and by method(s) to display the entire CT.
+            @param  s   Stream to write to.
+            @param  h   Handle of the entry.
+      */
+      void showEntry(output &s, unsigned long h) const;
 
 
     private:
+#ifdef OLD_OP_CT
       /// Global operation.  Ignored when MONOLITHIC is true.
       operation* global_op; 
-
-      /// Global slot number (with operation).  Ignored when MONOLITHIC is true.
-      unsigned global_slot;
-
+#else
+      /// Global entry type.  Ignored when MONOLITHIC is true.
+      const entry_type* global_et;
+#endif
 
       /// Hash table
       int*  table;
@@ -339,8 +360,11 @@ MEDDLY::ct_template<MONOLITHIC, CHAINED>::ct_template(
   } else {
     MEDDLY_DCASSERT(op);
   }
+#ifdef OLD_OP_CT
   global_op = op;
-  global_slot = slot;
+#else
+  global_et = getEntryType(op, slot);
+#endif
 
   /*
       Initialize memory management for entries.
@@ -486,10 +510,9 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
 #ifdef DEBUG_CT
           printf("Removing stale CT hit ");
           FILE_output out(stdout);
-          key->getOp()->showEntry(out, entry + SHIFT);
+          showEntry(out, hcurr);
           printf(" in slot %u\n", hcurr);
 #endif
-          key->getOp()->discardEntry(entry+SHIFT);
           if (CHAINED) {
             if (preventry) {
               preventry[0] = entry[0];
@@ -499,7 +522,13 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
           } else {
             table[hcurr] = 0;
           }
+
+#ifdef DISCARD_AND_RECYCLE
+          discardAndRecycle(curr);
+#else
+          key->getOp()->discardEntry(entry+SHIFT);
           recycleEntry(curr, key->getOp()->getCacheEntryLength() + SHIFT);
+#endif
 
           // Since there can NEVER be more than one match
           // in the table, we're done!
@@ -524,7 +553,7 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
 #ifdef DEBUG_CT
       printf("Found CT entry ");
       FILE_output out(stdout);
-      key->getOp()->showEntry(out, entry + SHIFT);
+      showEntry(out, hcurr);
       printf(" in slot %u\n", hcurr);
 #endif
       answer = entry;
@@ -536,10 +565,6 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
     // Not a cache hit.
     //
     if (checkStalesOnFind) {
-      operation* op = MONOLITHIC
-          ?   operation::getOpWithIndex(entry[CHAINED ? 1 : 0])
-          :   global_op;
-      MEDDLY_DCASSERT(op);
 
 #ifndef USE_NODE_STATUS
       const bool stale = key->getOp()->isEntryStale(entry+SHIFT);
@@ -554,10 +579,9 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
 #ifdef DEBUG_CT
         printf("Removing stale CT entry ");
         FILE_output out(stdout);
-        op->showEntry(out, entry + SHIFT);
+        showEntry(out, hcurr);
         printf(" in slot %u\n", hcurr);
 #endif
-        op->discardEntry(entry+SHIFT);
         if (CHAINED) {
           if (preventry) {
             preventry[0] = entry[0];
@@ -567,7 +591,16 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
         } else {
           table[hcurr] = 0;
         }
+#ifdef DISCARD_AND_RECYCLE
+        discardAndRecycle(curr);
+#else
+        operation* op = MONOLITHIC
+          ?   operation::getOpWithIndex(entry[CHAINED ? 1 : 0])
+          :   global_op;
+        MEDDLY_DCASSERT(op);
+        op->discardEntry(entry+SHIFT);
         recycleEntry(curr, op->getCacheEntryLength() + SHIFT);
+#endif
       }
 
     } // if checkStalesOnFind
@@ -910,7 +943,9 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::removeStales()
 template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_template<MONOLITHIC, CHAINED>::removeAll()
 {
+#ifndef DISCARD_AND_RECYCLE
   const int SHIFT = (MONOLITHIC?1:0) + (CHAINED?1:0);
+#endif
 
   for (unsigned i=0; i<tableSize; i++) {
     while (table[i]) {
@@ -927,6 +962,9 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::removeAll()
         table[i] = 0;
       }
 
+#ifdef DISCARD_AND_RECYCLE
+      discardAndRecycle(curr);
+#else
       operation* currop = MONOLITHIC
           ?   operation::getOpWithIndex(entry[CHAINED ? 1 : 0])
           :   global_op;
@@ -934,6 +972,7 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::removeAll()
 
       currop->discardEntry(entry + SHIFT);
       recycleEntry(curr, SHIFT+currop->getCacheEntryLength());
+#endif
     } // while
   } // for i
 }
@@ -1096,11 +1135,16 @@ int MEDDLY::ct_template<MONOLITHIC, CHAINED>::convertToList(bool removeStales)
 #ifdef DEBUG_TABLE2LIST
           printf("\tstale ");
           FILE_output out(stdout);
-          currop->showEntry(out, entry+SHIFT);
-          printf(" (handle %d slot %d)\n", curr, i);
+          showEntry(out, curr);
+          printf(" (handle %d table slot %d)\n", curr, i);
 #endif
+
+#ifdef DISCARD_AND_RECYCLE
+          discardAndRecycle(curr);
+#else
           currop->discardEntry(entry+SHIFT);
           recycleEntry(curr, SHIFT+currop->getCacheEntryLength());
+#endif
           continue;
         }
       } // if removeStales
@@ -1110,8 +1154,8 @@ int MEDDLY::ct_template<MONOLITHIC, CHAINED>::convertToList(bool removeStales)
 #ifdef DEBUG_TABLE2LIST
       printf("\tkeep  ");
       FILE_output out(stdout);
-      currop->showEntry(out, entry+SHIFT);
-      printf(" (handle %d slot %d)\n", curr, i);
+      showEntry(out, curr);
+      printf(" (handle %d table slot %d)\n", curr, i);
 #endif
       entry[0] = list;
       list = curr;
@@ -1154,8 +1198,8 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::listToTable(int L)
 #ifdef DEBUG_LIST2TABLE
     printf("\tsave  ");
     FILE_output out(stdout);
-    currop->showEntry(out, entry+M+1);
-    printf(" (handle %d slot %d)\n", curr, h);
+    showEntry(out, curr);
+    printf(" (handle %d table slot %d)\n", curr, h);
 #endif
   }
 }
@@ -1192,12 +1236,17 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::scanForStales()
 #ifdef DEBUG_CT
     printf("Removing CT stale entry ");
     FILE_output out(stdout);
-    currop->showEntry(out, entry + M );
-    printf(" in slot %u\n", i);
+    showEntry(out, table[i]);
+    printf(" in table slot %u\n", i);
 #endif  
+
+#ifdef DISCARD_AND_RECYCLE
+    discardAndRecycle(table[i]);
+#else
     currop->discardEntry(entry + M );
     int length = currop->getCacheEntryLength();
     recycleEntry(table[i], length + M );
+#endif
     table[i] = 0;
   } // for i
 }
@@ -1277,6 +1326,185 @@ MEDDLY::node_address MEDDLY::ct_template<MONOLITHIC, CHAINED>
   size_t the_size = size;
   return MMAN->requestChunk(the_size);
 #endif
+}
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED>
+void MEDDLY::ct_template<MONOLITHIC, CHAINED>
+::discardAndRecycle(unsigned long h)
+{
+  const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
+
+#ifdef INTEGRATED_MEMMAN
+  int* entry = entries + h;
+#else
+  int* entry = (int*) MMAN->getChunkAddress(table[h]);
+#endif
+
+  unsigned slots;
+
+  //
+  // Discard.
+  // For the portion of the entry that are nodes,
+  // we need to notify the forest to decrement
+  // the CT counter.
+  //
+
+#ifdef OLD_OP_CT
+
+  operation* op = MONOLITHIC
+    ?   operation::getOpWithIndex(entry[0])
+    :   global_op;
+  MEDDLY_DCASSERT(op);
+  op->discardEntry(entry + SHIFT);    // Old way - OP handles decrementing counters
+  slots = op->getCacheEntryLength() + SHIFT;
+
+#else
+
+  const entry_type* et = MONOLITHIC
+    ?   getEntryType(entry[0])
+    :   global_et;
+  MEDDLY_DCASSERT(et);
+
+  // TBD
+  MEDDLY_DCASSERT(0);
+  slots = 0;
+
+#endif
+
+  //
+  // Recycle
+  //
+#ifdef DEBUG_CTALLOC
+  fprintf(stderr, "Recycling entry %ld size %u\n", long(h), slots);
+#endif
+#ifdef INTEGRATED_MEMMAN
+  entries[h] = freeList[slots];
+  freeList[slots] = h;
+  mstats.decMemUsed( slots * sizeof(int) );
+#else
+  MMAN->recycleChunk(h, slots);
+#endif
+  perf.numEntries--;
+}
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED>
+void MEDDLY::ct_template<MONOLITHIC, CHAINED>
+::showEntry(output &s, unsigned long h) const
+{
+#ifdef INTEGRATED_MEMMAN
+  const int* entry = entries+h;
+#else
+  const int* entry = (const int*) MMAN->getChunkAddress(h);
+#endif
+
+#ifdef OLD_OP_CT
+  operation* op = MONOLITHIC
+      ?   operation::getOpWithIndex(entry[CHAINED ? 1 : 0])
+      :   global_op;
+  MEDDLY_DCASSERT(op);
+  op->showEntry(s, entry + (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0));
+
+#else
+
+  const entry_type* et = MONOLITHIC
+    ?   getEntryType(entry[0])
+    :   global_et;
+  MEDDLY_DCASSERT(et);
+
+  const int* ptr = entry + (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
+  unsigned reps;
+  if (et->isRepeating()) {
+    reps = *((const unsigned*)(ptr));
+    ptr++;
+  } else {
+    reps = 0;
+  }
+  s << "[" << et->getName() << "(";
+  unsigned stop = et->getKeySize(reps);
+  for (unsigned i=0; i<stop; i++) {
+      entry_item item;
+      if (i) s << ", ";
+      switch (et->getKeyType(i)) {
+        case NODE:
+                        item.N = *ptr;
+                        s.put(long(item.N));
+                        ptr++;
+                        break;
+        case INTEGER:
+                        item.I = *ptr;
+                        s.put(long(item.I));
+                        ptr++;
+                        break;
+        case LONG:
+                        item.L = *((const long*)(ptr));
+                        s.put(item.L);
+                        ptr += sizeof(long) / sizeof(int);
+                        break;
+        case FLOAT:
+                        item.F = *((const float*)(ptr));
+                        s.put(item.F);
+                        ptr += sizeof(float) / sizeof(int);
+                        break;
+        case DOUBLE:
+                        item.D = *((const double*)(ptr));
+                        s.put(item.D);
+                        ptr += sizeof(double) / sizeof(int);
+                        break;
+        case POINTER:
+                        item.P = *((void**)(ptr));
+                        s.put_hex((unsigned long)item.P);
+                        ptr += sizeof(void*) / sizeof(int);
+                        break;
+        default:
+                        MEDDLY_DCASSERT(0);
+      } // switch et->getKeyType()
+  } // for i
+  s << "): ";
+  for (unsigned i=0; i<et->getResultSize(); i++) {
+      entry_item item;
+      if (i) s << ", ";
+      switch (et->getResultType(i)) {
+        case NODE:
+                        item.N = *ptr;
+                        s.put(long(item.N));
+                        ptr++;
+                        break;
+        case INTEGER:
+                        item.I = *ptr;
+                        s.put(long(item.I));
+                        ptr++;
+                        break;
+        case LONG:
+                        item.L = *((const long*)(ptr));
+                        s.put(item.L);
+                        ptr += sizeof(long) / sizeof(int);
+                        break;
+        case FLOAT:
+                        item.F = *((const float*)(ptr));
+                        s.put(item.F);
+                        ptr += sizeof(float) / sizeof(int);
+                        break;
+        case DOUBLE:
+                        item.D = *((const double*)(ptr));
+                        s.put(item.D);
+                        ptr += sizeof(double) / sizeof(int);
+                        break;
+                            
+        case POINTER:
+                        item.P = *((void**)(ptr));
+                        s.put_hex((unsigned long)item.P);
+                        ptr += sizeof(void*) / sizeof(int);
+                        break;
+        default:
+                        MEDDLY_DCASSERT(0);
+      } // switch et->getResultType()
+  } // for i
+  s << "]";
+#endif  // ifdef OLD_OP_CT
 }
 
 

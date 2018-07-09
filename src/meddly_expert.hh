@@ -2637,6 +2637,13 @@ MEDDLY::compute_table::getEntryType(operation* op, unsigned slot)
   MEDDLY_CHECK_RANGE(0, etid, entryInfoSize);
   return entryInfo[etid];
 }
+
+inline const MEDDLY::compute_table::entry_type*
+MEDDLY::compute_table::getEntryType(unsigned etid)
+{
+  MEDDLY_CHECK_RANGE(0, etid, entryInfoSize);
+  return entryInfo[etid];
+}
 #endif
 
 inline void

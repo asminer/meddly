@@ -4194,6 +4194,9 @@ class MEDDLY::compute_table {
       /// Find entry_type for operation and slot number.
       static const entry_type* getEntryType(operation* op, unsigned slot);
 
+      /// Find entry type for given entryID
+      static const entry_type* getEntryType(unsigned etID);
+
 #endif
 
     protected:
