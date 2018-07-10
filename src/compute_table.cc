@@ -475,7 +475,7 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
   //
   if (len_ks_type) {
     ks_type = new typeID[len_ks_type];
-    ks_forest = new forest*[len_ks_type];
+    ks_forest = new expert_forest*[len_ks_type];
     for (unsigned i=0; i<len_ks_type; i++) {
       ks_type[i] = char2typeID(pattern[i]);
       ks_forest[i] = 0;
@@ -491,7 +491,7 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
   //
   if (len_kr_type) {
     kr_type = new typeID[len_kr_type];
-    kr_forest = new forest*[len_kr_type];
+    kr_forest = new expert_forest*[len_kr_type];
     for (unsigned i=0; i<len_kr_type; i++) {
       kr_type[i] = char2typeID(pattern[i + dot_slot + 1]);
       kr_forest[i] = 0;
@@ -506,7 +506,7 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
   //
   MEDDLY_DCASSERT(len_r_type);
   r_type = new typeID[len_r_type];
-  r_forest = new forest*[len_r_type];
+  r_forest = new expert_forest*[len_r_type];
   for (unsigned i=0; i<len_r_type; i++) {
     r_type[i] = char2typeID(pattern[i + colon_slot + 1]);
     r_forest[i] = 0;
@@ -542,7 +542,7 @@ MEDDLY::compute_table::entry_type::~entry_type()
   delete[] r_forest;
 }
 
-void MEDDLY::compute_table::entry_type::setForestForSlot(unsigned i, forest* f)
+void MEDDLY::compute_table::entry_type::setForestForSlot(unsigned i, expert_forest* f)
 {
   if (i<len_ks_type) {
     if (NODE != ks_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);

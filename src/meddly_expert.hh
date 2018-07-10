@@ -2497,7 +2497,7 @@ inline unsigned MEDDLY::compute_table::entry_type
 }
 
 inline void MEDDLY::compute_table::entry_type
-::getKeyType(unsigned i, typeID &t, forest* &f) const
+::getKeyType(unsigned i, typeID &t, expert_forest* &f) const
 {
   if (i<len_ks_type) {
     MEDDLY_DCASSERT(ks_type);
@@ -2534,7 +2534,7 @@ inline unsigned MEDDLY::compute_table::entry_type
 }
 
 inline void MEDDLY::compute_table::entry_type
-::getResultType(unsigned i, typeID &t, forest* &f) const
+::getResultType(unsigned i, typeID &t, expert_forest* &f) const
 {
   MEDDLY_CHECK_RANGE(0, i, len_r_type);
   MEDDLY_DCASSERT(r_type);

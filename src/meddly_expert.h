@@ -3607,8 +3607,6 @@ class MEDDLY::ct_object {
     virtual opnd_type getType() = 0;
 };
 
-// under construction:
-
 
 // ******************************************************************
 // *                                                                *
@@ -3831,7 +3829,7 @@ class MEDDLY::compute_table {
                                 'H': hugeint (if gmp support enabled)
                                 'F': float
                                 'D': double
-                                'P': generic pointer
+                                'P': pointer to a ct_object
                                 ':': separates key portion from result portion;
                                      must appear exactly once
                                 '.': for repeating entries; can appear at most once.
@@ -3850,7 +3848,7 @@ class MEDDLY::compute_table {
               @param  i   Slot.  Character i in the pattern must be 'N'.
               @param  f   Forest.
           */
-          void setForestForSlot(unsigned i, forest* f);
+          void setForestForSlot(unsigned i, expert_forest* f);
           
           //
           // The remaining interface is for use by the compute table.
@@ -3882,9 +3880,9 @@ class MEDDLY::compute_table {
 
                 @param  t   On output, the type for item i.
                 @param  f   If t is 'N', the forest for item i.
-                            Otherwise, undefined.
+                            Otherwise, null.
           */
-          void getKeyType(unsigned i, typeID &t, forest* &f) const;
+          void getKeyType(unsigned i, typeID &t, expert_forest* &f) const;
 
           /**
               Get the type for item i in the key.
@@ -3905,9 +3903,9 @@ class MEDDLY::compute_table {
 
                 @param  t   On output, the type for item i.
                 @param  f   If t is 'N', the forest for item i.
-                            Otherwise, undefined.
+                            Otherwise, null.
           */
-          void getResultType(unsigned i, typeID &t, forest* &f) const;
+          void getResultType(unsigned i, typeID &t, expert_forest* &f) const;
 
           /**
               Get the type for item i in the result.
@@ -3924,20 +3922,20 @@ class MEDDLY::compute_table {
           /// Starting portion of key pattern.
           typeID* ks_type;
           /// Forests in starting portion of key.
-          forest** ks_forest;
+          expert_forest** ks_forest;
           /// Length of ks_type and ks_forest arrays.
           unsigned len_ks_type;
           /// Repeating portion of key pattern (or null for no repeats).
           typeID* kr_type;
           /// Forests in repeating portion of key (or null).
-          forest** kr_forest;
+          expert_forest** kr_forest;
           /// Length of kr_type and kr_forest arrays (zero if no repeats).
           unsigned len_kr_type;
 
           /// Result pattern
           typeID* r_type;
           /// Forests in result
-          forest** r_forest;
+          expert_forest** r_forest;
           /// Length of r_type and r_forest arrays.
           unsigned len_r_type;
 
