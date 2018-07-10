@@ -418,6 +418,8 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
 {
   name = _name;
 
+  updatable_result = false;
+
   bool saw_dot = false;
   bool saw_colon = false;
 

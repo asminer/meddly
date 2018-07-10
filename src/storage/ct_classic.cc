@@ -34,8 +34,6 @@
 
 #define INTEGRATED_MEMMAN
 
-// #define OLD_FIND_ENTRY
-
 
 // **********************************************************************
 // *                                                                    *
@@ -56,7 +54,7 @@ namespace MEDDLY {
           Find an entry.
           Used by find() and updateEntry().
             @param  key   Key to search for.
-            @return Pointer to the entry, or null if not found.
+            @return Pointer to the result portion of the entry, or null if not found.
       */
       int* findEntry(entry_key* key);
 
@@ -208,41 +206,17 @@ namespace MEDDLY {
         };
       }
 
-      inline void checkEqualityAndStatus(const int* entry, const entry_key* k, bool &equal, bool &discard)
-      {
-          equal = equal_sw(entry + (CHAINED?1:0), k->rawData(MONOLITHIC), k->dataLength(MONOLITHIC));
-
-          static const int SHIFT = (MONOLITHIC?1:0) + (CHAINED?1:0);
-
-          operation* entryop = MONOLITHIC
-            ?   operation::getOpWithIndex(entry[CHAINED?1:0])
-            :   global_op;
-
-          if (equal) {
-            if (entryop->shouldStaleCacheHitsBeDiscarded()) {
-#ifndef USE_NODE_STATUS
-              discard = entryop->isEntryStale(entry+SHIFT);
 #else
-              discard = (MEDDLY::forest::node_status::DEAD == entryop->getEntryStatus(entry+SHIFT) );
-#endif
-            } else {
-              discard = false;
-            }
-          } else { // not equal
-            if (checkStalesOnFind) {
-#ifndef USE_NODE_STATUS
-              discard = entryop->isEntryStale(entry+SHIFT);
-#else
-              discard = (MEDDLY::forest::node_status::ACTIVE != entryop->getEntryStatus(entry+SHIFT) );
-#endif
-            } else {
-              discard = false;
-            }
-          }
-      }
+      /**
+          Check if the key portion of an entry equals key and should be discarded.
+            @param  entry   Complete entry in CT to check.
+            @param  key     Key to compare against. 
+            @param  discard On output: should this entry be discarded
 
-#else
-      void checkEqualityAndStatus(const int* entry, const entry_key* k, bool &equal, bool &discard);
+            @return Result portion of the entry, if they key portion matches;
+                    0 if the entry does not match the key.
+      */
+      int* checkEqualityAndStatus(const int* entry, const entry_key* key, bool &discard);
 #endif
 
 
@@ -455,7 +429,7 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
   //    if (!active) discard
   //    else do nothing
 
-#ifdef OLD_FIND_ENTRY
+#ifdef OLD_OP_CT
   const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
 #endif
 
@@ -492,7 +466,7 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
     int* entry = (int*) MMAN->getChunkAddress(curr);
 #endif
 
-#ifdef OLD_FIND_ENTRY ////////////////////////////////////////////////////////////
+#ifdef OLD_OP_CT ////////////////////////////////////////////////////////////
 
     //
     // Check for match
@@ -554,7 +528,7 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
       showEntry(out, hcurr);
       printf(" in slot %u\n", hcurr);
 #endif
-      answer = entry;
+      answer = entry + (CHAINED ? 1 : 0) + key->dataLength(MONOLITHIC);
       break;
     } // equal_sw
 
@@ -593,10 +567,10 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
       }
     }
 
-#else  ////////////////////////////////////////////////////////////// NOT OLD_FIND_ENTRY
+#else  ////////////////////////////////////////////////////////////// NOT OLD_OP_CT
 
-    bool equal, discard;
-    checkEqualityAndStatus(entry, key, equal, discard);
+    bool discard;
+    answer = checkEqualityAndStatus(entry, key, discard);
 
     if (discard) {
         //
@@ -621,14 +595,15 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
 
         discardAndRecycle(curr);
 
-        if (equal) {
+        if (answer) {
+          answer = 0;
           // Since there can NEVER be more than one match
           // in the table, we're done!
           break;
         }
     } // if discard
 
-    if (equal) {
+    if (answer) {
         //
         // "Hit"
         //
@@ -649,11 +624,10 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
         showEntry(out, hcurr);
         printf(" in slot %u\n", hcurr);
 #endif
-        answer = entry;
         break;
     } // if equal
 
-#endif ////////////////////////////////////////////////////////////// OLD_FIND_ENTRY
+#endif ////////////////////////////////////////////////////////////// OLD_OP_CT
 
     //
     // Advance
@@ -689,17 +663,24 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
 {
 #ifdef OLD_OP_CT
   static entry_result res;
-#endif
   setHash(key, raw_hash(key->rawData(MONOLITHIC), key->dataLength(MONOLITHIC)));
-  int* entry = findEntry(key);
+#else
+  //
+  // Hash the key
+  //
+
+  // TBD
+  MEDDLY_DCASSERT(0);
+
+#endif
+
+
+  int* entry_result = findEntry(key);
   perf.pings++;
 
-  if (entry) {
+  if (entry_result) {
     perf.hits++;
-    res.setResult(
-      entry+(CHAINED?1:0)+key->dataLength(MONOLITHIC), 
-      key->getOp()->getAnsLength()
-    );
+    res.setResult(entry_result, key->getOp()->getAnsLength());
   } else {
     res.setInvalid();
   }
@@ -881,11 +862,12 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const en
 template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_template<MONOLITHIC, CHAINED>::updateEntry(entry_key* key, const entry_result &res)
 {
-  int* entry = findEntry(key);
-  if (entry) {
-    int* key_portion = entry + (CHAINED ? 1 : 0);
-    int* res_portion = key_portion + key->dataLength(MONOLITHIC);
-    memcpy(res_portion, res.rawData(), res.dataLength()*sizeof(node_handle));
+#ifndef OLD_OP_CT
+  MEDDLY_DCASSERT(key->getET()->isResultUpdatable());
+#endif
+  int* entry_result = findEntry(key);
+  if (entry_result) {
+    memcpy(entry_result, res.rawData(), res.dataLength()*sizeof(node_handle));
   } else {
     throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
   }
@@ -1355,7 +1337,7 @@ MEDDLY::node_address MEDDLY::ct_template<MONOLITHIC, CHAINED>
 #ifndef OLD_OP_CT
 
 template <bool MONOLITHIC, bool CHAINED>
-void MEDDLY::ct_template<MONOLITHIC, CHAINED>
+int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
 ::checkEqualityAndStatus(const int* entry, const entry_key* k, bool &equal, bool &discard)
 {
   // TBD!

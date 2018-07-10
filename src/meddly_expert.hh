@@ -2105,7 +2105,8 @@ inline void
 MEDDLY::compute_table::entry_key::setup(operation* _op, unsigned slots)
 {
   op = _op;
-  if (slots > data_alloc) {
+  total_slots = 1+slots;
+  if (total_slots > data_alloc) {
     data_alloc = (1+(data_alloc / 8)) * 8;   // allocate in chunks of size 8
     data = (int*) realloc(data, data_alloc*sizeof(int));
     if (0==data) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
@@ -2123,8 +2124,8 @@ inline void
 MEDDLY::compute_table::entry_key::setup(const compute_table::entry_type* et, unsigned repeats)
 {
   etype = et;
-  unsigned slots = 1+et->getKeySize(repeats);
-  if (slots > data_alloc) {
+  total_slots = 1+et->getKeySize(repeats);
+  if (total_slots > data_alloc) {
     data_alloc = (1+(data_alloc / 8)) * 8;   // allocate in chunks of size 8
     data = (entry_item*) realloc(data, data_alloc*sizeof(entry_item));
     if (0==data) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
@@ -2154,7 +2155,7 @@ MEDDLY::compute_table::entry_key::getET() const
 
 inline void MEDDLY::compute_table::entry_key::writeN(node_handle nh) 
 {
-  MEDDLY_CHECK_RANGE(0, currslot, data_alloc);
+  MEDDLY_CHECK_RANGE(0, currslot, total_slots);
 #ifdef OLD_OP_CT
   data[currslot++] = nh;
 #else 
@@ -2165,7 +2166,7 @@ inline void MEDDLY::compute_table::entry_key::writeN(node_handle nh)
 
 inline void MEDDLY::compute_table::entry_key::writeI(int i) 
 {
-  MEDDLY_CHECK_RANGE(0, currslot, data_alloc);
+  MEDDLY_CHECK_RANGE(0, currslot, total_slots);
 #ifdef OLD_OP_CT
   data[currslot++] = i;
 #else
@@ -2176,7 +2177,7 @@ inline void MEDDLY::compute_table::entry_key::writeI(int i)
 
 inline void MEDDLY::compute_table::entry_key::writeL(long i) 
 {
-  MEDDLY_CHECK_RANGE(0, currslot, data_alloc);
+  MEDDLY_CHECK_RANGE(0, currslot, total_slots);
 #ifdef OLD_OP_CT
   memcpy(data+currslot, &i, sizeof(long));
   currslot += sizeof(long) / sizeof(node_handle);
@@ -2188,7 +2189,7 @@ inline void MEDDLY::compute_table::entry_key::writeL(long i)
 
 inline void MEDDLY::compute_table::entry_key::writeF(float f) 
 {
-  MEDDLY_CHECK_RANGE(0, currslot, data_alloc);
+  MEDDLY_CHECK_RANGE(0, currslot, total_slots);
 #ifdef OLD_OP_CT
   float* x = (float*) (data+currslot);
   x[0] = f;
@@ -2201,14 +2202,17 @@ inline void MEDDLY::compute_table::entry_key::writeF(float f)
 
 #ifdef OLD_OP_CT
 inline const MEDDLY::node_handle* MEDDLY::compute_table::entry_key::rawData(bool includeOp) const 
+#else
+inline const MEDDLY::compute_table::entry_item* 
+MEDDLY::compute_table::entry_key::rawData(bool includeOp) const 
+#endif
 { 
   return includeOp ? data : (data+1);
 }
-#endif
 
 inline int MEDDLY::compute_table::entry_key::dataLength(bool includeOp) const
 { 
-  return includeOp ? currslot : (currslot-1);
+  return includeOp ? total_slots : (total_slots-1);
 }
 
 inline unsigned MEDDLY::compute_table::entry_key::getHash() const
@@ -2479,6 +2483,16 @@ inline unsigned MEDDLY::compute_table::entry_type::getID() const
   return etID;
 }
 
+inline void MEDDLY::compute_table::entry_type::mightUpdateResults()
+{
+  updatable_result = true;
+}
+
+inline bool MEDDLY::compute_table::entry_type::isResultUpdatable() const
+{
+  return updatable_result;
+}
+
 inline const char* MEDDLY::compute_table::entry_type
 ::getName() const
 {
@@ -2587,7 +2601,7 @@ MEDDLY::compute_table::useEntryKey(operation* op)
   } else {
     k = new entry_key();
   }
-  k->setup(op, 1+op->getKeyLength());
+  k->setup(op, op->getKeyLength());
   return k;
 }
 

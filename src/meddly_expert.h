@@ -3849,7 +3849,20 @@ class MEDDLY::compute_table {
               @param  f   Forest.
           */
           void setForestForSlot(unsigned i, expert_forest* f);
+
+          /**
+            Results might be overwritten.
+            Indicate that in these entries, the result portion of the
+            entry might be updated.
+            The CT will make storage decisions based on this.
+          */
+          void mightUpdateResults();
           
+          /**
+              Is the result portion updatable?
+          */
+          bool isResultUpdatable() const;
+
           //
           // The remaining interface is for use by the compute table.
           // All these should be inlined for speed (see meddly_expert.hh)
@@ -3939,6 +3952,8 @@ class MEDDLY::compute_table {
           /// Length of r_type and r_forest arrays.
           unsigned len_r_type;
 
+          bool updatable_result;
+
           friend class compute_table;
       };
 
@@ -3985,6 +4000,8 @@ class MEDDLY::compute_table {
           // interface, for compute_table.  All inlined in meddly_expert.hh
 #ifdef OLD_OP_CT
           const node_handle* rawData(bool includeOp) const;
+#else
+          const entry_item* rawData(bool includeOp) const;
 #endif
           int dataLength(bool includeOp) const;
           unsigned getHash() const;
@@ -4006,6 +4023,7 @@ class MEDDLY::compute_table {
           unsigned data_alloc;
 
           unsigned currslot;
+          unsigned total_slots;
 #ifdef DEVELOPMENT_CODE
           bool has_hash;
 #endif
