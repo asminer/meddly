@@ -4002,6 +4002,10 @@ class MEDDLY::compute_table {
           const node_handle* rawData(bool includeOp) const;
 #else
           const entry_item* rawData(bool includeOp) const;
+
+          const void* readTempData() const;
+          void* allocTempData(unsigned bytes);
+          unsigned dataBytes(bool includeOp) const;
 #endif
           int dataLength(bool includeOp) const;
           unsigned getHash() const;
@@ -4017,6 +4021,9 @@ class MEDDLY::compute_table {
 #else 
           const compute_table::entry_type* etype;
           entry_item* data;
+          unsigned currbytes;
+          void* temp_data; 
+          unsigned temp_bytes;
 #endif
 
           unsigned hash_value;
@@ -4086,6 +4093,9 @@ class MEDDLY::compute_table {
 #ifdef OLD_OP_CT
           void setResult(const node_handle* d, unsigned sz);
           const node_handle* rawData() const;
+#else 
+          const entry_item* rawData() const;
+          unsigned dataBytes() const;
 #endif
           unsigned dataLength() const;
 
@@ -4098,6 +4108,7 @@ class MEDDLY::compute_table {
 #else
           const entry_type* etype;
           entry_item* build;
+          unsigned currbytes;
 #endif
           bool is_valid;
           unsigned currslot;

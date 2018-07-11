@@ -344,6 +344,8 @@ MEDDLY::compute_table::entry_key::entry_key()
 #else
   etype = 0;
   data = (entry_item*) malloc(data_alloc * sizeof(entry_item));
+  temp_bytes = 0;
+  temp_data = 0;
   // malloc: because realloc later
 #endif
 }
@@ -351,6 +353,9 @@ MEDDLY::compute_table::entry_key::entry_key()
 MEDDLY::compute_table::entry_key::~entry_key()
 {
   free(data);
+#ifndef OLD_OP_CT
+  free(temp_data);
+#endif
 }
 
 // **********************************************************************

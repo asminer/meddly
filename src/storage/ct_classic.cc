@@ -20,8 +20,10 @@
 
 #include "ct_classic.h"
 
-#include <map>  // for operation_map
-#include <limits.h>
+// #include "../hash_stream.h"
+
+// #include <map>  // for operation_map
+// #include <limits.h>
 
 // #define DEBUG_SLOW
 // #define DEBUG_CT
@@ -83,10 +85,6 @@ namespace MEDDLY {
       /// Grab space for a new entry
       node_address newEntry(unsigned size);
 
-      inline unsigned hash(const int* k, int length) const {
-        return raw_hash(k, length) % tableSize;
-      }
-
       /*
           Use our own, built-in, specialized hash
           instead of hash_stream because it's faster.
@@ -142,6 +140,9 @@ namespace MEDDLY {
         return c;
       }
 
+      inline unsigned hash(const int* k, int length) const {
+        return raw_hash(k, length) % tableSize;
+      }
     
       inline void incMod(unsigned &h) {
         h++;
@@ -189,7 +190,6 @@ namespace MEDDLY {
       }
 
 
-#ifdef OLD_OP_CT
       /// Check equality
       static inline bool equal_sw(const int* a, const int* b, int N) {
         switch (N) {  // note: cases 8 - 2 fall through
@@ -206,7 +206,7 @@ namespace MEDDLY {
         };
       }
 
-#else
+#ifndef OLD_OP_CT
       /**
           Check if the key portion of an entry equals key and should be discarded.
             @param  entry   Complete entry in CT to check.
@@ -219,6 +219,81 @@ namespace MEDDLY {
       int* checkEqualityAndStatus(const int* entry, const entry_key* key, bool &discard);
 #endif
 
+#ifdef OLD_OP_CT
+      inline bool isStale(unsigned long h) const 
+      {
+          const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
+
+#ifdef INTEGRATED_MEMMAN
+          const int* entry = entries + h;
+#else
+          const int* entry = (const int*) MMAN->getChunkAddress(h);
+#endif
+          operation* currop = MONOLITHIC
+            ?   operation::getOpWithIndex(entry[CHAINED?1:0])
+            :   global_op;
+          MEDDLY_DCASSERT(currop);
+
+#ifndef USE_NODE_STATUS
+          return currop->isEntryStale(entry+SHIFT);
+#else
+          return MEDDLY::forest::node_status::ACTIVE != currop->getEntryStatus(entry+SHIFT);
+#endif
+      }
+
+#else // OLD_OP_CT
+
+      /**
+          Check if an entry is stale.
+            @param  h   Handle of entry to check.
+            @return true, if the entry should be discarded.
+      */
+      bool isStale(unsigned long h) const;
+
+#endif // OLD_OP_CT
+
+      /**
+          Copy a result into an entry.
+      */
+#ifdef OLD_OP_CT
+      inline void setResult(int* respart, const entry_result &res) {
+        memcpy(respart, res.rawData(), res.dataLength()*sizeof(node_handle));
+      }
+#else
+      inline void setResult(int* respart, const entry_result &res, const entry_type* et) {
+        const entry_item* resdata = res.rawData();
+        for (unsigned i=0; i<res.dataLength(); i++) {
+            typeID t = et->getResultType(i);
+            switch (t) {
+              case NODE:    *respart = resdata[i].N;
+                            respart++;
+                            continue;
+
+              case INTEGER: *respart = resdata[i].I;
+                            respart++;
+                            continue;
+
+              case FLOAT:   *((float*)respart) = resdata[i].F;
+                            respart++;
+                            continue;
+
+              case DOUBLE:  *((double*)respart) = resdata[i].D;
+                            respart += sizeof(double) / sizeof(int);
+                            continue;
+
+              case LONG:    *((long*)respart) = resdata[i].L;
+                            respart += sizeof(long) / sizeof(int);
+                            continue;
+
+              case POINTER: *((void**)respart) = resdata[i].P;
+                            respart += sizeof(void*) / sizeof(int);
+                            continue;
+
+              default:      MEDDLY_DCASSERT(0);
+            } // switch t
+        } // for i
+      }
+#endif
 
       /// Display a chain 
       inline void showChain(output &s, int L) const {
@@ -244,7 +319,7 @@ namespace MEDDLY {
           result node(s) are DEAD.
             @param  h   Handle of the entry.
       */
-      bool entryUnrecoverable(unsigned long h) const;
+      // bool entryUnrecoverable(unsigned long h) const;
 #endif
 
       /**
@@ -466,12 +541,14 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
     int* entry = (int*) MMAN->getChunkAddress(curr);
 #endif
 
-#ifdef OLD_OP_CT ////////////////////////////////////////////////////////////
+
+#ifdef OLD_OP_CT  ////////////////////////////////////////////////////////////// NOT OLD_OP_CT
 
     //
     // Check for match
     //
     if (equal_sw(entry + (CHAINED?1:0), key->rawData(MONOLITHIC), key->dataLength(MONOLITHIC))) {
+
       if (key->getOp()->shouldStaleCacheHitsBeDiscarded()) {
 #ifndef USE_NODE_STATUS
         const bool stale = key->getOp()->isEntryStale(entry+SHIFT);
@@ -666,11 +743,56 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
   setHash(key, raw_hash(key->rawData(MONOLITHIC), key->dataLength(MONOLITHIC)));
 #else
   //
+  // Allocate temporary space for key preprocessing.
+  //
+  int* temp_entry = (int*) key->allocTempData( key->dataBytes(MONOLITHIC) );
+
+  //
+  // Copy the operation index if we're monolithic
+  //
+  const entry_item* data = key->rawData(MONOLITHIC);
+  int tptr = 0;
+  if (MONOLITHIC) {
+    temp_entry[0] = data[0].U;
+    data++;
+    tptr++;
+  }
+
+  //
+  // Copy the key into temp_entry
+  //
+  const entry_type* et = key->getET();
+  MEDDLY_DCASSERT(et);
+  unsigned datalen = key->dataLength(false);
+  for (unsigned i=0; i<datalen; i++) {
+    typeID t = et->getKeyType(i);
+    switch (t) {
+      case NODE:
+                  temp_entry[tptr++] = data[i].N;
+                  continue;
+      case INTEGER:
+                  temp_entry[tptr++] = data[i].I;
+                  continue;
+      case LONG: 
+                  memcpy(temp_entry+tptr, &(data[i].L), sizeof(long));
+                  tptr += sizeof(long) / sizeof(int);
+                  continue;
+      case FLOAT:
+                  temp_entry[tptr++] = data[i].I;   // Hack!
+                  continue;
+      default:
+                  MEDDLY_DCASSERT(0);
+    } // switch t
+  } // for i
+
+  // 
+  // TBD - probably shouldn't hash the floats, doubles.
+  //
+  
+  //
   // Hash the key
   //
-
-  // TBD
-  MEDDLY_DCASSERT(0);
+  setHash(key, raw_hash(temp_entry, key->dataBytes(MONOLITHIC) / sizeof(int)));
 
 #endif
 
@@ -680,7 +802,42 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
 
   if (entry_result) {
     perf.hits++;
+#ifdef OLD_OP_CT
     res.setResult(entry_result, key->getOp()->getAnsLength());
+#else
+    //
+    // Fill res
+    //
+    res.reset();
+    for (unsigned i=0; i<key->getET()->getResultSize(); i++) {
+      typeID t = et->getResultType(i);
+      switch (t) {
+        case NODE:    res.writeN( *entry_result++ );
+                      continue;
+
+        case INTEGER: res.writeI( *entry_result++ );
+                      continue;
+
+        case FLOAT:   res.writeF( *((float*)entry_result) );
+                      entry_result++;
+                      continue;
+
+        case DOUBLE:  res.writeD( *((double*)entry_result) );
+                      entry_result += sizeof(double) / sizeof(int);
+                      continue;
+
+        case LONG:    res.writeL( *((long*)entry_result) );
+                      entry_result += sizeof(long) / sizeof(int);
+                      continue;
+
+        case POINTER: res.writeP( *((void**)entry_result) );
+                      entry_result += sizeof(void*) / sizeof(int);
+                      continue;
+                    
+        default:      MEDDLY_DCASSERT(0);
+      } // switch t
+    } // for i
+#endif
   } else {
     res.setInvalid();
   }
@@ -696,8 +853,13 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const en
 {
   MEDDLY_DCASSERT(key);
   if (!MONOLITHIC) {
+#ifdef OLD_OP_CT
     if (key->getOp() != global_op)
       throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
+#else
+    if (key->getET() != global_et)
+      throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
+#endif
   }
 
   unsigned h = key->getHash() % tableSize;
@@ -709,18 +871,31 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const en
   printf(" in slot %u\n", h);
 #endif
 
+#ifdef OLD_OP_CT
   operation* op = key->getOp();
   MEDDLY_DCASSERT(op);
+#else
+  const entry_type* et = key->getET();
+  MEDDLY_DCASSERT(et);
+#endif
 
   //
   // Allocate an entry
   //
 
+#ifdef OLD_OP_CT
   node_address curr = newEntry(
     op->getCacheEntryLength() + 
     (CHAINED ? 1 : 0) + 
     (MONOLITHIC ? 1 : 0)
   );
+#else
+  node_address curr = newEntry(
+    key->dataBytes(MONOLITHIC) / sizeof(int) +
+    res.dataBytes() / sizeof(int) +
+    (CHAINED ? 1 : 0)
+  );
+#endif
 
 #ifdef INTEGRATED_MEMMAN
   int* entry = entries + curr;
@@ -732,9 +907,15 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const en
   // Copy into the entry
   //
   int* key_portion = entry + (CHAINED ? 1 : 0);
+#ifdef OLD_OP_CT
   memcpy(key_portion, key->rawData(MONOLITHIC), key->dataLength(MONOLITHIC)*sizeof(node_handle));
   int* res_portion = key_portion + key->dataLength(MONOLITHIC);
-  memcpy(res_portion, res.rawData(), res.dataLength()*sizeof(node_handle));
+  setResult(res_portion, res);
+#else
+  memcpy(key_portion, key->readTempData(), key->dataBytes(MONOLITHIC));
+  int* res_portion = key_portion + key->dataBytes(MONOLITHIC) / sizeof(int);
+  setResult(res_portion, res, et);
+#endif
 
   //
   // Recycle key
@@ -866,11 +1047,15 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::updateEntry(entry_key* key, const
   MEDDLY_DCASSERT(key->getET()->isResultUpdatable());
 #endif
   int* entry_result = findEntry(key);
-  if (entry_result) {
-    memcpy(entry_result, res.rawData(), res.dataLength()*sizeof(node_handle));
-  } else {
+  if (!entry_result) {
     throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
   }
+
+#ifdef OLD_OP_CT
+  setResult(entry_result, res);
+#else
+  setResult(entry_result, res, key->getET());
+#endif
 }
 
 // **********************************************************************
@@ -1003,8 +1188,13 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
   if (MONOLITHIC) {
     s << "Monolithic compute table\n";
   } else {
+#ifdef OLD_OP_CT
     s << "Compute table for " << global_op->getName() << " (index " 
       << long(global_op->getIndex()) << ")\n";
+#else
+    s << "Compute table for " << global_et->getName() << " (index " 
+      << long(global_et->getID()) << ")\n";
+#endif
   }
 
   s.put("", 6);
@@ -1122,7 +1312,7 @@ template <bool MONOLITHIC, bool CHAINED>
 int MEDDLY::ct_template<MONOLITHIC, CHAINED>::convertToList(bool removeStales)
 {
   MEDDLY_DCASSERT(CHAINED);
-  const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
+  // const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
 
   int list = 0;
   for (unsigned i=0; i<tableSize; i++) {
@@ -1134,7 +1324,9 @@ int MEDDLY::ct_template<MONOLITHIC, CHAINED>::convertToList(bool removeStales)
       int* entry = (int*) MMAN->getChunkAddress(curr);
 #endif
       table[i] = entry[0];
-      if (removeStales) {
+      if (removeStales && isStale(curr)) {
+
+        /*
         operation* currop = MONOLITHIC
           ?   operation::getOpWithIndex(entry[1])
           :   global_op;
@@ -1147,6 +1339,8 @@ int MEDDLY::ct_template<MONOLITHIC, CHAINED>::convertToList(bool removeStales)
 #else
         if (currop->getEntryStatus(entry+SHIFT)) {
 #endif
+          */
+
 #ifdef DEBUG_TABLE2LIST
           printf("\tstale ");
           FILE_output out(stdout);
@@ -1156,7 +1350,7 @@ int MEDDLY::ct_template<MONOLITHIC, CHAINED>::convertToList(bool removeStales)
 
           discardAndRecycle(curr);
           continue;
-        }
+        // }
       } // if removeStales
       //
       // Not stale, move to list
@@ -1220,38 +1414,22 @@ template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_template<MONOLITHIC, CHAINED>::scanForStales()
 {
   MEDDLY_DCASSERT(!CHAINED);
-  const int M = MONOLITHIC ? 1 : 0;
   for (unsigned i=0; i<tableSize; i++) {
     if (0==table[i]) continue;
-#ifdef INTEGRATED_MEMMAN
-    const int* entry = entries + table[i];
-#else
-    const int* entry = (const int*) MMAN->getChunkAddress(table[i]);
-#endif
-    operation* currop = MONOLITHIC
-      ?   operation::getOpWithIndex(entry[0])
-      :   global_op;
-    MEDDLY_DCASSERT(currop);
 
-#ifndef USE_NODE_STATUS
-    if (!currop->isEntryStale(entry+M)) {
-      continue;
-    }
-#else
-    if (MEDDLY::forest::node_status::ACTIVE == currop->getEntryStatus(entry+M) {
-      continue;
-    }
-#endif
+    if (isStale(table[i])) {
 
 #ifdef DEBUG_CT
-    printf("Removing CT stale entry ");
-    FILE_output out(stdout);
-    showEntry(out, table[i]);
-    printf(" in table slot %u\n", i);
+      printf("Removing CT stale entry ");
+      FILE_output out(stdout);
+      showEntry(out, table[i]);
+      printf(" in table slot %u\n", i);
 #endif  
 
-    discardAndRecycle(table[i]);
-    table[i] = 0;
+      discardAndRecycle(table[i]);
+      table[i] = 0;
+
+    } // if isStale
   } // for i
 }
 
@@ -1340,14 +1518,35 @@ template <bool MONOLITHIC, bool CHAINED>
 int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
 ::checkEqualityAndStatus(const int* entry, const entry_key* k, bool &equal, bool &discard)
 {
+
+  equal = equal_sw(entry, (const int*) k->readTempData(), k->dataBytes(MONOLITHIC) / sizeof(int) );
+
+  //
+  // Now, scan entry and check for staleness
+  //
+
   // TBD!
   MEDDLY_DCASSERT(0);
+  return 0;
 }
 
 #endif
 
 // **********************************************************************
 
+#ifndef OLD_OP_CT
+
+template <bool MONOLITHIC, bool CHAINED>
+bool MEDDLY::ct_template<MONOLITHIC, CHAINED> 
+::isStale(unsigned long h) const
+{
+}
+
+#endif
+
+// **********************************************************************
+
+/*
 #ifndef OLD_OP_CT
 
 template <bool MONOLITHIC, bool CHAINED>
@@ -1382,6 +1581,7 @@ bool MEDDLY::ct_template<MONOLITHIC, CHAINED>
 }
 
 #endif
+*/
 
 // **********************************************************************
 
