@@ -2123,16 +2123,16 @@ MEDDLY::compute_table::entry_key::setup(operation* _op, unsigned slots)
 inline void
 MEDDLY::compute_table::entry_key::setup(const compute_table::entry_type* et, unsigned repeats)
 {
+  MEDDLY_DCASSERT(et);
   etype = et;
-  total_slots = 1+et->getKeySize(repeats);
+  num_repeats = repeats;
+  MEDDLY_DCASSERT( 0==repeats || et->isRepeating() );
+  total_slots = et->getKeySize(repeats);
   if (total_slots > data_alloc) {
     data_alloc = (1+(data_alloc / 8)) * 8;   // allocate in chunks of size 8
     data = (entry_item*) realloc(data, data_alloc*sizeof(entry_item));
     if (0==data) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
-  data[0].U = et->getID();
-  currslot = 1;
-  currbytes = sizeof(unsigned);
 #ifdef DEVELOPMENT_CODE
   has_hash = false;
 #endif
@@ -2160,9 +2160,8 @@ inline void MEDDLY::compute_table::entry_key::writeN(node_handle nh)
 #ifdef OLD_OP_CT
   data[currslot++] = nh;
 #else 
-  MEDDLY_DCASSERT(compute_table::NODE == etype->getKeyType(currslot));
+  MEDDLY_DCASSERT(compute_table::NODE == theSlotType());
   data[currslot++].N = nh;
-  currbytes += sizeof(node_handle);
 #endif
 }
 
@@ -2172,9 +2171,8 @@ inline void MEDDLY::compute_table::entry_key::writeI(int i)
 #ifdef OLD_OP_CT
   data[currslot++] = i;
 #else
-  MEDDLY_DCASSERT(compute_table::INTEGER == etype->getKeyType(currslot));
+  MEDDLY_DCASSERT(compute_table::INTEGER == theSlotType());
   data[currslot++].I = i;
-  currbytes += sizeof(int);
 #endif
 }
 
@@ -2185,9 +2183,8 @@ inline void MEDDLY::compute_table::entry_key::writeL(long i)
   memcpy(data+currslot, &i, sizeof(long));
   currslot += sizeof(long) / sizeof(node_handle);
 #else
-  MEDDLY_DCASSERT(compute_table::LONG == etype->getKeyType(currslot));
+  MEDDLY_DCASSERT(compute_table::LONG == theSlotType());
   data[currslot++].L = i;
-  currbytes += sizeof(long);
 #endif
 }
 
@@ -2199,21 +2196,43 @@ inline void MEDDLY::compute_table::entry_key::writeF(float f)
   x[0] = f;
   currslot++;
 #else
-  MEDDLY_DCASSERT(compute_table::FLOAT == etype->getKeyType(currslot));
+  MEDDLY_DCASSERT(compute_table::FLOAT == theSlotType());
   data[currslot++].F = f;
-  currbytes += sizeof(float);
 #endif
 }
 
 #ifdef OLD_OP_CT
-inline const MEDDLY::node_handle* MEDDLY::compute_table::entry_key::rawData(bool includeOp) const 
-#else
-inline const MEDDLY::compute_table::entry_item* 
+
+inline const MEDDLY::node_handle* 
 MEDDLY::compute_table::entry_key::rawData(bool includeOp) const 
-#endif
 { 
   return includeOp ? data : (data+1);
 }
+
+inline int MEDDLY::compute_table::entry_key::dataLength(bool includeOp) const
+{ 
+  return includeOp ? total_slots : (total_slots-1);
+}
+
+#else
+
+inline const MEDDLY::compute_table::entry_item* 
+MEDDLY::compute_table::entry_key::rawData() const 
+{ 
+  return data;
+}
+
+inline int MEDDLY::compute_table::entry_key::dataLength() const
+{ 
+  return total_slots;
+}
+
+inline unsigned MEDDLY::compute_table::entry_key::numRepeats() const
+{ 
+  return num_repeats;
+}
+
+#endif
 
 #ifndef OLD_OP_CT
 inline const void*
@@ -2222,28 +2241,25 @@ MEDDLY::compute_table::entry_key::readTempData() const
   return temp_data;
 }
 
+inline unsigned
+MEDDLY::compute_table::entry_key::numTempBytes() const
+{
+  return temp_bytes;
+}
+
 inline void*
 MEDDLY::compute_table::entry_key::allocTempData(unsigned bytes)
 {
-  if (bytes > temp_bytes) {
-    temp_bytes = (1+(bytes/64)) * 64;    // allocate in chunks of 64 bytes
-    temp_data = realloc(temp_data, temp_bytes);
+  temp_bytes = bytes;
+  if (bytes > temp_alloc) {
+    temp_alloc = (1+(temp_bytes/64)) * 64;    // allocate in chunks of 64 bytes
+    temp_data = realloc(temp_data, temp_alloc);
     if (0==temp_data) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   return temp_data;
 }
 
-inline unsigned MEDDLY::compute_table::entry_key::dataBytes(bool includeOp) const
-{ 
-  return includeOp ? currbytes : currbytes - sizeof(unsigned);
-}
-
 #endif
-
-inline int MEDDLY::compute_table::entry_key::dataLength(bool includeOp) const
-{ 
-  return includeOp ? total_slots : (total_slots-1);
-}
 
 inline unsigned MEDDLY::compute_table::entry_key::getHash() const
 {
@@ -2259,6 +2275,15 @@ inline void MEDDLY::compute_table::entry_key::setHash(unsigned h)
 #endif
 }
 
+#ifndef OLD_OP_CT
+inline MEDDLY::compute_table::typeID MEDDLY::compute_table::entry_key::theSlotType() const
+{
+  //
+  // Adjust currslot for OP entry, and number of repeats entry
+  //
+  return etype->getKeyType(currslot - (etype->isRepeating() ? 2 : 1) );
+}
+#endif
 
 // ******************************************************************
 
@@ -2352,9 +2377,6 @@ inline void* MEDDLY::compute_table::entry_result::readP()
 inline void MEDDLY::compute_table::entry_result::reset() 
 {
   currslot = 0;
-#ifndef OLD_OP_CT
-  currbytes = 0;
-#endif
 }
 
 inline void MEDDLY::compute_table::entry_result::writeN(node_handle nh)
@@ -2366,7 +2388,6 @@ inline void MEDDLY::compute_table::entry_result::writeN(node_handle nh)
 #else
   MEDDLY_DCASSERT(compute_table::NODE == etype->getResultType(currslot));
   build[currslot++].N = nh;
-  currbytes += sizeof(node_handle);
 #endif
 }
 
@@ -2379,7 +2400,6 @@ inline void MEDDLY::compute_table::entry_result::writeI(int i)
 #else
   MEDDLY_DCASSERT(compute_table::INTEGER == etype->getResultType(currslot));
   build[currslot++].I = i;
-  currbytes += sizeof(int);
 #endif
 }
 
@@ -2394,7 +2414,6 @@ inline void MEDDLY::compute_table::entry_result::writeF(float f)
 #else
   MEDDLY_DCASSERT(compute_table::FLOAT == etype->getResultType(currslot));
   build[currslot++].F = f;
-  currbytes += sizeof(float);
 #endif
 }
 
@@ -2407,7 +2426,6 @@ inline void MEDDLY::compute_table::entry_result::writeL(long L)
   MEDDLY_DCASSERT(currslot < dataLength());
   MEDDLY_DCASSERT(compute_table::LONG == etype->getResultType(currslot));
   build[currslot++].L = L;
-  currbytes += sizeof(long);
 #endif
 }
 
@@ -2420,7 +2438,6 @@ inline void MEDDLY::compute_table::entry_result::writeD(double D)
   MEDDLY_DCASSERT(currslot < dataLength());
   MEDDLY_DCASSERT(compute_table::DOUBLE == etype->getResultType(currslot));
   build[currslot++].D = D;
-  currbytes += sizeof(double);
 #endif
 }
 
@@ -2433,7 +2450,6 @@ inline void MEDDLY::compute_table::entry_result::writeP(void* P)
   MEDDLY_DCASSERT(currslot < dataLength());
   MEDDLY_DCASSERT(compute_table::DOUBLE == etype->getResultType(currslot));
   build[currslot++].P = P;
-  currbytes += sizeof(void*);
 #endif
 }
 
@@ -2507,13 +2523,6 @@ inline unsigned MEDDLY::compute_table::entry_result
 #endif
 }
 
-#ifndef OLD_OP_CT
-inline unsigned MEDDLY::compute_table::entry_result
-::dataBytes() const
-{
-  return currbytes;
-}
-#endif
 
 // ******************************************************************
 
@@ -2547,6 +2556,12 @@ inline unsigned MEDDLY::compute_table::entry_type
 ::getKeySize(unsigned reps) const
 {
   return len_ks_type + (reps * len_kr_type);
+}
+
+inline unsigned MEDDLY::compute_table::entry_type
+::getKeyBytes(unsigned reps) const
+{
+  return ks_bytes + (reps * kr_bytes);
 }
 
 inline void MEDDLY::compute_table::entry_type
@@ -2584,6 +2599,12 @@ inline unsigned MEDDLY::compute_table::entry_type
 ::getResultSize() const
 {
   return len_r_type;
+}
+
+inline unsigned MEDDLY::compute_table::entry_type
+::getResultBytes() const
+{
+  return r_bytes;
 }
 
 inline void MEDDLY::compute_table::entry_type

@@ -344,8 +344,9 @@ MEDDLY::compute_table::entry_key::entry_key()
 #else
   etype = 0;
   data = (entry_item*) malloc(data_alloc * sizeof(entry_item));
-  temp_bytes = 0;
   temp_data = 0;
+  temp_bytes = 0;
+  temp_alloc = 0;
   // malloc: because realloc later
 #endif
 }
@@ -419,6 +420,20 @@ inline MEDDLY::compute_table::typeID char2typeID(char c)
   }
 }
 
+inline unsigned bytes4typeID(MEDDLY::compute_table::typeID t)
+{
+  switch (t) {
+    case MEDDLY::compute_table::NODE      : return sizeof(MEDDLY::node_handle);
+    case MEDDLY::compute_table::INTEGER   : return sizeof(int);
+    case MEDDLY::compute_table::LONG      : return sizeof(long);
+    case MEDDLY::compute_table::HUGEINT   : return sizeof(void*);
+    case MEDDLY::compute_table::FLOAT     : return sizeof(float);
+    case MEDDLY::compute_table::DOUBLE    : return sizeof(double);
+    case MEDDLY::compute_table::POINTER   : return sizeof(void*);
+    default:    return 0;
+  }
+}
+
 MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pattern)
 {
   name = _name;
@@ -480,11 +495,13 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
   //
   // Build starting portion of key
   //
+  ks_bytes = 0;
   if (len_ks_type) {
     ks_type = new typeID[len_ks_type];
     ks_forest = new expert_forest*[len_ks_type];
     for (unsigned i=0; i<len_ks_type; i++) {
       ks_type[i] = char2typeID(pattern[i]);
+      ks_bytes += bytes4typeID(ks_type[i]);
       ks_forest[i] = 0;
     }
   } else {
@@ -496,11 +513,13 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
   //
   // Build repeating portion of key
   //
+  kr_bytes = 0;
   if (len_kr_type) {
     kr_type = new typeID[len_kr_type];
     kr_forest = new expert_forest*[len_kr_type];
     for (unsigned i=0; i<len_kr_type; i++) {
       kr_type[i] = char2typeID(pattern[i + dot_slot + 1]);
+      kr_bytes += bytes4typeID(kr_type[i]);
       kr_forest[i] = 0;
     }
   } else {
@@ -512,10 +531,12 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
   // Build result
   //
   MEDDLY_DCASSERT(len_r_type);
+  r_bytes = 0;
   r_type = new typeID[len_r_type];
   r_forest = new expert_forest*[len_r_type];
   for (unsigned i=0; i<len_r_type; i++) {
     r_type[i] = char2typeID(pattern[i + colon_slot + 1]);
+    r_bytes += bytes4typeID(r_type[i]);
     r_forest[i] = 0;
   }
 
@@ -525,17 +546,17 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
   for (unsigned i=0; i<len_ks_type; i++) {
     fputc(ks_type[i], stdout);
   }
-  printf("\"\n");
+  printf("\"  (%u bytes)\n", ks_bytes);
   printf("Key repeat: \"");
   for (unsigned i=0; i<len_kr_type; i++) {
     fputc(kr_type[i], stdout);
   }
-  printf("\"\n");
+  printf("\"  (%u bytes)\n", kr_bytes);
   printf("Result: \"");
   for (unsigned i=0; i<len_r_type; i++) {
     fputc(r_type[i], stdout);
   }
-  printf("\"\n");
+  printf("\"  (%u bytes)\n", r_bytes);
 #endif
 }
 

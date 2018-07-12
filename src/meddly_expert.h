@@ -3887,6 +3887,16 @@ class MEDDLY::compute_table {
           unsigned getKeySize(unsigned reps) const;
 
           /**
+              Get the number of bytes in the key.
+                @param  reps  Number of repetitions.
+                              If this is not a repeating type,
+                              then this is ignored.
+
+                @return Total number of bytes required for the key.
+          */
+          unsigned getKeyBytes(unsigned reps) const;
+
+          /**
               Get the type for item i in the key.
               Automatically handles repetitions.
                 @param  i   Slot number, between 0 and getKeySize().   
@@ -3909,6 +3919,11 @@ class MEDDLY::compute_table {
               Get the number of items in the result
           */
           unsigned getResultSize() const;
+
+          /**
+              Get the number of bytes in the result
+          */
+          unsigned getResultBytes() const;
 
           /**
               Get the type for item i in the result.
@@ -3938,12 +3953,17 @@ class MEDDLY::compute_table {
           expert_forest** ks_forest;
           /// Length of ks_type and ks_forest arrays.
           unsigned len_ks_type;
+          /// Total bytes in the starting portion of the key.
+          unsigned ks_bytes;
+
           /// Repeating portion of key pattern (or null for no repeats).
           typeID* kr_type;
           /// Forests in repeating portion of key (or null).
           expert_forest** kr_forest;
           /// Length of kr_type and kr_forest arrays (zero if no repeats).
           unsigned len_kr_type;
+          /// Total bytes in the repeating portion of the key.
+          unsigned kr_bytes;
 
           /// Result pattern
           typeID* r_type;
@@ -3951,6 +3971,8 @@ class MEDDLY::compute_table {
           expert_forest** r_forest;
           /// Length of r_type and r_forest arrays.
           unsigned len_r_type;
+          /// Total bytes in the result.
+          unsigned r_bytes;
 
           bool updatable_result;
 
@@ -4000,19 +4022,26 @@ class MEDDLY::compute_table {
           // interface, for compute_table.  All inlined in meddly_expert.hh
 #ifdef OLD_OP_CT
           const node_handle* rawData(bool includeOp) const;
+          int dataLength(bool includeOp) const;
 #else
-          const entry_item* rawData(bool includeOp) const;
+          const entry_item* rawData() const;
+          int dataLength() const;
+          unsigned numRepeats() const;
 
           const void* readTempData() const;
+          unsigned numTempBytes() const;
           void* allocTempData(unsigned bytes);
-          unsigned dataBytes(bool includeOp) const;
 #endif
-          int dataLength(bool includeOp) const;
           unsigned getHash() const;
 
         protected:
           // protected interface, for compute_table.  All inlined in meddly_expert.hh
           void setHash(unsigned h);
+
+#ifndef OLD_OP_CT
+        private:
+          typeID theSlotType() const;
+#endif
 
         private:
 #ifdef OLD_OP_CT
@@ -4021,11 +4050,11 @@ class MEDDLY::compute_table {
 #else 
           const compute_table::entry_type* etype;
           entry_item* data;
-          unsigned currbytes;
           void* temp_data; 
           unsigned temp_bytes;
+          unsigned temp_alloc;
+          unsigned num_repeats;
 #endif
-
           unsigned hash_value;
           unsigned data_alloc;
 
@@ -4095,7 +4124,6 @@ class MEDDLY::compute_table {
           const node_handle* rawData() const;
 #else 
           const entry_item* rawData() const;
-          unsigned dataBytes() const;
 #endif
           unsigned dataLength() const;
 
@@ -4108,7 +4136,6 @@ class MEDDLY::compute_table {
 #else
           const entry_type* etype;
           entry_item* build;
-          unsigned currbytes;
 #endif
           bool is_valid;
           unsigned currslot;

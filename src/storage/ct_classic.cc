@@ -745,40 +745,57 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
   //
   // Allocate temporary space for key preprocessing.
   //
-  int* temp_entry = (int*) key->allocTempData( key->dataBytes(MONOLITHIC) );
+  const entry_type* et = key->getET();
+  MEDDLY_DCASSERT(et);
+  unsigned temp_bytes =
+    et->getKeyBytes( key->numRepeats() ) 
+    +
+    (MONOLITHIC ? sizeof(int) : 0)
+    +
+    (et->isRepeating() ? sizeof(int) : 0);
+
+  int* temp_entry = (int*) key->allocTempData(temp_bytes);
+  const entry_item* data = key->rawData();
 
   //
   // Copy the operation index if we're monolithic
   //
-  const entry_item* data = key->rawData(MONOLITHIC);
   int tptr = 0;
   if (MONOLITHIC) {
-    temp_entry[0] = data[0].U;
-    data++;
+    temp_entry[0] = et->getID();
+    tptr++;
+  }
+
+  //
+  // Copy the number of repeats if we're a repeating entry
+  //
+  if (et->isRepeating()) {
+    temp_entry[tptr] = key->numRepeats();
     tptr++;
   }
 
   //
   // Copy the key into temp_entry
   //
-  const entry_type* et = key->getET();
-  MEDDLY_DCASSERT(et);
-  unsigned datalen = key->dataLength(false);
+  unsigned datalen = key->dataLength();
   for (unsigned i=0; i<datalen; i++) {
     typeID t = et->getKeyType(i);
     switch (t) {
       case NODE:
-                  temp_entry[tptr++] = data[i].N;
+                  temp_entry[tptr] = data[i].N;
+                  tptr++;
                   continue;
       case INTEGER:
-                  temp_entry[tptr++] = data[i].I;
+                  temp_entry[tptr] = data[i].I;
+                  tptr++;
                   continue;
       case LONG: 
                   memcpy(temp_entry+tptr, &(data[i].L), sizeof(long));
                   tptr += sizeof(long) / sizeof(int);
                   continue;
       case FLOAT:
-                  temp_entry[tptr++] = data[i].I;   // Hack!
+                  temp_entry[tptr] = data[i].I;   // Hack!
+                  tptr++;
                   continue;
       default:
                   MEDDLY_DCASSERT(0);
@@ -792,7 +809,7 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
   //
   // Hash the key
   //
-  setHash(key, raw_hash(temp_entry, key->dataBytes(MONOLITHIC) / sizeof(int)));
+  setHash(key, raw_hash(temp_entry, temp_bytes / sizeof(int)));
 
 #endif
 
@@ -890,11 +907,7 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const en
     (MONOLITHIC ? 1 : 0)
   );
 #else
-  node_address curr = newEntry(
-    key->dataBytes(MONOLITHIC) / sizeof(int) +
-    res.dataBytes() / sizeof(int) +
-    (CHAINED ? 1 : 0)
-  );
+  node_address curr = newEntry( key->numTempBytes() / sizeof(int) );
 #endif
 
 #ifdef INTEGRATED_MEMMAN
@@ -912,8 +925,8 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const en
   int* res_portion = key_portion + key->dataLength(MONOLITHIC);
   setResult(res_portion, res);
 #else
-  memcpy(key_portion, key->readTempData(), key->dataBytes(MONOLITHIC));
-  int* res_portion = key_portion + key->dataBytes(MONOLITHIC) / sizeof(int);
+  memcpy(key_portion, key->readTempData(), key->numTempBytes());
+  int* res_portion = key_portion + key->numTempBytes() / sizeof(int);
   setResult(res_portion, res, et);
 #endif
 
