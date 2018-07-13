@@ -193,6 +193,7 @@ int main(int argc, const char** argv)
       
       //CREATE FORESTS
       forest* inmdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
+      forest* relmxd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
       
       expert_domain* dm = static_cast<expert_domain*>(inmdd->useDomain());
 
@@ -210,7 +211,7 @@ int main(int argc, const char** argv)
       
       
       //CREATE RELATION
-      satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,inmdd);
+      satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,relmxd,inmdd);
       
       start.note_time();
       buildImplicitRelation(model, TRANS, PLACES, BOUNDS, T);

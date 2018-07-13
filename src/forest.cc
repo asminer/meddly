@@ -1953,6 +1953,56 @@ MEDDLY::node_handle MEDDLY::expert_forest
 }
 
 MEDDLY::node_handle MEDDLY::expert_forest
+::createImplicitNode(MEDDLY::satimpl_opname::relation_node &nb)
+{
+  // 
+  // Not eliminated by reduction rule.
+  // Not a duplicate.
+  //
+  // We need to create a new node for this.
+  
+  // NOW is the best time to run the garbage collector, if necessary.
+#ifndef GC_OFF
+  if (isTimeToGc()) garbageCollect();
+#endif
+  
+  // Grab a new node
+  node_handle p = nodeHeaders.getFreeNodeHandle();
+  nodeHeaders.setNodeLevel(p, nb.getLevel());
+  MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
+  MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
+  
+  stats.incActive(1);
+  if (theLogger && theLogger->recordingNodeCounts()) {
+    theLogger->addToActiveNodeCount(this, nb.getLevel(), 1);
+  }
+  
+  // All of the work is in nodeMan now :^)
+  nodeHeaders.setNodeAddress(p, nodeMan->makeNode(p, nb));
+  linkNode(p);
+  
+  // add to UT
+  //unique->add(nb.hash(), p);
+  
+#ifdef DEVELOPMENT_CODE
+  unpacked_node* key = unpacked_node::newFromNode(this, p, false);
+  key->computeHash();
+  MEDDLY_DCASSERT(key->hash() == nb.hash());
+  node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
+  MEDDLY_DCASSERT(f == p);
+  unpacked_node::recycle(key);
+#endif
+#ifdef DEBUG_CREATE_REDUCED
+  printf("Created node ");
+  showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
+  printf("\n");
+#endif
+  
+  return p;
+}
+
+
+MEDDLY::node_handle MEDDLY::expert_forest
 ::createReducedExtensibleNodeHelper(int in, unpacked_node &nb)
 {
 #ifdef DEVELOPMENT_CODE

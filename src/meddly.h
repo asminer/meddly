@@ -124,7 +124,7 @@ namespace MEDDLY {
   class forest;
   class expert_forest;
   class unpacked_node;
-
+  
   class memory_manager_style;
   class node_storage_style;
 

@@ -29,7 +29,6 @@
 
    #define OUT_OF_BOUNDS -1
    #define NOT_KNOWN -2
-   #define TERMINAL_NODE 1
 
 // #define DEBUG_CLEANUP
 // #define DEBUG_FINALIZE
@@ -1508,9 +1507,9 @@ MEDDLY::satimpl_opname::relation_node::setTokenUpdateAtIndex(long i,long val)
 }
 // ******************************************************************
 
-MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
+MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd, forest* relmxd,
                                                              forest* outmdd)
-: insetF(static_cast<expert_forest*>(inmdd)),outsetF(static_cast<expert_forest*>(outmdd))
+: insetF(static_cast<expert_forest*>(inmdd)),relF(static_cast<expert_forest*>(relmxd)),outsetF(static_cast<expert_forest*>(outmdd))
 {
   
   if (0==insetF || 0==outsetF) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
@@ -1564,9 +1563,10 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
   
   
   //create the terminal node
-  relation_node *Terminal = new relation_node(0,0,TERMINAL_NODE);
+  relation_node *Terminal = new relation_node(0,0,1);
+  MEDDLY::node_handle TERMINAL_NODE = relF->createImplicitNode(relation_node);
   Terminal->setID(TERMINAL_NODE);
-  std::pair<rel_node_handle, relation_node*> TerminalNode(TERMINAL_NODE,Terminal);
+  std::pair<MEDDLY::node_handle, relation_node*> TerminalNode(TERMINAL_NODE,Terminal);
   impl_unique.insert(TerminalNode);
   last_in_node_array = TERMINAL_NODE;
   
@@ -1718,9 +1718,10 @@ MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relat
 #endif
 
   rel_node_handle n_ID = isUniqueNode(n);
+  
   if(n_ID==0) // Add new node
    {
-    n_ID  = last_in_node_array + 1;
+    n_ID  = relF->createImplicitNode(n);
     std::pair<rel_node_handle, relation_node*> add_node(n_ID,n);
     impl_unique.insert(add_node);
     if(impl_unique.find(n_ID) != impl_unique.end())

@@ -54,7 +54,7 @@ namespace MEDDLY {
 
   // EXPERIMENTAL - matrix wrappers for unprimed, primed pairs of nodes
   class unpacked_matrix;
-
+  
   /*
   
     class op_initializer;
@@ -771,6 +771,18 @@ class MEDDLY::unpacked_node {
     bool has_hash;
 #endif
 };
+
+// ******************************************************************
+// *                                                                *
+// *                     relation_node  class                       *
+// *                                                                *
+// ******************************************************************
+
+/** Class for relation nodes of implicit relation
+ Implemented in node_wrappers.cc.
+ 
+ TBD : inline what we should
+ */
 
 
 
@@ -2603,6 +2615,13 @@ class MEDDLY::expert_forest: public forest
           @return       Handle to a node that encodes the same thing.
     */
     node_handle createReducedHelper(int in, unpacked_node &nb);
+  
+    /** Create implicit node in the forest. Just add a handle and it points to original location
+     @param  un    Relation node.
+     @return       Handle to a node that encodes the same thing.
+     */
+    node_handle createImplicitNode(MEDDLY::satimpl_opname::relation_node &nb);
+
 
     /** Apply reduction rule to the temporary extensible node and finalize it. 
         Once a node is reduced, its contents cannot be modified.
@@ -3420,8 +3439,12 @@ class MEDDLY::satimpl_opname: public specialized_opname {
 
             Not 100% sure we need these...
         */
-        implicit_relation(forest* inmdd, forest* outmdd);
+        implicit_relation(forest* inmdd,forest* relmxd,forest* outmdd);
         virtual ~implicit_relation();
+      
+        /// Returns the Relation forest that stores the initial set of states
+        expert_forest* getRelForest() const;
+
 
         /// Returns the MDD forest that stores the initial set of states
         expert_forest* getInForest() const;
@@ -3482,6 +3505,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       private:
         expert_forest* insetF;
         expert_forest* outsetF;
+        expert_forest* relF;
         int num_levels;
 
       private:
