@@ -2079,11 +2079,11 @@ class MEDDLY::expert_forest: public forest
     ///   in-count and cache-count are zero.
     /// Pessimistic deletion: A node is said to be stale when the in-count
     ///  is zero regardless of the cache-count.
-#ifndef USE_NODE_STATUS
+// #ifndef USE_NODE_STATUS
     bool isStale(node_handle node) const;
-#else
+// #else
     MEDDLY::forest::node_status getNodeStatus(node_handle node) const;
-#endif
+// #endif
 
   // ------------------------------------------------------------
   // non-virtual, handy methods for debugging or logging.
@@ -2632,11 +2632,11 @@ class MEDDLY::expert_forest: public forest
 
     /// Should a terminal node be considered a stale entry in the compute table.
     /// per-forest policy, derived classes may change as appropriate.
-#ifndef USE_NODE_STATUS
+// #ifndef USE_NODE_STATUS
     bool terminalNodesAreStale;
-#else
+// #else
     MEDDLY::forest::node_status terminalNodesStatus;
-#endif
+// #endif
 
     /// Class that stores nodes.
     node_storage* nodeMan;
@@ -3914,6 +3914,14 @@ class MEDDLY::compute_table {
           */
           typeID getKeyType(unsigned i) const;
 
+          /**
+              Get the forest for item i in the key.
+              Automatically handles repetitions.
+                @param  i   Slot number, between 0 and getKeySize().
+                @return     Forest for that slot, or 0 if the type
+                            is not 'N'.
+          */
+          expert_forest* getKeyForest(unsigned i) const;
 
           /**
               Get the number of items in the result
@@ -3940,6 +3948,14 @@ class MEDDLY::compute_table {
                 @param  i   Slot number, between 0 and getResultSize().
           */
           typeID getResultType(unsigned i) const;
+
+          /**
+              Get the forest for item i in the result.
+                @param  i   Slot number, between 0 and getResultSize().
+                @return     Forest for that slot, or 0 if the type
+                            is not 'N'.
+          */
+          expert_forest* getResultForest(unsigned i) const;
 
         private:
           /// Unique ID, set by compute table
@@ -4031,6 +4047,8 @@ class MEDDLY::compute_table {
           const void* readTempData() const;
           unsigned numTempBytes() const;
           void* allocTempData(unsigned bytes);
+          /// Increase cache counters for nodes in this portion of the entry.
+          void cacheNodes() const;
 #endif
           unsigned getHash() const;
 
@@ -4118,6 +4136,10 @@ class MEDDLY::compute_table {
           void setValid();
           void setInvalid();
           operator bool() const;
+#ifndef OLD_OP_CT
+          /// Increase cache counters for nodes in this portion of the entry.
+          void cacheNodes() const;
+#endif
 
 #ifdef OLD_OP_CT
           void setResult(const node_handle* d, unsigned sz);

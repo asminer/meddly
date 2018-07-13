@@ -1505,7 +1505,7 @@ MEDDLY::expert_forest::hash(MEDDLY::node_handle p) const
   return hashNode(p);
 }
 
-#ifndef USE_NODE_STATUS
+// #ifndef USE_NODE_STATUS
 inline bool
 MEDDLY::expert_forest::isStale(MEDDLY::node_handle node) const
 {
@@ -1523,7 +1523,7 @@ MEDDLY::expert_forest::isStale(MEDDLY::node_handle node) const
       : isPessimistic() ? isZombieNode(node) : (getNodeInCount(node) == 0));
   */
 }
-#else
+// #else
 inline MEDDLY::forest::node_status
 MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
 {
@@ -1543,7 +1543,7 @@ MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
   }
   return MEDDLY::forest::ACTIVE;
 }
-#endif
+// #endif
 
 inline unsigned
 MEDDLY::expert_forest::hashNode(MEDDLY::node_handle p) const
@@ -2259,6 +2259,17 @@ MEDDLY::compute_table::entry_key::allocTempData(unsigned bytes)
   return temp_data;
 }
 
+inline void
+MEDDLY::compute_table::entry_key::cacheNodes() const
+{
+  for (unsigned i=0; i<total_slots; i++) {
+    expert_forest* f = etype->getKeyForest(i);
+    if (f) {
+      f->cacheNode(data[i].N);
+    }
+  }
+}
+
 #endif
 
 inline unsigned MEDDLY::compute_table::entry_key::getHash() const
@@ -2483,6 +2494,20 @@ MEDDLY::compute_table::entry_result::operator bool() const
   return is_valid;
 }
 
+#ifndef OLD_OP_CT
+inline void
+MEDDLY::compute_table::entry_result::cacheNodes() const
+{
+  for (unsigned i=0; i<etype->getResultSize(); i++) {
+    expert_forest* f = etype->getResultForest(i);
+    if (f) {
+      f->cacheNode(build[i].N);
+    }
+  }
+}
+
+#endif
+
 #ifdef OLD_OP_CT
 
 inline
@@ -2595,6 +2620,18 @@ inline MEDDLY::compute_table::typeID MEDDLY::compute_table::entry_type
   return kr_type[i];
 }
 
+inline MEDDLY::expert_forest* MEDDLY::compute_table::entry_type
+::getKeyForest(unsigned i) const
+{
+  MEDDLY_DCASSERT(ks_forest);
+  if (i<len_ks_type) {
+    return ks_forest[i];
+  }
+  i -= len_ks_type;
+  i %= len_kr_type;
+  return kr_forest[i];
+}
+
 inline unsigned MEDDLY::compute_table::entry_type
 ::getResultSize() const
 {
@@ -2622,9 +2659,17 @@ inline MEDDLY::compute_table::typeID MEDDLY::compute_table::entry_type
 {
   MEDDLY_CHECK_RANGE(0, i, len_r_type);
   MEDDLY_DCASSERT(r_type);
-  MEDDLY_DCASSERT(r_forest);
   return r_type[i];
 }
+
+inline MEDDLY::expert_forest* MEDDLY::compute_table::entry_type
+::getResultForest(unsigned i) const
+{
+  MEDDLY_CHECK_RANGE(0, i, len_r_type);
+  MEDDLY_DCASSERT(r_forest);
+  return r_forest[i];
+}
+
 
 // ******************************************************************
 
