@@ -129,14 +129,15 @@ protected:
   inline node_handle saveSaturateResult(compute_table::entry_key* Key,
                                         node_handle a, node_handle b)
   {
-  argF->cacheNode(a);
 #ifdef OLD_OP_CT
+  argF->cacheNode(a);
+  resF->cacheNode(b);
   static compute_table::entry_result result(1);
 #else
   static compute_table::entry_result result(etype[0]);
 #endif
   result.reset();
-  result.writeN(resF->cacheNode(b));
+  result.writeN(b);
   CT0->addEntry(Key, result);
   return b;
   }
@@ -199,14 +200,15 @@ protected:
   inline node_handle saveResult(compute_table::entry_key* Key,
                                 node_handle a, rel_node_handle b, node_handle c)
   {
-  arg1F->cacheNode(a);
 #ifdef OLD_OP_CT
+  arg1F->cacheNode(a);
+  resF->cacheNode(c);
   static compute_table::entry_result result(1);
 #else
   static compute_table::entry_result result(etype[0]);
 #endif
   result.reset();
-  result.writeN(resF->cacheNode(c));
+  result.writeN(c);
   CT0->addEntry(Key, result);
   return c;
   }

@@ -235,14 +235,15 @@ MEDDLY::mdd2index_operation
 
   // Add to compute table
   if (CTsrch) {
-    argF->cacheNode(a);
 #ifdef OLD_OP_CT
+    argF->cacheNode(a);
+    resF->cacheNode(bdn);
     static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
 #else
     static compute_table::entry_result result(etype[0]);
 #endif
     result.reset();
-    result.writeN(resF->cacheNode(bdn));
+    result.writeN(bdn);
     result.writeL(bcard);
     CT0->addEntry(CTsrch, result);
   }

@@ -67,6 +67,7 @@ public:
   card_int(const unary_opname* oc, expert_forest* arg);
 
   // common
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
   virtual bool isStaleEntry(const node_handle* entryData);
 #else
@@ -74,6 +75,7 @@ public:
 #endif
   virtual void discardEntry(const node_handle* entryData);
   virtual void showEntry(output &strm, const node_handle* entryData) const;
+#endif
 
 protected:
   static inline void overflow_acc(long &a, long x) {
@@ -103,6 +105,7 @@ MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
 }
 #endif
 
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
 bool MEDDLY::card_int::isStaleEntry(const node_handle* data)
 {
@@ -135,6 +138,8 @@ void MEDDLY::card_int::showEntry(output &strm, const node_handle* data) const
   strm  << "[" << getName() << "(" << long(data[0]) 
         << "): " << answer << "(L)]";
 }
+
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -197,8 +202,8 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   unpacked_node::recycle(A);
 
   // Add entry to compute table
-  argF->cacheNode(a);
 #ifdef OLD_OP_CT
+  argF->cacheNode(a);
   static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
 #else
   static compute_table::entry_result result(etype[0]);
@@ -280,8 +285,8 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   unpacked_node::recycle(A);
 
   // Add entry to compute table
-  argF->cacheNode(a);
 #ifdef OLD_OP_CT
+  argF->cacheNode(a);
   static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
 #else
   static compute_table::entry_result result(etype[0]);
@@ -430,8 +435,8 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   unpacked_node::recycle(A);
 
   // Add entry to compute table
-  argF->cacheNode(a);
 #ifdef OLD_OP_CT
+  argF->cacheNode(a);
   static compute_table::entry_result result(sizeof(double) / sizeof(node_handle));
 #else
   static compute_table::entry_result result(etype[0]);
@@ -514,8 +519,8 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
   unpacked_node::recycle(A);
 
   // Add entry to compute table
-  argF->cacheNode(a);
 #ifdef OLD_OP_CT
+  argF->cacheNode(a);
   static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
 #else
   static compute_table::entry_result result(etype[0]);
@@ -692,8 +697,8 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   unpacked_node::recycle(A);
 
   // Add entry to compute table
-  argF->cacheNode(a);
 #ifdef OLD_OP_CT
+  argF->cacheNode(a);
   static compute_table::entry_result result(sizeof(void*) / sizeof(node_handle));
 #else
   static compute_table::entry_result result(etype[0]);
@@ -795,8 +800,8 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   unpacked_node::recycle(A);
 
   // Add entry to compute table
-  argF->cacheNode(a);
 #ifdef OLD_OP_CT
+  argF->cacheNode(a);
   static compute_table::entry_result result(sizeof(void*) / sizeof(node_handle));
 #else
   static compute_table::entry_result result(etype[0]);

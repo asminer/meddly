@@ -204,16 +204,17 @@ MEDDLY::compute_table::entry_key* MEDDLY::plus_evplus::findResult(long aev, node
 void MEDDLY::plus_evplus::saveResult(compute_table::entry_key* key,
   long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
 {
+#ifdef OLD_OP_CT
   arg1F->cacheNode(a);
   arg2F->cacheNode(b);
-#ifdef OLD_OP_CT
+  resF->cacheNode(c);
   static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
 #else
   static compute_table::entry_result result(etype[0]);
 #endif
   result.reset();
   result.writeL(c == 0 ? 0L : cev - aev - bev);
-  result.writeN(resF->cacheNode(c));
+  result.writeN(c);
   CT0->addEntry(key, result);
 }
 

@@ -672,12 +672,12 @@ MEDDLY::node_headers::getNodeCacheCount(node_handle p) const
 
 // ******************************************************************
 
-inline MEDDLY::node_handle
+inline void
 MEDDLY::node_headers::cacheNode(node_handle p)
 {
   MEDDLY_DCASSERT(usesCacheCounts); // or do we just return?  TBD
 
-  if (p<1) return p;    // terminal node
+  if (p<1) return;    // terminal node
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(p>0);
   MEDDLY_DCASSERT(p<=a_last);
@@ -687,7 +687,6 @@ MEDDLY::node_headers::cacheNode(node_handle p)
   fprintf(stdout, "\t+Node %d is in %d caches\n", p, address[p].cache_count);
   fflush(stdout);
 #endif
-  return p;
 }
 
 // ******************************************************************
@@ -1400,10 +1399,10 @@ MEDDLY::expert_forest::getNodeCacheCount(MEDDLY::node_handle p) const
 }
 */
 
-inline MEDDLY::node_handle
+inline void
 MEDDLY::expert_forest::cacheNode(MEDDLY::node_handle p)
 {
-  return nodeHeaders.cacheNode(p);
+  nodeHeaders.cacheNode(p);
 }
 
 inline void
@@ -2838,7 +2837,6 @@ MEDDLY::operation::usesMonolithicComputeTable()
   return Monolithic_CT;
 }
 
-#ifdef PUBLIC_OP_INDEXES
 inline int
 MEDDLY::operation::getIndex() const
 {
@@ -2856,7 +2854,6 @@ MEDDLY::operation::getOpListSize()
 {
   return list_size;
 }
-#endif
 
 #ifndef OLD_OP_CT
 inline void

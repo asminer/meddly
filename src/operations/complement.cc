@@ -84,14 +84,15 @@ class MEDDLY::compl_mdd : public unary_operation {
     inline node_handle saveResult(compute_table::entry_key* Key, 
       node_handle a, node_handle b) 
     {
-      argF->cacheNode(a);
 #ifdef OLD_OP_CT
+      argF->cacheNode(a);
+      resF->cacheNode(b);
       static compute_table::entry_result result(1);
 #else
       static compute_table::entry_result result(etype[0]);
 #endif
       result.reset();
-      result.writeN(resF->cacheNode(b));
+      result.writeN(b);
       CT0->addEntry(Key, result);
       return b;
     }
@@ -383,14 +384,15 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
   node_handle result = resF->createReducedNode(in, C);
   if (k<0 && 1==nnz) canSave = false;
   if (canSave) {
-    argF->cacheNode(a);
 #ifdef OLD_OP_CT
+    argF->cacheNode(a);
+    resF->cacheNode(result);
     static compute_table::entry_result res(1);
 #else
     static compute_table::entry_result res(etype[0]);
 #endif
     res.reset();
-    res.writeN(resF->cacheNode(result));
+    res.writeN(result);
     CT0->addEntry(CTsrch, res);
   } else {
     CT0->recycle(CTsrch);

@@ -42,8 +42,6 @@
 #include <cstdint>
 #include <map>
 
-#define PUBLIC_OP_INDEXES
-
 #define OLD_OP_CT
 
 namespace MEDDLY {
@@ -1389,7 +1387,7 @@ class MEDDLY::node_headers {
     unsigned long getNodeCacheCount(node_handle p) const;
 
     /// Increment the cache count for node p and return p.
-    node_handle cacheNode(node_handle p);
+    void cacheNode(node_handle p);
 
     /// Decrement the cache count for node p.
     void uncacheNode(node_handle p);
@@ -2027,7 +2025,7 @@ class MEDDLY::expert_forest: public forest
           @param  p     Node we care about.
           @return p, for convenience.
     */
-    node_handle cacheNode(node_handle p);
+    void cacheNode(node_handle p);
 
     /** Increase the cache count for this node. Call this whenever this node
         is added to a cache.
@@ -4435,11 +4433,10 @@ class MEDDLY::operation {
 
     // for compute tables.
 
-#ifdef PUBLIC_OP_INDEXES
     int getIndex() const;
     static operation* getOpWithIndex(int i);
     static int getOpListSize();
-#endif
+
 #ifndef OLD_OP_CT
     void setFirstETid(unsigned slot);
     unsigned getFirstETid() const;

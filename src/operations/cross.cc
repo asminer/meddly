@@ -196,15 +196,16 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   unpacked_node::recycle(A);
   node_handle c = resF->createReducedNode(-1, C);
 
+#ifdef OLD_OP_CT
   arg1F->cacheNode(a);
   arg2F->cacheNode(b);
-#ifdef OLD_OP_CT
+  resF->cacheNode(c);
   static compute_table::entry_result result(1);
 #else
   static compute_table::entry_result result(etype[0]);
 #endif
   result.reset();
-  result.writeN(resF->cacheNode(c));
+  result.writeN(c);
   CT0->addEntry(CTsrch, result);
 
 #ifdef TRACE_ALL_OPS

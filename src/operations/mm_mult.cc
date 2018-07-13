@@ -91,15 +91,16 @@ class MEDDLY::mm_mult_op : public binary_operation {
     inline node_handle saveResult(compute_table::entry_key* Key, 
       node_handle a, node_handle b, node_handle c) 
     {
+#ifdef OLD_OP_CT
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-#ifdef OLD_OP_CT
+      resF->cacheNode(c);
       static compute_table::entry_result result(1);
 #else
       static compute_table::entry_result result(etype[0]);
 #endif
       result.reset();
-      result.writeN(resF->cacheNode(c));
+      result.writeN(c);
       CT0->addEntry(Key, result);
       return c;
     }

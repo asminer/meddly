@@ -85,8 +85,8 @@ class MEDDLY::range_int : public unary_operation {
     inline long saveResult(compute_table::entry_key* Key, 
       node_handle a, int &b) 
     {
-      argF->cacheNode(a);
 #ifdef OLD_OP_CT
+      argF->cacheNode(a);
       static compute_table::entry_result result(1);
 #else
       static compute_table::entry_result result(etype[0]);
@@ -195,8 +195,8 @@ class MEDDLY::range_real : public unary_operation {
     inline float saveResult(compute_table::entry_key* Key, 
       node_handle a, float &b) 
     {
-      argF->cacheNode(a);
 #ifdef OLD_OP_CT
+      argF->cacheNode(a);
       static compute_table::entry_result result(1);
 #else
       static compute_table::entry_result result(etype[0]);

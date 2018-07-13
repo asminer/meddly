@@ -208,9 +208,10 @@ MEDDLY::compute_table::entry_key* MEDDLY::inter_max_evplus::findResult(long aev,
 void MEDDLY::inter_max_evplus::saveResult(compute_table::entry_key* key,
   long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
 {
+#ifdef OLD_OP_CT
   arg1F->cacheNode(a);
   arg2F->cacheNode(b);
-#ifdef OLD_OP_CT
+  resF->cacheNode(c);
   static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
 #else
   static compute_table::entry_result result(etype[0]);
@@ -221,7 +222,7 @@ void MEDDLY::inter_max_evplus::saveResult(compute_table::entry_key* key,
   else {
     result.writeL(cev - (a > b ? bev : aev));
   }
-  result.writeN(resF->cacheNode(c));
+  result.writeN(c);
   CT0->addEntry(key, result);
 }
 
