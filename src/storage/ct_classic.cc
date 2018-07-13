@@ -27,6 +27,7 @@
 
 // #define DEBUG_SLOW
 // #define DEBUG_CT
+// #define DEBUG_CT_SEARCHES
 // #define DEBUG_TABLE2LIST
 // #define DEBUG_LIST2TABLE
 // #define DEBUG_CTALLOC
@@ -180,7 +181,7 @@ namespace MEDDLY {
         printf("Collision; removing CT entry ");
         FILE_output out(stdout);
         showEntry(out, table[h]);
-        printf(" in slot %u\n", h);
+        printf(" handle %d in slot %u\n", table[h], h);
 #endif
         collisions++;    
 
@@ -393,6 +394,9 @@ namespace MEDDLY {
       */
       void showEntry(output &s, unsigned long h) const;
 
+      /// Display a key.
+      void showKey(output &s, const entry_key* k) const;
+
 
     private:
 #ifdef OLD_OP_CT
@@ -468,7 +472,7 @@ MEDDLY::ct_template<MONOLITHIC, CHAINED>::ct_template(
 #ifdef OLD_OP_CT
   global_op = op;
 #else
-  global_et = getEntryType(op, slot);
+  global_et = op ? getEntryType(op, slot) : 0;
 #endif
 
   /*
@@ -561,14 +565,12 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
   //    if (!active) discard
   //    else do nothing
 
-  /*
-#ifdef DEBUG_CT
+#ifdef DEBUG_CT_SEARCHES
   printf("Searching for CT entry ");
   FILE_output out(stdout);
-  key->show(out, key->dataLength());
+  showKey(out, key);
   printf("\n");
 #endif
-  */
 
   int chain;
 
@@ -606,7 +608,7 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
         else        printf("Removing stale CT entry ");
         FILE_output out(stdout);
         showEntry(out, hcurr);
-        printf(" in slot %u\n", hcurr);
+        printf(" handle %d in slot %u\n", curr, hcurr);
 #endif
         if (CHAINED) {
           if (preventry) {
@@ -646,8 +648,8 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
 #ifdef DEBUG_CT
         printf("Found CT entry ");
         FILE_output out(stdout);
-        showEntry(out, hcurr);
-        printf(" in slot %u\n", hcurr);
+        showEntry(out, curr);
+        printf(" handle %d in slot %u\n", curr, hcurr);
 #endif
         break;
     } // if equal
@@ -771,6 +773,7 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
     //
     // Fill res
     //
+    res.setValid();
     res.reset();
     for (unsigned i=0; i<key->getET()->getResultSize(); i++) {
       typeID t = et->getResultType(i);
@@ -835,13 +838,6 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const en
 
   unsigned h = key->getHash() % tableSize;
 
-#ifdef DEBUG_CT
-  printf("Adding CT entry ");
-  FILE_output out(stdout);
-  showEntry(out, currEntry.readHandle());
-  printf(" in slot %u\n", h);
-#endif
-
 #ifdef OLD_OP_CT
   operation* op = key->getOp();
   MEDDLY_DCASSERT(op);
@@ -900,6 +896,13 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const en
   } else {
     setTable(h, curr);
   }
+
+#ifdef DEBUG_CT
+  printf("Added CT entry ");
+  FILE_output out(stdout);
+  showEntry(out, curr);
+  printf(" handle %lu in slot %u\n", curr, h);
+#endif
 
   if (perf.numEntries < tableExpand) return;
 
@@ -1654,7 +1657,7 @@ bool MEDDLY::ct_template<MONOLITHIC, CHAINED>
   //
   // Check result portion for dead nodes - cannot use result in that case
   //
-  for (unsigned i=0; i<et->getResultBytes(); i++) {
+  for (unsigned i=0; i<et->getResultSize(); i++) {
     typeID t;
     expert_forest* f;
     et->getResultType(i, t, f);
@@ -1950,7 +1953,59 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
 }
 
 
+// **********************************************************************
 
+template <bool MONOLITHIC, bool CHAINED>
+void MEDDLY::ct_template<MONOLITHIC, CHAINED>
+::showKey(output &s, const entry_key* key) const
+{
+  MEDDLY_DCASSERT(key);
+
+#ifdef OLD_OP_CT
+  //
+  // Hack but ok enough for debugging I hope
+  //
+  operation* op = key->getOp();
+  MEDDLY_DCASSERT(op);
+  op->showEntry(s, key->rawData(false));
+
+#else
+  const entry_type* et = key->getET();
+  MEDDLY_DCASSERT(et);
+
+  unsigned reps = key->numRepeats();
+  s << "[" << et->getName() << "(";
+  unsigned stop = et->getKeySize(reps);
+
+  for (unsigned i=0; i<stop; i++) {
+      entry_item item = key->rawData()[i];
+      if (i) s << ", ";
+      switch (et->getKeyType(i)) {
+        case NODE:
+                        s.put(long(item.N));
+                        break;
+        case INTEGER:
+                        s.put(long(item.I));
+                        break;
+        case LONG:
+                        s.put(item.L);
+                        break;
+        case FLOAT:
+                        s.put(item.F);
+                        break;
+        case DOUBLE:
+                        s.put(item.D);
+                        break;
+        case POINTER:
+                        s.put_hex((unsigned long)item.P);
+                        break;
+        default:
+                        MEDDLY_DCASSERT(0);
+      } // switch et->getKeyType()
+  } // for i
+  s << "): ?]";
+#endif
+}
 
 // **********************************************************************
 // *                                                                    *

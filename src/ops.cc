@@ -2046,6 +2046,11 @@ MEDDLY::operation::operation(const opname* n, unsigned et_slots)
   } else {
     etype = 0;
   }
+
+  //
+  // Allocate our slots
+  //
+  compute_table::registerOp(this, et_slots);
 }
 
 void MEDDLY::operation::buildCTs()

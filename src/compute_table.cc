@@ -434,6 +434,20 @@ inline unsigned bytes4typeID(MEDDLY::compute_table::typeID t)
   }
 }
 
+inline char typeID2char(MEDDLY::compute_table::typeID t)
+{
+  switch (t) {
+    case MEDDLY::compute_table::NODE      : return 'N';
+    case MEDDLY::compute_table::INTEGER   : return 'I';
+    case MEDDLY::compute_table::LONG      : return 'L';
+    case MEDDLY::compute_table::HUGEINT   : return 'H';
+    case MEDDLY::compute_table::FLOAT     : return 'F';
+    case MEDDLY::compute_table::DOUBLE    : return 'D';
+    case MEDDLY::compute_table::POINTER   : return 'P';
+    default:    return '?';
+  }
+}
+
 MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pattern)
 {
   name = _name;
@@ -541,20 +555,20 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
   }
 
 #ifdef DEBUG_ENTRY_TYPE
-  printf("Built entry type %s with pattern %s:\n", name, pattern);
+  printf("Built entry type %s with pattern '%s'\n", name, pattern);
   printf("Key start: \"");
   for (unsigned i=0; i<len_ks_type; i++) {
-    fputc(ks_type[i], stdout);
+    fputc(typeID2char(ks_type[i]), stdout);
   }
   printf("\"  (%u bytes)\n", ks_bytes);
   printf("Key repeat: \"");
   for (unsigned i=0; i<len_kr_type; i++) {
-    fputc(kr_type[i], stdout);
+    fputc(typeID2char(kr_type[i]), stdout);
   }
   printf("\"  (%u bytes)\n", kr_bytes);
   printf("Result: \"");
   for (unsigned i=0; i<len_r_type; i++) {
-    fputc(r_type[i], stdout);
+    fputc(typeID2char(r_type[i]), stdout);
   }
   printf("\"  (%u bytes)\n", r_bytes);
 #endif

@@ -2132,6 +2132,7 @@ MEDDLY::compute_table::entry_key::setup(const compute_table::entry_type* et, uns
     data = (entry_item*) realloc(data, data_alloc*sizeof(entry_item));
     if (0==data) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
+  currslot = 0;
 #ifdef DEVELOPMENT_CODE
   has_hash = false;
 #endif
@@ -2291,7 +2292,8 @@ inline MEDDLY::compute_table::typeID MEDDLY::compute_table::entry_key::theSlotTy
   //
   // Adjust currslot for OP entry, and number of repeats entry
   //
-  return etype->getKeyType(currslot - (etype->isRepeating() ? 2 : 1) );
+  // return etype->getKeyType(currslot - (etype->isRepeating() ? 2 : 1) );
+  return etype->getKeyType(currslot);
 }
 #endif
 
@@ -2598,6 +2600,7 @@ inline void MEDDLY::compute_table::entry_type
     f = ks_forest[i];
     return;
   }
+  MEDDLY_DCASSERT(len_kr_type);
   i -= len_ks_type;
   i %= len_kr_type;
   MEDDLY_DCASSERT(kr_type);
@@ -2613,6 +2616,7 @@ inline MEDDLY::compute_table::typeID MEDDLY::compute_table::entry_type
     MEDDLY_DCASSERT(ks_type);
     return ks_type[i];
   }
+  MEDDLY_DCASSERT(len_kr_type);
   i -= len_ks_type;
   i %= len_kr_type;
   MEDDLY_DCASSERT(kr_type);
@@ -2626,6 +2630,7 @@ inline MEDDLY::expert_forest* MEDDLY::compute_table::entry_type
   if (i<len_ks_type) {
     return ks_forest[i];
   }
+  MEDDLY_DCASSERT(len_kr_type);
   i -= len_ks_type;
   i %= len_kr_type;
   return kr_forest[i];
