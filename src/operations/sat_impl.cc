@@ -364,59 +364,70 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
     
     MEDDLY_DCASSERT(nb.d(i));
     
-    for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
+    std::map<long,std::vector<rel_node_handle>> list_of_j = rel->getListOfNexts(nb.getLevel(),i);
+    
+    for (std::map<long,std::vector<rel_node_handle>>::iterator jt=list_of_j.begin(); jt!=list_of_j.end(); ++jt) {
+     //For each j get the list of different events
+      int next = jt->first;
+      int no_of_events_for_this_change = jt->second.size();
       
-      int j = Ru[ei]->nextOf(i);
-      if(j==-1) continue;
-      if (j < nb.getSize() && -1==nb.d(j)) continue; // nothing can be added to this set
+      for (std::vector<rel_node_handle>::iterator et=jt->second.begin(); et!=jt->second.end(); ++et)
+      {
+        //Do rec fire for each of the events that have same next
+        satimpl_opname::relation_node* Ru = rel->nodeExists(*et);
+        int j = next;
+        if(j==-1) continue;
+        if (j < nb.getSize() && -1==nb.d(j)) continue; // nothing can be added to this set
       
-      node_handle rec = recFire(nb.d(i), Ru[ei]->getDown());
-      
-      if (rec == 0) continue;
-      
-      //confirm local state
-      rel->setConfirmedStates(level,j);
-      
-      if(j>=nb.getSize())
-        {
-        int new_var_bound = resF->isExtensibleLevel(nb.getLevel())? -(j+1): (j+1);
-        dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
-        int oldSize = nb.getSize();
-        nb.resize(j+1);
-        while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
-        queue->resize(nb.getSize());
-        }
-      
-      if (rec == nb.d(j)) {
-        resF->unlinkNode(rec);
-        continue;
-      }
-      
-      bool updated = true;
-      
-      if (0 == nb.d(j)) {
-        nb.d_ref(j) = rec;
-      }
-      else if (rec == -1) {
-        resF->unlinkNode(nb.d(j));
-        nb.d_ref(j) = -1;
-      }
-      else {
-        node_handle acc = mddUnion->compute(nb.d(j), rec);
-        resF->unlinkNode(rec);
-        if (acc != nb.d(j)) {
-          resF->unlinkNode(nb.d(j));
-          nb.d_ref(j) = acc;
-        } else {
-          resF->unlinkNode(acc);
-          updated = false;
+        node_handle rec = recFire(nb.d(i), Ru->getDown());
+        
+        if (rec == 0) continue;
+        
+        //confirm local state
+        rel->setConfirmedStates(level,j);
+        
+        if(j>=nb.getSize())
+          {
+          int new_var_bound = resF->isExtensibleLevel(nb.getLevel())? -(j+1): (j+1);
+          dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
+          int oldSize = nb.getSize();
+          nb.resize(j+1);
+          while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
+          queue->resize(nb.getSize());
+          }
+        
+        if (rec == nb.d(j)) {
+          resF->unlinkNode(rec);
+          continue;
         }
         
-      }
-      
-      if (updated) queue->add(j);
+        bool updated = true;
+        
+        if (0 == nb.d(j)) {
+          nb.d_ref(j) = rec;
+        }
+        else if (rec == -1) {
+          resF->unlinkNode(nb.d(j));
+          nb.d_ref(j) = -1;
+        }
+        else {
+          node_handle acc = mddUnion->compute(nb.d(j), rec);
+          resF->unlinkNode(rec);
+          if (acc != nb.d(j)) {
+            resF->unlinkNode(nb.d(j));
+            nb.d_ref(j) = acc;
+          } else {
+            resF->unlinkNode(acc);
+            updated = false;
+          }
+          
+        }
+        
+        if (updated) queue->add(j);
       
     } // for all events, ei
+    
+  }// for all j's
     
   }// more indexes to explore
   

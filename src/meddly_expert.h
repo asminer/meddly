@@ -3563,6 +3563,31 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       private:
         expert_forest* mxdF;
       
+     public:
+      /*
+       Set the map that stores the node handles for unioned events
+       */
+      void initUnion();
+      
+      /*
+       Get the union node handle for the events with 
+       @level as top
+       Returns the rel_node_handle of the union.
+       Use the key to get the list of rel_node_handles of the actual events (value against the key)
+       */
+      rel_node_handle getUnionEvent(int level);
+      
+      std::vector<rel_node_handle> getEventsFromUnion(int level);
+      
+      std::map<long,std::vector<rel_node_handle>> getListOfNexts(int level, long i);
+      
+    private:
+      /*
+       Probably only stores the union of the tops
+       */
+      std::map<int,std::pair<rel_node_handle,std::vector<rel_node_handle>>> unioned_list;
+      
+      
     };  // class implicit_relation
 
 

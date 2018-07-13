@@ -1930,6 +1930,48 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
   return nsf;
 }
 
+// ******************************************************************
+
+
+void
+MEDDLY::satimpl_opname::implicit_relation::initUnion()
+{
+  int next_allowed_nh = last_in_node_array;
+  
+  for(int i = 1; i <= num_levels; i++)
+    {
+    std::vector<rel_node_handle> listEvents(lengthForLevel(i));
+    for(int j = 0;j<lengthForLevel(i);j++)
+      {
+      //create a vector of node_handles
+      listEvents[j]=arrayForLevel(i)[j];
+      }
+    //create a pair of union_rel_nh and the above vector
+    //add to the unioned_list
+    if(listEvents.size()>0)
+      {
+      next_allowed_nh++; // starts after from the last node handle of the "singleton" relation nodes
+      std::pair < rel_node_handle , std::vector<rel_node_handle>> entry = std::make_pair (next_allowed_nh,listEvents);
+      unioned_list.insert(std::pair<int, std::pair < rel_node_handle , std::vector<rel_node_handle>>>(i,entry));
+      }
+    }
+}
+
+std::map<long,std::vector<rel_node_handle>>
+MEDDLY::satimpl_opname::implicit_relation::getListOfNexts(int level, long i)
+{
+  std::map<long,std::vector<rel_node_handle>> jList;
+  // atleast as many j's as many events
+  for(int k=0;k<lengthForLevel(level);k++)
+    {
+    int rnh = unioned_list[level].second[k];
+    relation_node *Rnode = nodeExists(rnh);
+    long key = Rnode->nextOf(i);
+    jList[key].push_back(rnh);
+    }
+  
+  return jList;
+}
 
 
 

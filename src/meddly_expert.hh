@@ -2091,6 +2091,21 @@ MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
   return (i < insetF->getLevelSize(level) && confirmed[level][i]);
 }
 
+// ******************************************************************
+
+inline rel_node_handle
+MEDDLY::satimpl_opname::implicit_relation::getUnionEvent(int level) // Call this function only if this level is known to be top of atleast one event
+{
+  return unioned_list[level].first;
+}
+
+inline std::vector<rel_node_handle>
+MEDDLY::satimpl_opname::implicit_relation::getEventsFromUnion(int level) // Call this function only if this level is known to be top of atleast one event
+{
+  return unioned_list[level].second;
+}
+
+
 
 // ******************************************************************
 // *                                                                *
