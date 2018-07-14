@@ -1500,6 +1500,14 @@ MEDDLY::generic_binary_evplus::generic_binary_evplus(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_ev(code, arg1, arg2, res)
 {
+#ifndef OLD_OP_CT
+  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "LNLN:LN");
+  et->setForestForSlot(1, arg1);
+  et->setForestForSlot(3, arg2);
+  et->setForestForSlot(6, res);
+  registerEntryType(0, et);
+  buildCTs();
+#endif
 }
 
 MEDDLY::generic_binary_evplus::~generic_binary_evplus()
@@ -1602,6 +1610,14 @@ MEDDLY::generic_binary_evplus_mxd::generic_binary_evplus_mxd(const binary_opname
   if (!arg1->isForRelations() || !arg2->isForRelations() || !res->isForRelations()) {
     throw error::TYPE_MISMATCH;
   }
+#ifndef OLD_OP_CT
+  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "LNLN:LN");
+  et->setForestForSlot(1, arg1);
+  et->setForestForSlot(3, arg2);
+  et->setForestForSlot(6, res);
+  registerEntryType(0, et);
+  buildCTs();
+#endif
 }
 
 MEDDLY::generic_binary_evplus_mxd::~generic_binary_evplus_mxd()
@@ -1759,6 +1775,14 @@ MEDDLY::generic_binary_evtimes
   expert_forest* arg2, expert_forest* res)
 : generic_binary_ev(code, arg1, arg2, res)
 {
+#ifndef OLD_OP_CT
+  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "FNFN:FN");
+  et->setForestForSlot(1, arg1);
+  et->setForestForSlot(3, arg2);
+  et->setForestForSlot(6, res);
+  registerEntryType(0, et);
+  buildCTs();
+#endif
 }
 
 MEDDLY::generic_binary_evtimes::~generic_binary_evtimes()

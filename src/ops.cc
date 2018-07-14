@@ -2199,7 +2199,17 @@ void MEDDLY::operation::removeAllComputeTableEntries()
 #endif
   if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
+#ifndef OLD_OP_CT
+  for (unsigned i=0; i<num_etids; i++) {
+    etype[i]->markForDeletion();
+  }
+#endif
   removeStaleComputeTableEntries();
+#ifndef OLD_OP_CT
+  for (unsigned i=0; i<num_etids; i++) {
+    etype[i]->unmarkForDeletion();
+  }
+#endif
   is_marked_for_deletion = false;
 #ifdef DEBUG_CLEANUP
   fprintf(stdout, "Removed entries for operation %p %s\n", this, getName());

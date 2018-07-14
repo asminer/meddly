@@ -3958,6 +3958,9 @@ class MEDDLY::compute_table {
           /// Mark for deletion
           void markForDeletion();
  
+          /// Unmark for deletion
+          void unmarkForDeletion();
+ 
           /// Should we remove all CT entries of this type?
           bool isMarkedForDeletion() const;
         private:

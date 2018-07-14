@@ -2680,6 +2680,12 @@ inline void MEDDLY::compute_table::entry_type
   is_marked_for_deletion = true;
 }
 
+inline void MEDDLY::compute_table::entry_type
+::unmarkForDeletion()
+{
+  is_marked_for_deletion = false;
+}
+
 inline bool MEDDLY::compute_table::entry_type
 ::isMarkedForDeletion() const
 {
