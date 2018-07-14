@@ -2039,13 +2039,18 @@ MEDDLY::operation::operation(const opname* n, unsigned et_slots)
   // Set up slots to save our entry_types.
   //
   if (et_slots) {
-    etype = new const compute_table::entry_type* [et_slots];
+    etype = new compute_table::entry_type* [et_slots];
     for (unsigned i=0; i<et_slots; i++) {
       etype[i] = 0;
     }
   } else {
     etype = 0;
   }
+
+  //
+  // Allocate CTresults
+  //
+  CTresult = new compute_table::entry_result [et_slots];
 
   //
   // Allocate our slots
@@ -2068,6 +2073,14 @@ void MEDDLY::operation::buildCTs()
       CT[i] = ct_initializer::createForOp(this, i);
     }
   }
+
+  //
+  // Initialize CTresults
+  //
+  for (unsigned i=0; i<num_etids; i++) {
+    CTresult[i].initialize(etype[i]);
+  }
+
   //
   // Most operations use only one slot
   //
@@ -2096,6 +2109,7 @@ MEDDLY::operation::~operation()
   }
   // Don't delete the entries in etype, they're owned by compute_table.
   delete[] etype;
+  compute_table::unregisterOp(this, num_etids);
 #endif
 
   if (oplist_index >= 0) {
@@ -2132,6 +2146,9 @@ void MEDDLY::operation::markForDeletion()
 #ifdef OLD_OP_CT
   if (CT0 && CT0->isOperationTable()) CT0->removeStales();
 #else
+  for (unsigned i=0; i<num_etids; i++) {
+    etype[i]->markForDeletion();
+  }
   if (CT) {
     for (unsigned i=0; i<num_etids; i++) {
       if (CT[i] && CT[i]->isOperationTable()) CT[i]->removeStales();

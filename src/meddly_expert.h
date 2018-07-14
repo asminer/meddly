@@ -3955,6 +3955,11 @@ class MEDDLY::compute_table {
           */
           expert_forest* getResultForest(unsigned i) const;
 
+          /// Mark for deletion
+          void markForDeletion();
+ 
+          /// Should we remove all CT entries of this type?
+          bool isMarkedForDeletion() const;
         private:
           /// Unique ID, set by compute table
           unsigned etID;
@@ -3989,6 +3994,8 @@ class MEDDLY::compute_table {
           unsigned r_bytes;
 
           bool updatable_result;
+
+          bool is_marked_for_deletion;
 
           friend class compute_table;
       };
@@ -4101,12 +4108,15 @@ class MEDDLY::compute_table {
           entry_result();
 #ifdef OLD_OP_CT
           entry_result(unsigned slots);
-#else
-          entry_result(const entry_type* et);
 #endif
           ~entry_result();
 
         public:
+#ifndef OLD_OP_CT
+          // For delayed construction
+          void initialize(const entry_type* et);
+#endif
+
           // interface, for operations (reading).
           node_handle readN();
           int readI();
@@ -4304,8 +4314,8 @@ class MEDDLY::compute_table {
 */
 class MEDDLY::operation {
     const opname* theOpName;
-    bool is_marked_for_deletion;
     int oplist_index;
+    bool is_marked_for_deletion;
 #ifdef OLD_OP_CT
     int key_length;   
     int ans_length;
@@ -4345,7 +4355,13 @@ class MEDDLY::operation {
         Owned by the compute_table class; we have
         these pointers for convenience.
     */
-    const compute_table::entry_type** etype;
+    compute_table::entry_type** etype;
+    /** Array of entry results.
+        Use these during computation.
+        We only ever need one result per entry type.
+    */
+    compute_table::entry_result* CTresult;
+
     /**
       Number of entry_types needed by this operation.
       This gives the dimension of arrays CT and etype.

@@ -104,12 +104,13 @@ class MEDDLY::saturation_by_events_op : public unary_operation {
       if (argF->isFullyReduced()) CTsrch->writeI(level);
 #ifdef OLD_OP_CT
       compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-      static compute_table::entry_result cacheFind(etype[0]);
-      CT0->find(CTsrch, cacheFind);
-#endif
       if (!cacheFind) return CTsrch;
       b = resF->linkNode(cacheFind.readN()); 
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      b = resF->linkNode(CTresult[0].readN()); 
+#endif
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -120,12 +121,14 @@ class MEDDLY::saturation_by_events_op : public unary_operation {
       argF->cacheNode(a);
       resF->cacheNode(b);
       static compute_table::entry_result result(1);
-#else
-      static compute_table::entry_result result(etype[0]);
-#endif
       result.reset();
       result.writeN(b);
       CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeN(b);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
       return b;
     }
 };
@@ -169,12 +172,13 @@ class MEDDLY::common_dfs_by_events_mt : public specialized_operation {
       CTsrch->writeN(b);
 #ifdef OLD_OP_CT
       compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-      static compute_table::entry_result cacheFind(etype[0]);
-      CT0->find(CTsrch, cacheFind);
-#endif
       if (!cacheFind) return CTsrch;
       c = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      c = resF->linkNode(CTresult[0].readN());
+#endif
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -186,12 +190,14 @@ class MEDDLY::common_dfs_by_events_mt : public specialized_operation {
       arg2F->cacheNode(b);
       resF->cacheNode(c);
       static compute_table::entry_result result(1);
-#else
-      static compute_table::entry_result result(etype[0]);
-#endif
       result.reset();
       result.writeN(c);
       CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeN(c);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
       return c;
     }
 

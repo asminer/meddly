@@ -179,14 +179,17 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   CTsrch->writeN(a); 
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(CTsrch, cacheFind);
-#endif
   if (cacheFind) {
     CT0->recycle(CTsrch);
     return cacheFind.readL();
   }
+#else
+  CT0->find(CTsrch, CTresult[0]);
+  if (CTresult[0]) {
+    CT0->recycle(CTsrch);
+    return CTresult[0].readL();
+  }
+#endif
 
   // Initialize node reader
   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
@@ -205,12 +208,14 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
 #ifdef OLD_OP_CT
   argF->cacheNode(a);
   static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
-#else
-  static compute_table::entry_result result(etype[0]);
-#endif
   result.reset();
   result.writeL(card);
   CT0->addEntry(CTsrch, result);
+#else
+  CTresult[0].reset();
+  CTresult[0].writeL(card);
+  CT0->addEntry(CTsrch, CTresult[0]);
+#endif
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is %ld(L)\n", a, card);
@@ -262,14 +267,17 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   CTsrch->writeN(a); 
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(CTsrch, cacheFind);
-#endif
   if (cacheFind) {
     CT0->recycle(CTsrch);
     return cacheFind.readL();
   }
+#else
+  CT0->find(CTsrch, CTresult[0]);
+  if (CTresult[0]) {
+    CT0->recycle(CTsrch);
+    return CTresult[0].readL();
+  }
+#endif
 
   // Initialize node reader
   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
@@ -288,12 +296,14 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
 #ifdef OLD_OP_CT
   argF->cacheNode(a);
   static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
-#else
-  static compute_table::entry_result result(etype[0]);
-#endif
   result.reset();
   result.writeL(card);
   CT0->addEntry(CTsrch, result);
+#else
+  CTresult[0].reset();
+  CTresult[0].writeL(card);
+  CT0->addEntry(CTsrch, CTresult[0]);
+#endif
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is %ld(L)\n", a, card);
@@ -412,14 +422,17 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   CTsrch->writeN(a); 
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(CTsrch, cacheFind);
-#endif
   if (cacheFind) {
     CT0->recycle(CTsrch);
     return cacheFind.readD();
   }
+#else
+  CT0->find(CTsrch, CTresult[0]);
+  if (CTresult[0]) {
+    CT0->recycle(CTsrch);
+    return CTresult[0].readD();
+  }
+#endif
 
   // Initialize node reader
   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
@@ -438,12 +451,14 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
 #ifdef OLD_OP_CT
   argF->cacheNode(a);
   static compute_table::entry_result result(sizeof(double) / sizeof(node_handle));
-#else
-  static compute_table::entry_result result(etype[0]);
-#endif
   result.reset();
   result.writeD(card);
   CT0->addEntry(CTsrch, result);
+#else
+  CTresult[0].reset();
+  CTresult[0].writeD(card);
+  CT0->addEntry(CTsrch, CTresult[0]);
+#endif
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is %le(L)\n", a, card);
@@ -496,14 +511,17 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
   CTsrch->writeN(a); 
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(CTsrch, cacheFind);
-#endif
   if (cacheFind) {
     CT0->recycle(CTsrch);
     return cacheFind.readD();
   }
+#else
+  CT0->find(CTsrch, CTresult[0]);
+  if (CTresult[0]) {
+    CT0->recycle(CTsrch);
+    return CTresult[0].readD();
+  }
+#endif
 
   // Initialize node reader
   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
@@ -522,12 +540,14 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
 #ifdef OLD_OP_CT
   argF->cacheNode(a);
   static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
-#else
-  static compute_table::entry_result result(etype[0]);
-#endif
   result.reset();
   result.writeD(card);
   CT0->addEntry(CTsrch, result);
+#else
+  CTresult[0].reset();
+  CTresult[0].writeD(card);
+  CT0->addEntry(CTsrch, CTresult[0]);
+#endif
 
 
 #ifdef DEBUG_CARD
@@ -667,10 +687,6 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   CTsrch->writeN(a);
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(CTsrch, cacheFind);
-#endif
   if (cacheFind) {
     void* P = cacheFind.readP();
     mpz_object* answer = (mpz_object*) P;
@@ -678,6 +694,16 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
     CT0->recycle(CTsrch);
     return;
   }
+#else
+  CT0->find(CTsrch, CTresult[0]);
+  if (CTresult[0]) {
+    void* P = CTresult[0].readP();
+    mpz_object* answer = (mpz_object*) P;
+    answer->copyInto(card);
+    CT0->recycle(CTsrch);
+    return;
+  }
+#endif
 
   // Initialize node reader
   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
@@ -700,12 +726,14 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 #ifdef OLD_OP_CT
   argF->cacheNode(a);
   static compute_table::entry_result result(sizeof(void*) / sizeof(node_handle));
-#else
-  static compute_table::entry_result result(etype[0]);
-#endif
   result.reset();
   result.writeP(new mpz_object(card));
   CT0->addEntry(CTsrch, result);
+#else
+  CTresult[0].reset();
+  CTresult[0].writeP(new mpz_object(card));
+  CT0->addEntry(CTsrch, CTresult[0]);
+#endif
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is ", a);
@@ -771,10 +799,6 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   CTsrch->writeN(a);
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(CTsrch, cacheFind);
-#endif
   if (cacheFind) {
     void* P = cacheFind.readP();
     mpz_object* answer = (mpz_object*) P;
@@ -782,6 +806,16 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
     CT0->recycle(CTsrch);
     return;
   }
+#else
+  CT0->find(CTsrch, CTresult[0]);
+  if (CTresult[0]) {
+    void* P = CTresult[0].readP();
+    mpz_object* answer = (mpz_object*) P;
+    answer->copyInto(card);
+    CT0->recycle(CTsrch);
+    return;
+  }
+#endif
 
   // Initialize node reader
   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
@@ -803,12 +837,14 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 #ifdef OLD_OP_CT
   argF->cacheNode(a);
   static compute_table::entry_result result(sizeof(void*) / sizeof(node_handle));
-#else
-  static compute_table::entry_result result(etype[0]);
-#endif
   result.reset();
   result.writeP(new mpz_object(card));
   CT0->addEntry(CTsrch, result);
+#else
+  CTresult[0].reset();
+  CTresult[0].writeP(new mpz_object(card));
+  CT0->addEntry(CTsrch, CTresult[0]);
+#endif
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is ", a);

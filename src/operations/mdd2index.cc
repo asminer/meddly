@@ -177,16 +177,21 @@ MEDDLY::mdd2index_operation
     CTsrch->writeN(a);
 #ifdef OLD_OP_CT
     compute_table::entry_result& cacheEntry = CT0->find(CTsrch);
-#else
-    static compute_table::entry_result cacheEntry(etype[0]);
-    CT0->find(CTsrch, cacheEntry);
-#endif
     if (cacheEntry) {
       bdn = resF->linkNode(cacheEntry.readN());
       bcard = cacheEntry.readL();
       CT0->recycle(CTsrch);
       return;
     }
+#else
+    CT0->find(CTsrch, CTresult[0]);
+    if (CTresult[0]) {
+      bdn = resF->linkNode(CTresult[0].readN());
+      bcard = CTresult[0].readL();
+      CT0->recycle(CTsrch);
+      return;
+    }
+#endif
   }
 
 #ifdef TRACE_ALL_OPS
@@ -239,13 +244,16 @@ MEDDLY::mdd2index_operation
     argF->cacheNode(a);
     resF->cacheNode(bdn);
     static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
-#else
-    static compute_table::entry_result result(etype[0]);
-#endif
     result.reset();
     result.writeN(bdn);
     result.writeL(bcard);
     CT0->addEntry(CTsrch, result);
+#else
+    CTresult[0].reset();
+    CTresult[0].writeN(bdn);
+    CTresult[0].writeL(bcard);
+    CT0->addEntry(CTsrch, CTresult[0]);
+#endif
   }
 }
 

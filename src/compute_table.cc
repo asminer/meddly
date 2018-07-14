@@ -22,7 +22,8 @@
 
 #include "storage/ct_classic.h"
 
-#define DEBUG_ENTRY_TYPE
+// #define DEBUG_ENTRY_TYPE
+// #define DEBUG_ENTRY_REGISTRY
 
 // **********************************************************************
 // *                                                                    *
@@ -269,6 +270,10 @@ void MEDDLY::compute_table::registerOp(operation* op, unsigned num_ids)
   if (0==op) return;
   if (0==num_ids) return;
 
+#ifdef DEBUG_ENTRY_REGISTRY
+  printf("Requesting %u entry slots for operation %s\n", num_ids, op->getName());
+#endif
+
   if (1==num_ids) {
     //
     // Most common case, and easiest to find a hole.
@@ -312,6 +317,13 @@ void MEDDLY::compute_table::registerEntryType(unsigned etid, entry_type* et)
   MEDDLY_DCASSERT(0==entryInfo[etid]);
   entryInfo[etid] = et;
   et->etID = etid;
+#ifdef DEBUG_ENTRY_REGISTRY
+  printf("Registering entry %s in slot %u\n", et->getName(), etid);
+  printf("Updated Table:\n");
+  for (unsigned i=0; i<entryInfoSize; i++) {
+    printf("    %2u: %s\n", i, entryInfo[i] ? entryInfo[i]->getName() : " ");
+  }
+#endif
 }
 
 void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
@@ -328,6 +340,13 @@ void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
   // decrement entryInfoSize if array ends in zeroes
   //
   while (entryInfoSize && (0==entryInfo[entryInfoSize-1])) entryInfoSize--;
+#ifdef DEBUG_ENTRY_REGISTRY
+  printf("Unregistering %u slots for operation %s\n", num_ids, op->getName());
+  printf("Updated Table:\n");
+  for (unsigned i=0; i<entryInfoSize; i++) {
+    printf("    %2u: %s\n", i, entryInfo[i] ? entryInfo[i]->getName() : " ");
+  }
+#endif
 }
 
 #endif
@@ -381,20 +400,15 @@ MEDDLY::compute_table::entry_result::entry_result(unsigned slots)
   ansLength = slots;
 }
 
-
 #else
 
-MEDDLY::compute_table::entry_result::entry_result(const compute_table::entry_type* et)
+void MEDDLY::compute_table::entry_result::initialize(const compute_table::entry_type* et)
 {
   MEDDLY_DCASSERT(et);
   etype = et;
   const unsigned slots = etype->getResultSize();
-#ifdef OLD_OP_CT
-  build = new node_handle[slots];
-  data = build;
-#else
+  MEDDLY_DCASSERT(0==build);
   build = new entry_item[slots];
-#endif
 }
 
 #endif
@@ -451,6 +465,7 @@ inline char typeID2char(MEDDLY::compute_table::typeID t)
 MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pattern)
 {
   name = _name;
+  is_marked_for_deletion = false;
 
   updatable_result = false;
 

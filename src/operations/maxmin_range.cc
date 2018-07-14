@@ -73,12 +73,13 @@ class MEDDLY::range_int : public unary_operation {
       CTsrch->writeN(a);
 #ifdef OLD_OP_CT
       compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-      static compute_table::entry_result cacheFind(etype[0]);
-      CT0->find(CTsrch, cacheFind);
-#endif
       if (!cacheFind) return CTsrch;
       b = cacheFind.readI();
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      b = CTresult[0].readI();
+#endif
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -88,12 +89,14 @@ class MEDDLY::range_int : public unary_operation {
 #ifdef OLD_OP_CT
       argF->cacheNode(a);
       static compute_table::entry_result result(1);
-#else
-      static compute_table::entry_result result(etype[0]);
-#endif
       result.reset();
       result.writeI(b);
       CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeI(b);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
       return b;
     }
 };
@@ -183,12 +186,13 @@ class MEDDLY::range_real : public unary_operation {
       CTsrch->writeN(a);
 #ifdef OLD_OP_CT
       compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-      static compute_table::entry_result cacheFind(etype[0]);
-      CT0->find(CTsrch, cacheFind);
-#endif
       if (!cacheFind) return CTsrch;
       b = cacheFind.readF();
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      b = CTresult[0].readF();
+#endif
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -198,12 +202,14 @@ class MEDDLY::range_real : public unary_operation {
 #ifdef OLD_OP_CT
       argF->cacheNode(a);
       static compute_table::entry_result result(1);
-#else
-      static compute_table::entry_result result(etype[0]);
-#endif
       result.reset();
       result.writeF(b);
       CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeF(b);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
       return b;
     }
 };

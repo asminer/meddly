@@ -167,14 +167,17 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   CTsrch->writeN(b);
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(CTsrch, cacheFind);
-#endif
   if (cacheFind) {
     CT0->recycle(CTsrch);
     return resF->linkNode(cacheFind.readN());
   }
+#else
+  CT0->find(CTsrch, CTresult[0]);
+  if (CTresult[0]) {
+    CT0->recycle(CTsrch);
+    return resF->linkNode(CTresult[0].readN());
+  }
+#endif
 
   // Initialize unpacked node
   unpacked_node *A = unpacked_node::useUnpackedNode();
@@ -201,12 +204,14 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   arg2F->cacheNode(b);
   resF->cacheNode(c);
   static compute_table::entry_result result(1);
-#else
-  static compute_table::entry_result result(etype[0]);
-#endif
   result.reset();
   result.writeN(c);
   CT0->addEntry(CTsrch, result);
+#else
+  CTresult[0].reset();
+  CTresult[0].writeN(c);
+  CT0->addEntry(CTsrch, CTresult[0]);
+#endif
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(%d, %d, %d) = %d\n", getName(), k, a, b, c);

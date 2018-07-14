@@ -72,12 +72,13 @@ class MEDDLY::compl_mdd : public unary_operation {
       CTsrch->writeN(a);
 #ifdef OLD_OP_CT
       compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-      static compute_table::entry_result cacheFind(etype[0]);
-      CT0->find(CTsrch, cacheFind);
-#endif
       if (!cacheFind) return CTsrch;
       b = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      b = resF->linkNode(CTresult[0].readN());
+#endif
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -88,12 +89,14 @@ class MEDDLY::compl_mdd : public unary_operation {
       argF->cacheNode(a);
       resF->cacheNode(b);
       static compute_table::entry_result result(1);
-#else
-      static compute_table::entry_result result(etype[0]);
-#endif
       result.reset();
       result.writeN(b);
       CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeN(b);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
       return b;
     }
 };
@@ -330,10 +333,6 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
   CTsrch->writeN(a);
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(CTsrch, cacheFind);
-#endif
   if (cacheFind) {
     node_handle ans = cacheFind.readN();
 #ifdef DEBUG_MXD_COMPL
@@ -342,6 +341,17 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
     CT0->recycle(CTsrch);
     return resF->linkNode(ans);
   }
+#else
+  CT0->find(CTsrch, CTresult[0]);
+  if (CTresult[0]) {
+    node_handle ans = CTresult[0].readN();
+#ifdef DEBUG_MXD_COMPL
+    fprintf(stderr, "\tin CT:   compl_mxd(%d, %d) : %d\n", ht, a, ans);
+#endif
+    CT0->recycle(CTsrch);
+    return resF->linkNode(ans);
+  }
+#endif
 
 #ifdef DEBUG_MXD_COMPL
   fprintf(stderr, "\tstarting compl_mxd(%d, %d)\n", ht, a);
@@ -388,12 +398,14 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
     argF->cacheNode(a);
     resF->cacheNode(result);
     static compute_table::entry_result res(1);
-#else
-    static compute_table::entry_result res(etype[0]);
-#endif
     res.reset();
     res.writeN(result);
     CT0->addEntry(CTsrch, res);
+#else
+    CTresult[0].reset();
+    CTresult[0].writeN(result);
+    CT0->addEntry(CTsrch, CTresult[0]);
+#endif
   } else {
     CT0->recycle(CTsrch);
   }

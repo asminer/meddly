@@ -82,12 +82,13 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
       }
 #ifdef OLD_OP_CT
       compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-      static compute_table::entry_result cacheFind(etype[0]);
-      CT0->find(CTsrch, cacheFind);
-#endif
       if (!cacheFind) return CTsrch;
       c = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      c = resF->linkNode(CTresult[0].readN());
+#endif
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -100,12 +101,14 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
       arg2F->cacheNode(b);
       resF->cacheNode(c);
       static compute_table::entry_result result(1);
-#else
-      static compute_table::entry_result result(etype[0]);
-#endif
       result.reset();
       result.writeN(c);
       CT0->addEntry(K, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeN(c);
+      CT0->addEntry(K, CTresult[0]);
+#endif
     }
 
   protected:
@@ -168,12 +171,13 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
       }
 #ifdef OLD_OP_CT
       compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-      static compute_table::entry_result cacheFind(etype[0]);
-      CT0->find(CTsrch, cacheFind);
-#endif
       if (!cacheFind) return CTsrch;
       c = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      c = resF->linkNode(CTresult[0].readN());
+#endif
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -186,12 +190,14 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
       arg2F->cacheNode(b);
       resF->cacheNode(c);
       static compute_table::entry_result result(1);
-#else
-      static compute_table::entry_result result(etype[0]);
-#endif
       result.reset();
       result.writeN(c);
       CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeN(c);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
     }
 
   protected:
@@ -247,12 +253,13 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
       }
 #ifdef OLD_OP_CT
       compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-      static compute_table::entry_result cacheFind(etype[0]);
-      CT0->find(CTsrch, cacheFind);
-#endif
       if (!cacheFind) return CTsrch;
       c = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      c = resF->linkNode(CTresult[0].readN());
+#endif
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -265,12 +272,14 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
       arg2F->cacheNode(b);
       resF->cacheNode(c);
       static compute_table::entry_result result(1);
-#else
-      static compute_table::entry_result result(etype[0]);
-#endif
       result.reset();
       result.writeN(c);
       CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeN(c);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
     }
 
     node_handle compute_r(int i, int level, node_handle a, node_handle b);
@@ -346,13 +355,15 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
       }
 #ifdef OLD_OP_CT
       compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-      static compute_table::entry_result cacheFind(etype[0]);
-      CT0->find(CTsrch, cacheFind);
-#endif
       if (!cacheFind) return CTsrch;
       cev = cacheFind.readL();
       c = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      cev = CTresult[0].readL();
+      c = resF->linkNode(CTresult[0].readN());
+#endif
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -365,13 +376,16 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
       arg2F->cacheNode(b);
       resF->cacheNode(c);
       static compute_table::entry_result result(1 + sizeof(long)/sizeof(node_handle));
-#else
-      static compute_table::entry_result result(etype[0]);
-#endif
       result.reset();
       result.writeL(cev);
       result.writeN(c);
       CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeL(cev);
+      CTresult[0].writeN(c);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
     }
 
   protected:
@@ -425,13 +439,15 @@ class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
       }
 #ifdef OLD_OP_CT
       compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-      static compute_table::entry_result cacheFind(etype[0]);
-      CT0->find(CTsrch, cacheFind);
-#endif
       if (!cacheFind) return CTsrch;
       cev = cacheFind.readL();
       c = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      cev = CTresult[0].readL();
+      c = resF->linkNode(CTresult[0].readN());
+#endif
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -444,13 +460,16 @@ class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
       arg2F->cacheNode(b);
       resF->cacheNode(c);
       static compute_table::entry_result result(1 + sizeof(long)/sizeof(node_handle));
-#else
-      static compute_table::entry_result result(etype[0]);
-#endif
       result.reset();
       result.writeL(cev);
       result.writeN(c);
       CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeL(cev);
+      CTresult[0].writeN(c);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
     }
 
   protected:
@@ -505,13 +524,15 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
       }
 #ifdef OLD_OP_CT
       compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-      static compute_table::entry_result cacheFind(etype[0]);
-      CT0->find(CTsrch, cacheFind);
-#endif
       if (!cacheFind) return CTsrch;
       cev = cacheFind.readF();
       c = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      cev = CTresult[0].readF();
+      c = resF->linkNode(CTresult[0].readN());
+#endif
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -524,13 +545,16 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
       arg2F->cacheNode(b);
       resF->cacheNode(c);
       static compute_table::entry_result result(2);
-#else
-      static compute_table::entry_result result(etype[0]);
-#endif
       result.reset();
       result.writeF(cev);
       result.writeN(c);
       CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeF(cev);
+      CTresult[0].writeN(c);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
     }
 
   protected:

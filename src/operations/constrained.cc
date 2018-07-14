@@ -309,15 +309,19 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_dfs_mt::findResult(
 
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(key);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(key, cacheFind);
-#endif
   if (!cacheFind) {
     return key;
   }
 
   c = resF->linkNode(cacheFind.readN());
+#else
+  CT0->find(key, CTresult[0]);
+  if (!CTresult[0]) {
+    return key;
+  }
+
+  c = resF->linkNode(CTresult[0].readN());
+#endif
 
   CT0->recycle(key);
   return 0;
@@ -332,12 +336,14 @@ void MEDDLY::constrained_dfs_mt::saveResult(compute_table::entry_key* key,
   transF->cacheNode(r);
   resF->cacheNode(c);
   static compute_table::entry_result result(1);
-#else
-  static compute_table::entry_result result(etype[0]);
-#endif
   result.reset();
   result.writeN(c);
   CT0->addEntry(key, result);
+#else
+  CTresult[0].reset();
+  CTresult[0].writeN(c);
+  CT0->addEntry(key, CTresult[0]);
+#endif
 }
 
 #ifdef OLD_OP_CT
@@ -1072,12 +1078,13 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_saturation_mt::findResult(
 
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(key);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(key, cacheFind);
-#endif
   if (!cacheFind) return key;
   c = resF->linkNode(cacheFind.readN());
+#else
+  CT0->find(key, CTresult[0]);
+  if (!CTresult[0]) return key;
+  c = resF->linkNode(CTresult[0].readN());
+#endif
 
   CT0->recycle(key);
   return 0;
@@ -1091,12 +1098,14 @@ void MEDDLY::constrained_saturation_mt::saveResult(compute_table::entry_key* key
   argF->cacheNode(b);
   resF->cacheNode(c);
   static compute_table::entry_result result(1);
-#else
-  static compute_table::entry_result result(etype[0]);
-#endif
   result.reset();
   result.writeN(c);
   CT0->addEntry(key, result);
+#else
+  CTresult[0].reset();
+  CTresult[0].writeN(c);
+  CT0->addEntry(key, CTresult[0]);
+#endif
 }
 
 #ifdef OLD_OP_CT
@@ -1240,16 +1249,21 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_bckwd_dfs_evplus::findResu
 
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(key);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(key, cacheFind);
-#endif
   if (!cacheFind) {
     return key;
   }
 
   cev = cacheFind.readL();
   c = resF->linkNode(cacheFind.readN());
+#else
+  CT0->find(key, CTresult[0]);
+  if (!CTresult[0]) {
+    return key;
+  }
+
+  cev = CTresult[0].readL();
+  c = resF->linkNode(CTresult[0].readN());
+#endif
   if (c != 0) {
     cev += bev;
   }
@@ -1270,9 +1284,6 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saveResult(compute_table::entry_key* 
   transF->cacheNode(r);
   resF->cacheNode(c);
   static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
-#else
-  static compute_table::entry_result result(etype[0]);
-#endif
   result.reset();
   if (c == 0) {
     // Write long
@@ -1283,6 +1294,18 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saveResult(compute_table::entry_key* 
   }
   result.writeN(c);
   CT0->addEntry(key, result);
+#else
+  CTresult[0].reset();
+  if (c == 0) {
+    // Write long
+    CTresult[0].writeL(0);
+  }
+  else {
+    CTresult[0].writeL(cev - bev);
+  }
+  CTresult[0].writeN(c);
+  CT0->addEntry(key, CTresult[0]);
+#endif
 }
 
 #ifdef OLD_OP_CT
@@ -1800,13 +1823,15 @@ MEDDLY::compute_table::entry_key* MEDDLY::constrained_saturation_evplus::findRes
 
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(key);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(key, cacheFind);
-#endif
   if (!cacheFind) return key;
   cev = cacheFind.readL();
   c = resF->linkNode(cacheFind.readN());
+#else
+  CT0->find(key, CTresult[0]);
+  if (!CTresult[0]) return key;
+  cev = CTresult[0].readL();
+  c = resF->linkNode(CTresult[0].readN());
+#endif
   if (c != 0) {
     cev += bev;
   }
@@ -1826,9 +1851,6 @@ void MEDDLY::constrained_saturation_evplus::saveResult(compute_table::entry_key*
   argF->cacheNode(b);
   resF->cacheNode(c);
   static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
-#else
-  static compute_table::entry_result result(etype[0]);
-#endif
   result.reset();
   if (c == 0) {
     // Write long
@@ -1840,6 +1862,19 @@ void MEDDLY::constrained_saturation_evplus::saveResult(compute_table::entry_key*
   }
   result.writeN(c);
   CT0->addEntry(key, result);
+#else
+  CTresult[0].reset();
+  if (c == 0) {
+    // Write long
+    CTresult[0].writeL(0);
+  }
+  else {
+    MEDDLY_DCASSERT(cev - bev >= 0);
+    CTresult[0].writeL(cev - bev);
+  }
+  CTresult[0].writeN(c);
+  CT0->addEntry(key, CTresult[0]);
+#endif
 }
 
 #ifdef OLD_OP_CT

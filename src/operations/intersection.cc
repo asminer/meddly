@@ -188,13 +188,15 @@ MEDDLY::compute_table::entry_key* MEDDLY::inter_max_evplus::findResult(long aev,
   }
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(CTsrch, cacheFind);
-#endif
   if (!cacheFind) return CTsrch;
   cev = cacheFind.readL();
   c = resF->linkNode(cacheFind.readN());
+#else
+  CT0->find(CTsrch, CTresult[0]);
+  if (!CTresult[0]) return CTsrch;
+  cev = CTresult[0].readL();
+  c = resF->linkNode(CTresult[0].readN());
+#endif
   if (c != 0) {
     cev += (a > b ? bev : aev);
   }
@@ -213,9 +215,6 @@ void MEDDLY::inter_max_evplus::saveResult(compute_table::entry_key* key,
   arg2F->cacheNode(b);
   resF->cacheNode(c);
   static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
-#else
-  static compute_table::entry_result result(etype[0]);
-#endif
   if (c == 0) {
     result.writeL(0);
   }
@@ -224,6 +223,16 @@ void MEDDLY::inter_max_evplus::saveResult(compute_table::entry_key* key,
   }
   result.writeN(c);
   CT0->addEntry(key, result);
+#else
+  if (c == 0) {
+    CTresult[0].writeL(0);
+  }
+  else {
+    CTresult[0].writeL(cev - (a > b ? bev : aev));
+  }
+  CTresult[0].writeN(c);
+  CT0->addEntry(key, CTresult[0]);
+#endif
 }
 
 bool MEDDLY::inter_max_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,

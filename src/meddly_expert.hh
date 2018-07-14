@@ -2674,6 +2674,17 @@ inline MEDDLY::expert_forest* MEDDLY::compute_table::entry_type
   return r_forest[i];
 }
 
+inline void MEDDLY::compute_table::entry_type
+::markForDeletion()
+{
+  is_marked_for_deletion = true;
+}
+
+inline bool MEDDLY::compute_table::entry_type
+::isMarkedForDeletion() const
+{
+  return is_marked_for_deletion;
+}
 
 // ******************************************************************
 
@@ -2817,6 +2828,7 @@ MEDDLY::operation::registerEntryType(unsigned slot, compute_table::entry_type* e
   compute_table::registerEntryType(first_etid + slot, et);
 }
 #endif
+
 
 inline bool
 MEDDLY::operation::isMarkedForDeletion() const

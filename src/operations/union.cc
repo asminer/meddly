@@ -322,14 +322,17 @@ MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus::findResult(long aev,
   }
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(CTsrch, cacheFind);
-#endif
   if (!cacheFind) return CTsrch;
   cev = cacheFind.readL();
   MEDDLY_DCASSERT(cev == 0);
   c = resF->linkNode(cacheFind.readN());
+#else
+  CT0->find(CTsrch, CTresult[0]);
+  if (!CTresult[0]) return CTsrch;
+  cev = CTresult[0].readL();
+  MEDDLY_DCASSERT(cev == 0);
+  c = resF->linkNode(CTresult[0].readN());
+#endif
   if (c != 0) {
     cev = MIN(aev, bev);
   }
@@ -346,13 +349,16 @@ void MEDDLY::union_min_evplus::saveResult(compute_table::entry_key* key,
   arg2F->cacheNode(b);
   resF->cacheNode(c);
   static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
-#else
-  static compute_table::entry_result result(etype[0]);
-#endif
   result.reset();
   result.writeL(0);   //   Why always 0?
   result.writeN(c);
   CT0->addEntry(key, result);
+#else
+  CTresult[0].reset();
+  CTresult[0].writeL(0);   //   Why always 0?
+  CTresult[0].writeN(c);
+  CT0->addEntry(key, CTresult[0]);
+#endif
 }
 
 bool MEDDLY::union_min_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,
@@ -466,14 +472,17 @@ MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus_mxd::findResult(long 
   }
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(CTsrch, cacheFind);
-#endif
   if (!cacheFind) return CTsrch;
   cev = cacheFind.readL();
   MEDDLY_DCASSERT(cev == 0);
   c = resF->linkNode(cacheFind.readN());
+#else
+  CT0->find(CTsrch, CTresult[0]);
+  if (!CTresult[0]) return CTsrch;
+  cev = CTresult[0].readL();
+  MEDDLY_DCASSERT(cev == 0);
+  c = resF->linkNode(CTresult[0].readN());
+#endif
   if (c != 0) {
     cev = MIN(aev, bev);
   }
@@ -490,13 +499,16 @@ void MEDDLY::union_min_evplus_mxd::saveResult(compute_table::entry_key* key,
   arg2F->cacheNode(b);
   resF->cacheNode(c);
   static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
-#else
-  static compute_table::entry_result result(etype[0]);
-#endif
   result.reset();
   result.writeL(0);   // why always 0?
   result.writeN(c);
   CT0->addEntry(key, result);
+#else
+  CTresult[0].reset();
+  CTresult[0].writeL(0);   // why always 0?
+  CTresult[0].writeN(c);
+  CT0->addEntry(key, CTresult[0]);
+#endif
 }
 
 bool MEDDLY::union_min_evplus_mxd::checkTerminals(long aev, node_handle a, long bev, node_handle b,

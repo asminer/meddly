@@ -773,7 +773,6 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
     //
     // Fill res
     //
-    res.setValid();
     res.reset();
     for (unsigned i=0; i<key->getET()->getResultSize(); i++) {
       typeID t = et->getResultType(i);
@@ -803,6 +802,8 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
         default:      MEDDLY_DCASSERT(0);
       } // switch t
     } // for i
+    res.reset();
+    res.setValid();
 #endif
   } else {
     res.setInvalid();
@@ -857,7 +858,9 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const en
     (MONOLITHIC ? 1 : 0)
   );
 #else
-  node_address curr = newEntry( key->numTempBytes() / sizeof(int) );
+  node_address curr = newEntry( 
+    ( key->numTempBytes() + key->getET()->getResultBytes() ) / sizeof(int)
+  );
 #endif
 
 #ifdef INTEGRATED_MEMMAN
@@ -1080,7 +1083,7 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::updateEntry(entry_key* key, const
 template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_template<MONOLITHIC, CHAINED>::removeStales()
 {
-#ifdef DEBUG_SLOW
+#ifdef DEBUG_REMOVESTALES
   fprintf(stdout, "Removing stales in CT (size %d, entries %u)\n", 
         tableSize, perf.numEntries
   );
@@ -1164,10 +1167,13 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::removeStales()
     }
   } // if CHAINED
     
-#ifdef DEBUG_SLOW
+#ifdef DEBUG_REMOVESTALES
   fprintf(stdout, "Done removing CT stales (size %d, entries %u)\n", 
     tableSize, perf.numEntries
   );
+  FILE_output out(stderr);
+  out << "CT after removing stales:\n";
+  show(out, 9);
 #endif
 }
 
@@ -1176,6 +1182,9 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::removeStales()
 template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_template<MONOLITHIC, CHAINED>::removeAll()
 {
+#ifdef DEBUG_REMOVESTALES
+  fprintf(stdout, "Removing all CT entries\n");
+#endif
   for (unsigned i=0; i<tableSize; i++) {
     while (table[i]) {
       int curr = table[i];
@@ -1299,21 +1308,30 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
   if (--verbLevel < 1) return;
 
 #ifdef INTEGRATED_MEMMAN
+  if (0==freeList) {
+    s << "Free: null\n";
+  } else {
+    for (int i=1; i<=maxEntrySize; i++) {
+      if (freeList[i]) {
+        s << "freeList[" << i << "]: ";
+
+        int L = freeList[i];
+        s << L;
+        while (L) {
+          L = entries[L];
+          s << "->" << L;
+        }
+        s << "\n";
+      }
+    }
+  }
+
   if (0==entries) {
     s << "Entries: null\n";
   } else {
     s << "Entries: [" << long(entries[0]);
     for (int i=1; i<entriesSize; i++) {
       s << ", " << long(entries[i]);
-    }
-    s << "]\n";
-  }
-  if (0==freeList) {
-    s << "Free: null\n";
-  } else {
-    s << "Free: [" << long(freeList[0]);
-    for (int i=1; i<=maxEntrySize; i++) {
-      s << ", " << long(freeList[i]);
     }
     s << "]\n";
   }
@@ -1506,7 +1524,7 @@ MEDDLY::node_address MEDDLY::ct_template<MONOLITHIC, CHAINED>
     node_address h = freeList[size];
     freeList[size] = entries[h];
 #ifdef DEBUG_CTALLOC
-    fprintf(stderr, "Re-used entry %d size %d\n", h, size);
+    fprintf(stderr, "Re-used entry %ld size %d\n", h, size);
 #endif
     mstats.incMemUsed( size * sizeof(int) );
     return h;
@@ -1529,7 +1547,7 @@ MEDDLY::node_address MEDDLY::ct_template<MONOLITHIC, CHAINED>
   node_address h = entriesSize;
   entriesSize += size;
 #ifdef DEBUG_CTALLOC
-  fprintf(stderr, "New entry %d size %d\n", h, size);
+  fprintf(stderr, "New entry %ld size %d\n", h, size);
 #endif
   mstats.incMemUsed( size * sizeof(int) );
   return h;
@@ -1540,13 +1558,6 @@ MEDDLY::node_address MEDDLY::ct_template<MONOLITHIC, CHAINED>
   return MMAN->requestChunk(the_size);
 #endif
 }
-
-// **********************************************************************
-
-#ifndef OLD_OP_CT
-
-
-#endif
 
 // **********************************************************************
 
@@ -1565,6 +1576,9 @@ bool MEDDLY::ct_template<MONOLITHIC, CHAINED>
       ?   getEntryType(entry[CHAINED?1:0])
       :   global_et;
   MEDDLY_DCASSERT(et);
+
+  if (et->isMarkedForDeletion()) return true;
+
   entry += SHIFT;
   const unsigned reps = (et->isRepeating()) ? *entry++ : 0;
   const unsigned klen = et->getKeySize(reps);
@@ -1745,8 +1759,8 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
   //
   // Key portion
   //
-  slots = et->getKeySize(reps);
-  for (unsigned i=0; i<slots; i++) {
+  const unsigned stop = et->getKeySize(reps);
+  for (unsigned i=0; i<stop; i++) {
     typeID t;
     expert_forest* f;
     et->getKeyType(i, t, f);
@@ -1782,7 +1796,6 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
   //
   // Result portion
   //
-  slots += et->getResultSize();
   for (unsigned i=0; i<et->getResultSize(); i++) {
     typeID t;
     expert_forest* f;
@@ -1815,6 +1828,7 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
                         MEDDLY_DCASSERT(0);
     }
   } // for i
+  slots = ptr - entry;
 
 #endif
 

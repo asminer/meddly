@@ -82,13 +82,15 @@ MEDDLY::compute_table::entry_key* MEDDLY::prepostplus_evplus::findResult(long ae
 
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-  static compute_table::entry_result cacheFind(etype[0]);
-  CT0->find(CTsrch, cacheFind);
-#endif
   if (!cacheFind) return CTsrch;
   cev = cacheFind.readL();
   c = resF->linkNode(cacheFind.readN());
+#else
+  CT0->find(CTsrch, CTresult[0]);
+  if (!CTresult[0]) return CTsrch;
+  cev = CTresult[0].readL();
+  c = resF->linkNode(CTresult[0].readN());
+#endif
   if (c != 0) {
     cev += aev + bev;
   }
@@ -104,13 +106,16 @@ void MEDDLY::prepostplus_evplus::saveResult(compute_table::entry_key* Key,
   arg2F->cacheNode(b);
   resF->cacheNode(c);
   static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
-#else
-  static compute_table::entry_result result(etype[0]);
-#endif
   result.reset();
   result.writeL(c == 0 ? 0L : cev - aev - bev);
   result.writeN(c);
   CT0->addEntry(Key, result);
+#else
+  CTresult[0].reset();
+  CTresult[0].writeL(c == 0 ? 0L : cev - aev - bev);
+  CTresult[0].writeN(c);
+  CT0->addEntry(Key, CTresult[0]);
+#endif
 }
 
 bool MEDDLY::prepostplus_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,

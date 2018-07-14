@@ -63,13 +63,15 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
       CTsrch->writeN(a);
 #ifdef OLD_OP_CT
       compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-      static compute_table::entry_result cacheFind(etype[0]);
-      CT0->find(CTsrch, cacheFind);
-#endif
       if (!cacheFind) return CTsrch;
       bev = cacheFind.readL();
       b = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      bev = CTresult[0].readL();
+      b = resF->linkNode(CTresult[0].readN());
+#endif
       if (b != 0) {
         bev += aev;
       }
@@ -83,13 +85,16 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
       argF->cacheNode(a);
       resF->cacheNode(b);
       static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
-#else
-      static compute_table::entry_result result(etype[0]);
-#endif
       result.reset();
       result.writeL(b == 0 ? 0L : bev - aev);
       result.writeN(b);
       CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeL(b == 0 ? 0L : bev - aev);
+      CTresult[0].writeN(b);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
       return b;
     }
 };

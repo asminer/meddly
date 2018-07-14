@@ -90,12 +90,13 @@ class MEDDLY::image_op : public binary_operation {
       CTsrch->writeN(b);
 #ifdef OLD_OP_CT
       compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-      static compute_table::entry_result cacheFind(etype[0]);
-      CT0->find(CTsrch, cacheFind);
-#endif
       if (!cacheFind) return CTsrch;
       c = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      c = resF->linkNode(CTresult[0].readN());
+#endif
       CT0->recycle(CTsrch);
       return 0;
     }
@@ -107,12 +108,14 @@ class MEDDLY::image_op : public binary_operation {
       argM->cacheNode(b);
       resF->cacheNode(c);
       static compute_table::entry_result result(1);
-#else
-      static compute_table::entry_result result(etype[0]);
-#endif
       result.reset();
       result.writeN(c);
       CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeN(c);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
       return c;
     }
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -593,13 +596,15 @@ class MEDDLY::image_op_evplus : public binary_operation {
       CTsrch->writeN(mxd);
 #ifdef OLD_OP_CT
       compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-#else
-      static compute_table::entry_result cacheFind(etype[0]);
-      CT0->find(CTsrch, cacheFind);
-#endif
       if (!cacheFind) return CTsrch;
       resEv = cacheFind.readL();
       resEvmdd = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      resEv = CTresult[0].readL();
+      resEvmdd = resF->linkNode(CTresult[0].readN());
+#endif
       if (resEvmdd != 0) {
         resEv += ev;
       }
@@ -614,13 +619,16 @@ class MEDDLY::image_op_evplus : public binary_operation {
       argM->cacheNode(mxd);
       resF->cacheNode(resEvmdd);
       static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
-#else
-      static compute_table::entry_result result(etype[0]);
-#endif
       result.reset();
       result.writeL(resEvmdd == 0 ? 0L : resEv - ev);
       result.writeN(resEvmdd);
       CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeL(resEvmdd == 0 ? 0L : resEv - ev);
+      CTresult[0].writeN(resEvmdd);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
     }
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
