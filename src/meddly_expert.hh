@@ -2092,6 +2092,7 @@ MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
 }
 
 
+
 // ******************************************************************
 // *                                                                *
 // *                 inlined  compute_table methods                 *

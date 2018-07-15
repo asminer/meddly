@@ -3587,6 +3587,28 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       private:
         expert_forest* mxdF;
       
+     public:
+      
+      /*
+       Group the list of events at a given level by same next-of values 
+       @param level    level at which saturation is called
+       @param i        number of tokens before event is fired
+       @param R        array of events at level top
+       
+       Return the map.
+       */
+      std::unordered_map<long,std::vector<rel_node_handle>> getListOfNexts(int level, long i, relation_node **R);
+      
+      /*
+       Returns whether there exist a possibility of doing union 
+       @param level    level at which saturation is called
+       @param i        number of tokens before event is fired
+       @param R        array of events at level top
+       
+       Return bool.
+       */
+      bool isUnionPossible(int level, long i, relation_node **R);
+      
     };  // class implicit_relation
 
 

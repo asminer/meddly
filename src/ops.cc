@@ -1931,8 +1931,55 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
   return nsf;
 }
 
+// ******************************************************************
 
 
+std::unordered_map<long,std::vector<rel_node_handle>>
+MEDDLY::satimpl_opname::implicit_relation::getListOfNexts(int level, long i, relation_node **R)
+{
+  std::unordered_map<long,std::vector<rel_node_handle>> jList;
+  // atleast as many j's as many events
+  for(int k=0;k<lengthForLevel(level);k++)
+    {
+    long key = R[k]->nextOf(i);
+    jList[key].reserve(lengthForLevel(level));
+    int rnh_dwn = R[k]->getDown();
+    jList[key].push_back(rnh_dwn);
+    }
+  
+  return jList;
+}
+
+bool
+MEDDLY::satimpl_opname::implicit_relation::isUnionPossible(int level, long i, relation_node **R)
+{
+  if(lengthForLevel(level)==1)
+     return false;
+  
+   int* jset = (int*)malloc(lengthForLevel(level)*sizeof(int));
+   int last_j = 0;
+   for(int k=0;k<lengthForLevel(level);k++)
+    {
+    long key = R[k]->nextOf(i);
+    int flag = 0;
+    for(int m=0;m<last_j;m++)
+      if(jset[m]==key)
+        {
+          flag=1;
+          break;
+        }
+    
+      if(flag==0)
+        {
+          jset[k]=key;
+          last_j++;
+        }
+    }
+  if(lengthForLevel(level)==last_j)
+   return false;
+  else 
+    return true;
+}
 
 // ******************************************************************
 // *                       operation  methods                       *
