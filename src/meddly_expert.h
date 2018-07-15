@@ -3564,29 +3564,26 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         expert_forest* mxdF;
       
      public:
-      /*
-       Set the map that stores the node handles for unioned events
-       */
-      void initUnion();
       
       /*
-       Get the union node handle for the events with 
-       @level as top
-       Returns the rel_node_handle of the union.
-       Use the key to get the list of rel_node_handles of the actual events (value against the key)
+       Group the list of events at a given level by same next-of values 
+       @param level    level at which saturation is called
+       @param i        number of tokens before event is fired
+       @param R        array of events at level top
+       
+       Return the map.
        */
-      rel_node_handle getUnionEvent(int level);
+      std::unordered_map<long,std::vector<rel_node_handle>> getListOfNexts(int level, long i, relation_node **R);
       
-      std::vector<rel_node_handle> getEventsFromUnion(int level);
-      
-      std::map<long,std::vector<rel_node_handle>> getListOfNexts(int level, long i);
-      
-    private:
       /*
-       Probably only stores the union of the tops
+       Returns whether there exist a possibility of doing union 
+       @param level    level at which saturation is called
+       @param i        number of tokens before event is fired
+       @param R        array of events at level top
+       
+       Return bool.
        */
-      std::map<int,std::pair<rel_node_handle,std::vector<rel_node_handle>>> unioned_list;
-      
+      bool isUnionPossible(int level, long i, relation_node **R);
       
     };  // class implicit_relation
 

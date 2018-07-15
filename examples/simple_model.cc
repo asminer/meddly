@@ -436,7 +436,6 @@ void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, in
         }
       }
     }
-    T->initUnion();
 }
 
 
