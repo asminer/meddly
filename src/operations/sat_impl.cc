@@ -436,13 +436,6 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       if(j==-1) continue;
       if (j < nb.getSize() && -1==nb.d(j)) continue; // nothing can be added to this set
         
-      /*std::vector<node_handle>recList = recFireSet(nb.d(i), jt->second);
-        
-      node_handle union_rec = recList[0];
-      for(int v=1;v<recList.size();v++)
-        union_rec = mddUnion->compute(union_rec,recList[v]);
-      */
-      
       node_handle rec = recFireSet(nb.d(i), jt->second);
       if (rec == 0) continue;
         
