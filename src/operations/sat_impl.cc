@@ -430,7 +430,6 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
     for (std::unordered_map<long,std::vector<rel_node_handle>>::iterator jt=list_of_j.begin(); jt!=list_of_j.end(); ++jt) {
      //For each j get the list of different events
       int next = jt->first;
-      int no_of_events_for_this_change = jt->second.size();
       
       int j = next;
       if(j==-1) continue;
@@ -492,22 +491,16 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 }
 
 MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFireSet(
-                                                                                 MEDDLY::node_handle mdd, std::vector<rel_node_handle> vector_mxd)
+                                                                    MEDDLY::node_handle mdd, 
+                                                                    std::vector<rel_node_handle> vector_mxd)
 {
   std::vector<node_handle> array_rec(vector_mxd.size());
-  
-  int last_size = 0;
   node_handle union_rec = 0;
+  
   for(int rn = 0; rn < vector_mxd.size(); rn ++){
-    
-    //check how many of these nodes again qualify for same effect
-    //if there is a sub-set of nodes that have same effect, then probably mark them into a "unioned" node 
-    //
-    
     int ans=recFire(mdd,vector_mxd[rn]);
     union_rec = mddUnion->compute(union_rec,ans);
   }
-  
   
   return union_rec;
 }
