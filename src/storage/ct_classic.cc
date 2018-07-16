@@ -858,9 +858,11 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const en
     (MONOLITHIC ? 1 : 0)
   );
 #else
-  node_address curr = newEntry( 
+  const unsigned num_slots = 
     ( key->numTempBytes() + key->getET()->getResultBytes() ) / sizeof(int)
-  );
+    + (CHAINED ? 1 : 0)
+  ;
+  node_address curr = newEntry(num_slots);
 #endif
 
 #ifdef INTEGRATED_MEMMAN
@@ -904,7 +906,7 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const en
   printf("Added CT entry ");
   FILE_output out(stdout);
   showEntry(out, curr);
-  printf(" handle %lu in slot %u\n", curr, h);
+  printf(" handle %lu in slot %u (%u slots long)\n", curr, h, num_slots);
 #endif
 
   if (perf.numEntries < tableExpand) return;
@@ -1870,7 +1872,7 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
 #else
 
   const entry_type* et = MONOLITHIC
-    ?   getEntryType(entry[0])
+    ?   getEntryType(entry[CHAINED?1:0])
     :   global_et;
   MEDDLY_DCASSERT(et);
 
