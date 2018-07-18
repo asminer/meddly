@@ -13,6 +13,15 @@ layout: single
 
 ### Expert Interface Changes
 
+The compute table interface has changed significantly.
+This will affect anyone who implements their own operations.
+Essentially, the compute table is now much more aware of the contents
+of each compute table entry (in terms of the types of items in an entry).
+The long term goals of this change include
+simplification (and better flexibility flexibility) of operation code
+and eventually to allow for efficient compression of compute table entries.
+   
+
  * Class ```compute_table::search_key```
    has been renamed ```compute_table::entry_key```, and is now concrete.
 
@@ -41,6 +50,13 @@ layout: single
     // ...
     CT->recycle(CTsrch);
     ```
+
+  * Instead of returning the result, the ```compute_table::find``` 
+    method now expects the result to be passed as an argument
+    and will be filled in.
+    Operations now pre-allocate results for this purpose
+    (only one result is needed per entry type).
+
   * Removed ```OperationMap``` as a compute table option.
 
 
