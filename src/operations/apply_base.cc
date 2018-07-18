@@ -98,10 +98,15 @@ void MEDDLY::generic_binary_mdd::discardEntry(const node_handle* data)
 }
 
 void
-MEDDLY::generic_binary_mdd ::showEntry(output &strm, const node_handle *data) const
+MEDDLY::generic_binary_mdd ::showEntry(output &strm, const node_handle *data, bool key_only) const
 {
-  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) 
-       << "): " << long(data[2]) << "]";
+  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[2]);
+  }
+  strm << "]";
 }
 
 #endif // OLD_OP_CT
@@ -513,10 +518,15 @@ void MEDDLY::generic_binary_mxd::discardEntry(const node_handle* data)
 }
 
 void
-MEDDLY::generic_binary_mxd ::showEntry(output &strm, const node_handle *data) const
+MEDDLY::generic_binary_mxd ::showEntry(output &strm, const node_handle *data, bool key_only) const
 {
-  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) 
-       << "): " << long(data[2]) << "]";
+  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[2]);
+  }
+  strm << "]";
 }
 
 #endif // OLD_OP_CT
@@ -1173,10 +1183,16 @@ void MEDDLY::generic_binbylevel_mxd::discardEntry(const node_handle* data)
 
 void
 MEDDLY::generic_binbylevel_mxd
-::showEntry(output &strm, const node_handle *data) const
+::showEntry(output &strm, const node_handle *data, bool key_only) const
 {
   strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) 
-       << ", " << long(data[2]) << "): " << long(data[3]) << "]";
+       << ", " << long(data[2]) << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[3]);
+  }
+  strm << "]";
 }
 
 #endif // OLD_OP_CT
@@ -1517,11 +1533,16 @@ MEDDLY::generic_binary_evplus::~generic_binary_evplus()
 #ifdef OLD_OP_CT
 
 void MEDDLY::generic_binary_evplus
-::showEntry(output &strm, const node_handle *data) const
+::showEntry(output &strm, const node_handle *data, bool key_only) const
 {
   strm << "[" << getName() << "(<" << long(data[0]) << ":" << long(data[1]) 
-       << ">, <" << long(data[2]) << ":" << long(data[3]) << ">): <"
-       << long(data[4]) << ":" << long(data[5]) << ">]";
+       << ">, <" << long(data[2]) << ":" << long(data[3]) << ">): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << "<" << long(data[4]) << ":" << long(data[5]) << ">";
+  }
+  strm << "]";
 }
 
 #endif
@@ -1627,11 +1648,16 @@ MEDDLY::generic_binary_evplus_mxd::~generic_binary_evplus_mxd()
 #ifdef OLD_OP_CT
 
 void MEDDLY::generic_binary_evplus_mxd
-::showEntry(output &strm, const node_handle *data) const
+::showEntry(output &strm, const node_handle *data, bool key_only) const
 {
   strm << "[" << getName() << "(<" << long(data[0]) << ":" << long(data[1])
-       << ">, <" << long(data[2]) << ":" << long(data[3]) << ">): <"
-       << long(data[4]) << ":" << long(data[5]) << ">]";
+       << ">, <" << long(data[2]) << ":" << long(data[3]) << ">): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << "<" << long(data[4]) << ":" << long(data[5]) << ">";
+  }
+  strm << "]";
 }
 
 #endif
@@ -1792,17 +1818,23 @@ MEDDLY::generic_binary_evtimes::~generic_binary_evtimes()
 #ifdef OLD_OP_CT
 
 void MEDDLY::generic_binary_evtimes
-::showEntry(output &strm, const node_handle *data) const
+::showEntry(output &strm, const node_handle *data, bool key_only) const
 {
   float ev0;
   float ev2;
   float ev4;
   compute_table::readEV(data+0, ev0);
   compute_table::readEV(data+2, ev2);
-  compute_table::readEV(data+4, ev4);
   strm << "[" << getName() << "(<" << ev0 << ":" << long(data[1]) 
-       << ">, <" << ev2 << ":" << long(data[3]) << ">): <"
-       << ev4 << ":" << long(data[5]) << ">]";
+       << ">, <" << ev2 << ":" << long(data[3]) << ">): ";
+
+  if (key_only) {
+    strm << "?";
+  } else {
+    compute_table::readEV(data+4, ev4);
+    strm << "<" << ev4 << ":" << long(data[5]) << ">]";
+  }
+  strm << "]";
 }
 
 #endif

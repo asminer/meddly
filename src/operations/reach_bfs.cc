@@ -58,7 +58,7 @@ class MEDDLY::common_bfs_mt : public binary_operation {
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
 #endif
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual node_handle compute(node_handle a, node_handle b) = 0;
@@ -155,7 +155,7 @@ void MEDDLY::common_bfs_mt::discardEntry(const node_handle* entryData)
   // this operation won't add any CT entries.
 }
 
-void MEDDLY::common_bfs_mt::showEntry(output &strm, const node_handle* entryData) const
+void MEDDLY::common_bfs_mt::showEntry(output &strm, const node_handle* entryData, bool key_only) const
 {
   throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   // this operation won't add any CT entries.
@@ -247,7 +247,7 @@ class MEDDLY::common_bfs_evplus : public binary_operation {
 #ifdef OLD_OP_CT
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual void compute(long aev, node_handle a, node_handle b, long& resEv, node_handle& resEvmdd) = 0;
@@ -338,7 +338,7 @@ void MEDDLY::common_bfs_evplus::discardEntry(const node_handle* entryData)
   // this operation won't add any CT entries.
 }
 
-void MEDDLY::common_bfs_evplus::showEntry(output &strm, const node_handle* entryData) const
+void MEDDLY::common_bfs_evplus::showEntry(output &strm, const node_handle* entryData, bool key_only) const
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.

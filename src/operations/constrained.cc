@@ -185,7 +185,7 @@ void MEDDLY::constrained_bckwd_bfs_evplus::discardEntry(const node_handle* entry
   // this operation won't add any CT entries.
 }
 
-void MEDDLY::constrained_bckwd_bfs_evplus::showEntry(output &strm, const node_handle* entryData) const
+void MEDDLY::constrained_bckwd_bfs_evplus::showEntry(output &strm, const node_handle* entryData, bool key_only) const
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.
@@ -363,14 +363,19 @@ void MEDDLY::constrained_dfs_mt::discardEntry(const node_handle* data)
   resF->uncacheNode(data[NODE_INDICES_IN_KEY[3]]);
 }
 
-void MEDDLY::constrained_dfs_mt::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::constrained_dfs_mt::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
   strm << "[" << getName()
     << "(" << long(data[NODE_INDICES_IN_KEY[0]])
     << ", " << long(data[NODE_INDICES_IN_KEY[1]])
     << ", " << long(data[NODE_INDICES_IN_KEY[2]])
-    << "): " << long(data[NODE_INDICES_IN_KEY[3]])
-    << "]";
+    << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[NODE_INDICES_IN_KEY[3]]);
+  }
+  strm << "]";
 }
 #endif
 
@@ -1123,13 +1128,18 @@ void MEDDLY::constrained_saturation_mt::discardEntry(const node_handle* data)
   resF->uncacheNode(data[NODE_INDICES_IN_KEY[2]]);
 }
 
-void MEDDLY::constrained_saturation_mt::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::constrained_saturation_mt::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
   strm << "[" << getName()
     << "(" << long(data[NODE_INDICES_IN_KEY[0]])
     << ", " << long(data[NODE_INDICES_IN_KEY[1]])
-    << "): " << long(data[NODE_INDICES_IN_KEY[2]])
-    << "]";
+    << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[NODE_INDICES_IN_KEY[2]]);
+  }
+  strm << "]";
 }
 #endif
 
@@ -1325,14 +1335,19 @@ void MEDDLY::constrained_bckwd_dfs_evplus::discardEntry(const node_handle* data)
   resF->uncacheNode(data[NODE_INDICES_IN_KEY[3]]);
 }
 
-void MEDDLY::constrained_bckwd_dfs_evplus::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::constrained_bckwd_dfs_evplus::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
   strm << "[" << getName()
     << "(" << long(data[NODE_INDICES_IN_KEY[0]])
     << ", " << long(data[NODE_INDICES_IN_KEY[1]])
     << ", " << long(data[NODE_INDICES_IN_KEY[2]])
-    << "): " << long(data[NODE_INDICES_IN_KEY[3]])
-    << "]";
+    << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[NODE_INDICES_IN_KEY[3]]);
+  }
+  strm << "]";
 }
 #endif
 
@@ -1892,13 +1907,18 @@ void MEDDLY::constrained_saturation_evplus::discardEntry(const node_handle* data
   resF->uncacheNode(data[NODE_INDICES_IN_KEY[2]]);
 }
 
-void MEDDLY::constrained_saturation_evplus::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::constrained_saturation_evplus::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
   strm << "[" << getName()
     << "(" << long(data[NODE_INDICES_IN_KEY[0]])
     << ", " << long(data[NODE_INDICES_IN_KEY[1]])
-    << "): " << long(data[NODE_INDICES_IN_KEY[2]])
-    << "]";
+    << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[NODE_INDICES_IN_KEY[2]]);
+  }
+  strm << "]";
 }
 #endif
 

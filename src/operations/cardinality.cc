@@ -74,7 +74,7 @@ public:
   virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* data);
 #endif
   virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(output &strm, const node_handle* entryData) const;
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
 
 protected:
@@ -131,12 +131,16 @@ void MEDDLY::card_int::discardEntry(const node_handle* data)
   argF->uncacheNode(data[0]);
 }
 
-void MEDDLY::card_int::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::card_int::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
-  long answer;
-  memcpy(&answer, data+1, sizeof(long));
-  strm  << "[" << getName() << "(" << long(data[0]) 
-        << "): " << answer << "(L)]";
+  strm  << "[" << getName() << "(" << long(data[0]) << "): ";
+  if (key_only) {
+    strm << "?]";
+  } else {
+    long answer;
+    memcpy(&answer, data+1, sizeof(long));
+    strm << answer << "(L)]";
+  }
 }
 
 #endif
@@ -330,7 +334,7 @@ public:
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
 #endif
   virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(output &strm, const node_handle* entryData) const;
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 };
 
 #ifdef OLD_OP_CT
@@ -374,12 +378,16 @@ void MEDDLY::card_real::discardEntry(const node_handle* data)
   argF->uncacheNode(data[0]);
 }
 
-void MEDDLY::card_real::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::card_real::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
-  double answer;
-  memcpy(&answer, data+1, sizeof(double));
   strm  << "[" << getName() << "(" << long(data[0]) << "): ";
-  strm.put(answer, 0, 0, 'e');
+  if (key_only) {
+    strm.put('?');
+  } else {
+    double answer;
+    memcpy(&answer, data+1, sizeof(double));
+    strm.put(answer, 0, 0, 'e');
+  }
   strm.put(']');
 }
 
@@ -579,7 +587,7 @@ public:
   virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
 #endif
   virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(output &strm, const node_handle* entryData) const;
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 };
 
 #ifdef OLD_OP_CT
@@ -626,13 +634,17 @@ void MEDDLY::card_mpz::discardEntry(const node_handle* data)
   delete answer;
 }
 
-void MEDDLY::card_mpz::showEntry(output &strm, const node_handle* entryData) const
+void MEDDLY::card_mpz::showEntry(output &strm, const node_handle* entryData, bool key_only) const
 {
-  mpz_object* answer;
-  memcpy(&answer, entryData+1, sizeof(mpz_object*));
   strm  << "[" << getName() << "(" << long(entryData[0]) << "): ";
-  answer->show(strm);
-  strm.put(']');
+  if (key_only) {
+    strm.put('?');
+  } else {
+    mpz_object* answer;
+    memcpy(&answer, entryData+1, sizeof(mpz_object*));
+    answer->show(strm);
+    strm.put(']');
+  }
 }
 
 #endif

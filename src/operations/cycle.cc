@@ -40,7 +40,7 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
 #ifdef OLD_OP_CT
     virtual bool isStaleEntry(const node_handle* data);
     virtual void discardEntry(const node_handle* data);
-    virtual void showEntry(output &strm, const node_handle* data) const;
+    virtual void showEntry(output &strm, const node_handle* data, bool key_only) const;
 #endif
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
 
@@ -142,12 +142,17 @@ void MEDDLY::cycle_EV2EV::discardEntry(const node_handle* data)
   resF->uncacheNode(data[NODE_INDICES_IN_KEY[1]]);
 }
 
-void MEDDLY::cycle_EV2EV::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::cycle_EV2EV::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
   strm << "[" << getName()
     << "(" << long(data[NODE_INDICES_IN_KEY[0]])
-    << "): " << long(data[NODE_INDICES_IN_KEY[3]])
-    << "]";
+    << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[NODE_INDICES_IN_KEY[3]]);
+  }
+  strm << "]";
 }
 
 #endif

@@ -87,7 +87,7 @@ protected:
 #ifdef OLD_OP_CT
   virtual bool isStaleEntry(const node_handle* entryData);
   virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(output &strm, const node_handle* entryData) const;
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
 
 public:
@@ -129,7 +129,7 @@ protected:
 #ifdef OLD_OP_CT
   virtual bool isStaleEntry(const node_handle* data);
   virtual void discardEntry(const node_handle* data);
-  virtual void showEntry(output &strm, const node_handle *data) const;
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
 
 public:
@@ -193,7 +193,7 @@ protected:
 #ifdef OLD_OP_CT
   virtual bool isStaleEntry(const node_handle* data);
   virtual void discardEntry(const node_handle* data);
-  virtual void showEntry(output &strm, const node_handle *data) const;
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
 
 public:
@@ -233,7 +233,7 @@ protected:
 #ifdef OLD_OP_CT
   virtual bool isStaleEntry(const node_handle* data);
   virtual void discardEntry(const node_handle* data);
-  virtual void showEntry(output &strm, const node_handle *data) const;
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
 
 public:
@@ -274,7 +274,7 @@ protected:
 #ifdef OLD_OP_CT
   virtual bool isStaleEntry(const node_handle* data);
   virtual void discardEntry(const node_handle* data);
-  virtual void showEntry(output &strm, const node_handle *data) const;
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
 
 public:

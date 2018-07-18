@@ -63,7 +63,7 @@ class MEDDLY::mm_mult_op : public binary_operation {
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
 #endif
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
 
     inline compute_table::entry_key* 
@@ -181,10 +181,14 @@ void MEDDLY::mm_mult_op::discardEntry(const node_handle* data)
 }
 
 void
-MEDDLY::mm_mult_op::showEntry(output &strm, const node_handle* data) const
+MEDDLY::mm_mult_op::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
-  strm  << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1])
-        << "): " << long(data[2]) << "]";
+  strm  << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
+  if (key_only) {
+    strm << "?]";
+  } else {
+    strm << long(data[2]) << "]";
+  }
 }
 
 #endif // OLD_OP_CT

@@ -45,7 +45,7 @@ class MEDDLY::select : public unary_operation {
   protected:
     virtual bool isStaleEntry(const node_handle* entry);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
 };
 
@@ -73,7 +73,7 @@ void MEDDLY::select::discardEntry(const node_handle* entryData)
   // Do nothing
 }
 
-void MEDDLY::select::showEntry(output &strm, const node_handle* entryData) const
+void MEDDLY::select::showEntry(output &strm, const node_handle* entryData, bool key_only) const
 {
   // Do nothing
 }

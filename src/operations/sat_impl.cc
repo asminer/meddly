@@ -98,7 +98,7 @@ public:
   virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
 #endif
   virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(output &strm, const node_handle* entryData) const;
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
   
 protected:
@@ -166,7 +166,7 @@ public:
   virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
 #endif
   virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(output &strm, const node_handle* entryData) const;
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
   virtual void compute(const dd_edge& a, dd_edge &c);
   virtual bool isReachable(const dd_edge& a, const dd_edge& constraint);
@@ -686,9 +686,11 @@ void MEDDLY::common_impl_dfs_by_events_mt::discardEntry(const node_handle* data)
 }
 
 void MEDDLY::common_impl_dfs_by_events_mt::showEntry(output &strm,
-                                                     const node_handle* data) const
+                                                     const node_handle* data, bool key_only) const
 {
-  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): " << long(data[2]) << "]";
+  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
+  if (key_only) strm << "?]";
+  else          strm << long(data[2]) << "]";
 }
 
 #endif // OLD_OP_CT
@@ -1003,12 +1005,16 @@ void MEDDLY::saturation_impl_by_events_op::discardEntry(const node_handle* data)
 }
 
 void MEDDLY::saturation_impl_by_events_op::showEntry(output &strm,
-                                                     const node_handle* data) const
+                                                     const node_handle* data, bool key_only) const
 {
   if (argF->isFullyReduced()) {
-    strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): " << long(data[2]) << "]";
+    strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
+    if (key_only) strm << "?]";
+    else          strm << long(data[2]) << "]";
   } else {
-    strm << "[" << getName() << "(" << long(data[0]) << "): " << long(data[1]) << "]";
+    strm << "[" << getName() << "(" << long(data[0]) << "): ";
+    if (key_only) strm << "?]";
+    else          strm << long(data[1]) << "]";
   }
 }
 

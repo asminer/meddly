@@ -55,7 +55,7 @@ class MEDDLY::cross_bool : public binary_operation {
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
 #endif
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif // OLD_OP_CT
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
@@ -127,11 +127,16 @@ void MEDDLY::cross_bool::discardEntry(const node_handle* data)
 }
 
 void
-MEDDLY::cross_bool ::showEntry(output &strm, const node_handle* data) const
+MEDDLY::cross_bool ::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
   strm  << "[" << getName() << "(level: " << long(data[1]) << ", " 
-        << long(data[2]) << ", " << long(data[3]) << "): " << long(data[4])
-        << "]";
+        << long(data[2]) << ", " << long(data[3]) << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[4]);
+  }
+  strm << "]";
 }
 
 #endif // OLD_OP_CT

@@ -156,7 +156,7 @@ void MEDDLY::transitive_closure_forwd_bfs::discardEntry(const node_handle* entry
   // this operation won't add any CT entries.
 }
 
-void MEDDLY::transitive_closure_forwd_bfs::showEntry(output &strm, const node_handle* entryData) const
+void MEDDLY::transitive_closure_forwd_bfs::showEntry(output &strm, const node_handle* entryData, bool key_only) const
 {
   throw error(error::MISCELLANEOUS);
   // this operation won't add any CT entries.
@@ -340,14 +340,19 @@ void MEDDLY::transitive_closure_dfs::discardEntry(const node_handle* data)
   resF->uncacheNode(data[NODE_INDICES_IN_KEY[3]]);
 }
 
-void MEDDLY::transitive_closure_dfs::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::transitive_closure_dfs::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
   strm << "[" << getName()
     << "(" << long(data[NODE_INDICES_IN_KEY[0]])
     << ", " << long(data[NODE_INDICES_IN_KEY[1]])
     << ", " << long(data[NODE_INDICES_IN_KEY[2]])
-    << "): " << long(data[NODE_INDICES_IN_KEY[3]])
-    << "]";
+    << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[NODE_INDICES_IN_KEY[3]]);
+  }
+  strm << "]";
 }
 
 #endif
@@ -955,13 +960,18 @@ void MEDDLY::transitive_closure_evplus::discardEntry(const node_handle* data)
   resF->uncacheNode(data[NODE_INDICES_IN_KEY[2]]);
 }
 
-void MEDDLY::transitive_closure_evplus::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::transitive_closure_evplus::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
   strm << "[" << getName()
     << "(" << long(data[NODE_INDICES_IN_KEY[0]])
     << ", " << long(data[NODE_INDICES_IN_KEY[1]])
-    << "): " << long(data[NODE_INDICES_IN_KEY[2]])
-    << "]";
+    << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[NODE_INDICES_IN_KEY[2]]);
+  }
+  strm << "]";
 }
 
 #endif

@@ -50,7 +50,7 @@ class MEDDLY::copy_MT : public unary_operation {
 #endif
 
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
 
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
@@ -151,9 +151,15 @@ void MEDDLY::copy_MT::discardEntry(const node_handle* entryData)
   resF->uncacheNode(entryData[1]);
 }
 
-void MEDDLY::copy_MT::showEntry(output &strm, const node_handle* eD) const
+void MEDDLY::copy_MT::showEntry(output &strm, const node_handle* eD, bool key_only) const
 {
-  strm << "[" << getName() << "(" << long(eD[0]) << ") " << long(eD[1]) << "]";
+  strm << "[" << getName() << "(" << long(eD[0]) << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(eD[1]);
+  }
+  strm << "]";
 }
 
 #endif // OLD_OP_CT
@@ -380,13 +386,18 @@ namespace MEDDLY {
         argF->uncacheNode(entryData[0]);
         resF->uncacheNode(entryData[(sizeof(node_handle) + sizeof(TYPE)) / sizeof(node_handle)]);
       }
-      virtual void showEntry(output &strm, const node_handle* entryData) const {
+      virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const {
         TYPE ev;
         compute_table::readEV(entryData + sizeof(node_handle) / sizeof(node_handle), ev);
         strm << "[" << getName()
           << "(" << long(entryData[0])
-          << ") <" << ev << ", " << long(entryData[(sizeof(node_handle) + sizeof(TYPE)) / sizeof(node_handle)])
-          << ">]";
+          << "): ";
+        if (key_only) {
+          strm << "?";
+        } else {
+          strm << "<" << ev << ", " << long(entryData[(sizeof(node_handle) + sizeof(TYPE)) / sizeof(node_handle)]) << ">";
+        } 
+        strm << "]";
       }
 
 #endif // OLD_OP_CT
@@ -667,13 +678,18 @@ namespace MEDDLY {
         argF->uncacheNode(entryData[sizeof(TYPE) / sizeof(node_handle)]);
         resF->uncacheNode(entryData[(sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle)]);
       }
-      virtual void showEntry(output &strm, const node_handle* entryData) const {
+      virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const {
         TYPE ev;
         compute_table::readEV(entryData, ev);
         strm << "[" << getName()
           << "(<" << ev << "," << long(entryData[sizeof(TYPE) / sizeof(node_handle)])
-          << ">) " << long(entryData[(sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle)])
-          << "]";
+          << ">): ";
+        if (key_only) {
+          strm << "?";
+        } else {
+          strm << long(entryData[(sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle)]);
+        }
+        strm << "]";
       }
 
 #endif // OLD_OP_CT
@@ -926,11 +942,16 @@ namespace MEDDLY {
         argF->uncacheNode(entryData[0]);
         resF->uncacheNode(entryData[1]);
       }
-      virtual void showEntry(output &strm, const node_handle* entryData) const {
+      virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const {
         strm << "[" << getName()
           << "(<?," << long(entryData[0])
-          << ">) <?," << long(entryData[1])
-          << ">]";
+          << ">): ";
+        if (key_only) {
+          strm << "?";
+        } else {
+          strm << "<?," << long(entryData[1]) << ">";
+        }
+        strm << "]";
       }
 
 #endif // OLD_OP_CT
@@ -1106,7 +1127,7 @@ namespace MEDDLY {
         argF->uncacheNode(entryData[sizeof(INTYPE) / sizeof(node_handle)]);
         resF->uncacheNode(entryData[(sizeof(INTYPE) + sizeof(node_handle) + sizeof(OUTTYPE)) / sizeof(node_handle)]);
       }
-      virtual void showEntry(output &strm, const node_handle* entryData) const {
+      virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const {
         INTYPE ev1;
         compute_table::readEV(entryData, ev1);
         node_handle n1 = entryData[sizeof(INTYPE) / sizeof(node_handle)];
@@ -1116,8 +1137,13 @@ namespace MEDDLY {
 
         strm << "[" << getName()
           << "(<" << ev1 << "," << n1
-          << ">) <" << ev2 << "," << n2
-          << ">]";
+          << ">): ";
+        if (key_only) {
+          strm << "?";
+        } else {
+          strm << "<" << ev2 << "," << n2 << ">";
+        }
+        strm << "]";
       }
 
 #endif // OLD_OP_CT

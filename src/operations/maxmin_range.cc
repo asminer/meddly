@@ -57,7 +57,7 @@ class MEDDLY::range_int : public unary_operation {
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
 #endif
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif // OLD_OP_CT
   
   protected:
@@ -144,10 +144,15 @@ void MEDDLY::range_int::discardEntry(const node_handle* data)
   argF->uncacheNode(data[0]);
 }
 
-void MEDDLY::range_int::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::range_int::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
   strm  << "[" << getName() << "(" << long(data[0]) 
-        << "): " << long(data[1]) << "(L)]";
+        << "): ";
+  if (key_only) {
+    strm << "?]";
+  } else {
+    strm << long(data[1]) << "(L)]";
+  }
 }
 
 #endif // OLD_OP_CT
@@ -172,7 +177,7 @@ class MEDDLY::range_real : public unary_operation {
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
 #endif
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif // OLD_OP_CT
 
   protected:
@@ -257,12 +262,16 @@ void MEDDLY::range_real::discardEntry(const node_handle* data)
   argF->uncacheNode(data[0]);
 }
 
-void MEDDLY::range_real::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::range_real::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
   double answer;
   memcpy(&answer, data+1, sizeof(double));
   strm  << "[" << getName() << "(" << long(data[0]) << "): ";
-  strm.put(answer, 0, 0, 'e');
+  if (key_only) {
+    strm.put('?');
+  } else {
+    strm.put(answer, 0, 0, 'e');
+  }
   strm.put(']');
 }
 

@@ -74,7 +74,7 @@ class MEDDLY::image_op : public binary_operation {
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
 #endif
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif // OLD_OP_CT
 
     inline compute_table::entry_key* 
@@ -209,10 +209,14 @@ void MEDDLY::image_op::discardEntry(const node_handle* data)
 }
 
 void
-MEDDLY::image_op::showEntry(output &strm, const node_handle* data) const
+MEDDLY::image_op::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
-  strm  << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1])
-        << "): " << long(data[2]) << "]";
+  strm  << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
+  if (key_only) {
+    strm << "?]";
+  } else {
+    strm << long(data[2]) << "]";
+  }
 }
 
 #endif // OLD_OP_CT
@@ -580,7 +584,7 @@ class MEDDLY::image_op_evplus : public binary_operation {
 #ifdef OLD_OP_CT
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
 
     inline compute_table::entry_key*
@@ -702,13 +706,18 @@ void MEDDLY::image_op_evplus::discardEntry(const node_handle* data)
   resF->uncacheNode(data[(2 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)]);
 }
 
-void MEDDLY::image_op_evplus::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::image_op_evplus::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
   strm  << "[" << getName()
         << "(" << long(data[0])
         << ", " << long(data[sizeof(node_handle) / sizeof(node_handle)])
-        << "): " << long(data[(2 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)])
-        << "]";
+        << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[(2 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)]);
+  }
+  strm << "]";
 }
 
 #endif

@@ -51,7 +51,7 @@ class MEDDLY::compl_mdd : public unary_operation {
 #endif
 
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 
 #endif // OLD_OP_CT
 
@@ -153,10 +153,14 @@ void MEDDLY::compl_mdd::discardEntry(const node_handle* data)
   resF->uncacheNode(data[1]);
 }
 
-void MEDDLY::compl_mdd::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::compl_mdd::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
-  strm  << "[" << getName() << "(" << long(data[0]) 
-        << "): " << long(data[1]) << "]";
+  strm  << "[" << getName() << "(" << long(data[0]) << "): ";
+  if (key_only) {
+    strm << "?]";
+  } else {
+    strm << long(data[1]) << "]";
+  }
 }
 
 #endif // OLD_OP_CT
@@ -232,7 +236,7 @@ class MEDDLY::compl_mxd : public unary_operation {
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
 #endif
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 
 #endif // OLD_OP_CT
 
@@ -294,10 +298,14 @@ void MEDDLY::compl_mxd::discardEntry(const node_handle* data)
   resF->uncacheNode(data[2]);
 }
 
-void MEDDLY::compl_mxd::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::compl_mxd::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
-  strm  << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1])
-        << "): " << long(data[2]) << "]";
+  strm  << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
+  if (key_only) {
+    strm << "?]";
+  } else {
+    strm << long(data[2]) << "]";
+  }
 }
 
 #endif // OLD_OP_CT

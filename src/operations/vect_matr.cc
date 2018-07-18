@@ -69,7 +69,7 @@ class MEDDLY::base_evplus_mt : public specialized_operation {
     virtual void discardEntry(const node_handle*) {
       throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     }
-    virtual void showEntry(output &, const node_handle*) const {
+    virtual void showEntry(output &, const node_handle*, bool) const {
       throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     }
 

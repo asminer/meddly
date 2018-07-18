@@ -101,7 +101,7 @@ class MEDDLY::saturation_op : public unary_operation {
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
 #endif
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
 
   protected:
@@ -164,7 +164,7 @@ class MEDDLY::saturation_evplus_op : public unary_operation {
 #ifdef OLD_OP_CT
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
 
   protected:
@@ -233,7 +233,7 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
 #endif
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual void saturateHelper(unpacked_node &mdd) = 0;
@@ -401,7 +401,7 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
 #ifdef OLD_OP_CT
     virtual bool isStaleEntry(const node_handle* entryData);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual void saturateHelper(unpacked_node &mdd) = 0;
@@ -706,12 +706,16 @@ void MEDDLY::saturation_op::discardEntry(const node_handle* data)
   }
 }
 
-void MEDDLY::saturation_op::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::saturation_op::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
   if (argF->isFullyReduced()) {
-    strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): " << long(data[2]) << "]";
+    strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
+    if (key_only) strm << "?]";
+    else          strm << long(data[2]) << "]";
   } else {
-    strm << "[" << getName() << "(" << long(data[0]) << "): " << long(data[1]) << "]";
+    strm << "[" << getName() << "(" << long(data[0]) << "): ";
+    if (key_only) strm << "?]";
+    else          strm << long(data[1]) << "]";
   }
 }
 
@@ -855,19 +859,29 @@ void MEDDLY::saturation_evplus_op::discardEntry(const node_handle* data)
   }
 }
 
-void MEDDLY::saturation_evplus_op::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::saturation_evplus_op::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
   if (argF->isFullyReduced()) {
     strm << "[" << getName()
       << "(" << long(data[0])
       << ", " << long(data[sizeof(node_handle) / sizeof(node_handle)])
-      << "): " << long(data[(sizeof(node_handle) + sizeof(int) + sizeof(long)) / sizeof(node_handle)])
-      << "]";
+      << "): ";
+    if (key_only) {
+      strm << "?";
+    } else {
+      strm << long(data[(sizeof(node_handle) + sizeof(int) + sizeof(long)) / sizeof(node_handle)]);
+    }
+    strm << "]";
   } else {
     strm << "[" << getName()
       << "(" << long(data[0])
-      << "): " << long(data[(sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)])
-      << "]";
+      << "): ";
+    if (key_only) {
+      strm << "?";
+    } else {
+      strm << long(data[(sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)]);
+    }
+    strm << "]";
   }
 }
 
@@ -940,9 +954,11 @@ void MEDDLY::common_dfs_mt::discardEntry(const node_handle* data)
   resF->uncacheNode(data[2]);
 }
 
-void MEDDLY::common_dfs_mt::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::common_dfs_mt::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
-  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): " << long(data[2]) << "]";
+  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
+  if (key_only) strm << "?]";
+  else          strm << long(data[2]) << "]";
 }
 
 #endif // OLD_OP_CT
@@ -1618,13 +1634,18 @@ void MEDDLY::common_dfs_evplus::discardEntry(const node_handle* data)
   resF->uncacheNode(data[(2 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)]);
 }
 
-void MEDDLY::common_dfs_evplus::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::common_dfs_evplus::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
   strm << "[" << getName()
     << "(" << long(data[0])
     << ", " << long(data[sizeof(node_handle) / sizeof(node_handle)])
-    << "): " << long(data[(2 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)])
-    << "]";
+    << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[(2 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)]);
+  }
+  strm << "]";
 }
 
 #endif // OLD_OP_CT

@@ -48,7 +48,7 @@ class MEDDLY::mdd2index_operation : public unary_operation {
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
 #endif
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 #endif // OLD_OP_CT
 
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
@@ -121,11 +121,15 @@ MEDDLY::mdd2index_operation
 
 void 
 MEDDLY::mdd2index_operation
-::showEntry(output &strm, const node_handle* entryData) const
+::showEntry(output &strm, const node_handle* entryData, bool key_only) const
 {
   long card = reinterpret_cast<const long*>(entryData + 2)[0];
-  strm << "[" << getName() << " " << entryData[0] << " "
-       << entryData[1] << " (card " << card << ")]";
+  strm << "[" << getName() << " (" << entryData[0] << "): ";
+  if (key_only) {
+    strm << "?]";
+  } else {
+    strm << entryData[1] << " (card " << card << ")]";
+  }
 }
 
 #endif // OLD_OP_CT

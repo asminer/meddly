@@ -42,7 +42,7 @@
 #include <cstdint>
 #include <map>
 
-#define OLD_OP_CT
+// #define OLD_OP_CT
 
 namespace MEDDLY {
 
@@ -4499,7 +4499,7 @@ class MEDDLY::operation {
     virtual void discardEntry(const node_handle* entryData) = 0;
 
     /// Prints a string representation of this cache entry on strm (stream).
-    virtual void showEntry(output &strm, const node_handle *entryData) const = 0;
+    virtual void showEntry(output &strm, const node_handle *entryData, bool key_only) const = 0;
 
     bool shouldStaleCacheHitsBeDiscarded() const;
 #endif
