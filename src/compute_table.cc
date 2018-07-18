@@ -22,6 +22,9 @@
 
 #include "storage/ct_classic.h"
 
+// #define DEBUG_ENTRY_TYPE
+// #define DEBUG_ENTRY_REGISTRY
+
 // **********************************************************************
 // *                                                                    *
 // *                         ct_object  methods                         *
@@ -78,12 +81,16 @@ void MEDDLY::ct_initializer::setup()
   if (ct_factory->usesMonolithic()) {
     operation::Monolithic_CT = ct_factory->create(the_settings);
   }
+
+  compute_table::initialize();
 }
 
 void MEDDLY::ct_initializer::cleanup()
 {
   delete operation::Monolithic_CT;
   operation::Monolithic_CT = 0;
+
+  compute_table::destroy();
 }
 
 void MEDDLY::ct_initializer::setStaleRemoval(staleRemovalOption sro)
@@ -116,10 +123,6 @@ void MEDDLY::ct_initializer::setBuiltinStyle(builtinCTstyle cts)
     case OperationChainedHash:
           builtin_ct_factory = new operation_chained_style;
           break;
-
-    case OperationMap:
-          builtin_ct_factory = new operation_map_style;
-          break;
   }
 
   ct_factory = builtin_ct_factory;
@@ -137,14 +140,25 @@ void MEDDLY::ct_initializer::setMemoryManager(const memory_manager_style* mms)
   the_settings.MMS = mms;
 }
 
+#ifdef OLD_OP_CT
 MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(operation* op)
 {
   if (ct_factory) {
-    return ct_factory->create(the_settings, op);
+    return ct_factory->create(the_settings, op, 0);
   } else {
     return 0;
   }
 }
+#else
+MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(operation* op, unsigned slot)
+{
+  if (ct_factory) {
+    return ct_factory->create(the_settings, op, slot);
+  } else {
+    return 0;
+  }
+}
+#endif
 
 // **********************************************************************
 // *                                                                    *
@@ -170,7 +184,7 @@ MEDDLY::compute_table_style::create(const ct_initializer::settings &s)
 
 MEDDLY::compute_table* 
 MEDDLY::compute_table_style::create(const ct_initializer::settings &s, 
-      operation* op) const
+      operation* op, unsigned slot) const
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -180,6 +194,13 @@ MEDDLY::compute_table_style::create(const ct_initializer::settings &s,
 // *                       compute_table  methods                       *
 // *                                                                    *
 // **********************************************************************
+
+#ifndef OLD_OP_CT
+MEDDLY::compute_table::entry_type** MEDDLY::compute_table::entryInfo;
+unsigned MEDDLY::compute_table::entryInfoAlloc;
+unsigned MEDDLY::compute_table::entryInfoSize;
+#endif
+MEDDLY::compute_table::entry_key* MEDDLY::compute_table::free_keys;
 
 MEDDLY::compute_table::compute_table(const ct_initializer::settings &s)
 {
@@ -215,34 +236,399 @@ MEDDLY::compute_table::~compute_table()
 {
 }
 
+void MEDDLY::compute_table::initialize()
+{
+  free_keys = 0;
+#ifndef OLD_OP_CT
+  //
+  // Initialize entryInfo list
+  //
+  entryInfo = 0;
+  entryInfoAlloc = 0;
+  entryInfoSize = 0;
+  // zero that array?
+#endif
+}
+
+void MEDDLY::compute_table::destroy()
+{
+  while (free_keys) {
+    entry_key* n = free_keys->next;
+    delete free_keys;
+    free_keys = n;
+  }
+#ifndef OLD_OP_CT
+  // delete the items?  TBD
+  delete[] entryInfo;
+#endif
+}
+
+#ifndef OLD_OP_CT
+
+void MEDDLY::compute_table::registerOp(operation* op, unsigned num_ids)
+{
+  if (0==op) return;
+  if (0==num_ids) return;
+
+#ifdef DEBUG_ENTRY_REGISTRY
+  printf("Requesting %u entry slots for operation %s\n", num_ids, op->getName());
+#endif
+
+  if (1==num_ids) {
+    //
+    // Most common case, and easiest to find a hole.
+    //
+    for (unsigned i=0; i<entryInfoSize; i++) {
+      if (0==entryInfo[i]) {
+        op->setFirstETid(i);
+        return;
+      }
+    } // for i
+  } // if 1==num_ids
+
+  //
+  // No holes, or we want more than one slot so we didn't bother looking for holes.
+  // Grab slots off the end
+  //
+  op->setFirstETid(entryInfoSize);
+  entryInfoSize += num_ids;
+
+  if (entryInfoSize > entryInfoAlloc) {
+    //
+    // Need to enlarge
+    //
+    entry_type** net = new entry_type* [entryInfoAlloc+256];
+    unsigned i;
+    for (i=0; i<entryInfoAlloc; i++) {
+      net[i] = entryInfo[i];
+    }
+    entryInfoAlloc += 256;
+    for (; i<entryInfoAlloc; i++) {
+      net[i] = 0;
+    }
+    delete[] entryInfo;
+    entryInfo = net;
+  }
+}
+
+void MEDDLY::compute_table::registerEntryType(unsigned etid, entry_type* et)
+{
+  MEDDLY_CHECK_RANGE(0, etid, entryInfoSize);
+  MEDDLY_DCASSERT(0==entryInfo[etid]);
+  entryInfo[etid] = et;
+  et->etID = etid;
+#ifdef DEBUG_ENTRY_REGISTRY
+  printf("Registering entry %s in slot %u\n", et->getName(), etid);
+  printf("Updated Table:\n");
+  for (unsigned i=0; i<entryInfoSize; i++) {
+    printf("    %2u: %s\n", i, entryInfo[i] ? entryInfo[i]->getName() : " ");
+  }
+#endif
+}
+
+void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
+{
+  if (0==op) return;
+  if (0==num_ids) return;
+  MEDDLY_CHECK_RANGE(0, op->getFirstETid(), entryInfoSize);
+  unsigned stopID = op->getFirstETid()+num_ids;
+  for (unsigned i=op->getFirstETid(); i<stopID; i++) {
+    delete entryInfo[i];
+    entryInfo[i] = 0;
+  }
+  //
+  // decrement entryInfoSize if array ends in zeroes
+  //
+  while (entryInfoSize && (0==entryInfo[entryInfoSize-1])) entryInfoSize--;
+#ifdef DEBUG_ENTRY_REGISTRY
+  printf("Unregistering %u slots for operation %s\n", num_ids, op->getName());
+  printf("Updated Table:\n");
+  for (unsigned i=0; i<entryInfoSize; i++) {
+    printf("    %2u: %s\n", i, entryInfo[i] ? entryInfo[i]->getName() : " ");
+  }
+#endif
+}
+
+#endif
+
 // **********************************************************************
 
-MEDDLY::compute_table::search_key::search_key(operation* _op)
+MEDDLY::compute_table::entry_key::entry_key()
 {
-  op = _op;
+  data_alloc = 8;
+#ifdef OLD_OP_CT
+  op = 0;
+  data = (int*) malloc(data_alloc * sizeof(int));
+  // malloc: because realloc later
+#else
+  etype = 0;
+  data = (entry_item*) malloc(data_alloc * sizeof(entry_item));
+  temp_data = 0;
+  temp_bytes = 0;
+  temp_alloc = 0;
+  // malloc: because realloc later
+#endif
 }
 
-MEDDLY::compute_table::search_key::~search_key()
+MEDDLY::compute_table::entry_key::~entry_key()
 {
+  free(data);
+#ifndef OLD_OP_CT
+  free(temp_data);
+#endif
 }
 
 // **********************************************************************
 
-MEDDLY::compute_table::search_result::search_result()
+MEDDLY::compute_table::entry_result::entry_result()
 {
-
+  build = 0;
+#ifdef OLD_OP_CT
+  ansLength = 0;
+  data = 0;
+#else
+  etype = 0;
+#endif
 }
-MEDDLY::compute_table::search_result::~search_result()
+
+#ifdef OLD_OP_CT
+
+MEDDLY::compute_table::entry_result::entry_result(unsigned slots)
 {
+  build = new node_handle[slots];
+  data = build;
+  ansLength = slots;
+}
+
+#else
+
+void MEDDLY::compute_table::entry_result::initialize(const compute_table::entry_type* et)
+{
+  MEDDLY_DCASSERT(et);
+  etype = et;
+  const unsigned slots = etype->getResultSize();
+  MEDDLY_DCASSERT(0==build);
+  build = new entry_item[slots];
+}
+
+#endif
+
+MEDDLY::compute_table::entry_result::~entry_result()
+{
+  delete[] build;
 }
 
 // **********************************************************************
 
-MEDDLY::compute_table::entry_builder::entry_builder()
+inline MEDDLY::compute_table::typeID char2typeID(char c)
 {
-
+  switch (c) {
+    case 'N':   return MEDDLY::compute_table::NODE;
+    case 'I':   return MEDDLY::compute_table::INTEGER;
+    case 'L':   return MEDDLY::compute_table::LONG;
+    case 'H':   return MEDDLY::compute_table::HUGEINT;
+    case 'F':   return MEDDLY::compute_table::FLOAT;
+    case 'D':   return MEDDLY::compute_table::DOUBLE;
+    case 'P':   return MEDDLY::compute_table::POINTER;
+    default:    return MEDDLY::compute_table::ERROR;
+  }
 }
-MEDDLY::compute_table::entry_builder::~entry_builder()
+
+inline unsigned bytes4typeID(MEDDLY::compute_table::typeID t)
 {
+  switch (t) {
+    case MEDDLY::compute_table::NODE      : return sizeof(MEDDLY::node_handle);
+    case MEDDLY::compute_table::INTEGER   : return sizeof(int);
+    case MEDDLY::compute_table::LONG      : return sizeof(long);
+    case MEDDLY::compute_table::HUGEINT   : return sizeof(void*);
+    case MEDDLY::compute_table::FLOAT     : return sizeof(float);
+    case MEDDLY::compute_table::DOUBLE    : return sizeof(double);
+    case MEDDLY::compute_table::POINTER   : return sizeof(void*);
+    default:    return 0;
+  }
+}
+
+inline char typeID2char(MEDDLY::compute_table::typeID t)
+{
+  switch (t) {
+    case MEDDLY::compute_table::NODE      : return 'N';
+    case MEDDLY::compute_table::INTEGER   : return 'I';
+    case MEDDLY::compute_table::LONG      : return 'L';
+    case MEDDLY::compute_table::HUGEINT   : return 'H';
+    case MEDDLY::compute_table::FLOAT     : return 'F';
+    case MEDDLY::compute_table::DOUBLE    : return 'D';
+    case MEDDLY::compute_table::POINTER   : return 'P';
+    default:    return '?';
+  }
+}
+
+MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pattern)
+{
+  name = _name;
+  is_marked_for_deletion = false;
+
+  updatable_result = false;
+
+  bool saw_dot = false;
+  bool saw_colon = false;
+
+  unsigned dot_slot = 0;
+  unsigned colon_slot = 0;
+
+  //
+  // First scan: find '.' and ':'
+  //
+
+  unsigned length;
+  for (length=0; pattern[length]; length++) {
+    if ('.' == pattern[length]) {
+      if (saw_dot || saw_colon) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+      saw_dot = true;
+      dot_slot = length;
+      continue;
+    }
+    if (':' == pattern[length]) {
+      if (saw_colon) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+      saw_colon = true;
+      colon_slot = length;
+      continue;
+    }
+  }
+
+  //
+  // Determine lengths for each portion
+  //
+
+  if (!saw_colon) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+
+  if (saw_dot) {
+    // "012.456:89"
+    len_ks_type = dot_slot; 
+    MEDDLY_DCASSERT(colon_slot > dot_slot);
+    len_kr_type = (colon_slot - dot_slot) - 1;
+  } else {
+    // "01234:67"
+    len_ks_type = colon_slot;
+    len_kr_type = 0;
+  }
+  len_r_type = (length - colon_slot) - 1;
+
+  if (
+    (saw_dot && 0==len_kr_type)             // "foo.:bar" is bad
+    ||
+    (len_ks_type + len_kr_type == 0)        // no key?
+    || 
+    (len_r_type == 0)                       // no result?
+  ) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);   
+
+  //
+  // Build starting portion of key
+  //
+  ks_bytes = 0;
+  if (len_ks_type) {
+    ks_type = new typeID[len_ks_type];
+    ks_forest = new expert_forest*[len_ks_type];
+    for (unsigned i=0; i<len_ks_type; i++) {
+      ks_type[i] = char2typeID(pattern[i]);
+      ks_bytes += bytes4typeID(ks_type[i]);
+      ks_forest[i] = 0;
+    }
+  } else {
+    // This is possible if the pattern begins with .
+    ks_type = 0;
+    ks_forest = 0;
+  }
+
+  //
+  // Build repeating portion of key
+  //
+  kr_bytes = 0;
+  if (len_kr_type) {
+    kr_type = new typeID[len_kr_type];
+    kr_forest = new expert_forest*[len_kr_type];
+    for (unsigned i=0; i<len_kr_type; i++) {
+      kr_type[i] = char2typeID(pattern[i + dot_slot + 1]);
+      kr_bytes += bytes4typeID(kr_type[i]);
+      kr_forest[i] = 0;
+    }
+  } else {
+    kr_type = 0;
+    kr_forest = 0;
+  }
+
+  //
+  // Build result
+  //
+  MEDDLY_DCASSERT(len_r_type);
+  r_bytes = 0;
+  r_type = new typeID[len_r_type];
+  r_forest = new expert_forest*[len_r_type];
+  for (unsigned i=0; i<len_r_type; i++) {
+    r_type[i] = char2typeID(pattern[i + colon_slot + 1]);
+    r_bytes += bytes4typeID(r_type[i]);
+    r_forest[i] = 0;
+  }
+
+#ifdef DEBUG_ENTRY_TYPE
+  printf("Built entry type %s with pattern '%s'\n", name, pattern);
+  printf("Key start: \"");
+  for (unsigned i=0; i<len_ks_type; i++) {
+    fputc(typeID2char(ks_type[i]), stdout);
+  }
+  printf("\"  (%u bytes)\n", ks_bytes);
+  printf("Key repeat: \"");
+  for (unsigned i=0; i<len_kr_type; i++) {
+    fputc(typeID2char(kr_type[i]), stdout);
+  }
+  printf("\"  (%u bytes)\n", kr_bytes);
+  printf("Result: \"");
+  for (unsigned i=0; i<len_r_type; i++) {
+    fputc(typeID2char(r_type[i]), stdout);
+  }
+  printf("\"  (%u bytes)\n", r_bytes);
+#endif
+}
+
+MEDDLY::compute_table::entry_type::~entry_type()
+{
+  delete[] ks_type;
+  delete[] ks_forest;
+  delete[] kr_type;
+  delete[] kr_forest;
+  delete[] r_type;
+  delete[] r_forest;
+}
+
+void MEDDLY::compute_table::entry_type::setForestForSlot(unsigned i, expert_forest* f)
+{
+  if (i<len_ks_type) {
+    if (NODE != ks_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+    ks_forest[i] = f;
+    return;
+  }
+  i -= len_ks_type;
+
+  if (len_kr_type) {
+    // adjust for the .
+    i--;
+    if (i<len_kr_type) {
+      if (NODE != kr_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+      kr_forest[i] = f;
+      return;
+    }
+  }
+  
+  i -= len_kr_type;
+  // adjust for :
+  i--;
+
+  if (i < len_r_type) {
+    if (NODE != r_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+    r_forest[i] = f;
+    return;
+  }
+
+  // i is too large
+  throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
 }
 

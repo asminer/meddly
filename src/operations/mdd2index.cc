@@ -41,19 +41,22 @@ class MEDDLY::mdd2index_operation : public unary_operation {
     mdd2index_operation(const unary_opname* oc, expert_forest* arg, 
       expert_forest* res);
 
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
 #endif
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
+#endif // OLD_OP_CT
 
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
 
     void compute_r(int k, node_handle a, node_handle &bdn, long &bcard);
 };
 
+#ifdef OLD_OP_CT
 MEDDLY::mdd2index_operation::mdd2index_operation(const unary_opname* oc, 
   expert_forest* arg, expert_forest* res)
   : unary_operation(oc,
@@ -64,6 +67,22 @@ MEDDLY::mdd2index_operation::mdd2index_operation(const unary_opname* oc,
   // answer[0] : pointer
   // answer[1] : cardinality
 }
+#else
+MEDDLY::mdd2index_operation::mdd2index_operation(const unary_opname* oc, 
+  expert_forest* arg, expert_forest* res)
+  : unary_operation(oc, 1, arg, res)
+{
+  // answer[0] : node
+  // answer[1] : cardinality
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:NL");
+  et->setForestForSlot(0, arg);
+  et->setForestForSlot(2, res);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool 
@@ -102,12 +121,18 @@ MEDDLY::mdd2index_operation
 
 void 
 MEDDLY::mdd2index_operation
-::showEntry(output &strm, const node_handle* entryData) const
+::showEntry(output &strm, const node_handle* entryData, bool key_only) const
 {
   long card = reinterpret_cast<const long*>(entryData + 2)[0];
-  strm << "[" << getName() << " " << entryData[0] << " "
-       << entryData[1] << " (card " << card << ")]";
+  strm << "[" << getName() << " (" << entryData[0] << "): ";
+  if (key_only) {
+    strm << "?]";
+  } else {
+    strm << entryData[1] << " (card " << card << ")]";
+  }
 }
+
+#endif // OLD_OP_CT
 
 void
 MEDDLY::mdd2index_operation
@@ -145,19 +170,32 @@ MEDDLY::mdd2index_operation
   MEDDLY_DCASSERT(aLevel <= k);
 
   // Check compute table
-  compute_table::search_key* CTsrch = 0;
+  compute_table::entry_key* CTsrch = 0;
   if (aLevel == k) {
-    CTsrch = useCTkey();
+#ifdef OLD_OP_CT
+    CTsrch = CT0->useEntryKey(this);
+#else
+    CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
     MEDDLY_DCASSERT(CTsrch);
-    CTsrch->reset();
-    CTsrch->writeNH(a);
-    compute_table::search_result &cacheEntry = CT->find(CTsrch);
+    CTsrch->writeN(a);
+#ifdef OLD_OP_CT
+    compute_table::entry_result& cacheEntry = CT0->find(CTsrch);
     if (cacheEntry) {
-      bdn = resF->linkNode(cacheEntry.readNH());
-      cacheEntry.read(bcard);
-      doneCTkey(CTsrch);
+      bdn = resF->linkNode(cacheEntry.readN());
+      bcard = cacheEntry.readL();
+      CT0->recycle(CTsrch);
       return;
     }
+#else
+    CT0->find(CTsrch, CTresult[0]);
+    if (CTresult[0]) {
+      bdn = resF->linkNode(CTresult[0].readN());
+      bcard = CTresult[0].readL();
+      CT0->recycle(CTsrch);
+      return;
+    }
+#endif
   }
 
 #ifdef TRACE_ALL_OPS
@@ -206,12 +244,20 @@ MEDDLY::mdd2index_operation
 
   // Add to compute table
   if (CTsrch) {
+#ifdef OLD_OP_CT
     argF->cacheNode(a);
-    compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
-    // entry.writeKeyNH(argF->cacheNode(a));
-    entry.writeResultNH(resF->cacheNode(bdn));
-    entry.writeResult(bcard);
-    CT->addEntry();
+    resF->cacheNode(bdn);
+    static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+    result.reset();
+    result.writeN(bdn);
+    result.writeL(bcard);
+    CT0->addEntry(CTsrch, result);
+#else
+    CTresult[0].reset();
+    CTresult[0].writeN(bdn);
+    CTresult[0].writeL(bcard);
+    CT0->addEntry(CTsrch, CTresult[0]);
+#endif
   }
 }
 
