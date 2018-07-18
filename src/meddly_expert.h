@@ -3677,16 +3677,28 @@ class MEDDLY::ct_initializer : public initializer_list {
       OperationUnchainedHash,
     };
 
+    enum compressionOption {
+      /// No compression at all
+      None,
+      /// Compression based on item type
+      TypeBased
+      // TBD - others
+    };
+
     struct settings {
+      public:
         /// Memory manager to use for compute table entries
         const memory_manager_style *MMS;
-        /// Stale removal policy
-        staleRemovalOption staleRemoval;
         /// Maximum compute table size
         size_t maxSize;
-      settings() {
-        MMS = 0;
-      }
+        /// Stale removal policy
+        staleRemovalOption staleRemoval;
+        /// Compression policy
+        compressionOption compression;
+      public:
+        settings() {
+          MMS = 0;
+        }
     };
 
   public:
@@ -3704,6 +3716,7 @@ class MEDDLY::ct_initializer : public initializer_list {
     static void setMaxSize(unsigned ms);
     static void setBuiltinStyle(builtinCTstyle cts);
     static void setUserStyle(const compute_table_style*);
+    static void setCompression(compressionOption co);
 
     // for convenience
 #ifdef OLD_OP_CT
