@@ -203,7 +203,8 @@ void MEDDLY::unique_table::subtable::add(unsigned hash, node_handle item)
   num_entries++;
 
   unsigned h = hash % size;
-  parent->setNext(item, table[h]);
+  if(!parent->isImplicit(item))
+    parent->setNext(item, table[h]);
   table[h] = item;
 }
 

@@ -340,7 +340,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   // Initialize mxd readers, note we might skip the unprimed level
   const int level = nb.getLevel();
   node_handle* events = rel->arrayForLevel(level);
-  satimpl_opname::relation_node** Ru = new satimpl_opname::relation_node*[nEventsAtThisLevel];
+  relation_node** Ru = new relation_node*[nEventsAtThisLevel];
   for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
     Ru[ei] = rel->nodeExists(events[ei]);
 #ifdef DEVELOPMENT_CODE
@@ -523,7 +523,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
       return resF->linkNode(mdd);
   }
   
-  satimpl_opname::relation_node* relNode = rel->nodeExists(mxd); // The relation node
+  relation_node* relNode = rel->nodeExists(mxd); // The relation node
   
   // check the cache
   node_handle result = 0;
@@ -1286,7 +1286,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
 
   // Initialize mxd readers, note we might skip the unprimed level
   node_handle* events = rel->arrayForLevel(level);
-  satimpl_opname::relation_node** Ru = new satimpl_opname::relation_node*[nEventsAtThisLevel];
+  relation_node** Ru = new relation_node*[nEventsAtThisLevel];
   for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
     Ru[ei] = rel->nodeExists(events[ei]);
 #ifdef DEVELOPMENT_CODE
@@ -1412,7 +1412,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     }
   }
 
-  satimpl_opname::relation_node* relNode = rel->nodeExists(mxd); // The relation node
+  relation_node* relNode = rel->nodeExists(mxd); // The relation node
 
   // check the cache
   result = 0;

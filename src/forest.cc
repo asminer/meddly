@@ -1953,7 +1953,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
 }
 
 MEDDLY::node_handle MEDDLY::expert_forest
-::createImplicitNode(MEDDLY::satimpl_opname::relation_node &nb)
+::createImplicitNode(MEDDLY::relation_node &nb)
 {
   // 
   // Not eliminated by reduction rule.
@@ -1968,6 +1968,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   
   // Grab a new node
   node_handle p = nodeHeaders.getFreeNodeHandle();
+  nodeHeaders.setNodeImplicitFlag(p, true);
   nodeHeaders.setNodeLevel(p, nb.getLevel());
   MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
   MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
@@ -1976,22 +1977,13 @@ MEDDLY::node_handle MEDDLY::expert_forest
   if (theLogger && theLogger->recordingNodeCounts()) {
     theLogger->addToActiveNodeCount(this, nb.getLevel(), 1);
   }
-  
-  // All of the work is in nodeMan now :^)
-  nodeHeaders.setNodeAddress(p, nodeMan->makeNode(p, nb));
+  // All of the work is in satimpl_opname::implicit_relation now :^)
+  nodeHeaders.setNodeAddress(p, nb.getID());
   linkNode(p);
   
   // add to UT
-  //unique->add(nb.hash(), p);
+  unique->add(nb.getSignature(), p);
   
-#ifdef DEVELOPMENT_CODE
-  unpacked_node* key = unpacked_node::newFromNode(this, p, false);
-  key->computeHash();
-  MEDDLY_DCASSERT(key->hash() == nb.hash());
-  node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
-  MEDDLY_DCASSERT(f == p);
-  unpacked_node::recycle(key);
-#endif
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node ");
   showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);

@@ -411,20 +411,6 @@ MEDDLY::node_address MEDDLY::simple_separated
   return addr;
 }
 
-MEDDLY::node_address MEDDLY::simple_separated
-::makeNode(node_handle p, const MEDDLY::satimpl_opname::relation_node &nb)
-{
-#ifdef DEBUG_ENCODING
-  printf("simple_separated making implicit node\n        temp:  ");
-  FILE_output out(stdout);
-  nb.show(out, true);
-#endif
-  
-  node_address addr = 0;
-  
-  return addr;
-}
-
 
 
 void MEDDLY::simple_separated::unlinkDownAndRecycle(node_address addr)

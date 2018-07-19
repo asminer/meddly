@@ -368,7 +368,7 @@ void explicitReachset(const char* const* events, int nEvents,
 
 /*************************************************************/
 int* nxtList;
-class derRelNode : public MEDDLY::satimpl_opname::relation_node
+class derRelNode : public MEDDLY::relation_node
 {
 public:
   derRelNode(unsigned long signature, int level, rel_node_handle down):relation_node(signature, level, down)
@@ -423,7 +423,7 @@ void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, in
   for(int e = 0;e < nEvents; e++)
     {
     unsigned long sign = 0;
-    int previous_node_handle = T->last_in_node_array();
+    int previous_node_handle = 1;
     for( int p = 1; p <= nPlaces; p++)
       {
        sign = events[e][p]>=0?(sign*10)+events[e][p]:(sign*100)+events[e][p];

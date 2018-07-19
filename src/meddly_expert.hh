@@ -830,6 +830,28 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
 
 // ******************************************************************
 
+inline int 
+MEDDLY::node_headers::getNodeImplicitFlag(node_handle p) const
+{
+  MEDDLY_DCASSERT(address);
+  MEDDLY_DCASSERT(p>0);
+  MEDDLY_DCASSERT(p<=a_last);
+  return address[p].is_implicit;
+}
+
+// ******************************************************************
+
+inline void 
+MEDDLY::node_headers::setNodeImplicitFlag(node_handle p, bool flag)
+{
+  MEDDLY_DCASSERT(address);
+  MEDDLY_DCASSERT(p>0);
+  MEDDLY_DCASSERT(p<=a_last);
+  address[p].is_implicit = flag;
+}
+                         
+// ******************************************************************                       
+
 inline MEDDLY::node_handle
 MEDDLY::node_headers::getNextOf(node_handle p) const
 {
@@ -1497,6 +1519,11 @@ MEDDLY::expert_forest::setNext(MEDDLY::node_handle p, MEDDLY::node_handle n)
 {
   nodeMan->setNextOf(getNodeAddress(p), n);
 }
+inline bool 
+MEDDLY::expert_forest::isImplicit(node_handle p) const
+{
+  return nodeHeaders.getNodeImplicitFlag(p);
+}
 
 inline unsigned
 MEDDLY::expert_forest::hash(MEDDLY::node_handle p) const
@@ -1616,6 +1643,17 @@ MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un)
   printf("Created node %d\n", q);
 #endif
   unpacked_node::recycle(un);
+  return q;
+}
+
+inline MEDDLY::node_handle
+MEDDLY::expert_forest::createRelationNode(MEDDLY::relation_node *un)
+{
+  MEDDLY_DCASSERT(un);
+  MEDDLY::node_handle q = createImplicitNode(*un);
+#ifdef TRACK_DELETIONS
+  printf("Created node %d\n", q);
+#endif
   return q;
 }
 
@@ -1941,69 +1979,74 @@ MEDDLY::satotf_opname::otf_relation::getNumConfirmed(int level) const
 
 // ******************************************************************
 // *                                                                *
-// *                 inlined  satimpl_opname methods                *
+// *                 inlined  relation_node methods                *
 // *                                                                *
 // ******************************************************************
 
 
 inline unsigned long
-MEDDLY::satimpl_opname::relation_node::getSignature() const
+MEDDLY::relation_node::getSignature() const
 {
   return signature;
 }
 
 inline int
-MEDDLY::satimpl_opname::relation_node::getLevel() const
+MEDDLY::relation_node::getLevel() const
 {
   return level;
 }
 
 inline rel_node_handle
-MEDDLY::satimpl_opname::relation_node::getDown() const
+MEDDLY::relation_node::getDown() const
 {
   return down;
 }
 
 inline rel_node_handle
-MEDDLY::satimpl_opname::relation_node::getID() const
+MEDDLY::relation_node::getID() const
 {
   return ID;
 }
 
 inline void
-MEDDLY::satimpl_opname::relation_node::setID(rel_node_handle n_ID)
+MEDDLY::relation_node::setID(rel_node_handle n_ID)
 {
   ID=n_ID;
 }
 
 inline long
-MEDDLY::satimpl_opname::relation_node::getPieceSize() const
+MEDDLY::relation_node::getPieceSize() const
 {
   return piece_size;
 }
 
 inline void
-MEDDLY::satimpl_opname::relation_node::setPieceSize(long pS)
+MEDDLY::relation_node::setPieceSize(long pS)
 {
   piece_size=pS;
 }
 
 inline long*
-MEDDLY::satimpl_opname::relation_node::getTokenUpdate() const
+MEDDLY::relation_node::getTokenUpdate() const
 {
   return token_update;
 }
 
 inline
 void
-MEDDLY::satimpl_opname::relation_node::setTokenUpdate(long* n_token_update)
+MEDDLY::relation_node::setTokenUpdate(long* n_token_update)
 {
   token_update = n_token_update;
 }
 
-//************************************************************************
+// ******************************************************************
+// *                                                                *
+// *                 inlined  satimpl_opname methods                *
+// *                                                                *
+// ******************************************************************
 
-inline MEDDLY::satimpl_opname::relation_node*
+
+inline MEDDLY::relation_node*
 MEDDLY::satimpl_opname::implicit_relation::nodeExists(rel_node_handle n)
 {
   std::unordered_map<rel_node_handle, relation_node*>::iterator finder = impl_unique.find(n);
@@ -2031,6 +2074,12 @@ inline MEDDLY::expert_forest*
 MEDDLY::satimpl_opname::implicit_relation::getOutForest() const
 {
   return outsetF;
+}
+
+inline MEDDLY::expert_forest*
+MEDDLY::satimpl_opname::implicit_relation::getMixRelForest() const
+{
+  return mixRelF;
 }
 
 // ***********************************************************************

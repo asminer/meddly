@@ -54,6 +54,7 @@ namespace MEDDLY {
 
   // EXPERIMENTAL - matrix wrappers for unprimed, primed pairs of nodes
   class unpacked_matrix;
+  class relation_node;
   
   /*
   
@@ -448,6 +449,115 @@ class MEDDLY::expert_domain : public domain {
     ~expert_domain();
 };
 
+
+// ******************************************************************
+// *                                                                *
+// *                      relation_node  class                      *
+// *                                                                *
+// ******************************************************************
+
+/** Pieces of an implicit relation.
+ 
+ Each piece (this class) is a function of a single variable.
+ The function specifies the "next state" for the given
+ current state, but we are only allowed to depend on one
+ state variable.
+ 
+ This is an abstract base class.  The function is specified
+ by deriving a class from this one, and specifying method
+ nextOf().
+ TBD - Need a bogus value for nextOf()...
+ 
+ Additionally, you must specify method equals(), which is used
+ to detect when two nodes actually represent the same function.
+ 
+ */
+typedef int rel_node_handle;
+class MEDDLY::relation_node {
+public:
+  /** Constructor.
+   @param  signature   Hash for this node, such that
+   two equal nodes must have the same
+   signature.
+   @param  level          Level affected.
+   @param  down           Handle to a relation node below us. 
+   */
+  relation_node(unsigned long signature, int level, rel_node_handle down);
+  virtual ~relation_node();
+  
+  // the following should be inlined in meddly_expert.hh
+  
+  /** A signature for this function.
+   This helps class implicit_relation to detect duplicate
+   functions (using a hash table where the signature
+   is taken as the hash value).
+   */
+  unsigned long getSignature() const;
+  
+  /** The state variable affected by this part of the relation.
+   */
+  int getLevel() const;
+  
+  /** Pointer to the (ID of the) next piece of the relation.
+   */
+  rel_node_handle getDown() const;
+  
+  /** The unique ID for this piece.
+   */
+  rel_node_handle getID() const;
+  
+  /** Set the unique ID for this piece.
+   */
+  void setID(rel_node_handle ID);
+  
+  /** The token_update array for this piece.
+   */
+  long* getTokenUpdate() const;
+  
+  /** Set the token_update array for this piece.
+   */
+  void setTokenUpdate(long* token_update);
+  
+  /** The size of token_update array for this piece.
+   */
+  long getPieceSize() const;
+  
+  /** Set the size of token_update array for this piece.
+   */
+  void setPieceSize(long pS);
+  
+  /** Expand the tokenUpdate array as the variable increases
+   */
+  void expandTokenUpdate(long i);
+  
+  /** Set the tokenUpdate array at location i to val
+   */
+  void setTokenUpdateAtIndex(long i,long val);
+  
+  // the following must be provided in derived classes.
+  
+  /** If the variable at this level has value i,
+   what should the new value be?
+   */
+  virtual long nextOf(long i);
+  
+  /** Determine if this node is equal to another one.
+   */
+  virtual bool equals(const relation_node* n) const;
+  
+private:
+  unsigned long signature;
+  int level;
+  rel_node_handle down;
+  rel_node_handle ID;
+  long* token_update;
+  long piece_size;        
+  
+  // used by the hash table in implicit_relation
+  relation_node* hash_chain;
+  
+  // friend class implicit_relation;
+};  // class relation_node
 
 // ******************************************************************
 // *                                                                *
@@ -1416,7 +1526,14 @@ class MEDDLY::node_headers {
     /// Decrement the incoming count for node p.
     void unlinkNode(node_handle p);
     
-  
+  public: // implicit stuff
+    
+    /// Get whether node p is implicit.
+    int getNodeImplicitFlag(node_handle p) const;
+    
+    /// Set as true if node p is implicit.
+    void setNodeImplicitFlag(node_handle p,bool flag);
+
 
   public: // for debugging
 
@@ -1470,6 +1587,11 @@ class MEDDLY::node_headers {
 
           /// Is node marked.  This is pretty horrible, but is only temporary
           // bool marked;
+       
+          /** Implicit node
+              This indicates if node is implicit
+           */
+          bool is_implicit = false;
 
     };
 
@@ -2077,6 +2199,7 @@ class MEDDLY::expert_forest: public forest
     // Used by the unique table
     // --------------------------------------------------
     node_handle getNext(node_handle p) const;
+    bool isImplicit(node_handle p) const;
     void setNext(node_handle p, node_handle n);
     unsigned hash(node_handle p) const;
 
@@ -2268,6 +2391,18 @@ class MEDDLY::expert_forest: public forest
     
   */
   node_handle createReducedNode(int in, unpacked_node *un);
+  
+  /** Return a forest node for implicit node equal to the one given.
+   The implicit node is already constructed inside satimpl_opname.
+   This version should be used only for
+   multi terminal forests.
+   @param  un    Implicit relation node
+   
+   @return       A node handle equivalent
+   to \a un.
+   
+   */
+  node_handle createRelationNode(MEDDLY::relation_node *un);
 
   /** Return a forest node equal to the one given.
       The node is constructed as necessary.
@@ -2620,7 +2755,7 @@ class MEDDLY::expert_forest: public forest
      @param  un    Relation node.
      @return       Handle to a node that encodes the same thing.
      */
-    node_handle createImplicitNode(MEDDLY::satimpl_opname::relation_node &nb);
+    node_handle createImplicitNode(MEDDLY::relation_node &nb);
 
 
     /** Apply reduction rule to the temporary extensible node and finalize it. 
@@ -2735,15 +2870,15 @@ class MEDDLY::opname {
 
 /// Unary operation names.
 class MEDDLY::unary_opname : public opname {
-  public:
-    unary_opname(const char* n);
-    virtual ~unary_opname();
-
-    virtual unary_operation*
-      buildOperation(expert_forest* arg, expert_forest* res) const;
-
-    virtual unary_operation*
-      buildOperation(expert_forest* arg, opnd_type res) const;
+public:
+  unary_opname(const char* n);
+  virtual ~unary_opname();
+  
+  virtual unary_operation*
+  buildOperation(expert_forest* arg, expert_forest* res) const;
+  
+  virtual unary_operation*
+  buildOperation(expert_forest* arg, opnd_type res) const;
 };
 
 // ******************************************************************
@@ -3297,7 +3432,6 @@ class MEDDLY::satotf_opname : public specialized_opname {
 // ******************************************************************
 
 /// Saturation, transition relations stored implcitly, operation names.
-typedef int rel_node_handle;
 class MEDDLY::satimpl_opname: public specialized_opname {
   public:
 
@@ -3306,109 +3440,6 @@ class MEDDLY::satimpl_opname: public specialized_opname {
 
     /// Arguments should have type "implicit_relation", below
     virtual specialized_operation* buildOperation(arguments* a) const;
-
-  public:
-    /** Pieces of an implicit relation.
-
-        Each piece (this class) is a function of a single variable.
-        The function specifies the "next state" for the given
-        current state, but we are only allowed to depend on one
-        state variable.
-
-        This is an abstract base class.  The function is specified
-        by deriving a class from this one, and specifying method
-        nextOf().
-        TBD - Need a bogus value for nextOf()...
-
-        Additionally, you must specify method equals(), which is used
-        to detect when two nodes actually represent the same function.
-
-    */
-    class relation_node {
-      public:
-        /** Constructor.
-            @param  signature   Hash for this node, such that
-            two equal nodes must have the same
-            signature.
-            @param  level          Level affected.
-            @param  down           Handle to a relation node below us. 
-        */
-        relation_node(unsigned long signature, int level, rel_node_handle down);
-        virtual ~relation_node();
-
-        // the following should be inlined in meddly_expert.hh
-
-        /** A signature for this function.
-            This helps class implicit_relation to detect duplicate
-            functions (using a hash table where the signature
-            is taken as the hash value).
-        */
-        unsigned long getSignature() const;
-
-        /** The state variable affected by this part of the relation.
-        */
-        int getLevel() const;
-
-        /** Pointer to the (ID of the) next piece of the relation.
-        */
-        rel_node_handle getDown() const;
-
-        /** The unique ID for this piece.
-        */
-        rel_node_handle getID() const;
-
-        /** Set the unique ID for this piece.
-        */
-        void setID(rel_node_handle ID);
-
-        /** The token_update array for this piece.
-        */
-        long* getTokenUpdate() const;
-
-        /** Set the token_update array for this piece.
-        */
-        void setTokenUpdate(long* token_update);
-
-        /** The size of token_update array for this piece.
-        */
-        long getPieceSize() const;
-
-        /** Set the size of token_update array for this piece.
-        */
-        void setPieceSize(long pS);
-
-        /** Expand the tokenUpdate array as the variable increases
-        */
-        void expandTokenUpdate(long i);
-
-        /** Set the tokenUpdate array at location i to val
-        */
-        void setTokenUpdateAtIndex(long i,long val);
-
-        // the following must be provided in derived classes.
-
-        /** If the variable at this level has value i,
-            what should the new value be?
-        */
-        virtual long nextOf(long i);
-
-        /** Determine if this node is equal to another one.
-        */
-        virtual bool equals(const relation_node* n) const;
-
-      private:
-        unsigned long signature;
-        int level;
-        rel_node_handle down;
-        rel_node_handle ID;
-        long* token_update;
-        long piece_size;        
-
-        // used by the hash table in implicit_relation
-        relation_node* hash_chain;
-
-        friend class implicit_relation;
-    };  // class relation_node
 
   public:
 
@@ -3439,11 +3470,11 @@ class MEDDLY::satimpl_opname: public specialized_opname {
 
             Not 100% sure we need these...
         */
-        implicit_relation(forest* inmdd,forest* relmxd,forest* outmdd);
+        implicit_relation(forest* inmdd, forest* relmxd, forest* outmdd);
         virtual ~implicit_relation();
       
-        /// Returns the Relation forest that stores the initial set of states
-        expert_forest* getRelForest() const;
+        /// Returns the Relation forest that stores the mix of relation nodes and mxd nodes
+        expert_forest* getMixRelForest() const;
 
 
         /// Returns the MDD forest that stores the initial set of states
@@ -3505,7 +3536,8 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       private:
         expert_forest* insetF;
         expert_forest* outsetF;
-        expert_forest* relF;
+        expert_forest* mixRelF;
+        
         int num_levels;
 
       private:
