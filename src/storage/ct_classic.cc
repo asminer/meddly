@@ -23,7 +23,7 @@
 // #include "../hash_stream.h"
 
 // #include <map>  // for operation_map
-// #include <limits.h>
+#include <limits.h>
 
 // #define DEBUG_SLOW
 // #define DEBUG_CT
@@ -428,9 +428,9 @@ namespace MEDDLY {
       /// Memory space for entries
       int*  entries;
       /// Used entries
-      int entriesSize;
+      unsigned entriesSize;
       /// Memory allocated for entries
-      int entriesAlloc;
+      unsigned entriesAlloc;
 
       static const int maxEntrySize = 15;
       static const int maxEntryBytes = sizeof(int) * maxEntrySize;
@@ -1338,7 +1338,7 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
     s << "Entries: null\n";
   } else {
     s << "Entries: [" << long(entries[0]);
-    for (int i=1; i<entriesSize; i++) {
+    for (unsigned i=1; i<entriesSize; i++) {
       s << ", " << long(entries[i]);
     }
     s << "]\n";
