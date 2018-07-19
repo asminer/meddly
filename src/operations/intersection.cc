@@ -150,9 +150,9 @@ class MEDDLY::inter_max_evplus : public generic_binary_evplus {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual compute_table::search_key* findResult(long aev, node_handle a,
+    virtual compute_table::entry_key* findResult(long aev, node_handle a,
       long bev, node_handle b, long& cev, node_handle &c);
-    virtual void saveResult(compute_table::search_key* key,
+    virtual void saveResult(compute_table::entry_key* key,
       long aev, node_handle a, long bev, node_handle b, long cev, node_handle c);
 
     virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
@@ -166,51 +166,73 @@ MEDDLY::inter_max_evplus::inter_max_evplus(const binary_opname* opcode,
   operationCommutes();
 }
 
-MEDDLY::compute_table::search_key* MEDDLY::inter_max_evplus::findResult(long aev, node_handle a,
+MEDDLY::compute_table::entry_key* MEDDLY::inter_max_evplus::findResult(long aev, node_handle a,
   long bev, node_handle b, long& cev, node_handle &c)
 {
-  compute_table::search_key* CTsrch = useCTkey();
+#ifdef OLD_OP_CT
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->reset();
   if (can_commute && a > b) {
-    CTsrch->write(0L);
-    CTsrch->writeNH(b);
-    CTsrch->write(aev - bev);
-    CTsrch->writeNH(a);
+    CTsrch->writeL(0);
+    CTsrch->writeN(b);
+    CTsrch->writeL(aev - bev);
+    CTsrch->writeN(a);
   } else {
-    CTsrch->write(0L);
-    CTsrch->writeNH(a);
-    CTsrch->write(bev - aev);
-    CTsrch->writeNH(b);
+    CTsrch->writeL(0);
+    CTsrch->writeN(a);
+    CTsrch->writeL(bev - aev);
+    CTsrch->writeN(b);
   }
-  compute_table::search_result &cacheFind = CT->find(CTsrch);
+#ifdef OLD_OP_CT
+  compute_table::entry_result& cacheFind = CT0->find(CTsrch);
   if (!cacheFind) return CTsrch;
-  cacheFind.read(cev);
-  c = resF->linkNode(cacheFind.readNH());
+  cev = cacheFind.readL();
+  c = resF->linkNode(cacheFind.readN());
+#else
+  CT0->find(CTsrch, CTresult[0]);
+  if (!CTresult[0]) return CTsrch;
+  cev = CTresult[0].readL();
+  c = resF->linkNode(CTresult[0].readN());
+#endif
   if (c != 0) {
     cev += (a > b ? bev : aev);
   }
   else {
     MEDDLY_DCASSERT(cev == 0);
   }
-  doneCTkey(CTsrch);
+  CT0->recycle(CTsrch);
   return 0;
 }
 
-void MEDDLY::inter_max_evplus::saveResult(compute_table::search_key* key,
+void MEDDLY::inter_max_evplus::saveResult(compute_table::entry_key* key,
   long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
 {
+#ifdef OLD_OP_CT
   arg1F->cacheNode(a);
   arg2F->cacheNode(b);
-  compute_table::entry_builder &entry = CT->startNewEntry(key);
+  resF->cacheNode(c);
+  static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
   if (c == 0) {
-    entry.writeResult(0L);
+    result.writeL(0);
   }
   else {
-    entry.writeResult(cev - (a > b ? bev : aev));
+    result.writeL(cev - (a > b ? bev : aev));
   }
-  entry.writeResultNH(resF->cacheNode(c));
-  CT->addEntry();
+  result.writeN(c);
+  CT0->addEntry(key, result);
+#else
+  if (c == 0) {
+    CTresult[0].writeL(0);
+  }
+  else {
+    CTresult[0].writeL(cev - (a > b ? bev : aev));
+  }
+  CTresult[0].writeN(c);
+  CT0->addEntry(key, CTresult[0]);
+#endif
 }
 
 bool MEDDLY::inter_max_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,

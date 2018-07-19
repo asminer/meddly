@@ -35,15 +35,31 @@
 // *                                                                *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
 MEDDLY::generic_binary_mdd::generic_binary_mdd(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : binary_operation(code, 2, 1, arg1, arg2, res)
 {
 }
+#else
+MEDDLY::generic_binary_mdd::generic_binary_mdd(const binary_opname* code,
+  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  : binary_operation(code, 1, arg1, arg2, res)
+{
+  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "NN:N");
+  et->setForestForSlot(0, arg1);
+  et->setForestForSlot(1, arg2);
+  et->setForestForSlot(3, res);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
 
 MEDDLY::generic_binary_mdd::~generic_binary_mdd()
 {
 }
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::generic_binary_mdd::isStaleEntry(const node_handle* data)
@@ -82,11 +98,18 @@ void MEDDLY::generic_binary_mdd::discardEntry(const node_handle* data)
 }
 
 void
-MEDDLY::generic_binary_mdd ::showEntry(output &strm, const node_handle *data) const
+MEDDLY::generic_binary_mdd ::showEntry(output &strm, const node_handle *data, bool key_only) const
 {
-  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) 
-       << "): " << long(data[2]) << "]";
+  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[2]);
+  }
+  strm << "]";
 }
+
+#endif // OLD_OP_CT
 
 void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &b, 
   dd_edge &c)
@@ -116,7 +139,7 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
   if (checkTerminals(a, b, result))
     return result;
 
-  compute_table::search_key* Key = findResult(a, b, result);
+  compute_table::entry_key* Key = findResult(a, b, result);
   if (0==Key) return result;
 
   // Get level information
@@ -430,6 +453,7 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
 // *                                                                *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
 MEDDLY::generic_binary_mxd::generic_binary_mxd(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : binary_operation(code, 2, 1, arg1, arg2, res)
@@ -438,10 +462,25 @@ MEDDLY::generic_binary_mxd::generic_binary_mxd(const binary_opname* code,
   // data[1] : arg2
   // data[2] : result
 }
+#else
+MEDDLY::generic_binary_mxd::generic_binary_mxd(const binary_opname* code,
+  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  : binary_operation(code, 1, arg1, arg2, res)
+{
+  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "NN:N");
+  et->setForestForSlot(0, arg1);
+  et->setForestForSlot(1, arg2);
+  et->setForestForSlot(3, res);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
 
 MEDDLY::generic_binary_mxd::~generic_binary_mxd()
 {
 }
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::generic_binary_mxd::isStaleEntry(const node_handle* data)
@@ -479,11 +518,18 @@ void MEDDLY::generic_binary_mxd::discardEntry(const node_handle* data)
 }
 
 void
-MEDDLY::generic_binary_mxd ::showEntry(output &strm, const node_handle *data) const
+MEDDLY::generic_binary_mxd ::showEntry(output &strm, const node_handle *data, bool key_only) const
 {
-  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) 
-       << "): " << long(data[2]) << "]";
+  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[2]);
+  }
+  strm << "]";
 }
+
+#endif // OLD_OP_CT
 
 void MEDDLY::generic_binary_mxd::computeDDEdge(const dd_edge &a, const dd_edge &b, 
   dd_edge &c)
@@ -504,7 +550,7 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
   if (checkTerminals(a, b, result))
     return result;
 
-  compute_table::search_key* Key = findResult(a, b, result);
+  compute_table::entry_key* Key = findResult(a, b, result);
   if (0==Key) return result;
 
   // Get level information
@@ -541,7 +587,7 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
   //
   // Note - we cache the primed levels, but only when "safe"
   //
-  compute_table::search_key* Key = findResult(a, b, result);
+  compute_table::entry_key* Key = findResult(a, b, result);
   if (0==Key) {
   printf("Found %s pr (%d, %d) = %d\n", getName(), a, b, result);
   printf("\tat level %d\n", k);
@@ -1070,6 +1116,7 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
 // *                                                                *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
 MEDDLY::generic_binbylevel_mxd
 ::generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1, 
   expert_forest* arg2, expert_forest* res)
@@ -1077,10 +1124,27 @@ MEDDLY::generic_binbylevel_mxd
 {
   can_commute = false;
 }
+#else
+MEDDLY::generic_binbylevel_mxd
+::generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1, 
+  expert_forest* arg2, expert_forest* res)
+ : binary_operation(code, 1, arg1, arg2, res)
+{
+  can_commute = false;
+  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "INN:N");
+  et->setForestForSlot(1, arg1);
+  et->setForestForSlot(2, arg2);
+  et->setForestForSlot(4, res);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
 
 MEDDLY::generic_binbylevel_mxd::~generic_binbylevel_mxd()
 {
 }
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::generic_binbylevel_mxd::isStaleEntry(const node_handle* data)
@@ -1119,11 +1183,19 @@ void MEDDLY::generic_binbylevel_mxd::discardEntry(const node_handle* data)
 
 void
 MEDDLY::generic_binbylevel_mxd
-::showEntry(output &strm, const node_handle *data) const
+::showEntry(output &strm, const node_handle *data, bool key_only) const
 {
   strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) 
-       << ", " << long(data[2]) << "): " << long(data[3]) << "]";
+       << ", " << long(data[2]) << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[3]);
+  }
+  strm << "]";
 }
+
+#endif // OLD_OP_CT
 
 void MEDDLY::generic_binbylevel_mxd
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
@@ -1157,7 +1229,7 @@ MEDDLY::generic_binbylevel_mxd
   //
   // Note - we cache the primed levels, but only when "safe"
   //
-  compute_table::search_key* Key = findResult(resultLevel, a, b, result);
+  compute_table::entry_key* Key = findResult(resultLevel, a, b, result);
   if (0==Key) return result;
 
   // Get level information
@@ -1215,7 +1287,7 @@ MEDDLY::generic_binbylevel_mxd
   // save result in compute table, when we can
   if (resultLevel<0 && 1==nnz) canSaveResult = false;
   if (canSaveResult)  saveResult(Key, resultLevel, a, b, result);
-  else                doneCTkey(Key);
+  else                CT0->recycle(Key);
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
@@ -1241,7 +1313,7 @@ MEDDLY::generic_binbylevel_mxd
   //
   // Note - we cache the primed levels, but only when "safe"
   //
-  compute_table::search_key* Key = findResult(resultLevel, a, b, result);
+  compute_table::entry_key* Key = findResult(resultLevel, a, b, result);
   if (0==Key) return result;
 
   // Get level information
@@ -1351,7 +1423,7 @@ MEDDLY::generic_binbylevel_mxd
   // save result in compute table, when we can
   if (resultLevel<0 && 1==nnz) canSaveResult = false;
   if (canSaveResult)  saveResult(Key, resultLevel, a, b, result);
-  else                doneCTkey(Key);
+  else                CT0->recycle(Key);
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
@@ -1370,6 +1442,7 @@ MEDDLY::generic_binbylevel_mxd
 // *                                                                *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
 MEDDLY::generic_binary_ev::generic_binary_ev(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : binary_operation(code,
@@ -1377,6 +1450,11 @@ MEDDLY::generic_binary_ev::generic_binary_ev(const binary_opname* code,
       (arg1->edgeBytes() + sizeof(node_handle) + arg2->edgeBytes() + sizeof(node_handle)) / sizeof(node_handle),
       (res->edgeBytes() + sizeof(node_handle)) / sizeof(node_handle),
       arg1, arg2, res)
+#else
+MEDDLY::generic_binary_ev::generic_binary_ev(const binary_opname* code,
+  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  : binary_operation(code, 1, arg1, arg2, res)
+#endif
 {
   can_commute = false;
 }
@@ -1384,6 +1462,8 @@ MEDDLY::generic_binary_ev::generic_binary_ev(const binary_opname* code,
 MEDDLY::generic_binary_ev::~generic_binary_ev()
 {
 }
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::generic_binary_ev::isStaleEntry(const node_handle* data)
@@ -1424,6 +1504,8 @@ void MEDDLY::generic_binary_ev::discardEntry(const node_handle* data)
   resF->uncacheNode(data[(arg1F->edgeBytes() + sizeof(node_handle) + arg2F->edgeBytes() + sizeof(node_handle) + resF->edgeBytes()) / sizeof(node_handle)]);
 }
 
+#endif // OLD_OP_CT
+
 // ******************************************************************
 // *                                                                *
 // *                 generic_binary_evplus  methods                 *
@@ -1434,19 +1516,36 @@ MEDDLY::generic_binary_evplus::generic_binary_evplus(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_ev(code, arg1, arg2, res)
 {
+#ifndef OLD_OP_CT
+  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "LNLN:LN");
+  et->setForestForSlot(1, arg1);
+  et->setForestForSlot(3, arg2);
+  et->setForestForSlot(6, res);
+  registerEntryType(0, et);
+  buildCTs();
+#endif
 }
 
 MEDDLY::generic_binary_evplus::~generic_binary_evplus()
 {
 }
 
+#ifdef OLD_OP_CT
+
 void MEDDLY::generic_binary_evplus
-::showEntry(output &strm, const node_handle *data) const
+::showEntry(output &strm, const node_handle *data, bool key_only) const
 {
   strm << "[" << getName() << "(<" << long(data[0]) << ":" << long(data[1]) 
-       << ">, <" << long(data[2]) << ":" << long(data[3]) << ">): <"
-       << long(data[4]) << ":" << long(data[5]) << ">]";
+       << ">, <" << long(data[2]) << ":" << long(data[3]) << ">): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << "<" << long(data[4]) << ":" << long(data[5]) << ">";
+  }
+  strm << "]";
 }
+
+#endif
 
 void MEDDLY::generic_binary_evplus
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
@@ -1469,7 +1568,7 @@ void MEDDLY::generic_binary_evplus
   if (checkTerminals(aev, a, bev, b, cev, c))
     return;
 
-  compute_table::search_key* Key = findResult(aev, a, bev, b, cev, c);
+  compute_table::entry_key* Key = findResult(aev, a, bev, b, cev, c);
   if (0==Key) return;
 
   // Get level information
@@ -1532,19 +1631,36 @@ MEDDLY::generic_binary_evplus_mxd::generic_binary_evplus_mxd(const binary_opname
   if (!arg1->isForRelations() || !arg2->isForRelations() || !res->isForRelations()) {
     throw error::TYPE_MISMATCH;
   }
+#ifndef OLD_OP_CT
+  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "LNLN:LN");
+  et->setForestForSlot(1, arg1);
+  et->setForestForSlot(3, arg2);
+  et->setForestForSlot(6, res);
+  registerEntryType(0, et);
+  buildCTs();
+#endif
 }
 
 MEDDLY::generic_binary_evplus_mxd::~generic_binary_evplus_mxd()
 {
 }
 
+#ifdef OLD_OP_CT
+
 void MEDDLY::generic_binary_evplus_mxd
-::showEntry(output &strm, const node_handle *data) const
+::showEntry(output &strm, const node_handle *data, bool key_only) const
 {
   strm << "[" << getName() << "(<" << long(data[0]) << ":" << long(data[1])
-       << ">, <" << long(data[2]) << ":" << long(data[3]) << ">): <"
-       << long(data[4]) << ":" << long(data[5]) << ">]";
+       << ">, <" << long(data[2]) << ":" << long(data[3]) << ">): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << "<" << long(data[4]) << ":" << long(data[5]) << ">";
+  }
+  strm << "]";
 }
+
+#endif
 
 void MEDDLY::generic_binary_evplus_mxd
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
@@ -1568,7 +1684,7 @@ void MEDDLY::generic_binary_evplus_mxd
     return;
   }
 
-  compute_table::search_key* Key = findResult(aev, a, bev, b, cev, c);
+  compute_table::entry_key* Key = findResult(aev, a, bev, b, cev, c);
   if (0 == Key) {
     return;
   }
@@ -1685,25 +1801,43 @@ MEDDLY::generic_binary_evtimes
   expert_forest* arg2, expert_forest* res)
 : generic_binary_ev(code, arg1, arg2, res)
 {
+#ifndef OLD_OP_CT
+  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "FNFN:FN");
+  et->setForestForSlot(1, arg1);
+  et->setForestForSlot(3, arg2);
+  et->setForestForSlot(6, res);
+  registerEntryType(0, et);
+  buildCTs();
+#endif
 }
 
 MEDDLY::generic_binary_evtimes::~generic_binary_evtimes()
 {
 }
 
+#ifdef OLD_OP_CT
+
 void MEDDLY::generic_binary_evtimes
-::showEntry(output &strm, const node_handle *data) const
+::showEntry(output &strm, const node_handle *data, bool key_only) const
 {
   float ev0;
   float ev2;
   float ev4;
   compute_table::readEV(data+0, ev0);
   compute_table::readEV(data+2, ev2);
-  compute_table::readEV(data+4, ev4);
   strm << "[" << getName() << "(<" << ev0 << ":" << long(data[1]) 
-       << ">, <" << ev2 << ":" << long(data[3]) << ">): <"
-       << ev4 << ":" << long(data[5]) << ">]";
+       << ">, <" << ev2 << ":" << long(data[3]) << ">): ";
+
+  if (key_only) {
+    strm << "?";
+  } else {
+    compute_table::readEV(data+4, ev4);
+    strm << "<" << ev4 << ":" << long(data[5]) << ">]";
+  }
+  strm << "]";
 }
+
+#endif
 
 void MEDDLY::generic_binary_evtimes
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
@@ -1730,7 +1864,7 @@ void MEDDLY::generic_binary_evtimes
     return;
 
 #ifndef DISABLE_CACHE
-  compute_table::search_key* Key = findResult(aev, a, bev, b, cev, c);
+  compute_table::entry_key* Key = findResult(aev, a, bev, b, cev, c);
   if (0==Key) return;
 #endif
 
