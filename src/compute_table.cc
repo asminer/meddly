@@ -390,9 +390,9 @@ MEDDLY::compute_table::entry_key::~entry_key()
 MEDDLY::compute_table::entry_result::entry_result()
 {
   build = 0;
+  data = 0;
 #ifdef OLD_OP_CT
   ansLength = 0;
-  data = 0;
 #else
   etype = 0;
 #endif

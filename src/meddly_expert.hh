@@ -2133,6 +2133,7 @@ MEDDLY::compute_table::entry_key::setup(const compute_table::entry_type* et, uns
     data = (entry_item*) realloc(data, data_alloc*sizeof(entry_item));
     if (0==data) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
+  memset(data, 0, total_slots * sizeof(entry_item));
   currslot = 0;
 #ifdef DEVELOPMENT_CODE
   has_hash = false;
@@ -2306,9 +2307,9 @@ inline MEDDLY::node_handle MEDDLY::compute_table::entry_result::readN()
 #ifdef OLD_OP_CT
   return data[currslot++];
 #else
-  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(compute_table::NODE == etype->getResultType(currslot));
-  return build[currslot++].N;
+  return data[currslot++].N;
 #endif
 }
 
@@ -2318,9 +2319,9 @@ inline int MEDDLY::compute_table::entry_result::readI()
 #ifdef OLD_OP_CT
   return data[currslot++];
 #else
-  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(compute_table::INTEGER == etype->getResultType(currslot));
-  return build[currslot++].I;
+  return data[currslot++].I;
 #endif
 }
 
@@ -2332,9 +2333,9 @@ inline float MEDDLY::compute_table::entry_result::readF()
   currslot++;
   return f;
 #else
-  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(compute_table::FLOAT == etype->getResultType(currslot));
-  return build[currslot++].F;
+  return data[currslot++].F;
 #endif
 }
 
@@ -2347,10 +2348,10 @@ inline long MEDDLY::compute_table::entry_result::readL()
   currslot += sizeof(long) / sizeof(node_handle);
   return L;
 #else
-  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(currslot < dataLength());
   MEDDLY_DCASSERT(compute_table::LONG == etype->getResultType(currslot));
-  return build[currslot++].L;
+  return data[currslot++].L;
 #endif
 }
 
@@ -2363,10 +2364,10 @@ inline double MEDDLY::compute_table::entry_result::readD()
   currslot += sizeof(double) / sizeof(node_handle);
   return D;
 #else
-  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(currslot < dataLength());
   MEDDLY_DCASSERT(compute_table::DOUBLE == etype->getResultType(currslot));
-  return build[currslot++].D;
+  return data[currslot++].D;
 #endif
 }
 
@@ -2379,10 +2380,10 @@ inline void* MEDDLY::compute_table::entry_result::readP()
   currslot += sizeof(void*) / sizeof(node_handle);
   return P;
 #else
-  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(currslot < dataLength());
   MEDDLY_DCASSERT(compute_table::POINTER == etype->getResultType(currslot));
-  return build[currslot++].P;
+  return data[currslot++].P;
 #endif
 }
 
@@ -2482,6 +2483,16 @@ inline void
 MEDDLY::compute_table::entry_result::setValid()
 {
   is_valid = true;
+#ifndef OLD_OP_CT
+  data = build;
+#endif
+}
+
+inline void
+MEDDLY::compute_table::entry_result::setValid(const entry_item* d)
+{
+  is_valid = true;
+  data = d;
 }
 
 inline void

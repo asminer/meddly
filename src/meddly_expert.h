@@ -3795,13 +3795,13 @@ class MEDDLY::compute_table {
       //
 
       struct stats {
-        unsigned numEntries;
-        long hits;
-        long pings;
-        static const int searchHistogramSize = 256;
-        long searchHistogram[searchHistogramSize];
-        long numLargeSearches;
-        int maxSearchLength;
+        unsigned long numEntries;
+        unsigned long hits;
+        unsigned long pings;
+        static const unsigned searchHistogramSize = 256;
+        unsigned long searchHistogram[searchHistogramSize];
+        unsigned long numLargeSearches;
+        unsigned maxSearchLength;
       };
 
       //
@@ -3826,12 +3826,13 @@ class MEDDLY::compute_table {
 #ifndef OLD_OP_CT
       union entry_item {
         int I;
+        unsigned int U;
         long L;
+        unsigned long UL;
         node_handle N;
         float F;
         double D;
         void* P;
-        unsigned U;
       };
 #endif
 
@@ -4180,6 +4181,7 @@ class MEDDLY::compute_table {
 
           // interface, for compute tables.
           void setValid();
+          void setValid(const entry_item* d);
           void setInvalid();
           operator bool() const;
 #ifndef OLD_OP_CT
@@ -4204,6 +4206,7 @@ class MEDDLY::compute_table {
 #else
           const entry_type* etype;
           entry_item* build;
+          const entry_item* data;
 #endif
           bool is_valid;
           unsigned currslot;

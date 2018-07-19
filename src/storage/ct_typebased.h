@@ -21,19 +21,6 @@
 #ifndef CT_TYPEBASED_H
 #define CT_TYPEBASED_H
 
-// #define DEBUG_SLOW
-// #define DEBUG_CT
-// #define DEBUG_CT_SEARCHES
-// #define DEBUG_REHASH
-// #define DEBUG_TABLE2LIST
-// #define DEBUG_LIST2TABLE
-// #define DEBUG_CTALLOC
-
-// #define DEBUG_REMOVESTALES
-// #define SUMMARY_STALES
-
-#define INTEGRATED_MEMMAN
-
 // **********************************************************************
 // *                                                                    *
 // *                                                                    *
