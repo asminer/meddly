@@ -3809,14 +3809,14 @@ class MEDDLY::compute_table {
       //
 
       enum typeID {
-        ERROR,
-        NODE,
-        INTEGER,
-        LONG,
-        HUGEINT,
-        FLOAT,
-        DOUBLE,
-        POINTER
+        ERROR = 0,
+        NODE = 1,
+        INTEGER = 2,
+        LONG = 3,
+        FLOAT = 4,
+        DOUBLE = 5,
+        POINTER = 6
+        // HUGEINT = 7
       };
 
       //

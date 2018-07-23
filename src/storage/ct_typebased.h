@@ -361,15 +361,6 @@ namespace MEDDLY {
         s << "\n";
       }
 
-#ifndef OLD_OP_CT
-      /**
-          Determine if an entry is unrecoverable.
-          This means the entry is unusable because the
-          result node(s) are DEAD.
-            @param  h   Handle of the entry.
-      */
-      // bool entryUnrecoverable(unsigned long h) const;
-#endif
 
       /**
           Discard an entry and recycle the memory it used.
