@@ -74,6 +74,10 @@ namespace MEDDLY {
 
       // TBD - migrate to 64-bit hash
 
+      static unsigned hash(const entry_key* key);
+      static unsigned hash(const entry_type* et, const entry_item* entry);
+
+/*
       static inline unsigned raw_hash(const void* x, unsigned bytes) {
         hash_stream H;
         H.start(12345);
@@ -84,6 +88,7 @@ namespace MEDDLY {
       inline unsigned hash(const void* x, unsigned bytes) const {
         return raw_hash(x, bytes) % tableSize;
       }
+*/
     
       inline void incMod(unsigned long &h) {
         h++;
@@ -122,7 +127,11 @@ namespace MEDDLY {
         printf("Collision; removing CT entry ");
         FILE_output out(stdout);
         showEntry(out, table[h]);
+#ifdef DEBUG_CT_SLOTS
         printf(" handle %lu in slot %lu\n", table[h], h);
+#else
+        printf("\n");
+#endif
         fflush(stdout);
 #endif
         collisions++;    
@@ -132,23 +141,59 @@ namespace MEDDLY {
       }
 
 
-      /// Check equality
-      static inline bool equal_sw(const entry_item* a, const entry_item* b, int N) {
-        /*
-        switch (N) {  // note: cases 8 - 2 fall through
-          case  8:    if (a[7] != b[7]) return false;
-          case  7:    if (a[6] != b[6]) return false;
-          case  6:    if (a[5] != b[5]) return false;
-          case  5:    if (a[4] != b[4]) return false;
-          case  4:    if (a[3] != b[3]) return false;
-          case  3:    if (a[2] != b[2]) return false;
-          case  2:    if (a[1] != b[1]) return false;
-          case  1:    return a[0] == b[0];
-          case  0:    return true;
-          default:    return (0==memcmp(a, b, N*sizeof(entry_item)));
-        };
-        */
-        return (0==memcmp(a, b, N*sizeof(entry_item)));
+      /** 
+        Check equality.
+        We advance pointer a and return it if equal.
+        If unequal we return 0.
+      */
+      static inline entry_item* equal(entry_item* a, const entry_key* key) {
+        const entry_type* et = key->getET();
+        MEDDLY_DCASSERT(et);
+        //
+        // Compare operator, if needed
+        //
+        if (MONOLITHIC) {
+          if (et->getID() != (*a).U) return 0;
+          a++;
+        }
+        //
+        // compare #repetitions, if needed
+        //
+        if (et->isRepeating()) {
+          if (key->numRepeats() != (*a).U) return 0;
+          a++;
+        }
+        //
+        // Compare key portion only
+        //
+        const entry_item* b = key->rawData();
+        const unsigned klen = et->getKeySize(key->numRepeats());
+        for (unsigned i=0; i<klen; i++) {
+          const typeID t = et->getKeyType(i);
+          switch (t) {
+              case FLOAT:
+                        if (a[i].F != b[i].F) return 0;
+                        continue;
+              case NODE:
+                        if (a[i].N != b[i].N) return 0;
+                        continue;
+              case INTEGER:
+                        if (a[i].I != b[i].I) return 0;
+                        continue;
+              case DOUBLE:
+                        if (a[i].D != b[i].D) return 0;
+                        continue;
+              case POINTER:
+                        if (a[i].P != b[i].P) return 0;
+                        continue;
+              case LONG:
+                        if (a[i].L  != b[i].L) return 0;
+                        continue;
+              default:
+                        MEDDLY_DCASSERT(0);
+          } // switch t
+        } // for i
+        return a + klen;
       }
 
 
@@ -163,17 +208,13 @@ namespace MEDDLY {
       */
       inline entry_item* checkEqualityAndStatus(entry_item* entry, const entry_key* key, bool &discard)
       {
-        entry_item* entry_without_next = CHAINED ? (entry+1) : entry;
-        const unsigned keyslots = key->numTempBytes() / sizeof(entry_item);
-        // TBD HERE
-        if (equal_sw(entry_without_next, (const entry_item*) key->readTempData(), keyslots))
+        entry_item* answer = equal( CHAINED ? (entry+1) : entry, key);
+        if (answer) 
         {
           //
           // Equal.
           //
-          entry_item* result = entry_without_next + keyslots;
-          discard = isDead(result, key->getET());
-          return result;
+          discard = isDead(answer, key->getET());
         } else {
           //
           // Not equal.
@@ -183,8 +224,8 @@ namespace MEDDLY {
           } else {
             discard = false;
           } // if checkStalesOnFind
-          return 0;
         }
+        return answer;
       }
 
       /**
@@ -411,7 +452,11 @@ inline MEDDLY::compute_table::entry_item* MEDDLY::ct_none<MONOLITHIC, CHAINED>
   printf("Searching for CT entry ");
   FILE_output out(stdout);
   showKey(out, key);
+#ifdef DEBUG_CT_SLOTS
   printf(" in hash slot %lu\n", hcurr);
+#else
+  printf("\n");
+#endif
   fflush(stdout);
 #endif
 
@@ -445,7 +490,11 @@ inline MEDDLY::compute_table::entry_item* MEDDLY::ct_none<MONOLITHIC, CHAINED>
         else        printf("Removing stale CT entry ");
         FILE_output out(stdout);
         showEntry(out, curr);
+#ifdef DEBUG_CT_SLOTS
         printf(" handle %lu in slot %lu\n", curr, hcurr);
+#else
+        printf("\n");
+#endif
         fflush(stdout);
 #endif
         if (CHAINED) {
@@ -487,7 +536,11 @@ inline MEDDLY::compute_table::entry_item* MEDDLY::ct_none<MONOLITHIC, CHAINED>
         printf("Found CT entry ");
         FILE_output out(stdout);
         showEntry(out, curr);
+#ifdef DEBUG_CT_SLOTS
         printf(" handle %lu in slot %lu\n", curr, hcurr);
+#else
+        printf("\n");
+#endif
         fflush(stdout);
 #endif
         break;
@@ -514,51 +567,10 @@ inline MEDDLY::compute_table::entry_item* MEDDLY::ct_none<MONOLITHIC, CHAINED>
 
 // **********************************************************************
 
-// HERE
-
 template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_none<MONOLITHIC, CHAINED>
 ::find(entry_key *key, entry_result& res)
 {
-  //
-  // Allocate temporary space for key preprocessing.
-  //
-  const entry_type* et = key->getET();
-  MEDDLY_DCASSERT(et);
-  unsigned temp_bytes = 
-    et->getKeySize( key->numRepeats() )
-    +
-    (MONOLITHIC ? 1 : 0)
-    +
-    (et->isRepeating() ? 1 : 0);
-  temp_bytes *= sizeof(entry_item);
-
-  entry_item* temp_entry = (entry_item*) key->allocTempData(temp_bytes);
-
-  //
-  // Copy the operation index if we're monolithic
-  //
-  int tptr = 0;
-  if (MONOLITHIC) {
-    temp_entry[0].UL = 0;
-    temp_entry[0].U = et->getID();
-    tptr++;
-  }
-
-  //
-  // Copy the number of repeats if we're a repeating entry
-  //
-  if (et->isRepeating()) {
-    temp_entry[tptr].UL = 0;
-    temp_entry[tptr].U = key->numRepeats();
-    tptr++;
-  }
-
-  //
-  // Copy the key into temp_entry
-  //
-  memcpy(temp_entry+tptr, key->rawData(), key->dataLength() * sizeof(entry_item) );
-
   // 
   // TBD - probably shouldn't hash the floats, doubles.
   //
@@ -566,7 +578,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
   //
   // Hash the key
   //
-  setHash(key, raw_hash(temp_entry, temp_bytes));
+  setHash(key, hash(key));
 
   entry_item* entry_result = findEntry(key);
   perf.pings++;
@@ -610,9 +622,11 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const entry_
   //
 
   const unsigned num_slots = 
-    ( key->numTempBytes() / sizeof(entry_item) )
-    + key->getET()->getResultSize()
+    et->getKeySize(key->numRepeats()) + 
+    + et->getResultSize()
     + (CHAINED ? 1 : 0)
+    + (MONOLITHIC ? 1 : 0)
+    + (et->isRepeating() ? 1 : 0)
   ;
   unsigned long curr = newEntry(num_slots);
 
@@ -626,8 +640,17 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const entry_
   // Copy into the entry
   //
   entry_item* key_portion = entry + (CHAINED ? 1 : 0);
-  memcpy(key_portion, key->readTempData(), key->numTempBytes());
-  entry_item* res_portion = key_portion + key->numTempBytes() / sizeof(entry_item);
+  if (MONOLITHIC) {
+    (*key_portion).U = et->getID();
+    key_portion++;
+  }
+  if (et->isRepeating()) {
+    (*key_portion).U = key->numRepeats();
+    key_portion++;
+  }
+  const unsigned key_slots = et->getKeySize(key->numRepeats());
+  memcpy(key_portion, key->rawData(), key_slots * sizeof(entry_item));
+  entry_item* res_portion = key_portion + key_slots;
   setResult(res_portion, res, et);
 
   //
@@ -651,7 +674,11 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const entry_
   printf("Added CT entry ");
   FILE_output out(stdout);
   showEntry(out, curr);
+#ifdef DEBUG_CT_SLOTS
   printf(" handle %lu in slot %lu (%u slots long)\n", curr, h, num_slots);
+#else
+  printf("\n");
+#endif
   fflush(stdout);
 #endif
 
@@ -1115,7 +1142,6 @@ unsigned long MEDDLY::ct_none<MONOLITHIC, CHAINED>::convertToList(bool removeSta
 template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_none<MONOLITHIC, CHAINED>::listToTable(unsigned long L)
 {
-  const int M = MONOLITHIC ? 1 : 0;
   MEDDLY_DCASSERT(CHAINED);
 #ifdef DEBUG_LIST2TABLE
   printf("Recovering  list");
@@ -1134,11 +1160,8 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::listToTable(unsigned long L)
       ?   getEntryType(entry[1].U)
       :   global_et;
     MEDDLY_DCASSERT(et);
-    const unsigned reps = (et->isRepeating()) ? entry[ M+1 ].U : 0;
-    // HERE
-    const unsigned hashlength = M + (et->isRepeating() ? 1 : 0) + ( et->getKeyBytes(reps) / sizeof(entry_item) );  
 
-    const unsigned h = hash(entry + 1, hashlength * sizeof(entry_item));
+    const unsigned h = hash(et, entry + 1) % tableSize;
     entry[0].UL = table[h];
     table[h] = curr;
 #ifdef DEBUG_LIST2TABLE
@@ -1171,7 +1194,11 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::scanForStales()
       printf("Removing CT stale entry ");
       FILE_output out(stdout);
       showEntry(out, table[i]);
+#ifdef DEBUG_CT_SLOTS
       printf(" in table slot %lu\n", i);
+#else
+      printf("\n");
+#endif
 #endif  
 
       discardAndRecycle(table[i]);
@@ -1190,7 +1217,6 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::rehashTable(const unsigned long* oldT
   printf("Rebuilding hash table\n");
 #endif
   MEDDLY_DCASSERT(!CHAINED);
-  const int M = MONOLITHIC ? 1 : 0;
   for (unsigned long i=0; i<oldS; i++) {
     unsigned long curr = oldT[i];
     if (0==curr) continue;
@@ -1204,10 +1230,8 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::rehashTable(const unsigned long* oldT
       ?   getEntryType(entry[0].UL)
       :   global_et;
     MEDDLY_DCASSERT(et);
-    const unsigned reps = (et->isRepeating()) ? entry[ M ].U : 0;
-    const unsigned hashlength = M + (et->isRepeating() ? 1 : 0) + ( et->getKeyBytes(reps) / sizeof(entry_item) );
 
-    unsigned long h = hash(entry, hashlength*sizeof(entry_item));
+    unsigned long h = hash(et, entry) % tableSize;
     setTable(h, curr);
 
 #ifdef DEBUG_REHASH
@@ -1270,6 +1294,209 @@ MEDDLY::node_address MEDDLY::ct_none<MONOLITHIC, CHAINED>
   size_t the_size = size;
   return MMAN->requestChunk(the_size);
 #endif
+}
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED>
+unsigned MEDDLY::ct_none<MONOLITHIC, CHAINED>
+::hash(const entry_key* key)
+{
+  const entry_type* et = key->getET();
+  MEDDLY_DCASSERT(et);
+
+  hash_stream H;
+  bool started = false;
+  //
+  // Operator, if needed
+  //
+  if (MONOLITHIC) {
+    H.start(et->getID());
+    started = true;
+  }
+  //
+  // #repetitions, if needed
+  //
+  if (et->isRepeating()) {
+    if (started) {
+      H.push(key->numRepeats());
+    } else {
+      H.start(key->numRepeats());
+      started = true;
+    }
+  }
+
+  //
+  // Hash key portion only
+  //
+
+  //
+  // Special case - we haven't started hashing yet
+  //
+  unsigned i=0;
+  const entry_item* entry = key->rawData();
+  if (!started) {
+    const typeID t = et->getKeyType(i);
+    switch (t) {
+        case FLOAT:
+                        MEDDLY_DCASSERT(sizeof(entry[i].F) == sizeof(entry[i].U));
+        case NODE:
+                        MEDDLY_DCASSERT(sizeof(entry[i].N) == sizeof(entry[i].U));
+        case INTEGER:
+                        MEDDLY_DCASSERT(sizeof(entry[i].I) == sizeof(entry[i].U));
+                        H.start(entry[i].U);
+                        break;
+
+        case DOUBLE:
+                        MEDDLY_DCASSERT(sizeof(entry[i].D) == sizeof(entry[i].L));
+        case POINTER:
+                        MEDDLY_DCASSERT(sizeof(entry[i].P) == sizeof(entry[i].L));
+        case LONG:
+                        {
+                          unsigned* hack = (unsigned*) (& (entry[i].L));
+                          H.start(hack[0]);
+                          H.push(hack[1]);
+                        }
+                        break;
+        default:
+                        MEDDLY_DCASSERT(0);
+    } // switch t
+    i++;
+  } // if !started
+
+  //
+  // Do rest of key portion
+  //
+  const unsigned klen = et->getKeySize(key->numRepeats());
+  for ( ; i<klen; i++) {    // i initialized earlier
+    const typeID t = et->getKeyType(i);
+    switch (t) {
+        case FLOAT:
+                        MEDDLY_DCASSERT(sizeof(entry[i].F) == sizeof(entry[i].U));
+        case NODE:
+                        MEDDLY_DCASSERT(sizeof(entry[i].N) == sizeof(entry[i].U));
+        case INTEGER:
+                        MEDDLY_DCASSERT(sizeof(entry[i].I) == sizeof(entry[i].U));
+                        H.push(entry[i].U);
+                        continue;
+
+        case DOUBLE:
+                        MEDDLY_DCASSERT(sizeof(entry[i].D) == sizeof(entry[i].L));
+        case POINTER:
+                        MEDDLY_DCASSERT(sizeof(entry[i].P) == sizeof(entry[i].L));
+        case LONG:      
+                        {
+                          unsigned* hack = (unsigned*) (& (entry[i].L));
+                          H.push(hack[0], hack[1]);
+                        }
+                        continue;
+        default:
+                        MEDDLY_DCASSERT(0);
+    } // switch t
+  } // for i
+
+  return H.finish();
+}
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED>
+unsigned MEDDLY::ct_none<MONOLITHIC, CHAINED>
+::hash(const entry_type* et, const entry_item* entry)
+{
+  hash_stream H;
+  bool started = false;
+  //
+  // Operator, if needed
+  //
+  if (MONOLITHIC) {
+    MEDDLY_DCASSERT(et->getID() == entry[0].U);
+    H.start(et->getID());
+    entry++;
+    started = true;
+  }
+  //
+  // #repetitions, if needed
+  //
+  unsigned reps = 0;
+  if (et->isRepeating()) {
+    if (started) {
+      H.push(entry[0].U);
+    } else {
+      H.start(entry[0].U);
+      started = true;
+    }
+    reps = entry[0].U;
+    entry++;
+  }
+
+  //
+  // Hash key portion only
+  //
+
+  //
+  // Special case - we haven't started hashing yet
+  //
+  unsigned i=0;
+  if (!started) {
+    const typeID t = et->getKeyType(i);
+    switch (t) {
+        case FLOAT:
+                        MEDDLY_DCASSERT(sizeof(entry[i].F) == sizeof(entry[i].U));
+        case NODE:
+                        MEDDLY_DCASSERT(sizeof(entry[i].N) == sizeof(entry[i].U));
+        case INTEGER:
+                        MEDDLY_DCASSERT(sizeof(entry[i].I) == sizeof(entry[i].U));
+                        H.start(entry[i].U);
+                        break;
+
+        case DOUBLE:
+                        MEDDLY_DCASSERT(sizeof(entry[i].D) == sizeof(entry[i].L));
+        case POINTER:
+                        MEDDLY_DCASSERT(sizeof(entry[i].P) == sizeof(entry[i].L));
+        case LONG:      {
+                          unsigned* hack = (unsigned*) (& (entry[i].L));
+                          H.start(hack[0]);
+                          H.push(hack[1]);
+                        }
+                        break;
+        default:
+                        MEDDLY_DCASSERT(0);
+    } // switch t
+    i++;
+  } // if !started
+
+  //
+  // Do rest of key portion
+  //
+  const unsigned klen = et->getKeySize(reps);
+  for ( ; i<klen; i++) {    // i initialized earlier
+    const typeID t = et->getKeyType(i);
+    switch (t) {
+        case FLOAT:
+                        MEDDLY_DCASSERT(sizeof(entry[i].F) == sizeof(entry[i].U));
+        case NODE:
+                        MEDDLY_DCASSERT(sizeof(entry[i].N) == sizeof(entry[i].U));
+        case INTEGER:
+                        MEDDLY_DCASSERT(sizeof(entry[i].I) == sizeof(entry[i].U));
+                        H.push(entry[i].U);
+                        continue;
+
+        case DOUBLE:
+                        MEDDLY_DCASSERT(sizeof(entry[i].D) == sizeof(entry[i].L));
+        case POINTER:
+                        MEDDLY_DCASSERT(sizeof(entry[i].P) == sizeof(entry[i].L));
+        case LONG:      {
+                          unsigned* hack = (unsigned*) (& (entry[i].L));
+                          H.push(hack[0], hack[1]);
+                        }
+                        continue;
+        default:
+                        MEDDLY_DCASSERT(0);
+    } // switch t
+  } // for i
+
+  return H.finish();
 }
 
 // **********************************************************************

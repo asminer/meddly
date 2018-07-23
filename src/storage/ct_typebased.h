@@ -97,7 +97,9 @@ namespace MEDDLY {
 
       static inline unsigned raw_hash(const int* k, int length) {
         unsigned a, b, c;
-        a = b = c = 0xdeadbeef;
+    //    a = b = c = 0xdeadbeef;
+        a = b = 0;
+        c = 0xdeadbeef;
 
         // handle most of the key
         while (length > 3)
@@ -165,7 +167,11 @@ namespace MEDDLY {
         printf("Collision; removing CT entry ");
         FILE_output out(stdout);
         showEntry(out, table[h]);
+#ifdef DEBUG_CT_SLOTS
         printf(" handle %d in slot %u\n", table[h], h);
+#else
+        printf("\n");
+#endif
         fflush(stdout);
 #endif
         collisions++;    
@@ -561,7 +567,11 @@ inline int* MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   printf("Searching for CT entry ");
   FILE_output out(stdout);
   showKey(out, key);
+#ifdef DEBUG_CT_SLOTS
   printf(" in hash slot %u\n", hcurr);
+#else
+  printf("\n");
+#endif
   fflush(stdout);
 #endif
 
@@ -595,7 +605,11 @@ inline int* MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
         else        printf("Removing stale CT entry ");
         FILE_output out(stdout);
         showEntry(out, curr);
+#ifdef DEBUG_CT_SLOTS
         printf(" handle %d in slot %u\n", curr, hcurr);
+#else
+        printf("\n");
+#endif
         fflush(stdout);
 #endif
         if (CHAINED) {
@@ -637,7 +651,11 @@ inline int* MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
         printf("Found CT entry ");
         FILE_output out(stdout);
         showEntry(out, curr);
+#ifdef DEBUG_CT_SLOTS
         printf(" handle %d in slot %u\n", curr, hcurr);
+#else
+        printf("\n");
+#endif
         fflush(stdout);
 #endif
         break;
@@ -893,7 +911,11 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
   printf("Added CT entry ");
   FILE_output out(stdout);
   showEntry(out, curr);
+#ifdef DEBUG_CT_SLOTS
   printf(" handle %lu in slot %u (%u slots long)\n", curr, h, num_slots);
+#else
+  printf("\n");
+#endif
   fflush(stdout);
 #endif
 
@@ -1451,7 +1473,11 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::scanForStales()
       printf("Removing CT stale entry ");
       FILE_output out(stdout);
       showEntry(out, table[i]);
+#ifdef DEBUG_CT_SLOTS
       printf(" in table slot %u\n", i);
+#else
+      printf("\n");
+#endif
 #endif  
 
       discardAndRecycle(table[i]);

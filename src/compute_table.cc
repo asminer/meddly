@@ -57,8 +57,8 @@ MEDDLY::ct_initializer::ct_initializer(initializer_list* prev) : initializer_lis
   setBuiltinStyle(MonolithicUnchainedHash);
   setMaxSize(16777216);
   setStaleRemoval(Moderate);
-  setCompression(None);
-//  setCompression(TypeBased);
+//  setCompression(None);
+  setCompression(TypeBased);
 
   //
   // Set to null for now.

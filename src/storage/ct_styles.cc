@@ -22,8 +22,11 @@
 
 
 // #define DEBUG_SLOW
+
 // #define DEBUG_CT
 // #define DEBUG_CT_SEARCHES
+// #define DEBUG_CT_SLOTS
+
 // #define DEBUG_REHASH
 // #define DEBUG_TABLE2LIST
 // #define DEBUG_LIST2TABLE
