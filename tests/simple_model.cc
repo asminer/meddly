@@ -32,6 +32,9 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   MEDDLY::forest* mxd, MEDDLY::dd_edge &nsf)
 {
   using namespace MEDDLY;
+#ifdef DEBUG_EVENTS
+  FILE_output out(stdout);
+#endif
 #ifdef VERBOSE
   fprintf(stderr, "Building next-state function\n");
 #endif
@@ -113,7 +116,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
     mxd->createEdge(&minterm, &mtprime, 1, nsf_ev);
 #ifdef DEBUG_EVENTS
     printf("Initial nsf for event %d\n", e);
-    nsf_ev.show(stdout, 2);
+    nsf_ev.show(out, 2);
 #endif
 #ifdef VERBOSE
     fprintf(stderr, " : ");
@@ -140,7 +143,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
       apply(COPY, docare, term);
 #ifdef DEBUG_EVENTS
       printf("Term for event %d, level %d\n", e, i);
-      term.show(stdout, 2);
+      term.show(out, 2);
 #endif
       nsf_ev *= term;
     } // for i
@@ -150,7 +153,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
     //
 #ifdef DEBUG_EVENTS
     printf("Complete nsf for event %d:\n", e);
-    nsf_ev.show(stdout, 2);
+    nsf_ev.show(out, 2);
 #endif
 #ifdef VERBOSE
     fputc(' ', stderr);
@@ -178,7 +181,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 
 #ifdef DEBUG_EVENTS
   printf("Complete NSF:\n");
-  nsf.show(stdout, 2);
+  nsf.show(out, 2);
 #endif
 }
 

@@ -2488,12 +2488,14 @@ MEDDLY::compute_table::entry_result::setValid()
 #endif
 }
 
+#ifndef OLD_OP_CT
 inline void
 MEDDLY::compute_table::entry_result::setValid(const entry_item* d)
 {
   is_valid = true;
   data = d;
 }
+#endif
 
 inline void
 MEDDLY::compute_table::entry_result::setInvalid()

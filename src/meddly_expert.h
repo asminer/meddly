@@ -4181,7 +4181,9 @@ class MEDDLY::compute_table {
 
           // interface, for compute tables.
           void setValid();
+#ifndef OLD_OP_CT
           void setValid(const entry_item* d);
+#endif
           void setInvalid();
           operator bool() const;
 #ifndef OLD_OP_CT

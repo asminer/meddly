@@ -254,7 +254,22 @@ namespace MEDDLY {
           // Equal.
           //
           int* result = entry_without_next + keyslots;
+#ifdef DEBUG_ISDEAD
+          printf("Checking entry result for deadness: ");
+          FILE_output out(stdout);
+          showEntry(out, entry);
+          printf("\n");
+          fflush(stdout);
+#endif
           discard = isDead(result, key->getET());
+#ifdef DEBUG_ISDEAD
+          if (discard) {
+            printf("\tdead\n");
+          } else {
+            printf("\tnot dead\n");
+          }
+          fflush(stdout);
+#endif
           return result;
         } else {
           //
@@ -378,9 +393,24 @@ namespace MEDDLY {
           Display an entry.
           Used for debugging, and by method(s) to display the entire CT.
             @param  s         Stream to write to.
+            @param  entry     Pointer to the entry.
+      */
+      void showEntry(output &s, const int* entry) const;
+
+      /**
+          Display an entry.
+          Used for debugging, and by method(s) to display the entire CT.
+            @param  s         Stream to write to.
             @param  h         Handle of the entry.
       */
-      void showEntry(output &s, unsigned long h) const;
+      inline void showEntry(output &s, unsigned long h) const 
+      {
+#ifdef INTEGRATED_MEMMAN
+        showEntry(s, entries+h);
+#else
+        showEntry(s, (const int*) MMAN->getChunkAddress(h));
+#endif
+      }
 
       /// Display a key.
       void showKey(output &s, const entry_key* k) const;
@@ -1114,7 +1144,7 @@ template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::removeStales()
 {
 #ifdef DEBUG_REMOVESTALES
-  fprintf(stdout, "Removing stales in CT (size %d, entries %u)\n", 
+  fprintf(stdout, "Removing stales in CT (size %d, entries %lu)\n", 
         tableSize, perf.numEntries
   );
 #endif
@@ -1198,12 +1228,14 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::removeStales()
   } // if CHAINED
     
 #ifdef DEBUG_REMOVESTALES
-  fprintf(stdout, "Done removing CT stales (size %d, entries %u)\n", 
+  fprintf(stdout, "Done removing CT stales (size %d, entries %lu)\n", 
     tableSize, perf.numEntries
   );
+#ifdef DEBUG_REMOVESTALES_DETAILS
   FILE_output out(stderr);
   out << "CT after removing stales:\n";
   show(out, 9);
+#endif
   fflush(stdout);
 #endif
 }
@@ -1378,7 +1410,6 @@ template <bool MONOLITHIC, bool CHAINED>
 int MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::convertToList(bool removeStales)
 {
   MEDDLY_DCASSERT(CHAINED);
-  // const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
 
   int list = 0;
   for (unsigned i=0; i<tableSize; i++) {
@@ -1606,12 +1637,37 @@ MEDDLY::node_address MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 
 // **********************************************************************
 
+inline bool YES_stale() 
+{
+#ifdef DEBUG_ISSTALE
+  printf("stale\n");
+  fflush(stdout);
+#endif
+  return true;
+}
+
+inline bool NO_stale()
+{
+#ifdef DEBUG_ISSTALE
+  printf("not stale\n");
+  fflush(stdout);
+#endif
+  return false;
+}
+
 #ifndef OLD_OP_CT
 
 template <bool MONOLITHIC, bool CHAINED>
 bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED> 
 ::isStale(const int* entry) const
 {
+#ifdef DEBUG_ISSTALE
+  printf("Checking entry for staleness: ");
+  FILE_output out(stdout);
+  showEntry(out, entry);
+  printf("\n");
+  fflush(stdout);
+#endif
   const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
 
   //
@@ -1622,7 +1678,10 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       :   global_et;
   MEDDLY_DCASSERT(et);
 
-  if (et->isMarkedForDeletion()) return true;
+#ifdef DEBUG_ISSTALE
+  printf("\tChecking et marked?\n");
+#endif
+  if (et->isMarkedForDeletion()) return YES_stale();
 
   entry += SHIFT;
   const unsigned reps = (et->isRepeating()) ? *entry++ : 0;
@@ -1648,12 +1707,18 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     et->getKeyType(i, t, f);
     MEDDLY_CHECK_RANGE(0, t, 7);
     if (f) {
+#ifdef DEBUG_ISSTALE
+      printf("\tchecking key item %u\n", i);
+#endif
       MEDDLY_DCASSERT(NODE == t);
       if (MEDDLY::forest::ACTIVE != f->getNodeStatus(*entry)) {
-        return true;
+        return YES_stale();
       }
       entry++;
     } else {
+#ifdef DEBUG_ISSTALE
+      printf("\tskipping key item %u, %u slots\n", i, slots_for_type[t]);
+#endif
       MEDDLY_DCASSERT(NODE != t);
       entry += slots_for_type[t];
     }
@@ -1697,12 +1762,18 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     et->getResultType(i, t, f);
     MEDDLY_CHECK_RANGE(0, t, 7);
     if (f) {
+#ifdef DEBUG_ISSTALE
+      printf("\tchecking result item %u\n", i);
+#endif
       MEDDLY_DCASSERT(NODE == t);
       if (MEDDLY::forest::ACTIVE != f->getNodeStatus(*entry)) {
-        return true;
+        return YES_stale();
       }
       entry++;
     } else {
+#ifdef DEBUG_ISSTALE
+      printf("\tskipping result item %u, %u slots\n", i, slots_for_type[t]);
+#endif
       MEDDLY_DCASSERT(NODE != t);
       entry += slots_for_type[t];
     }
@@ -1736,7 +1807,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     */
   } // for i
 
-  return false;
+  return NO_stale();
 }
 
 #endif
@@ -1771,12 +1842,18 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     et->getResultType(i, t, f);
     MEDDLY_CHECK_RANGE(0, t, 7);
     if (f) {
+#ifdef DEBUG_ISDEAD
+      printf("\tchecking result item %u\n", i);
+#endif
       MEDDLY_DCASSERT(NODE == t);
       if (MEDDLY::forest::DEAD == f->getNodeStatus(*result)) {
         return true;
       }
       result++;
     } else {
+#ifdef DEBUG_ISDEAD
+      printf("\tskipping result item %u, %u slots\n", i, slots_for_type[t]);
+#endif
       MEDDLY_DCASSERT(NODE != t);
       result += slots_for_type[t];
     }
@@ -1977,13 +2054,9 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 
 template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
-::showEntry(output &s, unsigned long h) const
+::showEntry(output &s, const int* entry) const
 {
-#ifdef INTEGRATED_MEMMAN
-  const int* entry = entries+h;
-#else
-  const int* entry = (const int*) MMAN->getChunkAddress(h);
-#endif
+  MEDDLY_DCASSERT(entry);
 
 #ifdef OLD_OP_CT
   operation* op = MONOLITHIC

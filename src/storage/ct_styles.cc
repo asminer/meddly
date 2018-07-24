@@ -32,8 +32,11 @@
 // #define DEBUG_LIST2TABLE
 // #define DEBUG_CTALLOC
 
+// #define DEBUG_ISDEAD
+// #define DEBUG_ISSTALE
 // #define DEBUG_REMOVESTALES
-// #define SUMMARY_STALES
+// #define DEBUG_REMOVESTALES_DETAILS
+
 
 #define INTEGRATED_MEMMAN
 

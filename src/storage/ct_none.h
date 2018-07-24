@@ -833,7 +833,7 @@ template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_none<MONOLITHIC, CHAINED>::removeStales()
 {
 #ifdef DEBUG_REMOVESTALES
-  fprintf(stdout, "Removing stales in CT (size %d, entries %u)\n", 
+  fprintf(stdout, "Removing stales in CT (size %lu, entries %lu)\n", 
         tableSize, perf.numEntries
   );
 #endif
@@ -920,9 +920,11 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::removeStales()
   fprintf(stdout, "Done removing CT stales (size %lu, entries %lu)\n", 
     tableSize, perf.numEntries
   );
+#ifdef DEBUG_REMOVESTALES_DETAILS
   FILE_output out(stderr);
   out << "CT after removing stales:\n";
   show(out, 9);
+#endif
   fflush(stdout);
 #endif
 }
