@@ -21,7 +21,7 @@
 #include "ct_styles.h"
 
 
-#define SPOOKY_HASH
+// #define SPOOKY_HASH
 
 // #define DEBUG_SLOW
 
@@ -47,11 +47,12 @@
 #include "../SpookyV2.h"
 #endif
 
-#ifndef OLD_OP_CT
+#ifdef OLD_OP_CT
+#include "ct_old.h"
+#else
+#include "ct_typebased.h"
 #include "ct_none.h"
 #endif
-
-#include "ct_typebased.h"
 
 
 // **********************************************************************
@@ -68,7 +69,7 @@ MEDDLY::compute_table*
 MEDDLY::monolithic_chained_style::create(const ct_initializer::settings &s) const 
 {
 #ifdef OLD_OP_CT
-  return new ct_typebased<true, true>(s, 0, 0);
+  return new ct_old<true, true>(s, 0, 0);
 #else
   switch (s.compression) {
     case ct_initializer::None:
@@ -101,7 +102,7 @@ MEDDLY::compute_table*
 MEDDLY::monolithic_unchained_style::create(const ct_initializer::settings &s) const 
 {
 #ifdef OLD_OP_CT
-  return new ct_typebased<true, false>(s, 0, 0);
+  return new ct_old<true, false>(s, 0, 0);
 #else
   switch (s.compression) {
     case ct_initializer::None:
@@ -133,7 +134,7 @@ MEDDLY::compute_table*
 MEDDLY::operation_chained_style::create(const ct_initializer::settings &s, operation* op, unsigned slot) const 
 {
 #ifdef OLD_OP_CT
-  return new ct_typebased<false, true>(s, op, slot);
+  return new ct_old<false, true>(s, op, slot);
 #else
   switch (s.compression) {
     case ct_initializer::None:
@@ -167,7 +168,7 @@ MEDDLY::compute_table*
 MEDDLY::operation_unchained_style::create(const ct_initializer::settings &s, operation* op, unsigned slot) const 
 {
 #ifdef OLD_OP_CT
-  return new ct_typebased<false, false>(s, op, slot);
+  return new ct_old<false, false>(s, op, slot);
 #else
   switch (s.compression) {
     case ct_initializer::None:

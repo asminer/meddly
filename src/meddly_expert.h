@@ -42,7 +42,7 @@
 #include <cstdint>
 #include <map>
 
-// #define OLD_OP_CT
+#define OLD_OP_CT
 // #define USE_NODE_STATUS
 
 namespace MEDDLY {
