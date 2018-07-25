@@ -71,6 +71,13 @@ namespace MEDDLY {
       /// Grab space for a new entry
       node_address newEntry(unsigned size);
 
+#ifdef SPOOKY_HASH
+
+      static inline unsigned long raw_hash(const int* k, int length) {
+        return SpookyHash::Hash64(k, length*sizeof(int), 0x0c0ffee);
+      }
+
+#else
       /*
           Use our own, built-in, specialized hash
           instead of hash_stream because it's faster.
@@ -127,6 +134,8 @@ namespace MEDDLY {
 
         return c;
       }
+
+#endif
 
       inline unsigned hash(const int* k, int length) const {
         return raw_hash(k, length) % tableSize;

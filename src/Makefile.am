@@ -28,6 +28,7 @@ libmeddly_la_SOURCES = \
   unique_table.cc \
   loggers.h loggers.cc \
   global_rebuilder.cc \
+  SpookyV2.cc \
   \
   reordering/reordering_factory.h \
   reordering/bring_up_reordering.h \

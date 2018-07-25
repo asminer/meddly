@@ -21,7 +21,9 @@
 #ifndef CT_NONE_H
 #define CT_NONE_H
 
+// #ifndef SPOOKY_HASH
 #include "../hash_stream.h"
+// #endif
 
 // **********************************************************************
 // *                                                                    *
