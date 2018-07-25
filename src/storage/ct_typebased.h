@@ -49,11 +49,7 @@ namespace MEDDLY {
       // required functions
 
       virtual bool isOperationTable() const   { return !MONOLITHIC; }
-#ifdef OLD_OP_CT
-      virtual entry_result& find(entry_key* key);
-#else
       virtual void find(entry_key* key, entry_result &res);
-#endif
       virtual void addEntry(entry_key* key, const entry_result& res);
       virtual void updateEntry(entry_key* key, const entry_result& res);
       virtual void removeStales();
@@ -225,37 +221,6 @@ namespace MEDDLY {
       inline int* checkEqualityAndStatus(int* entry, const entry_key* key, bool &discard)
       {
         int* entry_without_next = CHAINED ? (entry+1) : entry;
-#ifdef OLD_OP_CT
-        const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
-        if (equal_sw(entry_without_next, key->rawData(MONOLITHIC), key->dataLength(MONOLITHIC))) 
-        {
-          // Equal
-          if (key->getOp()->shouldStaleCacheHitsBeDiscarded()) {
-#ifndef USE_NODE_STATUS
-            discard = key->getOp()->isEntryStale(entry+SHIFT);
-#else
-            discard = (MEDDLY::forest::node_status::DEAD == key->getOp()->getEntryStatus(entry+SHIFT) );
-#endif
-          } else {
-            discard = false;
-          }
-          return entry_without_next + key->dataLength(MONOLITHIC);
-        } 
-        //
-        // Not equal
-        //
-        if (checkStalesOnFind) {
-#ifndef USE_NODE_STATUS
-          discard = key->getOp()->isEntryStale(entry+SHIFT);
-#else
-          discard = (MEDDLY::forest::node_status::ACTIVE != key->getOp()->getEntryStatus(entry+SHIFT) );
-#endif
-        } else {
-          discard = false;
-        }
-        return 0;
-#else // OLD_OP_CT
-
         const unsigned keyslots = key->numTempBytes() / sizeof(int);
         if (equal_sw(entry_without_next, (const int*) key->readTempData(), keyslots))
         {
@@ -291,28 +256,8 @@ namespace MEDDLY {
           } // if checkStalesOnFind
           return 0;
         }
-#endif // OLD_OP_CT
       }
 
-
-#ifdef OLD_OP_CT
-      inline bool isStale(const int* entry) const 
-      {
-          const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
-
-          operation* currop = MONOLITHIC
-            ?   operation::getOpWithIndex(entry[CHAINED?1:0])
-            :   global_op;
-          MEDDLY_DCASSERT(currop);
-
-#ifndef USE_NODE_STATUS
-          return currop->isEntryStale(entry+SHIFT);
-#else
-          return MEDDLY::forest::node_status::ACTIVE != currop->getEntryStatus(entry+SHIFT);
-#endif
-      }
-
-#else // OLD_OP_CT
 
       /**
           Check if an entry is stale.
@@ -329,16 +274,10 @@ namespace MEDDLY {
       */
       bool isDead(const int* res, const entry_type* et) const;
 
-#endif // OLD_OP_CT
 
       /**
           Copy a result into an entry.
       */
-#ifdef OLD_OP_CT
-      inline void setResult(int* respart, const entry_result &res) {
-        memcpy(respart, res.rawData(), res.dataLength()*sizeof(node_handle));
-      }
-#else
       inline void setResult(int* respart, const entry_result &res, const entry_type* et) {
         const entry_item* resdata = res.rawData();
         for (unsigned i=0; i<res.dataLength(); i++) {
@@ -372,7 +311,6 @@ namespace MEDDLY {
             } // switch t
         } // for i
       }
-#endif
 
       /// Display a chain 
       inline void showChain(output &s, int L) const {
@@ -426,13 +364,8 @@ namespace MEDDLY {
 
 
     private:
-#ifdef OLD_OP_CT
-      /// Global operation.  Ignored when MONOLITHIC is true.
-      operation* global_op; 
-#else
       /// Global entry type.  Ignored when MONOLITHIC is true.
       const entry_type* global_et;
-#endif
 
       /// Hash table
       int*  table;
@@ -496,11 +429,7 @@ MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::ct_typebased(
   } else {
     MEDDLY_DCASSERT(op);
   }
-#ifdef OLD_OP_CT
-  global_op = op;
-#else
   global_et = op ? getEntryType(op, slot) : 0;
-#endif
 
   /*
       Initialize memory management for entries.
@@ -718,21 +647,10 @@ inline int* MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 
 // **********************************************************************
 
-#ifdef OLD_OP_CT
-template <bool MONOLITHIC, bool CHAINED>
-MEDDLY::compute_table::entry_result& 
-MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
-::find(entry_key *key)
-#else
 template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 ::find(entry_key *key, entry_result& res)
-#endif
 {
-#ifdef OLD_OP_CT
-  static entry_result res;
-  setHash(key, raw_hash(key->rawData(MONOLITHIC), key->dataLength(MONOLITHIC)));
-#else
   //
   // Allocate temporary space for key preprocessing.
   //
@@ -802,17 +720,12 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   //
   setHash(key, raw_hash(temp_entry, temp_bytes / sizeof(int)));
 
-#endif
-
 
   int* entry_result = findEntry(key);
   perf.pings++;
 
   if (entry_result) {
     perf.hits++;
-#ifdef OLD_OP_CT
-    res.setResult(entry_result, key->getOp()->getAnsLength());
-#else
     //
     // Fill res
     //
@@ -847,13 +760,9 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     } // for i
     res.reset();
     res.setValid();
-#endif
   } else {
     res.setInvalid();
   }
-#ifdef OLD_OP_CT
-  return res;
-#endif
 }
 
 // **********************************************************************
@@ -863,47 +772,29 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
 {
   MEDDLY_DCASSERT(key);
   if (!MONOLITHIC) {
-#ifdef OLD_OP_CT
-    if (key->getOp() != global_op)
-      throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-#else
     if (key->getET() != global_et)
       throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-#endif
   }
 
   //
   // Increment cache counters for nodes in the key and result
   //
-#ifndef OLD_OP_CT
   key->cacheNodes();
   res.cacheNodes();
-#endif
 
   unsigned h = key->getHash() % tableSize;
 
-#ifdef OLD_OP_CT
-  operation* op = key->getOp();
-  MEDDLY_DCASSERT(op);
-#else
   const entry_type* et = key->getET();
   MEDDLY_DCASSERT(et);
-#endif
 
   //
   // Allocate an entry
   //
 
-#ifdef OLD_OP_CT
-  const unsigned num_slots = 
-    op->getCacheEntryLength() + (CHAINED ? 1 : 0) + (MONOLITHIC ? 1 : 0)
-  ;
-#else
   const unsigned num_slots = 
     ( key->numTempBytes() + key->getET()->getResultBytes() ) / sizeof(int)
     + (CHAINED ? 1 : 0)
   ;
-#endif
   node_address curr = newEntry(num_slots);
 
 #ifdef INTEGRATED_MEMMAN
@@ -916,15 +807,9 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
   // Copy into the entry
   //
   int* key_portion = entry + (CHAINED ? 1 : 0);
-#ifdef OLD_OP_CT
-  memcpy(key_portion, key->rawData(MONOLITHIC), key->dataLength(MONOLITHIC)*sizeof(node_handle));
-  int* res_portion = key_portion + key->dataLength(MONOLITHIC);
-  setResult(res_portion, res);
-#else
   memcpy(key_portion, key->readTempData(), key->numTempBytes());
   int* res_portion = key_portion + key->numTempBytes() / sizeof(int);
   setResult(res_portion, res, et);
-#endif
 
   //
   // Recycle key
@@ -1064,17 +949,12 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
 template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::updateEntry(entry_key* key, const entry_result &res)
 {
-#ifndef OLD_OP_CT
   MEDDLY_DCASSERT(key->getET()->isResultUpdatable());
-#endif
   int* entry_result = findEntry(key);
   if (!entry_result) {
     throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
   }
 
-#ifdef OLD_OP_CT
-  setResult(entry_result, res);
-#else
   //
   // decrement cache counters for old result,
   //
@@ -1144,7 +1024,6 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::updateEntry(entry_key* key, cons
   // Overwrite result
   //
   setResult(entry_result, res, key->getET());
-#endif
 }
 
 // **********************************************************************
@@ -1286,13 +1165,8 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   if (MONOLITHIC) {
     s << "Monolithic compute table\n";
   } else {
-#ifdef OLD_OP_CT
-    s << "Compute table for " << global_op->getName() << " (index " 
-      << long(global_op->getIndex()) << ")\n";
-#else
     s << "Compute table for " << global_et->getName() << " (index " 
       << long(global_et->getID()) << ")\n";
-#endif
   }
 
   s.put("", 6);
@@ -1483,20 +1357,12 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::listToTable(int L)
     const int curr = L;
     L = entry[0];
 
-#ifdef OLD_OP_CT
-    operation* currop = MONOLITHIC
-      ?   operation::getOpWithIndex(entry[1])
-      :   global_op;
-    MEDDLY_DCASSERT(currop);
-    const unsigned hashlength = M + currop->getKeyLength();
-#else
     const entry_type* et = MONOLITHIC
       ?   getEntryType(entry[1])
       :   global_et;
     MEDDLY_DCASSERT(et);
     const unsigned reps = (et->isRepeating()) ? entry[ M+1 ] : 0;
     const unsigned hashlength = M + (et->isRepeating() ? 1 : 0) + ( et->getKeyBytes(reps) / sizeof(int) );
-#endif
 
     const unsigned h = hash(entry + 1, hashlength);
     entry[0] = table[h];
@@ -1564,20 +1430,12 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::rehashTable(const int* oldT, uns
     const int* entry = (const int*) MMAN->getChunkAddress(curr);
 #endif
 
-#ifdef OLD_OP_CT
-    operation* currop = MONOLITHIC
-      ?   operation::getOpWithIndex(entry[0])
-      :   global_op;
-    MEDDLY_DCASSERT(currop);
-    const unsigned hashlength = M + currop->getKeyLength();
-#else
     const entry_type* et = MONOLITHIC
       ?   getEntryType(entry[0])
       :   global_et;
     MEDDLY_DCASSERT(et);
     const unsigned reps = (et->isRepeating()) ? entry[ M ] : 0;
     const unsigned hashlength = M + (et->isRepeating() ? 1 : 0) + ( et->getKeyBytes(reps) / sizeof(int) );
-#endif
 
     unsigned h = hash(entry, hashlength);
     setTable(h, curr);
@@ -1663,8 +1521,6 @@ inline bool NO_stale()
 #endif
   return false;
 }
-
-#ifndef OLD_OP_CT
 
 template <bool MONOLITHIC, bool CHAINED>
 bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED> 
@@ -1819,11 +1675,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   return NO_stale();
 }
 
-#endif
-
 // **********************************************************************
-
-#ifndef OLD_OP_CT
 
 template <bool MONOLITHIC, bool CHAINED>
 bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED> 
@@ -1899,8 +1751,6 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   return false;
 }
 
-#endif
-
 // **********************************************************************
 
 template <bool MONOLITHIC, bool CHAINED>
@@ -1923,17 +1773,6 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   // we need to notify the forest to decrement
   // the CT counter.
   //
-
-#ifdef OLD_OP_CT
-
-  operation* op = MONOLITHIC
-    ?   operation::getOpWithIndex(entry[CHAINED ? 1 : 0])
-    :   global_op;
-  MEDDLY_DCASSERT(op);
-  op->discardEntry(entry + SHIFT);    // Old way - OP handles decrementing counters
-  slots = op->getCacheEntryLength() + SHIFT;
-
-#else
 
   const entry_type* et = MONOLITHIC
     ?   getEntryType(entry[CHAINED ? 1 : 0])
@@ -2041,8 +1880,6 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   } // for i
   slots = ptr - entry;
 
-#endif
-
   //
   // Recycle
   //
@@ -2066,15 +1903,6 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 ::showEntry(output &s, const int* entry) const
 {
   MEDDLY_DCASSERT(entry);
-
-#ifdef OLD_OP_CT
-  operation* op = MONOLITHIC
-      ?   operation::getOpWithIndex(entry[CHAINED ? 1 : 0])
-      :   global_op;
-  MEDDLY_DCASSERT(op);
-  op->showEntry(s, entry + (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0), false);
-
-#else
 
   const entry_type* et = MONOLITHIC
     ?   getEntryType(entry[CHAINED?1:0])
@@ -2171,7 +1999,6 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       } // switch et->getResultType()
   } // for i
   s << "]";
-#endif  // ifdef OLD_OP_CT
 }
 
 
@@ -2183,12 +2010,6 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 {
   MEDDLY_DCASSERT(key);
 
-#ifdef OLD_OP_CT
-  operation* op = key->getOp();
-  MEDDLY_DCASSERT(op);
-  op->showEntry(s, key->rawData(false), true);
-
-#else
   const entry_type* et = key->getET();
   MEDDLY_DCASSERT(et);
 
@@ -2223,7 +2044,6 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       } // switch et->getKeyType()
   } // for i
   s << "): ?]";
-#endif
 }
 
 
