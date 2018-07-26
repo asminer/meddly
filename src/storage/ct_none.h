@@ -21,10 +21,6 @@
 #ifndef CT_NONE_H
 #define CT_NONE_H
 
-// #ifndef SPOOKY_HASH
-#include "../hash_stream.h"
-// #endif
-
 // **********************************************************************
 // *                                                                    *
 // *                                                                    *
@@ -145,7 +141,7 @@ namespace MEDDLY {
 
       /** 
         Check equality.
-        We advance pointer a and return it if equal.
+        We advance pointer a and return the result portion if equal.
         If unequal we return 0.
       */
       static inline entry_item* equal(entry_item* a, const entry_key* key) {

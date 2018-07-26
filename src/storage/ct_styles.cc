@@ -21,8 +21,6 @@
 #include "ct_styles.h"
 
 
-// #define SPOOKY_HASH
-
 // #define DEBUG_SLOW
 
 // #define DEBUG_CT
@@ -42,10 +40,7 @@
 
 #define INTEGRATED_MEMMAN
 
-
-#ifdef SPOOKY_HASH
-#include "../SpookyV2.h"
-#endif
+#include "../hash_stream.h"
 
 #ifdef OLD_OP_CT
 #include "ct_old.h"
