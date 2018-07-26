@@ -146,58 +146,6 @@ namespace MEDDLY {
       }
 
 
-
-      /** 
-        Check equality.
-        We advance pointer a and return the result portion if equal.
-        If unequal we return 0.
-      */
-      static inline int* equal(int* a, const entry_key* key) {
-        const entry_type* et = key->getET();
-        MEDDLY_DCASSERT(et);
-        //
-        // Compare operator, if needed
-        //
-        if (MONOLITHIC) {
-          if (et->getID() != *a) return 0;
-          a++;
-        }
-        //
-        // Compare #repetitions, if needed
-        //
-        if (et->isRepeating()) {
-          if (key->numRepeats() != *a) return 0;
-          a++;
-        }
-        //
-        // Compare key portion
-        //
-        const entry_item* b = key->rawData();
-        const unsigned klen = et->getKeySize(key->numRepeats());
-        for (unsigned i=0; i<klen; i++) {
-          const typeID t = et->getKeyType(i);
-          switch (t) {
-              case FLOAT:   // Hack: treat like integer
-              case INTEGER:
-                        if (b[i].I != *a) return 0;
-                        a++;
-                        continue;
-              case NODE:
-                        if (b[i].N != *a) return 0;
-                        a++;
-                        continue;
-              case LONG:
-                        if (b[i].L != *((long*)a) ) return 0;
-                        a += 2;
-                        continue;
-              default:
-                        // Other cases shouldn't be in the key
-                        MEDDLY_DCASSERT(0);
-          } // switch
-        } // for i
-        return a;
-      }
-
       /**
           Check if the key portion of an entry equals key and should be discarded.
             @param  entry   Complete entry in CT to check.
@@ -974,35 +922,6 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::updateEntry(entry_key* key, cons
       MEDDLY_DCASSERT(NODE != t);
       ptr += slots_for_type[t];
     }
-    /*
-    switch (t) {
-        case NODE:
-                        MEDDLY_DCASSERT(f);
-                        f->uncacheNode( *ptr );
-                        ptr++;
-                        continue;
-        case INTEGER:
-                        ptr++;
-                        continue;
-        case LONG:
-                        ptr += sizeof(long) / sizeof(int);
-                        continue;
-        case FLOAT:
-                        ptr += sizeof(float) / sizeof(int);
-                        continue;
-        case DOUBLE:
-                        ptr += sizeof(double) / sizeof(int);
-                        continue;
-        case POINTER: {
-                        ct_object* P = *((ct_object**)(ptr));
-                        delete P;
-                        ptr += sizeof(void*) / sizeof(int);
-                        continue;
-                      }
-        default:
-                        MEDDLY_DCASSERT(0);
-    }
-    */
   } // for i
 
   //
@@ -1578,34 +1497,6 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       entry += slots_for_type[t];
     }
 
-    /*
-    switch (t) {
-        case NODE:
-                        MEDDLY_DCASSERT(f);
-                        if (MEDDLY::forest::ACTIVE != f->getNodeStatus(*entry)) {
-                          return true;
-                        }
-                        entry++;
-                        continue;
-        case INTEGER:
-                        entry++;
-                        continue;
-        case LONG:
-                        entry += sizeof(long) / sizeof(int);
-                        continue;
-        case FLOAT:
-                        entry += sizeof(float) / sizeof(int);
-                        continue;
-        case DOUBLE:
-                        entry += sizeof(double) / sizeof(int);
-                        continue;
-        case POINTER: 
-                        entry += sizeof(void*) / sizeof(int);
-                        continue;
-        default:
-                        MEDDLY_DCASSERT(0);
-    }
-    */
   } // for i
 
   // 
@@ -1632,34 +1523,6 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       MEDDLY_DCASSERT(NODE != t);
       entry += slots_for_type[t];
     }
-    /*
-    switch (t) {
-        case NODE:
-                        MEDDLY_DCASSERT(f);
-                        if (MEDDLY::forest::ACTIVE != f->getNodeStatus(*entry)) {
-                          return true;
-                        }
-                        entry++;
-                        continue;
-        case INTEGER:
-                        entry++;
-                        continue;
-        case LONG:
-                        entry += sizeof(long) / sizeof(int);
-                        continue;
-        case FLOAT:
-                        entry += sizeof(float) / sizeof(int);
-                        continue;
-        case DOUBLE:
-                        entry += sizeof(double) / sizeof(int);
-                        continue;
-        case POINTER: 
-                        entry += sizeof(void*) / sizeof(int);
-                        continue;
-        default:
-                        MEDDLY_DCASSERT(0);
-    }
-    */
   } // for i
 
   return NO_stale();
@@ -1708,35 +1571,6 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       MEDDLY_DCASSERT(NODE != t);
       result += slots_for_type[t];
     }
-    /*
-    switch (t) {
-      case NODE:  
-                  MEDDLY_DCASSERT(f);
-                  if (MEDDLY::forest::DEAD == f->getNodeStatus(*result)) {
-                    return true;
-                  }
-                  result++;
-                  continue;
-      case INTEGER:
-                  result++;
-                  continue;
-      case FLOAT:
-                  result += sizeof(float) / sizeof(int);
-                  continue;
-      case LONG:
-                  result += sizeof(long) / sizeof(int);
-                  continue;
-      case DOUBLE:
-                  result += sizeof(double) / sizeof(int);
-                  continue;
-      case POINTER:
-                  result += sizeof(void*) / sizeof(int);
-                  continue;
-      default:
-                  MEDDLY_DCASSERT(0);
-
-    }
-    */
   } // for i
   return false;
 }
@@ -1797,26 +1631,16 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     expert_forest* f;
     et->getKeyType(i, t, f);
     MEDDLY_CHECK_RANGE(0, t, 7);
+    //
+    // Believe it or not, this switch statement is actually
+    // more efficient than using two if's
+    //
     switch (t) {
         case NODE:
                         MEDDLY_DCASSERT(f);
                         f->uncacheNode( *ptr );
                         ptr++;
                         continue;
-        /*
-        case INTEGER:
-                        ptr++;
-                        continue;
-        case LONG:
-                        ptr += sizeof(long) / sizeof(int);
-                        continue;
-        case FLOAT:
-                        ptr += sizeof(float) / sizeof(int);
-                        continue;
-        case DOUBLE:
-                        ptr += sizeof(double) / sizeof(int);
-                        continue;
-        */
         case POINTER: {
                         ct_object* P = *((ct_object**)(ptr));
                         delete P;
@@ -1827,6 +1651,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
                         MEDDLY_DCASSERT(ERROR != t);
                         ptr += slots_for_type[t];
     }
+
   } // for i
 
   //
@@ -1837,26 +1662,16 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     expert_forest* f;
     et->getResultType(i, t, f);
     MEDDLY_CHECK_RANGE(0, t, 7);
+    //
+    // Believe it or not, this switch statement is actually
+    // more efficient than using two if's
+    //
     switch (t) {
         case NODE:
                         MEDDLY_DCASSERT(f);
                         f->uncacheNode( *ptr );
                         ptr++;
                         continue;
-        /*
-        case INTEGER:
-                        ptr++;
-                        continue;
-        case LONG:
-                        ptr += sizeof(long) / sizeof(int);
-                        continue;
-        case FLOAT:
-                        ptr += sizeof(float) / sizeof(int);
-                        continue;
-        case DOUBLE:
-                        ptr += sizeof(double) / sizeof(int);
-                        continue;
-        */
         case POINTER: {
                         ct_object* P = *((ct_object**)(ptr));
                         delete P;
@@ -1867,6 +1682,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
                         MEDDLY_DCASSERT(ERROR != t);
                         ptr += slots_for_type[t];
     }
+
   } // for i
   slots = ptr - entry;
 
