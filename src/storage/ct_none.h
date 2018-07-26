@@ -65,29 +65,11 @@ namespace MEDDLY {
       /// Grab space for a new entry
       node_address newEntry(unsigned size);
 
-      /*
-          Use our own, built-in, specialized hash
-          instead of hash_stream because it's faster.
-      */
-
       // TBD - migrate to 64-bit hash
 
       static unsigned hash(const entry_key* key);
       static unsigned hash(const entry_type* et, const entry_item* entry);
 
-/*
-      static inline unsigned raw_hash(const void* x, unsigned bytes) {
-        hash_stream H;
-        H.start(12345);
-        H.push(x, bytes);
-        return H.finish();
-      }
-
-      inline unsigned hash(const void* x, unsigned bytes) const {
-        return raw_hash(x, bytes) % tableSize;
-      }
-*/
-    
       inline void incMod(unsigned long &h) {
         h++;
         if (h>=tableSize) h=0;
@@ -1306,69 +1288,28 @@ unsigned MEDDLY::ct_none<MONOLITHIC, CHAINED>
   MEDDLY_DCASSERT(et);
 
   hash_stream H;
-  bool started = false;
+  H.start();
+
   //
   // Operator, if needed
   //
   if (MONOLITHIC) {
-    H.start(et->getID());
-    started = true;
+    H.push(et->getID());
   }
   //
   // #repetitions, if needed
   //
   if (et->isRepeating()) {
-    if (started) {
-      H.push(key->numRepeats());
-    } else {
-      H.start(key->numRepeats());
-      started = true;
-    }
+    H.push(key->numRepeats());
   }
 
   //
   // Hash key portion only
   //
 
-  //
-  // Special case - we haven't started hashing yet
-  //
-  unsigned i=0;
   const entry_item* entry = key->rawData();
-  if (!started) {
-    const typeID t = et->getKeyType(i);
-    switch (t) {
-        case FLOAT:
-                        MEDDLY_DCASSERT(sizeof(entry[i].F) == sizeof(entry[i].U));
-        case NODE:
-                        MEDDLY_DCASSERT(sizeof(entry[i].N) == sizeof(entry[i].U));
-        case INTEGER:
-                        MEDDLY_DCASSERT(sizeof(entry[i].I) == sizeof(entry[i].U));
-                        H.start(entry[i].U);
-                        break;
-
-        case DOUBLE:
-                        MEDDLY_DCASSERT(sizeof(entry[i].D) == sizeof(entry[i].L));
-        case POINTER:
-                        MEDDLY_DCASSERT(sizeof(entry[i].P) == sizeof(entry[i].L));
-        case LONG:
-                        {
-                          unsigned* hack = (unsigned*) (& (entry[i].L));
-                          H.start(hack[0]);
-                          H.push(hack[1]);
-                        }
-                        break;
-        default:
-                        MEDDLY_DCASSERT(0);
-    } // switch t
-    i++;
-  } // if !started
-
-  //
-  // Do rest of key portion
-  //
   const unsigned klen = et->getKeySize(key->numRepeats());
-  for ( ; i<klen; i++) {    // i initialized earlier
+  for (unsigned i=0; i<klen; i++) {    // i initialized earlier
     const typeID t = et->getKeyType(i);
     switch (t) {
         case FLOAT:
