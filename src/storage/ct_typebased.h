@@ -21,10 +21,6 @@
 #ifndef CT_TYPEBASED_H
 #define CT_TYPEBASED_H
 
-// #define EQUAL_USES_MEMCPY
-
-#define USE_EQUAL_SW
-
 // **********************************************************************
 // *                                                                    *
 // *                                                                    *
@@ -69,6 +65,7 @@ namespace MEDDLY {
       /// Grab space for a new entry
       node_address newEntry(unsigned size);
 
+
       static inline unsigned raw_hash(const int* k, int length) {
         return hash_stream::raw_hash( (const unsigned*) k, length );
       }
@@ -76,7 +73,7 @@ namespace MEDDLY {
       inline unsigned hash(const int* k, int length) const {
         return raw_hash(k, length) % tableSize;
       }
-    
+
       inline void incMod(unsigned &h) {
         h++;
         if (h>=tableSize) h=0;
@@ -130,10 +127,11 @@ namespace MEDDLY {
 
       /// Check equality
       static inline bool equal_sw(const int* a, const int* b, int N) {
-#ifdef EQUAL_USES_MEMCPY
-        return (0==memcmp(a, b, N*sizeof(int)));
-#else
-        switch (N) {  // note: cases 8 - 2 fall through
+        switch (N) {  // note: cases 12 - 2 fall through
+          case 12:    if (a[11] != b[11]) return false;
+          case 11:    if (a[10] != b[10]) return false;
+          case 10:    if (a[9] != b[9]) return false;
+          case  9:    if (a[8] != b[8]) return false;
           case  8:    if (a[7] != b[7]) return false;
           case  7:    if (a[6] != b[6]) return false;
           case  6:    if (a[5] != b[5]) return false;
@@ -145,7 +143,6 @@ namespace MEDDLY {
           case  0:    return true;
           default:    return (0==memcmp(a, b, N*sizeof(int)));
         };
-#endif
       }
 
 
@@ -213,7 +210,6 @@ namespace MEDDLY {
       inline int* checkEqualityAndStatus(int* entry, const entry_key* key, bool &discard)
       {
         int* entry_without_next = CHAINED ? (entry+1) : entry;
-#ifdef USE_EQUAL_SW
         const unsigned keyslots = key->numTempBytes() / sizeof(int);
         if (equal_sw(entry_without_next, (const int*) key->readTempData(), keyslots))
         {
@@ -221,11 +217,6 @@ namespace MEDDLY {
           // Equal.
           //
           int* result = entry_without_next + keyslots;
-#else // USE_EQUAL_SW
-        int* result = equal(entry_without_next, key);
-        if (result) 
-        {
-#endif  // USE_EQUAL_SW
 
 #ifdef DEBUG_ISDEAD
           printf("Checking entry result for deadness: ");
@@ -650,11 +641,12 @@ template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 ::find(entry_key *key, entry_result& res)
 {
+  const entry_type* et = key->getET();
+  MEDDLY_DCASSERT(et);
+
   //
   // Allocate temporary space for key preprocessing.
   //
-  const entry_type* et = key->getET();
-  MEDDLY_DCASSERT(et);
   unsigned temp_bytes =
     et->getKeyBytes( key->numRepeats() ) 
     +
@@ -718,7 +710,6 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   // Hash the key
   //
   setHash(key, raw_hash(temp_entry, temp_bytes / sizeof(int)));
-
 
   int* entry_result = findEntry(key);
   perf.pings++;
@@ -1362,8 +1353,8 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::listToTable(int L)
     MEDDLY_DCASSERT(et);
     const unsigned reps = (et->isRepeating()) ? entry[ M+1 ] : 0;
     const unsigned hashlength = M + (et->isRepeating() ? 1 : 0) + ( et->getKeyBytes(reps) / sizeof(int) );
-
     const unsigned h = hash(entry + 1, hashlength);
+
     entry[0] = table[h];
     table[h] = curr;
 #ifdef DEBUG_LIST2TABLE
@@ -1435,8 +1426,8 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::rehashTable(const int* oldT, uns
     MEDDLY_DCASSERT(et);
     const unsigned reps = (et->isRepeating()) ? entry[ M ] : 0;
     const unsigned hashlength = M + (et->isRepeating() ? 1 : 0) + ( et->getKeyBytes(reps) / sizeof(int) );
-
     unsigned h = hash(entry, hashlength);
+
     setTable(h, curr);
 
 #ifdef DEBUG_REHASH

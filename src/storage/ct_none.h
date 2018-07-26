@@ -1346,27 +1346,21 @@ unsigned MEDDLY::ct_none<MONOLITHIC, CHAINED>
 ::hash(const entry_type* et, const entry_item* entry)
 {
   hash_stream H;
-  bool started = false;
+  H.start();
   //
   // Operator, if needed
   //
   if (MONOLITHIC) {
     MEDDLY_DCASSERT(et->getID() == entry[0].U);
-    H.start(et->getID());
+    H.push(et->getID());
     entry++;
-    started = true;
   }
   //
   // #repetitions, if needed
   //
   unsigned reps = 0;
   if (et->isRepeating()) {
-    if (started) {
-      H.push(entry[0].U);
-    } else {
-      H.start(entry[0].U);
-      started = true;
-    }
+    H.push(entry[0].U);
     reps = entry[0].U;
     entry++;
   }
@@ -1375,43 +1369,8 @@ unsigned MEDDLY::ct_none<MONOLITHIC, CHAINED>
   // Hash key portion only
   //
 
-  //
-  // Special case - we haven't started hashing yet
-  //
-  unsigned i=0;
-  if (!started) {
-    const typeID t = et->getKeyType(i);
-    switch (t) {
-        case FLOAT:
-                        MEDDLY_DCASSERT(sizeof(entry[i].F) == sizeof(entry[i].U));
-        case NODE:
-                        MEDDLY_DCASSERT(sizeof(entry[i].N) == sizeof(entry[i].U));
-        case INTEGER:
-                        MEDDLY_DCASSERT(sizeof(entry[i].I) == sizeof(entry[i].U));
-                        H.start(entry[i].U);
-                        break;
-
-        case DOUBLE:
-                        MEDDLY_DCASSERT(sizeof(entry[i].D) == sizeof(entry[i].L));
-        case POINTER:
-                        MEDDLY_DCASSERT(sizeof(entry[i].P) == sizeof(entry[i].L));
-        case LONG:      {
-                          unsigned* hack = (unsigned*) (& (entry[i].L));
-                          H.start(hack[0]);
-                          H.push(hack[1]);
-                        }
-                        break;
-        default:
-                        MEDDLY_DCASSERT(0);
-    } // switch t
-    i++;
-  } // if !started
-
-  //
-  // Do rest of key portion
-  //
   const unsigned klen = et->getKeySize(reps);
-  for ( ; i<klen; i++) {    // i initialized earlier
+  for (unsigned i=0; i<klen; i++) { 
     const typeID t = et->getKeyType(i);
     switch (t) {
         case FLOAT:
