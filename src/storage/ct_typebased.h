@@ -1612,6 +1612,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     reps = 0;
   }
 
+  /*
   const unsigned slots_for_type[] = { 1, 1, 1, 2, 1, 2, 2 };
 
   MEDDLY_DCASSERT(1 == slots_for_type[ERROR]);
@@ -1621,6 +1622,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   MEDDLY_DCASSERT(sizeof(float) / sizeof(int) == slots_for_type[FLOAT]);
   MEDDLY_DCASSERT(sizeof(double) / sizeof(int) == slots_for_type[DOUBLE]);
   MEDDLY_DCASSERT(sizeof(void*) / sizeof(int) == slots_for_type[POINTER]);
+  */
 
   //
   // Key portion
@@ -1641,15 +1643,29 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
                         f->uncacheNode( *ptr );
                         ptr++;
                         continue;
+        case INTEGER:
+        case FLOAT:
+                        ptr++;
+                        continue;
+
         case POINTER: {
                         ct_object* P = *((ct_object**)(ptr));
                         delete P;
                         ptr += sizeof(void*) / sizeof(int);
                         continue;
                       }
+
+        case DOUBLE:
+        case LONG:
+                        ptr+=2;
+                        continue;
+
         default:
+                        MEDDLY_DCASSERT(0);
+                        /*
                         MEDDLY_DCASSERT(ERROR != t);
                         ptr += slots_for_type[t];
+                        */
     }
 
   } // for i
@@ -1672,15 +1688,29 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
                         f->uncacheNode( *ptr );
                         ptr++;
                         continue;
+
+        case INTEGER:
+        case FLOAT:
+                        ptr++;
+                        continue;
+
         case POINTER: {
                         ct_object* P = *((ct_object**)(ptr));
                         delete P;
                         ptr += sizeof(void*) / sizeof(int);
                         continue;
                       }
+
+        case DOUBLE:
+        case LONG:
+                        ptr+=2;
+                        continue;
         default:
+                        MEDDLY_DCASSERT(0);
+                        /*
                         MEDDLY_DCASSERT(ERROR != t);
                         ptr += slots_for_type[t];
+                        */
     }
 
   } // for i
