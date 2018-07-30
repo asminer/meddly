@@ -126,7 +126,7 @@ double MEDDLY::FILE_input::get_real()
   return data;
 }
 
-int MEDDLY::FILE_input::read(int bytes, unsigned char* buffer)
+size_t MEDDLY::FILE_input::read(size_t bytes, unsigned char* buffer)
 {
   return fread(buffer, 1, bytes, inf);
 }
@@ -178,10 +178,10 @@ double MEDDLY::istream_input::get_real()
   return data;
 }
 
-int MEDDLY::istream_input::read(int bytes, unsigned char* buffer)
+size_t MEDDLY::istream_input::read(size_t bytes, unsigned char* buffer)
 {
-  in.read((char*) buffer, bytes);
-  return in.gcount();
+  in.read((char*) buffer, long(bytes));
+  return size_t(in.gcount());
 }
 
 
@@ -301,7 +301,7 @@ void MEDDLY::FILE_output::put(double x, int w, int p, char f)
   }
 }
 
-int MEDDLY::FILE_output::write(int bytes, const unsigned char* buffer)
+size_t MEDDLY::FILE_output::write(size_t bytes, const unsigned char* buffer)
 {
   return fwrite(buffer, 1, bytes, outf);
 }
@@ -384,9 +384,9 @@ void MEDDLY::ostream_output::put(double x, int w, int p, char f)
   out << x;
 }
 
-int MEDDLY::ostream_output::write(int bytes, const unsigned char* buffer)
+size_t MEDDLY::ostream_output::write(size_t bytes, const unsigned char* buffer)
 {
-  out.write((const char*) buffer, bytes);
+  out.write((const char*) buffer, long(bytes));
   // Not sure how to catch this one, so...
   return bytes;
 }

@@ -43,6 +43,7 @@
 #include <map>
 
 // #define OLD_OP_CT
+// #define USE_NODE_STATUS
 
 namespace MEDDLY {
 
@@ -3733,16 +3734,28 @@ class MEDDLY::ct_initializer : public initializer_list {
       OperationUnchainedHash,
     };
 
+    enum compressionOption {
+      /// No compression at all
+      None,
+      /// Compression based on item type
+      TypeBased
+      // TBD - others
+    };
+
     struct settings {
+      public:
         /// Memory manager to use for compute table entries
         const memory_manager_style *MMS;
-        /// Stale removal policy
-        staleRemovalOption staleRemoval;
         /// Maximum compute table size
         size_t maxSize;
-      settings() {
-        MMS = 0;
-      }
+        /// Stale removal policy
+        staleRemovalOption staleRemoval;
+        /// Compression policy
+        compressionOption compression;
+      public:
+        settings() {
+          MMS = 0;
+        }
     };
 
   public:
@@ -3760,6 +3773,7 @@ class MEDDLY::ct_initializer : public initializer_list {
     static void setMaxSize(unsigned ms);
     static void setBuiltinStyle(builtinCTstyle cts);
     static void setUserStyle(const compute_table_style*);
+    static void setCompression(compressionOption co);
 
     // for convenience
 #ifdef OLD_OP_CT
@@ -3838,13 +3852,13 @@ class MEDDLY::compute_table {
       //
 
       struct stats {
-        unsigned numEntries;
-        long hits;
-        long pings;
-        static const int searchHistogramSize = 256;
-        long searchHistogram[searchHistogramSize];
-        long numLargeSearches;
-        int maxSearchLength;
+        unsigned long numEntries;
+        unsigned long hits;
+        unsigned long pings;
+        static const unsigned searchHistogramSize = 256;
+        unsigned long searchHistogram[searchHistogramSize];
+        unsigned long numLargeSearches;
+        unsigned maxSearchLength;
       };
 
       //
@@ -3852,14 +3866,14 @@ class MEDDLY::compute_table {
       //
 
       enum typeID {
-        ERROR,
-        NODE,
-        INTEGER,
-        LONG,
-        HUGEINT,
-        FLOAT,
-        DOUBLE,
-        POINTER
+        ERROR = 0,
+        NODE = 1,
+        INTEGER = 2,
+        LONG = 3,
+        FLOAT = 4,
+        DOUBLE = 5,
+        POINTER = 6
+        // HUGEINT = 7
       };
 
       //
@@ -3869,12 +3883,13 @@ class MEDDLY::compute_table {
 #ifndef OLD_OP_CT
       union entry_item {
         int I;
+        unsigned int U;
         long L;
+        unsigned long UL;
         node_handle N;
         float F;
         double D;
         void* P;
-        unsigned U;
       };
 #endif
 
@@ -4124,10 +4139,10 @@ class MEDDLY::compute_table {
           // interface, for compute_table.  All inlined in meddly_expert.hh
 #ifdef OLD_OP_CT
           const node_handle* rawData(bool includeOp) const;
-          int dataLength(bool includeOp) const;
+          unsigned dataLength(bool includeOp) const;
 #else
           const entry_item* rawData() const;
-          int dataLength() const;
+          unsigned dataLength() const;
           unsigned numRepeats() const;
 
           const void* readTempData() const;
@@ -4223,6 +4238,9 @@ class MEDDLY::compute_table {
 
           // interface, for compute tables.
           void setValid();
+#ifndef OLD_OP_CT
+          void setValid(const entry_item* d);
+#endif
           void setInvalid();
           operator bool() const;
 #ifndef OLD_OP_CT
@@ -4247,6 +4265,7 @@ class MEDDLY::compute_table {
 #else
           const entry_type* etype;
           entry_item* build;
+          const entry_item* data;
 #endif
           bool is_valid;
           unsigned currslot;

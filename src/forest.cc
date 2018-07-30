@@ -708,11 +708,11 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   //
   // Initialize misc. protected data
   //
-#ifndef USE_NODE_STATUS
+// #ifndef USE_NODE_STATUS
   terminalNodesAreStale = false;
-#else
+// #else
   terminalNodesStatus = MEDDLY::forest::ACTIVE;
-#endif
+// #endif
 
   //
   // Initialize misc. private data

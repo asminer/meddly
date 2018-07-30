@@ -79,16 +79,16 @@ MEDDLY::unpacked_node::initFromNode(const expert_forest *f,
   f->fillUnpacked(*this, node, st2);
 }
 
-inline void MEDDLY::unpacked_node::initFull(const expert_forest *f, int level, int tsz)
+inline void MEDDLY::unpacked_node::initFull(const expert_forest *f, int levl, int tsz)
 {
   MEDDLY_DCASSERT(f);
-  bind_to_forest(f, level, tsz, true);
+  bind_to_forest(f, levl, tsz, true);
 }
 
-inline void MEDDLY::unpacked_node::initSparse(const expert_forest *f, int level, int nnz)
+inline void MEDDLY::unpacked_node::initSparse(const expert_forest *f, int levl, int nnz)
 {
   MEDDLY_DCASSERT(f);
-  bind_to_forest(f, level, nnz, false);
+  bind_to_forest(f, levl, nnz, false);
 }
 
 // ****************************************************************************
@@ -871,7 +871,8 @@ MEDDLY::node_headers::setNextOf(node_handle p, node_handle n)
   MEDDLY_DCASSERT(p>0);
   MEDDLY_DCASSERT(p<=a_last);
   MEDDLY_DCASSERT(0==address[p].level);
-  address[p].offset = n;
+  MEDDLY_DCASSERT(n>=0);
+  address[p].offset = node_address(n);
 }
 
 // ******************************************************************
@@ -1057,7 +1058,7 @@ MEDDLY::expert_forest::float_Tencoder::value2handle(float v)
   intfloat x;
   x.real = v;
   // strip lsb in fraction, and add sign bit
-  return (x.integer >> 1) | 0x80000000;
+  return node_handle( (unsigned(x.integer) >> 1) | 0x80000000 );
 }
 
 inline float
@@ -2182,6 +2183,7 @@ MEDDLY::compute_table::entry_key::setup(const compute_table::entry_type* et, uns
     data = (entry_item*) realloc(data, data_alloc*sizeof(entry_item));
     if (0==data) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
+  memset(data, 0, total_slots * sizeof(entry_item));
   currslot = 0;
 #ifdef DEVELOPMENT_CODE
   has_hash = false;
@@ -2259,7 +2261,7 @@ MEDDLY::compute_table::entry_key::rawData(bool includeOp) const
   return includeOp ? data : (data+1);
 }
 
-inline int MEDDLY::compute_table::entry_key::dataLength(bool includeOp) const
+inline unsigned MEDDLY::compute_table::entry_key::dataLength(bool includeOp) const
 { 
   return includeOp ? total_slots : (total_slots-1);
 }
@@ -2272,7 +2274,7 @@ MEDDLY::compute_table::entry_key::rawData() const
   return data;
 }
 
-inline int MEDDLY::compute_table::entry_key::dataLength() const
+inline unsigned MEDDLY::compute_table::entry_key::dataLength() const
 { 
   return total_slots;
 }
@@ -2355,9 +2357,9 @@ inline MEDDLY::node_handle MEDDLY::compute_table::entry_result::readN()
 #ifdef OLD_OP_CT
   return data[currslot++];
 #else
-  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(compute_table::NODE == etype->getResultType(currslot));
-  return build[currslot++].N;
+  return data[currslot++].N;
 #endif
 }
 
@@ -2367,9 +2369,9 @@ inline int MEDDLY::compute_table::entry_result::readI()
 #ifdef OLD_OP_CT
   return data[currslot++];
 #else
-  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(compute_table::INTEGER == etype->getResultType(currslot));
-  return build[currslot++].I;
+  return data[currslot++].I;
 #endif
 }
 
@@ -2381,9 +2383,9 @@ inline float MEDDLY::compute_table::entry_result::readF()
   currslot++;
   return f;
 #else
-  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(compute_table::FLOAT == etype->getResultType(currslot));
-  return build[currslot++].F;
+  return data[currslot++].F;
 #endif
 }
 
@@ -2396,10 +2398,10 @@ inline long MEDDLY::compute_table::entry_result::readL()
   currslot += sizeof(long) / sizeof(node_handle);
   return L;
 #else
-  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(currslot < dataLength());
   MEDDLY_DCASSERT(compute_table::LONG == etype->getResultType(currslot));
-  return build[currslot++].L;
+  return data[currslot++].L;
 #endif
 }
 
@@ -2412,10 +2414,10 @@ inline double MEDDLY::compute_table::entry_result::readD()
   currslot += sizeof(double) / sizeof(node_handle);
   return D;
 #else
-  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(currslot < dataLength());
   MEDDLY_DCASSERT(compute_table::DOUBLE == etype->getResultType(currslot));
-  return build[currslot++].D;
+  return data[currslot++].D;
 #endif
 }
 
@@ -2428,10 +2430,10 @@ inline void* MEDDLY::compute_table::entry_result::readP()
   currslot += sizeof(void*) / sizeof(node_handle);
   return P;
 #else
-  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(currslot < dataLength());
   MEDDLY_DCASSERT(compute_table::POINTER == etype->getResultType(currslot));
-  return build[currslot++].P;
+  return data[currslot++].P;
 #endif
 }
 
@@ -2531,7 +2533,19 @@ inline void
 MEDDLY::compute_table::entry_result::setValid()
 {
   is_valid = true;
+#ifndef OLD_OP_CT
+  data = build;
+#endif
 }
+
+#ifndef OLD_OP_CT
+inline void
+MEDDLY::compute_table::entry_result::setValid(const entry_item* d)
+{
+  is_valid = true;
+  data = d;
+}
+#endif
 
 inline void
 MEDDLY::compute_table::entry_result::setInvalid()

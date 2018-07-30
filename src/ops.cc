@@ -2100,7 +2100,11 @@ MEDDLY::operation::operation(const opname* n, unsigned et_slots)
   //
   // Allocate CTresults
   //
-  CTresult = new compute_table::entry_result [et_slots];
+  if (et_slots) {
+    CTresult = new compute_table::entry_result [et_slots];
+  } else {
+    CTresult = 0;
+  }
 
   //
   // Allocate our slots
@@ -2159,6 +2163,7 @@ MEDDLY::operation::~operation()
   }
   // Don't delete the entries in etype, they're owned by compute_table.
   delete[] etype;
+  delete[] CTresult;
   compute_table::unregisterOp(this, num_etids);
 #endif
 
