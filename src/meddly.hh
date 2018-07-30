@@ -562,12 +562,16 @@ inline bool MEDDLY::variable::isExtensible() const {
 // *                                                                *
 // ******************************************************************
 
-inline int MEDDLY::variable_order::getVarByLevel(int level) const {
-  return level2var[level];
+inline int MEDDLY::variable_order::getVarByLevel(int level) const 
+{
+  MEDDLY_DCASSERT(level>=0);
+  return level2var[size_t(level)];
 }
 
-inline int MEDDLY::variable_order::getLevelByVar(int var) const {
-  return var2level[var];
+inline int MEDDLY::variable_order::getLevelByVar(int var) const 
+{
+  MEDDLY_DCASSERT(var>=0);
+  return var2level[size_t(var)];
 }
 
 // ******************************************************************

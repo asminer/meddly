@@ -733,10 +733,9 @@ class MEDDLY::input {
           @param  bytes   Number of bytes requested
           @param  buffer  Pointer to store the bytes
 
-          @return Number of bytes actually read, 
-                  or negative on error.
+          @return Number of bytes actually read
     */
-    virtual int read(int bytes, unsigned char* buffer) = 0;
+    virtual size_t read(size_t bytes, unsigned char* buffer) = 0;
 
 
   /*
@@ -780,7 +779,7 @@ class MEDDLY::FILE_input : public MEDDLY::input {
     virtual void unget(char);
     virtual long get_integer();
     virtual double get_real();
-    virtual int read(int bytes, unsigned char* buffer);
+    virtual size_t read(size_t bytes, unsigned char* buffer);
 
   private:
     FILE* inf;
@@ -811,7 +810,7 @@ class MEDDLY::istream_input : public MEDDLY::input {
     virtual void unget(char);
     virtual long get_integer();
     virtual double get_real();
-    virtual int read(int bytes, unsigned char* buffer);
+    virtual size_t read(size_t bytes, unsigned char* buffer);
 
   private:
     std::istream &in;
@@ -888,10 +887,9 @@ class MEDDLY::output {
           @param  bytes   Number of bytes in the buffer
           @param  buffer  Pointer to memory location
           
-          @return Number of bytes actually written,
-                  or negative on error.
+          @return Number of bytes actually written
     */
-    virtual int write(int bytes, const unsigned char* buffer) = 0;
+    virtual size_t write(size_t bytes, const unsigned char* buffer) = 0;
 
     /**
         Flush the output stream.
@@ -948,7 +946,7 @@ class MEDDLY::FILE_output : public MEDDLY::output {
     virtual void put(unsigned long x, int w);
     virtual void put_hex(unsigned long x, int w);
     virtual void put(double x, int w, int p, char f);
-    virtual int write(int bytes, const unsigned char* buffer);
+    virtual size_t write(size_t bytes, const unsigned char* buffer);
     virtual void flush();
 
   private:
@@ -981,7 +979,7 @@ class MEDDLY::ostream_output : public MEDDLY::output {
     virtual void put(unsigned long x, int w);
     virtual void put_hex(unsigned long x, int w);
     virtual void put(double x, int w, int p, char f);
-    virtual int write(int bytes, const unsigned char* buffer);
+    virtual size_t write(size_t bytes, const unsigned char* buffer);
     virtual void flush();
 
   private:

@@ -4083,10 +4083,10 @@ class MEDDLY::compute_table {
           // interface, for compute_table.  All inlined in meddly_expert.hh
 #ifdef OLD_OP_CT
           const node_handle* rawData(bool includeOp) const;
-          int dataLength(bool includeOp) const;
+          unsigned dataLength(bool includeOp) const;
 #else
           const entry_item* rawData() const;
-          int dataLength() const;
+          unsigned dataLength() const;
           unsigned numRepeats() const;
 
           const void* readTempData() const;

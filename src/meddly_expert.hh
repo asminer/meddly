@@ -79,16 +79,16 @@ MEDDLY::unpacked_node::initFromNode(const expert_forest *f,
   f->fillUnpacked(*this, node, st2);
 }
 
-inline void MEDDLY::unpacked_node::initFull(const expert_forest *f, int level, int tsz)
+inline void MEDDLY::unpacked_node::initFull(const expert_forest *f, int levl, int tsz)
 {
   MEDDLY_DCASSERT(f);
-  bind_to_forest(f, level, tsz, true);
+  bind_to_forest(f, levl, tsz, true);
 }
 
-inline void MEDDLY::unpacked_node::initSparse(const expert_forest *f, int level, int nnz)
+inline void MEDDLY::unpacked_node::initSparse(const expert_forest *f, int levl, int nnz)
 {
   MEDDLY_DCASSERT(f);
-  bind_to_forest(f, level, nnz, false);
+  bind_to_forest(f, levl, nnz, false);
 }
 
 // ****************************************************************************
@@ -849,7 +849,8 @@ MEDDLY::node_headers::setNextOf(node_handle p, node_handle n)
   MEDDLY_DCASSERT(p>0);
   MEDDLY_DCASSERT(p<=a_last);
   MEDDLY_DCASSERT(0==address[p].level);
-  address[p].offset = n;
+  MEDDLY_DCASSERT(n>=0);
+  address[p].offset = node_address(n);
 }
 
 // ******************************************************************
@@ -1035,7 +1036,7 @@ MEDDLY::expert_forest::float_Tencoder::value2handle(float v)
   intfloat x;
   x.real = v;
   // strip lsb in fraction, and add sign bit
-  return (x.integer >> 1) | 0x80000000;
+  return node_handle( (unsigned(x.integer) >> 1) | 0x80000000 );
 }
 
 inline float
@@ -2211,7 +2212,7 @@ MEDDLY::compute_table::entry_key::rawData(bool includeOp) const
   return includeOp ? data : (data+1);
 }
 
-inline int MEDDLY::compute_table::entry_key::dataLength(bool includeOp) const
+inline unsigned MEDDLY::compute_table::entry_key::dataLength(bool includeOp) const
 { 
   return includeOp ? total_slots : (total_slots-1);
 }
@@ -2224,7 +2225,7 @@ MEDDLY::compute_table::entry_key::rawData() const
   return data;
 }
 
-inline int MEDDLY::compute_table::entry_key::dataLength() const
+inline unsigned MEDDLY::compute_table::entry_key::dataLength() const
 { 
   return total_slots;
 }
