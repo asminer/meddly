@@ -2512,7 +2512,7 @@ inline void MEDDLY::compute_table::entry_result::writeP(void* P)
 #else
   MEDDLY_DCASSERT(build);
   MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(compute_table::DOUBLE == etype->getResultType(currslot));
+  MEDDLY_DCASSERT(compute_table::POINTER == etype->getResultType(currslot));
   build[currslot++].P = P;
 #endif
 }
