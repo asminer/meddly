@@ -1554,7 +1554,7 @@ MEDDLY::node_address MEDDLY::ct_template<MONOLITHIC, CHAINED>
     if (0==ne) {
       fprintf(stderr,
           "Error in allocating array of size %lu at %s, line %d\n",
-          neA * sizeof(int), __FILE__, __LINE__);
+          size_t(neA * sizeof(int)), __FILE__, __LINE__);
       throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
     mstats.incMemAlloc( (entriesAlloc / 2) * sizeof(int) );

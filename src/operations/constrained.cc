@@ -20,8 +20,8 @@
 #include <deque>
 #include <vector>
 
-#include "constrained.h"
 #include "defines.h"
+#include "constrained.h"
 
 // ******************************************************************
 // *                                                                *

@@ -1510,7 +1510,7 @@ MEDDLY::relation_node::setTokenUpdateAtIndex(long i,long val)
 
 MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd, forest* relmxd,
                                                              forest* outmdd)
-: insetF(static_cast<expert_forest*>(inmdd)), mixRelF(static_cast<expert_forest*>(relmxd)), outsetF(static_cast<expert_forest*>(outmdd))
+: insetF(static_cast<expert_forest*>(inmdd)), outsetF(static_cast<expert_forest*>(outmdd)), mixRelF(static_cast<expert_forest*>(relmxd))
 {
   
   if (0==insetF || 0==outsetF || 0==mixRelF ) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
