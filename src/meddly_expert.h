@@ -1274,6 +1274,17 @@ class MEDDLY::memory_manager {
     */
     virtual bool isValidHandle(node_address h) const = 0;
 
+  public:
+    /**
+        Check if a handle is valid (non-null or otherwise).
+        Since this is not always possible,
+        this method is conservative.
+
+        @return   false if h is null or definitely invalid;
+                  true otherwise.
+    */
+    virtual bool isValidHandle(node_address h) const = 0;
+
     /** Show various statistics.
           @param  s         Output stream to write to
           @param  pad       Padding string, written at the start of

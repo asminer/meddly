@@ -421,46 +421,8 @@ namespace MEDDLY {
       /// When to next shrink the table
       unsigned int tableShrink;
 
-int MEDDLY::base_table::newEntry(int size)
-{
-  // check free list
-  if (size > maxEntrySize) {
-    fprintf(stderr, "MEDDLY error: request for compute table entry larger than max size\n");
-    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);  // best we can do
-  }
-  if (size<1) return 0;
-  perf.numEntries++;
-  if (freeList[size]) {
-    int h = freeList[size];
-    freeList[size] = entries[h];
-#ifdef DEBUG_CTALLOC
-    fprintf(stderr, "Re-used entry %d size %d\n", h, size);
-#endif
-    return h;
-  }
-  if (entriesSize + size > entriesAlloc) {
-    // Expand by a factor of 1.5
-    int neA = entriesAlloc + (entriesAlloc/2);
-    int* ne = (int*) realloc(entries, neA * sizeof(int));
-    if (0==ne) {
-      fprintf(stderr,
-          "Error in allocating array of size %lu at %s, line %d\n",
-          size_t(neA * sizeof(int)), __FILE__, __LINE__);
-      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    }
-    currMemory += (neA - entriesAlloc) * sizeof(int);
-    if (currMemory > peakMemory) peakMemory = currMemory;
-    entries = ne;
-    entriesAlloc = neA;
-  }
-  MEDDLY_DCASSERT(entriesSize + size <= entriesAlloc);
-  int h = entriesSize;
-  entriesSize += size;
-#ifdef DEBUG_CTALLOC
-  fprintf(stderr, "New entry %d size %d\n", h, size);
-#endif
-  return h;
-}
+      /// Space to build an entry
+      // our_temp_entry currEntry;
 
 #ifdef INTEGRATED_MEMMAN
       /// Memory space for entries
@@ -646,99 +608,12 @@ inline int* MEDDLY::ct_template<MONOLITHIC, CHAINED>
         // Delete the entry.
         //
 #ifdef DEBUG_CT
-  printf("Adding CT entry ");
-  showEntry(stdout, currEntry.readHandle());
-  // fprintf(stderr, " to slot %u", h);
-  printf("\n");
-#endif
-
-  if (perf.numEntries < tableExpand) return;
-
-#ifdef DEBUG_SLOW
-  fprintf(stdout, "Running GC in compute table (size %d, entries %ld)\n", 
-    tableSize, perf.numEntries
-  );
-#endif
-
-  int list = convertToList(checkStalesOnResize);
-  if (perf.numEntries < tableSize) {
-    // Don't need to expand
-    listToTable(list);
-#ifdef DEBUG_SLOW
-    fprintf(stdout, "Done CT GC, no resizing (now entries %ld)\n", 
-      perf.numEntries
-    );
-#endif
-    return;
-  } 
-
-  unsigned newsize = tableSize*2;
-  if (newsize > maxSize) newsize = maxSize;
-
-  int* newt = (int*) realloc(table, newsize * sizeof(int));
-  if (0==newt) {
-    fprintf(stderr,
-        "Error in allocating array of size %lu at %s, line %d\n",
-        size_t(newsize * sizeof(int)), __FILE__, __LINE__);
-    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  }
-
-  for (unsigned i=tableSize; i<newsize; i++) newt[i] = 0;
-
-  currMemory += (newsize - tableSize) * sizeof(int);
-  if (currMemory > peakMemory) peakMemory = currMemory;
-
-  table = newt;
-  tableSize = newsize;
-  if (tableSize == maxSize) {
-    tableExpand = INT_MAX;
-  } else {
-    tableExpand = 4*tableSize;
-  }
-  tableShrink = tableSize / 2;
-
-  listToTable(list);
-#ifdef DEBUG_SLOW
-  fprintf(stdout, "CT enlarged to size %d\n", tableSize);
-#endif
-}
-
-void MEDDLY::base_chained::removeStales()
-{
-#ifdef DEBUG_SLOW
-  fprintf(stdout, "Removing stales in CT (size %d, entries %ld)\n", 
-    tableSize, perf.numEntries
-  );
-#endif
-  int list = convertToList(true);
-  if (perf.numEntries < tableShrink) {
-    // shrink table
-    int newsize = tableSize / 2;
-    if (newsize < 1024) newsize = 1024;
-    int* newt = (int*) realloc(table, newsize * sizeof(int));
-    if (0==newt) {
-      fprintf(stderr,
-          "Error in allocating array of size %lu at %s, line %d\n",
-          size_t(newsize * sizeof(int)), __FILE__, __LINE__);
-      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__); 
-    }
-
-    currMemory -= (tableSize - newsize) * sizeof(int);  
-
-    table = newt;
-    tableSize = newsize;
-    tableExpand = 4*tableSize;
-    if (1024 == tableSize) {
-      tableShrink = 0;
-    } else {
-      tableShrink = tableSize / 2;
-    }
-  }
-  listToTable(list);
-#ifdef DEBUG_SLOW
-  fprintf(stdout, "Done removing CT stales (size %d, entries %ld)\n", 
-    tableSize, perf.numEntries
-  );
+        if (answer) printf("Removing stale CT hit   ");
+        else        printf("Removing stale CT entry ");
+        FILE_output out(stdout);
+        showEntry(out, curr);
+        printf(" handle %d in slot %u\n", curr, hcurr);
+        fflush(stdout);
 #endif
         if (CHAINED) {
           if (preventry) {
@@ -1115,9 +990,6 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const en
       if (0==table) {
         table = oldT;
         tableSize = oldSize;
-        fprintf(stderr,
-            "Error in allocating array of size %lu at %s, line %d\n",
-            size_t(newsize * sizeof(int)), __FILE__, __LINE__);
         throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
       }
       for (unsigned i=0; i<newsize; i++) table[i] = 0;
@@ -1280,9 +1152,6 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::removeStales()
           if (0==table) {
             table = oldT;
             tableSize = oldSize;
-            fprintf(stderr,
-                "Error in allocating array of size %lu at %s, line %d\n",
-                size_t(newsize * sizeof(int)), __FILE__, __LINE__);
             throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
           }
           for (unsigned i=0; i<newsize; i++) table[i] = 0;
