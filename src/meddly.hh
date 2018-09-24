@@ -50,6 +50,123 @@ inline int MEDDLY::error::getLine() const { return lineno; }
 
 // ******************************************************************
 // *                                                                *
+// *                         memstats class                         *
+// *                                                                *
+// ******************************************************************
+
+inline void MEDDLY::memstats::incMemUsed(size_t b)
+{
+// #ifdef TRACK_LOCAL_MEMORY
+  memory_used += b;
+  if (memory_used > peak_memory_used) {
+    peak_memory_used = memory_used;
+  }
+// #endif
+// #ifdef TRACK_GLOBAL_MEMORY
+  global_memory_used += b;
+  if (global_memory_used > global_peak_used) {
+    global_peak_used = global_memory_used;
+  }
+// #endif
+}
+
+inline void MEDDLY::memstats::decMemUsed(size_t b)
+{
+// #ifdef TRACK_LOCAL_MEMORY
+  MEDDLY_DCASSERT(memory_used >= b);
+  memory_used -= b;
+// #endif
+// #ifdef TRACK_GLOBAL_MEMORY
+  MEDDLY_DCASSERT(global_memory_used >= b);
+  global_memory_used -= b;
+// #endif
+}
+
+inline void MEDDLY::memstats::incMemAlloc(size_t b)
+{
+// #ifdef TRACK_LOCAL_MEMORY
+  memory_alloc += b;
+  if (memory_alloc > peak_memory_alloc) {
+    peak_memory_alloc = memory_alloc;
+  }
+// #endif
+// #ifdef TRACK_GLOBAL_MEMORY
+  global_memory_alloc += b;
+  if (global_memory_alloc > global_peak_alloc) {
+    global_peak_alloc = global_memory_alloc;
+  }
+// #endif
+}
+
+inline void MEDDLY::memstats::decMemAlloc(size_t b)
+{
+// #ifdef TRACK_LOCAL_MEMORY
+  MEDDLY_DCASSERT(memory_alloc >= b);
+  memory_alloc -= b;
+// #endif
+// #ifdef TRACK_GLOBAL_MEMORY
+  MEDDLY_DCASSERT(global_memory_alloc >= b);
+  global_memory_alloc -= b;
+// #endif
+}
+
+inline void MEDDLY::memstats::zeroMemUsed()
+{
+  MEDDLY_DCASSERT(global_memory_used >= memory_used);
+  global_memory_used -= memory_used;
+  memory_used = 0;
+}
+
+inline void MEDDLY::memstats::zeroMemAlloc()
+{
+  MEDDLY_DCASSERT(global_memory_alloc >= memory_alloc);
+  global_memory_alloc -= memory_alloc;
+  memory_alloc = 0;
+}
+
+inline size_t MEDDLY::memstats::getMemUsed() const
+{
+  return memory_used;
+}
+
+inline size_t MEDDLY::memstats::getMemAlloc() const
+{
+  return memory_alloc;
+}
+
+inline size_t MEDDLY::memstats::getPeakMemUsed() const
+{
+  return peak_memory_used;
+}
+
+inline size_t MEDDLY::memstats::getPeakMemAlloc() const
+{
+  return peak_memory_alloc;
+}
+
+
+inline size_t MEDDLY::memstats::getGlobalMemUsed()
+{
+  return global_memory_used;
+}
+
+inline size_t MEDDLY::memstats::getGlobalMemAlloc()
+{
+  return global_memory_alloc;
+}
+
+inline size_t MEDDLY::memstats::getGlobalPeakMemUsed()
+{
+  return global_peak_used;
+}
+
+inline size_t MEDDLY::memstats::getGlobalPeakMemAlloc()
+{
+  return global_peak_alloc;
+}
+
+// ******************************************************************
+// *                                                                *
 // *                                                                *
 // *                          forest class                          *
 // *                                                                *
@@ -146,6 +263,7 @@ inline void MEDDLY::forest::statset::decActive(long b) {
   active_nodes -= b;
   MEDDLY_DCASSERT(active_nodes >= 0);
 }
+/*
 inline void MEDDLY::forest::statset::incMemUsed(long b) {
   memory_used += b;
   if (memory_used > peak_memory_used) 
@@ -170,6 +288,7 @@ inline void MEDDLY::forest::statset::sawUTchain(int c) {
   if (c > max_UT_chain)
     max_UT_chain = c;
 }
+*/
 // end of forest::statset
 
 // forest::logger::
@@ -359,30 +478,36 @@ inline bool MEDDLY::forest::areFullNodesEnabled() const {
   return MEDDLY::forest::policies::ALLOW_FULL_STORAGE & deflt.storage_flags;
 }
 
-inline const MEDDLY::forest::statset& MEDDLY::forest::getStats() const { return stats; }
+inline const MEDDLY::forest::statset& MEDDLY::forest::getStats() const { 
+  return stats; 
+}
+
+inline const MEDDLY::memstats& MEDDLY::forest::getMemoryStats() const {
+  return mstats;
+}
 
 inline long MEDDLY::forest::getCurrentNumNodes() const {
   return stats.active_nodes;
 }
 
-inline long MEDDLY::forest::getCurrentMemoryUsed() const {
-  return stats.memory_used;
+inline size_t MEDDLY::forest::getCurrentMemoryUsed() const {
+  return mstats.getMemUsed();
 }
 
-inline long MEDDLY::forest::getCurrentMemoryAllocated() const {
-  return stats.memory_alloc; 
+inline size_t MEDDLY::forest::getCurrentMemoryAllocated() const {
+  return mstats.getMemAlloc();
 }
 
 inline long MEDDLY::forest::getPeakNumNodes() const {
   return stats.peak_active;
 }
 
-inline long MEDDLY::forest::getPeakMemoryUsed() const {
-  return stats.peak_memory_used;
+inline size_t MEDDLY::forest::getPeakMemoryUsed() const {
+  return mstats.getPeakMemUsed();
 }
 
-inline long MEDDLY::forest::getPeakMemoryAllocated() const {
-  return stats.peak_memory_alloc;
+inline size_t MEDDLY::forest::getPeakMemoryAllocated() const {
+  return mstats.getPeakMemAlloc();
 }
 
 inline bool MEDDLY::forest::isMarkedForDeletion() const {
@@ -437,12 +562,16 @@ inline bool MEDDLY::variable::isExtensible() const {
 // *                                                                *
 // ******************************************************************
 
-inline int MEDDLY::variable_order::getVarByLevel(int level) const {
-  return level2var[level];
+inline int MEDDLY::variable_order::getVarByLevel(int level) const 
+{
+  MEDDLY_DCASSERT(level>=0);
+  return level2var[size_t(level)];
 }
 
-inline int MEDDLY::variable_order::getLevelByVar(int var) const {
-  return var2level[var];
+inline int MEDDLY::variable_order::getLevelByVar(int var) const 
+{
+  MEDDLY_DCASSERT(var>=0);
+  return var2level[size_t(var)];
 }
 
 // ******************************************************************

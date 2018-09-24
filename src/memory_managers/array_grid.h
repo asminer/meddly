@@ -39,7 +39,7 @@ class MEDDLY::array_grid_style : public memory_manager_style {
     virtual ~array_grid_style();
 
     virtual memory_manager* initManager(unsigned char granularity,
-      unsigned char minsize, forest::statset &stats) const;
+      unsigned char minsize, memstats &stats) const;
 };
 
 #endif

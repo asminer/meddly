@@ -63,7 +63,7 @@ namespace MEDDLY {
   class heap_manager : public hole_manager<INT> {
 
     public:
-      heap_manager(const char* n, forest::statset &stats);
+      heap_manager(const char* n, memstats &stats);
       virtual ~heap_manager();
 
       virtual node_address requestChunk(size_t &numSlots);
@@ -239,7 +239,7 @@ namespace MEDDLY {
 
 
   template <class INT>
-  heap_manager<INT>::heap_manager(const char* n, forest::statset &stats)
+  heap_manager<INT>::heap_manager(const char* n, memstats &stats)
   : hole_manager<INT>(n, stats)
   {
     num_heap_nodes = 0;
@@ -885,7 +885,7 @@ MEDDLY::heap_style::~heap_style()
 
 MEDDLY::memory_manager*
 MEDDLY::heap_style::initManager(unsigned char granularity, 
-  unsigned char minsize, forest::statset &stats) const
+  unsigned char minsize, memstats &stats) const
 {
   if (sizeof(int) == granularity) {
     return new heap_manager <int>(getName(), stats);

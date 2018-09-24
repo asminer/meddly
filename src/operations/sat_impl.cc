@@ -91,38 +91,57 @@ public:
     node_handle& saturation_result);
 
   
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
   virtual bool isStaleEntry(const node_handle* entryData);
 #else
   virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
 #endif
   virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(output &strm, const node_handle* entryData) const;
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
+#endif
   
 protected:
-  inline compute_table::search_key*
+  inline compute_table::entry_key*
   findSaturateResult(node_handle a, int level, node_handle& b) {
-    compute_table::search_key* CTsrch = useCTkey();
+#ifdef OLD_OP_CT
+    compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+    compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
     MEDDLY_DCASSERT(CTsrch);
-    CTsrch->reset();
-    CTsrch->writeNH(a);
-    if (argF->isFullyReduced()) CTsrch->write(level);
-    compute_table::search_result &cacheFind = CT->find(CTsrch);
+    CTsrch->writeN(a);
+    if (argF->isFullyReduced()) CTsrch->writeI(level);
+#ifdef OLD_OP_CT
+    compute_table::entry_result& cacheFind = CT0->find(CTsrch);
     if (!cacheFind) return CTsrch;
-    b = resF->linkNode(cacheFind.readNH());
-    doneCTkey(CTsrch);
+    b = resF->linkNode(cacheFind.readN());
+#else
+    CT0->find(CTsrch, CTresult[0]);
+    if (!CTresult[0]) return CTsrch;
+    b = resF->linkNode(CTresult[0].readN());
+#endif
+    CT0->recycle(CTsrch);
     return 0;
   }
-  inline void recycleCTKey(compute_table::search_key* CTsrch) {
-    doneCTkey(CTsrch);
+  inline void recycleCTKey(compute_table::entry_key* CTsrch) {
+    CT0->recycle(CTsrch);
   }
-  inline node_handle saveSaturateResult(compute_table::search_key* Key,
+  inline node_handle saveSaturateResult(compute_table::entry_key* Key,
                                         node_handle a, node_handle b)
   {
+#ifdef OLD_OP_CT
   argF->cacheNode(a);
-  compute_table::entry_builder &entry = CT->startNewEntry(Key);
-  entry.writeResultNH(resF->cacheNode(b));
-  CT->addEntry();
+  resF->cacheNode(b);
+  static compute_table::entry_result result(1);
+  result.reset();
+  result.writeN(b);
+  CT0->addEntry(Key, result);
+#else
+  CTresult[0].reset();
+  CTresult[0].writeN(b);
+  CT0->addEntry(Key, CTresult[0]);
+#endif
   return b;
   }
 };
@@ -140,13 +159,15 @@ public:
                                satimpl_opname::implicit_relation* rel);
   virtual ~common_impl_dfs_by_events_mt();
   
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
   virtual bool isStaleEntry(const node_handle* entryData);
 #else
   virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
 #endif
   virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(output &strm, const node_handle* entryData) const;
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
+#endif
   virtual void compute(const dd_edge& a, dd_edge &c);
   virtual bool isReachable(const dd_edge& a, const dd_edge& constraint);
   virtual void saturateHelper(unpacked_node& mdd) = 0;
@@ -154,30 +175,47 @@ public:
   virtual bool saturateHelper(unpacked_node& mdd, node_handle constraint) = 0;
   
 protected:
-  inline compute_table::search_key*
+  inline compute_table::entry_key*
   findResult(node_handle a, rel_node_handle b, node_handle &c)
   {
-  compute_table::search_key* CTsrch = useCTkey();
+#ifdef OLD_OP_CT
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->reset();
-  CTsrch->writeNH(a);
-  CTsrch->writeNH(b);
-  compute_table::search_result &cacheFind = CT->find(CTsrch);
+  CTsrch->writeN(a);
+  CTsrch->writeN(b);
+#ifdef OLD_OP_CT
+  compute_table::entry_result& cacheFind = CT0->find(CTsrch);
   if (!cacheFind) return CTsrch;
-  c = resF->linkNode(cacheFind.readNH());
-  doneCTkey(CTsrch);
+  c = resF->linkNode(cacheFind.readN());
+#else
+  CT0->find(CTsrch, CTresult[0]);
+  if (!CTresult[0]) return CTsrch;
+  c = resF->linkNode(CTresult[0].readN());
+#endif
+  CT0->recycle(CTsrch);
   return 0;
   }
-  inline void recycleCTKey(compute_table::search_key* CTsrch) {
-    doneCTkey(CTsrch);
+  inline void recycleCTKey(compute_table::entry_key* CTsrch) {
+    CT0->recycle(CTsrch);
   }
-  inline node_handle saveResult(compute_table::search_key* Key,
+  inline node_handle saveResult(compute_table::entry_key* Key,
                                 node_handle a, rel_node_handle b, node_handle c)
   {
+#ifdef OLD_OP_CT
   arg1F->cacheNode(a);
-  compute_table::entry_builder &entry = CT->startNewEntry(Key);
-  entry.writeResultNH(resF->cacheNode(c));
-  CT->addEntry();
+  resF->cacheNode(c);
+  static compute_table::entry_result result(1);
+  result.reset();
+  result.writeN(c);
+  CT0->addEntry(Key, result);
+#else
+  CTresult[0].reset();
+  CTresult[0].writeN(c);
+  CT0->addEntry(Key, CTresult[0]);
+#endif
   return c;
   }
   
@@ -309,6 +347,7 @@ public:
 protected:
   virtual void saturateHelper(unpacked_node& mdd);
   node_handle recFire(node_handle mdd, rel_node_handle mxd);
+  MEDDLY::node_handle recFireSet(node_handle mdd, std::vector<rel_node_handle> mxd);
 
   // for reachable state in constraint detection
   bool saturateHelper(
@@ -339,7 +378,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   // Initialize mxd readers, note we might skip the unprimed level
   const int level = nb.getLevel();
   node_handle* events = rel->arrayForLevel(level);
-  satimpl_opname::relation_node** Ru = new satimpl_opname::relation_node*[nEventsAtThisLevel];
+  relation_node** Ru = new relation_node*[nEventsAtThisLevel];
   for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
     Ru[ei] = rel->nodeExists(events[ei]);
 #ifdef DEVELOPMENT_CODE
@@ -364,19 +403,82 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
     
     MEDDLY_DCASSERT(nb.d(i));
     
-    for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
+    bool is_union = rel->isUnionPossible(nb.getLevel(),i,Ru);
+    
+    if(!is_union)
+      {
+      for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
+        
+        int j = Ru[ei]->nextOf(i);
+        if(j==-1) continue;
+        if (j < nb.getSize() && -1==nb.d(j)) continue; // nothing can be added to this set
+        
+        node_handle rec = recFire(nb.d(i), Ru[ei]->getDown());
+        
+        if (rec == 0) continue;
+        
+        //confirm local state
+        rel->setConfirmedStates(level,j);
+        
+        if(j>=nb.getSize())
+          {
+          int new_var_bound = resF->isExtensibleLevel(nb.getLevel())? -(j+1): (j+1);
+          dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
+          int oldSize = nb.getSize();
+          nb.resize(j+1);
+          while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
+          queue->resize(nb.getSize());
+          }
+        
+        if (rec == nb.d(j)) {
+          resF->unlinkNode(rec);
+          continue;
+        }
+        
+        bool updated = true;
+        
+        if (0 == nb.d(j)) {
+          nb.d_ref(j) = rec;
+        }
+        else if (rec == -1) {
+          resF->unlinkNode(nb.d(j));
+          nb.d_ref(j) = -1;
+        }
+        else {
+          node_handle acc = mddUnion->compute(nb.d(j), rec);
+          resF->unlinkNode(rec);
+          if (acc != nb.d(j)) {
+            resF->unlinkNode(nb.d(j));
+            nb.d_ref(j) = acc;
+          } else {
+            resF->unlinkNode(acc);
+            updated = false;
+          }
+          
+        }
+        
+        if (updated) queue->add(j);
+        
+      } // for all events, ei
       
-      int j = Ru[ei]->nextOf(i);
+    } // No union possible
+    else { 
+    std::unordered_map<long,std::vector<rel_node_handle>> list_of_j = rel->getListOfNexts(nb.getLevel(),i, Ru);
+     
+    for (std::unordered_map<long,std::vector<rel_node_handle>>::iterator jt=list_of_j.begin(); jt!=list_of_j.end(); ++jt) {
+     //For each j get the list of different events
+      int next = jt->first;
+      
+      int j = next;
       if(j==-1) continue;
       if (j < nb.getSize() && -1==nb.d(j)) continue; // nothing can be added to this set
-      
-      node_handle rec = recFire(nb.d(i), Ru[ei]->getDown());
-      
+        
+      node_handle rec = recFireSet(nb.d(i), jt->second);
       if (rec == 0) continue;
-      
+        
       //confirm local state
       rel->setConfirmedStates(level,j);
-      
+        
       if(j>=nb.getSize())
         {
         int new_var_bound = resF->isExtensibleLevel(nb.getLevel())? -(j+1): (j+1);
@@ -415,13 +517,30 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       }
       
       if (updated) queue->add(j);
-      
-    } // for all events, ei
     
-  }// more indexes to explore
+    }// for all j's
+    
+   } //if union possible
+  
+ }// more indexes to explore
   
   delete[] Ru;
   recycle(queue);
+}
+
+MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFireSet(
+                                                                    MEDDLY::node_handle mdd, 
+                                                                    std::vector<rel_node_handle> vector_mxd)
+{
+  std::vector<node_handle> array_rec(vector_mxd.size());
+  node_handle union_rec = 0;
+  
+  for(int rn = 0; rn < vector_mxd.size(); rn ++){
+    int ans=recFire(mdd,vector_mxd[rn]);
+    union_rec = mddUnion->compute(union_rec,ans);
+  }
+  
+  return union_rec;
 }
 
 
@@ -442,11 +561,11 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
       return resF->linkNode(mdd);
   }
   
-  satimpl_opname::relation_node* relNode = rel->nodeExists(mxd); // The relation node
+  relation_node* relNode = rel->nodeExists(mxd); // The relation node
   
   // check the cache
   node_handle result = 0;
-  compute_table::search_key* Key = findResult(mdd, mxd, result);
+  compute_table::entry_key* Key = findResult(mdd, mxd, result);
   if (0==Key) return result;
   
   #ifdef TRACE_RECFIRE
@@ -575,7 +694,11 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
 MEDDLY::common_impl_dfs_by_events_mt::common_impl_dfs_by_events_mt(
                                                                    const satimpl_opname* opcode,
                                                                    satimpl_opname::implicit_relation* relation)
+#ifdef OLD_OP_CT
 : specialized_operation(opcode, 2, 1)
+#else
+: specialized_operation(opcode, 1)
+#endif
 {
   mddUnion = 0;
   mxdIntersection = 0;
@@ -590,7 +713,15 @@ MEDDLY::common_impl_dfs_by_events_mt::common_impl_dfs_by_events_mt(
   registerInForest(arg1F);
   //registerInForest(arg2F);
   registerInForest(resF);
+#ifdef OLD_OP_CT
   setAnswerForest(resF);
+#else
+  compute_table::entry_type* et = new compute_table::entry_type(opcode->getName(), "NL:N");
+  et->setForestForSlot(0, arg1F);
+  et->setForestForSlot(3, resF);
+  registerEntryType(0, et);
+  buildCTs();
+#endif
 }
 
 MEDDLY::common_impl_dfs_by_events_mt::~common_impl_dfs_by_events_mt()
@@ -600,6 +731,8 @@ MEDDLY::common_impl_dfs_by_events_mt::~common_impl_dfs_by_events_mt()
   //unregisterInForest(arg2F);
   unregisterInForest(resF);
 }
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::common_impl_dfs_by_events_mt::isStaleEntry(const node_handle* data)
@@ -634,10 +767,14 @@ void MEDDLY::common_impl_dfs_by_events_mt::discardEntry(const node_handle* data)
 }
 
 void MEDDLY::common_impl_dfs_by_events_mt::showEntry(output &strm,
-                                                     const node_handle* data) const
+                                                     const node_handle* data, bool key_only) const
 {
-  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): " << long(data[2]) << "]";
+  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
+  if (key_only) strm << "?]";
+  else          strm << long(data[2]) << "]";
 }
+
+#endif // OLD_OP_CT
 
 bool MEDDLY::common_impl_dfs_by_events_mt
 ::isReachable(const dd_edge &a, const dd_edge& constraint)
@@ -803,6 +940,7 @@ MEDDLY::satimpl_opname::buildOperation(arguments* a) const
 // *                                                                *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
 MEDDLY::saturation_impl_by_events_op
 ::saturation_impl_by_events_op(common_impl_dfs_by_events_mt* p,
                                expert_forest* argF, expert_forest* resF)
@@ -810,8 +948,32 @@ MEDDLY::saturation_impl_by_events_op
                   ((argF != 0 && argF->isFullyReduced())? 2: 1), 1, argF, resF)
 {
   parent = p;
-  
 }
+#else
+MEDDLY::saturation_impl_by_events_op
+::saturation_impl_by_events_op(common_impl_dfs_by_events_mt* p,
+                               expert_forest* argF, expert_forest* resF)
+: unary_operation(saturation_impl_by_events_opname::getInstance(), 1, argF, resF)
+{
+  parent = p;
+
+  const char* name = saturation_impl_by_events_opname::getInstance()->getName();
+  compute_table::entry_type* et;
+
+  if (argF->isFullyReduced()) {
+    // CT entry includes level info
+    et = new compute_table::entry_type(name, "NI:N");
+    et->setForestForSlot(0, argF);
+    et->setForestForSlot(3, resF);
+  } else {
+    et = new compute_table::entry_type(name, "N:N");
+    et->setForestForSlot(0, argF);
+    et->setForestForSlot(2, resF);
+  }
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
 
 MEDDLY::saturation_impl_by_events_op::~saturation_impl_by_events_op()
 {
@@ -844,7 +1006,7 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
  
   // search compute table
   node_handle n = 0;
-  compute_table::search_key* Key = findSaturateResult(mdd, k, n);
+  compute_table::entry_key* Key = findSaturateResult(mdd, k, n);
   if (0==Key) return n;
   
   const int sz = argF->getLevelSize(k);               // size
@@ -884,6 +1046,8 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
   return n;
 }
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
 bool MEDDLY::saturation_impl_by_events_op::isStaleEntry(const node_handle* data)
 {
@@ -922,14 +1086,20 @@ void MEDDLY::saturation_impl_by_events_op::discardEntry(const node_handle* data)
 }
 
 void MEDDLY::saturation_impl_by_events_op::showEntry(output &strm,
-                                                     const node_handle* data) const
+                                                     const node_handle* data, bool key_only) const
 {
   if (argF->isFullyReduced()) {
-    strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): " << long(data[2]) << "]";
+    strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
+    if (key_only) strm << "?]";
+    else          strm << long(data[2]) << "]";
   } else {
-    strm << "[" << getName() << "(" << long(data[0]) << "): " << long(data[1]) << "]";
+    strm << "[" << getName() << "(" << long(data[0]) << "): ";
+    if (key_only) strm << "?]";
+    else          strm << long(data[1]) << "]";
   }
 }
+
+#endif // OLD_OP_CT
 
 // ------------------
 // Deadlock detection
@@ -970,10 +1140,10 @@ bool isIntersectionEmpty(
 
   // search cache
   node_pair key = {node_A, node_B};
-  auto search_result = intersection_cache.find(key);
-  if (search_result != intersection_cache.end()) {
+  auto entry_result = intersection_cache.find(key);
+  if (entry_result != intersection_cache.end()) {
     // found cached entry
-    return search_result->second;
+    return entry_result->second;
   }
 
   // unpack nodes
@@ -1096,7 +1266,7 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
 
   // search compute table
   node_handle n = 0;
-  compute_table::search_key* Key = findSaturateResult(mdd, k, n);
+  compute_table::entry_key* Key = findSaturateResult(mdd, k, n);
   if (0==Key) {
     saturation_result = n;
     return !isIntersectionEmpty(argF, saturation_result, constraint);
@@ -1207,7 +1377,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
 
   // Initialize mxd readers, note we might skip the unprimed level
   node_handle* events = rel->arrayForLevel(level);
-  satimpl_opname::relation_node** Ru = new satimpl_opname::relation_node*[nEventsAtThisLevel];
+  relation_node** Ru = new relation_node*[nEventsAtThisLevel];
   for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
     Ru[ei] = rel->nodeExists(events[ei]);
 #ifdef DEVELOPMENT_CODE
@@ -1333,11 +1503,11 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     }
   }
 
-  satimpl_opname::relation_node* relNode = rel->nodeExists(mxd); // The relation node
+  relation_node* relNode = rel->nodeExists(mxd); // The relation node
 
   // check the cache
   result = 0;
-  compute_table::search_key* Key = findResult(mdd, mxd, result);
+  compute_table::entry_key* Key = findResult(mdd, mxd, result);
   if (0==Key) {
     return !isIntersectionEmpty(arg1F, result, constraint);
   }

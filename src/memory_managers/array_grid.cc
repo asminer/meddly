@@ -111,7 +111,7 @@ namespace MEDDLY {
   class array_plus_grid : public hole_manager<INT> {
 
     public:
-      array_plus_grid(const char* n, forest::statset &stats);
+      array_plus_grid(const char* n, memstats &stats);
       virtual ~array_plus_grid();
 
       virtual node_address requestChunk(size_t &numSlots);
@@ -276,7 +276,7 @@ namespace MEDDLY {
 // ******************************************************************
 
 template <class INT>
-MEDDLY::array_plus_grid<INT>::array_plus_grid(const char* n, forest::statset &stats)
+MEDDLY::array_plus_grid<INT>::array_plus_grid(const char* n, memstats &stats)
  : hole_manager<INT>(n, stats)
 {
   // small hole stuff
@@ -1091,7 +1091,7 @@ MEDDLY::array_grid_style::~array_grid_style()
 
 MEDDLY::memory_manager*
 MEDDLY::array_grid_style::initManager(unsigned char granularity, 
-  unsigned char minsize, forest::statset &stats) const
+  unsigned char minsize, memstats &stats) const
 {
   if (sizeof(int) == granularity) {
     return new array_plus_grid <int>(getName(), stats);

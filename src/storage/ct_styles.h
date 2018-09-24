@@ -17,8 +17,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef CT_CLASSIC_H
-#define CT_CLASSIC_H
+#ifndef CT_STYLES_H
+#define CT_STYLES_H
 
 #include "../defines.h"
 

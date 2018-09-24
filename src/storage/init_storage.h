@@ -24,6 +24,8 @@ namespace MEDDLY {
 class MEDDLY::storage_initializer : public initializer_list {
 
     node_storage_style* simple;
+    node_storage_style* pattern;
+    node_storage_style* best;
 
     // TBD - build a new compact style
 

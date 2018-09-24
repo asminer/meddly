@@ -1461,7 +1461,7 @@ MEDDLY::satimpl_opname::~satimpl_opname()
 }
 
 
-MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl, rel_node_handle d)
+MEDDLY::relation_node::relation_node(unsigned long sign, int lvl, rel_node_handle d)
 {
   signature  = sign;
   level = lvl;
@@ -1470,19 +1470,19 @@ MEDDLY::satimpl_opname::relation_node::relation_node(unsigned long sign, int lvl
   token_update = NULL;
 }
 
-MEDDLY::satimpl_opname::relation_node::~relation_node()
+MEDDLY::relation_node::~relation_node()
 {
 }
 
 
-long MEDDLY::satimpl_opname::relation_node::nextOf(long i)
+long MEDDLY::relation_node::nextOf(long i)
 {
   //to be defined for the example you use & comment this definition
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 bool
-MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
+MEDDLY::relation_node::equals(const relation_node* n) const
 {
   if((signature == n->getSignature()) && (level == n->getLevel()) && (down == n->getDown()))
     return true;
@@ -1491,7 +1491,7 @@ MEDDLY::satimpl_opname::relation_node::equals(const relation_node* n) const
 }
 
 void
-MEDDLY::satimpl_opname::relation_node::expandTokenUpdate(long i)
+MEDDLY::relation_node::expandTokenUpdate(long i)
 {
   if(getPieceSize()==0)
   {
@@ -1509,19 +1509,19 @@ MEDDLY::satimpl_opname::relation_node::expandTokenUpdate(long i)
 }
 
 void
-MEDDLY::satimpl_opname::relation_node::setTokenUpdateAtIndex(long i,long val)
+MEDDLY::relation_node::setTokenUpdateAtIndex(long i,long val)
 {
   MEDDLY_DCASSERT(i<getPieceSize());
   token_update[i] = val;
 }
 // ******************************************************************
 
-MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
+MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd, forest* relmxd,
                                                              forest* outmdd)
-: insetF(static_cast<expert_forest*>(inmdd)),outsetF(static_cast<expert_forest*>(outmdd))
+: insetF(static_cast<expert_forest*>(inmdd)), outsetF(static_cast<expert_forest*>(outmdd)), mixRelF(static_cast<expert_forest*>(relmxd))
 {
   
-  if (0==insetF || 0==outsetF) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+  if (0==insetF || 0==outsetF || 0==mixRelF ) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   
   // Check for same domain
   if (insetF->getDomain() != outsetF->getDomain())
@@ -1573,6 +1573,7 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd,
   
   //create the terminal node
   relation_node *Terminal = new relation_node(0,0,TERMINAL_NODE);
+  //mixRelF->createRelationNode(Terminal);
   Terminal->setID(TERMINAL_NODE);
   std::pair<rel_node_handle, relation_node*> TerminalNode(TERMINAL_NODE,Terminal);
   impl_unique.insert(TerminalNode);
@@ -1725,6 +1726,7 @@ MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relat
 #endif
 
   rel_node_handle n_ID = isUniqueNode(n);
+  
   if(n_ID==0) // Add new node
   {
     n_ID  = last_in_node_array + 1;
@@ -1735,6 +1737,7 @@ MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relat
       last_in_node_array = n_ID;
       n->setID(n_ID);
     }
+    mixRelF->createRelationNode(n);
   }
   else //Delete the node
   {
@@ -1826,6 +1829,50 @@ void MEDDLY::satimpl_opname::implicit_relation::bindExtensibleVariables() {
   }
 }
 
+MEDDLY::node_handle
+MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
+{
+  
+  //Get number of Variables and Events
+  int nVars = outsetF->getDomain()->getNumVariables();
+  int nEvents = getTotalEvent(nVars);
+  
+  
+  rel_node_handle* event_tops = (rel_node_handle*)malloc((nEvents)*sizeof(rel_node_handle));
+  int e = 0;
+  
+  for(int i = 1 ;i<=nVars;i++)
+    {
+    int num_events_at_this_level = lengthForLevel(i);
+    for(int j = 0;j<num_events_at_this_level;j++)
+      event_tops[e++]=arrayForLevel(i)[j];
+    }
+  
+  domain *d = outsetF->useDomain();
+  
+  forest* mxd = d->createForest(true,forest::BOOLEAN, forest::MULTI_TERMINAL);
+  dd_edge nsf(mxd);
+  
+  dd_edge* monolithic_nsf = new dd_edge(mxd);
+  for(int i=0;i<nEvents;i++)
+    {
+    (*monolithic_nsf) += buildEventMxd(event_tops[i],mxd);
+    }
+  
+  node_handle monolithic_nsf_handle = monolithic_nsf->getNode();
+  mxdF = (expert_forest*)mxd;
+  
+  /*for(int i = 0; i<nEvents;i++)
+   {
+   dd_edge nsf_ev(mxd);
+   nsf_ev = buildEventMxd(event_tops[i],mxd);
+   apply(UNION, nsf, nsf_ev, nsf);
+   }*/
+  
+  return monolithic_nsf_handle;
+}
+
+
 MEDDLY::dd_edge
 MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTop, forest *mxd)
 {
@@ -1893,12 +1940,61 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
   return nsf;
 }
 
+// ******************************************************************
 
 
+std::unordered_map<long,std::vector<rel_node_handle>>
+MEDDLY::satimpl_opname::implicit_relation::getListOfNexts(int level, long i, relation_node **R)
+{
+  std::unordered_map<long,std::vector<rel_node_handle>> jList;
+  // atleast as many j's as many events
+  for(int k=0;k<lengthForLevel(level);k++)
+    {
+    long key = R[k]->nextOf(i);
+    jList[key].reserve(lengthForLevel(level));
+    int rnh_dwn = R[k]->getDown();
+    jList[key].push_back(rnh_dwn);
+    }
+  
+  return jList;
+}
+
+bool
+MEDDLY::satimpl_opname::implicit_relation::isUnionPossible(int level, long i, relation_node **R)
+{
+  if(lengthForLevel(level)==1)
+     return false;
+  
+   int* jset = (int*)malloc(lengthForLevel(level)*sizeof(int));
+   int last_j = 0;
+   for(int k=0;k<lengthForLevel(level);k++)
+    {
+    long key = R[k]->nextOf(i);
+    int flag = 0;
+    for(int m=0;m<last_j;m++)
+      if(jset[m]==key)
+        {
+          flag=1;
+          break;
+        }
+    
+      if(flag==0)
+        {
+          jset[k]=key;
+          last_j++;
+        }
+    }
+  if(lengthForLevel(level)==last_j)
+   return false;
+  else 
+    return true;
+}
 
 // ******************************************************************
 // *                       operation  methods                       *
 // ******************************************************************
+
+#ifdef OLD_OP_CT
 
 MEDDLY::operation::operation(const opname* n, int kl, int al)
 {
@@ -1943,23 +2039,117 @@ MEDDLY::operation::operation(const opname* n, int kl, int al)
     // Initialize CT 
     //
     if (Monolithic_CT) {
-      CT = Monolithic_CT;
+      CT0 = Monolithic_CT;
     } else {
-      CT = ct_initializer::createForOp(this);
+      CT0 = ct_initializer::createForOp(this);
     }
-
-    //
-    // Initialize CT search structure
-    //
-    // CTsrch = CT->initializeSearchKey(this);
-
   } else {
     MEDDLY_DCASSERT(0==ans_length);
-    CT = 0;
-    // CTsrch = 0;
+    CT0 = 0;
   }
-  CT_free_keys = 0;
 }
+
+#else   // OLD_OP_CT
+
+MEDDLY::operation::operation(const opname* n, unsigned et_slots)
+{
+#ifdef DEBUG_CLEANUP
+  fprintf(stdout, "Creating operation %p\n", this);
+  fflush(stdout);
+#endif
+  theOpName = n;
+  num_etids = et_slots;
+
+  is_marked_for_deletion = false;
+  next = 0;
+
+  // 
+  // assign an index to this operation
+  //
+  if (free_list>=0) {
+    oplist_index = free_list;
+    free_list = op_holes[free_list];
+  } else {
+    if (list_size >= list_alloc) {
+      int nla = list_alloc + 256;
+      op_list = (operation**) realloc(op_list, nla * sizeof(void*));
+      op_holes = (int*) realloc(op_holes, nla * sizeof(int));
+      if (0==op_list || 0==op_holes) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+      for (int i=list_size; i<list_alloc; i++) {
+        op_list[i] = 0;
+        op_holes[i] = -1;
+      }
+      list_alloc = nla;
+    }
+    oplist_index = list_size;
+    list_size++;
+  }
+  op_list[oplist_index] = this;
+
+  //
+  // Delay CT initialization!
+  // The derived class hasn't set up the entry types yet!
+  //
+  CT = 0;
+
+  //
+  // Set up slots to save our entry_types.
+  //
+  if (et_slots) {
+    etype = new compute_table::entry_type* [et_slots];
+    for (unsigned i=0; i<et_slots; i++) {
+      etype[i] = 0;
+    }
+  } else {
+    etype = 0;
+  }
+
+  //
+  // Allocate CTresults
+  //
+  if (et_slots) {
+    CTresult = new compute_table::entry_result [et_slots];
+  } else {
+    CTresult = 0;
+  }
+
+  //
+  // Allocate our slots
+  //
+  compute_table::registerOp(this, et_slots);
+}
+
+void MEDDLY::operation::buildCTs()
+{
+  if (0==num_etids) return;
+
+  CT = new compute_table* [num_etids];
+
+  if (Monolithic_CT) {
+    for (unsigned i=0; i<num_etids; i++) {
+      CT[i] = Monolithic_CT;
+    }
+  } else {
+    for (unsigned i=0; i<num_etids; i++) {
+      CT[i] = ct_initializer::createForOp(this, i);
+    }
+  }
+
+  //
+  // Initialize CTresults
+  //
+  for (unsigned i=0; i<num_etids; i++) {
+    CTresult[i].initialize(etype[i]);
+  }
+
+  //
+  // Most operations use only one slot
+  //
+  CT0 = CT[0];  
+}
+
+#endif  // OLD_OP_CT
+
 
 MEDDLY::operation::~operation()
 {
@@ -1968,15 +2158,22 @@ MEDDLY::operation::~operation()
   fflush(stdout);
 #endif
 
-  while (CT_free_keys) {
-    compute_table::search_key* next = CT_free_keys->next;
-    delete CT_free_keys;
-    CT_free_keys = next;
+#ifdef OLD_OP_CT
+  if (CT0 && (CT0!=Monolithic_CT)) delete CT0;
+#else
+  if (CT) {
+    for (unsigned i=0; i<num_etids; i++) {
+      if (CT[i] != Monolithic_CT)
+        delete CT[i];
+    }
+    delete[] CT;
   }
+  // Don't delete the entries in etype, they're owned by compute_table.
+  delete[] etype;
+  delete[] CTresult;
+  compute_table::unregisterOp(this, num_etids);
+#endif
 
-  // delete CTsrch;
-  if (CT && (CT!=Monolithic_CT)) delete CT;
-  // delete next;  // Seriously, WTF?
   if (oplist_index >= 0) {
     MEDDLY_DCASSERT(op_list[oplist_index] == this);
     op_list[oplist_index] = 0;
@@ -2008,7 +2205,18 @@ void MEDDLY::operation::markForDeletion()
 #endif
   if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
-  if (CT && CT->isOperationTable()) CT->removeStales();
+#ifdef OLD_OP_CT
+  if (CT0 && CT0->isOperationTable()) CT0->removeStales();
+#else
+  for (unsigned i=0; i<num_etids; i++) {
+    etype[i]->markForDeletion();
+  }
+  if (CT) {
+    for (unsigned i=0; i<num_etids; i++) {
+      if (CT[i] && CT[i]->isOperationTable()) CT[i]->removeStales();
+    }
+  }
+#endif
 }
 
 void MEDDLY::operation::destroyAllOps() 
@@ -2025,7 +2233,24 @@ void MEDDLY::operation::destroyAllOps()
 
 void MEDDLY::operation::removeStaleComputeTableEntries()
 {
-  if (CT) CT->removeStales();
+#ifdef OLD_OP_CT
+  if (CT0) CT0->removeStales();
+#else
+  bool has_monolithic = false;
+  if (CT) {
+    for (unsigned i=0; i<num_etids; i++) {
+      if (0==CT[i]) continue;
+      if (CT[i]->isOperationTable()) {
+        CT[i]->removeStales();
+      } else {
+        has_monolithic = true;
+      }
+    }
+  }
+  if (has_monolithic) {
+    Monolithic_CT->removeStales();
+  }
+#endif
 }
 
 void MEDDLY::operation::removeAllComputeTableEntries()
@@ -2036,7 +2261,17 @@ void MEDDLY::operation::removeAllComputeTableEntries()
 #endif
   if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
-  if (CT) CT->removeStales();
+#ifndef OLD_OP_CT
+  for (unsigned i=0; i<num_etids; i++) {
+    etype[i]->markForDeletion();
+  }
+#endif
+  removeStaleComputeTableEntries();
+#ifndef OLD_OP_CT
+  for (unsigned i=0; i<num_etids; i++) {
+    etype[i]->unmarkForDeletion();
+  }
+#endif
   is_marked_for_deletion = false;
 #ifdef DEBUG_CLEANUP
   fprintf(stdout, "Removed entries for operation %p %s\n", this, getName());
@@ -2063,12 +2298,31 @@ void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
 
 void MEDDLY::operation::showComputeTable(output &s, int verbLevel) const
 {
-  if (CT) CT->show(s, verbLevel);
+#ifdef OLD_OP_CT
+  if (CT0) CT0->show(s, verbLevel);
+#else
+  bool has_monolithic = false;
+  if (CT) {
+    for (unsigned i=0; i<num_etids; i++) {
+      if (0==CT[i]) continue;
+      if (CT[i]->isOperationTable()) {
+        CT[i]->show(s, verbLevel);
+      } else {
+        has_monolithic = true;
+      }
+    }
+  }
+  if (has_monolithic) {
+    Monolithic_CT->show(s, verbLevel);
+  }
+#endif
 }
 
 // ******************************************************************
 // *                    unary_operation  methods                    *
 // ******************************************************************
+
+#ifdef OLD_OP_CT
 
 MEDDLY::unary_operation::unary_operation(const unary_opname* code, int kl, 
   int al, expert_forest* arg, expert_forest* res) : operation(code, kl, al)
@@ -2094,6 +2348,33 @@ MEDDLY::unary_operation::unary_operation(const unary_opname* code, int kl,
 
   setAnswerForest(0);
 }
+
+#else
+
+MEDDLY::unary_operation::unary_operation(const unary_opname* code, 
+  unsigned et_slots, expert_forest* arg, expert_forest* res)
+: operation(code, et_slots)
+{
+  argF = arg;
+  resultType = FOREST;
+  resF = res;
+
+  registerInForest(argF);
+  registerInForest(resF);
+}
+
+MEDDLY::unary_operation::unary_operation(const unary_opname* code, 
+  unsigned et_slots, expert_forest* arg, opnd_type res)
+: operation(code, et_slots)
+{
+  argF = arg;
+  resultType = res;
+  resF = 0;
+
+  registerInForest(argF);
+}
+
+#endif
 
 MEDDLY::unary_operation::~unary_operation()
 {
@@ -2125,6 +2406,7 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
 // *                    binary_operation methods                    *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
 MEDDLY::binary_operation::binary_operation(const binary_opname* op, int kl, 
   int al, expert_forest* arg1, expert_forest* arg2, expert_forest* res)
 : operation(op, kl, al)
@@ -2140,6 +2422,25 @@ MEDDLY::binary_operation::binary_operation(const binary_opname* op, int kl,
   setAnswerForest(resF);
   can_commute = false;
 }
+
+#else
+
+MEDDLY::binary_operation::binary_operation(const binary_opname* op, 
+  unsigned et_slots, expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+: operation(op, et_slots)
+{
+  arg1F = arg1;
+  arg2F = arg2;
+  resF = res;
+
+  registerInForest(arg1F);
+  registerInForest(arg2F);
+  registerInForest(resF);
+
+  can_commute = false;
+}
+
+#endif
 
 MEDDLY::binary_operation::~binary_operation()
 {
@@ -2188,12 +2489,23 @@ void MEDDLY::binary_operation::compute(float av, node_handle ap,
 // *                 specialized_operation  methods                 *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
 MEDDLY::
 specialized_operation::
 specialized_operation(const specialized_opname* op, int kl, int al) 
  : operation(op, kl, al)
 {
 }
+
+#else
+MEDDLY::
+specialized_operation::
+specialized_operation(const specialized_opname* op, unsigned et_slots)
+ : operation(op, et_slots)
+{
+}
+
+#endif
 
 MEDDLY::specialized_operation::~specialized_operation()
 {

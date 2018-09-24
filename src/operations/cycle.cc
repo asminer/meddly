@@ -37,59 +37,98 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
   public:
     cycle_EV2EV(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
+#ifdef OLD_OP_CT
     virtual bool isStaleEntry(const node_handle* data);
     virtual void discardEntry(const node_handle* data);
-    virtual void showEntry(output &strm, const node_handle* data) const;
+    virtual void showEntry(output &strm, const node_handle* data, bool key_only) const;
+#endif
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
 
   protected:
+#ifdef OLD_OP_CT
     static const int NODE_INDICES_IN_KEY[2];
+#endif
 
     virtual void compute_r(long aev, node_handle a, int k, long& bev, node_handle& b);
 
-    inline compute_table::search_key*
+    inline compute_table::entry_key*
     findResult(long aev, node_handle a, long& bev, node_handle &b)
     {
-      compute_table::search_key* CTsrch = useCTkey();
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->reset();
-      CTsrch->writeNH(a);
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      CTsrch->writeN(a);
+#ifdef OLD_OP_CT
+      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      cacheFind.read(bev);
-      b = resF->linkNode(cacheFind.readNH());
+      bev = cacheFind.readL();
+      b = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      bev = CTresult[0].readL();
+      b = resF->linkNode(CTresult[0].readN());
+#endif
       if (b != 0) {
         bev += aev;
       }
-      doneCTkey(CTsrch);
+      CT0->recycle(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::search_key* Key,
+    inline node_handle saveResult(compute_table::entry_key* Key,
       long aev, node_handle a, long bev, node_handle b)
     {
+#ifdef OLD_OP_CT
       argF->cacheNode(a);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResult(b == 0 ? 0L : bev - aev);
-      entry.writeResultNH(resF->cacheNode(b));
-      CT->addEntry();
+      resF->cacheNode(b);
+      static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
+      result.reset();
+      result.writeL(b == 0 ? 0L : bev - aev);
+      result.writeN(b);
+      CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeL(b == 0 ? 0L : bev - aev);
+      CTresult[0].writeN(b);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
       return b;
     }
 };
 
+#ifdef OLD_OP_CT
 const int MEDDLY::cycle_EV2EV::NODE_INDICES_IN_KEY[2] = {
   0,
   (sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)
 };
+#endif
 
 MEDDLY::cycle_EV2EV::cycle_EV2EV(const unary_opname* oc, expert_forest* arg, expert_forest* res)
+#ifdef OLD_OP_CT
   : unary_operation(oc,
       sizeof(node_handle) / sizeof(node_handle),
       (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
       arg, res)
+#else
+  : unary_operation(oc, 1, arg, res)
+#endif
 {
   MEDDLY_DCASSERT(argF->isEVPlus() && argF->isForRelations());
   MEDDLY_DCASSERT(resF->isEVPlus() && !resF->isForRelations());
+
+#ifndef OLD_OP_CT
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "LN:LN");
+  et->setForestForSlot(1, arg);
+  et->setForestForSlot(4, res);
+  registerEntryType(0, et);
+  buildCTs();
+#endif
 }
+
+#ifdef OLD_OP_CT
 
 bool MEDDLY::cycle_EV2EV::isStaleEntry(const node_handle* data)
 {
@@ -103,13 +142,20 @@ void MEDDLY::cycle_EV2EV::discardEntry(const node_handle* data)
   resF->uncacheNode(data[NODE_INDICES_IN_KEY[1]]);
 }
 
-void MEDDLY::cycle_EV2EV::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::cycle_EV2EV::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
   strm << "[" << getName()
     << "(" << long(data[NODE_INDICES_IN_KEY[0]])
-    << "): " << long(data[NODE_INDICES_IN_KEY[3]])
-    << "]";
+    << "): ";
+  if (key_only) {
+    strm << "?";
+  } else {
+    strm << long(data[NODE_INDICES_IN_KEY[3]]);
+  }
+  strm << "]";
 }
+
+#endif
 
 void MEDDLY::cycle_EV2EV::computeDDEdge(const dd_edge &arg, dd_edge &res)
 {
@@ -151,7 +197,7 @@ void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, int k, long& bev, n
   }
 
   // check the cache
-  compute_table::search_key* key = findResult(aev, a, bev, b);
+  compute_table::entry_key* key = findResult(aev, a, bev, b);
   if (key == 0) {
     return;
   }

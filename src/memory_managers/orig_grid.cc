@@ -81,7 +81,7 @@ namespace MEDDLY {
   class original_grid : public hole_manager<INT> {
 
     public:
-      original_grid(const char* n, forest::statset &stats);
+      original_grid(const char* n, memstats &stats);
       virtual ~original_grid();
 
       virtual node_address requestChunk(size_t &numSlots);
@@ -211,7 +211,7 @@ namespace MEDDLY {
   // ******************************************************************
 
   template <class INT>
-  original_grid<INT>::original_grid(const char* n, forest::statset &stats)
+  original_grid<INT>::original_grid(const char* n, memstats &stats)
   : hole_manager<INT>(n, stats)
   {
     max_request = 0;
@@ -892,7 +892,7 @@ MEDDLY::orig_grid_style::~orig_grid_style()
 
 MEDDLY::memory_manager*
 MEDDLY::orig_grid_style::initManager(unsigned char granularity, 
-  unsigned char minsize, forest::statset &stats) const
+  unsigned char minsize, memstats &stats) const
 {
   if (sizeof(int) == granularity) {
     return new original_grid <int>(getName(), stats);

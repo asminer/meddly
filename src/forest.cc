@@ -100,6 +100,8 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
   // nodemm = HEAP_MANAGER;
 
   nodestor = SIMPLE_STORAGE;
+  //nodestor = PATTERN_STORAGE;
+  //nodestor = BEST_STORAGE;
 
   reorder = reordering_type::SINK_DOWN;
   swap = variable_swap_type::VAR;
@@ -120,13 +122,17 @@ MEDDLY::forest::statset::statset()
   orphan_nodes = 0;
   active_nodes = 0;
   peak_active = 0;
+  /*
   memory_used = 0;
   memory_alloc = 0;
   peak_memory_used = 0;
   peak_memory_alloc = 0;
+  */
+  /*
   memory_UT = 0;
   peak_memory_UT = 0;
   max_UT_chain = 0;
+  */
 }
 
 // ******************************************************************
@@ -702,11 +708,11 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   //
   // Initialize misc. protected data
   //
-#ifndef USE_NODE_STATUS
+// #ifndef USE_NODE_STATUS
   terminalNodesAreStale = false;
-#else
+// #else
   terminalNodesStatus = MEDDLY::forest::ACTIVE;
-#endif
+// #endif
 
   //
   // Initialize misc. private data
@@ -1945,6 +1951,48 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   return p;
 }
+
+MEDDLY::node_handle MEDDLY::expert_forest
+::createImplicitNode(MEDDLY::relation_node &nb)
+{
+  // 
+  // Not eliminated by reduction rule.
+  // Not a duplicate.
+  //
+  // We need to create a new node for this.
+  
+  // NOW is the best time to run the garbage collector, if necessary.
+#ifndef GC_OFF
+  if (isTimeToGc()) garbageCollect();
+#endif
+  
+  // Grab a new node
+  node_handle p = nodeHeaders.getFreeNodeHandle();
+  nodeHeaders.setNodeImplicitFlag(p, true);
+  nodeHeaders.setNodeLevel(p, nb.getLevel());
+  MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
+  MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
+  
+  stats.incActive(1);
+  if (theLogger && theLogger->recordingNodeCounts()) {
+    theLogger->addToActiveNodeCount(this, nb.getLevel(), 1);
+  }
+  // All of the work is in satimpl_opname::implicit_relation now :^)
+  nodeHeaders.setNodeAddress(p, nb.getID());
+  linkNode(p);
+  
+  // add to UT
+  unique->add(nb.getSignature(), p);
+  
+#ifdef DEBUG_CREATE_REDUCED
+  printf("Created node ");
+  showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
+  printf("\n");
+#endif
+  
+  return p;
+}
+
 
 MEDDLY::node_handle MEDDLY::expert_forest
 ::createReducedExtensibleNodeHelper(int in, unpacked_node &nb)
