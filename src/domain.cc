@@ -43,6 +43,8 @@
 
 #include "forests/evmxd_pluslong.h"
 #include "forests/evmxd_timesreal.h"
+
+#include "forests/esrbdd.h"
 #endif
 
 // #define DEBUG_CLEANUP
@@ -370,6 +372,12 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 #endif
       f = new evmxd_timesreal(slot, this, p);
+      break;
+
+    case forest::ESR:
+      if (forest::BOOLEAN != t) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+      if (rel) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+      else     f = new esrbdd(slot, this, p, level_reduction_rule);
       break;
 
     default:

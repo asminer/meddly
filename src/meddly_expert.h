@@ -2809,10 +2809,11 @@ class MEDDLY::expert_forest: public forest
     // depth of delete/zombie stack; validate when 0
     int delete_depth;
 
+  protected:
     /// Node header information
     node_headers nodeHeaders;
 
-
+  private:
     /// Number of bytes for an edge
     char edge_bytes;
     /// Are edge values hashed?

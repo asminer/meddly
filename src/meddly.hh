@@ -429,6 +429,10 @@ inline bool MEDDLY::forest::isUserDefinedReduced() const {
     return MEDDLY::forest::policies::USER_DEFINED == deflt.reduction;
 }
 
+inline bool MEDDLY::forest::isEdgeSpecificReduced() const {
+    return MEDDLY::forest::policies::EDGE_SPECIFIC == deflt.reduction;
+}
+
 inline int* MEDDLY::forest::getLevelReductionRule() const{
     return level_reduction_rule;
     

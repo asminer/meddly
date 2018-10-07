@@ -1040,7 +1040,9 @@ class MEDDLY::forest {
       /// Special case of EVPLUS for indexed sets.
       INDEX_SET,
       /// Edges labeled, values multiplied along path.
-      EVTIMES
+      EVTIMES,
+      /// Edge-specific reduction.
+      ESR
       // TBD: there may be others in the future :^)
     };
 
@@ -1077,7 +1079,9 @@ class MEDDLY::forest {
           /// Nodes are identity-reduced.
           IDENTITY_REDUCED,
           /// Nodes are user-defined reduced
-          USER_DEFINED
+          USER_DEFINED,
+          /// Nodes are edge-specific reduced
+          EDGE_SPECIFIC
       };
 
       // Supported node storage meachanisms.
@@ -1445,8 +1449,11 @@ class MEDDLY::forest {
     /// Returns true if the forest is identity reduced.
     bool isIdentityReduced() const;
     
-     /// Returns true if the forest is user_defined reduced.
+    /// Returns true if the forest is user_defined reduced.
     bool isUserDefinedReduced() const;
+
+    /// Returns true if the forest is edge-specific reduced.
+    bool isEdgeSpecificReduced() const;
 
     /// Returns true if the level is fully reduced.
     bool isFullyReduced(int k) const;
