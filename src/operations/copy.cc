@@ -1540,6 +1540,14 @@ void MEDDLY::copy_MT2ESR<TYPE>
     if (0==Key) return;
   }
 
+/////////////////////////////////////////////////
+  bool jump = false;
+  if (k > aLevel + 1) {
+    k = aLevel + 1;
+    jump = true;
+  }
+/////////////////////////////////////////////////
+
   // What's below?
   int nextk;
   if (resF->isForRelations()) {
@@ -1576,6 +1584,20 @@ void MEDDLY::copy_MT2ESR<TYPE>
 
   // Reduce
   dynamic_cast<esrbdd*>(resF)->createReducedNode(in, nb, br, b);
+
+/////////////////////////////////////////////////
+  if (jump) {
+    if (argF->isFullyReduced()) {
+      if (br != esrbdd::Reduction::BLANK && br != esrbdd::Reduction::FULL) {
+        throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
+      }
+      br = esrbdd::Reduction::FULL;
+    }
+    else {
+      throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    }
+  }
+/////////////////////////////////////////////////
 
   // Add to compute table
   if (Key) addToCache(Key, a, b, br);
