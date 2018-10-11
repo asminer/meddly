@@ -8,6 +8,9 @@ namespace MEDDLY{
 
 class reordering_base
 {
+public:
+  virtual ~reordering_base() {}
+
 protected:
   const unique_table* get_unique_table(expert_forest* forest) const;
   int getInCount(expert_forest* forest, node_handle p) const;
