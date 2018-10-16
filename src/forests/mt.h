@@ -47,6 +47,7 @@ class MEDDLY::mt_forest : public expert_forest {
     virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
     virtual bool isRedundant(const unpacked_node &nb) const;
     virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;
+    virtual bool isZeroSuppressed(const unpacked_node &nb) const override;
 
   // ------------------------------------------------------------
   // Helpers for this and derived classes

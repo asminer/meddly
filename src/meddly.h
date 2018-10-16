@@ -1078,6 +1078,8 @@ class MEDDLY::forest {
           QUASI_REDUCED,
           /// Nodes are identity-reduced.
           IDENTITY_REDUCED,
+          /// Nodes are zero-suppressed.
+          ZERO_SUPPRESSION_REDUCED,
           /// Nodes are user-defined reduced
           USER_DEFINED,
           /// Nodes are edge-specific reduced
@@ -1182,6 +1184,7 @@ class MEDDLY::forest {
       void setFullyReduced();
       void setQuasiReduced();
       void setIdentityReduced();
+      void setZeroSuppressionReduced();
       void setUserDefinedReduced();
       void setNeverDelete();
       void setOptimistic();
@@ -1449,6 +1452,9 @@ class MEDDLY::forest {
     /// Returns true if the forest is identity reduced.
     bool isIdentityReduced() const;
     
+    /// Returns true if the forest is zero-suppressed.
+    bool isZeroSuppressionReduced() const;
+
     /// Returns true if the forest is user_defined reduced.
     bool isUserDefinedReduced() const;
 

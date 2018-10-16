@@ -198,6 +198,10 @@ inline void MEDDLY::forest::policies::setIdentityReduced() {
   reduction = IDENTITY_REDUCED;
 }
 
+inline void MEDDLY::forest::policies::setZeroSuppressionReduced() {
+  reduction = ZERO_SUPPRESSION_REDUCED;
+}
+
 inline void MEDDLY::forest::policies::setNeverDelete() {
   deletion = NEVER_DELETE;
 }
@@ -423,6 +427,10 @@ inline bool MEDDLY::forest::isQuasiReduced() const {
 
 inline bool MEDDLY::forest::isIdentityReduced() const {
     return MEDDLY::forest::policies::IDENTITY_REDUCED == deflt.reduction;
+}
+
+inline bool MEDDLY::forest::isZeroSuppressionReduced() const {
+    return MEDDLY::forest::policies::ZERO_SUPPRESSION_REDUCED == deflt.reduction;
 }
 
 inline bool MEDDLY::forest::isUserDefinedReduced() const {

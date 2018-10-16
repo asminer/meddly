@@ -183,6 +183,15 @@ MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, int i, float e
   return U;
 }
 
+inline MEDDLY::unpacked_node*
+MEDDLY::unpacked_node::newZeroSuppressed(const expert_forest *f, int k, node_handle node, bool full)
+{
+  unpacked_node* U = useUnpackedNode();
+  MEDDLY_DCASSERT(U);
+  U->initZeroSuppressed(f, k, node, full);
+  return U;
+}
+
 inline MEDDLY::unpacked_node* 
 MEDDLY::unpacked_node::newFull(const expert_forest *f, int level, int tsz)
 {

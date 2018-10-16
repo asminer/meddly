@@ -60,7 +60,7 @@ bool MEDDLY::mt_forest
 
 bool MEDDLY::mt_forest::isRedundant(const unpacked_node &nb) const
 {
-  if (isQuasiReduced()) return false;
+  if (!isFullyReduced() && !isIdentityReduced()) return false;
   if (nb.getLevel() < 0 && isIdentityReduced()) return false;
   if (nb.isExtensible()) {
     int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
@@ -84,6 +84,34 @@ bool MEDDLY::mt_forest::isIdentityEdge(const unpacked_node &nb, int i) const
   return nb.d(i) != 0;
 }
 
+bool MEDDLY::mt_forest::isZeroSuppressed(const unpacked_node &nb) const
+{
+  if (!isZeroSuppressionReduced()) return false;
+  if (nb.isExtensible()) {
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+  }
+  else {
+    if (nb.isSparse()) {
+      if (nb.getNNZs() > 1) {
+        return false;
+      }
+      if (nb.getNNZs() == 1) {
+        if (nb.i(0) != 0) {
+          return false;
+        }
+      }
+      return true;
+    }
+    else {
+      for (int i = 1; i < nb.getSize(); i++) {
+        if (nb.d(i) != getTransparentNode()) {
+          return false;
+        }
+      }
+      return true;
+    }
+  }
+}
 
 MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d) 
 {

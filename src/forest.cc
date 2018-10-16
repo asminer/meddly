@@ -1830,6 +1830,18 @@ MEDDLY::node_handle MEDDLY::expert_forest
     } // for z
 #endif
 
+    // Check for zero-suppressed nodes
+    if (1==nnz) {
+      if (isZeroSuppressed(nb)) {
+#ifdef DEBUG_CREATE_REDUCED
+        printf("Zero-suppressed node ");
+        showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        printf("\n");
+#endif
+        return nb.d(0);
+      }
+    }
+
     // Check for identity nodes
     if (1==nnz && in==nb.i(0)) {
       if (isIdentityEdge(nb, 0)) {
@@ -1864,8 +1876,18 @@ MEDDLY::node_handle MEDDLY::expert_forest
       if (nb.d(i)!=getTransparentNode()) nnz++;
     } // for i
 
-    // Check for identity nodes
     if (1==nnz) {
+      // Check for zero-suppressed nodes
+      if (isZeroSuppressed(nb)) {
+#ifdef DEBUG_CREATE_REDUCED
+        printf("Zero-suppressed node ");
+        showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        printf("\n");
+#endif
+        return nb.d(0);
+      }
+
+      // Check for identity nodes
       if (in < nb.getSize() && isIdentityEdge(nb, in)) {
 #ifdef DEBUG_CREATE_REDUCED
         printf("Identity node ");

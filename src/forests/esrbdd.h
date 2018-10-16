@@ -86,7 +86,7 @@ class MEDDLY::esrbdd : public evmdd_forest {
     virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
     virtual bool isRedundant(const unpacked_node &nb) const;
     virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;
-    virtual bool isZeroSuppressible(const unpacked_node &nb) const;
+    virtual bool isZeroSuppressed(const unpacked_node &nb) const;
     virtual bool isOneSuppressible(const unpacked_node &nb) const;
 
     virtual enumerator::iterator* makeFullIter() const {

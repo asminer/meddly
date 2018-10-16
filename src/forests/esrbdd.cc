@@ -168,7 +168,7 @@ bool MEDDLY::esrbdd::isIdentityEdge(const unpacked_node &nb, int i) const
   return isIdentityEdgeTempl<OP>(nb, i);
 }
 
-bool MEDDLY::esrbdd::isZeroSuppressible(const unpacked_node &nb) const
+bool MEDDLY::esrbdd::isZeroSuppressed(const unpacked_node &nb) const
 {
   if (nb.isSparse()) {
     if (nb.getNNZs() > 1) {
@@ -357,7 +357,7 @@ void MEDDLY::esrbdd::createReducedHelper(int in, unpacked_node &nb, long& r, nod
 
     // Check for zero- or one-suppressible nodes
     if (1 == nnz) {
-      if (isZeroSuppressible(nb)) {
+      if (isZeroSuppressed(nb)) {
         // Zero-suppressible
         r = Reduction::ZERO;
         node = nb.d(0);
@@ -390,7 +390,7 @@ void MEDDLY::esrbdd::createReducedHelper(int in, unpacked_node &nb, long& r, nod
 
     // Check for zero- or one-suppressible nodes
     if (1 == nnz) {
-      if (isZeroSuppressible(nb)) {
+      if (isZeroSuppressed(nb)) {
         // Zero-suppressible
         r = Reduction::ZERO;
         node = nb.d(0);

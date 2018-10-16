@@ -623,6 +623,8 @@ class MEDDLY::unpacked_node {
     void initIdentity(const expert_forest *f, int k, int i, long ev, node_handle node, bool full);
     void initIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full);
 
+    void initZeroSuppressed(const expert_forest *f, int k, node_handle node, bool full);
+
   /* Create blank node, primarily for writing */
     
     void initFull(const expert_forest *f, int level, int tsz); 
@@ -643,6 +645,8 @@ class MEDDLY::unpacked_node {
     static unpacked_node* newIdentity(const expert_forest *f, int k, int i, long ev, node_handle node, bool full);
 //    static unpacked_node* newIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full);
     static unpacked_node* newIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full);
+
+    static unpacked_node* newZeroSuppressed(const expert_forest *f, int k, node_handle node, bool full);
 
     static unpacked_node* newFull(const expert_forest *f, int level, int tsz);
     static unpacked_node* newSparse(const expert_forest *f, int level, int nnz);
@@ -2519,6 +2523,17 @@ class MEDDLY::expert_forest: public forest
     */
     virtual bool isIdentityEdge(const unpacked_node &nb, int i) const = 0;
 
+    /** Is this a zero-suppressible node that can be eliminated?
+        Must be implemented in derived forests
+        to deal with the default edge value.
+          @param  nb    Node we're trying to build.
+
+          @return   True, if nr is a zero-suppressible node
+                          AND it should be eliminated.
+    */
+    virtual bool isZeroSuppressed(const unpacked_node &nb) const {
+      return false;
+    }
 
     /**
         Build an iterator.
