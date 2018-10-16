@@ -24,6 +24,8 @@
 #include "../forests/esrbdd.h"
 #include "copy.h"
 
+#define COPY_HACK
+
 // #define DEBUG_COPY_COMPUTE_ALL
 
 namespace MEDDLY {
@@ -58,6 +60,31 @@ class MEDDLY::copy_MT : public unary_operation {
   protected:
     virtual node_handle compute_r(node_handle a) = 0;
 
+#ifdef COPY_HACK
+    inline compute_table::entry_key*
+    findResult(node_handle a, node_handle &b, int k = 0)
+    {
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->writeI(k);
+      CTsrch->writeN(a);
+#ifdef OLD_OP_CT
+      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
+      if (!cacheFind) return CTsrch;
+      b = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      b = resF->linkNode(CTresult[0].readN());
+#endif
+      CT0->recycle(CTsrch);
+      return 0;
+    }
+#else
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle &b) 
     {
@@ -80,6 +107,27 @@ class MEDDLY::copy_MT : public unary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
+#endif
+
+#ifdef COPY_HACK
+    inline node_handle saveResult(compute_table::entry_key* Key,
+      node_handle a, node_handle b, int k = 0)
+    {
+#ifdef OLD_OP_CT
+      argF->cacheNode(a);
+      resF->cacheNode(b);
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(b);
+      CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeN(b);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
+      return b;
+    }
+#else
     inline node_handle saveResult(compute_table::entry_key* Key, 
       node_handle a, node_handle b) 
     {
@@ -97,6 +145,7 @@ class MEDDLY::copy_MT : public unary_operation {
 #endif
       return b;
     }
+#endif
 };
 
 #ifdef OLD_OP_CT
@@ -111,9 +160,15 @@ MEDDLY::copy_MT
 :: copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res)
  : unary_operation(oc, 1, arg, res)
 {
+#ifdef COPY_HACK
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "IN:N");
+  et->setForestForSlot(1, arg);
+  et->setForestForSlot(3, res);
+#else
   compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:N");
   et->setForestForSlot(0, arg);
   et->setForestForSlot(2, res);
+#endif
   registerEntryType(0, et);
   buildCTs();
 }
@@ -268,10 +323,16 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
   // Check compute table
   node_handle b;
   compute_table::entry_key* Key = 0;
+
+#ifdef COPY_HACK
+  Key = findResult(a, b, k);
+  if (0==Key) return b;
+#else
   if (k == aLevel && k>0) {
     Key = findResult(a, b);
     if (0==Key) return b;
   }
+#endif
   int nextk;
   if (resF->isForRelations()) {
     nextk = resF->downLevel(k);
@@ -284,6 +345,8 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
   if (isLevelAbove(k, aLevel)) {
     if (k<0 && argF->isIdentityReduced()) {
       A->initIdentity(argF, k, in, a, false);
+    } else if (argF->isZeroSuppressionReduced()) {
+      A->initZeroSuppressed(argF, k, a, false);
     } else {
       A->initRedundant(argF, k, a, false);
     }
@@ -310,7 +373,11 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
   b = resF->createReducedNode(in, nb);
 
   // Add to compute table
+#ifdef COPY_HACK
+  saveResult(Key, a, b, k);
+#else
   if (Key) saveResult(Key, a, b);
+#endif
   return b;
 }
 
@@ -1561,6 +1628,8 @@ void MEDDLY::copy_MT2ESR<TYPE>
   if (isLevelAbove(k, aLevel)) {
     if (k<0 && argF->isIdentityReduced()) {
       A->initIdentity(argF, k, in, a, false);
+    } else if (argF->isZeroSuppressionReduced()) {
+      A->initZeroSuppressed(argF, k, a, false);
     } else {
       A->initRedundant(argF, k, a, false);
     }
