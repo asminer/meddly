@@ -22,6 +22,7 @@
 #endif
 #include "../defines.h"
 #include "../forests/esrbdd.h"
+#include "../forests/cbdd.h"
 #include "copy.h"
 
 #define COPY_HACK
@@ -1381,17 +1382,17 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
 
 // ******************************************************************
 // *                                                                *
-// *                       copy_MT2ESR class                        *
+// *                      copy_MT2SPEC class                        *
 // *                                                                *
 // ******************************************************************
 
 namespace MEDDLY {
 
   template <typename TYPE>
-  class copy_MT2ESR : public unary_operation {
+  class copy_MT2SPEC : public unary_operation {
     public:
 #ifdef OLD_OP_CT
-      copy_MT2EV(const unary_opname* oc, expert_forest* arg,
+      copy_MT2SPEC(const unary_opname* oc, expert_forest* arg,
         expert_forest* res) : unary_operation(oc,
           sizeof(node_handle) / sizeof(node_handle),
           (sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle),
@@ -1402,7 +1403,7 @@ namespace MEDDLY {
         // entry[2]: EV node (output)
       }
 #else
-      copy_MT2ESR(const unary_opname* oc, expert_forest* arg, expert_forest* res,
+      copy_MT2SPEC(const unary_opname* oc, expert_forest* arg, expert_forest* res,
         const char* pattern) : unary_operation(oc, 1, arg, res)
       {
         //
@@ -1466,19 +1467,7 @@ namespace MEDDLY {
 
 #endif // OLD_OP_CT
 
-      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
-        node_handle b;
-        TYPE br = Inf<TYPE>();
-        //if (argF->getReductionRule() == resF->getReductionRule()) {
-        //  computeSkip(-1, arg.getNode(), b, bev);  // same skipping rule, ok
-        //} else {
-          // need to visit every level...
-          computeAll(-1, resF->getNumVariables(), arg.getNode(), b, br);
-        //}
-        res.set(b, br);
-      }
-//      void computeSkip(int in, node_handle a, node_handle &b, TYPE &br);
-      void computeAll(int in, int k, node_handle a, node_handle &b, TYPE &br);
+      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) = 0;
 
     protected:
       inline compute_table::entry_key*
@@ -1535,54 +1524,28 @@ namespace MEDDLY {
 
 };  // namespace MEDDLY
 
-//template <typename TYPE>
-//void MEDDLY::copy_MT2ESR<TYPE>
-//::computeSkip(int in, node_handle a, node_handle &b, TYPE &br)
-//{
-//  // Check terminals
-//  if (argF->isTerminalNode(a)) {
-//    MEDDLY_DCASSERT(a != argF->getTransparentNode());
-//    if (argF->getRangeType() == forest::BOOLEAN) {
-//      br = 0;
-//    }
-//    else {
-//      argF->getValueFromHandle(a, br);
-//    }
-//    b = expert_forest::bool_Tencoder::value2handle(true);
-//    return;
-//  }
-//
-//  // Check compute table
-//  compute_table::entry_key* Key = inCache(a, b, bev);
-//  if (0==Key) return;
-//
-//  // Initialize sparse node reader
-//  unpacked_node* A = unpacked_node::useUnpackedNode();
-//  A->initFromNode(argF, a, false);
-//
-//  // Initialize node builder
-//  const int level = argF->getNodeLevel(a);
-//  unpacked_node* nb = unpacked_node::newSparse(resF, level, A->getNNZs());
-//
-//  // recurse
-//  for (int z=0; z<A->getNNZs(); z++) {
-//    node_handle d;
-//    TYPE dev = Inf<TYPE>();
-//    computeSkip(A->i(z), A->d(z), d, dev);
-//    nb->i_ref(z) = A->i(z);
-//    nb->d_ref(z) = d;
-//    nb->setEdge(z, dev);
-//  }
-//
-//  // Cleanup
-//  unpacked_node::recycle(A);
-//
-//  // Reduce
-//  resF->createReducedNode(in, nb, bev, b);
-//
-//  // Add to compute table
-//  addToCache(Key, a, b, bev);
-//}
+
+namespace MEDDLY {
+
+  template <typename TYPE>
+  class copy_MT2ESR : public copy_MT2SPEC<TYPE> {
+    public:
+      copy_MT2ESR(const unary_opname* oc, expert_forest* arg, expert_forest* res,
+        const char* pattern) : copy_MT2SPEC<TYPE>(oc, arg, res, pattern)
+      {
+      }
+
+      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) override {
+        node_handle b;
+        TYPE br = Inf<TYPE>();
+        computeAll(-1, this->resF->getNumVariables(), arg.getNode(), b, br);
+        res.set(b, br);
+      }
+
+      void computeAll(int in, int k, node_handle a, node_handle &b, TYPE &br);
+  };
+
+};  // namespace MEDDLY
 
 template <typename TYPE>
 void MEDDLY::copy_MT2ESR<TYPE>
@@ -1598,12 +1561,12 @@ void MEDDLY::copy_MT2ESR<TYPE>
   }
 
   // Get level number
-  const int aLevel = argF->getNodeLevel(a);
+  const int aLevel = this->argF->getNodeLevel(a);
 
   // Check compute table
   compute_table::entry_key* Key = 0;
   if (k == aLevel && k>0) {
-    Key = inCache(a, b, br);
+    Key = this->inCache(a, b, br);
     if (0==Key) return;
   }
 
@@ -1617,7 +1580,7 @@ void MEDDLY::copy_MT2ESR<TYPE>
 
   // What's below?
   int nextk;
-  if (resF->isForRelations()) {
+  if (this->resF->isForRelations()) {
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
   } else {
     nextk = k-1;
@@ -1626,19 +1589,19 @@ void MEDDLY::copy_MT2ESR<TYPE>
   // Initialize node reader
   unpacked_node* A = unpacked_node::useUnpackedNode();
   if (isLevelAbove(k, aLevel)) {
-    if (k<0 && argF->isIdentityReduced()) {
-      A->initIdentity(argF, k, in, a, false);
-    } else if (argF->isZeroSuppressionReduced()) {
-      A->initZeroSuppressed(argF, k, a, false);
+    if (k<0 && this->argF->isIdentityReduced()) {
+      A->initIdentity(this->argF, k, in, a, false);
+    } else if (this->argF->isZeroSuppressionReduced()) {
+      A->initZeroSuppressed(this->argF, k, a, false);
     } else {
-      A->initRedundant(argF, k, a, false);
+      A->initRedundant(this->argF, k, a, false);
     }
   } else {
-    A->initFromNode(argF, a, false);
+    A->initFromNode(this->argF, a, false);
   }
 
   // Initialize node builder
-  unpacked_node* nb = unpacked_node::newSparse(resF, k, A->getNNZs());
+  unpacked_node* nb = unpacked_node::newSparse(this->resF, k, A->getNNZs());
 
   // recurse
   for (int z=0; z<A->getNNZs(); z++) {
@@ -1652,11 +1615,11 @@ void MEDDLY::copy_MT2ESR<TYPE>
   unpacked_node::recycle(A);
 
   // Reduce
-  dynamic_cast<esrbdd*>(resF)->createReducedNode(in, nb, br, b);
+  dynamic_cast<esrbdd*>(this->resF)->createReducedNode(in, nb, br, b);
 
 /////////////////////////////////////////////////
   if (jump) {
-    if (argF->isFullyReduced()) {
+    if (this->argF->isFullyReduced()) {
       if (br != esrbdd::Reduction::BLANK && br != esrbdd::Reduction::FULL) {
         throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
       }
@@ -1669,7 +1632,72 @@ void MEDDLY::copy_MT2ESR<TYPE>
 /////////////////////////////////////////////////
 
   // Add to compute table
-  if (Key) addToCache(Key, a, b, br);
+  if (Key) this->addToCache(Key, a, b, br);
+}
+
+namespace MEDDLY {
+
+  template <typename TYPE>
+  class copy_MT2CBDD : public copy_MT2SPEC<TYPE> {
+    public:
+      copy_MT2CBDD(const unary_opname* oc, expert_forest* arg, expert_forest* res,
+        const char* pattern) : copy_MT2SPEC<TYPE>(oc, arg, res, pattern)
+      {
+      }
+
+      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) override {
+        node_handle b;
+        TYPE bev = Inf<TYPE>();
+        computeSkip(-1, arg.getNode(), b, bev);  // same skipping rule, ok
+        res.set(b, bev);
+      }
+      void computeSkip(int in, node_handle a, node_handle &b, TYPE &bev);
+  };
+
+};  // namespace MEDDLY
+
+template <typename TYPE>
+void MEDDLY::copy_MT2CBDD<TYPE>::computeSkip(int in, node_handle a, node_handle &b, TYPE &bev)
+{
+  // Check terminals
+  if (this->argF->isTerminalNode(a)) {
+    MEDDLY_DCASSERT(a != this->argF->getTransparentNode());
+    MEDDLY_DCASSERT(this->argF->getRangeType() == forest::BOOLEAN);
+    bev = -1;
+    b = expert_forest::bool_Tencoder::value2handle(true);
+    return;
+  }
+
+  // Check compute table
+  compute_table::entry_key* Key = this->inCache(a, b, bev);
+  if (0==Key) return;
+
+  // Initialize sparse node reader
+  unpacked_node* A = unpacked_node::useUnpackedNode();
+  A->initFromNode(this->argF, a, false);
+
+  // Initialize node builder
+  const int level = this->argF->getNodeLevel(a);
+  unpacked_node* nb = unpacked_node::newSparse(this->resF, level, A->getNNZs());
+
+  // recurse
+  for (int z=0; z<A->getNNZs(); z++) {
+    node_handle d;
+    TYPE dev = Inf<TYPE>();
+    computeSkip(A->i(z), A->d(z), d, dev);
+    nb->i_ref(z) = A->i(z);
+    nb->d_ref(z) = d;
+    nb->setEdge(z, dev);
+  }
+
+  // Cleanup
+  unpacked_node::recycle(A);
+
+  // Reduce
+  dynamic_cast<cbdd*>(this->resF)->createReducedNode(in, nb, bev, b);
+
+  // Add to compute table
+  this->addToCache(Key, a, b, bev);
 }
 
 // ******************************************************************
@@ -1825,8 +1853,11 @@ MEDDLY::copy_opname
   //
   if (arg->isMultiTerminal() && res->isEdgeSpecificReduced()) {
     MEDDLY_DCASSERT(res->getRangeType() == forest::BOOLEAN);
-    if (arg->getRangeType() == forest::BOOLEAN) {
+    if (res->getEdgeLabeling() == forest::ESR) {
       return new copy_MT2ESR<long>(this, arg, res, "N:LN");
+    }
+    else if (res->getEdgeLabeling() == forest::CBDD) {
+      return new copy_MT2CBDD<long>(this, arg, res, "N:LN");
     }
     else {
       throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);

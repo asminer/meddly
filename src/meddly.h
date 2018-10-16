@@ -1042,7 +1042,9 @@ class MEDDLY::forest {
       /// Edges labeled, values multiplied along path.
       EVTIMES,
       /// Edge-specific reduction.
-      ESR
+      ESR,
+      /// Chained BDD
+      CBDD
       // TBD: there may be others in the future :^)
     };
 

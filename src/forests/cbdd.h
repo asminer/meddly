@@ -19,17 +19,17 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ESRBDD_H
-#define ESRBDD_H
+#ifndef CBDD_H
+#define CBDD_H
 
 #include "evmdd.h"
 
 namespace MEDDLY {
-  class esrbdd;
+  class cbdd;
 };
 
 
-class MEDDLY::esrbdd : public evmdd_forest {
+class MEDDLY::cbdd : public evmdd_forest {
   public:
     class OP : public EVencoder<long> {
       public:
@@ -61,20 +61,9 @@ class MEDDLY::esrbdd : public evmdd_forest {
         }
     };
 
-    enum Reduction : long {
-        // Short edge
-        BLANK,
-        // Redundant
-        FULL,
-        // Zero-suppressed
-        ZERO,
-        // One-suppressed
-        ONE
-    };
-
   public:
-    esrbdd(int dsl, domain *d, const policies &p, int* level_reduction_rule=NULL);
-    ~esrbdd();
+    cbdd(int dsl, domain *d, const policies &p, int* level_reduction_rule=NULL);
+    ~cbdd();
 
     virtual void createEdge(long reduction, dd_edge &e);
 //    virtual void createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e);
@@ -87,7 +76,7 @@ class MEDDLY::esrbdd : public evmdd_forest {
     virtual bool isRedundant(const unpacked_node &nb) const;
     virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;
     virtual bool isZeroSuppressed(const unpacked_node &nb) const;
-    virtual bool isOneSuppressed(const unpacked_node &nb) const;
+//    virtual bool isOneSuppressed(const unpacked_node &nb) const;
 
     virtual enumerator::iterator* makeFullIter() const {
       return new evpimdd_iterator(this);
@@ -106,12 +95,13 @@ class MEDDLY::esrbdd : public evmdd_forest {
     void createReducedHelper(int in, unpacked_node &nb, long& r, node_handle& node);
 
   public:
-    void createReducedNode(int in, MEDDLY::unpacked_node *un, long& r,
+    void createReducedNode(int in, MEDDLY::unpacked_node *un, long& ev,
         node_handle& node) {
       MEDDLY_DCASSERT(un);
-      normalize(*un, r);
+      normalize(*un, ev);
       un->computeHash();
-      createReducedHelper(in, *un, r, node);
+      createReducedHelper(in, *un, ev, node);
+      ev = -1;
     #ifdef TRACK_DELETIONS
       printf("Created node %d\n", node);
     #endif

@@ -19,22 +19,22 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "esrbdd.h"
+#include "cbdd.h"
 
 #include "../unique_table.h"
 
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                        esrbdd  methods                         *
+// *                         cbdd  methods                          *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
 
-MEDDLY::esrbdd
- ::esrbdd(int dsl, domain *d, const policies &p, int* level_reduction_rule)
- : evmdd_forest(dsl, d, BOOLEAN, ESR, p, level_reduction_rule)
+MEDDLY::cbdd
+ ::cbdd(int dsl, domain *d, const policies &p, int* level_reduction_rule)
+ : evmdd_forest(dsl, d, BOOLEAN, CBDD, p, level_reduction_rule)
 {
   // The reduction can only be edge-specific
   deflt.reduction = policies::EDGE_SPECIFIC;
@@ -43,10 +43,10 @@ MEDDLY::esrbdd
   initializeForest();
 }
 
-MEDDLY::esrbdd::~esrbdd()
+MEDDLY::cbdd::~cbdd()
 { }
 
-void MEDDLY::esrbdd::createEdge(long reduction, dd_edge &e)
+void MEDDLY::cbdd::createEdge(long reduction, dd_edge &e)
 {
   createEdgeTempl<OP, long>(reduction, e);
 }
@@ -111,13 +111,13 @@ void MEDDLY::esrbdd::createEdge(long reduction, dd_edge &e)
 //}
 
 
-void MEDDLY::esrbdd
+void MEDDLY::cbdd
 ::evaluate(const dd_edge &f, const int* vlist, long &term) const
 {
   evaluateT<OP, long>(f, vlist, term);
 }
 
-bool MEDDLY::esrbdd
+bool MEDDLY::cbdd
 ::isTransparentEdge(node_handle ep, const void* ev) const
 {
   MEDDLY_DCASSERT(ep != 0 || OP::isTransparentEdge(ev));
@@ -125,14 +125,14 @@ bool MEDDLY::esrbdd
   return OP::isTransparentEdge(ev);
 }
 
-void MEDDLY::esrbdd
+void MEDDLY::cbdd
 ::getTransparentEdge(node_handle &ep, void* ev) const
 {
   ep = 0;
   OP::setEdge(ev, OP::getRedundantEdge());
 }
 
-bool MEDDLY::esrbdd
+bool MEDDLY::cbdd
 ::areEdgeValuesEqual(const void* eva, const void* evb) const
 {
   long val1, val2;
@@ -141,34 +141,27 @@ bool MEDDLY::esrbdd
   return (val1 == val2);
 }
 
-bool MEDDLY::esrbdd::isRedundant(const unpacked_node &nb) const
+bool MEDDLY::cbdd::isRedundant(const unpacked_node &nb) const
 {
   int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
   if (rawsize < getLevelSize(nb.getLevel())) {
     return false;
   }
   int common = nb.d(0);
-  for (int i = 1; i < rawsize; i++) {
+  for (int i=1; i<rawsize; i++) {
     if (nb.d(i) != common) {
-      return false;
-    }
-  }
-  for (int i = 0; i < rawsize; i++) {
-    long dr;
-    nb.getEdge(i, dr);
-    if (dr != Reduction::BLANK && dr != Reduction::FULL) {
       return false;
     }
   }
   return true;
 }
 
-bool MEDDLY::esrbdd::isIdentityEdge(const unpacked_node &nb, int i) const
+bool MEDDLY::cbdd::isIdentityEdge(const unpacked_node &nb, int i) const
 {
   return isIdentityEdgeTempl<OP>(nb, i);
 }
 
-bool MEDDLY::esrbdd::isZeroSuppressed(const unpacked_node &nb) const
+bool MEDDLY::cbdd::isZeroSuppressed(const unpacked_node &nb) const
 {
   if (nb.isSparse()) {
     if (nb.getNNZs() > 1) {
@@ -176,11 +169,6 @@ bool MEDDLY::esrbdd::isZeroSuppressed(const unpacked_node &nb) const
     }
     if (nb.getNNZs() == 1) {
       if (nb.i(0) != 0) {
-        return false;
-      }
-      long dr;
-      nb.getEdge(0, dr);
-      if (dr != Reduction::BLANK && dr != Reduction::ZERO) {
         return false;
       }
     }
@@ -192,61 +180,42 @@ bool MEDDLY::esrbdd::isZeroSuppressed(const unpacked_node &nb) const
         return false;
       }
     }
-    if (nb.d(0) != getTransparentNode()) {
-      long dr;
-      nb.getEdge(0, dr);
-      if (dr != Reduction::BLANK && dr != Reduction::ZERO) {
-        return false;
-      }
-    }
     return true;
   }
 }
 
-bool MEDDLY::esrbdd::isOneSuppressed(const unpacked_node &nb) const
-{
-  if (getLevelSize(nb.getLevel()) < 2) {
-    return false;
-  }
+//bool MEDDLY::cbdd::isOneSuppressed(const unpacked_node &nb) const
+//{
+//  if (getLevelSize(nb.getLevel()) < 2) {
+//    return false;
+//  }
+//
+//  if (nb.isSparse()) {
+//    if (nb.getNNZs() > 1) {
+//      return false;
+//    }
+//    if (nb.getNNZs() == 1) {
+//      if (nb.i(0) != 1) {
+//        return false;
+//      }
+//    }
+//    return true;
+//  }
+//  else {
+//    for (int i = 0; i < nb.getSize(); i++) {
+//      if (i == 1) {
+//        continue;
+//      }
+//
+//      if (nb.d(i) != getTransparentNode()) {
+//        return false;
+//      }
+//    }
+//    return true;
+//  }
+//}
 
-  if (nb.isSparse()) {
-    if (nb.getNNZs() > 1) {
-      return false;
-    }
-    if (nb.getNNZs() == 1) {
-      if (nb.i(0) != 1) {
-        return false;
-      }
-      long dr;
-      nb.getEdge(0, dr);
-      if (dr != Reduction::BLANK && dr != Reduction::ONE) {
-        return false;
-      }
-    }
-    return true;
-  }
-  else {
-    for (int i = 0; i < nb.getSize(); i++) {
-      if (i == 1) {
-        continue;
-      }
-
-      if (nb.d(i) != getTransparentNode()) {
-        return false;
-      }
-    }
-    if (nb.d(1) != getTransparentNode()) {
-      long dr;
-      nb.getEdge(1, dr);
-      if (dr != Reduction::BLANK && dr != Reduction::ONE) {
-        return false;
-      }
-    }
-    return true;
-  }
-}
-
-void MEDDLY::esrbdd::normalize(unpacked_node &nb, long& ev) const
+void MEDDLY::cbdd::normalize(unpacked_node &nb, long& ev) const
 {
 //  assert(nb.getSize() == 2);
 //
@@ -287,29 +256,29 @@ void MEDDLY::esrbdd::normalize(unpacked_node &nb, long& ev) const
 //  }
 }
 
-void MEDDLY::esrbdd::showEdgeValue(output &s, const void* edge) const
+void MEDDLY::cbdd::showEdgeValue(output &s, const void* edge) const
 {
   OP::show(s, edge);
 }
 
-void MEDDLY::esrbdd::writeEdgeValue(output &s, const void* edge) const
+void MEDDLY::cbdd::writeEdgeValue(output &s, const void* edge) const
 {
   OP::write(s, edge);
 }
 
-void MEDDLY::esrbdd::readEdgeValue(input &s, void* edge)
+void MEDDLY::cbdd::readEdgeValue(input &s, void* edge)
 {
   OP::read(s, edge);
 }
 
-void MEDDLY::esrbdd::showUnhashedHeader(output &s, const void* uh) const
+void MEDDLY::cbdd::showUnhashedHeader(output &s, const void* uh) const
 {
   s.put(" card: ");
   s.put(static_cast<const long*>(uh)[0]);
   // fprintf(s, " card: %d", ((const node_handle*)uh)[0]);
 }
 
-void MEDDLY::esrbdd::writeUnhashedHeader(output &s, const void* uh) const
+void MEDDLY::cbdd::writeUnhashedHeader(output &s, const void* uh) const
 {
   s.put("\t ");
   s.put(static_cast<const long*>(uh)[0]);
@@ -317,18 +286,18 @@ void MEDDLY::esrbdd::writeUnhashedHeader(output &s, const void* uh) const
   // th_fprintf(s, "\t %d\n", ((const node_handle*)uh)[0]);
 }
 
-void MEDDLY::esrbdd::readUnhashedHeader(input &s, unpacked_node &nb) const
+void MEDDLY::cbdd::readUnhashedHeader(input &s, unpacked_node &nb) const
 {
   static_cast<long*>(nb.UHdata())[0] = s.get_integer();
   // th_fscanf(1, s, "%d", (node_handle*)nb.UHptr());
 }
 
-const char* MEDDLY::esrbdd::codeChars() const
+const char* MEDDLY::cbdd::codeChars() const
 {
   return "dd_epvi";
 }
 
-void MEDDLY::esrbdd::createReducedHelper(int in, unpacked_node &nb, long& r, node_handle& node)
+void MEDDLY::cbdd::createReducedHelper(int in, unpacked_node &nb, long& r, node_handle& node)
 {
 #ifdef DEVELOPMENT_CODE
   validateDownPointers(nb);
@@ -342,6 +311,8 @@ void MEDDLY::esrbdd::createReducedHelper(int in, unpacked_node &nb, long& r, nod
   if (nb.isSparse()) nb.sort();
 
   //if (nb.isExtensible()) return createReducedExtensibleNodeHelper(in, nb);
+
+  long low = nb.getLevel();
 
   // get sparse, truncated full sizes and check
   // for redundant / identity reductions.
@@ -358,22 +329,22 @@ void MEDDLY::esrbdd::createReducedHelper(int in, unpacked_node &nb, long& r, nod
     // Check for zero- or one-suppressible nodes
     if (1 == nnz) {
       if (isZeroSuppressed(nb)) {
-        // Zero-suppressible
-        r = Reduction::ZERO;
-        node = nb.d(0);
-        return;
-      }
-      if (isOneSuppressed(nb)) {
-        // One-suppressible
-        r = Reduction::ONE;
-        node = nb.d(0);
-        return;
+        // Zero-suppressed
+        if (!isTerminalNode(nb.d(0)) && getNodeLevel(nb.d(0)) == nb.getLevel() - 1) {
+          unpacked_node* child = unpacked_node::newFromNode(this, nb.d(0), false);
+          if (isZeroSuppressed(*child)) {
+            child->getEdge(0, low);
+            node_handle old = nb.d(0);
+            nb.d_ref(0) = linkNode(child->d(0));
+            unlinkNode(old);
+          }
+          unpacked_node::recycle(child);
+        }
       }
     }
     else {
       // Check for redundant nodes
       if (isRedundant(nb)) {
-        r = Reduction::FULL;
         unlinkNode(nb.d(0));
         node = nb.d(1);
         return;
@@ -391,22 +362,22 @@ void MEDDLY::esrbdd::createReducedHelper(int in, unpacked_node &nb, long& r, nod
     // Check for zero- or one-suppressible nodes
     if (1 == nnz) {
       if (isZeroSuppressed(nb)) {
-        // Zero-suppressible
-        r = Reduction::ZERO;
-        node = nb.d(0);
-        return;
-      }
-      if (isOneSuppressed(nb)) {
-        // One-suppressible
-        r = Reduction::ONE;
-        node = nb.d(1);
-        return;
+        // Zero-suppressed
+        if (!isTerminalNode(nb.d(0)) && getNodeLevel(nb.d(0)) == nb.getLevel() - 1) {
+          unpacked_node* child = unpacked_node::newFromNode(this, nb.d(0), false);
+          if (isZeroSuppressed(*child)) {
+            child->getEdge(0, low);
+            node_handle old = nb.d(0);
+            nb.d_ref(0) = linkNode(child->d(0));
+            unlinkNode(old);
+          }
+          unpacked_node::recycle(child);
+        }
       }
     }
     else {
       // Check for redundant nodes
       if (isRedundant(nb)) {
-        r = Reduction::FULL;
         unlinkNode(nb.d(0));
         node = nb.d(1);
         return;
@@ -417,12 +388,11 @@ void MEDDLY::esrbdd::createReducedHelper(int in, unpacked_node &nb, long& r, nod
   // Is this a transparent node?
   if (0 == nnz) {
     // no need to unlink
-    r = (nb.getLevel() == 1 ? Reduction::BLANK : Reduction::FULL);
     node = getTransparentNode();
     return;
   }
 
-  r = Reduction::BLANK;
+  nb.setEdge(0, low);
 
   // check for duplicates in unique table
   node_handle q = unique->find(nb, getVarByLevel(nb.getLevel()));
@@ -486,25 +456,25 @@ void MEDDLY::esrbdd::createReducedHelper(int in, unpacked_node &nb, long& r, nod
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::esrbdd::evpimdd_iterator::evpimdd_iterator(const expert_forest *F)
+MEDDLY::cbdd::evpimdd_iterator::evpimdd_iterator(const expert_forest *F)
 : iterator(F)
 {
   int N = F->getNumVariables();
   acc_evs = new long[N+1];
 }
 
-MEDDLY::esrbdd::evpimdd_iterator::~evpimdd_iterator()
+MEDDLY::cbdd::evpimdd_iterator::~evpimdd_iterator()
 {
   delete[] acc_evs;
 }
 
-void MEDDLY::esrbdd::evpimdd_iterator::getValue(long &tv) const
+void MEDDLY::cbdd::evpimdd_iterator::getValue(long &tv) const
 {
   MEDDLY_DCASSERT(acc_evs);
   tv = acc_evs[0];
 }
 
-bool MEDDLY::esrbdd::evpimdd_iterator::start(const dd_edge &e)
+bool MEDDLY::cbdd::evpimdd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
     throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
@@ -517,7 +487,7 @@ bool MEDDLY::esrbdd::evpimdd_iterator::start(const dd_edge &e)
   return first(maxLevel, e.getNode());
 }
 
-bool MEDDLY::esrbdd::evpimdd_iterator::next()
+bool MEDDLY::cbdd::evpimdd_iterator::next()
 {
   MEDDLY_DCASSERT(F);
   MEDDLY_DCASSERT(!F->isForRelations());
@@ -548,7 +518,7 @@ bool MEDDLY::esrbdd::evpimdd_iterator::next()
   return first(k-1, down);
 }
 
-bool MEDDLY::esrbdd::evpimdd_iterator::first(int k, node_handle down)
+bool MEDDLY::cbdd::evpimdd_iterator::first(int k, node_handle down)
 {
   MEDDLY_DCASSERT(F);
   MEDDLY_DCASSERT(!F->isForRelations());
