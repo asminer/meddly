@@ -903,6 +903,7 @@ MEDDLY::expert_forest
   // Initialize search
   for (int i=0; i<N; i++) {
     if (isTerminalNode(root[i])) continue;
+    if (inList[root[i]]) continue;
     marked[mlen] = root[i];
     mlen++;
     inList[root[i]] = true;
@@ -962,6 +963,16 @@ MEDDLY::expert_forest
 long MEDDLY::expert_forest::getNodeCount(node_handle p) const
 {
   node_handle* list = markNodesInSubgraph(&p, 1, true);
+  if (0==list) return 0;
+  long i;
+  for (i=0; list[i]; i++) { }
+  free(list);
+  return i;
+}
+
+long MEDDLY::expert_forest::getNodeCount(const node_handle* roots, int N) const
+{
+  node_handle* list = markNodesInSubgraph(roots, N, false);
   if (0==list) return 0;
   long i;
   for (i=0; list[i]; i++) { }
