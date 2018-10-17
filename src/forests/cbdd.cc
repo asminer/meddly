@@ -326,10 +326,9 @@ void MEDDLY::cbdd::createReducedHelper(int in, unpacked_node &nb, long& r, node_
     } // for z
 #endif
 
-    // Check for zero- or one-suppressible nodes
     if (1 == nnz) {
+      // Check for zero-suppressed nodes
       if (isZeroSuppressed(nb)) {
-        // Zero-suppressed
         if (!isTerminalNode(nb.d(0)) && getNodeLevel(nb.d(0)) == nb.getLevel() - 1) {
           unpacked_node* child = unpacked_node::newFromNode(this, nb.d(0), false);
           if (isZeroSuppressed(*child)) {
@@ -393,6 +392,7 @@ void MEDDLY::cbdd::createReducedHelper(int in, unpacked_node &nb, long& r, node_
   }
 
   nb.setEdge(0, low);
+  nb.computeHash();
 
   // check for duplicates in unique table
   node_handle q = unique->find(nb, getVarByLevel(nb.getLevel()));

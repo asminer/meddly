@@ -99,7 +99,7 @@ class MEDDLY::cbdd : public evmdd_forest {
         node_handle& node) {
       MEDDLY_DCASSERT(un);
       normalize(*un, ev);
-      un->computeHash();
+      //un->computeHash();
       createReducedHelper(in, *un, ev, node);
       ev = -1;
     #ifdef TRACK_DELETIONS
