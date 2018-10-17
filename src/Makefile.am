@@ -58,6 +58,7 @@ libmeddly_la_SOURCES = \
   forests/evmxd_timesreal.h   forests/evmxd_timesreal.cc \
   forests/esrbdd.h            forests/esrbdd.cc \
   forests/cbdd.h              forests/cbdd.cc \
+  forests/czdd.h              forests/czdd.cc \
   forests/init_forests.h      forests/init_forests.cc \
   \
   memory_managers/base_manager.cc \

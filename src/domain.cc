@@ -46,6 +46,7 @@
 
 #include "forests/esrbdd.h"
 #include "forests/cbdd.h"
+#include "forests/czdd.h"
 #endif
 
 // #define DEBUG_CLEANUP
@@ -385,6 +386,12 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
       if (forest::BOOLEAN != t) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       if (rel) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       else     f = new cbdd(slot, this, p, level_reduction_rule);
+      break;
+
+    case forest::CZDD:
+      if (forest::BOOLEAN != t) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+      if (rel) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+      else     f = new czdd(slot, this, p, level_reduction_rule);
       break;
 
     default:

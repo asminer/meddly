@@ -1044,7 +1044,9 @@ class MEDDLY::forest {
       /// Edge-specific reduction.
       ESR,
       /// Chained BDD
-      CBDD
+      CBDD,
+      /// Chained ZDD
+      CZDD
       // TBD: there may be others in the future :^)
     };
 
