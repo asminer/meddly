@@ -570,14 +570,18 @@ void MEDDLY::copy_MT2EV<TYPE>
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    MEDDLY_DCASSERT(a != argF->getTransparentNode());
-    if (argF->getRangeType() == forest::BOOLEAN) {
-      bev = 0;
+    if (a == argF->getTransparentNode()) {
+      resF->getTransparentEdge(b, &bev);
     }
     else {
-      argF->getValueFromHandle(a, bev);
+      if (argF->getRangeType() == forest::BOOLEAN) {
+        bev = 0;
+      }
+      else {
+        argF->getValueFromHandle(a, bev);
+      }
+      b = expert_forest::bool_Tencoder::value2handle(true);
     }
-    b = expert_forest::bool_Tencoder::value2handle(true);
     return;
   }
 
@@ -1663,10 +1667,14 @@ void MEDDLY::copy_MT2ChainedDD<TYPE>::computeSkip(int in, node_handle a, node_ha
 {
   // Check terminals
   if (this->argF->isTerminalNode(a)) {
-    MEDDLY_DCASSERT(a != this->argF->getTransparentNode());
     MEDDLY_DCASSERT(this->argF->getRangeType() == forest::BOOLEAN);
-    bev = -1;
-    b = expert_forest::bool_Tencoder::value2handle(true);
+    if (a == this->argF->getTransparentNode()) {
+      this->resF->getTransparentEdge(b, &bev);
+    }
+    else {
+      bev = -1;
+      b = expert_forest::bool_Tencoder::value2handle(true);
+    }
     return;
   }
 
