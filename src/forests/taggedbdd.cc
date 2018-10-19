@@ -415,38 +415,28 @@ void MEDDLY::taggedbdd::createReducedHelper(int in, unpacked_node& nb, long& tag
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::taggedbdd::evpimdd_iterator::evpimdd_iterator(const expert_forest *F)
+MEDDLY::taggedbdd::taggedbdd_iterator::taggedbdd_iterator(const expert_forest *F)
 : iterator(F)
 {
-  int N = F->getNumVariables();
-  acc_evs = new long[N+1];
 }
 
-MEDDLY::taggedbdd::evpimdd_iterator::~evpimdd_iterator()
+MEDDLY::taggedbdd::taggedbdd_iterator::~taggedbdd_iterator()
 {
-  delete[] acc_evs;
 }
 
-void MEDDLY::taggedbdd::evpimdd_iterator::getValue(long &tv) const
-{
-  MEDDLY_DCASSERT(acc_evs);
-  tv = acc_evs[0];
-}
-
-bool MEDDLY::taggedbdd::evpimdd_iterator::start(const dd_edge &e)
+bool MEDDLY::taggedbdd::taggedbdd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
     throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
-  long ev = Inf<long>();
-  e.getEdgeValue(ev);
-  acc_evs[maxLevel] = ev;
+  long tag = Inf<long>();
+  e.getEdgeValue(tag);
 
-  return first(maxLevel, e.getNode());
+  return first(maxLevel, tag, e.getNode());
 }
 
-bool MEDDLY::taggedbdd::evpimdd_iterator::next()
+bool MEDDLY::taggedbdd::taggedbdd_iterator::next()
 {
   MEDDLY_DCASSERT(F);
   MEDDLY_DCASSERT(!F->isForRelations());
@@ -465,7 +455,6 @@ bool MEDDLY::taggedbdd::evpimdd_iterator::next()
       MEDDLY_DCASSERT(down);
       long ev = Inf<long>();
       path[k].getEdge(nzp[k], ev);
-      acc_evs[k-1] = acc_evs[k] + ev;
       break;
     }
   }
@@ -474,10 +463,12 @@ bool MEDDLY::taggedbdd::evpimdd_iterator::next()
     return false;
   }
 
-  return first(k-1, down);
+  long tag = Inf<long>();
+  path[k].getEdge(nzp[k], tag);
+  return first(k-1, tag, down);
 }
 
-bool MEDDLY::taggedbdd::evpimdd_iterator::first(int k, node_handle down)
+bool MEDDLY::taggedbdd::taggedbdd_iterator::first(int k, long tag, node_handle down)
 {
   MEDDLY_DCASSERT(F);
   MEDDLY_DCASSERT(!F->isForRelations());
@@ -492,14 +483,21 @@ bool MEDDLY::taggedbdd::evpimdd_iterator::first(int k, node_handle down)
     MEDDLY_DCASSERT(down);
     int kdn = F->getNodeLevel(down);
     MEDDLY_DCASSERT(kdn <= k);
-    if (kdn < k)  path[k].initRedundant(F, k, 0, down, false);
-    else          path[k].initFromNode(F, down, false);
+    if (kdn < k) {
+      if (tag < k) {
+        path[k].initRedundant(F, k, tag, down, false);
+      }
+      else {
+        path[k].initZeroSuppressed(F, k, (long)(k - 1), down, false);
+      }
+    }
+    else {
+      path[k].initFromNode(F, down, false);
+    }
     nzp[k] = 0;
     index[k] = path[k].i(0);
     down = path[k].d(0);
-    long ev = Inf<long>();
-    path[k].getEdge(0, ev);
-    acc_evs[k-1] = acc_evs[k] + ev;
+    path[k].getEdge(0, tag);
   }
   // save the terminal value
   index[0] = down;
