@@ -466,30 +466,21 @@ void MEDDLY::cbdd::createReducedHelper(int in, unpacked_node &nb, long& r, node_
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *               esrbdd::evpimdd_iterator  methods                *
+// *                 cbdd::cbdd_iterator  methods                   *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::cbdd::evpimdd_iterator::evpimdd_iterator(const expert_forest *F)
+MEDDLY::cbdd::cbdd_iterator::cbdd_iterator(const expert_forest *F)
 : iterator(F)
 {
-  int N = F->getNumVariables();
-  acc_evs = new long[N+1];
 }
 
-MEDDLY::cbdd::evpimdd_iterator::~evpimdd_iterator()
+MEDDLY::cbdd::cbdd_iterator::~cbdd_iterator()
 {
-  delete[] acc_evs;
 }
 
-void MEDDLY::cbdd::evpimdd_iterator::getValue(long &tv) const
-{
-  MEDDLY_DCASSERT(acc_evs);
-  tv = acc_evs[0];
-}
-
-bool MEDDLY::cbdd::evpimdd_iterator::start(const dd_edge &e)
+bool MEDDLY::cbdd::cbdd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
     throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
@@ -497,12 +488,11 @@ bool MEDDLY::cbdd::evpimdd_iterator::start(const dd_edge &e)
 
   long ev = Inf<long>();
   e.getEdgeValue(ev);
-  acc_evs[maxLevel] = ev;
 
-  return first(maxLevel, e.getNode());
+  return first(maxLevel, F->getNumVariables() + 1, e.getNode());
 }
 
-bool MEDDLY::cbdd::evpimdd_iterator::next()
+bool MEDDLY::cbdd::cbdd_iterator::next()
 {
   MEDDLY_DCASSERT(F);
   MEDDLY_DCASSERT(!F->isForRelations());
@@ -519,9 +509,6 @@ bool MEDDLY::cbdd::evpimdd_iterator::next()
       index[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
-      long ev = Inf<long>();
-      path[k].getEdge(nzp[k], ev);
-      acc_evs[k-1] = acc_evs[k] + ev;
       break;
     }
   }
@@ -530,10 +517,12 @@ bool MEDDLY::cbdd::evpimdd_iterator::next()
     return false;
   }
 
-  return first(k-1, down);
+  long low = Inf<long>();
+  path[k].getEdge(nzp[k], low);
+  return first(k-1, low, down);
 }
 
-bool MEDDLY::cbdd::evpimdd_iterator::first(int k, node_handle down)
+bool MEDDLY::cbdd::cbdd_iterator::first(int k, long low, node_handle down)
 {
   MEDDLY_DCASSERT(F);
   MEDDLY_DCASSERT(!F->isForRelations());
@@ -546,16 +535,24 @@ bool MEDDLY::cbdd::evpimdd_iterator::first(int k, node_handle down)
 
   for ( ; k; k--) {
     MEDDLY_DCASSERT(down);
-    int kdn = F->getNodeLevel(down);
-    MEDDLY_DCASSERT(kdn <= k);
-    if (kdn < k)  path[k].initRedundant(F, k, 0, down, false);
-    else          path[k].initFromNode(F, down, false);
+
+    if (k >= low) {
+      path[k].initZeroSuppressed(F, k, low, down, false);
+    }
+    else {
+      int kdn = F->getNodeLevel(down);
+      MEDDLY_DCASSERT(kdn <= k);
+      if (kdn < k) {
+        path[k].initRedundant(F, k, (long)k, down, false);
+      }
+      else {
+        path[k].initFromNode(F, down, false);
+        path[k].getEdge(0, low);
+      }
+    }
     nzp[k] = 0;
     index[k] = path[k].i(0);
     down = path[k].d(0);
-    long ev = Inf<long>();
-    path[k].getEdge(0, ev);
-    acc_evs[k-1] = acc_evs[k] + ev;
   }
   // save the terminal value
   index[0] = down;

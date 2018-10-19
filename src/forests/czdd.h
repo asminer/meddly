@@ -79,7 +79,7 @@ class MEDDLY::czdd : public evmdd_forest {
 //    virtual bool isOneSuppressed(const unpacked_node &nb) const;
 
     virtual enumerator::iterator* makeFullIter() const {
-      return new evpimdd_iterator(this);
+      return new czdd_iterator(this);
     }
 
   protected:
@@ -109,19 +109,15 @@ class MEDDLY::czdd : public evmdd_forest {
     }
 
   protected:
-    class evpimdd_iterator : public enumerator::iterator {
+    class czdd_iterator : public enumerator::iterator {
       public:
-        evpimdd_iterator(const expert_forest* F);
-        virtual ~evpimdd_iterator();
+        czdd_iterator(const expert_forest* F);
+        virtual ~czdd_iterator();
 
-        virtual void getValue(long &termVal) const;
         virtual bool start(const dd_edge &e);
         virtual bool next();
       private:
-        bool first(int k, node_handle p);
-
-      protected:
-        long* acc_evs;  // for accumulating edge values
+        bool first(int k, long low, node_handle p);
     };
 };
 

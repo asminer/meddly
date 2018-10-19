@@ -263,6 +263,29 @@ void MEDDLY::unpacked_node::initZeroSuppressed(const expert_forest *f, int k,
   is_extensible = f->isExtensibleLevel(k);
 }
 
+void MEDDLY::unpacked_node::initZeroSuppressed(const expert_forest *f, int k,
+  long ev, node_handle node, bool full)
+{
+  MEDDLY_DCASSERT(f);
+  int nsize = f->isExtensibleLevel(k) ? 1 : f->getLevelSize(k);
+  if (full) {
+    bind_to_forest(f, k, nsize, full);
+    down[0] = node;
+    ((long*)edge)[0] = ev;
+    for (int i=1; i<nsize; i++) {
+      down[i] = f->getTransparentNode();
+      ((long*)edge)[i] = 0L;
+    }
+  }
+  else {
+    bind_to_forest(f, k, 1, full);
+    down[0] = node;
+    ((long*)edge)[0] = ev;
+    index[0] = 0;
+    nnzs = 1;
+  }
+}
+
 /*
   Usage
 */
