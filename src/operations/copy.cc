@@ -24,6 +24,7 @@
 #include "../forests/esrbdd.h"
 #include "../forests/cbdd.h"
 #include "../forests/czdd.h"
+#include "../forests/taggedbdd.h"
 #include "copy.h"
 
 #define COPY_HACK
@@ -1710,6 +1711,235 @@ void MEDDLY::copy_MT2ChainedDD<TYPE>::computeSkip(int in, node_handle a, node_ha
 
 // ******************************************************************
 // *                                                                *
+// *                     copy_MT2TAGGED class                       *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+
+  class copy_MT2Tagged : public unary_operation {
+    public:
+#ifdef OLD_OP_CT
+      copy_MT2SPEC(const unary_opname* oc, expert_forest* arg,
+        expert_forest* res) : unary_operation(oc,
+          sizeof(node_handle) / sizeof(node_handle),
+          (sizeof(TYPE) + sizeof(node_handle)) / sizeof(node_handle),
+          arg, res)
+      {
+        // entry[0]: mt node
+        // entry[1]: EV value (output)
+        // entry[2]: EV node (output)
+      }
+#else
+      copy_MT2Tagged(const unary_opname* oc, expert_forest* arg, expert_forest* res,
+        const char* pattern) : unary_operation(oc, 1, arg, res)
+      {
+        //
+        // Pattern should be of the form "N:xN" where x is the EV Type.
+        //
+        // entry[0]: level
+        // entry[1]: mt node
+        // entry[2]: tag (output)
+        // entry[3]: tagged bdd node (output)
+        //
+        compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), pattern);
+        et->setForestForSlot(1, arg);
+        et->setForestForSlot(4, res);
+        registerEntryType(0, et);
+        buildCTs();
+      }
+#endif
+
+#ifdef OLD_OP_CT
+
+#ifndef USE_NODE_STATUS
+      virtual bool isStaleEntry(const node_handle* entryData) {
+        return
+          argF->isStale(entryData[0]) ||
+          resF->isStale(entryData[(sizeof(node_handle) + sizeof(TYPE)) / sizeof(node_handle)]);
+      }
+#else
+      virtual MEDDLY::forest::node_status
+      getStatusOfEntry(const node_handle* data)
+      {
+        MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
+        MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
+
+        if (a == MEDDLY::forest::DEAD ||
+            c == MEDDLY::forest::DEAD)
+          return MEDDLY::forest::DEAD;
+        else if (a == MEDDLY::forest::RECOVERABLE ||
+            c == MEDDLY::forest::RECOVERABLE)
+          return MEDDLY::forest::RECOVERABLE;
+        else
+          return MEDDLY::forest::ACTIVE;
+      }
+#endif
+
+      virtual void discardEntry(const node_handle* entryData) {
+        argF->uncacheNode(entryData[0]);
+        resF->uncacheNode(entryData[(sizeof(node_handle) + sizeof(TYPE)) / sizeof(node_handle)]);
+      }
+      virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const {
+        TYPE ev;
+        compute_table::readEV(entryData + sizeof(node_handle) / sizeof(node_handle), ev);
+        strm << "[" << getName()
+          << "(" << long(entryData[0])
+          << "): ";
+        if (key_only) {
+          strm << "?";
+        } else {
+          strm << "<" << ev << ", " << long(entryData[(sizeof(node_handle) + sizeof(TYPE)) / sizeof(node_handle)]) << ">";
+        }
+        strm << "]";
+      }
+
+#endif // OLD_OP_CT
+
+      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
+        node_handle b;
+        long tag;
+        computeAll(-1, argF->getNumVariables(), arg.getNode(), tag, b);
+        res.set(b, tag);
+      }
+
+      void computeAll(int in, int k, node_handle a, long& tag, node_handle& b);
+
+    protected:
+      inline compute_table::entry_key*
+      inCache(int k, node_handle a, long &tag, node_handle &b)
+      {
+#ifdef OLD_OP_CT
+        compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+        compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
+        MEDDLY_DCASSERT(CTsrch);
+        CTsrch->writeI(k);
+        CTsrch->writeN(a);
+#ifdef OLD_OP_CT
+        compute_table::entry_result& cacheFind = CT0->find(CTsrch);
+        if (cacheFind) {
+          cacheFind.read_ev(bev);
+          b = resF->linkNode(cacheFind.readN());
+          CT0->recycle(CTsrch);
+          return 0;
+        }
+#else
+        CT0->find(CTsrch, CTresult[0]);
+        if (CTresult[0]) {
+          CTresult[0].read_ev(tag);
+          b = resF->linkNode(CTresult[0].readN());
+          CT0->recycle(CTsrch);
+          return 0;
+        }
+#endif
+        return CTsrch;
+      }
+
+      inline void addToCache(compute_table::entry_key* Key, int k,
+        node_handle a, long tag, node_handle b)
+      {
+        MEDDLY_DCASSERT(tag != Inf<long>());
+
+#ifdef OLD_OP_CT
+        argF->cacheNode(a);
+        resF->cacheNode(b);
+        static compute_table::entry_result result(1 + sizeof(long)/sizeof(node_handle));
+        result.reset();
+        result.writeL(bev);
+        result.writeN(b);
+        CT0->addEntry(Key, result);
+#else
+        CTresult[0].reset();
+        CTresult[0].writeL(tag);
+        CTresult[0].writeN(b);
+        CT0->addEntry(Key, CTresult[0]);
+#endif
+      }
+  };
+
+};  // namespace MEDDLY
+
+void MEDDLY::copy_MT2Tagged::computeAll(int in, int k, node_handle a, long& tag, node_handle& b)
+{
+  // Check terminals
+  if (0==k) {
+    tag = 0L;
+    b = a;
+    return;
+  }
+
+  // 0 is 0 is 0, I think...
+  if (0==a) {
+    tag = 0L;
+    b = 0;
+    return;
+  }
+
+#ifdef DEBUG_COPY_COMPUTE_ALL
+  fprintf(stderr, "copy(%d, %d, %d)\n", in, k, a);
+#endif
+
+  // Get level number
+  const int aLevel = argF->getNodeLevel(a);
+
+  // Check compute table
+  compute_table::entry_key* Key = 0;
+
+  Key = inCache(k, a, tag, b);
+  if (0==Key) return;
+
+  int nextk;
+  if (resF->isForRelations()) {
+    nextk = resF->downLevel(k);
+  } else {
+    nextk = k-1;
+  }
+
+  // Initialize node reader
+  unpacked_node* A = unpacked_node::useUnpackedNode();
+  if (isLevelAbove(k, aLevel)) {
+    if (k<0 && argF->isIdentityReduced()) {
+      A->initIdentity(argF, k, in, a, false);
+    } else if (argF->isZeroSuppressionReduced()) {
+      A->initZeroSuppressed(argF, k, a, false);
+    } else {
+      A->initRedundant(argF, k, a, false);
+    }
+  } else {
+    A->initFromNode(argF, a, false);
+  }
+
+  unpacked_node* nb = unpacked_node::newFull(resF, k, resF->getLevelSize(k));
+  for (int i = 0; i < nb->getSize(); i++) {
+    nb->d_ref(i) = resF->getTransparentNode();
+    nb->setEdge(i, 0L);
+  }
+  // recurse
+  for (int z = 0; z < A->getNNZs(); z++) {
+    node_handle t;
+    long ttag;
+    computeAll(A->i(z), nextk, A->d(z), ttag, t);
+    nb->d_ref(A->i(z)) = t;
+    nb->setEdge(A->i(z), ttag);
+  }
+
+  // Handle extensible edge, if any
+  //if (A->isExtensible()) nb->markAsExtensible();
+
+  // Cleanup
+  unpacked_node::recycle(A);
+
+  // Reduce
+  dynamic_cast<taggedbdd*>(resF)->createReducedNode(in, nb, tag, b);
+
+  // Add to compute table
+  addToCache(Key, k, a, tag, b);
+}
+
+// ******************************************************************
+// *                                                                *
 // *                       copy_opname  class                       *
 // *                                                                *
 // ******************************************************************
@@ -1869,6 +2099,9 @@ MEDDLY::copy_opname
     }
     else if (arg->isZeroSuppressionReduced() && res->getEdgeLabeling() == forest::CZDD) {
       return new copy_MT2ChainedDD<long>(this, arg, res, "N:LN");
+    }
+    else if (arg->isFullyReduced() && res->getEdgeLabeling() == forest::TAGGED) {
+      return new copy_MT2Tagged(this, arg, res, "IN:LN");
     }
     else {
       throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);

@@ -59,6 +59,7 @@ libmeddly_la_SOURCES = \
   forests/esrbdd.h            forests/esrbdd.cc \
   forests/cbdd.h              forests/cbdd.cc \
   forests/czdd.h              forests/czdd.cc \
+  forests/taggedbdd.h         forests/taggedbdd.cc \
   forests/init_forests.h      forests/init_forests.cc \
   \
   memory_managers/base_manager.cc \

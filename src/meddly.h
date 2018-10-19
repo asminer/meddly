@@ -1046,7 +1046,9 @@ class MEDDLY::forest {
       /// Chained BDD
       CBDD,
       /// Chained ZDD
-      CZDD
+      CZDD,
+      /// Tagged BDD
+      TAGGED
       // TBD: there may be others in the future :^)
     };
 
