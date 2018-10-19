@@ -1559,10 +1559,10 @@ void MEDDLY::copy_MT2ESR<TYPE>
 {
   // Check terminals
   if (0==k) {
-    MEDDLY_DCASSERT(a != argF->getTransparentNode());
-    MEDDLY_DCASSERT(argF->getRangeType() == forest::BOOLEAN);
+    MEDDLY_DCASSERT(this->argF->getRangeType() == forest::BOOLEAN);
+
     br = esrbdd::Reduction::BLANK;
-    b = expert_forest::bool_Tencoder::value2handle(true);
+    b = expert_forest::bool_Tencoder::value2handle(a != this->argF->getTransparentNode());
     return;
   }
 
