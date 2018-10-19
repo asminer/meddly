@@ -486,38 +486,28 @@ void MEDDLY::esrbdd::createReducedHelper(int in, unpacked_node &nb, long& r, nod
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::esrbdd::evpimdd_iterator::evpimdd_iterator(const expert_forest *F)
+MEDDLY::esrbdd::esrbdd_iterator::esrbdd_iterator(const expert_forest *F)
 : iterator(F)
 {
-  int N = F->getNumVariables();
-  acc_evs = new long[N+1];
 }
 
-MEDDLY::esrbdd::evpimdd_iterator::~evpimdd_iterator()
+MEDDLY::esrbdd::esrbdd_iterator::~esrbdd_iterator()
 {
-  delete[] acc_evs;
 }
 
-void MEDDLY::esrbdd::evpimdd_iterator::getValue(long &tv) const
-{
-  MEDDLY_DCASSERT(acc_evs);
-  tv = acc_evs[0];
-}
-
-bool MEDDLY::esrbdd::evpimdd_iterator::start(const dd_edge &e)
+bool MEDDLY::esrbdd::esrbdd_iterator::start(const dd_edge &e)
 {
   if (F != e.getForest()) {
     throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
-  long ev = Inf<long>();
-  e.getEdgeValue(ev);
-  acc_evs[maxLevel] = ev;
+  long r = Inf<long>();
+  e.getEdgeValue(r);
 
-  return first(maxLevel, e.getNode());
+  return first(maxLevel, r, e.getNode());
 }
 
-bool MEDDLY::esrbdd::evpimdd_iterator::next()
+bool MEDDLY::esrbdd::esrbdd_iterator::next()
 {
   MEDDLY_DCASSERT(F);
   MEDDLY_DCASSERT(!F->isForRelations());
@@ -528,27 +518,26 @@ bool MEDDLY::esrbdd::evpimdd_iterator::next()
 
   int k;
   node_handle down = 0;
-  for (k=1; k<=maxLevel; k++) {
+  for (k = 1; k <= maxLevel; k++) {
     nzp[k]++;
     if (nzp[k] < path[k].getNNZs()) {
       index[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
-      long ev = Inf<long>();
-      path[k].getEdge(nzp[k], ev);
-      acc_evs[k-1] = acc_evs[k] + ev;
       break;
     }
   }
   level_change = k;
-  if (k>maxLevel) {
+  if (k > maxLevel) {
     return false;
   }
 
-  return first(k-1, down);
+  long r = Inf<long>();
+  path[k].getEdge(nzp[k], r);
+  return first(k - 1, r, down);
 }
 
-bool MEDDLY::esrbdd::evpimdd_iterator::first(int k, node_handle down)
+bool MEDDLY::esrbdd::esrbdd_iterator::first(int k, long r, node_handle down)
 {
   MEDDLY_DCASSERT(F);
   MEDDLY_DCASSERT(!F->isForRelations());
@@ -563,14 +552,29 @@ bool MEDDLY::esrbdd::evpimdd_iterator::first(int k, node_handle down)
     MEDDLY_DCASSERT(down);
     int kdn = F->getNodeLevel(down);
     MEDDLY_DCASSERT(kdn <= k);
-    if (kdn < k)  path[k].initRedundant(F, k, 0, down, false);
-    else          path[k].initFromNode(F, down, false);
+    if (kdn < k) {
+      MEDDLY_DCASSERT(r != esrbdd::Reduction::BLANK);
+
+      if (r == esrbdd::Reduction::FULL) {
+        path[k].initRedundant(F, k, r, down, false);
+      }
+      else if (r == esrbdd::Reduction::ZERO) {
+        path[k].initZeroSuppressed(F, k, r, down, false);
+      }
+      else if (r == esrbdd::Reduction::ONE) {
+        path[k].initOneSuppressed(F, k, r, down, false);
+      }
+      else {
+        throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+      }
+    }
+    else {
+      path[k].initFromNode(F, down, false);
+    }
     nzp[k] = 0;
     index[k] = path[k].i(0);
     down = path[k].d(0);
-    long ev = Inf<long>();
-    path[k].getEdge(0, ev);
-    acc_evs[k-1] = acc_evs[k] + ev;
+    path[k].getEdge(0, r);
   }
   // save the terminal value
   index[0] = down;

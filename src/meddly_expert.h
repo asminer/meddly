@@ -625,6 +625,8 @@ class MEDDLY::unpacked_node {
 
     void initZeroSuppressed(const expert_forest *f, int k, node_handle node, bool full);
     void initZeroSuppressed(const expert_forest *f, int k, long ev, node_handle node, bool full);
+    void initOneSuppressed(const expert_forest *f, int k, node_handle node, bool full);
+    void initOneSuppressed(const expert_forest *f, int k, long ev, node_handle node, bool full);
 
   /* Create blank node, primarily for writing */
     

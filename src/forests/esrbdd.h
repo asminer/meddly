@@ -90,7 +90,7 @@ class MEDDLY::esrbdd : public evmdd_forest {
     virtual bool isOneSuppressed(const unpacked_node &nb) const;
 
     virtual enumerator::iterator* makeFullIter() const {
-      return new evpimdd_iterator(this);
+      return new esrbdd_iterator(this);
     }
 
   protected:
@@ -119,19 +119,15 @@ class MEDDLY::esrbdd : public evmdd_forest {
     }
 
   protected:
-    class evpimdd_iterator : public enumerator::iterator {
+    class esrbdd_iterator : public enumerator::iterator {
       public:
-        evpimdd_iterator(const expert_forest* F);
-        virtual ~evpimdd_iterator();
+        esrbdd_iterator(const expert_forest* F);
+        virtual ~esrbdd_iterator();
 
-        virtual void getValue(long &termVal) const;
         virtual bool start(const dd_edge &e);
         virtual bool next();
       private:
-        bool first(int k, node_handle p);
-
-      protected:
-        long* acc_evs;  // for accumulating edge values
+        bool first(int k, long r, node_handle p);
     };
 };
 
