@@ -45,6 +45,7 @@
 #ifdef OLD_OP_CT
 #include "ct_old.h"
 #else
+#include <climits>
 #include "ct_typebased.h"
 #include "ct_none.h"
 #endif
