@@ -295,7 +295,7 @@ const char* MEDDLY::taggedbdd::codeChars() const
 void MEDDLY::taggedbdd::createReducedHelper(int in, unpacked_node& nb, long& tag, node_handle& node)
 {
 #ifdef DEVELOPMENT_CODE
-  validateDownPointers(nb);
+  //validateDownPointers(nb);
 #endif
 
   MEDDLY_DCASSERT(isEdgeSpecificReduced());
@@ -314,7 +314,7 @@ void MEDDLY::taggedbdd::createReducedHelper(int in, unpacked_node& nb, long& tag
   }
   else {
     // Reductions for full nodes
-    MEDDLY_DCASSERT(nb->getSize() == getLevelSize(nb.getLevel()));
+    MEDDLY_DCASSERT(nb.getSize() == getLevelSize(nb.getLevel()));
     // Check for redundant nodes
     if (isRedundant(nb)) {
       // Rule 1
@@ -337,7 +337,7 @@ void MEDDLY::taggedbdd::createReducedHelper(int in, unpacked_node& nb, long& tag
       }
       else {
         // Rule 2b
-        MEDDLY_DCASSERT(child_tag < nb->getLevel() - 1);
+        MEDDLY_DCASSERT(child_tag < nb.getLevel() - 1);
 
         int nextk = nb.getLevel() - 1;
         nb.initFull(this, nextk, getLevelSize(nextk));
@@ -443,7 +443,6 @@ bool MEDDLY::taggedbdd::taggedbdd_iterator::next()
   MEDDLY_DCASSERT(index);
   MEDDLY_DCASSERT(nzp);
   MEDDLY_DCASSERT(path);
-  MEDDLY_DCASSERT(acc_evs);
 
   int k;
   node_handle down = 0;
@@ -475,7 +474,6 @@ bool MEDDLY::taggedbdd::taggedbdd_iterator::first(int k, long tag, node_handle d
   MEDDLY_DCASSERT(index);
   MEDDLY_DCASSERT(nzp);
   MEDDLY_DCASSERT(path);
-  MEDDLY_DCASSERT(acc_evs);
 
   if (0==down) return false;
 

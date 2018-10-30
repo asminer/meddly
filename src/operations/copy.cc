@@ -1507,7 +1507,7 @@ namespace MEDDLY {
       }
 
       inline void addToCache(compute_table::entry_key* Key,
-        node_handle a, node_handle b, long br)
+        node_handle a, node_handle b, long bev)
       {
         MEDDLY_DCASSERT(bev != Inf<long>());
 
@@ -1521,7 +1521,7 @@ namespace MEDDLY {
         CT0->addEntry(Key, result);
 #else
         CTresult[0].reset();
-        CTresult[0].writeL(br);
+        CTresult[0].writeL(bev);
         CTresult[0].writeN(b);
         CT0->addEntry(Key, CTresult[0]);
 #endif

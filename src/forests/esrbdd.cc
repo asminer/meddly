@@ -331,7 +331,7 @@ const char* MEDDLY::esrbdd::codeChars() const
 void MEDDLY::esrbdd::createReducedHelper(int in, unpacked_node &nb, long& r, node_handle& node)
 {
 #ifdef DEVELOPMENT_CODE
-  validateDownPointers(nb);
+  //validateDownPointers(nb);
 #endif
 
   MEDDLY_DCASSERT(isEdgeSpecificReduced());
@@ -514,7 +514,6 @@ bool MEDDLY::esrbdd::esrbdd_iterator::next()
   MEDDLY_DCASSERT(index);
   MEDDLY_DCASSERT(nzp);
   MEDDLY_DCASSERT(path);
-  MEDDLY_DCASSERT(acc_evs);
 
   int k;
   node_handle down = 0;
@@ -544,7 +543,6 @@ bool MEDDLY::esrbdd::esrbdd_iterator::first(int k, long r, node_handle down)
   MEDDLY_DCASSERT(index);
   MEDDLY_DCASSERT(nzp);
   MEDDLY_DCASSERT(path);
-  MEDDLY_DCASSERT(acc_evs);
 
   if (0==down) return false;
 
