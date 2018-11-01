@@ -63,13 +63,13 @@ class MEDDLY::esrbdd : public evmdd_forest {
 
     enum Reduction : long {
         // Short edge
-        BLANK,
+        BLANK = 0,
         // Redundant
-        FULL,
+        FULL = 1,
         // Zero-suppressed
-        ZERO,
+        ZERO = 2,
         // One-suppressed
-        ONE
+        ONE = 3
     };
 
   public:
@@ -117,6 +117,8 @@ class MEDDLY::esrbdd : public evmdd_forest {
     #endif
       unpacked_node::recycle(un);
     }
+
+    virtual void countEdgeLabels(const node_handle* roots, int N, long* counts) const;
 
   protected:
     class esrbdd_iterator : public enumerator::iterator {

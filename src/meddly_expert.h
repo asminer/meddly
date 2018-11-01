@@ -2666,6 +2666,9 @@ class MEDDLY::expert_forest: public forest
     */
     virtual void readUnhashedHeader(input &s, unpacked_node &nb) const;
 
+    virtual void countEdgeLabels(const node_handle* roots, int N, long* counts) const {
+      throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    }
 
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

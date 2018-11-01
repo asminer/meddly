@@ -478,6 +478,35 @@ void MEDDLY::esrbdd::createReducedHelper(int in, unpacked_node &nb, long& r, nod
 #endif
 }
 
+void MEDDLY::esrbdd::countEdgeLabels(const node_handle* roots, int N, long* counts) const
+{
+  counts[Reduction::BLANK] = 0;
+  counts[Reduction::FULL] = 0;
+  counts[Reduction::ZERO] = 0;
+  counts[Reduction::ONE] = 0;
+
+  node_handle* list = markNodesInSubgraph(roots, N, false);
+  if (0==list) return;
+  long i;
+  for (i=0; list[i]; i++) {
+    unpacked_node* un = unpacked_node::newFromNode(this, list[i], true);
+    for (int j = 0; j < un->getSize(); j++) {
+      if (un->d(j) == getTransparentNode()) {
+        if (un->getLevel() == 1) {
+          counts[Reduction::BLANK]++;
+        }
+        else {
+          counts[Reduction::FULL]++;
+        }
+      }
+      else {
+        counts[un->ei(j)]++;
+      }
+    }
+  }
+  free(list);
+}
+
 // ******************************************************************
 // *                                                                *
 // *                                                                *
