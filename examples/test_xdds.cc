@@ -42,7 +42,7 @@ void createEdge(forest* mdd, int var, const std::vector<int>& indices, dd_edge& 
   // one minterm per index
   const int nVars = mdd->useDomain()->getNumVariables();
   int** minterms = new int*[indices.size()];
-  for (int i = 0; i < indices.size(); i++) {
+  for (unsigned i = 0; i < indices.size(); i++) {
     minterms[i] = new int[nVars+1];
     for (int j = 0; j <= nVars; j++) {
       minterms[i][j] = DONT_CARE;
@@ -50,7 +50,7 @@ void createEdge(forest* mdd, int var, const std::vector<int>& indices, dd_edge& 
     minterms[i][var] = indices[i];
   }
   mdd->createEdge(minterms, indices.size(), result);
-  for (int i = 0; i < indices.size(); i++) delete [] minterms[i];
+  for (unsigned i = 0; i < indices.size(); i++) delete [] minterms[i];
   delete [] minterms;
 }
 

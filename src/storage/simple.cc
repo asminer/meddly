@@ -431,7 +431,7 @@ void MEDDLY::simple_separated::unlinkDownAndRecycle(node_address addr)
   // Unlink down pointers
   //
   const node_handle* down = chunk + down_start;
-  for (int i=0; i<size; i++) {
+  for (unsigned int i=0; i<size; i++) {
     getParent()->unlinkNode(down[i]);
   }
 
@@ -506,8 +506,8 @@ bool MEDDLY::simple_separated
       //
       // n is full
       //
-      int i = 0;
-      for (int z=0; z<nnz; z++) {
+      node_handle i = 0;
+      for (unsigned int z=0; z<nnz; z++) {
         if (index[z] >= n.getSize()) return false;  // too large
         // loop - skipped edges must be transparent
         for (; i<index[z]; i++) { 
@@ -528,7 +528,7 @@ bool MEDDLY::simple_separated
       // now check edges
       //
       if (edge) {
-        for (int z=0; z<nnz; z++) {
+        for (unsigned int z=0; z<nnz; z++) {
           if (!getParent()->areEdgeValuesEqual(
             edge + z*slots_per_edge, n.eptr(index[z])
           )) return false;
@@ -540,15 +540,15 @@ bool MEDDLY::simple_separated
       //
       // n is sparse
       //
-      if (n.getNNZs() != nnz) return false;
+      if (unsigned(n.getNNZs()) != nnz) return false;
       // check that down matches
-      for (int z=0; z<nnz; z++) {
+      for (unsigned int z=0; z<nnz; z++) {
         if (index[z] != n.i(z)) return false;
         if (down[z] != n.d(z))  return false;
       }
       // check that edges match
       if (n.hasEdges()) {
-        for (int z=0; z<nnz; z++) {
+        for (unsigned int z=0; z<nnz; z++) {
           if (!getParent()->areEdgeValuesEqual(edge + z*slots_per_edge, n.eptr(z))) {
             return false;
           }
@@ -567,18 +567,18 @@ bool MEDDLY::simple_separated
       //
       // n is full
       //
-      if (size > n.getSize()) return false;
+      if (size > unsigned(n.getSize())) return false;
       // check down
-      int i;
+      unsigned int i;
       for (i=0; i<size; i++) {
         if (down[i] != n.d(i)) return false;
       }
-      for (; i<n.getSize(); i++) {
+      for (; i<unsigned(n.getSize()); i++) {
         if (n.d(i)!=tv) return false;
       }
       // check edges
       if (n.hasEdges()) {
-        for (int i=0; i<size; i++) if (down[i]) {
+        for (unsigned int i=0; i<size; i++) if (down[i]) {
           if (!getParent()->areEdgeValuesEqual(edge + i*slots_per_edge, n.eptr(i))) {
             return false;
           }
@@ -593,7 +593,7 @@ bool MEDDLY::simple_separated
       int i = 0;
       // check down
       for (int z=0; z<n.getNNZs(); z++) {
-        if (n.i(z) >= size) return false;
+        if (unsigned(n.i(z)) >= size) return false;
         // loop - skipped edges must be transparent
         for (; i<n.i(z); i++) {
           if (down[i]!=tv) return false;
@@ -601,7 +601,7 @@ bool MEDDLY::simple_separated
         if (n.d(z) != down[i]) return false;
         i++;
       } // for z
-      if (i<size) return false; // there WILL be a non-zero down
+      if (unsigned(i)<size) return false; // there WILL be a non-zero down
       //
       // check edges
       //
@@ -757,7 +757,7 @@ void MEDDLY::simple_separated
       //
       // Copying into a full node
       //
-      int i;
+      unsigned i;
       for (i=0; i<size; i++) {
         nr.d_ref(i) = down[i];
         if (nr.hasEdges()) {
@@ -769,7 +769,7 @@ void MEDDLY::simple_separated
       } else {
         const int ext_d = is_extensible? down[size-1]: tv;
         const void* ext_ptr = is_extensible? (edge + (size-1)*slots_per_edge): 0;
-        for (; i<nr.getSize(); i++) {
+        for (; i<unsigned(nr.getSize()); i++) {
           nr.d_ref(i) = ext_d;
           if (nr.hasEdges()) {
             if (ext_ptr)
@@ -785,7 +785,7 @@ void MEDDLY::simple_separated
       //
 
       int z = 0;
-      for (int i=0; i<size; i++) if (down[i]) {
+      for (unsigned int i=0; i<size; i++) if (down[i]) {
         nr.d_ref(z) = down[i];
         nr.i_ref(z) = i;
         if (nr.hasEdges()) {
@@ -892,16 +892,16 @@ unsigned MEDDLY::simple_separated::hashNode(int level, node_address addr) const
     const node_handle* edge = slots_per_edge ? (down + size) : 0;
     if (getParent()->areEdgeValuesHashed()) {
       const int edge_bytes = bytesForSlots(slots_per_edge);
-      for (int i=0; i<size; i++) {
+      for (unsigned i=0; i<size; i++) {
         if (down[i]!=tv) {
           s.push(i, down[i]);
           s.push(edge + i * slots_per_edge, edge_bytes);
     	  }
       } // for z
     } else {
-      for (int i=0; i<size; i++) {
+      for (unsigned i=0; i<size; i++) {
     	  if (down[i]!=tv) {
-          s.push(i, down[i]);
+            s.push(i, down[i]);
     	  }
       } // for z
     }
@@ -937,7 +937,7 @@ int MEDDLY::simple_separated
   //
   const node_handle tv=getParent()->getTransparentNode();
   const node_handle* dnptr = chunk + down_start;
-  for (int i=0; i<size; i++) {
+  for (unsigned i=0; i<size; i++) {
     if (tv==dnptr[i]) continue;
     if (i+1 != size) return -1;
     down = dnptr[i];
@@ -979,7 +979,7 @@ MEDDLY::simple_separated
   MEDDLY_DCASSERT(chunk);
 
   const unsigned int raw_size = getRawSize(chunk);
-  const unsigned int size = getSize(raw_size);
+  const unsigned size = getSize(raw_size);
   const node_handle* down = chunk + down_start;
 
   int z = i;
@@ -991,7 +991,7 @@ MEDDLY::simple_separated
       ? (size - 1)
       : findSparseIndex(i, index, size);
   } else {
-    if (i >= size) {
+    if (unsigned(i) >= size) {
       z = isExtensible(raw_size) ? size - 1 : -1;
     }
   }
@@ -1014,7 +1014,7 @@ MEDDLY::simple_separated
   MEDDLY_DCASSERT(slots_per_edge>0);
 
   const unsigned int raw_size = getRawSize(chunk);
-  const unsigned int size = getSize(raw_size);
+  const unsigned size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
   const node_handle* down = chunk + down_start;
 
@@ -1027,7 +1027,7 @@ MEDDLY::simple_separated
       ? (size - 1)
       : findSparseIndex(i, index, size);
   } else {
-    if (i >= size) {
+    if (unsigned(i) >= size) {
       z = isExtensible(raw_size) ? size - 1 : -1;
     }
   }
@@ -1053,7 +1053,7 @@ MEDDLY::simple_separated
   MEDDLY_DCASSERT(slots_per_edge>0);
 
   const unsigned int raw_size = getRawSize(chunk);
-  const unsigned int size = getSize(raw_size);
+  const unsigned size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
   const node_handle* down = chunk + down_start;
 
@@ -1066,7 +1066,7 @@ MEDDLY::simple_separated
       ? (size - 1)
       : findSparseIndex(i, index, size);
   } else {
-    if (i >= size) {
+    if (unsigned(i) >= size) {
       z = isExtensible(raw_size) ? size - 1 : -1;
     }
   }
@@ -1091,7 +1091,7 @@ void MEDDLY::simple_separated
   MEDDLY_DCASSERT(slots_per_edge>0);
 
   const unsigned int raw_size = getRawSize(chunk);
-  const unsigned int size = getSize(raw_size);
+  const unsigned size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
   const node_handle* down = chunk + down_start;
 
@@ -1104,7 +1104,7 @@ void MEDDLY::simple_separated
       ? (size - 1)
       : findSparseIndex(i, index, size);
   } else {
-    if (i >= size) {
+    if (unsigned(i) >= size) {
       z = isExtensible(raw_size) ? size - 1 : -1;
     }
   }
@@ -1280,7 +1280,7 @@ MEDDLY::simple_separated
   if (show_node) {
     s.put(" down ");
     s.put(long(down[0]));
-    for (int i=1; i<dnlen; i++) {
+    for (unsigned int i=1; i<dnlen; i++) {
       s.put(", ");
       s.put(long(down[i]));
     }
@@ -1297,7 +1297,7 @@ MEDDLY::simple_separated
       s.put(" index ");
       const node_handle* index = down + size;
       s.put(long(index[0]));
-      for (int i=1; i<dnlen; i++) {
+      for (unsigned int i=1; i<dnlen; i++) {
         s.put(", ");
         s.put(long(index[i]));
       }
@@ -1313,7 +1313,7 @@ MEDDLY::simple_separated
   if (slots_per_edge) {
     if (show_node) {
       s.put(" ev ");
-      for (int i=0; i<dnlen; i++) {
+      for (unsigned int i=0; i<dnlen; i++) {
         if (i) s.put(", ");
 
         getParent()->showEdgeValue(s, end);
@@ -1459,7 +1459,7 @@ MEDDLY::node_address MEDDLY::simple_separated
   long delta = slots_given - slots_req;
   MEDDLY_DCASSERT(delta>=0);
   MEDDLY_DCASSERT(delta<1024);    // Sanity check
-  MEDDLY_DCASSERT(down_start + size + slots_per_edge * size + 1 == slots_req);
+  MEDDLY_DCASSERT(size_t(down_start + size + slots_per_edge * size + 1) == slots_req);
   chunk[slots_req-1] = -delta;  // Where we expect the node to end
   chunk[slots_given-1] = p;     // Where the node actually ends
   // Note: if slots_req == slots_given, then the second statement
@@ -1595,7 +1595,7 @@ MEDDLY::node_address MEDDLY::simple_separated
   long delta = slots_given - slots_req;
   MEDDLY_DCASSERT(delta>=0);
   MEDDLY_DCASSERT(delta<1024);    // Sanity check
-  MEDDLY_DCASSERT(down_start + 2*size + slots_per_edge * size + 1 == slots_req);
+  MEDDLY_DCASSERT(size_t(down_start + 2*size + slots_per_edge * size + 1) == slots_req);
   chunk[slots_req-1] = -delta;  // Where we expect the node to end
   chunk[slots_given-1] = p;     // Where the node actually ends
   // Note: if slots_req == slots_given, then the second statement

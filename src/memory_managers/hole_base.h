@@ -177,7 +177,7 @@ namespace MEDDLY {
 
     private:
       /// @return true on success
-      bool resize(long newalloc);
+      bool resize(size_t newalloc);
 
     private:
       INT* data;
@@ -311,10 +311,8 @@ MEDDLY::node_address MEDDLY::hole_manager<INT>::allocateFromArray(size_t numSlot
 // ******************************************************************
 
 template <class INT>
-bool MEDDLY::hole_manager<INT>::resize(long new_alloc) 
+bool MEDDLY::hole_manager<INT>::resize(size_t new_alloc) 
 {
-  MEDDLY_DCASSERT(new_alloc >= 0);
-
 #if 0
 #ifdef HAVE_MALLOC_GOOD_SIZE
   size_t good_bytes = malloc_good_size(new_alloc * sizeof(INT));
