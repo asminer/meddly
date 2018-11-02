@@ -31,15 +31,15 @@
 #include <random>
 #include <chrono>
 
-#include "meddly.h"
-#include "meddly_expert.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
 
 using namespace MEDDLY;
 
 // Timer class
-#include "timer.h"
+#include "../src/timer.h"
 
-typedef int element_type;
+typedef long element_type;
 
 void printUsage(FILE *outputStream)
 {

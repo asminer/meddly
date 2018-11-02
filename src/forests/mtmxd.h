@@ -357,14 +357,15 @@ namespace MEDDLY {
         //
         // Start new node at level k
         //
-#ifndef USE_XDDS
-        unpacked_node* nb = unpacked_node::newSparse(F, k, lastV);
-        int z = 0; // number of nonzero edges in our sparse node
-#else
+        if (F->isExtensibleLevel(k)) {
+
+        } else {
+
+        }
+
         bool add_extensible_edge = (F->isExtensibleLevel(k) && dontcares);
         int z = 0; // number of nonzero edges in our sparse node
         unpacked_node* nb = unpacked_node::newSparse(F, k, lastV + (add_extensible_edge? 1: 0));
-#endif
 
         //
         // For each value v, 
@@ -423,7 +424,6 @@ namespace MEDDLY {
           }
         } // for v
 
-#ifdef USE_XDDS
         if (add_extensible_edge) {
           nb->i_ref(z) = ((z > 0)? nb->i(z-1)+1: 0);
           nb->d_ref(z) = F->linkNode(dontcares);
@@ -432,7 +432,6 @@ namespace MEDDLY {
         } else {
           nb->markAsNotExtensible();
         }
-#endif
 
         //
         // Cleanup

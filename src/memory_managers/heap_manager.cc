@@ -63,7 +63,7 @@ namespace MEDDLY {
   class heap_manager : public hole_manager<INT> {
 
     public:
-      heap_manager(const char* n, forest::statset &stats);
+      heap_manager(const char* n, memstats &stats);
       virtual ~heap_manager();
 
       virtual node_address requestChunk(size_t &numSlots);
@@ -239,7 +239,7 @@ namespace MEDDLY {
 
 
   template <class INT>
-  heap_manager<INT>::heap_manager(const char* n, forest::statset &stats)
+  heap_manager<INT>::heap_manager(const char* n, memstats &stats)
   : hole_manager<INT>(n, stats)
   {
     num_heap_nodes = 0;
@@ -277,11 +277,11 @@ namespace MEDDLY {
     // If current hole is too small, see if it makes sense
     // to grab from the heap
     //
-    if (0==current_hole || (getHoleSize(current_hole) < numSlots)) {
+    if (0==current_hole || (size_t(getHoleSize(current_hole)) < numSlots)) {
 #ifdef MEMORY_TRACE_DETAILS
       printf("\tcurrent_hole is too small, trying heap\n");
 #endif
-      if (heap_root && (getHoleSize(heap_root) >= numSlots)) {
+      if (heap_root && (size_t(getHoleSize(heap_root)) >= numSlots)) {
 #ifdef MEMORY_TRACE_DETAILS
         printf("\treplacing current_hole with heap root\n");
 #endif
@@ -351,14 +351,14 @@ namespace MEDDLY {
     //
     // Check current hole: if large enough, pull from it
     //
-    if (current_hole && (getHoleSize(current_hole) >= numSlots)) {
+    if (current_hole && (size_t(getHoleSize(current_hole)) >= numSlots)) {
 
       node_address h = current_hole;
 
       //
       // Deal with any leftover slots in the hole
       //
-      size_t leftover_slots = getHoleSize(current_hole) - numSlots;
+      size_t leftover_slots = size_t(getHoleSize(current_hole)) - numSlots;
 #ifdef MEMORY_TRACE_DETAILS
       printf("\t %lu remaining slots in current\n", leftover_slots);
 #endif
@@ -374,7 +374,7 @@ namespace MEDDLY {
         printf("\tcurrent hole %ld has size %lu\n", current_hole, leftover_slots);
 #endif
       }
-      if (leftover_slots < smallestChunk()) {
+      if (leftover_slots < size_t(smallestChunk())) {
         // cannot track this hole, so leave it
         incSmallSlots(leftover_slots);
         current_hole = 0;
@@ -426,7 +426,7 @@ namespace MEDDLY {
     // Check to the left for another hole
     //
     if (isHole(h-1)) {
-      MEDDLY_DCASSERT(getHoleSize(h-1) < h);
+      MEDDLY_DCASSERT(node_address(getHoleSize(h-1)) < h);
       node_address hleft = h - getHoleSize(h-1);
 #ifdef MEMORY_TRACE_DETAILS
       printf("\tMerging to the left, holes %lu and %lu\n", hleft, h);
@@ -577,7 +577,7 @@ namespace MEDDLY {
       s << "  Empty heap\n";
     } else {
       s << "  Root is " << heap_root << "\n";
-      for (unsigned long id=1; id <= num_heap_nodes; id++) {
+      for (long id=1; id <= num_heap_nodes; id++) {
         node_address addr = findNodeAtPosition(id);
         s << "    Node at position " << long(id) << ": " << addr << "\n";
         s << "        Size  : " << getHoleSize(addr) << "\n";
@@ -667,11 +667,11 @@ namespace MEDDLY {
     // Not the root, update parent's pointers
     if (Right(p)==0) {
       // we must be the left child
-      MEDDLY_DCASSERT(Left(p)==n);
+      MEDDLY_DCASSERT(node_address(Left(p))==n);
       setLeft(p, 0);
     } else {
       // we must be the right child
-      MEDDLY_DCASSERT(Right(p)==n);
+      MEDDLY_DCASSERT(node_address(Right(p))==n);
       setRight(p, 0);
     }
     return n;
@@ -704,10 +704,10 @@ namespace MEDDLY {
       MEDDLY_DCASSERT(heap_root == target);
       makeRoot(replace);
     } else {
-      if (Left(p) == target) {
+      if (node_address(Left(p)) == target) {
         setLeft(p, replace);
       } else {
-        MEDDLY_DCASSERT(Right(p) == target);
+        MEDDLY_DCASSERT(node_address(Right(p)) == target);
         setRight(p, replace);
       }
     }
@@ -752,10 +752,10 @@ namespace MEDDLY {
         MEDDLY_DCASSERT(heap_root == p);
         makeRoot(n);
       } else {
-        if (Left(gp) == p) {
+        if (node_address(Left(gp)) == p) {
           setLeft(gp, n);
         } else {
-          MEDDLY_DCASSERT(Right(gp) == p);
+          MEDDLY_DCASSERT(node_address(Right(gp)) == p);
           setRight(gp, n);
         }
       }
@@ -763,7 +763,7 @@ namespace MEDDLY {
       //
       // Fix p and n's children pointers
       //
-      if (Left(p) == n) {
+      if (node_address(Left(p)) == n) {
         //
         // n was the left child of p.
         // Make p the left child of n.
@@ -774,7 +774,7 @@ namespace MEDDLY {
         setRight(p, Right(n));
         setRight(n, tmp);
       } else {
-        MEDDLY_DCASSERT(Right(p) == n);
+        MEDDLY_DCASSERT(node_address(Right(p)) == n);
         //
         // n was the right child of p.
         // make p the right child of n.
@@ -850,10 +850,10 @@ namespace MEDDLY {
       }
       // update parent
       if (p) {
-        if (Left(p) == n) {
+        if (node_address(Left(p)) == n) {
           setLeft(p, newn);
         } else {
-          MEDDLY_DCASSERT(Right(p) == n);
+          MEDDLY_DCASSERT(node_address(Right(p)) == n);
           setRight(p, newn);
         }
       } else {
@@ -885,7 +885,7 @@ MEDDLY::heap_style::~heap_style()
 
 MEDDLY::memory_manager*
 MEDDLY::heap_style::initManager(unsigned char granularity, 
-  unsigned char minsize, forest::statset &stats) const
+  unsigned char minsize, memstats &stats) const
 {
   if (sizeof(int) == granularity) {
     return new heap_manager <int>(getName(), stats);

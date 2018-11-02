@@ -321,7 +321,11 @@ void MEDDLY::dd_edge::show(output &strm, int verbosity) const
       strm << "value: " << iv << ", ";
     }
   }
-  strm << "level: " << getLevel() << ")\n";
+  strm << "level: " << getLevel();
+  if (0 != getLevel()) {
+    strm << ", extensible: " << eParent->isExtensible(node);
+  }
+  strm << ")\n";
 
   if (verbosity == 2 || verbosity == 3) {
     if (eParent->isMultiTerminal()) {

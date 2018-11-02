@@ -1,0 +1,65 @@
+remote_theme: "mmistakes/minimal-mistakes"
+minimal_mistakes_skin: "default"
+
+url: "https://asminer.github.io"
+baseurl: "/meddly"
+repository: asminer/meddly
+title: MEDDLY
+title_separator: "|"
+description: Multi-terminal and Edge-valued Decision Diagram LibrarY
+
+plugins:
+  - jekyll-remote-theme
+  - jekyll-paginate
+  - jekyll-sitemap
+  - jekyll-feed
+
+whitelist:
+  - jekyll-paginate
+  - jekyll-sitemap
+  - jekyll-feed
+
+collections:
+  basics:
+    output: true
+    permalink: /:collection/:path
+  examples:
+    output: true
+    permalink: /:collection/:path/
+  releases:
+    output: true
+    permalink: /:collection/:path
+
+defaults:
+  # _pages
+  - scope:
+      path: ""
+      type: pages
+    values:
+      layout: single
+      sidebar:
+        nav: "side"
+  # _basics
+  - scope:
+      path: ""
+      type: basics
+    values:
+      layout: single
+      sidebar:
+        nav: "side"
+  # _releases
+  - scope:
+      path: ""
+      type: releases
+    values:
+      layout: singdate
+      sidebar:
+        nav: "side"
+  # _examples
+  - scope:
+      path: ""
+      type: examples
+    values:
+      layout: single
+      sidebar:
+        nav: "side"

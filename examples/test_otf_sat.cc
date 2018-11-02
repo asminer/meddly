@@ -30,8 +30,8 @@
   Initial state: A = N, B = 0
 */
 
-#include "meddly.h"
-#include "meddly_expert.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
 
 using namespace MEDDLY;
 
@@ -338,16 +338,16 @@ void pn::clearRechableStateSet() {
 }
 
 bool pn::indexOf(int vh, int value, int &index) {
-  if (value_to_index.size() <= vh) return false;
+  if (value_to_index.size() <= unsigned(vh)) return false;
 
-  if (value_to_index[vh].size() <= value) return false;
+  if (value_to_index[vh].size() <= unsigned(value)) return false;
   index = value_to_index[vh][value];
   return true;
 }
 
 bool pn::valueOf(int vh, int index, int &value) {
-  if (index_to_value.size() <= vh) return false;
-  if (index_to_value[vh].size() <= index) return false;
+  if (index_to_value.size() <= unsigned(vh)) return false;
+  if (index_to_value[vh].size() <= unsigned(index)) return false;
   value = index_to_value[vh][index];
   return true;
 }
@@ -355,9 +355,9 @@ bool pn::valueOf(int vh, int index, int &value) {
 bool pn::addValue(int vh, int value, int &index) {
   if (indexOf(vh, value, index) && index >= 0) return false;
 
-  if (value_to_index.size() <= vh) value_to_index.resize(vh+1);
-  if (index_to_value.size() <= vh) index_to_value.resize(vh+1);
-  if (value_to_index[vh].size() <= value) {
+  if (value_to_index.size() <= unsigned(vh)) value_to_index.resize(vh+1);
+  if (index_to_value.size() <= unsigned(vh)) index_to_value.resize(vh+1);
+  if (value_to_index[vh].size() <= unsigned(value)) {
     for (int j = (value + 1 - value_to_index[vh].size()); j > 0; j--)
       value_to_index[vh].push_back(-1);
   }

@@ -25,7 +25,7 @@
 #include <cstdlib>
 #include <time.h>
 
-#include "meddly.h"
+#include "../src/meddly.h"
 
 using namespace MEDDLY;
 

@@ -65,6 +65,8 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
     evmxd_pluslong(int dsl, domain *d, const policies &p, int* level_reduction_rule);
     ~evmxd_pluslong();
 
+    // using evmxd_forest::createEdgeForVar;
+
     virtual void createEdge(long val, dd_edge &e);
     virtual void createEdge(const int* const* vlist, const int* const* vplist,
       const long* terms, int N, dd_edge &e);
@@ -72,6 +74,7 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
       dd_edge& a);
     virtual void evaluate(const dd_edge &f, const int* vlist,
       const int* vplist, long &term) const;
+
 
     virtual bool isTransparentEdge(node_handle p, const void* v) const;
     virtual void getTransparentEdge(node_handle &p, void* v) const;

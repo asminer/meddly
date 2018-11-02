@@ -32,10 +32,10 @@
 #include <cstdio>
 #include <fstream>
 
-#include "meddly.h"
-#include "meddly_expert.h"
-#include "timer.h"
-#include "loggers.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
+#include "../src/timer.h"
+#include "../src/loggers.h"
 #include <vector>
 #include <algorithm>
 
@@ -50,8 +50,9 @@
 using namespace MEDDLY;
 
 int N;
-int* scratch;
+long* scratch;
 const char* lfile;
+bool build_pdf;
 
 bool use_folding;
 bool use_batches;
@@ -298,6 +299,7 @@ void createQueenNodes(forest* f, int q, dd_edge &col, dd_edge &cp, dd_edge &cm)
 bool processArgs(int argc, const char** argv, forest::policies &p)
 {
   lfile = 0;
+  build_pdf = false;
   p.setPessimistic();
   bool setN = false;
   use_folding = false;
@@ -336,6 +338,10 @@ bool processArgs(int argc, const char** argv, forest::policies &p)
         i++;
         continue;
       }
+      if (strcmp("-pdf", argv[i])==0) {
+        build_pdf = true;
+        continue;
+      }
       return false;
     }
     if (setN) return false;
@@ -363,6 +369,7 @@ int usage(const char* who)
   printf("\t        -opt:  Optimistic node deletion\n");
   printf("\t       -pess:  Pessimistic node deletion (default)\n");
   printf("\t    -l lfile:  Write logging information to specified file\n\n");
+  printf("\t        -pdf:  Write MDD of solutions to out.pdf\n\n");
   return 1;
 }
 
@@ -374,7 +381,7 @@ int main(int argc, const char** argv)
   timer watch;
   printf("Using %s\n", getLibraryInfo(0));
   printf("%d-Queens solutions.\n", N);
-  scratch = new int[N+1];
+  scratch = new long[N+1];
   
   watch.note_time();
   printf("Initializing domain and forest\n");
@@ -394,11 +401,13 @@ int main(int argc, const char** argv)
   }
   printf("\tUsing %s policy\n", ndp);
 
+  int* varsizes = new int[N+1];
   for (int i=0; i<N; i++) {
-    scratch[i] = N;
+    varsizes[i] = N;
   }
-  domain* d = createDomainBottomUp(scratch, N);
+  domain* d = createDomainBottomUp(varsizes, N);
   assert(d);
+  delete[] varsizes;
   expert_forest* f = (expert_forest*)
     d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL, p);
   assert(f);
@@ -435,7 +444,7 @@ int main(int argc, const char** argv)
     dgm[i] = new dd_edge(f);
     createQueenNodes(f, i+1, *col[i], *dgp[i], *dgm[i]);
     constr[i] = new dd_edge(f);
-    f->createEdge(int(1), *constr[i]);
+    f->createEdge(long(1), *constr[i]);
   }
   constr[N] = 0;
 
@@ -521,6 +530,9 @@ int main(int argc, const char** argv)
     }
   }
 #endif
+  if (build_pdf) {
+    solutions->writePicture("out", "pdf");
+  }
   delete solutions;
   operation::showAllComputeTables(myout, 3);
   if (LOG) {

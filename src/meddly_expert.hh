@@ -5,7 +5,7 @@
 
  This library is free software: you can redistribute it and/or modify
  it under the terms of the GNU Lesser General Public License as published
- by the Free Software Foundation, either version 3 of the License, or
+ by the Free Software Foundation, either version 3 of the License, orf
  (at your option) any later version.
 
  This library is distributed in the hope that it will be useful,
@@ -79,16 +79,16 @@ MEDDLY::unpacked_node::initFromNode(const expert_forest *f,
   f->fillUnpacked(*this, node, st2);
 }
 
-inline void MEDDLY::unpacked_node::initFull(const expert_forest *f, int level, int tsz)
+inline void MEDDLY::unpacked_node::initFull(const expert_forest *f, int levl, int tsz)
 {
   MEDDLY_DCASSERT(f);
-  bind_to_forest(f, level, tsz, true);
+  bind_to_forest(f, levl, tsz, true);
 }
 
-inline void MEDDLY::unpacked_node::initSparse(const expert_forest *f, int level, int nnz)
+inline void MEDDLY::unpacked_node::initSparse(const expert_forest *f, int levl, int nnz)
 {
   MEDDLY_DCASSERT(f);
-  bind_to_forest(f, level, nnz, false);
+  bind_to_forest(f, levl, nnz, false);
 }
 
 // ****************************************************************************
@@ -461,6 +461,7 @@ MEDDLY::unpacked_node::hash() const
 #endif
   return h;
 }
+
 inline void
 MEDDLY::unpacked_node::setHash(unsigned H)
 {
@@ -671,12 +672,12 @@ MEDDLY::node_headers::getNodeCacheCount(node_handle p) const
 
 // ******************************************************************
 
-inline MEDDLY::node_handle
+inline void
 MEDDLY::node_headers::cacheNode(node_handle p)
 {
   MEDDLY_DCASSERT(usesCacheCounts); // or do we just return?  TBD
 
-  if (p<1) return p;    // terminal node
+  if (p<1) return;    // terminal node
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(p>0);
   MEDDLY_DCASSERT(p<=a_last);
@@ -686,7 +687,6 @@ MEDDLY::node_headers::cacheNode(node_handle p)
   fprintf(stdout, "\t+Node %d is in %d caches\n", p, address[p].cache_count);
   fflush(stdout);
 #endif
-  return p;
 }
 
 // ******************************************************************
@@ -830,6 +830,28 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
 
 // ******************************************************************
 
+inline int 
+MEDDLY::node_headers::getNodeImplicitFlag(node_handle p) const
+{
+  MEDDLY_DCASSERT(address);
+  MEDDLY_DCASSERT(p>0);
+  MEDDLY_DCASSERT(p<=a_last);
+  return address[p].is_implicit;
+}
+
+// ******************************************************************
+
+inline void 
+MEDDLY::node_headers::setNodeImplicitFlag(node_handle p, bool flag)
+{
+  MEDDLY_DCASSERT(address);
+  MEDDLY_DCASSERT(p>0);
+  MEDDLY_DCASSERT(p<=a_last);
+  address[p].is_implicit = flag;
+}
+                         
+// ******************************************************************                       
+
 inline MEDDLY::node_handle
 MEDDLY::node_headers::getNextOf(node_handle p) const
 {
@@ -849,7 +871,8 @@ MEDDLY::node_headers::setNextOf(node_handle p, node_handle n)
   MEDDLY_DCASSERT(p>0);
   MEDDLY_DCASSERT(p<=a_last);
   MEDDLY_DCASSERT(0==address[p].level);
-  address[p].offset = n;
+  MEDDLY_DCASSERT(n>=0);
+  address[p].offset = node_address(n);
 }
 
 // ******************************************************************
@@ -886,25 +909,55 @@ inline const char* MEDDLY::memory_manager::getStyleName() const
   return style_name;
 }
 
-inline void MEDDLY::memory_manager::incMemUsed(long b)
+inline void* MEDDLY::memory_manager::getChunkAddress(node_address h) const
+{
+  MEDDLY_DCASSERT(isValidHandle(h));
+
+  return chunk_multiplier 
+    ?  chunk_base + chunk_multiplier * h
+    :  slowChunkAddress(h);
+}
+
+inline void MEDDLY::memory_manager::incMemUsed(size_t b)
 {
   my_mem.incMemUsed(b);
 }
 
-inline void MEDDLY::memory_manager::decMemUsed(long b)
+inline void MEDDLY::memory_manager::decMemUsed(size_t b)
 {
   my_mem.decMemUsed(b);
 }
 
-inline void MEDDLY::memory_manager::incMemAlloc(long b)
+inline void MEDDLY::memory_manager::incMemAlloc(size_t b)
 {
   my_mem.incMemAlloc(b);
 }
 
-inline void MEDDLY::memory_manager::decMemAlloc(long b)
+inline void MEDDLY::memory_manager::decMemAlloc(size_t b)
 {
   my_mem.decMemAlloc(b);
 }
+
+inline void MEDDLY::memory_manager::zeroMemUsed()
+{
+  my_mem.zeroMemUsed();
+}
+
+inline void MEDDLY::memory_manager::zeroMemAlloc()
+{
+  my_mem.zeroMemAlloc();
+}
+
+inline void MEDDLY::memory_manager::setChunkBase(void* p)
+{
+  chunk_base = (char*) p;
+}
+
+inline void MEDDLY::memory_manager::setChunkMultiplier(unsigned int m)
+{
+  chunk_multiplier = m;
+}
+
 
 // ******************************************************************
 // *                                                                *
@@ -1005,7 +1058,7 @@ MEDDLY::expert_forest::float_Tencoder::value2handle(float v)
   intfloat x;
   x.real = v;
   // strip lsb in fraction, and add sign bit
-  return (x.integer >> 1) | 0x80000000;
+  return node_handle( (unsigned(x.integer) >> 1) | 0x80000000 );
 }
 
 inline float
@@ -1191,10 +1244,10 @@ MEDDLY::expert_forest::getRealFromHandle(MEDDLY::node_handle n) const
   }
 }
 
-inline MEDDLY::expert_forest::statset&
-MEDDLY::expert_forest::changeStats()
+inline MEDDLY::memstats&
+MEDDLY::expert_forest::changeMemStats()
 {
-  return stats;
+  return mstats;
 }
 
 inline char
@@ -1369,10 +1422,10 @@ MEDDLY::expert_forest::getNodeCacheCount(MEDDLY::node_handle p) const
 }
 */
 
-inline MEDDLY::node_handle
+inline void
 MEDDLY::expert_forest::cacheNode(MEDDLY::node_handle p)
 {
-  return nodeHeaders.cacheNode(p);
+  nodeHeaders.cacheNode(p);
 }
 
 inline void
@@ -1467,6 +1520,11 @@ MEDDLY::expert_forest::setNext(MEDDLY::node_handle p, MEDDLY::node_handle n)
 {
   nodeMan->setNextOf(getNodeAddress(p), n);
 }
+inline bool 
+MEDDLY::expert_forest::isImplicit(node_handle p) const
+{
+  return nodeHeaders.getNodeImplicitFlag(p);
+}
 
 inline unsigned
 MEDDLY::expert_forest::hash(MEDDLY::node_handle p) const
@@ -1474,7 +1532,7 @@ MEDDLY::expert_forest::hash(MEDDLY::node_handle p) const
   return hashNode(p);
 }
 
-#ifndef USE_NODE_STATUS
+// #ifndef USE_NODE_STATUS
 inline bool
 MEDDLY::expert_forest::isStale(MEDDLY::node_handle node) const
 {
@@ -1492,7 +1550,7 @@ MEDDLY::expert_forest::isStale(MEDDLY::node_handle node) const
       : isPessimistic() ? isZombieNode(node) : (getNodeInCount(node) == 0));
   */
 }
-#else
+// #else
 inline MEDDLY::forest::node_status
 MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
 {
@@ -1512,7 +1570,7 @@ MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
   }
   return MEDDLY::forest::ACTIVE;
 }
-#endif
+// #endif
 
 inline unsigned
 MEDDLY::expert_forest::hashNode(MEDDLY::node_handle p) const
@@ -1586,6 +1644,17 @@ MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un)
   printf("Created node %d\n", q);
 #endif
   unpacked_node::recycle(un);
+  return q;
+}
+
+inline MEDDLY::node_handle
+MEDDLY::expert_forest::createRelationNode(MEDDLY::relation_node *un)
+{
+  MEDDLY_DCASSERT(un);
+  MEDDLY::node_handle q = createImplicitNode(*un);
+#ifdef TRACK_DELETIONS
+  printf("Created node %d\n", q);
+#endif
   return q;
 }
 
@@ -1911,69 +1980,74 @@ MEDDLY::satotf_opname::otf_relation::getNumConfirmed(int level) const
 
 // ******************************************************************
 // *                                                                *
-// *                 inlined  satimpl_opname methods                *
+// *                 inlined  relation_node methods                *
 // *                                                                *
 // ******************************************************************
 
 
 inline unsigned long
-MEDDLY::satimpl_opname::relation_node::getSignature() const
+MEDDLY::relation_node::getSignature() const
 {
   return signature;
 }
 
 inline int
-MEDDLY::satimpl_opname::relation_node::getLevel() const
+MEDDLY::relation_node::getLevel() const
 {
   return level;
 }
 
 inline rel_node_handle
-MEDDLY::satimpl_opname::relation_node::getDown() const
+MEDDLY::relation_node::getDown() const
 {
   return down;
 }
 
 inline rel_node_handle
-MEDDLY::satimpl_opname::relation_node::getID() const
+MEDDLY::relation_node::getID() const
 {
   return ID;
 }
 
 inline void
-MEDDLY::satimpl_opname::relation_node::setID(rel_node_handle n_ID)
+MEDDLY::relation_node::setID(rel_node_handle n_ID)
 {
   ID=n_ID;
 }
 
 inline long
-MEDDLY::satimpl_opname::relation_node::getPieceSize() const
+MEDDLY::relation_node::getPieceSize() const
 {
   return piece_size;
 }
 
 inline void
-MEDDLY::satimpl_opname::relation_node::setPieceSize(long pS)
+MEDDLY::relation_node::setPieceSize(long pS)
 {
   piece_size=pS;
 }
 
 inline long*
-MEDDLY::satimpl_opname::relation_node::getTokenUpdate() const
+MEDDLY::relation_node::getTokenUpdate() const
 {
   return token_update;
 }
 
 inline
 void
-MEDDLY::satimpl_opname::relation_node::setTokenUpdate(long* n_token_update)
+MEDDLY::relation_node::setTokenUpdate(long* n_token_update)
 {
   token_update = n_token_update;
 }
 
-//************************************************************************
+// ******************************************************************
+// *                                                                *
+// *                 inlined  satimpl_opname methods                *
+// *                                                                *
+// ******************************************************************
 
-inline MEDDLY::satimpl_opname::relation_node*
+
+inline MEDDLY::relation_node*
 MEDDLY::satimpl_opname::implicit_relation::nodeExists(rel_node_handle n)
 {
   std::unordered_map<rel_node_handle, relation_node*>::iterator finder = impl_unique.find(n);
@@ -2003,6 +2077,12 @@ MEDDLY::satimpl_opname::implicit_relation::getOutForest() const
   return outsetF;
 }
 
+inline MEDDLY::expert_forest*
+MEDDLY::satimpl_opname::implicit_relation::getMixRelForest() const
+{
+  return mixRelF;
+}
+
 // ***********************************************************************
 
 inline long
@@ -2029,42 +2109,39 @@ MEDDLY::satimpl_opname::implicit_relation::arrayForLevel(int level) const
 
 // ****************************************************************************
 
-inline MEDDLY::dd_edge
-MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
+inline MEDDLY::expert_forest*
+MEDDLY::satimpl_opname::implicit_relation::getRelForest() const
 {
-  
-  //Get number of Variables and Events
-  int nVars = outsetF->getDomain()->getNumVariables();
-  int nEvents = getTotalEvent(nVars);
-  
-  
-  rel_node_handle* event_tops = (rel_node_handle*)malloc((nEvents)*sizeof(rel_node_handle));
-  int e = 0;
-  
-  for(int i = 1 ;i<=nVars;i++)
+  return mxdF;
+}
+
+
+inline long
+MEDDLY::satimpl_opname::implicit_relation::getConfirmedStates(int level) const
+{
+  return confirm_states[level];
+}
+
+inline void
+MEDDLY::satimpl_opname::implicit_relation::setConfirmedStates(int level,int i)
+{
+  resizeConfirmedArray(level,i);
+  MEDDLY_DCASSERT(confirmed_array_size[level]>i);
+  if(!isConfirmedState(level,i))
     {
-    int num_events_at_this_level = lengthForLevel(i);
-    for(int j = 0;j<num_events_at_this_level;j++)
-      event_tops[e++]=arrayForLevel(i)[j];
+      confirmed[level][i]=true;
+      confirm_states[level]++;
     }
-  
-  domain *d = outsetF->useDomain();
-  
-  forest* mxd = d->createForest(true,forest::BOOLEAN, forest::MULTI_TERMINAL);
-  forest* event_mxd = d->createForest(true, forest::INTEGER, forest::MULTI_TERMINAL);
-  dd_edge nsf(mxd);
-  mxd->createEdge(false, nsf);
-  
- 
-  for(int i = 0; i<nEvents;i++)
-   {
-   dd_edge nsf_ev(mxd);
-   nsf_ev = buildEventMxd(event_tops[i],mxd,event_mxd);
-   nsf +=nsf_ev;
-   }
-  
-  return nsf;
-  }
+}
+
+inline bool
+MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
+{
+
+  return (i < insetF->getLevelSize(level) && confirmed[level][i]);
+}
+
+
 
 // ******************************************************************
 // *                                                                *
@@ -2072,28 +2149,614 @@ MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
 // *                                                                *
 // ******************************************************************
 
+#ifdef OLD_OP_CT
 
+inline void
+MEDDLY::compute_table::entry_key::setup(operation* _op, unsigned slots)
+{
+  op = _op;
+  total_slots = 1+slots;
+  if (total_slots > data_alloc) {
+    data_alloc = (1+(data_alloc / 8)) * 8;   // allocate in chunks of size 8
+    data = (int*) realloc(data, data_alloc*sizeof(int));
+    if (0==data) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+  data[0] = op->getIndex();
+  currslot = 1;
+#ifdef DEVELOPMENT_CODE
+  has_hash = false;
+#endif
+}
+
+#else
+
+inline void
+MEDDLY::compute_table::entry_key::setup(const compute_table::entry_type* et, unsigned repeats)
+{
+  MEDDLY_DCASSERT(et);
+  etype = et;
+  num_repeats = repeats;
+  MEDDLY_DCASSERT( 0==repeats || et->isRepeating() );
+  total_slots = et->getKeySize(repeats);
+  if (total_slots > data_alloc) {
+    data_alloc = (1+(data_alloc / 8)) * 8;   // allocate in chunks of size 8
+    data = (entry_item*) realloc(data, data_alloc*sizeof(entry_item));
+    if (0==data) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+  memset(data, 0, total_slots * sizeof(entry_item));
+  currslot = 0;
+#ifdef DEVELOPMENT_CODE
+  has_hash = false;
+#endif
+}
+
+#endif
+
+#ifdef OLD_OP_CT
 inline MEDDLY::operation*
-MEDDLY::compute_table::search_key::getOp() const
+MEDDLY::compute_table::entry_key::getOp() const
 {
   return op;
 }
+#else
+inline const MEDDLY::compute_table::entry_type*
+MEDDLY::compute_table::entry_key::getET() const
+{
+  return etype;
+}
+#endif
+
+inline void MEDDLY::compute_table::entry_key::writeN(node_handle nh) 
+{
+  MEDDLY_CHECK_RANGE(0, currslot, total_slots);
+#ifdef OLD_OP_CT
+  data[currslot++] = nh;
+#else 
+  MEDDLY_DCASSERT(compute_table::NODE == theSlotType());
+  data[currslot++].N = nh;
+#endif
+}
+
+inline void MEDDLY::compute_table::entry_key::writeI(int i) 
+{
+  MEDDLY_CHECK_RANGE(0, currslot, total_slots);
+#ifdef OLD_OP_CT
+  data[currslot++] = i;
+#else
+  MEDDLY_DCASSERT(compute_table::INTEGER == theSlotType());
+  data[currslot++].I = i;
+#endif
+}
+
+inline void MEDDLY::compute_table::entry_key::writeL(long i) 
+{
+  MEDDLY_CHECK_RANGE(0, currslot, total_slots);
+#ifdef OLD_OP_CT
+  memcpy(data+currslot, &i, sizeof(long));
+  currslot += sizeof(long) / sizeof(node_handle);
+#else
+  MEDDLY_DCASSERT(compute_table::LONG == theSlotType());
+  data[currslot++].L = i;
+#endif
+}
+
+inline void MEDDLY::compute_table::entry_key::writeF(float f) 
+{
+  MEDDLY_CHECK_RANGE(0, currslot, total_slots);
+#ifdef OLD_OP_CT
+  float* x = (float*) (data+currslot);
+  x[0] = f;
+  currslot++;
+#else
+  MEDDLY_DCASSERT(compute_table::FLOAT == theSlotType());
+  data[currslot++].F = f;
+#endif
+}
+
+#ifdef OLD_OP_CT
+
+inline const MEDDLY::node_handle* 
+MEDDLY::compute_table::entry_key::rawData(bool includeOp) const 
+{ 
+  return includeOp ? data : (data+1);
+}
+
+inline unsigned MEDDLY::compute_table::entry_key::dataLength(bool includeOp) const
+{ 
+  return includeOp ? total_slots : (total_slots-1);
+}
+
+#else
+
+inline const MEDDLY::compute_table::entry_item* 
+MEDDLY::compute_table::entry_key::rawData() const 
+{ 
+  return data;
+}
+
+inline unsigned MEDDLY::compute_table::entry_key::dataLength() const
+{ 
+  return total_slots;
+}
+
+inline unsigned MEDDLY::compute_table::entry_key::numRepeats() const
+{ 
+  return num_repeats;
+}
+
+#endif
+
+#ifndef OLD_OP_CT
+inline const void*
+MEDDLY::compute_table::entry_key::readTempData() const
+{
+  return temp_data;
+}
+
+inline unsigned
+MEDDLY::compute_table::entry_key::numTempBytes() const
+{
+  return temp_bytes;
+}
+
+inline void*
+MEDDLY::compute_table::entry_key::allocTempData(unsigned bytes)
+{
+  temp_bytes = bytes;
+  if (bytes > temp_alloc) {
+    temp_alloc = (1+(temp_bytes/64)) * 64;    // allocate in chunks of 64 bytes
+    temp_data = realloc(temp_data, temp_alloc);
+    if (0==temp_data) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+  return temp_data;
+}
 
 inline void
-MEDDLY::compute_table::search_result::setValid()
+MEDDLY::compute_table::entry_key::cacheNodes() const
+{
+  for (unsigned i=0; i<total_slots; i++) {
+    expert_forest* f = etype->getKeyForest(i);
+    if (f) {
+      f->cacheNode(data[i].N);
+    }
+  }
+}
+
+#endif
+
+inline unsigned MEDDLY::compute_table::entry_key::getHash() const
+{
+  MEDDLY_DCASSERT(has_hash);
+  return hash_value;
+}
+
+inline void MEDDLY::compute_table::entry_key::setHash(unsigned h)
+{
+  hash_value = h;
+#ifdef DEVELOPMENT_CODE
+  has_hash = true;
+#endif
+}
+
+#ifndef OLD_OP_CT
+inline MEDDLY::compute_table::typeID MEDDLY::compute_table::entry_key::theSlotType() const
+{
+  //
+  // Adjust currslot for OP entry, and number of repeats entry
+  //
+  // return etype->getKeyType(currslot - (etype->isRepeating() ? 2 : 1) );
+  return etype->getKeyType(currslot);
+}
+#endif
+
+// ******************************************************************
+
+inline MEDDLY::node_handle MEDDLY::compute_table::entry_result::readN() 
+{
+  MEDDLY_DCASSERT(currslot < dataLength());
+#ifdef OLD_OP_CT
+  return data[currslot++];
+#else
+  MEDDLY_DCASSERT(data);
+  MEDDLY_DCASSERT(compute_table::NODE == etype->getResultType(currslot));
+  return data[currslot++].N;
+#endif
+}
+
+inline int MEDDLY::compute_table::entry_result::readI()
+{
+  MEDDLY_DCASSERT(currslot < dataLength());
+#ifdef OLD_OP_CT
+  return data[currslot++];
+#else
+  MEDDLY_DCASSERT(data);
+  MEDDLY_DCASSERT(compute_table::INTEGER == etype->getResultType(currslot));
+  return data[currslot++].I;
+#endif
+}
+
+inline float MEDDLY::compute_table::entry_result::readF()
+{
+  MEDDLY_DCASSERT(currslot < dataLength());
+#ifdef OLD_OP_CT
+  float f = ((float*)(data + currslot))[0];
+  currslot++;
+  return f;
+#else
+  MEDDLY_DCASSERT(data);
+  MEDDLY_DCASSERT(compute_table::FLOAT == etype->getResultType(currslot));
+  return data[currslot++].F;
+#endif
+}
+
+inline long MEDDLY::compute_table::entry_result::readL()
+{
+#ifdef OLD_OP_CT
+  MEDDLY_DCASSERT(currslot+sizeof(long)/sizeof(node_handle) <= dataLength());
+  long L;
+  memcpy(&L, data+currslot, sizeof(long));
+  currslot += sizeof(long) / sizeof(node_handle);
+  return L;
+#else
+  MEDDLY_DCASSERT(data);
+  MEDDLY_DCASSERT(currslot < dataLength());
+  MEDDLY_DCASSERT(compute_table::LONG == etype->getResultType(currslot));
+  return data[currslot++].L;
+#endif
+}
+
+inline double MEDDLY::compute_table::entry_result::readD()
+{
+#ifdef OLD_OP_CT
+  MEDDLY_DCASSERT(currslot+sizeof(double)/sizeof(node_handle) <= dataLength());
+  double D;
+  memcpy(&D, data+currslot, sizeof(double));
+  currslot += sizeof(double) / sizeof(node_handle);
+  return D;
+#else
+  MEDDLY_DCASSERT(data);
+  MEDDLY_DCASSERT(currslot < dataLength());
+  MEDDLY_DCASSERT(compute_table::DOUBLE == etype->getResultType(currslot));
+  return data[currslot++].D;
+#endif
+}
+
+inline void* MEDDLY::compute_table::entry_result::readP()
+{
+#ifdef OLD_OP_CT
+  MEDDLY_DCASSERT(currslot+sizeof(void*)/sizeof(node_handle) <= dataLength());
+  void* P;
+  memcpy(&P, data+currslot, sizeof(void*));
+  currslot += sizeof(void*) / sizeof(node_handle);
+  return P;
+#else
+  MEDDLY_DCASSERT(data);
+  MEDDLY_DCASSERT(currslot < dataLength());
+  MEDDLY_DCASSERT(compute_table::POINTER == etype->getResultType(currslot));
+  return data[currslot++].P;
+#endif
+}
+
+
+inline void MEDDLY::compute_table::entry_result::reset() 
+{
+  currslot = 0;
+}
+
+inline void MEDDLY::compute_table::entry_result::writeN(node_handle nh)
+{
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot < dataLength());
+#ifdef OLD_OP_CT
+  build[currslot++] = nh;
+#else
+  MEDDLY_DCASSERT(compute_table::NODE == etype->getResultType(currslot));
+  build[currslot++].N = nh;
+#endif
+}
+
+inline void MEDDLY::compute_table::entry_result::writeI(int i)
+{
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot < dataLength());
+#ifdef OLD_OP_CT
+  build[currslot++] = i;
+#else
+  MEDDLY_DCASSERT(compute_table::INTEGER == etype->getResultType(currslot));
+  build[currslot++].I = i;
+#endif
+}
+
+inline void MEDDLY::compute_table::entry_result::writeF(float f)
+{
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot < dataLength());
+#ifdef OLD_OP_CT
+  float* x = (float*) (build + currslot);
+  x[0] = f;
+  currslot++;
+#else
+  MEDDLY_DCASSERT(compute_table::FLOAT == etype->getResultType(currslot));
+  build[currslot++].F = f;
+#endif
+}
+
+inline void MEDDLY::compute_table::entry_result::writeL(long L)
+{
+#ifdef OLD_OP_CT
+  write_raw(&L, sizeof(long) / sizeof(node_handle));
+#else
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot < dataLength());
+  MEDDLY_DCASSERT(compute_table::LONG == etype->getResultType(currslot));
+  build[currslot++].L = L;
+#endif
+}
+
+inline void MEDDLY::compute_table::entry_result::writeD(double D)
+{
+#ifdef OLD_OP_CT
+  write_raw(&D, sizeof(double) / sizeof(node_handle));
+#else
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot < dataLength());
+  MEDDLY_DCASSERT(compute_table::DOUBLE == etype->getResultType(currslot));
+  build[currslot++].D = D;
+#endif
+}
+
+inline void MEDDLY::compute_table::entry_result::writeP(void* P)
+{
+#ifdef OLD_OP_CT
+  write_raw(&P, sizeof(void*) / sizeof(node_handle));
+#else
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot < dataLength());
+  MEDDLY_DCASSERT(compute_table::POINTER == etype->getResultType(currslot));
+  build[currslot++].P = P;
+#endif
+}
+
+#ifdef OLD_OP_CT
+inline void MEDDLY::compute_table::entry_result::write_raw(void* ptr, size_t slots)
+{
+  MEDDLY_DCASSERT(ptr);
+  MEDDLY_DCASSERT(slots>0);
+  MEDDLY_DCASSERT(build);
+  MEDDLY_DCASSERT(currslot+slots<=dataLength());
+  memcpy(build+currslot, ptr, slots * sizeof(node_handle));
+  currslot += slots;
+}
+#endif
+
+inline void
+MEDDLY::compute_table::entry_result::setValid()
 {
   is_valid = true;
+#ifndef OLD_OP_CT
+  data = build;
+#endif
 }
+
+#ifndef OLD_OP_CT
 inline void
-MEDDLY::compute_table::search_result::setInvalid()
+MEDDLY::compute_table::entry_result::setValid(const entry_item* d)
+{
+  is_valid = true;
+  data = d;
+}
+#endif
+
+inline void
+MEDDLY::compute_table::entry_result::setInvalid()
 {
   is_valid = false;
 }
+
 inline
-MEDDLY::compute_table::search_result::operator bool() const
+MEDDLY::compute_table::entry_result::operator bool() const
 {
   return is_valid;
 }
+
+#ifndef OLD_OP_CT
+inline void
+MEDDLY::compute_table::entry_result::cacheNodes() const
+{
+  for (unsigned i=0; i<etype->getResultSize(); i++) {
+    expert_forest* f = etype->getResultForest(i);
+    if (f) {
+      f->cacheNode(build[i].N);
+    }
+  }
+}
+
+#endif
+
+#ifdef OLD_OP_CT
+
+inline
+void MEDDLY::compute_table::entry_result
+::setResult(const node_handle* d, unsigned sz)
+{
+  is_valid = true;
+  data = d;
+  currslot = 0;
+  ansLength = sz;
+}
+
+#endif
+
+#ifdef OLD_OP_CT
+inline const MEDDLY::node_handle* 
+MEDDLY::compute_table::entry_result
+::rawData() const
+{
+  return data;
+}
+#else
+inline const MEDDLY::compute_table::entry_item* 
+MEDDLY::compute_table::entry_result
+::rawData() const
+{
+  return build;
+}
+#endif
+
+inline unsigned MEDDLY::compute_table::entry_result
+::dataLength() const
+{
+#ifdef OLD_OP_CT
+  return ansLength;
+#else
+  return etype->getResultSize();
+#endif
+}
+
+
+// ******************************************************************
+
+inline unsigned MEDDLY::compute_table::entry_type::getID() const
+{
+  return etID;
+}
+
+inline void MEDDLY::compute_table::entry_type::mightUpdateResults()
+{
+  updatable_result = true;
+}
+
+inline bool MEDDLY::compute_table::entry_type::isResultUpdatable() const
+{
+  return updatable_result;
+}
+
+inline const char* MEDDLY::compute_table::entry_type
+::getName() const
+{
+  return name;
+}
+
+inline bool MEDDLY::compute_table::entry_type::isRepeating() const
+{
+  return len_kr_type;
+}
+
+inline unsigned MEDDLY::compute_table::entry_type
+::getKeySize(unsigned reps) const
+{
+  return len_ks_type + (reps * len_kr_type);
+}
+
+inline unsigned MEDDLY::compute_table::entry_type
+::getKeyBytes(unsigned reps) const
+{
+  return ks_bytes + (reps * kr_bytes);
+}
+
+inline void MEDDLY::compute_table::entry_type
+::getKeyType(unsigned i, typeID &t, expert_forest* &f) const
+{
+  if (i<len_ks_type) {
+    MEDDLY_DCASSERT(ks_type);
+    MEDDLY_DCASSERT(ks_forest);
+    t = ks_type[i];
+    f = ks_forest[i];
+    return;
+  }
+  MEDDLY_DCASSERT(len_kr_type);
+  i -= len_ks_type;
+  i %= len_kr_type;
+  MEDDLY_DCASSERT(kr_type);
+  MEDDLY_DCASSERT(kr_forest);
+  t = kr_type[i];
+  f = kr_forest[i];
+}
+
+inline MEDDLY::compute_table::typeID MEDDLY::compute_table::entry_type
+::getKeyType(unsigned i) const
+{
+  if (i<len_ks_type) {
+    MEDDLY_DCASSERT(ks_type);
+    return ks_type[i];
+  }
+  MEDDLY_DCASSERT(len_kr_type);
+  i -= len_ks_type;
+  i %= len_kr_type;
+  MEDDLY_DCASSERT(kr_type);
+  return kr_type[i];
+}
+
+inline MEDDLY::expert_forest* MEDDLY::compute_table::entry_type
+::getKeyForest(unsigned i) const
+{
+  MEDDLY_DCASSERT(ks_forest);
+  if (i<len_ks_type) {
+    return ks_forest[i];
+  }
+  MEDDLY_DCASSERT(len_kr_type);
+  i -= len_ks_type;
+  i %= len_kr_type;
+  return kr_forest[i];
+}
+
+inline unsigned MEDDLY::compute_table::entry_type
+::getResultSize() const
+{
+  return len_r_type;
+}
+
+inline unsigned MEDDLY::compute_table::entry_type
+::getResultBytes() const
+{
+  return r_bytes;
+}
+
+inline void MEDDLY::compute_table::entry_type
+::getResultType(unsigned i, typeID &t, expert_forest* &f) const
+{
+  MEDDLY_CHECK_RANGE(0, i, len_r_type);
+  MEDDLY_DCASSERT(r_type);
+  MEDDLY_DCASSERT(r_forest);
+  t = r_type[i];
+  f = r_forest[i];
+}
+
+inline MEDDLY::compute_table::typeID MEDDLY::compute_table::entry_type
+::getResultType(unsigned i) const
+{
+  MEDDLY_CHECK_RANGE(0, i, len_r_type);
+  MEDDLY_DCASSERT(r_type);
+  return r_type[i];
+}
+
+inline MEDDLY::expert_forest* MEDDLY::compute_table::entry_type
+::getResultForest(unsigned i) const
+{
+  MEDDLY_CHECK_RANGE(0, i, len_r_type);
+  MEDDLY_DCASSERT(r_forest);
+  return r_forest[i];
+}
+
+inline void MEDDLY::compute_table::entry_type
+::markForDeletion()
+{
+  is_marked_for_deletion = true;
+}
+
+inline void MEDDLY::compute_table::entry_type
+::unmarkForDeletion()
+{
+  is_marked_for_deletion = false;
+}
+
+inline bool MEDDLY::compute_table::entry_type
+::isMarkedForDeletion() const
+{
+  return is_marked_for_deletion;
+}
+
+// ******************************************************************
 
 // convenience methods, for grabbing edge values
 inline void
@@ -2114,12 +2777,85 @@ MEDDLY::compute_table::readEV(const MEDDLY::node_handle* p, float &ev)
   ev = f[0];
 }
 
+#ifdef OLD_OP_CT
+
+inline MEDDLY::compute_table::entry_key*
+MEDDLY::compute_table::useEntryKey(operation* op)
+{
+  if (0==op) return 0;
+
+  entry_key* k;
+  if (free_keys) {
+    k = free_keys;
+    free_keys = free_keys->next;
+  } else {
+    k = new entry_key();
+  }
+  k->setup(op, op->getKeyLength());
+  return k;
+}
+
+#else
+
+inline MEDDLY::compute_table::entry_key*
+MEDDLY::compute_table::useEntryKey(const entry_type* et, unsigned repeats)
+{
+  if (0==et) return 0;
+  MEDDLY_DCASSERT( (0==repeats) || et->isRepeating() );
+
+  entry_key* k;
+  if (free_keys) {
+    k = free_keys;
+    free_keys = free_keys->next;
+  } else {
+    k = new entry_key();
+  }
+  k->setup(et, repeats);
+  return k;
+}
+
+#endif
+
+inline void
+MEDDLY::compute_table::recycle(entry_key* k)
+{
+  if (k) {
+    k->next = free_keys;
+    free_keys = k;
+  }
+}
+
 inline const MEDDLY::compute_table::stats&
 MEDDLY::compute_table::getStats()
 {
   return perf;
 }
 
+#ifndef OLD_OP_CT
+inline const MEDDLY::compute_table::entry_type*
+MEDDLY::compute_table::getEntryType(operation* op, unsigned slot)
+{
+  MEDDLY_DCASSERT(op);
+  MEDDLY_CHECK_RANGE(0, slot, op->getNumETids());
+  unsigned etid = op->getFirstETid() + slot;
+  MEDDLY_CHECK_RANGE(0, etid, entryInfoSize);
+  return entryInfo[etid];
+}
+
+inline const MEDDLY::compute_table::entry_type*
+MEDDLY::compute_table::getEntryType(unsigned etid)
+{
+  MEDDLY_CHECK_RANGE(0, etid, entryInfoSize);
+  return entryInfo[etid];
+}
+#endif
+
+inline void
+MEDDLY::compute_table::setHash(entry_key *k, unsigned h)
+{
+  MEDDLY_DCASSERT(k);
+  k->setHash(h);
+}
 
 // ******************************************************************
 // *                                                                *
@@ -2128,12 +2864,14 @@ MEDDLY::compute_table::getStats()
 // ******************************************************************
 
 
+#ifdef OLD_OP_CT
 inline void
 MEDDLY::operation::setAnswerForest(const MEDDLY::expert_forest* f)
 {
   discardStaleHits = f ? f->getNodeDeletion()
       == MEDDLY::forest::policies::PESSIMISTIC_DELETION : false; // shouldn't be possible, so we'll do what's fastest.
 }
+#endif
 
 inline void
 MEDDLY::operation::registerInForest(MEDDLY::forest* f)
@@ -2149,20 +2887,18 @@ MEDDLY::operation::unregisterInForest(MEDDLY::forest* f)
     f->unregisterOperation(this);
 }
 
-inline MEDDLY::compute_table::search_key*
-MEDDLY::operation::useCTkey()
+#ifndef OLD_OP_CT
+inline void
+MEDDLY::operation::registerEntryType(unsigned slot, compute_table::entry_type* et)
 {
-  MEDDLY_DCASSERT(CT);
-  compute_table::search_key* ans;
-  if (CT_free_keys) {
-    ans = CT_free_keys;
-    CT_free_keys = ans->next;
-  }
-  else {
-    ans = CT->initializeSearchKey(this);
-  }
-  return ans;
+  MEDDLY_CHECK_RANGE(0, slot, num_etids);
+  MEDDLY_DCASSERT(etype);
+  MEDDLY_DCASSERT(0==etype[slot]);
+  etype[slot] = et;
+  compute_table::registerEntryType(first_etid + slot, et);
 }
+#endif
+
 
 inline bool
 MEDDLY::operation::isMarkedForDeletion() const
@@ -2206,6 +2942,27 @@ MEDDLY::operation::getOpListSize()
   return list_size;
 }
 
+#ifndef OLD_OP_CT
+inline void
+MEDDLY::operation::setFirstETid(unsigned slot)
+{
+  first_etid = slot;
+}
+
+inline unsigned
+MEDDLY::operation::getFirstETid() const
+{
+  return first_etid;
+}
+
+inline unsigned
+MEDDLY::operation::getNumETids() const
+{
+  return num_etids;
+}
+
+#endif
+
 inline const char*
 MEDDLY::operation::getName() const
 {
@@ -2218,6 +2975,7 @@ MEDDLY::operation::getOpName() const
   return theOpName;
 }
 
+#ifdef OLD_OP_CT
 inline int
 MEDDLY::operation::getKeyLength() const
 {
@@ -2235,6 +2993,9 @@ MEDDLY::operation::getCacheEntryLength() const
 {
   return key_length + ans_length;
 }
+#endif
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 inline bool
@@ -2251,22 +3012,14 @@ MEDDLY::operation::getEntryStatus(const MEDDLY::node_handle* data)
   else
     return getStatusOfEntry(data);
 }
-#endif
-
-inline void
-MEDDLY::operation::doneCTkey(compute_table::search_key* K)
-{
-  MEDDLY_DCASSERT(K);
-  K->next = CT_free_keys;
-  CT_free_keys = K;
-}
+#endif // USE_NODE_STATUS
 
 inline bool
 MEDDLY::operation::shouldStaleCacheHitsBeDiscarded() const
 {
   return discardStaleHits;
 }
-
+#endif // OLD_OP_CT
 
 // ******************************************************************
 // *                                                                *

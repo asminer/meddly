@@ -87,7 +87,7 @@ private:
      * of items in the table are to be retrieved.
      * Returns the actual number of items retrieved.
      */
-    int getItems(node_handle* items, int sz) const;
+    unsigned getItems(node_handle* items, unsigned sz) const;
 
   private:  // helper methods
     /// Empty the hash table into a list; returns the list.
@@ -165,7 +165,7 @@ public:
    * of items in the table are to be retrieved.
    * Returns the actual number of items retrieved.
    */
-  int getItems(int var, node_handle* items, int sz) const;
+  unsigned getItems(int var, node_handle* items, unsigned sz) const;
 
 private:
   expert_forest* parent;
@@ -236,7 +236,7 @@ inline void MEDDLY::unique_table::clear(int var)
   return tables[var].clear();
 }
 
-inline int MEDDLY::unique_table::getItems(int var, node_handle* items, int sz) const
+inline unsigned MEDDLY::unique_table::getItems(int var, node_handle* items, unsigned sz) const
 {
   return tables[var].getItems(items, sz);
 }

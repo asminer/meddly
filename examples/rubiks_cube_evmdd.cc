@@ -75,10 +75,10 @@
 #include <sys/resource.h>
 
 #if 1
-#include <domain.h>
-#include <forest.h>
-#include <dd_edge.h>
-#include <ophandle.h>
+#include "../src/domain.h"
+#include "../src/forest.h"
+#include "../src/dd_edge.h"
+#include "../src/ophandle.h"
 #else
 #include "../src/domain.h"
 #include "../src/forest.h"

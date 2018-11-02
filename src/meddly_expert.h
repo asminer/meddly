@@ -40,6 +40,10 @@
 #include <unordered_map>
 #include <vector>
 #include <cstdint>
+#include <map>
+
+// #define OLD_OP_CT
+// #define USE_NODE_STATUS
 
 namespace MEDDLY {
 
@@ -53,7 +57,8 @@ namespace MEDDLY {
 
   // EXPERIMENTAL - matrix wrappers for unprimed, primed pairs of nodes
   class unpacked_matrix;
-
+  class relation_node;
+  
   /*
   
     class op_initializer;
@@ -161,6 +166,7 @@ namespace MEDDLY {
   /** Minimum-witness operations.
   */
   extern const constrained_opname* CONSTRAINED_BACKWARD_BFS;
+  extern const constrained_opname* CONSTRAINED_FORWARD_DFS;
   extern const constrained_opname* CONSTRAINED_BACKWARD_DFS;
   extern const constrained_opname* TRANSITIVE_CLOSURE_DFS;
 
@@ -446,6 +452,115 @@ class MEDDLY::expert_domain : public domain {
     ~expert_domain();
 };
 
+
+// ******************************************************************
+// *                                                                *
+// *                      relation_node  class                      *
+// *                                                                *
+// ******************************************************************
+
+/** Pieces of an implicit relation.
+ 
+ Each piece (this class) is a function of a single variable.
+ The function specifies the "next state" for the given
+ current state, but we are only allowed to depend on one
+ state variable.
+ 
+ This is an abstract base class.  The function is specified
+ by deriving a class from this one, and specifying method
+ nextOf().
+ TBD - Need a bogus value for nextOf()...
+ 
+ Additionally, you must specify method equals(), which is used
+ to detect when two nodes actually represent the same function.
+ 
+ */
+typedef int rel_node_handle;
+class MEDDLY::relation_node {
+public:
+  /** Constructor.
+   @param  signature   Hash for this node, such that
+   two equal nodes must have the same
+   signature.
+   @param  level          Level affected.
+   @param  down           Handle to a relation node below us. 
+   */
+  relation_node(unsigned long signature, int level, rel_node_handle down);
+  virtual ~relation_node();
+  
+  // the following should be inlined in meddly_expert.hh
+  
+  /** A signature for this function.
+   This helps class implicit_relation to detect duplicate
+   functions (using a hash table where the signature
+   is taken as the hash value).
+   */
+  unsigned long getSignature() const;
+  
+  /** The state variable affected by this part of the relation.
+   */
+  int getLevel() const;
+  
+  /** Pointer to the (ID of the) next piece of the relation.
+   */
+  rel_node_handle getDown() const;
+  
+  /** The unique ID for this piece.
+   */
+  rel_node_handle getID() const;
+  
+  /** Set the unique ID for this piece.
+   */
+  void setID(rel_node_handle ID);
+  
+  /** The token_update array for this piece.
+   */
+  long* getTokenUpdate() const;
+  
+  /** Set the token_update array for this piece.
+   */
+  void setTokenUpdate(long* token_update);
+  
+  /** The size of token_update array for this piece.
+   */
+  long getPieceSize() const;
+  
+  /** Set the size of token_update array for this piece.
+   */
+  void setPieceSize(long pS);
+  
+  /** Expand the tokenUpdate array as the variable increases
+   */
+  void expandTokenUpdate(long i);
+  
+  /** Set the tokenUpdate array at location i to val
+   */
+  void setTokenUpdateAtIndex(long i,long val);
+  
+  // the following must be provided in derived classes.
+  
+  /** If the variable at this level has value i,
+   what should the new value be?
+   */
+  virtual long nextOf(long i);
+  
+  /** Determine if this node is equal to another one.
+   */
+  virtual bool equals(const relation_node* n) const;
+  
+private:
+  unsigned long signature;
+  int level;
+  rel_node_handle down;
+  rel_node_handle ID;
+  long* token_update;
+  long piece_size;        
+  
+  // used by the hash table in implicit_relation
+  relation_node* hash_chain;
+  
+  // friend class implicit_relation;
+};  // class relation_node
 
 // ******************************************************************
 // *                                                                *
@@ -770,6 +885,18 @@ class MEDDLY::unpacked_node {
 #endif
 };
 
+// ******************************************************************
+// *                                                                *
+// *                     relation_node  class                       *
+// *                                                                *
+// ******************************************************************
+
+/** Class for relation nodes of implicit relation
+ Implemented in node_wrappers.cc.
+ 
+ TBD : inline what we should
+ */
+
 
 
 // ******************************************************************
@@ -986,12 +1113,14 @@ class MEDDLY::memory_manager_style {
                     manager.
     */
     virtual memory_manager* initManager(unsigned char granularity, 
-      unsigned char minsize, forest::statset& stats) const = 0;
+      unsigned char minsize, memstats& stats) const = 0;
 
 
+    /**
+        Human readable name.
+        Used for debugging and reporting.
+    */
     const char* getName() const;
-
-  // TBD - const char* for name?
 };
 
 // ******************************************************************
@@ -1008,7 +1137,7 @@ class MEDDLY::memory_manager_style {
 class MEDDLY::memory_manager {
 
   public:
-    memory_manager(const char* sn, forest::statset& stats);
+    memory_manager(const char* sn, memstats& stats);
     virtual ~memory_manager();
 
     /**
@@ -1090,6 +1219,39 @@ class MEDDLY::memory_manager {
     /**
         Convert a handle to an actual pointer we can use.
 
+        A default, fast, inlined implementation that will work for
+        most memory managers is implemented here, based on
+          address = base + m * h
+        where m*h is the number of bytes to shift base by.
+        This requires derived classes to maintain the pointer "base"
+        and multiplier "m" by calling protected methods
+            void setChunkBase(void* base)
+            void setChunkMultiplier(unsigned int m)
+        Note that if m is zero (its default value), this method
+        will fall back to slowChunkAddress().
+
+          @param  h     Non-null handle of the chunk, as returned by requestChunk().
+
+          @return       If h is 0, or an invalid handle, then the result is 
+                        undefined.  Otherwise, we return a pointer to the 
+                        chunk given by handle h.
+                        This pointer is guaranteed to be fixed until the next
+                        call to requestChunk() or recycleChunk(); after that,
+                        the pointer for a handle could change.
+    */
+    void* getChunkAddress(node_address h) const;
+
+
+  protected:
+    /**
+        See getChunkAddress.
+        This method (default behavior is assert(false))
+        should be overridden in derived classes when
+        the mapping from node address h to pointer
+        does not follow the formula used by getChunkAddress().
+
+        Convert a handle to an actual pointer we can use.
+
           @param  h     Handle of the chunk, as returned by requestChunk(), or 0.
 
           @return       If h is 0, then we return 0.  Otherwise, we return
@@ -1098,8 +1260,19 @@ class MEDDLY::memory_manager {
                         call to requestChunk() or recycleChunk(); after that,
                         the pointer for a handle could change.
     */
-    virtual void* getChunkAddress(node_address h) const = 0;
+    virtual void* slowChunkAddress(node_address h) const;
 
+
+  public:
+    /**
+        Check if a handle is valid (non-null or otherwise).
+        Since this is not always possible,
+        this method is conservative.
+
+        @return   false if h is null or definitely invalid;
+                  true otherwise.
+    */
+    virtual bool isValidHandle(node_address h) const = 0;
 
     /** Show various statistics.
           @param  s         Output stream to write to
@@ -1155,12 +1328,24 @@ class MEDDLY::memory_manager {
     virtual void dumpInternalUnused(output &s, node_address addr) const = 0;
 
   protected:
-    void incMemUsed(long b);
-    void decMemUsed(long b);
-    void incMemAlloc(long b);
-    void decMemAlloc(long b);
+    void incMemUsed(size_t b);
+    void decMemUsed(size_t b);
+    void incMemAlloc(size_t b);
+    void decMemAlloc(size_t b);
 
+    void zeroMemUsed();
+    void zeroMemAlloc();
 
+    /**
+        Set base pointer used for fast getChunkAddress().
+    */
+    void setChunkBase(void* p);
+
+    /*
+        Set multiplier used for fast getChunkAddress().
+        If zero, we call getSlowChunkAddress().
+    */
+    void setChunkMultiplier(unsigned int m);
 
   public:
     /**
@@ -1171,7 +1356,13 @@ class MEDDLY::memory_manager {
   private:
     /// Name of the style that invoked us
     const char* style_name;
-    forest::statset &my_mem;
+    memstats &my_mem;
+
+    /// Base pointer for getChunkAddress
+    char* chunk_base;
+
+    /// Handle multiplier for getChunkAddress; if zero must call virtual function
+    unsigned int chunk_multiplier;
 };
 
 
@@ -1319,7 +1510,7 @@ class MEDDLY::node_headers {
     unsigned long getNodeCacheCount(node_handle p) const;
 
     /// Increment the cache count for node p and return p.
-    node_handle cacheNode(node_handle p);
+    void cacheNode(node_handle p);
 
     /// Decrement the cache count for node p.
     void uncacheNode(node_handle p);
@@ -1338,7 +1529,14 @@ class MEDDLY::node_headers {
     /// Decrement the incoming count for node p.
     void unlinkNode(node_handle p);
     
-  
+  public: // implicit stuff
+    
+    /// Get whether node p is implicit.
+    int getNodeImplicitFlag(node_handle p) const;
+    
+    /// Set as true if node p is implicit.
+    void setNodeImplicitFlag(node_handle p,bool flag);
+
 
   public: // for debugging
 
@@ -1392,6 +1590,11 @@ class MEDDLY::node_headers {
 
           /// Is node marked.  This is pretty horrible, but is only temporary
           // bool marked;
+       
+          /** Implicit node
+              This indicates if node is implicit
+           */
+          bool is_implicit = false;
 
     };
 
@@ -1868,7 +2071,7 @@ class MEDDLY::expert_forest: public forest
     */
     float getRealFromHandle(node_handle n) const;
 
-    statset& changeStats();
+    memstats& changeMemStats();
     /// Number of bytes for an edge value.
     char edgeBytes() const;
     /// Are edge values included when computing the hash.
@@ -1957,7 +2160,7 @@ class MEDDLY::expert_forest: public forest
           @param  p     Node we care about.
           @return p, for convenience.
     */
-    node_handle cacheNode(node_handle p);
+    void cacheNode(node_handle p);
 
     /** Increase the cache count for this node. Call this whenever this node
         is added to a cache.
@@ -1999,6 +2202,7 @@ class MEDDLY::expert_forest: public forest
     // Used by the unique table
     // --------------------------------------------------
     node_handle getNext(node_handle p) const;
+    bool isImplicit(node_handle p) const;
     void setNext(node_handle p, node_handle n);
     unsigned hash(node_handle p) const;
 
@@ -2009,11 +2213,11 @@ class MEDDLY::expert_forest: public forest
     ///   in-count and cache-count are zero.
     /// Pessimistic deletion: A node is said to be stale when the in-count
     ///  is zero regardless of the cache-count.
-#ifndef USE_NODE_STATUS
+// #ifndef USE_NODE_STATUS
     bool isStale(node_handle node) const;
-#else
+// #else
     MEDDLY::forest::node_status getNodeStatus(node_handle node) const;
-#endif
+// #endif
 
   // ------------------------------------------------------------
   // non-virtual, handy methods for debugging or logging.
@@ -2060,6 +2264,11 @@ class MEDDLY::expert_forest: public forest
         in the subgraph below the given node.
     */
     long getNodeCount(node_handle node) const;
+
+    /** Count and return the number of non-terminal nodes
+        in the subgraph below the given nodes.
+    */
+    long getNodeCount(const node_handle* roots, int N) const;
 
     /** Count and return the number of edges
         in the subgraph below the given node.
@@ -2195,6 +2404,18 @@ class MEDDLY::expert_forest: public forest
     
   */
   node_handle createReducedNode(int in, unpacked_node *un);
+  
+  /** Return a forest node for implicit node equal to the one given.
+   The implicit node is already constructed inside satimpl_opname.
+   This version should be used only for
+   multi terminal forests.
+   @param  un    Implicit relation node
+   
+   @return       A node handle equivalent
+   to \a un.
+   
+   */
+  node_handle createRelationNode(MEDDLY::relation_node *un);
 
   /** Return a forest node equal to the one given.
       The node is constructed as necessary.
@@ -2542,6 +2763,13 @@ class MEDDLY::expert_forest: public forest
           @return       Handle to a node that encodes the same thing.
     */
     node_handle createReducedHelper(int in, unpacked_node &nb);
+  
+    /** Create implicit node in the forest. Just add a handle and it points to original location
+     @param  un    Relation node.
+     @return       Handle to a node that encodes the same thing.
+     */
+    node_handle createImplicitNode(MEDDLY::relation_node &nb);
+
 
     /** Apply reduction rule to the temporary extensible node and finalize it. 
         Once a node is reduced, its contents cannot be modified.
@@ -2567,11 +2795,11 @@ class MEDDLY::expert_forest: public forest
 
     /// Should a terminal node be considered a stale entry in the compute table.
     /// per-forest policy, derived classes may change as appropriate.
-#ifndef USE_NODE_STATUS
+// #ifndef USE_NODE_STATUS
     bool terminalNodesAreStale;
-#else
+// #else
     MEDDLY::forest::node_status terminalNodesStatus;
-#endif
+// #endif
 
     /// Class that stores nodes.
     node_storage* nodeMan;
@@ -2655,15 +2883,15 @@ class MEDDLY::opname {
 
 /// Unary operation names.
 class MEDDLY::unary_opname : public opname {
-  public:
-    unary_opname(const char* n);
-    virtual ~unary_opname();
-
-    virtual unary_operation*
-      buildOperation(expert_forest* arg, expert_forest* res) const;
-
-    virtual unary_operation*
-      buildOperation(expert_forest* arg, opnd_type res) const;
+public:
+  unary_opname(const char* n);
+  virtual ~unary_opname();
+  
+  virtual unary_operation*
+  buildOperation(expert_forest* arg, expert_forest* res) const;
+  
+  virtual unary_operation*
+  buildOperation(expert_forest* arg, opnd_type res) const;
 };
 
 // ******************************************************************
@@ -3147,6 +3375,18 @@ class MEDDLY::satotf_opname : public specialized_opname {
         */
         void bindExtensibleVariables();
 
+        /** Get the number of arcs in the OTF relation
+            restricted by the confirmed local states.
+
+            Only works with non-extensible variables (call
+            bindExtensibleVariables() prior to calling this).
+
+            @param    count_duplicates  if false, counts arcs that are common
+                                          to mutiple transitions as one.
+            @return                     the number of arcs in the OTF relation.
+        */
+        double getArcCount(const dd_edge& mask, bool count_duplicates);
+
         /// For Debugging
         void showInfo(output &strm) const;
 
@@ -3205,314 +3445,220 @@ class MEDDLY::satotf_opname : public specialized_opname {
 // ******************************************************************
 
 /// Saturation, transition relations stored implcitly, operation names.
-typedef int rel_node_handle;
-class MEDDLY::satimpl_opname:public specialized_opname {
-      public:
+class MEDDLY::satimpl_opname: public specialized_opname {
+  public:
 
-      satimpl_opname(const char* n);
-      virtual ~satimpl_opname();
+    satimpl_opname(const char* n);
+    virtual ~satimpl_opname();
 
-      /// Arguments should have type "implicit_relation", below
-      virtual specialized_operation* buildOperation(arguments* a) const;
+    /// Arguments should have type "implicit_relation", below
+    virtual specialized_operation* buildOperation(arguments* a) const;
 
-      public:
-      /**
-       Pieces of an implicit relation.
-       
-       Each piece (this class) is a function of a single variable.
-       The function specifies the "next state" for the given
-       current state, but we are only allowed to depend on one
-       state variable.
-       
-       This is an abstract base class.  The function is specified
-       by deriving a class from this one, and specifying method
-       nextOf().
-       TBD - Need a bogus value for nextOf()...
-       
-       Additionally, you must specify method equals(), which is used
-       to detect when two nodes actually represent the same function.
-       
-       */
-      class relation_node {
-      public:
-        /**
-         Constructor.
-         @param  signature   Hash for this node, such that
-         two equal nodes must have the same
-         signature.
-         @param  level          Level affected.
-         @param  down           Handle to a relation node below us. 
-	*/
-        relation_node(unsigned long signature, int level, rel_node_handle down);
-        virtual ~relation_node();
-        
-        // the following should be inlined in meddly_expert.hh
-        
-        /**
-         A signature for this function.
-         This helps class implicit_relation to detect duplicate
-         functions (using a hash table where the signature
-         is taken as the hash value).
-         */
-         unsigned long getSignature() const;
-        
-        /**
-         The state variable affected by this part of the relation.
-         */
-        int getLevel() const;
-        
-        /**
-         Pointer to the (ID of the) next piece of the relation.
-         */
-        rel_node_handle getDown() const;
-        
-        /**
-         The unique ID for this piece.
-         */
-        rel_node_handle getID() const;
-        
-        /**
-         Set the unique ID for this piece.
-         */
-        void setID(rel_node_handle ID);
-        
-        /**
-         The token_update array for this piece.
-         */
-        long* getTokenUpdate() const;
-        
-        /**
-         Set the token_update array for this piece.
-         */
-        void setTokenUpdate(long* token_update);
-        
-        /**
-         The size of token_update array for this piece.
-         */
-        long getPieceSize() const;
-        
-        /**
-         Set the size of token_update array for this piece.
-         */
-        void setPieceSize(long pS);
-        
-        /**
-         Expand the tokenUpdate array as the variable increases
-         */
-        void expandTokenUpdate(long i);
-        
-        /**
-         Set the tokenUpdate array at location i to val
-         */
-        void setTokenUpdateAtIndex(long i,long val);
-        
-        // the following must be provided in derived classes.
-        
-        /**
-         If the variable at this level has value i,
-         what should the new value be?
-         */
-        virtual long nextOf(long i);
-        
-        
-        /**
-         Determine if this node is equal to another one.
-         */
-        virtual bool equals(const relation_node* n) const;
-        
-      private:
-        unsigned long signature;
-        int level;
-        rel_node_handle down;
-        rel_node_handle ID;
-        long* token_update;
-        long piece_size;        
-        
-        // used by the hash table in implicit_relation
-        relation_node* hash_chain;
-        
-        friend class implicit_relation;
-      };  // class relation_node
+  public:
 
-      public:
+    /** An implicit relation, as a DAG of relation_nodes.
 
-      /**
-       An implicit relation, as a DAG of relation_nodes.
-       
-       The relation is partitioned by "events", where each event
-       is the conjunction of local functions, and each local function
-       is specified as a single relation_node.  The relation_nodes
-       are chained together with at most one relation_node per state
-       variable, and any skipped variables are taken to be unchanged
-       by the event.
-       
-       If the bottom portion (suffix) of two events are identical,
-       then they are merged.  This is done by "registering" nodes
-       which assigns a unique ID to each node, not unlike an MDD forest.
-       
-       Note: node handles 0 and 1 are reserved.
-       0 means null node.
-       1 means special bottom-level "terminal" node
-       (in case we need to distinguish 0 and 1).
-       */
-      class implicit_relation : public specialized_opname::arguments {
+        The relation is partitioned by "events", where each event
+        is the conjunction of local functions, and each local function
+        is specified as a single relation_node.  The relation_nodes
+        are chained together with at most one relation_node per state
+        variable, and any skipped variables are taken to be unchanged
+        by the event.
+
+        If the bottom portion (suffix) of two events are identical,
+        then they are merged.  This is done by "registering" nodes
+        which assigns a unique ID to each node, not unlike an MDD forest.
+
+        Note: node handles 0 and 1 are reserved.
+        0 means null node.
+        1 means special bottom-level "terminal" node
+        (in case we need to distinguish 0 and 1).
+    */
+    class implicit_relation : public specialized_opname::arguments {
       public:
-        /**
-         Constructor.
-         
-         @param  inmdd       MDD forest containing initial states
-         @param  outmdd      MDD forest containing result
-         
-         Not 100% sure we need these...
-         
-         */
-        implicit_relation(forest* inmdd, forest* outmdd);
+        /** Constructor.
+
+            @param  inmdd       MDD forest containing initial states
+            @param  outmdd      MDD forest containing result
+
+            Not 100% sure we need these...
+        */
+        implicit_relation(forest* inmdd, forest* relmxd, forest* outmdd);
         virtual ~implicit_relation();
-        
+      
+        /// Returns the Relation forest that stores the mix of relation nodes and mxd nodes
+        expert_forest* getMixRelForest() const;
+
+
         /// Returns the MDD forest that stores the initial set of states
         expert_forest* getInForest() const;
-        
-        
+
+
         /// Returns the MDD forest that stores the resultant set of states
         expert_forest* getOutForest() const;
-        
-        
-        /**
-         Register a relation node.
-         If we have seen an equivalent node before, then
-         return its handle and destroy n.
-         Otherwise, add n to the unique table, assign it a unique
-         identifier, and return that identifier.
-         
-         @param  is_event_top    If true, this is also the top
-         node of some event; register it
-         in the list of events.
-         
-         @param  n               The relation node to register.
-         
-         @return Unique identifier to use to refer to n.
-         */
+
+        /// Returns true iff a state in \a constraint is reachable
+        /// from the states in \a initial_states
+        /// Note: \a constraint can be an XDD
+        bool isReachable(const dd_edge& initial_states, const dd_edge& constraint);
+
+        /** Register a relation node.
+
+            If we have seen an equivalent node before, then
+            return its handle and destroy n.
+            Otherwise, add n to the unique table, assign it a unique
+            identifier, and return that identifier.
+
+            @param  is_event_top    If true, this is also the top
+                                    node of some event; register it
+                                    in the list of events.
+
+            @param  n               The relation node to register.
+
+            @return Unique identifier to use to refer to n.
+        */
         rel_node_handle registerNode(bool is_event_top, relation_node* n);
-        
-        /**
-         Check if the relation node is unique
-         @param n  The relation node.
-         @return   If unique, 0
-                   Else, existing node handle
-         */
+
+        /** Check if the relation node is unique
+            @param n  The relation node.
+            @return   If unique, 0
+                      Else, existing node handle
+        */
         rel_node_handle isUniqueNode(relation_node* n);
-        
-        /**
-         Resize the node_array
-         */
-        void resizeNodeArray(int n);
-        
-        /**
-         Indicate that there will be no more registered nodes.
-         Allows us to preprocess the events or cleanup or convert
-         to a more useful representation for saturation.
-         */
-        
+
+
+        /** Indicate that there will be no more registered nodes.
+            Allows us to preprocess the events or cleanup or convert
+            to a more useful representation for saturation.
+        */
+
         //void finalizeNodes();
-        
-        /**
-         Get the relation node associated with the given handle.
-         
-         Should be a fast, inlined implementation.
-         */
+
+        /** Get the relation node associated with the given handle.
+
+            Should be a fast, inlined implementation.
+        */
         relation_node* nodeExists(rel_node_handle n);
-        
-        /**
-         Get the relation node associated with the given handle.
-         
-         Should be a fast, inlined implementation.
-         */
+
+        /** Get the relation node associated with the given handle.
+
+            Should be a fast, inlined implementation.
+        */
         bool isReserved(rel_node_handle n);
-        
+
       private:
         expert_forest* insetF;
         expert_forest* outsetF;
+        expert_forest* mixRelF;
+        
         int num_levels;
-        
+
       private:
-        //
-        // List of relation nodes.  The node handle is the array index,
-        // except we ensure that handle 0 refers to a null node.
-        //
-        
-        /// Expanding array of pointers to relation nodes.
-        relation_node* node_array;
-        
-        /// Current size of \a node_array.
-        long node_array_alloc;
-        
-        /// Last used element in \a node_array.
+
+        /// Last used ID of \a relation node.
         long last_in_node_array;
-        
+
       private:
         // TBD - add a data structure for the "uniqueness table"
         // of relation_nodes, so if we register a node that
         // is already present in a node_array, we can detect it.
-        
+
         std::unordered_map<rel_node_handle, relation_node*> impl_unique;
-        
+
       private:
         // TBD - add a data structure for list of events with top level k,
         // for all possible k.
         // Possibly this data structure is built by method
         // finalizeNodes().
-        
+
         rel_node_handle** event_list;
         long* event_list_alloc; // allocated space
         long* event_added; //how many events added so far
-        
+
+        long* confirm_states; //total no. of confirmed states of a level
+        bool** confirmed; // stores whether a particular local state is confirmed
+        long* confirmed_array_size; // stores size of confirmed array
+
+
       public:
-        
-        /*
-         Get total number of events upto given level
-         */
+
+        /// Get total number of events upto given level
         long getTotalEvent(int level);
-        
-        /*
-         Resizes the Event List
-         */
+
+        /// Resizes the Event List
         void resizeEventArray(int level);
-        
-        /*
-         Returns the number of events that have this level as top
-         */
+
+        /// Returns the number of events that have this level as top
         long lengthForLevel(int level) const;
-        
-        /*
-         Returns the array of events that have this level as top
-         */
+
+        /// Returns the array of events that have this level as top
         rel_node_handle* arrayForLevel(int level) const;
-        
+
+        /// Returns the number of confirmed states at a level
+        long getConfirmedStates(int level) const;
+
+        /// Confirms the local states at a level
+        void setConfirmedStates(int level, int i);
+
+        /// Confirms the local states in the given MDD
+        void setConfirmedStates(const dd_edge &set);
+
+
+        /// Checks if i is confirmed
+        bool isConfirmedState(int level, int i);
+
+        /// Expand confirm array
+        void resizeConfirmedArray(int level, int index);
+
+        /** Bound all extensible variables
+            using the maximum confirmed local state as the bound.
+        */
+        void bindExtensibleVariables();
+
       public:
-        /*
-          Prints the implicit relation
-         */
+        /// Prints the implicit relation
         void show();
-        
-        /*
-         Build mxd forest
-         */
-        dd_edge buildMxdForest();
-        
-        /*
-         Build each event_mxd
-         */
-        dd_edge buildEventMxd(rel_node_handle event_top, forest *mxd, forest *event_mxd);
-    
-        
+
+        /// Build mxd forest
+        MEDDLY::node_handle buildMxdForest();
+
+        /// Build each event_mxd
+        dd_edge buildEventMxd(rel_node_handle event_top, forest *mxd);
+
+        /// Get relation forest  
+        expert_forest* getRelForest() const;
+
+
       private:
-        dd_edge mxd;
-        
-      };  // class implicit_relation
+        expert_forest* mxdF;
+      
+     public:
+      
+      /*
+       Group the list of events at a given level by same next-of values 
+       @param level    level at which saturation is called
+       @param i        number of tokens before event is fired
+       @param R        array of events at level top
+       
+       Return the map.
+       */
+      std::unordered_map<long,std::vector<rel_node_handle>> getListOfNexts(int level, long i, relation_node **R);
+      
+      /*
+       Returns whether there exist a possibility of doing union 
+       @param level    level at which saturation is called
+       @param i        number of tokens before event is fired
+       @param R        array of events at level top
+       
+       Return bool.
+       */
+      bool isUnionPossible(int level, long i, relation_node **R);
+      
+    };  // class implicit_relation
 
 
 
-      };
+};
 class MEDDLY::constrained_opname : public specialized_opname {
 public:
 	constrained_opname(const char* n);
@@ -3547,8 +3693,6 @@ class MEDDLY::ct_object {
     virtual ~ct_object();
     virtual opnd_type getType() = 0;
 };
-
-// under construction:
 
 
 // ******************************************************************
@@ -3598,14 +3742,30 @@ class MEDDLY::ct_initializer : public initializer_list {
 
       /// A hash table (no chaining) for each operation.
       OperationUnchainedHash,
+    };
 
-      /// A STL "map" for each operation.
-      OperationMap
+    enum compressionOption {
+      /// No compression at all
+      None,
+      /// Compression based on item type
+      TypeBased
+      // TBD - others
     };
 
     struct settings {
-      staleRemovalOption staleRemoval;
-      unsigned maxSize;
+      public:
+        /// Memory manager to use for compute table entries
+        const memory_manager_style *MMS;
+        /// Maximum compute table size
+        size_t maxSize;
+        /// Stale removal policy
+        staleRemovalOption staleRemoval;
+        /// Compression policy
+        compressionOption compression;
+      public:
+        settings() {
+          MMS = 0;
+        }
     };
 
   public:
@@ -3615,6 +3775,7 @@ class MEDDLY::ct_initializer : public initializer_list {
   protected:
     virtual void setup();
     virtual void cleanup();
+    static void setMemoryManager(const memory_manager_style*);
 
   // use these to change defaults, before library initialization
   public:
@@ -3622,9 +3783,14 @@ class MEDDLY::ct_initializer : public initializer_list {
     static void setMaxSize(unsigned ms);
     static void setBuiltinStyle(builtinCTstyle cts);
     static void setUserStyle(const compute_table_style*);
+    static void setCompression(compressionOption co);
 
     // for convenience
+#ifdef OLD_OP_CT
     static compute_table* createForOp(operation* op);
+#else
+    static compute_table* createForOp(operation* op, unsigned slot);
+#endif
 
   private:
     static settings the_settings;
@@ -3660,7 +3826,7 @@ class MEDDLY::compute_table_style {
         Default throws an error.
     */
     virtual compute_table* create(const ct_initializer::settings &s,
-      operation* op) const;
+      operation* op, unsigned slot) const;
 
 
     /**
@@ -3678,9 +3844,10 @@ class MEDDLY::compute_table_style {
 /** Interface for compute tables.
     Anyone implementing an operation (see below) will
     probably want to use this.
+    Implementation is in compute_table.cc.
 */
 class MEDDLY::compute_table {
-    public:
+    protected:
       /// The maximum size of the hash table.
       unsigned maxSize;
       /// Do we try to eliminate stales during a "find" operation
@@ -3688,81 +3855,435 @@ class MEDDLY::compute_table {
       /// Do we try to eliminate stales during a "resize" operation
       bool checkStalesOnResize;
 
+    public:
+
+      //
+      // ******************************************************************
+      //
+
       struct stats {
-        unsigned numEntries;
-        long hits;
-        long pings;
-        static const int searchHistogramSize = 256;
-        long searchHistogram[searchHistogramSize];
-        long numLargeSearches;
-        int maxSearchLength;
+        unsigned long numEntries;
+        unsigned long hits;
+        unsigned long pings;
+        static const unsigned searchHistogramSize = 256;
+        unsigned long searchHistogram[searchHistogramSize];
+        unsigned long numLargeSearches;
+        unsigned maxSearchLength;
       };
 
       //
-      // Something to search for in the CT.
-      // This is an interface now!
+      // ******************************************************************
       //
-      class search_key {
-          operation* op;
+
+      enum typeID {
+        ERROR = 0,
+        NODE = 1,
+        INTEGER = 2,
+        LONG = 3,
+        FLOAT = 4,
+        DOUBLE = 5,
+        POINTER = 6
+        // HUGEINT = 7
+      };
+
+      //
+      // ******************************************************************
+      //
+
+#ifndef OLD_OP_CT
+      union entry_item {
+        int I;
+        unsigned int U;
+        long L;
+        unsigned long UL;
+        node_handle N;
+        float F;
+        double D;
+        void* P;
+      };
+#endif
+
+      //
+      // ******************************************************************
+      //
+
+      /**
+        Type information about entries.
+        Usually there is one type of entry for each operation,
+        but there could be more than one type.
+
+        These are built by operations and then registered
+        with the compute table.
+      */
+      class entry_type {
+        public:
+          /**
+            Constructor.
+              @param  name    Name of the entry type; used only for displaying
+                              CT entries (usually while debugging).
+
+              @param  pattern Pattern for an entry.  The following characters
+                              are supported in this string:
+                                'N': node (in a forest)
+                                'I': int 
+                                'L': long 
+                                'H': hugeint (if gmp support enabled)
+                                'F': float
+                                'D': double
+                                'P': pointer to a ct_object
+                                ':': separates key portion from result portion;
+                                     must appear exactly once
+                                '.': for repeating entries; can appear at most once.
+                                     Everything between '.' and ':' can repeat
+                                     zero or more times.
+
+              @throws INVALID_ARGUMENT if pattern is illegal
+          */
+          entry_type(const char* name, const char* pattern);
+          ~entry_type();
+
+          unsigned getID() const;
+
+          /**
+            Set the forest for 'N' items in the pattern.
+              @param  i   Slot.  Character i in the pattern must be 'N'.
+              @param  f   Forest.
+          */
+          void setForestForSlot(unsigned i, expert_forest* f);
+
+          /**
+            Results might be overwritten.
+            Indicate that in these entries, the result portion of the
+            entry might be updated.
+            The CT will make storage decisions based on this.
+          */
+          void mightUpdateResults();
+          
+          /**
+              Is the result portion updatable?
+          */
+          bool isResultUpdatable() const;
+
+          //
+          // The remaining interface is for use by the compute table.
+          // All these should be inlined for speed (see meddly_expert.hh)
+          //
+
+          const char* getName() const;
+
+          /**
+              Does this entry type allow repetitions in the key?
+              I.e., was there a '.' in the pattern?
+          */
+          bool isRepeating() const;
+
+          /**
+              Get the number of items in the key.
+                @param  reps  Number of repetitions.
+                              If this is not a repeating type,
+                              then this is ignored.
+
+                @return Total number of slots in the key.
+          */
+          unsigned getKeySize(unsigned reps) const;
+
+          /**
+              Get the number of bytes in the key.
+                @param  reps  Number of repetitions.
+                              If this is not a repeating type,
+                              then this is ignored.
+
+                @return Total number of bytes required for the key.
+          */
+          unsigned getKeyBytes(unsigned reps) const;
+
+          /**
+              Get the type for item i in the key.
+              Automatically handles repetitions.
+                @param  i   Slot number, between 0 and getKeySize().   
+
+                @param  t   On output, the type for item i.
+                @param  f   If t is 'N', the forest for item i.
+                            Otherwise, null.
+          */
+          void getKeyType(unsigned i, typeID &t, expert_forest* &f) const;
+
+          /**
+              Get the type for item i in the key.
+              Automatically handles repetitions.
+                @param  i   Slot number, between 0 and getKeySize().   
+          */
+          typeID getKeyType(unsigned i) const;
+
+          /**
+              Get the forest for item i in the key.
+              Automatically handles repetitions.
+                @param  i   Slot number, between 0 and getKeySize().
+                @return     Forest for that slot, or 0 if the type
+                            is not 'N'.
+          */
+          expert_forest* getKeyForest(unsigned i) const;
+
+          /**
+              Get the number of items in the result
+          */
+          unsigned getResultSize() const;
+
+          /**
+              Get the number of bytes in the result
+          */
+          unsigned getResultBytes() const;
+
+          /**
+              Get the type for item i in the result.
+                @param  i   Slot number, between 0 and getResultSize().
+
+                @param  t   On output, the type for item i.
+                @param  f   If t is 'N', the forest for item i.
+                            Otherwise, null.
+          */
+          void getResultType(unsigned i, typeID &t, expert_forest* &f) const;
+
+          /**
+              Get the type for item i in the result.
+                @param  i   Slot number, between 0 and getResultSize().
+          */
+          typeID getResultType(unsigned i) const;
+
+          /**
+              Get the forest for item i in the result.
+                @param  i   Slot number, between 0 and getResultSize().
+                @return     Forest for that slot, or 0 if the type
+                            is not 'N'.
+          */
+          expert_forest* getResultForest(unsigned i) const;
+
+          /// Mark for deletion
+          void markForDeletion();
+ 
+          /// Unmark for deletion
+          void unmarkForDeletion();
+ 
+          /// Should we remove all CT entries of this type?
+          bool isMarkedForDeletion() const;
+        private:
+          /// Unique ID, set by compute table
+          unsigned etID;
+
+          const char* name;
+
+          /// Starting portion of key pattern.
+          typeID* ks_type;
+          /// Forests in starting portion of key.
+          expert_forest** ks_forest;
+          /// Length of ks_type and ks_forest arrays.
+          unsigned len_ks_type;
+          /// Total bytes in the starting portion of the key.
+          unsigned ks_bytes;
+
+          /// Repeating portion of key pattern (or null for no repeats).
+          typeID* kr_type;
+          /// Forests in repeating portion of key (or null).
+          expert_forest** kr_forest;
+          /// Length of kr_type and kr_forest arrays (zero if no repeats).
+          unsigned len_kr_type;
+          /// Total bytes in the repeating portion of the key.
+          unsigned kr_bytes;
+
+          /// Result pattern
+          typeID* r_type;
+          /// Forests in result
+          expert_forest** r_forest;
+          /// Length of r_type and r_forest arrays.
+          unsigned len_r_type;
+          /// Total bytes in the result.
+          unsigned r_bytes;
+
+          bool updatable_result;
+
+          bool is_marked_for_deletion;
+
+          friend class compute_table;
+      };
+
+      //
+      // ******************************************************************
+      //
+
+      /** 
+        The key portion of an entry.
+        Internally, in the compute table, we may store
+        entries differently.  This class is used to build
+        keys for searching and to construct CT entries.
+      */
+      class entry_key {
+        public:
+          entry_key();
+          ~entry_key();
 
         protected:
-          search_key(operation* op);
+          /// Start using for this operation
+#ifdef OLD_OP_CT
+          void setup(operation* op, unsigned slots); 
+#else
+          void setup(const compute_table::entry_type* et, unsigned repeats);
+#endif
 
         public:
-          /// Used for linked-list of recycled search keys in an operation.
-          search_key* next;
-
+#ifdef OLD_OP_CT
           operation* getOp() const;
-          virtual ~search_key();
+#else
+          const compute_table::entry_type* getET() const;
+#endif
 
-          // interface, for operations
-          virtual void reset() = 0;
-          virtual void writeNH(node_handle nh) = 0;
-          virtual void write(int i) = 0;
-          virtual void write(long i) = 0;
-          virtual void write(float f) = 0;
+          // interface, for operations.  All inlined in meddly_expert.hh
+          void writeN(node_handle nh);
+          void writeI(int i);
+          void writeL(long i);
+          void writeF(float f);
+          // For templates
+          inline void write_ev(long i)  { writeL(i); }
+          inline void write_ev(float f) { writeF(f); }
+
+        public: 
+          // interface, for compute_table.  All inlined in meddly_expert.hh
+#ifdef OLD_OP_CT
+          const node_handle* rawData(bool includeOp) const;
+          unsigned dataLength(bool includeOp) const;
+#else
+          const entry_item* rawData() const;
+          unsigned dataLength() const;
+          unsigned numRepeats() const;
+
+          const void* readTempData() const;
+          unsigned numTempBytes() const;
+          void* allocTempData(unsigned bytes);
+          /// Increase cache counters for nodes in this portion of the entry.
+          void cacheNodes() const;
+#endif
+          unsigned getHash() const;
+
+        protected:
+          // protected interface, for compute_table.  All inlined in meddly_expert.hh
+          void setHash(unsigned h);
+
+#ifndef OLD_OP_CT
+        private:
+          typeID theSlotType() const;
+#endif
+
+        private:
+#ifdef OLD_OP_CT
+          operation* op;
+          node_handle* data;
+#else 
+          const compute_table::entry_type* etype;
+          entry_item* data;
+          void* temp_data; 
+          unsigned temp_bytes;
+          unsigned temp_alloc;
+          unsigned num_repeats;
+#endif
+          unsigned hash_value;
+          unsigned data_alloc;
+
+          unsigned currslot;
+          unsigned total_slots;
+#ifdef DEVELOPMENT_CODE
+          bool has_hash;
+#endif
+        protected:
+          /// Used for linked-list of recycled search keys in compute_table
+          entry_key* next;
+
+        friend class compute_table;
       };
 
       //
-      // Result of a search
+      // ******************************************************************
       //
-      class search_result {
-          bool is_valid;
 
-        protected:
-          search_result();
-          virtual ~search_result();
+      /** 
+        The result portion of an entry.
+        Internally, in the compute table, we may store
+        entries differently.  This class is used to return 
+        results from searches and to construct CT entries.
+      */
+      class entry_result {
+        public:
+          entry_result();
+#ifdef OLD_OP_CT
+          entry_result(unsigned slots);
+#endif
+          ~entry_result();
 
         public:
+#ifndef OLD_OP_CT
+          // For delayed construction
+          void initialize(const entry_type* et);
+#endif
+
+          // interface, for operations (reading).
+          node_handle readN();
+          int readI();
+          float readF();
+          long readL();
+          double readD();
+          void* readP();
+          // for templates
+          void read_ev(long &l)   { l = readL(); }
+          void read_ev(float &f)  { f = readF(); }
+
+          // interface, for operations (building). 
+          void reset();
+          void writeN(node_handle nh);
+          void writeI(int i);
+          void writeF(float f);
+          void writeL(long L);
+          void writeD(double D);
+          void writeP(void* P);
+#ifdef OLD_OP_CT
+          void write_raw(void* data, size_t slots);
+#endif
+
+          // interface, for compute tables.
           void setValid();
+#ifndef OLD_OP_CT
+          void setValid(const entry_item* d);
+#endif
           void setInvalid();
           operator bool() const;
+#ifndef OLD_OP_CT
+          /// Increase cache counters for nodes in this portion of the entry.
+          void cacheNodes() const;
+#endif
 
-          virtual node_handle readNH() = 0;
-          virtual void read(int &i) = 0;
-          virtual void read(float &f) = 0;
-          virtual void read(long &l) = 0;
-          virtual void read(double &d) = 0;
-          virtual void read(void* &ptr) = 0;
+#ifdef OLD_OP_CT
+          void setResult(const node_handle* d, unsigned sz);
+          const node_handle* rawData() const;
+#else 
+          const entry_item* rawData() const;
+#endif
+          unsigned dataLength() const;
+
+
+        private:
+#ifdef OLD_OP_CT
+          const node_handle* data;
+          node_handle* build;
+          unsigned ansLength;
+#else
+          const entry_type* etype;
+          entry_item* build;
+          const entry_item* data;
+#endif
+          bool is_valid;
+          unsigned currslot;
       };
 
       //
-      // Building a new CT entry.
-      // This is an interface now!
+      // ******************************************************************
       //
-      class entry_builder {
-        protected:
-          entry_builder();
-          virtual ~entry_builder();
-
-        public:
-          virtual void writeResultNH(node_handle) = 0;
-          virtual void writeResult(int) = 0;
-          virtual void writeResult(float) = 0;
-          virtual void writeResult(long) = 0;
-          virtual void writeResult(double) = 0;
-          virtual void writeResult(void*) = 0;
-      };
 
       // convenience methods, for grabbing edge values
       static void readEV(const node_handle* p, int &ev);
@@ -3778,29 +4299,54 @@ class MEDDLY::compute_table {
       */
       virtual ~compute_table();
 
+      /**
+          Start using an entry_key for the given operation.
+      */
+#ifdef OLD_OP_CT
+      static entry_key* useEntryKey(operation* op);
+#else
+      static entry_key* useEntryKey(const entry_type* et, unsigned repeats);
+#endif
+
+      /**
+          Done using an entry_key.
+      */
+      static void recycle(entry_key* k);
+
+
       /// Is this a per-operation compute table?
       virtual bool isOperationTable() const = 0;
 
       /// Initialize a search key for a given operation.
-      virtual search_key* initializeSearchKey(operation* op) = 0;
+      // virtual entry_key* initializeSearchKey(operation* op) = 0;
 
+#ifdef OLD_OP_CT
       /** Find an entry in the compute table based on the key provided.
           @param  key   Key to search for.
-          @return       An appropriate search_result.
+          @return       Result, if found.
       */
-      virtual search_result& find(search_key *key) = 0;
+      virtual entry_result& find(entry_key* key) = 0;
+#else
+      /** Find an entry in the compute table based on the key provided.
+          @param  key   Key to search for.
+          @param  res   Where to store the result, if any.
+      */
+      virtual void find(entry_key* key, entry_result &res) = 0;
+#endif
 
-      /** Start a new compute table entry.
-          The operation should "fill in" the values for the entry,
-          then call \a addEntry().
+      /**
+          Add an entry (key plus result) to the compute table.
+            @param  key   Key portion of the entry.  Will be recycled.
+            @param  res   Result portion of the entry.
       */
-      virtual entry_builder& startNewEntry(search_key* k) = 0;
+      virtual void addEntry(entry_key* key, const entry_result &res) = 0;
 
-      /** Add the "current" new entry to the compute table.
-          The entry may be specified by filling in the values
-          for the struct returned by \a startNewEntry().
+      /**
+          Update an existing entry in the compute table.
+            @param  key   Key portion of the entry.  Will be recycled.
+            @param  res   Updated result portion of the entry.
       */
-      virtual void addEntry() = 0;
+      virtual void updateEntry(entry_key* key, const entry_result &res) = 0;
 
       /** Remove all stale entries.
           Scans the table for entries that are no longer valid (i.e. they are
@@ -3820,8 +4366,50 @@ class MEDDLY::compute_table {
       /// For debugging.
       virtual void show(output &s, int verbLevel = 0) = 0;
 
+      static void initialize();
+      static void destroy();
+
+#ifndef OLD_OP_CT
+    protected:
+      /** Register an operation.
+          Sets aside a number of entry_type slots for the operation.
+      */
+      static void registerOp(operation* op, unsigned num_ids);
+
+      /// Register an entry_type.
+      static void registerEntryType(unsigned etid, entry_type* et);
+
+      /** Unregister an operation.
+          Frees the entry_type slots for the operation.
+      */
+      static void unregisterOp(operation* op, unsigned num_ids);
+
+    public:
+      /// Find entry_type for operation and slot number.
+      static const entry_type* getEntryType(operation* op, unsigned slot);
+
+      /// Find entry type for given entryID
+      static const entry_type* getEntryType(unsigned etID);
+
+#endif
+
+    protected:
+      void setHash(entry_key *k, unsigned h);
+
     protected:
       stats perf;
+
+#ifndef OLD_OP_CT
+    private:
+      static entry_type** entryInfo;
+      static unsigned entryInfoAlloc;
+      static unsigned entryInfoSize;
+#endif
+
+    private:
+      static entry_key* free_keys;
+
+    friend class operation;
 };
 
 // ******************************************************************
@@ -3836,12 +4424,12 @@ class MEDDLY::compute_table {
 */
 class MEDDLY::operation {
     const opname* theOpName;
-    bool is_marked_for_deletion;
     int oplist_index;
-    int key_length;
+    bool is_marked_for_deletion;
+#ifdef OLD_OP_CT
+    int key_length;   
     int ans_length;
-    /// List of free search_keys
-    compute_table::search_key* CT_free_keys;
+#endif
 
     // declared and initialized in meddly.cc
     static compute_table* Monolithic_CT;
@@ -3859,35 +4447,74 @@ class MEDDLY::operation {
     // should ONLY be called during library cleanup.
     static void destroyAllOps();
 
+#ifndef OLD_OP_CT
+    /**
+      Starting slot for entry_types, assigned
+      by compute_table.
+    */
+    unsigned first_etid;
+#endif
+
   protected:
-    /// Compute table to use, if any.
-    compute_table* CT;
+    /// Compute table to use (for entry type 0), if any.
+    compute_table* CT0;
+#ifndef OLD_OP_CT
+    /// Array of compute tables, one per entry type.
+    compute_table** CT;
+    /** Array of entry types.
+        Owned by the compute_table class; we have
+        these pointers for convenience.
+    */
+    compute_table::entry_type** etype;
+    /** Array of entry results.
+        Use these during computation.
+        We only ever need one result per entry type.
+    */
+    compute_table::entry_result* CTresult;
+
+    /**
+      Number of entry_types needed by this operation.
+      This gives the dimension of arrays CT and etype.
+    */
+    unsigned num_etids;
+#endif
     /// Struct for CT searches.
-    // compute_table::search_key* CTsrch;
+    // compute_table::entry_key* CTsrch;
     // for cache of operations.
     operation* next;
+
+#ifdef OLD_OP_CT
     // must stale compute table hits be discarded.
     // if the result forest is using pessimistic deletion, then true.
     // otherwise, false.  MUST BE SET BY DERIVED CLASSES.
     bool discardStaleHits;
+#endif
 
     virtual ~operation();
+#ifdef OLD_OP_CT
     void setAnswerForest(const expert_forest* f);
+#endif
     void markForDeletion();
     void registerInForest(forest* f);
     void unregisterInForest(forest* f);
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entry) = 0;
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entry) = 0;
 #endif
-    compute_table::search_key* useCTkey();
+#endif
     void allocEntryForests(int nf);
     void addEntryForest(int index, expert_forest* f);
     void allocEntryObjects(int no);
     void addEntryObject(int index);
 
     virtual bool checkForestCompatibility() const = 0;
+
+#ifndef OLD_OP_CT
+    void registerEntryType(unsigned slot, compute_table::entry_type* et);
+    void buildCTs();
+#endif
 
     friend class forest;
     friend void MEDDLY::destroyOpInternal(operation* op);
@@ -3896,6 +4523,7 @@ class MEDDLY::operation {
     friend class ct_initializer;
 
   public:
+#ifdef OLD_OP_CT
     /// New constructor.
     /// @param  n   Operation "name"
     /// @param  kl  Key length of compute table entries.
@@ -3903,6 +4531,17 @@ class MEDDLY::operation {
     /// @param  al  Answer length of compute table entries.
     ///             Use 0 if this operation does not use the compute table.
     operation(const opname* n, int kl, int al);
+#else
+    /**
+        Constructor.
+          @param  n         Operation "name"
+          @param  et_slots  Number of different compute table entry types
+                            used by this operation.
+                            Derived class constructors must register
+                            exactly this many entry types.
+    */
+    operation(const opname* n, unsigned et_slots);
+#endif
 
     bool isMarkedForDeletion() const;
     void setNext(operation* n);
@@ -3924,6 +4563,12 @@ class MEDDLY::operation {
     static operation* getOpWithIndex(int i);
     static int getOpListSize();
 
+#ifndef OLD_OP_CT
+    void setFirstETid(unsigned slot);
+    unsigned getFirstETid() const;
+    unsigned getNumETids() const;
+#endif
+
     // for debugging:
 
     static void showMonolithicComputeTable(output &, int verbLevel);
@@ -3934,6 +4579,7 @@ class MEDDLY::operation {
     const char* getName() const;
     const opname* getOpName() const;
 
+#ifdef OLD_OP_CT
     /// Number of ints that make up the key (usually the operands).
     int getKeyLength() const;
 
@@ -3942,6 +4588,9 @@ class MEDDLY::operation {
 
     /// Number of ints that make up the entire record (key + answer)
     int getCacheEntryLength() const;
+#endif
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
     /// Checks if the cache entry (in entryData[]) is stale.
@@ -3951,17 +4600,16 @@ class MEDDLY::operation {
     MEDDLY::forest::node_status getEntryStatus(const node_handle* data);
 #endif
 
-    void doneCTkey(compute_table::search_key* K);
-
     /// Removes the cache entry (in entryData[]) by informing the
     /// applicable forests that the nodes in this entry are being removed
     /// from the cache
     virtual void discardEntry(const node_handle* entryData) = 0;
 
     /// Prints a string representation of this cache entry on strm (stream).
-    virtual void showEntry(output &strm, const node_handle *entryData) const = 0;
+    virtual void showEntry(output &strm, const node_handle *entryData, bool key_only) const = 0;
 
     bool shouldStaleCacheHitsBeDiscarded() const;
+#endif
 };
 
 // ******************************************************************
@@ -3984,11 +4632,19 @@ class MEDDLY::unary_operation : public operation {
     virtual bool checkForestCompatibility() const;
 
   public:
+#ifdef OLD_OP_CT
     unary_operation(const unary_opname* code, int kl, int al,
       expert_forest* arg, expert_forest* res);
 
     unary_operation(const unary_opname* code, int kl, int al,
       expert_forest* arg, opnd_type res);
+#else
+    unary_operation(const unary_opname* code, unsigned et_slots,
+      expert_forest* arg, expert_forest* res);
+
+    unary_operation(const unary_opname* code, unsigned et_slots,
+      expert_forest* arg, opnd_type res);
+#endif
 
     bool matches(const expert_forest* arg, const expert_forest* res)
       const;
@@ -4036,8 +4692,13 @@ class MEDDLY::binary_operation : public operation {
     virtual bool checkForestCompatibility() const;
 
   public:
+#ifdef OLD_OP_CT
     binary_operation(const binary_opname* code, int kl, int al,
       expert_forest* arg1, expert_forest* arg2, expert_forest* res);
+#else
+    binary_operation(const binary_opname* code, unsigned et_slots,
+      expert_forest* arg1, expert_forest* arg2, expert_forest* res);
+#endif
 
     bool matches(const expert_forest* arg1, const expert_forest* arg2,
       const expert_forest* res) const;
@@ -4078,7 +4739,11 @@ class MEDDLY::binary_operation : public operation {
 */
 class MEDDLY::specialized_operation : public operation {
   public:
+#ifdef OLD_OP_CT
     specialized_operation(const specialized_opname* code, int kl, int al);
+#else
+    specialized_operation(const specialized_opname* code, unsigned et_slots);
+#endif
   protected:
     virtual ~specialized_operation();
   public:
@@ -4088,6 +4753,12 @@ class MEDDLY::specialized_operation : public operation {
         Default behavior is to throw an exception.
     */
     virtual void compute(const dd_edge &arg, dd_edge &res);
+
+    /** For unary (like) operations with boolean results.
+        Note that there could be other "built in" operands.
+        Default behavior is to throw an exception.
+    */
+    virtual void compute(const dd_edge &arg, bool &res);
 
     /** For binary (like) operations.
         Note that there could be other "built in" operands.
@@ -4166,6 +4837,7 @@ private:
 
   public:
     SignatureGenerator(global_rebuilder& gr);
+    virtual ~SignatureGenerator();
     virtual void precompute() = 0;
     virtual int signature(node_handle p) = 0;
   };

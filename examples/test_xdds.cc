@@ -19,18 +19,151 @@
 
 #include <cstdlib>
 #include <iostream>
-#include "meddly.h"
+#include "../src/meddly.h"
 
 using namespace MEDDLY;
 
-int main(int argc, char* argv[]) {
+domain* initDomain() {
   MEDDLY::initialize();
   int bounds[] = {-1, -1, -1};
   const int n_vars = 3;
   domain* d = createDomainBottomUp(bounds, n_vars);
   assert(d);
-  forest* mxd = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  return d;
+}
+
+forest* createForest(domain *d, bool relation) {
+  forest* mxd = d->createForest(relation, forest::BOOLEAN, forest::MULTI_TERMINAL);
   assert(mxd);
+  return mxd;
+}
+
+void createEdge(forest* mdd, int var, const std::vector<int>& indices, dd_edge& result) {
+  // one minterm per index
+  const int nVars = mdd->useDomain()->getNumVariables();
+  int** minterms = new int*[indices.size()];
+  for (unsigned i = 0; i < indices.size(); i++) {
+    minterms[i] = new int[nVars+1];
+    for (int j = 0; j <= nVars; j++) {
+      minterms[i][j] = DONT_CARE;
+    }
+    minterms[i][var] = indices[i];
+  }
+  mdd->createEdge(minterms, indices.size(), result);
+  for (unsigned i = 0; i < indices.size(); i++) delete [] minterms[i];
+  delete [] minterms;
+}
+
+void createEdge(forest* mdd, int var, int value, dd_edge& result) {
+  // one minterm per index
+  const int nVars = mdd->useDomain()->getNumVariables();
+  int** minterms = new int*[value];
+  for (int i = 0; i < value; i++) {
+    minterms[i] = new int[nVars+1];
+    for (int j = 0; j <= nVars; j++) {
+      minterms[i][j] = DONT_CARE;
+    }
+    minterms[i][var] = i;
+  }
+  mdd->createEdge(minterms, value, result);
+  for (int i = 0; i < value; i++) delete [] minterms[i];
+  delete [] minterms;
+}
+
+// disabling expressions for transitions:
+// {
+// (k_a:v_a, k_b:v_b, ...), // t1: k_a < v_a | k_b < v_b | ...
+// (k_c:v_c, k_d:v_d, ...), // t2: k_c < v_c | k_d < v_d | ...
+// ...
+// }
+// 
+// potential deadlock states = conjunction of transition disabling expressions
+
+struct int_pair {
+  int level;
+  int value;
+  int_pair(int k, int v) : level(k), value(v) {}
+};
+
+void buidPotentialDeadlockStates(forest* mdd,
+    std::vector<std::vector<int_pair>>& disabling_expressions,
+    dd_edge& result) {
+  MEDDLY_DCASSERT(mdd && !mdd->isForRelations());
+
+  if (disabling_expressions.size() == 0) return;
+
+  std::vector<dd_edge> disabling_ddedges;
+
+  for (auto i : disabling_expressions) {
+    dd_edge i_union(mdd);
+    for (auto j : i) {
+      dd_edge expr(mdd);
+      createEdge(mdd, j.level, j.value, expr);
+      i_union += expr;
+    }
+    disabling_ddedges.push_back(i_union);
+  }
+
+  ostream_output s(std::cout);
+  MEDDLY_DCASSERT(disabling_ddedges.size() > 0);
+  result = disabling_ddedges[0];
+  for (auto i : disabling_ddedges) {
+    std::cout << "\nDisabling dd_edge:\n";
+    i.show(s, 2);
+    result *= i;
+  }
+}
+
+
+void testStateSetForest(domain *d) {
+  forest* mdd = createForest(d, false);
+
+  std::vector<int> indices;
+  for (int i = 0; i < 3; i++) indices.push_back(i);
+  dd_edge level_1_le_3(mdd);
+  dd_edge level_2_le_3(mdd);
+  dd_edge level_3_le_3(mdd);
+  createEdge(mdd, 1, indices, level_1_le_3);
+  createEdge(mdd, 2, indices, level_2_le_3);
+  createEdge(mdd, 3, indices, level_3_le_3);
+
+  dd_edge result = level_1_le_3;
+  result += level_2_le_3;
+  result += level_3_le_3;
+
+  ostream_output s(std::cout);
+  level_1_le_3.show(s, 2);
+  level_2_le_3.show(s, 2);
+  level_3_le_3.show(s, 2);
+  result.show(s, 2);
+
+  // building potential deadlock states
+  // disabling expressions per transition:
+  // t1 : k1 < 3 or k2 < 4
+  // t2 : k1 < 2 or k3 < 2
+  // t3 : k2 < 1
+  std::vector<std::vector<int_pair>> disabling_expressions;
+  std::vector<int_pair> t1;
+  t1.emplace_back(1, 3);
+  t1.emplace_back(2, 4);
+  std::vector<int_pair> t2;
+  t2.emplace_back(1, 2);
+  t2.emplace_back(3, 2);
+  std::vector<int_pair> t3;
+  t3.emplace_back(2, 1);
+  disabling_expressions.push_back(t1);
+  disabling_expressions.push_back(t2);
+  disabling_expressions.push_back(t3);
+
+  buidPotentialDeadlockStates(mdd, disabling_expressions, result);
+  std::cout << "\nPotential deadlock states dd_edge:\n";
+  result.show(s, 2);
+}
+
+
+void testRelationForest(domain *d) {
+  const int n_vars = d->getNumVariables();
+  forest* mxd = createForest(d, true);
 
   int* unp_minterm_1 = new int[n_vars+1];
   int* unp_minterm_2 = new int[n_vars+1];
@@ -71,6 +204,12 @@ int main(int argc, char* argv[]) {
   delete [] unp_minterm_2;
   delete [] p_minterm_1;
   delete [] p_minterm_2;
+}
 
+
+int main(int argc, char* argv[]) {
+  domain* d = initDomain();
+  testRelationForest(d);
+  testStateSetForest(d);
   MEDDLY::cleanup();
 }

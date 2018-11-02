@@ -24,8 +24,8 @@
 
 #include <string.h>
 
-#include "meddly.h"
-#include "meddly_expert.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
 
 // #define SHOW_INDEXES
 // #define SHOW_MATRIX
@@ -48,7 +48,7 @@ bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
   // Build state indexes
 
   int* sslist[] = { R, N, S };
-  int indexes[] = { 0, 1, 2 };
+  long indexes[] = { 0, 1, 2 };
 
   try {
     indf->createEdge(sslist, indexes, 3, ss);

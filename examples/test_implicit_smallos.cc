@@ -24,11 +24,11 @@ along with this library.  If not, see <http://www.gnu.org/licenses/>.
 
 #define _MEDDLY_WITHOUT_IOSTREAM_
 
-#include "meddly.h"
-#include "meddly_expert.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
 #include "simple_model.h"
-#include "timer.h"
-#include "loggers.h"
+#include "../src/timer.h"
+#include "../src/loggers.h"
 
 // #define DUMP_NSF
 // #define DUMP_REACHABLE
@@ -123,8 +123,6 @@ expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
 int main(int argc, const char** argv)
 {
 char method ;
-int batchsize = 256;
-const char* lfile = 0;
 
 for (int i=1; i<argc; i++)
 {
@@ -187,6 +185,7 @@ if('i' == method)
 
 //CREATE FORESTS
   forest* inmdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
+  forest* relmxd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
 
   expert_domain* dm = static_cast<expert_domain*>(inmdd->useDomain());
   dm->enlargeVariableBound(p1_position, false, MT+1);
@@ -203,7 +202,7 @@ if('i' == method)
 
 
   //CREATE RELATION
-  satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,inmdd);
+  satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,relmxd,inmdd);
 
   start.note_time();
   buildImplicitRelation(model, TRANS, PLACES, BOUNDS, T);
@@ -244,9 +243,9 @@ if('i' == method)
   
   
   /* Building Mxd From Implicit */
-  dd_edge mxd_edge_all = T->buildMxdForest();
+ /* dd_edge mxd_edge_all = T->buildMxdForest();
   
-  mxd_edge_all.show(meddlyout,2);
+  mxd_edge_all.show(meddlyout,2);*/
   
 }
 

@@ -81,7 +81,7 @@ namespace MEDDLY {
   class original_grid : public hole_manager<INT> {
 
     public:
-      original_grid(const char* n, forest::statset &stats);
+      original_grid(const char* n, memstats &stats);
       virtual ~original_grid();
 
       virtual node_address requestChunk(size_t &numSlots);
@@ -119,7 +119,7 @@ namespace MEDDLY {
         return getHoleSize(h) < SmallestChunk;
       }
       inline bool isLargeHole(node_address h) const {
-        return getHoleSize(h) > max_request;
+        return size_t(getHoleSize(h)) > max_request;
         // return getHoleSize(h) > max_request + SmallestChunk;
         // if we add SmallestChunk, every large hole can be
         // used for every request seen so far, with enough
@@ -211,7 +211,7 @@ namespace MEDDLY {
   // ******************************************************************
 
   template <class INT>
-  original_grid<INT>::original_grid(const char* n, forest::statset &stats)
+  original_grid<INT>::original_grid(const char* n, memstats &stats)
   : hole_manager<INT>(n, stats)
   {
     max_request = 0;
@@ -290,13 +290,13 @@ namespace MEDDLY {
     //
     if (holes_current) {
 
-      while (getHoleSize(holes_current) > numSlots) {
+      while (size_t(getHoleSize(holes_current)) > numSlots) {
         INT next = Down(holes_current);
         if (0==next) break;
         holes_current = next;
       }
 
-      while (getHoleSize(holes_current) < numSlots) {
+      while (size_t(getHoleSize(holes_current)) < numSlots) {
         INT next = Up(holes_current);
         if (0==next) break;
         holes_current = next;
@@ -306,14 +306,14 @@ namespace MEDDLY {
       // holes_current either points to a row of the requested size,
       // or no such row exists.
       //
-      if (getHoleSize(holes_current) >= numSlots) {
+      if (size_t(getHoleSize(holes_current)) >= numSlots) {
         //
         // We have a hole we can use.
         //
 
 #ifdef MEMORY_TRACE_DETAILS
         printf("\tUsing hole of ");
-        if (getHoleSize(holes_current) == numSlots) printf("requested ");
+        if (size_t(getHoleSize(holes_current)) == numSlots) printf("requested ");
         printf("size %ld\n", long(getHoleSize(holes_current)));
 #endif
        
@@ -334,7 +334,7 @@ namespace MEDDLY {
       // Couldn't recycle from grid.  Try large hole list.
       //
 
-      MEDDLY_DCASSERT(getHoleSize(large_holes) >= numSlots);
+      MEDDLY_DCASSERT(size_t(getHoleSize(large_holes)) >= numSlots);
 
 #ifdef MEMORY_TRACE_DETAILS
       printf("\tUsing large hole of size %ld\n", long(getHoleSize(large_holes)));
@@ -355,7 +355,7 @@ namespace MEDDLY {
       //
       // Deal with leftover slots, if any
       //
-      MEDDLY_DCASSERT(getHoleSize(h) >= numSlots);
+      MEDDLY_DCASSERT(size_t(getHoleSize(h)) >= numSlots);
       size_t leftover_slots = getHoleSize(h) - numSlots;
       if (leftover_slots > 0) {
         // 
@@ -410,7 +410,7 @@ namespace MEDDLY {
     // Check to the left for another hole
     //
     if (isHole(h-1)) {
-      MEDDLY_DCASSERT(getHoleSize(h-1) < h);
+      MEDDLY_DCASSERT(node_address(getHoleSize(h-1)) < h);
       node_address hleft = h - getHoleSize(h-1);
 #ifdef MEMORY_TRACE_DETAILS
       printf("\tMerging to the left, holes %lu and %lu\n", hleft, h);
@@ -626,7 +626,7 @@ namespace MEDDLY {
       if (left) {
         Next(left) = right;
       } else {
-        MEDDLY_DCASSERT(large_holes == h);
+        MEDDLY_DCASSERT(node_address(large_holes) == h);
         large_holes = right;
       }
 
@@ -698,7 +698,7 @@ namespace MEDDLY {
         holes_top = below;
       }
 
-      if (holes_current == h) {
+      if (node_address(holes_current) == h) {
         holes_current = below;
       }
 
@@ -732,7 +732,7 @@ namespace MEDDLY {
     }
     Down(next) = below;
 
-    if (holes_current == h) {
+    if (node_address(holes_current) == h) {
       holes_current = next;
     }
   }
@@ -892,7 +892,7 @@ MEDDLY::orig_grid_style::~orig_grid_style()
 
 MEDDLY::memory_manager*
 MEDDLY::orig_grid_style::initManager(unsigned char granularity, 
-  unsigned char minsize, forest::statset &stats) const
+  unsigned char minsize, memstats &stats) const
 {
   if (sizeof(int) == granularity) {
     return new original_grid <int>(getName(), stats);

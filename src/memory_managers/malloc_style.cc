@@ -27,6 +27,8 @@
 
 // new grid class here
 
+// #define USE_SLOW_GET_CHUNK_ADDRESS
+
 namespace MEDDLY {
   class malloc_manager;
 };
@@ -42,7 +44,7 @@ namespace MEDDLY {
 */
 class MEDDLY::malloc_manager : public memory_manager {
   public:
-    malloc_manager(const char* n, forest::statset &stats, unsigned char gran);
+    malloc_manager(const char* n, memstats &stats, unsigned char gran);
     virtual ~malloc_manager();
 
     virtual bool mustRecycleManually() const {
@@ -59,7 +61,10 @@ class MEDDLY::malloc_manager : public memory_manager {
 
     virtual node_address requestChunk(size_t &numSlots);
     virtual void recycleChunk(node_address h, size_t numSlots);
-    virtual void* getChunkAddress(node_address h) const;
+#ifdef USE_SLOW_GET_CHUNK_ADDRESS
+    virtual void* slowChunkAddress(node_address h) const;
+#endif
+    virtual bool isValidHandle(node_address h) const;
 
     virtual void reportStats(output &s, const char* pad, bool human, bool details) const;
     virtual void dumpInternal(output &s) const;
@@ -81,11 +86,15 @@ class MEDDLY::malloc_manager : public memory_manager {
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::malloc_manager::malloc_manager(const char* n, forest::statset &stats, 
+MEDDLY::malloc_manager::malloc_manager(const char* n, memstats &stats, 
   unsigned char gran) : memory_manager(n, stats)
 {
   granularity = gran;
   bytes_allocd_not_freed = 0;
+#ifndef USE_SLOW_GET_CHUNK_ADDRESS
+  setChunkBase(0);
+  setChunkMultiplier(1);
+#endif
 }
 
 // ******************************************************************
@@ -126,9 +135,20 @@ void MEDDLY::malloc_manager::recycleChunk(node_address h, size_t numSlots)
 
 // ******************************************************************
 
-void* MEDDLY::malloc_manager::getChunkAddress(node_address h) const
+#ifdef USE_SLOW_GET_CHUNK_ADDRESS
+
+void* MEDDLY::malloc_manager::slowChunkAddress(node_address h) const
 {
   return (void*) h;
+}
+
+#endif
+
+// ******************************************************************
+
+bool MEDDLY::malloc_manager::isValidHandle(node_address h) const
+{
+  return h;
 }
 
 // ******************************************************************
@@ -194,7 +214,7 @@ MEDDLY::malloc_style::~malloc_style()
 
 MEDDLY::memory_manager*
 MEDDLY::malloc_style::initManager(unsigned char granularity, 
-  unsigned char minsize, forest::statset &stats) const
+  unsigned char minsize, memstats &stats) const
 {
   return new malloc_manager(getName(), stats, granularity);
 }

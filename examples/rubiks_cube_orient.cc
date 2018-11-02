@@ -72,9 +72,9 @@
 #include <cstring>
 #include <vector>
 
-#include "meddly.h"
-#include "meddly_expert.h"
-#include "timer.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
+#include "../src/timer.h"
 
 #define DEBUG
 
@@ -221,17 +221,17 @@ class rubiks {
     // Ben Smith's SMART file ordering:
     static const int BenSmithsVariableOrdering[nLocations+1];
 
-    static const int plus0mod2[2];
-    static const int plus1mod2[2];
-    static const int plus0mod3[3];
-    static const int plus1mod3[3];
-    static const int plus2mod3[3];
-    static const int plus0mod4[4];
-    static const int plus1mod4[4];
-    static const int plus2mod4[4];
-    static const int plus3mod4[4];
-    static const int plus0mod8[8];
-    static const int plus0mod12[12];
+    static const long plus0mod2[2];
+    static const long plus1mod2[2];
+    static const long plus0mod3[3];
+    static const long plus1mod3[3];
+    static const long plus2mod3[3];
+    static const long plus0mod4[4];
+    static const long plus1mod4[4];
+    static const long plus2mod4[4];
+    static const long plus3mod4[4];
+    static const long plus0mod8[8];
+    static const long plus0mod12[12];
 
     ~rubiks() {
       // Clean up forests and domain.
@@ -473,8 +473,8 @@ class rubiks {
     }
 
 
-    const int* getModArray(int var, int offset) const {
-      const int* modArray = 0;
+    const long* getModArray(int var, int offset) const {
+      const long* modArray = 0;
       offset = offset % variableSize[var];
       switch (variableSize[var]) {
         case 2: modArray = (offset == 0)? plus0mod2: plus1mod2;
@@ -516,7 +516,7 @@ class rubiks {
       dd_edge r1(mtmxd);
       dd_edge r2(mtmxd);
       dd_edge r(mxd);
-      const int* modArray = getModArray(x1, offset);
+      const long* modArray = getModArray(x1, offset);
       mtmxd->createEdgeForVar(order[x1], false, modArray, r1);
       mtmxd->createEdgeForVar(order[x2], true, r2);
       apply(EQUAL, r1, r2, r);
@@ -1205,17 +1205,17 @@ class rubiks {
 
 };
 
-const int rubiks::plus0mod2[2] = {0, 1};
-const int rubiks::plus1mod2[2] = {1, 0};
-const int rubiks::plus0mod3[3] = {0, 1, 2};
-const int rubiks::plus1mod3[3] = {1, 2, 0};
-const int rubiks::plus2mod3[3] = {2, 0, 1};
-const int rubiks::plus0mod4[4] = {0, 1, 2, 3};
-const int rubiks::plus1mod4[4] = {1, 2, 3, 0};
-const int rubiks::plus2mod4[4] = {2, 3, 0, 1};
-const int rubiks::plus3mod4[4] = {3, 0, 1, 2};
-const int rubiks::plus0mod8[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-const int rubiks::plus0mod12[12] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+const long rubiks::plus0mod2[2] = {0, 1};
+const long rubiks::plus1mod2[2] = {1, 0};
+const long rubiks::plus0mod3[3] = {0, 1, 2};
+const long rubiks::plus1mod3[3] = {1, 2, 0};
+const long rubiks::plus2mod3[3] = {2, 0, 1};
+const long rubiks::plus0mod4[4] = {0, 1, 2, 3};
+const long rubiks::plus1mod4[4] = {1, 2, 3, 0};
+const long rubiks::plus2mod4[4] = {2, 3, 0, 1};
+const long rubiks::plus3mod4[4] = {3, 0, 1, 2};
+const long rubiks::plus0mod8[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+const long rubiks::plus0mod12[12] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 
 const int rubiks::defaultVariableOrdering[rubiks::nLocations+1] = {
   0,

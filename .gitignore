@@ -1,3 +1,4 @@
+.DS_Store
 aclocal.m4
 ar-lib
 autom4te.cache
@@ -20,3 +21,5 @@ test-driver
 ylwrap
 *.swp
 .deps
+*.dot
+*.pdf

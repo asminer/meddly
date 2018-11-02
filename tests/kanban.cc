@@ -20,8 +20,10 @@
 #include <cstdlib>
 #include <string.h>
 
-#include "meddly.h"
+#include "../src/meddly.h"
 #include "simple_model.h"
+
+#define PROGRESS
 
 const char* kanban[] = {
   "X-+..............",  // Tin1
@@ -68,10 +70,20 @@ long buildReachset(int N, bool useSat)
   mdd->createEdge(&initial, 1, init_state);
   delete[] initial;
 
+#ifdef PROGRESS
+  fputc('i', stdout);
+  fflush(stdout);
+#endif
+
   // Build next-state function
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   buildNextStateFunction(kanban, 16, mxd, nsf); 
+
+#ifdef PROGRESS
+  fputc('n', stdout);
+  fflush(stdout);
+#endif
 
   dd_edge reachable(mdd);
   if (useSat)
@@ -79,11 +91,25 @@ long buildReachset(int N, bool useSat)
   else
     apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
 
+#ifdef PROGRESS
+  fputc('r', stdout);
+  fflush(stdout);
+#endif
+
   long c;
   apply(CARDINALITY, reachable, c);
 
+#ifdef PROGRESS
+  fputc('c', stdout);
+  fflush(stdout);
+#endif
+
   destroyDomain(d);
   
+#ifdef PROGRESS
+  fputc(' ', stdout);
+  fflush(stdout);
+#endif
   return c;
 }
 

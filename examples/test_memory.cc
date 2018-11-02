@@ -22,8 +22,8 @@
 #include <iostream>
 #include <fstream>
 #include <map>  // for symbol table
-#include "meddly.h"
-#include "meddly_expert.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
 
 // #define DEBUG_PARSER
 
@@ -302,7 +302,7 @@ int main(int argc, const char** argv)
 
   MEDDLY::memory_manager* Mmm = 0;
 
-  MEDDLY::forest::statset stats;
+  MEDDLY::memstats stats;
 
   if (mst) {
     std::cout << "Using memory manager of type " << mst->getName() << "\n";

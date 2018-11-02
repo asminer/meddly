@@ -20,7 +20,7 @@
 #include <cstdlib>
 #include <string.h>
 
-#include "meddly.h"
+#include "../src/meddly.h"
 #include "simple_model.h"
 
 #include "kan_rs1.h"
@@ -132,6 +132,7 @@ bool checkRS(int N, const char* rs[])
   for (int b=0; batches[b]; b++) { 
     printf("\tBuilding %ld markings by hand, %d at a time\n", 
       expected[N], batches[b]);
+    fflush(stdout);
 
     dd_edge brs = buildReachsetBatch(batches[b], mdd, rs, expected[N]);
 

@@ -13,6 +13,27 @@
 <h1 id="hometitle">Version History</h1>
 
 <h2>Changes since last release</h2>
+<p>
+Nothing yet
+</p>
+
+<h2>New in Version 0.15.0 (2018 May 22)</h2>
+
+<h3>Simple Interface</h3>
+<ul>
+  <li> New (experimental) method, <tt>dd_edge::writePicture</tt>,
+        generates a visualization of the decision diagram.
+        You must have 
+        <a href="http://graphviz.org" target="_blank">Graphviz</a>
+        installed for this to work.
+  </li>
+</ul>
+
+<h3>Expert Interface</h3>
+<ul>
+  <li> Various improvements and extensions to Saturation implementation.
+  </li>
+</ul>
 
 <h3>Implementation</h3>
 <ul>
@@ -29,6 +50,19 @@
   <li>
   Error class now tracks filename and line number
   of source code that threw the error.
+  </li>
+  <li>
+  Updated garbage collection of compute table entries.
+  Compute table entry status is now one of: dead, recoverable, active.
+  </li>
+  <li>
+  Support for <i>extensible</i> variables:
+  <ul>
+    <li> To enable, give the variable a negative bound  </li>
+    <li> Can mix extensible and non-extensible variables in the same domain </li>
+    <li> Supported in multi-terminal forests for sets and relations  </li>
+    <li> Compatible with Apply operations and saturation</li>
+  </ul>
   </li>
 </ul>
 

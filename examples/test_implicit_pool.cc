@@ -24,11 +24,11 @@
 
 #define _MEDDLY_WITHOUT_IOSTREAM_
 
-#include "meddly.h"
-#include "meddly_expert.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
 #include "simple_model.h"
-#include "timer.h"
-#include "loggers.h"
+#include "../src/timer.h"
+#include "../src/loggers.h"
 
 // #define DUMP_NSF
 // #define DUMP_REACHABLE
@@ -116,8 +116,6 @@ void printStats(const char* who, const forest* f)
 int main(int argc, const char** argv)
 {
   char method ;
-  int batchsize = 256;
-  const char* lfile = 0;
   
   for (int i=1; i<argc; i++)
     {
@@ -174,6 +172,8 @@ int main(int argc, const char** argv)
       
       //CREATE FORESTS
       forest* inmdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
+      forest* relmxd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
+      
       expert_domain* dm = static_cast<expert_domain*>(inmdd->useDomain());
       
       dm->enlargeVariableBound(p7_position, false, 20*N+1);
@@ -190,7 +190,8 @@ int main(int argc, const char** argv)
       
       
       //CREATE RELATION
-      satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,inmdd);
+      satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,relmxd,inmdd);
+      
       
       start.note_time();
       buildImplicitRelation(model, TRANS, PLACES, BOUNDS, T);

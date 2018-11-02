@@ -41,20 +41,27 @@ namespace MEDDLY {
 class MEDDLY::select : public unary_operation {
   public:
     select(const unary_opname* oc, expert_forest* arg, expert_forest* res);
+#ifdef OLD_OP_CT
   protected:
     virtual bool isStaleEntry(const node_handle* entry);
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
+#endif
 };
 
 MEDDLY::select
 :: select(const unary_opname* oc, expert_forest* arg, expert_forest* res)
+#ifdef OLD_OP_CT
  : unary_operation(oc, 0, 0, arg, res)
+#else
+ : unary_operation(oc, 0, arg, res)
+#endif
 {
   MEDDLY_DCASSERT(!argF->isForRelations());
   MEDDLY_DCASSERT(!resF->isForRelations());
 }
 
+#ifdef OLD_OP_CT
 bool MEDDLY::select::isStaleEntry(const node_handle* entry)
 {
   // Do not use compute table
@@ -66,10 +73,11 @@ void MEDDLY::select::discardEntry(const node_handle* entryData)
   // Do nothing
 }
 
-void MEDDLY::select::showEntry(output &strm, const node_handle* entryData) const
+void MEDDLY::select::showEntry(output &strm, const node_handle* entryData, bool key_only) const
 {
   // Do nothing
 }
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -82,7 +90,7 @@ class MEDDLY::select_MT : public select {
   public:
     select_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res);
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
-    virtual node_handle compute(node_handle node, int level);
+    virtual node_handle _compute(node_handle node, int level);
 };
 
 MEDDLY::select_MT
@@ -95,11 +103,11 @@ MEDDLY::select_MT
 
 void MEDDLY::select_MT::computeDDEdge(const dd_edge &arg, dd_edge &res)
 {
-  node_handle result = compute(arg.getNode(), resF->getNumVariables());
+  node_handle result = _compute(arg.getNode(), resF->getNumVariables());
   res.set(result);
 }
 
-MEDDLY::node_handle MEDDLY::select_MT::compute(node_handle a, int level)
+MEDDLY::node_handle MEDDLY::select_MT::_compute(node_handle a, int level)
 {
   // Check terminals
   if (argF->isTerminalNode(a) && level == 0) {
@@ -119,7 +127,7 @@ MEDDLY::node_handle MEDDLY::select_MT::compute(node_handle a, int level)
   // recurse
   int nz = rand() % A->getNNZs();
   nb->i_ref(0) = A->i(nz);
-  nb->d_ref(0) = compute(A->d(nz), level - 1);
+  nb->d_ref(0) = _compute(A->d(nz), level - 1);
 
   // Cleanup
   unpacked_node::recycle(A);
@@ -138,7 +146,7 @@ class MEDDLY::select_EVPlus : public select {
   public:
     select_EVPlus(const unary_opname* oc, expert_forest* arg, expert_forest* res);
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
-    virtual void compute(long aev, node_handle a, int level, long& bev, node_handle& b);
+    virtual void _compute(long aev, node_handle a, int level, long& bev, node_handle& b);
 };
 
 MEDDLY::select_EVPlus
@@ -155,11 +163,11 @@ void MEDDLY::select_EVPlus::computeDDEdge(const dd_edge &arg, dd_edge &res)
   node_handle b = 0;
   long aev = 0;
   arg.getEdgeValue(aev);
-  compute(aev, arg.getNode(), resF->getNumVariables(), bev, b);
+  _compute(aev, arg.getNode(), resF->getNumVariables(), bev, b);
   res.set(b, bev);
 }
 
-void MEDDLY::select_EVPlus::compute(long aev, node_handle a, int level, long& bev, node_handle& b)
+void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& bev, node_handle& b)
 {
   // Check terminals
   if (argF->isTerminalNode(a) && level == 0) {
@@ -194,7 +202,7 @@ void MEDDLY::select_EVPlus::compute(long aev, node_handle a, int level, long& be
 
   long tev = 0;
   node_handle t = 0;
-  compute(aev + A->ei(nz), A->d(nz), level - 1, tev, t);
+  _compute(aev + A->ei(nz), A->d(nz), level - 1, tev, t);
   nb->d_ref(0) = t;
   nb->setEdge(0, tev);
 

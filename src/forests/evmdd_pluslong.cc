@@ -44,18 +44,13 @@ MEDDLY::evmdd_pluslong
 MEDDLY::evmdd_pluslong::~evmdd_pluslong()
 { }
 
-void MEDDLY::evmdd_pluslong::createEdge(int val, dd_edge &e)
-{
-  createEdge((long)val, e);
-}
-
 void MEDDLY::evmdd_pluslong::createEdge(long val, dd_edge &e)
 {
   createEdgeTempl<OP, long>(val, e);
 }
 
 void MEDDLY::evmdd_pluslong
-::createEdge(const int* const* vlist, const int* terms, int N, dd_edge &e)
+::createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e)
 {
   // binary_operation* unionOp = getOperation(PLUS, this, this, this);
   binary_operation* unionOp = 0;  // for now
@@ -99,7 +94,7 @@ void MEDDLY::evmdd_pluslong
 }
 
 void MEDDLY::evmdd_pluslong
-::createEdgeForVar(int vh, bool vp, const int* terms, dd_edge& a)
+::createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 {
   int sz = this->getVariableSize(vh);
 
@@ -113,14 +108,6 @@ void MEDDLY::evmdd_pluslong
   delete[] terms_long;
 }
 
-void MEDDLY::evmdd_pluslong
-::evaluate(const dd_edge &f, const int* vlist, int &term) const
-{
-  // TODO: Redesign interface
-  long lterm = Inf<long>();
-  evaluate(f, vlist, lterm);
-  term = lterm;
-}
 
 void MEDDLY::evmdd_pluslong
 ::evaluate(const dd_edge &f, const int* vlist, long &term) const

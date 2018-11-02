@@ -28,8 +28,8 @@
 
 #include <iostream>
 #include <string.h>
-#include "meddly.h"
-#include "meddly_expert.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
 
 using namespace MEDDLY;
 
@@ -41,7 +41,7 @@ using namespace MEDDLY;
 // #include "operation_ext.h"
 
 // Timer class
-#include "timer.h"
+#include "../src/timer.h"
 
 
 
@@ -52,7 +52,7 @@ using namespace MEDDLY;
 #if USE_REALS
   typedef float element_type;
 #else
-  typedef int element_type;
+  typedef long element_type;
 #endif
 
 
@@ -398,13 +398,17 @@ int main(int argc, char *argv[])
   if (true) {
     enumerator beginIter(result);
     const int* element = beginIter.getAssignments();
+#if 0
     const int* curr = 0;
     const int* end = 0;
+#endif
 
     while (beginIter) {
       // Print minterm
+#if 0
       curr = element + nVariables;
       end = element + 1;
+#endif
       printf("[%d", element[1]);
       for (int i=2; i<=nVariables; i++) printf(" %d", element[i]);
       printf("]\n");

@@ -45,47 +45,70 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     virtual ~generic_binary_mdd();
 
   public:
+#ifdef OLD_OP_CT
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle *entryData) const;
+    virtual void showEntry(output &strm, const node_handle *entryData, bool key_only) const;
+#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual node_handle compute(node_handle a, node_handle b);
+    virtual node_handle compute_normal(node_handle a, node_handle b);
+    virtual node_handle compute_ext(node_handle a, node_handle b);
 
   protected:
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
 #endif
+#endif
 
-    inline compute_table::search_key* 
+    inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-      compute_table::search_key* CTsrch = useCTkey();
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->reset();
       if (can_commute && a > b) {
-        CTsrch->writeNH(b);
-        CTsrch->writeNH(a);
+        CTsrch->writeN(b);
+        CTsrch->writeN(a);
       } else {
-        CTsrch->writeNH(a);
-        CTsrch->writeNH(b);
+        CTsrch->writeN(a);
+        CTsrch->writeN(b);
       }
-      compute_table::search_result& cacheFind = CT->find(CTsrch);
+#ifdef OLD_OP_CT
+      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      c = resF->linkNode(cacheFind.readNH());
-      doneCTkey(CTsrch);
+      c = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      c = resF->linkNode(CTresult[0].readN());
+#endif
+      CT0->recycle(CTsrch);
       return 0;
     }
 
-    inline void saveResult(compute_table::search_key* K, 
+    inline void saveResult(compute_table::entry_key* K, 
       node_handle a, node_handle b, node_handle c) 
     {
+#ifdef OLD_OP_CT
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(K);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      resF->cacheNode(c);
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(c);
+      CT0->addEntry(K, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeN(c);
+      CT0->addEntry(K, CTresult[0]);
+#endif
     }
 
   protected:
@@ -106,50 +129,75 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     virtual ~generic_binary_mxd();
 
   public:
+#ifdef OLD_OP_CT
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle *entryData) const;
+    virtual void showEntry(output &strm, const node_handle *entryData, bool key_only) const;
+#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual node_handle compute(node_handle a, node_handle b);
+    virtual node_handle compute_normal(node_handle a, node_handle b);
+    virtual node_handle compute_ext(node_handle a, node_handle b);
 
   protected:
     node_handle compute_r(int i, int k, node_handle a, node_handle b);
+    node_handle compute_r_normal(int i, int k, node_handle a, node_handle b);
+    node_handle compute_r_ext(int i, int k, node_handle a, node_handle b);
 
   protected:
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
 #endif
+#endif
 
-    inline compute_table::search_key* 
+    inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-      compute_table::search_key* CTsrch = useCTkey();
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->reset();
       if (can_commute && a > b) {
-        CTsrch->writeNH(b);
-        CTsrch->writeNH(a);
+        CTsrch->writeN(b);
+        CTsrch->writeN(a);
       } else {
-        CTsrch->writeNH(a);
-        CTsrch->writeNH(b);
+        CTsrch->writeN(a);
+        CTsrch->writeN(b);
       }
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+#ifdef OLD_OP_CT
+      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      c = resF->linkNode(cacheFind.readNH());
-      doneCTkey(CTsrch);
+      c = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      c = resF->linkNode(CTresult[0].readN());
+#endif
+      CT0->recycle(CTsrch);
       return 0;
     }
 
-    inline void saveResult(compute_table::search_key* Key, 
+    inline void saveResult(compute_table::entry_key* Key, 
       node_handle a, node_handle b, node_handle c) 
     {
+#ifdef OLD_OP_CT
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      resF->cacheNode(c);
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(c);
+      CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeN(c);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
     }
 
   protected:
@@ -169,48 +217,69 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     virtual ~generic_binbylevel_mxd();
 
   public:
+#ifdef OLD_OP_CT
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle *entryData) const;
+    virtual void showEntry(output &strm, const node_handle *entryData, bool key_only) const;
+#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual node_handle compute(int level, node_handle a, node_handle b);
 
   protected:
+#ifdef OLD_OP_CT
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
 #endif
+#endif
 
-    inline compute_table::search_key* 
+    inline compute_table::entry_key* 
     findResult(int k, node_handle a, node_handle b, node_handle &c) 
     {
-      compute_table::search_key* CTsrch = useCTkey();
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->reset();
-      CTsrch->write(k);
+      CTsrch->writeI(k);
       if (can_commute && a > b) {
-        CTsrch->writeNH(b);
-        CTsrch->writeNH(a);
+        CTsrch->writeN(b);
+        CTsrch->writeN(a);
       } else {
-        CTsrch->writeNH(a);
-        CTsrch->writeNH(b);
+        CTsrch->writeN(a);
+        CTsrch->writeN(b);
       }
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+#ifdef OLD_OP_CT
+      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      c = resF->linkNode(cacheFind.readNH());
-      doneCTkey(CTsrch);
+      c = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      c = resF->linkNode(CTresult[0].readN());
+#endif
+      CT0->recycle(CTsrch);
       return 0;
     }
 
-    inline void saveResult(compute_table::search_key* Key,
+    inline void saveResult(compute_table::entry_key* Key,
       int k, node_handle a, node_handle b, node_handle c) 
     {
+#ifdef OLD_OP_CT
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      resF->cacheNode(c);
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(c);
+      CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeN(c);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
     }
 
     node_handle compute_r(int i, int level, node_handle a, node_handle b);
@@ -232,6 +301,7 @@ class MEDDLY::generic_binary_ev : public binary_operation {
   protected:
     virtual ~generic_binary_ev();
 
+#ifdef OLD_OP_CT
   public:
     virtual void discardEntry(const node_handle* entryData);
 
@@ -240,6 +310,7 @@ class MEDDLY::generic_binary_ev : public binary_operation {
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
+#endif
 #endif
 };
 
@@ -254,46 +325,67 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     virtual ~generic_binary_evplus();
 
   public:
-    virtual void showEntry(output &strm, const node_handle *entryData) const;
+#ifdef OLD_OP_CT
+    virtual void showEntry(output &strm, const node_handle *entryData, bool key_only) const;
+#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual void compute(long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
 
   protected:
-    virtual compute_table::search_key* findResult(long aev, node_handle a,
+    virtual compute_table::entry_key* findResult(long aev, node_handle a,
       long bev, node_handle b, long& cev, node_handle &c)
     {
-      compute_table::search_key* CTsrch = useCTkey();
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->reset();
       if (can_commute && a > b) {
-        CTsrch->write(bev);
-        CTsrch->writeNH(b);
-        CTsrch->write(aev);
-        CTsrch->writeNH(a);
+        CTsrch->writeL(bev);
+        CTsrch->writeN(b);
+        CTsrch->writeL(aev);
+        CTsrch->writeN(a);
       } else {
-        CTsrch->write(aev);
-        CTsrch->writeNH(a);
-        CTsrch->write(bev);
-        CTsrch->writeNH(b);
+        CTsrch->writeL(aev);
+        CTsrch->writeN(a);
+        CTsrch->writeL(bev);
+        CTsrch->writeN(b);
       }
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+#ifdef OLD_OP_CT
+      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      cacheFind.read(cev);
-      c = resF->linkNode(cacheFind.readNH());
-      doneCTkey(CTsrch);
+      cev = cacheFind.readL();
+      c = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      cev = CTresult[0].readL();
+      c = resF->linkNode(CTresult[0].readN());
+#endif
+      CT0->recycle(CTsrch);
       return 0;
     }
 
-    virtual void saveResult(compute_table::search_key* Key,
+    virtual void saveResult(compute_table::entry_key* Key,
       long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
     {
+#ifdef OLD_OP_CT
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResult(cev);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      resF->cacheNode(c);
+      static compute_table::entry_result result(1 + sizeof(long)/sizeof(node_handle));
+      result.reset();
+      result.writeL(cev);
+      result.writeN(c);
+      CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeL(cev);
+      CTresult[0].writeN(c);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
     }
 
   protected:
@@ -314,7 +406,9 @@ class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
     virtual ~generic_binary_evplus_mxd();
 
   public:
-    virtual void showEntry(output &strm, const node_handle *entryData) const;
+#ifdef OLD_OP_CT
+    virtual void showEntry(output &strm, const node_handle *entryData, bool key_only) const;
+#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual void compute(long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
@@ -323,40 +417,59 @@ class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
     void compute_r(int in, int level, long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
 
   protected:
-    virtual compute_table::search_key* findResult(long aev, node_handle a,
+    virtual compute_table::entry_key* findResult(long aev, node_handle a,
       long bev, node_handle b, long& cev, node_handle &c)
     {
-      compute_table::search_key* CTsrch = useCTkey();
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->reset();
       if (can_commute && a > b) {
-        CTsrch->write(bev);
-        CTsrch->writeNH(b);
-        CTsrch->write(aev);
-        CTsrch->writeNH(a);
+        CTsrch->writeL(bev);
+        CTsrch->writeN(b);
+        CTsrch->writeL(aev);
+        CTsrch->writeN(a);
       } else {
-        CTsrch->write(aev);
-        CTsrch->writeNH(a);
-        CTsrch->write(bev);
-        CTsrch->writeNH(b);
+        CTsrch->writeL(aev);
+        CTsrch->writeN(a);
+        CTsrch->writeL(bev);
+        CTsrch->writeN(b);
       }
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+#ifdef OLD_OP_CT
+      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      cacheFind.read(cev);
-      c = resF->linkNode(cacheFind.readNH());
-      doneCTkey(CTsrch);
+      cev = cacheFind.readL();
+      c = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      cev = CTresult[0].readL();
+      c = resF->linkNode(CTresult[0].readN());
+#endif
+      CT0->recycle(CTsrch);
       return 0;
     }
 
-    virtual void saveResult(compute_table::search_key* Key,
+    virtual void saveResult(compute_table::entry_key* Key,
       long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
     {
+#ifdef OLD_OP_CT
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResult(cev);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      resF->cacheNode(c);
+      static compute_table::entry_result result(1 + sizeof(long)/sizeof(node_handle));
+      result.reset();
+      result.writeL(cev);
+      result.writeN(c);
+      CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeL(cev);
+      CTresult[0].writeN(c);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
     }
 
   protected:
@@ -377,7 +490,9 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
     virtual ~generic_binary_evtimes();
 
   public:
-    virtual void showEntry(output &strm, const node_handle *entryData) const;
+#ifdef OLD_OP_CT
+    virtual void showEntry(output &strm, const node_handle *entryData, bool key_only) const;
+#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual void compute(float aev, node_handle a, float bev, node_handle b, 
@@ -387,40 +502,59 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
       float bev, node_handle b, float& cev, node_handle& c);
 
   protected:
-    inline compute_table::search_key* findResult(float aev, node_handle a, 
+    inline compute_table::entry_key* findResult(float aev, node_handle a, 
       float bev, node_handle b, float& cev, node_handle &c) 
     {
-      compute_table::search_key* CTsrch = useCTkey();
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->reset();
       if (can_commute && a > b) {
-        CTsrch->write(bev);
-        CTsrch->writeNH(b);
-        CTsrch->write(aev);
-        CTsrch->writeNH(a);
+        CTsrch->writeF(bev);
+        CTsrch->writeN(b);
+        CTsrch->writeF(aev);
+        CTsrch->writeN(a);
       } else {
-        CTsrch->write(aev);
-        CTsrch->writeNH(a);
-        CTsrch->write(bev);
-        CTsrch->writeNH(b);
+        CTsrch->writeF(aev);
+        CTsrch->writeN(a);
+        CTsrch->writeF(bev);
+        CTsrch->writeN(b);
       }
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+#ifdef OLD_OP_CT
+      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      cacheFind.read(cev);
-      c = resF->linkNode(cacheFind.readNH());
-      doneCTkey(CTsrch);
+      cev = cacheFind.readF();
+      c = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      cev = CTresult[0].readF();
+      c = resF->linkNode(CTresult[0].readN());
+#endif
+      CT0->recycle(CTsrch);
       return 0;
     }
 
-    inline void saveResult(compute_table::search_key* Key, float aev, 
+    inline void saveResult(compute_table::entry_key* Key, float aev, 
       node_handle a, float bev, node_handle b, float cev, node_handle c) 
     {
+#ifdef OLD_OP_CT
       arg1F->cacheNode(a);
       arg2F->cacheNode(b);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResult(cev);
-      entry.writeResultNH(resF->cacheNode(c));
-      CT->addEntry();
+      resF->cacheNode(c);
+      static compute_table::entry_result result(2);
+      result.reset();
+      result.writeF(cev);
+      result.writeN(c);
+      CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeF(cev);
+      CTresult[0].writeN(c);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
     }
 
   protected:

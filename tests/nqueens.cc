@@ -23,7 +23,7 @@
     our expectations.
 */
 
-#include "meddly.h"
+#include "../src/meddly.h"
 
 using namespace MEDDLY;
 
@@ -33,7 +33,7 @@ const long solutions[] = {
   0, 1, 0, 0, 2, 10, 4, 40, 92, 352, 724, 2680, 14200, 73712, 365596
 };
 
-int* scratch;
+long* scratch;
 
 #define LINEAR_INTERSECTIONS
 #ifdef  LINEAR_INTERSECTIONS
@@ -104,7 +104,7 @@ void createQueenNodes(forest* f, int q, int N, dd_edge &col, dd_edge &cp, dd_edg
 {
   assert(q>0);
   assert(q<=N);
-  f->createEdgeForVar(q, false, col);
+  f->createEdgeForVar(long(q), false, col);
   for (int i=0; i<N; i++) {
     scratch[i] = i+q;
   }
@@ -120,11 +120,13 @@ long buildQueenSolutions(int N)
   printf("Building solutions for %d", N);
   fflush(stdout);
 
+  int* varsizes = new int[N];
   for (int i=0; i<N; i++) {
-    scratch[i] = N;
+    varsizes[i] = N;
   }
-  domain* d = createDomainBottomUp(scratch, N);
+  domain* d = createDomainBottomUp(varsizes, N);
   assert(d);
+  delete[] varsizes;
   forest::policies p(false);
   p.setPessimistic();
   forest* f = 
@@ -145,7 +147,7 @@ long buildQueenSolutions(int N)
     dgm[i] = new dd_edge(f);
     createQueenNodes(f, i+1, N, *col[i], *dgp[i], *dgm[i]);
     constr[i] = new dd_edge(f);
-    f->createEdge(int(1), *constr[i]);
+    f->createEdge(long(1), *constr[i]);
   }
   constr[N] = 0;
 
@@ -197,7 +199,7 @@ long buildQueenSolutions(int N)
 int main()
 {
   initialize();
-  scratch = new int[N_HIGH+1];
+  scratch = new long[N_HIGH+1];
 
   for (int i=N_LOW; i<=N_HIGH; i++) {
     long sols = buildQueenSolutions(i);

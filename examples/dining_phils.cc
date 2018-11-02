@@ -93,10 +93,10 @@
   #include <gmp.h>
 #endif
 
-#include "meddly.h"
-#include "meddly_expert.h"
-#include "timer.h"
-#include "loggers.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
+#include "../src/timer.h"
+#include "../src/loggers.h"
 
 
 using namespace MEDDLY;
@@ -120,6 +120,7 @@ struct switches {
   // bool chaining;
   bool printReachableStates;
   varorder vord;
+  bool build_pdf;
 
 public:
   switches() {
@@ -129,6 +130,7 @@ public:
     // chaining = true;
     printReachableStates = false;
     vord = fpfp;
+    build_pdf = false;
   }
 };
 
@@ -710,6 +712,10 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
         double(counter), start.get_last_interval()/double(1000000.0));
   }
 
+  if (sw.build_pdf) {
+    reachableStates.writePicture("out", "pdf");
+  }
+
   /*
     Next will be cleanup.
     Log that.
@@ -744,8 +750,11 @@ int usage(const char* who)
   printf("\t-dfs:       use fastest saturation (currently, -msat)\n");
   printf("\t-esat:      use saturation by events\n");
   printf("\t-ksat:      use saturation by levels\n");
-  printf("\t-msat:      use monolithic saturation\n");
-  printf("\t -l lfile:  Write logging information to specified file\n\n");
+  printf("\t-msat:      use monolithic saturation\n\n");
+
+  printf("\t-l lfile:   Write logging information to specified file\n");
+  printf("\t-pdf:       Write MDD for reachable states to out.pdf\n\n");
+
   printf("\t-ofpfp:     (default) Variable order: fork, phil, fork, phil, ...\n");
   printf("\t-opfpf:     Variable order: phil, fork, phil, fork, ...\n");
   printf("\t-oppff:     Variable order: phil, ..., phil, fork, ..., fork\n");
@@ -816,6 +825,10 @@ int main(int argc, char *argv[])
     if (strcmp("-l", argv[i])==0) {
       lfile = argv[i+1];
       i++;
+      continue;
+    }
+    if (strcmp("-pdf", argv[i])==0) {
+      sw.build_pdf = true;
       continue;
     }
 

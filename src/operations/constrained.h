@@ -27,15 +27,19 @@ namespace MEDDLY {
   class common_constrained;
 
   class constrained_bfs_opname;
-  class constrained_bckwd_bfs;
+  class constrained_bckwd_bfs_evplus;
 
   class constrained_dfs_opname;
-  class constrained_bckwd_dfs;
+  class constrained_dfs_mt;
+  class constrained_forwd_dfs_mt;
+  class constrained_bckwd_dfs_mt;
+  class constrained_bckwd_dfs_evplus;
 
-  //class constraint_sat_opname;
-  class constrained_saturation;
+  class constrained_saturation_mt;
+  class constrained_saturation_evplus;
 
   constrained_opname* initConstrainedBFSBackward();
+  constrained_opname* initConstrainedDFSForward();
   constrained_opname* initConstrainedDFSBackward();
 }
 
@@ -51,8 +55,13 @@ protected:
   virtual bool checkForestCompatibility() const;
 
 public:
+#ifdef OLD_OP_CT
   common_constrained(const constrained_opname* code, int kl, int al,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+#else
+  common_constrained(const constrained_opname* code, unsigned slots,
+    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+#endif
   ~common_constrained();
 };
 
@@ -66,7 +75,7 @@ public:
   virtual specialized_operation* buildOperation(arguments* a) const;
 };
 
-class MEDDLY::constrained_bckwd_bfs: public common_constrained
+class MEDDLY::constrained_bckwd_bfs_evplus: public common_constrained
 {
 protected:
   binary_operation* imageOp;
@@ -75,12 +84,14 @@ protected:
 
   void iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
+#ifdef OLD_OP_CT
   virtual bool isStaleEntry(const node_handle* entryData);
   virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(output &strm, const node_handle* entryData) const;
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
+#endif
 
 public:
-  constrained_bckwd_bfs(const constrained_opname* code,
+  constrained_bckwd_bfs_evplus(const constrained_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
   virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
@@ -96,10 +107,114 @@ public:
   virtual specialized_operation* buildOperation(arguments* a) const;
 };
 
-class MEDDLY::constrained_bckwd_dfs: public common_constrained
+class MEDDLY::constrained_dfs_mt: public common_constrained
 {
 protected:
+#ifdef OLD_OP_CT
   static const int NODE_INDICES_IN_KEY[4];
+#endif
+
+  binary_operation* mxdDifferenceOp;
+  binary_operation* mxdIntersectionOp;
+  binary_operation* unionOp;
+
+  node_handle* splits;
+
+  compute_table::entry_key* findResult(node_handle a, node_handle b, node_handle r, node_handle& c);
+  void saveResult(compute_table::entry_key* key,
+    node_handle a, node_handle b, node_handle r, node_handle c);
+
+  void splitMxd(node_handle mxd);
+
+#ifdef OLD_OP_CT
+  virtual bool isStaleEntry(const node_handle* data);
+  virtual void discardEntry(const node_handle* data);
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
+#endif
+
+public:
+  constrained_dfs_mt(const constrained_opname* code,
+    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+
+  virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
+  void _compute(node_handle a, node_handle b, node_handle r, node_handle& c);
+
+  virtual void saturateHelper(node_handle a, unpacked_node& nb) = 0;
+};
+
+class MEDDLY::constrained_forwd_dfs_mt: public constrained_dfs_mt
+{
+protected:
+  void recFire(node_handle a, node_handle b, node_handle r, node_handle& c);
+
+public:
+  constrained_forwd_dfs_mt(const constrained_opname* code,
+    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+
+  virtual void saturateHelper(node_handle a, unpacked_node& nb) override;
+};
+
+class MEDDLY::constrained_bckwd_dfs_mt: public constrained_dfs_mt
+{
+protected:
+  void recFire(node_handle a, node_handle b, node_handle r, node_handle& c);
+
+public:
+  constrained_bckwd_dfs_mt(const constrained_opname* code,
+    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+
+  virtual void saturateHelper(node_handle a, unpacked_node& nb) override;
+};
+
+class MEDDLY::constrained_saturation_mt: public specialized_operation
+{
+protected:
+#ifdef OLD_OP_CT
+  int NODE_INDICES_IN_KEY[3];
+#endif
+
+  constrained_dfs_mt* parent;
+
+  expert_forest* consF;
+  expert_forest* argF;
+  expert_forest* resF;
+
+  virtual ~constrained_saturation_mt();
+
+  // Check if the variables orders of relevant forests are compatible
+  virtual bool checkForestCompatibility() const;
+
+  bool checkTerminals(node_handle a, node_handle b, node_handle& c);
+
+  compute_table::entry_key* findResult(node_handle a, node_handle b, int level, node_handle &c);
+  void saveResult(compute_table::entry_key* Key,
+    node_handle a, node_handle b, int level, node_handle c);
+
+#ifdef OLD_OP_CT
+  virtual bool isStaleEntry(const node_handle* data);
+  virtual void discardEntry(const node_handle* data);
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
+#endif
+
+public:
+  constrained_saturation_mt(constrained_dfs_mt* p,
+    expert_forest* cons, expert_forest* arg, expert_forest* res);
+
+  bool matches(const expert_forest* arg1, const expert_forest* arg2,
+    const expert_forest* res) const;
+
+  // high-level front-end
+  void saturate(node_handle a, node_handle b, node_handle& c);
+
+  void saturate(node_handle a, node_handle b, int level, node_handle& c);
+};
+
+class MEDDLY::constrained_bckwd_dfs_evplus: public common_constrained
+{
+protected:
+#ifdef OLD_OP_CT
+  static const int NODE_INDICES_IN_KEY[4];
+#endif
 
   binary_operation* mxdDifferenceOp;
   binary_operation* mxdIntersectionOp;
@@ -107,57 +222,63 @@ protected:
 
   node_handle* splits;
 
-  compute_table::search_key* findResult(long aev, node_handle a,
-    long bev, node_handle b, node_handle c, long& dev, node_handle& d);
-  void saveResult(compute_table::search_key* key,
-    long aev, node_handle a, long bev, node_handle b, node_handle c, long dev, node_handle d);
+  compute_table::entry_key* findResult(long aev, node_handle a,
+    long bev, node_handle b, node_handle r, long& dev, node_handle& d);
+  void saveResult(compute_table::entry_key* key,
+    long aev, node_handle a, long bev, node_handle b, node_handle r, long dev, node_handle d);
 
   void splitMxd(node_handle mxd);
   void recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
+#ifdef OLD_OP_CT
   virtual bool isStaleEntry(const node_handle* data);
   virtual void discardEntry(const node_handle* data);
-  virtual void showEntry(output &strm, const node_handle *data) const;
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
+#endif
 
 public:
-  constrained_bckwd_dfs(const constrained_opname* code,
+  constrained_bckwd_dfs_evplus(const constrained_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
   virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
-  void compute(int aev, node_handle a, int bev, node_handle b, node_handle r, long& cev, node_handle& c);
+  void _compute(int aev, node_handle a, int bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
   void saturateHelper(long aev, node_handle a, unpacked_node& nb);
 };
 
-class MEDDLY::constrained_saturation: public specialized_operation
+class MEDDLY::constrained_saturation_evplus: public specialized_operation
 {
 protected:
+#ifdef OLD_OP_CT
   int NODE_INDICES_IN_KEY[3];
+#endif
 
-  constrained_bckwd_dfs* parent;
+  constrained_bckwd_dfs_evplus* parent;
 
   expert_forest* consF;
   expert_forest* argF;
   expert_forest* resF;
 
-  virtual ~constrained_saturation();
+  virtual ~constrained_saturation_evplus();
 
   // Check if the variables orders of relevant forests are compatible
   virtual bool checkForestCompatibility() const;
 
   bool checkTerminals(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c);
 
-  compute_table::search_key* findResult(long aev, node_handle a,
+  compute_table::entry_key* findResult(long aev, node_handle a,
     long bev, node_handle b, int level, long& cev, node_handle &c);
-  void saveResult(compute_table::search_key* Key,
+  void saveResult(compute_table::entry_key* Key,
     long aev, node_handle a, long bev, node_handle b, int level, long cev, node_handle c);
 
+#ifdef OLD_OP_CT
   virtual bool isStaleEntry(const node_handle* data);
   virtual void discardEntry(const node_handle* data);
-  virtual void showEntry(output &strm, const node_handle *data) const;
+  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
+#endif
 
 public:
-  constrained_saturation(constrained_bckwd_dfs* p,
+  constrained_saturation_evplus(constrained_bckwd_dfs_evplus* p,
     expert_forest* cons, expert_forest* arg, expert_forest* res);
 
   bool matches(const expert_forest* arg1, const expert_forest* arg2,

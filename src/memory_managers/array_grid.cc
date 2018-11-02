@@ -111,7 +111,7 @@ namespace MEDDLY {
   class array_plus_grid : public hole_manager<INT> {
 
     public:
-      array_plus_grid(const char* n, forest::statset &stats);
+      array_plus_grid(const char* n, memstats &stats);
       virtual ~array_plus_grid();
 
       virtual node_address requestChunk(size_t &numSlots);
@@ -276,7 +276,7 @@ namespace MEDDLY {
 // ******************************************************************
 
 template <class INT>
-MEDDLY::array_plus_grid<INT>::array_plus_grid(const char* n, forest::statset &stats)
+MEDDLY::array_plus_grid<INT>::array_plus_grid(const char* n, memstats &stats)
  : hole_manager<INT>(n, stats)
 {
   // small hole stuff
@@ -364,9 +364,9 @@ MEDDLY::array_plus_grid<INT>::requestChunk(size_t &numSlots)
     //
     if (0==moveCurrentToRow(numSlots, grid_current)) {
       MEDDLY_DCASSERT(grid_current);
-      MEDDLY_DCASSERT(getHoleSize(grid_current) == numSlots);
+      MEDDLY_DCASSERT(size_t(getHoleSize(grid_current)) == numSlots);
       // It's easier to remove a non-index node, try that first
-      h = Next(grid_current);
+      h = node_address(Next(grid_current));
       if (0==h) {
         h = grid_current;
       }
@@ -388,9 +388,9 @@ MEDDLY::array_plus_grid<INT>::requestChunk(size_t &numSlots)
   //
   if (h) {
     stopTrackingHole(h);
-    MEDDLY_DCASSERT(getHoleSize(h) >= numSlots);
+    MEDDLY_DCASSERT(size_t(getHoleSize(h)) >= numSlots);
     memory_manager::incMemUsed(getHoleSize(h) * sizeof(INT));
-    size_t leftover_slots = getHoleSize(h) - numSlots;
+    size_t leftover_slots = size_t(getHoleSize(h)) - numSlots;
     if (leftover_slots > 0) {
       hole_manager<INT>::clearHole(h, numSlots); // otherwise we'll just merge them again
       recycleChunk(h+numSlots, leftover_slots);
@@ -437,7 +437,7 @@ void MEDDLY::array_plus_grid<INT>
   // Check to the left for another hole
   //
   if (isHole(h-1)) {
-    MEDDLY_DCASSERT(getHoleSize(h-1) < h);
+    MEDDLY_DCASSERT(node_address(getHoleSize(h-1)) < h);
     node_address hleft = h - getHoleSize(h-1);
 #ifdef MEMORY_TRACE_DETAILS
     printf("\tMerging to the left, holes %lu and %lu\n", hleft, h);
@@ -553,7 +553,7 @@ void MEDDLY::array_plus_grid<INT>
   hole_manager<INT>::showInternal(s);
 
   s << "\n  Non-empty medium hole lists:\n";
-  for (int i=0; i<LargeHoleSize; i++) {
+  for (INT i=0; i<LargeHoleSize; i++) {
     if (0==medium_hole_list[i]) continue;
     s << "    [size " << i << "]";
     INT prev = 0;
@@ -736,15 +736,15 @@ void MEDDLY::array_plus_grid<INT>
     INT right = Next(h);
 
     if (left) {
-      MEDDLY_DCASSERT(h == Next(left));
+      MEDDLY_DCASSERT(h == node_address(Next(left)));
       setNext(left, right);
     } else {
-      MEDDLY_DCASSERT(medium_hole_list[size] == h);
+      MEDDLY_DCASSERT(node_address(medium_hole_list[size]) == h);
       medium_hole_list[size] = right;
     }
 
     if (right) {
-      MEDDLY_DCASSERT(h == Prev(right));
+      MEDDLY_DCASSERT(h == node_address(Prev(right)));
       setPrev(right, left);
     }
 
@@ -758,7 +758,7 @@ void MEDDLY::array_plus_grid<INT>
   //
   // Is this a huge hole?  If so, remove from the huge hole list
   //
-  if (getHoleSize(h) > max_request) {
+  if (size_t(getHoleSize(h)) > max_request) {
 #ifdef MEMORY_TRACE_DETAILS
     printf("\tremoving from huge hole list %ld\n", long(huge_holes));
 #endif
@@ -766,15 +766,15 @@ void MEDDLY::array_plus_grid<INT>
     INT right = Next(h);
 
     if (left) {
-      MEDDLY_DCASSERT(h == Next(left));
+      MEDDLY_DCASSERT(h == node_address(Next(left)));
       setNext(left, right);
     } else {
-      MEDDLY_DCASSERT(huge_holes == h);
+      MEDDLY_DCASSERT(node_address(huge_holes) == h);
       huge_holes = right;
     }
 
     if (right) {
-      MEDDLY_DCASSERT(h == Prev(right));
+      MEDDLY_DCASSERT(h == node_address(Prev(right)));
       setPrev(right, left);
     }
 
@@ -805,11 +805,11 @@ void MEDDLY::array_plus_grid<INT>
 
     MEDDLY_DCASSERT(left);
 
-    MEDDLY_DCASSERT(h == Next(left));
+    MEDDLY_DCASSERT(h == node_address(Next(left)));
     setNext(left, right);
 
     if (right) {
-      MEDDLY_DCASSERT(h == Prev(right));
+      MEDDLY_DCASSERT(h == node_address(Prev(right)));
       setPrev(right, left);
     }
     return;
@@ -839,24 +839,24 @@ void MEDDLY::array_plus_grid<INT>
 
     INT above = Up(h);
     INT below = Down(h);
-    if (grid_current == h) {
+    if (node_address(grid_current) == h) {
       if (above)  grid_current = above;
       else        grid_current = below;
     }
 
     if (below) {
-      MEDDLY_DCASSERT(Up(below) == h);
+      MEDDLY_DCASSERT(node_address(Up(below)) == h);
       setUp(below, above);
     } else {
-      MEDDLY_DCASSERT(grid_bottom == h);
+      MEDDLY_DCASSERT(node_address(grid_bottom) == h);
       grid_bottom = above;
     }
 
     if (above) {
-      MEDDLY_DCASSERT(Down(above) == h);
+      MEDDLY_DCASSERT(node_address(Down(above)) == h);
       setDown(above, below);
     } else {
-      MEDDLY_DCASSERT(grid_top == h);
+      MEDDLY_DCASSERT(node_address(grid_top) == h);
       grid_top = below;
     }
 
@@ -876,7 +876,7 @@ void MEDDLY::array_plus_grid<INT>
   INT next = Next(h);
   MEDDLY_DCASSERT(next);
 
-  if (grid_current == h) {
+  if (node_address(grid_current) == h) {
     grid_current = next;
   }
   setPrev(next, 0);
@@ -884,18 +884,18 @@ void MEDDLY::array_plus_grid<INT>
   setDown(next, below);
 
   if (below) {
-    MEDDLY_DCASSERT(Up(below) == h);
+    MEDDLY_DCASSERT(node_address(Up(below)) == h);
     setUp(below, next);
   } else {
-    MEDDLY_DCASSERT(grid_bottom == h);
+    MEDDLY_DCASSERT(node_address(grid_bottom) == h);
     grid_bottom = next;
   }
 
   if (above) {
-    MEDDLY_DCASSERT(Down(above) == h);
+    MEDDLY_DCASSERT(node_address(Down(above)) == h);
     setDown(above, next);
   } else {
-    MEDDLY_DCASSERT(grid_top == h);
+    MEDDLY_DCASSERT(node_address(grid_top) == h);
     grid_top = next;
   }
 }
@@ -955,7 +955,7 @@ void MEDDLY::array_plus_grid<INT>
   //
   // Is this a huge hole?  If so, add it to the huge hole list
   //
-  if (getHoleSize(h) > max_request) {
+  if (size_t(getHoleSize(h)) > max_request) {
 #ifdef MEMORY_TRACE_DETAILS
     printf("\tadding to huge hole list %ld\n", long(huge_holes));
 #endif
@@ -1091,7 +1091,7 @@ MEDDLY::array_grid_style::~array_grid_style()
 
 MEDDLY::memory_manager*
 MEDDLY::array_grid_style::initManager(unsigned char granularity, 
-  unsigned char minsize, forest::statset &stats) const
+  unsigned char minsize, memstats &stats) const
 {
   if (sizeof(int) == granularity) {
     return new array_plus_grid <int>(getName(), stats);

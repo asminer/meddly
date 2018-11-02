@@ -118,7 +118,7 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   a_size = a_min_size;
   address = (node_header *) malloc(a_size * sizeof(node_header));
   if (0 == address) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  parent.stats.incMemAlloc(a_size * sizeof(node_header));
+  parent.mstats.incMemAlloc(a_size * sizeof(node_header));
   memset(address, 0, a_size * sizeof(node_header));
   a_last = a_next_shrink = 0;
   for (int i=0; i<8; i++) a_unused[i] = 0;
@@ -135,7 +135,7 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
 
 MEDDLY::node_headers::~node_headers()
 {
-  parent.stats.decMemAlloc(a_size * sizeof(node_header));
+  parent.mstats.decMemAlloc(a_size * sizeof(node_header));
 
   // Address array
   free(address);
@@ -162,7 +162,7 @@ void MEDDLY::node_headers::turnOffIncomingCounts()
 MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle() 
 {
   MEDDLY_DCASSERT(address);
-  parent.stats.incMemUsed(sizeof(node_header));
+  parent.mstats.incMemUsed(sizeof(node_header));
   node_handle found = 0;
   for (int i=a_lowest_index; i<8; i++) {
     // try the various lists
@@ -204,7 +204,7 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
   MEDDLY_DCASSERT(p>0);
   MEDDLY_DCASSERT(p<=a_last);
   MEDDLY_DCASSERT(0==address[p].cache_count);
-  parent.stats.decMemUsed(sizeof(node_header));
+  parent.mstats.decMemUsed(sizeof(node_header));
   deactivate(p);
 
   // Determine which list to add this into,
@@ -304,7 +304,7 @@ void MEDDLY::node_headers::expandHandleList()
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   address = new_address;
-  parent.stats.incMemAlloc(delta * sizeof(node_header));
+  parent.mstats.incMemAlloc(delta * sizeof(node_header));
   memset(address + a_size, 0, delta * sizeof(node_header));
   a_size += delta;
   a_next_shrink = a_size / 2;
@@ -363,7 +363,7 @@ void MEDDLY::node_headers::shrinkHandleList()
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   address = new_address;
-  parent.stats.decMemAlloc(delta * sizeof(node_header));
+  parent.mstats.decMemAlloc(delta * sizeof(node_header));
   a_size -= delta;
   a_next_shrink = a_size / 2;
   MEDDLY_DCASSERT(a_last < a_size);

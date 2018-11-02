@@ -37,10 +37,10 @@
 #include <cstdlib>
 #include <fstream>
 
-#include "meddly.h"
-#include "meddly_expert.h"
-#include "loggers.h"
-#include "timer.h"
+#include "../src/meddly.h"
+#include "../src/meddly_expert.h"
+#include "../src/loggers.h"
+#include "../src/timer.h"
 
 #include <vector>
 #include <map>
@@ -57,6 +57,7 @@ using namespace MEDDLY;
 int N;
 FILE* outfile;
 const char* lfile;
+bool build_pdf;
 
 dd_edge** qic;
 dd_edge** qidp;
@@ -442,7 +443,7 @@ void hasQueen(forest* f, int i, int j, dd_edge &e)
 
 void queenInRow(forest* f, int r, dd_edge &e)
 {
-  f->createEdge(int(0), e);
+  f->createEdge(long(0), e);
   if (r<0 || r>=N) return;
   for (int j=0; j<N; j++) {
     dd_edge tmp(f);
@@ -457,7 +458,7 @@ void queenInCol(forest* f, int c, dd_edge &e)
     e = *qic[c];
     return;
   }
-  f->createEdge(int(0), e);
+  f->createEdge(long(0), e);
   if (c<0 || c>=N) return;
   for (int i=0; i<N; i++) {
     dd_edge tmp(f);
@@ -473,7 +474,7 @@ void queenInDiagP(forest* f, int d, dd_edge &e)
     e = *qidp[d];
     return;
   }
-  f->createEdge(int(0), e);
+  f->createEdge(long(0), e);
   if (d<0 || d>=2*N-1) return;
   for (int i=0; i<N; i++) for (int j=0; j<N; j++) if (i+j==d) {
     dd_edge tmp(f);
@@ -489,7 +490,7 @@ void queenInDiagM(forest* f, int d, dd_edge &e)
     e = *qidm[d+N-1];
     return;
   }
-  f->createEdge(int(0), e);
+  f->createEdge(long(0), e);
   if (d<=-N || d>=N) return;
   for (int i=0; i<N; i++) for (int j=0; j<N; j++) if (i-j==d) {
     dd_edge tmp(f);
@@ -658,6 +659,7 @@ node_handle batchMultiply(
 
 bool processArgs(int argc, const char** argv, forest::policies &p)
 {
+  build_pdf = false;
   lfile = 0;
   p.setPessimistic();
   N = -1;
@@ -730,6 +732,10 @@ bool processArgs(int argc, const char** argv, forest::policies &p)
       i++;
       continue;
     }
+    if (strcmp("-pdf", argv[i])==0) {
+      build_pdf = true;
+      continue;
+    }
     N = atoi(argv[i]);
     break;
   }
@@ -754,7 +760,6 @@ int usage(const char* who)
     if ('/' == *ptr) name = ptr+1;
   }
   printf("Usage: %s <-opt|-pess> <-acc|-node_count|-cardinality> <-l lfile> N <outfile>\n\n",
-      name);
   printf("\t           N:  board dimension\n");
   printf("\t        -opt:  Optimistic node deletion\n");
   printf("\t       -pess:  Pessimistic node deletion (default)\n");
@@ -766,6 +771,7 @@ int usage(const char* who)
   printf("\t      -outer:  Apply heuristic when combining row constraints\n");
   printf("\t -monolithic:  Apply heuristic when combining all constraints using a single batch\n");
   printf("\t    -l lfile:  Write logging information to specified file\n");
+  printf("\t        -pdf:  Write MDD of solutions to out.pdf\n\n");
   printf("\t   <outfile>:  if specified, we write all solutions to this file\n\n");
   return 1;
 }
@@ -803,7 +809,7 @@ int main(int argc, const char** argv)
   }
 
   dd_edge num_queens(f);
-  f->createEdge(int(0), num_queens);
+  f->createEdge(long(0), num_queens);
   for (int i=0; i<N; i++) for (int j=0; j<N; j++) {
     dd_edge tmp(f);
     hasQueen(f, i, j, tmp);
@@ -837,7 +843,7 @@ int main(int argc, const char** argv)
 
     // Build all possible placements of q queens:
     dd_edge qqueens(f);
-    f->createEdge(q, qqueens);
+    f->createEdge(long(q), qqueens);
     apply(EQUAL, qqueens, num_queens, qqueens);
     solutions = qqueens;
 
@@ -1007,6 +1013,10 @@ int main(int argc, const char** argv)
       fprintf(outfile, "\n");
     } // for iter
     fprintf(outfile, "\n");
+  }
+
+  if (build_pdf) {
+    solutions.writePicture("out", "pdf");
   }
 
   if (LOG) LOG->newPhase(f, "Cleanup");

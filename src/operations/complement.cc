@@ -42,6 +42,8 @@ class MEDDLY::compl_mdd : public unary_operation {
   public:
     compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
@@ -49,36 +51,57 @@ class MEDDLY::compl_mdd : public unary_operation {
 #endif
 
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
+
+#endif // OLD_OP_CT
+
     virtual void computeDDEdge(const dd_edge& a, dd_edge& b);
 
   protected:
     node_handle compute_r(node_handle a);
 
-    inline compute_table::search_key* 
+    inline compute_table::entry_key* 
     findResult(node_handle a, node_handle &b) 
     {
-      compute_table::search_key* CTsrch = useCTkey();
+#ifdef OLD_OP_CT
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
       MEDDLY_DCASSERT(CTsrch);
-      CTsrch->reset();
-      CTsrch->writeNH(a);
-      compute_table::search_result &cacheFind = CT->find(CTsrch);
+      CTsrch->writeN(a);
+#ifdef OLD_OP_CT
+      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
       if (!cacheFind) return CTsrch;
-      b = resF->linkNode(cacheFind.readNH());
-      doneCTkey(CTsrch);
+      b = resF->linkNode(cacheFind.readN());
+#else
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      b = resF->linkNode(CTresult[0].readN());
+#endif
+      CT0->recycle(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::search_key* Key, 
+    inline node_handle saveResult(compute_table::entry_key* Key, 
       node_handle a, node_handle b) 
     {
+#ifdef OLD_OP_CT
       argF->cacheNode(a);
-      compute_table::entry_builder &entry = CT->startNewEntry(Key);
-      entry.writeResultNH(resF->cacheNode(b));
-      CT->addEntry();
+      resF->cacheNode(b);
+      static compute_table::entry_result result(1);
+      result.reset();
+      result.writeN(b);
+      CT0->addEntry(Key, result);
+#else
+      CTresult[0].reset();
+      CTresult[0].writeN(b);
+      CT0->addEntry(Key, CTresult[0]);
+#endif
       return b;
     }
 };
 
+#ifdef OLD_OP_CT
 MEDDLY::compl_mdd
 ::compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
  : unary_operation(oc, 1, 1, arg, res)
@@ -86,6 +109,20 @@ MEDDLY::compl_mdd
   // ct entry 0: input node
   // ct entry 1: output node
 }
+#else
+MEDDLY::compl_mdd
+::compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
+ : unary_operation(oc, 1, arg, res)
+{
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:N");
+  et->setForestForSlot(0, arg);
+  et->setForestForSlot(2, res);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::compl_mdd::isStaleEntry(const node_handle* data)
@@ -116,15 +153,28 @@ void MEDDLY::compl_mdd::discardEntry(const node_handle* data)
   resF->uncacheNode(data[1]);
 }
 
-void MEDDLY::compl_mdd::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::compl_mdd::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
-  strm  << "[" << getName() << "(" << long(data[0]) 
-        << "): " << long(data[1]) << "]";
+  strm  << "[" << getName() << "(" << long(data[0]) << "): ";
+  if (key_only) {
+    strm << "?]";
+  } else {
+    strm << long(data[1]) << "]";
+  }
 }
+
+#endif // OLD_OP_CT
 
 void MEDDLY::compl_mdd::computeDDEdge(const dd_edge& a, dd_edge& b) 
 {
-  int result = compute_r(a.getNode());
+  node_handle result = compute_r(a.getNode());
+  const int num_levels = resF->getDomain()->getNumVariables();
+  if (result != resF->getTransparentNode() && resF->isQuasiReduced() &&
+      resF->getNodeLevel(result) < num_levels) {
+    node_handle temp = ((mt_forest*)resF)->makeNodeAtLevel(num_levels, result);
+    resF->unlinkNode(result);
+    result = temp;
+  }
   b.set(result);
 }
 
@@ -139,7 +189,7 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
 
   // Check compute table
   node_handle b;
-  compute_table::search_key* Key = findResult(a, b);
+  compute_table::entry_key* Key = findResult(a, b);
   if (0==Key) return b;
 
   const int level = argF->getNodeLevel(a);
@@ -178,18 +228,24 @@ class MEDDLY::compl_mxd : public unary_operation {
   public:
     compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
+#ifdef OLD_OP_CT
+
 #ifndef USE_NODE_STATUS
     virtual bool isStaleEntry(const node_handle* entryData);
 #else
     virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
 #endif
     virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData) const;
+    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
+
+#endif // OLD_OP_CT
+
     virtual void computeDDEdge(const dd_edge& a, dd_edge& b);
 
     node_handle compute_r(int in, int k, node_handle a);
 };
 
+#ifdef OLD_OP_CT
 MEDDLY::compl_mxd
 ::compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
  : unary_operation(oc, 2, 1, arg, res)
@@ -198,6 +254,20 @@ MEDDLY::compl_mxd
   // ct entry 1: input node
   // ct entry 2: output node
 }
+#else
+MEDDLY::compl_mxd
+::compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
+ : unary_operation(oc, 1, arg, res)
+{
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "IN:N");
+  et->setForestForSlot(1, arg);
+  et->setForestForSlot(3, res);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
+
+#ifdef OLD_OP_CT
 
 #ifndef USE_NODE_STATUS
 bool MEDDLY::compl_mxd::isStaleEntry(const node_handle* data)
@@ -228,11 +298,17 @@ void MEDDLY::compl_mxd::discardEntry(const node_handle* data)
   resF->uncacheNode(data[2]);
 }
 
-void MEDDLY::compl_mxd::showEntry(output &strm, const node_handle* data) const
+void MEDDLY::compl_mxd::showEntry(output &strm, const node_handle* data, bool key_only) const
 {
-  strm  << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1])
-        << "): " << long(data[2]) << "]";
+  strm  << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
+  if (key_only) {
+    strm << "?]";
+  } else {
+    strm << long(data[2]) << "]";
+  }
 }
+
+#endif // OLD_OP_CT
 
 void MEDDLY::compl_mxd::computeDDEdge(const dd_edge& a, dd_edge& b) 
 {
@@ -255,20 +331,35 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
     );
   }
   // Check compute table
-  compute_table::search_key* CTsrch = useCTkey();
+#ifdef OLD_OP_CT
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
+#else
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+#endif
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->reset();
-  CTsrch->write(k);
-  CTsrch->writeNH(a);
-  compute_table::search_result &cacheFind = CT->find(CTsrch);
+  CTsrch->writeI(k);
+  CTsrch->writeN(a);
+#ifdef OLD_OP_CT
+  compute_table::entry_result& cacheFind = CT0->find(CTsrch);
   if (cacheFind) {
-    node_handle ans = cacheFind.readNH();
+    node_handle ans = cacheFind.readN();
 #ifdef DEBUG_MXD_COMPL
     fprintf(stderr, "\tin CT:   compl_mxd(%d, %d) : %d\n", ht, a, ans);
 #endif
-    doneCTkey(CTsrch);
+    CT0->recycle(CTsrch);
     return resF->linkNode(ans);
   }
+#else
+  CT0->find(CTsrch, CTresult[0]);
+  if (CTresult[0]) {
+    node_handle ans = CTresult[0].readN();
+#ifdef DEBUG_MXD_COMPL
+    fprintf(stderr, "\tin CT:   compl_mxd(%d, %d) : %d\n", ht, a, ans);
+#endif
+    CT0->recycle(CTsrch);
+    return resF->linkNode(ans);
+  }
+#endif
 
 #ifdef DEBUG_MXD_COMPL
   fprintf(stderr, "\tstarting compl_mxd(%d, %d)\n", ht, a);
@@ -311,12 +402,20 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
   node_handle result = resF->createReducedNode(in, C);
   if (k<0 && 1==nnz) canSave = false;
   if (canSave) {
+#ifdef OLD_OP_CT
     argF->cacheNode(a);
-    compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
-    entry.writeResultNH(resF->cacheNode(result));
-    CT->addEntry();
+    resF->cacheNode(result);
+    static compute_table::entry_result res(1);
+    res.reset();
+    res.writeN(result);
+    CT0->addEntry(CTsrch, res);
+#else
+    CTresult[0].reset();
+    CTresult[0].writeN(result);
+    CT0->addEntry(CTsrch, CTresult[0]);
+#endif
   } else {
-    doneCTkey(CTsrch);
+    CT0->recycle(CTsrch);
   }
   return result;
 }

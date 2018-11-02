@@ -23,7 +23,7 @@
 
 #include <iostream>
 #include <stdlib.h>
-#include "meddly.h"
+#include "../src/meddly.h"
 
 int main(int argc, const char** argv)
 {
