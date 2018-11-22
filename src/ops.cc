@@ -1738,7 +1738,7 @@ MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relat
       last_in_node_array = n_ID;
       n->setID(n_ID);
     }
-    mixRelF->createRelationNode(n);
+    //mixRelF->createRelationNode(n);
   }
   else //Delete the node
     {
