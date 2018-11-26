@@ -1,3 +1,17 @@
+
+# Top navigation
+# main:
+# - title: "About"
+#   url: "foo"
+# - title: "Getting Started"
+#   url: "foo"
+# - title: "Examples"
+#   url: "foo"
+# - title: "History"
+#   url: "foo"
+
+
+# Sidebar
 side:
   - title: "About"
     children:
@@ -20,6 +34,8 @@ side:
 
   - title: "History"
     children:
+      - title: "Complete history"
+        url: "/all_releases.html"
       - title: "Version 0.2.101"
         url: "/releases/0.2.101"
       - title: "Version 0.3.165"
@@ -50,5 +66,3 @@ side:
         url: "/releases/0.15.0"
       - title: "Since last release"
         url: "/releases/unreleased"
-      - title: "Complete history"
-        url: "/all_releases.html"
