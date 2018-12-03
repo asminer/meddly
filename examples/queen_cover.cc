@@ -759,7 +759,7 @@ int usage(const char* who)
   for (const char* ptr=who; *ptr; ptr++) {
     if ('/' == *ptr) name = ptr+1;
   }
-  printf("Usage: %s <-opt|-pess> <-acc|-node_count|-cardinality> <-l lfile> N <outfile>\n\n",
+  printf("Usage: %s <-opt|-pess> <-acc|-node_count|-cardinality> <-l lfile> N <outfile>\n\n", name);
   printf("\t           N:  board dimension\n");
   printf("\t        -opt:  Optimistic node deletion\n");
   printf("\t       -pess:  Pessimistic node deletion (default)\n");

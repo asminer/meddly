@@ -65,9 +65,10 @@ public:
 };
 
 MEDDLY::node_count_int::node_count_int(const unary_opname* oc, expert_forest* arg)
+#ifdef OLD_OP_CT
  : unary_operation(oc, 1, sizeof(long) / sizeof(node_handle), arg, INTEGER)
-{
-}
+ {
+ }
 
 bool MEDDLY::node_count_int::isStaleEntry(const node_handle* data)
 {
@@ -86,6 +87,16 @@ void MEDDLY::node_count_int::showEntry(output &strm, const node_handle* data) co
   strm  << "[" << getName() << "(" << long(data[0]) 
         << "): " << answer << "(L)]";
 }
+#else
+ : unary_operation(oc, 1, arg, INTEGER)
+{
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:I");
+  et->setForestForSlot(0, arg);
+  registerEntryType(0, et);
+  buildCTs();
+}
+#endif
+
 
 long MEDDLY::node_count_int::compute_r(node_handle a)
 {
@@ -95,6 +106,7 @@ long MEDDLY::node_count_int::compute_r(node_handle a)
   }
 
   // Check compute table
+#ifdef OLD_OP_CT
   compute_table::search_key* CTsrch = useCTkey();
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->reset();
@@ -106,14 +118,34 @@ long MEDDLY::node_count_int::compute_r(node_handle a)
     doneCTkey(CTsrch);
     return answer;
   }
+#else
+  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+  MEDDLY_DCASSERT(CTsrch);
+  CTsrch->writeN(a);
+  CT0->find(CTsrch, CTresult[0]);
+  if (CTresult[0]) {
+    long ans = CTresult[0].readI();
+#ifdef DEBUG_MXD_COMPL
+    fprintf(stderr, "\tin CT:   node_count(%ld) : %d\n", a, ans);
+#endif
+    CT0->recycle(CTsrch);
+    return ans;
+  }
+#endif
 
   long node_count = argF->getNodeCount(a);
 
   // Add entry to compute table
+#ifdef OLD_OP_CT
   argF->cacheNode(a);
   compute_table::entry_builder &entry = CT->startNewEntry(CTsrch);
   entry.writeResult(node_count);
   CT->addEntry();
+#else
+  CTresult[0].reset();
+  CTresult[0].writeI(node_count);
+  CT0->addEntry(CTsrch, CTresult[0]);
+#endif
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Node Count of node %d is %ld(L)\n", a, node_count);
