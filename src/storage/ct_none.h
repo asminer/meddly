@@ -163,8 +163,8 @@ namespace MEDDLY {
               case DOUBLE:
                         if (a[i].D != b[i].D) return 0;
                         continue;
-              case POINTER:
-                        if (a[i].P != b[i].P) return 0;
+              case GENERIC:
+                        if (a[i].G != b[i].G) return 0;
                         continue;
               case LONG:
                         if (a[i].L  != b[i].L) return 0;
@@ -1323,8 +1323,8 @@ unsigned MEDDLY::ct_none<MONOLITHIC, CHAINED>
 
         case DOUBLE:
                         MEDDLY_DCASSERT(sizeof(entry[i].D) == sizeof(entry[i].L));
-        case POINTER:
-                        MEDDLY_DCASSERT(sizeof(entry[i].P) == sizeof(entry[i].L));
+        case GENERIC:
+                        MEDDLY_DCASSERT(sizeof(entry[i].G) == sizeof(entry[i].L));
         case LONG:      
                         {
                           unsigned* hack = (unsigned*) (& (entry[i].L));
@@ -1384,8 +1384,8 @@ unsigned MEDDLY::ct_none<MONOLITHIC, CHAINED>
 
         case DOUBLE:
                         MEDDLY_DCASSERT(sizeof(entry[i].D) == sizeof(entry[i].L));
-        case POINTER:
-                        MEDDLY_DCASSERT(sizeof(entry[i].P) == sizeof(entry[i].L));
+        case GENERIC:
+                        MEDDLY_DCASSERT(sizeof(entry[i].G) == sizeof(entry[i].L));
         case LONG:      {
                           unsigned* hack = (unsigned*) (& (entry[i].L));
                           H.push(hack[0], hack[1]);
@@ -1542,9 +1542,8 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
       f->uncacheNode( ptr[i].N );
       continue;
     }
-    if (POINTER == t) {
-      ct_object* P = (ct_object*) ptr[i].P;
-      delete P;
+    if (GENERIC == t) {
+      delete ptr[i].G;
       continue;
     }
     MEDDLY_DCASSERT( t != NODE );
@@ -1563,9 +1562,8 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
       f->uncacheNode( ptr[i].N );
       continue;
     }
-    if (POINTER == t) {
-      ct_object* P = (ct_object*) ptr[i].P;
-      delete P;
+    if (GENERIC == t) {
+      delete ptr[i].G;
       continue;
     }
     MEDDLY_DCASSERT( t != NODE );
@@ -1636,8 +1634,8 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
         case DOUBLE:
                         s.put(ptr[i].D, 0, 0, 'e');
                         break;
-        case POINTER:
-                        s.put_hex((unsigned long)ptr[i].P);
+        case GENERIC:
+                        s.put_hex((unsigned long)ptr[i].G);
                         break;
         default:
                         MEDDLY_DCASSERT(0);
@@ -1665,8 +1663,8 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
                         s.put(ptr[i].D, 0, 0, 'e');
                         break;
                             
-        case POINTER:
-                        s.put_hex((unsigned long)ptr[i].P);
+        case GENERIC:
+                        s.put_hex((unsigned long)ptr[i].G);
                         break;
         default:
                         MEDDLY_DCASSERT(0);
@@ -1710,8 +1708,8 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
         case DOUBLE:
                         s.put(item.D);
                         break;
-        case POINTER:
-                        s.put_hex((unsigned long)item.P);
+        case GENERIC:
+                        s.put_hex((unsigned long)item.G);
                         break;
         default:
                         MEDDLY_DCASSERT(0);

@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <string.h>
 #include <fstream>
+#include <gmp.h>
 
 #define _MEDDLY_WITHOUT_IOSTREAM_
 
@@ -69,6 +70,8 @@ int usage(const char* who)
   printf("\t-esat: use saturation by events\n");
   printf("\t-ksat: use saturation by levels\n");
   printf("\t-msat: use monolithic saturation (default)\n\n");
+  printf("\t-approx: approximate the number of states (default)\n");
+  printf("\t-exact:  determine the exact number of states (requires gmp)\n\n");
   printf("\t-exp: use explicit (very slow)\n\n");
   printf("\t--batch b: specify explicit batch size\n\n");
   printf("\t -l lfile: Write logging information to specified file\n\n");
@@ -96,6 +99,7 @@ int main(int argc, const char** argv)
   int batchsize = 256;
   const char* lfile = 0;
   bool build_pdf = false;
+  bool approx_count = true;
 
   for (int i=1; i<argc; i++) {
     if (strcmp("-bfs", argv[i])==0) {
@@ -120,6 +124,14 @@ int main(int argc, const char** argv)
     }
     if (strcmp("-exp", argv[i])==0) {
       method = 'e';
+      continue;
+    }
+    if (strcmp("-approx", argv[i])==0) {
+      approx_count = true;
+      continue;
+    }
+    if (strcmp("-exact", argv[i])==0) {
+      approx_count = false;
       continue;
     }
     if (strcmp("-l", argv[i])==0) {
@@ -282,11 +294,24 @@ int main(int argc, const char** argv)
     printStats("MDD", mdd);
     fflush(stdout);
 
-    double c;
-    apply(CARDINALITY, reachable, c);
-    operation::showAllComputeTables(meddlyout, 3);
-
-    printf("Approx. %g reachable states\n", c);
+#ifdef HAVE_LIBGMP
+    if (approx_count) {
+#endif
+      double c;
+      apply(CARDINALITY, reachable, c);
+      operation::showAllComputeTables(meddlyout, 3);
+      printf("Approx. %g reachable states\n", c);
+#ifdef HAVE_LIBGMP
+    } else {
+      mpz_t c;
+      mpz_init(c);
+      apply(CARDINALITY, reachable, c);
+      operation::showAllComputeTables(meddlyout, 3);
+      printf("Exactly ");
+      mpz_out_str(stdout, 10, c);
+      printf(" states\n");
+    }
+#endif
 
     if (build_pdf) {
       reachable.writePicture("kanban", "pdf");

@@ -2142,6 +2142,12 @@ MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
 }
 
 
+// ******************************************************************
+// *                                                                *
+// *                   inlined ct_object  methods                   *
+// *                                                                *
+// ******************************************************************
+
 
 // ******************************************************************
 // *                                                                *
@@ -2421,19 +2427,19 @@ inline double MEDDLY::compute_table::entry_result::readD()
 #endif
 }
 
-inline void* MEDDLY::compute_table::entry_result::readP()
+inline MEDDLY::ct_object* MEDDLY::compute_table::entry_result::readG()
 {
 #ifdef OLD_OP_CT
-  MEDDLY_DCASSERT(currslot+sizeof(void*)/sizeof(node_handle) <= dataLength());
-  void* P;
-  memcpy(&P, data+currslot, sizeof(void*));
-  currslot += sizeof(void*) / sizeof(node_handle);
-  return P;
+  MEDDLY_DCASSERT(currslot+sizeof(ct_object*)/sizeof(node_handle) <= dataLength());
+  ct_object* G;
+  memcpy(&G, data+currslot, sizeof(ct_object*));
+  currslot += sizeof(ct_object*) / sizeof(node_handle);
+  return G;
 #else
   MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(compute_table::POINTER == etype->getResultType(currslot));
-  return data[currslot++].P;
+  MEDDLY_DCASSERT(compute_table::GENERIC == etype->getResultType(currslot));
+  return data[currslot++].G;
 #endif
 }
 
@@ -2505,15 +2511,15 @@ inline void MEDDLY::compute_table::entry_result::writeD(double D)
 #endif
 }
 
-inline void MEDDLY::compute_table::entry_result::writeP(void* P)
+inline void MEDDLY::compute_table::entry_result::writeG(ct_object* G)
 {
 #ifdef OLD_OP_CT
-  write_raw(&P, sizeof(void*) / sizeof(node_handle));
+  write_raw(&G, sizeof(ct_object*) / sizeof(node_handle));
 #else
   MEDDLY_DCASSERT(build);
   MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(compute_table::POINTER == etype->getResultType(currslot));
-  build[currslot++].P = P;
+  MEDDLY_DCASSERT(compute_table::GENERIC == etype->getResultType(currslot));
+  build[currslot++].G = G;
 #endif
 }
 

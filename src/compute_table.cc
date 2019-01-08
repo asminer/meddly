@@ -433,10 +433,9 @@ inline MEDDLY::compute_table::typeID char2typeID(char c)
     case 'N':   return MEDDLY::compute_table::NODE;
     case 'I':   return MEDDLY::compute_table::INTEGER;
     case 'L':   return MEDDLY::compute_table::LONG;
-    // case 'H':   return MEDDLY::compute_table::HUGEINT;
     case 'F':   return MEDDLY::compute_table::FLOAT;
     case 'D':   return MEDDLY::compute_table::DOUBLE;
-    case 'P':   return MEDDLY::compute_table::POINTER;
+    case 'G':   return MEDDLY::compute_table::GENERIC;
     default:    return MEDDLY::compute_table::ERROR;
   }
 }
@@ -447,10 +446,9 @@ inline unsigned bytes4typeID(MEDDLY::compute_table::typeID t)
     case MEDDLY::compute_table::NODE      : return sizeof(MEDDLY::node_handle);
     case MEDDLY::compute_table::INTEGER   : return sizeof(int);
     case MEDDLY::compute_table::LONG      : return sizeof(long);
-    // case MEDDLY::compute_table::HUGEINT   : return sizeof(void*);
     case MEDDLY::compute_table::FLOAT     : return sizeof(float);
     case MEDDLY::compute_table::DOUBLE    : return sizeof(double);
-    case MEDDLY::compute_table::POINTER   : return sizeof(void*);
+    case MEDDLY::compute_table::GENERIC   : return sizeof(MEDDLY::ct_object*);
     default:    return 0;
   }
 }
@@ -461,10 +459,9 @@ inline char typeID2char(MEDDLY::compute_table::typeID t)
     case MEDDLY::compute_table::NODE      : return 'N';
     case MEDDLY::compute_table::INTEGER   : return 'I';
     case MEDDLY::compute_table::LONG      : return 'L';
-    // case MEDDLY::compute_table::HUGEINT   : return 'H';
     case MEDDLY::compute_table::FLOAT     : return 'F';
     case MEDDLY::compute_table::DOUBLE    : return 'D';
-    case MEDDLY::compute_table::POINTER   : return 'P';
+    case MEDDLY::compute_table::GENERIC   : return 'G';
     default:    return '?';
   }
 }
