@@ -3679,7 +3679,7 @@ public:
 
 /** Generic objects in compute tables.
     Used for things other than dd_edges and simple types.
-    Defined in ops.cc
+    Defined in compute_table.cc
 */
 class MEDDLY::ct_object {
   public:
@@ -3876,8 +3876,7 @@ class MEDDLY::compute_table {
         LONG = 3,
         FLOAT = 4,
         DOUBLE = 5,
-        POINTER = 6
-        // HUGEINT = 7
+        GENERIC = 6
       };
 
       //
@@ -3893,7 +3892,7 @@ class MEDDLY::compute_table {
         node_handle N;
         float F;
         double D;
-        void* P;
+        ct_object* G;
       };
 #endif
 
@@ -3921,10 +3920,9 @@ class MEDDLY::compute_table {
                                 'N': node (in a forest)
                                 'I': int 
                                 'L': long 
-                                'H': hugeint (if gmp support enabled)
                                 'F': float
                                 'D': double
-                                'P': pointer to a ct_object
+                                'G': pointer to a ct_object
                                 ':': separates key portion from result portion;
                                      must appear exactly once
                                 '.': for repeating entries; can appear at most once.
@@ -4223,7 +4221,7 @@ class MEDDLY::compute_table {
           float readF();
           long readL();
           double readD();
-          void* readP();
+          ct_object* readG();
           // for templates
           void read_ev(long &l)   { l = readL(); }
           void read_ev(float &f)  { f = readF(); }
@@ -4235,7 +4233,7 @@ class MEDDLY::compute_table {
           void writeF(float f);
           void writeL(long L);
           void writeD(double D);
-          void writeP(void* P);
+          void writeG(ct_object* G);
 #ifdef OLD_OP_CT
           void write_raw(void* data, size_t slots);
 #endif

@@ -599,7 +599,7 @@ MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
 MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, HUGEINT)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:H");
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:G");
   et->setForestForSlot(0, arg);
   registerEntryType(0, et);
   buildCTs();
@@ -709,8 +709,9 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 #else
   CT0->find(CTsrch, CTresult[0]);
   if (CTresult[0]) {
-    void* P = CTresult[0].readP();
-    mpz_object* answer = (mpz_object*) P;
+    ct_object* G = CTresult[0].readG();
+    mpz_object* answer = smart_cast <mpz_object*> (G);
+    MEDDLY_DCASSERT(answer);
     answer->copyInto(card);
     CT0->recycle(CTsrch);
     return;
@@ -743,7 +744,7 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   CT0->addEntry(CTsrch, result);
 #else
   CTresult[0].reset();
-  CTresult[0].writeP(new mpz_object(card));
+  CTresult[0].writeG(new mpz_object(card));
   CT0->addEntry(CTsrch, CTresult[0]);
 #endif
 
@@ -821,8 +822,9 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 #else
   CT0->find(CTsrch, CTresult[0]);
   if (CTresult[0]) {
-    void* P = CTresult[0].readP();
-    mpz_object* answer = (mpz_object*) P;
+    ct_object* G = CTresult[0].readG();
+    mpz_object* answer = smart_cast <mpz_object*> (G);
+    MEDDLY_DCASSERT(answer);
     answer->copyInto(card);
     CT0->recycle(CTsrch);
     return;
@@ -854,7 +856,7 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   CT0->addEntry(CTsrch, result);
 #else
   CTresult[0].reset();
-  CTresult[0].writeP(new mpz_object(card));
+  CTresult[0].writeG(new mpz_object(card));
   CT0->addEntry(CTsrch, CTresult[0]);
 #endif
 
