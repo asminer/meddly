@@ -897,13 +897,25 @@ MEDDLY::expert_forest
   inList--;
 
   int mlen = 0;
-  int msize = 1024;
-  node_handle* marked = (node_handle*) malloc(msize * sizeof(node_handle));
+  int msize = 0;
+  node_handle* marked = 0;
 
   // Initialize search
   for (int i=0; i<N; i++) {
     if (isTerminalNode(root[i])) continue;
     if (inList[root[i]]) continue;
+
+    // add dn to list
+    if (mlen+1 >= msize) { 
+      // expand.  Note we're leaving an extra slot
+      // at the end, for the terminal 0.
+      msize += 1024;
+      node_handle* new_marked = (node_handle*) 
+        realloc(marked, msize*sizeof(node_handle));
+      if (0==new_marked) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+      marked = new_marked;
+    }
+
     marked[mlen] = root[i];
     mlen++;
     inList[root[i]] = true;
@@ -951,10 +963,12 @@ MEDDLY::expert_forest
   // cleanup
   inList++;
   delete[] inList;
-  if (0==mlen) {
-    free(marked);
+
+  if (0 == mlen) {
+    if (marked) free(marked);
     return 0;
   }
+
   // add 0 to the list
   marked[mlen] = 0;
   return marked;
@@ -1274,6 +1288,13 @@ void MEDDLY::expert_forest
   }
   node_handle* output2index = markNodesInSubgraph(eRaw, n, false);
   delete[] eRaw;
+
+  // Make a dummy array for fringe case where
+  // there are no non-zero nodes in the subgraph.
+  if (0 == output2index) {
+    output2index = (node_handle*) malloc(1*sizeof(node_handle));
+    output2index[0] = 0;
+  }
 
   // move a pointer to the end of the list, and
   // find the largest node index we're writing
