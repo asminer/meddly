@@ -835,7 +835,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
     }
 
     if (tableSize == maxSize) {
-      tableExpand = INT_MAX;
+      tableExpand = std::numeric_limits<int>::max();
     } else {
       tableExpand = 4*tableSize;
     }
@@ -868,7 +868,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
       mstats.decMemAlloc(oldSize * sizeof(int));
 
       if (tableSize == maxSize) {
-        tableExpand = INT_MAX;
+        tableExpand = std::numeric_limits<int>::max();
       } else {
         tableExpand = tableSize / 2;
       }

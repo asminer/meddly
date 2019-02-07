@@ -19,8 +19,6 @@
 
 #include "unique_table.h"
 
-#include <limits.h>
-
 MEDDLY::unique_table::unique_table(expert_forest* ef)
 : parent(ef)
 {
@@ -323,7 +321,7 @@ void MEDDLY::unique_table::subtable::expand()
 
   next_shrink = size;
   size = newSize;
-  next_expand = (size >= MAX_SIZE ? UINT_MAX : size * 2);
+  next_expand = (size >= MAX_SIZE ? std::numeric_limits<unsigned int>::max() : size * 2);
 
   buildFromList(ptr);
 }
