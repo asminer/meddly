@@ -185,7 +185,7 @@ protected:
 #endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a);
-  CTsrch->writeN(b);
+  CTsrch->writeL(b);
 #ifdef OLD_OP_CT
   compute_table::entry_result& cacheFind = CT0->find(CTsrch);
   if (!cacheFind) return CTsrch;

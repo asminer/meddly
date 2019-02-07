@@ -491,8 +491,8 @@ RubiksCubeModelConfig buildModelConfig(int num_phases, RubiksCubeModelType type)
 
   config.reorder_relation = false;
 
-  assert(config.num_phases == config.moves.size());
-  assert(config.num_phases == config.level2components.size());
+  assert(unsigned(config.num_phases) == config.moves.size());
+  assert(unsigned(config.num_phases) == config.level2components.size());
 
   return config;
 }
@@ -619,7 +619,7 @@ void RubiksCubeModel::buildForests()
 
 vector<int> RubiksCubeModel::convertToVariableOrder(const vector<Component>& level2component)
 {
-  assert(level2component.size() - 1 == _config.num_components());
+  assert(level2component.size() - 1 == unsigned(_config.num_components()));
 
   vector<int> level2var;
   level2var.push_back(0);
@@ -660,7 +660,7 @@ vector<dd_edge> RubiksCubeModel::buildNextStateFunctions()
     level2vars.push_back(convertToVariableOrder(_config.level2components[i]));
   }
 
-  assert(_relations.size() == _config.num_phases);
+  assert(_relations.size() == unsigned(_config.num_phases));
 
   // Reorder the relations
   for (int i = 0; i < _config.num_phases; i++) {

@@ -345,8 +345,8 @@ namespace MEDDLY {
                             respart += sizeof(long) / sizeof(int);
                             continue;
 
-              case POINTER: *((void**)respart) = resdata[i].P;
-                            respart += sizeof(void*) / sizeof(int);
+              case GENERIC: *((ct_object**)respart) = resdata[i].P;
+                            respart += sizeof(ct_object*) / sizeof(int);
                             continue;
 
               default:      MEDDLY_DCASSERT(0);
@@ -801,8 +801,8 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
                       entry_result += sizeof(long) / sizeof(int);
                       continue;
 
-        case POINTER: res.writeP( *((void**)entry_result) );
-                      entry_result += sizeof(void*) / sizeof(int);
+        case GENERIC: res.writeP( *((ct_object**)entry_result) );
+                      entry_result += sizeof(ct_object*) / sizeof(int);
                       continue;
                     
         default:      MEDDLY_DCASSERT(0);
@@ -1062,10 +1062,10 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>::updateEntry(entry_key* key, const
         case DOUBLE:
                         ptr += sizeof(double) / sizeof(int);
                         continue;
-        case POINTER: {
+        case GENERIC: {
                         ct_object* P = *((ct_object**)(ptr));
                         delete P;
-                        ptr += sizeof(void*) / sizeof(int);
+                        ptr += sizeof(ct_object*) / sizeof(int);
                         continue;
                       }
         default:
@@ -1628,8 +1628,8 @@ bool MEDDLY::ct_template<MONOLITHIC, CHAINED>
         case DOUBLE:
                         entry += sizeof(double) / sizeof(int);
                         continue;
-        case POINTER: 
-                        entry += sizeof(void*) / sizeof(int);
+        case GENERIC: 
+                        entry += sizeof(ct_object*) / sizeof(int);
                         continue;
         default:
                         MEDDLY_DCASSERT(0);
@@ -1663,8 +1663,8 @@ bool MEDDLY::ct_template<MONOLITHIC, CHAINED>
         case DOUBLE:
                         entry += sizeof(double) / sizeof(int);
                         continue;
-        case POINTER: 
-                        entry += sizeof(void*) / sizeof(int);
+        case GENERIC: 
+                        entry += sizeof(ct_object*) / sizeof(int);
                         continue;
         default:
                         MEDDLY_DCASSERT(0);
@@ -1713,8 +1713,8 @@ bool MEDDLY::ct_template<MONOLITHIC, CHAINED>
       case DOUBLE:
                   result += sizeof(double) / sizeof(int);
                   continue;
-      case POINTER:
-                  result += sizeof(void*) / sizeof(int);
+      case GENERIC:
+                  result += sizeof(ct_object*) / sizeof(int);
                   continue;
       default:
                   MEDDLY_DCASSERT(0);
@@ -1800,10 +1800,10 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
         case DOUBLE:
                         ptr += sizeof(double) / sizeof(int);
                         continue;
-        case POINTER: {
+        case GENERIC: {
                         ct_object* P = *((ct_object**)(ptr));
                         delete P;
-                        ptr += sizeof(void*) / sizeof(int);
+                        ptr += sizeof(ct_object*) / sizeof(int);
                         continue;
                       }
         default:
@@ -1836,10 +1836,10 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
         case DOUBLE:
                         ptr += sizeof(double) / sizeof(int);
                         continue;
-        case POINTER: {
+        case GENERIC: {
                         ct_object* P = *((ct_object**)(ptr));
                         delete P;
-                        ptr += sizeof(void*) / sizeof(int);
+                        ptr += sizeof(ct_object*) / sizeof(int);
                         continue;
                       }
         default:
@@ -1931,10 +1931,10 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
                         s.put(item.D, 0, 0, 'e');
                         ptr += sizeof(double) / sizeof(int);
                         break;
-        case POINTER:
-                        item.P = *((void**)(ptr));
-                        s.put_hex((unsigned long)item.P);
-                        ptr += sizeof(void*) / sizeof(int);
+        case GENERIC:
+                        item.G = *((ct_object**)(ptr));
+                        s.put_hex((unsigned long)item.G);
+                        ptr += sizeof(ct_object*) / sizeof(int);
                         break;
         default:
                         MEDDLY_DCASSERT(0);
@@ -1972,10 +1972,10 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
                         ptr += sizeof(double) / sizeof(int);
                         break;
                             
-        case POINTER:
-                        item.P = *((void**)(ptr));
-                        s.put_hex((unsigned long)item.P);
-                        ptr += sizeof(void*) / sizeof(int);
+        case GENERIC:
+                        item.G = *((ct_object**)(ptr));
+                        s.put_hex((unsigned long)item.G);
+                        ptr += sizeof(ct_object*) / sizeof(int);
                         break;
         default:
                         MEDDLY_DCASSERT(0);
@@ -2026,8 +2026,8 @@ void MEDDLY::ct_template<MONOLITHIC, CHAINED>
         case DOUBLE:
                         s.put(item.D);
                         break;
-        case POINTER:
-                        s.put_hex((unsigned long)item.P);
+        case GENERIC:
+                        s.put_hex((unsigned long)item.G);
                         break;
         default:
                         MEDDLY_DCASSERT(0);
