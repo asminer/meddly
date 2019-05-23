@@ -147,16 +147,6 @@ void MEDDLY::ct_initializer::setMemoryManager(const memory_manager_style* mms)
   the_settings.MMS = mms;
 }
 
-#ifdef OLD_OP_CT
-MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(operation* op)
-{
-  if (ct_factory) {
-    return ct_factory->create(the_settings, op, 0);
-  } else {
-    return 0;
-  }
-}
-#else
 MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(operation* op, unsigned slot)
 {
   if (ct_factory) {
@@ -165,7 +155,6 @@ MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(operation* op, unsign
     return 0;
   }
 }
-#endif
 
 // **********************************************************************
 // *                                                                    *
@@ -202,11 +191,10 @@ MEDDLY::compute_table_style::create(const ct_initializer::settings &s,
 // *                                                                    *
 // **********************************************************************
 
-#ifndef OLD_OP_CT
+
 MEDDLY::compute_table::entry_type** MEDDLY::compute_table::entryInfo;
 unsigned MEDDLY::compute_table::entryInfoAlloc;
 unsigned MEDDLY::compute_table::entryInfoSize;
-#endif
 MEDDLY::compute_table::entry_key* MEDDLY::compute_table::free_keys;
 
 MEDDLY::compute_table::compute_table(const ct_initializer::settings &s)
@@ -246,7 +234,6 @@ MEDDLY::compute_table::~compute_table()
 void MEDDLY::compute_table::initialize()
 {
   free_keys = 0;
-#ifndef OLD_OP_CT
   //
   // Initialize entryInfo list
   //
@@ -254,7 +241,6 @@ void MEDDLY::compute_table::initialize()
   entryInfoAlloc = 0;
   entryInfoSize = 0;
   // zero that array?
-#endif
 }
 
 void MEDDLY::compute_table::destroy()
@@ -264,13 +250,9 @@ void MEDDLY::compute_table::destroy()
     delete free_keys;
     free_keys = n;
   }
-#ifndef OLD_OP_CT
   // delete the items?  TBD
   delete[] entryInfo;
-#endif
 }
-
-#ifndef OLD_OP_CT
 
 void MEDDLY::compute_table::registerOp(operation* op, unsigned num_ids)
 {
@@ -356,33 +338,23 @@ void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
 #endif
 }
 
-#endif
-
 // **********************************************************************
 
 MEDDLY::compute_table::entry_key::entry_key()
 {
   data_alloc = 8;
-#ifdef OLD_OP_CT
-  op = 0;
-  data = (int*) malloc(data_alloc * sizeof(int));
-  // malloc: because realloc later
-#else
   etype = 0;
   data = (entry_item*) malloc(data_alloc * sizeof(entry_item));
   temp_data = 0;
   temp_bytes = 0;
   temp_alloc = 0;
   // malloc: because realloc later
-#endif
 }
 
 MEDDLY::compute_table::entry_key::~entry_key()
 {
   free(data);
-#ifndef OLD_OP_CT
   free(temp_data);
-#endif
 }
 
 // **********************************************************************
@@ -391,23 +363,8 @@ MEDDLY::compute_table::entry_result::entry_result()
 {
   build = 0;
   data = 0;
-#ifdef OLD_OP_CT
-  ansLength = 0;
-#else
   etype = 0;
-#endif
 }
-
-#ifdef OLD_OP_CT
-
-MEDDLY::compute_table::entry_result::entry_result(unsigned slots)
-{
-  build = new node_handle[slots];
-  data = build;
-  ansLength = slots;
-}
-
-#else
 
 void MEDDLY::compute_table::entry_result::initialize(const compute_table::entry_type* et)
 {
@@ -417,8 +374,6 @@ void MEDDLY::compute_table::entry_result::initialize(const compute_table::entry_
   MEDDLY_DCASSERT(0==build);
   build = new entry_item[slots];
 }
-
-#endif
 
 MEDDLY::compute_table::entry_result::~entry_result()
 {

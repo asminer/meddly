@@ -56,55 +56,25 @@ class MEDDLY::mm_mult_op : public binary_operation {
     mm_mult_op(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
-#ifdef OLD_OP_CT
-#ifndef USE_NODE_STATUS
-    virtual bool isStaleEntry(const node_handle* entryData);
-#else
-    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
-#endif
-    virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif
-
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-#ifdef OLD_OP_CT
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
-#ifdef OLD_OP_CT
-      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-      if (!cacheFind) return CTsrch;
-      c = resF->linkNode(cacheFind.readN());
-#else
       CT0->find(CTsrch, CTresult[0]);
       if (!CTresult[0]) return CTsrch;
       c = resF->linkNode(CTresult[0].readN());
-#endif
       CT0->recycle(CTsrch);
       return 0;
     }
     inline node_handle saveResult(compute_table::entry_key* Key, 
       node_handle a, node_handle b, node_handle c) 
     {
-#ifdef OLD_OP_CT
-      arg1F->cacheNode(a);
-      arg2F->cacheNode(b);
-      resF->cacheNode(c);
-      static compute_table::entry_result result(1);
-      result.reset();
-      result.writeN(c);
-      CT0->addEntry(Key, result);
-#else
       CTresult[0].reset();
       CTresult[0].writeN(c);
       CT0->addEntry(Key, CTresult[0]);
-#endif
       return c;
     }
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -114,17 +84,6 @@ class MEDDLY::mm_mult_op : public binary_operation {
     virtual node_handle compute_rec(node_handle a, node_handle b) = 0;
 };
 
-#ifdef OLD_OP_CT
-MEDDLY::mm_mult_op::mm_mult_op(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res, binary_operation* acc)
-: binary_operation(oc, 2, 1, a1, a2, res)
-{
-  accumulateOp = acc;
-
-  if (!a1->isForRelations() || !a2->isForRelations())
-    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-}
-#else
 MEDDLY::mm_mult_op::mm_mult_op(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res, binary_operation* acc)
 : binary_operation(oc, 1, a1, a2, res)
@@ -141,57 +100,6 @@ MEDDLY::mm_mult_op::mm_mult_op(const binary_opname* oc, expert_forest* a1,
   registerEntryType(0, et);
   buildCTs();
 }
-#endif
-
-#ifdef OLD_OP_CT
-
-#ifndef USE_NODE_STATUS
-bool MEDDLY::mm_mult_op::isStaleEntry(const node_handle* data)
-{
-  return arg1F->isStale(data[0]) ||
-         arg2F->isStale(data[1]) ||
-         resF->isStale(data[2]);
-}
-#else
-MEDDLY::forest::node_status
-MEDDLY::mm_mult_op::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[0]);
-  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[1]);
-  MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
-
-  if (a == MEDDLY::forest::DEAD ||
-      b == MEDDLY::forest::DEAD ||
-      c == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE ||
-      b == MEDDLY::forest::RECOVERABLE ||
-      c == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-void MEDDLY::mm_mult_op::discardEntry(const node_handle* data)
-{
-  arg1F->uncacheNode(data[0]);
-  arg2F->uncacheNode(data[1]);
-  resF->uncacheNode(data[2]);
-}
-
-void
-MEDDLY::mm_mult_op::showEntry(output &strm, const node_handle* data, bool key_only) const
-{
-  strm  << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
-  if (key_only) {
-    strm << "?]";
-  } else {
-    strm << long(data[2]) << "]";
-  }
-}
-
-#endif // OLD_OP_CT
 
 void MEDDLY::mm_mult_op
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)

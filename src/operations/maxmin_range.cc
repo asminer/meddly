@@ -49,64 +49,29 @@ class MEDDLY::range_int : public unary_operation {
   public:
     range_int(const unary_opname* oc, expert_forest* arg);
 
-#ifdef OLD_OP_CT
-    // common
-#ifndef USE_NODE_STATUS
-    virtual bool isStaleEntry(const node_handle* entryData);
-#else
-    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
-#endif
-    virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif // OLD_OP_CT
-  
   protected:
     inline compute_table::entry_key* 
     findResult(node_handle a, int &b) 
     {
-#ifdef OLD_OP_CT
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
-#ifdef OLD_OP_CT
-      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-      if (!cacheFind) return CTsrch;
-      b = cacheFind.readI();
-#else
       CT0->find(CTsrch, CTresult[0]);
       if (!CTresult[0]) return CTsrch;
       b = CTresult[0].readI();
-#endif
       CT0->recycle(CTsrch);
       return 0;
     }
     inline long saveResult(compute_table::entry_key* Key, 
       node_handle a, int &b) 
     {
-#ifdef OLD_OP_CT
-      argF->cacheNode(a);
-      static compute_table::entry_result result(1);
-      result.reset();
-      result.writeI(b);
-      CT0->addEntry(Key, result);
-#else
       CTresult[0].reset();
       CTresult[0].writeI(b);
       CT0->addEntry(Key, CTresult[0]);
-#endif
       return b;
     }
 };
 
-#ifdef OLD_OP_CT
-MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, 1, arg, INTEGER)
-{
-}
-#else
 MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, INTEGER)
 {
@@ -115,48 +80,6 @@ MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
   registerEntryType(0, et);
   buildCTs();
 }
-#endif
-
-#ifdef OLD_OP_CT
-
-#ifndef USE_NODE_STATUS
-bool MEDDLY::range_int::isStaleEntry(const node_handle* data)
-{
-  return argF->isStale(data[0]);
-}
-#else
-MEDDLY::forest::node_status
-MEDDLY::range_int::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
-
-  if (a == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-void MEDDLY::range_int::discardEntry(const node_handle* data)
-{
-  argF->uncacheNode(data[0]);
-}
-
-void MEDDLY::range_int::showEntry(output &strm, const node_handle* data, bool key_only) const
-{
-  strm  << "[" << getName() << "(" << long(data[0]) 
-        << "): ";
-  if (key_only) {
-    strm << "?]";
-  } else {
-    strm << long(data[1]) << "(L)]";
-  }
-}
-
-#endif // OLD_OP_CT
-
 
 // ******************************************************************
 // *                                                                *
@@ -169,62 +92,27 @@ class MEDDLY::range_real : public unary_operation {
   public:
     range_real(const unary_opname* oc, expert_forest* arg);
 
-#ifdef OLD_OP_CT
-    // common
-#ifndef USE_NODE_STATUS
-    virtual bool isStaleEntry(const node_handle* entryData);
-#else
-    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
-#endif
-    virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif // OLD_OP_CT
-
   protected:
     inline compute_table::entry_key* findResult(node_handle a, float &b) {
-#ifdef OLD_OP_CT
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
-#ifdef OLD_OP_CT
-      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-      if (!cacheFind) return CTsrch;
-      b = cacheFind.readF();
-#else
       CT0->find(CTsrch, CTresult[0]);
       if (!CTresult[0]) return CTsrch;
       b = CTresult[0].readF();
-#endif
       CT0->recycle(CTsrch);
       return 0;
     }
     inline float saveResult(compute_table::entry_key* Key, 
       node_handle a, float &b) 
     {
-#ifdef OLD_OP_CT
-      argF->cacheNode(a);
-      static compute_table::entry_result result(1);
-      result.reset();
-      result.writeF(b);
-      CT0->addEntry(Key, result);
-#else
       CTresult[0].reset();
       CTresult[0].writeF(b);
       CT0->addEntry(Key, CTresult[0]);
-#endif
       return b;
     }
 };
 
-#ifdef OLD_OP_CT
-MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, sizeof(float) / sizeof(int), arg, REAL)
-{
-}
-#else
 MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, REAL)
 {
@@ -233,49 +121,6 @@ MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
   registerEntryType(0, et);
   buildCTs();
 }
-#endif
-
-#ifdef OLD_OP_CT
-
-#ifndef USE_NODE_STATUS
-bool MEDDLY::range_real::isStaleEntry(const node_handle* data)
-{
-  return argF->isStale(data[0]);
-}
-#else
-MEDDLY::forest::node_status
-MEDDLY::range_real::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
-
-  if (a == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-void MEDDLY::range_real::discardEntry(const node_handle* data)
-{
-  argF->uncacheNode(data[0]);
-}
-
-void MEDDLY::range_real::showEntry(output &strm, const node_handle* data, bool key_only) const
-{
-  double answer;
-  memcpy(&answer, data+1, sizeof(double));
-  strm  << "[" << getName() << "(" << long(data[0]) << "): ";
-  if (key_only) {
-    strm.put('?');
-  } else {
-    strm.put(answer, 0, 0, 'e');
-  }
-  strm.put(']');
-}
-
-#endif // OLD_OP_CT
 
 // ******************************************************************
 // *                                                                *
@@ -319,8 +164,6 @@ int MEDDLY::maxrange_int::compute_r(node_handle a)
   // Add entry to compute table
   return saveResult(Key, a, max);
 }
-
-
 
 // ******************************************************************
 // *                                                                *

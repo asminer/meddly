@@ -766,8 +766,6 @@ class MEDDLY::input {
 
 /** FILE_Input class.
     Use for C-style FILE* input.
-
-    TBD - come up with a way to remove #include <cstdio> and <iostream> from above!
 */
 class MEDDLY::FILE_input : public MEDDLY::input {
   public:
@@ -797,8 +795,6 @@ class MEDDLY::FILE_input : public MEDDLY::input {
 
 /** istream_Input class.
     Use for C++-style istream input.
-
-    TBD - come up with a way to remove #include <cstdio> and <iostream> from above!
 */
 class MEDDLY::istream_input : public MEDDLY::input {
   public:
@@ -932,8 +928,6 @@ inline  MEDDLY::output& operator<< (MEDDLY::output &s, double x)          { s.pu
 
 /** FILE_output class.
     Use for C-style FILE* input.
-
-    TBD - come up with a way to remove #include <cstdio> and <iostream> from above!
 */
 class MEDDLY::FILE_output : public MEDDLY::output {
   public:
@@ -961,12 +955,10 @@ class MEDDLY::FILE_output : public MEDDLY::output {
 // *                                                                *
 // ******************************************************************
 
-#ifndef MEDDLY_WITHOUT_IOSTREAM_
+#ifndef _MEDDLY_WITHOUT_IOSTREAM_
 
 /** ostream_output class.
     Use for C++-style ostream input.
-
-    TBD - come up with a way to remove #include <cstdio> and <iostream> from above!
 */
 class MEDDLY::ostream_output : public MEDDLY::output {
   public:
@@ -1216,41 +1208,12 @@ class MEDDLY::forest {
       /// Peak number of active nodes
       long peak_active;
 
-      /*
-      /// Current memory used for nodes
-      long memory_used;
-      /// Current memory allocated for nodes
-      long memory_alloc;
-      /// Peak memory used for nodes
-      long peak_memory_used;
-      /// Peak memory allocated for nodes
-      long peak_memory_alloc;
-      */
-
-      // unique table stats
-
-      /*
-      /// Current memory for UT
-      long memory_UT;
-      /// Peak memory for UT
-      long peak_memory_UT;
-      /// Longest chain search in UT
-      int max_UT_chain;
-      */
-
       statset();
 
       // nice helpers
 
       void incActive(long b);
       void decActive(long b);
-      /*
-      void incMemUsed(long b);
-      void decMemUsed(long b);
-      void incMemAlloc(long b);
-      void decMemAlloc(long b);
-      void sawUTchain(int c);
-      */
     };
 
     /**

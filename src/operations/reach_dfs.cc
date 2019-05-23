@@ -94,54 +94,25 @@ class MEDDLY::saturation_op : public unary_operation {
     node_handle saturate(node_handle mdd);
     node_handle saturate(node_handle mdd, int level);
 
-#ifdef OLD_OP_CT
-#ifndef USE_NODE_STATUS
-    virtual bool isStaleEntry(const node_handle* entryData);
-#else
-    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
-#endif
-    virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif
-
   protected:
     inline compute_table::entry_key* 
     findSaturateResult(node_handle a, int level, node_handle& b) {
-#ifdef OLD_OP_CT
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       if (argF->isFullyReduced()) CTsrch->writeI(level);
-#ifdef OLD_OP_CT
-      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-      if (!cacheFind) return CTsrch;
-      b = resF->linkNode(cacheFind.readN()); 
-#else
       CT0->find(CTsrch, CTresult[0]);
       if (!CTresult[0]) return CTsrch;
       b = resF->linkNode(CTresult[0].readN()); 
-#endif
       CT0->recycle(CTsrch);
       return 0;
     }
     inline node_handle saveSaturateResult(compute_table::entry_key* Key,
       node_handle a, node_handle b) 
     {
-#ifdef OLD_OP_CT
-      argF->cacheNode(a);
-      resF->cacheNode(b);
-      static compute_table::entry_result result(1);
-      result.reset();
-      result.writeN(b);
-      CT0->addEntry(Key, result);
-#else
       CTresult[0].reset();
       CTresult[0].writeN(b);
       CT0->addEntry(Key, CTresult[0]);
-#endif
       return b;
     }
 };
@@ -161,56 +132,28 @@ class MEDDLY::saturation_evplus_op : public unary_operation {
     void saturate(long ev, node_handle evmdd, long& resEv, node_handle& resEvmdd);
     void saturate(long ev, node_handle evmdd, int level, long& resEv, node_handle& resEvmdd);
 
-#ifdef OLD_OP_CT
-    virtual bool isStaleEntry(const node_handle* entryData);
-    virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif
-
   protected:
     inline compute_table::entry_key*
     findSaturateResult(long aev, node_handle a, int level, long& bev, node_handle& b) {
-#ifdef OLD_OP_CT
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       if (argF->isFullyReduced()) CTsrch->writeI(level);
-#ifdef OLD_OP_CT
-      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-      if (!cacheFind) return CTsrch;
-      bev = cacheFind.readL();
-      bev += aev;
-      b = resF->linkNode(cacheFind.readN());
-#else
       CT0->find(CTsrch, CTresult[0]);
       if (!CTresult[0]) return CTsrch;
       bev = CTresult[0].readL();
       bev += aev;
       b = resF->linkNode(CTresult[0].readN());
-#endif
       CT0->recycle(CTsrch);
       return 0;
     }
     inline node_handle saveSaturateResult(compute_table::entry_key* Key,
       long aev, node_handle a, long bev, node_handle b)
     {
-#ifdef OLD_OP_CT
-      argF->cacheNode(a);
-      resF->cacheNode(b);
-      static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
-      result.reset();
-      result.writeL(bev - aev);
-      result.writeN(b);
-      CT0->addEntry(Key, result);
-#else
       CTresult[0].reset();
       CTresult[0].writeL(bev - aev);
       CTresult[0].writeN(b);
       CT0->addEntry(Key, CTresult[0]);
-#endif
       return b;
     }
 };
@@ -226,15 +169,6 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     common_dfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-#ifdef OLD_OP_CT
-#ifndef USE_NODE_STATUS
-    virtual bool isStaleEntry(const node_handle* entryData);
-#else
-    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
-#endif
-    virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual void saturateHelper(unpacked_node &mdd) = 0;
 
@@ -242,42 +176,22 @@ class MEDDLY::common_dfs_mt : public binary_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-#ifdef OLD_OP_CT
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
-#ifdef OLD_OP_CT
-      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-      if (!cacheFind) return CTsrch;
-      c = resF->linkNode(cacheFind.readN());
-#else
       CT0->find(CTsrch, CTresult[0]);
       if (!CTresult[0]) return CTsrch;
       c = resF->linkNode(CTresult[0].readN());
-#endif
       CT0->recycle(CTsrch);
       return 0;
     }
     inline node_handle saveResult(compute_table::entry_key* Key,
       node_handle a, node_handle b, node_handle c) 
     {
-#ifdef OLD_OP_CT
-      arg1F->cacheNode(a);
-      arg2F->cacheNode(b);
-      resF->cacheNode(c);
-      static compute_table::entry_result result(1);
-      result.reset();
-      result.writeN(c);
-      CT0->addEntry(Key, result);
-#else
       CTresult[0].reset();
       CTresult[0].writeN(c);
       CT0->addEntry(Key, CTresult[0]);
-#endif
       return c;
     }
     void splitMxd(node_handle mxd);
@@ -398,11 +312,6 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
     common_dfs_evplus(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-#ifdef OLD_OP_CT
-    virtual bool isStaleEntry(const node_handle* entryData);
-    virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual void saturateHelper(unpacked_node &mdd) = 0;
 
@@ -410,26 +319,15 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
     inline compute_table::entry_key*
     findResult(long aev, node_handle a, node_handle b, long& cev, node_handle& c)
     {
-#ifdef OLD_OP_CT
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
 
-#ifdef OLD_OP_CT
-      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-      if (!cacheFind) return CTsrch;
-      cev = cacheFind.readL();
-      c = resF->linkNode(cacheFind.readN());
-#else
       CT0->find(CTsrch, CTresult[0]);
       if (!CTresult[0]) return CTsrch;
       cev = CTresult[0].readL();
       c = resF->linkNode(CTresult[0].readN());
-#endif
       if (c != 0) {
         cev += aev;
       }
@@ -439,21 +337,10 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
     inline void saveResult(compute_table::entry_key* Key,
       long aev, node_handle a, node_handle b, long cev, node_handle c)
     {
-#ifdef OLD_OP_CT
-      arg1F->cacheNode(a);
-      arg2F->cacheNode(b);
-      resF->cacheNode(c);
-      static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
-      result.reset();
-      result.writeL(c == 0 ? 0L : cev - aev);
-      result.writeN(c);
-      CT0->addEntry(Key, result);
-#else
       CTresult[0].reset();
       CTresult[0].writeL(c == 0 ? 0L : cev - aev);
       CTresult[0].writeN(c);
       CT0->addEntry(Key, CTresult[0]);
-#endif
     }
     void splitMxd(node_handle mxd);
 
@@ -568,19 +455,6 @@ class MEDDLY::common_dfs_evplus : public binary_operation {
 // *                                                                *
 // ******************************************************************
 
-#ifdef OLD_OP_CT
-
-MEDDLY::saturation_op
-::saturation_op(common_dfs_mt* p, expert_forest* argF, expert_forest* resF)
-  : unary_operation(saturation_opname::getInstance(),
-  ((argF != 0 && argF->isFullyReduced())? 2: 1),
-  1, argF, resF)
-{
-  parent = p;
-}
-
-#else
-
 MEDDLY::saturation_op
 ::saturation_op(common_dfs_mt* p, expert_forest* argF, expert_forest* resF)
   : unary_operation(saturation_opname::getInstance(), 1, argF, resF)
@@ -603,8 +477,6 @@ MEDDLY::saturation_op
   registerEntryType(0, et);
   buildCTs();
 }
-
-#endif
 
 MEDDLY::saturation_op::~saturation_op()
 {
@@ -667,81 +539,12 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
   return n;
 }
 
-#ifdef OLD_OP_CT
-
-#ifndef USE_NODE_STATUS
-bool MEDDLY::saturation_op::isStaleEntry(const node_handle* data)
-{
-  return (argF->isFullyReduced()
-  ? (argF->isStale(data[0]) || resF->isStale(data[2]))
-  : (argF->isStale(data[0]) || resF->isStale(data[1])));
-}
-#else
-MEDDLY::forest::node_status
-MEDDLY::saturation_op::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
-  MEDDLY::forest::node_status c =
-    resF->getNodeStatus(data[ (argF->isFullyReduced()? 2: 1) ]);
-
-  if (a == MEDDLY::forest::DEAD ||
-      c == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE ||
-      c == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-void MEDDLY::saturation_op::discardEntry(const node_handle* data)
-{
-  if (argF->isFullyReduced()) {
-    argF->uncacheNode(data[0]);
-    resF->uncacheNode(data[2]);
-  } else {
-    argF->uncacheNode(data[0]);
-    resF->uncacheNode(data[1]);
-  }
-}
-
-void MEDDLY::saturation_op::showEntry(output &strm, const node_handle* data, bool key_only) const
-{
-  if (argF->isFullyReduced()) {
-    strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
-    if (key_only) strm << "?]";
-    else          strm << long(data[2]) << "]";
-  } else {
-    strm << "[" << getName() << "(" << long(data[0]) << "): ";
-    if (key_only) strm << "?]";
-    else          strm << long(data[1]) << "]";
-  }
-}
-
-#endif // OLD_OP_CT
 
 // ******************************************************************
 // *                                                                *
 // *                 saturation_evplus_op  methods                  *
 // *                                                                *
 // ******************************************************************
-
-#ifdef OLD_OP_CT
-
-MEDDLY::saturation_evplus_op
-::saturation_evplus_op(common_dfs_evplus* p, expert_forest* argF, expert_forest* resF)
-  : unary_operation(saturation_opname::getInstance(),
-  (argF != 0 && argF->isFullyReduced())
-      ? (sizeof(node_handle) + sizeof(int)) / sizeof(node_handle)
-      : (sizeof(node_handle) / sizeof(node_handle)),
-  (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
-  argF, resF)
-{
-  parent = p;
-}
-
-#else
 
 MEDDLY::saturation_evplus_op
 ::saturation_evplus_op(common_dfs_evplus* p, expert_forest* argF, expert_forest* resF)
@@ -765,8 +568,6 @@ MEDDLY::saturation_evplus_op
   registerEntryType(0, et);
   buildCTs();
 }
-
-#endif
 
 MEDDLY::saturation_evplus_op::~saturation_evplus_op()
 {
@@ -839,53 +640,6 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
 #endif
 }
 
-#ifdef OLD_OP_CT
-
-bool MEDDLY::saturation_evplus_op::isStaleEntry(const node_handle* data)
-{
-  return (argF->isFullyReduced()
-  ? (argF->isStale(data[0]) || resF->isStale(data[(sizeof(node_handle) + sizeof(int) + sizeof(long)) / sizeof(node_handle)]))
-  : (argF->isStale(data[0]) || resF->isStale(data[(sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)])));
-}
-
-void MEDDLY::saturation_evplus_op::discardEntry(const node_handle* data)
-{
-  if (argF->isFullyReduced()) {
-    argF->uncacheNode(data[0]);
-    resF->uncacheNode(data[(sizeof(node_handle) + sizeof(int) + sizeof(long)) / sizeof(node_handle)]);
-  } else {
-    argF->uncacheNode(data[0]);
-    resF->uncacheNode(data[(sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)]);
-  }
-}
-
-void MEDDLY::saturation_evplus_op::showEntry(output &strm, const node_handle* data, bool key_only) const
-{
-  if (argF->isFullyReduced()) {
-    strm << "[" << getName()
-      << "(" << long(data[0])
-      << ", " << long(data[sizeof(node_handle) / sizeof(node_handle)])
-      << "): ";
-    if (key_only) {
-      strm << "?";
-    } else {
-      strm << long(data[(sizeof(node_handle) + sizeof(int) + sizeof(long)) / sizeof(node_handle)]);
-    }
-    strm << "]";
-  } else {
-    strm << "[" << getName()
-      << "(" << long(data[0])
-      << "): ";
-    if (key_only) {
-      strm << "?";
-    } else {
-      strm << long(data[(sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)]);
-    }
-    strm << "]";
-  }
-}
-
-#endif // OLD_OP_CT
 
 // ******************************************************************
 // *                                                                *
@@ -895,11 +649,7 @@ void MEDDLY::saturation_evplus_op::showEntry(output &strm, const node_handle* da
 
 MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res)
-#ifdef OLD_OP_CT
-: binary_operation(oc, 2, 1, a1, a2, res)
-#else
 : binary_operation(oc, 1, a1, a2, res)
-#endif
 {
   splits = 0;
   mddUnion = 0;
@@ -907,61 +657,14 @@ MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
   mxdDifference = 0;
   freeqs = 0;
   freebufs = 0;
-#ifndef OLD_OP_CT
+
   compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "NN:N");
   et->setForestForSlot(0, a1);
   et->setForestForSlot(1, a2);
   et->setForestForSlot(3, res);
   registerEntryType(0, et);
   buildCTs();
-#endif
 }
-
-#ifdef OLD_OP_CT
-
-#ifndef USE_NODE_STATUS
-bool MEDDLY::common_dfs_mt::isStaleEntry(const node_handle* data)
-{
-  return arg1F->isStale(data[0]) ||
-         arg2F->isStale(data[1]) ||
-         resF->isStale(data[2]);
-}
-#else
-MEDDLY::forest::node_status
-MEDDLY::common_dfs_mt::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[0]);
-  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[1]);
-  MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
-
-  if (a == MEDDLY::forest::DEAD ||
-      b == MEDDLY::forest::DEAD ||
-      c == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE ||
-      b == MEDDLY::forest::RECOVERABLE ||
-      c == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-void MEDDLY::common_dfs_mt::discardEntry(const node_handle* data)
-{
-  arg1F->uncacheNode(data[0]);
-  arg2F->uncacheNode(data[1]);
-  resF->uncacheNode(data[2]);
-}
-
-void MEDDLY::common_dfs_mt::showEntry(output &strm, const node_handle* data, bool key_only) const
-{
-  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
-  if (key_only) strm << "?]";
-  else          strm << long(data[2]) << "]";
-}
-
-#endif // OLD_OP_CT
 
 void MEDDLY::common_dfs_mt
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
@@ -1593,14 +1296,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
 
 MEDDLY::common_dfs_evplus::common_dfs_evplus(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res)
-#ifdef OLD_OP_CT
-: binary_operation(oc,
-    (sizeof(node_handle) + sizeof(node_handle)) / sizeof(node_handle),
-    (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
-    a1, a2, res)
-#else
 : binary_operation(oc, 1, a1, a2, res)
-#endif
 {
   splits = 0;
   evplusUnionMin = 0;
@@ -1608,47 +1304,15 @@ MEDDLY::common_dfs_evplus::common_dfs_evplus(const binary_opname* oc, expert_for
   mxdDifference = 0;
   freeqs = 0;
   freebufs = 0;
-#ifndef OLD_OP_CT
+
   compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "NN:LN");
   et->setForestForSlot(0, a1);
   et->setForestForSlot(1, a2);
   et->setForestForSlot(4, res);
   registerEntryType(0, et);
   buildCTs();
-#endif
 }
 
-#ifdef OLD_OP_CT
-
-bool MEDDLY::common_dfs_evplus::isStaleEntry(const node_handle* data)
-{
-  return arg1F->isStale(data[0]) ||
-         arg2F->isStale(data[sizeof(node_handle) / sizeof(node_handle)]) ||
-         resF->isStale(data[(2 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)]);
-}
-
-void MEDDLY::common_dfs_evplus::discardEntry(const node_handle* data)
-{
-  arg1F->uncacheNode(data[0]);
-  arg2F->uncacheNode(data[sizeof(node_handle) / sizeof(node_handle)]);
-  resF->uncacheNode(data[(2 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)]);
-}
-
-void MEDDLY::common_dfs_evplus::showEntry(output &strm, const node_handle* data, bool key_only) const
-{
-  strm << "[" << getName()
-    << "(" << long(data[0])
-    << ", " << long(data[sizeof(node_handle) / sizeof(node_handle)])
-    << "): ";
-  if (key_only) {
-    strm << "?";
-  } else {
-    strm << long(data[(2 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)]);
-  }
-  strm << "]";
-}
-
-#endif // OLD_OP_CT
 
 void MEDDLY::common_dfs_evplus
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)

@@ -79,54 +79,25 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
     node_handle saturate(node_handle mdd);
     node_handle saturate(node_handle mdd, int level);
 
-#ifdef OLD_OP_CT
-#ifndef USE_NODE_STATUS
-    virtual bool isStaleEntry(const node_handle* entryData);
-#else
-    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
-#endif
-    virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif
-
   protected:
     inline compute_table::entry_key* 
     findSaturateResult(node_handle a, int level, node_handle& b) {
-#ifdef OLD_OP_CT
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       if (argF->isFullyReduced()) CTsrch->writeI(level);
-#ifdef OLD_OP_CT
-      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-      if (!cacheFind) return CTsrch;
-      b = resF->linkNode(cacheFind.readN()); 
-#else
       CT0->find(CTsrch, CTresult[0]);
       if (!CTresult[0]) return CTsrch;
       b = resF->linkNode(CTresult[0].readN()); 
-#endif
       CT0->recycle(CTsrch);
       return 0;
     }
     inline node_handle saveSaturateResult(compute_table::entry_key* Key,
       node_handle a, node_handle b) 
     {
-#ifdef OLD_OP_CT
-      argF->cacheNode(a);
-      resF->cacheNode(b);
-      static compute_table::entry_result result(1);
-      result.reset();
-      result.writeN(b);
-      CT0->addEntry(Key, result);
-#else
       CTresult[0].reset();
       CTresult[0].writeN(b);
       CT0->addEntry(Key, CTresult[0]);
-#endif
       return b;
     }
 };
@@ -144,15 +115,6 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
       satotf_opname::otf_relation* rel);
     virtual ~common_otf_dfs_by_events_mt();
 
-#ifdef OLD_OP_CT
-#ifndef USE_NODE_STATUS
-    virtual bool isStaleEntry(const node_handle* entryData);
-#else
-    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
-#endif
-    virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif
     virtual void compute(const dd_edge& a, dd_edge &c);
     virtual void saturateHelper(unpacked_node& mdd) = 0;
 
@@ -160,42 +122,22 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-#ifdef OLD_OP_CT
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
-#ifdef OLD_OP_CT
-      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-      if (!cacheFind) return CTsrch;
-      c = resF->linkNode(cacheFind.readN());
-#else
       CT0->find(CTsrch, CTresult[0]);
       if (!CTresult[0]) return CTsrch;
       c = resF->linkNode(CTresult[0].readN());
-#endif
       CT0->recycle(CTsrch);
       return 0;
     }
     inline node_handle saveResult(compute_table::entry_key* Key,
       node_handle a, node_handle b, node_handle c) 
     {
-#ifdef OLD_OP_CT
-      arg1F->cacheNode(a);
-      arg2F->cacheNode(b);
-      resF->cacheNode(c);
-      static compute_table::entry_result result(1);
-      result.reset();
-      result.writeN(c);
-      CT0->addEntry(Key, result);
-#else
       CTresult[0].reset();
       CTresult[0].writeN(c);
       CT0->addEntry(Key, CTresult[0]);
-#endif
       return c;
     }
 
@@ -319,16 +261,6 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
 // *                                                                *
 // ******************************************************************
 
-#ifdef OLD_OP_CT
-MEDDLY::otfsat_by_events_op
-::otfsat_by_events_op(common_otf_dfs_by_events_mt* p,
-  expert_forest* argF, expert_forest* resF)
-  : unary_operation(otfsat_by_events_opname::getInstance(),
-    ((argF != 0 && argF->isFullyReduced())? 2: 1), 1, argF, resF)
-{
-  parent = p;
-}
-#else
 MEDDLY::otfsat_by_events_op
 ::otfsat_by_events_op(common_otf_dfs_by_events_mt* p,
   expert_forest* argF, expert_forest* resF)
@@ -352,7 +284,6 @@ MEDDLY::otfsat_by_events_op
   registerEntryType(0, et);
   buildCTs();
 }
-#endif
 
 MEDDLY::otfsat_by_events_op::~otfsat_by_events_op()
 {
@@ -418,60 +349,6 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
   return n;
 }
 
-#ifdef OLD_OP_CT
-
-#ifndef USE_NODE_STATUS
-bool MEDDLY::otfsat_by_events_op::isStaleEntry(const node_handle* data)
-{
-  return (argF->isFullyReduced()
-  ? (argF->isStale(data[0]) || resF->isStale(data[2]))
-  : (argF->isStale(data[0]) || resF->isStale(data[1])));
-}
-#else
-MEDDLY::forest::node_status
-MEDDLY::otfsat_by_events_op::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
-  MEDDLY::forest::node_status c =
-    resF->getNodeStatus(data[ (argF->isFullyReduced()? 2: 1) ]);
-
-  if (a == MEDDLY::forest::DEAD ||
-      c == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE ||
-      c == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-void MEDDLY::otfsat_by_events_op::discardEntry(const node_handle* data)
-{
-  if (argF->isFullyReduced()) {
-    argF->uncacheNode(data[0]);
-    resF->uncacheNode(data[2]);
-  } else {
-    argF->uncacheNode(data[0]);
-    resF->uncacheNode(data[1]);
-  }
-}
-
-void MEDDLY::otfsat_by_events_op::showEntry(output &strm,
-  const node_handle* data, bool key_only) const
-{
-  if (argF->isFullyReduced()) {
-    strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
-    if (key_only) strm << "?]";
-    else          strm << long(data[2]) << "]";
-  } else {
-    strm << "[" << getName() << "(" << long(data[0]) << "): ";
-    if (key_only) strm << "?]";
-    else          strm << long(data[1]) << "]";
-  }
-}
-
-#endif // OLD_OP_CT
 
 // ******************************************************************
 // *                                                                *
@@ -482,11 +359,7 @@ void MEDDLY::otfsat_by_events_op::showEntry(output &strm,
 MEDDLY::common_otf_dfs_by_events_mt::common_otf_dfs_by_events_mt(
   const satotf_opname* opcode,
   satotf_opname::otf_relation* relation)
-#ifdef OLD_OP_CT
-: specialized_operation(opcode, 2, 1)
-#else
 : specialized_operation(opcode, 1)
-#endif
 {
   mddUnion = 0;
   mxdIntersection = 0;
@@ -501,16 +374,13 @@ MEDDLY::common_otf_dfs_by_events_mt::common_otf_dfs_by_events_mt(
   registerInForest(arg1F);
   registerInForest(arg2F);
   registerInForest(resF);
-#ifdef OLD_OP_CT
-  setAnswerForest(resF);
-#else
+
   compute_table::entry_type* et = new compute_table::entry_type(opcode->getName(), "NN:N");
   et->setForestForSlot(0, arg1F);
   et->setForestForSlot(1, arg2F);
   et->setForestForSlot(3, resF);
   registerEntryType(0, et);
   buildCTs();
-#endif
 }
 
 MEDDLY::common_otf_dfs_by_events_mt::~common_otf_dfs_by_events_mt()
@@ -520,53 +390,6 @@ MEDDLY::common_otf_dfs_by_events_mt::~common_otf_dfs_by_events_mt()
   unregisterInForest(arg2F);
   unregisterInForest(resF);
 }
-
-#ifdef OLD_OP_CT
-
-#ifndef USE_NODE_STATUS
-bool MEDDLY::common_otf_dfs_by_events_mt::isStaleEntry(const node_handle* data)
-{
-  return arg1F->isStale(data[0]) ||
-         arg2F->isStale(data[1]) ||
-         resF->isStale(data[2]);
-}
-#else
-MEDDLY::forest::node_status
-MEDDLY::common_otf_dfs_by_events_mt::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[0]);
-  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[1]);
-  MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
-
-  if (a == MEDDLY::forest::DEAD ||
-      b == MEDDLY::forest::DEAD ||
-      c == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE ||
-      b == MEDDLY::forest::RECOVERABLE ||
-      c == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-void MEDDLY::common_otf_dfs_by_events_mt::discardEntry(const node_handle* data)
-{
-  arg1F->uncacheNode(data[0]);
-  arg2F->uncacheNode(data[1]);
-  resF->uncacheNode(data[2]);
-}
-
-void MEDDLY::common_otf_dfs_by_events_mt::showEntry(output &strm,
-  const node_handle* data, bool key_only) const
-{
-  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
-  if (key_only) strm << "?]";
-  else          strm << long(data[2]) << "]";
-}
-
-#endif // OLD_OP_CT
 
 void MEDDLY::common_otf_dfs_by_events_mt
 ::compute(const dd_edge &a, dd_edge &c)

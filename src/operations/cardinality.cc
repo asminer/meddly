@@ -66,17 +66,6 @@ class MEDDLY::card_int : public unary_operation {
 public:
   card_int(const unary_opname* oc, expert_forest* arg);
 
-  // common
-#ifdef OLD_OP_CT
-#ifndef USE_NODE_STATUS
-  virtual bool isStaleEntry(const node_handle* entryData);
-#else
-  virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* data);
-#endif
-  virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif
-
 protected:
   static inline void overflow_acc(long &a, long x) {
     a += x;
@@ -89,12 +78,6 @@ protected:
   }
 };
 
-#ifdef OLD_OP_CT
-MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, sizeof(long) / sizeof(node_handle), arg, INTEGER)
-{
-}
-#else
 MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, INTEGER)
 {
@@ -103,47 +86,6 @@ MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
   registerEntryType(0, et);
   buildCTs();
 }
-#endif
-
-#ifdef OLD_OP_CT
-#ifndef USE_NODE_STATUS
-bool MEDDLY::card_int::isStaleEntry(const node_handle* data)
-{
-  return argF->isStale(data[0]);
-}
-#else
-MEDDLY::forest::node_status
-MEDDLY::card_int::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
-
-  if (a == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-void MEDDLY::card_int::discardEntry(const node_handle* data)
-{
-  argF->uncacheNode(data[0]);
-}
-
-void MEDDLY::card_int::showEntry(output &strm, const node_handle* data, bool key_only) const
-{
-  strm  << "[" << getName() << "(" << long(data[0]) << "): ";
-  if (key_only) {
-    strm << "?]";
-  } else {
-    long answer;
-    memcpy(&answer, data+1, sizeof(long));
-    strm << answer << "(L)]";
-  }
-}
-
-#endif
 
 // ******************************************************************
 // *                                                                *
@@ -174,26 +116,14 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-#ifdef OLD_OP_CT
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a); 
-#ifdef OLD_OP_CT
-  compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-  if (cacheFind) {
-    CT0->recycle(CTsrch);
-    return cacheFind.readL();
-  }
-#else
   CT0->find(CTsrch, CTresult[0]);
   if (CTresult[0]) {
     CT0->recycle(CTsrch);
     return CTresult[0].readL();
   }
-#endif
 
   // Initialize node reader
   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
@@ -209,17 +139,9 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   unpacked_node::recycle(A);
 
   // Add entry to compute table
-#ifdef OLD_OP_CT
-  argF->cacheNode(a);
-  static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
-  result.reset();
-  result.writeL(card);
-  CT0->addEntry(CTsrch, result);
-#else
   CTresult[0].reset();
   CTresult[0].writeL(card);
   CT0->addEntry(CTsrch, CTresult[0]);
-#endif
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is %ld(L)\n", a, card);
@@ -262,26 +184,14 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-#ifdef OLD_OP_CT
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a); 
-#ifdef OLD_OP_CT
-  compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-  if (cacheFind) {
-    CT0->recycle(CTsrch);
-    return cacheFind.readL();
-  }
-#else
   CT0->find(CTsrch, CTresult[0]);
   if (CTresult[0]) {
     CT0->recycle(CTsrch);
     return CTresult[0].readL();
   }
-#endif
 
   // Initialize node reader
   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
@@ -297,17 +207,9 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   unpacked_node::recycle(A);
 
   // Add entry to compute table
-#ifdef OLD_OP_CT
-  argF->cacheNode(a);
-  static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
-  result.reset();
-  result.writeL(card);
-  CT0->addEntry(CTsrch, result);
-#else
   CTresult[0].reset();
   CTresult[0].writeL(card);
   CT0->addEntry(CTsrch, CTresult[0]);
-#endif
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is %ld(L)\n", a, card);
@@ -326,23 +228,8 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
 class MEDDLY::card_real : public unary_operation {
 public:
   card_real(const unary_opname* oc, expert_forest* arg);
-
-  // common
-#ifndef USE_NODE_STATUS
-    virtual bool isStaleEntry(const node_handle* entryData);
-#else
-    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
-#endif
-  virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 };
 
-#ifdef OLD_OP_CT
-MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, sizeof(double) / sizeof(node_handle), arg, REAL)
-{
-}
-#else
 MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, REAL)
 {
@@ -351,46 +238,6 @@ MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
   registerEntryType(0, et);
   buildCTs();
 }
-#endif
-
-#ifndef USE_NODE_STATUS
-bool MEDDLY::card_real::isStaleEntry(const node_handle* data)
-{
-  return argF->isStale(data[0]);
-}
-#else
-MEDDLY::forest::node_status
-MEDDLY::card_real::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
-
-  if (a == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-void MEDDLY::card_real::discardEntry(const node_handle* data)
-{
-  argF->uncacheNode(data[0]);
-}
-
-void MEDDLY::card_real::showEntry(output &strm, const node_handle* data, bool key_only) const
-{
-  strm  << "[" << getName() << "(" << long(data[0]) << "): ";
-  if (key_only) {
-    strm.put('?');
-  } else {
-    double answer;
-    memcpy(&answer, data+1, sizeof(double));
-    strm.put(answer, 0, 0, 'e');
-  }
-  strm.put(']');
-}
-
 
 // ******************************************************************
 // *                                                                *
@@ -421,26 +268,14 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-#ifdef OLD_OP_CT
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a); 
-#ifdef OLD_OP_CT
-  compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-  if (cacheFind) {
-    CT0->recycle(CTsrch);
-    return cacheFind.readD();
-  }
-#else
   CT0->find(CTsrch, CTresult[0]);
   if (CTresult[0]) {
     CT0->recycle(CTsrch);
     return CTresult[0].readD();
   }
-#endif
 
   // Initialize node reader
   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
@@ -456,17 +291,9 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   unpacked_node::recycle(A);
 
   // Add entry to compute table
-#ifdef OLD_OP_CT
-  argF->cacheNode(a);
-  static compute_table::entry_result result(sizeof(double) / sizeof(node_handle));
-  result.reset();
-  result.writeD(card);
-  CT0->addEntry(CTsrch, result);
-#else
   CTresult[0].reset();
   CTresult[0].writeD(card);
   CT0->addEntry(CTsrch, CTresult[0]);
-#endif
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is %le(L)\n", a, card);
@@ -510,26 +337,14 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
   }
   
   // Check compute table
-#ifdef OLD_OP_CT
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a); 
-#ifdef OLD_OP_CT
-  compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-  if (cacheFind) {
-    CT0->recycle(CTsrch);
-    return cacheFind.readD();
-  }
-#else
   CT0->find(CTsrch, CTresult[0]);
   if (CTresult[0]) {
     CT0->recycle(CTsrch);
     return CTresult[0].readD();
   }
-#endif
 
   // Initialize node reader
   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
@@ -545,17 +360,9 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
   unpacked_node::recycle(A);
 
   // Add entry to compute table
-#ifdef OLD_OP_CT
-  argF->cacheNode(a);
-  static compute_table::entry_result result(sizeof(long) / sizeof(node_handle));
-  result.reset();
-  result.writeD(card);
-  CT0->addEntry(CTsrch, result);
-#else
   CTresult[0].reset();
   CTresult[0].writeD(card);
   CT0->addEntry(CTsrch, CTresult[0]);
-#endif
 
 
 #ifdef DEBUG_CARD
@@ -579,23 +386,8 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
 class MEDDLY::card_mpz : public unary_operation {
 public:
   card_mpz(const unary_opname* oc, expert_forest* arg);
-
-  // common
-#ifndef USE_NODE_STATUS
-  virtual bool isStaleEntry(const node_handle* entryData);
-#else
-  virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
-#endif
-  virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
 };
 
-#ifdef OLD_OP_CT
-MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, sizeof(ct_object*) / sizeof(node_handle), arg, HUGEINT)
-{
-}
-#else
 MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, HUGEINT)
 {
@@ -603,48 +395,6 @@ MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
   et->setForestForSlot(0, arg);
   registerEntryType(0, et);
   buildCTs();
-}
-#endif
-
-#ifndef USE_NODE_STATUS
-bool MEDDLY::card_mpz::isStaleEntry(const node_handle* data)
-{
-  return argF->isStale(data[0]);
-}
-#else
-MEDDLY::forest::node_status
-MEDDLY::card_mpz::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = argF->getNodeStatus(data[0]);
-
-  if (a == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-void MEDDLY::card_mpz::discardEntry(const node_handle* data)
-{
-  argF->uncacheNode(data[0]);
-  mpz_object* answer;
-  memcpy(&answer, data+1, sizeof(mpz_object*));
-  delete answer;
-}
-
-void MEDDLY::card_mpz::showEntry(output &strm, const node_handle* entryData, bool key_only) const
-{
-  strm  << "[" << getName() << "(" << long(entryData[0]) << "): ";
-  if (key_only) {
-    strm.put('?');
-  } else {
-    mpz_object* answer;
-    memcpy(&answer, entryData+1, sizeof(mpz_object*));
-    answer->show(strm);
-    strm.put(']');
-  }
 }
 
 #endif
@@ -690,23 +440,9 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
   
   // Check compute table
-#ifdef OLD_OP_CT
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a);
-#ifdef OLD_OP_CT
-  compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-  if (cacheFind) {
-    void* P = cacheFind.readP();
-    mpz_object* answer = (mpz_object*) P;
-    answer->copyInto(card);
-    CT0->recycle(CTsrch);
-    return;
-  }
-#else
   CT0->find(CTsrch, CTresult[0]);
   if (CTresult[0]) {
     ct_object* G = CTresult[0].readG();
@@ -716,7 +452,6 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
     CT0->recycle(CTsrch);
     return;
   }
-#endif
 
   // Initialize node reader
   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
@@ -736,17 +471,9 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   unpacked_node::recycle(A);
 
   // Add entry to compute table
-#ifdef OLD_OP_CT
-  argF->cacheNode(a);
-  static compute_table::entry_result result(sizeof(void*) / sizeof(node_handle));
-  result.reset();
-  result.writeP(new mpz_object(card));
-  CT0->addEntry(CTsrch, result);
-#else
   CTresult[0].reset();
   CTresult[0].writeG(new mpz_object(card));
   CT0->addEntry(CTsrch, CTresult[0]);
-#endif
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is ", a);
@@ -803,23 +530,9 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
   
   // Check compute table
-#ifdef OLD_OP_CT
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a);
-#ifdef OLD_OP_CT
-  compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-  if (cacheFind) {
-    void* P = cacheFind.readP();
-    mpz_object* answer = (mpz_object*) P;
-    answer->copyInto(card);
-    CT0->recycle(CTsrch);
-    return;
-  }
-#else
   CT0->find(CTsrch, CTresult[0]);
   if (CTresult[0]) {
     ct_object* G = CTresult[0].readG();
@@ -829,7 +542,6 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
     CT0->recycle(CTsrch);
     return;
   }
-#endif
 
   // Initialize node reader
   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
@@ -848,17 +560,9 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   unpacked_node::recycle(A);
 
   // Add entry to compute table
-#ifdef OLD_OP_CT
-  argF->cacheNode(a);
-  static compute_table::entry_result result(sizeof(void*) / sizeof(node_handle));
-  result.reset();
-  result.writeP(new mpz_object(card));
-  CT0->addEntry(CTsrch, result);
-#else
   CTresult[0].reset();
   CTresult[0].writeG(new mpz_object(card));
   CT0->addEntry(CTsrch, CTresult[0]);
-#endif
 
 #ifdef DEBUG_CARD
   fprintf(stderr, "Cardinality of node %d is ", a);

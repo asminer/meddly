@@ -42,8 +42,6 @@
 #include <cstdint>
 #include <map>
 
-// #define OLD_OP_CT
-// #define USE_NODE_STATUS
 
 namespace MEDDLY {
 
@@ -56,7 +54,7 @@ namespace MEDDLY {
   class unpacked_node;  // replacement for node_reader, node_builder
 
   // EXPERIMENTAL - matrix wrappers for unprimed, primed pairs of nodes
-  class unpacked_matrix;
+  // class unpacked_matrix;
   class relation_node;
   
   /*
@@ -635,13 +633,11 @@ class MEDDLY::unpacked_node {
     static unpacked_node* newFromNode(const expert_forest *f, node_handle node, storage_style st2);
 
     static unpacked_node* newRedundant(const expert_forest *f, int k, node_handle node, bool full);
-//    static unpacked_node* newRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full);
     static unpacked_node* newRedundant(const expert_forest *f, int k, long ev, node_handle node, bool full);
     static unpacked_node* newRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full);
 
     static unpacked_node* newIdentity(const expert_forest *f, int k, int i, node_handle node, bool full);
     static unpacked_node* newIdentity(const expert_forest *f, int k, int i, long ev, node_handle node, bool full);
-//    static unpacked_node* newIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full);
     static unpacked_node* newIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full);
 
     static unpacked_node* newFull(const expert_forest *f, int level, int tsz);
@@ -718,7 +714,6 @@ class MEDDLY::unpacked_node {
     void* eptr_write(int i);
 
     /// Get the edge value, as an integer.
-//    void getEdge(int i, int& ev) const;
     void getEdge(int i, long& ev) const;
 
     /// Get the edge value, as a float.
@@ -885,17 +880,6 @@ class MEDDLY::unpacked_node {
 #endif
 };
 
-// ******************************************************************
-// *                                                                *
-// *                     relation_node  class                       *
-// *                                                                *
-// ******************************************************************
-
-/** Class for relation nodes of implicit relation
- Implemented in node_wrappers.cc.
- 
- TBD : inline what we should
- */
 
 
 
@@ -910,6 +894,9 @@ class MEDDLY::unpacked_node {
 
     TBD : inline what we should
 */
+
+#if 0
+
 class MEDDLY::unpacked_matrix {
 
   public:
@@ -1023,6 +1010,7 @@ class MEDDLY::unpacked_matrix {
 
 };  // end of unpacked_matrix class
 
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -2152,9 +2140,6 @@ class MEDDLY::expert_forest: public forest
     /// Returns true if we are tracking incoming counts
     bool trackingCacheCounts() const;
 
-    /// Returns the cache count for a node.
-    // long getNodeCacheCount(node_handle p) const;
-
     /** Increase the cache count for this node. Call this whenever this node
         is added to a cache.
           @param  p     Node we care about.
@@ -2213,11 +2198,7 @@ class MEDDLY::expert_forest: public forest
     ///   in-count and cache-count are zero.
     /// Pessimistic deletion: A node is said to be stale when the in-count
     ///  is zero regardless of the cache-count.
-// #ifndef USE_NODE_STATUS
-    bool isStale(node_handle node) const;
-// #else
     MEDDLY::forest::node_status getNodeStatus(node_handle node) const;
-// #endif
 
   // ------------------------------------------------------------
   // non-virtual, handy methods for debugging or logging.
@@ -2790,11 +2771,7 @@ class MEDDLY::expert_forest: public forest
 
     /// Should a terminal node be considered a stale entry in the compute table.
     /// per-forest policy, derived classes may change as appropriate.
-// #ifndef USE_NODE_STATUS
-    bool terminalNodesAreStale;
-// #else
     MEDDLY::forest::node_status terminalNodesStatus;
-// #endif
 
     /// Class that stores nodes.
     node_storage* nodeMan;
@@ -3781,11 +3758,7 @@ class MEDDLY::ct_initializer : public initializer_list {
     static void setCompression(compressionOption co);
 
     // for convenience
-#ifdef OLD_OP_CT
-    static compute_table* createForOp(operation* op);
-#else
     static compute_table* createForOp(operation* op, unsigned slot);
-#endif
 
   private:
     static settings the_settings;
@@ -3884,7 +3857,6 @@ class MEDDLY::compute_table {
       // ******************************************************************
       //
 
-#ifndef OLD_OP_CT
       union entry_item {
         int I;
         unsigned int U;
@@ -3895,7 +3867,6 @@ class MEDDLY::compute_table {
         double D;
         ct_object* G;
       };
-#endif
 
       //
       // ******************************************************************
@@ -4116,18 +4087,10 @@ class MEDDLY::compute_table {
 
         protected:
           /// Start using for this operation
-#ifdef OLD_OP_CT
-          void setup(operation* op, unsigned slots); 
-#else
           void setup(const compute_table::entry_type* et, unsigned repeats);
-#endif
 
         public:
-#ifdef OLD_OP_CT
-          operation* getOp() const;
-#else
           const compute_table::entry_type* getET() const;
-#endif
 
           // interface, for operations.  All inlined in meddly_expert.hh
           void writeN(node_handle nh);
@@ -4140,10 +4103,6 @@ class MEDDLY::compute_table {
 
         public: 
           // interface, for compute_table.  All inlined in meddly_expert.hh
-#ifdef OLD_OP_CT
-          const node_handle* rawData(bool includeOp) const;
-          unsigned dataLength(bool includeOp) const;
-#else
           const entry_item* rawData() const;
           unsigned dataLength() const;
           unsigned numRepeats() const;
@@ -4153,30 +4112,22 @@ class MEDDLY::compute_table {
           void* allocTempData(unsigned bytes);
           /// Increase cache counters for nodes in this portion of the entry.
           void cacheNodes() const;
-#endif
           unsigned getHash() const;
 
         protected:
           // protected interface, for compute_table.  All inlined in meddly_expert.hh
           void setHash(unsigned h);
 
-#ifndef OLD_OP_CT
         private:
           typeID theSlotType() const;
-#endif
 
         private:
-#ifdef OLD_OP_CT
-          operation* op;
-          node_handle* data;
-#else 
           const compute_table::entry_type* etype;
           entry_item* data;
           void* temp_data; 
           unsigned temp_bytes;
           unsigned temp_alloc;
           unsigned num_repeats;
-#endif
           unsigned hash_value;
           unsigned data_alloc;
 
@@ -4205,16 +4156,11 @@ class MEDDLY::compute_table {
       class entry_result {
         public:
           entry_result();
-#ifdef OLD_OP_CT
-          entry_result(unsigned slots);
-#endif
           ~entry_result();
 
         public:
-#ifndef OLD_OP_CT
           // For delayed construction
           void initialize(const entry_type* et);
-#endif
 
           // interface, for operations (reading).
           node_handle readN();
@@ -4235,41 +4181,23 @@ class MEDDLY::compute_table {
           void writeL(long L);
           void writeD(double D);
           void writeG(ct_object* G);
-#ifdef OLD_OP_CT
-          void write_raw(void* data, size_t slots);
-#endif
 
           // interface, for compute tables.
           void setValid();
-#ifndef OLD_OP_CT
           void setValid(const entry_item* d);
-#endif
           void setInvalid();
           operator bool() const;
-#ifndef OLD_OP_CT
           /// Increase cache counters for nodes in this portion of the entry.
           void cacheNodes() const;
-#endif
 
-#ifdef OLD_OP_CT
-          void setResult(const node_handle* d, unsigned sz);
-          const node_handle* rawData() const;
-#else 
           const entry_item* rawData() const;
-#endif
           unsigned dataLength() const;
 
 
         private:
-#ifdef OLD_OP_CT
-          const node_handle* data;
-          node_handle* build;
-          unsigned ansLength;
-#else
           const entry_type* etype;
           entry_item* build;
           const entry_item* data;
-#endif
           bool is_valid;
           unsigned currslot;
       };
@@ -4295,11 +4223,7 @@ class MEDDLY::compute_table {
       /**
           Start using an entry_key for the given operation.
       */
-#ifdef OLD_OP_CT
-      static entry_key* useEntryKey(operation* op);
-#else
       static entry_key* useEntryKey(const entry_type* et, unsigned repeats);
-#endif
 
       /**
           Done using an entry_key.
@@ -4310,22 +4234,11 @@ class MEDDLY::compute_table {
       /// Is this a per-operation compute table?
       virtual bool isOperationTable() const = 0;
 
-      /// Initialize a search key for a given operation.
-      // virtual entry_key* initializeSearchKey(operation* op) = 0;
-
-#ifdef OLD_OP_CT
-      /** Find an entry in the compute table based on the key provided.
-          @param  key   Key to search for.
-          @return       Result, if found.
-      */
-      virtual entry_result& find(entry_key* key) = 0;
-#else
       /** Find an entry in the compute table based on the key provided.
           @param  key   Key to search for.
           @param  res   Where to store the result, if any.
       */
       virtual void find(entry_key* key, entry_result &res) = 0;
-#endif
 
       /**
           Add an entry (key plus result) to the compute table.
@@ -4362,7 +4275,6 @@ class MEDDLY::compute_table {
       static void initialize();
       static void destroy();
 
-#ifndef OLD_OP_CT
     protected:
       /** Register an operation.
           Sets aside a number of entry_type slots for the operation.
@@ -4384,20 +4296,16 @@ class MEDDLY::compute_table {
       /// Find entry type for given entryID
       static const entry_type* getEntryType(unsigned etID);
 
-#endif
-
     protected:
       void setHash(entry_key *k, unsigned h);
 
     protected:
       stats perf;
 
-#ifndef OLD_OP_CT
     private:
       static entry_type** entryInfo;
       static unsigned entryInfoAlloc;
       static unsigned entryInfoSize;
-#endif
 
     private:
       static entry_key* free_keys;
@@ -4419,10 +4327,6 @@ class MEDDLY::operation {
     const opname* theOpName;
     int oplist_index;
     bool is_marked_for_deletion;
-#ifdef OLD_OP_CT
-    int key_length;   
-    int ans_length;
-#endif
 
     // declared and initialized in meddly.cc
     static compute_table* Monolithic_CT;
@@ -4440,18 +4344,15 @@ class MEDDLY::operation {
     // should ONLY be called during library cleanup.
     static void destroyAllOps();
 
-#ifndef OLD_OP_CT
     /**
       Starting slot for entry_types, assigned
       by compute_table.
     */
     unsigned first_etid;
-#endif
 
   protected:
     /// Compute table to use (for entry type 0), if any.
     compute_table* CT0;
-#ifndef OLD_OP_CT
     /// Array of compute tables, one per entry type.
     compute_table** CT;
     /** Array of entry types.
@@ -4470,33 +4371,16 @@ class MEDDLY::operation {
       This gives the dimension of arrays CT and etype.
     */
     unsigned num_etids;
-#endif
+
     /// Struct for CT searches.
     // compute_table::entry_key* CTsrch;
     // for cache of operations.
     operation* next;
 
-#ifdef OLD_OP_CT
-    // must stale compute table hits be discarded.
-    // if the result forest is using pessimistic deletion, then true.
-    // otherwise, false.  MUST BE SET BY DERIVED CLASSES.
-    bool discardStaleHits;
-#endif
-
     virtual ~operation();
-#ifdef OLD_OP_CT
-    void setAnswerForest(const expert_forest* f);
-#endif
     void markForDeletion();
     void registerInForest(forest* f);
     void unregisterInForest(forest* f);
-#ifdef OLD_OP_CT
-#ifndef USE_NODE_STATUS
-    virtual bool isStaleEntry(const node_handle* entry) = 0;
-#else
-    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entry) = 0;
-#endif
-#endif
     void allocEntryForests(int nf);
     void addEntryForest(int index, expert_forest* f);
     void allocEntryObjects(int no);
@@ -4504,10 +4388,8 @@ class MEDDLY::operation {
 
     virtual bool checkForestCompatibility() const = 0;
 
-#ifndef OLD_OP_CT
     void registerEntryType(unsigned slot, compute_table::entry_type* et);
     void buildCTs();
-#endif
 
     friend class forest;
     friend void MEDDLY::destroyOpInternal(operation* op);
@@ -4516,15 +4398,6 @@ class MEDDLY::operation {
     friend class ct_initializer;
 
   public:
-#ifdef OLD_OP_CT
-    /// New constructor.
-    /// @param  n   Operation "name"
-    /// @param  kl  Key length of compute table entries.
-    ///             Use 0 if this operation does not use the compute table.
-    /// @param  al  Answer length of compute table entries.
-    ///             Use 0 if this operation does not use the compute table.
-    operation(const opname* n, int kl, int al);
-#else
     /**
         Constructor.
           @param  n         Operation "name"
@@ -4534,7 +4407,6 @@ class MEDDLY::operation {
                             exactly this many entry types.
     */
     operation(const opname* n, unsigned et_slots);
-#endif
 
     bool isMarkedForDeletion() const;
     void setNext(operation* n);
@@ -4556,11 +4428,9 @@ class MEDDLY::operation {
     static operation* getOpWithIndex(int i);
     static int getOpListSize();
 
-#ifndef OLD_OP_CT
     void setFirstETid(unsigned slot);
     unsigned getFirstETid() const;
     unsigned getNumETids() const;
-#endif
 
     // for debugging:
 
@@ -4571,38 +4441,6 @@ class MEDDLY::operation {
     // handy
     const char* getName() const;
     const opname* getOpName() const;
-
-#ifdef OLD_OP_CT
-    /// Number of ints that make up the key (usually the operands).
-    int getKeyLength() const;
-
-    /// Number of ints that make up the answer (usually the results).
-    int getAnsLength() const;
-
-    /// Number of ints that make up the entire record (key + answer)
-    int getCacheEntryLength() const;
-#endif
-
-#ifdef OLD_OP_CT
-
-#ifndef USE_NODE_STATUS
-    /// Checks if the cache entry (in entryData[]) is stale.
-    bool isEntryStale(const node_handle* data);
-#else
-    /// Returns the status of the compute table entry
-    MEDDLY::forest::node_status getEntryStatus(const node_handle* data);
-#endif
-
-    /// Removes the cache entry (in entryData[]) by informing the
-    /// applicable forests that the nodes in this entry are being removed
-    /// from the cache
-    virtual void discardEntry(const node_handle* entryData) = 0;
-
-    /// Prints a string representation of this cache entry on strm (stream).
-    virtual void showEntry(output &strm, const node_handle *entryData, bool key_only) const = 0;
-
-    bool shouldStaleCacheHitsBeDiscarded() const;
-#endif
 };
 
 // ******************************************************************
@@ -4625,19 +4463,11 @@ class MEDDLY::unary_operation : public operation {
     virtual bool checkForestCompatibility() const;
 
   public:
-#ifdef OLD_OP_CT
-    unary_operation(const unary_opname* code, int kl, int al,
-      expert_forest* arg, expert_forest* res);
-
-    unary_operation(const unary_opname* code, int kl, int al,
-      expert_forest* arg, opnd_type res);
-#else
     unary_operation(const unary_opname* code, unsigned et_slots,
       expert_forest* arg, expert_forest* res);
 
     unary_operation(const unary_opname* code, unsigned et_slots,
       expert_forest* arg, opnd_type res);
-#endif
 
     bool matches(const expert_forest* arg, const expert_forest* res)
       const;
@@ -4681,13 +4511,8 @@ class MEDDLY::binary_operation : public operation {
     virtual bool checkForestCompatibility() const;
 
   public:
-#ifdef OLD_OP_CT
-    binary_operation(const binary_opname* code, int kl, int al,
-      expert_forest* arg1, expert_forest* arg2, expert_forest* res);
-#else
     binary_operation(const binary_opname* code, unsigned et_slots,
       expert_forest* arg1, expert_forest* arg2, expert_forest* res);
-#endif
 
     bool matches(const expert_forest* arg1, const expert_forest* arg2,
       const expert_forest* res) const;
@@ -4728,11 +4553,7 @@ class MEDDLY::binary_operation : public operation {
 */
 class MEDDLY::specialized_operation : public operation {
   public:
-#ifdef OLD_OP_CT
-    specialized_operation(const specialized_opname* code, int kl, int al);
-#else
     specialized_operation(const specialized_opname* code, unsigned et_slots);
-#endif
   protected:
     virtual ~specialized_operation();
   public:

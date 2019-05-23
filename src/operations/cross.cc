@@ -38,42 +38,16 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::cross_bool : public binary_operation {
-#ifdef OLD_OP_CT
-    static const int LEVEL_INDEX = 0;
-    static const int OPNDA_INDEX = 1;
-    static const int OPNDB_INDEX = 2;
-    static const int RESLT_INDEX = 3;
-#endif
   public:
     cross_bool(const binary_opname* oc, expert_forest* a1,
       expert_forest* a2, expert_forest* res);
 
-#ifdef OLD_OP_CT
-#ifndef USE_NODE_STATUS
-    virtual bool isStaleEntry(const node_handle*);
-#else
-    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*);
-#endif
-    virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif // OLD_OP_CT
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     node_handle compute_pr(int in, int ht, node_handle a, node_handle b);
     node_handle compute_un(int ht, node_handle a, node_handle b);
 };
 
-#ifdef OLD_OP_CT
-MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res) 
-: binary_operation(oc, 3, 1, a1, a2, res)
-{
-  // data[LEVEL_INDEX] : level
-  // data[OPNDA_INDEX] : a
-  // data[OPNDB_INDEX] : b
-  // data[RESLT_INDEX] : c
-}
-#else
 MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res) 
 : binary_operation(oc, 1, a1, a2, res)
@@ -85,61 +59,6 @@ MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
   registerEntryType(0, et);
   buildCTs();
 }
-#endif
-
-#ifdef OLD_OP_CT
-
-#ifndef USE_NODE_STATUS
-bool MEDDLY::cross_bool::isStaleEntry(const node_handle* data)
-{
-  // data[0] is the level number
-  return arg1F->isStale(data[OPNDA_INDEX]) ||
-         arg2F->isStale(data[OPNDB_INDEX]) ||
-         resF->isStale(data[RESLT_INDEX]);
-}
-#else
-MEDDLY::forest::node_status
-MEDDLY::cross_bool::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[OPNDA_INDEX]);
-  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[OPNDB_INDEX]);
-  MEDDLY::forest::node_status c = resF->getNodeStatus(data[RESLT_INDEX]);
-
-  if (a == MEDDLY::forest::DEAD ||
-      b == MEDDLY::forest::DEAD ||
-      c == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE ||
-      b == MEDDLY::forest::RECOVERABLE ||
-      c == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-void MEDDLY::cross_bool::discardEntry(const node_handle* data)
-{
-  // data[0] is the level number
-  arg1F->uncacheNode(data[OPNDA_INDEX]);
-  arg2F->uncacheNode(data[OPNDB_INDEX]);
-  resF->uncacheNode(data[RESLT_INDEX]);
-}
-
-void
-MEDDLY::cross_bool ::showEntry(output &strm, const node_handle* data, bool key_only) const
-{
-  strm  << "[" << getName() << "(level: " << long(data[1]) << ", " 
-        << long(data[2]) << ", " << long(data[3]) << "): ";
-  if (key_only) {
-    strm << "?";
-  } else {
-    strm << long(data[4]);
-  }
-  strm << "]";
-}
-
-#endif // OLD_OP_CT
 
 void
 MEDDLY::cross_bool::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
@@ -161,28 +80,16 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   }
 
   // check compute table
-#ifdef OLD_OP_CT
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeI(k);
   CTsrch->writeN(a);
   CTsrch->writeN(b);
-#ifdef OLD_OP_CT
-  compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-  if (cacheFind) {
-    CT0->recycle(CTsrch);
-    return resF->linkNode(cacheFind.readN());
-  }
-#else
   CT0->find(CTsrch, CTresult[0]);
   if (CTresult[0]) {
     CT0->recycle(CTsrch);
     return resF->linkNode(CTresult[0].readN());
   }
-#endif
 
   // Initialize unpacked node
   unpacked_node *A = unpacked_node::useUnpackedNode();
@@ -204,19 +111,9 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   unpacked_node::recycle(A);
   node_handle c = resF->createReducedNode(-1, C);
 
-#ifdef OLD_OP_CT
-  arg1F->cacheNode(a);
-  arg2F->cacheNode(b);
-  resF->cacheNode(c);
-  static compute_table::entry_result result(1);
-  result.reset();
-  result.writeN(c);
-  CT0->addEntry(CTsrch, result);
-#else
   CTresult[0].reset();
   CTresult[0].writeN(c);
   CT0->addEntry(CTsrch, CTresult[0]);
-#endif
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(%d, %d, %d) = %d\n", getName(), k, a, b, c);

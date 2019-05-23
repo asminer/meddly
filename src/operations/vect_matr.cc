@@ -54,27 +54,6 @@ class MEDDLY::base_evplus_mt : public specialized_operation {
     virtual void compute_r(int ht, double* y, node_handle y_ind, const double* x, 
       node_handle x_ind, node_handle A) = 0;
 
-#ifdef OLD_OP_CT
-
-#ifndef USE_NODE_STATUS
-    virtual bool isStaleEntry(const node_handle*) {
-      throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    }
-#else
-    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle*) {
-      throw error(error::MISCELLANEOUS);
-    }
-#endif
-
-    virtual void discardEntry(const node_handle*) {
-      throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    }
-    virtual void showEntry(output &, const node_handle*, bool) const {
-      throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    }
-
-#endif
-
   protected:
     const expert_forest* fx;
     const expert_forest* fA;
@@ -95,11 +74,7 @@ class MEDDLY::base_evplus_mt : public specialized_operation {
 
 MEDDLY::base_evplus_mt::base_evplus_mt(const numerical_opname* code, 
   const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
-#ifdef OLD_OP_CT
- : specialized_operation(code, 0, 0)
-#else
  : specialized_operation(code, 0)
-#endif
 {
   fx = (const expert_forest*) x_ind.getForest();
   fA = (const expert_forest*) A.getForest();

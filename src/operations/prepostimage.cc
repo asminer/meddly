@@ -67,55 +67,25 @@ class MEDDLY::image_op : public binary_operation {
     image_op(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
-#ifdef OLD_OP_CT
-#ifndef USE_NODE_STATUS
-    virtual bool isStaleEntry(const node_handle* entryData);
-#else
-    virtual MEDDLY::forest::node_status getStatusOfEntry(const node_handle* entryData);
-#endif
-    virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif // OLD_OP_CT
-
     inline compute_table::entry_key* 
     findResult(node_handle a, node_handle b, node_handle &c) 
     {
-#ifdef OLD_OP_CT
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
-#ifdef OLD_OP_CT
-      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-      if (!cacheFind) return CTsrch;
-      c = resF->linkNode(cacheFind.readN());
-#else
       CT0->find(CTsrch, CTresult[0]);
       if (!CTresult[0]) return CTsrch;
       c = resF->linkNode(CTresult[0].readN());
-#endif
       CT0->recycle(CTsrch);
       return 0;
     }
     inline node_handle saveResult(compute_table::entry_key* Key, 
       node_handle a, node_handle b, node_handle c) 
     {
-#ifdef OLD_OP_CT
-      argV->cacheNode(a);
-      argM->cacheNode(b);
-      resF->cacheNode(c);
-      static compute_table::entry_result result(1);
-      result.reset();
-      result.writeN(c);
-      CT0->addEntry(Key, result);
-#else
       CTresult[0].reset();
       CTresult[0].writeN(c);
       CT0->addEntry(Key, CTresult[0]);
-#endif
       return c;
     }
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -128,24 +98,6 @@ class MEDDLY::image_op : public binary_operation {
     expert_forest* argM;
 };
 
-#ifdef OLD_OP_CT
-MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res, binary_operation* acc)
-: binary_operation(oc, 2, 1, a1, a2, res)
-{
-  accumulateOp = acc;
-
-  if (a1->isForRelations()) {
-    argM = a1;
-    argV = a2;
-    if (a2->isForRelations()) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-  } else {
-    argM = a2;
-    argV = a1;
-    if (!a2->isForRelations()) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-  }
-}
-#else
 MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res, binary_operation* acc)
 : binary_operation(oc, 1, a1, a2, res)
@@ -169,57 +121,6 @@ MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
   registerEntryType(0, et);
   buildCTs();
 }
-#endif
-
-#ifdef OLD_OP_CT
-
-#ifndef USE_NODE_STATUS
-bool MEDDLY::image_op::isStaleEntry(const node_handle* data)
-{
-  return argV->isStale(data[0]) ||
-         argM->isStale(data[1]) ||
-         resF->isStale(data[2]);
-}
-#else
-MEDDLY::forest::node_status
-MEDDLY::image_op::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = argV->getNodeStatus(data[0]);
-  MEDDLY::forest::node_status b = argM->getNodeStatus(data[1]);
-  MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
-
-  if (a == MEDDLY::forest::DEAD ||
-      b == MEDDLY::forest::DEAD ||
-      c == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE ||
-      b == MEDDLY::forest::RECOVERABLE ||
-      c == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-void MEDDLY::image_op::discardEntry(const node_handle* data)
-{
-  argV->uncacheNode(data[0]);
-  argM->uncacheNode(data[1]);
-  resF->uncacheNode(data[2]);
-}
-
-void
-MEDDLY::image_op::showEntry(output &strm, const node_handle* data, bool key_only) const
-{
-  strm  << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
-  if (key_only) {
-    strm << "?]";
-  } else {
-    strm << long(data[2]) << "]";
-  }
-}
-
-#endif // OLD_OP_CT
 
 void MEDDLY::image_op
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
@@ -623,34 +524,17 @@ class MEDDLY::image_op_evplus : public binary_operation {
     image_op_evplus(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
-#ifdef OLD_OP_CT
-    virtual bool isStaleEntry(const node_handle* entryData);
-    virtual void discardEntry(const node_handle* entryData);
-    virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif
-
     inline compute_table::entry_key*
     findResult(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle &resEvmdd)
     {
-#ifdef OLD_OP_CT
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(evmdd);
       CTsrch->writeN(mxd);
-#ifdef OLD_OP_CT
-      compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-      if (!cacheFind) return CTsrch;
-      resEv = cacheFind.readL();
-      resEvmdd = resF->linkNode(cacheFind.readN());
-#else
       CT0->find(CTsrch, CTresult[0]);
       if (!CTresult[0]) return CTsrch;
       resEv = CTresult[0].readL();
       resEvmdd = resF->linkNode(CTresult[0].readN());
-#endif
       if (resEvmdd != 0) {
         resEv += ev;
       }
@@ -660,21 +544,10 @@ class MEDDLY::image_op_evplus : public binary_operation {
     inline void saveResult(compute_table::entry_key* Key,
       long ev, node_handle evmdd, node_handle mxd, long resEv, node_handle resEvmdd)
     {
-#ifdef OLD_OP_CT
-      argV->cacheNode(evmdd);
-      argM->cacheNode(mxd);
-      resF->cacheNode(resEvmdd);
-      static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
-      result.reset();
-      result.writeL(resEvmdd == 0 ? 0L : resEv - ev);
-      result.writeN(resEvmdd);
-      CT0->addEntry(Key, result);
-#else
       CTresult[0].reset();
       CTresult[0].writeL(resEvmdd == 0 ? 0L : resEv - ev);
       CTresult[0].writeN(resEvmdd);
       CT0->addEntry(Key, CTresult[0]);
-#endif
     }
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
@@ -686,33 +559,6 @@ class MEDDLY::image_op_evplus : public binary_operation {
     expert_forest* argM;
 };
 
-
-#ifdef OLD_OP_CT
-
-MEDDLY::image_op_evplus::image_op_evplus(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res, binary_operation* acc)
-: binary_operation(oc,
-    (sizeof(node_handle) + sizeof(node_handle)) / sizeof(node_handle),
-    (sizeof(long) + sizeof(node_handle)) / sizeof(node_handle),
-    a1, a2, res)
-{
-  accumulateOp = acc;
-
-  argV = a1;
-  argM = a2;
-
-//  if (a1->isForRelations()) {
-//    argM = a1;
-//    argV = a2;
-//    if (a2->isForRelations()) throw error(error::MISCELLANEOUS);
-//  } else {
-//    argM = a2;
-//    argV = a1;
-//    if (!a2->isForRelations()) throw error(error::MISCELLANEOUS);
-//  }
-}
-
-#else
 
 MEDDLY::image_op_evplus::image_op_evplus(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res, binary_operation* acc)
@@ -730,39 +576,6 @@ MEDDLY::image_op_evplus::image_op_evplus(const binary_opname* oc, expert_forest*
   registerEntryType(0, et);
   buildCTs();
 }
-#endif
-
-#ifdef OLD_OP_CT
-
-bool MEDDLY::image_op_evplus::isStaleEntry(const node_handle* data)
-{
-  return argV->isStale(data[0]) ||
-         argM->isStale(data[sizeof(node_handle) / sizeof(node_handle)]) ||
-         resF->isStale(data[(2 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)]);
-}
-
-void MEDDLY::image_op_evplus::discardEntry(const node_handle* data)
-{
-  argV->uncacheNode(data[0]);
-  argM->uncacheNode(data[sizeof(node_handle) / sizeof(node_handle)]);
-  resF->uncacheNode(data[(2 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)]);
-}
-
-void MEDDLY::image_op_evplus::showEntry(output &strm, const node_handle* data, bool key_only) const
-{
-  strm  << "[" << getName()
-        << "(" << long(data[0])
-        << ", " << long(data[sizeof(node_handle) / sizeof(node_handle)])
-        << "): ";
-  if (key_only) {
-    strm << "?";
-  } else {
-    strm << long(data[(2 * sizeof(node_handle) + sizeof(long)) / sizeof(node_handle)]);
-  }
-  strm << "]";
-}
-
-#endif
 
 void MEDDLY::image_op_evplus::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
 {

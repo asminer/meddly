@@ -50,13 +50,8 @@ protected:
   virtual bool checkForestCompatibility() const;
 
 public:
-#ifdef OLD_OP_CT
-  common_transitive_closure(const constrained_opname* code, int kl, int al,
-    expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
-#else
   common_transitive_closure(const constrained_opname* code, unsigned slots,
     expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
-#endif
   ~common_transitive_closure();
 };
 
@@ -81,12 +76,6 @@ protected:
 
   void iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
-#ifdef OLD_OP_CT
-  virtual bool isStaleEntry(const node_handle* entryData);
-  virtual void discardEntry(const node_handle* entryData);
-  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif
-
 public:
   transitive_closure_forwd_bfs(const constrained_opname* code,
     expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
@@ -104,10 +93,6 @@ public:
 class MEDDLY::transitive_closure_dfs: public common_transitive_closure
 {
 protected:
-#ifdef OLD_OP_CT
-  static const int NODE_INDICES_IN_KEY[4];
-#endif
-
   binary_operation* mxdDifferenceOp;
   binary_operation* mxdIntersectionOp;
   binary_operation* minOp;
@@ -123,12 +108,6 @@ protected:
 
   void splitMxd(node_handle mxd);
   virtual void recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c) = 0;
-
-#ifdef OLD_OP_CT
-  virtual bool isStaleEntry(const node_handle* data);
-  virtual void discardEntry(const node_handle* data);
-  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif
 
 public:
   transitive_closure_dfs(const constrained_opname* code,
@@ -155,10 +134,6 @@ public:
 class MEDDLY::transitive_closure_evplus: public specialized_operation
 {
 protected:
-#ifdef OLD_OP_CT
-  int NODE_INDICES_IN_KEY[3];
-#endif
-
   transitive_closure_dfs* parent;
 
   expert_forest* tcF;
@@ -176,12 +151,6 @@ protected:
     long bev, node_handle b, int level, long& cev, node_handle &c);
   void saveResult(compute_table::entry_key* Key,
     long aev, node_handle a, long bev, node_handle b, int level, long cev, node_handle c);
-
-#ifdef OLD_OP_CT
-  virtual bool isStaleEntry(const node_handle* data);
-  virtual void discardEntry(const node_handle* data);
-  virtual void showEntry(output &strm, const node_handle* entryData, bool key_only) const;
-#endif
 
 public:
   transitive_closure_evplus(transitive_closure_dfs* p,

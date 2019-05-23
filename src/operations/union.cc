@@ -303,11 +303,7 @@ MEDDLY::union_min_evplus::union_min_evplus(const binary_opname* opcode,
 MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus::findResult(long aev, node_handle a,
   long bev, node_handle b, long& cev, node_handle &c)
 {
-#ifdef OLD_OP_CT
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
   MEDDLY_DCASSERT(CTsrch);
   if (can_commute && a > b) {
     CTsrch->writeL(0);
@@ -320,19 +316,11 @@ MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus::findResult(long aev,
     CTsrch->writeL(bev - aev);
     CTsrch->writeN(b);
   }
-#ifdef OLD_OP_CT
-  compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-  if (!cacheFind) return CTsrch;
-  cev = cacheFind.readL();
-  MEDDLY_DCASSERT(cev == 0);
-  c = resF->linkNode(cacheFind.readN());
-#else
   CT0->find(CTsrch, CTresult[0]);
   if (!CTresult[0]) return CTsrch;
   cev = CTresult[0].readL();
   MEDDLY_DCASSERT(cev == 0);
   c = resF->linkNode(CTresult[0].readN());
-#endif
   if (c != 0) {
     cev = MIN(aev, bev);
   }
@@ -344,21 +332,10 @@ void MEDDLY::union_min_evplus::saveResult(compute_table::entry_key* key,
   long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
 {
   MEDDLY_DCASSERT(c == 0 || cev == MIN(aev, bev));
-#ifdef OLD_OP_CT
-  arg1F->cacheNode(a);
-  arg2F->cacheNode(b);
-  resF->cacheNode(c);
-  static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
-  result.reset();
-  result.writeL(0);   //   Why always 0?
-  result.writeN(c);
-  CT0->addEntry(key, result);
-#else
   CTresult[0].reset();
   CTresult[0].writeL(0);   //   Why always 0?
   CTresult[0].writeN(c);
   CT0->addEntry(key, CTresult[0]);
-#endif
 }
 
 bool MEDDLY::union_min_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,
@@ -453,11 +430,7 @@ MEDDLY::union_min_evplus_mxd::union_min_evplus_mxd(const binary_opname* opcode,
 MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus_mxd::findResult(long aev, node_handle a,
   long bev, node_handle b, long& cev, node_handle &c)
 {
-#ifdef OLD_OP_CT
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(this);
-#else
   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-#endif
   MEDDLY_DCASSERT(CTsrch);
   if (can_commute && a > b) {
     CTsrch->writeL(0);
@@ -470,19 +443,11 @@ MEDDLY::compute_table::entry_key* MEDDLY::union_min_evplus_mxd::findResult(long 
     CTsrch->writeL(bev - aev);
     CTsrch->writeN(b);
   }
-#ifdef OLD_OP_CT
-  compute_table::entry_result& cacheFind = CT0->find(CTsrch);
-  if (!cacheFind) return CTsrch;
-  cev = cacheFind.readL();
-  MEDDLY_DCASSERT(cev == 0);
-  c = resF->linkNode(cacheFind.readN());
-#else
   CT0->find(CTsrch, CTresult[0]);
   if (!CTresult[0]) return CTsrch;
   cev = CTresult[0].readL();
   MEDDLY_DCASSERT(cev == 0);
   c = resF->linkNode(CTresult[0].readN());
-#endif
   if (c != 0) {
     cev = MIN(aev, bev);
   }
@@ -494,21 +459,10 @@ void MEDDLY::union_min_evplus_mxd::saveResult(compute_table::entry_key* key,
   long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
 {
   MEDDLY_DCASSERT(c == 0 || cev == MIN(aev, bev));
-#ifdef OLD_OP_CT
-  arg1F->cacheNode(a);
-  arg2F->cacheNode(b);
-  resF->cacheNode(c);
-  static compute_table::entry_result result(1 + sizeof(long) / sizeof(node_handle));
-  result.reset();
-  result.writeL(0);   // why always 0?
-  result.writeN(c);
-  CT0->addEntry(key, result);
-#else
   CTresult[0].reset();
   CTresult[0].writeL(0);   // why always 0?
   CTresult[0].writeN(c);
   CT0->addEntry(key, CTresult[0]);
-#endif
 }
 
 bool MEDDLY::union_min_evplus_mxd::checkTerminals(long aev, node_handle a, long bev, node_handle b,

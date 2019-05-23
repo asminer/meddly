@@ -42,13 +42,9 @@
 
 #include "../hash_stream.h"
 
-#ifdef OLD_OP_CT
-#include "ct_old.h"
-#else
 #include <climits>
 #include "ct_typebased.h"
 #include "ct_none.h"
-#endif
 
 
 // **********************************************************************
@@ -64,9 +60,6 @@ MEDDLY::monolithic_chained_style::monolithic_chained_style()
 MEDDLY::compute_table* 
 MEDDLY::monolithic_chained_style::create(const ct_initializer::settings &s) const 
 {
-#ifdef OLD_OP_CT
-  return new ct_old<true, true>(s, 0, 0);
-#else
   switch (s.compression) {
     case ct_initializer::None:
                                     return new ct_none<true, true>(s, 0, 0);
@@ -75,7 +68,6 @@ MEDDLY::monolithic_chained_style::create(const ct_initializer::settings &s) cons
     default:
                                     return 0;
   }
-#endif
 }
 
 bool MEDDLY::monolithic_chained_style::usesMonolithic() const 
@@ -97,9 +89,6 @@ MEDDLY::monolithic_unchained_style::monolithic_unchained_style()
 MEDDLY::compute_table* 
 MEDDLY::monolithic_unchained_style::create(const ct_initializer::settings &s) const 
 {
-#ifdef OLD_OP_CT
-  return new ct_old<true, false>(s, 0, 0);
-#else
   switch (s.compression) {
     case ct_initializer::None:
                                     return new ct_none<true, false>(s, 0, 0);
@@ -108,7 +97,6 @@ MEDDLY::monolithic_unchained_style::create(const ct_initializer::settings &s) co
     default:
                                     return 0;
   }
-#endif
 }
 
 bool MEDDLY::monolithic_unchained_style::usesMonolithic() const 
@@ -129,9 +117,6 @@ MEDDLY::operation_chained_style::operation_chained_style()
 MEDDLY::compute_table* 
 MEDDLY::operation_chained_style::create(const ct_initializer::settings &s, operation* op, unsigned slot) const 
 {
-#ifdef OLD_OP_CT
-  return new ct_old<false, true>(s, op, slot);
-#else
   switch (s.compression) {
     case ct_initializer::None:
                                     return new ct_none<false, true>(s, 0, 0);
@@ -140,7 +125,6 @@ MEDDLY::operation_chained_style::create(const ct_initializer::settings &s, opera
     default:
                                     return 0;
   }
-#endif
 }
 
 bool MEDDLY::operation_chained_style::usesMonolithic() const 
@@ -163,9 +147,6 @@ MEDDLY::operation_unchained_style::operation_unchained_style()
 MEDDLY::compute_table* 
 MEDDLY::operation_unchained_style::create(const ct_initializer::settings &s, operation* op, unsigned slot) const 
 {
-#ifdef OLD_OP_CT
-  return new ct_old<false, false>(s, op, slot);
-#else
   switch (s.compression) {
     case ct_initializer::None:
                                     return new ct_none<false, false>(s, 0, 0);
@@ -174,7 +155,6 @@ MEDDLY::operation_unchained_style::create(const ct_initializer::settings &s, ope
     default:
                                     return 0;
   }
-#endif
 }
 
 bool MEDDLY::operation_unchained_style::usesMonolithic() const 

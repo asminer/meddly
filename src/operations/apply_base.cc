@@ -35,13 +35,6 @@
 // *                                                                *
 // ******************************************************************
 
-#ifdef OLD_OP_CT
-MEDDLY::generic_binary_mdd::generic_binary_mdd(const binary_opname* code,
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : binary_operation(code, 2, 1, arg1, arg2, res)
-{
-}
-#else
 MEDDLY::generic_binary_mdd::generic_binary_mdd(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : binary_operation(code, 1, arg1, arg2, res)
@@ -53,63 +46,10 @@ MEDDLY::generic_binary_mdd::generic_binary_mdd(const binary_opname* code,
   registerEntryType(0, et);
   buildCTs();
 }
-#endif
 
 MEDDLY::generic_binary_mdd::~generic_binary_mdd()
 {
 }
-
-#ifdef OLD_OP_CT
-
-#ifndef USE_NODE_STATUS
-bool MEDDLY::generic_binary_mdd::isStaleEntry(const node_handle* data)
-{
-  return arg1F->isStale(data[0]) ||
-         arg2F->isStale(data[1]) ||
-         resF->isStale(data[2]);
-}
-#else
-MEDDLY::forest::node_status
-MEDDLY::generic_binary_mdd::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[0]);
-  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[1]);
-  MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
-
-  if (a == MEDDLY::forest::DEAD ||
-      b == MEDDLY::forest::DEAD ||
-      c == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE ||
-      b == MEDDLY::forest::RECOVERABLE ||
-      c == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-
-void MEDDLY::generic_binary_mdd::discardEntry(const node_handle* data)
-{
-  arg1F->uncacheNode(data[0]);
-  arg2F->uncacheNode(data[1]);
-  resF->uncacheNode(data[2]);
-}
-
-void
-MEDDLY::generic_binary_mdd ::showEntry(output &strm, const node_handle *data, bool key_only) const
-{
-  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
-  if (key_only) {
-    strm << "?";
-  } else {
-    strm << long(data[2]);
-  }
-  strm << "]";
-}
-
-#endif // OLD_OP_CT
 
 void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &b, 
   dd_edge &c)
@@ -453,16 +393,6 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
 // *                                                                *
 // ******************************************************************
 
-#ifdef OLD_OP_CT
-MEDDLY::generic_binary_mxd::generic_binary_mxd(const binary_opname* code,
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : binary_operation(code, 2, 1, arg1, arg2, res)
-{
-  // data[0] : arg1
-  // data[1] : arg2
-  // data[2] : result
-}
-#else
 MEDDLY::generic_binary_mxd::generic_binary_mxd(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : binary_operation(code, 1, arg1, arg2, res)
@@ -474,62 +404,10 @@ MEDDLY::generic_binary_mxd::generic_binary_mxd(const binary_opname* code,
   registerEntryType(0, et);
   buildCTs();
 }
-#endif
 
 MEDDLY::generic_binary_mxd::~generic_binary_mxd()
 {
 }
-
-#ifdef OLD_OP_CT
-
-#ifndef USE_NODE_STATUS
-bool MEDDLY::generic_binary_mxd::isStaleEntry(const node_handle* data)
-{
-  return arg1F->isStale(data[0]) ||
-         arg2F->isStale(data[1]) ||
-         resF->isStale(data[2]);
-}
-#else
-MEDDLY::forest::node_status
-MEDDLY::generic_binary_mxd::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[0]);
-  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[1]);
-  MEDDLY::forest::node_status c = resF->getNodeStatus(data[2]);
-
-  if (a == MEDDLY::forest::DEAD ||
-      b == MEDDLY::forest::DEAD ||
-      c == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE ||
-      b == MEDDLY::forest::RECOVERABLE ||
-      c == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-void MEDDLY::generic_binary_mxd::discardEntry(const node_handle* data)
-{
-  arg1F->uncacheNode(data[0]);
-  arg2F->uncacheNode(data[1]);
-  resF->uncacheNode(data[2]);
-}
-
-void
-MEDDLY::generic_binary_mxd ::showEntry(output &strm, const node_handle *data, bool key_only) const
-{
-  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) << "): ";
-  if (key_only) {
-    strm << "?";
-  } else {
-    strm << long(data[2]);
-  }
-  strm << "]";
-}
-
-#endif // OLD_OP_CT
 
 void MEDDLY::generic_binary_mxd::computeDDEdge(const dd_edge &a, const dd_edge &b, 
   dd_edge &c)
@@ -1116,15 +994,6 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
 // *                                                                *
 // ******************************************************************
 
-#ifdef OLD_OP_CT
-MEDDLY::generic_binbylevel_mxd
-::generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1, 
-  expert_forest* arg2, expert_forest* res)
- : binary_operation(code, 3, 1, arg1, arg2, res)
-{
-  can_commute = false;
-}
-#else
 MEDDLY::generic_binbylevel_mxd
 ::generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1, 
   expert_forest* arg2, expert_forest* res)
@@ -1138,64 +1007,10 @@ MEDDLY::generic_binbylevel_mxd
   registerEntryType(0, et);
   buildCTs();
 }
-#endif
 
 MEDDLY::generic_binbylevel_mxd::~generic_binbylevel_mxd()
 {
 }
-
-#ifdef OLD_OP_CT
-
-#ifndef USE_NODE_STATUS
-bool MEDDLY::generic_binbylevel_mxd::isStaleEntry(const node_handle* data)
-{
-  return arg1F->isStale(data[1]) ||
-         arg2F->isStale(data[2]) ||
-         resF->isStale(data[3]);
-}
-#else
-MEDDLY::forest::node_status
-MEDDLY::generic_binbylevel_mxd::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[1]);
-  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[2]);
-  MEDDLY::forest::node_status c = resF->getNodeStatus(data[3]);
-
-  if (a == MEDDLY::forest::DEAD ||
-      b == MEDDLY::forest::DEAD ||
-      c == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE ||
-      b == MEDDLY::forest::RECOVERABLE ||
-      c == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-void MEDDLY::generic_binbylevel_mxd::discardEntry(const node_handle* data)
-{
-  arg1F->uncacheNode(data[1]);
-  arg2F->uncacheNode(data[2]);
-  resF->uncacheNode(data[3]);
-}
-
-void
-MEDDLY::generic_binbylevel_mxd
-::showEntry(output &strm, const node_handle *data, bool key_only) const
-{
-  strm << "[" << getName() << "(" << long(data[0]) << ", " << long(data[1]) 
-       << ", " << long(data[2]) << "): ";
-  if (key_only) {
-    strm << "?";
-  } else {
-    strm << long(data[3]);
-  }
-  strm << "]";
-}
-
-#endif // OLD_OP_CT
 
 void MEDDLY::generic_binbylevel_mxd
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
@@ -1442,19 +1257,9 @@ MEDDLY::generic_binbylevel_mxd
 // *                                                                *
 // ******************************************************************
 
-#ifdef OLD_OP_CT
-MEDDLY::generic_binary_ev::generic_binary_ev(const binary_opname* code,
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-  : binary_operation(code,
-      // XXX: Cause problem in case of EV*
-      (arg1->edgeBytes() + sizeof(node_handle) + arg2->edgeBytes() + sizeof(node_handle)) / sizeof(node_handle),
-      (res->edgeBytes() + sizeof(node_handle)) / sizeof(node_handle),
-      arg1, arg2, res)
-#else
 MEDDLY::generic_binary_ev::generic_binary_ev(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : binary_operation(code, 1, arg1, arg2, res)
-#endif
 {
   can_commute = false;
 }
@@ -1463,48 +1268,6 @@ MEDDLY::generic_binary_ev::~generic_binary_ev()
 {
 }
 
-#ifdef OLD_OP_CT
-
-#ifndef USE_NODE_STATUS
-bool MEDDLY::generic_binary_ev::isStaleEntry(const node_handle* data)
-{
-  bool a = arg1F->isStale(data[arg1F->edgeBytes() / sizeof(node_handle)]);
-  bool b = arg2F->isStale(data[(arg1F->edgeBytes() + sizeof(node_handle) + arg2F->edgeBytes()) / sizeof(node_handle)]);
-  bool c = resF->isStale(data[(arg1F->edgeBytes() + sizeof(node_handle) + arg2F->edgeBytes() + sizeof(node_handle) + resF->edgeBytes()) / sizeof(node_handle)]);
-
-  return (a | b | c);
-}
-
-#else
-
-MEDDLY::forest::node_status
-MEDDLY::generic_binary_ev::getStatusOfEntry(const node_handle* data)
-{
-  MEDDLY::forest::node_status a = arg1F->getNodeStatus(data[1]);
-  MEDDLY::forest::node_status b = arg2F->getNodeStatus(data[3]);
-  MEDDLY::forest::node_status c = resF->getNodeStatus(data[5]);
-
-  if (a == MEDDLY::forest::DEAD ||
-      b == MEDDLY::forest::DEAD ||
-      c == MEDDLY::forest::DEAD)
-    return MEDDLY::forest::DEAD;
-  else if (a == MEDDLY::forest::RECOVERABLE ||
-      b == MEDDLY::forest::RECOVERABLE ||
-      c == MEDDLY::forest::RECOVERABLE)
-    return MEDDLY::forest::RECOVERABLE;
-  else
-    return MEDDLY::forest::ACTIVE;
-}
-#endif
-
-void MEDDLY::generic_binary_ev::discardEntry(const node_handle* data)
-{
-  arg1F->uncacheNode(data[arg1F->edgeBytes() / sizeof(node_handle)]);
-  arg2F->uncacheNode(data[(arg1F->edgeBytes() + sizeof(node_handle) + arg2F->edgeBytes()) / sizeof(node_handle)]);
-  resF->uncacheNode(data[(arg1F->edgeBytes() + sizeof(node_handle) + arg2F->edgeBytes() + sizeof(node_handle) + resF->edgeBytes()) / sizeof(node_handle)]);
-}
-
-#endif // OLD_OP_CT
 
 // ******************************************************************
 // *                                                                *
@@ -1516,36 +1279,17 @@ MEDDLY::generic_binary_evplus::generic_binary_evplus(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_ev(code, arg1, arg2, res)
 {
-#ifndef OLD_OP_CT
   compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "LNLN:LN");
   et->setForestForSlot(1, arg1);
   et->setForestForSlot(3, arg2);
   et->setForestForSlot(6, res);
   registerEntryType(0, et);
   buildCTs();
-#endif
 }
 
 MEDDLY::generic_binary_evplus::~generic_binary_evplus()
 {
 }
-
-#ifdef OLD_OP_CT
-
-void MEDDLY::generic_binary_evplus
-::showEntry(output &strm, const node_handle *data, bool key_only) const
-{
-  strm << "[" << getName() << "(<" << long(data[0]) << ":" << long(data[1]) 
-       << ">, <" << long(data[2]) << ":" << long(data[3]) << ">): ";
-  if (key_only) {
-    strm << "?";
-  } else {
-    strm << "<" << long(data[4]) << ":" << long(data[5]) << ">";
-  }
-  strm << "]";
-}
-
-#endif
 
 void MEDDLY::generic_binary_evplus
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
@@ -1631,36 +1375,17 @@ MEDDLY::generic_binary_evplus_mxd::generic_binary_evplus_mxd(const binary_opname
   if (!arg1->isForRelations() || !arg2->isForRelations() || !res->isForRelations()) {
     throw error::TYPE_MISMATCH;
   }
-#ifndef OLD_OP_CT
   compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "LNLN:LN");
   et->setForestForSlot(1, arg1);
   et->setForestForSlot(3, arg2);
   et->setForestForSlot(6, res);
   registerEntryType(0, et);
   buildCTs();
-#endif
 }
 
 MEDDLY::generic_binary_evplus_mxd::~generic_binary_evplus_mxd()
 {
 }
-
-#ifdef OLD_OP_CT
-
-void MEDDLY::generic_binary_evplus_mxd
-::showEntry(output &strm, const node_handle *data, bool key_only) const
-{
-  strm << "[" << getName() << "(<" << long(data[0]) << ":" << long(data[1])
-       << ">, <" << long(data[2]) << ":" << long(data[3]) << ">): ";
-  if (key_only) {
-    strm << "?";
-  } else {
-    strm << "<" << long(data[4]) << ":" << long(data[5]) << ">";
-  }
-  strm << "]";
-}
-
-#endif
 
 void MEDDLY::generic_binary_evplus_mxd
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
@@ -1801,43 +1526,17 @@ MEDDLY::generic_binary_evtimes
   expert_forest* arg2, expert_forest* res)
 : generic_binary_ev(code, arg1, arg2, res)
 {
-#ifndef OLD_OP_CT
   compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "FNFN:FN");
   et->setForestForSlot(1, arg1);
   et->setForestForSlot(3, arg2);
   et->setForestForSlot(6, res);
   registerEntryType(0, et);
   buildCTs();
-#endif
 }
 
 MEDDLY::generic_binary_evtimes::~generic_binary_evtimes()
 {
 }
-
-#ifdef OLD_OP_CT
-
-void MEDDLY::generic_binary_evtimes
-::showEntry(output &strm, const node_handle *data, bool key_only) const
-{
-  float ev0;
-  float ev2;
-  float ev4;
-  compute_table::readEV(data+0, ev0);
-  compute_table::readEV(data+2, ev2);
-  strm << "[" << getName() << "(<" << ev0 << ":" << long(data[1]) 
-       << ">, <" << ev2 << ":" << long(data[3]) << ">): ";
-
-  if (key_only) {
-    strm << "?";
-  } else {
-    compute_table::readEV(data+4, ev4);
-    strm << "<" << ev4 << ":" << long(data[5]) << ">]";
-  }
-  strm << "]";
-}
-
-#endif
 
 void MEDDLY::generic_binary_evtimes
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
