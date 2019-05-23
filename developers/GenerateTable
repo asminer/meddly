@@ -119,7 +119,7 @@ done
 # New releases 
 #
 
-for newrel in master; do
+for newrel in v0.15.0 master; do
   if git checkout $newrel; then
     echo "Checkout of $newrel succeeded"
   else
