@@ -42,6 +42,7 @@
 #include <cstdint>
 #include <map>
 
+// #define OLD_NODE_HEADERS
 
 namespace MEDDLY {
 
@@ -1534,23 +1535,32 @@ class MEDDLY::node_headers {
 //    virtual void getDownPtr(node_address addr, int ind, long& ev,
 //                            node_handle& dn) const = 0;
 
+#ifdef OLD_NODE_HEADERS
     /// Increase the number of node handles.
     void expandHandleList();
 
     /// Decrease the number of node handles.
     void shrinkHandleList();
 
-    /// Allocate marks if needed.
-    void allocateMarks();
+#else
+
+    /// Check free lists for removed addresses.
+    void cleanFreeLists();
+
+#endif
+
+    void deactivate(node_handle p);
+
+#ifdef OLD_NODE_HEADERS
 
     node_handle getNextOf(node_handle p) const;
     void setNextOf(node_handle p, node_handle n);
-    void deactivate(node_handle p);
 
   private:
     
     // Nothing to see here.  Move along.
     // Anything below here is subject to change without notice.
+
 
     struct node_header {
           /** Offset to node's data in the corresponding node storage structure.
@@ -1611,6 +1621,116 @@ class MEDDLY::node_headers {
     expert_forest &parent;
 
     static const int a_min_size = 1024;
+
+#else
+
+    size_t getNextOf(size_t p) const;
+    void setNextOf(size_t p, size_t n);
+
+  private:
+
+    class level_array {
+        memstats &MS;
+        int* data32;
+        size_t size;
+        size_t alloc;
+        size_t next_shrink;
+      public:
+        level_array(memstats &ms);
+        ~level_array();
+
+        void resize(size_t ns);
+
+        int get(size_t i) const;
+        void set(size_t i, int v);
+        void swap(size_t i, size_t j);
+
+        void show(output &s, size_t first, size_t last, int width) const;
+    };
+
+    class counter_array {
+        memstats &MS;
+        unsigned int* data32;
+        size_t size;
+        size_t alloc;
+        size_t next_shrink;
+      public:
+        counter_array(memstats &ms);
+        ~counter_array();
+
+        void resize(size_t ns);
+
+        unsigned int get(size_t i) const;
+        void swap(size_t i, size_t j);
+        void increment(size_t i);
+        void decrement(size_t i);
+
+        bool isZeroBeforeIncrement(size_t i);
+        bool isPositiveAfterDecrement(size_t i);
+
+        void show(output &s, size_t first, size_t last, int width) const;
+    };
+
+    class address_array {
+        memstats &MS;
+        unsigned long* data64;
+        size_t size;
+        size_t alloc;
+        size_t next_shrink;
+      public:
+        address_array(memstats &ms);
+        ~address_array();
+
+        bool resize_will_shrink(size_t ns) const;
+        void resize(size_t ns);
+        size_t getSize() const;
+
+        unsigned long get(size_t i) const;
+        void set(size_t i, unsigned long v);
+        void swap(size_t i, size_t j);
+
+        void show(output &s, size_t first, size_t last, int width) const;
+    };
+
+    class bitvector {
+        memstats &MS;
+        bool* data;
+        size_t size;
+        size_t alloc;
+        size_t next_shrink;
+      public:
+        bitvector(memstats &ms);
+        ~bitvector();
+
+        void resize(size_t ns);
+
+        bool get(size_t i) const;
+        void set(size_t i, bool v);
+        void swap(size_t i, size_t j);
+    };
+
+  private:
+    address_array* addresses;
+    level_array* levels;
+    counter_array* cache_counts;
+    counter_array* incoming_counts;
+    bitvector* implicit_bits;
+
+    /// Last used address.
+    size_t a_last;
+    /// Pointer to unused address lists, based on size
+    size_t a_unused[8];  // number of bytes per handle
+    /// Lowest non-empty address list
+    char a_lowest_index;
+
+    /// Are we using the pessimistic strategy?
+    bool pessimistic;
+
+    /// Parent forest, needed for recycling
+    expert_forest &parent;
+    
+#endif
+
 };
 
 

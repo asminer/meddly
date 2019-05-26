@@ -620,7 +620,6 @@ int main(int argc, const char** argv)
       dd_edge mask(f);
       numTrueEquals(scratch, min, mask);
       apply(INTERSECTION, answer, mask, ansmin);
-      long c;
       apply(CARDINALITY, ansmin, c);
       if (0==c) continue;
       cerr << "  previous gens with " << min << " alive cells: " << c << "\n";
@@ -633,7 +632,6 @@ int main(int argc, const char** argv)
       dd_edge mask(f);
       numTrueEquals(scratch, min, mask);
       apply(INTERSECTION, answer, mask, ansmin);
-      long c;
       apply(CARDINALITY, ansmin, c);
       if (0==c) continue;
       cerr << c << " minimal previous generations with ";
