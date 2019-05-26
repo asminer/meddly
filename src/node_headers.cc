@@ -22,6 +22,7 @@
 #include "defines.h"
 #include "storage/bytepack.h"
 
+// #define DEBUG_HANDLE_MGT
 
 // #define DEBUG_HANDLE_FREELIST
 
@@ -371,9 +372,22 @@ inline size_t next_size(size_t s)
   return s+MAX_ADD;
 }
 
-inline static size_t prev_size(size_t s) 
+inline size_t prev_size(size_t s) 
 {
-  if (s < MAX_ADD) return s/2;
+  if (s <= MAX_ADD) return s/2;
+  return s-MAX_ADD;
+}
+
+inline size_t next_check(size_t s)
+{
+  if (0==s) return START_SIZE/4;
+  if (s < MAX_ADD) return s*2;
+  return s+MAX_ADD;
+}
+
+inline size_t prev_check(size_t s) 
+{
+  if (s <= MAX_ADD) return s/2;
   return s-MAX_ADD;
 }
 
@@ -406,7 +420,7 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   implicit_bits = 0;
   a_last = 0;
   a_size = 0;
-  a_next_shrink = START_SIZE / 4;
+  a_next_shrink = 0;
   for (int i=0; i<8; i++) a_unused[i] = 0;
   a_lowest_index = 8;
 #endif
@@ -482,6 +496,9 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
     // address[found].setNotDeleted();
     dump_handle_info(*this, a_last+1);
 #endif
+#ifdef DEBUG_HANDLE_MGT
+    fprintf(stderr, "Using recycled handle %d\n", found);
+#endif
     return found;
   }
   a_last++;
@@ -493,6 +510,9 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
 #ifdef DEBUG_HANDLE_FREELIST
   dump_handle_info(*this, a_last+1);
 #endif
+#ifdef DEBUG_HANDLE_MGT
+  fprintf(stderr, "Using end handle %d\n", a_last);
+#endif
   return a_last;
 }
 
@@ -503,6 +523,11 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
   MEDDLY_DCASSERT(p>0);
   MEDDLY_DCASSERT(p<=a_last);
   MEDDLY_DCASSERT(0==getNodeCacheCount(p));
+
+#ifdef DEBUG_HANDLE_MGT
+  fprintf(stderr, "Recycling handle %d\n", p);
+#endif
+
 #ifdef OLD_NODE_HEADERS
   parent.mstats.decMemUsed(sizeof(node_header));
 #endif
@@ -529,22 +554,17 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
       a_last--;
     }
 
-    if (a_last < a_next_shrink) shrinkHandleList();
-
-    /*
-#else
-    if (addresses) {
-      if (addresses->resize_will_shrink(a_last+1)) {
-        cleanFreeLists();
-        addresses->resize(a_last+1);
-      }
-    }
-    if (levels)           levels->resize(a_last+1);
-    if (cache_counts)     cache_counts->resize(a_last+1);
-    if (incoming_counts)  incoming_counts->resize(a_last+1);
-    if (implicit_bits)    implicit_bits->resize(a_last+1);
+#ifdef DEBUG_HANDLE_MGT
+    fprintf(stderr, "Collapsing handle end from %d to %lu\n", p, a_last);
 #endif
-    */
+
+    if (a_last < a_next_shrink) {
+#ifdef DEBUG_HANDLE_MGT
+      fprintf(stderr, "Collapsed end less than shrink check %lu\n", a_next_shrink);
+#endif
+      shrinkHandleList();
+    }
+
   }
 #ifdef DEBUG_HANDLE_FREELIST
   dump_handle_info(*this, a_last+1);
@@ -679,8 +699,10 @@ void MEDDLY::node_headers::expandHandleList()
 
 #else // OLD_NODE_HEADERS
 
-  a_next_shrink = next_size(a_next_shrink);
-  a_size = next_size(a_size);
+  do {
+    a_next_shrink = next_check(a_next_shrink);
+    a_size = next_size(a_size);
+  } while (a_last >= a_size);
 
   if (addresses)        addresses->expand(a_size);
   if (levels)           levels->expand(a_size);
@@ -689,7 +711,7 @@ void MEDDLY::node_headers::expandHandleList()
   if (implicit_bits)    implicit_bits->expand(a_size);
 
 #ifdef DEBUG_ADDRESS_RESIZE
-  printf("Enlarged address array, new size %lu\n", a_size);
+  printf("Expanded node headers arrays, new size %lu (shrink check %lu)\n", a_size, a_next_shrink);
 #endif
 #endif
 }
@@ -781,8 +803,10 @@ void MEDDLY::node_headers::shrinkHandleList()
     }
   } // for i
 
-  a_size = next_size(a_size);
-  a_next_shrink = (a_size > START_SIZE) ? next_size(a_next_shrink) : 0;
+  do {
+    a_size = prev_size(a_size);
+    a_next_shrink = (a_size > START_SIZE) ? prev_check(a_next_shrink) : 0;
+  } while (a_last < a_next_shrink);
 
   if (addresses)        addresses->shrink(a_size);
   if (levels)           levels->shrink(a_size);
@@ -791,7 +815,7 @@ void MEDDLY::node_headers::shrinkHandleList()
   if (implicit_bits)    implicit_bits->shrink(a_size);
 
 #ifdef DEBUG_ADDRESS_RESIZE
-  printf("Shrank address array, new size %lu\n", a_size);
+  printf("Shrank node headers arrays, new size %lu (shrink check %lu)\n", a_size, a_next_shrink);
 #endif
 
 #endif
