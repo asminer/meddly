@@ -605,11 +605,6 @@ inline bool MEDDLY::node_headers::counter_array::isPositiveAfterDecrement(size_t
 
 #ifndef OLD_NODE_HEADERS
 
-inline size_t MEDDLY::node_headers::address_array::getSize() const
-{
-  return size;
-}
-
 inline unsigned long MEDDLY::node_headers::address_array::get(size_t i) const
 {
   MEDDLY_DCASSERT(data64);
@@ -1184,7 +1179,7 @@ MEDDLY::node_headers::setNodeImplicitFlag(node_handle p, bool flag)
   } else {
     if (!flag) return;
     implicit_bits = new bitvector(parent.mstats);
-    implicit_bits->resize(size_t(a_last));
+    implicit_bits->expand(a_size);
     implicit_bits->set(size_t(p), flag);
   }
 #endif

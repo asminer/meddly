@@ -113,83 +113,44 @@ MEDDLY::node_headers::level_array::level_array(memstats &ms) : MS(ms)
 {
   data32 = 0;
   size = 0;
-  alloc = 0;
-  next_shrink = 0;
 }
 
 MEDDLY::node_headers::level_array::~level_array()
 {
-  MS.decMemAlloc(alloc * sizeof(int));
+  MS.decMemAlloc(size * sizeof(int));
   free(data32);
 }
 
-void MEDDLY::node_headers::level_array::resize(size_t ns)
+void MEDDLY::node_headers::level_array::expand(size_t ns)
 {
-  const size_t HALF_START_SIZE = 256;
-  const size_t MAX_ADD = 65536;
+  if (ns <= size) return;
 
-  if (ns < size) {
-    // Shrink?
-    MS.decMemUsed( (size - ns) * sizeof(int) );
-    size = ns;
-
-    if (0==next_shrink) return;   // not going to shrink any more
-
-    size_t shrink = (next_shrink > MAX_ADD) ? (next_shrink-MAX_ADD) : next_shrink/2;
-
-    if (ns < shrink) {
-      //
-      // Shrink the array.
-      //
-      int* d = (int*) realloc(data32, next_shrink * sizeof(int));
-      if (0==d) {
-        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-      }
-      MS.decMemAlloc( (alloc - next_shrink) * sizeof(int) );
-      alloc = next_shrink;
-      next_shrink = (shrink > HALF_START_SIZE) ? shrink : 0;
-      data32 = d;
-#ifdef DEBUG_ADDRESS_RESIZE
-      printf("Reduced level array, new size %lu\n", alloc);
-#endif
-    }
-    return;
+  int* d = (int*) realloc(data32, ns * sizeof(int));
+  if (0==d) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
-  if (ns > size) {
-    // Enlarge?
-    MS.incMemUsed( (ns - size) * sizeof(int) );
-    size = ns;
-
-    if (size > alloc) {
-      // Need to enlarge array.
-      // Determine new allocation based on current alloc:
-      //    if ==0, use START_SIZE
-      //    if <MAX_ADD, double it
-      //    else add MAX_ADD elements.
-      //
-      size_t newalloc = alloc ? alloc : HALF_START_SIZE;
-      do {
-        if (newalloc < MAX_ADD) {
-          newalloc *= 2;
-        } else {
-          newalloc += MAX_ADD;
-        }
-      } while (newalloc < size);
-      int* d = (int*) realloc(data32, newalloc * sizeof(int));
-      if (0==d) {
-        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-      }
-      memset(d + alloc, 0, (newalloc-alloc) * sizeof(int) );
-      MS.incMemAlloc( (newalloc - alloc) * sizeof(int) );
-      next_shrink = alloc;
-      alloc = newalloc;
-      data32 = d;
+  memset(d + size, 0, (ns-size) * sizeof(int) );
+  MS.incMemAlloc( (ns - size) * sizeof(int) );
+  size = ns;
+  data32 = d;
 #ifdef DEBUG_ADDRESS_RESIZE
-      printf("Enlarged level array, new size %lu\n", alloc);
+  printf("Enlarged level array, new size %lu\n", size);
 #endif
-    }
-    return;
-  } // ns > size
+}
+
+void MEDDLY::node_headers::level_array::shrink(size_t ns)
+{
+  if (ns >= size) return;
+  int* d = (int*) realloc(data32, ns * sizeof(int));
+  if (0==d) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+  MS.decMemAlloc( (size - ns) * sizeof(int) );
+  size = ns;
+  data32 = d;
+#ifdef DEBUG_ADDRESS_RESIZE
+  printf("Reduced level array, new size %lu\n", size);
+#endif
 }
 
 void MEDDLY::node_headers::level_array
@@ -218,83 +179,44 @@ MEDDLY::node_headers::counter_array::counter_array(memstats &ms) : MS(ms)
 {
   data32 = 0;
   size = 0;
-  alloc = 0;
-  next_shrink = 0;
 }
 
 MEDDLY::node_headers::counter_array::~counter_array()
 {
-  MS.decMemAlloc(alloc * sizeof(unsigned int));
+  MS.decMemAlloc(size * sizeof(unsigned int));
   free(data32);
 }
 
-void MEDDLY::node_headers::counter_array::resize(size_t ns)
+void MEDDLY::node_headers::counter_array::expand(size_t ns)
 {
-  const size_t HALF_START_SIZE = 256;
-  const size_t MAX_ADD = 65536;
+  if (ns <= size) return;
 
-  if (ns < size) {
-    // Shrink?
-    MS.decMemUsed( (size - ns) * sizeof(unsigned int) );
-    size = ns;
-
-    if (0==next_shrink) return;   // not going to shrink any more
-
-    size_t shrink = (next_shrink > MAX_ADD) ? (next_shrink-MAX_ADD) : next_shrink/2;
-
-    if (ns < shrink) {
-      //
-      // Shrink the array.
-      //
-      unsigned int* d = (unsigned int*) realloc(data32, next_shrink * sizeof(unsigned int));
-      if (0==d) {
-        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-      }
-      MS.decMemAlloc( (alloc - next_shrink) * sizeof(unsigned int) );
-      alloc = next_shrink;
-      next_shrink = (shrink > HALF_START_SIZE) ? shrink : 0;
-      data32 = d;
-#ifdef DEBUG_ADDRESS_RESIZE
-      printf("Reduced counter array, new size %lu\n", alloc);
-#endif
-    }
-    return;
+  unsigned int* d = (unsigned int*) realloc(data32, ns * sizeof(unsigned int));
+  if (0==d) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
-  if (ns > size) {
-    // Enlarge?
-    MS.incMemUsed( (ns - size) * sizeof(unsigned int) );
-    size = ns;
-
-    if (size > alloc) {
-      // Need to enlarge array.
-      // Determine new allocation based on current alloc:
-      //    if ==0, use START_SIZE
-      //    if <MAX_ADD, double it
-      //    else add MAX_ADD elements.
-      //
-      size_t newalloc = alloc ? alloc : HALF_START_SIZE;
-      do {
-        if (newalloc < MAX_ADD) {
-          newalloc *= 2;
-        } else {
-          newalloc += MAX_ADD;
-        }
-      } while (newalloc < size);
-      unsigned int* d = (unsigned int*) realloc(data32, newalloc * sizeof(unsigned int));
-      if (0==d) {
-        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-      }
-      memset(d + alloc, 0, (newalloc-alloc) * sizeof(unsigned int) );
-      MS.incMemAlloc( (newalloc - alloc) * sizeof(unsigned int) );
-      next_shrink = alloc;
-      alloc = newalloc;
-      data32 = d;
+  memset(d + size, 0, (ns-size) * sizeof(unsigned int) );
+  MS.incMemAlloc( (ns - size) * sizeof(unsigned int) );
+  size = ns;
+  data32 = d;
 #ifdef DEBUG_ADDRESS_RESIZE
-      printf("Enlarged counter array, new size %lu\n", alloc);
+  printf("Enlarged counter array, new size %lu\n", size);
 #endif
-    }
-    return;
-  } // ns > size
+}
+
+void MEDDLY::node_headers::counter_array::shrink(size_t ns)
+{
+  if (ns >= size) return;
+  unsigned int* d = (unsigned int*) realloc(data32, ns * sizeof(unsigned int));
+  if (0==d) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+  MS.decMemAlloc( (size - ns) * sizeof(unsigned int) );
+  size = ns;
+  data32 = d;
+#ifdef DEBUG_ADDRESS_RESIZE
+  printf("Reduced counter array, new size %lu\n", size);
+#endif
 }
 
 void MEDDLY::node_headers::counter_array
@@ -308,7 +230,6 @@ void MEDDLY::node_headers::counter_array
   }
   s << "]";
 }
-
 
 #endif
 
@@ -324,93 +245,44 @@ MEDDLY::node_headers::address_array::address_array(memstats &ms) : MS(ms)
 {
   data64 = 0;
   size = 0;
-  alloc = 0;
-  next_shrink = 0;
 }
 
 MEDDLY::node_headers::address_array::~address_array()
 {
-  MS.decMemAlloc(alloc * sizeof(unsigned long));
+  MS.decMemAlloc(size * sizeof(unsigned long));
   free(data64);
 }
 
-bool MEDDLY::node_headers::address_array::resize_will_shrink(size_t ns) const
+void MEDDLY::node_headers::address_array::expand(size_t ns)
 {
-  const size_t MAX_ADD = 65536;
+  if (ns <= size) return;
 
-  if (ns >= size) return false;
-  if (0==next_shrink) return false;
-  size_t shrink = (next_shrink > MAX_ADD) ? (next_shrink-MAX_ADD) : next_shrink/2;
-  return ns < shrink;
+  unsigned long* d = (unsigned long*) realloc(data64, ns * sizeof(unsigned long));
+  if (0==d) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+  memset(d + size, 0, (ns-size) * sizeof(unsigned long) );
+  MS.incMemAlloc( (ns - size) * sizeof(unsigned long) );
+  size = ns;
+  data64 = d;
+#ifdef DEBUG_ADDRESS_RESIZE
+  printf("Enlarged address array, new size %lu\n", size);
+#endif
 }
 
-void MEDDLY::node_headers::address_array::resize(size_t ns)
+void MEDDLY::node_headers::address_array::shrink(size_t ns)
 {
-  const size_t HALF_START_SIZE = 256;
-  const size_t MAX_ADD = 65536;
-
-  if (ns < size) {
-    // Shrink?
-    MS.decMemUsed( (size - ns) * sizeof(unsigned long) );
-    size = ns;
-
-    if (0==next_shrink) return;   // not going to shrink any more
-
-    size_t shrink = (next_shrink > MAX_ADD) ? (next_shrink-MAX_ADD) : next_shrink/2;
-
-    if (ns < shrink) {
-      //
-      // Shrink the array.
-      //
-      unsigned long* d = (unsigned long*) realloc(data64, next_shrink * sizeof(unsigned long));
-      if (0==d) {
-        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-      }
-      MS.decMemAlloc( (alloc - next_shrink) * sizeof(unsigned long) );
-      alloc = next_shrink;
-      next_shrink = (shrink > HALF_START_SIZE) ? shrink : 0;
-      data64 = d;
-#ifdef DEBUG_ADDRESS_RESIZE
-      printf("Reduced address array, new size %lu\n", alloc);
-#endif
-    }
-    return;
+  if (ns >= size) return;
+  unsigned long* d = (unsigned long*) realloc(data64, ns * sizeof(unsigned long));
+  if (0==d) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
-  if (ns > size) {
-    // Enlarge?
-    MS.incMemUsed( (ns - size) * sizeof(unsigned long) );
-    size = ns;
-
-    if (size > alloc) {
-      // Need to enlarge array.
-      // Determine new allocation based on current alloc:
-      //    if ==0, use START_SIZE
-      //    if <MAX_ADD, double it
-      //    else add MAX_ADD elements.
-      //
-      size_t newalloc = alloc ? alloc : HALF_START_SIZE;
-      do {
-        if (newalloc < MAX_ADD) {
-          newalloc *= 2;
-        } else {
-          newalloc += MAX_ADD;
-        }
-      } while (newalloc < size);
-      unsigned long* d = (unsigned long*) realloc(data64, newalloc * sizeof(unsigned long));
-      if (0==d) {
-        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-      }
-      memset(d + alloc, 0, (newalloc-alloc) * sizeof(unsigned long) );
-      MS.incMemAlloc( (newalloc - alloc) * sizeof(unsigned long) );
-      next_shrink = alloc;
-      alloc = newalloc;
-      data64 = d;
+  MS.decMemAlloc( (size - ns) * sizeof(unsigned long) );
+  size = ns;
+  data64 = d;
 #ifdef DEBUG_ADDRESS_RESIZE
-      printf("Enlarged address array, new size %lu\n", alloc);
+  printf("Reduced address array, new size %lu\n", size);
 #endif
-    }
-    return;
-  } // ns > size
 }
 
 void MEDDLY::node_headers::address_array
@@ -439,83 +311,44 @@ MEDDLY::node_headers::bitvector::bitvector(memstats &ms) : MS(ms)
 {
   data = 0;
   size = 0;
-  alloc = 0;
-  next_shrink = 0;
 }
 
 MEDDLY::node_headers::bitvector::~bitvector()
 {
-  MS.decMemAlloc(alloc * sizeof(bool));
+  MS.decMemAlloc(size * sizeof(bool));
   free(data);
 }
 
-void MEDDLY::node_headers::bitvector::resize(size_t ns)
+void MEDDLY::node_headers::bitvector::expand(size_t ns)
 {
-  const size_t HALF_START_SIZE = 256;
-  const size_t MAX_ADD = 65536;
+  if (ns <= size) return;
 
-  if (ns < size) {
-    // Shrink?
-    MS.decMemUsed( (size - ns) * sizeof(bool) );
-    size = ns;
-
-    if (0==next_shrink) return;   // not going to shrink any more
-
-    size_t shrink = (next_shrink > MAX_ADD) ? (next_shrink-MAX_ADD) : next_shrink/2;
-
-    if (ns < shrink) {
-      //
-      // Shrink the array.
-      //
-      bool* d = (bool*) realloc(data, next_shrink * sizeof(bool));
-      if (0==d) {
-        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-      }
-      MS.decMemAlloc( (alloc - next_shrink) * sizeof(bool) );
-      alloc = next_shrink;
-      next_shrink = (shrink > HALF_START_SIZE) ? shrink : 0;
-      data = d;
-#ifdef DEBUG_ADDRESS_RESIZE
-      printf("Reduced bitvector, new size %lu\n", alloc);
-#endif
-    }
-    return;
+  bool* d = (bool*) realloc(data, ns * sizeof(bool));
+  if (0==d) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
-  if (ns > size) {
-    // Enlarge?
-    MS.incMemUsed( (ns - size) * sizeof(bool) );
-    size = ns;
-
-    if (size > alloc) {
-      // Need to enlarge array.
-      // Determine new allocation based on current alloc:
-      //    if ==0, use START_SIZE
-      //    if <MAX_ADD, double it
-      //    else add MAX_ADD elements.
-      //
-      size_t newalloc = alloc ? alloc : HALF_START_SIZE;
-      do {
-        if (newalloc < MAX_ADD) {
-          newalloc *= 2;
-        } else {
-          newalloc += MAX_ADD;
-        }
-      } while (newalloc < size);
-      bool* d = (bool*) realloc(data, newalloc * sizeof(bool));
-      if (0==d) {
-        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-      }
-      memset(d + alloc, 0, (newalloc-alloc) * sizeof(bool) );
-      MS.incMemAlloc( (newalloc - alloc) * sizeof(bool) );
-      next_shrink = alloc;
-      alloc = newalloc;
-      data = d;
+  memset(d + size, 0, (ns-size) * sizeof(bool) );
+  MS.incMemAlloc( (ns - size) * sizeof(bool) );
+  size = ns;
+  data = d;
 #ifdef DEBUG_ADDRESS_RESIZE
-      printf("Enlarged bitvector, new size %lu\n", alloc);
+  printf("Enlarged bitvector, new size %lu\n", size);
 #endif
-    }
-    return;
-  } // ns > size
+}
+
+void MEDDLY::node_headers::bitvector::shrink(size_t ns)
+{
+  if (ns >= size) return;
+  bool* d = (bool*) realloc(data, ns * sizeof(bool));
+  if (0==d) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+  MS.decMemAlloc( (size - ns) * sizeof(bool) );
+  size = ns;
+  data = d;
+#ifdef DEBUG_ADDRESS_RESIZE
+  printf("Reduced bitvector, new size %lu\n", size);
+#endif
 }
 
 #endif
@@ -527,6 +360,22 @@ void MEDDLY::node_headers::bitvector::resize(size_t ns)
 // *                                                                *
 // *                                                                *
 // ******************************************************************
+
+const size_t START_SIZE = 512;
+const size_t MAX_ADD = 65536;
+
+inline size_t next_size(size_t s)
+{
+  if (0==s) return START_SIZE; 
+  if (s < MAX_ADD) return s*2;
+  return s+MAX_ADD;
+}
+
+inline static size_t prev_size(size_t s) 
+{
+  if (s < MAX_ADD) return s/2;
+  return s-MAX_ADD;
+}
 
 MEDDLY::node_headers::node_headers(expert_forest &P)
   : parent(P)
@@ -554,9 +403,10 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   levels = new level_array(parent.mstats);
   cache_counts = new counter_array(parent.mstats);
   incoming_counts = new counter_array(parent.mstats);
-  // implicit_bits = new bitvector(parent.mstats);
   implicit_bits = 0;
   a_last = 0;
+  a_size = 0;
+  a_next_shrink = START_SIZE / 4;
   for (int i=0; i<8; i++) a_unused[i] = 0;
   a_lowest_index = 8;
 #endif
@@ -635,23 +485,12 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
     return found;
   }
   a_last++;
-#ifdef OLD_NODE_HEADERS
   if (a_last >= a_size) {
     expandHandleList();
   }
   MEDDLY_DCASSERT(a_last < a_size);
-#else
-  if (addresses) {
-    if (a_last+1 > addresses->getSize())
-      addresses->resize(a_last+1);
-  }
-  if (levels)           levels->resize(a_last+1);
-  if (cache_counts)     cache_counts->resize(a_last+1);
-  if (incoming_counts)  incoming_counts->resize(a_last+1);
-  if (implicit_bits)    implicit_bits->resize(a_last+1);
-#endif
+
 #ifdef DEBUG_HANDLE_FREELIST
-  // address[a_last].setNotDeleted();
   dump_handle_info(*this, a_last+1);
 #endif
   return a_last;
@@ -690,8 +529,9 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
       a_last--;
     }
 
-#ifdef OLD_NODE_HEADERS
     if (a_last < a_next_shrink) shrinkHandleList();
+
+    /*
 #else
     if (addresses) {
       if (addresses->resize_will_shrink(a_last+1)) {
@@ -704,6 +544,7 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
     if (incoming_counts)  incoming_counts->resize(a_last+1);
     if (implicit_bits)    implicit_bits->resize(a_last+1);
 #endif
+    */
   }
 #ifdef DEBUG_HANDLE_FREELIST
   dump_handle_info(*this, a_last+1);
@@ -812,10 +653,9 @@ void MEDDLY::node_headers::dumpInternal(output &s) const
 
 // ******************************************************************
 
-#ifdef OLD_NODE_HEADERS
-
 void MEDDLY::node_headers::expandHandleList()
 {
+#ifdef OLD_NODE_HEADERS
   // increase size by 50%
   int delta = a_size / 2;
   MEDDLY_DCASSERT(delta>=0);
@@ -836,16 +676,31 @@ void MEDDLY::node_headers::expandHandleList()
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Enlarged address array, new size %d\n", a_size);
 #endif
+
+#else // OLD_NODE_HEADERS
+
+  a_next_shrink = next_size(a_next_shrink);
+  a_size = next_size(a_size);
+
+  if (addresses)        addresses->expand(a_size);
+  if (levels)           levels->expand(a_size);
+  if (cache_counts)     cache_counts->expand(a_size);
+  if (incoming_counts)  incoming_counts->expand(a_size);
+  if (implicit_bits)    implicit_bits->expand(a_size);
+
+#ifdef DEBUG_ADDRESS_RESIZE
+  printf("Enlarged address array, new size %lu\n", a_size);
+#endif
+#endif
 }
 
-#endif
 
 // ******************************************************************
 
-#ifdef OLD_NODE_HEADERS
-
 void MEDDLY::node_headers::shrinkHandleList()
 {
+#ifdef OLD_NODE_HEADERS
+
   // Determine new size
   int new_size = a_min_size;
   while (a_last >= new_size) new_size += new_size/2;
@@ -899,16 +754,9 @@ void MEDDLY::node_headers::shrinkHandleList()
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Shrank address array, new size %d\n", a_size);
 #endif
-}
 
-#endif
+#else // OLD_NODE_HEADERS
 
-// ******************************************************************
-
-#ifndef OLD_NODE_HEADERS
-
-void MEDDLY::node_headers::cleanFreeLists()
-{
   // clean out free lists, because we're about
   // to shrink the address list which holds the pointers
   for (int i=0; i<8; i++) {
@@ -932,9 +780,23 @@ void MEDDLY::node_headers::cleanFreeLists()
       a_unused[i] = 0;
     }
   } // for i
-}
+
+  a_size = next_size(a_size);
+  a_next_shrink = (a_size > START_SIZE) ? next_size(a_next_shrink) : 0;
+
+  if (addresses)        addresses->shrink(a_size);
+  if (levels)           levels->shrink(a_size);
+  if (cache_counts)     cache_counts->shrink(a_size);
+  if (incoming_counts)  incoming_counts->shrink(a_size);
+  if (implicit_bits)    implicit_bits->shrink(a_size);
+
+#ifdef DEBUG_ADDRESS_RESIZE
+  printf("Shrank address array, new size %lu\n", a_size);
+#endif
 
 #endif
+}
+
 
 // ******************************************************************
 

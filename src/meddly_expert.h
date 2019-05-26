@@ -1532,22 +1532,12 @@ class MEDDLY::node_headers {
     void dumpInternal(output &s) const;
 
   private:  // helper methods
-//    virtual void getDownPtr(node_address addr, int ind, long& ev,
-//                            node_handle& dn) const = 0;
 
-#ifdef OLD_NODE_HEADERS
     /// Increase the number of node handles.
     void expandHandleList();
 
     /// Decrease the number of node handles.
     void shrinkHandleList();
-
-#else
-
-    /// Check free lists for removed addresses.
-    void cleanFreeLists();
-
-#endif
 
     void deactivate(node_handle p);
 
@@ -1633,13 +1623,12 @@ class MEDDLY::node_headers {
         memstats &MS;
         int* data32;
         size_t size;
-        size_t alloc;
-        size_t next_shrink;
       public:
         level_array(memstats &ms);
         ~level_array();
 
-        void resize(size_t ns);
+        void expand(size_t ns);
+        void shrink(size_t ns);
 
         int get(size_t i) const;
         void set(size_t i, int v);
@@ -1652,13 +1641,12 @@ class MEDDLY::node_headers {
         memstats &MS;
         unsigned int* data32;
         size_t size;
-        size_t alloc;
-        size_t next_shrink;
       public:
         counter_array(memstats &ms);
         ~counter_array();
 
-        void resize(size_t ns);
+        void expand(size_t ns);
+        void shrink(size_t ns);
 
         unsigned int get(size_t i) const;
         void swap(size_t i, size_t j);
@@ -1675,15 +1663,12 @@ class MEDDLY::node_headers {
         memstats &MS;
         unsigned long* data64;
         size_t size;
-        size_t alloc;
-        size_t next_shrink;
       public:
         address_array(memstats &ms);
         ~address_array();
 
-        bool resize_will_shrink(size_t ns) const;
-        void resize(size_t ns);
-        size_t getSize() const;
+        void expand(size_t ns);
+        void shrink(size_t ns);
 
         unsigned long get(size_t i) const;
         void set(size_t i, unsigned long v);
@@ -1696,13 +1681,12 @@ class MEDDLY::node_headers {
         memstats &MS;
         bool* data;
         size_t size;
-        size_t alloc;
-        size_t next_shrink;
       public:
         bitvector(memstats &ms);
         ~bitvector();
 
-        void resize(size_t ns);
+        void expand(size_t ns);
+        void shrink(size_t ns);
 
         bool get(size_t i) const;
         void set(size_t i, bool v);
@@ -1718,8 +1702,16 @@ class MEDDLY::node_headers {
 
     /// Last used address.
     size_t a_last;
+
+    /// Allocated sizes of arrays.
+    size_t a_size;
+
+    /// Next time we shink the address list.
+    size_t a_next_shrink;
+
     /// Pointer to unused address lists, based on size
     size_t a_unused[8];  // number of bytes per handle
+
     /// Lowest non-empty address list
     char a_lowest_index;
 
@@ -1728,7 +1720,7 @@ class MEDDLY::node_headers {
 
     /// Parent forest, needed for recycling
     expert_forest &parent;
-    
+
 #endif
 
 };
