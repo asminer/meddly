@@ -43,6 +43,7 @@
 #include <map>
 
 // #define OLD_NODE_HEADERS
+// #define COMPACTED_HEADERS
 
 namespace MEDDLY {
 
@@ -1639,10 +1640,15 @@ class MEDDLY::node_headers {
 
     class level_array {
         node_headers &parent;
+#ifdef COMPACTED_HEADERS
+        char* data8;
+        short* data16;
+#endif
         int* data32;
         size_t size;
+        unsigned char bytes;
       public:
-        level_array(node_headers &p);
+        level_array(node_headers &p, int max_level);
         ~level_array();
 
         void expand(size_t ns);

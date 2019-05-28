@@ -22,6 +22,8 @@
 #include "defines.h"
 #include "storage/bytepack.h"
 
+// #define COMPACT_LEVEL_ARRAY
+
 // #define DEBUG_HANDLE_MGT
 
 // #define DEBUG_HANDLE_FREELIST
@@ -110,30 +112,99 @@ inline void dump_handle_info(const MEDDLY::node_headers &NH, long size)
 
 #ifndef OLD_NODE_HEADERS
 
-MEDDLY::node_headers::level_array::level_array(node_headers &p) : parent(p)
+MEDDLY::node_headers::level_array::level_array(node_headers &p, int max_level)
+ : parent(p)
 {
+#ifdef COMPACTED_HEADERS
+  data8 = 0;
+  data16 = 0;
+#endif
   data32 = 0;
   size = 0;
-  parent.changeHeaderSize(0, sizeof(int)*8);
+
+#ifdef COMPACTED_HEADERS
+#ifdef COMPACT_LEVEL_ARRAY
+  if (max_level < 128) {
+    bytes = 1;
+    MEDDLY_DCASSERT(1 == sizeof(char));
+  } else if (max_level < 32768) {
+    bytes = 2;
+    MEDDLY_DCASSERT(2 == sizeof(short));
+  } else {
+    bytes = 4;
+    MEDDLY_DCASSERT(4 == sizeof(int));
+  }
+#else
+  bytes = 4;
+  MEDDLY_DCASSERT(4 == sizeof(int));
+#endif
+#else
+  bytes = 4;
+  MEDDLY_DCASSERT(4 == sizeof(int));
+#endif
+  parent.changeHeaderSize(0, bytes*8);
 }
 
 MEDDLY::node_headers::level_array::~level_array()
 {
+#ifdef COMPACTED_HEADERS
+  free(data8);
+  free(data16);
+#endif
   free(data32);
-  parent.changeHeaderSize(sizeof(int)*8, 0);
+  parent.changeHeaderSize(bytes*8, 0);
 }
 
 void MEDDLY::node_headers::level_array::expand(size_t ns)
 {
   if (ns <= size) return;
 
-  int* d = (int*) realloc(data32, ns * sizeof(int));
-  if (0==d) {
+#ifdef COMPACTED_HEADERS
+  char* d8 = 0;
+  short* d16 = 0;
+  int* d32 = 0;
+
+  switch (bytes) {
+    case 1:   // char array
+              d8 = (char*) realloc(data8, ns * bytes);
+              if (0==d8) {
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+              }
+              memset(d8 + size, 0, (ns-size) * bytes );
+              data8 = d8;
+              break;
+
+    case 2:   // short array
+              d16 = (short*) realloc(data16, ns * bytes);
+              if (0==d16) {
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+              }
+              memset(d16 + size, 0, (ns-size) * bytes );
+              data16 = d16;
+              break;
+
+    case 4:   // int array
+              d32 = (int*) realloc(data32, ns * bytes);
+              if (0==d32) {
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+              }
+              memset(d32 + size, 0, (ns-size) * bytes );
+              data32 = d32;
+              break;
+
+    default:
+              MEDDLY_DCASSERT(0);
+  }
+#else
+  int* d32 = (int*) realloc(data32, ns * bytes);
+  if (0==d32) {
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
-  memset(d + size, 0, (ns-size) * sizeof(int) );
+  memset(d32 + size, 0, (ns-size) * bytes );
+  data32 = d32;
+#endif
+
   size = ns;
-  data32 = d;
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Enlarged level array, new size %lu\n", size);
 #endif
@@ -142,12 +213,49 @@ void MEDDLY::node_headers::level_array::expand(size_t ns)
 void MEDDLY::node_headers::level_array::shrink(size_t ns)
 {
   if (ns >= size) return;
-  int* d = (int*) realloc(data32, ns * sizeof(int));
-  if (0==d) {
+
+#ifdef COMPACTED_HEADERS
+  char* d8 = 0;
+  short* d16 = 0;
+  int* d32 = 0;
+
+  switch (bytes) {
+    case 1:   // char array
+              d8 = (char*) realloc(data8, ns * bytes);
+              if (0==d8) {
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+              }
+              data8 = d8;
+              break;
+
+    case 2:   // short array
+              d16 = (short*) realloc(data16, ns * bytes);
+              if (0==d16) {
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+              }
+              data16 = d16;
+              break;
+
+    case 4:   // int array
+              d32 = (int*) realloc(data32, ns * bytes);
+              if (0==d32) {
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+              }
+              data32 = d32;
+              break;
+
+    default:
+              MEDDLY_DCASSERT(0);
+  }
+#else
+  int* d32 = (int*) realloc(data32, ns * bytes);
+  if (0==d32) {
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
+  data32 = d32;
+#endif
+
   size = ns;
-  data32 = d;
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Reduced level array, new size %lu\n", size);
 #endif
@@ -157,10 +265,10 @@ void MEDDLY::node_headers::level_array
   ::show(output &s, size_t first, size_t last, int width) const
 {
   s << "[";
-  s.put(long(data32[first]), width);
+  s.put(long(get(first)), width);
   for (size_t i=first+1; i<=last; i++) {
     s.put('|');
-    s.put(long(data32[i]), width);
+    s.put(long(get(i)), width);
   }
   s << "]";
 }
@@ -417,7 +525,7 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   for (int i=0; i<8; i++) a_unused[i] = 0;
   a_lowest_index = 8;
   addresses = new address_array(*this);
-  levels = new level_array(*this);
+  levels = new level_array(*this, parent.getNumVariables());
   cache_counts = new counter_array(*this);
   incoming_counts = new counter_array(*this);
   implicit_bits = 0;

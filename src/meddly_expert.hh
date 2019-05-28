@@ -516,23 +516,59 @@ MEDDLY::unpacked_node::freeRecycled()
 
 inline int MEDDLY::node_headers::level_array::get(size_t i) const
 {
-  MEDDLY_DCASSERT(data32);
   MEDDLY_DCASSERT(i<size);
+#ifdef COMPACTED_HEADERS
+  if (data8) {
+    return data8[i];
+  }
+  if (data16) {
+    return data16[i];
+  }
+#endif
+  MEDDLY_DCASSERT(data32);
   return data32[i];
 }
 
 inline void MEDDLY::node_headers::level_array::set(size_t i, int v)
 {
-  MEDDLY_DCASSERT(data32);
   MEDDLY_DCASSERT(i<size);
+#ifdef COMPACTED_HEADERS
+  if (data8) {
+    MEDDLY_DCASSERT(v>-128);
+    MEDDLY_DCASSERT(v<128);
+    data8[i] = v;
+    return;
+  }
+  if (data16) {
+    MEDDLY_DCASSERT(v>-32768);
+    MEDDLY_DCASSERT(v<32768);
+    data16[i] = v;
+    return;
+  }
+#endif
+  MEDDLY_DCASSERT(data32);
   data32[i] = v;
 }
 
 inline void MEDDLY::node_headers::level_array::swap(size_t i, size_t j)
 {
-  MEDDLY_DCASSERT(data32);
   MEDDLY_DCASSERT(i<size);
   MEDDLY_DCASSERT(j<size);
+#ifdef COMPACTED_HEADERS
+  if (data8) {
+    char tmp = data8[i];
+    data8[i] = data8[j];
+    data8[j] = tmp;
+    return;
+  }
+  if (data16) {
+    short tmp = data16[i];
+    data16[i] = data16[j];
+    data16[j] = tmp;
+    return;
+  }
+#endif
+  MEDDLY_DCASSERT(data32);
   int tmp = data32[i];
   data32[i] = data32[j];
   data32[j] = tmp;
@@ -540,7 +576,7 @@ inline void MEDDLY::node_headers::level_array::swap(size_t i, size_t j)
 
 inline size_t MEDDLY::node_headers::level_array::entry_bits() const
 {
-  return sizeof(int) * 8;
+  return size_t(bytes) * 8;
 }
 
 #endif
