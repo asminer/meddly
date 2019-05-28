@@ -110,16 +110,17 @@ inline void dump_handle_info(const MEDDLY::node_headers &NH, long size)
 
 #ifndef OLD_NODE_HEADERS
 
-MEDDLY::node_headers::level_array::level_array(memstats &ms) : MS(ms)
+MEDDLY::node_headers::level_array::level_array(node_headers &p) : parent(p)
 {
   data32 = 0;
   size = 0;
+  parent.changeHeaderSize(0, sizeof(int)*8);
 }
 
 MEDDLY::node_headers::level_array::~level_array()
 {
-  MS.decMemAlloc(size * sizeof(int));
   free(data32);
+  parent.changeHeaderSize(sizeof(int)*8, 0);
 }
 
 void MEDDLY::node_headers::level_array::expand(size_t ns)
@@ -131,7 +132,6 @@ void MEDDLY::node_headers::level_array::expand(size_t ns)
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   memset(d + size, 0, (ns-size) * sizeof(int) );
-  MS.incMemAlloc( (ns - size) * sizeof(int) );
   size = ns;
   data32 = d;
 #ifdef DEBUG_ADDRESS_RESIZE
@@ -146,7 +146,6 @@ void MEDDLY::node_headers::level_array::shrink(size_t ns)
   if (0==d) {
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
-  MS.decMemAlloc( (size - ns) * sizeof(int) );
   size = ns;
   data32 = d;
 #ifdef DEBUG_ADDRESS_RESIZE
@@ -176,16 +175,17 @@ void MEDDLY::node_headers::level_array
 
 #ifndef OLD_NODE_HEADERS
 
-MEDDLY::node_headers::counter_array::counter_array(memstats &ms) : MS(ms)
+MEDDLY::node_headers::counter_array::counter_array(node_headers &p) : parent(p)
 {
   data32 = 0;
   size = 0;
+  parent.changeHeaderSize(0, sizeof(unsigned int)*8);
 }
 
 MEDDLY::node_headers::counter_array::~counter_array()
 {
-  MS.decMemAlloc(size * sizeof(unsigned int));
   free(data32);
+  parent.changeHeaderSize(sizeof(unsigned int)*8, 0);
 }
 
 void MEDDLY::node_headers::counter_array::expand(size_t ns)
@@ -197,7 +197,6 @@ void MEDDLY::node_headers::counter_array::expand(size_t ns)
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   memset(d + size, 0, (ns-size) * sizeof(unsigned int) );
-  MS.incMemAlloc( (ns - size) * sizeof(unsigned int) );
   size = ns;
   data32 = d;
 #ifdef DEBUG_ADDRESS_RESIZE
@@ -212,7 +211,6 @@ void MEDDLY::node_headers::counter_array::shrink(size_t ns)
   if (0==d) {
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
-  MS.decMemAlloc( (size - ns) * sizeof(unsigned int) );
   size = ns;
   data32 = d;
 #ifdef DEBUG_ADDRESS_RESIZE
@@ -242,16 +240,17 @@ void MEDDLY::node_headers::counter_array
 
 #ifndef OLD_NODE_HEADERS
 
-MEDDLY::node_headers::address_array::address_array(memstats &ms) : MS(ms)
+MEDDLY::node_headers::address_array::address_array(node_headers &p) : parent(p)
 {
   data64 = 0;
   size = 0;
+  parent.changeHeaderSize(0, sizeof(unsigned long)*8);
 }
 
 MEDDLY::node_headers::address_array::~address_array()
 {
-  MS.decMemAlloc(size * sizeof(unsigned long));
   free(data64);
+  parent.changeHeaderSize(sizeof(unsigned long)*8, 0);
 }
 
 void MEDDLY::node_headers::address_array::expand(size_t ns)
@@ -263,7 +262,6 @@ void MEDDLY::node_headers::address_array::expand(size_t ns)
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   memset(d + size, 0, (ns-size) * sizeof(unsigned long) );
-  MS.incMemAlloc( (ns - size) * sizeof(unsigned long) );
   size = ns;
   data64 = d;
 #ifdef DEBUG_ADDRESS_RESIZE
@@ -278,7 +276,6 @@ void MEDDLY::node_headers::address_array::shrink(size_t ns)
   if (0==d) {
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
-  MS.decMemAlloc( (size - ns) * sizeof(unsigned long) );
   size = ns;
   data64 = d;
 #ifdef DEBUG_ADDRESS_RESIZE
@@ -308,16 +305,17 @@ void MEDDLY::node_headers::address_array
 
 #ifndef OLD_NODE_HEADERS
 
-MEDDLY::node_headers::bitvector::bitvector(memstats &ms) : MS(ms)
+MEDDLY::node_headers::bitvector::bitvector(node_headers &p) : parent(p)
 {
   data = 0;
   size = 0;
+  parent.changeHeaderSize(0, sizeof(bool)*8);
 }
 
 MEDDLY::node_headers::bitvector::~bitvector()
 {
-  MS.decMemAlloc(size * sizeof(bool));
   free(data);
+  parent.changeHeaderSize(sizeof(bool)*8, 0);
 }
 
 void MEDDLY::node_headers::bitvector::expand(size_t ns)
@@ -329,7 +327,6 @@ void MEDDLY::node_headers::bitvector::expand(size_t ns)
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   memset(d + size, 0, (ns-size) * sizeof(bool) );
-  MS.incMemAlloc( (ns - size) * sizeof(bool) );
   size = ns;
   data = d;
 #ifdef DEBUG_ADDRESS_RESIZE
@@ -344,7 +341,6 @@ void MEDDLY::node_headers::bitvector::shrink(size_t ns)
   if (0==d) {
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
-  MS.decMemAlloc( (size - ns) * sizeof(bool) );
   size = ns;
   data = d;
 #ifdef DEBUG_ADDRESS_RESIZE
@@ -403,7 +399,7 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   if (0 == address) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   parent.mstats.incMemAlloc(a_size * sizeof(node_header));
   memset(address, 0, a_size * sizeof(node_header));
-  a_last = a_next_shrink = 0;
+  a_last = a_next_shrink = a_freed = 0;
   for (int i=0; i<8; i++) a_unused[i] = 0;
   a_lowest_index = 8;
 
@@ -413,16 +409,18 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   usesCacheCounts = true;
   usesIncomingCounts = true;
 #else
-  addresses = new address_array(parent.mstats);
-  levels = new level_array(parent.mstats);
-  cache_counts = new counter_array(parent.mstats);
-  incoming_counts = new counter_array(parent.mstats);
-  implicit_bits = 0;
+  h_bits = 0;
   a_last = 0;
   a_size = 0;
+  a_freed = 0;
   a_next_shrink = 0;
   for (int i=0; i<8; i++) a_unused[i] = 0;
   a_lowest_index = 8;
+  addresses = new address_array(*this);
+  levels = new level_array(*this);
+  cache_counts = new counter_array(*this);
+  incoming_counts = new counter_array(*this);
+  implicit_bits = 0;
 #endif
 }
 
@@ -442,6 +440,44 @@ MEDDLY::node_headers::~node_headers()
   delete incoming_counts;
   delete implicit_bits;
 #endif
+}
+
+// ******************************************************************
+
+void MEDDLY::node_headers
+::reportStats(output &s, const char* pad, unsigned flags) const
+{
+  if (flags & (expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED) ) {
+#ifdef OLD_NODE_HEADERS
+    s << pad << "Node headers: struct based\n";
+#else
+    s << pad << "Node headers: array based\n";
+#endif
+  }
+  if (flags & expert_forest::STORAGE_STATS) {
+#ifdef OLD_NODE_HEADERS
+    unsigned h_bits = sizeof(node_header) * 8;
+#endif
+    s << pad << "  Node header: " << int(h_bits) << " bits\n";
+  }
+
+#ifndef OLD_NODE_HEADERS
+  if (flags & expert_forest::STORAGE_DETAILED) {
+    if (addresses)        s << pad << "    address   : " << addresses->entry_bits() << " bits\n";
+    if (levels)           s << pad << "    level     : " << levels->entry_bits() << " bits\n";
+    if (cache_counts)     s << pad << "    #caches   : " << cache_counts->entry_bits() << " bits\n";
+    if (incoming_counts)  s << pad << "    #incoming : " << incoming_counts->entry_bits() << " bits\n";
+    if (implicit_bits)    s << pad << "    implicit? : " << implicit_bits->entry_bits() << " bits\n";
+  }
+#endif
+
+  if (flags & expert_forest::STORAGE_STATS) {
+    s << pad << "  " << a_size << " headers allocated\n";
+    s << pad << "  " << a_last << " last header\n";
+    s << pad << "  " << a_freed << " recycled headers\n";
+    s << pad << "  " << a_last - a_freed << " headers in use\n";
+  }
+
 }
 
 // ******************************************************************
@@ -476,6 +512,8 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
 {
 #ifdef OLD_NODE_HEADERS
   parent.mstats.incMemUsed(sizeof(node_header));
+#else
+  parent.mstats.incMemUsed(h_bits/8);
 #endif
   node_handle found = 0;
   for (int i=a_lowest_index; i<8; i++) {
@@ -499,6 +537,7 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
 #ifdef DEBUG_HANDLE_MGT
     fprintf(stderr, "Using recycled handle %d\n", found);
 #endif
+    a_freed--;
     return found;
   }
   a_last++;
@@ -530,8 +569,11 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
 
 #ifdef OLD_NODE_HEADERS
   parent.mstats.decMemUsed(sizeof(node_header));
+#else
+  parent.mstats.decMemUsed(h_bits/8);
 #endif
   deactivate(p);
+  a_freed++;
 
   // Determine which list to add this into,
   // and add it there
@@ -552,6 +594,7 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
   if (p == a_last) {
     while (a_last && isDeactivated(a_last)) {
       a_last--;
+      a_freed--;
     }
 
 #ifdef DEBUG_HANDLE_MGT
@@ -613,7 +656,7 @@ void MEDDLY::node_headers::dumpInternal(output &s) const
     if (p>1) s.put(' ');
     s.put(long(p), awidth);
   }
-#if OLD_NODE_HEADERS
+#ifdef OLD_NODE_HEADERS
   s << "\n    Level  : [";
   for (node_handle p=1; p<=a_last; p++) {
     if (p>1) s.put('|');
@@ -673,6 +716,25 @@ void MEDDLY::node_headers::dumpInternal(output &s) const
 
 // ******************************************************************
 
+#ifndef OLD_NODE_HEADERS
+
+void MEDDLY::node_headers::changeHeaderSize(unsigned oldbits, unsigned newbits)
+{
+  if (oldbits < newbits) {
+    parent.mstats.incMemUsed((a_last - a_freed)*(newbits-oldbits)/8);
+    parent.mstats.incMemAlloc(a_size*(newbits-oldbits)/8);
+  } else {
+    parent.mstats.decMemUsed((a_last - a_freed)*(oldbits-newbits)/8);
+    parent.mstats.decMemAlloc(a_size*(oldbits-newbits)/8);
+  }
+  h_bits += newbits;
+  h_bits -= oldbits;
+}
+
+#endif
+
+// ******************************************************************
+
 void MEDDLY::node_headers::expandHandleList()
 {
 #ifdef OLD_NODE_HEADERS
@@ -699,6 +761,7 @@ void MEDDLY::node_headers::expandHandleList()
 
 #else // OLD_NODE_HEADERS
 
+  size_t old_size = a_size;
   do {
     a_next_shrink = next_check(a_next_shrink);
     a_size = next_size(a_size);
@@ -709,6 +772,8 @@ void MEDDLY::node_headers::expandHandleList()
   if (cache_counts)     cache_counts->expand(a_size);
   if (incoming_counts)  incoming_counts->expand(a_size);
   if (implicit_bits)    implicit_bits->expand(a_size);
+
+  parent.mstats.incMemAlloc( ((a_size-old_size)*h_bits)/8 );
 
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Expanded node headers arrays, new size %lu (shrink check %lu)\n", a_size, a_next_shrink);
@@ -803,6 +868,7 @@ void MEDDLY::node_headers::shrinkHandleList()
     }
   } // for i
 
+  size_t old_size = a_size;
   do {
     a_size = prev_size(a_size);
     a_next_shrink = (a_size > START_SIZE) ? prev_check(a_next_shrink) : 0;
@@ -813,6 +879,8 @@ void MEDDLY::node_headers::shrinkHandleList()
   if (cache_counts)     cache_counts->shrink(a_size);
   if (incoming_counts)  incoming_counts->shrink(a_size);
   if (implicit_bits)    implicit_bits->shrink(a_size);
+
+  parent.mstats.incMemAlloc( ((old_size-a_size)*h_bits)/8 );
 
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Shrank node headers arrays, new size %lu (shrink check %lu)\n", a_size, a_next_shrink);

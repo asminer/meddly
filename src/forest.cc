@@ -1262,6 +1262,8 @@ void MEDDLY::expert_forest
   }
   // forest specific
   reportForestStats(s, pad);
+  // header storage
+  nodeHeaders.reportStats(s, pad, flags);
   // node storage
   nodeMan->reportStats(s, pad, flags);
   // unique table

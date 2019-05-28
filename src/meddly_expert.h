@@ -1401,6 +1401,16 @@ class MEDDLY::node_headers {
     node_headers(expert_forest &P);
     ~node_headers();
 
+
+    /** Show various memory stats.
+          @param  s       Output stream to write to
+          @param  pad     Padding string, written at the start of
+                          each output line.
+          @param  flags   Which stats to display, as "flags";
+                          use bitwise or to combine values.
+    */
+    void reportStats(output &s, const char* pad, unsigned flags) const;
+
     /**
         Indicate that we don't need to track cache counts.
         The default is that we will track cache counts.
@@ -1531,6 +1541,12 @@ class MEDDLY::node_headers {
 
     void dumpInternal(output &s) const;
 
+
+#ifndef OLD_NODE_HEADERS
+  public: // interface for node header size changes
+    void changeHeaderSize(unsigned oldbits, unsigned newbits);
+#endif
+
   private:  // helper methods
 
     /// Increase the number of node handles.
@@ -1592,6 +1608,8 @@ class MEDDLY::node_headers {
     node_handle a_size;
     /// Last used address.
     node_handle a_last;
+    /// Number of recycled addresses
+    node_handle a_freed;
     /// Pointer to unused address lists, based on size
     node_handle a_unused[8];  // number of bytes per handle
     /// Lowest non-empty address list
@@ -1620,11 +1638,11 @@ class MEDDLY::node_headers {
   private:
 
     class level_array {
-        memstats &MS;
+        node_headers &parent;
         int* data32;
         size_t size;
       public:
-        level_array(memstats &ms);
+        level_array(node_headers &p);
         ~level_array();
 
         void expand(size_t ns);
@@ -1635,14 +1653,15 @@ class MEDDLY::node_headers {
         void swap(size_t i, size_t j);
 
         void show(output &s, size_t first, size_t last, int width) const;
+        size_t entry_bits() const;
     };
 
     class counter_array {
-        memstats &MS;
+        node_headers &parent;
         unsigned int* data32;
         size_t size;
       public:
-        counter_array(memstats &ms);
+        counter_array(node_headers &p);
         ~counter_array();
 
         void expand(size_t ns);
@@ -1657,14 +1676,15 @@ class MEDDLY::node_headers {
         bool isPositiveAfterDecrement(size_t i);
 
         void show(output &s, size_t first, size_t last, int width) const;
+        size_t entry_bits() const;
     };
 
     class address_array {
-        memstats &MS;
+        node_headers &parent;
         unsigned long* data64;
         size_t size;
       public:
-        address_array(memstats &ms);
+        address_array(node_headers &p);
         ~address_array();
 
         void expand(size_t ns);
@@ -1675,14 +1695,15 @@ class MEDDLY::node_headers {
         void swap(size_t i, size_t j);
 
         void show(output &s, size_t first, size_t last, int width) const;
+        size_t entry_bits() const;
     };
 
     class bitvector {
-        memstats &MS;
+        node_headers &parent;
         bool* data;
         size_t size;
       public:
-        bitvector(memstats &ms);
+        bitvector(node_headers &p);
         ~bitvector();
 
         void expand(size_t ns);
@@ -1691,6 +1712,7 @@ class MEDDLY::node_headers {
         bool get(size_t i) const;
         void set(size_t i, bool v);
         void swap(size_t i, size_t j);
+        size_t entry_bits() const;
     };
 
   private:
@@ -1709,8 +1731,14 @@ class MEDDLY::node_headers {
     /// Next time we shink the address list.
     size_t a_next_shrink;
 
+    /// Number of addresses in free lists
+    size_t a_freed;
+
     /// Pointer to unused address lists, based on size
     size_t a_unused[8];  // number of bytes per handle
+
+    /// Current size of node "header"
+    unsigned h_bits;
 
     /// Lowest non-empty address list
     char a_lowest_index;

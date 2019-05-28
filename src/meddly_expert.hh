@@ -538,6 +538,11 @@ inline void MEDDLY::node_headers::level_array::swap(size_t i, size_t j)
   data32[j] = tmp;
 }
 
+inline size_t MEDDLY::node_headers::level_array::entry_bits() const
+{
+  return sizeof(int) * 8;
+}
+
 #endif
 
 // ******************************************************************
@@ -595,6 +600,12 @@ inline bool MEDDLY::node_headers::counter_array::isPositiveAfterDecrement(size_t
   return 0<--data32[i];
 }
 
+inline size_t MEDDLY::node_headers::counter_array::entry_bits() const
+{
+  return sizeof(unsigned int) * 8;
+}
+
+
 #endif
 
 // ******************************************************************
@@ -627,6 +638,11 @@ inline void MEDDLY::node_headers::address_array::swap(size_t i, size_t j)
   unsigned long tmp = data64[i];
   data64[i] = data64[j];
   data64[j] = tmp;
+}
+
+inline size_t MEDDLY::node_headers::address_array::entry_bits() const
+{
+  return sizeof(unsigned long) * 8;
 }
 
 #endif
@@ -663,6 +679,10 @@ inline void MEDDLY::node_headers::bitvector::swap(size_t i, size_t j)
   data[j] = tmp;
 }
 
+inline size_t MEDDLY::node_headers::bitvector::entry_bits() const
+{
+  return sizeof(bool) * 8;
+}
 
 #endif
 
@@ -1178,7 +1198,7 @@ MEDDLY::node_headers::setNodeImplicitFlag(node_handle p, bool flag)
     implicit_bits->set(size_t(p), flag);
   } else {
     if (!flag) return;
-    implicit_bits = new bitvector(parent.mstats);
+    implicit_bits = new bitvector(*this);
     implicit_bits->expand(a_size);
     implicit_bits->set(size_t(p), flag);
   }

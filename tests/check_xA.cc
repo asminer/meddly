@@ -105,17 +105,17 @@ void by_hand_oz_Ax(double* y, const double* const x)
   y[2] += x[0]/4 + x[1]/4 + x[2]/2;
 }
 
-bool equals(double *xgot, double *xans, int N)
+bool equals(double *xgot, double *xans, int size)
 {
-  for (int i=0; i<N; i++) {
+  for (int i=0; i<size; i++) {
     double delta = xgot[i] - xans[i];
     if (xgot[i]) delta /= xgot[i];
     if (delta > -1e-5 && delta < 1e-5) continue;
     // not equal, print an error
     printf("Got     : [%lf", xgot[0]);
-    for (int j=1; j<N; j++) printf(", %lf", xgot[j]);
+    for (int j=1; j<size; j++) printf(", %lf", xgot[j]);
     printf("]\nExpected: [%lf", xans[0]);
-    for (int j=1; j<N; j++) printf(", %lf", xans[j]);
+    for (int j=1; j<size; j++) printf(", %lf", xans[j]);
     printf("]\n");
     return false;
   }
