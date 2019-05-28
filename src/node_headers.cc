@@ -22,7 +22,9 @@
 #include "defines.h"
 #include "storage/bytepack.h"
 
-// #define COMPACT_LEVEL_ARRAY
+// #define LEVEL_ARRAY_MAX_WIDTH
+
+// #define DEBUG_COUNTER_RESIZE
 
 // #define DEBUG_HANDLE_MGT
 
@@ -123,7 +125,11 @@ MEDDLY::node_headers::level_array::level_array(node_headers &p, int max_level)
   size = 0;
 
 #ifdef COMPACTED_HEADERS
-#ifdef COMPACT_LEVEL_ARRAY
+
+#ifdef LEVEL_ARRAY_MAX_WIDTH
+  max_level = 32768;
+#endif
+
   if (max_level < 128) {
     bytes = 1;
     MEDDLY_DCASSERT(1 == sizeof(char));
@@ -134,14 +140,16 @@ MEDDLY::node_headers::level_array::level_array(node_headers &p, int max_level)
     bytes = 4;
     MEDDLY_DCASSERT(4 == sizeof(int));
   }
-#else
+
+#ifdef LEVEL_ARRAY_MAX_WIDTH
+  // Make sure we hacked this correctly
+  MEDDLY_DCASSERT(4==bytes);
+#endif
+
+#else // COMPACTED HEADERS
   bytes = 4;
   MEDDLY_DCASSERT(4 == sizeof(int));
-#endif
-#else
-  bytes = 4;
-  MEDDLY_DCASSERT(4 == sizeof(int));
-#endif
+#endif // COMPACTED HEADERS
   parent.changeHeaderSize(0, bytes*8);
 }
 
@@ -205,7 +213,7 @@ void MEDDLY::node_headers::level_array::expand(size_t ns)
 #endif
 
   size = ns;
-#ifdef DEBUG_ADDRESS_RESIZE
+#ifdef DEBUG_LEVEL_RESIZE
   printf("Enlarged level array, new size %lu\n", size);
 #endif
 }
@@ -256,7 +264,7 @@ void MEDDLY::node_headers::level_array::shrink(size_t ns)
 #endif
 
   size = ns;
-#ifdef DEBUG_ADDRESS_RESIZE
+#ifdef DEBUG_LEVEL_RESIZE
   printf("Reduced level array, new size %lu\n", size);
 #endif
 }
@@ -285,29 +293,102 @@ void MEDDLY::node_headers::level_array
 
 MEDDLY::node_headers::counter_array::counter_array(node_headers &p) : parent(p)
 {
+#ifdef COMPACTED_HEADERS
+  data8 = 0;
+  data16 = 0;
+#endif
   data32 = 0;
   size = 0;
-  parent.changeHeaderSize(0, sizeof(unsigned int)*8);
+#ifdef COMPACTED_HEADERS
+  counts_09bit = 0;
+  counts_17bit = 0;
+  bytes = sizeof(unsigned char);
+#else
+  bytes = sizeof(unsigned int);
+#endif
+  parent.changeHeaderSize(0, bytes*8);
 }
 
 MEDDLY::node_headers::counter_array::~counter_array()
 {
+#ifdef COMPACTED_HEADERS
+  free(data8);
+  free(data16);
+#endif
   free(data32);
-  parent.changeHeaderSize(sizeof(unsigned int)*8, 0);
+  parent.changeHeaderSize(bytes*8, 0);
 }
 
 void MEDDLY::node_headers::counter_array::expand(size_t ns)
 {
   if (ns <= size) return;
 
+#ifdef COMPACTED_HEADERS
+  unsigned char* d8 = 0;
+  unsigned short* d16 = 0;
+  unsigned int* d32 = 0;
+
+  switch (bytes) {
+    case 1:   // char array
+              MEDDLY_DCASSERT(0==data16);
+              MEDDLY_DCASSERT(0==data32);
+              d8 = (unsigned char*) realloc(data8, ns * bytes);
+              if (0==d8) {
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+              }
+              memset(d8 + size, 0, (ns-size) * bytes );
+              data8 = d8;
+              break;
+
+    case 2:   // short array
+              if (counts_09bit) {
+                d16 = (unsigned short*) realloc(data16, ns * bytes);
+                if (0==d16) {
+                  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+                }
+                memset(d16 + size, 0, (ns-size) * bytes );
+                data16 = d16;
+                MEDDLY_DCASSERT(0==data8);
+                MEDDLY_DCASSERT(0==data32);
+              } else {
+                shrink16to8(ns);
+                memset(data8 + size, 0, (ns-size) * bytes );
+              }
+              break;
+
+    case 4:   // int array
+              if (counts_17bit) {
+                d32 = (unsigned int*) realloc(data32, ns * bytes);
+                if (0==d32) {
+                  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+                }
+                memset(d32 + size, 0, (ns-size) * bytes );
+                data32 = d32;
+                MEDDLY_DCASSERT(0==data8);
+                MEDDLY_DCASSERT(0==data16);
+              } else if (counts_09bit) {
+                shrink32to16(ns);
+                memset(data16 + size, 0, (ns-size) * bytes );
+              } else {
+                shrink32to8(ns);
+                memset(data8 + size, 0, (ns-size) * bytes );
+              }
+              break;
+
+    default:
+              MEDDLY_DCASSERT(0);
+  }; // switch bytes
+#else
   unsigned int* d = (unsigned int*) realloc(data32, ns * sizeof(unsigned int));
   if (0==d) {
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   memset(d + size, 0, (ns-size) * sizeof(unsigned int) );
-  size = ns;
   data32 = d;
-#ifdef DEBUG_ADDRESS_RESIZE
+#endif
+
+  size = ns;
+#ifdef DEBUG_COUNTER_RESIZE
   printf("Enlarged counter array, new size %lu\n", size);
 #endif
 }
@@ -315,13 +396,63 @@ void MEDDLY::node_headers::counter_array::expand(size_t ns)
 void MEDDLY::node_headers::counter_array::shrink(size_t ns)
 {
   if (ns >= size) return;
+
+#ifdef COMPACTED_HEADERS
+  unsigned char* d8 = 0;
+  unsigned short* d16 = 0;
+  unsigned int* d32 = 0;
+
+  switch (bytes) {
+    case 1:   // char array
+              MEDDLY_DCASSERT(0==counts_09bit);
+              MEDDLY_DCASSERT(0==counts_17bit);
+              d8 = (unsigned char*) realloc(data8, ns * bytes);
+              if (0==d8) {
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+              }
+              data8 = d8;
+              break;
+
+    case 2:   // short array
+              MEDDLY_DCASSERT(0==counts_17bit);
+              if (counts_09bit) {
+                d16 = (unsigned short*) realloc(data16, ns * bytes);
+                if (0==d16) {
+                  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+                }
+                data16 = d16;
+              } else {
+                shrink16to8(ns);
+              }
+              break;
+
+    case 4:   // int array
+              if (counts_17bit) {
+                d32 = (unsigned int*) realloc(data32, ns * bytes);
+                if (0==d32) {
+                  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+                }
+                data32 = d32;
+              } else if (counts_09bit) {
+                shrink32to16(ns);
+              } else {
+                shrink32to8(ns);
+              }
+              break;
+
+    default:
+              MEDDLY_DCASSERT(0);
+  }; // switch bytes
+#else
   unsigned int* d = (unsigned int*) realloc(data32, ns * sizeof(unsigned int));
   if (0==d) {
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
-  size = ns;
   data32 = d;
-#ifdef DEBUG_ADDRESS_RESIZE
+#endif
+
+  size = ns;
+#ifdef DEBUG_COUNTER_RESIZE
   printf("Reduced counter array, new size %lu\n", size);
 #endif
 }
@@ -330,12 +461,140 @@ void MEDDLY::node_headers::counter_array
   ::show(output &s, size_t first, size_t last, int width) const
 {
   s << "[";
-  s.put((unsigned long) data32[first], width);
+  s.put((unsigned long) get(first), width);
   for (size_t i=first+1; i<=last; i++) {
     s.put('|');
-    s.put((unsigned long) data32[i], width);
+    s.put((unsigned long) get(i), width);
   }
   s << "]";
+}
+
+void MEDDLY::node_headers::counter_array::expand8to16(size_t j)
+{
+#ifdef DEBUG_COUNTER_RESIZE
+  printf("Expanding counter array from 8 to 16 bits (for element %lu)\n", j);
+#endif
+  MEDDLY_DCASSERT(1==bytes);
+  MEDDLY_DCASSERT(0==data16);
+  MEDDLY_DCASSERT(0==data32);
+  MEDDLY_DCASSERT(0==counts_09bit);
+  MEDDLY_DCASSERT(0==counts_17bit);
+
+  counts_09bit = 1;  
+  bytes = sizeof(unsigned short);
+  data16 = (unsigned short*) malloc(size * bytes);
+  if (0==data16) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+  for (size_t i=0; i<size; i++) {
+    data16[i] = data8[i];
+  }
+  data16[j] = 256;
+  free(data8);
+  data8 = 0;
+  parent.changeHeaderSize(8, 16);
+}
+
+void MEDDLY::node_headers::counter_array::expand16to32(size_t j)
+{
+#ifdef DEBUG_COUNTER_RESIZE
+  printf("Expanding counter array from 16 to 32 bits (for element %lu)\n", j);
+#endif
+  MEDDLY_DCASSERT(2==bytes);
+  MEDDLY_DCASSERT(0==data8);
+  MEDDLY_DCASSERT(0==data32);
+  MEDDLY_DCASSERT(0==counts_17bit);
+
+  counts_17bit = 1;  
+  bytes = sizeof(unsigned int);
+  data32 = (unsigned int*) malloc(size * bytes);
+  if (0==data32) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+  for (size_t i=0; i<size; i++) {
+    data32[i] = data16[i];
+  }
+  data32[j] = 65536;
+  free(data16);
+  data16 = 0;
+  parent.changeHeaderSize(16, 32);
+}
+
+void MEDDLY::node_headers::counter_array::shrink16to8(size_t ns)
+{
+#ifdef DEBUG_COUNTER_RESIZE
+  printf("Shrinking counter array from 16 to 8 bits\n");
+#endif
+  MEDDLY_DCASSERT(2==bytes);
+  MEDDLY_DCASSERT(data16);
+  MEDDLY_DCASSERT(0==data8);
+  MEDDLY_DCASSERT(0==data32);
+  MEDDLY_DCASSERT(0==counts_09bit);
+  MEDDLY_DCASSERT(0==counts_17bit);
+
+  parent.changeHeaderSize(16, 8);
+  bytes = sizeof(unsigned char);
+  data8 = (unsigned char*) malloc(ns * bytes);
+  if (0==data8) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+  size_t stop = (ns < size) ? ns : size;
+  for (size_t i=0; i<stop; i++) {
+    data8[i] = data16[i];
+  }
+  free(data16);
+  data16 = 0;
+}
+
+void MEDDLY::node_headers::counter_array::shrink32to16(size_t ns)
+{
+#ifdef DEBUG_COUNTER_RESIZE
+  printf("Shrinking counter array from 32 to 16 bits\n");
+#endif
+  MEDDLY_DCASSERT(4==bytes);
+  MEDDLY_DCASSERT(data32);
+  MEDDLY_DCASSERT(0==data8);
+  MEDDLY_DCASSERT(0==data16);
+  MEDDLY_DCASSERT(0==counts_17bit);
+
+  parent.changeHeaderSize(32, 16);
+  bytes = sizeof(unsigned short);
+  data16 = (unsigned short*) malloc(ns * bytes);
+  if (0==data8) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+  size_t stop = (ns < size) ? ns : size;
+  for (size_t i=0; i<stop; i++) {
+    data16[i] = data32[i];
+  }
+  free(data32);
+  data32 = 0;
+}
+
+void MEDDLY::node_headers::counter_array::shrink32to8(size_t ns)
+{
+#ifdef DEBUG_COUNTER_RESIZE
+  printf("Shrinking counter array from 32 to 8 bits\n");
+#endif
+  MEDDLY_DCASSERT(4==bytes);
+  MEDDLY_DCASSERT(data32);
+  MEDDLY_DCASSERT(0==data8);
+  MEDDLY_DCASSERT(0==data16);
+  MEDDLY_DCASSERT(0==counts_09bit);
+  MEDDLY_DCASSERT(0==counts_17bit);
+
+  parent.changeHeaderSize(32, 8);
+  bytes = sizeof(unsigned char);
+  data8 = (unsigned char*) malloc(ns * bytes);
+  if (0==data8) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+  size_t stop = (ns < size) ? ns : size;
+  for (size_t i=0; i<stop; i++) {
+    data8[i] = data32[i];
+  }
+  free(data32);
+  data32 = 0;
 }
 
 #endif
@@ -875,13 +1134,13 @@ void MEDDLY::node_headers::expandHandleList()
     a_size = next_size(a_size);
   } while (a_last >= a_size);
 
+  parent.mstats.incMemAlloc( ((a_size-old_size)*h_bits)/8 );
+
   if (addresses)        addresses->expand(a_size);
   if (levels)           levels->expand(a_size);
   if (cache_counts)     cache_counts->expand(a_size);
   if (incoming_counts)  incoming_counts->expand(a_size);
   if (implicit_bits)    implicit_bits->expand(a_size);
-
-  parent.mstats.incMemAlloc( ((a_size-old_size)*h_bits)/8 );
 
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Expanded node headers arrays, new size %lu (shrink check %lu)\n", a_size, a_next_shrink);
@@ -982,13 +1241,13 @@ void MEDDLY::node_headers::shrinkHandleList()
     a_next_shrink = (a_size > START_SIZE) ? prev_check(a_next_shrink) : 0;
   } while (a_last < a_next_shrink);
 
+  parent.mstats.decMemAlloc( ((old_size-a_size)*h_bits)/8 );
+
   if (addresses)        addresses->shrink(a_size);
   if (levels)           levels->shrink(a_size);
   if (cache_counts)     cache_counts->shrink(a_size);
   if (incoming_counts)  incoming_counts->shrink(a_size);
   if (implicit_bits)    implicit_bits->shrink(a_size);
-
-  parent.mstats.incMemAlloc( ((old_size-a_size)*h_bits)/8 );
 
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Shrank node headers arrays, new size %lu (shrink check %lu)\n", a_size, a_next_shrink);

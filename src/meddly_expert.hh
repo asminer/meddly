@@ -519,11 +519,17 @@ inline int MEDDLY::node_headers::level_array::get(size_t i) const
   MEDDLY_DCASSERT(i<size);
 #ifdef COMPACTED_HEADERS
   if (data8) {
+    MEDDLY_DCASSERT(0==data16);
+    MEDDLY_DCASSERT(0==data32);
     return data8[i];
   }
   if (data16) {
+    MEDDLY_DCASSERT(0==data8);
+    MEDDLY_DCASSERT(0==data32);
     return data16[i];
   }
+  MEDDLY_DCASSERT(0==data8);
+  MEDDLY_DCASSERT(0==data16);
 #endif
   MEDDLY_DCASSERT(data32);
   return data32[i];
@@ -534,17 +540,23 @@ inline void MEDDLY::node_headers::level_array::set(size_t i, int v)
   MEDDLY_DCASSERT(i<size);
 #ifdef COMPACTED_HEADERS
   if (data8) {
+    MEDDLY_DCASSERT(0==data16);
+    MEDDLY_DCASSERT(0==data32);
     MEDDLY_DCASSERT(v>-128);
     MEDDLY_DCASSERT(v<128);
     data8[i] = v;
     return;
   }
   if (data16) {
+    MEDDLY_DCASSERT(0==data8);
+    MEDDLY_DCASSERT(0==data32);
     MEDDLY_DCASSERT(v>-32768);
     MEDDLY_DCASSERT(v<32768);
     data16[i] = v;
     return;
   }
+  MEDDLY_DCASSERT(0==data8);
+  MEDDLY_DCASSERT(0==data16);
 #endif
   MEDDLY_DCASSERT(data32);
   data32[i] = v;
@@ -591,16 +603,44 @@ inline size_t MEDDLY::node_headers::level_array::entry_bits() const
 
 inline unsigned int MEDDLY::node_headers::counter_array::get(size_t i) const
 {
-  MEDDLY_DCASSERT(data32);
   MEDDLY_DCASSERT(i<size);
+#ifdef COMPACTED_HEADERS
+  if (data8) {
+    MEDDLY_DCASSERT(0==data16);
+    MEDDLY_DCASSERT(0==data32);
+    return data8[i];
+  }
+  if (data16) {
+    MEDDLY_DCASSERT(0==data8);
+    MEDDLY_DCASSERT(0==data32);
+    return data16[i];
+  }
+  MEDDLY_DCASSERT(0==data8);
+  MEDDLY_DCASSERT(0==data16);
+#endif
+  MEDDLY_DCASSERT(data32);
   return data32[i];
 }
 
 inline void MEDDLY::node_headers::counter_array::swap(size_t i, size_t j)
 {
-  MEDDLY_DCASSERT(data32);
   MEDDLY_DCASSERT(i<size);
   MEDDLY_DCASSERT(j<size);
+#ifdef COMPACTED_HEADERS
+  if (data8) {
+    unsigned char tmp = data8[i];
+    data8[i] = data8[j];
+    data8[j] = tmp;
+    return;
+  }
+  if (data16) {
+    unsigned short tmp = data16[i];
+    data16[i] = data16[j];
+    data16[j] = tmp;
+    return;
+  }
+#endif
+  MEDDLY_DCASSERT(data32);
   unsigned int tmp = data32[i];
   data32[i] = data32[j];
   data32[j] = tmp;
@@ -608,37 +648,156 @@ inline void MEDDLY::node_headers::counter_array::swap(size_t i, size_t j)
 
 inline void MEDDLY::node_headers::counter_array::increment(size_t i)
 {
-  MEDDLY_DCASSERT(data32);
   MEDDLY_DCASSERT(i<size);
+#ifdef COMPACTED_HEADERS
+  if (data8) {
+    MEDDLY_DCASSERT(0==data16);
+    MEDDLY_DCASSERT(0==data32);
+    if (0 == ++data8[i]) expand8to16(i);
+    return;
+  }
+  if (data16) {
+    MEDDLY_DCASSERT(0==data8);
+    MEDDLY_DCASSERT(0==data32);
+    ++data16[i];
+    if (256 == data16[i]) ++counts_09bit;
+    if (0 == data16[i]) expand16to32(i);
+    return;
+  }
+  MEDDLY_DCASSERT(0==data8);
+  MEDDLY_DCASSERT(0==data16);
+#endif
+  MEDDLY_DCASSERT(data32);
   data32[i]++;
+#ifdef COMPACTED_HEADERS
+  if (256 == data32[i]) ++counts_09bit;
+  if (65536 == data32[i]) ++counts_17bit;
+#endif
 }
 
 inline void MEDDLY::node_headers::counter_array::decrement(size_t i)
 {
-  MEDDLY_DCASSERT(data32);
   MEDDLY_DCASSERT(i<size);
+#ifdef COMPACTED_HEADERS
+  if (data8) {
+    MEDDLY_DCASSERT(0==data16);
+    MEDDLY_DCASSERT(0==data32);
+    MEDDLY_DCASSERT(data8[i]);
+    --data8[i];
+    return;
+  }
+  if (data16) {
+    MEDDLY_DCASSERT(0==data8);
+    MEDDLY_DCASSERT(0==data32);
+    MEDDLY_DCASSERT(data16[i]);
+    if (256 == data16[i]) {
+      MEDDLY_DCASSERT(counts_09bit);
+      --counts_09bit;
+    }
+    --data16[i];
+    return;
+  }
+#endif
+  MEDDLY_DCASSERT(0==data8);
+  MEDDLY_DCASSERT(0==data16);
+  MEDDLY_DCASSERT(data32);
   MEDDLY_DCASSERT(data32[i]);
-  data32[i]--;
+#ifdef COMPACTED_HEADERS
+  if (256 == data32[i]) {
+    MEDDLY_DCASSERT(counts_09bit);
+    --counts_09bit;
+  }
+  if (65536 == data32[i]) {
+    MEDDLY_DCASSERT(counts_17bit);
+    --counts_17bit;
+  }
+#endif
+  --data32[i];
 }
 
 inline bool MEDDLY::node_headers::counter_array::isZeroBeforeIncrement(size_t i)
 {
-  MEDDLY_DCASSERT(data32);
   MEDDLY_DCASSERT(i<size);
-  return 0==data32[i]++;
+#ifdef COMPACTED_HEADERS
+  if (data8) {
+    MEDDLY_DCASSERT(0==data16);
+    MEDDLY_DCASSERT(0==data32);
+    if (0==data8[i]) {
+      data8[i] = 1;
+      return true;
+    }
+    if (0 == ++data8[i]) expand8to16(i);
+    return false;
+  }
+  if (data16) {
+    MEDDLY_DCASSERT(0==data8);
+    MEDDLY_DCASSERT(0==data32);
+    if (0==data16[i]) {
+      data16[i] = 1;
+      return true;
+    }
+    ++data16[i];
+    if (256 == data16[i]) ++counts_09bit;
+    if (0 == data16[i]) expand16to32(i);
+    return false;
+  }
+  MEDDLY_DCASSERT(0==data8);
+  MEDDLY_DCASSERT(0==data16);
+#endif
+  MEDDLY_DCASSERT(data32);
+  if (0==data32[i]) {
+    data32[i] = 1;
+    return true;
+  }
+  data32[i]++;
+#ifdef COMPACTED_HEADERS
+  if (256 == data32[i]) ++counts_09bit;
+  if (65536 == data32[i]) ++counts_17bit;
+#endif
+  return false;
 }
 
 inline bool MEDDLY::node_headers::counter_array::isPositiveAfterDecrement(size_t i)
 {
-  MEDDLY_DCASSERT(data32);
   MEDDLY_DCASSERT(i<size);
+#ifdef COMPACTED_HEADERS
+  if (data8) {
+    MEDDLY_DCASSERT(0==data16);
+    MEDDLY_DCASSERT(0==data32);
+    MEDDLY_DCASSERT(data8[i]);
+    return 0 < --data8[i];
+  }
+  if (data16) {
+    MEDDLY_DCASSERT(0==data8);
+    MEDDLY_DCASSERT(0==data32);
+    MEDDLY_DCASSERT(data16[i]);
+    if (256 == data16[i]) {
+      MEDDLY_DCASSERT(counts_09bit);
+      --counts_09bit;
+    }
+    return 0 < --data16[i];
+  }
+  MEDDLY_DCASSERT(0==data8);
+  MEDDLY_DCASSERT(0==data16);
+#endif
+  MEDDLY_DCASSERT(data32);
   MEDDLY_DCASSERT(data32[i]);
+#ifdef COMPACTED_HEADERS
+  if (256 == data32[i]) {
+    MEDDLY_DCASSERT(counts_09bit);
+    --counts_09bit;
+  }
+  if (65536 == data32[i]) {
+    MEDDLY_DCASSERT(counts_17bit);
+    --counts_17bit;
+  }
+#endif
   return 0<--data32[i];
 }
 
 inline size_t MEDDLY::node_headers::counter_array::entry_bits() const
 {
-  return sizeof(unsigned int) * 8;
+  return bytes * 8;
 }
 
 

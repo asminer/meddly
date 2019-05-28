@@ -43,7 +43,7 @@
 #include <map>
 
 // #define OLD_NODE_HEADERS
-// #define COMPACTED_HEADERS
+#define COMPACTED_HEADERS
 
 namespace MEDDLY {
 
@@ -1664,8 +1664,17 @@ class MEDDLY::node_headers {
 
     class counter_array {
         node_headers &parent;
+#ifdef COMPACTED_HEADERS
+        unsigned char* data8;
+        unsigned short* data16;
+#endif
         unsigned int* data32;
         size_t size;
+#ifdef COMPACTED_HEADERS
+        size_t counts_09bit;  // number of counts requiring at least 9 bits
+        size_t counts_17bit;  // number of counts requiring at least 17 bits
+#endif
+        unsigned char bytes;
       public:
         counter_array(node_headers &p);
         ~counter_array();
@@ -1683,6 +1692,18 @@ class MEDDLY::node_headers {
 
         void show(output &s, size_t first, size_t last, int width) const;
         size_t entry_bits() const;
+
+#ifdef COMPACTED_HEADERS
+        // Expand from 8-bit to 16-bit entries because of element i
+        void expand8to16(size_t i); 
+        // Expand from 16-bit to 32-bit entries because of element i
+        void expand16to32(size_t i); 
+
+        void shrink16to8(size_t ns); 
+
+        void shrink32to16(size_t ns); 
+        void shrink32to8(size_t ns); 
+#endif
     };
 
     class address_array {
