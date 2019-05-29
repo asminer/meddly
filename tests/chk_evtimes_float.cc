@@ -40,8 +40,8 @@ using namespace MEDDLY;
 
 const int varSize = 4;
 const int TERMS = 100;
-int terms = 0;
-long seed = -1;
+int arg_terms = 0;
+long arg_seed = -1;
 
 double Random()
 {
@@ -50,13 +50,13 @@ double Random()
   const long Q = MODULUS / MULTIPLIER;
   const long R = MODULUS % MULTIPLIER;
 
-  long t = MULTIPLIER * (seed % Q) - R * (seed / Q);
+  long t = MULTIPLIER * (arg_seed % Q) - R * (arg_seed / Q);
   if (t > 0) {
-    seed = t;
+    arg_seed = t;
   } else {
-    seed = t + MODULUS;
+    arg_seed = t + MODULUS;
   }
-  return ((double) seed / MODULUS);
+  return ((double) arg_seed / MODULUS);
 }
 
 int Equilikely(int a, int b)
@@ -92,7 +92,7 @@ void adjustMinterms(int* mtu, int* mtp, int N)
 
 void buildRandomFunc(long s, int terms, dd_edge &out)
 {
-  seed = s;
+  arg_seed = s;
   forest* f = out.getForest();
   int Vars = f->getDomain()->getNumVariables();
 
@@ -211,9 +211,9 @@ void testEVTimesMXD(forest* srcF, forest* destF)
   dd_edge destE(destF);
 
   try {
-    for (int t=1; t<=terms; t++) {
+    for (int t=1; t<=arg_terms; t++) {
 
-      long save_seed = seed;
+      long save_seed = arg_seed;
       buildRandomFunc(save_seed, t, srcE);
       buildRandomFunc(save_seed, t, destE);
 
@@ -277,9 +277,9 @@ void testEV(forest* mxd, forest* mtmxd, forest* evmxd)
 
   try {
 
-    for (int t=1; t<=terms; t++) {
+    for (int t=1; t<=arg_terms; t++) {
 
-      long save_seed = seed;
+      long save_seed = arg_seed;
       buildRandomFunc(save_seed, t, MXD);
       buildRandomFunc(save_seed, t, MTMXD);
       buildRandomFunc(save_seed, t, EVMXD);
@@ -329,18 +329,18 @@ int processArgs(int argc, const char** argv)
     return 0;
   }
   if (argc>2) {
-    terms = atol(argv[2]);
+    arg_terms = atol(argv[2]);
   } else {
-    terms = TERMS;
+    arg_terms = TERMS;
   }
   if (argc>1) {
-    seed = atol(argv[1]);
+    arg_seed = atol(argv[1]);
   }
-  if (seed < 1) {
-    seed = time(0);
+  if (arg_seed < 1) {
+    arg_seed = time(0);
   }
   
-  printf("Using rng seed %ld\n", seed);
+  printf("Using rng seed %ld\n", arg_seed);
   return 1;
 }
 

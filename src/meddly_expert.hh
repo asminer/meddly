@@ -697,9 +697,9 @@ inline void MEDDLY::node_headers::counter_array::decrement(size_t i)
     --data16[i];
     return;
   }
-#endif
   MEDDLY_DCASSERT(0==data8);
   MEDDLY_DCASSERT(0==data16);
+#endif
   MEDDLY_DCASSERT(data32);
   MEDDLY_DCASSERT(data32[i]);
 #ifdef COMPACTED_HEADERS
@@ -813,23 +813,79 @@ inline size_t MEDDLY::node_headers::counter_array::entry_bits() const
 
 inline unsigned long MEDDLY::node_headers::address_array::get(size_t i) const
 {
-  MEDDLY_DCASSERT(data64);
   MEDDLY_DCASSERT(i<size);
+#ifdef COMPACTED_HEADERS
+  if (4==bytes) {
+    MEDDLY_DCASSERT(data32);
+    MEDDLY_DCASSERT(0==data64);
+    MEDDLY_DCASSERT(0==num_large_elements);
+    return data32[i];
+  }
+  MEDDLY_DCASSERT(0==data32);
+#endif
+  MEDDLY_DCASSERT(8==bytes);
+  MEDDLY_DCASSERT(data64);
   return data64[i];
 }
 
 inline void MEDDLY::node_headers::address_array::set(size_t i, unsigned long v)
 {
-  MEDDLY_DCASSERT(data64);
   MEDDLY_DCASSERT(i<size);
+#ifdef COMPACTED_HEADERS
+  if (4==bytes) {
+    MEDDLY_DCASSERT(data32);
+    MEDDLY_DCASSERT(0==data64);
+    MEDDLY_DCASSERT(0==num_large_elements);
+
+    if (v & 0xffffffff00000000) {
+      // v won't fit in 32 bits
+      expand32to64();
+      MEDDLY_DCASSERT(data64);
+      data64[i] = v;
+    } else {
+      // v will fit in 32 bits
+      data32[i] = v;
+    }
+    return;
+  }
+  MEDDLY_DCASSERT(0==data32);
+#endif
+  MEDDLY_DCASSERT(8==bytes);
+  MEDDLY_DCASSERT(data64);
+#ifdef COMPACTED_HEADERS
+  if (v & 0xffffffff00000000) {
+    // v is large
+    if (0 == (data64[i] & 0xffffffff00000000)) {
+      // replacing small
+      num_large_elements++;
+    }
+  } else {
+    // v is small
+    if (data64[i] & 0xffffffff00000000) {
+      // replacing large
+      MEDDLY_DCASSERT(num_large_elements);
+      num_large_elements--;
+    }
+  }
+#endif
   data64[i] = v;
 }
 
 inline void MEDDLY::node_headers::address_array::swap(size_t i, size_t j)
 {
-  MEDDLY_DCASSERT(data64);
   MEDDLY_DCASSERT(i<size);
   MEDDLY_DCASSERT(j<size);
+#ifdef COMPACTED_HEADERS
+  if (4==bytes) {
+    MEDDLY_DCASSERT(data32);
+    unsigned int tmp = data32[i];
+    data32[i] = data32[j];
+    data32[j] = tmp;
+    return;
+  }
+#endif
+  MEDDLY_DCASSERT(8==bytes);
+  MEDDLY_DCASSERT(data64);
   unsigned long tmp = data64[i];
   data64[i] = data64[j];
   data64[j] = tmp;
@@ -837,7 +893,7 @@ inline void MEDDLY::node_headers::address_array::swap(size_t i, size_t j)
 
 inline size_t MEDDLY::node_headers::address_array::entry_bits() const
 {
-  return sizeof(unsigned long) * 8;
+  return bytes * 8;
 }
 
 #endif

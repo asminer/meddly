@@ -42,8 +42,8 @@
 #include <cstdint>
 #include <map>
 
-// #define OLD_NODE_HEADERS
-#define COMPACTED_HEADERS
+#define OLD_NODE_HEADERS
+// #define COMPACTED_HEADERS
 
 namespace MEDDLY {
 
@@ -1708,8 +1708,15 @@ class MEDDLY::node_headers {
 
     class address_array {
         node_headers &parent;
+#ifdef COMPACTED_HEADERS
+        unsigned int* data32;
+#endif
         unsigned long* data64;
         size_t size;
+#ifdef COMPACTED_HEADERS
+        size_t num_large_elements;
+#endif
+        unsigned char bytes;
       public:
         address_array(node_headers &p);
         ~address_array();
@@ -1723,6 +1730,11 @@ class MEDDLY::node_headers {
 
         void show(output &s, size_t first, size_t last, int width) const;
         size_t entry_bits() const;
+
+#ifdef COMPACTED_HEADERS
+        void expand32to64();
+        void shrink64to32(size_t ns);
+#endif
     };
 
     class bitvector {
