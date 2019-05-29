@@ -30,6 +30,8 @@
 
 unsigned char buffer[10];
 
+const int start = 1;
+const int middle = 1048576;
 const int stop = 2147483647; 
 // const int stop = 134217728;
 // const int stop = 16777216;
@@ -177,11 +179,12 @@ int main()
 {
   int check, count;
   timer foo;
+  printf("Small integer tests\n");
   printf("Testing integer encodings...\n");
   testInt(0);
   check = 1024;
   count = check;
-  for (int i=1; i!=stop; i++) {
+  for (int i=start; i!=middle; i++) {
     testInt(i);
     testInt(-i);
     count--;
@@ -198,7 +201,7 @@ int main()
   check = 1024;
   count = check;
   foo.note_time();
-  for (int i=1; i!=stop; i++) {
+  for (int i=start; i!=middle; i++) {
     long L = i;
     while (L << 1) {
       testLong(L);
@@ -219,7 +222,65 @@ int main()
   check = 1024;
   count = check;
   foo.note_time();
-  for (int i=1; i!=stop; i++) {
+  for (int i=start; i!=middle; i++) {
+    long L = i;
+    while (L << 2) {
+      testDown(L);
+      testDown(-L);
+      static const long msb = (0x80L) << ((sizeof(long)-1)*8);
+      testDown(L | msb);
+      L <<= 1;
+    }
+    count--;
+    if (count) continue;
+    printf("D %d\n", i);
+    if (foo.get_last_interval() < 5000000) {
+      if (check < 1073741824) check *= 2;
+    }
+    count = check;
+    foo.note_time();
+  }
+  printf("Large integer tests\n");
+  printf("Testing integer encodings...\n");
+  check = 1024;
+  count = check;
+  for (int i=middle; i!=stop; i++) {
+    testInt(i);
+    testInt(-i);
+    count--;
+    if (count) continue;
+    printf("I %d\n", i);
+    if (foo.get_last_interval() < 5000000) {
+      if (check < 1073741824) check *= 2;
+    }
+    count = check;
+    foo.note_time();
+  }
+  printf("Testing long encodings (with shifted ints)...\n");
+  check = 1024;
+  count = check;
+  foo.note_time();
+  for (int i=middle; i!=stop; i++) {
+    long L = i;
+    while (L << 1) {
+      testLong(L);
+      testLong(-L);
+      L <<= 1;
+    }
+    count--;
+    if (count) continue;
+    printf("L %d\n", i);
+    if (foo.get_last_interval() < 5000000) {
+      if (check < 1073741824) check *= 2;
+    }
+    count = check;
+    foo.note_time();
+  }
+  printf("Testing down encodings (with shifted ints)...\n");
+  check = 1024;
+  count = check;
+  foo.note_time();
+  for (int i=middle; i!=stop; i++) {
     long L = i;
     while (L << 2) {
       testDown(L);

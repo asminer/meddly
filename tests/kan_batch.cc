@@ -109,7 +109,7 @@ dd_edge buildReachsetBatch(int b, forest* mdd, const char* rs[], long states)
   }
 
   // cleanup the batch
-  for (int i=0; i<b; i++) {
+  for (i=0; i<b; i++) {
     delete[] batch[i];
   }
   delete[] batch;

@@ -26,7 +26,7 @@
 #include "defines.h"
 #include "unique_table.h"
 #include "hash_stream.h"
-#include "storage/bytepack.h"
+// #include "storage/bytepack.h"
 #include "reordering/reordering_factory.h"
 
 // for timestamps.
@@ -1262,6 +1262,8 @@ void MEDDLY::expert_forest
   }
   // forest specific
   reportForestStats(s, pad);
+  // header storage
+  nodeHeaders.reportStats(s, pad, flags);
   // node storage
   nodeMan->reportStats(s, pad, flags);
   // unique table

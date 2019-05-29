@@ -42,6 +42,8 @@
 #include <cstdint>
 #include <map>
 
+#define OLD_NODE_HEADERS
+// #define COMPACTED_HEADERS
 
 namespace MEDDLY {
 
@@ -1400,6 +1402,16 @@ class MEDDLY::node_headers {
     node_headers(expert_forest &P);
     ~node_headers();
 
+
+    /** Show various memory stats.
+          @param  s       Output stream to write to
+          @param  pad     Padding string, written at the start of
+                          each output line.
+          @param  flags   Which stats to display, as "flags";
+                          use bitwise or to combine values.
+    */
+    void reportStats(output &s, const char* pad, unsigned flags) const;
+
     /**
         Indicate that we don't need to track cache counts.
         The default is that we will track cache counts.
@@ -1530,9 +1542,13 @@ class MEDDLY::node_headers {
 
     void dumpInternal(output &s) const;
 
+
+#ifndef OLD_NODE_HEADERS
+  public: // interface for node header size changes
+    void changeHeaderSize(unsigned oldbits, unsigned newbits);
+#endif
+
   private:  // helper methods
-//    virtual void getDownPtr(node_address addr, int ind, long& ev,
-//                            node_handle& dn) const = 0;
 
     /// Increase the number of node handles.
     void expandHandleList();
@@ -1540,17 +1556,18 @@ class MEDDLY::node_headers {
     /// Decrease the number of node handles.
     void shrinkHandleList();
 
-    /// Allocate marks if needed.
-    void allocateMarks();
+    void deactivate(node_handle p);
+
+#ifdef OLD_NODE_HEADERS
 
     node_handle getNextOf(node_handle p) const;
     void setNextOf(node_handle p, node_handle n);
-    void deactivate(node_handle p);
 
   private:
     
     // Nothing to see here.  Move along.
     // Anything below here is subject to change without notice.
+
 
     struct node_header {
           /** Offset to node's data in the corresponding node storage structure.
@@ -1592,6 +1609,8 @@ class MEDDLY::node_headers {
     node_handle a_size;
     /// Last used address.
     node_handle a_last;
+    /// Number of recycled addresses
+    node_handle a_freed;
     /// Pointer to unused address lists, based on size
     node_handle a_unused[8];  // number of bytes per handle
     /// Lowest non-empty address list
@@ -1611,6 +1630,166 @@ class MEDDLY::node_headers {
     expert_forest &parent;
 
     static const int a_min_size = 1024;
+
+#else
+
+    size_t getNextOf(size_t p) const;
+    void setNextOf(size_t p, size_t n);
+
+  private:
+
+    class level_array {
+        node_headers &parent;
+#ifdef COMPACTED_HEADERS
+        char* data8;
+        short* data16;
+#endif
+        int* data32;
+        size_t size;
+        unsigned char bytes;
+      public:
+        level_array(node_headers &p, int max_level);
+        ~level_array();
+
+        void expand(size_t ns);
+        void shrink(size_t ns);
+
+        int get(size_t i) const;
+        void set(size_t i, int v);
+        void swap(size_t i, size_t j);
+
+        void show(output &s, size_t first, size_t last, int width) const;
+        size_t entry_bits() const;
+    };
+
+    class counter_array {
+        node_headers &parent;
+#ifdef COMPACTED_HEADERS
+        unsigned char* data8;
+        unsigned short* data16;
+#endif
+        unsigned int* data32;
+        size_t size;
+#ifdef COMPACTED_HEADERS
+        size_t counts_09bit;  // number of counts requiring at least 9 bits
+        size_t counts_17bit;  // number of counts requiring at least 17 bits
+#endif
+        unsigned char bytes;
+      public:
+        counter_array(node_headers &p);
+        ~counter_array();
+
+        void expand(size_t ns);
+        void shrink(size_t ns);
+
+        unsigned int get(size_t i) const;
+        void swap(size_t i, size_t j);
+        void increment(size_t i);
+        void decrement(size_t i);
+
+        bool isZeroBeforeIncrement(size_t i);
+        bool isPositiveAfterDecrement(size_t i);
+
+        void show(output &s, size_t first, size_t last, int width) const;
+        size_t entry_bits() const;
+
+#ifdef COMPACTED_HEADERS
+        // Expand from 8-bit to 16-bit entries because of element i
+        void expand8to16(size_t i); 
+        // Expand from 16-bit to 32-bit entries because of element i
+        void expand16to32(size_t i); 
+
+        void shrink16to8(size_t ns); 
+
+        void shrink32to16(size_t ns); 
+        void shrink32to8(size_t ns); 
+#endif
+    };
+
+    class address_array {
+        node_headers &parent;
+#ifdef COMPACTED_HEADERS
+        unsigned int* data32;
+#endif
+        unsigned long* data64;
+        size_t size;
+#ifdef COMPACTED_HEADERS
+        size_t num_large_elements;
+#endif
+        unsigned char bytes;
+      public:
+        address_array(node_headers &p);
+        ~address_array();
+
+        void expand(size_t ns);
+        void shrink(size_t ns);
+
+        unsigned long get(size_t i) const;
+        void set(size_t i, unsigned long v);
+        void swap(size_t i, size_t j);
+
+        void show(output &s, size_t first, size_t last, int width) const;
+        size_t entry_bits() const;
+
+#ifdef COMPACTED_HEADERS
+        void expand32to64();
+        void shrink64to32(size_t ns);
+#endif
+    };
+
+    class bitvector {
+        node_headers &parent;
+        bool* data;
+        size_t size;
+      public:
+        bitvector(node_headers &p);
+        ~bitvector();
+
+        void expand(size_t ns);
+        void shrink(size_t ns);
+
+        bool get(size_t i) const;
+        void set(size_t i, bool v);
+        void swap(size_t i, size_t j);
+        size_t entry_bits() const;
+    };
+
+  private:
+    address_array* addresses;
+    level_array* levels;
+    counter_array* cache_counts;
+    counter_array* incoming_counts;
+    bitvector* implicit_bits;
+
+    /// Last used address.
+    size_t a_last;
+
+    /// Allocated sizes of arrays.
+    size_t a_size;
+
+    /// Next time we shink the address list.
+    size_t a_next_shrink;
+
+    /// Number of addresses in free lists
+    size_t a_freed;
+
+    /// Pointer to unused address lists, based on size
+    size_t a_unused[8];  // number of bytes per handle
+
+    /// Current size of node "header"
+    unsigned h_bits;
+
+    /// Lowest non-empty address list
+    char a_lowest_index;
+
+    /// Are we using the pessimistic strategy?
+    bool pessimistic;
+
+    /// Parent forest, needed for recycling
+    expert_forest &parent;
+
+#endif
+
 };
 
 

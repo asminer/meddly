@@ -39,9 +39,9 @@ template <class INT>
 inline int bytesRequired4(INT a)
 {
   // proceed with byte examinations
-  static const unsigned long byte2 = 0xff00;
-  static const unsigned long byte3 = byte2<<8;
-  static const unsigned long byte4 = byte3<<8;
+  static const long byte2 = 0xff00;
+  static const long byte3 = byte2<<8;
+  static const long byte4 = byte3<<8;
   if (a & (byte4 | byte3)) {
     if (a & byte4) {
       return 4;
@@ -61,13 +61,13 @@ template <class INT>
 inline int bytesRequired8(INT a)
 {
   // proceed with byte examinations
-  static const unsigned long byte2 = 0xff00;
-  static const unsigned long byte3 = byte2<<8;
-  static const unsigned long byte4 = byte3<<8;
-  static const unsigned long byte5 = byte4<<8;
-  static const unsigned long byte6 = byte5<<8;
-  static const unsigned long byte7 = byte6<<8;
-  static const unsigned long byte8 = byte7<<8;
+  static const long byte2 = 0xff00;
+  static const long byte3 = byte2<<8;
+  static const long byte4 = byte3<<8;
+  static const long byte5 = byte4<<8;
+  static const long byte6 = byte5<<8;
+  static const long byte7 = byte6<<8;
+  static const long byte8 = byte7<<8;
   if (a & (byte8 | byte7 | byte6 | byte5)) {
     if (a & (byte8 | byte7)) {
       if (a & byte8) {
@@ -240,7 +240,7 @@ inline void downToData(INT  P, unsigned char* d)
   //              next msb set - terminal value is negative.
   //
   //  No conversion necessary because msb propogates when we shift
-  static const unsigned long nmsb = (0x40UL) << ((sizeof(INT)-1)*8);
+  static const long nmsb = (0x40L) << ((sizeof(INT)-1)*8);
   if (P & nmsb) {
     rawToData<bytes>(P, d);
     return;
@@ -251,7 +251,7 @@ inline void downToData(INT  P, unsigned char* d)
   //              
   //  The thing to do here is deal with the msb manually:
   //  clear msb, encode, set msb.
-  static const unsigned long msboff = ~ ((0x80UL) << ((sizeof(INT)-1)*8));
+  static const long msboff = ~ ((0x80L) << ((sizeof(INT)-1)*8));
   rawToData<bytes>(P & msboff, d);
   d[bytes-1] |= 0x80;
 }
@@ -387,8 +387,8 @@ inline void moveMSB(INT& P)
 {
   MEDDLY_DCASSERT(sizeof(INT) == sizeofint);
   // if (bytes < sizeofint) {
-    P = (P & ~(0x80UL << ((bytes-1)*8)) )      // old msb off
-        | ((0x80UL) << ((sizeofint-1)*8));     // new msb on
+    P = (P & ~(0x80L << ((bytes-1)*8)) )      // old msb off
+        | ((0x80L) << ((sizeofint-1)*8));     // new msb on
   // }
 }
 
