@@ -23,7 +23,6 @@
 
 // #define DEBUG_SLOW
 
-// #define DEBUG_CT
 // #define DEBUG_CT_SEARCHES
 // #define DEBUG_CT_SLOTS
 
@@ -37,6 +36,9 @@
 // #define DEBUG_REMOVESTALES
 // #define DEBUG_REMOVESTALES_DETAILS
 
+// #define CONTINUOUS_SCAN
+// #define DEBUG_CT_SCAN
+// #define DEBUG_CT
 
 #define INTEGRATED_MEMMAN
 

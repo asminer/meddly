@@ -42,8 +42,8 @@
 #include <cstdint>
 #include <map>
 
-#define OLD_NODE_HEADERS
-// #define COMPACTED_HEADERS
+// #define OLD_NODE_HEADERS
+#define COMPACTED_HEADERS
 
 namespace MEDDLY {
 
@@ -4016,6 +4016,8 @@ class MEDDLY::compute_table {
         unsigned long searchHistogram[searchHistogramSize];
         unsigned long numLargeSearches;
         unsigned maxSearchLength;
+        unsigned long completedScans;
+        unsigned long resizeScans;
       };
 
       //

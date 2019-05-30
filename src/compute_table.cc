@@ -20,7 +20,7 @@
 
 #include "defines.h"
 
-#include "storage/ct_classic.h"
+#include "storage/ct_styles.h"
 
 // #define DEBUG_ENTRY_TYPE
 // #define DEBUG_ENTRY_REGISTRY
@@ -225,6 +225,8 @@ MEDDLY::compute_table::compute_table(const ct_initializer::settings &s)
   perf.maxSearchLength = 0;
   for (int i=0; i<perf.searchHistogramSize; i++)
     perf.searchHistogram[i] = 0;
+  perf.completedScans = 0;
+  perf.resizeScans = 0;
 }
 
 MEDDLY::compute_table::~compute_table()

@@ -56,6 +56,73 @@ namespace MEDDLY {
 
     private:  // helper methods
 
+      inline void scanForStales(unsigned i) {
+          //
+          // Check entry i (only) for staleness
+          //
+          MEDDLY_DCASSERT(!CHAINED);
+
+          if (0==table[i]) return;
+
+#ifdef INTEGRATED_MEMMAN
+          const int* entry = entries + table[i];
+#else
+          const int* entry = (const int*) MMAN->getChunkAddress(table[i]);
+#endif
+          if (!isStale(entry)) return;
+
+#ifdef DEBUG_CT_SCAN
+          printf("CTSCAN stale entry #%ld", perf.numEntries);
+          FILE_output out(stdout);
+          showEntry(out, table[i]);
+          printf(" in table slot %u\n", i);
+#endif  
+          discardAndRecycle(table[i]);
+          table[i] = 0;
+      }
+
+      void scanListForStales(unsigned i) {
+          //
+          // Check list at slot i for staleness
+          //
+          MEDDLY_DCASSERT(CHAINED);
+
+          int curr = table[i];
+          table[i] = 0;
+          int* preventry = 0;
+
+          while (curr) {
+#ifdef INTEGRATED_MEMMAN
+            int* entry = entries + curr;
+#else
+            int* entry = (entry_item*) MMAN->getChunkAddress(curr);
+#endif
+            int next = entry[0];
+
+            if (isStale(entry)) {
+
+#ifdef DEBUG_CT_SCAN
+              printf("CTSCAN stale entry #%ld", perf.numEntries);
+              FILE_output out(stdout);
+              showEntry(out, curr);
+              printf(" in table list %u\n", i);
+#endif  
+              discardAndRecycle(curr);
+
+            } else {
+              // Add entry back to list
+              if (preventry) {
+                preventry[0] = curr;
+              } else {
+                table[i] = curr;
+              }
+              preventry = entry;
+            }
+
+            curr = next;
+          } // while curr
+          if (preventry) preventry[0] = 0;
+      }
       int convertToList(bool removeStales);
       void listToTable(int h);
 
@@ -126,7 +193,7 @@ namespace MEDDLY {
 
 
       /// Check equality
-      static inline bool equal_sw(const int* a, const int* b, int N) {
+      static inline bool equal_sw(const int* a, const int* b, unsigned N) {
         switch (N) {  // note: cases 12 - 2 fall through
           case 12:    if (a[11] != b[11]) return false;
           case 11:    if (a[10] != b[10]) return false;
@@ -346,6 +413,11 @@ namespace MEDDLY {
 
       /// Stats: how many collisions
       long collisions;
+
+#ifdef CONTINUOUS_SCAN
+    private:
+      unsigned int scan_index;
+#endif
   }; // class ct_typebased
 } // namespace
 
@@ -382,12 +454,12 @@ MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::ct_typebased(
 
   entriesAlloc = 1024;
   entriesSize = 1;    
-  entries = (int*) malloc(entriesAlloc * sizeof(int) );
+  entries = (int*) malloc(unsigned(entriesAlloc) * sizeof(int) );
   if (0==entries) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   entries[0] = 0;     // NEVER USED; set here for sanity.
 
   mstats.incMemUsed( entriesSize * sizeof(int) );
-  mstats.incMemAlloc( entriesAlloc * sizeof(int) );
+  mstats.incMemAlloc( unsigned(entriesAlloc) * sizeof(int) );
 #else
   MEDDLY_DCASSERT(s.MMS);
   MMAN = s.MMS->initManager(sizeof(int), 1, mstats);
@@ -407,6 +479,9 @@ MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::ct_typebased(
   mstats.incMemAlloc(tableSize * sizeof(int));
 
   collisions = 0;
+#ifdef CONTINUOUS_SCAN
+  scan_index = 0;
+#endif
 }
 
 // **********************************************************************
@@ -580,6 +655,20 @@ inline int* MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 
   sawSearch(chain);
 
+#ifdef CONTINUOUS_SCAN
+  do {
+    incMod(scan_index);
+    if (0==scan_index) {
+      perf.completedScans++;
+    }
+  } while (hcurr == scan_index);
+  if (CHAINED) {
+    scanListForStales(scan_index);
+  } else {
+    scanForStales(scan_index);
+  }
+#endif
+
   return answer;
 }
 
@@ -610,7 +699,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   //
   int tptr = 0;
   if (MONOLITHIC) {
-    temp_entry[0] = et->getID();
+    temp_entry[0] = int(et->getID());
     tptr++;
   }
 
@@ -618,7 +707,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   // Copy the number of repeats if we're a repeating entry
   //
   if (et->isRepeating()) {
-    temp_entry[tptr] = key->numRepeats();
+    temp_entry[tptr] = int(key->numRepeats());
     tptr++;
   }
 
@@ -767,7 +856,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
   }
 
 #ifdef DEBUG_CT
-  printf("Added CT entry ");
+  printf("Added CT entry #%ld", perf.numEntries);
   FILE_output out(stdout);
   showEntry(out, curr);
 #ifdef DEBUG_CT_SLOTS
@@ -783,6 +872,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
   //
   // Time to GC and maybe resize the table
   //
+  perf.resizeScans++;
 
 #ifdef DEBUG_SLOW
   fprintf(stdout, "Running GC in compute table (size %d, entries %u)\n", 
@@ -1101,6 +1191,10 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   s << "Pings               :\t" << long(perf.pings) << "\n";
   s.put("", 6);
   s << "Hits                :\t" << long(perf.hits) << "\n";
+  s.put("", 6);
+  s << "Completed scans     :\t" << long(perf.completedScans) << "\n";
+  s.put("", 6);
+  s << "Resize (GC) scans   :\t" << long(perf.resizeScans) << "\n";
 
   if (--verbLevel < 1) return;
 
@@ -1292,31 +1386,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::scanForStales()
 {
   MEDDLY_DCASSERT(!CHAINED);
   for (unsigned i=0; i<tableSize; i++) {
-    if (0==table[i]) continue;
-
-#ifdef INTEGRATED_MEMMAN
-    const int* entry = entries + table[i];
-#else
-    const int* entry = (const int*) MMAN->getChunkAddress(table[i]);
-#endif
-
-    if (isStale(entry)) {
-
-#ifdef DEBUG_CT
-      printf("Removing CT stale entry ");
-      FILE_output out(stdout);
-      showEntry(out, table[i]);
-#ifdef DEBUG_CT_SLOTS
-      printf(" in table slot %u\n", i);
-#else
-      printf("\n");
-#endif
-#endif  
-
-      discardAndRecycle(table[i]);
-      table[i] = 0;
-
-    } // if isStale
+    scanForStales(i);
   } // for i
 }
 
@@ -1383,7 +1453,7 @@ MEDDLY::node_address MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   }
   if (entriesSize + size > entriesAlloc) {
     // Expand by a factor of 1.5
-    int neA = entriesAlloc + (entriesAlloc/2);
+    size_t neA = entriesAlloc + (entriesAlloc/2);
     int* ne = (int*) realloc(entries, neA * sizeof(int));
     if (0==ne) {
       fprintf(stderr,
@@ -1458,7 +1528,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   if (et->isMarkedForDeletion()) return YES_stale();
 
   entry += SHIFT;
-  const unsigned reps = (et->isRepeating()) ? *entry++ : 0;
+  const unsigned reps = (et->isRepeating()) ? unsigned(*entry++) : 0;
   const unsigned klen = et->getKeySize(reps);
 
 

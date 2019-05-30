@@ -56,6 +56,74 @@ namespace MEDDLY {
 
     private:  // helper methods
 
+      inline void scanForStales(unsigned long i) {
+          //
+          // Check entry i (only) for staleness
+          //
+          MEDDLY_DCASSERT(!CHAINED);
+
+          if (0==table[i]) return;
+
+#ifdef INTEGRATED_MEMMAN
+          const entry_item* entry = entries + table[i];
+#else
+          const entry_item* entry = (const entry_item*) MMAN->getChunkAddress(table[i]);
+#endif
+          if (!isStale(entry)) return;
+
+#ifdef DEBUG_CT_SCAN
+          printf("SCAN removing CT stale entry ");
+          FILE_output out(stdout);
+          showEntry(out, table[i]);
+          printf(" in table slot %u\n", i);
+#endif  
+          discardAndRecycle(table[i]);
+          table[i] = 0;
+      }
+
+      void scanListForStales(unsigned long i) {
+          //
+          // Check list at slot i for staleness
+          //
+          MEDDLY_DCASSERT(CHAINED);
+
+          unsigned long curr = table[i];
+          table[i] = 0;
+          entry_item* preventry = 0;
+
+          while (curr) {
+#ifdef INTEGRATED_MEMMAN
+            entry_item* entry = entries + curr;
+#else
+            entry_item* entry = (entry_item*) MMAN->getChunkAddress(curr);
+#endif
+            unsigned long next = entry[0].UL;
+
+            if (isStale(entry)) {
+
+#ifdef DEBUG_CT_SCAN
+              printf("SCAN removing CT stale entry ");
+              FILE_output out(stdout);
+              showEntry(out, curr);
+              printf(" in table list %u\n", i);
+#endif  
+              discardAndRecycle(curr);
+
+            } else {
+              // Add entry back to list
+              if (preventry) {
+                preventry[0].UL = curr;
+              } else {
+                table[i] = curr;
+              }
+              preventry = entry;
+            }
+
+            curr = next;
+          } // while curr
+          if (preventry) preventry[0].UL = 0;
+      }
+
       unsigned long convertToList(bool removeStales);
       void listToTable(unsigned long h);
 
@@ -308,6 +376,11 @@ namespace MEDDLY {
 
       /// Stats: how many collisions
       unsigned long collisions;
+
+#ifdef CONTINUOUS_SCAN
+    private:
+      unsigned long scan_index;
+#endif
   }; // class ct_none
 } // namespace
 
@@ -369,6 +442,10 @@ MEDDLY::ct_none<MONOLITHIC, CHAINED>::ct_none(
   mstats.incMemAlloc(tableSize * sizeof(unsigned long));
 
   collisions = 0;
+
+#ifdef CONTINUOUS_SCAN
+  scan_index = 0;
+#endif
 }
 
 // **********************************************************************
@@ -542,6 +619,20 @@ inline MEDDLY::compute_table::entry_item* MEDDLY::ct_none<MONOLITHIC, CHAINED>
 
   sawSearch(chain);
 
+#ifdef CONTINUOUS_SCAN
+  do {
+    incMod(scan_index);
+    if (0==scan_index) {
+      perf.completedScans++;
+    }
+  } while (hcurr == scan_index);
+  if (CHAINED) {
+    scanListForStales(scan_index);
+  } else {
+    scanForStales(scan_index);
+  }
+#endif
+
   return answer;
 }
 
@@ -667,6 +758,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const entry_
   //
   // Time to GC and maybe resize the table
   //
+  perf.resizeScans++;
 
 #ifdef DEBUG_SLOW
   fprintf(stdout, "Running GC in compute table (size %d, entries %u)\n", 
@@ -919,7 +1011,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::removeAll()
 #endif
   for (unsigned i=0; i<tableSize; i++) {
     while (table[i]) {
-      int curr = table[i];
+      unsigned long curr = table[i];
 #ifdef INTEGRATED_MEMMAN
       const entry_item* entry = entries + curr;
 #else
@@ -973,6 +1065,10 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
   s << "Pings               :\t" << long(perf.pings) << "\n";
   s.put("", 6);
   s << "Hits                :\t" << long(perf.hits) << "\n";
+  s.put("", 6);
+  s << "Completed scans     :\t" << long(perf.completedScans) << "\n";
+  s.put("", 6);
+  s << "Resize (GC) scans   :\t" << long(perf.resizeScans) << "\n";
 
   if (--verbLevel < 1) return;
 
@@ -1011,7 +1107,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
   s << "\nHash table nodes:\n";
   
   for (unsigned i=0; i<tableSize; i++) {
-    int curr = table[i];
+    unsigned long curr = table[i];
     while (curr) {
       s << "\tNode ";
       s.put(long(curr), 9);
@@ -1162,31 +1258,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::scanForStales()
 {
   MEDDLY_DCASSERT(!CHAINED);
   for (unsigned long i=0; i<tableSize; i++) {
-    if (0==table[i]) continue;
-
-#ifdef INTEGRATED_MEMMAN
-    const entry_item* entry = entries + table[i];
-#else
-    const entry_item* entry = (const entry_item*) MMAN->getChunkAddress(table[i]);
-#endif
-
-    if (isStale(entry)) {
-
-#ifdef DEBUG_CT
-      printf("Removing CT stale entry ");
-      FILE_output out(stdout);
-      showEntry(out, table[i]);
-#ifdef DEBUG_CT_SLOTS
-      printf(" in table slot %lu\n", i);
-#else
-      printf("\n");
-#endif
-#endif  
-
-      discardAndRecycle(table[i]);
-      table[i] = 0;
-
-    } // if isStale
+    scanForStales(i);
   } // for i
 }
 
