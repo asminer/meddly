@@ -366,6 +366,8 @@ int main(int argc, const char** argv)
     fprintf(outfile, "\n");
   }
 
+  ef->validateCacheCounts();
+
   if (build_pdf) {
     solutions.writePicture("out", "pdf");
   }

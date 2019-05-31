@@ -53,6 +53,7 @@ namespace MEDDLY {
       virtual void removeStales();
       virtual void removeAll();
       virtual void show(output &s, int verbLevel = 0);
+      virtual void countNodeEntries(const expert_forest* f, size_t* counts) const;
 
     private:  // helper methods
 
@@ -436,7 +437,7 @@ MEDDLY::ct_none<MONOLITHIC, CHAINED>::ct_none(
   tableShrink = 0;
   table = (unsigned long*) malloc(tableSize * sizeof(unsigned long));
   if (0==table) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  for (unsigned i=0; i<tableSize; i++) table[i] = 0;
+  for (unsigned long i=0; i<tableSize; i++) table[i] = 0;
 
   mstats.incMemUsed(tableSize * sizeof(unsigned long));
   mstats.incMemAlloc(tableSize * sizeof(unsigned long));
@@ -1009,7 +1010,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::removeAll()
 #ifdef DEBUG_REMOVESTALES
   fprintf(stdout, "Removing all CT entries\n");
 #endif
-  for (unsigned i=0; i<tableSize; i++) {
+  for (unsigned long i=0; i<tableSize; i++) {
     while (table[i]) {
       unsigned long curr = table[i];
 #ifdef INTEGRATED_MEMMAN
@@ -1094,7 +1095,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
 
   s << "Hash table:\n";
 
-  for (unsigned i=0; i<tableSize; i++) {
+  for (unsigned long i=0; i<tableSize; i++) {
     if (0==table[i]) continue;
     s << "table[";
     s.put(long(i), 9);
@@ -1106,7 +1107,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
 
   s << "\nHash table nodes:\n";
   
-  for (unsigned i=0; i<tableSize; i++) {
+  for (unsigned long i=0; i<tableSize; i++) {
     unsigned long curr = table[i];
     while (curr) {
       s << "\tNode ";
@@ -1162,6 +1163,86 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
   if (MMAN) MMAN->dumpInternal(s);
 #endif
 
+}
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED>
+void MEDDLY::ct_none<MONOLITHIC, CHAINED>
+::countNodeEntries(const expert_forest* f, size_t* counts) const
+{
+#ifdef DEBUG_VALIDATE_COUNTS
+  printf("    Counting in ct_none\n");
+#endif
+  const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
+
+  for (unsigned long i=0; i<tableSize; i++) {
+    //
+    // Process table[i]
+    //
+    unsigned long curr = table[i];
+    while (curr) {
+      //
+      // Loop through the chain
+      // (unchained: done properly)
+      //
+
+#ifdef INTEGRATED_MEMMAN
+      entry_item* entry = entries + curr;
+#else
+      entry_item* entry = (entry_item*) MMAN->getChunkAddress(curr);
+#endif
+      const entry_type* et = MONOLITHIC
+        ?   getEntryType(entry[CHAINED ? 1 : 0].U)
+        :   global_et;
+      MEDDLY_DCASSERT(et);
+
+      const entry_item* ptr = entry + SHIFT;
+      unsigned reps;
+      if (et->isRepeating()) {
+        reps = (*ptr).U;
+        ptr++;
+      } else {
+        reps = 0;
+      }
+
+      //
+      // Count the key portion
+      //
+      const unsigned stop = et->getKeySize(reps);
+      for (unsigned i=0; i<stop; i++) {
+        if (f != et->getKeyForest(i)) continue;
+        if (ptr[i].N > 0) {
+          ++counts[ ptr[i].N ];
+        }
+      } // for i
+      ptr += stop;
+
+      //
+      // Count the result portion
+      //
+      for (unsigned i=0; i<et->getResultSize(); i++) {
+        if (f != et->getResultForest(i)) continue;
+        if (ptr[i].N > 0) {
+          ++counts[ ptr[i].N ];
+        }
+      } // for i;
+  
+      // 
+      // Next in the chain
+      //
+      if (CHAINED) {
+#ifdef INTEGRATED_MEMMAN
+        curr = entries[curr].UL;
+#else
+        const int* entry = (const int*) MMAN->getChunkAddress(curr);
+        curr = entry[0].UL;
+#endif
+      } else {
+        curr = 0;
+      }
+    } // while curr
+  } // for i
 }
 
 // **********************************************************************

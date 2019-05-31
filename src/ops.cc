@@ -2222,6 +2222,17 @@ void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
     }
 }
 
+void MEDDLY::operation::countAllNodeEntries(const expert_forest* f, size_t* counts) 
+{
+  if (Monolithic_CT) {
+    Monolithic_CT->countNodeEntries(f, counts);
+  }
+  for (int i=0; i<list_size; i++) 
+    if (op_list[i]) {
+      op_list[i]->countCTEntries(f, counts);
+    }
+}
+
 void MEDDLY::operation::showComputeTable(output &s, int verbLevel) const
 {
   bool has_monolithic = false;
@@ -2237,6 +2248,18 @@ void MEDDLY::operation::showComputeTable(output &s, int verbLevel) const
   }
   if (has_monolithic) {
     Monolithic_CT->show(s, verbLevel);
+  }
+}
+
+void MEDDLY::operation::countCTEntries(const expert_forest* f, size_t* counts) const
+{
+  if (CT) {
+    for (unsigned i=0; i<num_etids; i++) {
+      if (0==CT[i]) continue;
+      if (CT[i]->isOperationTable()) {
+        CT[i]->countNodeEntries(f, counts);
+      }
+    } 
   }
 }
 

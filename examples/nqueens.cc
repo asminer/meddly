@@ -354,6 +354,7 @@ int main(int argc, const char** argv)
     solutions->writePicture("out", "pdf");
   }
   delete solutions;
+  f->validateCacheCounts();
   operation::showAllComputeTables(myout, 3);
   if (LOG) {
     LOG->newPhase(f, "Cleanup");

@@ -53,6 +53,7 @@ namespace MEDDLY {
       virtual void removeStales();
       virtual void removeAll();
       virtual void show(output &s, int verbLevel = 0);
+      virtual void countNodeEntries(const expert_forest* f, size_t* counts) const;
 
     private:  // helper methods
 
@@ -1288,6 +1289,111 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   if (MMAN) MMAN->dumpInternal(s);
 #endif
 
+}
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED>
+void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
+::countNodeEntries(const expert_forest* f, size_t* counts) const
+{
+#ifdef DEBUG_VALIDATE_COUNTS
+  printf("    Counting in ct_typebased\n");
+#endif
+  const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
+
+  for (unsigned i=0; i<tableSize; i++) {
+    int curr = table[i];
+    while (curr) {
+      //
+      // Loop through the chain
+      //
+#ifdef INTEGRATED_MEMMAN
+      const int* entry = entries + curr;
+#else
+      const int* entry = (const int*) MMAN->getChunkAddress(curr);
+#endif
+
+#ifdef DEBUG_VALIDATE_COUNTS
+      FILE_output s(stdout);
+      s.put("", 6);
+      showEntry(s, entry);
+      s.put('\n');
+      s.flush();
+#endif
+
+      const entry_type* et = MONOLITHIC
+        ?   getEntryType(entry[CHAINED?1:0])
+        :   global_et;
+      MEDDLY_DCASSERT(et);
+
+      entry += SHIFT;
+      const unsigned reps = (et->isRepeating()) ? unsigned(*entry++) : 0;
+      const unsigned klen = et->getKeySize(reps);
+
+      const unsigned slots_for_type[] = { 1, 1, 1, 2, 1, 2, 2 };
+
+      MEDDLY_DCASSERT(1 == slots_for_type[ERROR]);
+      MEDDLY_DCASSERT(1 == slots_for_type[INTEGER]);
+      MEDDLY_DCASSERT(sizeof(node_handle) / sizeof(int) == slots_for_type[NODE]);
+      MEDDLY_DCASSERT(sizeof(long) / sizeof(int) == slots_for_type[LONG]);
+      MEDDLY_DCASSERT(sizeof(float) / sizeof(int) == slots_for_type[FLOAT]);
+      MEDDLY_DCASSERT(sizeof(double) / sizeof(int) == slots_for_type[DOUBLE]);
+      MEDDLY_DCASSERT(sizeof(ct_object*) / sizeof(int) == slots_for_type[GENERIC]);
+    
+      //
+      // Key portion
+      //
+      for (unsigned i=0; i<klen; i++) {
+        typeID t;
+        expert_forest* ef;
+        et->getKeyType(i, t, ef);
+        MEDDLY_CHECK_RANGE(0, t, 7);
+        if (f == ef) {
+          if (*entry>0) {
+#ifdef DEBUG_VALIDATE_COUNTS
+            printf("\t%d++\n", *entry);
+#endif
+            ++counts[ *entry ];
+          }
+        }
+        entry += slots_for_type[t];
+      } // for i
+
+      // 
+      // Result portion
+      //
+      for (unsigned i=0; i<et->getResultSize(); i++) {
+        typeID t;
+        expert_forest* ef;
+        et->getResultType(i, t, ef);
+        MEDDLY_CHECK_RANGE(0, t, 7);
+        if (f == ef) {
+          if (*entry>0) {
+#ifdef DEBUG_VALIDATE_COUNTS
+            printf("\t%d++\n", *entry);
+#endif
+            ++counts[ *entry ];
+          }
+        }
+        entry += slots_for_type[t];
+      } // for i
+
+      //
+      // Next in chain
+      //
+      if (CHAINED) {
+#ifdef INTEGRATED_MEMMAN
+        curr = entries[curr];
+#else
+        const int* entry = (const int*) MMAN->getChunkAddress(curr);
+        curr = entry[0];
+#endif
+      } else {
+        curr = 0;
+      }
+    } // while curr
+  } // for i
 }
 
 // **********************************************************************

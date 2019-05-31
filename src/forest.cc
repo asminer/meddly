@@ -56,6 +56,8 @@
 // #define VALIDATE_INCOUNTS
 // #define VALIDATE_INCOUNTS_ON_DELETE
 
+#define SHOW_VALIDATE_CACHECOUNTS
+
 // #define GC_OFF
 
 // #define REPORT_ON_DESTROY
@@ -852,6 +854,48 @@ void MEDDLY::expert_forest::validateIncounts(bool exact)
 #ifdef TRACK_DELETIONS
   printf("Incounts validated #%d\n", idnum);
 #endif
+#endif
+}
+
+
+void MEDDLY::expert_forest::validateCacheCounts() const
+{
+#ifdef DEVELOPMENT_CODE
+#ifdef SHOW_VALIDATE_CACHECOUNTS
+  printf("Validating cache counts for %ld handles\n", getLastNode());
+#endif
+  const node_handle N = getLastNode()+1;
+  size_t* counts = new size_t[N];
+  
+#ifdef SHOW_VALIDATE_CACHECOUNTS
+  printf("  Counting...\n");
+  fflush(stdout);
+#endif
+  for (node_handle i=0; i<N; i++) counts[i] = 0;
+  operation::countAllNodeEntries(this, counts);
+
+#ifdef SHOW_VALIDATE_CACHECOUNTS
+  printf("  Validating...\n");
+#endif
+  for (node_handle i=1; i<N; i++) {
+    if (nodeHeaders.getNodeCacheCount(i) == counts[i]) continue;
+    printf("\tCount mismatch node %ld\n", i);
+    printf("\t  We counted %lu\n", counts[i]);
+    printf("\t  node  says %lu\n", nodeHeaders.getNodeCacheCount(i));
+  }
+  node_handle maxi = 1;
+  for (node_handle i=2; i<N; i++) {
+    if (counts[i] > counts[maxi]) {
+      maxi = i;
+    }
+  }
+#ifdef SHOW_VALIDATE_CACHECOUNTS
+  printf("  Largest count: %lu for node %ld at level %d\n", 
+    counts[maxi], maxi, nodeHeaders.getNodeLevel(maxi)
+  );
+#endif
+
+  delete[] counts;
 #endif
 }
 

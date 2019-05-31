@@ -2332,7 +2332,6 @@ class MEDDLY::expert_forest: public forest
     */
     void uncacheNode(node_handle p);
 
-
   // --------------------------------------------------
   // Node status
   // --------------------------------------------------
@@ -2392,7 +2391,9 @@ class MEDDLY::expert_forest: public forest
     void dumpInternal(output &s) const;
     void dumpUniqueTable(output &s) const;
     void validateIncounts(bool exact);
+    void validateCacheCounts() const;
     void countNodesByLevel(long* active) const;
+
 
 
   // ------------------------------------------------------------
@@ -4453,6 +4454,13 @@ class MEDDLY::compute_table {
       /// For debugging.
       virtual void show(output &s, int verbLevel = 0) = 0;
 
+      /** Also for debugging.
+          Examine all entries, and for each pointer to forest f node p,
+          increment counts[p].
+      */
+      virtual void countNodeEntries(const expert_forest* f, size_t* counts) const = 0;
+
+
       static void initialize();
       static void destroy();
 
@@ -4617,7 +4625,10 @@ class MEDDLY::operation {
 
     static void showMonolithicComputeTable(output &, int verbLevel);
     static void showAllComputeTables(output &, int verbLevel);
+    static void countAllNodeEntries(const expert_forest* f, size_t* counts);
+
     void showComputeTable(output &, int verbLevel) const;
+    void countCTEntries(const expert_forest* f, size_t* counts) const;
 
     // handy
     const char* getName() const;

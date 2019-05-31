@@ -40,6 +40,8 @@
 // #define DEBUG_CT_SCAN
 // #define DEBUG_CT
 
+// #define DEBUG_VALIDATE_COUNTS
+
 #define INTEGRATED_MEMMAN
 
 #include "../hash_stream.h"
