@@ -30,6 +30,8 @@
 
 // #define DEBUG_HANDLE_FREELIST
 
+// #define ALWAYS_CHECK_FREELISTS
+
 // #define DEBUG_ADDRESS_RESIZE
 
 // ******************************************************************
@@ -827,7 +829,7 @@ void MEDDLY::node_headers::bitvector::expand(size_t ns)
   memset(d + size, 0, (ns-size) * sizeof(bool) );
   size = ns;
   data = d;
-#ifdef DEBUG_ADDRESS_RESIZE
+#ifdef DEBUG_BITVECTOR_RESIZE
   printf("Enlarged bitvector, new size %lu\n", size);
 #endif
 }
@@ -841,7 +843,7 @@ void MEDDLY::node_headers::bitvector::shrink(size_t ns)
   }
   size = ns;
   data = d;
-#ifdef DEBUG_ADDRESS_RESIZE
+#ifdef DEBUG_BITVECTOR_RESIZE
   printf("Reduced bitvector, new size %lu\n", size);
 #endif
 }
@@ -1048,7 +1050,7 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
   dump_handle_info(*this, a_last+1);
 #endif
 #ifdef DEBUG_HANDLE_MGT
-  fprintf(stderr, "Using end handle %d\n", a_last);
+  fprintf(stderr, "Using end handle %lu\n", a_last);
 #endif
   return a_last;
 }
@@ -1109,6 +1111,9 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
   }
 #ifdef DEBUG_HANDLE_FREELIST
   dump_handle_info(*this, a_last+1);
+#endif
+#ifdef ALWAYS_CHECK_FREELISTS
+  validateFreeLists();
 #endif
 }
 
@@ -1214,6 +1219,47 @@ void MEDDLY::node_headers::dumpInternal(output &s) const
 
 // ******************************************************************
 
+void MEDDLY::node_headers::validateFreeLists() const
+{
+  const int MAX_ERRORS = 25;
+  int errors = 0;
+  printf("  Validating Free Lists\n");
+  bool* inlist = new bool[a_last+1];
+  for (size_t i=0; i<=a_last; i++) {
+    inlist[i] = false;
+  }
+  for (unsigned i=0; i<8; i++) {
+    for (size_t curr = a_unused[i]; curr; curr = getNextOf(curr)) {
+      if (curr > a_last) continue;
+      inlist[curr] = true;
+      if (isDeleted(curr)) continue;
+      printf("\tBAD FREE LIST: item %lu in free list %u is not deleted?\n",
+        curr, i
+      );
+      ++errors;
+      if (errors >= MAX_ERRORS) {
+        printf("\tToo many errors, not printing the rest\n");
+        exit(1);
+      }
+    }
+  }
+  for (size_t i=1; i<=a_last; i++) {
+    if (!isDeleted(i)) continue;
+    if (inlist[i]) continue;
+    printf("\tMISSING: item %lu is deleted, not in any free list\n", i);
+    ++errors;
+    if (errors >= MAX_ERRORS) {
+      printf("\tToo many errors, not printing the rest\n");
+      exit(1);
+    }
+  }
+  printf("  Done validating free lists\n");
+  delete[] inlist;
+  if (errors>0) exit(1);
+}
+
+// ******************************************************************
+
 #ifndef OLD_NODE_HEADERS
 
 void MEDDLY::node_headers::changeHeaderSize(unsigned oldbits, unsigned newbits)
@@ -1284,6 +1330,12 @@ void MEDDLY::node_headers::expandHandleList()
 
 void MEDDLY::node_headers::shrinkHandleList()
 {
+#ifdef DEBUG_ADDRESS_RESIZE
+  printf("About to shrink node headers arrays (current size %ld)...\n",
+    a_size);
+  validateFreeLists();
+#endif
+
 #ifdef OLD_NODE_HEADERS
 
   // Determine new size
@@ -1311,6 +1363,7 @@ void MEDDLY::node_headers::shrinkHandleList()
       } else {
         a_unused[i] = curr;
       }
+      prev = curr;
     } 
     if (prev) {
       setNextOf(prev, 0);
@@ -1358,6 +1411,7 @@ void MEDDLY::node_headers::shrinkHandleList()
       } else {
         a_unused[i] = curr;
       }
+      prev = curr;
     } 
     if (prev) {
       setNextOf(prev, 0);
@@ -1384,6 +1438,11 @@ void MEDDLY::node_headers::shrinkHandleList()
   printf("Shrank node headers arrays, new size %lu (shrink check %lu)\n", a_size, a_next_shrink);
 #endif
 
+#endif
+
+#ifdef DEBUG_ADDRESS_RESIZE
+  printf("Done shrinking node headers arrays (size is now %ld)...\n", a_size);
+  validateFreeLists();
 #endif
 }
 

@@ -42,8 +42,8 @@
 #include <cstdint>
 #include <map>
 
-// #define OLD_NODE_HEADERS
-#define COMPACTED_HEADERS
+#define OLD_NODE_HEADERS
+// #define COMPACTED_HEADERS
 
 namespace MEDDLY {
 
@@ -1475,7 +1475,7 @@ class MEDDLY::node_headers {
     bool isZombie(node_handle p) const;
     /// Is this a deleted node
     bool isDeleted(node_handle p) const;
-    /// Deactivated: 0 address
+    /// Deactivated: 0 level  
     bool isDeactivated(node_handle p) const;
 
 
@@ -1542,6 +1542,9 @@ class MEDDLY::node_headers {
 
     void dumpInternal(output &s) const;
 
+
+  private:  // for debugging help
+    void validateFreeLists() const;
 
 #ifndef OLD_NODE_HEADERS
   public: // interface for node header size changes

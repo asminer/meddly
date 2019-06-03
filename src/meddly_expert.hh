@@ -998,11 +998,11 @@ MEDDLY::node_headers::isDeleted(node_handle p) const
   MEDDLY_DCASSERT(p<=a_last);
 #ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
-  return (0==address[p].offset) && (0==address[p].level);
+  return (0==address[p].level);
 #else
   MEDDLY_DCASSERT(addresses);
   MEDDLY_DCASSERT(levels);
-  return (0==addresses->get(size_t(p))) && (0==levels->get(size_t(p)));
+  return (0==levels->get(size_t(p)));
 #endif
 }
 
