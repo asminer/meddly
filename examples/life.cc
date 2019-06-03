@@ -574,7 +574,7 @@ int main(int argc, const char** argv)
   C[N].clear();
   delete[] C;
   watch.note_time();
-  cerr << "Constraint combination took " << watch.get_last_interval()/1000000.0;
+  cerr << "Constraint combination took " << watch.get_last_seconds();
   cerr << " seconds\nSet of solutions requires " << answer.getNodeCount();
   cerr << " nodes.\nForest stats:\n";
   cerr.flush();

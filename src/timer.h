@@ -61,6 +61,10 @@ public:
 	{
 		return last_interval;
 	}
+  inline double get_last_seconds()
+  {
+    return last_interval / 1000000.0;
+  }
 };
 
 #endif

@@ -291,7 +291,7 @@ int main()
   Square1NSF(nsf);
   watch.note_time();
   printf("Next-state function construction took %.4f seconds\n",
-          watch.get_last_interval()/1000000.0);
+          watch.get_last_seconds());
   printf("Next-state function MxD has\n\t%d nodes\n\t\%d edges\n",
     nsf.getNodeCount(), nsf.getEdgeCount());
   printStats("MxD", mxd);
@@ -325,7 +325,7 @@ int main()
   apply(REACHABLE_STATES_DFS, initial, nsf, reachable);
   watch.note_time();
   printf("Reachability set construction took %.4f seconds\n",
-          watch.get_last_interval()/1000000.0);
+          watch.get_last_seconds());
   printf("Reachability set MDD has\n\t%d nodes\n\t\%d edges\n",
     nsf.getNodeCount(), nsf.getEdgeCount());
   printStats("MDD", mdd);

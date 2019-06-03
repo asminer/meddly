@@ -372,7 +372,7 @@ void buildNSF(dd_edge& out)
 void printStats(const char* who, timer& watch, const dd_edge &node)
 {
   printf("%s construction took %.4f seconds\n", 
-    who, watch.get_last_interval()/1000000.0
+    who, watch.get_last_seconds()
   );
   printf("%s has\n\t%d nodes\n\t\%d edges\n", 
     who, node.getNodeCount(), node.getEdgeCount()

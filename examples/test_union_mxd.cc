@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
   delete [] ddElements;
 
   printf("done. Time interval: %.4e seconds\n",
-      start.get_last_interval()/1000000.0);
+      start.get_last_seconds());
 
 #ifdef VERBOSE
   printf("\n\nInitial State:\n");

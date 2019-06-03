@@ -368,7 +368,7 @@ int main(int argc, char *argv[])
 #endif
   start.note_time();
   printf("Time interval: %.4e seconds\n",
-      start.get_last_interval()/1000000.0);
+      start.get_last_seconds());
 
   printf("Peak Nodes in MXD: %ld\n", mtmxd->getPeakNumNodes());
   /* TBD: FIX

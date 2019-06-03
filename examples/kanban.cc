@@ -233,7 +233,7 @@ int main(int argc, const char** argv)
 #endif
       }
       printf("Next-state function construction took %.4e seconds\n",
-          start.get_last_interval() / 1000000.0);
+          start.get_last_seconds());
       printStats("MxD", mxd);
     }
 
@@ -283,7 +283,7 @@ int main(int argc, const char** argv)
     start.note_time();
     printf("Done\n");
     printf("Reachability set construction took %.4e seconds\n",
-        start.get_last_interval() / 1000000.0);
+        start.get_last_seconds() );
     fflush(stdout);
 
 #ifdef DUMP_REACHABLE

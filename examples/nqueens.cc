@@ -299,7 +299,7 @@ int main(int argc, const char** argv)
   constr[0] = 0;
   watch.note_time();
 
-  printf("Elapsed time: %lf seconds\n", watch.get_last_interval()/1000000.0);
+  printf("Elapsed time: %lf seconds\n", watch.get_last_seconds());
 
   printf("Cleanup\n");
   if (LOG) LOG->newPhase(f, "Cardinality");

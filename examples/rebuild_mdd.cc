@@ -199,7 +199,7 @@ void reorderVariablesByRebuilding(dd_edge &e)
 	  start.note_time();
 	  e2 = gr.rebuild(e);
 	  start.note_time();
-	  printf("Time interval: %.4e seconds\n", start.get_last_interval()/1000000.0);
+	  printf("Time interval: %.4e seconds\n", start.get_last_seconds());
 
 	  printf("Source: %d\n", e.getNodeCount());
 	  printf("Final: %d\n", e2.getNodeCount());
@@ -215,7 +215,7 @@ void reorderVariablesByRebuilding(dd_edge &e)
 	  start.note_time();
 	  e = gr.rebuild(e2);
 	  start.note_time();
-	  printf("Time interval: %.4e seconds\n", start.get_last_interval()/1000000.0);
+	  printf("Time interval: %.4e seconds\n", start.get_last_seconds());
 
 	  printf("Final: %d\n", e2.getNodeCount());
 	  printf("Source: %d\n", e.getNodeCount());
@@ -325,7 +325,7 @@ int main(int argc, char *argv[])
   dd_edge result = test_mtmdd(mtmdd, PLUS, element, terms, nElements);
   start.note_time();
   printf("Time interval: %.4e seconds\n",
-      start.get_last_interval()/1000000.0);
+      start.get_last_seconds());
 
   printf("Peak Nodes in MDD: %ld\n", mtmdd->getPeakNumNodes());
 
@@ -401,7 +401,7 @@ int main(int argc, char *argv[])
 //    }
 //    start.note_time();
 //    printf("Iterator traversal time (%0.4e elements): %0.4e seconds\n",
-//        double(counter), start.get_last_interval()/double(1000000.0));
+//        double(counter), start.get_last_seconds());
 //    double c;
 //    apply(CARDINALITY, reachableStates, c);
 //    printf("Cardinality: %0.4e\n", c);

@@ -741,7 +741,7 @@ void RubiksCubeModel::execute()
 
   cout << "Done" << endl;
   cout << "Time for constructing reachability set: "
-      << static_cast<double>(start.get_last_interval()) / 1000000.0 << " s"
+      << start.get_last_seconds() << " s"
       << endl;
   cout << "# Reachable states: " << initial.getCardinality() << endl,
 
@@ -780,7 +780,7 @@ void RubiksCubeModel::execute_phase(const dd_edge& initial, const dd_edge& nsf, 
 
   start.note_time();
   cout << "Time: "
-      << static_cast<double>(start.get_last_interval()) / 1000000.0 << " s"
+      << start.get_last_seconds() << " s"
       << endl;
 
   cout << "Computing the reachable states..." << endl;
@@ -791,7 +791,7 @@ void RubiksCubeModel::execute_phase(const dd_edge& initial, const dd_edge& nsf, 
   start.note_time();
 
   cout << "Time: "
-      << static_cast<double>(start.get_last_interval()) / 1000000.0 << " s"
+      << start.get_last_seconds() << " s"
       << endl;
 }
 

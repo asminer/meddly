@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
   mtmxd->createEdge(from, to, terms, nElements, result);
 
   start.note_time();
-  std::cout << "Time interval: " << start.get_last_interval()/1000000.0 << " seconds" << std::endl;
+  std::cout << "Time interval: " << start.get_last_seconds() << " seconds" << std::endl;
 
   std::cout << "Peak Nodes in MXD: " << mtmxd->getPeakNumNodes() << std::endl;
 
@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
     std::cout << "#Nodes  (After): " << mtmxd->getCurrentNumNodes() << std::endl;
 
     start.note_time();
-    std::cout << "Time interval: " << start.get_last_interval()/1000000.0 << " seconds" << std::endl;
+    std::cout << "Time interval: " << start.get_last_seconds() << " seconds" << std::endl;
   }
 
   std::cout << "Reorder" << std::endl;
@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
   std::cout << "#Nodes  (After): " << mtmxd->getCurrentNumNodes() << std::endl;
 
   start.note_time();
-  std::cout << "Time interval: " << start.get_last_interval()/1000000.0 << " seconds" << std::endl;
+  std::cout << "Time interval: " << start.get_last_seconds() << " seconds" << std::endl;
 
   delete[] level2var;
   delete[] level2var_origin;

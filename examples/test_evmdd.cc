@@ -314,7 +314,7 @@ int main(int argc, char *argv[])
   if (verbose > 0) result.show(meddlyout, 2);
 
   printf("Time interval: %.4e seconds\n",
-      start.get_last_interval()/1000000.0);
+      start.get_last_seconds());
   printf("#Nodes: %d\n", result.getNodeCount());
   printf("#Edges: %d\n", result.getEdgeCount());
 
@@ -330,7 +330,7 @@ int main(int argc, char *argv[])
   if (verbose > 0) result1.show(meddlyout, 2);
 
   printf("Time interval: %.4e seconds\n",
-      start.get_last_interval()/1000000.0);
+      start.get_last_seconds());
 
   if (result == result1) {
     printf("Batch Addition == Sequential Addition!\n");
@@ -348,7 +348,7 @@ int main(int argc, char *argv[])
 
   start.note_time();
   printf("Time interval: %.4e seconds\n",
-      start.get_last_interval()/1000000.0);
+      start.get_last_seconds());
 
   printf("Peak Nodes in MDD: %ld\n", evmdd->getPeakNumNodes());
   /* TBD: FIX
@@ -382,7 +382,7 @@ int main(int argc, char *argv[])
     }
     start.note_time();
     printf("Iterator traversal time (%0.4e elements): %0.4e seconds\n",
-        double(counter), start.get_last_interval()/double(1000000.0));
+        double(counter), start.get_last_seconds());
     printf("Cardinality: %0.4e\n", reachableStates.getCardinality());
   }
 
@@ -404,7 +404,7 @@ int main(int argc, char *argv[])
   mdd->createEdge(element, nElements, mddResult);
   start.note_time();
   printf("Time interval: %.4e seconds\n",
-      start.get_last_interval()/1000000.0);
+      start.get_last_seconds());
 
   printf("\nMDD:\n");
 

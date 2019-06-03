@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
   if (verbose > 0) result.show(meddlyout, 2);
 
   printf("Time interval: %.4e seconds\n",
-      start.get_last_interval()/1000000.0);
+      start.get_last_seconds());
   printf("#Nodes: %d\n", result.getNodeCount());
   printf("#Edges: %d\n", result.getEdgeCount());
 
@@ -374,7 +374,7 @@ int main(int argc, char *argv[])
     std::cout << "#Edges  (After): " << result.getEdgeCount() << std::endl;
 
     start.note_time();
-    std::cout << "Time interval: " << start.get_last_interval()/1000000.0 << " seconds" << std::endl;
+    std::cout << "Time interval: " << start.get_last_seconds() << " seconds" << std::endl;
   }
 
   std::cout << "Reorder" << std::endl;
@@ -389,7 +389,7 @@ int main(int argc, char *argv[])
   std::cout << "#Edges  (After): " << result.getEdgeCount() << std::endl;
 
   start.note_time();
-  std::cout << "Time interval: " << start.get_last_interval()/1000000.0 << " seconds" << std::endl;
+  std::cout << "Time interval: " << start.get_last_seconds() << " seconds" << std::endl;
 
   delete[] level2var;
   delete[] level2var_origin;

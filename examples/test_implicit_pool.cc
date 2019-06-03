@@ -196,7 +196,7 @@ int main(int argc, const char** argv)
       start.note_time();
       buildImplicitRelation(model, TRANS, PLACES, BOUNDS, T);
       printf("\nNext-state function construction took %.4e seconds\n",
-             start.get_last_interval() / 1000000.0);
+             start.get_last_seconds());
       specialized_operation* sat = 0;
       
       
@@ -213,7 +213,7 @@ int main(int argc, const char** argv)
       
       start.note_time();
       printf("\nReachability set construction took %.4e seconds\n",
-             start.get_last_interval() / 1000000.0);
+             start.get_last_seconds());
       fflush(stdout);
       
 #ifdef DUMP_REACHABLE

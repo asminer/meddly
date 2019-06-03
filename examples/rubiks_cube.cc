@@ -952,7 +952,7 @@ int doBfs(const moves& m)
   fprintf(stdout, " done!\n");
   fflush(stdout);
   fprintf(stdout, "Time for constructing reachability set: %.4e seconds\n",
-      start.get_last_interval()/1000000.0);
+      start.get_last_seconds());
   fprintf(stdout, "# of reachable states: %1.6e\n",
       initial.getCardinality());
   fflush(stdout);
@@ -1008,7 +1008,7 @@ int doDfs(const moves& m, char saturation_type, bool split)
   fprintf(stdout, " done!\n");
   fflush(stdout);
   fprintf(stdout, "Time for constructing reachability set: %.4e seconds\n",
-      start.get_last_interval()/1000000.0);
+      start.get_last_seconds());
   fprintf(stdout, "# of reachable states: %1.6e\n",
       initial.getCardinality());
   fflush(stdout);

@@ -786,7 +786,7 @@ class rubiks {
 
       start.note_time();
       fprintf(stdout, "Time for building individual events: %.4e seconds\n",
-          start.get_last_interval()/1000000.0);
+          start.get_last_seconds());
       fflush(stdout);
       start.note_time();
 
@@ -801,7 +801,7 @@ class rubiks {
 
       start.note_time();
       fprintf(stdout, "Time for splitting events: %.4e seconds\n",
-          start.get_last_interval()/1000000.0);
+          start.get_last_seconds());
       fflush(stdout);
     }
 
@@ -858,7 +858,7 @@ class rubiks {
       fprintf(stdout, " done!\n");
       fflush(stdout);
       fprintf(stdout, "Time for constructing reachability set: %.4e seconds\n",
-          start.get_last_interval()/1000000.0);
+          start.get_last_seconds());
       fprintf(stdout, "# of reachable states: %1.6e\n",
           initial.getCardinality());
       fflush(stdout);
@@ -899,7 +899,7 @@ class rubiks {
       start.note_time();
       fprintf(stdout,
           "Time for building next-state function: %.4e seconds\n",
-          start.get_last_interval()/1000000.0);
+          start.get_last_seconds());
       FILE_output myout(stdout);
       printStats(myout);
       fflush(stdout);
@@ -933,7 +933,7 @@ class rubiks {
 
       start.note_time();
       fprintf(stdout, "Time for constructing reachability set: %.4e seconds\n",
-          start.get_last_interval()/1000000.0);
+          start.get_last_seconds());
       fprintf(stdout, "# of reachable states: %1.6e\n",
           initial.getCardinality());
       fflush(stdout);

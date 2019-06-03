@@ -328,8 +328,8 @@ int main(int argc, const char** argv)
   delete[] qidp;
   delete[] qidm;
 
-  printf("\n%lg seconds CPU time elapsed\n", 
-    stopwatch.get_last_interval() / 1000000.0);
+  stopwatch.note_time();
+  printf("\n%lg seconds CPU time elapsed\n", stopwatch.get_last_seconds());
   printf("Forest stats:\n");
   FILE_output myout(stdout);
   expert_forest* ef = (expert_forest*)f;

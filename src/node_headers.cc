@@ -34,6 +34,8 @@
 
 // #define DEBUG_ADDRESS_RESIZE
 
+// #define OLD_HEADERS_NEW_ALLOC
+
 // ******************************************************************
 // *                                                                *
 // *                        Helper functions                        *
@@ -860,6 +862,7 @@ void MEDDLY::node_headers::bitvector::shrink(size_t ns)
 
 const size_t START_SIZE = 512;
 const size_t MAX_ADD = 65536;
+// const size_t MAX_ADD = 16777216;
 
 inline size_t next_size(size_t s)
 {
@@ -1282,6 +1285,28 @@ void MEDDLY::node_headers::changeHeaderSize(unsigned oldbits, unsigned newbits)
 void MEDDLY::node_headers::expandHandleList()
 {
 #ifdef OLD_NODE_HEADERS
+
+#ifdef OLD_HEADERS_NEW_ALLOC
+  size_t old_size = a_size;
+  do {
+    a_next_shrink = next_check(a_next_shrink);
+    a_size = next_size(a_size);
+  } while (a_last >= a_size);
+ 
+  node_header* new_address = (node_header*) 
+    realloc(address, a_size * sizeof(node_header));
+  if (0==new_address) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+  address = new_address;
+  parent.mstats.incMemAlloc((a_size - old_size) * sizeof(node_header));
+  memset(address + old_size, 0, (a_size - old_size) * sizeof(node_header));
+#ifdef DEBUG_ADDRESS_RESIZE
+  printf("Enlarged address array, new size %d\n", a_size);
+#endif
+
+#else // OLD_HEADERS_NEW_ALLOC
+
   // increase size by 50%
   int delta = a_size / 2;
   MEDDLY_DCASSERT(delta>=0);
@@ -1302,6 +1327,8 @@ void MEDDLY::node_headers::expandHandleList()
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Enlarged address array, new size %d\n", a_size);
 #endif
+
+#endif // OLD_HEADERS_NEW_ALLOC
 
 #else // OLD_NODE_HEADERS
 
@@ -1338,17 +1365,8 @@ void MEDDLY::node_headers::shrinkHandleList()
 
 #ifdef OLD_NODE_HEADERS
 
-  // Determine new size
-  int new_size = a_min_size;
-  while (a_last >= new_size) new_size += new_size/2;
-  int delta = a_size - new_size;
-  if (0==delta) {
-    a_next_shrink = 0;
-    return;
-  }
-
   // clean out free lists, because we're about
-  // to trash memory beyond new_size.
+  // to trash memory beyond a_last.
   for (int i=0; i<8; i++) {
     //
     // clean list i
@@ -1372,6 +1390,34 @@ void MEDDLY::node_headers::shrinkHandleList()
     }
   } // for i
 
+#ifdef OLD_HEADERS_NEW_ALLOC
+
+  size_t old_size = a_size;
+  do {
+    a_size = prev_size(a_size);
+    a_next_shrink = (a_size > START_SIZE) ? prev_check(a_next_shrink) : 0;
+  } while (a_last < a_next_shrink);
+
+  // shrink the array
+  node_header* new_address = (node_header*) 
+    realloc(address, a_size * sizeof(node_header));
+  if (0==new_address) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+  address = new_address;
+
+  parent.mstats.decMemAlloc( (old_size-a_size)*sizeof(node_header) );
+
+#else // OLD_HEADERS_NEW_ALLOC
+  int new_size = a_min_size;
+  while (a_last >= new_size) new_size += new_size/2;
+
+  int delta = a_size - new_size;
+  if (0==delta) {
+    a_next_shrink = 0;
+    return;
+  }
+
   // shrink the array
   MEDDLY_DCASSERT(delta>=0);
   MEDDLY_DCASSERT(a_size-delta>=a_min_size);
@@ -1392,6 +1438,8 @@ void MEDDLY::node_headers::shrinkHandleList()
 #ifdef DEBUG_ADDRESS_RESIZE
   printf("Shrank address array, new size %d\n", a_size);
 #endif
+
+#endif // OLD_HEADERS_NEW_ALLOC
 
 #else // OLD_NODE_HEADERS
 

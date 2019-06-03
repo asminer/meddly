@@ -195,11 +195,11 @@ void execute_phase(const dd_edge& initial, const dd_edge& nsf, dd_edge& result, 
 
     start.note_time();
     cout << "Time: "
-        << static_cast<double>(start.get_last_interval()) / 1000000.0 << " s"
+        << start.get_last_seconds() << " s"
         << endl;
     show_node(initial);
 
-    reorder_time += static_cast<double>(start.get_last_interval()) / 1000000.0;
+    reorder_time += start.get_last_seconds();
   }
 
   cout << "Computing the reachable states..." << endl;
@@ -211,7 +211,7 @@ void execute_phase(const dd_edge& initial, const dd_edge& nsf, dd_edge& result, 
   start.note_time();
 
   cout << "Time: "
-      << static_cast<double>(start.get_last_interval()) / 1000000.0 << " s"
+      << start.get_last_seconds() << " s"
       << endl;
 }
 
@@ -330,7 +330,7 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   //        buildNextStateFunction(events, 8*N, mxd, nsf, 2);
   start.note_time();
   printf("Next-state function construction took %.4e seconds\n",
-      start.get_last_interval() / 1000000.0);
+      start.get_last_seconds());
   //    printStats("MxD", mxd);
 
   //
@@ -366,7 +366,7 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   start.note_time();
   printf("Done\n");
   printf("Reachability set construction took %.4e seconds\n",
-          start.get_last_interval()/1000000.0);
+          start.get_last_seconds());
   printf("Reordering took %.4e seconds\n", reorder_time);
   fflush(stdout);
 

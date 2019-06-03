@@ -423,7 +423,7 @@ void testMDDComplement(const dd_edge& mdd)
   complement.show(stderr, 1);
 
   fprintf(stderr, "\nComplement(MDD) took %.4e seconds\n",
-      compTimer.get_last_interval()/1000000.0);
+      compTimer.get_last_seconds());
 }
 
 
@@ -445,7 +445,7 @@ void testMXDComplement(const dd_edge& mxd)
   complement.show(stderr, 1);
 
   fprintf(stderr, "\nComplement(MXD) took %.4e seconds\n",
-      compTimer.get_last_interval()/1000000.0);
+      compTimer.get_last_seconds());
 
   // Complement of MXD using Mxd-Difference: (1 - MXD).
 
@@ -459,7 +459,7 @@ void testMXDComplement(const dd_edge& mxd)
   complement.show(stderr, 1);
 
   fprintf(stderr, "\n(1 - MXD) took %.4e seconds\n",
-      compTimer.get_last_interval()/1000000.0);
+      compTimer.get_last_seconds());
 
   // Check if Complement(MXD) == (1 - MXD)
 
