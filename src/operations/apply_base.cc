@@ -1511,7 +1511,7 @@ void MEDDLY::generic_binary_evplus_mxd
   resF->createReducedNode(in, C, cev, c);
 
 #ifdef TRACE_ALL_OPS
-  printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
+  printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, c);
 #endif
 }
 

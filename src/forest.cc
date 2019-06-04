@@ -890,7 +890,7 @@ void MEDDLY::expert_forest::validateCacheCounts() const
     }
   }
 #ifdef SHOW_VALIDATE_CACHECOUNTS
-  printf("  Largest count: %lu for node %ld at level %d\n", 
+  if (maxi < N) printf("  Largest count: %lu for node %ld at level %d\n", 
     counts[maxi], maxi, nodeHeaders.getNodeLevel(maxi)
   );
 #endif
