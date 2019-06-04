@@ -43,7 +43,6 @@
 #include <map>
 
 #define OLD_NODE_HEADERS
-// #define COMPACTED_HEADERS
 
 namespace MEDDLY {
 
@@ -1643,10 +1642,8 @@ class MEDDLY::node_headers {
 
     class level_array {
         node_headers &parent;
-#ifdef COMPACTED_HEADERS
         char* data8;
         short* data16;
-#endif
         int* data32;
         size_t size;
         unsigned char bytes;
@@ -1667,16 +1664,12 @@ class MEDDLY::node_headers {
 
     class counter_array {
         node_headers &parent;
-#ifdef COMPACTED_HEADERS
         unsigned char* data8;
         unsigned short* data16;
-#endif
         unsigned int* data32;
         size_t size;
-#ifdef COMPACTED_HEADERS
         size_t counts_09bit;  // number of counts requiring at least 9 bits
         size_t counts_17bit;  // number of counts requiring at least 17 bits
-#endif
         unsigned char bytes;
       public:
         counter_array(node_headers &p);
@@ -1696,7 +1689,6 @@ class MEDDLY::node_headers {
         void show(output &s, size_t first, size_t last, int width) const;
         size_t entry_bits() const;
 
-#ifdef COMPACTED_HEADERS
         // Expand from 8-bit to 16-bit entries because of element i
         void expand8to16(size_t i); 
         // Expand from 16-bit to 32-bit entries because of element i
@@ -1706,19 +1698,14 @@ class MEDDLY::node_headers {
 
         void shrink32to16(size_t ns); 
         void shrink32to8(size_t ns); 
-#endif
     };
 
     class address_array {
         node_headers &parent;
-#ifdef COMPACTED_HEADERS
         unsigned int* data32;
-#endif
         unsigned long* data64;
         size_t size;
-#ifdef COMPACTED_HEADERS
         size_t num_large_elements;
-#endif
         unsigned char bytes;
       public:
         address_array(node_headers &p);
@@ -1734,10 +1721,8 @@ class MEDDLY::node_headers {
         void show(output &s, size_t first, size_t last, int width) const;
         size_t entry_bits() const;
 
-#ifdef COMPACTED_HEADERS
         void expand32to64();
         void shrink64to32(size_t ns);
-#endif
     };
 
     class bitvector {

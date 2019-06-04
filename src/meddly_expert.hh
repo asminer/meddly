@@ -517,7 +517,6 @@ MEDDLY::unpacked_node::freeRecycled()
 inline int MEDDLY::node_headers::level_array::get(size_t i) const
 {
   MEDDLY_DCASSERT(i<size);
-#ifdef COMPACTED_HEADERS
   if (data8) {
     MEDDLY_DCASSERT(0==data16);
     MEDDLY_DCASSERT(0==data32);
@@ -530,7 +529,6 @@ inline int MEDDLY::node_headers::level_array::get(size_t i) const
   }
   MEDDLY_DCASSERT(0==data8);
   MEDDLY_DCASSERT(0==data16);
-#endif
   MEDDLY_DCASSERT(data32);
   return data32[i];
 }
@@ -538,7 +536,6 @@ inline int MEDDLY::node_headers::level_array::get(size_t i) const
 inline void MEDDLY::node_headers::level_array::set(size_t i, int v)
 {
   MEDDLY_DCASSERT(i<size);
-#ifdef COMPACTED_HEADERS
   if (data8) {
     MEDDLY_DCASSERT(0==data16);
     MEDDLY_DCASSERT(0==data32);
@@ -557,7 +554,6 @@ inline void MEDDLY::node_headers::level_array::set(size_t i, int v)
   }
   MEDDLY_DCASSERT(0==data8);
   MEDDLY_DCASSERT(0==data16);
-#endif
   MEDDLY_DCASSERT(data32);
   data32[i] = v;
 }
@@ -566,7 +562,6 @@ inline void MEDDLY::node_headers::level_array::swap(size_t i, size_t j)
 {
   MEDDLY_DCASSERT(i<size);
   MEDDLY_DCASSERT(j<size);
-#ifdef COMPACTED_HEADERS
   if (data8) {
     char tmp = data8[i];
     data8[i] = data8[j];
@@ -579,7 +574,6 @@ inline void MEDDLY::node_headers::level_array::swap(size_t i, size_t j)
     data16[j] = tmp;
     return;
   }
-#endif
   MEDDLY_DCASSERT(data32);
   int tmp = data32[i];
   data32[i] = data32[j];
@@ -604,7 +598,6 @@ inline size_t MEDDLY::node_headers::level_array::entry_bits() const
 inline unsigned int MEDDLY::node_headers::counter_array::get(size_t i) const
 {
   MEDDLY_DCASSERT(i<size);
-#ifdef COMPACTED_HEADERS
   if (data8) {
     MEDDLY_DCASSERT(0==data16);
     MEDDLY_DCASSERT(0==data32);
@@ -617,7 +610,6 @@ inline unsigned int MEDDLY::node_headers::counter_array::get(size_t i) const
   }
   MEDDLY_DCASSERT(0==data8);
   MEDDLY_DCASSERT(0==data16);
-#endif
   MEDDLY_DCASSERT(data32);
   return data32[i];
 }
@@ -626,7 +618,6 @@ inline void MEDDLY::node_headers::counter_array::swap(size_t i, size_t j)
 {
   MEDDLY_DCASSERT(i<size);
   MEDDLY_DCASSERT(j<size);
-#ifdef COMPACTED_HEADERS
   if (data8) {
     unsigned char tmp = data8[i];
     data8[i] = data8[j];
@@ -639,7 +630,6 @@ inline void MEDDLY::node_headers::counter_array::swap(size_t i, size_t j)
     data16[j] = tmp;
     return;
   }
-#endif
   MEDDLY_DCASSERT(data32);
   unsigned int tmp = data32[i];
   data32[i] = data32[j];
@@ -649,7 +639,6 @@ inline void MEDDLY::node_headers::counter_array::swap(size_t i, size_t j)
 inline void MEDDLY::node_headers::counter_array::increment(size_t i)
 {
   MEDDLY_DCASSERT(i<size);
-#ifdef COMPACTED_HEADERS
   if (data8) {
     MEDDLY_DCASSERT(0==data16);
     MEDDLY_DCASSERT(0==data32);
@@ -666,19 +655,15 @@ inline void MEDDLY::node_headers::counter_array::increment(size_t i)
   }
   MEDDLY_DCASSERT(0==data8);
   MEDDLY_DCASSERT(0==data16);
-#endif
   MEDDLY_DCASSERT(data32);
   data32[i]++;
-#ifdef COMPACTED_HEADERS
   if (256 == data32[i]) ++counts_09bit;
   if (65536 == data32[i]) ++counts_17bit;
-#endif
 }
 
 inline void MEDDLY::node_headers::counter_array::decrement(size_t i)
 {
   MEDDLY_DCASSERT(i<size);
-#ifdef COMPACTED_HEADERS
   if (data8) {
     MEDDLY_DCASSERT(0==data16);
     MEDDLY_DCASSERT(0==data32);
@@ -699,10 +684,8 @@ inline void MEDDLY::node_headers::counter_array::decrement(size_t i)
   }
   MEDDLY_DCASSERT(0==data8);
   MEDDLY_DCASSERT(0==data16);
-#endif
   MEDDLY_DCASSERT(data32);
   MEDDLY_DCASSERT(data32[i]);
-#ifdef COMPACTED_HEADERS
   if (256 == data32[i]) {
     MEDDLY_DCASSERT(counts_09bit);
     --counts_09bit;
@@ -711,14 +694,12 @@ inline void MEDDLY::node_headers::counter_array::decrement(size_t i)
     MEDDLY_DCASSERT(counts_17bit);
     --counts_17bit;
   }
-#endif
   --data32[i];
 }
 
 inline bool MEDDLY::node_headers::counter_array::isZeroBeforeIncrement(size_t i)
 {
   MEDDLY_DCASSERT(i<size);
-#ifdef COMPACTED_HEADERS
   if (data8) {
     MEDDLY_DCASSERT(0==data16);
     MEDDLY_DCASSERT(0==data32);
@@ -743,24 +724,20 @@ inline bool MEDDLY::node_headers::counter_array::isZeroBeforeIncrement(size_t i)
   }
   MEDDLY_DCASSERT(0==data8);
   MEDDLY_DCASSERT(0==data16);
-#endif
   MEDDLY_DCASSERT(data32);
   if (0==data32[i]) {
     data32[i] = 1;
     return true;
   }
   data32[i]++;
-#ifdef COMPACTED_HEADERS
   if (256 == data32[i]) ++counts_09bit;
   if (65536 == data32[i]) ++counts_17bit;
-#endif
   return false;
 }
 
 inline bool MEDDLY::node_headers::counter_array::isPositiveAfterDecrement(size_t i)
 {
   MEDDLY_DCASSERT(i<size);
-#ifdef COMPACTED_HEADERS
   if (data8) {
     MEDDLY_DCASSERT(0==data16);
     MEDDLY_DCASSERT(0==data32);
@@ -779,10 +756,8 @@ inline bool MEDDLY::node_headers::counter_array::isPositiveAfterDecrement(size_t
   }
   MEDDLY_DCASSERT(0==data8);
   MEDDLY_DCASSERT(0==data16);
-#endif
   MEDDLY_DCASSERT(data32);
   MEDDLY_DCASSERT(data32[i]);
-#ifdef COMPACTED_HEADERS
   if (256 == data32[i]) {
     MEDDLY_DCASSERT(counts_09bit);
     --counts_09bit;
@@ -791,7 +766,6 @@ inline bool MEDDLY::node_headers::counter_array::isPositiveAfterDecrement(size_t
     MEDDLY_DCASSERT(counts_17bit);
     --counts_17bit;
   }
-#endif
   return 0<--data32[i];
 }
 
@@ -814,7 +788,6 @@ inline size_t MEDDLY::node_headers::counter_array::entry_bits() const
 inline unsigned long MEDDLY::node_headers::address_array::get(size_t i) const
 {
   MEDDLY_DCASSERT(i<size);
-#ifdef COMPACTED_HEADERS
   if (4==bytes) {
     MEDDLY_DCASSERT(data32);
     MEDDLY_DCASSERT(0==data64);
@@ -822,7 +795,6 @@ inline unsigned long MEDDLY::node_headers::address_array::get(size_t i) const
     return data32[i];
   }
   MEDDLY_DCASSERT(0==data32);
-#endif
   MEDDLY_DCASSERT(8==bytes);
   MEDDLY_DCASSERT(data64);
   return data64[i];
@@ -831,7 +803,6 @@ inline unsigned long MEDDLY::node_headers::address_array::get(size_t i) const
 inline void MEDDLY::node_headers::address_array::set(size_t i, unsigned long v)
 {
   MEDDLY_DCASSERT(i<size);
-#ifdef COMPACTED_HEADERS
   if (4==bytes) {
     MEDDLY_DCASSERT(data32);
     MEDDLY_DCASSERT(0==data64);
@@ -849,10 +820,8 @@ inline void MEDDLY::node_headers::address_array::set(size_t i, unsigned long v)
     return;
   }
   MEDDLY_DCASSERT(0==data32);
-#endif
   MEDDLY_DCASSERT(8==bytes);
   MEDDLY_DCASSERT(data64);
-#ifdef COMPACTED_HEADERS
   if (v & 0xffffffff00000000) {
     // v is large
     if (0 == (data64[i] & 0xffffffff00000000)) {
@@ -867,7 +836,6 @@ inline void MEDDLY::node_headers::address_array::set(size_t i, unsigned long v)
       num_large_elements--;
     }
   }
-#endif
   data64[i] = v;
 }
 
@@ -875,7 +843,6 @@ inline void MEDDLY::node_headers::address_array::swap(size_t i, size_t j)
 {
   MEDDLY_DCASSERT(i<size);
   MEDDLY_DCASSERT(j<size);
-#ifdef COMPACTED_HEADERS
   if (4==bytes) {
     MEDDLY_DCASSERT(data32);
     unsigned int tmp = data32[i];
@@ -883,7 +850,6 @@ inline void MEDDLY::node_headers::address_array::swap(size_t i, size_t j)
     data32[j] = tmp;
     return;
   }
-#endif
   MEDDLY_DCASSERT(8==bytes);
   MEDDLY_DCASSERT(data64);
   unsigned long tmp = data64[i];
