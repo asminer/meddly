@@ -1071,6 +1071,7 @@ MEDDLY::node_headers::setNodeLevel(node_handle p, int k)
 
 // ******************************************************************
 
+/*
 inline bool
 MEDDLY::node_headers::trackingCacheCounts() const
 {
@@ -1080,6 +1081,7 @@ MEDDLY::node_headers::trackingCacheCounts() const
   return cache_counts;
 #endif
 }
+*/
 
 // ******************************************************************
 
@@ -1215,6 +1217,7 @@ MEDDLY::node_headers::uncacheNode(MEDDLY::node_handle p)
 
 // ******************************************************************
 
+/*
 inline bool
 MEDDLY::node_headers::trackingIncomingCounts() const
 {
@@ -1224,6 +1227,7 @@ MEDDLY::node_headers::trackingIncomingCounts() const
   return incoming_counts;
 #endif
 }
+*/
 
 // ******************************************************************
 
@@ -1980,27 +1984,32 @@ MEDDLY::expert_forest::setNodeLevel(node_handle p, int level)
 // Managing incoming edge counts
 // --------------------------------------------------
 
+/*
 inline bool
 MEDDLY::expert_forest::trackingInCounts() const
 {
   return nodeHeaders.trackingIncomingCounts();
 }
+*/
 
 inline unsigned long
 MEDDLY::expert_forest::getNodeInCount(MEDDLY::node_handle p) const
 {
+  MEDDLY_DCASSERT(deflt.useNodeIncomingCounts);
   return nodeHeaders.getIncomingCount(p);
 }
 
 inline MEDDLY::node_handle
 MEDDLY::expert_forest::linkNode(MEDDLY::node_handle p)
 {
+  MEDDLY_DCASSERT(deflt.useNodeIncomingCounts);
   return nodeHeaders.linkNode(p);
 }
 
 inline void
 MEDDLY::expert_forest::unlinkNode(MEDDLY::node_handle p)
 {
+  MEDDLY_DCASSERT(deflt.useNodeIncomingCounts);
   nodeHeaders.unlinkNode(p);
 }
 
@@ -2008,21 +2017,25 @@ MEDDLY::expert_forest::unlinkNode(MEDDLY::node_handle p)
 // Managing cache counts
 // --------------------------------------------------
 
+/*
 inline bool
 MEDDLY::expert_forest::trackingCacheCounts() const
 {
   return nodeHeaders.trackingCacheCounts();
 }
+*/
 
 inline void
 MEDDLY::expert_forest::cacheNode(MEDDLY::node_handle p)
 {
+  MEDDLY_DCASSERT(deflt.useCacheReferenceCounts);
   nodeHeaders.cacheNode(p);
 }
 
 inline void
 MEDDLY::expert_forest::uncacheNode(MEDDLY::node_handle p)
 {
+  MEDDLY_DCASSERT(deflt.useCacheReferenceCounts);
   nodeHeaders.uncacheNode(p);
 }
 

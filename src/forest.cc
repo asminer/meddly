@@ -96,6 +96,9 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
   compactAfterGC = false;
   compactBeforeExpand = true;
 
+  useNodeIncomingCounts = true;
+  useCacheReferenceCounts = true;
+
   // nodemm = ORIGINAL_GRID;
   nodemm = ARRAY_PLUS_GRID;
   // nodemm = MALLOC_MANAGER;

@@ -1417,7 +1417,7 @@ class MEDDLY::node_headers {
         For efficiency, this should be called soon after 
         construction (otherwise we may allocate space for nothing).
     */
-    void turnOffCacheCounts();
+    // void turnOffCacheCounts();
 
     /**
         Indicate that we don't need to track incoming counts.
@@ -1425,7 +1425,7 @@ class MEDDLY::node_headers {
         For efficiency, this should be called soon after 
         construction (otherwise we may allocate space for nothing).
     */
-    void turnOffIncomingCounts();
+    // void turnOffIncomingCounts();
 
     /**
         Set node recycling to pessimistic or optimistic.
@@ -1503,7 +1503,7 @@ class MEDDLY::node_headers {
   public: // cache count stuff
 
     /// Are we tracking cache counts
-    bool trackingCacheCounts() const;
+    // bool trackingCacheCounts() const;
 
     /// Get the cache count for node p.
     unsigned long getNodeCacheCount(node_handle p) const;
@@ -1517,7 +1517,7 @@ class MEDDLY::node_headers {
   public: // incoming count stuff
 
     /// Are we tracking incoming counts
-    bool trackingIncomingCounts() const;
+    // bool trackingIncomingCounts() const;
 
     /// Get the incoming count for node p.
     unsigned long getIncomingCount(node_handle p) const;

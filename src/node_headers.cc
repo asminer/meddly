@@ -882,6 +882,7 @@ void MEDDLY::node_headers
 
 // ******************************************************************
 
+/*
 void MEDDLY::node_headers::turnOffCacheCounts()
 {
 #ifdef OLD_NODE_HEADERS
@@ -892,9 +893,11 @@ void MEDDLY::node_headers::turnOffCacheCounts()
   cache_counts = 0;
 #endif
 }
+*/
 
 // ******************************************************************
 
+/*
 void MEDDLY::node_headers::turnOffIncomingCounts()
 {
 #ifdef OLD_NODE_HEADERS
@@ -905,6 +908,7 @@ void MEDDLY::node_headers::turnOffIncomingCounts()
   incoming_counts = 0;
 #endif
 }
+*/
 
 // ******************************************************************
 
