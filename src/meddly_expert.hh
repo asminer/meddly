@@ -2002,15 +2002,19 @@ MEDDLY::expert_forest::getNodeInCount(MEDDLY::node_handle p) const
 inline MEDDLY::node_handle
 MEDDLY::expert_forest::linkNode(MEDDLY::node_handle p)
 {
-  MEDDLY_DCASSERT(deflt.useNodeIncomingCounts);
-  return nodeHeaders.linkNode(p);
+  if (deflt.useNodeIncomingCounts) {
+    return nodeHeaders.linkNode(p);
+  } else {
+    return p;
+  }
 }
 
 inline void
 MEDDLY::expert_forest::unlinkNode(MEDDLY::node_handle p)
 {
-  MEDDLY_DCASSERT(deflt.useNodeIncomingCounts);
-  nodeHeaders.unlinkNode(p);
+  if (deflt.useNodeIncomingCounts) {
+    nodeHeaders.unlinkNode(p);
+  } 
 }
 
 // --------------------------------------------------
@@ -2028,15 +2032,17 @@ MEDDLY::expert_forest::trackingCacheCounts() const
 inline void
 MEDDLY::expert_forest::cacheNode(MEDDLY::node_handle p)
 {
-  MEDDLY_DCASSERT(deflt.useCacheReferenceCounts);
-  nodeHeaders.cacheNode(p);
+  if (deflt.useCacheReferenceCounts) {
+    nodeHeaders.cacheNode(p);
+  }
 }
 
 inline void
 MEDDLY::expert_forest::uncacheNode(MEDDLY::node_handle p)
 {
-  MEDDLY_DCASSERT(deflt.useCacheReferenceCounts);
-  nodeHeaders.uncacheNode(p);
+  if (deflt.useCacheReferenceCounts) {
+    nodeHeaders.uncacheNode(p);
+  }
 }
 
 
