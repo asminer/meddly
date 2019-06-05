@@ -886,6 +886,12 @@ inline void MEDDLY::node_headers::bitvector::set(size_t i, bool v)
   data[i] = v;
 }
 
+inline void MEDDLY::node_headers::bitvector::clearAll()
+{
+  MEDDLY_DCASSERT(data);
+  memset(data, 0, size * sizeof(bool));
+}
+
 inline void MEDDLY::node_headers::bitvector::swap(size_t i, size_t j)
 {
   MEDDLY_DCASSERT(data);
@@ -1091,7 +1097,7 @@ MEDDLY::node_headers::getNodeCacheCount(node_handle p) const
   MEDDLY_DCASSERT(p>0);
   MEDDLY_DCASSERT(p<=a_last);
 #ifdef OLD_NODE_HEADERS
-  MEDDLY_DCASSERT(usesCacheCounts); // or do we just return 0?  TBD
+  // MEDDLY_DCASSERT(usesCacheCounts); // or do we just return 0?  TBD
   MEDDLY_DCASSERT(address);
   return address[p].cache_count;
 #else
@@ -1111,7 +1117,7 @@ MEDDLY::node_headers::cacheNode(node_handle p)
 
 #ifdef OLD_NODE_HEADERS
 
-  MEDDLY_DCASSERT(usesCacheCounts); // or do we just return?  TBD
+  // MEDDLY_DCASSERT(usesCacheCounts); // or do we just return?  TBD
   MEDDLY_DCASSERT(address);
   address[p].cache_count++;
 #ifdef TRACK_CACHECOUNT
@@ -1142,7 +1148,7 @@ MEDDLY::node_headers::uncacheNode(MEDDLY::node_handle p)
 
 #ifdef OLD_NODE_HEADERS
 
-  MEDDLY_DCASSERT(usesCacheCounts); // or do we just return?  TBD
+  // MEDDLY_DCASSERT(usesCacheCounts); // or do we just return?  TBD
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(address[p].cache_count > 0);
   address[p].cache_count--;
@@ -1217,6 +1223,48 @@ MEDDLY::node_headers::uncacheNode(MEDDLY::node_handle p)
 
 // ******************************************************************
 
+inline void
+MEDDLY::node_headers::setInCacheBit(node_handle p)
+{
+  if (p<1) return;    // terminal node
+  MEDDLY_DCASSERT(p>0);
+  MEDDLY_DCASSERT(p<=a_last);
+
+#ifdef OLD_NODE_HEADERS
+
+  MEDDLY_DCASSERT(address);
+  address[p].cache_count = 1;
+
+#else
+
+  MEDDLY_DCASSERT(is_in_cache);
+  is_in_cache->set(size_t(p), 1);
+
+#endif
+}
+
+// ******************************************************************
+
+inline void
+MEDDLY::node_headers::clearAllInCacheBits()
+{
+#ifdef OLD_NODE_HEADERS
+
+  MEDDLY_DCASSERT(address);
+  for (node_handle p=0; p<=a_last; p++) {
+    address[p].cache_count = 0;
+  }
+
+#else
+
+  MEDDLY_DCASSERT(is_in_cache);
+  is_in_cache->clearAllInCacheBits();
+
+#endif
+}
+
+// ******************************************************************
+
 /*
 inline bool
 MEDDLY::node_headers::trackingIncomingCounts() const
@@ -1237,7 +1285,7 @@ MEDDLY::node_headers::getIncomingCount(node_handle p) const
   MEDDLY_DCASSERT(p>0);
   MEDDLY_DCASSERT(p<=a_last);
 #ifdef OLD_NODE_HEADERS
-  MEDDLY_DCASSERT(usesIncomingCounts); // or do we just return 0?  TBD
+  // MEDDLY_DCASSERT(usesIncomingCounts); // or do we just return 0?  TBD
   MEDDLY_DCASSERT(address);
   return address[p].incoming_count;
 #else
@@ -1257,7 +1305,7 @@ MEDDLY::node_headers::linkNode(node_handle p)
 
 #ifdef OLD_NODE_HEADERS
 
-  MEDDLY_DCASSERT(usesIncomingCounts); // or do we just return?  TBD
+  // MEDDLY_DCASSERT(usesIncomingCounts); // or do we just return?  TBD
 
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(address[p].offset);
@@ -1305,7 +1353,7 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
 
 #ifdef OLD_NODE_HEADERS
 
-  MEDDLY_DCASSERT(usesIncomingCounts); // or do we just return?  TBD
+  // MEDDLY_DCASSERT(usesIncomingCounts); // or do we just return?  TBD
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(address[p].offset);
   MEDDLY_DCASSERT(address[p].incoming_count>0);
@@ -2045,6 +2093,21 @@ MEDDLY::expert_forest::uncacheNode(MEDDLY::node_handle p)
   }
 }
 
+inline void
+MEDDLY::expert_forest::setCacheBit(MEDDLY::node_handle p)
+{
+  if (!deflt.useCacheReferenceCounts) {
+    nodeHeaders.setInCacheBit(p);
+  }
+}
+
+inline void
+MEDDLY::expert_forest::clearAllCacheBits()
+{
+  if (!deflt.useCacheReferenceCounts) {
+    nodeHeaders.clearAllInCacheBits();
+  }
+}
 
 // --------------------------------------------------
 // Node status

@@ -1514,6 +1514,14 @@ class MEDDLY::node_headers {
     /// Decrement the cache count for node p.
     void uncacheNode(node_handle p);
     
+  public: // cache bit stuff (if we're not using reference counts)
+    
+    /// Indicate that node p is (or might be) in some cache entry.
+    void setInCacheBit(node_handle p);
+
+    /// Reset cache entry bit for all nodes
+    void clearAllInCacheBits();
+
   public: // incoming count stuff
 
     /// Are we tracking incoming counts
@@ -1527,7 +1535,7 @@ class MEDDLY::node_headers {
 
     /// Decrement the incoming count for node p.
     void unlinkNode(node_handle p);
-    
+
   public: // implicit stuff
     
     /// Get whether node p is implicit.
@@ -1621,9 +1629,9 @@ class MEDDLY::node_headers {
     node_handle a_next_shrink;
 
     /// Do we track cache counts
-    bool usesCacheCounts;
+    // bool usesCacheCounts;
     /// Do we track incoming counts
-    bool usesIncomingCounts;
+    // bool usesIncomingCounts;
 
     /// Are we using the pessimistic strategy?
     bool pessimistic;
@@ -1738,6 +1746,7 @@ class MEDDLY::node_headers {
 
         bool get(size_t i) const;
         void set(size_t i, bool v);
+        void clearAll();
         void swap(size_t i, size_t j);
         size_t entry_bits() const;
     };
@@ -1746,7 +1755,10 @@ class MEDDLY::node_headers {
     address_array* addresses;
     level_array* levels;
     counter_array* cache_counts;
+    bitvector* is_in_cache;
     counter_array* incoming_counts;
+    bitvector* is_reachable;
+
     bitvector* implicit_bits;
 
     /// Last used address.
@@ -2282,7 +2294,7 @@ class MEDDLY::expert_forest: public forest
   // --------------------------------------------------
   public:
     /// Returns true if we are tracking incoming counts
-    bool trackingInCounts() const;
+    // bool trackingInCounts() const;
 
     /// Returns the in-count for a node.
     unsigned long getNodeInCount(node_handle p) const;
@@ -2305,10 +2317,11 @@ class MEDDLY::expert_forest: public forest
   // --------------------------------------------------
   public:
     /// Returns true if we are tracking incoming counts
-    bool trackingCacheCounts() const;
+    // bool trackingCacheCounts() const;
 
     /** Increase the cache count for this node. Call this whenever this node
         is added to a cache.
+        Do nothing if we are not using reference counts for caches.
           @param  p     Node we care about.
           @return p, for convenience.
     */
@@ -2316,9 +2329,21 @@ class MEDDLY::expert_forest: public forest
 
     /** Increase the cache count for this node. Call this whenever this node
         is added to a cache.
+        Do nothing if we are not using reference counts for caches.
           @param  p     Node we care about.
     */
     void uncacheNode(node_handle p);
+
+    /** Mark the node as belonging to some cache entry.
+        Do nothing if we are using reference counts for caches.
+          @param p    Node we care about.
+    */
+    void setCacheBit(node_handle p);
+
+    /** Clear all cache bits.
+        Do nothing if we are using reference counts for caches.
+    */
+    void clearAllCacheBits();
 
   // --------------------------------------------------
   // Node status

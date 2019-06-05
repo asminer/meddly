@@ -795,10 +795,10 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   // Inltialize address array
   //
   a_size = a_min_size;
-  address = (node_header *) malloc(a_size * sizeof(node_header));
+  address = (node_header *) malloc(size_t(a_size) * sizeof(node_header));
   if (0 == address) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  parent.mstats.incMemAlloc(a_size * sizeof(node_header));
-  memset(address, 0, a_size * sizeof(node_header));
+  parent.mstats.incMemAlloc(size_t(a_size) * sizeof(node_header));
+  memset(address, 0, size_t(a_size) * sizeof(node_header));
   a_last = a_next_shrink = a_freed = 0;
   for (int i=0; i<8; i++) a_unused[i] = 0;
   a_lowest_index = 8;
@@ -806,8 +806,8 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   //
   // hooks for later
   //
-  usesCacheCounts = true;
-  usesIncomingCounts = true;
+  // usesCacheCounts = true;
+  // usesIncomingCounts = true;
 #else
   h_bits = 0;
   a_last = 0;
@@ -818,8 +818,20 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   a_lowest_index = 8;
   addresses = new address_array(*this);
   levels = new level_array(*this, parent.getNumVariables());
-  cache_counts = new counter_array(*this);
-  incoming_counts = new counter_array(*this);
+  if (parent.getPolicies().useCacheReferenceCounts) {
+    cache_counts = new counter_array(*this);
+    is_in_cache = 0;
+  } else {
+    cache_counts = 0;
+    is_in_cache = new bitvector(*this);
+  }
+  if (parent.getPolicies().useNodeIncomingCounts) {
+    incoming_counts = new counter_array(*this);
+    is_reachable = 0;
+  } else {
+    incoming_counts = 0;
+    is_reachable = new bitvector(*this);
+  }
   implicit_bits = 0;
 #endif
 }
@@ -829,7 +841,7 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
 MEDDLY::node_headers::~node_headers()
 {
 #ifdef OLD_NODE_HEADERS
-  parent.mstats.decMemAlloc(a_size * sizeof(node_header));
+  parent.mstats.decMemAlloc(size_t(a_size) * sizeof(node_header));
 
   // Address array
   free(address);
@@ -837,7 +849,9 @@ MEDDLY::node_headers::~node_headers()
   delete addresses;
   delete levels;
   delete cache_counts;
+  delete is_in_cache;
   delete incoming_counts;
+  delete is_reachable;
   delete implicit_bits;
 #endif
 }
@@ -866,7 +880,9 @@ void MEDDLY::node_headers
     if (addresses)        s << pad << "    address   : " << addresses->entry_bits() << " bits\n";
     if (levels)           s << pad << "    level     : " << levels->entry_bits() << " bits\n";
     if (cache_counts)     s << pad << "    #caches   : " << cache_counts->entry_bits() << " bits\n";
+    if (is_in_cache)      s << pad << "    in_cache? : " << is_in_cache->entry_bits() << " bits\n";
     if (incoming_counts)  s << pad << "    #incoming : " << incoming_counts->entry_bits() << " bits\n";
+    if (is_reachable)     s << pad << "    reachable?: " << is_reachable->entry_bits() << " bits\n";
     if (implicit_bits)    s << pad << "    implicit? : " << implicit_bits->entry_bits() << " bits\n";
   }
 #endif
@@ -1133,7 +1149,7 @@ void MEDDLY::node_headers::validateFreeLists() const
     inlist[i] = false;
   }
   for (unsigned i=0; i<8; i++) {
-    for (size_t curr = a_unused[i]; curr; curr = getNextOf(curr)) {
+    for (size_t curr = size_t(a_unused[i]); curr; curr = size_t(getNextOf(curr))) {
       if (curr > a_last) continue;
       inlist[curr] = true;
       if (isDeleted(curr)) continue;
@@ -1212,7 +1228,7 @@ void MEDDLY::node_headers::expandHandleList()
   int delta = a_size / 2;
   MEDDLY_DCASSERT(delta>=0);
   node_header* new_address = (node_header*) 
-    realloc(address, (a_size+delta) * sizeof(node_header));
+    realloc(address, size_t(a_size+delta) * sizeof(node_header));
   if (0==new_address) {
     /*
     fprintf(stderr, "Error in allocating array of size %lu at %s, line %d\n",
@@ -1221,8 +1237,8 @@ void MEDDLY::node_headers::expandHandleList()
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   address = new_address;
-  parent.mstats.incMemAlloc(delta * sizeof(node_header));
-  memset(address + a_size, 0, delta * sizeof(node_header));
+  parent.mstats.incMemAlloc(size_t(delta) * sizeof(node_header));
+  memset(address + a_size, 0, size_t(delta) * sizeof(node_header));
   a_size += delta;
   a_next_shrink = a_size / 2;
 #ifdef DEBUG_ADDRESS_RESIZE
