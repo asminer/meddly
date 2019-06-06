@@ -424,7 +424,7 @@ MEDDLY::satpregen_opname::pregen_relation
     // Subtract events[maxDiagLevel] from events[k].
     // Do this only for SplitSubtract. SplitSubtractAll is handled later.
     if (split == SplitSubtract) {
-      int tmp = events[k];
+      tmp = events[k];
       events[k] = mxdDifference->compute(events[k], events[maxDiagLevel]);
       mxdF->unlinkNode(tmp);
 #ifdef DEBUG_FINALIZE_SPLIT

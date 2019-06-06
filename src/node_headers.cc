@@ -1326,10 +1326,10 @@ void MEDDLY::node_headers::shrinkHandleList()
   parent.mstats.decMemAlloc( (old_size-a_size)*sizeof(node_header) );
 
 #else // OLD_HEADERS_NEW_ALLOC
-  int new_size = a_min_size;
+  size_t new_size = a_min_size;
   while (a_last >= new_size) new_size += new_size/2;
 
-  int delta = a_size - new_size;
+  size_t delta = size_t(a_size) - new_size;
   if (0==delta) {
     a_next_shrink = 0;
     return;
@@ -1337,7 +1337,7 @@ void MEDDLY::node_headers::shrinkHandleList()
 
   // shrink the array
   MEDDLY_DCASSERT(delta>=0);
-  MEDDLY_DCASSERT(a_size-delta>=a_min_size);
+  MEDDLY_DCASSERT(size_t(a_size)-delta>=a_min_size);
   node_header* new_address = (node_header*) 
     realloc(address, new_size * sizeof(node_header));
   if (0==new_address) {

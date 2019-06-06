@@ -2105,6 +2105,9 @@ inline void
 MEDDLY::expert_forest::clearAllCacheBits()
 {
   if (!deflt.useCacheReferenceCounts) {
+#ifdef DEBUG_MARK_SWEEP
+    printf("Clearing cache bits for forest %u\n", FID());
+#endif
     nodeHeaders.clearAllInCacheBits();
   }
 }

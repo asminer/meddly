@@ -876,6 +876,21 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
   );
 #endif
 
+  //
+  // Clear CT bits for all forests we affect.
+  // Should be a no-op for forests that use reference counts.
+  //
+  const unsigned NF = forest::MaxFID()+1;
+  bool* skipF = new bool[NF];
+  for (unsigned i=0; i<NF; i++) skipF[i] = 0;
+  clearForestCTBits(skipF, NF);
+  delete[] skipF;
+
+  //
+  // Go through all entries and discard stales.
+  // Anything not stale will mark the CT bit.
+  //
+
   int list = 0;
   if (CHAINED) {
     list = convertToList(checkStalesOnResize);

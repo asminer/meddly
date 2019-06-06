@@ -42,6 +42,8 @@
 #include <cstdint>
 #include <map>
 
+#define DEBUG_MARK_SWEEP
+
 #define OLD_NODE_HEADERS
 
 namespace MEDDLY {
@@ -4218,14 +4220,15 @@ class MEDDLY::compute_table {
           /// Should we remove all CT entries of this type?
           bool isMarkedForDeletion() const;
 
-          /** Determine forests this entry type uses.
-                @param  in_use  Array of booleans.  We set in_use[i] to true
-                                if forest with ID i is the forest for some
-                                slot in the entry (either key or result).
+          /** Clear CT bits for any forests this entry type uses.
+                @param  skipF   If skipF[i] is true, then we do nothing 
+                                for forests with ID i.  We set this to 
+                                true after clearing forest with ID i to 
+                                prevent clearing the bits twice.
 
                 @param  N       Size of in_use array, for sanity checks.
           */
-          void markForests(bool* in_use, unsigned N) const;
+          void clearForestCTBits(bool* skipF, unsigned N) const;
         private:
           /// Unique ID, set by compute table
           unsigned etID;
@@ -4488,7 +4491,7 @@ class MEDDLY::compute_table {
 
     protected:
       /// Determine which forests could have entries in this table.
-      void markForests(bool* in_use, unsigned n) const;
+      void clearForestCTBits(bool* skipF, unsigned n) const;
 
       /** Register an operation.
           Sets aside a number of entry_type slots for the operation.
