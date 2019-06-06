@@ -329,6 +329,10 @@ inline unsigned MEDDLY::forest::FID() const {
   return fid;
 }
 
+inline unsigned MEDDLY::forest::MaxFID() {
+  return gfid;
+}
+
 inline const MEDDLY::domain* MEDDLY::forest::getDomain() const {
   return d;
 }

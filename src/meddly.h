@@ -1367,6 +1367,9 @@ class MEDDLY::forest {
     /// Returns the forest identifier, a unique integer per forest.
     unsigned FID() const;
 
+    /// Returns the largest forest identifier ever seen.
+    static unsigned MaxFID();
+
     /// Returns a non-modifiable pointer to this forest's domain.
     const domain* getDomain() const;
 
