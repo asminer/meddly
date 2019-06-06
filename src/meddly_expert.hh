@@ -1265,6 +1265,14 @@ MEDDLY::node_headers::clearAllInCacheBits()
 
 // ******************************************************************
 
+inline void
+MEDDLY::node_headers::sweepAllInCacheBits()
+{
+  // TBD
+}
+
+// ******************************************************************
+
 /*
 inline bool
 MEDDLY::node_headers::trackingIncomingCounts() const
@@ -2180,6 +2188,17 @@ MEDDLY::expert_forest::clearAllCacheBits()
     printf("Clearing cache bits for forest %u\n", FID());
 #endif
     nodeHeaders.clearAllInCacheBits();
+  }
+}
+
+inline void
+MEDDLY::expert_forest::sweepAllCacheBits()
+{
+  if (!deflt.useCacheReferenceCounts) {
+#ifdef DEBUG_MARK_SWEEP
+    printf("Sweeping cache bits for forest %u\n", FID());
+#endif
+    nodeHeaders.sweepAllInCacheBits();
   }
 }
 

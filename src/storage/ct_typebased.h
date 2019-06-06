@@ -884,13 +884,15 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
   bool* skipF = new bool[NF];
   for (unsigned i=0; i<NF; i++) skipF[i] = 0;
   clearForestCTBits(skipF, NF);
-  delete[] skipF;
 
   //
   // Go through all entries and discard stales.
   // Anything not stale will mark the CT bit.
   //
 
+  // TBD - what if LOTS of entries are removed?  When should we shrink the table?
+
+  bool bail_out = false;
   int list = 0;
   if (CHAINED) {
     list = convertToList(checkStalesOnResize);
@@ -899,7 +901,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
 #ifdef DEBUG_SLOW
       fprintf(stdout, "Done CT GC, no resizing (now entries %u)\n", perf.numEntries);
 #endif
-      return;
+      bail_out = true;
     }
   } else {
     scanForStales();
@@ -907,9 +909,21 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
 #ifdef DEBUG_SLOW
       fprintf(stdout, "Done CT GC, no resizing (now entries %u)\n", perf.numEntries);
 #endif
-      return;
+      bail_out = true;
     }
   }
+
+  //
+  // Notify forests that we're done marking cache bits; 
+  // forests can sweep if they like.
+  //
+  sweepForestCTBits(skipF, NF);
+  delete[] skipF;
+  if (bail_out) return;
+
+  //
+  // Enlarge table.
+  //
 
   unsigned long newsize = tableSize * 2;
   if (newsize > maxSize) newsize = maxSize;

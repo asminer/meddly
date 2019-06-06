@@ -1524,6 +1524,9 @@ class MEDDLY::node_headers {
     /// Clear cache entry bit for all nodes
     void clearAllInCacheBits();
 
+    /// Called when done setting InCacheBits
+    void sweepAllInCacheBits();
+
   public: // incoming count stuff
 
     /// Are we tracking incoming counts
@@ -2360,6 +2363,13 @@ class MEDDLY::expert_forest: public forest
         Do nothing if we are using reference counts for caches.
     */
     void clearAllCacheBits();
+
+    /** Sweep all cache bits.
+        Called by CT to indicate we can begin sweep phase
+        on cache bits.
+    */
+    void sweepAllCacheBits();
+
 
   // --------------------------------------------------
   // Node status
@@ -4243,6 +4253,16 @@ class MEDDLY::compute_table {
                 @param  N       Size of in_use array, for sanity checks.
           */
           void clearForestCTBits(bool* skipF, unsigned N) const;
+
+          /** Notify forests that we're done marking CT bits.
+              The forests can choose to start the sweep phase if they like.
+                @param  whichF  If whichF[i] is true, then we notify the 
+                                forest with ID i, and set whichF[i] to false.
+                                This prevents notifying a forest twice.
+
+                @param  N       Size of in_use array, for sanity checks.
+          */
+          void sweepForestCTBits(bool* skipF, unsigned N) const;
         private:
           /// Unique ID, set by compute table
           unsigned etID;
@@ -4504,8 +4524,11 @@ class MEDDLY::compute_table {
       static void destroy();
 
     protected:
-      /// Determine which forests could have entries in this table.
+      /// Clear CT Bits in forests that could have entries in this table.
       void clearForestCTBits(bool* skipF, unsigned n) const;
+
+      /// Start sweep phase for forests that could have entries in this table.
+      void sweepForestCTBits(bool* whichF, unsigned n) const;
 
       /** Register an operation.
           Sets aside a number of entry_type slots for the operation.
