@@ -296,12 +296,13 @@ bool fireEvent(const char* event, const int* current, int* next, int nVars)
 void explicitReachset(const char* const* events, int nEvents, 
   MEDDLY::forest* f, MEDDLY::dd_edge &expl, MEDDLY::dd_edge &RS, int batchsize)
 {
+  int b;
   int nVars = f->getDomain()->getNumVariables();
   if (batchsize < 1) batchsize = 256;
 
   // initialize batch memory
   int** minterms = new int*[batchsize];
-  for (int b=0; b<batchsize; b++) {
+  for (b=0; b<batchsize; b++) {
     minterms[b] = new int[1+nVars];
   }
   
@@ -309,7 +310,7 @@ void explicitReachset(const char* const* events, int nEvents,
   MEDDLY::dd_edge unexplored(f);
   // batch of states
   MEDDLY::dd_edge batch(f);
-  int b = 0; 
+  b = 0; 
   // exploration loop.
   MEDDLY::enumerator I(expl);
   for (;;) {
@@ -359,7 +360,7 @@ void explicitReachset(const char* const* events, int nEvents,
   }
 
   // cleanup batch memory
-  for (int b=0; b<batchsize; b++) {
+  for (b=0; b<batchsize; b++) {
     delete[] minterms[b];
   }
   delete[] minterms;
@@ -394,8 +395,8 @@ public:
 void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::satimpl_opname::implicit_relation* T)
 {
   
-  int node_count = 0;
-  int* tops_of_events = (int*)malloc(nEvents*sizeof(int));
+  unsigned node_count = 0;
+  int* tops_of_events = (int*)malloc(size_t(nEvents)*sizeof(int));
   
   for(int e = 0;e < nEvents; e++)
     {
