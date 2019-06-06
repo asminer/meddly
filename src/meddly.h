@@ -902,7 +902,7 @@ class MEDDLY::output {
           @param  human   If false, units will be "bytes".
                           If true, scale units so that output is betwen one and 1000.
     */
-    void put_mem(long m, bool human);
+    void put_mem(size_t m, bool human);
 
 };  // end of output class
 

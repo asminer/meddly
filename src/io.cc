@@ -199,10 +199,10 @@ MEDDLY::output::~output()
 {
 }
 
-void MEDDLY::output::put_mem(long m, bool human)
+void MEDDLY::output::put_mem(size_t m, bool human)
 {
   if ((!human) || (m<1024)) {
-    put(m);
+    put((unsigned long)m);
     put(" bytes");
     return;
   }
