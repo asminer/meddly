@@ -217,7 +217,18 @@ void MEDDLY::dd_edge::setEdgeValue(float value)
   MEDDLY_DCASSERT(forest::REAL == parent->getRangeType());
   expert_forest::EVencoder<float>::writeValue(&raw_value, value);
 }
-
+void MEDDLY::dd_edge::setHasInfty()
+{
+  hasInfty=true;
+}
+void MEDDLY::dd_edge::unsetHasInfty()
+{
+  hasInfty=false;
+}
+bool MEDDLY::dd_edge::getHasInfty()
+{
+  return hasInfty;
+}
 unsigned MEDDLY::dd_edge::getNodeCount() const
 {
   return smart_cast<expert_forest*>(parent)->getNodeCount(node);

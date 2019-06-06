@@ -60,7 +60,12 @@ void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
   for(int i=0; i<=num_vars; i++) {
 	  int level=getLevelByVar(i);
 	  for(int j=0; j<N; j++) {
-		  ordered_vlist[j][level]=vlist[j][i];
+		  //+2 because of considering +infty and -infty
+		  if (e.getHasInfty()){
+		  ordered_vlist[j][level]=vlist[j][i]+2;
+		  }else{
+			  ordered_vlist[j][level]=vlist[j][i];
+		  }
 	  }
   }
 

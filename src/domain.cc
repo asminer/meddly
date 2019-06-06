@@ -528,7 +528,8 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 
   vars[0] = 0;
   for (int i=1; i<=N; i++) {
-    vars[i] = MEDDLY::createVariable(bounds[i-1], 0);
+	// bounds[i-1]+2 to have +infty and -infty for each variable.
+    vars[i] = MEDDLY::createVariable(bounds[i-1]+2, 0);
     ((expert_variable*)vars[i])->addToList(this);
   }
 
@@ -557,7 +558,8 @@ void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
 
   vars[0] = 0;
   for (int i=N; i; i--) {
-    vars[N-i+1] = MEDDLY::createVariable(bounds[i], 0);
+	// bounds[i]+2 to have +infty and -infty for each variable.
+    vars[N-i+1] = MEDDLY::createVariable(bounds[i]+2, 0);
     ((expert_variable*)vars[i])->addToList(this);
   }
 

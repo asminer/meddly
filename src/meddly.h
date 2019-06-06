@@ -2477,6 +2477,9 @@ class MEDDLY::dd_edge {
     void setEdgeValue(long value);
     void setEdgeValue(float value);
 
+    void setHasInfty();
+    void unsetHasInfty();
+    bool getHasInfty();
     /** Check for equality.
         @return true    iff this edge has the same parent and refers to
                         the same edge as \a e.
@@ -2590,6 +2593,9 @@ class MEDDLY::dd_edge {
 
     // called when the parent is destroyed
     void orphan();
+
+    // when hasInfty is true we consider the first two child to be -infty and +infty
+    bool hasInfty=false;
 };
 
 // ******************************************************************
