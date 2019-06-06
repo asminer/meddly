@@ -4008,14 +4008,6 @@ class MEDDLY::compute_table_style {
     Implementation is in compute_table.cc.
 */
 class MEDDLY::compute_table {
-    protected:
-      /// The maximum size of the hash table.
-      unsigned maxSize;
-      /// Do we try to eliminate stales during a "find" operation
-      bool checkStalesOnFind;
-      /// Do we try to eliminate stales during a "resize" operation
-      bool checkStalesOnResize;
-
     public:
 
       //
@@ -4225,6 +4217,15 @@ class MEDDLY::compute_table {
  
           /// Should we remove all CT entries of this type?
           bool isMarkedForDeletion() const;
+
+          /** Determine forests this entry type uses.
+                @param  in_use  Array of booleans.  We set in_use[i] to true
+                                if forest with ID i is the forest for some
+                                slot in the entry (either key or result).
+
+                @param  N       Size of in_use array, for sanity checks.
+          */
+          void markForests(bool* in_use, unsigned N) const;
         private:
           /// Unique ID, set by compute table
           unsigned etID;
@@ -4406,8 +4407,16 @@ class MEDDLY::compute_table {
       static void readEV(const node_handle* p, long &ev);
       static void readEV(const node_handle* p, float &ev);
 
-      /// Constructor
-      compute_table(const ct_initializer::settings &s);
+      /** Constructor.
+            @param  s   Settings for compute table.
+            @param  op  For MONOLITHIC tables, this should be 0;
+                        otherwise, a pointer to the operation specific to
+                        this table.
+            @param  slot  Ignored for MONOLITHIC tables.  For operation-specific
+                          tables, the (op, slot) pair completely identifies
+                          the kinds of entries in the table.
+      */
+      compute_table(const ct_initializer::settings &s, operation* op, unsigned slot);
 
       /** Destructor.
           Does NOT properly discard all table entries;
@@ -4427,7 +4436,7 @@ class MEDDLY::compute_table {
 
 
       /// Is this a per-operation compute table?
-      virtual bool isOperationTable() const = 0;
+      bool isOperationTable() const;
 
       /** Find an entry in the compute table based on the key provided.
           @param  key   Key to search for.
@@ -4478,6 +4487,9 @@ class MEDDLY::compute_table {
       static void destroy();
 
     protected:
+      /// Determine which forests could have entries in this table.
+      void markForests(bool* in_use, unsigned n) const;
+
       /** Register an operation.
           Sets aside a number of entry_type slots for the operation.
       */
@@ -4502,6 +4514,15 @@ class MEDDLY::compute_table {
       void setHash(entry_key *k, unsigned h);
 
     protected:
+      /// The maximum size of the hash table.
+      unsigned maxSize;
+      /// Do we try to eliminate stales during a "find" operation
+      bool checkStalesOnFind;
+      /// Do we try to eliminate stales during a "resize" operation
+      bool checkStalesOnResize;
+      /// Global entry type, if we're an operation cache; otherwise 0.
+      const entry_type* global_et;
+      /// Performance statistics
       stats perf;
 
     private:

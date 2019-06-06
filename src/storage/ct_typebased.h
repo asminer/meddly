@@ -46,7 +46,6 @@ namespace MEDDLY {
 
       // required functions
 
-      virtual bool isOperationTable() const   { return !MONOLITHIC; }
       virtual void find(entry_key* key, entry_result &res);
       virtual void addEntry(entry_key* key, const entry_result& res);
       virtual void updateEntry(entry_key* key, const entry_result& res);
@@ -370,9 +369,6 @@ namespace MEDDLY {
 
 
     private:
-      /// Global entry type.  Ignored when MONOLITHIC is true.
-      const entry_type* global_et;
-
       /// Hash table
       int*  table;
 
@@ -432,7 +428,7 @@ namespace MEDDLY {
 template <bool MONOLITHIC, bool CHAINED>
 MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::ct_typebased(
   const ct_initializer::settings &s, operation* op, unsigned slot)
-: compute_table(s)
+: compute_table(s, op, slot)
 {
   if (MONOLITHIC) {
     MEDDLY_DCASSERT(0==op);
@@ -440,7 +436,6 @@ MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::ct_typebased(
   } else {
     MEDDLY_DCASSERT(op);
   }
-  global_et = op ? getEntryType(op, slot) : 0;
 
   /*
       Initialize memory management for entries.
@@ -1323,7 +1318,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 #endif
 
       const entry_type* et = MONOLITHIC
-        ?   getEntryType(entry[CHAINED?1:0])
+        ?   getEntryType(unsigned(entry[CHAINED?1:0]))
         :   global_et;
       MEDDLY_DCASSERT(et);
 
@@ -1467,7 +1462,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::listToTable(int L)
     L = entry[0];
 
     const entry_type* et = MONOLITHIC
-      ?   getEntryType(entry[1])
+      ?   getEntryType(unsigned(entry[1]))
       :   global_et;
     MEDDLY_DCASSERT(et);
     const unsigned reps = (et->isRepeating()) ? entry[ M+1 ] : 0;
@@ -1516,7 +1511,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::rehashTable(const int* oldT, uns
 #endif
 
     const entry_type* et = MONOLITHIC
-      ?   getEntryType(entry[0])
+      ?   getEntryType(unsigned(entry[0]))
       :   global_et;
     MEDDLY_DCASSERT(et);
     const unsigned reps = (et->isRepeating()) ? entry[ M ] : 0;
@@ -1624,7 +1619,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   // Check entire entry for staleness
   //
   const entry_type* et = MONOLITHIC
-      ?   getEntryType(entry[CHAINED?1:0])
+      ?   getEntryType(unsigned(entry[CHAINED?1:0]))
       :   global_et;
   MEDDLY_DCASSERT(et);
 
@@ -1663,6 +1658,9 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       MEDDLY_DCASSERT(NODE == t);
       if (MEDDLY::forest::ACTIVE != f->getNodeStatus(*entry)) {
         return YES_stale();
+      } else {
+        // Indicate that this node is in some cache entry
+        f->setCacheBit(*entry);
       }
       entry++;
     } else {
@@ -1690,6 +1688,8 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       MEDDLY_DCASSERT(NODE == t);
       if (MEDDLY::forest::ACTIVE != f->getNodeStatus(*entry)) {
         return YES_stale();
+      } else {
+        f->setCacheBit(*entry);
       }
       entry++;
     } else {
@@ -1775,7 +1775,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   //
 
   const entry_type* et = MONOLITHIC
-    ?   getEntryType(entry[CHAINED ? 1 : 0])
+    ?   getEntryType(unsigned(entry[CHAINED ? 1 : 0]))
     :   global_et;
   MEDDLY_DCASSERT(et);
 
@@ -1917,7 +1917,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   MEDDLY_DCASSERT(entry);
 
   const entry_type* et = MONOLITHIC
-    ?   getEntryType(entry[CHAINED?1:0])
+    ?   getEntryType(unsigned(entry[CHAINED?1:0]))
     :   global_et;
   MEDDLY_DCASSERT(et);
 

@@ -197,7 +197,8 @@ unsigned MEDDLY::compute_table::entryInfoAlloc;
 unsigned MEDDLY::compute_table::entryInfoSize;
 MEDDLY::compute_table::entry_key* MEDDLY::compute_table::free_keys;
 
-MEDDLY::compute_table::compute_table(const ct_initializer::settings &s)
+MEDDLY::compute_table::compute_table(const ct_initializer::settings &s, 
+  operation* op, unsigned slot)
 {
   maxSize = s.maxSize;
   if (0==maxSize)
@@ -227,6 +228,16 @@ MEDDLY::compute_table::compute_table(const ct_initializer::settings &s)
     perf.searchHistogram[i] = 0;
   perf.completedScans = 0;
   perf.resizeScans = 0;
+
+  //
+  // Global operation vs monolithic
+  //
+  if (op) {
+    global_et = getEntryType(op, slot);
+    MEDDLY_DCASSERT(global_et);
+  } else {
+    global_et = 0;
+  }
 }
 
 MEDDLY::compute_table::~compute_table()
@@ -254,6 +265,23 @@ void MEDDLY::compute_table::destroy()
   }
   // delete the items?  TBD
   delete[] entryInfo;
+}
+
+void MEDDLY::compute_table::markForests(bool* in_use, unsigned N) const
+{
+  if (global_et) {
+    // Operation cache
+    global_et->markForests(in_use, N);
+    return;
+  }
+  //
+  // Monolithic cache.
+  //
+  for (unsigned i=0; i<entryInfoSize; i++) {
+    if (entryInfo[i]) {
+      entryInfo[i]->markForests(in_use, N);
+    }
+  }
 }
 
 void MEDDLY::compute_table::registerOp(operation* op, unsigned num_ids)
@@ -591,5 +619,25 @@ void MEDDLY::compute_table::entry_type::setForestForSlot(unsigned i, expert_fore
 
   // i is too large
   throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+}
+
+void MEDDLY::compute_table::entry_type::markForests(bool* in_use, unsigned N) const
+{
+  unsigned i;
+  for (i=0; i<len_ks_type; i++) {
+    if (0==ks_forest[i]) continue;
+    MEDDLY_DCASSERT(ks_forest[i]->FID() < N);
+    in_use[ ks_forest[i]->FID() ] = 1;
+  }
+  for (i=0; i<len_kr_type; i++) {
+    if (0==kr_forest[i]) continue;
+    MEDDLY_DCASSERT(kr_forest[i]->FID() < N);
+    in_use[ kr_forest[i]->FID() ] = 1;
+  }
+  for (i=0; i<len_r_type; i++) {
+    if (0==r_forest[i]) continue;
+    MEDDLY_DCASSERT(r_forest[i]->FID() < N);
+    in_use[ r_forest[i]->FID() ] = 1;
+  }
 }
 

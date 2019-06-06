@@ -3229,6 +3229,12 @@ inline bool MEDDLY::compute_table::entry_type
 
 // ******************************************************************
 
+inline bool
+MEDDLY::compute_table::isOperationTable() const
+{
+  return global_et;
+}
+
 // convenience methods, for grabbing edge values
 inline void
 MEDDLY::compute_table::readEV(const MEDDLY::node_handle* p, int &ev)
