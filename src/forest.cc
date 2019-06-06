@@ -96,8 +96,8 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
   compactAfterGC = false;
   compactBeforeExpand = true;
 
-  useNodeIncomingCounts = true;
-  useCacheReferenceCounts = true;
+  useNodeIncomingCounts = true; 
+  useCacheReferenceCounts = true; 
 
   // nodemm = ORIGINAL_GRID;
   nodemm = ARRAY_PLUS_GRID;
@@ -863,6 +863,8 @@ void MEDDLY::expert_forest::validateIncounts(bool exact)
 
 void MEDDLY::expert_forest::validateCacheCounts() const
 {
+  if (!deflt.useCacheReferenceCounts) return;
+
 #ifdef DEVELOPMENT_CODE
 #ifdef SHOW_VALIDATE_CACHECOUNTS
   printf("Validating cache counts for %ld handles\n", getLastNode());
@@ -1997,8 +1999,16 @@ MEDDLY::node_handle MEDDLY::expert_forest
   // Grab a new node
   node_handle p = nodeHeaders.getFreeNodeHandle();
   nodeHeaders.setNodeLevel(p, nb.getLevel());
-  MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
-  MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
+  if (deflt.useNodeIncomingCounts) {
+    MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
+  } else {
+    nodeHeaders.setReachableBit(p);
+  }
+  if (deflt.useCacheReferenceCounts) {
+    MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
+  } else {
+    nodeHeaders.setInCacheBit(p);
+  }
 
   stats.incActive(1);
   if (theLogger && theLogger->recordingNodeCounts()) {

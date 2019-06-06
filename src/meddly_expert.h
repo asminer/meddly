@@ -42,7 +42,7 @@
 #include <cstdint>
 #include <map>
 
-#define DEBUG_MARK_SWEEP
+// #define DEBUG_MARK_SWEEP
 
 #define OLD_NODE_HEADERS
 
@@ -1516,12 +1516,12 @@ class MEDDLY::node_headers {
     /// Decrement the cache count for node p.
     void uncacheNode(node_handle p);
     
-  public: // cache bit stuff (if we're not using reference counts)
+  public: // cache bit stuff (if we're not using cache counts)
     
     /// Indicate that node p is (or might be) in some cache entry.
     void setInCacheBit(node_handle p);
 
-    /// Reset cache entry bit for all nodes
+    /// Clear cache entry bit for all nodes
     void clearAllInCacheBits();
 
   public: // incoming count stuff
@@ -1537,6 +1537,17 @@ class MEDDLY::node_headers {
 
     /// Decrement the incoming count for node p.
     void unlinkNode(node_handle p);
+
+  public: // reachable bit stuff (if we're not using incoming counts)
+
+    /// Indicate that node p is (or might be) reachable in the forest.
+    void setReachableBit(node_handle p);
+
+    /// Does node p have its reachable bit set?
+    bool hasReachableBit(node_handle p) const;
+
+    /// Clear reachable bit for all nodes
+    void clearAllReachableBits();
 
   public: // implicit stuff
     
@@ -2313,6 +2324,9 @@ class MEDDLY::expert_forest: public forest
         its connection to this node.
     */
     void unlinkNode(node_handle p);
+
+    /// Does a node have its reachable bit set?
+    bool hasReachableBit(node_handle p) const;
 
   // --------------------------------------------------
   // Managing cache counts

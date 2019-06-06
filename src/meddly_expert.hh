@@ -1258,7 +1258,7 @@ MEDDLY::node_headers::clearAllInCacheBits()
 #else
 
   MEDDLY_DCASSERT(is_in_cache);
-  is_in_cache->clearAllInCacheBits();
+  is_in_cache->clearAll();
 
 #endif
 }
@@ -1435,6 +1435,70 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
   }
 
 #endif // OLD_NODE_HEADERS
+}
+
+// ******************************************************************
+
+inline void
+MEDDLY::node_headers::setReachableBit(node_handle p)
+{
+  if (p<1) return;    // terminal node
+  MEDDLY_DCASSERT(p>0);
+  MEDDLY_DCASSERT(p<=a_last);
+
+#ifdef OLD_NODE_HEADERS
+
+  MEDDLY_DCASSERT(address);
+  address[p].incoming_count = 1;
+
+#else
+
+  MEDDLY_DCASSERT(is_reachable);
+  is_reachable->set(size_t(p), 1);
+
+#endif
+}
+
+// ******************************************************************
+
+inline bool
+MEDDLY::node_headers::hasReachableBit(node_handle p) const
+{
+  if (p<1) return 1;    // terminal node
+  MEDDLY_DCASSERT(p>0);
+  MEDDLY_DCASSERT(p<=a_last);
+
+#ifdef OLD_NODE_HEADERS
+
+  MEDDLY_DCASSERT(address);
+  return address[p].incoming_count;
+
+#else
+
+  MEDDLY_DCASSERT(is_reachable);
+  return is_reachable->get(size_t(p));
+
+#endif
+}
+
+// ******************************************************************
+
+inline void
+MEDDLY::node_headers::clearAllReachableBits()
+{
+#ifdef OLD_NODE_HEADERS
+
+  MEDDLY_DCASSERT(address);
+  for (node_handle p=0; p<=a_last; p++) {
+    address[p].incoming_count = 0;
+  }
+
+#else
+
+  MEDDLY_DCASSERT(is_reachable);
+  is_reachable->clearAll();
+
+#endif
 }
 
 // ******************************************************************
@@ -2065,6 +2129,13 @@ MEDDLY::expert_forest::unlinkNode(MEDDLY::node_handle p)
   } 
 }
 
+inline bool
+MEDDLY::expert_forest::hasReachableBit(node_handle p) const
+{
+  MEDDLY_DCASSERT(!deflt.useNodeIncomingCounts);
+  return nodeHeaders.hasReachableBit(p);
+}
+
 // --------------------------------------------------
 // Managing cache counts
 // --------------------------------------------------
@@ -2222,9 +2293,16 @@ MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
     // zombie nodes
     return MEDDLY::forest::DEAD;
   }
-  if (getNodeInCount(node) == 0) {
-    // orphan nodes
-    return MEDDLY::forest::RECOVERABLE;
+  if (deflt.useNodeIncomingCounts) {
+    if (getNodeInCount(node) == 0) {
+      // orphan nodes
+      return MEDDLY::forest::RECOVERABLE;
+    }
+  } else {
+    if (!hasReachableBit(node)) {
+      // orphan nodes
+      return MEDDLY::forest::RECOVERABLE;
+    }
   }
   return MEDDLY::forest::ACTIVE;
 }
