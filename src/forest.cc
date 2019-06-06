@@ -452,6 +452,11 @@ void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
   throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 }
 
+void MEDDLY::forest::isMarkingCovered(const dd_edge &f, const int* vl,
+		bool &t) const {
+	throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
 void MEDDLY::forest::removeStaleComputeTableEntries()
 {
   if (operation::usesMonolithicComputeTable()) {

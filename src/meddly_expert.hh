@@ -336,7 +336,16 @@ MEDDLY::unpacked_node::setLevel(int k)
 {
   level = k;
 }
-
+// ------Visited
+inline bool MEDDLY::unpacked_node::isVisited() const {
+	return visited;
+}
+inline void MEDDLY::unpacked_node::setVisited() {
+	visited = true;
+}
+inline void MEDDLY::unpacked_node::unsetVisited() {
+	visited = false;
+}
 // ---------------------------------------------
 // Extensible portion of the node
 // ---------------------------------------------

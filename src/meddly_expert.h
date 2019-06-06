@@ -731,7 +731,11 @@ class MEDDLY::unpacked_node {
 
     /// Get the edge value, as a float.
     float ef(int i) const;
-
+	// -------------------------------------------------------------------------
+	// Methods for accessing the visited value of the node
+	bool isVisited() const;
+	void setVisited();
+	void unsetVisited();
     // -------------------------------------------------------------------------
     // Methods to access the extensible portion of the node
     //
@@ -876,6 +880,7 @@ class MEDDLY::unpacked_node {
     unsigned h;
     char edge_bytes; // number of bytes for an edge value.
     bool is_full;
+	bool visited;
 #ifdef DEVELOPMENT_CODE
     bool has_hash;
 #endif

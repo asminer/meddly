@@ -1924,7 +1924,18 @@ class MEDDLY::forest {
     */
     virtual void getElement(const dd_edge& a, int index, int* e);
     virtual void getElement(const dd_edge& a, long index, int* e);
-
+	/** find whether a marking, vlist, is covered by a path in f.
+	 @param  f     Edge (function) to evaluate.
+	 @param  vlist List of variable assignments, of dimension one higher
+	 than the largest variable handle.
+	 @param  term  Output parameter, will be set to
+	 true if there is a marking in f that covers vlist, and false otherwise.
+	 @throws       TYPE_MISMATCH, if
+	 the range type of the forest is not INTEGER,
+	 or the forest is for relations.
+	 */
+	virtual void isMarkingCovered(const dd_edge &f, const int* vlist,
+			bool &term) const;
   // ------------------------------------------------------------
   // abstract virtual.
   public:

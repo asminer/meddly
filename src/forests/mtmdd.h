@@ -51,6 +51,50 @@ class MEDDLY::mtmdd_forest : public mt_forest {
       return p;
     }
 
+	inline bool evaluateRawIsMarkingCovered(const dd_edge &f, node_handle p,
+			const int* vlist) const {
+		if (isTerminalNode(p)) {
+			printf("terminal P value%d\n", p);
+			if (p != 0) {
+				printf("Returned true\n");
+				return true;
+			}
+		} else {
+			unpacked_node* nr = unpacked_node::useUnpackedNode();
+			nr->initFromNode(this, p, true);
+			FILE_output meddlyout(stdout);
+			nr->show(meddlyout, false);
+			if (nr->isVisited() != true) {
+				int level = getNodeLevel(p);
+				int val = getDomain()->getVariableBound(level, false);
+				printf("Domain size%d\n", val);
+				bool result = false;
+				for (int i = 0; i <= val; i++) {
+					if (!result) {
+						printf("In Domain%d\n", i);
+						printf("LEVEL%d\n", level);
+						printf("vlist[level] %d , %d\n", vlist[level], i);
+						if (i >= vlist[level]) {
+							printf("POSIBLE \n");
+//							printf("bP *value%d\n", p);
+							p = getDownPtr(p, i);
+							printf("P *value%d\n", p);
+							result = evaluateRawIsMarkingCovered(f, p, vlist);
+							if (result == true) {
+								printf("After Call%d", i);
+								return true;
+							}
+						}
+					}
+				}
+				nr->setVisited();
+			} else {
+				return false;
+			}
+		}
+
+		return false;
+	}
     // Move the variable to the optimal level between top and bottom
     void sifting(int var, int top, int bottom);
 

@@ -91,6 +91,12 @@ void MEDDLY::mt_mdd_bool
   term = bool_Tencoder::handle2value(evaluateRaw(f, vlist));
 }
 
+void MEDDLY::mt_mdd_bool::isMarkingCovered(const dd_edge &f, const int* vlist,
+		bool &term) const {
+	node_handle p = f.getNode();
+	term = evaluateRawIsMarkingCovered(f, p, vlist);
+}
+
 void MEDDLY::mt_mdd_bool::showTerminal(output &s, node_handle tnode) const
 {
   bool_Tencoder::show(s, tnode);
