@@ -804,11 +804,6 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   a_lowest_index = 8;
   a_sweep = INT_MAX;
 
-  //
-  // hooks for later
-  //
-  // usesCacheCounts = true;
-  // usesIncomingCounts = true;
 #else
   h_bits = 0;
   a_last = 0;
@@ -1276,6 +1271,12 @@ void MEDDLY::node_headers::changeHeaderSize(unsigned oldbits, unsigned newbits)
 
 void MEDDLY::node_headers::expandHandleList()
 {
+  //
+  // If we're not using reference counts,
+  // determine which nodes are reachable.
+  //
+  parent.markAllRoots();
+
 #ifdef OLD_NODE_HEADERS
 
 #ifdef OLD_HEADERS_NEW_ALLOC

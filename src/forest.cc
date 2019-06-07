@@ -867,6 +867,13 @@ void MEDDLY::expert_forest::initializeForest()
 
 void MEDDLY::expert_forest::markAllRoots()
 {
+  if (deflt.useNodeIncomingCounts) return;
+
+#ifdef DEBUG_MARK_SWEEP
+  printf("Determining which nodes are reachable in forest %u\n", FID());
+#endif
+
+  nodeHeaders.clearAllReachableBits();
   nodemarker foo(this);
   visitRegisteredEdges(foo);
   unpacked_node::markBuildListChildren(this);
