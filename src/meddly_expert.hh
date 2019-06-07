@@ -907,6 +907,14 @@ inline size_t MEDDLY::node_headers::bitvector::entry_bits() const
   return sizeof(bool) * 8;
 }
 
+inline size_t MEDDLY::node_headers::bitvector::firstZero(size_t start) const
+{
+  for (; start < size; start++) {
+    if (0==data[start]) return start;
+  }
+  return size;
+}
+
 #endif
 
 // ******************************************************************
@@ -1268,7 +1276,7 @@ MEDDLY::node_headers::clearAllInCacheBits()
 inline void
 MEDDLY::node_headers::sweepAllInCacheBits()
 {
-  // TBD
+  a_sweep = 0;
 }
 
 // ******************************************************************

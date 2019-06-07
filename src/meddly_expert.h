@@ -1635,14 +1635,26 @@ class MEDDLY::node_headers {
     node_handle a_size;
     /// Last used address.
     node_handle a_last;
+    /// Next time we shink the address list.
+    node_handle a_next_shrink;
+
+    //
+    // Data structure for free lists,
+    // used with cache reference counts
+    //
+
     /// Number of recycled addresses
     node_handle a_freed;
     /// Pointer to unused address lists, based on size
     node_handle a_unused[8];  // number of bytes per handle
     /// Lowest non-empty address list
     char a_lowest_index;
-    /// Next time we shink the address list.
-    node_handle a_next_shrink;
+
+    //
+    // Place to search next for free items,
+    // used with mark & sweep cache bits.
+    //
+    node_handle a_sweep;
 
     /// Do we track cache counts
     // bool usesCacheCounts;
@@ -1765,6 +1777,9 @@ class MEDDLY::node_headers {
         void clearAll();
         void swap(size_t i, size_t j);
         size_t entry_bits() const;
+
+        /// Return smallest index i >= start with bit i cleared.
+        size_t firstZero(size_t start) const;
     };
 
   private:
@@ -1786,17 +1801,27 @@ class MEDDLY::node_headers {
     /// Next time we shink the address list.
     size_t a_next_shrink;
 
+    //
+    // Data structure for free lists,
+    // used with cache reference counts
+    //
+
     /// Number of addresses in free lists
     size_t a_freed;
-
     /// Pointer to unused address lists, based on size
     size_t a_unused[8];  // number of bytes per handle
+    /// Lowest non-empty address list
+    char a_lowest_index;
+
+    //
+    // Place to search next for free items,
+    // used with mark & sweep cache bits.
+    //
+    size_t a_sweep;
+
 
     /// Current size of node "header"
     unsigned h_bits;
-
-    /// Lowest non-empty address list
-    char a_lowest_index;
 
     /// Are we using the pessimistic strategy?
     bool pessimistic;

@@ -802,6 +802,7 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   a_last = a_next_shrink = a_freed = 0;
   for (int i=0; i<8; i++) a_unused[i] = 0;
   a_lowest_index = 8;
+  a_sweep = INT_MAX;
 
   //
   // hooks for later
@@ -816,6 +817,7 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   a_next_shrink = 0;
   for (int i=0; i<8; i++) a_unused[i] = 0;
   a_lowest_index = 8;
+  a_sweep = SIZE_MAX;
   addresses = new address_array(*this);
   levels = new level_array(*this, parent.getNumVariables());
   if (parent.getPolicies().useCacheReferenceCounts) {
@@ -949,6 +951,9 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
       if (i == a_lowest_index) a_lowest_index++;
     }
   }
+  //
+  // We got something from a free list.
+  //
   if (found) {  
 #ifdef DEBUG_HANDLE_FREELIST
     // address[found].setNotDeleted();
@@ -960,6 +965,76 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
     a_freed--;
     return found;
   }
+
+  //
+  // Free lists are empty.
+  // Use sweep index if it's small enough (this is set
+  // if we're using mark and sweep).
+  //
+  if (a_sweep < a_last) {
+#ifdef OLD_NODE_HEADERS
+    MEDDLY_DCASSERT(address);
+    ++a_sweep;
+    for (; a_sweep <= a_last; a_sweep++) {
+      if (address[a_sweep].cache_count) continue;
+      if (address[a_sweep].incoming_count) continue;
+      found = a_sweep;
+      break;
+    }
+    if (found) {
+      if (address[found].offset) {
+        parent.deleteNode(found);
+        address[found].offset = 0;
+      }
+    } else {
+      // we're done sweeping
+      a_sweep = INT_MAX;
+    }
+#else
+    MEDDLY_DCASSERT(addresses);
+    MEDDLY_DCASSERT(is_in_cache);
+    ++a_sweep;
+    if (is_reachable) {
+      for (;;) {
+        a_sweep = is_in_cache->firstZero(a_sweep);
+        if (a_sweep > a_last) break;
+        if (is_reachable->get(a_sweep)) continue;
+        found = a_sweep;
+        break;
+      }
+    } else {
+      MEDDLY_DCASSERT(incoming_counts);
+      for (;;) {
+        a_sweep = is_in_cache->firstZero(a_sweep);
+        if (a_sweep > a_last) break;
+        if (incoming_counts->get(a_sweep)) continue;
+        found = a_sweep;
+        break;
+      }
+    }
+    if (found) {
+      if (addresses->get(found)) {
+        parent.deleteNode(found);
+        addresses->set(found, 0);
+      }
+    } else {
+      // we're done sweeping
+      a_sweep = SIZE_MAX;
+    }
+#endif
+  }
+
+  if (found) {
+#ifdef DEBUG_HANDLE_FREELIST
+    // address[found].setNotDeleted();
+    dump_handle_info(*this, a_last+1);
+#endif
+#ifdef DEBUG_HANDLE_MGT
+    fprintf(stderr, "Using swept handle %d\n", found);
+#endif
+    return found;
+  }
+
   a_last++;
   if (a_last >= a_size) {
     expandHandleList();
