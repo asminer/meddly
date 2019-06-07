@@ -393,8 +393,8 @@ namespace MEDDLY {
               else{
                 // make a singleton node
                 unpacked_node* nb = unpacked_node::newSparse(F, i, 1);
-                nb->i_ref(0) = vlist[i];
-                nb->d_ref(0) = bottom;
+                nb->i_ref(2) = vlist[i];
+                nb->d_ref(2) = bottom;
                 bottom = F->createReducedNode(-1, nb);
               }
             }
