@@ -51,6 +51,7 @@ MEDDLY::unpacked_node::unpacked_node()
   size = 0;
   nnzs = 0;
   level = 0;
+  is_in_build_list = false;
 #ifdef DEVELOPMENT_CODE
   has_hash = false;
 #endif
@@ -428,6 +429,49 @@ void MEDDLY::unpacked_node
   }
 }
 */
+
+void MEDDLY::unpacked_node::removeFromBuildList(unpacked_node* b)
+{
+  MEDDLY_DCASSERT(b);
+  MEDDLY_DCASSERT(b->is_in_build_list);
+  if (b == buildList) {
+    // should always happen if we're recursively building
+    buildList = b->next;
+    return;
+  }
+  unpacked_node* prev = buildList;
+  for (unpacked_node* curr = buildList->next; curr; curr=curr->next) {
+    if (b == curr) {
+      prev->next = b->next;
+      return;
+    }
+    prev = curr;
+  }
+}
+
+void MEDDLY::unpacked_node::markBuildListChildren(expert_forest* F)
+{
+  for (unpacked_node* curr = buildList; curr; curr=curr->next) {
+    if (curr->parent != F) continue;
+#ifdef DEBUG_MARK_SWEEP
+    printf("Traversing unpacked node at level %d\n", curr->getLevel());
+#endif
+    if (curr->isSparse()) {
+      // Sparse
+      for (int i=0; i<curr->getNNZs(); i++) {
+        F->markNode(curr->d(i));
+      }
+    } else {
+      // Full
+      for (int i=0; i<curr->getSize(); i++) {
+        F->markNode(curr->d(i));
+      }
+    }
+    if (curr->isExtensible()) {
+      F->markNode(curr->ext_d());
+    }
+  } // for curr
+}
 
 void MEDDLY::unpacked_node::computeHash()
 {

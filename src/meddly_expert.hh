@@ -171,6 +171,7 @@ MEDDLY::unpacked_node::newFull(const expert_forest *f, int level, int tsz)
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
   U->initFull(f, level, tsz);
+  addToBuildList(U);
   return U;
 }
 
@@ -180,6 +181,7 @@ MEDDLY::unpacked_node::newSparse(const expert_forest *f, int level, int nnzs)
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
   U->initSparse(f, level, nnzs);
+  addToBuildList(U);
   return U;
 }
 
@@ -484,6 +486,7 @@ MEDDLY::unpacked_node::useUnpackedNode()
 #ifdef DEVELOPMENT_CODE
   nr->has_hash = false;
 #endif
+  nr->is_in_build_list = false;
   return nr;
 }
 
@@ -493,6 +496,9 @@ MEDDLY::unpacked_node::recycle(MEDDLY::unpacked_node* r)
   if (r) {
     r->next = freeList;
     freeList = r;
+    if (r->is_in_build_list) {
+      removeFromBuildList(r);
+    }
   }
 }
 
@@ -504,6 +510,15 @@ MEDDLY::unpacked_node::freeRecycled()
     delete freeList;
     freeList = n;
   }
+}
+
+inline void
+MEDDLY::unpacked_node::addToBuildList(unpacked_node* b)
+{
+  MEDDLY_DCASSERT(b);
+  b->is_in_build_list = true;
+  b->next = buildList;
+  buildList = b;
 }
 
 // ******************************************************************

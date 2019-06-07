@@ -65,6 +65,14 @@
 
 // ******************************************************************
 // *                                                                *
+// *                                                                *
+// *                          forest stuff                          *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+// ******************************************************************
+// *                                                                *
 // *                    forest::policies methods                    *
 // *                                                                *
 // ******************************************************************
@@ -607,6 +615,14 @@ MEDDLY::forest::edge_visitor::~edge_visitor()
 
 // ******************************************************************
 // *                                                                *
+// *                                                                *
+// *                      expert_forest  stuff                      *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+// ******************************************************************
+// *                                                                *
 // *                 expert_forest encoder  methods                 *
 // *                                                                *
 // ******************************************************************
@@ -669,6 +685,86 @@ MEDDLY::node_handle MEDDLY::expert_forest::float_Tencoder::read(input &s)
   int c = s.get_char();
   if ('t' != c) throw error(error::INVALID_FILE, __FILE__, __LINE__);
   return value2handle(s.get_real());
+}
+
+// ******************************************************************
+// *                                                                *
+// *                expert_forest::nodecounter class                *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::expert_forest::nodecounter: public edge_visitor {
+    expert_forest* parent;
+    int* counts;
+  public:
+    nodecounter(expert_forest*p, int* c);
+    virtual ~nodecounter();
+    virtual void visit(dd_edge &e);
+};
+
+
+// ******************************************************************
+// *               expert_forest::nodecounter methods               *
+// ******************************************************************
+
+MEDDLY::expert_forest::nodecounter::nodecounter(expert_forest *p, int* c)
+ : edge_visitor()
+{
+  parent = p;
+  counts = c;
+}
+
+MEDDLY::expert_forest::nodecounter::~nodecounter()
+{
+  // DO NOT delete counts.
+}
+
+void MEDDLY::expert_forest::nodecounter::visit(dd_edge &e)
+{
+  int n = e.getNode();
+  if (parent->isTerminalNode(n)) return;
+  MEDDLY_DCASSERT(n>0);
+  MEDDLY_DCASSERT(n<=parent->getLastNode());
+  counts[n]++;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                expert_forest::nodemarker  class                *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::expert_forest::nodemarker: public edge_visitor {
+    expert_forest* parent;
+  public:
+    nodemarker(expert_forest *p);
+    virtual ~nodemarker();
+    virtual void visit(dd_edge &e);
+};
+
+
+// ******************************************************************
+// *               expert_forest::nodemarker  methods               *
+// ******************************************************************
+
+MEDDLY::expert_forest::nodemarker::nodemarker(expert_forest *p)
+ : edge_visitor()
+{
+  parent = p;
+}
+
+MEDDLY::expert_forest::nodemarker::~nodemarker()
+{
+  // nothing to do
+}
+
+void MEDDLY::expert_forest::nodemarker::visit(dd_edge &e)
+{
+  if (e.getForest() != parent) return;
+#ifdef DEBUG_MARK_SWEEP
+  printf("Traversing root node %ld\n", e.getNode());
+#endif
+  parent->markNode(e.getNode());
 }
 
 // ******************************************************************
@@ -761,6 +857,19 @@ void MEDDLY::expert_forest::initializeForest()
   //
   nodeMan = deflt.nodestor->createForForest(this, deflt.nodemm);
 
+}
+
+// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+// '                                                                '
+// '                  public mark & sweep  methods                  '
+// '                                                                '
+// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+void MEDDLY::expert_forest::markAllRoots()
+{
+  nodemarker foo(this);
+  visitRegisteredEdges(foo);
+  unpacked_node::markBuildListChildren(this);
 }
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -2267,31 +2376,4 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
 }
 
 
-
-// ******************************************************************
-// *                                                                *
-// *               expert_forest::nodecounter methods               *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::expert_forest::nodecounter::nodecounter(expert_forest *p, int* c)
- : edge_visitor()
-{
-  parent = p;
-  counts = c;
-}
-
-MEDDLY::expert_forest::nodecounter::~nodecounter()
-{
-  // DO NOT delete counts.
-}
-
-void MEDDLY::expert_forest::nodecounter::visit(dd_edge &e)
-{
-  int n = e.getNode();
-  if (parent->isTerminalNode(n)) return;
-  MEDDLY_DCASSERT(n>0);
-  MEDDLY_DCASSERT(n<=parent->getLastNode());
-  counts[n]++;
-}
 

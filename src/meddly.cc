@@ -80,6 +80,7 @@ namespace MEDDLY {
   //
   // List of free unpacked nodes
   unpacked_node* unpacked_node::freeList = 0;
+  unpacked_node* unpacked_node::buildList = 0;
 
   // helper functions
   void purgeMarkedOperations();

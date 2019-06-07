@@ -846,11 +846,18 @@ class MEDDLY::unpacked_node {
     static void recycle(unpacked_node* r);
     static void freeRecycled();
 
+    static void addToBuildList(unpacked_node* b);
+    static void removeFromBuildList(unpacked_node* b);
+    static void markBuildListChildren(expert_forest* F);
 
   private:
     const expert_forest* parent;
     static unpacked_node* freeList;
-    unpacked_node* next; // for recycled list
+    static unpacked_node* buildList;
+
+    unpacked_node* next; // for recycled list, and list of nodes being built
+    bool is_in_build_list;
+
     /*
       TBD - extra info that is not hashed
     */
@@ -2364,6 +2371,10 @@ class MEDDLY::expert_forest: public forest
     /// Does a node have its reachable bit set?
     bool hasReachableBit(node_handle p) const;
 
+    /// Mark all "root" nodes; i.e. start the mark phase.
+    /// Not inlined; implemented in forest.cc
+    void markAllRoots();
+
   // --------------------------------------------------
   // Managing cache counts
   // --------------------------------------------------
@@ -3057,24 +3068,10 @@ class MEDDLY::expert_forest: public forest
     char hashed_bytes;
 
     class nodecounter;
+    class nodemarker;
 };
 // end of expert_forest class.
 
-
-// ******************************************************************
-// *                                                                *
-// *                expert_forest::nodecounter class                *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::expert_forest::nodecounter: public edge_visitor {
-    expert_forest* parent;
-    int* counts;
-  public:
-    nodecounter(expert_forest*p, int* c);
-    virtual ~nodecounter();
-    virtual void visit(dd_edge &e);
-};
 
 
 // ******************************************************************
