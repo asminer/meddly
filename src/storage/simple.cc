@@ -128,6 +128,7 @@ class MEDDLY::simple_separated : public node_storage {
         node_storage_flags opt);
 
     virtual void unlinkDownAndRecycle(node_address addr);
+    virtual void markDownPointers(node_address addr);
 
     virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
     virtual void fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style) const;
@@ -452,6 +453,30 @@ void MEDDLY::simple_separated::unlinkDownAndRecycle(node_address addr)
   //
   MM->recycleChunk(addr, actual_slots);
 }
+
+
+void MEDDLY::simple_separated::markDownPointers(node_address addr)
+{
+#ifdef DEBUG_MARK_SWEEP
+  printf("marking children at address %ld\n", addr);
+  FILE_output out(stdout);
+  dumpInternalNode(out, addr, 0x03);
+#endif
+  const node_handle* chunk = getChunkAddress(addr);
+  MEDDLY_DCASSERT(chunk);
+  
+  const unsigned int raw_size = getRawSize(chunk);
+  const unsigned int size = getSize(raw_size);
+
+  //
+  // Mark down pointers
+  //
+  const node_handle* down = chunk + down_start;
+  for (unsigned int i=0; i<size; i++) {
+    getParent()->markNode(down[i]);
+  }
+}
+
 
 
 

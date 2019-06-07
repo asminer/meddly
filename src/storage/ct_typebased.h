@@ -56,7 +56,7 @@ namespace MEDDLY {
 
     private:  // helper methods
 
-      inline void scanForStales(unsigned i) {
+      inline void scanForStales(unsigned i, bool mark) {
           //
           // Check entry i (only) for staleness
           //
@@ -69,7 +69,7 @@ namespace MEDDLY {
 #else
           const int* entry = (const int*) MMAN->getChunkAddress(table[i]);
 #endif
-          if (!isStale(entry)) return;
+          if (!isStale(entry, mark)) return;
 
 #ifdef DEBUG_CT_SCAN
           printf("CTSCAN stale entry #%ld", perf.numEntries);
@@ -99,7 +99,7 @@ namespace MEDDLY {
 #endif
             int next = entry[0];
 
-            if (isStale(entry)) {
+            if (isStale(entry, false)) {
 
 #ifdef DEBUG_CT_SCAN
               printf("CTSCAN stale entry #%ld", perf.numEntries);
@@ -255,7 +255,7 @@ namespace MEDDLY {
           // Not equal.
           //
           if (checkStalesOnFind) {
-            discard = isStale(entry);
+            discard = isStale(entry, false);
           } else {
             discard = false;
           } // if checkStalesOnFind
@@ -267,9 +267,10 @@ namespace MEDDLY {
       /**
           Check if an entry is stale.
             @param  entry   Pointer to complete entry to check.
+            @param  mark    Should we mark the non-stale entries?
             @return         true, if the entry should be discarded.
       */
-      bool isStale(const int* entry) const;
+      bool isStale(const int* entry, bool mark) const;
 
       /**
           Check if a result is dead (unrecoverable).
@@ -661,7 +662,7 @@ inline int* MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   if (CHAINED) {
     scanListForStales(scan_index);
   } else {
-    scanForStales(scan_index);
+    scanForStales(scan_index, true);
   }
 #endif
 
@@ -1437,7 +1438,7 @@ int MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::convertToList(bool removeStales)
       int* entry = (int*) MMAN->getChunkAddress(curr);
 #endif
       table[i] = entry[0];
-      if (removeStales && isStale(entry)) {
+      if (removeStales && isStale(entry, true)) {
 
 #ifdef DEBUG_TABLE2LIST
           printf("\tstale ");
@@ -1516,7 +1517,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::scanForStales()
 {
   MEDDLY_DCASSERT(!CHAINED);
   for (unsigned i=0; i<tableSize; i++) {
-    scanForStales(i);
+    scanForStales(i, true);
   } // for i
 }
 
@@ -1633,7 +1634,7 @@ inline bool NO_stale()
 
 template <bool MONOLITHIC, bool CHAINED>
 bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED> 
-::isStale(const int* entry) const
+::isStale(const int* entry, bool mark) const
 {
 #ifdef DEBUG_ISSTALE
   printf("Checking entry for staleness: ");
@@ -1689,7 +1690,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
         return YES_stale();
       } else {
         // Indicate that this node is in some cache entry
-        f->setCacheBit(*entry);
+        if (mark) f->setCacheBit(*entry);
       }
       entry++;
     } else {
@@ -1718,7 +1719,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       if (MEDDLY::forest::ACTIVE != f->getNodeStatus(*entry)) {
         return YES_stale();
       } else {
-        f->setCacheBit(*entry);
+        if (mark) f->setCacheBit(*entry);
       }
       entry++;
     } else {

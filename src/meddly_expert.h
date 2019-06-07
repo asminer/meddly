@@ -1942,6 +1942,11 @@ class MEDDLY::node_storage {
     */
     virtual void unlinkDownAndRecycle(node_address addr) = 0;
 
+    /** Mark a node.
+        Traverse the downward pointers, and mark all of them.
+            @param  addr    Address of the node.
+    */
+    virtual void markDownPointers(node_address addr) = 0;
 
     // various ways to read a node
 
@@ -2352,6 +2357,9 @@ class MEDDLY::expert_forest: public forest
         its connection to this node.
     */
     void unlinkNode(node_handle p);
+
+    /// Set reachable bits for p and its descendants.
+    void markNode(node_handle p);
 
     /// Does a node have its reachable bit set?
     bool hasReachableBit(node_handle p) const;

@@ -2145,6 +2145,23 @@ MEDDLY::expert_forest::unlinkNode(MEDDLY::node_handle p)
   } 
 }
 
+inline void
+MEDDLY::expert_forest::markNode(node_handle p)
+{
+  if (!deflt.useNodeIncomingCounts) return;
+  if (p<1) return;
+  if (nodeHeaders.hasReachableBit(p)) return;
+
+#ifdef DEBUG_MARK_SWEEP
+  printf("Marking node %ld\n", p);
+#endif
+
+  nodeHeaders.setReachableBit(p);
+
+  MEDDLY_DCASSERT(nodeMan);
+  nodeMan->markDownPointers( nodeHeaders.getNodeAddress(p) );
+}
+
 inline bool
 MEDDLY::expert_forest::hasReachableBit(node_handle p) const
 {
