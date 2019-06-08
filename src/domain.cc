@@ -502,6 +502,16 @@ void MEDDLY::domain::cleanVariableOrders()
   }
 }
 
+void MEDDLY::domain::setHasInftyDomain() {
+	hasInftyDomain = true;
+}
+void MEDDLY::domain::unsetHasInftyDomain() {
+	hasInftyDomain = false;
+}
+bool MEDDLY::domain::getHasInftyDomain() {
+	return hasInftyDomain;
+}
+
 // ----------------------------------------------------------------------
 // expert_domain
 // ----------------------------------------------------------------------
@@ -528,8 +538,13 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 
   vars[0] = 0;
   for (int i=1; i<=N; i++) {
-	// bounds[i-1]+2 to have +infty and -infty for each variable.
-    vars[i] = MEDDLY::createVariable(bounds[i-1]+2, 0);
+		if (this->getHasInftyDomain()) {
+			// bounds[i-1]+2 to have +infty and -infty for each variable.
+			vars[i] = MEDDLY::createVariable(bounds[i - 1] + 2, 0);
+		} else {
+			vars[i] = MEDDLY::createVariable(bounds[i - 1], 0);
+		}
+
     ((expert_variable*)vars[i])->addToList(this);
   }
 
@@ -558,8 +573,14 @@ void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
 
   vars[0] = 0;
   for (int i=N; i; i--) {
-	// bounds[i]+2 to have +infty and -infty for each variable.
-    vars[N-i+1] = MEDDLY::createVariable(bounds[i]+2, 0);
+		if (this->getHasInftyDomain()) {
+			// bounds[i]+2 to have +infty and -infty for each variable.
+			vars[N - i + 1] = MEDDLY::createVariable(bounds[i] + 2, 0);
+		} else {
+			vars[N - i + 1] = MEDDLY::createVariable(bounds[i], 0);
+		}
+
+
     ((expert_variable*)vars[i])->addToList(this);
   }
 

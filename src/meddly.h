@@ -2277,7 +2277,10 @@ class MEDDLY::domain {
 
     /// Free the slot that the forest is using.
     void unlinkForest(forest* f, int slot);
-
+    //-------------------------------------------------------------------
+    void setHasInftyDomain();
+    void unsetHasInftyDomain();
+    bool getHasInftyDomain();
     // --------------------------------------------------------------------
 
   protected:
@@ -2328,6 +2331,8 @@ class MEDDLY::domain {
     static int free_list;
     /// Index of this domain in the domain list.
     int my_index;
+    /// the domain has infty.
+    bool hasInftyDomain=false;
 
     static void expandDomList();
     static void markDomList();
