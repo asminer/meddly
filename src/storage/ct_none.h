@@ -374,10 +374,6 @@ namespace MEDDLY {
       /// Stats: how many collisions
       unsigned long collisions;
 
-#ifdef CONTINUOUS_SCAN
-    private:
-      unsigned long scan_index;
-#endif
   }; // class ct_none
 } // namespace
 
@@ -438,10 +434,6 @@ MEDDLY::ct_none<MONOLITHIC, CHAINED>::ct_none(
   mstats.incMemAlloc(tableSize * sizeof(unsigned long));
 
   collisions = 0;
-
-#ifdef CONTINUOUS_SCAN
-  scan_index = 0;
-#endif
 }
 
 // **********************************************************************
@@ -614,20 +606,6 @@ inline MEDDLY::compute_table::entry_item* MEDDLY::ct_none<MONOLITHIC, CHAINED>
   } // for chain
 
   sawSearch(chain);
-
-#ifdef CONTINUOUS_SCAN
-  do {
-    incMod(scan_index);
-    if (0==scan_index) {
-      perf.completedScans++;
-    }
-  } while (hcurr == scan_index);
-  if (CHAINED) {
-    scanListForStales(scan_index);
-  } else {
-    scanForStales(scan_index);
-  }
-#endif
 
   return answer;
 }
@@ -1061,8 +1039,6 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
   s << "Pings               :\t" << long(perf.pings) << "\n";
   s.put("", 6);
   s << "Hits                :\t" << long(perf.hits) << "\n";
-  s.put("", 6);
-  s << "Completed scans     :\t" << long(perf.completedScans) << "\n";
   s.put("", 6);
   s << "Resize (GC) scans   :\t" << long(perf.resizeScans) << "\n";
 

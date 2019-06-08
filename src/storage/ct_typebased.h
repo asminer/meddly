@@ -72,10 +72,7 @@ namespace MEDDLY {
           if (!isStale(entry, mark)) return;
 
 #ifdef DEBUG_CT_SCAN
-          printf("CTSCAN stale entry #%ld", perf.numEntries);
-          FILE_output out(stdout);
-          showEntry(out, table[i]);
-          printf(" in table slot %u\n", i);
+          printf("CTSCAN stale entry in table slot %u\n", i);
 #endif  
           discardAndRecycle(table[i]);
           table[i] = 0;
@@ -175,7 +172,7 @@ namespace MEDDLY {
         MEDDLY_DCASSERT(table[h]);
         // full; remove entry at our slot.
 #ifdef DEBUG_CT
-        printf("Collision; removing CT entry ");
+        printf("CT Collision; removing CT entry ");
         FILE_output out(stdout);
         showEntry(out, table[h]);
 #ifdef DEBUG_CT_SLOTS
@@ -411,11 +408,6 @@ namespace MEDDLY {
 
       /// Stats: how many collisions
       long collisions;
-
-#ifdef CONTINUOUS_SCAN
-    private:
-      unsigned int scan_index;
-#endif
   }; // class ct_typebased
 } // namespace
 
@@ -476,9 +468,6 @@ MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::ct_typebased(
   mstats.incMemAlloc(tableSize * sizeof(int));
 
   collisions = 0;
-#ifdef CONTINUOUS_SCAN
-  scan_index = 0;
-#endif
 }
 
 // **********************************************************************
@@ -651,20 +640,6 @@ inline int* MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   } // for chain
 
   sawSearch(chain);
-
-#ifdef CONTINUOUS_SCAN
-  do {
-    incMod(scan_index);
-    if (0==scan_index) {
-      perf.completedScans++;
-    }
-  } while (hcurr == scan_index);
-  if (CHAINED) {
-    scanListForStales(scan_index);
-  } else {
-    scanForStales(scan_index, true);
-  }
-#endif
 
   return answer;
 }
@@ -853,7 +828,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
   }
 
 #ifdef DEBUG_CT
-  printf("Added CT entry #%ld", perf.numEntries);
+  printf("Added CT entry ");
   FILE_output out(stdout);
   showEntry(out, curr);
 #ifdef DEBUG_CT_SLOTS
@@ -1217,8 +1192,6 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   s << "Pings               :\t" << long(perf.pings) << "\n";
   s.put("", 6);
   s << "Hits                :\t" << long(perf.hits) << "\n";
-  s.put("", 6);
-  s << "Completed scans     :\t" << long(perf.completedScans) << "\n";
   s.put("", 6);
   s << "Resize (GC) scans   :\t" << long(perf.resizeScans) << "\n";
 
@@ -1925,6 +1898,14 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   //
   // Recycle
   //
+#ifdef DEBUG_CT
+  printf("Recycling CT entry ");
+  FILE_output out(stdout);
+  showEntry(out, h);
+  printf("\n");
+  fflush(stdout);
+#endif
+
 #ifdef DEBUG_CTALLOC
   fprintf(stderr, "Recycling entry %ld size %u\n", long(h), slots);
 #endif
