@@ -965,19 +965,12 @@ MEDDLY::node_headers::lastUsedHandle() const
 inline bool
 MEDDLY::node_headers::isActive(node_handle p) const
 {
-  if (p<=0) return true;
-  if (p>a_last) return false;
-#ifdef OLD_NODE_HEADERS
-  MEDDLY_DCASSERT(address);
-  return address[p].offset;
-#else
-  MEDDLY_DCASSERT(addresses);
-  return addresses->get(size_t(p));
-#endif
+  return !isDeleted(p);
 }
 
 // ******************************************************************
 
+/*
 inline bool
 MEDDLY::node_headers::isZombie(node_handle p) const
 {
@@ -992,6 +985,7 @@ MEDDLY::node_headers::isZombie(node_handle p) const
   return (0==addresses->get(size_t(p))) && (0!=levels->get(size_t(p)));
 #endif
 }
+*/
 
 // ******************************************************************
 
@@ -1004,7 +998,6 @@ MEDDLY::node_headers::isDeleted(node_handle p) const
   MEDDLY_DCASSERT(address);
   return (0==address[p].level);
 #else
-  MEDDLY_DCASSERT(addresses);
   MEDDLY_DCASSERT(levels);
   return (0==levels->get(size_t(p)));
 #endif
@@ -1012,6 +1005,7 @@ MEDDLY::node_headers::isDeleted(node_handle p) const
 
 // ******************************************************************
 
+/*
 inline bool
 MEDDLY::node_headers::isDeactivated(node_handle p) const
 {
@@ -1025,6 +1019,23 @@ MEDDLY::node_headers::isDeactivated(node_handle p) const
   return (0==levels->get(size_t(p)));
 #endif
 }
+*/
+
+// ******************************************************************
+
+inline void
+MEDDLY::node_headers::deactivate(node_handle p)
+{
+  MEDDLY_DCASSERT(isActive(p));
+#ifdef OLD_NODE_HEADERS
+  MEDDLY_DCASSERT(address);
+  address[p].level = 0;
+#else
+  MEDDLY_DCASSERT(levels);
+  levels->set(size_t(p), 0);
+#endif
+}
+
 
 // ******************************************************************
 
@@ -1144,12 +1155,10 @@ inline void
 MEDDLY::node_headers::cacheNode(node_handle p)
 {
   if (p<1) return;    // terminal node
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
 
+  MEDDLY_DCASSERT(isActive(p));
 #ifdef OLD_NODE_HEADERS
 
-  // MEDDLY_DCASSERT(usesCacheCounts); // or do we just return?  TBD
   MEDDLY_DCASSERT(address);
   address[p].cache_count++;
 #ifdef TRACK_CACHECOUNT
@@ -1180,7 +1189,6 @@ MEDDLY::node_headers::uncacheNode(MEDDLY::node_handle p)
 
 #ifdef OLD_NODE_HEADERS
 
-  // MEDDLY_DCASSERT(usesCacheCounts); // or do we just return?  TBD
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(address[p].cache_count > 0);
   address[p].cache_count--;
@@ -1196,16 +1204,16 @@ MEDDLY::node_headers::uncacheNode(MEDDLY::node_handle p)
   // Still here?  Might need to clean up
   //
   
-  if (0==address[p].offset) {
-      // we are a zombie
-      parent.stats.zombie_nodes--;
+  if (isDeleted(p)) {
+      // we were already disconnected; must be using pessimistic
+      parent.stats.unreachable_nodes--;
       recycleNodeHandle(p);
   } else {
       // We're still active
       // See if we're now completely disconnected
       // and if so, tell parent to recycle node storage
       if (0==address[p].incoming_count) {
-        parent.stats.orphan_nodes--;
+        parent.stats.unreachable_nodes--;
 
         parent.deleteNode(p);
         recycleNodeHandle(p);
@@ -1215,7 +1223,6 @@ MEDDLY::node_headers::uncacheNode(MEDDLY::node_handle p)
 #else
 
   MEDDLY_DCASSERT(addresses);
-  MEDDLY_DCASSERT(incoming_counts);
   MEDDLY_DCASSERT(cache_counts);
 
   if (cache_counts->isPositiveAfterDecrement(size_t(p))) {
@@ -1235,16 +1242,21 @@ MEDDLY::node_headers::uncacheNode(MEDDLY::node_handle p)
   // Still here?  Cache count now zero; might need to clean up
   //
 
-  if (0==addresses->get(size_t(p))) {
-    // we were a zombie
-    parent.stats.zombie_nodes--;
+  if (isDeleted(p)) {
+    //
+    // Must be using pessimistic
+    //
     recycleNodeHandle(p);
   } else {
     // we were active.
     // See if we're now completely disconnected
     // and if so, tell parent to recycle node storage
-    if (0==incoming_counts->get(size_t(p))) {
-      parent.stats.orphan_nodes--;
+    if (
+          (incoming_counts && (0==incoming_counts->get(size_t(p)))) 
+          ||
+          (is_reachable && (0==is_reachable->get(size_t(p))))
+    ) {
+      parent.stats.unreachable_nodes--;
       parent.deleteNode(p);
       recycleNodeHandle(p);
     }
@@ -1332,8 +1344,8 @@ inline MEDDLY::node_handle
 MEDDLY::node_headers::linkNode(node_handle p)
 {
   if (p<1) return p;    // terminal node
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+
+  MEDDLY_DCASSERT(isActive(p));
 
 #ifdef OLD_NODE_HEADERS
 
@@ -1343,9 +1355,9 @@ MEDDLY::node_headers::linkNode(node_handle p)
   MEDDLY_DCASSERT(address[p].offset);
 
   if (0==address[p].incoming_count) {
-    // Reclaim an orphan node
+    // Reclaim an unreachable
     parent.stats.reclaimed_nodes++;
-    parent.stats.orphan_nodes--;
+    parent.stats.unreachable_nodes--;
   }
 
   address[p].incoming_count++;
@@ -1359,9 +1371,9 @@ MEDDLY::node_headers::linkNode(node_handle p)
 
   MEDDLY_DCASSERT(incoming_counts);
   if (incoming_counts->isZeroBeforeIncrement(size_t(p))) {
-    // Reclaim an orphan node
+    // Reclaim an unreachable 
     parent.stats.reclaimed_nodes++;
-    parent.stats.orphan_nodes--;
+    parent.stats.unreachable_nodes--;
   }
 
 #ifdef TRACK_DELETIONS
@@ -1380,8 +1392,8 @@ inline void
 MEDDLY::node_headers::unlinkNode(node_handle p)
 {
   if (p<1) return;    // terminal node
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+
+  MEDDLY_DCASSERT(isActive(p));
 
 #ifdef OLD_NODE_HEADERS
 
@@ -1400,33 +1412,33 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
   if (address[p].incoming_count) return;
 
   //
-  // See if we need to do some cleanup
+  // Node p just became unreachable.
+  // Various cleanups below.
   //
 
+  //
+  // If we're not in any caches, delete
+  //
   if (0==address[p].cache_count) {
         parent.deleteNode(p);
         recycleNodeHandle(p);
         return;
   }
+
+  //
+  // Still in some cache somewhere.
+  //
   
   if (pessimistic) {
-    //
-    // Make this a zombie
-    //
     parent.deleteNode(p);
-    address[p].offset = 0;
-    parent.stats.zombie_nodes++;
   } else {
-    //
-    // We're disconnected but sticking around
-    //
-    parent.stats.orphan_nodes++;
+    parent.stats.unreachable_nodes++;
   }
+
 
 #else // OLD_NODE_HEADERS
 
   MEDDLY_DCASSERT(incoming_counts);
-  MEDDLY_DCASSERT(cache_counts);
   MEDDLY_DCASSERT(addresses);
 
   if (incoming_counts->isPositiveAfterDecrement(size_t(p))) {
@@ -1443,10 +1455,17 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
 #endif
 
   //
-  // See if we need to do some cleanup
+  // Node is unreachable.  See if we need to do some cleanup
   //
 
-  if (0==cache_counts->get(size_t(p))) {
+  if (
+        (cache_counts && (0==cache_counts->get(size_t(p)))) 
+        ||
+        (is_in_cache && (0==is_in_cache->get(size_t(p))))
+  ) {
+    //
+    // Unreachable and not in any caches.  Delete and recycle handle.
+    //
     parent.deleteNode(p);
     recycleNodeHandle(p);
     return;
@@ -1454,16 +1473,14 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
   
   if (pessimistic) {
     //
-    // Make this a zombie
+    // Delete; keep handle until caches are cleared.
     //
     parent.deleteNode(p);
-    addresses->set(size_t(p), 0);
-    parent.stats.zombie_nodes++;
   } else {
     //
-    // We're disconnected but sticking around
+    // Optimistic.  Keep unreachables around.
     //
-    parent.stats.orphan_nodes++;
+    parent.stats.unreachable_nodes++;
   }
 
 #endif // OLD_NODE_HEADERS
@@ -1617,23 +1634,6 @@ MEDDLY::node_headers::setNextOf(size_t p, size_t n)
   addresses->set(size_t(p), node_address(n));
 #endif
 }
-
-// ******************************************************************
-
-inline void
-MEDDLY::node_headers::deactivate(node_handle p)
-{
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
-#ifdef OLD_NODE_HEADERS
-  MEDDLY_DCASSERT(address);
-  address[p].level = 0;
-#else
-  MEDDLY_DCASSERT(levels);
-  levels->set(size_t(p), 0);
-#endif
-}
-
 
 // ******************************************************************
 // *                                                                *
@@ -2202,6 +2202,8 @@ MEDDLY::expert_forest::cacheNode(MEDDLY::node_handle p)
 {
   if (deflt.useCacheReferenceCounts) {
     nodeHeaders.cacheNode(p);
+  } else {
+    nodeHeaders.setInCacheBit(p);
   }
 }
 
@@ -2253,11 +2255,13 @@ MEDDLY::expert_forest::isActiveNode(node_handle p) const
   return nodeHeaders.isActive(p);
 }
 
+/*
 inline bool
 MEDDLY::expert_forest::isZombieNode(node_handle p) const
 {
   return nodeHeaders.isZombie(p);
 }
+*/
 
 inline bool
 MEDDLY::expert_forest::isDeletedNode(node_handle p) const
@@ -2424,6 +2428,7 @@ MEDDLY::expert_forest::fillUnpacked(MEDDLY::unpacked_node &un, MEDDLY::node_hand
 const
 {
   const int level = getNodeLevel(node);
+  MEDDLY_DCASSERT(0 != level);
   un.bind_to_forest(this, level, getLevelSize(level), true); 
   MEDDLY_DCASSERT(getNodeAddress(node));
   nodeMan->fillUnpacked(un, getNodeAddress(node), st2);
@@ -2503,12 +2508,14 @@ MEDDLY::expert_forest::setHashedSize(char hbytes)
   hashed_bytes = hbytes;
 }
 
+/*
 inline bool
 MEDDLY::expert_forest::isTimeToGc() const
 {
   return isPessimistic() ? (stats.zombie_nodes > deflt.zombieTrigger)
       : (stats.orphan_nodes > deflt.orphanTrigger);
 }
+*/
 
 inline void
 MEDDLY::expert_forest::moveNodeOffset(MEDDLY::node_handle node, node_address old_addr,

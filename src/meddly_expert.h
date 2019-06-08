@@ -1489,11 +1489,13 @@ class MEDDLY::node_headers {
   public: // node status
     bool isActive(node_handle p) const;
     /// Is this a zombie node (dead but not able to be deleted yet)
-    bool isZombie(node_handle p) const;
+    // bool isZombie(node_handle p) const;
     /// Is this a deleted node
     bool isDeleted(node_handle p) const;
     /// Deactivated: 0 level  
-    bool isDeactivated(node_handle p) const;
+    // bool isDeactivated(node_handle p) const;
+
+    void deactivate(node_handle p);
 
 
   public: // address stuff
@@ -1597,8 +1599,6 @@ class MEDDLY::node_headers {
 
     /// Decrease the number of node handles.
     void shrinkHandleList();
-
-    void deactivate(node_handle p);
 
 #ifdef OLD_NODE_HEADERS
 
@@ -2176,8 +2176,8 @@ class MEDDLY::expert_forest: public forest
 
     /// Display deleted nodes
     static const unsigned int SHOW_DELETED;
-    /// Display zombie nodes
-    static const unsigned int SHOW_ZOMBIE;
+    /// Display unreachable nodes
+    static const unsigned int SHOW_UNREACHABLE;
     /// Display node details
     static const unsigned int SHOW_DETAILS;
     /// Display the node index
@@ -2429,7 +2429,7 @@ class MEDDLY::expert_forest: public forest
   // --------------------------------------------------
   public:
     bool isActiveNode(node_handle p) const;
-    bool isZombieNode(node_handle p) const;
+    // bool isZombieNode(node_handle p) const;
     bool isDeletedNode(node_handle p) const;
     static bool isTerminalNode(node_handle p);
     /// Sanity check: is this a valid nonterminal node index.
@@ -2706,8 +2706,8 @@ class MEDDLY::expert_forest: public forest
 
     virtual void writeEdges(output &s, const dd_edge* E, int n) const;
     virtual void readEdges(input &s, dd_edge* E, int n);
-    virtual void garbageCollect();
-    virtual void compactMemory();
+    // virtual void garbageCollect();
+    // virtual void compactMemory();
     virtual void showInfo(output &strm, int verbosity);
 
   // ------------------------------------------------------------
@@ -2982,7 +2982,7 @@ class MEDDLY::expert_forest: public forest
   // ------------------------------------------------------------
   // inlined helpers for this class
 
-    bool isTimeToGc() const;
+    // bool isTimeToGc() const;
 
     /** Change the location of a node.
         Used by node_storage during compaction.
@@ -4090,7 +4090,6 @@ class MEDDLY::compute_table {
         unsigned long searchHistogram[searchHistogramSize];
         unsigned long numLargeSearches;
         unsigned maxSearchLength;
-        unsigned long completedScans;
         unsigned long resizeScans;
       };
 

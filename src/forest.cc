@@ -95,16 +95,16 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
   reduction = rel ? IDENTITY_REDUCED : FULLY_REDUCED;
   storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
   deletion = OPTIMISTIC_DELETION;
-  compact_min = 100;
-  compact_max = 1000000;
-  compact_frac = 40;
-  zombieTrigger = 1000000;
-  orphanTrigger = 500000;
-  compactAfterGC = false;
-  compactBeforeExpand = true;
+  // compact_min = 100;
+  // compact_max = 1000000;
+  // compact_frac = 40;
+  // zombieTrigger = 1000000;
+  // orphanTrigger = 500000;
+  // compactAfterGC = false;
+  // compactBeforeExpand = true;
 
-  useNodeIncomingCounts = true;
-  useCacheReferenceCounts = true;
+  useNodeIncomingCounts = true; 
+  useCacheReferenceCounts = false;
 
   // nodemm = ORIGINAL_GRID;
   nodemm = ARRAY_PLUS_GRID;
@@ -131,8 +131,7 @@ MEDDLY::forest::statset::statset()
   reclaimed_nodes = 0;
   num_compactions = 0;
   garbage_collections = 0;
-  zombie_nodes = 0;
-  orphan_nodes = 0;
+  unreachable_nodes = 0;
   active_nodes = 0;
   peak_active = 0;
   /*
@@ -790,11 +789,11 @@ const unsigned MEDDLY::expert_forest::HOLE_MANAGER_DETAILED   = 0x0200;
 // Display flags
 //
 
-const unsigned int MEDDLY::expert_forest::SHOW_DELETED    = 0x10;
-const unsigned int MEDDLY::expert_forest::SHOW_ZOMBIE     = 0x08;
-const unsigned int MEDDLY::expert_forest::SHOW_DETAILS    = 0x04;
-const unsigned int MEDDLY::expert_forest::SHOW_INDEX      = 0x02;
-const unsigned int MEDDLY::expert_forest::SHOW_TERMINALS  = 0x01;
+const unsigned int MEDDLY::expert_forest::SHOW_DELETED      = 0x10;
+const unsigned int MEDDLY::expert_forest::SHOW_UNREACHABLE  = 0x08;
+const unsigned int MEDDLY::expert_forest::SHOW_DETAILS      = 0x04;
+const unsigned int MEDDLY::expert_forest::SHOW_INDEX        = 0x02;
+const unsigned int MEDDLY::expert_forest::SHOW_TERMINALS    = 0x01;
 
 
 MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
@@ -1036,7 +1035,7 @@ void MEDDLY::expert_forest::countNodesByLevel(long* active) const
   for (; l<=L; l++) active[l] = 0;
 
   for (long p=1; p<=nodeHeaders.lastUsedHandle(); p++) {
-    if (nodeHeaders.isDeactivated(p)) continue; 
+    if (nodeHeaders.isDeleted(p)) continue; 
     active[nodeHeaders.getNodeLevel(p)]++;
   }
 }
@@ -1178,16 +1177,19 @@ bool MEDDLY::expert_forest
   /*
     Deal with cases where nothing will be displayed.
   */
+  bool isReachable = 
+    deflt.useNodeIncomingCounts ? (getNodeInCount(p)) : (hasReachableBit(p)) ;
+
   if (isTerminalNode(p)) {
     if (!(flags & SHOW_TERMINALS))  return false;
   } else 
   if (isDeletedNode(p)) {
     if (!(flags & SHOW_DELETED))    return false;
   } else 
-  if (isZombieNode(p)) {
-    if (!(flags & SHOW_ZOMBIE))     return false;
+  if (!isReachable) {
+    if (!(flags & SHOW_UNREACHABLE))     return false;
   }
-
+  
   /*
     Show the node index, if selected.
   */
@@ -1208,9 +1210,8 @@ bool MEDDLY::expert_forest
     s << "DELETED";
     return true;
   }
-  if (isZombieNode(p)) {
-    s << "Zombie cc: " <<  nodeHeaders.getNodeCacheCount(p);
-    return true;
+  if (!isReachable) {
+    s << "Unreachable ";
   }
 
   /*
@@ -1735,6 +1736,8 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
   }
 }
 
+/*
+
 void MEDDLY::expert_forest::garbageCollect()
 {
   if (performing_gc) return;
@@ -1789,6 +1792,8 @@ void MEDDLY::expert_forest::compactMemory()
 {
   nodeMan->collectGarbage(true);
 }
+
+*/
 
 void MEDDLY::expert_forest::showInfo(output &s, int verb)
 {
@@ -1984,6 +1989,8 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 
   // unlink children and recycle node memory
   nodeMan->unlinkDownAndRecycle(getNodeAddress(p));
+  setNodeAddress(p, 0);
+  nodeHeaders.deactivate(p);
 
   // if (nodeMan.compactLevel) nodeMan.compact(false);
 
@@ -2111,7 +2118,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   // NOW is the best time to run the garbage collector, if necessary.
 #ifndef GC_OFF
-  if (isTimeToGc()) garbageCollect();
+  // if (isTimeToGc()) garbageCollect();
 #endif
 
   // Grab a new node
@@ -2169,7 +2176,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   
   // NOW is the best time to run the garbage collector, if necessary.
 #ifndef GC_OFF
-  if (isTimeToGc()) garbageCollect();
+  // if (isTimeToGc()) garbageCollect();
 #endif
   
   // Grab a new node
@@ -2256,7 +2263,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   // NOW is the best time to run the garbage collector, if necessary.
 #ifndef GC_OFF
-  if (isTimeToGc()) garbageCollect();
+  // if (isTimeToGc()) garbageCollect();
 #endif
 
   // Expand level size

@@ -1140,20 +1140,20 @@ class MEDDLY::forest {
       const node_storage_style* nodestor;
 
       /// Memory compactor: never run if fewer than this many unused slots.
-      int compact_min;
+      // int compact_min;
       /// Memory compactor: always run if more than this many unused slots.
-      int compact_max;
+      // int compact_max;
       /// Memory compactor: fraction of unused slots to trigger.
-      int compact_frac;
+      // int compact_frac;
 
       /// Number of zombie nodes to trigger garbage collection
-      int zombieTrigger;
+      // int zombieTrigger;
       /// Number of orphan nodes to trigger garbage collection
-      int orphanTrigger;
+      // int orphanTrigger;
       /// Should we run the memory compactor after garbage collection
-      bool compactAfterGC;
+      // bool compactAfterGC;
       /// Should we run the memory compactor before trying to expand
-      bool compactBeforeExpand;
+      // bool compactBeforeExpand;
 
       /// Use reference counts to count incoming edges into nodes.
       /// Otherwise, use mark and sweep to remove unreachable nodes.
@@ -1206,14 +1206,12 @@ class MEDDLY::forest {
       long num_compactions;
       /// Number of times the garbage collector ran.
       long garbage_collections;
-      /// Current number of zombie nodes (waiting for deletion)
-      long zombie_nodes;
-      /// Current number of orphan nodes (disconnected)
-      long orphan_nodes;
+      /// Current number of unreachable (disconnected) nodes
+      long unreachable_nodes;
       /// Current number of connected nodes
       long active_nodes;
       /// Current number of temporary nodes
-      long temp_nodes;
+      // long temp_nodes;
 
       /// Peak number of active nodes
       long peak_active;
@@ -1970,12 +1968,12 @@ class MEDDLY::forest {
         All disconnected nodes in this forest are discarded along with any
         compute table entries that may include them.
     */
-    virtual void garbageCollect() = 0;
+    // virtual void garbageCollect() = 0;
 
     /** Compact the memory for all variables in this forest.
         This is not the same as garbage collection.
     */
-    virtual void compactMemory() = 0;
+    // virtual void compactMemory() = 0;
 
     /** Create an edge representing the subset of a Matrix Diagram.
 

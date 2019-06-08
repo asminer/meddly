@@ -1099,7 +1099,6 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
 #else
   parent.mstats.decMemUsed(h_bits/8);
 #endif
-  deactivate(p);
   a_freed++;
 
   // Determine which list to add this into,
@@ -1119,7 +1118,7 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
   // from the free list(s); we simply discard any too-large
   // ones when we pull from the free list(s).
   if (p == a_last) {
-    while (a_last && isDeactivated(a_last)) {
+    while (a_last && isDeleted(a_last)) {
       a_last--;
       a_freed--;
     }
@@ -1217,7 +1216,7 @@ void MEDDLY::node_headers::sweepAllInCacheBits()
   for (node_handle p=1; p<=a_last; p++) {
     if (address[p].cache_count) continue;
     if (address[p].incoming_count) continue;
-    if (0==address[p].offset) continue;
+    if (0==address[p].level) continue;  // already deleted
     parent.deleteNode(p);
     address[p].offset = 0;
   }
