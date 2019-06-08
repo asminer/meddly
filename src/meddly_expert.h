@@ -43,6 +43,7 @@
 #include <map>
 
 // #define DEBUG_MARK_SWEEP
+// #define DEBUG_BUILDLIST
 
 #define OLD_NODE_HEADERS
 
@@ -816,6 +817,8 @@ class MEDDLY::unpacked_node {
     // checks if the node indices are in ascending order
     bool isSorted() const;
 
+    // Is this a "build" node?  Important for mark and sweep.
+    bool isBuildNode() const;
 
   public:
 
@@ -1419,6 +1422,12 @@ class MEDDLY::node_headers {
                           use bitwise or to combine values.
     */
     void reportStats(output &s, const char* pad, unsigned flags) const;
+
+    /** Display header information, primarily for debugging.
+          @param  s     Output stream to write to
+          @param  p     Node to display
+    */
+    void showHeader(output &s, node_handle p) const;
 
     /**
         Indicate that we don't need to track cache counts.
@@ -2459,6 +2468,9 @@ class MEDDLY::expert_forest: public forest
     ///   in-count and cache-count are zero.
     /// Pessimistic deletion: A node is said to be stale when the in-count
     ///  is zero regardless of the cache-count.
+    /// If we don't use reference counts and instead mark and sweep,
+    ///  then a node cannot be recovered once it is "unreachable"
+    ///  because its children might have been recycled
     MEDDLY::forest::node_status getNodeStatus(node_handle node) const;
 
   // ------------------------------------------------------------

@@ -43,7 +43,6 @@
 
 // #define DEBUG_CLEANUP
 // #define DEBUG_ADDRESS_RESIZE
-// #define DEBUG_GC
 // #define DEBUG_CREATE_REDUCED
 // #define DEBUG_GC
 // #define DEBUG_WRITE
@@ -56,7 +55,7 @@
 // #define VALIDATE_INCOUNTS
 // #define VALIDATE_INCOUNTS_ON_DELETE
 
-#define SHOW_VALIDATE_CACHECOUNTS
+// #define SHOW_VALIDATE_CACHECOUNTS
 
 // #define GC_OFF
 
@@ -104,8 +103,8 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
   compactAfterGC = false;
   compactBeforeExpand = true;
 
-  useNodeIncomingCounts = true; 
-  useCacheReferenceCounts = true; 
+  useNodeIncomingCounts = true;
+  useCacheReferenceCounts = true;
 
   // nodemm = ORIGINAL_GRID;
   nodemm = ARRAY_PLUS_GRID;
@@ -128,6 +127,7 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
 
 MEDDLY::forest::statset::statset()
 {
+  reachable_scans = 0;
   reclaimed_nodes = 0;
   num_compactions = 0;
   garbage_collections = 0;
@@ -869,6 +869,8 @@ void MEDDLY::expert_forest::markAllRoots()
 {
   if (deflt.useNodeIncomingCounts) return;
 
+  stats.reachable_scans++;
+
 #ifdef DEBUG_MARK_SWEEP
   printf("Determining which nodes are reachable in forest %u\n", FID());
 #endif
@@ -1216,15 +1218,7 @@ bool MEDDLY::expert_forest
   */
   if (flags & SHOW_DETAILS) {
     // node: was already written.
-    const variable* v = getDomain()->getVar(getVarByLevel(ABS(getNodeLevel(p))));
-    if (v->getName()) {
-      s << " level: " << v->getName();
-    } else {
-      s << " level: " <<  ABS(getNodeLevel(p));
-    }
-    s.put( (getNodeLevel(p) < 0) ? '\'' : ' ' );
-    s << " in: " << getNodeInCount(p);
-    s << " cc: " << nodeHeaders.getNodeCacheCount(p);
+    nodeHeaders.showHeader(s, p);
   } else {
     s << "node: " << long(p);
   }
@@ -1421,6 +1415,7 @@ void MEDDLY::expert_forest
     s << " peak memory allocated\n";
   }
   if (flags & EXTRA_STATS) {
+    s << pad << stats.reachable_scans << " scans for reachable nodes\n";
     s << pad << stats.reclaimed_nodes << " reclaimed nodes\n";
     s << pad << stats.num_compactions << " compactions\n";
     s << pad << stats.garbage_collections << " garbage collections\n";
@@ -1941,7 +1936,8 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 #ifdef TRACK_DELETIONS
   for (int i=0; i<delete_depth; i++) printf(" ");
   printf("Deleting node ");
-  showNode(stdout, p, SHOW_INDEX | SHOW_DETAILS);
+  FILE_output s(stdout);
+  showNode(s, p, SHOW_INDEX | SHOW_DETAILS);
   printf("\n");
   fflush(stdout);
 #endif
@@ -1950,8 +1946,12 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 #endif
 
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
-  MEDDLY_DCASSERT(getNodeInCount(p) == 0);
   MEDDLY_DCASSERT(isActiveNode(p));
+  if (deflt.useNodeIncomingCounts) {
+    MEDDLY_DCASSERT(getNodeInCount(p) == 0);
+  } else {
+    MEDDLY_DCASSERT(!hasReachableBit(p));
+  }
 
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
@@ -1977,12 +1977,10 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 
 #ifdef TRACK_DELETIONS
   // start at one, because we have incremented the depth
-  for (int i=1; i<delete_depth; i++) printf(" "); 
-  printf("%s: p = %d, unique->remove(p) = %d\n", __func__, p, x);
-  fflush(stdout);
+  // for (int i=1; i<delete_depth; i++) printf(" "); 
+  // printf("%s: p = %d, unique->remove(p) = %d\n", __func__, p, x);
+  // fflush(stdout);
 #endif
-
-  MEDDLY_DCASSERT(0==getNodeInCount(p));
 
   // unlink children and recycle node memory
   nodeMan->unlinkDownAndRecycle(getNodeAddress(p));
@@ -2030,7 +2028,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
       if (isIdentityEdge(nb, 0)) {
 #ifdef DEBUG_CREATE_REDUCED
         printf("Identity node ");
-        showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        FILE_output s(stdout);
+        showNode(s, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
         printf("\n");
 #endif
         return nb.d(0);
@@ -2044,7 +2043,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
         for (int i = 1; i<nnz; i++)  unlinkNode(nb.d(i));  
 #ifdef DEBUG_CREATE_REDUCED
         printf("Redundant node ");
-        showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        FILE_output s(stdout);
+        showNode(s, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
         printf("\n");
 #endif
         return nb.d(0);
@@ -2064,7 +2064,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
       if (in < nb.getSize() && isIdentityEdge(nb, in)) {
 #ifdef DEBUG_CREATE_REDUCED
         printf("Identity node ");
-        showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        FILE_output s(stdout);
+        showNode(s, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
         printf("\n");
 #endif
         return nb.d(in);
@@ -2078,7 +2079,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
         for (int i = 1; i<nb.getSize(); i++)  unlinkNode(nb.d(i));
 #ifdef DEBUG_CREATE_REDUCED
         printf("Redundant node ");
-        showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        FILE_output s(stdout);
+        showNode(s, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
         printf("\n");
 #endif
         return nb.d(0);
@@ -2148,7 +2150,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
 #endif
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node ");
-  showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
+  FILE_output s(stdout);
+  showNode(s, p, SHOW_DETAILS | SHOW_INDEX);
   printf("\n");
 #endif
 
@@ -2189,7 +2192,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
   
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node ");
-  showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
+  FILE_output s(stdout);
+  showNode(s, p, SHOW_DETAILS | SHOW_INDEX);
   printf("\n");
 #endif
   
@@ -2229,7 +2233,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
     MEDDLY_DCASSERT(nnz == 1 && nb.ext_i() == 0);
 #ifdef DEBUG_CREATE_REDUCED
     printf("Redundant node ");
-    showNode(stdout, nb.ext_d(), SHOW_DETAILS | SHOW_INDEX);
+    FILE_output s(stdout);
+    showNode(s, nb.ext_d(), SHOW_DETAILS | SHOW_INDEX);
     printf("\n");
 #endif
     return nb.ext_d();
@@ -2289,7 +2294,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
 #endif
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node ");
-  showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
+  FILE_output s(stdout);
+  showNode(s, p, SHOW_DETAILS | SHOW_INDEX);
   printf("\n");
 #endif
 
@@ -2331,7 +2337,8 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_nod
 #endif
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node ");
-  showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
+  FILE_output s(stdout);
+  showNode(s, p, SHOW_DETAILS | SHOW_INDEX);
   printf("\n");
 #endif
 
@@ -2346,11 +2353,23 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
     case policies::FULLY_REDUCED:
       if (nb.isSparse()) {
         for (int z=0; z<nb.getNNZs(); z++) {
-          MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(z))));
+          if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(z)))) continue;
+          FILE_output s(stdout);
+          s << "Down pointer violation in created node at level " << nb.getLevel() << ":\n";
+          nb.show(s, true);
+          s << "\nPointer " << nb.d(z) << " at level " << getNodeLevel(nb.d(z)) << ":\n";
+          showNode(s, nb.d(z), SHOW_DETAILS);
+          MEDDLY_DCASSERT(0);
         } 
       } else {
         for (int i=0; i<nb.getSize(); i++) {
-          MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(i))));
+          if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(i)))) continue;
+          FILE_output s(stdout);
+          s << "Down pointer violation in created node at level " << nb.getLevel() << ":\n";
+          nb.show(s, true);
+          s << "\nPointer " << nb.d(i) << " at level " << getNodeLevel(nb.d(i)) << ":\n";
+          showNode(s, nb.d(i), SHOW_DETAILS);
+          MEDDLY_DCASSERT(0);
         }
       }
       break;

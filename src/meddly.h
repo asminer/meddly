@@ -1198,6 +1198,8 @@ class MEDDLY::forest {
 
     /// Collection of various stats for performance measurement
     struct statset {
+      /// Number of times we scanned for reachable nodes
+      long reachable_scans;
       /// Number of times a dead node was resurrected.
       long reclaimed_nodes;
       /// Number of times the forest storage array was compacted

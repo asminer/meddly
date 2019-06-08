@@ -79,6 +79,11 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
   if (checkTerminals(a, b, result))
     return result;
 
+#ifdef TRACE_ALL_OPS
+  printf("computing %s(%d, %d)\n", getName(), a, b);
+  fflush(stdout);
+#endif
+
   compute_table::entry_key* Key = findResult(a, b, result);
   if (0==Key) return result;
 

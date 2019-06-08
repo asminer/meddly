@@ -448,6 +448,12 @@ MEDDLY::unpacked_node::setHash(unsigned H)
   h = H;
 }
 
+inline bool
+MEDDLY::unpacked_node::isBuildNode() const
+{
+  return is_in_build_list;
+}
+
 inline void
 MEDDLY::unpacked_node::shrinkFull(int ns)
 {
@@ -494,11 +500,11 @@ inline void
 MEDDLY::unpacked_node::recycle(MEDDLY::unpacked_node* r)
 {
   if (r) {
-    r->next = freeList;
-    freeList = r;
     if (r->is_in_build_list) {
       removeFromBuildList(r);
     }
+    r->next = freeList;
+    freeList = r;
   }
 }
 
@@ -515,6 +521,9 @@ MEDDLY::unpacked_node::freeRecycled()
 inline void
 MEDDLY::unpacked_node::addToBuildList(unpacked_node* b)
 {
+#ifdef DEBUG_BUILDLIST
+  printf("Adding unpacked node at level %d to build list\n", b->getLevel());
+#endif
   MEDDLY_DCASSERT(b);
   b->is_in_build_list = true;
   b->next = buildList;
@@ -1284,14 +1293,6 @@ MEDDLY::node_headers::clearAllInCacheBits()
   is_in_cache->clearAll();
 
 #endif
-}
-
-// ******************************************************************
-
-inline void
-MEDDLY::node_headers::sweepAllInCacheBits()
-{
-  a_sweep = 0;
 }
 
 // ******************************************************************
@@ -2163,12 +2164,12 @@ MEDDLY::expert_forest::unlinkNode(MEDDLY::node_handle p)
 inline void
 MEDDLY::expert_forest::markNode(node_handle p)
 {
-  if (!deflt.useNodeIncomingCounts) return;
+  if (deflt.useNodeIncomingCounts) return;
   if (p<1) return;
   if (nodeHeaders.hasReachableBit(p)) return;
 
 #ifdef DEBUG_MARK_SWEEP
-  printf("Marking node %ld\n", p);
+  printf("Marking node %d\n", p);
 #endif
 
   nodeHeaders.setReachableBit(p);
@@ -2359,8 +2360,7 @@ MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
     }
   } else {
     if (!hasReachableBit(node)) {
-      // orphan nodes
-      return MEDDLY::forest::RECOVERABLE;
+      return MEDDLY::forest::DEAD;    // Only safe thing to do
     }
   }
   return MEDDLY::forest::ACTIVE;
@@ -2425,6 +2425,7 @@ const
 {
   const int level = getNodeLevel(node);
   un.bind_to_forest(this, level, getLevelSize(level), true); 
+  MEDDLY_DCASSERT(getNodeAddress(node));
   nodeMan->fillUnpacked(un, getNodeAddress(node), st2);
 }
 
@@ -2432,6 +2433,7 @@ inline MEDDLY::node_handle
 MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un)
 {
   MEDDLY_DCASSERT(un);
+  MEDDLY_DCASSERT(un->isBuildNode());
   un->computeHash();
   MEDDLY::node_handle q = createReducedHelper(in, *un);
 #ifdef TRACK_DELETIONS
@@ -2458,6 +2460,7 @@ MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un, T& e
       MEDDLY::node_handle& node)
 {
   MEDDLY_DCASSERT(un);
+  MEDDLY_DCASSERT(un->isBuildNode());
   normalize(*un, ev);
   MEDDLY_DCASSERT(ev >= 0);
   un->computeHash();

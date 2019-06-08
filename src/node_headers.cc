@@ -34,6 +34,9 @@
 
 // #define OLD_HEADERS_NEW_ALLOC
 
+// #define DEBUG_SWEEP_DETAIL
+// #define DEBUG_SWEEP_DETAIL_CT
+
 // ******************************************************************
 // *                                                                *
 // *                        Helper functions                        *
@@ -895,6 +898,34 @@ void MEDDLY::node_headers
 
 // ******************************************************************
 
+void MEDDLY::node_headers
+::showHeader(output &s, node_handle p) const
+{
+  MEDDLY_DCASSERT(p>0);
+  MEDDLY_DCASSERT(p<=a_last);
+
+  int k = ABS(getNodeLevel(p));
+  const variable* v = parent.getDomain()->getVar(parent.getVarByLevel(k));
+  if (v->getName()) {
+    s << " level: " << v->getName();
+  } else {
+    s << " level: " <<  k;
+  }
+  s.put( (getNodeLevel(p) < 0) ? '\'' : ' ' );
+
+#ifdef OLD_NODE_HEADERS
+  s << " in: " << (unsigned long) address[p].incoming_count;
+  s << " cc: " << (unsigned long) address[p].cache_count;
+#else
+  if (incoming_counts)  s << " in: " << incoming_counts->get(p);
+  if (cache_counts)     s << " cc: " << cache_counts->get(p);
+  if (is_reachable)     s << " reach: " << is_reachable->get(p);
+  if (is_in_cache)      s << " cache: " << is_in_cache->get(p);
+#endif
+}
+
+// ******************************************************************
+
 /*
 void MEDDLY::node_headers::turnOffCacheCounts()
 {
@@ -955,7 +986,7 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
     dump_handle_info(*this, a_last+1);
 #endif
 #ifdef DEBUG_HANDLE_MGT
-    fprintf(stderr, "Using recycled handle %d\n", found);
+    printf("Using recycled handle %d\n", found);
 #endif
     a_freed--;
     return found;
@@ -977,10 +1008,13 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
       break;
     }
     if (found) {
+      MEDDLY_DCASSERT(0==address[found].offset);
+      /*
       if (address[found].offset) {
         parent.deleteNode(found);
         address[found].offset = 0;
       }
+      */
     } else {
       // we're done sweeping
       a_sweep = INT_MAX;
@@ -1008,10 +1042,13 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
       }
     }
     if (found) {
+      MEDDLY_DCASSERT(0==addresses->get(found));
+      /*
       if (addresses->get(found)) {
         parent.deleteNode(found);
         addresses->set(found, 0);
       }
+      */
     } else {
       // we're done sweeping
       a_sweep = SIZE_MAX;
@@ -1025,7 +1062,7 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
     dump_handle_info(*this, a_last+1);
 #endif
 #ifdef DEBUG_HANDLE_MGT
-    fprintf(stderr, "Using swept handle %d\n", found);
+    printf("Using swept handle %d\n", found);
 #endif
     return found;
   }
@@ -1040,7 +1077,7 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
   dump_handle_info(*this, a_last+1);
 #endif
 #ifdef DEBUG_HANDLE_MGT
-  fprintf(stderr, "Using end handle %lu\n", a_last);
+  printf("Using end handle %lu\n", a_last);
 #endif
   return a_last;
 }
@@ -1054,7 +1091,7 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
   MEDDLY_DCASSERT(0==getNodeCacheCount(p));
 
 #ifdef DEBUG_HANDLE_MGT
-  fprintf(stderr, "Recycling handle %d\n", p);
+  printf("Recycling handle %d\n", p);
 #endif
 
 #ifdef OLD_NODE_HEADERS
@@ -1088,12 +1125,12 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
     }
 
 #ifdef DEBUG_HANDLE_MGT
-    fprintf(stderr, "Collapsing handle end from %d to %lu\n", p, a_last);
+    printf("Collapsing handle end from %d to %lu\n", p, a_last);
 #endif
 
     if (a_last < a_next_shrink) {
 #ifdef DEBUG_HANDLE_MGT
-      fprintf(stderr, "Collapsed end less than shrink check %lu\n", a_next_shrink);
+      printf("Collapsed end less than shrink check %lu\n", a_next_shrink);
 #endif
       shrinkHandleList();
     }
@@ -1134,6 +1171,74 @@ void MEDDLY::node_headers::swapNodes(node_handle p, node_handle q, bool swap_inc
   if (implicit_bits)                      implicit_bits->swap(sp, sq);
 #endif
 }
+
+// ******************************************************************
+
+void MEDDLY::node_headers::sweepAllInCacheBits()
+{
+  a_sweep = 0;
+
+#ifdef DEBUG_SWEEP_DETAIL
+  printf("Done sweeping; nodes that will be reclaimed:\n\t");
+
+#ifdef OLD_NODE_HEADERS
+  for (node_handle p=1; p<=a_last; p++) {
+    if (address[p].cache_count) continue;
+    if (address[p].incoming_count) continue;
+    printf("%d, ", p);
+  }
+#else
+  MEDDLY_DCASSERT(is_in_cache);
+  size_t p = 0;
+  for (;;) {
+    p = is_in_cache->firstZero(++p);
+    if (is_reachable) {
+      if (is_reachable->get(p)) continue;
+    } else {
+      if (incoming_counts->get(p)) continue;
+    }
+    printf("%d, ", p);
+  } // infinite loop
+#endif
+  printf(".\n");
+
+#ifdef DEBUG_SWEEP_DETAIL_CT
+  printf("Compute tables:\n");
+  FILE_output s(stdout);
+  operation::showAllComputeTables(s, 5);
+#endif
+#endif
+
+  //
+  // Delete all nodes that can be reclaimed
+  //
+
+#ifdef OLD_NODE_HEADERS
+  for (node_handle p=1; p<=a_last; p++) {
+    if (address[p].cache_count) continue;
+    if (address[p].incoming_count) continue;
+    if (0==address[p].offset) continue;
+    parent.deleteNode(p);
+    address[p].offset = 0;
+  }
+#else
+  MEDDLY_DCASSERT(is_in_cache);
+  MEDDLY_DCASSERT(addresses);
+  size_t p = 0;
+  for (;;) {
+    p = is_in_cache->firstZero(++p);
+    if (is_reachable) {
+      if (is_reachable->get(p)) continue;
+    } else {
+      if (incoming_counts->get(p)) continue;
+    }
+    if (0==addresses->get(p)) continue;
+    parent.deleteNode(p);
+    addresses->set(p, 0);
+  } // infinite loop
+#endif
+}
+
 
 // ******************************************************************
 
@@ -1272,10 +1377,64 @@ void MEDDLY::node_headers::changeHeaderSize(unsigned oldbits, unsigned newbits)
 void MEDDLY::node_headers::expandHandleList()
 {
   //
+  // We just incremented a_last,
+  // so don't include it in our iterations.
+  //
+  //
   // If we're not using reference counts,
   // determine which nodes are reachable.
   //
-  parent.markAllRoots();
+  if (!parent.getPolicies().useNodeIncomingCounts) {
+
+      parent.markAllRoots();
+
+#ifdef DEBUG_SWEEP_DETAIL
+      printf("Unreachable nodes:\n\t");
+
+      for (node_handle p=1; p<a_last; p++) {
+#ifdef OLD_NODE_HEADERS
+        if (address[p].incoming_count) continue;
+#else
+        MEDDLY_DCASSERT(is_reachable);
+        if (is_reachable->get(p)) continue;
+#endif
+        printf("%d, ", p);
+      }
+      printf(".\n");
+
+#endif  // DEBUG_SWEEP_DETAIL
+
+      //
+      // If pessimistic, go ahead and delete the unreachable nodes now.
+      //
+      if (parent.getNodeDeletion() == forest::policies::PESSIMISTIC_DELETION) {
+
+        for (node_handle p=1; p<a_last; p++) {
+#ifdef OLD_NODE_HEADERS
+          if (address[p].incoming_count) continue;
+          if (0==address[p].offset) continue;
+#else
+          MEDDLY_DCASSERT(is_reachable);
+          MEDDLY_DCASSERT(addresses);
+          if (is_reachable->get(p)) continue;
+          if (0==addresses->get(p)) continue;
+#endif
+
+          parent.deleteNode(p);
+
+#ifdef OLD_NODE_HEADERS
+          address[p].offset = 0;
+#else
+          addresses->set(p, 0);
+#endif
+        } // for p
+        
+      } // pessimistic
+  } // no incoming counts
+
+  //
+  // Done with GC, now work on expanding
+  //
 
 #ifdef OLD_NODE_HEADERS
 

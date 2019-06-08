@@ -434,25 +434,40 @@ void MEDDLY::unpacked_node::removeFromBuildList(unpacked_node* b)
 {
   MEDDLY_DCASSERT(b);
   MEDDLY_DCASSERT(b->is_in_build_list);
+  MEDDLY_DCASSERT(buildList);
   if (b == buildList) {
+#ifdef DEBUG_BUILDLIST
+    printf("Removing unpacked node (level %d) from front of build list\n", b->getLevel());
+#endif
     // should always happen if we're recursively building
     buildList = b->next;
+    b->next = 0;
     return;
   }
+#ifdef DEBUG_BUILDLIST
+  printf("Removing unpacked node (level %d) from middle of build list\n", b->getLevel());
+#endif
   unpacked_node* prev = buildList;
   for (unpacked_node* curr = buildList->next; curr; curr=curr->next) {
     if (b == curr) {
       prev->next = b->next;
+      b->next = 0;
       return;
     }
     prev = curr;
   }
+  MEDDLY_DCASSERT(0);
 }
 
 void MEDDLY::unpacked_node::markBuildListChildren(expert_forest* F)
 {
   for (unpacked_node* curr = buildList; curr; curr=curr->next) {
-    if (curr->parent != F) continue;
+    if (curr->parent != F) {
+#ifdef DEBUG_MARK_SWEEP
+      printf("Skipping unpacked node for other forest\n");
+#endif
+      continue;
+    }
 #ifdef DEBUG_MARK_SWEEP
     printf("Traversing unpacked node at level %d\n", curr->getLevel());
 #endif
