@@ -95,6 +95,75 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 
 		return false;
 	}
+
+	inline bool evaluateRawIsMarkingCoveredWithInfty(const dd_edge &f, node_handle p,
+				const int* vlist) const {
+
+		if (isTerminalNode(p) && getNodeLevel(p) == 0) {
+
+			printf("REACH TO TERMINAL\n");
+			printf("terminal P value%d\n", p);
+			if (p != 0) {
+				printf("Returned true\n");
+				return true;
+			}
+
+		} else {
+			printf("F.Hasinfty%d", f.getHasInfty());
+			unpacked_node* nr = unpacked_node::useUnpackedNode();
+			nr->initFromNode(this, p, true);
+			FILE_output meddlyout(stdout);
+			nr->show(meddlyout, false);
+			if (nr->isVisited() != true) {
+				int level = getNodeLevel(p);
+				int val = getDomain()->getVariableBound(level, false);
+				printf("Domain size%d\n", val);
+				bool result = false;
+				for (int i = 0; i < val; i++) {
+					if (!result) {
+						printf("In Domain%d\n", i);
+						printf("LEVEL%d\n", level);
+						printf("vlist[level] %d , %d\n", vlist[level], i);
+						if (i == 0) {
+
+						} else if (i == 1) {
+							node_handle p1 = getDownPtr(p, i);
+							printf("CAME IN i=1\n");
+//							if(p!=0){
+//							if (vlist[level] == i) {
+							result = evaluateRawIsMarkingCoveredWithInfty(f, p1,
+									vlist);
+							if (result == true) {
+								printf("After Call%d", i);
+								return true;
+//							}
+							}
+//							}
+						} else if (i >= vlist[level] && vlist[level] != 1) {
+							printf("POSIBLE %d level: %d \n", i, level);
+							//							printf("bP *value%d\n", p);
+							node_handle p2 = getDownPtr(p, i);
+							printf("P *value%d %d\n", p2, getNodeLevel(p2));
+							result = evaluateRawIsMarkingCoveredWithInfty(f, p2,
+									vlist);
+							printf("After evaluateRawIsMarkingCovered %d\n",
+									result);
+							if (result == true) {
+								printf("After Call%d", i);
+								return true;
+							}
+						}
+					}
+				}
+				nr->setVisited();
+			} else {
+				return false;
+			}
+		}
+
+		return false;
+	}
+
     // Move the variable to the optimal level between top and bottom
     void sifting(int var, int top, int bottom);
 

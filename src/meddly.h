@@ -2484,7 +2484,7 @@ class MEDDLY::dd_edge {
 
     void setHasInfty();
     void unsetHasInfty();
-    bool getHasInfty();
+    bool getHasInfty()const;
     /** Check for equality.
         @return true    iff this edge has the same parent and refers to
                         the same edge as \a e.

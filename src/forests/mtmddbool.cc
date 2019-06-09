@@ -61,9 +61,10 @@ void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
 	  int level=getLevelByVar(i);
 	  for(int j=0; j<N; j++) {
 		  //+2 because of considering +infty and -infty
-		  if (e.getHasInfty()){
-		  ordered_vlist[j][level]=vlist[j][i]+2;
-		  }else{
+//		  if (e.getHasInfty()){
+//		  ordered_vlist[j][level]=vlist[j][i]+2;
+//		  }else
+		  {
 			  ordered_vlist[j][level]=vlist[j][i];
 		  }
 	  }
@@ -99,7 +100,14 @@ void MEDDLY::mt_mdd_bool
 void MEDDLY::mt_mdd_bool::isMarkingCovered(const dd_edge &f, const int* vlist,
 		bool &term) const {
 	node_handle p = f.getNode();
+	printf("XXXXF%d\n",f.getHasInfty());
+	if (!f.getHasInfty()){
 	term = evaluateRawIsMarkingCovered(f, p, vlist);
+	}
+	else{
+		printf("CALL WITH INFTY\n");
+		term = evaluateRawIsMarkingCoveredWithInfty(f, p, vlist);
+	}
 }
 
 void MEDDLY::mt_mdd_bool::showTerminal(output &s, node_handle tnode) const

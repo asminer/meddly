@@ -225,7 +225,7 @@ void MEDDLY::dd_edge::unsetHasInfty()
 {
   hasInfty=false;
 }
-bool MEDDLY::dd_edge::getHasInfty()
+bool MEDDLY::dd_edge::getHasInfty()const
 {
   return hasInfty;
 }
