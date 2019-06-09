@@ -2202,9 +2202,17 @@ MEDDLY::expert_forest::cacheNode(MEDDLY::node_handle p)
 {
   if (deflt.useCacheReferenceCounts) {
     nodeHeaders.cacheNode(p);
-  } else {
+    return;
+  } 
+  // We only need to set the cache bit if
+  // we're using incoming reference counts.
+  if (deflt.useNodeIncomingCounts) {
     nodeHeaders.setInCacheBit(p);
   }
+  // If incoming is ALSO marked and swept,
+  // then we only recycle nodes at set times,
+  // and there is no need to set the cache bit
+  // outside of the "mark" phase.
 }
 
 inline void
