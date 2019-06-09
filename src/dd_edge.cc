@@ -217,17 +217,14 @@ void MEDDLY::dd_edge::setEdgeValue(float value)
   MEDDLY_DCASSERT(forest::REAL == parent->getRangeType());
   expert_forest::EVencoder<float>::writeValue(&raw_value, value);
 }
-void MEDDLY::dd_edge::setHasInfty()
-{
-  hasInfty=true;
+void MEDDLY::dd_edge::setHasPInfty() {
+	hasPInfty = true;
 }
-void MEDDLY::dd_edge::unsetHasInfty()
-{
-  hasInfty=false;
+void MEDDLY::dd_edge::unsetHasPInfty() {
+	hasPInfty = false;
 }
-bool MEDDLY::dd_edge::getHasInfty()const
-{
-  return hasInfty;
+bool MEDDLY::dd_edge::getHasPInfty() const {
+	return hasPInfty;
 }
 unsigned MEDDLY::dd_edge::getNodeCount() const
 {

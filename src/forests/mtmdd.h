@@ -109,7 +109,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 			}
 
 		} else {
-			printf("F.Hasinfty%d", f.getHasInfty());
+			printf("F.Hasinfty%d", f.getHasPInfty());
 			unpacked_node* nr = unpacked_node::useUnpackedNode();
 			nr->initFromNode(this, p, true);
 			FILE_output meddlyout(stdout);
@@ -126,9 +126,9 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 						printf("vlist[level] %d , %d\n", vlist[level], i);
 						if (i == 0) {
 
-						} else if (i == 1) {
+						//} else if (i == 1) {
 							node_handle p1 = getDownPtr(p, i);
-							printf("CAME IN i=1\n");
+							printf("CAME IN i=0\n");
 //							if(p!=0){
 //							if (vlist[level] == i) {
 							result = evaluateRawIsMarkingCoveredWithInfty(f, p1,
@@ -139,7 +139,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 //							}
 							}
 //							}
-						} else if (i >= vlist[level] && vlist[level] != 1) {
+						} else if (i >= vlist[level] && vlist[level] != 0) {
 							printf("POSIBLE %d level: %d \n", i, level);
 							//							printf("bP *value%d\n", p);
 							node_handle p2 = getDownPtr(p, i);

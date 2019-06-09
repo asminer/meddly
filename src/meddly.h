@@ -2278,9 +2278,9 @@ class MEDDLY::domain {
     /// Free the slot that the forest is using.
     void unlinkForest(forest* f, int slot);
     //-------------------------------------------------------------------
-    void setHasInftyDomain();
-    void unsetHasInftyDomain();
-    bool getHasInftyDomain();
+    void setHasPInftyDomain();
+    void unsetHasPInftyDomain();
+    bool getHasPInftyDomain();
     // --------------------------------------------------------------------
 
   protected:
@@ -2332,7 +2332,7 @@ class MEDDLY::domain {
     /// Index of this domain in the domain list.
     int my_index;
     /// the domain has infty.
-    bool hasInftyDomain=false;
+    bool hasPInftyDomain=false;
 
     static void expandDomList();
     static void markDomList();
@@ -2482,9 +2482,9 @@ class MEDDLY::dd_edge {
     void setEdgeValue(long value);
     void setEdgeValue(float value);
 
-    void setHasInfty();
-    void unsetHasInfty();
-    bool getHasInfty()const;
+    void setHasPInfty();
+    void unsetHasPInfty();
+    bool getHasPInfty()const;
     /** Check for equality.
         @return true    iff this edge has the same parent and refers to
                         the same edge as \a e.
@@ -2599,8 +2599,9 @@ class MEDDLY::dd_edge {
     // called when the parent is destroyed
     void orphan();
 
-    // when hasInfty is true we consider the first two child to be -infty and +infty
-    bool hasInfty=false;
+    // when hasPInfty is true we consider the first child to be +infty
+    bool hasPInfty=false;
+    bool hasNInfty=false;
 };
 
 // ******************************************************************

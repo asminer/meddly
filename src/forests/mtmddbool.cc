@@ -100,8 +100,8 @@ void MEDDLY::mt_mdd_bool
 void MEDDLY::mt_mdd_bool::isMarkingCovered(const dd_edge &f, const int* vlist,
 		bool &term) const {
 	node_handle p = f.getNode();
-	printf("XXXXF%d\n",f.getHasInfty());
-	if (!f.getHasInfty()){
+	printf("XXXXF%d\n",f.getHasPInfty());
+	if (!f.getHasPInfty()){
 	term = evaluateRawIsMarkingCovered(f, p, vlist);
 	}
 	else{
