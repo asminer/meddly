@@ -210,7 +210,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 //							}
 							}
 //							}
-						} else if (i <= vlist[level] && i != 0) {
+						} else if (i <= vlist[level] || vlist[level] == 0) {
 							rlist[level] = i;
 							printf("POSIBLE %d level: %d \n", i, level);
 							//							printf("bP *value%d\n", p);
