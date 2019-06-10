@@ -346,6 +346,19 @@ inline void MEDDLY::unpacked_node::setVisited() {
 inline void MEDDLY::unpacked_node::unsetVisited() {
 	visited = false;
 }
+// ------Marked
+inline MEDDLY::unpacked_node::markedWith MEDDLY::unpacked_node::getMarked() const {
+	return marked;
+}
+inline void MEDDLY::unpacked_node::setMarkedC() {
+	marked = markedWith::C;
+}
+inline void MEDDLY::unpacked_node::setMarkedNC() {
+	marked = markedWith::NC;
+}
+inline void MEDDLY::unpacked_node::setMarkedNV() {
+	marked = markedWith::NV;
+}
 // ---------------------------------------------
 // Extensible portion of the node
 // ---------------------------------------------

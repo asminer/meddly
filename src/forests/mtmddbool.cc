@@ -110,6 +110,26 @@ void MEDDLY::mt_mdd_bool::isMarkingCovered(const dd_edge &f, const int* vlist,
 	}
 }
 
+void MEDDLY::mt_mdd_bool::firstMarkingCovers(const dd_edge &f, const int* vlist,
+		bool &term) const {
+	node_handle p = f.getNode();
+//	printf("XXXXF%d\n",f.getHasPInfty());
+//	if (!f.getHasPInfty()){
+//	term = evaluateRawIsMarkingCovered(f, p, vlist);
+//	}
+//	else{
+	int rlistsize=getNodeLevel(p);
+	int* rlist=new int(rlistsize);
+		printf("evaluateRawFirstMarkingCoveredWithInfty WITH INFTY\n");
+		term = evaluateRawFirstMarkingCoversWithInfty(f, p, vlist,rlist);
+		printf("RESULT is %d\n",term);
+		if (term){
+		for (int i = rlistsize; i >= 0; i--)
+			printf("%d ",rlist[i]);
+		}
+//	}
+}
+
 void MEDDLY::mt_mdd_bool::showTerminal(output &s, node_handle tnode) const
 {
   bool_Tencoder::show(s, tnode);

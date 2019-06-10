@@ -593,6 +593,9 @@ class MEDDLY::unpacked_node {
       AS_STORED
     };
 
+	enum markedWith {
+		NC, C, NV
+	};
   public:
     /** Constructor.
      The class must be "filled" by a forest before
@@ -736,6 +739,12 @@ class MEDDLY::unpacked_node {
 	bool isVisited() const;
 	void setVisited();
 	void unsetVisited();
+	// -------------------------------------------------------------------------
+	// Methods for accessing the marked value of the node
+	markedWith getMarked() const;
+	void setMarkedNC();
+	void setMarkedC();
+	void setMarkedNV();
     // -------------------------------------------------------------------------
     // Methods to access the extensible portion of the node
     //
@@ -881,6 +890,7 @@ class MEDDLY::unpacked_node {
     char edge_bytes; // number of bytes for an edge value.
     bool is_full;
 	bool visited;
+	markedWith marked = markedWith::NV;
 #ifdef DEVELOPMENT_CODE
     bool has_hash;
 #endif

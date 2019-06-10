@@ -44,6 +44,8 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest {
       const;
 	virtual void isMarkingCovered(const dd_edge &f, const int* vlist,
 			bool &term) const;
+	virtual void firstMarkingCovers(const dd_edge &f, const int* vlist,
+			bool &term) const;
 
     virtual void showTerminal(output &s, node_handle tnode) const;
     virtual void writeTerminal(output &s, node_handle tnode) const;

@@ -457,6 +457,11 @@ void MEDDLY::forest::isMarkingCovered(const dd_edge &f, const int* vl,
 	throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
+void MEDDLY::forest::firstMarkingCovers(const dd_edge &f, const int* vl,
+		bool &t) const {
+	throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
 void MEDDLY::forest::removeStaleComputeTableEntries()
 {
   if (operation::usesMonolithicComputeTable()) {
