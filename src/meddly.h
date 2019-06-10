@@ -1155,13 +1155,9 @@ class MEDDLY::forest {
       /// Should we run the memory compactor before trying to expand
       // bool compactBeforeExpand;
 
-      /// Use reference counts to count incoming edges into nodes.
-      /// Otherwise, use mark and sweep to remove unreachable nodes.
-      bool useNodeIncomingCounts;
-
-      /// Use reference counts to count cache entries for nodes.
-      /// Otherwise, use mark and sweep to remove stale cache entries.
-      bool useCacheReferenceCounts;
+      /// Use reference counts to know when nodes can be recycled.
+      /// Otherwise, use mark and sweep to recycle disconnected nodes.
+      bool useReferenceCounts;
 
       /// Empty constructor, for setting up defaults later
       policies();

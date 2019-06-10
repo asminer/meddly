@@ -103,8 +103,7 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
   // compactAfterGC = false;
   // compactBeforeExpand = true;
 
-  useNodeIncomingCounts = true; 
-  useCacheReferenceCounts = false;
+  useReferenceCounts = true;
 
   // nodemm = ORIGINAL_GRID;
   nodemm = ARRAY_PLUS_GRID;
@@ -866,7 +865,7 @@ void MEDDLY::expert_forest::initializeForest()
 
 void MEDDLY::expert_forest::markAllRoots()
 {
-  if (deflt.useNodeIncomingCounts) return;
+  if (deflt.useReferenceCounts) return;
 
   stats.reachable_scans++;
 
@@ -980,7 +979,7 @@ void MEDDLY::expert_forest::validateIncounts(bool exact)
 
 void MEDDLY::expert_forest::validateCacheCounts() const
 {
-  if (!deflt.useCacheReferenceCounts) return;
+  if (!deflt.useReferenceCounts) return;
 
 #ifdef DEVELOPMENT_CODE
 #ifdef SHOW_VALIDATE_CACHECOUNTS
@@ -1178,7 +1177,7 @@ bool MEDDLY::expert_forest
     Deal with cases where nothing will be displayed.
   */
   bool isReachable = 
-    deflt.useNodeIncomingCounts ? (getNodeInCount(p)) : (hasReachableBit(p)) ;
+    deflt.useReferenceCounts ? (getNodeInCount(p)) : (hasReachableBit(p)) ;
 
   if (isTerminalNode(p)) {
     if (!(flags & SHOW_TERMINALS))  return false;
@@ -1942,7 +1941,7 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
   for (int i=0; i<delete_depth; i++) printf(" ");
   printf("Deleting node ");
   FILE_output s(stdout);
-  showNode(s, p, SHOW_INDEX | SHOW_DETAILS);
+  showNode(s, p, SHOW_INDEX | SHOW_DETAILS | SHOW_UNREACHABLE);
   printf("\n");
   fflush(stdout);
 #endif
@@ -1952,7 +1951,7 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
   MEDDLY_DCASSERT(isActiveNode(p));
-  if (deflt.useNodeIncomingCounts) {
+  if (deflt.useReferenceCounts) {
     MEDDLY_DCASSERT(getNodeInCount(p) == 0);
   } else {
     MEDDLY_DCASSERT(!hasReachableBit(p));
@@ -2124,12 +2123,12 @@ MEDDLY::node_handle MEDDLY::expert_forest
   // Grab a new node
   node_handle p = nodeHeaders.getFreeNodeHandle();
   nodeHeaders.setNodeLevel(p, nb.getLevel());
-  if (deflt.useNodeIncomingCounts) {
+  if (deflt.useReferenceCounts) {
     MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
   } else {
     nodeHeaders.setReachableBit(p);
   }
-  if (deflt.useCacheReferenceCounts) {
+  if (deflt.useReferenceCounts) {
     MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
   } else {
     nodeHeaders.setInCacheBit(p);

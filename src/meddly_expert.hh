@@ -2139,14 +2139,14 @@ MEDDLY::expert_forest::trackingInCounts() const
 inline unsigned long
 MEDDLY::expert_forest::getNodeInCount(MEDDLY::node_handle p) const
 {
-  MEDDLY_DCASSERT(deflt.useNodeIncomingCounts);
+  MEDDLY_DCASSERT(deflt.useReferenceCounts);
   return nodeHeaders.getIncomingCount(p);
 }
 
 inline MEDDLY::node_handle
 MEDDLY::expert_forest::linkNode(MEDDLY::node_handle p)
 {
-  if (deflt.useNodeIncomingCounts) {
+  if (deflt.useReferenceCounts) {
     return nodeHeaders.linkNode(p);
   } else {
     return p;
@@ -2156,7 +2156,7 @@ MEDDLY::expert_forest::linkNode(MEDDLY::node_handle p)
 inline void
 MEDDLY::expert_forest::unlinkNode(MEDDLY::node_handle p)
 {
-  if (deflt.useNodeIncomingCounts) {
+  if (deflt.useReferenceCounts) {
     nodeHeaders.unlinkNode(p);
   } 
 }
@@ -2164,7 +2164,7 @@ MEDDLY::expert_forest::unlinkNode(MEDDLY::node_handle p)
 inline void
 MEDDLY::expert_forest::markNode(node_handle p)
 {
-  if (deflt.useNodeIncomingCounts) return;
+  if (deflt.useReferenceCounts) return;
   if (p<1) return;
   if (nodeHeaders.hasReachableBit(p)) return;
 
@@ -2181,7 +2181,7 @@ MEDDLY::expert_forest::markNode(node_handle p)
 inline bool
 MEDDLY::expert_forest::hasReachableBit(node_handle p) const
 {
-  MEDDLY_DCASSERT(!deflt.useNodeIncomingCounts);
+  MEDDLY_DCASSERT(!deflt.useReferenceCounts);
   return nodeHeaders.hasReachableBit(p);
 }
 
@@ -2200,25 +2200,16 @@ MEDDLY::expert_forest::trackingCacheCounts() const
 inline void
 MEDDLY::expert_forest::cacheNode(MEDDLY::node_handle p)
 {
-  if (deflt.useCacheReferenceCounts) {
+  if (deflt.useReferenceCounts) {
     nodeHeaders.cacheNode(p);
     return;
   } 
-  // We only need to set the cache bit if
-  // we're using incoming reference counts.
-  if (deflt.useNodeIncomingCounts) {
-    nodeHeaders.setInCacheBit(p);
-  }
-  // If incoming is ALSO marked and swept,
-  // then we only recycle nodes at set times,
-  // and there is no need to set the cache bit
-  // outside of the "mark" phase.
 }
 
 inline void
 MEDDLY::expert_forest::uncacheNode(MEDDLY::node_handle p)
 {
-  if (deflt.useCacheReferenceCounts) {
+  if (deflt.useReferenceCounts) {
     nodeHeaders.uncacheNode(p);
   }
 }
@@ -2226,7 +2217,7 @@ MEDDLY::expert_forest::uncacheNode(MEDDLY::node_handle p)
 inline void
 MEDDLY::expert_forest::setCacheBit(MEDDLY::node_handle p)
 {
-  if (!deflt.useCacheReferenceCounts) {
+  if (!deflt.useReferenceCounts) {
     nodeHeaders.setInCacheBit(p);
   }
 }
@@ -2234,7 +2225,7 @@ MEDDLY::expert_forest::setCacheBit(MEDDLY::node_handle p)
 inline void
 MEDDLY::expert_forest::clearAllCacheBits()
 {
-  if (!deflt.useCacheReferenceCounts) {
+  if (!deflt.useReferenceCounts) {
 #ifdef DEBUG_MARK_SWEEP
     printf("Clearing cache bits for forest %u\n", FID());
 #endif
@@ -2245,7 +2236,7 @@ MEDDLY::expert_forest::clearAllCacheBits()
 inline void
 MEDDLY::expert_forest::sweepAllCacheBits()
 {
-  if (!deflt.useCacheReferenceCounts) {
+  if (!deflt.useReferenceCounts) {
 #ifdef DEBUG_MARK_SWEEP
     printf("Sweeping cache bits for forest %u\n", FID());
 #endif
@@ -2361,20 +2352,25 @@ MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
   if (isTerminalNode(node)) {
     return terminalNodesStatus;
   }
-  if (0==getNodeAddress(node)) {
-    // zombie nodes
+  if (isDeletedNode(node)) {
     return MEDDLY::forest::DEAD;
   }
-  if (deflt.useNodeIncomingCounts) {
+  // Active node.
+
+  // If we're still connected, then we're active.
+  // Otherwise, we're "recoverable" (and we must
+  // be using optimistic and reference counts).
+
+  if (deflt.useReferenceCounts) {
     if (getNodeInCount(node) == 0) {
-      // orphan nodes
       return MEDDLY::forest::RECOVERABLE;
+    } else {
+      return MEDDLY::forest::ACTIVE;
     }
   } else {
-    if (!hasReachableBit(node)) {
-      return MEDDLY::forest::DEAD;    // Only safe thing to do
-    }
+    MEDDLY_DCASSERT(hasReachableBit(node));
   }
+
   return MEDDLY::forest::ACTIVE;
 }
 

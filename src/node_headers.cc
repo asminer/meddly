@@ -818,17 +818,14 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   a_sweep = SIZE_MAX;
   addresses = new address_array(*this);
   levels = new level_array(*this, parent.getNumVariables());
-  if (parent.getPolicies().useCacheReferenceCounts) {
+  if (parent.getPolicies().useReferenceCounts) {
     cache_counts = new counter_array(*this);
     is_in_cache = 0;
-  } else {
-    cache_counts = 0;
-    is_in_cache = new bitvector(*this);
-  }
-  if (parent.getPolicies().useNodeIncomingCounts) {
     incoming_counts = new counter_array(*this);
     is_reachable = 0;
   } else {
+    cache_counts = 0;
+    is_in_cache = new bitvector(*this);
     incoming_counts = 0;
     is_reachable = new bitvector(*this);
   }
@@ -1118,7 +1115,7 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
   // from the free list(s); we simply discard any too-large
   // ones when we pull from the free list(s).
   if (p == a_last) {
-    while (a_last && isDeleted(a_last)) {
+    while (a_last && isDeleted(a_last) && (0==getNodeCacheCount(a_last))) {
       a_last--;
       a_freed--;
     }
@@ -1383,7 +1380,7 @@ void MEDDLY::node_headers::expandHandleList()
   // If we're not using reference counts,
   // determine which nodes are reachable.
   //
-  if (!parent.getPolicies().useNodeIncomingCounts) {
+  if (!parent.getPolicies().useReferenceCounts) {
 
       parent.markAllRoots();
 
@@ -1404,31 +1401,24 @@ void MEDDLY::node_headers::expandHandleList()
 #endif  // DEBUG_SWEEP_DETAIL
 
       //
-      // If pessimistic, go ahead and delete the unreachable nodes now.
+      // Because there's no way for us to recover
+      // an unreachable node, go ahead and delete them now.
       //
-      if (parent.getNodeDeletion() == forest::policies::PESSIMISTIC_DELETION) {
-
-        for (node_handle p=1; p<a_last; p++) {
 #ifdef OLD_NODE_HEADERS
-          if (address[p].incoming_count) continue;
-          if (0==address[p].offset) continue;
+      for (node_handle p=1; p<a_last; p++) {
+        if (address[p].incoming_count) continue;
+        if (!isDeleted(p)) parent.deleteNode(p);
+      }
 #else
-          MEDDLY_DCASSERT(is_reachable);
-          MEDDLY_DCASSERT(addresses);
-          if (is_reachable->get(p)) continue;
-          if (0==addresses->get(p)) continue;
+      MEDDLY_DCASSERT(is_reachable);
+      size_t unrch = 0;
+      for (;;) {
+        unrch = is_reachable->nextZero(++unrch);
+        if (unrch >= a_last) break;
+        if (!isDeleted(p)) parent.deleteNode(p);
+      }
 #endif
 
-          parent.deleteNode(p);
-
-#ifdef OLD_NODE_HEADERS
-          address[p].offset = 0;
-#else
-          addresses->set(p, 0);
-#endif
-        } // for p
-        
-      } // pessimistic
   } // no incoming counts
 
   //

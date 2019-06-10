@@ -1760,6 +1760,14 @@ template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 ::discardAndRecycle(unsigned long h)
 {
+#ifdef DEBUG_CT
+  printf("Recycling CT entry ");
+  FILE_output out(stdout);
+  showEntry(out, h);
+  printf("\n");
+  fflush(stdout);
+#endif
+
   const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
 
 #ifdef INTEGRATED_MEMMAN
@@ -1898,14 +1906,6 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   //
   // Recycle
   //
-#ifdef DEBUG_CT
-  printf("Recycling CT entry ");
-  FILE_output out(stdout);
-  showEntry(out, h);
-  printf("\n");
-  fflush(stdout);
-#endif
-
 #ifdef DEBUG_CTALLOC
   fprintf(stderr, "Recycling entry %ld size %u\n", long(h), slots);
 #endif
