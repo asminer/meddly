@@ -171,6 +171,7 @@ MEDDLY::unpacked_node::newFull(const expert_forest *f, int level, int tsz)
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
   U->initFull(f, level, tsz);
+  U->clearFullDownPtrs();
   addToBuildList(U);
   return U;
 }
@@ -181,6 +182,7 @@ MEDDLY::unpacked_node::newSparse(const expert_forest *f, int level, int nnzs)
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
   U->initSparse(f, level, nnzs);
+  U->clearSparseDownPtrs();
   addToBuildList(U);
   return U;
 }
@@ -476,6 +478,20 @@ inline void
 MEDDLY::unpacked_node::bind_as_full(bool full)
 {
   is_full = full;
+}
+
+inline void
+MEDDLY::unpacked_node::clearFullDownPtrs()
+{
+  MEDDLY_DCASSERT(isFull());
+  memset(down, 0, unsigned(size) * sizeof(node_handle));
+}
+
+inline void
+MEDDLY::unpacked_node::clearSparseDownPtrs()
+{
+  MEDDLY_DCASSERT(isSparse());
+  memset(down, 0, unsigned(nnzs) * sizeof(node_handle));
 }
 
 inline MEDDLY::unpacked_node*
@@ -1495,6 +1511,8 @@ MEDDLY::node_headers::setReachableBit(node_handle p)
   MEDDLY_DCASSERT(p>0);
   MEDDLY_DCASSERT(p<=a_last);
 
+  MEDDLY_DCASSERT(isActive(p));
+
 #ifdef OLD_NODE_HEADERS
 
   MEDDLY_DCASSERT(address);
@@ -2357,18 +2375,19 @@ MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
   }
   // Active node.
 
-  // If we're still connected, then we're active.
-  // Otherwise, we're "recoverable" (and we must
-  // be using optimistic and reference counts).
+  // If we're using reference counts,
+  // and the incoming count is zero,
+  // then we must be using optimistic
+  // and the node is stale but recoverable.
+
+  // If we're NOT using reference counts,
+  // since we're not a deleted node,
+  // assume we are still active.
 
   if (deflt.useReferenceCounts) {
     if (getNodeInCount(node) == 0) {
       return MEDDLY::forest::RECOVERABLE;
-    } else {
-      return MEDDLY::forest::ACTIVE;
-    }
-  } else {
-    MEDDLY_DCASSERT(hasReachableBit(node));
+    } 
   }
 
   return MEDDLY::forest::ACTIVE;

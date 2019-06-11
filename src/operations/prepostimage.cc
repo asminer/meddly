@@ -127,9 +127,21 @@ void MEDDLY::image_op
 {
   node_handle cnode;
   if (a.getForest() == argV) {
+#ifdef TRACE_ALL_OPS
+    printf("computing top-level product(%d, %d)\n", a.getNode(), b.getNode());
+#endif
     cnode = compute(a.getNode(), b.getNode());
+#ifdef TRACE_ALL_OPS
+    printf("computed top-level product(%d, %d) = %d\n", a.getNode(), b.getNode(), cnode);
+#endif
   } else {
+#ifdef TRACE_ALL_OPS
+    printf("computing top-level product(%d, %d)\n", b.getNode(), a.getNode());
+#endif
     cnode = compute(b.getNode(), a.getNode());
+#ifdef TRACE_ALL_OPS
+    printf("computed top-level product(%d, %d) = %d\n", b.getNode(), a.getNode(), cnode);
+#endif
   }
   c.set(cnode);
 }
@@ -311,7 +323,18 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
   // check the cache
   node_handle result = 0;
   compute_table::entry_key* Key = findResult(mdd, mxd, result);
-  if (0==Key) return result;
+  if (0==Key) {
+#ifdef TRACE_ALL_OPS
+    printf("computing new setXrel(%d, %d), got %d from cache\n", mdd, mxd, result);
+#endif
+
+    return result;
+  }
+
+#ifdef TRACE_ALL_OPS
+  printf("computing new setXrel(%d, %d)\n", mdd, mxd);
+#endif
+
 
   // check if mxd and mdd are at the same level
   const int mddLevel = argV->getNodeLevel(mdd);
@@ -1141,7 +1164,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
 
   resF->createReducedNode(-1, C, resEv, resEvmdd);
 #ifdef TRACE_ALL_OPS
-  printf("computed new tcXrel(<%ld, %d>, %d) = <%ld, %d>\n", ev, evmdd, mxd, resEv, resEvmdd);
+  printf("computed new tcXrel(<%ld, %d>, %d) = <%ld, %d>\n", ev, evmxd, mxd, resEv, resEvmdd);
 #endif
   saveResult(Key, ev, evmxd, mxd, resEv, resEvmdd);
 }

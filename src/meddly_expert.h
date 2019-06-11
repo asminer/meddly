@@ -843,6 +843,10 @@ class MEDDLY::unpacked_node {
     /// node based on how it's stored.
     void bind_as_full(bool full);
 
+  protected:
+    void clearFullDownPtrs();
+    void clearSparseDownPtrs();
+
   public:
     // Centralized recycling
     static unpacked_node* useUnpackedNode();

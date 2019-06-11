@@ -1939,7 +1939,7 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 {
 #ifdef TRACK_DELETIONS
   for (int i=0; i<delete_depth; i++) printf(" ");
-  printf("Deleting node ");
+  printf("Forest %u deleting node ", FID());
   FILE_output s(stdout);
   showNode(s, p, SHOW_INDEX | SHOW_DETAILS | SHOW_UNREACHABLE);
   printf("\n");
@@ -2125,12 +2125,9 @@ MEDDLY::node_handle MEDDLY::expert_forest
   nodeHeaders.setNodeLevel(p, nb.getLevel());
   if (deflt.useReferenceCounts) {
     MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
-  } else {
-    nodeHeaders.setReachableBit(p);
-  }
-  if (deflt.useReferenceCounts) {
     MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
   } else {
+    nodeHeaders.setReachableBit(p);
     nodeHeaders.setInCacheBit(p);
   }
 
@@ -2359,6 +2356,8 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
     case policies::FULLY_REDUCED:
       if (nb.isSparse()) {
         for (int z=0; z<nb.getNNZs(); z++) {
+          if (isTerminalNode(nb.d(z))) continue;
+          MEDDLY_DCASSERT(!isDeletedNode(nb.d(z)));
           if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(z)))) continue;
           FILE_output s(stdout);
           s << "Down pointer violation in created node at level " << nb.getLevel() << ":\n";
@@ -2369,6 +2368,8 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
         } 
       } else {
         for (int i=0; i<nb.getSize(); i++) {
+          if (isTerminalNode(nb.d(i))) continue;
+          MEDDLY_DCASSERT(!isDeletedNode(nb.d(i)));
           if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(i)))) continue;
           FILE_output s(stdout);
           s << "Down pointer violation in created node at level " << nb.getLevel() << ":\n";

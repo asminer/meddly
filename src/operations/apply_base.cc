@@ -54,6 +54,11 @@ MEDDLY::generic_binary_mdd::~generic_binary_mdd()
 void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &b, 
   dd_edge &c)
 {
+#ifdef TRACE_ALL_OPS
+  printf("computing Top %s(%d, %d)\n", 
+    getName(), a.getNode(), b.getNode()
+  );
+#endif
   node_handle cnode = compute(a.getNode(), b.getNode());
   const int num_levels = resF->getDomain()->getNumVariables();
   if (resF->isQuasiReduced() && cnode != resF->getTransparentNode()
@@ -62,11 +67,11 @@ void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &
     resF->unlinkNode(cnode);
     cnode = temp;
   }
-  c.set(cnode);
 #ifdef TRACE_ALL_OPS
-  printf("completed %s(%d, %d) = %d\n", 
+  printf("completed Top %s(%d, %d) = %d\n", 
     getName(), a.getNode(), b.getNode(), cnode);
 #endif
+  c.set(cnode);
 #ifdef DEVELOPMENT_CODE
   resF->validateIncounts(true);
 #endif
@@ -79,13 +84,20 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
   if (checkTerminals(a, b, result))
     return result;
 
+  compute_table::entry_key* Key = findResult(a, b, result);
+  if (0==Key) {
+#ifdef TRACE_ALL_OPS
+    printf("computing %s(%d, %d), got %d from cache\n", getName(), a, b, result);
+    fflush(stdout);
+#endif
+
+    return result;
+  }
+
 #ifdef TRACE_ALL_OPS
   printf("computing %s(%d, %d)\n", getName(), a, b);
   fflush(stdout);
 #endif
-
-  compute_table::entry_key* Key = findResult(a, b, result);
-  if (0==Key) return result;
 
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
