@@ -260,14 +260,14 @@ namespace MEDDLY {
         }
 
         // size of variables at level k
-        int lastV = F->getLevelSize(k);
+        unsigned lastV = unsigned(F->getLevelSize(k));
         // index of end of current batch
         int batchP = start;
 
         //
         // Move any "don't cares" to the front, and process them
         //
-        int nextV = lastV;
+        unsigned nextV = lastV;
         for (int i=start; i<stop; i++) {
           if (DONT_CARE == unprimed(i, k)) {
             if (batchP != i) {
@@ -276,7 +276,7 @@ namespace MEDDLY {
             batchP++;
           } else {
             MEDDLY_DCASSERT(unprimed(i, k) >= 0);
-            nextV = MIN(nextV, unprimed(i, k));
+            nextV = MIN(nextV, unsigned(unprimed(i, k)));
           }
         }
 
@@ -296,13 +296,15 @@ namespace MEDDLY {
         //
         // Process "don't care, don't change" pairs, if any
         //
-        T dc_ev;
-        node_handle dc;
-        OPERATION::makeEmptyEdge(dc_ev, dc);
+        dd_edge dontcare(F);
+        OPERATION::makeEmptyEdge(dontcare);
 
         if (dch > start) {
+          T dc_ev;
+          node_handle dc;
           createEdgeUn(k-1, start, dch, dc_ev, dc);
           makeIdentityEdge(k, dc_ev, dc);
+          dontcare.set(dc, dc_ev);
           // done with those
           start = dch;
         }
@@ -313,25 +315,21 @@ namespace MEDDLY {
         //
         if (batchP > start) {
           T dcnormal_ev;
-          node_handle dcnormal;
-          createEdgePr(-1, -k, start, batchP, dcnormal_ev, dcnormal);
-          F->makeNodeAtLevel<OPERATION, T>(k, dcnormal_ev, dcnormal);
+          node_handle dcnormal_nh;
+          createEdgePr(-1, -k, start, batchP, dcnormal_ev, dcnormal_nh);
+          F->makeNodeAtLevel<OPERATION, T>(k, dcnormal_ev, dcnormal_nh);
+          dd_edge dcnormal(F);
+          dcnormal.set(dcnormal_nh, dcnormal_ev);
 
           MEDDLY_DCASSERT(unionOp);
-          T total_ev;
-          node_handle total;
-          unionOp->compute(dc_ev, dc, dcnormal_ev, dcnormal, total_ev, total);
-          F->unlinkNode(dcnormal);
-          F->unlinkNode(dc);
-          dc_ev = total_ev;
-          dc = total;
+          unionOp->compute(dontcare, dcnormal, dontcare);
         }
 
         //
         // Start new node at level k
         //
         unpacked_node* nb = unpacked_node::newSparse(F, k, lastV);
-        int z = 0; // number of nonzero edges in our sparse node
+        unsigned z = 0; // number of nonzero edges in our sparse node
 
         //
         // For each value v, 
@@ -339,7 +337,7 @@ namespace MEDDLY {
         //  (2) process them, if any
         // Then when we are done, union with any don't cares
         //
-        for (int v=nextV; v<lastV; v=nextV) {
+        for (unsigned v=nextV; v<lastV; v=nextV) {
           nextV = lastV;
           //
           // neat trick!
@@ -357,7 +355,7 @@ namespace MEDDLY {
               }
               batchP++;
             } else {
-              nextV = MIN(nextV, unprimed(i, k));
+              nextV = MIN(nextV, unsigned(unprimed(i, k)));
             }
           }
 
@@ -378,13 +376,16 @@ namespace MEDDLY {
         // Union with don't cares
         //
         MEDDLY_DCASSERT(unionOp);
-        node_handle built;
+        node_handle built_nh;
         T built_ev;
         nb->shrinkSparse(z);
-        F->createReducedNode(-1, nb, built_ev, built);
-        unionOp->compute(dc_ev, dc, built_ev, built, ev, ed);
-        F->unlinkNode(dc);
-        F->unlinkNode(built);
+        F->createReducedNode(-1, nb, built_ev, built_nh);
+        dd_edge built(F);
+        built.set(built_nh, built_ev);
+
+        unionOp->compute(dontcare, built, built);
+        ed = F->linkNode(built);
+        built.getEdgeValue(ev);
       };
 
     protected:
@@ -403,14 +404,14 @@ namespace MEDDLY {
         //
 
         // size of variables at level k
-        int lastV = F->getLevelSize(k);
+        unsigned lastV = unsigned(F->getLevelSize(k));
         // current batch size
         int batchP = start;
 
         //
         // Move any "don't cares" to the front, and process them
         //
-        int nextV = lastV;
+        unsigned nextV = lastV;
         for (int i=start; i<stop; i++) {
           if (DONT_CARE == primed(i, -k)) {
             if (batchP != i) {
@@ -418,23 +419,26 @@ namespace MEDDLY {
             }
             batchP++;
           } else {
-            nextV = MIN(nextV, primed(i, -k));
+            nextV = MIN(nextV, unsigned(primed(i, -k)));
           }
         }
 
-        node_handle dc_ptr;
-        T dc_val;
+        dd_edge dontcare(F);
+
         if (batchP > start) {
+          node_handle dc_ptr;
+          T dc_val;
           createEdgeUn(-k-1, start, batchP, dc_val, dc_ptr);
+          dontcare.set(dc_ptr, dc_val);
         } else {
-          OPERATION::makeEmptyEdge(dc_val, dc_ptr);
+          OPERATION::makeEmptyEdge(dontcare);
         }
 
         //
         // Start new node at level k
         //
         unpacked_node* nb = unpacked_node::newSparse(F, k, lastV);
-        int z = 0; // number of nonzero edges in our sparse node
+        unsigned z = 0; // number of nonzero edges in our sparse node
 
         //
         // For each value v, 
@@ -442,9 +446,11 @@ namespace MEDDLY {
         //  (2) process them, if any
         //  (3) union with don't cares
         //
-        for (int v = (dc_ptr) ? 0 : nextV; 
+        dd_edge these(F);
+
+        for (unsigned v = (dontcare.getNode()) ? 0 : nextV; 
              v<lastV; 
-             v = (dc_ptr) ? v+1 : nextV) 
+             v = (dontcare.getNode()) ? v+1 : nextV) 
         {
           nextV = lastV;
           //
@@ -465,53 +471,43 @@ namespace MEDDLY {
               }
               batchP++;
             } else {
-              nextV = MIN(nextV, primed(i, -k));
+              nextV = MIN(nextV, unsigned(primed(i, -k)));
             }
           }
 
           //
           // (2) recurse if necessary
           //
-          node_handle these_ptr;
-          T these_val;
           if (batchP > start) {
+            node_handle these_ptr;
+            T these_val;
             createEdgeUn(-k-1, start, batchP, these_val, these_ptr);
+            these.set(these_ptr, these_val);
           } else {
-            OPERATION::makeEmptyEdge(these_val, these_ptr);
+            OPERATION::makeEmptyEdge(these);
           }
 
           //
           // (3) union with don't cares
           //
-          node_handle total_ptr;
-          T total_val;
-          if (0 == dc_ptr) {
-            total_val = these_val;
-            total_ptr = F->linkNode(these_ptr);
-          } else if (0 == these_val) {
-            total_val = dc_val;
-            total_ptr = F->linkNode(dc_ptr);
-          } else {
-            MEDDLY_DCASSERT(unionOp);
-            unionOp->compute(dc_val, dc_ptr, these_val, these_ptr, 
-              total_val, total_ptr);
-          }
-          F->unlinkNode(these_ptr);
+          MEDDLY_DCASSERT(unionOp);
+          unionOp->compute(dontcare, these, these);
 
           //
           // add to sparse node, unless empty
           //
-          if (0==total_ptr) continue;
+          if (0==these.getNode()) continue;
           nb->i_ref(z) = v;
-          nb->d_ref(z) = total_ptr;
-          nb->setEdge(z, total_val);
+          nb->d_ref(z) = F->linkNode(these);
+          T temp;
+          these.getEdgeValue(temp);
+          nb->setEdge(z, temp);
           z++;
         } // for v
 
         //
         // Cleanup
         //
-        F->unlinkNode(dc_ptr);
         nb->shrinkSparse(z);
         F->createReducedNode(in, nb, ev, ed);
       };

@@ -50,9 +50,8 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
         static inline double apply(double a, double b) {
           return a*b;
         }
-        static inline void makeEmptyEdge(float &ev, node_handle &ep) {
-          ev = 0;
-          ep = 0;
+        static inline void makeEmptyEdge(dd_edge &e) {
+          e.set(0, float(0));
         }
         static inline void makeEmptyEdge(node_handle &ep, void* ev) {
           ep = 0;
