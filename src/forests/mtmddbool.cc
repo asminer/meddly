@@ -111,7 +111,7 @@ void MEDDLY::mt_mdd_bool::isMarkingCovered(const dd_edge &f, const int* vlist,
 }
 
 void MEDDLY::mt_mdd_bool::firstMarkingCovers(const dd_edge &f, const int* vlist,
-		bool &term) const {
+		bool &term,int* rlist) const {
 	node_handle p = f.getNode();
 //	printf("XXXXF%d\n",f.getHasPInfty());
 //	if (!f.getHasPInfty()){
@@ -119,13 +119,15 @@ void MEDDLY::mt_mdd_bool::firstMarkingCovers(const dd_edge &f, const int* vlist,
 //	}
 //	else{
 	int rlistsize=getNodeLevel(p);
-	int* rlist=new int(rlistsize);
+	int* resultlist=new int(rlistsize);
 		printf("evaluateRawFirstMarkingCoveredWithInfty WITH INFTY\n");
-		term = evaluateRawFirstMarkingCoversWithInfty(f, p, vlist,rlist);
+		term = evaluateRawFirstMarkingCoversWithInfty(f, p, vlist,resultlist);
+
 		printf("RESULT is %d\n",term);
 		if (term){
 		for (int i = rlistsize; i >= 0; i--)
-			printf("%d ",rlist[i]);
+			rlist[i]=resultlist[i];
+//			printf("%d ",rlist[i]);
 		}
 //	}
 }

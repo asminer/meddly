@@ -458,7 +458,7 @@ void MEDDLY::forest::isMarkingCovered(const dd_edge &f, const int* vl,
 }
 
 void MEDDLY::forest::firstMarkingCovers(const dd_edge &f, const int* vl,
-		bool &t) const {
+		bool &t,int*r) const {
 	throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
