@@ -311,7 +311,7 @@ MEDDLY::satpregen_opname::pregen_relation
 
     last_event++;
 
-    events[last_event] = mxdF->linkNode(r.getNode());
+    events[last_event] = mxdF->linkNode(r);
     next[last_event] = level_index[k];
     level_index[k] = last_event;
   }
@@ -368,11 +368,10 @@ MEDDLY::satpregen_opname::pregen_relation
 
     unpacked_node* Mp = unpacked_node::useUnpackedNode();
 
-    bool first = true;
-    node_handle maxDiag = 0;
+    dd_edge maxDiag(mxdF);
 
     // Read "rows"
-    for (int i = 0; i < Mu->getSize(); i++) {
+    for (unsigned i = 0; i < Mu->getSize(); i++) {
       // Initialize column reader
       if (isLevelAbove(-k, mxdF->getNodeLevel(Mu->d(i)))) {
         Mp->initIdentity(mxdF, -k, i, Mu->d(i), true);
@@ -381,13 +380,12 @@ MEDDLY::satpregen_opname::pregen_relation
       }
 
       // Intersect along the diagonal
-      if (first) {
-        maxDiag = mxdF->linkNode(Mp->d(i));
-        first = false;
+      if (0==i) {
+        maxDiag.set( mxdF->linkNode(Mp->d(i)) );
       } else {
-        node_handle nmd = mxdIntersection->compute(maxDiag, Mp->d(i));
-        mxdF->unlinkNode(maxDiag);
-        maxDiag = nmd;
+        dd_edge mpd(mxdF);
+        mpd.set( mxdF->linkNode(Mp->d(i)) );
+        mxdIntersection->compute(maxDiag, mpd, maxDiag);
       }
     } // for i
 
@@ -395,19 +393,21 @@ MEDDLY::satpregen_opname::pregen_relation
     unpacked_node::recycle(Mp);
     unpacked_node::recycle(Mu);
 
-    if (0 == maxDiag) {
+    if (0 == maxDiag.getNode()) {
 #ifdef DEBUG_FINALIZE_SPLIT
       printf("splitMxd: event %d, maxDiag %d\n", events[k], maxDiag);
 #endif
       continue;
     }
 
+    dd_edge evk(mxdF);
+    evk.set(events[k]);
+
     // Subtract maxDiag from events[k]
     // Do this only for SplitOnly. Other cases are handled later.
+
     if (split == SplitOnly) {
-      int tmp = events[k];
-      events[k] = mxdDifference->compute(events[k], maxDiag);
-      mxdF->unlinkNode(tmp);
+      mxdDifference->compute(evk, maxDiag, evk);
 #ifdef DEBUG_FINALIZE_SPLIT
       printf("SplitOnly: event %d = event %d - maxDiag %d\n",
           events[k], tmp, maxDiag);
@@ -415,41 +415,50 @@ MEDDLY::satpregen_opname::pregen_relation
     } 
 
     // Add maxDiag to events[level(maxDiag)]
-    int maxDiagLevel = ABS(mxdF->getNodeLevel(maxDiag));
-    int tmp = events[maxDiagLevel];
-    events[maxDiagLevel] = mxdUnion->compute(maxDiag, events[maxDiagLevel]);
-    mxdF->unlinkNode(tmp);
-    mxdF->unlinkNode(maxDiag);
+    int maxDiagLevel = ABS(maxDiag.getLevel());
+
+    dd_edge evmdl(mxdF);
+    evmdl.set(events[maxDiagLevel]);
+
+    mxdUnion->compute(maxDiag, evmdl, evmdl);
 
     // Subtract events[maxDiagLevel] from events[k].
     // Do this only for SplitSubtract. SplitSubtractAll is handled later.
     if (split == SplitSubtract) {
-      tmp = events[k];
-      events[k] = mxdDifference->compute(events[k], events[maxDiagLevel]);
-      mxdF->unlinkNode(tmp);
+      mxdDifference->compute(evk, evmdl, evk);
+
 #ifdef DEBUG_FINALIZE_SPLIT
       printf("SplitSubtract: event %d = event %d - event[maxDiagLevel] %d\n",
           events[k], tmp, maxDiag);
 #endif
     }
 
+    events[k] = mxdF->linkNode(evk);
+    events[maxDiagLevel] = mxdF->linkNode(evmdl);
+
   } // for k
 
   if (split == SplitSubtractAll) {
     // Subtract event[i] from all event[j], where j > i.
+    dd_edge evi(mxdF);
+    dd_edge evj(mxdF);
     for (int i = 1; i < K; i++) {
+      if (0==events[i]) continue;
+      evi.set( mxdF->linkNode(events[i]) ); // link, b/c we don't want to clobber it
+
       for (int j = i + 1; j <= K; j++) {
-        if (events[i] && events[j]) {
-          int tmp = events[j];
-          events[j] = mxdDifference->compute(events[j], events[i]);
-          mxdF->unlinkNode(tmp);
+        if (0==events[j]) continue;
+
+        evj.set(events[j]);   // don't link, because we will clobber it
+        mxdDifference->compute(evj, evi, evj);
+        events[j] = mxdF->linkNode(evj);
+
 #ifdef DEBUG_FINALIZE_SPLIT
-          printf("SplitSubtractAll: event %d = event %d - event %d\n",
+        printf("SplitSubtractAll: event %d = event %d - event %d\n",
               events[j], tmp, events[i]);
 #endif
-        }
-      }
-    }
+      } // for j
+    } // for i
   }
 
 #ifdef DEBUG_FINALIZE_SPLIT
@@ -463,6 +472,8 @@ MEDDLY::satpregen_opname::pregen_relation
 #endif
 }
 
+// HERE!
+
 
 void
 MEDDLY::satpregen_opname::pregen_relation
@@ -473,19 +484,20 @@ MEDDLY::satpregen_opname::pregen_relation
   binary_operation* mxdUnion = getOperation(UNION, mxdF, mxdF, mxdF);
   MEDDLY_DCASSERT(mxdUnion);
 
-  node_handle u = events[1];
+  dd_edge u(mxdF);
+  dd_edge evk(mxdF);
+
+  u.set(events[1]);
   events[1] = 0;
 
   for (int k = 2; k <= K; k++) {
     if (0 == events[k]) continue;
-    node_handle temp = mxdUnion->compute(u, events[k]);
-    mxdF->unlinkNode(events[k]);
+    evk.set(events[k]);
     events[k] = 0;
-    mxdF->unlinkNode(u);
-    u = temp;
+    mxdUnion->compute(u, evk, u);
   }
 
-  events[mxdF->getNodeLevel(u)] = u;
+  events[u.getLevel()] = mxdF->linkNode(u);
 }
 
 
@@ -609,7 +621,7 @@ MEDDLY::satotf_opname::subevent::subevent(forest* f, int* v, int nv, bool firing
   MEDDLY_DCASSERT(nv > 0);
 
   vars = new int[num_vars];
-  memcpy(vars, v, num_vars * sizeof(int));
+  memcpy(vars, v, unsigned(num_vars) * sizeof(int));
 
   // find top
   top = vars[0];
@@ -672,8 +684,8 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
   if (num_minterms >= size_minterms) {
     int old_size = size_minterms;
     size_minterms = (0==size_minterms)? 8: MIN(2*size_minterms, 256 + size_minterms);
-    unpminterms = (int**) realloc(unpminterms, size_minterms * sizeof(int**));
-    pminterms = (int**) realloc(pminterms, size_minterms * sizeof(int**));
+    unpminterms = (int**) realloc(unpminterms, unsigned(size_minterms) * sizeof(int**));
+    pminterms = (int**) realloc(pminterms, unsigned(size_minterms) * sizeof(int**));
     if (0==unpminterms || 0==pminterms) return false; // malloc or realloc failed
     for (int i=old_size; i<size_minterms; i++) {
       unpminterms[i] = 0;
@@ -751,7 +763,7 @@ long MEDDLY::satotf_opname::subevent::mintermMemoryUsage() const {
   for (int i = 0; i < size_minterms; i++) {
     if (unpminterms[i] != 0) n_minterms++;
   }
-  return long(n_minterms * 2) * long(f->getDomain()->getNumVariables()) * sizeof(int);
+  return long(n_minterms * 2) * long(f->getDomain()->getNumVariables()) * long(sizeof(int));
 }
 
 // ============================================================
@@ -848,7 +860,7 @@ void MEDDLY::satotf_opname::event::buildEventMask()
   MEDDLY_DCASSERT(f);
 
   if (0 == event_mask_from_minterm) {
-    const size_t minterm_size = f->getNumVariables()+1;
+    const size_t minterm_size = size_t(f->getNumVariables()+1);
     event_mask_from_minterm = new int[minterm_size];
     event_mask_to_minterm = new int[minterm_size];
 
@@ -988,8 +1000,8 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
   // (0) Initialize
   num_events_by_top_level = new int[num_levels];
   num_events_by_level = new int[num_levels];
-  memset(num_events_by_top_level, 0, sizeof(int)*num_levels);
-  memset(num_events_by_level, 0, sizeof(int)*num_levels);
+  memset(num_events_by_top_level, 0, sizeof(int)*unsigned(num_levels));
+  memset(num_events_by_level, 0, sizeof(int)*unsigned(num_levels));
 
   // (1) Determine the number of events per level
   for (int i = 0; i < ne; i++) {
@@ -1031,7 +1043,7 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
   // Build the subevents-per-level data structure
   // (0) Initialize
   num_subevents_by_level = new int[num_levels];
-  memset(num_subevents_by_level, 0, sizeof(int)*num_levels);
+  memset(num_subevents_by_level, 0, sizeof(int)*unsigned(num_levels));
 
   // (1) Determine the number of subevents per level
   for (int i = 0; i < ne; i++) {
@@ -1077,7 +1089,7 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
   confirmed[0] = 0;
   for (int i = 1; i < num_levels; i++) {
     int level_size = mxdF->getLevelSize(-i);
-    confirmed[i] = (bool*) malloc(level_size * sizeof(bool));
+    confirmed[i] = (bool*) malloc(unsigned(level_size) * sizeof(bool));
     for (int j = 0; j < level_size; j++) {
       confirmed[i][j] = false;
     }
@@ -1179,7 +1191,7 @@ void findConfirmedStates(MEDDLY::satotf_opname::otf_relation* rel,
     // mdd_level == level
     visited.insert(mdd);
     MEDDLY::unpacked_node *nr = MEDDLY::unpacked_node::newFromNode(insetF, mdd, false);
-    for (int i = 0; i < nr->getNNZs(); i++) {
+    for (unsigned i = 0; i < nr->getNNZs(); i++) {
       if (!confirmed[level][nr->i(i)]) {
         rel->confirm(level, nr->i(i));
       }
@@ -1296,7 +1308,7 @@ double MEDDLY::satotf_opname::otf_relation::getArcCount(
   // Build confirmed mask
   dd_edge confirmed_local_states(outsetF);
   confirmed_local_states.set(MEDDLY::expert_forest::bool_Tencoder::value2handle(true));
-  for (int i = 1; i < num_levels; i++) {
+  for (int k = 1; k < num_levels; k++) {
     node_handle current_node = confirmed_local_states.getNode();
     int current_level = outsetF->getNodeLevel(current_node);
     int next_level = outsetF->upLevel(outsetF->upLevel(current_level));
@@ -1317,10 +1329,10 @@ double MEDDLY::satotf_opname::otf_relation::getArcCount(
   MEDDLY::apply(MEDDLY::CROSS, confirmed_local_states_mask, confirmed_local_states_mask, mxd_mask);
 
   if (count_duplicates) {
-    for (int i = 1; i < num_levels; i++) {
-      for (int ei = 0; ei < getNumOfEvents(i); ei++) {
+    for (int k = 1; k < num_levels; k++) {
+      for (int ei = 0; ei < getNumOfEvents(k); ei++) {
         // start with (num_level-1) to correctly count edges in skipped levels
-        dd_edge rg_ei = events_by_top_level[i][ei]->getRoot();
+        dd_edge rg_ei = events_by_top_level[k][ei]->getRoot();
         rg_ei *= mxd_mask;
         arc_count += rg_ei.getCardinality();
       }
@@ -1328,10 +1340,10 @@ double MEDDLY::satotf_opname::otf_relation::getArcCount(
   } else {
     // build monolithic 
     dd_edge monolithic_nsf(mxdF);
-    for (int i = 1; i < num_levels; i++) {
+    for (int k = 1; k < num_levels; k++) {
       dd_edge nsf_i(mxdF);
-      for (int ei = 0; ei < getNumOfEvents(i); ei++) {
-        nsf_i += events_by_top_level[i][ei]->getRoot();
+      for (int ei = 0; ei < getNumOfEvents(k); ei++) {
+        nsf_i += events_by_top_level[k][ei]->getRoot();
       }
       monolithic_nsf += nsf_i;
     }
@@ -1546,13 +1558,13 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd, fore
   
   
   //Allocate event_list
-  event_list = (rel_node_handle**)malloc((num_levels+1)*sizeof(rel_node_handle*));
-  event_list_alloc = (long*)malloc((num_levels+1)*sizeof(long));
-  event_added = (long*)malloc((num_levels+1)*sizeof(long));
+  event_list = (rel_node_handle**)malloc(unsigned(num_levels+1)*sizeof(rel_node_handle*));
+  event_list_alloc = (long*)malloc(unsigned(num_levels+1)*sizeof(long));
+  event_added = (long*)malloc(unsigned(num_levels+1)*sizeof(long));
 
   
-  confirm_states = (long*)malloc((num_levels+1)*sizeof(long));
-  confirmed_array_size = (long*)malloc((num_levels+1)*sizeof(long));
+  confirm_states = (long*)malloc(unsigned(num_levels+1)*sizeof(long));
+  confirmed_array_size = (long*)malloc(unsigned(num_levels+1)*sizeof(long));
   confirmed = new bool*[num_levels+1];
   
   confirmed[0]=0;
@@ -2342,6 +2354,8 @@ MEDDLY::binary_operation::~binary_operation()
   unregisterInForest(resF);
 }
 
+#ifdef KEEP_LL_COMPUTES
+
 MEDDLY::node_handle 
 MEDDLY::binary_operation::compute(node_handle a, node_handle b)
 {
@@ -2377,6 +2391,8 @@ void MEDDLY::binary_operation::compute(float av, node_handle ap,
 {
   throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
 }
+
+#endif
 
 // ******************************************************************
 // *                 specialized_operation  methods                 *

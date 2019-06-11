@@ -47,8 +47,6 @@
 
 #define OLD_NODE_HEADERS
 
-#define KEEP_LL_COMPUTES
-
 namespace MEDDLY {
 
   // classes defined here
@@ -2334,10 +2332,10 @@ class MEDDLY::expert_forest: public forest
         Negative values are used for primed levels or variables.
     */
     int getVarByLevel(int level) const {
-      return level > 0 ? var_order->getVarByLevel(level) : -var_order->getVarByLevel(-level);
+      return level > 0 ? int(var_order->getVarByLevel(unsigned(level))) : -int(var_order->getVarByLevel(unsigned(-level)));
     }
     int getLevelByVar(int var) const {
-      return var > 0 ? var_order->getLevelByVar(var) : -var_order->getLevelByVar(-var);
+      return var > 0 ? int(var_order->getLevelByVar(unsigned(var))) : -int(var_order->getLevelByVar(unsigned(-var)));
     }
 
     int getNodeLevel(node_handle p) const;
@@ -2815,9 +2813,9 @@ class MEDDLY::expert_forest: public forest
     /*
      * Reorganize the variables in a certain order.
      */
-    void reorderVariables(const int* level2var);
+    void reorderVariables(const unsigned* level2var);
 
-    void getVariableOrder(int* level2var) const;
+    void getVariableOrder(unsigned* level2var) const;
 
     std::shared_ptr<const variable_order> variableOrder() const;
 
@@ -2825,21 +2823,21 @@ class MEDDLY::expert_forest: public forest
      * Swap the variables at level and level+1.
      * This method should only be called by expert_domain.
      */
-    virtual void swapAdjacentVariables(int level) = 0;
+    virtual void swapAdjacentVariables(unsigned level) = 0;
 
     /*
      * Move the variable at level high down to level low.
      * The variables from level low to level high-1 will be moved one level up.
      */
-    virtual void moveDownVariable(int high, int low) = 0;
+    virtual void moveDownVariable(unsigned high, unsigned low) = 0;
 
     /*
      * Move the variable at level low up to level high.
      * The variables from level low+1 to level high will be moved one level down.
      */
-    virtual void moveUpVariable(int low, int high) = 0;
+    virtual void moveUpVariable(unsigned low, unsigned high) = 0;
 
-    virtual void dynamicReorderVariables(int top, int bottom) {
+    virtual void dynamicReorderVariables(unsigned top, unsigned bottom) {
     	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
@@ -4849,8 +4847,8 @@ class MEDDLY::binary_operation : public operation {
 
     // low-level front ends.  TBD - REMOVE THESE BECAUSE THEY BREAK MARK & SWEEP
 
-#ifdef KEEP_LL_COMPUTES
 
+/*
     /// Low-level compute on nodes a and b, return result.
     virtual node_handle compute(node_handle a, node_handle b);
     /// Low-level compute at level k on nodes a and b, return result.
@@ -4867,8 +4865,7 @@ class MEDDLY::binary_operation : public operation {
     /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
     virtual void compute(float av, node_handle ap, float bv, node_handle bp,
       float &cv, node_handle &cp);
-
-#endif
+*/
 
 };
 
