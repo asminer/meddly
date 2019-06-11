@@ -620,15 +620,15 @@ class MEDDLY::unpacked_node {
     void initRedundant(const expert_forest *f, int k, long ev, node_handle node, bool full);
     void initRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full);
 
-    void initIdentity(const expert_forest *f, int k, int i, node_handle node, bool full);
-    void initIdentity(const expert_forest *f, int k, int i, int ev, node_handle node, bool full);
-    void initIdentity(const expert_forest *f, int k, int i, long ev, node_handle node, bool full);
-    void initIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full);
+    void initIdentity(const expert_forest *f, int k, unsigned i, node_handle node, bool full);
+    void initIdentity(const expert_forest *f, int k, unsigned i, int ev, node_handle node, bool full);
+    void initIdentity(const expert_forest *f, int k, unsigned i, long ev, node_handle node, bool full);
+    void initIdentity(const expert_forest *f, int k, unsigned i, float ev, node_handle node, bool full);
 
   /* Create blank node, primarily for writing */
     
-    void initFull(const expert_forest *f, int level, int tsz); 
-    void initSparse(const expert_forest *f, int level, int nnz);
+    void initFull(const expert_forest *f, int level, unsigned tsz); 
+    void initSparse(const expert_forest *f, int level, unsigned nnz);
 
   public:
   /* For convenience: get recycled instance and initialize */
@@ -640,12 +640,12 @@ class MEDDLY::unpacked_node {
     static unpacked_node* newRedundant(const expert_forest *f, int k, long ev, node_handle node, bool full);
     static unpacked_node* newRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full);
 
-    static unpacked_node* newIdentity(const expert_forest *f, int k, int i, node_handle node, bool full);
-    static unpacked_node* newIdentity(const expert_forest *f, int k, int i, long ev, node_handle node, bool full);
-    static unpacked_node* newIdentity(const expert_forest *f, int k, int i, float ev, node_handle node, bool full);
+    static unpacked_node* newIdentity(const expert_forest *f, int k, unsigned i, node_handle node, bool full);
+    static unpacked_node* newIdentity(const expert_forest *f, int k, unsigned i, long ev, node_handle node, bool full);
+    static unpacked_node* newIdentity(const expert_forest *f, int k, unsigned i, float ev, node_handle node, bool full);
 
-    static unpacked_node* newFull(const expert_forest *f, int level, int tsz);
-    static unpacked_node* newSparse(const expert_forest *f, int level, int nnz);
+    static unpacked_node* newFull(const expert_forest *f, int level, unsigned tsz);
+    static unpacked_node* newSparse(const expert_forest *f, int level, unsigned nnz);
 
   public:
   /* Display / access methods */
@@ -672,7 +672,7 @@ class MEDDLY::unpacked_node {
     void* UHdata();
 
     /// Get the number of bytes of unhashed header data.
-    int UHbytes() const;
+    unsigned UHbytes() const;
 
     /// Get a pointer to the hashed header data.
     const void* HHptr() const;
@@ -681,7 +681,7 @@ class MEDDLY::unpacked_node {
     void* HHdata();
 
     /// Get the number of bytes of hashed header data.
-    int HHbytes() const;
+    unsigned HHbytes() const;
 
     /** Get a downward pointer.
           @param  n   Which pointer.
@@ -690,7 +690,7 @@ class MEDDLY::unpacked_node {
                       If this is a sparse reader,
                       return the nth non-zero pointer.
     */
-    node_handle d(int n) const;
+    node_handle d(unsigned n) const;
 
     /** Reference to a downward pointer.
           @param  n   Which pointer.
@@ -699,41 +699,41 @@ class MEDDLY::unpacked_node {
                       If this is a sparse reader,
                       modify the nth non-zero pointer.
     */
-    node_handle& d_ref(int n);
+    node_handle& d_ref(unsigned n);
 
     /** Get the index of the nth non-zero pointer.
         Use only for sparse readers.
      */
-    int i(int n) const;
+    unsigned i(unsigned n) const;
 
     /** Modify the index of the nth non-zero pointer.
         Use only for sparse readers.
     */
-    int& i_ref(int n);
+    unsigned& i_ref(unsigned n);
 
     /// Get a pointer to an edge
-    const void* eptr(int i) const;
+    const void* eptr(unsigned i) const;
 
     /// Modify pointer to an edge
-    void* eptr_write(int i);
+    void* eptr_write(unsigned i);
 
     /// Get the edge value, as an integer.
-    void getEdge(int i, long& ev) const;
+    void getEdge(unsigned i, long& ev) const;
 
     /// Get the edge value, as a float.
-    void getEdge(int i, float& ev) const;
+    void getEdge(unsigned i, float& ev) const;
 
     /// Set the edge value, as an integer.
-    void setEdge(int i, long ev);
+    void setEdge(unsigned i, long ev);
 
     /// Set the edge value, as a float.
-    void setEdge(int i, float ev);
+    void setEdge(unsigned i, float ev);
 
     /// Get the edge value, as an integer.
-    long ei(int i) const;
+    long ei(unsigned i) const;
 
     /// Get the edge value, as a float.
-    float ef(int i) const;
+    float ef(unsigned i) const;
 
     // -------------------------------------------------------------------------
     // Methods to access the extensible portion of the node
@@ -765,9 +765,9 @@ class MEDDLY::unpacked_node {
     void markAsExtensible();
     void markAsNotExtensible();
 
-    int ext_d() const;
-    int ext_i() const;
-    int ext_ei() const;
+    node_handle ext_d() const;
+    unsigned ext_i() const;
+    long ext_ei() const;
     float ext_ef() const;
 
     // -------------------- End of extensible portion --------------------------
@@ -779,10 +779,10 @@ class MEDDLY::unpacked_node {
     void setLevel(int k);
 
     /// Get the size of this node (full readers only).
-    int getSize() const;
+    unsigned getSize() const;
 
     /// Get the number of nonzeroes of this node (sparse readers only).
-    int getNNZs() const;
+    unsigned getNNZs() const;
 
     /// Is this a sparse reader?
     bool isSparse() const;
@@ -794,7 +794,7 @@ class MEDDLY::unpacked_node {
     bool hasEdges() const;
 
     /// Number of bytes per edge
-    int edgeBytes() const;
+    unsigned edgeBytes() const;
 
     // For debugging unique table.
     unsigned hash() const;
@@ -823,13 +823,13 @@ class MEDDLY::unpacked_node {
   public:
 
     /// Change the size of a node
-    void resize(int ns);
+    void resize(unsigned ns);
 
     /// Shrink the size of a (truncated) full node
-    void shrinkFull(int ns);
+    void shrinkFull(unsigned ns);
 
     /// Shrink the size of a sparse node
-    void shrinkSparse(int ns);
+    void shrinkSparse(unsigned ns);
 
     /// Called within expert_forest to allocate space.
     ///   @param  p     Parent.
@@ -837,7 +837,7 @@ class MEDDLY::unpacked_node {
     ///   @param  ns    Size of node.
     ///   @param  full  If true, we'll be filling a full reader.
     ///                 Otherwise it is a sparse one.
-    void bind_to_forest(const expert_forest* p, int k, int ns, bool full);
+    void bind_to_forest(const expert_forest* p, int k, unsigned ns, bool full);
 
     /// Called by node_storage when building an unpacked
     /// node based on how it's stored.
@@ -869,28 +869,28 @@ class MEDDLY::unpacked_node {
       TBD - extra info that is not hashed
     */
     void* extra_unhashed;
-    int ext_uh_alloc;
-    int ext_uh_size;
+    unsigned ext_uh_alloc;
+    unsigned ext_uh_size;
     /*
      Extra info that is hashed
      */
     void* extra_hashed;
-    int ext_h_alloc;
-    int ext_h_size;
+    unsigned ext_h_alloc;
+    unsigned ext_h_size;
     /*
      Down pointers, indexes, edge values.
      */
     node_handle* down;
-    int* index;
+    unsigned* index;
     void* edge;
     bool is_extensible;
-    int alloc;
-    int ealloc;
-    int size;
-    int nnzs;
+    unsigned alloc;
+    unsigned ealloc;
+    unsigned size;
+    unsigned nnzs;
     int level;
     unsigned h;
-    char edge_bytes; // number of bytes for an edge value.
+    unsigned char edge_bytes; // number of bytes for an edge value.
     bool is_full;
 #ifdef DEVELOPMENT_CODE
     bool has_hash;
@@ -2306,13 +2306,13 @@ class MEDDLY::expert_forest: public forest
 
     memstats& changeMemStats();
     /// Number of bytes for an edge value.
-    char edgeBytes() const;
+    unsigned char edgeBytes() const;
     /// Are edge values included when computing the hash.
     bool areEdgeValuesHashed() const;
     /// Extra bytes per node, not hashed.
-    char unhashedHeaderBytes() const;
+    unsigned char unhashedHeaderBytes() const;
     /// Extra bytes per node, hashed.
-    char hashedHeaderBytes() const;
+    unsigned char hashedHeaderBytes() const;
 
     const expert_domain* getExpertDomain() const;
     expert_domain* useExpertDomain();
@@ -2930,9 +2930,9 @@ class MEDDLY::expert_forest: public forest
   // ------------------------------------------------------------
   // inlined setters for derived classes to use.
 
-    void setEdgeSize(char ebytes, bool hashed);
-    void setUnhashedSize(char ubytes);
-    void setHashedSize(char hbytes);
+    void setEdgeSize(unsigned char ebytes, bool hashed);
+    void setUnhashedSize(unsigned char ubytes);
+    void setHashedSize(unsigned char hbytes);
 
   // ------------------------------------------------------------
   // virtual, with default implementation.
@@ -3075,13 +3075,13 @@ class MEDDLY::expert_forest: public forest
 
 
     /// Number of bytes for an edge
-    char edge_bytes;
+    unsigned char edge_bytes;
     /// Are edge values hashed?
     bool hash_edge_values;
     /// Number of bytes of unhashed header
-    char unhashed_bytes;
+    unsigned char unhashed_bytes;
     /// Number of bytes of hashed header
-    char hashed_bytes;
+    unsigned char hashed_bytes;
 
     class nodecounter;
     class nodemarker;
@@ -4786,16 +4786,16 @@ class MEDDLY::unary_operation : public operation {
     bool matches(const expert_forest* arg, opnd_type res) const;
 
     // high-level front-ends
-    virtual void compute(const dd_edge &arg, dd_edge &res);
-    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
+
+    /**
+      Checks forest comatability and then calls computeDDEdge().
+    */
+    void compute(const dd_edge &arg, dd_edge &res);
+
     virtual void compute(const dd_edge &arg, long &res);
     virtual void compute(const dd_edge &arg, double &res);
     virtual void compute(const dd_edge &arg, ct_object &c);
-
-    // TBD: low-level front-ends?
-    // e.g.,
-    // virtual int computeDD(int k, int p);
-    // virtual void computeEvDD(int k, int v, int p, int &w, int &q);
+    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
 };
 
 // ******************************************************************
@@ -4829,11 +4829,17 @@ class MEDDLY::binary_operation : public operation {
       const expert_forest* res) const;
 
     // high-level front-end
-    virtual void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
+
+    /**
+      Checks forest comatability and then calls computeDDEdge().
+    */
+    void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
+
     virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
       = 0;
 
-    // low-level front ends
+    // low-level front ends.  TBD - REMOVE THESE BECAUSE THEY BREAK MARK & SWEEP
+
 
     /// Low-level compute on nodes a and b, return result.
     virtual node_handle compute(node_handle a, node_handle b);
@@ -4851,6 +4857,7 @@ class MEDDLY::binary_operation : public operation {
     /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
     virtual void compute(float av, node_handle ap, float bv, node_handle bp,
       float &cv, node_handle &cp);
+
 
 };
 
