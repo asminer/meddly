@@ -263,7 +263,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
         newstatesE.set(newstates);
         cdi.set(C->d(i));
         accumulateOp->compute(newstatesE, cdi, cdi);
-        C->d_ref(i) = resF->linkNode(cdi);
+        C->set_d(i, cdi);
       } // for j
   
     } // for i
@@ -405,7 +405,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
         newstatesE.set(newstates);
         cdj.set(C->d(j));
         accumulateOp->compute(newstatesE, cdj, cdj);
-        C->d_ref(j) = resF->linkNode(cdj);
+        C->set_d(j, cdj);
       } // for j
   
     } // for i
@@ -755,10 +755,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
         newstatesE.set(newstates, nev);
         cdi.set(C->d(i), C->ei(i));
         accumulateOp->compute(newstatesE, cdi, cdi);
-        C->d_ref(i) = resF->linkNode(cdi);
-        long cev;
-        cdi.getEdgeValue(cev);
-        C->setEdge(i, cev);
+        C->set_de(i, cdi);
       } // for j
 
     } // for i
@@ -906,10 +903,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
         newstatesE.set(newstates, nev);
         cdj.set(C->d(j), C->ei(j));
         accumulateOp->compute(newstatesE, cdj, cdj);
-        C->d_ref(j) = resF->linkNode(cdj);
-        long cev;
-        cdj.getEdgeValue(cev);
-        C->setEdge(j, cev);
+        C->set_de(j, cdj);
       } // for j
 
     } // for i
@@ -1142,10 +1136,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
           newstatesE.set(newstates, nev);
           djp.set(D->d(jp), D->ei(jp));
           accumulateOp->compute(newstatesE, djp, djp);
-          D->d_ref(jp) = resF->linkNode(djp);
-          long dev;
-          djp.getEdgeValue(dev);
-          D->setEdge(jp, dev);
+          D->set_de(jp, djp);
         } // for j
 
       } // for i

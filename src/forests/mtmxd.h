@@ -249,11 +249,11 @@ namespace MEDDLY {
               k, createEdgePr(-1, -k, start, batchP)
           );
           MEDDLY_DCASSERT(unionOp);
-          dd_edge dcE(F), dcnE(F), total(F);
+          dd_edge dcE(F), dcnE(F);
           dcE.set(dontcares);
           dcnE.set(dcnormal);
-          unionOp->compute(dcE, dcnE, total);
-          dontcares = F->linkNode(total);
+          unionOp->compute(dcE, dcnE, dcE);
+          dontcares = F->linkNode(dcE);
         }
 
         //
@@ -310,11 +310,11 @@ namespace MEDDLY {
         nb->shrinkSparse(z);
 
         MEDDLY_DCASSERT(unionOp);
-        dd_edge dontcaresE(F), built(F), total(F);
+        dd_edge dontcaresE(F), built(F);
         dontcaresE.set(dontcares);
         built.set( F->createReducedNode(-1, nb) );
-        unionOp->compute(dontcaresE, built, total);
-        return F->linkNode(total);
+        unionOp->compute(dontcaresE, built, built);
+        return F->linkNode(built);
       };
 
     protected:

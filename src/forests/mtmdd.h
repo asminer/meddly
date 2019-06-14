@@ -302,11 +302,11 @@ namespace MEDDLY {
         nb->shrinkSparse(z);
 
         MEDDLY_DCASSERT(unionOp);
-        dd_edge dontcaresE(F), built(F), total(F);
+        dd_edge dontcaresE(F), built(F);
         dontcaresE.set(dontcares);
         built.set( F->createReducedNode(-1, nb) );
-        unionOp->compute(dontcaresE, built, total);
-        return F->linkNode(total);
+        unionOp->compute(dontcaresE, built, built);
+        return F->linkNode(built);
       }
 
     protected:

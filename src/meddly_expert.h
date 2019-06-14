@@ -706,6 +706,9 @@ class MEDDLY::unpacked_node {
     */
     node_handle& d_ref(unsigned n);
 
+    /// Set the nth pointer from E, and destroy E.
+    void set_d(unsigned n, dd_edge &E);
+
     /** Get the index of the nth non-zero pointer.
         Use only for sparse readers.
      */
@@ -721,6 +724,9 @@ class MEDDLY::unpacked_node {
 
     /// Modify pointer to an edge
     void* eptr_write(unsigned i);
+
+    /// Set the nth pointer and edge value from E, and destroy E.
+    void set_de(unsigned n, dd_edge &E);
 
     /// Get the edge value, as an integer.
     void getEdge(unsigned i, long& ev) const;

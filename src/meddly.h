@@ -2572,6 +2572,7 @@ class MEDDLY::dd_edge {
 
   private:
     friend class forest;
+    friend class unpacked_node;
 
     void setIndex(int ind);
     int getIndex() const;

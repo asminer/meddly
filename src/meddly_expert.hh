@@ -245,6 +245,15 @@ MEDDLY::unpacked_node::d_ref(unsigned n)
   return down[n];
 }
 
+inline void
+MEDDLY::unpacked_node::set_d(unsigned n, dd_edge &E)
+{
+  MEDDLY_DCASSERT(parent == E.parent);
+  MEDDLY_DCASSERT(0==edge_bytes);
+  MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+  down[n] = E.node;
+  E.node = 0; // avoid having to adjust the link count
+}
 
 inline unsigned
 MEDDLY::unpacked_node::i(unsigned n) const
@@ -268,6 +277,7 @@ inline const void*
 MEDDLY::unpacked_node::eptr(unsigned i) const
 {
   MEDDLY_DCASSERT(edge);
+  MEDDLY_DCASSERT(edge_bytes);
   MEDDLY_CHECK_RANGE(0, i, (is_full ? size : nnzs));
   return ((char*) edge) + i * edge_bytes;
 }
@@ -276,8 +286,21 @@ inline void*
 MEDDLY::unpacked_node::eptr_write(unsigned i)
 {
   MEDDLY_DCASSERT(edge);
+  MEDDLY_DCASSERT(edge_bytes);
   MEDDLY_CHECK_RANGE(0, i, (is_full ? size : nnzs));
   return ((char*) edge) + i * edge_bytes;
+}
+
+inline void
+MEDDLY::unpacked_node::set_de(unsigned n, dd_edge &E)
+{
+  MEDDLY_DCASSERT(parent == E.parent);
+  MEDDLY_DCASSERT(edge);
+  MEDDLY_DCASSERT(edge_bytes);
+  MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+  down[n] = E.node;
+  memcpy( ((char*) edge) + n * edge_bytes, & (E.raw_value), edge_bytes );
+  E.node = 0; // avoid having to adjust the link count
 }
 
 inline void

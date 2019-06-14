@@ -861,7 +861,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
         nbdj.set( nb.d(j) );
         mddUnion->compute(nbdj, temp, nbdj);
         updated = (nbdj.getNode() != nb.d(j));
-        nb.d_ref(j) = resF->linkNode(nbdj);
+        nb.set_d(j, nbdj);
       }
 
       if (updated) {
@@ -977,7 +977,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
         newst.set(newstates); // clobber when done
         nbdj.set(nb->d(j));   // also clobber when done
         mddUnion->compute(newst, nbdj, nbdj);
-        nb->d_ref(j) = resF->linkNode( nbdj );
+        nb->set_d(j, nbdj);
       } // for j
   
     } // for i
@@ -1096,7 +1096,7 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(unpacked_node& nb)
           temp.set(rec);
           mddUnion->compute(nbdi, temp, nbdi);
           updated = nbdi.getNode() != nb.d(i);
-          nb.d_ref(i) = resF->linkNode( nbdi );
+          nb.set_d(i, nbdi);
         }
         if (updated) {
           expl->data[i] = 2;
@@ -1193,7 +1193,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
         nbdi.set(nb->d(i));
         temp.set(newstates);
         mddUnion->compute(temp, nbdi, nbdi);
-        nb->d_ref(i) = resF->linkNode(nbdi);
+        nb->set_d(i, nbdi);
       } // for j
   
     } // for i
@@ -1373,12 +1373,7 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
         temp.set(rec, recev);  // clobbers rec; that's what we want
         mddUnion->compute(nbdj, temp, nbdj);
         updated = (nbdj.getNode() != nb.d(j));
-        nb.d_ref(j) = resF->linkNode(nbdj);
-        if (updated) {
-          long accev;
-          nbdj.getEdgeValue(accev);
-          nb.setEdge(j, accev);
-        }
+        nb.set_de(j, nbdj);
       }
 
       if (updated) {
@@ -1510,10 +1505,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
         newst.set(n, nev); // clobber when done
         nbdj.set(nb->d(j), nb->ei(j));   // also clobber when done
         mddUnion->compute(newst, nbdj, nbdj);
-        nb->d_ref(j) = resF->linkNode( nbdj );
-        long newev;
-        nbdj.getEdgeValue(newev);
-        nb->setEdge(j, newev);
+        nb->set_de(j, nbdj);
       } // for j
 
     } // for i
