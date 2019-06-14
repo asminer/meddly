@@ -646,7 +646,10 @@ class MEDDLY::unpacked_node {
     static unpacked_node* newIdentity(const expert_forest *f, int k, unsigned i, long ev, node_handle node, bool full);
     static unpacked_node* newIdentity(const expert_forest *f, int k, unsigned i, float ev, node_handle node, bool full);
 
+    /** Create a zeroed-out full node */
     static unpacked_node* newFull(const expert_forest *f, int level, unsigned tsz);
+
+    /** Create a zeroed-out sparse node */
     static unpacked_node* newSparse(const expert_forest *f, int level, unsigned nnz);
 
   public:
@@ -846,8 +849,8 @@ class MEDDLY::unpacked_node {
     void bind_as_full(bool full);
 
   protected:
-    void clearFullDownPtrs();
-    void clearSparseDownPtrs();
+    void clearFullEdges();
+    void clearSparseEdges();
 
   public:
     // Centralized recycling

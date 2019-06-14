@@ -2398,6 +2398,9 @@ class MEDDLY::dd_edge {
     */
     forest* getForest() const;
 
+    /// Set the forest owning this edge.
+    void setForest(forest* f);
+
     /** Get this dd_edge's node handle.
         @return         the node handle.
     */

@@ -178,7 +178,7 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned nsize = unsigned(f->getLevelSize(k));
   if (full) {
     bind_to_forest(f, k, nsize, full);
-    clearFullDownPtrs();
+    clearFullEdges();
     down[i] = node;
   } else {
     bind_to_forest(f, k, 1, full);
@@ -198,8 +198,7 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned nsize = unsigned(f->getLevelSize(k));
   if (full) {
     bind_to_forest(f, k, nsize, full);
-    clearFullDownPtrs();
-    memset(edge, 0, nsize * sizeof(int));
+    clearFullEdges();
     down[i] = node;
     ((int*)edge)[i] = ev;
   } else {
@@ -221,8 +220,7 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned nsize = unsigned(f->getLevelSize(k));
   if (full) {
     bind_to_forest(f, k, nsize, full);
-    memset(down, 0, nsize * sizeof(node_handle));
-    memset(edge, 0, nsize * sizeof(long));
+    clearFullEdges();
     down[i] = node;
     ((long*)edge)[i] = ev;
   } else {
@@ -244,8 +242,7 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned nsize = unsigned(f->getLevelSize(k));
   if (full) {
     bind_to_forest(f, k, nsize, full);
-    memset(down, 0, nsize * sizeof(node_handle));
-    memset(edge, 0, nsize * sizeof(float));
+    clearFullEdges();
     down[i] = node;
     ((float*)edge)[i] = ev;
   } else {

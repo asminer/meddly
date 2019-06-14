@@ -549,10 +549,6 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     //
     // Need to process this level in the MXD.
     MEDDLY_DCASSERT(mxdLevel >= mddLevel);
-    // clear out result (important!)
-    for (int i=0; i<rSize; i++) {
-      nb->d_ref(i) = 0;
-    }
     
     // Initialize mxd readers, note we might skip the unprimed level
     
@@ -1396,10 +1392,6 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     //
     // Need to process this level in the MXD.
     MEDDLY_DCASSERT(mxdLevel >= mddLevel);
-    // clear out result (important!)
-    for (int i=0; i<rSize; i++) {
-      nb->d_ref(i) = 0;
-    }
 
     // Initialize mxd readers, note we might skip the unprimed level
 

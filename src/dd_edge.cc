@@ -136,6 +136,17 @@ void MEDDLY::dd_edge::destroy()
     node = 0;
     unlinkNode(parent, old);
     if (parent) parent->unregisterEdge(*this);
+    parent = 0;
+  }
+}
+
+void MEDDLY::dd_edge::setForest(forest* f)
+{
+  destroy();
+  parent = f;
+  if (parent) {
+    parent->registerEdge(*this);
+    MEDDLY_DCASSERT(index != -1);
   }
 }
 

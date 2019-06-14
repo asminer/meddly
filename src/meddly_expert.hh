@@ -171,7 +171,7 @@ MEDDLY::unpacked_node::newFull(const expert_forest *f, int level, unsigned tsz)
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
   U->initFull(f, level, tsz);
-  U->clearFullDownPtrs();
+  U->clearFullEdges();
   addToBuildList(U);
   return U;
 }
@@ -182,7 +182,7 @@ MEDDLY::unpacked_node::newSparse(const expert_forest *f, int level, unsigned nnz
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
   U->initSparse(f, level, nnzs);
-  U->clearSparseDownPtrs();
+  U->clearSparseEdges();
   addToBuildList(U);
   return U;
 }
@@ -481,17 +481,23 @@ MEDDLY::unpacked_node::bind_as_full(bool full)
 }
 
 inline void
-MEDDLY::unpacked_node::clearFullDownPtrs()
+MEDDLY::unpacked_node::clearFullEdges()
 {
   MEDDLY_DCASSERT(isFull());
   memset(down, 0, unsigned(size) * sizeof(node_handle));
+  if (edge_bytes) {
+    memset(edge, 0, unsigned(size) * edge_bytes);
+  }
 }
 
 inline void
-MEDDLY::unpacked_node::clearSparseDownPtrs()
+MEDDLY::unpacked_node::clearSparseEdges()
 {
   MEDDLY_DCASSERT(isSparse());
   memset(down, 0, unsigned(nnzs) * sizeof(node_handle));
+  if (edge_bytes) {
+    memset(edge, 0, unsigned(nnzs) * edge_bytes);
+  }
 }
 
 inline MEDDLY::unpacked_node*

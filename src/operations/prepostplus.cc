@@ -149,7 +149,7 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
   MEDDLY_DCASSERT(bLevel >= 0);
 
   const int resultLevel = ABS(aLevel) > bLevel ? ABS(aLevel): bLevel;
-  const int resultSize = resF->getLevelSize(resultLevel);
+  const unsigned resultSize = unsigned(resF->getLevelSize(resultLevel));
 
   // Initialize result
   unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
@@ -166,7 +166,7 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
   ;
 
   // do computation
-  for (int i = 0; i < resultSize; i++) {
+  for (unsigned i = 0; i < resultSize; i++) {
     if (A->d(i) == 0 || B->d(i) == 0) {
       nb->d_ref(i) = 0;
       nb->setEdge(i, 0L);
@@ -180,7 +180,7 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
 
     unpacked_node* nb2 = unpacked_node::newFull(resF, -resultLevel, resultSize);
 
-    for (int j = 0; j < resultSize; j++) {
+    for (unsigned j = 0; j < resultSize; j++) {
       if (D->d(j) == 0) {
         nb2->d_ref(j) = 0;
         nb2->setEdge(j, 0L);
@@ -201,7 +201,7 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
     // Reduce
     long dev = Inf<long>();
     node_handle d = 0;
-    resF->createReducedNode(i, nb2, dev, d);
+    resF->createReducedNode(int(i), nb2, dev, d);
 
     nb->d_ref(i) = d;
     nb->setEdge(i, dev);
@@ -256,7 +256,7 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
   MEDDLY_DCASSERT(bLevel >= 0);
 
   const int resultLevel = ABS(aLevel) > bLevel ? ABS(aLevel): bLevel;
-  const int resultSize = resF->getLevelSize(resultLevel);
+  const unsigned resultSize = unsigned(resF->getLevelSize(resultLevel));
 
   // Initialize result
   unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
@@ -273,7 +273,7 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
   ;
 
   // do computation
-  for (int i = 0; i < resultSize; i++) {
+  for (unsigned i = 0; i < resultSize; i++) {
     if (A->d(i) == 0) {
       nb->d_ref(i) = 0;
       nb->setEdge(i, 0L);
@@ -287,7 +287,7 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
 
     unpacked_node* nb2 = unpacked_node::newFull(resF, -resultLevel, resultSize);
 
-    for (int j = 0; j < resultSize; j++) {
+    for (unsigned j = 0; j < resultSize; j++) {
       if (D->d(j) == 0 || B->d(j) == 0) {
         nb2->d_ref(j) = 0;
         nb2->setEdge(j, 0L);
@@ -308,7 +308,7 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
     // Reduce
     long dev = Inf<long>();
     node_handle d = 0;
-    resF->createReducedNode(i, nb2, dev, d);
+    resF->createReducedNode(int(i), nb2, dev, d);
 
     nb->d_ref(i) = d;
     nb->setEdge(i, dev);

@@ -73,7 +73,7 @@ void MEDDLY::ev_forest::enlargeStatics(int n)
 {
   MEDDLY_DCASSERT(n>0);
   if (n>order_size) {
-    order = (int*) realloc(order, n*sizeof(int));
+    order = (int*) realloc(order, unsigned(n)*sizeof(int));
     //terminals = (node_handle*) realloc(terminals, n*sizeof(node_handle));
     //if (0==order || 0==terminals) {
     if (0==order) {
