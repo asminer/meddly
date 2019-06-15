@@ -51,6 +51,7 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest {
     virtual void writeTerminal(output &s, node_handle tnode) const;
     virtual node_handle readTerminal(input &s);
     int storedValue(int) const;
+    int returnStored(int) const;
   protected:
     virtual const char* codeChars() const;
 };

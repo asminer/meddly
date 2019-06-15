@@ -46,6 +46,14 @@ int MEDDLY::mt_mdd_bool::storedValue(int value) const{
 		return value+1;
 	}
 }
+
+int MEDDLY::mt_mdd_bool::returnStored(int value) const{
+	if (value==Omega){
+		return Omega;
+	}else{
+		return value-1;
+	}
+}
 void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
 {
   binary_operation* unionOp = getOperation(UNION, this, this, this);
@@ -107,7 +115,7 @@ void MEDDLY::mt_mdd_bool
 void MEDDLY::mt_mdd_bool::isMarkingCovered(const dd_edge &f, const int* vlist,
 		bool &term) const {
 	node_handle p = f.getNode();
-	printf("XXXXF%d\n",f.getHasPInfty());
+//	printf("XXXXF%d\n",f.getHasPInfty());
 	if (!f.getHasPInfty()){
 	term = evaluateRawIsMarkingCovered(f, p, vlist);
 	}
@@ -118,7 +126,7 @@ void MEDDLY::mt_mdd_bool::isMarkingCovered(const dd_edge &f, const int* vlist,
 			const int value=vlist[ind];
 			updatedVlist[ind]=storedValue(value);
 		}
-		printf("CALL WITH INFTY\n");
+//		printf("CALL WITH INFTY\n");
 		term = evaluateRawIsMarkingCoveredWithInfty(f, p, updatedVlist);
 	}
 }
@@ -133,7 +141,7 @@ void MEDDLY::mt_mdd_bool::firstMarkingCovers(const dd_edge &f, const int* vlist,
 //	else{
 	int rlistsize=getNodeLevel(p);
 	int* resultlist=new int(rlistsize);
-		printf("evaluateRawFirstMarkingCoveredWithInfty WITH INFTY\n");
+//		printf("evaluateRawFirstMarkingCoveredWithInfty WITH INFTY\n");
 		int arraySize=sizeof(vlist)/sizeof(int);
 				int* updatedVlist= new int(arraySize);
 				for(int ind=1; ind<=arraySize;ind++){
@@ -142,10 +150,13 @@ void MEDDLY::mt_mdd_bool::firstMarkingCovers(const dd_edge &f, const int* vlist,
 				}
 		term = evaluateRawFirstMarkingCoversWithInfty(f, p, updatedVlist,resultlist);
 
-		printf("RESULT is %d\n",term);
+//		printf("RESULT is %d\n",term);
 		if (term){
 		for (int i = rlistsize; i >= 0; i--)
-			rlist[i]=resultlist[i];
+			if (i!=0)
+			rlist[i]=returnStored(resultlist[i]);
+			else
+			rlist[i]=0;
 //			printf("%d ",rlist[i]);
 		}
 //	}
