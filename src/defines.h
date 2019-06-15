@@ -68,6 +68,7 @@
 namespace MEDDLY {
   // const int INF = std::numeric_limits<int>::max();
   // const float NAN = std::numeric_limits<float>::quiet_NaN();
+  const int Omega=-10;
   template<typename T>
   inline T Inf()    { return std::numeric_limits<T>::max(); }
   inline float Nan()  { return std::numeric_limits<float>::quiet_NaN(); }

@@ -39,6 +39,13 @@ void MEDDLY::mt_mdd_bool::createEdge(bool term, dd_edge& e)
 #endif
 }
 
+int MEDDLY::mt_mdd_bool::storedValue(int value) const{
+	if (value==Omega){
+		return 0;
+	}else{
+		return value+1;
+	}
+}
 void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
 {
   binary_operation* unionOp = getOperation(UNION, this, this, this);
@@ -60,10 +67,10 @@ void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
   for(int i=0; i<=num_vars; i++) {
 	  int level=getLevelByVar(i);
 	  for(int j=0; j<N; j++) {
-		  //+2 because of considering +infty and -infty
-//		  if (e.getHasInfty()){
-//		  ordered_vlist[j][level]=vlist[j][i]+2;
-//		  }else
+		  //considering +infty if PInfty is true.
+		  if (e.getHasPInfty()){
+		  ordered_vlist[j][level]=storedValue(vlist[j][i]);
+		  }else
 		  {
 			  ordered_vlist[j][level]=vlist[j][i];
 		  }
@@ -105,8 +112,14 @@ void MEDDLY::mt_mdd_bool::isMarkingCovered(const dd_edge &f, const int* vlist,
 	term = evaluateRawIsMarkingCovered(f, p, vlist);
 	}
 	else{
+		int arraySize=sizeof(vlist)/sizeof(int);
+		int* updatedVlist= new int(arraySize);
+		for(int ind=1; ind<=arraySize;ind++){
+			const int value=vlist[ind];
+			updatedVlist[ind]=storedValue(value);
+		}
 		printf("CALL WITH INFTY\n");
-		term = evaluateRawIsMarkingCoveredWithInfty(f, p, vlist);
+		term = evaluateRawIsMarkingCoveredWithInfty(f, p, updatedVlist);
 	}
 }
 
@@ -121,7 +134,13 @@ void MEDDLY::mt_mdd_bool::firstMarkingCovers(const dd_edge &f, const int* vlist,
 	int rlistsize=getNodeLevel(p);
 	int* resultlist=new int(rlistsize);
 		printf("evaluateRawFirstMarkingCoveredWithInfty WITH INFTY\n");
-		term = evaluateRawFirstMarkingCoversWithInfty(f, p, vlist,resultlist);
+		int arraySize=sizeof(vlist)/sizeof(int);
+				int* updatedVlist= new int(arraySize);
+				for(int ind=1; ind<=arraySize;ind++){
+					const int value=vlist[ind];
+					updatedVlist[ind]=storedValue(value);
+				}
+		term = evaluateRawFirstMarkingCoversWithInfty(f, p, updatedVlist,resultlist);
 
 		printf("RESULT is %d\n",term);
 		if (term){

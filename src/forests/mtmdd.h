@@ -268,6 +268,7 @@ namespace MEDDLY {
       int N;
       int K;
       binary_operation* unionOp;
+      bool hasInfty=false;
     public:
       mtmdd_edgemaker(mtmdd_forest* f, const int* const* mt, const T* v, 
         int* o, int n, int k, binary_operation* unOp) 
