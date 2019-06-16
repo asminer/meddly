@@ -109,7 +109,18 @@ createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 void MEDDLY::mt_mdd_bool
 ::evaluate(const dd_edge &f, const int* vlist, bool &term) const
 {
+  if (f.getHasPInfty()){
+		int arraySize = sizeof(vlist) / sizeof(int);
+		int* updatedVlist = new int(arraySize);
+		for (int ind = 1; ind <= arraySize; ind++) {
+			const int value = vlist[ind];
+			updatedVlist[ind] = storedValue(value);
+		}
+		term = bool_Tencoder::handle2value(evaluateRaw(f, updatedVlist));
+  }
+  else{
   term = bool_Tencoder::handle2value(evaluateRaw(f, vlist));
+  }
 }
 
 void MEDDLY::mt_mdd_bool::isMarkingCovered(const dd_edge &f, const int* vlist,
