@@ -110,9 +110,10 @@ void MEDDLY::mt_mdd_bool
 ::evaluate(const dd_edge &f, const int* vlist, bool &term) const
 {
   if (f.getHasPInfty()){
-		int arraySize = sizeof(vlist) / sizeof(int);
-		int* updatedVlist = new int(arraySize);
-		for (int ind = 1; ind <= arraySize; ind++) {
+	  const int NumberOfLevel=f.getLevel();
+		//int arraySize = sizeof(vlist) / sizeof(int);
+		int* updatedVlist = new int(NumberOfLevel+1);
+		for (int ind = 1; ind <= NumberOfLevel; ind++) {
 			const int value = vlist[ind];
 			updatedVlist[ind] = storedValue(value);
 		}
@@ -131,9 +132,10 @@ void MEDDLY::mt_mdd_bool::isMarkingCovered(const dd_edge &f, const int* vlist,
 	term = evaluateRawIsMarkingCovered(f, p, vlist);
 	}
 	else{
-		int arraySize=sizeof(vlist)/sizeof(int);
-		int* updatedVlist= new int(arraySize);
-		for(int ind=1; ind<=arraySize;ind++){
+		const int NumberOfLevel=f.getLevel();
+				//int arraySize = sizeof(vlist) / sizeof(int);
+				int* updatedVlist = new int(NumberOfLevel+1);
+		for(int ind=1; ind<=NumberOfLevel;ind++){
 			const int value=vlist[ind];
 			updatedVlist[ind]=storedValue(value);
 		}
@@ -153,9 +155,10 @@ void MEDDLY::mt_mdd_bool::firstMarkingCovers(const dd_edge &f, const int* vlist,
 	int rlistsize=getNodeLevel(p);
 	int* resultlist=new int(rlistsize);
 //		printf("evaluateRawFirstMarkingCoveredWithInfty WITH INFTY\n");
-		int arraySize=sizeof(vlist)/sizeof(int);
-				int* updatedVlist= new int(arraySize);
-				for(int ind=1; ind<=arraySize;ind++){
+//	const int NumberOfLevel=f.getLevel();
+					//int arraySize = sizeof(vlist) / sizeof(int);
+					int* updatedVlist = new int(rlistsize+1);
+				for(int ind=1; ind<=rlistsize;ind++){
 					const int value=vlist[ind];
 					updatedVlist[ind]=storedValue(value);
 				}
