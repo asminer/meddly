@@ -112,10 +112,10 @@ void MEDDLY::mt_mdd_bool
   if (f.getHasPInfty()){
 	  const int NumberOfLevel=f.getLevel();
 		//int arraySize = sizeof(vlist) / sizeof(int);
-		int* updatedVlist = new int(NumberOfLevel+1);
+		int* updatedVlist = new int[NumberOfLevel+1];
 		for (int ind = 1; ind <= NumberOfLevel; ind++) {
-			const int value = vlist[ind];
-			updatedVlist[ind] = storedValue(value);
+//			const int value = vlist[ind];
+			updatedVlist[ind] = storedValue(vlist[ind]);
 		}
 		term = bool_Tencoder::handle2value(evaluateRaw(f, updatedVlist));
   }
@@ -134,7 +134,7 @@ void MEDDLY::mt_mdd_bool::isMarkingCovered(const dd_edge &f, const int* vlist,
 	else{
 		const int NumberOfLevel=f.getLevel();
 				//int arraySize = sizeof(vlist) / sizeof(int);
-				int* updatedVlist = new int(NumberOfLevel+1);
+				int* updatedVlist = new int[NumberOfLevel+1];
 		for(int ind=1; ind<=NumberOfLevel;ind++){
 			const int value=vlist[ind];
 			updatedVlist[ind]=storedValue(value);
@@ -157,7 +157,7 @@ void MEDDLY::mt_mdd_bool::firstMarkingCovers(const dd_edge &f, const int* vlist,
 //		printf("evaluateRawFirstMarkingCoveredWithInfty WITH INFTY\n");
 //	const int NumberOfLevel=f.getLevel();
 					//int arraySize = sizeof(vlist) / sizeof(int);
-					int* updatedVlist = new int(rlistsize+1);
+					int* updatedVlist = new int[rlistsize+1];
 				for(int ind=1; ind<=rlistsize;ind++){
 					const int value=vlist[ind];
 					updatedVlist[ind]=storedValue(value);

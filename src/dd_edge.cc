@@ -81,6 +81,7 @@ MEDDLY::dd_edge::dd_edge(const dd_edge& e)
   fprintf(stderr, "Creating dd_edge %p\n", this);
 #endif
   init(e);
+  this->hasPInfty=e.hasPInfty;
   MEDDLY_DCASSERT(index != -1);
 }
 
@@ -93,6 +94,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator=(const dd_edge& e)
     init(e);
   }
   MEDDLY_DCASSERT(index != -1);
+  this->hasPInfty=e.hasPInfty;
   return *this;
 }
 
