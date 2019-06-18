@@ -2046,12 +2046,11 @@ class MEDDLY::forest {
   private:  // For edge registration
     friend class dd_edge;
 
-    // structure to store references to registered dd_edges.
+    /// structure to store references to registered dd_edges.
     struct edge_data {
-      // If nextHole >= 0, this is a hole, in which case nextHole also
-      // refers to the array index of the next hole in edge[]
-      int nextHole;
-      // registered dd_edge
+      /// Index of the next hole (spot with a 0 edge).
+      unsigned nextHole;
+      /// registered dd_edge
       dd_edge* edge;
     };
 
@@ -2059,11 +2058,11 @@ class MEDDLY::forest {
     edge_data *edge;
 
     // Size of edge[]
-    unsigned sz;
+    unsigned edge_sz;
     // Array index: 1 + (last used slot in edge[])
     unsigned firstFree;
     // Array index: most recently created hole in edge[]
-    int firstHole;
+    unsigned firstHole;
 
     void registerEdge(dd_edge& e);
     void unregisterEdge(dd_edge& e);
@@ -2563,11 +2562,11 @@ class MEDDLY::dd_edge {
   private:
     friend class forest;
 
-    void setIndex(int ind);
-    int getIndex() const;
+    void setIndex(unsigned ind);
+    unsigned getIndex() const;
 
     forest *parent;
-    int index;  //  our slot number in the parent forest's list
+    unsigned index;  //  our slot number in the parent forest's list, or 0 for no slot.
 
     node_handle node;
     long raw_value;
