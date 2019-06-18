@@ -46,7 +46,11 @@ MEDDLY::expert_domain::readExpertVar(int lev) const
 inline void
 MEDDLY::expert_domain::enlargeVariableBound(int vh, bool prime, int b)
 {
-  getExpertVar(vh)->enlargeBound(prime, b);
+	if (this->getHasPInftyDomain()) {
+		getExpertVar(vh)->enlargeBound(prime, b + 1);
+	} else {
+		getExpertVar(vh)->enlargeBound(prime, b);
+	}
 }
 
 inline void
