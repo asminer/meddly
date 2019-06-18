@@ -2668,7 +2668,7 @@ MEDDLY::satpregen_opname::pregen_relation::isFinalized() const
   return 0 == next;
 }
 
-inline MEDDLY::node_handle*
+inline MEDDLY::dd_edge*
 MEDDLY::satpregen_opname::pregen_relation::arrayForLevel(int k) const
 {
   MEDDLY_DCASSERT(isFinalized());
@@ -2685,14 +2685,11 @@ MEDDLY::satpregen_opname::pregen_relation::arrayForLevel(int k) const
   }
   else {
     // "by levels"
-    if (events[k])
-      return events + k;
-    else
-      return 0;
+    return events+k;
   }
 }
 
-inline int
+inline unsigned
 MEDDLY::satpregen_opname::pregen_relation::lengthForLevel(int k) const
 {
   MEDDLY_DCASSERT(isFinalized());
@@ -2703,7 +2700,7 @@ MEDDLY::satpregen_opname::pregen_relation::lengthForLevel(int k) const
   }
   else {
     // "by levels"
-    return events[k] ? 1 : 0;
+    return events[k].getNode() ? 1 : 0;
   }
 }
 
@@ -2809,11 +2806,11 @@ MEDDLY::satotf_opname::otf_relation::getNumOfEvents(int level) const
   return num_events_by_top_level[level];
 }
 
-inline MEDDLY::node_handle
-MEDDLY::satotf_opname::otf_relation::getEvent(int level, int i)
+inline const MEDDLY::dd_edge&
+MEDDLY::satotf_opname::otf_relation::getEvent(int level, int i) const
 {
   MEDDLY_CHECK_RANGE(0, i, getNumOfEvents(level));
-  return events_by_top_level[level][i]->getRoot().getNode();
+  return events_by_top_level[level][i]->getRoot();
 }
 
 
@@ -3578,19 +3575,19 @@ MEDDLY::operation::usesMonolithicComputeTable()
   return Monolithic_CT;
 }
 
-inline int
+inline unsigned
 MEDDLY::operation::getIndex() const
 {
   return oplist_index;
 }
 
 inline MEDDLY::operation*
-MEDDLY::operation::getOpWithIndex(int i)
+MEDDLY::operation::getOpWithIndex(unsigned i)
 {
   return op_list[i];
 }
 
-inline int
+inline unsigned
 MEDDLY::operation::getOpListSize()
 {
   return list_size;

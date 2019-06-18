@@ -55,7 +55,6 @@
 #define DCASSERTS_ON
 #endif
 
-
 // #define TRACK_DELETIONS
 // #define TRACK_CACHECOUNT
 
@@ -2039,8 +2038,8 @@ class MEDDLY::forest {
   private:  // For operation registration
     friend class operation;
 
-    int* opCount;
-    int szOpCount;
+    unsigned* opCount;
+    unsigned szOpCount;
 
     /// Register an operation with this forest.
     /// Called only within operation.
@@ -2574,11 +2573,11 @@ class MEDDLY::dd_edge {
     friend class forest;
     friend class unpacked_node;
 
-    void setIndex(int ind);
-    int getIndex() const;
+    void setIndex(unsigned ind);
+    unsigned getIndex() const;
 
     forest *parent;
-    int index;  //  our slot number in the parent forest's list
+    unsigned index;  //  our slot number in the parent forest's list
 
     node_handle node;
     long raw_value;

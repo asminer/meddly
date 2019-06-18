@@ -3251,7 +3251,9 @@ class MEDDLY::numerical_opname : public specialized_opname {
 // *                                                                *
 // ******************************************************************
 
-/// Saturation, with already generated transition relations, operation names.
+/** Saturation, with already generated transition relations, operation names.
+    Implemented in operations/sat_pregen.cc
+*/
 class MEDDLY::satpregen_opname : public specialized_opname {
   public:
     satpregen_opname(const char* n);
@@ -3275,7 +3277,7 @@ class MEDDLY::satpregen_opname : public specialized_opname {
                                   number of calls to addToRelation().
         */
         pregen_relation(forest* inmdd, forest* mxd, forest* outmdd,
-          int num_events);
+          unsigned num_events);
 
         /** Constructor, by levels
               @param  inmdd       MDD forest containing initial states
@@ -3323,8 +3325,8 @@ class MEDDLY::satpregen_opname : public specialized_opname {
         forest* getOutForest() const;
 
         // the following methods assume the relation has been finalized.
-        node_handle* arrayForLevel(int k) const;
-        int lengthForLevel(int k) const;
+        dd_edge* arrayForLevel(int k) const;
+        unsigned lengthForLevel(int k) const;
 
       private:
         // helper for constructors
@@ -3341,23 +3343,23 @@ class MEDDLY::satpregen_opname : public specialized_opname {
         forest* insetF;
         expert_forest* mxdF;
         forest* outsetF;
-        int K;
+        unsigned K;
         // array of sub-relations
-        node_handle* events;
-        // next pointers, unless we're finalized
-        int* next;
+        dd_edge* events;
+        // next pointers (plus one), unless we're finalized
+        unsigned* next;
         // size of events array
-        int num_events;
-        // last used element of events array
-        int last_event;
+        unsigned num_events;
+        // one past last used element of events array
+        unsigned last_event;
 
         // If null, then we are "by levels".  Otherwise, we are "by events",
-        // and before we're finalized, level_index[k] points to a linked-list
-        // of sub-relations that affect level k.
-        // after we're finalized, the events array is sorted, so
-        // level_index[k] is the index of the first event affecting level k.
+        // and before we're finalized, level_index[k] "points" (index plus one)
+        // to a linked-list of sub-relations that affect level k.
+        // After we're finalized, the events array is sorted, so
+        // level_index[k] is the (actual) index of the first event affecting level k.
         // Dimension is number of variables + 1.
-        int* level_index;
+        unsigned* level_index;
     };
 
 };
@@ -3370,7 +3372,9 @@ class MEDDLY::satpregen_opname : public specialized_opname {
 // *                                                                *
 // ******************************************************************
 
-/// Saturation, transition relations built on the fly, operation names.
+/** Saturation, transition relations built on the fly, operation names.
+    Implemented in operations/sat_otf.cc
+*/
 class MEDDLY::satotf_opname : public specialized_opname {
   public:
     satotf_opname(const char* n);
@@ -3608,7 +3612,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
                                 the ith event at this level;
                                 otherwise, 0.
          */
-        node_handle getEvent(int level, int i);
+        const dd_edge& getEvent(int level, int i) const;
 
         /** Rebuild an event.
 
@@ -3620,10 +3624,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
         /** Build a Monolithic Next State Function that is equivalent to
             the union of all events while restricting the size of each
             variable to that of the largest confirmed index.
-
-            @return             union of bounded OTF events.
         */
-        node_handle getBoundedMonolithicNSF();
+        void getBoundedMonolithicNSF(dd_edge &root) const;
 
         /** Bound all extensible variables
             using the maximum confirmed local state as the bound.
@@ -3651,8 +3653,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
       protected:
         void enlargeConfirmedArrays(int level, int sz);
-        node_handle getBoundedMxd(node_handle mxd, const int* bounds_array, int sz,
-            std::unordered_map<node_handle, node_handle>& cache);
+        // node_handle getBoundedMxd(node_handle mxd, const int* bounds_array, int sz,
+            // std::unordered_map<node_handle, node_handle>& cache);
 
       private:
         expert_forest* insetF;
@@ -3699,7 +3701,9 @@ class MEDDLY::satotf_opname : public specialized_opname {
 // *                                                                *
 // ******************************************************************
 
-/// Saturation, transition relations stored implcitly, operation names.
+/** Saturation, transition relations stored implcitly, operation names.
+    Implemented in operations/sat_impl.cc
+*/
 class MEDDLY::satimpl_opname: public specialized_opname {
   public:
 
@@ -4651,7 +4655,7 @@ class MEDDLY::compute_table {
 */
 class MEDDLY::operation {
     const opname* theOpName;
-    int oplist_index;
+    unsigned oplist_index;
     bool is_marked_for_deletion;
 
     // declared and initialized in meddly.cc
@@ -4659,13 +4663,13 @@ class MEDDLY::operation {
     // declared and initialized in meddly.cc
     static operation** op_list;
     // declared and initialized in meddly.cc
-    static int* op_holes;
+    static unsigned* op_holes;
     // declared and initialized in meddly.cc
-    static int list_size;
+    static unsigned list_size;
     // declared and initialized in meddly.cc
-    static int list_alloc;
+    static unsigned list_alloc;
     // declared and initialized in meddly.cc
-    static int free_list;
+    static unsigned free_list;
 
     // should ONLY be called during library cleanup.
     static void destroyAllOps();
@@ -4750,9 +4754,9 @@ class MEDDLY::operation {
 
     // for compute tables.
 
-    int getIndex() const;
-    static operation* getOpWithIndex(int i);
-    static int getOpListSize();
+    unsigned getIndex() const;
+    static operation* getOpWithIndex(unsigned i);
+    static unsigned getOpListSize();
 
     void setFirstETid(unsigned slot);
     unsigned getFirstETid() const;

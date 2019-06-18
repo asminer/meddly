@@ -637,8 +637,8 @@ inline const MEDDLY::dd_edge MEDDLY::dd_edge::operator-(const MEDDLY::dd_edge& e
   return dd_edge(*this) -= e;
 }
 
-inline void MEDDLY::dd_edge::setIndex(int ind) { index = ind; }
-inline int MEDDLY::dd_edge::getIndex() const { return index; }
+inline void MEDDLY::dd_edge::setIndex(unsigned ind) { index = ind; }
+inline unsigned MEDDLY::dd_edge::getIndex() const { return index; }
 
 inline void MEDDLY::dd_edge::orphan() {
   parent = 0;

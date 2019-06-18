@@ -41,7 +41,7 @@
 //#include <queue>
 //#include <vector>
 
-// #define DEBUG_CLEANUP
+#define DEBUG_CLEANUP
 // #define DEBUG_ADDRESS_RESIZE
 // #define DEBUG_CREATE_REDUCED
 // #define DEBUG_GC
@@ -345,7 +345,7 @@ void MEDDLY::forest::markForDeletion()
   if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
   // deal with operations associated with this forest
-  for (int i=0; i<szOpCount; i++) 
+  for (unsigned i=0; i<szOpCount; i++) 
     if (opCount[i]) {
       operation* op = operation::getOpWithIndex(i);
       op->markForDeletion();
@@ -466,7 +466,7 @@ void MEDDLY::forest::removeStaleComputeTableEntries()
   if (operation::usesMonolithicComputeTable()) {
     operation::removeStalesFromMonolithic();
   } else {
-    for (int i=0; i<szOpCount; i++) 
+    for (unsigned i=0; i<szOpCount; i++) 
       if (opCount[i]) {
         operation* op = operation::getOpWithIndex(i);
         op->removeStaleComputeTableEntries();
@@ -482,7 +482,7 @@ void MEDDLY::forest::removeAllComputeTableEntries()
     operation::removeStalesFromMonolithic();
     is_marked_for_deletion = false;
   } else {
-    for (int i=0; i<szOpCount; i++) 
+    for (unsigned i=0; i<szOpCount; i++) 
       if (opCount[i]) {
         operation* op = operation::getOpWithIndex(i);
         op->removeAllComputeTableEntries();
@@ -495,7 +495,7 @@ void MEDDLY::forest::showComputeTable(output &s, int verbLevel) const
   if (operation::usesMonolithicComputeTable()) {
     operation::showMonolithicComputeTable(s, verbLevel);
   } else {
-    for (int i=0; i<szOpCount; i++) 
+    for (unsigned i=0; i<szOpCount; i++) 
       if (opCount[i]) {
         operation* op = operation::getOpWithIndex(i);
         op->showComputeTable(s, verbLevel);
@@ -508,8 +508,8 @@ void MEDDLY::forest::registerOperation(const operation* op)
   MEDDLY_DCASSERT(op->getIndex() >= 0);
   if (op->getIndex() >= szOpCount) {
     // need to expand
-    int newSize = ((op->getIndex() / 16) +1 )*16; // expand in chunks of 16
-    int* tmp = (int*) realloc(opCount, newSize * sizeof(int));
+    unsigned newSize = ((op->getIndex() / 16) +1 )*16; // expand in chunks of 16
+    unsigned* tmp = (unsigned*) realloc(opCount, newSize * sizeof(unsigned));
     if (0==tmp) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     for ( ; szOpCount < newSize; szOpCount++) {
       tmp[szOpCount] = 0;
@@ -542,12 +542,12 @@ void MEDDLY::forest::registerEdge(dd_edge& e)
     // no holes available, add to end of array
     if (firstFree >= sz) {
       // expand edge[]
-      int new_sz = sz * 2;
+      unsigned new_sz = sz * 2;
       edge_data* new_edge =
           (edge_data*) realloc(edge, new_sz * sizeof(edge_data));
       if (0 == new_edge) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
       edge = new_edge;
-      for (int i = sz; i < new_sz; ++i)
+      for (unsigned i = sz; i < new_sz; ++i)
       {
         edge[i].nextHole = -1;
         edge[i].edge = 0;
@@ -568,7 +568,7 @@ void MEDDLY::forest::unregisterEdge(dd_edge& e)
   // remove this edge from the collection of edges for this forest.
   // change e.index to -1.
   MEDDLY_DCASSERT(e.getIndex() >= 0);
-  int index = e.getIndex();
+  unsigned index = e.getIndex();
   MEDDLY_DCASSERT(edge[index].edge == &e);
   edge[index].edge = 0;
   edge[index].nextHole = firstHole;
