@@ -202,7 +202,7 @@ MEDDLY::forest::policies MEDDLY::forest::mddDefaults;
 MEDDLY::forest::policies MEDDLY::forest::mxdDefaults;
 
 MEDDLY::forest
-::forest(int ds, domain* _d, bool rel, range_type t, edge_labeling ev, 
+::forest(unsigned ds, domain* _d, bool rel, range_type t, edge_labeling ev, 
   const policies &p,int* lrr) : deflt(p)
 {
   // FID
@@ -210,7 +210,7 @@ MEDDLY::forest
   fid = ++gfid;
 
 #ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Creating forest #%d in domain #%d\n", ds, _d->ID());
+  fprintf(stderr, "Creating forest #%u in domain #%d\n", ds, _d->ID());
 #endif
   d_slot = ds;
   is_marked_for_deletion = false;
@@ -312,7 +312,7 @@ MEDDLY::forest
 MEDDLY::forest::~forest()
 {
 #ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Deleting forest #%d in domain #%d\n", d_slot, d->ID());
+  fprintf(stderr, "Deleting forest #%u in domain #%d\n", d_slot, d->ID());
 #endif
   // operations are deleted elsewhere...
   free(opCount);

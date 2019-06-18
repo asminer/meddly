@@ -1305,7 +1305,7 @@ class MEDDLY::forest {
       @param  p       Polcies for reduction, storage, deletion.
       @param  level_reduction_rule       Rules for reduction on different levels.
     */
-    forest(int dslot, domain* d, bool rel, range_type t, edge_labeling ev, 
+    forest(unsigned dslot, domain* d, bool rel, range_type t, edge_labeling ev, 
       const policies &p, int* level_reduction_rule);
 
     /// Destructor.
@@ -2026,7 +2026,7 @@ class MEDDLY::forest {
 
   private:  // Domain info 
     friend class domain;
-    int d_slot;
+    unsigned d_slot;
     domain* d;
 
   private:  // For operation registration
@@ -2264,7 +2264,7 @@ class MEDDLY::domain {
     void showInfo(output &strm);
 
     /// Free the slot that the forest is using.
-    void unlinkForest(forest* f, int slot);
+    void unlinkForest(forest* f, unsigned slot);
 
     // --------------------------------------------------------------------
 
@@ -2285,10 +2285,10 @@ class MEDDLY::domain {
   private:
     bool is_marked_for_deletion;
     forest** forests;
-    int szForests;
+    unsigned szForests;
 
     /// Find a free slot for a new forest.
-    int findEmptyForestSlot();
+    unsigned findEmptyForestSlot();
 
     /// Mark this domain for deletion
     void markForDeletion();

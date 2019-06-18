@@ -20,7 +20,7 @@
 
 #include "mtmxdbool.h"
 
-MEDDLY::mt_mxd_bool::mt_mxd_bool(int dsl, domain *d, const policies &p, int* level_reduction_rule, bool tv)
+MEDDLY::mt_mxd_bool::mt_mxd_bool(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, bool tv)
 : mtmxd_forest(dsl, d, BOOLEAN, p, level_reduction_rule)
 { 
   initializeForest();

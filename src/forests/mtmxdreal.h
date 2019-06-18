@@ -34,7 +34,7 @@ namespace MEDDLY {
 class MEDDLY::mt_mxd_real : public mtmxd_forest {
   public:
 
-    mt_mxd_real(int dsl, domain *d, const policies &p, int* level_reduction_rule=NULL, float tv=0);
+    mt_mxd_real(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule=NULL, float tv=0);
     ~mt_mxd_real();
 
     void createEdge(float val, dd_edge &e);

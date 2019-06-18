@@ -34,7 +34,7 @@
 int* MEDDLY::mt_forest::order;
 int  MEDDLY::mt_forest::order_size;
 
-MEDDLY::mt_forest::mt_forest(int dsl, domain *d, bool rel,
+MEDDLY::mt_forest::mt_forest(unsigned dsl, domain *d, bool rel,
   range_type t, const policies &p, int* level_reduction_rule)
 : expert_forest(dsl, d, rel, t, MULTI_TERMINAL, p, level_reduction_rule)
 {

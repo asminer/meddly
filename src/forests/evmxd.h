@@ -28,7 +28,7 @@ namespace MEDDLY {
 
 class MEDDLY::evmxd_forest : public ev_forest {
   public:
-    evmxd_forest(int dsl, domain* d, range_type t, edge_labeling ev, 
+    evmxd_forest(unsigned dsl, domain* d, range_type t, edge_labeling ev, 
       const policies &p, int* level_reduction_rule=NULL);
 
     virtual void reorderVariables(const int* level2var);
