@@ -3277,19 +3277,20 @@ MEDDLY::operation::usesMonolithicComputeTable()
   return Monolithic_CT;
 }
 
-inline int
+inline unsigned
 MEDDLY::operation::getIndex() const
 {
   return oplist_index;
 }
 
 inline MEDDLY::operation*
-MEDDLY::operation::getOpWithIndex(int i)
+MEDDLY::operation::getOpWithIndex(unsigned i)
 {
+  MEDDLY_CHECK_RANGE(1, i, 1+list_size);
   return op_list[i];
 }
 
-inline int
+inline unsigned
 MEDDLY::operation::getOpListSize()
 {
   return list_size;

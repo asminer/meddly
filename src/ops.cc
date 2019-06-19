@@ -2010,20 +2010,24 @@ MEDDLY::operation::operation(const opname* n, unsigned et_slots)
   // 
   // assign an index to this operation
   //
-  if (free_list>=0) {
+  if (free_list) {
     oplist_index = free_list;
     free_list = op_holes[free_list];
   } else {
     if (list_size >= list_alloc) {
-      int nla = list_alloc + 256;
+      unsigned nla = list_alloc + 256;
       op_list = (operation**) realloc(op_list, nla * sizeof(void*));
-      op_holes = (int*) realloc(op_holes, nla * sizeof(int));
+      op_holes = (unsigned*) realloc(op_holes, nla * sizeof(unsigned));
       if (0==op_list || 0==op_holes) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-      for (int i=list_size; i<list_alloc; i++) {
+      for (unsigned i=list_size; i<list_alloc; i++) {
         op_list[i] = 0;
-        op_holes[i] = -1;
+        op_holes[i] = 0;
       }
       list_alloc = nla;
+    }
+    if (0==list_size) {
+      // Never use slot 0
+      list_size++;
     }
     oplist_index = list_size;
     list_size++;
@@ -2112,7 +2116,7 @@ MEDDLY::operation::~operation()
   delete[] CTresult;
   compute_table::unregisterOp(this, num_etids);
 
-  if (oplist_index >= 0) {
+  if (oplist_index) {
     MEDDLY_DCASSERT(op_list[oplist_index] == this);
     op_list[oplist_index] = 0;
     op_holes[oplist_index] = free_list;
@@ -2155,14 +2159,14 @@ void MEDDLY::operation::markForDeletion()
 
 void MEDDLY::operation::destroyAllOps() 
 {
-  for (int i=0; i<list_size; i++) delete op_list[i];
+  for (unsigned i=0; i<list_size; i++) delete op_list[i];
   free(op_list);
   free(op_holes);
   op_list = 0;
   op_holes = 0;
   list_size = 0;
   list_alloc = 0;
-  free_list = -1;
+  free_list = 0;
 }
 
 void MEDDLY::operation::removeStaleComputeTableEntries()
@@ -2216,7 +2220,7 @@ void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
     Monolithic_CT->show(s, verbLevel);
     return;
   }
-  for (int i=0; i<list_size; i++) 
+  for (unsigned i=0; i<list_size; i++) 
     if (op_list[i]) {
       op_list[i]->showComputeTable(s, verbLevel);
     }
@@ -2227,7 +2231,7 @@ void MEDDLY::operation::countAllNodeEntries(const expert_forest* f, size_t* coun
   if (Monolithic_CT) {
     Monolithic_CT->countNodeEntries(f, counts);
   }
-  for (int i=0; i<list_size; i++) 
+  for (unsigned i=0; i<list_size; i++) 
     if (op_list[i]) {
       op_list[i]->countCTEntries(f, counts);
     }

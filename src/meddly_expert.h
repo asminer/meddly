@@ -4502,7 +4502,7 @@ class MEDDLY::compute_table {
 */
 class MEDDLY::operation {
     const opname* theOpName;
-    int oplist_index;
+    unsigned oplist_index;
     bool is_marked_for_deletion;
 
     // declared and initialized in meddly.cc
@@ -4510,13 +4510,13 @@ class MEDDLY::operation {
     // declared and initialized in meddly.cc
     static operation** op_list;
     // declared and initialized in meddly.cc
-    static int* op_holes;
+    static unsigned* op_holes;
     // declared and initialized in meddly.cc
-    static int list_size;
+    static unsigned list_size;
     // declared and initialized in meddly.cc
-    static int list_alloc;
+    static unsigned list_alloc;
     // declared and initialized in meddly.cc
-    static int free_list;
+    static unsigned free_list;
 
     // should ONLY be called during library cleanup.
     static void destroyAllOps();
@@ -4601,9 +4601,9 @@ class MEDDLY::operation {
 
     // for compute tables.
 
-    int getIndex() const;
-    static operation* getOpWithIndex(int i);
-    static int getOpListSize();
+    unsigned getIndex() const;
+    static operation* getOpWithIndex(unsigned i);
+    static unsigned getOpListSize();
 
     void setFirstETid(unsigned slot);
     unsigned getFirstETid() const;
