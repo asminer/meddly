@@ -170,11 +170,11 @@ MEDDLY::operation::operation(const opname* n, unsigned et_slots)
       op_list = (operation**) realloc(op_list, nla * sizeof(void*));
       op_holes = (unsigned*) realloc(op_holes, nla * sizeof(unsigned));
       if (0==op_list || 0==op_holes) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+      list_alloc = nla;
       for (unsigned i=list_size; i<list_alloc; i++) {
         op_list[i] = 0;
         op_holes[i] = 0;
       }
-      list_alloc = nla;
     }
     if (0==list_size) {
       // Never use slot 0
