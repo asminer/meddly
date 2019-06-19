@@ -1308,7 +1308,7 @@ class MEDDLY::forest {
       @param  p       Polcies for reduction, storage, deletion.
       @param  level_reduction_rule       Rules for reduction on different levels.
     */
-    forest(int dslot, domain* d, bool rel, range_type t, edge_labeling ev, 
+    forest(unsigned dslot, domain* d, bool rel, range_type t, edge_labeling ev, 
       const policies &p, int* level_reduction_rule);
 
     /// Destructor.
@@ -2032,7 +2032,7 @@ class MEDDLY::forest {
 
   private:  // Domain info 
     friend class domain;
-    int d_slot;
+    unsigned d_slot;
     domain* d;
 
   private:  // For operation registration
@@ -2052,12 +2052,11 @@ class MEDDLY::forest {
   private:  // For edge registration
     friend class dd_edge;
 
-    // structure to store references to registered dd_edges.
+    /// structure to store references to registered dd_edges.
     struct edge_data {
-      // If nextHole >= 0, this is a hole, in which case nextHole also
-      // refers to the array index of the next hole in edge[]
-      int nextHole;
-      // registered dd_edge
+      /// Index of the next hole (spot with a 0 edge).
+      unsigned nextHole;
+      /// registered dd_edge
       dd_edge* edge;
     };
 
@@ -2065,11 +2064,11 @@ class MEDDLY::forest {
     edge_data *edge;
 
     // Size of edge[]
-    unsigned sz;
+    unsigned edge_sz;
     // Array index: 1 + (last used slot in edge[])
     unsigned firstFree;
     // Array index: most recently created hole in edge[]
-    int firstHole;
+    unsigned firstHole;
 
     void registerEdge(dd_edge& e);
     void unregisterEdge(dd_edge& e);
@@ -2271,7 +2270,7 @@ class MEDDLY::domain {
     void showInfo(output &strm);
 
     /// Free the slot that the forest is using.
-    void unlinkForest(forest* f, int slot);
+    void unlinkForest(forest* f, unsigned slot);
 
     // --------------------------------------------------------------------
 
@@ -2292,10 +2291,10 @@ class MEDDLY::domain {
   private:
     bool is_marked_for_deletion;
     forest** forests;
-    int szForests;
+    unsigned szForests;
 
     /// Find a free slot for a new forest.
-    int findEmptyForestSlot();
+    unsigned findEmptyForestSlot();
 
     /// Mark this domain for deletion
     void markForDeletion();
@@ -2577,7 +2576,7 @@ class MEDDLY::dd_edge {
     unsigned getIndex() const;
 
     forest *parent;
-    unsigned index;  //  our slot number in the parent forest's list
+    unsigned index;  //  our slot number in the parent forest's list, or 0 for no slot.
 
     node_handle node;
     long raw_value;

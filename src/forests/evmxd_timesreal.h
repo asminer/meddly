@@ -72,7 +72,7 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
     };
 
   public:
-    evmxd_timesreal(int dsl, domain *d, const policies &p, int* level_reduction_rule=NULL);
+    evmxd_timesreal(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule=NULL);
     ~evmxd_timesreal();
 
     virtual void createEdge(float val, dd_edge &e);

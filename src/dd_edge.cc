@@ -50,7 +50,7 @@ inline void unlinkNode(MEDDLY::forest* p, int node)
 // ******************************************************************
 
 MEDDLY::dd_edge::dd_edge()
-: parent(0), index(-1),
+: parent(0), index(0),
   node(0), raw_value(0),
   opPlus(0), opStar(0), opMinus(0), opDivide(0)
 {
@@ -61,7 +61,7 @@ MEDDLY::dd_edge::dd_edge()
 
 // Constructor.
 MEDDLY::dd_edge::dd_edge(forest* p)
-: parent(p), index(-1),
+: parent(p), index(0),
   node(0), raw_value(0),
   opPlus(0), opStar(0), opMinus(0), opDivide(0)
 {
@@ -70,7 +70,7 @@ MEDDLY::dd_edge::dd_edge(forest* p)
 #endif
   MEDDLY_DCASSERT(p != NULL);
   parent->registerEdge(*this);
-  MEDDLY_DCASSERT(index != -1);
+  MEDDLY_DCASSERT(index);
 }
 
 
@@ -81,7 +81,7 @@ MEDDLY::dd_edge::dd_edge(const dd_edge& e)
   fprintf(stderr, "Creating dd_edge %p\n", this);
 #endif
   init(e);
-  MEDDLY_DCASSERT(index != -1);
+  MEDDLY_DCASSERT(index);
 }
 
 
@@ -92,7 +92,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator=(const dd_edge& e)
     destroy();
     init(e);
   }
-  MEDDLY_DCASSERT(index != -1);
+  MEDDLY_DCASSERT(index);
   return *this;
 }
 
@@ -122,7 +122,7 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
   opDivide = e.opDivide;
 
   if (parent) parent->registerEdge(*this);
-  MEDDLY_DCASSERT(index != -1);
+  MEDDLY_DCASSERT(index);
 }
 
 //
@@ -130,14 +130,15 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
 //
 void MEDDLY::dd_edge::destroy()
 {
-  if (index != -1) {
+  if (index) {
     // still registered; unregister before discarding
     int old = node;
     node = 0;
     unlinkNode(parent, old);
     if (parent) parent->unregisterEdge(*this);
-    parent = 0;
   }
+  parent = 0;
+  index = 0;
 }
 
 void MEDDLY::dd_edge::setForest(forest* f)
@@ -146,7 +147,7 @@ void MEDDLY::dd_edge::setForest(forest* f)
   parent = f;
   if (parent) {
     parent->registerEdge(*this);
-    MEDDLY_DCASSERT(index != -1);
+    MEDDLY_DCASSERT(index);
   }
 }
 
@@ -412,7 +413,7 @@ void MEDDLY::dd_edge::read(forest* p, input &s, const node_handle* map)
   opDivide = 0;
 
   if (parent) parent->registerEdge(*this);
-  MEDDLY_DCASSERT(index != -1);
+  MEDDLY_DCASSERT(index);
 }
 
 

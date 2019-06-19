@@ -211,7 +211,7 @@ MEDDLY::forest::policies MEDDLY::forest::mddDefaults;
 MEDDLY::forest::policies MEDDLY::forest::mxdDefaults;
 
 MEDDLY::forest
-::forest(int ds, domain* _d, bool rel, range_type t, edge_labeling ev, 
+::forest(unsigned ds, domain* _d, bool rel, range_type t, edge_labeling ev, 
   const policies &p,int* lrr) : deflt(p)
 {
   // FID
@@ -219,7 +219,7 @@ MEDDLY::forest
   fid = ++gfid;
 
 #ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Creating forest #%d in domain #%d\n", ds, _d->ID());
+  fprintf(stderr, "Creating forest #%u in domain #%d\n", ds, _d->ID());
 #endif
   d_slot = ds;
   is_marked_for_deletion = false;
@@ -300,14 +300,14 @@ MEDDLY::forest
   //
   // Initialize list of registered dd_edges
   //
-  firstHole = -1; // firstHole < 0 indicates no holes.
-  firstFree = 0;
-  sz = 256;
+  firstHole = 0;  // firstHole == 0 indicates no holes.
+  firstFree = 1;  // never use slot 0
+  edge_sz = 256;
 
   // Create an array to store pointers to dd_edges.
-  edge = (edge_data *) malloc(sz * sizeof(edge_data));
-  for (unsigned i = 0; i < sz; ++i) {
-    edge[i].nextHole = -1;
+  edge = (edge_data *) malloc(edge_sz * sizeof(edge_data));
+  for (unsigned i = 0; i < edge_sz; ++i) {
+    edge[i].nextHole = 0;
     edge[i].edge = 0;
   }
 
@@ -321,7 +321,7 @@ MEDDLY::forest
 MEDDLY::forest::~forest()
 {
 #ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Deleting forest #%d in domain #%d\n", d_slot, d->ID());
+  fprintf(stderr, "Deleting forest #%u in domain #%d\n", d_slot, d->ID());
 #endif
   // operations are deleted elsewhere...
   free(opCount);
@@ -531,31 +531,32 @@ void MEDDLY::forest::registerEdge(dd_edge& e)
 {
   // add to collection of edges for this forest.
   // change e.index to help find this edge at a later time.
-  if (firstHole >= 0) {
+  if (firstHole) {
     // hole available; fill it up
-    int index = firstHole;
+    unsigned index = firstHole;
     firstHole = edge[firstHole].nextHole;
     edge[index].edge = &e;
-    edge[index].nextHole = -1;
+    edge[index].nextHole = 0;
     e.setIndex(index);
   } else {
     // no holes available, add to end of array
-    if (firstFree >= sz) {
+    if (firstFree >= edge_sz) {
       // expand edge[]
-      unsigned new_sz = sz * 2;
+      unsigned new_sz = edge_sz * 2;
       edge_data* new_edge =
           (edge_data*) realloc(edge, new_sz * sizeof(edge_data));
       if (0 == new_edge) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
       edge = new_edge;
-      for (unsigned i = sz; i < new_sz; ++i)
+      for (unsigned i = edge_sz; i < new_sz; ++i)
       {
-        edge[i].nextHole = -1;
+        edge[i].nextHole = 0;
         edge[i].edge = 0;
       }
-      sz = new_sz;
+      edge_sz = new_sz;
     }
-    MEDDLY_DCASSERT(firstFree < sz);
-    edge[firstFree].nextHole = -1;
+    MEDDLY_DCASSERT(firstFree > 0);
+    MEDDLY_DCASSERT(firstFree < edge_sz);
+    edge[firstFree].nextHole = 0;
     edge[firstFree].edge = &e;
     e.setIndex(firstFree);
     ++firstFree;
@@ -570,10 +571,24 @@ void MEDDLY::forest::unregisterEdge(dd_edge& e)
   MEDDLY_DCASSERT(e.getIndex() >= 0);
   unsigned index = e.getIndex();
   MEDDLY_DCASSERT(edge[index].edge == &e);
-  edge[index].edge = 0;
-  edge[index].nextHole = firstHole;
-  firstHole = index;
-  e.setIndex(-1);
+  e.setIndex(0);
+
+  if (index+1 == firstFree) {
+    //
+    // Instead of adding to the free list,
+    // absorb this "hole" at the end of the array
+    //
+    MEDDLY_DCASSERT(firstFree);
+    firstFree--;
+    MEDDLY_DCASSERT(firstFree);
+  } else {
+    //
+    // Add to the free list
+    //
+    edge[index].edge = 0;
+    edge[index].nextHole = firstHole;
+    firstHole = index;
+  }
 }
 
 
@@ -582,22 +597,25 @@ void MEDDLY::forest::unregisterDDEdges()
   // Go through the list of valid edges (value > 0), and set
   // the e.index to -1 (indicating unregistered edge).
 
+  MEDDLY_DCASSERT(edge);
+  MEDDLY_DCASSERT(0==edge[0].edge);
+
   // ignore the NULLs; release the rest
-  for (unsigned i = 0; i < firstFree; ++i) {
-    if (edge[i].edge != 0) {
-      MEDDLY_DCASSERT(edge[i].nextHole == -1);
+  for (unsigned i = 1; i < firstFree; ++i) {
+    if (edge[i].edge) {
+      MEDDLY_DCASSERT(0==edge[i].nextHole);
       edge[i].edge->clear();
-      edge[i].edge->setIndex(-1);
+      edge[i].edge->setIndex(0);
     }
   }
 
   // firstHole < 0 indicates no holes.
-  for (unsigned i = 0; i < firstFree; ++i) {
-    edge[i].nextHole = -1;
+  for (unsigned i = 1; i < firstFree; ++i) {
+    edge[i].nextHole = 0;
     edge[i].edge = 0;
   }
-  firstHole = -1;
-  firstFree = 0;
+  firstHole = 0;
+  firstFree = 1;
 }
 
 // ******************************************************************

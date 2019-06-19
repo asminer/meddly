@@ -34,7 +34,7 @@ namespace MEDDLY {
 class MEDDLY::mt_mdd_bool : public mtmdd_forest {
   public:
 
-    mt_mdd_bool(int dsl, domain *d, const policies &p, int* level_reduction_rule=NULL, bool tv=false);
+    mt_mdd_bool(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule=NULL, bool tv=false);
     ~mt_mdd_bool();
 
     virtual void createEdge(bool val, dd_edge &e);

@@ -170,14 +170,18 @@ MEDDLY::operation::operation(const opname* n, unsigned et_slots)
       op_list = (operation**) realloc(op_list, nla * sizeof(void*));
       op_holes = (unsigned*) realloc(op_holes, nla * sizeof(unsigned));
       if (0==op_list || 0==op_holes) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-      op_list[0] = 0;
-      op_holes[0] = 0;
       for (unsigned i=list_size; i<list_alloc; i++) {
         op_list[i] = 0;
         op_holes[i] = 0;
       }
       list_alloc = nla;
     }
+    if (0==list_size) {
+      // Never use slot 0
+      list_size++;
+    }
+    oplist_index = list_size;
+    list_size++;
   }
   op_list[oplist_index] = this;
 
@@ -263,7 +267,7 @@ MEDDLY::operation::~operation()
   delete[] CTresult;
   compute_table::unregisterOp(this, num_etids);
 
-  if (oplist_index >= 0) {
+  if (oplist_index) {
     MEDDLY_DCASSERT(op_list[oplist_index] == this);
     op_list[oplist_index] = 0;
     op_holes[oplist_index] = free_list;

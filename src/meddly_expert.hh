@@ -3584,6 +3584,7 @@ MEDDLY::operation::getIndex() const
 inline MEDDLY::operation*
 MEDDLY::operation::getOpWithIndex(unsigned i)
 {
+  MEDDLY_CHECK_RANGE(0, i, list_size);
   return op_list[i];
 }
 
