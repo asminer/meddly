@@ -390,7 +390,12 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 							}
 						}
 					}
-					map[p]=unpacked_node::markedWith::NC;
+					std::map<node_handle,int>::iterator it=map.find(p);
+					if(it!=map.end()){
+						map[p]=unpacked_node::markedWith::NC;
+					}else{
+						it->second=unpacked_node::markedWith::NC;
+					}
 //					nr->setMarkedNC();
 				} else {
 					return false;
