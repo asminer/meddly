@@ -109,121 +109,125 @@ createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 void MEDDLY::mt_mdd_bool
 ::evaluate(const dd_edge &f, const int* vlist, bool &term) const
 {
-  if (f.getHasPInfty()){
-	  const int NumberOfLevel=f.getLevel();
+	if (f.getHasPInfty()) {
+		const int NumberOfLevel = f.getLevel();
 		//int arraySize = sizeof(vlist) / sizeof(int);
-		int* updatedVlist = new int[NumberOfLevel+1];
+		int* updatedVlist = new int[NumberOfLevel + 1];
 		for (int ind = 1; ind <= NumberOfLevel; ind++) {
 //			const int value = vlist[ind];
 			updatedVlist[ind] = storedValue(vlist[ind]);
 		}
 		term = bool_Tencoder::handle2value(evaluateRaw(f, updatedVlist));
-  }
-  else{
-  term = bool_Tencoder::handle2value(evaluateRaw(f, vlist));
-  }
+		free(updatedVlist);
+	} else {
+		term = bool_Tencoder::handle2value(evaluateRaw(f, vlist));
+	}
 }
 
 void MEDDLY::mt_mdd_bool::isMarkingCovered(const dd_edge &f, const int* vlist,
 		bool &term) const {
 	node_handle p = f.getNode();
 //	printf("XXXXF%d\n",f.getHasPInfty());
-	if (!f.getHasPInfty()){
-	term = evaluateRawIsMarkingCovered(f, p, vlist);
-	}
-	else{
-		const int NumberOfLevel=f.getLevel();
-				//int arraySize = sizeof(vlist) / sizeof(int);
-				int* updatedVlist = new int[NumberOfLevel+1];
-		for(int ind=1; ind<=NumberOfLevel;ind++){
-			const int value=vlist[ind];
-			updatedVlist[ind]=storedValue(value);
+	if (!f.getHasPInfty()) {
+		term = evaluateRawIsMarkingCovered(f, p, vlist);
+	} else {
+		const int NumberOfLevel = f.getLevel();
+		//int arraySize = sizeof(vlist) / sizeof(int);
+		int* updatedVlist = new int[NumberOfLevel + 1];
+		for (int ind = 1; ind <= NumberOfLevel; ind++) {
+			const int value = vlist[ind];
+			updatedVlist[ind] = storedValue(value);
 		}
 //		printf("CALL WITH INFTY\n");
 		term = evaluateRawIsMarkingCoveredWithInfty(f, p, updatedVlist);
+		free(updatedVlist);
 	}
 }
 
 void MEDDLY::mt_mdd_bool::isMarkingCovered(const dd_edge &f, const int* vlist,
-		bool &term, std::map<node_handle,bool>& map) const {
+		bool &term, std::map<node_handle, bool>& map) const {
 	node_handle p = f.getNode();
 //	printf("XXXXF%d\n",f.getHasPInfty());
-	if (!f.getHasPInfty()){
-	term = evaluateRawIsMarkingCovered(f, p, vlist);
-	}
-	else{
-		const int NumberOfLevel=f.getLevel();
-				//int arraySize = sizeof(vlist) / sizeof(int);
-				int* updatedVlist = new int[NumberOfLevel+1];
-		for(int ind=1; ind<=NumberOfLevel;ind++){
-			const int value=vlist[ind];
-			updatedVlist[ind]=storedValue(value);
+	if (!f.getHasPInfty()) {
+		term = evaluateRawIsMarkingCovered(f, p, vlist);
+	} else {
+		const int NumberOfLevel = f.getLevel();
+		//int arraySize = sizeof(vlist) / sizeof(int);
+		int* updatedVlist = new int[NumberOfLevel + 1];
+		for (int ind = 1; ind <= NumberOfLevel; ind++) {
+			const int value = vlist[ind];
+			updatedVlist[ind] = storedValue(value);
 		}
 //		printf("CALL WITH INFTY\n");
-		term = evaluateRawIsMarkingCoveredWithInfty(f, p, updatedVlist,map);
+		term = evaluateRawIsMarkingCoveredWithInfty(f, p, updatedVlist, map);
+		free(updatedVlist);
 	}
 }
 void MEDDLY::mt_mdd_bool::firstMarkingCovers(const dd_edge &f, const int* vlist,
-		bool &term,int* rlist) const {
+		bool &term, int* rlist) const {
 	node_handle p = f.getNode();
 //	printf("XXXXF%d\n",f.getHasPInfty());
 //	if (!f.getHasPInfty()){
 //	term = evaluateRawIsMarkingCovered(f, p, vlist);
 //	}
 //	else{
-	int rlistsize=getNodeLevel(p);
-	int* resultlist=new int(rlistsize);
+	int rlistsize = getNodeLevel(p);
+	int* resultlist = new int[rlistsize];
 //		printf("evaluateRawFirstMarkingCoveredWithInfty WITH INFTY\n");
 //	const int NumberOfLevel=f.getLevel();
-					//int arraySize = sizeof(vlist) / sizeof(int);
-					int* updatedVlist = new int[rlistsize+1];
-				for(int ind=1; ind<=rlistsize;ind++){
-					const int value=vlist[ind];
-					updatedVlist[ind]=storedValue(value);
-				}
-		term = evaluateRawFirstMarkingCoversWithInfty(f, p, updatedVlist,resultlist);
-
+	//int arraySize = sizeof(vlist) / sizeof(int);
+	int* updatedVlist = new int[rlistsize + 1];
+	for (int ind = 1; ind <= rlistsize; ind++) {
+		const int value = vlist[ind];
+		updatedVlist[ind] = storedValue(value);
+	}
+	term = evaluateRawFirstMarkingCoversWithInfty(f, p, updatedVlist,
+			resultlist);
+	free(updatedVlist);
 //		printf("RESULT is %d\n",term);
-		if (term){
+	if (term) {
 		for (int i = rlistsize; i >= 0; i--)
-			if (i!=0)
-			rlist[i]=returnStored(resultlist[i]);
+			if (i != 0)
+				rlist[i] = returnStored(resultlist[i]);
 			else
-			rlist[i]=0;
+				rlist[i] = 0;
 //			printf("%d ",rlist[i]);
-		}
+	}
+	free(resultlist);
 //	}
 }
 
 void MEDDLY::mt_mdd_bool::firstMarkingCovers(const dd_edge &f, const int* vlist,
-		bool &term,int* rlist,std::map<node_handle,int>& map) const {
+		bool &term, int* rlist, std::map<node_handle, int>& map) const {
 	node_handle p = f.getNode();
 //	printf("XXXXF%d\n",f.getHasPInfty());
 //	if (!f.getHasPInfty()){
 //	term = evaluateRawIsMarkingCovered(f, p, vlist);
 //	}
 //	else{
-	int rlistsize=getNodeLevel(p);
-	int* resultlist=new int(rlistsize);
+	int rlistsize = getNodeLevel(p);
+	int* resultlist = new int[rlistsize];
 //		printf("evaluateRawFirstMarkingCoveredWithInfty WITH INFTY\n");
 //	const int NumberOfLevel=f.getLevel();
-					//int arraySize = sizeof(vlist) / sizeof(int);
-					int* updatedVlist = new int[rlistsize+1];
-				for(int ind=1; ind<=rlistsize;ind++){
-					const int value=vlist[ind];
-					updatedVlist[ind]=storedValue(value);
-				}
-		term = evaluateRawFirstMarkingCoversWithInfty(f, p, updatedVlist,resultlist,map);
-
+	//int arraySize = sizeof(vlist) / sizeof(int);
+	int* updatedVlist = new int[rlistsize + 1];
+	for (int ind = 1; ind <= rlistsize; ind++) {
+		const int value = vlist[ind];
+		updatedVlist[ind] = storedValue(value);
+	}
+	term = evaluateRawFirstMarkingCoversWithInfty(f, p, updatedVlist,
+			resultlist, map);
+	free(updatedVlist);
 //		printf("RESULT is %d\n",term);
-		if (term){
+	if (term) {
 		for (int i = rlistsize; i >= 0; i--)
-			if (i!=0)
-			rlist[i]=returnStored(resultlist[i]);
+			if (i != 0)
+				rlist[i] = returnStored(resultlist[i]);
 			else
-			rlist[i]=0;
+				rlist[i] = 0;
 //			printf("%d ",rlist[i]);
-		}
+	}
+	free(resultlist);
 //	}
 }
 

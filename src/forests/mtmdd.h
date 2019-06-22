@@ -186,10 +186,10 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 
 			} else {
 //				printf("F.Hasinfty%d", f.getHasPInfty());
-				unpacked_node* nr = unpacked_node::useUnpackedNode();
+				/*unpacked_node* nr = unpacked_node::useUnpackedNode();
 				nr->initFromNode(this, p, true);
 				FILE_output meddlyout(stdout);
-				nr->show(meddlyout, false);
+				nr->show(meddlyout, false);*/
 				std::map<node_handle, bool>::iterator it=map.find(p);
 				bool isVisited=false;
 				if (it!=map.end()){
@@ -336,8 +336,8 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 
 			} else {
 	//			printf("F.Hasinfty%d", f.getHasPInfty());
-				unpacked_node* nr = unpacked_node::useUnpackedNode();
-				nr->initFromNode(this, p, true);
+//				unpacked_node* nr = unpacked_node::useUnpackedNode();
+//				nr->initFromNode(this, p, true);
 	//			FILE_output meddlyout(stdout);
 	//			nr->show(meddlyout, false);
 			std::map<node_handle, int>::iterator it = map.find(p);
