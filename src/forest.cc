@@ -26,6 +26,7 @@
 #include "defines.h"
 #include "unique_table.h"
 #include "hash_stream.h"
+#include "map"
 // #include "storage/bytepack.h"
 #include "reordering/reordering_factory.h"
 
@@ -456,12 +457,20 @@ void MEDDLY::forest::isMarkingCovered(const dd_edge &f, const int* vl,
 		bool &t) const {
 	throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
+void MEDDLY::forest::isMarkingCovered(const dd_edge &f, const int* vl,
+		bool &t, std::map<node_handle, bool>& map) const {
+	throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
 
 void MEDDLY::forest::firstMarkingCovers(const dd_edge &f, const int* vl,
 		bool &t,int*r) const {
 	throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
+void MEDDLY::forest::firstMarkingCovers(const dd_edge &f, const int* vl,
+		bool &t,int*r,std::map<node_handle, int>& map) const {
+	throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
 void MEDDLY::forest::removeStaleComputeTableEntries()
 {
   if (operation::usesMonolithicComputeTable()) {

@@ -594,7 +594,7 @@ class MEDDLY::unpacked_node {
     };
 
 	enum markedWith {
-		NC, C, NV
+		NV, NC, C
 	};
   public:
     /** Constructor.

@@ -144,6 +144,25 @@ void MEDDLY::mt_mdd_bool::isMarkingCovered(const dd_edge &f, const int* vlist,
 	}
 }
 
+void MEDDLY::mt_mdd_bool::isMarkingCovered(const dd_edge &f, const int* vlist,
+		bool &term, std::map<node_handle,bool>& map) const {
+	node_handle p = f.getNode();
+//	printf("XXXXF%d\n",f.getHasPInfty());
+	if (!f.getHasPInfty()){
+	term = evaluateRawIsMarkingCovered(f, p, vlist);
+	}
+	else{
+		const int NumberOfLevel=f.getLevel();
+				//int arraySize = sizeof(vlist) / sizeof(int);
+				int* updatedVlist = new int[NumberOfLevel+1];
+		for(int ind=1; ind<=NumberOfLevel;ind++){
+			const int value=vlist[ind];
+			updatedVlist[ind]=storedValue(value);
+		}
+//		printf("CALL WITH INFTY\n");
+		term = evaluateRawIsMarkingCoveredWithInfty(f, p, updatedVlist,map);
+	}
+}
 void MEDDLY::mt_mdd_bool::firstMarkingCovers(const dd_edge &f, const int* vlist,
 		bool &term,int* rlist) const {
 	node_handle p = f.getNode();
@@ -163,6 +182,38 @@ void MEDDLY::mt_mdd_bool::firstMarkingCovers(const dd_edge &f, const int* vlist,
 					updatedVlist[ind]=storedValue(value);
 				}
 		term = evaluateRawFirstMarkingCoversWithInfty(f, p, updatedVlist,resultlist);
+
+//		printf("RESULT is %d\n",term);
+		if (term){
+		for (int i = rlistsize; i >= 0; i--)
+			if (i!=0)
+			rlist[i]=returnStored(resultlist[i]);
+			else
+			rlist[i]=0;
+//			printf("%d ",rlist[i]);
+		}
+//	}
+}
+
+void MEDDLY::mt_mdd_bool::firstMarkingCovers(const dd_edge &f, const int* vlist,
+		bool &term,int* rlist,std::map<node_handle,int>& map) const {
+	node_handle p = f.getNode();
+//	printf("XXXXF%d\n",f.getHasPInfty());
+//	if (!f.getHasPInfty()){
+//	term = evaluateRawIsMarkingCovered(f, p, vlist);
+//	}
+//	else{
+	int rlistsize=getNodeLevel(p);
+	int* resultlist=new int(rlistsize);
+//		printf("evaluateRawFirstMarkingCoveredWithInfty WITH INFTY\n");
+//	const int NumberOfLevel=f.getLevel();
+					//int arraySize = sizeof(vlist) / sizeof(int);
+					int* updatedVlist = new int[rlistsize+1];
+				for(int ind=1; ind<=rlistsize;ind++){
+					const int value=vlist[ind];
+					updatedVlist[ind]=storedValue(value);
+				}
+		term = evaluateRawFirstMarkingCoversWithInfty(f, p, updatedVlist,resultlist,map);
 
 //		printf("RESULT is %d\n",term);
 		if (term){

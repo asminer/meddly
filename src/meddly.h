@@ -48,6 +48,7 @@
 #include <vector>
 #include <memory>
 #include <cassert>
+#include "map"
 
 // Flags for development version only. Significant reduction in performance.
 #ifdef DEVELOPMENT_CODE
@@ -1936,6 +1937,8 @@ class MEDDLY::forest {
 	 */
 	virtual void isMarkingCovered(const dd_edge &f, const int* vlist,
 			bool &term) const;
+	virtual void isMarkingCovered(const dd_edge &f, const int* vlist,
+				bool &term, std::map<node_handle, bool>&map) const;
 	/** find whether a marking, vlist, covers any marking in f.
 	 @param  f     Edge (function) to evaluate.
 	 @param  vlist List of variable assignments, of dimension one higher
@@ -1949,6 +1952,8 @@ class MEDDLY::forest {
 	 */
 	virtual void firstMarkingCovers(const dd_edge &f, const int* vlist,
 			bool &term,int*r) const;
+	virtual void firstMarkingCovers(const dd_edge &f, const int* vlist,
+				bool &term,int*r,std::map<node_handle, int>&map) const;
   // ------------------------------------------------------------
   // abstract virtual.
   public:
