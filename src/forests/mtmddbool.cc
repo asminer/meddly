@@ -231,6 +231,28 @@ void MEDDLY::mt_mdd_bool::firstMarkingCovers(const dd_edge &f, const int* vlist,
 //	}
 }
 
+void MEDDLY::mt_mdd_bool::updateMarkedNode(const dd_edge &f,const int level,
+		std::map<node_handle, int>& map) const {
+	node_handle* p = new node_handle(f.getNode());
+	node_handle* list = markNodesInSubgraph(p, 1, true);
+	if (0 == list)
+		return;
+//	for (int k = 1; k <= getNumVariables(); ){
+	for (long i = 0; list[i]; i++) {
+		if (getNodeLevel(list[i]) >= level) {
+			std::map<node_handle, int>::iterator it = map.find(list[i]);
+			if (it != map.end()&& it->second==unpacked_node::markedWith::NC) {
+				map[list[i]] = unpacked_node::markedWith::NV;
+			}
+		}
+	}
+//	k++;
+//	}
+	free(list);
+	free(p);
+
+}
+
 void MEDDLY::mt_mdd_bool::showTerminal(output &s, node_handle tnode) const
 {
   bool_Tencoder::show(s, tnode);

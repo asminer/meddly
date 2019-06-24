@@ -471,6 +471,11 @@ void MEDDLY::forest::firstMarkingCovers(const dd_edge &f, const int* vl,
 		bool &t,int*r,std::map<node_handle, int>& map) const {
 	throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
+void MEDDLY::forest::updateMarkedNode(const dd_edge &f,const int level,
+		std::map<node_handle, int>& map )const{
+	throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
 void MEDDLY::forest::removeStaleComputeTableEntries()
 {
   if (operation::usesMonolithicComputeTable()) {
