@@ -762,8 +762,8 @@ void MEDDLY::node_headers::bitvector::shrink(size_t ns)
 // ******************************************************************
 
 const size_t START_SIZE = 512;
-const size_t MAX_ADD = 65536;
-// const size_t MAX_ADD = 16777216;
+// const size_t MAX_ADD = 65536;
+const size_t MAX_ADD = 16777216;
 
 inline size_t next_size(size_t s)
 {
@@ -798,11 +798,19 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   //
   // Inltialize address array
   //
+#ifdef OLD_HEADERS_NEW_ALLOC
+  a_size = 0;
+  address = 0;
+
+#else
   a_size = a_min_size;
+
   address = (node_header *) malloc(size_t(a_size) * sizeof(node_header));
   if (0 == address) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   parent.mstats.incMemAlloc(size_t(a_size) * sizeof(node_header));
   memset(address, 0, size_t(a_size) * sizeof(node_header));
+#endif
+
   a_last = a_next_shrink = a_freed = 0;
   for (int i=0; i<8; i++) a_unused[i] = 0;
   a_lowest_index = 8;
@@ -915,10 +923,10 @@ void MEDDLY::node_headers
   s << " in: " << (unsigned long) address[p].incoming_count;
   s << " cc: " << (unsigned long) address[p].cache_count;
 #else
-  if (incoming_counts)  s << " in: " << incoming_counts->get(p);
-  if (cache_counts)     s << " cc: " << cache_counts->get(p);
-  if (is_reachable)     s << " reach: " << is_reachable->get(p);
-  if (is_in_cache)      s << " cache: " << is_in_cache->get(p);
+  if (incoming_counts)  s << " in: " << (unsigned long)incoming_counts->get((size_t)p);
+  if (cache_counts)     s << " cc: " << (unsigned long)cache_counts->get((size_t)p);
+  if (is_reachable)     s << " reach: " << (unsigned long)is_reachable->get((size_t)p);
+  if (is_in_cache)      s << " cache: " << (unsigned long)is_in_cache->get((size_t)p);
 #endif
 }
 
@@ -1023,7 +1031,7 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
       break;
     }
     if (found) {
-      MEDDLY_DCASSERT(0==addresses->get(found));
+      MEDDLY_DCASSERT(0==addresses->get((size_t)found));
     } else {
       // we're done sweeping
       a_sweep = SIZE_MAX;
@@ -1368,9 +1376,9 @@ void MEDDLY::node_headers::expandHandleList()
       MEDDLY_DCASSERT(is_reachable);
       size_t unrch = 0;
       for (;;) {
-        unrch = is_reachable->nextZero(++unrch);
-        if (unrch > a_last) break;
-        if (!isDeleted(p)) parent.deleteNode(p);
+          unrch = is_reachable->firstZero(++unrch);
+          if (unrch >= a_size) break;
+          if (!isDeleted(unrch)) parent.deleteNode(unrch);
       }
 #endif
 
@@ -1439,7 +1447,9 @@ void MEDDLY::node_headers::expandHandleList()
   if (addresses)        addresses->expand(a_size);
   if (levels)           levels->expand(a_size);
   if (cache_counts)     cache_counts->expand(a_size);
+  if (is_in_cache)      is_in_cache->expand(a_size);
   if (incoming_counts)  incoming_counts->expand(a_size);
+  if (is_reachable)     is_reachable->expand(a_size);
   if (implicit_bits)    implicit_bits->expand(a_size);
 
 #ifdef DEBUG_ADDRESS_RESIZE
@@ -1575,7 +1585,9 @@ void MEDDLY::node_headers::shrinkHandleList()
   if (addresses)        addresses->shrink(a_size);
   if (levels)           levels->shrink(a_size);
   if (cache_counts)     cache_counts->shrink(a_size);
+  if (is_in_cache)      is_in_cache->shrink(a_size);
   if (incoming_counts)  incoming_counts->shrink(a_size);
+  if (is_reachable)     is_reachable->shrink(a_size);
   if (implicit_bits)    implicit_bits->shrink(a_size);
 
 #ifdef DEBUG_ADDRESS_RESIZE

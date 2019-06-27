@@ -496,7 +496,7 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
     : compute_r_normal(in, k, a, b);
 
 #ifdef TRACE_ALL_OPS
-  printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
+  printf("computed %s(in %d, level %d, %d, %d) = %d\n", getName(), in, k, a, b, result);
   fflush(stdout);
 #endif
 
@@ -1122,7 +1122,7 @@ MEDDLY::generic_binbylevel_mxd
   else                CT0->recycle(Key);
 
 #ifdef TRACE_ALL_OPS
-  printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
+  printf("computed %s(in %d, level %d, %d, %d) = %d\n", getName(), in, resultLevel, a, b, result);
   fflush(stdout);
 #endif
 

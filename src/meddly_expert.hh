@@ -957,8 +957,10 @@ inline void MEDDLY::node_headers::bitvector::set(size_t i, bool v)
 
 inline void MEDDLY::node_headers::bitvector::clearAll()
 {
-  MEDDLY_DCASSERT(data);
-  memset(data, 0, size * sizeof(bool));
+  if (size) {
+    MEDDLY_DCASSERT(data);
+    memset(data, 0, size * sizeof(bool));
+  }
 }
 
 inline void MEDDLY::node_headers::bitvector::swap(size_t i, size_t j)
@@ -1339,8 +1341,9 @@ MEDDLY::node_headers::clearAllInCacheBits()
 {
 #ifdef OLD_NODE_HEADERS
 
-  MEDDLY_DCASSERT(address);
-  for (node_handle p=0; p<=a_last; p++) {
+  MEDDLY_DCASSERT(address || (0==a_last));
+
+  for (node_handle p=1; p<=a_last; p++) {
     address[p].cache_count = 0;
   }
 
@@ -1584,8 +1587,8 @@ MEDDLY::node_headers::clearAllReachableBits()
 {
 #ifdef OLD_NODE_HEADERS
 
-  MEDDLY_DCASSERT(address);
-  for (node_handle p=0; p<=a_last; p++) {
+  MEDDLY_DCASSERT(address || (0==a_last));
+  for (node_handle p=1; p<=a_last; p++) {
     address[p].incoming_count = 0;
   }
 
