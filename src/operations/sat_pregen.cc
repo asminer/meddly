@@ -486,7 +486,7 @@ class MEDDLY::saturation_by_events_op : public unary_operation {
       expert_forest* argF, expert_forest* resF);
     virtual ~saturation_by_events_op();
 
-    node_handle saturate(node_handle mdd);
+    void saturate(const dd_edge& in, dd_edge& out);
     node_handle saturate(node_handle mdd, int level);
 
   protected:
@@ -700,9 +700,9 @@ MEDDLY::saturation_by_events_op::~saturation_by_events_op()
   removeAllComputeTableEntries();
 }
 
-MEDDLY::node_handle MEDDLY::saturation_by_events_op::saturate(node_handle mdd)
+void MEDDLY::saturation_by_events_op::saturate(const dd_edge& in, dd_edge& out)
 {
-  return saturate(mdd, argF->getNumVariables());
+  out.set( saturate(in.getNode(), argF->getNumVariables()) );
 }
 
 MEDDLY::node_handle
@@ -830,8 +830,7 @@ void MEDDLY::common_dfs_by_events_mt
     printf("done.\n");
   }
   saturation_by_events_op* so = new saturation_by_events_op(this, arg1F, resF);
-  node_handle cnode = so->saturate(a.getNode());
-  c.set(cnode);
+  so->saturate(a, c);
 
   // Cleanup
   while (freeqs) {

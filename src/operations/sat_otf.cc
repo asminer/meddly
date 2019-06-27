@@ -944,7 +944,8 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
       expert_forest* argF, expert_forest* resF);
     virtual ~otfsat_by_events_op();
 
-    node_handle saturate(node_handle mdd);
+    void saturate(const dd_edge& in, dd_edge& out);
+    // node_handle saturate(node_handle mdd);
     node_handle saturate(node_handle mdd, int level);
 
   protected:
@@ -1158,11 +1159,19 @@ MEDDLY::otfsat_by_events_op::~otfsat_by_events_op()
   removeAllComputeTableEntries();
 }
 
+void MEDDLY::otfsat_by_events_op::saturate(const dd_edge& in, dd_edge& out)
+{
+  // Saturate
+  out.set( saturate(in.getNode(), argF->getNumVariables()) );
+}
+
+/*
 MEDDLY::node_handle MEDDLY::otfsat_by_events_op::saturate(node_handle mdd)
 {
   // Saturate
   return saturate(mdd, argF->getNumVariables());
 }
+*/
 
 MEDDLY::node_handle
 MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
@@ -1283,8 +1292,7 @@ void MEDDLY::common_otf_dfs_by_events_mt
 
   // Execute saturation operation
   otfsat_by_events_op* so = new otfsat_by_events_op(this, arg1F, resF);
-  node_handle cnode = so->saturate(a.getNode());
-  c.set(cnode);
+  so->saturate(a, c);
 
   // Cleanup
   while (freeqs) {
@@ -1402,6 +1410,8 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   }
   unpacked_node* Rp = unpacked_node::useUnpackedNode();
 
+  dd_edge nbdj(resF), newst(resF);
+
   //      Node reader auto expands when passed by reference
   //      Node builder can be expanded via a call to unpacked_node::resize()
   //      Queue can be expanded via a call to indexq::resize()
@@ -1482,18 +1492,19 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
           queue->resize(nb.getSize());
         }
 
+        bool updated = true;
+
         if (0 == nb.d(j)) {
           nb.d_ref(j) = newstates;
-          queue->add(int(j));
         } else {
-          // there's new states and existing states; union them.
-          const node_handle oldj = nb.d_ref(j);
-          nb.d_ref(j) = mddUnion->compute(nb.d(j), newstates);
-          if (oldj != nb.d(j)) queue->add(int(j));
-          resF->unlinkNode(oldj);
-          resF->unlinkNode(newstates); 
+          nbdj.set(nb.d(j));      // clobber
+          newst.set(newstates);   // clobber
+          mddUnion->compute(nbdj, newst, nbdj);
+          updated = (nbdj.getNode() != nb.d(j));
+          nb.set_d(j, nbdj);
         }
 
+        if (updated) queue->add((int)j);
       } // for j
     } // for all events, ei
   } // while there are indexes to explore
@@ -1686,6 +1697,8 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::recFireHelper(
 
   MEDDLY_DCASSERT(!Rp->isExtensible());
 
+  dd_edge nbdj(resF), newst(resF);
+
   // loop over mxd "columns"
   for (unsigned jz=0; jz<Rp->getNNZs(); jz++) {
     const unsigned j = Rp->i(jz);
@@ -1709,10 +1722,10 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::recFireHelper(
       nb->d_ref(j) = newstates;
     } else {
       // there's new states and existing states; union them.
-      const node_handle oldj = nb->d(j);
-      nb->d_ref(j) = mddUnion->compute(oldj, newstates);
-      resF->unlinkNode(oldj);
-      resF->unlinkNode(newstates);
+      nbdj.set(nb->d(j));
+      newst.set(newstates);
+      mddUnion->compute(nbdj, newst, nbdj);
+      nb->set_d(j, nbdj);
     }
   } // for j
 }

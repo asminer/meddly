@@ -93,7 +93,7 @@ class MEDDLY::saturation_op : public unary_operation {
     saturation_op(common_dfs_mt* p, expert_forest* argF, expert_forest* resF);
     virtual ~saturation_op();
 
-    node_handle saturate(node_handle mdd);
+    void saturate(const dd_edge& in, dd_edge& out);
     node_handle saturate(node_handle mdd, int level);
 
   protected:
@@ -131,7 +131,8 @@ class MEDDLY::saturation_evplus_op : public unary_operation {
     saturation_evplus_op(common_dfs_evplus* p, expert_forest* argF, expert_forest* resF);
     virtual ~saturation_evplus_op();
 
-    void saturate(long ev, node_handle evmdd, long& resEv, node_handle& resEvmdd);
+    void saturate(const dd_edge& in, dd_edge& out);
+    // void saturate(long ev, node_handle evmdd, long& resEv, node_handle& resEvmdd);
     void saturate(long ev, node_handle evmdd, int level, long& resEv, node_handle& resEvmdd);
 
   protected:
@@ -396,9 +397,9 @@ MEDDLY::saturation_op::~saturation_op()
 {
 }
 
-MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd)
+void MEDDLY::saturation_op::saturate(const dd_edge& in, dd_edge& out)
 {
-  return saturate(mdd, argF->getNumVariables());
+  out.set( saturate(in.getNode(), argF->getNumVariables()) );
 }
 
 MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
@@ -487,9 +488,14 @@ MEDDLY::saturation_evplus_op::~saturation_evplus_op()
 {
 }
 
-void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, long& resEv, node_handle& resEvmdd)
+void MEDDLY::saturation_evplus_op::saturate(const dd_edge& in, dd_edge& out)
 {
-  saturate(ev, evmdd, argF->getNumVariables(), resEv, resEvmdd);
+  long aev = Inf<long>();
+  in.getEdgeValue(aev);
+  long cev = Inf<long>();
+  node_handle cnode = 0;
+  saturate(aev, in.getNode(), argF->getNumVariables(), cev, cnode);
+  out.set(cnode, cev);
 }
 
 void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, long& resEv, node_handle& resEvmdd)
@@ -762,8 +768,7 @@ void MEDDLY::common_dfs_mt
 
   // Execute saturation operation
   saturation_op *so = new saturation_op(this, arg1F, resF);
-  node_handle cnode = so->saturate(a.getNode());
-  c.set(cnode);
+  so->saturate(a, c);
 
   // Cleanup
   cleanup();
@@ -1259,12 +1264,7 @@ void MEDDLY::common_dfs_evplus
 
   // Execute saturation operation
   saturation_evplus_op *so = new saturation_evplus_op(this, arg1F, resF);
-  long aev = Inf<long>();
-  a.getEdgeValue(aev);
-  long cev = Inf<long>();
-  node_handle cnode = 0;
-  so->saturate(aev, a.getNode(), cev, cnode);
-  c.set(cnode, cev);
+  so->saturate(a, c);
 
   // Cleanup
   cleanup();

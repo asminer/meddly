@@ -193,6 +193,8 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
   unsigned rSize = unsigned(resF->getLevelSize(rLevel));
   unpacked_node* nbr = unpacked_node::newFull(resF, rLevel, rSize);
 
+  dd_edge resultik(resF), temp(resF);
+
   // Clear out result (important!)
   for (unsigned i = 0; i < rSize; ++i) nbr->d_ref(i) = 0;
 
@@ -288,10 +290,11 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
             nbri->d_ref(k) = res;
             continue;
           }
-          node_handle old = nbri->d(k);
-          nbri->d_ref(k) = accumulateOp->compute(old, res);
-          resF->unlinkNode(old);
-          resF->unlinkNode(res);
+          // Do the union
+          resultik.set(nbri->d(k));
+          temp.set(res);
+          accumulateOp->compute(resultik, temp, resultik);
+          nbri->set_d(k, resultik);
         }
       }
       MEDDLY_DCASSERT(0 == nbr->d(i));
