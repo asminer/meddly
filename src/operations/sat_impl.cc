@@ -881,6 +881,8 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
     MEDDLY_DCASSERT(ABS(eventLevel) == level);
 #endif
   }
+
+  dd_edge nbdj(resF), newst(resF);
   
   expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
   
@@ -940,16 +942,11 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
           nb.d_ref(j) = -1;
         }
         else {
-          node_handle acc = mddUnion->compute(nb.d(j), rec);
-          resF->unlinkNode(rec);
-          if (acc != nb.d(j)) {
-            resF->unlinkNode(nb.d(j));
-            nb.d_ref(j) = acc;
-          } else {
-            resF->unlinkNode(acc);
-            updated = false;
-          }
-          
+          nbdj.set(nb.d(j));  // clobber
+          newst.set(rec);     // clobber
+          mddUnion->compute(nbdj, newst, nbdj);
+          updated = (nbdj.getNode() != nb.d(j));
+          nb.set_d(j, nbdj);
         }
         
         if (updated) queue->add(j);
@@ -999,16 +996,11 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         nb.d_ref(j) = -1;
       }
       else {
-        node_handle acc = mddUnion->compute(nb.d(j), rec);
-        resF->unlinkNode(rec);
-        if (acc != nb.d(j)) {
-          resF->unlinkNode(nb.d(j));
-          nb.d_ref(j) = acc;
-        } else {
-          resF->unlinkNode(acc);
-          updated = false;
-        }
-        
+        nbdj.set(nb.d(j));  // clobber
+        newst.set(rec);     // clobber
+        mddUnion->compute(nbdj, newst, nbdj);
+        updated = (nbdj.getNode() != nb.d(j));
+        nb.set_d(j, nbdj);
       }
       
       if (updated) queue->add(j);
@@ -1028,14 +1020,15 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFireSet(
                                                                     std::vector<rel_node_handle> vector_mxd)
 {
   std::vector<node_handle> array_rec(vector_mxd.size());
-  node_handle union_rec = 0;
+
+  dd_edge ans(resF), union_rec(resF);
   
   for(int rn = 0; rn < vector_mxd.size(); rn ++){
-    int ans=recFire(mdd,vector_mxd[rn]);
-    union_rec = mddUnion->compute(union_rec,ans);
+    ans.set( recFire(mdd,vector_mxd[rn]) );
+    mddUnion->compute(union_rec, ans, union_rec);
   }
   
-  return union_rec;
+  return union_rec.getNode();
 }
 
 
@@ -1079,6 +1072,8 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
    int rSize = resF->getLevelSize(rLevel);
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
   expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
+
+  dd_edge nbdj(resF), newst(resF);
   
   // Initialize mdd reader
   unpacked_node *A = unpacked_node::useUnpackedNode();
@@ -1138,11 +1133,10 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
             continue;
           }
           // there's new states and existing states; union them.
-          int oldj = nb->d(j);
-          nb->d_ref(j) = mddUnion->compute(newstates, oldj);
-          resF->unlinkNode(oldj);
-          resF->unlinkNode(newstates);
-          
+          nbdj.set(nb->d(j));
+          newst.set(newstates);
+          mddUnion->compute(nbdj, newst, nbdj);
+          nb->set_d(j, nbdj);
           
         } // for i
 
@@ -1758,6 +1752,8 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
 #endif
   }
 
+  dd_edge nbdj(resF), newst(resF);
+
   expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
 
   // indexes to explore
@@ -1821,16 +1817,11 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
         nb.d_ref(j) = -1;
       }
       else {
-        node_handle acc = mddUnion->compute(nb.d(j), rec);
-        resF->unlinkNode(rec);
-        if (acc != nb.d(j)) {
-          resF->unlinkNode(nb.d(j));
-          nb.d_ref(j) = acc;
-        } else {
-          resF->unlinkNode(acc);
-          updated = false;
-        }
-
+        nbdj.set(nb.d(j));  // clobber
+        newst.set(rec);     // clobber
+        mddUnion->compute(nbdj, newst, nbdj);
+        updated = (nbdj.getNode() != nb.d(j));
+        nb.set_d(j, nbdj);
       }
 
       if (updated) queue->add(j);
@@ -1901,6 +1892,8 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   int rSize = resF->getLevelSize(rLevel);
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
   expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
+
+  dd_edge nbdj(resF), newst(resF);
 
   // Initialize mdd reader
   unpacked_node *A = unpacked_node::useUnpackedNode();
@@ -1993,12 +1986,10 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
         continue;
       }
       // there's new states and existing states; union them.
-      int oldj = nb->d(j);
-      nb->d_ref(j) = mddUnion->compute(newstates, oldj);
-      resF->unlinkNode(oldj);
-      resF->unlinkNode(newstates);
-
-
+      nbdj.set(nb->d(j));
+      newst.set(newstates);
+      mddUnion->compute(nbdj, newst, nbdj);
+      nb->set_d(j, nbdj);
     } // for i
 
 
