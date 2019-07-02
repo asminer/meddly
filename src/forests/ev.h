@@ -68,7 +68,7 @@ class MEDDLY::ev_forest : public expert_forest {
       if (nb.getLevel() > 0) return false;
       if (!isIdentityReduced()) return false;
       if (i<0) return false;
-      return (nb.d(i) != 0)  &&  OPERATION::isIdentityEdge(nb.eptr(i));
+      return (nb.d(unsigned(i)) != 0)  &&  OPERATION::isIdentityEdge(nb.eptr(unsigned(i)));
     }
 
   // ------------------------------------------------------------

@@ -521,9 +521,9 @@ namespace MEDDLY {
         if (F->isIdentityReduced()) return;
 
         // build an identity node by hand
-        int lastV = F->getLevelSize(k);
+        unsigned lastV = unsigned(F->getLevelSize(k));
         unpacked_node* nb = unpacked_node::newFull(F, k, lastV);
-        for (int v=0; v<lastV; v++) {
+        for (unsigned v=0; v<lastV; v++) {
           unpacked_node* nbp = unpacked_node::newSparse(F, -k, 1);
           nbp->i_ref(0) = v;
           nbp->d_ref(0) = F->linkNode(p);
