@@ -54,7 +54,14 @@ MEDDLY::generic_binary_mdd::~generic_binary_mdd()
 void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &b, 
   dd_edge &c)
 {
-  node_handle cnode = compute(a.getNode(), b.getNode());
+	node_handle cnode =-1;
+  if(a.getHasPInfty()!=b.getHasPInfty()){
+	   cnode = compute(a.getNode(), b.getNode(),
+			  a.getHasPInfty(),b.getHasPInfty());
+//		  c.setHasPInfty();
+  }
+  else
+   cnode = compute(a.getNode(), b.getNode());
   const int num_levels = resF->getDomain()->getNumVariables();
   if (resF->isQuasiReduced() && cnode != resF->getTransparentNode()
     && resF->getNodeLevel(cnode) < num_levels) {
@@ -101,6 +108,41 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
 #endif
 
   return result;
+}
+
+MEDDLY::node_handle 
+MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b,
+		bool aInfty, bool bInfty){
+	  node_handle result = 0;
+	  if (checkTerminals(a, b, result))
+	    return result;
+
+	  compute_table::entry_key* Key = findResult(a, b, result);
+	  if (0==Key) return result;
+
+	  // Get level information
+	  const int aLevel = arg1F->getNodeLevel(a);
+	  const int bLevel = arg2F->getNodeLevel(b);
+	  const int resultLevel = MAX(aLevel, bLevel);
+	  if (aInfty!=bInfty){
+		  result=compute_normal(a,b,aInfty,bInfty);
+	  }
+	  else
+	  result =
+	    resF->isExtensibleLevel(resultLevel)
+	    ? compute_ext(a, b)
+	    : compute_normal(a, b);
+
+	  // save result
+	  saveResult(Key, a, b, result);
+
+	#ifdef TRACE_ALL_OPS
+	  printf("computed %s(%d, %d) = %d\n", getName(), a, b, result);
+	  fflush(stdout);
+	#endif
+
+	  return result;
+
 }
 
 MEDDLY::node_handle 
@@ -158,6 +200,82 @@ MEDDLY::generic_binary_mdd::compute_normal(node_handle a, node_handle b)
   node_handle result = resF->createReducedNode(-1, C);
   return result;
 }
+
+MEDDLY::node_handle
+MEDDLY::generic_binary_mdd::compute_normal(node_handle a, node_handle b,
+		bool aInfty, bool bInfty){
+
+	  // Get level information
+	  const int aLevel = arg1F->getNodeLevel(a);
+	  const int bLevel = arg2F->getNodeLevel(b);
+	  const int resultLevel = MAX(aLevel, bLevel);
+	  const int resultSize = resF->getLevelSize(resultLevel);
+
+	  MEDDLY_DCASSERT(!resF->isExtensibleLevel(resultLevel));
+
+	  unpacked_node* C = unpacked_node::newFull(resF, resultLevel, resultSize);
+	  MEDDLY_DCASSERT(!C->isExtensible());
+
+	  // Initialize readers
+	  unpacked_node *A = (aLevel < resultLevel)
+	    ? unpacked_node::newRedundant(arg1F, resultLevel, a, true)
+	    : unpacked_node::newFromNode(arg1F, a, true)
+	  ;
+	  MEDDLY_DCASSERT(!A->isExtensible());
+
+	  unpacked_node *B = (bLevel < resultLevel)
+	    ? unpacked_node::newRedundant(arg2F, resultLevel, b, true)
+	    : unpacked_node::newFromNode(arg2F, b, true)
+	  ;
+	  MEDDLY_DCASSERT(!B->isExtensible());
+
+	  MEDDLY_DCASSERT(A->isFull() && resultSize == A->getSize());
+	  MEDDLY_DCASSERT(B->isFull() && resultSize == B->getSize());
+	  MEDDLY_DCASSERT(C->isFull() && resultSize == C->getSize());
+
+	  // do computation
+	  if(aInfty&&!bInfty){
+		  C->d_ref(0)=A->d(0);
+		  for(int i=0;i<resultSize;i++){
+				  C->d_ref(i+1) = compute(A->d(i+1), B->d(i),aInfty,bInfty);
+
+		  }
+
+	  }
+	  else if(!aInfty&&bInfty){
+		  C->d_ref(0)=B->d(0);
+
+		  for(int i=0;i<resultSize;i++){
+
+				  C->d_ref(i+1) = compute(A->d(i), B->d(i+1),aInfty,bInfty);
+
+		  }
+	  }
+	  else{
+	  for (int i=0; i<resultSize; i++) {
+	    C->d_ref(i) = compute(A->d(i), B->d(i),aInfty,bInfty);
+	  }
+	  }
+	  if (resF->isQuasiReduced()) {
+	    int nextLevel = resultLevel - 1;
+	    for (int i = 0; i < C->getSize(); i++) {
+	      if (resF->getNodeLevel(C->d(i)) < nextLevel) {
+	        node_handle temp = ((mt_forest*)resF)->makeNodeAtLevel(nextLevel, C->d(i));
+	        resF->unlinkNode(C->d(i));
+	        C->d_ref(i) = temp;
+	      }
+	    }
+	  }
+
+	  // cleanup
+	  unpacked_node::recycle(B);
+	  unpacked_node::recycle(A);
+
+	  // reduce and return result
+	  node_handle result = resF->createReducedNode(-1, C);
+	  return result;
+}
+
 
 #ifdef USING_SPARSE
 

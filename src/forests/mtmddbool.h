@@ -52,6 +52,9 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest {
 				bool &term,int*rlist, std::map<node_handle, int>& map) const;
 	virtual void updateMarkedNode(const dd_edge &f,const int level,
 			std::map<node_handle, int>& map )const;
+	virtual void allMarkingsCover(const dd_edge &f, int* vlist,
+			int* r,std::list<int*> R,bool &term, const dd_edge &w,
+			std::map<node_handle, int>&map)const;
     virtual void showTerminal(output &s, node_handle tnode) const;
     virtual void writeTerminal(output &s, node_handle tnode) const;
     virtual node_handle readTerminal(input &s);

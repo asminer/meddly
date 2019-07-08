@@ -49,6 +49,7 @@
 #include <memory>
 #include <cassert>
 #include "map"
+#include <list>
 
 // Flags for development version only. Significant reduction in performance.
 #ifdef DEVELOPMENT_CODE
@@ -1954,6 +1955,9 @@ class MEDDLY::forest {
 			bool &term,int*r) const;
 	virtual void firstMarkingCovers(const dd_edge &f, const int* vlist,
 				bool &term,int*r,std::map<node_handle, int>&map) const;
+	virtual void allMarkingsCover(const dd_edge &f, int* vlist,
+			int* r,std::list<int*> R,bool &term, const dd_edge &w,
+			std::map<node_handle, int>&map)const;
 	virtual void updateMarkedNode(const dd_edge &f,
 			const int level,std::map<node_handle,int>& map )const;
 

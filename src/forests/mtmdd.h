@@ -404,6 +404,133 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 
 			return false;
 		}
+	inline void evaluateRawAllMarkingsCoverWithInfty(const dd_edge &f,const dd_edge &w,const forest &fw, node_handle p,
+						int* vlist, int* rlist, std::map<node_handle,int>& map, bool &result, std::list<int*>& R) const {
+
+
+		if (isTerminalNode(p) && getNodeLevel(p) == 0) {
+
+//			printf("REACH TO TERMINAL\n");
+//			printf("terminal P value%d\n", p);
+			if (p != 0) {
+				rlist[getNodeLevel(p)]=0;
+				bool seen=false;
+				fw.evaluate(f,vlist,seen);
+				if (seen){
+					//Add Omega
+					//UpdateA
+				}
+				R.push_back(rlist);
+				result=true;
+//				printf("Returned true\n");
+//				return true;
+			}
+
+		} else {
+//			printf("F.Hasinfty%d", f.getHasPInfty());
+//				unpacked_node* nr = unpacked_node::useUnpackedNode();
+//				nr->initFromNode(this, p, true);
+//			FILE_output meddlyout(stdout);
+//			nr->show(meddlyout, false);
+		std::map<node_handle, int>::iterator it = map.find(p);
+		int isVisited = unpacked_node::markedWith::NV;
+		if (it != map.end()) {
+			isVisited = it->second;
+		}
+		if(isVisited==unpacked_node::markedWith::C){
+			R.push_back(rlist);
+			result=true;
+		}else if (isVisited == unpacked_node::markedWith::NV)
+//				if (nr->getMarked() != unpacked_node::markedWith::NC)
+			{
+				int level = getNodeLevel(p);
+				int val = getDomain()->getVariableBound(level, false);
+//				printf("Domain size%d\n", val);
+				bool* lresult= new bool[val+1];
+//				bool result = false;
+				bool unionResult=false;
+				for (int i = 0; i < val; i++) {
+//					if (!result) {
+//						printf("In Domain%d\n", i);
+//						printf("LEVEL%d\n", level);
+//						printf("vlist[level] %d , %d\n", vlist[level], i);
+						if (i == 0 && vlist[level] == 0) {
+
+							//} else if (i == 1) {
+							node_handle p1 = getDownPtr(p, i);
+//							printf("CAME IN i=0\n");
+//							if(p!=0){
+//							if (vlist[level] == i) {
+							evaluateRawAllMarkingsCoverWithInfty(f,
+									w,fw,p1, vlist, rlist,map,lresult[i],R);
+//							if (result == true) {
+////								printf("After Call%d", i);
+//								return true;
+////							}
+//							}
+//							}
+							unionResult=(unionResult | lresult[i]);
+						} else if (i <= vlist[level] || vlist[level] == 0) {
+							rlist[level] = i;
+//							printf("POSIBLE %d level: %d \n", i, level);
+							//							printf("bP *value%d\n", p);
+							node_handle p2 = getDownPtr(p, i);
+//							printf("P *value%d %d\n", p2, getNodeLevel(p2));
+							evaluateRawAllMarkingsCoverWithInfty(f,
+									w,fw,p2, vlist, rlist,map,lresult[i],R);
+							unionResult=(unionResult | lresult[i]);
+//							printf("After evaluateRawIsMarkingCovered %d\n",
+//									result);
+//							if (result == true) {
+////								printf("After Call%d", i);
+//								return true;
+//							}
+							rlist[level] = -1;
+						}
+//					}
+				}
+				bool updateMarked=true;
+				for(int i = 0; i < val; i++){
+					node_handle pi = getDownPtr(p, i);
+					std::map<node_handle,int>::iterator it=map.find(p);
+					if(it!=map.end()){
+						if(it->second==unpacked_node::markedWith::NV){
+							updateMarked=false;
+							break;
+						}
+					}
+				}
+				if(updateMarked){
+					if (unionResult) {
+						std::map<node_handle, int>::iterator it = map.find(p);
+						if (it != map.end()) {
+							map[p] = unpacked_node::markedWith::C;
+						} else {
+							it->second = unpacked_node::markedWith::C;
+						}
+						result=true;
+					}
+					else {
+						std::map<node_handle, int>::iterator it = map.find(p);
+						if (it != map.end()) {
+							map[p] = unpacked_node::markedWith::NC;
+						} else {
+							it->second = unpacked_node::markedWith::NC;
+						}
+						result=false;
+					}
+				}
+
+//					nr->setMarkedNC();
+			}
+//		else {
+//				return false;
+//			}
+		}
+
+//		return false;
+
+	}
     // Move the variable to the optimal level between top and bottom
     void sifting(int var, int top, int bottom);
 

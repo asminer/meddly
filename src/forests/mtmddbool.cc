@@ -231,6 +231,11 @@ void MEDDLY::mt_mdd_bool::firstMarkingCovers(const dd_edge &f, const int* vlist,
 //	}
 }
 
+void MEDDLY::mt_mdd_bool::allMarkingsCover(const dd_edge &f, int* vlist,
+		int* r,std::list<int*> R,bool &term, const dd_edge &w,
+		std::map<node_handle, int>&map)const{
+
+}
 void MEDDLY::mt_mdd_bool::updateMarkedNode(const dd_edge &f,const int level,
 		std::map<node_handle, int>& map) const {
 	node_handle* p = new node_handle(f.getNode());

@@ -48,7 +48,9 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
     virtual node_handle compute(node_handle a, node_handle b);
+    virtual node_handle compute(node_handle a, node_handle b,bool aInfty, bool bInfty);
     virtual node_handle compute_normal(node_handle a, node_handle b);
+    virtual node_handle compute_normal(node_handle a, node_handle b,bool aInfty, bool bInfty);
     virtual node_handle compute_ext(node_handle a, node_handle b);
 
   protected:
