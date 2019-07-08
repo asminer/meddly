@@ -120,7 +120,7 @@ done
 #
 
 for newrel in v0.15.0 master; do
-  if git checkout origin/$newrel; then
+  if git checkout $newrel; then
     echo "Checkout of $newrel succeeded"
   else
     echo "Checkout of $newrel failed"
