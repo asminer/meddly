@@ -130,7 +130,9 @@ MEDDLY::forest::statset::statset()
   reclaimed_nodes = 0;
   num_compactions = 0;
   garbage_collections = 0;
+#ifdef TRACK_UNREACHABLE_NODES
   unreachable_nodes = 0;
+#endif
   active_nodes = 0;
   peak_active = 0;
   /*

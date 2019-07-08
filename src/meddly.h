@@ -57,6 +57,8 @@
 
 // #define TRACK_DELETIONS
 // #define TRACK_CACHECOUNT
+// #define TRACK_UNREACHABLE_NODES
+
 
 // Use this for assertions that will fail only when your
 // code is wrong.  Handy for debugging.
@@ -72,7 +74,6 @@
 #else
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
 #endif
-
 
 
 namespace MEDDLY {
@@ -1201,8 +1202,12 @@ class MEDDLY::forest {
       long num_compactions;
       /// Number of times the garbage collector ran.
       long garbage_collections;
+
+#ifdef TRACK_UNREACHABLE_NODES
       /// Current number of unreachable (disconnected) nodes
       long unreachable_nodes;
+#endif
+
       /// Current number of connected nodes
       long active_nodes;
       /// Current number of temporary nodes

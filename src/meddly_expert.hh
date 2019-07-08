@@ -1253,14 +1253,18 @@ MEDDLY::node_headers::uncacheNode(MEDDLY::node_handle p)
   
   if (isDeleted(p)) {
       // we were already disconnected; must be using pessimistic
+#ifdef TRACK_UNREACHABLE_NODES
       parent.stats.unreachable_nodes--;
+#endif
       recycleNodeHandle(p);
   } else {
       // We're still active
       // See if we're now completely disconnected
       // and if so, tell parent to recycle node storage
       if (0==address[p].incoming_count) {
+#ifdef TRACK_UNREACHABLE_NODES
         parent.stats.unreachable_nodes--;
+#endif
 
         parent.deleteNode(p);
         recycleNodeHandle(p);
@@ -1293,6 +1297,9 @@ MEDDLY::node_headers::uncacheNode(MEDDLY::node_handle p)
     //
     // Must be using pessimistic
     //
+#ifdef TRACK_UNREACHABLE_NODES
+    parent.stats.unreachable_nodes--;
+#endif
     recycleNodeHandle(p);
   } else {
     // we were active.
@@ -1303,7 +1310,9 @@ MEDDLY::node_headers::uncacheNode(MEDDLY::node_handle p)
           ||
           (is_reachable && (0==is_reachable->get(size_t(p))))
     ) {
+#ifdef TRACK_UNREACHABLE_NODES
       parent.stats.unreachable_nodes--;
+#endif
       parent.deleteNode(p);
       recycleNodeHandle(p);
     }
@@ -1405,7 +1414,9 @@ MEDDLY::node_headers::linkNode(node_handle p)
   if (0==address[p].incoming_count) {
     // Reclaim an unreachable
     parent.stats.reclaimed_nodes++;
+#ifdef TRACK_UNREACHABLE_NODES
     parent.stats.unreachable_nodes--;
+#endif
   }
 
   address[p].incoming_count++;
@@ -1421,7 +1432,9 @@ MEDDLY::node_headers::linkNode(node_handle p)
   if (incoming_counts->isZeroBeforeIncrement(size_t(p))) {
     // Reclaim an unreachable 
     parent.stats.reclaimed_nodes++;
+#ifdef TRACK_UNREACHABLE_NODES
     parent.stats.unreachable_nodes--;
+#endif
   }
 
 #ifdef TRACK_DELETIONS
@@ -1480,7 +1493,9 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
   if (pessimistic) {
     parent.deleteNode(p);
   } else {
+#ifdef TRACK_UNREACHABLE_NODES
     parent.stats.unreachable_nodes++;
+#endif
   }
 
 
@@ -1528,7 +1543,9 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
     //
     // Optimistic.  Keep unreachables around.
     //
+#ifdef TRACK_UNREACHABLE_NODES
     parent.stats.unreachable_nodes++;
+#endif
   }
 
 #endif // OLD_NODE_HEADERS
