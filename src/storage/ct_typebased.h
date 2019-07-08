@@ -968,7 +968,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
   } // if CHAINED
 
 #ifdef DEBUG_SLOW
-  fprintf(stdout, "CT enlarged to size %d\n", tableSize);
+  fprintf(stdout, "CT enlarged to size %d, next expansion %d\n", tableSize, tableExpand);
 #endif
 
 }
