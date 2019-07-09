@@ -21,6 +21,7 @@
 
 #include "defines.h"
 #include "storage/bytepack.h"
+#include <climits>
 
 // #define DEBUG_COUNTER_RESIZE
 
