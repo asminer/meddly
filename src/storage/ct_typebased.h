@@ -46,7 +46,6 @@ namespace MEDDLY {
 
       // required functions
 
-      virtual bool isOperationTable() const   { return !MONOLITHIC; }
       virtual void find(entry_key* key, entry_result &res);
       virtual void addEntry(entry_key* key, const entry_result& res);
       virtual void updateEntry(entry_key* key, const entry_result& res);
@@ -57,7 +56,7 @@ namespace MEDDLY {
 
     private:  // helper methods
 
-      inline void scanForStales(unsigned i) {
+      inline void scanForStales(unsigned i, bool mark) {
           //
           // Check entry i (only) for staleness
           //
@@ -70,13 +69,10 @@ namespace MEDDLY {
 #else
           const int* entry = (const int*) MMAN->getChunkAddress(table[i]);
 #endif
-          if (!isStale(entry)) return;
+          if (!isStale(entry, mark)) return;
 
 #ifdef DEBUG_CT_SCAN
-          printf("CTSCAN stale entry #%ld", perf.numEntries);
-          FILE_output out(stdout);
-          showEntry(out, table[i]);
-          printf(" in table slot %u\n", i);
+          printf("CTSCAN stale entry in table slot %u\n", i);
 #endif  
           discardAndRecycle(table[i]);
           table[i] = 0;
@@ -100,7 +96,7 @@ namespace MEDDLY {
 #endif
             int next = entry[0];
 
-            if (isStale(entry)) {
+            if (isStale(entry, false)) {
 
 #ifdef DEBUG_CT_SCAN
               printf("CTSCAN stale entry #%ld", perf.numEntries);
@@ -176,7 +172,7 @@ namespace MEDDLY {
         MEDDLY_DCASSERT(table[h]);
         // full; remove entry at our slot.
 #ifdef DEBUG_CT
-        printf("Collision; removing CT entry ");
+        printf("CT Collision; removing CT entry ");
         FILE_output out(stdout);
         showEntry(out, table[h]);
 #ifdef DEBUG_CT_SLOTS
@@ -256,7 +252,7 @@ namespace MEDDLY {
           // Not equal.
           //
           if (checkStalesOnFind) {
-            discard = isStale(entry);
+            discard = isStale(entry, false);
           } else {
             discard = false;
           } // if checkStalesOnFind
@@ -268,9 +264,10 @@ namespace MEDDLY {
       /**
           Check if an entry is stale.
             @param  entry   Pointer to complete entry to check.
+            @param  mark    Should we mark the non-stale entries?
             @return         true, if the entry should be discarded.
       */
-      bool isStale(const int* entry) const;
+      bool isStale(const int* entry, bool mark) const;
 
       /**
           Check if a result is dead (unrecoverable).
@@ -370,9 +367,6 @@ namespace MEDDLY {
 
 
     private:
-      /// Global entry type.  Ignored when MONOLITHIC is true.
-      const entry_type* global_et;
-
       /// Hash table
       int*  table;
 
@@ -414,11 +408,6 @@ namespace MEDDLY {
 
       /// Stats: how many collisions
       long collisions;
-
-#ifdef CONTINUOUS_SCAN
-    private:
-      unsigned int scan_index;
-#endif
   }; // class ct_typebased
 } // namespace
 
@@ -432,7 +421,7 @@ namespace MEDDLY {
 template <bool MONOLITHIC, bool CHAINED>
 MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::ct_typebased(
   const ct_initializer::settings &s, operation* op, unsigned slot)
-: compute_table(s)
+: compute_table(s, op, slot)
 {
   if (MONOLITHIC) {
     MEDDLY_DCASSERT(0==op);
@@ -440,7 +429,6 @@ MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::ct_typebased(
   } else {
     MEDDLY_DCASSERT(op);
   }
-  global_et = op ? getEntryType(op, slot) : 0;
 
   /*
       Initialize memory management for entries.
@@ -480,9 +468,6 @@ MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::ct_typebased(
   mstats.incMemAlloc(tableSize * sizeof(int));
 
   collisions = 0;
-#ifdef CONTINUOUS_SCAN
-  scan_index = 0;
-#endif
 }
 
 // **********************************************************************
@@ -655,20 +640,6 @@ inline int* MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   } // for chain
 
   sawSearch(chain);
-
-#ifdef CONTINUOUS_SCAN
-  do {
-    incMod(scan_index);
-    if (0==scan_index) {
-      perf.completedScans++;
-    }
-  } while (hcurr == scan_index);
-  if (CHAINED) {
-    scanListForStales(scan_index);
-  } else {
-    scanForStales(scan_index);
-  }
-#endif
 
   return answer;
 }
@@ -857,7 +828,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
   }
 
 #ifdef DEBUG_CT
-  printf("Added CT entry #%ld", perf.numEntries);
+  printf("Added CT entry ");
   FILE_output out(stdout);
   showEntry(out, curr);
 #ifdef DEBUG_CT_SLOTS
@@ -881,6 +852,23 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
   );
 #endif
 
+  //
+  // Clear CT bits for all forests we affect.
+  // Should be a no-op for forests that use reference counts.
+  //
+  const unsigned NF = forest::MaxFID()+1;
+  bool* skipF = new bool[NF];
+  for (unsigned i=0; i<NF; i++) skipF[i] = 0;
+  clearForestCTBits(skipF, NF);
+
+  //
+  // Go through all entries and discard stales.
+  // Anything not stale will mark the CT bit.
+  //
+
+  // TBD - what if LOTS of entries are removed?  When should we shrink the table?
+
+  bool bail_out = false;
   int list = 0;
   if (CHAINED) {
     list = convertToList(checkStalesOnResize);
@@ -889,7 +877,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
 #ifdef DEBUG_SLOW
       fprintf(stdout, "Done CT GC, no resizing (now entries %u)\n", perf.numEntries);
 #endif
-      return;
+      bail_out = true;
     }
   } else {
     scanForStales();
@@ -897,9 +885,21 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
 #ifdef DEBUG_SLOW
       fprintf(stdout, "Done CT GC, no resizing (now entries %u)\n", perf.numEntries);
 #endif
-      return;
+      bail_out = true;
     }
   }
+
+  //
+  // Notify forests that we're done marking cache bits; 
+  // forests can sweep if they like.
+  //
+  sweepForestCTBits(skipF, NF);
+  delete[] skipF;
+  if (bail_out) return;
+
+  //
+  // Enlarge table.
+  //
 
   unsigned long newsize = tableSize * 2;
   if (newsize > maxSize) newsize = maxSize;
@@ -968,7 +968,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
   } // if CHAINED
 
 #ifdef DEBUG_SLOW
-  fprintf(stdout, "CT enlarged to size %d\n", tableSize);
+  fprintf(stdout, "CT enlarged to size %d, next expansion %d\n", tableSize, tableExpand);
 #endif
 
 }
@@ -1193,8 +1193,6 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   s.put("", 6);
   s << "Hits                :\t" << long(perf.hits) << "\n";
   s.put("", 6);
-  s << "Completed scans     :\t" << long(perf.completedScans) << "\n";
-  s.put("", 6);
   s << "Resize (GC) scans   :\t" << long(perf.resizeScans) << "\n";
 
   if (--verbLevel < 1) return;
@@ -1323,7 +1321,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 #endif
 
       const entry_type* et = MONOLITHIC
-        ?   getEntryType(entry[CHAINED?1:0])
+        ?   getEntryType(unsigned(entry[CHAINED?1:0]))
         :   global_et;
       MEDDLY_DCASSERT(et);
 
@@ -1413,7 +1411,7 @@ int MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::convertToList(bool removeStales)
       int* entry = (int*) MMAN->getChunkAddress(curr);
 #endif
       table[i] = entry[0];
-      if (removeStales && isStale(entry)) {
+      if (removeStales && isStale(entry, true)) {
 
 #ifdef DEBUG_TABLE2LIST
           printf("\tstale ");
@@ -1467,7 +1465,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::listToTable(int L)
     L = entry[0];
 
     const entry_type* et = MONOLITHIC
-      ?   getEntryType(entry[1])
+      ?   getEntryType(unsigned(entry[1]))
       :   global_et;
     MEDDLY_DCASSERT(et);
     const unsigned reps = (et->isRepeating()) ? entry[ M+1 ] : 0;
@@ -1492,7 +1490,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::scanForStales()
 {
   MEDDLY_DCASSERT(!CHAINED);
   for (unsigned i=0; i<tableSize; i++) {
-    scanForStales(i);
+    scanForStales(i, true);
   } // for i
 }
 
@@ -1516,7 +1514,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::rehashTable(const int* oldT, uns
 #endif
 
     const entry_type* et = MONOLITHIC
-      ?   getEntryType(entry[0])
+      ?   getEntryType(unsigned(entry[0]))
       :   global_et;
     MEDDLY_DCASSERT(et);
     const unsigned reps = (et->isRepeating()) ? entry[ M ] : 0;
@@ -1609,7 +1607,7 @@ inline bool NO_stale()
 
 template <bool MONOLITHIC, bool CHAINED>
 bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED> 
-::isStale(const int* entry) const
+::isStale(const int* entry, bool mark) const
 {
 #ifdef DEBUG_ISSTALE
   printf("Checking entry for staleness: ");
@@ -1624,7 +1622,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   // Check entire entry for staleness
   //
   const entry_type* et = MONOLITHIC
-      ?   getEntryType(entry[CHAINED?1:0])
+      ?   getEntryType(unsigned(entry[CHAINED?1:0]))
       :   global_et;
   MEDDLY_DCASSERT(et);
 
@@ -1663,6 +1661,9 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       MEDDLY_DCASSERT(NODE == t);
       if (MEDDLY::forest::ACTIVE != f->getNodeStatus(*entry)) {
         return YES_stale();
+      } else {
+        // Indicate that this node is in some cache entry
+        if (mark) f->setCacheBit(*entry);
       }
       entry++;
     } else {
@@ -1690,6 +1691,8 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       MEDDLY_DCASSERT(NODE == t);
       if (MEDDLY::forest::ACTIVE != f->getNodeStatus(*entry)) {
         return YES_stale();
+      } else {
+        if (mark) f->setCacheBit(*entry);
       }
       entry++;
     } else {
@@ -1757,6 +1760,14 @@ template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 ::discardAndRecycle(unsigned long h)
 {
+#ifdef DEBUG_CT
+  printf("Recycling CT entry ");
+  FILE_output out(stdout);
+  showEntry(out, h);
+  printf("\n");
+  fflush(stdout);
+#endif
+
   const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
 
 #ifdef INTEGRATED_MEMMAN
@@ -1775,7 +1786,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   //
 
   const entry_type* et = MONOLITHIC
-    ?   getEntryType(entry[CHAINED ? 1 : 0])
+    ?   getEntryType(unsigned(entry[CHAINED ? 1 : 0]))
     :   global_et;
   MEDDLY_DCASSERT(et);
 
@@ -1917,7 +1928,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   MEDDLY_DCASSERT(entry);
 
   const entry_type* et = MONOLITHIC
-    ?   getEntryType(entry[CHAINED?1:0])
+    ?   getEntryType(unsigned(entry[CHAINED?1:0]))
     :   global_et;
   MEDDLY_DCASSERT(et);
 

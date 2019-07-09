@@ -33,7 +33,7 @@
 
 
 MEDDLY::evmdd_pluslong
- ::evmdd_pluslong(int dsl, domain *d, const policies &p, int* level_reduction_rule, bool index_set)
+ ::evmdd_pluslong(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, bool index_set)
  : evmdd_forest(dsl, d, INTEGER, index_set ? INDEX_SET : EVPLUS, p, level_reduction_rule)
 {
   setEdgeSize(sizeof(long), true);
@@ -458,7 +458,7 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::first(int k, node_handle down)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmdd_index_set_long::evmdd_index_set_long(int dsl, domain *d, const policies &p, int* level_reduction_rule)
+MEDDLY::evmdd_index_set_long::evmdd_index_set_long(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule)
  : evmdd_pluslong(dsl, d, p, level_reduction_rule, true)
 { }
 

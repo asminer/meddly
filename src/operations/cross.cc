@@ -44,7 +44,7 @@ class MEDDLY::cross_bool : public binary_operation {
 
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
 
-    node_handle compute_pr(int in, int ht, node_handle a, node_handle b);
+    node_handle compute_pr(unsigned in, int ht, node_handle a, node_handle b);
     node_handle compute_un(int ht, node_handle a, node_handle b);
 };
 
@@ -99,11 +99,11 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
     A->initFromNode(arg1F, a, true);
   }
 
-  const int resultSize = resF->getLevelSize(k);
+  const unsigned resultSize = unsigned(resF->getLevelSize(k));
   unpacked_node *C = unpacked_node::newFull(resF, k, resultSize);
 
   // recurse
-  for (int i=0; i<resultSize; i++) {
+  for (unsigned i=0; i<resultSize; i++) {
     C->d_ref(i) = compute_pr(i, -k, A->d(i), b);
   }
 
@@ -122,7 +122,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   return c;
 }
 
-MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a, node_handle b)
+MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_handle a, node_handle b)
 {
 #ifdef DEBUG_CROSS
   printf("calling compute_pr(%d, %d, %d, %d)\n", in, k, a, b);
@@ -140,17 +140,17 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(int in, int k, node_handle a,
     B->initFromNode(arg2F, b, true);
   }
 
-  const int resultSize = resF->getLevelSize(k);
+  const unsigned resultSize = unsigned(resF->getLevelSize(k));
   unpacked_node *C = unpacked_node::newFull(resF, k, resultSize);
 
   // recurse
-  for (int i=0; i<resultSize; i++) {
+  for (unsigned i=0; i<resultSize; i++) {
     C->d_ref(i) = compute_un(-(k+1), a, B->d(i));
   }
 
   // reduce
   unpacked_node::recycle(B);
-  node_handle c = resF->createReducedNode(in, C);
+  node_handle c = resF->createReducedNode(int(in), C);
 
   // DON'T save in compute table
 

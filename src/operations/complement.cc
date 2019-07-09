@@ -108,7 +108,7 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
   if (0==Key) return b;
 
   const int level = argF->getNodeLevel(a);
-  const int size = resF->getLevelSize(level);
+  const unsigned size = unsigned(resF->getLevelSize(level));
   bool addRedundentNode=(resF->isQuasiReduced() && level>1);
 
   // Initialize unpacked nodes
@@ -116,7 +116,7 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
   unpacked_node* C = unpacked_node::newFull(resF, level, size);
 
   // recurse
-  for (int i=0; i<size; i++) {
+  for (unsigned i=0; i<size; i++) {
     C->d_ref(i) = compute_r(A->d(i));
 
     if(addRedundentNode && resF->isTerminalNode(C->d(i)) && C->d(i)!=resF->getTransparentNode()){
@@ -199,7 +199,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
 #endif
 
   // Initialize unpacked node
-  const int size = resF->getLevelSize(k);
+  const unsigned size = unsigned(resF->getLevelSize(k));
   const int aLevel = argF->getNodeLevel(a);
   MEDDLY_DCASSERT(!isLevelAbove(aLevel, k));
   unpacked_node* A = unpacked_node::useUnpackedNode();
@@ -210,19 +210,19 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
     A->initRedundant(argF, k, a, true);
   } else {
     MEDDLY_DCASSERT(in>=0);
-    A->initIdentity(argF, k, in, a, true);
+    A->initIdentity(argF, k, unsigned(in), a, true);
     canSave = false;
   }
   unpacked_node* C = unpacked_node::newFull(resF, aLevel, size);
 
   // recurse
   int nextLevel = argF->downLevel(k);
-  int nnz = 0;
+  unsigned nnz = 0;
   bool addRedundentNode=(resF->isQuasiReduced() && (k>0 || k<-1));
 
   // recurse
-  for (int i=0; i<size; i++) {
-    C->d_ref(i) = compute_r(i, nextLevel, A->d(i));
+  for (unsigned i=0; i<size; i++) {
+    C->d_ref(i) = compute_r(int(i), nextLevel, A->d(i));
     if (C->d(i)!=resF->getTransparentNode()) nnz++;
 
     if(addRedundentNode && resF->isTerminalNode(C->d(i)) && C->d(i)!=resF->getTransparentNode()){

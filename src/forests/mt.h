@@ -39,7 +39,7 @@ namespace MEDDLY {
 */
 class MEDDLY::mt_forest : public expert_forest {
   protected:
-    mt_forest(int dsl, domain *d, bool rel, range_type t, const policies &p, int* level_reduction_rule=NULL);
+    mt_forest(unsigned dsl, domain *d, bool rel, range_type t, const policies &p, int* level_reduction_rule=NULL);
 
   public:
     virtual bool isTransparentEdge(node_handle p, const void* v) const;
@@ -106,13 +106,13 @@ class MEDDLY::mt_forest : public expert_forest {
       } else {
         km1 = k-1;
       }
-      int sz = getLevelSize(level);
+      unsigned sz = unsigned(getLevelSize(level));
 
       /*
           Make this node
       */
       unpacked_node* nb = unpacked_node::newFull(this, k, sz);
-      for (int i=0; i<sz; i++) {
+      for (unsigned i=0; i<sz; i++) {
         nb->d_ref(i) = makeNodeAtLevel(km1, 
           ENCODER::value2handle(vals ? vals[i] : i)
         );

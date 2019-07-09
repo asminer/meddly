@@ -50,7 +50,7 @@ inline void unlinkNode(MEDDLY::forest* p, int node)
 // ******************************************************************
 
 MEDDLY::dd_edge::dd_edge()
-: parent(0), index(-1),
+: parent(0), index(0),
   node(0), raw_value(0),
   opPlus(0), opStar(0), opMinus(0), opDivide(0)
 {
@@ -61,7 +61,7 @@ MEDDLY::dd_edge::dd_edge()
 
 // Constructor.
 MEDDLY::dd_edge::dd_edge(forest* p)
-: parent(p), index(-1),
+: parent(p), index(0),
   node(0), raw_value(0),
   opPlus(0), opStar(0), opMinus(0), opDivide(0)
 {
@@ -70,7 +70,7 @@ MEDDLY::dd_edge::dd_edge(forest* p)
 #endif
   MEDDLY_DCASSERT(p != NULL);
   parent->registerEdge(*this);
-  MEDDLY_DCASSERT(index != -1);
+  MEDDLY_DCASSERT(index);
 }
 
 
@@ -82,7 +82,7 @@ MEDDLY::dd_edge::dd_edge(const dd_edge& e)
 #endif
   init(e);
   this->hasPInfty=e.hasPInfty;
-  MEDDLY_DCASSERT(index != -1);
+  MEDDLY_DCASSERT(index);
 }
 
 
@@ -94,7 +94,6 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator=(const dd_edge& e)
     init(e);
   }
   MEDDLY_DCASSERT(index != -1);
-  this->hasPInfty=e.hasPInfty;
   return *this;
 }
 
@@ -124,7 +123,7 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
   opDivide = e.opDivide;
 
   if (parent) parent->registerEdge(*this);
-  MEDDLY_DCASSERT(index != -1);
+  MEDDLY_DCASSERT(index);
 }
 
 //
@@ -132,12 +131,24 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
 //
 void MEDDLY::dd_edge::destroy()
 {
-  if (index != -1) {
+  if (index) {
     // still registered; unregister before discarding
     int old = node;
     node = 0;
     unlinkNode(parent, old);
     if (parent) parent->unregisterEdge(*this);
+  }
+  parent = 0;
+  index = 0;
+}
+
+void MEDDLY::dd_edge::setForest(forest* f)
+{
+  destroy();
+  parent = f;
+  if (parent) {
+    parent->registerEdge(*this);
+    MEDDLY_DCASSERT(index);
   }
 }
 
@@ -305,7 +316,7 @@ void MEDDLY::dd_edge::show(output &strm, int verbosity) const
   expert_forest* eParent = smart_cast<expert_forest*>(parent);
 
   strm << "(Forest Addr: ";
-  strm.put_hex(long(parent));
+  strm.put_hex((unsigned long) parent);
   strm << ", ";
   
   strm << "transparent: ";
@@ -411,7 +422,7 @@ void MEDDLY::dd_edge::read(forest* p, input &s, const node_handle* map)
   opDivide = 0;
 
   if (parent) parent->registerEdge(*this);
-  MEDDLY_DCASSERT(index != -1);
+  MEDDLY_DCASSERT(index);
 }
 
 

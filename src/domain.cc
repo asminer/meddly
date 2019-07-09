@@ -254,7 +254,7 @@ MEDDLY::domain::~domain()
   //
   // Delete all forests using this domain
   //
-  for (int i=0; i<szForests; i++) {
+  for (unsigned i=0; i<szForests; i++) {
 #ifdef DUMP_ON_FOREST_DESTROY
     expert_forest* ef = dynamic_cast <expert_forest*> (forests[i]);
     if (0==ef) continue;
@@ -322,7 +322,7 @@ void MEDDLY::domain::deleteDomList()
 MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t, 
     forest::edge_labeling e, const forest::policies &p, int* level_reduction_rule, int tv)
 {
-  int slot = findEmptyForestSlot();
+  unsigned slot = findEmptyForestSlot();
 
   expert_forest* f = 0;
 
@@ -407,27 +407,27 @@ void MEDDLY::domain::showInfo(output &strm)
 
 #if 0
   // call showNodes for each of the forests in this domain.
-  for (int i = 0; i < szForests; i++) {
+  for (unsigned i = 0; i < szForests; i++) {
     if (forests[i] != 0)
       forests[i]->showInfo(strm, 2);
   }
 #endif
 }
 
-void MEDDLY::domain::unlinkForest(forest* f, int slot)
+void MEDDLY::domain::unlinkForest(forest* f, unsigned slot)
 {
   if (forests[slot] != f)
     throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   forests[slot] = 0;
 }
 
-int MEDDLY::domain::findEmptyForestSlot()
+unsigned MEDDLY::domain::findEmptyForestSlot()
 {
-  for (int slot=0; slot<szForests; slot++) {
+  for (unsigned slot=0; slot<szForests; slot++) {
     if (0==forests[slot]) return slot;
   }
   // need to expand
-  int newSize;
+  unsigned newSize;
   if (szForests) {
     if (szForests > 16) newSize = szForests + 16;
     else                newSize = szForests * 2;
@@ -441,7 +441,7 @@ int MEDDLY::domain::findEmptyForestSlot()
   forests = temp;
   memset(forests + szForests, 0,
       (newSize - szForests) * sizeof(expert_forest*));
-  int slot = szForests;
+  unsigned slot = szForests;
   szForests = newSize;
   return slot;
 }
@@ -453,7 +453,7 @@ void MEDDLY::domain::markForDeletion()
 #endif
   if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
-  for (int slot=0; slot<szForests; slot++) 
+  for (unsigned slot=0; slot<szForests; slot++) 
     if (forests[slot]) forests[slot]->markForDeletion();
 }
 

@@ -47,8 +47,6 @@
 
 #define OLD_NODE_HEADERS
 
-// #define KEEP_LL_COMPUTES
-
 namespace MEDDLY {
 
   // classes defined here
@@ -598,9 +596,6 @@ class MEDDLY::unpacked_node {
       AS_STORED
     };
 
-	enum markedWith {
-		NV, NC, C
-	};
   public:
     /** Constructor.
      The class must be "filled" by a forest before
@@ -649,10 +644,7 @@ class MEDDLY::unpacked_node {
     static unpacked_node* newIdentity(const expert_forest *f, int k, unsigned i, long ev, node_handle node, bool full);
     static unpacked_node* newIdentity(const expert_forest *f, int k, unsigned i, float ev, node_handle node, bool full);
 
-    /** Create a zeroed-out full node */
     static unpacked_node* newFull(const expert_forest *f, int level, unsigned tsz);
-
-    /** Create a zeroed-out sparse node */
     static unpacked_node* newSparse(const expert_forest *f, int level, unsigned nnz);
 
   public:
@@ -709,9 +701,6 @@ class MEDDLY::unpacked_node {
     */
     node_handle& d_ref(unsigned n);
 
-    /// Set the nth pointer from E, and destroy E.
-    void set_d(unsigned n, dd_edge &E);
-
     /** Get the index of the nth non-zero pointer.
         Use only for sparse readers.
      */
@@ -727,9 +716,6 @@ class MEDDLY::unpacked_node {
 
     /// Modify pointer to an edge
     void* eptr_write(unsigned i);
-
-    /// Set the nth pointer and edge value from E, and destroy E.
-    void set_de(unsigned n, dd_edge &E);
 
     /// Get the edge value, as an integer.
     void getEdge(unsigned i, long& ev) const;
@@ -749,17 +735,6 @@ class MEDDLY::unpacked_node {
     /// Get the edge value, as a float.
     float ef(unsigned i) const;
 
-	// Methods for accessing the visited value of the node
-	bool isVisited() const;
-	void setVisited();
-	void unsetVisited();
-	// -------------------------------------------------------------------------
-	// Methods for accessing the marked value of the node
-	markedWith getMarked() const;
-	void setMarkedNC();
-	void setMarkedC();
-	void setMarkedNV();
-	// -------------------------------------------------------------------------
     // -------------------------------------------------------------------------
     // Methods to access the extensible portion of the node
     //
@@ -869,8 +844,8 @@ class MEDDLY::unpacked_node {
     void bind_as_full(bool full);
 
   protected:
-    void clearFullEdges();
-    void clearSparseEdges();
+    void clearFullDownPtrs();
+    void clearSparseDownPtrs();
 
   public:
     // Centralized recycling
@@ -917,8 +892,6 @@ class MEDDLY::unpacked_node {
     unsigned h;
     unsigned char edge_bytes; // number of bytes for an edge value.
     bool is_full;
-	bool visited;
-	markedWith marked = markedWith::NV;
 #ifdef DEVELOPMENT_CODE
     bool has_hash;
 #endif
@@ -2359,10 +2332,10 @@ class MEDDLY::expert_forest: public forest
         Negative values are used for primed levels or variables.
     */
     int getVarByLevel(int level) const {
-      return level > 0 ? var_order->getVarByLevel(level) : -var_order->getVarByLevel(-level);
+      return level > 0 ? int(var_order->getVarByLevel(unsigned(level))) : -int(var_order->getVarByLevel(unsigned(-level)));
     }
     int getLevelByVar(int var) const {
-      return var > 0 ? var_order->getLevelByVar(var) : -var_order->getLevelByVar(-var);
+      return var > 0 ? int(var_order->getLevelByVar(unsigned(var))) : -int(var_order->getLevelByVar(unsigned(-var)));
     }
 
     int getNodeLevel(node_handle p) const;
@@ -2840,9 +2813,9 @@ class MEDDLY::expert_forest: public forest
     /*
      * Reorganize the variables in a certain order.
      */
-    void reorderVariables(const int* level2var);
+    void reorderVariables(const unsigned* level2var);
 
-    void getVariableOrder(int* level2var) const;
+    void getVariableOrder(unsigned* level2var) const;
 
     std::shared_ptr<const variable_order> variableOrder() const;
 
@@ -2850,21 +2823,21 @@ class MEDDLY::expert_forest: public forest
      * Swap the variables at level and level+1.
      * This method should only be called by expert_domain.
      */
-    virtual void swapAdjacentVariables(int level) = 0;
+    virtual void swapAdjacentVariables(unsigned level) = 0;
 
     /*
      * Move the variable at level high down to level low.
      * The variables from level low to level high-1 will be moved one level up.
      */
-    virtual void moveDownVariable(int high, int low) = 0;
+    virtual void moveDownVariable(unsigned high, unsigned low) = 0;
 
     /*
      * Move the variable at level low up to level high.
      * The variables from level low+1 to level high will be moved one level down.
      */
-    virtual void moveUpVariable(int low, int high) = 0;
+    virtual void moveUpVariable(unsigned low, unsigned high) = 0;
 
-    virtual void dynamicReorderVariables(int top, int bottom) {
+    virtual void dynamicReorderVariables(unsigned top, unsigned bottom) {
     	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
@@ -3267,9 +3240,7 @@ class MEDDLY::numerical_opname : public specialized_opname {
 // *                                                                *
 // ******************************************************************
 
-/** Saturation, with already generated transition relations, operation names.
-    Implemented in operations/sat_pregen.cc
-*/
+/// Saturation, with already generated transition relations, operation names.
 class MEDDLY::satpregen_opname : public specialized_opname {
   public:
     satpregen_opname(const char* n);
@@ -3293,7 +3264,7 @@ class MEDDLY::satpregen_opname : public specialized_opname {
                                   number of calls to addToRelation().
         */
         pregen_relation(forest* inmdd, forest* mxd, forest* outmdd,
-          unsigned num_events);
+          int num_events);
 
         /** Constructor, by levels
               @param  inmdd       MDD forest containing initial states
@@ -3341,8 +3312,8 @@ class MEDDLY::satpregen_opname : public specialized_opname {
         forest* getOutForest() const;
 
         // the following methods assume the relation has been finalized.
-        dd_edge* arrayForLevel(int k) const;
-        unsigned lengthForLevel(int k) const;
+        node_handle* arrayForLevel(int k) const;
+        int lengthForLevel(int k) const;
 
       private:
         // helper for constructors
@@ -3359,23 +3330,23 @@ class MEDDLY::satpregen_opname : public specialized_opname {
         forest* insetF;
         expert_forest* mxdF;
         forest* outsetF;
-        unsigned K;
+        int K;
         // array of sub-relations
-        dd_edge* events;
-        // next pointers (plus one), unless we're finalized
-        unsigned* next;
+        node_handle* events;
+        // next pointers, unless we're finalized
+        int* next;
         // size of events array
-        unsigned num_events;
-        // one past last used element of events array
-        unsigned last_event;
+        int num_events;
+        // last used element of events array
+        int last_event;
 
         // If null, then we are "by levels".  Otherwise, we are "by events",
-        // and before we're finalized, level_index[k] "points" (index plus one)
-        // to a linked-list of sub-relations that affect level k.
-        // After we're finalized, the events array is sorted, so
-        // level_index[k] is the (actual) index of the first event affecting level k.
+        // and before we're finalized, level_index[k] points to a linked-list
+        // of sub-relations that affect level k.
+        // after we're finalized, the events array is sorted, so
+        // level_index[k] is the index of the first event affecting level k.
         // Dimension is number of variables + 1.
-        unsigned* level_index;
+        int* level_index;
     };
 
 };
@@ -3388,9 +3359,7 @@ class MEDDLY::satpregen_opname : public specialized_opname {
 // *                                                                *
 // ******************************************************************
 
-/** Saturation, transition relations built on the fly, operation names.
-    Implemented in operations/sat_otf.cc
-*/
+/// Saturation, transition relations built on the fly, operation names.
 class MEDDLY::satotf_opname : public specialized_opname {
   public:
     satotf_opname(const char* n);
@@ -3628,7 +3597,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
                                 the ith event at this level;
                                 otherwise, 0.
          */
-        const dd_edge& getEvent(int level, int i) const;
+        node_handle getEvent(int level, int i);
 
         /** Rebuild an event.
 
@@ -3640,8 +3609,10 @@ class MEDDLY::satotf_opname : public specialized_opname {
         /** Build a Monolithic Next State Function that is equivalent to
             the union of all events while restricting the size of each
             variable to that of the largest confirmed index.
+
+            @return             union of bounded OTF events.
         */
-        void getBoundedMonolithicNSF(dd_edge &root) const;
+        node_handle getBoundedMonolithicNSF();
 
         /** Bound all extensible variables
             using the maximum confirmed local state as the bound.
@@ -3669,8 +3640,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
 
       protected:
         void enlargeConfirmedArrays(int level, int sz);
-        // node_handle getBoundedMxd(node_handle mxd, const int* bounds_array, int sz,
-            // std::unordered_map<node_handle, node_handle>& cache);
+        node_handle getBoundedMxd(node_handle mxd, const int* bounds_array, int sz,
+            std::unordered_map<node_handle, node_handle>& cache);
 
       private:
         expert_forest* insetF;
@@ -3717,9 +3688,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
 // *                                                                *
 // ******************************************************************
 
-/** Saturation, transition relations stored implcitly, operation names.
-    Implemented in operations/sat_impl.cc
-*/
+/// Saturation, transition relations stored implcitly, operation names.
 class MEDDLY::satimpl_opname: public specialized_opname {
   public:
 
@@ -4671,7 +4640,7 @@ class MEDDLY::compute_table {
 */
 class MEDDLY::operation {
     const opname* theOpName;
-    unsigned oplist_index;
+    int oplist_index;
     bool is_marked_for_deletion;
 
     // declared and initialized in meddly.cc
@@ -4679,13 +4648,13 @@ class MEDDLY::operation {
     // declared and initialized in meddly.cc
     static operation** op_list;
     // declared and initialized in meddly.cc
-    static unsigned* op_holes;
+    static int* op_holes;
     // declared and initialized in meddly.cc
-    static unsigned list_size;
+    static int list_size;
     // declared and initialized in meddly.cc
-    static unsigned list_alloc;
+    static int list_alloc;
     // declared and initialized in meddly.cc
-    static unsigned free_list;
+    static int free_list;
 
     // should ONLY be called during library cleanup.
     static void destroyAllOps();
@@ -4770,9 +4739,9 @@ class MEDDLY::operation {
 
     // for compute tables.
 
-    unsigned getIndex() const;
-    static operation* getOpWithIndex(unsigned i);
-    static unsigned getOpListSize();
+    int getIndex() const;
+    static operation* getOpWithIndex(int i);
+    static int getOpListSize();
 
     void setFirstETid(unsigned slot);
     unsigned getFirstETid() const;
@@ -4878,8 +4847,8 @@ class MEDDLY::binary_operation : public operation {
 
     // low-level front ends.  TBD - REMOVE THESE BECAUSE THEY BREAK MARK & SWEEP
 
-#ifdef KEEP_LL_COMPUTES
 
+/*
     /// Low-level compute on nodes a and b, return result.
     virtual node_handle compute(node_handle a, node_handle b);
     /// Low-level compute at level k on nodes a and b, return result.
@@ -4896,8 +4865,7 @@ class MEDDLY::binary_operation : public operation {
     /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
     virtual void compute(float av, node_handle ap, float bv, node_handle bp,
       float &cv, node_handle &cp);
-
-#endif
+*/
 
 };
 

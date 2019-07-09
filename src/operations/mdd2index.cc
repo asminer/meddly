@@ -114,7 +114,7 @@ MEDDLY::mdd2index_operation
 #endif
 
   // Initialize node builder
-  const int size = resF->getLevelSize(k);
+  const unsigned size = unsigned(resF->getLevelSize(k));
   unpacked_node* nb = unpacked_node::newFull(resF, k, size);
   
   // Initialize node reader
@@ -127,7 +127,7 @@ MEDDLY::mdd2index_operation
 
   // recurse
   bcard = 0;
-  for (int i=0; i<size; i++) {
+  for (unsigned i=0; i<size; i++) {
     node_handle ddn;
     long dcard = 0;
     compute_r(k-1, A->d(i), ddn, dcard);

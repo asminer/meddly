@@ -44,7 +44,6 @@
 
 // #define DEBUG_CLEANUP
 // #define DEBUG_ADDRESS_RESIZE
-// #define DEBUG_GC
 // #define DEBUG_CREATE_REDUCED
 // #define DEBUG_GC
 // #define DEBUG_WRITE
@@ -57,12 +56,20 @@
 // #define VALIDATE_INCOUNTS
 // #define VALIDATE_INCOUNTS_ON_DELETE
 
-#define SHOW_VALIDATE_CACHECOUNTS
+// #define SHOW_VALIDATE_CACHECOUNTS
 
 // #define GC_OFF
 
 // #define REPORT_ON_DESTROY
 // #define DUMP_ON_FOREST_DESTROY
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                          forest stuff                          *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
 
 // ******************************************************************
 // *                                                                *
@@ -89,13 +96,15 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
   reduction = rel ? IDENTITY_REDUCED : FULLY_REDUCED;
   storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
   deletion = OPTIMISTIC_DELETION;
-  compact_min = 100;
-  compact_max = 1000000;
-  compact_frac = 40;
-  zombieTrigger = 1000000;
-  orphanTrigger = 500000;
-  compactAfterGC = false;
-  compactBeforeExpand = true;
+  // compact_min = 100;
+  // compact_max = 1000000;
+  // compact_frac = 40;
+  // zombieTrigger = 1000000;
+  // orphanTrigger = 500000;
+  // compactAfterGC = false;
+  // compactBeforeExpand = true;
+
+  useReferenceCounts = true;
 
   // nodemm = ORIGINAL_GRID;
   nodemm = ARRAY_PLUS_GRID;
@@ -118,11 +127,13 @@ void MEDDLY::forest::policies::useDefaults(bool rel)
 
 MEDDLY::forest::statset::statset()
 {
+  reachable_scans = 0;
   reclaimed_nodes = 0;
   num_compactions = 0;
   garbage_collections = 0;
-  zombie_nodes = 0;
-  orphan_nodes = 0;
+#ifdef TRACK_UNREACHABLE_NODES
+  unreachable_nodes = 0;
+#endif
   active_nodes = 0;
   peak_active = 0;
   /*
@@ -203,7 +214,7 @@ MEDDLY::forest::policies MEDDLY::forest::mddDefaults;
 MEDDLY::forest::policies MEDDLY::forest::mxdDefaults;
 
 MEDDLY::forest
-::forest(int ds, domain* _d, bool rel, range_type t, edge_labeling ev, 
+::forest(unsigned ds, domain* _d, bool rel, range_type t, edge_labeling ev, 
   const policies &p,int* lrr) : deflt(p)
 {
   // FID
@@ -211,7 +222,7 @@ MEDDLY::forest
   fid = ++gfid;
 
 #ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Creating forest #%d in domain #%d\n", ds, _d->ID());
+  fprintf(stderr, "Creating forest #%u in domain #%d\n", ds, _d->ID());
 #endif
   d_slot = ds;
   is_marked_for_deletion = false;
@@ -292,14 +303,14 @@ MEDDLY::forest
   //
   // Initialize list of registered dd_edges
   //
-  firstHole = -1; // firstHole < 0 indicates no holes.
-  firstFree = 0;
-  sz = 256;
+  firstHole = 0;  // firstHole == 0 indicates no holes.
+  firstFree = 1;  // never use slot 0
+  edge_sz = 256;
 
   // Create an array to store pointers to dd_edges.
-  edge = (edge_data *) malloc(sz * sizeof(edge_data));
-  for (unsigned i = 0; i < sz; ++i) {
-    edge[i].nextHole = -1;
+  edge = (edge_data *) malloc(edge_sz * sizeof(edge_data));
+  for (unsigned i = 0; i < edge_sz; ++i) {
+    edge[i].nextHole = 0;
     edge[i].edge = 0;
   }
 
@@ -313,7 +324,7 @@ MEDDLY::forest
 MEDDLY::forest::~forest()
 {
 #ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Deleting forest #%d in domain #%d\n", d_slot, d->ID());
+  fprintf(stderr, "Deleting forest #%u in domain #%d\n", d_slot, d->ID());
 #endif
   // operations are deleted elsewhere...
   free(opCount);
@@ -337,7 +348,7 @@ void MEDDLY::forest::markForDeletion()
   if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
   // deal with operations associated with this forest
-  for (int i=0; i<szOpCount; i++) 
+  for (unsigned i=0; i<szOpCount; i++) 
     if (opCount[i]) {
       operation* op = operation::getOpWithIndex(i);
       op->markForDeletion();
@@ -486,7 +497,7 @@ void MEDDLY::forest::removeStaleComputeTableEntries()
   if (operation::usesMonolithicComputeTable()) {
     operation::removeStalesFromMonolithic();
   } else {
-    for (int i=0; i<szOpCount; i++) 
+    for (unsigned i=0; i<szOpCount; i++) 
       if (opCount[i]) {
         operation* op = operation::getOpWithIndex(i);
         op->removeStaleComputeTableEntries();
@@ -502,7 +513,7 @@ void MEDDLY::forest::removeAllComputeTableEntries()
     operation::removeStalesFromMonolithic();
     is_marked_for_deletion = false;
   } else {
-    for (int i=0; i<szOpCount; i++) 
+    for (unsigned i=0; i<szOpCount; i++) 
       if (opCount[i]) {
         operation* op = operation::getOpWithIndex(i);
         op->removeAllComputeTableEntries();
@@ -515,7 +526,7 @@ void MEDDLY::forest::showComputeTable(output &s, int verbLevel) const
   if (operation::usesMonolithicComputeTable()) {
     operation::showMonolithicComputeTable(s, verbLevel);
   } else {
-    for (int i=0; i<szOpCount; i++) 
+    for (unsigned i=0; i<szOpCount; i++) 
       if (opCount[i]) {
         operation* op = operation::getOpWithIndex(i);
         op->showComputeTable(s, verbLevel);
@@ -528,8 +539,8 @@ void MEDDLY::forest::registerOperation(const operation* op)
   MEDDLY_DCASSERT(op->getIndex() >= 0);
   if (op->getIndex() >= szOpCount) {
     // need to expand
-    int newSize = ((op->getIndex() / 16) +1 )*16; // expand in chunks of 16
-    int* tmp = (int*) realloc(opCount, newSize * sizeof(int));
+    unsigned newSize = ((op->getIndex() / 16) +1 )*16; // expand in chunks of 16
+    unsigned* tmp = (unsigned*) realloc(opCount, newSize * sizeof(unsigned));
     if (0==tmp) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     for ( ; szOpCount < newSize; szOpCount++) {
       tmp[szOpCount] = 0;
@@ -551,31 +562,32 @@ void MEDDLY::forest::registerEdge(dd_edge& e)
 {
   // add to collection of edges for this forest.
   // change e.index to help find this edge at a later time.
-  if (firstHole >= 0) {
+  if (firstHole) {
     // hole available; fill it up
-    int index = firstHole;
+    unsigned index = firstHole;
     firstHole = edge[firstHole].nextHole;
     edge[index].edge = &e;
-    edge[index].nextHole = -1;
+    edge[index].nextHole = 0;
     e.setIndex(index);
   } else {
     // no holes available, add to end of array
-    if (firstFree >= sz) {
+    if (firstFree >= edge_sz) {
       // expand edge[]
-      int new_sz = sz * 2;
+      unsigned new_sz = edge_sz * 2;
       edge_data* new_edge =
           (edge_data*) realloc(edge, new_sz * sizeof(edge_data));
       if (0 == new_edge) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
       edge = new_edge;
-      for (int i = sz; i < new_sz; ++i)
+      for (unsigned i = edge_sz; i < new_sz; ++i)
       {
-        edge[i].nextHole = -1;
+        edge[i].nextHole = 0;
         edge[i].edge = 0;
       }
-      sz = new_sz;
+      edge_sz = new_sz;
     }
-    MEDDLY_DCASSERT(firstFree < sz);
-    edge[firstFree].nextHole = -1;
+    MEDDLY_DCASSERT(firstFree > 0);
+    MEDDLY_DCASSERT(firstFree < edge_sz);
+    edge[firstFree].nextHole = 0;
     edge[firstFree].edge = &e;
     e.setIndex(firstFree);
     ++firstFree;
@@ -588,12 +600,26 @@ void MEDDLY::forest::unregisterEdge(dd_edge& e)
   // remove this edge from the collection of edges for this forest.
   // change e.index to -1.
   MEDDLY_DCASSERT(e.getIndex() >= 0);
-  int index = e.getIndex();
+  unsigned index = e.getIndex();
   MEDDLY_DCASSERT(edge[index].edge == &e);
-  edge[index].edge = 0;
-  edge[index].nextHole = firstHole;
-  firstHole = index;
-  e.setIndex(-1);
+  e.setIndex(0);
+
+  if (index+1 == firstFree) {
+    //
+    // Instead of adding to the free list,
+    // absorb this "hole" at the end of the array
+    //
+    MEDDLY_DCASSERT(firstFree);
+    firstFree--;
+    MEDDLY_DCASSERT(firstFree);
+  } else {
+    //
+    // Add to the free list
+    //
+    edge[index].edge = 0;
+    edge[index].nextHole = firstHole;
+    firstHole = index;
+  }
 }
 
 
@@ -602,22 +628,25 @@ void MEDDLY::forest::unregisterDDEdges()
   // Go through the list of valid edges (value > 0), and set
   // the e.index to -1 (indicating unregistered edge).
 
+  MEDDLY_DCASSERT(edge);
+  MEDDLY_DCASSERT(0==edge[0].edge);
+
   // ignore the NULLs; release the rest
-  for (unsigned i = 0; i < firstFree; ++i) {
-    if (edge[i].edge != 0) {
-      MEDDLY_DCASSERT(edge[i].nextHole == -1);
+  for (unsigned i = 1; i < firstFree; ++i) {
+    if (edge[i].edge) {
+      MEDDLY_DCASSERT(0==edge[i].nextHole);
       edge[i].edge->clear();
-      edge[i].edge->setIndex(-1);
+      edge[i].edge->setIndex(0);
     }
   }
 
   // firstHole < 0 indicates no holes.
-  for (unsigned i = 0; i < firstFree; ++i) {
-    edge[i].nextHole = -1;
+  for (unsigned i = 1; i < firstFree; ++i) {
+    edge[i].nextHole = 0;
     edge[i].edge = 0;
   }
-  firstHole = -1;
-  firstFree = 0;
+  firstHole = 0;
+  firstFree = 1;
 }
 
 // ******************************************************************
@@ -630,6 +659,14 @@ MEDDLY::forest::edge_visitor::~edge_visitor()
 {
 }
 
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                      expert_forest  stuff                      *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
 
 // ******************************************************************
 // *                                                                *
@@ -699,6 +736,86 @@ MEDDLY::node_handle MEDDLY::expert_forest::float_Tencoder::read(input &s)
 
 // ******************************************************************
 // *                                                                *
+// *                expert_forest::nodecounter class                *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::expert_forest::nodecounter: public edge_visitor {
+    expert_forest* parent;
+    int* counts;
+  public:
+    nodecounter(expert_forest*p, int* c);
+    virtual ~nodecounter();
+    virtual void visit(dd_edge &e);
+};
+
+
+// ******************************************************************
+// *               expert_forest::nodecounter methods               *
+// ******************************************************************
+
+MEDDLY::expert_forest::nodecounter::nodecounter(expert_forest *p, int* c)
+ : edge_visitor()
+{
+  parent = p;
+  counts = c;
+}
+
+MEDDLY::expert_forest::nodecounter::~nodecounter()
+{
+  // DO NOT delete counts.
+}
+
+void MEDDLY::expert_forest::nodecounter::visit(dd_edge &e)
+{
+  int n = e.getNode();
+  if (parent->isTerminalNode(n)) return;
+  MEDDLY_DCASSERT(n>0);
+  MEDDLY_DCASSERT(n<=parent->getLastNode());
+  counts[n]++;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                expert_forest::nodemarker  class                *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::expert_forest::nodemarker: public edge_visitor {
+    expert_forest* parent;
+  public:
+    nodemarker(expert_forest *p);
+    virtual ~nodemarker();
+    virtual void visit(dd_edge &e);
+};
+
+
+// ******************************************************************
+// *               expert_forest::nodemarker  methods               *
+// ******************************************************************
+
+MEDDLY::expert_forest::nodemarker::nodemarker(expert_forest *p)
+ : edge_visitor()
+{
+  parent = p;
+}
+
+MEDDLY::expert_forest::nodemarker::~nodemarker()
+{
+  // nothing to do
+}
+
+void MEDDLY::expert_forest::nodemarker::visit(dd_edge &e)
+{
+  if (e.getForest() != parent) return;
+#ifdef DEBUG_MARK_SWEEP
+  printf("Traversing root node %ld\n", e.getNode());
+#endif
+  parent->markNode(e.getNode());
+}
+
+// ******************************************************************
+// *                                                                *
 // *                                                                *
 // *                     expert_forest  methods                     *
 // *                                                                *
@@ -720,11 +837,11 @@ const unsigned MEDDLY::expert_forest::HOLE_MANAGER_DETAILED   = 0x0200;
 // Display flags
 //
 
-const unsigned int MEDDLY::expert_forest::SHOW_DELETED    = 0x10;
-const unsigned int MEDDLY::expert_forest::SHOW_ZOMBIE     = 0x08;
-const unsigned int MEDDLY::expert_forest::SHOW_DETAILS    = 0x04;
-const unsigned int MEDDLY::expert_forest::SHOW_INDEX      = 0x02;
-const unsigned int MEDDLY::expert_forest::SHOW_TERMINALS  = 0x01;
+const unsigned int MEDDLY::expert_forest::SHOW_DELETED      = 0x10;
+const unsigned int MEDDLY::expert_forest::SHOW_UNREACHABLE  = 0x08;
+const unsigned int MEDDLY::expert_forest::SHOW_DETAILS      = 0x04;
+const unsigned int MEDDLY::expert_forest::SHOW_INDEX        = 0x02;
+const unsigned int MEDDLY::expert_forest::SHOW_TERMINALS    = 0x01;
 
 
 MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
@@ -787,6 +904,28 @@ void MEDDLY::expert_forest::initializeForest()
   //
   nodeMan = deflt.nodestor->createForForest(this, deflt.nodemm);
 
+}
+
+// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+// '                                                                '
+// '                  public mark & sweep  methods                  '
+// '                                                                '
+// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+void MEDDLY::expert_forest::markAllRoots()
+{
+  if (deflt.useReferenceCounts) return;
+
+  stats.reachable_scans++;
+
+#ifdef DEBUG_MARK_SWEEP
+  printf("Determining which nodes are reachable in forest %u\n", FID());
+#endif
+
+  nodeHeaders.clearAllReachableBits();
+  nodemarker foo(this);
+  visitRegisteredEdges(foo);
+  unpacked_node::markBuildListChildren(this);
 }
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -889,6 +1028,8 @@ void MEDDLY::expert_forest::validateIncounts(bool exact)
 
 void MEDDLY::expert_forest::validateCacheCounts() const
 {
+  if (!deflt.useReferenceCounts) return;
+
 #ifdef DEVELOPMENT_CODE
 #ifdef SHOW_VALIDATE_CACHECOUNTS
   printf("Validating cache counts for %ld handles\n", getLastNode());
@@ -942,7 +1083,7 @@ void MEDDLY::expert_forest::countNodesByLevel(long* active) const
   for (; l<=L; l++) active[l] = 0;
 
   for (long p=1; p<=nodeHeaders.lastUsedHandle(); p++) {
-    if (nodeHeaders.isDeactivated(p)) continue; 
+    if (nodeHeaders.isDeleted(p)) continue; 
     active[nodeHeaders.getNodeLevel(p)]++;
   }
 }
@@ -1084,16 +1225,19 @@ bool MEDDLY::expert_forest
   /*
     Deal with cases where nothing will be displayed.
   */
+  bool isReachable = 
+    deflt.useReferenceCounts ? (getNodeInCount(p)) : (hasReachableBit(p)) ;
+
   if (isTerminalNode(p)) {
     if (!(flags & SHOW_TERMINALS))  return false;
   } else 
   if (isDeletedNode(p)) {
     if (!(flags & SHOW_DELETED))    return false;
   } else 
-  if (isZombieNode(p)) {
-    if (!(flags & SHOW_ZOMBIE))     return false;
+  if (!isReachable) {
+    if (!(flags & SHOW_UNREACHABLE))     return false;
   }
-
+  
   /*
     Show the node index, if selected.
   */
@@ -1114,9 +1258,8 @@ bool MEDDLY::expert_forest
     s << "DELETED";
     return true;
   }
-  if (isZombieNode(p)) {
-    s << "Zombie cc: " <<  nodeHeaders.getNodeCacheCount(p);
-    return true;
+  if (!isReachable) {
+    s << "Unreachable ";
   }
 
   /*
@@ -1124,15 +1267,7 @@ bool MEDDLY::expert_forest
   */
   if (flags & SHOW_DETAILS) {
     // node: was already written.
-    const variable* v = getDomain()->getVar(getVarByLevel(ABS(getNodeLevel(p))));
-    if (v->getName()) {
-      s << " level: " << v->getName();
-    } else {
-      s << " level: " <<  ABS(getNodeLevel(p));
-    }
-    s.put( (getNodeLevel(p) < 0) ? '\'' : ' ' );
-    s << " in: " << getNodeInCount(p);
-    s << " cc: " << nodeHeaders.getNodeCacheCount(p);
+    nodeHeaders.showHeader(s, p);
   } else {
     s << "node: " << long(p);
   }
@@ -1329,6 +1464,7 @@ void MEDDLY::expert_forest
     s << " peak memory allocated\n";
   }
   if (flags & EXTRA_STATS) {
+    s << pad << stats.reachable_scans << " scans for reachable nodes\n";
     s << pad << stats.reclaimed_nodes << " reclaimed nodes\n";
     s << pad << stats.num_compactions << " compactions\n";
     s << pad << stats.garbage_collections << " garbage collections\n";
@@ -1648,6 +1784,8 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
   }
 }
 
+/*
+
 void MEDDLY::expert_forest::garbageCollect()
 {
   if (performing_gc) return;
@@ -1702,6 +1840,8 @@ void MEDDLY::expert_forest::compactMemory()
 {
   nodeMan->collectGarbage(true);
 }
+
+*/
 
 void MEDDLY::expert_forest::showInfo(output &s, int verb)
 {
@@ -1848,8 +1988,9 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 {
 #ifdef TRACK_DELETIONS
   for (int i=0; i<delete_depth; i++) printf(" ");
-  printf("Deleting node ");
-  showNode(stdout, p, SHOW_INDEX | SHOW_DETAILS);
+  printf("Forest %u deleting node ", FID());
+  FILE_output s(stdout);
+  showNode(s, p, SHOW_INDEX | SHOW_DETAILS | SHOW_UNREACHABLE);
   printf("\n");
   fflush(stdout);
 #endif
@@ -1858,8 +1999,12 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 #endif
 
   MEDDLY_DCASSERT(isValidNonterminalIndex(p));
-  MEDDLY_DCASSERT(getNodeInCount(p) == 0);
   MEDDLY_DCASSERT(isActiveNode(p));
+  if (deflt.useReferenceCounts) {
+    MEDDLY_DCASSERT(getNodeInCount(p) == 0);
+  } else {
+    MEDDLY_DCASSERT(!hasReachableBit(p));
+  }
 
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
@@ -1885,15 +2030,15 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 
 #ifdef TRACK_DELETIONS
   // start at one, because we have incremented the depth
-  for (int i=1; i<delete_depth; i++) printf(" "); 
-  printf("%s: p = %d, unique->remove(p) = %d\n", __func__, p, x);
-  fflush(stdout);
+  // for (int i=1; i<delete_depth; i++) printf(" "); 
+  // printf("%s: p = %d, unique->remove(p) = %d\n", __func__, p, x);
+  // fflush(stdout);
 #endif
-
-  MEDDLY_DCASSERT(0==getNodeInCount(p));
 
   // unlink children and recycle node memory
   nodeMan->unlinkDownAndRecycle(getNodeAddress(p));
+  setNodeAddress(p, 0);
+  nodeHeaders.deactivate(p);
 
   // if (nodeMan.compactLevel) nodeMan.compact(false);
 
@@ -1938,7 +2083,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
       if (isIdentityEdge(nb, 0)) {
 #ifdef DEBUG_CREATE_REDUCED
         printf("Identity node ");
-        showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        FILE_output s(stdout);
+        showNode(s, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
         printf("\n");
 #endif
         return nb.d(0);
@@ -1952,7 +2098,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
         for (int i = 1; i<nnz; i++)  unlinkNode(nb.d(i));  
 #ifdef DEBUG_CREATE_REDUCED
         printf("Redundant node ");
-        showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        FILE_output s(stdout);
+        showNode(s, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
         printf("\n");
 #endif
         return nb.d(0);
@@ -1972,7 +2119,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
       if (in < nb.getSize() && isIdentityEdge(nb, in)) {
 #ifdef DEBUG_CREATE_REDUCED
         printf("Identity node ");
-        showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        FILE_output s(stdout);
+        showNode(s, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
         printf("\n");
 #endif
         return nb.d(in);
@@ -1986,7 +2134,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
         for (int i = 1; i<nb.getSize(); i++)  unlinkNode(nb.d(i));
 #ifdef DEBUG_CREATE_REDUCED
         printf("Redundant node ");
-        showNode(stdout, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        FILE_output s(stdout);
+        showNode(s, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
         printf("\n");
 #endif
         return nb.d(0);
@@ -2017,14 +2166,19 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   // NOW is the best time to run the garbage collector, if necessary.
 #ifndef GC_OFF
-  if (isTimeToGc()) garbageCollect();
+  // if (isTimeToGc()) garbageCollect();
 #endif
 
   // Grab a new node
   node_handle p = nodeHeaders.getFreeNodeHandle();
   nodeHeaders.setNodeLevel(p, nb.getLevel());
-  MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
-  MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
+  if (deflt.useReferenceCounts) {
+    MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
+    MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
+  } else {
+    nodeHeaders.setReachableBit(p);
+    nodeHeaders.setInCacheBit(p);
+  }
 
   stats.incActive(1);
   if (theLogger && theLogger->recordingNodeCounts()) {
@@ -2048,7 +2202,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
 #endif
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node ");
-  showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
+  FILE_output s(stdout);
+  showNode(s, p, SHOW_DETAILS | SHOW_INDEX);
   printf("\n");
 #endif
 
@@ -2066,7 +2221,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   
   // NOW is the best time to run the garbage collector, if necessary.
 #ifndef GC_OFF
-  if (isTimeToGc()) garbageCollect();
+  // if (isTimeToGc()) garbageCollect();
 #endif
   
   // Grab a new node
@@ -2089,7 +2244,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
   
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node ");
-  showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
+  FILE_output s(stdout);
+  showNode(s, p, SHOW_DETAILS | SHOW_INDEX);
   printf("\n");
 #endif
   
@@ -2129,7 +2285,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
     MEDDLY_DCASSERT(nnz == 1 && nb.ext_i() == 0);
 #ifdef DEBUG_CREATE_REDUCED
     printf("Redundant node ");
-    showNode(stdout, nb.ext_d(), SHOW_DETAILS | SHOW_INDEX);
+    FILE_output s(stdout);
+    showNode(s, nb.ext_d(), SHOW_DETAILS | SHOW_INDEX);
     printf("\n");
 #endif
     return nb.ext_d();
@@ -2151,7 +2308,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   // NOW is the best time to run the garbage collector, if necessary.
 #ifndef GC_OFF
-  if (isTimeToGc()) garbageCollect();
+  // if (isTimeToGc()) garbageCollect();
 #endif
 
   // Expand level size
@@ -2189,7 +2346,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
 #endif
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node ");
-  showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
+  FILE_output s(stdout);
+  showNode(s, p, SHOW_DETAILS | SHOW_INDEX);
   printf("\n");
 #endif
 
@@ -2231,7 +2389,8 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_nod
 #endif
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node ");
-  showNode(stdout, p, SHOW_DETAILS | SHOW_INDEX);
+  FILE_output s(stdout);
+  showNode(s, p, SHOW_DETAILS | SHOW_INDEX);
   printf("\n");
 #endif
 
@@ -2246,11 +2405,27 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
     case policies::FULLY_REDUCED:
       if (nb.isSparse()) {
         for (int z=0; z<nb.getNNZs(); z++) {
-          MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(z))));
+          if (isTerminalNode(nb.d(z))) continue;
+          MEDDLY_DCASSERT(!isDeletedNode(nb.d(z)));
+          if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(z)))) continue;
+          FILE_output s(stdout);
+          s << "Down pointer violation in created node at level " << nb.getLevel() << ":\n";
+          nb.show(s, true);
+          s << "\nPointer " << nb.d(z) << " at level " << getNodeLevel(nb.d(z)) << ":\n";
+          showNode(s, nb.d(z), SHOW_DETAILS);
+          MEDDLY_DCASSERT(0);
         } 
       } else {
         for (int i=0; i<nb.getSize(); i++) {
-          MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(i))));
+          if (isTerminalNode(nb.d(i))) continue;
+          MEDDLY_DCASSERT(!isDeletedNode(nb.d(i)));
+          if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(i)))) continue;
+          FILE_output s(stdout);
+          s << "Down pointer violation in created node at level " << nb.getLevel() << ":\n";
+          nb.show(s, true);
+          s << "\nPointer " << nb.d(i) << " at level " << getNodeLevel(nb.d(i)) << ":\n";
+          showNode(s, nb.d(i), SHOW_DETAILS);
+          MEDDLY_DCASSERT(0);
         }
       }
       break;
@@ -2283,31 +2458,4 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
 }
 
 
-
-// ******************************************************************
-// *                                                                *
-// *               expert_forest::nodecounter methods               *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::expert_forest::nodecounter::nodecounter(expert_forest *p, int* c)
- : edge_visitor()
-{
-  parent = p;
-  counts = c;
-}
-
-MEDDLY::expert_forest::nodecounter::~nodecounter()
-{
-  // DO NOT delete counts.
-}
-
-void MEDDLY::expert_forest::nodecounter::visit(dd_edge &e)
-{
-  int n = e.getNode();
-  if (parent->isTerminalNode(n)) return;
-  MEDDLY_DCASSERT(n>0);
-  MEDDLY_DCASSERT(n<=parent->getLastNode());
-  counts[n]++;
-}
 

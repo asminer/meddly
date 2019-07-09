@@ -30,7 +30,7 @@
 int* MEDDLY::ev_forest::order;
 int  MEDDLY::ev_forest::order_size;
 
-MEDDLY::ev_forest::ev_forest(int dsl, domain *d, bool rel,
+MEDDLY::ev_forest::ev_forest(unsigned dsl, domain *d, bool rel,
   range_type t, edge_labeling ev, const policies &p, int* level_reduction_rule)
 : expert_forest(dsl, d, rel, t, ev, p, level_reduction_rule)
 {
@@ -73,7 +73,7 @@ void MEDDLY::ev_forest::enlargeStatics(int n)
 {
   MEDDLY_DCASSERT(n>0);
   if (n>order_size) {
-    order = (int*) realloc(order, n*sizeof(int));
+    order = (int*) realloc(order, unsigned(n)*sizeof(int));
     //terminals = (node_handle*) realloc(terminals, n*sizeof(node_handle));
     //if (0==order || 0==terminals) {
     if (0==order) {

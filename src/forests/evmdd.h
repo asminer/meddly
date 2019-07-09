@@ -28,7 +28,7 @@ namespace MEDDLY {
 
 class MEDDLY::evmdd_forest : public ev_forest {
   public:
-    evmdd_forest(int dsl, domain* d, range_type t, edge_labeling ev, 
+    evmdd_forest(unsigned dsl, domain* d, range_type t, edge_labeling ev, 
       const policies &p, int* level_reduction_rule=NULL);
 
     virtual void swapAdjacentVariables(int level);
@@ -168,14 +168,14 @@ namespace MEDDLY {
         }
 
         // size of variables at level k
-        int lastV = F->getLevelSize(k);
+        unsigned lastV = unsigned(F->getLevelSize(k));
         // index of end of current batch
         int batchP = start;
 
         //
         // Move any "don't cares" to the front, and process them
         //
-        int nextV = lastV;
+        unsigned nextV = lastV;
         for (int i=start; i<stop; i++) {
           if (DONT_CARE == unprimed(i, k)) {
             if (batchP != i) {
@@ -184,22 +184,24 @@ namespace MEDDLY {
             batchP++;
           } else {
             MEDDLY_DCASSERT(unprimed(i, k) >= 0);
-            nextV = MIN(nextV, unprimed(i, k));
+            nextV = MIN(nextV, unsigned(unprimed(i, k)));
           }
         }
-        T dc_val;
-        node_handle dc_ptr;
+        dd_edge dontcare(F);
         if (batchP > start) {
+          T dc_val;
+          node_handle dc_ptr;
           createEdge(k-1, start, batchP, dc_val, dc_ptr);
+          dontcare.set(dc_ptr, dc_val);
         } else {
-          OPERATION::makeEmptyEdge(dc_val, dc_ptr);
+          OPERATION::makeEmptyEdge(dontcare);
         }
 
         //
         // Start new node at level k
         //
         unpacked_node* nb = unpacked_node::newSparse(F, k, lastV);
-        int z = 0; // number of nonzero edges in our sparse node
+        unsigned z = 0; // number of nonzero edges in our sparse node
 
         //
         // For each value v, 
@@ -207,9 +209,11 @@ namespace MEDDLY {
         //  (2) process them, if any
         //  (3) union with don't cares
         //
-        for (int v = (dc_ptr) ? 0 : nextV; 
+        dd_edge these(F);
+
+        for (unsigned v = (dontcare.getNode()) ? 0 : nextV; 
              v<lastV; 
-             v = (dc_ptr) ? v+1 : nextV) 
+             v = (dontcare.getNode()) ? v+1 : nextV) 
         {
           nextV = lastV;
           //
@@ -228,62 +232,59 @@ namespace MEDDLY {
               }
               batchP++;
             } else {
-              nextV = MIN(nextV, unprimed(i, k));
+              nextV = MIN(nextV, unsigned(unprimed(i, k)));
             }
-          }
+          } // for i
 
           //
           // (2) recurse if necessary
           //
-          T these_val;
-          node_handle these_ptr;
           if (batchP > start) {
+            T these_val;
+            node_handle these_ptr;
             createEdge(k-1, start, batchP, these_val, these_ptr);
+            these.set(these_ptr, these_val);
           } else {
-            OPERATION::makeEmptyEdge(these_val, these_ptr);
+            OPERATION::makeEmptyEdge(these);
           }
 
           //
           // (3) union with don't cares
           //
-          T total_val;
-          node_handle total_ptr;
-          if (dc_ptr && these_ptr) {
-            if (0==unionOp) {
-              throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-            }
-            MEDDLY_DCASSERT(unionOp);
-            unionOp->compute(dc_val, dc_ptr, these_val, these_ptr, 
-              total_val, total_ptr);
-          } else {
-            if (dc_ptr) {
-              total_val = dc_val;
-              total_ptr = F->linkNode(dc_ptr);
+          if (dontcare.getNode()) {
+            if (these.getNode()) {
+              // Need to do a union
+              if (0==unionOp) {
+                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+              }
+              MEDDLY_DCASSERT(unionOp);
+              unionOp->compute(dontcare, these, these);
             } else {
-              total_val = these_val;
-              total_ptr = F->linkNode(these_ptr);
+              these = dontcare;
             }
           }
-          F->unlinkNode(these_ptr);
 
           //
           // add to sparse node, unless empty
           //
-          if (0==total_ptr) continue;
+          if (0==these.getNode()) continue;
           nb->i_ref(z) = v;
-          nb->d_ref(z) = total_ptr;
-          nb->setEdge(z, total_val);
+          nb->d_ref(z) = F->linkNode(these);
+          T temp;
+          these.getEdgeValue(temp);
+          nb->setEdge(z, temp);
           z++;
         } // for v
 
         //
         // Cleanup
         //
-        F->unlinkNode(dc_ptr);
+        // F->unlinkNode(dc_ptr);
         nb->shrinkSparse(z);
 
         F->createReducedNode(-1, nb, ev, ed);
-      };
+
+      }; // method createEdge
 
   }; // class evmdd_edgemaker
 

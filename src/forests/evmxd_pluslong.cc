@@ -29,7 +29,7 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmxd_pluslong::evmxd_pluslong(int dsl, domain *d, const policies &p, int* level_reduction_rule)
+MEDDLY::evmxd_pluslong::evmxd_pluslong(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule)
  : evmxd_forest(dsl, d, INTEGER, EVPLUS, p, level_reduction_rule)
 {
   // Edge's are longs and are NOT hashed.

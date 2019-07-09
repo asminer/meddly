@@ -124,6 +124,7 @@ void MEDDLY::constrained_bckwd_bfs_evplus::compute(const dd_edge& a, const dd_ed
   }
   imageOp = getOperation(PRE_IMAGE, argF, transF, resF);
 
+  /*
   long aev = Inf<long>();
   a.getEdgeValue(aev);
   long bev = Inf<long>();
@@ -131,12 +132,16 @@ void MEDDLY::constrained_bckwd_bfs_evplus::compute(const dd_edge& a, const dd_ed
   long cev = Inf<long>();
   node_handle cnode = 0;
   iterate(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, cnode);
+  */
+  iterate(a, b, r, res);
 
-  res.set(cnode, cev);
+  // res.set(cnode, cev);
 }
 
-void MEDDLY::constrained_bckwd_bfs_evplus::iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
+//void MEDDLY::constrained_bckwd_bfs_evplus::iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
+void MEDDLY::constrained_bckwd_bfs_evplus::iterate(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& c)
 {
+  /*
   cev = bev;
   MEDDLY_DCASSERT(argF == resF);
   c = resF->linkNode(b);
@@ -155,6 +160,15 @@ void MEDDLY::constrained_bckwd_bfs_evplus::iterate(long aev, node_handle a, long
     resF->unlinkNode(t);
   }
   resF->unlinkNode(prev);
+  */
+  c = b;
+  dd_edge prev(resF), t(resF);
+  while (prev != c) {
+    prev = c;
+    imageOp->compute(c, r, t);
+    plusOp->compute(t, a, t);
+    minOp->compute(c, t, c);
+  }
 }
 
 // ******************************************************************
@@ -271,35 +285,33 @@ void MEDDLY::constrained_dfs_mt::saveResult(compute_table::entry_key* key,
 
 
 // Partition the nsf based on "top level"
-void MEDDLY::constrained_dfs_mt::splitMxd(node_handle mxd)
+void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
 {
   MEDDLY_DCASSERT(transF);
   MEDDLY_DCASSERT(splits == nullptr);
 
-  splits = new node_handle[transF->getNumVariables() + 1];
-  splits[0] = 0;
+  splits = new dd_edge[transF->getNumVariables() + 1];
 
-  // we'll be unlinking later, so...
-  transF->linkNode(mxd);
+  dd_edge maxDiag(transF), root(mxd), Rpdi(transF);
 
   // Build from top down
   for (int level = transF->getNumVariables(); level > 0; level--) {
-    if (mxd == 0) {
+    splits[level].setForest(transF);
+
+    if (root.getNode() == 0) {
       // common and easy special case
-      splits[level] = 0;
       continue;
     }
 
-    int mxdLevel = transF->getNodeLevel(mxd);
+    int mxdLevel = root.getLevel();
     MEDDLY_DCASSERT(ABS(mxdLevel) <= level);
 
     // Initialize readers
     unpacked_node* Ru = isLevelAbove(level, mxdLevel)
-      ? unpacked_node::newRedundant(transF, level, mxd, true)
-      : unpacked_node::newFromNode(transF, mxd, true);
+      ? unpacked_node::newRedundant(transF, level, root.getNode(), true)
+      : unpacked_node::newFromNode(transF, root.getNode(), true);
 
     bool first = true;
-    node_handle maxDiag;
 
     // Read "rows"
     for (int i = 0; i < Ru->getSize(); i++) {
@@ -311,12 +323,11 @@ void MEDDLY::constrained_dfs_mt::splitMxd(node_handle mxd)
 
       // Intersect along the diagonal
       if (first) {
-        maxDiag = transF->linkNode(Rp->d(i));
+        maxDiag.set( transF->linkNode(Rp->d(i)) );
         first = false;
       } else {
-        node_handle nmd = mxdIntersectionOp->compute(maxDiag, Rp->d(i));
-        transF->unlinkNode(maxDiag);
-        maxDiag = nmd;
+        Rpdi.set( transF->linkNode(Rp->d(i)) );
+        mxdIntersectionOp->compute(maxDiag, Rpdi, maxDiag);
       }
 
       // cleanup
@@ -324,9 +335,8 @@ void MEDDLY::constrained_dfs_mt::splitMxd(node_handle mxd)
     } // for i
 
     // maxDiag is what we can split from here
-    splits[level] = mxdDifferenceOp->compute(mxd, maxDiag);
-    transF->unlinkNode(mxd);
-    mxd = maxDiag;
+    mxdDifferenceOp->compute(root, maxDiag, splits[level]);
+    root = maxDiag;
 
     // Cleanup
     unpacked_node::recycle(Ru);
@@ -351,6 +361,9 @@ void MEDDLY::constrained_dfs_mt::compute(const dd_edge& a, const dd_edge& b, con
   if (a.getNode() == 0) {
     c = smart_cast<expert_forest*>(resF)->linkNode(b.getNode());
   } else {
+    // Partition NSF by levels
+    splitMxd(r);
+
     _compute(a.getNode(), b.getNode(), r.getNode(), c);
   }
   res.set(c);
@@ -359,9 +372,6 @@ void MEDDLY::constrained_dfs_mt::compute(const dd_edge& a, const dd_edge& b, con
 void MEDDLY::constrained_dfs_mt::_compute(node_handle a, node_handle b, node_handle r,
   node_handle& c)
 {
-  // Partition NSF by levels
-  splitMxd(r);
-
   // Execute saturation operation
   constrained_saturation_mt* bckwdSatOp = new constrained_saturation_mt(this, consF, argF, resF);
   bckwdSatOp->saturate(a, b, c);
@@ -370,9 +380,6 @@ void MEDDLY::constrained_dfs_mt::_compute(node_handle a, node_handle b, node_han
 //  bckwdSatOp->removeAllComputeTableEntries();
   //delete bckwdSatOp;
 //  removeAllComputeTableEntries();
-  for (int i = transF->getNumVariables(); i > 0; i--) {
-    transF->unlinkNode(splits[i]);
-  }
   delete[] splits;
   splits = nullptr;
 }
@@ -393,22 +400,24 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
 {
   MEDDLY_DCASSERT(a != 0);
 
-  node_handle mxd = splits[nb.getLevel()];
-  if (mxd == 0) {
+  const dd_edge& mxd = splits[nb.getLevel()];
+  if (mxd.getNode() == 0) {
     return;
   }
 
-  const int mxdLevel = transF->getNodeLevel(mxd);
+  const int mxdLevel = mxd.getLevel();
   MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
   // Initialize mxd readers, note we might skip the unprimed level
   unpacked_node* Ru = (mxdLevel < 0)
-    ? unpacked_node::newRedundant(transF, nb.getLevel(), mxd, true)
-    : unpacked_node::newFromNode(transF, mxd, true);
+    ? unpacked_node::newRedundant(transF, nb.getLevel(), mxd.getNode(), true)
+    : unpacked_node::newFromNode(transF, mxd.getNode(), true);
 
   unpacked_node* A = isLevelAbove(nb.getLevel(), consF->getNodeLevel(a))
     ? unpacked_node::newRedundant(consF, nb.getLevel(), a, true)
     : unpacked_node::newFromNode(consF, a, true);
+
+  dd_edge nbdj(resF), newst(resF);
 
   // indices to explore
   std::deque<int> queue;
@@ -468,16 +477,11 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
           nb.d_ref(j) = rec;
         }
         else {
-          node_handle acc = unionOp->compute(nb.d(j), rec);
-          resF->unlinkNode(rec);
-          if (acc != nb.d(j)) {
-            resF->unlinkNode(nb.d(j));
-            nb.d_ref(j) = acc;
-          }
-          else {
-            resF->unlinkNode(acc);
-            updated = false;
-          }
+          nbdj.set(nb.d(j));  // clobber
+          newst.set(rec);     // clobber
+          unionOp->compute(nbdj, newst, nbdj);
+          updated = (nbdj.getNode() != nb.d(j));
+          nb.set_d(j, nbdj);
         }
 
         if (updated) {
@@ -530,6 +534,8 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
   const int rLevel = transF->getNodeLevel(r);
   const int level = MAX(MAX(ABS(rLevel), bLevel), aLevel);
   const int size = resF->getLevelSize(level);
+
+  dd_edge Tdj(resF), newst(resF);
 
   // Initialize evmdd reader
   unpacked_node* A = isLevelAbove(level, aLevel)
@@ -596,12 +602,10 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
         }
 
         // there's new states and existing states; union them.
-        const node_handle oldj = T->d(j);
-        node_handle newstates = unionOp->compute(n, oldj);
-        T->d_ref(j) = newstates;
-
-        resF->unlinkNode(oldj);
-        resF->unlinkNode(n);
+        Tdj.set(T->d(j));
+        newst.set(n);
+        unionOp->compute(newst, Tdj, Tdj);
+        T->set_d(j, Tdj);
       } // for j
 
       unpacked_node::recycle(Rp);
@@ -636,22 +640,24 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
 {
   MEDDLY_DCASSERT(a != 0);
 
-  node_handle mxd = splits[nb.getLevel()];
-  if (mxd == 0) {
+  const dd_edge& mxd = splits[nb.getLevel()];
+  if (mxd.getNode() == 0) {
     return;
   }
 
-  const int mxdLevel = transF->getNodeLevel(mxd);
+  const int mxdLevel = mxd.getLevel();
   MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
   // Initialize mxd readers, note we might skip the unprimed level
   unpacked_node* Ru = (mxdLevel < 0)
-    ? unpacked_node::newRedundant(transF, nb.getLevel(), mxd, false)
-    : unpacked_node::newFromNode(transF, mxd, false);
+    ? unpacked_node::newRedundant(transF, nb.getLevel(), mxd.getNode(), false)
+    : unpacked_node::newFromNode(transF, mxd.getNode(), false);
 
   unpacked_node* A = isLevelAbove(nb.getLevel(), consF->getNodeLevel(a))
     ? unpacked_node::newRedundant(consF, nb.getLevel(), a, true)
     : unpacked_node::newFromNode(consF, a, true);
+
+  dd_edge nbdi(resF), newst(resF);
 
   // indices to explore
   std::deque<int> queue;
@@ -714,16 +720,11 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
           nb.d_ref(i) = rec;
         }
         else {
-          node_handle acc = unionOp->compute(nb.d(i), rec);
-          resF->unlinkNode(rec);
-          if (acc != nb.d(i)) {
-            resF->unlinkNode(nb.d(i));
-            nb.d_ref(i) = acc;
-          }
-          else {
-            resF->unlinkNode(acc);
-            updated = false;
-          }
+          nbdi.set(nb.d(i));  // clobber
+          newst.set(rec);     // clobber
+          unionOp->compute(nbdi, newst, nbdi);
+          updated = (nbdi.getNode() != nb.d(i));
+          nb.set_d(i, nbdi);
         }
 
         if (updated) {
@@ -783,6 +784,8 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
     ? unpacked_node::newRedundant(argF, level, b, true)
     : unpacked_node::newFromNode(argF, b, true);
 
+  dd_edge Tdi(resF), newst(resF);
+
   unpacked_node* T = unpacked_node::newFull(resF, level, size);
   if (ABS(rLevel) < level) {
     // Assume identity reduction
@@ -840,12 +843,10 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
         }
 
         // there's new states and existing states; union them.
-        const node_handle oldi = T->d(i);
-        node_handle newstates = unionOp->compute(n, oldi);
-        T->d_ref(i) = newstates;
-
-        resF->unlinkNode(oldi);
-        resF->unlinkNode(n);
+        Tdi.set(T->d(i));
+        newst.set(n);
+        unionOp->compute(newst, Tdi, Tdi);
+        T->set_d(i, Tdi);
       } // for j
 
       unpacked_node::recycle(Rp);
@@ -1086,35 +1087,33 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saveResult(compute_table::entry_key* 
 
 
 // Partition the nsf based on "top level"
-void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(node_handle mxd)
+void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
 {
   MEDDLY_DCASSERT(transF);
   MEDDLY_DCASSERT(splits == nullptr);
 
-  splits = new node_handle[transF->getNumVariables() + 1];
-  splits[0] = 0;
+  splits = new dd_edge[transF->getNumVariables() + 1];
 
   // we'll be unlinking later, so...
-  transF->linkNode(mxd);
+  dd_edge root(mxd), maxDiag(transF), Rpdi(transF);
 
   // Build from top down
   for (int level = transF->getNumVariables(); level > 0; level--) {
-    if (mxd == 0) {
+    splits[level].setForest(transF);
+    if (root.getNode() == 0) {
       // common and easy special case
-      splits[level] = 0;
       continue;
     }
 
-    int mxdLevel = transF->getNodeLevel(mxd);
+    int mxdLevel = root.getLevel();
     MEDDLY_DCASSERT(ABS(mxdLevel) <= level);
 
     // Initialize readers
     unpacked_node* Ru = isLevelAbove(level, mxdLevel)
-      ? unpacked_node::newRedundant(transF, level, mxd, true)
-      : unpacked_node::newFromNode(transF, mxd, true);
+      ? unpacked_node::newRedundant(transF, level, root.getNode(), true)
+      : unpacked_node::newFromNode(transF, root.getNode(), true);
 
     bool first = true;
-    node_handle maxDiag;
 
     // Read "rows"
     for (int i = 0; i < Ru->getSize(); i++) {
@@ -1126,12 +1125,11 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(node_handle mxd)
 
       // Intersect along the diagonal
       if (first) {
-        maxDiag = transF->linkNode(Rp->d(i));
+        maxDiag.set( transF->linkNode(Rp->d(i)) );
         first = false;
       } else {
-        node_handle nmd = mxdIntersectionOp->compute(maxDiag, Rp->d(i));
-        transF->unlinkNode(maxDiag);
-        maxDiag = nmd;
+        Rpdi.set( transF->linkNode(Rp->d(i)) );
+        mxdIntersectionOp->compute(maxDiag, Rpdi, maxDiag);
       }
 
       // cleanup
@@ -1139,9 +1137,8 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(node_handle mxd)
     } // for i
 
     // maxDiag is what we can split from here
-    splits[level] = mxdDifferenceOp->compute(mxd, maxDiag);
-    transF->unlinkNode(mxd);
-    mxd = maxDiag;
+    mxdDifferenceOp->compute(root, maxDiag, splits[level]);
+    root = maxDiag;
 
     // Cleanup
     unpacked_node::recycle(Ru);
@@ -1162,6 +1159,9 @@ void MEDDLY::constrained_bckwd_dfs_evplus::compute(const dd_edge& a, const dd_ed
 {
   MEDDLY_DCASSERT(res.getForest() == resF);
 
+  // Partition NSF by levels
+  splitMxd(r);
+
   long aev = Inf<long>();
   a.getEdgeValue(aev);
   long bev = Inf<long>();
@@ -1176,9 +1176,6 @@ void MEDDLY::constrained_bckwd_dfs_evplus::compute(const dd_edge& a, const dd_ed
 void MEDDLY::constrained_bckwd_dfs_evplus::_compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
   long& cev, node_handle& c)
 {
-  // Partition NSF by levels
-  splitMxd(r);
-
   // Execute saturation operation
   constrained_saturation_evplus* bckwdSatOp = new constrained_saturation_evplus(this, consF, argF, resF);
   bckwdSatOp->saturate(aev, a, bev, b, cev, c);
@@ -1187,9 +1184,6 @@ void MEDDLY::constrained_bckwd_dfs_evplus::_compute(int aev, node_handle a, int 
 //  bckwdSatOp->removeAllComputeTableEntries();
   //delete bckwdSatOp;
 //  removeAllComputeTableEntries();
-  for (int i = transF->getNumVariables(); i > 0; i--) {
-    transF->unlinkNode(splits[i]);
-  }
   delete[] splits;
   splits = nullptr;
 }
@@ -1198,18 +1192,18 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
 {
   MEDDLY_DCASSERT(a != 0);
 
-  node_handle mxd = splits[nb.getLevel()];
-  if (mxd == 0) {
+  const dd_edge& mxd = splits[nb.getLevel()];
+  if (mxd.getNode() == 0) {
     return;
   }
 
-  const int mxdLevel = transF->getNodeLevel(mxd);
+  const int mxdLevel = mxd.getLevel();
   MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
   // Initialize mxd readers, note we might skip the unprimed level
   unpacked_node* Ru = (mxdLevel < 0)
-    ? unpacked_node::newRedundant(transF, nb.getLevel(), mxd, false)
-    : unpacked_node::newFromNode(transF, mxd, false);
+    ? unpacked_node::newRedundant(transF, nb.getLevel(), mxd.getNode(), false)
+    : unpacked_node::newFromNode(transF, mxd.getNode(), false);
 
   unpacked_node* A = isLevelAbove(nb.getLevel(), consF->getNodeLevel(a))
     ? unpacked_node::newRedundant(consF, nb.getLevel(), 0L, a, true)
@@ -1237,6 +1231,8 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
         : unpacked_node::newIdentity(transF, -nb.getLevel(), i, Ru->d(iz), true);
     }
   }
+
+  dd_edge nbdi(resF), newst(resF);
 
   // explore indexes
   while (!queue.empty()) {
@@ -1285,6 +1281,12 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
           nb.d_ref(i) = rec;
         }
         else {
+          nbdi.set(nb.d(i), nb.ei(i));
+          newst.set(rec, recev);
+          minOp->compute(nbdi, newst, nbdi);
+          updated = (nbdi.getNode() != nb.d(i));
+          nb.set_de(i, nbdi);
+/*
           long accev = Inf<long>();
           node_handle acc = 0;
           minOp->compute(nb.ei(i), nb.d(i), recev, rec, accev, acc);
@@ -1299,6 +1301,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
             resF->unlinkNode(acc);
             updated = false;
           }
+*/
         }
 
         if (updated) {
@@ -1312,7 +1315,8 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
               waiting[i] = true;
             }
           }
-        }
+        } // if updated
+
       }
     }
   }
@@ -1385,6 +1389,8 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
       T->d_ref(i) = 0;
     }
 
+    dd_edge Tdi(resF), newst(resF);
+
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node* Ru = (rLevel < 0)
       ? unpacked_node::newRedundant(transF, -rLevel, r, false)
@@ -1426,6 +1432,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
         }
 
         // there's new states and existing states; union them.
+        /*
         const node_handle oldi = T->d(i);
         long newev = Inf<long>();
         node_handle newstates = 0;
@@ -1435,6 +1442,13 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
 
         resF->unlinkNode(oldi);
         resF->unlinkNode(n);
+*/
+
+        // there's new states and existing states; union them.
+        Tdi.set(T->d(i), T->ei(i));
+        newst.set(n, nev);
+        minOp->compute(newst, Tdi, Tdi);
+        T->set_de(i, Tdi);
       } // for j
 
       unpacked_node::recycle(Rp);

@@ -95,6 +95,7 @@ void MEDDLY::transitive_closure_forwd_bfs::compute(const dd_edge &a, const dd_ed
   MEDDLY_DCASSERT(transF == r.getForest());
   MEDDLY_DCASSERT(resF == res.getForest());
 
+  /*
   long aev = Inf<long>();
   a.getEdgeValue(aev);
   long bev = Inf<long>();
@@ -104,8 +105,11 @@ void MEDDLY::transitive_closure_forwd_bfs::compute(const dd_edge &a, const dd_ed
   iterate(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, cnode);
 
   res.set(cnode, cev);
+  */
+  iterate(a, b, r, res);
 }
 
+/*
 void MEDDLY::transitive_closure_forwd_bfs::iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
 {
   cev = bev;
@@ -125,6 +129,26 @@ void MEDDLY::transitive_closure_forwd_bfs::iterate(long aev, node_handle a, long
     resF->unlinkNode(t);
   }
   resF->unlinkNode(prev);
+}
+*/
+
+void MEDDLY::transitive_closure_forwd_bfs::iterate(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& c)
+{
+  c = b;
+  dd_edge prev(resF), t(resF);
+  while (prev != c) {
+    prev = c;
+    imageOp->compute(c, r, t);
+
+    // t was increased by one step; roll it back one
+    long tev;
+    t.getEdgeValue(tev);
+    tev--;
+    t.setEdgeValue(tev);
+
+    plusOp->compute(t, a, t);
+    minOp->compute(c, t, c);
+  }
 }
 
 // ******************************************************************
@@ -237,35 +261,34 @@ void MEDDLY::transitive_closure_dfs::saveResult(compute_table::entry_key* key,
 
 
 // Partition the nsf based on "top level"
-void MEDDLY::transitive_closure_dfs::splitMxd(node_handle mxd)
+void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
 {
   MEDDLY_DCASSERT(transF);
   MEDDLY_DCASSERT(splits == nullptr);
 
-  splits = new node_handle[transF->getNumVariables() + 1];
-  splits[0] = 0;
+  splits = new dd_edge[transF->getNumVariables() + 1];
 
-  // we'll be unlinking later, so...
-  transF->linkNode(mxd);
+  dd_edge root(mxd), maxDiag, Rpdi;
+  maxDiag.setForest(transF);
+  Rpdi.setForest(transF);
 
   // Build from top down
   for (int level = transF->getNumVariables(); level > 0; level--) {
-    if (mxd == 0) {
+    splits[level].setForest(transF);
+    if (root.getNode() == 0) {
       // common and easy special case
-      splits[level] = 0;
       continue;
     }
 
-    int mxdLevel = transF->getNodeLevel(mxd);
+    int mxdLevel = root.getLevel(); // transF->getNodeLevel(mxd);
     MEDDLY_DCASSERT(ABS(mxdLevel) <= level);
 
     // Initialize readers
     unpacked_node* Ru = isLevelAbove(level, mxdLevel)
-      ? unpacked_node::newRedundant(transF, level, mxd, true)
-      : unpacked_node::newFromNode(transF, mxd, true);
+      ? unpacked_node::newRedundant(transF, level, root.getNode(), true)
+      : unpacked_node::newFromNode(transF, root.getNode(), true);
 
     bool first = true;
-    node_handle maxDiag;
 
     // Read "rows"
     for (int i = 0; i < Ru->getSize(); i++) {
@@ -277,12 +300,11 @@ void MEDDLY::transitive_closure_dfs::splitMxd(node_handle mxd)
 
       // Intersect along the diagonal
       if (first) {
-        maxDiag = transF->linkNode(Rp->d(i));
+        maxDiag.set( transF->linkNode(Rp->d(i)) );
         first = false;
       } else {
-        node_handle nmd = mxdIntersectionOp->compute(maxDiag, Rp->d(i));
-        transF->unlinkNode(maxDiag);
-        maxDiag = nmd;
+        Rpdi.set( transF->linkNode(Rp->d(i)) );
+        mxdIntersectionOp->compute(maxDiag, Rpdi, maxDiag);
       }
 
       // cleanup
@@ -290,9 +312,8 @@ void MEDDLY::transitive_closure_dfs::splitMxd(node_handle mxd)
     } // for i
 
     // maxDiag is what we can split from here
-    splits[level] = mxdDifferenceOp->compute(mxd, maxDiag);
-    transF->unlinkNode(mxd);
-    mxd = maxDiag;
+    mxdDifferenceOp->compute(root, maxDiag, splits[level]);
+    root = maxDiag;
 
     // Cleanup
     unpacked_node::recycle(Ru);
@@ -316,6 +337,9 @@ void MEDDLY::transitive_closure_dfs::compute(const dd_edge& a, const dd_edge& b,
   MEDDLY_DCASSERT(transF == r.getForest());
   MEDDLY_DCASSERT(resF == res.getForest());
 
+  // Partition NSF by levels
+  splitMxd(r);
+
   long aev = Inf<long>();
   a.getEdgeValue(aev);
   long bev = Inf<long>();
@@ -330,9 +354,6 @@ void MEDDLY::transitive_closure_dfs::compute(const dd_edge& a, const dd_edge& b,
 void MEDDLY::transitive_closure_dfs::_compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
   long& cev, node_handle& c)
 {
-  // Partition NSF by levels
-  splitMxd(r);
-
   // Execute saturation operation
   transitive_closure_evplus* tcSatOp = new transitive_closure_evplus(this, consF, tcF, resF);
   tcSatOp->saturate(aev, a, bev, b, cev, c);
@@ -343,9 +364,9 @@ void MEDDLY::transitive_closure_dfs::_compute(int aev, node_handle a, int bev, n
   //minOp->removeAllComputeTableEntries();
   //removeAllComputeTableEntries();
 
-  for (int i = transF->getNumVariables(); i > 0; i--) {
-    transF->unlinkNode(splits[i]);
-  }
+  // for (int i = transF->getNumVariables(); i > 0; i--) {
+    // transF->unlinkNode(splits[i]);
+  // }
   delete[] splits;
   splits = nullptr;
 }
@@ -368,23 +389,26 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
   // nb is at a primed level
   MEDDLY_DCASSERT(nb.getLevel() < 0);
 
-  node_handle mxd = splits[-nb.getLevel()];
-  if (mxd == 0) {
+  const dd_edge& mxd = splits[-nb.getLevel()];
+  if (mxd.getNode() == 0) {
     return;
   }
 
-  const int mxdLevel = transF->getNodeLevel(mxd);
+  // const int mxdLevel = transF->getNodeLevel(mxd);
+  const int mxdLevel = mxd.getLevel();
   MEDDLY_DCASSERT(ABS(mxdLevel) == -nb.getLevel());
 
   // Initialize mxd readers, note we might skip the unprimed level
   unpacked_node* Ru = (mxdLevel < 0)
-    ? unpacked_node::newRedundant(transF, -nb.getLevel(), mxd, true)
-    : unpacked_node::newFromNode(transF, mxd, true);
+    ? unpacked_node::newRedundant(transF, -nb.getLevel(), mxd.getNode(), true)
+    : unpacked_node::newFromNode(transF, mxd.getNode(), true);
   unpacked_node* Rp = unpacked_node::useUnpackedNode();
 
   unpacked_node* A = isLevelAbove(-nb.getLevel(), consF->getNodeLevel(a))
     ? unpacked_node::newRedundant(consF, -nb.getLevel(), 0L, a, true)
     : unpacked_node::newFromNode(consF, a, true);
+
+  dd_edge nbdj(resF), newst(resF);
 
   // indices to explore
   int size = nb.getSize();
@@ -448,6 +472,14 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
         nb.d_ref(jp) = rec;
       }
       else {
+        nbdj.set(nb.d(jp), nb.ei(jp));
+        newst.set(rec, recev);
+        minOp->compute(nbdj, newst, nbdj);
+        updated = (nbdj.getNode() != nb.d(jp));
+        nb.set_de(jp, nbdj);
+
+        // OLD
+        /*
         long accev = Inf<long>();
         node_handle acc = 0;
         minOp->compute(nb.ei(jp), nb.d(jp), recev, rec, accev, acc);
@@ -464,6 +496,8 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
           resF->unlinkNode(acc);
           updated = false;
         }
+        */
+
       }
 
       if (updated) {
@@ -515,6 +549,8 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
   const int rLevel = transF->getNodeLevel(r);
   const int level = MAX(MAX(ABS(rLevel), ABS(bLevel)), aLevel);
   const int size = resF->getLevelSize(level);
+
+  dd_edge Tdj(resF), newst(resF);
 
   // Initialize evmdd reader
   unpacked_node* A = isLevelAbove(level, aLevel)
@@ -615,6 +651,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
           }
 
           // there's new states and existing states; union them.
+          /*
           const node_handle oldjp = Tp->d(jp);
           long newev = Inf<long>();
           node_handle newstates = 0;
@@ -624,6 +661,13 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
 
           resF->unlinkNode(oldjp);
           resF->unlinkNode(n);
+          */
+
+          // there's new states and existing states; union them.
+          Tdj.set(Tp->d(jp), Tp->ei(jp));
+          newst.set(n, nev);
+          minOp->compute(newst, Tdj, Tdj);
+          Tp->set_de(jp, Tdj);
         } // for j
       } // for i
 

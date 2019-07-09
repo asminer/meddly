@@ -329,6 +329,10 @@ inline unsigned MEDDLY::forest::FID() const {
   return fid;
 }
 
+inline unsigned MEDDLY::forest::MaxFID() {
+  return gfid;
+}
+
 inline const MEDDLY::domain* MEDDLY::forest::getDomain() const {
   return d;
 }
@@ -592,14 +596,18 @@ inline int MEDDLY::domain::ID() const { return my_index; }
 
 
 inline void MEDDLY::dd_edge::clear() {
-  assert(index != -1);
+  MEDDLY_DCASSERT(index);
   set(0);
   raw_value = 0;
 }
 
-inline MEDDLY::forest* MEDDLY::dd_edge::getForest() const { return parent; }
+inline MEDDLY::forest* MEDDLY::dd_edge::getForest() const { 
+  return parent; 
+}
 
-inline MEDDLY::node_handle MEDDLY::dd_edge::getNode() const { return node; }
+inline MEDDLY::node_handle MEDDLY::dd_edge::getNode() const { 
+  return node; 
+}
 
 inline double MEDDLY::dd_edge::getCardinality() const {
   double c;
@@ -629,8 +637,13 @@ inline const MEDDLY::dd_edge MEDDLY::dd_edge::operator-(const MEDDLY::dd_edge& e
   return dd_edge(*this) -= e;
 }
 
-inline void MEDDLY::dd_edge::setIndex(int ind) { index = ind; }
-inline int MEDDLY::dd_edge::getIndex() const { return index; }
+inline void MEDDLY::dd_edge::setIndex(unsigned ind) { 
+  index = ind; 
+}
+
+inline unsigned MEDDLY::dd_edge::getIndex() const { 
+  return index; 
+}
 
 inline void MEDDLY::dd_edge::orphan() {
   parent = 0;

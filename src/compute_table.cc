@@ -197,7 +197,8 @@ unsigned MEDDLY::compute_table::entryInfoAlloc;
 unsigned MEDDLY::compute_table::entryInfoSize;
 MEDDLY::compute_table::entry_key* MEDDLY::compute_table::free_keys;
 
-MEDDLY::compute_table::compute_table(const ct_initializer::settings &s)
+MEDDLY::compute_table::compute_table(const ct_initializer::settings &s, 
+  operation* op, unsigned slot)
 {
   maxSize = s.maxSize;
   if (0==maxSize)
@@ -225,8 +226,17 @@ MEDDLY::compute_table::compute_table(const ct_initializer::settings &s)
   perf.maxSearchLength = 0;
   for (int i=0; i<perf.searchHistogramSize; i++)
     perf.searchHistogram[i] = 0;
-  perf.completedScans = 0;
   perf.resizeScans = 0;
+
+  //
+  // Global operation vs monolithic
+  //
+  if (op) {
+    global_et = getEntryType(op, slot);
+    MEDDLY_DCASSERT(global_et);
+  } else {
+    global_et = 0;
+  }
 }
 
 MEDDLY::compute_table::~compute_table()
@@ -254,6 +264,40 @@ void MEDDLY::compute_table::destroy()
   }
   // delete the items?  TBD
   delete[] entryInfo;
+}
+
+void MEDDLY::compute_table::clearForestCTBits(bool* skipF, unsigned N) const
+{
+  if (global_et) {
+    // Operation cache
+    global_et->clearForestCTBits(skipF, N);
+    return;
+  }
+  //
+  // Monolithic cache.
+  //
+  for (unsigned i=0; i<entryInfoSize; i++) {
+    if (entryInfo[i]) {
+      entryInfo[i]->clearForestCTBits(skipF, N);
+    }
+  }
+}
+
+void MEDDLY::compute_table::sweepForestCTBits(bool* whichF, unsigned N) const
+{
+  if (global_et) {
+    // Operation cache
+    global_et->sweepForestCTBits(whichF, N);
+    return;
+  }
+  //
+  // Monolithic cache.
+  //
+  for (unsigned i=0; i<entryInfoSize; i++) {
+    if (entryInfo[i]) {
+      entryInfo[i]->sweepForestCTBits(whichF, N);
+    }
+  }
 }
 
 void MEDDLY::compute_table::registerOp(operation* op, unsigned num_ids)
@@ -591,5 +635,66 @@ void MEDDLY::compute_table::entry_type::setForestForSlot(unsigned i, expert_fore
 
   // i is too large
   throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+}
+
+void MEDDLY::compute_table::entry_type::clearForestCTBits(bool* skipF, unsigned N) const
+{
+  unsigned i;
+  for (i=0; i<len_ks_type; i++) {
+    expert_forest* f = ks_forest[i];
+    if (0==f) continue;
+    MEDDLY_DCASSERT(f->FID() < N);
+    if (skipF[ f->FID() ]) continue;
+    f->clearAllCacheBits();
+    skipF[ f->FID() ] = 1;
+  }
+  for (i=0; i<len_kr_type; i++) {
+    expert_forest* f = kr_forest[i];
+    if (0==f) continue;
+    MEDDLY_DCASSERT(f->FID() < N);
+    if (skipF[ f->FID() ]) continue;
+    f->clearAllCacheBits();
+    skipF[ f->FID() ] = 1;
+  }
+  for (i=0; i<len_r_type; i++) {
+    expert_forest* f = r_forest[i];
+    if (0==f) continue;
+    MEDDLY_DCASSERT(f->FID() < N);
+    if (skipF[ f->FID() ]) continue;
+    f->clearAllCacheBits();
+    skipF[ f->FID() ] = 1;
+  }
+}
+
+void MEDDLY::compute_table::entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
+{
+  unsigned i;
+  for (i=0; i<len_ks_type; i++) {
+    expert_forest* f = ks_forest[i];
+    if (0==f) continue;
+    MEDDLY_DCASSERT(f->FID() < N);
+    if (whichF[ f->FID() ]) {
+      f->sweepAllCacheBits();
+      whichF[ f->FID() ] = 0;
+    }
+  }
+  for (i=0; i<len_kr_type; i++) {
+    expert_forest* f = kr_forest[i];
+    if (0==f) continue;
+    MEDDLY_DCASSERT(f->FID() < N);
+    if (whichF[ f->FID() ]) {
+      f->sweepAllCacheBits();
+      whichF[ f->FID() ] = 0;
+    }
+  }
+  for (i=0; i<len_r_type; i++) {
+    expert_forest* f = r_forest[i];
+    if (0==f) continue;
+    MEDDLY_DCASSERT(f->FID() < N);
+    if (whichF[ f->FID() ]) {
+      f->sweepAllCacheBits();
+      whichF[ f->FID() ] = 0;
+    }
+  }
 }
 

@@ -199,10 +199,10 @@ MEDDLY::output::~output()
 {
 }
 
-void MEDDLY::output::put_mem(long m, bool human)
+void MEDDLY::output::put_mem(size_t m, bool human)
 {
   if ((!human) || (m<1024)) {
-    put(m);
+    put((unsigned long)m);
     put(" bytes");
     return;
   }
@@ -255,28 +255,28 @@ void MEDDLY::FILE_output::put(char x)
 
 void MEDDLY::FILE_output::put(const char* x, int w)
 {
-  if (fprintf(outf, "%*s", w, x)<1) {
+  if (fprintf(outf, "%*s", w, x)<0) {
     throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
   }
 }
 
 void MEDDLY::FILE_output::put(long x, int w)
 {
-  if (fprintf(outf, "%*ld", w, x)<1) {
+  if (fprintf(outf, "%*ld", w, x)<0) {
     throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
   }
 }
 
 void MEDDLY::FILE_output::put(unsigned long x, int w)
 {
-  if (fprintf(outf, "%*lu", w, x)<1) {
+  if (fprintf(outf, "%*lu", w, x)<0) {
     throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
   }
 }
 
 void MEDDLY::FILE_output::put_hex(unsigned long x, int w)
 {
-  if (fprintf(outf, "%*lx", w, x)<1) {
+  if (fprintf(outf, "%*lx", w, x)<0) {
     throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
   }
 }
@@ -296,7 +296,7 @@ void MEDDLY::FILE_output::put(double x, int w, int p, char f)
               out = fprintf(outf, "%*.*g", w, p, x);
               break;
   }
-  if (out < 1) {
+  if (out < 0) {
     throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
   }
 }

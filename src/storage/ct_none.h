@@ -46,7 +46,6 @@ namespace MEDDLY {
 
       // required functions
 
-      virtual bool isOperationTable() const   { return !MONOLITHIC; }
       virtual void find(entry_key* key, entry_result &res);
       virtual void addEntry(entry_key* key, const entry_result& res);
       virtual void updateEntry(entry_key* key, const entry_result& res);
@@ -336,9 +335,6 @@ namespace MEDDLY {
 
 
     private:
-      /// Global entry type.  Ignored when MONOLITHIC is true.
-      const entry_type* global_et;
-
       /// Hash table
       unsigned long* table;
 
@@ -378,10 +374,6 @@ namespace MEDDLY {
       /// Stats: how many collisions
       unsigned long collisions;
 
-#ifdef CONTINUOUS_SCAN
-    private:
-      unsigned long scan_index;
-#endif
   }; // class ct_none
 } // namespace
 
@@ -395,7 +387,7 @@ namespace MEDDLY {
 template <bool MONOLITHIC, bool CHAINED>
 MEDDLY::ct_none<MONOLITHIC, CHAINED>::ct_none(
   const ct_initializer::settings &s, operation* op, unsigned slot)
-: compute_table(s)
+: compute_table(s, op, slot)
 {
   if (MONOLITHIC) {
     MEDDLY_DCASSERT(0==op);
@@ -403,7 +395,6 @@ MEDDLY::ct_none<MONOLITHIC, CHAINED>::ct_none(
   } else {
     MEDDLY_DCASSERT(op);
   }
-  global_et = op ? getEntryType(op, slot) : 0;
 
   /*
       Initialize memory management for entries.
@@ -443,10 +434,6 @@ MEDDLY::ct_none<MONOLITHIC, CHAINED>::ct_none(
   mstats.incMemAlloc(tableSize * sizeof(unsigned long));
 
   collisions = 0;
-
-#ifdef CONTINUOUS_SCAN
-  scan_index = 0;
-#endif
 }
 
 // **********************************************************************
@@ -619,20 +606,6 @@ inline MEDDLY::compute_table::entry_item* MEDDLY::ct_none<MONOLITHIC, CHAINED>
   } // for chain
 
   sawSearch(chain);
-
-#ifdef CONTINUOUS_SCAN
-  do {
-    incMod(scan_index);
-    if (0==scan_index) {
-      perf.completedScans++;
-    }
-  } while (hcurr == scan_index);
-  if (CHAINED) {
-    scanListForStales(scan_index);
-  } else {
-    scanForStales(scan_index);
-  }
-#endif
 
   return answer;
 }
@@ -1066,8 +1039,6 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
   s << "Pings               :\t" << long(perf.pings) << "\n";
   s.put("", 6);
   s << "Hits                :\t" << long(perf.hits) << "\n";
-  s.put("", 6);
-  s << "Completed scans     :\t" << long(perf.completedScans) << "\n";
   s.put("", 6);
   s << "Resize (GC) scans   :\t" << long(perf.resizeScans) << "\n";
 
@@ -1589,6 +1560,8 @@ bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
       MEDDLY_DCASSERT(NODE==t);
       if (MEDDLY::forest::ACTIVE != f->getNodeStatus(entry[i].N)) {
         return true;
+      } else {
+        f->setCacheBit(entry[i].N);
       }
     }
   } // for i
@@ -1609,6 +1582,8 @@ bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
       MEDDLY_DCASSERT(NODE==t);
       if (MEDDLY::forest::ACTIVE != f->getNodeStatus(entry[i].N)) {
         return true;
+      } else {
+        f->setCacheBit(entry[i].N);
       }
     }
   } // for i

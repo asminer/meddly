@@ -27,7 +27,7 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmdd_timesreal::evmdd_timesreal(int dsl, domain *d, const policies &p, int* level_reduction_rule)
+MEDDLY::evmdd_timesreal::evmdd_timesreal(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule)
  : evmdd_forest(dsl, d, REAL, EVTIMES, p, level_reduction_rule)
 {
   setEdgeSize(sizeof(float), true);

@@ -28,11 +28,12 @@
 // #define VERBOSE_BFS
 
 namespace MEDDLY {
-  class common_bfs_mt;
+  class common_bfs;
+  // class common_bfs_mt;
   class forwd_bfs_mt;
   class bckwd_bfs_mt;
 
-  class common_bfs_evplus;
+  // class common_bfs_evplus;
   class forwd_bfs_evplus;
   class bckwd_bfs_evplus;
 
@@ -42,67 +43,40 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                      common_bfs_mt  class                      *
+// *                        common_bfs class                        *
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::common_bfs_mt : public binary_operation {
+class MEDDLY::common_bfs : public binary_operation {
   public:
-    common_bfs_mt(const binary_opname* opcode, expert_forest* arg1,
+    common_bfs(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
-    virtual node_handle compute(node_handle a, node_handle b) = 0;
+
   protected:
+    inline void setUnionOp(binary_operation* uop)
+    {
+      MEDDLY_DCASSERT(uop);
+      MEDDLY_DCASSERT(0==unionOp);
+      unionOp = uop;
+    }
+
+    inline void setImageOp(binary_operation* iop)
+    {
+      MEDDLY_DCASSERT(iop);
+      MEDDLY_DCASSERT(0==imageOp);
+      imageOp = iop;
+    }
+
+  private:
     binary_operation* unionOp;
     binary_operation* imageOp;
 
-    inline node_handle iterate(node_handle init, node_handle R) {
-      node_handle reachableStates = arg1F->linkNode(init);
-      node_handle prevReachable = 0;
-#ifdef DEBUG_BFS
-      fprintf(stderr, "Relation: %d\n", R);
-      arg2F->showNodeGraph(stderr, R);
-      fprintf(stderr, "Initial states: %d\n", init);
-      arg1F->showNodeGraph(stderr, init);
-      long iters = 0;
-#endif
-#ifdef VERBOSE_BFS
-      long iters = 0;
-#endif
-      while (prevReachable != reachableStates) {
-#ifdef VERBOSE_BFS
-        iters++;
-        fprintf(stderr, "Iteration %d:\n", iters);
-#endif
-        resF->unlinkNode(prevReachable);
-        prevReachable = reachableStates;
-        node_handle front = imageOp->compute(reachableStates, R);
-#ifdef VERBOSE_BFS
-        fprintf(stderr, "\timage done %d\n", front);
-#endif
-#ifdef DEBUG_BFS
-        iters++;
-        fprintf(stderr, "Iteration %d\npseudo-frontier: %d\n", iters, front);
-        arg1F->showNodeGraph(stderr, front);
-#endif
-        reachableStates = unionOp->compute(reachableStates, front);
-#ifdef VERBOSE_BFS
-        fprintf(stderr, "\tunion done %d\n", reachableStates);
-#endif
-#ifdef DEBUG_BFS
-        fprintf(stderr, "Reachable so far: %d\n", reachableStates);
-        arg1F->showNodeGraph(stderr, reachableStates);
-#endif
-        resF->unlinkNode(front);
-      }
-      resF->unlinkNode(prevReachable);
-      return reachableStates;
-    }
 };
 
 
-MEDDLY::common_bfs_mt::common_bfs_mt(const binary_opname* oc, expert_forest* a1,
+MEDDLY::common_bfs::common_bfs(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res)
 : binary_operation(oc, 0, a1, a2, res)
 {
@@ -110,11 +84,55 @@ MEDDLY::common_bfs_mt::common_bfs_mt(const binary_opname* oc, expert_forest* a1,
   imageOp = 0;
 }
 
-void MEDDLY::common_bfs_mt
-::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
+void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd_edge &reachableStates)
 {
-  node_handle cnode = compute(a.getNode(), b.getNode());
-  c.set(cnode);
+  MEDDLY_DCASSERT(unionOp);
+  MEDDLY_DCASSERT(imageOp);
+
+  reachableStates = init;
+  dd_edge prevReachable(resF);
+  dd_edge front(resF);
+#ifdef DEBUG_BFS
+  FILE_output debug(stderr);
+  debug << "Relation: ";
+  R.show(debug, 2);
+  debug << "Initial states: ";
+  init.show(debug, 2);
+  long iters = 0;
+#endif
+#ifdef VERBOSE_BFS
+  long iters = 0;
+  FILE_OUTPUT verbose(stderr);
+#endif
+  while (prevReachable != reachableStates) {
+#ifdef VERBOSE_BFS
+    iters++;
+    verbose << "Iteration " << iters << ":\n";
+#endif
+    prevReachable = reachableStates;
+    imageOp->computeDDEdge(reachableStates, R, front);
+#ifdef VERBOSE_BFS
+    verbose << "\timage done ";
+    front.show(verbose, 0);
+    verbose << "\n";
+#endif
+#ifdef DEBUG_BFS
+    iters++;
+    debug << "Iteration " << iters << "\npseudo-frontier: ";
+    front.show(debug, 2);
+#endif
+    unionOp->computeDDEdge(reachableStates, front, reachableStates);
+#ifdef VERBOSE_BFS
+    verbose << "\tunion done ";
+    reachableStates.show(verbose, 0);
+    verbose << "\n";
+#endif
+#ifdef DEBUG_BFS
+    debug << "Reachable so far: ";
+    reachable.show(debug, 2);
+#endif
+  }
+
 }
 
 // ******************************************************************
@@ -123,29 +141,21 @@ void MEDDLY::common_bfs_mt
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::forwd_bfs_mt : public common_bfs_mt {
+class MEDDLY::forwd_bfs_mt : public common_bfs {
   public:
     forwd_bfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
-
-    virtual node_handle compute(node_handle a, node_handle b);
 };
 
 MEDDLY::forwd_bfs_mt::forwd_bfs_mt(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res) : common_bfs_mt(oc, a1, a2, res)
+  expert_forest* a2, expert_forest* res) : common_bfs(oc, a1, a2, res)
 {
-}
-
-MEDDLY::node_handle MEDDLY::forwd_bfs_mt::compute(node_handle a, node_handle b)
-{
-  if (resF->getRangeType() == forest::BOOLEAN) {
-    unionOp = getOperation(UNION, resF, resF, resF);
+  if (res->getRangeType() == forest::BOOLEAN) {
+    setUnionOp( getOperation(UNION, res, res, res) );
   } else {
-    unionOp = getOperation(MAXIMUM, resF, resF, resF);
+    setUnionOp( getOperation(MAXIMUM, res, res, res) );
   }
-  imageOp = getOperation(POST_IMAGE, arg1F, arg2F, resF);
-
-  return iterate(a, b);
+  setImageOp( getOperation(POST_IMAGE, a1, a2, res) );
 }
 
 
@@ -155,36 +165,32 @@ MEDDLY::node_handle MEDDLY::forwd_bfs_mt::compute(node_handle a, node_handle b)
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::bckwd_bfs_mt : public common_bfs_mt {
+class MEDDLY::bckwd_bfs_mt : public common_bfs {
   public:
     bckwd_bfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-    virtual node_handle compute(node_handle a, node_handle b);
 };
 
 MEDDLY::bckwd_bfs_mt::bckwd_bfs_mt(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res) : common_bfs_mt(oc, a1, a2, res)
+  expert_forest* a2, expert_forest* res) : common_bfs(oc, a1, a2, res)
 {
-}
-
-MEDDLY::node_handle MEDDLY::bckwd_bfs_mt::compute(node_handle a, node_handle b)
-{
-  if (resF->getRangeType() == forest::BOOLEAN) {
-    unionOp = getOperation(UNION, resF, resF, resF);
+  if (res->getRangeType() == forest::BOOLEAN) {
+    setUnionOp( getOperation(UNION, res, res, res) );
   } else {
-    unionOp = getOperation(MAXIMUM, resF, resF, resF);
+    setUnionOp( getOperation(MAXIMUM, res, res, res) );
   }
-  imageOp = getOperation(PRE_IMAGE, arg1F, arg2F, resF);
-
-  return iterate(a, b);
+  setImageOp( getOperation(PRE_IMAGE, a1, a2, res) );
 }
+
 
 // ******************************************************************
 // *                                                                *
 // *                    common_bfs_evplus  class                    *
 // *                                                                *
 // ******************************************************************
+
+/*
 
 class MEDDLY::common_bfs_evplus : public binary_operation {
   public:
@@ -264,25 +270,35 @@ void MEDDLY::common_bfs_evplus::computeDDEdge(const dd_edge &a, const dd_edge &b
   c.set(cnode, cev);
 }
 
+*/
+
 // ******************************************************************
 // *                                                                *
 // *                     forwd_bfs_evplus class                     *
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::forwd_bfs_evplus : public common_bfs_evplus {
+class MEDDLY::forwd_bfs_evplus : public common_bfs {
   public:
   forwd_bfs_evplus(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-    virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
+//     virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
 };
 
 MEDDLY::forwd_bfs_evplus::forwd_bfs_evplus(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res) : common_bfs_evplus(oc, a1, a2, res)
+  // expert_forest* a2, expert_forest* res) : common_bfs_evplus(oc, a1, a2, res)
+  expert_forest* a2, expert_forest* res) : common_bfs(oc, a1, a2, res)
 {
+  if (res->getRangeType() == forest::INTEGER) {
+    setUnionOp( getOperation(UNION, res, res, res) );
+  } else {
+    throw error(error::INVALID_OPERATION);
+  }
+  setImageOp( getOperation(POST_IMAGE, a1, a2, res) );
 }
 
+/*
 void MEDDLY::forwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd)
 {
   if (resF->getRangeType() == forest::INTEGER) {
@@ -294,6 +310,7 @@ void MEDDLY::forwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle m
 
   iterate(ev, evmdd, mxd, resEv, resEvmdd);
 }
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -301,19 +318,27 @@ void MEDDLY::forwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle m
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::bckwd_bfs_evplus : public common_bfs_evplus {
+class MEDDLY::bckwd_bfs_evplus : public common_bfs {
   public:
     bckwd_bfs_evplus(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-    virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
+    // virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
 };
 
 MEDDLY::bckwd_bfs_evplus::bckwd_bfs_evplus(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res) : common_bfs_evplus(oc, a1, a2, res)
+  // expert_forest* a2, expert_forest* res) : common_bfs_evplus(oc, a1, a2, res)
+  expert_forest* a2, expert_forest* res) : common_bfs(oc, a1, a2, res)
 {
+  if (res->getRangeType() == forest::INTEGER) {
+    setUnionOp( getOperation(UNION, res, res, res) );
+  } else {
+    throw error(error::INVALID_OPERATION);
+  }
+  setImageOp( getOperation(PRE_IMAGE, a1, a2, res) );
 }
 
+/*
 void MEDDLY::bckwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd)
 {
   if (resF->getRangeType() == forest::INTEGER) {
@@ -325,6 +350,7 @@ void MEDDLY::bckwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle m
 
   iterate(ev, evmdd, mxd, resEv, resEvmdd);
 }
+*/
 
 
 // ******************************************************************
