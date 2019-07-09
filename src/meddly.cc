@@ -80,6 +80,7 @@ namespace MEDDLY {
   //
   // List of free unpacked nodes
   unpacked_node* unpacked_node::freeList = 0;
+  unpacked_node* unpacked_node::buildList = 0;
 
   // helper functions
   void purgeMarkedOperations();
@@ -324,7 +325,7 @@ void MEDDLY::destroyForest(MEDDLY::forest* &f)
 void MEDDLY::purgeMarkedOperations()
 {
   operation::removeStalesFromMonolithic();
-  for (unsigned i=1; i<operation::getOpListSize(); i++) {
+  for (unsigned i=0; i<operation::getOpListSize(); i++) {
     operation* op = operation::getOpWithIndex(i);
     if (0==op) continue;
     if (op->isMarkedForDeletion()) {

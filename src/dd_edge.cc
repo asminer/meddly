@@ -136,7 +136,18 @@ void MEDDLY::dd_edge::destroy()
     node = 0;
     unlinkNode(parent, old);
     if (parent) parent->unregisterEdge(*this);
-    else        index = 0;
+  }
+  parent = 0;
+  index = 0;
+}
+
+void MEDDLY::dd_edge::setForest(forest* f)
+{
+  destroy();
+  parent = f;
+  if (parent) {
+    parent->registerEdge(*this);
+    MEDDLY_DCASSERT(index);
   }
 }
 
@@ -296,7 +307,7 @@ void MEDDLY::dd_edge::show(output &strm, int verbosity) const
   expert_forest* eParent = smart_cast<expert_forest*>(parent);
 
   strm << "(Forest Addr: ";
-  strm.put_hex((unsigned long)parent);
+  strm.put_hex((unsigned long) parent);
   strm << ", ";
   
   strm << "transparent: ";

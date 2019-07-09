@@ -1108,7 +1108,7 @@ int doChoice()
         break;
       case 18:
         // Perform garbage collection.
-        states->garbageCollect();
+        // states->garbageCollect();
         break;
       case 19:
         // Clear result.
@@ -1225,7 +1225,7 @@ int doSteppedBfs()
         break;
       case 3:
         // Perform garbage collection.
-        states->garbageCollect();
+        // states->garbageCollect();
         break;
       case 4:
         // Clear result.

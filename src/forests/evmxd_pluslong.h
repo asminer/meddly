@@ -50,9 +50,8 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
         static inline long apply(double a, double b) {
           return a + b;
         }
-        static inline void makeEmptyEdge(long &ev, node_handle &ep) {
-          ev = 0;
-          ep = 0;
+        static inline void makeEmptyEdge(dd_edge &e) {
+          e.set(0, long(0));
         }
         static inline void unionEq(long &a, long b) {
           if (b < a) {

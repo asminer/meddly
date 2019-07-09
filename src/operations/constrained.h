@@ -77,7 +77,8 @@ protected:
   binary_operation* plusOp;
   binary_operation* minOp;
 
-  void iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
+  // void iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
+  void iterate(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& c);
 
 public:
   constrained_bckwd_bfs_evplus(const constrained_opname* code,
@@ -103,13 +104,13 @@ protected:
   binary_operation* mxdIntersectionOp;
   binary_operation* unionOp;
 
-  node_handle* splits;
+  dd_edge* splits;
 
   compute_table::entry_key* findResult(node_handle a, node_handle b, node_handle r, node_handle& c);
   void saveResult(compute_table::entry_key* key,
     node_handle a, node_handle b, node_handle r, node_handle c);
 
-  void splitMxd(node_handle mxd);
+  void splitMxd(const dd_edge& mxd);
 
 public:
   constrained_dfs_mt(const constrained_opname* code,
@@ -185,14 +186,14 @@ protected:
   binary_operation* mxdIntersectionOp;
   binary_operation* minOp;
 
-  node_handle* splits;
+  dd_edge* splits;
 
   compute_table::entry_key* findResult(long aev, node_handle a,
     long bev, node_handle b, node_handle r, long& dev, node_handle& d);
   void saveResult(compute_table::entry_key* key,
     long aev, node_handle a, long bev, node_handle b, node_handle r, long dev, node_handle d);
 
-  void splitMxd(node_handle mxd);
+  void splitMxd(const dd_edge& mxd);
   void recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
 public:

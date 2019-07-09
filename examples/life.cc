@@ -578,8 +578,8 @@ int main(int argc, const char** argv)
   cerr << " seconds\nSet of solutions requires " << answer.getNodeCount();
   cerr << " nodes.\nForest stats:\n";
   cerr.flush();
-  f->garbageCollect();
-  f->compactMemory();
+  // f->garbageCollect();
+  // f->compactMemory();
   f->reportStats(meddlyout, "\t", 
     expert_forest::HUMAN_READABLE_MEMORY  |
     expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |

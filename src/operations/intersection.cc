@@ -267,32 +267,33 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
     : unpacked_node::newFromNode(arg1F, a, false)
     ;
   const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
-  int last_nz = A->getNNZs()-1;
-  for ( ; last_nz >= 0 && A->d(last_nz) == 0; last_nz--);
+  int last_nz = int(A->getNNZs())-1;
+  for ( ; last_nz >= 0 && A->d(unsigned(last_nz)) == 0; last_nz--);
   const int A_nnzs = last_nz + 1;
-  const int A_last_index = last_nz >= 0? A->i(last_nz): -1;
+  const int A_last_index = last_nz >= 0? int(A->i(unsigned(last_nz))): -1;
 
   unpacked_node *B = (bLevel < resultLevel)
     ? unpacked_node::newRedundant(arg2F, resultLevel, b, false)
     : unpacked_node::newFromNode(arg2F, b, false)
     ;
   const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
-  last_nz = B->getNNZs()-1;
-  for ( ; last_nz >= 0 && B->d(last_nz) == 0; last_nz--);
+  last_nz = int(B->getNNZs())-1;
+  for ( ; last_nz >= 0 && B->d(unsigned(last_nz)) == 0; last_nz--);
   const int B_nnzs = last_nz + 1;
-  const int B_last_index = last_nz >= 0? B->i(last_nz): -1;
+  const int B_last_index = last_nz >= 0? int(B->i(unsigned(last_nz))): -1;
 
   const int max_a_b_last_index = MAX(A_last_index, B_last_index);
 
-  int resultSize = A->getNNZs() + B->getNNZs() + 1 + 1;
+  unsigned resultSize = A->getNNZs() + B->getNNZs() + 1 + 1;
   unpacked_node* C = unpacked_node::newSparse(resF, resultLevel, resultSize);
 
-  int nnz = 0;
-  int A_curr_index = 0;
-  int B_curr_index = 0;
+  unsigned nnz = 0;
+  unsigned A_curr_index = 0;
+  unsigned B_curr_index = 0;
   for ( ; A_curr_index < A_nnzs && B_curr_index < B_nnzs; ) {
     // get a_i, a_d, b_i, b_d
-    int a_i, a_d, b_i, b_d;
+    node_handle a_d, b_d;
+    unsigned a_i, b_i;
     a_i = A->i(A_curr_index);
     b_i = B->i(B_curr_index);
     if (a_i <= b_i) {
@@ -311,8 +312,8 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
     if (a_d == 0 || b_d == 0) continue;
 
     // compute inter(a_d, b_d)
-    int index = (a_d? a_i: b_i);
-    node_handle down = compute_r(index, dwnLevel, a_d, b_d);
+    unsigned index = (a_d? a_i: b_i);
+    node_handle down = compute_r(int(index), dwnLevel, a_d, b_d);
 
     // if inter is non-zero, add it to the new node
     if (down) {
@@ -320,12 +321,12 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
       C->d_ref(nnz) = down;
       nnz++;
     }
-  }
+  } // for loop
   if (B_ext_d != 0) {
     for ( ; A_curr_index < A_nnzs; A_curr_index++) {
       // do inter(a_i, b_ext_i)
-      int index = A->i(A_curr_index);
-      node_handle down = compute_r(index, dwnLevel, A->d(A_curr_index), B_ext_d);
+      unsigned index = A->i(A_curr_index);
+      node_handle down = compute_r(int(index), dwnLevel, A->d(A_curr_index), B_ext_d);
       if (down) {
         C->i_ref(nnz) = index;
         C->d_ref(nnz) = down;
@@ -336,8 +337,8 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
   if (A_ext_d != 0) {
     for ( ; B_curr_index < B_nnzs; B_curr_index++) {
       // do inter(a_ext_i, b_i)
-      int index = B->i(B_curr_index);
-      node_handle down = compute_r(index, dwnLevel, A_ext_d, B->d(B_curr_index));
+      unsigned index = B->i(B_curr_index);
+      node_handle down = compute_r(int(index), dwnLevel, A_ext_d, B->d(B_curr_index));
       if (down) {
         C->i_ref(nnz) = index;
         C->d_ref(nnz) = down;
@@ -346,10 +347,11 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
     }
   }
   if (A_ext_d != 0 && B_ext_d != 0) {
-    int index = max_a_b_last_index+1;
-    int down = compute_r(index, dwnLevel, A_ext_d, B_ext_d);
+    const int index = max_a_b_last_index+1;
+    MEDDLY_DCASSERT(index >= 0);
+    node_handle down = compute_r(index, dwnLevel, A_ext_d, B_ext_d);
     if (down) {
-      C->i_ref(nnz) = index;
+      C->i_ref(nnz) = unsigned(index);
       C->d_ref(nnz) = down;
       C->markAsExtensible();
       nnz++;

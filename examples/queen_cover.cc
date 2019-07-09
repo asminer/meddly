@@ -48,6 +48,8 @@ int N;
 FILE* outfile;
 const char* lfile;
 bool build_pdf;
+bool pessimistic;
+unsigned ct_maxsize;
 
 dd_edge** qic;
 dd_edge** qidp;
@@ -157,20 +159,29 @@ void queenInDiagM(forest* f, int d, dd_edge &e)
   qidm[d+N-1] = new dd_edge(e);
 }
 
-bool processArgs(int argc, const char** argv, forest::policies &p)
+bool processArgs(int argc, const char** argv)
 {
   build_pdf = false;
   lfile = 0;
-  p.setPessimistic();
+  pessimistic = true;
+  ct_maxsize = 0;
   N = -1;
   int i;
   for (i=1; i<argc; i++) {
     if (strcmp("-opt", argv[i])==0) {
-      p.setOptimistic();
+      pessimistic = false;
       continue;
     }
     if (strcmp("-pess", argv[i])==0) {
-      p.setPessimistic();
+      pessimistic = true;
+      continue;
+    }
+    if (strcmp("-ct", argv[i])==0) {
+      long ctm = atol(argv[i+1]);
+      i++;
+      if (ctm > 0) {
+        ct_maxsize = ctm;
+      }
       continue;
     }
     if (strcmp("-l", argv[i])==0) {
@@ -204,8 +215,9 @@ int usage(const char* who)
   for (const char* ptr=who; *ptr; ptr++) {
     if ('/' == *ptr) name = ptr+1;
   }
-  printf("Usage: %s <-opt> <-pess> <-l lfile> N <outfile>\n\n", name);
+  printf("Usage: %s <-opt> <-pess> <-l lfile> <-ct size> N <outfile>\n\n", name);
   printf("\t        N:  board dimension\n");
+  printf("\t -ct size:  Maximum entries in compute table\n");
   printf("\t     -opt:  Optimistic node deletion\n");
   printf("\t    -pess:  Pessimistic node deletion (default)\n");
   printf("\t -l lfile:  Write logging information to specified file\n");
@@ -216,9 +228,20 @@ int usage(const char* who)
 
 int main(int argc, const char** argv)
 {
-  initialize();
+  if (!processArgs(argc, argv)) return usage(argv[0]);
+
+  initializer_list* INIT = defaultInitializerList(0);
+  if (ct_maxsize) {
+    ct_initializer::setMaxSize(ct_maxsize);
+  }
+  initialize(INIT);
+
   forest::policies p(false);
-  if (!processArgs(argc, argv, p)) return usage(argv[0]);
+  if (pessimistic) {
+    p.setPessimistic();
+  } else {
+    p.setOptimistic();
+  }
   printf("Using %s\n", getLibraryInfo(0));
 
   timer stopwatch;

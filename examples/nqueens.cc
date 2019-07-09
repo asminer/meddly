@@ -45,6 +45,8 @@ int N;
 long* scratch;
 const char* lfile;
 bool build_pdf;
+bool pessimistic;
+unsigned ct_max;
 
 bool use_folding;
 
@@ -130,11 +132,12 @@ void createQueenNodes(forest* f, int q, dd_edge &col, dd_edge &cp, dd_edge &cm)
   f->createEdgeForVar(q, false, scratch, cm);
 }
 
-bool processArgs(int argc, const char** argv, forest::policies &p)
+bool processArgs(int argc, const char** argv)
 {
   lfile = 0;
   build_pdf = false;
-  p.setPessimistic();
+  pessimistic = true;
+  ct_max = 0;
   bool setN = false;
   use_folding = false;
   for (int i=1; i<argc; i++) {
@@ -148,11 +151,19 @@ bool processArgs(int argc, const char** argv, forest::policies &p)
         continue;
       }
       if (strcmp("-opt", argv[i])==0) {
-        p.setOptimistic();
+        pessimistic = false;
         continue;
       }
       if (strcmp("-pess", argv[i])==0) {
-        p.setPessimistic();
+        pessimistic = true;
+        continue;
+      }
+      if (strcmp("-ct", argv[i])==0) {
+        long ctm = atol(argv[i+1]);
+        i++;
+        if (ctm > 0) {
+          ct_max = ctm;
+        }
         continue;
       }
       if (strcmp("-l", argv[i])==0) {
@@ -186,6 +197,7 @@ int usage(const char* who)
   printf("\t       N:  board dimension\n");
   printf("\t    -acc:  Accumulate constraints in order (default)\n");
   printf("\t   -fold:  Accumulate constraints in pairs\n");
+  printf("\t-ct size:  Maximum entries in compute table\n");
   printf("\t    -opt:  Optimistic node deletion\n");
   printf("\t   -pess:  Pessimistic node deletion (default)\n");
   printf("\t-l lfile:  Write logging information to specified file\n");
@@ -195,11 +207,23 @@ int usage(const char* who)
 
 int main(int argc, const char** argv)
 {
-  initialize();
+  if (!processArgs(argc, argv)) return usage(argv[0]);
+
+  initializer_list* INIT = defaultInitializerList(0);
+  if (ct_max) {
+    ct_initializer::setMaxSize(ct_max);
+  }
+  initialize(INIT);
+
   forest::policies p(false);
-  if (!processArgs(argc, argv, p)) return usage(argv[0]);
-  timer watch;
+  if (pessimistic) {
+    p.setPessimistic();
+  } else {
+    p.setOptimistic();
+  }
   printf("Using %s\n", getLibraryInfo(0));
+
+  timer watch;
   printf("%d-Queens solutions.\n", N);
   scratch = new long[N+1];
   

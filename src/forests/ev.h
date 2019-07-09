@@ -50,14 +50,14 @@ class MEDDLY::ev_forest : public expert_forest {
     inline bool isRedundantTempl(const unpacked_node &nb) const {
       if (isQuasiReduced()) return false;
       if (nb.getLevel() < 0 && isIdentityReduced()) return false;
-      int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
-      if (rawsize < getLevelSize(nb.getLevel())) return false;
-      int common = nb.d(0);
-      for (int i=1; i<rawsize; i++) {
+      unsigned rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
+      if (rawsize < unsigned(getLevelSize(nb.getLevel()))) return false;
+      node_handle common = nb.d(0);
+      for (unsigned i=1; i<rawsize; i++) {
         if (nb.d(i) != common)  return false;
       }
       // This might be expensive, so split the loops to cheapest first
-      for (int i=0; i<rawsize; i++) {
+      for (unsigned i=0; i<rawsize; i++) {
         if (!OPERATION::isIdentityEdge(nb.eptr(i))) return false;
       }
       return true;
@@ -68,7 +68,7 @@ class MEDDLY::ev_forest : public expert_forest {
       if (nb.getLevel() > 0) return false;
       if (!isIdentityReduced()) return false;
       if (i<0) return false;
-      return (nb.d(i) != 0)  &&  OPERATION::isIdentityEdge(nb.eptr(i));
+      return (nb.d(unsigned(i)) != 0)  &&  OPERATION::isIdentityEdge(nb.eptr(unsigned(i)));
     }
 
   // ------------------------------------------------------------
@@ -135,13 +135,13 @@ class MEDDLY::ev_forest : public expert_forest {
       } else {
         km1 = k-1;
       }
-      int sz = getLevelSize(level);
+      unsigned sz = unsigned(getLevelSize(level));
 
       /*
           Make this node
       */
       unpacked_node *nb = unpacked_node::newFull(this, k, sz);
-      for (int i=0; i<sz; i++) {
+      for (unsigned i=0; i<sz; i++) {
         T ev = vals ? vals[i] : i;
         node_handle ed = bool_Tencoder::value2handle(true);
         makeNodeAtLevel<OPERATION, T>(km1, ev, ed);
@@ -198,12 +198,12 @@ namespace MEDDLY {
     if (isFullyReduced()) return;
 
     // prevSize == 1 enables getSingletonIndex for the first run.
-    int prevSize = 1;
+    unsigned prevSize = 1;
     int dk = getNodeLevel(ed);
     while (dk != k) {
       // make node at one level up
       int up = (dk < 0) ? -dk : isForRelations() ? -(dk + 1) : (dk + 1);
-      int sz = getLevelSize(up);
+      unsigned sz = unsigned(getLevelSize(up));
       unpacked_node* nb = unpacked_node::newFull(this, up, sz);
   
       if (isIdentityReduced() && (dk < 0) && (1 == prevSize)) {
@@ -214,13 +214,13 @@ namespace MEDDLY {
         MEDDLY_DCASSERT(!isTerminalNode(ed));
         node_handle sd;
         int si = getSingletonIndex(ed, sd);
-        for (int i = 0; i < sz; i++) {
+        for (unsigned i = 0; i < sz; i++) {
           nb->d_ref(i) = linkNode( (si == i) ? sd : ed );
           nb->setEdge(i, ev);
         }
       } else {
         // No identity reduction possible.
-        for (int i = 0; i < sz; i++) {
+        for (unsigned i = 0; i < sz; i++) {
           nb->d_ref(i) = linkNode(ed);
           nb->setEdge(i, ev);
         }

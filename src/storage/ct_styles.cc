@@ -36,7 +36,6 @@
 // #define DEBUG_REMOVESTALES
 // #define DEBUG_REMOVESTALES_DETAILS
 
-// #define CONTINUOUS_SCAN
 // #define DEBUG_CT_SCAN
 // #define DEBUG_CT
 

@@ -329,6 +329,10 @@ inline unsigned MEDDLY::forest::FID() const {
   return fid;
 }
 
+inline unsigned MEDDLY::forest::MaxFID() {
+  return gfid;
+}
+
 inline const MEDDLY::domain* MEDDLY::forest::getDomain() const {
   return d;
 }
@@ -597,9 +601,13 @@ inline void MEDDLY::dd_edge::clear() {
   raw_value = 0;
 }
 
-inline MEDDLY::forest* MEDDLY::dd_edge::getForest() const { return parent; }
+inline MEDDLY::forest* MEDDLY::dd_edge::getForest() const { 
+  return parent; 
+}
 
-inline MEDDLY::node_handle MEDDLY::dd_edge::getNode() const { return node; }
+inline MEDDLY::node_handle MEDDLY::dd_edge::getNode() const { 
+  return node; 
+}
 
 inline double MEDDLY::dd_edge::getCardinality() const {
   double c;

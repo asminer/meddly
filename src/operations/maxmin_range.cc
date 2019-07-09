@@ -154,7 +154,7 @@ int MEDDLY::maxrange_int::compute_r(node_handle a)
 
   // recurse
   max = compute_r(A->d(0));
-  for (int i=1; i<A->getSize(); i++) {
+  for (unsigned i=1; i<A->getSize(); i++) {
     max = MAX(max, compute_r(A->d(i)));
   }
 
@@ -197,7 +197,7 @@ int MEDDLY::minrange_int::compute_r(node_handle a)
 
   // recurse
   min = compute_r(A->d(0));
-  for (int i=1; i<A->getSize(); i++) {
+  for (unsigned i=1; i<A->getSize(); i++) {
     min = MIN(min, compute_r(A->d(i)));
   }
 
@@ -242,7 +242,7 @@ float MEDDLY::maxrange_real::compute_r(node_handle a)
 
   // recurse
   max = compute_r(A->d(0));
-  for (int i=1; i<A->getSize(); i++) {
+  for (unsigned i=1; i<A->getSize(); i++) {
     max = MAX(max, compute_r(A->d(i)));
   }
 
@@ -287,7 +287,7 @@ float MEDDLY::minrange_real::compute_r(node_handle a)
 
   // recurse
   min = compute_r(A->d(0));
-  for (int i=1; i<A->getSize(); i++) {
+  for (unsigned i=1; i<A->getSize(); i++) {
     min = MIN(min, compute_r(A->d(i)));
   }
 

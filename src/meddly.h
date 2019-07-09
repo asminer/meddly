@@ -55,9 +55,10 @@
 #define DCASSERTS_ON
 #endif
 
-
 // #define TRACK_DELETIONS
 // #define TRACK_CACHECOUNT
+// #define TRACK_UNREACHABLE_NODES
+
 
 // Use this for assertions that will fail only when your
 // code is wrong.  Handy for debugging.
@@ -73,7 +74,6 @@
 #else
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
 #endif
-
 
 
 namespace MEDDLY {
@@ -902,7 +902,7 @@ class MEDDLY::output {
           @param  human   If false, units will be "bytes".
                           If true, scale units so that output is betwen one and 1000.
     */
-    void put_mem(long m, bool human);
+    void put_mem(size_t m, bool human);
 
 };  // end of output class
 
@@ -1140,20 +1140,24 @@ class MEDDLY::forest {
       const node_storage_style* nodestor;
 
       /// Memory compactor: never run if fewer than this many unused slots.
-      int compact_min;
+      // int compact_min;
       /// Memory compactor: always run if more than this many unused slots.
-      int compact_max;
+      // int compact_max;
       /// Memory compactor: fraction of unused slots to trigger.
-      int compact_frac;
+      // int compact_frac;
 
       /// Number of zombie nodes to trigger garbage collection
-      int zombieTrigger;
+      // int zombieTrigger;
       /// Number of orphan nodes to trigger garbage collection
-      int orphanTrigger;
+      // int orphanTrigger;
       /// Should we run the memory compactor after garbage collection
-      bool compactAfterGC;
+      // bool compactAfterGC;
       /// Should we run the memory compactor before trying to expand
-      bool compactBeforeExpand;
+      // bool compactBeforeExpand;
+
+      /// Use reference counts to know when nodes can be recycled.
+      /// Otherwise, use mark and sweep to recycle disconnected nodes.
+      bool useReferenceCounts;
 
       /// Empty constructor, for setting up defaults later
       policies();
@@ -1190,20 +1194,24 @@ class MEDDLY::forest {
 
     /// Collection of various stats for performance measurement
     struct statset {
+      /// Number of times we scanned for reachable nodes
+      long reachable_scans;
       /// Number of times a dead node was resurrected.
       long reclaimed_nodes;
       /// Number of times the forest storage array was compacted
       long num_compactions;
       /// Number of times the garbage collector ran.
       long garbage_collections;
-      /// Current number of zombie nodes (waiting for deletion)
-      long zombie_nodes;
-      /// Current number of orphan nodes (disconnected)
-      long orphan_nodes;
+
+#ifdef TRACK_UNREACHABLE_NODES
+      /// Current number of unreachable (disconnected) nodes
+      long unreachable_nodes;
+#endif
+
       /// Current number of connected nodes
       long active_nodes;
       /// Current number of temporary nodes
-      long temp_nodes;
+      // long temp_nodes;
 
       /// Peak number of active nodes
       long peak_active;
@@ -1358,6 +1366,9 @@ class MEDDLY::forest {
 
     /// Returns the forest identifier, a unique integer per forest.
     unsigned FID() const;
+
+    /// Returns the largest forest identifier ever seen.
+    static unsigned MaxFID();
 
     /// Returns a non-modifiable pointer to this forest's domain.
     const domain* getDomain() const;
@@ -1957,12 +1968,12 @@ class MEDDLY::forest {
         All disconnected nodes in this forest are discarded along with any
         compute table entries that may include them.
     */
-    virtual void garbageCollect() = 0;
+    // virtual void garbageCollect() = 0;
 
     /** Compact the memory for all variables in this forest.
         This is not the same as garbage collection.
     */
-    virtual void compactMemory() = 0;
+    // virtual void compactMemory() = 0;
 
     /** Create an edge representing the subset of a Matrix Diagram.
 
@@ -2032,8 +2043,8 @@ class MEDDLY::forest {
   private:  // For operation registration
     friend class operation;
 
-    int* opCount;
-    int szOpCount;
+    unsigned* opCount;
+    unsigned szOpCount;
 
     /// Register an operation with this forest.
     /// Called only within operation.
@@ -2390,6 +2401,9 @@ class MEDDLY::dd_edge {
     */
     forest* getForest() const;
 
+    /// Set the forest owning this edge.
+    void setForest(forest* f);
+
     /** Get this dd_edge's node handle.
         @return         the node handle.
     */
@@ -2561,6 +2575,7 @@ class MEDDLY::dd_edge {
 
   private:
     friend class forest;
+    friend class unpacked_node;
 
     void setIndex(unsigned ind);
     unsigned getIndex() const;

@@ -106,13 +106,13 @@ class MEDDLY::mt_forest : public expert_forest {
       } else {
         km1 = k-1;
       }
-      int sz = getLevelSize(level);
+      unsigned sz = unsigned(getLevelSize(level));
 
       /*
           Make this node
       */
       unpacked_node* nb = unpacked_node::newFull(this, k, sz);
-      for (int i=0; i<sz; i++) {
+      for (unsigned i=0; i<sz; i++) {
         nb->d_ref(i) = makeNodeAtLevel(km1, 
           ENCODER::value2handle(vals ? vals[i] : i)
         );

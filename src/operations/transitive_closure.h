@@ -74,7 +74,8 @@ protected:
   binary_operation* plusOp;
   binary_operation* minOp;
 
-  void iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
+  // void iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
+  void iterate(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& c);
 
 public:
   transitive_closure_forwd_bfs(const constrained_opname* code,
@@ -97,7 +98,7 @@ protected:
   binary_operation* mxdIntersectionOp;
   binary_operation* minOp;
 
-  node_handle* splits;
+  dd_edge* splits;
 
   bool checkTerminals(int aev, node_handle a, int bev, node_handle b, node_handle c, long& dev, node_handle& d);
 
@@ -106,7 +107,7 @@ protected:
   void saveResult(compute_table::entry_key* key,
     long aev, node_handle a, long bev, node_handle b, node_handle c, long dev, node_handle d);
 
-  void splitMxd(node_handle mxd);
+  void splitMxd(const dd_edge& mxd);
   virtual void recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c) = 0;
 
 public:

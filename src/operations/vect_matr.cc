@@ -115,7 +115,7 @@ class MEDDLY::VM_evplus_mt : public base_evplus_mt {
       node_handle x_ind, node_handle A);
 
     void comp_pr(int k, double* y, node_handle y_ind, const double* x, 
-      node_handle x_ind, int ain, node_handle A);
+      node_handle x_ind, unsigned ain, node_handle A);
 
 };
 
@@ -161,8 +161,8 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
     unpacked_node* xR = unpacked_node::newFromNode(fx, x_ind, false);
     unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, false);
 
-    int xp = 0;
-    int yp = 0;
+    unsigned xp = 0;
+    unsigned yp = 0;
     for (;;) {
       if (xR->i(xp) < yR->i(yp)) {
         xp++;
@@ -205,8 +205,8 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   unpacked_node* xR = unpacked_node::useUnpackedNode();
   xR->initFromNode(fx, x_ind, false);
 
-  int xp = 0;
-  int ap = 0;
+  unsigned xp = 0;
+  unsigned ap = 0;
   for (;;) {
     if (aR->i(ap) < xR->i(xp)) {
       ap++;
@@ -232,7 +232,7 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
 }
 
 void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind, 
-  const double* x, node_handle x_ind, int ain, node_handle a)
+  const double* x, node_handle x_ind, unsigned ain, node_handle a)
 {
   // Handles the primed levels of A
   if (0==k) {
@@ -251,8 +251,8 @@ void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
   unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, false);
 
 
-  int yp = 0;
-  int ap = 0;
+  unsigned yp = 0;
+  unsigned ap = 0;
   for (;;) {
     if (aR->i(ap) < yR->i(yp)) {
       ap++;
@@ -293,7 +293,7 @@ class MEDDLY::MV_evplus_mt : public base_evplus_mt {
       node_handle x_ind, node_handle A);
 
     void comp_pr(int k, double* y, node_handle y_ind, const double* x, 
-      node_handle x_ind, int ain, node_handle A);
+      node_handle x_ind, unsigned ain, node_handle A);
 
 };
 
@@ -339,8 +339,8 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
     unpacked_node* xR = unpacked_node::newFromNode(fx, x_ind, false);
     unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, false);
 
-    int xp = 0;
-    int yp = 0;
+    unsigned xp = 0;
+    unsigned yp = 0;
     for (;;) {
       if (xR->i(xp) < yR->i(yp)) {
         xp++;
@@ -383,8 +383,8 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, false);
 
 
-  int yp = 0;
-  int ap = 0;
+  unsigned yp = 0;
+  unsigned ap = 0;
   for (;;) {
     if (aR->i(ap) < yR->i(yp)) {
       ap++;
@@ -410,7 +410,7 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
 }
 
 void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind, 
-  const double* x, node_handle x_ind, int ain, node_handle a)
+  const double* x, node_handle x_ind, unsigned ain, node_handle a)
 {
   // Handles the primed levels of A
   if (0==k) {
@@ -429,8 +429,8 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
   unpacked_node* xR = unpacked_node::newFromNode(fx, x_ind, false);
 
 
-  int xp = 0;
-  int ap = 0;
+  unsigned xp = 0;
+  unsigned ap = 0;
   for (;;) {
     if (aR->i(ap) < xR->i(xp)) {
       ap++;
