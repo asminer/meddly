@@ -1,5 +1,6 @@
 ---
 title: Downloading
+shorttitle: Downloading
 ---
 
 The source code for MEDDLY may be obtained by downloading one of the archived

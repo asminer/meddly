@@ -1,5 +1,6 @@
 ---
 title: Publications
+shorttitle: Publications
 ---
 
 The following publications are related to MEDDLY, 

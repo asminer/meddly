@@ -9,6 +9,7 @@ Preferred mechanism to "release" the library:
 
 (3) check new version in configure.ac
 
-(4) add an entry in docs/_releases
+(4) add an entry in docs/_releases, and update
+    docs/_data/navigation.yml
 
 (5) bask in the glory of a job well-done

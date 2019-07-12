@@ -1,0 +1,29 @@
+
+{% assign next = page.next %}
+{% assign previous = page.previous %}
+
+<nav class="pagination">
+  {% if page.collection == "releases" %}
+    {% if next %}
+    <a href="{{ next.url | absolute_url }}" class="pagination--pager" title="{{ next.title | markdownify | strip_html }}">&laquo;&nbsp;{{ next.shorttitle }}</a>
+    {% else %}
+    <a href="#" class="pagination--pager disabled">&laquo;</a>
+    {% endif %}
+    {% if previous %}
+    <a href="{{ previous.url | absolute_url }}" class="pagination--pager" title="{{ previous.title | markdownify | strip_html }}">{{ previous.shorttitle }}&nbsp;&raquo;</a>
+    {% else %}
+    <a href="#" class="pagination--pager disabled">&raquo;</a>
+    {% endif %}
+  {% else %}
+    {% if previous %}
+    <a href="{{ previous.url | absolute_url }}" class="pagination--pager" title="{{ previous.title | markdownify | strip_html }}">&laquo;&nbsp;{{ previous.shorttitle }}</a>
+    {% else %}
+    <a href="#" class="pagination--pager disabled">&laquo;</a>
+    {% endif %}
+    {% if next %}
+    <a href="{{ next.url | absolute_url }}" class="pagination--pager" title="{{ next.title | markdownify | strip_html }}">{{ next.shorttitle }}&nbsp;&raquo;</a>
+    {% else %}
+    <a href="#" class="pagination--pager disabled">&raquo;</a>
+    {% endif %}
+  {% endif %}
+</nav>

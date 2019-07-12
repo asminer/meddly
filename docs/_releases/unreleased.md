@@ -1,5 +1,6 @@
 ---
 title: New since last release
+shorttitle: Since last release
 number: changes
 layout: single
 ---
@@ -9,7 +10,7 @@ layout: single
 * Under forest policies, you can now decide (at runtime) to use
   reference counts or mark and sweep for garbage collection.
   The current default is to use reference counts.
-  Set ```useReferenceCounts''' to false to instead use mark and sweep.
+  Set ```useReferenceCounts``` to false to instead use mark and sweep.
 
 ### Expert Interface Changes
 

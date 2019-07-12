@@ -27,15 +27,11 @@ layout: default
       {% unless page.header.overlay_color or page.header.overlay_image %}
         <header>
           {% if page.title %}
+            <h1 id="page-title" class="page__title" itemprop="headline">
+              {{ page.title }} 
+            </h1>
             {% if page.date %}
-              <h1 id="page-title" class="page__title" itemprop="headline">
-                {{ page.title | markdownify | remove: "<p>" | remove: "</p>" }}
-                (released {{ page.date | date_to_string }})
-              </h1>
-            {% else %}
-              <h1 id="page-title" class="page__title" itemprop="headline">
-                {{ page.title | markdownify | remove: "<p>" | remove: "</p>" }}
-              </h1>
+                <h2>Released {{ page.date | date_to_string }} </h2>
             {% endif %}
           {% endif %}
           {% if page.read_time %}
