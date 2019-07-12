@@ -506,7 +506,7 @@ void MEDDLY::node_headers::counter_array::shrink32to16(size_t ns)
   parent.changeHeaderSize(32, 16);
   bytes = sizeof(unsigned short);
   data16 = (unsigned short*) malloc(ns * bytes);
-  if (0==data8) {
+  if (0==data16) {
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
   size_t stop = (ns < size) ? ns : size;

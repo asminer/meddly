@@ -48,6 +48,7 @@ int N;
 FILE* outfile;
 const char* lfile;
 bool build_pdf;
+bool mark_sweep;
 bool pessimistic;
 unsigned ct_maxsize;
 
@@ -60,7 +61,9 @@ forest* buildQueenForest(forest::policies &p)
 {
   printf("Initializing domain and forest\n");
   const char* ndp = "unknown node deletion";
-  switch (p.deletion) {
+  if (!p.useReferenceCounts) {
+    ndp = "mark and sweep node deletion";
+  } else switch (p.deletion) {
     case forest::policies::NEVER_DELETE:
         ndp = "never delete";
         break;
@@ -163,16 +166,23 @@ bool processArgs(int argc, const char** argv)
 {
   build_pdf = false;
   lfile = 0;
+  mark_sweep = true;
   pessimistic = true;
   ct_maxsize = 0;
   N = -1;
   int i;
   for (i=1; i<argc; i++) {
+    if (strcmp("-ms", argv[i])==0) {
+      mark_sweep = true;
+      continue;
+    }
     if (strcmp("-opt", argv[i])==0) {
+      mark_sweep = false;
       pessimistic = false;
       continue;
     }
     if (strcmp("-pess", argv[i])==0) {
+      mark_sweep = false;
       pessimistic = true;
       continue;
     }
@@ -218,8 +228,9 @@ int usage(const char* who)
   printf("Usage: %s <-opt> <-pess> <-l lfile> <-ct size> N <outfile>\n\n", name);
   printf("\t        N:  board dimension\n");
   printf("\t -ct size:  Maximum entries in compute table\n");
-  printf("\t     -opt:  Optimistic node deletion\n");
-  printf("\t    -pess:  Pessimistic node deletion (default)\n");
+  printf("\t      -ms:  Mark and sweep node deletion (default)\n");
+  printf("\t     -opt:  Reference counts and Optimistic node deletion\n");
+  printf("\t    -pess:  Reference counts and Pessimistic node deletion\n");
   printf("\t -l lfile:  Write logging information to specified file\n");
   printf("\t     -pdf:  Write MDD of solutions to out.pdf\n\n");
   printf("\t<outfile>:  if specified, we write all solutions to this file\n\n");
@@ -237,9 +248,13 @@ int main(int argc, const char** argv)
   initialize(INIT);
 
   forest::policies p(false);
-  if (pessimistic) {
+  if (mark_sweep) {
+    p.useReferenceCounts = false;
+  } else if (pessimistic) {
+    p.useReferenceCounts = true;
     p.setPessimistic();
   } else {
+    p.useReferenceCounts = true;
     p.setOptimistic();
   }
   printf("Using %s\n", getLibraryInfo(0));
@@ -289,7 +304,7 @@ int main(int argc, const char** argv)
   dd_edge solutions(f);
 
   int q;
-  for (q=1; q<=N; q++) {
+  try { for (q=1; q<=N; q++) {
 
     char buffer[80];
     snprintf(buffer, 80, "Trying to cover with %d queens", q);
@@ -340,6 +355,12 @@ int main(int argc, const char** argv)
       break;
     }
   } // for q
+  } // try
+  catch (MEDDLY::error e) {
+    printf("\n\nCaught error: %s (from %s line %d)\n\n", 
+      e.getName(), e.getFile(), e.getLine()
+    );
+  };
 
   // Cleanup
   for (int i=0; i<N; i++) delete qic[i];

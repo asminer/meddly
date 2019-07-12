@@ -46,6 +46,7 @@ long* scratch;
 const char* lfile;
 bool build_pdf;
 bool pessimistic;
+bool mark_sweep;
 unsigned ct_max;
 
 bool use_folding;
@@ -136,6 +137,7 @@ bool processArgs(int argc, const char** argv)
 {
   lfile = 0;
   build_pdf = false;
+  mark_sweep = true;
   pessimistic = true;
   ct_max = 0;
   bool setN = false;
@@ -150,11 +152,17 @@ bool processArgs(int argc, const char** argv)
         use_folding = true;
         continue;
       }
+      if (strcmp("-ms", argv[i])==0) {
+        mark_sweep = true;
+        continue;
+      }
       if (strcmp("-opt", argv[i])==0) {
+        mark_sweep = false;
         pessimistic = false;
         continue;
       }
       if (strcmp("-pess", argv[i])==0) {
+        mark_sweep = false;
         pessimistic = true;
         continue;
       }
@@ -198,8 +206,9 @@ int usage(const char* who)
   printf("\t    -acc:  Accumulate constraints in order (default)\n");
   printf("\t   -fold:  Accumulate constraints in pairs\n");
   printf("\t-ct size:  Maximum entries in compute table\n");
-  printf("\t    -opt:  Optimistic node deletion\n");
-  printf("\t   -pess:  Pessimistic node deletion (default)\n");
+  printf("\t     -ms:  Mark and sweep node deletion (default)\n");
+  printf("\t    -opt:  Reference counts and Optimistic node deletion\n");
+  printf("\t   -pess:  Reference counts and Pessimistic node deletion\n");
   printf("\t-l lfile:  Write logging information to specified file\n");
   printf("\t    -pdf:  Write MDD of solutions to out.pdf\n\n");
   return 1;
@@ -216,9 +225,13 @@ int main(int argc, const char** argv)
   initialize(INIT);
 
   forest::policies p(false);
-  if (pessimistic) {
+  if (mark_sweep) {
+    p.useReferenceCounts = false;
+  } else if (pessimistic) {
+    p.useReferenceCounts = true;
     p.setPessimistic();
   } else {
+    p.useReferenceCounts = true;
     p.setOptimistic();
   }
   printf("Using %s\n", getLibraryInfo(0));
@@ -230,18 +243,23 @@ int main(int argc, const char** argv)
   watch.note_time();
   printf("Initializing domain and forest\n");
   const char* ndp = "unknown node deletion";
-  switch (p.deletion) {
-    case forest::policies::NEVER_DELETE:
+  if (!p.useReferenceCounts) {
+    // TBD - can we use "never delete" with mark and sweep?
+    ndp = "mark and sweep node deletion";
+  } else {
+    switch (p.deletion) {
+      case forest::policies::NEVER_DELETE:
         ndp = "never delete";
         break;
 
-    case forest::policies::OPTIMISTIC_DELETION:
+      case forest::policies::OPTIMISTIC_DELETION:
         ndp = "optimistic node deletion";
         break;
 
-    case forest::policies::PESSIMISTIC_DELETION:
+      case forest::policies::PESSIMISTIC_DELETION:
         ndp = "pessimistic node deletion";
         break;
+    }
   }
   printf("\tUsing %s policy\n", ndp);
 
