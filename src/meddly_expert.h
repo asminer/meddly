@@ -759,6 +759,14 @@ class MEDDLY::unpacked_node {
 	void setMarkedNC();
 	void setMarkedC();
 	void setMarkedNV();
+	//--------------------------------------------------------------------------
+	// Methods for accessing the infinity portion of the node
+	bool getHasInfty() const;
+	void setHasInfty();
+	void unsetHasInfty();
+	node_handle d_Infty() const;
+	unsigned i_Infty() const;
+
 	// -------------------------------------------------------------------------
     // -------------------------------------------------------------------------
     // Methods to access the extensible portion of the node
@@ -909,6 +917,7 @@ class MEDDLY::unpacked_node {
     unsigned* index;
     void* edge;
     bool is_extensible;
+    bool hasInfty;
     unsigned alloc;
     unsigned ealloc;
     unsigned size;

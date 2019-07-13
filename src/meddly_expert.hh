@@ -390,6 +390,37 @@ inline void MEDDLY::unpacked_node::setMarkedNC() {
 inline void MEDDLY::unpacked_node::setMarkedNV() {
 	marked = markedWith::NV;
 }
+//----------------------------------------------
+// Infinity portion of the node.
+//----------------------------------------------
+
+inline bool
+MEDDLY::unpacked_node::getHasInfty()const{
+	return hasInfty;
+}
+
+inline void
+MEDDLY::unpacked_node::setHasInfty(){
+	hasInfty=true;
+}
+
+inline void
+MEDDLY::unpacked_node::unsetHasInfty(){
+	hasInfty=false;
+}
+
+inline unsigned
+MEDDLY::unpacked_node::i_Infty()const{
+	MEDDLY_DCASSERT(hasInfty());
+	return 0;
+}
+
+inline MEDDLY::node_handle
+MEDDLY::unpacked_node::d_Infty()const{
+	MEDDLY_DCASSERT(hasInfty());
+	return d(0);
+}
+
 // ---------------------------------------------
 // Extensible portion of the node
 // ---------------------------------------------
@@ -419,7 +450,7 @@ MEDDLY::unpacked_node::ext_i() const
   MEDDLY_DCASSERT(isExtensible());
   return isSparse()? i(getNNZs() - 1): getSize() - 1;
 }
-
+// extensible down pointer.
 inline MEDDLY::node_handle
 MEDDLY::unpacked_node::ext_d() const
 {
