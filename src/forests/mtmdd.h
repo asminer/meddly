@@ -160,8 +160,19 @@ namespace MEDDLY {
             }
             batchP++;
           } else {
-            MEDDLY_DCASSERT(unprimed(i, k) >= 0);
+        	  printf("COME HERE!\n");
+            MEDDLY_DCASSERT(unprimed(i, k) >= 0||unprimed(i, k)==Omega);
+            if(unprimed(i, k)==Omega)
+            {
+//            	printf("VVV %d\n",F->getLevelSize(k));
+            	nextV = MIN(nextV, unsigned(F->getLevelSize(k)-1));
+            	printf("nextV is %d\n",nextV);
+
+            }
+            else{
             nextV = MIN(nextV, unsigned(unprimed(i, k)));
+            printf("Else nextV is %d\n",nextV);
+            }
           }
         }
 
@@ -172,6 +183,7 @@ namespace MEDDLY {
           for (unsigned v = 0; v<lastV; v++) {
         	  nb->d_ref(v)=F->linkNode(dontcares);
           }
+          if(F->getHasInftyLevel(k)) nb->setHasInfty();
           if (F->isExtensibleLevel(k)) nb->markAsExtensible();
           node_handle built=F->createReducedNode(-1, nb);
           F->unlinkNode(dontcares);
@@ -245,8 +257,16 @@ namespace MEDDLY {
 			        v++;
 			      }
 		      }
-
-          if (F->isExtensibleLevel(k)) {
+		  if (F->getHasInftyLevel(k)){
+			  printf("F->getHasInftyLevel(k) true\n");
+				nb->resize(lastV + 1);
+				nb->i_ref(z) = v;
+				nb->d_ref(z) = F->linkNode(zero);
+				z++;
+				v++;
+				nb->setHasInfty();
+		  }
+		  else  if (F->isExtensibleLevel(k)) {
             nb->resize(lastV+1);
             nb->i_ref(z)=v;
             nb->d_ref(z)=F->linkNode(zero);
@@ -270,7 +290,18 @@ namespace MEDDLY {
 			    // (1) move anything with value v, to the "new" front
 			    //
 			    for (int i=start; i<stop; i++) {
-			      if (v == unprimed(i, k)) {
+					if (unprimed(i, k) == Omega) {
+						int nV = F->getLevelSize(k) - 1;
+						if (v == nV) {
+							if (batchP != i) {
+								swap(batchP, i);
+							}
+							batchP++;
+						} else {
+							nextV = MIN(nextV, unsigned(nV));
+						}
+					}
+					else if (v == unprimed(i, k)) {
 				      if (batchP != i) {
 				        swap(batchP, i);
 				      }
@@ -328,11 +359,13 @@ namespace MEDDLY {
               for (int v=1; v<sz; v++) {
                 nb->d_ref(v) = F->linkNode(bottom);
               }
+              if(F->getHasInftyLevel(i)) nb->setHasInfty();
               if (F->isExtensibleLevel(i)) nb->markAsExtensible();
               bottom = F->createReducedNode(-1, nb);
             } else {
               if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
                 int sz = F->getLevelSize(i);
+                if (F->getHasInftyLevel(i) && (sz == _vlist[i]+1)) sz++;
                 if (F->isExtensibleLevel(i) && (sz == _vlist[i]+1)) sz++;
                 unpacked_node* nb = unpacked_node::newFull(F, i, sz);
                 node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
@@ -341,16 +374,27 @@ namespace MEDDLY {
                   nb->d_ref(v)=(v==_vlist[i] ? bottom : F->linkNode(zero));
                 }
                 F->unlinkNode(zero);
+                if(F->getHasInftyLevel(i)) nb->setHasInfty();
                 if (F->isExtensibleLevel(i)) nb->markAsExtensible();
                 bottom=F->createReducedNode(-1, nb);
               }
               else{
                 // make a singleton node
                 unpacked_node* nb = unpacked_node::newSparse(F, i, 1);
-                MEDDLY_DCASSERT(_vlist[i] >= 0);
+                printf("In else block_vlist[i] %d\n",_vlist[i]);
+                MEDDLY_DCASSERT(_vlist[i] >= 0| _vlist[i]==Omega);
+                if(_vlist[i]==Omega){
+                	int sz = F->getLevelSize(i);
+                	printf("COmeHereOMEGA  %d %d\n",sz, nb->infty_i());
+                	nb->i_ref(0)=F->getLevelSize(i)-1;
+                	nb->d_ref(0) = bottom;
+                	bottom = F->createReducedNode(-1, nb);
+                }
+                else{
                 nb->i_ref(0) = unsigned(_vlist[i]);
                 nb->d_ref(0) = bottom;
                 bottom = F->createReducedNode(-1, nb);
+                }
               }
             }
           } // for i

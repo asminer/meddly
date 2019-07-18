@@ -314,6 +314,7 @@ class MEDDLY::expert_variable : public variable {
     /// Update our list of domains: remove \a d.
     void removeFromList(const domain* d);
 
+    void enlargeBound(bool prime, int b, bool hasInfty);
     /** Enlarge the possible values for a variable.
       This could modify all nodes in all forests, depending on the
       choice of reduction rule.
@@ -746,6 +747,16 @@ class MEDDLY::unpacked_node {
     /// Get the edge value, as a float.
     float ef(unsigned i) const;
 
+
+    bool getHasInfty() const;
+
+    void setHasInfty();
+    void unsetHasInfty();
+
+    node_handle infty_d() const;
+    unsigned infty_i() const;
+
+
     // -------------------------------------------------------------------------
     // Methods to access the extensible portion of the node
     //
@@ -895,6 +906,7 @@ class MEDDLY::unpacked_node {
     unsigned* index;
     void* edge;
     bool is_extensible;
+    bool hasInfty;
     unsigned alloc;
     unsigned ealloc;
     unsigned size;
@@ -2358,6 +2370,7 @@ class MEDDLY::expert_forest: public forest
     bool isValidLevel(int k) const;
     bool isExtensibleLevel(int k) const;
 
+    bool getHasInftyLevel(int k) const;
     /// The maximum size (number of indices) a node at this level can have
     int getLevelSize(int lh) const;
     // The maximum size (number of indices) a variable can have.

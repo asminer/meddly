@@ -43,6 +43,15 @@ void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
 {
   binary_operation* unionOp = getOperation(UNION, this, this, this);
   enlargeStatics(N);
+  printf("size of vlist is %d\n",sizeof(vlist));
+  printf("N is %d\n",N);
+  printf("getDomain()->getNumVariables() : %d\n",getDomain()->getNumVariables());
+  int ssize=getDomain()->getNumVariables();
+	for (int k = 0; k <= ssize; k++) {
+		for (int ii = 0; ii < N; ii++) {
+			printf("%d,%d : %d\n",ii,k, vlist[ii][k]);
+		}
+	}
   enlargeVariables(vlist, N, false);
   
   int num_vars=getNumVariables();

@@ -531,6 +531,17 @@ inline const char* MEDDLY::variable::getName() const { return name; }
 inline bool MEDDLY::variable::isExtensible() const { 
   return is_extensible;
 }
+inline bool MEDDLY::variable::getHasInfty() const {
+  return hasInfty;
+}
+
+inline void MEDDLY::variable::setHasInfty()  {
+  hasInfty=true;
+}
+
+inline void MEDDLY::variable::unsetHasInfty()  {
+  hasInfty=false;
+}
 
 // ******************************************************************
 // *                                                                *

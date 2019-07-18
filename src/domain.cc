@@ -177,6 +177,26 @@ void MEDDLY::expert_variable::removeFromList(const domain* d)
   if (0==dl_used) delete this;  
 }
 
+void MEDDLY::expert_variable::enlargeBound(bool prime, int b, bool _hasInfty)
+{
+  if (b < 1&& _hasInfty) {
+    hasInfty = true;
+    b = -b;
+  } else if (_hasInfty && b > 0) {
+    // changing from hasInfty to non-hasInfty
+    hasInfty = false;
+  }
+
+  if (prime) {
+    // set prime bound
+    if (b > pr_bound) pr_bound = b;
+  } else {
+    // set prime and unprime bound
+    if (b > un_bound) un_bound = b;
+    if (b > pr_bound) pr_bound = b;
+  }
+}
+
 void MEDDLY::expert_variable::enlargeBound(bool prime, int b)
 {
   if (b < 1) {

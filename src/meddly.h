@@ -2134,10 +2134,14 @@ class MEDDLY::variable {
     const char* getName() const;
     void setName(char* newname);
     bool isExtensible() const;
+    bool getHasInfty() const;
+    void setHasInfty();
+    void unsetHasInfty();
   protected:
     int un_bound;
     int pr_bound;
     bool is_extensible;
+    bool hasInfty;
   private:
     char* name;
 };

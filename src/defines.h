@@ -236,6 +236,7 @@ namespace MEDDLY {
 #define smart_cast	static_cast
 #endif
 
+#define Omega -10
 
 
 #endif

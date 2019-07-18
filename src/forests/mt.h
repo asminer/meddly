@@ -64,15 +64,53 @@ class MEDDLY::mt_forest : public expert_forest {
         Enlarge variables to include all given minterms.
     */
     inline void enlargeVariables(const int* const* vlist, int N, bool primed) {
+    	 printf("COMEHERE enlargeVariables %d\n",getDomain()->getNumVariables());
       for (int k=1; k<=getDomain()->getNumVariables(); k++) {
+    	  printf("COME TO K LOOP%d\n",N);
         int maxv = vlist[0][k];
+        expert_variable* vh = useExpertDomain()->getExpertVar(k);
+        bool hasInftyBefore=vh->getHasInfty();
+        printf("hasInftyBefore %d\n",hasInftyBefore);
+        bool hasInfty=false;
+        printf("MAXV: %d\n",maxv);
+        if (maxv==Omega){
+        	hasInfty=true;
+        }
         for (int i=1; i<N; i++) {
+        printf("vlist[i][k] :%d,%d: %d\n",i,k,vlist[i][k]);
+          if(vlist[i][k]==Omega){
+        	  hasInfty=true;
+          }
           maxv = MAX(maxv, vlist[i][k]);
         }
-        if (maxv < 1) continue;
-        if (maxv >= getDomain()->getVariableBound(k, primed)) {
+        if (hasInfty){
+//          maxv+=1;
+          vh->setHasInfty();
+          printf("vh set infty %d\n", vh->getHasInfty());
+        }
+        if (maxv < 1 && !hasInfty) continue;
+        if(!hasInftyBefore && hasInfty){
+
+        	maxv=MAX(maxv,getDomain()->getVariableBound(k, primed));
+//        	if (maxv >= getDomain()->getVariableBound(k, primed)) {
+        	          expert_variable* vh = useExpertDomain()->getExpertVar(k);
+        	          // if variable has set to have Infty the domain of varibale should enlarge accordingly.
+        	          printf("OOOmega%d\n",(maxv+1));
+//        	          if(vh->getHasInfty())
+        	        	 vh->enlargeBound(primed,-(maxv+1),true);
+//        	          else if (vh->isExtensible())
+//        	            vh->enlargeBound(primed, -(maxv+1));
+//        	          else
+//        	            vh->enlargeBound(primed, (maxv+1));
+//        	        }
+        }
+        else if (maxv >= getDomain()->getVariableBound(k, primed)) {
           expert_variable* vh = useExpertDomain()->getExpertVar(k);
-          if (vh->isExtensible())
+          // if variable has set to have Infty the domain of varibale should enlarge accordingly.
+          printf("OOOmega%d\n",(maxv+1));
+          if(vh->getHasInfty())
+        	 vh->enlargeBound(primed,-(maxv+1),true);
+          else if (vh->isExtensible())
             vh->enlargeBound(primed, -(maxv+1));
           else
             vh->enlargeBound(primed, (maxv+1));

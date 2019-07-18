@@ -364,6 +364,44 @@ MEDDLY::unpacked_node::setLevel(int k)
   level = k;
 }
 
+
+inline bool
+MEDDLY::unpacked_node::getHasInfty() const
+{
+  return hasInfty;
+}
+
+inline void
+MEDDLY::unpacked_node::setHasInfty()
+{
+  MEDDLY_DCASSERT(parent->getHasInftyLevel(getLevel()));
+  hasInfty = true;
+}
+
+inline void
+MEDDLY::unpacked_node::unsetHasInfty()
+{
+  hasInfty = false;
+}
+
+inline unsigned
+MEDDLY::unpacked_node::infty_i() const
+{
+  MEDDLY_DCASSERT(getHasInfty());
+//  parent->getLevelSize(getLevel())-1;
+  return parent->getLevelSize(getLevel())-1;//isSparse()? i(getNNZs() - 1): getSize() - 1;
+}
+
+inline MEDDLY::node_handle
+MEDDLY::unpacked_node::infty_d() const
+{
+  MEDDLY_DCASSERT(getHasInfty());
+  return d(parent->getLevelSize(getLevel())-1);
+//  return d( (isSparse()? getNNZs(): getSize()) - 1 );
+}
+
+
+
 // ---------------------------------------------
 // Extensible portion of the node
 // ---------------------------------------------
@@ -2158,6 +2196,14 @@ MEDDLY::expert_forest::isValidLevel(int k) const
 {
   return (k >= getMinLevelIndex()) && (k <= getNumVariables());
 }
+
+inline bool
+MEDDLY::expert_forest::getHasInftyLevel(int k) const
+{
+  MEDDLY_DCASSERT(isValidLevel(k));
+  return getDomain()->getVar(k < 0? -k: k)->getHasInfty();
+}
+
 
 inline bool
 MEDDLY::expert_forest::isExtensibleLevel(int k) const

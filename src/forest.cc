@@ -1268,9 +1268,9 @@ void MEDDLY::expert_forest
         const variable* v = getDomain()->getVar(getVarByLevel(ABS(k)));
         char primed = (k>0) ? ' ' : '\'';
         if (v->getName()) {
-          s << "Level: " << k << " Var: " << v->getName() << primed << '\n';
+          s << "Level: " << k << " Var: " << v->getName() << primed << "hasInfty: "<<v->getHasInfty()<<"Domain"<<v->getBound(false)<<'\n';
         } else {
-          s << "Level: " << k << " Var: " << getVarByLevel(ABS(k)) << primed << '\n';
+          s << "Level: " << k << " Var: " << getVarByLevel(ABS(k)) << primed << "hasInfty: "<<v->getHasInfty()<<"Domain"<<v->getBound(false)<<'\n';
         }
         printed = true;
       }
