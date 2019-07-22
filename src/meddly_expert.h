@@ -56,6 +56,17 @@ namespace MEDDLY {
   class expert_variable;
   class expert_domain;
 
+  class number_types;
+  class integer_number;
+  class positive_infinity;
+  class negative_infinity;
+  class variable_domains;
+  class natural_domain;
+  class zero_natural_domain;
+  class bounded_domain;
+  class integer_domian;
+  class natural_infinity_domain;
+  class intiger_infinity_domain;
   // wrapper for temporary nodes
   class unpacked_node;  // replacement for node_reader, node_builder
 
@@ -1898,6 +1909,92 @@ class MEDDLY::node_storage_style {
     const char* getName() const;
 };
 
+class MEDDLY::number_types
+{
+public:
+  virtual int getValue()=0;
+};
+
+class MEDDLY::integer_number: public number_types{
+private:
+  int value;
+
+  public :
+  void setValue(int _value){value=_value;};
+    int getValue(){return value;};
+};
+
+class MEDDLY::positive_infinity: public number_types{
+public:
+  int getValue(){ return 0;};
+};
+class MEDDLY::negative_infinity: public number_types{
+public:
+  int getValue(){ return 0;};
+};
+
+class MEDDLY::variable_domains{
+
+public:
+  virtual bool isInIt(MEDDLY::number_types* nt) =0;
+};
+
+class MEDDLY::natural_domain:public variable_domains{
+public:
+  bool isInIt(MEDDLY::number_types* nt){
+    if(dynamic_cast<integer_number*>(nt)!=nullptr){
+      if(dynamic_cast<integer_number*>(nt)->getValue()>0)
+      return true;
+    }
+    return false;
+  };
+};
+
+class MEDDLY::zero_natural_domain:public variable_domains{
+public:
+  bool isInIt(MEDDLY::number_types* nt){
+    if(dynamic_cast<integer_number*>(nt)!=nullptr){
+      if(dynamic_cast<integer_number*>(nt)->getValue()>=0)
+      return true;
+    }
+    return false;
+  };
+};
+
+class MEDDLY::integer_domian:public variable_domains{
+public:
+  bool isInIt(MEDDLY::number_types* nt){
+    if(dynamic_cast<integer_number*>(nt)!=nullptr){
+      return true;
+    }
+    return false;
+  };
+};
+
+class MEDDLY::intiger_infinity_domain:public variable_domains{
+public:
+  bool isInIt(MEDDLY::number_types* nt){
+    if(dynamic_cast<integer_number*>(nt)!=nullptr||dynamic_cast<positive_infinity*>(nt)!=nullptr){
+      return true;
+    }
+    return false;
+  };
+};
+
+
+class MEDDLY::natural_infinity_domain:public variable_domains{
+public:
+  bool isInIt(MEDDLY::number_types* nt){
+    if(dynamic_cast<integer_number*>(nt)!=nullptr){
+      if(dynamic_cast<integer_number*>(nt)->getValue()>0)
+      return true;
+    }
+    else if(dynamic_cast<positive_infinity*>(nt)!=nullptr){
+      return true;
+    }
+    return false;
+  };
+};
 // ******************************************************************
 // *                                                                *
 // *                       node_storage class                       *
