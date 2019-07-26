@@ -128,6 +128,18 @@ namespace MEDDLY {
   class memory_manager_style;
   class node_storage_style;
 
+  class number_types;
+   class integer_number;
+   class positive_infinity;
+   class negative_infinity;
+   class variable_domains;
+   class natural_domain;
+   class zero_natural_domain;
+   class bounded_domain;
+   class integer_domian;
+   class natural_infinity_domain;
+   class intiger_infinity_domain;
+
   class variable;
   class variable_order;
   class domain;
@@ -402,7 +414,7 @@ namespace MEDDLY {
         @param  name    Variable name (used only in display / debugging), or 0.
         @return A new variable, or 0 on error.
   */
-  variable* createVariable(int bound, char* name);
+  variable* createVariable(MEDDLY::variable_domains* bd,MEDDLY::number_types* bound, char* name);
 
   /** Front-end function to create a domain with the given variables.
         @param  vars    List of variables, in order.
@@ -434,7 +446,7 @@ namespace MEDDLY {
 
         @return A new domain.
   */
-  domain* createDomainBottomUp(const int* bounds, int N);
+  domain* createDomainBottomUp(variable_domains* bd, const number_types** bounds, int N);
 
 /* Commented out as of version 0.10
 #ifdef _MSC_VER
@@ -2127,7 +2139,7 @@ class MEDDLY::forest {
 */
 class MEDDLY::variable {
   protected:
-    variable(int bound, char* name);
+    variable(MEDDLY::variable_domains* bd,MEDDLY::number_types* bound, char* name);
     virtual ~variable();
   public:
     int getBound(bool primed) const;
@@ -2139,6 +2151,7 @@ class MEDDLY::variable {
     int pr_bound;
     bool is_extensible;
   private:
+    MEDDLY::variable_domains* variable_domain;
     char* name;
 };
 
@@ -2205,7 +2218,7 @@ class MEDDLY::domain {
                         Note: an extensible variable has a range [1 .. +infinity].
         @param  N       Number of variables.
     */
-    virtual void createVariablesBottomUp(const int* bounds, int N) = 0;
+    virtual void createVariablesBottomUp(MEDDLY::variable_domains* bd, const MEDDLY::number_types** bounds, int N) = 0;
 
     /** Create a forest in this domain.
         Conceptually, a forest is a structure used to represent a

@@ -282,10 +282,10 @@ void MEDDLY::apply(const binary_opname* code, const dd_edge &a,
 // front end - create and destroy objects
 //----------------------------------------------------------------------
 
-MEDDLY::variable* MEDDLY::createVariable(int bound, char* name)
+MEDDLY::variable* MEDDLY::createVariable(MEDDLY::variable_domains* bd, MEDDLY::number_types* bound, char* name)
 {
   if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
-  return new expert_variable(bound, name);
+  return new expert_variable(bd,bound, name);
 }
 
 MEDDLY::domain* MEDDLY::createDomain(variable** vars, int N)
@@ -294,11 +294,11 @@ MEDDLY::domain* MEDDLY::createDomain(variable** vars, int N)
   return new expert_domain(vars, N);
 }
 
-MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
+MEDDLY::domain* MEDDLY::createDomainBottomUp(variable_domains* bd,const number_types** bounds, int N)
 {
   if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   domain* d = new expert_domain(0, 0);
-  d->createVariablesBottomUp(bounds, N);
+  d->createVariablesBottomUp(bd,bounds, N);
   return d;
 }
 

@@ -52,12 +52,15 @@
 // variable
 // ----------------------------------------------------------------------
 
-MEDDLY::variable::variable(int b, char* n)
+MEDDLY::variable::variable(MEDDLY::variable_domains* bd, MEDDLY::number_types* b, char* n)
 : is_extensible(false), name(n)
 {
-  if (b < 0) { is_extensible = true; b = -b; }
-  un_bound = b;
-  pr_bound = b;
+  variable_domain=bd;
+  if(dynamic_cast<bounded_domain*>(variable_domain)!=nullptr){
+  if (dynamic_cast<integer_number*>(b)->getValue() < 0) { is_extensible = true; dynamic_cast<integer_number*>(b)->setValue( -dynamic_cast<integer_number*>(b)->getValue()); }
+  un_bound = dynamic_cast<integer_number*>(b)->getValue();
+  pr_bound = dynamic_cast<integer_number*>(b)->getValue();
+}
 }
 
 MEDDLY::variable::~variable()
@@ -138,8 +141,8 @@ bool MEDDLY::variable_order::is_compatible_with(const variable_order& order) con
 // expert_varaiable
 // ----------------------------------------------------------------------
 
-MEDDLY::expert_variable::expert_variable(int b, char* n)
- : variable(b, n)
+MEDDLY::expert_variable::expert_variable(MEDDLY::variable_domains* bd,MEDDLY::number_types* b, char* n)
+ : variable(bd,b, n)
 {
   domlist = 0;
   dl_alloc = 0;
@@ -516,7 +519,7 @@ MEDDLY::expert_domain::~expert_domain()
 {
 }
 
-void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
+void MEDDLY::expert_domain::createVariablesBottomUp(MEDDLY::variable_domains* bd, const MEDDLY::number_types** bounds, int N)
 {
   // domain must be empty -- no variables defined so far
   if (hasForests() || nVars != 0)
@@ -528,7 +531,7 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 
   vars[0] = 0;
   for (int i=1; i<=N; i++) {
-    vars[i] = MEDDLY::createVariable(bounds[i-1], 0);
+    vars[i] = MEDDLY::createVariable(bd,(number_types*)bounds[i-1], 0);
     ((expert_variable*)vars[i])->addToList(this);
   }
 
@@ -545,7 +548,7 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 }
 
 
-void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
+void MEDDLY::expert_domain::createVariablesTopDown(MEDDLY::variable_domains* bd, const MEDDLY::number_types** bounds, int N)
 {
   // domain must be empty -- no variables defined so far
   if (hasForests() || nVars != 0)
@@ -557,7 +560,7 @@ void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
 
   vars[0] = 0;
   for (int i=N; i; i--) {
-    vars[N-i+1] = MEDDLY::createVariable(bounds[i], 0);
+    vars[N-i+1] = MEDDLY::createVariable(bd,(number_types*)bounds[i], 0);
     ((expert_variable*)vars[i])->addToList(this);
   }
 
@@ -639,7 +642,11 @@ void MEDDLY::expert_domain::read(input &s)
     long bound;
     s.stripWS();
     bound = s.get_integer();
-    vars[nVars-i+1] = MEDDLY::createVariable(bound, 0);
+    MEDDLY::bounded_domain bd;
+    MEDDLY::variable_domains* vd=&bd;
+    MEDDLY::integer_number int_number(bound);
+    MEDDLY::number_types* number=&int_number;
+    vars[nVars-i+1] = MEDDLY::createVariable(vd,number, 0);
     ((expert_variable*)vars[i])->addToList(this);
   }
   s.stripWS();

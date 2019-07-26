@@ -69,7 +69,12 @@ int main(int argc, char *argv[])
   const int N = 2;
   const int bounds[N] = {4, 2};
   // d->createVariablesTopDown(bounds, N);
-  d->createVariablesBottomUp(bounds, N);
+  MEDDLY::bounded_domain bd;
+  MEDDLY::variable_domains* vd=&bd;
+  MEDDLY::integer_number* number4= new integer_number(4);
+  MEDDLY::integer_number* number2=new integer_number(2);
+  const MEDDLY::number_types* nbounds[N]={number4,number2};
+  d->createVariablesBottomUp(vd,nbounds, N);
 
   // Create an MDD forest in this domain (to store states)
   forest* states = d->createForest(false, forest::BOOLEAN,

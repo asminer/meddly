@@ -318,7 +318,7 @@ namespace MEDDLY {
 
 class MEDDLY::expert_variable : public variable {
   public:
-    expert_variable(int b, char* n);
+    expert_variable(MEDDLY::variable_domains* bd,MEDDLY::number_types* b, char* n);
 
     /// Update our list of domains: add \a d.
     void addToList(domain* d);
@@ -369,7 +369,7 @@ class MEDDLY::expert_domain : public domain {
   public:
     expert_domain(variable**, int);
 
-    virtual void createVariablesBottomUp(const int* bounds, int N);
+    virtual void createVariablesBottomUp(MEDDLY::variable_domains* bd, const MEDDLY::number_types** bounds, int N);
 
     /** Create all variables at once, from the top down.
       Requires the domain to be "empty" (containing no variables or forests).
@@ -382,7 +382,7 @@ class MEDDLY::expert_domain : public domain {
                       Note: an extensible variable has a range [1 .. +infinity].
       @param  N       Number of variables.
     */
-    void createVariablesTopDown(const int* bounds, int N);
+    void createVariablesTopDown(MEDDLY::variable_domains* bd, const MEDDLY::number_types** bounds, int N);
 
     /** Insert a new variable.
           @param  lev   Level to insert above; use 0 for a
@@ -1920,6 +1920,7 @@ private:
   int value;
 
   public :
+  integer_number(int _value){value=_value;};
   void setValue(int _value){value=_value;};
     int getValue(){return value;};
 };
@@ -1962,6 +1963,15 @@ public:
 };
 
 class MEDDLY::integer_domian:public variable_domains{
+public:
+  bool isInIt(MEDDLY::number_types* nt){
+    if(dynamic_cast<integer_number*>(nt)!=nullptr){
+      return true;
+    }
+    return false;
+  };
+};
+class MEDDLY::bounded_domain:public variable_domains{
 public:
   bool isInIt(MEDDLY::number_types* nt){
     if(dynamic_cast<integer_number*>(nt)!=nullptr){
