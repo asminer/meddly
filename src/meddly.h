@@ -128,6 +128,7 @@ namespace MEDDLY {
   class memory_manager_style;
   class node_storage_style;
 
+  class general_int;
   class variable;
   class variable_order;
   class domain;
@@ -2105,6 +2106,120 @@ class MEDDLY::forest {
     // global one
     static unsigned gfid;
 };
+
+
+class MEDDLY::general_int{
+private:
+  enum{
+    integer,
+    positive_infinity,
+    negative_infinity,
+    undefined
+  }type;
+  long value;
+public:
+  general_int(long _value){
+    this->type=integer;
+    value=_value;
+  };
+  general_int(){
+    this->type=undefined;
+  };
+  general_int(bool infty){
+    if(infty){
+      this->type=positive_infinity;
+    }else
+    {
+      this->type=negative_infinity;
+    }
+  };
+  inline bool operator< (const general_int& rhs){
+    if(rhs.type==positive_infinity){
+        if(this->type==integer ||this->type==negative_infinity)
+      return true;
+    }
+    if(rhs.type==integer){
+      if(this->type==integer){
+        return (this->value<rhs.value);
+      }else if(this->type==negative_infinity)
+          return true;
+        else
+          return false;
+      }
+    if(rhs.type==negative_infinity||rhs.type==undefined){
+      return false;
+    }
+    return false;
+  };
+  inline bool operator> (const general_int& rhs){
+    if(this->type==positive_infinity){
+        if(rhs.type==integer || rhs.type==negative_infinity)
+      return true;
+    }
+    if(this->type==integer){
+      if(rhs.type==integer){
+        return (this->value>rhs.value);
+      }else if(rhs.type==negative_infinity)
+          return true;
+        else
+          return false;
+      }
+    if(this->type==negative_infinity||this->type==undefined){
+      return false;
+    }
+    return false;
+  };
+  inline bool operator<=(const general_int& rhs){
+    if(rhs.type==positive_infinity){
+        if(this->type==integer || this->type==negative_infinity)
+      return true;
+    }
+    if(rhs.type==integer){
+      if(this->type==integer){
+        return (this->value<=rhs.value);
+      }else if(this->type==negative_infinity)
+          return true;
+        else
+          return false;
+      }
+    if(rhs.type==negative_infinity||rhs.type==undefined){
+      return false;
+    }
+    return false;
+  };
+  inline bool operator>=(const general_int& rhs){
+    if(this->type==positive_infinity){
+        if(rhs.type==integer || rhs.type==negative_infinity)
+      return true;
+    }
+    if(this->type==integer){
+      if(rhs.type==integer){
+        return (this->value>=rhs.value);
+      }else if(rhs.type==negative_infinity)
+          return true;
+        else
+          return false;
+      }
+    if(this->type==negative_infinity||this->type==undefined){
+      return false;
+    }
+    return false;
+   };
+  inline bool operator==(const general_int& rhs){
+
+    if((this->type==positive_infinity &&rhs.type==positive_infinity)||
+        (this->type==negative_infinity &&rhs.type==negative_infinity)){
+      return true;
+    }
+    if(this->type==integer&& rhs.type==integer){
+
+        return (this->value==rhs.value);
+      }
+  return false;
+  };
+
+};
+
 
 // ******************************************************************
 // *                                                                *
