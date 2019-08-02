@@ -101,6 +101,9 @@ MEDDLY::sccgraph::~sccgraph()
   free(graph_from);
   free(scc_edges);
   free(scc_from);
+  free(vertex_to_scc);
+  free(vertices_by_scc);
+  free(scc_vertex_offset);
 #ifdef DEBUG
   fprintf(stderr, "Exiting  sccgraph destructor\n");
 #endif
@@ -122,6 +125,17 @@ void MEDDLY::sccgraph::clear()
   scc_vertices_used = 0;
 }
 
+inline void show_array(MEDDLY::output &out, const char* what, const unsigned* A, unsigned n)
+{
+  out << what;
+  out << "[";
+  if (n) {
+    out << A[0];
+    for (unsigned i=1; i<n; i++) out << ", " << A[i];
+  }
+  out << "]\n";
+}
+
 void MEDDLY::sccgraph::dumpGraph(MEDDLY::output &out) const
 {
   out << "sccgraph structure\n";
@@ -141,7 +155,38 @@ void MEDDLY::sccgraph::dumpGraph(MEDDLY::output &out) const
     } while (ptr != graph_from[i]);
   } // for i
 
-  out << "  TBD...\n";
+  out << "  Vertex to SCC mapping:\n";
+  for (unsigned i=0; i<graph_vertices_used; i++) {
+    out << "      Vertex " << i << " is in SCC " << vertex_to_scc[i] << "\n";
+  }
+  for (unsigned i=0; i<scc_vertices_used; i++) {
+    out << "  SCC #" << i << " contains vertices:  ";
+    bool commas = false;
+    for (unsigned j=scc_vertex_offset[i]; j<scc_vertex_offset[i+1]; j++) {
+      if (commas) out << ", ";
+      out << vertices_by_scc[j];
+      commas = true;
+    }
+    out << "\n";
+  }
+  out << "  Edges between SCCs:\n";
+  for (unsigned i=0; i<scc_vertices_used; i++) {
+    out << "      From SCC#" << i << ":\n";
+    unsigned ptr = scc_from[i];
+    if (0==ptr) continue;
+    do {
+      ptr = scc_edges[ptr].next;
+      out << "\tTo SCC#" << scc_edges[ptr].to << "\n";
+    } while (ptr != scc_from[i]);
+  } // for i
+
+  out << "internal structure\n";
+  show_array(out, "   graph_from: ", graph_from, graph_vertices_used); 
+  show_array(out, "   scc_from: ", scc_from, scc_vertices_used); 
+  show_array(out, "   vertex_to_scc: ", vertex_to_scc, graph_vertices_used);
+  show_array(out, "   scc_vertex_offset: ", scc_vertex_offset, 1+scc_vertices_used);
+  show_array(out, "   vertices_by_scc: ", vertices_by_scc, graph_vertices_used);
+  out << "end\n";
 }
 
 void MEDDLY::sccgraph::add_edge(unsigned I, unsigned J, edge_label* L)
@@ -162,6 +207,10 @@ void MEDDLY::sccgraph::update_SCCs()
 
 void MEDDLY::sccgraph::expand_vertices(unsigned I)
 { 
+  //
+  // Add graph vertices as needed
+  //
+
   if (I > graph_vertices_alloc) {
     // enlarge
     if (0==graph_vertices_alloc) {
@@ -177,15 +226,72 @@ void MEDDLY::sccgraph::expand_vertices(unsigned I)
     if (0==graph_from) {
       throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
-  }
 
-  // TBD - new sccs also, expand here if needed
+    vertex_to_scc = (unsigned*)
+      realloc(vertex_to_scc, graph_vertices_alloc * sizeof(unsigned));
+
+    if (0==vertex_to_scc) {
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+
+    vertices_by_scc = (unsigned*)
+      realloc(vertices_by_scc, graph_vertices_alloc * sizeof(unsigned));
+
+    if (0==vertices_by_scc) {
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+  }
 
   for (unsigned i=graph_vertices_used; i<I; i++) {
     graph_from[i] = 0;
   }
+  const unsigned added_vertices = I - graph_vertices_used;
+
+  //
+  // Add SCC vertices as needed
+  //
+
+  if (scc_vertices_used + added_vertices > scc_vertices_alloc) {
+    // enlarge
+    if (0==scc_vertices_alloc) {
+      scc_vertices_alloc = 16;
+    } else if (scc_vertices_alloc > 1024) {
+      scc_vertices_alloc += 1024;
+    } else {
+      scc_vertices_alloc *= 2;
+    }
+    scc_from = (unsigned*) 
+      realloc(scc_from, scc_vertices_alloc * sizeof(unsigned));
+
+    if (0==scc_from) {
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+
+    scc_vertex_offset = (unsigned*) 
+      realloc(scc_vertex_offset, (1+scc_vertices_alloc) * sizeof(unsigned));
+
+    scc_vertex_offset[0] = 0;
+
+    if (0==scc_vertex_offset) {
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+  }
+
+  //
+  // Add a new SCC for each graph vertex added
+  //
+
+  for (unsigned i=0; i<added_vertices; i++) {
+    scc_from[scc_vertices_used+i] = 0;
+    vertex_to_scc[graph_vertices_used+i] = scc_vertices_used+i;
+
+    vertices_by_scc[ scc_vertex_offset[ scc_vertices_used+i ] ] = scc_vertices_used+i;
+
+    scc_vertex_offset[scc_vertices_used+i+1] = scc_vertex_offset[scc_vertices_used+i]+1;
+  }
 
   graph_vertices_used = I;
+  scc_vertices_used += added_vertices;
 }
 
 void MEDDLY::sccgraph::addGraphEdge(unsigned I, unsigned J, edge_label* L)
