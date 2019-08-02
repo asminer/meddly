@@ -7,13 +7,6 @@
 noinst_PROGRAMS = \
 testmddlib \
 graphs_to_mdds \
-test_union_mdd \
-test_union_mxd \
-test_mtmdd \
-test_mtmxd \
-test_evmdd \
-test_xdds \
-test_otf_sat \
 build_expression \
 dining_phils \
 rubiks_cube \
@@ -33,10 +26,18 @@ test_reorder_mtmxd \
 test_reorder_evmdd \
 rubiks_cube_phase \
 slot_phase \
+test_union_mdd \
+test_union_mxd \
+test_mtmdd \
+test_mtmxd \
+test_evmdd \
+test_xdds \
+test_otf_sat \
 test_memory \
 test_implicit_kanban \
 test_implicit_pool \
-test_implicit_smallos
+test_implicit_smallos \
+test_sccs
 
 
 # test_user_operation 
@@ -142,4 +143,7 @@ test_implicit_smallos_LDADD = ../src/libmeddly.la
 
 test_memory_SOURCES = test_memory.cc
 test_memory_LDADD = ../src/libmeddly.la
+
+test_sccs_SOURCES = test_sccs.cc 
+test_sccs_LDADD = ../src/libmeddly.la
 

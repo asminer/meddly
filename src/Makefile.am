@@ -104,6 +104,7 @@ libmeddly_la_SOURCES = \
   operations/transitive_closure.h   operations/transitive_closure.cc \
   operations/cycle.h          operations/cycle.cc        \
   operations/select.h         operations/select.cc       \
+  operations/sccgraph.h       operations/sccgraph.cc     \
   \
   storage/bytepack.h  \
   storage/simple.h          storage/simple.cc \

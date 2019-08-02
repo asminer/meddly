@@ -914,6 +914,7 @@ inline  MEDDLY::output& operator<< (MEDDLY::output &s, char x)            { s.pu
 inline  MEDDLY::output& operator<< (MEDDLY::output &s, const char* x)     { s.put(x); return s; }
 inline  MEDDLY::output& operator<< (MEDDLY::output &s, int x)             { s.put(long(x)); return s; }
 inline  MEDDLY::output& operator<< (MEDDLY::output &s, long x)            { s.put(x); return s; }
+inline  MEDDLY::output& operator<< (MEDDLY::output &s, unsigned x)        { s.put((unsigned long)x); return s; }
 inline  MEDDLY::output& operator<< (MEDDLY::output &s, unsigned long x)   { s.put(x); return s; }
 inline  MEDDLY::output& operator<< (MEDDLY::output &s, double x)          { s.put(x); return s; }
 
