@@ -3031,6 +3031,7 @@ class MEDDLY::expert_forest: public forest
      @return       Handle to a node that encodes the same thing.
      */
     node_handle createImplicitNode(MEDDLY::relation_node &nb);
+    
 
 
     /** Apply reduction rule to the temporary extensible node and finalize it. 

@@ -470,6 +470,7 @@ MEDDLY::unpacked_node::setHash(unsigned H)
   MEDDLY_DCASSERT(!has_hash);
   has_hash = true;
 #endif
+  printf("\n Setting hash as %ul",H);
   h = H;
 }
 
@@ -2531,6 +2532,25 @@ MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un)
   return q;
 }
 
+inline unsigned
+MEDDLY::expert_forest::getImplicitTableCount() const
+{
+  unsigned q = getImplTableCount();
+  return q;
+}
+
+inline MEDDLY::relation_node* 
+MEDDLY::expert_forest::buildImplicitNode(node_handle rnh)
+{
+  return buildImplNode(rnh);
+}
+
+inline MEDDLY::node_handle 
+MEDDLY::expert_forest::getImplicitTerminalNode() const
+{
+  return getImplTerminalNode();
+}
+
 inline MEDDLY::node_handle
 MEDDLY::expert_forest::createRelationNode(MEDDLY::relation_node *un)
 {
@@ -2541,6 +2561,7 @@ MEDDLY::expert_forest::createRelationNode(MEDDLY::relation_node *un)
 #endif
   return q;
 }
+
 
 template<class T>
 inline void
@@ -2874,23 +2895,54 @@ MEDDLY::relation_node::getLevel() const
   return level;
 }
 
-inline rel_node_handle
+inline node_handle
 MEDDLY::relation_node::getDown() const
 {
   return down;
 }
 
-inline rel_node_handle
+inline void
+MEDDLY::relation_node::setDown(node_handle d) 
+{
+  down = d;
+}
+
+inline node_handle
 MEDDLY::relation_node::getID() const
 {
   return ID;
 }
 
 inline void
-MEDDLY::relation_node::setID(rel_node_handle n_ID)
+MEDDLY::relation_node::setID(node_handle n_ID)
 {
   ID=n_ID;
 }
+
+inline long
+MEDDLY::relation_node::getFire() const
+{
+  return fire;
+}
+
+inline void
+MEDDLY::relation_node::setFire(long fire_val)
+{
+  fire = fire_val;
+}
+
+inline long
+MEDDLY::relation_node::getEnable() const
+{
+  return enable;
+}
+
+inline void
+MEDDLY::relation_node::setEnable(long enable_val)
+{
+  enable = enable_val;
+}
+
 
 inline long
 MEDDLY::relation_node::getPieceSize() const
@@ -2924,10 +2976,10 @@ MEDDLY::relation_node::setTokenUpdate(long* n_token_update)
 // ******************************************************************
 
 
-inline MEDDLY::relation_node*
-MEDDLY::satimpl_opname::implicit_relation::nodeExists(rel_node_handle n)
+/*inline MEDDLY::relation_node*
+MEDDLY::satimpl_opname::implicit_relation::nodeExists(node_handle n)
 {
-  std::unordered_map<rel_node_handle, relation_node*>::iterator finder = impl_unique.find(n);
+  std::unordered_map<node_handle, relation_node*>::iterator finder = impl_unique.find(n);
   if(finder!=impl_unique.end())
     return finder->second;
   else
@@ -2935,10 +2987,10 @@ MEDDLY::satimpl_opname::implicit_relation::nodeExists(rel_node_handle n)
 }
 
 inline bool
-MEDDLY::satimpl_opname::implicit_relation::isReserved(rel_node_handle n)
+MEDDLY::satimpl_opname::implicit_relation::isReserved(node_handle n)
 {
   return (n==1);
-}
+}*/
 
 //************************************************************************
 
@@ -2978,7 +3030,7 @@ MEDDLY::satimpl_opname::implicit_relation::lengthForLevel(int level) const
   return event_added[level];
 }
 
-inline rel_node_handle*
+inline node_handle*
 MEDDLY::satimpl_opname::implicit_relation::arrayForLevel(int level) const
 {
   return event_list[level];
@@ -2989,7 +3041,7 @@ MEDDLY::satimpl_opname::implicit_relation::arrayForLevel(int level) const
 inline MEDDLY::expert_forest*
 MEDDLY::satimpl_opname::implicit_relation::getRelForest() const
 {
-  return mxdF;
+  return mixRelF;
 }
 
 
@@ -3018,6 +3070,48 @@ MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
   return (i < insetF->getLevelSize(level) && confirmed[level][i]);
 }
 
+// ****************************************************************************
+
+
+inline MEDDLY::expert_forest*
+MEDDLY::satimpl_opname::subevent::getForest() {
+  return f;
+} 
+
+inline int
+MEDDLY::satimpl_opname::subevent::getNumVars() const {
+  return num_vars;
+}
+
+inline const int*
+MEDDLY::satimpl_opname::subevent::getVars() const {
+  return vars;
+}
+
+inline int
+MEDDLY::satimpl_opname::subevent::getTop() const {
+  return top;
+}
+
+inline bool
+MEDDLY::satimpl_opname::subevent::isFiring() const {
+  return is_firing;
+}
+
+inline bool
+MEDDLY::satimpl_opname::subevent::isEnabling() const {
+  return !is_firing;
+}
+
+inline const MEDDLY::dd_edge&
+MEDDLY::satimpl_opname::subevent::getRoot() const {
+  return root;
+}
+
+inline bool
+MEDDLY::satimpl_opname::subevent::usesExtensibleVariables() const {
+  return uses_extensible_variables;
+}
 
 // ******************************************************************
 // *                                                                *
@@ -3749,6 +3843,7 @@ inline MEDDLY::binary_operation*
 MEDDLY::getOperation(const binary_opname* code, const dd_edge& arg1,
     const dd_edge& arg2, const dd_edge& res)
 {
+  printf("\n HERER");
   return getOperation(code, (MEDDLY::expert_forest*) arg1.getForest(),
       (MEDDLY::expert_forest*) arg2.getForest(), (MEDDLY::expert_forest*) res.getForest());
 }

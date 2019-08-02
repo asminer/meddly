@@ -372,11 +372,17 @@ int* nxtList;
 class derRelNode : public MEDDLY::relation_node
 {
 public:
-  derRelNode(unsigned long signature, int level, rel_node_handle down):relation_node(signature, level, down)
+  derRelNode(unsigned long signature, int level, node_handle down, long en, long fi):relation_node(signature, level, down, en, fi)
   {}
   long nextOf(long i) override
   {
   
+     long val = i + nxtList[getID()];
+     if (val<0)
+        return -1;
+    else
+        return val;
+  /*
      if(i>=getPieceSize()) //Array needs to be allocated
       expandTokenUpdate(i);
   
@@ -387,7 +393,7 @@ public:
       	setTokenUpdateAtIndex(i,val);
       }
 
-     return getTokenUpdate()[i];
+     return getTokenUpdate()[i];*/
   }
 };
 
@@ -419,26 +425,88 @@ void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, in
   nxtList = (int*)malloc((node_count+2)*sizeof(int));
   nxtList[0] = 0;
   nxtList[1] = 0;
+  printf("\nNow building NSF\n");
+  
+  MEDDLY::expert_forest *mxdF = T->getRelForest();
+   printf("\nFrom forest %d\n",mxdF);
   
   int rctr = 0;
   for(int e = 0;e < nEvents; e++)
     {
+    if(e==7) continue;
     unsigned long sign = 0;
-    int previous_node_handle = 1;
+    int previous_node_handle = mxdF->handleForValue(true);
+    printf("\nBuilding from bottom handle %d <-",previous_node_handle);
     for( int p = 1; p <= nPlaces; p++)
       {
        sign = events[e][p]>=0?(sign*10)+events[e][p]:(sign*100)+events[e][p];
         if(events[e][p]!=0)
         {
-          rNode[rctr] = new derRelNode(sign,p,previous_node_handle);
-          previous_node_handle = T->registerNode((tops_of_events[e]==p),rNode[rctr]);
-          
+          rNode[rctr] = new derRelNode(sign,p,previous_node_handle,events[e][p]<0?-events[e][p]:0,events[e][p]);
+          previous_node_handle = mxdF->createRelationNode(rNode[rctr]);
+          printf("%d<-",previous_node_handle,p);
+          //previous_node_handle = T->registerNode((tops_of_events[e]==p),rNode[rctr]);
+          if(tops_of_events[e]==p)
+            T->addTopEvent(previous_node_handle,p);
           rctr++;
           nxtList[previous_node_handle] = events[e][p];
         }
       }
     }
+  
+    //e==7 : Level 10, 5: unpacked nodes
+    {
+      int e = 7;
+      unsigned long sign = 0;
+      int previous_node_handle = mxdF->handleForValue(true);
+      printf("\nBuilding from bottom handle %d <-",previous_node_handle);
+      for( int p = 1; p <= nPlaces; p++)
+        {
+          if ((p==10)) // doing only for Kanban
+          { 
+              //Create a new unprimed node for variable p of size 1
+              MEDDLY::unpacked_node* UP_var = MEDDLY::unpacked_node::newFull(mxdF, p, 5);
+                  
+              for (int j=0; j<5; j++) {
+                    
+              long new_j = j + events[e][p];
+                    
+                    if(new_j>=0) 
+                      {
+                      //Create primed node for each valid index of the unprimed node
+                      MEDDLY::unpacked_node* P_var = MEDDLY::unpacked_node::newSparse(mxdF, -p, 1);
+                      P_var->i_ref(0) = new_j;
+                      P_var->d_ref(0) = mxdF->linkNode(previous_node_handle); // primed node for new_j index points to terminal or unprime node
+                      UP_var->d_ref(j) = mxdF->createReducedNode(j, P_var);
+                      printf("P:%d<-",UP_var->d_ref(j));
+                      }
+                    else
+                      UP_var->d_ref(j) = mxdF->handleForValue(false); // unprimed node for j index points to false
+                  }
+                  
+                  mxdF->unlinkNode(previous_node_handle);
+                  previous_node_handle = mxdF->createReducedNode(-1, UP_var);
+                  printf("UP:%d<-",previous_node_handle);
+                  if(tops_of_events[e]==p)
+                    T->addTopEvent(previous_node_handle,p);
+          } else {
+            sign = events[e][p]>=0?(sign*10)+events[e][p]:(sign*100)+events[e][p];
+            if(events[e][p]!=0)
+            {
+              rNode[rctr] = new derRelNode(sign,p,previous_node_handle,events[e][p]<0?-events[e][p]:0,events[e][p]);
+              previous_node_handle = mxdF->createRelationNode(rNode[rctr]);
+              printf("%d<-",previous_node_handle);
+              if(tops_of_events[e]==p)
+                T->addTopEvent(previous_node_handle,p);
+              //previous_node_handle = T->registerNode((tops_of_events[e]==p),rNode[rctr]);
+              rctr++;
+              nxtList[previous_node_handle] = events[e][p];
+            }
+          }
+        }
+    }
+    
+  
 }
-
 
 

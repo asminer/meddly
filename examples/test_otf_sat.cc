@@ -321,7 +321,8 @@ void pn::doOtfSaturation() {
   assert(reachable_states);
 
   otf_rel->confirm(*initial_state);
-
+  printf("\n Added initial edge");
+  
   otf_sat_op->compute(*initial_state, *reachable_states);
   assert(reachable_states);
 }
@@ -432,6 +433,7 @@ void enabling_subevent::confirm(satotf_opname::otf_relation &rel, int v, int ind
     unp_minterm[v] = index;
     p_minterm[v] = DONT_CARE;
     addMinterm(unp_minterm, p_minterm);
+    printf("\n This done\n");
   }
 }
 
@@ -484,6 +486,7 @@ void firing_subevent::initializeMinterm() {
 }
 
 void firing_subevent::confirm(satotf_opname::otf_relation &rel, int v, int index) {
+  printf("\n I come here\n");
   std::cout << "Confirming (firing): (" << v << ", " << index << ")\n";
   // add minterm:
   // if it is a known index

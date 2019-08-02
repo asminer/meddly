@@ -111,10 +111,14 @@ namespace MEDDLY {
   class specialized_operation;
 
   class global_rebuilder;
+  
+  // class for generic functions
+  class generic_function;
 
   // classes defined elsewhere
   class base_table;
   class unique_table;
+  class impl_unique_table;
 
   class reordering_base;
 
@@ -479,7 +483,7 @@ class MEDDLY::expert_domain : public domain {
  to detect when two nodes actually represent the same function.
  
  */
-typedef int rel_node_handle;
+typedef int node_handle;
 class MEDDLY::relation_node {
 public:
   /** Constructor.
@@ -489,7 +493,7 @@ public:
    @param  level          Level affected.
    @param  down           Handle to a relation node below us. 
    */
-  relation_node(unsigned long signature, int level, rel_node_handle down);
+  relation_node(unsigned long signature, int level, node_handle down, long e_val, long f_val);
   virtual ~relation_node();
   
   // the following should be inlined in meddly_expert.hh
@@ -507,15 +511,19 @@ public:
   
   /** Pointer to the (ID of the) next piece of the relation.
    */
-  rel_node_handle getDown() const;
+  node_handle getDown() const;
+  
+  /** Set the (ID of the) next piece of the relation.
+   */
+  void setDown(node_handle down) ;
   
   /** The unique ID for this piece.
    */
-  rel_node_handle getID() const;
+  node_handle getID() const;
   
   /** Set the unique ID for this piece.
    */
-  void setID(rel_node_handle ID);
+  void setID(node_handle ID);
   
   /** The token_update array for this piece.
    */
@@ -524,6 +532,23 @@ public:
   /** Set the token_update array for this piece.
    */
   void setTokenUpdate(long* token_update);
+  
+  /** The token_update array for this piece.
+   */
+  long getEnable() const;
+  
+  /** Set the token_update array for this piece.
+   */
+  void setEnable(long enable_val);
+  
+  /** The token_update array for this piece.
+   */
+  long getFire() const;
+  
+  /** Set the token_update array for this piece.
+   */
+  void setFire(long fire_val);
+  
   
   /** The size of token_update array for this piece.
    */
@@ -555,8 +580,10 @@ public:
 private:
   unsigned long signature;
   int level;
-  rel_node_handle down;
-  rel_node_handle ID;
+  node_handle down;
+  node_handle ID;
+  long enable;
+  long fire;
   long* token_update;
   long piece_size;        
   
@@ -1965,7 +1992,7 @@ class MEDDLY::node_storage {
     */
     virtual node_address makeNode(node_handle p, const unpacked_node &nb,
                                   node_storage_flags opt) = 0;
-
+  
     /** Destroy a node.
         Unlink the downward pointers, and recycle the memory
         used by the node.
@@ -2689,6 +2716,10 @@ class MEDDLY::expert_forest: public forest
    
    */
   node_handle createRelationNode(MEDDLY::relation_node *un);
+  
+  unsigned getImplicitTableCount() const;
+  inline MEDDLY::relation_node* buildImplicitNode(node_handle rnh);
+  inline MEDDLY::node_handle getImplicitTerminalNode() const;
 
   /** Return a forest node equal to the one given.
       The node is constructed as necessary.
@@ -3042,6 +3073,10 @@ class MEDDLY::expert_forest: public forest
      @return       Handle to a node that encodes the same thing.
      */
     node_handle createImplicitNode(MEDDLY::relation_node &nb);
+  
+    unsigned getImplTableCount() const;
+    MEDDLY::relation_node* buildImplNode(node_handle rnh);
+    MEDDLY::node_handle getImplTerminalNode() const;
 
 
     /** Apply reduction rule to the temporary extensible node and finalize it. 
@@ -3065,6 +3100,9 @@ class MEDDLY::expert_forest: public forest
   protected:
     /// uniqueness table, still used by derived classes.
     unique_table* unique;
+  
+    ///uniqueness table for implicit nodes.
+    impl_unique_table* implUT;
 
     /// Should a terminal node be considered a stale entry in the compute table.
     /// per-forest policy, derived classes may change as appropriate.
@@ -3103,6 +3141,7 @@ class MEDDLY::expert_forest: public forest
 
     class nodecounter;
     class nodemarker;
+  
 };
 // end of expert_forest class.
 
@@ -3714,7 +3753,177 @@ class MEDDLY::satimpl_opname: public specialized_opname {
     virtual specialized_operation* buildOperation(arguments* a) const;
 
   public:
-
+    
+    class implicit_relation;
+  
+    class subevent {
+    public:
+      /// Constructor, specify variables that this function depends on,
+      /// and if it is a firing or enabling event.
+      subevent(forest* f, int* v, int nv, bool firing);
+      virtual ~subevent();
+      
+      /// Get the forest to which this function belongs to.
+      expert_forest* getForest();
+      
+      /// Get number of variables this function depends on.
+      int getNumVars() const;
+      
+      /// Get array of variables this function depends on.
+      const int* getVars() const;
+      
+      /// Get the DD encoding of this function
+      const dd_edge& getRoot() const;
+      
+      /// Get the "top" variable for this function
+      int getTop() const;
+      
+      /// Is this a firing subevent?
+      bool isFiring() const;
+      
+      /// Is this an enabling subevent
+      bool isEnabling() const;
+      
+      /**
+       Rebuild the function to include the
+       local state "index" for the variable "v".
+       Updates root with the updated function.
+       User MUST provide this method.
+       */
+      virtual void confirm(implicit_relation &rel, int v, int index) = 0;
+      
+      /// If num_minterms > 0,
+      ///   Add all minterms to the root
+      ///   Delete all minterms.
+      void buildRoot();
+      
+      /// Debugging info
+      void showInfo(output& out) const;
+      
+      long mintermMemoryUsage() const;
+      void clearMinterms();
+      
+    protected:
+      bool addMinterm(const int* from, const int* to);
+      bool usesExtensibleVariables() const;
+      
+      int* vars;
+      int num_vars;
+      dd_edge root;
+      int top;
+      expert_forest* f;
+      int** unpminterms;
+      int** pminterms;
+      int num_minterms;
+      int size_minterms;
+      bool is_firing;
+      bool uses_extensible_variables;
+      
+    };  // end of class subevent
+    
+    // ============================================================
+    
+    /**
+     An "event".
+     Produces part of the transition relation, from its sub-functions.
+     
+     TBD - do we need to split the enabling and updating sub-functions,
+     or will one giant list work fine?
+     */
+    class event {
+      // TBD - put a list of events that have priority over this one
+      
+      // TBD - for priority - when is this event enabled?
+    public:
+      event(subevent** se, int nse, relation_node** rn, int nrn);
+      virtual ~event();
+      
+      /// Get the forest to which the subevents belong to
+      inline expert_forest* getForest() { return f; } 
+      
+      /// Get number of subevents
+      inline int getNumOfSubevents() const { return num_subevents; }
+      
+      /// Get array of subevents
+      inline subevent** getSubevents() const { return subevents; }
+      
+      /// Get number of relation_nodes
+      inline int getNumOfRelnodes() const { return num_relnodes; }
+      
+      /// Get array of relation_nodes
+      inline relation_node** getRelNodes() const { return relnodes; }
+      
+      /// Get number of components
+      inline int getNumOfComponents() const { return num_components; }
+      
+      /// Get the "top" variable for this event
+      inline int getTop() const { return top; }
+      
+      /// Get the number of variables that are effected by this event
+      inline int getNumVars() const { return num_vars; }
+      
+      /// Get a (sorted) array of variables that are effected by this event
+      inline const int* getVars() const { return vars; }
+      
+      inline const dd_edge& getRoot() const { return root; }
+      
+      inline bool isDisabled() const { return is_disabled; }
+      
+      inline bool needsRebuilding() const { return needs_rebuilding; }
+      
+      inline void markForRebuilding() { needs_rebuilding = true; }
+      
+      inline std::map<int,int> getComponentHandles() { return level_component; }
+      
+      /**
+       If this event has been marked for rebuilding:
+       Build this event as a conjunction of its sub-events.
+       
+       @return               true, if the event needed rebuilding and
+       the rebuilding modified the root.
+       false, otherwise.
+       */
+      virtual bool rebuild();
+      
+      /// Enlarges the "from" variable to be the same size as the "to" variable
+      void enlargeVariables();
+      
+      /// Debugging info
+      void showInfo(output& out) const;
+      
+      long mintermMemoryUsage() const;
+      
+    protected:
+      void buildEventMask();
+      
+    private:
+      subevent** subevents;
+      int num_subevents;
+      relation_node** relnodes;
+      int num_relnodes;
+      int num_components;
+      int top;
+      int num_vars;
+      int* vars;
+      dd_edge root;
+      node_handle root_handle;
+      bool needs_rebuilding;
+      expert_forest* f;
+      
+      bool is_disabled;
+      int num_firing_vars;
+      int* firing_vars;
+      dd_edge event_mask;
+      int* event_mask_from_minterm;
+      int* event_mask_to_minterm;
+      
+      int num_rel_vars;
+      int* relNode_vars;
+      
+      std::map<int,int> level_component;
+      
+    };  // end of class event
+  
     /** An implicit relation, as a DAG of relation_nodes.
 
         The relation is partitioned by "events", where each event
@@ -3742,7 +3951,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
 
             Not 100% sure we need these...
         */
-        implicit_relation(forest* inmdd, forest* relmxd, forest* outmdd);
+        implicit_relation(forest* inmdd, forest* relmxd, forest* outmdd);//, event** E, int ne);
         virtual ~implicit_relation();
       
         /// Returns the Relation forest that stores the mix of relation nodes and mxd nodes
@@ -3759,7 +3968,9 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         /// Returns true iff a state in \a constraint is reachable
         /// from the states in \a initial_states
         /// Note: \a constraint can be an XDD
-        bool isReachable(const dd_edge& initial_states, const dd_edge& constraint);
+        //Test: bool isReachable(const dd_edge& initial_states, const dd_edge& constraint);
+      
+      //**************************************No longer needed********************************************
 
         /** Register a relation node.
 
@@ -3776,14 +3987,14 @@ class MEDDLY::satimpl_opname: public specialized_opname {
 
             @return Unique identifier to use to refer to n.
         */
-        rel_node_handle registerNode(bool is_event_top, relation_node* n);
+        //node_handle registerNode(bool is_event_top, relation_node* n);
 
         /** Check if the relation node is unique
             @param n  The relation node.
             @return   If unique, 0
                       Else, existing node handle
         */
-        rel_node_handle isUniqueNode(relation_node* n);
+        //node_handle isUniqueNode(relation_node* n);
 
 
         /** Indicate that there will be no more registered nodes.
@@ -3797,32 +4008,36 @@ class MEDDLY::satimpl_opname: public specialized_opname {
 
             Should be a fast, inlined implementation.
         */
-        relation_node* nodeExists(rel_node_handle n);
+        //relation_node* nodeExists(node_handle n);
 
         /** Get the relation node associated with the given handle.
 
             Should be a fast, inlined implementation.
         */
-        bool isReserved(rel_node_handle n);
+        //bool isReserved(node_handle n);
+      
+      //**********************************************************************************
+      
+      public:
+        void addTopEvent(node_handle rnh, int level);
 
       private:
         expert_forest* insetF;
         expert_forest* outsetF;
         expert_forest* mixRelF;
-        
         int num_levels;
 
-      private:
+      //private:
 
         /// Last used ID of \a relation node.
-        long last_in_node_array;
+        //long last_in_node_array;
 
-      private:
+      //private:
         // TBD - add a data structure for the "uniqueness table"
         // of relation_nodes, so if we register a node that
         // is already present in a node_array, we can detect it.
 
-        std::unordered_map<rel_node_handle, relation_node*> impl_unique;
+        //std::unordered_map<node_handle, relation_node*> impl_unique;
 
       private:
         // TBD - add a data structure for list of events with top level k,
@@ -3830,17 +4045,57 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         // Possibly this data structure is built by method
         // finalizeNodes().
 
-        rel_node_handle** event_list;
+        node_handle** event_list;
         long* event_list_alloc; // allocated space
         long* event_added; //how many events added so far
 
         long* confirm_states; //total no. of confirmed states of a level
         bool** confirmed; // stores whether a particular local state is confirmed
         long* confirmed_array_size; // stores size of confirmed array
-
-
+      
+      
+        // Obtained from OTF :
+      
+        // All events that begin at level i,
+        // are listed in events_by_top_level[i].
+        // An event will appear in only one list
+        // (as there is only one top level per event).
+        // num_events_by_top_level[i] gives the size of events_by_top_level[i]
+        event*** events_by_top_level;
+        int *num_events_by_top_level;
+        
+        // All events that depend on a level i,
+        // are listed in events_by_level[i]
+        // Therefore, an event that depends on n levels,
+        // will appear in n lists
+        // num_events_by_level[i] gives the size of events_by_level[i]
+        event*** events_by_level;
+        int *num_events_by_level;
+        
+        // All subevents that depend on a level i,
+        // are listed in subevents_by_level[i]
+        // Therefore, a subevent that depends on n levels,
+        // will appear in n lists
+        // num_subevents_by_level[i] gives the size of subevents_by_level[i]
+        subevent*** subevents_by_level;
+        int *num_subevents_by_level;
+      
+        // All relation_nodes that depend on a level i,
+        // are listed in relnodes_by_level[i]
+        // A relnode can only appear in one list
+        // num_relnodes_by_level[i] gives the size of relnodes_by_level[i]
+        relation_node*** relnodes_by_level;
+        int *num_relnodes_by_level;
+    
       public:
-
+      
+        /** Rebuild an event.
+         
+         @param  i           index of the event.
+         @return             true, if event was updated.
+         */
+        bool rebuildEvent(int level, int i);
+      
         /// Get total number of events upto given level
         long getTotalEvent(int level);
 
@@ -3851,7 +4106,11 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         long lengthForLevel(int level) const;
 
         /// Returns the array of events that have this level as top
-        rel_node_handle* arrayForLevel(int level) const;
+        node_handle* arrayForLevel(int level) const;
+      
+        /// Returns an array of local states for this level, such that
+        /// result[i] == isConfirmed(level, i).
+        const bool* getLocalStates(int level);
 
         /// Returns the number of confirmed states at a level
         long getConfirmedStates(int level) const;
@@ -3861,7 +4120,6 @@ class MEDDLY::satimpl_opname: public specialized_opname {
 
         /// Confirms the local states in the given MDD
         void setConfirmedStates(const dd_edge &set);
-
 
         /// Checks if i is confirmed
         bool isConfirmedState(int level, int i);
@@ -3882,7 +4140,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         MEDDLY::node_handle buildMxdForest();
 
         /// Build each event_mxd
-        dd_edge buildEventMxd(rel_node_handle event_top, forest *mxd);
+        dd_edge buildEventMxd(node_handle event_top, forest *mxd);
 
         /// Get relation forest  
         expert_forest* getRelForest() const;
@@ -3901,7 +4159,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
        
        Return the map.
        */
-      std::unordered_map<long,std::vector<rel_node_handle>> getListOfNexts(int level, long i, relation_node **R);
+      std::unordered_map<long,std::vector<node_handle>> getListOfNexts(int level, long i, relation_node **R);
       
       /*
        Returns whether there exist a possibility of doing union 
@@ -5046,6 +5304,19 @@ public:
   void clearCache();
   double hitRate() const;
 };
+
+
+
+// ******************************************************************
+// *                                                                *
+// *                    generic_function class                     *
+// *                                                                *
+// ******************************************************************
+
+/*class generic_function {
+  public:
+  
+}*/
 
 #include "meddly_expert.hh"
 #endif

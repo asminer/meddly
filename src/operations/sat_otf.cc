@@ -155,6 +155,7 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
     }
   }
   num_minterms++;
+  printf("\n I come here fine \n");
   return true;
 }
 
@@ -324,6 +325,7 @@ void MEDDLY::satotf_opname::event::buildEventMask()
 
 bool MEDDLY::satotf_opname::event::rebuild()
 {
+  printf("\n I am hererebuild \n");
   MEDDLY_DCASSERT(num_subevents > 0);
   if (is_disabled) return false;
   if (!needs_rebuilding) return false;
@@ -331,14 +333,19 @@ bool MEDDLY::satotf_opname::event::rebuild()
 
   // An event is a conjunction of sub-events (or sub-functions).
   for (int i = 0; i < num_subevents; i++) {
+    printf("\n Doing subevent %d root build \n",i);
     subevents[i]->buildRoot();
+     printf("\n I subevent %d root build done \n",i);
   }
+   printf("\n I done subevent building \n");
   buildEventMask();
+   printf("\n I done event mask \n");
 
   dd_edge e(event_mask);
   for (int i = 0; i < num_subevents; i++) {
     e *= subevents[i]->getRoot();
   }
+  printf("\n I done event building \n");
 
   /*
   if (e.getNode() == 0) {
@@ -360,6 +367,8 @@ bool MEDDLY::satotf_opname::event::rebuild()
   */
   if (e == root) return false;
   root = e;
+  printf("\n I am hererebuild done \n");
+  printf("\n I am hererebuild done \n");
   return true;
 }
 
@@ -1384,6 +1393,7 @@ MEDDLY::forwd_otf_dfs_by_events_mt::forwd_otf_dfs_by_events_mt(
 
 void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 {
+   printf("\n InIn saturateHelper \n");
   const int level = nb.getLevel();
   const int nEventsAtThisLevel = rel->getNumOfEvents(level);
   if (0 == nEventsAtThisLevel) return;
@@ -1425,6 +1435,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   // explore indexes
   while (!queue->isEmpty()) {
     const unsigned i = unsigned(queue->remove());
+    printf("\n Exploring index %d out of size %d--> %d)\n", i, nb.getSize(),nb.d(i));
 
     MEDDLY_DCASSERT(nb.d(i));
 
@@ -1454,6 +1465,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
           }
         }
       }
+      printf("\nEvent is rebuilt\n");
       // check if row i of the event ei is empty
       if (0 == Ru[ei]) continue;
       MEDDLY_DCASSERT(!Ru[ei]->isExtensible());
@@ -1473,7 +1485,9 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
       MEDDLY_DCASSERT(!Rp->isExtensible());
 
+      printf("\n The prime node at level %d has nnzs %d",level,Rp->getNNZs());
       for (unsigned jz=0; jz<Rp->getNNZs(); jz++) {
+        printf("\n j=%d\n",jz);
         const unsigned j = Rp->i(jz);
         if (j < nb.getSize() && -1==nb.d(j)) continue;  // nothing can be added to this set
 
@@ -1481,6 +1495,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         if (newstates == 0) continue;
 
         // Confirm local state
+        printf("\n Confirm local state \n");
         rel->confirm(level, int(j));
 
         if (j >= nb.getSize()) {
@@ -1491,6 +1506,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
           // resize the queue, and clear out the new entries
           queue->resize(nb.getSize());
         }
+        printf("\n In saturateHelper \n");
 
         bool updated = true;
 
@@ -1505,8 +1521,11 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         }
 
         if (updated) queue->add((int)j);
+        printf("\n Finishing saturateHelper \n");
       } // for j
     } // for all events, ei
+    printf("\n Explored index %d out of size %d\n", i, nb.getSize());
+    printf("\n");
   } // while there are indexes to explore
 
   // cleanup
@@ -1514,6 +1533,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   for (int ei = 0; ei < nEventsAtThisLevel; ei++) unpacked_node::recycle(Ru[ei]);
   delete[] Ru;
   recycle(queue);
+  printf("\n Done saturateHelper \n");
 }
 
 
@@ -1521,6 +1541,8 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   node_handle mdd, node_handle mxd)
 {
+  printf("\n In recFire \n");
+  
   //      Node builder expansion
   //          - done
   //      MXD doesnt expand but unconfirmed > confirmed
@@ -1588,6 +1610,8 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     // 
     // Need to process this level in the MXD.
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
+    // clear out result (important!)    
+    for (unsigned i=0; i<rSize; i++) nb->d_ref(i) = 0;
 
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node *Ru = unpacked_node::useUnpackedNode();
@@ -1619,6 +1643,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
         node_handle newstates = recFire(A->d(i), Rp->d(jz));
         if (0==newstates) continue;
 
+        printf("\n Confirm local state1 \n");
         if (rel->confirm(rLevel, j)) {
           // Newly confirmed local state
           // Node builder must expand to accomodate j
@@ -1629,6 +1654,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
             while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
           }
         }
+        printf("\n In recFire \n");
 
         if (0==nb->d(j)) {
           nb->d_ref(j) = newstates;
@@ -1666,7 +1692,9 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   // cleanup mdd reader
   unpacked_node::recycle(A);
 
+  printf("\n Going into satHelper from recFire\n");
   saturateHelper(*nb);
+  printf("\n Cameback from satHelper to recFire\n");
   result = resF->createReducedNode(-1, nb);
 #ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
@@ -1677,6 +1705,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   resF->showNode(stdout, result, 1);
   printf("\n");
 #endif
+  printf("\n Done recFire \n");
   return saveResult(Key, mdd, mxd, result); 
 }
 
@@ -1709,6 +1738,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::recFireHelper(
     if (0==newstates) continue;
 
     // Confirm local state
+    printf("\n Confirming index %d at level %d",j,rLevel);
     rel->confirm(rLevel, int(j));
 
     if (j >= nb->getSize()) {

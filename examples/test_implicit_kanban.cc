@@ -190,10 +190,12 @@ int main(int argc, const char** argv)
     
     if('i' == method)
       {
-      
       //CREATE FORESTS
       forest* inmdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
-      forest* relmxd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
+      printf("\n inmdd forest is %d\n",inmdd);
+      
+      forest* relmxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
+      printf("\n mxd forest is %d\n",relmxd);
       
       expert_domain* dm = static_cast<expert_domain*>(inmdd->useDomain());
 
@@ -209,9 +211,12 @@ int main(int argc, const char** argv)
       dd_edge reachable(inmdd);
       inmdd->createEdge(&initialState, 1, first);
       
+      printf("\n Initialized the relation\n");
       
       //CREATE RELATION
       satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,relmxd,inmdd);
+      printf("\n Initialized the relation");
+      
       
       start.note_time();
       buildImplicitRelation(model, TRANS, PLACES, BOUNDS, T);

@@ -126,7 +126,7 @@ class MEDDLY::simple_separated : public node_storage {
 
     virtual node_address makeNode(node_handle p, const unpacked_node &nb, 
         node_storage_flags opt);
-
+   
     virtual void unlinkDownAndRecycle(node_address addr);
     virtual void markDownPointers(node_address addr);
 
@@ -238,7 +238,7 @@ class MEDDLY::simple_separated : public node_storage {
 
   private:
     memory_manager* MM;
-
+    
     //
     // Header indexes that are fixed
     //

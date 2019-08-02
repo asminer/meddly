@@ -124,6 +124,7 @@ namespace MEDDLY {
   class forest;
   class expert_forest;
   class unpacked_node;
+  class relation_node;
   
   class memory_manager_style;
   class node_storage_style;
@@ -1793,8 +1794,7 @@ class MEDDLY::forest {
     */
     virtual void createEdge(const int* const* vlist, const int* const* vplist, 
         const float* terms, int N, dd_edge &e);
-
-
+  
     /** Create an edge for a boolean constant.
         @param  val   Requested constant.
         @param  e     returns a handle to a node in the forest for
@@ -2576,6 +2576,7 @@ class MEDDLY::dd_edge {
   private:
     friend class forest;
     friend class unpacked_node;
+    friend class relation_node;
 
     void setIndex(unsigned ind);
     unsigned getIndex() const;

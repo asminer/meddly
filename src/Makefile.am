@@ -12,7 +12,7 @@
 lib_LTLIBRARIES = libmeddly.la
 
 libmeddly_la_SOURCES = \
-  defines.h revision.h hash_stream.h heap.h timer.h unique_table.h \
+  defines.h revision.h hash_stream.h heap.h timer.h unique_table.h impl_unique_table.h\
   meddly.h meddly.hh meddly.cc \
   meddly_expert.h meddly_expert.hh \
   error.cc \
@@ -28,6 +28,7 @@ libmeddly_la_SOURCES = \
   unique_table.cc \
   loggers.h loggers.cc \
   global_rebuilder.cc \
+  impl_unique_table.cc \
   \
   reordering/reordering_factory.h \
   reordering/bring_up_reordering.h \

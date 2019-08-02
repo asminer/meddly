@@ -52,6 +52,8 @@ private:
      * Initialize the sub table. Must be called before use.
      */
     void init(expert_forest *ef);
+    
+    inline expert_forest* getParent() const { return parent;}
 
     /** If table contains key, move it to the front of the list.
             Otherwise, do nothing.
@@ -208,7 +210,6 @@ MEDDLY::node_handle MEDDLY::unique_table::subtable::find(const T &key) const
     }
     prev = ptr;
   }
-
   return 0;
 }
 

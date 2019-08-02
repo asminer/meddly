@@ -244,11 +244,14 @@ unsigned MEDDLY::dd_edge::getEdgeCount(bool countZeroes) const
 // Operator +=
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator+=(const dd_edge& e)
 {
+  printf("\n Unioning happens here %d\n",opPlus);
   if (opPlus == 0) {
-    if (parent->getRangeType() == forest::BOOLEAN)
-      opPlus = getOperation(UNION, *this, e, *this);
-    else
-      opPlus = getOperation(PLUS, *this, e, *this);
+    if (parent->getRangeType() == forest::BOOLEAN){
+      printf("\n I am boolean\n");
+      opPlus = getOperation(UNION, *this, e, *this);}
+    else {
+      printf("\n I am not boolean\n");
+      opPlus = getOperation(PLUS, *this, e, *this);}
     MEDDLY_DCASSERT(opPlus != 0);
   }
   opPlus->compute(*this, e, *this);

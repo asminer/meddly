@@ -21,6 +21,7 @@
 #define MTMXD_H
 
 #include "mt.h"
+#include <vector>
 
 namespace MEDDLY {
   class mtmxd_forest;
@@ -117,11 +118,13 @@ namespace MEDDLY {
       mtmxd_forest* F;
       const int* const* vulist;
       const int* const* vplist;
+      std::vector<relation_node*> rnblist;
       const T* values;
       int* order;
       int N;
       int K;
       binary_operation* unionOp;
+      relation_node* Terminal;
     public:
       mtmxd_edgemaker(mtmxd_forest* f, 
         const int* const* mt, const int* const* mp, const T* v, int* o, int n, 
@@ -135,8 +138,9 @@ namespace MEDDLY {
         N = n;
         K = k;
         unionOp = unOp;
+        Terminal = new MEDDLY::relation_node(0,0,1,0,0);
       }
-
+      // These functions return the ith edge's to get the value at k level 
       inline const int* unprimed(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return vulist[order[i]];
@@ -194,7 +198,7 @@ namespace MEDDLY {
           }
           return ENCODER::value2handle(accumulate);
         }
-
+        
         // size of variables at level k
         unsigned lastV = unsigned(F->getLevelSize(k));
         // index of end of current batch
@@ -202,6 +206,7 @@ namespace MEDDLY {
 
         //
         // Move any "don't cares" to the front, and process them
+        // For each level k, get hold of all index values & process them
         //
         unsigned nextV = lastV;
         for (int i=start; i<stop; i++) {
@@ -213,16 +218,16 @@ namespace MEDDLY {
           } else {
             MEDDLY_DCASSERT(unprimed(i, k) >= 0);
             nextV = MIN(nextV, unsigned(unprimed(i, k)));
-          }
+          } 
         }
         node_handle dontcares = 0;
 
         //
-        // Move any "don't changes" below the "don't cares", to the front,
+        // Move any  "don't changes" below the "don't cares", to the front,
         // and process them to construct a new level-k node.
         int dch = start;
         for (int i=start; i<batchP; i++) {
-          if (DONT_CHANGE == primed(i, k)) {
+          if (DONT_CHANGE == primed(i, k))  {
             if (dch != i) {
               swap(dch, i);
             }
@@ -243,6 +248,7 @@ namespace MEDDLY {
         //
         // Process "don't care, ordinary" pairs, if any
         // (producing a level-k node)
+        // T.B.D
         //
         if (batchP > start) {
           node_handle dcnormal = F->makeNodeAtLevel(
@@ -255,7 +261,8 @@ namespace MEDDLY {
           unionOp->compute(dcE, dcnE, dcE);
           dontcares = F->linkNode(dcE);
         }
-
+        
+        
         //
         // Start new node at level k
         //
@@ -297,7 +304,7 @@ namespace MEDDLY {
 
           node_handle total=createEdgePr(v, F->downLevel(k), start, batchP);
           if(total!=F->getTransparentNode()){
-        	  nb->i_ref(z) = v;
+            nb->i_ref(z) = v;
             nb->d_ref(z) =total;
             z++;
           }
@@ -581,6 +588,7 @@ namespace MEDDLY {
               // Below is likely a singleton, so check for identity reduction
               // on the appropriate v value
               unsigned sz = unsigned(F->getLevelSize(i));
+              printf("\n sz = %d\n",sz);
               bool add_edge = (F->isExtensibleLevel(i) && (_vplist[i]+1) == sz);
               nb = unpacked_node::newFull(F, i, add_edge? (1+sz): sz);
               for (unsigned v=0; v<sz; v++) {
@@ -592,8 +600,7 @@ namespace MEDDLY {
               }
             } else {
               // Doesn't matter what happened below
-
-              if (F->isExtensibleLevel(i)) {
+               if (F->isExtensibleLevel(i)) {
                 nb = unpacked_node::newFull(F, i, 1);
                 nb->d_ref(0) = F->linkNode(nextpr);
                 nb->markAsExtensible();
@@ -628,9 +635,10 @@ namespace MEDDLY {
 
               next = F->createReducedNode(-1, nb);
             }
+            
           }
         }
-
+        
         return next;
       }
 

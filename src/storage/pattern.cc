@@ -314,6 +314,7 @@ void MEDDLY::pattern_storage::reportStats(output &s, const char* pad,
    */
 }
 
+
 MEDDLY::node_address MEDDLY::pattern_storage
 ::makeNode(node_handle p, const unpacked_node &nb, node_storage_flags opt)
 {

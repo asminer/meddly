@@ -40,7 +40,7 @@ void MEDDLY::mt_mxd_int::createEdge(long term, dd_edge& e)
 }
 
 void MEDDLY::mt_mxd_int
-::createEdge(const int* const* vlist, const int* const* vplist, const long* terms, int N, dd_edge &e)
+::createEdge(const int* const* vlist, const int* const* vplist,const long* terms, int N, dd_edge &e)
 {
   binary_operation* unionOp = getOperation(PLUS, this, this, this);
   enlargeStatics(N);
