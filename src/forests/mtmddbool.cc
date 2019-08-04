@@ -38,8 +38,46 @@ void MEDDLY::mt_mdd_bool::createEdge(bool term, dd_edge& e)
   validateIncounts(true);
 #endif
 }
+void MEDDLY::mt_mdd_bool::createEdge(const general_int* const* vlist, int N, dd_edge &e)
+{
+  binary_operation* unionOp = getOperation(UNION, this, this, this);
+  enlargeStatics(N);
+  enlargeVariables(vlist, N, false);
 
-void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
+  int num_vars=getNumVariables();
+
+  // Create vlist following the mapping between variable and level
+  general_int** ordered_vlist=static_cast<general_int**>(malloc(N*sizeof(general_int*)+(num_vars+1)*N*sizeof(general_int)));
+  if(ordered_vlist==0){
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+
+  ordered_vlist[0]=reinterpret_cast<general_int*>(&ordered_vlist[N]);
+  for(int i=1; i<N; i++) {
+    ordered_vlist[i]=(ordered_vlist[i-1]+num_vars+1);
+  }
+  for(int i=0; i<=num_vars; i++) {
+    int level=getLevelByVar(i);
+    for(int j=0; j<N; j++) {
+      ordered_vlist[j][level]=vlist[j][i];
+    }
+  }
+
+  mtmdd_edgemaker<bool_Tencoder, bool>
+  EM(this, ordered_vlist, 0, order, N, getDomain()->getNumVariables(), unionOp);
+
+  e.set(EM.createEdge());
+
+  free(ordered_vlist);
+
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
+}
+
+
+
+/*void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
 {
   binary_operation* unionOp = getOperation(UNION, this, this, this);
   enlargeStatics(N);
@@ -74,7 +112,7 @@ void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
-}
+}*/
 
 void MEDDLY::mt_mdd_bool::
 createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
@@ -86,10 +124,16 @@ createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 }
 
 void MEDDLY::mt_mdd_bool
-::evaluate(const dd_edge &f, const int* vlist, bool &term) const
+::evaluate(const dd_edge &f, const general_int* vlist, bool &term) const
 {
   term = bool_Tencoder::handle2value(evaluateRaw(f, vlist));
 }
+
+/*void MEDDLY::mt_mdd_bool
+::evaluate(const dd_edge &f, const int* vlist, bool &term) const
+{
+  term = bool_Tencoder::handle2value(evaluateRaw(f, vlist));
+}*/
 
 void MEDDLY::mt_mdd_bool::showTerminal(output &s, node_handle tnode) const
 {

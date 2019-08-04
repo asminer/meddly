@@ -62,16 +62,16 @@ inline domain* buildKanbanDomain(int N)
 {
   int sizes[16];
   for (int i=15; i>=0; i--) sizes[i] = N+1;
-  return createDomainBottomUp(sizes, 16);
+  return createDomainBottomUp(variable::variableTypes::boundedClass,sizes, 16);
 }
 
 // Build the initial state
 inline void buildInitial(int N, forest* mdd, dd_edge &init_state)
 {
-  int initial[17];
+  general_int initial[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
-  int* initptr = initial;
+  general_int* initptr = initial;
   mdd->createEdge(&initptr, 1, init_state);
 }
 

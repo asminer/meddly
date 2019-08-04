@@ -48,8 +48,8 @@ void buildNextStateFunction(const char* const* events, int nEvents,
     maxBound = MAX(maxBound, d->getVariableBound(i, false));
   }
   maxBound++;
-  int* minterm = new int[nVars+1];
-  int* mtprime = new int[nVars+1];
+  general_int* minterm = new general_int[nVars+1];
+  general_int* mtprime = new general_int[nVars+1];
   dd_edge** varP  = new dd_edge*[nVars+1];
   varP[0] = 0;
   dd_edge** inc   = new dd_edge*[nVars+1];

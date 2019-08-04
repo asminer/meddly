@@ -50,7 +50,7 @@ void MEDDLY::evmdd_pluslong::createEdge(long val, dd_edge &e)
 }
 
 void MEDDLY::evmdd_pluslong
-::createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e)
+::createEdge(const general_int* const* vlist, const long* terms, int N, dd_edge &e)
 {
   // binary_operation* unionOp = getOperation(PLUS, this, this, this);
   binary_operation* unionOp = 0;  // for now
@@ -60,12 +60,12 @@ void MEDDLY::evmdd_pluslong
   int num_vars = getNumVariables();
 
   // Create vlist following the mapping between variable and level
-  int** ordered_vlist = static_cast<int**>(malloc(N * sizeof(int*) + (num_vars + 1) * N * sizeof(int)));
+  general_int** ordered_vlist = static_cast<general_int**>(malloc(N * sizeof(general_int*) + (num_vars + 1) * N * sizeof(general_int)));
   if (ordered_vlist == nullptr) {
 	  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 
-  ordered_vlist[0] = reinterpret_cast<int*>(&ordered_vlist[N]);
+  ordered_vlist[0] = reinterpret_cast<general_int*>(&ordered_vlist[N]);
   for (int i = 1; i < N; i++) {
 	  ordered_vlist[i] = (ordered_vlist[i - 1] + num_vars + 1);
   }
@@ -107,6 +107,8 @@ void MEDDLY::evmdd_pluslong
 
   delete[] terms_long;
 }
+
+
 
 
 void MEDDLY::evmdd_pluslong

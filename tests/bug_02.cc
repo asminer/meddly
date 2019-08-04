@@ -43,10 +43,10 @@ int main(int argc, char *argv[])
   // Set up arrays bounds
   variable** vars = (variable**) malloc((1+nLevels) * sizeof(void*));
   vars[0] = 0;
-  for (int i = nLevels; i; i--) { vars[i] = createVariable(2, 0); }
+  for (int i = nLevels; i; i--) { vars[i] = createVariable(variable::variableTypes::boundedClass,2, 0); }
 
   // Create a domain and set up the state variables.
-  domain *d = createDomain(vars, nLevels);
+  domain *d = createDomain(variable::variableTypes::boundedClass,vars, nLevels);
   assert(d != NULL);
 
   // Create an MDD forest in this domain (to store states)
@@ -62,21 +62,21 @@ int main(int argc, char *argv[])
   assert(mxd != NULL);
 
   // Set up initial state array
-  int state1[nLevels+1] = {0, 0, DONT_CARE, 0};
-  int *states[1] = { state1 };
+  general_int state1[nLevels+1] = {0, 0, DONT_CARE, 0};
+  general_int *states[1] = { state1 };
   dd_edge initialStates(mdd);
-  mdd->createEdge(reinterpret_cast<int**>(states), 1, initialStates);
+  mdd->createEdge(reinterpret_cast<general_int**>(states), 1, initialStates);
 
   // Create a matrix diagram to represent the next-state function
-  int from1[nLevels+1] = {0, 0, DONT_CARE, DONT_CARE};
-  int from2[nLevels+1] = {0, DONT_CARE, DONT_CARE, 0};
-  int to1[nLevels+1] = {0, 1, 1, DONT_CHANGE};
-  int to2[nLevels+1] = {0, DONT_CHANGE, DONT_CHANGE, DONT_CARE};
-  int *from[2] = { from1, from2 };
-  int *to[2] = { to1, to2 };
+  general_int from1[nLevels+1] = {0, 0, DONT_CARE, DONT_CARE};
+  general_int from2[nLevels+1] = {0, DONT_CARE, DONT_CARE, 0};
+  general_int to1[nLevels+1] = {0, 1, 1, DONT_CHANGE};
+  general_int to2[nLevels+1] = {0, DONT_CHANGE, DONT_CHANGE, DONT_CARE};
+  general_int *from[2] = { from1, from2 };
+  general_int *to[2] = { to1, to2 };
   dd_edge nsf(mxd);
-  mxd->createEdge(reinterpret_cast<int**>(from), 
-      reinterpret_cast<int**>(to), 2, nsf);
+  mxd->createEdge(reinterpret_cast<general_int**>(from),
+      reinterpret_cast<general_int**>(to), 2, nsf);
 
   dd_edge reachBFS(initialStates);
   dd_edge reachDFS(initialStates);

@@ -41,6 +41,7 @@ MEDDLY::enumerator::iterator::iterator(const expert_forest* f)
     rawpath = path = 0;
     rawnzp = nzp = 0;
     rawindex = index = 0;
+    gindex=0;
     minLevel = 0;
     maxLevel = 0;
     level_change = 0;
@@ -55,6 +56,7 @@ MEDDLY::enumerator::iterator::iterator(const expert_forest* f)
     path = rawpath + N;
     nzp = rawnzp + N;
     index = rawindex + N;
+    gindex= new general_int[N+1];
     minLevel = -N;
   } else {
     rawpath = new unpacked_node[N+1];
@@ -63,6 +65,7 @@ MEDDLY::enumerator::iterator::iterator(const expert_forest* f)
     path = rawpath;
     nzp = rawnzp;
     index = rawindex;
+    gindex= new general_int[N+1];
     minLevel = 1;
   }
   level_change = N+1;
@@ -74,6 +77,7 @@ MEDDLY::enumerator::iterator::~iterator()
   delete[] rawnzp;
   delete[] rawindex;
   delete[] prindex;
+  delete[] gindex;
 }
 
 bool MEDDLY::enumerator::iterator::start(const dd_edge &e)
@@ -82,6 +86,10 @@ bool MEDDLY::enumerator::iterator::start(const dd_edge &e)
 }
 
 bool MEDDLY::enumerator::iterator::start(const dd_edge &e, const int* m)
+{
+  throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+}
+bool MEDDLY::enumerator::iterator::startGI(const dd_edge &e, const general_int* m)
 {
   throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 }
@@ -180,6 +188,7 @@ void MEDDLY::enumerator::init(type t, const forest* f)
       return;
   }
   if (I->build_error()) {
+    printf("FACE ERROR!!!\n");
     delete I;
     I = 0;
   } 
@@ -209,3 +218,10 @@ void MEDDLY::enumerator::startFixedColumn(const dd_edge &e, const int* minterm)
   is_valid = I->start(e, minterm);
 }
 
+void MEDDLY::enumerator::startFixedColumn(const dd_edge &e, const general_int* minterm)
+{
+  if (0==I) return;
+  if (COL_FIXED != T) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+  MEDDLY_DCASSERT(I);
+  is_valid = I->startGI(e, minterm);
+}

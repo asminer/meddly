@@ -72,13 +72,13 @@ int main(int argc, char *argv[])
   timer mallocTimer;
   long mallocTime = 0;
 
-  int** elements = (int **) malloc(nElements * sizeof(int *));
-  int** pelements = (int **) malloc(nElements * sizeof(int *));
+  general_int** elements = (general_int **) malloc(nElements * sizeof(general_int *));
+  general_int** pelements = (general_int **) malloc(nElements * sizeof(general_int *));
   for (int i = 0; i < nElements; ++i)
   {
     mallocTimer.note_time();
-    elements[i] = (int *) malloc((nVariables + 1) * sizeof(int));
-    pelements[i] = (int *) malloc((nVariables + 1) * sizeof(int));
+    elements[i] = (general_int *) malloc((nVariables + 1) * sizeof(general_int));
+    pelements[i] = (general_int *) malloc((nVariables + 1) * sizeof(general_int));
     mallocTimer.note_time();
     mallocTime += mallocTimer.get_last_interval();
 
@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
   initialize(L);
 
   // Create a domain
-  domain *d = createDomainBottomUp(bounds, nVariables);
+  domain *d = createDomainBottomUp(variable::variableTypes::boundedClass,bounds, nVariables);
   assert(d != 0);
 
   // Create an MXD forest in this domain (to store a relation)

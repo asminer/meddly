@@ -31,7 +31,7 @@
 // MEDDLY::
 
 inline MEDDLY::domain* MEDDLY::createDomain() { 
-  return createDomain((variable**) 0, 0);
+  return createDomain(variable::variableTypes::boundedClass,(variable**) 0, 0);
 }
 
 #ifdef __GMP_H__
@@ -492,6 +492,15 @@ inline bool MEDDLY::forest::isMarkedForDeletion() const {
   return is_marked_for_deletion;
 }
 
+//inline void MEDDLY::forest::createEdgeForVar(general_int vh, bool pr, dd_edge& a) {
+//  switch (rangeType) {
+//    case BOOLEAN:   createEdgeForVar(vh, pr, (bool*)  0, a);  break;
+//    case INTEGER:   createEdgeForVar(vh, pr, (long*)  0, a);  break;
+//    case REAL:      createEdgeForVar(vh, pr, (float*) 0, a);  break;
+//    default:        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+//  }
+//};
+
 inline void MEDDLY::forest::createEdgeForVar(int vh, bool pr, dd_edge& a) {
   switch (rangeType) {
     case BOOLEAN:   createEdgeForVar(vh, pr, (bool*)  0, a);  break;
@@ -672,6 +681,10 @@ inline const int* MEDDLY::enumerator::iterator::getAssignments() const {
   return index;
 }
 
+inline const MEDDLY::general_int* MEDDLY::enumerator::iterator::getGIAssignments() const {
+  return gindex;
+}
+
 // enumerator::
 inline MEDDLY::enumerator::operator bool() const {
   return is_valid;
@@ -683,6 +696,12 @@ inline void MEDDLY::enumerator::operator++() {
 
 inline const int* MEDDLY::enumerator::getAssignments() const {
   if (I && is_valid) return I->getAssignments(); else return 0;
+}
+
+inline const MEDDLY::general_int* MEDDLY::enumerator::getGIAssignments() const {
+  if (I && is_valid)
+    return I->getGIAssignments();
+  else return 0;
 }
 
 inline const int* MEDDLY::enumerator::getPrimedAssignments() const {

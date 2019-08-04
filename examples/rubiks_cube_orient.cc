@@ -388,7 +388,7 @@ class rubiks {
       MEDDLY::initialize(L);
 
       // Set up the state variables, as described earlier
-      d = createDomainBottomUp(&variableSize[1], nLevels);
+      d = createDomainBottomUp(variable::variableTypes::boundedClass,&variableSize[1], nLevels);
       if (0 == d) {
         fprintf(stderr, "Couldn't create domain\n");
         assert(false);
@@ -429,7 +429,7 @@ class rubiks {
       assert(mdd);
 
       // sets of states
-      int* initst = new int[nLevels + 1];
+      general_int* initst = new general_int[nLevels + 1];
       assert(initst);
 
       // The initial state is the "solved" Rubik's Cube.
@@ -452,7 +452,7 @@ class rubiks {
       }
 
       dd_edge initialStates(mdd);
-      mdd->createEdge((int**)(&initst), 1, initialStates);
+      mdd->createEdge((general_int**)(&initst), 1, initialStates);
 
       delete[] initst;
 
@@ -536,8 +536,8 @@ class rubiks {
       fflush(stdout);
 #endif
 
-      int* from = (int *)malloc((1+nLevels) * sizeof(int));
-      int* to = (int *)malloc((1+nLevels) * sizeof(int));
+      general_int* from = (general_int *)malloc((1+nLevels) * sizeof(general_int));
+      general_int* to = (general_int *)malloc((1+nLevels) * sizeof(general_int));
       for (int i = 1; i <= nLevels; i++) {
         from[i] = DONT_CARE;
         to[i] = DONT_CHANGE;
@@ -570,7 +570,7 @@ class rubiks {
         to[order[centero]] = DONT_CARE;
       }
       dd_edge r(mxd);
-      mxd->createEdge((int**)(&from), (int**)(&to), 1, r);
+      mxd->createEdge((general_int**)(&from), (general_int**)(&to), 1, r);
       free(from);
       free(to);
 

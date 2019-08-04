@@ -579,7 +579,7 @@ void RubiksCubeModel::buildDomain()
     sizes[i] = getVarSize(i + 1);
   }
 
-  _domain = createDomainBottomUp(sizes, _config.num_components());
+  _domain = createDomainBottomUp(variable::variableTypes::boundedClass,sizes, _config.num_components());
   if (_domain == nullptr) {
     cerr << "Couldn't create domain" << endl;
     exit(1);
@@ -632,14 +632,14 @@ vector<int> RubiksCubeModel::convertToVariableOrder(const vector<Component>& lev
 
 dd_edge RubiksCubeModel::buildInitial()
 {
-  int** initst = new int*[1];
-  initst[0] = new int[_config.num_components() + 1];
+  general_int** initst = new general_int*[1];
+  initst[0] = new general_int[_config.num_components() + 1];
   initst[0][0] = 0;
   for (int j = 0; j < NUM_TYPE2; j++) {
-    initst[0][get_var_of_component(2, j)] = j;
+    initst[0][get_var_of_component(2, j)] = general_int(j);
   }
   for (int j = 0; j < NUM_TYPE3; j++) {
-    initst[0][get_var_of_component(3, j)] = j;
+    initst[0][get_var_of_component(3, j)] = general_int(j);
   }
 
   assert(_state != nullptr);
@@ -885,12 +885,12 @@ dd_edge RubiksCubeModel::buildMoveHelper(forest* relation, int type3_a,
   //
   int nElements = 4 * _config.num_type2 + 4 * _config.num_type3;
 
-  int** from = new int*[nElements];
-  int** to = new int*[nElements];
+  general_int** from = new general_int*[nElements];
+  general_int** to = new general_int*[nElements];
   for (int i = 0; i < nElements; i++) {
     // allocate elements
-    from[i] = new int[_config.num_components() + 1];
-    to[i] = new int[_config.num_components() + 1];
+    from[i] = new general_int[_config.num_components() + 1];
+    to[i] = new general_int[_config.num_components() + 1];
 
     // initialize elements
     from[i][0] = 0;
@@ -1044,12 +1044,12 @@ dd_edge RubiksCubeModel::buildFlipMoveHelper(forest* relation, int type3_a,
   // total additions = 4 * 12 + 4 * 8 = 4 * 20 = 80
   //
   int nElements = 4 * _config.num_type2 + 4 * _config.num_type3;
-  int** from = new int*[nElements];
-  int** to = new int*[nElements];
+  general_int** from = new general_int*[nElements];
+  general_int** to = new general_int*[nElements];
   for (int i = 0; i < nElements; i++) {
     // allocate elements
-    from[i] =  new int[_config.num_components() + 1];
-    to[i] = new int[_config.num_components() + 1];
+    from[i] =  new general_int[_config.num_components() + 1];
+    to[i] = new general_int[_config.num_components() + 1];
 
     // initialize elements
     from[i][0] = 0;

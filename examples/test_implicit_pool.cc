@@ -150,7 +150,7 @@ int main(int argc, const char** argv)
     // Initialize domain
     int* sizes = new int[PLACES];
     for (int i=PLACES-1; i>=0; i--) sizes[i] = BOUNDS;
-    d = createDomainBottomUp(sizes, PLACES);
+    d = createDomainBottomUp(variable::variableTypes::boundedClass,sizes, PLACES);
     delete[] sizes;
     forest::policies pr(true);
     pr.setPessimistic();
@@ -158,10 +158,10 @@ int main(int argc, const char** argv)
     p.setPessimistic();
     
     //INITIAL STATE
-    int* initialState;
-    initialState = new int[PLACES + 1];
-    for(int g = 1;g <= PLACES;g++) initialState[g] = 0;
-    initialState[p7_position]=20*N; initialState[p8_position]=15*N;initialState[p9_position]=10*N;
+    general_int* initialState;
+    initialState = new general_int[PLACES + 1];
+    for(int g = 1;g <= PLACES;g++) initialState[g] = general_int(0);
+    initialState[p7_position]=20*N; initialState[p8_position]=15*N;initialState[p9_position]=general_int(10*N);
     
     method ='i';
     std::cout<<"\n********************";

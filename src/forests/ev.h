@@ -92,11 +92,11 @@ class MEDDLY::ev_forest : public expert_forest {
     /**
         Enlarge variables to include all given minterms.
     */
-    inline void enlargeVariables(const int* const* vlist, int N, bool primed) {
+    inline void enlargeVariables(const general_int* const* vlist, int N, bool primed) {
       for (int k=1; k<=getDomain()->getNumVariables(); k++) {
-        int maxv = vlist[0][k];
+        int maxv = vlist[0][k].getInteger();
         for (int i=1; i<N; i++) {
-          maxv = MAX(maxv, vlist[i][k]);
+          maxv = MAX(maxv, vlist[i][k].getInteger());
         }
         if (maxv < 1) continue;
         if (maxv >= getDomain()->getVariableBound(k, primed)) {

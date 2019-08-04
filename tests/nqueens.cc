@@ -124,7 +124,7 @@ long buildQueenSolutions(int N)
   for (int i=0; i<N; i++) {
     varsizes[i] = N;
   }
-  domain* d = createDomainBottomUp(varsizes, N);
+  domain* d = createDomainBottomUp(variable::variableTypes::boundedClass,varsizes, N);
   assert(d);
   delete[] varsizes;
   forest::policies p(false);

@@ -174,7 +174,7 @@ forest* buildForest(forest::policies &p, int N, const varorder &V)
   for (int i=0; i<2*M; i++) {
     vars[i] = N;
   }
-  domain* d = createDomainBottomUp(vars, 2*M);
+  domain* d = createDomainBottomUp(variable::variableTypes::boundedClass,vars, 2*M);
   delete[] vars;
   if (0==d) return 0;
 

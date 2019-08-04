@@ -33,10 +33,13 @@ using namespace MEDDLY;
 // #define DEBUG_SEGV
 
 int vars[] = {4, 4, 4, 4, 4, 4};
-int dontcare[] = {0, -1, -1, -1, -1, -1, -1};
-int minterm[7];
-int* mtaddr[] = { minterm };
-int* dcaddr[] = { dontcare };
+general_int dontcare[] = {0, -1, -1, -1, -1, -1, -1};
+general_int minterm[7];
+general_int gminterm[7];
+general_int* mtaddr[] = { minterm };
+general_int* dcaddr[] = { dontcare };
+general_int* gmtaddr[] = { gminterm };
+
 
 long seed = -1;
 
@@ -63,7 +66,7 @@ int Equilikely(int a, int b)
 
 void randomizeMinterm()
 {
-  for (int i=1; i<7; i++) minterm[i] = Equilikely(-1, 3);
+  for (int i=1; i<7; i++) {minterm[i] = Equilikely(-1, 3);gminterm[i]=minterm[i];}
 #ifdef DEBUG_RANDSET
   printf("Random minterm: [%d", minterm[1]);
   for (int i=2; i<7; i++) printf(", %d", minterm[i]);
@@ -85,7 +88,7 @@ void makeRandomSet(forest* f, int nmt, dd_edge &x)
 #ifdef DEBUG_SEGV
     fprintf(stderr, "\tedge\n");
 #endif
-    f->createEdge(mtaddr, 1, tmp);
+    f->createEdge(gmtaddr, 1, tmp);
 #ifdef DEBUG_SEGV
     fprintf(stderr, "\tunion\n");
 #endif
@@ -230,7 +233,7 @@ int main(int argc, const char** argv)
 
   initialize();
 
-  domain* myd = createDomainBottomUp(vars, 6);
+  domain* myd = createDomainBottomUp(variable::variableTypes::boundedClass,vars, 6);
   assert(myd);
 
   forest* mdd = myd->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);

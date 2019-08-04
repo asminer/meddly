@@ -42,14 +42,24 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     }
 
   protected:
-    inline node_handle evaluateRaw(const dd_edge &f, const int* vlist) const {
+    inline node_handle evaluateRaw(const dd_edge &f, const general_int* vlist) const {
+          node_handle p = f.getNode();
+          while (!isTerminalNode(p)) {
+          int level = getNodeLevel(p);
+            printf("vlist[getVarByLevel(level)].getInteger() %d\n",vlist[getVarByLevel(level)].getInteger());
+            p = getDownPtr(p, vlist[getVarByLevel(level)].getInteger());
+          }
+          return p;
+        }
+
+    /*inline node_handle evaluateRaw(const dd_edge &f, const int* vlist) const {
       node_handle p = f.getNode();
       while (!isTerminalNode(p)) {
     	int level = getNodeLevel(p);
         p = getDownPtr(p, vlist[getVarByLevel(level)]);
       }
       return p;
-    }
+    }*/
 
     // Move the variable to the optimal level between top and bottom
     void sifting(int var, int top, int bottom);
@@ -76,15 +86,18 @@ namespace MEDDLY {
   template <class ENCODER, typename T>
   class mtmdd_edgemaker {
       mtmdd_forest* F;
-      const int* const* vlist;
+      const general_int* const* vlist;
+//      const int* const* vlist;
       const T* values;
       int* order;
       int N;
       int K;
       binary_operation* unionOp;
     public:
-      mtmdd_edgemaker(mtmdd_forest* f, const int* const* mt, const T* v, 
-        int* o, int n, int k, binary_operation* unOp) 
+      mtmdd_edgemaker(mtmdd_forest* f, const general_int* const* mt, const T* v,
+              int* o, int n, int k, binary_operation* unOp)
+//      mtmdd_edgemaker(mtmdd_forest* f, const int* const* mt, const T* v,
+//        int* o, int n, int k, binary_operation* unOp)
       {
         F = f;
         vlist = mt;
@@ -95,14 +108,14 @@ namespace MEDDLY {
         unionOp = unOp;
       }
 
-      inline const int* unprimed(int i) const {
+      inline const general_int* unprimed(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return vlist[order[i]];
       }
-      inline int unprimed(int i, int k) const {
+      inline general_int unprimed(int i, int k) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         MEDDLY_CHECK_RANGE(1, k, K+1);
-        return vlist[order[i]][k];
+        return vlist[order[i]][k].getInteger();
       }
       inline T term(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
@@ -154,14 +167,14 @@ namespace MEDDLY {
         //
         unsigned nextV = lastV;
         for (int i=start; i<stop; i++) {
-          if (DONT_CARE == unprimed(i, k)) {
+          if (DONT_CARE == unprimed(i, k).getInteger()) {
             if (batchP != i) {
               swap(batchP, i);
             }
             batchP++;
           } else {
             MEDDLY_DCASSERT(unprimed(i, k) >= 0);
-            nextV = MIN(nextV, unsigned(unprimed(i, k)));
+            nextV = MIN(nextV, unsigned(unprimed(i, k).getInteger()));
           }
         }
 
@@ -212,13 +225,13 @@ namespace MEDDLY {
 			      // (1) move anything with value v, to the "new" front
 			      //
 			      for (int i=start; i<stop; i++) {
-			        if (v == unprimed(i, k)) {
+			        if (v == unprimed(i, k).getInteger()) {
 				        if (batchP != i) {
 				          swap(batchP, i);
 				        }
 				        batchP++;
 			        } else {
-				        nextV = MIN(nextV, unsigned(unprimed(i, k)));
+				        nextV = MIN(nextV, unsigned(unprimed(i, k).getInteger()));
 			        }
 			      }
 
@@ -270,13 +283,13 @@ namespace MEDDLY {
 			    // (1) move anything with value v, to the "new" front
 			    //
 			    for (int i=start; i<stop; i++) {
-			      if (v == unprimed(i, k)) {
+			      if (v == unprimed(i, k).getInteger()) {
 				      if (batchP != i) {
 				        swap(batchP, i);
 				      }
 				      batchP++;
 			      } else {
-				      nextV = MIN(nextV, unsigned(unprimed(i, k)));
+				      nextV = MIN(nextV, unsigned(unprimed(i, k).getInteger()));
 			      }
 			    }
 
@@ -312,14 +325,14 @@ namespace MEDDLY {
     protected:
       /// Special case for createEdge(), with only one minterm.
       inline node_handle
-      createEdgePath(int k, const int* _vlist, node_handle bottom)
+      createEdgePath(int k, const general_int* _vlist, node_handle bottom)
       {
           if (bottom==0 && (!F->isQuasiReduced() || F->getTransparentNode()==ENCODER::value2handle(0))) {
             return bottom;
           }
 
           for (int i=1; i<=k; i++) {
-            if (DONT_CARE == _vlist[i]) {
+            if (DONT_CARE == _vlist[i].getInteger()) {
               // make a redundant node
               if (F->isFullyReduced()) continue;
               int sz = F->getLevelSize(i);
@@ -333,12 +346,12 @@ namespace MEDDLY {
             } else {
               if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
                 int sz = F->getLevelSize(i);
-                if (F->isExtensibleLevel(i) && (sz == _vlist[i]+1)) sz++;
+                if (F->isExtensibleLevel(i) && (sz == _vlist[i].getInteger()+1)) sz++;
                 unpacked_node* nb = unpacked_node::newFull(F, i, sz);
                 node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
                 // add opaque zero nodes
                 for(int v=0; v<sz; v++) {
-                  nb->d_ref(v)=(v==_vlist[i] ? bottom : F->linkNode(zero));
+                  nb->d_ref(v)=(v==_vlist[i].getInteger() ? bottom : F->linkNode(zero));
                 }
                 F->unlinkNode(zero);
                 if (F->isExtensibleLevel(i)) nb->markAsExtensible();
@@ -348,7 +361,7 @@ namespace MEDDLY {
                 // make a singleton node
                 unpacked_node* nb = unpacked_node::newSparse(F, i, 1);
                 MEDDLY_DCASSERT(_vlist[i] >= 0);
-                nb->i_ref(0) = unsigned(_vlist[i]);
+                nb->i_ref(0) = unsigned(_vlist[i].getInteger());
                 nb->d_ref(0) = bottom;
                 bottom = F->createReducedNode(-1, nb);
               }

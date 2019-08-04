@@ -374,9 +374,11 @@ bool MEDDLY::mtmdd_forest::mtmdd_iterator::first(int k, node_handle down)
     else          path[k].initFromNode(F, down, false);
     nzp[k] = 0;
     index[k] = path[k].i(0);
+    gindex[k]=path[k].i(0);
     down = path[k].d(0);
   }
   // save the terminal value
   index[0] = down;
+  gindex[0]=down;
   return true;
 }

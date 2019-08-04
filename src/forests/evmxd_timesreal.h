@@ -76,12 +76,16 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
     ~evmxd_timesreal();
 
     virtual void createEdge(float val, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-      const float* terms, int N, dd_edge &e);
+    virtual void createEdge(const general_int* const* vlist, const general_int* const* vplist,
+          const float* terms, int N, dd_edge &e);
+//    virtual void createEdge(const int* const* vlist, const int* const* vplist,
+//      const float* terms, int N, dd_edge &e);
     virtual void createEdgeForVar(int vh, bool vp, const float* terms,
       dd_edge& a);
-    virtual void evaluate(const dd_edge &f, const int* vlist,
-      const int* vplist, float &term) const;
+    virtual void evaluate(const dd_edge &f, const general_int* vlist,
+          const general_int* vplist, float &term) const;
+//    virtual void evaluate(const dd_edge &f, const int* vlist,
+//      const int* vplist, float &term) const;
 
     virtual bool isTransparentEdge(node_handle p, const void* v) const;
     virtual void getTransparentEdge(node_handle &p, void* v) const;

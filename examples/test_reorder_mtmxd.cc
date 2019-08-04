@@ -122,20 +122,20 @@ int main(int argc, char *argv[])
       nVariables, variableBound, nElements);
 
   // create the elements randomly
-  int** from = new int*[nElements];
-  int** to = new int*[nElements];
+  general_int** from = new general_int*[nElements];
+  general_int** to = new general_int*[nElements];
   element_type* terms = new element_type[nElements];
 
   for (int i = 0; i < nElements; ++i) {
-    from[i] = new int[nVariables + 1];
-    to[i] = new int[nVariables + 1];
+    from[i] = new general_int[nVariables + 1];
+    to[i] = new general_int[nVariables + 1];
     from[i][0] = 0;
     to[i][0] = 0;
     for (int j = nVariables; j > 0; --j) {
-      from[i][j] = int(float(variableBound + 1) * rand() / (RAND_MAX + 1.0)) - 1;
+      from[i][j] = general_int(float(variableBound + 1) * rand() / (RAND_MAX + 1.0)) - 1;
       assert(from[i][j] >= DONT_CARE && from[i][j] < variableBound);
       // DONT_CHANGE can only be used with DONT_CARE
-      to[i][j] = int(float(variableBound) * rand() / (RAND_MAX + 1.0));
+      to[i][j] = general_int(float(variableBound) * rand() / (RAND_MAX + 1.0));
       assert(to[i][j] >= 0 && to[i][j] < variableBound);
     }
     terms[i] =
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
   initialize();
 
   // Create a domain
-  domain *d = createDomainBottomUp(bounds, nVariables);
+  domain *d = createDomainBottomUp(variable::variableTypes::boundedClass,bounds, nVariables);
   assert(d != 0);
 
   // Create a MTMXD forest in this domain

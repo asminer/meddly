@@ -23,7 +23,7 @@
 #include "../src/meddly.h"
 #include "simple_model.h"
 
-// #define SHOW_INDEXES
+ #define SHOW_INDEXES
 
 const char* kanban[] = {
   "X-+..............",  // Tin1
@@ -56,20 +56,25 @@ bool equal(const int* a, const int* b, int N)
 bool checkReachset(int N)
 {
   printf("Running test for N=%d...\n", N);
+  FILE_output meddlyout(stdout);
 
   int sizes[16];
 
   for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* dom = createDomainBottomUp(sizes, 16);
+  domain* dom = createDomainBottomUp(variable::variableTypes::boundedClass,sizes, 16);
 
   // Build initial state
-  int* initial = new int[17];
+  general_int* initial = new general_int[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
+//  general_int* ginitial = new general_int[17];
+//  for (int i=16; i; i--) ginitial[i] = initial[i];
   forest* mdd = dom->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
+  init_state.show(meddlyout,2);
   delete[] initial;
+//  delete[] ginitial;
   printf("\tbuilt initial state\n");
   fflush(stdout);
 
@@ -84,6 +89,7 @@ bool checkReachset(int N)
   dd_edge reachable(mdd);
   apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
   printf("\tbuilt reachable states\n");
+  reachable.show(meddlyout,2);
   fflush(stdout);
 
   // Build index set for reachable states
@@ -92,7 +98,10 @@ bool checkReachset(int N)
   apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
 #ifdef SHOW_INDEXES
   printf("\tbuilt index set:\n");
-  reach_index.show(stdout, 2);
+  reach_index.show(meddlyout, 2);
+
+//  reachable.show(meddlyout, 2);
+  // reach_index.show(stdout, 2);
 #else
   printf("\tbuilt index set\n");
 #endif
@@ -100,8 +109,21 @@ bool checkReachset(int N)
 
   // Verify indexes
   int c = 0;
-  for (enumerator s(reachable); s; ++s) {
+  /*for (enumerator s(reachable); s; ++s) {
     const int* state = s.getAssignments();
+//    printf("state SIZE IS   %d %d\n", state[0],state[1]);
+//    int size=sizeof(state)/sizeof( int);
+//
+//    general_int gstate[size];
+//    for(int i=0;i<size;i++)
+//    {  gstate[i]=state[i];
+//
+//    }
+//    printf("gstate SIZE IS  %d %d\n", gstate[0],gstate[1]);
+
+//     const general_int* ggstate=s.getGIAssignments();
+//    printf("ggstate SIZE IS  %d %d\n", ggstate[0].getInteger(),ggstate[1].getInteger());
+//    fflush(stdout);
     long index;
     evmdd->evaluate(reach_index, state, index);
     if (c != index) {
@@ -111,14 +133,22 @@ bool checkReachset(int N)
     c++;
   } // for s
   printf("\tverified `forward'\n");
-  fflush(stdout);
+  fflush(stdout);*/
 
   // verify the other way
   int d = 0;
   for (enumerator s(reach_index); s; ++s) {
     const int* state = s.getAssignments();
+    int size=sizeof(state)/sizeof(const int);
+    printf("size %d %d\n",state[0],state[1]);
+    const general_int* gstate=s.getGIAssignments();
+    printf("gsize %d %d\n",gstate[0].getInteger(),gstate[1].getInteger());
+//        general_int* gstate= new general_int[size];
+//        for(int i=0;i<size;i++)
+//          gstate[i]=state[i];
+//       const general_int* ggstate=gstate;
     bool ok;
-    mdd->evaluate(reachable, state, ok);
+    mdd->evaluate(reachable,gstate, ok);
     if (!ok) {
       printf("\nIndex number %d does not appear in reachability set\n", d);
       return false;

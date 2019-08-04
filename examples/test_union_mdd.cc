@@ -97,18 +97,18 @@ int main(int argc, char *argv[])
   timer mallocTimer;
   long mallocTime = 0;
 
-  int** elements = (int **) malloc(nElements * sizeof(int *));
+  general_int** elements = (general_int **) malloc(nElements * sizeof(general_int *));
   for (int i = 0; i < nElements; ++i)
   {
     mallocTimer.note_time();
-    elements[i] = (int *) malloc((nVariables + 1) * sizeof(int));
+    elements[i] = (general_int *) malloc((nVariables + 1) * sizeof(general_int));
     mallocTimer.note_time();
     mallocTime += mallocTimer.get_last_interval();
 
-    elements[i][0] = 0;
+    elements[i][0] = general_int(0);
     for (int j = nVariables; j >= 1; --j)
     {
-      elements[i][j] = int(float(variableBound) * rand() / (RAND_MAX + 1.0));
+      elements[i][j] = general_int(float(variableBound) * rand() / (RAND_MAX + 1.0));
       assert(elements[i][j] >= 0 && elements[i][j] < variableBound);
     }
     // print element[i]
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
   initialize(L);
 
   // Create a domain
-  domain *d = createDomainBottomUp(bounds, nVariables);
+  domain *d = createDomainBottomUp(variable::variableTypes::boundedClass,bounds, nVariables);
   assert(d != 0);
 
   // Create an MDD forest in this domain (to store states)

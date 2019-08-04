@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     bounds[i] = variableBound;
 
   // Create a domain
-  domain *d = createDomainBottomUp(bounds, nVariables);
+  domain *d = createDomainBottomUp(variable::variableTypes::boundedClass,bounds, nVariables);
   assert(d != 0);
 
   // Create an MXD forest in this domain (to store states)
@@ -123,10 +123,10 @@ int main(int argc, char *argv[])
   incrY1.show(mout, 2);
   
   dd_edge postImage(states);
-  int element[] = {0, 0, 0, 0, 0};
-  int* elements[] = { element };
+  general_int element[] = {general_int(0), general_int(0), general_int(0), general_int(0), general_int(0)};
+  general_int* elements[] = { element };
   element_type terms[] = {element_type(1)};
-  states->createEdge((int**)elements, (element_type*)terms, 1, postImage);
+  states->createEdge((general_int**)elements, (element_type*)terms, 1, postImage);
   // postImage *= expr;
 
   fprintf(stdout, "-----------------------------------------------------\n");
@@ -272,10 +272,10 @@ dd_edge buildMultiplierForVariable(forest* mtmxd, int level)
 {
   assert(mtmxd != 0);
   int nLevels = mtmxd->getDomain()->getNumVariables() + 1;
-  std::vector<int> from(nLevels, -2);
-  std::vector<int> to(nLevels, -2);
-  int* fromArray[] = {&from[0]};
-  int* toArray[] = {&to[0]};
+  std::vector<general_int> from(nLevels, -2);
+  std::vector<general_int> to(nLevels, -2);
+  general_int* fromArray[] = {&from[0]};
+  general_int* toArray[] = {&to[0]};
   element_type terms[] = {element_type(1)};
 
   from[0] = 0;

@@ -267,7 +267,7 @@ int main(int argc, const char** argv)
   for (int i=0; i<N; i++) {
     varsizes[i] = N;
   }
-  domain* d = createDomainBottomUp(varsizes, N);
+  domain* d = createDomainBottomUp(variable::variableTypes::boundedClass,varsizes, N);
   assert(d);
   delete[] varsizes;
   expert_forest* f = (expert_forest*)

@@ -152,6 +152,69 @@ namespace MEDDLY {
     DOUBLEVECT  = 6
   };
 
+ /*enum variableTypes{
+  boundedClass,
+  naturalClass,
+  integerClass,
+  boundedInfinityClass,
+  naturalInfinityClass,
+  integerInfinityClass,
+};*/
+
+  // ******************************************************************
+  // *                                                                *
+  // *                                                                *
+  // *                         variable class                         *
+  // *                                                                *
+  // *                                                                *
+  // ******************************************************************
+
+  /** Variable class.
+      Abstract base class.
+      A variable consists of an optional name, and a bound.
+      A single variable object is used to describe both
+      the primed and unprimed versions of the variable.
+
+      Note1: variables are automatically deleted when
+      removed from their last domain.
+
+      Additional features are provided in the expert interface.
+  */
+
+  class variable {
+  public:
+    enum variableTypes{
+             boundedClass,
+             naturalClass,
+             integerClass,
+             boundedInfinityClass,
+             naturalInfinityClass,
+             integerInfinityClass,
+           };
+    protected:
+
+      variable(variableTypes _type,int bound, char* name);
+
+  //    variable(int bound, char* name);
+      virtual ~variable();
+    public:
+
+      int getBound(bool primed) const;
+      const char* getName() const;
+      void setName(char* newname);
+      bool isExtensible() const;
+      bool isValueValid(int val, variableTypes type)const;
+
+    protected:
+      int un_bound;
+      int pr_bound;
+      bool is_extensible;
+    private:
+      char* name;
+      variableTypes variableType;
+  };
+
+
   // ******************************************************************
   // *                    miscellaneous  functions                    *
   // ******************************************************************
@@ -403,7 +466,8 @@ namespace MEDDLY {
         @param  name    Variable name (used only in display / debugging), or 0.
         @return A new variable, or 0 on error.
   */
-  variable* createVariable(int bound, char* name);
+//  variable* createVariable(int bound, char* name);
+  variable* createVariable(MEDDLY::variable::variableTypes _variableType, int bound, char* name);
 
   /** Front-end function to create a domain with the given variables.
         @param  vars    List of variables, in order.
@@ -414,7 +478,9 @@ namespace MEDDLY {
 
         @return A new domain.
   */
-  domain* createDomain(variable** vars, int N);
+  domain* createDomain(variable::variableTypes _variableType,variable** vars, int N);
+
+//  domain* createDomain(variable** vars, int N);
 
   /** Front-end function to create an empty domain.
       This is required because domain is an abstract class.
@@ -435,7 +501,9 @@ namespace MEDDLY {
 
         @return A new domain.
   */
-  domain* createDomainBottomUp(const int* bounds, int N);
+  domain* createDomainBottomUp(variable::variableTypes _variableType,const int* bounds, int N);
+
+//  domain* createDomainBottomUp(const int* bounds, int N);
 
 /* Commented out as of version 0.10
 #ifdef _MSC_VER
@@ -1558,6 +1626,8 @@ class MEDDLY::forest {
 
         @throws       TYPE_MISMATCH, if the forest's range is not BOOLEAN.
     */
+//    virtual void createEdgeForVar(general_int vh, bool vp, const bool* terms, dd_edge& a);
+
     virtual void createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a);
 
     /** Create an edge such that
@@ -1586,6 +1656,8 @@ class MEDDLY::forest {
         
         @throws       TYPE_MISMATCH, if the forest's range is not INTEGER.
     */
+//    virtual void createEdgeForVar(general_int vh, bool vp, const long* terms, dd_edge& a);
+
     virtual void createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a);
 
     /** Create an edge such that
@@ -1614,6 +1686,8 @@ class MEDDLY::forest {
 
         @throws       TYPE_MISMATCH, if the forest's range is not REAL.
     */
+//    virtual void createEdgeForVar(general_int vh, bool vp, const float* terms, dd_edge& a);
+
     virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
 
     /** Create an edge such that
@@ -1638,6 +1712,8 @@ class MEDDLY::forest {
         @param  a     return a handle to a node in the forest such that
                       f(v_1, ..., vh=i, ..., v_n) = i for 0 <= i < size(vh).
     */
+//    void createEdgeForVar(general_int vh, bool pr, dd_edge& a);
+
     void createEdgeForVar(int vh, bool pr, dd_edge& a);
 
     /** Create an edge as the union of several explicit vectors.
@@ -1656,7 +1732,9 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN, 
                         or the forest is for relations.
     */
-    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
+    virtual void createEdge(const general_int* const* vlist, int N, dd_edge &e);
+
+//    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
 
     /** Create an edge as the union of several vectors and return values.
         @param  vlist Array of vectors. Each vector has dimension equal
@@ -1676,7 +1754,9 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER,
                         or the forest is for relations.
     */
-    virtual void createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e);
+    virtual void createEdge(const general_int* const* vlist, const long* terms, int N, dd_edge &e);
+
+//    virtual void createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e);
 
     /** Create an edge as the union of several vectors and return values.
         @param  vlist Array of vectors. Each vector has dimension equal
@@ -1696,7 +1776,9 @@ class MEDDLY::forest {
                         the range type of the forest is not REAL,
                         or the forest is for relations.
     */
-    virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
+    virtual void createEdge(const general_int* const* vlist, const float* terms, int N, dd_edge &e);
+
+//    virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
@@ -1727,7 +1809,9 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN, 
                         or the forest is not for relations.
     */
-    virtual void createEdge(const int* const* vlist, const int* const* vplist, int N, dd_edge &e);
+    virtual void createEdge(const general_int* const* vlist, const general_int* const* vplist, int N, dd_edge &e);
+
+//    virtual void createEdge(const int* const* vlist, const int* const* vplist, int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
@@ -1759,8 +1843,11 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER, 
                         or the forest is not for relations.
     */
-    virtual void createEdge(const int* const* vlist, const int* const* vplist, 
-        const long* terms, int N, dd_edge &e);
+    virtual void createEdge(const general_int* const* vlist, const general_int* const* vplist,
+            const long* terms, int N, dd_edge &e);
+
+//    virtual void createEdge(const int* const* vlist, const int* const* vplist,
+//        const long* terms, int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
@@ -1792,8 +1879,10 @@ class MEDDLY::forest {
                         the range type of the forest is not REAL, 
                         or the forest is not for relations.
     */
-    virtual void createEdge(const int* const* vlist, const int* const* vplist, 
-        const float* terms, int N, dd_edge &e);
+    virtual void createEdge(const general_int* const* vlist, const general_int* const* vplist,
+            const float* terms, int N, dd_edge &e);
+//    virtual void createEdge(const int* const* vlist, const int* const* vplist,
+//        const float* terms, int N, dd_edge &e);
 
 
     /** Create an edge for a boolean constant.
@@ -1837,8 +1926,10 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN, 
                         or the forest is for relations.
     */
-    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const;
+    virtual void evaluate(const dd_edge &f, const general_int* vlist, bool &term)
+          const;
+//    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
+//      const;
 
     /** Evaluate the function encoded by an edge.
         @param  f     Edge (function) to evaluate.
@@ -1851,6 +1942,9 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER,
                         or the forest is for relations.
     */
+    virtual void evaluate(const dd_edge &f, const general_int* vlist, long &term)
+          const;
+    //FOR TEST
     virtual void evaluate(const dd_edge &f, const int* vlist, long &term)
       const;
 
@@ -1865,8 +1959,10 @@ class MEDDLY::forest {
                         the range type of the forest is not REAL,
                         or the forest is for relations.
     */
-    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
-      const;
+    virtual void evaluate(const dd_edge &f, const general_int* vlist, float &term)
+          const;
+//    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
+//      const;
 
     /** Evaluate the function encoded by an edge.
         @param  f       Edge (function) to evaluate.
@@ -1884,8 +1980,11 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN, 
                         or the forest is not for relations.
     */
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-      const int* vplist, bool &term) const;
+    virtual void evaluate(const dd_edge& f, const general_int* vlist,
+         const general_int* vplist, bool &term) const;
+
+//    virtual void evaluate(const dd_edge& f, const int* vlist,
+//      const int* vplist, bool &term) const;
 
     /** Evaluate the function encoded by an edge.
         @param  f       Edge (function) to evaluate.
@@ -1903,8 +2002,10 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER, 
                         or the forest is not for relations.
     */
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-      const int* vplist, long &term) const;
+    virtual void evaluate(const dd_edge& f, const general_int* vlist,
+          const general_int* vplist, long &term) const;
+//    virtual void evaluate(const dd_edge& f, const int* vlist,
+//      const int* vplist, long &term) const;
 
     /** Evaluate the function encoded by an edge.
         @param  f       Edge (function) to evaluate.
@@ -1922,8 +2023,10 @@ class MEDDLY::forest {
                         the range type of the forest is not REAL, 
                         or the forest is not for relations.
     */
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-      const int* vplist, float &term) const;
+    virtual void evaluate(const dd_edge& f, const general_int* vlist,
+          const general_int* vplist, float &term) const;
+//    virtual void evaluate(const dd_edge& f, const int* vlist,
+//      const int* vplist, float &term) const;
 
     /** Returns element \a e at index \a i from an Index Set EV+MDD.
     
@@ -2122,6 +2225,18 @@ public:
     this->type=integer;
     value=_value;
   };
+  general_int(int _value){
+      this->type=integer;
+      value=_value;
+    };
+  general_int(double _value){
+        this->type=integer;
+        value=(long)_value;
+      };
+  general_int(float _value){
+          this->type=integer;
+          value=(long)_value;
+        };
   general_int(){
     this->type=undefined;
   };
@@ -2133,6 +2248,86 @@ public:
       this->type=negative_infinity;
     }
   };
+  int getInteger()const{
+    return (int)value;
+  }
+  long getLong()const{
+    return value;
+  }
+  bool isInteger(){
+    return type==integer;
+  }
+  bool isUndefined(){
+      return type==undefined;
+    }
+  bool isPositiveInfinity(){
+      return type==positive_infinity;
+    }
+  bool isPositiveInteger(){
+    return (isInteger()&&value>0);
+  }
+  bool isNegativeInteger(){
+     return (isInteger()&&value<0);
+   }
+  bool isNegativeInfinity(){
+        return type==negative_infinity;
+      }
+  inline general_int operator- (){
+    value=-value;
+    return this;
+  }
+  inline general_int& operator- (const general_int& rhs){
+
+            type=rhs.type;
+            value-=rhs.value;
+            return *this;
+
+        };
+
+  inline general_int& operator+ (const general_int& rhs){
+
+             type=rhs.type;
+             value+=rhs.value;
+             return *this;
+
+         };
+ /* inline general_int operator= (const general_int& rhs){
+
+          type=rhs.type;
+          value=rhs.value;
+          return this;
+
+      };*/
+  inline general_int& operator= (const int& rhs){
+
+            type=integer;
+            value=rhs;
+            return *this;
+
+        };
+  inline general_int& operator= (const int* rhs){
+
+              type=integer;
+              value=*rhs;
+              return *this;
+
+          };
+  inline general_int operator+= (const general_int& rhs){
+            type=rhs.type;
+            value+=rhs.value;
+            return this;
+
+        };
+  inline bool operator< (const int& rhs){
+
+        if(this->type==integer){
+          return (this->value<rhs);
+        }else if(this->type==negative_infinity)
+            return true;
+          else
+            return false;
+
+    };
   inline bool operator< (const general_int& rhs){
     if(rhs.type==positive_infinity){
         if(this->type==integer ||this->type==negative_infinity)
@@ -2221,41 +2416,7 @@ public:
 };
 
 
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                         variable class                         *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
 
-/** Variable class.
-    Abstract base class.
-    A variable consists of an optional name, and a bound.
-    A single variable object is used to describe both 
-    the primed and unprimed versions of the variable.
-
-    Note1: variables are automatically deleted when
-    removed from their last domain.
-
-    Additional features are provided in the expert interface.
-*/
-class MEDDLY::variable {
-  protected:
-    variable(int bound, char* name);
-    virtual ~variable();
-  public:
-    int getBound(bool primed) const;
-    const char* getName() const;
-    void setName(char* newname);
-    bool isExtensible() const;
-  protected:
-    int un_bound;
-    int pr_bound;
-    bool is_extensible;
-  private:
-    char* name;
-};
 
 // ******************************************************************
 // *                                                                *
@@ -2320,7 +2481,9 @@ class MEDDLY::domain {
                         Note: an extensible variable has a range [1 .. +infinity].
         @param  N       Number of variables.
     */
-    virtual void createVariablesBottomUp(const int* bounds, int N) = 0;
+    virtual void createVariablesBottomUp(variable::variableTypes _variableType,const int* bounds, int N) = 0;
+
+//    virtual void createVariablesBottomUp(const int* bounds, int N) = 0;
 
     /** Create a forest in this domain.
         Conceptually, a forest is a structure used to represent a
@@ -2396,7 +2559,7 @@ class MEDDLY::domain {
 
   protected:
     /// Constructor.
-    domain(variable** v, int N);
+    domain(variable::variableTypes _variableType,variable** v, int N);
 
     /// Destructor.
     virtual ~domain();
@@ -2413,6 +2576,7 @@ class MEDDLY::domain {
     forest** forests;
     unsigned szForests;
 
+    variable::variableTypes variableType;
     /// Find a free slot for a new forest.
     unsigned findEmptyForestSlot();
 
@@ -2733,6 +2897,8 @@ class MEDDLY::enumerator {
 
         virtual bool start(const dd_edge &e);
         virtual bool start(const dd_edge &e, const int* m);
+        virtual bool startGI(const dd_edge &e, const general_int* m);
+
         virtual bool next() = 0;
 
         /**
@@ -2745,7 +2911,7 @@ class MEDDLY::enumerator {
             unprimed variable, and index -i for the primed variable.
         */
         const int* getAssignments() const;
-
+        const MEDDLY::general_int* getGIAssignments() const;
         /** Get primed assignments.
             It is much faster to use getAssigments()
             and look at the negative indexes;
@@ -2775,6 +2941,7 @@ class MEDDLY::enumerator {
         // Path indexes
         int*      rawindex;
         int*      index;  // rawindex, shifted so we can use index[-k]
+        general_int* gindex;
         // 
         int       minLevel; // 1 or -#vars, depending.
         int       maxLevel; // #vars
@@ -2844,6 +3011,7 @@ class MEDDLY::enumerator {
                             assignment for (unprimed) variable k.
     */
     void startFixedColumn(const dd_edge &e, const int* minterm);
+    void startFixedColumn(const dd_edge &e, const general_int* minterm);
 
 
     /** Get the current variable assignments.
@@ -2851,6 +3019,7 @@ class MEDDLY::enumerator {
         unprimed variable, and index -i for the primed variable.
     */
     const int* getAssignments() const;
+    const general_int* getGIAssignments() const;
 
     /// Get the current primed variable assignments.
     const int* getPrimedAssignments() const;

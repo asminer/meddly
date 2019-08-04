@@ -75,7 +75,7 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
     ~evmdd_timesreal();
 
     virtual void createEdge(float val, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
+    virtual void createEdge(const general_int* const* vlist, const float* terms, int N, dd_edge &e);
     virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
     virtual void evaluate(const dd_edge &f, const int* vlist, float &term) const;
 

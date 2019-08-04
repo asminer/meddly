@@ -250,7 +250,7 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   for (int i = N * 8 - 1; i >= 0; i--) {
     sizes[i] = 2;
   }
-  domain* d = createDomainBottomUp(sizes, N * 8);
+  domain* d = createDomainBottomUp(variable::variableTypes::boundedClass,sizes, N * 8);
   delete[] sizes;
 
   // Initialize forests
@@ -274,6 +274,8 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   // Build initial state
   //
   if (LOG) LOG->newPhase(mdd, "Building initial state");
+  general_int* ginitial = new general_int[1 + N * 8];
+  for (int i = N * 8; i; i--) ginitial[i] = 0;
   int* initial = new int[1 + N * 8];
   for (int i = N * 8; i; i--) initial[i] = 0;
   int* initLocal = initial;
@@ -282,7 +284,7 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
     initLocal += 8;
   }
   dd_edge init_state(mdd);
-  mdd->createEdge(&initial, 1, init_state);
+  mdd->createEdge(&ginitial, 1, init_state);
 
   //
   // Build next-state function

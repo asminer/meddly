@@ -60,9 +60,11 @@ dd_edge buildReachset(domain* d, int N)
   int* initial = new int[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
+  general_int* ginitial = new general_int[17];
+  for (int i=16; i; i--) ginitial[i] = initial[i];
   forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge init_state(mdd);
-  mdd->createEdge(&initial, 1, init_state);
+  mdd->createEdge(&ginitial, 1, init_state);
   delete[] initial;
 
   // Build next-state function
@@ -88,7 +90,7 @@ long checkRS(int N, const char* rs[])
   int sizes[16];
 
   for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = createDomainBottomUp(sizes, 16);
+  domain* d = createDomainBottomUp(variable::variableTypes::boundedClass,sizes, 16);
 
   dd_edge reachable = buildReachset(d, N);
 
@@ -115,7 +117,7 @@ void showRS(int N)
   int sizes[16];
 
   for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = createDomainBottomUp(sizes, 16);
+  domain* d = createDomainBottomUp(variable::variableTypes::boundedClass,sizes, 16);
 
   dd_edge reachable = buildReachset(d, N);
 

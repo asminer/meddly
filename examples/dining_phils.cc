@@ -216,13 +216,13 @@ class philsModel {
     void eventsForPhil(int phil, dd_edge &e);
 
   private:
-    inline void setMinterm(int* m, int c) {
+    inline void setMinterm(general_int* m, int c) {
       for (int i = 1; i<sz; i++) m[i] = c;
     }
 
   private:
-    int* from;
-    int* to;
+    general_int* from;
+    general_int* to;
     int nPhils;
     int sz;
     forest* mxd;
@@ -243,8 +243,8 @@ philsModel::philsModel(int nP, const model2var& m2v, forest* _mxd)
 
   sz = nPhils * 2 + 1;
 
-  from = new int[sz];
-  to = new int[sz];
+  from = new general_int[sz];
+  to = new general_int[sz];
 
   from[0] = to[0] = 0;
 
@@ -413,7 +413,7 @@ variable** initializeVariables(const model2var &M2V)
     snprintf(buffer, 32, "fork%d", i);
     name = strdup(buffer);
 #endif
-    vars[v] = createVariable(2, name);
+    vars[v] = createVariable(variable::variableTypes::boundedClass,2, name);
 
     /*
         Create ith philosopher
@@ -432,7 +432,7 @@ variable** initializeVariables(const model2var &M2V)
     snprintf(buffer, 32, "phil%d", i);
     name = strdup(buffer);
 #endif
-    vars[v] = createVariable(5, name);
+    vars[v] = createVariable(variable::variableTypes::boundedClass,5, name);
 
   } // for i
 
@@ -440,11 +440,11 @@ variable** initializeVariables(const model2var &M2V)
 }
 
 
-int* initializeInitialState(int nLevels)
+general_int* initializeInitialState(int nLevels)
 {
   // initial state -- all levels at 0
-  int *initialState = (int *) malloc((nLevels + 1) * sizeof(int));
-  memset(initialState, 0, (nLevels + 1) * sizeof(int));
+  general_int *initialState = (general_int *) malloc((nLevels + 1) * sizeof(general_int));
+  memset(initialState, 0, (nLevels + 1) * sizeof(general_int));
   return initialState;
 }
 
@@ -493,7 +493,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
   printf("Initiailzing forests\n");
 
   // Create a domain and set up the state variables.
-  domain *d = createDomain(vars, M2V.numLevels());
+  domain *d = createDomain(variable::variableTypes::boundedClass,vars, M2V.numLevels());
   assert(d != NULL);
 
   // Set up MDD options
@@ -520,10 +520,10 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
 
   // Set up initial state array based on nPhilosophers
   if (LOG) LOG->newPhase(mdd, "Building initial state");
-  int *initSt = initializeInitialState(nLevels);
-  int *addrInitSt[1] = { initSt };
+  general_int *initSt = initializeInitialState(nLevels);
+  general_int *addrInitSt[1] = { initSt };
   dd_edge initialStates(mdd);
-  mdd->createEdge(reinterpret_cast<int**>(addrInitSt), 1, initialStates);
+  mdd->createEdge(reinterpret_cast<general_int**>(addrInitSt), 1, initialStates);
 
   if (LOG) LOG->newPhase(mxd, "Building next-state function");
   printf("Building next-state function for %d dining philosophers\n", 

@@ -244,13 +244,13 @@ void runWithArgs(int N, char method, bool alternate)
   */
   int* sizes = new int[N];
   for (int i=0; i<N; i++) sizes[i] = N;
-  domain* D = createDomainBottomUp(sizes, N);
+  domain* D = createDomainBottomUp(variable::variableTypes::boundedClass,sizes, N);
   delete[] sizes;
 
   /*
      Build initial state
   */
-  int* initial = new int[N+1];
+  general_int* initial = new general_int[N+1];
   initial[0] = 0;
   for (int i=1; i<=N; i++) initial[i] = i-1;
   forest::policies p(false);

@@ -60,8 +60,10 @@ dd_edge buildReachsetSAT(forest* mdd, forest* mxd, int N)
   int* initial = new int[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
+  general_int* ginitial = new general_int[17];
+  for (int i=16; i; i--) ginitial[i] = initial[i];
   dd_edge init_state(mdd);
-  mdd->createEdge(&initial, 1, init_state);
+  mdd->createEdge(&ginitial, 1, init_state);
   delete[] initial;
 
   // Build next-state function
@@ -74,7 +76,7 @@ dd_edge buildReachsetSAT(forest* mdd, forest* mxd, int N)
   return reachable;
 }
 
-void mark2minterm(const char* mark, int* minterm, int np)
+void mark2minterm(const char* mark, general_int* minterm, int np)
 {
   for (; np; np--) {
     minterm[np] = mark[np]-48;
@@ -84,9 +86,9 @@ void mark2minterm(const char* mark, int* minterm, int np)
 
 dd_edge buildReachsetBatch(int b, forest* mdd, const char* rs[], long states)
 {
-  int** batch = new int*[b];
+  general_int** batch = new general_int*[b];
   for (int i=0; i<b; i++) {
-    batch[i] = new int[17];
+    batch[i] = new general_int[17];
   }
 
   dd_edge reachable(mdd);
@@ -123,7 +125,7 @@ bool checkRS(int N, const char* rs[])
   int sizes[16];
 
   for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = createDomainBottomUp(sizes, 16);
+  domain* d = createDomainBottomUp(variable::variableTypes::boundedClass,sizes, 16);
   forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
 

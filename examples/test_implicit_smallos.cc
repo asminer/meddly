@@ -161,7 +161,7 @@ fflush(stdout);
 // Initialize domain
 int* sizes = new int[PLACES];
 for (int i=PLACES-1; i>=0; i--) sizes[i] = BOUNDS;
-d = createDomainBottomUp(sizes, PLACES);
+d = createDomainBottomUp(variable::variableTypes::boundedClass,sizes, PLACES);
 delete[] sizes;
 forest::policies pr(true);
   pr.setPessimistic();
@@ -169,10 +169,10 @@ forest::policies p(false);
   p.setPessimistic();
 
 //INITIAL STATE
-int* initialState;
-initialState = new int[PLACES + 1];
-for(int g = 1;g <= PLACES;g++) initialState[g] = 0;
-initialState[p1_position]=initialState[p3_position]=MT;initialState[p5_position]=DC;initialState[p7_position]=2*DC;
+  general_int* initialState;
+initialState = new general_int[PLACES + 1];
+for(int g = 1;g <= PLACES;g++) initialState[g] = general_int(0);
+initialState[p1_position]=initialState[p3_position]=MT;initialState[p5_position]=DC;initialState[p7_position]=general_int(2*DC);
 
 N = 2*DC>MT?(2*DC):MT;
   

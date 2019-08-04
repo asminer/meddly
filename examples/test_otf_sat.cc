@@ -240,7 +240,7 @@ void pn::initializeMeddly() {
 
 void pn::buildDomain() {
   int bounds[] = {-1, -1, -1};
-  dom = createDomainBottomUp((int*)&bounds[0], n_vars);
+  dom = createDomainBottomUp(variable::variableTypes::boundedClass,(int*)&bounds[0], n_vars);
   assert(dom);
 }
 
@@ -289,9 +289,9 @@ void pn::buildTransition() {
 
 void pn::buildInitialState() {
   initial_state = new dd_edge(mdd);
-  int init_state[] = {0, 0, 0, 0};
-  int* init[] = {init_state};
-  mdd->createEdge((int**)(&init[0]), 1, *initial_state);
+  general_int init_state[] = {general_int(0), general_int(0), general_int(0), general_int(0)};
+  general_int* init[] = {init_state};
+  mdd->createEdge((general_int**)(&init[0]), 1, *initial_state);
   assert(initial_state);
   int index = -1;
   assert(addValue(A_level, n_tokens, index));

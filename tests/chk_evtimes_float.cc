@@ -71,7 +71,7 @@ void printRandomSet(int* mt, int N)
   printf("]\n");
 }
 
-void randomizeMinterm(bool primed, int max, int* mt, int N)
+void randomizeMinterm(bool primed, int max, general_int* mt, int N)
 {
   int min = primed ? -2 : -1;
   for (int i=1; i<N; i++) {
@@ -83,7 +83,7 @@ void randomizeMinterm(bool primed, int max, int* mt, int N)
 #endif
 }
 
-void adjustMinterms(int* mtu, int* mtp, int N)
+void adjustMinterms(general_int* mtu, general_int* mtp, int N)
 {
   for (int i=1; i<N; i++) {
     if (mtp[i] == -2) mtu[i] = -1;
@@ -106,8 +106,8 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
     exit(1);
   }
 
-  int* minterm = new int[Vars+1];
-  int* minprime = new int[Vars+1];
+  general_int* minterm = new general_int[Vars+1];
+  general_int* minprime = new general_int[Vars+1];
 
   out.clear();
   for (int i=0; i<terms; i++) {
@@ -412,7 +412,7 @@ int main(int argc, const char** argv)
   initialize();
 
   int vars[] = {varSize, varSize, varSize, varSize, varSize, varSize};
-  domain* myd = createDomainBottomUp(vars, 6);
+  domain* myd = createDomainBottomUp(variable::variableTypes::boundedClass,vars, 6);
   assert(myd);
 
   //

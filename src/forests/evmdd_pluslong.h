@@ -66,9 +66,10 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
     ~evmdd_pluslong();
 
     virtual void createEdge(long val, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e);
+    virtual void createEdge(const general_int* const* vlist, const long* terms, int N, dd_edge &e);
     virtual void createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a);
     virtual void evaluate(const dd_edge &f, const int* vlist, long &term) const;
+
 
     virtual bool isTransparentEdge(node_handle p, const void* v) const;
     virtual void getTransparentEdge(node_handle &p, void* v) const;

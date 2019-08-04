@@ -103,7 +103,7 @@ op_info* getOp(forest* f, old_operation* op)
 #endif
 
 // Combine N elements using + operator
-dd_edge doPlus(forest* mtmxd, int** from, int** to, element_type* terms, int N)
+dd_edge doPlus(forest* mtmxd, general_int** from, general_int** to, element_type* terms, int N)
 {
   // Four ways of doing this:
   // ------------------------
@@ -180,7 +180,7 @@ dd_edge doPlus(forest* mtmxd, int** from, int** to, element_type* terms, int N)
 // This function assumes that each from[i] and to[i] combine
 // to make up an element in the given MTMXD.
 dd_edge test_mtmxd(forest* mtmxd, binary_opname* opCode,
-    int** from, int** to, element_type* terms, int nElements)
+    general_int** from, general_int** to, element_type* terms, int nElements)
 {
   // A = first nElements/2 elements combined using +.
   // B = second nElements/2 elements combined using +.
@@ -287,15 +287,15 @@ int main(int argc, char *argv[])
       nVariables, variableBound, nElements);
 
   // create the elements randomly
-  int** from = (int **) malloc(nElements * sizeof(int *));
-  int** to = (int **) malloc(nElements * sizeof(int *));
+  general_int** from = (general_int **) malloc(nElements * sizeof(general_int *));
+  general_int** to = (general_int **) malloc(nElements * sizeof(general_int *));
   element_type* terms =
     (element_type *) malloc(nElements * sizeof(element_type));
 
   for (int i = 0; i < nElements; ++i)
   {
-    from[i] = (int *) malloc((nVariables + 1) * sizeof(int));
-    to[i] = (int *) malloc((nVariables + 1) * sizeof(int));
+    from[i] = (general_int *) malloc((nVariables + 1) * sizeof(general_int));
+    to[i] = (general_int *) malloc((nVariables + 1) * sizeof(general_int));
     from[i][0] = 0;
     to[i][0] = 0;
     for (int j = nVariables; j > 0; --j)
@@ -321,7 +321,7 @@ int main(int argc, char *argv[])
   initialize();
 
   // Create a domain
-  domain *d = createDomainBottomUp(bounds, nVariables);
+  domain *d = createDomainBottomUp(variable::variableTypes::boundedClass,bounds, nVariables);
   assert(d != 0);
 
   // Create a MTMXD forest in this domain

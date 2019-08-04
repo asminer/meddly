@@ -60,7 +60,7 @@ int Equilikely(int a, int b)
   return (a + (int) ((b - a + 1) * Random()));
 }
 
-void randomizeMinterm(bool primed, int max, int* mt, int N)
+void randomizeMinterm(bool primed, int max, general_int* mt, int N)
 {
   int min = primed ? -2 : -1;
   for (int i=1; i<N; i++) {
@@ -73,7 +73,20 @@ void randomizeMinterm(bool primed, int max, int* mt, int N)
 #endif
 }
 
-void adjustMinterms(int* mtu, int* mtp, int N)
+/*void randomizeMinterm(bool primed, int max, general_int* mt, int N)
+{
+  int min = primed ? -2 : -1;
+  for (int i=1; i<N; i++) {
+    mt[i] = Equilikely(min, max);
+  }
+#ifdef DEBUG_RANDSET
+  printf("Random minterm: [%d", minterm[1]);
+  for (int i=2; i<N; i++) printf(", %d", minterm[i]);
+  printf("]\n");
+#endif
+}*/
+
+void adjustMinterms(general_int* mtu, general_int* mtp, int N)
 {
   for (int i=1; i<N; i++) {
     if (mtp[i] == -2) mtu[i] = -1;
@@ -86,14 +99,18 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
   forest* f = out.getForest();
   int Vars = f->getDomain()->getNumVariables();
 
-  int* minterm = new int[Vars+1];
-  int* minprime = 0;
-  if (f->isForRelations()) minprime = new int[Vars+1];
+  general_int* minterm = new general_int[Vars+1];
+  general_int* gminterm = new general_int[Vars+1];
+
+  general_int* minprime = 0;
+  if (f->isForRelations()) minprime = new general_int[Vars+1];
 
 
   out.clear();
   for (int i=0; i<terms; i++) {
     randomizeMinterm(false, 4, minterm, Vars+1);
+    randomizeMinterm(false, 4, gminterm, Vars+1);
+
     if (minprime) {
       randomizeMinterm(true, 4, minprime, Vars+1);
       adjustMinterms(minterm, minprime, Vars+1);
@@ -106,17 +123,17 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
     switch (f->getRangeType()) {
       case forest::BOOLEAN:
         if (minprime) f->createEdge(&minterm, &minprime, 1, temp);
-        else          f->createEdge(&minterm, 1, temp);
+        else          f->createEdge(&gminterm, 1, temp);
         break;
 
       case forest::INTEGER:
         if (minprime) f->createEdge(&minterm, &minprime, &i_value, 1, temp);
-        else          f->createEdge(&minterm, &i_value, 1, temp);
+        else          f->createEdge(&gminterm, &i_value, 1, temp);
         break;
         
       case forest::REAL:
         if (minprime) f->createEdge(&minterm, &minprime, &f_value, 1, temp);
-        else          f->createEdge(&minterm, &f_value, 1, temp);
+        else          f->createEdge(&gminterm, &f_value, 1, temp);
         break;
     }
 
@@ -381,7 +398,7 @@ int main(int argc, const char** argv)
   initialize();
 
   int vars[] = {5, 5, 5, 5, 5, 5};
-  domain* myd = createDomainBottomUp(vars, 6);
+  domain* myd = createDomainBottomUp(variable::variableTypes::boundedClass,vars, 6);
   assert(myd);
 
   //

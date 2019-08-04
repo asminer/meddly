@@ -281,26 +281,46 @@ void MEDDLY::apply(const binary_opname* code, const dd_edge &a,
 //----------------------------------------------------------------------
 // front end - create and destroy objects
 //----------------------------------------------------------------------
+MEDDLY::variable* MEDDLY::createVariable(variable::variableTypes _variableType,int bound, char* name)
+{
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  return new expert_variable(_variableType,bound, name);
+}
 
-MEDDLY::variable* MEDDLY::createVariable(int bound, char* name)
+
+/*MEDDLY::variable* MEDDLY::createVariable(int bound, char* name)
 {
   if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   return new expert_variable(bound, name);
+}*/
+
+MEDDLY::domain* MEDDLY::createDomain(variable::variableTypes _variableType,variable** vars, int N)
+{
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  return new expert_domain(_variableType,vars, N);
 }
 
-MEDDLY::domain* MEDDLY::createDomain(variable** vars, int N)
+/*MEDDLY::domain* MEDDLY::createDomain(variable** vars, int N)
 {
   if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   return new expert_domain(vars, N);
+}*/
+
+MEDDLY::domain* MEDDLY::createDomainBottomUp(variable::variableTypes _variableType,const int* bounds, int N)
+{
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  domain* d = new expert_domain(_variableType,0, 0);
+  d->createVariablesBottomUp(_variableType,bounds, N);
+  return d;
 }
 
-MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
+/*MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
 {
   if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   domain* d = new expert_domain(0, 0);
   d->createVariablesBottomUp(bounds, N);
   return d;
-}
+}*/
 
 void MEDDLY::destroyDomain(MEDDLY::domain* &d)
 {

@@ -279,7 +279,7 @@ int main()
     }
   } // for i
 
-  domain* D = createDomainBottomUp(scratch, Vars);
+  domain* D = createDomainBottomUp(variable::variableTypes::boundedClass,scratch, Vars);
  
   //
   // Build NSF for possible "1-step" moves
@@ -312,7 +312,7 @@ int main()
       scratch[i] = 0;
     }
   }
-  const int* foo = scratch;
+  const general_int* foo = (general_int*)scratch;
   mdd->createEdge(&foo, 1, initial);
 
   //

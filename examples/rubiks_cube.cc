@@ -83,7 +83,7 @@ typedef enum {CW, CCW, FLIP} direction;
 
 // level *variables = NULL;
 int* sizes = NULL;
-int** initst = NULL;
+general_int** initst = NULL;
 
 // Number of variables of each type
 // const int NUM_TYPE1 = 6;   // centers, not needed
@@ -198,9 +198,9 @@ void Init()
   fflush(stderr);
 
   // sets of states
-  initst = (int**) malloc(1 * sizeof(int*));
+  initst = (general_int**) malloc(1 * sizeof(general_int*));
   assert(initst != NULL);
-  initst[0] = (int *) malloc((num_levels + 1) * sizeof(int));
+  initst[0] = (general_int *) malloc((num_levels + 1) * sizeof(general_int));
   assert(initst[0] != NULL);
   // all start at state 0
   memset(initst[0], 0, (num_levels + 1) * sizeof(int));
@@ -227,7 +227,7 @@ void CheckVars(domain *d)
 }
 
 
-void SetIntArray(int p[], const int p_size, const int c)
+void SetIntArray(general_int p[], const int p_size, const int c)
 {
   for (int i=0; i<p_size; i++) p[i] = c;
 }
@@ -283,13 +283,13 @@ dd_edge BuildMoveHelper(
   //
   int nElements = 4 * NUM_TYPE2 + 4 * NUM_TYPE3;
   assert(nElements == 80);
-  int** from = (int**) malloc(nElements * sizeof(int *));
-  int** to = (int**) malloc(nElements * sizeof(int *));
+  general_int** from = (general_int**) malloc(nElements * sizeof(general_int *));
+  general_int** to = (general_int**) malloc(nElements * sizeof(general_int *));
   for (int i = 0; i < nElements; i++)
   {
     // allocate elements
-    from[i] = (int*) malloc(sz * sizeof(int));
-    to[i] = (int*) malloc(sz * sizeof(int));
+    from[i] = (general_int*) malloc(sz * sizeof(general_int));
+    to[i] = (general_int*) malloc(sz * sizeof(general_int));
 
     // initialize elements
     from[i][0] = 0;
@@ -486,13 +486,13 @@ dd_edge BuildFlipMoveHelper(
   //
   int nElements = 4 * NUM_TYPE2 + 4 * NUM_TYPE3;
   assert(nElements == 80);
-  int** from = (int**) malloc(nElements * sizeof(int *));
-  int** to = (int**) malloc(nElements * sizeof(int *));
+  general_int** from = (general_int**) malloc(nElements * sizeof(general_int *));
+  general_int** to = (general_int**) malloc(nElements * sizeof(general_int *));
   for (int i = 0; i < nElements; i++)
   {
     // allocate elements
-    from[i] = (int*) malloc(sz * sizeof(int));
-    to[i] = (int*) malloc(sz * sizeof(int));
+    from[i] = (general_int*) malloc(sz * sizeof(general_int));
+    to[i] = (general_int*) malloc(sz * sizeof(general_int));
 
     // initialize elements
     from[i][0] = 0;
@@ -1322,7 +1322,7 @@ int main(int argc, char *argv[])
   MEDDLY::initialize(L);
 
   // Set up the state variables, as described earlier
-  d = createDomainBottomUp(sizes, num_levels);
+  d = createDomainBottomUp(variable::variableTypes::boundedClass,sizes, num_levels);
   if (NULL == d) {
     fprintf(stderr, "Couldn't create domain\n");
     return 1;

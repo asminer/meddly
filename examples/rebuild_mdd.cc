@@ -116,7 +116,7 @@ void printStats(const char* who, const forest* f)
 // This function assumes that each element[i] represents
 // an element in the given MTMDD.
 dd_edge test_mtmdd(forest* mtmdd, const binary_opname* opCode,
-    int** element, element_type* terms, int nElements)
+    general_int** element, element_type* terms, int nElements)
 {
   // A = first nElements/2 elements combined using +.
   // B = second nElements/2 elements combined using +.
@@ -259,17 +259,17 @@ int main(int argc, char *argv[])
       nVariables, variableBound, nElements);
 
   // create the elements randomly
-  int** element = (int **) malloc(nElements * sizeof(int *));
+  general_int** element = (general_int **) malloc(nElements * sizeof(general_int *));
   element_type* terms =
     (element_type *) malloc(nElements * sizeof(element_type));
 
   for (int i = 0; i < nElements; ++i)
   {
-    element[i] = (int *) malloc((nVariables + 1) * sizeof(int));
+    element[i] = (general_int *) malloc((nVariables + 1) * sizeof(general_int));
     element[i][0] = 0;
     for (int j = nVariables; j > 0; --j)
     {
-      element[i][j] = int(float(variableBound) * rand() / (RAND_MAX + 1.0));
+      element[i][j] = general_int(float(variableBound) * rand() / (RAND_MAX + 1.0));
       assert(element[i][j] >= 0 && element[i][j] < variableBound);
     }
     terms[i] =
@@ -288,7 +288,7 @@ int main(int argc, char *argv[])
   initialize();
 
   // Create a domain
-  domain *d = createDomainBottomUp(bounds, nVariables);
+  domain *d = createDomainBottomUp(variable::variableTypes::boundedClass,bounds, nVariables);
   assert(d != 0);
 
   // Create a MTMDD forest in this domain

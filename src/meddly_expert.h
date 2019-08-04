@@ -307,7 +307,9 @@ namespace MEDDLY {
 
 class MEDDLY::expert_variable : public variable {
   public:
-    expert_variable(int b, char* n);
+    expert_variable(variableTypes _variableType, int b, char* n);
+
+//    expert_variable(int b, char* n);
 
     /// Update our list of domains: add \a d.
     void addToList(domain* d);
@@ -343,6 +345,7 @@ class MEDDLY::expert_variable : public variable {
     domain** domlist;
     int dl_alloc;
     int dl_used;
+    variableTypes variableType;
 
     virtual ~expert_variable();
 };
@@ -356,9 +359,10 @@ class MEDDLY::expert_variable : public variable {
 
 class MEDDLY::expert_domain : public domain {
   public:
-    expert_domain(variable**, int);
+    expert_domain(variable::variableTypes _variable,variable**, int);
 
-    virtual void createVariablesBottomUp(const int* bounds, int N);
+//    virtual void createVariablesBottomUp(const int* bounds, int N);
+    virtual void createVariablesBottomUp(const variable::variableTypes _variableType,const int* bounds, int N);
 
     /** Create all variables at once, from the top down.
       Requires the domain to be "empty" (containing no variables or forests).
@@ -371,7 +375,9 @@ class MEDDLY::expert_domain : public domain {
                       Note: an extensible variable has a range [1 .. +infinity].
       @param  N       Number of variables.
     */
-    void createVariablesTopDown(const int* bounds, int N);
+    void createVariablesTopDown(const variable::variableTypes _variableType,const int* bounds, int N);
+
+//    void createVariablesTopDown(const int* bounds, int N);
 
     /** Insert a new variable.
           @param  lev   Level to insert above; use 0 for a
@@ -454,6 +460,8 @@ class MEDDLY::expert_domain : public domain {
 
   protected:
     ~expert_domain();
+  private:
+    variable::variableTypes variableType;
 };
 
 
@@ -3449,8 +3457,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
         dd_edge root;
         int top;
         expert_forest* f;
-        int** unpminterms;
-        int** pminterms;
+        general_int** unpminterms;
+        general_int** pminterms;
         int num_minterms;
         int size_minterms;
         bool is_firing;
@@ -3536,8 +3544,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
         int num_firing_vars;
         int* firing_vars;
         dd_edge event_mask;
-        int* event_mask_from_minterm;
-        int* event_mask_to_minterm;
+        general_int* event_mask_from_minterm;
+        general_int* event_mask_to_minterm;
 
     };  // end of class event
 

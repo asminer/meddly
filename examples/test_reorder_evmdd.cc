@@ -110,7 +110,7 @@ op_info* getOp(forest* f, operation* op)
 // This function assumes that each element[i] represents
 // an element in the given MTMDD.
 dd_edge test_evmdd(forest* evmdd, const binary_opname* opCode,
-    int** element, element_type* terms, int nElements)
+    general_int** element, element_type* terms, int nElements)
 {
   // A = first nElements/2 elements combined using +.
   // B = second nElements/2 elements combined using +.
@@ -148,7 +148,7 @@ dd_edge test_evmdd(forest* evmdd, const binary_opname* opCode,
 
 
 dd_edge test_evmdd_plus(forest* evmdd,
-    int** element, element_type* terms, int nElements)
+    general_int** element, element_type* terms, int nElements)
 {
   // Adds all elements sequentially
 
@@ -180,6 +180,25 @@ void printElements(int** elements, element_type* terms, int nElements,
     for (int j = 1; j <= nVariables; ++j)
     {
       printf(" %d", elements[i][j]);
+    }
+#if USE_REALS
+    printf(": %f]\n", terms[i]);
+#else
+    printf(": %ld]\n", terms[i]);
+#endif
+  }
+}
+
+void printElements(general_int** elements, element_type* terms, int nElements,
+    int nVariables)
+{
+  // print elements
+  for (int i = 0; i < nElements; ++i)
+  {
+    printf("Element %d: [%d", i, elements[i][0].getInteger());
+    for (int j = 1; j <= nVariables; ++j)
+    {
+      printf(" %d", elements[i][j].getInteger());
     }
 #if USE_REALS
     printf(": %f]\n", terms[i]);
@@ -260,13 +279,13 @@ int main(int argc, char *argv[])
 #endif
 
   // create the elements randomly
-  int** element = (int **) malloc(nElements * sizeof(int *));
+  general_int** element = (general_int **) malloc(nElements * sizeof(general_int *));
   element_type* terms =
     (element_type *) malloc(nElements * sizeof(element_type));
 
   for (int i = 0; i < nElements; ++i)
   {
-    element[i] = (int *) malloc((nVariables + 1) * sizeof(int));
+    element[i] = (general_int *) malloc((nVariables + 1) * sizeof(general_int));
     element[i][0] = 0;
     for (int j = nVariables; j > 0; --j)
     {
@@ -309,7 +328,7 @@ int main(int argc, char *argv[])
   initialize();
 
   // Create a domain
-  domain *d = createDomainBottomUp(bounds, nVariables);
+  domain *d = createDomainBottomUp(variable::variableTypes::boundedClass,bounds, nVariables);
   assert(d != 0);
 
   // Create a MTMDD forest in this domain

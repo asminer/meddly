@@ -123,8 +123,8 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
   if (num_minterms >= size_minterms) {
     int old_size = size_minterms;
     size_minterms = (0==size_minterms)? 8: MIN(2*size_minterms, 256 + size_minterms);
-    unpminterms = (int**) realloc(unpminterms, unsigned(size_minterms) * sizeof(int**));
-    pminterms = (int**) realloc(pminterms, unsigned(size_minterms) * sizeof(int**));
+    unpminterms = (general_int**) realloc(unpminterms, unsigned(size_minterms) * sizeof(general_int**));
+    pminterms = (general_int**) realloc(pminterms, unsigned(size_minterms) * sizeof(general_int**));
     if (0==unpminterms || 0==pminterms) return false; // malloc or realloc failed
     for (int i=old_size; i<size_minterms; i++) {
       unpminterms[i] = 0;
@@ -132,9 +132,9 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
     }
   }
   if (0==unpminterms[num_minterms]) {
-    unpminterms[num_minterms] = new int[f->getNumVariables() + 1];
+    unpminterms[num_minterms] = new general_int[f->getNumVariables() + 1];
     MEDDLY_DCASSERT(0==pminterms[num_minterms]);
-    pminterms[num_minterms] = new int[f->getNumVariables() + 1];
+    pminterms[num_minterms] = new general_int[f->getNumVariables() + 1];
   }
   // out << "Added minterm: [";
   for (int i = f->getNumVariables(); i >= 0; i--) {
@@ -190,7 +190,7 @@ void MEDDLY::satotf_opname::subevent::showInfo(output& out) const {
   for (int i = 0; i < num_minterms; i++) {
     out << "minterm[" << i << "]: ";
     for (int lvl = num_levels; lvl > 0; lvl--) {
-      out << unpminterms[i][lvl] << " -> " << pminterms[i][lvl] << ", ";
+      out << unpminterms[i][lvl].getInteger() << " -> " << pminterms[i][lvl].getInteger() << ", ";
     }
     out << "]\n";
   }
@@ -300,8 +300,8 @@ void MEDDLY::satotf_opname::event::buildEventMask()
 
   if (0 == event_mask_from_minterm) {
     const size_t minterm_size = size_t(f->getNumVariables()+1);
-    event_mask_from_minterm = new int[minterm_size];
-    event_mask_to_minterm = new int[minterm_size];
+    event_mask_from_minterm = new general_int[minterm_size];
+    event_mask_to_minterm = new general_int[minterm_size];
 
     for (unsigned i = 0; i < minterm_size; i++) {
       event_mask_from_minterm[i] = MEDDLY::DONT_CARE;

@@ -63,6 +63,23 @@ class MEDDLY::mt_forest : public expert_forest {
     /**
         Enlarge variables to include all given minterms.
     */
+    inline void enlargeVariables(const general_int* const* vlist, int N, bool primed) {
+          for (int k=1; k<=getDomain()->getNumVariables(); k++) {
+            int maxv = vlist[0][k].getInteger();
+            for (int i=1; i<N; i++) {
+              maxv = MAX(maxv, vlist[i][k].getInteger());
+            }
+            if (maxv < 1) continue;
+            if (maxv >= getDomain()->getVariableBound(k, primed)) {
+              expert_variable* vh = useExpertDomain()->getExpertVar(k);
+              if (vh->isExtensible())
+                vh->enlargeBound(primed, -(maxv+1));
+              else
+                vh->enlargeBound(primed, (maxv+1));
+            }
+          }
+        }
+
     inline void enlargeVariables(const int* const* vlist, int N, bool primed) {
       for (int k=1; k<=getDomain()->getNumVariables(); k++) {
         int maxv = vlist[0][k];
@@ -89,9 +106,9 @@ class MEDDLY::mt_forest : public expert_forest {
       */
       if (vh < 0 || vh > getNumVariables())
           throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
-      if (result.getForest() != this) 
+      if (result.getForest() != this)
           throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-      if (!isForRelations() && pr) 
+      if (!isForRelations() && pr)
           throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
 
       int level = getLevelByVar(vh);
@@ -113,7 +130,7 @@ class MEDDLY::mt_forest : public expert_forest {
       */
       unpacked_node* nb = unpacked_node::newFull(this, k, sz);
       for (unsigned i=0; i<sz; i++) {
-        nb->d_ref(i) = makeNodeAtLevel(km1, 
+        nb->d_ref(i) = makeNodeAtLevel(km1,
           ENCODER::value2handle(vals ? vals[i] : i)
         );
       }
@@ -122,7 +139,7 @@ class MEDDLY::mt_forest : public expert_forest {
           Reduce, add redundant as necessary, and set answer
       */
       node_handle node = createReducedNode(-1, nb);
-      node = makeNodeAtTop(node); 
+      node = makeNodeAtTop(node);
       result.set(node);
     }
 

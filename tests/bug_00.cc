@@ -14,10 +14,17 @@ int main()
 
   // Initialize domain
   int* tmp = new int[4];
+  general_int* gtmp = new  general_int[4];
+
   tmp[0] = 3;
   tmp[1] = 3;
   tmp[2] = 3;
-  domain* d = createDomainBottomUp(tmp, 3);
+
+  gtmp[0] = tmp[0];
+  gtmp[1] = tmp[1];
+  gtmp[2] = tmp[2];
+
+  domain* d = createDomainBottomUp(variable::variableTypes::boundedClass,tmp, 3);
 
   // Initialize forests
   forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
@@ -28,7 +35,10 @@ int main()
   tmp[2] = 0;
   tmp[3] = 0;
   dd_edge init_state(mdd);
-  mdd->createEdge(&tmp, 1, init_state);
+  gtmp[1] = tmp[1];
+  gtmp[2] = tmp[2];
+  gtmp[3] = tmp[3];
+  mdd->createEdge(&gtmp, 1, init_state);
 
   // build next-state function
   dd_edge nsf(mxd);
@@ -36,8 +46,12 @@ int main()
   tmp[3] = 0;
   tmp[2] = -1;
   tmp[1] = -1;
+
+  gtmp[3] = tmp[3];
+  gtmp[2] = tmp[2];
+  gtmp[1] = tmp[1];
   dd_edge mask(mxd);
-  mxd->createEdge(&tmp, &tmp, 1, mask);
+  mxd->createEdge(&gtmp, &gtmp, 1, mask);
   nsf *= mask;
 
   // build rs using traditional & saturation

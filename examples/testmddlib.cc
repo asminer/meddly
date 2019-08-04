@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
   const int N = 2;
   const int bounds[N] = {4, 2};
   // d->createVariablesTopDown(bounds, N);
-  d->createVariablesBottomUp(bounds, N);
+  d->createVariablesBottomUp(variable::variableTypes::boundedClass,bounds, N);
 
   // Create an MDD forest in this domain (to store states)
   forest* states = d->createForest(false, forest::BOOLEAN,
@@ -79,11 +79,11 @@ int main(int argc, char *argv[])
   printf("Constructing initial set of states\n");
 #if 1
   // Create an edge in MDD forest
-  int** v = (int **) malloc(2 * sizeof(int*));
-  v[0] = (int *) malloc((N+1) * sizeof(int));
-  v[0][0] = 0; v[0][1] = 0; v[0][2] = 0;
-  v[1] = (int *) malloc((N+1) * sizeof(int));
-  v[1][0] = 0; v[1][1] = 1; v[1][2] = 0;
+  general_int** v = (general_int **) malloc(2 * sizeof(general_int*));
+  v[0] = (general_int *) malloc((N+1) * sizeof(general_int));
+  v[0][0] = general_int(0); v[0][1] = general_int(0); v[0][2] = general_int(0);
+  v[1] = (general_int *) malloc((N+1) * sizeof(general_int));
+  v[1][0] = general_int(0); v[1][1] = general_int(1); v[1][2] = general_int(0);
   dd_edge initial_state(states);
   states->createEdge(v, 1, initial_state);
   initial_state.show(meddlyout, 2);
@@ -147,12 +147,12 @@ int main(int argc, char *argv[])
   // (2, 0) -> (1, 1)
   // (x, 1) -> (x, 0)
   const int num_of_transitions = 5;
-  int** vlist = (int **) malloc(num_of_transitions * sizeof(int*));
-  int** vplist = (int **) malloc(num_of_transitions * sizeof(int*));
+  general_int** vlist = (general_int **) malloc(num_of_transitions * sizeof(general_int*));
+  general_int** vplist = (general_int **) malloc(num_of_transitions * sizeof(general_int*));
   for (int i = 0; i < num_of_transitions; ++i)
   {
-    vlist[i] = (int *) malloc((N+1) * sizeof(int));
-    vplist[i] = (int *) malloc((N+1) * sizeof(int));
+    vlist[i] = (general_int *) malloc((N+1) * sizeof(general_int));
+    vplist[i] = (general_int *) malloc((N+1) * sizeof(general_int));
   }
   vlist[0][0] = 0; vlist[0][1] = 0; vlist[0][2] = -2;
   vplist[0][0] = 0; vplist[0][1] = 1; vplist[0][2] = -2;

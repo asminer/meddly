@@ -53,13 +53,13 @@ class MEDDLY::mtmxd_forest : public mt_forest {
     }
 
   protected:
-      inline node_handle evaluateRaw(const dd_edge &f, const int* vlist, 
-        const int* vplist) const
+      inline node_handle evaluateRaw(const dd_edge &f, const general_int* vlist,
+        const general_int* vplist) const
       {
         node_handle p = f.getNode();
         while (!isTerminalNode(p)) {
           int k = getNodeLevel(p);
-          int i = (k<0) ? vplist[-k] : vlist[k];
+          int i = (k<0) ? vplist[-k].getInteger() : vlist[k].getInteger();
           p = getDownPtr(p, i);
         } 
         return p;
@@ -115,8 +115,8 @@ namespace MEDDLY {
   template <class ENCODER, typename T>
   class mtmxd_edgemaker {
       mtmxd_forest* F;
-      const int* const* vulist;
-      const int* const* vplist;
+      const general_int* const* vulist;
+      const general_int* const* vplist;
       const T* values;
       int* order;
       int N;
@@ -124,7 +124,7 @@ namespace MEDDLY {
       binary_operation* unionOp;
     public:
       mtmxd_edgemaker(mtmxd_forest* f, 
-        const int* const* mt, const int* const* mp, const T* v, int* o, int n, 
+        const general_int* const* mt, const general_int* const* mp, const T* v, int* o, int n,
         int k, binary_operation* unOp) 
       {
         F = f;
@@ -137,20 +137,20 @@ namespace MEDDLY {
         unionOp = unOp;
       }
 
-      inline const int* unprimed(int i) const {
+      inline const general_int* unprimed(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return vulist[order[i]];
       }
-      inline int unprimed(int i, int k) const {
+      inline general_int unprimed(int i, int k) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         MEDDLY_CHECK_RANGE(1, k, K+1);
         return vulist[order[i]][k];
       }
-      inline const int* primed(int i) const {
+      inline const general_int* primed(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return vplist[order[i]];
       }
-      inline int primed(int i, int k) const {
+      inline general_int primed(int i, int k) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         MEDDLY_CHECK_RANGE(1, k, K+1);
         return vplist[order[i]][k];
@@ -205,14 +205,14 @@ namespace MEDDLY {
         //
         unsigned nextV = lastV;
         for (int i=start; i<stop; i++) {
-          if (DONT_CARE == unprimed(i, k)) {
+          if (DONT_CARE == unprimed(i, k).getInteger()) {
             if (batchP != i) {
               swap(batchP, i);
             }
             batchP++;
           } else {
-            MEDDLY_DCASSERT(unprimed(i, k) >= 0);
-            nextV = MIN(nextV, unsigned(unprimed(i, k)));
+            MEDDLY_DCASSERT(unprimed(i, k).getInteger() >= 0);
+            nextV = MIN(nextV, unsigned(unprimed(i, k).getInteger()));
           }
         }
         node_handle dontcares = 0;
@@ -222,7 +222,7 @@ namespace MEDDLY {
         // and process them to construct a new level-k node.
         int dch = start;
         for (int i=start; i<batchP; i++) {
-          if (DONT_CHANGE == primed(i, k)) {
+          if (DONT_CHANGE == primed(i, k).getInteger()) {
             if (dch != i) {
               swap(dch, i);
             }
@@ -280,13 +280,13 @@ namespace MEDDLY {
           // (1) move anything with value v, to the "new" front
           //
           for (int i=start; i<stop; i++) {
-            if (v == unprimed(i, k)) {
+            if (v == unprimed(i, k).getInteger()) {
               if (batchP != i) {
                 swap(batchP, i);
               }
               batchP++;
             } else {
-              nextV = MIN(nextV, unsigned(unprimed(i, k)));
+              nextV = MIN(nextV, unsigned(unprimed(i, k).getInteger()));
             }
           }
 
@@ -341,13 +341,13 @@ namespace MEDDLY {
         //
         unsigned nextV = lastV;
         for (int i=start; i<stop; i++) {
-          if (DONT_CARE == primed(i, -k)) {
+          if (DONT_CARE == primed(i, -k).getInteger()) {
             if (batchP != i) {
               swap(batchP, i);
             }
             batchP++;
           } else {
-            nextV = MIN(nextV, unsigned(primed(i, -k)));
+            nextV = MIN(nextV, unsigned(primed(i, -k).getInteger()));
           }
         }
 
@@ -392,13 +392,13 @@ namespace MEDDLY {
           //
           bool veqin = (v==in);
           for (int i=start; i<stop; i++) {
-            if (v == primed(i, -k) || (veqin && DONT_CHANGE==primed(i, -k))) {
+            if (v == primed(i, -k).getInteger() || (veqin && DONT_CHANGE==primed(i, -k).getInteger())) {
               if (batchP != i) {
                 swap(batchP, i);
               }
               batchP++;
             } else {
-              nextV = MIN(nextV, unsigned(primed(i, -k)));
+              nextV = MIN(nextV, unsigned(primed(i, -k).getInteger()));
             }
           }
 
@@ -472,7 +472,7 @@ namespace MEDDLY {
       }
 
       /// Special case for createEdge(), with only one minterm.
-      node_handle createEdgePath(int k, const int* _vlist, const int* _vplist, node_handle next)
+      node_handle createEdgePath(int k, const general_int* _vlist, const general_int* _vplist, node_handle next)
       {
         MEDDLY_DCASSERT(F->isForRelations());
 
@@ -485,7 +485,7 @@ namespace MEDDLY {
           // process primed level
           //
           node_handle nextpr;
-          if (DONT_CARE == _vplist[i]) {
+          if (DONT_CARE == _vplist[i].getInteger()) {
             if (F->isFullyReduced()) {
               // DO NOTHING
               nextpr = next;
@@ -508,17 +508,17 @@ namespace MEDDLY {
               nextpr = F->createReducedNode(-1, nb);
             }
           }
-          else if (DONT_CHANGE == _vplist[i]) {
+          else if (DONT_CHANGE == _vplist[i].getInteger()) {
             //
             // Identity node
             //
-            if(DONT_CARE == _vlist[i]){
+            if(DONT_CARE == _vlist[i].getInteger()){
               if (F->isIdentityReduced()) continue;
               next = makeIdentityEdgeForDontCareDontChange(i, next);
               continue;
             }
 
-            MEDDLY_DCASSERT(_vlist[i]>=0);
+            MEDDLY_DCASSERT(_vlist[i].getInteger()>=0);
 
             if (F->isIdentityReduced()) {
               // DO NOTHING
@@ -529,19 +529,19 @@ namespace MEDDLY {
               unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
               node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
               for(unsigned v=0; v<sz; v++){
-                nbp->d_ref(v)=(v==_vlist[i] ? F->linkNode(next) : F->linkNode(zero));
+                nbp->d_ref(v)=(v==_vlist[i].getInteger() ? F->linkNode(next) : F->linkNode(zero));
               }
               F->unlinkNode(zero);
 
-              nextpr = F->createReducedNode(_vlist[i], nbp);
+              nextpr = F->createReducedNode(_vlist[i].getInteger(), nbp);
             }
             else {
               unpacked_node* nbp = unpacked_node::newSparse(F, -i, 1);
-              nbp->i_ref(0) = _vlist[i];
+              nbp->i_ref(0) = _vlist[i].getInteger();
               nbp->d_ref(0) = next;
               // link count should be unchanged
 
-              nextpr = F->createReducedNode(_vlist[i], nbp);
+              nextpr = F->createReducedNode(_vlist[i].getInteger(), nbp);
             }
           }
           else {
@@ -551,26 +551,26 @@ namespace MEDDLY {
               unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
               node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
               for(unsigned v=0; v<sz; v++){
-                nbp->d_ref(v)=(v==_vplist[i] ? F->linkNode(next) : F->linkNode(zero));
+                nbp->d_ref(v)=(v==_vplist[i].getInteger() ? F->linkNode(next) : F->linkNode(zero));
               }
               F->unlinkNode(zero);
 
-              nextpr = F->createReducedNode(_vlist[i], nbp);
+              nextpr = F->createReducedNode(_vlist[i].getInteger(), nbp);
             }
             else {
               unpacked_node* nbp = unpacked_node::newSparse(F, -i, 1);
-              nbp->i_ref(0) = _vplist[i];
+              nbp->i_ref(0) = _vplist[i].getInteger();
               nbp->d_ref(0) = next;
               // link count should be unchanged
 
-              nextpr = F->createReducedNode(_vlist[i], nbp);
+              nextpr = F->createReducedNode(_vlist[i].getInteger(), nbp);
             }
           }
 
           //
           // process unprimed level
           //
-          if (DONT_CARE == _vlist[i]) {
+          if (DONT_CARE == _vlist[i].getInteger()) {
             if (F->isFullyReduced()) { 
               next=nextpr;
               continue;
@@ -581,10 +581,10 @@ namespace MEDDLY {
               // Below is likely a singleton, so check for identity reduction
               // on the appropriate v value
               unsigned sz = unsigned(F->getLevelSize(i));
-              bool add_edge = (F->isExtensibleLevel(i) && (_vplist[i]+1) == sz);
+              bool add_edge = (F->isExtensibleLevel(i) && (_vplist[i].getInteger()+1) == sz);
               nb = unpacked_node::newFull(F, i, add_edge? (1+sz): sz);
               for (unsigned v=0; v<sz; v++) {
-                nb->d_ref(v) = F->linkNode(v == _vplist[i] ? next : nextpr);
+                nb->d_ref(v) = F->linkNode(v == _vplist[i].getInteger() ? next : nextpr);
               }
               if (F->isExtensibleLevel(i)) {
                 nb->markAsExtensible();
@@ -614,7 +614,7 @@ namespace MEDDLY {
               unpacked_node* nb = unpacked_node::newFull(F, i, sz);
               node_handle zero = makeOpaqueZeroNodeAtLevel(-i);
               for(unsigned v=0; v<sz; v++){
-                nb->d_ref(v) = F->linkNode(v==_vlist[i] ? nextpr : zero);
+                nb->d_ref(v) = F->linkNode(v==_vlist[i].getInteger() ? nextpr : zero);
               }
               F->unlinkNode(zero);
 
@@ -622,7 +622,7 @@ namespace MEDDLY {
             }
             else {
               unpacked_node* nb = unpacked_node::newSparse(F, i, 1);
-              nb->i_ref(0) = _vlist[i];
+              nb->i_ref(0) = _vlist[i].getInteger();
               nb->d_ref(0) = nextpr;
               // link count should be unchanged
 

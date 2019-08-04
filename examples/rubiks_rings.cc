@@ -259,19 +259,19 @@ void moveBall(int oldSlot, int newSlot, bool changing[], dd_edge &out)
   //
   // Build minterm arrays, if needed (save for later)
   // 
-  static int** fromterms = 0;
-  static int** toterms = 0;
+  static general_int** fromterms = 0;
+  static general_int** toterms = 0;
 
   if (0==fromterms) {
-    fromterms = new int*[COLORS];
+    fromterms = new general_int*[COLORS];
     for (int i=0; i<COLORS; i++) {
-      fromterms[i] = new int[1+LEVELS];
+      fromterms[i] = new general_int[1+LEVELS];
     }
   }
   if (0==toterms) {
-    toterms = new int*[COLORS];
+    toterms = new general_int*[COLORS];
     for (int i=0; i<COLORS; i++) {
-      toterms[i] = new int[1+LEVELS];
+      toterms[i] = new general_int[1+LEVELS];
     }
   }
 
@@ -507,7 +507,7 @@ int main(int argc, const char** argv)
   //
   int scratch[1+LEVELS];
   for (int k=0; k<LEVELS; k++) scratch[k] = COLORS;
-  domain* D = createDomainBottomUp(scratch, LEVELS);
+  domain* D = createDomainBottomUp(variable::variableTypes::boundedClass,scratch, LEVELS);
  
   //
   // Build NSF for possible "1-step" moves
@@ -529,7 +529,7 @@ int main(int argc, const char** argv)
   dd_edge initial(mdd);
   for (int i=0; i<leftring; i++)  scratch[leftvar[i]]   = leftinit[i];
   for (int i=0; i<rightring; i++) scratch[rightvar[i]]  = rightinit[i];
-  const int* foo = scratch;
+  const general_int* foo = (general_int*)scratch;
   mdd->createEdge(&foo, 1, initial);
 
   //

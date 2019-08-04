@@ -34,9 +34,13 @@ using namespace MEDDLY;
 
 const int vars[] = {10, 10, 10};
 
-int R[] = {0, 3, 1, 4};
-int N[] = {0, 1, 4, 9};
-int S[] = {0, 2, 6, 5};
+general_int R[] = {0, 3, 1, 4};
+general_int N[] = {0, 1, 4, 9};
+general_int S[] = {0, 2, 6, 5};
+
+general_int RR[] = {0, 3, 1, 4};
+general_int NN[] = {0, 1, 4, 9};
+general_int SS[] = {0, 2, 6, 5};
 
 // State indexes:
 //    R : 0
@@ -47,7 +51,7 @@ bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
 {
   // Build state indexes
 
-  int* sslist[] = { R, N, S };
+  general_int* sslist[] = { RR, NN, SS };
   long indexes[] = { 0, 1, 2 };
 
   try {
@@ -65,10 +69,10 @@ bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
 
   // Build matrix elements
 
-  int* fromlist[] = {
+  general_int* fromlist[] = {
     R,    R,    R,    N,    N,    S,    S,    S
   };
-  int* tolist[] = {
+  general_int* tolist[] = {
     R,    N,    S,    R,    S,    R,    N,    S
   };
   float problist[] = {
@@ -126,11 +130,11 @@ void readVector(const dd_edge &x, double* ans)
 {
   forest* f = x.getForest();
   float temp;
-  f->evaluate(x, R, temp);
+  f->evaluate(x, RR, temp);
   ans[0] = temp;
-  f->evaluate(x, N, temp);
+  f->evaluate(x, NN, temp);
   ans[1] = temp;
-  f->evaluate(x, S, temp);
+  f->evaluate(x, SS, temp);
   ans[2] = temp;
 }
 
@@ -139,7 +143,7 @@ bool impl_xA_check(dd_edge &x, const dd_edge &P)
   printf("xA multiplications (implicit):\n");
 
   forest* f = x.getForest();
-  int* pinit[] = { N };
+  general_int* pinit[] = { NN };
   float v=1;
   f->createEdge(pinit, &v, 1, x);
 
@@ -210,7 +214,7 @@ bool impl_Ax_check(dd_edge &x, const dd_edge &P)
   printf("Ax multiplications (implicit):\n");
 
   forest* f = x.getForest();
-  int* pinit[] = { N };
+  general_int* pinit[] = { NN };
   float v=1;
   f->createEdge(pinit, &v, 1, x);
 
@@ -276,7 +280,7 @@ int main(int argc, const char** argv)
 {
   initialize();
 
-  domain* ozd = createDomainBottomUp(vars, 3);
+  domain* ozd = createDomainBottomUp(variable::variableTypes::boundedClass,vars, 3);
   assert(ozd);
   forest* evpmdds = ozd->createForest(0, forest::INTEGER, forest::EVPLUS);
   assert(evpmdds);
