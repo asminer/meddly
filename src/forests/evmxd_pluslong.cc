@@ -234,6 +234,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_iterator::next()
     nzp[k]++;
     if (nzp[k] < path[k].getNNZs()) {
       index[k] = path[k].i(nzp[k]);
+      gindex[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       long ev;
@@ -281,6 +282,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_iterator::first(int k, node_handle down)
     }
     nzp[k] = 0;
     index[k] = path[k].i(0);
+    gindex[k] = path[k].i(0);
     down = path[k].d(0);
     long ev;
     path[k].getEdge(0, ev);
@@ -288,6 +290,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_iterator::first(int k, node_handle down)
   }
   // save the terminal value
   index[0] = down;
+  gindex[0] = down;
   return true;
 }
 
@@ -313,6 +316,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedrow_iter
 
   for (int k=1; k<=maxLevel; k++) {
     index[k] = minterm[k];
+    gindex[k] = minterm[k];
   }
   return first(maxLevel, e.getNode());
 }
@@ -331,6 +335,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedrow_iter::next()
   for (int k=-1; k>=-maxLevel; k--) { 
     for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
       index[k] = path[k].i(nzp[k]);
+      gindex[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       level_change = k;
@@ -356,6 +361,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedrow_iter::first(int k, node_handle dow
 
   if (0==k) {
     index[0] = down;
+    gindex[0] = down;
     return true;
   }
 
@@ -410,6 +416,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedrow_iter::first(int k, node_handle dow
     if (first(downLevel(k), path[k].d(z))) {
       nzp[k] = z;
       index[k] = path[k].i(z);
+      gindex[k] = path[k].i(z);
       return true;
     }
   }
@@ -439,6 +446,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter
 
   for (int k=1; k<=maxLevel; k++) {
     index[-k] = minterm[k];
+    gindex[-k] = minterm[k];
   }
   return first(maxLevel, e.getNode());
 }
@@ -457,6 +465,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::next()
   for (int k=1; k<=maxLevel; k++) { 
     for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
       index[k] = path[k].i(nzp[k]);
+      gindex[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       long ev;
@@ -520,9 +529,11 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::first(int k, node_handle dow
       if (F->isFullyReduced()) {
         nzp[k] = 0;
         index[k] = 0;
+        gindex[k] = 0;
       } else {
         nzp[k] = index[kpr];
         index[k] = index[kpr];
+        gindex[k] = index[kpr];
       }
       return true;
     }
@@ -537,6 +548,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::first(int k, node_handle dow
     path[k].initRedundant(F, k, 0L, down, false);
     nzp[k] = 0;
     index[k] = 0;
+    gindex[k] = 0;
     return true;
   }
 
@@ -545,6 +557,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::first(int k, node_handle dow
   
   for (int z=0; z<path[k].getNNZs(); z++) {
     index[k] = path[k].i(z);
+    gindex[k] = path[k].i(z);
     long ev;
     path[k].getEdge(z, ev);
     acc_evs[downLevel(k)] = acc_evs[k] + ev;

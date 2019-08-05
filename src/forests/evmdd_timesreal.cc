@@ -209,6 +209,7 @@ bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::next()
     nzp[k]++;
     if (nzp[k] < path[k].getNNZs()) {
       index[k] = path[k].i(nzp[k]);
+      gindex[k]=path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       float ev;
@@ -244,6 +245,7 @@ bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::first(int k, node_handle down)
     else          F->initNodeReader(path[k], down, false);
     nzp[k] = 0;
     index[k] = path[k].i(0);
+    gindex[k] = path[k].i(0);
     down = path[k].d(0);
     float ev;
     path[k].getEdge(0, ev);
@@ -251,6 +253,7 @@ bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::first(int k, node_handle down)
   }
   // save the terminal value
   index[0] = down;
+  gindex[0] = down;
   return true;
 }
 

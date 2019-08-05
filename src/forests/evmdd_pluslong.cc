@@ -407,6 +407,7 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::next()
     nzp[k]++;
     if (nzp[k] < path[k].getNNZs()) {
       index[k] = path[k].i(nzp[k]);
+      gindex[k]=path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       long ev = Inf<long>();
@@ -442,6 +443,7 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::first(int k, node_handle down)
     else          path[k].initFromNode(F, down, false);
     nzp[k] = 0;
     index[k] = path[k].i(0);
+    gindex[k]=path[k].i(0);
     down = path[k].d(0);
     long ev = Inf<long>();
     path[k].getEdge(0, ev);
@@ -449,6 +451,7 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::first(int k, node_handle down)
   }
   // save the terminal value
   index[0] = down;
+  gindex[0]=down;
   return true;
 }
 
