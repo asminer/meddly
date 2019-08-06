@@ -620,6 +620,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_iterator::next()
     nzp[k]++;
     if (nzp[k] < path[k].getNNZs()) {
       index[k] = path[k].i(nzp[k]);
+      gindex[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       break;
@@ -667,10 +668,12 @@ bool MEDDLY::mtmxd_forest::mtmxd_iterator::first(int k, node_handle down)
     }
     nzp[k] = 0;
     index[k] = path[k].i(0);
+    gindex[k] = path[k].i(0);
     down = path[k].d(0);
   }
   // save the terminal value
   index[0] = down;
+  gindex[0] = down;
   return true;
 }
 
@@ -698,6 +701,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter
   }
   for (int k=1; k<=maxLevel; k++) {
     index[k] = minterm[k];
+    gindex[k] = minterm[k];
   }
   return first(maxLevel, e.getNode());
 }
@@ -715,6 +719,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::next()
   for (int k=-1; k>=-maxLevel; k--) { 
     for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
       index[k] = path[k].i(nzp[k]);
+      gindex[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       level_change = k;
@@ -766,8 +771,10 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
     if (F->isFullyReduced()) {
       path[k].initRedundant(F, k, cdown, false);
       index[k] = 0;
+      gindex[k] = 0;
     } else {
       index[k] = index[upLevel(k)];
+      gindex[k] = index[upLevel(k)];
       path[k].initIdentity(F, k, index[k], cdown, false);
     }
     return true;
@@ -782,6 +789,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
     if (first(downLevel(k), path[k].d(z))) {
       nzp[k] = z;
       index[k] = path[k].i(z);
+      gindex[k] = path[k].i(z);
       return true;
     }
   }
@@ -814,6 +822,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter
   
   for (int k=1; k<=maxLevel; k++) {
     index[-k] = minterm[k];
+    gindex[-k] = minterm[k];
   }
 
   return first(maxLevel, e.getNode());
@@ -832,6 +841,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::next()
   for (int k=1; k<=maxLevel; k++) { 
     for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
       index[k] = path[k].i(nzp[k]);
+      gindex[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       level_change = k;
@@ -853,6 +863,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
 
   if (0==k) {
     index[0] = down;
+    gindex[0] = down;
     return true;
   }
 
@@ -887,9 +898,11 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
       if (F->isFullyReduced()) {
         nzp[k] = 0;
         index[k] = 0;
+        gindex[k] = 0;
       } else {
         nzp[k] = index[kpr];
         index[k] = index[kpr];
+        gindex[k] = index[kpr];
       }
       return true;
     }
@@ -901,6 +914,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
     path[k].initRedundant(F, k, down, false);
     nzp[k] = 0;
     index[k] = 0;
+    gindex[k] = 0;
     return true;
   }
 
@@ -909,6 +923,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
   
   for (int z=0; z<path[k].getNNZs(); z++) {
     index[k] = path[k].i(z);
+    gindex[k] = path[k].i(z);
     if (first(downLevel(k), path[k].d(z))) {
       nzp[k] = z;
       return true;

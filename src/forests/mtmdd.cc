@@ -343,6 +343,7 @@ bool MEDDLY::mtmdd_forest::mtmdd_iterator::next()
     nzp[k]++;
     if (nzp[k] < path[k].getNNZs()) {
       index[k] = path[k].i(nzp[k]);
+      gindex[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       break;

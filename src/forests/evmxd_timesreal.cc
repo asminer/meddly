@@ -256,6 +256,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::next()
     nzp[k]++;
     if (nzp[k] < path[k].getNNZs()) {
       index[k] = path[k].i(nzp[k]);
+      gindex[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       float ev;
@@ -302,6 +303,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::first(int k, node_handle down)
     }
     nzp[k] = 0;
     index[k] = path[k].i(0);
+    gindex[k] = path[k].i(0);
     down = path[k].d(0);
     float ev;
     path[k].getEdge(0, ev);
@@ -309,6 +311,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::first(int k, node_handle down)
   }
   // save the terminal value
   index[0] = down;
+  gindex[0] = down;
   return true;
 }
 
@@ -334,6 +337,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter
 
   for (int k=1; k<=maxLevel; k++) {
     index[k] = minterm[k];
+    gindex[k] = minterm[k];
   }
   return first(maxLevel, e.getNode());
 }
@@ -352,6 +356,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::next()
   for (int k=-1; k>=-maxLevel; k--) { 
     for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
       index[k] = path[k].i(nzp[k]);
+      gindex[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       level_change = k;
@@ -377,6 +382,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::first(int k, node_handle do
 
   if (0==k) {
     index[0] = down;
+    gindex[0] = down;
     return true;
   }
 
@@ -412,8 +418,10 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::first(int k, node_handle do
     if (F->isFullyReduced()) {
       path[k].initRedundant(F, k, 1.0f, cdown, false);
       index[k] = 0;
+      gindex[k] = 0;
     } else {
       index[k] = index[upLevel(k)];
+      gindex[k] = index[upLevel(k)];
       path[k].initIdentity(F, k, index[k], 1.0f, cdown, false);
     }
     return true;
@@ -431,6 +439,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::first(int k, node_handle do
     if (first(downLevel(k), path[k].d(z))) {
       nzp[k] = z;
       index[k] = path[k].i(z);
+      gindex[k] = path[k].i(z);
       return true;
     }
   }
@@ -460,6 +469,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter
 
   for (int k=1; k<=maxLevel; k++) {
     index[-k] = minterm[k];
+    gindex[-k] = minterm[k];
   }
   return first(maxLevel, e.getNode());
 }
@@ -478,6 +488,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::next()
   for (int k=1; k<=maxLevel; k++) { 
     for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
       index[k] = path[k].i(nzp[k]);
+      gindex[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
       MEDDLY_DCASSERT(down);
       float ev;
@@ -541,9 +552,11 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::first(int k, node_handle do
       if (F->isFullyReduced()) {
         nzp[k] = 0;
         index[k] = 0;
+        gindex[k] = 0;
       } else {
         nzp[k] = index[kpr];
         index[k] = index[kpr];
+        gindex[k] = index[kpr];
       }
       return true;
     }
@@ -558,6 +571,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::first(int k, node_handle do
     path[k].initRedundant(F, k, 1.0f, down, false);
     nzp[k] = 0;
     index[k] = 0;
+    gindex[k] = 0;
     return true;
   }
 

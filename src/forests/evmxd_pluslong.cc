@@ -429,8 +429,10 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedrow_iter::first(int k, node_handle dow
     if (F->isFullyReduced()) {
       path[k].initRedundant(F, k, 0L, cdown, false);
       index[k] = 0;
+      gindex[k] = 0;
     } else {
       index[k] = index[upLevel(k)];
+      gindex[k] = index[upLevel(k)];
       path[k].initIdentity(F, k, index[k], 0L, cdown, false);
     }
     return true;
@@ -522,6 +524,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::first(int k, node_handle dow
 
   if (0==k) {
     index[0] = down;
+    gindex[0] = down;
     return true;
   }
 
