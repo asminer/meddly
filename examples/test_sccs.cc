@@ -73,7 +73,7 @@ int run_test(std::istream &in, bool interactive)
 
   for (;;) {
     if (interactive) {
-      std::cout << "Options:\n\n  V: add vertices\n  E: add edge  \n  D: display graph\n  Q: quit\n\n";
+      std::cout << "Options:\n\n  V: add vertices\n  E: add edge  \n  D: display graph\n  U: update sccs\n  Q: quit\n\n";
     }
     in >> key;
 
@@ -98,6 +98,12 @@ int run_test(std::istream &in, bool interactive)
       case 'D':
       case 'd':
                 G.dumpGraph(out);
+                continue;
+
+      case 'U':
+      case 'u':
+                std::cout << "updating sccs\n";
+                G.update_SCCs();
                 continue;
 
       case 'Q':

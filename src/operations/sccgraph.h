@@ -150,7 +150,9 @@ class MEDDLY::sccgraph {
     unsigned graph_vertices_alloc;
 
   private:
-    void addGraphEdge(unsigned I, unsigned J, edge_label* L);
+    void add_graph_edge(unsigned I, unsigned J, edge_label* L);
+    unsigned new_graph_edge(unsigned J, edge_label* L);
+    void show_graph_list(output &out, unsigned list) const;
 
   private:
     // SCC graph
@@ -167,6 +169,14 @@ class MEDDLY::sccgraph {
     unsigned* scc_from;
     unsigned scc_vertices_used;
     unsigned scc_vertices_alloc;
+
+    unsigned sccs_to_update;
+
+  private:
+    void add_scc_edge(unsigned I, unsigned J);
+    unsigned new_scc_edge(unsigned J);
+    unsigned add_to_scc_list(unsigned ptr, unsigned J);
+    void show_scc_list(output &out, unsigned list) const;
 
   private:
     // mappings from vertices to SCCs
@@ -256,6 +266,37 @@ inline const unsigned* MEDDLY::sccgraph::get_SCC_vertices(unsigned s) const
   MEDDLY_CHECK_RANGE(0, s, scc_vertices_used);
   return vertices_by_scc + scc_vertex_offset[s];
 }
+
+inline
+void MEDDLY::sccgraph::show_graph_list(MEDDLY::output &out, unsigned list) const
+{
+  if (0==list) return;
+  unsigned ptr = list;
+  bool commas = false;
+  do {
+    ptr = graph_edges[ptr].next;
+    if (commas) out << ", ";
+    out << "( " << graph_edges[ptr].to << " : ";
+    graph_edges[ptr].edge->show(out);
+    out << " )";
+    commas = true;
+  } while (ptr != list);
+}
+
+inline
+void MEDDLY::sccgraph::show_scc_list(MEDDLY::output &out, unsigned list) const
+{
+  if (0==list) return;
+  unsigned ptr = list;
+  bool commas = false;
+  do {
+    ptr = scc_edges[ptr].next;
+    if (commas) out << ", ";
+    out << scc_edges[ptr].to;
+    commas = true;
+  } while (ptr != list);
+}
+
 
 #endif  // ifndef SCCGRAPH_H
 

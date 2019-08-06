@@ -89,6 +89,8 @@ MEDDLY::sccgraph::sccgraph()
   vertex_to_scc = 0;
   vertices_by_scc = 0;
   scc_vertex_offset = 0;
+
+  sccs_to_update = 0;
 }
 
 MEDDLY::sccgraph::~sccgraph()
@@ -128,6 +130,10 @@ void MEDDLY::sccgraph::clear()
 inline void show_array(MEDDLY::output &out, const char* what, const unsigned* A, unsigned n)
 {
   out << what;
+  if (0==A) {
+    out << "null\n";
+    return;
+  }
   out << "[";
   if (n) {
     out << A[0];
@@ -143,16 +149,9 @@ void MEDDLY::sccgraph::dumpGraph(MEDDLY::output &out) const
   out << "    " << graph_vertices_used << " vertices\n";
   out << "    Edges:\n";
   for (unsigned i=0; i<graph_vertices_used; i++) {
-    out << "      From vertex " << i << ":\n";
-    unsigned ptr = graph_from[i];
-    if (0==ptr) continue;
-    do {
-      ptr = graph_edges[ptr].next;
-      out << "\tTo vertex " << graph_edges[ptr].to;
-      out << " edge label ";
-      graph_edges[ptr].edge->show(out);
-      out << "\n";
-    } while (ptr != graph_from[i]);
+    out << "      From vertex " << i << ":\t";
+    show_graph_list(out, graph_from[i]);
+    out << "\n";
   } // for i
 
   out << "  Vertex to SCC mapping:\n";
@@ -171,16 +170,15 @@ void MEDDLY::sccgraph::dumpGraph(MEDDLY::output &out) const
   }
   out << "  Edges between SCCs:\n";
   for (unsigned i=0; i<scc_vertices_used; i++) {
-    out << "      From SCC#" << i << ":\n";
-    unsigned ptr = scc_from[i];
-    if (0==ptr) continue;
-    do {
-      ptr = scc_edges[ptr].next;
-      out << "\tTo SCC#" << scc_edges[ptr].to << "\n";
-    } while (ptr != scc_from[i]);
+    out << "      From SCC#" << i << ":\t";
+    show_scc_list(out, scc_from[i]);
+    out << "\n";
   } // for i
 
-  out << "internal structure\n";
+  out << "  SCCs to explore on update:\n\t";
+  show_scc_list(out, sccs_to_update);
+
+  out << "\ninternal structure\n";
   show_array(out, "   graph_from: ", graph_from, graph_vertices_used); 
   show_array(out, "   scc_from: ", scc_from, scc_vertices_used); 
   show_array(out, "   vertex_to_scc: ", vertex_to_scc, graph_vertices_used);
@@ -194,10 +192,10 @@ void MEDDLY::sccgraph::add_edge(unsigned I, unsigned J, edge_label* L)
   MEDDLY_CHECK_RANGE(0, I, graph_vertices_used);
   MEDDLY_CHECK_RANGE(0, J, graph_vertices_used);
   MEDDLY_DCASSERT(L);
+  MEDDLY_DCASSERT(vertex_to_scc);
 
-  addGraphEdge(I, J, L);
-
-  // TBD - scc edge
+  add_graph_edge(I, J, L);
+  add_scc_edge(vertex_to_scc[I], vertex_to_scc[J]);
 }
 
 void MEDDLY::sccgraph::update_SCCs()
@@ -294,7 +292,7 @@ void MEDDLY::sccgraph::expand_vertices(unsigned I)
   scc_vertices_used += added_vertices;
 }
 
-void MEDDLY::sccgraph::addGraphEdge(unsigned I, unsigned J, edge_label* L)
+void MEDDLY::sccgraph::add_graph_edge(unsigned I, unsigned J, edge_label* L)
 {
   //
   // Put this edge into the list for I.
@@ -344,38 +342,14 @@ void MEDDLY::sccgraph::addGraphEdge(unsigned I, unsigned J, edge_label* L)
   } // list not empty
 
   //
-  // Need to create a new edge.
+  // Create a new edge, add it to the list in the appropriate spot
   //
-  unsigned newedge = graph_edges_used;
-  graph_edges_used++;
-  if (graph_edges_used > graph_edges_alloc) {
-    // enlarge
-    if (0==graph_edges_alloc) {
-      graph_edges_alloc = 16;
-    } else if (graph_edges_alloc > 1024) {
-      graph_edges_alloc += 1024;
-    } else {
-      graph_edges_alloc *= 2;
-    }
-    graph_edges = (graph_list_node*) 
-      realloc(graph_edges, graph_edges_alloc * sizeof(graph_list_node));
-
-    if (0==graph_edges) {
-      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    }
-    graph_edges[0].edge = 0;
-  }
+  unsigned newedge = new_graph_edge(J, L);
 
 #ifdef DEBUG
-  printf("Adding edge# %u  (prev %u curr %u)\n", newedge, prev, curr);
+  printf("Adding graph edge# %u  (prev %u curr %u)\n", newedge, prev, curr);
 #endif
 
-  //
-  // Add the new edge to the list in the appropriate spot
-  //
-
-  graph_edges[newedge].to = J;
-  graph_edges[newedge].edge = L;
   if (0==prev) {
     MEDDLY_DCASSERT(0==curr);
     MEDDLY_DCASSERT(0==graph_from[I]);
@@ -404,4 +378,152 @@ void MEDDLY::sccgraph::addGraphEdge(unsigned I, unsigned J, edge_label* L)
   graph_edges[prev].next = newedge;
 }
 
+unsigned MEDDLY::sccgraph::new_graph_edge(unsigned J, edge_label* L)
+{
+  unsigned newedge = graph_edges_used;
+  graph_edges_used++;
+  if (graph_edges_used > graph_edges_alloc) {
+    // enlarge
+    if (0==graph_edges_alloc) {
+      graph_edges_alloc = 16;
+    } else if (graph_edges_alloc > 1024) {
+      graph_edges_alloc += 1024;
+    } else {
+      graph_edges_alloc *= 2;
+    }
+    graph_edges = (graph_list_node*) 
+      realloc(graph_edges, graph_edges_alloc * sizeof(graph_list_node));
+
+    if (0==graph_edges) {
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+    graph_edges[0].edge = 0;
+  }
+
+  graph_edges[newedge].to = J;
+  graph_edges[newedge].edge = L;
+
+  return newedge;
+}
+
+void MEDDLY::sccgraph::add_scc_edge(unsigned I, unsigned J)
+{
+  if (I==J) return;
+
+  MEDDLY_DCASSERT(scc_from);
+  MEDDLY_CHECK_RANGE(0, I, scc_vertices_used);
+
+  scc_from[I] = add_to_scc_list(scc_from[I], J);
+
+  //
+  // If we need to update SCC I, add it to the (ordered) list
+  //
+
+  if (I>J) {
+    sccs_to_update = add_to_scc_list(sccs_to_update, I);
+  }
+}
+
+unsigned MEDDLY::sccgraph::new_scc_edge(unsigned J)
+{
+  unsigned newedge = scc_edges_used;
+  scc_edges_used++;
+  if (scc_edges_used > scc_edges_alloc) {
+    // enlarge
+    if (0==scc_edges_alloc) {
+      scc_edges_alloc = 16;
+    } else if (scc_edges_alloc > 1024) {
+      scc_edges_alloc += 1024;
+    } else {
+      scc_edges_alloc *= 2;
+    }
+    scc_edges = (scc_list_node*) 
+      realloc(scc_edges, scc_edges_alloc * sizeof(scc_list_node));
+
+    if (0==scc_edges) {
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+  }
+
+  scc_edges[newedge].to = J;
+
+  return newedge;
+}
+
+unsigned MEDDLY::sccgraph::add_to_scc_list(unsigned ptr, unsigned J)
+{
+  //
+  // Find the place in the circular list before we need to insert this edge.
+  // If we find an existing edge, do nothing and return.
+  //
+  // Insertion point will be after prev and before curr.
+  //
+  unsigned prev = 0;
+  unsigned curr = 0;
+
+  if (ptr) {
+
+    unsigned last = ptr;
+    if (J == scc_edges[last].to) {
+      // edge already exists
+      MEDDLY_DCASSERT(scc_edges[last].edge);
+      return ptr;
+    }
+    if (J > scc_edges[last].to) {
+      prev = last;
+    } else {
+      // Search the list until curr > J
+      for (curr = scc_edges[last].next; curr != last; curr = scc_edges[curr].next) {
+        if (scc_edges[curr].to == J ) {
+          MEDDLY_DCASSERT(scc_edges[curr].edge);
+          // Already in the list, do nothing
+          return ptr;
+        }
+        if (scc_edges[curr].to > J ) {
+          // found the spot
+          break;
+        }
+        // Still here? curr < J so insertion point must be here or after.
+        prev = curr;
+      } // for curr
+    }
+  } // list not empty
+
+  //
+  // Create a new edge, add it to the list in the appropriate spot
+  //
+  unsigned newedge = new_scc_edge(J);
+
+#ifdef DEBUG
+  printf("Adding to SCC list item# %u  (prev %u curr %u)\n", newedge, prev, curr);
+#endif
+
+  if (0==prev) {
+    // We had an empty list to start with
+    MEDDLY_DCASSERT(0==curr);
+    MEDDLY_DCASSERT(0==ptr);
+    scc_edges[newedge].next = newedge;
+    return newedge;
+  }
+
+  MEDDLY_DCASSERT(scc_edges[prev].to < J);
+  if (curr) {
+    MEDDLY_DCASSERT(scc_edges[prev].next == curr);
+    MEDDLY_DCASSERT(J < scc_edges[curr].to);
+
+    // We're adding anywhere except the very end of the list.
+
+    scc_edges[newedge].next = curr;
+  } else {
+    MEDDLY_DCASSERT(last == prev);
+
+    // We're adding at the very end of the list, so we also
+    // need to update the list pointer.
+
+    ptr = newedge;
+    scc_edges[newedge].next = scc_edges[prev].next;
+  }
+  scc_edges[prev].next = newedge;
+  return ptr;
+}
 
