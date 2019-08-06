@@ -69,13 +69,13 @@ bool MEDDLY::variable::isValueValid(int val,variable::variableTypes type)const{
   return result;
 }
 
-/*MEDDLY::variable::variable(int b, char* n)
+MEDDLY::variable::variable(int b, char* n)
 : is_extensible(false), name(n)
 {
   if (b < 0) { is_extensible = true; b = -b; }
   un_bound = b;
   pr_bound = b;
-}*/
+}
 
 MEDDLY::variable::~variable()
 {
@@ -163,13 +163,13 @@ MEDDLY::expert_variable::expert_variable(variableTypes _variableType, int b, cha
   dl_used = 0;
 }
 
-/*MEDDLY::expert_variable::expert_variable(int b, char* n)
+MEDDLY::expert_variable::expert_variable(int b, char* n)
  : variable(b, n)
 {
   domlist = 0;
   dl_alloc = 0;
   dl_used = 0;
-}*/
+}
 
 MEDDLY::expert_variable::~expert_variable()
 {
@@ -236,6 +236,43 @@ const int MEDDLY::domain::TERMINALS = 0;
 MEDDLY::domain::domain(variable::variableTypes _variableType,variable** v, int N)
 {
   variableType=_variableType;
+  vars = v;
+  nVars = N;
+  for (int i=1; i<=N; i++) {
+    ((expert_variable*)vars[i])->addToList(this);
+  }
+  is_marked_for_deletion = false;
+  forests = 0;
+  szForests = 0;
+
+  //
+  // Add myself to the master list
+  //
+  if (-1 == free_list) {
+    expandDomList();
+  }
+  MEDDLY_DCASSERT(free_list != -1);
+  my_index = free_list;
+  free_list = dom_free[free_list];
+  dom_list[my_index] = this;
+  dom_free[my_index] = -1;
+
+  // Create the default variable order
+  int* defaultOrder = new int[N + 1];
+  for (int i = 0; i < N + 1; i++) {
+    defaultOrder[i] = i;
+  }
+  default_var_order = std::make_shared<variable_order>(defaultOrder, N);
+  delete[] defaultOrder;
+  var_orders.push_back(default_var_order);
+
+#ifdef DEBUG_CLEANUP
+  fprintf(stderr, "Creating domain #%d\n", my_index);
+#endif
+}
+
+MEDDLY::domain::domain(variable** v, int N)
+{
   vars = v;
   nVars = N;
   for (int i=1; i<=N; i++) {
@@ -536,7 +573,10 @@ MEDDLY::expert_domain::expert_domain(variable::variableTypes _variableType,varia
 : domain(_variableType,x, n)
 {
 }
-
+MEDDLY::expert_domain::expert_domain(variable** x, int n)
+: domain(x, n)
+{
+}
 
 MEDDLY::expert_domain::~expert_domain()
 {
@@ -570,7 +610,7 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const variable::variableType
   var_orders.push_back(default_var_order);
 }
 
-/*void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
+void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
 {
   // domain must be empty -- no variables defined so far
   if (hasForests() || nVars != 0)
@@ -596,7 +636,7 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const variable::variableType
   default_var_order = std::make_shared<variable_order>(defaultOrder, N);
   delete[] defaultOrder;
   var_orders.push_back(default_var_order);
-}*/
+}
 
 void MEDDLY::expert_domain::createVariablesTopDown(const variable::variableTypes _variableType,const int* bounds, int N)
 {
@@ -627,7 +667,7 @@ void MEDDLY::expert_domain::createVariablesTopDown(const variable::variableTypes
 }
 
 
-/*void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
+void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
 {
   // domain must be empty -- no variables defined so far
   if (hasForests() || nVars != 0)
@@ -653,7 +693,7 @@ void MEDDLY::expert_domain::createVariablesTopDown(const variable::variableTypes
   default_var_order = std::make_shared<variable_order>(defaultOrder, N);
   delete[] defaultOrder;
   var_orders.push_back(default_var_order);
-}*/
+}
 
 void MEDDLY::expert_domain::insertVariableAboveLevel(int lev, variable* v)
 {

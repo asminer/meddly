@@ -45,6 +45,28 @@ void MEDDLY::evmdd_timesreal::createEdge(float val, dd_edge &e)
 #endif
 }
 
+/// deprecated
+void MEDDLY::evmdd_timesreal
+::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
+{
+  // binary_operation* unionOp = getOperation(PLUS, this, this, this);
+  binary_operation* unionOp = 0;  // for now
+  enlargeStatics(N);
+  enlargeVariables(vlist, N, false);
+
+  evmdd_edgemaker<OP, float>
+  EM(this, vlist, terms, order, N, getDomain()->getNumVariables(), unionOp);
+
+  float ev;
+  node_handle ep;
+  EM.createEdge(ev, ep);
+  e.set(ep, ev);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
+}
+
+
 void MEDDLY::evmdd_timesreal
 ::createEdge(const general_int* const* vlist, const float* terms, int N, dd_edge &e)
 {

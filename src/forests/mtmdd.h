@@ -46,20 +46,19 @@ class MEDDLY::mtmdd_forest : public mt_forest {
           node_handle p = f.getNode();
           while (!isTerminalNode(p)) {
           int level = getNodeLevel(p);
-            printf("vlist[getVarByLevel(level)].getInteger() %d\n",vlist[getVarByLevel(level)].getInteger());
             p = getDownPtr(p, vlist[getVarByLevel(level)].getInteger());
           }
           return p;
         }
-
-    /*inline node_handle evaluateRaw(const dd_edge &f, const int* vlist) const {
+    /// deprecated
+    inline node_handle evaluateRaw(const dd_edge &f, const int* vlist) const {
       node_handle p = f.getNode();
       while (!isTerminalNode(p)) {
     	int level = getNodeLevel(p);
         p = getDownPtr(p, vlist[getVarByLevel(level)]);
       }
       return p;
-    }*/
+    }
 
     // Move the variable to the optimal level between top and bottom
     void sifting(int var, int top, int bottom);
@@ -86,8 +85,8 @@ namespace MEDDLY {
   template <class ENCODER, typename T>
   class mtmdd_edgemaker {
       mtmdd_forest* F;
-      const general_int* const* vlist;
-//      const int* const* vlist;
+      const general_int* const* gvlist;
+      const int* const* vlist;
       const T* values;
       int* order;
       int N;
@@ -96,8 +95,18 @@ namespace MEDDLY {
     public:
       mtmdd_edgemaker(mtmdd_forest* f, const general_int* const* mt, const T* v,
               int* o, int n, int k, binary_operation* unOp)
-//      mtmdd_edgemaker(mtmdd_forest* f, const int* const* mt, const T* v,
-//        int* o, int n, int k, binary_operation* unOp)
+      {
+        F = f;
+        gvlist = mt;
+        values = v;
+        order = o;
+        N = n;
+        K = k;
+        unionOp = unOp;
+      }
+
+      mtmdd_edgemaker(mtmdd_forest* f, const int* const* mt, const T* v,
+        int* o, int n, int k, binary_operation* unOp)
       {
         F = f;
         vlist = mt;
@@ -107,16 +116,25 @@ namespace MEDDLY {
         K = k;
         unionOp = unOp;
       }
-
-      inline const general_int* unprimed(int i) const {
+      inline const general_int* gunprimed(int i) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        return gvlist[order[i]];
+      }
+      inline general_int gunprimed(int i, int k) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        MEDDLY_CHECK_RANGE(1, k, K+1);
+        return gvlist[order[i]][k].getInteger();
+      }
+      inline const int* unprimed(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return vlist[order[i]];
       }
-      inline general_int unprimed(int i, int k) const {
+      inline int unprimed(int i, int k) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         MEDDLY_CHECK_RANGE(1, k, K+1);
-        return vlist[order[i]][k].getInteger();
+        return vlist[order[i]][k];
       }
+
       inline T term(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return values ? values[order[i]]: 1;
@@ -142,7 +160,7 @@ namespace MEDDLY {
         // Fast special case
         //
         if (1==stop-start) {
-          return createEdgePath(k, unprimed(start),
+          return createEdgePath(k, gunprimed(start),
             ENCODER::value2handle(term(start))
           );
         }
@@ -167,14 +185,14 @@ namespace MEDDLY {
         //
         unsigned nextV = lastV;
         for (int i=start; i<stop; i++) {
-          if (DONT_CARE == unprimed(i, k).getInteger()) {
+          if (DONT_CARE == gunprimed(i, k).getInteger()) {
             if (batchP != i) {
               swap(batchP, i);
             }
             batchP++;
           } else {
             MEDDLY_DCASSERT(unprimed(i, k) >= 0);
-            nextV = MIN(nextV, unsigned(unprimed(i, k).getInteger()));
+            nextV = MIN(nextV, unsigned(gunprimed(i, k).getInteger()));
           }
         }
 
@@ -225,13 +243,13 @@ namespace MEDDLY {
 			      // (1) move anything with value v, to the "new" front
 			      //
 			      for (int i=start; i<stop; i++) {
-			        if (v == unprimed(i, k).getInteger()) {
+			        if (v == gunprimed(i, k).getInteger()) {
 				        if (batchP != i) {
 				          swap(batchP, i);
 				        }
 				        batchP++;
 			        } else {
-				        nextV = MIN(nextV, unsigned(unprimed(i, k).getInteger()));
+				        nextV = MIN(nextV, unsigned(gunprimed(i, k).getInteger()));
 			        }
 			      }
 
@@ -283,13 +301,13 @@ namespace MEDDLY {
 			    // (1) move anything with value v, to the "new" front
 			    //
 			    for (int i=start; i<stop; i++) {
-			      if (v == unprimed(i, k).getInteger()) {
+			      if (v == gunprimed(i, k).getInteger()) {
 				      if (batchP != i) {
 				        swap(batchP, i);
 				      }
 				      batchP++;
 			      } else {
-				      nextV = MIN(nextV, unsigned(unprimed(i, k).getInteger()));
+				      nextV = MIN(nextV, unsigned(gunprimed(i, k).getInteger()));
 			      }
 			    }
 
@@ -369,6 +387,54 @@ namespace MEDDLY {
           } // for i
           return bottom;
       }
+
+      /// deprecated
+      inline node_handle
+       createEdgePath(int k, const int* _vlist, node_handle bottom)
+       {
+           if (bottom==0 && (!F->isQuasiReduced() || F->getTransparentNode()==ENCODER::value2handle(0))) {
+             return bottom;
+           }
+
+           for (int i=1; i<=k; i++) {
+             if (DONT_CARE == _vlist[i]) {
+               // make a redundant node
+               if (F->isFullyReduced()) continue;
+               int sz = F->getLevelSize(i);
+               unpacked_node* nb = unpacked_node::newFull(F, i, sz);
+               nb->d_ref(0) = bottom;
+               for (int v=1; v<sz; v++) {
+                 nb->d_ref(v) = F->linkNode(bottom);
+               }
+               if (F->isExtensibleLevel(i)) nb->markAsExtensible();
+               bottom = F->createReducedNode(-1, nb);
+             } else {
+               if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
+                 int sz = F->getLevelSize(i);
+                 if (F->isExtensibleLevel(i) && (sz == _vlist[i]+1)) sz++;
+                 unpacked_node* nb = unpacked_node::newFull(F, i, sz);
+                 node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
+                 // add opaque zero nodes
+                 for(int v=0; v<sz; v++) {
+                   nb->d_ref(v)=(v==_vlist[i] ? bottom : F->linkNode(zero));
+                 }
+                 F->unlinkNode(zero);
+                 if (F->isExtensibleLevel(i)) nb->markAsExtensible();
+                 bottom=F->createReducedNode(-1, nb);
+               }
+               else{
+                 // make a singleton node
+                 unpacked_node* nb = unpacked_node::newSparse(F, i, 1);
+                 MEDDLY_DCASSERT(_vlist[i] >= 0);
+                 nb->i_ref(0) = unsigned(_vlist[i]);
+                 nb->d_ref(0) = bottom;
+                 bottom = F->createReducedNode(-1, nb);
+               }
+             }
+           } // for i
+           return bottom;
+       }
+
 
       // Make zero nodes recursively when:
       // 1. quasi reduction

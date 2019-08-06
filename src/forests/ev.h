@@ -108,6 +108,23 @@ class MEDDLY::ev_forest : public expert_forest {
         }
       }
     }
+    /// deprecated
+    inline void enlargeVariables(const int* const* vlist, int N, bool primed) {
+          for (int k=1; k<=getDomain()->getNumVariables(); k++) {
+            int maxv = vlist[0][k];
+            for (int i=1; i<N; i++) {
+              maxv = MAX(maxv, vlist[i][k]);
+            }
+            if (maxv < 1) continue;
+            if (maxv >= getDomain()->getVariableBound(k, primed)) {
+              expert_variable* vh = useExpertDomain()->getExpertVar(k);
+              if (vh->isExtensible())
+                vh->enlargeBound(primed, -(maxv+1));
+              else
+                vh->enlargeBound(primed, (maxv+1));
+            }
+          }
+        }
 
     template <class OPERATION, typename T>
     inline

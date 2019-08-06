@@ -195,7 +195,8 @@ namespace MEDDLY {
 
       variable(variableTypes _type,int bound, char* name);
 
-  //    variable(int bound, char* name);
+      ///deprecated
+      variable(int bound, char* name);
       virtual ~variable();
     public:
 
@@ -466,7 +467,8 @@ namespace MEDDLY {
         @param  name    Variable name (used only in display / debugging), or 0.
         @return A new variable, or 0 on error.
   */
-//  variable* createVariable(int bound, char* name);
+  ///deprecated
+  variable* createVariable(int bound, char* name);
   variable* createVariable(MEDDLY::variable::variableTypes _variableType, int bound, char* name);
 
   /** Front-end function to create a domain with the given variables.
@@ -479,8 +481,8 @@ namespace MEDDLY {
         @return A new domain.
   */
   domain* createDomain(variable::variableTypes _variableType,variable** vars, int N);
-
-//  domain* createDomain(variable** vars, int N);
+/// deprecated
+  domain* createDomain(variable** vars, int N);
 
   /** Front-end function to create an empty domain.
       This is required because domain is an abstract class.
@@ -502,8 +504,8 @@ namespace MEDDLY {
         @return A new domain.
   */
   domain* createDomainBottomUp(variable::variableTypes _variableType,const int* bounds, int N);
-
-//  domain* createDomainBottomUp(const int* bounds, int N);
+/// deprecated
+  domain* createDomainBottomUp(const int* bounds, int N);
 
 /* Commented out as of version 0.10
 #ifdef _MSC_VER
@@ -1734,7 +1736,7 @@ class MEDDLY::forest {
     */
     virtual void createEdge(const general_int* const* vlist, int N, dd_edge &e);
 
-//    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
 
     /** Create an edge as the union of several vectors and return values.
         @param  vlist Array of vectors. Each vector has dimension equal
@@ -1756,7 +1758,7 @@ class MEDDLY::forest {
     */
     virtual void createEdge(const general_int* const* vlist, const long* terms, int N, dd_edge &e);
 
-//    virtual void createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e);
 
     /** Create an edge as the union of several vectors and return values.
         @param  vlist Array of vectors. Each vector has dimension equal
@@ -1778,7 +1780,7 @@ class MEDDLY::forest {
     */
     virtual void createEdge(const general_int* const* vlist, const float* terms, int N, dd_edge &e);
 
-//    virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
@@ -1811,7 +1813,7 @@ class MEDDLY::forest {
     */
     virtual void createEdge(const general_int* const* vlist, const general_int* const* vplist, int N, dd_edge &e);
 
-//    virtual void createEdge(const int* const* vlist, const int* const* vplist, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const int* const* vplist, int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
@@ -1846,8 +1848,8 @@ class MEDDLY::forest {
     virtual void createEdge(const general_int* const* vlist, const general_int* const* vplist,
             const long* terms, int N, dd_edge &e);
 
-//    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-//        const long* terms, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
+        const long* terms, int N, dd_edge &e);
 
 
     /** Create an edge as the union of several explicit matrices.
@@ -1881,8 +1883,8 @@ class MEDDLY::forest {
     */
     virtual void createEdge(const general_int* const* vlist, const general_int* const* vplist,
             const float* terms, int N, dd_edge &e);
-//    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-//        const float* terms, int N, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
+        const float* terms, int N, dd_edge &e);
 
 
     /** Create an edge for a boolean constant.
@@ -1928,8 +1930,8 @@ class MEDDLY::forest {
     */
     virtual void evaluate(const dd_edge &f, const general_int* vlist, bool &term)
           const;
-//    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
-//      const;
+    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
+      const;
 
     /** Evaluate the function encoded by an edge.
         @param  f     Edge (function) to evaluate.
@@ -1944,7 +1946,7 @@ class MEDDLY::forest {
     */
     virtual void evaluate(const dd_edge &f, const general_int* vlist, long &term)
           const;
-    //FOR TEST
+    //deprecated
     virtual void evaluate(const dd_edge &f, const int* vlist, long &term)
       const;
 
@@ -1961,8 +1963,8 @@ class MEDDLY::forest {
     */
     virtual void evaluate(const dd_edge &f, const general_int* vlist, float &term)
           const;
-//    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
-//      const;
+    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
+      const;
 
     /** Evaluate the function encoded by an edge.
         @param  f       Edge (function) to evaluate.
@@ -2483,7 +2485,7 @@ class MEDDLY::domain {
     */
     virtual void createVariablesBottomUp(variable::variableTypes _variableType,const int* bounds, int N) = 0;
 
-//    virtual void createVariablesBottomUp(const int* bounds, int N) = 0;
+    virtual void createVariablesBottomUp(const int* bounds, int N) = 0;
 
     /** Create a forest in this domain.
         Conceptually, a forest is a structure used to represent a
@@ -2560,6 +2562,9 @@ class MEDDLY::domain {
   protected:
     /// Constructor.
     domain(variable::variableTypes _variableType,variable** v, int N);
+
+    /// deprecated
+    domain(variable** v, int N);
 
     /// Destructor.
     virtual ~domain();

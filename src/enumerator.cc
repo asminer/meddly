@@ -188,7 +188,6 @@ void MEDDLY::enumerator::init(type t, const forest* f)
       return;
   }
   if (I->build_error()) {
-    printf("FACE ERROR!!!\n");
     delete I;
     I = 0;
   } 

@@ -48,6 +48,50 @@ void MEDDLY::evmdd_pluslong::createEdge(long val, dd_edge &e)
 {
   createEdgeTempl<OP, long>(val, e);
 }
+///deprecated
+void MEDDLY::evmdd_pluslong
+::createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e)
+{
+  // binary_operation* unionOp = getOperation(PLUS, this, this, this);
+  binary_operation* unionOp = 0;  // for now
+  enlargeStatics(N);
+  enlargeVariables(vlist, N, false);
+
+  int num_vars = getNumVariables();
+
+  // Create vlist following the mapping between variable and level
+  int** ordered_vlist = static_cast<int**>(malloc(N * sizeof(int*) + (num_vars + 1) * N * sizeof(int)));
+  if (ordered_vlist == nullptr) {
+    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+  }
+
+  ordered_vlist[0] = reinterpret_cast<int*>(&ordered_vlist[N]);
+  for (int i = 1; i < N; i++) {
+    ordered_vlist[i] = (ordered_vlist[i - 1] + num_vars + 1);
+  }
+  for (int i = 0; i <= num_vars; i++) {
+    int level = getLevelByVar(i);
+    for (int j = 0; j < N; j++) {
+      ordered_vlist[j][level] = vlist[j][i];
+    }
+  }
+
+  long* terms_long = static_cast<long*>(malloc(N * sizeof(long)));
+  for (int i = 0; i < N; i++) {
+    terms_long[i] = terms[i];
+  }
+
+  evmdd_edgemaker<OP, long>
+  EM(this, ordered_vlist, terms_long, order, N, num_vars, unionOp);
+
+  long ev = Inf<long>();
+  node_handle ep = 0;
+  EM.createEdge(ev, ep);
+  e.set(ep, ev);
+
+  free(ordered_vlist);
+  free(terms_long);
+}
 
 void MEDDLY::evmdd_pluslong
 ::createEdge(const general_int* const* vlist, const long* terms, int N, dd_edge &e)

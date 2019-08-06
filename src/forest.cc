@@ -354,20 +354,6 @@ void MEDDLY::forest::markForDeletion()
     }
   unregisterDDEdges();
 }
-//void MEDDLY::forest::createEdgeForVar(general_int vh, bool vp, const bool* terms, dd_edge& a)
-//{
-//  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-//}
-//
-//void MEDDLY::forest::createEdgeForVar(general_int vh, bool vp, const long* terms, dd_edge& a)
-//{
-//  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-//}
-//
-//void MEDDLY::forest::createEdgeForVar(general_int vh, bool vp, const float* terms, dd_edge& a)
-//{
-//  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-//}
 
 void MEDDLY::forest::createEdge(const general_int* const* vlist, int N, dd_edge &e)
 {
@@ -401,7 +387,7 @@ void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const float* terms, dd_ed
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-/*void MEDDLY::forest::createEdge(const int* const* vlist, int N, dd_edge &e)
+void MEDDLY::forest::createEdge(const int* const* vlist, int N, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -416,7 +402,7 @@ void MEDDLY::forest
 ::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}*/
+}
 
 void MEDDLY::forest
 ::createEdge(const general_int* const* vl, const general_int* const* vpl, int N, dd_edge &e)
@@ -436,7 +422,7 @@ void MEDDLY::forest
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-/*void MEDDLY::forest
+void MEDDLY::forest
 ::createEdge(const int* const* vl, const int* const* vpl, int N, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -452,7 +438,7 @@ void MEDDLY::forest
 ::createEdge(const int* const* vlist, const int* const* vplist, const float* terms, int N, dd_edge &e)
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}*/
+}
 
 void MEDDLY::forest::createEdge(bool val, dd_edge &e)
 {
@@ -469,6 +455,11 @@ void MEDDLY::forest::createEdge(float val, dd_edge &e)
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
+void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, bool &t) const
+{
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
 void MEDDLY::forest::evaluate(const dd_edge &f, const general_int* vl, bool &t) const
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -478,17 +469,8 @@ void MEDDLY::forest::evaluate(const dd_edge &f, const general_int* vl, long &t) 
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
-///FOR TEST
-void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, long &t) const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
 
 void MEDDLY::forest::evaluate(const dd_edge &f, const general_int* vl, float &t) const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-/*void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, bool &t) const
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -501,7 +483,7 @@ void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, long &t) const
 void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, float &t) const
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}*/
+}
 
 void MEDDLY::forest
 ::evaluate(const dd_edge& f, const general_int* vl, const general_int* vpl, bool &t) const

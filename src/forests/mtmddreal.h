@@ -40,12 +40,14 @@ class MEDDLY::mt_mdd_real : public mtmdd_forest {
     virtual void createEdge(float val, dd_edge &e);
     virtual void createEdge(const general_int* const* vlist, const float* terms, int N, dd_edge &e);
 
-//    virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
+    /// deprecated
+    virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
     virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
     virtual void evaluate(const dd_edge &f, const general_int* vlist, float &term)
           const;
-//    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
-//      const;
+    /// deprecated
+    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
+      const;
 
     virtual void showTerminal(output &s, node_handle tnode) const;
     virtual void writeTerminal(output &s, node_handle tnode) const;

@@ -58,7 +58,29 @@ class MEDDLY::evmxd_forest : public ev_forest {
         val = (node) ? OPERATION::apply(val, ev) : ev;
       }
     }
-    
+    /// deprecated
+    template <class OPERATION, typename TYPE>
+        inline void evaluateT(const dd_edge &f, const int* vlist,
+          const int* vplist, TYPE &val) const
+        {
+          if (f.getForest() != this) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+          if (vlist == 0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
+          if (vplist == 0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
+
+          // Assumptions:
+          // (1) vlist and vplist do not contain special values (-1, -2, etc).
+          // (2) vlist and vplist contains a single element.
+          node_handle node = f.getNode();
+          f.getEdgeValue(val);
+
+          while (!isTerminalNode(node)) {
+            TYPE ev;
+            int k = getNodeLevel(node);
+            getDownPtr(node, ((k > 0) ? vlist[k] : vplist[-k]), ev, node);
+            val = (node) ? OPERATION::apply(val, ev) : ev;
+          }
+        }
+
   public:
     /// Special case for createEdge(), with only one minterm.
     template <class OPERATION, typename TYPE>
@@ -162,6 +184,108 @@ class MEDDLY::evmxd_forest : public ev_forest {
       } // for i
     }
 
+    /// deprecated
+    template <class OPERATION, typename TYPE>
+        inline void
+        createEdgePath(int k, const int* vlist, const int* vplist,
+          TYPE &ev, node_handle &ed)
+        {
+          if (0==ed) return;
+
+          for (int i=1; i<=k; i++) {
+            if (DONT_CHANGE == vplist[i]) {
+              //
+              // Identity node
+              //
+              MEDDLY_DCASSERT(DONT_CARE == vlist[i]);
+              if (isIdentityReduced()) continue;
+              // Build an identity node by hand
+              int sz = getLevelSize(i);
+              unpacked_node* nb = unpacked_node::newFull(this, i, sz);
+              for (int v=0; v<sz; v++) {
+                unpacked_node* nbp = unpacked_node::newSparse(this, -i, 1);
+                nbp->i_ref(0) = v;
+                nbp->d_ref(0) = linkNode(ed);
+                nbp->setEdge(0, ev);
+                TYPE pev;
+                node_handle pd;
+                createReducedNode(v, nbp, pev, pd);
+                nb->d_ref(v) = pd;
+                nb->setEdge(v, pev);
+              }
+              unlinkNode(ed);
+              createReducedNode(-1, nb, ev, ed);
+              continue;
+            }
+            //
+            // process primed level
+            //
+            node_handle edpr;
+            TYPE evpr;
+            if (DONT_CARE == vplist[i]) {
+              if (isFullyReduced()) {
+                // DO NOTHING
+                edpr = ed;
+                evpr = ev;
+              } else {
+                // build redundant node
+                int sz = getLevelSize(-i);
+                unpacked_node* nb = unpacked_node::newFull(this, -i, sz);
+                for (int v=0; v<sz; v++) {
+                  nb->d_ref(v) = linkNode(ed);
+                  nb->setEdge(v, ev);
+                }
+                unlinkNode(ed);
+                createReducedNode(-1, nb, evpr, edpr);
+              }
+            } else {
+              // sane value
+              unpacked_node* nb = unpacked_node::newSparse(this, -i, 1);
+              nb->i_ref(0) = vplist[i];
+              nb->d_ref(0) = ed;
+              nb->setEdge(0, ev);
+              createReducedNode(vlist[i], nb, evpr, edpr);
+            }
+            //
+            // process unprimed level
+            //
+            if (DONT_CARE == vlist[i]) {
+              if (isFullyReduced()) {
+                ed = edpr;
+                ev = evpr;
+                continue;
+              }
+              // build redundant node
+              int sz = getLevelSize(i);
+              unpacked_node *nb = unpacked_node::newFull(this, i, sz);
+              if (isIdentityReduced()) {
+                // Below is likely a singleton, so check for identity reduction
+                // on the appropriate v value
+                for (int v=0; v<sz; v++) {
+                  node_handle dpr = (v == vplist[i]) ? ed : edpr;
+                  nb->d_ref(v) = linkNode(dpr);
+                  nb->setEdge(v, evpr);
+                }
+              } else {
+                // Doesn't matter what happened below
+                for (int v=0; v<sz; v++) {
+                  nb->d_ref(v) = linkNode(edpr);
+                  nb->setEdge(v, evpr);
+                }
+              }
+              unlinkNode(edpr);
+              createReducedNode(-1, nb, ev, ed);
+            } else {
+              // sane value
+              unpacked_node* nb = unpacked_node::newSparse(this, i, 1);
+              nb->i_ref(0) = vlist[i];
+              nb->d_ref(0) = edpr;
+              nb->setEdge(0, evpr);
+              createReducedNode(-1, nb, ev, ed);
+            }
+          } // for i
+        }
+
 };
 
 
@@ -174,10 +298,10 @@ namespace MEDDLY {
   template <class OPERATION, typename T>
   class evmxd_edgemaker {
       evmxd_forest* F;
-      const general_int* const* vulist;
-      const general_int* const* vplist;
-//      const int* const* vulist;
-//      const int* const* vplist;
+      const general_int* const* gvulist;
+      const general_int* const* gvplist;
+      const int* const* vulist;
+      const int* const* vplist;
       const T* values;
       int* order;
       int N;
@@ -187,9 +311,20 @@ namespace MEDDLY {
       evmxd_edgemaker(evmxd_forest* f,
               const general_int* const* mt, const general_int* const* mp, const T* v,
               int* o, int n, int k, binary_operation* unOp)
-//      evmxd_edgemaker(evmxd_forest* f,
-//        const int* const* mt, const int* const* mp, const T* v,
-//        int* o, int n, int k, binary_operation* unOp)
+      {
+        F = f;
+        gvulist = mt;
+        gvplist = mp;
+        values = v;
+        order = o;
+        N = n;
+        K = k;
+        unionOp = unOp;
+      }
+      /// deprecated
+      evmxd_edgemaker(evmxd_forest* f,
+        const int* const* mt, const int* const* mp, const T* v,
+        int* o, int n, int k, binary_operation* unOp)
       {
         F = f;
         vulist = mt;
@@ -200,21 +335,42 @@ namespace MEDDLY {
         K = k;
         unionOp = unOp;
       }
-
-      inline const general_int* unprimed(int i) const {
+      inline const general_int* gunprimed(int i) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        return gvulist[order[i]];
+      }
+      inline general_int gunprimed(int i, int k) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        MEDDLY_CHECK_RANGE(1, k, K+1);
+        return gvulist[order[i]][k];
+      }
+      inline const general_int* gprimed(int i) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        return gvplist[order[i]];
+      }
+      inline general_int gprimed(int i, int k) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        MEDDLY_CHECK_RANGE(1, k, K+1);
+        return gvplist[order[i]][k];
+      }
+      /// deprecated
+      inline const int* unprimed(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return vulist[order[i]];
       }
-      inline general_int unprimed(int i, int k) const {
+      /// deprecated
+      inline int unprimed(int i, int k) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         MEDDLY_CHECK_RANGE(1, k, K+1);
         return vulist[order[i]][k];
       }
-      inline const general_int* primed(int i) const {
+      /// deprecated
+      inline const int* primed(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return vplist[order[i]];
       }
-      inline general_int primed(int i, int k) const {
+      /// deprecated
+      inline int primed(int i, int k) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         MEDDLY_CHECK_RANGE(1, k, K+1);
         return vplist[order[i]][k];
@@ -248,7 +404,7 @@ namespace MEDDLY {
         if (1==stop-start) {
           ev = term(start);
           ed = expert_forest::bool_Tencoder::value2handle(true);
-          F->createEdgePath<OPERATION, T>(k, unprimed(start), primed(start),
+          F->createEdgePath<OPERATION, T>(k, gunprimed(start), gprimed(start),
             ev, ed);
           return;
         }
@@ -274,14 +430,14 @@ namespace MEDDLY {
         //
         unsigned nextV = lastV;
         for (int i=start; i<stop; i++) {
-          if (DONT_CARE == unprimed(i, k).getInteger()) {
+          if (DONT_CARE == gunprimed(i, k).getInteger()) {
             if (batchP != i) {
               swap(batchP, i);
             }
             batchP++;
           } else {
             MEDDLY_DCASSERT(unprimed(i, k) >= 0);
-            nextV = MIN(nextV, unsigned(unprimed(i, k).getInteger()));
+            nextV = MIN(nextV, unsigned(gunprimed(i, k).getInteger()));
           }
         }
 
@@ -290,7 +446,7 @@ namespace MEDDLY {
         // and process them to construct a new level-k node.
         int dch = start;
         for (int i=start; i<batchP; i++) {
-          if (DONT_CHANGE == primed(i, k).getInteger()) {
+          if (DONT_CHANGE == gprimed(i, k).getInteger()) {
             if (dch != i) {
               swap(dch, i);
             }
@@ -354,13 +510,13 @@ namespace MEDDLY {
           // (1) move anything with value v, to the "new" front
           //
           for (int i=start; i<stop; i++) {
-            if (v == unprimed(i, k).getInteger()) {
+            if (v == gunprimed(i, k).getInteger()) {
               if (batchP != i) {
                 swap(batchP, i);
               }
               batchP++;
             } else {
-              nextV = MIN(nextV, unsigned(unprimed(i, k).getInteger()));
+              nextV = MIN(nextV, unsigned(gunprimed(i, k).getInteger()));
             }
           }
 
@@ -418,13 +574,13 @@ namespace MEDDLY {
         //
         unsigned nextV = lastV;
         for (int i=start; i<stop; i++) {
-          if (DONT_CARE == primed(i, -k).getInteger()) {
+          if (DONT_CARE == gprimed(i, -k).getInteger()) {
             if (batchP != i) {
               swap(batchP, i);
             }
             batchP++;
           } else {
-            nextV = MIN(nextV, unsigned(primed(i, -k).getInteger()));
+            nextV = MIN(nextV, unsigned(gprimed(i, -k).getInteger()));
           }
         }
 
@@ -470,13 +626,13 @@ namespace MEDDLY {
           //
           bool veqin = (v==in);
           for (int i=start; i<stop; i++) {
-            if (v == primed(i, -k).getInteger() || (veqin && DONT_CHANGE==primed(i, -k).getInteger())) {
+            if (v == gprimed(i, -k).getInteger() || (veqin && DONT_CHANGE==gprimed(i, -k).getInteger())) {
               if (batchP != i) {
                 swap(batchP, i);
               }
               batchP++;
             } else {
-              nextV = MIN(nextV, unsigned(primed(i, -k).getInteger()));
+              nextV = MIN(nextV, unsigned(gprimed(i, -k).getInteger()));
             }
           }
 

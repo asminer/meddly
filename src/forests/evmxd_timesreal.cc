@@ -68,6 +68,29 @@ void MEDDLY::evmxd_timesreal
   validateIncounts(true);
 #endif
 }
+/// deprecated
+void MEDDLY::evmxd_timesreal
+::createEdge(const int* const* vlist, const int* const* vplist,
+  const float* terms, int N, dd_edge &e)
+{
+  binary_operation* unionOp = getOperation(PLUS, this, this, this);
+  MEDDLY_DCASSERT(unionOp);
+  enlargeStatics(N);
+  enlargeVariables(vlist, N, false);
+  enlargeVariables(vplist, N, true);
+
+  evmxd_edgemaker<OP, float>
+  EM(this, vlist, vplist, terms, order, N,
+    getDomain()->getNumVariables(), unionOp);
+
+  float ev;
+  node_handle ep;
+  EM.createEdge(ev, ep);
+  e.set(ep, ev);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
+}
 
 void MEDDLY::evmxd_timesreal
 ::createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
@@ -84,6 +107,14 @@ void MEDDLY::evmxd_timesreal
 {
   evaluateT<OP, float>(f, vlist, vplist, term);
 }
+/// deprecated
+void MEDDLY::evmxd_timesreal
+::evaluate(const dd_edge &f, const int* vlist, const int* vplist,
+  float &term) const
+{
+  evaluateT<OP, float>(f, vlist, vplist, term);
+}
+
 
 bool MEDDLY::evmxd_timesreal
 ::isTransparentEdge(node_handle ep, const void* ev) const

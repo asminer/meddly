@@ -72,6 +72,31 @@ void MEDDLY::evmxd_pluslong
 #endif
 }
 
+/// deprecated
+void MEDDLY::evmxd_pluslong
+::createEdge(const int* const* vlist, const int* const* vplist,
+  const long* terms, int N, dd_edge &e)
+{
+  // XXX: Requires UnionPlus
+  binary_operation* unionOp = getOperation(PLUS, this, this, this);
+  MEDDLY_DCASSERT(unionOp);
+  enlargeStatics(N);
+  enlargeVariables(vlist, N, false);
+  enlargeVariables(vplist, N, true);
+
+  evmxd_edgemaker<OP, long>
+  EM(this, vlist, vplist, terms, order, N,
+    getDomain()->getNumVariables(), unionOp);
+
+  long ev;
+  node_handle ep;
+  EM.createEdge(ev, ep);
+  e.set(ep, ev);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true);
+#endif
+}
+
 void MEDDLY::evmxd_pluslong
 ::createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 {
@@ -83,6 +108,13 @@ void MEDDLY::evmxd_pluslong
 
 void MEDDLY::evmxd_pluslong
 ::evaluate(const dd_edge &f, const general_int* vlist, const general_int* vplist,
+  long &term) const
+{
+  evaluateT<OP, long>(f, vlist, vplist, term);
+}
+
+void MEDDLY::evmxd_pluslong
+::evaluate(const dd_edge &f, const int* vlist, const int* vplist,
   long &term) const
 {
   evaluateT<OP, long>(f, vlist, vplist, term);

@@ -77,7 +77,7 @@ void MEDDLY::mt_mdd_bool::createEdge(const general_int* const* vlist, int N, dd_
 
 
 
-/*void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
+void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
 {
   binary_operation* unionOp = getOperation(UNION, this, this, this);
   enlargeStatics(N);
@@ -112,7 +112,7 @@ void MEDDLY::mt_mdd_bool::createEdge(const general_int* const* vlist, int N, dd_
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
-}*/
+}
 
 void MEDDLY::mt_mdd_bool::
 createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
@@ -129,11 +129,11 @@ void MEDDLY::mt_mdd_bool
   term = bool_Tencoder::handle2value(evaluateRaw(f, vlist));
 }
 
-/*void MEDDLY::mt_mdd_bool
+void MEDDLY::mt_mdd_bool
 ::evaluate(const dd_edge &f, const int* vlist, bool &term) const
 {
   term = bool_Tencoder::handle2value(evaluateRaw(f, vlist));
-}*/
+}
 
 void MEDDLY::mt_mdd_bool::showTerminal(output &s, node_handle tnode) const
 {

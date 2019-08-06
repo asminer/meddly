@@ -76,7 +76,7 @@ void MEDDLY::mt_mdd_real::createEdge(const general_int* const* vlist, const floa
 #endif
 }
 
-/*void MEDDLY::mt_mdd_real::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
+void MEDDLY::mt_mdd_real::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
 {
   binary_operation* unionOp = getOperation(PLUS, this, this, this);
   enlargeStatics(N);
@@ -111,7 +111,7 @@ void MEDDLY::mt_mdd_real::createEdge(const general_int* const* vlist, const floa
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
-}*/
+}
 
 void MEDDLY::mt_mdd_real::
 createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
@@ -129,11 +129,11 @@ void MEDDLY::mt_mdd_real
   term = float_Tencoder::handle2value(evaluateRaw(f, vlist));
 }
 
-/*void MEDDLY::mt_mdd_real
+void MEDDLY::mt_mdd_real
 ::evaluate(const dd_edge &f, const int* vlist, float &term) const
 {
   term = float_Tencoder::handle2value(evaluateRaw(f, vlist));
-}*/
+}
 
 void MEDDLY::mt_mdd_real::showTerminal(output &s, node_handle tnode) const
 {

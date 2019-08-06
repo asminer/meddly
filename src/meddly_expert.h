@@ -309,7 +309,8 @@ class MEDDLY::expert_variable : public variable {
   public:
     expert_variable(variableTypes _variableType, int b, char* n);
 
-//    expert_variable(int b, char* n);
+    /// deprecated
+    expert_variable(int b, char* n);
 
     /// Update our list of domains: add \a d.
     void addToList(domain* d);
@@ -361,7 +362,10 @@ class MEDDLY::expert_domain : public domain {
   public:
     expert_domain(variable::variableTypes _variable,variable**, int);
 
-//    virtual void createVariablesBottomUp(const int* bounds, int N);
+    ///deprecated
+    expert_domain(variable**, int);
+    ///deprecated
+    virtual void createVariablesBottomUp(const int* bounds, int N);
     virtual void createVariablesBottomUp(const variable::variableTypes _variableType,const int* bounds, int N);
 
     /** Create all variables at once, from the top down.
@@ -376,8 +380,8 @@ class MEDDLY::expert_domain : public domain {
       @param  N       Number of variables.
     */
     void createVariablesTopDown(const variable::variableTypes _variableType,const int* bounds, int N);
-
-//    void createVariablesTopDown(const int* bounds, int N);
+    /// deprecated
+    void createVariablesTopDown(const int* bounds, int N);
 
     /** Insert a new variable.
           @param  lev   Level to insert above; use 0 for a

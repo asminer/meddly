@@ -64,6 +64,18 @@ class MEDDLY::mtmxd_forest : public mt_forest {
         } 
         return p;
       }
+    /// deprecated
+      inline node_handle evaluateRaw(const dd_edge &f, const int* vlist,
+        const int* vplist) const
+      {
+        node_handle p = f.getNode();
+        while (!isTerminalNode(p)) {
+          int k = getNodeLevel(p);
+          int i = (k<0) ? vplist[-k] : vlist[k];
+          p = getDownPtr(p, i);
+        }
+        return p;
+      }
 
   protected:
     class mtmxd_iterator : public mt_iterator {
@@ -115,8 +127,10 @@ namespace MEDDLY {
   template <class ENCODER, typename T>
   class mtmxd_edgemaker {
       mtmxd_forest* F;
-      const general_int* const* vulist;
-      const general_int* const* vplist;
+      const general_int* const* gvulist;
+      const general_int* const* gvplist;
+      const int* const* vulist;
+      const int* const* vplist;
       const T* values;
       int* order;
       int N;
@@ -128,6 +142,20 @@ namespace MEDDLY {
         int k, binary_operation* unOp) 
       {
         F = f;
+        gvulist = mt;
+        gvplist = mp;
+        values = v;
+        order = o;
+        N = n;
+        K = k;
+        unionOp = unOp;
+      }
+      /// deprecated
+      mtmxd_edgemaker(mtmxd_forest* f,
+        const int* const* mt, const int* const* mp, const T* v, int* o, int n,
+        int k, binary_operation* unOp)
+      {
+        F = f;
         vulist = mt;
         vplist = mp;
         values = v;
@@ -136,21 +164,42 @@ namespace MEDDLY {
         K = k;
         unionOp = unOp;
       }
-
-      inline const general_int* unprimed(int i) const {
+      inline const general_int* gunprimed(int i) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        return gvulist[order[i]];
+      }
+      inline general_int gunprimed(int i, int k) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        MEDDLY_CHECK_RANGE(1, k, K+1);
+        return gvulist[order[i]][k];
+      }
+      inline const general_int* gprimed(int i) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        return gvplist[order[i]];
+      }
+      inline general_int gprimed(int i, int k) const {
+        MEDDLY_CHECK_RANGE(0, i, N);
+        MEDDLY_CHECK_RANGE(1, k, K+1);
+        return gvplist[order[i]][k];
+      }
+      /// deprecated
+      inline const int* unprimed(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return vulist[order[i]];
       }
-      inline general_int unprimed(int i, int k) const {
+      /// deprecated
+      inline int unprimed(int i, int k) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         MEDDLY_CHECK_RANGE(1, k, K+1);
         return vulist[order[i]][k];
       }
-      inline const general_int* primed(int i) const {
+      /// deprecated
+      inline const int* primed(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return vplist[order[i]];
       }
-      inline general_int primed(int i, int k) const {
+      /// deprecated
+      inline int primed(int i, int k) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         MEDDLY_CHECK_RANGE(1, k, K+1);
         return vplist[order[i]][k];
@@ -180,7 +229,7 @@ namespace MEDDLY {
         // Fast special case
         //
         if (1==stop-start) {
-          return createEdgePath(k, unprimed(start), primed(start),
+          return createEdgePath(k, gunprimed(start), gprimed(start),
             ENCODER::value2handle(term(start))
           );
         }
@@ -205,14 +254,14 @@ namespace MEDDLY {
         //
         unsigned nextV = lastV;
         for (int i=start; i<stop; i++) {
-          if (DONT_CARE == unprimed(i, k).getInteger()) {
+          if (DONT_CARE == gunprimed(i, k).getInteger()) {
             if (batchP != i) {
               swap(batchP, i);
             }
             batchP++;
           } else {
             MEDDLY_DCASSERT(unprimed(i, k).getInteger() >= 0);
-            nextV = MIN(nextV, unsigned(unprimed(i, k).getInteger()));
+            nextV = MIN(nextV, unsigned(gunprimed(i, k).getInteger()));
           }
         }
         node_handle dontcares = 0;
@@ -222,7 +271,7 @@ namespace MEDDLY {
         // and process them to construct a new level-k node.
         int dch = start;
         for (int i=start; i<batchP; i++) {
-          if (DONT_CHANGE == primed(i, k).getInteger()) {
+          if (DONT_CHANGE == gprimed(i, k).getInteger()) {
             if (dch != i) {
               swap(dch, i);
             }
@@ -280,13 +329,13 @@ namespace MEDDLY {
           // (1) move anything with value v, to the "new" front
           //
           for (int i=start; i<stop; i++) {
-            if (v == unprimed(i, k).getInteger()) {
+            if (v == gunprimed(i, k).getInteger()) {
               if (batchP != i) {
                 swap(batchP, i);
               }
               batchP++;
             } else {
-              nextV = MIN(nextV, unsigned(unprimed(i, k).getInteger()));
+              nextV = MIN(nextV, unsigned(gunprimed(i, k).getInteger()));
             }
           }
 
@@ -341,13 +390,13 @@ namespace MEDDLY {
         //
         unsigned nextV = lastV;
         for (int i=start; i<stop; i++) {
-          if (DONT_CARE == primed(i, -k).getInteger()) {
+          if (DONT_CARE == gprimed(i, -k).getInteger()) {
             if (batchP != i) {
               swap(batchP, i);
             }
             batchP++;
           } else {
-            nextV = MIN(nextV, unsigned(primed(i, -k).getInteger()));
+            nextV = MIN(nextV, unsigned(gprimed(i, -k).getInteger()));
           }
         }
 
@@ -392,13 +441,13 @@ namespace MEDDLY {
           //
           bool veqin = (v==in);
           for (int i=start; i<stop; i++) {
-            if (v == primed(i, -k).getInteger() || (veqin && DONT_CHANGE==primed(i, -k).getInteger())) {
+            if (v == gprimed(i, -k).getInteger() || (veqin && DONT_CHANGE==gprimed(i, -k).getInteger())) {
               if (batchP != i) {
                 swap(batchP, i);
               }
               batchP++;
             } else {
-              nextV = MIN(nextV, unsigned(primed(i, -k).getInteger()));
+              nextV = MIN(nextV, unsigned(gprimed(i, -k).getInteger()));
             }
           }
 
