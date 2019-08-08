@@ -103,7 +103,7 @@ op_info* getOp(forest* f, old_operation* op)
 #endif
 
 // Combine N elements using + operator
-dd_edge doPlus(forest* mtmxd, general_int** from, general_int** to, element_type* terms, int N)
+dd_edge doPlus(forest* mtmxd, int_extra** from, int_extra** to, element_type* terms, int N)
 {
   // Four ways of doing this:
   // ------------------------
@@ -180,7 +180,7 @@ dd_edge doPlus(forest* mtmxd, general_int** from, general_int** to, element_type
 // This function assumes that each from[i] and to[i] combine
 // to make up an element in the given MTMXD.
 dd_edge test_mtmxd(forest* mtmxd, binary_opname* opCode,
-    general_int** from, general_int** to, element_type* terms, int nElements)
+    int_extra** from, int_extra** to, element_type* terms, int nElements)
 {
   // A = first nElements/2 elements combined using +.
   // B = second nElements/2 elements combined using +.
@@ -245,7 +245,7 @@ void printAssignment(unsigned count, const int* element, const int* pelement, in
   printf("]\n");
 }
 
-void printAssignment(unsigned count, const general_int* element, int nVariables)
+void printAssignment(unsigned count, const int_extra* element, int nVariables)
 {
   printf("%d: [%d", count, element[1].getInteger());
   for (int k=2; k<=nVariables; k++) {
@@ -287,15 +287,15 @@ int main(int argc, char *argv[])
       nVariables, variableBound, nElements);
 
   // create the elements randomly
-  general_int** from = (general_int **) malloc(nElements * sizeof(general_int *));
-  general_int** to = (general_int **) malloc(nElements * sizeof(general_int *));
+  int_extra** from = (int_extra **) malloc(nElements * sizeof(int_extra *));
+  int_extra** to = (int_extra **) malloc(nElements * sizeof(int_extra *));
   element_type* terms =
     (element_type *) malloc(nElements * sizeof(element_type));
 
   for (int i = 0; i < nElements; ++i)
   {
-    from[i] = (general_int *) malloc((nVariables + 1) * sizeof(general_int));
-    to[i] = (general_int *) malloc((nVariables + 1) * sizeof(general_int));
+    from[i] = (int_extra *) malloc((nVariables + 1) * sizeof(int_extra));
+    to[i] = (int_extra *) malloc((nVariables + 1) * sizeof(int_extra));
     from[i][0] = 0;
     to[i][0] = 0;
     for (int j = nVariables; j > 0; --j)
@@ -397,7 +397,7 @@ int main(int argc, char *argv[])
 #if 1
   if (true) {
     enumerator beginIter(result);
-    const general_int* element = beginIter.getGIAssignments();
+    const int_extra* element = beginIter.getGIAssignments();
 #if 0
     const int* curr = 0;
     const int* end = 0;

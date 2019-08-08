@@ -83,7 +83,7 @@ typedef enum {CW, CCW, FLIP} direction;
 
 // level *variables = NULL;
 int* sizes = NULL;
-general_int** initst = NULL;
+int_extra** initst = NULL;
 
 // Number of variables of each type
 // const int NUM_TYPE1 = 6;   // centers, not needed
@@ -198,9 +198,9 @@ void Init()
   fflush(stderr);
 
   // sets of states
-  initst = (general_int**) malloc(1 * sizeof(general_int*));
+  initst = (int_extra**) malloc(1 * sizeof(int_extra*));
   assert(initst != NULL);
-  initst[0] = (general_int *) malloc((num_levels + 1) * sizeof(general_int));
+  initst[0] = (int_extra *) malloc((num_levels + 1) * sizeof(int_extra));
   assert(initst[0] != NULL);
   // all start at state 0
   memset(initst[0], 0, (num_levels + 1) * sizeof(int));
@@ -227,7 +227,7 @@ void CheckVars(domain *d)
 }
 
 
-void SetIntArray(general_int p[], const int p_size, const int c)
+void SetIntArray(int_extra p[], const int p_size, const int c)
 {
   for (int i=0; i<p_size; i++) p[i] = c;
 }
@@ -283,13 +283,13 @@ dd_edge BuildMoveHelper(
   //
   int nElements = 4 * NUM_TYPE2 + 4 * NUM_TYPE3;
   assert(nElements == 80);
-  general_int** from = (general_int**) malloc(nElements * sizeof(general_int *));
-  general_int** to = (general_int**) malloc(nElements * sizeof(general_int *));
+  int_extra** from = (int_extra**) malloc(nElements * sizeof(int_extra *));
+  int_extra** to = (int_extra**) malloc(nElements * sizeof(int_extra *));
   for (int i = 0; i < nElements; i++)
   {
     // allocate elements
-    from[i] = (general_int*) malloc(sz * sizeof(general_int));
-    to[i] = (general_int*) malloc(sz * sizeof(general_int));
+    from[i] = (int_extra*) malloc(sz * sizeof(int_extra));
+    to[i] = (int_extra*) malloc(sz * sizeof(int_extra));
 
     // initialize elements
     from[i][0] = 0;
@@ -486,13 +486,13 @@ dd_edge BuildFlipMoveHelper(
   //
   int nElements = 4 * NUM_TYPE2 + 4 * NUM_TYPE3;
   assert(nElements == 80);
-  general_int** from = (general_int**) malloc(nElements * sizeof(general_int *));
-  general_int** to = (general_int**) malloc(nElements * sizeof(general_int *));
+  int_extra** from = (int_extra**) malloc(nElements * sizeof(int_extra *));
+  int_extra** to = (int_extra**) malloc(nElements * sizeof(int_extra *));
   for (int i = 0; i < nElements; i++)
   {
     // allocate elements
-    from[i] = (general_int*) malloc(sz * sizeof(general_int));
-    to[i] = (general_int*) malloc(sz * sizeof(general_int));
+    from[i] = (int_extra*) malloc(sz * sizeof(int_extra));
+    to[i] = (int_extra*) malloc(sz * sizeof(int_extra));
 
     // initialize elements
     from[i][0] = 0;

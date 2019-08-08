@@ -42,7 +42,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
     }
 
   protected:
-    inline node_handle evaluateRaw(const dd_edge &f, const general_int* vlist) const {
+    inline node_handle evaluateRaw(const dd_edge &f, const int_extra* vlist) const {
           node_handle p = f.getNode();
           while (!isTerminalNode(p)) {
           int level = getNodeLevel(p);
@@ -85,7 +85,7 @@ namespace MEDDLY {
   template <class ENCODER, typename T>
   class mtmdd_edgemaker {
       mtmdd_forest* F;
-      const general_int* const* gvlist;
+      const int_extra* const* gvlist;
       const int* const* vlist;
       const T* values;
       int* order;
@@ -93,7 +93,7 @@ namespace MEDDLY {
       int K;
       binary_operation* unionOp;
     public:
-      mtmdd_edgemaker(mtmdd_forest* f, const general_int* const* mt, const T* v,
+      mtmdd_edgemaker(mtmdd_forest* f, const int_extra* const* mt, const T* v,
               int* o, int n, int k, binary_operation* unOp)
       {
         F = f;
@@ -116,11 +116,11 @@ namespace MEDDLY {
         K = k;
         unionOp = unOp;
       }
-      inline const general_int* gunprimed(int i) const {
+      inline const int_extra* gunprimed(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return gvlist[order[i]];
       }
-      inline general_int gunprimed(int i, int k) const {
+      inline int_extra gunprimed(int i, int k) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         MEDDLY_CHECK_RANGE(1, k, K+1);
         return gvlist[order[i]][k].getInteger();
@@ -351,7 +351,7 @@ namespace MEDDLY {
     protected:
       /// Special case for createEdge(), with only one minterm.
       inline node_handle
-      createEdgePath(int k, const general_int* _vlist, node_handle bottom)
+      createEdgePath(int k, const int_extra* _vlist, node_handle bottom)
       {
           if (bottom==0 && (!F->isQuasiReduced() || F->getTransparentNode()==ENCODER::value2handle(0))) {
             return bottom;

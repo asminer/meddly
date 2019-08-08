@@ -62,21 +62,21 @@ int main(int argc, char *argv[])
   assert(mxd != NULL);
 
   // Set up initial state array
-  general_int state1[nLevels+1] = {0, 0, DONT_CARE};
-  general_int *states[1] = { state1 };
+  int_extra state1[nLevels+1] = {0, 0, DONT_CARE};
+  int_extra *states[1] = { state1 };
   dd_edge initialStates(mdd);
-  mdd->createEdge(reinterpret_cast<general_int**>(states), 1, initialStates);
+  mdd->createEdge(reinterpret_cast<int_extra**>(states), 1, initialStates);
 
   // Create a matrix diagram to represent the next-state function
-  general_int from1[nLevels+1] = {0, DONT_CARE, 0};
-  general_int from2[nLevels+1] = {0, DONT_CARE, 0};
-  general_int to1[nLevels+1] = {0, 1, 0};
-  general_int to2[nLevels+1] = {0, 1, 1};
-  general_int *from[2] = { from1, from2 };
-  general_int *to[2] = { to1, to2 };
+  int_extra from1[nLevels+1] = {0, DONT_CARE, 0};
+  int_extra from2[nLevels+1] = {0, DONT_CARE, 0};
+  int_extra to1[nLevels+1] = {0, 1, 0};
+  int_extra to2[nLevels+1] = {0, 1, 1};
+  int_extra *from[2] = { from1, from2 };
+  int_extra *to[2] = { to1, to2 };
   dd_edge nsf(mxd);
-  mxd->createEdge(reinterpret_cast<general_int**>(from),
-      reinterpret_cast<general_int**>(to), 2, nsf);
+  mxd->createEdge(reinterpret_cast<int_extra**>(from),
+      reinterpret_cast<int_extra**>(to), 2, nsf);
 
   dd_edge reachBFS(initialStates);
   dd_edge reachDFS(initialStates);

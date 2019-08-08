@@ -80,8 +80,8 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   }
   maxBound++;
   long* temp = new long[maxBound];
-  general_int* minterm = new general_int[nVars+1];
-  general_int* mtprime = new general_int[nVars+1];
+  int_extra* minterm = new int_extra[nVars+1];
+  int_extra* mtprime = new int_extra[nVars+1];
   dd_edge** varP  = new dd_edge*[nVars+1];
   varP[0] = 0;
   dd_edge** inc   = new dd_edge*[nVars+1];
@@ -271,7 +271,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 //  Explicit RS construction
 //
 
-bool fireEvent(const char* event, const int* current, MEDDLY::general_int* next, int nVars)
+bool fireEvent(const char* event, const int* current, MEDDLY::int_extra* next, int nVars)
 {
   for (int i=nVars; i; i--) {
     if ('.' == event[i]) {
@@ -301,9 +301,9 @@ void explicitReachset(const char* const* events, int nEvents,
   if (batchsize < 1) batchsize = 256;
 
   // initialize batch memory
-  MEDDLY::general_int** minterms = new MEDDLY::general_int*[batchsize];
+  MEDDLY::int_extra** minterms = new MEDDLY::int_extra*[batchsize];
   for (b=0; b<batchsize; b++) {
-    minterms[b] = new MEDDLY::general_int[1+nVars];
+    minterms[b] = new MEDDLY::int_extra[1+nVars];
   }
   
   // unexplored states

@@ -68,7 +68,7 @@ void MEDDLY::evmdd_timesreal
 
 
 void MEDDLY::evmdd_timesreal
-::createEdge(const general_int* const* vlist, const float* terms, int N, dd_edge &e)
+::createEdge(const int_extra* const* vlist, const float* terms, int N, dd_edge &e)
 {
   // binary_operation* unionOp = getOperation(PLUS, this, this, this);
   binary_operation* unionOp = 0;  // for now

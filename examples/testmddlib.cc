@@ -79,10 +79,10 @@ int main(int argc, char *argv[])
   printf("Constructing initial set of states\n");
 #if 1
   // Create an edge in MDD forest
-  general_int** v = (general_int **) malloc(2 * sizeof(general_int*));
-  v[0] = (general_int *) malloc((N+1) * sizeof(general_int));
+  int_extra** v = (int_extra **) malloc(2 * sizeof(int_extra*));
+  v[0] = (int_extra *) malloc((N+1) * sizeof(int_extra));
   v[0][0] = 0; v[0][1] = 0; v[0][2] = 0;
-  v[1] = (general_int *) malloc((N+1) * sizeof(general_int));
+  v[1] = (int_extra *) malloc((N+1) * sizeof(int_extra));
   v[1][0] = 0; v[1][1] = 1; v[1][2] =0;
   dd_edge initial_state(states);
   states->createEdge(v, 1, initial_state);
@@ -147,12 +147,12 @@ int main(int argc, char *argv[])
   // (2, 0) -> (1, 1)
   // (x, 1) -> (x, 0)
   const int num_of_transitions = 5;
-  general_int** vlist = (general_int **) malloc(num_of_transitions * sizeof(general_int*));
-  general_int** vplist = (general_int **) malloc(num_of_transitions * sizeof(general_int*));
+  int_extra** vlist = (int_extra **) malloc(num_of_transitions * sizeof(int_extra*));
+  int_extra** vplist = (int_extra **) malloc(num_of_transitions * sizeof(int_extra*));
   for (int i = 0; i < num_of_transitions; ++i)
   {
-    vlist[i] = (general_int *) malloc((N+1) * sizeof(general_int));
-    vplist[i] = (general_int *) malloc((N+1) * sizeof(general_int));
+    vlist[i] = (int_extra *) malloc((N+1) * sizeof(int_extra));
+    vplist[i] = (int_extra *) malloc((N+1) * sizeof(int_extra));
   }
   vlist[0][0] = 0; vlist[0][1] = 0; vlist[0][2] = -2;
   vplist[0][0] = 0; vplist[0][1] = 1; vplist[0][2] = -2;

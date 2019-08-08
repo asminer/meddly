@@ -47,7 +47,7 @@ void MEDDLY::evmxd_timesreal::createEdge(float val, dd_edge &e)
 }
 
 void MEDDLY::evmxd_timesreal
-::createEdge(const general_int* const* vlist, const general_int* const* vplist,
+::createEdge(const int_extra* const* vlist, const int_extra* const* vplist,
   const float* terms, int N, dd_edge &e)
 {
   binary_operation* unionOp = getOperation(PLUS, this, this, this);
@@ -102,7 +102,7 @@ void MEDDLY::evmxd_timesreal
 }
 
 void MEDDLY::evmxd_timesreal
-::evaluate(const dd_edge &f, const general_int* vlist, const general_int* vplist,
+::evaluate(const dd_edge &f, const int_extra* vlist, const int_extra* vplist,
   float &term) const
 {
   evaluateT<OP, float>(f, vlist, vplist, term);

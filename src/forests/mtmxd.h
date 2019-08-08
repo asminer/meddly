@@ -53,8 +53,8 @@ class MEDDLY::mtmxd_forest : public mt_forest {
     }
 
   protected:
-      inline node_handle evaluateRaw(const dd_edge &f, const general_int* vlist,
-        const general_int* vplist) const
+      inline node_handle evaluateRaw(const dd_edge &f, const int_extra* vlist,
+        const int_extra* vplist) const
       {
         node_handle p = f.getNode();
         while (!isTerminalNode(p)) {
@@ -127,8 +127,8 @@ namespace MEDDLY {
   template <class ENCODER, typename T>
   class mtmxd_edgemaker {
       mtmxd_forest* F;
-      const general_int* const* gvulist;
-      const general_int* const* gvplist;
+      const int_extra* const* gvulist;
+      const int_extra* const* gvplist;
       const int* const* vulist;
       const int* const* vplist;
       const T* values;
@@ -138,7 +138,7 @@ namespace MEDDLY {
       binary_operation* unionOp;
     public:
       mtmxd_edgemaker(mtmxd_forest* f, 
-        const general_int* const* mt, const general_int* const* mp, const T* v, int* o, int n,
+        const int_extra* const* mt, const int_extra* const* mp, const T* v, int* o, int n,
         int k, binary_operation* unOp) 
       {
         F = f;
@@ -164,20 +164,20 @@ namespace MEDDLY {
         K = k;
         unionOp = unOp;
       }
-      inline const general_int* gunprimed(int i) const {
+      inline const int_extra* gunprimed(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return gvulist[order[i]];
       }
-      inline general_int gunprimed(int i, int k) const {
+      inline int_extra gunprimed(int i, int k) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         MEDDLY_CHECK_RANGE(1, k, K+1);
         return gvulist[order[i]][k];
       }
-      inline const general_int* gprimed(int i) const {
+      inline const int_extra* gprimed(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return gvplist[order[i]];
       }
-      inline general_int gprimed(int i, int k) const {
+      inline int_extra gprimed(int i, int k) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         MEDDLY_CHECK_RANGE(1, k, K+1);
         return gvplist[order[i]][k];
@@ -956,7 +956,7 @@ namespace MEDDLY {
 
 
       /// Special case for createEdge(), with only one minterm.
-      node_handle createEdgePath(int k, const general_int* _vlist, const general_int* _vplist, node_handle next)
+      node_handle createEdgePath(int k, const int_extra* _vlist, const int_extra* _vplist, node_handle next)
       {
         MEDDLY_DCASSERT(F->isForRelations());
 

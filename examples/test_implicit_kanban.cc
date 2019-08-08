@@ -178,10 +178,10 @@ int main(int argc, const char** argv)
     p.setPessimistic();
     
     //INITIAL STATE
-    general_int* initialState;
-    initialState = new general_int[PLACES + 1];
-    for(int g = 1;g <= PLACES;g++) initialState[g] = general_int(0);
-    initialState[p1_position]=initialState[p13_position]=initialState[p5_position]=initialState[p9_position]=general_int(N);
+    int_extra* initialState;
+    initialState = new int_extra[PLACES + 1];
+    for(int g = 1;g <= PLACES;g++) initialState[g] = int_extra(0);
+    initialState[p1_position]=initialState[p13_position]=initialState[p5_position]=initialState[p9_position]=int_extra(N);
     
     method ='i';
     std::cout<<"\n********************";

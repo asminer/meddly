@@ -57,7 +57,7 @@ MEDDLY::enumerator::iterator::iterator(const expert_forest* f)
     path = rawpath + N;
     nzp = rawnzp + N;
     index = rawindex + N;
-    gindex= new general_int[N+1];
+    gindex= new int_extra[N+1];
     minLevel = -N;
   } else {
     rawpath = new unpacked_node[N+1];
@@ -66,7 +66,7 @@ MEDDLY::enumerator::iterator::iterator(const expert_forest* f)
     path = rawpath;
     nzp = rawnzp;
     index = rawindex;
-    gindex= new general_int[N+1];
+    gindex= new int_extra[N+1];
     minLevel = 1;
   }
   level_change = N+1;
@@ -90,7 +90,7 @@ bool MEDDLY::enumerator::iterator::start(const dd_edge &e, const int* m)
 {
   throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 }
-bool MEDDLY::enumerator::iterator::startGI(const dd_edge &e, const general_int* m)
+bool MEDDLY::enumerator::iterator::startGI(const dd_edge &e, const int_extra* m)
 {
   throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 }
@@ -110,12 +110,12 @@ const int* MEDDLY::enumerator::iterator::getPrimedAssignments()
   return prindex; 
 }
 
-const MEDDLY::general_int* MEDDLY::enumerator::iterator::getPrimedGIAssignments()
+const MEDDLY::int_extra* MEDDLY::enumerator::iterator::getPrimedGIAssignments()
 {
   if (0==F) return 0;
   if (!F->isForRelations()) return 0;
   if (0==gprindex) {
-    gprindex = new general_int[1+maxLevel];
+    gprindex = new int_extra[1+maxLevel];
     gprindex[0] = 0;
   }
   MEDDLY_DCASSERT(index);
@@ -225,7 +225,7 @@ void MEDDLY::enumerator::startFixedRow(const dd_edge &e, const int* minterm)
   is_valid = I->start(e, minterm);
 }
 
-void MEDDLY::enumerator::startFixedRow(const dd_edge &e, const general_int* minterm)
+void MEDDLY::enumerator::startFixedRow(const dd_edge &e, const int_extra* minterm)
 {
   if (0==I) return;
   if (ROW_FIXED != T) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
@@ -241,7 +241,7 @@ void MEDDLY::enumerator::startFixedColumn(const dd_edge &e, const int* minterm)
   is_valid = I->start(e, minterm);
 }
 
-void MEDDLY::enumerator::startFixedColumn(const dd_edge &e, const general_int* minterm)
+void MEDDLY::enumerator::startFixedColumn(const dd_edge &e, const int_extra* minterm)
 {
   if (0==I) return;
   if (COL_FIXED != T) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);

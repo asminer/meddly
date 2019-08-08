@@ -259,19 +259,19 @@ void moveBall(int oldSlot, int newSlot, bool changing[], dd_edge &out)
   //
   // Build minterm arrays, if needed (save for later)
   // 
-  static general_int** fromterms = 0;
-  static general_int** toterms = 0;
+  static int_extra** fromterms = 0;
+  static int_extra** toterms = 0;
 
   if (0==fromterms) {
-    fromterms = new general_int*[COLORS];
+    fromterms = new int_extra*[COLORS];
     for (int i=0; i<COLORS; i++) {
-      fromterms[i] = new general_int[1+LEVELS];
+      fromterms[i] = new int_extra[1+LEVELS];
     }
   }
   if (0==toterms) {
-    toterms = new general_int*[COLORS];
+    toterms = new int_extra*[COLORS];
     for (int i=0; i<COLORS; i++) {
-      toterms[i] = new general_int[1+LEVELS];
+      toterms[i] = new int_extra[1+LEVELS];
     }
   }
 
@@ -529,7 +529,7 @@ int main(int argc, const char** argv)
   dd_edge initial(mdd);
   for (int i=0; i<leftring; i++)  scratch[leftvar[i]]   = leftinit[i];
   for (int i=0; i<rightring; i++) scratch[rightvar[i]]  = rightinit[i];
-  const general_int* foo = (general_int*)scratch;
+  const int_extra* foo = (int_extra*)scratch;
   mdd->createEdge(&foo, 1, initial);
 
   //

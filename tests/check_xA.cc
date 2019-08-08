@@ -34,13 +34,13 @@ using namespace MEDDLY;
 
 const int vars[] = {10, 10, 10};
 
-general_int R[] = {0, 3, 1, 4};
-general_int N[] = {0, 1, 4, 9};
-general_int S[] = {0, 2, 6, 5};
+int_extra R[] = {0, 3, 1, 4};
+int_extra N[] = {0, 1, 4, 9};
+int_extra S[] = {0, 2, 6, 5};
 
-general_int RR[] = {0, 3, 1, 4};
-general_int NN[] = {0, 1, 4, 9};
-general_int SS[] = {0, 2, 6, 5};
+int_extra RR[] = {0, 3, 1, 4};
+int_extra NN[] = {0, 1, 4, 9};
+int_extra SS[] = {0, 2, 6, 5};
 
 // State indexes:
 //    R : 0
@@ -51,7 +51,7 @@ bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
 {
   // Build state indexes
 
-  general_int* sslist[] = { RR, NN, SS };
+  int_extra* sslist[] = { RR, NN, SS };
   long indexes[] = { 0, 1, 2 };
 
   try {
@@ -69,10 +69,10 @@ bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
 
   // Build matrix elements
 
-  general_int* fromlist[] = {
+  int_extra* fromlist[] = {
     R,    R,    R,    N,    N,    S,    S,    S
   };
-  general_int* tolist[] = {
+  int_extra* tolist[] = {
     R,    N,    S,    R,    S,    R,    N,    S
   };
   float problist[] = {
@@ -143,7 +143,7 @@ bool impl_xA_check(dd_edge &x, const dd_edge &P)
   printf("xA multiplications (implicit):\n");
 
   forest* f = x.getForest();
-  general_int* pinit[] = { NN };
+  int_extra* pinit[] = { NN };
   float v=1;
   f->createEdge(pinit, &v, 1, x);
 
@@ -214,7 +214,7 @@ bool impl_Ax_check(dd_edge &x, const dd_edge &P)
   printf("Ax multiplications (implicit):\n");
 
   forest* f = x.getForest();
-  general_int* pinit[] = { NN };
+  int_extra* pinit[] = { NN };
   float v=1;
   f->createEdge(pinit, &v, 1, x);
 

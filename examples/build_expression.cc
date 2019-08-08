@@ -123,10 +123,10 @@ int main(int argc, char *argv[])
   incrY1.show(mout, 2);
   
   dd_edge postImage(states);
-  general_int element[] = {general_int(0), general_int(0), general_int(0), general_int(0), general_int(0)};
-  general_int* elements[] = { element };
+  int_extra element[] = {int_extra(0), int_extra(0), int_extra(0), int_extra(0), int_extra(0)};
+  int_extra* elements[] = { element };
   element_type terms[] = {element_type(1)};
-  states->createEdge((general_int**)elements, (element_type*)terms, 1, postImage);
+  states->createEdge((int_extra**)elements, (element_type*)terms, 1, postImage);
   // postImage *= expr;
 
   fprintf(stdout, "-----------------------------------------------------\n");
@@ -272,10 +272,10 @@ dd_edge buildMultiplierForVariable(forest* mtmxd, int level)
 {
   assert(mtmxd != 0);
   int nLevels = mtmxd->getDomain()->getNumVariables() + 1;
-  std::vector<general_int> from(nLevels, -2);
-  std::vector<general_int> to(nLevels, -2);
-  general_int* fromArray[] = {&from[0]};
-  general_int* toArray[] = {&to[0]};
+  std::vector<int_extra> from(nLevels, -2);
+  std::vector<int_extra> to(nLevels, -2);
+  int_extra* fromArray[] = {&from[0]};
+  int_extra* toArray[] = {&to[0]};
   element_type terms[] = {element_type(1)};
 
   from[0] = 0;

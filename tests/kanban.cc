@@ -65,7 +65,7 @@ long buildReachset(int N, bool useSat)
   int* initial = new int[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
-  general_int* ginitial = new general_int[17];
+  int_extra* ginitial = new int_extra[17];
   for (int i=16; i; i--) ginitial[i] = initial[i];
 
   forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);

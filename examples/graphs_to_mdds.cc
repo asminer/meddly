@@ -105,11 +105,11 @@ int main(int argv, char *argc[])
   // Create an element to insert in the MDD
   // Note that this is of size (N + 1), since [0] is a special level handle
   // dedicated to terminal nodes.
-  general_int* elementList[1];
-  elementList[0] = new general_int[N + 1];
+  int_extra* elementList[1];
+  elementList[0] = new int_extra[N + 1];
 
   // First element
-  elementList[0][1] = general_int(0); elementList[0][2] = general_int(0); elementList[0][3] = general_int(0);
+  elementList[0][1] = int_extra(0); elementList[0][2] = int_extra(0); elementList[0][3] = int_extra(0);
   dd_edge first(mdd);
   mdd->createEdge(elementList, 1, first);
   std::cout << "\nCreated element [0 0 0]: "
@@ -129,12 +129,12 @@ int main(int argv, char *argc[])
   second.show(meddlyout, 2);
 
   // Third, Fourth, Fifth and Sixth elements are created at once
-  general_int* eList[4];
-  for (int i = 0; i < 4; ++i) { eList[i] = new general_int[N + 1]; }
-  eList[0][1] = general_int(1); eList[0][2] = general_int(0); eList[0][3] = general_int(0);
-  eList[1][1] = general_int(1); eList[1][2] = general_int(0); eList[1][3] = general_int(1);
-  eList[2][1] = general_int(1); eList[2][2] = general_int(1); eList[2][3] = general_int(1);
-  eList[3][1] = general_int(2); eList[3][2] = general_int(1); eList[3][3] = general_int(1);
+  int_extra* eList[4];
+  for (int i = 0; i < 4; ++i) { eList[i] = new int_extra[N + 1]; }
+  eList[0][1] = int_extra(1); eList[0][2] = int_extra(0); eList[0][3] = int_extra(0);
+  eList[1][1] = int_extra(1); eList[1][2] = int_extra(0); eList[1][3] = int_extra(1);
+  eList[2][1] = int_extra(1); eList[2][2] = int_extra(1); eList[2][3] = int_extra(1);
+  eList[3][1] = int_extra(2); eList[3][2] = int_extra(1); eList[3][3] = int_extra(1);
   dd_edge theRest(mdd);
   mdd->createEdge(eList, 4, theRest);
   std::cout << "\nCreated elements [1 0 0], [1 0 1], [1 1 1], [2 1 1]: "

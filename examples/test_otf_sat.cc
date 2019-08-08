@@ -289,9 +289,9 @@ void pn::buildTransition() {
 
 void pn::buildInitialState() {
   initial_state = new dd_edge(mdd);
-  general_int init_state[] = {general_int(0), general_int(0), general_int(0), general_int(0)};
-  general_int* init[] = {init_state};
-  mdd->createEdge((general_int**)(&init[0]), 1, *initial_state);
+  int_extra init_state[] = {int_extra(0), int_extra(0), int_extra(0), int_extra(0)};
+  int_extra* init[] = {init_state};
+  mdd->createEdge((int_extra**)(&init[0]), 1, *initial_state);
   assert(initial_state);
   int index = -1;
   assert(addValue(A_level, n_tokens, index));

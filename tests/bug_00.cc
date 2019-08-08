@@ -14,7 +14,7 @@ int main()
 
   // Initialize domain
   int* tmp = new int[4];
-  general_int* gtmp = new  general_int[4];
+  int_extra* gtmp = new  int_extra[4];
 
   tmp[0] = 3;
   tmp[1] = 3;

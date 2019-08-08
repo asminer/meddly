@@ -49,7 +49,7 @@ void MEDDLY::evmxd_pluslong::createEdge(long val, dd_edge &e)
 }
 
 void MEDDLY::evmxd_pluslong
-::createEdge(const general_int* const* vlist, const general_int* const* vplist,
+::createEdge(const int_extra* const* vlist, const int_extra* const* vplist,
   const long* terms, int N, dd_edge &e)
 {
   // XXX: Requires UnionPlus
@@ -107,7 +107,7 @@ void MEDDLY::evmxd_pluslong
 }
 
 void MEDDLY::evmxd_pluslong
-::evaluate(const dd_edge &f, const general_int* vlist, const general_int* vplist,
+::evaluate(const dd_edge &f, const int_extra* vlist, const int_extra* vplist,
   long &term) const
 {
   evaluateT<OP, long>(f, vlist, vplist, term);

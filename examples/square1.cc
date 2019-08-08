@@ -312,11 +312,11 @@ int main()
       scratch[i] = 0;
     }
   }
-  general_int tempscratch[1+Vars];
+  int_extra tempscratch[1+Vars];
   for (int i=0; i<1+Vars; i++){
     tempscratch[i]=scratch[i];
   }
-  const general_int* foo = tempscratch;
+  const int_extra* foo = tempscratch;
   mdd->createEdge(&foo, 1, initial);
 
   //

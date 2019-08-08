@@ -40,7 +40,7 @@ void MEDDLY::mt_mxd_int::createEdge(long term, dd_edge& e)
 }
 
 void MEDDLY::mt_mxd_int
-::createEdge(const general_int* const* vlist, const general_int* const* vplist, const long* terms, int N, dd_edge &e)
+::createEdge(const int_extra* const* vlist, const int_extra* const* vplist, const long* terms, int N, dd_edge &e)
 {
   binary_operation* unionOp = getOperation(PLUS, this, this, this);
   enlargeStatics(N);
@@ -50,17 +50,17 @@ void MEDDLY::mt_mxd_int
   int num_vars=getNumVariables();
 
   // Create vlist and vplist following the mapping between variable and level
-  general_int** ordered_vlist=static_cast<general_int**>(malloc(N*sizeof(general_int*)+(num_vars+1)*N*sizeof(general_int)));
+  int_extra** ordered_vlist=static_cast<int_extra**>(malloc(N*sizeof(int_extra*)+(num_vars+1)*N*sizeof(int_extra)));
   if(ordered_vlist==0){
 	  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
-  general_int** ordered_vplist=static_cast<general_int**>(malloc(N*sizeof(general_int*)+(num_vars+1)*N*sizeof(general_int)));
+  int_extra** ordered_vplist=static_cast<int_extra**>(malloc(N*sizeof(int_extra*)+(num_vars+1)*N*sizeof(int_extra)));
   if(ordered_vplist==0){
 	  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 
-  ordered_vlist[0]=reinterpret_cast<general_int*>(&ordered_vlist[N]);
-  ordered_vplist[0]=reinterpret_cast<general_int*>(&ordered_vplist[N]);
+  ordered_vlist[0]=reinterpret_cast<int_extra*>(&ordered_vlist[N]);
+  ordered_vplist[0]=reinterpret_cast<int_extra*>(&ordered_vplist[N]);
   for(int i=1; i<N; i++) {
 	  ordered_vlist[i]=(ordered_vlist[i-1]+num_vars+1);
 	  ordered_vplist[i]=(ordered_vplist[i-1]+num_vars+1);
@@ -143,8 +143,8 @@ createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 #endif
 }
 
-void MEDDLY::mt_mxd_int::evaluate(const dd_edge &f, const general_int* vlist,
-  const general_int* vplist, long &term) const
+void MEDDLY::mt_mxd_int::evaluate(const dd_edge &f, const int_extra* vlist,
+  const int_extra* vplist, long &term) const
 {
   term = int_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));
 }

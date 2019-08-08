@@ -110,7 +110,7 @@ op_info* getOp(forest* f, operation* op)
 // This function assumes that each element[i] represents
 // an element in the given MTMDD.
 dd_edge test_evmdd(forest* evmdd, const binary_opname* opCode,
-    general_int** element, element_type* terms, int nElements)
+    int_extra** element, element_type* terms, int nElements)
 {
   // A = first nElements/2 elements combined using +.
   // B = second nElements/2 elements combined using +.
@@ -148,7 +148,7 @@ dd_edge test_evmdd(forest* evmdd, const binary_opname* opCode,
 
 
 dd_edge test_evmdd_plus(forest* evmdd,
-    general_int** element, element_type* terms, int nElements)
+    int_extra** element, element_type* terms, int nElements)
 {
   // Adds all elements sequentially
 
@@ -189,7 +189,7 @@ void printElements(int** elements, element_type* terms, int nElements,
   }
 }
 
-void printElements(general_int** elements, element_type* terms, int nElements,
+void printElements(int_extra** elements, element_type* terms, int nElements,
     int nVariables)
 {
   // print elements
@@ -279,13 +279,13 @@ int main(int argc, char *argv[])
 #endif
 
   // create the elements randomly
-  general_int** element = (general_int **) malloc(nElements * sizeof(general_int *));
+  int_extra** element = (int_extra **) malloc(nElements * sizeof(int_extra *));
   element_type* terms =
     (element_type *) malloc(nElements * sizeof(element_type));
 
   for (int i = 0; i < nElements; ++i)
   {
-    element[i] = (general_int *) malloc((nVariables + 1) * sizeof(general_int));
+    element[i] = (int_extra *) malloc((nVariables + 1) * sizeof(int_extra));
     element[i][0] = 0;
     for (int j = nVariables; j > 0; --j)
     {

@@ -128,7 +128,7 @@ namespace MEDDLY {
   class memory_manager_style;
   class node_storage_style;
 
-  class general_int;
+  class int_extra;
   class variable;
   class variable_order;
   class domain;
@@ -1628,7 +1628,7 @@ class MEDDLY::forest {
 
         @throws       TYPE_MISMATCH, if the forest's range is not BOOLEAN.
     */
-//    virtual void createEdgeForVar(general_int vh, bool vp, const bool* terms, dd_edge& a);
+//    virtual void createEdgeForVar(int_extra vh, bool vp, const bool* terms, dd_edge& a);
 
     virtual void createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a);
 
@@ -1658,7 +1658,7 @@ class MEDDLY::forest {
         
         @throws       TYPE_MISMATCH, if the forest's range is not INTEGER.
     */
-//    virtual void createEdgeForVar(general_int vh, bool vp, const long* terms, dd_edge& a);
+//    virtual void createEdgeForVar(int_extra vh, bool vp, const long* terms, dd_edge& a);
 
     virtual void createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a);
 
@@ -1688,7 +1688,7 @@ class MEDDLY::forest {
 
         @throws       TYPE_MISMATCH, if the forest's range is not REAL.
     */
-//    virtual void createEdgeForVar(general_int vh, bool vp, const float* terms, dd_edge& a);
+//    virtual void createEdgeForVar(int_extra vh, bool vp, const float* terms, dd_edge& a);
 
     virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
 
@@ -1714,7 +1714,7 @@ class MEDDLY::forest {
         @param  a     return a handle to a node in the forest such that
                       f(v_1, ..., vh=i, ..., v_n) = i for 0 <= i < size(vh).
     */
-//    void createEdgeForVar(general_int vh, bool pr, dd_edge& a);
+//    void createEdgeForVar(int_extra vh, bool pr, dd_edge& a);
 
     void createEdgeForVar(int vh, bool pr, dd_edge& a);
 
@@ -1734,7 +1734,7 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN, 
                         or the forest is for relations.
     */
-    virtual void createEdge(const general_int* const* vlist, int N, dd_edge &e);
+    virtual void createEdge(const int_extra* const* vlist, int N, dd_edge &e);
 
     virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
 
@@ -1756,7 +1756,7 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER,
                         or the forest is for relations.
     */
-    virtual void createEdge(const general_int* const* vlist, const long* terms, int N, dd_edge &e);
+    virtual void createEdge(const int_extra* const* vlist, const long* terms, int N, dd_edge &e);
 
     virtual void createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e);
 
@@ -1778,7 +1778,7 @@ class MEDDLY::forest {
                         the range type of the forest is not REAL,
                         or the forest is for relations.
     */
-    virtual void createEdge(const general_int* const* vlist, const float* terms, int N, dd_edge &e);
+    virtual void createEdge(const int_extra* const* vlist, const float* terms, int N, dd_edge &e);
 
     virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
 
@@ -1811,7 +1811,7 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN, 
                         or the forest is not for relations.
     */
-    virtual void createEdge(const general_int* const* vlist, const general_int* const* vplist, int N, dd_edge &e);
+    virtual void createEdge(const int_extra* const* vlist, const int_extra* const* vplist, int N, dd_edge &e);
 
     virtual void createEdge(const int* const* vlist, const int* const* vplist, int N, dd_edge &e);
 
@@ -1845,7 +1845,7 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER, 
                         or the forest is not for relations.
     */
-    virtual void createEdge(const general_int* const* vlist, const general_int* const* vplist,
+    virtual void createEdge(const int_extra* const* vlist, const int_extra* const* vplist,
             const long* terms, int N, dd_edge &e);
 
     virtual void createEdge(const int* const* vlist, const int* const* vplist,
@@ -1881,7 +1881,7 @@ class MEDDLY::forest {
                         the range type of the forest is not REAL, 
                         or the forest is not for relations.
     */
-    virtual void createEdge(const general_int* const* vlist, const general_int* const* vplist,
+    virtual void createEdge(const int_extra* const* vlist, const int_extra* const* vplist,
             const float* terms, int N, dd_edge &e);
     virtual void createEdge(const int* const* vlist, const int* const* vplist,
         const float* terms, int N, dd_edge &e);
@@ -1928,7 +1928,7 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN, 
                         or the forest is for relations.
     */
-    virtual void evaluate(const dd_edge &f, const general_int* vlist, bool &term)
+    virtual void evaluate(const dd_edge &f, const int_extra* vlist, bool &term)
           const;
     virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
@@ -1944,7 +1944,7 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER,
                         or the forest is for relations.
     */
-    virtual void evaluate(const dd_edge &f, const general_int* vlist, long &term)
+    virtual void evaluate(const dd_edge &f, const int_extra* vlist, long &term)
           const;
     //deprecated
     virtual void evaluate(const dd_edge &f, const int* vlist, long &term)
@@ -1961,7 +1961,7 @@ class MEDDLY::forest {
                         the range type of the forest is not REAL,
                         or the forest is for relations.
     */
-    virtual void evaluate(const dd_edge &f, const general_int* vlist, float &term)
+    virtual void evaluate(const dd_edge &f, const int_extra* vlist, float &term)
           const;
     virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
       const;
@@ -1982,8 +1982,8 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN, 
                         or the forest is not for relations.
     */
-    virtual void evaluate(const dd_edge& f, const general_int* vlist,
-         const general_int* vplist, bool &term) const;
+    virtual void evaluate(const dd_edge& f, const int_extra* vlist,
+         const int_extra* vplist, bool &term) const;
 
 //    virtual void evaluate(const dd_edge& f, const int* vlist,
 //      const int* vplist, bool &term) const;
@@ -2004,8 +2004,8 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER, 
                         or the forest is not for relations.
     */
-    virtual void evaluate(const dd_edge& f, const general_int* vlist,
-          const general_int* vplist, long &term) const;
+    virtual void evaluate(const dd_edge& f, const int_extra* vlist,
+          const int_extra* vplist, long &term) const;
 //    virtual void evaluate(const dd_edge& f, const int* vlist,
 //      const int* vplist, long &term) const;
 
@@ -2025,8 +2025,8 @@ class MEDDLY::forest {
                         the range type of the forest is not REAL, 
                         or the forest is not for relations.
     */
-    virtual void evaluate(const dd_edge& f, const general_int* vlist,
-          const general_int* vplist, float &term) const;
+    virtual void evaluate(const dd_edge& f, const int_extra* vlist,
+          const int_extra* vplist, float &term) const;
 //    virtual void evaluate(const dd_edge& f, const int* vlist,
 //      const int* vplist, float &term) const;
 
@@ -2213,7 +2213,7 @@ class MEDDLY::forest {
 };
 
 
-class MEDDLY::general_int{
+class MEDDLY::int_extra{
 private:
   enum{
     integer,
@@ -2223,26 +2223,26 @@ private:
   }type;
   long value;
 public:
-  general_int(long _value){
+  int_extra(long _value){
     this->type=integer;
     value=_value;
   };
-  general_int(int _value){
+  int_extra(int _value){
       this->type=integer;
       value=_value;
     };
-  general_int(double _value){
+  int_extra(double _value){
         this->type=integer;
         value=(long)_value;
       };
-  general_int(float _value){
+  int_extra(float _value){
           this->type=integer;
           value=(long)_value;
         };
-  general_int(){
+  int_extra(){
     this->type=undefined;
   };
-  general_int(bool infty){
+  int_extra(bool infty){
     if(infty){
       this->type=positive_infinity;
     }else
@@ -2274,11 +2274,11 @@ public:
   bool isNegativeInfinity(){
         return type==negative_infinity;
       }
-  inline general_int operator- (){
+  inline int_extra operator- (){
     value=-value;
     return this;
   }
-  inline general_int& operator- (const general_int& rhs){
+  inline int_extra& operator- (const int_extra& rhs){
 
             type=rhs.type;
             value-=rhs.value;
@@ -2286,42 +2286,42 @@ public:
 
         };
 
-  /*inline general_int& operator+ (const general_int& rhs){
+  /*inline int_extra& operator+ (const int_extra& rhs){
 
              type=rhs.type;
              value+=rhs.value;
              return *this;
 
          };*/
-  inline general_int& operator+ (const int& rhs){
+  inline int_extra& operator+ (const int& rhs){
 
                type=integer;
                value+=rhs;
                return *this;
 
            };
- /* inline general_int operator= (const general_int& rhs){
+ /* inline int_extra operator= (const int_extra& rhs){
 
           type=rhs.type;
           value=rhs.value;
           return this;
 
       };*/
-  inline general_int& operator= (const int& rhs){
+  inline int_extra& operator= (const int& rhs){
 
             type=integer;
             value=rhs;
             return *this;
 
         };
-  inline general_int& operator= (const int* rhs){
+  inline int_extra& operator= (const int* rhs){
 
               type=integer;
               value=*rhs;
               return *this;
 
           };
-  inline general_int operator+= (const general_int& rhs){
+  inline int_extra operator+= (const int_extra& rhs){
             type=rhs.type;
             value+=rhs.value;
             return this;
@@ -2337,7 +2337,7 @@ public:
             return false;
 
     };
-  inline bool operator< (const general_int& rhs){
+  inline bool operator< (const int_extra& rhs){
     if(rhs.type==positive_infinity){
         if(this->type==integer ||this->type==negative_infinity)
       return true;
@@ -2355,7 +2355,7 @@ public:
     }
     return false;
   };
-  inline bool operator> (const general_int& rhs){
+  inline bool operator> (const int_extra& rhs){
     if(this->type==positive_infinity){
         if(rhs.type==integer || rhs.type==negative_infinity)
       return true;
@@ -2373,7 +2373,7 @@ public:
     }
     return false;
   };
-  inline bool operator<=(const general_int& rhs){
+  inline bool operator<=(const int_extra& rhs){
     if(rhs.type==positive_infinity){
         if(this->type==integer || this->type==negative_infinity)
       return true;
@@ -2391,7 +2391,7 @@ public:
     }
     return false;
   };
-  inline bool operator>=(const general_int& rhs){
+  inline bool operator>=(const int_extra& rhs){
     if(this->type==positive_infinity){
         if(rhs.type==integer || rhs.type==negative_infinity)
       return true;
@@ -2409,7 +2409,7 @@ public:
     }
     return false;
    };
-  inline bool operator==(const general_int& rhs){
+  inline bool operator==(const int_extra& rhs){
 
     if((this->type==positive_infinity &&rhs.type==positive_infinity)||
         (this->type==negative_infinity &&rhs.type==negative_infinity)){
@@ -2909,7 +2909,7 @@ class MEDDLY::enumerator {
 
         virtual bool start(const dd_edge &e);
         virtual bool start(const dd_edge &e, const int* m);
-        virtual bool startGI(const dd_edge &e, const general_int* m);
+        virtual bool startGI(const dd_edge &e, const int_extra* m);
 
         virtual bool next() = 0;
 
@@ -2923,14 +2923,14 @@ class MEDDLY::enumerator {
             unprimed variable, and index -i for the primed variable.
         */
         const int* getAssignments() const;
-        const MEDDLY::general_int* getGIAssignments() const;
+        const MEDDLY::int_extra* getGIAssignments() const;
         /** Get primed assignments.
             It is much faster to use getAssigments()
             and look at the negative indexes;
             however, this works.
         */
         const int* getPrimedAssignments();
-        const general_int* getPrimedGIAssignments();
+        const int_extra* getPrimedGIAssignments();
 
         /// For integer-ranged edges, get the current non-zero value.
         virtual void getValue(int& edgeValue) const;
@@ -2954,7 +2954,7 @@ class MEDDLY::enumerator {
         // Path indexes
         int*      rawindex;
         int*      index;  // rawindex, shifted so we can use index[-k]
-        general_int* gindex;
+        int_extra* gindex;
         // 
         int       minLevel; // 1 or -#vars, depending.
         int       maxLevel; // #vars
@@ -2964,7 +2964,7 @@ class MEDDLY::enumerator {
       private:
         // Used only by getPrimedAssignments.
         int*      prindex;
-        general_int*      gprindex;
+        int_extra*      gprindex;
     };
 
   public:
@@ -3014,7 +3014,7 @@ class MEDDLY::enumerator {
                             assignment for (unprimed) variable k.
     */
     void startFixedRow(const dd_edge &e, const int* minterm);
-    void startFixedRow(const dd_edge &e, const general_int* minterm);
+    void startFixedRow(const dd_edge &e, const int_extra* minterm);
     /** Start iterating through edge e.
         The primed variables will be fixed to
         the given values.
@@ -3025,7 +3025,7 @@ class MEDDLY::enumerator {
                             assignment for (unprimed) variable k.
     */
     void startFixedColumn(const dd_edge &e, const int* minterm);
-    void startFixedColumn(const dd_edge &e, const general_int* minterm);
+    void startFixedColumn(const dd_edge &e, const int_extra* minterm);
 
 
     /** Get the current variable assignments.
@@ -3033,11 +3033,11 @@ class MEDDLY::enumerator {
         unprimed variable, and index -i for the primed variable.
     */
     const int* getAssignments() const;
-    const general_int* getGIAssignments() const;
+    const int_extra* getGIAssignments() const;
 
     /// Get the current primed variable assignments.
     const int* getPrimedAssignments() const;
-    const general_int* getPrimedGIAssignments() const;
+    const int_extra* getPrimedGIAssignments() const;
 
     void getValue(int &v) const;
     void getValue(long &v) const;

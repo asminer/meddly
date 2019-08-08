@@ -97,18 +97,18 @@ int main(int argc, char *argv[])
   timer mallocTimer;
   long mallocTime = 0;
 
-  general_int** elements = (general_int **) malloc(nElements * sizeof(general_int *));
+  int_extra** elements = (int_extra **) malloc(nElements * sizeof(int_extra *));
   for (int i = 0; i < nElements; ++i)
   {
     mallocTimer.note_time();
-    elements[i] = (general_int *) malloc((nVariables + 1) * sizeof(general_int));
+    elements[i] = (int_extra *) malloc((nVariables + 1) * sizeof(int_extra));
     mallocTimer.note_time();
     mallocTime += mallocTimer.get_last_interval();
 
-    elements[i][0] = general_int(0);
+    elements[i][0] = int_extra(0);
     for (int j = nVariables; j >= 1; --j)
     {
-      elements[i][j] = general_int(float(variableBound) * rand() / (RAND_MAX + 1.0));
+      elements[i][j] = int_extra(float(variableBound) * rand() / (RAND_MAX + 1.0));
       assert(elements[i][j] >= 0 && elements[i][j] < variableBound);
     }
     // print element[i]

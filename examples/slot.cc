@@ -197,7 +197,7 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, forest::logg
   // Build initial state
   //
   if (LOG) LOG->newPhase(mdd, "Building initial state");
-  general_int* ginitial = new general_int[1+N*8];
+  int_extra* ginitial = new int_extra[1+N*8];
   for (int i=N*8; i; i--) ginitial[i] = 0;
   int* initial = new int[1+N*8];
   for (int i=N*8; i; i--) initial[i] = 0;

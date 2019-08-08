@@ -72,13 +72,13 @@ int main(int argc, char *argv[])
   timer mallocTimer;
   long mallocTime = 0;
 
-  general_int** elements = (general_int **) malloc(nElements * sizeof(general_int *));
-  general_int** pelements = (general_int **) malloc(nElements * sizeof(general_int *));
+  int_extra** elements = (int_extra **) malloc(nElements * sizeof(int_extra *));
+  int_extra** pelements = (int_extra **) malloc(nElements * sizeof(int_extra *));
   for (int i = 0; i < nElements; ++i)
   {
     mallocTimer.note_time();
-    elements[i] = (general_int *) malloc((nVariables + 1) * sizeof(general_int));
-    pelements[i] = (general_int *) malloc((nVariables + 1) * sizeof(general_int));
+    elements[i] = (int_extra *) malloc((nVariables + 1) * sizeof(int_extra));
+    pelements[i] = (int_extra *) malloc((nVariables + 1) * sizeof(int_extra));
     mallocTimer.note_time();
     mallocTime += mallocTimer.get_last_interval();
 

@@ -33,12 +33,12 @@ using namespace MEDDLY;
 // #define DEBUG_SEGV
 
 int vars[] = {4, 4, 4, 4, 4, 4};
-general_int dontcare[] = {0, -1, -1, -1, -1, -1, -1};
-general_int minterm[7];
-general_int gminterm[7];
-general_int* mtaddr[] = { minterm };
-general_int* dcaddr[] = { dontcare };
-general_int* gmtaddr[] = { gminterm };
+int_extra dontcare[] = {0, -1, -1, -1, -1, -1, -1};
+int_extra minterm[7];
+int_extra gminterm[7];
+int_extra* mtaddr[] = { minterm };
+int_extra* dcaddr[] = { dontcare };
+int_extra* gmtaddr[] = { gminterm };
 
 
 long seed = -1;

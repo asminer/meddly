@@ -102,7 +102,7 @@ op_info* getOp(forest* f, old_operation* op)
 // This function assumes that each element[i] represents
 // an element in the given MTMDD.
 dd_edge test_mtmdd(forest* mtmdd, const binary_opname* opCode,
-    general_int** element, element_type* terms, int nElements)
+    int_extra** element, element_type* terms, int nElements)
 {
   // A = first nElements/2 elements combined using +.
   // B = second nElements/2 elements combined using +.
@@ -195,17 +195,17 @@ int main(int argc, char *argv[])
       nVariables, variableBound, nElements);
 
   // create the elements randomly
-  general_int** element = (general_int **) malloc(nElements * sizeof(general_int *));
+  int_extra** element = (int_extra **) malloc(nElements * sizeof(int_extra *));
   element_type* terms =
     (element_type *) malloc(nElements * sizeof(element_type));
 
   for (int i = 0; i < nElements; ++i)
   {
-    element[i] = (general_int *) malloc((nVariables + 1) * sizeof(general_int));
-    element[i][0] = general_int(0);
+    element[i] = (int_extra *) malloc((nVariables + 1) * sizeof(int_extra));
+    element[i][0] = int_extra(0);
     for (int j = nVariables; j > 0; --j)
     {
-      element[i][j] = general_int(float(variableBound) * rand() / (RAND_MAX + 1.0));
+      element[i][j] = int_extra(float(variableBound) * rand() / (RAND_MAX + 1.0));
       assert(element[i][j] >= 0 && element[i][j] < variableBound);
     }
     terms[i] =

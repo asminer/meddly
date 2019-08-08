@@ -39,7 +39,7 @@ class MEDDLY::mt_mxd_real : public mtmxd_forest {
 
     void createEdge(float val, dd_edge &e);
 
-    void createEdge(const general_int* const* vlist, const general_int* const* vplist,
+    void createEdge(const int_extra* const* vlist, const int_extra* const* vplist,
         const float* terms, int N, dd_edge& e);
 
     /// deprecated
@@ -48,7 +48,7 @@ class MEDDLY::mt_mxd_real : public mtmxd_forest {
 
     virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
 
-    void evaluate(const dd_edge& f, const general_int* vlist, const general_int* vplist,
+    void evaluate(const dd_edge& f, const int_extra* vlist, const int_extra* vplist,
         float &term) const;
 
     /// deprecated

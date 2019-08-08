@@ -632,14 +632,14 @@ vector<int> RubiksCubeModel::convertToVariableOrder(const vector<Component>& lev
 
 dd_edge RubiksCubeModel::buildInitial()
 {
-  general_int** initst = new general_int*[1];
-  initst[0] = new general_int[_config.num_components() + 1];
+  int_extra** initst = new int_extra*[1];
+  initst[0] = new int_extra[_config.num_components() + 1];
   initst[0][0] = 0;
   for (int j = 0; j < NUM_TYPE2; j++) {
-    initst[0][get_var_of_component(2, j)] = general_int(j);
+    initst[0][get_var_of_component(2, j)] = int_extra(j);
   }
   for (int j = 0; j < NUM_TYPE3; j++) {
-    initst[0][get_var_of_component(3, j)] = general_int(j);
+    initst[0][get_var_of_component(3, j)] = int_extra(j);
   }
 
   assert(_state != nullptr);
@@ -885,12 +885,12 @@ dd_edge RubiksCubeModel::buildMoveHelper(forest* relation, int type3_a,
   //
   int nElements = 4 * _config.num_type2 + 4 * _config.num_type3;
 
-  general_int** from = new general_int*[nElements];
-  general_int** to = new general_int*[nElements];
+  int_extra** from = new int_extra*[nElements];
+  int_extra** to = new int_extra*[nElements];
   for (int i = 0; i < nElements; i++) {
     // allocate elements
-    from[i] = new general_int[_config.num_components() + 1];
-    to[i] = new general_int[_config.num_components() + 1];
+    from[i] = new int_extra[_config.num_components() + 1];
+    to[i] = new int_extra[_config.num_components() + 1];
 
     // initialize elements
     from[i][0] = 0;
@@ -1044,12 +1044,12 @@ dd_edge RubiksCubeModel::buildFlipMoveHelper(forest* relation, int type3_a,
   // total additions = 4 * 12 + 4 * 8 = 4 * 20 = 80
   //
   int nElements = 4 * _config.num_type2 + 4 * _config.num_type3;
-  general_int** from = new general_int*[nElements];
-  general_int** to = new general_int*[nElements];
+  int_extra** from = new int_extra*[nElements];
+  int_extra** to = new int_extra*[nElements];
   for (int i = 0; i < nElements; i++) {
     // allocate elements
-    from[i] =  new general_int[_config.num_components() + 1];
-    to[i] = new general_int[_config.num_components() + 1];
+    from[i] =  new int_extra[_config.num_components() + 1];
+    to[i] = new int_extra[_config.num_components() + 1];
 
     // initialize elements
     from[i][0] = 0;

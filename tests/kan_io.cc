@@ -68,10 +68,10 @@ inline domain* buildKanbanDomain(int N)
 // Build the initial state
 inline void buildInitial(int N, forest* mdd, dd_edge &init_state)
 {
-  general_int initial[17];
+  int_extra initial[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
-  general_int* initptr = initial;
+  int_extra* initptr = initial;
   mdd->createEdge(&initptr, 1, init_state);
 }
 

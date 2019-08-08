@@ -60,7 +60,7 @@ dd_edge buildReachsetSAT(forest* mdd, forest* mxd, int N)
   int* initial = new int[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
-  general_int* ginitial = new general_int[17];
+  int_extra* ginitial = new int_extra[17];
   for (int i=16; i; i--) ginitial[i] = initial[i];
   dd_edge init_state(mdd);
   mdd->createEdge(&ginitial, 1, init_state);
@@ -76,7 +76,7 @@ dd_edge buildReachsetSAT(forest* mdd, forest* mxd, int N)
   return reachable;
 }
 
-void mark2minterm(const char* mark, general_int* minterm, int np)
+void mark2minterm(const char* mark, int_extra* minterm, int np)
 {
   for (; np; np--) {
     minterm[np] = mark[np]-48;
@@ -86,9 +86,9 @@ void mark2minterm(const char* mark, general_int* minterm, int np)
 
 dd_edge buildReachsetBatch(int b, forest* mdd, const char* rs[], long states)
 {
-  general_int** batch = new general_int*[b];
+  int_extra** batch = new int_extra*[b];
   for (int i=0; i<b; i++) {
-    batch[i] = new general_int[17];
+    batch[i] = new int_extra[17];
   }
 
   dd_edge reachable(mdd);

@@ -41,13 +41,13 @@ forest* createForest(domain *d, bool relation) {
 void createEdge(forest* mdd, int var, const std::vector<int>& indices, dd_edge& result) {
   // one minterm per index
   const int nVars = mdd->useDomain()->getNumVariables();
-  general_int** minterms = new general_int*[indices.size()];
+  int_extra** minterms = new int_extra*[indices.size()];
   for (unsigned i = 0; i < indices.size(); i++) {
-    minterms[i] = new general_int[nVars+1];
+    minterms[i] = new int_extra[nVars+1];
     for (int j = 0; j <= nVars; j++) {
-      minterms[i][j] = general_int(DONT_CARE);
+      minterms[i][j] = int_extra(DONT_CARE);
     }
-    minterms[i][var] = general_int(indices[i]);
+    minterms[i][var] = int_extra(indices[i]);
   }
   mdd->createEdge(minterms, indices.size(), result);
   for (unsigned i = 0; i < indices.size(); i++) delete [] minterms[i];
@@ -57,13 +57,13 @@ void createEdge(forest* mdd, int var, const std::vector<int>& indices, dd_edge& 
 void createEdge(forest* mdd, int var, int value, dd_edge& result) {
   // one minterm per index
   const int nVars = mdd->useDomain()->getNumVariables();
-  general_int** minterms = new general_int*[value];
+  int_extra** minterms = new int_extra*[value];
   for (int i = 0; i < value; i++) {
-    minterms[i] = new general_int[nVars+1];
+    minterms[i] = new int_extra[nVars+1];
     for (int j = 0; j <= nVars; j++) {
-      minterms[i][j] = general_int(DONT_CARE);
+      minterms[i][j] = int_extra(DONT_CARE);
     }
-    minterms[i][var] = general_int(i);
+    minterms[i][var] = int_extra(i);
   }
   mdd->createEdge(minterms, value, result);
   for (int i = 0; i < value; i++) delete [] minterms[i];
@@ -165,12 +165,12 @@ void testRelationForest(domain *d) {
   const int n_vars = d->getNumVariables();
   forest* mxd = createForest(d, true);
 
-  general_int* unp_minterm_1 = new general_int[n_vars+1];
-  general_int* unp_minterm_2 = new general_int[n_vars+1];
-  general_int* p_minterm_1 = new general_int[n_vars+1];
-  general_int* p_minterm_2 = new general_int[n_vars+1];
-  general_int* unp_minterms[] = {unp_minterm_1, unp_minterm_2};
-  general_int* p_minterms[] = {p_minterm_1, p_minterm_2};
+  int_extra* unp_minterm_1 = new int_extra[n_vars+1];
+  int_extra* unp_minterm_2 = new int_extra[n_vars+1];
+  int_extra* p_minterm_1 = new int_extra[n_vars+1];
+  int_extra* p_minterm_2 = new int_extra[n_vars+1];
+  int_extra* unp_minterms[] = {unp_minterm_1, unp_minterm_2};
+  int_extra* p_minterms[] = {p_minterm_1, p_minterm_2};
 
   for (int i = 0; i <= n_vars; i++) {
     unp_minterm_1[i] = DONT_CARE;
@@ -186,8 +186,8 @@ void testRelationForest(domain *d) {
   dd_edge with_dont_change(mxd);
   dd_edge only_dont_cares(mxd);
 
-  mxd->createEdge((general_int**)(&unp_minterm_1), (general_int**)(&p_minterm_1), 1, with_dont_change);
-  mxd->createEdge((general_int**)(&unp_minterm_2), (general_int**)(&p_minterm_2), 1, only_dont_cares);
+  mxd->createEdge((int_extra**)(&unp_minterm_1), (int_extra**)(&p_minterm_1), 1, with_dont_change);
+  mxd->createEdge((int_extra**)(&unp_minterm_2), (int_extra**)(&p_minterm_2), 1, only_dont_cares);
 
   dd_edge result = with_dont_change;
   result += only_dont_cares;
@@ -197,7 +197,7 @@ void testRelationForest(domain *d) {
   only_dont_cares.show(s, 2);
   result.show(s, 2);
 
-  mxd->createEdge((general_int**)(&unp_minterms[0]), (general_int**)(&p_minterms[0]), 2, result);
+  mxd->createEdge((int_extra**)(&unp_minterms[0]), (int_extra**)(&p_minterms[0]), 2, result);
   result.show(s, 2);
 
   delete [] unp_minterm_1;

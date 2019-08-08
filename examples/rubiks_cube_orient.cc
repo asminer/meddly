@@ -429,7 +429,7 @@ class rubiks {
       assert(mdd);
 
       // sets of states
-      general_int* initst = new general_int[nLevels + 1];
+      int_extra* initst = new int_extra[nLevels + 1];
       assert(initst);
 
       // The initial state is the "solved" Rubik's Cube.
@@ -452,7 +452,7 @@ class rubiks {
       }
 
       dd_edge initialStates(mdd);
-      mdd->createEdge((general_int**)(&initst), 1, initialStates);
+      mdd->createEdge((int_extra**)(&initst), 1, initialStates);
 
       delete[] initst;
 
@@ -536,8 +536,8 @@ class rubiks {
       fflush(stdout);
 #endif
 
-      general_int* from = (general_int *)malloc((1+nLevels) * sizeof(general_int));
-      general_int* to = (general_int *)malloc((1+nLevels) * sizeof(general_int));
+      int_extra* from = (int_extra *)malloc((1+nLevels) * sizeof(int_extra));
+      int_extra* to = (int_extra *)malloc((1+nLevels) * sizeof(int_extra));
       for (int i = 1; i <= nLevels; i++) {
         from[i] = DONT_CARE;
         to[i] = DONT_CHANGE;
@@ -570,7 +570,7 @@ class rubiks {
         to[order[centero]] = DONT_CARE;
       }
       dd_edge r(mxd);
-      mxd->createEdge((general_int**)(&from), (general_int**)(&to), 1, r);
+      mxd->createEdge((int_extra**)(&from), (int_extra**)(&to), 1, r);
       free(from);
       free(to);
 

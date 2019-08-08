@@ -122,20 +122,20 @@ int main(int argc, char *argv[])
       nVariables, variableBound, nElements);
 
   // create the elements randomly
-  general_int** from = new general_int*[nElements];
-  general_int** to = new general_int*[nElements];
+  int_extra** from = new int_extra*[nElements];
+  int_extra** to = new int_extra*[nElements];
   element_type* terms = new element_type[nElements];
 
   for (int i = 0; i < nElements; ++i) {
-    from[i] = new general_int[nVariables + 1];
-    to[i] = new general_int[nVariables + 1];
+    from[i] = new int_extra[nVariables + 1];
+    to[i] = new int_extra[nVariables + 1];
     from[i][0] = 0;
     to[i][0] = 0;
     for (int j = nVariables; j > 0; --j) {
-      from[i][j] = general_int(float(variableBound + 1) * rand() / (RAND_MAX + 1.0)) - 1;
+      from[i][j] = int_extra(float(variableBound + 1) * rand() / (RAND_MAX + 1.0)) - 1;
       assert(from[i][j] >= DONT_CARE && from[i][j] < variableBound);
       // DONT_CHANGE can only be used with DONT_CARE
-      to[i][j] = general_int(float(variableBound) * rand() / (RAND_MAX + 1.0));
+      to[i][j] = int_extra(float(variableBound) * rand() / (RAND_MAX + 1.0));
       assert(to[i][j] >= 0 && to[i][j] < variableBound);
     }
     terms[i] =

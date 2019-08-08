@@ -169,10 +169,10 @@ forest::policies p(false);
   p.setPessimistic();
 
 //INITIAL STATE
-  general_int* initialState;
-initialState = new general_int[PLACES + 1];
-for(int g = 1;g <= PLACES;g++) initialState[g] = general_int(0);
-initialState[p1_position]=initialState[p3_position]=MT;initialState[p5_position]=DC;initialState[p7_position]=general_int(2*DC);
+  int_extra* initialState;
+initialState = new int_extra[PLACES + 1];
+for(int g = 1;g <= PLACES;g++) initialState[g] = int_extra(0);
+initialState[p1_position]=initialState[p3_position]=MT;initialState[p5_position]=DC;initialState[p7_position]=int_extra(2*DC);
 
 N = 2*DC>MT?(2*DC):MT;
   

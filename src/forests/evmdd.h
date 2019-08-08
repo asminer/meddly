@@ -58,7 +58,7 @@ class MEDDLY::evmdd_forest : public ev_forest {
     /// Special case for createEdge(), with only one minterm.
     template <class OPERATION, typename TYPE>
     inline void 
-    createEdgePath(int k, const general_int* vlist, TYPE &ev, node_handle &ed)
+    createEdgePath(int k, const int_extra* vlist, TYPE &ev, node_handle &ed)
     {
         if (0==ed) return;
         for (int i=1; i<=k; i++) {
@@ -126,7 +126,7 @@ namespace MEDDLY {
   template <class OPERATION, typename T>
   class evmdd_edgemaker {
       evmdd_forest* F;
-      const general_int* const* gvlist;
+      const int_extra* const* gvlist;
       const int* const* vlist;
       const T* values;
       int* order;
@@ -146,7 +146,7 @@ namespace MEDDLY {
         K = k;
         unionOp = unOp;
     }
-      evmdd_edgemaker(evmdd_forest* f, const general_int* const* mt, const T* v,
+      evmdd_edgemaker(evmdd_forest* f, const int_extra* const* mt, const T* v,
         int* o, int n, int k, binary_operation* unOp)
       {
         F = f;
@@ -169,11 +169,11 @@ namespace MEDDLY {
               return vlist[order[i]][k];
             }
 
-      inline const general_int* gunprimed(int i) const {
+      inline const int_extra* gunprimed(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return gvlist[order[i]];
       }
-      inline general_int gunprimed(int i, int k) const {
+      inline int_extra gunprimed(int i, int k) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         MEDDLY_CHECK_RANGE(1, k, K+1);
         return gvlist[order[i]][k];

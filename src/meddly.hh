@@ -672,7 +672,7 @@ inline const int* MEDDLY::enumerator::iterator::getAssignments() const {
   return index;
 }
 
-inline const MEDDLY::general_int* MEDDLY::enumerator::iterator::getGIAssignments() const {
+inline const MEDDLY::int_extra* MEDDLY::enumerator::iterator::getGIAssignments() const {
   return gindex;
 }
 
@@ -689,7 +689,7 @@ inline const int* MEDDLY::enumerator::getAssignments() const {
   if (I && is_valid) return I->getAssignments(); else return 0;
 }
 
-inline const MEDDLY::general_int* MEDDLY::enumerator::getGIAssignments() const {
+inline const MEDDLY::int_extra* MEDDLY::enumerator::getGIAssignments() const {
   if (I && is_valid)
     return I->getGIAssignments();
   else return 0;
@@ -699,7 +699,7 @@ inline const int* MEDDLY::enumerator::getPrimedAssignments() const {
   if (I && is_valid) return I->getPrimedAssignments(); else return 0;
 }
 
-inline const MEDDLY::general_int* MEDDLY::enumerator::getPrimedGIAssignments() const {
+inline const MEDDLY::int_extra* MEDDLY::enumerator::getPrimedGIAssignments() const {
   if (I && is_valid) return I->getPrimedGIAssignments(); else return 0;
 }
 

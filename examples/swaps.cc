@@ -250,7 +250,7 @@ void runWithArgs(int N, char method, bool alternate)
   /*
      Build initial state
   */
-  general_int* initial = new general_int[N+1];
+  int_extra* initial = new int_extra[N+1];
   initial[0] = 0;
   for (int i=1; i<=N; i++) initial[i] = i-1;
   forest::policies p(false);

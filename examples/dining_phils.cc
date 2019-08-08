@@ -216,13 +216,13 @@ class philsModel {
     void eventsForPhil(int phil, dd_edge &e);
 
   private:
-    inline void setMinterm(general_int* m, int c) {
+    inline void setMinterm(int_extra* m, int c) {
       for (int i = 1; i<sz; i++) m[i] = c;
     }
 
   private:
-    general_int* from;
-    general_int* to;
+    int_extra* from;
+    int_extra* to;
     int nPhils;
     int sz;
     forest* mxd;
@@ -243,8 +243,8 @@ philsModel::philsModel(int nP, const model2var& m2v, forest* _mxd)
 
   sz = nPhils * 2 + 1;
 
-  from = new general_int[sz];
-  to = new general_int[sz];
+  from = new int_extra[sz];
+  to = new int_extra[sz];
 
   from[0] = to[0] = 0;
 
@@ -440,11 +440,11 @@ variable** initializeVariables(const model2var &M2V)
 }
 
 
-general_int* initializeInitialState(int nLevels)
+int_extra* initializeInitialState(int nLevels)
 {
   // initial state -- all levels at 0
-  general_int *initialState = (general_int *) malloc((nLevels + 1) * sizeof(general_int));
-  memset(initialState, 0, (nLevels + 1) * sizeof(general_int));
+  int_extra *initialState = (int_extra *) malloc((nLevels + 1) * sizeof(int_extra));
+  memset(initialState, 0, (nLevels + 1) * sizeof(int_extra));
   return initialState;
 }
 
@@ -520,10 +520,10 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
 
   // Set up initial state array based on nPhilosophers
   if (LOG) LOG->newPhase(mdd, "Building initial state");
-  general_int *initSt = initializeInitialState(nLevels);
-  general_int *addrInitSt[1] = { initSt };
+  int_extra *initSt = initializeInitialState(nLevels);
+  int_extra *addrInitSt[1] = { initSt };
   dd_edge initialStates(mdd);
-  mdd->createEdge(reinterpret_cast<general_int**>(addrInitSt), 1, initialStates);
+  mdd->createEdge(reinterpret_cast<int_extra**>(addrInitSt), 1, initialStates);
 
   if (LOG) LOG->newPhase(mxd, "Building next-state function");
   printf("Building next-state function for %d dining philosophers\n", 

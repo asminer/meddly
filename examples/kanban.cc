@@ -196,7 +196,7 @@ int main(int argc, const char** argv)
 
     // Build initial state
     if (LOG) LOG->newPhase(mdd, "Building initial state");
-    general_int* initial = new general_int[17];
+    int_extra* initial = new int_extra[17];
     for (int i=16; i; i--) initial[i] = 0;
     initial[1] = initial[5] = initial[9] = initial[13] = N;
     dd_edge init_state(mdd);

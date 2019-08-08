@@ -101,7 +101,7 @@ forest* makeBinaryForest(int N)
   return d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
 }
 
-void check_solution(const char* name, forest* f, dd_edge& M, const general_int* sol)
+void check_solution(const char* name, forest* f, dd_edge& M, const int_extra* sol)
 {
   long ns;
   apply(CARDINALITY, M, ns);
@@ -126,7 +126,7 @@ void tiny_test()
   const int c_06[] = {-1, 2, -3, 0};
   const int c_07[] = {-1, -2, 3, 0};
   const int* clauses[] = { c_01, c_02, c_03, c_04, c_05, c_06, c_07, 0 };
-  const general_int sol[] = { -1, 1, 1, 1 };
+  const int_extra sol[] = { -1, 1, 1, 1 };
 
   forest* f = makeBinaryForest(3);
   dd_edge M(f);
@@ -138,7 +138,7 @@ void tiny_test()
 
 void test_10()
 {
-  const general_int sol[] = { -1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0};
+  const int_extra sol[] = { -1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0};
 
   const int c_01[] = {-10  , -7  , 2 , 0};
   const int c_02[] = {10  , -1  , -9 , 0};
@@ -201,7 +201,7 @@ void test_10()
 
 void test_20()
 {
-  const general_int sol[] = { -1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0,
+  const int_extra sol[] = { -1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0,
                       1, 0, 0, 1, 1 };
 
   const int c_1[] = {-10 , 20 , -13 , 0};
@@ -311,7 +311,7 @@ void test_20()
 
 void test_30()
 {
-  const general_int sol[] = { -1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0,
+  const int_extra sol[] = { -1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0,
                           0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1 };
 
   const int c_1[] = {21 , 27 , 23 , 0};
@@ -467,7 +467,7 @@ void test_30()
 
 void test_40()
 {
-  const general_int sol[] = { -1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
+  const int_extra sol[] = { -1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
                           1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 
                           1, 0, 1, 0, 1, 0, 1, 1, 1, 0 };
 
@@ -670,7 +670,7 @@ void test_40()
 
 void test_50()
 {
-  const general_int sol[] = { -1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0,
+  const int_extra sol[] = { -1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0,
                           1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 
                           1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 
                           1, 0, 1, 0, 1 };

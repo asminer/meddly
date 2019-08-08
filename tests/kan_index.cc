@@ -64,10 +64,10 @@ bool checkReachset(int N)
   domain* dom = createDomainBottomUp(variable::variableTypes::boundedClass,sizes, 16);
 
   // Build initial state
-  general_int* initial = new general_int[17];
+  int_extra* initial = new int_extra[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
-//  general_int* ginitial = new general_int[17];
+//  int_extra* ginitial = new int_extra[17];
 //  for (int i=16; i; i--) ginitial[i] = initial[i];
   forest* mdd = dom->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge init_state(mdd);
@@ -114,14 +114,14 @@ bool checkReachset(int N)
 //    printf("state SIZE IS   %d %d\n", state[0],state[1]);
 //    int size=sizeof(state)/sizeof( int);
 //
-//    general_int gstate[size];
+//    int_extra gstate[size];
 //    for(int i=0;i<size;i++)
 //    {  gstate[i]=state[i];
 //
 //    }
 //    printf("gstate SIZE IS  %d %d\n", gstate[0],gstate[1]);
 
-//     const general_int* ggstate=s.getGIAssignments();
+//     const int_extra* ggstate=s.getGIAssignments();
 //    printf("ggstate SIZE IS  %d %d\n", ggstate[0].getInteger(),ggstate[1].getInteger());
 //    fflush(stdout);
     long index;
@@ -141,12 +141,12 @@ bool checkReachset(int N)
     const int* state = s.getAssignments();
     int size=sizeof(state)/sizeof(const int);
     printf("size %d %d\n",state[0],state[1]);
-    const general_int* gstate=s.getGIAssignments();
+    const int_extra* gstate=s.getGIAssignments();
     printf("gsize %d %d\n",gstate[0].getInteger(),gstate[1].getInteger());
-//        general_int* gstate= new general_int[size];
+//        int_extra* gstate= new int_extra[size];
 //        for(int i=0;i<size;i++)
 //          gstate[i]=state[i];
-//       const general_int* ggstate=gstate;
+//       const int_extra* ggstate=gstate;
     bool ok;
     mdd->evaluate(reachable,gstate, ok);
     if (!ok) {

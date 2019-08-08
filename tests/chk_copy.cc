@@ -60,7 +60,7 @@ int Equilikely(int a, int b)
   return (a + (int) ((b - a + 1) * Random()));
 }
 
-void randomizeMinterm(bool primed, int max, general_int* mt, int N)
+void randomizeMinterm(bool primed, int max, int_extra* mt, int N)
 {
   int min = primed ? -2 : -1;
   for (int i=1; i<N; i++) {
@@ -73,7 +73,7 @@ void randomizeMinterm(bool primed, int max, general_int* mt, int N)
 #endif
 }
 
-/*void randomizeMinterm(bool primed, int max, general_int* mt, int N)
+/*void randomizeMinterm(bool primed, int max, int_extra* mt, int N)
 {
   int min = primed ? -2 : -1;
   for (int i=1; i<N; i++) {
@@ -86,7 +86,7 @@ void randomizeMinterm(bool primed, int max, general_int* mt, int N)
 #endif
 }*/
 
-void adjustMinterms(general_int* mtu, general_int* mtp, int N)
+void adjustMinterms(int_extra* mtu, int_extra* mtp, int N)
 {
   for (int i=1; i<N; i++) {
     if (mtp[i] == -2) mtu[i] = -1;
@@ -99,11 +99,11 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
   forest* f = out.getForest();
   int Vars = f->getDomain()->getNumVariables();
 
-  general_int* minterm = new general_int[Vars+1];
-  general_int* gminterm = new general_int[Vars+1];
+  int_extra* minterm = new int_extra[Vars+1];
+  int_extra* gminterm = new int_extra[Vars+1];
 
-  general_int* minprime = 0;
-  if (f->isForRelations()) minprime = new general_int[Vars+1];
+  int_extra* minprime = 0;
+  if (f->isForRelations()) minprime = new int_extra[Vars+1];
 
 
   out.clear();

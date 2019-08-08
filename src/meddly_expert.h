@@ -3461,8 +3461,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
         dd_edge root;
         int top;
         expert_forest* f;
-        general_int** unpminterms;
-        general_int** pminterms;
+        int_extra** unpminterms;
+        int_extra** pminterms;
         int num_minterms;
         int size_minterms;
         bool is_firing;
@@ -3548,8 +3548,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
         int num_firing_vars;
         int* firing_vars;
         dd_edge event_mask;
-        general_int* event_mask_from_minterm;
-        general_int* event_mask_to_minterm;
+        int_extra* event_mask_from_minterm;
+        int_extra* event_mask_to_minterm;
 
     };  // end of class event
 

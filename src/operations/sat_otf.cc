@@ -123,8 +123,8 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
   if (num_minterms >= size_minterms) {
     int old_size = size_minterms;
     size_minterms = (0==size_minterms)? 8: MIN(2*size_minterms, 256 + size_minterms);
-    unpminterms = (general_int**) realloc(unpminterms, unsigned(size_minterms) * sizeof(general_int**));
-    pminterms = (general_int**) realloc(pminterms, unsigned(size_minterms) * sizeof(general_int**));
+    unpminterms = (int_extra**) realloc(unpminterms, unsigned(size_minterms) * sizeof(int_extra**));
+    pminterms = (int_extra**) realloc(pminterms, unsigned(size_minterms) * sizeof(int_extra**));
     if (0==unpminterms || 0==pminterms) return false; // malloc or realloc failed
     for (int i=old_size; i<size_minterms; i++) {
       unpminterms[i] = 0;
@@ -132,9 +132,9 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
     }
   }
   if (0==unpminterms[num_minterms]) {
-    unpminterms[num_minterms] = new general_int[f->getNumVariables() + 1];
+    unpminterms[num_minterms] = new int_extra[f->getNumVariables() + 1];
     MEDDLY_DCASSERT(0==pminterms[num_minterms]);
-    pminterms[num_minterms] = new general_int[f->getNumVariables() + 1];
+    pminterms[num_minterms] = new int_extra[f->getNumVariables() + 1];
   }
   // out << "Added minterm: [";
   for (int i = f->getNumVariables(); i >= 0; i--) {
@@ -300,8 +300,8 @@ void MEDDLY::satotf_opname::event::buildEventMask()
 
   if (0 == event_mask_from_minterm) {
     const size_t minterm_size = size_t(f->getNumVariables()+1);
-    event_mask_from_minterm = new general_int[minterm_size];
-    event_mask_to_minterm = new general_int[minterm_size];
+    event_mask_from_minterm = new int_extra[minterm_size];
+    event_mask_to_minterm = new int_extra[minterm_size];
 
     for (unsigned i = 0; i < minterm_size; i++) {
       event_mask_from_minterm[i] = MEDDLY::DONT_CARE;

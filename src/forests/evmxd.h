@@ -38,8 +38,8 @@ class MEDDLY::evmxd_forest : public ev_forest {
 
   protected:
     template <class OPERATION, typename TYPE>
-    inline void evaluateT(const dd_edge &f, const general_int* vlist,
-      const general_int* vplist, TYPE &val) const
+    inline void evaluateT(const dd_edge &f, const int_extra* vlist,
+      const int_extra* vplist, TYPE &val) const
     {
       if (f.getForest() != this) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
       if (vlist == 0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
@@ -85,7 +85,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
     /// Special case for createEdge(), with only one minterm.
     template <class OPERATION, typename TYPE>
     inline void 
-    createEdgePath(int k, const general_int* vlist, const general_int* vplist,
+    createEdgePath(int k, const int_extra* vlist, const int_extra* vplist,
       TYPE &ev, node_handle &ed) 
     {
       if (0==ed) return;
@@ -298,8 +298,8 @@ namespace MEDDLY {
   template <class OPERATION, typename T>
   class evmxd_edgemaker {
       evmxd_forest* F;
-      const general_int* const* gvulist;
-      const general_int* const* gvplist;
+      const int_extra* const* gvulist;
+      const int_extra* const* gvplist;
       const int* const* vulist;
       const int* const* vplist;
       const T* values;
@@ -309,7 +309,7 @@ namespace MEDDLY {
       binary_operation* unionOp;
     public:
       evmxd_edgemaker(evmxd_forest* f,
-              const general_int* const* mt, const general_int* const* mp, const T* v,
+              const int_extra* const* mt, const int_extra* const* mp, const T* v,
               int* o, int n, int k, binary_operation* unOp)
       {
         F = f;
@@ -335,20 +335,20 @@ namespace MEDDLY {
         K = k;
         unionOp = unOp;
       }
-      inline const general_int* gunprimed(int i) const {
+      inline const int_extra* gunprimed(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return gvulist[order[i]];
       }
-      inline general_int gunprimed(int i, int k) const {
+      inline int_extra gunprimed(int i, int k) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         MEDDLY_CHECK_RANGE(1, k, K+1);
         return gvulist[order[i]][k];
       }
-      inline const general_int* gprimed(int i) const {
+      inline const int_extra* gprimed(int i) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         return gvplist[order[i]];
       }
-      inline general_int gprimed(int i, int k) const {
+      inline int_extra gprimed(int i, int k) const {
         MEDDLY_CHECK_RANGE(0, i, N);
         MEDDLY_CHECK_RANGE(1, k, K+1);
         return gvplist[order[i]][k];

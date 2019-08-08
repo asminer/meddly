@@ -39,7 +39,7 @@ void MEDDLY::mt_mdd_real::createEdge(float term, dd_edge& e)
 #endif
 }
 
-void MEDDLY::mt_mdd_real::createEdge(const general_int* const* vlist, const float* terms, int N, dd_edge &e)
+void MEDDLY::mt_mdd_real::createEdge(const int_extra* const* vlist, const float* terms, int N, dd_edge &e)
 {
   binary_operation* unionOp = getOperation(PLUS, this, this, this);
   enlargeStatics(N);
@@ -48,12 +48,12 @@ void MEDDLY::mt_mdd_real::createEdge(const general_int* const* vlist, const floa
   int num_vars=getNumVariables();
 
   // Create vlist following the mapping between variable and level
-  general_int** ordered_vlist=static_cast<general_int**>(malloc(N*sizeof(general_int*)+(num_vars+1)*N*sizeof(general_int)));
+  int_extra** ordered_vlist=static_cast<int_extra**>(malloc(N*sizeof(int_extra*)+(num_vars+1)*N*sizeof(int_extra)));
   if(ordered_vlist==0){
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 
-  ordered_vlist[0]=reinterpret_cast<general_int*>(&ordered_vlist[N]);
+  ordered_vlist[0]=reinterpret_cast<int_extra*>(&ordered_vlist[N]);
   for(int i=1; i<N; i++) {
     ordered_vlist[i]=(ordered_vlist[i-1]+num_vars+1);
   }
@@ -124,7 +124,7 @@ createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 
 
 void MEDDLY::mt_mdd_real
-::evaluate(const dd_edge &f, const general_int* vlist, float &term) const
+::evaluate(const dd_edge &f, const int_extra* vlist, float &term) const
 {
   term = float_Tencoder::handle2value(evaluateRaw(f, vlist));
 }
