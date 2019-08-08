@@ -105,7 +105,7 @@ void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
   mtmdd_edgemaker<bool_Tencoder, bool>
   EM(this, ordered_vlist, 0, order, N, getDomain()->getNumVariables(), unionOp);
 
-  e.set(EM.createEdge());
+  e.set(EM.createEdgeOld());
 
   free(ordered_vlist);
 

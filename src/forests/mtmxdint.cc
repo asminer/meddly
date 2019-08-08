@@ -124,7 +124,7 @@ void MEDDLY::mt_mxd_int
   mtmxd_edgemaker<int_Tencoder, long>
   EM(this, ordered_vlist, ordered_vplist, terms, order, N, num_vars, unionOp);
 
-  e.set(EM.createEdge());
+  e.set(EM.createEdgeOld());
 
   free(ordered_vlist);
   free(ordered_vplist);

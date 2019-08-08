@@ -36,6 +36,7 @@
 MEDDLY::enumerator::iterator::iterator(const expert_forest* f)
 {
   prindex = 0;
+  gprindex=0;
   F = f;
   if (0==f) {
     rawpath = path = 0;
@@ -77,7 +78,7 @@ MEDDLY::enumerator::iterator::~iterator()
   delete[] rawnzp;
   delete[] rawindex;
   delete[] prindex;
-  delete[] gindex;
+  delete[] gprindex;
 }
 
 bool MEDDLY::enumerator::iterator::start(const dd_edge &e)
@@ -107,6 +108,21 @@ const int* MEDDLY::enumerator::iterator::getPrimedAssignments()
     prindex[k] = index[-k];
   }
   return prindex; 
+}
+
+const MEDDLY::general_int* MEDDLY::enumerator::iterator::getPrimedGIAssignments()
+{
+  if (0==F) return 0;
+  if (!F->isForRelations()) return 0;
+  if (0==gprindex) {
+    gprindex = new general_int[1+maxLevel];
+    gprindex[0] = 0;
+  }
+  MEDDLY_DCASSERT(index);
+  for (int k=maxLevel; k; k--) {
+    gprindex[k] = index[-k];
+  }
+  return gprindex;
 }
 
 void MEDDLY::enumerator::iterator::getValue(int &) const
@@ -207,6 +223,14 @@ void MEDDLY::enumerator::startFixedRow(const dd_edge &e, const int* minterm)
   if (ROW_FIXED != T) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   MEDDLY_DCASSERT(I);
   is_valid = I->start(e, minterm);
+}
+
+void MEDDLY::enumerator::startFixedRow(const dd_edge &e, const general_int* minterm)
+{
+  if (0==I) return;
+  if (ROW_FIXED != T) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+  MEDDLY_DCASSERT(I);
+  is_valid = I->startGI(e, minterm);
 }
 
 void MEDDLY::enumerator::startFixedColumn(const dd_edge &e, const int* minterm)

@@ -146,8 +146,16 @@ namespace MEDDLY {
       }
 
       inline node_handle createEdge() {
-        return createEdge(K, 0, N);
+          return createEdge(K, 0, N);
+
+
       }
+      inline node_handle createEdgeOld() {
+
+                return createEdgeOld(K, 0, N);
+
+
+            }
 
       /**
           Recursive implementation of createEdge(),
@@ -434,6 +442,198 @@ namespace MEDDLY {
            } // for i
            return bottom;
        }
+
+
+      /**
+          Recursive implementation of createEdge(),
+          for use by mtmdd_forest descendants.
+      */
+      node_handle createEdgeOld(int k, int start, int stop) {
+        MEDDLY_DCASSERT(k>=0);
+        MEDDLY_DCASSERT(stop > start);
+        //
+        // Fast special case
+        //
+        if (1==stop-start) {
+          return createEdgePath(k, unprimed(start),
+            ENCODER::value2handle(term(start))
+          );
+        }
+        //
+        // Check terminal case
+        //
+        if (0==k) {
+          T accumulate = term(start);
+          for (int i=start+1; i<stop; i++) {
+            accumulate += term(i);
+          }
+          return ENCODER::value2handle(accumulate);
+        }
+
+        // size of variables at level k
+        unsigned lastV = unsigned(F->getLevelSize(k));
+        // index of end of current batch
+        int batchP = start;
+
+        //
+        // Move any "don't cares" to the front, and process them
+        //
+        unsigned nextV = lastV;
+        for (int i=start; i<stop; i++) {
+          if (DONT_CARE == unprimed(i, k)) {
+            if (batchP != i) {
+              swap(batchP, i);
+            }
+            batchP++;
+          } else {
+            MEDDLY_DCASSERT(unprimed(i, k) >= 0);
+            nextV = MIN(nextV, unsigned(unprimed(i, k)));
+          }
+        }
+
+        node_handle dontcares = (batchP > start) ? createEdgeOld(k-1, start, batchP) : 0;
+        if(dontcares && F->isQuasiReduced()){
+          // Add the redundant node at level k
+          unpacked_node* nb = unpacked_node::newFull(F, k, lastV);
+          for (unsigned v = 0; v<lastV; v++) {
+            nb->d_ref(v)=F->linkNode(dontcares);
+          }
+          if (F->isExtensibleLevel(k)) nb->markAsExtensible();
+          node_handle built=F->createReducedNode(-1, nb);
+          F->unlinkNode(dontcares);
+          dontcares=built;
+        }
+
+        //
+        // Start new node at level k
+        //
+        unpacked_node* nb = unpacked_node::newSparse(F, k, lastV);
+        unsigned z = 0; // number of nonzero edges in our sparse node
+
+        //
+        // For each value v,
+        //  (1) move those values to the front
+        //  (2) process them, if any
+        //  (3) union with don't cares
+        //
+        if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
+          // TODO: Can be simpler
+          node_handle zero=makeOpaqueZeroNodeAtLevel(k-1);
+
+          while(z<nextV) {
+            nb->i_ref(z)=z;
+            nb->d_ref(z)=F->linkNode(zero);
+            z++;
+          }
+          unsigned v = nextV;
+          while(v<lastV) {
+            nextV = lastV;
+            //
+            // neat trick!
+            // shift the array over, because we're done with the previous batch
+            //
+            start = batchP;
+
+            //
+            // (1) move anything with value v, to the "new" front
+            //
+            for (int i=start; i<stop; i++) {
+              if (v == unprimed(i, k)) {
+                if (batchP != i) {
+                  swap(batchP, i);
+                }
+                batchP++;
+              } else {
+                nextV = MIN(nextV, unsigned(unprimed(i, k)));
+              }
+            }
+
+            //
+            // (2) recurse if necessary
+            //
+            MEDDLY_DCASSERT(batchP > start);
+            node_handle total = createEdgeOld(k-1, start, batchP);
+
+            //
+            // add to sparse node, unless transparent
+            //
+            if (total!=F->getTransparentNode()) {
+              nb->i_ref(z) = v;
+              nb->d_ref(z) = total;
+              z++;
+            }
+
+            v++;
+            while(v<nextV) {
+              nb->i_ref(z)=v;
+              nb->d_ref(z)=F->linkNode(zero);
+              z++;
+              v++;
+            }
+          }
+
+          if (F->isExtensibleLevel(k)) {
+            nb->resize(lastV+1);
+            nb->i_ref(z)=v;
+            nb->d_ref(z)=F->linkNode(zero);
+            z++;
+            v++;
+            nb->markAsExtensible();
+          }
+
+          F->unlinkNode(zero);
+        }
+        else{
+          for (unsigned v = nextV; v<lastV; v = nextV) {
+          nextV = lastV;
+          //
+          // neat trick!
+          // shift the array over, because we're done with the previous batch
+          //
+          start = batchP;
+
+          //
+          // (1) move anything with value v, to the "new" front
+          //
+          for (int i=start; i<stop; i++) {
+            if (v == unprimed(i, k)) {
+              if (batchP != i) {
+                swap(batchP, i);
+              }
+              batchP++;
+            } else {
+              nextV = MIN(nextV, unsigned(unprimed(i, k)));
+            }
+          }
+
+          //
+          // (2) recurse if necessary
+          //
+          MEDDLY_DCASSERT(batchP > start);
+          node_handle total = createEdgeOld(k-1, start, batchP);
+
+          //
+          // add to sparse node, unless transparent
+          //
+          if (total==F->getTransparentNode()) continue;
+          nb->i_ref(z) = v;
+          nb->d_ref(z) = total;
+          z++;
+          }
+        }
+
+        //
+        // Cleanup
+        //
+        nb->shrinkSparse(z);
+
+        MEDDLY_DCASSERT(unionOp);
+        dd_edge dontcaresE(F), built(F);
+        dontcaresE.set(dontcares);
+        built.set( F->createReducedNode(-1, nb) );
+        unionOp->compute(dontcaresE, built, built);
+        return F->linkNode(built);
+      }
 
 
       // Make zero nodes recursively when:

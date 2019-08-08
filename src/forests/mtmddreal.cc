@@ -104,7 +104,7 @@ void MEDDLY::mt_mdd_real::createEdge(const int* const* vlist, const float* terms
   mtmdd_edgemaker<float_Tencoder, float>
   EM(this, ordered_vlist, terms, order, N, num_vars, unionOp);
 
-  e.set(EM.createEdge());
+  e.set(EM.createEdgeOld());
 
   free(ordered_vlist);
 

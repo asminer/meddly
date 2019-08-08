@@ -81,9 +81,9 @@ int main(int argc, char *argv[])
   // Create an edge in MDD forest
   general_int** v = (general_int **) malloc(2 * sizeof(general_int*));
   v[0] = (general_int *) malloc((N+1) * sizeof(general_int));
-  v[0][0] = general_int(0); v[0][1] = general_int(0); v[0][2] = general_int(0);
+  v[0][0] = 0; v[0][1] = 0; v[0][2] = 0;
   v[1] = (general_int *) malloc((N+1) * sizeof(general_int));
-  v[1][0] = general_int(0); v[1][1] = general_int(1); v[1][2] = general_int(0);
+  v[1][0] = 0; v[1][1] = 1; v[1][2] =0;
   dd_edge initial_state(states);
   states->createEdge(v, 1, initial_state);
   initial_state.show(meddlyout, 2);

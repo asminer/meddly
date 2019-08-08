@@ -699,6 +699,10 @@ inline const int* MEDDLY::enumerator::getPrimedAssignments() const {
   if (I && is_valid) return I->getPrimedAssignments(); else return 0;
 }
 
+inline const MEDDLY::general_int* MEDDLY::enumerator::getPrimedGIAssignments() const {
+  if (I && is_valid) return I->getPrimedGIAssignments(); else return 0;
+}
+
 inline void MEDDLY::enumerator::getValue(int &v) const {
   if (I && is_valid) I->getValue(v);
 }

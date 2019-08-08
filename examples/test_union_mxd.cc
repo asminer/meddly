@@ -87,9 +87,9 @@ int main(int argc, char *argv[])
     for (int j = nVariables; j >= 1; --j)
     {
       elements[i][j] = int(float(variableBound) * rand() / (RAND_MAX + 1.0));
-      assert(elements[i][j] >= 0 && elements[i][j] < variableBound);
+      assert(elements[i][j].getInteger() >= 0 && elements[i][j].getInteger() < variableBound);
       pelements[i][j] = int(float(variableBound) * rand() / (RAND_MAX + 1.0));
-      assert(pelements[i][j] >= 0 && pelements[i][j] < variableBound);
+      assert(pelements[i][j].getInteger() >= 0 && pelements[i][j].getInteger() < variableBound);
     }
     // print element[i]
 #ifdef VERBOSE

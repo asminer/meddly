@@ -245,15 +245,15 @@ void printAssignment(unsigned count, const int* element, const int* pelement, in
   printf("]\n");
 }
 
-void printAssignment(unsigned count, const int* element, int nVariables)
+void printAssignment(unsigned count, const general_int* element, int nVariables)
 {
-  printf("%d: [%d", count, element[1]);
+  printf("%d: [%d", count, element[1].getInteger());
   for (int k=2; k<=nVariables; k++) {
     printf(", %d", element[k]);
   }
-  printf("] --> [%d", element[-1]);
+  printf("] --> [%d", element[-1].getInteger());
   for (int k=2; k<=nVariables; k++) {
-    printf(", %d", element[-k]);
+    printf(", %d", element[-k].getInteger());
   }
   printf("]\n");
 }
@@ -385,7 +385,7 @@ int main(int argc, char *argv[])
     for (enumerator iter(result);
         iter; ++iter, ++counter)
     {
-      printAssignment(counter, iter.getAssignments(), nVariables);
+      printAssignment(counter, iter.getGIAssignments(), nVariables);
     }
     printf("Iterator traversal: %0.4e elements\n", double(counter));
     double c;
@@ -397,7 +397,7 @@ int main(int argc, char *argv[])
 #if 1
   if (true) {
     enumerator beginIter(result);
-    const int* element = beginIter.getAssignments();
+    const general_int* element = beginIter.getGIAssignments();
 #if 0
     const int* curr = 0;
     const int* end = 0;
@@ -409,8 +409,8 @@ int main(int argc, char *argv[])
       curr = element + nVariables;
       end = element + 1;
 #endif
-      printf("[%d", element[1]);
-      for (int i=2; i<=nVariables; i++) printf(" %d", element[i]);
+      printf("[%d", element[1].getInteger());
+      for (int i=2; i<=nVariables; i++) printf(" %d", element[i].getInteger());
       printf("]\n");
 
 #if 0
@@ -426,30 +426,30 @@ int main(int argc, char *argv[])
       enumerator colIter;
       colIter.startFixedRow(result, element);
       while (colIter) {
-        element = colIter.getAssignments();
-        printf(" --> [%d", element[-1]);
-        for (int i=2; i<=nVariables; i++) printf(" %d", element[-i]);
+        element = colIter.getGIAssignments();
+        printf(" --> [%d", element[-1].getInteger());
+        for (int i=2; i<=nVariables; i++) printf(" %d", element[-i].getInteger());
         printf("]\n");
         ++colIter;
       }
 
       // Print column
-      element = beginIter.getPrimedAssignments();
+      element = beginIter.getPrimedGIAssignments();
       printf("[%d", element[1]);
-      for (int i=2; i<=nVariables; i++) printf(" %d", element[i]);
+      for (int i=2; i<=nVariables; i++) printf(" %d", element[i].getInteger());
       printf("]\n");
       colIter.startFixedColumn(result, element);
 
       while (colIter) {
-        element = colIter.getAssignments();
+        element = colIter.getGIAssignments();
         printf(" <-- [%d", element[1]);
-        for (int i=2; i<=nVariables; i++) printf(" %d", element[i]);
+        for (int i=2; i<=nVariables; i++) printf(" %d", element[i].getInteger());
         printf("]\n");
         ++colIter;
       }
 
       ++beginIter;
-      element = beginIter.getAssignments();
+      element = beginIter.getGIAssignments();
     }
   }
 #endif

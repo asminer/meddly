@@ -2286,13 +2286,20 @@ public:
 
         };
 
-  inline general_int& operator+ (const general_int& rhs){
+  /*inline general_int& operator+ (const general_int& rhs){
 
              type=rhs.type;
              value+=rhs.value;
              return *this;
 
-         };
+         };*/
+  inline general_int& operator+ (const int& rhs){
+
+               type=integer;
+               value+=rhs;
+               return *this;
+
+           };
  /* inline general_int operator= (const general_int& rhs){
 
           type=rhs.type;
@@ -2923,6 +2930,7 @@ class MEDDLY::enumerator {
             however, this works.
         */
         const int* getPrimedAssignments();
+        const general_int* getPrimedGIAssignments();
 
         /// For integer-ranged edges, get the current non-zero value.
         virtual void getValue(int& edgeValue) const;
@@ -2956,6 +2964,7 @@ class MEDDLY::enumerator {
       private:
         // Used only by getPrimedAssignments.
         int*      prindex;
+        general_int*      gprindex;
     };
 
   public:
@@ -3005,7 +3014,7 @@ class MEDDLY::enumerator {
                             assignment for (unprimed) variable k.
     */
     void startFixedRow(const dd_edge &e, const int* minterm);
-
+    void startFixedRow(const dd_edge &e, const general_int* minterm);
     /** Start iterating through edge e.
         The primed variables will be fixed to
         the given values.
@@ -3028,6 +3037,7 @@ class MEDDLY::enumerator {
 
     /// Get the current primed variable assignments.
     const int* getPrimedAssignments() const;
+    const general_int* getPrimedGIAssignments() const;
 
     void getValue(int &v) const;
     void getValue(long &v) const;

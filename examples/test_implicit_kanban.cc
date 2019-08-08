@@ -113,7 +113,7 @@ int usage(const char* who)
   for (const char* ptr=who; *ptr; ptr++) {
     if ('/' == *ptr) name = ptr+1;
   }
-  printf("\nUsage: %s nnnn <-O> order\n\n", name);
+  printf("\nUsage: %s <-O> nnnn order\n\n", name);
   printf("\tnnnn: number of initial tokens\n");
   printf("\torder: the order of variables:123456789ABCDEFG \n");
   return 1;

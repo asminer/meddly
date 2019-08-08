@@ -214,6 +214,10 @@ namespace MEDDLY {
         MEDDLY::SWAP(order[i], order[j]);
       }
 
+      inline node_handle createEdgeOld() {
+          return createEdgeUnOld(K, 0, N);
+      }
+
       inline node_handle createEdge() {
         return createEdgeUn(K, 0, N);
       }
@@ -260,7 +264,7 @@ namespace MEDDLY {
             }
             batchP++;
           } else {
-            MEDDLY_DCASSERT(unprimed(i, k).getInteger() >= 0);
+            MEDDLY_DCASSERT(gunprimed(i, k).getInteger() >= 0);
             nextV = MIN(nextV, unsigned(gunprimed(i, k).getInteger()));
           }
         }
@@ -347,6 +351,150 @@ namespace MEDDLY {
           node_handle total=createEdgePr(v, F->downLevel(k), start, batchP);
           if(total!=F->getTransparentNode()){
         	  nb->i_ref(z) = v;
+            nb->d_ref(z) =total;
+            z++;
+          }
+        }
+
+        //
+        // Union with don't cares
+        //
+
+        nb->shrinkSparse(z);
+
+        MEDDLY_DCASSERT(unionOp);
+        dd_edge dontcaresE(F), built(F);
+        dontcaresE.set(dontcares);
+        built.set( F->createReducedNode(-1, nb) );
+        unionOp->compute(dontcaresE, built, built);
+        return F->linkNode(built);
+      };
+
+      node_handle createEdgeUnOld(int k, int start, int stop) {
+        MEDDLY_DCASSERT(k>=0);
+        MEDDLY_DCASSERT(stop > start);
+        //
+        // Fast special case
+        //
+        if (1==stop-start) {
+          return createEdgePath(k, unprimed(start), primed(start),
+            ENCODER::value2handle(term(start))
+          );
+        }
+        //
+        // Check terminal case
+        //
+        if (0==k) {
+          T accumulate = term(start);
+          for (int i=start+1; i<stop; i++) {
+            accumulate += term(i);
+          }
+          return ENCODER::value2handle(accumulate);
+        }
+
+        // size of variables at level k
+        unsigned lastV = unsigned(F->getLevelSize(k));
+        // index of end of current batch
+        int batchP = start;
+
+        //
+        // Move any "don't cares" to the front, and process them
+        //
+        unsigned nextV = lastV;
+        for (int i=start; i<stop; i++) {
+          if (DONT_CARE == unprimed(i, k)) {
+            if (batchP != i) {
+              swap(batchP, i);
+            }
+            batchP++;
+          } else {
+            MEDDLY_DCASSERT(unprimed(i, k) >= 0);
+            nextV = MIN(nextV, unsigned(unprimed(i, k)));
+          }
+        }
+        node_handle dontcares = 0;
+
+        //
+        // Move any "don't changes" below the "don't cares", to the front,
+        // and process them to construct a new level-k node.
+        int dch = start;
+        for (int i=start; i<batchP; i++) {
+          if (DONT_CHANGE == primed(i, k)) {
+            if (dch != i) {
+              swap(dch, i);
+            }
+            dch++;
+          }
+        }
+
+        //
+        // Process "don't care, don't change" pairs, if any
+        //
+        if (dch > start) {
+          node_handle below = createEdgeUn(k-1, start, dch);
+          dontcares = makeIdentityEdgeForDontCareDontChange(k, below);
+          // done with those
+          start = dch;
+        }
+
+        //
+        // Process "don't care, ordinary" pairs, if any
+        // (producing a level-k node)
+        //
+        if (batchP > start) {
+          node_handle dcnormal = F->makeNodeAtLevel(
+              k, createEdgePrOld(-1, -k, start, batchP)
+          );
+          MEDDLY_DCASSERT(unionOp);
+          dd_edge dcE(F), dcnE(F);
+          dcE.set(dontcares);
+          dcnE.set(dcnormal);
+          unionOp->compute(dcE, dcnE, dcE);
+          dontcares = F->linkNode(dcE);
+        }
+
+        //
+        // Start new node at level k
+        //
+        unpacked_node* nb = unpacked_node::newSparse(F, k, lastV);
+        unsigned z = 0; // number of opaque edges in our sparse node
+
+        //
+        // For each value v,
+        //  (1) move those values to the front
+        //  (2) process them, if any
+        // Then when we are done, union with any don't cares
+        //
+        for (unsigned v=nextV; v<lastV; v=nextV) {
+          nextV = lastV;
+          //
+          // neat trick!
+          // shift the array over, because we're done with the previous batch
+          //
+          start = batchP;
+
+          //
+          // (1) move anything with value v, to the "new" front
+          //
+          for (int i=start; i<stop; i++) {
+            if (v == unprimed(i, k)) {
+              if (batchP != i) {
+                swap(batchP, i);
+              }
+              batchP++;
+            } else {
+              nextV = MIN(nextV, unsigned(unprimed(i, k)));
+            }
+          }
+
+          //
+          // (2) recurse if necessary
+          //
+          if (0==batchP) continue;
+
+          node_handle total=createEdgePrOld(v, F->downLevel(k), start, batchP);
+          if(total!=F->getTransparentNode()){
+            nb->i_ref(z) = v;
             nb->d_ref(z) =total;
             z++;
           }
@@ -495,6 +643,130 @@ namespace MEDDLY {
         return F->createReducedNode(in, nb);
       };
 
+      node_handle createEdgePrOld(int in, int k, int start, int stop) {
+        MEDDLY_DCASSERT(k<0);
+        MEDDLY_DCASSERT(stop > start);
+
+        //
+        // Don't need to check for terminals
+        //
+
+        // size of variables at level k
+        unsigned lastV = unsigned(F->getLevelSize(k));
+        // current batch size
+        int batchP = start;
+
+        //
+        // Move any "don't cares" to the front, and process them
+        //
+        unsigned nextV = lastV;
+        for (int i=start; i<stop; i++) {
+          if (DONT_CARE == primed(i, -k)) {
+            if (batchP != i) {
+              swap(batchP, i);
+            }
+            batchP++;
+          } else {
+            nextV = MIN(nextV, unsigned(primed(i, -k)));
+          }
+        }
+
+        dd_edge dontcares(F);
+        if (batchP > start) {
+          dontcares.set( createEdgeUnOld(F->downLevel(k), start, batchP) );
+        }
+
+        //
+        // Start new node at level k
+        //
+        // if (F->isExtensibleLevel(k)) {
+
+        // } else {
+
+        // }
+
+        bool add_extensible_edge = (F->isExtensibleLevel(k) && dontcares.getNode());
+        unsigned z = 0; // number of nonzero edges in our sparse node
+        unpacked_node* nb = unpacked_node::newSparse(F, k, lastV + (add_extensible_edge? 1: 0));
+
+        //
+        // For each value v,
+        //  (1) move those values to the front
+        //  (2) process them, if any
+        //  (3) union with don't cares
+        //
+        for (unsigned v = (dontcares.getNode()) ? 0 : nextV;
+             v<lastV;
+             v = (dontcares.getNode()) ? v+1 : nextV)
+        {
+          nextV = lastV;
+          //
+          // neat trick!
+          // shift the array over, because we're done with the previous batch
+          //
+          start = batchP;
+
+          //
+          // (1) move anything with value v, or don't change if v=in,
+          //     to the "new" front
+          //
+          bool veqin = (v==in);
+          for (int i=start; i<stop; i++) {
+            if (v == primed(i, -k) || (veqin && DONT_CHANGE==primed(i, -k))) {
+              if (batchP != i) {
+                swap(batchP, i);
+              }
+              batchP++;
+            } else {
+              nextV = MIN(nextV, unsigned(primed(i, -k)));
+            }
+          }
+
+          //
+          // (2) recurse if necessary
+          //
+          dd_edge these(F);
+          if (batchP > start) {
+            these.set( createEdgeUnOld(F->downLevel(k), start, batchP) );
+          }
+
+          //
+          // (3) union with don't cares
+          //
+          MEDDLY_DCASSERT(unionOp);
+          unionOp->compute(dontcares, these, these);
+
+          node_handle total = F->linkNode(these);
+          these.set(0);
+
+          //
+          // add to sparse node, unless transparent
+          //
+          if (total!=F->getTransparentNode()){
+            nb->i_ref(z) = v;
+            nb->d_ref(z) = total;
+            z++;
+          }
+        } // for v
+
+        if (add_extensible_edge) {
+          nb->i_ref(z) = ((z > 0)? nb->i(z-1)+1: 0);
+          nb->d_ref(z) = F->linkNode(dontcares);
+          z++;
+          nb->markAsExtensible();
+        } else {
+          nb->markAsNotExtensible();
+        }
+
+        //
+        // Cleanup
+        //
+//         F->unlinkNode(dontcares);
+        nb->shrinkSparse(z);
+        return F->createReducedNode(in, nb);
+      };
+
+
       //
       //
       // Helper for createEdge for (DONT_CARE -> DONT_CHANGE)
@@ -519,6 +791,169 @@ namespace MEDDLY {
         F->unlinkNode(p);
         return F->createReducedNode(-1, nb);
       }
+
+      node_handle createEdgePath(int k, const int* _vlist, const int* _vplist, node_handle next)
+      {
+        MEDDLY_DCASSERT(F->isForRelations());
+
+        if (0==next && (!F->isQuasiReduced() || F->getTransparentNode()==ENCODER::value2handle(0))) {
+          return next;
+        }
+
+        for (int i=1; i<=k; i++) {
+          //
+          // process primed level
+          //
+          node_handle nextpr;
+          if (DONT_CARE == _vplist[i]) {
+            if (F->isFullyReduced()) {
+              // DO NOTHING
+              nextpr = next;
+            } else {
+              // build redundant node
+              unpacked_node* nb = 0;
+              if (F->isExtensibleLevel(i)) {
+                nb = unpacked_node::newFull(F, -i, 1);
+                nb->d_ref(0) = next;
+                // link count should be unchanged
+                nb->markAsExtensible();
+              } else {
+                int sz = F->getLevelSize(-i);
+                nb = unpacked_node::newFull(F, -i, sz);
+                for (int v=0; v<sz; v++) {
+                  nb->d_ref(v) = F->linkNode(next);
+                }
+                F->unlinkNode(next);
+              }
+              nextpr = F->createReducedNode(-1, nb);
+            }
+          }
+          else if (DONT_CHANGE == _vplist[i]) {
+            //
+            // Identity node
+            //
+            if(DONT_CARE == _vlist[i]){
+              if (F->isIdentityReduced()) continue;
+              next = makeIdentityEdgeForDontCareDontChange(i, next);
+              continue;
+            }
+
+            MEDDLY_DCASSERT(_vlist[i].getInteger()>=0);
+
+            if (F->isIdentityReduced()) {
+              // DO NOTHING
+              nextpr = next;
+            }
+            else if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
+              unsigned sz = unsigned(F->getLevelSize(-i));
+              unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
+              node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
+              for(unsigned v=0; v<sz; v++){
+                nbp->d_ref(v)=(v==_vlist[i] ? F->linkNode(next) : F->linkNode(zero));
+              }
+              F->unlinkNode(zero);
+
+              nextpr = F->createReducedNode(_vlist[i], nbp);
+            }
+            else {
+              unpacked_node* nbp = unpacked_node::newSparse(F, -i, 1);
+              nbp->i_ref(0) = _vlist[i];
+              nbp->d_ref(0) = next;
+              // link count should be unchanged
+
+              nextpr = F->createReducedNode(_vlist[i], nbp);
+            }
+          }
+          else {
+            // sane value
+            if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
+              unsigned sz = unsigned(F->getLevelSize(-i));
+              unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
+              node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
+              for(unsigned v=0; v<sz; v++){
+                nbp->d_ref(v)=(v==_vplist[i] ? F->linkNode(next) : F->linkNode(zero));
+              }
+              F->unlinkNode(zero);
+
+              nextpr = F->createReducedNode(_vlist[i], nbp);
+            }
+            else {
+              unpacked_node* nbp = unpacked_node::newSparse(F, -i, 1);
+              nbp->i_ref(0) = _vplist[i];
+              nbp->d_ref(0) = next;
+              // link count should be unchanged
+
+              nextpr = F->createReducedNode(_vlist[i], nbp);
+            }
+          }
+
+          //
+          // process unprimed level
+          //
+          if (DONT_CARE == _vlist[i]) {
+            if (F->isFullyReduced()) {
+              next=nextpr;
+              continue;
+            }
+            // build redundant node
+            unpacked_node* nb = 0;
+            if (F->isIdentityReduced()) {
+              // Below is likely a singleton, so check for identity reduction
+              // on the appropriate v value
+              unsigned sz = unsigned(F->getLevelSize(i));
+              bool add_edge = (F->isExtensibleLevel(i) && (_vplist[i]+1) == sz);
+              nb = unpacked_node::newFull(F, i, add_edge? (1+sz): sz);
+              for (unsigned v=0; v<sz; v++) {
+                nb->d_ref(v) = F->linkNode(v == _vplist[i] ? next : nextpr);
+              }
+              if (F->isExtensibleLevel(i)) {
+                nb->markAsExtensible();
+                if (add_edge) nb->d_ref(sz) = F->linkNode(nextpr);
+              }
+            } else {
+              // Doesn't matter what happened below
+
+              if (F->isExtensibleLevel(i)) {
+                nb = unpacked_node::newFull(F, i, 1);
+                nb->d_ref(0) = F->linkNode(nextpr);
+                nb->markAsExtensible();
+              } else {
+                unsigned sz = unsigned(F->getLevelSize(i));
+                nb = unpacked_node::newFull(F, i, sz);
+                for (unsigned v=0; v<sz; v++) {
+                  nb->d_ref(v) = F->linkNode(nextpr);
+                }
+              }
+            }
+            F->unlinkNode(nextpr);
+            next = F->createReducedNode(-1, nb);
+          } else {
+            // sane value
+            if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
+              unsigned sz = unsigned(F->getLevelSize(i));
+              unpacked_node* nb = unpacked_node::newFull(F, i, sz);
+              node_handle zero = makeOpaqueZeroNodeAtLevel(-i);
+              for(unsigned v=0; v<sz; v++){
+                nb->d_ref(v) = F->linkNode(v==_vlist[i] ? nextpr : zero);
+              }
+              F->unlinkNode(zero);
+
+              next = F->createReducedNode(-1, nb);
+            }
+            else {
+              unpacked_node* nb = unpacked_node::newSparse(F, i, 1);
+              nb->i_ref(0) = _vlist[i];
+              nb->d_ref(0) = nextpr;
+              // link count should be unchanged
+
+              next = F->createReducedNode(-1, nb);
+            }
+          }
+        }
+
+        return next;
+      }
+
 
       /// Special case for createEdge(), with only one minterm.
       node_handle createEdgePath(int k, const general_int* _vlist, const general_int* _vplist, node_handle next)
