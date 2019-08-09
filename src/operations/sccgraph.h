@@ -188,6 +188,21 @@ class MEDDLY::sccgraph {
 
   private:
     friend class sccgraph::edge_iterator;
+
+  //
+  // SCC computation
+  //
+  private:
+    unsigned* visit_stack;  // size is scc_vertices_alloc
+    unsigned stack_top;
+
+    unsigned* visit_index;  // size is scc_vertices_alloc
+    unsigned curr_index;
+
+    void visit_push(unsigned v);  // inlined
+    unsigned visit_pop();         // inlined
+
+    unsigned scc_visit(unsigned v);     // called by update_SCCs
 };
 
 //
@@ -297,6 +312,23 @@ void MEDDLY::sccgraph::show_scc_list(MEDDLY::output &out, unsigned list) const
   } while (ptr != list);
 }
 
+inline
+void MEDDLY::sccgraph::visit_push(unsigned v)
+{
+  MEDDLY_DCASSERT(visit_stack);
+  MEDDLY_DCASSERT(stack_top < scc_vertices_alloc);
+
+  visit_stack[stack_top++] = v;
+}
+
+inline
+unsigned MEDDLY::sccgraph::visit_pop()
+{
+  MEDDLY_DCASSERT(visit_stack);
+  MEDDLY_DCASSERT(stack_top > 0);
+
+  return visit_stack[--stack_top];
+}
 
 #endif  // ifndef SCCGRAPH_H
 

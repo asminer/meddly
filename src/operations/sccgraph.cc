@@ -25,10 +25,16 @@
 #include "sccgraph.h"
 
 #define DEBUG
+#define DEBUG_SCC
 
 #ifdef DEBUG
 #include <cstdio>
 #endif
+
+#ifdef DEBUG_SCC
+#include <cstdio>
+#endif
+
 
 // ******************************************************************
 // *                                                                *
@@ -91,6 +97,9 @@ MEDDLY::sccgraph::sccgraph()
   scc_vertex_offset = 0;
 
   sccs_to_update = 0;
+
+  visit_stack = 0;
+  visit_index = 0;
 }
 
 MEDDLY::sccgraph::~sccgraph()
@@ -106,6 +115,8 @@ MEDDLY::sccgraph::~sccgraph()
   free(vertex_to_scc);
   free(vertices_by_scc);
   free(scc_vertex_offset);
+  free(visit_stack);
+  free(visit_index);
 #ifdef DEBUG
   fprintf(stderr, "Exiting  sccgraph destructor\n");
 #endif
@@ -200,7 +211,42 @@ void MEDDLY::sccgraph::add_edge(unsigned I, unsigned J, edge_label* L)
 
 void MEDDLY::sccgraph::update_SCCs()
 {
+  if (0==sccs_to_update) return;
+
+  //
+  // Initialize 'globals' before scc recursions
+  //
+
+  stack_top = 0;
+  for (unsigned i=0; i<scc_vertices_used; i++) {
+    visit_index[i] = 0;
+  }
+  curr_index = 0;
+
+  //
+  // Traverse list of sccs we know need updating
+  // and do the scc traversal algorithm on them
+  //
+  unsigned ptr = sccs_to_update;
+  do {
+    ptr = scc_edges[ptr].next;
+#ifdef DEBUG_SCC
+    printf("Updating scc %u\n", ptr);
+#endif
+    unsigned v = scc_edges[ptr].to;
+    if (visit_index[v]) continue;
+    scc_visit(v);
+
+  } while (ptr != sccs_to_update);
+
+#ifdef DEBUG_SCC
+  printf("Done updating sccs\n");
+  FILE_output cout(stdout);
+  show_array(cout, "  visit_index:", visit_index, scc_vertices_used);
+#endif
+
   // TBD
+  // regroup sccs as needed here
 }
 
 void MEDDLY::sccgraph::expand_vertices(unsigned I)
@@ -271,6 +317,20 @@ void MEDDLY::sccgraph::expand_vertices(unsigned I)
     scc_vertex_offset[0] = 0;
 
     if (0==scc_vertex_offset) {
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+
+    visit_stack = (unsigned*)
+      realloc(visit_stack, scc_vertices_alloc * sizeof(unsigned));
+
+    if (0==visit_stack) {
+      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+
+    visit_index = (unsigned*)
+      realloc(visit_index, scc_vertices_alloc * sizeof(unsigned));
+      
+    if (0==visit_index) {
       throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
   }
@@ -525,5 +585,51 @@ unsigned MEDDLY::sccgraph::add_to_scc_list(unsigned ptr, unsigned J)
   }
   scc_edges[prev].next = newedge;
   return ptr;
+}
+
+unsigned MEDDLY::sccgraph::scc_visit(unsigned v)
+{
+#ifdef DEBUG_SCC
+  printf("entering scc_visit(%u)\n", v);
+#endif
+
+  unsigned min = (visit_index[v] = ++curr_index);
+  visit_push(v);
+
+  // go through outgoing edges from v
+  if (scc_from[v]) {
+    unsigned ptr = scc_from[v];
+    do {
+      ptr = scc_edges[ptr].next;
+      unsigned w = scc_edges[ptr].to;
+
+      if (visit_index[w]) {
+        // already visited
+        min = MIN(min, visit_index[w]);
+      } else {
+        min = MIN(min, scc_visit(w));
+      }
+    } while (ptr != scc_from[v]);
+  }
+
+  // check if v is the root of an SCC
+  if (min == visit_index[v]) {
+    // Pop everything off the stack until v;
+    // these vertices must be merged
+#ifdef DEBUG_SCC
+    printf("  %u is an scc root\n", v);
+#endif
+    unsigned w;
+    do {
+      w = visit_pop();
+      visit_index[w] = min;
+    } while (w != v);
+  }
+
+#ifdef DEBUG_SCC
+  printf("exiting  scc_visit(%u) returning %u\n", v, min);
+#endif
+
+  return min;
 }
 
