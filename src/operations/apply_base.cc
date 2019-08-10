@@ -234,7 +234,7 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
   //
   unsigned A_curr_index = 0;
   unsigned B_curr_index = 0;
-  unsigned j = 0;
+  int j = 0;
   unsigned nnz = 0;
   for ( ; j <= min_a_b_last_index; j++) {
     const node_handle a_d = ((j == A->i(A_curr_index))? A->d(A_curr_index++): 0);
@@ -354,7 +354,7 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
   //
   // Loop 1: [0, min(a_last_index,b_last_index)]
   //
-  unsigned j = 0;
+  int j = 0;
   for ( ; j < min_size; j++) {
     C->d_ref(j) = compute(A->d(j), B->d(j));
   }
@@ -608,7 +608,7 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   //
   unsigned A_curr_index = 0;
   unsigned B_curr_index = 0;
-  unsigned j = 0;
+  int j = 0;
   unsigned nnz = 0;
   for ( ; j <= min_a_b_last_index; j++) {
     const node_handle a_d = ((j == A->i(A_curr_index))? A->d(A_curr_index++): 0);
@@ -720,7 +720,7 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   //
   // Loop 1: [0, min(a_last_index,b_last_index)]
   //
-  unsigned j = 0;
+  int j = 0;
   for ( ; j < min_size; j++) {
     C->d_ref(j) = compute_r(j, dwnLevel, A->d(j), B->d(j));
   }
@@ -862,7 +862,7 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
     //
     unsigned A_curr_index = 0;
     unsigned B_curr_index = 0;
-    unsigned j = 0;
+    int j = 0;
     unsigned nnz = 0;
     for ( ; j <= min_a_b_last_index; j++) {
       const node_handle a_d = ((j == A->i(A_curr_index))? A->d(A_curr_index++): 0);
@@ -968,7 +968,7 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
 
     // Loop 1: [0, min(a_last_index,b_last_index)]
     //
-    unsigned j = 0;
+    int j = 0;
     for ( ; j < min_size; j++) {
       C->d_ref(j) = compute(A->d(j), B->d(j));
     }
