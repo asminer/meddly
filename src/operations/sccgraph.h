@@ -201,6 +201,7 @@ class MEDDLY::sccgraph {
 
     void visit_push(unsigned v);  // inlined
     unsigned visit_pop();         // inlined
+    unsigned min_visit_stack_until(unsigned v) const; // inlined
 
     unsigned scc_visit(unsigned v);     // called by update_SCCs
 };
@@ -328,6 +329,24 @@ unsigned MEDDLY::sccgraph::visit_pop()
   MEDDLY_DCASSERT(stack_top > 0);
 
   return visit_stack[--stack_top];
+}
+
+inline
+unsigned MEDDLY::sccgraph::min_visit_stack_until(unsigned v) const
+/*
+  Find and smallest element on the stack between top and element v
+  (guaranteed to be on the stack).
+*/
+{
+  MEDDLY_DCASSERT(visit_stack);
+  MEDDLY_DCASSERT(stack_top > 0);
+  unsigned min = v;
+  for (unsigned i=stack_top-1; visit_stack[i] != v; i--) {
+    MEDDLY_DCASSERT(i > 0);
+    if (visit_stack[i] > min) continue;
+    min = visit_stack[i];
+  }
+  return min;
 }
 
 #endif  // ifndef SCCGRAPH_H

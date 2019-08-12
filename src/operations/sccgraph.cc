@@ -26,12 +26,17 @@
 
 #define DEBUG
 #define DEBUG_SCC
+// #define DEBUG_SCC_MIN
 
 #ifdef DEBUG
 #include <cstdio>
 #endif
 
 #ifdef DEBUG_SCC
+#include <cstdio>
+#endif
+
+#ifdef DEBUG_SCC_MIN
 #include <cstdio>
 #endif
 
@@ -240,9 +245,30 @@ void MEDDLY::sccgraph::update_SCCs()
   } while (ptr != sccs_to_update);
 
 #ifdef DEBUG_SCC
-  printf("Done updating sccs\n");
+  printf("Done exploring sccs\n");
   FILE_output cout(stdout);
-  show_array(cout, "  visit_index:", visit_index, scc_vertices_used);
+  show_array(cout, "  visit_index: ", visit_index, scc_vertices_used);
+#endif
+
+  //
+  // Determine renumbering
+  //
+  bool renumbered = false;
+  for (unsigned i=0; i<scc_vertices_used; i++) {
+    if (visit_index[i]) {
+      MEDDLY_DCASSERT(visit_index[i] > scc_vertices_used);
+      visit_index[i] -= scc_vertices_used;
+    } else {
+      visit_index[i] = i;
+    }
+    if (i != visit_index[i]) renumbered = true;
+  }
+#ifdef DEBUG_SCC
+  if (renumbered) {
+    show_array(cout, "  renumbering: ", visit_index, scc_vertices_used);
+  } else {
+    printf("No renumbering necessary\n");
+  }
 #endif
 
   // TBD
@@ -593,8 +619,13 @@ unsigned MEDDLY::sccgraph::scc_visit(unsigned v)
   printf("entering scc_visit(%u)\n", v);
 #endif
 
-  unsigned min = (visit_index[v] = ++curr_index);
+  visit_index[v] = ++curr_index;
+  unsigned min = visit_index[v];
   visit_push(v);
+
+#ifdef DEBUG_SCC_MIN
+  printf("    min for %u is initially %u\n", v, min);
+#endif
 
   // go through outgoing edges from v
   if (scc_from[v]) {
@@ -609,21 +640,38 @@ unsigned MEDDLY::sccgraph::scc_visit(unsigned v)
       } else {
         min = MIN(min, scc_visit(w));
       }
+#ifdef DEBUG_SCC_MIN
+      printf("    min for %u is now %u\n", v, min);
+#endif
     } while (ptr != scc_from[v]);
   }
+
+#ifdef DEBUG_SCC_MIN
+  printf("    min for %u is finally %u\n", v, min);
+#endif
 
   // check if v is the root of an SCC
   if (min == visit_index[v]) {
     // Pop everything off the stack until v;
     // these vertices must be merged
+    // But first, determine the minimum of everything that will be popped;
+    // use this as the new scc number.
+    const unsigned sccnum = min_visit_stack_until(v);
 #ifdef DEBUG_SCC
-    printf("  %u is an scc root\n", v);
+    printf("  %u is an scc root.\n", v);
+    printf("  Create new SCC# %u from vertices:  ", sccnum);
 #endif
     unsigned w;
     do {
       w = visit_pop();
-      visit_index[w] = min;
+#ifdef DEBUG_SCC
+      printf("%u ", w);
+#endif
+      visit_index[w] = scc_vertices_used+sccnum;
     } while (w != v);
+#ifdef DEBUG_SCC
+    printf("\n");
+#endif
   }
 
 #ifdef DEBUG_SCC
