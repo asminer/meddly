@@ -215,6 +215,7 @@ class MEDDLY::sccgraph {
 
     unsigned* visit_index;  // size is scc_vertices_alloc
     unsigned curr_index;
+    unsigned scc_number;
 
     void visit_push(unsigned v);  // inlined
     unsigned visit_pop();         // inlined

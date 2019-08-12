@@ -340,21 +340,40 @@ void MEDDLY::sccgraph::update_SCCs()
   curr_index = 0;
 
   //
-  // Traverse list of sccs we know need updating
-  // and do the scc traversal algorithm on them
+  // Reverse the update list because we need
+  // to visit them from highest to lowest.
   //
   unsigned ptr = scc_updatelist;
+  unsigned next = 0;
+  unsigned revlist = 0;
+  next = scc_edges[ptr].next;
   do {
-    ptr = scc_edges[ptr].next;
+    ptr = next;
+    next = scc_edges[ptr].next;
+    scc_edges[ptr].next = revlist;
+    revlist = ptr;
+  } while (ptr != scc_updatelist);
+  scc_updatelist = 0;
+
+  //
+  // Traverse list of sccs we know need updating
+  // and do the scc traversal algorithm on them.
+  // Also recycle the list.
+  //
+  scc_number = 2*scc_vertices_used;
+  while (revlist) {
+    ptr = revlist;
+    revlist = scc_edges[revlist].next;
+
 #ifdef DEBUG_SCC
     printf("Updating scc %u\n", ptr);
 #endif
     unsigned v = scc_edges[ptr].to;
     if (visit_index[v]) continue;
     scc_visit(v);
-
-  } while (ptr != scc_updatelist);
-
+    recycle_scc_edge(ptr);
+  }
+  
 #ifdef DEBUG_SCC
   printf("Done exploring sccs\n");
   FILE_output cout(stdout);
@@ -364,26 +383,93 @@ void MEDDLY::sccgraph::update_SCCs()
   //
   // Determine renumbering
   //
-  bool renumbered = false;
+
+  //
+  // Pass 1: anything with visit_index=0 is numbered first, in order.
+  // These vertices were never touched during exploration.
+  // Note - if visit_index != 0 then we know visit_index >= scc_vertices_used.
+  //
+  unsigned up_counter = 0;
   for (unsigned i=0; i<scc_vertices_used; i++) {
-    if (visit_index[i]) {
-      MEDDLY_DCASSERT(visit_index[i] > scc_vertices_used);
-      visit_index[i] -= scc_vertices_used;
-    } else {
-      visit_index[i] = i;
+    if (0==visit_index[i]) {
+      visit_index[i] = up_counter++;
     }
-    if (i != visit_index[i]) renumbered = true;
   }
+
+  //
+  // There will be a gap of exactly scc_number - up_counter
+  // between the ones numbered upwards (that were 0) and the
+  // SCCs that were discovered counting downwards.
+  // Pass 2: collapse the gap.
+  //
+  const unsigned gap = 1+scc_number - up_counter;
+  for (unsigned i=0; i<scc_vertices_used; i++) {
+    if (visit_index[i] > up_counter) {
+      visit_index[i] -= gap;
+    }
+  }
+
 #ifdef DEBUG_SCC
-  if (renumbered) {
-    show_array(cout, "  renumbering: ", visit_index, scc_vertices_used);
-  } else {
-    printf("No renumbering necessary\n");
-  }
+  show_array(cout, "  renumbering: ", visit_index, scc_vertices_used);
 #endif
 
-  // TBD
-  // regroup sccs as needed here
+  //
+  // Renumbering has been determined!
+  // visit_index is now used for SCC renumbering.
+  // Next - renumber everything :)
+  //
+
+  //
+  // Move the scc_graph adjacency lists to visit_stack, temporarily.
+  //
+  for (unsigned i=0; i<scc_vertices_used; i++) {
+    visit_stack[i] = scc_from[i];
+    scc_from[i] = 0;
+  }
+  
+  //
+  // Copy edges back where they belong.
+  // During the copy, renumber the "to" value.
+  // Note - we can't simply do that in place, because the lists
+  // will be out of order and some elements may need to be merged.
+  // Also, eliminate any self loops.
+  //
+  for (unsigned i=0; i<scc_vertices_used; i++) {
+    if (0==visit_stack[i]) continue;
+    const unsigned newi = visit_index[i];
+    // convert circular list to linear list by breaking the cycle
+    unsigned list = scc_edges[visit_stack[i]].next;
+    scc_edges[visit_stack[i]].next = 0;
+    // transfer from list to the correct list, renumbering to values as we go
+    while (list) {
+      next = scc_edges[list].next;
+      const unsigned newj = visit_index[ scc_edges[list].to ];
+      scc_edges[list].to = newj;
+
+      // Check our invariant
+      MEDDLY_DCASSERT(newj >= newi);
+      
+      if ((newi == newj) || (list != add_to_circular_list(scc_from[newi], list, scc_edges))) {
+        // this edge collapses now
+        recycle_scc_edge(list);
+      }
+      list = next;
+    } // while
+  } // for i
+
+  //
+  // Update vertex_to_scc mapping
+  //
+  for (unsigned i=0; i<graph_vertices_used; i++) {
+    MEDDLY_CHECK_RANGE(0, vertex_to_scc[i], scc_vertices_used);
+    vertex_to_scc[i] = visit_index[ vertex_to_scc[i] ];
+  }
+  
+  // TBD:
+  // rebuild the vertices_by_scc and scc_vertex_offset arrays
+
+  // TBD:
+  // shrink scc_vertices_used as needed (first scc# with no vertices)
 }
 
 void MEDDLY::sccgraph::expand_vertices(unsigned I)
@@ -534,115 +620,6 @@ unsigned MEDDLY::sccgraph::new_graph_edge(unsigned J, edge_label* L)
 }
 
 
-/*
-void MEDDLY::sccgraph::add_graph_edge(unsigned I, unsigned J, edge_label* L)
-{
-  //
-  // Put this edge into the list for I.
-  // We use a circular list and keep a pointer to the last element;
-  // that way "add to front" and "add to end" are both fast.
-  //
-
-  MEDDLY_DCASSERT(graph_from);
-  MEDDLY_CHECK_RANGE(0, I, graph_vertices_used);
-
-  //
-  // Find the place in the list before we need to insert this edge.
-  // If we find an existing edge, append L
-  //
-  // Insertion point will be after prev and before curr.
-  //
-  unsigned prev = 0;
-  unsigned curr = 0;
-  unsigned last = 0;
-
-  if (graph_from[I]) {
-
-    last = graph_from[I];
-    if (J == graph_edges[last].to) {
-      // merge edges
-      MEDDLY_DCASSERT(graph_edges[last].edge);
-      graph_edges[last].edge->append_and_recycle(L);
-      return;
-    }
-    if (J > graph_edges[last].to) {
-      prev = last;
-    } else {
-      // Search the list until curr > J
-      for (curr = graph_edges[last].next; curr != last; curr = graph_edges[curr].next) {
-        if (graph_edges[curr].to == J ) {
-          MEDDLY_DCASSERT(graph_edges[curr].edge);
-          graph_edges[curr].edge->append_and_recycle(L);
-          return;
-        }
-        if (graph_edges[curr].to > J ) {
-          // found the spot
-          break;
-        }
-        // Still here? curr < J so insertion point must be here or after.
-        prev = curr;
-      } // for curr
-    }
-  } // list not empty
-
-  //
-  // Create a new edge, add it to the list in the appropriate spot
-  //
-  unsigned newedge = new_graph_edge(J, L);
-
-#ifdef DEBUG
-  printf("Adding graph edge# %u  (prev %u curr %u)\n", newedge, prev, curr);
-#endif
-
-  if (0==prev) {
-    MEDDLY_DCASSERT(0==curr);
-    MEDDLY_DCASSERT(0==graph_from[I]);
-    graph_from[I] = newedge;
-    graph_edges[newedge].next = newedge;
-    return;
-  }
-
-  MEDDLY_DCASSERT(graph_edges[prev].to < J);
-  if (curr) {
-    MEDDLY_DCASSERT(graph_edges[prev].next == curr);
-    MEDDLY_DCASSERT(J < graph_edges[curr].to);
-
-    // We're adding anywhere except the very end of the list.
-
-    graph_edges[newedge].next = curr;
-  } else {
-    MEDDLY_DCASSERT(last == prev);
-
-    // We're adding at the very end of the list, so we also
-    // need to update the list pointer.
-
-    graph_from[I] = newedge;
-    graph_edges[newedge].next = graph_edges[prev].next;
-  }
-  graph_edges[prev].next = newedge;
-}
-*/
-
-/*
-void MEDDLY::sccgraph::add_scc_edge(unsigned I, unsigned J)
-{
-  if (I==J) return;
-
-  MEDDLY_DCASSERT(scc_from);
-  MEDDLY_CHECK_RANGE(0, I, scc_vertices_used);
-
-  scc_from[I] = add_to_scc_list(scc_from[I], J);
-
-  //
-  // If we need to update SCC I, add it to the (ordered) list
-  //
-
-  if (I>J) {
-    sccs_to_update = add_to_scc_list(sccs_to_update, I);
-  }
-}
-*/
-
 unsigned MEDDLY::sccgraph::new_scc_edge(unsigned J)
 {
   unsigned newedge = 0;
@@ -681,84 +658,6 @@ unsigned MEDDLY::sccgraph::new_scc_edge(unsigned J)
 
   return newedge;
 }
-
-/*
-unsigned MEDDLY::sccgraph::add_to_scc_list(unsigned ptr, unsigned J)
-{
-  //
-  // Find the place in the circular list before we need to insert this edge.
-  // If we find an existing edge, do nothing and return.
-  //
-  // Insertion point will be after prev and before curr.
-  //
-  unsigned prev = 0;
-  unsigned curr = 0;
-  const unsigned last = ptr;
-
-  if (ptr) {
-
-    if (J == scc_edges[last].to) {
-      // edge already exists
-      return ptr;
-    }
-    if (J > scc_edges[last].to) {
-      prev = last;
-    } else {
-      // Search the list until curr > J
-      for (curr = scc_edges[last].next; curr != last; curr = scc_edges[curr].next) {
-        if (scc_edges[curr].to == J ) {
-          // Already in the list, do nothing
-          return ptr;
-        }
-        if (scc_edges[curr].to > J ) {
-          // found the spot
-          break;
-        }
-        // Still here? curr < J so insertion point must be here or after.
-        prev = curr;
-      } // for curr
-    }
-  } // list not empty
-
-  //
-  // Create a new edge, add it to the list in the appropriate spot
-  //
-  unsigned newedge = new_scc_edge(J);
-
-#ifdef DEBUG
-  printf("Adding to SCC list item# %u  (prev %u curr %u)\n", newedge, prev, curr);
-#endif
-
-  if (0==prev) {
-    // We had an empty list to start with
-    MEDDLY_DCASSERT(0==curr);
-    MEDDLY_DCASSERT(0==ptr);
-    scc_edges[newedge].next = newedge;
-    return newedge;
-  }
-
-  MEDDLY_DCASSERT(scc_edges[prev].to < J);
-  if (curr) {
-    MEDDLY_DCASSERT(scc_edges[prev].next == curr);
-    MEDDLY_DCASSERT(J < scc_edges[curr].to);
-
-    // We're adding anywhere except the very end of the list.
-
-    scc_edges[newedge].next = curr;
-  } else {
-    MEDDLY_DCASSERT(last == prev);
-
-    // We're adding at the very end of the list, so we also
-    // need to update the list pointer.
-
-    ptr = newedge;
-    scc_edges[newedge].next = scc_edges[prev].next;
-  }
-  scc_edges[prev].next = newedge;
-  return ptr;
-}
-*/
-
 
 unsigned MEDDLY::sccgraph::scc_visit(unsigned v)
 {
@@ -803,10 +702,11 @@ unsigned MEDDLY::sccgraph::scc_visit(unsigned v)
     // these vertices must be merged
     // But first, determine the minimum of everything that will be popped;
     // use this as the new scc number.
-    const unsigned sccnum = min_visit_stack_until(v);
+  //  const unsigned sccnum = min_visit_stack_until(v);
 #ifdef DEBUG_SCC
-    printf("  %u is an scc root.\n", v);
-    printf("  Create new SCC# %u from vertices:  ", sccnum);
+    printf("  %u is an scc root\n", v);
+    printf("  Create new SCC# %u from vertices: ", scc_number);
+   // printf("  Create new SCC# %u from vertices:  ", sccnum);
 #endif
     unsigned w;
     do {
@@ -814,11 +714,12 @@ unsigned MEDDLY::sccgraph::scc_visit(unsigned v)
 #ifdef DEBUG_SCC
       printf("%u ", w);
 #endif
-      visit_index[w] = scc_vertices_used+sccnum;
+      visit_index[w] = scc_number;
     } while (w != v);
 #ifdef DEBUG_SCC
     printf("\n");
 #endif
+    scc_number--;   // we get a reverse topological sort for free; number backwards
   }
 
 #ifdef DEBUG_SCC
