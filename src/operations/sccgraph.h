@@ -133,49 +133,66 @@ class MEDDLY::sccgraph {
     const unsigned* get_SCC_vertices(unsigned s) const;   // Inlined
 
   private:
-    // Complete graph
-
-    struct graph_list_node {
-      edge_label* edge;
+    //
+    // linked list nodes in unlabeled (SCC) graphs
+    //
+    struct unlabeled_list_node {
       unsigned to;
       unsigned next;
     };
 
-    graph_list_node* graph_edges;
+    //
+    // linked list nodes in labeled (main) graphs
+    struct labeled_list_node : public unlabeled_list_node {
+      edge_label *edge;
+    };
+
+
+  private:
+    //
+    // main graph
+    //
+    labeled_list_node* graph_edges;
     unsigned graph_edges_used;
     unsigned graph_edges_alloc;
+    unsigned graph_edges_freelist;
 
     unsigned* graph_from;
     unsigned graph_vertices_used;
     unsigned graph_vertices_alloc;
 
   private:
-    void add_graph_edge(unsigned I, unsigned J, edge_label* L);
     unsigned new_graph_edge(unsigned J, edge_label* L);
-    void show_graph_list(output &out, unsigned list) const;
+    inline void recycle_graph_edge(unsigned n) {
+      graph_edges[n].next = graph_edges_freelist;
+      graph_edges_freelist = n;
+    }
+
+    void show_graph_list(output &out, unsigned list) const; // inlined
 
   private:
+    //
     // SCC graph
+    //
 
-    struct scc_list_node {
-      unsigned to;
-      unsigned next;
-    };
-
-    scc_list_node* scc_edges;
+    unlabeled_list_node* scc_edges;
     unsigned scc_edges_used;
     unsigned scc_edges_alloc;
+    unsigned scc_edges_freelist;
 
     unsigned* scc_from;
     unsigned scc_vertices_used;
     unsigned scc_vertices_alloc;
 
-    unsigned sccs_to_update;
+    unsigned scc_updatelist;
 
   private:
-    void add_scc_edge(unsigned I, unsigned J);
     unsigned new_scc_edge(unsigned J);
-    unsigned add_to_scc_list(unsigned ptr, unsigned J);
+    inline void recycle_scc_edge(unsigned n) {
+      scc_edges[n].next = scc_edges_freelist;
+      scc_edges_freelist = n;
+    }
+
     void show_scc_list(output &out, unsigned list) const;
 
   private:
@@ -204,6 +221,7 @@ class MEDDLY::sccgraph {
     unsigned min_visit_stack_until(unsigned v) const; // inlined
 
     unsigned scc_visit(unsigned v);     // called by update_SCCs
+
 };
 
 //
@@ -233,7 +251,7 @@ MEDDLY::sccgraph::edge_iterator& MEDDLY::sccgraph::edge_iterator::operator++()
 
 bool MEDDLY::sccgraph::edge_iterator::operator==(const edge_iterator& ei) const
 {
-  MEDDLY_DCASSERT(parent == ei.parent);
+  // MEDDLY_DCASSERT(parent == ei.parent);
   return edgeptr == ei.edgeptr;
 }
 
