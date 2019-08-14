@@ -465,11 +465,41 @@ void MEDDLY::sccgraph::update_SCCs()
     vertex_to_scc[i] = visit_index[ vertex_to_scc[i] ];
   }
   
-  // TBD:
-  // rebuild the vertices_by_scc and scc_vertex_offset arrays
+  //
+  // Count number of vertices in each scc
+  //
+  for (unsigned i=0; i<scc_vertices_used; i++) {
+    scc_vertex_offset[i] = 0;
+  }
+  for (unsigned i=0; i<graph_vertices_used; i++) {
+    ++scc_vertex_offset[ vertex_to_scc[i] ];
+  }
 
-  // TBD:
-  // shrink scc_vertices_used as needed (first scc# with no vertices)
+  //
+  // Now "accumulate" the counts, so that
+  // scc_vertex_offset[i] = #vertices in sccs numbered i or lower
+  //
+  for (unsigned i=1; i<scc_vertices_used; i++) {
+    scc_vertex_offset[i] += scc_vertex_offset[i-1];
+  }
+  scc_vertex_offset[scc_vertices_used] = scc_vertex_offset[scc_vertices_used-1];
+
+  //
+  // Put vertices into vertices_by_scc array, backwards,
+  // using scc_vertex_offset[i] as the current slot for SCC i.
+  //
+  for (unsigned i=graph_vertices_used; i; ) {
+    i--;
+    vertices_by_scc[ --scc_vertex_offset[ vertex_to_scc[i] ] ] = i;
+  }
+
+  //
+  // Shrink scc_vertices_used by discarding end sccs with no vertices
+  //
+  while (scc_vertex_offset[scc_vertices_used] == scc_vertex_offset[scc_vertices_used-1]) {
+    MEDDLY_DCASSERT(scc_vertices_used>1);
+    scc_vertices_used--;
+  }
 }
 
 void MEDDLY::sccgraph::expand_vertices(unsigned I)
