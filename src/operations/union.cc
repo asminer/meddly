@@ -550,8 +550,6 @@ MEDDLY::binary_operation*
 MEDDLY::union_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
   expert_forest* r) const
 {
-  printf("\nn I land here for union\n");
-   printf("\nn I land here for union\n");
   if (0==a1 || 0==a2 || 0==r) return 0;
 
   if (  

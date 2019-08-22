@@ -42,7 +42,6 @@ void MEDDLY::mt_mxd_bool::createEdge(bool term, dd_edge& e)
 void MEDDLY::mt_mxd_bool
 ::createEdge(const int* const* vlist, const int* const* vplist, int N, dd_edge &e)
 {
-  printf("\n I entered here!!!\n");
   binary_operation* unionOp = getOperation(UNION, this, this, this);
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);
@@ -81,8 +80,7 @@ void MEDDLY::mt_mxd_bool
 
   free(ordered_vlist);
   free(ordered_vplist);
-  printf("\n I wil exit createEdge!!!\n");
-
+  
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif

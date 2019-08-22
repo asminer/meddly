@@ -25,10 +25,8 @@ Model: A simple petri net
 Places: A, B, C
 Transitions: T_ab, T_ac, T_abc
 
-T_ab: A--, B++
-T_ac: A++, C--
-T_abc: A += C , B--, C -= A 
-Initial state: A = N, B = 0, C = N
+T_abc: A -= 1 , B--, C += 1, D
+Initial state: A = N, B = N, C = 0, D = 0
 */
 
 #include "../src/meddly.h"
@@ -39,6 +37,7 @@ using namespace MEDDLY;
 class pn;
 class enabling_subevent;
 class firing_subevent;
+class derived_relation_node;
 int usage(const char*);
 
 class pn {
@@ -63,14 +62,13 @@ bool indexOf(int vh, int value, int &index);
 bool valueOf(int vh, int index, int &value);
 
 satimpl_opname::implicit_relation* impl_rel;
-satimpl_opname::subevent* A_AB_firing;
-satimpl_opname::subevent* B_AB_firing;
-satimpl_opname::subevent* A_AB_enabling;
-satimpl_opname::subevent* A_AC_firing;
-satimpl_opname::subevent* C_AC_firing;
-satimpl_opname::subevent* C_AC_enabling;  
-satimpl_opname::event* T_AB;
-satimpl_opname::event* T_AC;
+satimpl_opname::subevent* A_ABC_firing;
+satimpl_opname::subevent* A_ABC_enabling;
+//relation_node* A_ABC_firing;
+//relation_node* C_ABC_firing;
+relation_node* B_ABC_firing;
+satimpl_opname::subevent* C_ABC_firing;
+satimpl_opname::event* T_ABC;
   
 specialized_operation* impl_sat_op;
 
@@ -82,9 +80,9 @@ dd_edge* initial_state;
 dd_edge* reachable_states;
 
 const int n_vars = 3;
-const int A_level = 3;
-const int B_level = 2;
-const int C_level = 1;
+const int A_level = 2;
+const int B_level = 1;
+const int C_level = 3;
 
 // index to value
 std::vector<std::vector<int>> index_to_value;
@@ -92,6 +90,7 @@ std::vector<std::vector<int>> value_to_index;
 
 friend enabling_subevent;
 friend firing_subevent;
+friend derived_relation_node;
 };
 
 class enabling_subevent : public satimpl_opname::subevent {
@@ -100,7 +99,7 @@ enabling_subevent(pn* model, forest* mxd,
 int* subevent_vars, int n_subevent_vars,
 int* event_vars, int n_event_vars);
 ~enabling_subevent();
-virtual void confirm(satimpl_opname::otf_relation &rel, int v, int index);
+virtual void confirm(satimpl_opname::implicit_relation &rel, int v, int index);
 void initializeMinterm();
 protected:
 pn* model;
@@ -120,7 +119,7 @@ int* subevent_vars, int n_subevent_vars,
 int* event_vars, int n_event_vars,
 int offset);
 ~firing_subevent();
-virtual void confirm(satimpl_opname::impicit_relation &rel, int v, int index);
+virtual void confirm(satimpl_opname::implicit_relation &rel, int v, int index);
 void initializeMinterm();
 protected:
 pn* model;
@@ -132,6 +131,24 @@ int offset;
 int* unp_minterm;
 int* p_minterm;
 int minterm_size;
+};
+
+
+class derived_relation_node : public relation_node{
+public:
+  derived_relation_node(pn* model, forest* mxd,
+                  int rn_var,
+                  int en_offset, int f_offset);
+  ~derived_relation_node();
+  //virtual void confirm(satimpl_opname::implicit_relation &rel, int v, int index);
+  virtual long nextOf(long i);
+ protected:
+  pn* model;
+  forest* mxd;
+  int rn_var;
+  int en_offset;
+  int f_offset;
+  
 };
 
 int main(int argc, char* argv[]) {
@@ -154,7 +171,6 @@ std::cout << "Tokens: " << nTokens << std::endl;
 
 pn model(nTokens);
 dd_edge rss = model.getReachableStateSet();
-
 ostream_output s(std::cout);
 rss.show(s, 2);
 double rss_card = rss.getCardinality();
@@ -190,15 +206,12 @@ pn::pn(int n_tokens) {
 this->n_tokens = n_tokens;
 
 impl_rel = 0;
-A_AB_firing = 0;
-B_AB_firing = 0;
-A_AB_enabling = 0;
-A_AC_firing = 0;
-C_AC_firing = 0;
-C_AC_enabling = 0;
+A_ABC_firing = 0;
+A_ABC_enabling = 0;
+B_ABC_firing = 0;
+C_ABC_firing = 0;
 
-T_AB = 0;
-T_AC = 0;  
+T_ABC = 0;
 impl_sat_op = 0;
 
 dom = 0;
@@ -239,8 +252,7 @@ pn::~pn() {
 // delete otf_rel;
 
 // delete the events
-delete T_AB;
-delete T_AC;
+delete T_ABC;
 
 
 // delete the domain
@@ -270,47 +282,40 @@ assert(mxd);
 }
 
 void pn::buildTransition() {
-// Only one transition in the system: T_ab: A--, B++
+// Only one transition in the system: T_ab: A--, B--, C++
 // build A-- subevent
-// build B++ subevent
+// build C++ subevent
+// build B-- relation node
 // build array of variables this transition depends on
 
-if (A_AB_firing) delete A_AB_firing;
-if (A_AB_enabling) delete A_AB_enabling;
-if (B_AB_firing) delete B_AB_firing;
-if (T_AB) delete T_AB;
+if (A_ABC_firing) delete A_ABC_firing;
+if (A_ABC_enabling) delete A_ABC_enabling;
+if (C_ABC_firing) delete C_ABC_firing;
+if (T_ABC) delete T_ABC;
+
+int dep_vars_A_ABC[] = {A_level};
+int dep_vars_B_ABC[] = {B_level};
+int dep_vars_C_ABC[] = {C_level};
+int dep_vars_TABC[] = {A_level, B_level, C_level};
+
+
+A_ABC_firing = new firing_subevent(this, mxd, (int*)(&dep_vars_A_ABC[0]), 1, (int*)(&dep_vars_TABC[0]), 3, -1);
+// A_ABC_enabling = new enabling_subevent(this, mxd, (int*)(&dep_vars_A_ABC[0]), 1, (int*)(&dep_vars_TABC[0]), 3);
   
-if (A_AC_firing) delete A_AC_firing;
-if (C_AC_firing) delete C_AC_firing;
-if (C_AC_enabling) delete C_AC_enabling;
-if (T_AC) delete T_AC;
+C_ABC_firing = new firing_subevent(this, mxd, (int*)(&dep_vars_C_ABC[0]), 1, (int*)(&dep_vars_TABC[0]), 3, 1);
+//A_ABC_firing = new derived_relation_node(this, mxd, dep_vars_A_ABC[0], 1, -1);
   
+//C_ABC_firing =  new derived_relation_node(this, mxd, dep_vars_C_ABC[0], 0, 1);
 
+B_ABC_firing  = new derived_relation_node(this, mxd, dep_vars_B_ABC[0], 1, -1);
 
-int dep_vars_A_AB[] = {A_level};
-int dep_vars_B_AB[] = {B_level};
-int dep_vars_TAB[] = {A_level, B_level};
-
-int dep_vars_A_AC[] = {A_level};
-int dep_vars_C_AC[] = {C_level};
-int dep_vars_TAC[] = {A_level, C_level};
-  
-
-A_AB_firing = new firing_subevent(this, mxd, (int*)(&dep_vars_A_AB[0]), 1, (int*)(&dep_vars_TAB[0]), 2, -1);
-B_AB_firing = new firing_subevent(this, mxd, (int*)(&dep_vars_B_AB[0]), 1, (int*)(&dep_vars_TAB[0]), 2, 1);
-A_AB_enabling = new enabling_subevent(this, mxd, (int*)(&dep_vars_A_AB[0]), 1, (int*)(&dep_vars_TAB[0]), 2);
-
-A_AC_firing = new firing_subevent(this, mxd, (int*)(&dep_vars_A_AC[0]), 1, (int*)(&dep_vars_TAC[0]), 2, 1);
-C_AC_firing = new firing_subevent(this, mxd, (int*)(&dep_vars_C_AC[0]), 1, (int*)(&dep_vars_TAC[0]), 2, 1);
-C_AC_enabling = new enabling_subevent(this, mxd, (int*)(&dep_vars_C_AC[0]), 1, (int*)(&dep_vars_TAC[0]), 2);
-    
-
-satimpl_opname::subevent* subeventsAB[] = {A_AB_firing, B_AB_firing, A_AB_enabling};
-satimpl_opname::subevent* subeventsAC[] = {A_AC_firing, C_AC_firing, C_AC_enabling};
-T_AB = new satimpl_opname::event((satimpl_opname::subevent**)(&subeventsAB[0]), 3);
-assert(T_AB);
-T_AC = new satimpl_opname::event((satimpl_opname::subevent**)(&subeventsAC[0]), 3);
-assert(T_AC);
+satimpl_opname::subevent* subeventsABC[] = {C_ABC_firing, A_ABC_firing};
+//satimpl_opname::subevent* subeventsABC[] = {};
+relation_node* relNodesABC[] = {B_ABC_firing};
+//(satimpl_opname::subevent**)(&subeventsABC[0])
+T_ABC = new satimpl_opname::event((satimpl_opname::subevent**)(&subeventsABC[0]), 2, (relation_node**)(&relNodesABC[0]), 1);
+// T_ABC = new satimpl_opname::event(NULL, 0, NULL, 0);
+assert(T_ABC);
 }
 
 void pn::buildInitialState() {
@@ -319,22 +324,24 @@ int init_state[] = {0, 0, 0, 0};
 int* init[] = {init_state};
 mdd->createEdge((int**)(&init[0]), 1, *initial_state);
 assert(initial_state);
+  ostream_output s(std::cout);
+  initial_state->show(s, 2);
 int index = -1;
 assert(addValue(A_level, n_tokens, index));
-assert(addValue(B_level, 0, index));
+assert(addValue(B_level, n_tokens, index));
 assert(addValue(C_level, 0, index));
 }
 
 void pn::buildOtfSaturationOp() {
 if (impl_sat_op == 0) {
-if (otf_rel == 0) {
+if (impl_rel == 0) {
 // build otf saturation relation
-satimpl_opname::event* events[] = {T_AB, T_AC};
-otf_rel = new satotf_opname::otf_relation(mdd, mxd, mdd, &events[0], 1);
+satimpl_opname::event* events[] = {T_ABC};
+impl_rel = new satimpl_opname::implicit_relation(mdd, mxd, mdd, &events[0], 1);
 }
 assert(impl_rel);
-impl_sat_op = SATURATION_OTF_FORWARD->buildOperation(impl_rel);
-assert(impl_sat_op);
+ impl_sat_op = SATURATION_IMPL_FORWARD->buildOperation(impl_rel);
+ assert(impl_sat_op);
 }
 }
 
@@ -346,8 +353,7 @@ if (reachable_states) delete reachable_states;
 reachable_states = new dd_edge(mdd);
 assert(reachable_states);
 
-otf_rel->confirm(*initial_state);
-
+impl_rel->setConfirmedStates(*initial_state);
 impl_sat_op->compute(*initial_state, *reachable_states);
 assert(reachable_states);
 }
@@ -364,8 +370,8 @@ reachable_states = 0;
 }
 
 bool pn::indexOf(int vh, int value, int &index) {
+  
 if (value_to_index.size() <= unsigned(vh)) return false;
-
 if (value_to_index[vh].size() <= unsigned(value)) return false;
 index = value_to_index[vh][value];
 return true;
@@ -405,7 +411,7 @@ enabling_subevent::enabling_subevent(
 pn* model, forest* mxd,
 int* se_vars, int n_se_vars,  // subevent vars
 int* e_vars, int n_e_vars)    // event vars
-: satotf_opname::subevent(mxd, se_vars, n_se_vars, false)
+: satimpl_opname::subevent(mxd, se_vars, n_se_vars, false)
 {
 this->model = model;
 this->mxd = mxd;
@@ -441,7 +447,7 @@ p_minterm[event_vars[i]] = DONT_CARE;
 }
 }
 
-void enabling_subevent::confirm(satotf_opname::impl_relation &rel, int v, int index) {
+void enabling_subevent::confirm(satimpl_opname::implicit_relation &rel, int v, int index) {
 std::cout << "Confirming (enabling): (" << v << ", " << index << ")\n";
 // add minterm:
 // if (value(v[index]) > 0)
@@ -472,7 +478,7 @@ pn* model, forest* mxd,
 int* se_vars, int n_se_vars,  // subevent vars
 int* e_vars, int n_e_vars,    // event vars
 int offset)
-: satotf_opname::subevent(mxd, se_vars, n_se_vars, true)
+: satimpl_opname::subevent(mxd, se_vars, n_se_vars, true)
 {
 this->model = model;
 this->mxd = mxd;
@@ -509,7 +515,7 @@ p_minterm[event_vars[i]] = DONT_CARE;
 }
 }
 
-void firing_subevent::confirm(satotf_opname::otf_relation &rel, int v, int index) {
+void firing_subevent::confirm(satimpl_opname::implicit_relation &rel, int v, int index) {
 std::cout << "Confirming (firing): (" << v << ", " << index << ")\n";
 // add minterm:
 // if it is a known index
@@ -545,5 +551,79 @@ std::cout << "\t\tk: " << v
 }
 
 // ----------- end of class firing_subevent implementation ----------
+
+// ------------ class derived_relation_node implmentation -----------
+
+derived_relation_node::derived_relation_node(
+                                 pn* model, forest* mxd,
+                                 int rn_var,  // relation node var
+                                 int en_offset, int f_offset)
+: relation_node(141010, rn_var, -1 ,en_offset, f_offset)
+{
+  this->model = model;
+  this->mxd = mxd;
+  this->rn_var = rn_var;
+  this->en_offset = en_offset;
+  this->f_offset = f_offset;
+}
+
+
+derived_relation_node::~derived_relation_node() {
+}
+
+long derived_relation_node::nextOf(long i) {
+  
+  int val_at_i = -1;
+  model->valueOf(rn_var, i, val_at_i);
+  assert(val_at_i!=-1);
+  
+  printf("\n RNode at level %d with f_offset %d -> From Index: %d; Token: %d",rn_var, f_offset, i, val_at_i);
+  
+  /*if(val_at_i>=getPieceSize()) //Array needs to be allocated
+    expandTokenUpdate(val_at_i);*/
+  
+  long val_at_j = val_at_i >= en_offset? val_at_i + f_offset : -1;
+   printf("\n To Token: %d",val_at_j);
+  
+  if(val_at_j<0)
+    return -1;
+  
+  int j;
+  if(!model->addValue(rn_var, val_at_j, j))
+    model->indexOf(rn_var, val_at_j, j);
+  printf(", Index: %d",j);
+  
+ /* if(getTokenUpdate()[val_at_i]==-2) //Array needs to be updated
+    {  
+      int val = val_at_j<0? -1: val_at_j;
+      setTokenUpdateAtIndex(i,val_at_j);
+    }
+  
+  return getTokenUpdate()[val_at_i];*/
+    
+  return j;
+  
+  /*
+  if (val<0)
+    return -1;
+  else
+    return val;
+  */
+  /*
+   if(i>=getPieceSize()) //Array needs to be allocated
+   expandTokenUpdate(i);
+   
+   if(getTokenUpdate()[i]==NOT_KNOWN) //Array needs to be updated
+   {  
+   long result = i+nxtList[getID()];
+   long val = result>=0?result:OUT_OF_BOUNDS;
+   setTokenUpdateAtIndex(i,val);
+   }
+   
+   return getTokenUpdate()[i];
+   */
+}
+
+// --------- end of class derived_relation_node implmentation ---------
 
 

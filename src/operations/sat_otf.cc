@@ -155,7 +155,6 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
     }
   }
   num_minterms++;
-  printf("\n I come here fine \n");
   return true;
 }
 
@@ -325,7 +324,6 @@ void MEDDLY::satotf_opname::event::buildEventMask()
 
 bool MEDDLY::satotf_opname::event::rebuild()
 {
-  printf("\n I am hererebuild \n");
   MEDDLY_DCASSERT(num_subevents > 0);
   if (is_disabled) return false;
   if (!needs_rebuilding) return false;
@@ -333,20 +331,15 @@ bool MEDDLY::satotf_opname::event::rebuild()
 
   // An event is a conjunction of sub-events (or sub-functions).
   for (int i = 0; i < num_subevents; i++) {
-    printf("\n Doing subevent %d root build \n",i);
     subevents[i]->buildRoot();
-     printf("\n I subevent %d root build done \n",i);
   }
-   printf("\n I done subevent building \n");
-  buildEventMask();
-   printf("\n I done event mask \n");
-
+   buildEventMask();
+   
   dd_edge e(event_mask);
   for (int i = 0; i < num_subevents; i++) {
     e *= subevents[i]->getRoot();
   }
-  printf("\n I done event building \n");
-
+  
   /*
   if (e.getNode() == 0) {
     ostream_output out(std::cout);
@@ -367,8 +360,6 @@ bool MEDDLY::satotf_opname::event::rebuild()
   */
   if (e == root) return false;
   root = e;
-  printf("\n I am hererebuild done \n");
-  printf("\n I am hererebuild done \n");
   return true;
 }
 
@@ -1692,9 +1683,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   // cleanup mdd reader
   unpacked_node::recycle(A);
 
-  printf("\n Going into satHelper from recFire\n");
   saturateHelper(*nb);
-  printf("\n Cameback from satHelper to recFire\n");
   result = resF->createReducedNode(-1, nb);
 #ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);

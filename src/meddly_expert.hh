@@ -1092,7 +1092,7 @@ MEDDLY::node_headers::getNodeAddress(node_handle p) const
 {
   MEDDLY_DCASSERT(p>0);
   MEDDLY_DCASSERT(p<=a_last);
-#ifdef OLD_NODE_HEADERS
+ #ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   return address[p].offset;
 #else
@@ -3027,13 +3027,13 @@ MEDDLY::satimpl_opname::implicit_relation::getTotalEvent(int level)
 inline long
 MEDDLY::satimpl_opname::implicit_relation::lengthForLevel(int level) const
 {
-  return event_added[level];
+  return num_events_by_top_level[level];
 }
 
-inline node_handle*
+inline MEDDLY::satimpl_opname::event**
 MEDDLY::satimpl_opname::implicit_relation::arrayForLevel(int level) const
 {
-  return event_list[level];
+  return events_by_top_level[level];
 }
 
 // ****************************************************************************
@@ -3051,7 +3051,7 @@ MEDDLY::satimpl_opname::implicit_relation::getConfirmedStates(int level) const
   return confirm_states[level];
 }
 
-inline void
+/*inline void
 MEDDLY::satimpl_opname::implicit_relation::setConfirmedStates(int level,int i)
 {
   resizeConfirmedArray(level,i);
@@ -3061,7 +3061,7 @@ MEDDLY::satimpl_opname::implicit_relation::setConfirmedStates(int level,int i)
       confirmed[level][i]=true;
       confirm_states[level]++;
     }
-}
+}*/
 
 inline bool
 MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
@@ -3106,6 +3106,11 @@ MEDDLY::satimpl_opname::subevent::isEnabling() const {
 inline const MEDDLY::dd_edge&
 MEDDLY::satimpl_opname::subevent::getRoot() const {
   return root;
+}
+
+inline const MEDDLY::node_handle
+MEDDLY::satimpl_opname::subevent::getRootHandle() const {
+  return root_handle;
 }
 
 inline bool
@@ -3843,7 +3848,6 @@ inline MEDDLY::binary_operation*
 MEDDLY::getOperation(const binary_opname* code, const dd_edge& arg1,
     const dd_edge& arg2, const dd_edge& res)
 {
-  printf("\n HERER");
   return getOperation(code, (MEDDLY::expert_forest*) arg1.getForest(),
       (MEDDLY::expert_forest*) arg2.getForest(), (MEDDLY::expert_forest*) res.getForest());
 }

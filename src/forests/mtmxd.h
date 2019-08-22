@@ -588,7 +588,6 @@ namespace MEDDLY {
               // Below is likely a singleton, so check for identity reduction
               // on the appropriate v value
               unsigned sz = unsigned(F->getLevelSize(i));
-              printf("\n sz = %d\n",sz);
               bool add_edge = (F->isExtensibleLevel(i) && (_vplist[i]+1) == sz);
               nb = unpacked_node::newFull(F, i, add_edge? (1+sz): sz);
               for (unsigned v=0; v<sz; v++) {

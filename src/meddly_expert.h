@@ -3775,6 +3775,9 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       /// Get the DD encoding of this function
       const dd_edge& getRoot() const;
       
+      /// Get the node_handle of this function
+      const node_handle getRootHandle() const;
+      
       /// Get the "top" variable for this function
       int getTop() const;
       
@@ -3810,6 +3813,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       int* vars;
       int num_vars;
       dd_edge root;
+      node_handle root_handle;
       int top;
       expert_forest* f;
       int** unpminterms;
@@ -3856,6 +3860,9 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       /// Get number of components
       inline int getNumOfComponents() const { return num_components; }
       
+      ///Get the subevent handle or relation node handle at a givel level of event
+      inline node_handle getComponentAt(int level)  { return level_component.find(level)->second; }
+      
       /// Get the "top" variable for this event
       inline int getTop() const { return top; }
       
@@ -3867,13 +3874,13 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       
       inline const dd_edge& getRoot() const { return root; }
       
+      inline const node_handle getRootHandle() const { return root_handle; }
+      
       inline bool isDisabled() const { return is_disabled; }
       
       inline bool needsRebuilding() const { return needs_rebuilding; }
       
       inline void markForRebuilding() { needs_rebuilding = true; }
-      
-      inline std::map<int,int> getComponentHandles() { return level_component; }
       
       /**
        If this event has been marked for rebuilding:
@@ -3884,6 +3891,9 @@ class MEDDLY::satimpl_opname: public specialized_opname {
        false, otherwise.
        */
       virtual bool rebuild();
+      
+      /// Get down of a level of event 
+      int downLevel(int level) const;
       
       /// Enlarges the "from" variable to be the same size as the "to" variable
       void enlargeVariables();
@@ -3920,7 +3930,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       int num_rel_vars;
       int* relNode_vars;
       
-      std::map<int,int> level_component;
+      std::map<int,node_handle> level_component;
       
     };  // end of class event
   
@@ -3951,7 +3961,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
 
             Not 100% sure we need these...
         */
-        implicit_relation(forest* inmdd, forest* relmxd, forest* outmdd);//, event** E, int ne);
+        implicit_relation(forest* inmdd, forest* relmxd, forest* outmdd, event** E, int ne);
         virtual ~implicit_relation();
       
         /// Returns the Relation forest that stores the mix of relation nodes and mxd nodes
@@ -4106,7 +4116,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         long lengthForLevel(int level) const;
 
         /// Returns the array of events that have this level as top
-        node_handle* arrayForLevel(int level) const;
+        event** arrayForLevel(int level) const;
       
         /// Returns an array of local states for this level, such that
         /// result[i] == isConfirmed(level, i).
@@ -4137,10 +4147,10 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         void show();
 
         /// Build mxd forest
-        MEDDLY::node_handle buildMxdForest();
+        //MEDDLY::node_handle buildMxdForest();
 
         /// Build each event_mxd
-        dd_edge buildEventMxd(node_handle event_top, forest *mxd);
+        //dd_edge buildEventMxd(node_handle event_top, forest *mxd);
 
         /// Get relation forest  
         expert_forest* getRelForest() const;
@@ -5315,6 +5325,8 @@ public:
 
 /*class generic_function {
   public:
+
+  //generic_function(int nVars, int** depLists, event** E);
   
 }*/
 

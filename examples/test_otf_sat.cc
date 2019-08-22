@@ -342,6 +342,17 @@ bool pn::indexOf(int vh, int value, int &index) {
   if (value_to_index.size() <= unsigned(vh)) return false;
 
   if (value_to_index[vh].size() <= unsigned(value)) return false;
+  
+  for(int i=0;i<value_to_index.size();i++)
+    {
+    printf("\n value_to_index[%d][%d] = %d ", vh, i,value_to_index[vh][i]);
+    }
+  for(int i=0;i<index_to_value.size();i++)
+    {
+    printf("\n index_to_value[%d][%d] = %d ", vh, i,index_to_value[vh][i]);
+    }
+  
+  
   index = value_to_index[vh][value];
   return true;
 }
@@ -358,6 +369,8 @@ bool pn::addValue(int vh, int value, int &index) {
 
   if (value_to_index.size() <= unsigned(vh)) value_to_index.resize(vh+1);
   if (index_to_value.size() <= unsigned(vh)) index_to_value.resize(vh+1);
+  
+  
   if (value_to_index[vh].size() <= unsigned(value)) {
     for (int j = (value + 1 - value_to_index[vh].size()); j > 0; j--)
       value_to_index[vh].push_back(-1);

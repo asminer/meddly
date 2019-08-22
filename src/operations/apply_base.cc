@@ -434,7 +434,6 @@ void MEDDLY::generic_binary_mxd::computeDDEdge(const dd_edge &a, const dd_edge &
 #ifdef DEVELOPMENT_CODE
   resF->validateIncounts(true);
 #endif
-  printf("\n I FINISH UP \n");
 }
 
 MEDDLY::node_handle 
@@ -845,8 +844,6 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
   const int min_a_b_last_index = MIN(A_last_index, B_last_index);
   const int max_a_b_last_index = MAX(A_last_index, B_last_index);
 
-  printf("\n IS any of them extensible ? (%d, %d)\n",A->isExtensible(), B->isExtensible());
-  printf("\n ABOUT TO COMPUTE (%d, %d)\n",A_ext_d, B_ext_d);
   const node_handle C_ext_d =
     (A->isExtensible() || B->isExtensible())
     ? compute(A_ext_d, B_ext_d)
