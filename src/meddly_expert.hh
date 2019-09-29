@@ -232,9 +232,19 @@ MEDDLY::unpacked_node::HHbytes() const
 inline MEDDLY::node_handle
 MEDDLY::unpacked_node::d(unsigned n) const
 {
+  return d(n,false,false,false,false);
+//  MEDDLY_DCASSERT(down);
+//  MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+//  return down[n];
+}
+
+inline MEDDLY::node_handle
+MEDDLY::unpacked_node::d(unsigned n, bool nInfty,bool nExtensible,bool pExtensible,bool pInfty) const
+{
   MEDDLY_DCASSERT(down);
+  int specialSlots=(nInfty?1:0)+(nExtensible?1:0)+(pExtensible?1:0)+(pInfty?1:0);
   MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
-  return down[n];
+  return down[n+specialSlots];
 }
 
 inline MEDDLY::node_handle&
@@ -339,16 +349,37 @@ MEDDLY::unpacked_node::setEdge(unsigned n, float ev)
 inline long
 MEDDLY::unpacked_node::ei(unsigned i) const
 {
+  return ei(i,false,false,false,false);
+//  long ev;
+//  getEdge(i, ev);
+//  return ev;
+}
+
+inline long
+MEDDLY::unpacked_node::ei(unsigned i,bool nInfty,bool nExtensible,bool pExtensible,bool pInfty) const
+{
   long ev;
-  getEdge(i, ev);
+  int specialSlots=(nInfty?1:0)+(nExtensible?1:0)+(pExtensible?1:0)+(pInfty?1:0);
+  getEdge(i+specialSlots, ev);
   return ev;
 }
+
 
 inline float
 MEDDLY::unpacked_node::ef(unsigned i) const
 {
+  return ef(i,false,false,false,false);
+//  float ev;
+//  getEdge(i, ev);
+//  return ev;
+}
+
+inline float
+MEDDLY::unpacked_node::ef(unsigned i,bool nInfty,bool nExtensible,bool pExtensible,bool pInfty) const
+{
   float ev;
-  getEdge(i, ev);
+  int specialSlots=(nInfty?1:0)+(nExtensible?1:0)+(pExtensible?1:0)+(pInfty?1:0);
+  getEdge(i+specialSlots, ev);
   return ev;
 }
 
@@ -416,7 +447,210 @@ MEDDLY::unpacked_node::ext_ef() const
 }
 
 // --- End of Extensible portion of the node ---
+// --- special portion
+inline bool
+MEDDLY::unpacked_node::isPInfinity() const
+{
+  return is_pinfinity;
+}
 
+inline void
+MEDDLY::unpacked_node::markAsPInfinity()
+{
+  is_pinfinity = true;
+}
+
+inline void
+MEDDLY::unpacked_node::markAsNotPInfinity()
+{
+  is_pinfinity = false;
+}
+
+inline unsigned
+MEDDLY::unpacked_node::pinfty_i() const
+{
+  MEDDLY_DCASSERT(isPInfinity());
+  return (isNInfinity()?1:0)+(isNExtensible()?1:0)+(isPExtensible()?1:0);
+}
+
+inline MEDDLY::node_handle
+MEDDLY::unpacked_node::pinfty_d() const
+{
+  MEDDLY_DCASSERT(isPInfinity());
+  return down[(isNInfinity()?1:0)+(isNExtensible()?1:0)+(isPExtensible()?1:0)];
+}
+
+inline long
+MEDDLY::unpacked_node::pinfty_ei() const
+{
+  MEDDLY_DCASSERT(isPInfinity());
+  long ev;
+  getEdge((isNInfinity()?1:0)+(isNExtensible()?1:0)+(isPExtensible()?1:0), ev);
+  return ev;
+}
+
+inline float
+MEDDLY::unpacked_node::pinfty_ef() const
+{
+  MEDDLY_DCASSERT(isPInfinity());
+  float ev;
+  getEdge((isNInfinity()?1:0)+(isNExtensible()?1:0)+(isPExtensible()?1:0), ev);
+  return ev;
+}
+
+
+
+// positive extensible
+inline bool
+MEDDLY::unpacked_node::isPExtensible() const
+{
+  return is_pextensible;
+}
+
+inline void
+MEDDLY::unpacked_node::markAsPExtensible()
+{
+  is_pextensible = true;
+}
+
+inline void
+MEDDLY::unpacked_node::markAsNotPExtensible()
+{
+  is_pextensible = false;
+}
+
+inline unsigned
+MEDDLY::unpacked_node::pext_i() const
+{
+  MEDDLY_DCASSERT(isPExtensible());
+  return (isNInfinity()?1:0)+(isNExtensible()?1:0);
+}
+
+inline MEDDLY::node_handle
+MEDDLY::unpacked_node::pext_d() const
+{
+  MEDDLY_DCASSERT(isPExtensible());
+  return down[(isNInfinity()?1:0)+(isNExtensible()?1:0)];
+}
+
+inline long
+MEDDLY::unpacked_node::pext_ei() const
+{
+  MEDDLY_DCASSERT(isPExtensible());
+  long ev;
+  getEdge((isNInfinity()?1:0)+(isNExtensible()?1:0), ev);
+  return ev;
+}
+
+inline float
+MEDDLY::unpacked_node::pext_ef() const
+{
+  MEDDLY_DCASSERT(isPExtensible());
+  float ev;
+  getEdge((isNInfinity()?1:0)+(isNExtensible()?1:0), ev);
+  return ev;
+}
+//negative extensible
+inline bool
+MEDDLY::unpacked_node::isNExtensible() const
+{
+  return is_nextensible;
+}
+
+inline void
+MEDDLY::unpacked_node::markAsNExtensible()
+{
+  is_nextensible = true;
+}
+
+inline void
+MEDDLY::unpacked_node::markAsNotNExtensible()
+{
+  is_nextensible = false;
+}
+
+inline unsigned
+MEDDLY::unpacked_node::next_i() const
+{
+  MEDDLY_DCASSERT(isNExtensible());
+  return (isNInfinity()?1:0);
+}
+
+inline MEDDLY::node_handle
+MEDDLY::unpacked_node::next_d() const
+{
+  MEDDLY_DCASSERT(isPExtensible());
+  return down[(isNInfinity()?1:0)];
+}
+
+inline long
+MEDDLY::unpacked_node::next_ei() const
+{
+  MEDDLY_DCASSERT(isPExtensible());
+  long ev;
+  getEdge((isNInfinity()?1:0), ev);
+  return ev;
+}
+
+inline float
+MEDDLY::unpacked_node::next_ef() const
+{
+  MEDDLY_DCASSERT(isPExtensible());
+  float ev;
+  getEdge((isNInfinity()?1:0), ev);
+  return ev;
+}
+// negative infinity
+inline bool
+MEDDLY::unpacked_node::isNInfinity() const
+{
+  return is_ninfinity;
+}
+
+inline void
+MEDDLY::unpacked_node::markAsNInfinity()
+{
+  is_ninfinity = true;
+}
+
+inline void
+MEDDLY::unpacked_node::markAsNotNInfinity()
+{
+  is_ninfinity = false;
+}
+
+inline unsigned
+MEDDLY::unpacked_node::ninfty_i() const
+{
+  MEDDLY_DCASSERT(isNInfinity());
+  return 0;
+}
+
+inline MEDDLY::node_handle
+MEDDLY::unpacked_node::ninfty_d() const
+{
+  MEDDLY_DCASSERT(isNInfinity());
+  return down[0];
+}
+
+inline long
+MEDDLY::unpacked_node::ninfty_ei() const
+{
+  MEDDLY_DCASSERT(isNInfinity());
+  long ev;
+  getEdge(0, ev);
+  return ev;
+}
+
+inline float
+MEDDLY::unpacked_node::ninfty_ef() const
+{
+  MEDDLY_DCASSERT(isNInfinity());
+  float ev;
+  getEdge(0, ev);
+  return ev;
+}
+// --- end special portion
 inline unsigned
 MEDDLY::unpacked_node::getSize() const
 {

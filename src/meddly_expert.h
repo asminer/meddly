@@ -708,7 +708,7 @@ class MEDDLY::unpacked_node {
                       return the nth non-zero pointer.
     */
     node_handle d(unsigned n) const;
-
+    node_handle d(unsigned n, bool nInfty,bool nExtensible,bool pExtensible,bool pInfty) const;
     /** Reference to a downward pointer.
           @param  n   Which pointer.
           @return     If this is a full reader,
@@ -754,9 +754,11 @@ class MEDDLY::unpacked_node {
 
     /// Get the edge value, as an integer.
     long ei(unsigned i) const;
+    long ei(unsigned i,bool nInfty,bool nExtensible,bool pExtensible,bool pInfty) const;
 
     /// Get the edge value, as a float.
     float ef(unsigned i) const;
+    float ef(unsigned i,bool nInfty,bool nExtensible,bool pExtensible,bool pInfty) const;
 
     // -------------------------------------------------------------------------
     // Methods to access the extensible portion of the node
@@ -794,7 +796,41 @@ class MEDDLY::unpacked_node {
     float ext_ef() const;
 
     // -------------------- End of extensible portion --------------------------
+    // ----special portion
+    bool isPInfinity() const;
+    void markAsPInfinity();
+    void markAsNotPInfinity();
+    node_handle pinfty_d() const;
+    unsigned pinfty_i() const;
+    long pinfty_ei() const;
+    float pinfty_ef() const;
 
+
+    bool isPExtensible() const;
+    void markAsPExtensible();
+    void markAsNotPExtensible();
+    node_handle pext_d() const;
+    unsigned pext_i() const;
+    long pext_ei() const;
+    float pext_ef() const;
+
+    bool isNExtensible() const;
+    void markAsNExtensible();
+    void markAsNotNExtensible();
+    node_handle next_d() const;
+    unsigned next_i() const;
+    long next_ei() const;
+    float next_ef() const;
+
+    bool isNInfinity() const;
+    void markAsNInfinity();
+    void markAsNotNInfinity();
+    node_handle ninfty_d() const;
+    unsigned ninfty_i() const;
+    long ninfty_ei() const;
+    float ninfty_ef() const;
+
+    // ---- end special portion
     /// Get the level number of this node.
     int getLevel() const;
 
@@ -907,6 +943,10 @@ class MEDDLY::unpacked_node {
     unsigned* index;
     void* edge;
     bool is_extensible;
+    bool is_pinfinity;
+    bool is_pextensible;
+    bool is_nextensible;
+    bool is_ninfinity;
     unsigned alloc;
     unsigned ealloc;
     unsigned size;
