@@ -717,6 +717,7 @@ class MEDDLY::unpacked_node {
                       modify the nth non-zero pointer.
     */
     node_handle& d_ref(unsigned n);
+    node_handle& d_ref(unsigned n, bool nInfty,bool nExtensible,bool pExtensible,bool pInfty) ;
 
     /// Set the nth pointer from E, and destroy E.
     void set_d(unsigned n, dd_edge &E);
@@ -734,8 +735,11 @@ class MEDDLY::unpacked_node {
     /// Get a pointer to an edge
     const void* eptr(unsigned i) const;
 
+    const void* eptr(unsigned i, bool ninf,bool next,bool pext,bool pinf) const;
+
     /// Modify pointer to an edge
     void* eptr_write(unsigned i);
+    void* eptr_write(unsigned i,bool ninf,bool next,bool pext,bool pinf);
 
     /// Set the nth pointer and edge value from E, and destroy E.
     void set_de(unsigned n, dd_edge &E);
@@ -849,6 +853,7 @@ class MEDDLY::unpacked_node {
     /// Is this a full reader?
     bool isFull() const;
 
+    bool isFullGeneral() const;
     /// Does this node have edge values?
     bool hasEdges() const;
 
@@ -943,10 +948,10 @@ class MEDDLY::unpacked_node {
     unsigned* index;
     void* edge;
     bool is_extensible;
-    bool is_pinfinity;
-    bool is_pextensible;
-    bool is_nextensible;
-    bool is_ninfinity;
+    bool is_pinfinity=false;
+    bool is_pextensible=false;
+    bool is_nextensible=false;
+    bool is_ninfinity=false;
     unsigned alloc;
     unsigned ealloc;
     unsigned size;
@@ -955,6 +960,7 @@ class MEDDLY::unpacked_node {
     unsigned h;
     unsigned char edge_bytes; // number of bytes for an edge value.
     bool is_full;
+    bool is_fullGeneral=false;
 #ifdef DEVELOPMENT_CODE
     bool has_hash;
 #endif

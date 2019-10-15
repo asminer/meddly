@@ -241,18 +241,29 @@ MEDDLY::unpacked_node::d(unsigned n) const
 inline MEDDLY::node_handle
 MEDDLY::unpacked_node::d(unsigned n, bool nInfty,bool nExtensible,bool pExtensible,bool pInfty) const
 {
-  MEDDLY_DCASSERT(down);
+  node_handle* downF=down+(isFullGeneral()?1:0);
+  MEDDLY_DCASSERT(downF);
   int specialSlots=(nInfty?1:0)+(nExtensible?1:0)+(pExtensible?1:0)+(pInfty?1:0);
   MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
-  return down[n+specialSlots];
+  return downF[n+specialSlots];
 }
 
 inline MEDDLY::node_handle&
 MEDDLY::unpacked_node::d_ref(unsigned n) 
 {
+  return d_ref(n,false,false,false,false);
+//  MEDDLY_DCASSERT(down);
+//  MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+//  return down[n];
+}
+
+inline MEDDLY::node_handle&
+MEDDLY::unpacked_node::d_ref(unsigned n, bool nInfty,bool nExtensible,bool pExtensible,bool pInfty)
+{
   MEDDLY_DCASSERT(down);
+  int specialSlots=(nInfty?1:0)+(nExtensible?1:0)+(pExtensible?1:0)+(pInfty?1:0);
   MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
-  return down[n];
+  return down[n+specialSlots];
 }
 
 inline void
@@ -286,19 +297,41 @@ MEDDLY::unpacked_node::i_ref(unsigned n)
 inline const void*
 MEDDLY::unpacked_node::eptr(unsigned i) const
 {
+  return eptr(i,false,false,false,false);
+//  MEDDLY_DCASSERT(edge);
+//  MEDDLY_DCASSERT(edge_bytes);
+//  MEDDLY_CHECK_RANGE(0, i, (is_full ? size : nnzs));
+//  return ((char*) edge) + i * edge_bytes;
+}
+
+inline const void*
+MEDDLY::unpacked_node::eptr(unsigned i, bool ninf,bool next,bool pext,bool pinf) const
+{
   MEDDLY_DCASSERT(edge);
   MEDDLY_DCASSERT(edge_bytes);
   MEDDLY_CHECK_RANGE(0, i, (is_full ? size : nnzs));
-  return ((char*) edge) + i * edge_bytes;
+  int special=(ninf?1:0)+(next?1:0)+(pext?1:0)+(pinf?1:0);
+  return ((char*) edge) + (i+special) * edge_bytes;
 }
 
 inline void*
 MEDDLY::unpacked_node::eptr_write(unsigned i)
 {
+  return eptr_write(i,false,false,false,false);
+//  MEDDLY_DCASSERT(edge);
+//  MEDDLY_DCASSERT(edge_bytes);
+//  MEDDLY_CHECK_RANGE(0, i, (is_full ? size : nnzs));
+//  return ((char*) edge) + i * edge_bytes;
+}
+
+inline void*
+MEDDLY::unpacked_node::eptr_write(unsigned i,bool ninf,bool next,bool pext,bool pinf)
+{
   MEDDLY_DCASSERT(edge);
   MEDDLY_DCASSERT(edge_bytes);
   MEDDLY_CHECK_RANGE(0, i, (is_full ? size : nnzs));
-  return ((char*) edge) + i * edge_bytes;
+  int special=(ninf?1:0)+(next?1:0)+(pext?1:0)+(pinf?1:0);
+  return ((char*) edge) + (i+special) * edge_bytes;
 }
 
 inline void
@@ -677,6 +710,11 @@ MEDDLY::unpacked_node::isFull() const
   return is_full;
 }
 
+inline bool
+MEDDLY::unpacked_node::isFullGeneral() const
+{
+  return is_fullGeneral;
+}
 inline bool
 MEDDLY::unpacked_node::hasEdges() const
 {

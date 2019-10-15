@@ -81,6 +81,9 @@ namespace MEDDLY {
       header    --{       : as needed on a forest-by-forest basis.
       (optional)  {       : Info DOES affect node uniqueness.
 
+      Offset    --{       : slot used for storing the offset
+      (optional)  {
+
                   {       : Downward pointers.
                   {       : If full storage, there are size pointers
       down -------{       : and entry i gives downward pointer i.
@@ -162,9 +165,17 @@ class MEDDLY::simple_separated : public node_storage {
       ///   @param  sz      Number of downward pointers.
       ///   @param  sparse  True for sparse storage, otherwise full. 
       inline int slotsForNode(int sz, bool sparse) const {
-        int node_slots = sparse ? (2+slots_per_edge) * sz : (1+slots_per_edge) * sz;
-        return extra_slots + unhashed_slots + hashed_slots + node_slots;
+        return slotsForNode(sz,sparse,false,false,false,false,false);
+//        int node_slots = sparse ? (2+slots_per_edge) * sz : (1+slots_per_edge) * sz;
+//        return extra_slots + unhashed_slots + hashed_slots + node_slots;
       }
+      inline int slotsForNode(int sz, bool sparse,bool fullType, bool nInfty,bool nExtensible,bool pExtensible, bool pInfty) const {
+        int specials=(nInfty?1:0)+(nExtensible?1:0)+(pExtensible?1:0)+(pInfty?1:0);
+        int downEdgesz=sz+specials;
+        int node_slots = sparse ? (1+slots_per_edge) *downEdgesz +sz : (1+slots_per_edge) * downEdgesz;
+        return extra_slots + unhashed_slots + hashed_slots + node_slots+(fullType?1:0);
+      }
+
       inline node_handle* getChunkAddress(node_address addr) const {
         MEDDLY_DCASSERT(MM);
         return (node_handle*) MM->getChunkAddress(addr);
@@ -173,23 +184,45 @@ class MEDDLY::simple_separated : public node_storage {
         return chunk[size_slot];
       }
       inline static unsigned int getRawSize(int size, bool sparse, bool extensible) {
-        return (((unsigned int)(size) << 2) | (sparse? 2U: 0) | (extensible? 1U: 0));
+        return getRawSize(size,sparse,false,false,false,extensible,false);
+//        return (((unsigned int)(size) << 6) | (sparse? 1U: 0) | (extensible? 16U: 0));
+      }
+      inline static unsigned int getRawSize(int size, bool sparse,bool fullType,bool nInfty,bool nextensible, bool extensible,bool pInfty) {
+        return (((unsigned int)(size) << 6) | (sparse? 1U: 0) |(fullType?2U:0)|(nInfty?4U:0)|(nextensible?8U:0) | (extensible? 16U: 0)|(pInfty?32U:0));
       }
       inline static unsigned int getSize(unsigned int raw_size) { 
-        return ((unsigned int)raw_size) >> 2;
+        return ((unsigned int)raw_size) >> 6;
       }
       inline static bool isSparse(unsigned int raw_size) {
-        return ((raw_size & 2U) != 0);
+        return ((raw_size & 1U) != 0);
+      }
+      inline static bool isFullGeneral(unsigned int raw_size){
+        return (((raw_size &2U)!=0)&((raw_size & 1U) == 0));
+      }
+      inline static bool isFull(unsigned int raw_size){
+              return (((raw_size &2U)==0)&((raw_size & 1U) == 0));
+      }
+      inline static bool isNInfinity(unsigned int raw_size) {
+              return ((raw_size & 4U) != 0);
+      }
+      inline static bool isNExtensible(unsigned int raw_size) {
+              return ((raw_size & 8U) != 0);
+      }
+      inline static bool isPExtensible(unsigned int raw_size) {
+              return ((raw_size & 16U) != 0);
       }
       inline static bool isExtensible(unsigned int raw_size) {
-        return ((raw_size & 1U) != 0);
+        return ((raw_size & 16U) != 0);
+      }
+      inline static bool isPInfinity(unsigned int raw_size) {
+              return ((raw_size & 32U) != 0);
       }
       virtual bool isExtensible(node_address addr) const {
         MEDDLY_DCASSERT(MM);
         const node_handle* chunk = getChunkAddress(addr);
         MEDDLY_DCASSERT(chunk);
         const unsigned int raw_size = getRawSize(chunk);
-        return isExtensible(raw_size);
+        return isPExtensible(raw_size);
       }
 
       //
@@ -211,6 +244,11 @@ class MEDDLY::simple_separated : public node_storage {
       inline int findSparseIndex(int i, const node_handle* chunk) const {
         const unsigned int raw_size = getRawSize(chunk);
         MEDDLY_DCASSERT(isSparse(raw_size));
+        const bool nInfty=isNInfinity(raw_size);
+        const bool nExtensible=isNExtensible(raw_size);
+        const bool pExtensible=isPExtensible(raw_size);
+        const bool pInfty=isPInfinity(raw_size);
+        int specials=(nInfty?1:0)+(nExtensible?1:0)+(pExtensible?1:0)+(pInfty?1:0);
         int nnz = getSize(raw_size);
         const node_handle* index = chunk + down_start + nnz;
         if (isExtensible(raw_size) && i >= index[nnz-1]) return nnz-1;
@@ -259,6 +297,10 @@ class MEDDLY::simple_separated : public node_storage {
     char hashed_start;
     char hashed_slots;
     char down_start;
+    char down_NInfinity;
+    char down_NExtensible;
+    char down_PExtensible;
+    char down_PInfinity;
     char slots_per_edge;
 };
 
@@ -431,8 +473,10 @@ void MEDDLY::simple_separated::unlinkDownAndRecycle(node_address addr)
   //
   // Unlink down pointers
   //
-  const node_handle* down = chunk + down_start;
-  for (unsigned int i=0; i<size; i++) {
+  int specials=(isNInfinity(raw_size)?1:0)+(isNExtensible(raw_size)?1:0)+
+      (isExtensible(raw_size)?1:0)+(isPInfinity(raw_size)?1:0);
+  const node_handle* down = chunk + down_start+(isFullGeneral(raw_size)?1:0);
+  for (unsigned int i=0; i<size+specials; i++) {
     getParent()->unlinkNode(down[i]);
   }
 
@@ -467,12 +511,13 @@ void MEDDLY::simple_separated::markDownPointers(node_address addr)
   
   const unsigned int raw_size = getRawSize(chunk);
   const unsigned int size = getSize(raw_size);
-
+  int specials=(isNInfinity(raw_size)?1:0)+(isNExtensible(raw_size)?1:0)+
+      (isExtensible(raw_size)?1:0)+(isPInfinity(raw_size)?1:0);
   //
   // Mark down pointers
   //
-  const node_handle* down = chunk + down_start;
-  for (unsigned int i=0; i<size; i++) {
+  const node_handle* down = chunk + down_start+(isFullGeneral(raw_size)?1:0);
+  for (unsigned int i=0; i<size+specials; i++) {
     getParent()->markNode(down[i]);
   }
 }
@@ -507,13 +552,30 @@ bool MEDDLY::simple_separated
 
   const unsigned int raw_size = getRawSize(chunk);
   const bool is_extensible = isExtensible(raw_size);
+  const bool is_nextensible=isNExtensible(raw_size);
+  const bool is_nInfinity=isNInfinity(raw_size);
+  const bool is_pInfinity=isPInfinity(raw_size);
 
   if (n.isExtensible()) {
     if (!is_extensible) return false;
   } else {
     if (is_extensible) return false;
   }
-
+  if (n.isNExtensible()) {
+    if (!is_nextensible) return false;
+  } else {
+    if (is_nextensible) return false;
+  }
+  if (n.isNInfinity()) {
+    if (!is_nInfinity) return false;
+  } else {
+    if (is_nInfinity) return false;
+  }
+  if (n.isPInfinity()) {
+    if (!is_pInfinity) return false;
+  } else {
+    if (is_pInfinity) return false;
+  }
   const unsigned int size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
   const node_handle tv = getParent()->getTransparentNode();
@@ -524,7 +586,9 @@ bool MEDDLY::simple_separated
     // Node is stored sparsely
     //
     const unsigned int nnz = size;
-    const node_handle* index = down + nnz;
+    int specials=(isNInfinity(raw_size)?1:0)+(isNExtensible(raw_size)?1:0)
+        +(isExtensible(raw_size)?1:0)+(isPInfinity(raw_size)?1:0);
+    const node_handle* index = down + nnz+specials;
     const node_handle* edge = slots_per_edge ? (index + nnz) : 0;
 
     if (n.isFull()) {
@@ -539,13 +603,13 @@ bool MEDDLY::simple_separated
           if (n.d(i)!=tv) return false;
         } // for
         // compare this[z] with n[i]
-        if (down[z] != n.d(i)) return false;
+        if (down[z+specials] != n.d(i,n.isNInfinity(),n.isNExtensible(),n.isExtensible(),n.isPInfinity())) return false;
         i++;
       } // for z
       //
       // Anything beyond must be transparent
       for (; i<n.getSize(); i++) {
-        if (n.d(i)!=tv) {
+        if (n.d(i,n.isNInfinity(),n.isNExtensible(),n.isExtensible(),n.isPInfinity())!=tv) {
           return false;
         }
       }
@@ -555,9 +619,41 @@ bool MEDDLY::simple_separated
       if (edge) {
         for (unsigned int z=0; z<nnz; z++) {
           if (!getParent()->areEdgeValuesEqual(
-            edge + z*slots_per_edge, n.eptr(index[z])
+            edge + (z+specials)*slots_per_edge, n.eptr(index[z],n.isNInfinity(),n.isNExtensible(),n.isExtensible(),n.isPInfinity())
           )) return false;
         } // for z
+      }
+      // check special values for down and edge
+      if(specials>0){
+        int j=0;
+        if(n.isNInfinity()){
+          if(down[j]!=n.d(j,n.isNInfinity(),n.isNExtensible(),n.isExtensible(),n.isPInfinity())) return false;
+          if(!getParent()->areEdgeValuesEqual(
+              edge + (j)*slots_per_edge, n.eptr(j)
+            )) return false;
+          j++;
+        }
+        if(n.isNExtensible()){
+          if(down[j]!=n.d(j,n.isNInfinity(),n.isNExtensible(),n.isExtensible(),n.isPInfinity())) return false;
+          if(!getParent()->areEdgeValuesEqual(
+              edge + (j)*slots_per_edge, n.eptr(j)
+            )) return false;
+          j++;
+        }
+        if(n.isExtensible()){
+          if(down[j]!=n.d(j,n.isNInfinity(),n.isNExtensible(),n.isExtensible(),n.isPInfinity())) return false;
+          if(!getParent()->areEdgeValuesEqual(
+              edge + (j)*slots_per_edge, n.eptr(j)
+            )) return false;
+          j++;
+        }
+        if(n.isPInfinity()){
+          if(down[j]!=n.d(j,n.isNInfinity(),n.isNExtensible(),n.isExtensible(),n.isPInfinity())) return false;
+          if(!getParent()->areEdgeValuesEqual(
+              edge + (j)*slots_per_edge, n.eptr(j)
+            )) return false;
+          j++;
+        }
       }
       // must be equal
       return true;
@@ -567,13 +663,21 @@ bool MEDDLY::simple_separated
       //
       if (unsigned(n.getNNZs()) != nnz) return false;
       // check that down matches
-      for (unsigned int z=0; z<nnz; z++) {
-        if (index[z] != n.i(z)) return false;
+      for (unsigned int z=0; z<nnz+specials; z++) {
+//        if (index[z] != n.i(z)) return false;
         if (down[z] != n.d(z))  return false;
       }
+      for (unsigned int z=0; z<nnz; z++) {
+        if (index[z] != n.i(z)) return false;
+//        if (down[z] != n.d(z))  return false;
+      }
+//      for (unsigned int z=0; z<nnz; z++) {
+//        if (index[z] != n.i(z)) return false;
+//        if (down[z] != n.d(z))  return false;
+//      }
       // check that edges match
       if (n.hasEdges()) {
-        for (unsigned int z=0; z<nnz; z++) {
+        for (unsigned int z=0; z<nnz+specials; z++) {
           if (!getParent()->areEdgeValuesEqual(edge + z*slots_per_edge, n.eptr(z))) {
             return false;
           }
@@ -586,7 +690,9 @@ bool MEDDLY::simple_separated
     //
     // Node is stored truncated full
     //
-    const node_handle* edge = slots_per_edge ? (down + size) : 0;
+    int specials=(isNInfinity(raw_size)?1:0)+(isNExtensible(raw_size)?1:0)
+            +(isExtensible(raw_size)?1:0)+(isPInfinity(raw_size)?1:0);
+    const node_handle* edge = slots_per_edge ? (down + size+specials) : 0;
 
     if (n.isFull()) {
       //
@@ -595,7 +701,7 @@ bool MEDDLY::simple_separated
       if (size > unsigned(n.getSize())) return false;
       // check down
       unsigned int i;
-      for (i=0; i<size; i++) {
+      for (i=0; i<size+specials; i++) {
         if (down[i] != n.d(i)) return false;
       }
       for (; i<unsigned(n.getSize()); i++) {
@@ -603,7 +709,7 @@ bool MEDDLY::simple_separated
       }
       // check edges
       if (n.hasEdges()) {
-        for (unsigned int i=0; i<size; i++) if (down[i]) {
+        for (unsigned int i=0; i<size+specials; i++) if (down[i]) {
           if (!getParent()->areEdgeValuesEqual(edge + i*slots_per_edge, n.eptr(i))) {
             return false;
           }
@@ -621,9 +727,9 @@ bool MEDDLY::simple_separated
         if (unsigned(n.i(z)) >= size) return false;
         // loop - skipped edges must be transparent
         for (; i<n.i(z); i++) {
-          if (down[i]!=tv) return false;
+          if (down[i+specials]!=tv) return false;
         }
-        if (n.d(z) != down[i]) return false;
+        if (n.d(z) != down[i+specials]) return false;
         i++;
       } // for z
       if (unsigned(i)<size) return false; // there WILL be a non-zero down
@@ -632,10 +738,42 @@ bool MEDDLY::simple_separated
       //
       if (n.hasEdges()) {
         for (int z=0; z<n.getNNZs(); z++) {
-          if (!getParent()->areEdgeValuesEqual(edge + n.i(z) * slots_per_edge, n.eptr(z))) {
+          if (!getParent()->areEdgeValuesEqual(edge + (n.i(z)+specials )* slots_per_edge, n.eptr(z,n.isNInfinity(),n.isNExtensible(),n.isExtensible(),n.isPInfinity()))) {
             return false;
           }
         } // for z
+      }
+      // check special values for down and edge
+      if(specials>0){
+        int j=0;
+        if(n.isNInfinity()){
+          if(down[j]!=n.d(j)) return false;
+          if(!getParent()->areEdgeValuesEqual(
+              edge + (j)*slots_per_edge, n.eptr(j)
+            )) return false;
+          j++;
+        }
+        if(n.isNExtensible()){
+          if(down[j]!=n.d(j)) return false;
+          if(!getParent()->areEdgeValuesEqual(
+              edge + (j)*slots_per_edge, n.eptr(j)
+            )) return false;
+          j++;
+        }
+        if(n.isExtensible()){
+          if(down[j]!=n.d(j)) return false;
+          if(!getParent()->areEdgeValuesEqual(
+              edge + (j)*slots_per_edge, n.eptr(j)
+            )) return false;
+          j++;
+        }
+        if(n.isPInfinity()){
+          if(down[j]!=n.d(j)) return false;
+          if(!getParent()->areEdgeValuesEqual(
+              edge + (j)*slots_per_edge, n.eptr(j)
+            )) return false;
+          j++;
+        }
       }
       // must be equal
       return true;
@@ -677,7 +815,11 @@ void MEDDLY::simple_separated
   const unsigned int size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
   const bool is_extensible = isExtensible(raw_size);
-  const node_handle* down = chunk + down_start;
+  const bool is_pextensible=isPExtensible(raw_size);
+  const bool is_nextensible=isNExtensible(raw_size);
+  const bool is_ninfinity=isNInfinity(raw_size);
+  const bool is_pinfinity=isPInfinity(raw_size);
+  const node_handle* down = chunk + down_start+(isFullGeneral(raw_size)?1:0);
 
   /*
      Set the unpacked node storage style based on settings
@@ -696,17 +838,26 @@ void MEDDLY::simple_separated
   else 
     nr.markAsNotExtensible();
 
+  if(is_pextensible) nr.markAsPExtensible();
+      else nr.markAsNotPExtensible();
+  if(is_nextensible) nr.markAsNExtensible();
+      else nr.markAsNotNExtensible();
+  if(is_pinfinity) nr.markAsPInfinity();
+      else nr.markAsNotPInfinity();
+  if(is_ninfinity) nr.markAsNInfinity();
+      else nr.markAsNotNInfinity();
   // Make sure that when an extensible node is unpacked that the trailing edges
   // are filled correctly (regardless of the storage scheme of the unpacked node)
 
   const node_handle tv = getParent()->getTransparentNode();
-
+  int specials=(is_ninfinity?1:0)+(is_nextensible?1:0)+
+          (is_pextensible?1:0)+(is_pinfinity?1:0);
   if (is_sparse) {
     //
     // Node is sparse
     //
     int nnz = size;
-    const node_handle* index = down + nnz;
+    const node_handle* index = down + nnz+specials;
     const node_handle* edge = slots_per_edge ? (index + nnz) : 0;
     const int ext_i = index[nnz-1];
     const int ext_d = is_extensible? down[nnz-1]: tv;
@@ -719,37 +870,64 @@ void MEDDLY::simple_separated
 
       // Clear locations [0, ext_i]
       for (int i=0; i<=ext_i; i++) {
-        nr.d_ref(i) = tv;
+        nr.d_ref(i,is_ninfinity,is_nextensible,is_pextensible,is_pinfinity) = tv;
         if (nr.hasEdges()) {
-          memset(nr.eptr_write(i), 0, nr.edgeBytes());
+          memset(nr.eptr_write(i,is_ninfinity,is_nextensible,is_pextensible,is_pinfinity), 0, nr.edgeBytes());
         }
       }
       // Write the sparse edges
       for (int z=0; z<nnz; z++) {
         int i = index[z];
-        nr.d_ref(i) = down[z];
+        nr.d_ref(i,is_ninfinity,is_nextensible,is_pextensible,is_pinfinity) = down[z+specials];
         if (nr.hasEdges()) {
-          memcpy(nr.eptr_write(i), edge + z*slots_per_edge, nr.edgeBytes());
+          memcpy(nr.eptr_write(i,is_ninfinity,is_nextensible,is_pextensible,is_pinfinity), edge + (z+specials)*slots_per_edge, nr.edgeBytes());
         }
       }
       // Write the extensible edge to the rest (trailing locations)
       for (int i=ext_i+1; i<nr.getSize(); i++) {
-        nr.d_ref(i) = ext_d;
+        nr.d_ref(i,is_ninfinity,is_nextensible,is_pextensible,is_pinfinity) = ext_d;
         if (nr.hasEdges()) {
           if (ext_ptr)
-            memcpy(nr.eptr_write(i), ext_ptr, nr.edgeBytes());
+            memcpy(nr.eptr_write(i,is_ninfinity,is_nextensible,is_pextensible,is_pinfinity), ext_ptr, nr.edgeBytes());
           else
-            memset(nr.eptr_write(i), 0, nr.edgeBytes());
+            memset(nr.eptr_write(i,is_ninfinity,is_nextensible,is_pextensible,is_pinfinity), 0, nr.edgeBytes());
+        }
+      }
+      // write special Down Edge
+      if(specials>0){
+
+        int i=0;
+        if(is_ninfinity){
+          nr.d_ref(i)=down[i];
+          memcpy(nr.eptr_write(i),edge + (i)*slots_per_edge,nr.edgeBytes());
+          i++;
+        }
+        if(is_nextensible){
+          nr.d_ref(i)=down[i];
+          memcpy(nr.eptr_write(i),edge + (i)*slots_per_edge,nr.edgeBytes());
+          i++;
+        }
+        if(is_pextensible){
+          nr.d_ref(i)=down[i];
+          memcpy(nr.eptr_write(i),edge + (i)*slots_per_edge,nr.edgeBytes());
+          i++;
+        }
+        if(is_pinfinity){
+          nr.d_ref(i)=down[i];
+          memcpy(nr.eptr_write(i),edge + (i)*slots_per_edge,nr.edgeBytes());
+          i++;
         }
       }
     } else {
       //
       // Copying into a sparse node
       //
-
       for (int z=0; z<nnz; z++) {
+              nr.i_ref(z) = index[z];
+      }
+      for (int z=0; z<nnz+specials; z++) {
         nr.d_ref(z) = down[z];
-        nr.i_ref(z) = index[z];
+//        nr.i_ref(z) = index[z];
         if (nr.hasEdges()) {
           memcpy(nr.eptr_write(z), edge + z*slots_per_edge, nr.edgeBytes());
         }
@@ -762,12 +940,12 @@ void MEDDLY::simple_separated
         int i = ext_i+1;
         for (int z=nnz; z<nr.getNNZs(); z++, i++) {
           nr.i_ref(z) = i;
-          nr.d_ref(z) = ext_d;
+          nr.d_ref(z,nr.isNInfinity(),nr.isNExtensible(),nr.isPExtensible(),nr.isPInfinity()) = ext_d;
           if (nr.hasEdges()) {
             if (ext_ptr)
-              memcpy(nr.eptr_write(z), ext_ptr, nr.edgeBytes());
+              memcpy(nr.eptr_write(z,nr.isNInfinity(),nr.isNExtensible(),nr.isPExtensible(),nr.isPInfinity()), ext_ptr, nr.edgeBytes());
             else
-              memset(nr.eptr_write(z), 0, nr.edgeBytes());
+              memset(nr.eptr_write(z,nr.isNInfinity(),nr.isNExtensible(),nr.isPExtensible(),nr.isPInfinity()), 0, nr.edgeBytes());
           }
         }
       }
@@ -776,14 +954,14 @@ void MEDDLY::simple_separated
     //
     // Node is full
     //
-    const node_handle* edge = slots_per_edge ? (down + size) : 0;
+    const node_handle* edge = slots_per_edge ? (down + size+specials) : 0;
 
     if (nr.isFull()) {
       //
       // Copying into a full node
       //
       unsigned i;
-      for (i=0; i<size; i++) {
+      for (i=0; i<size+specials; i++) {
         nr.d_ref(i) = down[i];
         if (nr.hasEdges()) {
           memcpy(nr.eptr_write(i), edge + i*slots_per_edge, nr.edgeBytes());
@@ -792,15 +970,15 @@ void MEDDLY::simple_separated
       if (unpacked_node::AS_STORED == st2 && is_extensible == nr.isExtensible()) {
         nr.shrinkFull(size);
       } else {
-        const int ext_d = is_extensible? down[size-1]: tv;
-        const void* ext_ptr = is_extensible? (edge + (size-1)*slots_per_edge): 0;
+        const int ext_d = is_extensible? down[size-1+specials]: tv;
+        const void* ext_ptr = is_extensible? (edge + (size-1+specials)*slots_per_edge): 0;
         for (; i<unsigned(nr.getSize()); i++) {
-          nr.d_ref(i) = ext_d;
+          nr.d_ref(i+specials) = ext_d;
           if (nr.hasEdges()) {
             if (ext_ptr)
-              memcpy(nr.eptr_write(i), ext_ptr, nr.edgeBytes());
+              memcpy(nr.eptr_write(i+specials), ext_ptr, nr.edgeBytes());
             else
-              memset(nr.eptr_write(i), 0, nr.edgeBytes());
+              memset(nr.eptr_write(i+specials), 0, nr.edgeBytes());
           }
         }
       }
@@ -810,29 +988,40 @@ void MEDDLY::simple_separated
       //
 
       int z = 0;
-      for (unsigned int i=0; i<size; i++) if (down[i]) {
+      for (unsigned int i=0; i<size+specials; i++) if (down[i]) {
         nr.d_ref(z) = down[i];
-        nr.i_ref(z) = i;
+//        nr.i_ref(z) = i;
         if (nr.hasEdges()) {
           memcpy(nr.eptr_write(z), edge + i*slots_per_edge, nr.edgeBytes());
         }
         z++;
       } // for i
+      // handle index in sparse node
+      z = 0;
+      for (unsigned int i = 0; i < size; i++)
+        if (down[i]) {
+//          nr.d_ref(z) = down[i];
+          nr.i_ref(z) = i;
+//          if (nr.hasEdges()) {
+//            memcpy(nr.eptr_write(z), edge + i * slots_per_edge, nr.edgeBytes());
+//          }
+          z++;
+        }
       if (nr.isExtensible() == is_extensible) nr.shrinkSparse(z);
       else {
         MEDDLY_DCASSERT(is_extensible);
         MEDDLY_DCASSERT(!nr.isExtensible());
-        const int ext_i = size-1;
+        const int ext_i = size-1+specials;
         const int ext_d = down[ext_i];
         const void* ext_ptr = (edge + (ext_i)*slots_per_edge);
         for (int i = ext_i + 1 ; z<nr.getNNZs(); z++, i++) {
           nr.i_ref(z) = i;
-          nr.d_ref(z) = ext_d;
+          nr.d_ref(z,nr.isNInfinity(),nr.isNExtensible(),nr.isPExtensible(),nr.isPInfinity()) = ext_d;
           if (nr.hasEdges()) {
             if (ext_ptr)
-              memcpy(nr.eptr_write(z), ext_ptr, nr.edgeBytes());
+              memcpy(nr.eptr_write(z,nr.isNInfinity(),nr.isNExtensible(),nr.isPExtensible(),nr.isPInfinity()), ext_ptr, nr.edgeBytes());
             else
-              memset(nr.eptr_write(z), 0, nr.edgeBytes());
+              memset(nr.eptr_write(z,nr.isNInfinity(),nr.isNExtensible(),nr.isPExtensible(),nr.isPInfinity()), 0, nr.edgeBytes());
           }
         }
       }
@@ -890,23 +1079,65 @@ unsigned MEDDLY::simple_separated::hashNode(int level, node_address addr) const
   const unsigned int size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
   const node_handle* down = chunk + down_start;
-
+  const bool is_nextensible=isNExtensible(raw_size);
+  const bool is_ninfinity=isNInfinity(raw_size);
+  const bool is_pextensible=isPExtensible(raw_size);
+  const bool is_pinfinity=isPInfinity(raw_size);
+  int specials=(is_nextensible?1:0)+(is_ninfinity?1:0)+(is_pextensible?1:0)+(is_pinfinity?1:0);
   if (is_sparse) {
     //
     // Node is sparse
     //
     int nnz = size;
-    const node_handle* index = down + nnz;
+    const node_handle* index = down + nnz+specials;
     const node_handle* edge = slots_per_edge ? (index + nnz) : 0;
     if (getParent()->areEdgeValuesHashed()) {
       const int edge_bytes = bytesForSlots(slots_per_edge);
+      if(specials>0){
+        int ind=0;
+        if(is_ninfinity){
+          s.push(down[ind]);
+          ind++;
+        }
+        if(is_nextensible){
+          s.push(down[ind]);
+          ind++;
+        }
+        if(is_pextensible){
+          s.push(down[ind]);
+          ind++;
+        }
+        if(is_pinfinity){
+          s.push(down[ind]);
+          ind++;
+        }
+      }
       for (int z=0; z<nnz; z++) {
-        s.push(index[z], down[z]);
+        s.push(index[z], down[z+specials]);
         s.push(edge + z * slots_per_edge, edge_bytes);
       } // for z
     } else {
+      if(specials>0){
+              int ind=0;
+              if(is_ninfinity){
+                s.push(down[ind]);
+                ind++;
+              }
+              if(is_nextensible){
+                s.push(down[ind]);
+                ind++;
+              }
+              if(is_pextensible){
+                s.push(down[ind]);
+                ind++;
+              }
+              if(is_pinfinity){
+                s.push(down[ind]);
+                ind++;
+              }
+            }
       for (int z=0; z<nnz; z++) {
-        s.push(index[z], down[z]);
+        s.push(index[z], down[z+specials]);
       } // for z
     }
   } else {
@@ -914,17 +1145,17 @@ unsigned MEDDLY::simple_separated::hashNode(int level, node_address addr) const
     // Node is full
     //
     const node_handle tv=getParent()->getTransparentNode();
-    const node_handle* edge = slots_per_edge ? (down + size) : 0;
+    const node_handle* edge = slots_per_edge ? (down + size+specials) : 0;
     if (getParent()->areEdgeValuesHashed()) {
       const int edge_bytes = bytesForSlots(slots_per_edge);
-      for (unsigned i=0; i<size; i++) {
+      for (unsigned i=0; i<size+specials; i++) {
         if (down[i]!=tv) {
           s.push(i, down[i]);
           s.push(edge + i * slots_per_edge, edge_bytes);
     	  }
       } // for z
     } else {
-      for (unsigned i=0; i<size; i++) {
+      for (unsigned i=0; i<size+specials; i++) {
     	  if (down[i]!=tv) {
             s.push(i, down[i]);
     	  }
@@ -947,6 +1178,11 @@ int MEDDLY::simple_separated
 
   const unsigned int size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
+  const bool is_nextensible=isNExtensible(raw_size);
+  const bool is_ninfinity=isNInfinity(raw_size);
+  const bool is_pextensible=isPExtensible(raw_size);
+  const bool is_pinfinity=isPInfinity(raw_size);
+  int specials=(is_nextensible?1:0)+(is_ninfinity?1:0)+(is_pextensible?1:0)+(is_pinfinity?1:0);
 
   if (is_sparse) {
     //
@@ -954,7 +1190,7 @@ int MEDDLY::simple_separated
     //
     if (size != 1) return -1;
     down = chunk[0 + down_start];       // 0+ stops a compiler warning
-    return chunk[down_start + size];    // size is number of nonzeroes
+    return chunk[down_start + size+specials];    // size is number of nonzeroes
   } 
   
   //
@@ -962,11 +1198,11 @@ int MEDDLY::simple_separated
   //
   const node_handle tv=getParent()->getTransparentNode();
   const node_handle* dnptr = chunk + down_start;
-  for (unsigned i=0; i<size; i++) {
+  for (unsigned i=specials; i<size+specials; i++) {
     if (tv==dnptr[i]) continue;
-    if (i+1 != size) return -1;
-    down = dnptr[i];
-    return i;
+    if (i+1 != size+specials) return -1;
+    down = dnptr[i-specials];
+    return i-specials;
   }
   return -1;
 }
@@ -980,15 +1216,21 @@ MEDDLY::simple_separated
   const node_handle* chunk = getChunkAddress(addr);
   MEDDLY_DCASSERT(chunk);
   const unsigned int raw_size = getRawSize(chunk);
+  const bool is_nextensible=isNExtensible(raw_size);
+  const bool is_ninfinity=isNInfinity(raw_size);
+  const bool is_pextensible=isPExtensible(raw_size);
+  const bool is_pinfinity=isPInfinity(raw_size);
+  int specials=(is_nextensible?1:0)+(is_ninfinity?1:0)+(is_pextensible?1:0)+(is_pinfinity?1:0);
+
   if (!isExtensible(raw_size)) return -1;
   int sz = getSize(raw_size);
   const node_handle* down = chunk + down_start;
   if (isSparse(raw_size)) {
-    MEDDLY_DCASSERT(down[sz-1] != getParent()->getTransparentNode());
-    const node_handle* index = down + sz;
+    MEDDLY_DCASSERT(down[sz-1+specials] != getParent()->getTransparentNode());
+    const node_handle* index = down + sz+specials;
     return index[sz-1];
   } else {
-    MEDDLY_DCASSERT(down[sz-1] != getParent()->getTransparentNode());
+    MEDDLY_DCASSERT(down[sz-1+specials] != getParent()->getTransparentNode());
     return sz-1;
   }
 }
@@ -1005,7 +1247,16 @@ MEDDLY::simple_separated
 
   const unsigned int raw_size = getRawSize(chunk);
   const unsigned size = getSize(raw_size);
-  const node_handle* down = chunk + down_start;
+
+  const bool is_nextensible=isNExtensible(raw_size);
+  const bool is_ninfinity=isNInfinity(raw_size);
+  const bool is_pextensible=isPExtensible(raw_size);
+  const bool is_pinfinity=isPInfinity(raw_size);
+  int specials=(is_nextensible?1:0)+(is_ninfinity?1:0)+(is_pextensible?1:0)+(is_pinfinity?1:0);
+
+
+
+  const node_handle* down = chunk + down_start+specials;
 
   int z = i;
 
@@ -1041,7 +1292,15 @@ MEDDLY::simple_separated
   const unsigned int raw_size = getRawSize(chunk);
   const unsigned size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
-  const node_handle* down = chunk + down_start;
+
+  const bool is_nextensible=isNExtensible(raw_size);
+  const bool is_ninfinity=isNInfinity(raw_size);
+  const bool is_pextensible=isPExtensible(raw_size);
+  const bool is_pinfinity=isPInfinity(raw_size);
+  int specials=(is_nextensible?1:0)+(is_ninfinity?1:0)+(is_pextensible?1:0)+(is_pinfinity?1:0);
+
+
+  const node_handle* down = chunk + down_start+specials;
 
   int z = i;
 
@@ -1080,7 +1339,15 @@ MEDDLY::simple_separated
   const unsigned int raw_size = getRawSize(chunk);
   const unsigned size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
-  const node_handle* down = chunk + down_start;
+
+  const bool is_nextensible=isNExtensible(raw_size);
+  const bool is_ninfinity=isNInfinity(raw_size);
+  const bool is_pextensible=isPExtensible(raw_size);
+  const bool is_pinfinity=isPInfinity(raw_size);
+  int specials=(is_nextensible?1:0)+(is_ninfinity?1:0)+(is_pextensible?1:0)+(is_pinfinity?1:0);
+
+
+  const node_handle* down = chunk + down_start+specials;
 
   int z = i;
 
@@ -1118,7 +1385,15 @@ void MEDDLY::simple_separated
   const unsigned int raw_size = getRawSize(chunk);
   const unsigned size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
-  const node_handle* down = chunk + down_start;
+
+  const bool is_nextensible=isNExtensible(raw_size);
+  const bool is_ninfinity=isNInfinity(raw_size);
+  const bool is_pextensible=isPExtensible(raw_size);
+  const bool is_pinfinity=isPInfinity(raw_size);
+  int specials=(is_nextensible?1:0)+(is_ninfinity?1:0)+(is_pextensible?1:0)+(is_pinfinity?1:0);
+
+
+  const node_handle* down = chunk + down_start+specials;
 
   int z = i;
 
@@ -1301,11 +1576,16 @@ MEDDLY::simple_separated
   end += down_start;
   const node_handle* down = end;
   const unsigned int dnlen = size;
+  const bool is_nextensible=isNExtensible(raw_size);
+  const bool is_ninfinity=isNInfinity(raw_size);
+  const bool is_pextensible=isPExtensible(raw_size);
+  const bool is_pinfinity=isPInfinity(raw_size);
+  int specials=(is_nextensible?1:0)+(is_ninfinity?1:0)+(is_pextensible?1:0)+(is_pinfinity?1:0);
 
   if (show_node) {
     s.put(" down ");
     s.put(long(down[0]));
-    for (unsigned int i=1; i<dnlen; i++) {
+    for (unsigned int i=1; i<dnlen+specials; i++) {
       s.put(", ");
       s.put(long(down[i]));
     }
@@ -1320,7 +1600,7 @@ MEDDLY::simple_separated
   if (isSparse(raw_size)) {
     if (show_node) {
       s.put(" index ");
-      const node_handle* index = down + size;
+      const node_handle* index = down + size+specials;
       s.put(long(index[0]));
       for (unsigned int i=1; i<dnlen; i++) {
         s.put(", ");
@@ -1338,7 +1618,7 @@ MEDDLY::simple_separated
   if (slots_per_edge) {
     if (show_node) {
       s.put(" ev ");
-      for (unsigned int i=0; i<dnlen; i++) {
+      for (unsigned int i=0; i<dnlen+specials; i++) {
         if (i) s.put(", ");
 
         getParent()->showEdgeValue(s, end);
@@ -1401,7 +1681,7 @@ MEDDLY::node_address MEDDLY::simple_separated
   // Determine amount of memory we need, and request it
   //
 
-  size_t slots_req = slotsForNode(size, false);
+  size_t slots_req = slotsForNode(size, false,false,nb.isNInfinity(),nb.isNExtensible(),nb.isExtensible(),nb.isPInfinity());
   MEDDLY_DCASSERT(slots_req > 0);
   size_t slots_given = slots_req;
   node_address addr = MM->requestChunk(slots_given);
@@ -1417,7 +1697,8 @@ MEDDLY::node_address MEDDLY::simple_separated
   // Set size
   //
   MEDDLY_CHECK_RANGE(0, size_slot, slots_given);
-  chunk[size_slot] = getRawSize(size, false, nb.isExtensible());
+  chunk[size_slot] = getRawSize(size, false,false,nb.isNInfinity(),nb.isNExtensible(), nb.isExtensible(),nb.isPInfinity());
+//  chunk[size_slot] = getRawSize(size, false, nb.isExtensible());
 
   //
   // Copy any extra header information
@@ -1435,27 +1716,74 @@ MEDDLY::node_address MEDDLY::simple_separated
   //
 
   node_handle* down = chunk + down_start;
+  int specialDown=(nb.isNInfinity()?1:0)+(nb.isNExtensible()?1:0)+(nb.isPExtensible()?1:0)+(nb.isPInfinity()?1:0);
+  int downEdgeSize=size+specialDown;
   if (slots_per_edge) {
       //
       // There's edge values
       //
       MEDDLY_DCASSERT(nb.hasEdges());
-      char* edge = (char*) (down + size); 
+      char* edge = (char*) (down + downEdgeSize/*size*/);
       int edge_bytes = bytesForSlots(slots_per_edge);
       if (nb.isSparse()) {
-        for (int i=0; i<size; i++) {
+        // handle skipped edge.
+        for (int i=0; i<downEdgeSize/*size*/; i++) {
           getParent()->getTransparentEdge(down[i], edge + i * edge_bytes);
         }
         for (int z=0; z<nb.getNNZs(); z++) {
           int i = nb.i(z);
           MEDDLY_CHECK_RANGE(0, i, size);
-          down[i] = nb.d(z);
-          memcpy(edge + i * edge_bytes, nb.eptr(z), edge_bytes);
+          down[i+specialDown] = nb.d(z,nb.isNInfinity(),nb.isNExtensible(),nb.isExtensible(),nb.isPInfinity());
+          memcpy(edge + (i+specialDown) * edge_bytes, nb.eptr(z,nb.isNInfinity(),nb.isNExtensible(),nb.isExtensible(),nb.isPInfinity()), edge_bytes);
+        }
+        if(specialDown>0){
+
+          int i=0;
+          if(nb.isNInfinity()){
+            down[i]=nb.ninfty_d();
+            memcpy(edge+i,nb.eptr(i),edge_bytes);
+            i++;
+          }
+          if(nb.isNExtensible()){
+            down[i]=nb.next_d();
+            memcpy(edge+i,nb.eptr(i),edge_bytes);
+            i++;
+          }
+          if(nb.isExtensible()){
+            down[i]=nb.pext_d();
+            memcpy(edge+i,nb.eptr(i),edge_bytes);
+            i++;
+          }
+          if(nb.isPInfinity()){
+            down[i]=nb.ninfty_d();
+            memcpy(edge+i,nb.eptr(i),edge_bytes);
+            i++;
+          }
         }
       } else {
-        for (int i=0; i<size; i++) down[i] = nb.d(i);
+        for (int i=0; i<size; i++) down[i+specialDown] = nb.d(i,nb.isNInfinity(),nb.isNExtensible(),nb.isExtensible(),nb.isPInfinity());
         // kinda hacky
         memcpy(edge, nb.eptr(0), size * edge_bytes);
+        //for special value
+        if(specialDown>0){
+                  int i=0;
+                  if(nb.isNInfinity()){
+                    down[i]=nb.ninfty_d();
+                    i++;
+                  }
+                  if(nb.isNExtensible()){
+                    down[i]=nb.next_d();
+                    i++;
+                  }
+                  if(nb.isExtensible()){
+                    down[i]=nb.pext_d();
+                    i++;
+                  }
+                  if(nb.isPInfinity()){
+                    down[i]=nb.ninfty_d();
+                    i++;
+                  }
+                }
       }
   } else {
       //
@@ -1464,16 +1792,35 @@ MEDDLY::node_address MEDDLY::simple_separated
       MEDDLY_DCASSERT(!nb.hasEdges());
       if (nb.isSparse()) {
         const node_handle tv = getParent()->getTransparentNode();
-        for (int i=0; i<size; i++) {
+        for (int i=0; i<downEdgeSize/*size*/; i++) {
           down[i] = tv;
         }
         for (int z=0; z<nb.getNNZs(); z++) {
           MEDDLY_CHECK_RANGE(0, nb.i(z), size);
-          down[nb.i(z)] = nb.d(z);
+          down[nb.i(z)+specialDown] = nb.d(z,nb.isNInfinity(),nb.isNExtensible(),nb.isExtensible(),nb.isPInfinity());
         }
       } else {
-        for (int i=0; i<size; i++) down[i] = nb.d(i);
+        for (int i=0; i<size; i++) down[i+specialDown] = nb.d(i,nb.isNInfinity(),nb.isNExtensible(),nb.isExtensible(),nb.isPInfinity());
       }
+    if (specialDown > 0) {
+      int i = 0;
+      if (nb.isNInfinity()) {
+        down[i] = nb.ninfty_d();
+        i++;
+      }
+      if (nb.isNExtensible()) {
+        down[i] = nb.next_d();
+        i++;
+      }
+      if (nb.isExtensible()) {
+        down[i] = nb.pext_d();
+        i++;
+      }
+      if (nb.isPInfinity()) {
+        down[i] = nb.ninfty_d();
+        i++;
+      }
+    }
   }
 
   //
@@ -1484,7 +1831,7 @@ MEDDLY::node_address MEDDLY::simple_separated
   long delta = slots_given - slots_req;
   MEDDLY_DCASSERT(delta>=0);
   MEDDLY_DCASSERT(delta<1024);    // Sanity check
-  MEDDLY_DCASSERT(size_t(down_start + size + slots_per_edge * size + 1) == slots_req);
+  MEDDLY_DCASSERT(size_t(down_start + downEdgeSize/*size*/ + slots_per_edge * downEdgeSize/*size*/ + 1) == slots_req);
   chunk[slots_req-1] = -delta;  // Where we expect the node to end
   chunk[slots_given-1] = p;     // Where the node actually ends
   // Note: if slots_req == slots_given, then the second statement
@@ -1520,7 +1867,7 @@ MEDDLY::node_address MEDDLY::simple_separated
   // Determine amount of memory we need, and request it
   //
 
-  size_t slots_req = slotsForNode(size, true);
+  size_t slots_req = slotsForNode(size, true,false,nb.isNInfinity(),nb.isNExtensible(),nb.isExtensible(),nb.isPInfinity());
   MEDDLY_DCASSERT(slots_req > 0);
   size_t slots_given = slots_req;
   node_address addr = MM->requestChunk(slots_given);
@@ -1536,7 +1883,8 @@ MEDDLY::node_address MEDDLY::simple_separated
   // Set size
   //
   MEDDLY_CHECK_RANGE(0, size_slot, slots_given);
-  chunk[size_slot] = getRawSize(size, true, nb.isExtensible());
+  chunk[size_slot]=getRawSize(size, true,false,nb.isNInfinity(),nb.isNExtensible(), nb.isExtensible(),nb.isPInfinity());
+//  chunk[size_slot] = getRawSize(size, true, nb.isExtensible());
 
   //
   // Copy any extra header information
@@ -1552,9 +1900,10 @@ MEDDLY::node_address MEDDLY::simple_separated
   //
   // Copy downward pointers, indexes, and edge values (if any)
   //
-
+  int specialDown=(nb.isNInfinity()?1:0)+(nb.isNExtensible()?1:0)+(nb.isPExtensible()?1:0)+(nb.isPInfinity()?1:0);
+  int downEdgeSize=size+specialDown;
   node_handle* down = chunk + down_start;
-  node_handle* index = down + size;
+  node_handle* index = down + downEdgeSize/*size*/;
 
   if (slots_per_edge) {
       //
@@ -1564,21 +1913,53 @@ MEDDLY::node_address MEDDLY::simple_separated
       char* edge = (char*) (index + size); 
       int edge_bytes = bytesForSlots(slots_per_edge);
       if (nb.isSparse()) {
-        for (int z=0; z<size; z++) {
+//      for (int z = 0; z < size; z++) {
+//        down[z] = nb.d(z);
+//        index[z] = nb.i(z);
+//      }
+        for (int z=0; z<downEdgeSize/*size*/; z++) {
           down[z] = nb.d(z);
-          index[z] = nb.i(z);
+//          index[z] = nb.i(z);
         }
+      for (int z = 0; z < size; z++) {
+        index[z] = nb.i(z);
+      }
         // kinda hacky
-        memcpy(edge, nb.eptr(0), size * edge_bytes);
+        memcpy(edge, nb.eptr(0), /*size*/downEdgeSize * edge_bytes);
+
       } else {
         int z = 0;
         for (int i=0; i<nb.getSize(); i++) {
           if (getParent()->isTransparentEdge(nb.d(i), nb.eptr(i))) continue;
           MEDDLY_CHECK_RANGE(0, z, size);
-          down[z] = nb.d(i);
+          down[z+specialDown] = nb.d(i,nb.isNInfinity(),nb.isNExtensible(),nb.isExtensible(),nb.isPInfinity());
           index[z] = i;
-          memcpy(edge + z * edge_bytes, nb.eptr(i), edge_bytes);
+          memcpy(edge + (z+specialDown) * edge_bytes, nb.eptr(i,nb.isNInfinity(),nb.isNExtensible(),nb.isExtensible(),nb.isPInfinity()), edge_bytes);
           z++;
+        }
+        if(specialDown>0){
+
+          int i=0;
+          if(nb.isNInfinity()){
+            down[i]=nb.ninfty_d();
+            memcpy(edge+i,nb.eptr(i),edge_bytes);
+            i++;
+          }
+          if(nb.isNExtensible()){
+            down[i]=nb.next_d();
+            memcpy(edge+i,nb.eptr(i),edge_bytes);
+            i++;
+          }
+          if(nb.isExtensible()){
+            down[i]=nb.pext_d();
+            memcpy(edge+i,nb.eptr(i),edge_bytes);
+            i++;
+          }
+          if(nb.isPInfinity()){
+            down[i]=nb.ninfty_d();
+            memcpy(edge+i,nb.eptr(i),edge_bytes);
+            i++;
+          }
         }
         MEDDLY_DCASSERT(size == z);
       }
@@ -1588,19 +1969,47 @@ MEDDLY::node_address MEDDLY::simple_separated
       //
       MEDDLY_DCASSERT(!nb.hasEdges());
       if (nb.isSparse()) {
-        for (int z=0; z<size; z++) {
-          down[z] = nb.d(z);
-          index[z] = nb.i(z);
-        }
+      for (int z = 0; z < downEdgeSize/*size*/; z++) {
+        down[z] = nb.d(z);
+//        index[z] = nb.i(z);
+      }
+      for (int z = 0; z < size; z++) {
+//        down[z] = nb.d(z);
+        index[z] = nb.i(z);
+      }
+//        for (int z=0; z<size; z++) {
+//          down[z] = nb.d(z);
+//          index[z] = nb.i(z);
+//        }
+
       } else {
         int z = 0;
         const node_handle tv = getParent()->getTransparentNode();
         for (int i=0; i<nb.getSize(); i++) {
           if (nb.d(i)!=tv) {
             MEDDLY_CHECK_RANGE(0, z, size);
-            down[z] = nb.d(i);
+            down[z+specialDown] = nb.d(i,nb.isNInfinity(),nb.isNExtensible(),nb.isExtensible(),nb.isPInfinity());
             index[z] = i;
             z++;
+          }
+        }
+        if (specialDown > 0) {
+          int i = 0;
+          if (nb.isNInfinity()) {
+            down[i] = nb.ninfty_d();
+            i++;
+          }
+          if (nb.isNExtensible()) {
+            down[i] = nb.next_d();
+            i++;
+          }
+          if (nb.isExtensible()) {
+            down[i] = nb.pext_d();
+            i++;
+          }
+          if (nb.isPInfinity()) {
+            down[i] = nb.ninfty_d();
+            i++;
           }
         }
         MEDDLY_DCASSERT(size == z);
@@ -1620,7 +2029,7 @@ MEDDLY::node_address MEDDLY::simple_separated
   long delta = slots_given - slots_req;
   MEDDLY_DCASSERT(delta>=0);
   MEDDLY_DCASSERT(delta<1024);    // Sanity check
-  MEDDLY_DCASSERT(size_t(down_start + 2*size + slots_per_edge * size + 1) == slots_req);
+  MEDDLY_DCASSERT(size_t(down_start +downEdgeSize +size + slots_per_edge * size + 1) == slots_req);
   chunk[slots_req-1] = -delta;  // Where we expect the node to end
   chunk[slots_given-1] = p;     // Where the node actually ends
   // Note: if slots_req == slots_given, then the second statement
