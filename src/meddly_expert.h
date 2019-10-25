@@ -606,10 +606,16 @@ class MEDDLY::unpacked_node {
       FULL_NODE,
       /// Unpacked node should be stored sparsely
       SPARSE_NODE,
+      /// Unpacked node should be stored as truncated full general
+      FULLGENERAL_NODE,
       /// Unpacked node should be stored same as packed node
       AS_STORED
     };
-
+    enum stored_scheme{
+          SPARSE,
+          FULL,
+          FULLGENERAL
+        };
   public:
     /** Constructor.
      The class must be "filled" by a forest before
@@ -627,39 +633,71 @@ class MEDDLY::unpacked_node {
   /* Initialization methods, primarily for reading */
 
     void initFromNode(const expert_forest *f, node_handle node, bool full);
+    void initFromNode(const expert_forest *f, node_handle node, stored_scheme full);
     void initFromNode(const expert_forest *f, node_handle node, storage_style st2);
 
     void initRedundant(const expert_forest *f, int k, node_handle node, bool full);
+    void initRedundant(const expert_forest *f, int k, node_handle node, stored_scheme full);
+
     void initRedundant(const expert_forest *f, int k, int ev, node_handle node, bool full);
+    void initRedundant(const expert_forest *f, int k, int ev, node_handle node, stored_scheme full);
+
     void initRedundant(const expert_forest *f, int k, long ev, node_handle node, bool full);
+    void initRedundant(const expert_forest *f, int k, long ev, node_handle node, stored_scheme full);
+
     void initRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full);
+    void initRedundant(const expert_forest *f, int k, float ev, node_handle node, stored_scheme full);
+
 
     void initIdentity(const expert_forest *f, int k, unsigned i, node_handle node, bool full);
+    void initIdentity(const expert_forest *f, int k, unsigned i, node_handle node, stored_scheme full);
+
     void initIdentity(const expert_forest *f, int k, unsigned i, int ev, node_handle node, bool full);
+    void initIdentity(const expert_forest *f, int k, unsigned i, int ev, node_handle node, stored_scheme full);
+
     void initIdentity(const expert_forest *f, int k, unsigned i, long ev, node_handle node, bool full);
+    void initIdentity(const expert_forest *f, int k, unsigned i, long ev, node_handle node, stored_scheme full);
+
     void initIdentity(const expert_forest *f, int k, unsigned i, float ev, node_handle node, bool full);
+    void initIdentity(const expert_forest *f, int k, unsigned i, float ev, node_handle node, stored_scheme full);
+
 
   /* Create blank node, primarily for writing */
     
     void initFull(const expert_forest *f, int level, unsigned tsz); 
+    void initFullGeneral(const expert_forest *f, int level, unsigned tsz);
     void initSparse(const expert_forest *f, int level, unsigned nnz);
 
   public:
   /* For convenience: get recycled instance and initialize */
-
+    static unpacked_node* newFromNode(const expert_forest *f, node_handle node, stored_scheme full);
     static unpacked_node* newFromNode(const expert_forest *f, node_handle node, bool full);
     static unpacked_node* newFromNode(const expert_forest *f, node_handle node, storage_style st2);
 
     static unpacked_node* newRedundant(const expert_forest *f, int k, node_handle node, bool full);
+    static unpacked_node* newRedundant(const expert_forest *f, int k, node_handle node, stored_scheme full);
+
     static unpacked_node* newRedundant(const expert_forest *f, int k, long ev, node_handle node, bool full);
+    static unpacked_node* newRedundant(const expert_forest *f, int k, long ev, node_handle node, stored_scheme full);
+
     static unpacked_node* newRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full);
+    static unpacked_node* newRedundant(const expert_forest *f, int k, float ev, node_handle node, stored_scheme full);
 
     static unpacked_node* newIdentity(const expert_forest *f, int k, unsigned i, node_handle node, bool full);
+    static unpacked_node* newIdentity(const expert_forest *f, int k, unsigned i, node_handle node, stored_scheme full);
+
     static unpacked_node* newIdentity(const expert_forest *f, int k, unsigned i, long ev, node_handle node, bool full);
+    static unpacked_node* newIdentity(const expert_forest *f, int k, unsigned i, long ev, node_handle node, stored_scheme full);
+
+
     static unpacked_node* newIdentity(const expert_forest *f, int k, unsigned i, float ev, node_handle node, bool full);
+    static unpacked_node* newIdentity(const expert_forest *f, int k, unsigned i, float ev, node_handle node, stored_scheme full);
 
     /** Create a zeroed-out full node */
     static unpacked_node* newFull(const expert_forest *f, int level, unsigned tsz);
+
+    /** Create a zeroed-out fullGeneral node */
+    static unpacked_node* newFullGeneral(const expert_forest *f, int level, unsigned tsz);
 
     /** Create a zeroed-out sparse node */
     static unpacked_node* newSparse(const expert_forest *f, int level, unsigned nnz);
@@ -734,8 +772,32 @@ class MEDDLY::unpacked_node {
     /// Get a pointer to an edge
     const void* eptr(unsigned i) const;
 
+    /// Get a pointer to a negative infinity edge
+    const void* nieptr() const;
+
+    /// Get a pointer to a negative extensible edge
+    const void* neeptr() const;
+
+    /// Get a pointer to an extensible edge
+    const void* eeptr() const;
+
+    /// Get a pointer to a positive infinity edge
+    const void* pieptr() const;
+
     /// Modify pointer to an edge
     void* eptr_write(unsigned i);
+
+    /// Modify pointer to extensible edge
+    void* eeptr_write();
+
+    /// Modify pointer to nextensible edge
+    void* neeptr_write();
+
+    /// Modify pointer to pinfinity edge
+    void* pieptr_write();
+
+    /// Modify pointer to ninfinity edge
+    void* nieptr_write();
 
     /// Set the nth pointer and edge value from E, and destroy E.
     void set_de(unsigned n, dd_edge &E);
@@ -793,8 +855,36 @@ class MEDDLY::unpacked_node {
     long ext_ei() const;
     float ext_ef() const;
 
+    node_handle& dref_ext() const;
+    node_handle d_ext() const;
+    long ei_ext() const;
+    float ef_ext() const;
     // -------------------- End of extensible portion --------------------------
+    // -------------------- Special part-----
+    bool isNExtensible() const;
+    void markAsNExtensible();
+    void markAsNotNExtensible();
+    node_handle& dref_next() const;
+    node_handle d_next() const;
+    long ei_next() const;
+    float ef_next() const;
 
+    bool isNInfinity() const;
+    void markAsNInfinity();
+    void markAsNotNInfinity();
+    node_handle& dref_ninf() const;
+    node_handle d_ninf() const;
+    long ei_ninf() const;
+    float ef_ninf() const;
+
+    bool isPInfinity() const;
+    void markAsPInfinity();
+    void markAsNotPInfinity();
+    node_handle& dref_pinf() const;
+    node_handle d_pinf() const;
+    long ei_pinf() const;
+    float ef_pinf() const;
+    // -------------------- End of special part
     /// Get the level number of this node.
     int getLevel() const;
 
@@ -812,6 +902,9 @@ class MEDDLY::unpacked_node {
 
     /// Is this a full reader?
     bool isFull() const;
+
+    /// Is this a fullGeneral reader?
+    bool isFullGeneral() const;
 
     /// Does this node have edge values?
     bool hasEdges() const;
@@ -860,14 +953,18 @@ class MEDDLY::unpacked_node {
     ///   @param  ns    Size of node.
     ///   @param  full  If true, we'll be filling a full reader.
     ///                 Otherwise it is a sparse one.
-    void bind_to_forest(const expert_forest* p, int k, unsigned ns, bool full);
+    void bind_to_forest(const expert_forest* p, int k, unsigned ns, stored_scheme/*bool*/ full);
 
     /// Called by node_storage when building an unpacked
     /// node based on how it's stored.
     void bind_as_full(bool full);
+    void bind_as_full();
+    void bind_as_sparse();
+    void bind_as_fullgeneral();
 
   protected:
     void clearFullEdges();
+    void clearFullGeneralEdges();
     void clearSparseEdges();
 
   public:
@@ -904,9 +1001,28 @@ class MEDDLY::unpacked_node {
      Down pointers, indexes, edge values.
      */
     node_handle* down;
+    node_handle* down_ext;
+    node_handle* down_pinf;
+    node_handle* down_ninf;
+    node_handle* down_next;
+    long ei_extensible;
+    long ei_pinfinity;
+    long ei_ninfinity;
+    long ei_nextensible;
+    float ef_extensible;
+    float ef_pinfinity;
+    float ef_ninfinity;
+    float ef_nextensible;
     unsigned* index;
     void* edge;
+    void* edge_ext;
+    void* edge_pinf;
+    void* edge_ninf;
+    void* edge_next;
     bool is_extensible;
+    bool is_ninfinity;
+    bool is_nextensible;
+    bool is_pinfinity;
     unsigned alloc;
     unsigned ealloc;
     unsigned size;
@@ -914,7 +1030,11 @@ class MEDDLY::unpacked_node {
     int level;
     unsigned h;
     unsigned char edge_bytes; // number of bytes for an edge value.
-    bool is_full;
+//    bool is_full;
+//    bool is_sparse;
+//    bool is_fullgeneral;
+    stored_scheme type;
+//    bool is_generalfull;
 #ifdef DEVELOPMENT_CODE
     bool has_hash;
 #endif

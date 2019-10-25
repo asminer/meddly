@@ -63,16 +63,34 @@ MEDDLY::expert_domain::shrinkVariableBound(int vh, int b, bool force)
 // ******************************************************************
 
 
-inline void 
+inline void
 MEDDLY::unpacked_node::initFromNode(const expert_forest *f, 
   node_handle node, bool full)
 {
-  MEDDLY_DCASSERT(f);
-  f->fillUnpacked(*this, node, full ? FULL_NODE : SPARSE_NODE);
+  if(full)
+    initFromNode(f,node,stored_scheme::FULL);
+  else
+    initFromNode(f,node,stored_scheme::SPARSE);
+
+//  MEDDLY_DCASSERT(f);
+//  f->fillUnpacked(*this, node, full ? FULL_NODE : SPARSE_NODE);
 }
 
-inline void 
+inline void
 MEDDLY::unpacked_node::initFromNode(const expert_forest *f, 
+  node_handle node, stored_scheme full)
+{
+  MEDDLY_DCASSERT(f);
+  if(full==stored_scheme::FULL)
+  f->fillUnpacked(*this, node, FULL_NODE);
+  if(full==stored_scheme::FULLGENERAL)
+    f->fillUnpacked(*this, node, FULLGENERAL_NODE);
+  if(full==stored_scheme::SPARSE)
+    f->fillUnpacked(*this, node, SPARSE_NODE);
+}
+
+inline void
+MEDDLY::unpacked_node::initFromNode(const expert_forest *f,
   node_handle node, storage_style st2)
 {
   MEDDLY_DCASSERT(f);
@@ -82,13 +100,19 @@ MEDDLY::unpacked_node::initFromNode(const expert_forest *f,
 inline void MEDDLY::unpacked_node::initFull(const expert_forest *f, int levl, unsigned tsz)
 {
   MEDDLY_DCASSERT(f);
-  bind_to_forest(f, levl, tsz, true);
+  bind_to_forest(f, levl, tsz, unpacked_node::stored_scheme::FULL);
+}
+
+inline void MEDDLY::unpacked_node::initFullGeneral(const expert_forest *f, int levl, unsigned tsz)
+{
+  MEDDLY_DCASSERT(f);
+  bind_to_forest(f, levl, tsz, unpacked_node::stored_scheme::FULLGENERAL);
 }
 
 inline void MEDDLY::unpacked_node::initSparse(const expert_forest *f, int levl, unsigned nnz)
 {
   MEDDLY_DCASSERT(f);
-  bind_to_forest(f, levl, nnz, false);
+  bind_to_forest(f, levl, nnz, unpacked_node::stored_scheme::SPARSE);
 }
 
 // ****************************************************************************
@@ -96,13 +120,25 @@ inline void MEDDLY::unpacked_node::initSparse(const expert_forest *f, int levl, 
 inline MEDDLY::unpacked_node* 
 MEDDLY::unpacked_node::newFromNode(const expert_forest *f, node_handle node, bool full)
 {
+  if(full)
+    return newFromNode(f,node,stored_scheme::FULL );
+  else
+    return  newFromNode(f,node,stored_scheme::SPARSE );
+
+//  unpacked_node* U = useUnpackedNode();
+//  MEDDLY_DCASSERT(U);
+//  U->initFromNode(f, node, full);
+//  return U;
+}
+inline MEDDLY::unpacked_node* 
+MEDDLY::unpacked_node::newFromNode(const expert_forest *f, node_handle node, stored_scheme full)
+{
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
   U->initFromNode(f, node, full);
   return U;
 }
-
-inline MEDDLY::unpacked_node* 
+inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::newFromNode(const expert_forest *f, node_handle node, storage_style st2)
 {
   unpacked_node* U = useUnpackedNode();
@@ -114,6 +150,20 @@ MEDDLY::unpacked_node::newFromNode(const expert_forest *f, node_handle node, sto
 inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, node_handle node, bool full)
 {
+  if(full)
+    return newRedundant(f,k,node,stored_scheme::FULL );
+    else
+      return   newRedundant(f,k,node,stored_scheme::SPARSE );
+//  unpacked_node* U = useUnpackedNode();
+//  MEDDLY_DCASSERT(U);
+//  U->initRedundant(f, k, node, full);
+//  return U;
+}
+
+inline MEDDLY::unpacked_node*
+MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, node_handle node, stored_scheme full)
+{
+
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
   U->initRedundant(f, k, node, full);
@@ -122,6 +172,20 @@ MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, node_handle n
 
 inline MEDDLY::unpacked_node* 
 MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, long ev, node_handle node, bool full)
+{
+  if(full)
+    return newRedundant(f,k,ev,node,stored_scheme::FULL );
+  else
+    return newRedundant(f,k,ev,node,stored_scheme::SPARSE );
+
+//  unpacked_node* U = useUnpackedNode();
+//  MEDDLY_DCASSERT(U);
+//  U->initRedundant(f, k, ev, node, full);
+//  return U;
+}
+
+inline MEDDLY::unpacked_node*
+MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, long ev, node_handle node, stored_scheme full)
 {
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
@@ -132,14 +196,42 @@ MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, long ev, node
 inline MEDDLY::unpacked_node* 
 MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full)
 {
+  if(full)
+    return newRedundant(f,k,ev,node,stored_scheme::FULL );
+  else
+    return newRedundant(f,k,ev,node,stored_scheme::SPARSE );
+
+//  unpacked_node* U = useUnpackedNode();
+//  MEDDLY_DCASSERT(U);
+//  U->initRedundant(f, k, ev, node, full);
+//  return U;
+}
+
+inline MEDDLY::unpacked_node*
+MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, float ev, node_handle node, stored_scheme full)
+{
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
   U->initRedundant(f, k, ev, node, full);
   return U;
 }
 
+
 inline MEDDLY::unpacked_node* 
 MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, unsigned i, node_handle node, bool full)
+{
+  if(full)
+    return newIdentity(f,k,i,node,stored_scheme::FULL );
+  else
+    return newIdentity(f,k,i,node,stored_scheme::SPARSE );
+//  unpacked_node* U = useUnpackedNode();
+//  MEDDLY_DCASSERT(U);
+//  U->initIdentity(f, k, i, node, full);
+//  return U;
+}
+
+inline MEDDLY::unpacked_node*
+MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, unsigned i, node_handle node, stored_scheme full)
 {
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
@@ -150,6 +242,19 @@ MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, unsigned i, no
 inline MEDDLY::unpacked_node* 
 MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, unsigned i, long ev, node_handle node, bool full)
 {
+  if(full)
+    return newIdentity(f,k,i,ev,node,stored_scheme::FULL );
+  else
+    return newIdentity(f,k,i,ev,node,stored_scheme::SPARSE );
+//  unpacked_node* U = useUnpackedNode();
+//  MEDDLY_DCASSERT(U);
+//  U->initIdentity(f, k, i, ev, node, full);
+//  return U;
+}
+
+inline MEDDLY::unpacked_node*
+MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, unsigned i, long ev, node_handle node, stored_scheme full)
+{
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
   U->initIdentity(f, k, i, ev, node, full);
@@ -158,6 +263,19 @@ MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, unsigned i, lo
 
 inline MEDDLY::unpacked_node* 
 MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, unsigned i, float ev, node_handle node, bool full)
+{
+  if(full)
+   return newIdentity(f,k,i,ev,node,stored_scheme::FULL );
+  else
+    return newIdentity(f,k,i,ev,node,stored_scheme::SPARSE );
+//  unpacked_node* U = useUnpackedNode();
+//  MEDDLY_DCASSERT(U);
+//  U->initIdentity(f, k, i, ev, node, full);
+//  return U;
+}
+
+inline MEDDLY::unpacked_node*
+MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, unsigned i, float ev, node_handle node, stored_scheme full)
 {
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
@@ -177,6 +295,17 @@ MEDDLY::unpacked_node::newFull(const expert_forest *f, int level, unsigned tsz)
 }
 
 inline MEDDLY::unpacked_node* 
+MEDDLY::unpacked_node::newFullGeneral(const expert_forest *f, int level, unsigned tsz)
+{
+  unpacked_node* U = useUnpackedNode();
+  MEDDLY_DCASSERT(U);
+  U->initFullGeneral(f, level, tsz);
+  U->clearFullGeneralEdges();
+  addToBuildList(U);
+  return U;
+}
+
+inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::newSparse(const expert_forest *f, int level, unsigned nnzs)
 {
   unpacked_node* U = useUnpackedNode();
@@ -282,6 +411,34 @@ MEDDLY::unpacked_node::eptr(unsigned i) const
   return ((char*) edge) + i * edge_bytes;
 }
 
+inline const void*
+MEDDLY::unpacked_node::nieptr() const
+{
+  MEDDLY_DCASSERT(isNInfinity());
+  return edge_ninf;
+}
+
+inline const void*
+MEDDLY::unpacked_node::neeptr() const
+{
+  MEDDLY_DCASSERT(isNExtensible());
+  return edge_next;
+}
+
+inline const void*
+MEDDLY::unpacked_node::eeptr() const
+{
+  MEDDLY_DCASSERT(isExtensible());
+  return edge_ext;
+}
+
+inline const void*
+MEDDLY::unpacked_node::pieptr() const
+{
+  MEDDLY_DCASSERT(isPInfinity());
+  return edge_pinf;
+}
+
 inline void*
 MEDDLY::unpacked_node::eptr_write(unsigned i)
 {
@@ -291,6 +448,33 @@ MEDDLY::unpacked_node::eptr_write(unsigned i)
   return ((char*) edge) + i * edge_bytes;
 }
 
+inline void*
+MEDDLY::unpacked_node::eeptr_write()
+{
+  MEDDLY_DCASSERT(isExtensible());
+  return edge_ext;
+}
+
+inline void*
+MEDDLY::unpacked_node::neeptr_write()
+{
+  MEDDLY_DCASSERT(isNExtensible());
+  return edge_next;
+}
+
+inline void*
+MEDDLY::unpacked_node::pieptr_write()
+{
+  MEDDLY_DCASSERT(isPInfinity());
+  return edge_pinf;
+}
+
+inline void*
+MEDDLY::unpacked_node::nieptr_write()
+{
+  MEDDLY_DCASSERT(isNInfinity());
+  return edge_ninf;
+}
 inline void
 MEDDLY::unpacked_node::set_de(unsigned n, dd_edge &E)
 {
@@ -415,8 +599,166 @@ MEDDLY::unpacked_node::ext_ef() const
   return ef( (isSparse()? getNNZs(): getSize()) - 1 );
 }
 
-// --- End of Extensible portion of the node ---
+inline MEDDLY::node_handle&
+MEDDLY::unpacked_node::dref_ext() const
+{
+  MEDDLY_DCASSERT(isExtensible());
+  return down_ext[0];
+}
 
+inline MEDDLY::node_handle
+MEDDLY::unpacked_node::d_ext() const
+{
+  MEDDLY_DCASSERT(isExtensible());
+  return down_ext[0];
+}
+inline long
+MEDDLY::unpacked_node::ei_ext() const
+{
+  MEDDLY_DCASSERT(isExtensible());
+  return ei_extensible;
+}
+
+inline float
+MEDDLY::unpacked_node::ef_ext() const
+{
+  MEDDLY_DCASSERT(isExtensible());
+  return ef_extensible;
+}
+// --- End of Extensible portion of the node ---
+// --- Special part
+inline bool
+MEDDLY::unpacked_node::isNInfinity() const
+{
+  return is_ninfinity;
+}
+inline void
+MEDDLY::unpacked_node::markAsNInfinity()
+{
+  is_ninfinity = true;
+}
+
+inline void
+MEDDLY::unpacked_node::markAsNotNInfinity()
+{
+  is_ninfinity = false;
+}
+inline MEDDLY::node_handle&
+MEDDLY::unpacked_node::dref_ninf() const
+{
+  MEDDLY_DCASSERT(isNInfinity());
+  return down_ninf[0];
+}
+
+inline MEDDLY::node_handle
+MEDDLY::unpacked_node::d_ninf() const
+{
+  MEDDLY_DCASSERT(isNInfinity());
+  return down_ninf[0];
+}
+
+inline long
+MEDDLY::unpacked_node::ei_ninf() const
+{
+  MEDDLY_DCASSERT(isNInfinity());
+  return ei_ninfinity;
+}
+
+inline float
+MEDDLY::unpacked_node::ef_ninf() const
+{
+  MEDDLY_DCASSERT(isNInfinity());
+  return ef_ninfinity;
+}
+// nextensible
+inline bool
+MEDDLY::unpacked_node::isNExtensible() const
+{
+  return is_nextensible;
+}
+inline void
+MEDDLY::unpacked_node::markAsNExtensible()
+{
+  is_nextensible = true;
+}
+
+inline void
+MEDDLY::unpacked_node::markAsNotNExtensible()
+{
+  is_nextensible = false;
+}
+inline MEDDLY::node_handle&
+MEDDLY::unpacked_node::dref_next() const
+{
+  MEDDLY_DCASSERT(isNExtensible());
+  return down_next[0];
+}
+
+inline MEDDLY::node_handle
+MEDDLY::unpacked_node::d_next() const
+{
+  MEDDLY_DCASSERT(isNExtensible());
+  return down_next[0];
+}
+
+inline long
+MEDDLY::unpacked_node::ei_next() const
+{
+  MEDDLY_DCASSERT(isNExtensible());
+  return ei_nextensible;
+}
+
+inline float
+MEDDLY::unpacked_node::ef_next() const
+{
+  MEDDLY_DCASSERT(isNExtensible());
+  return ei_nextensible;
+}
+// pinfinity
+inline bool
+MEDDLY::unpacked_node::isPInfinity() const
+{
+  return is_pinfinity;
+}
+inline void
+MEDDLY::unpacked_node::markAsPInfinity()
+{
+  is_pinfinity = true;
+}
+
+inline void
+MEDDLY::unpacked_node::markAsNotPInfinity()
+{
+  is_pinfinity = false;
+}
+inline MEDDLY::node_handle&
+MEDDLY::unpacked_node::dref_pinf() const
+{
+  MEDDLY_DCASSERT(isPInfinity());
+  return down_pinf[0];
+}
+
+inline MEDDLY::node_handle
+MEDDLY::unpacked_node::d_pinf() const
+{
+  MEDDLY_DCASSERT(isPInfinity());
+  return down_pinf[0];
+}
+
+inline long
+MEDDLY::unpacked_node::ei_pinf() const
+{
+  MEDDLY_DCASSERT(isPInfinity());
+  return ei_pinfinity;
+}
+
+inline float
+MEDDLY::unpacked_node::ef_pinf() const
+{
+  MEDDLY_DCASSERT(isPInfinity());
+  return ef_pinfinity;
+}
+// --- End of special part
 inline unsigned
 MEDDLY::unpacked_node::getSize() const
 {
@@ -434,13 +776,19 @@ MEDDLY::unpacked_node::getNNZs() const
 inline bool
 MEDDLY::unpacked_node::isSparse() const
 {
-  return !is_full;
+  return (type==stored_scheme::SPARSE);//!is_full;
 }
 
 inline bool
 MEDDLY::unpacked_node::isFull() const
 {
-  return is_full;
+  return (type==stored_scheme::FULL);//is_full;
+}
+
+inline bool
+MEDDLY::unpacked_node::isFullGeneral() const
+{
+  return (type==stored_scheme::FULLGENERAL);//is_full;
 }
 
 inline bool
@@ -500,13 +848,47 @@ MEDDLY::unpacked_node::shrinkSparse(unsigned ns)
 inline void
 MEDDLY::unpacked_node::bind_as_full(bool full)
 {
-  is_full = full;
+  if (full)
+  type= stored_scheme::FULL;
+  else
+    type=stored_scheme::SPARSE;
+//  is_sparse=!full;
+//  is_fullgeneral=false;
+}
+
+inline void
+MEDDLY::unpacked_node::bind_as_full()
+{
+  type= stored_scheme::FULL;
+
+}
+
+inline void
+MEDDLY::unpacked_node::bind_as_sparse()
+{
+  type=stored_scheme::SPARSE;
+}
+
+inline void
+MEDDLY::unpacked_node::bind_as_fullgeneral()
+{
+  type=stored_scheme::FULLGENERAL;
 }
 
 inline void
 MEDDLY::unpacked_node::clearFullEdges()
 {
   MEDDLY_DCASSERT(isFull());
+  memset(down, 0, unsigned(size) * sizeof(node_handle));
+  if (edge_bytes) {
+    memset(edge, 0, unsigned(size) * edge_bytes);
+  }
+}
+
+inline void
+MEDDLY::unpacked_node::clearFullGeneralEdges()
+{
+  MEDDLY_DCASSERT(isFullGeneral());
   memset(down, 0, unsigned(size) * sizeof(node_handle));
   if (edge_bytes) {
     memset(edge, 0, unsigned(size) * edge_bytes);
@@ -2512,7 +2894,14 @@ const
 {
   const int level = getNodeLevel(node);
   MEDDLY_DCASSERT(0 != level);
-  un.bind_to_forest(this, level, unsigned(getLevelSize(level)), true); 
+  if(st2==unpacked_node::storage_style::FULL_NODE)
+  un.bind_to_forest(this, level, unsigned(getLevelSize(level)), unpacked_node::stored_scheme::FULL);
+  else if(st2==unpacked_node::storage_style::SPARSE_NODE)
+    un.bind_to_forest(this, level, unsigned(getLevelSize(level)), unpacked_node::stored_scheme::SPARSE);
+  else if(st2==unpacked_node::storage_style::FULLGENERAL_NODE)
+    un.bind_to_forest(this, level, unsigned(getLevelSize(level)), unpacked_node::stored_scheme::FULLGENERAL);
+  else
+    un.bind_to_forest(this, level, unsigned(getLevelSize(level)), unpacked_node::stored_scheme::SPARSE);
   MEDDLY_DCASSERT(getNodeAddress(node));
   nodeMan->fillUnpacked(un, getNodeAddress(node), st2);
 }

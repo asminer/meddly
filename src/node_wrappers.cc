@@ -46,6 +46,9 @@ MEDDLY::unpacked_node::unpacked_node()
   index = 0;
   edge = 0;
   is_extensible = false;
+  is_nextensible=false;
+  is_pinfinity=false;
+  is_ninfinity=false;
   alloc = 0;
   ealloc = 0;
   size = 0;
@@ -73,6 +76,9 @@ void MEDDLY::unpacked_node::clear()
   index = 0;
   edge = 0;
   is_extensible = false;
+  is_nextensible=false;
+  is_pinfinity=false;
+  is_ninfinity=false;
   alloc = 0;
   ealloc = 0;
   size = 0;
@@ -92,7 +98,7 @@ void MEDDLY::unpacked_node::clear()
           repeat for all indices till +infinity.
 */
 
-void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k, 
+void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -100,7 +106,10 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   MEDDLY_DCASSERT(k);
   MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
   unsigned nsize = f->isExtensibleLevel(k) ? 1 : unsigned(f->getLevelSize(k));
-  bind_to_forest(f, k, nsize, full);
+  if(full)
+    bind_to_forest(f, k, nsize, unpacked_node::stored_scheme::FULL);
+    else
+      bind_to_forest(f, k, nsize, unpacked_node::stored_scheme::SPARSE);
   for (unsigned i=0; i<nsize; i++) {
     down[i] = node;
   }
@@ -112,6 +121,25 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
 }
 
 void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k, 
+  node_handle node, stored_scheme full)
+{
+  MEDDLY_DCASSERT(f);
+  MEDDLY_DCASSERT(0==f->edgeBytes());
+  MEDDLY_DCASSERT(k);
+  MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+  unsigned nsize = f->isExtensibleLevel(k) ? 1 : unsigned(f->getLevelSize(k));
+  bind_to_forest(f, k, nsize, full);
+  for (unsigned i=0; i<nsize; i++) {
+    down[i] = node;
+  }
+  if (full==stored_scheme::SPARSE) {
+    for (unsigned i=0; i<nsize; i++) index[i] = i;
+    nnzs = nsize;
+  }
+  is_extensible = f->isExtensibleLevel(k);
+}
+
+void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   float ev, node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -119,7 +147,10 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   MEDDLY_DCASSERT(k);
   MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
   unsigned nsize = unsigned(f->getLevelSize(k));
-  bind_to_forest(f, k, nsize, full);
+  if(full)
+    bind_to_forest(f, k, nsize, unpacked_node::stored_scheme::FULL);
+    else
+      bind_to_forest(f, k, nsize, unpacked_node::stored_scheme::SPARSE);
   for (unsigned i=0; i<nsize; i++) {
     down[i] = node;
     ((float*)edge)[i] = ev;
@@ -131,7 +162,48 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
 }
 
 void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k, 
+  float ev, node_handle node, stored_scheme full)
+{
+  MEDDLY_DCASSERT(f);
+  MEDDLY_DCASSERT(sizeof(float)==f->edgeBytes());
+  MEDDLY_DCASSERT(k);
+  MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+  unsigned nsize = unsigned(f->getLevelSize(k));
+  bind_to_forest(f, k, nsize, full);
+  for (unsigned i=0; i<nsize; i++) {
+    down[i] = node;
+    ((float*)edge)[i] = ev;
+  }
+  if (full==stored_scheme::SPARSE) {
+    for (unsigned i=0; i<nsize; i++) index[i] = i;
+    nnzs = nsize;
+  }
+}
+
+void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   int ev, node_handle node, bool full)
+{
+  MEDDLY_DCASSERT(f);
+  MEDDLY_DCASSERT(sizeof(int)==f->edgeBytes());
+  MEDDLY_DCASSERT(k);
+  MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+  unsigned nsize = unsigned(f->getLevelSize(k));
+  if(full)
+    bind_to_forest(f, k, nsize, unpacked_node::stored_scheme::FULL);
+    else
+      bind_to_forest(f, k, nsize, unpacked_node::stored_scheme::SPARSE);
+  for (unsigned i=0; i<nsize; i++) {
+    down[i] = node;
+    ((int*)edge)[i] = ev;
+  }
+  if (!full) {
+    for (unsigned i=0; i<nsize; i++) index[i] = i;
+    nnzs = nsize;
+  }
+}
+
+void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
+  int ev, node_handle node, stored_scheme full)
 {
   MEDDLY_DCASSERT(f);
   MEDDLY_DCASSERT(sizeof(int)==f->edgeBytes());
@@ -143,7 +215,7 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
     down[i] = node;
     ((int*)edge)[i] = ev;
   }
-  if (!full) {
+  if (full==stored_scheme::SPARSE) {
     for (unsigned i=0; i<nsize; i++) index[i] = i;
     nnzs = nsize;
   }
@@ -157,7 +229,11 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   MEDDLY_DCASSERT(k);
   MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
   unsigned nsize = unsigned(f->getLevelSize(k));
-  bind_to_forest(f, k, nsize, full);
+  if(full)
+  bind_to_forest(f, k, nsize, unpacked_node::stored_scheme::FULL);
+  else
+    bind_to_forest(f, k, nsize, unpacked_node::stored_scheme::SPARSE);
+
   for (unsigned i=0; i<nsize; i++) {
     down[i] = node;
     ((long*)edge)[i] = ev;
@@ -168,8 +244,47 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   }
 }
 
-void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k, 
+void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
+  long ev, node_handle node, stored_scheme full)
+{
+  MEDDLY_DCASSERT(f);
+  MEDDLY_DCASSERT((sizeof ev)==f->edgeBytes());
+  MEDDLY_DCASSERT(k);
+  MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+  unsigned nsize = unsigned(f->getLevelSize(k));
+  bind_to_forest(f, k, nsize, full);
+  for (unsigned i=0; i<nsize; i++) {
+    down[i] = node;
+    ((long*)edge)[i] = ev;
+  }
+  if (full==stored_scheme::SPARSE) {
+    for (unsigned i=0; i<nsize; i++) index[i] = i;
+    nnzs = nsize;
+  }
+}
+
+void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, node_handle node, bool full)
+{
+  MEDDLY_DCASSERT(f);
+  MEDDLY_DCASSERT(0==f->edgeBytes());
+  MEDDLY_DCASSERT(k);
+  MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+  unsigned nsize = unsigned(f->getLevelSize(k));
+  if (full) {
+    bind_to_forest(f, k, nsize, unpacked_node::stored_scheme::FULL);
+    clearFullEdges();
+    down[i] = node;
+  } else {
+    bind_to_forest(f, k, 1, unpacked_node::stored_scheme::SPARSE);
+    nnzs = 1;
+    down[0] = node;
+    index[0] = i;
+  }
+}
+
+void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k, 
+  unsigned i, node_handle node, stored_scheme full)
 {
   MEDDLY_DCASSERT(f);
   MEDDLY_DCASSERT(0==f->edgeBytes());
@@ -188,8 +303,30 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   }
 }
 
-void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k, 
+void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, int ev, node_handle node, bool full)
+{
+  MEDDLY_DCASSERT(f);
+  MEDDLY_DCASSERT(sizeof(int)==f->edgeBytes());
+  MEDDLY_DCASSERT(k);
+  MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+  unsigned nsize = unsigned(f->getLevelSize(k));
+  if (full) {
+    bind_to_forest(f, k, nsize, unpacked_node::stored_scheme::FULL);
+    clearFullEdges();
+    down[i] = node;
+    ((int*)edge)[i] = ev;
+  } else {
+    bind_to_forest(f, k, 1, unpacked_node::stored_scheme::SPARSE);
+    nnzs = 1;
+    down[0] = node;
+    ((int*)edge)[0] = ev;
+    index[0] = i;
+  }
+}
+
+void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k, 
+  unsigned i, int ev, node_handle node, stored_scheme full)
 {
   MEDDLY_DCASSERT(f);
   MEDDLY_DCASSERT(sizeof(int)==f->edgeBytes());
@@ -210,8 +347,30 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   }
 }
 
-void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k, 
+void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, long ev, node_handle node, bool full)
+{
+  MEDDLY_DCASSERT(f);
+  MEDDLY_DCASSERT((sizeof ev)==f->edgeBytes());
+  MEDDLY_DCASSERT(k);
+  MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+  unsigned nsize = unsigned(f->getLevelSize(k));
+  if (full) {
+    bind_to_forest(f, k, nsize, unpacked_node::stored_scheme::FULL);
+    clearFullEdges();
+    down[i] = node;
+    ((long*)edge)[i] = ev;
+  } else {
+    bind_to_forest(f, k, 1, unpacked_node::stored_scheme::SPARSE);
+    nnzs = 1;
+    down[0] = node;
+    ((long*)edge)[0] = ev;
+    index[0] = i;
+  }
+}
+
+void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
+  unsigned i, long ev, node_handle node, stored_scheme full)
 {
   MEDDLY_DCASSERT(f);
   MEDDLY_DCASSERT((sizeof ev)==f->edgeBytes());
@@ -234,6 +393,28 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
 
 void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, float ev, node_handle node, bool full)
+{
+  MEDDLY_DCASSERT(f);
+  MEDDLY_DCASSERT(sizeof(float)==f->edgeBytes());
+  MEDDLY_DCASSERT(k);
+  MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+  unsigned nsize = unsigned(f->getLevelSize(k));
+  if (full) {
+    bind_to_forest(f, k, nsize, unpacked_node::stored_scheme::FULL);
+    clearFullEdges();
+    down[i] = node;
+    ((float*)edge)[i] = ev;
+  } else {
+    bind_to_forest(f, k, 1, unpacked_node::stored_scheme::SPARSE);
+    nnzs = 1;
+    down[0] = node;
+    ((float*)edge)[0] = ev;
+    index[0] = i;
+  }
+}
+
+void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
+  unsigned i, float ev, node_handle node, stored_scheme full)
 {
   MEDDLY_DCASSERT(f);
   MEDDLY_DCASSERT(sizeof(float)==f->edgeBytes());
@@ -397,11 +578,13 @@ void MEDDLY::unpacked_node
 }
 
 void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f,
-    int k, unsigned ns, bool full)
+    int k, unsigned ns, unpacked_node::stored_scheme/*bool*/ full)
 {
   parent = f;
   level = k;
-  is_full = full;
+  type=full;
+//  is_sparse=!full;
+//  is_full = full;
   markAsNotExtensible();
   edge_bytes = f->edgeBytes();
   resize(ns);
