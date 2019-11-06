@@ -180,7 +180,11 @@ class MEDDLY::simple_separated : public node_storage {
         return chunk[size_slot];
       }
       inline static unsigned int getRawSize(int size, bool sparse, bool extensible) {
-        return (((unsigned int)(size) << 6) | (sparse? 1U: 0) | (extensible? 16U: 0));
+        return getRawSize(size, sparse, false, false, extensible, false); //(((unsigned int)(size) << 6) | (sparse? 1U: 0) | (extensible? 16U: 0));
+      }
+      inline static unsigned int getRawSize(int size, bool sparse, bool ninf, bool next, bool extensible, bool pinf) {
+        return (((unsigned int) (size) << 6) | (sparse ? 1U : 0) | (ninf ? 4U : 0)
+            | (next ? 8U : 0) | (extensible ? 16U : 0) | (pinf ? 32U : 0));
       }
       inline static unsigned int getSize(unsigned int raw_size) { 
         return ((unsigned int)raw_size) >> 6;
