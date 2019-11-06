@@ -76,12 +76,12 @@ namespace MEDDLY {
   const int down_ninf_hashcode=104729; //10000 prime number
   const int down_pinf_hashcode=160309;//14,708th prime
   const int down_nstr_hashcode=382703;//32,498th prime
-  const int down_pext_hashcode=868291;//68,965th prime
+  const int down_pstr_hashcode=868291;//68,965th prime
 
   const int edge_ninf_hashcode=510823; // 42,354th prime
   const int edge_pinf_hashcode=790871;//63,274th prime
   const int edge_nstr_hashcode=954509;//75,235th prime
-  const int edge_pext_hashcode= 320851;//27,678th prime
+  const int edge_pstr_hashcode= 320851;//27,678th prime
 
   // Handy Macros
 

@@ -1231,7 +1231,7 @@ unsigned MEDDLY::simple_separated::hashNode(int level, node_address addr) const
     }if(is_nstar){
           s.push(down_nstr[0],down_nstr_hashcode);
     }if(is_extensible){
-          s.push(down_ext[0],down_pext_hashcode);
+          s.push(down_ext[0],down_pstr_hashcode);
     }if(is_pinfinity){
           s.push(down_pinf[0],down_pinf_hashcode);
     }
@@ -1256,7 +1256,7 @@ unsigned MEDDLY::simple_separated::hashNode(int level, node_address addr) const
         if(is_nstar)
           s.push(edge_nstar,edge_nstr_hashcode);
         if(is_extensible)
-          s.push(edge_ext,edge_pext_hashcode);
+          s.push(edge_ext,edge_pstr_hashcode);
         if(is_pinfinity)
           s.push(edge_pinf,edge_pinf_hashcode);
       }
@@ -1288,7 +1288,7 @@ unsigned MEDDLY::simple_separated::hashNode(int level, node_address addr) const
         if(is_nstar)
           s.push(edge_nstar,edge_nstr_hashcode);
         if(is_extensible)
-          s.push(edge_ext,edge_pext_hashcode);
+          s.push(edge_ext,edge_pstr_hashcode);
         if(is_pinfinity)
           s.push(edge_pinf,edge_pinf_hashcode);
       }
