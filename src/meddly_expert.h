@@ -861,13 +861,13 @@ class MEDDLY::unpacked_node {
     float ef_ext() const;
     // -------------------- End of extensible portion --------------------------
     // -------------------- Special part-----
-    bool isNExtensible() const;
-    void markAsNExtensible();
-    void markAsNotNExtensible();
-    node_handle& dref_next() const;
-    node_handle d_next() const;
-    long ei_next() const;
-    float ef_next() const;
+    bool isNStar() const;
+    void markAsNStar();
+    void markAsNotNStar();
+    node_handle& dref_nstar() const;
+    node_handle d_nstar() const;
+    long ei_nstar() const;
+    float ef_nstar() const;
 
     bool isNInfinity() const;
     void markAsNInfinity();

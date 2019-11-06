@@ -421,7 +421,7 @@ MEDDLY::unpacked_node::nieptr() const
 inline const void*
 MEDDLY::unpacked_node::neeptr() const
 {
-  MEDDLY_DCASSERT(isNExtensible());
+  MEDDLY_DCASSERT(isNStar());
   return edge_next;
 }
 
@@ -458,7 +458,7 @@ MEDDLY::unpacked_node::eeptr_write()
 inline void*
 MEDDLY::unpacked_node::neeptr_write()
 {
-  MEDDLY_DCASSERT(isNExtensible());
+  MEDDLY_DCASSERT(isNStar());
   return edge_next;
 }
 
@@ -672,46 +672,46 @@ MEDDLY::unpacked_node::ef_ninf() const
 }
 // nextensible
 inline bool
-MEDDLY::unpacked_node::isNExtensible() const
+MEDDLY::unpacked_node::isNStar() const
 {
   return is_nextensible;
 }
 inline void
-MEDDLY::unpacked_node::markAsNExtensible()
+MEDDLY::unpacked_node::markAsNStar()
 {
   is_nextensible = true;
 }
 
 inline void
-MEDDLY::unpacked_node::markAsNotNExtensible()
+MEDDLY::unpacked_node::markAsNotNStar()
 {
   is_nextensible = false;
 }
 inline MEDDLY::node_handle&
-MEDDLY::unpacked_node::dref_next() const
+MEDDLY::unpacked_node::dref_nstar() const
 {
-  MEDDLY_DCASSERT(isNExtensible());
+  MEDDLY_DCASSERT(isNStar());
   return down_next[0];
 }
 
 inline MEDDLY::node_handle
-MEDDLY::unpacked_node::d_next() const
+MEDDLY::unpacked_node::d_nstar() const
 {
-  MEDDLY_DCASSERT(isNExtensible());
+  MEDDLY_DCASSERT(isNStar());
   return down_next[0];
 }
 
 inline long
-MEDDLY::unpacked_node::ei_next() const
+MEDDLY::unpacked_node::ei_nstar() const
 {
-  MEDDLY_DCASSERT(isNExtensible());
+  MEDDLY_DCASSERT(isNStar());
   return ei_nextensible;
 }
 
 inline float
-MEDDLY::unpacked_node::ef_next() const
+MEDDLY::unpacked_node::ef_nstar() const
 {
-  MEDDLY_DCASSERT(isNExtensible());
+  MEDDLY_DCASSERT(isNStar());
   return ei_nextensible;
 }
 // pinfinity

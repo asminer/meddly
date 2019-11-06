@@ -166,8 +166,8 @@ class MEDDLY::simple_separated : public node_storage {
 //        int node_slots = sparse ? (2+slots_per_edge) * sz : (1+slots_per_edge) * sz;
 //        return extra_slots + unhashed_slots + hashed_slots + node_slots;
       }
-      inline int slotsForNode(int sz, bool sparse,bool fullGeneral,bool hasNInfty,bool hasNExtensible,bool hasPExtensible,bool hasPInfty) const {
-        int specials=int(hasNInfty)+int(hasNExtensible)+int(hasPExtensible)+int(hasPInfty);
+      inline int slotsForNode(int sz, bool sparse,bool fullGeneral,bool hasNInfty,bool hasNStar,bool hasPExtensible,bool hasPInfty) const {
+        int specials=int(hasNInfty)+int(hasNStar)+int(hasPExtensible)+int(hasPInfty);
         int downEdgeSize=sz+specials;
         int node_slots = sparse ? (1+slots_per_edge) *downEdgeSize+ sz : (1+slots_per_edge) * downEdgeSize;
         return extra_slots + unhashed_slots + hashed_slots + node_slots+int(fullGeneral);
@@ -180,11 +180,7 @@ class MEDDLY::simple_separated : public node_storage {
         return chunk[size_slot];
       }
       inline static unsigned int getRawSize(int size, bool sparse, bool extensible) {
-        return getRawSize(size, sparse, false, false, extensible, false); //(((unsigned int)(size) << 6) | (sparse? 1U: 0) | (extensible? 16U: 0));
-      }
-      inline static unsigned int getRawSize(int size, bool sparse, bool ninf, bool next, bool extensible, bool pinf) {
-        return (((unsigned int) (size) << 6) | (sparse ? 1U : 0) | (ninf ? 4U : 0)
-            | (next ? 8U : 0) | (extensible ? 16U : 0) | (pinf ? 32U : 0));
+        return (((unsigned int)(size) << 6) | (sparse? 1U: 0) | (extensible? 16U: 0));
       }
       inline static unsigned int getSize(unsigned int raw_size) { 
         return ((unsigned int)raw_size) >> 6;
@@ -201,7 +197,7 @@ class MEDDLY::simple_separated : public node_storage {
       inline static bool isNInfinity(unsigned int raw_size){
         return ((raw_size&4U)!=0);
       }
-      inline static bool isNExtensible(unsigned int raw_size){
+      inline static bool isNStar(unsigned int raw_size){
         return ((raw_size&8U)!=0);
       }
       inline static bool isExtensible(unsigned int raw_size) {
@@ -217,12 +213,12 @@ class MEDDLY::simple_separated : public node_storage {
         const unsigned int raw_size = getRawSize(chunk);
         return isExtensible(raw_size);
       }
-      virtual bool isNExtensible(node_address addr) const {
+      virtual bool isNStar(node_address addr) const {
         MEDDLY_DCASSERT(MM);
         const node_handle* chunk = getChunkAddress(addr);
         MEDDLY_DCASSERT(chunk);
         const unsigned int raw_size = getRawSize(chunk);
-        return isNExtensible(raw_size);
+        return isNStar(raw_size);
       }
       virtual bool isNInfinity(node_address addr) const {
         MEDDLY_DCASSERT(MM);
@@ -258,7 +254,7 @@ class MEDDLY::simple_separated : public node_storage {
         const unsigned int raw_size = getRawSize(chunk);
         MEDDLY_DCASSERT(isSparse(raw_size));
         int nnz = getSize(raw_size);
-        int specials=int(isNInfinity(raw_size))+int(isNExtensible(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
+        int specials=int(isNInfinity(raw_size))+int(isNStar(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
         char down_start=(isFullGeneral(raw_size)?offset_start+1+specials:offset_start+specials);
         const node_handle* index = chunk + down_start + nnz;
         if (isExtensible(raw_size) && i >= index[nnz-1]) return nnz-1;
@@ -481,24 +477,24 @@ void MEDDLY::simple_separated::unlinkDownAndRecycle(node_address addr)
   const bool is_extensible = isExtensible(raw_size);
   const bool is_ninfinity=isNInfinity(raw_size);
   const bool is_pinfinity=isPInfinity(raw_size);
-  const bool is_nextensible=isNExtensible(raw_size);
+  const bool is_nstar=isNStar(raw_size);
 
   //
   // Unlink down pointers
   //
-  int specials=int(is_ninfinity)+int(is_nextensible)+int(is_extensible)+int(is_pinfinity);
+  int specials=int(is_ninfinity)+int(is_nstar)+int(is_extensible)+int(is_pinfinity);
   char down_start=(isFullGeneral(raw_size)?offset_start+1+specials:offset_start+specials);
   const node_handle* down = chunk + down_start;
   const int* offset= isFullGeneral(raw_size)?chunk+offset_start:0;
   const int* down_ninf=(is_ninfinity?(chunk+offset_start+int(is_fullgeneral)):0);
-  const int* down_next=is_nextensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
-  const int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)):0;
-  const int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)+int(is_extensible)):0;
+  const int* down_next=is_nstar?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
+  const int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)):0;
+  const int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)+int(is_extensible)):0;
 
   if(specials){
     if(is_ninfinity)
       getParent()->unlinkNode(down_ninf[0]);
-    if(is_nextensible)
+    if(is_nstar)
           getParent()->unlinkNode(down_next[0]);
     if(is_extensible)
           getParent()->unlinkNode(down_ext[0]);
@@ -544,22 +540,22 @@ void MEDDLY::simple_separated::markDownPointers(node_address addr)
   const bool is_extensible = isExtensible(raw_size);
   const bool is_ninfinity=isNInfinity(raw_size);
   const bool is_pinfinity=isPInfinity(raw_size);
-  const bool is_nextensible=isNExtensible(raw_size);
+  const bool is_nstar=isNStar(raw_size);
   //
   // Mark down pointers
   //
-  int specials=int(is_ninfinity)+int(is_nextensible)+int(is_extensible)+int(is_pinfinity);
+  int specials=int(is_ninfinity)+int(is_nstar)+int(is_extensible)+int(is_pinfinity);
   char down_start=(isFullGeneral(raw_size)?offset_start+1+specials:offset_start+specials);
   const node_handle* down = chunk + down_start;
   const int* offset= isFullGeneral(raw_size)?chunk+offset_start:0;
   const int* down_ninf=(is_ninfinity?(chunk+offset_start+int(is_fullgeneral)):0);
-  const int* down_next=is_nextensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
-  const int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)):0;
-  const int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)+int(is_extensible)):0;
+  const int* down_next=is_nstar?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
+  const int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)):0;
+  const int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)+int(is_extensible)):0;
   if(specials){
     if(is_ninfinity)
       getParent()->markNode(down_ninf[0]);
-    if(is_nextensible)
+    if(is_nstar)
           getParent()->markNode(down_next[0]);
     if(is_extensible)
           getParent()->markNode(down_ext[0]);
@@ -604,7 +600,7 @@ bool MEDDLY::simple_separated
   const bool is_fullgeneral=isFullGeneral(raw_size);
   const bool is_ninfinity=isNInfinity(raw_size);
   const bool is_pinfinity=isPInfinity(raw_size);
-  const bool is_nextensible=isNExtensible(raw_size);
+  const bool is_nstar=isNStar(raw_size);
 
   if (n.isExtensible()) {
     if (!is_extensible) return false;
@@ -612,10 +608,10 @@ bool MEDDLY::simple_separated
     if (is_extensible) return false;
   }
 
-  if (n.isNExtensible()) {
-    if (!is_nextensible) return false;
+  if (n.isNStar()) {
+    if (!is_nstar) return false;
   } else {
-    if (is_nextensible) return false;
+    if (is_nstar) return false;
   }
 
   if (n.isPInfinity()) {
@@ -633,20 +629,20 @@ bool MEDDLY::simple_separated
   const bool is_sparse = isSparse(raw_size);
   const node_handle tv = getParent()->getTransparentNode();
 
-  int specials=int(is_ninfinity)+int(is_nextensible)+int(is_extensible)+int(is_pinfinity);
+  int specials=int(is_ninfinity)+int(is_nstar)+int(is_extensible)+int(is_pinfinity);
   char down_start=(is_fullgeneral?offset_start+1+specials:offset_start+specials);
   const node_handle* down = chunk + down_start;
   const int* offset= isFullGeneral(raw_size)?chunk+offset_start:0;
   const int* down_ninf=(is_ninfinity?(chunk+offset_start+int(is_fullgeneral)):0);
-  const int* down_next=is_nextensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
-  const int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)):0;
-  const int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)+int(is_extensible)):0;
+  const int* down_next=is_nstar?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
+  const int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)):0;
+  const int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)+int(is_extensible)):0;
 
   if(specials){
     if(is_ninfinity)
       if(down_ninf[0]!=n.d_ninf()) return false;
-    if(is_nextensible)
-      if(down_next[0]!=n.d_next()) return false;
+    if(is_nstar)
+      if(down_next[0]!=n.d_nstar()) return false;
     if(is_extensible)
       if(down_ext[0]!=n.d_ext()) return false;
     if(is_pinfinity)
@@ -660,9 +656,9 @@ bool MEDDLY::simple_separated
     const node_handle* index = down + nnz;
     const node_handle* edge = slots_per_edge ? (index + nnz+specials) : 0;
     const void* edge_ninf=(is_ninfinity?(index + size):0);
-    const void* edge_next=(is_nextensible?(index + size+int(is_ninfinity)):0);
-    const void* edge_ext=(is_extensible?(index + size+int(is_nextensible)+int(is_ninfinity)):0);
-    const void* edge_pinf=(is_pinfinity?(index + size+int(is_extensible)+int(is_nextensible)+int(is_ninfinity)):0);
+    const void* edge_next=(is_nstar?(index + size+int(is_ninfinity)):0);
+    const void* edge_ext=(is_extensible?(index + size+int(is_nstar)+int(is_ninfinity)):0);
+    const void* edge_pinf=(is_pinfinity?(index + size+int(is_extensible)+int(is_nstar)+int(is_ninfinity)):0);
 
     if (n.isFull()) {
       //
@@ -693,7 +689,7 @@ bool MEDDLY::simple_separated
         if(specials){
             if(is_ninfinity)
               if(edge_ninf!=n.nieptr()) return false;
-            if(is_nextensible)
+            if(is_nstar)
               if(edge_next!=n.neeptr()) return false;
             if(is_extensible)
               if(edge_ext!=n.eeptr()) return false;
@@ -723,7 +719,7 @@ bool MEDDLY::simple_separated
         if(specials){
                     if(is_ninfinity)
                       if(edge_ninf!=n.nieptr()) return false;
-                    if(is_nextensible)
+                    if(is_nstar)
                       if(edge_next!=n.neeptr()) return false;
                     if(is_extensible)
                       if(edge_ext!=n.eeptr()) return false;
@@ -745,9 +741,9 @@ bool MEDDLY::simple_separated
     //
     const node_handle* edge = slots_per_edge ? (down + size+specials) : 0;
     const void* edge_ninf=(is_ninfinity?(down + size):0);
-    const void* edge_next=(is_nextensible?(down + size+int(is_ninfinity)):0);
-    const void* edge_ext=(is_extensible?(down + size+int(is_nextensible)+int(is_ninfinity)):0);
-    const void* edge_pinf=(is_pinfinity?(down + size+int(is_extensible)+int(is_nextensible)+int(is_ninfinity)):0);
+    const void* edge_next=(is_nstar?(down + size+int(is_ninfinity)):0);
+    const void* edge_ext=(is_extensible?(down + size+int(is_nstar)+int(is_ninfinity)):0);
+    const void* edge_pinf=(is_pinfinity?(down + size+int(is_extensible)+int(is_nstar)+int(is_ninfinity)):0);
 
     if (n.isFull()) {
       //
@@ -767,7 +763,7 @@ bool MEDDLY::simple_separated
         if(specials){
                     if(is_ninfinity)
                       if(edge_ninf!=n.nieptr()) return false;
-                    if(is_nextensible)
+                    if(is_nstar)
                       if(edge_next!=n.neeptr()) return false;
                     if(is_extensible)
                       if(edge_ext!=n.eeptr()) return false;
@@ -805,7 +801,7 @@ bool MEDDLY::simple_separated
         if(specials){
                     if(is_ninfinity)
                       if(edge_ninf!=n.nieptr()) return false;
-                    if(is_nextensible)
+                    if(is_nstar)
                       if(edge_next!=n.neeptr()) return false;
                     if(is_extensible)
                       if(edge_ext!=n.eeptr()) return false;
@@ -861,15 +857,15 @@ void MEDDLY::simple_separated
   const bool is_extensible = isExtensible(raw_size);
   const bool is_ninfinity=isNInfinity(raw_size);
   const bool is_pinfinity=isPInfinity(raw_size);
-  const bool is_nextensible=isNExtensible(raw_size);
-  int specials=int(isNInfinity(raw_size))+int(isNExtensible(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
+  const bool is_nstar=isNStar(raw_size);
+  int specials=int(isNInfinity(raw_size))+int(isNStar(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
   char down_start=(is_fullgeneral?offset_start+1+specials:offset_start+specials);
   const node_handle* down = chunk + down_start;
   const int* offset= isFullGeneral(raw_size)?chunk+offset_start:0;
   const int* down_ninf=(is_ninfinity?(chunk+offset_start+int(is_fullgeneral)):0);
-  const int* down_next=is_nextensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
-  const int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)):0;
-  const int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)+int(is_extensible)):0;
+  const int* down_next=is_nstar?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
+  const int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)):0;
+  const int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)+int(is_extensible)):0;
 
 
 
@@ -905,10 +901,10 @@ void MEDDLY::simple_separated
     nr.markAsNInfinity();
   else
     nr.markAsNotNInfinity();
-  if(is_nextensible)
-    nr.markAsNExtensible();
+  if(is_nstar)
+    nr.markAsNStar();
   else
-    nr.markAsNotNExtensible();
+    nr.markAsNotNStar();
 
   // Make sure that when an extensible node is unpacked that the trailing edges
   // are filled correctly (regardless of the storage scheme of the unpacked node)
@@ -922,9 +918,9 @@ void MEDDLY::simple_separated
     int nnz = size;
     const node_handle* index = down + nnz;
     const void* edge_ninf=(is_ninfinity?(index+nnz):0);
-    const void* edge_next=(is_nextensible?(index+nnz+int(is_ninfinity)):0);
-    const void* edge_ext=(is_extensible?(index+nnz+int(is_nextensible)+int(is_ninfinity)):0);
-    const void* edge_pinf=(is_pinfinity?(index+nnz+int(is_extensible)+int(is_nextensible)+int(is_ninfinity)):0);
+    const void* edge_next=(is_nstar?(index+nnz+int(is_ninfinity)):0);
+    const void* edge_ext=(is_extensible?(index+nnz+int(is_nstar)+int(is_ninfinity)):0);
+    const void* edge_pinf=(is_pinfinity?(index+nnz+int(is_extensible)+int(is_nstar)+int(is_ninfinity)):0);
 
     const node_handle* edge = slots_per_edge ? (index + nnz+specials) : 0;
     const int ext_i = index[nnz-1];
@@ -939,7 +935,7 @@ void MEDDLY::simple_separated
       if(nr.hasEdges()&specials>0){
         if(is_ninfinity)
         memset((void*)edge_ninf,0,nr.edgeBytes());
-        if(is_nextensible)
+        if(is_nstar)
         memset((void*)edge_next,0,nr.edgeBytes());
         if(is_extensible)
         memset((void*)edge_ext,0,nr.edgeBytes());
@@ -960,8 +956,8 @@ void MEDDLY::simple_separated
           if (nr.hasEdges())
             memcpy(nr.nieptr_write(), (void*) edge_ninf, nr.edgeBytes());
         }
-        if (is_nextensible) {
-          nr.dref_next()=down_next[0];
+        if (is_nstar) {
+          nr.dref_nstar()=down_next[0];
           if (nr.hasEdges())
             memcpy(nr.neeptr_write(), (void*) edge_next, nr.edgeBytes());
         }
@@ -1004,8 +1000,8 @@ void MEDDLY::simple_separated
           if (nr.hasEdges())
             memcpy(nr.nieptr_write(), (void*) edge_ninf, nr.edgeBytes());
         }
-        if (is_nextensible) {
-          nr.dref_next()=down_next[0];
+        if (is_nstar) {
+          nr.dref_nstar()=down_next[0];
           if (nr.hasEdges())
             memcpy(nr.neeptr_write(), (void*) edge_next, nr.edgeBytes());
         }
@@ -1050,9 +1046,9 @@ void MEDDLY::simple_separated
     // Node is full
     //
     const void* edge_ninf=(is_ninfinity?(down + size):0);
-    const void* edge_next=(is_nextensible?(down + size+int(is_ninfinity)):0);
-    const void* edge_ext=(is_extensible?(down + size+int(is_nextensible)+int(is_ninfinity)):0);
-    const void* edge_pinf=(is_pinfinity?(down + size+int(is_extensible)+int(is_nextensible)+int(is_ninfinity)):0);
+    const void* edge_next=(is_nstar?(down + size+int(is_ninfinity)):0);
+    const void* edge_ext=(is_extensible?(down + size+int(is_nstar)+int(is_ninfinity)):0);
+    const void* edge_pinf=(is_pinfinity?(down + size+int(is_extensible)+int(is_nstar)+int(is_ninfinity)):0);
 
     const node_handle* edge = slots_per_edge ? (down + size+specials) : 0;
 
@@ -1067,8 +1063,8 @@ void MEDDLY::simple_separated
           if (nr.hasEdges())
             memcpy(nr.nieptr_write(), (void*) edge_ninf, nr.edgeBytes());
         }
-        if (is_nextensible) {
-          nr.dref_next()=down_next[0];
+        if (is_nstar) {
+          nr.dref_nstar()=down_next[0];
           if (nr.hasEdges())
             memcpy(nr.neeptr_write(), (void*) edge_next, nr.edgeBytes());
         }
@@ -1116,8 +1112,8 @@ void MEDDLY::simple_separated
           if (nr.hasEdges())
             memcpy(nr.nieptr_write(), (void*) edge_ninf, nr.edgeBytes());
         }
-        if (is_nextensible) {
-          nr.dref_next()=down_next[0];
+        if (is_nstar) {
+          nr.dref_nstar()=down_next[0];
           if (nr.hasEdges())
             memcpy(nr.neeptr_write(), (void*) edge_next, nr.edgeBytes());
         }
@@ -1216,8 +1212,8 @@ unsigned MEDDLY::simple_separated::hashNode(int level, node_address addr) const
   const bool is_extensible = isExtensible(raw_size);
   const bool is_ninfinity=isNInfinity(raw_size);
   const bool is_pinfinity=isPInfinity(raw_size);
-  const bool is_nextensible=isNExtensible(raw_size);
-  int specials=int(isNInfinity(raw_size))+int(isNExtensible(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
+  const bool is_nstar=isNStar(raw_size);
+  int specials=int(isNInfinity(raw_size))+int(isNStar(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
   char down_start=(is_fullgeneral?offset_start+1+specials:offset_start+specials);
   const node_handle* down = chunk + down_start;
 
@@ -1225,14 +1221,14 @@ unsigned MEDDLY::simple_separated::hashNode(int level, node_address addr) const
 
   const int* offset= isFullGeneral(raw_size)?chunk+offset_start:0;
   const int* down_ninf=(is_ninfinity?(chunk+offset_start+int(is_fullgeneral)):0);
-  const int* down_next=is_nextensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
-  const int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)):0;
-  const int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)+int(is_extensible)):0;
+  const int* down_next=is_nstar?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
+  const int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)):0;
+  const int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)+int(is_extensible)):0;
 
   if(specials){
     if(is_ninfinity){
       s.push(down_ninf[0],down_ninf_hashcode);
-    }if(is_nextensible){
+    }if(is_nstar){
           s.push(down_next[0],down_next_hashcode);
     }if(is_extensible){
           s.push(down_ext[0],down_pext_hashcode);
@@ -1249,15 +1245,15 @@ unsigned MEDDLY::simple_separated::hashNode(int level, node_address addr) const
     const node_handle* index = down + nnz;
     const node_handle* edge = slots_per_edge ? (index + nnz+specials) : 0;
     const void* edge_ninf=(is_ninfinity?(index + nnz):0);
-    const void* edge_next=(is_nextensible?(index + nnz+int(is_ninfinity)):0);
-    const void* edge_ext=(is_extensible?(index + nnz+int(is_nextensible)+int(is_ninfinity)):0);
-    const void* edge_pinf=(is_pinfinity?(index + nnz+int(is_extensible)+int(is_nextensible)+int(is_ninfinity)):0);
+    const void* edge_next=(is_nstar?(index + nnz+int(is_ninfinity)):0);
+    const void* edge_ext=(is_extensible?(index + nnz+int(is_nstar)+int(is_ninfinity)):0);
+    const void* edge_pinf=(is_pinfinity?(index + nnz+int(is_extensible)+int(is_nstar)+int(is_ninfinity)):0);
 
     if (getParent()->areEdgeValuesHashed()) {
       if(specials){
         if(is_ninfinity)
           s.push(edge_ninf,edge_ninf_hashcode);
-        if(is_nextensible)
+        if(is_nstar)
           s.push(edge_next,edge_next_hashcode);
         if(is_extensible)
           s.push(edge_ext,edge_pext_hashcode);
@@ -1281,15 +1277,15 @@ unsigned MEDDLY::simple_separated::hashNode(int level, node_address addr) const
     const node_handle tv=getParent()->getTransparentNode();
     const node_handle* edge = slots_per_edge ? (down + size) : 0;
     const void* edge_ninf=(is_ninfinity?(down + size):0);
-    const void* edge_next=(is_nextensible?(down + size+int(is_ninfinity)):0);
-    const void* edge_ext=(is_extensible?(down + size+int(is_nextensible)+int(is_ninfinity)):0);
-    const void* edge_pinf=(is_pinfinity?(down + size+int(is_extensible)+int(is_nextensible)+int(is_ninfinity)):0);
+    const void* edge_next=(is_nstar?(down + size+int(is_ninfinity)):0);
+    const void* edge_ext=(is_extensible?(down + size+int(is_nstar)+int(is_ninfinity)):0);
+    const void* edge_pinf=(is_pinfinity?(down + size+int(is_extensible)+int(is_nstar)+int(is_ninfinity)):0);
 
     if (getParent()->areEdgeValuesHashed()) {
       if(specials){
         if(is_ninfinity)
           s.push(edge_ninf,edge_ninf_hashcode);
-        if(is_nextensible)
+        if(is_nstar)
           s.push(edge_next,edge_next_hashcode);
         if(is_extensible)
           s.push(edge_ext,edge_pext_hashcode);
@@ -1327,7 +1323,7 @@ int MEDDLY::simple_separated
 
   const unsigned int size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
-  int specials=int(isNInfinity(raw_size))+int(isNExtensible(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
+  int specials=int(isNInfinity(raw_size))+int(isNStar(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
   char down_start=(isFullGeneral(raw_size)?offset_start+1+specials:offset_start+specials);
   if (is_sparse) {
     //
@@ -1363,7 +1359,7 @@ MEDDLY::simple_separated
   const unsigned int raw_size = getRawSize(chunk);
   if (!isExtensible(raw_size)) return -1;
   int sz = getSize(raw_size);
-  int specials=int(isNInfinity(raw_size))+int(isNExtensible(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
+  int specials=int(isNInfinity(raw_size))+int(isNStar(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
   char down_start=(isFullGeneral(raw_size)?offset_start+1+specials:offset_start+specials);
   const node_handle* down = chunk + down_start;
   if (isSparse(raw_size)) {
@@ -1388,7 +1384,7 @@ MEDDLY::simple_separated
 
   const unsigned int raw_size = getRawSize(chunk);
   const unsigned size = getSize(raw_size);
-  int specials=int(isNInfinity(raw_size))+int(isNExtensible(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
+  int specials=int(isNInfinity(raw_size))+int(isNStar(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
   char down_start=(isFullGeneral(raw_size)?offset_start+1+specials:offset_start+specials);
   const node_handle* down = chunk + down_start;
 
@@ -1426,7 +1422,7 @@ MEDDLY::simple_separated
   const unsigned int raw_size = getRawSize(chunk);
   const unsigned size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
-  int specials=int(isNInfinity(raw_size))+int(isNExtensible(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
+  int specials=int(isNInfinity(raw_size))+int(isNStar(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
   char down_start=(isFullGeneral(raw_size)?offset_start+1+specials:offset_start+specials);
   const node_handle* down = chunk + down_start;
 
@@ -1467,7 +1463,7 @@ MEDDLY::simple_separated
   const unsigned int raw_size = getRawSize(chunk);
   const unsigned size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
-  int specials=int(isNInfinity(raw_size))+int(isNExtensible(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
+  int specials=int(isNInfinity(raw_size))+int(isNStar(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
   char down_start=(isFullGeneral(raw_size)?offset_start+1+specials:offset_start+specials);
   const node_handle* down = chunk + down_start;
 
@@ -1507,7 +1503,7 @@ void MEDDLY::simple_separated
   const unsigned int raw_size = getRawSize(chunk);
   const unsigned size = getSize(raw_size);
   const bool is_sparse = isSparse(raw_size);
-  int specials=int(isNInfinity(raw_size))+int(isNExtensible(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
+  int specials=int(isNInfinity(raw_size))+int(isNStar(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
   char down_start=(isFullGeneral(raw_size)?offset_start+1+specials:offset_start+specials);
   const node_handle* down = chunk + down_start;
 
@@ -1693,14 +1689,14 @@ MEDDLY::simple_separated
   const bool is_extensible = isExtensible(raw_size);
   const bool is_ninfinity=isNInfinity(raw_size);
   const bool is_pinfinity=isPInfinity(raw_size);
-  const bool is_nextensible=isNExtensible(raw_size);
-  int specials=int(is_ninfinity)+int(is_nextensible)+int(is_extensible)+int(is_pinfinity);
+  const bool is_nstar=isNStar(raw_size);
+  int specials=int(is_ninfinity)+int(is_nstar)+int(is_extensible)+int(is_pinfinity);
   char down_start=(is_fullgeneral?offset_start+1+specials:offset_start+specials);
   const int* offset= isFullGeneral(raw_size)?chunk+offset_start:0;
   const int* down_ninf=(is_ninfinity?(chunk+offset_start+int(is_fullgeneral)):0);
-  const int* down_next=is_nextensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
-  const int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)):0;
-  const int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)+int(is_extensible)):0;
+  const int* down_next=is_nstar?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
+  const int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)):0;
+  const int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)+int(is_extensible)):0;
   end += down_start;
   const node_handle* down = end;
   const unsigned int dnlen = size;
@@ -1709,7 +1705,7 @@ MEDDLY::simple_separated
       s.put("down negative Inf ");
       s.put(long(down_ninf[0]));
     }
-    if (is_nextensible) {
+    if (is_nstar) {
       s.put("down negative ext ");
       s.put(long(down_next[0]));
     }
@@ -1854,30 +1850,30 @@ MEDDLY::node_address MEDDLY::simple_separated
   //
   // Copy downward pointers and edge values (if any)
   //
-  int specials=int(isNInfinity(addr))+int(isNExtensible(addr))+int(isPInfinity(addr))+int(isExtensible(addr));
+  int specials=int(isNInfinity(addr))+int(isNStar(addr))+int(isPInfinity(addr))+int(isExtensible(addr));
   char down_start=(isFullGeneral(addr)?offset_start+1+specials:offset_start+specials);
   node_handle* down = chunk + down_start;
   const bool is_fullgeneral=isFullGeneral(addr);
   const bool is_extensible = isExtensible(addr);
   const bool is_ninfinity=isNInfinity(addr);
   const bool is_pinfinity=isPInfinity(addr);
-  const bool is_nextensible=isNExtensible(addr);
+  const bool is_nstar=isNStar(addr);
   const int* offset= isFullGeneral(addr)?chunk+offset_start:0;
   int* down_ninf=(is_ninfinity?(chunk+offset_start+int(is_fullgeneral)):0);
-  int* down_next=is_nextensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
-  int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)):0;
-  int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)+int(is_extensible)):0;
+  int* down_next=is_nstar?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
+  int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)):0;
+  int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)+int(is_extensible)):0;
   void* edge_ninf=(is_ninfinity?(down + size):0);
-  void* edge_next=(is_nextensible?(down + size+int(is_ninfinity)):0);
-  void* edge_ext=(is_extensible?(down + size+int(is_nextensible)+int(is_ninfinity)):0);
-  void* edge_pinf=(is_pinfinity?(down + size+int(is_extensible)+int(is_nextensible)+int(is_ninfinity)):0);
+  void* edge_next=(is_nstar?(down + size+int(is_ninfinity)):0);
+  void* edge_ext=(is_extensible?(down + size+int(is_nstar)+int(is_ninfinity)):0);
+  void* edge_pinf=(is_pinfinity?(down + size+int(is_extensible)+int(is_nstar)+int(is_ninfinity)):0);
 
   if(specials){
     if(is_ninfinity){
       down_ninf[0]=nb.d_ninf();
     }
-    if(is_nextensible){
-      down_next[0]=nb.d_next();
+    if(is_nstar){
+      down_next[0]=nb.d_nstar();
     }
     if(is_extensible){
       down_ext[0]=nb.d_ext();
@@ -1898,7 +1894,7 @@ MEDDLY::node_address MEDDLY::simple_separated
       if(specials){
             if(is_ninfinity)
                memcpy(edge_ninf, nb.nieptr(), edge_bytes);
-            if(is_nextensible)
+            if(is_nstar)
               memcpy(edge_next, nb.neeptr(), edge_bytes);
             if(is_extensible)
               memcpy(edge_ext, nb.eeptr(), edge_bytes);
@@ -2015,7 +2011,7 @@ MEDDLY::node_address MEDDLY::simple_separated
   //
   // Copy downward pointers, indexes, and edge values (if any)
   //
-  int specials=int(isNInfinity(addr))+int(isNExtensible(addr))+int(isPInfinity(addr))+int(isExtensible(addr));
+  int specials=int(isNInfinity(addr))+int(isNStar(addr))+int(isPInfinity(addr))+int(isExtensible(addr));
   char down_start=(isFullGeneral(addr)?offset_start+1+specials:offset_start+specials);
   node_handle* down = chunk + down_start;
   node_handle* index = down + size;
@@ -2023,23 +2019,23 @@ MEDDLY::node_address MEDDLY::simple_separated
   const bool is_extensible = isExtensible(addr);
   const bool is_ninfinity=isNInfinity(addr);
   const bool is_pinfinity=isPInfinity(addr);
-  const bool is_nextensible=isNExtensible(addr);
+  const bool is_nstar=isNStar(addr);
   const int* offset= isFullGeneral(addr)?chunk+offset_start:0;
   int* down_ninf=(is_ninfinity?(chunk+offset_start+int(is_fullgeneral)):0);
-  int* down_next=is_nextensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
-  int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)):0;
-  int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nextensible)+int(is_extensible)):0;
+  int* down_next=is_nstar?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
+  int* down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)):0;
+  int* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)+int(is_extensible)):0;
   void* edge_ninf=(is_ninfinity?(index + size):0);
-  void* edge_next=(is_nextensible?(index + size+int(is_ninfinity)):0);
-  void* edge_ext=(is_extensible?(index + size+int(is_nextensible)+int(is_ninfinity)):0);
-  void* edge_pinf=(is_pinfinity?(index + size+int(is_extensible)+int(is_nextensible)+int(is_ninfinity)):0);
+  void* edge_next=(is_nstar?(index + size+int(is_ninfinity)):0);
+  void* edge_ext=(is_extensible?(index + size+int(is_nstar)+int(is_ninfinity)):0);
+  void* edge_pinf=(is_pinfinity?(index + size+int(is_extensible)+int(is_nstar)+int(is_ninfinity)):0);
 
   if(specials){
     if(is_ninfinity){
       down_ninf[0]=nb.d_ninf();
     }
-    if(is_nextensible){
-      down_next[0]=nb.d_next();
+    if(is_nstar){
+      down_next[0]=nb.d_nstar();
     }
     if(is_extensible){
       down_ext[0]=nb.d_ext();
@@ -2058,7 +2054,7 @@ MEDDLY::node_address MEDDLY::simple_separated
     if (specials) {
       if (is_ninfinity)
         memcpy(edge_ninf, nb.nieptr(), edge_bytes);
-      if (is_nextensible)
+      if (is_nstar)
         memcpy(edge_next, nb.neeptr(), edge_bytes);
       if (is_extensible)
         memcpy(edge_ext, nb.eeptr(), edge_bytes);
