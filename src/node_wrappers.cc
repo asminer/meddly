@@ -46,7 +46,7 @@ MEDDLY::unpacked_node::unpacked_node()
   index = 0;
   edge = 0;
   is_extensible = false;
-  is_nextensible=false;
+  is_nstar=false;
   is_pinfinity=false;
   is_ninfinity=false;
   alloc = 0;
@@ -76,7 +76,7 @@ void MEDDLY::unpacked_node::clear()
   index = 0;
   edge = 0;
   is_extensible = false;
-  is_nextensible=false;
+  is_nstar=false;
   is_pinfinity=false;
   is_ninfinity=false;
   alloc = 0;

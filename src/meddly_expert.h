@@ -775,8 +775,8 @@ class MEDDLY::unpacked_node {
     /// Get a pointer to a negative infinity edge
     const void* nieptr() const;
 
-    /// Get a pointer to a negative extensible edge
-    const void* neeptr() const;
+    /// Get a pointer to a negative star edge
+    const void* nseptr() const;
 
     /// Get a pointer to an extensible edge
     const void* eeptr() const;
@@ -790,8 +790,8 @@ class MEDDLY::unpacked_node {
     /// Modify pointer to extensible edge
     void* eeptr_write();
 
-    /// Modify pointer to nextensible edge
-    void* neeptr_write();
+    /// Modify pointer to nstar edge
+    void* nseptr_write();
 
     /// Modify pointer to pinfinity edge
     void* pieptr_write();
@@ -1008,11 +1008,11 @@ class MEDDLY::unpacked_node {
     long ei_extensible;
     long ei_pinfinity;
     long ei_ninfinity;
-    long ei_nextensible;
+    long ei_nstr;
     float ef_extensible;
     float ef_pinfinity;
     float ef_ninfinity;
-    float ef_nextensible;
+    float ef_nstr;
     unsigned* index;
     void* edge;
     void* edge_ext;
@@ -1021,7 +1021,7 @@ class MEDDLY::unpacked_node {
     void* edge_next;
     bool is_extensible;
     bool is_ninfinity;
-    bool is_nextensible;
+    bool is_nstar;
     bool is_pinfinity;
     unsigned alloc;
     unsigned ealloc;

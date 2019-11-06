@@ -419,7 +419,7 @@ MEDDLY::unpacked_node::nieptr() const
 }
 
 inline const void*
-MEDDLY::unpacked_node::neeptr() const
+MEDDLY::unpacked_node::nseptr() const
 {
   MEDDLY_DCASSERT(isNStar());
   return edge_next;
@@ -456,7 +456,7 @@ MEDDLY::unpacked_node::eeptr_write()
 }
 
 inline void*
-MEDDLY::unpacked_node::neeptr_write()
+MEDDLY::unpacked_node::nseptr_write()
 {
   MEDDLY_DCASSERT(isNStar());
   return edge_next;
@@ -670,22 +670,22 @@ MEDDLY::unpacked_node::ef_ninf() const
   MEDDLY_DCASSERT(isNInfinity());
   return ef_ninfinity;
 }
-// nextensible
+// nstar
 inline bool
 MEDDLY::unpacked_node::isNStar() const
 {
-  return is_nextensible;
+  return is_nstar;
 }
 inline void
 MEDDLY::unpacked_node::markAsNStar()
 {
-  is_nextensible = true;
+  is_nstar = true;
 }
 
 inline void
 MEDDLY::unpacked_node::markAsNotNStar()
 {
-  is_nextensible = false;
+  is_nstar = false;
 }
 inline MEDDLY::node_handle&
 MEDDLY::unpacked_node::dref_nstar() const
@@ -705,14 +705,14 @@ inline long
 MEDDLY::unpacked_node::ei_nstar() const
 {
   MEDDLY_DCASSERT(isNStar());
-  return ei_nextensible;
+  return ei_nstr;
 }
 
 inline float
 MEDDLY::unpacked_node::ef_nstar() const
 {
   MEDDLY_DCASSERT(isNStar());
-  return ei_nextensible;
+  return ei_nstr;
 }
 // pinfinity
 inline bool
