@@ -75,6 +75,7 @@ libmeddly_la_SOURCES = \
   operations/complement.h     operations/complement.cc   \
   operations/maxmin_range.h   operations/maxmin_range.cc \
   operations/mdd2index.h      operations/mdd2index.cc    \
+  operations/convert_bdd.h    operations/convert_bdd.cc  \
   operations/union.h          operations/union.cc        \
   operations/intersection.h   operations/intersection.cc \
   operations/difference.h     operations/difference.cc   \

@@ -44,6 +44,15 @@ class MEDDLY::mt_mxd_bool : public mtmxd_forest {
     virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, bool &term) const;
 
+  virtual node_handle unionOneMinterm(node_handle nh, std::vector<std::vector<int>> terms);
+  
+  
+protected:
+  node_handle unionOneMinterm_r(int index, int vh, node_handle nh, std::vector<std::vector<int>> terms);
+  
+  bool checkTerminalMinterm(node_handle a, std::vector<std::vector<int>> terms, node_handle& c);
+
+
     virtual void showTerminal(output &s, node_handle tnode) const;
     virtual void writeTerminal(output &s, node_handle tnode) const;
     virtual node_handle readTerminal(input &s);

@@ -372,7 +372,7 @@ int* nxtList;
 class derRelNode : public MEDDLY::relation_node
 {
 public:
-  derRelNode(unsigned long signature, int level, node_handle down, long en, long fi):relation_node(signature, level, down, en, fi)
+  derRelNode(unsigned long signature, MEDDLY::forest* mxdF, int level, node_handle down, long en, long fi):relation_node(signature,mxdF, level, down, en, fi)
   {}
   long nextOf(long i) override
   {
@@ -427,7 +427,7 @@ void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, in
   nxtList[1] = 0;
   printf("\nNow building NSF\n");
   
-  MEDDLY::expert_forest *mxdF = T->getRelForest();
+  MEDDLY::expert_forest *mxdF = T->getRelForests()[0];
    printf("\nFrom forest %d\n",mxdF);
   
   int rctr = 0;
@@ -442,7 +442,7 @@ void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, in
        sign = events[e][p]>=0?(sign*10)+events[e][p]:(sign*100)+events[e][p];
         if(events[e][p]!=0)
         {
-          rNode[rctr] = new derRelNode(sign,p,previous_node_handle,events[e][p]<0?-events[e][p]:0,events[e][p]);
+          rNode[rctr] = new derRelNode(sign,mxdF,p,previous_node_handle,events[e][p]<0?-events[e][p]:0,events[e][p]);
           previous_node_handle = mxdF->createRelationNode(rNode[rctr]);
           printf("%d<-",previous_node_handle,p);
           //previous_node_handle = T->registerNode((tops_of_events[e]==p),rNode[rctr]);
@@ -493,7 +493,7 @@ void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, in
             sign = events[e][p]>=0?(sign*10)+events[e][p]:(sign*100)+events[e][p];
             if(events[e][p]!=0)
             {
-              rNode[rctr] = new derRelNode(sign,p,previous_node_handle,events[e][p]<0?-events[e][p]:0,events[e][p]);
+              rNode[rctr] = new derRelNode(sign,mxdF,p,previous_node_handle,events[e][p]<0?-events[e][p]:0,events[e][p]);
               previous_node_handle = mxdF->createRelationNode(rNode[rctr]);
               printf("%d<-",previous_node_handle);
               if(tops_of_events[e]==p)

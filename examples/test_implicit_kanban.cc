@@ -214,7 +214,7 @@ int main(int argc, const char** argv)
       printf("\n Initialized the relation\n");
       
       //CREATE RELATION
-      satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,relmxd,inmdd);
+      satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,1, &relmxd,inmdd);
       printf("\n Initialized the relation");
       
       

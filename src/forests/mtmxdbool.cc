@@ -18,6 +18,7 @@
 */
 
 
+#include "../defines.h"
 #include "mtmxdbool.h"
 
 MEDDLY::mt_mxd_bool::mt_mxd_bool(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, bool tv)
@@ -121,3 +122,162 @@ const char* MEDDLY::mt_mxd_bool::codeChars() const
   return "dd_txb";
 }
 
+bool
+MEDDLY::mt_mxd_bool::checkTerminalMinterm(node_handle a, std::vector<std::vector<int>> terms, node_handle &result)
+{
+  
+   //printf("\n I am checking TERMINAL\n");
+  if (a <= 0 && (terms[0].size() == 0 && terms[1].size() == 0) )
+    {
+    result = handleForValue(true);
+    //printf("\n I am TERMINAL\n");
+    return true;
+    }
+  
+  //initial forest is empty and I am adding a single term
+  if( getNodeLevel(a) == 0 && terms[0].size() > 0 && terms[1].size() > 0 ) 
+    {
+        //printf("\n I am SEMITERMINAL\n");
+        int num_levels = terms[1].size();
+        node_handle below = handleForValue(true);
+        for(int i = 0; i < num_levels; i++)
+          {
+              int level_from = i + 1;
+              int level_to = -level_from;
+              unsigned level_from_size = getLevelSize(level_from);
+              unsigned level_to_size =  getLevelSize(level_to);
+              int b_from = terms[0].at(i);
+              int b_to = terms[1].at(i);
+          
+              //MEDDLY_DCASSERT(!isExtensibleLevel(level));
+          
+              // the level not in this subevent
+              // so skip
+              if((b_from == DONT_CARE) && (b_to == DONT_CARE)) 
+                 continue;
+                 
+              
+             // the level not in this event and subevent
+             // so skip
+             if((b_from == DONT_CARE) && (b_to == DONT_CHANGE)) 
+                continue;
+                
+             // else build the prime & unprime nodes
+             unpacked_node *UP_node = unpacked_node::newFull(this, level_from, level_from_size);
+             unpacked_node *P_node = unpacked_node::newFull(this, level_to, level_to_size);
+                
+              
+              for(int j = 0; j < level_to_size; j++ )
+                {
+                  if(j!=b_to) P_node->d_ref(j) = 0;
+                  else
+                    {
+                      //terms[1].erase(terms[1].begin()+level_from - 1);
+                      P_node->d_ref(j) = linkNode(below);
+                    }
+                }
+                
+                for(int j = 0; j < level_from_size; j++ )
+                {
+                if(j!=b_from) UP_node->d_ref(j) = 0;
+                else
+                  {
+                    //terms[0].erase(terms[0].begin()+level_from - 1);
+                    UP_node->d_ref(j) = createReducedNode(j, P_node);
+                  }
+                }
+                below = createReducedNode(-1, UP_node);
+                
+          }
+                
+                result = below;
+                return true;
+    
+    }
+                
+    
+    return false;
+}
+                
+                
+   
+MEDDLY::node_handle 
+MEDDLY::mt_mxd_bool::unionOneMinterm(node_handle a, std::vector<std::vector<int>> terms) 
+{
+  node_handle result = 0;
+  if(checkTerminalMinterm(a, terms, result))
+    return result;
+  
+  const int aLevel = getNodeLevel(a);
+  const int bLevel = terms[0].size();
+  int resultLevel = ABS(topLevel(aLevel,bLevel));
+  int dwnLevel = downLevel(resultLevel);
+  
+  MEDDLY_DCASSERT(bLevel == resultLevel);
+  
+  if( (aLevel < resultLevel) && ( terms[0].at(bLevel-1) == DONT_CARE && ( terms[1].at(bLevel-1) == DONT_CHANGE || terms[1].at(bLevel-1) == DONT_CARE )) )
+    {
+      terms[0].erase(terms[0].begin() + bLevel - 1);
+      terms[1].erase(terms[1].begin() + bLevel - 1);
+      return unionOneMinterm(a, terms); 
+    }
+  
+  if(aLevel == resultLevel)
+    {
+        unsigned b_from = terms[0].at(bLevel-1);
+        unpacked_node *A = unpacked_node::newFromNode(this, a, true);
+        unpacked_node *C = unpacked_node::newFull(this, resultLevel, getLevelSize(resultLevel));
+    
+          for(int i = 0; i < getLevelSize(resultLevel); i++ )
+            {
+              if(i==b_from) terms[0].erase(terms[0].begin() + bLevel - 1);
+               C->d_ref(i) = i == b_from ? unionOneMinterm_r(i, dwnLevel, A->d(i), terms) : linkNode(A->d(i)); 
+              
+            }
+          
+            result = createReducedNode(-1, C);
+    
+    }
+  
+  return result;
+}
+                
+
+MEDDLY::node_handle 
+MEDDLY::mt_mxd_bool::unionOneMinterm_r(int in, int k, node_handle a, std::vector<std::vector<int>> terms) 
+{
+  node_handle result = 0;
+  const int aLevel = getNodeLevel(a);
+  const int bLevel = terms[1].size();
+  unsigned resultSize = unsigned(getLevelSize(k));
+
+  unpacked_node* C = unpacked_node::newFull(this, k, resultSize);
+ 
+  unpacked_node *A =
+  (aLevel == k) 
+  ? unpacked_node::newFromNode(this, a, true)
+  : this->isFullyReduced()
+  ? unpacked_node::newRedundant(this, k, a, true)
+  : unpacked_node::newIdentity(this, k, in, a, true)
+  ;
+  
+  // Do computation
+  int b_to  = terms[1].at(bLevel-1);
+  
+  for (unsigned j=0; j<resultSize; j++) {
+    if(j==b_to)
+      {
+        terms[1].erase(terms[1].begin()+bLevel-1);
+        C->d_ref(j) = unionOneMinterm(A->d(j), terms);
+      } else
+        C->d_ref(j) = linkNode(A->d(j));
+    
+  }   
+  
+  // cleanup
+  unpacked_node::recycle(A);
+  
+  // reduce and return result
+  result = createReducedNode(-1, C);
+  return result;
+}

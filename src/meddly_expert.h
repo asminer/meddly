@@ -62,6 +62,7 @@ namespace MEDDLY {
   // EXPERIMENTAL - matrix wrappers for unprimed, primed pairs of nodes
   // class unpacked_matrix;
   class relation_node;
+  typedef relation_node indep_se;
   
   /*
   
@@ -100,7 +101,8 @@ namespace MEDDLY {
   class satotf_opname;
   class satimpl_opname;
   class constrained_opname;
-
+  
+ 
   class ct_initializer;
   class compute_table_style;
   class compute_table;
@@ -484,7 +486,7 @@ class MEDDLY::expert_domain : public domain {
  
  */
 typedef int node_handle;
-class MEDDLY::relation_node {
+class MEDDLY::relation_node{
 public:
   /** Constructor.
    @param  signature   Hash for this node, such that
@@ -493,10 +495,13 @@ public:
    @param  level          Level affected.
    @param  down           Handle to a relation node below us. 
    */
-  relation_node(unsigned long signature, int level, node_handle down, long e_val, long f_val);
+  relation_node(unsigned long signature, forest* f, int level, node_handle down, long e_val, long f_val);
   virtual ~relation_node();
   
   // the following should be inlined in meddly_expert.hh
+  
+  // Get the forest to which the node belongs
+  expert_forest* getForest();
   
   /** A signature for this function.
    This helps class implicit_relation to detect duplicate
@@ -579,6 +584,7 @@ public:
   
 private:
   unsigned long signature;
+  expert_forest* f;
   int level;
   node_handle down;
   node_handle ID;
@@ -2121,6 +2127,13 @@ class MEDDLY::node_storage {
                           or 0 if none.
     */
     virtual void setNextOf(node_address addr, node_handle n) = 0;
+  
+  
+    /**
+         Get the extensible index of an extensible node handle
+           @param  addr    Address of node
+     */
+    virtual int getExtensibleIndex(node_address addr) const = 0;
 
 
     /**
@@ -3756,36 +3769,73 @@ class MEDDLY::satimpl_opname: public specialized_opname {
     
     class implicit_relation;
   
-    class subevent {
+  
+    class subevent { //: public semievent {
     public:
       /// Constructor, specify variables that this function depends on,
       /// and if it is a firing or enabling event.
-      subevent(forest* f, int* v, int nv, bool firing);
+      subevent(forest* f, int* v, int nv, bool firing,long eval, long fval);
       virtual ~subevent();
+      
+      //semievent* clone();
       
       /// Get the forest to which this function belongs to.
       expert_forest* getForest();
       
       /// Get number of variables this function depends on.
-      int getNumVars() const;
+      int getNumVars() const; // Returns 1 for implicit node
       
       /// Get array of variables this function depends on.
-      const int* getVars() const;
+      const int* getVars() const; // Returns only 1 value
       
       /// Get the DD encoding of this function
-      const dd_edge& getRoot() const;
+      const dd_edge& getRoot() const; // Non-existent for implicit node
       
       /// Get the node_handle of this function
-      const node_handle getRootHandle() const;
+      const node_handle getRootHandle() const; // getID() for implicit node
       
       /// Get the "top" variable for this function
-      int getTop() const;
+      int getTop() const; // getLevel() for implicit node
       
       /// Is this a firing subevent?
       bool isFiring() const;
       
       /// Is this an enabling subevent
       bool isEnabling() const;
+      
+      /// Is this an implicit subevent
+      bool isImplicit() const;
+      
+      /** Applicable if implicit node:
+       A signature for this function.
+       This helps class implicit_relation to detect duplicate
+       functions (using a hash table where the signature
+       is taken as the hash value).
+       */
+      //unsigned long getSignature() const;
+      
+      /** Applicable if implicit node :
+       Get the ID of next piece, default = handleForValue(True).
+       */
+      node_handle getDown() const;
+      
+      /** Applicable if implicit node :
+       Set the ID of next piece.
+       */
+      void setDown(node_handle down) ;
+      
+      /** Applicable if implicit node :
+       Set the unique ID for this piece.
+       */
+      void setRootHandle(node_handle ID);
+      
+      //
+      int getEnable() const;
+      int getFire() const;
+      
+      /** Determine if this node is equal to another one.
+       */
+      //virtual bool equals(const relation_node* n) const;
       
       /**
        Rebuild the function to include the
@@ -3796,8 +3846,8 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       virtual void confirm(implicit_relation &rel, int v, int index) = 0;
       
       /// If num_minterms > 0,
-      ///   Add all minterms to the root
-      ///   Delete all minterms.
+      /// Add all minterms to the root
+      /// Delete all minterms.
       void buildRoot();
       
       /// Debugging info
@@ -3812,13 +3862,20 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       
       int* vars;
       int num_vars;
-      dd_edge root;
+      dd_edge root; // NULL for implicit node
       node_handle root_handle;
-      int top;
+      int top; // top = vars[0] for implicit node
+      node_handle down;
+     
+      
       expert_forest* f;
-      int** unpminterms;
-      int** pminterms;
+        int** unpminterms; // unpminterms[0] for implicit node
+        long enable;
+        int** pminterms; // pminterms[0] for implicit node
+        long fire;
       int num_minterms;
+      int process_minterm_pos;
+      int processed_minterm_pos;
       int size_minterms;
       bool is_firing;
       bool uses_extensible_variables;
@@ -3839,7 +3896,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       
       // TBD - for priority - when is this event enabled?
     public:
-      event(subevent** se, int nse, relation_node** rn, int nrn);
+      event(subevent** se, int nse, relation_node** r, int nr);
       virtual ~event();
       
       /// Get the forest to which the subevents belong to
@@ -3860,8 +3917,11 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       /// Get number of components
       inline int getNumOfComponents() const { return num_components; }
       
-      ///Get the subevent handle or relation node handle at a givel level of event
+      ///Get the subevent handle or relation node handle whose top level is the given level
       inline node_handle getComponentAt(int level)  { return level_component.find(level)->second; }
+      
+      ///Get the entire map of subevent-nodeHandles_by_topLevel
+      inline std::map<int, node_handle> getComponents()  { return level_component; }
       
       /// Get the "top" variable for this event
       inline int getTop() const { return top; }
@@ -3961,11 +4021,11 @@ class MEDDLY::satimpl_opname: public specialized_opname {
 
             Not 100% sure we need these...
         */
-        implicit_relation(forest* inmdd, forest* relmxd, forest* outmdd, event** E, int ne);
+        implicit_relation(forest* inmdd, int noofrmxd, forest** relmxd, forest* outmdd, event** E, int ne);
         virtual ~implicit_relation();
       
         /// Returns the Relation forest that stores the mix of relation nodes and mxd nodes
-        expert_forest* getMixRelForest() const;
+        expert_forest** getMixRelForest() const;
 
 
         /// Returns the MDD forest that stores the initial set of states
@@ -4034,7 +4094,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       private:
         expert_forest* insetF;
         expert_forest* outsetF;
-        expert_forest* mixRelF;
+        expert_forest** mixRelF; 
         int num_levels;
 
       //private:
@@ -4096,6 +4156,9 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         // num_relnodes_by_level[i] gives the size of relnodes_by_level[i]
         relation_node*** relnodes_by_level;
         int *num_relnodes_by_level;
+      
+        //Number of relation forests
+        int nooforests;
     
       public:
       
@@ -4152,8 +4215,9 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         /// Build each event_mxd
         //dd_edge buildEventMxd(node_handle event_top, forest *mxd);
 
-        /// Get relation forest  
-        expert_forest* getRelForest() const;
+        /// Get relation forests
+        int getNumRelForests() const;
+        expert_forest** getRelForests() const;
 
 
       private:
@@ -4186,6 +4250,9 @@ class MEDDLY::satimpl_opname: public specialized_opname {
 
 
 };
+
+typedef MEDDLY::satimpl_opname::subevent dep_se;
+
 class MEDDLY::constrained_opname : public specialized_opname {
 public:
 	constrained_opname(const char* n);

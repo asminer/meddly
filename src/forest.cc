@@ -420,6 +420,28 @@ void MEDDLY::forest::createEdge(float val, dd_edge &e)
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
+node_handle MEDDLY::forest::unionOneMinterm(node_handle nh, std::vector<std::vector<int>> terms)
+{
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+MEDDLY::node_handle  MEDDLY::forest::convertMDDtoBDD(node_handle nh, std::map<MEDDLY::node_handle, MEDDLY::node_handle>* mddnh_to_bddnh)
+{
+   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+
+/*
+node_handle MEDDLY::forest::unionOneMinterm_normal(node_handle nh, std::vector<std::vector<int>> terms)
+{
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+node_handle MEDDLY::forest::unionOneMinterm_ext(node_handle nh, std::vector<std::vector<int>> terms)
+{
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}*/
+
 void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, bool &t) const
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -2122,6 +2144,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   // check for duplicates in unique table
   node_handle q = unique->find(nb, getVarByLevel(nb.getLevel()));
+  
   if (q) {
     // unlink all downward pointers
     int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
@@ -2141,6 +2164,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   // Grab a new node
   node_handle p = nodeHeaders.getFreeNodeHandle();
+  printf("\n Found free handle = %d", p);
   nodeHeaders.setNodeLevel(p, nb.getLevel());
   if (deflt.useReferenceCounts) {
     MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
@@ -2158,7 +2182,6 @@ MEDDLY::node_handle MEDDLY::expert_forest
   // All of the work is in nodeMan now :^)
   nodeHeaders.setNodeAddress(p, nodeMan->makeNode(p, nb, getNodeStorage()));
   linkNode(p);
-
   // add to UT
   unique->add(nb.hash(), p);
 #ifdef DEVELOPMENT_CODE
@@ -2247,7 +2270,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
 MEDDLY::node_handle MEDDLY::expert_forest
 ::createReducedExtensibleNodeHelper(int in, unpacked_node &nb)
 {
-#ifdef DEVELOPMENT_CODE
+  
+ #ifdef DEVELOPMENT_CODE
   validateDownPointers(nb);
 #endif
   MEDDLY_DCASSERT(nb.isExtensible());
@@ -2265,6 +2289,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
     if (nb.d(i)!=getTransparentNode()) nnz++;
   } // for i
 
+  printf("\n This node's nnz = %d ",nnz);
   // Is this a transparent node?
   if (0==nnz) {
     // no need to unlink
@@ -2397,6 +2422,7 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
       if (nb.isSparse()) {
         for (int z=0; z<nb.getNNZs(); z++) {
           if (isTerminalNode(nb.d(z))) continue;
+          printf("\n Check if %d is deleted node\n",nb.d(z));
           MEDDLY_DCASSERT(!isDeletedNode(nb.d(z)));
           if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(z)))) continue;
           FILE_output s(stdout);
@@ -2409,6 +2435,7 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
       } else {
         for (int i=0; i<nb.getSize(); i++) {
           if (isTerminalNode(nb.d(i))) continue;
+          printf("\n Check if %d is deleted node\n",nb.d(i));
           MEDDLY_DCASSERT(!isDeletedNode(nb.d(i)));
           if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(i)))) continue;
           FILE_output s(stdout);

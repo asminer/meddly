@@ -138,7 +138,7 @@ namespace MEDDLY {
         N = n;
         K = k;
         unionOp = unOp;
-        Terminal = new MEDDLY::relation_node(0,0,1,0,0);
+        Terminal = new MEDDLY::relation_node(0,f,0,1,0,0);
       }
       // These functions return the ith edge's to get the value at k level 
       inline const int* unprimed(int i) const {

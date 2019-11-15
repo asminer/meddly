@@ -29,6 +29,10 @@
 #include "../src/meddly.h"
 #include "../src/timer.h"
 
+#include <vector>
+
+#define VERBOSE 1
+
 #define CACHE_SIZE 262144u
 
 using namespace MEDDLY;
@@ -48,6 +52,8 @@ int main(int argc, char *argv[])
 
   srand(1u);
 
+  FILE_output meddlyout(stdout);
+  
   // initialize number of variables, their bounds and the number of elements
   // to create
 
@@ -91,6 +97,15 @@ int main(int argc, char *argv[])
       pelements[i][j] = int(float(variableBound) * rand() / (RAND_MAX + 1.0));
       assert(pelements[i][j] >= 0 && pelements[i][j] < variableBound);
     }
+   /*if(i==0)
+    {
+     pelements[i][2] =  elements[i][2];
+    }
+    if(i==1)
+      {
+        elements[i][2] = DONT_CARE;
+        pelements[i][2] = DONT_CHANGE;
+      }*/
     // print element[i]
 #ifdef VERBOSE
     printf("Element %d: [%d", i, elements[i][0]);
@@ -133,16 +148,16 @@ int main(int argc, char *argv[])
   printf("Started... ");
 
   // Create a dd_edge per element and combine using the UNION operator.
-  dd_edge** ddElements = new dd_edge*[nElements];
-  for (int i = 0; i < nElements; ++i)
+  dd_edge** ddElements = new dd_edge*[nElements-1];
+  for (int i = 0; i < nElements-1; ++i)
   {
     ddElements[i] = new dd_edge(xd);
     xd->createEdge(elements + i, pelements + i, 1, *(ddElements[i]));
   }
 
   // Combine dd_edges
-  start.note_time();
-  int nDDElements = nElements;
+  //start.note_time();
+  int nDDElements = nElements-1;
   while (nDDElements > 1) {
     int nCombinations = nDDElements/2;
     for (int i = 0; i < nCombinations; i++)
@@ -153,32 +168,83 @@ int main(int argc, char *argv[])
     nDDElements = (nDDElements+1)/2;
   }
   initial_state = *(ddElements[0]);
+  
+#ifdef VERBOSE
+  printf("\n\nInitial State:\n");
+  initial_state.show(meddlyout, 2);
+#endif
+  
+  double c0;
+  apply(CARDINALITY, initial_state, c0);
+  printf("Elements in result: %.4e\n", c0);
+  printf("Peak Nodes in MXD: %ld\n", xd->getPeakNumNodes());
+  
+  
+  printf("\n Will mark time for unioning a single minterm\n");
   start.note_time();
+  dd_edge singleminterm(xd);
+  xd->createEdge(elements+nElements-1, pelements+nElements-1,1,singleminterm);
+  initial_state +=singleminterm;
+  start.note_time();  
 
   for (int i = 0; i < nElements; ++i) delete ddElements[i];
   delete [] ddElements;
 
-  printf("done. Time interval: %.4e seconds\n",
-      start.get_last_seconds());
-
 #ifdef VERBOSE
-  printf("\n\nInitial State:\n");
-  initial_state.show(stdout, 2);
+  printf("\n\nInitial State Union One Minterm:\n");
+  initial_state.show(meddlyout, 2);
 #endif
+  printf("done. Time interval: %.4e seconds\n",
+         start.get_last_seconds());
 
   double c;
   apply(CARDINALITY, initial_state, c);
   printf("Elements in result: %.4e\n", c);
   printf("Peak Nodes in MXD: %ld\n", xd->getPeakNumNodes());
+  
   /* TBD: FIX
   printf("Nodes in compute table: %ld\n",
       (getComputeManager())->getNumCacheEntries());
   */
 
-#ifdef VERBOSE
+/*#ifdef VERBOSE
   printf("\n\nForest Info:\n");
-  xd->showInfo(stdout);
+  xd->showInfo(meddlyout);
+#endif*/
+  
+  std::vector<int> f_term;
+  std::vector<int> t_term;
+  
+  f_term.push_back(0);f_term.push_back(0);f_term.push_back(0);// f_term.push_back(0);f_term.push_back(0);f_term.push_back(1); f_term.push_back(0);f_term.push_back(0);f_term.push_back(1);f_term.push_back(1);
+  t_term.push_back(1);t_term.push_back(1);t_term.push_back(1);//t_term.push_back(1);t_term.push_back(1);t_term.push_back(0);t_term.push_back(1);t_term.push_back(1);t_term.push_back(0);t_term.push_back(0);
+  printf("\n Single element: [0 %d %d %d] --> [0 %d %d %d]",f_term.at(0),f_term.at(1),f_term.at(2),t_term.at(0),t_term.at(1),t_term.at(2));
+  
+  std::vector<std::vector<int>> terms;
+  terms.push_back(f_term);
+  terms.push_back(t_term);
+  
+  node_handle fhandle = initial_state.getNode();
+  printf("Before  operation handle is: %d\n", fhandle);
+  timer start1;
+  printf("Started... ");
+  start1.note_time();
+  node_handle new_handle = xd->unionOneMinterm(fhandle, terms);
+  printf("After New operation handle is: %d\n", new_handle);
+  start1.note_time();
+  printf("done1. Time interval: %.4e seconds\n",
+         start1.get_last_seconds());
+  dd_edge new_state(xd);
+  new_state.set(new_handle);
+  
+#ifdef VERBOSE
+  printf("\n\nNew State:\n");
+  new_state.show(meddlyout, 2);
 #endif
+  
+  double c1;
+  apply(CARDINALITY, new_state, c1);
+  printf("Elements in result: %.4e\n", c1);
+  printf("Peak Nodes in MXD: %ld\n", xd->getPeakNumNodes());
 
   // Cleanup; in this case simply delete the domain
   destroyDomain(d);

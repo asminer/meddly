@@ -46,6 +46,7 @@
 #endif
 
 #include <vector>
+#include <map>
 #include <memory>
 #include <cassert>
 
@@ -254,6 +255,9 @@ namespace MEDDLY {
 
   /// Randomly select one state from a set of states
   extern const unary_opname* SELECT;
+  
+  /// Convert mdd states into bdd states
+  extern const unary_opname* CONVERT_BDD;
 
   // ******************************************************************
   // *                    Named  binary operations                    *
@@ -1531,7 +1535,29 @@ class MEDDLY::forest {
   // ------------------------------------------------------------
   // virtual, with default implementation.
   public:
-
+  
+    /** Union a minterm to a mdd
+     
+     
+     @param   vh        Variable handle.
+     @param   vp        true : if forest is mdd; false: if forest is mxd.
+     @param   nh        Node handle of the mdd to which the minterm is to be unioned.
+     @param   minterm   Array of at most 2 vectors. Each vector dimension equal to 
+                        one plus largest variable handle in the domain.
+                        \a minterm[0] : Is passed for mdd / mxd
+                        \a minterm[1] : Is passed for mxd for prime minterm values
+    
+     @throws       TYPE_MISMATCH, if the forest's range is not BOOLEAN.
+     */
+    virtual node_handle unionOneMinterm(node_handle nh, std::vector<std::vector<int>> terms);
+  
+  
+    virtual node_handle convertMDDtoBDD(node_handle nh, std::map<MEDDLY::node_handle, MEDDLY::node_handle>* mddnh_to_bddnh);
+  
+  
+    //virtual node_handle unionOneMinterm_normal(node_handle nh, std::vector<std::vector<int>> terms);
+    //virtual node_handle unionOneMinterm_ext(node_handle nh, std::vector<std::vector<int>> terms);
+  
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
 

@@ -26,6 +26,7 @@ Places: A, B, C
 Transitions: T_ab, T_ac, T_abc
 
 T_abc: A -= 1 , B--, C += 1, D
+T_ab: A -= 2 , B++
 Initial state: A = N, B = N, C = 0, D = 0
 */
 
@@ -38,6 +39,7 @@ class pn;
 class enabling_subevent;
 class firing_subevent;
 class derived_relation_node;
+//class derived_event;
 int usage(const char*);
 
 class pn {
@@ -45,7 +47,7 @@ public:
 pn(int nTokens);
 ~pn();
 dd_edge& getReachableStateSet();
-void clearRechableStateSet();
+void clearReachableStateSet();
 
 private:
 void initializeMeddly();
@@ -62,12 +64,14 @@ bool indexOf(int vh, int value, int &index);
 bool valueOf(int vh, int index, int &value);
 
 satimpl_opname::implicit_relation* impl_rel;
-satimpl_opname::subevent* A_ABC_firing;
+//satimpl_opname::subevent* A_ABC_firing;
 satimpl_opname::subevent* A_ABC_enabling;
-//relation_node* A_ABC_firing;
 //relation_node* C_ABC_firing;
 relation_node* B_ABC_firing;
-satimpl_opname::subevent* C_ABC_firing;
+relation_node* C_ABC_firing;
+relation_node* A_ABC_firing;
+//satimpl_opname::subevent* B_ABC_firing;
+//satimpl_opname::subevent* C_ABC_firing;
 satimpl_opname::event* T_ABC;
   
 specialized_operation* impl_sat_op;
@@ -80,9 +84,9 @@ dd_edge* initial_state;
 dd_edge* reachable_states;
 
 const int n_vars = 3;
-const int A_level = 2;
-const int B_level = 1;
-const int C_level = 3;
+const int A_level = 1;
+const int B_level = 3;
+const int C_level = 2;
 
 // index to value
 std::vector<std::vector<int>> index_to_value;
@@ -91,7 +95,18 @@ std::vector<std::vector<int>> value_to_index;
 friend enabling_subevent;
 friend firing_subevent;
 friend derived_relation_node;
+//friend derived_event;
 };
+
+/*class derived_event: public satimpl_opname::event {
+  public:
+  derived_event(pn* model, satimpl_opname::subevent** se, int n_subevent_vars);
+  ~derived_event();
+  virtual int getValue(int level, int i);
+  virtual int addValue(int level, int i);
+  protected:
+  pn* model;
+};*/
 
 class enabling_subevent : public satimpl_opname::subevent {
 public:
@@ -117,7 +132,7 @@ public:
 firing_subevent(pn* model, forest* mxd,
 int* subevent_vars, int n_subevent_vars,
 int* event_vars, int n_event_vars,
-int offset);
+int eoffset, int foffset);
 ~firing_subevent();
 virtual void confirm(satimpl_opname::implicit_relation &rel, int v, int index);
 void initializeMinterm();
@@ -127,7 +142,8 @@ forest* mxd;
 int subevent_var;
 int* event_vars;
 int n_event_vars;
-int offset;
+int eoffset;
+int foffset;  
 int* unp_minterm;
 int* p_minterm;
 int minterm_size;
@@ -144,7 +160,7 @@ public:
   virtual long nextOf(long i);
  protected:
   pn* model;
-  forest* mxd;
+  forest* f;
   int rn_var;
   int en_offset;
   int f_offset;
@@ -239,7 +255,7 @@ buildInitialState();
 buildTransition();
 
 // clear the set of reachable states
-clearRechableStateSet();
+clearReachableStateSet();
 }
 
 pn::~pn() {
@@ -264,7 +280,7 @@ MEDDLY::initialize();
 }
 
 void pn::buildDomain() {
-int bounds[] = {-1, -1, -1};
+int bounds[] = {1, 1, 1};
 dom = createDomainBottomUp((int*)&bounds[0], n_vars);
 assert(dom);
 }
@@ -277,7 +293,9 @@ assert(mdd);
 }
 
 void pn::buildMxd() {
-mxd = static_cast<expert_forest*>(dom->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL));
+forest::policies p(true);
+p.setFullStorage();
+mxd = static_cast<expert_forest*>(dom->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL, p));
 assert(mxd);
 }
 
@@ -288,9 +306,9 @@ void pn::buildTransition() {
 // build B-- relation node
 // build array of variables this transition depends on
 
-if (A_ABC_firing) delete A_ABC_firing;
+//if (A_ABC_firing) delete A_ABC_firing;
 if (A_ABC_enabling) delete A_ABC_enabling;
-if (C_ABC_firing) delete C_ABC_firing;
+//if (C_ABC_firing) delete C_ABC_firing;
 if (T_ABC) delete T_ABC;
 
 int dep_vars_A_ABC[] = {A_level};
@@ -299,22 +317,32 @@ int dep_vars_C_ABC[] = {C_level};
 int dep_vars_TABC[] = {A_level, B_level, C_level};
 
 
-A_ABC_firing = new firing_subevent(this, mxd, (int*)(&dep_vars_A_ABC[0]), 1, (int*)(&dep_vars_TABC[0]), 3, -1);
-// A_ABC_enabling = new enabling_subevent(this, mxd, (int*)(&dep_vars_A_ABC[0]), 1, (int*)(&dep_vars_TABC[0]), 3);
   
-C_ABC_firing = new firing_subevent(this, mxd, (int*)(&dep_vars_C_ABC[0]), 1, (int*)(&dep_vars_TABC[0]), 3, 1);
-//A_ABC_firing = new derived_relation_node(this, mxd, dep_vars_A_ABC[0], 1, -1);
+//A_ABC_firing = new firing_subevent(this, mxd, (int*)(&dep_vars_A_ABC[0]), 1, (int*)(&dep_vars_TABC[0]), 3, 1, -1); //1
+//A_ABC_enabling = new enabling_subevent(this, mxd, (int*)(&dep_vars_A_ABC[0]), 1, (int*)(&dep_vars_TABC[0]), 3);
+//C_ABC_firing = new firing_subevent(this, mxd, (int*)(&dep_vars_C_ABC[0]), 1, (int*)(&dep_vars_TABC[0]), 3, 1, -1); //2
+A_ABC_firing = new derived_relation_node(this, mxd, dep_vars_A_ABC[0], 1, -1);
   
-//C_ABC_firing =  new derived_relation_node(this, mxd, dep_vars_C_ABC[0], 0, 1);
+C_ABC_firing =  new derived_relation_node(this, mxd, dep_vars_C_ABC[0], 0, 1);
 
-B_ABC_firing  = new derived_relation_node(this, mxd, dep_vars_B_ABC[0], 1, -1);
+//B_ABC_firing  = new firing_subevent(this, mxd, (int*)(&dep_vars_B_ABC[0]), 1, (int*)(&dep_vars_TABC[0]), 3, 1, -1); //3
+B_ABC_firing = new derived_relation_node(this, mxd, dep_vars_B_ABC[0], 1, -1);
 
-satimpl_opname::subevent* subeventsABC[] = {C_ABC_firing, A_ABC_firing};
+//satimpl_opname::subevent* subeventsABC[] = {A_ABC_firing, C_ABC_firing};
+satimpl_opname::subevent* subeventsABC[] = {};
+
 //satimpl_opname::subevent* subeventsABC[] = {};
-relation_node* relNodesABC[] = {B_ABC_firing};
+//relation_node* relNodesABC[] = {C_ABC_firing,A_ABC_firing,B_ABC_firing};
+relation_node* relNodesABC[] = {A_ABC_firing,C_ABC_firing,B_ABC_firing};
 //(satimpl_opname::subevent**)(&subeventsABC[0])
-T_ABC = new satimpl_opname::event((satimpl_opname::subevent**)(&subeventsABC[0]), 2, (relation_node**)(&relNodesABC[0]), 1);
-// T_ABC = new satimpl_opname::event(NULL, 0, NULL, 0);
+T_ABC = new satimpl_opname::event((satimpl_opname::subevent**)(&subeventsABC[0]), 0, (relation_node**)(&relNodesABC[0]), 3);
+//T_ABC = new satimpl_opname::event((satimpl_opname::subevent**)(&subeventsABC[0]), 3);
+//T_ABC = new derived_event(this, (satimpl_opname::subevent**)(&subeventsABC[0]), 3);
+
+  // what if event takes input all semievents and decides inside what to do?
+  // 
+ // T_ABC = new satimpl_opname::event(NULL, 0, (relation_node**)(&relNodesABC[0]), 1);
+ //  T_ABC = new satimpl_opname::event(NULL, 0, (relation_node**)(&wowmy[0]), 1);
 assert(T_ABC);
 }
 
@@ -329,7 +357,7 @@ assert(initial_state);
 int index = -1;
 assert(addValue(A_level, n_tokens, index));
 assert(addValue(B_level, n_tokens, index));
-assert(addValue(C_level, 0, index));
+assert(addValue(C_level, n_tokens, index));
 }
 
 void pn::buildOtfSaturationOp() {
@@ -337,7 +365,8 @@ if (impl_sat_op == 0) {
 if (impl_rel == 0) {
 // build otf saturation relation
 satimpl_opname::event* events[] = {T_ABC};
-impl_rel = new satimpl_opname::implicit_relation(mdd, mxd, mdd, &events[0], 1);
+forest* mxdd = mxd;
+impl_rel = new satimpl_opname::implicit_relation(mdd, 1, &mxdd, mdd, &events[0], 1);
 }
 assert(impl_rel);
  impl_sat_op = SATURATION_IMPL_FORWARD->buildOperation(impl_rel);
@@ -364,7 +393,7 @@ assert(reachable_states);
 return *reachable_states;
 }
 
-void pn::clearRechableStateSet() {
+void pn::clearReachableStateSet() {
 if (reachable_states) delete reachable_states;
 reachable_states = 0;
 }
@@ -411,7 +440,7 @@ enabling_subevent::enabling_subevent(
 pn* model, forest* mxd,
 int* se_vars, int n_se_vars,  // subevent vars
 int* e_vars, int n_e_vars)    // event vars
-: satimpl_opname::subevent(mxd, se_vars, n_se_vars, false)
+: satimpl_opname::subevent(mxd, se_vars, n_se_vars, false, 0, 0)
 {
 this->model = model;
 this->mxd = mxd;
@@ -477,8 +506,8 @@ firing_subevent::firing_subevent(
 pn* model, forest* mxd,
 int* se_vars, int n_se_vars,  // subevent vars
 int* e_vars, int n_e_vars,    // event vars
-int offset)
-: satimpl_opname::subevent(mxd, se_vars, n_se_vars, true)
+int eoffset, int foffset)
+: satimpl_opname::subevent(mxd, se_vars, n_se_vars, true, eoffset, foffset)
 {
 this->model = model;
 this->mxd = mxd;
@@ -487,7 +516,8 @@ subevent_var = se_vars[0];
 n_event_vars = n_e_vars;
 event_vars = new int[n_event_vars];
 for (int i = 0; i < n_event_vars; i++) event_vars[i] = e_vars[i];
-this->offset = offset;
+this->eoffset = eoffset;
+this->foffset = foffset;
 minterm_size = 0;
 unp_minterm = 0;
 p_minterm = 0;
@@ -506,12 +536,13 @@ assert(minterm_size == 0);
 minterm_size = mxd->getDomain()->getNumVariables() + 1;
 unp_minterm = new int[minterm_size];
 p_minterm = new int[minterm_size];
+unp_minterm[0] = 0;p_minterm[0] = 0;
 for (int i = 1; i < minterm_size; i++) {
 unp_minterm[i] = DONT_CARE;
-p_minterm[i] = DONT_CHANGE;
+p_minterm[i] = DONT_CARE;
 }
 for (int i = 0; i < n_event_vars; i++) {
-p_minterm[event_vars[i]] = DONT_CARE;
+p_minterm[event_vars[i]] = DONT_CHANGE;
 }
 }
 
@@ -529,8 +560,13 @@ if (!model->valueOf(v, index, value)) {
 assert(false);
 }
 
-int next_value = value + offset;
-if (next_value < 0) return;
+if (value < eoffset) 
+  {
+    printf("\n Cannot add this minterm because token(%d) is not atleast >= enable_offset(%d)", value, eoffset);
+    return;
+  }
+int next_value = value + foffset;
+ 
 
 int next_value_index = -1;
 #ifdef DEVELOPMENT_CODE
@@ -541,6 +577,7 @@ model->addValue(v, next_value, next_value_index);
 // add enabling minterm
 unp_minterm[v] = index;
 p_minterm[v] = next_value_index;
+printf("\n AT level %d : minterm from=%d, to=%d",v,index,next_value_index); 
 addMinterm(unp_minterm, p_minterm);
 std::cout << "\t\tk: " << v
 << ", index: " << index
@@ -552,16 +589,36 @@ std::cout << "\t\tk: " << v
 
 // ----------- end of class firing_subevent implementation ----------
 
+/*
+derived_event::derived_event(pn* m, satimpl_opname::subevent** se, int nse) : satimpl_opname::event((satimpl_opname::subevent**) (se) ,nse) {
+  model = m;
+}
+derived_event::~derived_event() {}
+
+int derived_event::getValue(int v, int index) {
+  int value = 0;
+  model->valueOf(v, index, value);
+  return value;
+  }
+  
+int derived_event::addValue(int v, int value) {
+  int index = -1;
+  model->addValue(v, value, index);
+  return index;
+}*/
+
+
 // ------------ class derived_relation_node implmentation -----------
 
 derived_relation_node::derived_relation_node(
-                                 pn* model, forest* mxd,
+                                 pn* model, forest* f,
                                  int rn_var,  // relation node var
                                  int en_offset, int f_offset)
-: relation_node(141010, rn_var, -1 ,en_offset, f_offset)
+: relation_node(141010, f, rn_var, -1, en_offset, f_offset)
+//relation_node(unsigned long signature, forest* f, int level, node_handle down, long e_val, long f_val);
 {
   this->model = model;
-  this->mxd = mxd;
+  this->f = f;
   this->rn_var = rn_var;
   this->en_offset = en_offset;
   this->f_offset = f_offset;
@@ -577,16 +634,13 @@ long derived_relation_node::nextOf(long i) {
   model->valueOf(rn_var, i, val_at_i);
   assert(val_at_i!=-1);
   
-  printf("\n RNode at level %d with f_offset %d -> From Index: %d; Token: %d",rn_var, f_offset, i, val_at_i);
-  
   /*if(val_at_i>=getPieceSize()) //Array needs to be allocated
     expandTokenUpdate(val_at_i);*/
   
   long val_at_j = val_at_i >= en_offset? val_at_i + f_offset : -1;
-   printf("\n To Token: %d",val_at_j);
+  printf("\n To Token: %d",val_at_j);
   
-  if(val_at_j<0)
-    return -1;
+  if(val_at_j<0) return -1;
   
   int j;
   if(!model->addValue(rn_var, val_at_j, j))

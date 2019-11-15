@@ -30,6 +30,7 @@
 #include "mdd2index.h"
 #include "cycle.h"
 #include "select.h"
+#include "convert_bdd.h"
 
 #include "union.h"
 #include "intersection.h"
@@ -80,6 +81,7 @@ namespace MEDDLY {
   const unary_opname* CONVERT_TO_INDEX_SET = 0;
   const unary_opname* CYCLE = 0;
   const unary_opname* SELECT = 0;
+  const unary_opname* CONVERT_BDD = 0;
 
   // binary operation "codes"
 
@@ -164,6 +166,7 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::CONVERT_TO_INDEX_SET, MDD2INDEX,  initializeMDD2INDEX()     );
   initP(MEDDLY::CYCLE,                CYCLE,      initializeCycle()         );
   initP(MEDDLY::SELECT,               SELECT,     initializeSelect()        );
+  initP(MEDDLY::CONVERT_BDD,          CONVERTBDD, initializeConvertBdd()    );
 
   initP(MEDDLY::UNION,                UNION,      initializeUnion()         );
   initP(MEDDLY::INTERSECTION,         INTERSECT,  initializeIntersection()  );
@@ -236,6 +239,7 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(MINRANGE,       MEDDLY::MIN_RANGE);
   cleanPair(MDD2INDEX,      MEDDLY::CONVERT_TO_INDEX_SET);
   cleanPair(CYCLE,          MEDDLY::CYCLE);
+  cleanPair(CONVERTBDD,     MEDDLY::CONVERT_BDD);
 
   cleanPair(UNION,          MEDDLY::UNION);
   cleanPair(INTERSECT,      MEDDLY::INTERSECTION);

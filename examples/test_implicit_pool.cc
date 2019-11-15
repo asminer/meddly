@@ -190,7 +190,7 @@ int main(int argc, const char** argv)
       
       
       //CREATE RELATION
-      satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,relmxd,inmdd);
+      satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,1,&relmxd,inmdd);
       
       
       start.note_time();

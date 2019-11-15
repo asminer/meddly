@@ -30,6 +30,7 @@ class MEDDLY::builtin_initializer : public initializer_list {
   unary_opname* MDD2INDEX;
   unary_opname* CYCLE;
   unary_opname* SELECT;
+  unary_opname* CONVERTBDD;
 
   binary_opname* UNION;
   binary_opname* INTERSECT;

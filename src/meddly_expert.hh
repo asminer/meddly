@@ -2384,6 +2384,12 @@ MEDDLY::expert_forest::isExtensible(node_handle p) const
   return nodeMan->isExtensible(getNodeAddress(p));
 }
 
+inline int
+MEDDLY::expert_forest::getExtensibleIndex(node_handle p) const
+{
+  return nodeMan->getExtensibleIndex(getNodeAddress(p));
+}
+
 //
 // Unorganized from here
 //
@@ -2889,6 +2895,11 @@ MEDDLY::relation_node::getSignature() const
   return signature;
 }
 
+inline MEDDLY::expert_forest*
+MEDDLY::relation_node::getForest() {
+  return f;
+} 
+
 inline int
 MEDDLY::relation_node::getLevel() const
 {
@@ -3006,7 +3017,7 @@ MEDDLY::satimpl_opname::implicit_relation::getOutForest() const
   return outsetF;
 }
 
-inline MEDDLY::expert_forest*
+inline MEDDLY::expert_forest**
 MEDDLY::satimpl_opname::implicit_relation::getMixRelForest() const
 {
   return mixRelF;
@@ -3038,8 +3049,14 @@ MEDDLY::satimpl_opname::implicit_relation::arrayForLevel(int level) const
 
 // ****************************************************************************
 
-inline MEDDLY::expert_forest*
-MEDDLY::satimpl_opname::implicit_relation::getRelForest() const
+inline int 
+MEDDLY::satimpl_opname::implicit_relation::getNumRelForests() const
+{
+  return nooforests;
+}
+
+inline MEDDLY::expert_forest**
+MEDDLY::satimpl_opname::implicit_relation::getRelForests() const
 {
   return mixRelF;
 }
@@ -3103,6 +3120,11 @@ MEDDLY::satimpl_opname::subevent::isEnabling() const {
   return !is_firing;
 }
 
+inline bool
+MEDDLY::satimpl_opname::subevent::isImplicit() const {
+  return num_vars == 1;
+}
+
 inline const MEDDLY::dd_edge&
 MEDDLY::satimpl_opname::subevent::getRoot() const {
   return root;
@@ -3112,6 +3134,32 @@ inline const MEDDLY::node_handle
 MEDDLY::satimpl_opname::subevent::getRootHandle() const {
   return root_handle;
 }
+
+inline void
+MEDDLY::satimpl_opname::subevent::setRootHandle( node_handle ID ) {
+  root_handle = ID;
+}
+
+inline MEDDLY::node_handle
+MEDDLY::satimpl_opname::subevent::getDown() const {
+  return down;
+}
+
+inline void
+MEDDLY::satimpl_opname::subevent::setDown( node_handle d_ID ) {
+   down = d_ID;
+}
+
+inline int
+MEDDLY::satimpl_opname::subevent::getEnable() const {
+  return enable;
+}
+
+inline int
+MEDDLY::satimpl_opname::subevent::getFire() const {
+  return fire;
+}
+
 
 inline bool
 MEDDLY::satimpl_opname::subevent::usesExtensibleVariables() const {
