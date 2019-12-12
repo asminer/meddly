@@ -215,15 +215,42 @@ MEDDLY::mt_mxd_bool::unionOneMinterm(node_handle a, std::vector<std::vector<int>
   
   MEDDLY_DCASSERT(bLevel == resultLevel);
   
-  if( (aLevel < resultLevel) && ( terms[0].at(bLevel-1) == DONT_CARE && ( terms[1].at(bLevel-1) == DONT_CHANGE || terms[1].at(bLevel-1) == DONT_CARE )) )
-    {
+  // Existing mdd has FF kind of nodes at resultLevel
+  if(aLevel < resultLevel)
+   { 
+    if( ( terms[0].at(bLevel-1) == DONT_CARE && ( terms[1].at(bLevel-1) == DONT_CHANGE || terms[1].at(bLevel-1) == DONT_CARE )) )
+    { 
+      // Minterm to be added has FF kind of nodes at resultLevel
       terms[0].erase(terms[0].begin() + bLevel - 1);
       terms[1].erase(terms[1].begin() + bLevel - 1);
       return unionOneMinterm(a, terms); 
+    } else { 
+      // Minterm to be added has non-skippable nodes at resultLevel
+      unsigned b_from = terms[0].at(bLevel-1);
+      unpacked_node *C = unpacked_node::newSparse(this, resultLevel, getLevelSize(resultLevel));
+      
+      terms[0].erase(terms[0].begin() + bLevel - 1);
+      C->d_ref(b_from) = unionOneMinterm_r(b_from, dwnLevel, a, terms); 
+      result = createReducedNode(-1, C);
+     
+      return result;
     }
+  }
   
   if(aLevel == resultLevel)
     {
+    
+    if( ( terms[0].at(bLevel-1) == DONT_CARE && ( terms[1].at(bLevel-1) == DONT_CHANGE || terms[1].at(bLevel-1) == DONT_CARE )) )
+      { 
+        terms[0].erase(terms[0].begin() + bLevel - 1);
+        unpacked_node *A = unpacked_node::newFromNode(this, a, true);
+        unpacked_node *C = unpacked_node::newFull(this, resultLevel, getLevelSize(resultLevel));
+        for(int i = 0; i < getLevelSize(resultLevel); i++ )
+          {
+            C->d_ref(i) = unionOneMinterm_r(i, dwnLevel, A->d(i), terms);
+          }
+         result = createReducedNode(-1, C);
+        } else {
         unsigned b_from = terms[0].at(bLevel-1);
         unpacked_node *A = unpacked_node::newFromNode(this, a, true);
         unpacked_node *C = unpacked_node::newFull(this, resultLevel, getLevelSize(resultLevel));
@@ -232,11 +259,10 @@ MEDDLY::mt_mxd_bool::unionOneMinterm(node_handle a, std::vector<std::vector<int>
             {
               if(i==b_from) terms[0].erase(terms[0].begin() + bLevel - 1);
                C->d_ref(i) = i == b_from ? unionOneMinterm_r(i, dwnLevel, A->d(i), terms) : linkNode(A->d(i)); 
-              
-            }
+             }
           
             result = createReducedNode(-1, C);
-    
+        }
     }
   
   return result;
@@ -256,23 +282,32 @@ MEDDLY::mt_mxd_bool::unionOneMinterm_r(int in, int k, node_handle a, std::vector
   unpacked_node *A =
   (aLevel == k) 
   ? unpacked_node::newFromNode(this, a, true)
-  : this->isFullyReduced()
-  ? unpacked_node::newRedundant(this, k, a, true)
+  : this->isFullyReduced()       
+  ? unpacked_node::newRedundant(this, k, a, true)  // has to be a FR mxd.... make sure it is
   : unpacked_node::newIdentity(this, k, in, a, true)
   ;
   
   // Do computation
   int b_to  = terms[1].at(bLevel-1);
   
-  for (unsigned j=0; j<resultSize; j++) {
-    if(j==b_to)
-      {
-        terms[1].erase(terms[1].begin()+bLevel-1);
-        C->d_ref(j) = unionOneMinterm(A->d(j), terms);
-      } else
-        C->d_ref(j) = linkNode(A->d(j));
-    
-  }   
+  if(b_to == DONT_CARE || b_to == DONT_CHANGE)
+    {
+      terms[1].erase(terms[1].begin()+bLevel-1);
+      for (unsigned j=0; j<resultSize; j++) {
+           C->d_ref(j) = unionOneMinterm(A->d(j), terms);
+        }
+    }
+  else {
+      for (unsigned j=0; j<resultSize; j++) {
+        if(j==b_to)
+          {
+            terms[1].erase(terms[1].begin()+bLevel-1);
+            C->d_ref(j) = unionOneMinterm(A->d(j), terms);
+          } else
+            C->d_ref(j) = linkNode(A->d(j));
+        
+      }
+  }
   
   // cleanup
   unpacked_node::recycle(A);

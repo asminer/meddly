@@ -372,7 +372,7 @@ int* nxtList;
 class derRelNode : public MEDDLY::relation_node
 {
 public:
-  derRelNode(unsigned long signature, MEDDLY::forest* mxdF, int level, node_handle down, long en, long fi):relation_node(signature,mxdF, level, down, en, fi)
+  derRelNode(unsigned long signature, MEDDLY::forest* mxdF, int level, node_handle down, long en, long fi):relation_node(signature, mxdF, level, down, en, fi)
   {}
   long nextOf(long i) override
   {
@@ -427,7 +427,7 @@ void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, in
   nxtList[1] = 0;
   printf("\nNow building NSF\n");
   
-  MEDDLY::expert_forest *mxdF = T->getRelForests()[0];
+  MEDDLY::expert_forest *mxdF = T->getRelForests();
    printf("\nFrom forest %d\n",mxdF);
   
   int rctr = 0;

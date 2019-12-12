@@ -187,6 +187,7 @@ int MEDDLY::dd_edge::getLevel() const
 void MEDDLY::dd_edge::set(node_handle n)
 {
   MEDDLY_DCASSERT(parent);
+  const expert_forest* ef = dynamic_cast <expert_forest*>(parent);
   node_handle old = node;
   node = n;
   unlinkNode(parent, old);
@@ -251,7 +252,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator+=(const dd_edge& e)
       opPlus = getOperation(PLUS, *this, e, *this);}
     MEDDLY_DCASSERT(opPlus != 0);
   }
-  opPlus->compute(*this, e, *this);
+  opPlus->computeTemp(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
   return *this;
 }
@@ -267,7 +268,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator*=(const dd_edge& e)
       opStar = getOperation(MULTIPLY, *this, e, *this);
     MEDDLY_DCASSERT(opStar != 0);
   }
-  opStar->compute(*this, e, *this);
+  opStar->computeTemp(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
   return *this;
 }
@@ -283,7 +284,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator-=(const dd_edge& e)
       opMinus = getOperation(MINUS, *this, e, *this);
     MEDDLY_DCASSERT(opMinus != 0);
   }
-  opMinus->compute(*this, e, *this);
+  opMinus->computeTemp(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
   return *this;
 }
@@ -295,7 +296,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator/=(const dd_edge& e)
   if (opDivide == 0) {
     opDivide = getOperation(DIVIDE, *this, e, *this);
   }
-  opDivide->compute(*this, e, *this);
+  opDivide->computeTemp(*this, e, *this);
   // apply will call set() which in turn will set updateNeeded to true
   return *this;
 }

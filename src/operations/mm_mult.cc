@@ -77,7 +77,7 @@ class MEDDLY::mm_mult_op : public binary_operation {
       CT0->addEntry(Key, CTresult[0]);
       return c;
     }
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
     virtual node_handle compute(node_handle a, node_handle b);
   protected:
     binary_operation* accumulateOp;
@@ -102,7 +102,7 @@ MEDDLY::mm_mult_op::mm_mult_op(const binary_opname* oc, expert_forest* a1,
 }
 
 void MEDDLY::mm_mult_op
-::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
+::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
 {
   node_handle cnode;
   cnode = compute(a.getNode(), b.getNode());
@@ -293,7 +293,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
           // Do the union
           resultik.set(nbri->d(k));
           temp.set(res);
-          accumulateOp->compute(resultik, temp, resultik);
+          accumulateOp->computeTemp(resultik, temp, resultik);
           nbri->set_d(k, resultik);
         }
       }

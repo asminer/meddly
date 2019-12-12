@@ -321,8 +321,7 @@ void pn::doOtfSaturation() {
   assert(reachable_states);
 
   otf_rel->confirm(*initial_state);
-  printf("\n Added initial edge");
-  
+
   otf_sat_op->compute(*initial_state, *reachable_states);
   assert(reachable_states);
 }
@@ -342,17 +341,6 @@ bool pn::indexOf(int vh, int value, int &index) {
   if (value_to_index.size() <= unsigned(vh)) return false;
 
   if (value_to_index[vh].size() <= unsigned(value)) return false;
-  
-  for(int i=0;i<value_to_index.size();i++)
-    {
-    printf("\n value_to_index[%d][%d] = %d ", vh, i,value_to_index[vh][i]);
-    }
-  for(int i=0;i<index_to_value.size();i++)
-    {
-    printf("\n index_to_value[%d][%d] = %d ", vh, i,index_to_value[vh][i]);
-    }
-  
-  
   index = value_to_index[vh][value];
   return true;
 }
@@ -445,8 +433,7 @@ void enabling_subevent::confirm(satotf_opname::otf_relation &rel, int v, int ind
     // add enabling minterm
     unp_minterm[v] = index;
     p_minterm[v] = DONT_CARE;
-    addMinterm(unp_minterm, p_minterm);
-    printf("\n This done\n");
+    addMinterm(unp_minterm, p_minterm); 
   }
 }
 

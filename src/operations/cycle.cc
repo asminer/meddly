@@ -37,7 +37,7 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
   public:
     cycle_EV2EV(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
-    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
+    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
 
   protected:
     virtual void compute_r(long aev, node_handle a, int k, long& bev, node_handle& b);
@@ -82,7 +82,7 @@ MEDDLY::cycle_EV2EV::cycle_EV2EV(const unary_opname* oc, expert_forest* arg, exp
   buildCTs();
 }
 
-void MEDDLY::cycle_EV2EV::computeDDEdge(const dd_edge &arg, dd_edge &res)
+void MEDDLY::cycle_EV2EV::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
 {
   long aev = Inf<long>();
   arg.getEdgeValue(aev);

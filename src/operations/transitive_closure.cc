@@ -122,10 +122,10 @@ void MEDDLY::transitive_closure_forwd_bfs::iterate(long aev, node_handle a, long
     prev = c;
     long tev = Inf<long>();
     node_handle t = 0;
-    imageOp->compute(cev, c, r, tev, t);
+    imageOp->computeTemp(cev, c, r, tev, t);
     // tev was increased by one step
-    plusOp->compute(tev - 1, t, aev, a, tev, t);
-    minOp->compute(cev, c, tev, t, cev, c);
+    plusOp->computeTemp(tev - 1, t, aev, a, tev, t);
+    minOp->computeTemp(cev, c, tev, t, cev, c);
     resF->unlinkNode(t);
   }
   resF->unlinkNode(prev);
@@ -138,7 +138,7 @@ void MEDDLY::transitive_closure_forwd_bfs::iterate(const dd_edge& a, const dd_ed
   dd_edge prev(resF), t(resF);
   while (prev != c) {
     prev = c;
-    imageOp->compute(c, r, t);
+    imageOp->computeTemp(c, r, t);
 
     // t was increased by one step; roll it back one
     long tev;
@@ -146,8 +146,8 @@ void MEDDLY::transitive_closure_forwd_bfs::iterate(const dd_edge& a, const dd_ed
     tev--;
     t.setEdgeValue(tev);
 
-    plusOp->compute(t, a, t);
-    minOp->compute(c, t, c);
+    plusOp->computeTemp(t, a, t);
+    minOp->computeTemp(c, t, c);
   }
 }
 
@@ -304,7 +304,7 @@ void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
         first = false;
       } else {
         Rpdi.set( transF->linkNode(Rp->d(i)) );
-        mxdIntersectionOp->compute(maxDiag, Rpdi, maxDiag);
+        mxdIntersectionOp->computeTemp(maxDiag, Rpdi, maxDiag);
       }
 
       // cleanup
@@ -312,7 +312,7 @@ void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
     } // for i
 
     // maxDiag is what we can split from here
-    mxdDifferenceOp->compute(root, maxDiag, splits[level]);
+    mxdDifferenceOp->computeTemp(root, maxDiag, splits[level]);
     root = maxDiag;
 
     // Cleanup
@@ -474,7 +474,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
       else {
         nbdj.set(nb.d(jp), nb.ei(jp));
         newst.set(rec, recev);
-        minOp->compute(nbdj, newst, nbdj);
+        minOp->computeTemp(nbdj, newst, nbdj);
         updated = (nbdj.getNode() != nb.d(jp));
         nb.set_de(jp, nbdj);
 
@@ -482,7 +482,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
         /*
         long accev = Inf<long>();
         node_handle acc = 0;
-        minOp->compute(nb.ei(jp), nb.d(jp), recev, rec, accev, acc);
+        minOp->computeTemp(nb.ei(jp), nb.d(jp), recev, rec, accev, acc);
 
         MEDDLY_DCASSERT(acc != 0);
         resF->unlinkNode(rec);
@@ -655,7 +655,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
           const node_handle oldjp = Tp->d(jp);
           long newev = Inf<long>();
           node_handle newstates = 0;
-          minOp->compute(nev, n, Tp->ei(jp), oldjp, newev, newstates);
+          minOp->computeTemp(nev, n, Tp->ei(jp), oldjp, newev, newstates);
           Tp->setEdge(jp, newev);
           Tp->d_ref(jp) = newstates;
 
@@ -666,7 +666,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
           // there's new states and existing states; union them.
           Tdj.set(Tp->d(jp), Tp->ei(jp));
           newst.set(n, nev);
-          minOp->compute(newst, Tdj, Tdj);
+          minOp->computeTemp(newst, Tdj, Tdj);
           Tp->set_de(jp, Tdj);
         } // for j
       } // for i

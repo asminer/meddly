@@ -2164,7 +2164,6 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   // Grab a new node
   node_handle p = nodeHeaders.getFreeNodeHandle();
-  printf("\n Found free handle = %d", p);
   nodeHeaders.setNodeLevel(p, nb.getLevel());
   if (deflt.useReferenceCounts) {
     MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
@@ -2422,7 +2421,6 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
       if (nb.isSparse()) {
         for (int z=0; z<nb.getNNZs(); z++) {
           if (isTerminalNode(nb.d(z))) continue;
-          printf("\n Check if %d is deleted node\n",nb.d(z));
           MEDDLY_DCASSERT(!isDeletedNode(nb.d(z)));
           if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(z)))) continue;
           FILE_output s(stdout);
@@ -2435,7 +2433,6 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
       } else {
         for (int i=0; i<nb.getSize(); i++) {
           if (isTerminalNode(nb.d(i))) continue;
-          printf("\n Check if %d is deleted node\n",nb.d(i));
           MEDDLY_DCASSERT(!isDeletedNode(nb.d(i)));
           if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(i)))) continue;
           FILE_output s(stdout);
@@ -2464,6 +2461,7 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
         node_handle tv=getTransparentNode();
         for (int i=0; i<nb.getSize(); i++) {
           if (nb.d(i)==tv) continue;
+          printf("\n Am i for relations? %d--getNodeLevel(nb) %d  getNodeLevel(nb.d(i=%d)) %d of dnh_%d == nextLevel %d ",isForRelations(),nb.getLevel(),i, getNodeLevel(nb.d(i)),nb.d(i),nextLevel);
           MEDDLY_DCASSERT(getNodeLevel(nb.d(i)) == nextLevel);
         }
       }

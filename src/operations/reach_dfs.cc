@@ -293,7 +293,7 @@ class MEDDLY::common_dfs_mt : public common_dfs {
     common_dfs_mt(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
     virtual void saturateHelper(unpacked_node &mdd) = 0;
 
   protected:
@@ -332,7 +332,7 @@ class MEDDLY::common_dfs_evplus : public common_dfs {
     common_dfs_evplus(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
     virtual void saturateHelper(unpacked_node &mdd) = 0;
 
   protected:
@@ -628,14 +628,14 @@ void MEDDLY::common_dfs::splitMxd(node_handle mxd_nh)
         maxDiag.set( arg2F->linkNode(Mp->d(i)) );
       } else {
         mpdi.set( arg2F->linkNode(Mp->d(i)) );
-        mxdIntersection->compute(maxDiag, mpdi, maxDiag);
+        mxdIntersection->computeTemp(maxDiag, mpdi, maxDiag);
       }
 
       // cleanup
     } // for i
 
     // maxDiag is what we can split from here
-    mxdDifference->compute(mxd, maxDiag, splits[level]);
+    mxdDifference->computeTemp(mxd, maxDiag, splits[level]);
     mxd = maxDiag;
 
     // Cleanup
@@ -742,7 +742,7 @@ MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
 }
 
 void MEDDLY::common_dfs_mt
-::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
+::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
 {
   // Initialize operations
   mddUnion = getOperation(UNION, resF, resF, resF);
@@ -864,7 +864,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
       else {
         temp.set(rec);  // clobbers rec; that's what we want
         nbdj.set( nb.d(j) );
-        mddUnion->compute(nbdj, temp, nbdj);
+        mddUnion->computeTemp(nbdj, temp, nbdj);
         updated = (nbdj.getNode() != nb.d(j));
         nb.set_d(j, nbdj);
       }
@@ -981,7 +981,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
         // there's new states and existing states; union them.
         newst.set(newstates); // clobber when done
         nbdj.set(nb->d(j));   // also clobber when done
-        mddUnion->compute(newst, nbdj, nbdj);
+        mddUnion->computeTemp(newst, nbdj, nbdj);
         nb->set_d(j, nbdj);
       } // for j
   
@@ -1099,7 +1099,7 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(unpacked_node& nb)
         else {
           nbdi.set(nb.d(i));
           temp.set(rec);
-          mddUnion->compute(nbdi, temp, nbdi);
+          mddUnion->computeTemp(nbdi, temp, nbdi);
           updated = nbdi.getNode() != nb.d(i);
           nb.set_d(i, nbdi);
         }
@@ -1197,7 +1197,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
         // there's new states and existing states; union them.
         nbdi.set(nb->d(i));
         temp.set(newstates);
-        mddUnion->compute(temp, nbdi, nbdi);
+        mddUnion->computeTemp(temp, nbdi, nbdi);
         nb->set_d(i, nbdi);
       } // for j
   
@@ -1238,7 +1238,7 @@ MEDDLY::common_dfs_evplus::common_dfs_evplus(const binary_opname* oc, expert_for
 
 
 void MEDDLY::common_dfs_evplus
-::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
+::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
 {
   // Initialize operations
   mddUnion = getOperation(UNION, resF, resF, resF);
@@ -1371,7 +1371,7 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
       else {
         nbdj.set(nb.d(j), nb.ei(j));
         temp.set(rec, recev);  // clobbers rec; that's what we want
-        mddUnion->compute(nbdj, temp, nbdj);
+        mddUnion->computeTemp(nbdj, temp, nbdj);
         updated = (nbdj.getNode() != nb.d(j));
         nb.set_de(j, nbdj);
       }
@@ -1504,7 +1504,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
         // there's new states and existing states; union them.
         newst.set(n, nev); // clobber when done
         nbdj.set(nb->d(j), nb->ei(j));   // also clobber when done
-        mddUnion->compute(newst, nbdj, nbdj);
+        mddUnion->computeTemp(newst, nbdj, nbdj);
         nb->set_de(j, nbdj);
       } // for j
 

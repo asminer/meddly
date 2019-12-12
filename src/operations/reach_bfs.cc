@@ -52,7 +52,7 @@ class MEDDLY::common_bfs : public binary_operation {
     common_bfs(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
 
   protected:
     inline void setUnionOp(binary_operation* uop)
@@ -84,7 +84,7 @@ MEDDLY::common_bfs::common_bfs(const binary_opname* oc, expert_forest* a1,
   imageOp = 0;
 }
 
-void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd_edge &reachableStates)
+void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd_edge &reachableStates, bool userFlag)
 {
   MEDDLY_DCASSERT(unionOp);
   MEDDLY_DCASSERT(imageOp);
@@ -110,7 +110,7 @@ void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd
     verbose << "Iteration " << iters << ":\n";
 #endif
     prevReachable = reachableStates;
-    imageOp->computeDDEdge(reachableStates, R, front);
+    imageOp->computeDDEdge(reachableStates, R, front, userFlag);
 #ifdef VERBOSE_BFS
     verbose << "\timage done ";
     front.show(verbose, 0);
@@ -121,7 +121,7 @@ void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd
     debug << "Iteration " << iters << "\npseudo-frontier: ";
     front.show(debug, 2);
 #endif
-    unionOp->computeDDEdge(reachableStates, front, reachableStates);
+    unionOp->computeDDEdge(reachableStates, front, reachableStates, userFlag);
 #ifdef VERBOSE_BFS
     verbose << "\tunion done ";
     reachableStates.show(verbose, 0);

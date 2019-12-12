@@ -118,19 +118,13 @@ MEDDLY::relation_node::setTokenUpdateAtIndex(long i,long val)
 }
 // ******************************************************************
 
-MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd, int noofrmxd, forest** relmxd, forest* outmdd, event** E, int ne) 
+MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd, forest* relmxd, forest* outmdd, event** E, int ne) 
 : insetF(static_cast<expert_forest*>(inmdd)), outsetF(static_cast<expert_forest*>(outmdd))
 {
   
-  mixRelF = new expert_forest*[noofrmxd];
+  mixRelF = static_cast<expert_forest*>(relmxd);
   
-  for(int i = 0;i<noofrmxd;i++)
-    {
-      mixRelF[i] = static_cast<expert_forest*>(relmxd[i]);
-    }
-  
-  
-  if (0==insetF || 0==outsetF || 0==noofrmxd ||0==mixRelF ) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+  if (0==insetF || 0==outsetF || 0==mixRelF ) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   
   // Check for same domain
   if (insetF->getDomain() != outsetF->getDomain())
@@ -144,16 +138,15 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd, int 
   if (
       insetF->isForRelations()    ||
       outsetF->isForRelations()   ||
-      !mixRelF[0]->isForRelations()  ||
+      !mixRelF->isForRelations()  ||
       (insetF->getEdgeLabeling() != forest::MULTI_TERMINAL)   ||
       (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)  ||
-      (mixRelF[0]->getEdgeLabeling() != forest::MULTI_TERMINAL)  
+      (mixRelF->getEdgeLabeling() != forest::MULTI_TERMINAL)  
       )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   
   // Forests are good; set number of variables
   num_levels = insetF->getDomain()->getNumVariables() + 1;
-  nooforests = noofrmxd;
   
   //Allocate event_list
   event_list = (node_handle**)malloc(unsigned(num_levels)*sizeof(node_handle*));
@@ -409,6 +402,7 @@ void MEDDLY::satimpl_opname::implicit_relation::setConfirmedStates(int level, in
   //    (2) for each level k affected by the subevent,
   //        (a) enlarge variable bound of k to variable bound of k'
   
+  printf("\n Confirming index %d at level %d", index, level);
   
   resizeConfirmedArray(level, index+1);
   
@@ -546,8 +540,8 @@ MEDDLY::satimpl_opname::implicit_relation::show()
         if((event_list_copy[i][eid]==0)&&(k<event_added[i]))
           {
             event_list_copy[i][eid] = event_list[i][k];
-            relation_node* hold_it = getRelForests()[0]->buildImplicitNode(event_list[i][k]);
-            relation_node* hold_down = getRelForests()[0]->buildImplicitNode(hold_it->getDown());
+            relation_node* hold_it = getRelForests()->buildImplicitNode(event_list[i][k]);
+            relation_node* hold_down = getRelForests()->buildImplicitNode(hold_it->getDown());
             event_list_copy[hold_down->getLevel()][eid] = hold_down->getID();
           k++;eid++;
           }
@@ -874,12 +868,13 @@ bool MEDDLY::satimpl_opname::subevent::addMinterm(const int* from, const int* to
 }
 
 void MEDDLY::satimpl_opname::subevent::buildRoot() {
+  //printf("\n num_minterms in this se = %d, to be done = %d ",num_minterms,process_minterm_pos-processed_minterm_pos );
   if (0 == num_minterms) return;
   if (processed_minterm_pos == process_minterm_pos) return;
   //if (1 == num_vars) return ;
   
-   ostream_output out(std::cout);
-   out << "Building subevent from " << num_minterms << " minterms\n";
+   /*ostream_output out(std::cout);
+   out << "\nBuilding subevent from " << num_minterms << " minterms\n";
    out << "New minterm is added at position " << process_minterm_pos << " minterms\n";
    for (int i = 0; i < num_minterms; i++) {
    out << "minterm[" << i << "]: [ ";
@@ -887,29 +882,56 @@ void MEDDLY::satimpl_opname::subevent::buildRoot() {
    out << unpminterms[i][j] << " -> " << pminterms[i][j] << ", ";
    }
    out << " ]\n";
-   }
+   }*/
    
   std::vector<std::vector<int>> terms;
   std::vector<int> pterms;
   std::vector<int> unpterms;
   
-  for(int i=1;i<=f->getNumVariables();i++)
+ /* for(int i=1;i<=f->getNumVariables();i++)
     {
       unpterms.push_back(unpminterms[process_minterm_pos][i]);
       pterms.push_back(pminterms[process_minterm_pos][i]);
     }
   terms.push_back(unpterms);
   terms.push_back(pterms);
+  */
   
-  printf("\n Previous roothandle = %d ",root.getNode());
-  node_handle rnh = f->unionOneMinterm(root.getNode(), terms);
-  processed_minterm_pos +=1;
-  printf("\n Obtained roothandle = %d Passed = %d",rnh,root.getNode());
-  if(rnh!=root.getNode()) 
-    root.set(rnh);
+  node_handle rnh = 0;
+  while(processed_minterm_pos!=process_minterm_pos)
+    {
+      for(int i=1;i<=f->getNumVariables();i++)
+        {
+        unpterms.push_back(unpminterms[processed_minterm_pos+1][i]);
+        pterms.push_back(pminterms[processed_minterm_pos+1][i]);
+        }
+      terms.push_back(unpterms);
+      terms.push_back(pterms);
+    
+      rnh = f->unionOneMinterm(root.getNode(), terms);
+      if(rnh!=root.getNode()) root.set(rnh);
+      processed_minterm_pos +=1;
+    
+      unpterms.clear();
+      pterms.clear();
+      terms.clear();
+    
+    }
+  
+  #if 0
+  if (usesExtensibleVariables()) {
+    dd_edge sum(root);
+    f->createEdge(unpminterms, pminterms, num_minterms, sum);
+    num_minterms = 0;
+    root += sum;
+  } else {
+    f->createEdge(unpminterms, pminterms, num_minterms, root);
+  }
+  #endif
+  
   
   root_handle = root.getNode();
-  printf("\n My roothandle = %d",root_handle);
+  printf("\n My root handle is %d",root_handle);
   // out << "\nEquivalent event: " << root.getNode() << "\n";
   // out << "Result: ";
   // root.show(out, 2);
@@ -1108,6 +1130,9 @@ MEDDLY::satimpl_opname::event::event(subevent** p, int np, relation_node** r, in
   event_mask_from_minterm = 0;
   event_mask_to_minterm = 0;
   needs_rebuilding = is_disabled? false: true;
+  
+  printf("\n This event is done building");
+  printf("\n");
 }
 #endif
 
@@ -1187,7 +1212,6 @@ MEDDLY::satimpl_opname::event::event(subevent** p, int np)
     relnodes = NULL;
   
   
-  printf("\n top level = %d", top);
   /*top = np>0? p[0]->getTop() : r[0]->getLevel(); 
    for (int i = 1; i < np; i++) {
    if (top < p[i]->getTop()) top = p[i]->getTop();
@@ -1428,33 +1452,61 @@ bool MEDDLY::satimpl_opname::event::rebuild()
   /*if (is_disabled) return false;*/
   if(num_subevents > 0)
     {
-    if (!needs_rebuilding) return false;
-    needs_rebuilding = false;
+      if (!needs_rebuilding) return false;
+      needs_rebuilding = false;
     }
   
   // An event is a conjunction of sub-events (or sub-functions).
+  printf("\n I am in event %d", this);
   for (int i = 0; i < num_subevents; i++)
     {
-      printf("\n Rebuild is about to happen for event %d",i);
+      printf("\n Rebuild is about to happen for sub-event %d",i);
       subevents[i]->buildRoot();
     }
      
+  printf("\n See the chain of rel_nodes:%d nodes",num_relnodes);
+  if(num_relnodes>0)
+    {
+      int kk = 0;
+      relation_node *temp = NULL;
+      node_handle nnh = relnodes[num_relnodes-1]->getID();
+      while(nnh!=-1)
+        {
+          temp = f->buildImplicitNode(nnh);
+          printf("%d<%d>->",temp->getID(),temp->getLevel());
+          nnh = temp->getDown();
+        }
+     }
   
+  
+  //replace the existing subevent's previous handles
+  level_component.clear();
    for (int i = 0; i < num_subevents; i++) {
      int level_of_subevent = subevents[i]->getTop();
      
-      printf("\nAdding se node handle %d at %d",subevents[i]->getRootHandle(),level_of_subevent);
      if(level_component.find(level_of_subevent)!=level_component.end())
-         level_component.at(level_of_subevent) = subevents[i]->getRootHandle();
+         level_component.at(level_of_subevent).insert(subevents[i]->getRootHandle());
      else 
-         level_component.insert(std::make_pair(level_of_subevent,subevents[i]->getRootHandle()));
+       {
+         std::set<node_handle> handles_at_this_top;
+         handles_at_this_top.insert(subevents[i]->getRootHandle());
+         level_component.insert(std::make_pair(level_of_subevent,handles_at_this_top));
+       }
     }
   
-  printf("\nnum relnodes = %d",num_relnodes);
+   // Modify it to only hold the topmost relNode!
    for (int i = 0; i < num_relnodes; i++)
      {
-      printf("\nAdding node handle %d at %d",relnodes[i]->getID(),relnodes[i]->getLevel());
-      level_component.insert(std::make_pair(relnodes[i]->getLevel(),relnodes[i]->getID()));
+        int level_of_relNode = relnodes[i]->getLevel();
+       
+       if(level_component.find(level_of_relNode)!=level_component.end())
+         level_component.at(level_of_relNode).insert(relnodes[i]->getID());
+       else 
+         {
+          std::set<node_handle> handles_at_this_top;
+          handles_at_this_top.insert(relnodes[i]->getID());
+          level_component.insert(std::make_pair(level_of_relNode,handles_at_this_top));
+         }
      } 
   
   
@@ -1480,7 +1532,7 @@ bool MEDDLY::satimpl_opname::event::rebuild()
    ostream_output out(std::cout);
    for (int i = 0; i < num_subevents; i++) {
    out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
-   subevents[i]->getRoot().show(out, 2);
+   if(subevents[i]->getRoot().getNode()) subevents[i]->getRoot().show(out, 2);
    }
    //e.show(out, 2);
    
@@ -1641,30 +1693,20 @@ public:
   
 protected:
   inline compute_table::entry_key*
-  findResult(node_handle a, std::vector<node_handle> b, expert_forest* givenForest, node_handle &c)
+  findResult(node_handle a, std::vector<node_handle> b, node_handle &c)
   {
     // needs to be searched in that CT where the forest matches!
     compute_table::entry_key* CTsrch = 0;
-    int which_CT_pos = -1;
-    for(int i = 0; i < rel->getNumRelForests();i++)
-      {
-        if(etype[i]->getKeyForest(2) == givenForest)
-          {
-            printf("\n %d vector size", b.size());
-            CTsrch = CT[i]->useEntryKey(etype[i], b.size());
-            which_CT_pos = i;
-            break;
-          }
-      }
+    CTsrch = CT0->useEntryKey(etype[0], b.size());
     MEDDLY_DCASSERT(CTsrch);
     CTsrch->writeN(a);
     for(auto it = b.begin(); it!=b.end(); it++ )
        CTsrch->writeN(*it);
     //CTsrch->writeL(b);
-    CT[which_CT_pos]->find(CTsrch, CTresult[0]);
+    CT0->find(CTsrch, CTresult[0]);
     if (!CTresult[0]) return CTsrch;
     c = resF->linkNode(CTresult[0].readN());
-    CT[which_CT_pos]->recycle(CTsrch);
+    CT0->recycle(CTsrch);
     return 0;
   }
   
@@ -1672,20 +1714,11 @@ protected:
     CT0->recycle(CTsrch);
   }
   inline node_handle saveResult(compute_table::entry_key* Key,
-                                node_handle a, std::vector<node_handle> b, expert_forest* givenForest, node_handle c)
+                                node_handle a, std::vector<node_handle> b, node_handle c)
   {
     CTresult[0].reset();
     CTresult[0].writeN(c);
-    int which_CT_pos = -1;
-    for(int i = 0; i < rel->getNumRelForests();i++)
-    {
-    if(etype[i]->getKeyForest(2) == givenForest)
-      {
-        CT[i]->addEntry(Key, CTresult[0]);
-        which_CT_pos = i;
-        break;
-      }
-    }
+    CT0->addEntry(Key, CTresult[0]);
     return c;
   }
   
@@ -1697,7 +1730,7 @@ protected:
   satimpl_opname::implicit_relation* rel;
   
   expert_forest* arg1F;
-  expert_forest** arg2Fs;
+  expert_forest* arg2F;
   expert_forest* resF;
   
 protected:
@@ -1816,7 +1849,7 @@ public:
                               satimpl_opname::implicit_relation* rel);
 protected:
   virtual void saturateHelper(unpacked_node& mdd);
-  node_handle recFire(node_handle mdd, std::map<int,node_handle> seHandles, expert_forest* eventForest); //mxd, satimpl_opname::event* e);
+  node_handle recFire(node_handle mdd, std::map<int,std::set<node_handle>> seHandles); //mxd, satimpl_opname::event* e);
   //MEDDLY::node_handle recFireSet(node_handle mdd, std::vector<node_handle> mxd);
 
   // for reachable state in constraint detection
@@ -1840,6 +1873,7 @@ MEDDLY::forwd_impl_dfs_by_events_mt::forwd_impl_dfs_by_events_mt(
 
 void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 {
+  
   int nEventsAtThisLevel = rel->lengthForLevel(nb.getLevel());
   if (0 == nEventsAtThisLevel) return;
   
@@ -1870,58 +1904,114 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       
       // rebuild the marking-dependent subevents, if needed
       // change the if-condition
-      expert_forest* eF = event_handles[ei]->getForest();
-      if(event_handles[ei]->getNumOfSubevents()>0) 
-        event_handles[ei]->rebuild();
+      event_handles[ei]->rebuild();
       
+      printf("\n COmpleted rebuild");
       // build a set of pairs, where each element contains: {level,node_handle} 
       // an updated set is passed to next recursion based on the level processed in current recursion
-      std::map<int, node_handle> seHandles = event_handles[ei]->getComponents();
+      std::map<int, std::set<node_handle>> seHandles = event_handles[ei]->getComponents();
       const int* eVars = event_handles[ei]->getVars();
       int num_eVars = event_handles[ei]->getNumVars();
       
       int jc = 0;
       std::vector<int> jvector;
       std::vector<node_handle> dvector;
-      bool imFlag = eF->isImplicit(seHandles[level]);
+      std::map<int, std::vector<node_handle>> j_d_map;
       
-      // obtain the node-handle at this level and build appropriate node-type
-      if(imFlag)
-        {
-        relation_node* Ru = eF->buildImplicitNode(seHandles[level]);
-        jc = 1;
-        jvector.push_back(Ru->nextOf(i)); //user must have nextOf defined as per mapping. so virtual.
-        dvector.push_back(Ru->getDown());
-        } else {
-          unpacked_node* Ru = unpacked_node::useUnpackedNode();
-          Ru->initFromNode(eF, seHandles[level], true);
-          node_handle ei_p = Ru->d(i);
-          if (0 == ei_p) continue;
-          unpacked_node* Rp = unpacked_node::useUnpackedNode();
-          Rp->initFromNode(eF, ei_p, false);
-          jc = Rp->getNNZs();
-          for(int jz = 0; jz < jc; jz++)
+      // intersectio of the subevents
+       printf("\n Intersection of subevents at level %d",level);
+      for(auto nse_it = seHandles[level].begin(); nse_it != seHandles[level].end(); nse_it++) {
+         printf("\n Handle:%d",*nse_it);
+        
+        if(*nse_it==0) continue;
+        bool imFlag = arg2F->isImplicit(*nse_it);
+        printf("\n Am i implicit?:%d",imFlag);
+        
+        if(imFlag)
+          {
+          relation_node* Ru = arg2F->buildImplicitNode(*nse_it);
+          int j = Ru->nextOf(i);
+          
+          if(j_d_map.find(j)!=j_d_map.end())
+            j_d_map.at(j).push_back(Ru->getDown());
+          else 
             {
-            jvector.push_back(Rp->i(jz));
-            dvector.push_back(Rp->d(jz));
+              std::vector<node_handle> handles_down_j;
+              handles_down_j.push_back(Ru->getDown());
+              j_d_map.insert(std::make_pair(j,handles_down_j));
             }
-        }
+          
+          } else {
+            printf("\n I am about to build the mxd Node for %d on level %d", *nse_it,arg2F->getNodeLevel(*nse_it));
+            unpacked_node* Ru = unpacked_node::useUnpackedNode();
+            Ru->initFromNode(arg2F, *nse_it, true);
+             printf("\n I did so");
+            node_handle ei_p = Ru->d(i);
+            if (0 == ei_p) continue;
+            unpacked_node* Rp = unpacked_node::useUnpackedNode();
+            Rp->initFromNode(arg2F, ei_p, false);
+            for(int jz = 0; jz < Rp->getNNZs(); jz++)
+              {
+                jvector.push_back(Rp->i(jz));
+                dvector.push_back(Rp->d(jz));
+              if(j_d_map.find(Rp->i(jz))!=j_d_map.end())
+                j_d_map.at(Rp->i(jz)).push_back(Rp->d(jz));
+              else 
+                {
+                  std::vector<node_handle> handles_down_j;
+                  handles_down_j.push_back(Rp->d(jz));
+                  j_d_map.insert(std::make_pair(Rp->i(jz),handles_down_j));
+                }
+              }
+            printf("\n I built the mxd Node");
+          }
+        
+      }
       
-      for(int jz = 0; jz < jc; jz++)
+      std::map<int, std::set<node_handle>> j_dset_map;
+      
+      printf("\n Intresetion vector size  %d", seHandles[level].size());
+      for(auto jit = j_d_map.begin();jit!=j_d_map.end();jit++)
+        {
+          if(jit->second.size()==seHandles[level].size())
+            { 
+              std::set<node_handle> set_of_handles_down_j(jit->second.begin(), jit->second.end());
+              j_dset_map.insert(std::make_pair(jit->first,set_of_handles_down_j));
+              printf("\n jd_map: [%d]:",jit->first);
+              for(auto kit = j_dset_map[jit->first].begin();kit!= j_dset_map[jit->first].end();kit++)
+              printf("\n %d,",*kit);
+            }
+         }
+      
+      
+      for(auto jit = j_dset_map.begin(); jit!=j_dset_map.end(); jit++)
         { 
-          int j = jvector[jz];
+          int j = jit->first;
           if(j==-1) continue;
           if (j < nb.getSize() && -1==nb.d(j)) continue; // nothing can be added to this set
           
-          std::map<int, node_handle> seHandlesForRecursion = seHandles;
-          seHandlesForRecursion.insert(std::make_pair(eF->getNodeLevel(dvector[jz]), dvector[jz]));
+          std::map<int, std::set<node_handle>> seHandlesForRecursion = seHandles;
+          for(auto jdit = jit->second.begin(); jdit != jit->second.end(); jdit++)
+            {
+              int level_of_downj = arg2F->getNodeLevel(*jdit);
+              if( seHandlesForRecursion.find(level_of_downj) != seHandlesForRecursion.end())
+                  seHandlesForRecursion.at(level_of_downj).insert(*jdit);
+              else
+                {
+                  std::set<node_handle> handles_at_level;
+                  handles_at_level.insert(*jdit);
+                  seHandlesForRecursion.insert(std::make_pair(level_of_downj, handles_at_level));
+                }
+            }
           seHandlesForRecursion.erase(level); 
-          node_handle rec = recFire(nb.d(i), seHandlesForRecursion, eF);
+         
+          node_handle rec = recFire(nb.d(i), seHandlesForRecursion);
           
           
           if (rec == 0) continue;
           
           //confirm local state
+          printf("\n Confirming j=%d from i=%d",j,i);
           if(!rel->isConfirmedState(level,j))
             rel->setConfirmedStates(level, j);
           
@@ -1933,8 +2023,8 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
             nb.resize(j+1);
             while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
             queue->resize(nb.getSize());
-            }
-          
+             printf("\n Resizing  queue to %d", nb.getSize());
+            }  
           if (rec == nb.d(j)) {
             resF->unlinkNode(rec);
             continue;
@@ -1944,23 +2034,25 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
           
           if (0 == nb.d(j)) {
             nb.d_ref(j) = rec;
+            printf("\n Assigning %dth child of node %d as %d", j,&nb,rec);
           }
           else if (rec == -1) {
             resF->unlinkNode(nb.d(j));
             nb.d_ref(j) = -1;
+            printf("\n Assigning %dth child of node %d as %d", j,&nb,nb.d(j));
           }
           else {
             nbdj.set(nb.d(j));  // clobber
             newst.set(rec);     // clobber
-            mddUnion->compute(nbdj, newst, nbdj);
+            mddUnion->computeTemp(nbdj, newst, nbdj);
             updated = (nbdj.getNode() != nb.d(j));
             nb.set_d(j, nbdj);
-          }
+            }
           
-          if (updated) queue->add(j);
+          if (updated) {printf("\n Added index %d for level %d", j, level);queue->add(j);}
           
         } //for all j's
-      
+      printf("\n No more j's to look at for this ei %d", ei);
     } // for all events, ei
   }// more indexes to explore
   
@@ -1970,42 +2062,49 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
 // Same as post-image, except we saturate before reducing.
 MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
-                                                                 MEDDLY::node_handle mdd, std::map<int, node_handle> seHandles, expert_forest* eForest
-                                                                 )
+                                                                 MEDDLY::node_handle mdd, std::map<int, std::set<node_handle>> seHandles)
 {
   // current mxd handle is at highest level from this set
-  std::map<int,node_handle>::reverse_iterator rit = seHandles.rbegin();
-  node_handle mxd = rit->second;
+  std::map<int,std::set<node_handle>>::reverse_iterator rit = seHandles.rbegin();
+  std::set<node_handle> set_mxd = rit->second;
+  printf("\n {}{}{}{}{} setmxd :");
+  for(auto iit = set_mxd.begin(); iit != set_mxd.end();iit++ )
+    printf("%d,",*iit);
+    
+  node_handle mxd = 0;
+  if(set_mxd.size() == 1)
+    {
+      auto sit = set_mxd.begin();
+      mxd = *sit;
   
-  // keep track of compute_table entries
-  std::vector<int> mxd_vector;
+     // termination conditions
+     if (mxd == 0 || mdd == 0) return 0;
   
-  // termination conditions
-  if (mxd == 0 || mdd == 0) return 0;
-  
-  if (mxd == -1) {
-    if (arg1F->isTerminalNode(mdd)) {
-      {
-      return resF->handleForValue(1);
+      if (mxd == -1) {
+        if (arg1F->isTerminalNode(mdd))
+        {
+          return resF->handleForValue(1);
+        }
+        // mxd is identity
+        if (arg1F == resF)
+         return resF->linkNode(mdd);
       }
     }
-    // mxd is identity
-    if (arg1F == resF)
-      return resF->linkNode(mdd);
-  }
   
-  printf("\n mddLevel is %d mxdLevel is %d\n", arg1F->getNodeLevel(mdd),eForest->getNodeLevel(mxd) );
+  // keep track of compute_table entries
+  std::vector<node_handle> mxd_vector;
   
-  
+  printf("\n ComputeTableEntry : <mdd:%d,mxd(",mdd);
   for(auto it = seHandles.begin(); it!= seHandles.end(); it++)
-    {
-      mxd_vector.push_back(it->second);
-    }
-  
+    for(auto hit = it->second.begin(); hit!= it->second.end(); hit++)
+        mxd_vector.push_back(*hit);
+    
+  printf(")>");
+ 
   // check the cache
   FILE_output meddlyout(stdout);
   node_handle result = 0;
-  compute_table::entry_key* Key = findResult(mdd, mxd_vector, eForest, result); // need to see if i might need to store forest into compute_table or maintain separate compute tables for each event forest
+  compute_table::entry_key* Key = findResult(mdd, mxd_vector, result); // need to see if i might need to store forest into compute_table or maintain separate compute tables for each event forest
   if (0==Key) return result;
 #ifdef TRACE_RECFIRE
   printf("computing recFire(%d, %d)\n", mdd, mxd);
@@ -2018,7 +2117,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   
   // check if mxd and mdd are at the same level
   const int mddLevel = arg1F->getNodeLevel(mdd);
-  const int mxdLevel = eForest->getNodeLevel(mxd);
+  const int mxdLevel = rit->first; //arg2F->getNodeLevel(mxd);
   const int rLevel = MAX(mxdLevel, mddLevel);
   int rSize = resF->getLevelSize(rLevel);
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
@@ -2040,9 +2139,10 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     //
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
-    printf("\n mddLvel is higher\n");
+    printf("\n Skipped levels in the MXD");
     for (int i=0; i<rSize; i++) {
-      nb->d_ref(i) = recFire(A->d(i), seHandles, eForest);
+       printf("\n recFire(%d)",A->d(i));
+      nb->d_ref(i) = recFire(A->d(i), seHandles);
     }
     
   } else {
@@ -2053,81 +2153,138 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     // clear out result (important!)    
     for (unsigned i=0; i<rSize; i++) nb->d_ref(i) = 0;
     
+    std::map< std::pair<int, int>, std::vector<node_handle> > from_to_handle;
     
-    int jc = 0;
-    std::vector<int> jvector;
-    std::vector<node_handle> dvector;
-    bool imFlag = eForest->isImplicit(mxd);
-    int row_size = rSize;
-    
-    if(imFlag) {
-      relation_node* relNode = eForest->buildImplicitNode(mxd);
-      row_size = rSize;
-    } 
-    else {
-      unpacked_node *Ru = unpacked_node::useUnpackedNode();
-      if (mxdLevel < 0) {
-        Ru->initRedundant(eForest, rLevel, mxd, false);
-      } else {
-        Ru->initFromNode(eForest, mxd, false);
-      }
-      row_size = Ru->getNNZs();
-    }
-    
-    
-    for (int iz=0; iz<row_size; iz++) {
-      jvector.clear();
-      dvector.clear();
-      int i = iz;
-      // Initialize mxd readers, note we might skip the unprimed level
+    for(auto sit = set_mxd.begin(); sit!=set_mxd.end(); sit++) // set of mxds at level k
+    {
+      mxd = *sit;
+      int jc = 0;
+      std::vector<int> jvector;
+      std::vector<node_handle> dvector;
+      bool imFlag = arg2F->isImplicit(mxd);
+      int row_size = rSize;
+      
       if(imFlag) {
-        
-        relation_node* relNode = eForest->buildImplicitNode(mxd);
-        jc = 1;
-        jvector.push_back(relNode->nextOf(i));
-        dvector.push_back(relNode->getDown());
-      } else  { 
-        
+        relation_node* relNode = arg2F->buildImplicitNode(mxd);
+        row_size = rSize; // Get the update array size;
+      } 
+      else {
         unpacked_node *Ru = unpacked_node::useUnpackedNode();
-        unpacked_node *Rp = unpacked_node::useUnpackedNode();
         if (mxdLevel < 0) {
-          Ru->initRedundant(eForest, rLevel, mxd, false);
+          Ru->initRedundant(arg2F, rLevel, mxd, false);
         } else {
-          Ru->initFromNode(eForest, mxd, false);
+          Ru->initFromNode(arg2F, mxd, false);
         }
-        
-        i = Ru->i(iz);
-        
-        if (0==A->d(i)) continue; 
-        const node_handle pnode = Ru->d(iz);
-        if (isLevelAbove(-rLevel, eForest->getNodeLevel(pnode))) {
-          Rp->initIdentity(eForest, rLevel, i, pnode, false);
-        } else {
-          Rp->initFromNode(eForest, pnode, false);
-        }
-        jc = Rp->getNNZs();
-        // loop over mxd "columns"
-        for(int jz = 0; jz < jc; jz++)
-          {
-          jvector.push_back(Rp->i(jz));
-          dvector.push_back(Rp->d(jz));
-          }
-        
+        row_size = Ru->getNNZs();
       }
       
-      // loop over mxd "columns"
-      for (int jz=0; jz<jc; jz++) {
+    
+      // for intersection to happen : For each i, check across the set_mxd what are the common j's. Then use those j's only. 
+      
+      for (int iz=0; iz<row_size; iz++) { // for each i -> get common j's downhandle
+        jvector.clear();
+        dvector.clear();
+        int i = iz;
+        // Initialize mxd readers, note we might skip the unprimed level
+        if(imFlag) {
+          
+          relation_node* relNode = arg2F->buildImplicitNode(mxd);
+          jc = 1;
+          int j = relNode->nextOf(i);
+          jvector.push_back(relNode->nextOf(i));
+          dvector.push_back(relNode->getDown());
+          
+          std::pair <int,int> from_to(i,j);
+          
+          if( from_to_handle.find(from_to) != from_to_handle.end())
+            from_to_handle.at(from_to).push_back(relNode->getDown());
+          else
+            {
+            std::vector<node_handle> handles_at_change;
+            handles_at_change.push_back(relNode->getDown());
+            from_to_handle.insert(std::make_pair(from_to, handles_at_change));
+            }
+          
+        } else  { 
+          
+          unpacked_node *Ru = unpacked_node::useUnpackedNode();
+          unpacked_node *Rp = unpacked_node::useUnpackedNode();
+          if (mxdLevel < 0) {
+            Ru->initRedundant(arg2F, rLevel, mxd, false);
+          } else {
+            Ru->initFromNode(arg2F, mxd, false);
+          }
+          
+          i = Ru->i(iz);
+          
+          if (0==A->d(i)) continue; 
+          const node_handle pnode = Ru->d(iz);
+          if (isLevelAbove(-rLevel, arg2F->getNodeLevel(pnode))) {
+            Rp->initIdentity(arg2F, rLevel, i, pnode, false);
+          } else {
+            Rp->initFromNode(arg2F, pnode, false);
+          }
+          jc = Rp->getNNZs();
+          // loop over mxd "columns"
+          for(int jz = 0; jz < jc; jz++)
+            {
+              jvector.push_back(Rp->i(jz));
+              dvector.push_back(Rp->d(jz));
+              std::pair <int,int> from_to(i,Rp->i(jz));
+            
+              if( from_to_handle.find(from_to) != from_to_handle.end())
+                from_to_handle.at(from_to).push_back(Rp->d(jz));
+              else
+              {
+                std::vector<node_handle> handles_at_change;
+                handles_at_change.push_back(Rp->d(jz));
+                from_to_handle.insert(std::make_pair(from_to, handles_at_change));
+              }
+            
+            }
+         }
+      }
+    }
+    
+    std::map< std::pair<int, int>, std::set<node_handle> > from_to_uniqhandle; 
+                                                 
+   for(auto pit = from_to_handle.begin();pit!=from_to_handle.end();pit++)
+   {
+   if(pit->second.size()==set_mxd.size())
+     { 
+       std::set<node_handle> set_of_handles_down_ij(pit->second.begin(), pit->second.end());
+       from_to_uniqhandle.insert(std::make_pair(pit->first,set_of_handles_down_ij));
+     }
+   }                                              
+                                                 
+    // loop over from-to pairs
+                                                 
+    for (auto pit  = from_to_uniqhandle.begin(); pit!= from_to_uniqhandle.end(); pit++) {
         
-        int j = jvector[jz];
+        int i = pit->first.first;
+        int j = pit->first.second;
         if(j==-1) continue;
         
         
         
-        std::map<int, node_handle> seHandlesForRecursion = seHandles;
-        seHandlesForRecursion.insert(std::make_pair(eForest->getNodeLevel(dvector[jz]), dvector[jz]));
+        std::map<int, std::set<node_handle>> seHandlesForRecursion = seHandles;
+        //seHandlesForRecursion.insert(std::make_pair(arg2F->getNodeLevel(dvector[jz]), dvector[jz]));
+        for(auto pdit = pit->second.begin(); pdit != pit->second.end(); pdit++)
+          {
+          int level_of_downij = arg2F->getNodeLevel(*pdit);
+          
+          if( seHandlesForRecursion.find(level_of_downij) != seHandlesForRecursion.end())
+            seHandlesForRecursion.at(level_of_downij).insert(*pdit);
+          else
+            {
+            std::set<node_handle> handles_at_ij;
+            handles_at_ij.insert(*pdit);
+            seHandlesForRecursion.insert(std::make_pair(level_of_downij, handles_at_ij));
+            }
+          }
         seHandlesForRecursion.erase(mxdLevel); 
         
-        node_handle newstates = recFire(A->d(i), seHandlesForRecursion, eForest);
+        node_handle newstates = recFire(A->d(i), seHandlesForRecursion);
         if (0==newstates) continue;
         
         //confirm local state
@@ -2153,21 +2310,22 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
         // there's new states and existing states; union them.
         nbdj.set(nb->d(j));
         newst.set(newstates);
-        mddUnion->compute(nbdj, newst, nbdj);
+        mddUnion->computeTemp(nbdj, newst, nbdj);
         nb->set_d(j, nbdj);
         
-      } // for j
-      
-    } // for i
+      } // for i-j pairs
+   
     
   } // else
   
   // cleanup mdd reader
   unpacked_node::recycle(A);
   
-  
+  printf("\nrecFire Calling saturateHelper on node at level %d", nb->getLevel());
   saturateHelper(*nb);
+  printf("\n Called saturateHelper on node at level %d", nb->getLevel());
   result = resF->createReducedNode(-1, nb);
+  printf("\n Called saturateHelper & got handle  %d at level %d", result, nb->getLevel());
   
 #ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
@@ -2182,7 +2340,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   //saveResult(Key, mdd, mxd_vector, result);
   //node_handle resultTest = 0;
   //findResult(mdd,mxd,resultTest);
-  return saveResult(Key, mdd, mxd_vector,eForest,result);
+  return saveResult(Key, mdd, mxd_vector,result);
 }
 
 
@@ -2369,7 +2527,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         else {
           nbdj.set(nb.d(j));  // clobber
           newst.set(rec);     // clobber
-          mddUnion->compute(nbdj, newst, nbdj);
+          mddUnion->computeTemp(nbdj, newst, nbdj);
           updated = (nbdj.getNode() != nb.d(j));
           nb.set_d(j, nbdj);
         }
@@ -2424,7 +2582,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       else {
         nbdj.set(nb.d(j));  // clobber
         newst.set(rec);     // clobber
-        mddUnion->compute(nbdj, newst, nbdj);
+        mddUnion->computeTemp(nbdj, newst, nbdj);
         updated = (nbdj.getNode() != nb.d(j));
         nb.set_d(j, nbdj);
       }
@@ -2451,7 +2609,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFireSet(
   
   /*for(int rn = 0; rn < vector_mxd.size(); rn ++){
     ans.set( recFire(mdd,vector_mxd[rn]) );
-    mddUnion->compute(union_rec, ans, union_rec);
+    mddUnion->computeTemp(union_rec, ans, union_rec);
   }*/
   
   return union_rec.getNode();
@@ -2669,7 +2827,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
           // there's new states and existing states; union them.
           nbdj.set(nb->d(j));
           newst.set(newstates);
-          mddUnion->compute(nbdj, newst, nbdj);
+          mddUnion->computeTemp(nbdj, newst, nbdj);
           nb->set_d(j, nbdj);
           
         } // for j
@@ -2684,6 +2842,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   
   saturateHelper(*nb);
   result = resF->createReducedNode(-1, nb);
+  printf("\n The node is created with handle %d", result);
   
   #ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
@@ -2712,7 +2871,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
 MEDDLY::common_impl_dfs_by_events_mt::common_impl_dfs_by_events_mt(
                                                                    const satimpl_opname* opcode,
                                                                    satimpl_opname::implicit_relation* relation)
-: specialized_operation(opcode, relation->getNumRelForests())
+: specialized_operation(opcode, 1)
 {
   mddUnion = 0;
   mxdIntersection = 0;
@@ -2721,23 +2880,18 @@ MEDDLY::common_impl_dfs_by_events_mt::common_impl_dfs_by_events_mt(
   freebufs = 0;
   rel = relation;
   arg1F = static_cast<expert_forest*>(rel->getInForest());
-  arg2Fs = new expert_forest*[rel->getNumRelForests()];
-  for(int i = 0; i < rel->getNumRelForests(); i++)
-    arg2Fs[i] = static_cast<expert_forest*>(rel->getMixRelForest()[i]);
+  arg2F = static_cast<expert_forest*>(rel->getMixRelForest());
   resF = static_cast<expert_forest*>(rel->getOutForest());
   
   registerInForest(arg1F);
-  //registerInForest(arg2F);
+  registerInForest(arg2F);
   registerInForest(resF);
-  compute_table::entry_type** et =  new compute_table::entry_type*[rel->getNumRelForests()];
-  for(int i = 0; i<rel->getNumRelForests(); i++)
-  {
-    et[i] = new compute_table::entry_type(opcode->getName(), "N.N:N");
-    et[i]->setForestForSlot(0, arg1F);
-    et[i]->setForestForSlot(2, arg2Fs[i]);
-    et[i]->setForestForSlot(4, resF);
-    registerEntryType(i, et[i]);
-  }
+  compute_table::entry_type* et = new compute_table::entry_type(opcode->getName(), "N.N:N");
+  et->setForestForSlot(0, arg1F);
+  et->setForestForSlot(2, arg2F);
+  et->setForestForSlot(4, resF);
+  registerEntryType(0, et);
+  
   buildCTs();
 }
 
@@ -2995,7 +3149,10 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
   
   // Cleanup
   unpacked_node::recycle(mddDptrs);
+  printf("\n Calling saturateHelper on node at level %d", nb->getLevel());
   parent->saturateHelper(*nb);
+  printf("\n Abt Completion Called saturateHelper on node at level %d", nb->getLevel());
+  
   n = resF->createReducedNode(-1, nb);
   
   // save in compute table
@@ -3359,7 +3516,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
       else {
         nbdj.set(nb.d(j));  // clobber
         newst.set(rec);     // clobber
-        mddUnion->compute(nbdj, newst, nbdj);
+        mddUnion->computeTemp(nbdj, newst, nbdj);
         updated = (nbdj.getNode() != nb.d(j));
         nb.set_d(j, nbdj);
       }
@@ -3528,7 +3685,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
       // there's new states and existing states; union them.
       nbdj.set(nb->d(j));
       newst.set(newstates);
-      mddUnion->compute(nbdj, newst, nbdj);
+      mddUnion->computeTemp(nbdj, newst, nbdj);
       nb->set_d(j, nbdj);
     } // for i
 

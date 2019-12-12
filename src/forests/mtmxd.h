@@ -258,7 +258,7 @@ namespace MEDDLY {
           dd_edge dcE(F), dcnE(F);
           dcE.set(dontcares);
           dcnE.set(dcnormal);
-          unionOp->compute(dcE, dcnE, dcE);
+          unionOp->computeTemp(dcE, dcnE, dcE);
           dontcares = F->linkNode(dcE);
         }
         
@@ -320,7 +320,7 @@ namespace MEDDLY {
         dd_edge dontcaresE(F), built(F);
         dontcaresE.set(dontcares);
         built.set( F->createReducedNode(-1, nb) );
-        unionOp->compute(dontcaresE, built, built);
+        unionOp->computeTemp(dontcaresE, built, built);
         return F->linkNode(built);
       };
 
@@ -421,7 +421,7 @@ namespace MEDDLY {
           // (3) union with don't cares
           //
           MEDDLY_DCASSERT(unionOp);
-          unionOp->compute(dontcares, these, these);
+          unionOp->computeTemp(dontcares, these, these);
     
           node_handle total = F->linkNode(these);
           these.set(0);

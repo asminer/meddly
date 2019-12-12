@@ -41,6 +41,7 @@
 #include <vector>
 #include <cstdint>
 #include <map>
+#include <set>
 
 // #define DEBUG_MARK_SWEEP
 // #define DEBUG_BUILDLIST
@@ -3918,10 +3919,10 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       inline int getNumOfComponents() const { return num_components; }
       
       ///Get the subevent handle or relation node handle whose top level is the given level
-      inline node_handle getComponentAt(int level)  { return level_component.find(level)->second; }
+      inline std::set<node_handle> getComponentAt(int level)  { return level_component.find(level)->second; }
       
       ///Get the entire map of subevent-nodeHandles_by_topLevel
-      inline std::map<int, node_handle> getComponents()  { return level_component; }
+      inline std::map<int, std::set<node_handle>> getComponents()  { return level_component; }
       
       /// Get the "top" variable for this event
       inline int getTop() const { return top; }
@@ -3934,7 +3935,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       
       inline const dd_edge& getRoot() const { return root; }
       
-      inline const node_handle getRootHandle() const { return root_handle; }
+      inline const std::set<node_handle> getRootHandle() const { return root_handle; }
       
       inline bool isDisabled() const { return is_disabled; }
       
@@ -3976,7 +3977,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       int num_vars;
       int* vars;
       dd_edge root;
-      node_handle root_handle;
+      std::set<node_handle> root_handle;
       bool needs_rebuilding;
       expert_forest* f;
       
@@ -3990,7 +3991,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       int num_rel_vars;
       int* relNode_vars;
       
-      std::map<int,node_handle> level_component;
+      std::map<int,std::set<node_handle>> level_component;
       
     };  // end of class event
   
@@ -4021,11 +4022,11 @@ class MEDDLY::satimpl_opname: public specialized_opname {
 
             Not 100% sure we need these...
         */
-        implicit_relation(forest* inmdd, int noofrmxd, forest** relmxd, forest* outmdd, event** E, int ne);
+        implicit_relation(forest* inmdd, forest* relmxd, forest* outmdd, event** E, int ne);
         virtual ~implicit_relation();
       
         /// Returns the Relation forest that stores the mix of relation nodes and mxd nodes
-        expert_forest** getMixRelForest() const;
+        expert_forest* getMixRelForest() const;
 
 
         /// Returns the MDD forest that stores the initial set of states
@@ -4094,7 +4095,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
       private:
         expert_forest* insetF;
         expert_forest* outsetF;
-        expert_forest** mixRelF; 
+        expert_forest* mixRelF; 
         int num_levels;
 
       //private:
@@ -4157,9 +4158,6 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         relation_node*** relnodes_by_level;
         int *num_relnodes_by_level;
       
-        //Number of relation forests
-        int nooforests;
-    
       public:
       
         /** Rebuild an event.
@@ -4216,8 +4214,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         //dd_edge buildEventMxd(node_handle event_top, forest *mxd);
 
         /// Get relation forests
-        int getNumRelForests() const;
-        expert_forest** getRelForests() const;
+        expert_forest* getRelForests() const;
 
 
       private:
@@ -5148,11 +5145,12 @@ class MEDDLY::unary_operation : public operation {
       Checks forest comatability and then calls computeDDEdge().
     */
     void compute(const dd_edge &arg, dd_edge &res);
+    void computeTemp(const dd_edge &arg, dd_edge &res);
 
     virtual void compute(const dd_edge &arg, long &res);
     virtual void compute(const dd_edge &arg, double &res);
     virtual void compute(const dd_edge &arg, ct_object &c);
-    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
+    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag = true);
 };
 
 // ******************************************************************
@@ -5191,8 +5189,9 @@ class MEDDLY::binary_operation : public operation {
       Checks forest comatability and then calls computeDDEdge().
     */
     void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
+    void computeTemp(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
 
-    virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
+    virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res, bool userFlag = true)
       = 0;
 
     // low-level front ends.  TBD - REMOVE THESE BECAUSE THEY BREAK MARK & SWEEP
