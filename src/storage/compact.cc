@@ -435,6 +435,38 @@ getSingletonIndex(node_address addr, node_handle &down) const
 }
 
 // ******************************************************************
+MEDDLY::node_handle
+MEDDLY::compact_storage
+::getNInfDownPtr(node_address addr) const
+{
+
+  return 0;
+  //T.B.D
+}
+MEDDLY::node_handle
+MEDDLY::compact_storage
+::getPInfDownPtr(node_address addr) const
+{
+  return 0;
+
+  //T.B.D
+}
+MEDDLY::node_handle
+MEDDLY::compact_storage
+::getNStrDownPtr(node_address addr) const
+{
+  return 0;
+
+  //T.B.D
+}
+MEDDLY::node_handle
+MEDDLY::compact_storage
+::getPStrDownPtr(node_address addr) const
+{
+return 0;
+  //T.B.D
+}
+
 
 MEDDLY::node_handle 
 MEDDLY::compact_storage::getDownPtr(node_address addr, int index) const

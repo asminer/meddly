@@ -133,6 +133,10 @@ class MEDDLY::compact_storage : public node_storage {
     virtual void getDownPtr(node_address addr, int ind, int& ev, node_handle& dn) const;
     virtual void getDownPtr(node_address addr, int ind, long& ev, node_handle& dn) const;
     virtual void getDownPtr(node_address addr, int ind, float& ev, node_handle& dn) const;
+    virtual node_handle getPInfDownPtr(node_address addr)const ;
+    virtual node_handle getNInfDownPtr(node_address addr)const;
+    virtual node_handle getPStrDownPtr(node_address addr)const;
+    virtual node_handle getNStrDownPtr(node_address addr)const;
     virtual const void* getUnhashedHeaderOf(node_address addr) const;
     virtual const void* getHashedHeaderOf(node_address addr) const;
 

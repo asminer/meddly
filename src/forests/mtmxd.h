@@ -788,6 +788,35 @@ namespace MEDDLY {
           nbp->d_ref(0) = F->linkNode(p);
           nb->d_ref(v) = F->createReducedNode(v, nbp);
         }
+        if(F->isExtensibleLevel(k)){
+          unpacked_node* nbp = unpacked_node::newSparse(F, -k, 0);
+          nbp->markAsExtensible();
+          nbp->dref_ext() = F->linkNode(p);
+          nb->markAsExtensible();
+          nb->dref_ext() = F->createReducedNode(0, nbp);
+        }
+        if(F->isNStarLevel(k)){
+          unpacked_node* nbp = unpacked_node::newSparse(F, -k, 0);
+          nbp->markAsNStar();
+          nbp->dref_nstar() = F->linkNode(p);
+          nb->markAsNStar();
+          nb->dref_nstar() = F->createReducedNode(0, nbp);
+        }
+        if(F->isNInfinityLevel(k)){
+          unpacked_node* nbp = unpacked_node::newSparse(F, -k, 0);
+          nbp->markAsNInfinity();
+          nbp->dref_ninf() = F->linkNode(p);
+          nb->markAsNInfinity();
+          nb->dref_ninf() = F->createReducedNode(0, nbp);
+        }
+        if(F->isPInfinityLevel(k)){
+          unpacked_node* nbp = unpacked_node::newSparse(F, -k, 0);
+          nbp->markAsPInfinity();
+          nbp->dref_pinf() = F->linkNode(p);
+          nb->markAsPInfinity();
+          nb->dref_pinf() = F->createReducedNode(0, nbp);
+        }
+
         F->unlinkNode(p);
         return F->createReducedNode(-1, nb);
       }
@@ -969,18 +998,73 @@ namespace MEDDLY {
           // process primed level
           //
           node_handle nextpr;
-          if (DONT_CARE == _vplist[i].getInteger()) {
+          if(_vplist[i].isPositiveInfinity()){
+            if (F->isFullyReduced()) {
+              nextpr = next;
+            } else {
+            unpacked_node* nb = 0;
+            nb = unpacked_node::newFull(F, -i, 0);
+            nb->markAsPInfinity();
+            nb->dref_pinf()=next;
+            nextpr = F->createReducedNode(-1, nb);
+            }
+          }
+          else if(_vplist[i].isNegativeInfinity()){
+            if (F->isFullyReduced()) {
+              nextpr = next;
+            } else {
+            unpacked_node* nb = 0;
+            nb = unpacked_node::newFull(F, -i, 0);
+            nb->markAsNInfinity();
+            nb->dref_ninf()=next;
+            nextpr = F->createReducedNode(-1, nb);
+            }
+          }
+          else if(_vplist[i].isNegativeStar()){
+            if (F->isFullyReduced()) {
+              nextpr = next;
+            } else {
+              unpacked_node* nb = 0;
+              nb = unpacked_node::newFull(F, -i, 0);
+              nb->markAsNStar();
+              nb->dref_nstar()=next;
+              nextpr = F->createReducedNode(-1, nb);
+              }
+          }
+          else if (DONT_CARE == _vplist[i].getInteger()) {
             if (F->isFullyReduced()) {
               // DO NOTHING
               nextpr = next;
             } else {
               // build redundant node
               unpacked_node* nb = 0;
-              if (F->isExtensibleLevel(i)) {
+              if (F->isExtensibleLevel(i) ||F->isNStarLevel(i)||
+                  F->isPInfinityLevel(i)||F->isNInfinityLevel(i)) {
                 nb = unpacked_node::newFull(F, -i, 1);
                 nb->d_ref(0) = next;
                 // link count should be unchanged
-                nb->markAsExtensible();
+                bool isset=false;
+                if(F->isExtensibleLevel(i)){
+                  nb->markAsExtensible();
+                  nb->dref_ext()=F->linkNode(next);
+                  isset=true;
+                }
+                if(F->isPInfinityLevel(i)){
+                  nb->markAsPInfinity();
+                  nb->dref_pinf()=isset? F->linkNode(next):next;
+                  isset=true;
+                }
+                if(F->isNStarLevel(i)){
+                  nb->markAsNStar();
+                  nb->dref_nstar()=isset? F->linkNode(next):next;
+                  isset=true;
+                }
+                if(F->isNInfinityLevel(i)){
+                  nb->markAsNInfinity();
+                  nb->dref_ninf()=isset? F->linkNode(next):next;
+                  isset=true;
+                }
+
               } else {
                 int sz = F->getLevelSize(-i);
                 nb = unpacked_node::newFull(F, -i, sz);
@@ -1072,15 +1156,44 @@ namespace MEDDLY {
               }
               if (F->isExtensibleLevel(i)) {
                 nb->markAsExtensible();
+                nb->dref_ext()=F->linkNode(nextpr);
                 if (add_edge) nb->d_ref(sz) = F->linkNode(nextpr);
+              }
+              if(F->isNStarLevel(i)){
+                nb->markAsNStar();
+                nb->dref_nstar()=F->linkNode(nextpr);
+              }
+              if(F->isNInfinityLevel(i)){
+                nb->markAsNInfinity();
+                nb->dref_ninf()=F->linkNode(nextpr);
+              }
+              if(F->isPInfinityLevel(i)){
+                nb->markAsPInfinity();
+                nb->dref_pinf()=F->linkNode(nextpr);
               }
             } else {
               // Doesn't matter what happened below
 
-              if (F->isExtensibleLevel(i)) {
+              if (F->isExtensibleLevel(i)||F->isNInfinityLevel(i)||
+                  F->isNStarLevel(i)||F->isPInfinityLevel(i)) {
                 nb = unpacked_node::newFull(F, i, 1);
-                nb->d_ref(0) = F->linkNode(nextpr);
-                nb->markAsExtensible();
+                if(F->isExtensible(i)){
+                  nb->d_ref(0) = F->linkNode(nextpr);
+                  nb->dref_ext()=F->linkNode(nextpr);
+                  nb->markAsExtensible();
+                }
+                if(F->isNInfinityLevel(i)){
+                  nb->dref_ninf()=F->linkNode(nextpr);
+                  nb->markAsNInfinity();
+                }
+                if(F->isNStarLevel(i)){
+                  nb->dref_nstar()=F->linkNode(nextpr);
+                  nb->markAsNStar();
+                }
+                if(F->isPInfinityLevel(i)){
+                  nb->dref_pinf()=F->linkNode(nextpr);
+                  nb->markAsPInfinity();
+                }
               } else {
                 unsigned sz = unsigned(F->getLevelSize(i));
                 nb = unpacked_node::newFull(F, i, sz);
@@ -1100,6 +1213,9 @@ namespace MEDDLY {
               for(unsigned v=0; v<sz; v++){
                 nb->d_ref(v) = F->linkNode(v==_vlist[i].getInteger() ? nextpr : zero);
               }
+//              if(F->isExtensibleLevel(i)){
+//                nb->dref_ext()=F->linkNode(zero);
+//              }
               F->unlinkNode(zero);
 
               next = F->createReducedNode(-1, nb);

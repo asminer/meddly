@@ -43,6 +43,14 @@ MEDDLY::unpacked_node::unpacked_node()
   ext_h_alloc = 0;
   ext_h_size = 0;
   down = 0;
+  down_ext=0;
+  down_pinf=0;
+  down_ninf=0;
+  down_next=0;
+  edge_ext=0;
+  edge_pinf=0;
+  edge_ninf=0;
+  edge_next=0;
   index = 0;
   edge = 0;
   is_extensible = false;
@@ -72,7 +80,23 @@ void MEDDLY::unpacked_node::clear()
   free(down);
   free(index);
   free(edge);
+  free(down_ext);
+  free(down_pinf);
+  free(down_ninf);
+  free(down_next);
+  free(edge_ext);
+  free(edge_pinf);
+  free(edge_ninf);
+  free(edge_next);
   down = 0;
+  down_ext=0;
+  down_pinf=0;
+  down_ninf=0;
+  down_next=0;
+  edge_ext=0;
+  edge_pinf=0;
+  edge_ninf=0;
+  edge_next=0;
   index = 0;
   edge = 0;
   is_extensible = false;
@@ -574,9 +598,24 @@ void MEDDLY::unpacked_node
     edge = realloc(edge, nalloc);
     if (0==edge) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     ealloc = nalloc;
+    edge_ext=realloc(edge_ext,(sizeof(edge_bytes)/8)+1);
+      edge_pinf=realloc(edge_pinf,(sizeof(edge_bytes)/8)+1);
+      edge_ninf=realloc(edge_ninf,(sizeof(edge_bytes)/8)+1);
+      edge_next=realloc(edge_next,(sizeof(edge_bytes)/8)+1);
   }
+  down_ext=(node_handle*) realloc(down_ext,1*sizeof(node_handle));
+  down_pinf=(node_handle*) realloc(down_pinf,1*sizeof(node_handle));
+  down_ninf=(node_handle*) realloc(down_ninf,1*sizeof(node_handle));
+  down_next=(node_handle*) realloc(down_next,1*sizeof(node_handle));
+
+
+
 }
 
+
+void MEDDLY::unpacked_node::setOffset(int _offset){
+  offset=_offset;
+}
 void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f,
     int k, unsigned ns, unpacked_node::stored_scheme/*bool*/ full)
 {

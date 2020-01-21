@@ -103,9 +103,10 @@ inline void MEDDLY::unpacked_node::initFull(const expert_forest *f, int levl, un
   bind_to_forest(f, levl, tsz, unpacked_node::stored_scheme::FULL);
 }
 
-inline void MEDDLY::unpacked_node::initFullGeneral(const expert_forest *f, int levl, unsigned tsz)
+inline void MEDDLY::unpacked_node::initFullGeneral(const expert_forest *f, int levl, unsigned tsz, int offset)
 {
   MEDDLY_DCASSERT(f);
+  setOffset(offset);
   bind_to_forest(f, levl, tsz, unpacked_node::stored_scheme::FULLGENERAL);
 }
 
@@ -295,11 +296,11 @@ MEDDLY::unpacked_node::newFull(const expert_forest *f, int level, unsigned tsz)
 }
 
 inline MEDDLY::unpacked_node* 
-MEDDLY::unpacked_node::newFullGeneral(const expert_forest *f, int level, unsigned tsz)
+MEDDLY::unpacked_node::newFullGeneral(const expert_forest *f, int level, unsigned tsz, int offset)
 {
   unpacked_node* U = useUnpackedNode();
   MEDDLY_DCASSERT(U);
-  U->initFullGeneral(f, level, tsz);
+  U->initFullGeneral(f, level, tsz,offset);
   U->clearFullGeneralEdges();
   addToBuildList(U);
   return U;
@@ -502,6 +503,62 @@ MEDDLY::unpacked_node::getEdge(unsigned n, float &val) const
 }
 
 inline void
+MEDDLY::unpacked_node::getEdgePStar( long &val) const
+{
+  MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<long>::readValue(eeptr(), val);
+}
+
+inline void
+MEDDLY::unpacked_node::getEdgePStar( float &val) const
+{
+  MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<float>::readValue(eeptr(), val);
+}
+
+inline void
+MEDDLY::unpacked_node::getEdgeNStar( long &val) const
+{
+  MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<long>::readValue(nseptr(), val);
+}
+
+inline void
+MEDDLY::unpacked_node::getEdgeNStar( float &val) const
+{
+  MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<float>::readValue(nseptr(), val);
+}
+
+inline void
+MEDDLY::unpacked_node::getEdgePInf( long &val) const
+{
+  MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<long>::readValue(pieptr(), val);
+}
+
+inline void
+MEDDLY::unpacked_node::getEdgePInf( float &val) const
+{
+  MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<float>::readValue(pieptr(), val);
+}
+
+inline void
+MEDDLY::unpacked_node::getEdgeNInf( long &val) const
+{
+  MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<long>::readValue(nieptr(), val);
+}
+
+inline void
+MEDDLY::unpacked_node::getEdgeNInf( float &val) const
+{
+  MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<float>::readValue(nieptr(), val);
+}
+
+inline void
 MEDDLY::unpacked_node::setEdge(unsigned n, long ev)
 {
   MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
@@ -519,6 +576,84 @@ MEDDLY::unpacked_node::setEdge(unsigned n, float ev)
   MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
   MEDDLY::expert_forest::EVencoder<float>::writeValue(eptr_write(n), ev);
 }
+
+inline void
+MEDDLY::unpacked_node::setEdgePStar( long ev)
+{
+  MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<long>::writeValue(eeptr_write(), ev);
+
+  long test_ev = 256;
+  getEdgePStar(test_ev);
+  MEDDLY_DCASSERT(test_ev == ev);
+}
+
+
+inline void
+MEDDLY::unpacked_node::setEdgePStar( float ev)
+{
+  MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<float>::writeValue(eeptr_write(), ev);
+}
+
+
+inline void
+MEDDLY::unpacked_node::setEdgeNStar( long ev)
+{
+  MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<long>::writeValue(nseptr_write(), ev);
+
+  long test_ev = 256;
+  getEdgeNStar(test_ev);
+  MEDDLY_DCASSERT(test_ev == ev);
+}
+
+
+inline void
+MEDDLY::unpacked_node::setEdgeNStar( float ev)
+{
+  MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<float>::writeValue(nseptr_write(), ev);
+}
+
+inline void
+MEDDLY::unpacked_node::setEdgePInf( long ev)
+{
+  MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<long>::writeValue(pieptr_write(), ev);
+
+  long test_ev = 256;
+  getEdgePInf(test_ev);
+  MEDDLY_DCASSERT(test_ev == ev);
+}
+
+
+inline void
+MEDDLY::unpacked_node::setEdgePInf( float ev)
+{
+  MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<float>::writeValue(pieptr_write(), ev);
+}
+
+inline void
+MEDDLY::unpacked_node::setEdgeNInf( long ev)
+{
+  MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<long>::writeValue(nieptr_write(), ev);
+
+  long test_ev = 256;
+  getEdgeNInf(test_ev);
+  MEDDLY_DCASSERT(test_ev == ev);
+}
+
+
+inline void
+MEDDLY::unpacked_node::setEdgeNInf( float ev)
+{
+  MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
+  MEDDLY::expert_forest::EVencoder<float>::writeValue(nieptr_write(), ev);
+}
+
 
 inline long
 MEDDLY::unpacked_node::ei(unsigned i) const
@@ -2546,6 +2681,27 @@ MEDDLY::expert_forest::isExtensibleLevel(int k) const
 {
   MEDDLY_DCASSERT(isValidLevel(k));
   return getDomain()->getVar(k < 0? -k: k)->isExtensible();
+}
+
+inline bool
+MEDDLY::expert_forest::isNStarLevel(int k) const
+{
+  MEDDLY_DCASSERT(isValidLevel(k));
+  return getDomain()->getVar(k < 0? -k: k)->isNStar();
+}
+
+inline bool
+MEDDLY::expert_forest::isNInfinityLevel(int k) const
+{
+  MEDDLY_DCASSERT(isValidLevel(k));
+  return getDomain()->getVar(k < 0? -k: k)->isNInfinity();
+}
+
+inline bool
+MEDDLY::expert_forest::isPInfinityLevel(int k) const
+{
+  MEDDLY_DCASSERT(isValidLevel(k));
+  return getDomain()->getVar(k < 0? -k: k)->isPInfinity();
 }
 
 inline int

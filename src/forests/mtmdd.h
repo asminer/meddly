@@ -358,7 +358,25 @@ namespace MEDDLY {
           }
 
           for (int i=1; i<=k; i++) {
-            if (DONT_CARE == _vlist[i].getInteger()) {
+            if((_vlist[i]).isPositiveInfinity()){
+              unpacked_node* nb = unpacked_node::newSparse(F, i, 0);
+              nb->markAsPInfinity();
+              nb->dref_pinf()=bottom;
+              bottom = F->createReducedNode(-1, nb);
+            }
+            else if ((_vlist[i]).isNegativeInfinity()) {
+              unpacked_node* nb = unpacked_node::newSparse(F, i, 0);
+              nb->markAsNInfinity();
+              nb->dref_ninf() = bottom;
+              bottom = F->createReducedNode(-1, nb);
+            }
+            else if ((_vlist[i]).isNegativeStar()) {
+              unpacked_node* nb = unpacked_node::newSparse(F, i, 0);
+              nb->markAsNStar();
+              nb->dref_nstar() = bottom;
+              bottom = F->createReducedNode(-1, nb);
+            }
+            else if (DONT_CARE == _vlist[i].getInteger()) {
               // make a redundant node
               if (F->isFullyReduced()) continue;
               int sz = F->getLevelSize(i);
@@ -367,7 +385,22 @@ namespace MEDDLY {
               for (int v=1; v<sz; v++) {
                 nb->d_ref(v) = F->linkNode(bottom);
               }
-              if (F->isExtensibleLevel(i)) nb->markAsExtensible();
+              if (F->isExtensibleLevel(i)){
+                nb->markAsExtensible();
+                nb->dref_ext()=F->linkNode(bottom);
+              }
+              if (F->isNStarLevel(i)){
+                nb->markAsNStar();
+                nb->dref_nstar()=F->linkNode(bottom);
+              }
+              if (F->isNInfinityLevel(i)){
+                nb->markAsNInfinity();
+                nb->dref_ninf()=F->linkNode(bottom);
+              }
+              if (F->isPInfinityLevel(i)){
+                nb->markAsPInfinity();
+                nb->dref_pinf()=F->linkNode(bottom);
+              }
               bottom = F->createReducedNode(-1, nb);
             } else {
               if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
@@ -381,6 +414,10 @@ namespace MEDDLY {
                 }
                 F->unlinkNode(zero);
                 if (F->isExtensibleLevel(i)) nb->markAsExtensible();
+                if (F->isNStarLevel(i)) nb->markAsNStar();
+                if (F->isNInfinityLevel(i)) nb->markAsNInfinity();
+                if (F->isPInfinityLevel(i)) nb->markAsPInfinity();
+
                 bottom=F->createReducedNode(-1, nb);
               }
               else{

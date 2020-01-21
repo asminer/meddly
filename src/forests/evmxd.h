@@ -110,7 +110,69 @@ class MEDDLY::evmxd_forest : public ev_forest {
             createReducedNode(v, nbp, pev, pd);
             nb->d_ref(v) = pd;
             nb->setEdge(v, pev);
+//            if(isExtensibleLevel(i)){
+//              nb->dref_ext() = pd;
+//              nb->setEdgePStar( pev);
+//            }
+//            if(isNStarLevel(i)){
+//              nb->dref_nstar() = pd;
+//              nb->setEdgeNStar( pev);
+//            }
+//            if(isNInfinityLevel(i)){
+//              nb->dref_ninf() = pd;
+//              nb->setEdgeNInf( pev);
+//            }
+//            if(isPInfinityLevel(i)){
+//              nb->dref_pinf() = pd;
+//              nb->setEdgePInf( pev);
+//            }
           }
+          if(isExtensibleLevel(i)){
+            unpacked_node* nbp = unpacked_node::newSparse(this, -i, 0);
+            nbp->markAsExtensible();
+            nbp->dref_ext() = linkNode(ed);
+            nbp->setEdgePStar( ev);
+            TYPE pev;
+            node_handle pd;
+            createReducedNode(0, nbp, pev, pd);
+            nb->markAsExtensible();
+            nb->dref_ext() = pd;
+            nb->setEdgePStar( pev);
+          }
+          if(isNStarLevel(i)){
+            unpacked_node* nbp = unpacked_node::newSparse(this, -i, 0);
+            nbp->markAsNStar();
+            nbp->dref_nstar() = linkNode(ed);
+            nbp->setEdgeNStar( ev);
+            TYPE pev;
+            node_handle pd;
+            createReducedNode(0, nbp, pev, pd);
+            nb->dref_nstar() = pd;
+            nb->setEdgeNStar( pev);
+          }
+          if(isNInfinityLevel(i)){
+            unpacked_node* nbp = unpacked_node::newSparse(this, -i, 0);
+            nbp->markAsNInfinity();
+            nbp->dref_ninf() = linkNode(ed);
+            nbp->setEdgeNInf( ev);
+            TYPE pev;
+            node_handle pd;
+            createReducedNode(0, nbp, pev, pd);
+            nb->dref_ninf() = pd;
+            nb->setEdgeNInf( pev);
+          }
+          if(isPInfinityLevel(i)){
+            unpacked_node* nbp = unpacked_node::newSparse(this, -i, 0);
+            nbp->markAsPInfinity();
+            nbp->dref_pinf() = linkNode(ed);
+            nbp->setEdgePInf( ev);
+            TYPE pev;
+            node_handle pd;
+            createReducedNode(0, nbp, pev, pd);
+            nb->dref_pinf() = pd;
+            nb->setEdgePInf( pev);
+          }
+
           unlinkNode(ed);
           createReducedNode(-1, nb, ev, ed);
           continue;
@@ -120,6 +182,27 @@ class MEDDLY::evmxd_forest : public ev_forest {
         //
         node_handle edpr;
         TYPE evpr;
+        if(vplist[i].isNegativeInfinity()){
+         unpacked_node* nb = unpacked_node::newSparse(this, -i, 0);
+         nb->markAsNInfinity();
+         nb->dref_ninf() = ed;
+         nb->setEdgeNInf(ev);
+         createReducedNode(vlist[i].getInteger(), nb, evpr, edpr);
+        }
+        else if(vplist[i].isPositiveInfinity()){
+          unpacked_node* nb = unpacked_node::newSparse(this, -i, 0);
+          nb->markAsPInfinity();
+          nb->dref_pinf() = ed;
+          nb->setEdgePInf(ev);
+          createReducedNode(vlist[i].getInteger(), nb, evpr, edpr);
+         }
+        else if(vplist[i].isNegativeStar()){
+          unpacked_node* nb = unpacked_node::newSparse(this, -i, 0);
+          nb->markAsNStar();
+          nb->dref_nstar() = ed;
+          nb->setEdgeNStar(ev);
+          createReducedNode(vlist[i].getInteger(), nb, evpr, edpr);
+         }
         if (DONT_CARE == vplist[i].getInteger()) {
           if (isFullyReduced()) {
             // DO NOTHING
@@ -132,6 +215,26 @@ class MEDDLY::evmxd_forest : public ev_forest {
             for (int v=0; v<sz; v++) {
               nb->d_ref(v) = linkNode(ed);
               nb->setEdge(v, ev);
+            }
+            if(isExtensibleLevel(i)){
+              nb->markAsExtensible();
+              nb->dref_ext()=linkNode(ed);
+              nb->setEdgePStar(ev);
+            }
+            if(isNStarLevel(i)){
+              nb->markAsNStar();
+              nb->dref_nstar() = linkNode(ed);
+              nb->setEdgeNStar( ev);
+            }
+            if(isNInfinityLevel(i)){
+              nb->markAsNInfinity();
+              nb->dref_ninf() = linkNode(ed);
+              nb->setEdgeNInf( ev);
+            }
+            if(isPInfinityLevel(i)){
+              nb->markAsPInfinity();
+              nb->dref_pinf() = linkNode(ed);
+              nb->setEdgePInf( ev);
             }
             unlinkNode(ed);
             createReducedNode(-1, nb, evpr, edpr);
@@ -147,7 +250,43 @@ class MEDDLY::evmxd_forest : public ev_forest {
         //
         // process unprimed level
         //
-        if (DONT_CARE == vlist[i].getInteger()) {
+        if(vlist->isNegativeInfinity()){
+          if (isFullyReduced()) {
+            ed = edpr;
+            ev = evpr;
+            continue;
+          }
+          unpacked_node* nb = unpacked_node::newSparse(this, i, 0);
+          nb->markAsNInfinity();
+          nb->dref_ninf() = edpr;
+          nb->setEdgeNInf( evpr);
+          createReducedNode(-1, nb, ev, ed);
+        }
+        else if (vlist->isPositiveInfinity()){
+          if (isFullyReduced()) {
+            ed = edpr;
+            ev = evpr;
+            continue;
+          }
+          unpacked_node* nb = unpacked_node::newSparse(this, i, 0);
+          nb->markAsPInfinity();
+          nb->dref_pinf() = edpr;
+          nb->setEdgePInf( evpr);
+          createReducedNode(-1, nb, ev, ed);
+        }
+        else if (vlist->isNegativeStar()){
+          if (isFullyReduced()) {
+            ed = edpr;
+            ev = evpr;
+            continue;
+          }
+          unpacked_node* nb = unpacked_node::newSparse(this, i, 0);
+          nb->markAsNStar();
+          nb->dref_nstar() = edpr;
+          nb->setEdgeNStar( evpr);
+          createReducedNode(-1, nb, ev, ed);
+        }
+        else if (DONT_CARE == vlist[i].getInteger()) {
           if (isFullyReduced()) {
             ed = edpr;
             ev = evpr;
@@ -164,11 +303,51 @@ class MEDDLY::evmxd_forest : public ev_forest {
               nb->d_ref(v) = linkNode(dpr);
               nb->setEdge(v, evpr);
             }
+            if(isExtensibleLevel(i)){
+              nb->markAsExtensible();
+              nb->dref_ext()=linkNode(edpr);
+              nb->setEdgePStar(evpr);
+            }
+            if(isNStarLevel(i)){
+              nb->markAsNStar();
+              nb->dref_nstar()=linkNode(edpr);
+              nb->setEdgeNStar(evpr);
+            }
+            if(isNInfinityLevel(i)){
+              nb->markAsNInfinity();
+              nb->dref_ninf()=linkNode(edpr);
+              nb->setEdgeNInf(evpr);
+            }
+            if(isPInfinityLevel(i)){
+              nb->markAsPInfinity();
+              nb->dref_pinf()=linkNode(edpr);
+              nb->setEdgePInf(evpr);
+            }
           } else {
             // Doesn't matter what happened below
             for (int v=0; v<sz; v++) {
               nb->d_ref(v) = linkNode(edpr);
               nb->setEdge(v, evpr);
+            }
+            if(isExtensibleLevel(i)){
+              nb->markAsExtensible();
+              nb->dref_ext()=linkNode(edpr);
+              nb->setEdgePStar(evpr);
+            }
+            if(isNStarLevel(i)){
+              nb->markAsNStar();
+              nb->dref_nstar()=linkNode(edpr);
+              nb->setEdgeNStar(evpr);
+            }
+            if(isNInfinityLevel(i)){
+              nb->markAsNInfinity();
+              nb->dref_ninf()=linkNode(edpr);
+              nb->setEdgeNInf(evpr);
+            }
+            if(isPInfinityLevel(i)){
+              nb->markAsPInfinity();
+              nb->dref_pinf()=linkNode(edpr);
+              nb->setEdgePInf(evpr);
             }
           }
           unlinkNode(edpr);

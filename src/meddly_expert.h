@@ -665,7 +665,7 @@ class MEDDLY::unpacked_node {
   /* Create blank node, primarily for writing */
     
     void initFull(const expert_forest *f, int level, unsigned tsz); 
-    void initFullGeneral(const expert_forest *f, int level, unsigned tsz);
+    void initFullGeneral(const expert_forest *f, int level, unsigned tsz, int offset);
     void initSparse(const expert_forest *f, int level, unsigned nnz);
 
   public:
@@ -697,7 +697,7 @@ class MEDDLY::unpacked_node {
     static unpacked_node* newFull(const expert_forest *f, int level, unsigned tsz);
 
     /** Create a zeroed-out fullGeneral node */
-    static unpacked_node* newFullGeneral(const expert_forest *f, int level, unsigned tsz);
+    static unpacked_node* newFullGeneral(const expert_forest *f, int level, unsigned tsz, int offset);
 
     /** Create a zeroed-out sparse node */
     static unpacked_node* newSparse(const expert_forest *f, int level, unsigned nnz);
@@ -808,12 +808,66 @@ class MEDDLY::unpacked_node {
     /// Get the edge value, as a float.
     void getEdge(unsigned i, float& ev) const;
 
+    ///Special part
+    /// Get the edge value, as an integer.
+        void getEdgePStar( long& ev) const;
+
+        /// Get the edge value, as a float.
+        void getEdgePStar( float& ev) const;
+
+        /// Get the edge value, as an integer.
+        void getEdgeNStar(long& ev) const;
+
+        /// Get the edge value, as a float.
+        void getEdgeNStar( float& ev) const;
+
+        /// Get the edge value, as an integer.
+        void getEdgePInf( long& ev) const;
+
+        /// Get the edge value, as a float.
+        void getEdgePInf( float& ev) const;
+
+        /// Get the edge value, as an integer.
+        void getEdgeNInf(long& ev) const;
+
+        /// Get the edge value, as a float.
+        void getEdgeNInf( float& ev) const;
+
+    /// End of Special part
+
+
     /// Set the edge value, as an integer.
     void setEdge(unsigned i, long ev);
 
     /// Set the edge value, as a float.
     void setEdge(unsigned i, float ev);
 
+    /// Special part
+    /// Set the edge value, as an integer.
+    void setEdgePStar( long ev);
+
+    /// Set the edge value, as a float.
+    void setEdgePStar( float ev);
+    /// Set the edge value, as an integer.
+    void setEdgeNStar( long ev);
+
+    /// Set the edge value, as a float.
+    void setEdgeNStar( float ev);
+
+    /// Set the edge value, as an integer.
+    void setEdgePInf( long ev);
+
+    /// Set the edge value, as a float.
+    void setEdgePInf( float ev);
+    /// Set the edge value, as an integer.
+    void setEdgeNInf( long ev);
+
+    /// Set the edge value, as a float.
+    void setEdgeNInf( float ev);
+
+    /// End of Special part
+
+    void setOffset(int _offset);
     /// Get the edge value, as an integer.
     long ei(unsigned i) const;
 
@@ -954,6 +1008,7 @@ class MEDDLY::unpacked_node {
     ///   @param  full  If true, we'll be filling a full reader.
     ///                 Otherwise it is a sparse one.
     void bind_to_forest(const expert_forest* p, int k, unsigned ns, stored_scheme/*bool*/ full);
+//    void bind_to_forest(const expert_forest* p, int k, unsigned ns, stored_scheme/*bool*/ full, int offset);
 
     /// Called by node_storage when building an unpacked
     /// node based on how it's stored.
@@ -1034,6 +1089,7 @@ class MEDDLY::unpacked_node {
 //    bool is_sparse;
 //    bool is_fullgeneral;
     stored_scheme type;
+    int offset;
 //    bool is_generalfull;
 #ifdef DEVELOPMENT_CODE
     bool has_hash;
@@ -2169,6 +2225,10 @@ class MEDDLY::node_storage {
           @throw          INVALID_VARIABLE, if index is negative.
     */
     virtual node_handle getDownPtr(node_address addr, int index) const = 0;
+    virtual node_handle getPInfDownPtr(node_address addr) const = 0;
+    virtual node_handle getNInfDownPtr(node_address addr) const = 0;
+    virtual node_handle getPStrDownPtr(node_address addr) const = 0;
+    virtual node_handle getNStrDownPtr(node_address addr) const = 0;
 
     /** Get the specified outgoing edge for a node.
         Fast if we just want one.
@@ -2489,6 +2549,9 @@ class MEDDLY::expert_forest: public forest
     int getMinLevelIndex() const;
     bool isValidLevel(int k) const;
     bool isExtensibleLevel(int k) const;
+    bool isNStarLevel(int k) const;
+    bool isNInfinityLevel(int k) const;
+    bool isPInfinityLevel(int k) const;
 
     /// The maximum size (number of indices) a node at this level can have
     int getLevelSize(int lh) const;

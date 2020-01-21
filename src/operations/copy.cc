@@ -142,10 +142,23 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handl
     nb->i_ref(z) = A->i(z);
     nb->d_ref(z) = computeSkip(int(A->i(z)), A->d(z));
   }
-
+  if(A->isExtensible()){
+    nb->dref_ext()=computeSkip(0, A->d_ext());
+  }
+  if(A->isNStar()){
+    nb->dref_nstar()=computeSkip(0, A->d_nstar());
+  }
+  if(A->isNInfinity()){
+      nb->dref_ninf()=computeSkip(0, A->d_ninf());
+  }
+  if(A->isPInfinity()){
+        nb->dref_pinf()=computeSkip(0, A->d_pinf());
+  }
   // Handle extensible edge, if any
   if (A->isExtensible()) nb->markAsExtensible();
-
+  if (A->isNStar()) nb->markAsNStar();
+  if (A->isPInfinity()) nb->markAsPInfinity();
+  if (A->isNInfinity()) nb->markAsNInfinity();
   // Cleanup
   unpacked_node::recycle(A);
 
@@ -214,8 +227,25 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
     nb->d_ref(z) = computeAll(int(A->i(z)), nextk, A->d(z));
   }
 
+
   // Handle extensible edge, if any
-  if (A->isExtensible()) nb->markAsExtensible();
+  if (A->isExtensible()) {
+    nb->markAsExtensible();
+    nb->dref_ext()=computeAll(0,nextk,A->d_ext());
+  }
+  if(A->isNStar()){
+    nb->markAsNStar();
+    nb->dref_nstar()=computeAll(0,nextk, A->d_nstar());
+  }
+  if(A->isNInfinity()){
+    nb->markAsNInfinity();
+    nb->dref_ninf()=computeAll(0,nextk, A->d_ninf());
+  }
+  if(A->isPInfinity()){
+    nb->markAsPInfinity();
+    nb->dref_pinf()=computeAll(0,nextk, A->d_pinf());
+  }
+
 
   // Cleanup
   unpacked_node::recycle(A);
@@ -351,7 +381,34 @@ void MEDDLY::copy_MT2EV<TYPE>
     nb->d_ref(z) = d;
     nb->setEdge(z, dev);
   }
-
+  if(A->isExtensible()){
+    node_handle d;
+    TYPE dev = Inf<TYPE>();
+    computeSkip(0, A->d_ext(), d, dev);
+    nb->dref_ext() = d;
+    nb->setEdgePStar(dev);
+  }
+  if(A->isNStar()){
+    node_handle d;
+    TYPE dev = Inf<TYPE>();
+    computeSkip(0, A->d_nstar(), d, dev);
+    nb->dref_nstar() = d;
+    nb->setEdgeNStar(dev);
+  }
+  if(A->isNInfinity()){
+    node_handle d;
+    TYPE dev = Inf<TYPE>();
+    computeSkip(0, A->d_ninf(), d, dev);
+    nb->dref_ninf() = d;
+    nb->setEdgeNInf(dev);
+  }
+  if(A->isPInfinity()){
+    node_handle d;
+    TYPE dev = Inf<TYPE>();
+    computeSkip(0, A->d_pinf(), d, dev);
+    nb->dref_pinf() = d;
+    nb->setEdgePInf(dev);
+  }
   // Cleanup
   unpacked_node::recycle(A);
 
@@ -419,7 +476,26 @@ void MEDDLY::copy_MT2EV<TYPE>
     computeAll(int(A->i(z)), nextk, A->d(z), nb->d_ref(z), dev);
     nb->setEdge(z, dev);
   }
-
+  if(A->isExtensible()){
+    TYPE dev;
+    computeAll(0, nextk, A->d_ext(), nb->dref_ext(), dev);
+    nb->setEdgePStar(dev);
+  }
+  if(A->isNStar()){
+    TYPE dev;
+    computeAll(0, nextk, A->d_nstar(), nb->dref_nstar(), dev);
+    nb->setEdgeNStar(dev);
+  }
+  if(A->isNInfinity()){
+    TYPE dev;
+    computeAll(0, nextk, A->d_ninf(), nb->dref_ninf(), dev);
+    nb->setEdgeNInf(dev);
+  }
+  if(A->isPInfinity()){
+    TYPE dev;
+    computeAll(0, nextk, A->d_pinf(), nb->dref_pinf(), dev);
+    nb->setEdgePInf(dev);
+  }
   // Cleanup
   unpacked_node::recycle(A);
 
@@ -538,6 +614,30 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
     nb->d_ref(z) = computeSkip(int(A->i(z)), OP::apply(ev, aev), A->d(z));
   }
 
+  if(A->isExtensible()){
+    nb->markAsExtensible();
+    TYPE aev;
+    A->getEdgePStar(aev);
+    nb->dref_ext() = computeSkip(0, OP::apply(ev, aev), A->d_ext());
+  }
+  if(A->isNStar()){
+    nb->markAsNStar();
+    TYPE aev;
+    A->getEdgeNStar(aev);
+    nb->dref_nstar() = computeSkip(0, OP::apply(ev, aev), A->d_nstar());
+  }
+  if(A->isNInfinity()){
+    nb->markAsNInfinity();
+    TYPE aev;
+    A->getEdgeNInf(aev);
+    nb->dref_ninf() = computeSkip(0, OP::apply(ev, aev), A->d_ninf());
+  }
+  if(A->isPInfinity()){
+    nb->markAsPInfinity();
+    TYPE aev;
+    A->getEdgePInf(aev);
+    nb->dref_pinf() = computeSkip(0, OP::apply(ev, aev), A->d_pinf());
+  }
   // Cleanup
   unpacked_node::recycle(A);
 
@@ -610,6 +710,30 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
     nb->d_ref(z) = computeAll(int(A->i(z)), nextk, OP::apply(ev, aev), A->d(z));
   }
 
+  if(A->isExtensible()){
+    nb->markAsExtensible();
+    TYPE aev;
+    A->getEdgePStar(aev);
+    nb->dref_ext()=computeAll(0,nextk,OP::apply(ev, aev), A->d_ext());
+  }
+  if(A->isNStar()){
+    nb->markAsNStar();
+    TYPE aev;
+    A->getEdgeNStar(aev);
+    nb->dref_nstar()=computeAll(0,nextk,OP::apply(ev, aev), A->d_nstar());
+  }
+  if(A->isNInfinity()){
+    nb->markAsNInfinity();
+    TYPE aev;
+    A->getEdgeNInf(aev);
+    nb->dref_ninf()=computeAll(0,nextk,OP::apply(ev, aev), A->d_ninf());
+  }
+  if(A->isPInfinity()){
+    nb->markAsPInfinity();
+    TYPE aev;
+    A->getEdgePInf(aev);
+    nb->dref_pinf()=computeAll(0,nextk,OP::apply(ev, aev), A->d_pinf());
+  }
   // Cleanup
   unpacked_node::recycle(A);
 
@@ -714,6 +838,42 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
     nb->setEdge(z, bv);
   }
 
+  if(A->isExtensible()){
+    nb->markAsExtensible();
+    nb->dref_ext()=computeSkip(0,A->d_ext());
+    INTYPE av;
+    OUTTYPE bv;
+    A->getEdgePStar( av);
+    bv = av;
+    nb->setEdgePStar( bv);
+  }
+  if(A->isNStar()){
+    nb->markAsNStar();
+    nb->dref_nstar()=computeSkip(0,A->d_nstar());
+    INTYPE av;
+    OUTTYPE bv;
+    A->getEdgeNStar( av);
+    bv = av;
+    nb->setEdgeNStar( bv);
+  }
+  if(A->isNInfinity()){
+    nb->markAsNInfinity();
+    nb->dref_ninf()=computeSkip(0,A->d_ninf());
+    INTYPE av;
+    OUTTYPE bv;
+    A->getEdgeNInf( av);
+    bv = av;
+    nb->setEdgeNInf( bv);
+  }
+  if(A->isPInfinity()){
+    nb->markAsPInfinity();
+    nb->dref_pinf()=computeSkip(0,A->d_pinf());
+    INTYPE av;
+    OUTTYPE bv;
+    A->getEdgePInf( av);
+    bv = av;
+    nb->setEdgePInf( bv);
+  }
   // Cleanup
   unpacked_node::recycle(A);
 
@@ -875,6 +1035,38 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
     nb->setEdge(z, bdv);
   }
 
+  if(A->isExtensible()){
+    nb->markAsExtensible();
+    INTYPE adv;
+    OUTTYPE bdv;
+    A->getEdgePStar( adv);
+    computeAll(0, nextk, INOP::apply(av, adv), A->d_ext(), bdv, nb->dref_ext());
+    nb->setEdgePStar(bdv);
+  }
+  if(A->isNStar()){
+    nb->markAsNStar();
+    INTYPE adv;
+    OUTTYPE bdv;
+    A->getEdgeNStar( adv);
+    computeAll(0, nextk, INOP::apply(av, adv), A->d_nstar(), bdv, nb->dref_nstar());
+    nb->setEdgeNStar(bdv);
+  }
+  if(A->isNInfinity()){
+    nb->markAsNInfinity();
+    INTYPE adv;
+    OUTTYPE bdv;
+    A->getEdgeNInf( adv);
+    computeAll(0, nextk, INOP::apply(av, adv), A->d_ninf(), bdv, nb->dref_ninf());
+    nb->setEdgeNInf(bdv);
+  }
+  if(A->isPInfinity()){
+    nb->markAsPInfinity();
+    INTYPE adv;
+    OUTTYPE bdv;
+    A->getEdgePInf( adv);
+    computeAll(0, nextk, INOP::apply(av, adv), A->d_pinf(), bdv, nb->dref_pinf());
+    nb->setEdgePInf(bdv);
+  }
   // Cleanup
   unpacked_node::recycle(A);
 

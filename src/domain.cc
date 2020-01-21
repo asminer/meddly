@@ -54,8 +54,20 @@
 MEDDLY::variable::variable(variable::variableTypes _type,int b, char* n)
 : is_extensible(false), name(n)
 {
-  if(isValueValid(b,_type))
+  MEDDLY_DCASSERT(isValueValid(b,_type))
   variableType=_type;
+  is_extensible=false;
+  is_pinf=false;
+  is_ninf=false;
+  is_nstar=false;
+  if(variableType==variableTypes::boundedInfinityClass)
+  {
+    is_pinf=true;
+    is_ninf=true;
+  }
+  else if(variableType==variableTypes::naturalInfinityClass){
+    is_pinf=true;
+  }
   if (b < 0) { is_extensible = true; b = -b; }
   un_bound = b;
   pr_bound = b;

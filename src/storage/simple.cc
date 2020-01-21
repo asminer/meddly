@@ -136,6 +136,10 @@ class MEDDLY::simple_separated : public node_storage {
     virtual unsigned hashNode(int level, node_address addr) const;
     virtual int getSingletonIndex(node_address addr, node_handle &down) const;
     virtual node_handle getDownPtr(node_address addr, int index) const;
+    virtual node_handle getPInfDownPtr(node_address addr) const;
+    virtual node_handle getNInfDownPtr(node_address addr) const;
+    virtual node_handle getPStrDownPtr(node_address addr) const;
+    virtual node_handle getNStrDownPtr(node_address addr) const;
     virtual void getDownPtr(node_address addr, int ind, int& ev, node_handle& dn) const;
     virtual void getDownPtr(node_address addr, int ind, long& ev, node_handle& dn) const;
     virtual void getDownPtr(node_address addr, int ind, float& ev, node_handle& dn) const;
@@ -1408,7 +1412,114 @@ MEDDLY::simple_separated
     : down[z];
 }
 
+MEDDLY::node_handle
+MEDDLY::simple_separated
+::getNStrDownPtr(node_address addr) const
+{
 
+  const node_handle* chunk = getChunkAddress(addr);
+  MEDDLY_DCASSERT(chunk);
+
+  const unsigned int raw_size = getRawSize(chunk);
+  const unsigned size = getSize(raw_size);
+  bool hasNstr=isNStar(addr);
+
+  int specials=int(isNInfinity(raw_size))+int(isNStar(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
+  char down_start=(isFullGeneral(raw_size)?offset_start+1+specials:offset_start+specials);
+  const node_handle* down = chunk + down_start;
+    const bool is_fullgeneral=isFullGeneral(addr);
+    const bool is_extensible = isExtensible(addr);
+    const bool is_ninfinity=isNInfinity(addr);
+    const bool is_pinfinity=isPInfinity(addr);
+    const bool is_nstar=isNStar(addr);
+    const int* offset= isFullGeneral(addr)?chunk+offset_start:0;
+    const node_handle* down_nstr=is_nstar?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)):0;
+
+  return down_nstr[0];
+
+}
+
+MEDDLY::node_handle
+MEDDLY::simple_separated
+::getPStrDownPtr(node_address addr) const
+{
+
+  const node_handle* chunk = getChunkAddress(addr);
+  MEDDLY_DCASSERT(chunk);
+
+  const unsigned int raw_size = getRawSize(chunk);
+  const unsigned size = getSize(raw_size);
+  bool hasPstr=isExtensible(addr);
+
+  int specials=int(isNInfinity(raw_size))+int(isNStar(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
+  char down_start=(isFullGeneral(raw_size)?offset_start+1+specials:offset_start+specials);
+  const node_handle* down = chunk + down_start;
+    const bool is_fullgeneral=isFullGeneral(addr);
+    const bool is_extensible = isExtensible(addr);
+    const bool is_ninfinity=isNInfinity(addr);
+    const bool is_pinfinity=isPInfinity(addr);
+    const bool is_nstar=isNStar(addr);
+    const int* offset= isFullGeneral(addr)?chunk+offset_start:0;
+    const node_handle*   down_ext=is_extensible?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)):0;
+
+  return down_ext[0];
+
+}
+
+
+MEDDLY::node_handle
+MEDDLY::simple_separated
+::getNInfDownPtr(node_address addr) const
+{
+
+  const node_handle* chunk = getChunkAddress(addr);
+  MEDDLY_DCASSERT(chunk);
+
+  const unsigned int raw_size = getRawSize(chunk);
+  const unsigned size = getSize(raw_size);
+  bool hasNInf=isNInfinity(addr);
+
+  int specials=int(isNInfinity(raw_size))+int(isNStar(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
+  char down_start=(isFullGeneral(raw_size)?offset_start+1+specials:offset_start+specials);
+  const node_handle* down = chunk + down_start;
+    const bool is_fullgeneral=isFullGeneral(addr);
+    const bool is_extensible = isExtensible(addr);
+    const bool is_ninfinity=isNInfinity(addr);
+    const bool is_pinfinity=isPInfinity(addr);
+    const bool is_nstar=isNStar(addr);
+    const int* offset= isFullGeneral(addr)?chunk+offset_start:0;
+    const node_handle* down_ninf=(is_ninfinity?(chunk+offset_start+int(is_fullgeneral)):0);
+
+  return down_ninf[0];
+
+}
+
+MEDDLY::node_handle
+MEDDLY::simple_separated
+::getPInfDownPtr(node_address addr) const
+{
+
+  const node_handle* chunk = getChunkAddress(addr);
+  MEDDLY_DCASSERT(chunk);
+
+  const unsigned int raw_size = getRawSize(chunk);
+  const unsigned size = getSize(raw_size);
+  bool hasNInf=isPInfinity(addr);
+
+  int specials=int(isNInfinity(raw_size))+int(isNStar(raw_size))+int(isPInfinity(raw_size))+int(isExtensible(raw_size));
+  char down_start=(isFullGeneral(raw_size)?offset_start+1+specials:offset_start+specials);
+  const node_handle* down = chunk + down_start;
+    const bool is_fullgeneral=isFullGeneral(addr);
+    const bool is_extensible = isExtensible(addr);
+    const bool is_ninfinity=isNInfinity(addr);
+    const bool is_pinfinity=isPInfinity(addr);
+    const bool is_nstar=isNStar(addr);
+    const int* offset= isFullGeneral(addr)?chunk+offset_start:0;
+    const node_handle* down_pinf=is_pinfinity?(chunk+offset_start+int(is_fullgeneral)+int(is_ninfinity)+int(is_nstar)+int(is_extensible)):0;
+
+  return down_pinf[0];
+
+}
 void
 MEDDLY::simple_separated
 ::getDownPtr(node_address addr, int i, float& ev, node_handle& dn) const

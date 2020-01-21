@@ -128,6 +128,7 @@ namespace MEDDLY {
   class memory_manager_style;
   class node_storage_style;
 
+  class interval;
   class int_extra;
   class variable;
   class variable_order;
@@ -204,12 +205,18 @@ namespace MEDDLY {
       const char* getName() const;
       void setName(char* newname);
       bool isExtensible() const;
+      bool isNStar() const;
+      bool isPInfinity() const;
+      bool isNInfinity() const;
       bool isValueValid(int val, variableTypes type)const;
 
     protected:
       int un_bound;
       int pr_bound;
       bool is_extensible;
+      bool is_nstar;
+      bool is_pinf;
+      bool is_ninf;
     private:
       char* name;
       variableTypes variableType;
@@ -1734,6 +1741,8 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN, 
                         or the forest is for relations.
     */
+    virtual void createEdge(const interval* const* vlist, int N, dd_edge &e);
+
     virtual void createEdge(const int_extra* const* vlist, int N, dd_edge &e);
 
     virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
@@ -1756,6 +1765,8 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER,
                         or the forest is for relations.
     */
+    virtual void createEdge(const interval* const* vlist, const long* terms, int N, dd_edge &e);
+
     virtual void createEdge(const int_extra* const* vlist, const long* terms, int N, dd_edge &e);
 
     virtual void createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e);
@@ -1778,6 +1789,8 @@ class MEDDLY::forest {
                         the range type of the forest is not REAL,
                         or the forest is for relations.
     */
+    virtual void createEdge(const interval* const* vlist, const float* terms, int N, dd_edge &e);
+
     virtual void createEdge(const int_extra* const* vlist, const float* terms, int N, dd_edge &e);
 
     virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
@@ -1811,6 +1824,8 @@ class MEDDLY::forest {
                         the range type of the forest is not BOOLEAN, 
                         or the forest is not for relations.
     */
+    virtual void createEdge(const interval* const* vlist, const int_extra* const* vplist, int N, dd_edge &e);
+
     virtual void createEdge(const int_extra* const* vlist, const int_extra* const* vplist, int N, dd_edge &e);
 
     virtual void createEdge(const int* const* vlist, const int* const* vplist, int N, dd_edge &e);
@@ -1845,6 +1860,9 @@ class MEDDLY::forest {
                         the range type of the forest is not INTEGER, 
                         or the forest is not for relations.
     */
+    virtual void createEdge(const interval* const* vlist, const int_extra* const* vplist,
+                const long* terms, int N, dd_edge &e);
+
     virtual void createEdge(const int_extra* const* vlist, const int_extra* const* vplist,
             const long* terms, int N, dd_edge &e);
 
@@ -1881,6 +1899,9 @@ class MEDDLY::forest {
                         the range type of the forest is not REAL, 
                         or the forest is not for relations.
     */
+    virtual void createEdge(const interval* const* vlist, const int_extra* const* vplist,
+            const float* terms, int N, dd_edge &e);
+
     virtual void createEdge(const int_extra* const* vlist, const int_extra* const* vplist,
             const float* terms, int N, dd_edge &e);
     virtual void createEdge(const int* const* vlist, const int* const* vplist,
@@ -2219,6 +2240,8 @@ private:
     integer,
     positive_infinity,
     negative_infinity,
+    positive_star,
+    negative_star,
     undefined
   }type;
   long value;
@@ -2262,7 +2285,7 @@ public:
   bool isUndefined(){
       return type==undefined;
     }
-  bool isPositiveInfinity(){
+  bool isPositiveInfinity()const{
       return type==positive_infinity;
     }
   bool isPositiveInteger(){
@@ -2271,8 +2294,14 @@ public:
   bool isNegativeInteger(){
      return (isInteger()&&value<0);
    }
-  bool isNegativeInfinity(){
+  bool isNegativeInfinity()const{
         return type==negative_infinity;
+      }
+  bool isNegativeStar()const{
+        return type==negative_star;
+      }
+  bool isPositiveStar()const{
+        return type==positive_star;
       }
   inline int_extra operator- (){
     value=-value;
@@ -2424,6 +2453,27 @@ public:
 
 };
 
+class MEDDLY::interval{
+private:
+  int_extra start;
+  int_extra stop;
+  bool leftOpen;
+  bool rightOpen;
+public:
+  interval(int_extra _interval){
+    this->start=_interval;
+    this->stop=_interval;
+    this->leftOpen=false;
+    this->rightOpen=false;
+  }
+  interval(bool _leftOpen,int_extra _startinterval,int_extra _stopinterval,bool _rightOpen){
+      this->start=_startinterval;
+      this->stop=_stopinterval;
+      this->leftOpen=_leftOpen;
+      this->rightOpen=_rightOpen;
+    }
+
+};
 
 
 

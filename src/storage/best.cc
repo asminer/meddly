@@ -143,6 +143,10 @@ public:
   virtual void getDownPtr(node_address addr, int ind, int& ev, node_handle& dn) const;
   virtual void getDownPtr(node_address addr, int ind, long& ev, node_handle& dn) const;
   virtual void getDownPtr(node_address addr, int ind, float& ev, node_handle& dn) const;
+  virtual node_handle getPInfDownPtr(node_address addr)const ;
+  virtual node_handle getNInfDownPtr(node_address addr)const;
+  virtual node_handle getPStrDownPtr(node_address addr)const;
+  virtual node_handle getNStrDownPtr(node_address addr)const;
   virtual int getExtensibleIndex(node_address addr) const;
   virtual const void* getUnhashedHeaderOf(node_address addr) const;
   virtual const void* getHashedHeaderOf(node_address addr) const;
@@ -1379,7 +1383,37 @@ MEDDLY::best_storage
   }
 }
 
+MEDDLY::node_handle
+MEDDLY::best_storage
+::getNInfDownPtr(node_address addr) const
+{
 
+  return 0;
+  //T.B.D
+}
+MEDDLY::node_handle
+MEDDLY::best_storage
+::getPInfDownPtr(node_address addr) const
+{
+  return 0;
+
+  //T.B.D
+}
+MEDDLY::node_handle
+MEDDLY::best_storage
+::getNStrDownPtr(node_address addr) const
+{
+  return 0;
+
+  //T.B.D
+}
+MEDDLY::node_handle
+MEDDLY::best_storage
+::getPStrDownPtr(node_address addr) const
+{
+return 0;
+  //T.B.D
+}
 MEDDLY::node_handle 
 MEDDLY::best_storage
 ::getDownPtr(node_address addr, int i) const
