@@ -314,8 +314,12 @@ int main(int argc, const char** argv)
 #endif
 
     if (build_pdf) {
+      reachable.setLabel("reachable");
       reachable.writePicture("kanban", "pdf");
-      if ('m' == method) nsf.writePicture("kanban-nsf", "pdf");
+      if ('m' == method) {
+        nsf.setLabel("next-state");
+        nsf.writePicture("kanban-nsf", "pdf");
+      }
     }
 
     // cleanup

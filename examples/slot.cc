@@ -318,6 +318,7 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, forest::logg
   // or, don't, and let cleanup() take care of it?
 
   if (build_pdf) {
+    reachable.setLabel("reachable");
     reachable.writePicture("out", "pdf");
   }
 

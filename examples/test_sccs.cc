@@ -62,7 +62,7 @@ void my_edge_label::show(MEDDLY::output &out)
 //
 //
 
-int run_test(std::istream &in, bool interactive)
+int run_test(std::istream &in, const char* answer)
 {
   MEDDLY::sccgraph G;
 
@@ -70,6 +70,8 @@ int run_test(std::istream &in, bool interactive)
   unsigned from, to;
   char label;
   MEDDLY::ostream_output out(std::cout);
+
+  const bool interactive = !answer;
 
   for (;;) {
     if (interactive) {
@@ -108,14 +110,31 @@ int run_test(std::istream &in, bool interactive)
 
       case 'Q':
       case 'q':
-                return 0;
+                break;
 
       default:
                 if (!interactive) return 1;
                 std::cout << "Not a valid option\n";
+                continue;
     }
 
+    break;
   };
+
+  //
+  // If interactive - dump SCCs.
+  // Otherwise, we need to pass in expected SCCs and check them.
+  //
+  if (interactive) {
+    for (unsigned s = 0; s<G.get_num_SCCs(); s++) {
+      const unsigned* vertex_list = G.get_SCC_vertices(s);
+      for (unsigned i = 0; i<G.get_SCC_size(s); i++) {
+        if (i) std::cout << ", ";
+        std::cout << vertex_list[i];
+      }
+      std::cout << ";\n";
+    }
+  }
 
   return 0;
 }
@@ -124,7 +143,7 @@ int main()
 {
   using namespace std;
 
-  run_test(std::cin, 1);
+  run_test(std::cin, 0);
 
   cout << "Done\n";
 

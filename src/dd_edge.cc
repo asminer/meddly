@@ -57,6 +57,7 @@ MEDDLY::dd_edge::dd_edge()
 #ifdef DEBUG_CLEANUP
   fprintf(stderr, "Creating dd_edge %p\n", this);
 #endif
+  label = 0;
 }
 
 // Constructor.
@@ -71,6 +72,7 @@ MEDDLY::dd_edge::dd_edge(forest* p)
   MEDDLY_DCASSERT(p != NULL);
   parent->registerEdge(*this);
   MEDDLY_DCASSERT(index);
+  label = 0;
 }
 
 
@@ -123,6 +125,8 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
 
   if (parent) parent->registerEdge(*this);
   MEDDLY_DCASSERT(index);
+
+  label = e.label ? strdup(e.label) : 0;
 }
 
 //
@@ -139,6 +143,8 @@ void MEDDLY::dd_edge::destroy()
   }
   parent = 0;
   index = 0;
+  free(label);
+  label = 0;
 }
 
 void MEDDLY::dd_edge::setForest(forest* f)
@@ -228,6 +234,12 @@ void MEDDLY::dd_edge::setEdgeValue(float value)
   MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
   MEDDLY_DCASSERT(forest::REAL == parent->getRangeType());
   expert_forest::EVencoder<float>::writeValue(&raw_value, value);
+}
+
+void MEDDLY::dd_edge::setLabel(const char* L)
+{
+  if (label) free(label);
+  label = strdup(L);
 }
 
 unsigned MEDDLY::dd_edge::getNodeCount() const
@@ -421,6 +433,6 @@ void MEDDLY::dd_edge::writePicture(const char* filename, const char* extension) 
 {
   if (parent) {
     expert_forest* eParent = smart_cast<expert_forest*>(parent);
-    eParent->writeNodeGraphPicture(filename, extension, &node, 1);
+    eParent->writeNodeGraphPicture(filename, extension, &node, &label, 1);
   }
 }

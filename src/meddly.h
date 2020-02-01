@@ -2417,6 +2417,9 @@ class MEDDLY::dd_edge {
     /// Get this dd_edge's edge value (only valid for edge-valued MDDs).
     void getEdgeValue(float& ev) const;
 
+    /// Get this dd_edge's label
+    const char* getLabel() const;
+
     /** Get this dd_edge's level.
         @return         the level.
     */
@@ -2479,6 +2482,11 @@ class MEDDLY::dd_edge {
     void setEdgeValue(int value);
     void setEdgeValue(long value);
     void setEdgeValue(float value);
+
+    /** Set the edge's label.
+        @param  L   Label to use; will be copied.
+    */
+    void setLabel(const char* L);
 
     /** Check for equality.
         @return true    iff this edge has the same parent and refers to
@@ -2594,6 +2602,9 @@ class MEDDLY::dd_edge {
 
     // called when the parent is destroyed
     void orphan();
+
+    // Label; used only for display purposes
+    char* label;
 };
 
 // ******************************************************************

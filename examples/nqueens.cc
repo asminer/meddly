@@ -393,6 +393,7 @@ int main(int argc, const char** argv)
   }
 #endif
   if (build_pdf) {
+    solutions->setLabel("queens");
     solutions->writePicture("out", "pdf");
   }
   delete solutions;

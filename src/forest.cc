@@ -1290,7 +1290,7 @@ void MEDDLY::expert_forest
 
 void MEDDLY::expert_forest
 ::writeNodeGraphPicture(const char* filename, const char *ext,
-    const node_handle* p, int n) const
+    const node_handle* p, const char* const* labels, int n) const
 {
   if (filename == NULL || ext == NULL || p == NULL) return;
   if (!isMultiTerminal()) {
@@ -1353,7 +1353,7 @@ void MEDDLY::expert_forest
           lowest_level = false;
         } else {
           s << "  edge [color=transparent];\n";
-          s << "  l" << map_k << ":0 -> l" << (isForRelations()? map_k-1: map_k-2) << ":0;\n";
+          s << "  l" << map_k << ":0 -> l" << (isForRelations()? map_k-1: map_k-2) << ";\n";
           s << "  edge [color=black];\n";
         }
         s << "  {rank=same; l" << map_k << " ";
@@ -1388,7 +1388,7 @@ void MEDDLY::expert_forest
           s << "  edge [color=" << blue /*((un->i(j) % 2 == 0)? black: blue)*/ << "];\n";
           s << "  s" << list[i] << ":" << j;
           s << " -> s" << un->d(j);
-          s << ":0 [samehead = true];\n";
+          s << " [samehead = true];\n";
         }
 
         unpacked_node::recycle(un);
@@ -1402,6 +1402,27 @@ void MEDDLY::expert_forest
       k++;
     }
   } // for k
+
+  /* Write all the labels */
+  s << "  node [shape=plaintext];\n";
+  int rootlevel = 2*(getNumVariables()+1);
+  s << "  l" << rootlevel << "[label=\"\"];\n";
+  s << "  edge [color=transparent];\n";
+  s << "  l" << rootlevel << " -> l" << rootlevel-2 << ";\n";
+  s << "  {rank=same; l" << rootlevel;
+  for (int i=0; i<n; i++) {
+    s << " root" << i;
+  }
+  s << " ;}\n";
+
+  for (int i=0; i<n; i++) {
+    s << "  root" << i << " [label=\"";
+    if (labels[i]) s << labels[i];
+    s << "\"];\n";
+    s << "  edge [color=blue];\n";
+    s << "  root" << i << " -> s" << p[i] << " [samehead = true];\n";
+  }
+
 
   s << "}\n";
 

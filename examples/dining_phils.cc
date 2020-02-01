@@ -714,6 +714,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
   }
 
   if (sw.build_pdf) {
+    reachableStates.setLabel("reachable");
     reachableStates.writePicture("out", "pdf");
   }
 

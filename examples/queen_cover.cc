@@ -413,6 +413,7 @@ int main(int argc, const char** argv)
   ef->validateCacheCounts();
 
   if (build_pdf) {
+    solutions.setLabel("queen-cover");
     solutions.writePicture("out", "pdf");
   }
 
