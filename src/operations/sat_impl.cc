@@ -1028,7 +1028,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFireSet(
     mddUnion->compute(union_rec, ans, union_rec);
   }
   
-  return resF->linkNode(union_rec.getNode());
+  return union_rec.getNode();
 }
 
 
