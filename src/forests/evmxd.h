@@ -322,7 +322,7 @@ namespace MEDDLY {
           dcnormal.set(dcnormal_nh, dcnormal_ev);
 
           MEDDLY_DCASSERT(unionOp);
-          unionOp->compute(dontcare, dcnormal, dontcare);
+          unionOp->computeTemp(dontcare, dcnormal, dontcare);
         }
 
         //
@@ -383,7 +383,7 @@ namespace MEDDLY {
         dd_edge built(F);
         built.set(built_nh, built_ev);
 
-        unionOp->compute(dontcare, built, built);
+        unionOp->computeTemp(dontcare, built, built);
         ed = F->linkNode(built);
         built.getEdgeValue(ev);
       };
@@ -491,7 +491,7 @@ namespace MEDDLY {
           // (3) union with don't cares
           //
           MEDDLY_DCASSERT(unionOp);
-          unionOp->compute(dontcare, these, these);
+          unionOp->computeTemp(dontcare, these, these);
 
           //
           // add to sparse node, unless empty

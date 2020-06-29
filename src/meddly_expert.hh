@@ -3682,7 +3682,16 @@ MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
   if (!checkForestCompatibility()) {
     throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
   }
-  computeDDEdge(arg, res);
+  computeDDEdge(arg, res, true);
+}
+
+inline void
+MEDDLY::unary_operation::computeTemp(const dd_edge &arg, dd_edge &res)
+{
+  if (!checkForestCompatibility()) {
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+  }
+  computeDDEdge(arg, res, false);
 }
 
 // ******************************************************************
@@ -3720,7 +3729,16 @@ MEDDLY::binary_operation::compute(const dd_edge &ar1, const dd_edge &ar2, dd_edg
   if (!checkForestCompatibility()) {
     throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
   }
-  computeDDEdge(ar1, ar2, res);
+  computeDDEdge(ar1, ar2, res, true);
+}
+
+inline void
+MEDDLY::binary_operation::computeTemp(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
+{
+  if (!checkForestCompatibility()) {
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+  }
+  computeDDEdge(ar1, ar2, res, false);
 }
 
 // ******************************************************************

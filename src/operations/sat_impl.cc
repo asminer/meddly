@@ -944,7 +944,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         else {
           nbdj.set(nb.d(j));  // clobber
           newst.set(rec);     // clobber
-          mddUnion->compute(nbdj, newst, nbdj);
+          mddUnion->computeTemp(nbdj, newst, nbdj);
           updated = (nbdj.getNode() != nb.d(j));
           nb.set_d(j, nbdj);
         }
@@ -998,7 +998,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       else {
         nbdj.set(nb.d(j));  // clobber
         newst.set(rec);     // clobber
-        mddUnion->compute(nbdj, newst, nbdj);
+        mddUnion->computeTemp(nbdj, newst, nbdj);
         updated = (nbdj.getNode() != nb.d(j));
         nb.set_d(j, nbdj);
       }
@@ -1025,7 +1025,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFireSet(
   
   for(int rn = 0; rn < vector_mxd.size(); rn ++){
     ans.set( recFire(mdd,vector_mxd[rn]) );
-    mddUnion->compute(union_rec, ans, union_rec);
+    mddUnion->computeTemp(union_rec, ans, union_rec);
   }
   
   return union_rec.getNode();
@@ -1135,7 +1135,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
           // there's new states and existing states; union them.
           nbdj.set(nb->d(j));
           newst.set(newstates);
-          mddUnion->compute(nbdj, newst, nbdj);
+          mddUnion->computeTemp(nbdj, newst, nbdj);
           nb->set_d(j, nbdj);
           
         } // for i
@@ -1819,7 +1819,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
       else {
         nbdj.set(nb.d(j));  // clobber
         newst.set(rec);     // clobber
-        mddUnion->compute(nbdj, newst, nbdj);
+        mddUnion->computeTemp(nbdj, newst, nbdj);
         updated = (nbdj.getNode() != nb.d(j));
         nb.set_d(j, nbdj);
       }
@@ -1988,7 +1988,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
       // there's new states and existing states; union them.
       nbdj.set(nb->d(j));
       newst.set(newstates);
-      mddUnion->compute(nbdj, newst, nbdj);
+      mddUnion->computeTemp(nbdj, newst, nbdj);
       nb->set_d(j, nbdj);
     } // for i
 

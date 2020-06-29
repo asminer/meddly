@@ -258,7 +258,7 @@ namespace MEDDLY {
                 throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
               }
               MEDDLY_DCASSERT(unionOp);
-              unionOp->compute(dontcare, these, these);
+              unionOp->computeTemp(dontcare, these, these);
             } else {
               these = dontcare;
             }
