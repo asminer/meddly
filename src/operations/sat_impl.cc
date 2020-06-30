@@ -480,13 +480,11 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
   rel_node_handle* rnh_array = (rel_node_handle*)malloc((nVars+1)*sizeof(rel_node_handle));
   // int top_level = Rnode->getLevel();
   
-  // domain* d = outsetF->useDomain();
   expert_forest* ef = (expert_forest*) mxd;
   
   //Get relation node handles
   for (int i=nVars; i>=1; i--)
     {
-    
       if(Rnode->getLevel()==i)// if variable i is a part of this event
         {
           rnh_array[i] = Rnode->getID(); // keep track of node_handles that are part of this event
@@ -505,6 +503,7 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
     {
         if(rnh_array[i]!=-1)
           {
+            const int maxVar = ef->getDomain()->getVariableBound(i);
             Rnode = nodeExists(rnh_array[i]);
             //Create a new unprimed node for variable i
             MEDDLY_DCASSERT(outsetF->getVariableSize(i)>=Rnode->getPieceSize());
@@ -512,9 +511,10 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
           
             for (int j=0; j<Rnode->getPieceSize(); j++) {
           
-              long new_j = confirmed[i][Rnode->getTokenUpdate()[j]]? Rnode->getTokenUpdate()[j] : -2;
+              // long new_j = confirmed[i][Rnode->getTokenUpdate()[j]]? Rnode->getTokenUpdate()[j] : -2;
+              long new_j = Rnode->getTokenUpdate()[j];
               
-              if(new_j>=0) 
+              if(new_j>=0 && new_j<maxVar) // do not exceed variable bounds
                 {
                    //Create primed node for each valid index of the unprimed node
                   unpacked_node* P_var = unpacked_node::newSparse(ef, -i, 1);
@@ -562,7 +562,8 @@ MEDDLY::satimpl_opname::implicit_relation::isUnionPossible(int level, long i, re
   if(lengthForLevel(level)==1)
      return false;
   
-   int* jset = (int*)malloc(lengthForLevel(level)*sizeof(int));
+  std::vector<int> jset(lengthForLevel(level), 0); 
+
    int last_j = 0;
    for(int k=0;k<lengthForLevel(level);k++)
     {

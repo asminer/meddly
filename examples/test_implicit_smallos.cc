@@ -101,7 +101,7 @@ const char* name = who;
 for (const char* ptr=who; *ptr; ptr++) {
 if ('/' == *ptr) name = ptr+1;
 }
-  printf("\nUsage: %s nnnn <-O> order\n\n", name);
+  printf("\nUsage: %s mt dc <-O> order\n\n", name);
   printf("\tnnnn: number of initial tokens\n");
   printf("\torder: the order of variables:123456789\n");
 return 1;
@@ -166,6 +166,7 @@ forest::policies pr(true);
   pr.setPessimistic();
 forest::policies p(false);
   p.setPessimistic();
+  // p.setQuasiReduced();
 
 //INITIAL STATE
 int* initialState;
@@ -184,7 +185,7 @@ if('i' == method)
 
 //CREATE FORESTS
   forest* inmdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
-  forest* relmxd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
+  forest* relmxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL,pr);
 
   expert_domain* dm = static_cast<expert_domain*>(inmdd->useDomain());
   dm->enlargeVariableBound(p1_position, false, MT+1);

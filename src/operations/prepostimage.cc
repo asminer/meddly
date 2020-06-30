@@ -249,6 +249,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
       // loop over mxd "columns"
       for (unsigned jz=0; jz<Rp->getNNZs(); jz++) {
         unsigned j = Rp->i(jz);
+        MEDDLY_DCASSERT(0<=j && j < A->getSize());
         if (0==A->d(j))   continue; 
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
