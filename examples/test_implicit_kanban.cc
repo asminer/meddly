@@ -175,6 +175,7 @@ int main(int argc, const char** argv)
     pr.setPessimistic();
     forest::policies p(false);
     p.setPessimistic();
+    // p.setQuasiReduced();
     
     //INITIAL STATE
     int* initialState;
@@ -192,7 +193,7 @@ int main(int argc, const char** argv)
       
       //CREATE FORESTS
       forest* inmdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
-      forest* relmxd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
+      forest* relmxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL,pr);
       
       expert_domain* dm = static_cast<expert_domain*>(inmdd->useDomain());
 
