@@ -28,6 +28,8 @@ rubiks_cube_phase \
 slot_phase \
 test_union_mdd \
 test_union_mxd \
+test_iec_mdd \
+test_aboveCount_mdd\
 test_mtmdd \
 test_mtmxd \
 test_evmdd \
@@ -68,6 +70,12 @@ test_xdds_LDADD = ../src/libmeddly.la
 
 test_otf_sat_SOURCES = test_otf_sat.cc
 test_otf_sat_LDADD = ../src/libmeddly.la
+
+test_iec_mdd_SOURCES = test_iec_mdd.cc
+test_iec_mdd_LDADD = ../src/libmeddly.la
+
+test_aboveCount_mdd_SOURCES = test_aboveCount_mdd.cc
+test_aboveCount_mdd_LDADD = ../src/libmeddly.la
 
 build_expression_SOURCES = build_expression.cc
 build_expression_LDADD = ../src/libmeddly.la
