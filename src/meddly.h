@@ -151,6 +151,9 @@ namespace MEDDLY {
     DOUBLEVECT  = 6
   };
 
+  extern int* incomingedgecount;
+  extern int* abovecount;
+  extern int* belowcount;
   // ******************************************************************
   // *                    miscellaneous  functions                    *
   // ******************************************************************
@@ -254,6 +257,10 @@ namespace MEDDLY {
   /// Randomly select one state from a set of states
   extern const unary_opname* SELECT;
 
+  /// Unary operation. Return the number of incoming edge count
+  extern const unary_opname* IEC;
+  /// Unary operation. Return the number of above state count
+  extern const unary_opname* AC;
   // ******************************************************************
   // *                    Named  binary operations                    *
   // ******************************************************************

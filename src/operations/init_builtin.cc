@@ -30,6 +30,8 @@
 #include "mdd2index.h"
 #include "cycle.h"
 #include "select.h"
+#include "incoming_edge_count.h"
+#include "above_count.h"
 
 #include "union.h"
 #include "intersection.h"
@@ -80,6 +82,8 @@ namespace MEDDLY {
   const unary_opname* CONVERT_TO_INDEX_SET = 0;
   const unary_opname* CYCLE = 0;
   const unary_opname* SELECT = 0;
+  const unary_opname* IEC = 0;
+  const unary_opname* AC=0;
 
   // binary operation "codes"
 
@@ -164,6 +168,8 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::CONVERT_TO_INDEX_SET, MDD2INDEX,  initializeMDD2INDEX()     );
   initP(MEDDLY::CYCLE,                CYCLE,      initializeCycle()         );
   initP(MEDDLY::SELECT,               SELECT,     initializeSelect()        );
+  initP(MEDDLY::IEC,                  IEC,        initializeIncomingEdgeCount());
+  initP(MEDDLY::AC,                   AC,         initializeAboveCount());
 
   initP(MEDDLY::UNION,                UNION,      initializeUnion()         );
   initP(MEDDLY::INTERSECTION,         INTERSECT,  initializeIntersection()  );
@@ -231,6 +237,8 @@ void MEDDLY::builtin_initializer::cleanup()
 {
   cleanPair(COPY,           MEDDLY::COPY);
   cleanPair(CARD,           MEDDLY::CARDINALITY);
+  cleanPair(IEC,            MEDDLY::IEC);
+  cleanPair(AC,             MEDDLY::AC);
   cleanPair(COMPL,          MEDDLY::COMPLEMENT);
   cleanPair(MAXRANGE,       MEDDLY::MAX_RANGE);
   cleanPair(MINRANGE,       MEDDLY::MIN_RANGE);
