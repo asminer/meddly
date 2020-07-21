@@ -1499,7 +1499,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         } else {
           nbdj.set(nb.d(j));      // clobber
           newst.set(newstates);   // clobber
-          mddUnion->compute(nbdj, newst, nbdj);
+          mddUnion->computeTemp(nbdj, newst, nbdj);
           updated = (nbdj.getNode() != nb.d(j));
           nb.set_d(j, nbdj);
         }
@@ -1636,7 +1636,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
         }
         // there's new states and existing states; union them.
         const int oldj = nb->d(j);
-        nb->d_ref(j) = mddUnion->compute(newstates, oldj);
+        nb->d_ref(j) = mddUnion->computeTemp(newstates, oldj);
         resF->unlinkNode(oldj);
         resF->unlinkNode(newstates);
       } // for j
@@ -1724,7 +1724,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::recFireHelper(
       // there's new states and existing states; union them.
       nbdj.set(nb->d(j));
       newst.set(newstates);
-      mddUnion->compute(nbdj, newst, nbdj);
+      mddUnion->computeTemp(nbdj, newst, nbdj);
       nb->set_d(j, nbdj);
     }
   } // for j

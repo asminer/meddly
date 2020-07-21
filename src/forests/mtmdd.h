@@ -305,7 +305,7 @@ namespace MEDDLY {
         dd_edge dontcaresE(F), built(F);
         dontcaresE.set(dontcares);
         built.set( F->createReducedNode(-1, nb) );
-        unionOp->compute(dontcaresE, built, built);
+        unionOp->computeTemp(dontcaresE, built, built);
         return F->linkNode(built);
       }
 

@@ -45,7 +45,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     virtual ~generic_binary_mdd();
 
   public:
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
 
     virtual node_handle compute(node_handle a, node_handle b);
     virtual node_handle compute_normal(node_handle a, node_handle b);
@@ -97,7 +97,7 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     virtual ~generic_binary_mxd();
 
   public:
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
 
     virtual node_handle compute(node_handle a, node_handle b);
     virtual node_handle compute_normal(node_handle a, node_handle b);
@@ -153,7 +153,7 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     virtual ~generic_binbylevel_mxd();
 
   public:
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
 
     virtual node_handle compute(int level, node_handle a, node_handle b);
 
@@ -218,7 +218,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     virtual ~generic_binary_evplus();
 
   public:
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
 
     virtual void compute(long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
 
@@ -274,7 +274,7 @@ class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
     virtual ~generic_binary_evplus_mxd();
 
   public:
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
 
     virtual void compute(long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
 
@@ -333,7 +333,7 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
     virtual ~generic_binary_evtimes();
 
   public:
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
 
     virtual void compute(float aev, node_handle a, float bev, node_handle b, 
       float& cev, node_handle &c);

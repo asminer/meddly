@@ -52,7 +52,7 @@ class MEDDLY::common_bfs : public binary_operation {
     common_bfs(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
 
   protected:
     inline void setUnionOp(binary_operation* uop)
@@ -84,7 +84,7 @@ MEDDLY::common_bfs::common_bfs(const binary_opname* oc, expert_forest* a1,
   imageOp = 0;
 }
 
-void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd_edge &reachableStates)
+void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd_edge &reachableStates, bool userFlag)
 {
   MEDDLY_DCASSERT(unionOp);
   MEDDLY_DCASSERT(imageOp);
@@ -110,7 +110,7 @@ void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd
     verbose << "Iteration " << iters << ":\n";
 #endif
     prevReachable = reachableStates;
-    imageOp->computeDDEdge(reachableStates, R, front);
+    imageOp->computeDDEdge(reachableStates, R, front, userFlag);
 #ifdef VERBOSE_BFS
     verbose << "\timage done ";
     front.show(verbose, 0);
@@ -121,7 +121,7 @@ void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd
     debug << "Iteration " << iters << "\npseudo-frontier: ";
     front.show(debug, 2);
 #endif
-    unionOp->computeDDEdge(reachableStates, front, reachableStates);
+    unionOp->computeDDEdge(reachableStates, front, reachableStates, userFlag);
 #ifdef VERBOSE_BFS
     verbose << "\tunion done ";
     reachableStates.show(verbose, 0);
@@ -227,7 +227,7 @@ class MEDDLY::common_bfs_evplus : public binary_operation {
         prevReachable = resEvmdd;
         long front_ev = Inf<long>();
         node_handle front = 0;
-        imageOp->compute(resEv, resEvmdd, mxd, front_ev, front);
+        imageOp->computeTemp(resEv, resEvmdd, mxd, front_ev, front);
 #ifdef VERBOSE_BFS
         fprintf(stderr, "\timage done <%ld, %d>\n", front_ev, front);
 #endif
@@ -236,7 +236,7 @@ class MEDDLY::common_bfs_evplus : public binary_operation {
         fprintf(stderr, "Iteration %d\npseudo-frontier: <%ld, %d>\n", iters, front_ev, front);
         arg1F->showNodeGraph(stderr, front);
 #endif
-        unionMinOp->compute(resEv, resEvmdd, front_ev, front, resEv, resEvmdd);
+        unionMinOp->computeTemp(resEv, resEvmdd, front_ev, front, resEv, resEvmdd);
 #ifdef VERBOSE_BFS
         fprintf(stderr, "\tunion done <%ld, %d>\n", resEv, resEvmdd);
 #endif

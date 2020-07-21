@@ -61,7 +61,7 @@ MEDDLY::select
 class MEDDLY::select_MT : public select {
   public:
     select_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res);
-    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
+    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
     virtual node_handle _compute(node_handle node, int level);
 };
 
@@ -73,7 +73,7 @@ MEDDLY::select_MT
   MEDDLY_DCASSERT(resF->isMultiTerminal());
 }
 
-void MEDDLY::select_MT::computeDDEdge(const dd_edge &arg, dd_edge &res)
+void MEDDLY::select_MT::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
 {
   node_handle result = _compute(arg.getNode(), resF->getNumVariables());
   res.set(result);
@@ -117,7 +117,7 @@ MEDDLY::node_handle MEDDLY::select_MT::_compute(node_handle a, int level)
 class MEDDLY::select_EVPlus : public select {
   public:
     select_EVPlus(const unary_opname* oc, expert_forest* arg, expert_forest* res);
-    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
+    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
     virtual void _compute(long aev, node_handle a, int level, long& bev, node_handle& b);
 };
 
@@ -129,7 +129,7 @@ MEDDLY::select_EVPlus
   MEDDLY_DCASSERT(resF->isEVPlus());
 }
 
-void MEDDLY::select_EVPlus::computeDDEdge(const dd_edge &arg, dd_edge &res)
+void MEDDLY::select_EVPlus::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
 {
   long bev = 0;
   node_handle b = 0;

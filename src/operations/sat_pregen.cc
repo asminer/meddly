@@ -238,7 +238,7 @@ MEDDLY::satpregen_opname::pregen_relation
       } else {
         dd_edge mpd(mxdF);
         mpd.set( mxdF->linkNode(Mp->d(i)) );
-        mxdIntersection->compute(maxDiag, mpd, maxDiag);
+        mxdIntersection->computeTemp(maxDiag, mpd, maxDiag);
       }
     } // for i
 
@@ -257,7 +257,7 @@ MEDDLY::satpregen_opname::pregen_relation
     // Do this only for SplitOnly. Other cases are handled later.
 
     if (split == SplitOnly) {
-      mxdDifference->compute(events[k], maxDiag, events[k]);
+      mxdDifference->computeTemp(events[k], maxDiag, events[k]);
 #ifdef DEBUG_FINALIZE_SPLIT
       printf("SplitOnly: event %d = event %d - maxDiag %d\n",
           events[k], tmp, maxDiag);
@@ -267,12 +267,12 @@ MEDDLY::satpregen_opname::pregen_relation
     // Add maxDiag to events[level(maxDiag)]
     int maxDiagLevel = ABS(maxDiag.getLevel());
 
-    mxdUnion->compute(maxDiag, events[maxDiagLevel], events[maxDiagLevel]);
+    mxdUnion->computeTemp(maxDiag, events[maxDiagLevel], events[maxDiagLevel]);
 
     // Subtract events[maxDiagLevel] from events[k].
     // Do this only for SplitSubtract. SplitSubtractAll is handled later.
     if (split == SplitSubtract) {
-      mxdDifference->compute(events[k], events[maxDiagLevel], events[k]);
+      mxdDifference->computeTemp(events[k], events[maxDiagLevel], events[k]);
 
 #ifdef DEBUG_FINALIZE_SPLIT
       printf("SplitSubtract: event %d = event %d - event[maxDiagLevel] %d\n",
@@ -290,7 +290,7 @@ MEDDLY::satpregen_opname::pregen_relation
       for (int j = i + 1; j <= K; j++) {
         if (0==events[j].getNode()) continue;
 
-        mxdDifference->compute(events[j], events[i], events[j]);
+        mxdDifference->computeTemp(events[j], events[i], events[j]);
 
 #ifdef DEBUG_FINALIZE_SPLIT
         printf("SplitSubtractAll: event %d = event %d - event %d\n",
@@ -360,8 +360,8 @@ MEDDLY::satpregen_opname::pregen_relation
       MEDDLY_DCASSERT(mxdDifference);
       for(unsigned k = 0; k <= K; k++) {
         if (old_events[k] != events[k]) {
-          node_handle diff1 = mxdDifference->compute(old_events[k], events[k]);
-          node_handle diff2 = mxdDifference->compute(events[k], old_events[k]);
+          node_handle diff1 = mxdDifference->computeTemp(old_events[k], events[k]);
+          node_handle diff2 = mxdDifference->computeTemp(events[k], old_events[k]);
           printf("error at level %d, n:k %d:%d, %d:%d\n",
               k,
               diff1, mxdF->getNodeLevel(diff1),
@@ -988,7 +988,7 @@ void MEDDLY::forwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         else {
           nbdj.set(nb.d(j));  // clobber
           newst.set(rec);     // clobber
-          mddUnion->compute(nbdj, newst, nbdj);
+          mddUnion->computeTemp(nbdj, newst, nbdj);
           updated = (nbdj.getNode() != nb.d(j));
           nb.set_d(j, nbdj);
         }
@@ -1100,7 +1100,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
         // there's new states and existing states; union them.
         nbdj.set(nb->d(j));
         newst.set(newstates);
-        mddUnion->compute(nbdj, newst, nbdj);
+        mddUnion->computeTemp(nbdj, newst, nbdj);
         nb->set_d(j, nbdj);
       } // for j
   
@@ -1224,7 +1224,7 @@ void MEDDLY::bckwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
           else {
             nbdi.set(nb.d(i));
             newst.set(rec);
-            mddUnion->compute(nbdi, newst, nbdi);
+            mddUnion->computeTemp(nbdi, newst, nbdi);
             updated = (nbdi.getNode() != nb.d(i));
             nb.set_d(i, nbdi);
           }
@@ -1327,7 +1327,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_by_events_mt::recFire(node_handle mdd,
         // there's new states and existing states; union them.
         nbdi.set(nb->d(i));
         newst.set(newstates);
-        mddUnion->compute(nbdi, newst, nbdi);
+        mddUnion->computeTemp(nbdi, newst, nbdi);
         nb->set_d(i, nbdi);
       } // for j
   

@@ -4813,11 +4813,12 @@ class MEDDLY::unary_operation : public operation {
       Checks forest comatability and then calls computeDDEdge().
     */
     void compute(const dd_edge &arg, dd_edge &res);
+    void computeTemp(const dd_edge &arg, dd_edge &res);
 
     virtual void compute(const dd_edge &arg, long &res);
     virtual void compute(const dd_edge &arg, double &res);
     virtual void compute(const dd_edge &arg, ct_object &c);
-    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
+    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
 };
 
 // ******************************************************************
@@ -4856,8 +4857,9 @@ class MEDDLY::binary_operation : public operation {
       Checks forest comatability and then calls computeDDEdge().
     */
     void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
+    void computeTemp(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
 
-    virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
+    virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res, bool userFlag)
       = 0;
 
     // low-level front ends.  TBD - REMOVE THESE BECAUSE THEY BREAK MARK & SWEEP

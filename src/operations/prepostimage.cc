@@ -88,7 +88,7 @@ class MEDDLY::image_op : public binary_operation {
       CT0->addEntry(Key, CTresult[0]);
       return c;
     }
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
     virtual node_handle compute(node_handle a, node_handle b);
   protected:
     binary_operation* accumulateOp;
@@ -123,7 +123,7 @@ MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
 }
 
 void MEDDLY::image_op
-::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
+::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
 {
   node_handle cnode;
   if (a.getForest() == argV) {
@@ -249,6 +249,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
       // loop over mxd "columns"
       for (unsigned jz=0; jz<Rp->getNNZs(); jz++) {
         unsigned j = Rp->i(jz);
+        MEDDLY_DCASSERT(0<=j && j < A->getSize());
         if (0==A->d(j))   continue; 
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
@@ -262,7 +263,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
         // there's new states and existing states; union them.
         newstatesE.set(newstates);
         cdi.set(C->d(i));
-        accumulateOp->compute(newstatesE, cdi, cdi);
+        accumulateOp->computeTemp(newstatesE, cdi, cdi);
         C->set_d(i, cdi);
       } // for j
   
@@ -404,7 +405,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
         // there's new states and existing states; union them.
         newstatesE.set(newstates);
         cdj.set(C->d(j));
-        accumulateOp->compute(newstatesE, cdj, cdj);
+        accumulateOp->computeTemp(newstatesE, cdj, cdj);
         C->set_d(j, cdj);
       } // for j
   
@@ -576,7 +577,7 @@ class MEDDLY::image_op_evplus : public binary_operation {
       CTresult[0].writeN(resEvmdd);
       CT0->addEntry(Key, CTresult[0]);
     }
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
     virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
   protected:
     binary_operation* accumulateOp;
@@ -604,7 +605,7 @@ MEDDLY::image_op_evplus::image_op_evplus(const binary_opname* oc, expert_forest*
   buildCTs();
 }
 
-void MEDDLY::image_op_evplus::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
+void MEDDLY::image_op_evplus::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
 {
   long cev = Inf<long>();
   node_handle cnode = 0;
@@ -754,7 +755,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
         // there's new states and existing states; union them.
         newstatesE.set(newstates, nev);
         cdi.set(C->d(i), C->ei(i));
-        accumulateOp->compute(newstatesE, cdi, cdi);
+        accumulateOp->computeTemp(newstatesE, cdi, cdi);
         C->set_de(i, cdi);
       } // for j
 
@@ -902,7 +903,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
         // there's new states and existing states; union them.
         newstatesE.set(newstates, nev);
         cdj.set(C->d(j), C->ei(j));
-        accumulateOp->compute(newstatesE, cdj, cdj);
+        accumulateOp->computeTemp(newstatesE, cdj, cdj);
         C->set_de(j, cdj);
       } // for j
 
@@ -1135,7 +1136,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
           // there's new states and existing states; union them.
           newstatesE.set(newstates, nev);
           djp.set(D->d(jp), D->ei(jp));
-          accumulateOp->compute(newstatesE, djp, djp);
+          accumulateOp->computeTemp(newstatesE, djp, djp);
           D->set_de(jp, djp);
         } // for j
 

@@ -152,10 +152,10 @@ void MEDDLY::constrained_bckwd_bfs_evplus::iterate(const dd_edge& a, const dd_ed
     prev = c;
     long tev = Inf<long>();
     node_handle t = 0;
-    imageOp->compute(cev, c, r, tev, t);
+    imageOp->computeTemp(cev, c, r, tev, t);
     node_handle oldt = t;
-    plusOp->compute(tev, oldt, aev, a, tev, t);
-    minOp->compute(cev, c, tev, t, cev, c);
+    plusOp->computeTemp(tev, oldt, aev, a, tev, t);
+    minOp->computeTemp(cev, c, tev, t, cev, c);
     resF->unlinkNode(oldt);
     resF->unlinkNode(t);
   }
@@ -165,9 +165,9 @@ void MEDDLY::constrained_bckwd_bfs_evplus::iterate(const dd_edge& a, const dd_ed
   dd_edge prev(resF), t(resF);
   while (prev != c) {
     prev = c;
-    imageOp->compute(c, r, t);
-    plusOp->compute(t, a, t);
-    minOp->compute(c, t, c);
+    imageOp->computeTemp(c, r, t);
+    plusOp->computeTemp(t, a, t);
+    minOp->computeTemp(c, t, c);
   }
 }
 
@@ -327,7 +327,7 @@ void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
         first = false;
       } else {
         Rpdi.set( transF->linkNode(Rp->d(i)) );
-        mxdIntersectionOp->compute(maxDiag, Rpdi, maxDiag);
+        mxdIntersectionOp->computeTemp(maxDiag, Rpdi, maxDiag);
       }
 
       // cleanup
@@ -335,7 +335,7 @@ void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
     } // for i
 
     // maxDiag is what we can split from here
-    mxdDifferenceOp->compute(root, maxDiag, splits[level]);
+    mxdDifferenceOp->computeTemp(root, maxDiag, splits[level]);
     root = maxDiag;
 
     // Cleanup
@@ -479,7 +479,7 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
         else {
           nbdj.set(nb.d(j));  // clobber
           newst.set(rec);     // clobber
-          unionOp->compute(nbdj, newst, nbdj);
+          unionOp->computeTemp(nbdj, newst, nbdj);
           updated = (nbdj.getNode() != nb.d(j));
           nb.set_d(j, nbdj);
         }
@@ -604,7 +604,7 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
         // there's new states and existing states; union them.
         Tdj.set(T->d(j));
         newst.set(n);
-        unionOp->compute(newst, Tdj, Tdj);
+        unionOp->computeTemp(newst, Tdj, Tdj);
         T->set_d(j, Tdj);
       } // for j
 
@@ -722,7 +722,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
         else {
           nbdi.set(nb.d(i));  // clobber
           newst.set(rec);     // clobber
-          unionOp->compute(nbdi, newst, nbdi);
+          unionOp->computeTemp(nbdi, newst, nbdi);
           updated = (nbdi.getNode() != nb.d(i));
           nb.set_d(i, nbdi);
         }
@@ -845,7 +845,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
         // there's new states and existing states; union them.
         Tdi.set(T->d(i));
         newst.set(n);
-        unionOp->compute(newst, Tdi, Tdi);
+        unionOp->computeTemp(newst, Tdi, Tdi);
         T->set_d(i, Tdi);
       } // for j
 
@@ -1129,7 +1129,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
         first = false;
       } else {
         Rpdi.set( transF->linkNode(Rp->d(i)) );
-        mxdIntersectionOp->compute(maxDiag, Rpdi, maxDiag);
+        mxdIntersectionOp->computeTemp(maxDiag, Rpdi, maxDiag);
       }
 
       // cleanup
@@ -1137,7 +1137,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
     } // for i
 
     // maxDiag is what we can split from here
-    mxdDifferenceOp->compute(root, maxDiag, splits[level]);
+    mxdDifferenceOp->computeTemp(root, maxDiag, splits[level]);
     root = maxDiag;
 
     // Cleanup
@@ -1283,13 +1283,13 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
         else {
           nbdi.set(nb.d(i), nb.ei(i));
           newst.set(rec, recev);
-          minOp->compute(nbdi, newst, nbdi);
+          minOp->computeTemp(nbdi, newst, nbdi);
           updated = (nbdi.getNode() != nb.d(i));
           nb.set_de(i, nbdi);
 /*
           long accev = Inf<long>();
           node_handle acc = 0;
-          minOp->compute(nb.ei(i), nb.d(i), recev, rec, accev, acc);
+          minOp->computeTemp(nb.ei(i), nb.d(i), recev, rec, accev, acc);
           resF->unlinkNode(rec);
           if (acc != nb.d(i)) {
             resF->unlinkNode(nb.d(i));
@@ -1436,7 +1436,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
         const node_handle oldi = T->d(i);
         long newev = Inf<long>();
         node_handle newstates = 0;
-        minOp->compute(nev, n, T->ei(i), oldi, newev, newstates);
+        minOp->computeTemp(nev, n, T->ei(i), oldi, newev, newstates);
         T->setEdge(i, newev);
         T->d_ref(i) = newstates;
 
@@ -1447,7 +1447,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
         // there's new states and existing states; union them.
         Tdi.set(T->d(i), T->ei(i));
         newst.set(n, nev);
-        minOp->compute(newst, Tdi, Tdi);
+        minOp->computeTemp(newst, Tdi, Tdi);
         T->set_de(i, Tdi);
       } // for j
 

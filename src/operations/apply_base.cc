@@ -52,7 +52,7 @@ MEDDLY::generic_binary_mdd::~generic_binary_mdd()
 }
 
 void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &b, 
-  dd_edge &c)
+  dd_edge &c, bool userFlag)
 {
 #ifdef TRACE_ALL_OPS
   printf("computing Top %s(%d, %d)\n", 
@@ -61,7 +61,7 @@ void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &
 #endif
   node_handle cnode = compute(a.getNode(), b.getNode());
   const int num_levels = resF->getDomain()->getNumVariables();
-  if (resF->isQuasiReduced() && cnode != resF->getTransparentNode()
+  if ( userFlag && resF->isQuasiReduced() && cnode != resF->getTransparentNode()
     && resF->getNodeLevel(cnode) < num_levels) {
     node_handle temp = ((mt_forest*)resF)->makeNodeAtLevel(num_levels, cnode);
     resF->unlinkNode(cnode);
@@ -427,7 +427,7 @@ MEDDLY::generic_binary_mxd::~generic_binary_mxd()
 }
 
 void MEDDLY::generic_binary_mxd::computeDDEdge(const dd_edge &a, const dd_edge &b, 
-  dd_edge &c)
+  dd_edge &c, bool userFlag)
 {
   node_handle cnode = compute(a.getNode(), b.getNode());
   c.set(cnode);
@@ -1030,7 +1030,7 @@ MEDDLY::generic_binbylevel_mxd::~generic_binbylevel_mxd()
 }
 
 void MEDDLY::generic_binbylevel_mxd
-::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
+::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c, bool userFlag)
 {
   node_handle result = compute(
     resF->getDomain()->getNumVariables(), a.getNode(), b.getNode()
@@ -1309,7 +1309,7 @@ MEDDLY::generic_binary_evplus::~generic_binary_evplus()
 }
 
 void MEDDLY::generic_binary_evplus
-::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
+::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c, bool userFlag)
 {
   node_handle result;
   long ev = Inf<long>(), aev = Inf<long>(), bev = Inf<long>();
@@ -1405,7 +1405,7 @@ MEDDLY::generic_binary_evplus_mxd::~generic_binary_evplus_mxd()
 }
 
 void MEDDLY::generic_binary_evplus_mxd
-::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
+::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c, bool userFlag)
 {
   node_handle result;
   long ev = Inf<long>(), aev = Inf<long>(), bev = Inf<long>();
@@ -1556,7 +1556,7 @@ MEDDLY::generic_binary_evtimes::~generic_binary_evtimes()
 }
 
 void MEDDLY::generic_binary_evtimes
-::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c)
+::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c, bool userFlag)
 {
   node_handle result; 
   float ev, aev, bev;

@@ -233,7 +233,7 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, dd_edge &c)
   if (0==code)  
     throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   unary_operation* op = getOperation(code, a, c);
-  op->compute(a, c);
+  op->computeTemp(a, c);
 }
 
 void MEDDLY::apply(const unary_opname* code, const dd_edge &a, long &c)
@@ -275,7 +275,7 @@ void MEDDLY::apply(const binary_opname* code, const dd_edge &a,
   if (0==code)
     throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   binary_operation* op = getOperation(code, a, b, c);
-  op->compute(a, b, c);
+  op->computeTemp(a, b, c);
 }
 
 //----------------------------------------------------------------------

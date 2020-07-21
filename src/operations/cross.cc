@@ -42,7 +42,7 @@ class MEDDLY::cross_bool : public binary_operation {
     cross_bool(const binary_opname* oc, expert_forest* a1,
       expert_forest* a2, expert_forest* res);
 
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
 
     node_handle compute_pr(unsigned in, int ht, node_handle a, node_handle b);
     node_handle compute_un(int ht, node_handle a, node_handle b);
@@ -61,7 +61,7 @@ MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
 }
 
 void
-MEDDLY::cross_bool::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c)
+MEDDLY::cross_bool::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
 {
   int L = arg1F->getDomain()->getNumVariables();
   node_handle cnode = compute_un(L, a.getNode(), b.getNode());

@@ -41,7 +41,7 @@ class MEDDLY::mdd2index_operation : public unary_operation {
     mdd2index_operation(const unary_opname* oc, expert_forest* arg, 
       expert_forest* res);
 
-    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
+    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
 
     void compute_r(int k, node_handle a, node_handle &bdn, long &bcard);
 };
@@ -61,7 +61,7 @@ MEDDLY::mdd2index_operation::mdd2index_operation(const unary_opname* oc,
 
 void
 MEDDLY::mdd2index_operation
-::computeDDEdge(const dd_edge &arg, dd_edge &res)
+::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
 {
   MEDDLY_DCASSERT(arg.getForest() == argF);
   MEDDLY_DCASSERT(res.getForest() == resF);

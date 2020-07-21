@@ -42,7 +42,7 @@ class MEDDLY::copy_MT : public unary_operation {
   public:
     copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res);
 
-    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res);
+    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
   protected:
     virtual node_handle compute_r(node_handle a) = 0;
 
@@ -79,7 +79,7 @@ MEDDLY::copy_MT
   buildCTs();
 }
 
-void MEDDLY::copy_MT::computeDDEdge(const dd_edge &arg, dd_edge &res)
+void MEDDLY::copy_MT::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
 {
   node_handle result = compute_r(arg.getNode());
   res.set(result);
@@ -258,7 +258,7 @@ namespace MEDDLY {
         buildCTs();
       }
 
-      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
+      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag) {
         node_handle b;
         TYPE bev = Inf<TYPE>();
         if (argF->getReductionRule() == resF->getReductionRule()) {
@@ -458,7 +458,7 @@ namespace MEDDLY {
         buildCTs();
       }
 
-      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
+      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag) {
         TYPE ev;
         node_handle b;
         arg.getEdgeValue(ev);
@@ -645,7 +645,7 @@ namespace MEDDLY {
         buildCTs();
       }
 
-      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
+      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag) {
         INTYPE av;
         node_handle bn;
         arg.getEdgeValue(av);
@@ -756,7 +756,7 @@ namespace MEDDLY {
         buildCTs();
       }
 
-      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res) {
+      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag) {
         INTYPE av;
         node_handle an, bn;
         OUTTYPE bv;

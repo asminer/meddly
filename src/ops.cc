@@ -451,7 +451,7 @@ MEDDLY::unary_operation::~unary_operation()
   unregisterInForest(resF);
 }
 
-void MEDDLY::unary_operation::computeDDEdge(const dd_edge &arg, dd_edge &res)
+void MEDDLY::unary_operation::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
