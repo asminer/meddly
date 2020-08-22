@@ -27,9 +27,10 @@ side:
       - title: "Building"
         url: "/basics/03_building"
       
-#  - title: "Examples"
-#    children:
-#      - title: "TBD 1"
+  - title: "Examples"
+    children:
+      - title: "Build MDD from function"
+        url: "/basics/101_example"
 #      - title: "TBD 2"
 
   - title: "History"
