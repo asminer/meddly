@@ -7,6 +7,7 @@ mathjax: true
 Build an MDD for Boolean function $f = x \vee (y \wedge z)$
 
 ## <span style="color:blue">  Truth Table </span>
+
 | $x$ | $y$ | $z$ | $f$ |	
 |--|--|--|--|
 |0|0|0|0|
