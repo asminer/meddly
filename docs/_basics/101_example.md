@@ -58,22 +58,38 @@ mdd->createEdge(element, 1, first);
 > Default value of element[0] (terminal) is true.
 
 ###  <span style="color:blue"> Add multiple elements into MDD. </span>
-- Via creatEdge() only : User can pass all elements and MEDDLY will take care of  adding them to the forest.
+- Via createEdge() only : User can pass all elements that evaluate to $f = 1$ and MEDDLY will take care of  adding them to the forest.
  All elements can be stored in an array and passed into createEdge(), like above example :
  
 ```c
 dd_edge all(mdd);
-mdd->createEdge(elementList, 8, all);
+mdd->createEdge(elementList, 5, all);
 ```
->  elementList : elementList[$j$] = element,  $\forall j \in$ [1,8]
+>  elementList : elementList[$j$] = element,  $\forall j \in$ [1,5]
 
 - Via createEdge() and UNION operation : User can pass elements one-by-one and explicitly union them.
  
  ```c
 dd_edge result(mdd);
-for each element from truth-table : 
+for each true element that from truth-table : 
     mdd->createEdge(element,1,first);
     apply(UNION, first, result, result);
 ```
 
 > result.show(std::cout, 0) will display the stored mdd.
+
+### <span style="color:blue"> Setting forest policies </span>
+
+Default forest policies for MDD is Fully-reduced.
+
+![Fully-Reduced MDD](images/FR_MDD.png)
+
+If forest policies are set to Quasi-reduced :
+```c
+forest::policies pmdd(false); // false - not for relations
+pmdd.setQuasiReduced();
+forest* mdd = d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL, pmdd);
+```
+
+![Quasi-Reduced MDD](images/QR_MDD.png)
+
