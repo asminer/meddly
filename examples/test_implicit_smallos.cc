@@ -205,7 +205,7 @@ if('i' == method)
   satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,relmxd,inmdd);
 
   start.note_time();
-  buildImplicitRelation(model, TRANS, PLACES, BOUNDS, T);
+  buildImplicitRelation(model, TRANS, PLACES, BOUNDS, inmdd, relmxd, T);
   printf("\nNext-state function construction took %.4e seconds\n",
   start.get_last_seconds());
   specialized_operation* sat = 0;

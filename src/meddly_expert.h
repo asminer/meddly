@@ -41,6 +41,8 @@
 #include <vector>
 #include <cstdint>
 #include <map>
+#include <set>
+
 
 // #define DEBUG_MARK_SWEEP
 // #define DEBUG_BUILDLIST
@@ -99,6 +101,7 @@ namespace MEDDLY {
   class satpregen_opname;
   class satotf_opname;
   class satimpl_opname;
+  class sathyb_opname;
   class constrained_opname;
 
   class ct_initializer;
@@ -115,6 +118,7 @@ namespace MEDDLY {
   // classes defined elsewhere
   class base_table;
   class unique_table;
+  class impl_unique_table;
 
   class reordering_base;
 
@@ -166,6 +170,11 @@ namespace MEDDLY {
       Transition relation is specified implicitly.
   */
   extern const satimpl_opname* SATURATION_IMPL_FORWARD;
+
+  /** Forward reachability using saturation.
+      Allows hybrid representation of transition relation.
+  */
+  extern const sathyb_opname* SATURATION_HYB_FORWARD;
 
   /** Minimum-witness operations.
   */
@@ -489,10 +498,13 @@ public:
    @param  level          Level affected.
    @param  down           Handle to a relation node below us. 
    */
-  relation_node(unsigned long signature, int level, rel_node_handle down);
-  virtual ~relation_node();
+ relation_node(unsigned long signature, forest* f, int level, node_handle down, long e_val, long f_val, long inh);
+ virtual ~relation_node();
   
   // the following should be inlined in meddly_expert.hh
+
+   // Get the forest to which the node belongs
+  expert_forest* getForest();
   
   /** A signature for this function.
    This helps class implicit_relation to detect duplicate
@@ -508,6 +520,8 @@ public:
   /** Pointer to the (ID of the) next piece of the relation.
    */
   rel_node_handle getDown() const;
+
+  void setDown(rel_node_handle d);
   
   /** The unique ID for this piece.
    */
@@ -525,6 +539,30 @@ public:
    */
   void setTokenUpdate(long* token_update);
   
+  /** Get the enable condition for this piece.
+   */
+  long getEnable() const;
+  
+  /** Set the enable condition for this piece.
+   */
+  void setEnable(long enable_val);
+  
+  /** Get the fire condition for this piece.
+   */
+  long getFire() const;
+  
+  /** Set the fire condition for this piece.
+   */
+  void setFire(long fire_val);
+  
+  /** Get the inhibit condition for this piece.
+   */
+  long getInhibit() const;
+  
+  /** Set the inhibit condition for this piece.
+   */
+  void setInhibit(long inh_val);
+
   /** The size of token_update array for this piece.
    */
   long getPieceSize() const;
@@ -554,7 +592,11 @@ public:
   
 private:
   unsigned long signature;
+  expert_forest* f;
   int level;
+  long enable;
+  long fire;
+  long inhibit;
   rel_node_handle down;
   rel_node_handle ID;
   long* token_update;
@@ -2690,6 +2732,11 @@ class MEDDLY::expert_forest: public forest
    */
   node_handle createRelationNode(MEDDLY::relation_node *un);
 
+  unsigned getImplicitTableCount() const;
+  inline MEDDLY::relation_node* buildImplicitNode(node_handle rnh);
+  inline MEDDLY::node_handle getImplicitTerminalNode() const;
+
+
   /** Return a forest node equal to the one given.
       The node is constructed as necessary.
       This version should be used only for
@@ -3043,6 +3090,10 @@ class MEDDLY::expert_forest: public forest
      */
     node_handle createImplicitNode(MEDDLY::relation_node &nb);
 
+    unsigned getImplTableCount() const;
+    MEDDLY::relation_node* buildImplNode(node_handle rnh);
+    MEDDLY::node_handle getImplTerminalNode() const;
+
 
     /** Apply reduction rule to the temporary extensible node and finalize it. 
         Once a node is reduced, its contents cannot be modified.
@@ -3065,6 +3116,9 @@ class MEDDLY::expert_forest: public forest
   protected:
     /// uniqueness table, still used by derived classes.
     unique_table* unique;
+
+    /// uniqueness table for relation nodes.
+    impl_unique_table* implUT;
 
     /// Should a terminal node be considered a stale entry in the compute table.
     /// per-forest policy, derived classes may change as appropriate.
@@ -3934,6 +3988,478 @@ public:
 	  {
 	  }
 	};
+};
+
+// ******************************************************************
+// *                                                                *
+// *                      sathyb_opname class                      *
+// *                                                                *
+// ******************************************************************
+
+/** Saturation, transition relations stored implcitly, operation names.
+    Implemented in operations/sat_impl.cc
+*/
+class MEDDLY::sathyb_opname: public specialized_opname {
+  public:
+
+    sathyb_opname(const char* n);
+    virtual ~sathyb_opname();
+
+    /// Arguments should have type "implicit_relation", below
+    virtual specialized_operation* buildOperation(arguments* a) const;
+
+  public:
+
+    /** A hybrid relation, as a DAG of relation_nodes and MxD nodes.
+
+        The relation is partitioned by "events", where each event
+        is the "symbolic" conjunction of local functions, and each local function
+        might be specified as a single relation_node or an MxD forest based on the cardinality of dependent variables of the local function.  
+        The relation_nodes are chained together. 
+
+        Ideally it behaves as a combination of MxD forest and implicit relation : covering the best of both worlds.
+    */
+  
+    class hybrid_relation;
+  
+  
+    class subevent { //: public semievent {
+    public:
+      /// Constructor, specify variables that this function depends on,
+      /// and if it is a firing or enabling event.
+      subevent(forest* f, int* v, int nv, bool firing);
+      virtual ~subevent();
+      
+      //semievent* clone();
+      
+      /// Get the forest to which this function belongs to.
+      expert_forest* getForest();
+      
+      /// Get number of variables this function depends on.
+      int getNumVars() const; // Returns 1 for implicit node
+      
+      /// Get array of variables this function depends on.
+      const int* getVars() const; // Returns only 1 value
+      
+      /// Get the DD encoding of this function
+      const dd_edge& getRoot() const; // Non-existent for implicit node
+      
+      /// Get the node_handle of this function
+      const node_handle getRootHandle() const; // getID() for implicit node
+      
+      /// Get the "top" variable for this function
+      int getTop() const; // getLevel() for implicit node
+      
+      /// Is this a firing subevent?
+      bool isFiring() const;
+      
+      /// Is this an enabling subevent
+      bool isEnabling() const;
+      
+      /// Is this an implicit subevent
+      bool isImplicit() const;
+      
+      /** Applicable if implicit node:
+       A signature for this function.
+       This helps class implicit_relation to detect duplicate
+       functions (using a hash table where the signature
+       is taken as the hash value).
+       */
+      //unsigned long getSignature() const;
+      
+      /** Applicable if implicit node :
+       Get the ID of next piece, default = handleForValue(True).
+       */
+      node_handle getDown() const;
+      
+      /** Applicable if implicit node :
+       Set the ID of next piece.
+       */
+      void setDown(node_handle down) ;
+      
+      /** Applicable if implicit node :
+       Set the unique ID for this piece.
+       */
+      void setRootHandle(node_handle ID);
+      
+      //
+      int getEnable() const;
+      int getFire() const;
+      
+      /** Determine if this node is equal to another one.
+       */
+      //virtual bool equals(const relation_node* n) const;
+      
+      /**
+       Rebuild the function to include the
+       local state "index" for the variable "v".
+       Updates root with the updated function.
+       User MUST provide this method.
+       */
+      virtual void confirm(hybrid_relation &rel, int v, int index) = 0;
+      
+      /// If num_minterms > 0,
+      /// Add all minterms to the root
+      /// Delete all minterms.
+      void buildRoot();
+      
+      /// Debugging info
+      void showInfo(output& out) const;
+      
+      long mintermMemoryUsage() const;
+      void clearMinterms();
+      
+    protected:
+      bool addMinterm(const int* from, const int* to);
+      bool usesExtensibleVariables() const;
+      
+      int* vars;
+      int num_vars;
+      dd_edge root; // NULL for implicit node
+      node_handle root_handle;
+      int top; // top = vars[0] for implicit node
+      node_handle down;
+     
+      
+      expert_forest* f;
+      int** unpminterms; // unpminterms[0] for implicit node
+      long enable;
+      int** pminterms; // pminterms[0] for implicit node
+      long fire;
+      int num_minterms;
+      int process_minterm_pos;
+      int processed_minterm_pos;
+      int size_minterms;
+      bool is_firing;
+      bool uses_extensible_variables;
+      
+    };  // end of class subevent
+    
+    // ============================================================
+    
+    /**
+     An "event".
+     Produces part of the transition relation, from its sub-functions.
+     
+     TBD - do we need to split the enabling and updating sub-functions,
+     or will one giant list work fine?
+     */
+    class event {
+      // TBD - put a list of events that have priority over this one
+      
+      // TBD - for priority - when is this event enabled?
+    public:
+
+      event(subevent** se, int nse, relation_node** r, int nr);
+      virtual ~event();
+      
+      /// Get the forest to which the subevents belong to
+      inline expert_forest* getForest() { return f; } 
+      
+      /// Get number of subevents
+      inline int getNumOfSubevents() const { return num_subevents; }
+      
+      /// Get array of subevents
+      inline subevent** getSubevents() const { return subevents; }
+      
+      /// Get number of relation_nodes
+      inline int getNumOfRelnodes() const { return num_relnodes; }
+      
+      /// Get array of relation_nodes
+      inline relation_node** getRelNodes() const { return relnodes; }
+      
+      /// Get number of components
+      inline int getNumOfComponents() const { return num_components; }
+      
+      ///Get the subevent handle or relation node handle whose top level is the given level
+      inline std::set<node_handle> getComponentAt(int level)  { return level_component.find(level)->second; }
+
+      inline node_handle getTopComponent()  { return *level_component[top].begin(); }
+
+      ///Get the entire map of subevent-nodeHandles_by_topLevel
+      inline std::map<int, std::set<node_handle>> getComponents()  { return level_component; }
+      
+      ///Get the entire map of subevent-nodeHandles_by_topLevel
+      inline node_handle* getAllComponents()  {  return all_components; }
+
+      ///Get the type of subevent-nodeHandles
+      inline bool getSubeventType(node_handle nh)  { return component_se_type[nh]; }
+      
+      
+      /// Get the "top" variable for this event
+      inline int getTop() const { return top; }
+      
+      /// Get the number of variables that are effected by this event
+      inline int getNumVars() const { return num_vars; }
+      
+      /// Get a (sorted) array of variables that are effected by this event
+      inline const int* getVars() const { return vars; }
+      
+      inline const dd_edge& getRoot() const { return root; }
+      
+      inline const std::set<node_handle> getRootHandle() const { return root_handle; }
+      
+      inline bool isDisabled() const { return is_disabled; }
+      
+      inline bool needsRebuilding() const { return needs_rebuilding; }
+      
+      inline void markForRebuilding() { needs_rebuilding = true; }
+      
+      /**
+       If this event has been marked for rebuilding:
+       Build this event as a conjunction of its sub-events.
+       
+       @return               true, if the event needed rebuilding and
+       the rebuilding modified the root.
+       false, otherwise.
+       */
+      virtual bool rebuild();
+      
+      /// Get down of a level of event 
+      int downLevel(int level) const;
+      
+      /// Enlarges the "from" variable to be the same size as the "to" variable
+      void enlargeVariables();
+      
+      /// Debugging info
+      void showInfo(output& out) const;
+      
+      long mintermMemoryUsage() const;
+      
+    protected:
+      void buildEventMask();
+      
+    private:
+      subevent** subevents;
+      int num_subevents;
+      relation_node** relnodes;
+      int num_relnodes;
+      int num_components;
+      int top;
+      int num_vars;
+      int* vars;
+
+      // set only if sub-events are conjuncted
+      dd_edge partial_root;
+
+      // set because multiple root_handles may exist if sub-events & relNodes are not conjuncted
+      std::set<node_handle> root_handle; 
+      bool needs_rebuilding;
+      expert_forest* f;
+      dd_edge root;
+      bool is_disabled;
+      int num_firing_vars;
+      int* firing_vars;
+      dd_edge event_mask;
+      int* event_mask_from_minterm;
+      int* event_mask_to_minterm;
+      bool first_time_build;
+
+      
+      int num_rel_vars;
+      int* relNode_vars;
+      
+      std::map<int,std::set<node_handle>> level_component; // stores the set of subevent node_handles whose top is this level.
+      std::map<node_handle,bool> component_se_type; //enabling:0 firing/rn:1
+      node_handle* all_components; // set of subevent's top node_handles 
+      
+    };  // end of class event
+  
+
+
+    /** An implicit relation, as a DAG of relation_nodes.
+
+        The relation is partitioned by "events", where each event
+        is the conjunction of local functions, and each local function
+        is specified as a single relation_node.  The relation_nodes
+        are chained together with at most one relation_node per state
+        variable, and any skipped variables are taken to be unchanged
+        by the event.
+
+        If the bottom portion (suffix) of two events are identical,
+        then they are merged.  This is done by "registering" nodes
+        which assigns a unique ID to each node, not unlike an MDD forest.
+
+        Note: node handles 0 and 1 are reserved.
+        0 means null node.
+        1 means special bottom-level "terminal" node
+        (in case we need to distinguish 0 and 1).
+    */
+    class hybrid_relation : public specialized_opname::arguments {
+      public:
+        /** Constructor.
+
+            @param  inmdd       MDD forest containing initial states
+            @param  outmdd      MDD forest containing result
+
+            Not 100% sure we need these...
+        */
+        hybrid_relation(forest* inmdd, forest* relmxd, forest* outmdd, event** E, int ne);
+        virtual ~hybrid_relation();
+      
+        /// Returns the Relation forest that stores the mix of relation nodes and mxd nodes
+        expert_forest* getHybridForest() const;
+
+
+        /// Returns the MDD forest that stores the initial set of states
+        expert_forest* getInForest() const;
+
+
+        /// Returns the MDD forest that stores the resultant set of states
+        expert_forest* getOutForest() const;
+
+
+        /// If only relation_nodes are present
+        /// return the vector of events pertaining to a given level
+        /// that have the same net effect 
+        std::vector<node_handle> getRelNodeAtLevelWithEffect(int level, long effect);
+
+      private:
+        expert_forest* insetF;
+        expert_forest* outsetF;
+        expert_forest* hybRelF;
+        
+        int num_levels;
+
+      private:
+
+        /// Last used ID of \a relation node.
+        long last_in_node_array;
+
+      private:
+        // TBD - add a data structure for the "uniqueness table"
+        // of relation_nodes, so if we register a node that
+        // is already present in a node_array, we can detect it.
+
+        std::unordered_map<node_handle, relation_node*> impl_unique;
+
+      private:
+        // TBD - add a data structure for list of events with top level k,
+        // for all possible k.
+        // Possibly this data structure is built by method
+        // finalizeNodes().
+
+        node_handle** event_list;
+        long* event_list_alloc; // allocated space
+        long* event_added; //how many events added so far
+
+        int* confirm_states; //total no. of confirmed states of a level
+        bool** confirmed; // stores whether a particular local state is confirmed
+        int* confirmed_array_size; // stores size of confirmed array
+
+
+        // Obtained from OTF :
+      
+        // All events that begin at level i,
+        // are listed in events_by_top_level[i].
+        // An event will appear in only one list
+        // (as there is only one top level per event).
+        // num_events_by_top_level[i] gives the size of events_by_top_level[i]
+        event*** events_by_top_level;
+        int *num_events_by_top_level;
+        
+        // All events that depend on a level i,
+        // are listed in events_by_level[i]
+        // Therefore, an event that depends on n levels,
+        // will appear in n lists
+        // num_events_by_level[i] gives the size of events_by_level[i]
+        event*** events_by_level;
+        int *num_events_by_level;
+        
+        // All subevents that depend on a level i,
+        // are listed in subevents_by_level[i]
+        // Therefore, a subevent that depends on n levels,
+        // will appear in n lists
+        // num_subevents_by_level[i] gives the size of subevents_by_level[i]
+        subevent*** subevents_by_level;
+        int *num_subevents_by_level;
+      
+        // All relation_nodes that depend on a level i,
+        // are listed in relnodes_by_level[i]
+        // A relnode can only appear in one list
+        // num_relnodes_by_level[i] gives the size of relnodes_by_level[i]
+        relation_node*** relnodes_by_level;
+        int *num_relnodes_by_level;
+      
+      public:
+
+        /// Get total number of variables
+        inline int getNumVariables() { return num_levels;}
+
+        /** Rebuild an event.
+         
+         @param  i           index of the event.
+         @return             true, if event was updated.
+         */
+        bool rebuildEvent(int level, int i);
+
+        /// Get total number of events upto given level
+        long getTotalEvent(int level);
+
+        /// Resizes the Event List
+        void resizeEventArray(int level);
+
+        /// Returns the number of events that have this level as top
+        long lengthForLevel(int level) const;
+
+        /// Returns the array of events that have this level as top
+        event** arrayForLevel(int level) const;
+
+        /// Returns an array of local states for this level, such that
+        /// result[i] == isConfirmed(level, i).
+        const bool* getLocalStates(int level);
+
+
+        /// Returns the number of confirmed states at a level
+        int getConfirmedStates(int level) const;
+
+        /// Confirms the local states at a level
+        void setConfirmedStates(int level, int i);
+
+        /// Confirms the local states in the given MDD
+        void setConfirmedStates(const dd_edge &set);
+
+
+        /// Checks if i is confirmed
+        bool isConfirmedState(int level, int i);
+
+        /// Expand confirm array
+        void resizeConfirmedArray(int level, int index);
+
+        /** Bound all extensible variables
+            using the maximum confirmed local state as the bound.
+        */
+        void bindExtensibleVariables();
+
+      public:
+        /// Prints the hybrid relation
+        void show();
+      
+     public:
+      
+      /*
+       Group the list of events at a given level by same next-of values 
+       @param level    level at which saturation is called
+       @param i        number of tokens before event is fired
+       @param R        array of events at level top
+       
+       Return the map.
+       */
+      std::unordered_map<long,std::vector<node_handle>> getListOfNexts(int level, long i, relation_node **R);
+      
+      /*
+       Returns whether there exist a possibility of doing union 
+       @param level    level at which saturation is called
+       @param i        number of tokens before event is fired
+       @param R        array of events at level top
+       
+       Return bool.
+       */
+      bool isUnionPossible(int level, long i, relation_node **R);
+      
+    };  // class hybrid_relation
+
+
 };
 
 // ******************************************************************

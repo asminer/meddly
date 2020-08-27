@@ -57,11 +57,15 @@ MEDDLY::satimpl_opname::~satimpl_opname()
 }
 
 
-MEDDLY::relation_node::relation_node(unsigned long sign, int lvl, rel_node_handle d)
+MEDDLY::relation_node::relation_node(unsigned long sign, forest* f, int lvl, node_handle d, long enable_val, long fire_val, long inh_val) :
+f(static_cast<expert_forest*>(f))
 {
   signature  = sign;
   level = lvl;
   down = d;
+  enable = enable_val;
+  fire = fire_val;
+  inhibit = inh_val;
   piece_size = 0;
   token_update = NULL;
 }
@@ -80,7 +84,7 @@ long MEDDLY::relation_node::nextOf(long i)
 bool
 MEDDLY::relation_node::equals(const relation_node* n) const
 {
-  if((signature == n->getSignature()) && (level == n->getLevel()) && (down == n->getDown()))
+  if((signature == n->getSignature()) && (level == n->getLevel()) && (down == n->getDown()) && (fire == n->getFire()) && (enable == n->getEnable()))
     return true;
   else
     return false;
@@ -116,6 +120,7 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd, fore
                                                              forest* outmdd)
 : insetF(static_cast<expert_forest*>(inmdd)), outsetF(static_cast<expert_forest*>(outmdd)), mixRelF(static_cast<expert_forest*>(relmxd))
 {
+  mixRelF = static_cast<expert_forest*>(relmxd);
   
   if (0==insetF || 0==outsetF || 0==mixRelF ) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   
@@ -168,7 +173,7 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd, fore
   
   
   //create the terminal node
-  relation_node *Terminal = new relation_node(0,0,TERMINAL_NODE);
+  relation_node *Terminal = new MEDDLY::relation_node(0,mixRelF,0,-1,0,0,-1);
   //mixRelF->createRelationNode(Terminal);
   Terminal->setID(TERMINAL_NODE);
   std::pair<rel_node_handle, relation_node*> TerminalNode(TERMINAL_NODE,Terminal);
