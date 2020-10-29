@@ -32,6 +32,8 @@ class MEDDLY::builtin_initializer : public initializer_list {
   unary_opname* SELECT;
   unary_opname* IEC;
   unary_opname* AC;
+  unary_opname* HU;
+  unary_opname* UC;
 
   binary_opname* UNION;
   binary_opname* INTERSECT;

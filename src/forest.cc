@@ -463,12 +463,24 @@ void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
   throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 }
 
+void MEDDLY::forest
+::underApproximate(dd_edge &e, int Threashold)
+{
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::forest
+::HeuristicUnderApproximate(dd_edge &e, int Threashold)
+{
+  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
 void MEDDLY::forest::removeStaleComputeTableEntries()
 {
   if (operation::usesMonolithicComputeTable()) {
     operation::removeStalesFromMonolithic();
   } else {
-    for (unsigned i=0; i<szOpCount; i++) 
+    for (unsigned i=0; i<szOpCount; i++)
       if (opCount[i]) {
         operation* op = operation::getOpWithIndex(i);
         op->removeStaleComputeTableEntries();
@@ -2356,6 +2368,41 @@ void MEDDLY::expert_forest::swapNodes(node_handle p, node_handle q)
   unique->add(hashNode(p), p);
   unique->add(hashNode(q), q);
 }
+
+MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlaceWithoutRecyclingDownPtr(unpacked_node* un, node_handle p)
+{
+  unique->remove(hashNode(p), p);
+  // nodeMan->unlinkDownAndRecycle(nodeHeaders.getNodeAddress(p));
+
+  un->computeHash();
+
+  nodeHeaders.setNodeLevel(p, un->getLevel());
+  node_address addr = nodeMan->makeNode(p, *un, getNodeStorage());
+  nodeHeaders.setNodeAddress(p, addr);
+  // incoming count, cache count remains unchanged
+
+  unique->add(un->hash(), p);
+
+#ifdef DEVELOPMENT_CODE
+  unpacked_node* key = unpacked_node::newFromNode(this, p, false);
+  key->computeHash();
+  MEDDLY_DCASSERT(key->hash() == un->hash());
+  node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
+  MEDDLY_DCASSERT(f == p);
+  unpacked_node::recycle(key);
+#endif
+#ifdef DEBUG_CREATE_REDUCED
+  printf("Created node ");
+  FILE_output s(stdout);
+  showNode(s, p, SHOW_DETAILS | SHOW_INDEX);
+  printf("\n");
+#endif
+
+  unpacked_node::recycle(un);
+  return p;
+}
+
+
 
 MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_node* un, node_handle p)
 {

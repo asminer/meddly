@@ -78,6 +78,8 @@ libmeddly_la_SOURCES = \
   operations/intersection.h   operations/intersection.cc \
 	operations/incoming_edge_count.h	operations/incoming_edge_count.cc\
 	operations/above_count.h 		operations/above_count.cc\
+	operations/highest_unique.h	operations/highest_unique.cc\
+	operations/unique_count.h		operations/unique_count.cc\
   operations/difference.h     operations/difference.cc   \
   operations/cross.h          operations/cross.cc        \
   operations/maxmin.h         operations/maxmin.cc       \

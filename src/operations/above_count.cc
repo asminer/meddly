@@ -187,7 +187,7 @@ long MEDDLY::ac_mdd_int::compute_r(int k, node_handle a)
   // CTresult[0].writeL(iec);
   // CT0->addEntry(CTsrch, CTresult[0]);
 
-#ifdef DEBUG_CARD
+#ifdef DEBUG_AC
   fprintf(stderr, "ac of node %d is %ld(L)\n", a, ac);
 #endif
   return ac;
@@ -298,21 +298,30 @@ protected:
    ac_mdd_real(const unary_opname* oc, expert_forest* arg)
      : ac_real(oc, arg) { }
    virtual void compute(const dd_edge &arg, double &res) {
-       for(int i=0;i<arg.getCardinality()+1;i++)
+
+       int card =lastNode; //argF->getCurrentNumNodes();// instead of arg.getCardinality()
+       if(card<1)
+       {
+           throw error(error::INVALID_SEQUENCE, __FILE__, __LINE__);
+       }
+#ifdef DEBUG_AC
+
+       for(int i=0;i<card;i++)
        {
       	 printf("beforeAC %d %d \n",i, incomingedgecount[i]);
        }
-	  abovecount=new int[(int)arg.getCardinality()+1];
-     iec=new int[(int)arg.getCardinality()+1];
-     for(int i=0;i<arg.getCardinality()+1;i++)
+#endif
+	  abovecount=new int[card];
+     iec=new int[card];
+     for(int i=0;i<card;i++)
      {
     	 iec[i]=incomingedgecount[i];
      }
-     abovecount[arg.getNode()]=1;
+     abovecount[arg.getNode()-1]=1;
      res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
 
 #ifdef DEBUG_AC
-     for(int i=0;i<arg.getCardinality()+1;i++)
+     for(int i=0;i<card;i++)
      {
     	 printf("AC %d %d \n",i, abovecount[i]);
      }
@@ -360,9 +369,9 @@ protected:
 		int kdn = k - 1;
 		for (unsigned z = 0; z < A->getNNZs(); z++) {
 			if(kdn>0){
-				abovecount[int(A->d(z))]+=abovecount[a];
-				iec[int(A->d(z))]--;
-				if (iec[int(A->d(z))]==0){
+				abovecount[int(A->d(z))-1]+=abovecount[a-1];
+				iec[int(A->d(z))-1]--;
+				if (iec[int(A->d(z))-1]==0){
 				compute_r(kdn, A->d(z));
 				}
 			}
@@ -400,9 +409,9 @@ protected:
 //   CT0->addEntry(CTsrch, CTresult[0]);
 
  #ifdef DEBUG_AC
-   fprintf(stderr, "AC of node %d is %le(L)\n", a, abovecount[a]);
+   fprintf(stderr, "AC of node %d is %le(L)\n", a, abovecount[a-1]);
  #endif
-   return abovecount[a];
+   return abovecount[a-1];
  }
 
 

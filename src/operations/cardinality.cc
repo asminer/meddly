@@ -37,7 +37,8 @@ namespace MEDDLY {
   class card_real;
   class card_mdd_real;
   class card_mxd_real;
-
+  int* belowcount;
+  int lastNode;
 #ifdef HAVE_LIBGMP
   class card_mpz;
   class card_mdd_mpz;
@@ -228,6 +229,19 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
 class MEDDLY::card_real : public unary_operation {
 public:
   card_real(const unary_opname* oc, expert_forest* arg);
+protected:
+    inline compute_table::entry_key*
+    findResult(node_handle a, double &b)
+    {
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->writeN(a);
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      b = CTresult[0].readI();
+      CT0->recycle(CTsrch);
+      return 0;
+    }
 };
 
 MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
@@ -252,8 +266,38 @@ public:
     : card_real(oc, arg) { }
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
+    // FILE_output meddlyout(stdout);
+    //CT0->show(meddlyout,2);
+    // printf("lastNode %d\n",lastNode );
+    delete belowcount;
+    belowcount=new int[lastNode];//argF->getCurrentNumNodes()];
+
+//     for(int i=1;i<int(res)+1;i++){
+//     compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+//     MEDDLY_DCASSERT(CTsrch);
+//     CTsrch->writeN(i);
+// //     printf("getCurrentNumNodes: %ld\n",argF->getCurrentNumNodes() );
+// // printf("getKeyType: %d\n", etype[0]->getKeyType(0));
+//     CT0->find(CTsrch, CTresult[0]);
+//     if (CTresult[0]) {
+//
+//         // int bres=
+//          printf("Card result for %d is %d \n",i ,(int)CTresult[0].readD());
+//
+//      belowcount[i-1]=(int)CTresult[0].readD();
+//     }
+// }
+    // belowcount=new int[(int)res];
+    std::map<int, int>::iterator itr;
+    for (itr = resultmap.begin(); itr != resultmap.end(); ++itr) {
+        belowcount[itr->first]=itr->second;
+    }
+    resultmap.clear();
+    // delete belowcount;
   }
   double compute_r(int ht, node_handle a);
+private:
+    std::map<int, int> resultmap;
 };
 
 double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
@@ -286,13 +330,14 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   for (unsigned z=0; z<A->getNNZs(); z++) {
     card += compute_r(kdn, A->d(z));
   }
-  
+
   // Cleanup
   unpacked_node::recycle(A);
 
   // Add entry to compute table
   CTresult[0].reset();
   CTresult[0].writeD(card);
+  resultmap[a-1]=card;
   CT0->addEntry(CTsrch, CTresult[0]);
 
 #ifdef DEBUG_CARD

@@ -48,6 +48,8 @@
 #include <vector>
 #include <memory>
 #include <cassert>
+#include <map>
+#include <set>
 
 // Flags for development version only. Significant reduction in performance.
 #ifdef DEVELOPMENT_CODE
@@ -154,6 +156,9 @@ namespace MEDDLY {
   extern int* incomingedgecount;
   extern int* abovecount;
   extern int* belowcount;
+  extern std::map< int, std::set<int>> highestunique;
+  extern int* uniquecount;
+  extern int lastNode;
   // ******************************************************************
   // *                    miscellaneous  functions                    *
   // ******************************************************************
@@ -261,6 +266,10 @@ namespace MEDDLY {
   extern const unary_opname* IEC;
   /// Unary operation. Return the number of above state count
   extern const unary_opname* AC;
+  // Unary operation. Return the highest unique set
+  extern const unary_opname* HU;
+  // Unary operation. Return the unique count.
+  extern const unary_opname* UC;
   // ******************************************************************
   // *                    Named  binary operations                    *
   // ******************************************************************
@@ -565,6 +574,8 @@ class MEDDLY::error {
       INSUFFICIENT_MEMORY,
       /// An operation is not supported for the given forest.
       INVALID_OPERATION,
+      /// An incorrect sequnce of operations.
+      INVALID_SEQUENCE,
       /// A provided variable is erroneous.
       INVALID_VARIABLE,
       /// A provided level number is erroneous.
@@ -1841,11 +1852,13 @@ class MEDDLY::forest {
                       f(v1 = vlist[v1], ..., vn = vlist[vn]).
 
         @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not BOOLEAN, 
+                        the range type of the forest is not BOOLEAN,
                         or the forest is for relations.
     */
     virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
+      virtual void underApproximate(dd_edge &e, int Threashold);
+      virtual void HeuristicUnderApproximate(dd_edge &e, int Threashold);
 
     /** Evaluate the function encoded by an edge.
         @param  f     Edge (function) to evaluate.

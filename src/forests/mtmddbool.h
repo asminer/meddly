@@ -21,14 +21,14 @@
 #define MTMDDBOOL_H
 
 #include "mtmdd.h"
-
+#include <cfloat>
 namespace MEDDLY {
-  class mt_mdd_bool; 
+  class mt_mdd_bool;
 };
 
 // ******************************************************************
 
-/** 
+/**
     Forest for multi-terminal, mdd, boolean range.
 */
 class MEDDLY::mt_mdd_bool : public mtmdd_forest {
@@ -46,10 +46,15 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest {
     virtual void showTerminal(output &s, node_handle tnode) const;
     virtual void writeTerminal(output &s, node_handle tnode) const;
     virtual node_handle readTerminal(input &s);
+    virtual void underApproximate(dd_edge &e, int Threashold);
+    virtual void HeuristicUnderApproximate(dd_edge &e, int Threashold);
 
   protected:
     virtual const char* codeChars() const;
+private:
+      void RemoveDuplicate(int lvl, std::map<int,int>map);
+      void RemoveDuplicate2(int lvl, std::map<int,int>map,dd_edge &e);
+
 };
 
 #endif
-

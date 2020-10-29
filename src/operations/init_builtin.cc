@@ -32,6 +32,8 @@
 #include "select.h"
 #include "incoming_edge_count.h"
 #include "above_count.h"
+#include "highest_unique.h"
+#include "unique_count.h"
 
 #include "union.h"
 #include "intersection.h"
@@ -84,6 +86,8 @@ namespace MEDDLY {
   const unary_opname* SELECT = 0;
   const unary_opname* IEC = 0;
   const unary_opname* AC=0;
+  const unary_opname* HU=0;
+  const unary_opname* UC=0;
 
   // binary operation "codes"
 
@@ -170,6 +174,8 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::SELECT,               SELECT,     initializeSelect()        );
   initP(MEDDLY::IEC,                  IEC,        initializeIncomingEdgeCount());
   initP(MEDDLY::AC,                   AC,         initializeAboveCount());
+  initP(MEDDLY::HU,                   HU,         initializeHighestUnique());
+  initP(MEDDLY::UC,                   UC,         initializeUniqueCount());
 
   initP(MEDDLY::UNION,                UNION,      initializeUnion()         );
   initP(MEDDLY::INTERSECTION,         INTERSECT,  initializeIntersection()  );
@@ -239,6 +245,8 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(CARD,           MEDDLY::CARDINALITY);
   cleanPair(IEC,            MEDDLY::IEC);
   cleanPair(AC,             MEDDLY::AC);
+  cleanPair(HU,             MEDDLY::HU);
+  cleanPair(UC,             MEDDLY::UC);
   cleanPair(COMPL,          MEDDLY::COMPLEMENT);
   cleanPair(MAXRANGE,       MEDDLY::MAX_RANGE);
   cleanPair(MINRANGE,       MEDDLY::MIN_RANGE);

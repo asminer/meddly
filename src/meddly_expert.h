@@ -2721,6 +2721,13 @@ class MEDDLY::expert_forest: public forest
      * Keep the reference number and the cache count of the node.
      */
     node_handle modifyReducedNodeInPlace(unpacked_node* un, node_handle p);
+    /*
+     * Modify a node in place.
+     * Does not check if the modified node is duplicate or redundant.
+     * The level of the node may change.
+     * Keep the reference number and the cache count of the node.
+     */
+    node_handle modifyReducedNodeInPlaceWithoutRecyclingDownPtr(unpacked_node* un, node_handle p);
 
   // ------------------------------------------------------------
   // virtual in the base class, but implemented here.
