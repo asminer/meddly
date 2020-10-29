@@ -270,6 +270,7 @@ public:
     //CT0->show(meddlyout,2);
     // printf("lastNode %d\n",lastNode );
     delete belowcount;
+    if(lastNode!=0)
     belowcount=new int[lastNode];//argF->getCurrentNumNodes()];
 
 //     for(int i=1;i<int(res)+1;i++){
@@ -288,11 +289,13 @@ public:
 //     }
 // }
     // belowcount=new int[(int)res];
+    if(lastNode!=0){
     std::map<int, int>::iterator itr;
     for (itr = resultmap.begin(); itr != resultmap.end(); ++itr) {
         belowcount[itr->first]=itr->second;
     }
     resultmap.clear();
+}
     // delete belowcount;
   }
   double compute_r(int ht, node_handle a);
