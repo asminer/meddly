@@ -62,32 +62,46 @@ using namespace MEDDLY;
 int main(int argc, char *argv[])
 {
   FILE_output meddlyout(stdout);
-
+  // initializer_list* L = defaultInitializerList(0);
+  // ct_initializer::setBuiltinStyle(ct_initializer::OperationArrayStyle, 10);
+  // initialize(L);
   initialize();
   // Create a domain
   domain *d = createDomain();
-  const int N = 2;
-  const int bounds[N] = {4, 2};
+  // const int N = 2;
+  // const int bounds[N] = {4, 2};
+  const int N = 4;
+  const int bounds[N] = {2, 2,2,2};
   // d->createVariablesTopDown(bounds, N);
   d->createVariablesBottomUp(bounds, N);
 
+  forest::policies pmdd(false);
+  pmdd.setPessimistic();
+
   // Create an MDD forest in this domain (to store states)
  forest* states = d->createForest(false, forest::BOOLEAN,
-      forest::MULTI_TERMINAL, forest::policies(false));
-
+      forest::MULTI_TERMINAL, pmdd);
+// forest::policies(false)
 #if 1
   printf("Constructing initial set of states\n");
 #if 1
   // Create an edge in MDD forest
+  // int** v = (int **) malloc(2 * sizeof(int*));
+  // v[0] = (int *) malloc((N+1) * sizeof(int));
+  // v[0][0] = 0; v[0][1] = 0; v[0][2] = 0;
+  // v[1] = (int *) malloc((N+1) * sizeof(int));
+  // v[1][0] = 0; v[1][1] = 1; v[1][2] = 0;
+  // v[2] = (int *) malloc((N+1) * sizeof(int));
+  // v[2][0] = 0; v[2][1] = 1; v[2][2] = 1;
   int** v = (int **) malloc(2 * sizeof(int*));
   v[0] = (int *) malloc((N+1) * sizeof(int));
-  v[0][0] = 0; v[0][1] = 0; v[0][2] = 0;
+  v[0][0] = 0; v[0][1] = 0; v[0][2] = 0; v[0][3] = 0; v[0][4] = 0;
   v[1] = (int *) malloc((N+1) * sizeof(int));
-  v[1][0] = 0; v[1][1] = 1; v[1][2] = 0;
-  v[2] = (int *) malloc((N+1) * sizeof(int));
-  v[2][0] = 0; v[2][1] = 1; v[2][2] = 1;
+  v[1][0] = 0; v[1][1] = 0; v[1][2] = 0; v[1][3] = 1; v[1][4] = 1;
+  // v[2] = (int *) malloc((N+1) * sizeof(int));
+  // v[2][0] = 0; v[2][1] = 1; v[2][2] = 1;
   dd_edge initial_state(states);
-  states->createEdge(v, 3, initial_state);
+  states->createEdge(v, 2, initial_state);
   initial_state.show(meddlyout, 2);
   /*expert_forest* f=static_cast<expert_forest*>(states);
   node_handle nn=initial_state.getNode();
@@ -98,7 +112,7 @@ int main(int argc, char *argv[])
   long l1=f->getIncomingCount(nn1);
   printf("l=%d l1=%d\n",l,l1);*/
 
- double c;
+ double c,c1;
 
  // node_headers nnh=f->getIncomingCount(nn);
   //l=nnh.getIncomingCount(nn);
@@ -117,14 +131,49 @@ int main(int argc, char *argv[])
  //long l=0;
 // unpacked_node* A = MEDDLY::unpacked_node::newFromNode( states,initial_state, false);
  //printf("initial_state %d\n", initial_state.getIncomingCount());
-   apply(IEC, initial_state, c);
 
-   for(int i=0;i<3;i++){
-	  printf("%d \t %d\n", i, incomingedgecount[i]);
-   }
-  printf("Exactly %d\n", c);
-  double e;
-  apply(AC, initial_state, e);
+
+
+   // apply(CARDINALITY,initial_state,c1);
+   // printf("CARDDDD\n" );
+   // for(int i=0;i<(int)c1;i++){
+   //    printf("BELOW %d \t %d\n", i, belowcount[i]);
+   // }
+
+
+
+// MEDDLY::operation::showMonolithicComputeTable(meddlyout,true);
+// printf("XXXXXX\n" );
+// MEDDLY::operation::showAllComputeTables(meddlyout,2);
+   // for(int i=1;i<int(c1)+1;i++){
+   // compute_table::entry_key* CTsrch = MEDDLY::CT0->useEntryKey(etype[0], 0);
+   // MEDDLY_DCASSERT(CTsrch);
+   // CTsrch->writeN(i);
+   // CT0->find(CTsrch, CTresult[0]);
+   // if (CTresult[0]) {
+   //   //CT0->recycle(CTsrch);
+   //   printf("FFFFF%f\n", CTresult[0].readD());
+   // }
+
+
+  //  apply(IEC, initial_state, c);
+  //
+  //  for(int i=0;i<(int)c1;i++){
+	//   printf("%d \t %d\n", i, incomingedgecount[i]);
+  //  }
+  // printf("Exactly %f\n", c1);
+  // double e;
+  // apply(AC, initial_state, e);
+
+
+  states->underApproximate(initial_state,4);
+  printf("HAHA lastNode %ld\n",states->getCurrentNumNodes() );
+  // node_handle root = initial_state.getNode();
+  // printf("Root is %d\n",root );
+  // roo
+  if (states->getCurrentNumNodes()!=0)
+  initial_state.show(meddlyout, 2);
+
 //
 //  printf(" reachable states\n");
 //  fflush(stdout);
