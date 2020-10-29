@@ -25,6 +25,7 @@
 #include <sstream>
 #include "defines.h"
 #include "unique_table.h"
+#include "impl_unique_table.h"
 #include "hash_stream.h"
 // #include "storage/bytepack.h"
 #include "reordering/reordering_factory.h"
@@ -369,6 +370,12 @@ void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const float* terms, dd_ed
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
+
+MEDDLY::node_handle MEDDLY::forest::unionOneMinterm(node_handle a,  int* from,  int* to, int level)
+{
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
 
 void MEDDLY::forest::createEdge(const int* const* vlist, int N, dd_edge &e)
 {
@@ -845,6 +852,7 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   // Initialize misc. private data
   //
   unique = new unique_table(this);
+  implUT = new impl_unique_table(this);
   performing_gc = false;
   in_validate = 0;
   in_val_size = 0;
@@ -871,6 +879,7 @@ MEDDLY::expert_forest::~expert_forest()
 
   // unique table
   delete unique;
+  delete implUT;
 
   // Misc. private data
   free(in_validate);
@@ -2214,10 +2223,33 @@ MEDDLY::node_handle MEDDLY::expert_forest
   return p;
 }
 
+unsigned MEDDLY::expert_forest
+::getImplTableCount() const
+{
+    return implUT->getNumEntries();
+}
+
+MEDDLY::relation_node* MEDDLY::expert_forest
+::buildImplNode(node_handle rnh)
+{
+  return implUT->getNode(rnh);
+}
+
+MEDDLY::node_handle MEDDLY::expert_forest
+::getImplTerminalNode() const
+{
+  return implUT->getLastHandle();
+}
+
+
 MEDDLY::node_handle MEDDLY::expert_forest
 ::createImplicitNode(MEDDLY::relation_node &nb)
 {
-  // 
+  // check for duplicates in unique table
+
+  node_handle q = implUT->isDuplicate(&nb);
+  if (q) return q;
+
   // Not eliminated by reduction rule.
   // Not a duplicate.
   //
@@ -2239,12 +2271,22 @@ MEDDLY::node_handle MEDDLY::expert_forest
   if (theLogger && theLogger->recordingNodeCounts()) {
     theLogger->addToActiveNodeCount(this, nb.getLevel(), 1);
   }
+  
+  #if 0
   // All of the work is in satimpl_opname::implicit_relation now :^)
   nodeHeaders.setNodeAddress(p, nb.getID());
   linkNode(p);
   
   // add to UT
   unique->add(nb.getSignature(), p);
+  #endif
+
+  // All of the work is in implUT now :^)
+  // If it is not duplicate, universal handle will become handle to node in implUT.
+  nb.setID(p);
+  nodeHeaders.setNodeAddress(p, implUT->add(p, &nb));
+  linkNode(p);
+
   
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node ");
@@ -2255,6 +2297,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   
   return p;
 }
+
 
 
 MEDDLY::node_handle MEDDLY::expert_forest

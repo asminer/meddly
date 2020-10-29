@@ -371,9 +371,17 @@ void explicitReachset(const char* const* events, int nEvents,
 int* nxtList;
 class derRelNode : public MEDDLY::relation_node
 {
+  int en;
+  int fr;
+  int h;
 public:
-  derRelNode(unsigned long signature, int level, rel_node_handle down):relation_node(signature, level, down)
-  {}
+  derRelNode(MEDDLY::forest* mxdF, int level, int dwn, int e, int f, int inh): relation_node(141010, mxdF, level, dwn, e, f, inh)
+  {
+    en = e;
+    fr = f;
+    h = inh;
+  }
+  
   long nextOf(long i) override
   {
   
@@ -382,17 +390,16 @@ public:
   
       if(getTokenUpdate()[i]==NOT_KNOWN) //Array needs to be updated
       {	
-      	long result = i+nxtList[getID()];
-      	long val = result>=0?result:OUT_OF_BOUNDS;
+      	long result = ((i>=en) && (h==-1?true:i<h))? i+fr : OUT_OF_BOUNDS;
+      	long val = result;
       	setTokenUpdateAtIndex(i,val);
       }
-
      return getTokenUpdate()[i];
   }
 };
 
 
-void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::satimpl_opname::implicit_relation* T)
+void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::forest* mddF, MEDDLY::forest* mxdF, MEDDLY::satimpl_opname::implicit_relation* T)
 {
   
   unsigned node_count = 0;
@@ -430,7 +437,7 @@ void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, in
        sign = events[e][p]>=0?(sign*10)+events[e][p]:(sign*100)+events[e][p];
         if(events[e][p]!=0)
         {
-          rNode[rctr] = new derRelNode(sign,p,previous_node_handle);
+          rNode[rctr] = new derRelNode(mxdF,p,previous_node_handle,events[e][p]<0?-events[e][p]:0,events[e][p],-1);
           previous_node_handle = T->registerNode((tops_of_events[e]==p),rNode[rctr]);
           
           rctr++;
@@ -440,5 +447,56 @@ void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, in
     }
 }
 
+
+MEDDLY::sathyb_opname::event** buildHybridRelation(const int* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::forest* mddF, MEDDLY::forest* mxdF) {
+
+  unsigned node_count = 0;
+  int* tops_of_events = (int*)malloc(size_t(nEvents)*sizeof(int));
+  
+  for(int e = 0;e < nEvents; e++)
+    {
+    bool done = false;
+    for( int p = 1; p <= nPlaces; p++)
+      {
+      if(events[e][p]!='0') node_count +=1;
+      if((events[e][nPlaces-p+1]!=0)&&(!done))
+        {
+        tops_of_events[e] = nPlaces-p+1;
+        done = true;
+        }
+      }
+    }
+  
+  derRelNode** rNode = (derRelNode**)malloc(node_count*sizeof(derRelNode*));
+  MEDDLY::sathyb_opname::event** T = (MEDDLY::sathyb_opname::event**)malloc(nEvents*sizeof(MEDDLY::sathyb_opname::event*));
+  
+  // Add/Subtract Tokens
+  nxtList = (int*)malloc((node_count+2)*sizeof(int));
+  nxtList[0] = 0;
+  nxtList[1] = 0;
+  
+  int rctr = 0;
+  for(int e = 0;e < nEvents; e++)
+    {
+    unsigned long sign = 0;
+    int previous_node_handle = 1;
+    int e_rn = 0;
+    for( int p = 1; p <= nPlaces; p++)
+      {
+       sign = events[e][p]>=0?(sign*10)+events[e][p]:(sign*100)+events[e][p];
+        if(events[e][p]!=0)
+        {
+          e_rn++;
+          rNode[rctr] = new derRelNode(mxdF,p,-1,events[e][p]<0?-events[e][p]:0,events[e][p],-1);
+          rctr++;
+          nxtList[previous_node_handle] = events[e][p];
+        }
+      }
+       T[e] = new MEDDLY::sathyb_opname::event(NULL, 0, (MEDDLY::relation_node**)(&rNode[rctr-e_rn]), e_rn);
+    }
+
+    return T;
+
+}
 
 

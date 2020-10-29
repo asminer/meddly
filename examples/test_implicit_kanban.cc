@@ -29,6 +29,7 @@
 #include "../src/timer.h"
 #include "../src/loggers.h"
 
+ #define TEST_HYB
 // #define DUMP_NSF
 // #define DUMP_REACHABLE
 
@@ -211,21 +212,37 @@ int main(int argc, const char** argv)
       
       
       //CREATE RELATION
-      satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,relmxd,inmdd);
+      #ifdef TEST_HYB
+        MEDDLY::sathyb_opname::event** hyb_event  = buildHybridRelation(model, TRANS, PLACES, BOUNDS, inmdd, relmxd);
+      #else
+        satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,relmxd,inmdd);
+      #endif
       
       start.note_time();
-      buildImplicitRelation(model, TRANS, PLACES, BOUNDS, T);
+      #ifdef TEST_HYB
+        sathyb_opname::hybrid_relation* IMPR = new sathyb_opname::hybrid_relation(inmdd, relmxd, inmdd, &hyb_event[0], TRANS);
+      #else
+        buildImplicitRelation(model, TRANS, PLACES, BOUNDS, inmdd, relmxd, T);
+      #endif
+
       printf("\nNext-state function construction took %.4e seconds\n",
              start.get_last_seconds());
       specialized_operation* sat = 0;
       
-      
-      printf("\nBuilding reachability set using saturation implicit relation");
-      if (0==SATURATION_IMPL_FORWARD) {
-        throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-      }
-      sat = SATURATION_IMPL_FORWARD->buildOperation(T);
-      
+      #ifdef TEST_HYB
+        printf("\nBuilding reachability set using saturation hybrid relation");
+        if (0==SATURATION_HYB_FORWARD) {
+          throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
+        }
+        sat = SATURATION_HYB_FORWARD->buildOperation(IMPR);
+      #else
+        printf("\nBuilding reachability set using saturation implicit relation");
+        if (0==SATURATION_IMPL_FORWARD) {
+          throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
+        }
+        sat = SATURATION_IMPL_FORWARD->buildOperation(T);
+      #endif
+
       if (0==sat) {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
       }

@@ -62,6 +62,7 @@
 #include "sat_pregen.h"
 #include "sat_otf.h"
 #include "sat_impl.h"
+#include "sat_hyb.h"
 
 #include "vect_matr.h"
 
@@ -138,6 +139,7 @@ namespace MEDDLY {
   const satpregen_opname* SATURATION_BACKWARD = 0;
   const satotf_opname* SATURATION_OTF_FORWARD = 0;
   const satimpl_opname* SATURATION_IMPL_FORWARD = 0;
+  const sathyb_opname* SATURATION_HYB_FORWARD = 0;
 
   // minimum witness operation "codes"
   const constrained_opname* CONSTRAINED_BACKWARD_BFS = 0;
@@ -220,6 +222,7 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::SATURATION_BACKWARD,  SATURATION_BACKWARD,  initSaturationBackward()  );
   initP(MEDDLY::SATURATION_OTF_FORWARD,   SATURATION_OTF_FORWARD,   initOtfSaturationForward()  );
   initP(MEDDLY::SATURATION_IMPL_FORWARD, SATURATION_IMPL_FORWARD, initImplSaturationForward()  );
+  initP(MEDDLY::SATURATION_HYB_FORWARD, SATURATION_HYB_FORWARD, initHybSaturationForward()  );
   initP(MEDDLY::CONSTRAINED_BACKWARD_BFS,   CONSTRAINED_BACKWARD_BFS,   initConstrainedBFSBackward()  );
   initP(MEDDLY::CONSTRAINED_FORWARD_DFS,   CONSTRAINED_FORWARD_DFS,   initConstrainedDFSForward()  );
   initP(MEDDLY::CONSTRAINED_BACKWARD_DFS,   CONSTRAINED_BACKWARD_DFS,   initConstrainedDFSBackward()  );
@@ -288,6 +291,7 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(SATURATION_FORWARD,       MEDDLY::SATURATION_FORWARD  );
   cleanPair(SATURATION_OTF_FORWARD,   MEDDLY::SATURATION_OTF_FORWARD  );
   cleanPair(SATURATION_IMPL_FORWARD,   MEDDLY::SATURATION_IMPL_FORWARD  );
+  cleanPair(SATURATION_HYB_FORWARD,   MEDDLY::SATURATION_HYB_FORWARD  );
 
   cleanPair(EXPLVECT_MATR_MULT, MEDDLY::EXPLVECT_MATR_MULT);
   cleanPair(MATR_EXPLVECT_MULT, MEDDLY::MATR_EXPLVECT_MULT);

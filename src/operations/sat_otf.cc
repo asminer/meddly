@@ -65,7 +65,7 @@ MEDDLY::satotf_opname::subevent::subevent(forest* f, int* v, int nv, bool firing
   // find top
   top = vars[0];
   for (int i = 1; i < num_vars; i++) {
-    if (isLevelAbove(top, vars[i])) top = vars[i];
+    if (isLevelAbove(vars[i],top)) top = vars[i];
   }
 
   uses_extensible_variables = false;

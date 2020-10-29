@@ -2531,6 +2531,26 @@ MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un)
   return q;
 }
 
+inline unsigned
+MEDDLY::expert_forest::getImplicitTableCount() const
+{
+  unsigned q = getImplTableCount();
+  return q;
+}
+
+inline MEDDLY::relation_node* 
+MEDDLY::expert_forest::buildImplicitNode(node_handle rnh)
+{
+  return buildImplNode(rnh);
+}
+
+inline MEDDLY::node_handle 
+MEDDLY::expert_forest::getImplicitTerminalNode() const
+{
+  return getImplTerminalNode();
+}
+
+
 inline MEDDLY::node_handle
 MEDDLY::expert_forest::createRelationNode(MEDDLY::relation_node *un)
 {
@@ -2868,6 +2888,11 @@ MEDDLY::relation_node::getSignature() const
   return signature;
 }
 
+inline MEDDLY::expert_forest*
+MEDDLY::relation_node::getForest() {
+  return f;
+} 
+
 inline int
 MEDDLY::relation_node::getLevel() const
 {
@@ -2880,6 +2905,13 @@ MEDDLY::relation_node::getDown() const
   return down;
 }
 
+inline void
+MEDDLY::relation_node::setDown(rel_node_handle d) 
+{
+  down = d;
+}
+
+
 inline rel_node_handle
 MEDDLY::relation_node::getID() const
 {
@@ -2890,6 +2922,42 @@ inline void
 MEDDLY::relation_node::setID(rel_node_handle n_ID)
 {
   ID=n_ID;
+}
+
+inline long
+MEDDLY::relation_node::getFire() const
+{
+  return fire;
+}
+
+inline void
+MEDDLY::relation_node::setFire(long fire_val)
+{
+  fire = fire_val;
+}
+
+inline long
+MEDDLY::relation_node::getEnable() const
+{
+  return enable;
+}
+
+inline void
+MEDDLY::relation_node::setEnable(long enable_val)
+{
+  enable = enable_val;
+}
+
+inline void
+MEDDLY::relation_node::setInhibit(long inh)
+{
+  inhibit = inh;
+}
+
+inline long
+MEDDLY::relation_node::getInhibit() const
+{
+  return inhibit;
 }
 
 inline long
@@ -3016,6 +3084,147 @@ MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
 {
 
   return (i < insetF->getLevelSize(level) && confirmed[level][i]);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                 inlined  sathyb_opname methods                 *
+// *                                                                *
+// ******************************************************************
+
+inline MEDDLY::expert_forest*
+MEDDLY::sathyb_opname::hybrid_relation::getInForest() const
+{
+  return insetF;
+}
+
+inline MEDDLY::expert_forest*
+MEDDLY::sathyb_opname::hybrid_relation::getOutForest() const
+{
+  return outsetF;
+}
+
+inline MEDDLY::expert_forest*
+MEDDLY::sathyb_opname::hybrid_relation::getHybridForest() const
+{
+  return hybRelF;
+}
+
+// ***********************************************************************
+
+inline long
+MEDDLY::sathyb_opname::hybrid_relation::getTotalEvent(int level)
+{
+  int total_event = 0;
+  for(int i=1;i<=level;i++)
+    total_event +=  lengthForLevel(i);
+  
+  return total_event;
+}
+
+inline long
+MEDDLY::sathyb_opname::hybrid_relation::lengthForLevel(int level) const
+{
+  return num_events_by_top_level[level];
+}
+
+inline MEDDLY::sathyb_opname::event**
+MEDDLY::sathyb_opname::hybrid_relation::arrayForLevel(int level) const
+{
+  return events_by_top_level[level];
+}
+
+// ****************************************************************************
+
+inline int
+MEDDLY::sathyb_opname::hybrid_relation::getConfirmedStates(int level) const
+{
+  return confirm_states[level];
+}
+
+
+inline bool
+MEDDLY::sathyb_opname::hybrid_relation::isConfirmedState(int level,int i)
+{
+  return (i < insetF->getLevelSize(level) && (i < confirmed_array_size[level]) && confirmed[level][i]);
+}
+
+// ******************************************************************
+
+
+inline MEDDLY::expert_forest*
+MEDDLY::sathyb_opname::subevent::getForest() {
+  return f;
+} 
+
+inline int
+MEDDLY::sathyb_opname::subevent::getNumVars() const {
+  return num_vars;
+}
+
+inline const int*
+MEDDLY::sathyb_opname::subevent::getVars() const {
+  return vars;
+}
+
+inline int
+MEDDLY::sathyb_opname::subevent::getTop() const {
+  return top;
+}
+
+inline bool
+MEDDLY::sathyb_opname::subevent::isFiring() const {
+  return is_firing;
+}
+
+inline bool
+MEDDLY::sathyb_opname::subevent::isEnabling() const {
+  return !is_firing;
+}
+
+inline bool
+MEDDLY::sathyb_opname::subevent::isImplicit() const {
+  return num_vars == 1;
+}
+
+inline const MEDDLY::dd_edge&
+MEDDLY::sathyb_opname::subevent::getRoot() const {
+  return root;
+}
+
+inline const MEDDLY::node_handle
+MEDDLY::sathyb_opname::subevent::getRootHandle() const {
+  return root_handle;
+}
+
+inline void
+MEDDLY::sathyb_opname::subevent::setRootHandle( node_handle ID ) {
+  root_handle = ID;
+}
+
+inline MEDDLY::node_handle
+MEDDLY::sathyb_opname::subevent::getDown() const {
+  return down;
+}
+
+inline void
+MEDDLY::sathyb_opname::subevent::setDown( node_handle d_ID ) {
+   down = d_ID;
+}
+
+inline int
+MEDDLY::sathyb_opname::subevent::getEnable() const {
+  return enable;
+}
+
+inline int
+MEDDLY::sathyb_opname::subevent::getFire() const {
+  return fire;
+}
+
+inline bool
+MEDDLY::sathyb_opname::subevent::usesExtensibleVariables() const {
+  return uses_extensible_variables;
 }
 
 

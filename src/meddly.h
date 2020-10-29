@@ -1550,6 +1550,8 @@ class MEDDLY::forest {
   // virtual, with default implementation.
   public:
 
+   virtual node_handle unionOneMinterm(node_handle a,  int* from,  int* to, int level);
+
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
 
