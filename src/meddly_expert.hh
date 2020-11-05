@@ -2544,10 +2544,22 @@ MEDDLY::expert_forest::buildImplicitNode(node_handle rnh)
   return buildImplNode(rnh);
 }
 
+inline MEDDLY::gen_relation_node*
+MEDDLY::expert_forest::buildGenImplicitNode(node_handle rnh)
+{
+  return buildGenImplNode(rnh);
+}
+
 inline MEDDLY::node_handle 
 MEDDLY::expert_forest::getImplicitTerminalNode() const
 {
   return getImplTerminalNode();
+}
+
+inline MEDDLY::node_handle
+MEDDLY::expert_forest::getGenImplicitTerminalNode() const
+{
+  return getGenImplTerminalNode();
 }
 
 
@@ -2556,6 +2568,19 @@ MEDDLY::expert_forest::createRelationNode(MEDDLY::relation_node *un)
 {
   MEDDLY_DCASSERT(un);
   MEDDLY::node_handle q = createImplicitNode(*un);
+#ifdef TRACK_DELETIONS
+  printf("Created node %d\n", q);
+#endif
+  return q;
+}
+
+inline MEDDLY::node_handle
+MEDDLY::expert_forest::createGenRelationNode(MEDDLY::gen_relation_node *un)
+{
+  MEDDLY_DCASSERT(un);
+  printf("\n Going via createGenImplicitNode\n");
+  MEDDLY::node_handle q = createGenImplicitNode(*un);
+  printf("\nCreated node %d \n", q);
 #ifdef TRACK_DELETIONS
   printf("Created node %d\n", q);
 #endif
@@ -3088,6 +3113,279 @@ MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
 
 // ******************************************************************
 // *                                                                *
+// *                 inlined  gen_relation_node methods             *
+// *                                                                *
+// ******************************************************************
+inline std::string
+MEDDLY::gen_relation_node::getSignature() const
+{
+  return signature;
+}
+
+inline MEDDLY::expert_forest*
+MEDDLY::gen_relation_node::getForest() {
+  return f;
+}
+
+inline int
+MEDDLY::gen_relation_node::getLevel() const
+{
+  return level;
+}
+
+inline rel_node_handle
+MEDDLY::gen_relation_node::getDown() const
+{
+  return down;
+}
+
+inline void
+MEDDLY::gen_relation_node::setDown(rel_node_handle d)
+{
+  down = d;
+}
+
+
+inline rel_node_handle
+MEDDLY::gen_relation_node::getID() const
+{
+  return ID;
+}
+
+inline void
+MEDDLY::gen_relation_node::setID(rel_node_handle n_ID)
+{
+  ID=n_ID;
+}
+
+inline int*
+MEDDLY::gen_relation_node::getInputVariables() const
+{
+  return input_vars;
+}
+
+inline void
+MEDDLY::gen_relation_node::setInputVariables(int* ip_var, int sz)
+{
+  noof_inputs = sz;
+  input_vars = (int*)malloc(sizeof(int)*sz);
+  for(int i = 0; i < sz; i++)
+  {
+    input_vars[i] = ip_var[i];
+  }
+  printf("\n I am done \n");
+}
+
+inline int*
+MEDDLY::gen_relation_node::getOutputVariables() const
+{
+  return output_vars;
+}
+
+inline void
+MEDDLY::gen_relation_node::setOutputVariables(int* op_var, int sz)
+{
+  noof_outputs = sz;
+  printf("\n No. of outputs in func: %d \n",noof_outputs );
+  output_vars = (int*)malloc(sizeof(int)*sz);
+  printf("\n Done malloc now loop \n");
+  for(int i = 0; i < sz; i++)
+  {
+    output_vars[i] = op_var[i];
+    printf("\n op[i] = %d \n",output_vars[i] );
+  }
+  printf("\n I am done \n");
+}
+
+inline int*
+MEDDLY::gen_relation_node::getDepVariables() const
+{
+  return dep_vars;
+}
+
+inline void
+MEDDLY::gen_relation_node::setDepVariables(int* dep_var, int sz)
+{
+  noof_deps = sz;
+  for(int i = 0; i < sz; i++)
+  {
+    dep_vars[i] = dep_var[i];
+  }
+}
+
+inline int*
+MEDDLY::gen_relation_node::getFreeVariables() const
+{
+  return free_vars;
+}
+
+inline void
+MEDDLY::gen_relation_node::setFreeVariables(std::set<int> free1)
+{
+   printf("\n Enetering now\n");
+  noof_free = free1.size();
+  printf("\n No. of free %d\n",noof_free);
+  free_vars = (int*)malloc(noof_free*sizeof(int));
+  int i = 0;
+  printf("\n Filing it up\n");
+  for(auto it = free1.begin(); it != free1.end(); it++)
+  {
+    free_vars[i] = *it;
+    printf("\n Added this var %d %d\n",free_vars[i], *it);
+    i++;
+  }
+}
+
+inline int
+MEDDLY::gen_relation_node::getCountInput() const
+{
+  return noof_inputs;
+}
+
+inline int
+MEDDLY::gen_relation_node::getCountOutput() const
+{
+  return noof_outputs;
+}
+
+inline int
+MEDDLY::gen_relation_node::getCountDep() const
+{
+  return noof_deps;
+}
+
+inline int
+MEDDLY::gen_relation_node::getCountFree() const
+{
+  return noof_free;
+}
+
+inline void
+MEDDLY::gen_relation_node::setConstantWeights(long en_val, long inh_val, long fire_val)
+{
+  constant_wgts[0] = en_val;
+  constant_wgts[1] = inh_val;
+  constant_wgts[2] = fire_val;
+}
+
+inline long
+MEDDLY::gen_relation_node::getEnable() const
+{
+  return constant_wgts[0];
+}
+
+inline long
+MEDDLY::gen_relation_node::getInhibit() const
+{
+  return constant_wgts[1];
+}
+
+inline long
+MEDDLY::gen_relation_node::getFire() const
+{
+  return constant_wgts[2];
+}
+// ******************************************************************
+// *                                                                *
+// *                 inlined  satmdimpl_opname methods              *
+// *                                                                *
+// ******************************************************************
+
+inline MEDDLY::expert_forest*
+MEDDLY::satmdimpl_opname::md_implicit_relation::getInForest() const
+{
+  return insetF;
+}
+
+inline MEDDLY::expert_forest*
+MEDDLY::satmdimpl_opname::md_implicit_relation::getOutForest() const
+{
+  return outsetF;
+}
+
+inline MEDDLY::expert_forest*
+MEDDLY::satmdimpl_opname::md_implicit_relation::getRelForest() const
+{
+  return relF;
+}
+
+// ***********************************************************************
+
+inline long
+MEDDLY::satmdimpl_opname::md_implicit_relation::getTotalEvent(int level)
+{
+  int total_event = 0;
+  for(int i=1;i<=level;i++)
+    total_event +=  lengthForLevel(i);
+  
+  return total_event;
+}
+
+inline long
+MEDDLY::satmdimpl_opname::md_implicit_relation::lengthForLevel(int level) const
+{
+  return event_added[level];
+}
+
+inline rel_node_handle*
+MEDDLY::satmdimpl_opname::md_implicit_relation::arrayForLevel(int level) const
+{
+  return event_list[level];
+}
+
+// ****************************************************************************
+
+inline long
+MEDDLY::satmdimpl_opname::md_implicit_relation::getConfirmedStates(int level) const
+{
+  return confirm_states[level];
+}
+
+inline void
+MEDDLY::satmdimpl_opname::md_implicit_relation::setConfirmedStates(int level,int i)
+{
+  resizeConfirmedArray(level,i);
+  MEDDLY_DCASSERT(confirmed_array_size[level]>i);
+  if(!isConfirmedState(level,i))
+    {
+      confirmed[level][i]=true;
+      //are_new_confirms[level][i]=true;
+      confirm_states[level]++;
+    }
+}
+
+inline bool
+MEDDLY::satmdimpl_opname::md_implicit_relation::isConfirmedState(int level,int i)
+{
+
+  return (i < insetF->getLevelSize(level) && confirmed[level][i]);
+}
+
+inline bool
+MEDDLY::satmdimpl_opname::md_implicit_relation::isNewlyConfirmedState(int level,int i)
+{
+
+  return (i < insetF->getLevelSize(level) && are_new_confirms[level][i]);
+}
+
+// ***************************************************************************
+
+inline int
+MEDDLY::satmdimpl_opname::md_implicit_relation::getNoOfNodeAtLevelsOfEvent(int e, int k)
+{
+  return event_level_affectlist[{e,k}].size();
+}
+     
+     
+inline std::set<rel_node_handle>
+MEDDLY::satmdimpl_opname::md_implicit_relation::getListOfNodesAtLevelsOfEvent(int e, int k)
+{
+  return event_level_affectlist[{e,k}];
+}
+     
+
+// ******************************************************************
+// *                                                                *
 // *                 inlined  sathyb_opname methods                 *
 // *                                                                *
 // ******************************************************************
@@ -3226,7 +3524,6 @@ inline bool
 MEDDLY::sathyb_opname::subevent::usesExtensibleVariables() const {
   return uses_extensible_variables;
 }
-
 
 // ******************************************************************
 // *                                                                *

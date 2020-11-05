@@ -13,6 +13,7 @@ MEDDLY::impl_unique_table::impl_unique_table(expert_forest* ef)
 MEDDLY::impl_unique_table::~impl_unique_table()
 {
   table.clear();
+  gen_table.clear();
 }
 
 MEDDLY::node_handle
@@ -45,3 +46,38 @@ MEDDLY::impl_unique_table::isDuplicate(relation_node *rnb)
   }
   return 0;
 }
+
+/*--------------------------------------------------------------------*/
+
+MEDDLY::node_handle
+MEDDLY::impl_unique_table::add(node_handle rnh, gen_relation_node *rnb)
+{
+      std::pair<node_handle, gen_relation_node*> newNode(rnh,rnb);
+      gen_table.insert(newNode);
+      return rnh;
+}
+
+MEDDLY::gen_relation_node*
+MEDDLY::impl_unique_table::getGenNode(node_handle rnh)
+{
+  std::unordered_map<node_handle, gen_relation_node*>::iterator it = gen_table.find(rnh);
+  if(it!=gen_table.end())
+    return it->second;
+  else
+    return NULL;
+}
+
+MEDDLY::node_handle
+MEDDLY::impl_unique_table::isDuplicate(gen_relation_node *rnb)
+{
+  printf("\n I am here \n");
+  std::unordered_map<node_handle, gen_relation_node*>::iterator it = gen_table.begin();
+  while(it != gen_table.end())
+  {
+    if((it->second)->equals(rnb))
+      return (it->second)->getID();
+    ++it;
+  }
+  return 0;
+}
+

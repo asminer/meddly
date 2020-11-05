@@ -37,6 +37,7 @@ test_memory \
 test_implicit_kanban \
 test_implicit_pool \
 test_implicit_smallos \
+test_param_impl \
 test_sccs
 
 
@@ -143,6 +144,9 @@ test_implicit_smallos_LDADD = ../src/libmeddly.la
 
 test_memory_SOURCES = test_memory.cc
 test_memory_LDADD = ../src/libmeddly.la
+
+test_param_impl_SOURCES = test_param_impl.cc simple_model.h simple_model.cc
+test_param_impl_LDADD = ../src/libmeddly.la
 
 test_sccs_SOURCES = test_sccs.cc 
 test_sccs_LDADD = ../src/libmeddly.la

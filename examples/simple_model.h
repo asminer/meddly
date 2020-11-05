@@ -73,6 +73,8 @@ MEDDLY::satimpl_opname::implicit_relation* T);
 MEDDLY::sathyb_opname::event** buildHybridRelation(const int* const* events, 
 int nEvents,int nPlaces, int bounds, MEDDLY::forest* mddF, MEDDLY::forest* mxdF);
 
+void buildGenericImplicitRelation(std::vector<std::map<int,std::map<int, int>>> events,
+                                  int nEvents, MEDDLY::forest* mxdF, MEDDLY::satmdimpl_opname::md_implicit_relation* T);
 
 
 #endif

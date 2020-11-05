@@ -25,11 +25,13 @@ class MEDDLY::impl_unique_table {
       Otherwise, return the handle to the existing node. 
    */
   node_handle add(node_handle rnh, relation_node* rnb);
+  node_handle add(node_handle rnh, gen_relation_node* rnb);
   
   
   /** Get the node asscoiated with the handle
    */
   relation_node* getNode(node_handle rnh);
+  gen_relation_node* getGenNode(node_handle rnh);
   
   /** Check if node already exist in table
       @param rnb  The relation node.
@@ -37,6 +39,7 @@ class MEDDLY::impl_unique_table {
                   Else, existing node handle
    */
   node_handle isDuplicate(relation_node* rnb);
+  node_handle isDuplicate(gen_relation_node* rnb);
   
   private:
     // To which forest does this unique table belong to
@@ -44,6 +47,7 @@ class MEDDLY::impl_unique_table {
   
     // The contents of the table
     std::unordered_map<node_handle, relation_node*> table;
+    std::unordered_map<node_handle, gen_relation_node*> gen_table;
   
     //Top nodes of each event
     std::vector<std::vector<node_handle>> levelTopEvent;
