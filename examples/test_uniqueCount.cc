@@ -98,7 +98,6 @@ int main(int argc, char *argv[])
   long l1=f->getIncomingCount(nn1);
   printf("l=%d l1=%d\n",l,l1);*/
 
- double c,c1;
 
  // node_headers nnh=f->getIncomingCount(nn);
   //l=nnh.getIncomingCount(nn);
@@ -117,11 +116,25 @@ int main(int argc, char *argv[])
  //long l=0;
 // unpacked_node* A = MEDDLY::unpacked_node::newFromNode( states,initial_state, false);
  //printf("initial_state %d\n", initial_state.getIncomingCount());
- apply(CARDINALITY,initial_state,c1);
+ int ccard=initial_state.getLastHandle()+1;
+ lastNode=ccard;
+ double c,c1,c2,c3;
 
+ printf("CCARD %d\n", ccard);
+ apply(CARDINALITY,initial_state,c1);
+     for(int i=0;i<ccard;i++){
+     printf("BC%d \t %d\n", i, belowcount[i]);
+ }
    apply(IEC, initial_state, c);
-   apply(HU, initial_state, c);
-   for(int i=0;i<(int)c1;i++){
+   for(int i=0;i<ccard;i++){
+   printf("IEC%d \t %d\n", i, incomingedgecount[i]);
+}
+apply(AC, initial_state, c2);
+for(int i=0;i<ccard;i++){
+printf("AC%d \t %d\n", i, abovecount[i]);
+}
+   apply(HU, initial_state, c3);
+   for(int i=0;i<(int)ccard;i++){
  	  printf("%d \t", i);
       std::set<int> rset=highestunique[i];
       for (auto it=rset.begin(); it != rset.end(); ++it)

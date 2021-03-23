@@ -2584,7 +2584,10 @@ class MEDDLY::expert_forest: public forest
         in the subgraph below the given node.
     */
     long getNodeCount(node_handle node) const;
-
+    /** Count and return the number of non-terminal nodes
+        in the subgraph below the given node.
+    */
+    int getLastHandle(node_handle node) const;
     /** Count and return the number of non-terminal nodes
         in the subgraph below the given nodes.
     */

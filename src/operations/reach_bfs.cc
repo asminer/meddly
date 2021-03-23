@@ -26,19 +26,41 @@
 
 // #define DEBUG_BFS
 // #define VERBOSE_BFS
+// #define BFSDFS
+#define Normal
+// #define CHKBFS
+// #define maxThreshold 100000
+// #define minThreshold 100000
+// #define iterationcount 50
+// #define desiredPercentage 0.5
+// #define DUP
 
 namespace MEDDLY {
+    long maxThreshold;
+    long minThreshold;
+    float desiredPercentage;
+    unsigned int optionsForUA;
+    long timeForUA;
   class common_bfs;
+  class common_bfs_ua;
+  class common_bfs_hua;
   // class common_bfs_mt;
   class forwd_bfs_mt;
   class bckwd_bfs_mt;
+  class forwd_bfs_ua_mt;
+  class forwd_bfs_hua_mt;
+
 
   // class common_bfs_evplus;
   class forwd_bfs_evplus;
   class bckwd_bfs_evplus;
+  class forwd_bfs_ua_evplus;
+  class forwd_bfs_hua_evplus;
 
   class forwd_bfs_opname;
   class bckwd_bfs_opname;
+  class forwd_bfs_ua_opname;
+  class forwd_bfs_hua_opname;
 };
 
 // ******************************************************************
@@ -92,6 +114,9 @@ void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd
   reachableStates = init;
   dd_edge prevReachable(resF);
   dd_edge front(resF);
+  FILE_output meddlyout(stdout);
+  long peakreachable=0;
+  long lastreachable=0;
 #ifdef DEBUG_BFS
   FILE_output debug(stderr);
   debug << "Relation: ";
@@ -105,12 +130,21 @@ void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd
   FILE_OUTPUT verbose(stderr);
 #endif
   while (prevReachable != reachableStates) {
+      // printf("XXXXXIt Done0000\n" );
+      // R.show(meddlyout,0);
 #ifdef VERBOSE_BFS
     iters++;
     verbose << "Iteration " << iters << ":\n";
 #endif
+    // printf("XXXXXIt Done0\n" );
     prevReachable = reachableStates;
+    // printf("XXXXXIt Done 1\n" );
+
+     // reachableStates.show(meddlyout, 0);
+
     imageOp->computeDDEdge(reachableStates, R, front, userFlag);
+    // printf("XXXXXIt Done2\n" );
+
 #ifdef VERBOSE_BFS
     verbose << "\timage done ";
     front.show(verbose, 0);
@@ -129,11 +163,617 @@ void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd
 #endif
 #ifdef DEBUG_BFS
     debug << "Reachable so far: ";
-    reachable.show(debug, 2);
+    reachableStates.show(debug, 2);
 #endif
+lastreachable=reachableStates.getNodeCount();
+#ifdef CHKBFS
+if(lastreachable>maxThreshold)
+return;
+#endif
+if(lastreachable>peakreachable)
+{peakreachable=lastreachable;}
+printf("XXXX %ld\t %ld\n",lastreachable, peakreachable );
+
+ // reachableStates.getForest()->underApproximate(reachableStates,1100);
+//1000
+// reachableStates.show(meddlyout,0);
+ // printf("XXXX\n" );
   }
 
 }
+
+// ******************************************************************
+// *                                                                *
+// *                        common_bfs_ua class                        *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::common_bfs_ua : public binary_operation {
+  public:
+    common_bfs_ua(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
+
+  protected:
+    inline void setUnionOp(binary_operation* uop)
+    {
+      MEDDLY_DCASSERT(uop);
+      MEDDLY_DCASSERT(0==unionOp);
+      unionOp = uop;
+    }
+
+    inline void setImageOp(binary_operation* iop)
+    {
+      MEDDLY_DCASSERT(iop);
+      MEDDLY_DCASSERT(0==imageOp);
+      imageOp = iop;
+    }
+
+  private:
+    binary_operation* unionOp;
+    binary_operation* imageOp;
+
+};
+
+
+MEDDLY::common_bfs_ua::common_bfs_ua(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res)
+: binary_operation(oc, 0, a1, a2, res)
+{
+  unionOp = 0;
+  imageOp = 0;
+}
+
+void MEDDLY::common_bfs_ua::computeDDEdge(const dd_edge &init, const dd_edge &R, dd_edge &reachableStates, bool userFlag)
+{
+    #ifdef BFSDFS
+    MEDDLY_DCASSERT(unionOp);
+    MEDDLY_DCASSERT(imageOp);
+    reachableStates = init;
+    binary_operation* opMinus = getOperation(DIFFERENCE, reachableStates, reachableStates, reachableStates);
+    MEDDLY_DCASSERT(opMinus);
+
+    dd_edge from(resF);
+    from=init;
+    dd_edge to(resF);
+    dd_edge newstate(resF);
+    dd_edge reachablenew(resF);
+    // dd_edge front(resF);
+    FILE_output meddlyout(stdout);
+    // dd_edge* arrddedge= new dd_edge[10];
+    // int k=0;
+    // int size=0;
+    #ifdef DEBUG_BFS
+    FILE_output debug(stderr);
+    debug << "Relation: ";
+    R.show(debug, 2);
+    debug << "Initial states: ";
+    init.show(debug, 2);
+    long iters = 0;
+    #endif
+    #ifdef VERBOSE_BFS
+    long iters = 0;
+    FILE_OUTPUT verbose(stderr);
+    #endif
+    while (true) {
+        printf("XXXXXIt Done0000\n" );
+        // R.show(meddlyout,0);
+    #ifdef VERBOSE_BFS
+      iters++;
+      verbose << "Iteration " << iters << ":\n";
+    #endif
+      // printf("XXXXXIt Done0\n" );
+      // prevReachable = reachableStates;
+      // printf("XXXXXIt Done 1\n" );
+
+       // reachableStates.show(meddlyout, 0);
+
+      imageOp->computeDDEdge(from, R, to, userFlag);
+      // if(front.getNodeCount()>size)
+      // size=front.getNodeCount();
+      // printf("XXXX %d %d\n",front.getNodeCount(),size );
+      // to.getForest()->underApproximate(to,1500,15000);
+
+      printf("XXXXXIt Done2\n" );
+
+    #ifdef VERBOSE_BFS
+      verbose << "\timage done ";
+      front.show(verbose, 0);
+      verbose << "\n";
+    #endif
+    #ifdef DEBUG_BFS
+      iters++;
+      debug << "Iteration " << iters << "\npseudo-frontier: ";
+      front.show(debug, 2);
+    #endif
+    opMinus->computeTemp(to,reachableStates,newstate);
+    printf("XXXXXIt Done3\n" );
+
+    if(to==reachableStates){//(newstate.getNodeCount()==0){
+        printf("XXXXXIt Done3-1\n" );
+
+        unionOp->computeDDEdge(reachableStates, newstate, reachablenew, userFlag);
+
+        imageOp->computeDDEdge(reachablenew, R, to, userFlag);
+        if(to==reachableStates){ return;}
+        else{
+            printf("XXXXXIt Done3-2\n" );
+            opMinus->computeTemp(to,reachableStates,newstate);
+            printf("XXXXXIt Done3-3\n" );
+        }
+    }
+    printf("XXXXXIt Done4\n" );
+
+    from=newstate;
+    printf("XXXXXIt Done5\n" );
+
+    from.getForest()->underApproximate(from,5000,18000,0,0);
+
+      unionOp->computeDDEdge(reachableStates, from, reachableStates, userFlag);
+      // printf("XXXXXIt Done3\n" );
+    #ifdef VERBOSE_BFS
+      verbose << "\tunion done ";
+      reachableStates.show(verbose, 0);
+      verbose << "\n";
+    #endif
+    #ifdef DEBUG_BFS
+      debug << "Reachable so far: ";
+      reachableStates.show(debug, 2);
+    #endif
+    // expert_forest* ef=(expert_forest*)reachableStates.getForest();
+    // printf("XXXX %d\n",reachableStates.getNodeCount() );
+    //2389790
+    //getchar();
+    // reachableStates.getForest()->underApproximate(reachableStates,1000,1500);
+    // for(int i=0;i<10;i++){
+    //   if(reachableStates==arrddedge[i])
+    //   {
+    //       printf("duplicate\n" );
+    //       getchar();
+    //       getchar();
+    //   }
+    // }
+    // arrddedge[k%10]=reachableStates;
+    // k++;
+    //1063000
+    // reachableStates.getForest()->underApproximate(reachableStates, 500,500);
+    //1000
+    // reachableStates.show(meddlyout,0);
+    // printf("XXXX\n" );
+    // getchar();
+    }
+
+    // delete [] arrddedge;
+#endif
+
+#ifdef Normal
+clock_t start, end;
+start = clock();
+  MEDDLY_DCASSERT(unionOp);
+  MEDDLY_DCASSERT(imageOp);
+  // binary_operation* opMinus = getOperation(DIFFERENCE, reachableStates, reachableStates, reachableStates);
+  reachableStates = init;
+  dd_edge prevReachable(resF);
+  dd_edge front(resF);
+  FILE_output meddlyout(stdout);
+    #ifdef DUP
+  dd_edge* arrddedge= new dd_edge[10];
+  int k=0;
+  #endif
+  #ifdef iterationcount
+  int uacall=0;
+  #endif
+  int step=0;
+  int size=0;
+#ifdef DEBUG_BFS
+  FILE_output debug(stderr);
+  debug << "Relation: ";
+  R.show(debug, 2);
+  debug << "Initial states: ";
+  init.show(debug, 2);
+  long iters = 0;
+#endif
+#ifdef VERBOSE_BFS
+  long iters = 0;
+  FILE_OUTPUT verbose(stderr);
+#endif
+  while (prevReachable != reachableStates) {
+      // printf("XXXXXIt Done0000\n" );
+      // R.show(meddlyout,0);
+#ifdef VERBOSE_BFS
+    iters++;
+    verbose << "Iteration " << iters << ":\n";
+#endif
+    printf("XXXXXIt Done0\n" );
+    prevReachable = reachableStates;
+    // printf("XXXXXIt Done 1\n" );
+
+     // reachableStates.show(meddlyout, 0);
+
+    imageOp->computeDDEdge(reachableStates, R, front, userFlag);
+
+    step++;
+    // if(front.getNodeCount()>size)
+    // size=front.getNodeCount();
+    // printf("XXXX %d %d %d\n",step, front.getNodeCount(),size );
+    // front.getForest()->underApproximate(front,20,200,0);
+    // printf("XXXX %d\n",step);
+    // printf("XXXXXIt Done2\n" );
+
+#ifdef VERBOSE_BFS
+    verbose << "\timage done ";
+    front.show(verbose, 0);
+    verbose << "\n";
+#endif
+#ifdef DEBUG_BFS
+    iters++;
+    debug << "Iteration " << iters << "\npseudo-frontier: ";
+    front.show(debug, 2);
+#endif
+    unionOp->computeDDEdge(reachableStates, front, reachableStates, userFlag);
+    printf("before %d\n",reachableStates.getNodeCount() );
+    printf("cardbefore %f\n",reachableStates.getCardinality() );
+    #ifdef iterationcount
+    if(reachableStates.getNodeCount()>maxThreshold){
+    if(uacall<iterationcount)
+    uacall++;
+    else
+    return;
+    }
+    #endif
+    // reachableStates.getForest()->underApproximate(reachableStates,minThreshold,maxThreshold,0,0);
+    reachableStates.getForest()->underApproximate(reachableStates,minThreshold,maxThreshold,desiredPercentage,optionsForUA);
+
+    // reachableStates.getForest()->HeuristicUnderApproximate(reachableStates,minThreshold,maxThreshold,0);
+    printf("after %d\n",reachableStates.getNodeCount() );
+    printf("cardafter %f\n",reachableStates.getCardinality() );
+    printf("XXXX %d\n",step);
+    unionOp->computeDDEdge(reachableStates, init, reachableStates, userFlag);
+
+    // printf("XXXXXIt Done3\n" );
+#ifdef VERBOSE_BFS
+    verbose << "\tunion done ";
+    reachableStates.show(verbose, 0);
+    verbose << "\n";
+#endif
+#ifdef DEBUG_BFS
+    debug << "Reachable so far: ";
+    reachableStates.show(debug, 2);
+#endif
+// expert_forest* ef=(expert_forest*)reachableStates.getForest();
+// printf("XXXX %d\n",reachableStates.getNodeCount() );
+//2389790
+//getchar();
+// reachableStates.getForest()->underApproximate(reachableStates,1000,1500);
+#ifdef DUP
+for(int i=0;i<10;i++){
+    if(reachableStates==arrddedge[i])
+    {
+        printf("duplicate\n" );
+        getchar();
+        getchar();
+    }
+}
+arrddedge[k%10]=reachableStates;
+k++;
+#endif
+//1063000
+// reachableStates.getForest()->underApproximate(reachableStates, 500,500);
+//1000
+// reachableStates.show(meddlyout,0);
+ // printf("XXXX\n" );
+// getchar();
+end = clock();
+double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+if(time_taken>timeForUA)
+return;
+  }
+  #ifdef DUP
+delete [] arrddedge;
+#endif
+#endif
+}
+
+
+
+// ******************************************************************
+// *                                                                *
+// *                        common_bfs_hua class                        *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::common_bfs_hua : public binary_operation {
+  public:
+    common_bfs_hua(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
+
+  protected:
+    inline void setUnionOp(binary_operation* uop)
+    {
+      MEDDLY_DCASSERT(uop);
+      MEDDLY_DCASSERT(0==unionOp);
+      unionOp = uop;
+    }
+
+    inline void setImageOp(binary_operation* iop)
+    {
+      MEDDLY_DCASSERT(iop);
+      MEDDLY_DCASSERT(0==imageOp);
+      imageOp = iop;
+    }
+
+  private:
+    binary_operation* unionOp;
+    binary_operation* imageOp;
+
+};
+
+
+MEDDLY::common_bfs_hua::common_bfs_hua(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res)
+: binary_operation(oc, 0, a1, a2, res)
+{
+  unionOp = 0;
+  imageOp = 0;
+}
+
+void MEDDLY::common_bfs_hua::computeDDEdge(const dd_edge &init, const dd_edge &R, dd_edge &reachableStates, bool userFlag)
+{
+    #ifdef BFSDFS
+    MEDDLY_DCASSERT(unionOp);
+    MEDDLY_DCASSERT(imageOp);
+    reachableStates = init;
+    binary_operation* opMinus = getOperation(DIFFERENCE, reachableStates, reachableStates, reachableStates);
+    MEDDLY_DCASSERT(opMinus);
+
+    dd_edge from(resF);
+    from=init;
+    dd_edge to(resF);
+    dd_edge newstate(resF);
+    dd_edge reachablenew(resF);
+    // dd_edge front(resF);
+    FILE_output meddlyout(stdout);
+    // dd_edge* arrddedge= new dd_edge[10];
+    // int k=0;
+    // int size=0;
+    #ifdef DEBUG_BFS
+    FILE_output debug(stderr);
+    debug << "Relation: ";
+    R.show(debug, 2);
+    debug << "Initial states: ";
+    init.show(debug, 2);
+    long iters = 0;
+    #endif
+    #ifdef VERBOSE_BFS
+    long iters = 0;
+    FILE_OUTPUT verbose(stderr);
+    #endif
+    while (true) {
+        printf("XXXXXIt Done0000\n" );
+        // R.show(meddlyout,0);
+    #ifdef VERBOSE_BFS
+      iters++;
+      verbose << "Iteration " << iters << ":\n";
+    #endif
+      // printf("XXXXXIt Done0\n" );
+      // prevReachable = reachableStates;
+      // printf("XXXXXIt Done 1\n" );
+
+       // reachableStates.show(meddlyout, 0);
+
+      imageOp->computeDDEdge(from, R, to, userFlag);
+      // if(front.getNodeCount()>size)
+      // size=front.getNodeCount();
+      // printf("XXXX %d %d\n",front.getNodeCount(),size );
+      // to.getForest()->underApproximate(to,1500,15000);
+
+      printf("XXXXXIt Done2\n" );
+
+    #ifdef VERBOSE_BFS
+      verbose << "\timage done ";
+      front.show(verbose, 0);
+      verbose << "\n";
+    #endif
+    #ifdef DEBUG_BFS
+      iters++;
+      debug << "Iteration " << iters << "\npseudo-frontier: ";
+      front.show(debug, 2);
+    #endif
+    opMinus->computeTemp(to,reachableStates,newstate);
+    printf("XXXXXIt Done3\n" );
+
+    if(to==reachableStates){//(newstate.getNodeCount()==0){
+        printf("XXXXXIt Done3-1\n" );
+
+        unionOp->computeDDEdge(reachableStates, newstate, reachablenew, userFlag);
+
+        imageOp->computeDDEdge(reachablenew, R, to, userFlag);
+        if(to==reachableStates){ return;}
+        else{
+            printf("XXXXXIt Done3-2\n" );
+            opMinus->computeTemp(to,reachableStates,newstate);
+            printf("XXXXXIt Done3-3\n" );
+        }
+    }
+    printf("XXXXXIt Done4\n" );
+
+    from=newstate;
+    printf("XXXXXIt Done5\n" );
+
+    from.getForest()->underApproximate(from,5000,18000);
+
+      unionOp->computeDDEdge(reachableStates, from, reachableStates, userFlag);
+      // printf("XXXXXIt Done3\n" );
+    #ifdef VERBOSE_BFS
+      verbose << "\tunion done ";
+      reachableStates.show(verbose, 0);
+      verbose << "\n";
+    #endif
+    #ifdef DEBUG_BFS
+      debug << "Reachable so far: ";
+      reachableStates.show(debug, 2);
+    #endif
+    // expert_forest* ef=(expert_forest*)reachableStates.getForest();
+    // printf("XXXX %d\n",reachableStates.getNodeCount() );
+    //2389790
+    //getchar();
+    // reachableStates.getForest()->underApproximate(reachableStates,1000,1500);
+    // for(int i=0;i<10;i++){
+    //   if(reachableStates==arrddedge[i])
+    //   {
+    //       printf("duplicate\n" );
+    //       getchar();
+    //       getchar();
+    //   }
+    // }
+    // arrddedge[k%10]=reachableStates;
+    // k++;
+    //1063000
+    // reachableStates.getForest()->underApproximate(reachableStates, 500,500);
+    //1000
+    // reachableStates.show(meddlyout,0);
+    // printf("XXXX\n" );
+    // getchar();
+    }
+
+    // delete [] arrddedge;
+#endif
+
+#ifdef Normal
+clock_t start, end;
+start = clock();
+  MEDDLY_DCASSERT(unionOp);
+  MEDDLY_DCASSERT(imageOp);
+  // binary_operation* opMinus = getOperation(DIFFERENCE, reachableStates, reachableStates, reachableStates);
+  reachableStates = init;
+  dd_edge prevReachable(resF);
+  dd_edge front(resF);
+  FILE_output meddlyout(stdout);
+    #ifdef DUP
+  dd_edge* arrddedge= new dd_edge[10];
+  int k=0;
+  #endif
+  #ifdef iterationcount
+  int uacall=0;
+  #endif
+  int step=0;
+  int size=0;
+#ifdef DEBUG_BFS
+  FILE_output debug(stderr);
+  debug << "Relation: ";
+  R.show(debug, 2);
+  debug << "Initial states: ";
+  init.show(debug, 2);
+  long iters = 0;
+#endif
+#ifdef VERBOSE_BFS
+  long iters = 0;
+  FILE_OUTPUT verbose(stderr);
+#endif
+  while (prevReachable != reachableStates) {
+      // printf("XXXXXIt Done0000\n" );
+      // R.show(meddlyout,0);
+#ifdef VERBOSE_BFS
+    iters++;
+    verbose << "Iteration " << iters << ":\n";
+#endif
+    printf("XXXXXIt Done0\n" );
+    prevReachable = reachableStates;
+    // printf("XXXXXIt Done 1\n" );
+
+     // reachableStates.show(meddlyout, 0);
+
+    imageOp->computeDDEdge(reachableStates, R, front, userFlag);
+
+    step++;
+    // if(front.getNodeCount()>size)
+    // size=front.getNodeCount();
+    // printf("XXXX %d %d %d\n",step, front.getNodeCount(),size );
+    // front.getForest()->underApproximate(front,20,200,0);
+    // printf("XXXX %d\n",step);
+    // printf("XXXXXIt Done2\n" );
+
+#ifdef VERBOSE_BFS
+    verbose << "\timage done ";
+    front.show(verbose, 0);
+    verbose << "\n";
+#endif
+#ifdef DEBUG_BFS
+    iters++;
+    debug << "Iteration " << iters << "\npseudo-frontier: ";
+    front.show(debug, 2);
+#endif
+    unionOp->computeDDEdge(reachableStates, front, reachableStates, userFlag);
+    printf("before %d\n",reachableStates.getNodeCount() );
+    printf("cardbefore %f\n",reachableStates.getCardinality() );
+
+    #ifdef iterationcount
+    if(reachableStates.getNodeCount()>maxThreshold){
+    if(uacall<iterationcount)
+    uacall++;
+    else
+    return;
+    }
+    #endif
+    // reachableStates.getForest()->underApproximate(reachableStates,minThreshold,maxThreshold,0);
+    reachableStates.getForest()->HeuristicUnderApproximate(reachableStates,minThreshold,maxThreshold,desiredPercentage,optionsForUA);
+    // Option 0 is minThreshold and maxThreshold
+    // Option 2 is maxThreshold and remove until all nodes with density < rootdensity*desiredPercentage is deleted
+    // Option 3 is maxThreshold and remove until
+    //  1-all nodes with density <rootdensity*desiredPercentage is deleted, and
+    //  2-number of nodes<maxThreshold
+    printf("after %d\n",reachableStates.getNodeCount() );
+    printf("cardafter %f\n",reachableStates.getCardinality() );
+    printf("XXXX %d\n",step);
+    unionOp->computeDDEdge(reachableStates, init, reachableStates, userFlag);
+
+    // printf("XXXXXIt Done3\n" );
+#ifdef VERBOSE_BFS
+    verbose << "\tunion done ";
+    reachableStates.show(verbose, 0);
+    verbose << "\n";
+#endif
+#ifdef DEBUG_BFS
+    debug << "Reachable so far: ";
+    reachableStates.show(debug, 2);
+#endif
+// expert_forest* ef=(expert_forest*)reachableStates.getForest();
+// printf("XXXX %d\n",reachableStates.getNodeCount() );
+//2389790
+//getchar();
+// reachableStates.getForest()->underApproximate(reachableStates,1000,1500);
+#ifdef DUP
+for(int i=0;i<10;i++){
+    if(reachableStates==arrddedge[i])
+    {
+        printf("duplicate\n" );
+        getchar();
+        getchar();
+    }
+}
+arrddedge[k%10]=reachableStates;
+k++;
+#endif
+//1063000
+// reachableStates.getForest()->underApproximate(reachableStates, 500,500);
+//1000
+// reachableStates.show(meddlyout,0);
+ // printf("XXXX\n" );
+// getchar();
+end = clock();
+double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+if(time_taken>timeForUA)
+return;
+  }
+  #ifdef DUP
+delete [] arrddedge;
+#endif
+#endif
+}
+
 
 // ******************************************************************
 // *                                                                *
@@ -156,8 +796,62 @@ MEDDLY::forwd_bfs_mt::forwd_bfs_mt(const binary_opname* oc, expert_forest* a1,
     setUnionOp( getOperation(MAXIMUM, res, res, res) );
   }
   setImageOp( getOperation(POST_IMAGE, a1, a2, res) );
+  // FILE_output meddlyout(stdout);
+  //
+  // res->showInfo(meddlyout,2);
 }
 
+// ******************************************************************
+// *                                                                *
+// *                       forwd_bfs_ua_mt class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::forwd_bfs_ua_mt : public common_bfs_ua {
+  public:
+    forwd_bfs_ua_mt(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+};
+
+MEDDLY::forwd_bfs_ua_mt::forwd_bfs_ua_mt(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res) : common_bfs_ua(oc, a1, a2, res)
+{
+  if (res->getRangeType() == forest::BOOLEAN) {
+    setUnionOp( getOperation(UNION, res, res, res) );
+  } else {
+    setUnionOp( getOperation(MAXIMUM, res, res, res) );
+  }
+  setImageOp( getOperation(POST_IMAGE, a1, a2, res) );
+  // FILE_output meddlyout(stdout);
+  //
+  // res->showInfo(meddlyout,2);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                       forwd_bfs_ua_mt class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::forwd_bfs_hua_mt : public common_bfs_hua {
+  public:
+    forwd_bfs_hua_mt(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+};
+
+MEDDLY::forwd_bfs_hua_mt::forwd_bfs_hua_mt(const binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res) : common_bfs_hua(oc, a1, a2, res)
+{
+  if (res->getRangeType() == forest::BOOLEAN) {
+    setUnionOp( getOperation(UNION, res, res, res) );
+  } else {
+    setUnionOp( getOperation(MAXIMUM, res, res, res) );
+  }
+  setImageOp( getOperation(POST_IMAGE, a1, a2, res) );
+  // FILE_output meddlyout(stdout);
+  //
+  // res->showInfo(meddlyout,2);
+}
 
 // ******************************************************************
 // *                                                                *
@@ -312,6 +1006,59 @@ void MEDDLY::forwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle m
 }
 */
 
+
+// ******************************************************************
+// *                                                                *
+// *                     forwd_bfs_ua_evplus class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::forwd_bfs_ua_evplus : public common_bfs_ua {
+  public:
+  forwd_bfs_ua_evplus(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+//     virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
+};
+
+MEDDLY::forwd_bfs_ua_evplus::forwd_bfs_ua_evplus(const binary_opname* oc, expert_forest* a1,
+  // expert_forest* a2, expert_forest* res) : common_bfs_evplus(oc, a1, a2, res)
+  expert_forest* a2, expert_forest* res) : common_bfs_ua(oc, a1, a2, res)
+{
+  if (res->getRangeType() == forest::INTEGER) {
+    setUnionOp( getOperation(UNION, res, res, res) );
+  } else {
+    throw error(error::INVALID_OPERATION);
+  }
+  setImageOp( getOperation(POST_IMAGE, a1, a2, res) );
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                     forwd_bfs_ua_evplus class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::forwd_bfs_hua_evplus : public common_bfs_hua {
+  public:
+  forwd_bfs_hua_evplus(const binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res);
+
+//     virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
+};
+
+MEDDLY::forwd_bfs_hua_evplus::forwd_bfs_hua_evplus(const binary_opname* oc, expert_forest* a1,
+  // expert_forest* a2, expert_forest* res) : common_bfs_evplus(oc, a1, a2, res)
+  expert_forest* a2, expert_forest* res) : common_bfs_hua(oc, a1, a2, res)
+{
+  if (res->getRangeType() == forest::INTEGER) {
+    setUnionOp( getOperation(UNION, res, res, res) );
+  } else {
+    throw error(error::INVALID_OPERATION);
+  }
+  setImageOp( getOperation(POST_IMAGE, a1, a2, res) );
+}
 // ******************************************************************
 // *                                                                *
 // *                     bckwd_bfs_evplus class                     *
@@ -406,6 +1153,110 @@ MEDDLY::forwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 
 // ******************************************************************
 // *                                                                *
+// *                     forwd_bfs_ua_opname class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::forwd_bfs_ua_opname : public binary_opname {
+  public:
+    forwd_bfs_ua_opname();
+    virtual binary_operation* buildOperation(expert_forest* a1,
+      expert_forest* a2, expert_forest* r) const;
+};
+
+MEDDLY::forwd_bfs_ua_opname::forwd_bfs_ua_opname()
+ : binary_opname("ReachableBFSUA")
+{
+}
+
+MEDDLY::binary_operation*
+MEDDLY::forwd_bfs_ua_opname::buildOperation(expert_forest* a1, expert_forest* a2,
+  expert_forest* r) const
+{
+  if (0==a1 || 0==a2 || 0==r) return 0;
+
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
+  )
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+
+  if (
+    a1->isForRelations()    ||
+    !a2->isForRelations()   ||
+    r->isForRelations()     ||
+    (a1->getRangeType() != r->getRangeType()) ||
+    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
+    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL)
+  )
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+
+  if (a1->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+    return new forwd_bfs_ua_mt(this, a1, a2, r);
+  }
+  else if (a1->getEdgeLabeling() == forest::EVPLUS) {
+    return new forwd_bfs_ua_evplus(this, a1, a2, r);
+  }
+  else {
+    throw error(error::TYPE_MISMATCH);
+  }
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                     forwd_bfs_hua_opname class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::forwd_bfs_hua_opname : public binary_opname {
+  public:
+    forwd_bfs_hua_opname();
+    virtual binary_operation* buildOperation(expert_forest* a1,
+      expert_forest* a2, expert_forest* r) const;
+};
+
+MEDDLY::forwd_bfs_hua_opname::forwd_bfs_hua_opname()
+ : binary_opname("ReachableBFSHUA")
+{
+}
+
+MEDDLY::binary_operation*
+MEDDLY::forwd_bfs_hua_opname::buildOperation(expert_forest* a1, expert_forest* a2,
+  expert_forest* r) const
+{
+  if (0==a1 || 0==a2 || 0==r) return 0;
+
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
+  )
+    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+
+  if (
+    a1->isForRelations()    ||
+    !a2->isForRelations()   ||
+    r->isForRelations()     ||
+    (a1->getRangeType() != r->getRangeType()) ||
+    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
+    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL)
+  )
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+
+  if (a1->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+    return new forwd_bfs_hua_mt(this, a1, a2, r);
+  }
+  else if (a1->getEdgeLabeling() == forest::EVPLUS) {
+    return new forwd_bfs_hua_evplus(this, a1, a2, r);
+  }
+  else {
+    throw error(error::TYPE_MISMATCH);
+  }
+}
+
+
+// ******************************************************************
+// *                                                                *
 // *                     bckwd_bfs_opname class                     *
 // *                                                                *
 // ******************************************************************
@@ -474,3 +1325,12 @@ MEDDLY::binary_opname* MEDDLY::initializeBackwardBFS()
   return new bckwd_bfs_opname;
 }
 
+MEDDLY::binary_opname* MEDDLY::initializeForwardBFSUA()
+{
+  return new forwd_bfs_ua_opname;
+}
+
+MEDDLY::binary_opname* MEDDLY::initializeForwardBFSHUA()
+{
+  return new forwd_bfs_hua_opname;
+}

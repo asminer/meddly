@@ -43,6 +43,8 @@ int usage(const char* who)
   printf("\tnnnn: number of parts\n\n");
   printf("\t-bfs: use traditional iterations\n\n");
   printf("\t-dfs: use fastest saturation (currently, -msat)\n");
+  printf("\t-ufs: use traditional iterations with UA\n\n");
+  printf("\t-diff: diff ufs and bfs\n\n");
   printf("\t-esat: use saturation by events\n");
   printf("\t-ksat: use saturation by levels\n");
   printf("\t-msat: use monolithic saturation (default)\n\n");
@@ -247,6 +249,8 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, forest::logg
   //
   if (LOG) LOG->newPhase(mdd, "Building reachability set");
   dd_edge reachable(mdd);
+  dd_edge bfsreachable(mdd);
+
   start.note_time();
   switch (method) {
     case 'b':
@@ -254,7 +258,24 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, forest::logg
         fflush(stdout);
         apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
         break;
+    case 'u':
+        printf("Building reachability set using traditional algorithm\n");
+        fflush(stdout);
+        apply(REACHABLE_STATES_BFS_UA, init_state, nsf, reachable);
+        break;
+    case 'd':
+        printf("Building reachability set using traditional algorithm\n");
+        fflush(stdout);
+        apply(REACHABLE_STATES_BFS_UA, init_state, nsf, reachable);
+        printf("DONEDONEDONEDONE\n" );
+        apply(REACHABLE_STATES_BFS, init_state, nsf, bfsreachable);
+        reachable-=bfsreachable;
 
+        // printf("new reachable states %ld\n",c );
+        long c;
+        apply(CARDINALITY, reachable, c);
+        printf("new reachable states %ld\n",c );
+        break;
     case 'm':
         printf("Building reachability set using saturation, monolithic relation\n");
         fflush(stdout);
@@ -340,6 +361,14 @@ int main(int argc, const char** argv)
   for (int i=1; i<argc; i++) {
     if (strcmp("-bfs", argv[i])==0) {
       method = 'b';
+      continue;
+    }
+    if (strcmp("-ufs", argv[i])==0) {
+      method = 'u';
+      continue;
+    }
+    if (strcmp("-diff", argv[i])==0) {
+      method = 'd';
       continue;
     }
     if (strcmp("-dfs", argv[i])==0) {

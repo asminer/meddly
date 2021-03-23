@@ -28,24 +28,49 @@ namespace MEDDLY {
 class mpz_object : public ct_object {
   mpz_t value;
 public:
+    double rdvalue; //used for double reminder of a division
   mpz_object();
   mpz_object(const mpz_t &v);
   mpz_object(const mpz_object &v);
   virtual ~mpz_object();
   virtual opnd_type getType();
-  
+
   inline void copyInto(mpz_t &x) const {
     mpz_set(x, value);
   }
   inline void copyInto(mpz_object &x) const {
     mpz_set(x.value, value);
   }
+  inline void setReminder(double i) {
+    rdvalue=i;
+  }
+  inline void copyIntowithReminder(mpz_object &x)  {
+    mpz_set(x.value, value);
+    // setReminder(x.rdvalue);
+    rdvalue=x.rdvalue;
+  }
+
   inline void setValue(long i) {
     mpz_set_si(value, i);
   }
+
   void show(output &strm) const;
+  void showwithreminder(output &strm) const;
+
   inline void multiply(long i) {
     mpz_mul_si(value, value, i);
+  }
+  inline void division(unsigned long i){
+      int rivalue=mpz_cdiv_q_ui(value, value, i);
+     rdvalue=rivalue/(double)i;
+      // mpf_div(value,value,)
+  }
+  inline int compare(mpz_object x, mpz_object y){
+      int qcomparision =mpz_cmp(x.value,y.value);
+     if(qcomparision !=0) return qcomparision ;
+     if(x.rdvalue> y.rdvalue) return 1;
+     if(x.rdvalue< y.rdvalue) return -1;
+     else return 0;
   }
   inline void add(const mpz_object &x) {
     mpz_add(value, value, x.value);

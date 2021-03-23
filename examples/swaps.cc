@@ -315,7 +315,11 @@ void runWithArgs(int N, char method, bool alternate)
         fflush(stdout);
         apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
         break;
-
+    case 'u':
+        printf("Building reachability set using traditional bfs +UA algorithm\n");
+        fflush(stdout);
+        apply(REACHABLE_STATES_BFS_UA, init_state, nsf, reachable);
+        break;
     case 'm':
         printf("Building reachability set using saturation\n");
         fflush(stdout);
@@ -377,6 +381,10 @@ int main(int argc, const char** argv)
   for (int i=1; i<argc; i++) {
     if (strcmp("-bfs", argv[i])==0) {
       method = 'b';
+      continue;
+    }
+    if (strcmp("-ubfs", argv[i])==0) {
+      method = 'u';
       continue;
     }
     if (strcmp("-dfs", argv[i])==0) {

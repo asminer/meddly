@@ -20,6 +20,8 @@
 
 
 #include "defines.h"
+#include "operations/mpz_object.h"
+#include <cfloat>
 
 // #define DEBUG_CLEANUP
 
@@ -245,6 +247,11 @@ void MEDDLY::dd_edge::setLabel(const char* L)
 unsigned MEDDLY::dd_edge::getNodeCount() const
 {
   return smart_cast<expert_forest*>(parent)->getNodeCount(node);
+}
+
+unsigned MEDDLY::dd_edge::getLastHandle() const
+{
+  return smart_cast<expert_forest*>(parent)->getLastHandle(node);
 }
 
 unsigned MEDDLY::dd_edge::getEdgeCount(bool countZeroes) const

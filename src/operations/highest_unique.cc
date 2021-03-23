@@ -349,28 +349,45 @@ if(card<1)
     lastPosition=new int[card];
     startInterval= new int[card];
     stopInterval=new int[card];
-    for(int i=0;i<=card;i++){
+    if(explored==0 || incomingedgecountHU==0 || lastPosition==0||startInterval==0|| stopInterval==0)
+    {printf("ERROR IN making arrays\n" ); char c=getchar();}
+    for(int i=0;i<card;i++)
+    {
+        explored[i]=false;
+        incomingedgecountHU[i]=0;
+        lastPosition[i]=0;
+        startInterval[i]=0;
+        stopInterval[i]=0;
+    }
+    for(int i=0;i<card;i++){
     incomingedgecountHU[i]=incomingedgecount[i];
-    lastPosition[i]=0;
     }
     pset = new std::set<int>[card];
      // res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode(),pset );
      res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode() );
 
      // printf("COMPUTED %d\n",card );
-     printf("***HU***\n" );
-     for(int i=0;i<=(int)card;i++){
-   	  printf("HU[%d]= \t", i);
-        std::set<int> rset=highestunique[i];
-        for (auto it=rset.begin(); it != rset.end(); ++it){
-           printf(", %d", *it);
-
-       }
-       printf("[%d, \t %d ,\t %d ]\t \n",startInterval[i],stopInterval[i],lastPosition[i] );
-         printf("\n" );
-      }
-      printf("**HU****\n" );
-      pset=NULL;
+     // printf("***HU***\n" );
+     // for(int i=0;i<=(int)card;i++){
+   	 //  printf("HU[%d]= \t", i);
+     //    std::set<int> rset=highestunique[i];
+     //    for (auto it=rset.begin(); it != rset.end(); ++it){
+     //       printf(", %d", *it);
+     //
+     //   }
+     //   printf("[%d, \t %d ,\t %d ]\t \n",startInterval[i],stopInterval[i],lastPosition[i] );
+     //     printf("\n" );
+     //  }
+     //  printf("**HU****\n" );
+     for(int i=0;i<card;i++){
+     pset[i].clear();
+     }
+     delete[] pset;//=NULL;
+     delete[] incomingedgecountHU;
+     delete[] explored;
+     delete[] startInterval;
+     delete[] stopInterval;
+     delete[] lastPosition;
      //  std::set<int> rset=highestunique[2];
      //  for (auto it=rset.begin(); it != rset.end(); ++it){
      //     printf(", %d", *it);
@@ -442,20 +459,20 @@ if(card<1)
  std::set<int> MEDDLY::hu_mdd_real::CheckInterval(node_handle a ){
 
 std::set<int> shouldBeRemoved;
-printf("COMING CheckInterval %d \n",a );
+// printf("COMING CheckInterval %d \n",a );
 for (auto l: pset[a] ){
-    printf("L %d \t %d \t %d \t %d\n",l,  startInterval[l],stopInterval[l],lastPosition[l]);
-    printf("P %d \t %d \t %d \t %d \n",a,  startInterval[a],stopInterval[a],lastPosition[a]);
+    // printf("L %d \t %d \t %d \t %d\n",l,  startInterval[l],stopInterval[l],lastPosition[l]);
+    // printf("P %d \t %d \t %d \t %d \n",a,  startInterval[a],stopInterval[a],lastPosition[a]);
 
     if((startInterval[l]>=startInterval[a])&&(stopInterval[l]<=stopInterval[a])
     &&(((lastPosition[l]!=0)&&(lastPosition[l]>=startInterval[a])&&(lastPosition[l]<=stopInterval[a]))||(lastPosition[l]==0))){
-        printf("TRUE\n" );
+        // printf("TRUE\n" );
         updateInsert(a,l);
         shouldBeRemoved.insert(l);
     }
 
 }
-printf("END CheckInterval %d\n",a );
+// printf("END CheckInterval %d\n",a );
 
 return shouldBeRemoved;
 
@@ -467,64 +484,64 @@ return shouldBeRemoved;
 
  {
      // printf("COMING TO hu_mdd_real \n" );
-     if(explored[a-1]==1){
+     if(explored[a]==1){
          // printf("EXP %d is true\n",a-1 );
-         printf("else  %d\n",a-1);
+         // printf("else  %d\n",a-1);
 
-         lastPosition[a-1]=c;
+         lastPosition[a]=c;
          c++;
-         for (auto it=pset[a-1].begin(); it != pset[a-1].end(); ++it)
-        printf("else Pset is %d\n",*it );
-         printf("Done else  %d\n",a-1);
+        //  for (auto it=pset[a-1].begin(); it != pset[a-1].end(); ++it)
+        // printf("else Pset is %d\n",*it );
+        //  printf("Done else  %d\n",a-1);
      }else{
 
          // printf("C is %d\n",c );
-         startInterval[a-1]=c;
-         printf("startInterval[ %d ] =%d\n",a-1,c );
+         startInterval[a]=c;
+         // printf("startInterval[ %d ] =%d\n",a-1,c );
          c++;
          int kdn = k - 1;
          unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
          for (unsigned z = 0; z < A->getNNZs(); z++) {
              if (kdn>0)
              {
-                incomingedgecountHU[int(A->d(z))-1]--;
+                incomingedgecountHU[A->d(z)]--;
                 // std::set<int> childpset;
                 // compute_r(k-1,A->d(z),childpset);
                 compute_r(k-1,A->d(z));
 
-                if(incomingedgecountHU[int(A->d(z))-1]==0)
+                if(incomingedgecountHU[A->d(z)]==0)
                 {
-                     printf("ADDED %d to pset of %d \n",int(A->d(z))-1, a-1 );
+                     // printf("ADDED %d to pset of %d \n",int(A->d(z))-1, a-1 );
                     // pset.insert(int(A->d(z))-1);
                     // pset.insert(childpset.begin(), childpset.end());
-                    pset[a-1].insert(int(A->d(z))-1);
-                    pset[a-1].insert(pset[A->d(z)-1].begin(), pset[A->d(z)-1].end());
-                    for (auto it=pset[a-1].begin(); it != pset[a-1].end(); ++it)
-                   printf("Pset is**** %d\n",*it );
+                    pset[a].insert(A->d(z));
+                    pset[a].insert(pset[A->d(z)].begin(), pset[A->d(z)].end());
+                   //  for (auto it=pset[a-1].begin(); it != pset[a-1].end(); ++it)
+                   // printf("Pset is**** %d\n",*it );
 
                 }
 
              }
          }
-         stopInterval[a-1]=c;
-         printf("stopInterval[ %d ] =%d\n",a-1,c );
+         stopInterval[a]=c;
+         // printf("stopInterval[ %d ] =%d\n",a-1,c );
 
          c++;
-         explored[a-1]=true;
-         printf("explored[ %d ] is true\n",a-1 );
-
+         explored[a]=true;
+         // printf("explored[ %d ] is true\n",a-1 );
+         unpacked_node::recycle(A);
      }
-     if(incomingedgecountHU[a-1]==0)
+     if(incomingedgecountHU[a]==0)
      {
-         printf("incomingedgecountHU %d  is ZERO\n", a-1);
+         // printf("incomingedgecountHU %d  is ZERO\n", a-1);
          std::set<int> result;
-         for (auto it=pset[a-1].begin(); it != pset[a-1].end(); ++it)
-        printf("Pset is %d\n",*it );
+        //  for (auto it=pset[a-1].begin(); it != pset[a-1].end(); ++it)
+        // printf("Pset is %d\n",*it );
     // std::set<int> toRemove= CheckInterval(pset,a-1);
-    std::set<int> toRemove= CheckInterval(a-1);
+    std::set<int> toRemove= CheckInterval(a);
 
     for (auto r: toRemove ){
-        pset[a-1].erase(r);
+        pset[a].erase(r);
     }
           }
      return 0;

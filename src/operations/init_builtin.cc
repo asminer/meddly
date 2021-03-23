@@ -32,6 +32,7 @@
 #include "select.h"
 #include "incoming_edge_count.h"
 #include "above_count.h"
+#include "below_count.h"
 #include "highest_unique.h"
 #include "unique_count.h"
 
@@ -87,6 +88,7 @@ namespace MEDDLY {
   const unary_opname* SELECT = 0;
   const unary_opname* IEC = 0;
   const unary_opname* AC=0;
+  const unary_opname* BC=0;
   const unary_opname* HU=0;
   const unary_opname* UC=0;
 
@@ -122,6 +124,8 @@ namespace MEDDLY {
   const binary_opname* REACHABLE_STATES_BFS = 0;
   const binary_opname* REVERSE_REACHABLE_DFS = 0;
   const binary_opname* REVERSE_REACHABLE_BFS = 0;
+  const binary_opname* REACHABLE_STATES_BFS_UA = 0;
+  const binary_opname* REACHABLE_STATES_BFS_HUA = 0;
 
   const binary_opname* VM_MULTIPLY = 0;
   const binary_opname* MV_MULTIPLY = 0;
@@ -176,6 +180,7 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::SELECT,               SELECT,     initializeSelect()        );
   initP(MEDDLY::IEC,                  IEC,        initializeIncomingEdgeCount());
   initP(MEDDLY::AC,                   AC,         initializeAboveCount());
+  initP(MEDDLY::BC,                   BC,         initializeBelowCount());
   initP(MEDDLY::HU,                   HU,         initializeHighestUnique());
   initP(MEDDLY::UC,                   UC,         initializeUniqueCount());
 
@@ -209,6 +214,8 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::REACHABLE_STATES_BFS, FORWARD_BFS,  initializeForwardBFS()  );
   initP(MEDDLY::REVERSE_REACHABLE_DFS,BACKWARD_DFS, initializeBackwardDFS() );
   initP(MEDDLY::REVERSE_REACHABLE_BFS,BACKWARD_BFS, initializeBackwardBFS() );
+  initP(MEDDLY::REACHABLE_STATES_BFS_UA, FORWARD_BFS_UA, initializeForwardBFSUA());
+  initP(MEDDLY::REACHABLE_STATES_BFS_HUA, FORWARD_BFS_HUA, initializeForwardBFSHUA());
 
   initP(MEDDLY::VM_MULTIPLY,          VM_MULTIPLY,  initializeVMmult()      );
   initP(MEDDLY::MV_MULTIPLY,          MV_MULTIPLY,  initializeMVmult()      );
@@ -248,6 +255,7 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(CARD,           MEDDLY::CARDINALITY);
   cleanPair(IEC,            MEDDLY::IEC);
   cleanPair(AC,             MEDDLY::AC);
+  cleanPair(BC,             MEDDLY::BC);
   cleanPair(HU,             MEDDLY::HU);
   cleanPair(UC,             MEDDLY::UC);
   cleanPair(COMPL,          MEDDLY::COMPLEMENT);
@@ -286,6 +294,8 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(FORWARD_BFS,    MEDDLY::REACHABLE_STATES_BFS);
   cleanPair(BACKWARD_DFS,   MEDDLY::REVERSE_REACHABLE_DFS);
   cleanPair(BACKWARD_BFS,   MEDDLY::REVERSE_REACHABLE_BFS);
+  cleanPair(FORWARD_BFS_UA, MEDDLY::REACHABLE_STATES_BFS_UA);
+  cleanPair(FORWARD_BFS_HUA, MEDDLY::REACHABLE_STATES_BFS_HUA);
 
   cleanPair(SATURATION_BACKWARD,      MEDDLY::SATURATION_BACKWARD );
   cleanPair(SATURATION_FORWARD,       MEDDLY::SATURATION_FORWARD  );

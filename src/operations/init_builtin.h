@@ -32,6 +32,7 @@ class MEDDLY::builtin_initializer : public initializer_list {
   unary_opname* SELECT;
   unary_opname* IEC;
   unary_opname* AC;
+  unary_opname* BC;
   unary_opname* HU;
   unary_opname* UC;
 
@@ -65,6 +66,8 @@ class MEDDLY::builtin_initializer : public initializer_list {
   binary_opname* FORWARD_BFS;
   binary_opname* BACKWARD_DFS;
   binary_opname* BACKWARD_BFS;
+  binary_opname* FORWARD_BFS_UA;
+  binary_opname* FORWARD_BFS_HUA;
 
   binary_opname* VM_MULTIPLY;
   binary_opname* MV_MULTIPLY;

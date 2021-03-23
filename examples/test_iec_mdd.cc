@@ -133,12 +133,12 @@ int main(int argc, char *argv[])
  //printf("initial_state %d\n", initial_state.getIncomingCount());
 
 
-
-   // apply(CARDINALITY,initial_state,c1);
-   // printf("CARDDDD\n" );
-   // for(int i=0;i<(int)c1;i++){
-   //    printf("BELOW %d \t %d\n", i, belowcount[i]);
-   // }
+ lastNode=initial_state.getLastHandle()+1;
+   apply(CARDINALITY,initial_state,c1);
+   printf("CARDDDD\n" );
+   for(int i=0;i<lastNode;i++){
+      printf("BELOW %d \t %d\n", i, belowcount[i]);
+   }
 
 
 
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
   // apply(AC, initial_state, e);
 
 
-  states->underApproximate(initial_state,4);
+  states->underApproximate(initial_state,4,4,0.5,0);
   printf("HAHA lastNode %ld\n",states->getCurrentNumNodes() );
   // node_handle root = initial_state.getNode();
   // printf("Root is %d\n",root );

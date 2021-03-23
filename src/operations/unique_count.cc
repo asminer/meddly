@@ -309,20 +309,24 @@ if((card<1))
 
     visitedNode=new bool[card];
     uniquecount=new int[card];
-
-    for(int i=0;i<=card;i++){
+for(int i=0;i<card;i++){
+    visitedNode[i]=false;
+    uniquecount[i]=0;
+}
+    for(int i=0;i<card;i++){
+        if(incomingedgecount[i]>0)
     uniquecount[i]=1;
     }
 
-     res = compute_r( arg.getNode()-1);
-
-     printf("COMPUTED %d\n",card );
-     printf("******\n" );
-     for(int i=0;i<=(int)card;i++){
-   	  printf("UC[%d] %d \t\n", i,uniquecount[i]);
-
-      }
-      printf("******\n" );
+     res = compute_r( arg.getNode());
+     delete [] visitedNode;
+     // printf("COMPUTED %d\n",card );
+     // printf("******\n" );
+     // for(int i=0;i<=(int)card;i++){
+   	 //  printf("UC[%d] %d \t\n", i,uniquecount[i]);
+     //
+     //  }
+     //  printf("******\n" );
 
 
 #ifdef DEBUG_AC
@@ -343,7 +347,7 @@ if((card<1))
  {
      //printf("CAME UC %d \n",a );
 
-     if(visitedNode[a]==1){
+     if(visitedNode[a]){
          return uniquecount[a];
      }
      std::set<int> rset=highestunique[a];

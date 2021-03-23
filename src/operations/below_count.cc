@@ -18,55 +18,55 @@
 */
 
 #ifdef HAVE_CONFIG_H
-#include "incoming_edge_count.h"
+#include "below_count.h"
+#include "config.h"
 #endif
 #ifdef HAVE_LIBGMP
 #include <gmp.h>
 #endif
 #include "../defines.h"
-#include <set>
-//#include "mpz_object.h"
+#include "mpz_object.h"
 
-// #define DEBUG_IEC
+// #define DEBUG_CARD
 
 namespace MEDDLY {
-  class iec_int;
-  class iec_mdd_int;
- // class card_mxd_int;
-  int* incomingedgecount;
-  class iec_real;
-  class iec_mdd_real;
-  /*  class card_mxd_real;
+  class bc_int;
+  class bc_mdd_int;
+  // class card_mxd_int;
 
+  class bc_real;
+  class bc_mdd_real;
+  // class card_mxd_real;
+  long* belowcount;
+  int lastNode;
 #ifdef HAVE_LIBGMP
-  class card_mpz;
-  class card_mdd_mpz;
-  class card_mxd_mpz;
+  // class card_mpz;
+  // class card_mdd_mpz;
+  // class card_mxd_mpz;
 #endif
- */
-  class iec_opname;
 
+  class bc_opname;
 };
 
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                        IEC  operations                        *
+// *                        Card  operations                        *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
 // ******************************************************************
 // *                                                                *
-// *                         iec_int class                         *
+// *                         card_int class                         *
 // *                                                                *
 // ******************************************************************
 
 //  Abstract base class: cardinality that returns an integer
-class MEDDLY::iec_int : public unary_operation {
+class MEDDLY::bc_int : public unary_operation {
 public:
-  iec_int(const unary_opname* oc, expert_forest* arg);
-  std::set<node_handle> visitedNode;
+  bc_int(const unary_opname* oc, expert_forest* arg);
+
 protected:
   static inline void overflow_acc(long &a, long x) {
     a += x;
@@ -78,130 +78,87 @@ protected:
     return a;
   }
 };
-MEDDLY::iec_int::iec_int(const unary_opname* oc, expert_forest* arg)
+
+MEDDLY::bc_int::bc_int(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, INTEGER)
 {
   compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:L");
   et->setForestForSlot(0, arg);
   registerEntryType(0, et);
   buildCTs();
-  visitedNode.clear();
 }
 
 // ******************************************************************
 // *                                                                *
-// *                       iec_mdd_int class                       *
+// *                       card_mdd_int class                       *
 // *                                                                *
 // ******************************************************************
 
-//  incoming edge count on MDDs, returning integer
-class MEDDLY::iec_mdd_int : public iec_int {
+//  Cardinality on MDDs, returning integer
+class MEDDLY::bc_mdd_int : public bc_int {
 public:
-  iec_mdd_int(const unary_opname* oc, expert_forest* arg)
-    : iec_int(oc, arg) { }
+  bc_mdd_int(const unary_opname* oc, expert_forest* arg)
+    : bc_int(oc, arg) { }
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
   }
   long compute_r(int k, node_handle a);
-protected:
-  inline compute_table::entry_key*
-  findResult(node_handle a, long &b)
-  {
-    compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-    MEDDLY_DCASSERT(CTsrch);
-    CTsrch->writeN(a);
-    CT0->find(CTsrch, CTresult[0]);
-    if (!CTresult[0]) return CTsrch;
-    b = CTresult[0].readI();
-    CT0->recycle(CTsrch);
-    return 0;
-  }
-  inline long saveResult(compute_table::entry_key* Key,
-    node_handle a, long &b)
-  {
-    CTresult[0].reset();
-    CTresult[0].writeI(b);
-    CT0->addEntry(Key, CTresult[0]);
-    return b;
-  }
 };
 
-long MEDDLY::iec_mdd_int::compute_r(int k, node_handle a)
+long MEDDLY::bc_mdd_int::compute_r(int k, node_handle a)
 {
   // Terminal cases
-  if (0==a) return 0;
-  if (0==k) return 0;
-  // Quickly deal with skipped levels
-  if (argF->getNodeLevel(a) < k) {
-    return overflow_mult(compute_r(k-1, a), argF->getLevelSize(k));
-  }
-
-  // Check compute table
-  long iec = 0;
-  if(visitedNode.find(a)==visitedNode.end()){
-
-    // Initialize node reader
-    unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
-    int kdn = k-1;
-    for (unsigned z=0; z<A->getNNZs(); z++) {
-      if(kdn>0){
-        long iec;
-        compute_table::entry_key* CTsrch = findResult(A->d(z), iec);
-        if (0==CTsrch) iec++;
-        else iec=1;
-        saveResult(CTsrch, A->d(z), iec);
-        overflow_acc(iec, compute_r(kdn, A->d(z)));
-      }
-    }
-    visitedNode.insert(a);
-
-  // compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-  // MEDDLY_DCASSERT(CTsrch);
-  // CTsrch->writeN(a);
-  // CT0->find(CTsrch, CTresult[0]);
-  // if (CTresult[0]) {
-  //   CT0->recycle(CTsrch);
-  //   iec=CTresult[0].readL();
-  //   overflow_acc(iec,1);
-  //   return iec;
-  // }
-  // else{
-	//   iec=1;
-  // }
-
-
-
-  // Recurse
-
-  // int kdn = k-1;
-  // for (unsigned z=0; z<A->getNNZs(); z++) {
-	// if(kdn>0)
-  //   overflow_acc(iec, compute_r(kdn, A->d(z)));
-  // }
-
-  // Cleanup
-  unpacked_node::recycle(A);
-
-  // Add entry to compute table
-  // CTresult[0].reset();
-  // CTresult[0].writeL(iec);
-  // CT0->addEntry(CTsrch, CTresult[0]);
-
-#ifdef DEBUG_CARD
-  fprintf(stderr, "iec of node %d is %ld(L)\n", a, iec);
-#endif
-  return iec;
-  }
+//   if (0==a) return 0;
+//   if (0==k) return 1;
+//
+//   // Quickly deal with skipped levels
+//   if (argF->getNodeLevel(a) < k) {
+//     return overflow_mult(compute_r(k-1, a), argF->getLevelSize(k));
+//   }
+//
+//   // Check compute table
+//   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+//   MEDDLY_DCASSERT(CTsrch);
+//   CTsrch->writeN(a);
+//   CT0->find(CTsrch, CTresult[0]);
+//   if (CTresult[0]) {
+//     CT0->recycle(CTsrch);
+//     return CTresult[0].readL();
+//   }
+//
+//   // Initialize node reader
+//   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+//
+//   // Recurse
+//   long card = 0;
+//   int kdn = k-1;
+//   for (unsigned z=0; z<A->getNNZs(); z++) {
+//     overflow_acc(card, compute_r(kdn, A->d(z)));
+//   }
+//
+//   // Cleanup
+//   unpacked_node::recycle(A);
+//
+//   // Add entry to compute table
+//   CTresult[0].reset();
+//   CTresult[0].writeL(card);
+//   CT0->addEntry(CTsrch, CTresult[0]);
+//
+// #ifdef DEBUG_CARD
+//   fprintf(stderr, "Cardinality of node %d is %ld(L)\n", a, card);
+// #endif
+//   return card;
+return 0;
 }
 
 
-// // ******************************************************************
-// // *                                                                *
-// // *                       card_mxd_int class                       *
-// // *                                                                *
-// // ******************************************************************
-//
-// //  Cardinality on MxDs, returning integer
+// ******************************************************************
+// *                                                                *
+// *                       card_mxd_int class                       *
+// *                                                                *
+// ******************************************************************
+
+//  Cardinality on MxDs, returning integer
 // class MEDDLY::card_mxd_int : public card_int {
 // public:
 //   card_mxd_int(const unary_opname* oc, expert_forest* arg)
@@ -261,129 +218,130 @@ long MEDDLY::iec_mdd_int::compute_r(int k, node_handle a)
 // #endif
 //   return card;
 // }
-//
-//
- // ******************************************************************
- // *                                                                *
- // *                        iec_real  class                        *
- // *                                                                *
- // ******************************************************************
 
- //  Abstract base class: cardinality that returns a real
- class MEDDLY::iec_real : public unary_operation {
- public:
-   iec_real(const unary_opname* oc, expert_forest* arg);
+
+// ******************************************************************
+// *                                                                *
+// *                        bc_real  class                        *
+// *                                                                *
+// ******************************************************************
+
+//  Abstract base class: cardinality that returns a real
+class MEDDLY::bc_real : public unary_operation {
+public:
+  bc_real(const unary_opname* oc, expert_forest* arg);
 protected:
     bool* visitedNode;
-    //int* iec;
- };
+    inline compute_table::entry_key*
+    findResult(node_handle a, double &b)
+    {
+      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->writeN(a);
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      b = CTresult[0].readI();
+      CT0->recycle(CTsrch);
+      return 0;
+    }
+};
 
- MEDDLY::iec_real::iec_real(const unary_opname* oc, expert_forest* arg)
-  : unary_operation(oc, 1, arg, REAL)
- {
-   compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:D");
-   et->setForestForSlot(0, arg);
-   registerEntryType(0, et);
-   buildCTs();
- }
-
- // ******************************************************************
- // *                                                                *
- // *                      iec_mdd_real  class                      *
- // *                                                                *
- // ******************************************************************
-
- //  Cardinality on MDDs, returning real
- class MEDDLY::iec_mdd_real : public iec_real {
- public:
-   iec_mdd_real(const unary_opname* oc, expert_forest* arg)
-     : iec_real(oc, arg) { }
-   virtual void compute(const dd_edge &arg, double &res) {
-       // printf("IEC Root is %d\n",arg.getNode() );
-
-       int card = lastNode;//argF->getCurrentNumNodes();// instead of arg.getCardinality()
-       if(card<1)
-       {
-           throw error(error::INVALID_SEQUENCE, __FILE__, __LINE__);
-       }
-       // printf("CARD %d\n",card );
-	  incomingedgecount=new int[card];
-      visitedNode=new bool[card];
-
-      for(int i=0;i<card;i++)
-      {
-     	 incomingedgecount[i]=0;
-         visitedNode[i]=false;
-      }
-      // printf("ROOT IS %d\n",arg.getNode() );
-      // printf("XXXXIEC ROOT %d\n",incomingedgecount[arg.getNode()] );
-
-      compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
-
-     // printf("IEC ROOT %d\n",incomingedgecount[arg.getNode()] );
-     res =0;
-     delete[] visitedNode;
-
-#ifdef DEBUG_IEC
-for(int i=0;i<card;i++)
+MEDDLY::bc_real::bc_real(const unary_opname* oc, expert_forest* arg)
+ : unary_operation(oc, 1, arg, REAL)
 {
-    if(incomingedgecount[i]>0)
-   printf("i %d %d \n",i, incomingedgecount[i]);
-}
-#endif
-
-   }
-   void compute_r(int ht, node_handle a);
- protected:
-  inline compute_table::entry_key*
-  findResult(node_handle a, double &b)
-  {
-    compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-    MEDDLY_DCASSERT(CTsrch);
-    CTsrch->writeN(a);
-    CT0->find(CTsrch, CTresult[0]);
-    if (!CTresult[0]) return CTsrch;
-    b = CTresult[0].readI();
-    CT0->recycle(CTsrch);
-    return 0;
-  }
-  inline long saveResult(compute_table::entry_key* Key,
-    node_handle a, double &b)
-  {
-    CTresult[0].reset();
-    CTresult[0].writeI(b);
-    CT0->addEntry(Key, CTresult[0]);
-    return b;
-  }
- };
-
- void MEDDLY::iec_mdd_real::compute_r(int k, node_handle a)
- {
-   if(visitedNode[a]==false){
-		unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
-		int kdn = k-1;
-		for (unsigned z = 0; z < A->getNNZs(); z++) {
-			if(kdn>0){
-				incomingedgecount[A->d(z)]++;
-				compute_r(kdn, A->d(z));
-			}
-		}
-		visitedNode[a]=true;
-        unpacked_node::recycle(A);
-   }
+  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:D");
+  et->setForestForSlot(0, arg);
+  registerEntryType(0, et);
+  buildCTs();
 }
 
+// ******************************************************************
+// *                                                                *
+// *                      card_mdd_real  class                      *
+// *                                                                *
+// ******************************************************************
 
+//  Cardinality on MDDs, returning real
+class MEDDLY::bc_mdd_real : public bc_real {
+public:
+  bc_mdd_real(const unary_opname* oc, expert_forest* arg)
+    : bc_real(oc, arg) { }
+  virtual void compute(const dd_edge &arg, double &res) {
+      if(lastNode>0)
+      {
+      belowcount=new long[lastNode];//argF->getCurrentNumNodes()];
+      visitedNode=new bool[lastNode];
+      for(int i=0;i<lastNode;i++)
+      {belowcount[i]=0;
+      visitedNode[i]=false;
+    }
+      // resultmap.clear();
+      }
 
+    res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
+    delete[] visitedNode;
+    // FILE_output meddlyout(stdout);
+    //CT0->show(meddlyout,2);
+    // printf("lastNode in CARD %d\n",lastNode );
+    // delete belowcount;
 
-
-// // ******************************************************************
-// // *                                                                *
-// // *                      card_mxd_real  class                      *
-// // *                                                                *
-// // ******************************************************************
+//     for(int i=1;i<int(res)+1;i++){
+//     compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+//     MEDDLY_DCASSERT(CTsrch);
+//     CTsrch->writeN(i);
+// //     printf("getCurrentNumNodes: %ld\n",argF->getCurrentNumNodes() );
+// // printf("getKeyType: %d\n", etype[0]->getKeyType(0));
+//     CT0->find(CTsrch, CTresult[0]);
+//     if (CTresult[0]) {
 //
-// //  Cardinality on MxDs, returning real
+//         // int bres=
+//          printf("Card result for %d is %d \n",i ,(int)CTresult[0].readD());
+//
+//      belowcount[i-1]=(int)CTresult[0].readD();
+//     }
+// }
+    // belowcount=new int[(int)res];
+    // if(lastNode>0){
+    //     // printf("CAME resultmapresultmapresultmapresultmap \n");
+    // std::map<int, long>::iterator itr;
+    // for (itr = resultmap.begin(); itr != resultmap.end(); ++itr) {
+    //     belowcount[itr->first]=itr->second;
+    //     // printf("BC %d %d\n", itr->first,belowcount[itr->first]);
+    // }
+    // resultmap.clear();
+    // }
+    // delete belowcount;
+  }
+  double compute_r(int ht, node_handle a);
+// private:
+//     std::map<int, long> resultmap;
+};
+
+double MEDDLY::bc_mdd_real::compute_r(int k, node_handle a)
+{
+      if (0==a) return 0.0;
+      if (0==k) return 1.0;
+    if(visitedNode[a]) return belowcount[a];
+      unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+       int kdn = k-1;
+       for (unsigned z=0; z<A->getNNZs(); z++) {
+         belowcount[a] += compute_r(kdn, A->d(z));
+       }
+       visitedNode[a]=true;
+       unpacked_node::recycle(A);
+       return belowcount[a];
+
+}
+
+
+
+// ******************************************************************
+// *                                                                *
+// *                      card_mxd_real  class                      *
+// *                                                                *
+// ******************************************************************
+
+//  Cardinality on MxDs, returning real
 // class MEDDLY::card_mxd_real : public card_real {
 // public:
 //   card_mxd_real(const unary_opname* oc, expert_forest* arg)
@@ -646,7 +604,7 @@ for(int i=0;i<card;i++)
 // }
 //
 // #endif
-
+//
 
 
 // ******************************************************************
@@ -655,42 +613,40 @@ for(int i=0;i<card;i++)
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::iec_opname : public unary_opname {
+class MEDDLY::bc_opname : public unary_opname {
   public:
-    iec_opname();
+    bc_opname();
     virtual unary_operation*
       buildOperation(expert_forest* ar, opnd_type res) const;
 };
 
-MEDDLY::iec_opname::iec_opname()
- : unary_opname("IEC")
+MEDDLY::bc_opname::bc_opname()
+ : unary_opname("BC")
 {
 }
 
 MEDDLY::unary_operation*
-MEDDLY::iec_opname::buildOperation(expert_forest* arg, opnd_type res) const
+MEDDLY::bc_opname::buildOperation(expert_forest* arg, opnd_type res) const
 {
   if (0==arg) return 0;
   switch (res) {
-
     case INTEGER:
-
       if (arg->isForRelations())
-    	  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-        //return new card_mxd_int(this, arg);
-        //return new iec_mdd_int(this, arg);
-
+      ;
+        // return new card_mxd_int(this, arg);
       else
-        return new iec_mdd_int(this, arg);
+        return new bc_mdd_int(this, arg);
 
-     case REAL:
-       if (arg->isForRelations());
-         //return new iec_mxd_real(this, arg);
-       else
-         return new iec_mdd_real(this, arg);
+    case REAL:
+      if (arg->isForRelations())
+      ;
+        // return new card_mxd_real(this, arg);
+      else
+        return new bc_mdd_real(this, arg);
 
 // #ifdef HAVE_LIBGMP
 //     case HUGEINT:
+//         printf("DOUBLE MPZ \n" );
 //       if (arg->isForRelations())
 //         return new card_mxd_mpz(this, arg);
 //       else
@@ -708,7 +664,7 @@ MEDDLY::iec_opname::buildOperation(expert_forest* arg, opnd_type res) const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeIncomingEdgeCount()
+MEDDLY::unary_opname* MEDDLY::initializeBelowCount()
 {
-  return new iec_opname;
+  return new bc_opname;
 }

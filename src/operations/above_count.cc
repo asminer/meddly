@@ -33,7 +33,7 @@ namespace MEDDLY {
   class ac_int;
   class ac_mdd_int;
  // class card_mxd_int;
-  int* abovecount;
+  long* abovecount;
   class ac_real;
   class ac_mdd_real;
   /*  class card_mxd_real;
@@ -298,7 +298,7 @@ protected:
    ac_mdd_real(const unary_opname* oc, expert_forest* arg)
      : ac_real(oc, arg) { }
    virtual void compute(const dd_edge &arg, double &res) {
-
+       // printf("AC Root is %d\n",arg.getNode() );
        int card =lastNode; //argF->getCurrentNumNodes();// instead of arg.getCardinality()
        if(card<1)
        {
@@ -311,15 +311,27 @@ protected:
       	 printf("beforeAC %d %d \n",i, incomingedgecount[i]);
        }
 #endif
-	  abovecount=new int[card];
+    // delete abovecount;
+	  abovecount=new long[card];
      iec=new int[card];
      for(int i=0;i<card;i++)
+     iec[i]=0;
+     for(int i=0;i<card;i++)
      {
+         abovecount[i]=0;
     	 iec[i]=incomingedgecount[i];
+         // printf("IEC %i %i\n",i,iec[i] );
      }
-     abovecount[arg.getNode()-1]=1;
-     res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
-
+     // printf("IEC ROOT in AC %d %d\n",iec[arg.getNode()], incomingedgecount[arg.getNode()] );
+     // char c=getchar();
+     abovecount[arg.getNode()]=1;
+    compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
+    delete [] iec;
+ res = 0;
+     // for(int i=0;i<card;i++)
+     // {
+    	//  printf("AC %d %d \n",i, abovecount[i]);
+     // }
 #ifdef DEBUG_AC
      for(int i=0;i<card;i++)
      {
@@ -327,7 +339,7 @@ protected:
      }
 #endif
    }
-   double compute_r(int ht, node_handle a);
+   void compute_r(int ht, node_handle a);
  protected:
   inline compute_table::entry_key*
   findResult(node_handle a, double &b)
@@ -351,16 +363,8 @@ protected:
   }
  };
 
- double MEDDLY::ac_mdd_real::compute_r(int k, node_handle a)
+ void MEDDLY::ac_mdd_real::compute_r(int k, node_handle a)
  {
-   // Terminal cases
-   if (0==a) return 0.0;
-   if (0==k) return 0.0;
-
-   // Quickly deal with skipped levels
-   if (argF->getNodeLevel(a) < k) {
-     return compute_r(k-1, a) * argF->getLevelSize(k);
-   }
 
 		unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
 
@@ -369,14 +373,17 @@ protected:
 		int kdn = k - 1;
 		for (unsigned z = 0; z < A->getNNZs(); z++) {
 			if(kdn>0){
-				abovecount[int(A->d(z))-1]+=abovecount[a-1];
-				iec[int(A->d(z))-1]--;
-				if (iec[int(A->d(z))-1]==0){
+				abovecount[A->d(z)]+=abovecount[a];
+				iec[A->d(z)]--;
+				if (iec[A->d(z)]==0){
+                    // printf("RECURSIVE:\n" );
+
 				compute_r(kdn, A->d(z));
 				}
 			}
 		}
 
+        unpacked_node::recycle(A);
 
 
 
@@ -409,9 +416,9 @@ protected:
 //   CT0->addEntry(CTsrch, CTresult[0]);
 
  #ifdef DEBUG_AC
-   fprintf(stderr, "AC of node %d is %le(L)\n", a, abovecount[a-1]);
+   fprintf(stderr, "AC of node %d is %le(L)\n", a, abovecount[a]);
  #endif
-   return abovecount[a-1];
+   // return abovecount[a-1];
  }
 
 

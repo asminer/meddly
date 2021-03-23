@@ -23,6 +23,7 @@
 #include <gmp.h>
 
 #define _MEDDLY_WITHOUT_IOSTREAM_
+// #define HAVE_LIBGMP
 
 #include "../src/meddly.h"
 #include "../src/meddly_expert.h"
@@ -106,6 +107,22 @@ int main(int argc, const char** argv)
       method = 'b';
       continue;
     }
+    if (strcmp("-uabfs", argv[i])==0) {
+      method = 'u';
+      continue;
+    }
+    if (strcmp("-huabfs", argv[i])==0) {
+      method = 'h';
+      continue;
+    }
+    if (strcmp("-diffuabfs", argv[i])==0) {
+      method = 'l';
+      continue;
+    }
+    if (strcmp("-diffhuabfs", argv[i])==0) {
+      method = 'n';
+      continue;
+    }
     if (strcmp("-dfs", argv[i])==0) {
       method = 'm';
       continue;
@@ -170,10 +187,22 @@ int main(int argc, const char** argv)
     for (int i=15; i>=0; i--) sizes[i] = N+1;
     d = createDomainBottomUp(sizes, 16);
     delete[] sizes;
-
+    // forest::policies pmdd(false);
+    forest::policies p(false);
+    p.setQuasiReduced();
+    // reduction_rule r = forest::QUASI_REDUCED;
+    // pmdd.setPessimistic();
     // Initialize forests
-    forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
-    forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+    // forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,pmdd);
+    // forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL,pmdd);
+    forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
+    forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
+    // printf("%d\n",mdd->getReductionRule()==forest::policies::QUASI_REDUCED );
+    // char c=getchar();
+    // mdd->setReductionRule(forest::QUASI_REDUCED);
+
+    // mdd->setQuasiReduced();
+    // mxd->setQuasiReduced();
 
     // associate loggers
     std::ofstream log;
@@ -239,12 +268,60 @@ int main(int argc, const char** argv)
 
     if (LOG) LOG->newPhase(mdd, "Building reachability set");
     dd_edge reachable(mdd);
+    dd_edge bfsreachable(mdd);
     start.note_time();
     switch (method) {
       case 'b':
         printf("Building reachability set using traditional algorithm\n");
         fflush(stdout);
         apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+        long cbr;
+        apply(CARDINALITY, reachable, cbr);
+        printf("Reachable State %ld\n",cbr );
+        break;
+
+      case 'u':
+        printf("Building reachability set using traditional BFS_UA algorithm\n");
+        fflush(stdout);
+        apply(REACHABLE_STATES_BFS_UA, init_state, nsf, reachable);
+        break;
+      case 'h':
+          printf("Building reachability set using traditional BFS_HUA algorithm\n");
+          fflush(stdout);
+          maxThreshold=1000;
+          minThreshold=1000;
+          desiredPercentage=0.3;
+          optionsForUA=2;
+          timeForUA=3600;
+          apply(REACHABLE_STATES_BFS_HUA, init_state, nsf, reachable);
+          break;
+
+    case 'l':
+        printf("Building reachability set using traditional algorithm\n");
+        fflush(stdout);
+        apply(REACHABLE_STATES_BFS_UA, init_state, nsf, reachable);
+        printf("DONEDONEDONEDONE\n" );
+        apply(REACHABLE_STATES_BFS, init_state, nsf, bfsreachable);
+        reachable-=bfsreachable;
+
+        // printf("new reachable states %ld\n",c );
+        long c;
+        apply(CARDINALITY, reachable, c);
+        printf("new reachable states %ld\n",c );
+        break;
+
+    case 'n':
+        printf("Building reachability set using traditional algorithm\n");
+        fflush(stdout);
+        apply(REACHABLE_STATES_BFS_HUA, init_state, nsf, reachable);
+        printf("DONEDONEDONEDONE\n" );
+        apply(REACHABLE_STATES_BFS, init_state, nsf, bfsreachable);
+        reachable-=bfsreachable;
+
+        // printf("new reachable states %ld\n",c );
+        long d;
+        apply(CARDINALITY, reachable, d);
+        printf("new reachable states %ld\n",d );
         break;
 
       case 'm':

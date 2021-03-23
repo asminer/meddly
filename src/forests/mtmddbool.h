@@ -22,6 +22,8 @@
 
 #include "mtmdd.h"
 #include <cfloat>
+#include "../operations/mpz_object.h"
+#include <gmp.h>
 namespace MEDDLY {
   class mt_mdd_bool;
 };
@@ -46,15 +48,17 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest {
     virtual void showTerminal(output &s, node_handle tnode) const;
     virtual void writeTerminal(output &s, node_handle tnode) const;
     virtual node_handle readTerminal(input &s);
-    virtual void underApproximate(dd_edge &e, int Threashold);
-    virtual void HeuristicUnderApproximate(dd_edge &e, int Threashold);
+    virtual void underApproximate(dd_edge &e,long minThreshold, long maxThreshold,float desiredPercentage, int option);
+    virtual void HeuristicUnderApproximate(dd_edge &e, long minThreshold, long maxThreshold,float desiredPercentage, int option);
 
   protected:
     virtual const char* codeChars() const;
 private:
       void RemoveDuplicate(int lvl, std::map<int,int>map);
-      void RemoveDuplicate2(int lvl, std::map<int,int>map,dd_edge &e);
-
+      int RemoveDuplicate2(int lvl, std::map<int,int>map,dd_edge &e);
+      int maxid=0;
+      void uniqueNodesforp(node_handle p,std::set<int> &result );
+      int RemoveDuplicateSet(int lvl, std::set<int>levels,std::map<int,int>map,dd_edge &e);
 };
 
 #endif

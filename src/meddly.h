@@ -154,11 +154,16 @@ namespace MEDDLY {
   };
 
   extern int* incomingedgecount;
-  extern int* abovecount;
-  extern int* belowcount;
+  extern long* abovecount;
+  extern long* belowcount;
   extern std::map< int, std::set<int>> highestunique;
   extern int* uniquecount;
   extern int lastNode;
+  extern unsigned int optionsForUA;
+  extern long maxThreshold;
+  extern long minThreshold;
+  extern float desiredPercentage;
+  extern long timeForUA;
   // ******************************************************************
   // *                    miscellaneous  functions                    *
   // ******************************************************************
@@ -266,6 +271,8 @@ namespace MEDDLY {
   extern const unary_opname* IEC;
   /// Unary operation. Return the number of above state count
   extern const unary_opname* AC;
+  /// Unary operation. Return the number of above state count
+  extern const unary_opname* BC;
   // Unary operation. Return the highest unique set
   extern const unary_opname* HU;
   // Unary operation. Return the unique count.
@@ -357,6 +364,9 @@ namespace MEDDLY {
   extern const binary_opname* REACHABLE_STATES_BFS;
   extern const binary_opname* REVERSE_REACHABLE_DFS;
   extern const binary_opname* REVERSE_REACHABLE_BFS;
+  extern const binary_opname* REACHABLE_STATES_BFS_UA;
+  extern const binary_opname* REACHABLE_STATES_BFS_HUA;
+
 
   /** Vector matrix multiply, where the first argument is vector (MDD),
       the second argument is a matrix (MXD), and the result is a vector (MDD).
@@ -1859,8 +1869,8 @@ class MEDDLY::forest {
     */
     virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
-      virtual void underApproximate(dd_edge &e, int Threashold);
-      virtual void HeuristicUnderApproximate(dd_edge &e, int Threashold);
+      virtual void underApproximate(dd_edge &e, long minThreshold, long maxThreshold,float desiredPercentage, int option);
+      virtual void HeuristicUnderApproximate(dd_edge &e, long minThreshold, long maxThreshold,float desiredPercentage, int option);
 
     /** Evaluate the function encoded by an edge.
         @param  f     Edge (function) to evaluate.
@@ -2459,6 +2469,13 @@ class MEDDLY::dd_edge {
                       of this dd_edge.
     */
     unsigned getNodeCount() const;
+
+    // void underApproximate(dd_edge &e, int Threashold);
+
+    /** get last node handle in this decision diagram.
+
+    */
+    unsigned getLastHandle() const;
 
     /** Counts the number of unique edges in this decision diagram.
         @param  countZeroes

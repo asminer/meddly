@@ -71,6 +71,25 @@ void MEDDLY::mpz_object::show(output &strm) const
   strm.put(buffer);
 }
 
+void MEDDLY::mpz_object::showwithreminder(output &strm) const
+{
+  // Make sure temporary string has enough space
+  int digits = mpz_sizeinbase(value, 10)+2;
+  enlargeBuffer(digits);
+  // Write into a string
+  mpz_get_str(buffer, 10, value);
+  // Display the string
+  strm.put(buffer);
+  strm.put(".");
+  // Make sure temporary string has enough space
+  // int digits = mpz_sizeinbase(rdvalue, 10)+2;
+  // enlargeBuffer(digits);
+  // // Write into a string
+  // mpz_get_str(buffer, 10, rdvalue);
+  // // Display the string
+  strm.put(rdvalue);
+}
+
 void MEDDLY::mpz_object::initBuffer()
 {
   buffer = 0;

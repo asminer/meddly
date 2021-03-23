@@ -471,13 +471,13 @@ void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
 }
 
 void MEDDLY::forest
-::underApproximate(dd_edge &e, int Threashold)
+::underApproximate(dd_edge &e, long minThreshold, long maxThreshold,float desiredPercentage, int option)
 {
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
-::HeuristicUnderApproximate(dd_edge &e, int Threashold)
+::HeuristicUnderApproximate(dd_edge &e, long minThreshold, long maxThreshold, float desiredPercentage,int option)
 {
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
@@ -1179,11 +1179,25 @@ MEDDLY::expert_forest
 long MEDDLY::expert_forest::getNodeCount(node_handle p) const
 {
   node_handle* list = markNodesInSubgraph(&p, 1, true);
+  // printf("ran markNodesInSubgraph\n" );
   if (0==list) return 0;
   long i;
   for (i=0; list[i]; i++) { }
   free(list);
   return i;
+}
+
+int MEDDLY::expert_forest::getLastHandle(node_handle p) const
+{
+    // return nodeHeaders.lastUsedHandle();
+  node_handle* list = markNodesInSubgraph(&p, 1, true);
+  // printf("CAME expert_forest::getLastHandle\n" );
+  if (0==list) {printf("ERROR \n\n \n" ); char c=getchar(); return -1;}
+  long i;
+  int returnedHandle=-1;
+  for (i=0; list[i]; i++) { if (returnedHandle<(int)list[i]) {returnedHandle=list[i];}}
+  free(list);
+  return returnedHandle;
 }
 
 long MEDDLY::expert_forest::getNodeCount(const node_handle* roots, int N) const

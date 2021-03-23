@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -17,23 +17,15 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef REACH_BFS_H
-#define REACH_BFS_H
+#ifndef BELOW_COUNT
+#define BELOW_COUNT
 
 namespace MEDDLY {
-  class binary_opname;
+  class unary_opname;
 
-  /// Set up a binary_opname for the "reachable bfs" operation.
-  binary_opname* initializeForwardBFS();
-
-  /// Set up a binary_opname for the "reverse reachable bfs" operation.
-  binary_opname* initializeBackwardBFS();
-
-  /// Set up a binary_opname for the  "reachable bfs with under approximation" opertaion.
-  binary_opname* initializeForwardBFSUA();
-
-  /// Set up a binary_opname for the  "reachable bfs with heuristic under approximation" opertaion.
-  binary_opname* initializeForwardBFSHUA();
-}
+  /// Minimalist interface.
+  /// Set up a unary_opname for the "incoming_edge_count" operation.
+  unary_opname* initializeBelowCount();
+};
 
 #endif
