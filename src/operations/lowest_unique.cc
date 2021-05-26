@@ -18,24 +18,26 @@
 */
 
 #ifdef HAVE_CONFIG_H
-#include "incoming_edge_count.h"
+#include "lowest_unique.h"
 #endif
 #ifdef HAVE_LIBGMP
 #include <gmp.h>
 #endif
 #include "../defines.h"
 #include <set>
+#include <map>
 //#include "mpz_object.h"
 
-// #define DEBUG_IEC
+// #define DEBUG_AC
 
 namespace MEDDLY {
-  class iec_int;
-  class iec_mdd_int;
+  class lu_int;
+  class lu_mdd_int;
  // class card_mxd_int;
-  int* incomingedgecount;
-  class iec_real;
-  class iec_mdd_real;
+ std::map< int, std::set<int>> lowestunique;
+  //int* abovecount;
+  class lu_real;
+  class lu_mdd_real;
   /*  class card_mxd_real;
 
 #ifdef HAVE_LIBGMP
@@ -44,29 +46,29 @@ namespace MEDDLY {
   class card_mxd_mpz;
 #endif
  */
-  class iec_opname;
+  class lu_opname;
 
 };
 
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                        IEC  operations                        *
+// *                        LU  operations                          *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
 // ******************************************************************
 // *                                                                *
-// *                         iec_int class                         *
+// *                         lu_int class                         *
 // *                                                                *
 // ******************************************************************
 
 //  Abstract base class: cardinality that returns an integer
-class MEDDLY::iec_int : public unary_operation {
+class MEDDLY::lu_int : public unary_operation {
 public:
-  iec_int(const unary_opname* oc, expert_forest* arg);
-  std::set<node_handle> visitedNode;
+  lu_int(const unary_opname* oc, expert_forest* arg);
+  //std::set<node_handle> visitedNode;
 protected:
   static inline void overflow_acc(long &a, long x) {
     a += x;
@@ -78,28 +80,36 @@ protected:
     return a;
   }
 };
-MEDDLY::iec_int::iec_int(const unary_opname* oc, expert_forest* arg)
+MEDDLY::lu_int::lu_int(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, INTEGER)
 {
   compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:L");
   et->setForestForSlot(0, arg);
   registerEntryType(0, et);
   buildCTs();
-  visitedNode.clear();
+  // visitedNode.clear();
 }
 
 // ******************************************************************
 // *                                                                *
-// *                       iec_mdd_int class                       *
+// *                       ac_mdd_int class                       *
 // *                                                                *
 // ******************************************************************
 
 //  incoming edge count on MDDs, returning integer
-class MEDDLY::iec_mdd_int : public iec_int {
+class MEDDLY::lu_mdd_int : public lu_int {
 public:
-  iec_mdd_int(const unary_opname* oc, expert_forest* arg)
-    : iec_int(oc, arg) { }
+  lu_mdd_int(const unary_opname* oc, expert_forest* arg)
+    : lu_int(oc, arg) { }
   virtual void compute(const dd_edge &arg, long &res) {
+
+    /*  std::set<int> a={10};
+      lowestunique.insert ( std::pair<int,std::set<int>>(1,a) );
+      std::set<int> rset=lowestunique[1];
+      printf("HAHA\n" );
+      for (auto it=rset.begin(); it != rset.end(); ++it)
+        printf("%d\n", *it);*/
+
     res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
   }
   long compute_r(int k, node_handle a);
@@ -126,7 +136,7 @@ protected:
   }
 };
 
-long MEDDLY::iec_mdd_int::compute_r(int k, node_handle a)
+long MEDDLY::lu_mdd_int::compute_r(int k, node_handle a)
 {
   // Terminal cases
   if (0==a) return 0;
@@ -135,25 +145,26 @@ long MEDDLY::iec_mdd_int::compute_r(int k, node_handle a)
   if (argF->getNodeLevel(a) < k) {
     return overflow_mult(compute_r(k-1, a), argF->getLevelSize(k));
   }
+  return 0;
 
   // Check compute table
-  long iec = 0;
-  if(visitedNode.find(a)==visitedNode.end()){
-
-    // Initialize node reader
-    unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
-    int kdn = k-1;
-    for (unsigned z=0; z<A->getNNZs(); z++) {
-      if(kdn>0){
-        long iec;
-        compute_table::entry_key* CTsrch = findResult(A->d(z), iec);
-        if (0==CTsrch) iec++;
-        else iec=1;
-        saveResult(CTsrch, A->d(z), iec);
-        overflow_acc(iec, compute_r(kdn, A->d(z)));
-      }
-    }
-    visitedNode.insert(a);
+  // long ac = 0;
+  // if(visitedNode.find(a)==visitedNode.end()){
+  //
+  //   // Initialize node reader
+  //   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  //   int kdn = k-1;
+  //   for (unsigned z=0; z<A->getNNZs(); z++) {
+  //     if(kdn>0){
+  //       long ac;
+  //       compute_table::entry_key* CTsrch = findResult(A->d(z), ac);
+  //       if (0==CTsrch) ac++;
+  //       else ac=1;
+  //       saveResult(CTsrch, A->d(z), ac);
+  //       overflow_acc(ac, compute_r(kdn, A->d(z)));
+  //     }
+  //   }
+  //   visitedNode.insert(a);
 
   // compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   // MEDDLY_DCASSERT(CTsrch);
@@ -180,18 +191,18 @@ long MEDDLY::iec_mdd_int::compute_r(int k, node_handle a)
   // }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  // unpacked_node::recycle(A);
 
   // Add entry to compute table
   // CTresult[0].reset();
   // CTresult[0].writeL(iec);
   // CT0->addEntry(CTsrch, CTresult[0]);
 
-#ifdef DEBUG_CARD
-  fprintf(stderr, "iec of node %d is %ld(L)\n", a, iec);
-#endif
-  return iec;
-  }
+// #ifdef DEBUG_CARD
+//   fprintf(stderr, "highest unique of node %d is %ld(L)\n", a, ac);
+// #endif
+//   return ac;
+  // }
 }
 
 
@@ -265,89 +276,156 @@ long MEDDLY::iec_mdd_int::compute_r(int k, node_handle a)
 //
  // ******************************************************************
  // *                                                                *
- // *                        iec_real  class                        *
+ // *                        ac_real  class                        *
  // *                                                                *
  // ******************************************************************
 
  //  Abstract base class: cardinality that returns a real
- class MEDDLY::iec_real : public unary_operation {
+ class MEDDLY::lu_real : public unary_operation {
  public:
-   iec_real(const unary_opname* oc, expert_forest* arg);
-protected:
-    bool* visitedNode;
+   lu_real(const unary_opname* oc, expert_forest* arg);
+//protected:
     //int* iec;
  };
 
- MEDDLY::iec_real::iec_real(const unary_opname* oc, expert_forest* arg)
+ MEDDLY::lu_real::lu_real(const unary_opname* oc, expert_forest* arg)
   : unary_operation(oc, 1, arg, REAL)
  {
-   compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:D");
-   et->setForestForSlot(0, arg);
-   registerEntryType(0, et);
+   // compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:D");
+   // et->setForestForSlot(0, arg);
+   // registerEntryType(0, et);
+   // buildCTs();
+   compute_table::entry_type* et2 = new compute_table::entry_type(oc->getName(), "NN:N");
+   et2->setForestForSlot(0, arg);
+   et2->setForestForSlot(1, arg);
+   et2->setForestForSlot(3, resF);
+   registerEntryType(0, et2);
    buildCTs();
  }
 
  // ******************************************************************
  // *                                                                *
- // *                      iec_mdd_real  class                      *
+ // *                      ac_mdd_real  class                      *
  // *                                                                *
  // ******************************************************************
 
  //  Cardinality on MDDs, returning real
- class MEDDLY::iec_mdd_real : public iec_real {
+ class MEDDLY::lu_mdd_real : public lu_real {
  public:
-   iec_mdd_real(const unary_opname* oc, expert_forest* arg)
-     : iec_real(oc, arg) { }
+   lu_mdd_real(const unary_opname* oc, expert_forest* arg)
+     : lu_real(oc, arg) { }
    virtual void compute(const dd_edge &arg, double &res) {
-       // printf("IEC Root is %d\n",arg.getNode() );
 
-       int card = lastNode;//argF->getCurrentNumNodes();// instead of arg.getCardinality()
-       if(card<1)
-       {
-           throw error(error::INVALID_SEQUENCE, __FILE__, __LINE__);
-       }
-       // printf("CARD %d\n",card );
-	  incomingedgecount=new int[card];
-      visitedNode=new bool[card];
 
-      for(int i=0;i<card;i++)
-      {
-     	 incomingedgecount[i]=0;
-         visitedNode[i]=false;
-      }
-      // printf("ROOT IS %d\n",arg.getNode() );
-      // printf("XXXXIEC ROOT %d\n",incomingedgecount[arg.getNode()] );
-// getIncomingCount(arg.getNode());
-      compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
-      // getchar();
-      // for(int i=0;i<card;i++)
-      // {
-      //     expert_forest* ef = (expert_forest*) arg.getForest();
-      //     if(incomingedgecount[i]!=ef->getIncomingCount(i))
-      //     {
-      //         printf("ERROR %d\n",i );
-      //         getchar();
-      //       }
-      //     // arg.getForest()//.//getIncomingCount(i);
-      //     // if()
-      //    // incomingedgecount[i]=0;
-      //    // visitedNode[i]=false;
-      // }
-     // printf("IEC ROOT %d\n",incomingedgecount[arg.getNode()] );
-     res =0;
-     delete[] visitedNode;
-
-#ifdef DEBUG_IEC
-for(int i=0;i<card;i++)
+int card = lastNode;
+if(card<1)
 {
-    if(incomingedgecount[i]>0)
-   printf("i %d %d \n",i, incomingedgecount[i]);
+    throw error(error::INVALID_SEQUENCE, __FILE__, __LINE__);
 }
-#endif
 
+    explored=new bool[card];
+    LUreverse=new int[card];
+    if(explored==0||LUreverse==0)
+    {printf("ERROR IN making arrays\n" ); getchar();}
+    for(int i=0;i<card;i++)
+    {
+        explored[i]=false;
+        LUreverse[i]=-1;
+    }
+    initialize(argF->getDomain()->getNumVariables(), arg.getNode() );
+    for(int i=0;i<card;i++)
+    {
+        explored[i]=false;
+    }
+    // for(int i=0;i<=(int)card;i++){
+    //  printf("LUR[%d]= %d\t", i,LUreverse[i]);
+    // }
+    // printf("Initialized Complete\n" );
+    // expert_forest* ef = static_cast<expert_forest*>(arg);
+    // expert_forest* ef=(expert_forest*) arg.getForest();
+    // node_handle n=arg.getNode();
+
+    // node_handle* list = ef->markNodesInSubgraph(&n, 1, false);
+    // delete ef;
+    // getchar();
+    // for(int i=0;i<card;i++){
+    // incomingedgecountHU[i]=incomingedgecount[i];
+    // }
+    // pset = new std::set<int>[card];
+     // res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode(),pset );
+    compute_r(argF->getDomain()->getNumVariables(), arg.getNode() );
+    // for(int i=0;i<=(int)card;i++){
+    //  printf("LUR[%d]= %d\t", i,LUreverse[i]);
+    // }
+    // printf("\nComputation Complete\n" );
+    for(int i=0;i<card;i++)
+    {
+        if(LUreverse[i]!=-1)
+        {
+            updateInsert(LUreverse[i],i);
+        }
+    }
+    // for(int i=0;i<=(int)card;i++){
+    //  printf("LUR[%d]= %d\t", i,LUreverse[i]);
+    // }
+    // getchar();
+    // printf("Computation Complete after update\n" );
+
+     // printf("COMPUTED %d\n",card );
+   //   printf("***LU***\n" );
+   //   for(int i=0;i<(int)card;i++){
+   // 	  printf("LU[%d]= \t", i);
+   //      std::set<int> rset=lowestunique[i];
+   //      for (auto it=rset.begin(); it != rset.end(); ++it){
+   //         printf(", %d", *it);
+   //
+   //     }
+   //     printf("\n" );
+   // }
+     //   printf("[%d, \t %d ,\t %d ]\t \n",startInterval[i],stopInterval[i],lastPosition[i] );
+     //     printf("\n" );
+     //  }
+     //  printf("**HU****\n" );
+     // for(int i=0;i<card;i++){
+     // pset[i].clear();
+     // }
+     delete[] explored;
+     delete[] LUreverse;
+
+#ifdef DEBUG_LU
+     for(int i=0;i<card;i++)
+     {
+    	 printf("LU %d %d \n",i, lowestunique[i]);
+     }
+#endif
    }
    void compute_r(int ht, node_handle a);
+   void initialize(int ht, node_handle a);
+
+   // std::set<int> CheckInterval(std::set<int> pset,node_handle a );
+   // std::set<int> CheckInterval(node_handle a );
+
  protected:
+     bool* explored;
+     int* LUreverse;
+  inline void updateInsert(node_handle a, node_handle b){
+      //printf("COMING TO updateInsert\n");
+      if ( lowestunique.find(a) == lowestunique.end() ) {
+        // not found
+        std::set<int> rset={b};
+        lowestunique.insert ( std::pair<int,std::set<int>>(a, rset) );
+        // for (auto it=rset.begin(); it != rset.end(); ++it)
+        //   printf("%d\n", *it);
+      } else {
+        // found
+      std::set<int> rset=lowestunique[a];
+      rset.insert(b);
+      lowestunique.at(a)=rset;
+      // for (auto it=rset.begin(); it != rset.end(); ++it)
+      //   printf("%d\n", *it);
+  }
+
+  }
   inline compute_table::entry_key*
   findResult(node_handle a, double &b)
   {
@@ -368,26 +446,198 @@ for(int i=0;i<card;i++)
     CT0->addEntry(Key, CTresult[0]);
     return b;
   }
- };
+  inline compute_table::entry_key*
+  findResult(node_handle a, node_handle b, node_handle &c)
+  {
+    compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+    MEDDLY_DCASSERT(CTsrch);
 
- void MEDDLY::iec_mdd_real::compute_r(int k, node_handle a)
- {
-   if(visitedNode[a]==false){
-		unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
-		int kdn = k-1;
-		for (unsigned z = 0; z < A->getNNZs(); z++) {
-			if(kdn>0){
-				incomingedgecount[A->d(z)]++;
-				compute_r(kdn, A->d(z));
-			}
-		}
-		visitedNode[a]=true;
+      CTsrch->writeN(a);
+      CTsrch->writeN(b);
+
+    CT0->find(CTsrch, CTresult[0]);
+    if (!CTresult[0]) return CTsrch;
+    c = resF->linkNode(CTresult[0].readN());
+    CT0->recycle(CTsrch);
+    return 0;
+  }
+
+  inline void saveResult(compute_table::entry_key* K,
+    node_handle a, node_handle b, node_handle c)
+  {
+    CTresult[0].reset();
+    CTresult[0].writeN(c);
+    CT0->addEntry(K, CTresult[0]);
+  }
+
+  inline int ChildsLeastCommonUnique(node_handle firstChild,node_handle secondChild)
+  {
+      // printf("ChildsLeastCommonUnique\n");
+
+      int firstChildLVL=argF->getNodeLevel(firstChild);
+      int secondChildLVL=argF->getNodeLevel(secondChild);
+      // printf("firstChildLVL %d secondChildLVL %d\n", firstChildLVL,secondChildLVL);
+      // printf("LU firstChildLVL %d LU secondChildLVL %d\n",LUreverse[ firstChild],LUreverse[secondChild]);
+      if(firstChildLVL==0 || secondChildLVL==0) return 0;
+      if(LUreverse[firstChild]==0 || LUreverse[secondChild]==0) return 0;
+
+
+     /* if( LUreverse[ firstChild]==-1)
+      compute_r(firstChildLVL,firstChild);
+      if( LUreverse[ secondChild]==-1)
+      compute_r(secondChildLVL,secondChild);
+      if(LUreverse[firstChild]==0 || LUreverse[secondChild]==0) return 0;
+
+      printf("firstChildLVL %d secondChildLVL %d\n", firstChildLVL,secondChildLVL);
+      printf("LU firstChildLVL %d LU secondChildLVL %d\n",LUreverse[ firstChild],LUreverse[secondChild]);
+
+      if(firstChildLVL==1||secondChildLVL==1) return 0;*/
+      if(firstChildLVL<secondChildLVL){
+          return ChildsLeastCommonUnique(firstChild,LUreverse[secondChild]);
+      }
+      else if(firstChildLVL>secondChildLVL){
+          return ChildsLeastCommonUnique(LUreverse[firstChild],secondChild);
+      }
+      else if(LUreverse[firstChild]==LUreverse[secondChild]){
+          return LUreverse[firstChild];
+      }
+      else{
+          return ChildsLeastCommonUnique(LUreverse[firstChild],LUreverse[secondChild]);
+      }
+  }
+  inline int LeastCommonUnique(int lvl ,node_handle a)
+  {
+       int firstChild=0;
+       int secondChild=0;
+       // compute_table::entry_key* Key=NULL;
+       int kdn = lvl - 1;
+       // if(kdn==0)
+       //  return 0;
+       unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+       for(unsigned z = 0; z < A->getNNZs(); z++){
+           // if(kdn>0){
+               if(firstChild==0){
+                 firstChild=A->d(z);
+                 if(LUreverse[firstChild]==0) return 0;
+                 // compute_r(kdn,firstChild);
+                 // printf("Set firstChild %d\n", firstChild);
+               }
+               else{
+                   secondChild=A->d(z);
+                   // printf("LU secondChild\n",LUreverse[secondChild] );
+                   if(LUreverse[secondChild]==0) {
+                       return 0;
+                   }
+
+                   // printf("Set secondChild %d\n", secondChild);
+                    // node_handle result = 0;
+                    // printf("result is set\n" );
+                   //  Key = findResult(firstChild, secondChild, result);
+                   //  printf("Key set\n" );
+                   // if (0==Key){
+                   //      unpacked_node::recycle(A);
+                   //      return result;
+                   //  }
+                    // printf("Could not find result\n" );
+                   // int oldfirstChild=firstChild;
+
+                   //  if (LUreverse[secondChild]==-1)
+                   // compute_r(kdn,secondChild);
+                   // else
+                   // getchar();
+                   firstChild=ChildsLeastCommonUnique(firstChild,secondChild);
+                   // getchar();
+                   // printf("Result is %d\n",firstChild );
+                   // saveResult(Key, oldfirstChild, secondChild, firstChild);
+                   // printf("Saved\n" );
+                   // saveResult(Key, secondChild, oldfirstChild, firstChild);
+                   // printf("Saved\n" );
+
+                   if(firstChild==0) {
+                        unpacked_node::recycle(A);
+                       return 0;
+                   }
+               }
+       }
         unpacked_node::recycle(A);
-   }
-}
+       return firstChild;
+  }
+ };
+ void MEDDLY::lu_mdd_real::initialize(int k, node_handle a)
+
+ {
+     if(explored[a]==0){
+         int firstChild=-1;
+         bool singleChild=true;
+         bool childWithLUE=false;
+         unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+         int kdn = k - 1;
+         if(kdn==0)
+         LUreverse[a]=0;
+         else if(kdn>0){
+             for(unsigned z = 0; z < A->getNNZs(); z++){
+
+                     if (firstChild==-1){
+                         firstChild=A->d(z);
+                     }else if(A->d(z)!=firstChild&&singleChild){
+                         singleChild=false;
+                     }
+                     initialize(kdn,A->d(z));
+                     if(LUreverse[A->d(z)]==0&&!singleChild){
+                         childWithLUE=true;
+                         singleChild=false;
+                     }
+             }
+         //}
+         if(singleChild/*&&kdn>0*/){
+             // updateInsert(firstChild,a);
+             LUreverse[a]=firstChild;
+             // LUisSet[a]=true;
+         }
+         else if(childWithLUE/*||kdn==0*/){
+             // updateInsert(1,(int)a);
+             LUreverse[(int)a]=0;
+             // LUisSet[a]=true;
+         }
+     }
+         explored[a]=true;
+         unpacked_node::recycle(A);
+     }
+ }
 
 
+ void MEDDLY::lu_mdd_real::compute_r(int k, node_handle a)
+ {
+     // node_handle* list = this->markNodesInSubgraph(&a, 1, false);
+     // getchar();
+     if(!explored[a]/*&&/*a>0&& *//*LUreverse[a]==-1*/){
+         // printf("a is %d and lvl is %d\n",a,k );
+         unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+         int kdn = k - 1;
+          if(kdn>0){
+              for(unsigned z = 0; z < A->getNNZs(); z++){
+                 // if(LUreverse[A->d(z)]==-1)
+                 // if(kdn>0)
+                 {
+                     // printf("Child is %d and LU is %d\n",A->d(z),LUreverse[A->d(z)] );
+                     compute_r(kdn,A->d(z));
+                 }
+              }
 
+              if(LUreverse[a]==-1)
+              {
+                  LUreverse[a]=LeastCommonUnique(k,a);
+                  // printf(" LUreverse[%d]=%d;\n",a,LUreverse[a] );
+              }
+          }
+          else{
+              LUreverse[a]=0;
+          }
+
+         unpacked_node::recycle(A);
+     }
+     explored[a]=true;
+ }
 
 
 // // ******************************************************************
@@ -668,20 +918,20 @@ for(int i=0;i<card;i++)
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::iec_opname : public unary_opname {
+class MEDDLY::lu_opname : public unary_opname {
   public:
-    iec_opname();
+    lu_opname();
     virtual unary_operation*
       buildOperation(expert_forest* ar, opnd_type res) const;
 };
 
-MEDDLY::iec_opname::iec_opname()
- : unary_opname("IEC")
+MEDDLY::lu_opname::lu_opname()
+ : unary_opname("HU")
 {
 }
 
 MEDDLY::unary_operation*
-MEDDLY::iec_opname::buildOperation(expert_forest* arg, opnd_type res) const
+MEDDLY::lu_opname::buildOperation(expert_forest* arg, opnd_type res) const
 {
   if (0==arg) return 0;
   switch (res) {
@@ -694,13 +944,13 @@ MEDDLY::iec_opname::buildOperation(expert_forest* arg, opnd_type res) const
         //return new iec_mdd_int(this, arg);
 
       else
-        return new iec_mdd_int(this, arg);
+        return new lu_mdd_int(this, arg);
 
      case REAL:
        if (arg->isForRelations());
          //return new iec_mxd_real(this, arg);
        else
-         return new iec_mdd_real(this, arg);
+         return new lu_mdd_real(this, arg);
 
 // #ifdef HAVE_LIBGMP
 //     case HUGEINT:
@@ -721,7 +971,7 @@ MEDDLY::iec_opname::buildOperation(expert_forest* arg, opnd_type res) const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeIncomingEdgeCount()
+MEDDLY::unary_opname* MEDDLY::initializeLowestUnique()
 {
-  return new iec_opname;
+  return new lu_opname;
 }

@@ -34,7 +34,9 @@
 #include "above_count.h"
 #include "below_count.h"
 #include "highest_unique.h"
+#include "lowest_unique.h"
 #include "unique_count.h"
+#include "unique_above_count.h"
 
 #include "union.h"
 #include "intersection.h"
@@ -90,7 +92,9 @@ namespace MEDDLY {
   const unary_opname* AC=0;
   const unary_opname* BC=0;
   const unary_opname* HU=0;
+  const unary_opname* LU=0;
   const unary_opname* UC=0;
+  const unary_opname* UAC=0;
 
   // binary operation "codes"
 
@@ -182,7 +186,10 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::AC,                   AC,         initializeAboveCount());
   initP(MEDDLY::BC,                   BC,         initializeBelowCount());
   initP(MEDDLY::HU,                   HU,         initializeHighestUnique());
+  initP(MEDDLY::LU,                   LU,         initializeLowestUnique());
   initP(MEDDLY::UC,                   UC,         initializeUniqueCount());
+  initP(MEDDLY::UAC,                  UAC,        initializeUniqueAboveCount());
+
 
   initP(MEDDLY::UNION,                UNION,      initializeUnion()         );
   initP(MEDDLY::INTERSECTION,         INTERSECT,  initializeIntersection()  );
@@ -257,7 +264,9 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(AC,             MEDDLY::AC);
   cleanPair(BC,             MEDDLY::BC);
   cleanPair(HU,             MEDDLY::HU);
+  cleanPair(LU,             MEDDLY::LU);
   cleanPair(UC,             MEDDLY::UC);
+  cleanPair(UAC,            MEDDLY::UAC);
   cleanPair(COMPL,          MEDDLY::COMPLEMENT);
   cleanPair(MAXRANGE,       MEDDLY::MAX_RANGE);
   cleanPair(MINRANGE,       MEDDLY::MIN_RANGE);

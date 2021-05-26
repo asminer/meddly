@@ -602,8 +602,20 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
         printf("Building reachability set using traditional algorithm\n");
         fflush(stdout);
         apply(REACHABLE_STATES_BFS, initialStates, nsf, reachableStates);
+        long cbr;
+        apply(CARDINALITY, reachableStates, cbr);
+        printf("Reachable State %ld\n",cbr );
         break;
-
+    case 'h':
+        printf("Building reachability set using traditional BFS_HUA algorithm\n");
+        fflush(stdout);
+        maxThreshold=5000;
+        minThreshold=1000;
+        desiredPercentage=0.3;
+        optionsForUA=0;
+        timeForUA=3600;
+        apply(REACHABLE_STATES_BFS_HUA, initialStates, nsf, reachableStates);
+        break;
     case 'm':
         printf("Building reachability set using saturation, monolithic relation\n");
         fflush(stdout);
@@ -806,7 +818,10 @@ int main(int argc, char *argv[])
       sw.method = 'b';
       continue;
     }
-
+    if (strcmp(cmd, "-huabfs") == 0) {
+      sw.method = 'h';
+      continue;
+    }
     if (strcmp(cmd, "-dfs") == 0) {
       sw.method = 'm';
       continue;

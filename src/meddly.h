@@ -157,12 +157,15 @@ namespace MEDDLY {
   extern long* abovecount;
   extern long* belowcount;
   extern std::map< int, std::set<int>> highestunique;
+  extern std::map< int, std::set<int>> lowestunique;
   extern int* uniquecount;
+  extern int* uniqueAbovecount;
   extern int lastNode;
   extern unsigned int optionsForUA;
   extern long maxThreshold;
   extern long minThreshold;
   extern float desiredPercentage;
+  extern float rootStatePercentage;
   extern long timeForUA;
   // ******************************************************************
   // *                    miscellaneous  functions                    *
@@ -275,8 +278,12 @@ namespace MEDDLY {
   extern const unary_opname* BC;
   // Unary operation. Return the highest unique set
   extern const unary_opname* HU;
+  // Unary operation. Return the lowest unique set
+  extern const unary_opname* LU;
   // Unary operation. Return the unique count.
   extern const unary_opname* UC;
+  // Unary operation. Return the unique above count.
+  extern const unary_opname* UAC;
   // ******************************************************************
   // *                    Named  binary operations                    *
   // ******************************************************************
@@ -1870,7 +1877,7 @@ class MEDDLY::forest {
     virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
       virtual void underApproximate(dd_edge &e, long minThreshold, long maxThreshold,float desiredPercentage, int option);
-      virtual void HeuristicUnderApproximate(dd_edge &e, long minThreshold, long maxThreshold,float desiredPercentage, int option);
+      virtual void HeuristicUnderApproximate(dd_edge &e, long minThreshold, long maxThreshold,float desiredPercentage, int option,int deletedApproach, float rootStatePercentage);
 
     /** Evaluate the function encoded by an edge.
         @param  f     Edge (function) to evaluate.

@@ -81,7 +81,9 @@ libmeddly_la_SOURCES = \
 	operations/above_count.h 		operations/above_count.cc\
 	operations/below_count.h 		operations/below_count.cc\
 	operations/highest_unique.h	operations/highest_unique.cc\
+	operations/lowest_unique.h	operations/lowest_unique.cc\
 	operations/unique_count.h		operations/unique_count.cc\
+	operations/unique_above_count.h		operations/unique_above_count.cc\
   operations/difference.h     operations/difference.cc   \
   operations/cross.h          operations/cross.cc        \
   operations/maxmin.h         operations/maxmin.cc       \

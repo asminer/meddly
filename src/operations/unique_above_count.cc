@@ -18,24 +18,26 @@
 */
 
 #ifdef HAVE_CONFIG_H
-#include "incoming_edge_count.h"
+#include "unique_above_count.h"
 #endif
 #ifdef HAVE_LIBGMP
 #include <gmp.h>
 #endif
 #include "../defines.h"
 #include <set>
+#include <map>
 //#include "mpz_object.h"
 
-// #define DEBUG_IEC
+// #define DEBUG_AC
 
 namespace MEDDLY {
-  class iec_int;
-  class iec_mdd_int;
+  class uac_int;
+  class uac_mdd_int;
  // class card_mxd_int;
-  int* incomingedgecount;
-  class iec_real;
-  class iec_mdd_real;
+ //std::map< int, std::set<int>> lowestunique;
+  int* uniqueAbovecount;
+  class uac_real;
+  class uac_mdd_real;
   /*  class card_mxd_real;
 
 #ifdef HAVE_LIBGMP
@@ -44,29 +46,29 @@ namespace MEDDLY {
   class card_mxd_mpz;
 #endif
  */
-  class iec_opname;
+  class uac_opname;
 
 };
 
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                        IEC  operations                        *
+// *                        uac  operations                          *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
 // ******************************************************************
 // *                                                                *
-// *                         iec_int class                         *
+// *                         uac_int class                         *
 // *                                                                *
 // ******************************************************************
 
 //  Abstract base class: cardinality that returns an integer
-class MEDDLY::iec_int : public unary_operation {
+class MEDDLY::uac_int : public unary_operation {
 public:
-  iec_int(const unary_opname* oc, expert_forest* arg);
-  std::set<node_handle> visitedNode;
+  uac_int(const unary_opname* oc, expert_forest* arg);
+  //std::set<node_handle> visitedNode;
 protected:
   static inline void overflow_acc(long &a, long x) {
     a += x;
@@ -78,28 +80,31 @@ protected:
     return a;
   }
 };
-MEDDLY::iec_int::iec_int(const unary_opname* oc, expert_forest* arg)
+MEDDLY::uac_int::uac_int(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, INTEGER)
 {
   compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:L");
   et->setForestForSlot(0, arg);
   registerEntryType(0, et);
   buildCTs();
-  visitedNode.clear();
+  // visitedNode.clear();
 }
 
 // ******************************************************************
 // *                                                                *
-// *                       iec_mdd_int class                       *
+// *                       ac_mdd_int class                       *
 // *                                                                *
 // ******************************************************************
 
 //  incoming edge count on MDDs, returning integer
-class MEDDLY::iec_mdd_int : public iec_int {
+class MEDDLY::uac_mdd_int : public uac_int {
 public:
-  iec_mdd_int(const unary_opname* oc, expert_forest* arg)
-    : iec_int(oc, arg) { }
+  uac_mdd_int(const unary_opname* oc, expert_forest* arg)
+    : uac_int(oc, arg) { }
   virtual void compute(const dd_edge &arg, long &res) {
+
+
+
     res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
   }
   long compute_r(int k, node_handle a);
@@ -126,7 +131,7 @@ protected:
   }
 };
 
-long MEDDLY::iec_mdd_int::compute_r(int k, node_handle a)
+long MEDDLY::uac_mdd_int::compute_r(int k, node_handle a)
 {
   // Terminal cases
   if (0==a) return 0;
@@ -137,23 +142,23 @@ long MEDDLY::iec_mdd_int::compute_r(int k, node_handle a)
   }
 
   // Check compute table
-  long iec = 0;
-  if(visitedNode.find(a)==visitedNode.end()){
-
-    // Initialize node reader
-    unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
-    int kdn = k-1;
-    for (unsigned z=0; z<A->getNNZs(); z++) {
-      if(kdn>0){
-        long iec;
-        compute_table::entry_key* CTsrch = findResult(A->d(z), iec);
-        if (0==CTsrch) iec++;
-        else iec=1;
-        saveResult(CTsrch, A->d(z), iec);
-        overflow_acc(iec, compute_r(kdn, A->d(z)));
-      }
-    }
-    visitedNode.insert(a);
+  // long ac = 0;
+  // if(visitedNode.find(a)==visitedNode.end()){
+  //
+  //   // Initialize node reader
+  //   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  //   int kdn = k-1;
+  //   for (unsigned z=0; z<A->getNNZs(); z++) {
+  //     if(kdn>0){
+  //       long ac;
+  //       compute_table::entry_key* CTsrch = findResult(A->d(z), ac);
+  //       if (0==CTsrch) ac++;
+  //       else ac=1;
+  //       saveResult(CTsrch, A->d(z), ac);
+  //       overflow_acc(ac, compute_r(kdn, A->d(z)));
+  //     }
+  //   }
+  //   visitedNode.insert(a);
 
   // compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   // MEDDLY_DCASSERT(CTsrch);
@@ -180,18 +185,18 @@ long MEDDLY::iec_mdd_int::compute_r(int k, node_handle a)
   // }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  // unpacked_node::recycle(A);
 
   // Add entry to compute table
   // CTresult[0].reset();
   // CTresult[0].writeL(iec);
   // CT0->addEntry(CTsrch, CTresult[0]);
 
-#ifdef DEBUG_CARD
-  fprintf(stderr, "iec of node %d is %ld(L)\n", a, iec);
-#endif
-  return iec;
-  }
+// #ifdef DEBUG_CARD
+//   fprintf(stderr, "highest unique of node %d is %ld(L)\n", a, ac);
+// #endif
+//   return ac;
+  // }
 }
 
 
@@ -220,7 +225,7 @@ long MEDDLY::iec_mdd_int::compute_r(int k, node_handle a)
 //
 //   // Quickly deal with skipped levels
 //   if (isLevelAbove(k, argF->getNodeLevel(a))) {
-//     if (k<0 && argF->isIdentityReduced()) {
+//     if (k<0 && argF->isIdentityReduaced()) {
 //       // identity node
 //       return compute_r(argF->downLevel(k), a);
 //     }
@@ -265,20 +270,17 @@ long MEDDLY::iec_mdd_int::compute_r(int k, node_handle a)
 //
  // ******************************************************************
  // *                                                                *
- // *                        iec_real  class                        *
+ // *                        ac_real  class                        *
  // *                                                                *
  // ******************************************************************
 
  //  Abstract base class: cardinality that returns a real
- class MEDDLY::iec_real : public unary_operation {
+ class MEDDLY::uac_real : public unary_operation {
  public:
-   iec_real(const unary_opname* oc, expert_forest* arg);
-protected:
-    bool* visitedNode;
-    //int* iec;
+   uac_real(const unary_opname* oc, expert_forest* arg);
  };
 
- MEDDLY::iec_real::iec_real(const unary_opname* oc, expert_forest* arg)
+ MEDDLY::uac_real::uac_real(const unary_opname* oc, expert_forest* arg)
   : unary_operation(oc, 1, arg, REAL)
  {
    compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:D");
@@ -289,103 +291,136 @@ protected:
 
  // ******************************************************************
  // *                                                                *
- // *                      iec_mdd_real  class                      *
+ // *                      ac_mdd_real  class                      *
  // *                                                                *
  // ******************************************************************
 
  //  Cardinality on MDDs, returning real
- class MEDDLY::iec_mdd_real : public iec_real {
+ class MEDDLY::uac_mdd_real : public uac_real {
  public:
-   iec_mdd_real(const unary_opname* oc, expert_forest* arg)
-     : iec_real(oc, arg) { }
+   uac_mdd_real(const unary_opname* oc, expert_forest* arg)
+     : uac_real(oc, arg) { }
    virtual void compute(const dd_edge &arg, double &res) {
-       // printf("IEC Root is %d\n",arg.getNode() );
-
-       int card = lastNode;//argF->getCurrentNumNodes();// instead of arg.getCardinality()
-       if(card<1)
-       {
-           throw error(error::INVALID_SEQUENCE, __FILE__, __LINE__);
-       }
-       // printf("CARD %d\n",card );
-	  incomingedgecount=new int[card];
-      visitedNode=new bool[card];
-
-      for(int i=0;i<card;i++)
-      {
-     	 incomingedgecount[i]=0;
-         visitedNode[i]=false;
-      }
-      // printf("ROOT IS %d\n",arg.getNode() );
-      // printf("XXXXIEC ROOT %d\n",incomingedgecount[arg.getNode()] );
-// getIncomingCount(arg.getNode());
-      compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
-      // getchar();
-      // for(int i=0;i<card;i++)
-      // {
-      //     expert_forest* ef = (expert_forest*) arg.getForest();
-      //     if(incomingedgecount[i]!=ef->getIncomingCount(i))
-      //     {
-      //         printf("ERROR %d\n",i );
-      //         getchar();
-      //       }
-      //     // arg.getForest()//.//getIncomingCount(i);
-      //     // if()
-      //    // incomingedgecount[i]=0;
-      //    // visitedNode[i]=false;
-      // }
-     // printf("IEC ROOT %d\n",incomingedgecount[arg.getNode()] );
-     res =0;
-     delete[] visitedNode;
-
-#ifdef DEBUG_IEC
-for(int i=0;i<card;i++)
+int card =lastNode; //argF->getCurrentNumNodes();//sizeof(belowcount)/sizeof(belowcount[0]);
+if((card<1))
 {
-    if(incomingedgecount[i]>0)
-   printf("i %d %d \n",i, incomingedgecount[i]);
+    throw error(error::INVALID_SEQUENCE, __FILE__, __LINE__);
 }
-#endif
 
+    visitedNode=new bool[card];
+    uniqueAbovecount=new int[card];
+for(int i=0;i<card;i++){
+    visitedNode[i]=false;
+    uniqueAbovecount[i]=0;
+}
+    // for(int i=0;i<card;i++){
+    //     if(incomingedgecount[i]>0)
+    // uniqueAbovecount[i]=1;
+    // }
+
+     res = compute_r( 0/*arg.getNode()*/);
+     delete [] visitedNode;
+     // printf("COMPUTED %d\n",card );
+     // printf("******\n" );
+     // for(int i=0;i<(int)card;i++){
+   	 //  printf("uac[%d] %d \t\n", i,uniqueAbovecount[i]);
+     //  }
+     // printf("UAC for 0 is %d\n",uniqueAbovecount[0] );
+     // getchar();
+     //  printf("******\n" );
+
+
+#ifdef DEBUG_AC
+     for(int i=0;i<card;i++)
+     {
+    	 printf("uac %d %d \n",i, uniqueAbovecount[i]);
+     }
+#endif
    }
-   void compute_r(int ht, node_handle a);
+   double compute_r( node_handle a);
  protected:
-  inline compute_table::entry_key*
-  findResult(node_handle a, double &b)
-  {
-    compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-    MEDDLY_DCASSERT(CTsrch);
-    CTsrch->writeN(a);
-    CT0->find(CTsrch, CTresult[0]);
-    if (!CTresult[0]) return CTsrch;
-    b = CTresult[0].readI();
-    CT0->recycle(CTsrch);
-    return 0;
-  }
-  inline long saveResult(compute_table::entry_key* Key,
-    node_handle a, double &b)
-  {
-    CTresult[0].reset();
-    CTresult[0].writeI(b);
-    CT0->addEntry(Key, CTresult[0]);
-    return b;
-  }
+     bool* visitedNode;
+
  };
 
- void MEDDLY::iec_mdd_real::compute_r(int k, node_handle a)
- {
-   if(visitedNode[a]==false){
-		unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
-		int kdn = k-1;
-		for (unsigned z = 0; z < A->getNNZs(); z++) {
-			if(kdn>0){
-				incomingedgecount[A->d(z)]++;
-				compute_r(kdn, A->d(z));
-			}
-		}
-		visitedNode[a]=true;
-        unpacked_node::recycle(A);
-   }
-}
 
+ double MEDDLY::uac_mdd_real::compute_r(node_handle a)
+ {
+     //printf("CAME uac %d \n",a );
+
+     if(visitedNode[a]){
+         return uniqueAbovecount[a];
+     }
+     std::set<int> rset=lowestunique[a];
+     for (auto it=rset.begin(); it != rset.end(); ++it){
+        // printf("Res %d\n",*it );
+        uniqueAbovecount[a]+=compute_r((*it))+1;
+
+    }
+
+    //printf("Done\n" );
+    visitedNode[a]=1;
+    return uniqueAbovecount[a];
+}
+   // Terminal cases
+   // if (0==a) return 0.0;
+   // if (0==k) return 0.0;
+
+   // // Quickly deal with skipped levels
+   // if (argF->getNodeLevel(a) < k) {
+   //   return compute_r(k-1, a) * argF->getLevelSize(k);
+   // }
+   //
+	// 	unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+   //
+	// 	// Recurse
+   //
+	// 	int kdn = k - 1;
+	// 	for (unsigned z = 0; z < A->getNNZs(); z++) {
+	// 		if(kdn>0){
+	// 			abovecount[int(A->d(z))]+=abovecount[a];
+	// 			iec[int(A->d(z))]--;
+	// 			if (iec[int(A->d(z))]==0){
+	// 			compute_r(kdn, A->d(z));
+	// 			}
+	// 		}
+	// 	}
+   //
+   //
+
+
+//   // Check compute table
+//   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+//   MEDDLY_DCASSERT(CTsrch);
+//   CTsrch->writeN(a);
+//   CT0->find(CTsrch, CTresult[0]);
+//   if (CTresult[0]) {
+//     CT0->recycle(CTsrch);
+//     return CTresult[0].readD();
+//   }
+//
+//   // Initialize node reader
+//   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+//
+//   // Recurse
+//   double card = 0;
+//   int kdn = k-1;
+//   for (unsigned z=0; z<A->getNNZs(); z++) {
+//     card += compute_r(kdn, A->d(z));
+//   }
+//
+//   // Cleanup
+//   unpacked_node::recycle(A);
+//
+//   // Add entry to compute table
+//   CTresult[0].reset();
+//   CTresult[0].writeD(card);
+//   CT0->addEntry(CTsrch, CTresult[0]);
+
+ // #ifdef DEBUG_AC
+ //   fprintf(stderr, "HU of node %d is %le(L)\n", a, abovecount[a]);
+ // #endif
+ //   return abovecount[a];
 
 
 
@@ -415,7 +450,7 @@ for(int i=0;i<card;i++)
 //
 //   // Quickly deal with skipped levels
 //   if (isLevelAbove(k, argF->getNodeLevel(a))) {
-//     if (k<0 && argF->isIdentityReduced()) {
+//     if (k<0 && argF->isIdentityReduaced()) {
 //       // identity node
 //       return compute_r(argF->downLevel(k), a);
 //     }
@@ -605,7 +640,7 @@ for(int i=0;i<card;i++)
 //
 //   // Quickly deal with skipped levels
 //   if (isLevelAbove(k, argF->getNodeLevel(a))) {
-//     if (k<0 && argF->isIdentityReduced()) {
+//     if (k<0 && argF->isIdentityReduaced()) {
 //       // identity node
 //       compute_r(argF->downLevel(k), a, card);
 //       return;
@@ -668,20 +703,20 @@ for(int i=0;i<card;i++)
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::iec_opname : public unary_opname {
+class MEDDLY::uac_opname : public unary_opname {
   public:
-    iec_opname();
+    uac_opname();
     virtual unary_operation*
       buildOperation(expert_forest* ar, opnd_type res) const;
 };
 
-MEDDLY::iec_opname::iec_opname()
- : unary_opname("IEC")
+MEDDLY::uac_opname::uac_opname()
+ : unary_opname("uac")
 {
 }
 
 MEDDLY::unary_operation*
-MEDDLY::iec_opname::buildOperation(expert_forest* arg, opnd_type res) const
+MEDDLY::uac_opname::buildOperation(expert_forest* arg, opnd_type res) const
 {
   if (0==arg) return 0;
   switch (res) {
@@ -694,13 +729,13 @@ MEDDLY::iec_opname::buildOperation(expert_forest* arg, opnd_type res) const
         //return new iec_mdd_int(this, arg);
 
       else
-        return new iec_mdd_int(this, arg);
+        return new uac_mdd_int(this, arg);
 
      case REAL:
        if (arg->isForRelations());
          //return new iec_mxd_real(this, arg);
        else
-         return new iec_mdd_real(this, arg);
+         return new uac_mdd_real(this, arg);
 
 // #ifdef HAVE_LIBGMP
 //     case HUGEINT:
@@ -721,7 +756,7 @@ MEDDLY::iec_opname::buildOperation(expert_forest* arg, opnd_type res) const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeIncomingEdgeCount()
+MEDDLY::unary_opname* MEDDLY::initializeUniqueAboveCount()
 {
-  return new iec_opname;
+  return new uac_opname;
 }

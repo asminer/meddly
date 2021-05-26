@@ -19,6 +19,7 @@
 
 #ifndef MTMDDBOOL_H
 #define MTMDDBOOL_H
+// #define DBG_MTMDD
 
 #include "mtmdd.h"
 #include <cfloat>
@@ -49,16 +50,18 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest {
     virtual void writeTerminal(output &s, node_handle tnode) const;
     virtual node_handle readTerminal(input &s);
     virtual void underApproximate(dd_edge &e,long minThreshold, long maxThreshold,float desiredPercentage, int option);
-    virtual void HeuristicUnderApproximate(dd_edge &e, long minThreshold, long maxThreshold,float desiredPercentage, int option);
+    virtual void HeuristicUnderApproximate(dd_edge &e, long minThreshold, long maxThreshold,float desiredPercentage, int option,int deletedApproach, float rootStatePercentage);
 
   protected:
     virtual const char* codeChars() const;
 private:
       void RemoveDuplicate(int lvl, std::map<int,int>map);
-      int RemoveDuplicate2(int lvl, std::map<int,int>map,dd_edge &e);
+      int RemoveDuplicate2(int lvl, std::map<int,int>map,dd_edge &e,std::set<int>&RNA,std::set<int>&RNB);
       int maxid=0;
       void uniqueNodesforp(node_handle p,std::set<int> &result );
-      int RemoveDuplicateSet(int lvl, std::set<int>levels,std::map<int,int>map,dd_edge &e);
+      void getNC(int lvl, node_handle a,bool*visitedNode,std::set<int> &result);
+      void uniqueAboveNodesforp(node_handle p,std::set<int> &result );
+      int RemoveDuplicateSet(int lvl, std::set<int>levels,std::map<int,int>map,dd_edge &e,std::set<int>&RNA,std::set<int>&RNB);
 };
 
 #endif

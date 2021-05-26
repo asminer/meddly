@@ -40,6 +40,7 @@ namespace MEDDLY {
     long minThreshold;
     float desiredPercentage;
     unsigned int optionsForUA;
+    float rootStatePercentage;
     long timeForUA;
   class common_bfs;
   class common_bfs_ua;
@@ -719,13 +720,14 @@ start = clock();
     }
     #endif
     // reachableStates.getForest()->underApproximate(reachableStates,minThreshold,maxThreshold,0);
-    reachableStates.getForest()->HeuristicUnderApproximate(reachableStates,minThreshold,maxThreshold,desiredPercentage,optionsForUA);
+    reachableStates.getForest()->HeuristicUnderApproximate(reachableStates,minThreshold,maxThreshold,desiredPercentage,optionsForUA,1, rootStatePercentage);
     // Option 0 is minThreshold and maxThreshold
     // Option 2 is maxThreshold and remove until all nodes with density < rootdensity*desiredPercentage is deleted
     // Option 3 is maxThreshold and remove until
     //  1-all nodes with density <rootdensity*desiredPercentage is deleted, and
     //  2-number of nodes<maxThreshold
     printf("after %d\n",reachableStates.getNodeCount() );
+    // getchar();
     printf("cardafter %f\n",reachableStates.getCardinality() );
     printf("XXXX %d\n",step);
     unionOp->computeDDEdge(reachableStates, init, reachableStates, userFlag);

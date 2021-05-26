@@ -119,15 +119,17 @@ void MEDDLY::mt_mdd_bool::underApproximate(dd_edge &e, long Threashold, long max
     if(option==1) return;
      clock_t start, end;
      start = clock();
-    // printf("underApproximate begin \n" );
+     // printf("underApproximate begin \n" );
     FILE_output meddlyout(stdout);
     int num_vars=getNumVariables();
     // printf("num_vars %d\n",num_vars );
     int cC=e.getNodeCount();//unique->getNumEntries();//this->getCurrentNumNodes();
+    // printf("cC %d\n",cC );
+    if(cC<maxThreshold) return;
     int initialRootCardinality=e.getCardinality();
     double initialRootDensity=(initialRootCardinality/cC)*desiredPercentage;
 
-    if(cC<maxThreshold) return;
+
 
     #if 0
     std::random_device rd;
@@ -172,6 +174,14 @@ generator.seed( rd() );
    // printf("HU Calculated\n" );
    double cU;
    apply(UC, e, cU);
+
+   double cL;
+   apply(LU, e, cL);
+
+   double cUA;
+   apply(UAC, e, cUA);
+   // double caU;
+   // apply(UAC, e, caU);
    // printf("UC Calculated\n" );
 
    // for(int i=0;i<(int)maxid;i++){
@@ -210,7 +220,7 @@ generator.seed( rd() );
            mpz_object mulmpz;
            mulmpz.setValue(abovecount[i]);
            mulmpz.multiply(belowcount[i]);
-           mulmpz.division(uniquecount[i]);
+           mulmpz.division(uniquecount[i]+uniqueAbovecount[i]);
            if((mulmpz.compare(mulmpz, densitympz)<=0)&&((option!=2)||(option==2 &&mulmpz.compare(mulmpz, option2comparingmpz)<=0)))
            {
                minIndex=i;
@@ -305,13 +315,51 @@ generator.seed( rd() );
    }
    // printf("MinIndex %d\n",(minIndex+1) );
    map[(minIndex)]=0;
+   std::set<int> removedNodeA;
+   std::set<int> removedNodeB;
+   std::set<int> resultp;
+  uniqueNodesforp(minIndex,resultp);
+  std::set<int> resultap;
+  uniqueAboveNodesforp(minIndex/*,visitedNode*/,resultap);
+  if(resultap.size()!=uniqueAbovecount[minIndex])
+  {printf("ERRR in uniqueAboveNodesforp %d %d\n",resultap.size(),uniqueAbovecount[minIndex]);getchar();}
+  if(resultp.size()!=uniquecount[minIndex])
+  {printf("ERRR in uniqueNodesforp\n");getchar();}
+  removedNodeB.insert(resultp.begin(), resultp.end());
+  // removedNodeB.erase(minIndex);
+  removedNodeA.insert(resultap.begin(), resultap.end());
    delete uniqueNodes;
    // printf("MAke MAP! \n" );
 
 // printf("getNodeStatus %d\n",getNodeStatus((minIndex)));
 // int deleted=uniquecount[minIndex];
 // printf("CALL RemoveDuplicate2 \n" );
-RemoveDuplicate2(lvl,map,e);
+std::set<int> s(removedNodeA);
+printf("MinIndex is %d\n",minIndex );
+// removedNodeB.erase(minIndex);
+printf("******\n" );
+s.insert(removedNodeB.begin(), removedNodeB.end());
+for (auto it = removedNodeA.begin(); it !=
+                         removedNodeA.end(); ++it)
+// if(incomingedgecount[(*it)]==1)
+printf("%d map %d iec %d lvl %d out of %d\n",(*it),map[(*it)],incomingedgecount[(*it)],getNodeLevel((*it)),getNumVariables() );
+printf("BEfore**RNA***\n" );
+for (auto it = removedNodeB.begin(); it !=
+                         removedNodeB.end(); ++it)
+// if(incomingedgecount[(*it)]==1)
+printf("%d map %d iec %d lvl %d out of %d\n",(*it),map[(*it)],incomingedgecount[(*it)],getNodeLevel((*it)),getNumVariables() );
+printf("BEfore**RNB***\n" );
+
+ printf("BEfore RNA %d RNB %d Union %d, minlvl %d\n",removedNodeA.size(),removedNodeB.size(),s.size(),getNodeLevel(minIndex) );
+RemoveDuplicate2(lvl,map,e,removedNodeA,removedNodeB);
+printf("After RNA %d RNB %d\n",removedNodeA.size(),removedNodeB.size() );
+ for (auto it = removedNodeB.begin(); it !=
+                          removedNodeB.end(); ++it)
+ // if(incomingedgecount[(*it)]==1)
+ printf("%d map %d iec %d lvl %d out of %d\n",(*it),map[(*it)],incomingedgecount[(*it)],getNodeLevel((*it)),getNumVariables() );
+ printf("**RNB***\n" );
+// getchar();
+
 cC=e.getNodeCount();
 // printf("End CALL RemoveDuplicate2 \n" );
 
@@ -321,7 +369,8 @@ if(incomingedgecount!=0)delete [] incomingedgecount;else {printf("ERRR incominge
 if(abovecount!=0)delete[] abovecount;else {printf("ERRR abovecount\n"); getchar();}
 highestunique.clear();
 if(uniquecount!=0)delete[] uniquecount;else {printf("ERRR uniquecount\n"); getchar();}
-
+lowestunique.clear();
+if(uniqueAbovecount!=0) delete[] uniqueAbovecount; else{printf("ERR uniqueAbovecount\n" ); getchar();}
 // printf("DELETED \n" );
 
 
@@ -336,21 +385,65 @@ double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
 printf("Time taken %f \n",time_taken );
  // printf("underApproximate End\n" );
 }
-void MEDDLY::mt_mdd_bool::uniqueNodesforp(node_handle a/*,bool* visitedNode*/,std::set<int> &result ){
+void MEDDLY::mt_mdd_bool::uniqueNodesforp(node_handle a,std::set<int> &result ){
 result.insert(a);
-// if(visitedNode[a]){
-//     return uniquecount[a];
-// }
+// printf("a in uniqueNodesforp is %d\n",a );
+
 std::set<int> rset=highestunique[a];
 for (auto it=rset.begin(); it != rset.end(); ++it){
    // printf("Res %d\n",*it );
    uniqueNodesforp((*it),result);
-   // uniquecount[a]+=compute_r((*it));
+}
+}
+void MEDDLY::mt_mdd_bool::uniqueAboveNodesforp(node_handle a,std::set<int> &result ){
+
+std::set<int> rset=lowestunique[a];
+for (auto it=rset.begin(); it != rset.end(); ++it){
+   result.insert((*it));
+   uniqueAboveNodesforp((*it),result);
 
 }
 }
+void MEDDLY::mt_mdd_bool::getNC(int k,node_handle a,bool* visitedNode,std::set<int> &result){
+result.insert(a);
+// printf("getNC inserted %d\n",a );
+// printf("VN %d\n",visitedNode[a] );
+if(visitedNode[a]==false){
+     int kdn = k-1;
 
-void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold, long maxThreshold,float desiredPercentage, int option)
+ int b=getDomain()->getVariableBound(k, false);
+ // printf("b is %d\n",b );
+
+     for(int ik=0;ik<=b; ik++){
+
+         int dpt=getDownPtr(a,ik);
+ // printf("child is %d kdn is %d\n",dpt,kdn );
+         // if(dpt==1868)
+         // {
+         //     printf("1868 Reached from %d\n",a );
+         //     getchar();
+         // }
+         // if(dpt==34348)
+         // {
+         //     printf("34348 Reached from %d\n",a );
+         //     getchar();
+         // }
+         // if(dpt==34366)
+         // {
+         //     printf("34348 Reached from %d\n",a );
+         //     getchar();
+         // }
+         // if(kdn>0&&dpt>1){
+         //     // printf("Child\n",dpt );
+         //
+         //     getNC(kdn,dpt,visitedNode,result);
+         // }
+     }
+     visitedNode[a]=true;
+
+}
+}
+void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold, long maxThreshold,float desiredPercentage, int option, int deletedApproach, float rootStatePercentage)
 {
     if(option==1) return;
     printf("HunderApproximate\n" );
@@ -376,6 +469,9 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
 
         #endif
         // while(cC>Threashold){
+        while((deletedApproach==1)||((e.getNodeCount()>Threashold)&&((option==0)||(option==3)))||(option==2)){
+            // printf("START calculation \n" );
+            cC=e.getNodeCount();
          maxid=e.getLastHandle();
         lastNode=maxid+1;
 
@@ -391,6 +487,16 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
        apply(HU, e, cH);
        double cU;
        apply(UC, e, cU);
+       double cL;
+       apply(LU, e, cL);
+       double caU;
+       apply(UAC, e, caU);
+
+
+       long int sumOfstateforselectedNode=0;
+       long int rootNumberofState=belowcount[e.getNode()];
+       // printf("rootNumberofState %ld \n", rootNumberofState);
+
 
        int* levelcount=new int[num_vars+1];
        int* copylevelcount=new int[num_vars+1];
@@ -409,6 +515,8 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
        int minIndex=0;
        std::set<int> m;
        std::set<int> removedNode;
+       std::set<int> removedNodeA;
+       std::set<int> removedNodeB;
        std::set<int> neverdelete;
        if(option==0||(option==2)||(option==3)){
        // double mindensity=DBL_MAX;
@@ -429,7 +537,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
                // mulmpz.division(uniquecount[i]);
                arrdensity[i].setValue(abovecount[i]);
                arrdensity[i].multiply(belowcount[i]);
-               arrdensity[i].division(uniquecount[i]);
+               arrdensity[i].division(uniquecount[i]+uniqueAbovecount[i]);
                // if(mulmpz.compare(mulmpz, densitympz)<=0)
                // {
                //     minIndex=i;
@@ -448,7 +556,11 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
        option2comparingmpz.setReminder(fractpart);
        bool option3densitycheck=false;
        removedNode.clear();
+       removedNodeA.clear();
+       removedNodeB.clear();
+       m.clear();
        // printf("**IN WHILE LOOP option %d\n", option );
+
         while(((cC-removedNode.size()>Threashold)&&((option==0)||(option==3)))||(option==2)){
             // printf("**IN WHILE LOOP\n" );
             mpz_object densitympz;
@@ -461,12 +573,13 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
                 // option2comparingmpz.showwithreminder(meddlyout);
                 // printf("\n");
                 // printf("______\n" );
+                if(i!=root)
                 if(((incomingedgecount[i]>0)&&(arrdensity[i].compare(arrdensity[i], densitympz)<=0)&&(copylevelcount[getNodeLevel(i)]>1)&&((option==0)||(option==3 && option3densitycheck))||
                 ((incomingedgecount[i]>0)&&(arrdensity[i].compare(arrdensity[i], option2comparingmpz)<=0)&&(copylevelcount[getNodeLevel(i)]>1)&&((option==2)||(option==3 && !option3densitycheck)))))
                 //&&(!(removedNode.find(i))))
                 {
                     // printf("option3densitycheck %d size %d\n",option3densitycheck,removedNode.size());
-                     printf("SELECTED\n" );
+                     // printf("SELECTED\n" );
                     bool is_in = removedNode.find(i) != removedNode.end();
                     bool neverDelete_isin = neverdelete.find(i) != neverdelete.end();
                     if(!is_in && !neverDelete_isin){
@@ -484,27 +597,157 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
             // }
               std::set<int> resultp;
             uniqueNodesforp(minIndex/*,visitedNode*/,resultp);
+            std::set<int> resultap;
+          uniqueAboveNodesforp(minIndex/*,visitedNode*/,resultap);
+          // std::set<int> bresultp;
+          // for(auto p:resultap){
+          //     std::set<int> belowresultap;
+          //     uniqueNodesforp(p/*,visitedNode*/,belowresultap);
+          //     bresultp.insert(belowresultap.begin(),belowresultap.end());
+          // }
+          if(resultap.size()!=uniqueAbovecount[minIndex])
+          {printf("ERRR in uniqueAboveNodesforp %d %d\n",resultap.size(),uniqueAbovecount[minIndex]);getchar();}
             if(resultp.size()!=uniquecount[minIndex])
             {printf("ERRR in uniqueNodesforp\n");getchar();}
             bool shouldadd=true;
+            // for(auto i= bresultp.begin();i!=bresultp.end();++i){
+            //     if(copylevelcount[getNodeLevel(*i)]<=1)
+            //     {
+            //         shouldadd=false;
+            //         printf("should not add bresultp\n" );
+            //         //getchar();
+            //         neverdelete.insert(minIndex);
+            //         break;
+            //     }
+            // }
+
+            if(shouldadd)
             for(auto i= resultp.begin();i!=resultp.end();++i){
                 if(copylevelcount[getNodeLevel(*i)]<=1)
                 {
                     shouldadd=false;
-                    printf("should not add\n" );
+                    printf("should not add resultp\n" );
                     //getchar();
                     neverdelete.insert(minIndex);
                     break;
                 }
             }
-            if(shouldadd){
+            if(shouldadd)
+            for(auto i= resultap.begin();i!=resultap.end();++i){
+                if(copylevelcount[getNodeLevel(*i)]<=1)
+                {
+                    shouldadd=false;
+                    printf("should not add resultap\n" );
+                    //getchar();
+                    neverdelete.insert(minIndex);
+                    break;
+                }
+            }
 
+            if(shouldadd){
+                // printf("ADDED?\n" );
+                sumOfstateforselectedNode+=(abovecount[minIndex]*belowcount[minIndex]);
+                if((deletedApproach==1)&&(sumOfstateforselectedNode>(long int)(rootStatePercentage*rootNumberofState))){
+                    break;
+                }
+                else{
                 m.insert(minIndex);
+                }
+                // printf("Done ADDED?\n" );
             // printf("%d %d %d\n",minIndex,uniquecount[minIndex], resultp.size() );
             // printf("ADDED %d\n", option3densitycheck );
             // printf("ADDED\n" );
             // getchar();
+            // const bool is_in = resultp.find(51693) != resultp.end();
+// getNodeInCount
+
+            // if(is_in){
+                // printf("51693 added by %d %d\n",minIndex ,getNodeInCount(minIndex));
+                // showNode(meddlyout,minIndex, SHOW_DETAILS);
+                // // printf("65243***%d\n",incomingedgecount[65243] );
+                // showNode(meddlyout,65242, SHOW_DETAILS);
+                // printf("65242***%d\n",incomingedgecount[65242] );
+                // showNode(meddlyout,51693, SHOW_DETAILS);
+                // printf("51693***%d\n",incomingedgecount[51693] );
+                //
+                // showNode(meddlyout,14212, SHOW_DETAILS);
+                // printf("14212***%d\n" ,incomingedgecount[14212]);
+                // showNode(meddlyout,14214, SHOW_DETAILS);
+                // printf("14214***%d\n",incomingedgecount[14214] );
+                // showNode(meddlyout,14171, SHOW_DETAILS);
+                // printf("14171***%d\n" ,incomingedgecount[14171]);
+                // showNode(meddlyout,14172, SHOW_DETAILS);
+                // printf("14172***%d\n",incomingedgecount[14172] );
+                // //
+                //
+                // showNode(meddlyout,14211, SHOW_DETAILS);
+                // printf("14211***%d\n" ,incomingedgecount[14211]);
+                // showNode(meddlyout,14213, SHOW_DETAILS);
+                // printf("14213***%d\n",incomingedgecount[14213] );
+                // showNode(meddlyout,14170, SHOW_DETAILS);
+                // printf("14170***%d\n" ,incomingedgecount[14170]);
+                // showNode(meddlyout,3222, SHOW_DETAILS);
+                // printf("3222***%d\n",incomingedgecount[3222] );
+                // //
+                // showNode(meddlyout,14210, SHOW_DETAILS);
+                // printf("14210***%d\n" ,incomingedgecount[14210]);
+                // showNode(meddlyout,3221, SHOW_DETAILS);
+                // printf("3221***%d\n",incomingedgecount[3221] );
+                // //
+                // showNode(meddlyout,14209, SHOW_DETAILS);
+                // printf("14209***%d\n" ,incomingedgecount[14209]);
+                // showNode(meddlyout,3210, SHOW_DETAILS);
+                // printf("3210***%d\n" ,incomingedgecount[3210]);
+                // //
+                // showNode(meddlyout,14208, SHOW_DETAILS);
+                // printf("14208***%d\n" ,incomingedgecount[14208]);
+                // showNode(meddlyout,878, SHOW_DETAILS);
+                // printf("878***%d\n" ,incomingedgecount[878]);
+                // //
+                // showNode(meddlyout,14192, SHOW_DETAILS);
+                // printf("14192***%d\n" ,incomingedgecount[14192]);
+                // showNode(meddlyout,1872, SHOW_DETAILS);
+                // printf("1872***%d\n" ,incomingedgecount[1872]);
+                // showNode(meddlyout,877, SHOW_DETAILS);
+                // printf("877***%d\n" ,incomingedgecount[877]);
+                // //
+                // showNode(meddlyout,1871, SHOW_DETAILS);
+                // printf("1871***%d\n" ,incomingedgecount[1871]);
+                // showNode(meddlyout,876, SHOW_DETAILS);
+                // printf("876***%d\n" ,incomingedgecount[876]);
+                //
+                // //
+                // showNode(meddlyout,1870, SHOW_DETAILS);
+                // printf("1870***%d\n" ,incomingedgecount[1870]);
+                // showNode(meddlyout,1856, SHOW_DETAILS);
+                // printf("1856***%d\n" ,incomingedgecount[1856]);
+                // showNode(meddlyout,875, SHOW_DETAILS);
+                // printf("875***%d\n" ,incomingedgecount[875]);
+                // showNode(meddlyout,865, SHOW_DETAILS);
+                // printf("865***%d\n" ,incomingedgecount[865]);
+                // //
+                // showNode(meddlyout,1869, SHOW_DETAILS);
+                // printf("1869***%d***%d\n" ,incomingedgecount[1869],getNodeInCount(minIndex));
+                // showNode(meddlyout,1855, SHOW_DETAILS);
+                // printf("1855***%d\n" ,incomingedgecount[1855]);
+                // showNode(meddlyout,874, SHOW_DETAILS);
+                // printf("874***%d\n" ,incomingedgecount[874]);
+                // showNode(meddlyout,864, SHOW_DETAILS);
+                // printf("864***%d\n" ,incomingedgecount[864]);
+                //
+                // //
+                // showNode(meddlyout,1868, SHOW_DETAILS);
+                // printf("1868***%d***%d\n" ,incomingedgecount[1868],getNodeInCount(minIndex));
+                // showNode(meddlyout,1848, SHOW_DETAILS);
+
+
+            //     getchar();
+            // }
             removedNode.insert(resultp.begin(), resultp.end());
+            removedNode.insert(resultap.begin(), resultap.end());
+            removedNodeB.insert(resultp.begin(), resultp.end());
+            // removedNodeB.insert(minIndex);
+            removedNodeA.insert(resultap.begin(), resultap.end());
             for(int i=0;i<=num_vars; i++)
             copylevelcount[i]=levelcount[i];
             for(auto i= removedNode.begin();i!=removedNode.end();++i){
@@ -526,6 +769,17 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
                  {
                      printf("Deleted node by density %d\n",removedNode.size() );
                      // end = clock();
+                     // if(removedNode.size()==0){
+                     //     for(int i=0;i<(int)maxid;i++){
+                     //         if((incomingedgecount[i]>0||i==e.getNode())&&(uniqueAbovecount[i]>0))
+                     //         {
+                     //             printf("ERROR i %d AC %ld BC %ld UC %d UAC %d \n", i,abovecount[i], belowcount[i],uniquecount[i],uniqueAbovecount[i]);
+                     //             // char c=getchar();
+                     //          }
+                     //     }
+                     //     printf("NC is %ld UAC[0] is %ld\n",e.getNodeCount(), uniqueAbovecount[0]);
+                     //     getchar();
+                     // }
                      // double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
                      // printf("Time taken %f \n",time_taken );
                      break;
@@ -551,6 +805,8 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
             // for(int i=0;i<=num_vars; i++)
             // copylevelcount[i]=levelcount[i];
         }
+        printf("m size %d\n",m.size() );
+        printf("Removed size %d\n",removedNode.size() );
         printf("Expected %d\n", cC-removedNode.size());
         // printf("rn %d\n",removedNode.size() );
 
@@ -598,7 +854,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
         // printf("ERRROR \n" );
         //
         //  free(list);
-        }
+    }
 
 
        std::map<int,int> map;
@@ -606,18 +862,13 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
        int minlvl=INT_MAX;
        node_handle n=e.getNode();
        node_handle* list = markNodesInSubgraph(&n, 1, false);
+       for(int i=0;i<=lastNode;i++)
+       map[i]=0;
        for (long i=0; list[i]; i++) {
             map[list[i]]=list[i];
         }
        delete[] list;
-
-       // std::set<int> tempres;
-       // for(auto i = m.begin(); i != m.end(); ++i){
-       //     std::set<int>resultp;
-       //     uniqueNodesforp((*i)/*,visitedNode*/,resultp);
-       //     tempres.insert(resultp.begin(), resultp.end());
-       // }
-       // printf("%d=====%d\n",tempres.size(), removedNode.size() );
+       int minnode=0;
        for(auto i = m.begin(); i != m.end(); ++i){
           map[(*i)]=0;
           int nodelvl=getNodeLevel((*i));
@@ -625,7 +876,11 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
           if(nodelvl<minlvl)
             minlvl=nodelvl;
         }
-
+        for(auto i = m.begin(); i != m.end(); ++i){
+            int nodelvl=getNodeLevel((*i));
+            if(nodelvl==minlvl)
+            minnode+=uniquecount[(*i)];
+        }
        // for(int k=0;k<sizeunique;k++)
        // {
        //    if(incomingedgecount[uniqueNodes[k]]>0|| uniqueNodes[k]==e.getNode())
@@ -663,8 +918,105 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
     //     printf("%d ,",(*i) );
     // }
     // printf("\n" );
-    RemoveDuplicateSet(minlvl,levels,map,e);
-    cC=e.getNodeCount();
+    // getchar();
+    // printf("*****\n" );
+    // for (auto it = removedNode.begin(); it !=
+    //                          removedNode.end(); ++it)
+    // printf("%d\n",(*it) );
+    // printf("*****\n" );
+    // getchar();
+    std::set<int> s(removedNodeA);
+   s.insert(removedNodeB.begin(), removedNodeB.end());
+   // for (auto it = removedNodeB.begin(); it !=
+   //                          removedNodeB.end(); ++it)
+   // // if(incomingedgecount[(*it)]==1)
+   // printf("%d map %d iec %d lvl %d out of %d\n",(*it),map[(*it)],incomingedgecount[(*it)],getNodeLevel((*it)),getNumVariables() );
+   // printf("**RNB***\n" );
+   // getchar();
+   #ifdef DBG_MTMDD
+    printf("BEfore RNA %d RNB %d Union %d, minlvl %d\n",removedNodeA.size(),removedNodeB.size(),s.size(),minlvl );
+    #endif
+    int merged=RemoveDuplicateSet(minlvl,levels,map,e,removedNodeA,removedNodeB);
+    printf("root is %d\n",e.getNode() );
+    printf("Node count is %d\n",e.getNodeCount() );
+    if((deletedApproach==1)&&(e.getNodeCount()<=Threashold)){
+    deletedApproach=0;
+    }
+    // std::set<int> result;
+    maxid=e.getLastHandle();
+    // bool* visitedNodex= new bool[maxid];
+    // for(int i=0;i<=(int)maxid;i++){
+    //     visitedNodex[i]=false;
+    // }
+    // node_handle n1=e.getNode();
+    // printf("Node LVL is %d & maxid is %d\n",getNodeLevel(n1),maxid );
+    // getNC(getNodeLevel(n1),n1,visitedNodex,result);
+    // delete[] visitedNodex;
+    // printf("NCNCNC %d\n",result.size() );
+    // getchar();
+    #ifdef DBG_MTMDD
+    printf("merged %d\n",merged );
+    printf("After RNA %d RNB %d\n",removedNodeA.size(),removedNodeB.size() );
+    // for (auto it = removedNodeB.begin(); it !=
+    //                          removedNodeB.end(); ++it)
+    // printf("%d map %d iec %d lvl %d out of %d\n",(*it),map[(*it)],incomingedgecount[(*it)],getNodeLevel((*it)),getNumVariables() );
+    printf("**RNB***\n" );
+    #endif
+    std::set<int> notRemoved;
+    // int num_vars=getNumVariables();
+    // for(int l=1;l<num_vars;l++){
+    // int sizeunique=unique->getNumEntries(l);
+    // node_handle* uniqueNodes= new node_handle[sizeunique];
+    // unique->getItems(getVarByLevel(l),uniqueNodes,sizeunique);
+    //  for(int k=0;k<sizeunique;k++){
+    //      const bool is_in = removedNodeB.find(uniqueNodes[k]) != removedNodeB.end();
+    //      if(is_in){
+    //          notRemoved.insert(uniqueNodes[k]);
+    //      }
+    //  }
+    // delete uniqueNodes;
+    // }
+    #ifdef DBG_MTMDD
+    /*node_handle*/ n=e.getNode();
+    /*node_handle**/ list = markNodesInSubgraph(&n, 1, false);
+    int ix=0;
+    for (long i=0; list[i]; i++) {
+        // printf("%d\n",list[i] );
+         const bool is_in = removedNodeB.find(list[i]) != removedNodeB.end();
+         if(is_in)
+        {   ix++;
+        notRemoved.insert(list[i]);
+        }
+         // map[list[i]]=list[i];
+     }
+     delete[] list;
+     printf("ix is %d\n",ix );
+    for (auto it = notRemoved.begin(); it !=
+                             notRemoved.end(); ++it)
+    // if(incomingedgecount[(*it)]==1)
+    {showNode(meddlyout,(*it), SHOW_DETAILS);
+    printf("%d***%d\n",(*it),incomingedgecount[(*it)] );
+    // printf("%d map %d iec %d lvl %d out of %d\n",(*it),map[(*it)],incomingedgecount[(*it)],getNodeLevel((*it)),getNumVariables() );
+    }
+    printf("**notRemoved***\n" );
+    #endif
+    // if(ix!=0)
+    // getchar();
+    // double cI;
+    // if(incomingedgecount!=0)delete [] incomingedgecount;else {printf("ERRR incomingedgecount\n"); getchar();}
+    //
+    // apply(IEC, e, cI);
+    // getchar();
+
+    // cC=e.getNodeCount();
+    // getchar();
+
+
+    // for(int i=0;i<=lastNode;i++)
+    // map[i]=0;
+
+
+    // getchar();
     // printf("End CALL RemoveDuplicate2 \n" );
 
     // cC--;
@@ -673,15 +1025,18 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
     if(abovecount!=0)delete[] abovecount;else {printf("ERRR abovecount\n"); getchar();}
     highestunique.clear();
     if(uniquecount!=0)delete[] uniquecount;else {printf("ERRR uniquecount\n"); getchar();}
-
+    lowestunique.clear();
+    if(uniqueAbovecount!=0) delete[] uniqueAbovecount; else{printf("ERR uniqueAbovecount\n" );getchar();}
     // printf("DELETED \n" );
 
 
     map.clear();
+    }
     // e.show(meddlyout,0);
-    // printf("HNodeCount is %d\n",cC );
-    // getchar();
-
+    #ifdef DBG_MTMDD
+    printf("HNodeCount is %d\n",cC );
+    getchar();
+    #endif
     // }
         /////////////*******
     // printf("NddeCountAfter %d\n",e.getNodeCount() );
@@ -690,7 +1045,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
     printf("Time taken %f \n",time_taken );
     printf("HunderApproximate End\n" );
 }
- int MEDDLY::mt_mdd_bool::RemoveDuplicateSet(int lvl, std::set<int>levels,std::map<int,int>map,dd_edge &e){
+ int MEDDLY::mt_mdd_bool::RemoveDuplicateSet(int lvl, std::set<int>levels,std::map<int,int>map,dd_edge &e,std::set<int>&RNA,std::set<int>&RNB){
      int root=e.getNode();
       // printf("size is %d\n",e.getNodeCount() );
      bool changeInLevel=false;
@@ -698,10 +1053,14 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
      FILE_output meddlyout(stdout);
      // std::map<int,int> nmap;
      // printf("RemoveDuplicateSet\n" );
-     int result=0;
+     int merged=0;
+     int nodeChangedNumber=0;
      node_handle* uniqueNodes;
      for(int l=lvl;l<num_vars;l++){
-         // printf("l is %d\n",l );
+         #ifdef DBG_MTMDD
+         printf("l is %d\n",l );
+         printf("RNA %d RNB %d\n",RNA.size(),RNB.size() );
+         #endif
          // getchar();
          bool is_in = levels.find(l) != levels.end();
          // printf("is_in is %d\n",is_in );
@@ -720,32 +1079,88 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
          int b=getDomain()->getVariableBound(l+1, false);
          for(int k=0;k<sizeunique;k++){
          if(((incomingedgecount[uniqueNodes[k]]>0)||(uniqueNodes[k]==root))&&(uniqueNodes[k]<=maxid)&&(map[uniqueNodes[k]]!=0)){
+             // if(uniqueNodes[k]==3463) {
+             //     printf(" 3463\n" );
+             //     showNode(meddlyout,uniqueNodes[k], SHOW_DETAILS);
+             //     //printf("map 3463 is %d\n", map[3463]);
+             //     getchar();
+             // }
+             // if(uniqueNodes[k]==28584) {
+             //     printf("28584 3463\n" );
+             //     showNode(meddlyout,uniqueNodes[k], SHOW_DETAILS);
+             //     showNode(meddlyout,3463, SHOW_DETAILS);
+             //
+             //     printf("map 3463 is %d\n", map[3463]);
+             //     getchar();
+             // }
              unpacked_node* un =  unpacked_node::newRedundant(this, l+1, uniqueNodes[k], true);
              bool nodeChanged=false;
              for(int ik=0;ik<=b; ik++){
                  int dpt=getDownPtr(uniqueNodes[k],ik);
+                 // if(dpt==3463){
+                 //     printf("Parent 3463 is %d\n",uniqueNodes[k] );
+                 //     getchar();
+                 // }
                  if(dpt>=1 && dpt!=map[dpt]){
+                     // if(map[dpt]!=0)
+                     // showNode(meddlyout,uniqueNodes[k], SHOW_DETAILS);
+                     #ifdef DBG_MTMDD
+                     printf("C uniqueNodes %d\n",dpt );
+                     #endif
+                     RNA.erase(dpt);
+                     RNB.erase(dpt);
+                     // printf("%d\n",uniqueNodes[k] );
                      un->d_ref(ik) = this->linkNode(map[dpt]);
                      nodeChanged=true;
                      // printf("\nChanged %d th ptr which was %d to %d and lvl is %d \n", ik, dpt,map[dpt], getNodeLevel(dpt) );
                      // getchar();
+                     // if(uniqueNodes[k]==28584) {
+                     //     printf("Changed 28584 28584\n" );
+                     //     getchar();
+                     // }
+
+                     // if(uniqueNodes[k]==47181) {
+                     //     printf("47181 47181\n" );
+                     //     getchar();
+                     // }
                  }
                  else{
                      un->d_ref(ik)=this->linkNode(dpt);
                  }
              }
              if(nodeChanged){
+                 nodeChangedNumber++;
+                 RNA.erase(uniqueNodes[k]);
+                 RNB.erase(uniqueNodes[k]);
                  // showNode(meddlyout,uniqueNodes[k], SHOW_DETAILS);
+                 // printf("\n" );
+                 #ifdef DBG_MTMDD
+                 printf("D uniqueNodes %d",uniqueNodes[k] );
+                 #endif
                  changeInLevel=true;
                  node_handle q=unique->find(*un, getVarByLevel(un->getLevel()));
                  if(q!=0){
-                     result++;
+                     #ifdef DBG_MTMDD
+                     printf("merged\n" );
+                     #endif
+                     merged++;
                      // printf("Found\n" );
+                     // printf("Dup %d\n",uniqueNodes[k] );
                      map[uniqueNodes[k]]=q;
                      unpacked_node::recycle(un);
                     }else{
+
                         if(l+1<num_vars){
                             node_handle temporaryNode=this->createReducedNode(-1,un);
+                            #ifdef DBG_MTMDD
+                            showNode(meddlyout, uniqueNodes[k], SHOW_DETAILS);
+                            showNode(meddlyout, temporaryNode, SHOW_DETAILS);
+
+                             printf("newNode%d\n",temporaryNode );
+                             #endif
+                             RNA.erase(temporaryNode);
+                             RNB.erase(temporaryNode);
+                            // printf("%d\n",uniqueNodes[k] );
                             this->linkNode(temporaryNode);
                               // showNode(meddlyout, temporaryNode, SHOW_DETAILS);
                              map[uniqueNodes[k]]=temporaryNode;
@@ -753,18 +1168,27 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
                               // getchar();
 
                          }else{
-                             // printf("HERE WANT TO set root\n");
+                             #ifdef DBG_MTMDD
+                             printf("HERE WANT TO set root\n");
+                             #endif
                              node_handle node=this->createReducedNode(-1,un);
+                             // printf("%d\n",uniqueNodes[k] );
                              node = makeNodeAtTop(node);
                              this->linkNode(node);
                              e.set(node);
-                             // showNode(meddlyout, node, SHOW_DETAILS);
-                             // printf("Root set!\n");
+                             #ifdef DBG_MTMDD
+                             showNode(meddlyout, node, SHOW_DETAILS);
+                             printf("Root set! %d\n",node);
+                             getchar();
+                             #endif
                              // printf("end size is %d\n",e.getNodeCount() );
                              //nmap.clear();
                              map.clear();
                              // changeInLevel=false;
-                             return result;
+                             #ifdef DBG_MTMDD
+                             printf("NodeChangedNumber %d\n",nodeChangedNumber );
+                             #endif
+                             return merged;
                          }
                      }
                  }else{
@@ -773,10 +1197,24 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
              }
          }
          else{
+             if((map[uniqueNodes[k]]==0)&&(incomingedgecount[uniqueNodes[k]]>0))
+             // printf("MAP %d is 0\n",uniqueNodes[k] );
+             {
+                 // showNode(meddlyout,uniqueNodes[k], SHOW_DETAILS);
+                 // printf("\n" );
+                 #ifdef DBG_MTMDD
+                 printf("0 uniqueNodes %d\n",uniqueNodes[k] );
+                 #endif
+                 RNA.erase(uniqueNodes[k]);
+                 RNB.erase(uniqueNodes[k]);
+             }
              ;//nothing
          }
         }
         delete[] uniqueNodes;
+        #ifdef DBG_MTMDD
+        printf("changeInLevel %d\n",changeInLevel );
+        #endif
         if(changeInLevel==false){
             if(levels.size()==0)
             {
@@ -792,11 +1230,12 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
             // printf("new l is\n", );
         }
      }
-return 0;
+return merged;
+#ifdef DBG_MTMDD
 printf("Done RemoveDuplicateSet\n" );
-
+#endif
  }
-int MEDDLY::mt_mdd_bool::RemoveDuplicate2(int lvl, std::map<int,int> map,dd_edge &e){
+int MEDDLY::mt_mdd_bool::RemoveDuplicate2(int lvl, std::map<int,int> map,dd_edge &e,std::set<int>&RNA,std::set<int>&RNB){
     int root=e.getNode();
     // printf("ROOT is \n",root );
     int result=0;
@@ -816,7 +1255,7 @@ int MEDDLY::mt_mdd_bool::RemoveDuplicate2(int lvl, std::map<int,int> map,dd_edge
     // }
     for(int l=lvl;l<num_vars;l++){
         // nmap.clear();
-        // printf("lvl %d\n",l );
+        printf("lvl %d\n",l );
         changeInLevel=false;
         int sizeunique=unique->getNumEntries(l+1);
          // printf("Number of entries  %d\n",sizeunique );
@@ -837,7 +1276,9 @@ int MEDDLY::mt_mdd_bool::RemoveDuplicate2(int lvl, std::map<int,int> map,dd_edge
             for(int ik=0;ik<=b; ik++){
                 int dpt=getDownPtr(uniqueNodes[k],ik);
                 if(dpt>=1 && dpt!=map[dpt]){
-                    // printf("\nChanged %d th ptr which was %d to %d and lvl is %d \n", ik, dpt,map[dpt], getNodeLevel(dpt) );
+                    RNA.erase(dpt);
+                    RNB.erase(dpt);
+                    printf("\nChanged %d th ptr which was %d to %d and lvl is %d \n", ik, dpt,map[dpt], getNodeLevel(dpt) );
                     un->d_ref(ik) = this->linkNode(map[dpt]);
                     nodeChanged=true;
                 }
@@ -846,10 +1287,12 @@ int MEDDLY::mt_mdd_bool::RemoveDuplicate2(int lvl, std::map<int,int> map,dd_edge
                 }
             }
             if(nodeChanged){
+                RNA.erase(uniqueNodes[k]);
+                RNB.erase(uniqueNodes[k]);
                 // showNode(meddlyout,uniqueNodes[k], SHOW_DETAILS);
                 changeInLevel=true;
             node_handle q=unique->find(*un, getVarByLevel(un->getLevel()));
-             // printf("p is %d\n",q );
+             printf("p %d is %d\n",uniqueNodes[k],q );
              if(q!=0){
                 result++;
                 nmap[uniqueNodes[k]]=q;

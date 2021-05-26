@@ -314,12 +314,14 @@ for(int i=0;i<card;i++){
     uniquecount[i]=0;
 }
     for(int i=0;i<card;i++){
-        if(incomingedgecount[i]>0)
+        if(incomingedgecount[i]>0||i==arg.getNode())
     uniquecount[i]=1;
     }
 
      res = compute_r( arg.getNode());
      delete [] visitedNode;
+     // printf("UBC for root is %d\n", uniquecount[arg.getNode()]);
+     // getchar();
      // printf("COMPUTED %d\n",card );
      // printf("******\n" );
      // for(int i=0;i<=(int)card;i++){

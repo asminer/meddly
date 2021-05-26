@@ -309,113 +309,231 @@ long MEDDLY::hu_mdd_int::compute_r(int k, node_handle a)
    hu_mdd_real(const unary_opname* oc, expert_forest* arg)
      : hu_real(oc, arg) { }
    virtual void compute(const dd_edge &arg, double &res) {
-       // for(int i=0;i<arg.getCardinality()+1;i++)
-       // {
-      	//  printf("beforeAC %d %d \n",i, incomingedgecount[i]);
-       // }
-// 	  abovecount=new int[(int)arg.getCardinality()+1];
-//      iec=new int[(int)arg.getCardinality()+1];
-//      for(int i=0;i<arg.getCardinality()+1;i++)
-//      {
-//     	 iec[i]=incomingedgecount[i];
-//      }
-
-
+// printf("HighestUnique start\n" );
 int card = lastNode;//argF->getCurrentNumNodes();// instead of arg.getCardinality()
 if(card<1)
 {
     throw error(error::INVALID_SEQUENCE, __FILE__, __LINE__);
 }
 
-// std::set<int> a={10};
-// highestunique.insert ( std::pair<int,std::set<int>>(1,a) );
-// std::set<int> rset=highestunique[1];
-// printf("HAHA\n" );
-// updateInsert(1,10);
-// for (auto it=rset.begin(); it != rset.end(); ++it)
-//   printf("%d\n", *it);
-// rset.insert(20);
-// highestunique.at(1)=rset;
-// rset=highestunique[1];
-// printf("NEW\n" );
-// updateInsert(1,20);
-// for (auto it=rset.begin(); it != rset.end(); ++it)
-//   printf("%d\n", *it);
-// int arrsize=sizeof(incomingedgecount)/sizeof(incomingedgecount[0]);
-// printf("ARRSIZE %d XXXX\n",arrsize );
-// int card = arrsize-1;
-    explored=new bool[card];
+    // explored=new bool[card];
     incomingedgecountHU=new int[card];
-    lastPosition=new int[card];
-    startInterval= new int[card];
-    stopInterval=new int[card];
-    if(explored==0 || incomingedgecountHU==0 || lastPosition==0||startInterval==0|| stopInterval==0)
+    LSA=new int[card];
+    firstParent= new int[card];
+    setToRoot= new bool[card];
+    singleParent= new bool[card];
+    // lastPosition=new int[card];
+    // startInterval= new int[card];
+    // stopInterval=new int[card];
+    if(/*explored==0 ||*/ incomingedgecountHU==0/* || lastPosition==0||startInterval==0|| stopInterval==0*/)
     {printf("ERROR IN making arrays\n" ); char c=getchar();}
     for(int i=0;i<card;i++)
     {
-        explored[i]=false;
+        // explored[i]=false;
         incomingedgecountHU[i]=0;
-        lastPosition[i]=0;
-        startInterval[i]=0;
-        stopInterval[i]=0;
+        firstParent[i]=-1;
+        setToRoot[i]=false;
+        singleParent[i]=true;
+        LSA[i]=-1;
+        // lastPosition[i]=0;
+        // startInterval[i]=0;
+        // stopInterval[i]=0;
     }
     for(int i=0;i<card;i++){
     incomingedgecountHU[i]=incomingedgecount[i];
     }
-    pset = new std::set<int>[card];
-     // res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode(),pset );
-     res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode() );
+    parents = new std::set<int>[card];
+    initialize(argF->getDomain()->getNumVariables(), arg.getNode(),arg.getNode());
+    // printf("Initialize completed\n" );
+    for(int i=0;i<card;i++){
+    incomingedgecountHU[i]=incomingedgecount[i];
+    }
+    compute_r(argF->getDomain()->getNumVariables(), arg.getNode(),arg.getNode() );
+    for(int i=0;i<card;i++){
+    parents[i].clear();
+    }
+    for(int i=1;i<card;i++)
+    {
+        // if(LSA[i]==0)
+        // {
+        //     printf("LSA is 0 for %d\n",i );
+        //     getchar();
+        // }
+        if(LSA[i]!=-1)
+        {
+            updateInsert(LSA[i],i);
+        }
+        else{
 
-     // printf("COMPUTED %d\n",card );
-     // printf("***HU***\n" );
-     // for(int i=0;i<=(int)card;i++){
-   	 //  printf("HU[%d]= \t", i);
-     //    std::set<int> rset=highestunique[i];
-     //    for (auto it=rset.begin(); it != rset.end(); ++it){
-     //       printf(", %d", *it);
-     //
-     //   }
-     //   printf("[%d, \t %d ,\t %d ]\t \n",startInterval[i],stopInterval[i],lastPosition[i] );
-     //     printf("\n" );
-     //  }
-     //  printf("**HU****\n" );
-     for(int i=0;i<card;i++){
-     pset[i].clear();
-     }
-     delete[] pset;//=NULL;
+            if(i!=arg.getNode()&&incomingedgecount[i]>0){
+            printf("ERR LSA %d is -1\n", i );
+            getchar();
+            }
+        }
+    }
+     delete[] parents;//=NULL;
      delete[] incomingedgecountHU;
-     delete[] explored;
-     delete[] startInterval;
-     delete[] stopInterval;
-     delete[] lastPosition;
-     //  std::set<int> rset=highestunique[2];
-     //  for (auto it=rset.begin(); it != rset.end(); ++it){
-     //     printf(", %d", *it);
-     //     printf("\n" );
-     // }
+     delete[] LSA;
+     delete[] setToRoot;
+     delete[] singleParent;
+     delete[]firstParent;
+     // delete[] stopInterval;
+     // delete[] lastPosition;
+
 #ifdef DEBUG_AC
      for(int i=0;i<card;i++)
      {
     	 printf("HU %d %d \n",i, highestunique[i]);
      }
 #endif
+// printf("HighestUnique End\n" );
    }
-   // double compute_r(int ht, node_handle a,std::set<int>);
-   double compute_r(int ht, node_handle a);
+   /*
 
+   // std::set<int> a={10};
+   // highestunique.insert ( std::pair<int,std::set<int>>(1,a) );
+   // std::set<int> rset=highestunique[1];
+   // printf("HAHA\n" );
+   // updateInsert(1,10);
+   // for (auto it=rset.begin(); it != rset.end(); ++it)
+   //   printf("%d\n", *it);
+   // rset.insert(20);
+   // highestunique.at(1)=rset;
+   // rset=highestunique[1];
+   // printf("NEW\n" );
+   // updateInsert(1,20);
+   // for (auto it=rset.begin(); it != rset.end(); ++it)
+   //   printf("%d\n", *it);
+   // int arrsize=sizeof(incomingedgecount)/sizeof(incomingedgecount[0]);
+   // printf("ARRSIZE %d XXXX\n",arrsize );
+   // int card = arrsize-1;
+
+   // for(int i=0;i<arg.getCardinality()+1;i++)
+   // {
+    //  printf("beforeAC %d %d \n",i, incomingedgecount[i]);
+   // }
+  // 	  abovecount=new int[(int)arg.getCardinality()+1];
+  //      iec=new int[(int)arg.getCardinality()+1];
+  //      for(int i=0;i<arg.getCardinality()+1;i++)
+  //      {
+  //     	 iec[i]=incomingedgecount[i];
+  //      }
+
+
+   // printf("ROOT is %d\n",arg.getNode() );
+    // getchar();
+     // res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode(),pset );
+    // for(int i=0;i<card;i++){
+    //     if(incomingedgecountHU[i]<0)
+    //     printf("ERR incomingedgecountHU\n" );
+    // }
+    // printf("COMPUTED %d\n",card );
+    // printf("***HU***\n" );
+    // for(int i=0;i<=(int)card;i++){
+    //  printf("HU[%d]= \t", i);
+    //    std::set<int> rset=highestunique[i];
+    //    for (auto it=rset.begin(); it != rset.end(); ++it){
+    //       printf(", %d", *it);
+    //
+    //   }
+    //   printf("[%d, \t %d ,\t %d ]\t \n",startInterval[i],stopInterval[i],lastPosition[i] );
+    //     printf("\n" );
+    //  }
+    //  printf("**HU****\n" );
+
+    //  std::set<int> rset=highestunique[2];
+    //  for (auto it=rset.begin(); it != rset.end(); ++it){
+    //     printf(", %d", *it);
+    //     printf("\n" );
+    // }
+    */
+   // double compute_r(int ht, node_handle a,std::set<int>);
+   void compute_r(int ht, node_handle a,node_handle root);
+   void initialize(int ht, node_handle a, node_handle root);
+
+    // double compute_rn(int ht, node_handle a);
    // std::set<int> CheckInterval(std::set<int> pset,node_handle a );
-   std::set<int> CheckInterval(node_handle a );
+   // std::set<int> CheckInterval(node_handle a );
 
  protected:
-     bool* explored;
+     // bool* explored;
      // std::set<int> pset;
-     std::set<int>* pset;
+     std::set<int>* parents;
 
      int* incomingedgecountHU;
-     int* lastPosition;
-     int* startInterval;
-     int* stopInterval;
-     int c=1;
+     int* LSA;
+     bool* setToRoot;
+     bool* singleParent;
+     int* firstParent;
+     // int* lastPosition;
+     // int* startInterval;
+     // int* stopInterval;
+     // int c=1;
+  inline int PairLowestSeparatorAbove(node_handle firstParent,node_handle secondParent,node_handle root){
+      int firstParentLVL=argF->getNodeLevel(firstParent);
+      int secondParentLVL=argF->getNodeLevel(secondParent);
+      int rootLVL=argF->getNodeLevel(root);
+      // printf("firstChildLVL %d secondChildLVL %d\n", firstChildLVL,secondChildLVL);
+      // printf("LU firstChildLVL %d LU secondChildLVL %d\n",LUreverse[ firstChild],LUreverse[secondChild]);
+      if(firstParent==root||secondParent==root) return root;
+      if(firstParentLVL==rootLVL-1 || secondParentLVL==rootLVL-1) return root;
+      if(LSA[firstParentLVL]==root || LSA[secondParentLVL]==root) return root;
+      if(LSA[firstParent]==-1 ||LSA[secondParent]==-1) {
+          printf("ERR PairLowestSeparatorAbove\n" );
+          printf("firstParent %d LSA %d\n",firstParent,LSA[firstParent] );
+          printf("secondParent %d LSA %d\n",secondParent,LSA[secondParent] );
+          getchar();
+      }
+      if(firstParentLVL<secondParentLVL){
+          return PairLowestSeparatorAbove(LSA[firstParent],secondParent,root);
+      }
+      else if(firstParentLVL>secondParentLVL){
+          return PairLowestSeparatorAbove(firstParent,LSA[secondParent],root);
+      }
+      else if(LSA[firstParent]==LSA[secondParent]){
+          return LSA[firstParent];
+      }
+      else{
+          return PairLowestSeparatorAbove(LSA[firstParent],LSA[secondParent],root);
+      }
+  }
+  inline int LowestSeparatorAboveSet(int lvl,std::set<int> parents,node_handle root){
+      int firstParent=0;
+      int secondParent=0;
+      int kdn = lvl - 1;
+
+      // unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+      // for(unsigned z = 0; z < A->getNNZs(); z++){
+        for(auto a : parents){
+            // printf("a is %d\n", a);
+            // getchar();
+              if(firstParent==0){
+                firstParent=a;
+                // printf("firstParent %d\n",a );
+                if(LSA[firstParent]==root) return root;
+                }
+              else{
+                  secondParent=a;
+                  // printf("LU secondChild\n",LUreverse[secondChild] );
+                  if(LSA[secondParent]==root) return root;
+                  firstParent=PairLowestSeparatorAbove(firstParent,secondParent,root);
+                  // getchar();
+                  // printf("Result is %d\n",firstChild );
+                  // saveResult(Key, oldfirstChild, secondChild, firstChild);
+                  // printf("Saved\n" );
+                  // saveResult(Key, secondChild, oldfirstChild, firstChild);
+                  // printf("Saved\n" );
+
+                  if(firstParent==root) {
+                       // unpacked_node::recycle(A);
+                      return root;
+                  }
+              }
+      }
+       // unpacked_node::recycle(A);
+      return firstParent;
+  }
+
   inline void updateInsert(node_handle a, node_handle b){
       //printf("COMING TO updateInsert\n");
       if ( highestunique.find(a) == highestunique.end() ) {
@@ -456,96 +574,208 @@ if(card<1)
   }
  };
  // std::set<int> MEDDLY::hu_mdd_real::CheckInterval(std::set<int> pset,node_handle a ){
- std::set<int> MEDDLY::hu_mdd_real::CheckInterval(node_handle a ){
-
-std::set<int> shouldBeRemoved;
-// printf("COMING CheckInterval %d \n",a );
-for (auto l: pset[a] ){
-    // printf("L %d \t %d \t %d \t %d\n",l,  startInterval[l],stopInterval[l],lastPosition[l]);
-    // printf("P %d \t %d \t %d \t %d \n",a,  startInterval[a],stopInterval[a],lastPosition[a]);
-
-    if((startInterval[l]>=startInterval[a])&&(stopInterval[l]<=stopInterval[a])
-    &&(((lastPosition[l]!=0)&&(lastPosition[l]>=startInterval[a])&&(lastPosition[l]<=stopInterval[a]))||(lastPosition[l]==0))){
-        // printf("TRUE\n" );
-        updateInsert(a,l);
-        shouldBeRemoved.insert(l);
-    }
-
-}
-// printf("END CheckInterval %d\n",a );
-
-return shouldBeRemoved;
-
-
- }
+//  std::set<int> MEDDLY::hu_mdd_real::CheckInterval(node_handle a ){
+//
+// std::set<int> shouldBeRemoved;
+// // printf("COMING CheckInterval %d \n",a );
+// if(a==3210){
+//     for (auto l: pset[a] ){
+//         printf("3210 3210 %d\n",l );
+//     }
+//     getchar();
+// }
+// for (auto l: pset[a] ){
+//     // printf("L %d \t %d \t %d \t %d\n",l,  startInterval[l],stopInterval[l],lastPosition[l]);
+//     // printf("P %d \t %d \t %d \t %d \n",a,  startInterval[a],stopInterval[a],lastPosition[a]);
+//
+//     if((startInterval[l]>=startInterval[a])&&(stopInterval[l]<=stopInterval[a])
+//     &&(((lastPosition[l]!=0)&&(lastPosition[l]>=startInterval[a])&&(lastPosition[l]<=stopInterval[a]))||(lastPosition[l]==0))){
+//         // printf("TRUE\n" );
+//         if(l==353)
+//         {
+//             printf("added l %d to a %d\n",l,a );
+//             printf("L IEC %d\t %d \t %d \t %d \t %d\n",l,  incomingedgecountHU[l],startInterval[l],stopInterval[l],lastPosition[l]);
+//             printf("P IEC %d\t %d \t %d \t %d \t %d \n",a, incomingedgecountHU[a], startInterval[a],stopInterval[a],lastPosition[a]);
+//
+//         }
+//
+//         updateInsert(a,l);
+//         shouldBeRemoved.insert(l);
+//     }
+//
+// }
+// // printf("END CheckInterval %d\n",a );
+//
+// return shouldBeRemoved;
+//
+//
+//  }
 
  // double MEDDLY::hu_mdd_real::compute_r(int k, node_handle a,std::set<int>pset)
- double MEDDLY::hu_mdd_real::compute_r(int k, node_handle a)
+ void MEDDLY::hu_mdd_real::initialize(int k, node_handle a, node_handle root)
 
  {
-     // printf("COMING TO hu_mdd_real \n" );
-     if(explored[a]==1){
-         // printf("EXP %d is true\n",a-1 );
-         // printf("else  %d\n",a-1);
-
-         lastPosition[a]=c;
-         c++;
-        //  for (auto it=pset[a-1].begin(); it != pset[a-1].end(); ++it)
-        // printf("else Pset is %d\n",*it );
-        //  printf("Done else  %d\n",a-1);
-     }else{
-
-         // printf("C is %d\n",c );
-         startInterval[a]=c;
-         // printf("startInterval[ %d ] =%d\n",a-1,c );
-         c++;
-         int kdn = k - 1;
-         unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
-         for (unsigned z = 0; z < A->getNNZs(); z++) {
-             if (kdn>0)
-             {
-                incomingedgecountHU[A->d(z)]--;
-                // std::set<int> childpset;
-                // compute_r(k-1,A->d(z),childpset);
-                compute_r(k-1,A->d(z));
-
-                if(incomingedgecountHU[A->d(z)]==0)
-                {
-                     // printf("ADDED %d to pset of %d \n",int(A->d(z))-1, a-1 );
-                    // pset.insert(int(A->d(z))-1);
-                    // pset.insert(childpset.begin(), childpset.end());
-                    pset[a].insert(A->d(z));
-                    pset[a].insert(pset[A->d(z)].begin(), pset[A->d(z)].end());
-                   //  for (auto it=pset[a-1].begin(); it != pset[a-1].end(); ++it)
-                   // printf("Pset is**** %d\n",*it );
-
+    int kdn = k - 1;
+    unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+    for (unsigned z = 0; z < A->getNNZs(); z++) {
+        if (kdn>0){
+            if((a==root)||(LSA[a]==root)){
+                setToRoot[A->d(z)]=true;
+            }
+            if(firstParent[A->d(z)]==-1){
+                firstParent[A->d(z)]=a;
+            }else{
+                if(firstParent[A->d(z)]!=a){
+                    singleParent[A->d(z)]=false;
                 }
-
-             }
-         }
-         stopInterval[a]=c;
-         // printf("stopInterval[ %d ] =%d\n",a-1,c );
-
-         c++;
-         explored[a]=true;
-         // printf("explored[ %d ] is true\n",a-1 );
-         unpacked_node::recycle(A);
-     }
-     if(incomingedgecountHU[a]==0)
-     {
-         // printf("incomingedgecountHU %d  is ZERO\n", a-1);
-         std::set<int> result;
-        //  for (auto it=pset[a-1].begin(); it != pset[a-1].end(); ++it)
-        // printf("Pset is %d\n",*it );
-    // std::set<int> toRemove= CheckInterval(pset,a-1);
-    std::set<int> toRemove= CheckInterval(a);
-
-    for (auto r: toRemove ){
-        pset[a].erase(r);
+            }
+            incomingedgecountHU[A->d(z)]--;
+            if(incomingedgecountHU[A->d(z)]==0){
+                if(singleParent[A->d(z)]){
+                    LSA[A->d(z)]=firstParent[A->d(z)];
+                }else{
+                    if(setToRoot[A->d(z)]){
+                        LSA[A->d(z)]=root;
+                    }
+                }
+                initialize(kdn,A->d(z),root);
+            }
+        }
     }
-          }
-     return 0;
+    unpacked_node::recycle(A);
  }
+
+ void MEDDLY::hu_mdd_real::compute_r(int k, node_handle a,node_handle root)
+ {
+    int kdn = k - 1;
+
+    unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+    for (unsigned z = 0; z < A->getNNZs(); z++) {
+        if (kdn>0){
+            incomingedgecountHU[A->d(z)]--;
+            if(LSA[A->d(z)]==-1){
+                if(LSA[a]==root||a==root){
+                    LSA[A->d(z)]=root;
+                    parents[A->d(z)].clear();
+                }else{
+                parents[A->d(z)].insert(a);
+                if(LSA[a]==-1 && a!=root){printf("ERR Parent is %d LSA is -1\n",a );getchar();}
+                }
+            }
+            if(incomingedgecountHU[A->d(z)]==0){
+                if(LSA[A->d(z)]==-1){
+                    // printf("Call LowestSeparatorAboveSet for %d\n",A->d(z) );
+                    for(auto p:parents[A->d(z)]){
+                        if(LSA[p]==-1)
+                        { printf("LSA %d is -1\n", p);
+                        getchar();}
+                    }
+                    LSA[A->d(z)]=LowestSeparatorAboveSet(kdn,parents[A->d(z)],root);
+                }
+                compute_r(kdn,A->d(z),root);
+                parents[A->d(z)].clear();
+            }
+        }
+    }
+    unpacked_node::recycle(A);
+ }
+
+     // printf("COMING TO hu_mdd_real \n" );
+//      if(explored[a]==1){
+//          // printf("EXP %d is true\n",a-1 );
+//          // printf("else  %d\n",a-1);
+//
+//          lastPosition[a]=c;
+//          c++;
+//         //  for (auto it=pset[a-1].begin(); it != pset[a-1].end(); ++it)
+//         // printf("else Pset is %d\n",*it );
+//         //  printf("Done else  %d\n",a-1);
+//      }else{
+//
+//          // printf("C is %d\n",c );
+//          startInterval[a]=c;
+//          // printf("startInterval[ %d ] =%d\n",a-1,c );
+//          c++;
+//          int kdn = k - 1;
+//          unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+//          for (unsigned z = 0; z < A->getNNZs(); z++) {
+//              if (kdn>0)
+//              {
+//
+//
+//                 incomingedgecountHU[A->d(z)]--;
+//
+//                 // std::set<int> childpset;
+//                 // compute_r(k-1,A->d(z),childpset);
+//                 compute_r(kdn,A->d(z));
+//                 bool singleParent=false;
+//                 if(incomingedgecount[A->d(z)]==1){
+//                     if(A->d(z)==352)
+//                     {
+//                         printf("single parent a is %d\n",a );
+//                         getchar();
+//                     }
+//                            updateInsert(a,A->d(z));
+//                            singleParent=true;
+//                            pset[a].insert(pset[A->d(z)].begin(), pset[A->d(z)].end());
+//
+//                        }
+//                 else if(incomingedgecountHU[A->d(z)]==0)
+//                 {
+//                     if(A->d(z)==353)
+//                     {
+//                         printf("a is %d\n",a );
+//                         getchar();
+//                     }
+//                      // printf("ADDED %d to pset of %d \n",int(A->d(z))-1, a-1 );
+//                     // pset.insert(int(A->d(z))-1);
+//                     // pset.insert(childpset.begin(), childpset.end());
+//                     pset[a].insert(A->d(z));
+//                     pset[a].insert(pset[A->d(z)].begin(), pset[A->d(z)].end());
+//                    //  for (auto it=pset[a-1].begin(); it != pset[a-1].end(); ++it)
+//                    // printf("Pset is**** %d\n",*it );
+//
+//                 }
+//
+//              }
+//          }
+//          stopInterval[a]=c;
+//          // printf("stopInterval[ %d ] =%d\n",a-1,c );
+//
+//          c++;
+//          explored[a]=true;
+//          // printf("explored[ %d ] is true\n",a-1 );
+//          unpacked_node::recycle(A);
+//      }
+//      if(incomingedgecountHU[a]==0)
+//      {
+//          unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+//          bool dooperation=true;
+//          for (unsigned z = 0; z < A->getNNZs(); z++) {
+//              if(incomingedgecountHU[A->d(z)]!=0)
+//              dooperation=false;
+//          }
+//          if(a==14210)
+//          printf("dooperation 14210 %d\n",dooperation );
+//              unpacked_node::recycle(A);
+//
+//          // printf("incomingedgecountHU %d  is ZERO\n", a-1);
+//          // std::set<int> result;
+//         //  for (auto it=pset[a-1].begin(); it != pset[a-1].end(); ++it)
+//         // printf("Pset is %d\n",*it );
+//     // std::set<int> toRemove= CheckInterval(pset,a-1);
+//     if(dooperation){
+//         if(a==14210)
+//         printf("dooperation 14210\n" );
+//     std::set<int> toRemove= CheckInterval(a);
+//
+//     for (auto r: toRemove ){
+//         pset[a].erase(r);
+//     }
+// }
+//           }
+ //     return 0;
+ // }
    // Terminal cases
    // if (0==a) return 0.0;
    // if (0==k) return 0.0;

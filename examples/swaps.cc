@@ -314,6 +314,9 @@ void runWithArgs(int N, char method, bool alternate)
         printf("Building reachability set using traditional algorithm\n");
         fflush(stdout);
         apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+        long cbr;
+        apply(CARDINALITY, reachable, cbr);
+        printf("Reachable State %ld\n",cbr );
         break;
     case 'u':
         printf("Building reachability set using traditional bfs +UA algorithm\n");

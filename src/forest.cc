@@ -477,7 +477,7 @@ void MEDDLY::forest
 }
 
 void MEDDLY::forest
-::HeuristicUnderApproximate(dd_edge &e, long minThreshold, long maxThreshold, float desiredPercentage,int option)
+::HeuristicUnderApproximate(dd_edge &e, long minThreshold, long maxThreshold, float desiredPercentage,int option, int deletedApproach, float rootStatePercentage)
 {
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
@@ -1192,7 +1192,7 @@ int MEDDLY::expert_forest::getLastHandle(node_handle p) const
     // return nodeHeaders.lastUsedHandle();
   node_handle* list = markNodesInSubgraph(&p, 1, true);
   // printf("CAME expert_forest::getLastHandle\n" );
-  if (0==list) {printf("ERROR \n\n \n" ); char c=getchar(); return -1;}
+  if (0==list) {printf("ERROR getLastHandle \n\n \n" ); char c=getchar(); return -1;}
   long i;
   int returnedHandle=-1;
   for (i=0; list[i]; i++) { if (returnedHandle<(int)list[i]) {returnedHandle=list[i];}}

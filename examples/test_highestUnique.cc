@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
   v[2] = (int *) malloc((N+1) * sizeof(int));
   v[2][0] = 0; v[2][1] = 1; v[2][2] = 1;
   dd_edge initial_state(states);
-  states->createEdge(v, 3, initial_state);
+  states->createEdge(v, 2, initial_state);
   initial_state.show(meddlyout, 2);
   /*expert_forest* f=static_cast<expert_forest*>(states);
   node_handle nn=initial_state.getNode();
@@ -100,7 +100,9 @@ int main(int argc, char *argv[])
   printf("l=%d l1=%d\n",l,l1);*/
 
  double c,c1;
+ int maxid=initial_state.getLastHandle();
 
+lastNode=maxid+1;
  // node_headers nnh=f->getIncomingCount(nn);
   //l=nnh.getIncomingCount(nn);
 //  long l=initial_state.getCardinality();
@@ -118,17 +120,27 @@ int main(int argc, char *argv[])
  //long l=0;
 // unpacked_node* A = MEDDLY::unpacked_node::newFromNode( states,initial_state, false);
  //printf("initial_state %d\n", initial_state.getIncomingCount());
- apply(CARDINALITY,initial_state,c1);
+ apply(BC,initial_state,c1);
 
    apply(IEC, initial_state, c);
    apply(HU, initial_state, c);
-   for(int i=0;i<(int)c1;i++){
+   for(int i=0;i<=(int)c1;i++){
  	  printf("%d \t", i);
       std::set<int> rset=highestunique[i];
       for (auto it=rset.begin(); it != rset.end(); ++it)
          printf(", %d", *it);
          printf("\n" );
     }
+      apply(LU, initial_state, c);
+    apply(UAC, initial_state, c);
+    printf("LU\n" );
+    for(int i=0;i<=(int)c1;i++){
+       printf("%d \t", i);
+       std::set<int> rset=lowestunique[i];
+       for (auto it=rset.begin(); it != rset.end(); ++it)
+          printf(", %d", *it);
+          printf("\n" );
+     }
   //   printf("AFTER\n" );
   //   apply(CARDINALITY, initial_state, c);
   //   printf("Elements in result: %.4e\n", c);

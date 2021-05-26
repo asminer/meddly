@@ -186,10 +186,11 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, forest::logg
   int* sizes = new int[N*8];
   for (int i=N*8-1; i>=0; i--) sizes[i] = 2;
   domain* d = createDomainBottomUp(sizes, N*8);
-
+  forest::policies p(false);
+  p.setQuasiReduced();
   // Initialize forests
-  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
-  forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
+  forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
   if (LOG) {
     mdd->setLogger(LOG, "MDD");
     mxd->setLogger(LOG, "MxD");
@@ -257,11 +258,26 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, forest::logg
         printf("Building reachability set using traditional algorithm\n");
         fflush(stdout);
         apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+         // reachable.show(meddlyout, 2);
+         long cbr;
+         apply(CARDINALITY, reachable, cbr);
+         printf("Reachable State %ld\n",cbr );
         break;
     case 'u':
         printf("Building reachability set using traditional algorithm\n");
         fflush(stdout);
         apply(REACHABLE_STATES_BFS_UA, init_state, nsf, reachable);
+        break;
+    case 'h':
+        printf("Building reachability set using traditional BFS_HUA algorithm\n");
+        fflush(stdout);
+        maxThreshold=10000;
+        minThreshold=5000;
+        //desiredPercentage=0.3;
+        optionsForUA=0;
+        timeForUA=3600;
+        rootStatePercentage=0.5;
+        apply(REACHABLE_STATES_BFS_HUA, init_state, nsf, reachable);
         break;
     case 'd':
         printf("Building reachability set using traditional algorithm\n");
@@ -361,6 +377,10 @@ int main(int argc, const char** argv)
   for (int i=1; i<argc; i++) {
     if (strcmp("-bfs", argv[i])==0) {
       method = 'b';
+      continue;
+    }
+    if (strcmp("-huabfs", argv[i])==0) {
+      method = 'h';
       continue;
     }
     if (strcmp("-ufs", argv[i])==0) {
