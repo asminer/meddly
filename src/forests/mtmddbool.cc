@@ -1095,7 +1095,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
              // }
              unpacked_node* un =  unpacked_node::newRedundant(this, l+1, uniqueNodes[k], true);
              bool nodeChanged=false;
-             for(int ik=0;ik<=b; ik++){
+             for(int ik=0;ik<b; ik++){
                  int dpt=getDownPtr(uniqueNodes[k],ik);
                  // if(dpt==3463){
                  //     printf("Parent 3463 is %d\n",uniqueNodes[k] );
@@ -1273,7 +1273,7 @@ int MEDDLY::mt_mdd_bool::RemoveDuplicate2(int lvl, std::map<int,int> map,dd_edge
             nmap[uniqueNodes[k]]=uniqueNodes[k];
             unpacked_node* un =  unpacked_node::newRedundant(this, l+1, uniqueNodes[k], true);//unpacked_node::newFull(this, l+1, b);
             bool nodeChanged=false;
-            for(int ik=0;ik<=b; ik++){
+            for(int ik=0;ik<b; ik++){
                 int dpt=getDownPtr(uniqueNodes[k],ik);
                 if(dpt>=1 && dpt!=map[dpt]){
                     RNA.erase(dpt);
@@ -1402,7 +1402,7 @@ void MEDDLY::mt_mdd_bool::RemoveDuplicate(int lvl, std::map<int,int> map){
            unpacked_node* un = unpacked_node::newFromNode(this, uniqueNodes[k], unpacked_node::AS_STORED);
            showNode(meddlyout, uniqueNodes[k], SHOW_DETAILS);
 
-           for(int ik=0;ik<=b; ik++){
+           for(int ik=0;ik<b; ik++){
                // printf("DPTR %d\n",getDownPtr(uniqueNodes[k],ik) );
                int dpt=getDownPtr(uniqueNodes[k],ik);
                 if(dpt!=map[dpt])
