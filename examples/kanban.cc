@@ -283,10 +283,10 @@ int main(int argc, const char** argv)
       case 'u':
         printf("Building reachability set using traditional BFS_UA algorithm\n");
         fflush(stdout);
-        maxThreshold=1000;
-        minThreshold=1000;
-        desiredPercentage=0.3;
-        optionsForUA=2;
+        maxThreshold=300;
+        minThreshold=800;
+        //desiredPercentage=0.3;
+        optionsForUA=0;
         timeForUA=3600;
         apply(REACHABLE_STATES_BFS_UA, init_state, nsf, reachable);
         break;
@@ -297,6 +297,7 @@ int main(int argc, const char** argv)
           minThreshold=4700;
           desiredPercentage=0;
           optionsForUA=0;
+          deletedApproach=1;
           rootStatePercentage=0.5;
           timeForUA=3600;
           apply(REACHABLE_STATES_BFS_HUA, init_state, nsf, reachable);

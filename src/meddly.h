@@ -166,6 +166,7 @@ namespace MEDDLY {
   extern long minThreshold;
   extern float desiredPercentage;
   extern float rootStatePercentage;
+  extern int deletedApproach;
   extern long timeForUA;
   // ******************************************************************
   // *                    miscellaneous  functions                    *

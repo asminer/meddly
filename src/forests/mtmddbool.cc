@@ -335,9 +335,10 @@ generator.seed( rd() );
 // int deleted=uniquecount[minIndex];
 // printf("CALL RemoveDuplicate2 \n" );
 std::set<int> s(removedNodeA);
-printf("MinIndex is %d\n",minIndex );
+// printf("MinIndex is %d\n",minIndex );
 // removedNodeB.erase(minIndex);
-printf("******\n" );
+// printf("******\n" );
+#ifdef DBG_MTMDD
 s.insert(removedNodeB.begin(), removedNodeB.end());
 for (auto it = removedNodeA.begin(); it !=
                          removedNodeA.end(); ++it)
@@ -351,7 +352,12 @@ printf("%d map %d iec %d lvl %d out of %d\n",(*it),map[(*it)],incomingedgecount[
 printf("BEfore**RNB***\n" );
 
  printf("BEfore RNA %d RNB %d Union %d, minlvl %d\n",removedNodeA.size(),removedNodeB.size(),s.size(),getNodeLevel(minIndex) );
+#endif
+// printf("Cardinality before RD %ld\n", e.getCardinality());
 RemoveDuplicate2(lvl,map,e,removedNodeA,removedNodeB);
+// printf("Cardinality after RD %ld\n", e.getCardinality());
+
+#ifdef DBG_MTMDD
 printf("After RNA %d RNB %d\n",removedNodeA.size(),removedNodeB.size() );
  for (auto it = removedNodeB.begin(); it !=
                           removedNodeB.end(); ++it)
@@ -359,7 +365,7 @@ printf("After RNA %d RNB %d\n",removedNodeA.size(),removedNodeB.size() );
  printf("%d map %d iec %d lvl %d out of %d\n",(*it),map[(*it)],incomingedgecount[(*it)],getNodeLevel((*it)),getNumVariables() );
  printf("**RNB***\n" );
 // getchar();
-
+#endif
 cC=e.getNodeCount();
 // printf("End CALL RemoveDuplicate2 \n" );
 
@@ -936,8 +942,15 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
    #ifdef DBG_MTMDD
     printf("BEfore RNA %d RNB %d Union %d, minlvl %d\n",removedNodeA.size(),removedNodeB.size(),s.size(),minlvl );
     #endif
+    printf("Cardinality before RD %ld\n", belowcount[e.getNode()]);
     int merged=RemoveDuplicateSet(minlvl,levels,map,e,removedNodeA,removedNodeB);
-    printf("root is %d\n",e.getNode() );
+    if(belowcount!=0)delete[] belowcount; else {printf("ERRR belowcount\n"); getchar();}
+    maxid=e.getLastHandle();
+    lastNode=maxid+1;
+    apply(BC,e,cCard);
+
+    printf("Cardinality after RD %ld\n", belowcount[e.getNode()]);
+    // printf("root is %d\n",e.getNode() );
     printf("Node count is %d\n",e.getNodeCount() );
     if((deletedApproach==1)&&(e.getNodeCount()<=Threashold)){
     deletedApproach=0;
@@ -1255,7 +1268,7 @@ int MEDDLY::mt_mdd_bool::RemoveDuplicate2(int lvl, std::map<int,int> map,dd_edge
     // }
     for(int l=lvl;l<num_vars;l++){
         // nmap.clear();
-        printf("lvl %d\n",l );
+        // printf("lvl %d\n",l );
         changeInLevel=false;
         int sizeunique=unique->getNumEntries(l+1);
          // printf("Number of entries  %d\n",sizeunique );
@@ -1271,14 +1284,14 @@ int MEDDLY::mt_mdd_bool::RemoveDuplicate2(int lvl, std::map<int,int> map,dd_edge
         {
             // printf("Node %d %d \n",uniqueNodes[k], maxid );
             nmap[uniqueNodes[k]]=uniqueNodes[k];
-            unpacked_node* un =  unpacked_node::newRedundant(this, l+1, uniqueNodes[k], true);//unpacked_node::newFull(this, l+1, b);
+            unpacked_node* un =  unpacked_node::newFull(this, l+1, b);//unpacked_node::newFull(this, l+1, b);
             bool nodeChanged=false;
             for(int ik=0;ik<b; ik++){
                 int dpt=getDownPtr(uniqueNodes[k],ik);
                 if(dpt>=1 && dpt!=map[dpt]){
                     RNA.erase(dpt);
                     RNB.erase(dpt);
-                    printf("\nChanged %d th ptr which was %d to %d and lvl is %d \n", ik, dpt,map[dpt], getNodeLevel(dpt) );
+                    // printf("\nChanged %d th ptr which was %d to %d and lvl is %d \n", ik, dpt,map[dpt], getNodeLevel(dpt) );
                     un->d_ref(ik) = this->linkNode(map[dpt]);
                     nodeChanged=true;
                 }
@@ -1291,8 +1304,8 @@ int MEDDLY::mt_mdd_bool::RemoveDuplicate2(int lvl, std::map<int,int> map,dd_edge
                 RNB.erase(uniqueNodes[k]);
                 // showNode(meddlyout,uniqueNodes[k], SHOW_DETAILS);
                 changeInLevel=true;
-            node_handle q=unique->find(*un, getVarByLevel(un->getLevel()));
-             printf("p %d is %d\n",uniqueNodes[k],q );
+            node_handle q=0;//=unique->find(*un, getVarByLevel(un->getLevel()));
+             // printf("p %d is %d\n",uniqueNodes[k],q );
              if(q!=0){
                 result++;
                 nmap[uniqueNodes[k]]=q;
@@ -1426,7 +1439,7 @@ void MEDDLY::mt_mdd_bool::RemoveDuplicate(int lvl, std::map<int,int> map){
 
                 ////////////////////////////////////////////////////////////////////////
                     un->d_ref(ik) = linkNode(map[dpt]);//this->createReducedNode(ik, nkp);
-                    printf("Changed %d th ptr which was %d to %d\n", ik, dpt,map[dpt] );
+                    // printf("Changed %d th ptr which was %d to %d\n", ik, dpt,map[dpt] );
                 ///////////////////////////////////////////////////////////////////
 
                     // un->show(meddlyout, true);

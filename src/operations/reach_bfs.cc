@@ -41,6 +41,7 @@ namespace MEDDLY {
     float desiredPercentage;
     unsigned int optionsForUA;
     float rootStatePercentage;
+    int deletedApproach;
     long timeForUA;
   class common_bfs;
   class common_bfs_ua;
@@ -720,7 +721,7 @@ start = clock();
     }
     #endif
     // reachableStates.getForest()->underApproximate(reachableStates,minThreshold,maxThreshold,0);
-    reachableStates.getForest()->HeuristicUnderApproximate(reachableStates,minThreshold,maxThreshold,desiredPercentage,optionsForUA,1, rootStatePercentage);
+    reachableStates.getForest()->HeuristicUnderApproximate(reachableStates,minThreshold,maxThreshold,desiredPercentage,optionsForUA,deletedApproach, rootStatePercentage);
     // Option 0 is minThreshold and maxThreshold
     // Option 2 is maxThreshold and remove until all nodes with density < rootdensity*desiredPercentage is deleted
     // Option 3 is maxThreshold and remove until
