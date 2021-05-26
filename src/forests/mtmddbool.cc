@@ -1093,7 +1093,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
              //     printf("map 3463 is %d\n", map[3463]);
              //     getchar();
              // }
-             unpacked_node* un =  unpacked_node::newRedundant(this, l+1, uniqueNodes[k], true);
+             unpacked_node* un =  unpacked_node::newFull(this, l+1,b);
              bool nodeChanged=false;
              for(int ik=0;ik<b; ik++){
                  int dpt=getDownPtr(uniqueNodes[k],ik);
@@ -1138,7 +1138,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
                  printf("D uniqueNodes %d",uniqueNodes[k] );
                  #endif
                  changeInLevel=true;
-                 node_handle q=unique->find(*un, getVarByLevel(un->getLevel()));
+                 node_handle q=0;//=unique->find(*un, getVarByLevel(un->getLevel()));
                  if(q!=0){
                      #ifdef DBG_MTMDD
                      printf("merged\n" );
