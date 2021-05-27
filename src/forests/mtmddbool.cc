@@ -944,12 +944,12 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
     #endif
     printf("Cardinality before RD %ld\n", belowcount[e.getNode()]);
     int merged=RemoveDuplicateSet(minlvl,levels,map,e,removedNodeA,removedNodeB);
-    if(belowcount!=0)delete[] belowcount; else {printf("ERRR belowcount\n"); getchar();}
-    maxid=e.getLastHandle();
-    lastNode=maxid+1;
-    apply(BC,e,cCard);
-
-    printf("Cardinality after RD %ld\n", belowcount[e.getNode()]);
+    // if(belowcount!=0)delete[] belowcount; else {printf("ERRR belowcount\n"); getchar();}
+    // maxid=e.getLastHandle();
+    // lastNode=maxid+1;
+    // apply(BC,e,cCard);
+    //
+    // printf("Cardinality after RD %ld\n", belowcount[e.getNode()]);
     // printf("root is %d\n",e.getNode() );
     printf("Node count is %d\n",e.getNodeCount() );
     if((deletedApproach==1)&&(e.getNodeCount()<=Threashold)){
