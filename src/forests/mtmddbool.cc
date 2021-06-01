@@ -653,7 +653,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
             if(shouldadd){
                 // printf("ADDED?\n" );
                 sumOfstateforselectedNode+=(abovecount[minIndex]*belowcount[minIndex]);
-                if((deletedApproach==1)&&(sumOfstateforselectedNode>(long int)(rootStatePercentage*rootNumberofState))){
+                if((deletedApproach==1)&&(m.size()>0)&&(sumOfstateforselectedNode>(long int)(rootStatePercentage*rootNumberofState))){
                     break;
                 }
                 else{
