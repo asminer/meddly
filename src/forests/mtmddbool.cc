@@ -146,6 +146,7 @@ generator.seed( rd() );
     // if(option==2){
     //     Threashold=initialRootDensity*desiredPercentage;
     // }
+    int num_deletedNode=0;
     while((cC>Threashold&&(option!=2))||(option==2)){
     //     printf("num_vars %d\n",num_vars );
     //     printf("cC%d\n",cC );
@@ -355,6 +356,7 @@ printf("BEfore**RNB***\n" );
 #endif
 // printf("Cardinality before RD %ld\n", e.getCardinality());
 RemoveDuplicate2(lvl,map,e,removedNodeA,removedNodeB);
+num_deletedNode++;
 // printf("Cardinality after RD %ld\n", e.getCardinality());
 
 #ifdef DBG_MTMDD
@@ -386,6 +388,7 @@ map.clear();
 }
     /////////////*******
 // printf("NddeCountAfter %d\n",e.getNodeCount() );
+printf("deleted_node %d\n",num_deletedNode );
 end = clock();
 double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
 printf("Time taken %f \n",time_taken );
