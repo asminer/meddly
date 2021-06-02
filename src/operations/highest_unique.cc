@@ -284,8 +284,9 @@ long MEDDLY::hu_mdd_int::compute_r(int k, node_handle a)
  class MEDDLY::hu_real : public unary_operation {
  public:
    hu_real(const unary_opname* oc, expert_forest* arg);
-//protected:
-    //int* iec;
+protected:
+    std::map<std::pair<int, int>, int> cache;
+
  };
 
  MEDDLY::hu_real::hu_real(const unary_opname* oc, expert_forest* arg)
@@ -348,6 +349,7 @@ if(card<1)
     for(int i=0;i<card;i++){
     incomingedgecountHU[i]=incomingedgecount[i];
     }
+    cache.clear();
     compute_r(argF->getDomain()->getNumVariables(), arg.getNode(),arg.getNode() );
     for(int i=0;i<card;i++){
     parents[i].clear();
@@ -371,6 +373,7 @@ if(card<1)
             }
         }
     }
+    cache.clear();
      delete[] parents;//=NULL;
      delete[] incomingedgecountHU;
      delete[] LSA;
@@ -477,7 +480,7 @@ if(card<1)
       // printf("LU firstChildLVL %d LU secondChildLVL %d\n",LUreverse[ firstChild],LUreverse[secondChild]);
       if(firstParent==root||secondParent==root) return root;
       if(firstParentLVL==rootLVL-1 || secondParentLVL==rootLVL-1) return root;
-      if(LSA[firstParentLVL]==root || LSA[secondParentLVL]==root) return root;
+      if(LSA[firstParent]==root || LSA[secondParent]==root) return root;
       if(LSA[firstParent]==-1 ||LSA[secondParent]==-1) {
           printf("ERR PairLowestSeparatorAbove\n" );
           printf("firstParent %d LSA %d\n",firstParent,LSA[firstParent] );
@@ -516,7 +519,22 @@ if(card<1)
                   secondParent=a;
                   // printf("LU secondChild\n",LUreverse[secondChild] );
                   if(LSA[secondParent]==root) return root;
-                  firstParent=PairLowestSeparatorAbove(firstParent,secondParent,root);
+                  int prevFirstParent=firstParent;
+                  std::map<std::pair<int,int>,int>::iterator res = cache.find(std::make_pair(prevFirstParent,secondParent));
+
+                   if(res != cache.end())
+                   {
+
+                      // printf("FOUND %d %d %d\n",prevFirstParent, secondParent,X);
+                      firstParent=res->second;
+
+                   }
+                   else{
+                       // printf("Call PairLowestSeparatorAbove %d %d\n", prevFirstParent,secondParent);
+                  firstParent=PairLowestSeparatorAbove(prevFirstParent,secondParent,root);
+                  cache[std::make_pair(prevFirstParent,secondParent)]=firstParent;
+                  // printf("SAVE %d %d %d\n",prevFirstParent, secondParent,firstParent);
+                    }
                   // getchar();
                   // printf("Result is %d\n",firstChild );
                   // saveResult(Key, oldfirstChild, secondChild, firstChild);

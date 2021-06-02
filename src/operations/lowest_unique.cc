@@ -284,8 +284,8 @@ long MEDDLY::lu_mdd_int::compute_r(int k, node_handle a)
  class MEDDLY::lu_real : public unary_operation {
  public:
    lu_real(const unary_opname* oc, expert_forest* arg);
-//protected:
-    //int* iec;
+protected:
+     std::map<std::pair<int, int>, int> cache;
  };
 
  MEDDLY::lu_real::lu_real(const unary_opname* oc, expert_forest* arg)
@@ -353,6 +353,7 @@ if(card<1)
     // }
     // pset = new std::set<int>[card];
      // res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode(),pset );
+     cache.clear();
     compute_r(argF->getDomain()->getNumVariables(), arg.getNode() );
     // for(int i=0;i<=(int)card;i++){
     //  printf("LUR[%d]= %d\t", i,LUreverse[i]);
@@ -389,6 +390,7 @@ if(card<1)
      // for(int i=0;i<card;i++){
      // pset[i].clear();
      // }
+     cache.clear();
      delete[] explored;
      delete[] LUreverse;
 
@@ -545,7 +547,24 @@ if(card<1)
                    // compute_r(kdn,secondChild);
                    // else
                    // getchar();
-                   firstChild=ChildsLeastCommonUnique(firstChild,secondChild);
+                   int prevFirstChild=firstChild;
+                 std::map<std::pair<int,int>,int>::iterator res = cache.find(std::make_pair(prevFirstChild,secondChild));
+
+                  if(res != cache.end())
+                  {
+
+                     // printf("FOUND %d %d %d\n",prevFirstParent, secondParent,X);
+                     firstChild=res->second;
+
+                  }
+                  else{
+                      // printf("Call PairLowestSeparatorAbove %d %d\n", prevFirstParent,secondParent);
+                      firstChild=ChildsLeastCommonUnique(prevFirstChild,secondChild);
+                 cache[std::make_pair(prevFirstChild,secondChild)]=firstChild;
+                 // printf("SAVE %d %d %d\n",prevFirstParent, secondParent,firstParent);
+                   }
+
+
                    // getchar();
                    // printf("Result is %d\n",firstChild );
                    // saveResult(Key, oldfirstChild, secondChild, firstChild);
