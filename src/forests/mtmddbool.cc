@@ -845,7 +845,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
        // }
        delete[]levelcount;
        delete[]copylevelcount;
-       delete[] arrdensity;
+       delete arrdensity;
 
         }
         if(option==1){
