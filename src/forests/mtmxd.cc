@@ -778,7 +778,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
 
   path[k].initFromNode(F, cdown, false);
 
-  for (int z=0; z<path[k].getNNZs(); z++) {
+  for (unsigned z=0; z<path[k].getNNZs(); z++) {
     if (first(downLevel(k), path[k].d(z))) {
       nzp[k] = z;
       index[k] = path[k].i(z);
@@ -907,7 +907,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
   // Level is not skipped.
   path[k].initFromNode(F, down, false);
   
-  for (int z=0; z<path[k].getNNZs(); z++) {
+  for (unsigned z=0; z<path[k].getNNZs(); z++) {
     index[k] = path[k].i(z);
     if (first(downLevel(k), path[k].d(z))) {
       nzp[k] = z;

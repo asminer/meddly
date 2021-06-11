@@ -1170,11 +1170,11 @@ dd_edge RubiksCubeModel::buildFlipMoveHelper(forest* relation, int type3_a,
   assert(offset == nElements);
 
   for (int i = 0; i < nElements; i++) {
-    free(from[i]);
-    free(to[i]);
+    delete[] from[i];
+    delete[] to[i];
   }
-  free(from);
-  free(to);
+  delete[] from;
+  delete[] to;
 
   return result;
 }
