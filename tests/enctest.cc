@@ -203,7 +203,7 @@ int main()
   foo.note_time();
   for (int i=start; i!=middle; i++) {
     long L = i;
-    while (L << 1) {
+    while ((L << 1)!=0) {
       testLong(L);
       testLong(-L);
       L <<= 1;
@@ -224,7 +224,7 @@ int main()
   foo.note_time();
   for (int i=start; i!=middle; i++) {
     long L = i;
-    while (L << 2) {
+    while ((L << 2)!=0) {
       testDown(L);
       testDown(-L);
       static const long msb = (0x80L) << ((sizeof(long)-1)*8);
@@ -262,7 +262,7 @@ int main()
   foo.note_time();
   for (int i=middle; i!=stop; i++) {
     long L = i;
-    while (L << 1) {
+    while ((L << 1)!=0) {
       testLong(L);
       testLong(-L);
       L <<= 1;
@@ -282,7 +282,7 @@ int main()
   foo.note_time();
   for (int i=middle; i!=stop; i++) {
     long L = i;
-    while (L << 2) {
+    while ((L << 2)!=0) {
       testDown(L);
       testDown(-L);
       static const long msb = (0x80L) << ((sizeof(long)-1)*8);
