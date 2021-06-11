@@ -242,7 +242,7 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, long &c)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
     throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-  unary_operation* op = getOperation(code, a, INTEGER);
+  unary_operation* op = getOperation(code, a, opnd_type::INTEGER);
   op->compute(a, c);
 }
 
@@ -252,7 +252,7 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, double &c)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
     throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-  unary_operation* op = getOperation(code, a, REAL);
+  unary_operation* op = getOperation(code, a, opnd_type::REAL);
   op->compute(a, c);
 }
 

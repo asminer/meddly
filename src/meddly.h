@@ -141,7 +141,7 @@ namespace MEDDLY {
   class binary_operation;
 
   /// Argument and result types for apply operations.
-  enum opnd_type {
+  enum class opnd_type {
     FOREST      = 0,
     BOOLEAN     = 1,
     INTEGER     = 2,

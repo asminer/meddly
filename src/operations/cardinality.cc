@@ -79,7 +79,7 @@ protected:
 };
 
 MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, arg, INTEGER)
+ : unary_operation(oc, 1, arg, opnd_type::INTEGER)
 {
   compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:L");
   et->setForestForSlot(0, arg);
@@ -231,7 +231,7 @@ public:
 };
 
 MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, arg, REAL)
+ : unary_operation(oc, 1, arg, opnd_type::REAL)
 {
   compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:D");
   et->setForestForSlot(0, arg);
@@ -389,7 +389,7 @@ public:
 };
 
 MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, arg, HUGEINT)
+ : unary_operation(oc, 1, arg, opnd_type::HUGEINT)
 {
   compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:G");
   et->setForestForSlot(0, arg);
@@ -598,20 +598,20 @@ MEDDLY::card_opname::buildOperation(expert_forest* arg, opnd_type res) const
 {
   if (0==arg) return 0;
   switch (res) {
-    case INTEGER:
+    case opnd_type::INTEGER:
       if (arg->isForRelations())
         return new card_mxd_int(this, arg);
       else                        
         return new card_mdd_int(this, arg);
 
-    case REAL:
+    case opnd_type::REAL:
       if (arg->isForRelations())
         return new card_mxd_real(this, arg);
       else                        
         return new card_mdd_real(this, arg);
 
 #ifdef HAVE_LIBGMP
-    case HUGEINT:
+    case opnd_type::HUGEINT:
       if (arg->isForRelations())
         return new card_mxd_mpz(this, arg);
       else                        

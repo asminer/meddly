@@ -73,7 +73,7 @@ class MEDDLY::range_int : public unary_operation {
 };
 
 MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, arg, INTEGER)
+ : unary_operation(oc, 1, arg, opnd_type::INTEGER)
 {
   compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:I");
   et->setForestForSlot(0, arg);
@@ -114,7 +114,7 @@ class MEDDLY::range_real : public unary_operation {
 };
 
 MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
- : unary_operation(oc, 1, arg, REAL)
+ : unary_operation(oc, 1, arg, opnd_type::REAL)
 {
   compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:F");
   et->setForestForSlot(0, arg);
@@ -326,12 +326,12 @@ MEDDLY::maxrange_opname::buildOperation(expert_forest* ar, opnd_type res) const
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
   switch (res) {
-    case INTEGER:
+    case opnd_type::INTEGER:
       if (forest::INTEGER != ar->getRangeType())
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       return new maxrange_int(this,  ar);
 
-    case REAL:
+    case opnd_type::REAL:
       if (forest::REAL != ar->getRangeType())
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       return new maxrange_real(this,  ar);
@@ -369,12 +369,12 @@ MEDDLY::minrange_opname::buildOperation(expert_forest* ar, opnd_type res) const
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
   switch (res) {
-    case INTEGER:
+    case opnd_type::INTEGER:
       if (forest::INTEGER != ar->getRangeType())
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       return new minrange_int(this,  ar);
 
-    case REAL:
+    case opnd_type::REAL:
       if (forest::REAL != ar->getRangeType())
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       return new minrange_real(this,  ar);

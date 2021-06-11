@@ -427,7 +427,7 @@ MEDDLY::unary_operation::unary_operation(const unary_opname* code,
 : operation(code, et_slots)
 {
   argF = arg;
-  resultType = FOREST;
+  resultType = opnd_type::FOREST;
   resF = res;
 
   registerInForest(argF);
