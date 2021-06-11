@@ -269,7 +269,7 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
   const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
   int last_nz = int(A->getNNZs())-1;
   for ( ; last_nz >= 0 && A->d(unsigned(last_nz)) == 0; last_nz--);
-  const int A_nnzs = last_nz + 1;
+  const unsigned int A_nnzs = last_nz + 1;
   const int A_last_index = last_nz >= 0? int(A->i(unsigned(last_nz))): -1;
 
   unpacked_node *B = (bLevel < resultLevel)
@@ -279,7 +279,7 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
   const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
   last_nz = int(B->getNNZs())-1;
   for ( ; last_nz >= 0 && B->d(unsigned(last_nz)) == 0; last_nz--);
-  const int B_nnzs = last_nz + 1;
+  const unsigned int B_nnzs = last_nz + 1;
   const int B_last_index = last_nz >= 0? int(B->i(unsigned(last_nz))): -1;
 
   const int max_a_b_last_index = MAX(A_last_index, B_last_index);

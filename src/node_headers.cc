@@ -1101,7 +1101,7 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
   // "not yet allocated" pile.  But, we don't remove them
   // from the free list(s); we simply discard any too-large
   // ones when we pull from the free list(s).
-  if (p == a_last) {
+  if (0 == a_last - p) {
     while (a_last && isDeleted(a_last) && (0==getNodeCacheCount(a_last))) {
       a_last--;
       a_freed--;
@@ -1207,9 +1207,9 @@ void MEDDLY::node_headers::dumpInternal(output &s) const
   }
   int awidth = digits(a_last);
   s << "    Node# :  ";
-  for (node_handle p=1; p<=a_last; p++) {
+  for (unsigned long p=1; p<=a_last; p++) {
     if (p>1) s.put(' ');
-    s.put(long(p), awidth);
+    s.put(p, awidth);
   }
 #ifdef OLD_NODE_HEADERS
   s << "\n    Level  : [";

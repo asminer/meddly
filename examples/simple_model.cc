@@ -385,16 +385,17 @@ public:
   long nextOf(long i) override
   {
   
-     if(i>=getPieceSize()) //Array needs to be allocated
-      expandTokenUpdate(i);
+    if(i>=getPieceSize()) { //Array needs to be allocated
+       expandTokenUpdate(i);
+    }
   
-      if(getTokenUpdate()[i]==NOT_KNOWN) //Array needs to be updated
-      {	
-      	long result = ((i>=en) && (h==-1?true:i<h))? i+fr : OUT_OF_BOUNDS;
-      	long val = result;
-      	setTokenUpdateAtIndex(i,val);
-      }
-     return getTokenUpdate()[i];
+    if(getTokenUpdate()[i]==NOT_KNOWN) //Array needs to be updated
+    {	
+    	long result = ((i>=en) && (h==-1?true:i<h))? i+fr : OUT_OF_BOUNDS;
+    	long val = result;
+     	setTokenUpdateAtIndex(i,val);
+    }
+   return getTokenUpdate()[i];
   }
 };
 
