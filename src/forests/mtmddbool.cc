@@ -266,9 +266,10 @@ generator.seed( rd() );
        if(resultSet.size()>0){
        std::set<int>::iterator iter = resultSet.begin();
        std::random_device rd;
-       std::mt19937 mt(rd());
-       std::uniform_real_distribution<int> dist(0, resultSet.size());
-       std::advance(iter, dist(mt));
+      std::default_random_engine generator;
+      generator.seed(rd());
+      std::normal_distribution<> d(0, resultSet.size());
+      std::advance(iter, d(generator));
        minIndex=*iter;
       resultSet.clear();
     }
