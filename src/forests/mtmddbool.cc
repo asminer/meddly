@@ -207,30 +207,71 @@ generator.seed( rd() );
 
       double density;
       mpz_object densitympz;
+      std::set<int> resultSet;
+      mpz_object resultsetValue;
       densitympz.setValue(LONG_MAX);
-
+      resultsetValue.setValue(LONG_MAX);
       mpz_object option2comparingmpz;
       double intpart;
       double fractpart = std::modf (initialRootDensity , &intpart);
       option2comparingmpz.setValue(intpart);
       option2comparingmpz.setReminder(fractpart);
 
-   for(int i=0;i<=(int)maxid;i++){
-       if((uniquecount[i]>0)&&(levelcount[getNodeLevel(i)]>1))//&&(abovecount[i]>0)&&(belowcount[i]>0)&&(uniquecount[i]>0)&&(incomingedgecount[i]>0||i==e.getNode()))
-       {
-           mpz_object mulmpz;
-           mulmpz.setValue(abovecount[i]);
-           mulmpz.multiply(belowcount[i]);
-           mulmpz.division(uniquecount[i]+uniqueAbovecount[i]);
-           if((mulmpz.compare(mulmpz, densitympz)<=0)&&((option!=2)||(option==2 &&mulmpz.compare(mulmpz, option2comparingmpz)<=0)))
+       for(int i=0;i<=(int)maxid;i++){
+           if((uniquecount[i]>0)&&(levelcount[getNodeLevel(i)]>1))//&&(abovecount[i]>0)&&(belowcount[i]>0)&&(uniquecount[i]>0)&&(incomingedgecount[i]>0||i==e.getNode()))
            {
-               minIndex=i;
-               mulmpz.copyInto(densitympz);
-               densitympz.setReminder(mulmpz.rdvalue);
+               mpz_object mulmpz;
+               mulmpz.setValue(abovecount[i]);
+               mulmpz.multiply(belowcount[i]);
+               mulmpz.division(uniquecount[i]+uniqueAbovecount[i]);
+               if((mulmpz.compare(mulmpz, densitympz)<=0)&&((option!=2)||(option==2 &&mulmpz.compare(mulmpz, option2comparingmpz)<=0)))
+               {
+                   if(resultSet.size()>0){
+                       if(option==0){
+                           if(resultsetValue.compare(resultsetValue,mulmpz)==0){
+                               resultSet.insert(i);
+                               mulmpz.copyInto(resultsetValue);
+                               resultsetValue.setReminder(mulmpz.rdvalue);
+                           }else{
+                               resultSet.clear();
+                               resultSet.insert(i);
+                               mulmpz.copyInto(resultsetValue);
+                               resultsetValue.setReminder(mulmpz.rdvalue);
+                           }
+                       }else if(option==2){
+                           if(resultsetValue.compare(resultsetValue,mulmpz)==0){
+                               resultSet.insert(i);
+                               mulmpz.copyInto(resultsetValue);
+                               resultsetValue.setReminder(mulmpz.rdvalue);
+                           }else{
+                               resultSet.clear();
+                               resultSet.insert(i);
+                               mulmpz.copyInto(resultsetValue);
+                               resultsetValue.setReminder(mulmpz.rdvalue);
+                           }
+                       }
+                   }else{
+                      resultSet.insert(i);
+                      mulmpz.copyInto(resultsetValue);
+                      mulmpz.copyInto(densitympz);
+                      densitympz.setReminder(mulmpz.rdvalue);
+                      resultsetValue.setReminder(mulmpz.rdvalue);
+                   }
+                   // minIndex=i;
+                   // mulmpz.copyInto(densitympz);
+                   // densitympz.setReminder(mulmpz.rdvalue);
+               }
            }
        }
-   }
-
+       if(resultSet.size()>0){
+       std::set<int>::iterator iter = resultSet.begin();
+       std::random_device rd;
+       std::mt19937 mt(rd());
+       std::uniform_real_distribution<int> dist(0, resultSet.size());
+       std::advance(iter, dist(mt));
+       minIndex=*iter;
+      resultSet.clear();
+    }
    // densitympz.showwithreminder(meddlyout);
    if(minIndex==0)
    {
@@ -662,96 +703,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
                 else{
                 m.insert(minIndex);
                 }
-                // printf("Done ADDED?\n" );
-            // printf("%d %d %d\n",minIndex,uniquecount[minIndex], resultp.size() );
-            // printf("ADDED %d\n", option3densitycheck );
-            // printf("ADDED\n" );
-            // getchar();
-            // const bool is_in = resultp.find(51693) != resultp.end();
-// getNodeInCount
 
-            // if(is_in){
-                // printf("51693 added by %d %d\n",minIndex ,getNodeInCount(minIndex));
-                // showNode(meddlyout,minIndex, SHOW_DETAILS);
-                // // printf("65243***%d\n",incomingedgecount[65243] );
-                // showNode(meddlyout,65242, SHOW_DETAILS);
-                // printf("65242***%d\n",incomingedgecount[65242] );
-                // showNode(meddlyout,51693, SHOW_DETAILS);
-                // printf("51693***%d\n",incomingedgecount[51693] );
-                //
-                // showNode(meddlyout,14212, SHOW_DETAILS);
-                // printf("14212***%d\n" ,incomingedgecount[14212]);
-                // showNode(meddlyout,14214, SHOW_DETAILS);
-                // printf("14214***%d\n",incomingedgecount[14214] );
-                // showNode(meddlyout,14171, SHOW_DETAILS);
-                // printf("14171***%d\n" ,incomingedgecount[14171]);
-                // showNode(meddlyout,14172, SHOW_DETAILS);
-                // printf("14172***%d\n",incomingedgecount[14172] );
-                // //
-                //
-                // showNode(meddlyout,14211, SHOW_DETAILS);
-                // printf("14211***%d\n" ,incomingedgecount[14211]);
-                // showNode(meddlyout,14213, SHOW_DETAILS);
-                // printf("14213***%d\n",incomingedgecount[14213] );
-                // showNode(meddlyout,14170, SHOW_DETAILS);
-                // printf("14170***%d\n" ,incomingedgecount[14170]);
-                // showNode(meddlyout,3222, SHOW_DETAILS);
-                // printf("3222***%d\n",incomingedgecount[3222] );
-                // //
-                // showNode(meddlyout,14210, SHOW_DETAILS);
-                // printf("14210***%d\n" ,incomingedgecount[14210]);
-                // showNode(meddlyout,3221, SHOW_DETAILS);
-                // printf("3221***%d\n",incomingedgecount[3221] );
-                // //
-                // showNode(meddlyout,14209, SHOW_DETAILS);
-                // printf("14209***%d\n" ,incomingedgecount[14209]);
-                // showNode(meddlyout,3210, SHOW_DETAILS);
-                // printf("3210***%d\n" ,incomingedgecount[3210]);
-                // //
-                // showNode(meddlyout,14208, SHOW_DETAILS);
-                // printf("14208***%d\n" ,incomingedgecount[14208]);
-                // showNode(meddlyout,878, SHOW_DETAILS);
-                // printf("878***%d\n" ,incomingedgecount[878]);
-                // //
-                // showNode(meddlyout,14192, SHOW_DETAILS);
-                // printf("14192***%d\n" ,incomingedgecount[14192]);
-                // showNode(meddlyout,1872, SHOW_DETAILS);
-                // printf("1872***%d\n" ,incomingedgecount[1872]);
-                // showNode(meddlyout,877, SHOW_DETAILS);
-                // printf("877***%d\n" ,incomingedgecount[877]);
-                // //
-                // showNode(meddlyout,1871, SHOW_DETAILS);
-                // printf("1871***%d\n" ,incomingedgecount[1871]);
-                // showNode(meddlyout,876, SHOW_DETAILS);
-                // printf("876***%d\n" ,incomingedgecount[876]);
-                //
-                // //
-                // showNode(meddlyout,1870, SHOW_DETAILS);
-                // printf("1870***%d\n" ,incomingedgecount[1870]);
-                // showNode(meddlyout,1856, SHOW_DETAILS);
-                // printf("1856***%d\n" ,incomingedgecount[1856]);
-                // showNode(meddlyout,875, SHOW_DETAILS);
-                // printf("875***%d\n" ,incomingedgecount[875]);
-                // showNode(meddlyout,865, SHOW_DETAILS);
-                // printf("865***%d\n" ,incomingedgecount[865]);
-                // //
-                // showNode(meddlyout,1869, SHOW_DETAILS);
-                // printf("1869***%d***%d\n" ,incomingedgecount[1869],getNodeInCount(minIndex));
-                // showNode(meddlyout,1855, SHOW_DETAILS);
-                // printf("1855***%d\n" ,incomingedgecount[1855]);
-                // showNode(meddlyout,874, SHOW_DETAILS);
-                // printf("874***%d\n" ,incomingedgecount[874]);
-                // showNode(meddlyout,864, SHOW_DETAILS);
-                // printf("864***%d\n" ,incomingedgecount[864]);
-                //
-                // //
-                // showNode(meddlyout,1868, SHOW_DETAILS);
-                // printf("1868***%d***%d\n" ,incomingedgecount[1868],getNodeInCount(minIndex));
-                // showNode(meddlyout,1848, SHOW_DETAILS);
-
-
-            //     getchar();
-            // }
             removedNode.insert(resultp.begin(), resultp.end());
             removedNode.insert(resultap.begin(), resultap.end());
             removedNodeB.insert(resultp.begin(), resultp.end());
