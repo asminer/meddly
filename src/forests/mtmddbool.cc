@@ -117,6 +117,7 @@ const char* MEDDLY::mt_mdd_bool::codeChars() const
 void MEDDLY::mt_mdd_bool::underApproximate(dd_edge &e, long Threashold, long maxThreshold,float desiredPercentage,int option)
 {
     if(option==1) return;
+    srand(time(0));
      clock_t start, end;
      start = clock();
      // printf("underApproximate begin \n" );
@@ -235,6 +236,8 @@ generator.seed( rd() );
                            }else{
                                resultSet.clear();
                                resultSet.insert(i);
+                                mulmpz.copyInto(densitympz);
+                                densitympz.setReminder(mulmpz.rdvalue);
                                mulmpz.copyInto(resultsetValue);
                                resultsetValue.setReminder(mulmpz.rdvalue);
                            }
@@ -245,6 +248,8 @@ generator.seed( rd() );
                                resultsetValue.setReminder(mulmpz.rdvalue);
                            }else{
                                resultSet.clear();
+                               mulmpz.copyInto(densitympz);
+                               densitympz.setReminder(mulmpz.rdvalue);
                                resultSet.insert(i);
                                mulmpz.copyInto(resultsetValue);
                                resultsetValue.setReminder(mulmpz.rdvalue);
@@ -265,12 +270,9 @@ generator.seed( rd() );
        }
        if(resultSet.size()>0){
        std::set<int>::iterator iter = resultSet.begin();
-       std::random_device rd;
-      std::default_random_engine generator;
-      generator.seed(rd());
-      std::normal_distribution<> d(0, resultSet.size());
+       int dgen=rand() % (resultSet.size());
       std::advance(iter, d(generator));
-       minIndex=*iter;
+       minIndex=(*(iter));
       resultSet.clear();
     }
    // densitympz.showwithreminder(meddlyout);
