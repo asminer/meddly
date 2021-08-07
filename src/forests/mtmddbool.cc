@@ -271,7 +271,7 @@ generator.seed( rd() );
        if(resultSet.size()>0){
        std::set<int>::iterator iter = resultSet.begin();
        int dgen=rand() % (resultSet.size());
-      std::advance(iter, d(generator));
+      std::advance(iter, dgen);
        minIndex=(*(iter));
       resultSet.clear();
     }
