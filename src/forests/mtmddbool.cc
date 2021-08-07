@@ -500,7 +500,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
 {
     if(option==1) return;
     printf("HunderApproximate\n" );
-
+    srand(time(0));
          clock_t start, end;
          start = clock();
         FILE_output meddlyout(stdout);
@@ -618,6 +618,9 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
             // printf("**IN WHILE LOOP\n" );
             mpz_object densitympz;
             densitympz.setValue(LONG_MAX);
+            std::set<int> resultSet;
+            mpz_object resultsetValue;
+            resultsetValue.setValue(LONG_MAX);
             minIndex=0;
             for(int i=0;i<=(int)maxid;i++){
 
@@ -636,11 +639,54 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
                     bool is_in = removedNode.find(i) != removedNode.end();
                     bool neverDelete_isin = neverdelete.find(i) != neverdelete.end();
                     if(!is_in && !neverDelete_isin){
-                    minIndex=i;
-                    arrdensity[i].copyInto(densitympz);
-                    densitympz.setReminder(arrdensity[i].rdvalue);
+                        if(resultSet.size()>0){
+                            if((option==0)||(option==3 && option3densitycheck)){
+                                if(resultsetValue.compare(resultsetValue,arrdensity[i])==0){
+                                    resultSet.insert(i);
+                                    arrdensity[i].copyInto(resultsetValue);
+                                    resultsetValue.setReminder(arrdensity[i].rdvalue);
+                                }else{
+                                    resultSet.clear();
+                                    resultSet.insert(i);
+                                     arrdensity[i].copyInto(densitympz);
+                                     densitympz.setReminder(arrdensity[i].rdvalue);
+                                    arrdensity[i].copyInto(resultsetValue);
+                                    resultsetValue.setReminder(arrdensity[i].rdvalue);
+                                }
+                            }else if((option==2)||(option==3 && !option3densitycheck)){
+                                if(resultsetValue.compare(resultsetValue,arrdensity[i])==0){
+                                    resultSet.insert(i);
+                                    arrdensity[i].copyInto(resultsetValue);
+                                    resultsetValue.setReminder(arrdensity[i].rdvalue);
+                                }else{
+                                    resultSet.clear();
+                                    arrdensity[i].copyInto(densitympz);
+                                    densitympz.setReminder(arrdensity[i].rdvalue);
+                                    resultSet.insert(i);
+                                    arrdensity[i].copyInto(resultsetValue);
+                                    resultsetValue.setReminder(arrdensity[i].rdvalue);
+                                }
+                            }
+                        }else{
+                           resultSet.insert(i);
+                           arrdensity[i].copyInto(resultsetValue);
+                           arrdensity[i].copyInto(densitympz);
+                           densitympz.setReminder(arrdensity[i].rdvalue);
+                           resultsetValue.setReminder(arrdensity[i].rdvalue);
+                        }
+
+                    // minIndex=i;
+                    // arrdensity[i].copyInto(densitympz);
+                    // densitympz.setReminder(arrdensity[i].rdvalue);
                     }
                 }
+            }
+            if(resultSet.size()>0){
+               std::set<int>::iterator iter = resultSet.begin();
+               int dgen=rand() % (resultSet.size());
+              std::advance(iter, dgen);
+               minIndex=(*(iter));
+              resultSet.clear();
             }
             if(minIndex!=0){
 
