@@ -946,7 +946,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
    #ifdef DBG_MTMDD
     printf("BEfore RNA %d RNB %d Union %d, minlvl %d\n",removedNodeA.size(),removedNodeB.size(),s.size(),minlvl );
     #endif
-    printf("Cardinality before RD %ld\n", belowcount[e.getNode()]);
+    printf("Cardinality before RD %lu\n", belowcount[e.getNode()]);
     int merged=RemoveDuplicateSet(minlvl,levels,map,e,removedNodeA,removedNodeB);
     // if(belowcount!=0)delete[] belowcount; else {printf("ERRR belowcount\n"); getchar();}
     // maxid=e.getLastHandle();
