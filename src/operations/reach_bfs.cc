@@ -23,7 +23,8 @@
 #endif
 #include "../defines.h"
 #include "reach_bfs.h"
-
+#include <list>
+#include <algorithm>
 // #define DEBUG_BFS
 // #define VERBOSE_BFS
 // #define BFSDFS
@@ -675,6 +676,12 @@ start = clock();
   long iters = 0;
   FILE_OUTPUT verbose(stderr);
 #endif
+std::list<std::pair<long int ,int>> PairStateNode;
+std::pair<long int ,int> lastBFSStateNode;
+int BFSbetween=0;
+//std::list<long int> stateCount;
+//std::list<int> nodeCount;
+bool oneMoreBFS=false;
   while (prevReachable != reachableStates) {
       // printf("XXXXXIt Done0000\n" );
       // R.show(meddlyout,0);
@@ -709,8 +716,10 @@ start = clock();
     front.show(debug, 2);
 #endif
     unionOp->computeDDEdge(reachableStates, front, reachableStates, userFlag);
+    int currentNC=reachableStates.getNodeCount();
     printf("before %d\n",reachableStates.getNodeCount() );
-    printf("cardbefore %f\n",reachableStates.getCardinality() );
+    long currentRS=reachableStates.getCardinality();
+    printf("cardbefore %f\n",currentRS );
 
     #ifdef iterationcount
     if(reachableStates.getNodeCount()>maxThreshold){
@@ -720,8 +729,113 @@ start = clock();
     return;
     }
     #endif
+
     // reachableStates.getForest()->underApproximate(reachableStates,minThreshold,maxThreshold,0);
-    reachableStates.getForest()->HeuristicUnderApproximate(reachableStates,minThreshold,maxThreshold,desiredPercentage,optionsForUA,deletedApproach, rootStatePercentage);
+    /*if(reachableStates.getNodeCount()>maxThreshold && updatePercentage){
+        if(lastRS>0 && pprercentage>0){
+            if(lastRS<currentRS){;}
+            else if(lastRS==currentRS){
+                if(lastNC<currentNC){
+                    desiredPercentage-=pprercentage;
+                }
+                if(lastNC>currentNC){
+                    desiredPercentage+=pprercentage;
+                }
+                if(lastNC==currentNC){
+                     printf("this approach might not works!\n" );
+                     getchar();
+                }
+
+            }else if(lastRS>currentRS){
+                desiredPercentage-=pprercentage;
+            }
+
+        }
+        pprercentage=currentRS/lastRS;
+        lastRS=currentRS;
+        lastNC=currentNC;
+
+    }*/
+    // reachableStates.getForest()->HeuristicUnderApproximate(reachableStates,minThreshold,maxThreshold,desiredPercentage,optionsForUA,deletedApproach, rootStatePercentage);
+    long int getcard=reachableStates.getCardinality();
+      int getnode=reachableStates.getNodeCount();
+      if(oneMoreBFS){
+          if(lastBFSStateNode.first<getcard){
+              printf("More state!\n" );
+              if(lastBFSStateNode.second<getnode){
+                  printf("More node!" );
+                  return;
+                  // getchar();
+              }else{
+                  printf("LESS node!->good" );
+                  // getchar();
+              }
+          }
+          else{
+              printf("LESS state!\n" );
+              // getchar();
+          }
+      }
+      else{
+      auto it=std::find(PairStateNode.begin(),PairStateNode.end(),std::make_pair(getcard,getnode));
+      if(it!=PairStateNode.end()){
+          printf("Might be stuck!\n" );
+          oneMoreBFS=true;
+          lastBFSStateNode=std::make_pair(getcard,getnode);
+          // getchar();
+      }
+      }
+      /*auto it = std::find(stateCount.begin(), stateCount.end(), getcard);
+      if(it != stateCount.end()){
+          // int dist=std::distance(stateCount.begin(), it);
+          auto itn = std::find(nodeCount.begin(), nodeCount.end(),getnode);
+          if(itn != nodeCount.end()){
+          // if(nodeCount[dist]==getno
+
+              std::srand(time(0)); // use current time as seed for random generator
+              float random_variable = std::rand()%100;
+              float random_variable2 = std::rand()%100;
+              printf("Might be stuck! %f %f\n",random_variable,random_variable2 );
+              getchar();
+              if(random_variable2>50){
+                  desiredPercentage-=0.1;
+              }
+              else{
+                  if(random_variable>50)
+                  minThreshold=(int)(0.90*minThreshold);
+                  else{
+                      minThreshold=(int)(0.95*minThreshold);
+                  }
+              }
+          }
+      }
+      */
+      if(reachableStates.getNodeCount() >maxThreshold && oneMoreBFS==false ){
+          PairStateNode.push_back(std::make_pair(getcard,getnode));
+          // stateCount.push_back(getcard);
+          // nodeCount.push_back(getnode);
+      }
+
+      // reachableStates.getForest()->underApproximate(reachableStates,minThreshold,maxThreshold,0);
+
+      if(oneMoreBFS==false)
+      {
+          long originalminThreshold=minThreshold;
+          if(BFSbetween==1){
+              // minThreshold=(int)(0.90*minThreshold);
+              // desiredPercentage-=0.1;
+              // maxThreshold=maxThreshold+ (int)(0.01*maxThreshold);
+          }
+          reachableStates.getForest()->HeuristicUnderApproximate(reachableStates,minThreshold,maxThreshold,desiredPercentage,optionsForUA,deletedApproach, rootStatePercentage);
+          minThreshold=originalminThreshold;
+          BFSbetween=0;
+      }else{
+          BFSbetween++;
+      }
+
+      /*else{
+          oneMoreBFS=false;
+      }*/
     // Option 0 is minThreshold and maxThreshold
     // Option 2 is maxThreshold and remove until all nodes with density < rootdensity*desiredPercentage is deleted
     // Option 3 is maxThreshold and remove until
