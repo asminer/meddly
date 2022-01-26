@@ -27,7 +27,8 @@
 #include <set>
 #include <map>
 //#include "mpz_object.h"
-
+// #define HRec
+ #define HTrav
 // #define DEBUG_AC
 
 namespace MEDDLY {
@@ -317,32 +318,77 @@ if(card<1)
     throw error(error::INVALID_SEQUENCE, __FILE__, __LINE__);
 }
 
-    // explored=new bool[card];
+    explored=new bool[card];
     incomingedgecountHU=new int[card];
+    #ifdef HRec
     LSA=new int[card];
     firstParent= new int[card];
     setToRoot= new bool[card];
     singleParent= new bool[card];
-    // lastPosition=new int[card];
-    // startInterval= new int[card];
-    // stopInterval=new int[card];
-    if(/*explored==0 ||*/ incomingedgecountHU==0/* || lastPosition==0||startInterval==0|| stopInterval==0*/)
+    #endif
+    #ifdef HTrav
+    lastPosition=new int[card];
+    startInterval= new int[card];
+    stopInterval=new int[card];
+    blockedBy= new int[card];
+    #endif
+    #ifdef HRec
+    if(explored==0)
     {printf("ERROR IN making arrays\n" ); char c=getchar();}
+    #endif
+    #ifdef HTrav
+    if(explored==0 || incomingedgecountHU==0 || lastPosition==0||startInterval==0|| stopInterval==0)
+    {printf("ERROR IN making arrays\n" ); char c=getchar();}
+    #endif
     for(int i=0;i<card;i++)
     {
-        // explored[i]=false;
+         explored[i]=false;
         incomingedgecountHU[i]=0;
+        #ifdef HRec
         firstParent[i]=-1;
         setToRoot[i]=false;
         singleParent[i]=true;
         LSA[i]=-1;
-        // lastPosition[i]=0;
-        // startInterval[i]=0;
-        // stopInterval[i]=0;
+        #endif
+        #ifdef HTrav
+         lastPosition[i]=0;
+         startInterval[i]=0;
+         stopInterval[i]=0;
+         blockedBy[i]=0;
+         #endif
     }
     for(int i=0;i<card;i++){
     incomingedgecountHU[i]=incomingedgecount[i];
     }
+    #ifdef HTrav
+    pset = new std::set<int>[card];
+    for(int i=0;i<card;i++){
+    pset[i].clear();
+    }
+ // res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode(),pset );
+
+        res = compute_rt(argF->getDomain()->getNumVariables(), arg.getNode() );
+        // getchar();
+        // getchar();
+ // printf("COMPUTED %d\n",card );
+ // printf("***HU***\n" );
+ // for(int i=0;i<=(int)card;i++){
+ //  printf("HU[%d]= \t", i);
+ //    std::set<int> rset=highestunique[i];
+ //    for (auto it=rset.begin(); it != rset.end(); ++it){
+ //       printf(", %d", *it);
+ //
+ //   }
+ //
+ //   // printf("[%d, \t %d ,\t %d ]\t \n",startInterval[i],stopInterval[i],lastPosition[i] );
+ //     printf("\n" );
+ //  }
+ //  getchar();
+ //  getchar();
+ //  printf("**HU****\n" );
+
+    #endif
+    #ifdef HRec
     parents = new std::set<int>[card];
     initialize(argF->getDomain()->getNumVariables(), arg.getNode(),arg.getNode());
     // printf("Initialize completed\n" );
@@ -373,15 +419,39 @@ if(card<1)
             }
         }
     }
+
+    // printf("***HU-REC***\n" );
+    // for(int i=0;i<=(int)card;i++){
+    //  printf("HU[%d]= \t", i);
+    //    std::set<int> rset=highestunique[i];
+    //    for (auto it=rset.begin(); it != rset.end(); ++it){
+    //       printf(", %d", *it);
+    //
+    //   }
+    //
+    //   // printf("[%d, \t %d ,\t %d ]\t \n",startInterval[i],stopInterval[i],lastPosition[i] );
+    //     printf("\n" );
+    //  }
+    //  getchar();
+    //  getchar();
     cache.clear();
-     delete[] parents;//=NULL;
+
+    #endif
+
      delete[] incomingedgecountHU;
+     #ifdef HRec
+     delete[] parents;//=NULL;
      delete[] LSA;
      delete[] setToRoot;
      delete[] singleParent;
      delete[]firstParent;
-     // delete[] stopInterval;
-     // delete[] lastPosition;
+     #endif
+     #ifdef HTrav
+     delete[] startInterval;
+     delete[] stopInterval;
+     delete[] lastPosition;
+     delete[] blockedBy;
+     #endif
 
 #ifdef DEBUG_AC
      for(int i=0;i<card;i++)
@@ -452,27 +522,36 @@ if(card<1)
     */
    // double compute_r(int ht, node_handle a,std::set<int>);
    void compute_r(int ht, node_handle a,node_handle root);
+   double compute_rt(int ht, node_handle a);
    void initialize(int ht, node_handle a, node_handle root);
 
     // double compute_rn(int ht, node_handle a);
-   // std::set<int> CheckInterval(std::set<int> pset,node_handle a );
-   // std::set<int> CheckInterval(node_handle a );
+   // std::set<int> CheckInterval(std::set<int>* pset,node_handle a );
+    std::set<int> CheckInterval(node_handle a );
 
  protected:
-     // bool* explored;
-     // std::set<int> pset;
-     std::set<int>* parents;
+      bool* explored;
+
+
 
      int* incomingedgecountHU;
+     #ifdef HRec
+      std::set<int>* parents;
      int* LSA;
      bool* setToRoot;
      bool* singleParent;
      int* firstParent;
-     // int* lastPosition;
-     // int* startInterval;
-     // int* stopInterval;
-     // int c=1;
+     #endif
+     #ifdef HTrav
+      std::set<int>* pset;
+     int* lastPosition;
+     int* startInterval;
+     int* stopInterval;
+     int* blockedBy;
+     #endif
+     int c=1;
   inline int PairLowestSeparatorAbove(node_handle firstParent,node_handle secondParent,node_handle root){
+      #ifdef HRec
       int firstParentLVL=argF->getNodeLevel(firstParent);
       int secondParentLVL=argF->getNodeLevel(secondParent);
       int rootLVL=argF->getNodeLevel(root);
@@ -499,8 +578,10 @@ if(card<1)
       else{
           return PairLowestSeparatorAbove(LSA[firstParent],LSA[secondParent],root);
       }
+      #endif
   }
   inline int LowestSeparatorAboveSet(int lvl,std::set<int> parents,node_handle root){
+      #ifdef HRec
       int firstParent=0;
       int secondParent=0;
       int kdn = lvl - 1;
@@ -550,6 +631,7 @@ if(card<1)
       }
        // unpacked_node::recycle(A);
       return firstParent;
+     #endif
   }
 
   inline void updateInsert(node_handle a, node_handle b){
@@ -591,48 +673,155 @@ if(card<1)
     return b;
   }
  };
- // std::set<int> MEDDLY::hu_mdd_real::CheckInterval(std::set<int> pset,node_handle a ){
-//  std::set<int> MEDDLY::hu_mdd_real::CheckInterval(node_handle a ){
-//
-// std::set<int> shouldBeRemoved;
-// // printf("COMING CheckInterval %d \n",a );
-// if(a==3210){
+ // std::set<int> MEDDLY::hu_mdd_real::CheckInterval(std::set<int>* pset,node_handle a ){
+  std::set<int> MEDDLY::hu_mdd_real::CheckInterval(node_handle a ){
+#ifdef HTrav
+std::set<int> shouldBeRemoved;
+// printf("COMING CheckInterval %d \n",a );
+// if(a==1535){
 //     for (auto l: pset[a] ){
-//         printf("3210 3210 %d\n",l );
+//         printf("1535 pset %d\n",l );
 //     }
 //     getchar();
-// }
-// for (auto l: pset[a] ){
-//     // printf("L %d \t %d \t %d \t %d\n",l,  startInterval[l],stopInterval[l],lastPosition[l]);
-//     // printf("P %d \t %d \t %d \t %d \n",a,  startInterval[a],stopInterval[a],lastPosition[a]);
-//
-//     if((startInterval[l]>=startInterval[a])&&(stopInterval[l]<=stopInterval[a])
-//     &&(((lastPosition[l]!=0)&&(lastPosition[l]>=startInterval[a])&&(lastPosition[l]<=stopInterval[a]))||(lastPosition[l]==0))){
-//         // printf("TRUE\n" );
-//         if(l==353)
-//         {
-//             printf("added l %d to a %d\n",l,a );
-//             printf("L IEC %d\t %d \t %d \t %d \t %d\n",l,  incomingedgecountHU[l],startInterval[l],stopInterval[l],lastPosition[l]);
-//             printf("P IEC %d\t %d \t %d \t %d \t %d \n",a, incomingedgecountHU[a], startInterval[a],stopInterval[a],lastPosition[a]);
-//
-//         }
-//
-//         updateInsert(a,l);
-//         shouldBeRemoved.insert(l);
-//     }
-//
-// }
-// // printf("END CheckInterval %d\n",a );
-//
-// return shouldBeRemoved;
-//
-//
 //  }
+for (auto l: pset[a] ){
+    // if(a==1535){
+    // printf("L %d \t ST %d \t SP %d \t LP %d BB %d, INCBB %d\n",l,  startInterval[l],stopInterval[l],lastPosition[l],blockedBy[l],incomingedgecountHU[blockedBy[l]]);
+    // printf("P %d \t ST %d \t SP %d \t LP %d BB %d\n",a,  startInterval[a],stopInterval[a],lastPosition[a],blockedBy[a]);
+    // }
+    if((blockedBy[l]==0)||(blockedBy[l]!=0 && incomingedgecountHU[blockedBy[l]]==0)||(argF->getNodeLevel(l)+1==argF->getNodeLevel(a)))
+    if((startInterval[l]>=startInterval[a])&&(stopInterval[l]<=stopInterval[a])
+    &&(((lastPosition[l]!=0)&&(lastPosition[l]>=startInterval[a])&&(lastPosition[l]<=stopInterval[a]))||(lastPosition[l]==0))){
+        // printf("TRUE\n" );
+        // if(a==1535)
+        // {
+        //     printf("added l %d to a %d\n",l,a );
+        //     printf("L IEC %d\t %d \t %d \t %d \t %d\n",l,  incomingedgecountHU[l],startInterval[l],stopInterval[l],lastPosition[l]);
+        //     printf("P IEC %d\t %d \t %d \t %d \t %d \n",a, incomingedgecountHU[a], startInterval[a],stopInterval[a],lastPosition[a]);
+        //
+        // }
 
- // double MEDDLY::hu_mdd_real::compute_r(int k, node_handle a,std::set<int>pset)
+        updateInsert(a,l);
+        shouldBeRemoved.insert(l);
+    }
+
+}
+// printf("END CheckInterval %d\n",a );
+
+return shouldBeRemoved;
+
+#endif
+ }
+
+  double MEDDLY::hu_mdd_real::compute_rt(int k, node_handle a){
+      #ifdef HTrav
+       // printf("COMING TO hu_mdd_real traverse \n" );
+ if(explored[a]==1){
+     // printf("EXP %d is true\n",a-1 );
+     // printf("else  %d\n",a-1);
+
+     lastPosition[a]=c;
+     c++;
+    //  for (auto it=pset[a-1].begin(); it != pset[a-1].end(); ++it)
+    // printf("else Pset is %d\n",*it );
+    //  printf("Done else  %d\n",a-1);
+ }else{
+
+     // printf("C is %d\n",c );
+     startInterval[a]=c;
+     // printf("startInterval[ %d ] =%d\n",a-1,c );
+     c++;
+     int kdn = k - 1;
+     unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+     for (unsigned z = 0; z < A->getNNZs(); z++) {
+         if (kdn>0)
+         {
+             //FOR Testing
+             // if(a==1534)
+             // printf("1534 children %d, lvl %d\n",A->d(z),kdn );
+             // if(A->d(z)==1181)
+             // printf("Parent 1181 %d lvl %d\n",a, k);
+              //FOR Testing
+            incomingedgecountHU[A->d(z)]--;
+            // std::set<int> childpset;
+            // compute_r(k-1,A->d(z),childpset);
+            compute_rt(k-1,A->d(z));
+            if(blockedBy[a]!=0){
+                //FOR Testing
+                // if(A->d(z)==1528)
+                // printf("blockedBy %d\n",a );
+                //FOR Testing
+                if((blockedBy[A->d(z)]==0)||(blockedBy[A->d(z)]!=0&& argF->getNodeLevel(blockedBy[a])>argF->getNodeLevel(blockedBy[A->d(z)]))){
+                    blockedBy[A->d(z)]=blockedBy[a];
+                    //FOR Testing
+                    if(A->d(z)==1528)
+                    printf("blockedBy set to %d\n",blockedBy[a] );
+                    //FOR Testing
+                }
+            }
+            if(incomingedgecount[a]!=0){
+                //FOR Testing
+                // if(A->d(z)==1528)
+                // printf("incomingedgecount[a] %d %d\n",a, incomingedgecount[a] );
+                //FOR Testing
+                if((blockedBy[A->d(z)]==0)||(blockedBy[A->d(z)]!=0&& argF->getNodeLevel(a)>argF->getNodeLevel(blockedBy[A->d(z)]))){
+                    blockedBy[A->d(z)]=a;
+                    //FOR Testing
+                    // if(A->d(z)==1528)
+                    // printf("blockedBy set to %d\n",a );
+                    //FOR Testing
+                }
+            }
+            if(incomingedgecountHU[A->d(z)]==0)
+            {
+                //FOR Testing
+                // if(A->d(z)==1528)
+                // printf("ADDED %d to pset of %d \n",int(A->d(z)), a );
+                //FOR Testing
+                // pset.insert(int(A->d(z))-1);
+                // pset.insert(childpset.begin(), childpset.end());
+                pset[a].insert(A->d(z));
+                pset[a].insert(pset[A->d(z)].begin(), pset[A->d(z)].end());
+                //FOR Testing
+               //  if(A->d(z)==1528)
+               //
+               //  for (auto it=pset[a].begin(); it != pset[a].end(); ++it)
+               // printf("Pset %d is**** %d\n",a,*it );
+               //FOR Testing
+
+                 }
+             }
+ }
+ stopInterval[a]=c;
+ // printf("stopInterval[ %d ] =%d\n",a-1,c );
+
+ c++;
+ explored[a]=true;
+ // printf("explored[ %d ] is true\n",a-1 );
+ unpacked_node::recycle(A);
+}
+if(incomingedgecountHU[a]==0)
+{
+ // printf("incomingedgecountHU %d  is ZERO\n", a-1);
+ std::set<int> result;
+//  for (auto it=pset[a-1].begin(); it != pset[a-1].end(); ++it)
+// printf("Pset is %d\n",*it );
+// std::set<int> toRemove= CheckInterval(pset,a-1);
+std::set<int> toRemove= CheckInterval(a);
+
+for (auto r: toRemove ){
+
+pset[a].erase(r);
+     }
+ // }
+           }
+      return 0;
+#endif
+  }
  void MEDDLY::hu_mdd_real::initialize(int k, node_handle a, node_handle root)
 
  {
+     #ifdef HRec
     int kdn = k - 1;
     unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
     for (unsigned z = 0; z < A->getNNZs(); z++) {
@@ -661,10 +850,12 @@ if(card<1)
         }
     }
     unpacked_node::recycle(A);
+    #endif
  }
 
  void MEDDLY::hu_mdd_real::compute_r(int k, node_handle a,node_handle root)
  {
+     #ifdef HRec
     int kdn = k - 1;
 
     unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
@@ -696,6 +887,7 @@ if(card<1)
         }
     }
     unpacked_node::recycle(A);
+    #endif
  }
 
      // printf("COMING TO hu_mdd_real \n" );
