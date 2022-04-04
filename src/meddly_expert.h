@@ -645,7 +645,7 @@ public:
    @param  output_vars               Output variables from this node.
    @param  dep_vars                      Dependent variables of this node. \\ subset of input and output variables
    */
- gen_relation_node(std::string signature, forest* f, int level, node_handle down, long* constant_wgts, int* dep_vars, int noof_dep_vars);
+ gen_relation_node(unsigned long signature, forest* f, int level, node_handle down);
  virtual ~gen_relation_node();
   
   // the following should be inlined in meddly_expert.hh
@@ -656,7 +656,7 @@ public:
   /** A signature for this function. Signature is built by the user
    based on the function encoded by thie piece.
    */
-  std::string getSignature() const;
+  unsigned long getSignature() const;
   
   /** The state variable affected by this part of the relation.
    */
@@ -678,7 +678,30 @@ public:
    */
   void setID(rel_node_handle ID);
   
-  /* On-time definition parameters */
+  /* Special case non-dependent */
+  /* Special case non dependent fast*/
+  /** The token_update array for this piece.
+   */
+  long* getTokenUpdate() const;
+  
+  /** Set the token_update array for this piece.
+   */
+  void setTokenUpdate(long* token_update);
+  /** The size of token_update array for this piece.
+   */
+  long getPieceSize() const;
+  
+  /** Set the size of token_update array for this piece.
+   */
+  void setPieceSize(long pS);
+  
+  /** Expand the tokenUpdate array as the variable increases
+   */
+  void expandTokenUpdate(long i);
+  
+  /** Set the tokenUpdate array at location i to val
+   */
+  void setTokenUpdateAtIndex(long i,long val);
   
   /** Get the set of input variables  for this piece.
    */
@@ -739,26 +762,28 @@ public:
   /** Get cartesian product of valid-free spaces for node's function evaluation.
       @param forest : to get the domain
    */
-  virtual std::set<std::vector<long>> buildFreeValues(MEDDLY::expert_forest* resF);
+  virtual long* buildFreeValues(MEDDLY::forest* resF, long* inp_values, long i, int& jsize);
   
   /** If the variable at this level has value i, inputs are inp_val and outputs are op_val,
     what should the new value be?
     j will be calculated using use only values of dep_vars
    */
-  virtual long delta(std::vector<long> v_in, std::vector<long> v_free, long i);
+  virtual long delta(long* v_in, long* v_free, long i);
   
   /** If the variable at this level has value i, inputs are inp_val and outputs are op_val,
   which output variables' values should be passed on?
    set of output_vars of this place is known, those are selected are passed.
   */
-  virtual std::vector<long> omega(std::vector<long> v_in, std::vector<long> v_free, long i);
+  virtual long* omega(long* v_in, long i, long j);
   
   /** Determine if this node is equal to another one.
    */
   virtual bool equals(const gen_relation_node* n) const;
+
+  virtual long extractOwnValue(long* input_values);
   
 private:
-  std::string signature;
+  unsigned long signature;
   expert_forest* f;
   
   /* dep_vars = level + some input vars + some output vars */
@@ -773,6 +798,9 @@ private:
   int noof_free;
   long* constant_wgts;
   
+  long* token_update;
+  long piece_size;
+
   rel_node_handle down;
   rel_node_handle ID;
   

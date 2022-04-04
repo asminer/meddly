@@ -57,11 +57,14 @@ MEDDLY::satmdimpl_opname::~satmdimpl_opname()
 }
 
 
-MEDDLY::gen_relation_node::gen_relation_node(std::string sign1, forest* f, int lvl, node_handle d, long* const_wgts, int* d_vars, int noof_dep_vars) : f(static_cast<expert_forest*>(f))
+MEDDLY::gen_relation_node::gen_relation_node(unsigned long sign1, forest* f, int lvl, node_handle d) : f(static_cast<expert_forest*>(f))
 {
   signature  = sign1;
   level = lvl;
   down = d;
+  piece_size = 0;
+  token_update = NULL;
+  #if 0
   if(const_wgts != NULL)
      {
        constant_wgts = (long*)malloc(sizeof(long)*3);
@@ -78,29 +81,37 @@ MEDDLY::gen_relation_node::gen_relation_node(std::string sign1, forest* f, int l
   {
     dep_vars[i] = d_vars[i];
   }
+  #endif
 }
 
 MEDDLY::gen_relation_node::~gen_relation_node()
 {
 }
 
-std::set<std::vector<long>> MEDDLY::gen_relation_node::buildFreeValues(MEDDLY::expert_forest* resF)
+long* MEDDLY::gen_relation_node::buildFreeValues(MEDDLY::forest* resF, long* inp_values, long i, int& jsize)
 {
   //to be defined for the example you use & comment this definition
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
-long MEDDLY::gen_relation_node::delta(std::vector<long> v_in, std::vector<long> v_free, long i)
+long MEDDLY::gen_relation_node::delta(long* v_in, long* v_free, long i)
 {
   //to be defined for the example you use & comment this definition
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
-std::vector<long> MEDDLY::gen_relation_node::omega(std::vector<long> v_in, std::vector<long> v_free, long i)
+long* MEDDLY::gen_relation_node::omega(long* v_in, long i, long j)
 {
   //to be defined for the example you use & comment this definition
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
+
+
+long MEDDLY::gen_relation_node::extractOwnValue(long* input_values)
+{
+   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
 
 bool
 MEDDLY::gen_relation_node::equals(const gen_relation_node* n) const
@@ -108,20 +119,7 @@ MEDDLY::gen_relation_node::equals(const gen_relation_node* n) const
   
   //bool const_flag = (constant_wgts[0] == n->getEnable()) && (constant_wgts[1] == n->getInhibit()) && (constant_wgts[2] == n->getFire());
   
-  
-  bool dep_flag = (noof_deps == n->getCountDep());
-  
-  if(dep_flag>0)
-  {
-    for(int i = 0; i < noof_deps; i++ )
-    {
-      dep_flag = dep_flag && (dep_vars[i] == n->getDepVariables()[i]);
-      
-      if(!dep_flag) break;
-    }
-  }
-  
-  if( (signature == n->getSignature()) && (level == n->getLevel()) && (down == n->getDown()) && dep_flag )
+  if( (signature == n->getSignature()) && (level == n->getLevel()) && (down == n->getDown()) )
   {
     return true;
   }
@@ -129,6 +127,31 @@ MEDDLY::gen_relation_node::equals(const gen_relation_node* n) const
   {
     return false;
   }
+}
+
+void
+MEDDLY::gen_relation_node::expandTokenUpdate(long i)
+{
+  if(getPieceSize()==0)
+  {
+    token_update = (long*)malloc(1*sizeof(long));
+    piece_size = 1;
+    token_update[0]=NOT_KNOWN;
+  }
+  if(i>0)
+  {
+    token_update = (long*)realloc(token_update,(i+1)*sizeof(long));
+    for(int j = piece_size;j<=i;j++)
+      token_update[j]=NOT_KNOWN;
+    piece_size = i+1;
+  }
+}
+
+void
+MEDDLY::gen_relation_node::setTokenUpdateAtIndex(long i,long val)
+{
+  MEDDLY_DCASSERT(i<getPieceSize());
+  token_update[i] = val;
 }
 
 // ******************************************************************
@@ -307,7 +330,7 @@ MEDDLY::satmdimpl_opname::md_implicit_relation::~md_implicit_relation()
 }
 
 int setOutputVariablesLocally(int* input_vars, int noof_inp, std::set<int> free_vars,
-                        std::map<std::pair<int,int>, std::set<int>> &EL_set, int e_no, int lvl, int** output_vars) {
+                        std::map< std::pair<int,int>, std::set<int> > &EL_set, int e_no, int lvl, int** output_vars) {
   
   std::set<int> op_set;
   
@@ -316,11 +339,11 @@ int setOutputVariablesLocally(int* input_vars, int noof_inp, std::set<int> free_
     if(*i < lvl) op_set.insert(*i);
     else
     {
-      auto it = EL_set[{e_no,*i}].find(lvl);
-      if(it != EL_set[{e_no,*i}].end()) // curr_level is used, erase it
+      auto it = EL_set[std::make_pair(e_no,*i)].find(lvl);
+      if(it != EL_set[std::make_pair(e_no,*i)].end()) // curr_level is used, erase it
       {
-        EL_set[{e_no,*i}].erase(it);
-        if(!EL_set[{e_no,*i}].empty()) op_set.insert(*i);
+        EL_set[std::make_pair(e_no,*i)].erase(it);
+        if(!EL_set[std::make_pair(e_no,*i)].empty()) op_set.insert(*i);
       }
     }
   }
@@ -330,21 +353,21 @@ int setOutputVariablesLocally(int* input_vars, int noof_inp, std::set<int> free_
     if(input_vars[i] < lvl) op_set.insert(input_vars[i]);
     else if(input_vars[i] == lvl)
     {
-      if(!EL_set[{e_no,input_vars[i]}].empty()) op_set.insert(input_vars[i]);
+      if(!EL_set[std::make_pair(e_no,input_vars[i])].empty()) op_set.insert(input_vars[i]);
       
     }else
     {
-      auto it = EL_set[{e_no,input_vars[i]}].find(lvl); // Am I using it and/or relaying it.
-      if(it != EL_set[{e_no,input_vars[i]}].end()) // curr_level is used, erase it
+      auto it = EL_set[std::make_pair(e_no,input_vars[i])].find(lvl); // Am I using it and/or relaying it.
+      if(it != EL_set[std::make_pair(e_no,input_vars[i])].end()) // curr_level is used, erase it
       {
-        EL_set[{e_no,input_vars[i]}].erase(it);
-        if(!EL_set[{e_no,input_vars[i]}].empty()) op_set.insert(input_vars[i]);
+        EL_set[std::make_pair(e_no,input_vars[i])].erase(it);
+        if(!EL_set[std::make_pair(e_no,input_vars[i])].empty()) op_set.insert(input_vars[i]);
       }
     }
   }
   
 
-  if(!EL_set[{e_no,lvl}].empty()) op_set.insert(lvl);
+  if(!EL_set[std::make_pair(e_no,lvl)].empty()) op_set.insert(lvl);
   
   
   *output_vars = (int*)malloc(op_set.size()*sizeof(int));
@@ -373,15 +396,21 @@ MEDDLY::satmdimpl_opname::md_implicit_relation::registerEventNodes(gen_relation_
   // for current event ordered at "total_events"
   // Assign each level to the set of levels where it has usage(empty for now)
   for(int i = 1; i<=num_levels; i++)
-    event_level_affectlist.insert({std::make_pair(total_events,i), empty_set});
+    event_level_affectlist.insert(std::make_pair(std::make_pair(total_events,i), empty_set));
   
   for(int i = 0;i < sz; i++)
   {
+    int aff_where = nb[i]->getLevel();
+    int not_added = 0;
     for(int d = 0; d < nb[i]->getCountDep(); d++)
     {
-      event_level_affectlist[{total_events,nb[i]->getDepVariables()[d]}].insert(nb[i]->getLevel());
+      int l = nb[i]->getDepVariables()[d];
+      if(l>=aff_where)
+        event_level_affectlist[std::make_pair(total_events,l)].insert(aff_where);
+      else not_added++;
     }
   }
+
   //decide all params of the nodes
   for(int i = sz-1; i >= 0; i--)
   {
@@ -554,13 +583,13 @@ public:
   
 protected:
   inline compute_table::entry_key*
-  findResult(node_handle a, rel_node_handle b, std::vector<long> input_values, node_handle &c)
+  findResult(node_handle a, rel_node_handle b, long* input_values, int cnt_inp, node_handle &c)
   {
-    compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], input_values.size());
+    compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], cnt_inp);
     MEDDLY_DCASSERT(CTsrch);
     CTsrch->writeN(a);
     CTsrch->writeN(b);
-    for(int i = 0; i<input_values.size(); i++)
+    for(int i = 0; i<cnt_inp; i++)
     {
       CTsrch->writeL(input_values[i]);
     }
@@ -574,7 +603,7 @@ protected:
     CT0->recycle(CTsrch);
   }
   inline node_handle saveResult(compute_table::entry_key* Key,
-                                node_handle a, rel_node_handle b, std::vector<long> input_values, node_handle c)
+                                node_handle a, rel_node_handle b, long* input_values, node_handle c)
   {
     CTresult[0].reset();
     CTresult[0].writeN(c);
@@ -709,7 +738,7 @@ public:
                               satmdimpl_opname::md_implicit_relation* rel);
 protected:
   virtual void saturateHelper(unpacked_node& mdd);
-  node_handle recFire(node_handle mdd, rel_node_handle mxd, std::vector<long> inputs);
+  node_handle recFire(node_handle mdd, rel_node_handle mxd, long* inputs);
   
  };
 
@@ -719,23 +748,6 @@ MEDDLY::forwd_md_impl_dfs_by_events_mt::forwd_md_impl_dfs_by_events_mt(
 : common_md_impl_dfs_by_events_mt(opcode, rel)
 {
 }
-
-long extractOwnValue(MEDDLY::gen_relation_node* relNode, std::vector<long> input_values)
-{
-  int node_level = relNode->getLevel();
-  int no_of_inp = relNode->getCountInput();
-  int* ip_vars = relNode->getInputVariables();
-  for(int i = 0; i< no_of_inp; i++)
-  {
-    if(node_level==ip_vars[i])
-      return input_values[i];
-    else if(node_level>ip_vars[i])
-      return -1;
-  }
-  
-  return -1;
-}
-
 
 void MEDDLY::forwd_md_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 {
@@ -773,22 +785,19 @@ void MEDDLY::forwd_md_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         // Should this be calculated several times? or Can i precalculate and re-use it?
         // Do I use the full cartesian_product or just the news ones?
         //std::set<std::vector<long>> cart_prod = calculateCartesianProd(resF, Ru[ei]->getFreeVariables(), Ru[ei]->getCountFree(), rel);
-        std::set<std::vector<long>> cart_prod = Ru[ei]->buildFreeValues(resF);
+        int jsize = 0;
+        long* j_vector = Ru[ei]->buildFreeValues(resF, NULL, i, jsize);
+        for(int j_it = 0; j_it < jsize; j_it++){
+          long j = j_vector[j_it];
 
-        for(auto guess_it = cart_prod.begin(); guess_it != cart_prod.end(); guess_it++){
-          std::vector<long> empty_vector;
-          
-          int j = Ru[ei]->delta(empty_vector, *guess_it, i);
           if(j==-1) continue;
           if (j < nb.getSize() && -1==nb.d(j)) continue; // nothing can be added to this set
           
-          node_handle rec = recFire(nb.d(i), Ru[ei]->getDown(), Ru[ei]->omega(empty_vector, *guess_it, i));
-          
-          std::vector<long> whatis =Ru[ei]->omega(empty_vector, *guess_it, i);
+          node_handle rec = recFire(nb.d(i), Ru[ei]->getDown(), Ru[ei]->omega(NULL, i, j));
           
           if (rec == 0) continue;
           
-          //confirm local state
+          //confirm local stat
           rel->setConfirmedStates(level,j);
           
           if(j>=nb.getSize())
@@ -837,12 +846,14 @@ void MEDDLY::forwd_md_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
 // Same as post-image, except we saturate before reducing.
 MEDDLY::node_handle MEDDLY::forwd_md_impl_dfs_by_events_mt::recFire(
-                                                                 MEDDLY::node_handle mdd, rel_node_handle mxd, std::vector<long> input_values)
+                                                                 MEDDLY::node_handle mdd, rel_node_handle mxd, long* input_values)
 {
   // termination conditions
   if (mxd == 0 || mdd == 0) return 0;
   
   if (mxd==-1) {
+    if(input_values != NULL) return 0;
+
     if (arg1F->isTerminalNode(mdd)) {
       return resF->handleForValue(1);
     }
@@ -852,10 +863,15 @@ MEDDLY::node_handle MEDDLY::forwd_md_impl_dfs_by_events_mt::recFire(
   }
   
   gen_relation_node* relNode = arg2F->buildGenImplicitNode(mxd); // The relation node
+
+  if(relNode->getCountInput() > 0) {
+    if(input_values != NULL && input_values[0] == -1)
+      return 0;
+  }
   
   // check the cache
   node_handle result = 0;
-  compute_table::entry_key* Key = findResult(mdd, mxd, input_values, result);  // Place the inputs into this CT.
+  compute_table::entry_key* Key = findResult(mdd, mxd, input_values, relNode->getCountInput(), result);  // Place the inputs into this CT.
   if (0==Key) return result;
   
   #ifdef TRACE_RECFIRE
@@ -901,7 +917,7 @@ MEDDLY::node_handle MEDDLY::forwd_md_impl_dfs_by_events_mt::recFire(
     MEDDLY_DCASSERT(mxdLevel >= mddLevel);
     
     // does input_values have my own value??
-    int own_value = extractOwnValue(relNode, input_values);
+    int own_value = relNode->extractOwnValue(input_values);
     
     // Initialize mxd readers, note we might skip the unprimed level
     
@@ -914,13 +930,14 @@ MEDDLY::node_handle MEDDLY::forwd_md_impl_dfs_by_events_mt::recFire(
           // loop over mxd "columns"
           // loop over free values
           //std::set<std::vector<long>> cart_prod = calculateCartesianProd(resF, relNode->getFreeVariables(), relNode->getCountFree(), rel);
-          std::set<std::vector<long>> cart_prod = relNode->buildFreeValues(resF);
-          for(auto guess_it = cart_prod.begin(); guess_it != cart_prod.end(); guess_it++){
+          int jsize = 0;
+          long* j_vector = relNode->buildFreeValues(resF, input_values, i, jsize);
+          for(int j_it = 0;j_it < jsize; j_it++){
             
-          int j = relNode->delta(input_values, *guess_it, i);
+          long j = j_vector[j_it];
           if(j==-1) continue;
           
-          node_handle newstates = recFire(A->d(i), relNode->getDown(), relNode->omega(input_values, *guess_it, i));
+          node_handle newstates = recFire(A->d(i), relNode->getDown(), relNode->omega(input_values, i, j));
           if (0==newstates) continue;
           
           //confirm local state

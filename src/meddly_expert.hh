@@ -3116,7 +3116,7 @@ MEDDLY::satimpl_opname::implicit_relation::isConfirmedState(int level,int i)
 // *                 inlined  gen_relation_node methods             *
 // *                                                                *
 // ******************************************************************
-inline std::string
+inline unsigned long
 MEDDLY::gen_relation_node::getSignature() const
 {
   return signature;

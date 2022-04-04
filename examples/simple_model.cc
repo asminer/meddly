@@ -516,10 +516,11 @@ class param_rel_node : public MEDDLY::gen_relation_node
   std::vector<int> vars_out;
   long self_coeff;
   
+  std::set<long*> resultProdSet;
+  std::set<std::vector<long>> resultProd;
   
 public:
-  param_rel_node(std::string signature, MEDDLY::forest* f, int level, MEDDLY::node_handle down, long* const_wgts, int* dep_vars, int noof_dep_vars, long* coefficients, long own_coeff) : gen_relation_node(signature, f, level, down, const_wgts, dep_vars, noof_dep_vars)
-  {
+  param_rel_node(unsigned long signature, MEDDLY::forest* f, int level, MEDDLY::node_handle down, long* const_wgts, int* dep_vars, int noof_dep_vars, long* coefficients, long own_coeff) : gen_relation_node(signature, f, level, down){
     noofdep = noof_dep_vars;
     if(const_wgts != NULL)
     {
@@ -558,11 +559,11 @@ public:
   }
   
   
-  std::set<std::vector<long>> cartesianProductTwo(std::set<std::vector<long>> set_a, int var, MEDDLY::expert_forest* resF){
+  std::set<std::vector<long>> cartesianProductTwo(std::set<std::vector<long>> set_a, int var, MEDDLY::forest* resF){
     std::set<std::vector<long>> result;
     for (auto it = set_a.begin(); it!= set_a.end(); it++)
     {
-      MEDDLY::expert_domain* dom = static_cast<MEDDLY::expert_domain*>(resF->useDomain());
+      MEDDLY::domain* dom = (resF->useDomain());
       int set_b = dom->getVariableBound(var);
       for(int i = 0; i <set_b; i++){
         //*it = vector = element of a set
@@ -575,170 +576,29 @@ public:
   }
   
   
-  std::set<std::vector<long>> buildFreeValues(MEDDLY::expert_forest* resF) override
+  long* buildFreeValues(MEDDLY::forest* resF, long* inp_values, long i_own, int& jsize) override
   {
-    std::set<std::vector<long>> resultProd;
-     std::vector<long> empty_vector;
-    for(int i = 0; i<vars_free.size(); i++)
-     {
-       int var = vars_free[i];
-       MEDDLY::expert_domain* dom = static_cast<MEDDLY::expert_domain*>(resF->useDomain());
-       int dm = dom->getVariableBound(var);
-       if(i == 0){
-         for(int j = 0; j < dm ; j++)
-         {
-             std::vector<long> new_item;
-             new_item.push_back(j);
-             resultProd.insert(new_item);
-         }
-       } else {
-         resultProd = cartesianProductTwo(resultProd, var, resF);
-       }
-     }
-     if(resultProd.empty()) resultProd.insert(empty_vector);
-     return resultProd;
+    long* eVector;
+    return eVector; 
   }
   
-  long delta(std::vector<long> value_in, std::vector<long> value_free, long i) override
+  long delta(long* value_in, long* value_free, long i) override
   {
-    int expr = 0;
-    
-    int d_k = 0;
-    int i_k = 0;
-    int f_k = 0;
-    
-    if(constant_wgts!=NULL)
-    {
-      expr += constant_wgts[2] + constant_wgts[0];
-    }
-    /*
-    printf("\n here to get next of var%d:%d", this->getLevel(),i);
-    if(dep_variable.size()>0)printf("\n How many deps of this %d level? %d %d", this->getLevel(),dep_variable.size(),dep_variable[0]);
-    if(value_free.size()>0) printf("\n here to get next of freear?:%d (myvar:%d)", value_free[0], vars_free[0]);
-    if(value_in.size()>0) printf("\n here to get next of inpvar?:%d (myvar:%d)", value_in[0], vars_in[0]);
-    if(value_in.size()>1) printf("\n here to get next of inpvar?:%d (myvar:%d)", value_in[1], vars_in[1]);
-    if(vars_out.size()>1) printf("\n here to get outpvar is %d",vars_out[0]);
-    
-    for(int x=0;x<dep_variable.size();x++)
-    {
-      printf("\n I depend on variable %d", dep_variable[x]);
-    }
-     */
-    
-    while((d_k<dep_variable.size()) && (i_k<vars_in.size()) && (f_k<vars_free.size()))
-    {
-      if(dep_variable[d_k] < vars_free[f_k]) // dep must exist in vars_in
-      {
-        while(dep_variable[d_k] != vars_in[i_k])
-        {
-          i_k++;
-        }
-        expr += coeffs[d_k]*value_in[i_k];
-        d_k++;
-        i_k++;
-      }else if(dep_variable[d_k] == vars_free[f_k])
-      {
-        expr += coeffs[d_k]*value_free[f_k];
-        d_k++;
-        f_k++;
-      }
-    }
-    
-    if(d_k<dep_variable.size())
-    {
-      if(f_k<vars_free.size()) //remaining dependents must be free because those aren't in input
-      {
-        while(d_k<dep_variable.size()){
-        //printf("\n dep_variable[d_k=%d] = %d & free_vars[f_k=%d] = %d", d_k,dep_variable[d_k], f_k, vars_free[f_k]);
-        expr += coeffs[d_k]*value_free[f_k];
-        d_k++;
-        f_k++;
-        }
-      } else if (i_k<vars_in.size()) // some of the inputs cover the remaining dependents
-      {
-        while(d_k<dep_variable.size()){
-          if(dep_variable[d_k] == vars_in[i_k])
-          {
-           expr += coeffs[d_k]*value_in[i_k];
-           d_k++;
-           i_k++;
-          }else i_k++;
-        }
-      }
-    }
-    
-    int j = i*(1+self_coeff) + expr;
-     
-     return j>=0?j:-1;
+     return 0;
   }
   
-  std::vector<long> omega(std::vector<long> value_in, std::vector<long> value_free, long i) override
+  long* omega(long* value_in, long i, long j) override
   {
   
-     std::vector<long> value_out;
-    
-     int o_k = 0;
-     int i_k = 0;
-     int f_k = 0;
-    
-     while((o_k<vars_out.size()) && (i_k<vars_in.size()) && (f_k<vars_free.size()))
-     {
-       if(vars_out[o_k] < vars_free[f_k]) // op must exist in vars_in
-       {
-         while(vars_out[o_k] != vars_in[i_k])
-         {
-           i_k++;
-         }
-         value_out.push_back(value_in[i_k]);
-         o_k++;
-         i_k++;
-       }else if(vars_out[o_k] == vars_free[f_k])
-       {
-         value_out.push_back(value_free[f_k]);
-         o_k++;
-         f_k++;
-       }else if(vars_out[o_k] == this->getLevel())
-       {
-         value_out.push_back(i);
-         o_k++;
-       }
-     }
-     
-     if(o_k<vars_out.size())
-     {
-       if(f_k<vars_free.size()) //remaining dependents must be free because those aren't in input
-       {
-         while(o_k<vars_out.size()){
-         if(vars_out[o_k] == vars_free[f_k])
-         {
-           value_out.push_back(value_free[f_k]);
-           o_k++;
-           f_k++;
-         }else if(vars_out[o_k] == this->getLevel())
-         {
-           value_out.push_back(i);
-           o_k++;
-         }
-         }
-       } else if (i_k<vars_in.size()) // some of the inputs cover the remaining dependents
-       {
-         while(o_k<vars_out.size()){
-           if(vars_out[o_k] == vars_in[i_k])
-           {
-            value_out.push_back(value_in[i_k]);
-            o_k++;
-            i_k++;
-           }else if(vars_out[o_k] == this->getLevel())
-           {
-             value_out.push_back(i);
-             o_k++;
-           }else i_k++;
-         }
-       }
-     }
-    
+     long* value_out = (long*)malloc(vars_out.size()*sizeof(long));
     return value_out;
   }
+
+  long extractOwnValue(long* input_values) override
+  {
+    return 0;
+  }
+
 };
 
 /*
@@ -796,7 +656,8 @@ void buildGenericImplicitRelation(std::vector<std::map<int,std::map<int, int>>> 
           }
         } // effect of this_event on aff_level is all known.
         // build the node for it.
-        rNode[rctr] = new param_rel_node(node_sign, mxdF, aff_level, -1, constant_wgts, dep_vars, dep_var_ct, coefficients, own_coeff);
+        unsigned long node_sign1 = (unsigned long)stoi(node_sign);
+        rNode[rctr] = new param_rel_node(node_sign1, mxdF, aff_level, -1, constant_wgts, dep_vars, dep_var_ct, coefficients, own_coeff);
       }
       // Use all the nodes of this event to register the event
       T->registerEventNodes((MEDDLY::gen_relation_node**)rNode, this_event.size());
