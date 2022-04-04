@@ -737,6 +737,7 @@ public:
   void setFreeVariables(std::set<int> free1); // dep_vars - input_vars
   
   int getCountInput() const;
+  void setCountInput(int ct);
   int getCountOutput() const;
   int getCountDep() const;
   int getCountFree() const;

@@ -3242,6 +3242,12 @@ MEDDLY::gen_relation_node::getCountInput() const
   return noof_inputs;
 }
 
+inline void
+MEDDLY::gen_relation_node::setCountInput(int ct){
+  noof_inputs = ct;
+}
+
+
 inline int
 MEDDLY::gen_relation_node::getCountOutput() const
 {
