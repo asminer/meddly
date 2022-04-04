@@ -224,8 +224,9 @@ MEDDLY::compute_table::compute_table(const ct_initializer::settings &s,
   perf.pings = 0;
   perf.numLargeSearches = 0;
   perf.maxSearchLength = 0;
-  for (int i=0; i<perf.searchHistogramSize; i++)
+  for (unsigned i=0; i<perf.searchHistogramSize; i++) {
     perf.searchHistogram[i] = 0;
+  }
   perf.resizeScans = 0;
 
   //

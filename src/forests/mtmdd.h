@@ -212,7 +212,7 @@ namespace MEDDLY {
 			      // (1) move anything with value v, to the "new" front
 			      //
 			      for (int i=start; i<stop; i++) {
-			        if (v == unprimed(i, k)) {
+			        if (v == unsigned(unprimed(i, k))) {
 				        if (batchP != i) {
 				          swap(batchP, i);
 				        }
@@ -270,7 +270,7 @@ namespace MEDDLY {
 			    // (1) move anything with value v, to the "new" front
 			    //
 			    for (int i=start; i<stop; i++) {
-			      if (v == unprimed(i, k)) {
+			      if (v == unsigned(unprimed(i, k))) {
 				      if (batchP != i) {
 				        swap(batchP, i);
 				      }

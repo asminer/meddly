@@ -4172,7 +4172,7 @@ MEDDLY::unary_operation::matches(const MEDDLY::expert_forest* arg, opnd_type res
 inline bool
 MEDDLY::unary_operation::checkForestCompatibility() const
 {
-  if (resultType == FOREST) {
+  if (resultType == opnd_type::FOREST) {
     auto o1 = argF->variableOrder();
     auto o2 = resF->variableOrder();
     return o1->is_compatible_with(*o2);

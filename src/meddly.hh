@@ -37,7 +37,7 @@ inline MEDDLY::domain* MEDDLY::createDomain() {
 #ifdef __GMP_H__
 inline void MEDDLY::apply(const unary_opname* op, const dd_edge &a, mpz_t &c) {
   ct_object& x = get_mpz_wrapper();
-  apply(op, a, HUGEINT, x);
+  apply(op, a, opnd_type::HUGEINT, x);
   unwrap(x, c);
 }
 #endif

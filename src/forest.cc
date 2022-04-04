@@ -1117,7 +1117,7 @@ MEDDLY::expert_forest
   for (int mexpl=0; mexpl<mlen; mexpl++) {
     // explore node marked[mexpl]
     M->initFromNode(this, marked[mexpl], false);
-    for (int i=0; i<M->getNNZs(); i++) {
+    for (unsigned i=0; i<M->getNNZs(); i++) {
       if (isTerminalNode(M->d(i))) continue;
       MEDDLY_CHECK_RANGE(0, M->d(i)-1, a_last);
       if (inList[M->d(i)]) continue;
@@ -1383,7 +1383,7 @@ void MEDDLY::expert_forest
         // print index pointers
         MEDDLY_DCASSERT(isMultiTerminal());
         bool first_index = true;
-        for (int j = 0; j < un->getNNZs(); j++) {
+        for (unsigned j = 0; j < un->getNNZs(); j++) {
           if (first_index) first_index=false; else s << "|";
           s << "<" << j << ">";
           s << un->i(j);
@@ -1392,7 +1392,7 @@ void MEDDLY::expert_forest
         s << "\"];\n";
 
         // print down pointers
-        for (int j = 0; j < un->getNNZs(); j++) {
+        for (unsigned j = 0; j < un->getNNZs(); j++) {
           if (-1 == un->d(j)) continue;
           s << "  edge [color=" << blue /*((un->i(j) % 2 == 0)? black: blue)*/ << "];\n";
           s << "  s" << list[i] << ":" << j;
@@ -2111,7 +2111,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
     // Reductions for full nodes
     MEDDLY_DCASSERT(nb.getSize() <= getLevelSize(nb.getLevel()));
     nnz = 0;
-    for (int i=0; i<nb.getSize(); i++) {
+    for (unsigned i=0; i<nb.getSize(); i++) {
       if (nb.d(i)!=getTransparentNode()) nnz++;
     } // for i
 
@@ -2132,7 +2132,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
     if (nnz == getLevelSize(nb.getLevel()) && !isExtensibleLevel(nb.getLevel())) {
       if (isRedundant(nb)) {
         // unlink downward pointers, except the one we're returning.
-        for (int i = 1; i<nb.getSize(); i++)  unlinkNode(nb.d(i));
+        for (unsigned i = 1; i<nb.getSize(); i++)  unlinkNode(nb.d(i));
 #ifdef DEBUG_CREATE_REDUCED
         printf("Redundant node ");
         FILE_output s(stdout);
@@ -2508,7 +2508,7 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
     case policies::IDENTITY_REDUCED:
     case policies::FULLY_REDUCED:
       if (nb.isSparse()) {
-        for (int z=0; z<nb.getNNZs(); z++) {
+        for (unsigned z=0; z<nb.getNNZs(); z++) {
           if (isTerminalNode(nb.d(z))) continue;
           MEDDLY_DCASSERT(!isDeletedNode(nb.d(z)));
           if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(z)))) continue;
@@ -2520,7 +2520,7 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
           MEDDLY_DCASSERT(0);
         } 
       } else {
-        for (int i=0; i<nb.getSize(); i++) {
+        for (unsigned i=0; i<nb.getSize(); i++) {
           if (isTerminalNode(nb.d(i))) continue;
           MEDDLY_DCASSERT(!isDeletedNode(nb.d(i)));
           if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(i)))) continue;
@@ -2543,12 +2543,12 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
         nextLevel = nb.getLevel()-1;
 #endif
       if (nb.isSparse()) {
-        for (int z=0; z<nb.getNNZs(); z++) {
+        for (unsigned z=0; z<nb.getNNZs(); z++) {
           MEDDLY_DCASSERT(getNodeLevel(nb.d(z)) == nextLevel);
         } 
       } else {
         node_handle tv=getTransparentNode();
-        for (int i=0; i<nb.getSize(); i++) {
+        for (unsigned i=0; i<nb.getSize(); i++) {
           if (nb.d(i)==tv) continue;
           MEDDLY_DCASSERT(getNodeLevel(nb.d(i)) == nextLevel);
         }

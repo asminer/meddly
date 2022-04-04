@@ -319,7 +319,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::restrict(node_handle p,
 //}
 
 bool MEDDLY::global_rebuilder::restrict_exist(node_handle p,
-    const std::vector<int>& pa, int start, node_handle& result) {
+    const std::vector<int>& pa, unsigned start, node_handle& result) {
   if (_source->isTerminalNode(p)) {
     result = p;
     return true;

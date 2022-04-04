@@ -57,7 +57,7 @@ MEDDLY::mpz_object::~mpz_object()
 
 MEDDLY::opnd_type MEDDLY::mpz_object::getType()
 {
-  return HUGEINT;
+  return opnd_type::HUGEINT;
 }
 
 void MEDDLY::mpz_object::show(output &strm) const
