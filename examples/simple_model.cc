@@ -502,7 +502,7 @@ MEDDLY::sathyb_opname::event** buildHybridRelation(const int* const* events, int
 
 /*************************************************************/
 
-#if 1
+#if 0
 class param_rel_node : public MEDDLY::gen_relation_node
 {
   std::vector<int> dep_variable;
