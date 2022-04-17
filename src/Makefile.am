@@ -101,7 +101,8 @@ libmeddly_la_SOURCES = \
   operations/mm_mult.h        operations/mm_mult.cc      \
   operations/init_builtin.h   operations/init_builtin.cc \
   operations/sat_impl.h        operations/sat_impl.cc    \
-   operations/sat_hyb.h        operations/sat_hyb.cc    \
+  operations/sat_hyb.h        operations/sat_hyb.cc    \
+  operations/sat_md_impl.h    operations/sat_md_impl.cc    \
   operations/constrained.h      operations/constrained.cc \
   operations/transitive_closure.h   operations/transitive_closure.cc \
   operations/cycle.h          operations/cycle.cc        \

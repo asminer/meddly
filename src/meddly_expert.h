@@ -64,6 +64,9 @@ namespace MEDDLY {
   // EXPERIMENTAL - matrix wrappers for unprimed, primed pairs of nodes
   // class unpacked_matrix;
   class relation_node;
+
+  // Generalized implicit node
+  class gen_relation_node;
   
   /*
   
@@ -102,6 +105,7 @@ namespace MEDDLY {
   class satotf_opname;
   class satimpl_opname;
   class sathyb_opname;
+  class satmdimpl_opname;
   class constrained_opname;
 
   class ct_initializer;
@@ -176,6 +180,13 @@ namespace MEDDLY {
   */
   extern const sathyb_opname* SATURATION_HYB_FORWARD;
 
+  /**
+   * @brief Forward reachability saturation
+   * Allows generalized representation of transition relations
+   * using implicit nodes
+   */
+  extern const satmdimpl_opname* SATURATION_MDIMPL_FORWARD;
+  
   /** Minimum-witness operations.
   */
   extern const constrained_opname* CONSTRAINED_BACKWARD_BFS;
@@ -607,6 +618,207 @@ private:
   
   // friend class implicit_relation;
 };  // class relation_node
+
+// ******************************************************************
+// *                                                                *
+// *                     gen_relation_node  class                   *
+// *                                                                *
+// ******************************************************************
+
+/** Pieces of an generalized implicit relation.
+ 
+ Each piece (this class) is a function of a multiple variables.
+ The function specifies the "next state" for the given
+ current state, depending on multiple state variables.
+ 
+ delta() specifies next local state of the node at current level
+ omega() relays set of local states of levels known so far 
+ 
+ delta(), omega() are virtual methods.
+ 
+ Additionally, you must specify method equals(), which is used
+ to detect when two nodes actually represent the same function.
+ 
+ */
+class MEDDLY::gen_relation_node {
+public:
+  /** Constructor.
+   @param  signature   Hash for this node, such that
+   two equal nodes must have the same
+   signature.
+   @param  level                             Level affected.
+   @param  down                               Handle to a relation node below us.
+   @param  constant_wgts           Constant arc weights of this relation node.
+   @param  input_vars                  Input variables to this node.
+   @param  output_vars               Output variables from this node.
+   @param  dep_vars                      Dependent variables of this node. \\ subset of input and output variables
+   */
+ //gen_relation_node(unsigned long signature, forest* f, int level, node_handle down, long* constant_wgts, int* dep_vars, int noof_dep_vars);
+ gen_relation_node(unsigned long sign, forest* f, int level, node_handle down);
+ virtual ~gen_relation_node();
+  
+  // the following should be inlined in meddly_expert.hh
+
+  // Get the forest to which the node belongs
+  expert_forest* getForest();
+  
+  /** A signature for this function. Signature is built by the user
+   based on the function encoded by thie piece.
+   */
+  unsigned long getSignature() const;
+  
+  /** The state variable affected by this part of the relation.
+   */
+  int getLevel() const;
+  
+  /** Pointer to the (ID of the) next piece of the relation.
+   */
+  rel_node_handle getDown() const;
+  
+  /** Set the pointer ID of the next  piece.
+  */
+  void setDown(rel_node_handle d);
+  
+  /** The unique ID for this piece.
+   */
+  rel_node_handle getID() const;
+  
+  /** Set the unique ID for this piece.
+   */
+  void setID(rel_node_handle ID);
+  
+  /* Special case non dependent fast*/
+
+  /** The token_update array for this piece.
+   */
+  long* getTokenUpdate() const;
+  
+  /** Set the token_update array for this piece.
+   */
+  void setTokenUpdate(long* token_update);
+
+  /** The size of token_update array for this piece.
+   */
+  long getPieceSize() const;
+  
+  /** Set the size of token_update array for this piece.
+   */
+  void setPieceSize(long pS);
+  
+  /** Expand the tokenUpdate array as the variable increases
+   */
+  void expandTokenUpdate(long i);
+  
+  /** Set the tokenUpdate array at location i to val
+   */
+  void setTokenUpdateAtIndex(long i,long val);
+  
+  #if 0
+  /** Get the set of input variables  for this piece.
+   */
+  int* getInputVariables() const;
+  
+  /** Assign the the set of input variables for this piece.
+   */
+  void setInputVariables(int* ip_var, int sz);
+  
+  /** Get the set of dependent variables  for this piece.
+   */
+  int* getDepVariables() const;
+  
+  /** Assign the the set of dependent variables for this piece.
+      Note : It also contains self-variable.
+   */
+  void setDepVariables(int* free_var, int sz);
+  
+  /** Get the set of output variables  for this piece.
+   */
+  int* getOutputVariables() const;
+  
+  /** Assign the the set of output variables for this piece.
+   */
+  void setOutputVariables(int* op_var, int sz);
+  
+  /** Get the set of free variables  for this piece.
+   */
+  int* getFreeVariables() const;
+  
+  /** Set the set of free variables  for this piece.
+   */
+  void setFreeVariables(std::set<int> free1); // dep_vars - input_vars
+  #endif
+  int getCountInput() const;
+  void setCountInput(int ct);
+  #if 0
+  int getCountOutput() const;
+  int getCountDep() const;
+  int getCountFree() const;
+    
+  /** Get the constant enable condition (if any) for this piece.
+   */
+  long getEnable() const;
+  
+  /** Get the constant fire condition (if any) for this piece.
+   */
+  long getFire() const;
+  
+  /** Get the constant inhibit condition (if any)  for this piece.
+   */
+  long getInhibit() const;
+  
+  /** Set the constant arc-weights for this piece (if any).
+   */
+  void setConstantWeights(long en_val, long inh_val, long fire_val);
+  #endif
+  // the following must be provided in derived classes.
+  
+  /** Get cartesian product of valid-free spaces for node's function evaluation given the current variable has value i
+      @param forest : to get the domain
+   */
+  virtual long* buildFreeValues(MEDDLY::forest* resF, long* inp_values, long i, int& jsize);
+
+  /** If the variable at this level has value i, inputs are inp_val and outputs are op_val,
+    what should the new value be?
+    j will be calculated using use only values of dep_vars
+   */
+  virtual long delta(long* v_in, long* v_free, long i);
+  
+  /** If the variable at this level has value i, inputs are inp_val and outputs are op_val,
+  which output variables' values should be passed on?
+   set of output_vars of this place is known, those are selected are passed.
+  */
+  virtual long* omega(long* v_in, long i, long j);
+  
+  /** Determine if this node is equal to another one.
+   */
+  virtual bool equals(const gen_relation_node* n) const;
+
+  virtual long extractOwnValue(long* input_values);
+
+private:
+  unsigned long signature;
+  expert_forest* f;
+  
+  /* dep_vars = level + some input vars + some output vars */
+  int level;
+  int* output_vars;
+  int* input_vars;
+  // because not all input variables are to be used by this piece, some are passed on.
+  int* dep_vars; 
+  int* free_vars;
+  int noof_outputs;
+  int noof_inputs;
+  int noof_deps;
+  int noof_free;
+  long* constant_wgts;
+
+  long* token_update;
+  long piece_size; 
+  
+  rel_node_handle down;
+  rel_node_handle ID;
+  
+}; // class gen_relation_node
 
 // ******************************************************************
 // *                                                                *
@@ -2731,10 +2943,14 @@ class MEDDLY::expert_forest: public forest
    
    */
   node_handle createRelationNode(MEDDLY::relation_node *un);
+  node_handle createGenRelationNode(MEDDLY::gen_relation_node *un);
 
   unsigned getImplicitTableCount() const;
   inline MEDDLY::relation_node* buildImplicitNode(node_handle rnh);
   inline MEDDLY::node_handle getImplicitTerminalNode() const;
+
+  inline MEDDLY::gen_relation_node* buildGenImplicitNode(node_handle rnh);
+  inline MEDDLY::node_handle getGenImplicitTerminalNode() const;
 
 
   /** Return a forest node equal to the one given.
@@ -3089,10 +3305,14 @@ class MEDDLY::expert_forest: public forest
      @return       Handle to a node that encodes the same thing.
      */
     node_handle createImplicitNode(MEDDLY::relation_node &nb);
+    node_handle createGenImplicitNode(MEDDLY::gen_relation_node &nb);
 
     unsigned getImplTableCount() const;
     MEDDLY::relation_node* buildImplNode(node_handle rnh);
     MEDDLY::node_handle getImplTerminalNode() const;
+
+    MEDDLY::gen_relation_node* buildGenImplNode(node_handle rnh);
+    MEDDLY::node_handle getGenImplTerminalNode() const;
 
 
     /** Apply reduction rule to the temporary extensible node and finalize it. 
@@ -3990,6 +4210,168 @@ public:
 	};
 };
 
+// ******************************************************************
+// *                                                                *
+// *                    satmdimpl_opname class                      *
+// *                                                                *
+// ******************************************************************
+
+/** Saturation, transition relations with marking dependednt arcs stored implcitly, operation names.
+    Implemented in operations/sat_md_impl.cc
+*/
+class MEDDLY::satmdimpl_opname: public specialized_opname {
+  public:
+
+    satmdimpl_opname(const char* n);
+    virtual ~satmdimpl_opname();
+
+    /// Arguments should have type "implicit_relation", below
+    virtual specialized_operation* buildOperation(arguments* a) const;
+
+  public:
+
+    /** An implicit relation, as a DAG of gen_relation_nodes.
+
+        The relation is partitioned by "events", where each event
+        is the conjunction of local functions, and each local function
+        is specified as a single relation_node.  The relation_nodes
+        are chained together with at most one relation_node per state
+        variable, and any skipped variables are taken to be unchanged
+        by the event.
+
+        If the bottom portion (suffix) of two events are identical,
+        then they are merged.  This is done by "registering" nodes
+        which assigns a unique ID to each node, not unlike an MDD forest.
+
+        Note: node handles 0 and 1 are reserved.
+        0 means null node.
+        1 means special bottom-level "terminal" node
+        (in case we need to distinguish 0 and 1).
+    */
+    class md_implicit_relation : public specialized_opname::arguments {
+      public:
+        /** Constructor.
+
+            @param  inmdd       MDD forest containing initial states
+            @param  outmdd      MDD forest containing result
+
+            Not 100% sure we need these...
+        */
+        md_implicit_relation(forest* inmdd, forest* relmxd, forest* outmdd);
+        virtual ~md_implicit_relation();
+      
+        /// Returns the Relation forest that stores the mix of relation nodes and mxd nodes
+        expert_forest* getRelForest() const;
+
+
+        /// Returns the MDD forest that stores the initial set of states
+        expert_forest* getInForest() const;
+
+
+        /// Returns the MDD forest that stores the resultant set of states
+        expert_forest* getOutForest() const;
+
+        /** Register a relation node  to build an event. Called as many time as many events are there.
+         
+            If we have seen an equivalent node before, then
+            return its handle and destroy n.
+            Otherwise, add n to the unique table, assign it a unique
+            identifier, and return that identifier.
+
+            @param  is_event_top    If true, this is also the top
+                                  node of some event; register it
+                                  in the list of events.
+
+            @param  n               The relation node to register.
+
+            @return Unique identifier to use to refer to n.
+        */
+      void registerEventNodes(gen_relation_node** n, int sz);
+
+      private:
+        expert_forest* insetF;
+        expert_forest* outsetF;
+        expert_forest* relF;
+        
+        int num_levels;
+
+      private:
+
+        /// Last used ID of \a relation node.
+        long last_in_node_array;
+
+      private:
+        // TBD - add a data structure for list of events with top level k,
+        // for all possible k.
+        // Possibly this data structure is built by method
+        // finalizeNodes().
+      
+        rel_node_handle** event_list; // level-wise storage of events
+        long* event_list_alloc; // allocated space
+        long* event_added; //how many events added so far
+
+        long* confirm_states; //total no. of confirmed states of a level
+        bool** confirmed; // stores whether a particular local state is confirmed
+        long* confirmed_array_size; // stores size of confirmed array
+        bool** are_new_confirms; // level-wise flag storage if minterms of this confirms already explored. [FFFFFF...TTTT]
+        long total_events;
+        
+
+      public:
+
+        /// inline : Get total number of events upto given level
+        long getTotalEvent(int level);
+
+        /// inline : Resizes the Event List
+        void resizeEventArray(int level);
+
+        /// inline : Returns the number of events that have this level as top
+        long lengthForLevel(int level) const;
+
+        /// Returns the array of events that have this level as top
+        rel_node_handle* arrayForLevel(int level) const;
+
+        /// inline : Returns the number of confirmed states at a level
+        long getConfirmedStates(int level) const;
+
+        /// inline : Confirms the local states at a level
+        void setConfirmedStates(int level, int i);
+
+        /// Confirms the local states in the given MDD
+        void setConfirmedStates(const dd_edge &set);
+
+        /// inline : Checks if i is confirmed
+        bool isConfirmedState(int level, int i);
+      
+        /// inline : Checks if i is newly confirmed and not yet explored w.r.t other local states of other levels
+        bool isNewlyConfirmedState(int level, int i);
+
+        /// Expand confirm array
+        void resizeConfirmedArray(int level, int index);
+      
+      
+    private:
+      /* event-wise usage of level in list of levels.
+           event_level_affectlist[{0,2}] = {1,2,4}
+           In event 0, level 2 is used in level 1, 2 and 4
+      */
+      std::map<std::pair<int,int>, std::set<int>> event_level_affectlist;
+      
+      
+      
+    public:
+      
+      /// inline: Append dependency levels to  a node of an event : return event_level_length[e][k]
+      int getNoOfNodeAtLevelsOfEvent(int e, int k) ;
+      
+      /// inline: Append dependency levels to  a node of an event : return event_level_affectlist[e][k]
+      std::set<rel_node_handle> getListOfNodesAtLevelsOfEvent(int e, int k) ;
+    
+      
+    };  // class implicit_relation
+
+
+};
 // ******************************************************************
 // *                                                                *
 // *                      sathyb_opname class                      *

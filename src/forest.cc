@@ -2229,6 +2229,17 @@ MEDDLY::node_handle MEDDLY::expert_forest
   return implUT->getLastHandle();
 }
 
+MEDDLY::gen_relation_node* MEDDLY::expert_forest
+::buildGenImplNode(node_handle rnh)
+{
+  return implUT->getGenNode(rnh);
+}
+MEDDLY::node_handle MEDDLY::expert_forest
+::getGenImplTerminalNode() const
+{
+  return implUT->getLastHandle();
+}
+
 
 MEDDLY::node_handle MEDDLY::expert_forest
 ::createImplicitNode(MEDDLY::relation_node &nb)
@@ -2275,6 +2286,58 @@ MEDDLY::node_handle MEDDLY::expert_forest
   nodeHeaders.setNodeAddress(p, implUT->add(p, &nb));
   linkNode(p);
 
+  
+#ifdef DEBUG_CREATE_REDUCED
+  printf("Created node ");
+  FILE_output s(stdout);
+  showNode(s, p, SHOW_DETAILS | SHOW_INDEX);
+  printf("\n");
+#endif
+  
+  return p;
+}
+
+MEDDLY::node_handle MEDDLY::expert_forest
+::createGenImplicitNode(MEDDLY::gen_relation_node &nb)
+{
+  // check for duplicates in unique table
+  node_handle q = implUT->isDuplicate(&nb);
+  if (q) return q;
+  // Not eliminated by reduction rule.
+  // Not a duplicate.
+  //
+  // We need to create a new node for this.
+  
+  // NOW is the best time to run the garbage collector, if necessary.
+#ifndef GC_OFF
+  // if (isTimeToGc()) garbageCollect();
+#endif
+  
+  // Grab a new node
+  node_handle p = nodeHeaders.getFreeNodeHandle();
+  nodeHeaders.setNodeImplicitFlag(p, true);
+  nodeHeaders.setNodeLevel(p, nb.getLevel());
+  MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
+  MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
+  
+  stats.incActive(1);
+  if (theLogger && theLogger->recordingNodeCounts()) {
+    theLogger->addToActiveNodeCount(this, nb.getLevel(), 1);
+  }
+  
+  #if 0
+  // All of the work is in satimpl_opname::implicit_relation now :^)
+  nodeHeaders.setNodeAddress(p, nb.getID());
+  linkNode(p);
+  
+  // add to UT
+  unique->add(nb.getSignature(), p);
+  #endif
+  // All of the work is in implUT now :^)
+  // If it is not duplicate, universal handle will become handle to node in implUT.
+  nb.setID(p);
+  nodeHeaders.setNodeAddress(p, implUT->add(p, &nb));
+  linkNode(p);
   
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node ");
