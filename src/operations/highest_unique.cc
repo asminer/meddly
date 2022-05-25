@@ -335,7 +335,7 @@ if(card<1)
     blockedBy= new int[card];
     #endif
     #ifdef Hdom
-    LSAtree=new std::vector<int>[card];// dominator
+    // LSAtree=new std::vector<int>[card];// dominator
      rg=new std::vector<int> [card]; // revese graph
     bucket=new std::vector<int>[card]; // bucket stores the set of semidom
     sdom=new int[card]; // semi dominator
@@ -498,7 +498,7 @@ if(card<1)
      delete[]firstParent;
      #endif
      #ifdef Hdom
-     delete[] LSAtree;// dominator
+     // delete[] LSAtree;// dominator
      delete[] rg; // revese graph
      delete[] bucket; // bucket stores the set of semidom
      delete[] sdom; // semi dominator
@@ -615,7 +615,7 @@ if(card<1)
      #endif
      #ifdef Hdom
      int T=0;
-     std::vector<int>* LSAtree;// dominator
+     // std::vector<int>* LSAtree;// dominator
      std::vector<int>* rg; // revese graph
      std::vector<int>* bucket; // bucket stores the set of semidom
      int* sdom; // semi dominator
