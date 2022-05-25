@@ -26,9 +26,11 @@
 #include "../defines.h"
 #include <set>
 #include <map>
+#include <vector>
 //#include "mpz_object.h"
-// #define HRec
- #define HTrav
+ // #define HRec
+ #define Hdom
+ // #define HTrav //Not Correct Should not ran at all
 // #define DEBUG_AC
 
 namespace MEDDLY {
@@ -332,6 +334,18 @@ if(card<1)
     stopInterval=new int[card];
     blockedBy= new int[card];
     #endif
+    #ifdef Hdom
+    LSAtree=new std::vector<int>[card];// dominator
+     rg=new std::vector<int> [card]; // revese graph
+    bucket=new std::vector<int>[card]; // bucket stores the set of semidom
+    sdom=new int[card]; // semi dominator
+    par=new int[card]; // parent information
+    dom=new int[card]; //dominator
+    dsu=new int[card];
+    label=new int[card];
+    arr=new int[card];
+    rev=new int[card];
+    #endif
     #ifdef HRec
     if(explored==0)
     {printf("ERROR IN making arrays\n" ); char c=getchar();}
@@ -349,6 +363,18 @@ if(card<1)
         setToRoot[i]=false;
         singleParent[i]=true;
         LSA[i]=-1;
+        #endif
+        #ifdef Hdom
+        // LSAtree[i]=-1;// dominator
+        // rg[i]=-1; // revese graph
+        // bucket[i]=-1; // bucket stores the set of semidom
+        sdom[i]=-1; // semi dominator
+        par[i]=-1; // parent information
+        dom[i]=-1; //dominator
+        dsu[i]=-1;
+        label[i]=-1;
+        arr[i]=0;
+        rev[i]=-1;
         #endif
         #ifdef HTrav
          lastPosition[i]=0;
@@ -437,7 +463,32 @@ if(card<1)
     cache.clear();
 
     #endif
-
+    #ifdef Hdom
+    compute_rdom(argF->getDomain()->getNumVariables(), arg.getNode(),arg.getNode() );
+    int n=T;
+    for(int i=n;i>=1;i--){
+      for(int j=0; j<rg[i].size();j++){
+        sdom[i]=std::min(sdom[i],sdom[Find(rg[i][j])]);
+      }
+      if(i>1) bucket[sdom[i]].push_back(i);
+      for(int j=0;j<bucket[i].size();j++)
+		{
+			int w = bucket[i][j];
+			int v = Find(w);
+			if(sdom[v]==sdom[w])dom[w]=sdom[w];
+			else dom[w] = v;
+		}
+		if(i>1)Union(par[i],i);
+    }
+    for(int i=2;i<=n;i++)
+	   {
+    if(dom[i]!=sdom[i])
+			dom[i]=dom[dom[i]];
+    updateInsert(rev[dom[i]],rev[i]);
+  }
+		// tree[rev[i]].PB(rev[dom[i]]);
+		// printf("TREE %d = %d\n",rev[i], rev[dom[i]] );
+    #endif
      delete[] incomingedgecountHU;
      #ifdef HRec
      delete[] parents;//=NULL;
@@ -445,6 +496,18 @@ if(card<1)
      delete[] setToRoot;
      delete[] singleParent;
      delete[]firstParent;
+     #endif
+     #ifdef Hdom
+     delete[] LSAtree;// dominator
+     delete[] rg; // revese graph
+     delete[] bucket; // bucket stores the set of semidom
+     delete[] sdom; // semi dominator
+     delete[] par; // parent information
+     delete[] dom; //dominator
+     delete[] dsu;
+     delete[] label;
+     delete[] arr;
+     delete[] rev;
      #endif
      #ifdef HTrav
      delete[] startInterval;
@@ -522,6 +585,7 @@ if(card<1)
     */
    // double compute_r(int ht, node_handle a,std::set<int>);
    void compute_r(int ht, node_handle a,node_handle root);
+   void compute_rdom(int ht, node_handle a,node_handle root);
    double compute_rt(int ht, node_handle a);
    void initialize(int ht, node_handle a, node_handle root);
 
@@ -548,6 +612,19 @@ if(card<1)
      int* startInterval;
      int* stopInterval;
      int* blockedBy;
+     #endif
+     #ifdef Hdom
+     int T=0;
+     std::vector<int>* LSAtree;// dominator
+     std::vector<int>* rg; // revese graph
+     std::vector<int>* bucket; // bucket stores the set of semidom
+     int* sdom; // semi dominator
+     int* par; // parent information
+     int* dom; //dominator
+     int* dsu;
+     int* label;
+     int* arr;
+     int* rev;
      #endif
      int c=1;
   inline int PairLowestSeparatorAbove(node_handle firstParent,node_handle secondParent,node_handle root){
@@ -671,6 +748,20 @@ if(card<1)
     CTresult[0].writeI(b);
     CT0->addEntry(Key, CTresult[0]);
     return b;
+  }
+  inline int Find(int u,int x=0)
+  {
+  	if(u==dsu[u])return x?-1:u;
+  	int v = Find(dsu[u],x+1);
+  	if(v<0)return u;
+  	if(sdom[label[dsu[u]]] < sdom[label[u]])
+  		label[u] = label[dsu[u]];
+  	dsu[u] = v;
+  	return x?v:label[u];
+  }
+  inline void Union(int u,int v) //Add an edge u-->v
+  {
+  	dsu[v]=u; 	//yup,its correct :)
   }
  };
  // std::set<int> MEDDLY::hu_mdd_real::CheckInterval(std::set<int>* pset,node_handle a ){
@@ -889,7 +980,22 @@ pset[a].erase(r);
     unpacked_node::recycle(A);
     #endif
  }
-
+void MEDDLY::hu_mdd_real::compute_rdom(int k, node_handle a,node_handle root){
+  #ifdef Hdom
+  T++; arr[a]=T; rev[T]=a;
+  label[T]=T; sdom[T]=T; dsu[T]=T;
+  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+    for (unsigned z = 0; z < A->getNNZs(); z++) {
+      int w=A->d(z);
+      if(!arr[w]){
+        compute_rdom(k,w,root);
+        par[arr[w]]=arr[a];
+      }
+      rg[arr[w]].push_back(arr[a]);
+    }
+  unpacked_node::recycle(A);
+  #endif
+}
      // printf("COMING TO hu_mdd_real \n" );
 //      if(explored[a]==1){
 //          // printf("EXP %d is true\n",a-1 );
