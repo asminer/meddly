@@ -337,14 +337,23 @@ if(card<1)
     #ifdef Hdom
     // LSAtree=new std::vector<int>[card];// dominator
      rg=new std::vector<int> [card]; // revese graph
+     // printf("rg made\n" );
     bucket=new std::vector<int>[card]; // bucket stores the set of semidom
+// printf("bucket made\n" );
     sdom=new int[card]; // semi dominator
+// printf("sdom made\n" );
     par=new int[card]; // parent information
+// printf("par made\n" );
     dom=new int[card]; //dominator
+// printf("dom made\n" );
     dsu=new int[card];
+// printf("dsu made\n" );
     label=new int[card];
+// printf("label made\n" );
     arr=new int[card];
+// printf("arr made\n" );
     rev=new int[card];
+    // printf("rev made\n" );
     #endif
     #ifdef HRec
     if(explored==0)
@@ -352,6 +361,10 @@ if(card<1)
     #endif
     #ifdef HTrav
     if(explored==0 || incomingedgecountHU==0 || lastPosition==0||startInterval==0|| stopInterval==0)
+    {printf("ERROR IN making arrays\n" ); char c=getchar();}
+    #endif
+    #ifdef Hdom
+    if(rg==0|| bucket==0|| sdom==0 || par==0 ||dom==0 || dsu==0||label==0|| rev==0|| arr==0)
     {printf("ERROR IN making arrays\n" ); char c=getchar();}
     #endif
     for(int i=0;i<card;i++)
@@ -375,6 +388,7 @@ if(card<1)
         label[i]=-1;
         arr[i]=0;
         rev[i]=-1;
+        T=0;
         #endif
         #ifdef HTrav
          lastPosition[i]=0;
@@ -397,6 +411,8 @@ if(card<1)
         // getchar();
         // getchar();
  // printf("COMPUTED %d\n",card );
+ //////////////////FOR TESTING
+
  // printf("***HU***\n" );
  // for(int i=0;i<=(int)card;i++){
  //  printf("HU[%d]= \t", i);
@@ -464,15 +480,35 @@ if(card<1)
 
     #endif
     #ifdef Hdom
+    // printf("HDom started\n" );
     compute_rdom(argF->getDomain()->getNumVariables(), arg.getNode(),arg.getNode() );
+    // printf("HDOM compute_rdom\n" );
+
+    // getchar();
     int n=T;
+    // printf("HDOM%d\n",n );
+
     for(int i=n;i>=1;i--){
       for(int j=0; j<rg[i].size();j++){
+          // printf("i,j %d %d\n",i,j );
+          // printf("Sdom %d = %d\n",i,sdom[i] );
+          // printf("rg %d\n",rg[i][j] );
+          // printf("Find rg %d\n",Find(rg[i][j]) );
+          // printf("SdomFind %d  %d =%d \n",i,j,sdom[Find(rg[i][j])] );
+          // if(Find(rg[i][j])>0){
         sdom[i]=std::min(sdom[i],sdom[Find(rg[i][j])]);
+        // printf("MinCalculated %d %d\n",i,j );
+    // }
       }
-      if(i>1) bucket[sdom[i]].push_back(i);
+      // printf("Out of loop 1\n" );
+      // printf("sdom %d= %d\n",i,sdom[i] );
+
+      // printf("before Bucket loop %d %d \n", );
+      if(i>1&& sdom[i]>-1) bucket[sdom[i]].push_back(i);
+      // printf("before Bucket loop\n" );
       for(int j=0;j<bucket[i].size();j++)
 		{
+            // printf("Bucket %d %d =%d\n",i,j,bucket[i][j] );
 			int w = bucket[i][j];
 			int v = Find(w);
 			if(sdom[v]==sdom[w])dom[w]=sdom[w];
@@ -480,12 +516,33 @@ if(card<1)
 		}
 		if(i>1)Union(par[i],i);
     }
+    // printf("HDOM2\n" );
+
     for(int i=2;i<=n;i++)
 	   {
+    if(sdom[i]>-1){
     if(dom[i]!=sdom[i])
 			dom[i]=dom[dom[i]];
+    if(rev[i]==arg.getNode()&& rev[dom[i]]==arg.getNode());
+    else
     updateInsert(rev[dom[i]],rev[i]);
+    }
   }
+  // printf("HDOM3\n" );
+  //////////////////FOR TESTING
+  // printf("***HU-DOM***\n" );
+  // for(int i=0;i<=(int)card;i++){
+  //  printf("HU[%d]= \t", i);
+  //    std::set<int> rset=highestunique[i];
+  //    for (auto it=rset.begin(); it != rset.end(); ++it){
+  //       printf(", %d", *it);
+  //
+  //   }
+  //
+  //     printf("\n" );
+  //  }
+  //  getchar();
+  //  getchar();
 		// tree[rev[i]].PB(rev[dom[i]]);
 		// printf("TREE %d = %d\n",rev[i], rev[dom[i]] );
     #endif
@@ -508,6 +565,7 @@ if(card<1)
      delete[] label;
      delete[] arr;
      delete[] rev;
+     // printf("Deletion Complete\n" );
      #endif
      #ifdef HTrav
      delete[] startInterval;
@@ -522,7 +580,7 @@ if(card<1)
     	 printf("HU %d %d \n",i, highestunique[i]);
      }
 #endif
-// printf("HighestUnique End\n" );
+ // printf("HighestUnique End\n" );
    }
    /*
 
@@ -751,6 +809,7 @@ if(card<1)
   }
   inline int Find(int u,int x=0)
   {
+      #ifdef Hdom
   	if(u==dsu[u])return x?-1:u;
   	int v = Find(dsu[u],x+1);
   	if(v<0)return u;
@@ -758,10 +817,13 @@ if(card<1)
   		label[u] = label[dsu[u]];
   	dsu[u] = v;
   	return x?v:label[u];
+    #endif
   }
   inline void Union(int u,int v) //Add an edge u-->v
   {
+      #ifdef Hdom
   	dsu[v]=u; 	//yup,its correct :)
+    #endif
   }
  };
  // std::set<int> MEDDLY::hu_mdd_real::CheckInterval(std::set<int>* pset,node_handle a ){
@@ -982,18 +1044,36 @@ pset[a].erase(r);
  }
 void MEDDLY::hu_mdd_real::compute_rdom(int k, node_handle a,node_handle root){
   #ifdef Hdom
+  // printf("Call ComputeRDOM %d\n",T );
+  if (k>0){
   T++; arr[a]=T; rev[T]=a;
   label[T]=T; sdom[T]=T; dsu[T]=T;
+   // printf("ComputeRDOM\n");
+
+  int kdn=k-1;
   unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  // printf("node %d is unpacked \n ",a);
+
     for (unsigned z = 0; z < A->getNNZs(); z++) {
+        if(A->d(z)>0){
+
       int w=A->d(z);
       if(!arr[w]){
-        compute_rdom(k,w,root);
+
+        compute_rdom(kdn,w,root);
+
         par[arr[w]]=arr[a];
-      }
+            }
+            // printf("%d , %d, LN %d\n",arr[w],arr[a],lastNode );
       rg[arr[w]].push_back(arr[a]);
+        }
     }
   unpacked_node::recycle(A);
+  // printf("node %d is recycled \n ",a);
+
+}
+   // printf("ComputeRDOMDone\n");
+
   #endif
 }
      // printf("COMING TO hu_mdd_real \n" );

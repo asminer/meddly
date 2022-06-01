@@ -318,7 +318,8 @@ for(int i=0;i<card;i++){
     // uniqueAbovecount[i]=1;
     // }
 
-     res = compute_r( 0/*arg.getNode()*/);
+     // res = compute_r( 0/*arg.getNode()*/);// If LRec is on
+     res = compute_r( 1/*arg.getNode()*/);// If Ldom is on
      delete [] visitedNode;
      // printf("COMPUTED %d\n",card );
      // printf("******\n" );
