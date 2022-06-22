@@ -38,6 +38,7 @@ namespace MEDDLY {
   class hu_mdd_int;
  // class card_mxd_int;
  std::map< int, std::set<int>> highestunique;
+ std::vector<int>* rg;
   //int* abovecount;
   class hu_real;
   class hu_mdd_real;
@@ -556,7 +557,7 @@ if(card<1)
      #endif
      #ifdef Hdom
      // delete[] LSAtree;// dominator
-     delete[] rg; // revese graph
+     // delete[] rg; // revese graph
      delete[] bucket; // bucket stores the set of semidom
      delete[] sdom; // semi dominator
      delete[] par; // parent information
@@ -674,7 +675,7 @@ if(card<1)
      #ifdef Hdom
      int T=0;
      // std::vector<int>* LSAtree;// dominator
-     std::vector<int>* rg; // revese graph
+     // std::vector<int>* rg; // revese graph
      std::vector<int>* bucket; // bucket stores the set of semidom
      int* sdom; // semi dominator
      int* par; // parent information

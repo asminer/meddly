@@ -437,8 +437,8 @@ if(card<1)
     }
     #endif
     #ifdef Ldom
-g=new std::vector<int>[card];// dominator
-rg=new std::vector<int> [card]; // revese graph
+g=rg;//new std::vector<int>[card];// dominator
+rrg=new std::vector<int> [card]; // revese graph
 bucket=new std::vector<int>[card]; // bucket stores the set of semidom
 sdom=new int[card]; // semi dominator
 par=new int[card]; // parent information
@@ -450,17 +450,17 @@ rev=new int[card];
 for(int i=0; i<card;i++){
   arr[i]=0;
 }
-compute_rgraph(argF->getDomain()->getNumVariables(),arg.getNode());
+// compute_rgraph(argF->getDomain()->getNumVariables(),arg.getNode());
 // getchar();
-for(int i=0; i<card;i++){
-  arr[i]=0;
-}
+// for(int i=0; i<card;i++){
+//   arr[i]=0;
+// }
 T=0;
 compute_rdom(1);
 int n=T;
 for(int i=n;i>=1;i--){
-  for(int j=0; j<rg[i].size();j++){
-    sdom[i]=std::min(sdom[i],sdom[Find(rg[i][j])]);
+  for(int j=0; j<rrg[i].size();j++){
+    sdom[i]=std::min(sdom[i],sdom[Find(rrg[i][j])]);
   }
   if(i>1) bucket[sdom[i]].push_back(i);
   for(int j=0;j<bucket[i].size();j++)
@@ -480,7 +480,8 @@ if(dom[i]!=sdom[i])
   // else
 updateInsert(rev[dom[i]],rev[i]);
 }
-delete[] rg; // revese graph
+delete[] g;
+delete[] rrg; // revese graph
 delete[] bucket; // bucket stores the set of semidom
 delete[] sdom; // semi dominator
 delete[] par; // parent information
@@ -574,7 +575,7 @@ void compute_rgraph(int ht,node_handle a);
 int T=0;
 // std::vector<int>* LSAtree;// dominator
 std::vector<int>* g;
-std::vector<int>* rg; // revese graph
+std::vector<int>* rrg; // revese graph
 std::vector<int>* bucket; // bucket stores the set of semidom
 int* sdom; // semi dominator
 int* par; // parent information
@@ -1106,12 +1107,12 @@ pset[a].erase(r);
          compute_rdom(w);
          par[arr[w]]=arr[a];
        }
-       rg[arr[w]].push_back(arr[a]);
+       rrg[arr[w]].push_back(arr[a]);
      }
      // }
    // unpacked_node::recycle(A);
    #endif
- }
+}
 // // ******************************************************************
 // // *                                                                *
 // // *                      card_mxd_real  class                      *

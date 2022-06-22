@@ -161,6 +161,7 @@ namespace MEDDLY {
   extern int* uniquecount;
   extern int* uniqueAbovecount;
   extern int lastNode;
+  extern std::vector<int>* rg;
   extern unsigned int optionsForUA;
   extern long maxThreshold;
   extern long minThreshold;
