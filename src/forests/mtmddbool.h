@@ -31,6 +31,39 @@ namespace MEDDLY {
 
 // ******************************************************************
 
+class doubleDensityClass {
+public:
+    double density;
+    int index;
+    bool isIn;
+    bool neverIn;
+    doubleDensityClass(){index=0; density=0.0; isIn=false;neverIn=false;}
+    explicit doubleDensityClass(double _density,int _index, bool _isIn,bool _neverIn):
+    density(_density),index(_index),isIn(_isIn),neverIn(_neverIn){ }
+    doubleDensityClass(const doubleDensityClass &t)
+             {
+                        density=t.density;
+                        index=t.index;
+                        isIn=t.isIn;
+                        neverIn=t.neverIn;
+             }
+    doubleDensityClass& operator=(const doubleDensityClass& that) {
+                 if (this == &that)
+                    return *this;
+                    density=(double)that.density;
+                    index=that.index;
+                    isIn=that.isIn;
+                    neverIn= that.neverIn;
+                  return *this;
+             }
+    bool operator < (const doubleDensityClass& t) const
+             {
+                 return (density < t.density);
+             }
+    virtual ~doubleDensityClass(){}
+ };
+
+
 /**
     Forest for multi-terminal, mdd, boolean range.
 */
@@ -51,6 +84,7 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest {
     virtual node_handle readTerminal(input &s);
     virtual void underApproximate(dd_edge &e,long minThreshold, long maxThreshold,float desiredPercentage, int option);
     virtual void HeuristicUnderApproximate(dd_edge &e, long minThreshold, long maxThreshold,float desiredPercentage, int option,int deletedApproach, float rootStatePercentage);
+    bool compareLong(mpz_object a, mpz_object b );
 
   protected:
     virtual const char* codeChars() const;
@@ -58,10 +92,20 @@ private:
       void RemoveDuplicate(int lvl, std::map<int,int>map);
       int RemoveDuplicate2(int lvl, std::map<int,int>map,dd_edge &e,std::set<int>&RNA,std::set<int>&RNB);
       int maxid=0;
-      void uniqueNodesforp(node_handle p,std::set<int> &result );
+      void uniqueNodesforp(node_handle p,std::__cxx11::list<int> &result );
       void getNC(int lvl, node_handle a,bool*visitedNode,std::set<int> &result);
-      void uniqueAboveNodesforp(node_handle p,std::set<int> &result );
-      int RemoveDuplicateSet(int lvl, std::set<int>levels,std::map<int,int>map,dd_edge &e,std::set<int>&RNA,std::set<int>&RNB);
+      void uniqueAboveNodesforp(node_handle p,std::__cxx11::list<int> &result );
+      int RemoveDuplicateSet(int lvl, bool* levelarray,std::__cxx11::list<int>* uniquelist, /*std::set<int>levels,*/std::map<int,int>map,dd_edge &e/*,std::set<int>&RNA,std::set<int>&RNB*/);
+      void merge(doubleDensityClass* array, int const left, int const mid, int const right);
+      void mergeSort(doubleDensityClass* array, int const begin, int const end);
+      long double* ACBC;
 };
 
+// class  densityStruct {
+// public:
+//     mpz_object density;
+//     int index;
+//     bool removed;
+//     bool neverShouldRemove;
+//  };
 #endif

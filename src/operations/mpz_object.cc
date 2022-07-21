@@ -47,12 +47,18 @@ MEDDLY::mpz_object::mpz_object(const mpz_t &v)
 MEDDLY::mpz_object::mpz_object(const mpz_object &x)
 {
   mpz_init_set(value, x.value);
+  rdvalue=x.rdvalue;
+  index=x.index;
+  isIn=x.isIn;
+  neverIn=x.neverIn;
 }
 
 
 MEDDLY::mpz_object::~mpz_object()
 {
   mpz_clear(value);
+  rdvalue=0;
+  // index=-1;
 }
 
 MEDDLY::opnd_type MEDDLY::mpz_object::getType()
@@ -88,6 +94,11 @@ void MEDDLY::mpz_object::showwithreminder(output &strm) const
   // mpz_get_str(buffer, 10, rdvalue);
   // // Display the string
   strm.put(rdvalue);
+  // strm.put("I:");
+  strm.put(buffer);
+
+  printf("I: %d", index);
+
 }
 
 void MEDDLY::mpz_object::initBuffer()

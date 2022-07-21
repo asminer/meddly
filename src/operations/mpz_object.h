@@ -29,9 +29,27 @@ class mpz_object : public ct_object {
   mpz_t value;
 public:
     double rdvalue; //used for double reminder of a division
+    int index;
+    bool isIn;
+    bool neverIn;
+
   mpz_object();
   mpz_object(const mpz_t &v);
   mpz_object(const mpz_object &v);
+
+ mpz_object& operator=(const mpz_object& that) {
+     // printf("Copy Operator\n" );
+
+     if (this == &that)
+        return *this;
+        mpz_set(value, that.value);
+        index=that.index;
+        rdvalue=that.rdvalue;
+        isIn=that.isIn;
+        neverIn= that.neverIn;
+      return *this;
+ }
+
   virtual ~mpz_object();
   virtual opnd_type getType();
 
@@ -41,11 +59,17 @@ public:
   inline void copyInto(mpz_object &x) const {
     mpz_set(x.value, value);
   }
+  inline void setIndex(int i) {
+    index=i;
+  }
   inline void setReminder(double i) {
     rdvalue=i;
   }
   inline void copyIntowithReminder(mpz_object &x)  {
     mpz_set(x.value, value);
+    index=x.index;
+    isIn=x.isIn;
+    neverIn=x.neverIn;
     // setReminder(x.rdvalue);
     rdvalue=x.rdvalue;
   }

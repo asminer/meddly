@@ -33,7 +33,7 @@ namespace MEDDLY {
   class ac_int;
   class ac_mdd_int;
  // class card_mxd_int;
-  long* abovecount;
+  long long int* abovecount;
   class ac_real;
   class ac_mdd_real;
   /*  class card_mxd_real;
@@ -312,7 +312,7 @@ protected:
        }
 #endif
     // delete abovecount;
-	  abovecount=new long[card];
+	  abovecount=new long long int[card];
      iec=new int[card];
      for(int i=0;i<card;i++)
      iec[i]=0;

@@ -27,6 +27,8 @@
 #include <set>
 #include <map>
 #include <vector>
+#include <list>
+
 //#include "mpz_object.h"
  // #define HRec
  #define Hdom
@@ -38,6 +40,7 @@ namespace MEDDLY {
   class hu_mdd_int;
  // class card_mxd_int;
  std::map< int, std::set<int>> highestunique;
+ std::__cxx11::list<int>* highestuniquelist;
  std::vector<int>* rg;
   //int* abovecount;
   class hu_real;
@@ -314,28 +317,34 @@ protected:
    hu_mdd_real(const unary_opname* oc, expert_forest* arg)
      : hu_real(oc, arg) { }
    virtual void compute(const dd_edge &arg, double &res) {
-// printf("HighestUnique start\n" );
+ // printf("HighestUnique start\n" );
 int card = lastNode;//argF->getCurrentNumNodes();// instead of arg.getCardinality()
 if(card<1)
 {
     throw error(error::INVALID_SEQUENCE, __FILE__, __LINE__);
 }
-
+// int cC=arg.getNodeCount();
+// printf("cC %d\n",cC );
+// getchar();
     explored=new bool[card];
-    incomingedgecountHU=new int[card];
     #ifdef HRec
+    incomingedgecountHU=new int[card];
+
     LSA=new int[card];
     firstParent= new int[card];
     setToRoot= new bool[card];
     singleParent= new bool[card];
     #endif
     #ifdef HTrav
+    incomingedgecountHU=new int[card];
+
     lastPosition=new int[card];
     startInterval= new int[card];
     stopInterval=new int[card];
     blockedBy= new int[card];
     #endif
     #ifdef Hdom
+    highestuniquelist= new std::__cxx11::list<int>[card];
     // LSAtree=new std::vector<int>[card];// dominator
      rg=new std::vector<int> [card]; // revese graph
      // printf("rg made\n" );
@@ -371,8 +380,9 @@ if(card<1)
     for(int i=0;i<card;i++)
     {
          explored[i]=false;
-        incomingedgecountHU[i]=0;
         #ifdef HRec
+        incomingedgecountHU[i]=0;
+
         firstParent[i]=-1;
         setToRoot[i]=false;
         singleParent[i]=true;
@@ -392,16 +402,19 @@ if(card<1)
         T=0;
         #endif
         #ifdef HTrav
+        incomingedgecountHU[i]=0;
+
          lastPosition[i]=0;
          startInterval[i]=0;
          stopInterval[i]=0;
          blockedBy[i]=0;
          #endif
     }
+    #ifdef HTrav
     for(int i=0;i<card;i++){
     incomingedgecountHU[i]=incomingedgecount[i];
     }
-    #ifdef HTrav
+
     pset = new std::set<int>[card];
     for(int i=0;i<card;i++){
     pset[i].clear();
@@ -422,8 +435,8 @@ if(card<1)
  //       printf(", %d", *it);
  //
  //   }
- //
- //   // printf("[%d, \t %d ,\t %d ]\t \n",startInterval[i],stopInterval[i],lastPosition[i] );
+ // //
+ // //   // printf("[%d, \t %d ,\t %d ]\t \n",startInterval[i],stopInterval[i],lastPosition[i] );
  //     printf("\n" );
  //  }
  //  getchar();
@@ -432,6 +445,9 @@ if(card<1)
 
     #endif
     #ifdef HRec
+    for(int i=0;i<card;i++){
+    incomingedgecountHU[i]=incomingedgecount[i];
+    }
     parents = new std::set<int>[card];
     initialize(argF->getDomain()->getNumVariables(), arg.getNode(),arg.getNode());
     // printf("Initialize completed\n" );
@@ -482,13 +498,16 @@ if(card<1)
     #endif
     #ifdef Hdom
     // printf("HDom started\n" );
+    clock_t startd= clock();
     compute_rdom(argF->getDomain()->getNumVariables(), arg.getNode(),arg.getNode() );
+    // printf("compute_rdom time %f\n", double(clock() - startd) / double(CLOCKS_PER_SEC));
+
     // printf("HDOM compute_rdom\n" );
 
     // getchar();
     int n=T;
     // printf("HDOM%d\n",n );
-
+     startd= clock();
     for(int i=n;i>=1;i--){
       for(int j=0; j<rg[i].size();j++){
           // printf("i,j %d %d\n",i,j );
@@ -517,8 +536,13 @@ if(card<1)
 		}
 		if(i>1)Union(par[i],i);
     }
-    // printf("HDOM2\n" );
+    // printf("Forloop 1 time %f\n", double(clock() - startd) / double(CLOCKS_PER_SEC));
 
+    // printf("HDOM2\n" );
+    // list<int> HUList[card];
+     // std::__cxx11::list<int>* HUList = new std::__cxx11::list<int>[card];
+    // std::__cxx11::list<int> HUList[card];
+    startd= clock();
     for(int i=2;i<=n;i++)
 	   {
     if(sdom[i]>-1){
@@ -526,9 +550,13 @@ if(card<1)
 			dom[i]=dom[dom[i]];
     if(rev[i]==arg.getNode()&& rev[dom[i]]==arg.getNode());
     else
-    updateInsert(rev[dom[i]],rev[i]);
+    highestuniquelist[rev[dom[i]]].push_back(rev[i]);
+    // updateInsert(rev[dom[i]],rev[i]);
     }
   }
+  // delete [] HUList;
+  // printf("Forloop 2 time %f\n", double(clock() - startd) / double(CLOCKS_PER_SEC));
+  // getchar();
   // printf("HDOM3\n" );
   //////////////////FOR TESTING
   // printf("***HU-DOM***\n" );
@@ -547,8 +575,9 @@ if(card<1)
 		// tree[rev[i]].PB(rev[dom[i]]);
 		// printf("TREE %d = %d\n",rev[i], rev[dom[i]] );
     #endif
-     delete[] incomingedgecountHU;
+
      #ifdef HRec
+      delete[] incomingedgecountHU;
      delete[] parents;//=NULL;
      delete[] LSA;
      delete[] setToRoot;
@@ -556,6 +585,7 @@ if(card<1)
      delete[]firstParent;
      #endif
      #ifdef Hdom
+     // delete[] highestuniquelist;
      // delete[] LSAtree;// dominator
      // delete[] rg; // revese graph
      delete[] bucket; // bucket stores the set of semidom
@@ -569,6 +599,7 @@ if(card<1)
      // printf("Deletion Complete\n" );
      #endif
      #ifdef HTrav
+      delete[] incomingedgecountHU;
      delete[] startInterval;
      delete[] stopInterval;
      delete[] lastPosition;
@@ -657,8 +688,9 @@ if(card<1)
 
 
 
-     int* incomingedgecountHU;
+
      #ifdef HRec
+     int* incomingedgecountHU;
       std::set<int>* parents;
      int* LSA;
      bool* setToRoot;
@@ -666,6 +698,7 @@ if(card<1)
      int* firstParent;
      #endif
      #ifdef HTrav
+     int* incomingedgecountHU;
       std::set<int>* pset;
      int* lastPosition;
      int* startInterval;

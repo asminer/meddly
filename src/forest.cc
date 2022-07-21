@@ -1086,7 +1086,116 @@ void MEDDLY::expert_forest::countNodesByLevel(long* active) const
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-MEDDLY::node_handle* 
+std::__cxx11::list<int>*
+MEDDLY::expert_forest
+::markNodesInSubgraphByLvl(const node_handle* root, int N) const
+{
+  MEDDLY_DCASSERT(root);
+
+  const node_handle a_last = nodeHeaders.lastUsedHandle();
+  // initialize lists
+  bool* inList = new bool[a_last];
+  int* lvl= new int[a_last];
+  for (int i=0; i<a_last; i++) inList[i] = false;
+  inList--;
+
+  int mlen = 0;
+  int msize = 0;
+  node_handle* marked = 0;
+  std::__cxx11::list<int>* listMarked= new  std::__cxx11::list<int>[getNodeLevel(root[0])+1];
+
+  // Initialize search
+  for (int i=0; i<N; i++) {
+    if (isTerminalNode(root[i])) continue;
+    if (inList[root[i]]) continue;
+
+    // add dn to list
+    if (mlen+1 >= msize) {
+      // expand.  Note we're leaving an extra slot
+      // at the end, for the terminal 0.
+      msize += 1024;
+      node_handle* new_marked = (node_handle*)
+        realloc(marked, msize*sizeof(node_handle));
+      if (0==new_marked) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+      marked = new_marked;
+    }
+
+    marked[mlen] = root[i];
+    mlen++;
+    inList[root[i]] = true;
+    // lvl[root[i]]=getNodeLevel(root[i]);
+  }
+
+  unpacked_node *M = unpacked_node::useUnpackedNode();
+
+  // Breadth-first search
+  for (int mexpl=0; mexpl<mlen; mexpl++) {
+    // explore node marked[mexpl]
+    M->initFromNode(this, marked[mexpl], false);
+    for (int i=0; i<M->getNNZs(); i++) {
+      if (isTerminalNode(M->d(i))) continue;
+      MEDDLY_CHECK_RANGE(0, M->d(i)-1, a_last);
+      if (inList[M->d(i)]) continue;
+      // add dn to list
+      if (mlen+1 >= msize) {
+          // expand.  Note we're leaving an extra slot
+          // at the end, for the terminal 0.
+          msize += 1024;
+          node_handle* new_marked = (node_handle*)
+            realloc(marked, msize*sizeof(node_handle));
+          if (0==new_marked) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+          marked = new_marked;
+      }
+      inList[M->d(i)] = true;
+      marked[mlen] = M->d(i);
+      // lvl[mlen]=lvl[marked[mexpl]]-1;
+      mlen++;
+    } // for i
+  } // for mexpl
+
+  unpacked_node::recycle(M);
+
+  // sort
+  // if (sort && mlen>0) {
+  //   mlen = 0;
+  //   for (int i=1; i<=a_last; i++) {
+  //     if (inList[i]) {
+  //       marked[mlen] = i;
+  //       mlen++;
+  //     }
+  //   }
+  // }
+
+  // mlen = 0;
+  for (int i=1; i<=a_last; i++) {
+    if (inList[i]) {
+        listMarked[getNodeLevel(i)].push_back(i);
+        // printf("node i %d  gnl %d\n",i,getNodeLevel(i) );
+      // marked[mlen] = i;
+      // mlen++;
+    }
+  }
+
+  // cleanup
+  inList++;
+  delete[] inList;
+  delete[] lvl;
+  delete[]  marked;
+  // free(marked);
+
+  // if (0 == mlen) {
+  //   if (marked) free(marked);
+  //   return 0;
+  // }
+
+  // add 0 to the list
+  // marked[mlen] = 0;
+  // return marked;
+  return listMarked;
+}
+
+
+MEDDLY::node_handle*
 MEDDLY::expert_forest
 ::markNodesInSubgraph(const node_handle* root, int N, bool sort) const
 {

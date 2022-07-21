@@ -37,7 +37,7 @@ namespace MEDDLY {
   class bc_real;
   class bc_mdd_real;
   // class card_mxd_real;
-  long* belowcount;
+  long long int* belowcount;
   int lastNode;
 #ifdef HAVE_LIBGMP
   // class card_mpz;
@@ -269,7 +269,7 @@ public:
   virtual void compute(const dd_edge &arg, double &res) {
       if(lastNode>0)
       {
-      belowcount=new long[lastNode];//argF->getCurrentNumNodes()];
+      belowcount=new long long int[lastNode];//argF->getCurrentNumNodes()];
       visitedNode=new bool[lastNode];
       for(int i=0;i<lastNode;i++)
       {belowcount[i]=0;

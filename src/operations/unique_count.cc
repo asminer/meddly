@@ -25,6 +25,7 @@
 #endif
 #include "../defines.h"
 #include <set>
+#include <list>
 #include <map>
 //#include "mpz_object.h"
 
@@ -313,13 +314,18 @@ for(int i=0;i<card;i++){
     visitedNode[i]=false;
     uniquecount[i]=0;
 }
+// node_handle n=arg.getNode();
+// node_handle* list = markNodesInSubgraph(&n, 1, false);
+// for (long i=0; list[i]; i++) {
     for(int i=0;i<card;i++){
         if(incomingedgecount[i]>0||i==arg.getNode())
     uniquecount[i]=1;
     }
-
+    // printf("uniquecount Not COMPUTED  %d\n",arg.getNode() );
+    // getchar();
      res = compute_r( arg.getNode());
      delete [] visitedNode;
+     // printf("uniquecount COMPUTED\n" );
      // printf("UBC for root is %d\n", uniquecount[arg.getNode()]);
      // getchar();
      // printf("COMPUTED %d\n",card );
@@ -347,19 +353,25 @@ for(int i=0;i<card;i++){
 
  double MEDDLY::uc_mdd_real::compute_r(node_handle a)
  {
-     //printf("CAME UC %d \n",a );
+     // if(a>lastNode) return 0;
+     // if(a==1 or a==0) return 0;
+     // printf("CAME UC %d \n",a );
 
      if(visitedNode[a]){
+         // printf("Found %d\n",a );
          return uniquecount[a];
      }
-     std::set<int> rset=highestunique[a];
-     for (auto it=rset.begin(); it != rset.end(); ++it){
-        // printf("Res %d\n",*it );
+     // std::set<int> rset=highestunique[a];
+     // printf("size %d highestuniquelist %d \n",a, highestuniquelist[a].size() );
+     // for (auto it=rset.begin(); it != rset.end(); ++it){
+     for (std::__cxx11::list<int>::iterator it=highestuniquelist[a].begin(); it != highestuniquelist[a].end(); ++it){
+         // printf("Res %d\n",*it );
+         // printf("compute_r((*it)), %f\n",compute_r((*it)) );
         uniquecount[a]+=compute_r((*it));
 
     }
 
-    //printf("Done\n" );
+    // printf("Done %d= %d\n",a, uniquecount[a] );
     visitedNode[a]=1;
     return uniquecount[a];
 }

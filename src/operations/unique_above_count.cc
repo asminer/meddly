@@ -25,6 +25,7 @@
 #endif
 #include "../defines.h"
 #include <set>
+#include <list>
 #include <map>
 //#include "mpz_object.h"
 
@@ -352,8 +353,10 @@ for(int i=0;i<card;i++){
      if(visitedNode[a]){
          return uniqueAbovecount[a];
      }
-     std::set<int> rset=lowestunique[a];
-     for (auto it=rset.begin(); it != rset.end(); ++it){
+     // std::set<int> rset=lowestunique[a];
+     // for (auto it=rset.begin(); it != rset.end(); ++it){
+     for (std::__cxx11::list<int>::iterator it=lowestuniquelist[a].begin(); it != lowestuniquelist[a].end(); ++it){
+
         // printf("Res %d\n",*it );
         uniqueAbovecount[a]+=compute_r((*it))+1;
 

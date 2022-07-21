@@ -50,6 +50,7 @@
 #include <cassert>
 #include <map>
 #include <set>
+#include <list>
 
 // Flags for development version only. Significant reduction in performance.
 #ifdef DEVELOPMENT_CODE
@@ -154,10 +155,12 @@ namespace MEDDLY {
   };
 
   extern int* incomingedgecount;
-  extern long* abovecount;
-  extern long* belowcount;
+  extern long long int* abovecount;
+  extern long long int* belowcount;
   extern std::map< int, std::set<int>> highestunique;
+  extern std::__cxx11::list<int>* highestuniquelist;
   extern std::map< int, std::set<int>> lowestunique;
+  extern std::__cxx11::list<int>* lowestuniquelist;
   extern int* uniquecount;
   extern int* uniqueAbovecount;
   extern int lastNode;

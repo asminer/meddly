@@ -39,6 +39,8 @@ namespace MEDDLY {
   class lu_mdd_int;
  // class card_mxd_int;
  std::map< int, std::set<int>> lowestunique;
+ std::__cxx11::list<int>* lowestuniquelist;
+
   //int* abovecount;
   class lu_real;
   class lu_mdd_real;
@@ -331,15 +333,18 @@ if(card<1)
 }
 
     explored=new bool[card];
-    incomingedgecountHU=new int[card];
-    RincomingedgecountHU=new int[card];
+
 
     #ifdef LRec
+    incomingedgecountHU=new int[card];
+    RincomingedgecountHU=new int[card];
     LUreverse=new int[card];
     if(explored==0||LUreverse==0)
     {printf("ERROR IN making arrays\n" ); getchar();}
     #endif
     #ifdef LTrav
+    incomingedgecountHU=new int[card];
+    RincomingedgecountHU=new int[card];
     lastPosition=new int[card];
     startInterval= new int[card];
     stopInterval=new int[card];
@@ -351,22 +356,26 @@ if(card<1)
     for(int i=0;i<card;i++)
     {
         explored[i]=false;
+
+        #ifdef LRec
         incomingedgecountHU[i]=0;
         RincomingedgecountHU[i]=0;
-        #ifdef LRec
         LUreverse[i]=-1;
         #endif
         #ifdef LTrav
+        incomingedgecountHU[i]=0;
+        RincomingedgecountHU[i]=0;
         lastPosition[i]=0;
         startInterval[i]=0;
         stopInterval[i]=0;
         blockedBy[i]=0;
         #endif
     }
+
+    #ifdef LTrav
     for(int i=0;i<card;i++){
     incomingedgecountHU[i]=incomingedgecount[i];
     }
-    #ifdef LTrav
     pset = new std::set<int>[card];
     RMDD= new std::list<int>[card];
     for(int i=0;i<card;i++){
@@ -399,6 +408,9 @@ if(card<1)
     }
     #endif
     #ifdef LRec
+    for(int i=0;i<card;i++){
+    incomingedgecountHU[i]=incomingedgecount[i];
+    }
     initialize(argF->getDomain()->getNumVariables(), arg.getNode() );
     for(int i=0;i<card;i++)
     {
@@ -437,6 +449,8 @@ if(card<1)
     }
     #endif
     #ifdef Ldom
+    printf("Card %d\n",card );
+    lowestuniquelist=new std::__cxx11::list<int>[card];
 g=rg;//new std::vector<int>[card];// dominator
 rrg=new std::vector<int> [card]; // revese graph
 bucket=new std::vector<int>[card]; // bucket stores the set of semidom
@@ -478,7 +492,8 @@ if(dom[i]!=sdom[i])
   dom[i]=dom[dom[i]];
   // if(rev[i]==arg.getNode()&& rev[dom[i]]==arg.getNode());
   // else
-updateInsert(rev[dom[i]],rev[i]);
+  lowestuniquelist[rev[dom[i]]].push_back(rev[i]);
+// updateInsert(rev[dom[i]],rev[i]);
 }
 delete[] g;
 delete[] rrg; // revese graph
@@ -519,14 +534,17 @@ delete[] rev;
      // for(int i=0;i<card;i++){
      // pset[i].clear();
      // }
-      delete[] incomingedgecountHU;
-      delete[] RincomingedgecountHU;
+
      #ifdef LRec
+     delete[] incomingedgecountHU;
+     delete[] RincomingedgecountHU;
      cache.clear();
      delete[] LUreverse;
      #endif
      delete[] explored;
      #ifdef LTrav
+     delete[] incomingedgecountHU;
+     delete[] RincomingedgecountHU;
      delete[] pset;
      delete[] RMDD;
      delete[] startInterval;
@@ -554,11 +572,11 @@ void compute_rgraph(int ht,node_handle a);
 
  protected:
      bool* explored;
-     int* RincomingedgecountHU;
-     int* incomingedgecountHU;
+
 
      #ifdef LTrav
-
+     int* RincomingedgecountHU;
+     int* incomingedgecountHU;
      std::set<int>* pset;
      std::list<int>* RMDD;
     int* lastPosition;
@@ -569,6 +587,8 @@ void compute_rgraph(int ht,node_handle a);
 
      #endif
      #ifdef LRec
+     int* RincomingedgecountHU;
+     int* incomingedgecountHU;
      int* LUreverse;
      #endif
      #ifdef Ldom
