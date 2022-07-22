@@ -23,8 +23,8 @@
 
 #include "mtmdd.h"
 #include <cfloat>
-#include "../operations/mpz_object.h"
-#include <gmp.h>
+// #include "../operations/mpz_object.h"
+// #include <gmp.h>
 namespace MEDDLY {
   class mt_mdd_bool;
 };
@@ -84,7 +84,7 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest {
     virtual node_handle readTerminal(input &s);
     virtual void underApproximate(dd_edge &e,long minThreshold, long maxThreshold,float desiredPercentage, int option);
     virtual void HeuristicUnderApproximate(dd_edge &e, long minThreshold, long maxThreshold,float desiredPercentage, int option,int deletedApproach, float rootStatePercentage);
-    bool compareLong(mpz_object a, mpz_object b );
+    // bool compareLong(mpz_object a, mpz_object b );
 
   protected:
     virtual const char* codeChars() const;

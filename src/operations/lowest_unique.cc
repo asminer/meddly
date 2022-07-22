@@ -332,10 +332,10 @@ if(card<1)
     throw error(error::INVALID_SEQUENCE, __FILE__, __LINE__);
 }
 
-    explored=new bool[card];
 
 
     #ifdef LRec
+    explored=new bool[card];
     incomingedgecountHU=new int[card];
     RincomingedgecountHU=new int[card];
     LUreverse=new int[card];
@@ -343,6 +343,7 @@ if(card<1)
     {printf("ERROR IN making arrays\n" ); getchar();}
     #endif
     #ifdef LTrav
+    explored=new bool[card];
     incomingedgecountHU=new int[card];
     RincomingedgecountHU=new int[card];
     lastPosition=new int[card];
@@ -355,14 +356,15 @@ if(card<1)
 
     for(int i=0;i<card;i++)
     {
-        explored[i]=false;
 
         #ifdef LRec
+        explored[i]=false;
         incomingedgecountHU[i]=0;
         RincomingedgecountHU[i]=0;
         LUreverse[i]=-1;
         #endif
         #ifdef LTrav
+        explored[i]=false;
         incomingedgecountHU[i]=0;
         RincomingedgecountHU[i]=0;
         lastPosition[i]=0;
@@ -449,7 +451,7 @@ if(card<1)
     }
     #endif
     #ifdef Ldom
-    printf("Card %d\n",card );
+    // printf("Card %d\n",card );
     lowestuniquelist=new std::__cxx11::list<int>[card];
 g=rg;//new std::vector<int>[card];// dominator
 rrg=new std::vector<int> [card]; // revese graph
@@ -540,9 +542,10 @@ delete[] rev;
      delete[] RincomingedgecountHU;
      cache.clear();
      delete[] LUreverse;
-     #endif
      delete[] explored;
+     #endif
      #ifdef LTrav
+     delete[] explored;
      delete[] incomingedgecountHU;
      delete[] RincomingedgecountHU;
      delete[] pset;
@@ -571,10 +574,8 @@ void compute_rgraph(int ht,node_handle a);
    // std::set<int> CheckInterval(node_handle a );
 
  protected:
-     bool* explored;
-
-
      #ifdef LTrav
+     bool* explored;
      int* RincomingedgecountHU;
      int* incomingedgecountHU;
      std::set<int>* pset;
@@ -587,6 +588,7 @@ void compute_rgraph(int ht,node_handle a);
 
      #endif
      #ifdef LRec
+     bool* explored;
      int* RincomingedgecountHU;
      int* incomingedgecountHU;
      int* LUreverse;

@@ -326,8 +326,9 @@ if(card<1)
 // int cC=arg.getNodeCount();
 // printf("cC %d\n",cC );
 // getchar();
-    explored=new bool[card];
     #ifdef HRec
+    explored=new bool[card];
+
     incomingedgecountHU=new int[card];
 
     LSA=new int[card];
@@ -336,6 +337,8 @@ if(card<1)
     singleParent= new bool[card];
     #endif
     #ifdef HTrav
+    explored=new bool[card];
+
     incomingedgecountHU=new int[card];
 
     lastPosition=new int[card];
@@ -379,8 +382,9 @@ if(card<1)
     #endif
     for(int i=0;i<card;i++)
     {
-         explored[i]=false;
         #ifdef HRec
+        explored[i]=false;
+
         incomingedgecountHU[i]=0;
 
         firstParent[i]=-1;
@@ -402,6 +406,7 @@ if(card<1)
         T=0;
         #endif
         #ifdef HTrav
+        explored[i]=false;
         incomingedgecountHU[i]=0;
 
          lastPosition[i]=0;
@@ -583,6 +588,7 @@ if(card<1)
      delete[] setToRoot;
      delete[] singleParent;
      delete[]firstParent;
+     delete[] explored;
      #endif
      #ifdef Hdom
      // delete[] highestuniquelist;
@@ -604,6 +610,7 @@ if(card<1)
      delete[] stopInterval;
      delete[] lastPosition;
      delete[] blockedBy;
+     delete[] explored;
      #endif
 
 #ifdef DEBUG_AC
@@ -684,12 +691,8 @@ if(card<1)
     std::set<int> CheckInterval(node_handle a );
 
  protected:
-      bool* explored;
-
-
-
-
      #ifdef HRec
+     bool* explored;
      int* incomingedgecountHU;
       std::set<int>* parents;
      int* LSA;
@@ -698,6 +701,7 @@ if(card<1)
      int* firstParent;
      #endif
      #ifdef HTrav
+     bool* explored;
      int* incomingedgecountHU;
       std::set<int>* pset;
      int* lastPosition;

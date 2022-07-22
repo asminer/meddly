@@ -22,6 +22,7 @@
 #include "../unique_table.h"
 #include <random>
 #include <algorithm>
+#include <climits>
 
 
 MEDDLY::mt_mdd_bool::mt_mdd_bool(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, bool tv)
@@ -118,6 +119,7 @@ const char* MEDDLY::mt_mdd_bool::codeChars() const
 
 void MEDDLY::mt_mdd_bool::underApproximate(dd_edge &e, long Threashold, long maxThreshold,float desiredPercentage,int option)
 {
+    // printf("UAStart %d\n",option );
     if(option==1) return;
     srand(time(0));
      clock_t start, end;
@@ -173,6 +175,30 @@ generator.seed( rd() );
    double cA;
    apply(AC, e, cA);
    // printf("AC Calculated\n" );
+
+   ACBC=new long double[lastNode];
+       // printf("ACBC created\n" );
+       node_handle nl=e.getNode();
+
+       node_handle* list = markNodesInSubgraph(&nl, 1, false);
+       std::__cxx11::list<int>* uniquelist=markNodesInSubgraphByLvl(&nl,1);
+       for(long i=0;i<lastNode;i++)
+       ACBC[i]=0;
+       for (int i=0; list[i]; i++) {
+          // for(int i=0;i<lastNode;i++){
+              // if(abovecount[i]>1)
+              ACBC[list[i]]=(long double) abovecount[list[i]]*belowcount[list[i]];
+              if (ACBC[list[i]]/abovecount[list[i]]!=belowcount[list[i]])
+              { printf("NOT CORRECT%llu,%lu, %lu\n",ACBC[i],abovecount[list[i]],belowcount[list[i]] );
+              getchar();
+               }
+              // else
+              // ACBC[i]=0;
+          }
+          delete[] abovecount;
+        // printf("abovecount deleted\n" );
+       delete[] belowcount;
+       // printf("belowcount deleted\n" );
    double cH;
    apply(HU, e, cH);
    // printf("HU Calculated\n" );
@@ -197,45 +223,58 @@ generator.seed( rd() );
    // }
    int* levelcount=new int[num_vars+1];
    for(int i=0;i<=num_vars; i++){
-       levelcount[i]=0;
+       levelcount[i]=uniquelist[i].size();//0;
    }
-   for(int i=0;i<=(int)maxid;i++){
-       if((abovecount[i]>0)||(i==e.getNode()))
-        levelcount[getNodeLevel(i)]++;
-   }
+   // for(int i=0;i<=(int)maxid;i++){
+   //     if((abovecount[i]>0)||(i==e.getNode()))
+   //      levelcount[getNodeLevel(i)]++;
+   // }
 
    int minIndex=0;
    if((option==0)||(option==2)){
    double mindensity=DBL_MAX;
 
-      double density;
-      mpz_object densitympz;
-      std::set<int> resultSet;
-      mpz_object resultsetValue;
-      densitympz.setValue(LONG_MAX);
-      resultsetValue.setValue(LONG_MAX);
-      mpz_object option2comparingmpz;
-      double intpart;
-      double fractpart = std::modf (initialRootDensity , &intpart);
-      option2comparingmpz.setValue(intpart);
-      option2comparingmpz.setReminder(fractpart);
+      double density=DBL_MAX;
+      // mpz_object densitympz;
+      std::__cxx11::list<int> resultSet;
+      // mpz_object resultsetValue;
+      // densitympz.setValue(LONG_MAX);
+      // resultsetValue.setValue(LONG_MAX);
+      // mpz_object option2comparingmpz;
+      // double intpart;
+      // double fractpart = std::modf (initialRootDensity , &intpart);
+      // option2comparingmpz.setValue(intpart);
+      // option2comparingmpz.setReminder(fractpart);
+      // doubleDensityClass* doubleDensityArray=new doubleDensityClass[lastNode];
+      //
+      // for (i=0; list[i]; i++) {
+      //     doubleDensityArray[list[i]].density=(long double)ACBC[list[i]]/(double)(uniquecount[list[i]]+uniqueAbovecount[list[i]]);//((double)(abovecount[list[i]])/(double)(uniquecount[list[i]]+uniqueAbovecount[list[i]]))*(double)belowcount[list[i]];
+      //             doubleDensityArray[list[i]].index=list[i];
+      //             doubleDensityArray[list[i]].isIn=false;
+      //             doubleDensityArray[list[i]].neverIn=false;
+      // }
+      // std::sort(doubleDensityArray, doubleDensityArray+lastNode);
 
        for(int i=0;i<=(int)maxid;i++){
-           if((uniquecount[i]>0)&&(levelcount[getNodeLevel(i)]>1))//&&(abovecount[i]>0)&&(belowcount[i]>0)&&(uniquecount[i]>0)&&(incomingedgecount[i]>0||i==e.getNode()))
+           if((ACBC[i]>0)&&(levelcount[getNodeLevel(i)]>1))//&&(abovecount[i]>0)&&(belowcount[i]>0)&&(uniquecount[i]>0)&&(incomingedgecount[i]>0||i==e.getNode()))
            {
-               mpz_object mulmpz;
-               mulmpz.setValue(abovecount[i]);
-               mulmpz.multiply(belowcount[i]);
-               mulmpz.division(uniquecount[i]+uniqueAbovecount[i]);
-               if((mulmpz.compare(mulmpz, densitympz)<=0)&&((option!=2)||(option==2 &&mulmpz.compare(mulmpz, option2comparingmpz)<=0)))
+               double densityi=ACBC[i]/(uniquecount[i]+uniqueAbovecount[i]);
+               // mpz_object mulmpz;
+               // mulmpz.setValue(abovecount[i]);
+               // mulmpz.multiply(belowcount[i]);
+               // mulmpz.division(uniquecount[i]+uniqueAbovecount[i]);
+               if((densityi<=density/*mulmpz.compare(mulmpz, densitympz)<=0*/)&&((option!=2)||(option==2 /*&&mulmpz.compare(mulmpz, option2comparingmpz)<=0*/)))
                {
                    if(resultSet.size()>0){
                        if(option==0){
-                           if(resultsetValue.compare(resultsetValue,mulmpz)==0){
-                               resultSet.insert(i);
-                               mulmpz.copyInto(resultsetValue);
-                               resultsetValue.setReminder(mulmpz.rdvalue);
-                           }else{
+                           if(density=densityi/*resultsetValue.compare(resultsetValue,mulmpz)==0*/){
+                               resultSet.push_back(i);
+                               // mulmpz.copyInto(resultsetValue);
+                               // resultsetValue.setReminder(mulmpz.rdvalue);
+                              // density=densityi
+                           }
+
+                          /* else{
                                resultSet.clear();
                                resultSet.insert(i);
                                 mulmpz.copyInto(densitympz);
@@ -255,14 +294,15 @@ generator.seed( rd() );
                                resultSet.insert(i);
                                mulmpz.copyInto(resultsetValue);
                                resultsetValue.setReminder(mulmpz.rdvalue);
-                           }
+                           }*/
                        }
                    }else{
-                      resultSet.insert(i);
-                      mulmpz.copyInto(resultsetValue);
-                      mulmpz.copyInto(densitympz);
-                      densitympz.setReminder(mulmpz.rdvalue);
-                      resultsetValue.setReminder(mulmpz.rdvalue);
+                      resultSet.push_back(i);
+                      density=densityi;
+                      // mulmpz.copyInto(resultsetValue);
+                      // mulmpz.copyInto(densitympz);
+                      // densitympz.setReminder(mulmpz.rdvalue);
+                      // resultsetValue.setReminder(mulmpz.rdvalue);
                    }
                    // minIndex=i;
                    // mulmpz.copyInto(densitympz);
@@ -271,12 +311,14 @@ generator.seed( rd() );
            }
        }
        if(resultSet.size()>0){
-       std::set<int>::iterator iter = resultSet.begin();
+           // printf("Density %lf\n", density);
+       std::__cxx11::list<int>::iterator iter = resultSet.begin();
        int dgen=rand() % (resultSet.size());
       std::advance(iter, dgen);
        minIndex=(*(iter));
       resultSet.clear();
     }
+    // printf("minIndex %d\n",minIndex );
    // densitympz.showwithreminder(meddlyout);
    if(minIndex==0)
    {
@@ -418,14 +460,15 @@ cC=e.getNodeCount();
 // printf("End CALL RemoveDuplicate2 \n" );
 
 // cC--;
-if(belowcount!=0)delete[] belowcount; else {printf("ERRR belowcount\n"); getchar();}
+// if(belowcount!=0)delete[] belowcount; else {printf("ERRR belowcount\n"); getchar();}
 if(incomingedgecount!=0)delete [] incomingedgecount;else {printf("ERRR incomingedgecount\n"); getchar();}
-if(abovecount!=0)delete[] abovecount;else {printf("ERRR abovecount\n"); getchar();}
+// if(abovecount!=0)delete[] abovecount;else {printf("ERRR abovecount\n"); getchar();}
 highestunique.clear();
 if(uniquecount!=0)delete[] uniquecount;else {printf("ERRR uniquecount\n"); getchar();}
 lowestunique.clear();
 if(uniqueAbovecount!=0) delete[] uniqueAbovecount; else{printf("ERR uniqueAbovecount\n" ); getchar();}
 // printf("DELETED \n" );
+delete[] ACBC;
 
 
 map.clear();
@@ -2085,11 +2128,11 @@ printf("CCCC %d\n",e.getNodeCount() );
 */
 
 
-bool MEDDLY::mt_mdd_bool::compareLong(mpz_object a, mpz_object b)
-{
-    return true;
-    // return (i1.start < i2.start);
-}
+// bool MEDDLY::mt_mdd_bool::compareLong(mpz_object a, mpz_object b)
+// {
+//     return true;
+//     // return (i1.start < i2.start);
+// }
 void MEDDLY::mt_mdd_bool::RemoveDuplicate(int lvl, std::map<int,int> map){
     int num_vars=getNumVariables();
     FILE_output meddlyout(stdout);
