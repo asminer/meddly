@@ -44,6 +44,7 @@ namespace MEDDLY {
     float rootStatePercentage;
     int deletedApproach;
     long timeForUA;
+    long timeT;
   class common_bfs;
   class common_bfs_ua;
   class common_bfs_hua;
@@ -111,6 +112,8 @@ MEDDLY::common_bfs::common_bfs(const binary_opname* oc, expert_forest* a1,
 
 void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd_edge &reachableStates, bool userFlag)
 {
+    clock_t start, end;
+    start = clock();
   MEDDLY_DCASSERT(unionOp);
   MEDDLY_DCASSERT(imageOp);
 
@@ -181,7 +184,16 @@ printf("XXXX %ld\t %ld\n",lastreachable, peakreachable );
 //1000
 // reachableStates.show(meddlyout,0);
  // printf("XXXX\n" );
+ end = clock();
+ double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+ if(time_taken>timeT){
+ printf("TimeOut\n" );
+ return;
+}
   }
+
+
+
 
 }
 
@@ -416,7 +428,7 @@ start = clock();
 #endif
     unionOp->computeDDEdge(reachableStates, front, reachableStates, userFlag);
     printf("before %d\n",reachableStates.getNodeCount() );
-    printf("cardbefore %f\n",reachableStates.getCardinality() );
+    printf("cardbefore %ld\n",reachableStates.getCardinality() );
     #ifdef iterationcount
     if(reachableStates.getNodeCount()>maxThreshold){
     if(uacall<iterationcount)
@@ -469,8 +481,10 @@ k++;
 // getchar();
 end = clock();
 double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
-if(time_taken>timeForUA)
+if(time_taken>timeForUA){
+printf("TimeOut\n" );
 return;
+}
   }
   #ifdef DUP
 delete [] arrddedge;
@@ -719,7 +733,7 @@ bool oneMoreBFS=false;
     int currentNC=reachableStates.getNodeCount();
     printf("before %d\n",reachableStates.getNodeCount() );
     long currentRS=reachableStates.getCardinality();
-    printf("cardbefore %f\n",currentRS );
+    printf("cardbefore %ld\n",currentRS );
 
     #ifdef iterationcount
     if(reachableStates.getNodeCount()>maxThreshold){
@@ -882,8 +896,10 @@ k++;
 // getchar();
 end = clock();
 double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
-if(time_taken>timeForUA)
+if(time_taken>timeForUA){
+printf("TimeOut\n" );
 return;
+}
   }
   #ifdef DUP
 delete [] arrddedge;

@@ -172,6 +172,7 @@ namespace MEDDLY {
   extern float rootStatePercentage;
   extern int deletedApproach;
   extern long timeForUA;
+  extern long timeT;
   // ******************************************************************
   // *                    miscellaneous  functions                    *
   // ******************************************************************
