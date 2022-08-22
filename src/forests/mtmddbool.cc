@@ -176,7 +176,7 @@ generator.seed( rd() );
    apply(AC, e, cA);
    // printf("AC Calculated\n" );
 
-   ACBC=new long double[lastNode];
+   ACBC=new unsigned long long int[lastNode];
        // printf("ACBC created\n" );
        node_handle nl=e.getNode();
 
@@ -190,7 +190,8 @@ generator.seed( rd() );
               ACBC[list[i]]=(long double) abovecount[list[i]]*belowcount[list[i]];
               if (ACBC[list[i]]/abovecount[list[i]]!=belowcount[list[i]])
               { printf("NOT CORRECT%llu,%lu, %lu\n",ACBC[i],abovecount[list[i]],belowcount[list[i]] );
-              getchar();
+              exit(0);
+              // getchar();
                }
               // else
               // ACBC[i]=0;
@@ -655,7 +656,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
        apply(AC, e, cA);
        printf("AC time %f\n", double(clock() - startc) / double(CLOCKS_PER_SEC));
        startc = clock();
-       ACBC=new long double[lastNode];
+       ACBC=new unsigned long long int[lastNode];
        printf("ACBC created\n" );
        node_handle nl=e.getNode();
 
@@ -669,15 +670,16 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
        //     getchar();
        // }
        // }
-       long double sumOfstateforselectedNode=0;
-       long int rootNumberofState=belowcount[e.getNode()];
+       long double sumOfstateforselectedNode=0.0;
+       long long int rootNumberofState=belowcount[e.getNode()];
        for (int i=0; list[i]; i++) {
        // for(int i=0;i<lastNode;i++){
            // if(abovecount[i]>1)
            ACBC[list[i]]=(long double) abovecount[list[i]]*belowcount[list[i]];
            if (ACBC[list[i]]/abovecount[list[i]]!=belowcount[list[i]])
            { printf("NOT CORRECT%llu,%lu, %lu\n",ACBC[i],abovecount[list[i]],belowcount[list[i]] );
-           getchar();
+           exit(0);
+           // getchar();
             }
            // else
            // ACBC[i]=0;
@@ -1002,6 +1004,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 startc = clock();
 int shouldberemoved=0;
+sumOfstateforselectedNode=0.0;
 for(int j=0;j<lastNode;j++){
     // if(densityStructArray[j].removed)
     if(doubleDensityArray[j].isIn)// if(densityArray[j].isIn)
@@ -1194,10 +1197,14 @@ while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(opt
         // printf("MinIndex %d, AC %ld BC %ld, UC %d \n",minIndex,abovecount[minIndex],belowcount[minIndex],uniquecount[minIndex] );
         // printf("ADDED?\n" );
         sumOfstateforselectedNode+=ACBC[minIndex];//(abovecount[minIndex]*belowcount[minIndex]);
-        // printf("sumOfstateforselectedNode %ld\n", sumOfstateforselectedNode);
-        // printf("sumOfstateforselectedNode %ld, (long int)(rootStatePercentage*rootNumberofState %ld \n",sumOfstateforselectedNode,(long int)(rootStatePercentage*rootNumberofState) );
-        if((deletedApproach==1)&&(m.size()>0)&&(sumOfstateforselectedNode>(long int)(rootStatePercentage*rootNumberofState))){
-            // getchar();
+        // printf("sumOfstateforselectedNode %lu\n", sumOfstateforselectedNode);
+        unsigned long long int rootNumberofStatePercentage=(unsigned long long int)(rootNumberofState/ (1.0/rootStatePercentage));
+        if (rootNumberofStatePercentage<0)
+        { printf("NOT CORRECT %Lf, %llu, %f\n",rootNumberofStatePercentage,rootNumberofState,rootStatePercentage );
+        exit(0);
+        // getchar();
+         }
+        if((deletedApproach==1)&&(m.size()>0)&&(sumOfstateforselectedNode>(unsigned long long int)rootNumberofStatePercentage/*(rootNumberofState*rootStatePercentage)*/)){
             break;
         }
         else{
@@ -1504,7 +1511,7 @@ printf("Selecting nodes for deletion time %f\n", double(clock() - startc) / doub
         printf("m size %d\n",m.size() );
         printf("Removed size %d\n",shouldberemoved);
         printf("Expected %d\n", cC-shouldberemoved);
-        printf("sumOfstate for selectedNode %ld\n",sumOfstateforselectedNode );
+        printf("sumOfstate for selectedNode %lu\n",sumOfstateforselectedNode );
         // printf("Removed size %d\n",removedNode.size() );
         // printf("Expected %d\n", cC-removedNode.size());
         // printf("rn %d\n",removedNode.size() );
@@ -1816,7 +1823,8 @@ printf("Selecting nodes for deletion time %f\n", double(clock() - startc) / doub
          // for(int k=0;k<sizeunique;k++){
          // if(((incomingedgecount[uniqueNodes[k]]>0)||(uniqueNodes[k]==root))&&(uniqueNodes[k]<=maxid)&&(map[uniqueNodes[k]]!=0)){
          for(const auto& unique : uniquelist[l+1]){
-             if(((ACBC/*incomingedgecount*/[unique]>0)||(unique==root))&&(unique<=maxid)&&(map[unique]!=0)){
+             // if(((ACBC/*incomingedgecount*/[unique]>0)||(unique==root))&&(unique<=maxid)&&(map[unique]!=0)){
+             if(map[unique]!=0){
 
              unpacked_node* un =  unpacked_node::newFull(this, l+1,b);
              bool nodeChanged=false;
@@ -1972,7 +1980,8 @@ printf("Selecting nodes for deletion time %f\n", double(clock() - startc) / doub
             if(correct==false)
             {
                 printf("NOT CORRECT\n" );
-                getchar();
+                exit(0);
+                // getchar();
                 break;
             }
         }

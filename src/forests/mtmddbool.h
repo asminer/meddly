@@ -98,7 +98,7 @@ private:
       int RemoveDuplicateSet(int lvl, bool* levelarray,std::__cxx11::list<int>* uniquelist, /*std::set<int>levels,*/std::map<int,int>map,dd_edge &e/*,std::set<int>&RNA,std::set<int>&RNB*/);
       void merge(doubleDensityClass* array, int const left, int const mid, int const right);
       void mergeSort(doubleDensityClass* array, int const begin, int const end);
-      long double* ACBC;
+      unsigned long long int* ACBC;
 };
 
 // class  densityStruct {
