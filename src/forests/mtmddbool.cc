@@ -1011,6 +1011,7 @@ for(int j=0;j<lastNode;j++){
     shouldberemoved++;
 }
 int dsaIndexxk=0;
+cC=e.getNodeCount();
 while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(option==3)))||(option==2)){
 
     // std::set<int> resultSet;
@@ -1291,10 +1292,19 @@ while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(opt
     // for(int i=0;i<=num_vars; i++)
     // copylevelcount[i]=levelcount[i];
     // printf("End of loop\n");
+    shouldberemoved=0;
+   for(int j=0;j<lastNode;j++){
+       // if(densityStructArray[j].removed)
+       if(doubleDensityArray[j].isIn)// if(densityArray[j].isIn)
+       shouldberemoved++;
+   }
 }
 
 printf("Selecting nodes for deletion time %f\n", double(clock() - startc) / double(CLOCKS_PER_SEC));
-
+if(m.size()==0){
+    printf("No node can get selected.\n" );
+    return;
+}
 
 ///////////////////////////////////////////////////BEGIN RETURN IF NEEDED////////////////////////////////////////////////
         // while(((cC-removedNode.size()>Threashold)&&((option==0)||(option==3)))||(option==2)){
