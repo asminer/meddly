@@ -663,7 +663,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
        node_handle* list = markNodesInSubgraph(&nl, 1, false);
        std::__cxx11::list<int>* uniquelist=markNodesInSubgraphByLvl(&nl,1);
        for(long i=0;i<lastNode;i++)
-       ACBC[i]=0;
+       ACBC[i]=0.0;
        // for (int i=0; list[i]; i++) {
        //     if(abovecount[i]<1)
        //     {printf("Abovecount not correct %d %d %llu\n",i, incomingedgecount[i],abovecount[i] );
@@ -789,6 +789,13 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
         //     bool neverIn;
         //  };
          doubleDensityClass* doubleDensityArray=new doubleDensityClass[lastNode];
+		 for(long i=0;i<lastNode;i++)
+         {
+			 doubleDensityArray[i].density=0.0;
+			 doubleDensityArray[i].index=-1;
+			 doubleDensityArray[i].isIn=false;
+			 doubleDensityArray[i].neverIn=false;
+		 }
         // densityStruct* densityStructArray=new densityStruct[lastNode];
         // mpz_object* densityArray=new mpz_object[lastNode];
         // double* doubleDensityArray= new double[lastNode];
@@ -889,7 +896,14 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
     startc = clock();
     // mergeSort(doubleDensityArray, 0, lastNode-1);
     // getchar();
+	std::random_device rd;
+   std::mt19937 g(rd());
+
+   std::shuffle(doubleDensityArray, doubleDensityArray+lastNode, g);
     std::sort(doubleDensityArray, doubleDensityArray+lastNode);
+
+
+
     // , [](const doubleDensityClass& x, const doubleDensityClass& y) {
     //
     //        // if(x.density<y.density)
@@ -1007,203 +1021,69 @@ int shouldberemoved=0;
 sumOfstateforselectedNode=0.0;
 for(int j=0;j<lastNode;j++){
     // if(densityStructArray[j].removed)
-    if(doubleDensityArray[j].isIn)// if(densityArray[j].isIn)
-    shouldberemoved++;
+    // if(doubleDensityArray[j].isIn)
+	doubleDensityArray[j].isIn=false;
+	doubleDensityArray[j].neverIn=false;
+	// if(densityArray[j].isIn)
+    // shouldberemoved++;
 }
 int dsaIndexxk=0;
 cC=e.getNodeCount();
 while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(option==3)))||(option==2)){
-
-    // std::set<int> resultSet;
     minIndex=0;
     clock_t startf= clock();
     int numberDeleted=0;
 
     for ( int dsaIndexx=dsaIndexxk;dsaIndexx<lastNode;dsaIndexx++){
-    // for (auto j: vectordensity){
-
-        // int i=vectordensity.front().index;
-        // int i=dsaIndex;
-        // if(incomingedgecount)
-        // printf("dsaIndexx %d\n",dsaIndexx );
         int i= doubleDensityArray[dsaIndexx].index;//densityArray[dsaIndexx].index;
         if(i>lastNode){
             printf("ERRROR LASTNODE %d %d\n", i,lastNode);
         }
-        if (i>0){
-        // vectordensity.front().showwithreminder(meddlyout);
-        // getchar();
-        // printf("i is %d\n",i );
-        // getchar();
-        // if(i==1)
-        // {
-        //     getchar();
-        //     for (auto i: vectordensity){
-        //         printf("%d ,",i );
-        //     }
-        //     printf("\n" );
-        //     getchar();
-        //
-        // }
+        if (i>0&& doubleDensityArray[dsaIndexx].density>0.0){
         if(i!=root)
-        if(((ACBC/*incomingedgecount*/[i]>0)&&(levelcount[getNodeLevel(i)]>1)&&((option==0)||(option==3 && option3densitycheck))||
-        ((ACBC/*incomingedgecount*/[i]>0)&&(levelcount[getNodeLevel(i)]>1)&&((option==2)||(option==3 && !option3densitycheck)))))
-        //&&(!(removedNode.find(i))))
+        if(((ACBC[i]>0)&&(levelcount[getNodeLevel(i)]>1)&&((option==0)||(option==3 && option3densitycheck))||
+        ((ACBC[i]>0)&&(levelcount[getNodeLevel(i)]>1)&&((option==2)||(option==3 && !option3densitycheck)))))
         {
-            // printf("option3densitycheck %d size %d\n",option3densitycheck,removedNode.size());
-             // printf("SELECTED\n" );
-             // clock_t startd= clock();
             bool is_in =doubleDensityArray[dsaIndexx].isIn;//densityArray[dsaIndexx].isIn; //densityStructArray[dsaIndex].removed;//removedNode.find(i) != removedNode.end();
             bool neverDelete_isin =doubleDensityArray[dsaIndexx].neverIn;//densityArray[dsaIndexx].neverIn; //densityStructArray[dsaIndex].neverShouldRemove; //neverdelete.find(i) != neverdelete.end();
-            // printf("check node isin and neverisin time %f\n", double(clock() - startd) / double(CLOCKS_PER_SEC));
-
             if(!is_in && !neverDelete_isin &&(i>1)){
-                // if(resultSet.size()>0){
-                //     if((option==0)||(option==3 && option3densitycheck)){
-                //         if(resultsetValue.compare(resultsetValue,arrdensity[i])==0){
-                //             resultSet.insert(i);
-                //             arrdensity[i].copyInto(resultsetValue);
-                //             resultsetValue.setReminder(arrdensity[i].rdvalue);
-                //         }else{
-                //             resultSet.clear();
-                //             resultSet.insert(i);
-                //              arrdensity[i].copyInto(densitympz);
-                //              densitympz.setReminder(arrdensity[i].rdvalue);
-                //             arrdensity[i].copyInto(resultsetValue);
-                //             resultsetValue.setReminder(arrdensity[i].rdvalue);
-                //         }
-                //     }else if((option==2)||(option==3 && !option3densitycheck)){
-                //         if(resultsetValue.compare(resultsetValue,arrdensity[i])==0){
-                //             resultSet.insert(i);
-                //             arrdensity[i].copyInto(resultsetValue);
-                //             resultsetValue.setReminder(arrdensity[i].rdvalue);
-                //         }else{
-                //             resultSet.clear();
-                //             arrdensity[i].copyInto(densitympz);
-                //             densitympz.setReminder(arrdensity[i].rdvalue);
-                //             resultSet.insert(i);
-                //             arrdensity[i].copyInto(resultsetValue);
-                //             resultsetValue.setReminder(arrdensity[i].rdvalue);
-                //         }
-                //     }
-                // }else{
-                //    resultSet.insert(i);
-                //    arrdensity[i].copyInto(resultsetValue);
-                //    arrdensity[i].copyInto(densitympz);
-                //    densitympz.setReminder(arrdensity[i].rdvalue);
-                //    resultsetValue.setReminder(arrdensity[i].rdvalue);
-                // }
-
             minIndex=i;
-            // printf("minIndex inLoop is %d\n",minIndex );
             numberDeleted++;
             dsaIndexxk=dsaIndexx+1;
-            // printf("dsaIndexxk %d\n",dsaIndexxk );
-            // vectordensity.erase( vectordensity.begin() );
             break;
-            // arrdensity[i].copyInto(densitympz);
-            // densitympz.setReminder(arrdensity[i].rdvalue);
         }else{
             numberDeleted++;
-            // vectordensity.erase( vectordensity.begin() );
         }
          }
     }
     }
-    // getchar();
-    // printf("BREAK %d\n",dsaIndexxk );
-    // vectordensity.erase( vectordensity.begin(),vectordensity.begin()+numberDeleted );
-    // printf("Selecting the minIndex nodes for deletion time %f\n", double(clock() - startf) / double(CLOCKS_PER_SEC));
 
-    // printf("minIndex is %d\n",minIndex );
-    // getchar();
-    // if(resultSet.size()>0){
-    //    std::set<int>::iterator iter = resultSet.begin();
-    //    int dgen=rand() % (resultSet.size());
-    //   std::advance(iter, dgen);
-    //    minIndex=(*(iter));
-    //   resultSet.clear();
-    // }
     if(minIndex!=0){
 
-    // bool* visitedNode= new bool[maxid+1];
-    // for(int i=0;i<=maxid;i++){
-    //     visitedNode[i]=false;
-    // }
-    // clock_t startf= clock();
       std::__cxx11::list<int> resultp;
     uniqueNodesforp(minIndex/*,visitedNode*/,resultp);
-    // printf("find unique below nodes time %f\n", double(clock() - startf) / double(CLOCKS_PER_SEC));
-    // startf= clock();
+
     std::__cxx11::list<int> resultap;
   uniqueAboveNodesforp(minIndex/*,visitedNode*/,resultap);
-  // printf("find unique above nodes time %f\n", double(clock() - startf) / double(CLOCKS_PER_SEC));
 
-  // std::set<int> bresultp;
-  // for(auto p:resultap){
-  //     std::set<int> belowresultap;
-  //     uniqueNodesforp(p/*,visitedNode*/,belowresultap);
-  //     bresultp.insert(belowresultap.begin(),belowresultap.end());
-  // }
   if(resultap.size()!=uniqueAbovecount[minIndex])
   {printf("ERRR in uniqueAboveNodesforp %d %d\n",resultap.size(),uniqueAbovecount[minIndex]);getchar();}
     if(resultp.size()!=uniquecount[minIndex])
     {printf("ERRR in uniqueNodesforp\n");getchar();}
     bool shouldadd=true;
-    // for(auto i= bresultp.begin();i!=bresultp.end();++i){
-    //     if(copylevelcount[getNodeLevel(*i)]<=1)
-    //     {
-    //         shouldadd=false;
-    //         printf("should not add bresultp\n" );
-    //         //getchar();
-    //         neverdelete.insert(minIndex);
-    //         break;
-    //     }
-    // }
-    // startf= clock();
+
     if(shouldadd)
     if(levelcount[getNodeLevel(minIndex)]<=1){
         shouldadd=false;
     }
-    // for(auto i= resultp.begin();i!=resultp.end();++i){
-    //     if(copylevelcount[getNodeLevel(*i)]<=1)
-    //     {
-    //         shouldadd=false;
-    //         printf("should not add resultp\n" );
-    //         //getchar();
-    //         densityStructArray[minIndex].neverShouldRemove=true;
-    //         // neverdelete.insert(minIndex);
-    //         break;
-    //     }
-    // }
-    // printf("check unique below nodes should add time %f\n", double(clock() - startf) / double(CLOCKS_PER_SEC));
-    // startf= clock();
-
-    // if(shouldadd)
-    // for(auto i= resultap.begin();i!=resultap.end();++i){
-    //     if(copylevelcount[getNodeLevel(*i)]<=1)
-    //     {
-    //         shouldadd=false;
-    //         printf("should not add resultap\n" );
-    //         //getchar();
-    //         densityStructArray[minIndex].neverShouldRemove=true;
-    //         // neverdelete.insert(minIndex);
-    //         break;
-    //     }
-    // }
-    // printf("check unique below nodes should add time %f\n", double(clock() - startf) / double(CLOCKS_PER_SEC));
 
     if(shouldadd){
         startf= clock();
-        // printf("MinIndex %d, AC %ld BC %ld, UC %d \n",minIndex,abovecount[minIndex],belowcount[minIndex],uniquecount[minIndex] );
-        // printf("ADDED?\n" );
         sumOfstateforselectedNode+=ACBC[minIndex];//(abovecount[minIndex]*belowcount[minIndex]);
-        // printf("sumOfstateforselectedNode %lu\n", sumOfstateforselectedNode);
         unsigned long long int rootNumberofStatePercentage=(unsigned long long int)(rootNumberofState/ (1.0/rootStatePercentage));
         if (rootNumberofStatePercentage<0)
         { printf("NOT CORRECT %Lf, %llu, %f\n",rootNumberofStatePercentage,rootNumberofState,rootStatePercentage );
         exit(0);
-        // getchar();
          }
         if((deletedApproach==1)&&(m.size()>0)&&(sumOfstateforselectedNode>(unsigned long long int)rootNumberofStatePercentage/*(rootNumberofState*rootStatePercentage)*/)){
             break;
