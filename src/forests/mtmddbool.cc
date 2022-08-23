@@ -791,7 +791,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
          doubleDensityClass* doubleDensityArray=new doubleDensityClass[lastNode];
 		 for(long i=0;i<lastNode;i++)
          {
-			 doubleDensityArray[i].density=0.0;
+			 doubleDensityArray[i].density=-1;
 			 doubleDensityArray[i].index=-1;
 			 doubleDensityArray[i].isIn=false;
 			 doubleDensityArray[i].neverIn=false;
