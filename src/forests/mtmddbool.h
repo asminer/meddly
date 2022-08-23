@@ -33,12 +33,12 @@ namespace MEDDLY {
 
 class doubleDensityClass {
 public:
-    double density;
+    unsigned long long int density;
     int index;
     bool isIn;
     bool neverIn;
     doubleDensityClass(){index=0; density=0.0; isIn=false;neverIn=false;}
-    explicit doubleDensityClass(double _density,int _index, bool _isIn,bool _neverIn):
+    explicit doubleDensityClass(unsigned long long int _density,int _index, bool _isIn,bool _neverIn):
     density(_density),index(_index),isIn(_isIn),neverIn(_neverIn){ }
     doubleDensityClass(const doubleDensityClass &t)
              {

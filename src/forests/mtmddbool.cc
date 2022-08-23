@@ -187,7 +187,7 @@ generator.seed( rd() );
        for (int i=0; list[i]; i++) {
           // for(int i=0;i<lastNode;i++){
               // if(abovecount[i]>1)
-              ACBC[list[i]]=(long double) abovecount[list[i]]*belowcount[list[i]];
+              ACBC[list[i]]=(unsigned long long int) abovecount[list[i]]*belowcount[list[i]];
               if (ACBC[list[i]]/abovecount[list[i]]!=belowcount[list[i]])
               { printf("NOT CORRECT%llu,%lu, %lu\n",ACBC[i],abovecount[list[i]],belowcount[list[i]] );
               exit(0);
@@ -675,7 +675,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
        for (int i=0; list[i]; i++) {
        // for(int i=0;i<lastNode;i++){
            // if(abovecount[i]>1)
-           ACBC[list[i]]=(long double) abovecount[list[i]]*belowcount[list[i]];
+           ACBC[list[i]]=(unsigned long long int) abovecount[list[i]]*belowcount[list[i]];
            if (ACBC[list[i]]/abovecount[list[i]]!=belowcount[list[i]])
            { printf("NOT CORRECT%llu,%lu, %lu\n",ACBC[i],abovecount[list[i]],belowcount[list[i]] );
            exit(0);
@@ -800,7 +800,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
                 printf("ERRROR LASTNODE %d %d\n", list[i],lastNode);
             }
             if(list[i]!=root){
-                doubleDensityArray[list[i]].density=(long double)ACBC[list[i]]/(double)(uniquecount[list[i]]+uniqueAbovecount[list[i]]);//((double)(abovecount[list[i]])/(double)(uniquecount[list[i]]+uniqueAbovecount[list[i]]))*(double)belowcount[list[i]];
+                doubleDensityArray[list[i]].density=(unsigned long long int)ACBC[list[i]]/(double)(uniquecount[list[i]]+uniqueAbovecount[list[i]]);//((double)(abovecount[list[i]])/(double)(uniquecount[list[i]]+uniqueAbovecount[list[i]]))*(double)belowcount[list[i]];
                 doubleDensityArray[list[i]].index=list[i];
                 doubleDensityArray[list[i]].isIn=false;
                 doubleDensityArray[list[i]].neverIn=false;
