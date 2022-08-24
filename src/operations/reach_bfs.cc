@@ -171,6 +171,7 @@ void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd
     debug << "Reachable so far: ";
     reachableStates.show(debug, 2);
 #endif
+printf("cardafter %f\n",reachableStates.getCardinality() );
 lastreachable=reachableStates.getNodeCount();
 #ifdef CHKBFS
 if(lastreachable>maxThreshold)
@@ -428,7 +429,7 @@ start = clock();
 #endif
     unionOp->computeDDEdge(reachableStates, front, reachableStates, userFlag);
     printf("before %d\n",reachableStates.getNodeCount() );
-    printf("cardbefore %ld\n",reachableStates.getCardinality() );
+    printf("cardbefore %f\n",reachableStates.getCardinality() );
     #ifdef iterationcount
     if(reachableStates.getNodeCount()>maxThreshold){
     if(uacall<iterationcount)
@@ -608,7 +609,7 @@ void MEDDLY::common_bfs_hua::computeDDEdge(const dd_edge &init, const dd_edge &R
         unionOp->computeDDEdge(reachableStates, newstate, reachablenew, userFlag);
 
         imageOp->computeDDEdge(reachablenew, R, to, userFlag);
-        if(to==reachableStates){ return;}
+        if(to==reachableStates){ printf("Done to=reachableStates\n" );return;}
         else{
             printf("XXXXXIt Done3-2\n" );
             opMinus->computeTemp(to,reachableStates,newstate);
@@ -696,7 +697,9 @@ int BFSbetween=0;
 //std::list<long int> stateCount;
 //std::list<int> nodeCount;
 bool oneMoreBFS=false;
+bool BFSExec=false;
   while (prevReachable != reachableStates) {
+      BFSExec=false;
       // printf("XXXXXIt Done0000\n" );
       // R.show(meddlyout,0);
 #ifdef VERBOSE_BFS
@@ -730,10 +733,11 @@ bool oneMoreBFS=false;
     front.show(debug, 2);
 #endif
     unionOp->computeDDEdge(reachableStates, front, reachableStates, userFlag);
+    BFSExec=true;
     int currentNC=reachableStates.getNodeCount();
     printf("before %d\n",reachableStates.getNodeCount() );
-    long currentRS=reachableStates.getCardinality();
-    printf("cardbefore %ld\n",currentRS );
+    double currentRS=reachableStates.getCardinality();
+    printf("cardbefore %f\n",currentRS );
 
     #ifdef iterationcount
     if(reachableStates.getNodeCount()>maxThreshold){
@@ -824,24 +828,35 @@ bool oneMoreBFS=false;
           }
       }
       */
-      if(reachableStates.getNodeCount() >maxThreshold && oneMoreBFS==false ){
+      if(getnode >maxThreshold && oneMoreBFS==false ){
           PairStateNode.push_back(std::make_pair(getcard,getnode));
           // stateCount.push_back(getcard);
           // nodeCount.push_back(getnode);
       }
 
       // reachableStates.getForest()->underApproximate(reachableStates,minThreshold,maxThreshold,0);
-
+      if(getnode>maxThreshold){
+         BFSExec=false;
+        }
       if(oneMoreBFS==false)
       {
           long originalminThreshold=minThreshold;
-          if(BFSbetween==1){
-              // minThreshold=(int)(0.90*minThreshold);
-              // desiredPercentage-=0.1;
-              // maxThreshold=maxThreshold+ (int)(0.01*maxThreshold);
-          }
+          // if(BFSbetween<=1){
+          //     minThreshold=(int)(0.90*minThreshold);
+          //     desiredPercentage-=0.1;
+          //     if(desiredPercentage<0.0) desiredPercentage=0.1;
+          //     maxThreshold=maxThreshold+ (int)(0.01*maxThreshold);
+          //     printf("%d %d, %f\n", minThreshold,maxThreshold,desiredPercentage);
+          // }
+          // if(getnode<maxThreshold){
+          //     BFSbetween++;
+          // }
           reachableStates.getForest()->HeuristicUnderApproximate(reachableStates,minThreshold,maxThreshold,desiredPercentage,optionsForUA,deletedApproach, rootStatePercentage);
           minThreshold=originalminThreshold;
+
+          // if(getnode<maxThreshold){
+          //     BFSbetween++;
+          // }else
           BFSbetween=0;
       }else{
           BFSbetween++;
@@ -860,7 +875,9 @@ bool oneMoreBFS=false;
     printf("cardafter %f\n",reachableStates.getCardinality() );
     printf("XXXX %d\n",step);
     unionOp->computeDDEdge(reachableStates, init, reachableStates, userFlag);
-
+    if(reachableStates==prevReachable){
+        printf("Equal %d\n", BFSExec);
+    }
     // printf("XXXXXIt Done3\n" );
 #ifdef VERBOSE_BFS
     verbose << "\tunion done ";
