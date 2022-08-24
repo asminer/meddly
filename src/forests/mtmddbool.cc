@@ -1093,88 +1093,25 @@ while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(opt
         }
 
         for(auto i= resultp.begin();i!=resultp.end();++i){
-            // densityStructArray[(*i)].removed=true;
             doubleDensityArray[(*i)].isIn=true;//densityArray[(*i)].isIn=true;
             levelcount[getNodeLevel(*i)]--;
         }
         for(auto i= resultap.begin();i!=resultap.end();++i){
-            // densityStructArray[(*i)].removed=true;
             doubleDensityArray[(*i)].isIn=true;//densityArray[(*i)].isIn=true;
             levelcount[getNodeLevel(*i)]--;
         }
-    // removedNode.insert(resultp.begin(), resultp.end());
-    // removedNode.insert(resultap.begin(), resultap.end());
-    /////NotNeeded
-    // removedNodeB.insert(resultp.begin(), resultp.end());
-    ////NotNeeded
-    // removedNodeB.insert(minIndex);
-    /////notNeeded
-    // removedNodeA.insert(resultap.begin(), resultap.end());
-    ////NotNeeded
-    // for(int i=0;i<=num_vars; i++)
-    // copylevelcount[i]=levelcount[i];
-    // for(auto i= removedNode.begin();i!=removedNode.end();++i){
-    //     copylevelcount[getNodeLevel(*i)]--;
-    // }
-    // for(auto i = removedNode.begin(); i != removedNode.end(); ++i)
-    // printf("%d, ",(*i) );
-    // cC=ck-removedNode.size();
-    // printf("\n%d %d %d\n",ck,removedNode.size(), cC );
-    // printf("should add insert node  time %f\n", double(clock() - startf) / double(CLOCKS_PER_SEC));
 
     }
     else{
-        // densityStructArray[minIndex].neverShouldRemove=true;
         doubleDensityArray[minIndex].neverIn=true;// densityArray[minIndex].neverIn=true;
-        // neverdelete.insert(minIndex);
     }
-    // getchar();
     }else{
-        // printf("CAME ELSE\n" );
-        // getchar();
-        if(option==2 )
-         {
-             printf("Deleted node by density %d\n",removedNode.size() );
-             // end = clock();
-             // if(removedNode.size()==0){
-             //     for(int i=0;i<(int)maxid;i++){
-             //         if((incomingedgecount[i]>0||i==e.getNode())&&(uniqueAbovecount[i]>0))
-             //         {
-             //             printf("ERROR i %d AC %ld BC %ld UC %d UAC %d \n", i,abovecount[i], belowcount[i],uniquecount[i],uniqueAbovecount[i]);
-             //             // char c=getchar();
-             //          }
-             //     }
-             //     printf("NC is %ld UAC[0] is %ld\n",e.getNodeCount(), uniqueAbovecount[0]);
-             //     getchar();
-             // }
-             // double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
-             // printf("Time taken %f \n",time_taken );
-             break;
-         }
-        if(option==3 && !option3densitycheck){
-            option3densitycheck=true;
-            printf("Deleted node by density %d\n",removedNode.size() );
-            if(removedNode.size()==0)
-            { getchar();
+		break;
 
-            }
-            continue;
-        }else{
-        // printf("Cannot Delete more\n" );
-        // getchar();
-        // for(int i=0;i<num_vars;i++)
-        // printf("%d %d\n",i, levelcount[i] );
-        // getchar();
-        break;
-        // printf("Error\n" );
-        }
     }
-    // for(int i=0;i<=num_vars; i++)
-    // copylevelcount[i]=levelcount[i];
-    // printf("End of loop\n");
+
     shouldberemoved=0;
    for(int j=0;j<lastNode;j++){
-       // if(densityStructArray[j].removed)
        if(doubleDensityArray[j].isIn)// if(densityArray[j].isIn)
        shouldberemoved++;
    }
