@@ -1080,7 +1080,7 @@ while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(opt
     }
 
     if(shouldadd){
-        printf("Density %Lf ,  %Lf \n", ACBC[minIndex],selectednodeDensity);
+        printf("Density  %Lf \n", selectednodeDensity);
         startf= clock();
         sumOfstateforselectedNode+=ACBC[minIndex];//(abovecount[minIndex]*belowcount[minIndex]);
         long double rootNumberofStatePercentage=(long double)(rootNumberofState/ (1.0/rootStatePercentage));
