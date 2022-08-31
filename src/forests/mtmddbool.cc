@@ -1029,11 +1029,12 @@ for(int j=0;j<lastNode;j++){
 }
 int dsaIndexxk=0;
 cC=e.getNodeCount();
+unsigned long long int selectednodeDensity=0.0;
 while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(option==3)))||(option==2)){
     minIndex=0;
     clock_t startf= clock();
     int numberDeleted=0;
-
+    selectednodeDensity=0.0;
     for ( int dsaIndexx=dsaIndexxk;dsaIndexx<lastNode;dsaIndexx++){
         int i= doubleDensityArray[dsaIndexx].index;//densityArray[dsaIndexx].index;
         if(i>lastNode){
@@ -1048,6 +1049,7 @@ while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(opt
             bool neverDelete_isin =doubleDensityArray[dsaIndexx].neverIn;//densityArray[dsaIndexx].neverIn; //densityStructArray[dsaIndex].neverShouldRemove; //neverdelete.find(i) != neverdelete.end();
             if(!is_in && !neverDelete_isin &&(i>1)){
             minIndex=i;
+            selectednodeDensity=doubleDensityArray[dsaIndexx].density;
             numberDeleted++;
             dsaIndexxk=dsaIndexx+1;
             break;
@@ -1078,6 +1080,7 @@ while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(opt
     }
 
     if(shouldadd){
+        printf("Density %llu ,  %llu \n", ACBC[minIndex],selectednodeDensity);
         startf= clock();
         sumOfstateforselectedNode+=ACBC[minIndex];//(abovecount[minIndex]*belowcount[minIndex]);
         unsigned long long int rootNumberofStatePercentage=(unsigned long long int)(rootNumberofState/ (1.0/rootStatePercentage));
@@ -1093,12 +1096,18 @@ while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(opt
         }
 
         for(auto i= resultp.begin();i!=resultp.end();++i){
+            if(!doubleDensityArray[(*i)].isIn){
             doubleDensityArray[(*i)].isIn=true;//densityArray[(*i)].isIn=true;
             levelcount[getNodeLevel(*i)]--;
+            shouldberemoved++;
+            }
         }
         for(auto i= resultap.begin();i!=resultap.end();++i){
+            if(!doubleDensityArray[(*i)].isIn){
             doubleDensityArray[(*i)].isIn=true;//densityArray[(*i)].isIn=true;
             levelcount[getNodeLevel(*i)]--;
+            shouldberemoved++;
+            }
         }
 
     }
@@ -1110,11 +1119,11 @@ while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(opt
 
     }
 
-    shouldberemoved=0;
-   for(int j=0;j<lastNode;j++){
-       if(doubleDensityArray[j].isIn)// if(densityArray[j].isIn)
-       shouldberemoved++;
-   }
+   //  shouldberemoved=0;
+   // for(int j=0;j<lastNode;j++){
+   //     if(doubleDensityArray[j].isIn)// if(densityArray[j].isIn)
+   //     shouldberemoved++;
+   // }
 }
 
 printf("Selecting nodes for deletion time %f\n", double(clock() - startc) / double(CLOCKS_PER_SEC));
