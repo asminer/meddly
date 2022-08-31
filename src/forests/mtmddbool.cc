@@ -789,12 +789,16 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
         //     bool neverIn;
         //  };
          doubleDensityClass* doubleDensityArray=new doubleDensityClass[lastNode];
+         bool* isInArr= new bool[lastNode];
+         bool* neverInArr= new bool[lastNode];
 		 for(long i=0;i<lastNode;i++)
          {
 			 doubleDensityArray[i].density=-1;
 			 doubleDensityArray[i].index=-1;
-			 doubleDensityArray[i].isIn=false;
-			 doubleDensityArray[i].neverIn=false;
+			 // doubleDensityArray[i].isIn=false;
+			 // doubleDensityArray[i].neverIn=false;
+             isInArr[i]=false;
+             neverInArr[i]=false;
 		 }
         // densityStruct* densityStructArray=new densityStruct[lastNode];
         // mpz_object* densityArray=new mpz_object[lastNode];
@@ -809,8 +813,10 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
             if(list[i]!=root){
                 doubleDensityArray[list[i]].density=(long double)ACBC[list[i]]/(double)(uniquecount[list[i]]+uniqueAbovecount[list[i]]);//((double)(abovecount[list[i]])/(double)(uniquecount[list[i]]+uniqueAbovecount[list[i]]))*(double)belowcount[list[i]];
                 doubleDensityArray[list[i]].index=list[i];
-                doubleDensityArray[list[i]].isIn=false;
-                doubleDensityArray[list[i]].neverIn=false;
+                // doubleDensityArray[list[i]].isIn=false;
+                // doubleDensityArray[list[i]].neverIn=false;
+                isInArr[list[i]]=false;
+                neverInArr[list[i]]=false;
                 // mpz_object vdensity;
                 // densityArray[list[i]].setValue(abovecount[list[i]]);
                 // densityArray[list[i]].multiply(belowcount[list[i]]);
@@ -1022,8 +1028,10 @@ sumOfstateforselectedNode=0.0;
 for(int j=0;j<lastNode;j++){
     // if(densityStructArray[j].removed)
     // if(doubleDensityArray[j].isIn)
-	doubleDensityArray[j].isIn=false;
-	doubleDensityArray[j].neverIn=false;
+	// doubleDensityArray[j].isIn=false;
+	// doubleDensityArray[j].neverIn=false;
+    isInArr[j]=false;
+    neverInArr[j]=false;
 	// if(densityArray[j].isIn)
     // shouldberemoved++;
 }
@@ -1045,8 +1053,8 @@ while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(opt
         if(((ACBC[i]>0)&&(levelcount[getNodeLevel(i)]>1)&&((option==0)||(option==3 && option3densitycheck))||
         ((ACBC[i]>0)&&(levelcount[getNodeLevel(i)]>1)&&((option==2)||(option==3 && !option3densitycheck)))))
         {
-            bool is_in =doubleDensityArray[dsaIndexx].isIn;//densityArray[dsaIndexx].isIn; //densityStructArray[dsaIndex].removed;//removedNode.find(i) != removedNode.end();
-            bool neverDelete_isin =doubleDensityArray[dsaIndexx].neverIn;//densityArray[dsaIndexx].neverIn; //densityStructArray[dsaIndex].neverShouldRemove; //neverdelete.find(i) != neverdelete.end();
+            bool is_in =isInArr[i];//doubleDensityArray[dsaIndexx].isIn;//densityArray[dsaIndexx].isIn; //densityStructArray[dsaIndex].removed;//removedNode.find(i) != removedNode.end();
+            bool neverDelete_isin =neverInArr[i];//doubleDensityArray[dsaIndexx].neverIn;//densityArray[dsaIndexx].neverIn; //densityStructArray[dsaIndex].neverShouldRemove; //neverdelete.find(i) != neverdelete.end();
             if(!is_in && !neverDelete_isin &&(i>1)){
             minIndex=i;
             selectednodeDensity=doubleDensityArray[dsaIndexx].density;
@@ -1096,15 +1104,19 @@ while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(opt
         }
 
         for(auto i= resultp.begin();i!=resultp.end();++i){
-            if(!doubleDensityArray[(*i)].isIn){
-            doubleDensityArray[(*i)].isIn=true;//densityArray[(*i)].isIn=true;
+            // if(!doubleDensityArray[(*i)].isIn){
+            if(!isInArr[(*i)]){
+            isInArr[(*i)]=true;
+            // doubleDensityArray[(*i)].isIn=true;//densityArray[(*i)].isIn=true;
             levelcount[getNodeLevel(*i)]--;
             shouldberemoved++;
             }
         }
         for(auto i= resultap.begin();i!=resultap.end();++i){
-            if(!doubleDensityArray[(*i)].isIn){
-            doubleDensityArray[(*i)].isIn=true;//densityArray[(*i)].isIn=true;
+            // if(!doubleDensityArray[(*i)].isIn){
+            if(!isInArr[(*i)]){
+            isInArr[(*i)]=true;
+            // doubleDensityArray[(*i)].isIn=true;//densityArray[(*i)].isIn=true;
             levelcount[getNodeLevel(*i)]--;
             shouldberemoved++;
             }
@@ -1112,7 +1124,8 @@ while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(opt
 
     }
     else{
-        doubleDensityArray[minIndex].neverIn=true;// densityArray[minIndex].neverIn=true;
+        neverInArr[minIndex]=true;
+        // doubleDensityArray[minIndex].neverIn=true;// densityArray[minIndex].neverIn=true;
     }
     }else{
 		break;
@@ -1338,12 +1351,12 @@ if(m.size()==0){
         //     // copylevelcount[i]=levelcount[i];
         // }
         ////////////////////////////////////////////ENDRETURN IF NEEDED/////
-         shouldberemoved=0;
-        for(int j=0;j<lastNode;j++){
-            // if(densityStructArray[j].removed)
-            if(doubleDensityArray[j].isIn)// if(densityArray[j].isIn)
-            shouldberemoved++;
-        }
+        //  shouldberemoved=0;
+        // for(int j=0;j<lastNode;j++){
+        //     // if(densityStructArray[j].removed)
+        //     if(doubleDensityArray[j].isIn)// if(densityArray[j].isIn)
+        //     shouldberemoved++;
+        // }
         printf("m size %d\n",m.size() );
         printf("Removed size %d\n",shouldberemoved);
         printf("Expected %d\n", cC-shouldberemoved);
@@ -1382,6 +1395,8 @@ if(m.size()==0){
        // delete[] densityStructArray;
        // delete[] densityArray;
        delete[] doubleDensityArray;
+       delete[] isInArr;
+       delete[] neverInArr;
         // vectordensity.clear();
         }
         if(option==1){

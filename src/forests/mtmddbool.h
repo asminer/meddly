@@ -35,25 +35,25 @@ class doubleDensityClass {
 public:
     long double density;
     int index;
-    bool isIn;
-    bool neverIn;
-    doubleDensityClass(){index=0; density=0.0; isIn=false;neverIn=false;}
+    // bool isIn;
+    // bool neverIn;
+    doubleDensityClass(){index=0; density=0.0;/* isIn=false;neverIn=false;*/}
     explicit doubleDensityClass(unsigned long long int _density,int _index, bool _isIn,bool _neverIn):
-    density(_density),index(_index),isIn(_isIn),neverIn(_neverIn){ }
+    density(_density),index(_index)/*,isIn(_isIn),neverIn(_neverIn)*/{ }
     doubleDensityClass(const doubleDensityClass &t)
              {
                         density=(double)t.density;
                         index=t.index;
-                        isIn=t.isIn;
-                        neverIn=t.neverIn;
+                        // isIn=t.isIn;
+                        // neverIn=t.neverIn;
              }
     doubleDensityClass& operator=(const doubleDensityClass& that) {
                  if (this == &that)
                     return *this;
                     density=(double)that.density;
                     index=that.index;
-                    isIn=that.isIn;
-                    neverIn= that.neverIn;
+                    // isIn=that.isIn;
+                    // neverIn= that.neverIn;
                   return *this;
              }
     bool operator < (const doubleDensityClass& t) const
