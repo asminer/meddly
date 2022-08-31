@@ -176,7 +176,7 @@ generator.seed( rd() );
    apply(AC, e, cA);
    // printf("AC Calculated\n" );
 
-   ACBC=new unsigned long long int[lastNode];
+   ACBC=new long double[lastNode];
        // printf("ACBC created\n" );
        node_handle nl=e.getNode();
 
@@ -187,7 +187,7 @@ generator.seed( rd() );
        for (int i=0; list[i]; i++) {
           // for(int i=0;i<lastNode;i++){
               // if(abovecount[i]>1)
-              ACBC[list[i]]=(unsigned long long int) abovecount[list[i]]*belowcount[list[i]];
+              ACBC[list[i]]=(long double) abovecount[list[i]]*belowcount[list[i]];
               if (ACBC[list[i]]/abovecount[list[i]]!=belowcount[list[i]])
               { printf("NOT CORRECT%llu,%lu, %lu\n",ACBC[i],abovecount[list[i]],belowcount[list[i]] );
               exit(0);
@@ -656,7 +656,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
        apply(AC, e, cA);
        printf("AC time %f\n", double(clock() - startc) / double(CLOCKS_PER_SEC));
        startc = clock();
-       ACBC=new unsigned long long int[lastNode];
+       ACBC=new long double[lastNode];
        printf("ACBC created\n" );
        node_handle nl=e.getNode();
 
@@ -675,7 +675,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
        for (int i=0; list[i]; i++) {
        // for(int i=0;i<lastNode;i++){
            // if(abovecount[i]>1)
-           ACBC[list[i]]=(unsigned long long int) abovecount[list[i]]*belowcount[list[i]];
+           ACBC[list[i]]=(long double) abovecount[list[i]]*belowcount[list[i]];
            if (ACBC[list[i]]/abovecount[list[i]]!=belowcount[list[i]])
            { printf("NOT CORRECT%llu,%lu, %lu\n",ACBC[i],abovecount[list[i]],belowcount[list[i]] );
            exit(0);
@@ -807,7 +807,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
                 printf("ERRROR LASTNODE %d %d\n", list[i],lastNode);
             }
             if(list[i]!=root){
-                doubleDensityArray[list[i]].density=(unsigned long long int)ACBC[list[i]]/(double)(uniquecount[list[i]]+uniqueAbovecount[list[i]]);//((double)(abovecount[list[i]])/(double)(uniquecount[list[i]]+uniqueAbovecount[list[i]]))*(double)belowcount[list[i]];
+                doubleDensityArray[list[i]].density=(long double)ACBC[list[i]]/(double)(uniquecount[list[i]]+uniqueAbovecount[list[i]]);//((double)(abovecount[list[i]])/(double)(uniquecount[list[i]]+uniqueAbovecount[list[i]]))*(double)belowcount[list[i]];
                 doubleDensityArray[list[i]].index=list[i];
                 doubleDensityArray[list[i]].isIn=false;
                 doubleDensityArray[list[i]].neverIn=false;
@@ -1029,7 +1029,7 @@ for(int j=0;j<lastNode;j++){
 }
 int dsaIndexxk=0;
 cC=e.getNodeCount();
-unsigned long long int selectednodeDensity=0.0;
+long double selectednodeDensity=0.0;
 while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(option==3)))||(option==2)){
     minIndex=0;
     clock_t startf= clock();
@@ -1080,15 +1080,15 @@ while(((cC-shouldberemoved/*removedNode.size()*/>Threashold)&&((option==0)||(opt
     }
 
     if(shouldadd){
-        printf("Density %llu ,  %llu \n", ACBC[minIndex],selectednodeDensity);
+        printf("Density %Lf ,  %Lf \n", ACBC[minIndex],selectednodeDensity);
         startf= clock();
         sumOfstateforselectedNode+=ACBC[minIndex];//(abovecount[minIndex]*belowcount[minIndex]);
-        unsigned long long int rootNumberofStatePercentage=(unsigned long long int)(rootNumberofState/ (1.0/rootStatePercentage));
+        long double rootNumberofStatePercentage=(long double)(rootNumberofState/ (1.0/rootStatePercentage));
         if (rootNumberofStatePercentage<0)
-        { printf("NOT CORRECT %Lf, %llu, %f\n",rootNumberofStatePercentage,rootNumberofState,rootStatePercentage );
+        { printf("NOT CORRECT %Lf, %Lf, %f\n",rootNumberofStatePercentage,rootNumberofState,rootStatePercentage );
         exit(0);
          }
-        if((deletedApproach==1)&&(m.size()>0)&&(sumOfstateforselectedNode>(unsigned long long int)rootNumberofStatePercentage/*(rootNumberofState*rootStatePercentage)*/)){
+        if((deletedApproach==1)&&(m.size()>0)&&(sumOfstateforselectedNode>(long double)rootNumberofStatePercentage/*(rootNumberofState*rootStatePercentage)*/)){
             break;
         }
         else{

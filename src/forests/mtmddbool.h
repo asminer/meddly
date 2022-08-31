@@ -33,7 +33,7 @@ namespace MEDDLY {
 
 class doubleDensityClass {
 public:
-    unsigned long long int density;
+    long double density;
     int index;
     bool isIn;
     bool neverIn;
@@ -42,7 +42,7 @@ public:
     density(_density),index(_index),isIn(_isIn),neverIn(_neverIn){ }
     doubleDensityClass(const doubleDensityClass &t)
              {
-                        density=t.density;
+                        density=(double)t.density;
                         index=t.index;
                         isIn=t.isIn;
                         neverIn=t.neverIn;
@@ -98,7 +98,7 @@ private:
       int RemoveDuplicateSet(int lvl, bool* levelarray,std::__cxx11::list<int>* uniquelist, /*std::set<int>levels,*/std::map<int,int>map,dd_edge &e/*,std::set<int>&RNA,std::set<int>&RNB*/);
       void merge(doubleDensityClass* array, int const left, int const mid, int const right);
       void mergeSort(doubleDensityClass* array, int const begin, int const end);
-      unsigned long long int* ACBC;
+      long double* ACBC;
 };
 
 // class  densityStruct {
