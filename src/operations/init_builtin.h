@@ -70,6 +70,7 @@ class MEDDLY::builtin_initializer : public initializer_list {
   binary_opname* BACKWARD_BFS;
   binary_opname* FORWARD_BFS_UA;
   binary_opname* FORWARD_BFS_HUA;
+  binary_opname_event* FORWARD_ALL_BFS_GEN;
 
   binary_opname* VM_MULTIPLY;
   binary_opname* MV_MULTIPLY;

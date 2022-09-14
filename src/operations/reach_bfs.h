@@ -23,6 +23,7 @@
 namespace MEDDLY {
   class binary_opname;
 
+  class binary_opname_event;
   /// Set up a binary_opname for the "reachable bfs" operation.
   binary_opname* initializeForwardBFS();
 
@@ -34,6 +35,8 @@ namespace MEDDLY {
 
   /// Set up a binary_opname for the  "reachable bfs with heuristic under approximation" opertaion.
   binary_opname* initializeForwardBFSHUA();
+
+  binary_opname_event* initializeAllBFSGen();
 }
 
 #endif
