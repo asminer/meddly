@@ -96,6 +96,7 @@ namespace MEDDLY {
   class opname;
   class unary_opname;
   class binary_opname;
+  class binary_opname_event;
   class specialized_opname;
   class numerical_opname;
   class satpregen_opname;
@@ -111,6 +112,7 @@ namespace MEDDLY {
   class operation;
   class unary_operation;
   class binary_operation;
+  class binary_operation_event;
   class specialized_operation;
 
   class global_rebuilder;
@@ -166,6 +168,7 @@ namespace MEDDLY {
   */
   extern const satotf_opname* SATURATION_OTF_FORWARD;
 
+  extern const binary_opname_event* REACHABLE_STATES_ALL_BFS_GEN;
   /** Forward reachability using saturation.
       Transition relation is specified implicitly.
   */
@@ -243,7 +246,10 @@ namespace MEDDLY {
   */
   binary_operation* getOperation(const binary_opname* code,
     expert_forest* arg1, expert_forest* arg2, expert_forest* res);
-
+    binary_operation_event* getOperation(const binary_opname_event* code,
+      expert_forest* arg1, expert_forest* arg2, expert_forest* res);
+      binary_operation_event* getOperation(const binary_opname_event* code,
+          expert_forest* arg1, dd_edge* arg2, int arg3, expert_forest* res);
   /** Find, or build if necessary, a binary operation.
         @param  code    Operation we want
         @param  arg1    Argument 1 forest taken from this dd_edge
@@ -254,6 +260,10 @@ namespace MEDDLY {
   */
   binary_operation* getOperation(const binary_opname* code,
     const dd_edge& arg1, const dd_edge& arg2, const dd_edge& res);
+    binary_operation_event* getOperation(const binary_opname_event* code,
+      const dd_edge& arg1, const dd_edge& arg2, const dd_edge& res);
+  binary_operation_event* getOperation(const binary_opname_event* code,
+    const dd_edge& arg1,const dd_edge* arg2, const int arg3, const dd_edge& res);
 
   /** Safely destroy the given unary operation. 
       It should be unnecessary to call this directly.
@@ -265,6 +275,7 @@ namespace MEDDLY {
   */
   void destroyOperation(binary_operation* &op);
 
+  void destroyOperation(binary_operation_event* &op);
   /// Safely destroy the given numerical operation.
   void destroyOperation(specialized_operation* &op);
 
@@ -3231,6 +3242,23 @@ class MEDDLY::binary_opname : public opname {
       expert_forest* arg2, expert_forest* res) const = 0;
 };
 
+// ******************************************************************
+// *                                                                *
+// *                      binary_opname_event  class                      *
+// *                                                                *
+// ******************************************************************
+
+/// Binary operation names.
+class MEDDLY::binary_opname_event : public opname {
+  public:
+    binary_opname_event(const char* n);
+    virtual ~binary_opname_event();
+
+    virtual binary_operation_event* buildOperation(expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res) const = 0;
+    virtual binary_operation_event* buildOperation(expert_forest* arg1,
+        dd_edge* arg2,int arg3,expert_forest* res)const = 0;
+};
 
 // ******************************************************************
 // *                                                                *
@@ -5424,6 +5452,80 @@ class MEDDLY::binary_operation : public operation {
 #endif
 
 };
+
+// ******************************************************************
+// *                                                                *
+// *                     binary_operation_event class                     *
+// *                                                                *
+// ******************************************************************
+
+/** Mechanism to apply a binary operation in a specific forest.
+    Specific operations will be derived from this class.
+*/
+class MEDDLY::binary_operation_event : public operation {
+  protected:
+    bool can_commute;
+    expert_forest* arg1F;
+    // expert_forest* arg2F;
+    dd_edge* arg2D;
+    int arg3I;
+    expert_forest* resF;
+    opnd_type resultType;
+
+    virtual ~binary_operation_event();
+    void operationCommutes();
+
+    // Check if the variables orders of relevant forests are compatible
+    virtual bool checkForestCompatibility() const;
+
+  public:
+    binary_operation_event(const binary_opname_event* code, unsigned et_slots,
+      expert_forest* arg1, dd_edge* arg2,int arg3, expert_forest* res);
+
+    bool matches(const expert_forest* arg1, const expert_forest* arg2,
+      const expert_forest* res) const;
+
+    bool matches(const expert_forest* arg1, const dd_edge* arg2,
+      const int arg3, const expert_forest* res) const;
+
+    // high-level front-end
+
+    /**
+      Checks forest comatability and then calls computeDDEdge().
+    */
+    void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
+    void computeTemp(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
+    void compute_event(const dd_edge &ar1, const dd_edge* ar2, int ar3, dd_edge &res);
+
+
+    virtual void computeDDEdgeEvent(const dd_edge &ar1, const dd_edge* ar2, int ar3, dd_edge &res, bool userFlag)
+      = 0;
+
+    // low-level front ends.  TBD - REMOVE THESE BECAUSE THEY BREAK MARK & SWEEP
+
+#ifdef KEEP_LL_COMPUTES
+
+    /// Low-level compute on nodes a and b, return result.
+    virtual node_handle compute(node_handle a, node_handle b);
+    /// Low-level compute at level k on nodes a and b, return result.
+    virtual node_handle compute(int k, node_handle a, node_handle b);
+
+    /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
+    virtual void compute(int av, node_handle ap, int bv, node_handle bp,
+      int &cv, node_handle &cp);
+    virtual void compute(long av, node_handle ap, long bv, node_handle bp,
+      long &cv, node_handle &cp);
+    virtual void compute(long av, node_handle ap, node_handle bp,
+      long &cv, node_handle &cp);
+
+    /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
+    virtual void compute(float av, node_handle ap, float bv, node_handle bp,
+      float &cv, node_handle &cp);
+
+#endif
+
+};
+
 
 // ******************************************************************
 // *                                                                *

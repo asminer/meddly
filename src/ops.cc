@@ -84,6 +84,18 @@ MEDDLY::binary_opname::~binary_opname()
 }
 
 // ******************************************************************
+// *                     binary_opname  methods                     *
+// ******************************************************************
+
+MEDDLY::binary_opname_event::binary_opname_event(const char* n) : opname(n)
+{
+}
+
+MEDDLY::binary_opname_event::~binary_opname_event()
+{
+}
+
+// ******************************************************************
 // *                   specialized_opname methods                   *
 // ******************************************************************
 
@@ -530,6 +542,73 @@ void MEDDLY::binary_operation::compute(long av, node_handle ap,
 }
 
 void MEDDLY::binary_operation::compute(float av, node_handle ap,
+  float bv, node_handle bp, float &cv, node_handle &cp)
+{
+  throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
+}
+
+#endif
+
+// ******************************************************************
+// *                    binary_operation_event methods                    *
+// ******************************************************************
+
+MEDDLY::binary_operation_event::binary_operation_event(const binary_opname_event* op,
+  unsigned et_slots, expert_forest* arg1, dd_edge* arg2,int arg3, expert_forest* res)
+: operation(op, et_slots)
+{
+  arg1F = arg1;
+  arg2D = arg2;
+  arg3I=arg3;
+  resF = res;
+
+  registerInForest(arg1F);
+  // registerInForest(arg2F);
+  registerInForest(resF);
+
+  can_commute = false;
+}
+
+MEDDLY::binary_operation_event::~binary_operation_event()
+{
+  unregisterInForest(arg1F);
+  // unregisterInForest(arg2F);
+  unregisterInForest(resF);
+}
+
+#ifdef KEEP_LL_COMPUTES
+
+MEDDLY::node_handle
+MEDDLY::binary_operation_event::compute(node_handle a, node_handle b)
+{
+  throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
+}
+
+MEDDLY::node_handle
+MEDDLY::binary_operation_event::compute(int k, node_handle a, node_handle b)
+{
+  throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
+}
+
+void MEDDLY::binary_operation_event::compute(int av, node_handle ap,
+  int bv, node_handle bp, int &cv, node_handle &cp)
+{
+  throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
+}
+
+void MEDDLY::binary_operation_event::compute(long av, node_handle ap,
+  long bv, node_handle bp, long &cv, node_handle &cp)
+{
+  throw error(error::WRONG_NUMBER);
+}
+
+void MEDDLY::binary_operation_event::compute(long av, node_handle ap,
+  node_handle bp, long &cv, node_handle &cp)
+{
+  throw error(error::WRONG_NUMBER);
+}
+
+void MEDDLY::binary_operation_event::compute(float av, node_handle ap,
   float bv, node_handle bp, float &cv, node_handle &cp)
 {
   throw error(error::WRONG_NUMBER, __FILE__, __LINE__);

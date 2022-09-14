@@ -203,6 +203,71 @@ MEDDLY::binary_operation* MEDDLY::getOperation(const binary_opname* code,
   return (binary_operation*) curr;
 }
 
+MEDDLY::binary_operation_event* MEDDLY::getOperation(const binary_opname_event* code,
+  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+{
+  if (!libraryRunning)
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+
+  operation* curr;
+  operation* prev = 0;
+  for (curr=op_cache[code->getIndex()]; curr; curr=curr->getNext()) {
+    if (((binary_operation_event*)curr)->matches(arg1, arg2, res)) {
+      // move to front of list...
+      if (prev) {
+        prev->setNext(curr->getNext());
+        curr->setNext(op_cache[code->getIndex()]);
+        op_cache[code->getIndex()] = curr;
+      }
+      // ... and return
+      return (binary_operation_event*) curr;
+    }
+    prev = curr;
+  } // for
+
+  // none present, build a new one...
+  curr = code->buildOperation(arg1, arg2, res);
+  // ...move it to the front...
+  curr->setNext(op_cache[code->getIndex()]);
+  op_cache[code->getIndex()] = curr;
+  // ...and return
+  return (binary_operation_event*) curr;
+}
+
+MEDDLY::binary_operation_event* MEDDLY::getOperation(const binary_opname_event* code,
+     expert_forest* arg1, dd_edge* arg2,  int arg3,  expert_forest* res)
+{
+  if (!libraryRunning)
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+
+  operation* curr;
+  operation* prev = 0;
+  for (curr=op_cache[code->getIndex()]; curr; curr=curr->getNext()) {
+    if (((binary_operation_event*)curr)->matches(arg1, arg2, arg3, res)) {
+      // move to front of list...
+      if (prev) {
+        prev->setNext(curr->getNext());
+        curr->setNext(op_cache[code->getIndex()]);
+        op_cache[code->getIndex()] = curr;
+      }
+      // ... and return
+      return (binary_operation_event*) curr;
+    }
+    prev = curr;
+  } // for
+
+  // none present, build a new one...
+  curr = code->buildOperation(arg1, arg2, arg3, res);
+  // ...move it to the front...
+  curr->setNext(op_cache[code->getIndex()]);
+  op_cache[code->getIndex()] = curr;
+  // ...and return
+  return (binary_operation_event*) curr;
+}
 void MEDDLY::removeOperationFromCache(operation* op)
 {
   if (0==op || 0==op_cache) return;
@@ -276,6 +341,32 @@ void MEDDLY::apply(const binary_opname* code, const dd_edge &a,
     throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   binary_operation* op = getOperation(code, a, b, c);
   op->computeTemp(a, b, c);
+}
+
+void MEDDLY::apply(const binary_opname_event* code, const dd_edge &a,
+  const dd_edge &b, dd_edge &c)
+{
+    printf("MEDDLY::apply(const binary_opname_event* code, const dd_edge &a const dd_edge &b, dd_edge &c,\n" );
+
+  if (!libraryRunning)
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  if (0==code)
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
+  binary_operation_event* op = getOperation(code, a, b, c);
+  op->computeTemp(a, b, c);
+}
+
+void MEDDLY::apply(const binary_opname_event* code, const dd_edge &a,
+  const dd_edge* b,int c, dd_edge &d)
+{
+    printf("MEDDLY::apply(const binary_opname_event* code, const dd_edge &a,const dd_edge* b,int c, dd_edge &d\n" );
+    // printf("code %d\n",code );
+  if (!libraryRunning)
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  if (0==code)
+    throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
+  binary_operation_event* op = getOperation(code, a, b, c,d);
+  op->compute_event(a, b, c,d);
 }
 
 //----------------------------------------------------------------------
@@ -353,6 +444,12 @@ void MEDDLY::destroyOperation(MEDDLY::unary_operation* &op)
 }
 
 void MEDDLY::destroyOperation(MEDDLY::binary_operation* &op)
+{
+  destroyOpInternal(op);
+  op = 0;
+}
+
+void MEDDLY::destroyOperation(MEDDLY::binary_operation_event* &op)
 {
   destroyOpInternal(op);
   op = 0;

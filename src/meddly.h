@@ -139,9 +139,11 @@ namespace MEDDLY {
   class ct_object;
   class unary_opname;
   class binary_opname;
+  class binary_opname_event;
   class operation;
   class unary_operation;
   class binary_operation;
+  class binary_operation_event;
 
   /// Argument and result types for apply operations.
   enum opnd_type {
@@ -379,6 +381,7 @@ namespace MEDDLY {
   extern const binary_opname* REVERSE_REACHABLE_BFS;
   extern const binary_opname* REACHABLE_STATES_BFS_UA;
   extern const binary_opname* REACHABLE_STATES_BFS_HUA;
+  extern const binary_opname_event* REACHABLE_STATES_ALL_BFS_GEN;
 
 
   /** Vector matrix multiply, where the first argument is vector (MDD),
@@ -567,6 +570,11 @@ namespace MEDDLY {
   void apply(const binary_opname* op, const dd_edge &a, const dd_edge &b,
     dd_edge &c);
 
+      void apply(const binary_opname_event* op, const dd_edge &a, const dd_edge &b,
+        dd_edge &c);
+        //Zahra added
+      void apply(const binary_opname_event* op, const dd_edge &a, const dd_edge* b,
+          int c, dd_edge &d);
 
 };  // namespace MEDDLY
 
