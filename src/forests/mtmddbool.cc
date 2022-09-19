@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <climits>
 
+#define PRINTON
 
 MEDDLY::mt_mdd_bool::mt_mdd_bool(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, bool tv)
 : mtmdd_forest(dsl, d, BOOLEAN, p, level_reduction_rule)
@@ -610,12 +611,314 @@ void MEDDLY::mt_mdd_bool::mergeSort(doubleDensityClass* array, int const begin, 
 	merge(array, begin, mid, end);
 }
 
-
-
 void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold, long maxThreshold,float desiredPercentage, int option, int deletedApproach, float rootStatePercentage)
 {
+        unsigned nodeCount=e.getNodeCount();
+        if(option!=0|| nodeCount<maxThreshold) return;
+        srand(time(0));
+        clock_t start, end;
+        start = clock();
+        FILE_output meddlyout(stdout);
+        int num_vars=getNumVariables();
+#ifdef PRINTON
+        printf("HunderApproximate\n" );
+#endif
+        while((deletedApproach==1)||(nodeCount>Threashold)) {
+                maxid=e.getLastHandle();
+                lastNode=maxid+1;
+#ifdef PRINTON
+                clock_t startc= clock();
+#endif
+                double nodeCountard;
+                apply(BC,e,nodeCountard);
+#ifdef PRINTON
+                printf("Below count time %f\n", double(clock() - startc) / double(CLOCKS_PER_SEC));
+                startc = clock();
+#endif
+                double cI;
+                apply(IEC, e, cI);
+#ifdef PRINTON
+                printf("IEC time %f\n", double(clock() - startc) / double(CLOCKS_PER_SEC));
+                startc = clock();
+#endif
+                double cA;
+                apply(AC, e, cA);
+#ifdef PRINTON
+                printf("AC time %f\n", double(clock() - startc) / double(CLOCKS_PER_SEC));
+                startc = clock();
+#endif
+                ACBC=new long double[lastNode];
+                node_handle root=e.getNode();
+                node_handle* list = markNodesInSubgraph(&root, 1, false);
+                std::__cxx11::list<int>* uniquelist=markNodesInSubgraphByLvl(&root,1);
+                for(long i=0; i<lastNode; i++)
+                        ACBC[i]=0.0;
+                long double sumOfstateforselectedNode=0.0;
+                long long int rootNumberofState=belowcount[root];
+                for (long i=0; list[i]; i++) {
+                        ACBC[list[i]]=(long double) abovecount[list[i]]*belowcount[list[i]];
+                        if (ACBC[list[i]]/abovecount[list[i]]!=belowcount[list[i]]) {
+#ifdef PRINTON
+                                printf("NOT CORRECT %Lf, %llu, %llu\n",ACBC[i],abovecount[list[i]],belowcount[list[i]]);
+#endif
+                                throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
+                                exit(0);
+                        }
+                }
+                delete[] abovecount;
+                delete[] belowcount;
+                double cH;
+                apply(HU, e, cH);
+#ifdef PRINTON
+                printf("HU time %f\n", double(clock() - startc) / double(CLOCKS_PER_SEC));
+                startc = clock();
+#endif
+                double cU;
+                apply(UC, e, cU);
+#ifdef PRINTON
+                printf("UC time %f\n", double(clock() - startc) / double(CLOCKS_PER_SEC));
+                startc = clock();
+#endif
+                double cL;
+                apply(LU, e, cL);
+#ifdef PRINTON
+                printf("LU time %f\n", double(clock() - startc) / double(CLOCKS_PER_SEC));
+                startc = clock();
+#endif
+                double caU;
+                apply(UAC, e, caU);
+#ifdef PRINTON
+                printf("UAC time %f\n", double(clock() - startc) / double(CLOCKS_PER_SEC));
+#endif
+                int* levelcount=new int[num_vars+1];
+                for(int i=0; i<=num_vars; i++) {
+                        levelcount[i]=uniquelist[i].size();
+                }
+                int minIndex=0;
+                std::__cxx11::list<int> selectedNodeforDeletion;
+                std::__cxx11::list<int> removedNode;
+#ifdef PRINTON
+                startc = clock();
+#endif
+                doubleDensityClass* doubleDensityArray=new doubleDensityClass[lastNode];
+                bool* isInArr= new bool[lastNode];
+                bool* neverInArr= new bool[lastNode];
+                for(long i=0; i<lastNode; i++)
+                {
+                        doubleDensityArray[i].density=-1;
+                        doubleDensityArray[i].index=-1;
+                        isInArr[i]=false;
+                        neverInArr[i]=false;
+                }
+                for (long i=0; list[i]; i++) {
+                        if(list[i]>lastNode) {
+#ifdef PRINTON
+                                printf("ERRROR LASTNODE %d %d\n", list[i],lastNode);
+#endif
+                        }
+                        if(list[i]!=root) {
+                                doubleDensityArray[list[i]].density=(long double)ACBC[list[i]]/(double)(uniquecount[list[i]]+uniqueAbovecount[list[i]]); //((double)(abovecount[list[i]])/(double)(uniquecount[list[i]]+uniqueAbovecount[list[i]]))*(double)belowcount[list[i]];
+                                doubleDensityArray[list[i]].index=list[i];
+                                isInArr[list[i]]=false;
+                                neverInArr[list[i]]=false;
+                        }
+                }
+#ifdef PRINTON
+                printf("Density time %f\n", double(clock() - startc) / double(CLOCKS_PER_SEC));
+                startc = clock();
+#endif
+                std::random_device rd;
+                std::mt19937 g(rd());
+                std::shuffle(doubleDensityArray, doubleDensityArray+lastNode, g);
+                std::sort(doubleDensityArray, doubleDensityArray+lastNode);
+#ifdef PRINTON
+                printf("Sorting time doubleDensityArray %f\n", double(clock() - startc) / double(CLOCKS_PER_SEC));
+                startc = clock();
+#endif
+                removedNode.clear();
+                selectedNodeforDeletion.clear();
+                int shouldberemoved=0;
+                sumOfstateforselectedNode=0.0;
+                int dsaIndexxk=0;
+                while(nodeCount-shouldberemoved>Threashold) {
+                        minIndex=0;
+                        int numberDeleted=0;
+                        for ( int dsaIndexx=dsaIndexxk; dsaIndexx<lastNode; dsaIndexx++) {
+                                int i= doubleDensityArray[dsaIndexx].index;
+                                if(i>lastNode) {
+#ifdef PRINTON
+                                        printf("ERRROR LASTNODE %d %d\n", i,lastNode);
+#endif
+                                }
+                                if (i>0&& doubleDensityArray[dsaIndexx].density>0.0) {
+                                        if(i!=root)
+                                                if((ACBC[i]>0)&&(levelcount[getNodeLevel(i)]>1)) {
+                                                        bool is_in =isInArr[i];
+                                                        bool neverDelete_isin =neverInArr[i];
+                                                        if(!is_in && !neverDelete_isin &&(i>1)) {
+                                                                minIndex=i;
+                                                                numberDeleted++;
+                                                                dsaIndexxk=dsaIndexx+1;
+                                                                break;
+                                                        }else{
+                                                                numberDeleted++;
+                                                        }
+                                                }
+                                }
+                        }
+                        if(minIndex!=0) {
+                                std::__cxx11::list<int> resultp;
+                                uniqueNodesforp(minIndex,resultp);
+                                std::__cxx11::list<int> resultap;
+                                uniqueAboveNodesforp(minIndex,resultap);
+                                if(resultap.size()!=uniqueAbovecount[minIndex])
+                                {
+#ifdef PRINTON
+                                        printf("ERRR in uniqueAboveNodesforp %ld %d\n",resultap.size(),uniqueAbovecount[minIndex]);
+#endif
+                                        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+                                        exit(0);
+                                        // getchar();
+                                }
+                                if(resultp.size()!=uniquecount[minIndex])
+                                {
+#ifdef PRINTON
+                                        printf("ERRR in uniqueNodesforp\n"); //getchar();
+#endif
+                                        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+                                        exit(0);
+                                }
+                                if(levelcount[getNodeLevel(minIndex)]>1) { //should add
+                                        // startf= clock();
+                                        sumOfstateforselectedNode+=(long double)ACBC[minIndex];
+                                        long double rootNumberofStatePercentage=(long double)((long double)rootNumberofState/ ((long double)1.0/rootStatePercentage));
+                                        if (rootNumberofStatePercentage<0)
+                                        {
+#ifdef PRINTON
+                                                printf("NOT CORRECT %Lf, %lld, %f\n",rootNumberofStatePercentage,rootNumberofState,rootStatePercentage );
+#endif
+                                                throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
+                                                exit(0);
+                                        }
+                                        if((deletedApproach==1)&&(selectedNodeforDeletion.size()>0)&&(sumOfstateforselectedNode>rootNumberofStatePercentage)) {
+                                                break;
+                                        }
+                                        else{
+                                                selectedNodeforDeletion.push_back(minIndex);
+                                        }
+                                        for(auto i= resultp.begin(); i!=resultp.end(); ++i) {
+                                                if(!isInArr[(*i)]) {
+                                                        isInArr[(*i)]=true;
+                                                        levelcount[getNodeLevel(*i)]--;
+                                                        shouldberemoved++;
+                                                }
+                                        }
+                                        for(auto i= resultap.begin(); i!=resultap.end(); ++i) {
+                                                if(!isInArr[(*i)]) {
+                                                        isInArr[(*i)]=true;
+                                                        levelcount[getNodeLevel(*i)]--;
+                                                        shouldberemoved++;
+                                                }
+                                        }
+                                }
+                                else{neverInArr[minIndex]=true;}
+                        }else{
+                                break;
+                        }
+                }
+#ifdef PRINTON
+                printf("Selecting nodes for deletion time %f\n", double(clock() - startc) / double(CLOCKS_PER_SEC));
+#endif
+                if(selectedNodeforDeletion.size()==0) {
+#ifdef PRINTON
+                        printf("No node can get selected.\n" );
+#endif
+                        return;
+                }
+#ifdef PRINTON
+                printf("selectedNodeforDeletion size %d\n",selectedNodeforDeletion.size() );
+                printf("Removed size %d\n",shouldberemoved);
+                printf("Expected %d\n", nodeCount-shouldberemoved);
+                printf("sumOfstate for selectedNodex %Lf\n",sumOfstateforselectedNode );
+#endif
+                delete[]levelcount;
+                delete[] doubleDensityArray;
+                delete[] isInArr;
+                delete[] neverInArr;
+                std::map<int,int> map;
+                bool* levelarray=new bool[num_vars+1];
+                for(int i=0; i<=num_vars; i++)
+                        levelarray[i]=false;
+                int minlvl=INT_MAX;
+                for(long i=0; i<=lastNode; i++)
+                        map[i]=0;
+                for (long i=0; list[i]; i++) {
+                        map[list[i]]=list[i];
+                }
+                for(auto i = selectedNodeforDeletion.begin(); i != selectedNodeforDeletion.end(); ++i) {
+                        map[(*i)]=0;
+                        int nodelvl=getNodeLevel((*i));
+                        levelarray[nodelvl]=true;
+                        if(nodelvl<minlvl)
+                                minlvl=nodelvl;
+                }
+#ifdef PRINTON
+                printf("Cardinality before RD %llu\n", rootNumberofState);
+                startc=clock();
+#endif
+                int merged=RemoveDuplicateSet(minlvl,levelarray,uniquelist, map,e );
+#ifdef PRINTON
+                printf("RemoveDuplicateSet time %f\n", double(clock() - startc) / double(CLOCKS_PER_SEC));
+#endif
+                nodeCount=e.getNodeCount();
+                // printf("Node count is %d\n",nodeCount);
+                if((deletedApproach==1)&&(nodeCount<=Threashold)) {
+                        deletedApproach=0;
+                }
+                if(incomingedgecount!=0) delete [] incomingedgecount; else {
+#ifdef PRINTON
+                        printf("ERRR incomingedgecount\n");
+#endif
+                }
+                highestunique.clear();
+                if(highestuniquelist!=0) delete[] highestuniquelist; else {
+#ifdef PRINTON
+                        printf("ERRR highestuniquelist\n");
+#endif
+                }
+                if(uniquecount!=0) delete[] uniquecount; else {
+#ifdef PRINTON
+                        printf("ERRR uniquecount\n");
+#endif
+                }
+                lowestunique.clear();
+                if(lowestuniquelist!=0) delete[] lowestuniquelist; else {
+#ifdef PRINTON
+                        printf("ERRR lowestuniquelist\n");
+#endif
+                }
+                if(uniqueAbovecount!=0) delete[] uniqueAbovecount; else{
+#ifdef PRINTON
+                        printf("ERR uniqueAbovecount\n" );
+#endif
+                }
+                delete[] ACBC;
+                delete[] levelarray;
+                delete[] list;
+                map.clear();
+        }
+#ifdef PRINTON
+        end = clock();
+        double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+        printf("Time taken %f \n",time_taken );
+        printf("HunderApproximate EndZ\n" );
+#endif
+
+}
+
+void MEDDLY::mt_mdd_bool::HeuristicUnderApproximateDeleted(dd_edge &e, long Threashold, long maxThreshold,float desiredPercentage, int option, int deletedApproach, float rootStatePercentage)
+{
     if(option==1) return;
-    printf("HunderApproximate\n" );
     srand(time(0));
          clock_t start, end;
          start = clock();
@@ -626,6 +929,8 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
             // printf("LESS THAN Threashold\n" );
             return;
         }
+         printf("HunderApproximate\n" );
+
         int initialRootCardinality=e.getCardinality();
         double initialRootDensity=((double)initialRootCardinality/cC)*desiredPercentage;
         #if 0
@@ -636,7 +941,7 @@ void MEDDLY::mt_mdd_bool::HeuristicUnderApproximate(dd_edge &e, long Threashold,
         Threashold=std::round(d(generator));
         printf("Threashold %d\n",Threashold );
 
-        #endif
+#endif
         // while(cC>Threashold){
         while((deletedApproach==1)||((e.getNodeCount()>Threashold)&&((option==0)||(option==3)))||(option==2)){
             // printf("START calculation \n" );
@@ -1631,7 +1936,7 @@ if(m.size()==0){
 }
  int MEDDLY::mt_mdd_bool::RemoveDuplicateSet(int lvl, bool* levelarray,std::__cxx11::list<int>* uniquelist/*, std::set<int>levels*/,std::map<int,int> map,dd_edge &e/*,std::set<int>&RNA,std::set<int>&RNB*/){
      int root=e.getNode();
-     printf("RemoveDuplicateSet\n" );
+     // printf("RemoveDuplicateSet\n" );
       // printf("size is %d\n",e.getNodeCount() );
      bool changeInLevel=false;
      int num_vars=getNumVariables();
@@ -1645,7 +1950,7 @@ if(m.size()==0){
          #ifdef DBG_MTMDD
          printf("l is %d\n",l );
          // printf("RNA %d RNB %d\n",RNA.size(),RNB.size() );
-         #endif
+ #endif
          // getchar();
          bool is_in =levelarray[l];// levels.find(l) != levels.end();
          // printf("is_in is %d\n",is_in );
@@ -1693,7 +1998,7 @@ if(m.size()==0){
                      // showNode(meddlyout,uniqueNodes[k], SHOW_DETAILS);
                      #ifdef DBG_MTMDD
                      printf("C uniqueNodes %d\n",dpt );
-                     #endif
+             #endif
                      ///////////////Remove RNA RNB
                      // RNA.erase(dpt);
                      // RNB.erase(dpt);
@@ -1723,13 +2028,13 @@ if(m.size()==0){
                  // printf("\n" );
                  #ifdef DBG_MTMDD
                  printf("D uniqueNodes %d",uniqueNodes[k] );
-                 #endif
+         #endif
                  changeInLevel=true;
                  node_handle q=0;//=unique->find(*un, getVarByLevel(un->getLevel()));
                  if(q!=0){
                      #ifdef DBG_MTMDD
                      printf("merged\n" );
-                     #endif
+             #endif
                      merged++;
                      // printf("Found\n" );
                      // printf("Dup %d\n",uniqueNodes[k] );
@@ -1748,7 +2053,7 @@ if(m.size()==0){
                             showNode(meddlyout, temporaryNode, SHOW_DETAILS);
 
                              printf("newNode%d\n",temporaryNode );
-                             #endif
+     #endif
                              ///////////////Remove RNA RNB
 
                              // RNA.erase(temporaryNode);
@@ -1767,7 +2072,7 @@ if(m.size()==0){
                          }else{
                              #ifdef DBG_MTMDD
                              printf("HERE WANT TO set root\n");
-                             #endif
+     #endif
                              node_handle node=this->createReducedNode(-1,un);
                              // printf("%d\n",uniqueNodes[k] );
                              node = makeNodeAtTop(node);
@@ -1778,14 +2083,14 @@ if(m.size()==0){
                              showNode(meddlyout, node, SHOW_DETAILS);
                              printf("Root set! %d\n",node);
                              getchar();
-                             #endif
+     #endif
                              // printf("end size is %d\n",e.getNodeCount() );
                              //nmap.clear();
                              map.clear();
                              // changeInLevel=false;
                              #ifdef DBG_MTMDD
                              printf("NodeChangedNumber %d\n",nodeChangedNumber );
-                             #endif
+     #endif
                              return merged;
                          }
                      }
@@ -1805,7 +2110,7 @@ if(m.size()==0){
                  // printf("\n" );
                  #ifdef DBG_MTMDD
                  printf("0 uniqueNodes %d\n",uniqueNodes[k] );
-                 #endif
+         #endif
                  ///////////////Remove RNA RNB
 
                  // RNA.erase(uniqueNodes[k]);
@@ -1821,7 +2126,7 @@ if(m.size()==0){
         // delete[] uniqueNodes;
         #ifdef DBG_MTMDD
         printf("changeInLevel %d\n",changeInLevel );
-        #endif
+#endif
         if(changeInLevel==false){
             bool correct=false;
             for(int k=0;k<=num_vars; k++)

@@ -131,6 +131,8 @@ namespace MEDDLY {
   const binary_opname* REACHABLE_STATES_BFS_UA = 0;
   const binary_opname* REACHABLE_STATES_BFS_HUA = 0;
   const binary_opname_event* REACHABLE_STATES_ALL_BFS_GEN=0;
+  const binary_opname_event* REACHABLE_STATES_ALL_BFS_GEN_HUA=0;
+
 
   const binary_opname* VM_MULTIPLY = 0;
   const binary_opname* MV_MULTIPLY = 0;
@@ -225,6 +227,8 @@ void MEDDLY::builtin_initializer::setup()
   initP(MEDDLY::REACHABLE_STATES_BFS_UA, FORWARD_BFS_UA, initializeForwardBFSUA());
   initP(MEDDLY::REACHABLE_STATES_BFS_HUA, FORWARD_BFS_HUA, initializeForwardBFSHUA());
   initP(MEDDLY::REACHABLE_STATES_ALL_BFS_GEN, FORWARD_ALL_BFS_GEN,initializeAllBFSGen());
+  initP(MEDDLY::REACHABLE_STATES_ALL_BFS_GEN_HUA, FORWARD_ALL_BFS_GEN_HUA,initializeAllBFSGenHUA());
+
 
   initP(MEDDLY::VM_MULTIPLY,          VM_MULTIPLY,  initializeVMmult()      );
   initP(MEDDLY::MV_MULTIPLY,          MV_MULTIPLY,  initializeMVmult()      );
@@ -308,6 +312,8 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(FORWARD_BFS_UA, MEDDLY::REACHABLE_STATES_BFS_UA);
   cleanPair(FORWARD_BFS_HUA, MEDDLY::REACHABLE_STATES_BFS_HUA);
   cleanPair(FORWARD_ALL_BFS_GEN,MEDDLY::REACHABLE_STATES_ALL_BFS_GEN);
+  cleanPair(FORWARD_ALL_BFS_GEN_HUA,MEDDLY::REACHABLE_STATES_ALL_BFS_GEN_HUA);
+
 
   cleanPair(SATURATION_BACKWARD,      MEDDLY::SATURATION_BACKWARD );
   cleanPair(SATURATION_FORWARD,       MEDDLY::SATURATION_FORWARD  );

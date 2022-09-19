@@ -36,6 +36,8 @@
 // #define desiredPercentage 0.5
 // #define DUP
 
+#define PRINTON
+
 namespace MEDDLY {
     long maxThreshold;
     long minThreshold;
@@ -49,12 +51,15 @@ namespace MEDDLY {
   class common_bfs_ua;
   class common_bfs_hua;
   class common_bfs_event;
+  class common_bfs_event_hua;
+
   // class common_bfs_mt;
   class forwd_bfs_mt;
   class bckwd_bfs_mt;
   class forwd_bfs_ua_mt;
   class forwd_bfs_hua_mt;
   class forwd_bfs_mt_event;
+  class forwd_bfs_mt_event_hua;
 
 
   // class common_bfs_evplus;
@@ -68,6 +73,8 @@ namespace MEDDLY {
   class forwd_bfs_ua_opname;
   class forwd_bfs_hua_opname;
   class forwd_bfs_opname_event;
+  class forwd_bfs_opname_event_hua;
+
 };
 
 // ******************************************************************
@@ -784,11 +791,11 @@ bool BFSExec=false;
           if(lastBFSStateNode.first<getcard){
               printf("More state!\n" );
               if(lastBFSStateNode.second<getnode){
-                  printf("More node!" );
+                  printf("More node!\n" );
                   return;
                   // getchar();
               }else{
-                  printf("LESS node!->good" );
+                  printf("LESS node!->good\n" );
                   // getchar();
               }
           }
@@ -1465,35 +1472,366 @@ MEDDLY::bckwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 
 // ******************************************************************
 // *                                                                *
+// *                        common_bfs_event_hua class                        *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::common_bfs_event_hua : public binary_operation_event {
+public:
+common_bfs_event_hua(const binary_opname_event* opcode, expert_forest* arg1,
+                     dd_edge* arg2, int arg3, expert_forest* res);
+
+virtual void computeDDEdgeEvent(const dd_edge& a, const dd_edge* b, int c,dd_edge &d, bool userFlag);
+
+protected:
+inline void setUnionOp(binary_operation* uop)
+{
+        MEDDLY_DCASSERT(uop);
+        MEDDLY_DCASSERT(0==unionOp);
+        unionOp = uop;
+}
+
+inline void setImageOp(binary_operation* iop)
+{
+        MEDDLY_DCASSERT(iop);
+        MEDDLY_DCASSERT(0==imageOp);
+        imageOp = iop;
+}
+
+inline void setMinusOp(binary_operation* iop)
+{
+        MEDDLY_DCASSERT(iop);
+        MEDDLY_DCASSERT(0==minusOp);
+        minusOp = iop;
+}
+
+private:
+binary_operation* unionOp;
+binary_operation* imageOp;
+binary_operation* minusOp;
+
+};
+
+
+MEDDLY::common_bfs_event_hua::common_bfs_event_hua(const binary_opname_event* oc, expert_forest* a1,
+                                                   dd_edge* a2,int a3, expert_forest* res)
+        : binary_operation_event(oc, 0, a1, a2,a3, res)
+{
+        unionOp = 0;
+        imageOp = 0;
+        minusOp=0;
+}
+
+void MEDDLY::common_bfs_event_hua::computeDDEdgeEvent(const dd_edge &init, const dd_edge *R,int n, dd_edge &reachableStates, bool userFlag)
+{
+        clock_t start, end;
+        start = clock();
+        MEDDLY_DCASSERT(unionOp);
+        MEDDLY_DCASSERT(imageOp);
+// binary_operation* opMinus = getOperation(DIFFERENCE, reachableStates, reachableStates, reachableStates);
+// MEDDLY_DCASSERT(opMinus);
+        MEDDLY_DCASSERT(minusOp);
+        reachableStates = init;
+        dd_edge prevReachable(resF);
+        dd_edge prevReachableate(resF);
+
+        dd_edge front(resF);
+        dd_edge newstate(resF);
+        FILE_output meddlyout(stdout);
+        // unsigned peakreachable=0;
+        // unsigned lastreachable=0;
+        int step=0;
+        bool haveTobreak=false;
+        int lastNonZeroNewstateIndex=0;
+#ifdef DEBUG_BFS
+        FILE_output debug(stderr);
+        debug << "Relation: ";
+        R.show(debug, 2);
+        debug << "Initial states: ";
+        init.show(debug, 2);
+        long iters = 0;
+#endif
+#ifdef VERBOSE_BFS
+        long iters = 0;
+        FILE_OUTPUT verbose(stderr);
+#endif
+        int BFSbetween=0;
+        bool oneMoreBFS=false;
+        bool BFSExec=false;
+        std::list<std::pair<double,unsigned> > PairStateNode;
+        std::pair<double,unsigned> lastBFSStateNode;
+        while (haveTobreak==false /*prevReachable != reachableStates*/) {
+                // printf("XXXXXIt Done0000\n" );
+                // R.show(meddlyout,0);
+#ifdef VERBOSE_BFS
+                iters++;
+                verbose << "Iteration " << iters << ":\n";
+#endif
+                // printf("XXXXXIt Done0\n" );
+                prevReachable = reachableStates;
+                // printf("XXXXXIt Done 1\n" );
+                printf("before %u\n",reachableStates.getNodeCount() );
+                printf("cardbefore %f\n", reachableStates.getCardinality() );
+                // reachableStates.show(meddlyout, 0);
+                for(int e=0; e<n; e++) {
+                        prevReachableate=reachableStates;
+                        imageOp->computeDDEdge(reachableStates, R[e], front, userFlag);
+                        // printf("XXXXXIt Done2\n" );
+
+#ifdef VERBOSE_BFS
+                        verbose << "\timage done ";
+                        front.show(verbose, 0);
+                        verbose << "\n";
+#endif
+#ifdef DEBUG_BFS
+                        iters++;
+                        debug << "Iteration " << iters << "\npseudo-frontier: ";
+                        front.show(debug, 2);
+#endif
+                        unionOp->computeDDEdge(reachableStates, front, reachableStates, userFlag);
+                        BFSExec=true;
+                        // opMinus->computeDDEdge(reachableStates, prevReachableate, newstate, userFlag);
+                        minusOp->computeDDEdge(reachableStates, prevReachableate, newstate, userFlag);
+                        // if(newstate.getNodeCount()>0)
+                        //  printf("newstate[%d]=%u RS %u\n",e, newstate.getNodeCount(),reachableStates.getNodeCount() );
+                        if(newstate.getNodeCount()!=0)
+                        {
+                                lastNonZeroNewstateIndex=e;
+                        }
+                        else if(step>0 && lastNonZeroNewstateIndex==e) {
+                                haveTobreak=true;
+                                break;
+                        }
+                        double getcard=reachableStates.getCardinality();
+                        unsigned getnode=reachableStates.getNodeCount();
+#ifdef PRINTON
+if((long)getnode>maxThreshold|| newstate.getNodeCount() >0) {
+        printf("Ebefore %u\n",getnode );
+        printf("Ecardbefore %f\n",getcard );
+}
+#else
+if((long)getnode>maxThreshold) {
+        printf("before %u\n",getnode );
+        printf("cardbefore %f\n",getcard );
+}
+#endif
+
+                        // printf("newstateCount %u\n",newstate.getNodeCount() );
+                        if( newstate.getNodeCount() >0) {
+
+                                if(oneMoreBFS) {
+                                        if(lastBFSStateNode.first<=getcard) {
+                                                printf("More state! %f\n",getcard );
+                                                if(lastBFSStateNode.second<getnode) {
+                                                        printf("More node!\n" );
+                                                        return;
+                                                }else{
+                                                        printf("LESS node!->good %u\n",getnode );
+                                                }
+                                        }
+                                        else{
+                                                printf("LESS state!\n" );
+                                        }
+                                }
+                                else{
+                                        auto it=std::find(PairStateNode.begin(),PairStateNode.end(),std::make_pair(getcard,getnode));
+                                        if(it!=PairStateNode.end()) {
+                                                printf("Might be stuck!\n" );
+                                                oneMoreBFS=true;
+                                                lastBFSStateNode=std::make_pair(getcard,getnode);
+                                        }
+                                }
+                        }
+
+                        if((long)getnode >maxThreshold && oneMoreBFS==false ) {
+                                PairStateNode.push_back(std::make_pair(getcard,getnode));
+                        }
+// printf("maxThreshold %ld getNode %u BFSExec %d\n",maxThreshold,getnode,BFSExec );
+                        if((long)getnode>maxThreshold) {
+                                // printf("Detect getnode>maxThreshold \n" );
+                                BFSExec=false;
+                        }
+                        if(oneMoreBFS==false)
+                        {
+                                long originalminThreshold=minThreshold;
+                                reachableStates.getForest()->HeuristicUnderApproximate(reachableStates,minThreshold,maxThreshold,desiredPercentage,optionsForUA,deletedApproach, rootStatePercentage);
+                                minThreshold=originalminThreshold;
+                                BFSbetween=0;
+                        }else{
+                                BFSbetween++;
+                        }
+
+
+                        // if(haveTobreak==true/*reachableStates==prevReachable*/){
+                        // printf("Equal %d\n", /*BFSExec*/haveTobreak);
+                        // }
+                        // lastreachable=reachableStates.getNodeCount();
+                        // if(lastreachable>peakreachable) {peakreachable=lastreachable;}
+#ifdef PRINTON
+if((long)getnode>maxThreshold||newstate.getNodeCount() >0 ) {
+        printf("Eafter %d\n",reachableStates.getNodeCount() );
+        printf("Ecardafter %f\n",reachableStates.getCardinality() );
+}
+#endif
+                        end = clock();
+                        double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+                        if(time_taken>timeForUA) {
+                                printf("TimeOut\n" );
+                                return;
+                        }
+                }
+                printf("after %d\n",reachableStates.getNodeCount() );
+                printf("cardafter %f\n",reachableStates.getCardinality() );
+                printf("XXXX %d\n",step);
+                unionOp->computeDDEdge(reachableStates, init, reachableStates, userFlag);
+                // printf("Equal %d\n", /*BFSExec*/haveTobreak);
+
+#ifdef VERBOSE_BFS
+                verbose << "\tunion done ";
+                reachableStates.show(verbose, 0);
+                verbose << "\n";
+#endif
+#ifdef DEBUG_BFS
+                debug << "Reachable so far: ";
+                reachableStates.show(debug, 2);
+#endif
+                // printf("cardafter %f\n",reachableStates.getCardinality() );
+#ifdef CHKBFS
+                if(lastreachable>maxThreshold)
+                        return;
+#endif
+
+                // printf("XXXX %u\t %u\n",lastreachable, peakreachable );
+
+                step++;
+        }
+        printf("Equal %d\n", /*BFSExec*/ haveTobreak);
+
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                       forwd_bfs_mt_event_hua class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::forwd_bfs_mt_event_hua : public common_bfs_event_hua {
+public:
+forwd_bfs_mt_event_hua(const binary_opname_event* opcode, expert_forest* arg1,
+                       dd_edge* arg2, int arg3, expert_forest* res);
+};
+
+MEDDLY::forwd_bfs_mt_event_hua::forwd_bfs_mt_event_hua(const binary_opname_event* oc, expert_forest* a1,
+                                                       dd_edge* a2, int a3, expert_forest* res) : common_bfs_event_hua(oc, a1, a2,a3, res)
+{
+
+        if (res->getRangeType() == forest::BOOLEAN) {
+                setUnionOp( getOperation(UNION, res, res, res) );
+        } else {
+                setUnionOp( getOperation(MAXIMUM, res, res, res) );
+        }
+        setImageOp( getOperation(POST_IMAGE, a1, a2[0], res) );
+        setMinusOp( getOperation(DIFFERENCE,a1,a1,res));
+        // FILE_output meddlyout(stdout);
+        //
+        // res->showInfo(meddlyout,2);
+}
+
+
+
+// ******************************************************************
+// *                                                                *
+// *                     forwd_bfs_opname_event_hua class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::forwd_bfs_opname_event_hua : public binary_opname_event {
+public:
+forwd_bfs_opname_event_hua();
+virtual binary_operation_event* buildOperation(expert_forest* a1,
+                                               expert_forest* a2, expert_forest* r) const {
+        return 0;
+};
+virtual binary_operation_event* buildOperation(expert_forest* a1,
+                                               dd_edge* a2, int a3, expert_forest* r)const;
+};
+
+MEDDLY::forwd_bfs_opname_event_hua::forwd_bfs_opname_event_hua()
+        : binary_opname_event("ReachableBFSEventHUA")
+{
+}
+
+MEDDLY::binary_operation_event*
+MEDDLY::forwd_bfs_opname_event_hua::buildOperation(expert_forest* a1, dd_edge* a2,int a3,
+                                                   expert_forest* r) const
+{
+        if (0==a1 || 0==a2 || 0==r) return 0;
+
+        if (a1->getDomain() != r->getDomain())
+                throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+
+        if (
+                a1->isForRelations()    ||
+                r->isForRelations()     ||
+                (a1->getRangeType() != r->getRangeType()) ||
+                (a1->getEdgeLabeling() != r->getEdgeLabeling())
+                )
+        {
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+        }
+
+        if (a1->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+                return new forwd_bfs_mt_event_hua(this, a1, a2,a3, r);
+        }
+        else if (a1->getEdgeLabeling() == forest::EVPLUS) {
+                throw error(error::NOT_IMPLEMENTED);
+        }
+        else {
+                throw error(error::TYPE_MISMATCH);
+        }
+}
+
+
+// ******************************************************************
+// *                                                                *
 // *                        common_bfs_event class                        *
 // *                                                                *
 // ******************************************************************
 
 class MEDDLY::common_bfs_event : public binary_operation_event {
-  public:
-    common_bfs_event(const binary_opname_event* opcode, expert_forest* arg1,
-      dd_edge* arg2, int arg3, expert_forest* res);
+public:
+        common_bfs_event(const binary_opname_event* opcode, expert_forest* arg1,
+                         dd_edge* arg2, int arg3, expert_forest* res);
 
-    virtual void computeDDEdgeEvent(const dd_edge& a, const dd_edge* b, int c,dd_edge &d, bool userFlag);
+        virtual void computeDDEdgeEvent(const dd_edge& a, const dd_edge* b, int c,dd_edge &d, bool userFlag);
 
-  protected:
-    inline void setUnionOp(binary_operation* uop)
-    {
-      MEDDLY_DCASSERT(uop);
-      MEDDLY_DCASSERT(0==unionOp);
-      unionOp = uop;
-    }
+protected:
+        inline void setUnionOp(binary_operation* uop)
+        {
+                MEDDLY_DCASSERT(uop);
+                MEDDLY_DCASSERT(0==unionOp);
+                unionOp = uop;
+        }
 
-    inline void setImageOp(binary_operation* iop)
-    {
-      MEDDLY_DCASSERT(iop);
-      MEDDLY_DCASSERT(0==imageOp);
-      imageOp = iop;
-    }
+        inline void setImageOp(binary_operation* iop)
+        {
+                MEDDLY_DCASSERT(iop);
+                MEDDLY_DCASSERT(0==imageOp);
+                imageOp = iop;
+        }
 
-  private:
-    binary_operation* unionOp;
-    binary_operation* imageOp;
+        inline void setMinusOp(binary_operation* iop)
+        {
+                MEDDLY_DCASSERT(iop);
+                MEDDLY_DCASSERT(0==minusOp);
+                minusOp = iop;
+        }
+
+private:
+        binary_operation* unionOp;
+        binary_operation* imageOp;
+        binary_operation* minusOp;
 
 };
 
@@ -1502,97 +1840,129 @@ MEDDLY::common_bfs_event::common_bfs_event(const binary_opname_event* oc, expert
   dd_edge* a2,int a3, expert_forest* res)
 : binary_operation_event(oc, 0, a1, a2,a3, res)
 {
-  unionOp = 0;
-  imageOp = 0;
+        unionOp = 0;
+        imageOp = 0;
+        minusOp=0;
 }
 
 void MEDDLY::common_bfs_event::computeDDEdgeEvent(const dd_edge &init, const dd_edge *R,int n, dd_edge &reachableStates, bool userFlag)
 {
-    printf("Need to be write down!\n" );
-    clock_t start, end;
-    start = clock();
-  MEDDLY_DCASSERT(unionOp);
-  MEDDLY_DCASSERT(imageOp);
+        clock_t start, end;
+        start = clock();
+        MEDDLY_DCASSERT(unionOp);
+        MEDDLY_DCASSERT(imageOp);
+// binary_operation* opMinus = getOperation(DIFFERENCE, reachableStates, reachableStates, reachableStates);
+// MEDDLY_DCASSERT(opMinus);
+        MEDDLY_DCASSERT(minusOp);
+        reachableStates = init;
+        dd_edge prevReachable(resF);
+        dd_edge prevReachableate(resF);
 
-  reachableStates = init;
-  dd_edge prevReachable(resF);
-  dd_edge front(resF);
-  FILE_output meddlyout(stdout);
-  long peakreachable=0;
-  long lastreachable=0;
+        dd_edge front(resF);
+        dd_edge newstate(resF);
+        FILE_output meddlyout(stdout);
+        unsigned peakreachable=0;
+        unsigned lastreachable=0;
+        int step=0;
+        bool haveTobreak=false;
+        int lastNonZeroNewstateIndex=0;
 #ifdef DEBUG_BFS
-  FILE_output debug(stderr);
-  debug << "Relation: ";
-  R.show(debug, 2);
-  debug << "Initial states: ";
-  init.show(debug, 2);
-  long iters = 0;
+        FILE_output debug(stderr);
+        debug << "Relation: ";
+        R.show(debug, 2);
+        debug << "Initial states: ";
+        init.show(debug, 2);
+        long iters = 0;
 #endif
 #ifdef VERBOSE_BFS
-  long iters = 0;
-  FILE_OUTPUT verbose(stderr);
+        long iters = 0;
+        FILE_OUTPUT verbose(stderr);
 #endif
-  while (prevReachable != reachableStates) {
-      // printf("XXXXXIt Done0000\n" );
-      // R.show(meddlyout,0);
+        while (haveTobreak==false /*prevReachable != reachableStates*/) {
+                // printf("XXXXXIt Done0000\n" );
+                // R.show(meddlyout,0);
 #ifdef VERBOSE_BFS
-    iters++;
-    verbose << "Iteration " << iters << ":\n";
+                iters++;
+                verbose << "Iteration " << iters << ":\n";
 #endif
-    // printf("XXXXXIt Done0\n" );
-    prevReachable = reachableStates;
-    // printf("XXXXXIt Done 1\n" );
+                // printf("XXXXXIt Done0\n" );
+                prevReachable = reachableStates;
+                // printf("XXXXXIt Done 1\n" );
+                printf("before %u\n",reachableStates.getNodeCount() );
+                printf("cardbefore %f\n", reachableStates.getCardinality() );
+                // reachableStates.show(meddlyout, 0);
+                for(int e=0; e<n; e++) {
+                        prevReachableate=reachableStates;
+                        imageOp->computeDDEdge(reachableStates, R[e], front, userFlag);
+                        // printf("XXXXXIt Done2\n" );
 
-     // reachableStates.show(meddlyout, 0);
-     for(int e=0; e<n; e++){
-    imageOp->computeDDEdge(reachableStates, R[e], front, userFlag);
-    // printf("XXXXXIt Done2\n" );
-
 #ifdef VERBOSE_BFS
-    verbose << "\timage done ";
-    front.show(verbose, 0);
-    verbose << "\n";
-#endif
-#ifdef DEBUG_BFS
-    iters++;
-    debug << "Iteration " << iters << "\npseudo-frontier: ";
-    front.show(debug, 2);
-#endif
-    unionOp->computeDDEdge(reachableStates, front, reachableStates, userFlag);
-    }
-#ifdef VERBOSE_BFS
-    verbose << "\tunion done ";
-    reachableStates.show(verbose, 0);
-    verbose << "\n";
+                        verbose << "\timage done ";
+                        front.show(verbose, 0);
+                        verbose << "\n";
 #endif
 #ifdef DEBUG_BFS
-    debug << "Reachable so far: ";
-    reachableStates.show(debug, 2);
+                        iters++;
+                        debug << "Iteration " << iters << "\npseudo-frontier: ";
+                        front.show(debug, 2);
 #endif
-printf("cardafter %f\n",reachableStates.getCardinality() );
-lastreachable=reachableStates.getNodeCount();
-#ifdef CHKBFS
-if(lastreachable>maxThreshold)
-return;
-#endif
-if(lastreachable>peakreachable)
-{peakreachable=lastreachable;}
-printf("XXXX %ld\t %ld\n",lastreachable, peakreachable );
+                        unionOp->computeDDEdge(reachableStates, front, reachableStates, userFlag);
 
- // reachableStates.getForest()->underApproximate(reachableStates,1100);
-//1000
-// reachableStates.show(meddlyout,0);
- // printf("XXXX\n" );
- end = clock();
- double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
- if(time_taken>timeT){
- printf("TimeOut\n" );
- return;
+                        // opMinus->computeDDEdge(reachableStates, prevReachableate, newstate, userFlag);
+                        minusOp->computeDDEdge(reachableStates, prevReachableate, newstate, userFlag);
+                        // if(newstate.getNodeCount()>0)
+                        //  printf("newstate[%d]=%u RS %u\n",e, newstate.getNodeCount(),reachableStates.getNodeCount() );
+                        if(newstate.getNodeCount()>0)
+                        {
+                                lastNonZeroNewstateIndex=e;
+#ifdef PRINTON
+printf("Ebefore %u\n",reachableStates.getNodeCount() );
+printf("Ecardbefore %f\n", reachableStates.getCardinality() );
+#endif
+                        }
+                        // if((long)getnode>maxThreshold|| e==0||newstate.getNodeCount() >0) {
+                        //         printf("before %u\n",getnode );
+                        //         printf("cardbefore %f\n",getcard );
+                        // }
+                        else if(step>0 && lastNonZeroNewstateIndex==e) {
+                                haveTobreak=true;
+                                break;
+                        }
+                        lastreachable=reachableStates.getNodeCount();
+                        if(lastreachable>peakreachable) {peakreachable=lastreachable;}
+#ifdef PRINTON
+if(newstate.getNodeCount() >0 ) {
+        printf("Eafter %d\n",reachableStates.getNodeCount() );
+        printf("Ecardafter %f\n",reachableStates.getCardinality() );
 }
-  }
+#endif
+                        end = clock();
+                        double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+                        if(time_taken>timeT) {
+                                printf("TimeOut\n" );
+                                return;
+                        }
+                }
+#ifdef VERBOSE_BFS
+                verbose << "\tunion done ";
+                reachableStates.show(verbose, 0);
+                verbose << "\n";
+#endif
+#ifdef DEBUG_BFS
+                debug << "Reachable so far: ";
+                reachableStates.show(debug, 2);
+#endif
+                printf("after %u\n",reachableStates.getNodeCount() );
+                printf("cardafter %f\n",reachableStates.getCardinality() );
+#ifdef CHKBFS
+                if(lastreachable>maxThreshold)
+                        return;
+#endif
 
+                printf("XXXX %u\t %u\n",lastreachable, peakreachable );
 
-
+                step++;
+        }
 
 }
 
@@ -1612,18 +1982,14 @@ class MEDDLY::forwd_bfs_mt_event : public common_bfs_event {
 MEDDLY::forwd_bfs_mt_event::forwd_bfs_mt_event(const binary_opname_event* oc, expert_forest* a1,
  dd_edge* a2, int a3, expert_forest* res) : common_bfs_event(oc, a1, a2,a3, res)
 {
-    printf("start setting image and union operation\n" );
 
   if (res->getRangeType() == forest::BOOLEAN) {
     setUnionOp( getOperation(UNION, res, res, res) );
-    printf("Done setting union operation\n" );
   } else {
     setUnionOp( getOperation(MAXIMUM, res, res, res) );
   }
-  printf("start setting image operation\n" );
-
   setImageOp( getOperation(POST_IMAGE, a1, a2[0], res) );
-  printf("Done setting image and union operation\n" );
+  setMinusOp( getOperation(DIFFERENCE,a1,a1,res));
   // FILE_output meddlyout(stdout);
   //
   // res->showInfo(meddlyout,2);
@@ -1655,37 +2021,26 @@ MEDDLY::binary_operation_event*
 MEDDLY::forwd_bfs_opname_event::buildOperation(expert_forest* a1, dd_edge* a2,int a3,
   expert_forest* r) const
 {
-    printf("XXXX came here buildOperation\n" );
   if (0==a1 || 0==a2 || 0==r) return 0;
 
-  if (
-    (a1->getDomain() != r->getDomain())// ||
-    // (a2->getDomain() != r->getDomain())
-  )
+  if (a1->getDomain() != r->getDomain())
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
     a1->isForRelations()    ||
-    // !a2->isForRelations()   ||
     r->isForRelations()     ||
     (a1->getRangeType() != r->getRangeType()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) //||
-    // (a2->getEdgeLabeling() != forest::MULTI_TERMINAL)
+    (a1->getEdgeLabeling() != r->getEdgeLabeling())
   )
     {
-        printf("throw mismatch\n" );
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
 
   if (a1->getEdgeLabeling() == forest::MULTI_TERMINAL) {
-      printf("Should call something\n");
-      // return 0;
     return new forwd_bfs_mt_event(this, a1, a2,a3, r);
   }
   else if (a1->getEdgeLabeling() == forest::EVPLUS) {
-      printf("Should call something2\n");
-
-    // return new forwd_bfs_hua_evplus(this, a1, a2, r);
+      throw error(error::NOT_IMPLEMENTED);
   }
   else {
     throw error(error::TYPE_MISMATCH);
@@ -1720,6 +2075,10 @@ MEDDLY::binary_opname* MEDDLY::initializeForwardBFSHUA()
 
 MEDDLY::binary_opname_event* MEDDLY::initializeAllBFSGen()
 {
-    printf("Need to get completed!!! MEDDLY::initializeAllBFSGen\n" );
     return new forwd_bfs_opname_event;
+}
+
+MEDDLY::binary_opname_event* MEDDLY::initializeAllBFSGenHUA()
+{
+    return new forwd_bfs_opname_event_hua;
 }

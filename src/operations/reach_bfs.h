@@ -37,6 +37,8 @@ namespace MEDDLY {
   binary_opname* initializeForwardBFSHUA();
 
   binary_opname_event* initializeAllBFSGen();
+
+  binary_opname_event* initializeAllBFSGenHUA();
 }
 
 #endif

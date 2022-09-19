@@ -346,8 +346,6 @@ void MEDDLY::apply(const binary_opname* code, const dd_edge &a,
 void MEDDLY::apply(const binary_opname_event* code, const dd_edge &a,
   const dd_edge &b, dd_edge &c)
 {
-    printf("MEDDLY::apply(const binary_opname_event* code, const dd_edge &a const dd_edge &b, dd_edge &c,\n" );
-
   if (!libraryRunning)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
@@ -359,8 +357,7 @@ void MEDDLY::apply(const binary_opname_event* code, const dd_edge &a,
 void MEDDLY::apply(const binary_opname_event* code, const dd_edge &a,
   const dd_edge* b,int c, dd_edge &d)
 {
-    printf("MEDDLY::apply(const binary_opname_event* code, const dd_edge &a,const dd_edge* b,int c, dd_edge &d\n" );
-    // printf("code %d\n",code );
+
   if (!libraryRunning)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)

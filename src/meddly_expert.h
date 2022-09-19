@@ -169,6 +169,7 @@ namespace MEDDLY {
   extern const satotf_opname* SATURATION_OTF_FORWARD;
 
   extern const binary_opname_event* REACHABLE_STATES_ALL_BFS_GEN;
+  extern const binary_opname_event* REACHABLE_STATES_ALL_BFS_GEN_HUA;
   /** Forward reachability using saturation.
       Transition relation is specified implicitly.
   */
@@ -5401,6 +5402,8 @@ class MEDDLY::binary_operation : public operation {
     bool can_commute;
     expert_forest* arg1F;
     expert_forest* arg2F;
+    dd_edge* arg2D;
+    int arg3I;
     expert_forest* resF;
     opnd_type resultType;
 
@@ -5417,6 +5420,9 @@ class MEDDLY::binary_operation : public operation {
     bool matches(const expert_forest* arg1, const expert_forest* arg2,
       const expert_forest* res) const;
 
+    bool matches(const expert_forest* arg1, const dd_edge* arg2,
+      const int arg3, const expert_forest* res) const;
+
     // high-level front-end
 
     /**
@@ -5424,6 +5430,8 @@ class MEDDLY::binary_operation : public operation {
     */
     void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
     void computeTemp(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
+    void compute_event(const dd_edge &ar1, const dd_edge* ar2, int ar3, dd_edge &res);
+
 
     virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res, bool userFlag)
       = 0;

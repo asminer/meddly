@@ -3962,8 +3962,7 @@ inline bool
 MEDDLY::binary_operation_event::matches(const MEDDLY::expert_forest* arg1,
     const MEDDLY::expert_forest* arg2, const MEDDLY::expert_forest* res) const
 {
-    return true;
-  return (arg1 == arg1F /*&& arg2 == arg2F*/ && res == resF);
+  return (arg1 == arg1F && res == resF);
 }
 
 
@@ -3971,23 +3970,21 @@ inline bool
 MEDDLY::binary_operation_event::matches(const MEDDLY::expert_forest* arg1,
     const MEDDLY::dd_edge* arg2, const int arg3, const MEDDLY::expert_forest* res) const
 {
-    return true;
-  return ((arg1 == arg1F) &&/* (arg2 == arg2D) && (arg3==arg3I) &&*/ (res == resF));
+  return ((arg1 == arg1F) && (res == resF));
 }
 
 inline void
 MEDDLY::binary_operation_event::operationCommutes()
 {
-  can_commute =false;// (arg1F == arg2F);
+  can_commute =(arg1F == resF);
 }
 
 inline bool
 MEDDLY::binary_operation_event::checkForestCompatibility() const
 {
   auto o1 = arg1F->variableOrder();
-  // auto o2 = arg2F->variableOrder();
   auto o3 = resF->variableOrder();
-  return /*o1->is_compatible_with(*o2) &&*/ o1->is_compatible_with(*o3);
+  return o1->is_compatible_with(*o3);
 }
 
 inline void
@@ -3996,7 +3993,7 @@ MEDDLY::binary_operation_event::compute(const dd_edge &ar1, const dd_edge &ar2, 
   if (!checkForestCompatibility()) {
     throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
   }
-
+  throw error(error::NOT_IMPLEMENTED);
   // computeDDEdge(ar1, ar2,0, res, true);
 }
 
@@ -4006,6 +4003,7 @@ MEDDLY::binary_operation_event::computeTemp(const dd_edge &ar1, const dd_edge &a
   if (!checkForestCompatibility()) {
     throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
   }
+  throw error(error::NOT_IMPLEMENTED);
   // computeDDEdgeEvent(ar1, ar2,0, res, false);
 }
 

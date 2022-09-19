@@ -382,6 +382,8 @@ namespace MEDDLY {
   extern const binary_opname* REACHABLE_STATES_BFS_UA;
   extern const binary_opname* REACHABLE_STATES_BFS_HUA;
   extern const binary_opname_event* REACHABLE_STATES_ALL_BFS_GEN;
+  extern const binary_opname_event* REACHABLE_STATES_ALL_BFS_GEN_HUA;
+
 
 
   /** Vector matrix multiply, where the first argument is vector (MDD),

@@ -84,6 +84,8 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest {
     virtual node_handle readTerminal(input &s);
     virtual void underApproximate(dd_edge &e,long minThreshold, long maxThreshold,float desiredPercentage, int option);
     virtual void HeuristicUnderApproximate(dd_edge &e, long minThreshold, long maxThreshold,float desiredPercentage, int option,int deletedApproach, float rootStatePercentage);
+    virtual void HeuristicUnderApproximateDeleted(dd_edge &e, long minThreshold, long maxThreshold,float desiredPercentage, int option,int deletedApproach, float rootStatePercentage);
+
     // bool compareLong(mpz_object a, mpz_object b );
 
   protected:
