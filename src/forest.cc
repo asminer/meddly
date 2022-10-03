@@ -1086,7 +1086,7 @@ void MEDDLY::expert_forest::countNodesByLevel(long* active) const
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-std::__cxx11::list<int>*
+std::list<int>*
 MEDDLY::expert_forest
 ::markNodesInSubgraphByLvl(const node_handle* root, int N) const
 {
@@ -1102,7 +1102,7 @@ MEDDLY::expert_forest
   int mlen = 0;
   int msize = 0;
   node_handle* marked = 0;
-  std::__cxx11::list<int>* listMarked= new  std::__cxx11::list<int>[getNodeLevel(root[0])+1];
+  std::list<int>* listMarked= new  std::list<int>[getNodeLevel(root[0])+1];
 
   // Initialize search
   for (int i=0; i<N; i++) {

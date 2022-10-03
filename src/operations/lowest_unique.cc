@@ -20,9 +20,6 @@
 #ifdef HAVE_CONFIG_H
 #include "lowest_unique.h"
 #endif
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
-#endif
 #include "../defines.h"
 #include <set>
 #include <list>
@@ -39,7 +36,7 @@ namespace MEDDLY {
   class lu_mdd_int;
  // class card_mxd_int;
  std::map< int, std::set<int>> lowestunique;
- std::__cxx11::list<int>* lowestuniquelist;
+ std::list<int>* lowestuniquelist;
 
   //int* abovecount;
   class lu_real;
@@ -452,7 +449,7 @@ if(card<1)
     #endif
     #ifdef Ldom
     // printf("Card %d\n",card );
-    lowestuniquelist=new std::__cxx11::list<int>[card];
+    lowestuniquelist=new std::list<int>[card];
 g=rg;//new std::vector<int>[card];// dominator
 rrg=new std::vector<int> [card]; // revese graph
 bucket=new std::vector<int>[card]; // bucket stores the set of semidom

@@ -160,9 +160,9 @@ namespace MEDDLY {
   extern long long int* abovecount;
   extern long long int* belowcount;
   extern std::map< int, std::set<int>> highestunique;
-  extern std::__cxx11::list<int>* highestuniquelist;
+  extern std::list<int>* highestuniquelist;
   extern std::map< int, std::set<int>> lowestunique;
-  extern std::__cxx11::list<int>* lowestuniquelist;
+  extern std::list<int>* lowestuniquelist;
   extern int* uniquecount;
   extern int* uniqueAbovecount;
   extern int lastNode;

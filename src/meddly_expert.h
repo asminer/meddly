@@ -2592,7 +2592,7 @@ class MEDDLY::expert_forest: public forest
     node_handle*
     markNodesInSubgraph(const node_handle* roots, int N, bool sort) const;
 
-    std::__cxx11::list<int>*
+    std::list<int>*
     markNodesInSubgraphByLvl(const node_handle* roots, int N) const;
     /** Count and return the number of non-terminal nodes
         in the subgraph below the given node.

@@ -20,9 +20,6 @@
 #ifdef HAVE_CONFIG_H
 #include "highest_unique.h"
 #endif
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
-#endif
 #include "../defines.h"
 #include <set>
 #include <map>
@@ -40,7 +37,7 @@ namespace MEDDLY {
   class hu_mdd_int;
  // class card_mxd_int;
  std::map< int, std::set<int>> highestunique;
- std::__cxx11::list<int>* highestuniquelist;
+ std::list<int>* highestuniquelist;
  std::vector<int>* rg;
   //int* abovecount;
   class hu_real;
@@ -347,7 +344,7 @@ if(card<1)
     blockedBy= new int[card];
     #endif
     #ifdef Hdom
-    highestuniquelist= new std::__cxx11::list<int>[card];
+    highestuniquelist= new std::list<int>[card];
     // LSAtree=new std::vector<int>[card];// dominator
      rg=new std::vector<int> [card]; // revese graph
      // printf("rg made\n" );

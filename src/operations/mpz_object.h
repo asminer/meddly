@@ -84,8 +84,9 @@ public:
   inline void multiply(long i) {
     mpz_mul_si(value, value, i);
   }
+
   inline void division(unsigned long i){
-      int rivalue=mpz_cdiv_q_ui(value, value, i);
+      int rivalue=mpz_tdiv_q_ui(value, value, i);
      rdvalue=rivalue/(double)i;
       // mpf_div(value,value,)
   }
@@ -98,6 +99,7 @@ public:
   }
   inline void add(const mpz_object &x) {
     mpz_add(value, value, x.value);
+    rdvalue+=x.rdvalue;
   }
 
   static void initBuffer();

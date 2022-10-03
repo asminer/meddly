@@ -20,9 +20,6 @@
 #ifdef HAVE_CONFIG_H
 #include "unique_count.h"
 #endif
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
-#endif
 #include "../defines.h"
 #include <set>
 #include <list>
@@ -364,7 +361,7 @@ for(int i=0;i<card;i++){
      // std::set<int> rset=highestunique[a];
      // printf("size %d highestuniquelist %d \n",a, highestuniquelist[a].size() );
      // for (auto it=rset.begin(); it != rset.end(); ++it){
-     for (std::__cxx11::list<int>::iterator it=highestuniquelist[a].begin(); it != highestuniquelist[a].end(); ++it){
+     for (std::list<int>::iterator it=highestuniquelist[a].begin(); it != highestuniquelist[a].end(); ++it){
          // printf("Res %d\n",*it );
          // printf("compute_r((*it)), %f\n",compute_r((*it)) );
         uniquecount[a]+=compute_r((*it));

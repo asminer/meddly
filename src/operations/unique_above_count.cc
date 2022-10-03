@@ -20,9 +20,6 @@
 #ifdef HAVE_CONFIG_H
 #include "unique_above_count.h"
 #endif
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
-#endif
 #include "../defines.h"
 #include <set>
 #include <list>
@@ -355,7 +352,7 @@ for(int i=0;i<card;i++){
      }
      // std::set<int> rset=lowestunique[a];
      // for (auto it=rset.begin(); it != rset.end(); ++it){
-     for (std::__cxx11::list<int>::iterator it=lowestuniquelist[a].begin(); it != lowestuniquelist[a].end(); ++it){
+     for (std::list<int>::iterator it=lowestuniquelist[a].begin(); it != lowestuniquelist[a].end(); ++it){
 
         // printf("Res %d\n",*it );
         uniqueAbovecount[a]+=compute_r((*it))+1;

@@ -95,9 +95,9 @@ void MEDDLY::mpz_object::showwithreminder(output &strm) const
   // // Display the string
   strm.put(rdvalue);
   // strm.put("I:");
-  strm.put(buffer);
+  // strm.put(buffer);
 
-  printf("I: %d", index);
+  // printf("I: %d", index);
 
 }
 
