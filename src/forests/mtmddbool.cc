@@ -892,16 +892,18 @@ std::sort(doubleDensityArray, doubleDensityArray+lastNode);
 #ifdef HAVE_LIBGMP
                                 mpzd.setValue(0);
                                 mpzd.setReminder(0);
-                                if (i>0&& mpzd.compare(doubleDensityArray[dsaIndexx].density,mpz0)==1) {
+                                if (i>0&& mpzd.compare(doubleDensityArray[dsaIndexx].density,mpz0)==1)
 #else
-                                if (i>0&& doubleDensityArray[dsaIndexx].density>0.0) {
+                                if (i>0&& doubleDensityArray[dsaIndexx].density>0.0)
 #endif
+                                {
                                         if(i!=root)
 #ifdef HAVE_LIBGMP
-                                                if((mpzd.compare(ACBC[i],mpz0)==1)&&(levelcount[getNodeLevel(i)]>1)) {
+                                                if((mpzd.compare(ACBC[i],mpz0)==1)&&(levelcount[getNodeLevel(i)]>1))
 #else
-                                                if((ACBC[i]>0)&&(levelcount[getNodeLevel(i)]>1)) {
+                                                if((ACBC[i]>0)&&(levelcount[getNodeLevel(i)]>1))
 #endif
+                                                {
                                                         bool is_in =isInArr[i];
                                                         bool neverDelete_isin =neverInArr[i];
                                                         if(!is_in && !neverDelete_isin &&(i>1)) {
