@@ -1627,6 +1627,7 @@ if((long)getnode>maxThreshold) {
                                                         return;
                                                 }else{
                                                         printf("LESS node!->good %u\n",getnode );
+                                                        //oneMoreBFS=false;
                                                 }
                                         }
                                         else{
@@ -1634,12 +1635,15 @@ if((long)getnode>maxThreshold) {
                                         }
                                 }
                                 else{
-                                        auto it=std::find(PairStateNode.begin(),PairStateNode.end(),std::make_pair(getcard,getnode));
-                                        if(it!=PairStateNode.end()) {
-                                                printf("Might be stuck!\n" );
-                                                oneMoreBFS=true;
-                                                lastBFSStateNode=std::make_pair(getcard,getnode);
-                                        }
+                                  if((long)getnode >maxThreshold){
+                                    auto it=std::find(PairStateNode.begin(),PairStateNode.end(),std::make_pair(getcard,getnode));
+                                    if(it!=PairStateNode.end()) {
+                                            printf("Might be stuck!\n" );
+                                            oneMoreBFS=true;
+                                            lastBFSStateNode=std::make_pair(getcard,getnode);
+                                    }
+                                  }
+
                                 }
                         }
 
