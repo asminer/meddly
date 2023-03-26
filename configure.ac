@@ -23,12 +23,12 @@ AM_PROG_LIBTOOL
 # Checks for libraries.
 
 AC_ARG_WITH([gmp],
-  [AS_HELP_STRING([--without-gmp], [disable support for gmp])],
-  [],
-  [with_gmp=yes])
+    [AS_HELP_STRING([--without-gmp], [disable support for gmp])],
+    [],
+    [with_gmp=yes])
 LIBGMP=
 AS_IF([test "x$with_gmp" != xno],
-  [AC_CHECK_LIB([gmp], [__gmpz_init], [], 
+    [AC_CHECK_LIB([gmp], [__gmpz_init], [],
     [AC_MSG_FAILURE([gmp test failed (--without-gmp to disable)])],
     [])])
 
