@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -400,7 +400,7 @@ long MEDDLY::satotf_opname::event::mintermMemoryUsage() const {
 
 // ============================================================
 
-MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd, 
+MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
   forest* mxd, forest* outmdd, event** E, int ne)
 : insetF(static_cast<expert_forest*>(inmdd)),
   mxdF(static_cast<expert_forest*>(mxd)),
@@ -409,9 +409,9 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
   if (0==insetF || 0==outsetF || 0==mxdF) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 
   // Check for same domain
-  if (  
-    (insetF->getDomain() != mxdF->getDomain()) || 
-    (outsetF->getDomain() != mxdF->getDomain()) 
+  if (
+    (insetF->getDomain() != mxdF->getDomain()) ||
+    (outsetF->getDomain() != mxdF->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
@@ -582,7 +582,7 @@ bool MEDDLY::satotf_opname::otf_relation::confirm(int level, int index)
   enlargeConfirmedArrays(level, index+1);
 
   MEDDLY_DCASSERT(size_confirmed[level] > index);
-  if (isConfirmed(level, index)) return false; 
+  if (isConfirmed(level, index)) return false;
 
   // Get subevents affected by this level, and rebuild them.
   int nSubevents = num_subevents_by_level[level];
@@ -777,7 +777,7 @@ double MEDDLY::satotf_opname::otf_relation::getArcCount(
       }
     }
   } else {
-    // build monolithic 
+    // build monolithic
     dd_edge monolithic_nsf(mxdF);
     for (int k = 1; k < num_levels; k++) {
       dd_edge nsf_i(mxdF);
@@ -868,7 +868,7 @@ MEDDLY::node_handle MEDDLY::satotf_opname::otf_relation::getBoundedMxd(
     const int* bounds,
     int num_levels,
     std::unordered_map<MEDDLY::node_handle, MEDDLY::node_handle>& cache
-    ) 
+    )
 {
   if (mxdF->isTerminalNode(mxd)) return mxd;
   if (!mxdF->isExtensible(mxd)) return mxdF->linkNode(mxd);
@@ -915,7 +915,7 @@ class MEDDLY::otfsat_by_events_opname : public unary_opname {
     otfsat_by_events_opname();
 
     static const otfsat_by_events_opname* getInstance();
- 
+
 };
 
 MEDDLY::otfsat_by_events_opname* MEDDLY::otfsat_by_events_opname::instance = 0;
@@ -949,7 +949,7 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
     node_handle saturate(node_handle mdd, int level);
 
   protected:
-    inline compute_table::entry_key* 
+    inline compute_table::entry_key*
     findSaturateResult(node_handle a, int level, node_handle& b) {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
@@ -957,12 +957,12 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
       if (argF->isFullyReduced()) CTsrch->writeI(level);
       CT0->find(CTsrch, CTresult[0]);
       if (!CTresult[0]) return CTsrch;
-      b = resF->linkNode(CTresult[0].readN()); 
+      b = resF->linkNode(CTresult[0].readN());
       CT0->recycle(CTsrch);
       return 0;
     }
     inline node_handle saveSaturateResult(compute_table::entry_key* Key,
-      node_handle a, node_handle b) 
+      node_handle a, node_handle b)
     {
       CTresult[0].reset();
       CTresult[0].writeN(b);
@@ -988,8 +988,8 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
     virtual void saturateHelper(unpacked_node& mdd) = 0;
 
   protected:
-    inline compute_table::entry_key* 
-    findResult(node_handle a, node_handle b, node_handle &c) 
+    inline compute_table::entry_key*
+    findResult(node_handle a, node_handle b, node_handle &c)
     {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
@@ -1002,7 +1002,7 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
       return 0;
     }
     inline node_handle saveResult(compute_table::entry_key* Key,
-      node_handle a, node_handle b, node_handle c) 
+      node_handle a, node_handle b, node_handle c)
     {
       CTresult[0].reset();
       CTresult[0].writeN(c);
@@ -1443,7 +1443,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
           if (0==Ru[ei]) {
             Ru[ei] = unpacked_node::useUnpackedNode();
           }
-          const int eventLevel = mxd.getNode();
+          const int eventLevel = mxd.getLevel();
           if (ABS(eventLevel) < level || eventLevel < 0) {
             // Takes care of two situations:
             // - skipped unprimed level (due to Fully Reduced)
@@ -1585,7 +1585,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     }
 
   } else {
-    // 
+    //
     // Need to process this level in the MXD.
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
@@ -1602,7 +1602,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     // loop over mxd "rows"
     for (int iz=0; iz<Ru->getNNZs(); iz++) {
       const int i = Ru->i(iz);
-      if (0==A->d(i)) continue; 
+      if (0==A->d(i)) continue;
       const node_handle pnode = Ru->d(iz);
       if (isLevelAbove(-rLevel, arg2F->getNodeLevel(pnode))) {
         Rp->initIdentity(arg2F, rLevel, i, pnode, false);
@@ -1645,7 +1645,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     // loop over mxd "rows"
     for (unsigned iz=0; iz<Ru->getNNZs(); iz++) {
       const unsigned i = Ru->i(iz);
-      if (0==A->d(i)) continue; 
+      if (0==A->d(i)) continue;
       recFireHelper(i, rLevel, Ru->d(iz), A->d(i), Rp, nb);
     }
     // loop over the extensible portion of mxd (if any)
@@ -1677,7 +1677,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   resF->showNode(stdout, result, 1);
   printf("\n");
 #endif
-  return saveResult(Key, mdd, mxd, result); 
+  return saveResult(Key, mdd, mxd, result);
 }
 
 
