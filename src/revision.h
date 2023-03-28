@@ -1,1 +1,1 @@
-const char* MEDDLY_DATE = "2019 July 09";
+const char* MEDDLY_DATE = "2023 March 28";
