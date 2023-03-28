@@ -10,6 +10,11 @@ if [ $# -ne 0 ]; then
     exit 0
 fi
 
+if [ ! -f ../configure.ac ]; then
+    printf "\nRun this in the developers directory.\n\n"
+    exit 1
+fi
+
 version=`awk '/AC_INIT/{print $2}' ../configure.ac | tr -d '[],'`
 
 
