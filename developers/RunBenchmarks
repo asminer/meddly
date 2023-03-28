@@ -3,6 +3,24 @@
 # Massive script to run benchmark tests
 #
 
+EXDIR=examples
+SRCDIR=src
+
+if [ ! -d $EXDIR ]; then
+    EXDIR=../examples
+    SRCDIR=../src
+fi
+if [ ! -d $EXDIR ]; then
+    echo "Can't find examples directory; run this script in"
+    echo "the root directory or within developers/."
+    exit 1
+fi
+if [ ! -d $SRCDIR ]; then
+    echo "Can't find src directory; run this script in"
+    echo "the root directory or within developers/."
+    exit 1
+fi
+
 #
 # Process switches (these are new!)
 #
@@ -37,7 +55,7 @@ done
 #
 # Quick sanity check
 #
-if [ ! -f examples/kanban ]; then
+if [ ! -f $EXDIR/kanban ]; then
   echo "Can't find executables."
   echo "Are you running this in the main directory?"
   exit
@@ -53,7 +71,7 @@ TIMESTXT=`mktemp /tmp/times.txt.XXXXXX`
 #
 # Prevent jobs from exceeding time limit
 #
-sleepandkill() 
+sleepandkill()
 {
   sleep 1024 &
   slid=$!
@@ -81,7 +99,7 @@ printtime()
     # sec=`echo $2 | tr 'ms' '  ' | awk '{print $1*60+$2}'`
     # real=`echo $3 | tr 'ms' '  ' | awk '{print $1*60+$2}'`
     # printf "%20s %10s s.user  %10s s.real peak: " "$1" $sec $real
-    printf "%20s %10s s.user peak: " "$1" $sec 
+    printf "%20s %10s s.user peak: " "$1" $sec
     echo $4
     nsec=`echo $sec | awk '{print $1+0}'`
     total="$total + $nsec"
@@ -117,7 +135,7 @@ printcount()
 
 update()
 {
-  printf "\n\nSource code for $version (branch: $branch):\n" 
+  printf "\n\nSource code for $version (branch: $branch):\n"
   printf "\tReleased $revdate\n"
   printcount $numfiles "files"
   printcount $numlines "lines"
@@ -162,7 +180,7 @@ updatehtml()
   printf "</tr>\n"
 }
 
-runchild() 
+runchild()
 {
   $@ > $OUTTXT 2>&1 &
   pid=$!
@@ -177,7 +195,7 @@ runchild()
 run()
 {
   hr="==============================================================="
-  printf "\n%s\n$1\n%s\n\n" $hr $hr 
+  printf "\n%s\n$1\n%s\n\n" $hr $hr
   time (runchild $1) 2> $TIMESTXT
   thistime=`awk '/user/{print $2}' $TIMESTXT`
   thisreal=`awk '/real/{print $2}' $TIMESTXT`
@@ -207,72 +225,72 @@ trap ctrl_c INT
 
 # Grab file stats
 
-version=$(examples/libinfo | awk '{print $3}')
-revdate=$(examples/libinfo 5)
+version=$($EXDIR/libinfo | awk '{print $3}')
+revdate=$($EXDIR/libinfo 5)
 branch=$(git status | head -n 1 | awk '{print $3}')
-numfiles=$(ls src/*.h src/*.cc src/*/*.h src/*/*.cc | wc -l)
-numlines=$(wc -l src/*.h src/*.cc src/*/*.h src/*/*.cc | tail -1 | awk '{print $1}')
-numchars=$(wc -c src/*.h src/*.cc src/*/*.h src/*/*.cc | tail -1 | awk '{print $1}')
-update 
+numfiles=$(ls $SRCDIR/*.h $SRCDIR/*.cc $SRCDIR/*/*.h $SRCDIR/*/*.cc | wc -l)
+numlines=$(wc -l $SRCDIR/*.h $SRCDIR/*.cc $SRCDIR/*/*.h $SRCDIR/*/*.cc | tail -1 | awk '{print $1}')
+numchars=$(wc -c $SRCDIR/*.h $SRCDIR/*.cc $SRCDIR/*/*.h $SRCDIR/*/*.cc | tail -1 | awk '{print $1}')
+update
 
 # Run benchmarks
 
-run "examples/nqueens 14"
+run "$EXDIR/nqueens 14"
 nqtime=$thistime
 nqreal=$thisreal
 nqmem=$thismem
-update 
-  
-run "examples/queen_cover 12" 
+update
+
+run "$EXDIR/queen_cover 12"
 qctime=$thistime
 qcreal=$thisreal
 qcmem=$thismem
-update 
+update
 
-run "examples/dining_phils -n800" 
+run "$EXDIR/dining_phils -n800"
 phils8=$thistime
 phils8real=$thisreal
 phils8mem=$thismem
-update 
+update
 
-run "examples/kanban 75 -bfs"
+run "$EXDIR/kanban 75 -bfs"
 kan7=$thistime
 kan7real=$thisreal
 kan7mem=$thismem
-update 
+update
 
-run "examples/slot 20 -bfs"
+run "$EXDIR/slot 20 -bfs"
 slot20=$thistime
 slot20real=$thisreal
 slot20mem=$thismem
-update 
+update
 
-run "examples/dining_phils -n10000 -dfs"
+run "$EXDIR/dining_phils -n10000 -dfs"
 phils10k=$thistime
 phils10kreal=$thisreal
 phils10kmem=$thismem
-update 
+update
 
-run "examples/kanban 200 -dfs"
+run "$EXDIR/kanban 200 -dfs"
 kan2=$thistime
 kan2real=$thisreal
 kan2mem=$thismem
-update 
+update
 
-run "examples/slot 100 -dfs"
+run "$EXDIR/slot 100 -dfs"
 slot1=$thistime
 slot1real=$thisreal
 slot1mem=$thismem
-update 
+update
 
-run "examples/kanban 6 -exp"
+run "$EXDIR/kanban 6 -exp"
 kanex=$thistime
 kanexreal=$thisreal
 kanexmem=$thismem
-update 
+update
 
 
-run "examples/slot 7 -exp"
+run "$EXDIR/slot 7 -exp"
 slotex=$thistime
 slotexreal=$thisreal
 slotexmem=$thismem
