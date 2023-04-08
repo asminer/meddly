@@ -21,9 +21,13 @@
 #include "old_meddly.h"
 #include "old_meddly.hh"
 
+// #include "error.h"
+
 #else
 
 #include "meddly/old_meddly.h"
 #include "meddly/old_meddly.hh"
+
+// #include "meddly/error.h"
 
 #endif

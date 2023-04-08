@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -26,11 +26,13 @@
 #ifndef MEDDLY_HH
 #define MEDDLY_HH
 
+#include "error.h"
+
 //---------------------- Inlines ---------------------------------------------
 
 // MEDDLY::
 
-inline MEDDLY::domain* MEDDLY::createDomain() { 
+inline MEDDLY::domain* MEDDLY::createDomain() {
   return createDomain((variable**) 0, 0);
 }
 
@@ -42,11 +44,6 @@ inline void MEDDLY::apply(const unary_opname* op, const dd_edge &a, mpz_t &c) {
 }
 #endif
 
-// error::
-
-inline MEDDLY::error::code MEDDLY::error::getCode() const { return errcode; }
-inline const char* MEDDLY::error::getFile() const { return fname; }
-inline int MEDDLY::error::getLine() const { return lineno; }
 
 // ******************************************************************
 // *                                                                *
@@ -174,15 +171,15 @@ inline size_t MEDDLY::memstats::getGlobalPeakMemAlloc()
 // ******************************************************************
 
 
-inline void MEDDLY::forest::policies::setFullStorage() { 
-  storage_flags = ALLOW_FULL_STORAGE; 
+inline void MEDDLY::forest::policies::setFullStorage() {
+  storage_flags = ALLOW_FULL_STORAGE;
 }
 
-inline void MEDDLY::forest::policies::setSparseStorage() { 
+inline void MEDDLY::forest::policies::setSparseStorage() {
   storage_flags = ALLOW_SPARSE_STORAGE;
 }
 
-inline void MEDDLY::forest::policies::setFullOrSparse() { 
+inline void MEDDLY::forest::policies::setFullOrSparse() {
   storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
 }
 
@@ -255,7 +252,7 @@ inline void MEDDLY::forest::policies::setLevelSwap() {
 // forest::statset::
 inline void MEDDLY::forest::statset::incActive(long b) {
   active_nodes += b;
-  if (active_nodes > peak_active) 
+  if (active_nodes > peak_active)
     peak_active = active_nodes;
   MEDDLY_DCASSERT(active_nodes >= 0);
 }
@@ -409,7 +406,7 @@ inline bool MEDDLY::forest::isUserDefinedReduced() const {
 
 inline int* MEDDLY::forest::getLevelReductionRule() const{
     return level_reduction_rule;
-    
+
 }
 
 inline bool MEDDLY::forest::isFullyReduced(int k) const {
@@ -417,7 +414,7 @@ inline bool MEDDLY::forest::isFullyReduced(int k) const {
         return getLevelReductionRule()[2*(-k)]==-1;
     else
         return getLevelReductionRule()[2*(k) - 1]==-1;
-    
+
 }
 
 inline bool MEDDLY::forest::isQuasiReduced(int k) const {
@@ -456,8 +453,8 @@ inline bool MEDDLY::forest::areFullNodesEnabled() const {
   return MEDDLY::forest::policies::ALLOW_FULL_STORAGE & deflt.storage_flags;
 }
 
-inline const MEDDLY::forest::statset& MEDDLY::forest::getStats() const { 
-  return stats; 
+inline const MEDDLY::forest::statset& MEDDLY::forest::getStats() const {
+  return stats;
 }
 
 inline const MEDDLY::memstats& MEDDLY::forest::getMemoryStats() const {
@@ -524,11 +521,11 @@ inline void MEDDLY::forest::visitRegisteredEdges(edge_visitor &ev) {
 // *                                                                *
 // ******************************************************************
 
-inline int MEDDLY::variable::getBound(bool primed) const { 
-  return primed ? pr_bound : un_bound; 
+inline int MEDDLY::variable::getBound(bool primed) const {
+  return primed ? pr_bound : un_bound;
 }
 inline const char* MEDDLY::variable::getName() const { return name; }
-inline bool MEDDLY::variable::isExtensible() const { 
+inline bool MEDDLY::variable::isExtensible() const {
   return is_extensible;
 }
 
@@ -540,13 +537,13 @@ inline bool MEDDLY::variable::isExtensible() const {
 // *                                                                *
 // ******************************************************************
 
-inline int MEDDLY::variable_order::getVarByLevel(int level) const 
+inline int MEDDLY::variable_order::getVarByLevel(int level) const
 {
   MEDDLY_DCASSERT(level>=0);
   return level2var[size_t(level)];
 }
 
-inline int MEDDLY::variable_order::getLevelByVar(int var) const 
+inline int MEDDLY::variable_order::getLevelByVar(int var) const
 {
   MEDDLY_DCASSERT(var>=0);
   return var2level[size_t(var)];
@@ -601,12 +598,12 @@ inline void MEDDLY::dd_edge::clear() {
   raw_value = 0;
 }
 
-inline MEDDLY::forest* MEDDLY::dd_edge::getForest() const { 
-  return parent; 
+inline MEDDLY::forest* MEDDLY::dd_edge::getForest() const {
+  return parent;
 }
 
-inline MEDDLY::node_handle MEDDLY::dd_edge::getNode() const { 
-  return node; 
+inline MEDDLY::node_handle MEDDLY::dd_edge::getNode() const {
+  return node;
 }
 
 inline const char* MEDDLY::dd_edge::getLabel() const {
@@ -643,12 +640,12 @@ inline const MEDDLY::dd_edge MEDDLY::dd_edge::operator-(const MEDDLY::dd_edge& e
   return dd_edge(*this) -= e;
 }
 
-inline void MEDDLY::dd_edge::setIndex(unsigned ind) { 
-  index = ind; 
+inline void MEDDLY::dd_edge::setIndex(unsigned ind) {
+  index = ind;
 }
 
-inline unsigned MEDDLY::dd_edge::getIndex() const { 
-  return index; 
+inline unsigned MEDDLY::dd_edge::getIndex() const {
+  return index;
 }
 
 inline void MEDDLY::dd_edge::orphan() {
