@@ -27,74 +27,72 @@ namespace MEDDLY {
 
  */
 class MEDDLY::error {
-  public:
-    /// Error codes.
-    enum code {
-      /// The library was not initialized.
-      UNINITIALIZED,
-      /// The library was already initialized.
-      ALREADY_INITIALIZED,
-      /// The requested operation is not yet implemented!
-      NOT_IMPLEMENTED,
-      /// An operation failed due to lack of memory.
-      INSUFFICIENT_MEMORY,
-      /// An operation is not supported for the given forest.
-      INVALID_OPERATION,
-      /// A provided variable is erroneous.
-      INVALID_VARIABLE,
-      /// A provided level number is erroneous.
-      INVALID_LEVEL,
-      /// A provided variable bound is out of range.
-      INVALID_BOUND,
-      /// We expected an empty domain, but it wasn't
-      DOMAIN_NOT_EMPTY,
-      /// Unknown operation (bad operation handle).
-      UNKNOWN_OPERATION,
-      /// Requested operation requires same domains, they weren't.
-      DOMAIN_MISMATCH,
-      /// Requested operation requires same forest, it wasn't.
-      FOREST_MISMATCH,
-      /// Requested operation not supported for operand or result type.
-      TYPE_MISMATCH,
-      /// Requested operation requires different number of operands.
-      WRONG_NUMBER,
-      /// A result won't fit in an integer / float.
-      VALUE_OVERFLOW,
-      /// Integer division by 0 is invalid.
-      DIVIDE_BY_ZERO,
-      /// Invalid policy setting.
-      INVALID_POLICY,
-      /// Bad value for something.
-      INVALID_ASSIGNMENT,
-      /// Invalid argument (for specialized operations)
-      INVALID_ARGUMENT,
-      /// File format error.
-      INVALID_FILE,
-      /// File input error.
-      COULDNT_READ,
-      /// File output error.
-      COULDNT_WRITE,
-      /// Miscellaneous error
-      MISCELLANEOUS
-    };
-  public:
-    error(code c);
-    error(code c, const char* fn, int ln);
-    code getCode() const;
-    const char* getName() const;
-    const char* getFile() const;
-    int getLine() const;
-  private:
-    code errcode;
-    const char* fname;
-    int lineno;
+    public:
+        /// Error codes.
+        enum code {
+            /// The library was not initialized.
+            UNINITIALIZED,
+            /// The library was already initialized.
+            ALREADY_INITIALIZED,
+            /// The requested operation is not yet implemented!
+            NOT_IMPLEMENTED,
+            /// An operation failed due to lack of memory.
+            INSUFFICIENT_MEMORY,
+            /// An operation is not supported for the given forest.
+            INVALID_OPERATION,
+            /// A provided variable is erroneous.
+            INVALID_VARIABLE,
+            /// A provided level number is erroneous.
+            INVALID_LEVEL,
+            /// A provided variable bound is out of range.
+            INVALID_BOUND,
+            /// We expected an empty domain, but it wasn't
+            DOMAIN_NOT_EMPTY,
+            /// Unknown operation (bad operation handle).
+            UNKNOWN_OPERATION,
+            /// Requested operation requires same domains, they weren't.
+            DOMAIN_MISMATCH,
+            /// Requested operation requires same forest, it wasn't.
+            FOREST_MISMATCH,
+            /// Requested operation unsupported for operand or result type.
+            TYPE_MISMATCH,
+            /// Requested operation requires different number of operands.
+            WRONG_NUMBER,
+            /// A result won't fit in an integer / float.
+            VALUE_OVERFLOW,
+            /// Integer division by 0 is invalid.
+            DIVIDE_BY_ZERO,
+            /// Invalid policy setting.
+            INVALID_POLICY,
+            /// Bad value for something.
+            INVALID_ASSIGNMENT,
+            /// Invalid argument (for specialized operations)
+            INVALID_ARGUMENT,
+            /// File format error.
+            INVALID_FILE,
+            /// File input error.
+            COULDNT_READ,
+            /// File output error.
+            COULDNT_WRITE,
+            /// Miscellaneous error
+            MISCELLANEOUS
+        };
+    public:
+        error(code c, const char* fn=nullptr, unsigned ln=0);
+
+        /// Return a human-readable error message
+        const char* getName() const;
+
+        constexpr operator code() const         { return errcode; }
+        constexpr code getCode() const          { return errcode; }
+        constexpr const char* getFile() const   { return fname; }
+        constexpr unsigned getLine() const      { return lineno; }
+
+    private:
+        code errcode;
+        const char* fname;
+        unsigned lineno;
 };
-
-// error::
-
-inline MEDDLY::error::code MEDDLY::error::getCode() const { return errcode; }
-inline const char* MEDDLY::error::getFile() const { return fname; }
-inline int MEDDLY::error::getLine() const { return lineno; }
 
 
 #endif
