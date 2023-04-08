@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -25,6 +25,7 @@
   Test1: Test fully reduced MDDs with Saturation.
 */
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include <cstdlib>
 
@@ -53,7 +54,7 @@ int main(int argc, char *argv[])
   forest::policies pmdd(false);
   // pmdd.setQuasiReduced();
   pmdd.setFullyReduced();
-  forest* mdd = 
+  forest* mdd =
     d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL, pmdd);
   assert(mdd != NULL);
 
@@ -75,7 +76,7 @@ int main(int argc, char *argv[])
   int *from[2] = { from1, from2 };
   int *to[2] = { to1, to2 };
   dd_edge nsf(mxd);
-  mxd->createEdge(reinterpret_cast<int**>(from), 
+  mxd->createEdge(reinterpret_cast<int**>(from),
       reinterpret_cast<int**>(to), 2, nsf);
 
   dd_edge reachBFS(initialStates);

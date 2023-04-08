@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -31,12 +31,9 @@
 #include <random>
 #include <chrono>
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
-
-// #define USE_EXPERT_INTERFACE
-#ifdef USE_EXPERT_INTERFACE
 #include "../src/meddly_expert.h"
-#endif
 
 using namespace MEDDLY;
 
@@ -64,14 +61,14 @@ FILE_output meddlyout(stdout);
 #ifdef USE_EXPERT_INTERFACE
 
 // Given a forest and an op_code returns the corresponding op_info.
-// 
+//
 // This is only valid for operations of the form C = A op B,
 // where A, B and C belong to the same forest.
 op_info* getOp(forest* f, compute_manager::op_code op)
 {
   static const int nForests = 3;
   static forest* forests[nForests];
-  static expert_compute_manager* ecm = 
+  static expert_compute_manager* ecm =
     static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
   assert(f != 0);
@@ -85,14 +82,14 @@ op_info* getOp(forest* f, compute_manager::op_code op)
 
 // Given a forest and an instance of an operation returns
 // the corresponding op_info.
-// 
+//
 // This is only valid for operations of the form C = A op B,
 // where A, B and C belong to the same forest.
 op_info* getOp(forest* f, operation* op)
 {
   static const int nForests = 3;
   static forest* forests[nForests];
-  static expert_compute_manager* ecm = 
+  static expert_compute_manager* ecm =
     static_cast<expert_compute_manager*>(getComputeManager());
   assert(ecm != 0);
   assert(f != 0);

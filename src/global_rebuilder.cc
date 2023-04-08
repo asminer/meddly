@@ -1,7 +1,7 @@
 
 #include "defines.h"
-#include "meddly.h"
-#include "meddly_expert.h"
+#include "old_meddly.h"
+#include "old_meddly_expert.h"
 #include "hash_stream.h"
 #include "unique_table.h"
 

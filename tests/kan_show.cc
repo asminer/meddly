@@ -4,7 +4,7 @@
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <string.h>
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "simple_model.h"
 
@@ -47,9 +48,9 @@ const char* kanban[] = {
 };
 
 // 160 states for N=1
-long expected[] = { 
-  1, 160, 4600, 58400, 454475, 2546432, 11261376, 
-  41644800, 133865325, 384392800, 1005927208 
+long expected[] = {
+  1, 160, 4600, 58400, 454475, 2546432, 11261376,
+  41644800, 133865325, 384392800, 1005927208
 };
 
 using namespace MEDDLY;
@@ -68,22 +69,22 @@ dd_edge buildReachset(domain* d, int N)
   // Build next-state function
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
-  buildNextStateFunction(kanban, 16, mxd, nsf); 
+  buildNextStateFunction(kanban, 16, mxd, nsf);
 
   dd_edge reachable(mdd);
   apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
-  
+
   return reachable;
 }
 
 bool matches(const char* mark, const int* minterm, int np)
 {
-  for (int i=0; i<np; i++) 
+  for (int i=0; i<np; i++)
     if (mark[i]-48 != minterm[i]) return false;
   return true;
 }
 
-long checkRS(int N, const char* rs[]) 
+long checkRS(int N, const char* rs[])
 {
   int sizes[16];
 

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -31,6 +31,7 @@
 #include <iostream>
 #include <vector>
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "../src/timer.h"
 
@@ -84,7 +85,7 @@ dd_edge buildIncrY3(forest* mtmxd);
 int main(int argc, char *argv[])
 {
   MEDDLY::initialize();
-  
+
   FILE_output mout(stdout);
 
   // initialize the variable bounds array to provide to the domain
@@ -121,7 +122,7 @@ int main(int argc, char *argv[])
   dd_edge incrY1 = buildIncrY1(mtmxd);
   fprintf(stdout, "\nMTMXD for (y1' == y1 + 1):\n\n");
   incrY1.show(mout, 2);
-  
+
   dd_edge postImage(states);
   int element[] = {0, 0, 0, 0, 0};
   int* elements[] = { element };
@@ -131,7 +132,7 @@ int main(int argc, char *argv[])
 
   fprintf(stdout, "-----------------------------------------------------\n");
   fprintf(stdout, "\nMTMDD for [0 0 0 = 1]:\n\n");
-  postImage.show(mout, 2); 
+  postImage.show(mout, 2);
 
   apply(POST_IMAGE, postImage, incrY1, postImage);
   // postImage *= expr;
@@ -195,14 +196,14 @@ dd_edge buildExpression(forest* states)
 #else
   states->createEdge(3, cons3);
 #endif
-  
+
   // 3y3
   y3 *= cons3;
 
   // ---- Building y1 + 2*y2 + 3*y3 ----
 
   y1 = y1 + y2 + y3;
-  
+
   return y1;
 }
 
@@ -254,7 +255,7 @@ dd_edge buildExpressionWithTerms(forest* states)
 #else
   states->createEdge(3, cons3);
 #endif
-  
+
   // 3y3
   y3 *= cons3;
 

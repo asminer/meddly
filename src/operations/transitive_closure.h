@@ -20,8 +20,8 @@
 #ifndef TRANSITIVE_CLOSURE_H
 #define TRANSITIVE_CLOSURE_H
 
-#include "meddly.h"
-#include "meddly_expert.h"
+#include "old_meddly.h"
+#include "old_meddly_expert.h"
 
 namespace MEDDLY {
   class common_transitive_closure;

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
   node_storage s = FULL_OR_SPARSE_STORAGE;
 
   initialize();
-  
+
   domain *d = CreateDomain(sz-1, bound, height);
   assert(NULL != d);
   forest_hndl evmdd = CreateForest(d, f, false, r, s);
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
     << ", Node: " << node3.node
     << std::endl;
 #endif
-  
+
 #if 0
   evmdd_node node4;
   ops->computeUnionMin(node1, node2, node4);
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
     << ", Node: " << node4.node
     << std::endl;
 #endif
- 
+
 #if 0
   ops->report(stderr);
   delete ops;

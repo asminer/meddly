@@ -4,7 +4,7 @@
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -32,7 +32,7 @@ unsigned char buffer[10];
 
 const int start = 1;
 const int middle = 1048576;
-const int stop = 2147483647; 
+const int stop = 2147483647;
 // const int stop = 134217728;
 // const int stop = 16777216;
 // const int stop = 1048576;
@@ -127,7 +127,7 @@ inline void fprinthex(FILE* s, int i)
 void testInt(int a)
 {
   int br = bytesRequiredForSigned(a);
-  
+
   for (int b=sizeof(int); b>=br; b--) {
     int x;
     encodeInt(a, b);
@@ -144,7 +144,7 @@ void testInt(int a)
 void testLong(long a)
 {
   int br = bytesRequiredForSigned(a);
-  
+
   for (int b=sizeof(long); b>=br; b--) {
     long x;
     encodeLong(a, b);
@@ -161,7 +161,7 @@ void testLong(long a)
 void testDown(long a)
 {
   int br = bytesRequiredForDown(a);
-  
+
   for (int b=sizeof(long); b>=br; b--) {
     long x;
     encodeDown(a, b);

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -25,6 +25,7 @@
 #include <cstdlib>
 #include <time.h>
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 
 using namespace MEDDLY;
@@ -170,7 +171,7 @@ void writeType(const forest* f)
       printf("?R ");
       break;
   }
-  
+
   switch (f->getEdgeLabeling()) {
     case forest::MULTI_TERMINAL:
       printf(" mt");
@@ -288,15 +289,15 @@ void testEV(forest* mxd, forest* mtmxd, forest* evmxd)
         || MTMXD.getEdgeCount(false) < EVMXD.getEdgeCount(false)) {
         printf("failed!\n\n");
 
-        printf("\nCardinality: MxD = %f, MTMxD = %f, EV*MxD = %f", 
-            MXD.getCardinality(), 
-            MTMXD.getCardinality(), 
+        printf("\nCardinality: MxD = %f, MTMxD = %f, EV*MxD = %f",
+            MXD.getCardinality(),
+            MTMXD.getCardinality(),
             EVMXD.getCardinality());
-        printf("\nNode Count: MxD = %d, MTMxD = %d, EV*MxD = %d", 
+        printf("\nNode Count: MxD = %d, MTMxD = %d, EV*MxD = %d",
             MXD.getNodeCount(),
             MTMXD.getNodeCount(),
             EVMXD.getNodeCount());
-        printf("\nEdge Count: MxD = %d, MTMxD = %d, EV*MxD = %d", 
+        printf("\nEdge Count: MxD = %d, MTMxD = %d, EV*MxD = %d",
             MXD.getEdgeCount(false),
             MTMXD.getEdgeCount(false),
             EVMXD.getEdgeCount(false));
@@ -339,12 +340,12 @@ int processArgs(int argc, const char** argv)
   if (arg_seed < 1) {
     arg_seed = time(0);
   }
-  
+
   printf("Using rng seed %ld\n", arg_seed);
   return 1;
 }
 
-void addMXDforests(domain* D, forest** list, int &i, 
+void addMXDforests(domain* D, forest** list, int &i,
   forest::edge_labeling ev, forest::range_type type)
 {
 #ifdef ENABLE_IDENTITY_REDUCED
@@ -380,7 +381,7 @@ int makeRealMXDforests(domain* D, forest** list)
   return i;
 }
 
-void addIRMXDforest(domain* D, forest** list, int &i, 
+void addIRMXDforest(domain* D, forest** list, int &i,
   forest::edge_labeling ev, forest::range_type type)
 {
   forest::policies ir(true);
@@ -463,7 +464,7 @@ int main(int argc, const char** argv)
   printf("\n");
 #endif
 
-  
+
   cleanup();
   return 0;
 }

@@ -4,7 +4,7 @@
 
 #include <memory>
 
-#include "meddly.h"
+#include "old_meddly.h"
 
 #include "reordering_base.h"
 

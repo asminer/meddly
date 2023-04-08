@@ -13,8 +13,8 @@ lib_LTLIBRARIES = libmeddly.la
 
 libmeddly_la_SOURCES = \
   defines.h revision.h hash_stream.h heap.h timer.h unique_table.h \
-  meddly.h meddly.hh meddly.cc \
-  meddly_expert.h meddly_expert.hh \
+  old_meddly.h old_meddly.hh old_meddly.cc \
+  old_meddly_expert.h old_meddly_expert.hh \
   error.cc \
   io.cc \
   node_headers.cc \
@@ -116,9 +116,12 @@ libmeddly_la_SOURCES = \
   storage/ct_typebased.h    \
   storage/init_storage.h    storage/init_storage.cc
 
-  
+
 ## compile apps
 
-include_HEADERS = meddly.h meddly_expert.h meddly.hh meddly_expert.hh
+include_HEADERS = meddly.h meddly_expert.h
+
+pkginclude_HEADERS = error.h old_meddly.h old_meddly.hh \
+                     old_meddly_expert.h old_meddly_expert.hh
 
 AM_CXXFLAGS = -Wall

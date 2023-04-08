@@ -22,6 +22,7 @@ along with this library.  If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 
 #define _MEDDLY_WITHOUT_IOSTREAM_
+#define _MEDDLY_NOINST_
 
 #include "../src/meddly.h"
 #include "../src/meddly_expert.h"
@@ -62,12 +63,12 @@ void buildModel(const char* order)
     {0,0,0,0,0,0,1,1,-1,0},  // suspend
     {0,0,0,0,0,0,0,-1,1,-1},  // starFirst
   };
-  
+
   p1_position = 1;
   p3_position = 3;
   p5_position = 5;
   p7_position = 7;
-  
+
   for (int i=0; i<PLACES; i++)
     {
     if (order[i]=='1')
@@ -79,9 +80,9 @@ void buildModel(const char* order)
     if (order[i]=='7')
       p7_position = i+1;
     }
-  
+
   model = (int**) malloc(TRANS * sizeof(int*));
-  
+
   for(int i=0;i<TRANS;i++)
     {
     model[i] = (int*) malloc((PLACES+2) * sizeof(int));
@@ -90,7 +91,7 @@ void buildModel(const char* order)
       model[i][j]=modelTest[i][order[j-1]-'0'];
       }
     }
-  
+
 }
 
 
@@ -129,7 +130,7 @@ for (int i=1; i<argc; i++)
     MT = atoi(argv[i]);
   else if(i==2)
     DC = atoi(argv[i]);
-  
+
   if (strcmp("-O", argv[i])==0) {
     if(i+1 < argc)
       {
@@ -138,7 +139,7 @@ for (int i=1; i<argc; i++)
       }
   }
 }
-  
+
 if (argc<5) return usage(argv[0]);
 if (MT<0) return usage(argv[0]);
 if (DC<0) return usage(argv[0]);
@@ -175,7 +176,7 @@ for(int g = 1;g <= PLACES;g++) initialState[g] = 0;
 initialState[p1_position]=initialState[p3_position]=MT;initialState[p5_position]=DC;initialState[p7_position]=2*DC;
 
 N = 2*DC>MT?(2*DC):MT;
-  
+
 method ='i';
   std::cout<<"\n********************";
   std::cout<<"\n     implicit";
@@ -192,8 +193,8 @@ if('i' == method)
   dm->enlargeVariableBound(p3_position, false, MT+1);
   dm->enlargeVariableBound(p5_position, false, DC+1);
   dm->enlargeVariableBound(p7_position, false, 2*DC+1);
-  
-    
+
+
   //ADD INITIAL STATE
   dd_edge first(inmdd);
   dd_edge reachable(inmdd);
@@ -240,13 +241,13 @@ if('i' == method)
   operation::showAllComputeTables(meddlyout, 3);
 
   printf("Approx. %g reachable states\n", c);
-  
-  
+
+
   /* Building Mxd From Implicit */
  /* dd_edge mxd_edge_all = T->buildMxdForest();
-  
+
   mxd_edge_all.show(meddlyout,2);*/
-  
+
 }
 
 return 0;

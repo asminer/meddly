@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -26,7 +26,7 @@
   The model has 2 philosophers and 2 forks.
 
   Each philosopher can be in state {I, W, L, R, E} where
-  
+
   I:    idle philosopher
   WB:   philosopher is waiting for both forks
   HL:   philosopher has left fork
@@ -34,14 +34,14 @@
   E:    philosopher is eating
 
   Each fork can be in state {A, NA} where
-  
+
   A:    fork is available
   NA:   fork is not available
 
   Philosphers can move from one state to another as:
-  
+
   I -> WB
- 
+
   The synchronization between philosopher 1 and the forks:
 
   WB1 ->  HR1
@@ -120,7 +120,7 @@ void Init(int N)
   // store for level handles
   variables = (level *) malloc((N*2 + 1) * sizeof(level));
   memset(variables, 0, (N*2 + 1) * sizeof(level));
-  
+
   // node size for each level
   sizes = (int *) malloc((N*2 + 1) * sizeof(int));
   sizes[0] = 0;
@@ -130,7 +130,7 @@ void Init(int N)
     // level below is for philosophers
     sizes[i--] = 5;
   }
-  
+
   // sets of states; initialize to all zero with zero edge values
   initst = (int *) malloc((N*2 + 1) * sizeof(int));
   memset(initst, 0, (N*2 + 1) * sizeof(level));
@@ -151,7 +151,7 @@ void CheckVars(int N)
   /* Sanity check */
   int i;
   N = N*2 + 1;
-  for (i=1; i<N; i++) 
+  for (i=1; i<N; i++)
     if ((variables[i] > N) || (variables[i] < 1)) {
       fprintf(stderr, "Level handle for variable %d is %d, ", i, variables[i]);
       fprintf(stderr, "outside of expected range\n");
@@ -212,7 +212,7 @@ dd_edge* MakeSynchP_Forks(int ph_num, int N)
   from[variables[rf]] = 0;
     to[variables[rf]] = 1;
   AddMatrixElement(temp, from, to, sz, true);
-  
+
   /* WB(ph) -> HL(ph), A(lf) -> NA(lf) */
   SetIntArray(from+1, sz-1, -2);
   SetIntArray(to+1, sz-1, -2);
@@ -307,7 +307,7 @@ int main(int argc, char *argv[])
     printf("Enter the number of philosophers (at least 2): ");
     scanf("%d", &N);
   }
-  
+
   int i;
   domain* d;
   forest_hndl states;
@@ -317,9 +317,9 @@ int main(int argc, char *argv[])
 
   // set up arrays based on N
   Init(N);
-  
+
   /* transition relations */
-  dd_edge* nsf; 
+  dd_edge* nsf;
 
   /* Set up the state variables.
      Use one per philosopher and one per fork with values as described at
@@ -359,7 +359,7 @@ int main(int argc, char *argv[])
   }
 
   /* Build set of initial states */
-  initial = CreateEVVectorElement(states, initst, initstev, N*2 + 1, true); 
+  initial = CreateEVVectorElement(states, initst, initstev, N*2 + 1, true);
 
   if (NULL==initial) {
     fprintf(stderr, "Couldn't create set of initial states\n");
@@ -398,11 +398,11 @@ int main(int argc, char *argv[])
   for (int i=0; i<N; i++) {
     printf("synchronizing philosopher %d: ", i);
     ShowDDEdge(stdout, synch[i]);
-    printf("\n"); 
+    printf("\n");
   }
   printf("Overall transition relation: ");
   ShowDDEdge(stdout, nsf);
-  printf("\n"); 
+  printf("\n");
 
   // Image operations
   printf("\nInitial State: ");
@@ -411,7 +411,7 @@ int main(int argc, char *argv[])
   Saturate(initial, nsf, curr);
   printf("\nStates reachable from Initial State: ");
   ShowDDEdge(stdout, curr);
-  printf("\n"); 
+  printf("\n");
 #endif
 
   struct rusage start, stop;
@@ -459,7 +459,7 @@ int main(int argc, char *argv[])
   suseconds_t s_sat_time =
     (stop.ru_stime.tv_sec * 1000000 + stop.ru_stime.tv_usec) -
     (start.ru_stime.tv_sec * 1000000 + start.ru_stime.tv_usec);
-  
+
   printf("\nTime for constructing initial states and nsf:\n");
   printf("  %ld.%06ld sec user, %ld.%06ld sec system\n",
       (long int)start.ru_utime.tv_sec, (long int)start.ru_utime.tv_usec,
@@ -512,7 +512,7 @@ int main(int argc, char *argv[])
     ShowDDEdge(stdout, curr);
     printf("\n");
   }
- 
+
   DestroyForest(states);
   if (INVALID_FOREST != states) {
     fprintf(stderr, "Couldn't destroy forest of states\n");

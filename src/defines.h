@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,7 +21,7 @@
 
 /** @name defines.h
     @type File
-    @args \ 
+    @args \
 
   The base of all files.  So if you change this, everything gets to recompile.
 
@@ -51,16 +51,18 @@
 #include <limits>
 
 // Meddly
-#include "meddly.h"
-#include "meddly_expert.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 
 // Macro to handle extern "C"
 #ifdef __cplusplus
 #  define BEGIN_C_DECLS extern "C" {
 #  define END_C_DECLS   }
 #else /* !__cplusplus */
-#  define BEGIN_C_DECLS  
-#  define END_C_DECLS  
+#  define BEGIN_C_DECLS
+#  define END_C_DECLS
 #endif /* __cplusplus */
 
 // Handy Constants
@@ -207,11 +209,11 @@ namespace MEDDLY {
    There are now two modes of code generation:
    "DEVELOPMENT_CODE" and "RELEASE_CODE".
 
-   If "DEVELOPMENT_CODE" is defined (usually done in the makefile) then 
+   If "DEVELOPMENT_CODE" is defined (usually done in the makefile) then
    debugging macros and assertions will be turned on.  Otherwise we assume
    that we have "RELEASE_CODE" and they are turned off.
 
-   Macros useful for debugging "development code" that are turned off 
+   Macros useful for debugging "development code" that are turned off
    for release code (for speed):
 
    MEDDLY_DCASSERT()

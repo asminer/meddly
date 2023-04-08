@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -23,7 +23,7 @@
     State space generation for a small, simple model (Kanban, N=1).
     The model is described in the article
 
-    A. Miner and G. Ciardo.  "Efficient reachability set generation 
+    A. Miner and G. Ciardo.  "Efficient reachability set generation
     and storage using decision diagrams", in Proc. ICATPN 1999, LNCS 1639,
     pp. 6-25.
 
@@ -38,33 +38,33 @@
     machines 2 and 3, and output of machines 2 and 3 is used for machine 4.
 
     Machine 1 can change state locally as:
-    
+
     W -> M
     M -> B
     B -> M
     M -> G
 
     Machines 2 and 3 can change state locally as:
-    
+
     M -> B
     B -> M
     M -> G
 
     Machine 4 can change state locally as:
-    
+
     M -> B
     B -> M
     M -> G
     G -> W
 
     The synchronization between machines 1,2,3 is:
-    
+
     G1 -> W1
     W2 -> M2
     W3 -> M3
 
     The synchronization between machines 2,3,4 is:
-    
+
     G2 -> W2
     G3 -> W3
     W4 -> M4
@@ -82,6 +82,7 @@
 #include <deque>
 #include <vector>
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "../src/meddly_expert.h"
 #include "../src/timer.h"
@@ -196,14 +197,14 @@ int main(int argc, char* argv[])
   // Create an MDD forest in this domain (to store states)
   forest::policies pmdd(false);
   pmdd.setPessimistic();
-  forest* mdd = d->createForest(false, forest::BOOLEAN, 
+  forest* mdd = d->createForest(false, forest::BOOLEAN,
     forest::MULTI_TERMINAL, pmdd);
   assert(mdd != NULL);
 
   // Create a MXD forest in domain (to store transition diagrams)
   forest::policies pmxd(true);
   pmxd.setPessimistic();
-  forest* mxd = d->createForest(true, forest::BOOLEAN, 
+  forest* mxd = d->createForest(true, forest::BOOLEAN,
     forest::MULTI_TERMINAL, pmxd);
   assert(mxd != NULL);
 

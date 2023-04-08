@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -361,7 +361,7 @@ class VarOrdGenome {
         fprintf(stderr, "\n");
         VarOrdGenome::Print(bott, stderr);
         fprintf(stderr, "\n");
-        
+
         // Compute score based on WES(1) metric:
         score = 0;
         for (int i = 0; i < event.size(); ++i) {
@@ -570,7 +570,7 @@ class Generation {
 
 /*
       int mutations = Mutate(offspring, mut_prob);
-#if DEBUG      
+#if DEBUG
       fprintf(stderr, "Mutated %d\n", mutations);
       fflush(stderr);
 #endif

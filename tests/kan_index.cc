@@ -4,7 +4,7 @@
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <string.h>
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "simple_model.h"
 
@@ -76,7 +77,7 @@ bool checkReachset(int N)
   // Build next-state function
   forest* mxd = dom->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
-  buildNextStateFunction(kanban, 16, mxd, nsf); 
+  buildNextStateFunction(kanban, 16, mxd, nsf);
   printf("\tbuilt next-state function\n");
   fflush(stdout);
 
@@ -133,7 +134,7 @@ bool checkReachset(int N)
   int elem[17];
   for (enumerator s(reachable); s; ++s) {
     const int* state = s.getAssignments();
-    evmdd->getElement(reach_index, c, elem); 
+    evmdd->getElement(reach_index, c, elem);
     if (!equal(state, elem, 16)) {
       printf("\nFetch index %d got wrong state\n", c);
       return false;
@@ -150,7 +151,7 @@ bool checkReachset(int N)
   }
 
   destroyDomain(dom);
-  
+
   return true;
 }
 

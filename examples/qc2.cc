@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -18,7 +18,7 @@
 */
 
 /*
-    Builds the set of solutions to the queen cover problem for 
+    Builds the set of solutions to the queen cover problem for
     user-specified board size NxN.
 
     In other words, finds all possible ways to put queens onto
@@ -37,6 +37,7 @@
 #include <cstdlib>
 #include <fstream>
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "../src/meddly_expert.h"
 #include "../src/loggers.h"
@@ -211,14 +212,14 @@ forest* buildForest(forest::policies &p, int N, const varorder &V)
 }
 
 
-/* 
+/*
   Build the function: 1 if queen i is in row r, 0 otherwise.
   We do this by hand because it is easy and fast.
 */
 void queeniRowr(const varorder &V, int i, int r, dd_edge &e)
 {
   expert_forest* F = dynamic_cast<expert_forest*>(e.getForest());
-  
+
   unpacked_node* nb = unpacked_node::newSparse(F, V.queenRow(i), 1);
   nb->i_ref(0) = r;
   nb->d_ref(0) = F->handleForValue(1);
@@ -231,14 +232,14 @@ void queeniRowr(const varorder &V, int i, int r, dd_edge &e)
 #endif
 }
 
-/* 
+/*
   Build the function: 1 if queen i is in col c, 0 otherwise.
   We do this by hand because it is easy and fast.
 */
 void queeniColc(const varorder &V, int i, int c, dd_edge &e)
 {
   expert_forest* F = dynamic_cast<expert_forest*>(e.getForest());
-  
+
   unpacked_node* nb = unpacked_node::newSparse(F, V.queenCol(i), 1);
   nb->i_ref(0) = c;
   nb->d_ref(0) = F->handleForValue(1);
@@ -297,7 +298,7 @@ void queenInRow(const varorder &V, int r, dd_edge &e)
   queeniRowr(V, 0, r, e);
   for (int i=1; i<V.queens(); i++) {
     queeniRowr(V, i, r, qir);
-    apply(MAXIMUM, e, qir, e); 
+    apply(MAXIMUM, e, qir, e);
   }
 }
 
@@ -311,7 +312,7 @@ void queenInCol(const varorder &V, int c, dd_edge &e)
   queeniColc(V, 0, c, e);
   for (int i=1; i<V.queens(); i++) {
     queeniColc(V, i, c, qic);
-    apply(MAXIMUM, e, qic, e); 
+    apply(MAXIMUM, e, qic, e);
   }
 }
 
@@ -412,7 +413,7 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
 
       apply(MAXIMUM, covered[r][c], tmp, covered[r][c]);
     }
-  } 
+  }
 
   /*
     Add minus diagonal coverage
@@ -434,7 +435,7 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
 
       apply(MAXIMUM, covered[r][c], tmp, covered[r][c]);
     }
-  } 
+  }
 
 #ifdef ORDER_ROWS
   /*
@@ -486,7 +487,7 @@ dd_edge** buildConstraintsForSquares(forest *F, const varorder &V, int N)
     // Now, tmp is our rule:
     //  if rows are equal, then force column ordering;
     //  otherwise, if rows are not equal, then do not.
-   
+
     // And it to the rest
     apply(MULTIPLY, colorder, tmp, colorder);
   }
@@ -577,7 +578,7 @@ void FoldList(dd_edge *A, int n, bool dots)
   while (n>1) {
     dd_edge result(A[0].getForest());
     int res = 0;
-    
+
     for (int i=0; i<n; i+=2) {
 
       if (i+1>=n) {
@@ -651,7 +652,7 @@ void FlattenByPlusDiags(dd_edge** squares, dd_edge* list, int N)
       list[i] = squares[r][c];
       i++;
     }
-  } 
+  }
 }
 
 /*
@@ -680,7 +681,7 @@ void FlattenByInwardSpiral(dd_edge** squares, dd_edge* list, int N)
       i++;
     }
     loRow++;
-    if (loRow > hiRow) return; 
+    if (loRow > hiRow) return;
 
     /* Go down */
     for (r=loRow; r<=hiRow; r++) {
@@ -807,7 +808,7 @@ int main(int argc, const char** argv)
         case 'n': i++;
                   if (argv[i]) N = atoi(argv[i]);
                   continue;
-                  
+
         case 'o': p.setOptimistic();
                   continue;
 
@@ -873,7 +874,7 @@ int main(int argc, const char** argv)
               return usage(argv[0]);
   }
   printf("Using variable order: %s\n", V.Name());
-    
+
   /*
     Set up forest logging, if desired
   */
@@ -895,7 +896,7 @@ int main(int argc, const char** argv)
   dd_edge** covered = buildConstraintsForSquares(F, V, N);
   printf("Basic constraints are done:\n");
   expert_forest* ef = (expert_forest*) F;
-  ef->reportStats(meddlyout, "\t", 
+  ef->reportStats(meddlyout, "\t",
     expert_forest::HUMAN_READABLE_MEMORY | expert_forest::BASIC_STATS
   );
 
@@ -909,7 +910,7 @@ int main(int argc, const char** argv)
     case 'c':
                 FlattenByCols(covered, acc, N);
                 break;
-    case 'd':   
+    case 'd':
                 FlattenByPlusDiags(covered, acc, N);
                 break;
     case 'r':
@@ -957,7 +958,7 @@ int main(int argc, const char** argv)
 
   }
   printf("Done!\n");
-  
+
   int Q;  // minimum number of required queens
 
   if (0==acc[0].getNode()) {
@@ -986,7 +987,7 @@ int main(int argc, const char** argv)
     }
 
     printf("\n%d QUEENS MINIMAL SOLUTION\n\n", Q+1);
-  
+
     long c;
     apply(CARDINALITY, acc[0], c);
     printf("For a %dx%d chessboard, ", N, N);
@@ -994,7 +995,7 @@ int main(int argc, const char** argv)
   }
 
   printf("Forest stats:\n");
-  ef->reportStats(meddlyout, "\t", 
+  ef->reportStats(meddlyout, "\t",
     expert_forest::HUMAN_READABLE_MEMORY  |
     expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
     expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
@@ -1007,7 +1008,7 @@ int main(int argc, const char** argv)
   if (ofile) {
     FILE* OUT = fopen(ofile, "w");
     if (0==OUT) {
-      printf("Couldn't open %s for writing, no solutions will be written\n", ofile);      
+      printf("Couldn't open %s for writing, no solutions will be written\n", ofile);
     } else {
       fprintf(OUT, "%d # Board dimension\n\n", N);
       enumerator iter(acc[0]);

@@ -4,7 +4,7 @@
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -17,6 +17,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "simple_model.h"
 
@@ -121,7 +122,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 #ifdef VERBOSE
     fprintf(stderr, " : ");
 #endif
-    
+
     //
     // 'and' with the "do care" levels
     //

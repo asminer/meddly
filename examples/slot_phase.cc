@@ -4,7 +4,7 @@
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <iostream>
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "../src/meddly_expert.h"
 #include "simple_model.h"
@@ -63,7 +64,7 @@ void printStats(const char* who, const forest* f)
   ef->reportStats(meddlyout, "\t",
     expert_forest::HUMAN_READABLE_MEMORY  |
     expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
-    expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS | 
+    expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS |
     expert_forest::HOLE_MANAGER_DETAILED
   );
 }
@@ -387,7 +388,7 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
 
   double c;
   apply(CARDINALITY, init_state, c);
-  
+
   printf("Approx. %g reachable states\n", c);
   // or, don't, and let cleanup() take care of it?
 

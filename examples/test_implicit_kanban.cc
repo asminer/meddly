@@ -2,17 +2,17 @@
 /*
  Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
  Copyright (C) 2011, Iowa State University Research Foundation, Inc.
- 
+
  This library is free software: you can redistribute it and/or modify
  it under the terms of the GNU Lesser General Public License as published
  by the Free Software Foundation, either version 3 of the License, or
  (at your option) any later version.
- 
+
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public License
  along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -22,6 +22,7 @@
 #include <fstream>
 
 #define _MEDDLY_WITHOUT_IOSTREAM_
+#define _MEDDLY_NOINST_
 
 #include "../src/meddly.h"
 #include "../src/meddly_expert.h"
@@ -51,7 +52,7 @@ FILE_output meddlyout(stdout);
 
 void buildModel(const char* order)
 {
-  
+
   int const modelTest[TRANS][PLACES+1] = {
     {0,-1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0},  // Tin1 TA
     {0,0,-1,1,0,0,0,0,0,0,0,0,0,0,0,0,0},  // Tr1 TB
@@ -71,7 +72,7 @@ void buildModel(const char* order)
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0,1}   // Tg4 TP
   };
 
-  
+
   p1_position = 1;
   p13_position = 13;
   p5_position = 5;
@@ -87,9 +88,9 @@ void buildModel(const char* order)
     if (order[i]=='9')
       p9_position = i+1;
     }
-  
+
   model = (int**) malloc(TRANS * sizeof(int*));
-  
+
   for(int i=0;i<TRANS;i++)
     {
     model[i] = (int*) malloc((PLACES+2) * sizeof(int));
@@ -99,10 +100,10 @@ void buildModel(const char* order)
         model[i][j]=modelTest[i][order[j-1]-'0'];
       else
         model[i][j]=modelTest[i][order[j-1]-'7'];
-        
+
       }
     }
-  
+
 }
 
 
@@ -134,13 +135,13 @@ void printStats(const char* who, const forest* f)
 int main(int argc, const char** argv)
 {
   char method ;
-  
+
   for (int i=1; i<argc; i++)
     {
     if(i==1)
       N = atoi(argv[i]);
 
-    
+
     if (strcmp("-O", argv[i])==0) {
       if(i+1 < argc)
         {
@@ -150,23 +151,23 @@ int main(int argc, const char** argv)
     }
     }
   BOUNDS = 2;
-  
+
   if (argc<4) return usage(argv[0]);
   if (N<0) return usage(argv[0]);
-  
+
   domain* d = 0;
   try {
-    
+
     MEDDLY::initialize();
-    
+
     timer start;
-    
-    
+
+
     printf("+----------------------------------------------------+\n");
     printf("|         Initializing Kanban with %-4d        |\n", N);
     printf("+----------------------------------------------------+\n");
     fflush(stdout);
-    
+
     // Initialize domain
     int* sizes = new int[PLACES];
     for (int i=PLACES-1; i>=0; i--) sizes[i] = BOUNDS;
@@ -177,47 +178,47 @@ int main(int argc, const char** argv)
     forest::policies p(false);
     p.setPessimistic();
     // p.setQuasiReduced();
-    
+
     //INITIAL STATE
     int* initialState;
     initialState = new int[PLACES + 1];
     for(int g = 1;g <= PLACES;g++) initialState[g] = 0;
     initialState[p1_position]=initialState[p13_position]=initialState[p5_position]=initialState[p9_position]=N;
-    
+
     method ='i';
     std::cout<<"\n********************";
     std::cout<<"\n     Implicit";
     std::cout<<"\n********************";
-    
+
     if('i' == method)
       {
-      
+
       //CREATE FORESTS
       forest* inmdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
       forest* relmxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL,pr);
-      
+
       expert_domain* dm = static_cast<expert_domain*>(inmdd->useDomain());
 
       dm->enlargeVariableBound(p1_position, false, N+1);
       dm->enlargeVariableBound(p13_position, false, N+1);
       dm->enlargeVariableBound(p5_position, false, N+1);
       dm->enlargeVariableBound(p9_position, false, N+1);
-    
-      
-      
+
+
+
       //ADD INITIAL STATE
       dd_edge first(inmdd);
       dd_edge reachable(inmdd);
       inmdd->createEdge(&initialState, 1, first);
-      
-      
+
+
       //CREATE RELATION
       #ifdef TEST_HYB
         MEDDLY::sathyb_opname::event** hyb_event  = buildHybridRelation(model, TRANS, PLACES, BOUNDS, inmdd, relmxd);
       #else
         satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,relmxd,inmdd);
       #endif
-      
+
       start.note_time();
       #ifdef TEST_HYB
         sathyb_opname::hybrid_relation* IMPR = new sathyb_opname::hybrid_relation(inmdd, relmxd, inmdd, &hyb_event[0], TRANS);
@@ -228,7 +229,7 @@ int main(int argc, const char** argv)
       printf("\nNext-state function construction took %.4e seconds\n",
              start.get_last_seconds());
       specialized_operation* sat = 0;
-      
+
       #ifdef TEST_HYB
         printf("\nBuilding reachability set using saturation hybrid relation");
         if (0==SATURATION_HYB_FORWARD) {
@@ -247,35 +248,35 @@ int main(int argc, const char** argv)
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
       }
       sat->compute(first, reachable);
-      
+
       start.note_time();
       printf("\nReachability set construction took %.4e seconds\n",
              start.get_last_seconds());
       fflush(stdout);
-      
+
       #ifdef DUMP_REACHABLE
       printf("Reachable states:\n");
       reachable.show(meddlyout, 2);
       #endif
-      
+
       printStats("MDD", inmdd);
       fflush(stdout);
-      
+
       double c;
       apply(CARDINALITY, reachable, c);
       operation::showAllComputeTables(meddlyout, 3);
       printf("Approx. %g reachable states\n", c);
-      
+
       /* Building Mxd From Implicit */
-      
-      
+
+
       /*dd_edge mxd_edge_all = T->buildMxdForest();
-      
+
       mxd_edge_all.show(meddlyout,2);*/
 
-      
+
       }
-    
+
     return 0;
   }
   catch (MEDDLY::error e) {

@@ -1,4 +1,5 @@
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "simple_model.h"
 

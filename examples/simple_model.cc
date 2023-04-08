@@ -4,7 +4,7 @@
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -17,6 +17,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "../src/meddly_expert.h"
 #include "simple_model.h"
@@ -61,7 +62,7 @@ inline int MAX(int a, int b) {
 */
 
 void buildNextStateFunction(const char* const* events, int nEvents,
-  MEDDLY::forest* mxd, 
+  MEDDLY::forest* mxd,
   MEDDLY::satpregen_opname::pregen_relation* pnsf,
   MEDDLY::dd_edge* mono, int verb)
 {
@@ -140,7 +141,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
     nsf_ev.show(stdout, 2);
 #endif
     if (verb>2) fprintf(stderr, " : ");
-    
+
     //
     // 'and' with the "do care" levels
     //
@@ -156,7 +157,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
         if (verb>2) fputc(ev[i], stderr);
       }
       switch (ev[i]) {
-        case '+':   
+        case '+':
 #ifdef SAME_FOREST_OPERATIONS
                     apply(EQUAL, varP[i][0], inc[i][0], docare);
 #else
@@ -164,7 +165,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 #endif
                     break;
 
-        case '-':   
+        case '-':
 #ifdef SAME_FOREST_OPERATIONS
                     apply(EQUAL, varP[i][0], dec[i][0], docare);
 #else
@@ -231,7 +232,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 
 #ifdef DEBUG_EVENTS
   printf("Complete NSF:\n");
-  mono->show(stdout, 2); 
+  mono->show(stdout, 2);
 #endif
 }
 
@@ -293,7 +294,7 @@ bool fireEvent(const char* event, const int* current, int* next, int nVars)
   return true;
 }
 
-void explicitReachset(const char* const* events, int nEvents, 
+void explicitReachset(const char* const* events, int nEvents,
   MEDDLY::forest* f, MEDDLY::dd_edge &expl, MEDDLY::dd_edge &RS, int batchsize)
 {
   int b;
@@ -305,12 +306,12 @@ void explicitReachset(const char* const* events, int nEvents,
   for (b=0; b<batchsize; b++) {
     minterms[b] = new int[1+nVars];
   }
-  
+
   // unexplored states
   MEDDLY::dd_edge unexplored(f);
   // batch of states
   MEDDLY::dd_edge batch(f);
-  b = 0; 
+  b = 0;
   // exploration loop.
   MEDDLY::enumerator I(expl);
   for (;;) {
@@ -381,16 +382,16 @@ public:
     fr = f;
     h = inh;
   }
-  
+
   long nextOf(long i) override
   {
-  
+
     if(i>=getPieceSize()) { //Array needs to be allocated
        expandTokenUpdate(i);
     }
-  
+
     if(getTokenUpdate()[i]==NOT_KNOWN) //Array needs to be updated
-    {	
+    {
     	long result = ((i>=en) && (h==-1?true:i<h))? i+fr : OUT_OF_BOUNDS;
     	long val = result;
      	setTokenUpdateAtIndex(i,val);
@@ -402,10 +403,10 @@ public:
 
 void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::forest* mddF, MEDDLY::forest* mxdF, MEDDLY::satimpl_opname::implicit_relation* T)
 {
-  
+
   unsigned node_count = 0;
   int* tops_of_events = (int*)malloc(size_t(nEvents)*sizeof(int));
-  
+
   for(int e = 0;e < nEvents; e++)
     {
     bool done = false;
@@ -419,15 +420,15 @@ void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, in
         }
       }
     }
-  
-  
+
+
   derRelNode** rNode = (derRelNode**)malloc(node_count*sizeof(derRelNode*));
-  
+
   // Add/Subtract Tokens
   nxtList = (int*)malloc((node_count+2)*sizeof(int));
   nxtList[0] = 0;
   nxtList[1] = 0;
-  
+
   int rctr = 0;
   for(int e = 0;e < nEvents; e++)
     {
@@ -440,7 +441,7 @@ void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, in
         {
           rNode[rctr] = new derRelNode(mxdF,p,previous_node_handle,events[e][p]<0?-events[e][p]:0,events[e][p],-1);
           previous_node_handle = T->registerNode((tops_of_events[e]==p),rNode[rctr]);
-          
+
           rctr++;
           nxtList[previous_node_handle] = events[e][p];
         }
@@ -453,7 +454,7 @@ MEDDLY::sathyb_opname::event** buildHybridRelation(const int* const* events, int
 
   unsigned node_count = 0;
   int* tops_of_events = (int*)malloc(size_t(nEvents)*sizeof(int));
-  
+
   for(int e = 0;e < nEvents; e++)
     {
     bool done = false;
@@ -467,15 +468,15 @@ MEDDLY::sathyb_opname::event** buildHybridRelation(const int* const* events, int
         }
       }
     }
-  
+
   derRelNode** rNode = (derRelNode**)malloc(node_count*sizeof(derRelNode*));
   MEDDLY::sathyb_opname::event** T = (MEDDLY::sathyb_opname::event**)malloc(nEvents*sizeof(MEDDLY::sathyb_opname::event*));
-  
+
   // Add/Subtract Tokens
   nxtList = (int*)malloc((node_count+2)*sizeof(int));
   nxtList[0] = 0;
   nxtList[1] = 0;
-  
+
   int rctr = 0;
   for(int e = 0;e < nEvents; e++)
     {

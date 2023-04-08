@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -24,6 +24,7 @@
 
 #include <string.h>
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "../src/meddly_expert.h"
 
@@ -75,7 +76,7 @@ bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
     0.5,  0.25, 0.25, 0.5,  0.5,  0.25, 0.25, 0.5
   };
 
-  try { 
+  try {
     mxd->createEdge(fromlist, tolist, problist, 8, P);
   }
   catch (MEDDLY::error fe) {
@@ -157,9 +158,9 @@ bool impl_xA_check(dd_edge &x, const dd_edge &P)
       printf("Couldn't multiply: %s\n", ce.getName());
       return false;
     }
-    
+
     // determine product by hand
-    exP[0] = exP[1] = exP[2] = 0; 
+    exP[0] = exP[1] = exP[2] = 0;
     by_hand_oz_xA(exP, ex);
 
     // Compare!
@@ -228,9 +229,9 @@ bool impl_Ax_check(dd_edge &x, const dd_edge &P)
       printf("Couldn't multiply: %s\n", ce.getName());
       return false;
     }
-    
+
     // determine product by hand
-    exP[0] = exP[1] = exP[2] = 0; 
+    exP[0] = exP[1] = exP[2] = 0;
     by_hand_oz_Ax(exP, ex);
 
     // Compare!

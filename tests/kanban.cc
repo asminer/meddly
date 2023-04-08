@@ -4,7 +4,7 @@
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <string.h>
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "simple_model.h"
 
@@ -44,9 +45,9 @@ const char* kanban[] = {
   "X.............-.+"   // Tg4
 };
 
-long expected[] = { 
-  1, 160, 4600, 58400, 454475, 2546432, 11261376, 
-  41644800, 133865325, 384392800, 1005927208 
+long expected[] = {
+  1, 160, 4600, 58400, 454475, 2546432, 11261376,
+  41644800, 133865325, 384392800, 1005927208
 };
 
 const int nstart = 1;
@@ -78,7 +79,7 @@ long buildReachset(int N, bool useSat)
   // Build next-state function
   forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
   dd_edge nsf(mxd);
-  buildNextStateFunction(kanban, 16, mxd, nsf); 
+  buildNextStateFunction(kanban, 16, mxd, nsf);
 
 #ifdef PROGRESS
   fputc('n', stdout);
@@ -105,7 +106,7 @@ long buildReachset(int N, bool useSat)
 #endif
 
   destroyDomain(d);
-  
+
 #ifdef PROGRESS
   fputc(' ', stdout);
   fflush(stdout);

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -17,6 +17,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define _MEDDLY_NOINST_
 #include <iostream>
 #include <fstream>
 #include <map>  // for symbol table
@@ -72,7 +73,7 @@ char skipWhite(std::istream &in)
     char c = in.get();
     if (!in) return ' ';
     switch (c) {
-      case '\n': 
+      case '\n':
             comment = false;
             lineno++;
             continue;
@@ -81,7 +82,7 @@ char skipWhite(std::istream &in)
       case '\t': continue;
       case '\r': continue;
 
-      case '#': 
+      case '#':
             comment = true;
             continue;
 
@@ -256,7 +257,7 @@ int main(int argc, const char** argv)
         std::cerr << "Missing argument to -m\n";
         return usage(program)+1;
       }
-      
+
       if (0==strcmp("NONE", argv[1])) {
         mst = 0;
         continue;
@@ -265,7 +266,7 @@ int main(int argc, const char** argv)
       // so we can check for errors
       if (0==strcmp("ORIGINAL_GRID", argv[1])) {
         mst = MEDDLY::ORIGINAL_GRID;
-      } 
+      }
       // else if ... else if ...
       else {
         std::cerr << "Unknown memory manager " << argv[1] << "\n";
@@ -317,7 +318,7 @@ int main(int argc, const char** argv)
   // We have the memory manager; start parsing!
   //
 
-  
+
 
   std::istream* infile = 0;
   std::map <std::string, handle_size> symbols;

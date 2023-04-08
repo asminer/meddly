@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -26,7 +26,7 @@
 
 	The model has 6 square faces with 9 squares (of the same color) in each face
 	for a total of 54 squares.
-  
+
 	These 54 squares can be grouped together as some of them move together.
   Each Corner is a group of 3 squares. There are 8 corners.
   Each Edge is a group of 2 squares. There are 12 edges.
@@ -45,12 +45,12 @@
 
   There are three kinds of moves (events): rotate a face clockwise by
   90, 180 and 270 degrees.
-  
+
   Using Scheme 1 for representing the variables, each move will span all
   the variables in the MDD. Scheme 2, on the other hand will only span the
   variables effected by a move (i.e. 17 variables vs 46). We therefore
   use Scheme 2 for this model.
-  
+
   The locations are named as follows:
 
   (starting with the left top corner of the face and going clockwise)
@@ -72,6 +72,7 @@
 #include <cstring>
 #include <vector>
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "../src/meddly_expert.h"
 #include "../src/timer.h"
@@ -163,7 +164,7 @@ class rubiks {
 
     int coOffset;
     // Get the ith corner orientation variable
-    int co(int i) const { 
+    int co(int i) const {
       return i + coOffset;
     }
 
@@ -184,10 +185,10 @@ class rubiks {
     /*
        = {
        0,
-       8, 8, 8, 8, 8, 8, 8, 8, 
-       3, 3, 3, 3, 3, 3, 3, 3, 
-       12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 
-       2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+       8, 8, 8, 8, 8, 8, 8, 8,
+       3, 3, 3, 3, 3, 3, 3, 3,
+       12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+       2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
        4, 4, 4, 4, 4, 4
        };
        */
@@ -578,7 +579,7 @@ class rubiks {
     }
 
     dd_edge buildMove(direction d, const int* f, const int* o) {
-      // Translate ith variable of type j, to the actual variable 
+      // Translate ith variable of type j, to the actual variable
 
       int c1 = c(f[0]);
       int c2 = c(f[2]);
@@ -895,7 +896,7 @@ class rubiks {
       } else {
         nsf = buildNextStateFunction(m);
       }
-      
+
       start.note_time();
       fprintf(stdout,
           "Time for building next-state function: %.4e seconds\n",
@@ -919,7 +920,7 @@ class rubiks {
         printf("Building reachability set: Monolithic relation saturation\n");
       }
       fflush(stdout);
-      
+
       // Perform Reacability via "saturation".
       start.note_time();
       if (ensf) {
@@ -1190,15 +1191,15 @@ class rubiks {
     }
 
     void printStats(MEDDLY::output &out, const char* who, const forest* f)
-    { 
+    {
       out << who << " stats:\n";
       const expert_forest* ef = (expert_forest*) f;
       ef->reportStats(out, "\t",
           expert_forest::HUMAN_READABLE_MEMORY  |
           expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
           expert_forest::UNIQUE_TABLE_STATS |
-          expert_forest::STORAGE_STATS | 
-          expert_forest::HOLE_MANAGER_STATS | 
+          expert_forest::STORAGE_STATS |
+          expert_forest::HOLE_MANAGER_STATS |
           expert_forest::HOLE_MANAGER_DETAILED
           );
     }
@@ -1379,7 +1380,7 @@ int main(int argc, char *argv[])
   catch (MEDDLY::error& e) {
     fprintf(stderr, "Meddly error: %s\n", e.getName());
     fflush(stderr);
-  } 
+  }
   catch (...) {
     fprintf(stderr, "Unknown error.\n");
     fflush(stderr);

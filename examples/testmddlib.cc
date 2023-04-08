@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -29,6 +29,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <string.h>
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "../src/meddly_expert.h"
 
@@ -159,13 +160,13 @@ int main(int argc, char *argv[])
 
   vlist[0][0] = 0; vlist[1][1] = 1; vlist[1][2] = -2;
   vplist[0][0] = 0; vplist[1][1] = 2; vplist[1][2] = -2;
-  
+
   vlist[0][0] = 0; vlist[2][1] = 1; vlist[2][2] = 0;
   vplist[0][0] = 0; vplist[2][1] = 0; vplist[2][2] = 1;
-  
+
   vlist[0][0] = 0; vlist[3][1] = 2; vlist[3][2] = 0;
   vplist[0][0] = 0; vplist[3][1] = 1; vplist[3][2] = 1;
-  
+
   vlist[0][0] = 0; vlist[4][1] = -2; vlist[4][2] = 1;
   vplist[0][0] = 0; vplist[4][1] = -2; vplist[4][2] = 0;
 

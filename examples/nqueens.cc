@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -18,7 +18,7 @@
 */
 
 /*
-    Builds the set of solutions to the N-queens problem for 
+    Builds the set of solutions to the N-queens problem for
     user-specified N.
 
     In other words, finds all possible ways to put N queens onto
@@ -32,6 +32,7 @@
 #include <cstdio>
 #include <fstream>
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "../src/meddly_expert.h"
 #include "../src/timer.h"
@@ -239,7 +240,7 @@ int main(int argc, const char** argv)
   timer watch;
   printf("%d-Queens solutions.\n", N);
   scratch = new long[N+1];
-  
+
   watch.note_time();
   printf("Initializing domain and forest\n");
   const char* ndp = "unknown node deletion";
@@ -361,10 +362,10 @@ int main(int argc, const char** argv)
   printf("Set of solutions requires %d nodes\n", solutions->getNodeCount());
   printf("Forest stats:\n");
   FILE_output myout(stdout);
-  f->reportStats(myout, "\t", 
+  f->reportStats(myout, "\t",
     expert_forest::HUMAN_READABLE_MEMORY  |
     expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
-    expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED | 
+    expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED |
     expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED
   );
 

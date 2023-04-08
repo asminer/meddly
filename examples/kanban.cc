@@ -4,7 +4,7 @@
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -24,6 +24,7 @@
 
 #define _MEDDLY_WITHOUT_IOSTREAM_
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "../src/meddly_expert.h"
 #include "simple_model.h"
@@ -253,7 +254,7 @@ int main(int argc, const char** argv)
         apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
         break;
 
-      case 'e': 
+      case 'e':
         printf("Building reachability set using explicit search\n");
         printf("Using batch size: %d\n", batchsize);
         fflush(stdout);
@@ -326,7 +327,7 @@ int main(int argc, const char** argv)
     if (LOG) {
       LOG->newPhase(mdd, "Cleanup");
       LOG->newPhase(mxd, "Cleanup");
-      MEDDLY::destroyDomain(d); 
+      MEDDLY::destroyDomain(d);
       delete LOG;
     }
     MEDDLY::cleanup();

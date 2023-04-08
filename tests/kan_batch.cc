@@ -4,7 +4,7 @@
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <string.h>
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "simple_model.h"
 
@@ -47,9 +48,9 @@ const char* kanban[] = {
 };
 
 // 160 states for N=1
-long expected[] = { 
-  1, 160, 4600, 58400, 454475, 2546432, 11261376, 
-  41644800, 133865325, 384392800, 1005927208 
+long expected[] = {
+  1, 160, 4600, 58400, 454475, 2546432, 11261376,
+  41644800, 133865325, 384392800, 1005927208
 };
 
 using namespace MEDDLY;
@@ -66,7 +67,7 @@ dd_edge buildReachsetSAT(forest* mdd, forest* mxd, int N)
 
   // Build next-state function
   dd_edge nsf(mxd);
-  buildNextStateFunction(kanban, 16, mxd, nsf); 
+  buildNextStateFunction(kanban, 16, mxd, nsf);
 
   dd_edge reachable(mdd);
   apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
@@ -116,7 +117,7 @@ dd_edge buildReachsetBatch(int b, forest* mdd, const char* rs[], long states)
   return reachable;
 }
 
-bool checkRS(int N, const char* rs[]) 
+bool checkRS(int N, const char* rs[])
 {
   bool ok = true;
   const int batches[] = { 1000, 100, 10, 1, 0 };
@@ -129,8 +130,8 @@ bool checkRS(int N, const char* rs[])
 
   dd_edge reachable = buildReachsetSAT(mdd, mxd, N);
 
-  for (int b=0; batches[b]; b++) { 
-    printf("\tBuilding %ld markings by hand, %d at a time\n", 
+  for (int b=0; batches[b]; b++) {
+    printf("\tBuilding %ld markings by hand, %d at a time\n",
       expected[N], batches[b]);
     fflush(stdout);
 

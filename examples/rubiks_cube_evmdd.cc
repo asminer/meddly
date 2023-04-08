@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -26,18 +26,18 @@
 
 	The model has 6 square faces with 9 squares (of the same color) in each face
 	for a total of 54 squares.
-  
+
 	These 54 squares can be grouped together as some of them move together.
 
 	Type 1: Single square (6 such squares)  ,  6 * 1 =  6
 	Type 2: Two squares (12 such L-corners) , 12 * 2 = 24
 	Type 3: Three squares (8 such corners)  ,  8 * 3 = 24
-	
+
 	The model thus has 26 components and 26 component locations.
 	Each component location is represented as a MDD level. The size of the MDD
 	level depends on the number of components that can fit into that location.
 	For example, Type 2 component locations are of size 12.
-  
+
 	Level 0        : Terminals
 	Level 01 - 12  : Type 2 component locations (size 12)
 	Level 13 - 20  : Type 3 component locations (size 8)
@@ -193,7 +193,7 @@ int get_component_type (int comp_level)
   static int comp_type[] =
   {0, 3, 2, 3, 2, 3, 2, 3, 2, 2, 2, 2, 2, 3, 2, 3, 2, 3, 2, 3, 2};
 #else
-  
+
 #if REORDER_CUBE
   static int comp_type[] =
       {0, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
@@ -277,11 +277,11 @@ void Init()
   variables = (level *) malloc((num_levels + 1) * sizeof(level));
   assert(variables != NULL);
   memset(variables, 0, (num_levels + 1) * sizeof(level));
-  
+
   // node size for each level
   sizes = (int *) malloc((num_levels + 1) * sizeof(int));
   assert(sizes != NULL);
-  
+
   assert(num_levels == 20);
   sizes[0] = 0;
   for (int i = 1; i < (num_levels + 1); i++) {
@@ -303,7 +303,7 @@ void Init()
 void CheckVars()
 {
   // Sanity check
-  for (int i = num_levels; i > 0; i--) 
+  for (int i = num_levels; i > 0; i--)
     if ((variables[i] > num_levels) || (variables[i] < 1)) {
       fprintf(stderr, "Level handle for variable %d is %d, ",
           i, variables[i]);
@@ -546,7 +546,7 @@ dd_edge* DoMoveHelper(
   }
 
   dd_edge *e16 = CreateEdge(temp16);
-  
+
   // create node at level 1
   dd_tempedge *temp1 = CreateTempEdge(relation, NULL);
 
@@ -627,7 +627,7 @@ dd_edge* DoMoveHelper(
   }
 
   dd_edge *e3 = CreateEdge(temp3);
-  
+
   // create node at level 4
   dd_tempedge *temp4 = CreateTempEdge(relation, NULL);
 
@@ -777,7 +777,7 @@ dd_edge* DoFlipHelper(
   }
 
   dd_edge *e14 = CreateEdge(temp14);
- 
+
   // create node at level 1
   dd_tempedge *temp1 = CreateTempEdge(relation, NULL);
 
@@ -1012,8 +1012,8 @@ int main(int argc, char *argv[])
     initst[variables[get_component_level(3, j)]] = j;
   }
   initst[0] = 0;
-  // initial = CreateVectorElement(states, initst, num_levels + 1, true); 
-  initial = CreateEVVectorElement(states, initst, initstev, num_levels + 1, true); 
+  // initial = CreateVectorElement(states, initst, num_levels + 1, true);
+  initial = CreateEVVectorElement(states, initst, initstev, num_levels + 1, true);
 
   dd_edge *curr = NULL;
 
@@ -1070,7 +1070,7 @@ int main(int argc, char *argv[])
       if (nsf == NULL) {
         nsf = move[F][CW];
       } else {
-        assert(SUCCESS == 
+        assert(SUCCESS ==
             ApplyBinary(OP_UNION, nsf, move[F][CW], nsf));
       }
       fprintf(stderr, "Union f-cw: ");
@@ -1082,7 +1082,7 @@ int main(int argc, char *argv[])
       if (nsf == NULL) {
         nsf = move[U][CW];
       } else {
-        assert(SUCCESS == 
+        assert(SUCCESS ==
             ApplyBinary(OP_UNION, nsf, move[U][CW], nsf));
       }
       fprintf(stderr, "Union u-cw: ");
@@ -1094,7 +1094,7 @@ int main(int argc, char *argv[])
       if (nsf == NULL) {
         nsf = move[R][CW];
       } else {
-        assert(SUCCESS == 
+        assert(SUCCESS ==
             ApplyBinary(OP_UNION, nsf, move[R][CW], nsf));
       }
       fprintf(stderr, "Union r-cw: ");
@@ -1106,7 +1106,7 @@ int main(int argc, char *argv[])
       if (nsf == NULL) {
         nsf = move[L][CW];
       } else {
-        assert(SUCCESS == 
+        assert(SUCCESS ==
             ApplyBinary(OP_UNION, nsf, move[L][CW], nsf));
       }
       fprintf(stderr, "Union l-cw: ");
@@ -1118,7 +1118,7 @@ int main(int argc, char *argv[])
       if (nsf == NULL) {
         nsf = move[B][CW];
       } else {
-        assert(SUCCESS == 
+        assert(SUCCESS ==
             ApplyBinary(OP_UNION, nsf, move[B][CW], nsf));
       }
       fprintf(stderr, "Union b-cw: ");
@@ -1130,7 +1130,7 @@ int main(int argc, char *argv[])
       if (nsf == NULL) {
         nsf = move[D][CW];
       } else {
-        assert(SUCCESS == 
+        assert(SUCCESS ==
             ApplyBinary(OP_UNION, nsf, move[D][CW], nsf));
       }
       fprintf(stderr, "Union d-cw: ");
@@ -1144,7 +1144,7 @@ int main(int argc, char *argv[])
       if (nsf1 == NULL) {
         nsf1 = move[F][CCW];
       } else {
-        assert(SUCCESS == 
+        assert(SUCCESS ==
             ApplyBinary(OP_UNION, nsf1, move[F][CCW], nsf1));
       }
       fprintf(stderr, "Union f-ccw: ");
@@ -1156,7 +1156,7 @@ int main(int argc, char *argv[])
       if (nsf1 == NULL) {
         nsf1 = move[U][CCW];
       } else {
-        assert(SUCCESS == 
+        assert(SUCCESS ==
             ApplyBinary(OP_UNION, nsf1, move[U][CCW], nsf1));
       }
       fprintf(stderr, "Union u-ccw: ");
@@ -1168,7 +1168,7 @@ int main(int argc, char *argv[])
       if (nsf1 == NULL) {
         nsf1 = move[R][CCW];
       } else {
-        assert(SUCCESS == 
+        assert(SUCCESS ==
             ApplyBinary(OP_UNION, nsf1, move[R][CCW], nsf1));
       }
       fprintf(stderr, "Union r-ccw: ");
@@ -1180,7 +1180,7 @@ int main(int argc, char *argv[])
       if (nsf1 == NULL) {
         nsf1 = move[L][CCW];
       } else {
-        assert(SUCCESS == 
+        assert(SUCCESS ==
             ApplyBinary(OP_UNION, nsf1, move[L][CCW], nsf1));
       }
       fprintf(stderr, "Union l-ccw: ");
@@ -1192,7 +1192,7 @@ int main(int argc, char *argv[])
       if (nsf1 == NULL) {
         nsf1 = move[B][CCW];
       } else {
-        assert(SUCCESS == 
+        assert(SUCCESS ==
             ApplyBinary(OP_UNION, nsf1, move[B][CCW], nsf1));
       }
       fprintf(stderr, "Union b-ccw: ");
@@ -1204,7 +1204,7 @@ int main(int argc, char *argv[])
       if (nsf1 == NULL) {
         nsf1 = move[D][CCW];
       } else {
-        assert(SUCCESS == 
+        assert(SUCCESS ==
             ApplyBinary(OP_UNION, nsf1, move[D][CCW], nsf1));
       }
       fprintf(stderr, "Union d-ccw: ");
@@ -1227,7 +1227,7 @@ int main(int argc, char *argv[])
         if (nsf2 == NULL) {
           nsf2 = move[F][CCW];
         } else {
-          assert(SUCCESS == 
+          assert(SUCCESS ==
               ApplyBinary(OP_UNION, nsf2, move[F][CCW], nsf2));
         }
         fprintf(stderr, "Union f-ccw: ");
@@ -1239,7 +1239,7 @@ int main(int argc, char *argv[])
         if (nsf2 == NULL) {
           nsf2 = move[U][CCW];
         } else {
-          assert(SUCCESS == 
+          assert(SUCCESS ==
               ApplyBinary(OP_UNION, nsf2, move[U][CCW], nsf2));
         }
         fprintf(stderr, "Union u-ccw: ");
@@ -1251,7 +1251,7 @@ int main(int argc, char *argv[])
         if (nsf2 == NULL) {
           nsf2 = move[R][CCW];
         } else {
-          assert(SUCCESS == 
+          assert(SUCCESS ==
               ApplyBinary(OP_UNION, nsf2, move[R][CCW], nsf2));
         }
         fprintf(stderr, "Union r-ccw: ");
@@ -1263,7 +1263,7 @@ int main(int argc, char *argv[])
         if (nsf2 == NULL) {
           nsf2 = move[L][CCW];
         } else {
-          assert(SUCCESS == 
+          assert(SUCCESS ==
               ApplyBinary(OP_UNION, nsf2, move[L][CCW], nsf2));
         }
         fprintf(stderr, "Union l-ccw: ");
@@ -1275,7 +1275,7 @@ int main(int argc, char *argv[])
         if (nsf2 == NULL) {
           nsf2 = move[B][CCW];
         } else {
-          assert(SUCCESS == 
+          assert(SUCCESS ==
               ApplyBinary(OP_UNION, nsf2, move[B][CCW], nsf2));
         }
         fprintf(stderr, "Union b-ccw: ");
@@ -1287,7 +1287,7 @@ int main(int argc, char *argv[])
         if (nsf2 == NULL) {
           nsf2 = move[D][CCW];
         } else {
-          assert(SUCCESS == 
+          assert(SUCCESS ==
               ApplyBinary(OP_UNION, nsf2, move[D][CCW], nsf2));
         }
         fprintf(stderr, "Union d-ccw: ");
@@ -1331,14 +1331,14 @@ int main(int argc, char *argv[])
   for (int i = 0; i < num_moves; i++) {
     fprintf(stderr, "Move %d, CW: ", i);
     ShowDDEdge(stderr, move[i][0]);
-    fprintf(stderr, "\n"); 
+    fprintf(stderr, "\n");
     fprintf(stderr, "Move %d, CCW: ", i);
     ShowDDEdge(stderr, move[i][1]);
-    fprintf(stderr, "\n"); 
+    fprintf(stderr, "\n");
   }
   fprintf(stderr, "Overall transition relation: ");
   ShowDDEdge(stderr, nsf);
-  fprintf(stderr, "\n"); 
+  fprintf(stderr, "\n");
 #endif
 
   double card = 0;

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -17,6 +17,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define _MEDDLY_NOINST_
 #include <cstdlib>
 #include <iostream>
 #include "../src/meddly.h"
@@ -76,7 +77,7 @@ void createEdge(forest* mdd, int var, int value, dd_edge& result) {
 // (k_c:v_c, k_d:v_d, ...), // t2: k_c < v_c | k_d < v_d | ...
 // ...
 // }
-// 
+//
 // potential deadlock states = conjunction of transition disabling expressions
 
 struct int_pair {

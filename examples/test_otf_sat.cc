@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -20,16 +20,17 @@
 
 /*
   State space generation using On-The-Fly Saturation.
- 
+
   Model: A simple petri net
- 
+
   Places: A, B
   Transitions: T_ab
- 
+
   T_ab: A--, B++
   Initial state: A = N, B = 0
 */
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "../src/meddly_expert.h"
 
@@ -148,7 +149,7 @@ int main(int argc, char* argv[]) {
 
   pn model(nTokens);
   dd_edge rss = model.getReachableStateSet();
-  
+
   ostream_output s(std::cout);
   rss.show(s, 2);
   double rss_card = rss.getCardinality();

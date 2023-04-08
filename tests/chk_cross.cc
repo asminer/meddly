@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -25,6 +25,7 @@
 #include <cstdlib>
 #include <time.h>
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 
 using namespace MEDDLY;
@@ -178,7 +179,7 @@ void test(forest* mdd, forest* mxd, int nmt)
   printf("Generated random cols:\n");
   cr.show(out, 2);
 #endif
-  
+
   // check: generate cr from cs, make sure they match
   apply(CROSS, one, cs, tmp);
 #ifdef DEBUG_RANDSET
@@ -219,7 +220,7 @@ int processArgs(int argc, const char** argv)
   if (seed < 1) {
     seed = time(0);
   }
-  
+
   printf("Using rng seed %ld\n", seed);
   return 1;
 }

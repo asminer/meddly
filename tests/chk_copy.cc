@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -25,6 +25,7 @@
 #include <cstdlib>
 #include <time.h>
 
+#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 
 #define CHECK_ALL_MTMDDS
@@ -113,7 +114,7 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
         if (minprime) f->createEdge(&minterm, &minprime, &i_value, 1, temp);
         else          f->createEdge(&minterm, &i_value, 1, temp);
         break;
-        
+
       case forest::REAL:
         if (minprime) f->createEdge(&minterm, &minprime, &f_value, 1, temp);
         else          f->createEdge(&minterm, &f_value, 1, temp);
@@ -167,7 +168,7 @@ void writeType(const forest* f)
       printf("?R ");
       break;
   }
-  
+
   switch (f->getEdgeLabeling()) {
     case forest::MULTI_TERMINAL:
       printf(" mt");
@@ -235,10 +236,10 @@ void testCopy(forest* srcF, forest* destF)
         FILE_output meddlyout(stdout);
 
         printf("failed!\n\n");
-  
+
         printf("Source (first forest):\n");
         srcE.show(meddlyout, 3);
-  
+
         printf("Destination (should get):\n");
         destE.show(meddlyout, 3);
 
@@ -276,12 +277,12 @@ int processArgs(int argc, const char** argv)
   if (seed < 1) {
     seed = time(0);
   }
-  
+
   printf("Using rng seed %ld\n", seed);
   return 1;
 }
 
-void addMDDforests(domain* D, forest** list, int &i, 
+void addMDDforests(domain* D, forest** list, int &i,
   forest::edge_labeling ev, forest::range_type type)
 {
   forest::policies fr(false);
@@ -293,7 +294,7 @@ void addMDDforests(domain* D, forest** list, int &i,
   list[i++] = D->createForest(0, type, ev, qr);
 }
 
-void addMXDforests(domain* D, forest** list, int &i, 
+void addMXDforests(domain* D, forest** list, int &i,
   forest::edge_labeling ev, forest::range_type type)
 {
   forest::policies ir(true);
@@ -442,7 +443,7 @@ int main(int argc, const char** argv)
   printf("Checking all possible copies from integer to integer/real MDD forests\n");
   slen = makeIntegerMDDforests(myd, srcs);
   dlen = makeIntegerMDDforests(myd, dests);
-  addRealMDDforests(dlen, myd, dests); 
+  addRealMDDforests(dlen, myd, dests);
 
   for (int i=0; i<slen; i++) {
     for (int j=0; j<dlen; j++) {
@@ -504,7 +505,7 @@ int main(int argc, const char** argv)
   printf("\n");
 #endif
 
-  
+
   cleanup();
   return 0;
 }
