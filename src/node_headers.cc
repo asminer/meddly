@@ -912,8 +912,7 @@ void MEDDLY::node_headers
 void MEDDLY::node_headers
 ::showHeader(output &s, node_handle p) const
 {
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
 
   int k = ABS(getNodeLevel(p));
   const variable* v = parent.getDomain()->getVar(parent.getVarByLevel(k));
@@ -1074,8 +1073,7 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
 
 void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
 {
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
   MEDDLY_DCASSERT(0==getNodeCacheCount(p));
 
 #ifdef DEBUG_HANDLE_MGT
@@ -1136,10 +1134,8 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
 void MEDDLY::node_headers::swapNodes(node_handle p, node_handle q, bool swap_incounts)
 {
   MEDDLY_DCASSERT(p!=q);
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
-  MEDDLY_DCASSERT(q>0);
-  MEDDLY_DCASSERT(q<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, q, 1+a_last);
 
 #ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);

@@ -237,7 +237,7 @@ inline MEDDLY::node_handle
 MEDDLY::unpacked_node::d(unsigned n) const
 {
   MEDDLY_DCASSERT(down);
-  MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, (is_full ? size : nnzs));
   return down[n];
 }
 
@@ -245,7 +245,7 @@ inline MEDDLY::node_handle&
 MEDDLY::unpacked_node::d_ref(unsigned n)
 {
   MEDDLY_DCASSERT(down);
-  MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, (is_full ? size : nnzs));
   return down[n];
 }
 
@@ -254,7 +254,7 @@ MEDDLY::unpacked_node::set_d(unsigned n, dd_edge &E)
 {
   MEDDLY_DCASSERT(parent == E.parent);
   MEDDLY_DCASSERT(0==edge_bytes);
-  MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, (is_full ? size : nnzs));
   down[n] = E.node;
   E.node = 0; // avoid having to adjust the link count
 }
@@ -264,7 +264,7 @@ MEDDLY::unpacked_node::i(unsigned n) const
 {
   MEDDLY_DCASSERT(index);
   MEDDLY_DCASSERT(!is_full);
-  MEDDLY_CHECK_RANGE(0, n, nnzs);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, nnzs);
   return index[n];
 }
 
@@ -273,7 +273,7 @@ MEDDLY::unpacked_node::i_ref(unsigned n)
 {
   MEDDLY_DCASSERT(index);
   MEDDLY_DCASSERT(!is_full);
-  MEDDLY_CHECK_RANGE(0, n, nnzs);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, nnzs);
   return index[n];
 }
 
@@ -282,7 +282,7 @@ MEDDLY::unpacked_node::eptr(unsigned i) const
 {
   MEDDLY_DCASSERT(edge);
   MEDDLY_DCASSERT(edge_bytes);
-  MEDDLY_CHECK_RANGE(0, i, (is_full ? size : nnzs));
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, (is_full ? size : nnzs));
   return ((char*) edge) + i * edge_bytes;
 }
 
@@ -291,7 +291,7 @@ MEDDLY::unpacked_node::eptr_write(unsigned i)
 {
   MEDDLY_DCASSERT(edge);
   MEDDLY_DCASSERT(edge_bytes);
-  MEDDLY_CHECK_RANGE(0, i, (is_full ? size : nnzs));
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, (is_full ? size : nnzs));
   return ((char*) edge) + i * edge_bytes;
 }
 
@@ -301,7 +301,7 @@ MEDDLY::unpacked_node::set_de(unsigned n, dd_edge &E)
   MEDDLY_DCASSERT(parent == E.parent);
   MEDDLY_DCASSERT(edge);
   MEDDLY_DCASSERT(edge_bytes);
-  MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, (is_full ? size : nnzs));
   down[n] = E.node;
   memcpy( ((char*) edge) + n * edge_bytes, & (E.raw_value), edge_bytes );
   E.node = 0; // avoid having to adjust the link count
@@ -1043,8 +1043,7 @@ MEDDLY::node_headers::isZombie(node_handle p) const
 inline bool
 MEDDLY::node_headers::isDeleted(node_handle p) const
 {
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
 #ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   return (0==address[p].level);
@@ -1093,8 +1092,7 @@ MEDDLY::node_headers::deactivate(node_handle p)
 inline MEDDLY::node_address
 MEDDLY::node_headers::getNodeAddress(node_handle p) const
 {
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
 #ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   return address[p].offset;
@@ -1108,8 +1106,7 @@ MEDDLY::node_headers::getNodeAddress(node_handle p) const
 
 inline void MEDDLY::node_headers::setNodeAddress(node_handle p, node_address a)
 {
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
 #ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   address[p].offset = a;
@@ -1124,8 +1121,7 @@ inline void MEDDLY::node_headers::setNodeAddress(node_handle p, node_address a)
 inline void MEDDLY::node_headers::moveNodeAddress(node_handle p,
   node_address old_addr, node_address new_addr)
 {
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
 #ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(old_addr == address[p].offset);
@@ -1142,8 +1138,7 @@ inline void MEDDLY::node_headers::moveNodeAddress(node_handle p,
 inline int
 MEDDLY::node_headers::getNodeLevel(node_handle p) const
 {
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
 #ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   return address[p].level;
@@ -1158,8 +1153,7 @@ MEDDLY::node_headers::getNodeLevel(node_handle p) const
 inline void
 MEDDLY::node_headers::setNodeLevel(node_handle p, int k)
 {
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
 #ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
   address[p].level = k;
@@ -1188,8 +1182,7 @@ MEDDLY::node_headers::trackingCacheCounts() const
 inline unsigned long
 MEDDLY::node_headers::getNodeCacheCount(node_handle p) const
 {
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
 #ifdef OLD_NODE_HEADERS
   // MEDDLY_DCASSERT(usesCacheCounts); // or do we just return 0?  TBD
   MEDDLY_DCASSERT(address);
@@ -1235,8 +1228,7 @@ inline void
 MEDDLY::node_headers::uncacheNode(MEDDLY::node_handle p)
 {
   if (p<1) return;
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
 
 #ifdef OLD_NODE_HEADERS
 
@@ -1331,8 +1323,7 @@ inline void
 MEDDLY::node_headers::setInCacheBit(node_handle p)
 {
   if (p<1) return;    // terminal node
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
 
 #ifdef OLD_NODE_HEADERS
 
@@ -1387,8 +1378,7 @@ MEDDLY::node_headers::trackingIncomingCounts() const
 inline unsigned long
 MEDDLY::node_headers::getIncomingCount(node_handle p) const
 {
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
 #ifdef OLD_NODE_HEADERS
   // MEDDLY_DCASSERT(usesIncomingCounts); // or do we just return 0?  TBD
   MEDDLY_DCASSERT(address);
@@ -1561,8 +1551,7 @@ inline void
 MEDDLY::node_headers::setReachableBit(node_handle p)
 {
   if (p<1) return;    // terminal node
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
 
   MEDDLY_DCASSERT(isActive(p));
 
@@ -1585,8 +1574,7 @@ inline bool
 MEDDLY::node_headers::hasReachableBit(node_handle p) const
 {
   if (p<1) return 1;    // terminal node
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
 
 #ifdef OLD_NODE_HEADERS
 
@@ -1628,8 +1616,7 @@ MEDDLY::node_headers::getNodeImplicitFlag(node_handle p) const
 {
 #ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
   return address[p].is_implicit;
 #else
   return (implicit_bits) ? implicit_bits->get(size_t(p)) : false;
@@ -1643,8 +1630,7 @@ MEDDLY::node_headers::setNodeImplicitFlag(node_handle p, bool flag)
 {
 #ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
   address[p].is_implicit = flag;
 #else
   if (implicit_bits) {
@@ -1668,13 +1654,13 @@ inline size_t
 MEDDLY::node_headers::getNextOf(size_t p) const
 #endif
 {
-  MEDDLY_DCASSERT(p>0);
 #ifdef OLD_NODE_HEADERS
-  MEDDLY_DCASSERT(p<=a_size);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
   MEDDLY_DCASSERT(address);
   MEDDLY_DCASSERT(0==address[p].level);
   return address[p].offset;
 #else
+  MEDDLY_DCASSERT(p>0);
   MEDDLY_DCASSERT(addresses);
   MEDDLY_DCASSERT(levels);
   MEDDLY_DCASSERT(0==levels->get(size_t(p)));
@@ -1691,8 +1677,7 @@ MEDDLY::node_headers::setNextOf(node_handle p, node_handle n)
 MEDDLY::node_headers::setNextOf(size_t p, size_t n)
 #endif
 {
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+a_last);
   MEDDLY_DCASSERT(n>=0);
 #ifdef OLD_NODE_HEADERS
   MEDDLY_DCASSERT(address);
@@ -2716,7 +2701,7 @@ inline MEDDLY::dd_edge*
 MEDDLY::satpregen_opname::pregen_relation::arrayForLevel(int k) const
 {
   MEDDLY_DCASSERT(isFinalized());
-  MEDDLY_CHECK_RANGE(1, k, K + 1);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, k, K + 1);
   if (level_index) {
     // "by events"
     if (level_index[k - 1] > level_index[k]) {
@@ -2737,7 +2722,7 @@ inline unsigned
 MEDDLY::satpregen_opname::pregen_relation::lengthForLevel(int k) const
 {
   MEDDLY_DCASSERT(isFinalized());
-  MEDDLY_CHECK_RANGE(1, k, K + 1);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, k, K + 1);
   if (level_index) {
     // "by events"
     return level_index[k - 1] - level_index[k];
@@ -2846,14 +2831,14 @@ MEDDLY::satotf_opname::otf_relation::isConfirmed(int level, int i) const
 inline int
 MEDDLY::satotf_opname::otf_relation::getNumOfEvents(int level) const
 {
-  MEDDLY_CHECK_RANGE(1, level, num_levels);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, level, num_levels);
   return num_events_by_top_level[level];
 }
 
 inline const MEDDLY::dd_edge&
 MEDDLY::satotf_opname::otf_relation::getEvent(int level, int i) const
 {
-  MEDDLY_CHECK_RANGE(0, i, getNumOfEvents(level));
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, getNumOfEvents(level));
   return events_by_top_level[level][i]->getRoot();
 }
 
@@ -2861,21 +2846,21 @@ MEDDLY::satotf_opname::otf_relation::getEvent(int level, int i) const
 inline bool
 MEDDLY::satotf_opname::otf_relation::rebuildEvent(int level, int i)
 {
-  MEDDLY_CHECK_RANGE(0, i, getNumOfEvents(level));
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, getNumOfEvents(level));
   return events_by_top_level[level][i]->rebuild();
 }
 
 inline const bool*
 MEDDLY::satotf_opname::otf_relation::getLocalStates(int level)
 {
-  MEDDLY_CHECK_RANGE(0, level, num_levels);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, level, num_levels);
   return confirmed[level];
 }
 
 inline int
 MEDDLY::satotf_opname::otf_relation::getNumConfirmed(int level) const
 {
-  MEDDLY_CHECK_RANGE(0, level, num_levels);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, level, num_levels);
   return num_confirmed[level];
 }
 
@@ -3273,28 +3258,28 @@ MEDDLY::compute_table::entry_key::getET() const
 
 inline void MEDDLY::compute_table::entry_key::writeN(node_handle nh)
 {
-  MEDDLY_CHECK_RANGE(0, currslot, total_slots);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
   MEDDLY_DCASSERT(compute_table::NODE == theSlotType());
   data[currslot++].N = nh;
 }
 
 inline void MEDDLY::compute_table::entry_key::writeI(int i)
 {
-  MEDDLY_CHECK_RANGE(0, currslot, total_slots);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
   MEDDLY_DCASSERT(compute_table::INTEGER == theSlotType());
   data[currslot++].I = i;
 }
 
 inline void MEDDLY::compute_table::entry_key::writeL(long i)
 {
-  MEDDLY_CHECK_RANGE(0, currslot, total_slots);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
   MEDDLY_DCASSERT(compute_table::LONG == theSlotType());
   data[currslot++].L = i;
 }
 
 inline void MEDDLY::compute_table::entry_key::writeF(float f)
 {
-  MEDDLY_CHECK_RANGE(0, currslot, total_slots);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
   MEDDLY_DCASSERT(compute_table::FLOAT == theSlotType());
   data[currslot++].F = f;
 }
@@ -3629,7 +3614,7 @@ inline unsigned MEDDLY::compute_table::entry_type
 inline void MEDDLY::compute_table::entry_type
 ::getResultType(unsigned i, typeID &t, expert_forest* &f) const
 {
-  MEDDLY_CHECK_RANGE(0, i, len_r_type);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, len_r_type);
   MEDDLY_DCASSERT(r_type);
   MEDDLY_DCASSERT(r_forest);
   t = r_type[i];
@@ -3639,7 +3624,7 @@ inline void MEDDLY::compute_table::entry_type
 inline MEDDLY::compute_table::typeID MEDDLY::compute_table::entry_type
 ::getResultType(unsigned i) const
 {
-  MEDDLY_CHECK_RANGE(0, i, len_r_type);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, len_r_type);
   MEDDLY_DCASSERT(r_type);
   return r_type[i];
 }
@@ -3647,7 +3632,7 @@ inline MEDDLY::compute_table::typeID MEDDLY::compute_table::entry_type
 inline MEDDLY::expert_forest* MEDDLY::compute_table::entry_type
 ::getResultForest(unsigned i) const
 {
-  MEDDLY_CHECK_RANGE(0, i, len_r_type);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, len_r_type);
   MEDDLY_DCASSERT(r_forest);
   return r_forest[i];
 }
@@ -3733,16 +3718,16 @@ inline const MEDDLY::compute_table::entry_type*
 MEDDLY::compute_table::getEntryType(operation* op, unsigned slot)
 {
   MEDDLY_DCASSERT(op);
-  MEDDLY_CHECK_RANGE(0, slot, op->getNumETids());
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, slot, op->getNumETids());
   unsigned etid = op->getFirstETid() + slot;
-  MEDDLY_CHECK_RANGE(0, etid, entryInfoSize);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, etid, entryInfoSize);
   return entryInfo[etid];
 }
 
 inline const MEDDLY::compute_table::entry_type*
 MEDDLY::compute_table::getEntryType(unsigned etid)
 {
-  MEDDLY_CHECK_RANGE(0, etid, entryInfoSize);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, etid, entryInfoSize);
   return entryInfo[etid];
 }
 
@@ -3777,7 +3762,7 @@ MEDDLY::operation::unregisterInForest(MEDDLY::forest* f)
 inline void
 MEDDLY::operation::registerEntryType(unsigned slot, compute_table::entry_type* et)
 {
-  MEDDLY_CHECK_RANGE(0, slot, num_etids);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, slot, num_etids);
   MEDDLY_DCASSERT(etype);
   MEDDLY_DCASSERT(0==etype[slot]);
   etype[slot] = et;
@@ -3817,7 +3802,7 @@ MEDDLY::operation::getIndex() const
 inline MEDDLY::operation*
 MEDDLY::operation::getOpWithIndex(unsigned i)
 {
-  MEDDLY_CHECK_RANGE(0, i, list_size);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, list_size);
   return op_list[i];
 }
 

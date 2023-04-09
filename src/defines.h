@@ -151,8 +151,27 @@ namespace MEDDLY {
 // Use this for range checking assertions that should succeed.
 #ifdef RANGE_CHECK_ON
 #include <cassert>
+#include <cstdio>
+namespace MEDDLY {
+    inline void CHECK_RANGE(const char* fn, unsigned ln,
+            long min, long value, long max)
+    {
+        if (value >= max || value < min) {
+            fprintf(stderr, "Check range at %s line %u failed:\n", fn, ln);
+            fprintf(stderr, "    min: %ld\n    val: %ld\n    max: %ld\n",
+                    min, value, max);
+            assert(false);
+        }
+    }
+}
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX) { assert(VALUE < MAX); assert(VALUE >= MIN); }
 #else
+namespace MEDDLY {
+    inline void CHECK_RANGE(const char*, unsigned, long, long, long)
+    {
+    }
+}
+
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
 #endif
 
