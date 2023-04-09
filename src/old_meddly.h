@@ -504,54 +504,6 @@ namespace MEDDLY {
 
 
 // ******************************************************************
-// *                                                                *
-// *                         memstats class                         *
-// *                                                                *
-// ******************************************************************
-
-  /**
-    Class for memory statistics.
-  */
-  class MEDDLY::memstats {
-    public:
-      memstats();
-
-      void incMemUsed(size_t b);
-      void decMemUsed(size_t b);
-      void incMemAlloc(size_t b);
-      void decMemAlloc(size_t b);
-
-      void zeroMemUsed();
-      void zeroMemAlloc();
-
-      size_t getMemUsed() const;
-      size_t getMemAlloc() const;
-      size_t getPeakMemUsed() const;
-      size_t getPeakMemAlloc() const;
-
-      static size_t getGlobalMemUsed();
-      static size_t getGlobalMemAlloc();
-      static size_t getGlobalPeakMemUsed();
-      static size_t getGlobalPeakMemAlloc();
-
-    private:
-      /// Current memory used
-      size_t memory_used;
-      /// Current memory allocated
-      size_t memory_alloc;
-      /// Peak memory used
-      size_t peak_memory_used;
-      /// Peak memory allocated
-      size_t peak_memory_alloc;
-
-      // global memory usage
-      static size_t global_memory_used;
-      static size_t global_memory_alloc;
-      static size_t global_peak_used;
-      static size_t global_peak_alloc;
-  };
-
-// ******************************************************************
 // ******************************************************************
 // ******************************************************************
 // ******************************************************************
@@ -563,6 +515,8 @@ namespace MEDDLY {
 // *                                                                *
 // *                                                                *
 // ******************************************************************
+
+#include "memstats.h"   // needed by forest
 
 /** Forest class.
     Abstract base class.

@@ -16,22 +16,25 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef _MEDDLY_NOINST_
-
-#include "old_meddly.h"
-#include "old_meddly.hh"
-
-#include "error.h"
-#include "io.h"
 #include "memstats.h"
 
-#else
+//
+// static members
+//
+size_t MEDDLY::memstats::global_memory_used = 0;
+size_t MEDDLY::memstats::global_memory_alloc = 0;
+size_t MEDDLY::memstats::global_peak_used = 0;
+size_t MEDDLY::memstats::global_peak_alloc = 0;
 
-#include "meddly/old_meddly.h"
-#include "meddly/old_meddly.hh"
+//
+// non-inlined methods
+//
 
-#include "meddly/error.h"
-#include "meddly/io.h"
-#include "meddly/memstats.h"
+MEDDLY::memstats::memstats()
+{
+  memory_used = 0;
+  memory_alloc = 0;
+  peak_memory_used = 0;
+  peak_memory_alloc = 0;
+}
 
-#endif

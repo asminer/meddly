@@ -16,6 +16,7 @@ libmeddly_la_SOURCES = \
   old_meddly.cc \
   error.cc \
   io.cc \
+  memstats.cc \
   node_headers.cc \
   node_wrappers.cc \
   ops.cc \
@@ -120,7 +121,7 @@ libmeddly_la_SOURCES = \
 
 include_HEADERS = meddly.h meddly_expert.h
 
-pkginclude_HEADERS = error.h io.h \
+pkginclude_HEADERS = error.h io.h memstats.h \
                      old_meddly.h old_meddly.hh \
                      old_meddly_expert.h old_meddly_expert.hh
 

@@ -48,14 +48,6 @@ namespace MEDDLY {
 
   bool libraryRunning = 0;
 
-  //
-  // memory stats
-  //
-  size_t memstats::global_memory_used = 0;
-  size_t memstats::global_memory_alloc = 0;
-  size_t memstats::global_peak_used = 0;
-  size_t memstats::global_peak_alloc = 0;
-
   // cache of operations
   operation** op_cache = 0;
   // size of cache
@@ -91,18 +83,6 @@ namespace MEDDLY {
   void destroyOpInternal(operation* op);
 
 };
-
-//----------------------------------------------------------------------
-// front end - memstats class
-//----------------------------------------------------------------------
-
-MEDDLY::memstats::memstats()
-{
-  memory_used = 0;
-  memory_alloc = 0;
-  peak_memory_used = 0;
-  peak_memory_alloc = 0;
-}
 
 //----------------------------------------------------------------------
 // front end - unary operations
