@@ -31,37 +31,6 @@
 
 // ******************************************************************
 // *                                                                *
-// *                 inlined  expert_domain methods                 *
-// *                                                                *
-// ******************************************************************
-
-inline MEDDLY::expert_variable*
-MEDDLY::expert_domain::getExpertVar(int lev) const
-{
-  return (expert_variable*) vars[lev];
-}
-
-inline const MEDDLY::expert_variable*
-MEDDLY::expert_domain::readExpertVar(int lev) const
-{
-  return (expert_variable*) vars[lev];
-}
-
-inline void
-MEDDLY::expert_domain::enlargeVariableBound(int vh, bool prime, int b)
-{
-  getExpertVar(vh)->enlargeBound(prime, b);
-}
-
-inline void
-MEDDLY::expert_domain::shrinkVariableBound(int vh, int b, bool force)
-{
-  getExpertVar(vh)->shrinkBound(b, force);
-}
-
-
-// ******************************************************************
-// *                                                                *
 // *                 inlined  unpacked_node methods                 *
 // *                                                                *
 // ******************************************************************

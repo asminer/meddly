@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -24,10 +23,14 @@
 
 
 #include "defines.h"
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
+#include "domain.h"
+#include "io.h"
+
+
+// #include "old_meddly.h"
+// #include "old_meddly.hh"
+// #include "old_meddly_expert.h"
+// #include "old_meddly_expert.hh"
 
 #include "unique_table.h"
 

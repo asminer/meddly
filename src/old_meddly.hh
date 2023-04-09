@@ -397,42 +397,6 @@ inline void MEDDLY::forest::visitRegisteredEdges(edge_visitor &ev) {
 // end of class forest
 
 
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                          domain class                          *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-
-#include "variable.h"
-#include "varorder.h"
-
-inline int MEDDLY::domain::getNumVariables() const { return nVars; }
-
-inline int
-MEDDLY::domain::getVariableBound(int lev, bool prime) const {
-  return vars[lev]->getBound(prime);
-}
-
-inline const MEDDLY::variable* MEDDLY::domain::getVar(int var) const {
-  return vars[var];
-}
-
-inline MEDDLY::variable* MEDDLY::domain::useVar(int lev) { return vars[lev]; }
-
-inline bool MEDDLY::domain::hasForests() const { return forests; }
-
-inline bool MEDDLY::domain::isMarkedForDeletion() const {
-  return is_marked_for_deletion;
-}
-
-inline std::shared_ptr<const MEDDLY::variable_order> MEDDLY::domain::makeDefaultVariableOrder() {
-  return default_var_order;
-}
-
-inline int MEDDLY::domain::ID() const { return my_index; }
-
 
 // ******************************************************************
 // *                                                                *

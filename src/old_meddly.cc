@@ -27,6 +27,10 @@
 #include "config.h"
 #endif
 #include "defines.h"
+
+#include "variable.h"
+#include "domain.h"
+
 #include "old_meddly.h"
 #include "old_meddly.hh"
 #include "old_meddly_expert.h"
