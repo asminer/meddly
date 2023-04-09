@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "union.h"
 #include "apply_base.h"
 
@@ -49,7 +53,7 @@ class MEDDLY::union_mdd : public generic_binary_mdd {
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::union_mdd::union_mdd(const binary_opname* opcode, 
+MEDDLY::union_mdd::union_mdd(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
@@ -70,21 +74,21 @@ bool MEDDLY::union_mdd::checkTerminals(node_handle a, node_handle b, node_handle
     if (arg2F == resF) {
       c = resF->linkNode(b);
       return true;
-    } 
+    }
     return false;
   }
   if (b == 0) {
     if (arg1F == resF) {
       c = resF->linkNode(a);
       return true;
-    } 
+    }
     return false;
   }
   if (a == b) {
     if (arg1F == arg2F && arg1F == resF) {
       c = resF->linkNode(b);
       return true;
-    } 
+    }
     return false;
   }
   return false;
@@ -108,7 +112,7 @@ class MEDDLY::union_mxd : public generic_binary_mxd {
     virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
 };
 
-MEDDLY::union_mxd::union_mxd(const binary_opname* opcode, 
+MEDDLY::union_mxd::union_mxd(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
@@ -152,8 +156,8 @@ bool MEDDLY::union_mxd::checkTerminals(node_handle a, node_handle b, node_handle
   return false;
 }
 
-MEDDLY::node_handle 
-MEDDLY::union_mxd::compute_ext(node_handle a, node_handle b) 
+MEDDLY::node_handle
+MEDDLY::union_mxd::compute_ext(node_handle a, node_handle b)
 {
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
@@ -165,7 +169,7 @@ MEDDLY::union_mxd::compute_ext(node_handle a, node_handle b)
   const int dwnLevel = resF->downLevel(resultLevel);
 
   // Initialize readers
-  unpacked_node *A = (aLevel < resultLevel) 
+  unpacked_node *A = (aLevel < resultLevel)
     ? unpacked_node::newRedundant(arg1F, resultLevel, a, false)
     : unpacked_node::newFromNode(arg1F, a, false)
     ;
@@ -537,7 +541,7 @@ bool MEDDLY::union_min_evplus_mxd::checkTerminals(long aev, node_handle a, long 
 class MEDDLY::union_opname : public binary_opname {
   public:
     union_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1, 
+    virtual binary_operation* buildOperation(expert_forest* a1,
       expert_forest* a2, expert_forest* r) const;
 };
 
@@ -546,15 +550,15 @@ MEDDLY::union_opname::union_opname()
 {
 }
 
-MEDDLY::binary_operation* 
-MEDDLY::union_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+MEDDLY::binary_operation*
+MEDDLY::union_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   expert_forest* r) const
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
-  if (  
-    (a1->getDomain() != r->getDomain()) || 
-    (a2->getDomain() != r->getDomain()) 
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
@@ -562,7 +566,7 @@ MEDDLY::union_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->isForRelations() != r->isForRelations()) ||
     (a2->isForRelations() != r->isForRelations()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling()) 
+    (a2->getEdgeLabeling() != r->getEdgeLabeling())
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 

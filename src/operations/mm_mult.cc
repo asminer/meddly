@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -22,6 +22,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "mm_mult.h"
 
 // #define TRACE_ALL_OPS
@@ -56,8 +60,8 @@ class MEDDLY::mm_mult_op : public binary_operation {
     mm_mult_op(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
-    inline compute_table::entry_key* 
-    findResult(node_handle a, node_handle b, node_handle &c) 
+    inline compute_table::entry_key*
+    findResult(node_handle a, node_handle b, node_handle &c)
     {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
@@ -69,8 +73,8 @@ class MEDDLY::mm_mult_op : public binary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::entry_key* Key, 
-      node_handle a, node_handle b, node_handle c) 
+    inline node_handle saveResult(compute_table::entry_key* Key,
+      node_handle a, node_handle b, node_handle c)
     {
       CTresult[0].reset();
       CTresult[0].writeN(c);
@@ -136,7 +140,7 @@ class MEDDLY::mm_mult_mxd: public mm_mult_op {
     virtual node_handle processTerminals(node_handle a, node_handle b) = 0;
 };
 
-MEDDLY::mm_mult_mxd::mm_mult_mxd(const binary_opname* oc, 
+MEDDLY::mm_mult_mxd::mm_mult_mxd(const binary_opname* oc,
   expert_forest* a1, expert_forest* a2, expert_forest* res,
   binary_operation* acc)
 : mm_mult_op(oc, a1, a2, res, acc)
@@ -187,7 +191,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
   // No primed levels at this point
   MEDDLY_DCASSERT(aLevel >= 0);
   MEDDLY_DCASSERT(bLevel >= 0);
-  
+
   // Create a node builder for the result.
   int rLevel = MAX(aLevel, bLevel);
   unsigned rSize = unsigned(resF->getLevelSize(rLevel));
@@ -252,7 +256,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     // For all i, j and k, r[i][k] += compute_rec(a[i][j], b[j][k])
     MEDDLY_DCASSERT(aLevel == rLevel);
     MEDDLY_DCASSERT(bLevel == rLevel);
-    
+
     // Node readers for a, b and all b[j].
     unpacked_node* nra = unpacked_node::useUnpackedNode();
     nra->initFromNode(arg1F, a, false);
@@ -313,7 +317,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
 #ifdef TRACE_ALL_OPS
   printf("computed new mm_mult_mxd(%d, %d) = %d\n", a, b, result);
 #endif
-  return saveResult(Key, a, b, result); 
+  return saveResult(Key, a, b, result);
 }
 
 
@@ -371,7 +375,7 @@ namespace MEDDLY {
 class MEDDLY::mm_mult_opname : public binary_opname {
   public:
     mm_mult_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1, 
+    virtual binary_operation* buildOperation(expert_forest* a1,
       expert_forest* a2, expert_forest* r) const;
 };
 
@@ -380,15 +384,15 @@ MEDDLY::mm_mult_opname::mm_mult_opname()
 {
 }
 
-MEDDLY::binary_operation* 
-MEDDLY::mm_mult_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+MEDDLY::binary_operation*
+MEDDLY::mm_mult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   expert_forest* r) const
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
-  if (  
-    (a1->getDomain() != r->getDomain()) || 
-    (a2->getDomain() != r->getDomain()) 
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
@@ -401,7 +405,7 @@ MEDDLY::mm_mult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     !r->isForRelations()    ||
     (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
     (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
-    (r->getEdgeLabeling()  != forest::MULTI_TERMINAL) 
+    (r->getEdgeLabeling()  != forest::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
@@ -413,7 +417,7 @@ MEDDLY::mm_mult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 
     case forest::REAL:
       return new mm_mult_mt<float>(this, a1, a2, r, acc);
-      
+
     default:
       throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   }

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -56,12 +56,12 @@
 // *                                                                    *
 // **********************************************************************
 
-MEDDLY::monolithic_chained_style::monolithic_chained_style() 
-{ 
+MEDDLY::monolithic_chained_style::monolithic_chained_style()
+{
 }
 
-MEDDLY::compute_table* 
-MEDDLY::monolithic_chained_style::create(const ct_initializer::settings &s) const 
+MEDDLY::compute_table*
+MEDDLY::monolithic_chained_style::create(const ct_initializer::settings &s) const
 {
   switch (s.compression) {
     case ct_initializer::None:
@@ -73,7 +73,7 @@ MEDDLY::monolithic_chained_style::create(const ct_initializer::settings &s) cons
   }
 }
 
-bool MEDDLY::monolithic_chained_style::usesMonolithic() const 
+bool MEDDLY::monolithic_chained_style::usesMonolithic() const
 {
   return true;
 }
@@ -85,12 +85,12 @@ bool MEDDLY::monolithic_chained_style::usesMonolithic() const
 // **********************************************************************
 
 
-MEDDLY::monolithic_unchained_style::monolithic_unchained_style() 
-{ 
+MEDDLY::monolithic_unchained_style::monolithic_unchained_style()
+{
 }
 
-MEDDLY::compute_table* 
-MEDDLY::monolithic_unchained_style::create(const ct_initializer::settings &s) const 
+MEDDLY::compute_table*
+MEDDLY::monolithic_unchained_style::create(const ct_initializer::settings &s) const
 {
   switch (s.compression) {
     case ct_initializer::None:
@@ -102,7 +102,7 @@ MEDDLY::monolithic_unchained_style::create(const ct_initializer::settings &s) co
   }
 }
 
-bool MEDDLY::monolithic_unchained_style::usesMonolithic() const 
+bool MEDDLY::monolithic_unchained_style::usesMonolithic() const
 {
   return true;
 }
@@ -113,12 +113,12 @@ bool MEDDLY::monolithic_unchained_style::usesMonolithic() const
 // *                                                                    *
 // **********************************************************************
 
-MEDDLY::operation_chained_style::operation_chained_style() 
-{ 
+MEDDLY::operation_chained_style::operation_chained_style()
+{
 }
 
-MEDDLY::compute_table* 
-MEDDLY::operation_chained_style::create(const ct_initializer::settings &s, operation* op, unsigned slot) const 
+MEDDLY::compute_table*
+MEDDLY::operation_chained_style::create(const ct_initializer::settings &s, operation* op, unsigned slot) const
 {
   switch (s.compression) {
     case ct_initializer::None:
@@ -130,7 +130,7 @@ MEDDLY::operation_chained_style::create(const ct_initializer::settings &s, opera
   }
 }
 
-bool MEDDLY::operation_chained_style::usesMonolithic() const 
+bool MEDDLY::operation_chained_style::usesMonolithic() const
 {
   return false;
 }
@@ -143,12 +143,12 @@ bool MEDDLY::operation_chained_style::usesMonolithic() const
 // **********************************************************************
 
 
-MEDDLY::operation_unchained_style::operation_unchained_style() 
-{ 
+MEDDLY::operation_unchained_style::operation_unchained_style()
+{
 }
 
-MEDDLY::compute_table* 
-MEDDLY::operation_unchained_style::create(const ct_initializer::settings &s, operation* op, unsigned slot) const 
+MEDDLY::compute_table*
+MEDDLY::operation_unchained_style::create(const ct_initializer::settings &s, operation* op, unsigned slot) const
 {
   switch (s.compression) {
     case ct_initializer::None:
@@ -160,7 +160,7 @@ MEDDLY::operation_unchained_style::create(const ct_initializer::settings &s, ope
   }
 }
 
-bool MEDDLY::operation_unchained_style::usesMonolithic() const 
+bool MEDDLY::operation_unchained_style::usesMonolithic() const
 {
   return false;
 }

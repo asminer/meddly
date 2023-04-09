@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "copy.h"
 
 // #define DEBUG_COPY_COMPUTE_ALL
@@ -46,8 +50,8 @@ class MEDDLY::copy_MT : public unary_operation {
   protected:
     virtual node_handle compute_r(node_handle a) = 0;
 
-    inline compute_table::entry_key* 
-    findResult(node_handle a, node_handle &b) 
+    inline compute_table::entry_key*
+    findResult(node_handle a, node_handle &b)
     {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
@@ -58,8 +62,8 @@ class MEDDLY::copy_MT : public unary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::entry_key* Key, 
-      node_handle a, node_handle b) 
+    inline node_handle saveResult(compute_table::entry_key* Key,
+      node_handle a, node_handle b)
     {
       CTresult[0].reset();
       CTresult[0].writeN(b);
@@ -107,7 +111,7 @@ namespace MEDDLY {
           return computeAll(-1, resF->getNumVariables(), a);
         }
       }
-  
+
       node_handle computeSkip(int in, node_handle a);
       node_handle computeAll(int in, int k, node_handle a);
   };
@@ -169,7 +173,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
 
   // 0 is 0 is 0, I think...
   if (0==a) {
-    return 0; 
+    return 0;
   }
 
 #ifdef DEBUG_COPY_COMPUTE_ALL
@@ -241,13 +245,13 @@ namespace MEDDLY {
   template <typename TYPE>
   class copy_MT2EV : public unary_operation {
     public:
-      copy_MT2EV(const unary_opname* oc, expert_forest* arg, expert_forest* res, 
+      copy_MT2EV(const unary_opname* oc, expert_forest* arg, expert_forest* res,
         const char* pattern) : unary_operation(oc, 1, arg, res)
       {
         //
         // Pattern should be of the form "N:xN" where x is the EV Type.
         //
-        // entry[0]: mt node 
+        // entry[0]: mt node
         // entry[1]: EV value (output)
         // entry[2]: EV node (output)
         //
@@ -273,8 +277,8 @@ namespace MEDDLY {
       void computeAll(int in, int k, node_handle a, node_handle &b, TYPE &bev);
 
     protected:
-      inline compute_table::entry_key* 
-      inCache(node_handle a, node_handle &b, TYPE &bev) 
+      inline compute_table::entry_key*
+      inCache(node_handle a, node_handle &b, TYPE &bev)
       {
         compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
         MEDDLY_DCASSERT(CTsrch);
@@ -290,7 +294,7 @@ namespace MEDDLY {
       }
 
       inline void addToCache(compute_table::entry_key* Key,
-        node_handle a, node_handle b, long bev) 
+        node_handle a, node_handle b, long bev)
       {
         MEDDLY_DCASSERT(bev != Inf<long>());
         CTresult[0].reset();
@@ -300,7 +304,7 @@ namespace MEDDLY {
       }
 
       inline void addToCache(compute_table::entry_key* Key,
-        node_handle a, node_handle b, float bev) 
+        node_handle a, node_handle b, float bev)
       {
         MEDDLY_DCASSERT(bev != Inf<float>());
         CTresult[0].reset();
@@ -441,7 +445,7 @@ namespace MEDDLY {
   template <typename TYPE, class OP>
   class copy_EV2MT : public unary_operation {
     public:
-      copy_EV2MT(const unary_opname* oc, expert_forest* arg, expert_forest* res, 
+      copy_EV2MT(const unary_opname* oc, expert_forest* arg, expert_forest* res,
         const char* pattern) : unary_operation(oc, 1, arg, res)
       {
         //
@@ -474,8 +478,8 @@ namespace MEDDLY {
       node_handle computeAll(int in, int k, TYPE ev, node_handle a);
 
     protected:
-      inline compute_table::entry_key* 
-      inCache(TYPE ev, node_handle a, node_handle &b) 
+      inline compute_table::entry_key*
+      inCache(TYPE ev, node_handle a, node_handle &b)
       {
         compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
         MEDDLY_DCASSERT(CTsrch);
@@ -490,8 +494,8 @@ namespace MEDDLY {
         return CTsrch;
       }
 
-      inline void addToCache(compute_table::entry_key* Key, 
-        TYPE ev, node_handle a, node_handle b) 
+      inline void addToCache(compute_table::entry_key* Key,
+        TYPE ev, node_handle a, node_handle b)
       {
         CTresult[0].reset();
         CTresult[0].writeN(b);
@@ -633,11 +637,11 @@ namespace MEDDLY {
   template <typename INTYPE, typename OUTTYPE>
   class copy_EV2EV_fast : public unary_operation {
     public:
-      copy_EV2EV_fast(const unary_opname* oc, expert_forest* arg, 
+      copy_EV2EV_fast(const unary_opname* oc, expert_forest* arg,
         expert_forest* res) : unary_operation(oc, 1, arg, res)
       {
         // entry[0]: EV node
-        // entry[1]: EV node 
+        // entry[1]: EV node
         compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:N");
         et->setForestForSlot(0, arg);
         et->setForestForSlot(2, res);
@@ -657,8 +661,8 @@ namespace MEDDLY {
       node_handle computeSkip(int in, node_handle a);
 
     protected:
-      inline compute_table::entry_key* 
-      findResult(node_handle a, node_handle &b) 
+      inline compute_table::entry_key*
+      findResult(node_handle a, node_handle &b)
       {
         compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
         MEDDLY_DCASSERT(CTsrch);
@@ -670,7 +674,7 @@ namespace MEDDLY {
         return 0;
       }
       inline node_handle saveResult(compute_table::entry_key* Key,
-        node_handle a, node_handle b) 
+        node_handle a, node_handle b)
       {
         CTresult[0].reset();
         CTresult[0].writeN(b);
@@ -682,7 +686,7 @@ namespace MEDDLY {
 };  // namespace MEDDLY
 
 template <typename INTYPE, typename OUTTYPE>
-MEDDLY::node_handle 
+MEDDLY::node_handle
 MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
 {
   // Check terminals
@@ -738,7 +742,7 @@ namespace MEDDLY {
   template <typename INTYPE, class INOP, typename OUTTYPE>
   class copy_EV2EV_slow : public unary_operation {
     public:
-      copy_EV2EV_slow(const unary_opname* oc, expert_forest* arg, expert_forest* res, 
+      copy_EV2EV_slow(const unary_opname* oc, expert_forest* arg, expert_forest* res,
         const char* pattern) : unary_operation(oc, 1, arg, res)
       {
         //
@@ -747,7 +751,7 @@ namespace MEDDLY {
         // entry[0]: EV value
         // entry[1]: EV node
         // entry[2]: EV value
-        // entry[3]: EV node 
+        // entry[3]: EV node
         //
         compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), pattern);
         et->setForestForSlot(1, arg);
@@ -776,8 +780,8 @@ namespace MEDDLY {
         OUTTYPE &bv, node_handle &bn);
 
     protected:
-      inline compute_table::entry_key* 
-      inCache(INTYPE av, node_handle an, OUTTYPE &bv, node_handle &bn) 
+      inline compute_table::entry_key*
+      inCache(INTYPE av, node_handle an, OUTTYPE &bv, node_handle &bn)
       {
         compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
         MEDDLY_DCASSERT(CTsrch);
@@ -818,7 +822,7 @@ namespace MEDDLY {
 
 template <typename INTYPE, class INOP, typename OUTTYPE>
 void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
-::computeAll(int in, int k, INTYPE av, node_handle an, 
+::computeAll(int in, int k, INTYPE av, node_handle an,
   OUTTYPE &bv, node_handle &bn)
 {
   // Check terminals
@@ -894,7 +898,7 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
 class MEDDLY::copy_opname : public unary_opname {
   public:
     copy_opname();
-    virtual unary_operation* 
+    virtual unary_operation*
       buildOperation(expert_forest* ar, expert_forest* res) const;
 
 
@@ -934,7 +938,7 @@ MEDDLY::copy_opname
 
   if (arg->isMultiTerminal() && res->isMultiTerminal())
   {
-    // 
+    //
     // MT copies, handled by the new template class!
     //
     switch (res->getRangeType()) {
@@ -957,10 +961,10 @@ MEDDLY::copy_opname
   // Must be at least one EV forest
   //
 
-  if (arg->isMultiTerminal() && 
-    (res->isEVPlus() || res->isEVTimes())) 
+  if (arg->isMultiTerminal() &&
+    (res->isEVPlus() || res->isEVTimes()))
   {
-    // 
+    //
     // MT to EV conversion
     //
     switch (res->getRangeType()) {
@@ -1021,7 +1025,7 @@ MEDDLY::copy_opname
   //
   if (arg->getReductionRule() == res->getReductionRule()) {
 
-    if ( ((arg->isEVPlus() || arg->isIndexSet()) && res->isEVPlus()) 
+    if ( ((arg->isEVPlus() || arg->isIndexSet()) && res->isEVPlus())
        || (arg->isEVTimes() && res->isEVTimes()) )
     {
 
@@ -1071,7 +1075,7 @@ MEDDLY::copy_opname
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
-        
+
       case forest::REAL:
           switch (res->getRangeType()) {
             case forest::INTEGER:
@@ -1103,7 +1107,7 @@ MEDDLY::copy_opname
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
-        
+
       case forest::REAL:
           switch (res->getRangeType()) {
             case forest::INTEGER:

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -51,11 +51,11 @@ MEDDLY::generic_binary_mdd::~generic_binary_mdd()
 {
 }
 
-void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &b, 
+void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &b,
   dd_edge &c, bool userFlag)
 {
 #ifdef TRACE_ALL_OPS
-  printf("computing Top %s(%d, %d)\n", 
+  printf("computing Top %s(%d, %d)\n",
     getName(), a.getNode(), b.getNode()
   );
 #endif
@@ -68,7 +68,7 @@ void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &
     cnode = temp;
   }
 #ifdef TRACE_ALL_OPS
-  printf("completed Top %s(%d, %d) = %d\n", 
+  printf("completed Top %s(%d, %d) = %d\n",
     getName(), a.getNode(), b.getNode(), cnode);
 #endif
   c.set(cnode);
@@ -77,7 +77,7 @@ void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &
 #endif
 }
 
-MEDDLY::node_handle 
+MEDDLY::node_handle
 MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
 {
   node_handle result = 0;
@@ -104,7 +104,7 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
   const int bLevel = arg2F->getNodeLevel(b);
   const int resultLevel = MAX(aLevel, bLevel);
 
-  result = 
+  result =
     resF->isExtensibleLevel(resultLevel)
     ? compute_ext(a, b)
     : compute_normal(a, b);
@@ -120,7 +120,7 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
   return result;
 }
 
-MEDDLY::node_handle 
+MEDDLY::node_handle
 MEDDLY::generic_binary_mdd::compute_normal(node_handle a, node_handle b)
 {
   // Get level information
@@ -135,7 +135,7 @@ MEDDLY::generic_binary_mdd::compute_normal(node_handle a, node_handle b)
   MEDDLY_DCASSERT(!C->isExtensible());
 
   // Initialize readers
-  unpacked_node *A = (aLevel < resultLevel) 
+  unpacked_node *A = (aLevel < resultLevel)
     ? unpacked_node::newRedundant(arg1F, resultLevel, a, true)
     : unpacked_node::newFromNode(arg1F, a, true)
   ;
@@ -178,8 +178,8 @@ MEDDLY::generic_binary_mdd::compute_normal(node_handle a, node_handle b)
 
 #ifdef USING_SPARSE
 
-MEDDLY::node_handle 
-MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b) 
+MEDDLY::node_handle
+MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
 {
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
@@ -189,7 +189,7 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
   MEDDLY_DCASSERT(resF->isExtensibleLevel(resultLevel));
 
   // Initialize readers
-  unpacked_node *A = (aLevel < resultLevel) 
+  unpacked_node *A = (aLevel < resultLevel)
     ? unpacked_node::newRedundant(arg1F, resultLevel, a, false)
     : unpacked_node::newFromNode(arg1F, a, false)
     ;
@@ -223,7 +223,7 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
   //         [0,min(a_last_index,b_last_index)]
   // Loop 2: deal with indices in
   //         [min(a_last_index,b_last_index)+1, max(a_last_index,b_last_index)]
-  // 
+  //
   // Last index: result of A_ext_d and B_ext_d
 
   int resultSize = max_a_b_last_index + 1 + (C_is_extensible? 1: 0);
@@ -306,8 +306,8 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
 
 #else
 
-MEDDLY::node_handle 
-MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b) 
+MEDDLY::node_handle
+MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
 {
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
@@ -317,7 +317,7 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
   MEDDLY_DCASSERT(resF->isExtensibleLevel(resultLevel));
 
   // Initialize readers
-  unpacked_node *A = (aLevel < resultLevel) 
+  unpacked_node *A = (aLevel < resultLevel)
     ? unpacked_node::newRedundant(arg1F, resultLevel, a, true)
     : unpacked_node::newFromNode(arg1F, a, true)
     ;
@@ -345,7 +345,7 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
   //         [0,min(a_last_index,b_last_index)]
   // Loop 2: deal with indices in
   //         [min(a_last_index,b_last_index)+1, max(a_last_index,b_last_index)]
-  // 
+  //
   // Last index: result of A_ext_d and B_ext_d
 
   unsigned resultSize = max_size + (C_is_extensible? 1: 0);
@@ -426,7 +426,7 @@ MEDDLY::generic_binary_mxd::~generic_binary_mxd()
 {
 }
 
-void MEDDLY::generic_binary_mxd::computeDDEdge(const dd_edge &a, const dd_edge &b, 
+void MEDDLY::generic_binary_mxd::computeDDEdge(const dd_edge &a, const dd_edge &b,
   dd_edge &c, bool userFlag)
 {
   node_handle cnode = compute(a.getNode(), b.getNode());
@@ -436,8 +436,8 @@ void MEDDLY::generic_binary_mxd::computeDDEdge(const dd_edge &a, const dd_edge &
 #endif
 }
 
-MEDDLY::node_handle 
-MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b) 
+MEDDLY::node_handle
+MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
 {
   //  Compute for the unprimed levels.
   //
@@ -453,7 +453,7 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
   const int bLevel = arg2F->getNodeLevel(b);
   int resultLevel = ABS(topLevel(aLevel, bLevel));
 
-  result = 
+  result =
     resF->isExtensibleLevel(resultLevel)
     ? compute_ext(a, b)
     : compute_normal(a, b);
@@ -470,7 +470,7 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
 }
 
 
-MEDDLY::node_handle 
+MEDDLY::node_handle
 MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle b)
 {
   //  Compute for the primed levels.
@@ -490,7 +490,7 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
   }
   */
 
-  result = 
+  result =
     resF->isExtensibleLevel(k)
     ? compute_r_ext(in, k, a, b)
     : compute_r_normal(in, k, a, b);
@@ -504,8 +504,8 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
   return result;
 }
 
-MEDDLY::node_handle 
-MEDDLY::generic_binary_mxd::compute_normal(node_handle a, node_handle b) 
+MEDDLY::node_handle
+MEDDLY::generic_binary_mxd::compute_normal(node_handle a, node_handle b)
 {
   node_handle result = 0;
 
@@ -521,7 +521,7 @@ MEDDLY::generic_binary_mxd::compute_normal(node_handle a, node_handle b)
   MEDDLY_DCASSERT(!C->isExtensible());
 
   // Initialize readers
-  unpacked_node *A = (aLevel < resultLevel) 
+  unpacked_node *A = (aLevel < resultLevel)
     ? unpacked_node::newRedundant(arg1F, resultLevel, a, true)
     : unpacked_node::newFromNode(arg1F, a, true)
   ;
@@ -549,8 +549,8 @@ MEDDLY::generic_binary_mxd::compute_normal(node_handle a, node_handle b)
 
 #ifdef USING_SPARSE
 
-MEDDLY::node_handle 
-MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b) 
+MEDDLY::node_handle
+MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
 {
   node_handle result = 0;
 
@@ -563,7 +563,7 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   MEDDLY_DCASSERT(resF->isExtensibleLevel(resultLevel));
 
   // Initialize readers
-  unpacked_node *A = (aLevel < resultLevel) 
+  unpacked_node *A = (aLevel < resultLevel)
     ? unpacked_node::newRedundant(arg1F, resultLevel, a, false)
     : unpacked_node::newFromNode(arg1F, a, false)
     ;
@@ -597,7 +597,7 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   //         [0,min(a_last_index,b_last_index)]
   // Loop 2: deal with indices in
   //         [min(a_last_index,b_last_index)+1, max(a_last_index,b_last_index)]
-  // 
+  //
   // Last index: result of A_ext_d and B_ext_d
 
   int resultSize = max_a_b_last_index + 1 + (C_is_extensible? 1: 0);
@@ -669,8 +669,8 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
 
 #else
 
-MEDDLY::node_handle 
-MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b) 
+MEDDLY::node_handle
+MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
 {
   node_handle result = 0;
 
@@ -683,7 +683,7 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   MEDDLY_DCASSERT(resF->isExtensibleLevel(resultLevel));
 
   // Initialize readers
-  unpacked_node *A = (aLevel < resultLevel) 
+  unpacked_node *A = (aLevel < resultLevel)
     ? unpacked_node::newRedundant(arg1F, resultLevel, a, true)
     : unpacked_node::newFromNode(arg1F, a, true)
     ;
@@ -711,7 +711,7 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   //         [0,min(a_last_index,b_last_index)]
   // Loop 2: deal with indices in
   //         [min(a_last_index,b_last_index)+1, max(a_last_index,b_last_index)]
-  // 
+  //
   // Last index: result of A_ext_d and B_ext_d
 
   unsigned resultSize = max_size + (C_is_extensible? 1: 0);
@@ -757,7 +757,7 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
 
 #endif
 
-MEDDLY::node_handle 
+MEDDLY::node_handle
 MEDDLY::generic_binary_mxd::compute_r_normal(int in, int k, node_handle a, node_handle b)
 {
   MEDDLY_DCASSERT(!resF->isExtensibleLevel(k));
@@ -801,7 +801,7 @@ MEDDLY::generic_binary_mxd::compute_r_normal(int in, int k, node_handle a, node_
   unpacked_node::recycle(B);
   unpacked_node::recycle(A);
 
-  // reduce 
+  // reduce
   node_handle result = resF->createReducedNode(in, C);
 
   return result;
@@ -809,7 +809,7 @@ MEDDLY::generic_binary_mxd::compute_r_normal(int in, int k, node_handle a, node_
 
 #ifdef USING_SPARSE
 
-MEDDLY::node_handle 
+MEDDLY::node_handle
 MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_handle b)
 {
   MEDDLY_DCASSERT(resF->isExtensibleLevel(k));
@@ -822,7 +822,7 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
 
   // Initialize readers
   unpacked_node *A =
-  (aLevel == k) 
+  (aLevel == k)
     ? unpacked_node::newFromNode(arg1F, a, false)
     : arg1F->isFullyReduced()
     ? unpacked_node::newRedundant(arg1F, k, a, false)
@@ -834,7 +834,7 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
   const int A_last_index = last_nz >= 0? A->i(last_nz): -1;
 
   unpacked_node *B =
-  (bLevel == k) 
+  (bLevel == k)
     ? unpacked_node::newFromNode(arg2F, b, false)
     : arg2F->isFullyReduced()
     ? unpacked_node::newRedundant(arg2F, k, b, false)
@@ -910,7 +910,7 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
     }
     C->shrinkSparse(nnz);
 
-    // reduce 
+    // reduce
     result = resF->createReducedNode(in, C);
   }
 
@@ -923,7 +923,7 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
 
 #else
 
-MEDDLY::node_handle 
+MEDDLY::node_handle
 MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_handle b)
 {
   MEDDLY_DCASSERT(resF->isExtensibleLevel(k));
@@ -936,7 +936,7 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
 
   // Initialize readers
   unpacked_node *A =
-  (aLevel == k) 
+  (aLevel == k)
     ? unpacked_node::newFromNode(arg1F, a, true)
     : arg1F->isFullyReduced()
     ? unpacked_node::newRedundant(arg1F, k, a, true)
@@ -945,7 +945,7 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
   const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
 
   unpacked_node *B =
-  (bLevel == k) 
+  (bLevel == k)
     ? unpacked_node::newFromNode(arg2F, b, true)
     : arg2F->isFullyReduced()
     ? unpacked_node::newRedundant(arg2F, k, b, true)
@@ -992,7 +992,7 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
       C->markAsExtensible();
     }
 
-    // reduce 
+    // reduce
     result = resF->createReducedNode(in, C);
   }
 
@@ -1012,7 +1012,7 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
 // ******************************************************************
 
 MEDDLY::generic_binbylevel_mxd
-::generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1, 
+::generic_binbylevel_mxd(const binary_opname* code, expert_forest* arg1,
   expert_forest* arg2, expert_forest* res)
  : binary_operation(code, 1, arg1, arg2, res)
 {
@@ -1041,14 +1041,14 @@ void MEDDLY::generic_binbylevel_mxd
 #endif
 }
 
-MEDDLY::node_handle 
-MEDDLY::generic_binbylevel_mxd::compute(int level, node_handle a, node_handle b) 
+MEDDLY::node_handle
+MEDDLY::generic_binbylevel_mxd::compute(int level, node_handle a, node_handle b)
 {
   return compute_r(-1, level, a, b);
 }
 
 #if 1
-MEDDLY::node_handle 
+MEDDLY::node_handle
 MEDDLY::generic_binbylevel_mxd
 ::compute_r(int in, int resultLevel, node_handle a, node_handle b)
 {
@@ -1131,7 +1131,7 @@ MEDDLY::generic_binbylevel_mxd
 
 #else
 
-MEDDLY::node_handle 
+MEDDLY::node_handle
 MEDDLY::generic_binbylevel_mxd
 ::compute_r(int in, int resultLevel, node_handle a, node_handle b)
 {
@@ -1199,7 +1199,7 @@ MEDDLY::generic_binbylevel_mxd
   //         [0,min(a_last_index,b_last_index)]
   // Loop 2: deal with indices in
   //         [min(a_last_index,b_last_index)+1, max(a_last_index,b_last_index)]
-  // 
+  //
   // Last index: result of A_ext_d and B_ext_d
 
   //
@@ -1539,7 +1539,7 @@ void MEDDLY::generic_binary_evplus_mxd
 // ******************************************************************
 
 MEDDLY::generic_binary_evtimes
-::generic_binary_evtimes(const binary_opname* code, expert_forest* arg1, 
+::generic_binary_evtimes(const binary_opname* code, expert_forest* arg1,
   expert_forest* arg2, expert_forest* res)
 : generic_binary_ev(code, arg1, arg2, res)
 {
@@ -1558,7 +1558,7 @@ MEDDLY::generic_binary_evtimes::~generic_binary_evtimes()
 void MEDDLY::generic_binary_evtimes
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c, bool userFlag)
 {
-  node_handle result; 
+  node_handle result;
   float ev, aev, bev;
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
@@ -1570,7 +1570,7 @@ void MEDDLY::generic_binary_evtimes
 }
 
 void MEDDLY::generic_binary_evtimes
-::compute(float aev, node_handle a, float bev, node_handle b, 
+::compute(float aev, node_handle a, float bev, node_handle b,
   float& cev, node_handle& c)
 {
   // Compute for the unprimed levels.
@@ -1595,7 +1595,7 @@ void MEDDLY::generic_binary_evtimes
   unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
 
   // Initialize readers
-  unpacked_node *A = (aLevel < resultLevel) 
+  unpacked_node *A = (aLevel < resultLevel)
     ? unpacked_node::newRedundant(arg1F, resultLevel, 1.0f, a, true)
     : unpacked_node::newFromNode(arg1F, a, true)
   ;
@@ -1613,8 +1613,8 @@ void MEDDLY::generic_binary_evtimes
     node_handle ed;
     compute_k(
         i, -resultLevel,
-        aev * A->ef(i), A->d(i), 
-        bev * B->ef(i), B->d(i), 
+        aev * A->ef(i), A->d(i),
+        bev * B->ef(i), B->d(i),
         ev, ed);
     nb->d_ref(i) = ed;
     nb->setEdge(i, ev);
@@ -1685,7 +1685,7 @@ void MEDDLY::generic_binary_evtimes
     node_handle ed;
     compute(
         aev * A->ef(i), A->d(i),
-        bev * B->ef(i), B->d(i), 
+        bev * B->ef(i), B->d(i),
         ev, ed);
     nb->d_ref(i) = ed;
     nb->setEdge(i, ev);

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -20,6 +20,10 @@
 
 
 #include "defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "storage/bytepack.h"
 #include <climits>
 
@@ -56,7 +60,7 @@ void print_sequence(long a)
   static long last = -1;
   if (a<=0) {
     if (first>last) return;
-    if (printed) printf(", "); 
+    if (printed) printf(", ");
     printed = false;
     if (first < last) {
       if (first+1<last) {
@@ -426,7 +430,7 @@ void MEDDLY::node_headers::counter_array::expand8to16(size_t j)
   MEDDLY_DCASSERT(0==counts_09bit);
   MEDDLY_DCASSERT(0==counts_17bit);
 
-  counts_09bit = 1;  
+  counts_09bit = 1;
   bytes = sizeof(unsigned short);
   data16 = (unsigned short*) malloc(size * bytes);
   if (0==data16) {
@@ -451,7 +455,7 @@ void MEDDLY::node_headers::counter_array::expand16to32(size_t j)
   MEDDLY_DCASSERT(0==data32);
   MEDDLY_DCASSERT(0==counts_17bit);
 
-  counts_17bit = 1;  
+  counts_17bit = 1;
   bytes = sizeof(unsigned int);
   data32 = (unsigned int*) malloc(size * bytes);
   if (0==data32) {
@@ -768,12 +772,12 @@ const size_t MAX_ADD = 16777216;
 
 inline size_t next_size(size_t s)
 {
-  if (0==s) return START_SIZE; 
+  if (0==s) return START_SIZE;
   if (s < MAX_ADD) return s*2;
   return s+MAX_ADD;
 }
 
-inline size_t prev_size(size_t s) 
+inline size_t prev_size(size_t s)
 {
   if (s <= MAX_ADD) return s/2;
   return s-MAX_ADD;
@@ -786,7 +790,7 @@ inline size_t next_check(size_t s)
   return s+MAX_ADD;
 }
 
-inline size_t prev_check(size_t s) 
+inline size_t prev_check(size_t s)
 {
   if (s <= MAX_ADD) return s/2;
   return s-MAX_ADD;
@@ -963,7 +967,7 @@ void MEDDLY::node_headers::turnOffIncomingCounts()
 
 // ******************************************************************
 
-MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle() 
+MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
 {
 #ifdef OLD_NODE_HEADERS
   parent.mstats.incMemUsed(sizeof(node_header));
@@ -987,7 +991,7 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
   //
   // We got something from a free list.
   //
-  if (found) {  
+  if (found) {
 #ifdef DEBUG_HANDLE_FREELIST
     // address[found].setNotDeleted();
     dump_handle_info(*this, a_last+1);
@@ -1068,7 +1072,7 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
 
 // ******************************************************************
 
-void MEDDLY::node_headers::recycleNodeHandle(node_handle p) 
+void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
 {
   MEDDLY_DCASSERT(p>0);
   MEDDLY_DCASSERT(p<=a_last);
@@ -1143,7 +1147,7 @@ void MEDDLY::node_headers::swapNodes(node_handle p, node_handle q, bool swap_inc
 
   if (!swap_incounts) {
     SWAP(address[p].incoming_count, address[q].incoming_count);
-  } 
+  }
 #else
   size_t sp = size_t(p);
   size_t sq = size_t(q);
@@ -1397,8 +1401,8 @@ void MEDDLY::node_headers::expandHandleList()
     a_next_shrink = next_check(a_next_shrink);
     a_size = next_size(a_size);
   } while (a_last+1 >= a_size);
- 
-  node_header* new_address = (node_header*) 
+
+  node_header* new_address = (node_header*)
     realloc(address, a_size * sizeof(node_header));
   if (0==new_address) {
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
@@ -1415,7 +1419,7 @@ void MEDDLY::node_headers::expandHandleList()
   // increase size by 50%
   int delta = a_size / 2;
   MEDDLY_DCASSERT(delta>=0);
-  node_header* new_address = (node_header*) 
+  node_header* new_address = (node_header*)
     realloc(address, size_t(a_size+delta) * sizeof(node_header));
   if (0==new_address) {
     /*
@@ -1480,7 +1484,7 @@ void MEDDLY::node_headers::shrinkHandleList()
     //
     node_handle prev = 0;
     node_handle curr;
-    for (curr = a_unused[i]; curr; curr=getNextOf(curr)) 
+    for (curr = a_unused[i]; curr; curr=getNextOf(curr))
     {
       if (curr > a_last) continue;  // don't add to the list
       if (prev) {
@@ -1489,7 +1493,7 @@ void MEDDLY::node_headers::shrinkHandleList()
         a_unused[i] = curr;
       }
       prev = curr;
-    } 
+    }
     if (prev) {
       setNextOf(prev, 0);
     } else {
@@ -1506,7 +1510,7 @@ void MEDDLY::node_headers::shrinkHandleList()
   } while (a_last < a_next_shrink);
 
   // shrink the array
-  node_header* new_address = (node_header*) 
+  node_header* new_address = (node_header*)
     realloc(address, a_size * sizeof(node_header));
   if (0==new_address) {
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
@@ -1528,7 +1532,7 @@ void MEDDLY::node_headers::shrinkHandleList()
   // shrink the array
   MEDDLY_DCASSERT(delta>=0);
   MEDDLY_DCASSERT(size_t(a_size)-delta>=a_min_size);
-  node_header* new_address = (node_header*) 
+  node_header* new_address = (node_header*)
     realloc(address, new_size * sizeof(node_header));
   if (0==new_address) {
     /*
@@ -1558,7 +1562,7 @@ void MEDDLY::node_headers::shrinkHandleList()
     //
     size_t prev = 0;
     size_t curr;
-    for (curr = a_unused[i]; curr; curr=getNextOf(curr)) 
+    for (curr = a_unused[i]; curr; curr=getNextOf(curr))
     {
       if (curr > a_last) continue;  // don't add to the list
       if (prev) {
@@ -1567,7 +1571,7 @@ void MEDDLY::node_headers::shrinkHandleList()
         a_unused[i] = curr;
       }
       prev = curr;
-    } 
+    }
     if (prev) {
       setNextOf(prev, 0);
     } else {

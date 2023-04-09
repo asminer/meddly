@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -20,6 +20,10 @@
 
 
 #include "defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 
 // #define DEBUG_CLEANUP
 
@@ -321,11 +325,11 @@ void MEDDLY::dd_edge::show(output &strm, int verbosity) const
   strm << "(Forest Addr: ";
   strm.put_hex((unsigned long) parent);
   strm << ", ";
-  
+
   strm << "transparent: ";
   eParent->showTerminal(strm, eParent->getTransparentNode());
   strm << ", ";
-  
+
   if (eParent->isTerminalNode(node)) {
     strm << "node: ";
     eParent->showTerminal(strm, node);
@@ -354,7 +358,7 @@ void MEDDLY::dd_edge::show(output &strm, int verbosity) const
   if (verbosity == 2 || verbosity == 3) {
     if (eParent->isMultiTerminal()) {
       strm.put("MT");
-    } 
+    }
     if (eParent->isEVPlus()) {
       strm.put("EV+");
     }

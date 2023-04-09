@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -18,6 +18,10 @@
 */
 
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "vect_matr.h"
 #include <typeinfo> // for "bad_cast" exception
 
@@ -51,7 +55,7 @@ class MEDDLY::base_evplus_mt : public specialized_operation {
 
     virtual void compute(double* y, const double* x);
 
-    virtual void compute_r(int ht, double* y, node_handle y_ind, const double* x, 
+    virtual void compute_r(int ht, double* y, node_handle y_ind, const double* x,
       node_handle x_ind, node_handle A) = 0;
 
   protected:
@@ -72,7 +76,7 @@ class MEDDLY::base_evplus_mt : public specialized_operation {
     }
 };
 
-MEDDLY::base_evplus_mt::base_evplus_mt(const numerical_opname* code, 
+MEDDLY::base_evplus_mt::base_evplus_mt(const numerical_opname* code,
   const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
  : specialized_operation(code, 0)
 {
@@ -111,21 +115,21 @@ class MEDDLY::VM_evplus_mt : public base_evplus_mt {
     VM_evplus_mt(const numerical_opname* code, const dd_edge &x_ind,
       const dd_edge& A, const dd_edge &y_ind);
 
-    virtual void compute_r(int k, double* y, node_handle y_ind, const double* x, 
+    virtual void compute_r(int k, double* y, node_handle y_ind, const double* x,
       node_handle x_ind, node_handle A);
 
-    void comp_pr(int k, double* y, node_handle y_ind, const double* x, 
+    void comp_pr(int k, double* y, node_handle y_ind, const double* x,
       node_handle x_ind, unsigned ain, node_handle A);
 
 };
 
-MEDDLY::VM_evplus_mt::VM_evplus_mt(const numerical_opname* code, 
+MEDDLY::VM_evplus_mt::VM_evplus_mt(const numerical_opname* code,
   const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
   : base_evplus_mt(code, x_ind, A, y_ind)
 {
 }
 
-void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind, 
+void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   const double* x, node_handle x_ind, node_handle a)
 {
   // Handles the unprimed levels of a
@@ -134,7 +138,7 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
     return;
   }
 
-  // It should be impossible for an indexing function to skip levels, right?   
+  // It should be impossible for an indexing function to skip levels, right?
   MEDDLY_DCASSERT(fx->getNodeLevel(x_ind) == k);
   MEDDLY_DCASSERT(fy->getNodeLevel(y_ind) == k);
   int aLevel = fA->getNodeLevel(a);
@@ -181,7 +185,7 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
       yp++;
       if (yp >= yR->getNNZs()) break;
     } // for (;;)
-    
+
     // Cleanup
     unpacked_node::recycle(yR);
     unpacked_node::recycle(xR);
@@ -231,7 +235,7 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   unpacked_node::recycle(aR);
 }
 
-void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind, 
+void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
   const double* x, node_handle x_ind, unsigned ain, node_handle a)
 {
   // Handles the primed levels of A
@@ -289,21 +293,21 @@ class MEDDLY::MV_evplus_mt : public base_evplus_mt {
     MV_evplus_mt(const numerical_opname* code, const dd_edge &x_ind,
       const dd_edge& A, const dd_edge &y_ind);
 
-    virtual void compute_r(int k, double* y, node_handle y_ind, const double* x, 
+    virtual void compute_r(int k, double* y, node_handle y_ind, const double* x,
       node_handle x_ind, node_handle A);
 
-    void comp_pr(int k, double* y, node_handle y_ind, const double* x, 
+    void comp_pr(int k, double* y, node_handle y_ind, const double* x,
       node_handle x_ind, unsigned ain, node_handle A);
 
 };
 
-MEDDLY::MV_evplus_mt::MV_evplus_mt(const numerical_opname* code, 
+MEDDLY::MV_evplus_mt::MV_evplus_mt(const numerical_opname* code,
   const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
   : base_evplus_mt(code, x_ind, A, y_ind)
 {
 }
 
-void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind, 
+void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   const double* x, node_handle x_ind, node_handle a)
 {
   // Handles the unprimed levels of a
@@ -312,7 +316,7 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
     return;
   }
 
-  // It should be impossible for an indexing function to skip levels, right?   
+  // It should be impossible for an indexing function to skip levels, right?
   MEDDLY_DCASSERT(fx->getNodeLevel(x_ind) == k);
   MEDDLY_DCASSERT(fy->getNodeLevel(y_ind) == k);
   int aLevel = fA->getNodeLevel(a);
@@ -359,7 +363,7 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
       yp++;
       if (yp >= yR->getNNZs()) break;
     } // for (;;)
-    
+
     // Cleanup
     unpacked_node::recycle(yR);
     unpacked_node::recycle(xR);
@@ -409,7 +413,7 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   unpacked_node::recycle(aR);
 }
 
-void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind, 
+void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
   const double* x, node_handle x_ind, unsigned ain, node_handle a)
 {
   // Handles the primed levels of A
@@ -472,7 +476,7 @@ MEDDLY::VM_opname::VM_opname() : numerical_opname("VectMatrMult")
 {
 }
 
-MEDDLY::specialized_operation* 
+MEDDLY::specialized_operation*
 MEDDLY::VM_opname::buildOperation(arguments* a) const
 {
   numerical_args* na = dynamic_cast<numerical_args*>(a);
@@ -483,7 +487,7 @@ MEDDLY::VM_opname::buildOperation(arguments* a) const
   const expert_forest* fy = (const expert_forest*) na->y_ind.getForest();
 
   // everyone must use the same domain
-  if (      (fx->getDomain() != fy->getDomain()) 
+  if (      (fx->getDomain() != fy->getDomain())
         ||  (fx->getDomain() != fA->getDomain())  )
   {
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
@@ -491,13 +495,13 @@ MEDDLY::VM_opname::buildOperation(arguments* a) const
 
   // Check edge types
   if (
-           (fy->getRangeType() != forest::INTEGER) 
+           (fy->getRangeType() != forest::INTEGER)
         || (fy->isForRelations())
         || (fx->getRangeType() != forest::INTEGER)
         || (fx->isForRelations())
         || (fA->getRangeType() != forest::REAL)
         || (!fA->isForRelations())
-      ) 
+      )
   {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   }
@@ -542,7 +546,7 @@ MEDDLY::MV_opname::MV_opname() : numerical_opname("MatrVectMult")
 {
 }
 
-MEDDLY::specialized_operation* 
+MEDDLY::specialized_operation*
 MEDDLY::MV_opname::buildOperation(arguments* a) const
 {
   numerical_args* na = dynamic_cast<numerical_args*>(a);
@@ -554,7 +558,7 @@ MEDDLY::MV_opname::buildOperation(arguments* a) const
 
 
     // everyone must use the same domain
-  if (      (fx->getDomain() != fy->getDomain()) 
+  if (      (fx->getDomain() != fy->getDomain())
         ||  (fx->getDomain() != fA->getDomain())  )
   {
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
@@ -562,13 +566,13 @@ MEDDLY::MV_opname::buildOperation(arguments* a) const
 
   // Check edge types
   if (
-           (fy->getRangeType() != forest::INTEGER) 
+           (fy->getRangeType() != forest::INTEGER)
         || (fy->isForRelations())
         || (fx->getRangeType() != forest::INTEGER)
         || (fx->isForRelations())
         || (fA->getRangeType() != forest::REAL)
         || (!fA->isForRelations())
-      ) 
+      )
   {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
   }

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "mdd2index.h"
 
 // #define TRACE_ALL_OPS
@@ -38,7 +42,7 @@ namespace MEDDLY {
 
 class MEDDLY::mdd2index_operation : public unary_operation {
   public:
-    mdd2index_operation(const unary_opname* oc, expert_forest* arg, 
+    mdd2index_operation(const unary_opname* oc, expert_forest* arg,
       expert_forest* res);
 
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
@@ -46,7 +50,7 @@ class MEDDLY::mdd2index_operation : public unary_operation {
     void compute_r(int k, node_handle a, node_handle &bdn, long &bcard);
 };
 
-MEDDLY::mdd2index_operation::mdd2index_operation(const unary_opname* oc, 
+MEDDLY::mdd2index_operation::mdd2index_operation(const unary_opname* oc,
   expert_forest* arg, expert_forest* res)
   : unary_operation(oc, 1, arg, res)
 {
@@ -116,7 +120,7 @@ MEDDLY::mdd2index_operation
   // Initialize node builder
   const unsigned size = unsigned(resF->getLevelSize(k));
   unpacked_node* nb = unpacked_node::newFull(resF, k, size);
-  
+
   // Initialize node reader
   unpacked_node *A = unpacked_node::useUnpackedNode();
   if (aLevel < k) {
@@ -171,7 +175,7 @@ MEDDLY::mdd2index_operation
 class MEDDLY::mdd2index_opname : public unary_opname {
   public:
     mdd2index_opname();
-    virtual unary_operation* 
+    virtual unary_operation*
       buildOperation(expert_forest* ar, expert_forest* res) const;
 };
 
@@ -189,7 +193,7 @@ MEDDLY::mdd2index_opname
   if (arg->getDomain() != res->getDomain())
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
-  if (arg->isForRelations() || 
+  if (arg->isForRelations() ||
       arg->getRangeType() != forest::BOOLEAN ||
       arg->getEdgeLabeling() != forest::MULTI_TERMINAL ||
       res->isForRelations() ||

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -17,9 +17,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #ifndef BYTEPACK_H
 #define BYTEPACK_H
+
+#include "../defines.h"
 
 // ******************************************************************
 // *                                                                *
@@ -142,7 +143,7 @@ inline void stripDownEncodingForSizing(INT &a)
 template <class INT>
 inline void stripSignedEncodingForSizing(INT &a)
 {
-  a = (a<0) ? -(a<<1) : a<<1; 
+  a = (a<0) ? -(a<<1) : a<<1;
 }
 
 /**
@@ -151,7 +152,7 @@ inline void stripSignedEncodingForSizing(INT &a)
       Downward pointers follow the rules:
         if positive, it points to a node
         if negative, it encodes a terminal node
-        
+
       so the implementation takes that encoding into account.
 */
 inline int bytesRequiredForDown(int a)
@@ -166,7 +167,7 @@ inline int bytesRequiredForDown(int a)
       Downward pointers follow the rules:
         if positive, it points to a node
         if negative, it encodes a terminal node
-        
+
       so the implementation takes that encoding into account.
 */
 inline int bytesRequiredForDown(long a)
@@ -248,7 +249,7 @@ inline void downToData(INT  P, unsigned char* d)
 
   // negative P: this is a terminal pointer.
   //              next msb clr - terminal value is positive.
-  //              
+  //
   //  The thing to do here is deal with the msb manually:
   //  clear msb, encode, set msb.
   static const long msboff = ~ ((0x80L) << ((sizeof(INT)-1)*8));
@@ -368,11 +369,11 @@ template <> inline void moveMSB<8, 4>(long& P)  { MEDDLY_DCASSERT(0); }
 
 // These are no-ops
 
-template <> inline void moveMSB<4, 4>(int& P) { 
+template <> inline void moveMSB<4, 4>(int& P) {
   MEDDLY_DCASSERT(sizeof(int) == 4); // sanity check
 }
 
-template <> inline void moveMSB<4, 4>(long& P) { 
+template <> inline void moveMSB<4, 4>(long& P) {
   MEDDLY_DCASSERT(sizeof(long) == 4); // sanity check
 }
 

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -18,6 +18,10 @@
 */
 
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "sat_pregen.h"
 #include <typeinfo> // for "bad_cast" exception
 
@@ -65,9 +69,9 @@ MEDDLY::satpregen_opname::pregen_relation
   if (0==insetF || 0==outsetF || 0==mxdF) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 
   // Check for same domain
-  if (  
-    (insetF->getDomain() != mxdF->getDomain()) || 
-    (outsetF->getDomain() != mxdF->getDomain()) 
+  if (
+    (insetF->getDomain() != mxdF->getDomain()) ||
+    (outsetF->getDomain() != mxdF->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
@@ -149,9 +153,9 @@ MEDDLY::satpregen_opname::pregen_relation
 
   if (r.getForest() != mxdF)  throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
 
-  int k = r.getLevel(); 
+  int k = r.getLevel();
   if (0==k) return;
-  if (k<0) k = -k;   
+  if (k<0) k = -k;
 
   if (0==level_index) {
     // relation is "by levels"
@@ -216,7 +220,7 @@ MEDDLY::satpregen_opname::pregen_relation
     MEDDLY_DCASSERT(ABS(events[k].getLevel() <= k));
 
     // Initialize unpacked nodes
-    unpacked_node* Mu = (isLevelAbove(k, events[k].getLevel())) 
+    unpacked_node* Mu = (isLevelAbove(k, events[k].getLevel()))
       ?   unpacked_node::newRedundant(mxdF, k, events[k].getNode(), true)
       :   unpacked_node::newFromNode(mxdF, events[k].getNode(), true)
     ;
@@ -262,7 +266,7 @@ MEDDLY::satpregen_opname::pregen_relation
       printf("SplitOnly: event %d = event %d - maxDiag %d\n",
           events[k], tmp, maxDiag);
 #endif
-    } 
+    }
 
     // Add maxDiag to events[level(maxDiag)]
     int maxDiagLevel = ABS(maxDiag.getLevel());
@@ -375,12 +379,12 @@ MEDDLY::satpregen_opname::pregen_relation
       delete [] old_events;
 #endif
     }
-    return; 
+    return;
   }
 
   //
   // Still here?  Must be by events.
-  // 
+  //
 
 #ifdef DEBUG_FINALIZE
   printf("Finalizing pregen relation\n");
@@ -457,7 +461,7 @@ class MEDDLY::saturation_by_events_opname : public unary_opname {
     saturation_by_events_opname();
 
     static const saturation_by_events_opname* getInstance();
- 
+
 };
 
 MEDDLY::saturation_by_events_opname* MEDDLY::saturation_by_events_opname::instance = 0;
@@ -490,7 +494,7 @@ class MEDDLY::saturation_by_events_op : public unary_operation {
     node_handle saturate(node_handle mdd, int level);
 
   protected:
-    inline compute_table::entry_key* 
+    inline compute_table::entry_key*
     findSaturateResult(node_handle a, int level, node_handle& b) {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
@@ -498,12 +502,12 @@ class MEDDLY::saturation_by_events_op : public unary_operation {
       if (argF->isFullyReduced()) CTsrch->writeI(level);
       CT0->find(CTsrch, CTresult[0]);
       if (!CTresult[0]) return CTsrch;
-      b = resF->linkNode(CTresult[0].readN()); 
+      b = resF->linkNode(CTresult[0].readN());
       CT0->recycle(CTsrch);
       return 0;
     }
     inline node_handle saveSaturateResult(compute_table::entry_key* Key,
-      node_handle a, node_handle b) 
+      node_handle a, node_handle b)
     {
       CTresult[0].reset();
       CTresult[0].writeN(b);
@@ -529,8 +533,8 @@ class MEDDLY::common_dfs_by_events_mt : public specialized_operation {
     virtual void saturateHelper(unpacked_node& mdd) = 0;
 
   protected:
-    inline compute_table::entry_key* 
-    findResult(node_handle a, node_handle b, node_handle &c) 
+    inline compute_table::entry_key*
+    findResult(node_handle a, node_handle b, node_handle &c)
     {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
@@ -543,7 +547,7 @@ class MEDDLY::common_dfs_by_events_mt : public specialized_operation {
       return 0;
     }
     inline node_handle saveResult(compute_table::entry_key* Key,
-      node_handle a, node_handle b, node_handle c) 
+      node_handle a, node_handle b, node_handle c)
     {
       CTresult[0].reset();
       CTresult[0].writeN(c);
@@ -971,9 +975,9 @@ void MEDDLY::forwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         node_handle rec = recFire(nb.d(i), Rp->d(jz));
 
         if (rec == 0) continue;
-        if (rec == nb.d(j)) { 
-          resF->unlinkNode(rec); 
-          continue; 
+        if (rec == nb.d(j)) {
+          resF->unlinkNode(rec);
+          continue;
         }
 
         bool updated = true;
@@ -1062,7 +1066,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
     }
 
   } else {
-    // 
+    //
     // Need to process this level in the MXD.
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
@@ -1078,7 +1082,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
     // loop over mxd "rows"
     for (unsigned iz=0; iz<Ru->getNNZs(); iz++) {
       unsigned i = Ru->i(iz);
-      if (0==A->d(i))   continue; 
+      if (0==A->d(i))   continue;
       if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
         Rp->initIdentity(arg2F, rLevel, i, Ru->d(iz), false);
       } else {
@@ -1103,7 +1107,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
         mddUnion->computeTemp(nbdj, newst, nbdj);
         nb->set_d(j, nbdj);
       } // for j
-  
+
     } // for i
 
     unpacked_node::recycle(Rp);
@@ -1124,7 +1128,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
   resF->showNode(stdout, result, 1);
   printf("\n");
 #endif
-  return saveResult(Key, mdd, mxd, result); 
+  return saveResult(Key, mdd, mxd, result);
 }
 
 
@@ -1179,7 +1183,7 @@ void MEDDLY::bckwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   for (unsigned i = 0; i < nb.getSize(); i++) expl->data[i] = 2;
   bool repeat = true;
 
-  // explore 
+  // explore
   while (repeat) {
     // "advance" the explore list
     for (unsigned i=0; i<nb.getSize(); i++) if (expl->data[i]) expl->data[i]--;
@@ -1194,7 +1198,7 @@ void MEDDLY::bckwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         int dlevel = arg2F->getNodeLevel(Ru[ei]->d(iz));
 
         if (dlevel == -nb.getLevel()) {
-          Rp->initFromNode(arg2F, Ru[ei]->d(iz), false); 
+          Rp->initFromNode(arg2F, Ru[ei]->d(iz), false);
         } else {
           Rp->initIdentity(arg2F, -nb.getLevel(), i, Ru[ei]->d(iz), false);
         }
@@ -1220,7 +1224,7 @@ void MEDDLY::bckwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
           else if (-1 == rec) {
             resF->unlinkNode(nb.d(i));
             nb.d_ref(i) = -1;
-          } 
+          }
           else {
             nbdi.set(nb.d(i));
             newst.set(rec);
@@ -1289,7 +1293,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_by_events_mt::recFire(node_handle mdd,
       nb->d_ref(i) = recFire(A->d(i), mxd);
     }
   } else {
-    // 
+    //
     // Need to process this level in the MXD.
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
@@ -1314,7 +1318,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_by_events_mt::recFire(node_handle mdd,
       // loop over mxd "columns"
       for (unsigned jz=0; jz<Rp->getNNZs(); jz++) {
         unsigned j = Rp->i(jz);
-        if (0==A->d(j))   continue; 
+        if (0==A->d(j))   continue;
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
@@ -1330,7 +1334,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_by_events_mt::recFire(node_handle mdd,
         mddUnion->computeTemp(nbdi, newst, nbdi);
         nb->set_d(i, nbdi);
       } // for j
-  
+
     } // for i
 
     unpacked_node::recycle(Rp);
@@ -1345,7 +1349,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_by_events_mt::recFire(node_handle mdd,
 #ifdef TRACE_ALL_OPS
   printf("computed recFire(%d, %d) = %d\n", mdd, mxd, result);
 #endif
-  return saveResult(Key, mdd, mxd, result); 
+  return saveResult(Key, mdd, mxd, result);
 }
 
 

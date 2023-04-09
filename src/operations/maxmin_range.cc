@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "maxmin_range.h"
 
 namespace MEDDLY {
@@ -50,8 +54,8 @@ class MEDDLY::range_int : public unary_operation {
     range_int(const unary_opname* oc, expert_forest* arg);
 
   protected:
-    inline compute_table::entry_key* 
-    findResult(node_handle a, int &b) 
+    inline compute_table::entry_key*
+    findResult(node_handle a, int &b)
     {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
@@ -62,8 +66,8 @@ class MEDDLY::range_int : public unary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline long saveResult(compute_table::entry_key* Key, 
-      node_handle a, int &b) 
+    inline long saveResult(compute_table::entry_key* Key,
+      node_handle a, int &b)
     {
       CTresult[0].reset();
       CTresult[0].writeI(b);
@@ -103,8 +107,8 @@ class MEDDLY::range_real : public unary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline float saveResult(compute_table::entry_key* Key, 
-      node_handle a, float &b) 
+    inline float saveResult(compute_table::entry_key* Key,
+      node_handle a, float &b)
     {
       CTresult[0].reset();
       CTresult[0].writeF(b);
@@ -143,7 +147,7 @@ int MEDDLY::maxrange_int::compute_r(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return expert_forest::int_Tencoder::handle2value(a);
-  
+
   // Check compute table
   int max;
   compute_table::entry_key* Key = findResult(a, max);
@@ -186,7 +190,7 @@ int MEDDLY::minrange_int::compute_r(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return expert_forest::int_Tencoder::handle2value(a);
-  
+
   // Check compute table
   int min;
   compute_table::entry_key* Key = findResult(a, min);
@@ -231,7 +235,7 @@ float MEDDLY::maxrange_real::compute_r(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return expert_forest::float_Tencoder::handle2value(a);
-  
+
   // Check compute table
   float max;
   compute_table::entry_key* Key = findResult(a, max);
@@ -276,7 +280,7 @@ float MEDDLY::minrange_real::compute_r(node_handle a)
 {
   // Terminal case
   if (argF->isTerminalNode(a)) return expert_forest::float_Tencoder::handle2value(a);
-  
+
   // Check compute table
   float min;
   compute_table::entry_key* Key = findResult(a, min);

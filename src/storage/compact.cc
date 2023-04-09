@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -88,8 +88,8 @@ void MEDDLY::compact_storage::collectGarbage(bool shrink)
   if (wasted <  getParent()->getPolicies().compact_max) {
 
     // If percentage of wasted slots is below trigger, then don't compact
-    if (100 * wasted < 
-        holeManager->lastSlot() * getParent()->getPolicies().compact_frac) 
+    if (100 * wasted <
+        holeManager->lastSlot() * getParent()->getPolicies().compact_frac)
       return;
 
   }
@@ -108,7 +108,7 @@ void MEDDLY::compact_storage::collectGarbage(bool shrink)
 
   //
   // Scan the whole array of data, copying over itself and skipping holes.
-  // 
+  //
   node_handle* node_ptr = (data + 1);  // since we leave [0] empty
   node_handle* end_ptr =  (data + holeManager->lastSlot() + 1);
   node_handle* curr_ptr = node_ptr;
@@ -117,15 +117,15 @@ void MEDDLY::compact_storage::collectGarbage(bool shrink)
     if (*node_ptr < 0) {
       //
       // This is a hole, skip it
-      // 
+      //
       node_ptr = data + holeManager->chunkAfterHole(node_ptr - data);
       continue;
-    } 
+    }
     //
     // A real node, move it
     //
     MEDDLY_DCASSERT(!getParent()->isPessimistic() || *node_ptr != 0);
-    
+
     long old_off = node_ptr - data;
     long new_off = curr_ptr - data;
 
@@ -142,7 +142,7 @@ void MEDDLY::compact_storage::collectGarbage(bool shrink)
     // Skip any padding
     //
     if (*node_ptr < 0) {
-      node_ptr -= *node_ptr;  
+      node_ptr -= *node_ptr;
     }
     //
     // Copy trailer, the node number
@@ -158,7 +158,7 @@ void MEDDLY::compact_storage::collectGarbage(bool shrink)
   holeManager->clearHolesAndShrink( (curr_ptr - 1 - data), shrink );
   MEDDLY_DCASSERT(0==holeManager->holeSlots());
 
-  incCompactions(); 
+  incCompactions();
 
 #ifdef DEBUG_COMPACTION
   printf("After compaction:\n");
@@ -171,7 +171,7 @@ void MEDDLY::compact_storage::collectGarbage(bool shrink)
 void MEDDLY::compact_storage
 ::reportStats(output &s, const char* pad, unsigned flags) const
 {
-  static unsigned STORAGE = 
+  static unsigned STORAGE =
     expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED;
 
   if (flags & STORAGE) {
@@ -190,7 +190,7 @@ void MEDDLY::compact_storage
 
 // ******************************************************************
 
-MEDDLY::node_address 
+MEDDLY::node_address
 MEDDLY::compact_storage
 ::makeNode(node_handle p, const unpacked_node &nb, node_storage_flags opt)
 {
@@ -213,7 +213,7 @@ MEDDLY::compact_storage
       pbytes = MAX(pbytes, bytesRequiredForDown(nb.d(z)));
       MEDDLY_DCASSERT(nb.i(z) > imax);
       imax = nb.i(z);
-    } 
+    }
   } else {
     nnz = 0;
     for (int i=0; i<nb.getSize(); i++) {
@@ -436,7 +436,7 @@ getSingletonIndex(node_address addr, node_handle &down) const
 
 // ******************************************************************
 
-MEDDLY::node_handle 
+MEDDLY::node_handle
 MEDDLY::compact_storage::getDownPtr(node_address addr, int index) const
 {
   if (index<0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
@@ -610,7 +610,7 @@ void MEDDLY::compact_storage::dumpInternalTail(output &s) const
 
 // ******************************************************************
 
-MEDDLY::node_address 
+MEDDLY::node_address
 MEDDLY::compact_storage
 ::dumpInternalNode(output &s, node_address a, unsigned flags) const
 {
@@ -622,7 +622,7 @@ MEDDLY::compact_storage
     return 0;
   }
   MEDDLY_DCASSERT(data);
-  if (data[a]<0) { 
+  if (data[a]<0) {
     // hole
     if (flags & 0x02) {
       s.put(long(a), awidth);
@@ -707,7 +707,7 @@ MEDDLY::compact_storage
 // ******************************************************************
 
 MEDDLY::node_address
-MEDDLY::compact_storage::makeSparseNode(node_handle p, int size, 
+MEDDLY::compact_storage::makeSparseNode(node_handle p, int size,
   int pbytes, int ibytes, const unpacked_node &nb)
 {
   int slots = slotsForNode(-size, pbytes, ibytes);

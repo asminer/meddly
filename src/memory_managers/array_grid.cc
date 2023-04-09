@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -23,6 +23,10 @@
 // #define DEBUG_GRID
 // #define REPORT_ALL_MEDIUM_LISTS
 
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "hole_base.h"
 #include "array_grid.h"
 
@@ -61,7 +65,7 @@ namespace MEDDLY {
     :
     [size-1] size with MSB set
 
-    
+
     Array structure for medium holes:
       medium_list[i] : pointer to front of list with holes of size i.
     Array goes from element 0 (unused) to element LargeNodeSize-1.
@@ -199,7 +203,7 @@ namespace MEDDLY {
         MEDDLY_DCASSERT(!isSmallHole(h));
         hole_manager<INT>::refSlot(h, 2) = v;
       }
-      
+
 
       // Large hole handy methods
       inline void setNonIndex(node_address h) {
@@ -220,7 +224,7 @@ namespace MEDDLY {
         MEDDLY_DCASSERT(isLargeHole(h));
         hole_manager<INT>::refSlot(h, 3) = v;
       }
-      
+
       inline INT Down(node_address h) const {
         MEDDLY_DCASSERT(isLargeHole(h));
         return hole_manager<INT>::readSlot(h, 4);
@@ -229,7 +233,7 @@ namespace MEDDLY {
         MEDDLY_DCASSERT(isLargeHole(h));
         hole_manager<INT>::refSlot(h, 4) = v;
       }
-      
+
 
     private:
 
@@ -298,7 +302,7 @@ MEDDLY::array_plus_grid<INT>::array_plus_grid(const char* n, memstats &stats)
 
   // huge hole stuff
   max_request = 0;
-  // max_request = LargeHoleSize-1;  
+  // max_request = LargeHoleSize-1;
   huge_holes = 0;
   num_huge_holes = 0;
   num_huge_slots = 0;
@@ -315,7 +319,7 @@ MEDDLY::array_plus_grid<INT>::~array_plus_grid()
 // ******************************************************************
 
 template <class INT>
-MEDDLY::node_address 
+MEDDLY::node_address
 MEDDLY::array_plus_grid<INT>::requestChunk(size_t &numSlots)
 {
 #ifdef MEMORY_TRACE
@@ -341,7 +345,7 @@ MEDDLY::array_plus_grid<INT>::requestChunk(size_t &numSlots)
     huge_holes = 0;
     for (; curr; ) {
       INT next = Next(curr);
-      startTrackingHole(curr);  
+      startTrackingHole(curr);
       curr = next;
     }
 #ifdef DEBUG_GRID
@@ -381,7 +385,7 @@ MEDDLY::array_plus_grid<INT>::requestChunk(size_t &numSlots)
     h = huge_holes;
   }
 
-  
+
   //
   // Ok, that's everywhere.  If we have a hole,
   // use it and recycle any leftovers.
@@ -433,7 +437,7 @@ void MEDDLY::array_plus_grid<INT>
 
   setHoleSize(h, numSlots);
 
-  // 
+  //
   // Check to the left for another hole
   //
   if (isHole(h-1)) {
@@ -443,7 +447,7 @@ void MEDDLY::array_plus_grid<INT>
     printf("\tMerging to the left, holes %lu and %lu\n", hleft, h);
 #endif
     stopTrackingHole(hleft);
-    numSlots += getHoleSize(hleft); 
+    numSlots += getHoleSize(hleft);
     h = hleft;
     setHoleSize(h, numSlots);
 #ifdef DEBUG_GRID
@@ -495,7 +499,7 @@ void MEDDLY::array_plus_grid<INT>
 {
   s << pad << "Report for array_plus_grid memory manager:\n";
   s << pad << "  largest request: " << long(max_request) << " slots\n";
-  long total_holes = num_small_holes + num_grid_holes 
+  long total_holes = num_small_holes + num_grid_holes
     + num_huge_holes + num_medium_holes[0];
   s << pad << "  Current #holes: " << total_holes << "\n";
   if (details) {
@@ -559,7 +563,7 @@ void MEDDLY::array_plus_grid<INT>
     INT prev = 0;
     for (INT curr = medium_hole_list[i]; curr; curr=Next(curr)) {
       s << "  <-->  ";
-      s << "#" << curr; 
+      s << "#" << curr;
       if (getHoleSize(curr) != i) {
         s << " (size = " << getHoleSize(curr) << " != " << i << " !!!) ";
       }
@@ -579,7 +583,7 @@ void MEDDLY::array_plus_grid<INT>
     s << "  bottom\n";
     s << "    |\n";
     s << "    v\n";
-    
+
     INT down = 0;
     for (INT index=grid_bottom; index; index=Up(index)) {
       if (grid_current == index) {
@@ -688,7 +692,7 @@ int MEDDLY::array_plus_grid<INT>
     INT delta = getHoleSize(current) - size;
     if (delta <= 0) return delta;
   }
-  
+
   // should never get here.
   MEDDLY_DCASSERT(0);
   return -1;
@@ -700,7 +704,7 @@ int MEDDLY::array_plus_grid<INT>
 
 template <class INT>
 void MEDDLY::array_plus_grid<INT>
-::stopTrackingHole(node_address h) 
+::stopTrackingHole(node_address h)
 {
 #ifdef MEMORY_TRACE_DETAILS
   printf("stopTrackingHole(%lu)\n", h);
@@ -793,7 +797,7 @@ void MEDDLY::array_plus_grid<INT>
   num_grid_holes--;
   num_grid_slots -= getHoleSize(h);
 
-  // 
+  //
   // Easier case - not an index hole
   //
   if (!isIndexHole(h)) {
@@ -823,9 +827,9 @@ void MEDDLY::array_plus_grid<INT>
   //
   // We're removing an index node.
   // Two main cases to consider:
-  //   (1) index node with empty chain: 
+  //   (1) index node with empty chain:
   //          the entire row is killed
-  //   (2) index node with non-empty chain: 
+  //   (2) index node with non-empty chain:
   //          the front of chain becomes a new index node
   //
 
@@ -860,10 +864,10 @@ void MEDDLY::array_plus_grid<INT>
       grid_top = below;
     }
 
-    return; 
+    return;
   }
 
-  // 
+  //
   // Non-empty chain.
   // Shift the front over to become the new index node
   //
@@ -905,7 +909,7 @@ void MEDDLY::array_plus_grid<INT>
 
 template <class INT>
 void MEDDLY::array_plus_grid<INT>
-::startTrackingHole(node_address h) 
+::startTrackingHole(node_address h)
 {
 #ifdef MEMORY_TRACE_DETAILS
   printf("startTrackingHole(%lu) size %ld\n", h, long(getHoleSize(h)));
@@ -913,7 +917,7 @@ void MEDDLY::array_plus_grid<INT>
 
   MEDDLY_DCASSERT(getHoleSize(h)>0);
   MEDDLY_DCASSERT(matchingHoleSizes(h));
-    
+
   //
   // Check if the hole is too small to track.
   // If so, just leave it, and hope it gets merged later.
@@ -1044,7 +1048,7 @@ void MEDDLY::array_plus_grid<INT>
   INT above, below;
   if (status<0) {
     below = curr;
-    above = Up(curr); 
+    above = Up(curr);
   } else {
     above = curr;
     below = Down(curr);
@@ -1090,7 +1094,7 @@ MEDDLY::array_grid_style::~array_grid_style()
 }
 
 MEDDLY::memory_manager*
-MEDDLY::array_grid_style::initManager(unsigned char granularity, 
+MEDDLY::array_grid_style::initManager(unsigned char granularity,
   unsigned char minsize, memstats &stats) const
 {
   if (sizeof(int) == granularity) {

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "modulo.h"
 #include "apply_base.h"
 
@@ -52,7 +56,7 @@ template <typename REAL>
 bool modulo_mdd<REAL>
 ::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) 
+  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b))
   {
     REAL av, bv;
     arg1F->getValueFromHandle(a, av);
@@ -89,7 +93,7 @@ template <typename REAL>
 bool modulo_mxd<REAL>
 ::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
-  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) 
+  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b))
   {
     REAL av, bv;
     arg1F->getValueFromHandle(a, av);
@@ -112,7 +116,7 @@ bool modulo_mxd<REAL>
 class MEDDLY::modulo_opname : public binary_opname {
   public:
     modulo_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1, 
+    virtual binary_operation* buildOperation(expert_forest* a1,
       expert_forest* a2, expert_forest* r) const;
 };
 
@@ -121,15 +125,15 @@ MEDDLY::modulo_opname::modulo_opname()
 {
 }
 
-MEDDLY::binary_operation* 
-MEDDLY::modulo_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+MEDDLY::binary_operation*
+MEDDLY::modulo_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   expert_forest* r) const
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
-  if (  
-    (a1->getDomain() != r->getDomain()) || 
-    (a2->getDomain() != r->getDomain()) 
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
@@ -137,7 +141,7 @@ MEDDLY::modulo_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->isForRelations() != r->isForRelations()) ||
     (a2->isForRelations() != r->isForRelations()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling()) 
+    (a2->getEdgeLabeling() != r->getEdgeLabeling())
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
@@ -153,7 +157,7 @@ MEDDLY::modulo_opname::buildOperation(expert_forest* a1, expert_forest* a2,
       default:
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
-    
+
   }
 
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #define CT_CLASSIC_H
 
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 
 
 // **********************************************************************
@@ -73,7 +77,7 @@ class MEDDLY::monolithic_unchained_style : public compute_table_style {
 class MEDDLY::operation_chained_style : public compute_table_style {
   public:
     operation_chained_style();
-    virtual compute_table* create(const ct_initializer::settings &s, 
+    virtual compute_table* create(const ct_initializer::settings &s,
       operation* op, unsigned slot) const;
     virtual bool usesMonolithic() const;
 };
@@ -87,7 +91,7 @@ class MEDDLY::operation_chained_style : public compute_table_style {
 class MEDDLY::operation_unchained_style : public compute_table_style {
   public:
     operation_unchained_style();
-    virtual compute_table* create(const ct_initializer::settings &s, 
+    virtual compute_table* create(const ct_initializer::settings &s,
       operation* op, unsigned slot) const;
     virtual bool usesMonolithic() const;
 };

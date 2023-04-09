@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "freelists.h"
 
 // #define DEBUG_FREELISTS
@@ -103,7 +107,7 @@ MEDDLY::freelist_manager<INT>::freelist_manager(const char* n, memstats &stats)
   incMemAlloc( (1+maxEntrySize) * sizeof(INT) );
 
   entriesAlloc = 1024;
-  entriesSize = 1;    
+  entriesSize = 1;
   entries = (INT*) malloc(entriesAlloc * sizeof(INT) );
   if (0==entries) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   entries[0] = 0;     // NEVER USED; set here for sanity.
@@ -217,7 +221,7 @@ bool MEDDLY::freelist_manager<INT>::isValidHandle(node_address h) const
 // ******************************************************************
 
 template <class INT>
-void MEDDLY::freelist_manager<INT>::reportStats(output &s, const char* pad, 
+void MEDDLY::freelist_manager<INT>::reportStats(output &s, const char* pad,
   bool human, bool details) const
 {
   s << pad << "Report for freelist memory manager:\n";
@@ -321,7 +325,7 @@ MEDDLY::freelist_style::~freelist_style()
 }
 
 MEDDLY::memory_manager*
-MEDDLY::freelist_style::initManager(unsigned char granularity, 
+MEDDLY::freelist_style::initManager(unsigned char granularity,
   unsigned char minsize, memstats &stats) const
 {
   switch (granularity) {

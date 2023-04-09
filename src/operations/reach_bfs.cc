@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -22,6 +22,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "reach_bfs.h"
 
 // #define DEBUG_BFS
@@ -371,15 +375,15 @@ MEDDLY::forwd_bfs_opname::forwd_bfs_opname()
 {
 }
 
-MEDDLY::binary_operation* 
-MEDDLY::forwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+MEDDLY::binary_operation*
+MEDDLY::forwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   expert_forest* r) const
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
-  if (  
-    (a1->getDomain() != r->getDomain()) || 
-    (a2->getDomain() != r->getDomain()) 
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
@@ -422,15 +426,15 @@ MEDDLY::bckwd_bfs_opname::bckwd_bfs_opname()
 {
 }
 
-MEDDLY::binary_operation* 
-MEDDLY::bckwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+MEDDLY::binary_operation*
+MEDDLY::bckwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   expert_forest* r) const
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
-  if (  
-    (a1->getDomain() != r->getDomain()) || 
-    (a2->getDomain() != r->getDomain()) 
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
@@ -443,7 +447,7 @@ MEDDLY::bckwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     r->isForRelations()     ||
     (a1->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) 
+    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 

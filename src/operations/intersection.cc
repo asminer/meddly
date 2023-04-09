@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "intersection.h"
 #include "apply_base.h"
 
@@ -48,7 +52,7 @@ class MEDDLY::inter_mdd : public generic_binary_mdd {
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::inter_mdd::inter_mdd(const binary_opname* opcode, 
+MEDDLY::inter_mdd::inter_mdd(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
@@ -110,7 +114,7 @@ class MEDDLY::inter_mxd : public generic_binary_mxd {
     virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
 };
 
-MEDDLY::inter_mxd::inter_mxd(const binary_opname* opcode, 
+MEDDLY::inter_mxd::inter_mxd(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
@@ -250,8 +254,8 @@ bool MEDDLY::inter_max_evplus::checkTerminals(long aev, node_handle a, long bev,
   return false;
 }
 
-MEDDLY::node_handle 
-MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b) 
+MEDDLY::node_handle
+MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
 {
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
@@ -262,7 +266,7 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
   MEDDLY_DCASSERT(resF->isExtensibleLevel(resultLevel));
 
   // Initialize readers
-  unpacked_node *A = (aLevel < resultLevel) 
+  unpacked_node *A = (aLevel < resultLevel)
     ? unpacked_node::newRedundant(arg1F, resultLevel, a, false)
     : unpacked_node::newFromNode(arg1F, a, false)
     ;
@@ -380,7 +384,7 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
 class MEDDLY::inter_opname : public binary_opname {
   public:
     inter_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1, 
+    virtual binary_operation* buildOperation(expert_forest* a1,
       expert_forest* a2, expert_forest* r) const;
 };
 
@@ -389,15 +393,15 @@ MEDDLY::inter_opname::inter_opname()
 {
 }
 
-MEDDLY::binary_operation* 
-MEDDLY::inter_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+MEDDLY::binary_operation*
+MEDDLY::inter_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   expert_forest* r) const
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
-  if (  
-    (a1->getDomain() != r->getDomain()) || 
-    (a2->getDomain() != r->getDomain()) 
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 

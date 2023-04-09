@@ -25,6 +25,8 @@
 #ifndef MEDDLY_EXPERT_HH
 #define MEDDLY_EXPERT_HH
 
+#include "defines.h"
+
 // ******************************************************************
 // *                                                                *
 // *                 inlined  expert_domain methods                 *
@@ -63,16 +65,16 @@ MEDDLY::expert_domain::shrinkVariableBound(int vh, int b, bool force)
 // ******************************************************************
 
 
-inline void 
-MEDDLY::unpacked_node::initFromNode(const expert_forest *f, 
+inline void
+MEDDLY::unpacked_node::initFromNode(const expert_forest *f,
   node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
   f->fillUnpacked(*this, node, full ? FULL_NODE : SPARSE_NODE);
 }
 
-inline void 
-MEDDLY::unpacked_node::initFromNode(const expert_forest *f, 
+inline void
+MEDDLY::unpacked_node::initFromNode(const expert_forest *f,
   node_handle node, storage_style st2)
 {
   MEDDLY_DCASSERT(f);
@@ -93,7 +95,7 @@ inline void MEDDLY::unpacked_node::initSparse(const expert_forest *f, int levl, 
 
 // ****************************************************************************
 
-inline MEDDLY::unpacked_node* 
+inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::newFromNode(const expert_forest *f, node_handle node, bool full)
 {
   unpacked_node* U = useUnpackedNode();
@@ -102,7 +104,7 @@ MEDDLY::unpacked_node::newFromNode(const expert_forest *f, node_handle node, boo
   return U;
 }
 
-inline MEDDLY::unpacked_node* 
+inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::newFromNode(const expert_forest *f, node_handle node, storage_style st2)
 {
   unpacked_node* U = useUnpackedNode();
@@ -120,7 +122,7 @@ MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, node_handle n
   return U;
 }
 
-inline MEDDLY::unpacked_node* 
+inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, long ev, node_handle node, bool full)
 {
   unpacked_node* U = useUnpackedNode();
@@ -129,7 +131,7 @@ MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, long ev, node
   return U;
 }
 
-inline MEDDLY::unpacked_node* 
+inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, float ev, node_handle node, bool full)
 {
   unpacked_node* U = useUnpackedNode();
@@ -138,7 +140,7 @@ MEDDLY::unpacked_node::newRedundant(const expert_forest *f, int k, float ev, nod
   return U;
 }
 
-inline MEDDLY::unpacked_node* 
+inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, unsigned i, node_handle node, bool full)
 {
   unpacked_node* U = useUnpackedNode();
@@ -147,7 +149,7 @@ MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, unsigned i, no
   return U;
 }
 
-inline MEDDLY::unpacked_node* 
+inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, unsigned i, long ev, node_handle node, bool full)
 {
   unpacked_node* U = useUnpackedNode();
@@ -156,7 +158,7 @@ MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, unsigned i, lo
   return U;
 }
 
-inline MEDDLY::unpacked_node* 
+inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, unsigned i, float ev, node_handle node, bool full)
 {
   unpacked_node* U = useUnpackedNode();
@@ -165,7 +167,7 @@ MEDDLY::unpacked_node::newIdentity(const expert_forest *f, int k, unsigned i, fl
   return U;
 }
 
-inline MEDDLY::unpacked_node* 
+inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::newFull(const expert_forest *f, int level, unsigned tsz)
 {
   unpacked_node* U = useUnpackedNode();
@@ -176,7 +178,7 @@ MEDDLY::unpacked_node::newFull(const expert_forest *f, int level, unsigned tsz)
   return U;
 }
 
-inline MEDDLY::unpacked_node* 
+inline MEDDLY::unpacked_node*
 MEDDLY::unpacked_node::newSparse(const expert_forest *f, int level, unsigned nnzs)
 {
   unpacked_node* U = useUnpackedNode();
@@ -238,7 +240,7 @@ MEDDLY::unpacked_node::d(unsigned n) const
 }
 
 inline MEDDLY::node_handle&
-MEDDLY::unpacked_node::d_ref(unsigned n) 
+MEDDLY::unpacked_node::d_ref(unsigned n)
 {
   MEDDLY_DCASSERT(down);
   MEDDLY_CHECK_RANGE(0, n, (is_full ? size : nnzs));
@@ -1086,7 +1088,7 @@ MEDDLY::node_headers::deactivate(node_handle p)
 
 // ******************************************************************
 
-inline MEDDLY::node_address 
+inline MEDDLY::node_address
 MEDDLY::node_headers::getNodeAddress(node_handle p) const
 {
   MEDDLY_DCASSERT(p>0);
@@ -1117,7 +1119,7 @@ inline void MEDDLY::node_headers::setNodeAddress(node_handle p, node_address a)
 
 // ******************************************************************
 
-inline void MEDDLY::node_headers::moveNodeAddress(node_handle p, 
+inline void MEDDLY::node_headers::moveNodeAddress(node_handle p,
   node_address old_addr, node_address new_addr)
 {
   MEDDLY_DCASSERT(p>0);
@@ -1250,7 +1252,7 @@ MEDDLY::node_headers::uncacheNode(MEDDLY::node_handle p)
   //
   // Still here?  Might need to clean up
   //
-  
+
   if (isDeleted(p)) {
       // we were already disconnected; must be using pessimistic
 #ifdef TRACK_UNREACHABLE_NODES
@@ -1306,7 +1308,7 @@ MEDDLY::node_headers::uncacheNode(MEDDLY::node_handle p)
     // See if we're now completely disconnected
     // and if so, tell parent to recycle node storage
     if (
-          (incoming_counts && (0==incoming_counts->get(size_t(p)))) 
+          (incoming_counts && (0==incoming_counts->get(size_t(p))))
           ||
           (is_reachable && (0==is_reachable->get(size_t(p))))
     ) {
@@ -1380,7 +1382,7 @@ MEDDLY::node_headers::trackingIncomingCounts() const
 
 // ******************************************************************
 
-inline unsigned long 
+inline unsigned long
 MEDDLY::node_headers::getIncomingCount(node_handle p) const
 {
   MEDDLY_DCASSERT(p>0);
@@ -1430,7 +1432,7 @@ MEDDLY::node_headers::linkNode(node_handle p)
 
   MEDDLY_DCASSERT(incoming_counts);
   if (incoming_counts->isZeroBeforeIncrement(size_t(p))) {
-    // Reclaim an unreachable 
+    // Reclaim an unreachable
     parent.stats.reclaimed_nodes++;
 #ifdef TRACK_UNREACHABLE_NODES
     parent.stats.unreachable_nodes--;
@@ -1489,7 +1491,7 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
   //
   // Still in some cache somewhere.
   //
-  
+
   if (pessimistic) {
     parent.deleteNode(p);
   } else {
@@ -1522,7 +1524,7 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
   //
 
   if (
-        (cache_counts && (0==cache_counts->get(size_t(p)))) 
+        (cache_counts && (0==cache_counts->get(size_t(p))))
         ||
         (is_in_cache && (0==is_in_cache->get(size_t(p))))
   ) {
@@ -1533,7 +1535,7 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
     recycleNodeHandle(p);
     return;
   }
-  
+
   if (pessimistic) {
     //
     // Delete; keep handle until caches are cleared.
@@ -1619,7 +1621,7 @@ MEDDLY::node_headers::clearAllReachableBits()
 
 // ******************************************************************
 
-inline int 
+inline int
 MEDDLY::node_headers::getNodeImplicitFlag(node_handle p) const
 {
 #ifdef OLD_NODE_HEADERS
@@ -1634,7 +1636,7 @@ MEDDLY::node_headers::getNodeImplicitFlag(node_handle p) const
 
 // ******************************************************************
 
-inline void 
+inline void
 MEDDLY::node_headers::setNodeImplicitFlag(node_handle p, bool flag)
 {
 #ifdef OLD_NODE_HEADERS
@@ -1653,8 +1655,8 @@ MEDDLY::node_headers::setNodeImplicitFlag(node_handle p, bool flag)
   }
 #endif
 }
-                         
-// ******************************************************************                       
+
+// ******************************************************************
 
 #ifdef OLD_NODE_HEADERS
 inline MEDDLY::node_handle
@@ -1728,7 +1730,7 @@ inline void* MEDDLY::memory_manager::getChunkAddress(node_address h) const
 {
   MEDDLY_DCASSERT(isValidHandle(h));
 
-  return chunk_multiplier 
+  return chunk_multiplier
     ?  chunk_base + chunk_multiplier * h
     :  slowChunkAddress(h);
 }
@@ -2236,7 +2238,7 @@ MEDDLY::expert_forest::unlinkNode(MEDDLY::node_handle p)
 {
   if (deflt.useReferenceCounts) {
     nodeHeaders.unlinkNode(p);
-  } 
+  }
 }
 
 inline void
@@ -2281,7 +2283,7 @@ MEDDLY::expert_forest::cacheNode(MEDDLY::node_handle p)
   if (deflt.useReferenceCounts) {
     nodeHeaders.cacheNode(p);
     return;
-  } 
+  }
 }
 
 inline void
@@ -2409,7 +2411,7 @@ MEDDLY::expert_forest::setNext(MEDDLY::node_handle p, MEDDLY::node_handle n)
 {
   nodeMan->setNextOf(getNodeAddress(p), n);
 }
-inline bool 
+inline bool
 MEDDLY::expert_forest::isImplicit(node_handle p) const
 {
   return nodeHeaders.getNodeImplicitFlag(p);
@@ -2447,7 +2449,7 @@ MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
   if (deflt.useReferenceCounts) {
     if (getNodeInCount(node) == 0) {
       return MEDDLY::forest::RECOVERABLE;
-    } 
+    }
   }
 
   return MEDDLY::forest::ACTIVE;
@@ -2506,13 +2508,13 @@ MEDDLY::expert_forest::getTransparentNode() const
   return transparent;
 }
 
-inline void 
-MEDDLY::expert_forest::fillUnpacked(MEDDLY::unpacked_node &un, MEDDLY::node_handle node, unpacked_node::storage_style st2) 
+inline void
+MEDDLY::expert_forest::fillUnpacked(MEDDLY::unpacked_node &un, MEDDLY::node_handle node, unpacked_node::storage_style st2)
 const
 {
   const int level = getNodeLevel(node);
   MEDDLY_DCASSERT(0 != level);
-  un.bind_to_forest(this, level, unsigned(getLevelSize(level)), true); 
+  un.bind_to_forest(this, level, unsigned(getLevelSize(level)), true);
   MEDDLY_DCASSERT(getNodeAddress(node));
   nodeMan->fillUnpacked(un, getNodeAddress(node), st2);
 }
@@ -2538,13 +2540,13 @@ MEDDLY::expert_forest::getImplicitTableCount() const
   return q;
 }
 
-inline MEDDLY::relation_node* 
+inline MEDDLY::relation_node*
 MEDDLY::expert_forest::buildImplicitNode(node_handle rnh)
 {
   return buildImplNode(rnh);
 }
 
-inline MEDDLY::node_handle 
+inline MEDDLY::node_handle
 MEDDLY::expert_forest::getImplicitTerminalNode() const
 {
   return getImplTerminalNode();
@@ -2773,7 +2775,7 @@ MEDDLY::satpregen_opname::pregen_relation::getOutForest() const
 inline MEDDLY::expert_forest*
 MEDDLY::satotf_opname::subevent::getForest() {
   return f;
-} 
+}
 
 inline int
 MEDDLY::satotf_opname::subevent::getNumVars() const {
@@ -2891,7 +2893,7 @@ MEDDLY::relation_node::getSignature() const
 inline MEDDLY::expert_forest*
 MEDDLY::relation_node::getForest() {
   return f;
-} 
+}
 
 inline int
 MEDDLY::relation_node::getLevel() const
@@ -2906,7 +2908,7 @@ MEDDLY::relation_node::getDown() const
 }
 
 inline void
-MEDDLY::relation_node::setDown(rel_node_handle d) 
+MEDDLY::relation_node::setDown(rel_node_handle d)
 {
   down = d;
 }
@@ -3036,7 +3038,7 @@ MEDDLY::satimpl_opname::implicit_relation::getTotalEvent(int level)
   int total_event = 0;
   for(int i=1;i<=level;i++)
     total_event +=  lengthForLevel(i);
-  
+
   return total_event;
 }
 
@@ -3118,7 +3120,7 @@ MEDDLY::sathyb_opname::hybrid_relation::getTotalEvent(int level)
   int total_event = 0;
   for(int i=1;i<=level;i++)
     total_event +=  lengthForLevel(i);
-  
+
   return total_event;
 }
 
@@ -3155,7 +3157,7 @@ MEDDLY::sathyb_opname::hybrid_relation::isConfirmedState(int level,int i)
 inline MEDDLY::expert_forest*
 MEDDLY::sathyb_opname::subevent::getForest() {
   return f;
-} 
+}
 
 inline int
 MEDDLY::sathyb_opname::subevent::getNumVars() const {
@@ -3267,47 +3269,47 @@ MEDDLY::compute_table::entry_key::getET() const
   return etype;
 }
 
-inline void MEDDLY::compute_table::entry_key::writeN(node_handle nh) 
+inline void MEDDLY::compute_table::entry_key::writeN(node_handle nh)
 {
   MEDDLY_CHECK_RANGE(0, currslot, total_slots);
   MEDDLY_DCASSERT(compute_table::NODE == theSlotType());
   data[currslot++].N = nh;
 }
 
-inline void MEDDLY::compute_table::entry_key::writeI(int i) 
+inline void MEDDLY::compute_table::entry_key::writeI(int i)
 {
   MEDDLY_CHECK_RANGE(0, currslot, total_slots);
   MEDDLY_DCASSERT(compute_table::INTEGER == theSlotType());
   data[currslot++].I = i;
 }
 
-inline void MEDDLY::compute_table::entry_key::writeL(long i) 
+inline void MEDDLY::compute_table::entry_key::writeL(long i)
 {
   MEDDLY_CHECK_RANGE(0, currslot, total_slots);
   MEDDLY_DCASSERT(compute_table::LONG == theSlotType());
   data[currslot++].L = i;
 }
 
-inline void MEDDLY::compute_table::entry_key::writeF(float f) 
+inline void MEDDLY::compute_table::entry_key::writeF(float f)
 {
   MEDDLY_CHECK_RANGE(0, currslot, total_slots);
   MEDDLY_DCASSERT(compute_table::FLOAT == theSlotType());
   data[currslot++].F = f;
 }
 
-inline const MEDDLY::compute_table::entry_item* 
-MEDDLY::compute_table::entry_key::rawData() const 
-{ 
+inline const MEDDLY::compute_table::entry_item*
+MEDDLY::compute_table::entry_key::rawData() const
+{
   return data;
 }
 
 inline unsigned MEDDLY::compute_table::entry_key::dataLength() const
-{ 
+{
   return total_slots;
 }
 
 inline unsigned MEDDLY::compute_table::entry_key::numRepeats() const
-{ 
+{
   return num_repeats;
 }
 
@@ -3371,7 +3373,7 @@ inline MEDDLY::compute_table::typeID MEDDLY::compute_table::entry_key::theSlotTy
 
 // ******************************************************************
 
-inline MEDDLY::node_handle MEDDLY::compute_table::entry_result::readN() 
+inline MEDDLY::node_handle MEDDLY::compute_table::entry_result::readN()
 {
   MEDDLY_DCASSERT(currslot < dataLength());
   MEDDLY_DCASSERT(data);
@@ -3420,7 +3422,7 @@ inline MEDDLY::ct_object* MEDDLY::compute_table::entry_result::readG()
 }
 
 
-inline void MEDDLY::compute_table::entry_result::reset() 
+inline void MEDDLY::compute_table::entry_result::reset()
 {
   currslot = 0;
 }
@@ -3510,7 +3512,7 @@ MEDDLY::compute_table::entry_result::cacheNodes() const
   }
 }
 
-inline const MEDDLY::compute_table::entry_item* 
+inline const MEDDLY::compute_table::entry_item*
 MEDDLY::compute_table::entry_result
 ::rawData() const
 {

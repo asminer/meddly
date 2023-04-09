@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -24,6 +24,10 @@
 #include <gmp.h>
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "cardinality.h"
 #include "mpz_object.h"
 
@@ -114,11 +118,11 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   if (argF->getNodeLevel(a) < k) {
     return overflow_mult(compute_r(k-1, a), argF->getLevelSize(k));
   }
-  
+
   // Check compute table
   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->writeN(a); 
+  CTsrch->writeN(a);
   CT0->find(CTsrch, CTresult[0]);
   if (CTresult[0]) {
     CT0->recycle(CTsrch);
@@ -134,7 +138,7 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   for (unsigned z=0; z<A->getNNZs(); z++) {
     overflow_acc(card, compute_r(kdn, A->d(z)));
   }
-  
+
   // Cleanup
   unpacked_node::recycle(A);
 
@@ -172,7 +176,7 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   // Terminal cases
   if (0==a) return 0;
   if (0==k) return 1;
-  
+
   // Quickly deal with skipped levels
   if (isLevelAbove(k, argF->getNodeLevel(a))) {
     if (k<0 && argF->isIdentityReduced()) {
@@ -182,11 +186,11 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
     // redundant node
     return overflow_mult(compute_r(argF->downLevel(k), a), argF->getLevelSize(k));
   }
-  
+
   // Check compute table
   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->writeN(a); 
+  CTsrch->writeN(a);
   CT0->find(CTsrch, CTresult[0]);
   if (CTresult[0]) {
     CT0->recycle(CTsrch);
@@ -202,7 +206,7 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   for (unsigned z=0; z<A->getNNZs(); z++) {
     overflow_acc(card, compute_r(kdn, A->d(z)));
   }
-  
+
   // Cleanup
   unpacked_node::recycle(A);
 
@@ -266,11 +270,11 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   if (argF->getNodeLevel(a) < k) {
     return compute_r(k-1, a) * argF->getLevelSize(k);
   }
-  
+
   // Check compute table
   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->writeN(a); 
+  CTsrch->writeN(a);
   CT0->find(CTsrch, CTresult[0]);
   if (CTresult[0]) {
     CT0->recycle(CTsrch);
@@ -286,7 +290,7 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   for (unsigned z=0; z<A->getNNZs(); z++) {
     card += compute_r(kdn, A->d(z));
   }
-  
+
   // Cleanup
   unpacked_node::recycle(A);
 
@@ -335,11 +339,11 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
     // redundant node
     return compute_r(argF->downLevel(k), a) * argF->getLevelSize(k);
   }
-  
+
   // Check compute table
   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
-  CTsrch->writeN(a); 
+  CTsrch->writeN(a);
   CT0->find(CTsrch, CTresult[0]);
   if (CTresult[0]) {
     CT0->recycle(CTsrch);
@@ -355,7 +359,7 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
   for (unsigned z=0; z<A->getNNZs(); z++) {
     card += compute_r(kdn, A->d(z));
   }
-  
+
   // Cleanup
   unpacked_node::recycle(A);
 
@@ -438,7 +442,7 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
     card.multiply(argF->getLevelSize(k));
     return;
   }
-  
+
   // Check compute table
   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
@@ -466,7 +470,7 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
     compute_r(kdn, A->d(z), tmp);
     card.add(tmp);
   }
-  
+
   // Cleanup
   unpacked_node::recycle(A);
 
@@ -528,7 +532,7 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
     card.multiply(argF->getLevelSize(k));
     return;
   }
-  
+
   // Check compute table
   compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
@@ -555,7 +559,7 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
     compute_r(kdn, A->d(z), tmp);
     card.add(tmp);
   }
-  
+
   // Cleanup
   unpacked_node::recycle(A);
 
@@ -584,7 +588,7 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 class MEDDLY::card_opname : public unary_opname {
   public:
     card_opname();
-    virtual unary_operation* 
+    virtual unary_operation*
       buildOperation(expert_forest* ar, opnd_type res) const;
 };
 
@@ -593,7 +597,7 @@ MEDDLY::card_opname::card_opname()
 {
 }
 
-MEDDLY::unary_operation* 
+MEDDLY::unary_operation*
 MEDDLY::card_opname::buildOperation(expert_forest* arg, opnd_type res) const
 {
   if (0==arg) return 0;
@@ -601,20 +605,20 @@ MEDDLY::card_opname::buildOperation(expert_forest* arg, opnd_type res) const
     case opnd_type::INTEGER:
       if (arg->isForRelations())
         return new card_mxd_int(this, arg);
-      else                        
+      else
         return new card_mdd_int(this, arg);
 
     case opnd_type::REAL:
       if (arg->isForRelations())
         return new card_mxd_real(this, arg);
-      else                        
+      else
         return new card_mdd_real(this, arg);
 
 #ifdef HAVE_LIBGMP
     case opnd_type::HUGEINT:
       if (arg->isForRelations())
         return new card_mxd_mpz(this, arg);
-      else                        
+      else
         return new card_mdd_mpz(this, arg);
 #endif
 

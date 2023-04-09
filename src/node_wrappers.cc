@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -23,6 +23,10 @@
 
 #include <map>
 #include "defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "hash_stream.h"
 
 // ******************************************************************
@@ -81,7 +85,7 @@ void MEDDLY::unpacked_node::clear()
 }
 
 /*
-  Initializers 
+  Initializers
 
   Extensible nodes
         + Every node at level k, where level k represents an extensible
@@ -92,7 +96,7 @@ void MEDDLY::unpacked_node::clear()
           repeat for all indices till +infinity.
 */
 
-void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k, 
+void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -111,7 +115,7 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   is_extensible = f->isExtensibleLevel(k);
 }
 
-void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k, 
+void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   float ev, node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -130,7 +134,7 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   }
 }
 
-void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k, 
+void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   int ev, node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -168,7 +172,7 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   }
 }
 
-void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k, 
+void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -188,7 +192,7 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   }
 }
 
-void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k, 
+void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, int ev, node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -210,7 +214,7 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   }
 }
 
-void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k, 
+void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, long ev, node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -345,7 +349,7 @@ void MEDDLY::unpacked_node::write(output &s, const node_handle* map) const
     }
   }
 
-  // 
+  //
   // write edges
   //
   if (parent->edgeBytes()) {
@@ -514,7 +518,7 @@ void MEDDLY::unpacked_node::computeHash()
   if (ext_h_size) {
     s.push(extra_hashed, ext_h_size);
   }
-  
+
   if (isSparse()) {
     if (parent->areEdgeValuesHashed()) {
       for (unsigned z=0; z<nnzs; z++) {
@@ -561,7 +565,7 @@ void MEDDLY::unpacked_node::sort()
   unsigned k = 1;
   for (k = 1; k < getNNZs() && i(k-1) < i(k) ; k++);
   if (k == getNNZs()) return; // already sorted
-  
+
   // sort from (k-1) to (nnz-1)
   --k;
   std::map<unsigned, unsigned> sorter;

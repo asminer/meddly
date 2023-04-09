@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 
 #include "sccgraph.h"
 
@@ -96,7 +100,7 @@ unsigned add_to_circular_list(unsigned& List, unsigned node, LNT* edges)
 
       for (;;) {
         if (edges[node].to == edges[curr].to) {
-          // 
+          //
           // We found a match, don't update anything in the list
           //
           return curr;
@@ -277,8 +281,8 @@ void MEDDLY::sccgraph::dumpGraph(MEDDLY::output &out) const
   show_scc_list(out, scc_updatelist);
 
   out << "\ninternal structure\n";
-  show_array(out, "   graph_from: ", graph_from, graph_vertices_used); 
-  show_array(out, "   scc_from: ", scc_from, scc_vertices_used); 
+  show_array(out, "   graph_from: ", graph_from, graph_vertices_used);
+  show_array(out, "   scc_from: ", scc_from, scc_vertices_used);
   show_array(out, "   vertex_to_scc: ", vertex_to_scc, graph_vertices_used);
   show_array(out, "   scc_vertex_offset: ", scc_vertex_offset, 1+scc_vertices_used);
   show_array(out, "   vertices_by_scc: ", vertices_by_scc, graph_vertices_used);
@@ -300,7 +304,7 @@ void MEDDLY::sccgraph::add_edge(unsigned I, unsigned J, edge_label* L)
   if (ge != newge) {
     // Existing edge; merge them!
     graph_edges[ge].edge->append_and_recycle(L);
-    graph_edges[newge].edge = 0; 
+    graph_edges[newge].edge = 0;
     recycle_graph_edge(newge);
   }
 
@@ -373,7 +377,7 @@ void MEDDLY::sccgraph::update_SCCs()
     scc_visit(v);
     recycle_scc_edge(ptr);
   }
-  
+
 #ifdef DEBUG_SCC
   printf("Done exploring sccs\n");
   FILE_output cout(stdout);
@@ -426,7 +430,7 @@ void MEDDLY::sccgraph::update_SCCs()
     visit_stack[i] = scc_from[i];
     scc_from[i] = 0;
   }
-  
+
   //
   // Copy edges back where they belong.
   // During the copy, renumber the "to" value.
@@ -448,7 +452,7 @@ void MEDDLY::sccgraph::update_SCCs()
 
       // Check our invariant
       MEDDLY_DCASSERT(newj >= newi);
-      
+
       if ((newi == newj) || (list != add_to_circular_list(scc_from[newi], list, scc_edges))) {
         // this edge collapses now
         recycle_scc_edge(list);
@@ -464,7 +468,7 @@ void MEDDLY::sccgraph::update_SCCs()
     MEDDLY_CHECK_RANGE(0, vertex_to_scc[i], scc_vertices_used);
     vertex_to_scc[i] = visit_index[ vertex_to_scc[i] ];
   }
-  
+
   //
   // Count number of vertices in each scc
   //
@@ -503,7 +507,7 @@ void MEDDLY::sccgraph::update_SCCs()
 }
 
 void MEDDLY::sccgraph::expand_vertices(unsigned I)
-{ 
+{
   //
   // Add graph vertices as needed
   //
@@ -517,7 +521,7 @@ void MEDDLY::sccgraph::expand_vertices(unsigned I)
     } else {
       graph_vertices_alloc *= 2;
     }
-    graph_from = (unsigned*) 
+    graph_from = (unsigned*)
       realloc(graph_from, graph_vertices_alloc * sizeof(unsigned));
 
     if (0==graph_from) {
@@ -557,14 +561,14 @@ void MEDDLY::sccgraph::expand_vertices(unsigned I)
     } else {
       scc_vertices_alloc *= 2;
     }
-    scc_from = (unsigned*) 
+    scc_from = (unsigned*)
       realloc(scc_from, scc_vertices_alloc * sizeof(unsigned));
 
     if (0==scc_from) {
       throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
 
-    scc_vertex_offset = (unsigned*) 
+    scc_vertex_offset = (unsigned*)
       realloc(scc_vertex_offset, (1+scc_vertices_alloc) * sizeof(unsigned));
 
     scc_vertex_offset[0] = 0;
@@ -582,7 +586,7 @@ void MEDDLY::sccgraph::expand_vertices(unsigned I)
 
     visit_index = (unsigned*)
       realloc(visit_index, scc_vertices_alloc * sizeof(unsigned));
-      
+
     if (0==visit_index) {
       throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
@@ -634,7 +638,7 @@ unsigned MEDDLY::sccgraph::new_graph_edge(unsigned J, edge_label* L)
       } else {
         graph_edges_alloc *= 2;
       }
-      graph_edges = (labeled_list_node*) 
+      graph_edges = (labeled_list_node*)
         realloc(graph_edges, graph_edges_alloc * sizeof(labeled_list_node));
 
       if (0==graph_edges) {
@@ -675,7 +679,7 @@ unsigned MEDDLY::sccgraph::new_scc_edge(unsigned J)
       } else {
         scc_edges_alloc *= 2;
       }
-      scc_edges = (unlabeled_list_node*) 
+      scc_edges = (unlabeled_list_node*)
         realloc(scc_edges, scc_edges_alloc * sizeof(unlabeled_list_node));
 
       if (0==scc_edges) {

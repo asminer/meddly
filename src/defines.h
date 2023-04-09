@@ -44,26 +44,26 @@
 // #define TRACE_ALL_OPS
 
 // Things that everyone will need
-#include <cstdlib>
-#include <cassert>
-#include <cstring>
-#include <cstdarg>
+// #include <cstdlib>
+// #include <cassert>
+// #include <cstring>
+// #include <cstdarg>
 #include <limits>
 
 // Meddly
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
+// #include "old_meddly.h"
+// #include "old_meddly.hh"
+// #include "old_meddly_expert.h"
+// #include "old_meddly_expert.hh"
 
 // Macro to handle extern "C"
-#ifdef __cplusplus
-#  define BEGIN_C_DECLS extern "C" {
-#  define END_C_DECLS   }
-#else /* !__cplusplus */
-#  define BEGIN_C_DECLS
-#  define END_C_DECLS
-#endif /* __cplusplus */
+// #ifdef __cplusplus
+// #  define BEGIN_C_DECLS extern "C" {
+// #  define END_C_DECLS   }
+// #else /* !__cplusplus */
+// #  define BEGIN_C_DECLS
+// #  define END_C_DECLS
+// #endif /* __cplusplus */
 
 // Handy Constants
 
@@ -111,97 +111,6 @@ namespace MEDDLY {
     return k1 > k2;
   }
 
-  /// Print human-readable memory usage
-  /*
-  inline void fprintmem(FILE* s, unsigned long m, bool human) {
-    if ((!human) || (m<1024)) {
-      fprintf(s, "%lu bytes", m);
-      return;
-    }
-    double approx = m;
-    approx /= 1024;
-    if (approx < 1024) {
-      fprintf(s, "%3.2lf Kbytes", approx);
-      return;
-    }
-    approx /= 1024;
-    if (approx < 1024) {
-      fprintf(s, "%3.2lf Mbytes", approx);
-      return;
-    }
-    approx /= 1024;
-    if (approx < 1024) {
-      fprintf(s, "%3.2lf Gbytes", approx);
-      return;
-    }
-    approx /= 1024;
-    fprintf(s, "%3.2lf Tbytes", approx);
-  }
-  */
-
-  /// throw wrapper around fputc
-  /*
-  inline void th_fputc(int c, FILE* s) {
-    if (EOF==fputc(c, s)) throw error(error::COULDNT_WRITE);
-  }
-  */
-
-  /// throw wrapper around fprintf
-  /*
-  inline void th_fprintf(FILE* s, const char* fmt, ...) {
-    va_list argptr;
-    va_start(argptr, fmt);
-    if (vfprintf(s, fmt, argptr)<0) throw error(error::COULDNT_WRITE);
-    va_end(argptr);
-  }
-  */
-
-  /// throw wrapper around fscanf
-  /*
-  inline void th_fscanf(int n, FILE* s, const char* fmt, ...) {
-    va_list argptr;
-    va_start(argptr, fmt);
-    if (vfscanf(s, fmt, argptr)!=n) throw error(error::INVALID_FILE);
-    va_end(argptr);
-  }
-  */
-
-  /// Consume whitespace (if any) from a file stream
-  /// including comments of the form #....\n
-  /*
-  inline void stripWS(FILE* s) {
-    bool comment = false;
-    for (;;) {
-      int c = fgetc(s);
-      if (EOF == c) throw error(error::INVALID_FILE);
-      if ('\n'== c) {
-        comment = false;
-        continue;
-      }
-      if (comment) continue;
-      if (' ' == c) continue;
-      if ('\t' == c) continue;
-      if ('\r' == c) continue;
-      if ('#' == c) {
-        comment = true;
-        continue;
-      }
-      // not whitespace
-      ungetc(c, s);
-      return;
-    }
-  }
-  */
-
-  /// Consume a keyword from a file stream
-  /*
-  inline void consumeKeyword(FILE* s, const char* keyword) {
-    for ( ; *keyword; keyword++) {
-      int c = fgetc(s);
-      if (c != *keyword) throw error(error::INVALID_FILE);
-    }
-  }
-  */
 }
 
 /*
@@ -237,6 +146,35 @@ namespace MEDDLY {
 #else
 #define smart_cast	static_cast
 #endif
+
+
+// Flags for development version only. Significant reduction in performance.
+#ifdef DEVELOPMENT_CODE
+#define RANGE_CHECK_ON
+#define DCASSERTS_ON
+#include <cassert>
+#endif
+
+// #define TRACK_DELETIONS
+// #define TRACK_CACHECOUNT
+// #define TRACK_UNREACHABLE_NODES
+
+
+// Use this for assertions that will fail only when your
+// code is wrong.  Handy for debugging.
+#ifdef DCASSERTS_ON
+#define MEDDLY_DCASSERT(X) assert(X)
+#else
+#define MEDDLY_DCASSERT(X)
+#endif
+
+// Use this for range checking assertions that should succeed.
+#ifdef RANGE_CHECK_ON
+#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX) { assert(VALUE < MAX); assert(VALUE >= MIN); }
+#else
+#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
+#endif
+
 
 
 

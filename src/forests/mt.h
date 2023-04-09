@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -27,6 +27,10 @@
 #define MT_FOREST
 
 #include "../defines.h"
+#include "../old_meddly.h"
+#include "../old_meddly.hh"
+#include "../old_meddly_expert.h"
+#include "../old_meddly_expert.hh"
 
 namespace MEDDLY {
   class mt_forest;
@@ -53,7 +57,7 @@ class MEDDLY::mt_forest : public expert_forest {
 
     /// Add redundant nodes from level k to the given node.
     node_handle makeNodeAtLevel(int k, node_handle d);
-  
+
   protected:
     /// make a node at the top level
     inline node_handle makeNodeAtTop(node_handle d) {
@@ -89,9 +93,9 @@ class MEDDLY::mt_forest : public expert_forest {
       */
       if (vh < 0 || vh > getNumVariables())
           throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
-      if (result.getForest() != this) 
+      if (result.getForest() != this)
           throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-      if (!isForRelations() && pr) 
+      if (!isForRelations() && pr)
           throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
 
       int level = getLevelByVar(vh);
@@ -113,7 +117,7 @@ class MEDDLY::mt_forest : public expert_forest {
       */
       unpacked_node* nb = unpacked_node::newFull(this, k, sz);
       for (unsigned i=0; i<sz; i++) {
-        nb->d_ref(i) = makeNodeAtLevel(km1, 
+        nb->d_ref(i) = makeNodeAtLevel(km1,
           ENCODER::value2handle(vals ? vals[i] : i)
         );
       }
@@ -122,7 +126,7 @@ class MEDDLY::mt_forest : public expert_forest {
           Reduce, add redundant as necessary, and set answer
       */
       node_handle node = createReducedNode(-1, nb);
-      node = makeNodeAtTop(node); 
+      node = makeNodeAtTop(node);
       result.set(node);
     }
 

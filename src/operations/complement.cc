@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -47,8 +47,8 @@ class MEDDLY::compl_mdd : public unary_operation {
   protected:
     node_handle compute_r(node_handle a);
 
-    inline compute_table::entry_key* 
-    findResult(node_handle a, node_handle &b) 
+    inline compute_table::entry_key*
+    findResult(node_handle a, node_handle &b)
     {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
@@ -59,8 +59,8 @@ class MEDDLY::compl_mdd : public unary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::entry_key* Key, 
-      node_handle a, node_handle b) 
+    inline node_handle saveResult(compute_table::entry_key* Key,
+      node_handle a, node_handle b)
     {
       CTresult[0].reset();
       CTresult[0].writeN(b);
@@ -80,7 +80,7 @@ MEDDLY::compl_mdd
   buildCTs();
 }
 
-void MEDDLY::compl_mdd::computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag) 
+void MEDDLY::compl_mdd::computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag)
 {
   node_handle result = compute_r(a.getNode());
   const int num_levels = resF->getDomain()->getNumVariables();
@@ -159,7 +159,7 @@ MEDDLY::compl_mxd
   buildCTs();
 }
 
-void MEDDLY::compl_mxd::computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag) 
+void MEDDLY::compl_mxd::computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag)
 {
   node_handle result = compute_r(-1, argF->getDomain()->getNumVariables(), a.getNode());
   b.set(result);

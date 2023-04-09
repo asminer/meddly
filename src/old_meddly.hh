@@ -26,6 +26,7 @@
 #ifndef MEDDLY_HH
 #define MEDDLY_HH
 
+#include "defines.h"
 #include "error.h"
 
 //---------------------- Inlines ---------------------------------------------

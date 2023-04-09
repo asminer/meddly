@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -24,6 +24,10 @@
 
 
 #include "defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 
 #include "unique_table.h"
 
@@ -174,7 +178,7 @@ void MEDDLY::expert_variable::removeFromList(const domain* d)
   domlist[find] = domlist[dl_used-1];
   dl_used--;
   // if that was the last domain...
-  if (0==dl_used) delete this;  
+  if (0==dl_used) delete this;
 }
 
 void MEDDLY::expert_variable::enlargeBound(bool prime, int b)
@@ -208,7 +212,7 @@ void MEDDLY::expert_variable::shrinkBound(int b, bool force)
 
 const int MEDDLY::domain::TERMINALS = 0;
 
-MEDDLY::domain::domain(variable** v, int N) 
+MEDDLY::domain::domain(variable** v, int N)
 {
   vars = v;
   nVars = N;
@@ -245,7 +249,7 @@ MEDDLY::domain::domain(variable** v, int N)
 #endif
 }
 
-MEDDLY::domain::~domain() 
+MEDDLY::domain::~domain()
 {
 #ifdef DEBUG_CLEANUP
   fprintf(stderr, "Deleting domain #%d\n", my_index);
@@ -319,7 +323,7 @@ void MEDDLY::domain::deleteDomList()
   free_list = -1;
 }
 
-MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t, 
+MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
     forest::edge_labeling e, const forest::policies &p, int* level_reduction_rule, int tv)
 {
   unsigned slot = findEmptyForestSlot();
@@ -381,11 +385,11 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
   return f;
 }
 
-MEDDLY::forest* 
+MEDDLY::forest*
 MEDDLY::domain
 ::createForest(bool rel, forest::range_type t, forest::edge_labeling e)
 {
-  return createForest(rel, t, e, 
+  return createForest(rel, t, e,
     rel ? forest::getDefaultPoliciesMXDs() : forest::getDefaultPoliciesMDDs(),NULL, 0);
 }
 
@@ -453,14 +457,14 @@ void MEDDLY::domain::markForDeletion()
 #endif
   if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
-  for (unsigned slot=0; slot<szForests; slot++) 
+  for (unsigned slot=0; slot<szForests; slot++)
     if (forests[slot]) forests[slot]->markForDeletion();
 }
 
 std::shared_ptr<const MEDDLY::variable_order> MEDDLY::domain::makeVariableOrder(const int* order)
 {
   cleanVariableOrders();
-  
+
   for (const auto& p : var_orders) {
     if (p->is_compatible_with(order)) {
       return p;
@@ -475,7 +479,7 @@ std::shared_ptr<const MEDDLY::variable_order> MEDDLY::domain::makeVariableOrder(
 std::shared_ptr<const MEDDLY::variable_order> MEDDLY::domain::makeVariableOrder(const variable_order& order)
 {
   cleanVariableOrders();
-  
+
   for (const auto& p : var_orders) {
     if (p->is_compatible_with(order)) {
       return p;

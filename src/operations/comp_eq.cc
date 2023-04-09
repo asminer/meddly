@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "comp_eq.h"
 #include "apply_base.h"
 
@@ -123,11 +127,11 @@ class MEDDLY::equal_evtimes : public generic_binary_evtimes {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(float av, node_handle a, float bv, node_handle b, 
+    virtual bool checkTerminals(float av, node_handle a, float bv, node_handle b,
       float &cv, node_handle& c);
 };
 
-MEDDLY::equal_evtimes::equal_evtimes(const binary_opname* opcode, 
+MEDDLY::equal_evtimes::equal_evtimes(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_evtimes(opcode, arg1, arg2, res)
 {
@@ -160,7 +164,7 @@ bool MEDDLY::equal_evtimes
 class MEDDLY::equal_opname : public binary_opname {
   public:
     equal_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1, 
+    virtual binary_operation* buildOperation(expert_forest* a1,
       expert_forest* a2, expert_forest* r) const;
 };
 
@@ -169,15 +173,15 @@ MEDDLY::equal_opname::equal_opname()
 {
 }
 
-MEDDLY::binary_operation* 
-MEDDLY::equal_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+MEDDLY::binary_operation*
+MEDDLY::equal_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   expert_forest* r) const
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
-  if (  
-    (a1->getDomain() != r->getDomain()) || 
-    (a2->getDomain() != r->getDomain()) 
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
@@ -185,13 +189,13 @@ MEDDLY::equal_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a1->isForRelations() != r->isForRelations()) ||
     (a2->isForRelations() != r->isForRelations()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling()) 
+    (a2->getEdgeLabeling() != r->getEdgeLabeling())
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
     bool use_reals = (
-      a1->getRangeType() == forest::REAL || a2->getRangeType() == forest::REAL 
+      a1->getRangeType() == forest::REAL || a2->getRangeType() == forest::REAL
     );
     if (use_reals) {
       if (r->isForRelations())

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #define EV_FOREST
 
 #include "../defines.h"
+#include "../old_meddly.h"
+#include "../old_meddly.hh"
+#include "../old_meddly_expert.h"
+#include "../old_meddly_expert.hh"
 
 namespace MEDDLY {
   class ev_forest;
@@ -118,9 +122,9 @@ class MEDDLY::ev_forest : public expert_forest {
       */
       if (vh < 0 || vh > getNumVariables())
         throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
-      if (result.getForest() != this) 
+      if (result.getForest() != this)
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-      if (!isForRelations() && pr) 
+      if (!isForRelations() && pr)
         throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
 
       int level = getLevelByVar(vh);
@@ -155,7 +159,7 @@ class MEDDLY::ev_forest : public expert_forest {
       T ev;
       node_handle node;
       createReducedNode(-1, nb, ev, node);
-      makeNodeAtTop<OPERATION, T>(ev, node); 
+      makeNodeAtTop<OPERATION, T>(ev, node);
       result.set(node, ev);
     }
 
@@ -205,7 +209,7 @@ namespace MEDDLY {
       int up = (dk < 0) ? -dk : isForRelations() ? -(dk + 1) : (dk + 1);
       unsigned sz = unsigned(getLevelSize(up));
       unpacked_node* nb = unpacked_node::newFull(this, up, sz);
-  
+
       if (isIdentityReduced() && (dk < 0) && (1 == prevSize)) {
         // Build unprimed node with check for identity reduction.
         // Note 0: ed cannot be a terminal node (dk < 0).

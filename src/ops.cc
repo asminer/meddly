@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -24,6 +24,10 @@
 */
 
 #include "defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 // #include "compute_table.h"
 
 // #define DEBUG_CLEANUP
@@ -58,13 +62,13 @@ MEDDLY::unary_opname::~unary_opname()
 {
 }
 
-MEDDLY::unary_operation* 
+MEDDLY::unary_operation*
 MEDDLY::unary_opname::buildOperation(expert_forest* ar, expert_forest* rs) const
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);  
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-MEDDLY::unary_operation* 
+MEDDLY::unary_operation*
 MEDDLY::unary_opname::buildOperation(expert_forest* ar, opnd_type res) const
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -157,7 +161,7 @@ MEDDLY::operation::operation(const opname* n, unsigned et_slots)
   is_marked_for_deletion = false;
   next = 0;
 
-  // 
+  //
   // assign an index to this operation
   //
   if (free_list) {
@@ -244,7 +248,7 @@ void MEDDLY::operation::buildCTs()
   //
   // Most operations use only one slot
   //
-  CT0 = CT[0];  
+  CT0 = CT[0];
 }
 
 
@@ -308,7 +312,7 @@ void MEDDLY::operation::markForDeletion()
   }
 }
 
-void MEDDLY::operation::destroyAllOps() 
+void MEDDLY::operation::destroyAllOps()
 {
   for (unsigned i=0; i<list_size; i++) delete op_list[i];
   free(op_list);
@@ -371,18 +375,18 @@ void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
     Monolithic_CT->show(s, verbLevel);
     return;
   }
-  for (unsigned i=0; i<list_size; i++) 
+  for (unsigned i=0; i<list_size; i++)
     if (op_list[i]) {
       op_list[i]->showComputeTable(s, verbLevel);
     }
 }
 
-void MEDDLY::operation::countAllNodeEntries(const expert_forest* f, size_t* counts) 
+void MEDDLY::operation::countAllNodeEntries(const expert_forest* f, size_t* counts)
 {
   if (Monolithic_CT) {
     Monolithic_CT->countNodeEntries(f, counts);
   }
-  for (unsigned i=0; i<list_size; i++) 
+  for (unsigned i=0; i<list_size; i++)
     if (op_list[i]) {
       op_list[i]->countCTEntries(f, counts);
     }
@@ -414,7 +418,7 @@ void MEDDLY::operation::countCTEntries(const expert_forest* f, size_t* counts) c
       if (CT[i]->isOperationTable()) {
         CT[i]->countNodeEntries(f, counts);
       }
-    } 
+    }
   }
 }
 
@@ -422,7 +426,7 @@ void MEDDLY::operation::countCTEntries(const expert_forest* f, size_t* counts) c
 // *                    unary_operation  methods                    *
 // ******************************************************************
 
-MEDDLY::unary_operation::unary_operation(const unary_opname* code, 
+MEDDLY::unary_operation::unary_operation(const unary_opname* code,
   unsigned et_slots, expert_forest* arg, expert_forest* res)
 : operation(code, et_slots)
 {
@@ -434,7 +438,7 @@ MEDDLY::unary_operation::unary_operation(const unary_opname* code,
   registerInForest(resF);
 }
 
-MEDDLY::unary_operation::unary_operation(const unary_opname* code, 
+MEDDLY::unary_operation::unary_operation(const unary_opname* code,
   unsigned et_slots, expert_forest* arg, opnd_type res)
 : operation(code, et_slots)
 {
@@ -475,7 +479,7 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
 // *                    binary_operation methods                    *
 // ******************************************************************
 
-MEDDLY::binary_operation::binary_operation(const binary_opname* op, 
+MEDDLY::binary_operation::binary_operation(const binary_opname* op,
   unsigned et_slots, expert_forest* arg1, expert_forest* arg2, expert_forest* res)
 : operation(op, et_slots)
 {
@@ -499,13 +503,13 @@ MEDDLY::binary_operation::~binary_operation()
 
 #ifdef KEEP_LL_COMPUTES
 
-MEDDLY::node_handle 
+MEDDLY::node_handle
 MEDDLY::binary_operation::compute(node_handle a, node_handle b)
 {
   throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
 }
 
-MEDDLY::node_handle 
+MEDDLY::node_handle
 MEDDLY::binary_operation::compute(int k, node_handle a, node_handle b)
 {
   throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
@@ -562,7 +566,7 @@ void MEDDLY::specialized_operation::compute(const dd_edge &arg, bool &res)
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::specialized_operation::compute(const dd_edge &ar1, 
+void MEDDLY::specialized_operation::compute(const dd_edge &ar1,
   const dd_edge &ar2, dd_edge &res)
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);

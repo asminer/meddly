@@ -18,7 +18,7 @@
 */
 
 #include "defines.h"
-
+#include "error.h"
 
 MEDDLY::error::error(MEDDLY::error::code c, const char* fn, unsigned ln)
 {

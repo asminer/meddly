@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "plus.h"
 #include "apply_base.h"
 
@@ -48,7 +52,7 @@ class MEDDLY::plus_mdd : public generic_binary_mdd {
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::plus_mdd::plus_mdd(const binary_opname* opcode, 
+MEDDLY::plus_mdd::plus_mdd(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
@@ -106,7 +110,7 @@ class MEDDLY::plus_mxd : public generic_binary_mxd {
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::plus_mxd::plus_mxd(const binary_opname* opcode, 
+MEDDLY::plus_mxd::plus_mxd(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
@@ -155,7 +159,7 @@ class MEDDLY::plus_evplus : public generic_binary_evplus {
       long& cev, node_handle& c);
 };
 
-MEDDLY::plus_evplus::plus_evplus(const binary_opname* opcode, 
+MEDDLY::plus_evplus::plus_evplus(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_evplus(opcode, arg1, arg2, res)
 {
@@ -236,18 +240,18 @@ class MEDDLY::plus_evtimes : public generic_binary_evtimes {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual bool checkTerminals(float aev, node_handle a, float bev, node_handle b, 
+    virtual bool checkTerminals(float aev, node_handle a, float bev, node_handle b,
       float& cev, node_handle& c);
 };
 
-MEDDLY::plus_evtimes::plus_evtimes(const binary_opname* opcode, 
+MEDDLY::plus_evtimes::plus_evtimes(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_evtimes(opcode, arg1, arg2, res)
 {
   operationCommutes();
 }
 
-bool MEDDLY::plus_evtimes::checkTerminals(float aev, node_handle a, 
+bool MEDDLY::plus_evtimes::checkTerminals(float aev, node_handle a,
   float bev, node_handle b, float& cev, node_handle& c)
 {
   if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
@@ -290,7 +294,7 @@ bool MEDDLY::plus_evtimes::checkTerminals(float aev, node_handle a,
 class MEDDLY::plus_opname : public binary_opname {
   public:
     plus_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1, 
+    virtual binary_operation* buildOperation(expert_forest* a1,
       expert_forest* a2, expert_forest* r) const;
 };
 
@@ -299,15 +303,15 @@ MEDDLY::plus_opname::plus_opname()
 {
 }
 
-MEDDLY::binary_operation* 
-MEDDLY::plus_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+MEDDLY::binary_operation*
+MEDDLY::plus_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   expert_forest* r) const
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
-  if (  
-    (a1->getDomain() != r->getDomain()) || 
-    (a2->getDomain() != r->getDomain()) 
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
@@ -329,7 +333,7 @@ MEDDLY::plus_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 
   if (
     (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType()) 
+    (a2->getRangeType() != r->getRangeType())
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 

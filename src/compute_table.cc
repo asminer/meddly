@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -19,6 +19,10 @@
 
 
 #include "defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 
 #include "storage/ct_styles.h"
 
@@ -64,7 +68,7 @@ MEDDLY::ct_initializer::ct_initializer(initializer_list* prev) : initializer_lis
   // Set to null for now.
   // Set to the proper manager in setup()
   //
-  setMemoryManager(0);  
+  setMemoryManager(0);
 }
 
 MEDDLY::ct_initializer::~ct_initializer()
@@ -170,7 +174,7 @@ MEDDLY::compute_table_style::~compute_table_style()
 {
 }
 
-MEDDLY::compute_table* 
+MEDDLY::compute_table*
 MEDDLY::compute_table_style::create(const ct_initializer::settings &s)
       const
 {
@@ -178,8 +182,8 @@ MEDDLY::compute_table_style::create(const ct_initializer::settings &s)
 }
 
 
-MEDDLY::compute_table* 
-MEDDLY::compute_table_style::create(const ct_initializer::settings &s, 
+MEDDLY::compute_table*
+MEDDLY::compute_table_style::create(const ct_initializer::settings &s,
       operation* op, unsigned slot) const
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -197,7 +201,7 @@ unsigned MEDDLY::compute_table::entryInfoAlloc;
 unsigned MEDDLY::compute_table::entryInfoSize;
 MEDDLY::compute_table::entry_key* MEDDLY::compute_table::free_keys;
 
-MEDDLY::compute_table::compute_table(const ct_initializer::settings &s, 
+MEDDLY::compute_table::compute_table(const ct_initializer::settings &s,
   operation* op, unsigned slot)
 {
   maxSize = s.maxSize;
@@ -509,7 +513,7 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
 
   if (saw_dot) {
     // "012.456:89"
-    len_ks_type = dot_slot; 
+    len_ks_type = dot_slot;
     MEDDLY_DCASSERT(colon_slot > dot_slot);
     len_kr_type = (colon_slot - dot_slot) - 1;
   } else {
@@ -523,9 +527,9 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
     (saw_dot && 0==len_kr_type)             // "foo.:bar" is bad
     ||
     (len_ks_type + len_kr_type == 0)        // no key?
-    || 
+    ||
     (len_r_type == 0)                       // no result?
-  ) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);   
+  ) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
 
   //
   // Build starting portion of key
@@ -623,7 +627,7 @@ void MEDDLY::compute_table::entry_type::setForestForSlot(unsigned i, expert_fore
       return;
     }
   }
-  
+
   i -= len_kr_type;
   // adjust for :
   i--;

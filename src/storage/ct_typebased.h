@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -73,7 +73,7 @@ namespace MEDDLY {
 
 #ifdef DEBUG_CT_SCAN
           printf("CTSCAN stale entry in table slot %u\n", i);
-#endif  
+#endif
           discardAndRecycle(table[i]);
           table[i] = 0;
       }
@@ -103,7 +103,7 @@ namespace MEDDLY {
               FILE_output out(stdout);
               showEntry(out, curr);
               printf(" in table list %u\n", i);
-#endif  
+#endif
               discardAndRecycle(curr);
 
             } else {
@@ -182,7 +182,7 @@ namespace MEDDLY {
 #endif
         fflush(stdout);
 #endif
-        collisions++;    
+        collisions++;
 
         discardAndRecycle(table[h]);
         table[h] = curr;
@@ -213,7 +213,7 @@ namespace MEDDLY {
       /**
           Check if the key portion of an entry equals key and should be discarded.
             @param  entry   Complete entry in CT to check.
-            @param  key     Key to compare against. 
+            @param  key     Key to compare against.
             @param  discard On output: should this entry be discarded
 
             @return Result portion of the entry, if they key portion matches;
@@ -315,7 +315,7 @@ namespace MEDDLY {
         } // for i
       }
 
-      /// Display a chain 
+      /// Display a chain
       inline void showChain(output &s, int L) const {
         s << L;
         if (CHAINED) {
@@ -353,7 +353,7 @@ namespace MEDDLY {
             @param  s         Stream to write to.
             @param  h         Handle of the entry.
       */
-      inline void showEntry(output &s, unsigned long h) const 
+      inline void showEntry(output &s, unsigned long h) const
       {
 #ifdef INTEGRATED_MEMMAN
         showEntry(s, entries+h);
@@ -396,10 +396,10 @@ namespace MEDDLY {
       /// freeList[i] is list of all unused i-sized entries.
       int* freeList;
 #else
-  
+
       memory_manager* MMAN;
 #endif
-  
+
       /// Memory statistics
       memstats mstats;
 
@@ -442,7 +442,7 @@ MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::ct_typebased(
   mstats.incMemAlloc( (1+maxEntrySize) * sizeof(int) );
 
   entriesAlloc = 1024;
-  entriesSize = 1;    
+  entriesSize = 1;
   entries = (int*) malloc(unsigned(entriesAlloc) * sizeof(int) );
   if (0==entries) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   entries[0] = 0;     // NEVER USED; set here for sanity.
@@ -636,7 +636,7 @@ inline int* MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       incMod(hcurr);
       curr = table[hcurr];
     }
-    
+
   } // for chain
 
   sawSearch(chain);
@@ -657,7 +657,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   // Allocate temporary space for key preprocessing.
   //
   unsigned temp_bytes =
-    et->getKeyBytes( key->numRepeats() ) 
+    et->getKeyBytes( key->numRepeats() )
     +
     (MONOLITHIC ? sizeof(int) : 0)
     +
@@ -698,7 +698,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
                   temp_entry[tptr] = data[i].I;
                   tptr++;
                   continue;
-      case LONG: 
+      case LONG:
                   memcpy(temp_entry+tptr, &(data[i].L), sizeof(long));
                   tptr += sizeof(long) / sizeof(int);
                   continue;
@@ -711,10 +711,10 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     } // switch t
   } // for i
 
-  // 
+  //
   // TBD - probably shouldn't hash the floats, doubles.
   //
-  
+
   //
   // Hash the key
   //
@@ -753,7 +753,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
         case GENERIC: res.writeG( *((ct_object**)entry_result) );
                       entry_result += sizeof(ct_object*) / sizeof(int);
                       continue;
-                    
+
         default:      MEDDLY_DCASSERT(0);
       } // switch t
     } // for i
@@ -790,7 +790,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
   // Allocate an entry
   //
 
-  const unsigned num_slots = 
+  const unsigned num_slots =
     ( key->numTempBytes() + key->getET()->getResultBytes() ) / sizeof(int)
     + (CHAINED ? 1 : 0)
   ;
@@ -847,7 +847,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
   perf.resizeScans++;
 
 #ifdef DEBUG_SLOW
-  fprintf(stdout, "Running GC in compute table (size %d, entries %u)\n", 
+  fprintf(stdout, "Running GC in compute table (size %d, entries %u)\n",
     tableSize, perf.numEntries
   );
 #endif
@@ -890,7 +890,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
   }
 
   //
-  // Notify forests that we're done marking cache bits; 
+  // Notify forests that we're done marking cache bits;
   // forests can sweep if they like.
   //
   sweepForestCTBits(skipF, NF);
@@ -909,7 +909,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(entry_key* key, const e
       //
       // Enlarge table
       //
-    
+
       int* newt = (int*) realloc(table, newsize * sizeof(int));
       if (0==newt) {
         throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
@@ -1032,7 +1032,7 @@ template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::removeStales()
 {
 #ifdef DEBUG_REMOVESTALES
-  fprintf(stdout, "Removing stales in CT (size %d, entries %lu)\n", 
+  fprintf(stdout, "Removing stales in CT (size %d, entries %lu)\n",
         tableSize, perf.numEntries
   );
 #endif
@@ -1040,7 +1040,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::removeStales()
   if (CHAINED) {
 
     //
-    // Chained 
+    // Chained
     //
     int list = convertToList(true);
 
@@ -1052,7 +1052,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::removeStales()
       if (newsize < 1024) newsize = 1024;
       int* newt = (int*) realloc(table, newsize * sizeof(int));
       if (0==newt) {
-        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__); 
+        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
       }
 
       MEDDLY_DCASSERT(tableSize > newsize);
@@ -1098,13 +1098,13 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::removeStales()
           for (unsigned i=0; i<newsize; i++) table[i] = 0;
           mstats.incMemUsed(newsize * sizeof(int));
           mstats.incMemAlloc(newsize * sizeof(int));
-    
+
           rehashTable(oldT, oldSize);
           free(oldT);
-      
+
           mstats.decMemUsed(oldSize * sizeof(int));
           mstats.decMemAlloc(oldSize * sizeof(int));
-    
+
           tableExpand = tableSize / 2;
           if (1024 == tableSize) {
             tableShrink = 0;
@@ -1114,9 +1114,9 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::removeStales()
       } // if different size
     }
   } // if CHAINED
-    
+
 #ifdef DEBUG_REMOVESTALES
-  fprintf(stdout, "Done removing CT stales (size %d, entries %lu)\n", 
+  fprintf(stdout, "Done removing CT stales (size %d, entries %lu)\n",
     tableSize, perf.numEntries
   );
 #ifdef DEBUG_REMOVESTALES_DETAILS
@@ -1165,7 +1165,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   if (MONOLITHIC) {
     s << "Monolithic compute table\n";
   } else {
-    s << "Compute table for " << global_et->getName() << " (index " 
+    s << "Compute table for " << global_et->getName() << " (index "
       << long(global_et->getID()) << ")\n";
   }
 
@@ -1230,7 +1230,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   if (--verbLevel < 1) return;
 
   s << "\nHash table nodes:\n";
-  
+
   for (unsigned i=0; i<tableSize; i++) {
     int curr = table[i];
     while (curr) {
@@ -1338,7 +1338,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       MEDDLY_DCASSERT(sizeof(float) / sizeof(int) == slots_for_type[FLOAT]);
       MEDDLY_DCASSERT(sizeof(double) / sizeof(int) == slots_for_type[DOUBLE]);
       MEDDLY_DCASSERT(sizeof(ct_object*) / sizeof(int) == slots_for_type[GENERIC]);
-    
+
       //
       // Key portion
       //
@@ -1358,7 +1358,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
         entry += slots_for_type[t];
       } // for i
 
-      // 
+      //
       // Result portion
       //
       for (unsigned i=0; i<et->getResultSize(); i++) {
@@ -1587,7 +1587,7 @@ MEDDLY::node_address MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 
 // **********************************************************************
 
-inline bool YES_stale() 
+inline bool YES_stale()
 {
 #ifdef DEBUG_ISSTALE
   printf("stale\n");
@@ -1606,7 +1606,7 @@ inline bool NO_stale()
 }
 
 template <bool MONOLITHIC, bool CHAINED>
-bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED> 
+bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 ::isStale(const int* entry, bool mark) const
 {
 #ifdef DEBUG_ISSTALE
@@ -1676,7 +1676,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 
   } // for i
 
-  // 
+  //
   // Result portion
   //
   for (unsigned i=0; i<et->getResultSize(); i++) {
@@ -1710,7 +1710,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 // **********************************************************************
 
 template <bool MONOLITHIC, bool CHAINED>
-bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED> 
+bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 ::isDead(const int* result, const entry_type* et) const
 {
   MEDDLY_DCASSERT(et);
@@ -2011,7 +2011,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
                         s.put(item.D, 0, 0, 'e');
                         ptr += sizeof(double) / sizeof(int);
                         break;
-                            
+
         case GENERIC:
                         item.G = *((ct_object**)(ptr));
                         s.put_hex((unsigned long)item.G);

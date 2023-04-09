@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "maxmin.h"
 #include "apply_base.h"
 
@@ -49,7 +53,7 @@ class MEDDLY::maximum_mdd : public generic_binary_mdd {
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::maximum_mdd::maximum_mdd(const binary_opname* opcode, 
+MEDDLY::maximum_mdd::maximum_mdd(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
@@ -92,7 +96,7 @@ class MEDDLY::maximum_mxd : public generic_binary_mxd {
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::maximum_mxd::maximum_mxd(const binary_opname* opcode, 
+MEDDLY::maximum_mxd::maximum_mxd(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
@@ -129,7 +133,7 @@ bool MEDDLY::maximum_mxd::checkTerminals(node_handle a, node_handle b, node_hand
 class MEDDLY::maximum_opname : public binary_opname {
   public:
     maximum_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1, 
+    virtual binary_operation* buildOperation(expert_forest* a1,
       expert_forest* a2, expert_forest* r) const;
 };
 
@@ -138,15 +142,15 @@ MEDDLY::maximum_opname::maximum_opname()
 {
 }
 
-MEDDLY::binary_operation* 
-MEDDLY::maximum_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+MEDDLY::binary_operation*
+MEDDLY::maximum_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   expert_forest* r) const
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
-  if (  
-    (a1->getDomain() != r->getDomain()) || 
-    (a2->getDomain() != r->getDomain()) 
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
@@ -184,7 +188,7 @@ class MEDDLY::minimum_mdd : public generic_binary_mdd {
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::minimum_mdd::minimum_mdd(const binary_opname* opcode, 
+MEDDLY::minimum_mdd::minimum_mdd(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
@@ -227,7 +231,7 @@ class MEDDLY::minimum_mxd : public generic_binary_mxd {
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::minimum_mxd::minimum_mxd(const binary_opname* opcode, 
+MEDDLY::minimum_mxd::minimum_mxd(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
@@ -264,7 +268,7 @@ bool MEDDLY::minimum_mxd::checkTerminals(node_handle a, node_handle b, node_hand
 class MEDDLY::minimum_opname : public binary_opname {
   public:
     minimum_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1, 
+    virtual binary_operation* buildOperation(expert_forest* a1,
       expert_forest* a2, expert_forest* r) const;
 };
 
@@ -273,15 +277,15 @@ MEDDLY::minimum_opname::minimum_opname()
 {
 }
 
-MEDDLY::binary_operation* 
-MEDDLY::minimum_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+MEDDLY::binary_operation*
+MEDDLY::minimum_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   expert_forest* r) const
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
-  if (  
-    (a1->getDomain() != r->getDomain()) || 
-    (a2->getDomain() != r->getDomain()) 
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 

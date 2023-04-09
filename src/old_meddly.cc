@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -27,6 +27,10 @@
 #include "config.h"
 #endif
 #include "defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "revision.h"
 // #include "compute_table.h"
 #include "memory_managers/init_managers.h"
@@ -104,10 +108,10 @@ MEDDLY::memstats::memstats()
 // front end - unary operations
 //----------------------------------------------------------------------
 
-MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code, 
+MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code,
   expert_forest* arg, expert_forest* res)
 {
-  if (!libraryRunning) 
+  if (!libraryRunning)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
     throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
@@ -137,10 +141,10 @@ MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code,
   return (unary_operation*) curr;
 }
 
-MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code, 
+MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code,
   expert_forest* arg, opnd_type res)
 {
-  if (!libraryRunning) 
+  if (!libraryRunning)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
     throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
@@ -170,10 +174,10 @@ MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code,
   return (unary_operation*) curr;
 }
 
-MEDDLY::binary_operation* MEDDLY::getOperation(const binary_opname* code, 
+MEDDLY::binary_operation* MEDDLY::getOperation(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
 {
-  if (!libraryRunning) 
+  if (!libraryRunning)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (code->getIndex()<0 || code->getIndex()>=op_cache_size)
     throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
@@ -206,7 +210,7 @@ MEDDLY::binary_operation* MEDDLY::getOperation(const binary_opname* code,
 void MEDDLY::removeOperationFromCache(operation* op)
 {
   if (0==op || 0==op_cache) return;
-  if (!libraryRunning) 
+  if (!libraryRunning)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   const opname* code = op->getOpName();
 
@@ -228,9 +232,9 @@ void MEDDLY::removeOperationFromCache(operation* op)
 
 void MEDDLY::apply(const unary_opname* code, const dd_edge &a, dd_edge &c)
 {
-  if (!libraryRunning) 
+  if (!libraryRunning)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
-  if (0==code)  
+  if (0==code)
     throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
   unary_operation* op = getOperation(code, a, c);
   op->computeTemp(a, c);
@@ -238,7 +242,7 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, dd_edge &c)
 
 void MEDDLY::apply(const unary_opname* code, const dd_edge &a, long &c)
 {
-  if (!libraryRunning) 
+  if (!libraryRunning)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
     throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
@@ -248,7 +252,7 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, long &c)
 
 void MEDDLY::apply(const unary_opname* code, const dd_edge &a, double &c)
 {
-  if (!libraryRunning) 
+  if (!libraryRunning)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
     throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
@@ -259,7 +263,7 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, double &c)
 void MEDDLY::apply(const unary_opname* code, const dd_edge &a, opnd_type cr,
   ct_object &c)
 {
-  if (!libraryRunning) 
+  if (!libraryRunning)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
     throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
@@ -267,10 +271,10 @@ void MEDDLY::apply(const unary_opname* code, const dd_edge &a, opnd_type cr,
   op->compute(a, c);
 }
 
-void MEDDLY::apply(const binary_opname* code, const dd_edge &a, 
+void MEDDLY::apply(const binary_opname* code, const dd_edge &a,
   const dd_edge &b, dd_edge &c)
 {
-  if (!libraryRunning) 
+  if (!libraryRunning)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
     throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
@@ -425,7 +429,7 @@ void MEDDLY::cleanup()
 
   domain::deleteDomList();
 
-  // clean up operation cache 
+  // clean up operation cache
   delete[] op_cache;
   op_cache = 0;
 
@@ -453,11 +457,11 @@ const char* MEDDLY::getLibraryInfo(int what)
     case 0:
       if (!title) {
         title = new char[80];
-        snprintf(title, 80, 
+        snprintf(title, 80,
 #ifdef DEVELOPMENT_CODE
-          "%s version %s.dev", 
+          "%s version %s.dev",
 #else
-          "%s version %s", 
+          "%s version %s",
 #endif
             PACKAGE_NAME, VERSION
         );
@@ -469,7 +473,7 @@ const char* MEDDLY::getLibraryInfo(int what)
 
     case 2:
       return "Released under the GNU Lesser General Public License, version 3";
- 
+
     case 3:
       return PACKAGE_URL;
 

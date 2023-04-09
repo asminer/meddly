@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "comp_gt.h"
 #include "apply_base.h"
 
@@ -108,7 +112,7 @@ bool morethan_mxd<T>
 class MEDDLY::morethan_opname : public binary_opname {
   public:
     morethan_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1, 
+    virtual binary_operation* buildOperation(expert_forest* a1,
       expert_forest* a2, expert_forest* r) const;
 };
 
@@ -117,15 +121,15 @@ MEDDLY::morethan_opname::morethan_opname()
 {
 }
 
-MEDDLY::binary_operation* 
-MEDDLY::morethan_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+MEDDLY::binary_operation*
+MEDDLY::morethan_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   expert_forest* r) const
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
-  if (  
-    (a1->getDomain() != r->getDomain()) || 
-    (a2->getDomain() != r->getDomain()) 
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
@@ -138,7 +142,7 @@ MEDDLY::morethan_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   bool use_reals = (
-    a1->getRangeType() == forest::REAL || a2->getRangeType() == forest::REAL 
+    a1->getRangeType() == forest::REAL || a2->getRangeType() == forest::REAL
   );
   if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
     if (use_reals) {

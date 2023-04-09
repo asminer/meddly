@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -24,6 +24,10 @@
 // #define DONT_RECYCLE_FROM_GRID
 // #define DONT_RECYCLE_FROM_LARGE
 
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "hole_base.h"
 #include "orig_grid.h"
 
@@ -103,7 +107,7 @@ namespace MEDDLY {
       void addToGrid(node_address h);
 
     private:
-      static const INT SmallestChunk = 5;   
+      static const INT SmallestChunk = 5;
 
       inline bool isHole(node_address h) const {
         return hole_manager<INT>::isHole(h);
@@ -150,7 +154,7 @@ namespace MEDDLY {
         MEDDLY_DCASSERT(isIndexHole(h));
         return hole_manager<INT>::refSlot(h, 1);
       }
-      
+
       inline INT Down(node_address h) const {
         MEDDLY_DCASSERT(isIndexHole(h));
         return hole_manager<INT>::readSlot(h, 2);
@@ -159,7 +163,7 @@ namespace MEDDLY {
         MEDDLY_DCASSERT(isIndexHole(h));
         return hole_manager<INT>::refSlot(h, 2);
       }
-      
+
 
       inline INT Prev(node_address h) const {
         MEDDLY_DCASSERT(!isIndexHole(h));
@@ -176,7 +180,7 @@ namespace MEDDLY {
       inline INT& Next(node_address h) {
         return hole_manager<INT>::refSlot(h, 3);
       }
-      
+
     private:
       /// Largest hole ever requested
       size_t max_request;
@@ -261,7 +265,7 @@ namespace MEDDLY {
       large_holes = 0;
       for (; curr; ) {
         INT next = Next(curr);
-        addToGrid(curr);  
+        addToGrid(curr);
         curr = next;
       }
 #ifdef DEBUG_GRID
@@ -279,7 +283,7 @@ namespace MEDDLY {
 #ifndef DONT_RECYCLE_FROM_GRID
     //
     // Search for an existing chunk with exactly this size
-    // 
+    //
     if (0==holes_current) {
       // Start at the bottom
       holes_current = holes_bottom;
@@ -316,7 +320,7 @@ namespace MEDDLY {
         if (size_t(getHoleSize(holes_current)) == numSlots) printf("requested ");
         printf("size %ld\n", long(getHoleSize(holes_current)));
 #endif
-       
+
         //
         // Remove the next hole because it's not an index hole
         // (that's easier), if we can
@@ -358,7 +362,7 @@ namespace MEDDLY {
       MEDDLY_DCASSERT(size_t(getHoleSize(h)) >= numSlots);
       size_t leftover_slots = getHoleSize(h) - numSlots;
       if (leftover_slots > 0) {
-        // 
+        //
         // Note - we even recycle holes of size 1,
         // because they can be merged to the left or right,
         // depending on who is recycled first
@@ -406,7 +410,7 @@ namespace MEDDLY {
 
     setHoleSize(h, numSlots);
 
-    // 
+    //
     // Check to the left for another hole
     //
     if (isHole(h-1)) {
@@ -416,7 +420,7 @@ namespace MEDDLY {
       printf("\tMerging to the left, holes %lu and %lu\n", hleft, h);
 #endif
       removeFromGrid(hleft);
-      numSlots += getHoleSize(hleft); 
+      numSlots += getHoleSize(hleft);
       h = hleft;
       setHoleSize(h, numSlots);
 #ifdef DEBUG_GRID
@@ -452,7 +456,7 @@ namespace MEDDLY {
     //
     // Hole is ready, add to grid
     //
-    addToGrid(h); 
+    addToGrid(h);
 #ifdef DEBUG_GRID
     FILE_output out(stdout);
     dumpInternal(out);
@@ -508,7 +512,7 @@ namespace MEDDLY {
       s << "  bottom\n";
       s << "    |\n";
       s << "    v\n";
-    
+
       INT down = 0;
       for (INT index=holes_bottom; index; index=Up(index)) {
         if (holes_current == index) {
@@ -554,7 +558,7 @@ namespace MEDDLY {
     s << "\n";
     s << "  max request: " << long(max_request) << "\n";
     s << "  large hole list:\n    ";
-    
+
     if (0==large_holes) {
       s << "empty\n";
     } else {
@@ -591,7 +595,7 @@ namespace MEDDLY {
 
 
   template <class INT>
-  void original_grid<INT>::removeFromGrid(node_address h) 
+  void original_grid<INT>::removeFromGrid(node_address h)
   {
 #ifdef MEMORY_TRACE_DETAILS
     printf("removeFromGrid(%lu)\n", h);
@@ -644,7 +648,7 @@ namespace MEDDLY {
     num_grid_holes--;
     num_grid_slots -= getHoleSize(h);
 
-    // 
+    //
     // Easier case - not an index hole
     //
     if (!isIndexHole(h)) {
@@ -702,10 +706,10 @@ namespace MEDDLY {
         holes_current = below;
       }
 
-      return; 
+      return;
     }
 
-    // 
+    //
     // Non-empty chain.
     // Shift the front over to become the new index node
     //
@@ -742,7 +746,7 @@ namespace MEDDLY {
 
 
   template <class INT>
-  void original_grid<INT>::addToGrid(node_address h) 
+  void original_grid<INT>::addToGrid(node_address h)
   {
 #ifdef MEMORY_TRACE_DETAILS
     printf("addToGrid(%lu) size %ld\n", h, long(getHoleSize(h)));
@@ -750,12 +754,12 @@ namespace MEDDLY {
 
     MEDDLY_DCASSERT(getHoleSize(h)>0);
     MEDDLY_DCASSERT(matchingHoleSizes(h));
-    
+
     //
     // Check if the hole is too small to track.
     // If so, just leave it, and hope it gets merged later.
     //
-    if (isSmallHole(h)) { 
+    if (isSmallHole(h)) {
 #ifdef MEMORY_TRACE_DETAILS
       printf("\thole size %ld, too small to track\n", long(getHoleSize(h)));
 #endif
@@ -786,7 +790,7 @@ namespace MEDDLY {
     // update stats
     num_grid_holes++;
     num_grid_slots += getHoleSize(h);
-    
+
     //
     // Special case: empty grid
     //
@@ -822,7 +826,7 @@ namespace MEDDLY {
 
     //
     // First step: find our vertical position in the grid.
-    // 
+    //
     INT above = holes_bottom;
     INT below = 0;
     while (getHoleSize(h) > getHoleSize(above)) {
@@ -891,7 +895,7 @@ MEDDLY::orig_grid_style::~orig_grid_style()
 }
 
 MEDDLY::memory_manager*
-MEDDLY::orig_grid_style::initManager(unsigned char granularity, 
+MEDDLY::orig_grid_style::initManager(unsigned char granularity,
   unsigned char minsize, memstats &stats) const
 {
   if (sizeof(int) == granularity) {

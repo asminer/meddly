@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -22,6 +22,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "reach_dfs.h"
 
 // #define TRACE_RECFIRE
@@ -65,7 +69,7 @@ class MEDDLY::saturation_opname : public unary_opname {
     saturation_opname();
 
     static const saturation_opname* getInstance();
- 
+
 };
 
 MEDDLY::saturation_opname* MEDDLY::saturation_opname::instance = 0;
@@ -97,7 +101,7 @@ class MEDDLY::saturation_op : public unary_operation {
     node_handle saturate(node_handle mdd, int level);
 
   protected:
-    inline compute_table::entry_key* 
+    inline compute_table::entry_key*
     findSaturateResult(node_handle a, int level, node_handle& b) {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
@@ -105,12 +109,12 @@ class MEDDLY::saturation_op : public unary_operation {
       if (argF->isFullyReduced()) CTsrch->writeI(level);
       CT0->find(CTsrch, CTresult[0]);
       if (!CTresult[0]) return CTsrch;
-      b = resF->linkNode(CTresult[0].readN()); 
+      b = resF->linkNode(CTresult[0].readN());
       CT0->recycle(CTsrch);
       return 0;
     }
     inline node_handle saveSaturateResult(compute_table::entry_key* Key,
-      node_handle a, node_handle b) 
+      node_handle a, node_handle b)
     {
       CTresult[0].reset();
       CTresult[0].writeN(b);
@@ -297,8 +301,8 @@ class MEDDLY::common_dfs_mt : public common_dfs {
     virtual void saturateHelper(unpacked_node &mdd) = 0;
 
   protected:
-    inline compute_table::entry_key* 
-    findResult(node_handle a, node_handle b, node_handle &c) 
+    inline compute_table::entry_key*
+    findResult(node_handle a, node_handle b, node_handle &c)
     {
       compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
@@ -311,7 +315,7 @@ class MEDDLY::common_dfs_mt : public common_dfs {
       return 0;
     }
     inline node_handle saveResult(compute_table::entry_key* Key,
-      node_handle a, node_handle b, node_handle c) 
+      node_handle a, node_handle b, node_handle c)
     {
       CTresult[0].reset();
       CTresult[0].writeN(c);
@@ -792,7 +796,7 @@ class MEDDLY::forwd_dfs_mt : public common_dfs_mt {
     node_handle recFire(node_handle mdd, node_handle mxd);
 };
 
-MEDDLY::forwd_dfs_mt::forwd_dfs_mt(const binary_opname* opcode, 
+MEDDLY::forwd_dfs_mt::forwd_dfs_mt(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : common_dfs_mt(opcode, arg1, arg2, res)
 {
@@ -847,9 +851,9 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
       node_handle rec = recFire(nb.d(i), Rp->d(unsigned(jz)));
 
       if (rec == 0) continue;
-      if (rec == nb.d(j)) { 
-        resF->unlinkNode(rec); 
-        continue; 
+      if (rec == nb.d(j)) {
+        resF->unlinkNode(rec);
+        continue;
       }
 
       bool updated = true;
@@ -941,7 +945,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
     }
 
   } else {
-    // 
+    //
     // Need to process this level in the MXD.
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
@@ -959,7 +963,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
     // loop over mxd "rows"
     for (unsigned iz=0; iz<Ru->getNNZs(); iz++) {
       const unsigned i = Ru->i(iz);
-      if (0==A->d(i))   continue; 
+      if (0==A->d(i))   continue;
       if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
         Rp->initIdentity(arg2F, rLevel, i, Ru->d(iz), false);
       } else {
@@ -984,7 +988,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
         mddUnion->computeTemp(newst, nbdj, nbdj);
         nb->set_d(j, nbdj);
       } // for j
-  
+
     } // for i
 
     unpacked_node::recycle(Rp);
@@ -1005,7 +1009,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
   resF->showNode(stdout, result, 1);
   printf("\n");
 #endif
-  return saveResult(Key, mdd, mxd, result); 
+  return saveResult(Key, mdd, mxd, result);
 }
 
 
@@ -1026,7 +1030,7 @@ class MEDDLY::bckwd_dfs_mt : public common_dfs_mt {
     node_handle recFire(node_handle mdd, node_handle mxd);
 };
 
-MEDDLY::bckwd_dfs_mt::bckwd_dfs_mt(const binary_opname* opcode, 
+MEDDLY::bckwd_dfs_mt::bckwd_dfs_mt(const binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : common_dfs_mt(opcode, arg1, arg2, res)
 {
@@ -1056,7 +1060,7 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(unpacked_node& nb)
 
   dd_edge nbdi(resF), temp(resF);
 
-  // explore 
+  // explore
   while (repeat) {
     // "advance" the explore list
     for (unsigned i=0; i<nb.getSize(); i++) if (expl->data[i]) expl->data[i]--;
@@ -1095,7 +1099,7 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(unpacked_node& nb)
         else if (-1 == rec) {
           resF->unlinkNode(nb.d(i));
           nb.d_ref(i) = -1;
-        } 
+        }
         else {
           nbdi.set(nb.d(i));
           temp.set(rec);
@@ -1159,7 +1163,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
       nb->d_ref(i) = recFire(A->d(i), mxd);
     }
   } else {
-    // 
+    //
     // Need to process this level in the MXD.
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
@@ -1184,7 +1188,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
       // loop over mxd "columns"
       for (unsigned jz=0; jz<Rp->getNNZs(); jz++) {
         const unsigned j = Rp->i(jz);
-        if (0==A->d(j))   continue; 
+        if (0==A->d(j))   continue;
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
@@ -1200,7 +1204,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
         mddUnion->computeTemp(temp, nbdi, nbdi);
         nb->set_d(i, nbdi);
       } // for j
-  
+
     } // for i
 
     unpacked_node::recycle(Rp);
@@ -1215,7 +1219,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
 #ifdef TRACE_ALL_OPS
   printf("computed recFire(%d, %d) = %d\n", mdd, mxd, result);
 #endif
-  return saveResult(Key, mdd, mxd, result); 
+  return saveResult(Key, mdd, mxd, result);
 }
 
 // ******************************************************************
@@ -1550,15 +1554,15 @@ MEDDLY::forwd_dfs_opname::forwd_dfs_opname()
 {
 }
 
-MEDDLY::binary_operation* 
-MEDDLY::forwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+MEDDLY::binary_operation*
+MEDDLY::forwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   expert_forest* r) const
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
-  if (  
-    (a1->getDomain() != r->getDomain()) || 
-    (a2->getDomain() != r->getDomain()) 
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
@@ -1602,15 +1606,15 @@ MEDDLY::bckwd_dfs_opname::bckwd_dfs_opname()
 {
 }
 
-MEDDLY::binary_operation* 
-MEDDLY::bckwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+MEDDLY::binary_operation*
+MEDDLY::bckwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   expert_forest* r) const
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
-  if (  
-    (a1->getDomain() != r->getDomain()) || 
-    (a2->getDomain() != r->getDomain()) 
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
@@ -1621,7 +1625,7 @@ MEDDLY::bckwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     a1->isForRelations()    ||
     !a2->isForRelations()   ||
     (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
-    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) 
+    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "cross.h"
 
 // #define TRACE_ALL_OPS
@@ -49,7 +53,7 @@ class MEDDLY::cross_bool : public binary_operation {
 };
 
 MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res) 
+  expert_forest* a2, expert_forest* res)
 : binary_operation(oc, 1, a1, a2, res)
 {
   compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "INN:N");
@@ -76,7 +80,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   MEDDLY_DCASSERT(k>=0);
   if (0==a || 0==b) return 0;
   if (0==k) {
-    return a; 
+    return a;
   }
 
   // check compute table
@@ -130,7 +134,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
   MEDDLY_DCASSERT(k<0);
   if (0==a || 0==b) return 0;
 
-  // DON'T check compute table 
+  // DON'T check compute table
 
   // Initialize unpacked node
   unpacked_node *B = unpacked_node::useUnpackedNode();
@@ -171,7 +175,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
 class MEDDLY::cross_opname : public binary_opname {
   public:
     cross_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1, 
+    virtual binary_operation* buildOperation(expert_forest* a1,
       expert_forest* a2, expert_forest* r) const;
 };
 
@@ -180,15 +184,15 @@ MEDDLY::cross_opname::cross_opname()
 {
 }
 
-MEDDLY::binary_operation* 
-MEDDLY::cross_opname::buildOperation(expert_forest* a1, expert_forest* a2, 
+MEDDLY::binary_operation*
+MEDDLY::cross_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   expert_forest* r) const
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
-  if (  
-    (a1->getDomain() != r->getDomain()) || 
-    (a2->getDomain() != r->getDomain()) 
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 

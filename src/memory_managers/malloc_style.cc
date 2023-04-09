@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,6 +21,10 @@
 #include "config.h"
 #endif
 #include "../defines.h"
+#include "old_meddly.h"
+#include "old_meddly.hh"
+#include "old_meddly_expert.h"
+#include "old_meddly_expert.hh"
 #include "malloc_style.h"
 
 // #define MEMORY_TRACE
@@ -86,7 +90,7 @@ class MEDDLY::malloc_manager : public memory_manager {
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::malloc_manager::malloc_manager(const char* n, memstats &stats, 
+MEDDLY::malloc_manager::malloc_manager(const char* n, memstats &stats,
   unsigned char gran) : memory_manager(n, stats)
 {
   granularity = gran;
@@ -153,7 +157,7 @@ bool MEDDLY::malloc_manager::isValidHandle(node_address h) const
 
 // ******************************************************************
 
-void MEDDLY::malloc_manager::reportStats(output &s, const char* pad, 
+void MEDDLY::malloc_manager::reportStats(output &s, const char* pad,
   bool human, bool details) const
 {
 }
@@ -213,7 +217,7 @@ MEDDLY::malloc_style::~malloc_style()
 }
 
 MEDDLY::memory_manager*
-MEDDLY::malloc_style::initManager(unsigned char granularity, 
+MEDDLY::malloc_style::initManager(unsigned char granularity,
   unsigned char minsize, memstats &stats) const
 {
   return new malloc_manager(getName(), stats, granularity);
