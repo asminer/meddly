@@ -20,6 +20,7 @@
 #define MEDDLY_DOMAIN_H
 
 #include "variable.h"
+#include "forest.h"
 
 namespace MEDDLY {
     class variable_order;

@@ -126,6 +126,7 @@ pkginclude_HEADERS = error.h io.h memstats.h \
                      variable.h varorder.h \
                      domain.h \
                      node_headers.h \
+                     forest.h \
                      old_meddly.h old_meddly.hh \
                      old_meddly_expert.h old_meddly_expert.hh
 
