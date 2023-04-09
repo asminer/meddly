@@ -13,8 +13,7 @@ lib_LTLIBRARIES = libmeddly.la
 
 libmeddly_la_SOURCES = \
   defines.h revision.h hash_stream.h heap.h timer.h unique_table.h \
-  old_meddly.h old_meddly.hh old_meddly.cc \
-  old_meddly_expert.h old_meddly_expert.hh \
+  old_meddly.cc \
   error.cc \
   io.cc \
   node_headers.cc \
@@ -121,7 +120,8 @@ libmeddly_la_SOURCES = \
 
 include_HEADERS = meddly.h meddly_expert.h
 
-pkginclude_HEADERS = error.h old_meddly.h old_meddly.hh \
+pkginclude_HEADERS = error.h io.h \
+                     old_meddly.h old_meddly.hh \
                      old_meddly_expert.h old_meddly_expert.hh
 
 AM_CXXFLAGS = -Wall

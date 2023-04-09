@@ -23,11 +23,8 @@
 
 #include "defines.h"
 
-#include "old_meddly.h"
-#include "old_meddly.hh"
-
-#include <cstdio>
-#include <iostream>
+#include "io.h"
+#include "error.h"
 
 // ******************************************************************
 // *                                                                *

@@ -22,6 +22,7 @@
 #include "old_meddly.hh"
 
 // #include "error.h"
+#include "io.h"
 
 #else
 
@@ -29,5 +30,6 @@
 #include "meddly/old_meddly.hh"
 
 // #include "meddly/error.h"
+#include "meddly/io.h"
 
 #endif

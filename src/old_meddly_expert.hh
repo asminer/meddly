@@ -26,6 +26,7 @@
 #define MEDDLY_EXPERT_HH
 
 #include "defines.h"
+#include "io.h"
 
 // ******************************************************************
 // *                                                                *

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -19,6 +19,8 @@
 
 #ifndef SCCGRAPH_H
 #define SCCGRAPH_H
+
+#include "../io.h"
 
 namespace MEDDLY {
   class sccgraph;
@@ -49,7 +51,7 @@ class MEDDLY::sccgraph {
         unsigned edgeptr;
       public:
         edge_iterator(const edge_iterator& ei);
-        
+
         unsigned to() const;              // Inlined
         const edge_label* edge() const;   // Inlined
 
@@ -69,12 +71,12 @@ class MEDDLY::sccgraph {
     void clear();
 
     /// For debugging and testing.
-    void dumpGraph(MEDDLY::output &out) const; 
+    void dumpGraph(MEDDLY::output &out) const;
 
   public:
     //
     // Graph info
-    // 
+    //
 
     /**
         Add vertices 0,...,I to the graph, unless already present.
@@ -88,7 +90,7 @@ class MEDDLY::sccgraph {
         using append_and_recycle().
     */
     void add_edge(unsigned I, unsigned J, edge_label* L);
-    
+
     /// Update SCCs if necessary
     void update_SCCs();
 
@@ -123,7 +125,7 @@ class MEDDLY::sccgraph {
           @return     Number of vertexes contained in SCC s.
     */
     unsigned get_SCC_size(unsigned s) const;    // Inlined
-    
+
     /**
         Return the list of vertexes in an SCC.
           @param  s   SCC, should be between 0 and get_num_SCCs() - 1.
