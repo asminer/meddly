@@ -43,27 +43,7 @@
 // #define DEBUG_SLOW
 // #define TRACE_ALL_OPS
 
-// Things that everyone will need
-// #include <cstdlib>
-// #include <cassert>
-// #include <cstring>
-// #include <cstdarg>
 #include <limits>
-
-// Meddly
-// #include "old_meddly.h"
-// #include "old_meddly.hh"
-// #include "old_meddly_expert.h"
-// #include "old_meddly_expert.hh"
-
-// Macro to handle extern "C"
-// #ifdef __cplusplus
-// #  define BEGIN_C_DECLS extern "C" {
-// #  define END_C_DECLS   }
-// #else /* !__cplusplus */
-// #  define BEGIN_C_DECLS
-// #  define END_C_DECLS
-// #endif /* __cplusplus */
 
 // Handy Constants
 
@@ -152,7 +132,6 @@ namespace MEDDLY {
 #ifdef DEVELOPMENT_CODE
 #define RANGE_CHECK_ON
 #define DCASSERTS_ON
-#include <cassert>
 #endif
 
 // #define TRACK_DELETIONS
@@ -163,6 +142,7 @@ namespace MEDDLY {
 // Use this for assertions that will fail only when your
 // code is wrong.  Handy for debugging.
 #ifdef DCASSERTS_ON
+#include <cassert>
 #define MEDDLY_DCASSERT(X) assert(X)
 #else
 #define MEDDLY_DCASSERT(X)
@@ -170,6 +150,7 @@ namespace MEDDLY {
 
 // Use this for range checking assertions that should succeed.
 #ifdef RANGE_CHECK_ON
+#include <cassert>
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX) { assert(VALUE < MAX); assert(VALUE >= MIN); }
 #else
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
