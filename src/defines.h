@@ -151,15 +151,17 @@ namespace MEDDLY {
 // Use this for range checking assertions that should succeed.
 #ifdef RANGE_CHECK_ON
 #include <cassert>
-#include <cstdio>
+#include <iostream>
 namespace MEDDLY {
+    template <class INT>
     inline void CHECK_RANGE(const char* fn, unsigned ln,
-            long min, long value, long max)
+            long min, long value, INT max)
     {
-        if (value >= max || value < min) {
-            fprintf(stderr, "Check range at %s line %u failed:\n", fn, ln);
-            fprintf(stderr, "    min: %ld\n    val: %ld\n    max: %ld\n",
-                    min, value, max);
+        if (value < min || (unsigned long) value >= (unsigned long) max ) {
+            std::cerr << "Check range at " << fn << " line " << ln;
+            std::cerr << " failed:\n    min: " << min;
+            std::cerr << "\n    val: " << value;
+            std::cerr << "\n    max: " << max << '\n';
             assert(false);
         }
     }
@@ -167,7 +169,8 @@ namespace MEDDLY {
 #define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX) { assert(VALUE < MAX); assert(VALUE >= MIN); }
 #else
 namespace MEDDLY {
-    inline void CHECK_RANGE(const char*, unsigned, long, long, long)
+    template <class INT>
+    inline void CHECK_RANGE(const char*, unsigned, long, long, INT)
     {
     }
 }

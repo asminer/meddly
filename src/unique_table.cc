@@ -214,7 +214,7 @@ MEDDLY::node_handle MEDDLY::unique_table::subtable::remove(unsigned hash, node_h
 {
   unsigned h = hash%size;
 
-  MEDDLY_CHECK_RANGE(0, h, size);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, h, size);
 
   node_handle prev = 0;
   for (node_handle ptr = table[h]; ptr!=0; ptr = parent->getNext(ptr)) {

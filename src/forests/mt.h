@@ -60,8 +60,8 @@ class MEDDLY::mt_forest : public expert_forest {
 
   protected:
     /// make a node at the top level
-    inline node_handle makeNodeAtTop(node_handle d) {
-      return makeNodeAtLevel(getDomain()->getNumVariables(), d);
+    inline node_handle makeNodeAtTop(node_handle p) {
+      return makeNodeAtLevel(getDomain()->getNumVariables(), p);
     }
 
     /**

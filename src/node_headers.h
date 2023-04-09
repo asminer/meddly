@@ -309,9 +309,62 @@ class MEDDLY::node_headers {
                     return size_t(bytes) * 8;
                 }
 
-                int get(size_t i) const;    // inlined
-                void set(size_t i, int v);  // inlined
-                void swap(size_t i, size_t j);
+                inline int get(size_t i) const
+                {
+                    MEDDLY_DCASSERT(i<size);
+                    if (data8) {
+                        MEDDLY_DCASSERT(!data16);
+                        MEDDLY_DCASSERT(!data32);
+                        return data8[i];
+                    }
+                    if (data16) {
+                        MEDDLY_DCASSERT(!data32);
+                        return data16[i];
+                    }
+                    MEDDLY_DCASSERT(data32);
+                    return data32[i];
+                }
+
+                inline void set(size_t i, int v)
+                {
+                    MEDDLY_DCASSERT(i<size);
+                    if (data8) {
+                        MEDDLY_DCASSERT(!data16);
+                        MEDDLY_DCASSERT(!data32);
+                        MEDDLY_DCASSERT(v>-128);
+                        MEDDLY_DCASSERT(v<128);
+                        data8[i] = v;
+                        return;
+                    }
+                    if (data16) {
+                        MEDDLY_DCASSERT(!data32);
+                        MEDDLY_DCASSERT(v>-32768);
+                        MEDDLY_DCASSERT(v<32768);
+                        data16[i] = v;
+                        return;
+                    }
+                    MEDDLY_DCASSERT(data32);
+                    data32[i] = v;
+                }
+
+                inline void swap(size_t i, size_t j)
+                {
+                    MEDDLY_DCASSERT(i<size);
+                    MEDDLY_DCASSERT(j<size);
+                    if (data8) {
+                        MEDDLY_DCASSERT(!data16);
+                        MEDDLY_DCASSERT(!data32);
+                        SWAP(data8[i], data8[j]);
+                        return;
+                    }
+                    if (data16) {
+                        MEDDLY_DCASSERT(!data32);
+                        SWAP(data16[i], data16[j]);
+                        return;
+                    }
+                    MEDDLY_DCASSERT(data32);
+                    SWAP(data32[i], data32[j]);
+                }
 
         };
 
@@ -347,7 +400,8 @@ class MEDDLY::node_headers {
 
                 void show(output &s, size_t first, size_t last, int width)
                     const;
-                size_t entry_bits() const;
+                inline size_t entry_bits() const { return size_t(bytes) * 8; }
+
 
                 // Expand from 8-bit to 16-bit entries because of element i
                 void expand8to16(size_t i);
@@ -383,7 +437,8 @@ class MEDDLY::node_headers {
 
                 void show(output &s, size_t first, size_t last, int width)
                     const;
-                size_t entry_bits() const;
+                inline size_t entry_bits() const { return size_t(bytes) * 8; }
+
 
                 void expand32to64();
                 void shrink64to32(size_t ns);
@@ -405,14 +460,47 @@ class MEDDLY::node_headers {
                 void expand(size_t ns);
                 void shrink(size_t ns);
 
-                bool get(size_t i) const;
-                void set(size_t i, bool v);
-                void clearAll();
-                void swap(size_t i, size_t j);
-                size_t entry_bits() const;
+                inline bool get(size_t i) const
+                {
+                    MEDDLY_DCASSERT(data);
+                    MEDDLY_DCASSERT(i<size);
+                    return data[i];
+                }
+
+                inline void set(size_t i, bool v)
+                {
+                    MEDDLY_DCASSERT(data);
+                    MEDDLY_DCASSERT(i<size);
+                    data[i] = v;
+                }
+
+                inline void clearAll()
+                {
+                    if (size) {
+                        MEDDLY_DCASSERT(data);
+                        memset(data, 0, size * sizeof(bool));
+                    }
+                }
+
+                inline void swap(size_t i, size_t j)
+                {
+                    MEDDLY_DCASSERT(data);
+                    MEDDLY_DCASSERT(i<size);
+                    MEDDLY_DCASSERT(j<size);
+                    SWAP(data[i], data[j]);
+                }
+
+                inline size_t entry_bits() const { return sizeof(bool) * 8; }
 
                 /// Return smallest index i >= start with bit i cleared.
-                size_t firstZero(size_t start) const;
+                inline size_t firstZero(size_t start) const
+                {
+                    for (; start < size; start++) {
+                        if (0==data[start]) return start;
+                    }
+                    return size;
+                }
+
         };
 
     private:
@@ -465,277 +553,165 @@ class MEDDLY::node_headers {
 
 // ******************************************************************
 // *                                                                *
-// *           inlined node_headers::level_array  methods           *
-// *                                                                *
-// ******************************************************************
-
-inline int MEDDLY::node_headers::level_array::get(size_t i) const
-{
-  MEDDLY_DCASSERT(i<size);
-  if (data8) {
-    MEDDLY_DCASSERT(0==data16);
-    MEDDLY_DCASSERT(0==data32);
-    return data8[i];
-  }
-  if (data16) {
-    MEDDLY_DCASSERT(0==data8);
-    MEDDLY_DCASSERT(0==data32);
-    return data16[i];
-  }
-  MEDDLY_DCASSERT(0==data8);
-  MEDDLY_DCASSERT(0==data16);
-  MEDDLY_DCASSERT(data32);
-  return data32[i];
-}
-
-inline void MEDDLY::node_headers::level_array::set(size_t i, int v)
-{
-  MEDDLY_DCASSERT(i<size);
-  if (data8) {
-    MEDDLY_DCASSERT(0==data16);
-    MEDDLY_DCASSERT(0==data32);
-    MEDDLY_DCASSERT(v>-128);
-    MEDDLY_DCASSERT(v<128);
-    data8[i] = v;
-    return;
-  }
-  if (data16) {
-    MEDDLY_DCASSERT(0==data8);
-    MEDDLY_DCASSERT(0==data32);
-    MEDDLY_DCASSERT(v>-32768);
-    MEDDLY_DCASSERT(v<32768);
-    data16[i] = v;
-    return;
-  }
-  MEDDLY_DCASSERT(0==data8);
-  MEDDLY_DCASSERT(0==data16);
-  MEDDLY_DCASSERT(data32);
-  data32[i] = v;
-}
-
-inline void MEDDLY::node_headers::level_array::swap(size_t i, size_t j)
-{
-  MEDDLY_DCASSERT(i<size);
-  MEDDLY_DCASSERT(j<size);
-  if (data8) {
-      SWAP(data8[i], data8[j]);
-      /*
-    char tmp = data8[i];
-    data8[i] = data8[j];
-    data8[j] = tmp;
-    */
-    return;
-  }
-  if (data16) {
-      SWAP(data16[i], data16[j]);
-      /*
-    short tmp = data16[i];
-    data16[i] = data16[j];
-    data16[j] = tmp;
-    */
-    return;
-  }
-  MEDDLY_DCASSERT(data32);
-  SWAP(data32[i], data32[j]);
-  /*
-  int tmp = data32[i];
-  data32[i] = data32[j];
-  data32[j] = tmp;
-  */
-}
-
-// ******************************************************************
-// *                                                                *
 // *          inlined node_headers::counter_array  methods          *
 // *                                                                *
 // ******************************************************************
 
 inline unsigned int MEDDLY::node_headers::counter_array::get(size_t i) const
 {
-  MEDDLY_DCASSERT(i<size);
-  if (data8) {
-    MEDDLY_DCASSERT(0==data16);
-    MEDDLY_DCASSERT(0==data32);
-    return data8[i];
-  }
-  if (data16) {
-    MEDDLY_DCASSERT(0==data8);
-    MEDDLY_DCASSERT(0==data32);
-    return data16[i];
-  }
-  MEDDLY_DCASSERT(0==data8);
-  MEDDLY_DCASSERT(0==data16);
-  MEDDLY_DCASSERT(data32);
-  return data32[i];
+    MEDDLY_DCASSERT(i<size);
+    if (data8) {
+        MEDDLY_DCASSERT(!data16);
+        MEDDLY_DCASSERT(!data32);
+        return data8[i];
+    }
+    if (data16) {
+        MEDDLY_DCASSERT(!data32);
+        return data16[i];
+    }
+    MEDDLY_DCASSERT(data32);
+    return data32[i];
 }
 
 inline void MEDDLY::node_headers::counter_array::swap(size_t i, size_t j)
 {
-  MEDDLY_DCASSERT(i<size);
-  MEDDLY_DCASSERT(j<size);
-  if (data8) {
-      SWAP(data8[i], data8[j]);
-      /*
-    unsigned char tmp = data8[i];
-    data8[i] = data8[j];
-    data8[j] = tmp;
-    */
-    return;
-  }
-  if (data16) {
-      SWAP(data16[i], data16[j]);
-      /*
-    unsigned short tmp = data16[i];
-    data16[i] = data16[j];
-    data16[j] = tmp;
-    */
-    return;
-  }
-  MEDDLY_DCASSERT(data32);
-  SWAP(data32[i], data32[j]);
-  /*
-  unsigned int tmp = data32[i];
-  data32[i] = data32[j];
-  data32[j] = tmp;
-  */
+    MEDDLY_DCASSERT(i<size);
+    MEDDLY_DCASSERT(j<size);
+    if (data8) {
+        MEDDLY_DCASSERT(!data16);
+        MEDDLY_DCASSERT(!data32);
+        SWAP(data8[i], data8[j]);
+        return;
+    }
+    if (data16) {
+        MEDDLY_DCASSERT(!data32);
+        SWAP(data16[i], data16[j]);
+        return;
+    }
+    MEDDLY_DCASSERT(data32);
+    SWAP(data32[i], data32[j]);
 }
 
 inline void MEDDLY::node_headers::counter_array::increment(size_t i)
 {
-  MEDDLY_DCASSERT(i<size);
-  if (data8) {
-    MEDDLY_DCASSERT(0==data16);
-    MEDDLY_DCASSERT(0==data32);
-    if (0 == ++data8[i]) expand8to16(i);
-    return;
-  }
-  if (data16) {
-    MEDDLY_DCASSERT(0==data8);
-    MEDDLY_DCASSERT(0==data32);
-    ++data16[i];
-    if (256 == data16[i]) ++counts_09bit;
-    if (0 == data16[i]) expand16to32(i);
-    return;
-  }
-  MEDDLY_DCASSERT(0==data8);
-  MEDDLY_DCASSERT(0==data16);
-  MEDDLY_DCASSERT(data32);
-  data32[i]++;
-  if (256 == data32[i]) ++counts_09bit;
-  if (65536 == data32[i]) ++counts_17bit;
+    MEDDLY_DCASSERT(i<size);
+    if (data8) {
+        MEDDLY_DCASSERT(!data16);
+        MEDDLY_DCASSERT(!data32);
+        if (0 == ++data8[i]) expand8to16(i);
+        return;
+    }
+    if (data16) {
+        MEDDLY_DCASSERT(!data32);
+        ++data16[i];
+        if (256 == data16[i]) ++counts_09bit;
+        if (0 == data16[i]) expand16to32(i);
+        return;
+    }
+    MEDDLY_DCASSERT(data32);
+    data32[i]++;
+    if (256 == data32[i]) ++counts_09bit;
+    if (65536 == data32[i]) ++counts_17bit;
 }
 
 inline void MEDDLY::node_headers::counter_array::decrement(size_t i)
 {
-  MEDDLY_DCASSERT(i<size);
-  if (data8) {
-    MEDDLY_DCASSERT(0==data16);
-    MEDDLY_DCASSERT(0==data32);
-    MEDDLY_DCASSERT(data8[i]);
-    --data8[i];
-    return;
-  }
-  if (data16) {
-    MEDDLY_DCASSERT(0==data8);
-    MEDDLY_DCASSERT(0==data32);
-    MEDDLY_DCASSERT(data16[i]);
-    if (256 == data16[i]) {
-      MEDDLY_DCASSERT(counts_09bit);
-      --counts_09bit;
+    MEDDLY_DCASSERT(i<size);
+    if (data8) {
+        MEDDLY_DCASSERT(!data16);
+        MEDDLY_DCASSERT(!data32);
+        MEDDLY_DCASSERT(data8[i]);
+        --data8[i];
+        return;
     }
-    --data16[i];
-    return;
-  }
-  MEDDLY_DCASSERT(0==data8);
-  MEDDLY_DCASSERT(0==data16);
-  MEDDLY_DCASSERT(data32);
-  MEDDLY_DCASSERT(data32[i]);
-  if (256 == data32[i]) {
-    MEDDLY_DCASSERT(counts_09bit);
-    --counts_09bit;
-  }
-  if (65536 == data32[i]) {
-    MEDDLY_DCASSERT(counts_17bit);
-    --counts_17bit;
-  }
-  --data32[i];
+    if (data16) {
+        MEDDLY_DCASSERT(!data32);
+        MEDDLY_DCASSERT(data16[i]);
+        if (256 == data16[i]) {
+            MEDDLY_DCASSERT(counts_09bit);
+            --counts_09bit;
+        }
+        --data16[i];
+        return;
+    }
+    MEDDLY_DCASSERT(data32);
+    MEDDLY_DCASSERT(data32[i]);
+    if (256 == data32[i]) {
+        MEDDLY_DCASSERT(counts_09bit);
+        --counts_09bit;
+    }
+    if (65536 == data32[i]) {
+        MEDDLY_DCASSERT(counts_17bit);
+        --counts_17bit;
+    }
+    --data32[i];
 }
 
 inline bool MEDDLY::node_headers::counter_array::isZeroBeforeIncrement(size_t i)
 {
-  MEDDLY_DCASSERT(i<size);
-  if (data8) {
-    MEDDLY_DCASSERT(0==data16);
-    MEDDLY_DCASSERT(0==data32);
-    if (0==data8[i]) {
-      data8[i] = 1;
-      return true;
+    MEDDLY_DCASSERT(i<size);
+    if (data8) {
+        MEDDLY_DCASSERT(!data16);
+        MEDDLY_DCASSERT(!data32);
+        if (0==data8[i]) {
+            data8[i] = 1;
+            return true;
+        }
+        if (0 == ++data8[i]) expand8to16(i);
+        return false;
     }
-    if (0 == ++data8[i]) expand8to16(i);
-    return false;
-  }
-  if (data16) {
-    MEDDLY_DCASSERT(0==data8);
-    MEDDLY_DCASSERT(0==data32);
-    if (0==data16[i]) {
-      data16[i] = 1;
-      return true;
+    if (data16) {
+        MEDDLY_DCASSERT(!data32);
+        if (0==data16[i]) {
+            data16[i] = 1;
+            return true;
+        }
+        ++data16[i];
+        if (256 == data16[i]) ++counts_09bit;
+        if (0 == data16[i]) expand16to32(i);
+        return false;
     }
-    ++data16[i];
-    if (256 == data16[i]) ++counts_09bit;
-    if (0 == data16[i]) expand16to32(i);
+    MEDDLY_DCASSERT(data32);
+    if (0==data32[i]) {
+        data32[i] = 1;
+        return true;
+    }
+    data32[i]++;
+    if (256 == data32[i]) ++counts_09bit;
+    if (65536 == data32[i]) ++counts_17bit;
     return false;
-  }
-  MEDDLY_DCASSERT(0==data8);
-  MEDDLY_DCASSERT(0==data16);
-  MEDDLY_DCASSERT(data32);
-  if (0==data32[i]) {
-    data32[i] = 1;
-    return true;
-  }
-  data32[i]++;
-  if (256 == data32[i]) ++counts_09bit;
-  if (65536 == data32[i]) ++counts_17bit;
-  return false;
 }
 
-inline bool MEDDLY::node_headers::counter_array::isPositiveAfterDecrement(size_t i)
+inline bool MEDDLY::node_headers::counter_array
+    ::isPositiveAfterDecrement(size_t i)
 {
-  MEDDLY_DCASSERT(i<size);
-  if (data8) {
-    MEDDLY_DCASSERT(0==data16);
-    MEDDLY_DCASSERT(0==data32);
-    MEDDLY_DCASSERT(data8[i]);
-    return 0 < --data8[i];
-  }
-  if (data16) {
-    MEDDLY_DCASSERT(0==data8);
-    MEDDLY_DCASSERT(0==data32);
-    MEDDLY_DCASSERT(data16[i]);
-    if (256 == data16[i]) {
-      MEDDLY_DCASSERT(counts_09bit);
-      --counts_09bit;
+    MEDDLY_DCASSERT(i<size);
+    if (data8) {
+        MEDDLY_DCASSERT(!data16);
+        MEDDLY_DCASSERT(!data32);
+        MEDDLY_DCASSERT(data8[i]);
+        return --data8[i] > 0;
     }
-    return 0 < --data16[i];
-  }
-  MEDDLY_DCASSERT(0==data8);
-  MEDDLY_DCASSERT(0==data16);
-  MEDDLY_DCASSERT(data32);
-  MEDDLY_DCASSERT(data32[i]);
-  if (256 == data32[i]) {
-    MEDDLY_DCASSERT(counts_09bit);
-    --counts_09bit;
-  }
-  if (65536 == data32[i]) {
-    MEDDLY_DCASSERT(counts_17bit);
-    --counts_17bit;
-  }
-  return 0<--data32[i];
-}
-
-inline size_t MEDDLY::node_headers::counter_array::entry_bits() const
-{
-  return bytes * 8;
+    if (data16) {
+        MEDDLY_DCASSERT(!data32);
+        MEDDLY_DCASSERT(data16[i]);
+        if (256 == data16[i]) {
+            MEDDLY_DCASSERT(counts_09bit);
+            --counts_09bit;
+        }
+        return --data16[i] > 0;
+    }
+    MEDDLY_DCASSERT(data32);
+    MEDDLY_DCASSERT(data32[i]);
+    if (256 == data32[i]) {
+        MEDDLY_DCASSERT(counts_09bit);
+        --counts_09bit;
+    }
+    if (65536 == data32[i]) {
+        MEDDLY_DCASSERT(counts_17bit);
+        --counts_17bit;
+    }
+    return --data32[i] > 0;
 }
 
 
@@ -747,139 +723,72 @@ inline size_t MEDDLY::node_headers::counter_array::entry_bits() const
 
 inline unsigned long MEDDLY::node_headers::address_array::get(size_t i) const
 {
-  MEDDLY_DCASSERT(i<size);
-  if (4==bytes) {
-    MEDDLY_DCASSERT(data32);
-    MEDDLY_DCASSERT(0==data64);
-    MEDDLY_DCASSERT(0==num_large_elements);
-    return data32[i];
-  }
-  MEDDLY_DCASSERT(0==data32);
-  MEDDLY_DCASSERT(8==bytes);
-  MEDDLY_DCASSERT(data64);
-  return data64[i];
+    MEDDLY_DCASSERT(i<size);
+    if (4==bytes) {
+        MEDDLY_DCASSERT(data32);
+        MEDDLY_DCASSERT(!data64);
+        MEDDLY_DCASSERT(0==num_large_elements);
+        return data32[i];
+    }
+    MEDDLY_DCASSERT(8==bytes);
+    MEDDLY_DCASSERT(!data32);
+    MEDDLY_DCASSERT(data64);
+    return data64[i];
 }
 
 inline void MEDDLY::node_headers::address_array::set(size_t i, unsigned long v)
 {
-  MEDDLY_DCASSERT(i<size);
-  if (4==bytes) {
-    MEDDLY_DCASSERT(data32);
-    MEDDLY_DCASSERT(0==data64);
-    MEDDLY_DCASSERT(0==num_large_elements);
+    MEDDLY_DCASSERT(i<size);
+    if (4==bytes) {
+        MEDDLY_DCASSERT(data32);
+        MEDDLY_DCASSERT(!data64);
+        MEDDLY_DCASSERT(0==num_large_elements);
 
+        if (v & 0xffffffff00000000) {
+            // v won't fit in 32 bits
+            expand32to64();
+            MEDDLY_DCASSERT(data64);
+            data64[i] = v;
+        } else {
+            // v will fit in 32 bits
+            data32[i] = v;
+        }
+        return;
+    }
+    MEDDLY_DCASSERT(8==bytes);
+    MEDDLY_DCASSERT(!data32);
+    MEDDLY_DCASSERT(data64);
     if (v & 0xffffffff00000000) {
-      // v won't fit in 32 bits
-      expand32to64();
-      MEDDLY_DCASSERT(data64);
-      data64[i] = v;
+        // v is large
+        if (0 == (data64[i] & 0xffffffff00000000)) {
+            // replacing small
+            num_large_elements++;
+        }
     } else {
-      // v will fit in 32 bits
-      data32[i] = v;
+        // v is small
+        if (data64[i] & 0xffffffff00000000) {
+            // replacing large
+            MEDDLY_DCASSERT(num_large_elements);
+            num_large_elements--;
+        }
     }
-    return;
-  }
-  MEDDLY_DCASSERT(0==data32);
-  MEDDLY_DCASSERT(8==bytes);
-  MEDDLY_DCASSERT(data64);
-  if (v & 0xffffffff00000000) {
-    // v is large
-    if (0 == (data64[i] & 0xffffffff00000000)) {
-      // replacing small
-      num_large_elements++;
-    }
-  } else {
-    // v is small
-    if (data64[i] & 0xffffffff00000000) {
-      // replacing large
-      MEDDLY_DCASSERT(num_large_elements);
-      num_large_elements--;
-    }
-  }
-  data64[i] = v;
+    data64[i] = v;
 }
 
 inline void MEDDLY::node_headers::address_array::swap(size_t i, size_t j)
 {
-  MEDDLY_DCASSERT(i<size);
-  MEDDLY_DCASSERT(j<size);
-  if (4==bytes) {
-    MEDDLY_DCASSERT(data32);
-    SWAP(data32[i], data32[j]);
-    /*
-    unsigned int tmp = data32[i];
-    data32[i] = data32[j];
-    data32[j] = tmp;
-    */
-    return;
-  }
-  MEDDLY_DCASSERT(8==bytes);
-  MEDDLY_DCASSERT(data64);
-  SWAP(data64[i], data64[j]);
-  /*
-  unsigned long tmp = data64[i];
-  data64[i] = data64[j];
-  data64[j] = tmp;
-  */
-}
-
-inline size_t MEDDLY::node_headers::address_array::entry_bits() const
-{
-  return bytes * 8;
-}
-
-// ******************************************************************
-// *                                                                *
-// *            inlined node_headers::bitvector  methods            *
-// *                                                                *
-// ******************************************************************
-
-inline bool MEDDLY::node_headers::bitvector::get(size_t i) const
-{
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(i<size);
-  return data[i];
-}
-
-inline void MEDDLY::node_headers::bitvector::set(size_t i, bool v)
-{
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(i<size);
-  data[i] = v;
-}
-
-inline void MEDDLY::node_headers::bitvector::clearAll()
-{
-  if (size) {
-    MEDDLY_DCASSERT(data);
-    memset(data, 0, size * sizeof(bool));
-  }
-}
-
-inline void MEDDLY::node_headers::bitvector::swap(size_t i, size_t j)
-{
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(i<size);
-  MEDDLY_DCASSERT(j<size);
-  SWAP(data[i], data[j]);
-  /*
-  bool tmp = data[i];
-  data[i] = data[j];
-  data[j] = tmp;
-  */
-}
-
-inline size_t MEDDLY::node_headers::bitvector::entry_bits() const
-{
-  return sizeof(bool) * 8;
-}
-
-inline size_t MEDDLY::node_headers::bitvector::firstZero(size_t start) const
-{
-  for (; start < size; start++) {
-    if (0==data[start]) return start;
-  }
-  return size;
+    MEDDLY_DCASSERT(i<size);
+    MEDDLY_DCASSERT(j<size);
+    if (4==bytes) {
+        MEDDLY_DCASSERT(data32);
+        MEDDLY_DCASSERT(!data64);
+        SWAP(data32[i], data32[j]);
+        return;
+    }
+    MEDDLY_DCASSERT(8==bytes);
+    MEDDLY_DCASSERT(!data32);
+    MEDDLY_DCASSERT(data64);
+    SWAP(data64[i], data64[j]);
 }
 
 // ******************************************************************
@@ -1242,6 +1151,5 @@ MEDDLY::node_headers::setNextOf(size_t p, size_t n)
     MEDDLY_DCASSERT(0==levels->get(size_t(p)));
     addresses->set(size_t(p), node_address(n));
 }
-
 
 #endif

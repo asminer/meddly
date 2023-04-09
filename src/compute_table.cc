@@ -353,7 +353,7 @@ void MEDDLY::compute_table::registerOp(operation* op, unsigned num_ids)
 
 void MEDDLY::compute_table::registerEntryType(unsigned etid, entry_type* et)
 {
-  MEDDLY_CHECK_RANGE(0, etid, entryInfoSize);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, etid, entryInfoSize);
   MEDDLY_DCASSERT(0==entryInfo[etid]);
   entryInfo[etid] = et;
   et->etID = etid;
@@ -370,7 +370,7 @@ void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
 {
   if (0==op) return;
   if (0==num_ids) return;
-  MEDDLY_CHECK_RANGE(0, op->getFirstETid(), entryInfoSize);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, op->getFirstETid(), entryInfoSize);
   unsigned stopID = op->getFirstETid()+num_ids;
   for (unsigned i=op->getFirstETid(); i<stopID; i++) {
     delete entryInfo[i];

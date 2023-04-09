@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -78,7 +78,7 @@ namespace MEDDLY {
 #ifdef USE_SLOW_GET_CHUNK_ADDRESS
       virtual void* slowChunkAddress(node_address h) const {
         MEDDLY_DCASSERT(data);
-        MEDDLY_CHECK_RANGE(1, h, data_alloc);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, h, data_alloc);
         return data + h;
       }
 #endif
@@ -127,11 +127,11 @@ namespace MEDDLY {
           return false;
         }
       }
-      
+
     protected:
       inline bool isHole(node_address h) const {
         MEDDLY_DCASSERT(data);
-        MEDDLY_CHECK_RANGE(0, h, 1+last_used_slot);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, h, 1+last_used_slot);
         return data[h] & MSB;
         // Because we set data[0] to 0, this will work
         // correctly also for h=0 (which is not a hole).
@@ -143,8 +143,8 @@ namespace MEDDLY {
       inline void setHoleSize(node_address h, INT hs) {
         MEDDLY_DCASSERT(data);
         MEDDLY_DCASSERT(hs>0);
-        MEDDLY_CHECK_RANGE(1, h, 1+last_used_slot);
-        MEDDLY_CHECK_RANGE(1, h+hs-1, 1+last_used_slot);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, h, 1+last_used_slot);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, h+hs-1, 1+last_used_slot);
         data[h] = data[h+hs-1] = (hs | MSB);
       }
       inline void clearHole(node_address h, INT hs) const {
@@ -152,18 +152,19 @@ namespace MEDDLY {
         data[h] = data[h+hs-1] = 0;
       }
       inline bool matchingHoleSizes(node_address h) const {
-        return data[h] == data[h+ getHoleSize(h) - 1];
+            const unsigned long hs = getHoleSize(h);
+            return data[h] == data[h+ hs - 1];
       }
 
       inline INT readSlot(node_address h, const int slot) const {
         MEDDLY_DCASSERT(isHole(h));
-        MEDDLY_CHECK_RANGE(1, h+slot, 1+last_used_slot);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, h+slot, 1+last_used_slot);
         return data[h+slot];
       }
 
-      inline INT& refSlot(node_address h, const int slot) {
+      inline INT& refSlot(node_address h, const unsigned slot) {
         MEDDLY_DCASSERT(isHole(h));
-        MEDDLY_CHECK_RANGE(1, h+slot, 1+last_used_slot);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, h+slot, 1+last_used_slot);
         return data[h+slot];
       }
 
@@ -187,7 +188,7 @@ namespace MEDDLY {
       INT MSB;
 
   }; // class hole_manager
-  
+
 
 };  // namespace MEDDLY
 
@@ -273,7 +274,7 @@ template <class INT>
 MEDDLY::node_address MEDDLY::hole_manager<INT>::allocateFromArray(size_t numSlots)
 {
   if (last_used_slot + numSlots >= data_alloc) {
-    // 
+    //
     // Expand.
     //
 
@@ -311,7 +312,7 @@ MEDDLY::node_address MEDDLY::hole_manager<INT>::allocateFromArray(size_t numSlot
 // ******************************************************************
 
 template <class INT>
-bool MEDDLY::hole_manager<INT>::resize(size_t new_alloc) 
+bool MEDDLY::hole_manager<INT>::resize(size_t new_alloc)
 {
 #if 0
 #ifdef HAVE_MALLOC_GOOD_SIZE

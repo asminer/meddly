@@ -6,7 +6,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -458,8 +458,8 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::first(int k, node_handle down)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmdd_index_set_long::evmdd_index_set_long(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule)
- : evmdd_pluslong(dsl, d, p, level_reduction_rule, true)
+MEDDLY::evmdd_index_set_long::evmdd_index_set_long(unsigned dsl, domain *_d, const policies &p, int* level_reduction_rule)
+ : evmdd_pluslong(dsl, _d, p, level_reduction_rule, true)
 { }
 
 MEDDLY::evmdd_index_set_long::~evmdd_index_set_long()

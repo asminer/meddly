@@ -971,7 +971,7 @@ void MEDDLY::expert_forest::validateIncounts(bool exact)
     // add to reference counts
     for (int z=0; z<P.getNNZs(); z++) {
       if (isTerminalNode(P.d(z))) continue;
-      MEDDLY_CHECK_RANGE(0, P.d(z), sz);
+      MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, P.d(z), sz);
       in_validate[P.d(z)]++;
     }
   } // for i
@@ -1123,7 +1123,7 @@ MEDDLY::expert_forest
     M->initFromNode(this, marked[mexpl], false);
     for (unsigned i=0; i<M->getNNZs(); i++) {
       if (isTerminalNode(M->d(i))) continue;
-      MEDDLY_CHECK_RANGE(0, M->d(i)-1, a_last);
+      MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, M->d(i)-1, a_last);
       if (inList[M->d(i)]) continue;
       // add dn to list
       if (mlen+1 >= msize) {
@@ -1544,7 +1544,7 @@ void MEDDLY::expert_forest
   node_handle* index2output = new node_handle[maxnode+1];
   for (int i=0; i<maxnode; i++) index2output[i] = 0;
   for (int i=0; output2index[i]; i++) {
-    MEDDLY_CHECK_RANGE(1, output2index[i], maxnode+1);
+      MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, output2index[i], maxnode+1);
     index2output[output2index[i]] = i+1;
   }
 

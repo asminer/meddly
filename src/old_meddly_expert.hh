@@ -728,7 +728,7 @@ MEDDLY::expert_forest::int_Tencoder::value2handle(int v)
     throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
   }
   if (v)
-    v |= 0x80000000; // sets the sign bit
+    v |= -2147483648; // sets the sign bit
   return v;
 }
 
