@@ -308,55 +308,6 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                     expert_variable  class                     *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::expert_variable : public variable {
-  public:
-    expert_variable(int b, char* n);
-
-    /// Update our list of domains: add \a d.
-    void addToList(domain* d);
-    /// Update our list of domains: remove \a d.
-    void removeFromList(const domain* d);
-
-    /** Enlarge the possible values for a variable.
-      This could modify all nodes in all forests, depending on the
-      choice of reduction rule.
-      @param  prime   If prime is true, enlarge the bound for
-                      the primed variable only, otherwise both
-                      the primed and unprimed are enlarged.
-      @param  b       New bound, if less than the current bound
-                      an error is thrown.
-                      If bound<=0, the variable is marked as extensible,
-                      with initial bound as abs(bound).
-                      Note: an extensible variable has a range [1 .. +infinity].
-    */
-    void enlargeBound(bool prime, int b);
-
-    /** Shrink the possible values for a variable.
-      This could modify all nodes in all forests, depending on the
-      choice of reduction rule.
-      @param  b       New bound, if more than the current bound
-                      an error is thrown.
-      @param  force   If \a b is too small, and information will be lost,
-                      proceed anyway if \a force is true, otherwise
-                      return an error code.
-    */
-    void shrinkBound(int b, bool force);
-
-  private:
-    domain** domlist;
-    int dl_alloc;
-    int dl_used;
-
-    virtual ~expert_variable();
-};
-
-
-// ******************************************************************
-// *                                                                *
 // *                      expert_domain  class                      *
 // *                                                                *
 // ******************************************************************

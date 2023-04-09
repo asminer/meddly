@@ -24,6 +24,7 @@
 #include "error.h"
 #include "io.h"
 #include "memstats.h"
+#include "variable.h"
 
 #else
 
@@ -33,5 +34,6 @@
 #include "meddly/error.h"
 #include "meddly/io.h"
 #include "meddly/memstats.h"
+#include "meddly/variable.h"
 
 #endif

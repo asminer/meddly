@@ -400,22 +400,6 @@ inline void MEDDLY::forest::visitRegisteredEdges(edge_visitor &ev) {
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                         variable class                         *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-
-inline int MEDDLY::variable::getBound(bool primed) const {
-  return primed ? pr_bound : un_bound;
-}
-inline const char* MEDDLY::variable::getName() const { return name; }
-inline bool MEDDLY::variable::isExtensible() const {
-  return is_extensible;
-}
-
-// ******************************************************************
-// *                                                                *
-// *                                                                *
 // *                         variable order class                   *
 // *                                                                *
 // *                                                                *
@@ -440,6 +424,8 @@ inline int MEDDLY::variable_order::getLevelByVar(int var) const
 // *                                                                *
 // *                                                                *
 // ******************************************************************
+
+#include "variable.h"
 
 inline int MEDDLY::domain::getNumVariables() const { return nVars; }
 

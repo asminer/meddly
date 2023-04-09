@@ -1636,42 +1636,6 @@ class MEDDLY::forest {
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                         variable class                         *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-
-/** Variable class.
-    Abstract base class.
-    A variable consists of an optional name, and a bound.
-    A single variable object is used to describe both
-    the primed and unprimed versions of the variable.
-
-    Note1: variables are automatically deleted when
-    removed from their last domain.
-
-    Additional features are provided in the expert interface.
-*/
-class MEDDLY::variable {
-  protected:
-    variable(int bound, char* name);
-    virtual ~variable();
-  public:
-    int getBound(bool primed) const;
-    const char* getName() const;
-    void setName(char* newname);
-    bool isExtensible() const;
-  protected:
-    int un_bound;
-    int pr_bound;
-    bool is_extensible;
-  private:
-    char* name;
-};
-
-// ******************************************************************
-// *                                                                *
-// *                                                                *
 // *                      variable order class                      *
 // *                                                                *
 // *                                                                *
