@@ -1636,35 +1636,6 @@ class MEDDLY::forest {
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                      variable order class                      *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::variable_order {
-  protected:
-    std::vector<int> level2var;
-    std::vector<int> var2level;
-
-  public:
-    variable_order(const int* order, int size);
-    variable_order(const variable_order& order);
-
-    int getVarByLevel(int level) const;
-    int getLevelByVar(int var) const;
-
-    // Exchange two variables
-    // The two variables don't have to be adjacent
-    void exchange(int var1, int var2);
-
-    bool is_compatible_with(const int* order) const;
-    bool is_compatible_with(const variable_order& order) const;
-};
-
-
-// ******************************************************************
-// *                                                                *
-// *                                                                *
 // *                          domain class                          *
 // *                                                                *
 // *                                                                *

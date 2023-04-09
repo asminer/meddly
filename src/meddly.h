@@ -25,6 +25,7 @@
 #include "io.h"
 #include "memstats.h"
 #include "variable.h"
+#include "varorder.h"
 
 #else
 
@@ -35,5 +36,6 @@
 #include "meddly/io.h"
 #include "meddly/memstats.h"
 #include "meddly/variable.h"
+#include "meddly/varorder.h"
 
 #endif
