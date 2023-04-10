@@ -1969,7 +1969,7 @@ class MEDDLY::expert_forest: public forest
   // ------------------------------------------------------------
   // Copy a node into an unpacked node
 
-  void fillUnpacked(unpacked_node &un, node_handle node, unpacked_node::storage_style st2) const;
+  void fillUnpacked(unpacked_node &un, node_handle node, node_storage_flags st2) const;
 
   /**   Return a forest node equal to the one given.
         The node is constructed as necessary.
@@ -2966,12 +2966,8 @@ MEDDLY::expert_forest::getTransparentNode() const
   return transparent;
 }
 
-//
-// TBD MOVE THESE to .cc
-//
-
 inline void
-MEDDLY::expert_forest::fillUnpacked(MEDDLY::unpacked_node &un, MEDDLY::node_handle node, unpacked_node::storage_style st2)
+MEDDLY::expert_forest::fillUnpacked(MEDDLY::unpacked_node &un, MEDDLY::node_handle node, node_storage_flags st2)
 const
 {
   const int level = getNodeLevel(node);

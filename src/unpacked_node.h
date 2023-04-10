@@ -50,6 +50,7 @@ class MEDDLY::unpacked_node {
     /**
         Options for filling an unpacked node from an existing one.
     */
+      /*
     enum storage_style {
       /// Unpacked node should be stored as truncated full
       FULL_NODE,
@@ -58,6 +59,7 @@ class MEDDLY::unpacked_node {
       /// Unpacked node should be stored same as packed node
       AS_STORED
     };
+    */
 
   public:
     /** Constructor.
