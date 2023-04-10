@@ -2506,13 +2506,14 @@ void MEDDLY::expert_forest::recycle(unpacked_node* n)
 //
 
 void
-MEDDLY::expert_forest::fillUnpacked(MEDDLY::unpacked_node &un, MEDDLY::node_handle node, node_storage_flags st2)
-const
+MEDDLY::expert_forest::unpackNode(MEDDLY::unpacked_node* un,
+    MEDDLY::node_handle node, node_storage_flags st2) const
 {
-  const int level = getNodeLevel(node);
-  MEDDLY_DCASSERT(0 != level);
-  un.bind_to_forest(this, level, unsigned(getLevelSize(level)), true);
-  MEDDLY_DCASSERT(getNodeAddress(node));
-  nodeMan->fillUnpacked(un, getNodeAddress(node), st2);
+    MEDDLY_DCASSERT(un);
+    const int level = getNodeLevel(node);
+    MEDDLY_DCASSERT(0 != level);
+    un->bind_to_forest(this, level, unsigned(getLevelSize(level)), true);
+    MEDDLY_DCASSERT(getNodeAddress(node));
+    nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
 }
 

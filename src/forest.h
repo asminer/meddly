@@ -1967,7 +1967,10 @@ class MEDDLY::expert_forest: public forest
   // ------------------------------------------------------------
   // Copy a node into an unpacked node
 
-  void fillUnpacked(unpacked_node &un, node_handle node, node_storage_flags st2) const;
+    void unpackNode(unpacked_node* un, node_handle node, node_storage_flags st2)    const;
+
+    // KILL THIS:
+  // void fillUnpacked(unpacked_node &un, node_handle node, node_storage_flags st2) const;
 
   /**   Return a forest node equal to the one given.
         The node is constructed as necessary.

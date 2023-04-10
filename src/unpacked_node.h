@@ -21,6 +21,7 @@
 
 #include "defines.h"
 #include "encoders.h"
+#include "dd_edge.h"
 
 namespace MEDDLY {
     class unpacked_node;
@@ -62,12 +63,14 @@ class MEDDLY::unpacked_node {
     public:
         /* Initialization methods, primarily for reading */
 
+        /*
         inline void initFromNode(const expert_forest *f, node_handle node,
                 node_storage_flags st2)
         {
             MEDDLY_DCASSERT(f);
             f->fillUnpacked(*this, node, st2);
         }
+        */
 
         //
         // Build redundant nodes
@@ -105,13 +108,13 @@ class MEDDLY::unpacked_node {
         // Create blank nodes, primarily for writing
         //
 
-        inline void initFull(const expert_forest *f, int level, unsigned tsz)
+        inline void initFull(const expert_forest *f, int levl, unsigned tsz)
         {
             MEDDLY_DCASSERT(f);
             bind_to_forest(f, levl, tsz, true);
         }
 
-        inline void initSparse(const expert_forest *f, int level, unsigned nnz)
+        inline void initSparse(const expert_forest *f, int levl, unsigned nnz)
         {
             MEDDLY_DCASSERT(f);
             bind_to_forest(f, levl, nnz, false);
@@ -122,6 +125,8 @@ class MEDDLY::unpacked_node {
         // For convenience: get recycled instance and initialize
         //
 
+        /* use expert_forest::unpackNode(useUnpackedNode(), node, std) instead
+         *
         static inline unpacked_node* newFromNode(const expert_forest *f,
                 node_handle node, node_storage_flags st2)
         {
@@ -130,6 +135,7 @@ class MEDDLY::unpacked_node {
             U->initFromNode(f, node, st2);
             return U;
         }
+        */
 
         static inline unpacked_node* newRedundant(const expert_forest *f,
                 int k, node_handle node, bool full)
@@ -187,11 +193,11 @@ class MEDDLY::unpacked_node {
 
         /** Create a zeroed-out full node */
         static inline unpacked_node* newFull(const expert_forest *f,
-                int level, unsigned tsz)
+                int levl, unsigned tsz)
         {
             unpacked_node* U = useUnpackedNode();
             MEDDLY_DCASSERT(U);
-            U->initFull(f, level, tsz);
+            U->initFull(f, levl, tsz);
             U->clearFullEdges();
             addToBuildList(U);
             return U;
@@ -199,11 +205,11 @@ class MEDDLY::unpacked_node {
 
         /** Create a zeroed-out sparse node */
         static inline unpacked_node* newSparse(const expert_forest *f,
-                int level, unsigned nnz)
+                int levl, unsigned nnzs)
         {
             unpacked_node* U = useUnpackedNode();
             MEDDLY_DCASSERT(U);
-            U->initSparse(f, level, nnzs);
+            U->initSparse(f, levl, nnzs);
             U->clearSparseEdges();
             addToBuildList(U);
             return U;
@@ -231,7 +237,7 @@ class MEDDLY::unpacked_node {
 
     public:
         //
-        // Access methods (inlined)
+        // Node Access methods (inlined)
         //
 
         /// Modify a pointer to the unhashed header data
@@ -244,140 +250,316 @@ class MEDDLY::unpacked_node {
         /// Get a pointer to the unhashed header data.
         inline const void* UHptr() const
         {
-            return UHdata();
+            MEDDLY_DCASSERT(extra_unhashed);
+            return extra_unhashed;
+        }
+
+        /// Get the number of bytes of unhashed header data.
+        inline unsigned UHbytes() const
+        {
+            return ext_uh_size;
+        }
+
+        /// Get a pointer to the hashed header data.
+        inline const void* HHptr() const
+        {
+            MEDDLY_DCASSERT(extra_hashed);
+            return extra_hashed;
+        }
+
+        /// Modify a pointer to the hashed header data.
+        inline void* HHdata()
+        {
+            MEDDLY_DCASSERT(extra_hashed);
+            return extra_hashed;
+        }
+
+        /// Get the number of bytes of hashed header data.
+        inline unsigned HHbytes() const
+        {
+            return ext_h_size;
+        }
+
+        /** Get a downward pointer.
+            @param  n   Which pointer.
+            @return     If this is a full reader,
+                        return pointer with index n.
+                        If this is a sparse reader,
+                        return the nth non-zero pointer.
+        */
+        inline node_handle d(unsigned n) const
+        {
+            MEDDLY_DCASSERT(down);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n,
+                    is_full ? size : nnzs);
+            return down[n];
+        }
+
+        /** Reference to a downward pointer.
+            @param  n   Which pointer.
+            @return     If this is a full reader,
+                        modify pointer with index n.
+                        If this is a sparse reader,
+                        modify the nth non-zero pointer.
+        */
+        inline node_handle& d_ref(unsigned n)
+        {
+            MEDDLY_DCASSERT(down);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n,
+                    is_full ? size : nnzs);
+            return down[n];
+        }
+
+        /// Set the nth pointer from E, and destroy E.
+        inline void set_d(unsigned n, dd_edge &E)
+        {
+            MEDDLY_DCASSERT(parent == E.parent);
+            MEDDLY_DCASSERT(0==edge_bytes);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n,
+                    is_full ? size : nnzs);
+            down[n] = E.node;
+            E.node = 0; // avoid having to adjust the link count
+        }
+
+        /** Get the index of the nth non-zero pointer.
+            Use only for sparse readers.
+        */
+        inline unsigned i(unsigned n) const
+        {
+            MEDDLY_DCASSERT(index);
+            MEDDLY_DCASSERT(!is_full);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, nnzs);
+            return index[n];
+        }
+
+        /** Modify the index of the nth non-zero pointer.
+            Use only for sparse readers.
+        */
+        inline unsigned& i_ref(unsigned n)
+        {
+            MEDDLY_DCASSERT(index);
+            MEDDLY_DCASSERT(!is_full);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, nnzs);
+            return index[n];
+        }
+
+        /// Get a pointer to an edge
+        inline const void* eptr(unsigned i) const
+        {
+            MEDDLY_DCASSERT(edge);
+            MEDDLY_DCASSERT(edge_bytes);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i,
+                    is_full ? size : nnzs);
+            return ((char*) edge) + i * edge_bytes;
+        }
+
+        /// Modify pointer to an edge
+        inline void* eptr_write(unsigned i)
+        {
+            MEDDLY_DCASSERT(edge);
+            MEDDLY_DCASSERT(edge_bytes);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i,
+                    is_full ? size : nnzs);
+            return ((char*) edge) + i * edge_bytes;
+        }
+
+        /// Set the nth pointer and edge value from E, and destroy E.
+        inline void set_de(unsigned n, dd_edge &E)
+        {
+            MEDDLY_DCASSERT(parent == E.parent);
+            MEDDLY_DCASSERT(edge);
+            MEDDLY_DCASSERT(edge_bytes);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n,
+                    is_full ? size : nnzs);
+            down[n] = E.node;
+            memcpy(
+                ((char*) edge) + n * edge_bytes, & (E.raw_value), edge_bytes
+            );
+            E.node = 0; // avoid having to adjust the link count
+        }
+
+        /// Get the edge value, as an integer.
+        inline void getEdge(unsigned i, long& val) const
+        {
+            MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
+            MEDDLY::EVencoder<long>::readValue(eptr(i), val);
+        }
+
+        /// Get the edge value, as a float.
+        inline void getEdge(unsigned i, float& val) const
+        {
+            MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
+            MEDDLY::EVencoder<float>::readValue(eptr(i), val);
+        }
+
+        /// Set the edge value, as an integer.
+        inline void setEdge(unsigned i, long ev)
+        {
+            MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
+            MEDDLY::EVencoder<long>::writeValue(eptr_write(i), ev);
+#ifdef DEVELOPMENT_CODE
+            long test_ev = 256;
+            getEdge(i, test_ev);
+            MEDDLY_DCASSERT(test_ev == ev);
+#endif
+        }
+
+        /// Set the edge value, as a float.
+        inline void setEdge(unsigned i, float ev)
+        {
+            MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
+            MEDDLY::EVencoder<float>::writeValue(eptr_write(i), ev);
+        }
+
+        /// Get the edge value, as an integer.
+        inline long ei(unsigned i) const
+        {
+            long ev;
+            getEdge(i, ev);
+            return ev;
+        }
+
+        /// Get the edge value, as a float.
+        inline float ef(unsigned i) const
+        {
+            float ev;
+            getEdge(i, ev);
+            return ev;
+        }
+
+    public:
+        //
+        // Methods to access the extensible portion of the node
+        //
+        // Note: Only nodes that belong to an extensible level can
+        // be extensible.
+        //
+        // Extensible node  : (Regular part, Extensible part).
+        // Regular Part     : same as non-extensible nodes.
+        // Extensible Part  : a single edge <index, node, edge-value>,
+        //                    for all indices in [extensible_index, +infinity].
+        //
+        // Example:
+        // The node
+        //    [0:n0:ev0, 1:n1:ev1, 2:n2:ev2, 3:n2:ev2, ..., +infinity:n2:ev2]
+        // is represented as the following extensible node:
+        //    ([0:n0:ev0, 1:n1:ev1], Extensible: [2:n2:ev2])
+        // with,
+        //    size of node           : 2
+        //    extensible index       : 2
+        //    extensible node_handle : n2
+        //    extensible edge-value  : ev2
+        //
+
+
+
+        /// Does this node have an extensible edge?
+        inline bool isExtensible() const
+        {
+            return is_extensible;
+        }
+
+        /// Set this node as extensible
+        inline void markAsExtensible()
+        {
+            MEDDLY_DCASSERT(can_be_extensible);
+            is_extensible = true;
+        }
+
+        /// Set this node as not extensible
+        inline void markAsNotExtensible()
+        {
+            is_extensible = false;
+        }
+
+        /// Get extensible down pointer
+        inline node_handle ext_d() const
+        {
+            MEDDLY_DCASSERT(isExtensible());
+            return d( (isSparse()? getNNZs(): getSize()) - 1 );
+        }
+
+        /// Get the extensible index
+        inline unsigned ext_i() const
+        {
+            MEDDLY_DCASSERT(isExtensible());
+            return isSparse()? i(getNNZs() - 1): getSize() - 1;
+        }
+
+        /// Get the extensible edge value, as a long
+        inline long ext_ei() const
+        {
+            MEDDLY_DCASSERT(isExtensible());
+            return ei( (isSparse()? getNNZs(): getSize()) - 1 );
+        }
+
+        /// Get the extensible edge value, as a float
+        inline float ext_ef() const
+        {
+            MEDDLY_DCASSERT(isExtensible());
+            return ef( (isSparse()? getNNZs(): getSize()) - 1 );
+        }
+
+    public:
+        //
+        // Access of other information
+        //
+
+        /// Get the level number of this node.
+        inline int getLevel() const
+        {
+            return level;
+        }
+
+        /// Set the level number of this node.
+        inline void setLevel(int k)
+        {
+            level = k;
+        }
+
+        /// Get the size of this node (full readers only).
+        inline unsigned getSize() const
+        {
+            MEDDLY_DCASSERT(is_full);
+            return size;
+        }
+
+        /// Get the number of nonzeroes of this node (sparse readers only).
+        inline unsigned getNNZs() const
+        {
+            MEDDLY_DCASSERT(!is_full);
+            return nnzs;
+        }
+
+        /// Is this a sparse reader?
+        inline bool isSparse() const
+        {
+            return !is_full;
+        }
+
+        /// Is this a full reader?
+        inline bool isFull() const
+        {
+            return is_full;
+        }
+
+        /// Does this node have edge values?
+        inline bool hasEdges() const
+        {
+            return edge_bytes;
+        }
+
+        /// Number of bytes per edge
+        inline unsigned edgeBytes() const
+        {
+            return edge_bytes;
         }
 
 
-    /// Get the number of bytes of unhashed header data.
-    unsigned UHbytes() const;
 
-    /// Get a pointer to the hashed header data.
-    const void* HHptr() const;
 
-    /// Modify a pointer to the hashed header data.
-    void* HHdata();
+    public:
 
-    /// Get the number of bytes of hashed header data.
-    unsigned HHbytes() const;
-
-    /** Get a downward pointer.
-          @param  n   Which pointer.
-          @return     If this is a full reader,
-                      return pointer with index n.
-                      If this is a sparse reader,
-                      return the nth non-zero pointer.
-    */
-    node_handle d(unsigned n) const;
-
-    /** Reference to a downward pointer.
-          @param  n   Which pointer.
-          @return     If this is a full reader,
-                      modify pointer with index n.
-                      If this is a sparse reader,
-                      modify the nth non-zero pointer.
-    */
-    node_handle& d_ref(unsigned n);
-
-    /// Set the nth pointer from E, and destroy E.
-    void set_d(unsigned n, dd_edge &E);
-
-    /** Get the index of the nth non-zero pointer.
-        Use only for sparse readers.
-     */
-    unsigned i(unsigned n) const;
-
-    /** Modify the index of the nth non-zero pointer.
-        Use only for sparse readers.
-    */
-    unsigned& i_ref(unsigned n);
-
-    /// Get a pointer to an edge
-    const void* eptr(unsigned i) const;
-
-    /// Modify pointer to an edge
-    void* eptr_write(unsigned i);
-
-    /// Set the nth pointer and edge value from E, and destroy E.
-    void set_de(unsigned n, dd_edge &E);
-
-    /// Get the edge value, as an integer.
-    void getEdge(unsigned i, long& ev) const;
-
-    /// Get the edge value, as a float.
-    void getEdge(unsigned i, float& ev) const;
-
-    /// Set the edge value, as an integer.
-    void setEdge(unsigned i, long ev);
-
-    /// Set the edge value, as a float.
-    void setEdge(unsigned i, float ev);
-
-    /// Get the edge value, as an integer.
-    long ei(unsigned i) const;
-
-    /// Get the edge value, as a float.
-    float ef(unsigned i) const;
-
-    // -------------------------------------------------------------------------
-    // Methods to access the extensible portion of the node
-    //
-    // Note: Only nodes that belong to an extensible level can be extensible.
-    //
-    // Extensible node  : (Regular part, Extensible part).
-    // Regular Part     : same as non-extensible nodes.
-    // Extensible Part  : a single edge, i.e. a tuple <index, node, edge-value>,
-    //                    for all indices in [extensible_index, +infinity].
-    //
-    // Example:
-    // The node
-    //    [0:n0:ev0, 1:n1:ev1, 2:n2:ev2, 3:n2:ev2, ..., +infinity:n2:ev2]
-    // is represented as the following extensible node:
-    //    ([0:n0:ev0, 1:n1:ev1], Extensible: [2:n2:ev2])
-    // with,
-    //    size of node           : 2
-    //    extensible index       : 2
-    //    extensible node_handle : n2
-    //    extensible edge-value  : ev2
-    // -------------------------------------------------------------------------
-
-    /// Does this reader store an extensible edge?
-    /// Note: in an extensible node, all edges starting from
-    ///       index to +infinity refer to the same edge, i.e. (node, edge-value).
-    bool isExtensible() const;
-
-    void markAsExtensible();
-    void markAsNotExtensible();
-
-    node_handle ext_d() const;
-    unsigned ext_i() const;
-    long ext_ei() const;
-    float ext_ef() const;
-
-    // -------------------- End of extensible portion --------------------------
-
-    /// Get the level number of this node.
-    int getLevel() const;
-
-    /// Set the level number of this node.
-    void setLevel(int k);
-
-    /// Get the size of this node (full readers only).
-    unsigned getSize() const;
-
-    /// Get the number of nonzeroes of this node (sparse readers only).
-    unsigned getNNZs() const;
-
-    /// Is this a sparse reader?
-    bool isSparse() const;
-
-    /// Is this a full reader?
-    bool isFull() const;
-
-    /// Does this node have edge values?
-    bool hasEdges() const;
-
-    /// Number of bytes per edge
-    unsigned edgeBytes() const;
 
     // For debugging unique table.
     unsigned hash() const;
@@ -444,7 +626,7 @@ class MEDDLY::unpacked_node {
     static void markBuildListChildren(expert_forest* F);
 
   private:
-    const expert_forest* parent;
+    const forest* parent;
     static unpacked_node* freeList;
     static unpacked_node* buildList;
 
@@ -469,6 +651,7 @@ class MEDDLY::unpacked_node {
     node_handle* down;
     unsigned* index;
     void* edge;
+    bool can_be_extensible;
     bool is_extensible;
     unsigned alloc;
     unsigned ealloc;
@@ -489,269 +672,12 @@ class MEDDLY::unpacked_node {
 // *                                                                *
 // ******************************************************************
 
-
-inline const void*
-MEDDLY::unpacked_node::UHptr() const
-{
-}
-
-inline void*
-MEDDLY::unpacked_node::UHdata()
-{
-  MEDDLY_DCASSERT(extra_unhashed);
-  return extra_unhashed;
-}
-
-inline unsigned
-MEDDLY::unpacked_node::UHbytes() const
-{
-  return ext_uh_size;
-}
-
-inline const void*
-MEDDLY::unpacked_node::HHptr() const
-{
-  MEDDLY_DCASSERT(extra_hashed);
-  return extra_hashed;
-}
-
-inline void*
-MEDDLY::unpacked_node::HHdata()
-{
-  MEDDLY_DCASSERT(extra_hashed);
-  return extra_hashed;
-}
-
-inline unsigned
-MEDDLY::unpacked_node::HHbytes() const
-{
-  return ext_h_size;
-}
-
-inline MEDDLY::node_handle
-MEDDLY::unpacked_node::d(unsigned n) const
-{
-  MEDDLY_DCASSERT(down);
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, (is_full ? size : nnzs));
-  return down[n];
-}
-
-inline MEDDLY::node_handle&
-MEDDLY::unpacked_node::d_ref(unsigned n)
-{
-  MEDDLY_DCASSERT(down);
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, (is_full ? size : nnzs));
-  return down[n];
-}
-
-inline void
-MEDDLY::unpacked_node::set_d(unsigned n, dd_edge &E)
-{
-  MEDDLY_DCASSERT(parent == E.parent);
-  MEDDLY_DCASSERT(0==edge_bytes);
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, (is_full ? size : nnzs));
-  down[n] = E.node;
-  E.node = 0; // avoid having to adjust the link count
-}
-
-inline unsigned
-MEDDLY::unpacked_node::i(unsigned n) const
-{
-  MEDDLY_DCASSERT(index);
-  MEDDLY_DCASSERT(!is_full);
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, nnzs);
-  return index[n];
-}
-
-inline unsigned&
-MEDDLY::unpacked_node::i_ref(unsigned n)
-{
-  MEDDLY_DCASSERT(index);
-  MEDDLY_DCASSERT(!is_full);
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, nnzs);
-  return index[n];
-}
-
-inline const void*
-MEDDLY::unpacked_node::eptr(unsigned i) const
-{
-  MEDDLY_DCASSERT(edge);
-  MEDDLY_DCASSERT(edge_bytes);
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, (is_full ? size : nnzs));
-  return ((char*) edge) + i * edge_bytes;
-}
-
-inline void*
-MEDDLY::unpacked_node::eptr_write(unsigned i)
-{
-  MEDDLY_DCASSERT(edge);
-  MEDDLY_DCASSERT(edge_bytes);
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, (is_full ? size : nnzs));
-  return ((char*) edge) + i * edge_bytes;
-}
-
-inline void
-MEDDLY::unpacked_node::set_de(unsigned n, dd_edge &E)
-{
-  MEDDLY_DCASSERT(parent == E.parent);
-  MEDDLY_DCASSERT(edge);
-  MEDDLY_DCASSERT(edge_bytes);
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, (is_full ? size : nnzs));
-  down[n] = E.node;
-  memcpy( ((char*) edge) + n * edge_bytes, & (E.raw_value), edge_bytes );
-  E.node = 0; // avoid having to adjust the link count
-}
-
-inline void
-MEDDLY::unpacked_node::getEdge(unsigned n, long &val) const
-{
-  MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
-  MEDDLY::EVencoder<long>::readValue(eptr(n), val);
-}
-
-inline void
-MEDDLY::unpacked_node::getEdge(unsigned n, float &val) const
-{
-  MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
-  MEDDLY::EVencoder<float>::readValue(eptr(n), val);
-}
-
-inline void
-MEDDLY::unpacked_node::setEdge(unsigned n, long ev)
-{
-  MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
-  MEDDLY::EVencoder<long>::writeValue(eptr_write(n), ev);
-
-  long test_ev = 256;
-  getEdge(n, test_ev);
-  MEDDLY_DCASSERT(test_ev == ev);
-}
-
-
-inline void
-MEDDLY::unpacked_node::setEdge(unsigned n, float ev)
-{
-  MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
-  MEDDLY::EVencoder<float>::writeValue(eptr_write(n), ev);
-}
-
-inline long
-MEDDLY::unpacked_node::ei(unsigned i) const
-{
-  long ev;
-  getEdge(i, ev);
-  return ev;
-}
-
-inline float
-MEDDLY::unpacked_node::ef(unsigned i) const
-{
-  float ev;
-  getEdge(i, ev);
-  return ev;
-}
-
-inline int
-MEDDLY::unpacked_node::getLevel() const
-{
-  return level;
-}
-
-inline void
-MEDDLY::unpacked_node::setLevel(int k)
-{
-  level = k;
-}
-
 // ---------------------------------------------
 // Extensible portion of the node
 // ---------------------------------------------
 
-inline bool
-MEDDLY::unpacked_node::isExtensible() const
-{
-  return is_extensible;
-}
-
-inline void
-MEDDLY::unpacked_node::markAsExtensible()
-{
-  MEDDLY_DCASSERT(parent->isExtensibleLevel(getLevel()));
-  is_extensible = true;
-}
-
-inline void
-MEDDLY::unpacked_node::markAsNotExtensible()
-{
-  is_extensible = false;
-}
-
-inline unsigned
-MEDDLY::unpacked_node::ext_i() const
-{
-  MEDDLY_DCASSERT(isExtensible());
-  return isSparse()? i(getNNZs() - 1): getSize() - 1;
-}
-
-inline MEDDLY::node_handle
-MEDDLY::unpacked_node::ext_d() const
-{
-  MEDDLY_DCASSERT(isExtensible());
-  return d( (isSparse()? getNNZs(): getSize()) - 1 );
-}
-
-inline long
-MEDDLY::unpacked_node::ext_ei() const
-{
-  MEDDLY_DCASSERT(isExtensible());
-  return ei( (isSparse()? getNNZs(): getSize()) - 1 );
-}
-
-inline float
-MEDDLY::unpacked_node::ext_ef() const
-{
-  MEDDLY_DCASSERT(isExtensible());
-  return ef( (isSparse()? getNNZs(): getSize()) - 1 );
-}
 
 // --- End of Extensible portion of the node ---
-
-inline unsigned
-MEDDLY::unpacked_node::getSize() const
-{
-  MEDDLY_DCASSERT(is_full);
-  return size;
-}
-
-inline unsigned
-MEDDLY::unpacked_node::getNNZs() const
-{
-  MEDDLY_DCASSERT(!is_full);
-  return nnzs;
-}
-
-inline bool
-MEDDLY::unpacked_node::isSparse() const
-{
-  return !is_full;
-}
-
-inline bool
-MEDDLY::unpacked_node::isFull() const
-{
-  return is_full;
-}
-
-inline bool
-MEDDLY::unpacked_node::hasEdges() const
-{
-  return edge_bytes;
-}
-inline unsigned
-MEDDLY::unpacked_node::edgeBytes() const
-{
-  return edge_bytes;
-}
 
 inline unsigned
 MEDDLY::unpacked_node::hash() const

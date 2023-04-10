@@ -909,6 +909,8 @@ class MEDDLY::satpregen_opname : public specialized_opname {
 // *                                                                *
 // ******************************************************************
 
+#include "dd_edge.h"
+
 /** Saturation, transition relations built on the fly, operation names.
     Implemented in operations/sat_otf.cc
 */

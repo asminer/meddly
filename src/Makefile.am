@@ -127,6 +127,7 @@ pkginclude_HEADERS = \
     domain.h \
     node_headers.h node_storage.h unpacked_node.h relation_node.h \
     encoders.h forest.h \
+    dd_edge.h \
     old_meddly.h old_meddly.hh \
     old_meddly_expert.h old_meddly_expert.hh
 

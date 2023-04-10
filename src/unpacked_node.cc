@@ -49,6 +49,7 @@ MEDDLY::unpacked_node::unpacked_node()
   index = 0;
   edge = 0;
   is_extensible = false;
+  can_be_extensible = false;
   alloc = 0;
   ealloc = 0;
   size = 0;
@@ -405,6 +406,8 @@ void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f,
   parent = f;
   level = k;
   is_full = full;
+
+  can_be_extensible = f->isExtensibleLevel(k);
   markAsNotExtensible();
   edge_bytes = f->edgeBytes();
   resize(ns);
