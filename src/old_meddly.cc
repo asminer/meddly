@@ -30,6 +30,7 @@
 
 #include "variable.h"
 #include "domain.h"
+#include "unpacked_node.h"
 
 #include "old_meddly.h"
 #include "old_meddly.hh"

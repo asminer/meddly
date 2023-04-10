@@ -20,11 +20,11 @@
 #define MEDDLY_FOREST_H
 
 #include "memstats.h"
-#include "node_headers.h"
 #include "varorder.h"
 #include "io.h"
-#include "node_storage.h"
 #include "encoders.h"
+#include "node_headers.h"
+#include "node_storage.h"
 
 #include <memory>
 
@@ -38,6 +38,8 @@ namespace MEDDLY {
     class unpacked_node;
     class unique_table;
     class impl_unique_table;
+    class relation_node;
+    class global_rebuilder;
 };
 
 // ******************************************************************
@@ -126,10 +128,6 @@ class MEDDLY::forest {
           /// Nodes are user-defined reduced
           USER_DEFINED
       };
-
-      // Supported node storage meachanisms.
-      static const unsigned char ALLOW_FULL_STORAGE;
-      static const unsigned char ALLOW_SPARSE_STORAGE;
 
       /// Supported node deletion policies.
       enum node_deletion {
@@ -1172,15 +1170,15 @@ class MEDDLY::forest {
 
 
 inline void MEDDLY::forest::policies::setFullStorage() {
-  storage_flags = ALLOW_FULL_STORAGE;
+  storage_flags = FULL_ONLY;
 }
 
 inline void MEDDLY::forest::policies::setSparseStorage() {
-  storage_flags = ALLOW_SPARSE_STORAGE;
+  storage_flags = SPARSE_ONLY;
 }
 
 inline void MEDDLY::forest::policies::setFullOrSparse() {
-  storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
+  storage_flags = FULL_OR_SPARSE;
 }
 
 inline void MEDDLY::forest::policies::setFullyReduced() {
@@ -1446,11 +1444,11 @@ inline bool MEDDLY::forest::isPessimistic() const {
 }
 
 inline bool MEDDLY::forest::areSparseNodesEnabled() const {
-  return MEDDLY::forest::policies::ALLOW_SPARSE_STORAGE & deflt.storage_flags;
+  return SPARSE_ONLY & deflt.storage_flags;
 }
 
 inline bool MEDDLY::forest::areFullNodesEnabled() const {
-  return MEDDLY::forest::policies::ALLOW_FULL_STORAGE & deflt.storage_flags;
+  return FULL_ONLY & deflt.storage_flags;
 }
 
 inline const MEDDLY::forest::statset& MEDDLY::forest::getStats() const {
@@ -2375,6 +2373,8 @@ class MEDDLY::expert_forest: public forest
     // Sanity check; used in development code.
     void validateDownPointers(const unpacked_node &nb) const;
 
+    static void recycle(unpacked_node *n);
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // |                                                                |
   // |                              Data                              |
@@ -2966,31 +2966,6 @@ MEDDLY::expert_forest::getTransparentNode() const
   return transparent;
 }
 
-inline void
-MEDDLY::expert_forest::fillUnpacked(MEDDLY::unpacked_node &un, MEDDLY::node_handle node, node_storage_flags st2)
-const
-{
-  const int level = getNodeLevel(node);
-  MEDDLY_DCASSERT(0 != level);
-  un.bind_to_forest(this, level, unsigned(getLevelSize(level)), true);
-  MEDDLY_DCASSERT(getNodeAddress(node));
-  nodeMan->fillUnpacked(un, getNodeAddress(node), st2);
-}
-
-inline MEDDLY::node_handle
-MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un)
-{
-  MEDDLY_DCASSERT(un);
-  MEDDLY_DCASSERT(un->isBuildNode());
-  un->computeHash();
-  MEDDLY::node_handle q = createReducedHelper(in, *un);
-#ifdef TRACK_DELETIONS
-  printf("Created node %d\n", q);
-#endif
-  unpacked_node::recycle(un);
-  return q;
-}
-
 inline unsigned
 MEDDLY::expert_forest::getImplicitTableCount() const
 {
@@ -3022,21 +2997,32 @@ MEDDLY::expert_forest::createRelationNode(MEDDLY::relation_node *un)
   return q;
 }
 
+inline MEDDLY::node_handle
+MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un)
+{
+  MEDDLY_DCASSERT(un);
+  MEDDLY::node_handle q = createReducedHelper(in, *un);
+#ifdef TRACK_DELETIONS
+  printf("Created node %d\n", q);
+#endif
+  recycle(un);
+  return q;
+}
+
 template<class T>
 inline void
 MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un, T& ev,
       MEDDLY::node_handle& node)
 {
   MEDDLY_DCASSERT(un);
-  MEDDLY_DCASSERT(un->isBuildNode());
+  // MEDDLY_DCASSERT(un->isBuildNode());
   normalize(*un, ev);
   MEDDLY_DCASSERT(ev >= 0);
-  un->computeHash();
   node = createReducedHelper(in, *un);
 #ifdef TRACK_DELETIONS
   printf("Created node %d\n", node);
 #endif
-  unpacked_node::recycle(un);
+  recycle(un);
 }
 
 inline bool

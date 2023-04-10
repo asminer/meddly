@@ -19,6 +19,9 @@
 #ifndef MEDDLY_ENCODER_H
 #define MEDDLY_ENCODER_H
 
+#include "error.h"
+#include "io.h"
+
 /*
     Classes to encode and decode terminal values and edge values.
     As classes, because we can use them in template functions.

@@ -52,27 +52,6 @@ namespace MEDDLY {
   const int DONT_CHANGE = -2;
 
   // Typedefs
-  typedef unsigned char node_storage_flags;
-
-  /** Handles for nodes.
-      This should be either int or long, and effectively limits
-      the number of possible nodes per forest.
-      As an int, we get 2^32-1 possible nodes per forest,
-      which should be enough for most applications.
-      As a long on a 64-bit machine, we get 2^64-1 possible nodes
-      per forest, at the expense of nearly doubling the memory used.
-      This also specifies the incoming count range for each node.
-  */
-  typedef int  node_handle;
-
-  /** Node addresses.
-      This is used for internal storage of a node,
-      and should probably not be changed.
-      The typedef is given simply to clarify the code
-      (hopefully :^)
-  */
-  typedef unsigned long node_address;
-
   // Classes
 
   class memstats;

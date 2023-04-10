@@ -337,116 +337,6 @@ MEDDLY::satotf_opname::otf_relation::getNumConfirmed(int level) const
 
 // ******************************************************************
 // *                                                                *
-// *                 inlined  relation_node methods                *
-// *                                                                *
-// ******************************************************************
-
-
-inline unsigned long
-MEDDLY::relation_node::getSignature() const
-{
-  return signature;
-}
-
-inline MEDDLY::expert_forest*
-MEDDLY::relation_node::getForest() {
-  return f;
-}
-
-inline int
-MEDDLY::relation_node::getLevel() const
-{
-  return level;
-}
-
-inline rel_node_handle
-MEDDLY::relation_node::getDown() const
-{
-  return down;
-}
-
-inline void
-MEDDLY::relation_node::setDown(rel_node_handle d)
-{
-  down = d;
-}
-
-
-inline rel_node_handle
-MEDDLY::relation_node::getID() const
-{
-  return ID;
-}
-
-inline void
-MEDDLY::relation_node::setID(rel_node_handle n_ID)
-{
-  ID=n_ID;
-}
-
-inline long
-MEDDLY::relation_node::getFire() const
-{
-  return fire;
-}
-
-inline void
-MEDDLY::relation_node::setFire(long fire_val)
-{
-  fire = fire_val;
-}
-
-inline long
-MEDDLY::relation_node::getEnable() const
-{
-  return enable;
-}
-
-inline void
-MEDDLY::relation_node::setEnable(long enable_val)
-{
-  enable = enable_val;
-}
-
-inline void
-MEDDLY::relation_node::setInhibit(long inh)
-{
-  inhibit = inh;
-}
-
-inline long
-MEDDLY::relation_node::getInhibit() const
-{
-  return inhibit;
-}
-
-inline long
-MEDDLY::relation_node::getPieceSize() const
-{
-  return piece_size;
-}
-
-inline void
-MEDDLY::relation_node::setPieceSize(long pS)
-{
-  piece_size=pS;
-}
-
-inline long*
-MEDDLY::relation_node::getTokenUpdate() const
-{
-  return token_update;
-}
-
-inline
-void
-MEDDLY::relation_node::setTokenUpdate(long* n_token_update)
-{
-  token_update = n_token_update;
-}
-
-// ******************************************************************
-// *                                                                *
 // *                 inlined  satimpl_opname methods                *
 // *                                                                *
 // ******************************************************************
@@ -506,7 +396,7 @@ MEDDLY::satimpl_opname::implicit_relation::lengthForLevel(int level) const
   return event_added[level];
 }
 
-inline rel_node_handle*
+inline MEDDLY::rel_node_handle*
 MEDDLY::satimpl_opname::implicit_relation::arrayForLevel(int level) const
 {
   return event_list[level];

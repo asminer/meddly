@@ -81,8 +81,6 @@
 // *                                                                *
 // ******************************************************************
 
-const unsigned char MEDDLY::forest::policies::ALLOW_FULL_STORAGE    = 0x01;
-const unsigned char MEDDLY::forest::policies::ALLOW_SPARSE_STORAGE  = 0x02;
 
 MEDDLY::forest::policies::policies()
 {
@@ -98,7 +96,7 @@ MEDDLY::forest::policies::policies(bool rel)
 void MEDDLY::forest::policies::useDefaults(bool rel)
 {
   reduction = rel ? IDENTITY_REDUCED : FULLY_REDUCED;
-  storage_flags = ALLOW_FULL_STORAGE | ALLOW_SPARSE_STORAGE;
+  storage_flags = FULL_OR_SPARSE;
   deletion = OPTIMISTIC_DELETION;
   // compact_min = 100;
   // compact_max = 1000000;
@@ -2061,6 +2059,8 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
 MEDDLY::node_handle MEDDLY::expert_forest
 ::createReducedHelper(int in, unpacked_node &nb)
 {
+    nb.computeHash();
+
 #ifdef DEVELOPMENT_CODE
   validateDownPointers(nb);
 #endif
@@ -2496,5 +2496,23 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
 
 }
 
+void MEDDLY::expert_forest::recycle(unpacked_node* n)
+{
+    unpacked_node::recycle(n);
+}
 
+//
+// Stuff that used to be inlined but now can't
+//
+
+void
+MEDDLY::expert_forest::fillUnpacked(MEDDLY::unpacked_node &un, MEDDLY::node_handle node, node_storage_flags st2)
+const
+{
+  const int level = getNodeLevel(node);
+  MEDDLY_DCASSERT(0 != level);
+  un.bind_to_forest(this, level, unsigned(getLevelSize(level)), true);
+  MEDDLY_DCASSERT(getNodeAddress(node));
+  nodeMan->fillUnpacked(un, getNodeAddress(node), st2);
+}
 
