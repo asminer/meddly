@@ -24,6 +24,7 @@
 #include "varorder.h"
 #include "io.h"
 #include "node_storage.h"
+#include "encoders.h"
 
 #include <memory>
 
@@ -34,6 +35,7 @@ namespace MEDDLY {
     class forest;
     class expert_forest;
     class node_storage;
+    class unpacked_node;
     class unique_table;
     class impl_unique_table;
 };
@@ -1560,58 +1562,6 @@ class MEDDLY::expert_forest: public forest
     /// Display terminal nodes
     static const unsigned int SHOW_TERMINALS;
 
-    // ************************************************************
-    // *                                                          *
-    // *    Preferred way to encode and decode terminal values    *
-    // *    (classes so we can use them in template functions)    *
-    // *                                                          *
-    // ************************************************************
-
-    /** Encoding for booleans into (terminal) node handles */
-    class bool_Tencoder {
-        // -1 true
-        //  0 false
-      public:
-        static node_handle value2handle(bool v);
-        static bool handle2value(node_handle h);
-        static void show(output &s, node_handle h);
-        static void write(output &s, node_handle h);
-        static node_handle read(input &s);
-    };
-    /** Encoding for integers into (terminal) node handles */
-    class int_Tencoder {
-      public:
-        static node_handle value2handle(int v);
-        static int handle2value(node_handle h);
-        static void show(output &s, node_handle h);
-        static void write(output &s, node_handle h);
-        static node_handle read(input &s);
-    };
-    /** Encoding for floats into (terminal) node handles */
-    class float_Tencoder {
-        union intfloat {
-            float real;
-            int integer;
-        };
-      public:
-        static node_handle value2handle(float v);
-        static float handle2value(node_handle h);
-        static void show(output &s, node_handle h);
-        static void write(output &s, node_handle h);
-        static node_handle read(input &s);
-    };
-    // preferred way to encode and decode edge values
-    // (classes so we can use them in template functions)
-    template<typename T>
-    class EVencoder {
-      public:
-        static size_t edgeBytes();
-        static void writeValue(void* ptr, T val);
-        static void readValue(const void* ptr, T &val);
-        static void show(output &s, const void* ptr);
-        static void write(output &s, const void* ptr);
-        static void read(input &s, void* ptr);
-    };
 
 
     friend class reordering_base;
@@ -2485,155 +2435,6 @@ class MEDDLY::expert_forest: public forest
 // *                                                                *
 // ******************************************************************
 
-inline MEDDLY::node_handle
-MEDDLY::expert_forest::bool_Tencoder::value2handle(bool v)
-{
-  return v ? -1 : 0;
-}
-
-inline bool
-MEDDLY::expert_forest::bool_Tencoder::handle2value(MEDDLY::node_handle h)
-{
-  if (-1 == h)
-    return true;
-  if (0 == h)
-    return false;
-  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-}
-
-inline MEDDLY::node_handle
-MEDDLY::expert_forest::int_Tencoder::value2handle(int v)
-{
-  MEDDLY_DCASSERT(4 == sizeof(MEDDLY::node_handle));
-  if (v < -1073741824 || v > 1073741823) {
-    // Can't fit in 31 bits (signed)
-    throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
-  }
-  if (v)
-    v |= -2147483648; // sets the sign bit
-  return v;
-}
-
-inline int
-MEDDLY::expert_forest::int_Tencoder::handle2value(MEDDLY::node_handle h)
-{
-  // << 1 kills the sign bit
-  // >> 1 puts us back, and extends the (new) sign bit
-  return (h << 1) >> 1;
-}
-
-inline MEDDLY::node_handle
-MEDDLY::expert_forest::float_Tencoder::value2handle(float v)
-{
-  MEDDLY_DCASSERT(4 == sizeof(MEDDLY::node_handle));
-  MEDDLY_DCASSERT(sizeof(float) <= sizeof(MEDDLY::node_handle));
-  if (0.0 == v)
-    return 0;
-  intfloat x;
-  x.real = v;
-  // strip lsb in fraction, and add sign bit
-  return node_handle( (unsigned(x.integer) >> 1) | 0x80000000 );
-}
-
-inline float
-MEDDLY::expert_forest::float_Tencoder::handle2value(MEDDLY::node_handle h)
-{
-  MEDDLY_DCASSERT(4 == sizeof(MEDDLY::node_handle));
-  MEDDLY_DCASSERT(sizeof(float) <= sizeof(MEDDLY::node_handle));
-  if (0 == h)
-    return 0.0;
-  intfloat x;
-  x.integer = (h << 1); // remove sign bit
-  return x.real;
-}
-
-template<typename T>
-inline size_t
-MEDDLY::expert_forest::EVencoder<T>::edgeBytes()
-{
-  return sizeof(T);
-}
-template<typename T>
-inline void
-MEDDLY::expert_forest::EVencoder<T>::writeValue(void* ptr, T val)
-{
-  memcpy(ptr, &val, sizeof(T));
-}
-template<typename T>
-inline void
-MEDDLY::expert_forest::EVencoder<T>::readValue(const void* ptr, T &val)
-{
-  memcpy(&val, ptr, sizeof(T));
-}
-
-template<typename T>
-inline void MEDDLY::expert_forest::EVencoder<T>::show(output &s, const void* ptr)
-{
-  T val;
-  readValue(ptr, val);
-  s << val;
-}
-
-namespace MEDDLY {
-
-template<>
-inline void expert_forest::EVencoder<int>::write(output &s, const void* ptr)
-{
-  int val;
-  readValue(ptr, val);
-  s << val;
-}
-
-template<>
-inline void expert_forest::EVencoder<long>::write(output &s, const void* ptr)
-{
-  long val;
-  readValue(ptr, val);
-  s << val;
-}
-
-template<>
-inline void expert_forest::EVencoder<float>::write(output &s, const void* ptr)
-{
-  float val;
-  readValue(ptr, val);
-  s.put(val, 8, 8, 'e');
-}
-
-template<>
-inline void expert_forest::EVencoder<double>::write(output &s, const void* ptr)
-{
-  double val;
-  readValue(ptr, val);
-  s.put(val, 8, 8, 'e');
-}
-
-template<>
-inline void expert_forest::EVencoder<int>::read(input &s, void* ptr)
-{
-  writeValue(ptr, int(s.get_integer()));
-}
-
-template<>
-inline void expert_forest::EVencoder<long>::read(input &s, void* ptr)
-{
-  writeValue(ptr, long(s.get_integer()));
-}
-
-template<>
-inline void expert_forest::EVencoder<float>::read(input &s, void* ptr)
-{
-  writeValue(ptr, float(s.get_real()));
-}
-
-template<>
-inline void expert_forest::EVencoder<double>::read(input &s, void* ptr)
-{
-  writeValue(ptr, double(s.get_real()));
-}
-
-}
-
 template<typename T>
   inline MEDDLY::node_handle
   MEDDLY::expert_forest::handleForValue(T v) const
@@ -3164,6 +2965,10 @@ MEDDLY::expert_forest::getTransparentNode() const
 {
   return transparent;
 }
+
+//
+// TBD MOVE THESE to .cc
+//
 
 inline void
 MEDDLY::expert_forest::fillUnpacked(MEDDLY::unpacked_node &un, MEDDLY::node_handle node, unpacked_node::storage_style st2)
