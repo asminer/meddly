@@ -23,6 +23,7 @@
 #include "node_headers.h"
 #include "varorder.h"
 #include "io.h"
+#include "node_storage.h"
 
 #include <memory>
 

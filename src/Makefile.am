@@ -20,6 +20,7 @@ libmeddly_la_SOURCES = \
   variable.cc varorder.cc \
   domain.cc \
   node_headers.cc \
+  node_storage.cc \
   node_wrappers.cc \
   ops.cc \
   dd_edge.cc \
@@ -125,7 +126,7 @@ include_HEADERS = meddly.h meddly_expert.h
 pkginclude_HEADERS = error.h io.h memstats.h \
                      variable.h varorder.h \
                      domain.h \
-                     node_headers.h \
+                     node_headers.h node_storage.h \
                      forest.h \
                      old_meddly.h old_meddly.hh \
                      old_meddly_expert.h old_meddly_expert.hh

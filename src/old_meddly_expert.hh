@@ -624,52 +624,6 @@ inline void MEDDLY::memory_manager::setChunkMultiplier(unsigned int m)
 
 // ******************************************************************
 // *                                                                *
-// *               inlined node_storage_style methods               *
-// *                                                                *
-// ******************************************************************
-
-inline const char* MEDDLY::node_storage_style::getName() const
-{
-  return name;
-}
-
-// ******************************************************************
-// *                                                                *
-// *                  inlined node_storage methods                  *
-// *                                                                *
-// ******************************************************************
-
-
-inline const char*
-MEDDLY::node_storage::getStyleName() const
-{
-  return style_name;
-}
-
-inline const MEDDLY::expert_forest*
-MEDDLY::node_storage::getParent() const
-{
-  MEDDLY_DCASSERT(parent);
-  return parent;
-}
-
-inline MEDDLY::expert_forest*
-MEDDLY::node_storage::getParent()
-{
-  MEDDLY_DCASSERT(parent);
-  return parent;
-}
-
-inline void
-MEDDLY::node_storage::moveNodeOffset(MEDDLY::node_handle node, node_address old_addr,
-    node_address new_addr)
-{
-  MEDDLY_DCASSERT(parent);
-  parent->moveNodeOffset(node, old_addr, new_addr);
-}
-
-// ******************************************************************
-// *                                                                *
 // *                     inlined opname methods                     *
 // *                                                                *
 // ******************************************************************

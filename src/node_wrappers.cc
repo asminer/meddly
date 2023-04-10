@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -670,52 +669,4 @@ bool MEDDLY::unpacked_node::isSorted() const
   return true;
 }
 
-
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                   node_storage_style methods                   *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::node_storage_style::node_storage_style(const char* n)
-{
-  name = n;
-}
-
-MEDDLY::node_storage_style::~node_storage_style()
-{
-}
-
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                      node_storage methods                      *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::node_storage::node_storage(const char* n, expert_forest* f)
-{
-  style_name = n;
-  parent = f;
-}
-
-MEDDLY::node_storage::~node_storage()
-{
-  // nothing, derived classes must handle everything
-}
-
-void MEDDLY::node_storage::dumpInternal(output &s, unsigned flags) const
-{
-  dumpInternalInfo(s);
-  s << "Data array by record:\n";
-  for (node_address a=firstNodeAddress(); a > 0; ) {
-    s.flush();
-    a = dumpInternalNode(s, a, flags);
-  } // for a
-  dumpInternalTail(s);
-  s.flush();
-}
 
