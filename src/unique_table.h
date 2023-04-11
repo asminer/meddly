@@ -22,6 +22,7 @@
 #define UNIQUE_TABLE_H
 
 #include "defines.h"
+#include "forest.h"
 
 namespace MEDDLY {
 class unique_table;

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -36,7 +36,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 
     virtual void dynamicReorderVariables(int top, int bottom);
 
-    virtual enumerator::iterator* makeFullIter() const 
+    virtual enumerator::iterator* makeFullIter() const
     {
       return new mtmdd_iterator(this);
     }
@@ -83,8 +83,8 @@ namespace MEDDLY {
       int K;
       binary_operation* unionOp;
     public:
-      mtmdd_edgemaker(mtmdd_forest* f, const int* const* mt, const T* v, 
-        int* o, int n, int k, binary_operation* unOp) 
+      mtmdd_edgemaker(mtmdd_forest* f, const int* const* mt, const T* v,
+        int* o, int n, int k, binary_operation* unOp)
       {
         F = f;
         vlist = mt;
@@ -125,7 +125,7 @@ namespace MEDDLY {
       node_handle createEdge(int k, int start, int stop) {
         MEDDLY_DCASSERT(k>=0);
         MEDDLY_DCASSERT(stop > start);
-        // 
+        //
         // Fast special case
         //
         if (1==stop-start) {
@@ -185,7 +185,7 @@ namespace MEDDLY {
         unsigned z = 0; // number of nonzero edges in our sparse node
 
         //
-        // For each value v, 
+        // For each value v,
         //  (1) move those values to the front
         //  (2) process them, if any
         //  (3) union with don't cares

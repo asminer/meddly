@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -23,12 +23,12 @@
 #include "mtmxd.h"
 
 namespace MEDDLY {
-  class mt_mxd_real; 
+  class mt_mxd_real;
 };
 
 // ******************************************************************
 
-/** 
+/**
     Forest for multi-terminal, mxd, real range.
 */
 class MEDDLY::mt_mxd_real : public mtmxd_forest {

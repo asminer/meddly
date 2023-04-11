@@ -6,7 +6,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -85,12 +85,12 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
       return new evtrmxd_iterator(this);
     }
 
-    virtual enumerator::iterator* makeFixedRowIter() const 
+    virtual enumerator::iterator* makeFixedRowIter() const
     {
       return new evtrmxd_fixedrow_iter(this);
     }
 
-    virtual enumerator::iterator* makeFixedColumnIter() const 
+    virtual enumerator::iterator* makeFixedColumnIter() const
     {
       return new evtrmxd_fixedcol_iter(this);
     }

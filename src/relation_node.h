@@ -19,8 +19,12 @@
 #ifndef MEDDLY_RELATION_NODE
 #define MEDDLY_RELATION_NODE
 
+#include "defines.h"
+
 namespace MEDDLY {
     class relation_node;
+    class forest;
+    class expert_forest;
 };
 
 // ******************************************************************
@@ -189,7 +193,7 @@ MEDDLY::relation_node::getLevel() const
   return level;
 }
 
-inline rel_node_handle
+inline MEDDLY::rel_node_handle
 MEDDLY::relation_node::getDown() const
 {
   return down;
@@ -202,7 +206,7 @@ MEDDLY::relation_node::setDown(rel_node_handle d)
 }
 
 
-inline rel_node_handle
+inline MEDDLY::rel_node_handle
 MEDDLY::relation_node::getID() const
 {
   return ID;

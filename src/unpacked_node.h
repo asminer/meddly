@@ -25,6 +25,7 @@
 
 namespace MEDDLY {
     class unpacked_node;
+    class forest;
     class expert_forest;
 }
 
@@ -76,45 +77,45 @@ class MEDDLY::unpacked_node {
         // Build redundant nodes
         //
 
-        void initRedundant(const expert_forest *f, int k, node_handle node,
+        void initRedundant(expert_forest *f, int k, node_handle node,
                 bool full);
 
-        void initRedundant(const expert_forest *f, int k, int ev,
+        void initRedundant(expert_forest *f, int k, int ev,
                 node_handle node, bool full);
 
-        void initRedundant(const expert_forest *f, int k, long ev,
+        void initRedundant(expert_forest *f, int k, long ev,
                 node_handle node, bool full);
 
-        void initRedundant(const expert_forest *f, int k, float ev,
+        void initRedundant(expert_forest *f, int k, float ev,
                 node_handle node, bool full);
 
         //
         // Build identity nodes
         //
 
-        void initIdentity(const expert_forest *f, int k, unsigned i,
+        void initIdentity(expert_forest *f, int k, unsigned i,
                 node_handle node, bool full);
 
-        void initIdentity(const expert_forest *f, int k, unsigned i,
+        void initIdentity(expert_forest *f, int k, unsigned i,
                 int ev, node_handle node, bool full);
 
-        void initIdentity(const expert_forest *f, int k, unsigned i,
+        void initIdentity(expert_forest *f, int k, unsigned i,
                 long ev, node_handle node, bool full);
 
-        void initIdentity(const expert_forest *f, int k, unsigned i,
+        void initIdentity(expert_forest *f, int k, unsigned i,
                 float ev, node_handle node, bool full);
 
         //
         // Create blank nodes, primarily for writing
         //
 
-        inline void initFull(const expert_forest *f, int levl, unsigned tsz)
+        inline void initFull(expert_forest *f, int levl, unsigned tsz)
         {
             MEDDLY_DCASSERT(f);
             bind_to_forest(f, levl, tsz, true);
         }
 
-        inline void initSparse(const expert_forest *f, int levl, unsigned nnz)
+        inline void initSparse(expert_forest *f, int levl, unsigned nnz)
         {
             MEDDLY_DCASSERT(f);
             bind_to_forest(f, levl, nnz, false);
@@ -137,7 +138,7 @@ class MEDDLY::unpacked_node {
         }
         */
 
-        static inline unpacked_node* newRedundant(const expert_forest *f,
+        static inline unpacked_node* newRedundant(expert_forest *f,
                 int k, node_handle node, bool full)
         {
             unpacked_node* U = useUnpackedNode();
@@ -146,7 +147,7 @@ class MEDDLY::unpacked_node {
             return U;
         }
 
-        static inline unpacked_node* newRedundant(const expert_forest *f,
+        static inline unpacked_node* newRedundant(expert_forest *f,
                 int k, long ev, node_handle node, bool full)
         {
             unpacked_node* U = useUnpackedNode();
@@ -155,7 +156,7 @@ class MEDDLY::unpacked_node {
             return U;
         }
 
-        static inline unpacked_node* newRedundant(const expert_forest *f,
+        static inline unpacked_node* newRedundant(expert_forest *f,
                 int k, float ev, node_handle node, bool full)
         {
             unpacked_node* U = useUnpackedNode();
@@ -164,7 +165,7 @@ class MEDDLY::unpacked_node {
             return U;
         }
 
-        static inline unpacked_node* newIdentity(const expert_forest *f,
+        static inline unpacked_node* newIdentity(expert_forest *f,
                 int k, unsigned i, node_handle node, bool full)
         {
             unpacked_node* U = useUnpackedNode();
@@ -173,7 +174,7 @@ class MEDDLY::unpacked_node {
             return U;
         }
 
-        static inline unpacked_node* newIdentity(const expert_forest *f,
+        static inline unpacked_node* newIdentity(expert_forest *f,
                 int k, unsigned i, long ev, node_handle node, bool full)
         {
             unpacked_node* U = useUnpackedNode();
@@ -182,7 +183,7 @@ class MEDDLY::unpacked_node {
             return U;
         }
 
-        static inline unpacked_node* newIdentity(const expert_forest *f,
+        static inline unpacked_node* newIdentity(expert_forest *f,
                 int k, unsigned i, float ev, node_handle node, bool full)
         {
             unpacked_node* U = useUnpackedNode();
@@ -192,7 +193,7 @@ class MEDDLY::unpacked_node {
         }
 
         /** Create a zeroed-out full node */
-        static inline unpacked_node* newFull(const expert_forest *f,
+        static inline unpacked_node* newFull(expert_forest *f,
                 int levl, unsigned tsz)
         {
             unpacked_node* U = useUnpackedNode();
@@ -204,7 +205,7 @@ class MEDDLY::unpacked_node {
         }
 
         /** Create a zeroed-out sparse node */
-        static inline unpacked_node* newSparse(const expert_forest *f,
+        static inline unpacked_node* newSparse(expert_forest *f,
                 int levl, unsigned nnzs)
         {
             unpacked_node* U = useUnpackedNode();
@@ -602,7 +603,7 @@ class MEDDLY::unpacked_node {
     ///   @param  ns    Size of node.
     ///   @param  full  If true, we'll be filling a full reader.
     ///                 Otherwise it is a sparse one.
-    void bind_to_forest(const expert_forest* p, int k, unsigned ns, bool full);
+    void bind_to_forest(expert_forest* p, int k, unsigned ns, bool full);
 
     /// Called by node_storage when building an unpacked
     /// node based on how it's stored.
@@ -627,6 +628,8 @@ class MEDDLY::unpacked_node {
 
   private:
     const forest* parent;
+    expert_forest* eparent;
+
     static unpacked_node* freeList;
     static unpacked_node* buildList;
 

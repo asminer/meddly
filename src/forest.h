@@ -25,6 +25,9 @@
 #include "encoders.h"
 #include "node_headers.h"
 #include "node_storage.h"
+#include "dd_edge.h"
+#include "unpacked_node.h"
+#include "domain.h"
 
 #include <memory>
 

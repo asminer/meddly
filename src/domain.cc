@@ -172,6 +172,7 @@ void MEDDLY::domain::deleteDomList()
   free_list = -1;
 }
 
+/*
 MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
     forest::edge_labeling e, const forest::policies &p, int* level_reduction_rule, int tv)
 {
@@ -241,6 +242,7 @@ MEDDLY::domain
   return createForest(rel, t, e,
     rel ? forest::getDefaultPoliciesMXDs() : forest::getDefaultPoliciesMDDs(),NULL, 0);
 }
+*/
 
 void MEDDLY::domain::showInfo(output &strm)
 {

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -28,7 +28,7 @@ namespace MEDDLY {
 
 class MEDDLY::evmxd_forest : public ev_forest {
   public:
-    evmxd_forest(unsigned dsl, domain* d, range_type t, edge_labeling ev, 
+    evmxd_forest(unsigned dsl, domain* d, range_type t, edge_labeling ev,
       const policies &p, int* level_reduction_rule=NULL);
 
     virtual void reorderVariables(const int* level2var);
@@ -39,7 +39,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
   protected:
     template <class OPERATION, typename TYPE>
     inline void evaluateT(const dd_edge &f, const int* vlist,
-      const int* vplist, TYPE &val) const 
+      const int* vplist, TYPE &val) const
     {
       if (f.getForest() != this) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
       if (vlist == 0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
@@ -58,13 +58,13 @@ class MEDDLY::evmxd_forest : public ev_forest {
         val = (node) ? OPERATION::apply(val, ev) : ev;
       }
     }
-    
+
   public:
     /// Special case for createEdge(), with only one minterm.
     template <class OPERATION, typename TYPE>
-    inline void 
+    inline void
     createEdgePath(int k, const int* vlist, const int* vplist,
-      TYPE &ev, node_handle &ed) 
+      TYPE &ev, node_handle &ed)
     {
       if (0==ed) return;
 
@@ -183,8 +183,8 @@ namespace MEDDLY {
       binary_operation* unionOp;
     public:
       evmxd_edgemaker(evmxd_forest* f,
-        const int* const* mt, const int* const* mp, const T* v, 
-        int* o, int n, int k, binary_operation* unOp) 
+        const int* const* mt, const int* const* mp, const T* v,
+        int* o, int n, int k, binary_operation* unOp)
       {
         F = f;
         vulist = mt;
@@ -237,12 +237,12 @@ namespace MEDDLY {
       void createEdgeUn(int k, int start, int stop, T &ev, node_handle &ed) {
         MEDDLY_DCASSERT(k>=0);
         MEDDLY_DCASSERT(stop > start);
-        // 
+        //
         // Fast special case
         //
         if (1==stop-start) {
           ev = term(start);
-          ed = expert_forest::bool_Tencoder::value2handle(true);
+          ed = bool_Tencoder::value2handle(true);
           F->createEdgePath<OPERATION, T>(k, unprimed(start), primed(start),
             ev, ed);
           return;
@@ -255,7 +255,7 @@ namespace MEDDLY {
           for (int i=start+1; i<stop; i++) {
             OPERATION::unionEq(ev, term(i));
           }
-          ed = expert_forest::bool_Tencoder::value2handle(true);
+          ed = bool_Tencoder::value2handle(true);
           return;
         }
 
@@ -291,7 +291,7 @@ namespace MEDDLY {
             }
             dch++;
           }
-        } 
+        }
 
         //
         // Process "don't care, don't change" pairs, if any
@@ -332,7 +332,7 @@ namespace MEDDLY {
         unsigned z = 0; // number of nonzero edges in our sparse node
 
         //
-        // For each value v, 
+        // For each value v,
         //  (1) move those values to the front
         //  (2) process them, if any
         // Then when we are done, union with any don't cares
@@ -441,16 +441,16 @@ namespace MEDDLY {
         unsigned z = 0; // number of nonzero edges in our sparse node
 
         //
-        // For each value v, 
+        // For each value v,
         //  (1) move those values to the front
         //  (2) process them, if any
         //  (3) union with don't cares
         //
         dd_edge these(F);
 
-        for (unsigned v = (dontcare.getNode()) ? 0 : nextV; 
-             v<lastV; 
-             v = (dontcare.getNode()) ? v+1 : nextV) 
+        for (unsigned v = (dontcare.getNode()) ? 0 : nextV;
+             v<lastV;
+             v = (dontcare.getNode()) ? v+1 : nextV)
         {
           nextV = lastV;
           //

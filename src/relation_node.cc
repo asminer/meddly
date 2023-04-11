@@ -17,6 +17,10 @@
 */
 
 #include "relation_node.h"
+#include "forest.h"
+
+// TBD: move this!
+#define NOT_KNOWN -2
 
 // ******************************************************************
 // *                                                                *
