@@ -22,6 +22,10 @@
 #include "defines.h"
 #include "dd_edge.h"
 #include "forest.h"
+#include "encoders.h"
+#include "io.h"
+
+#include "old_meddly_expert.h"
 
 // #define DEBUG_CLEANUP
 
@@ -172,7 +176,7 @@ void MEDDLY::dd_edge::getEdgeValue(long& ev) const
   MEDDLY_DCASSERT(parent);
   MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
   MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
-  expert_forest::EVencoder<long>::readValue(&raw_value, ev);
+  EVencoder<long>::readValue(&raw_value, ev);
 }
 
 void MEDDLY::dd_edge::getEdgeValue(float& ev) const
@@ -180,7 +184,7 @@ void MEDDLY::dd_edge::getEdgeValue(float& ev) const
   MEDDLY_DCASSERT(parent);
   MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
   MEDDLY_DCASSERT(forest::REAL == parent->getRangeType());
-  expert_forest::EVencoder<float>::readValue(&raw_value, ev);
+  EVencoder<float>::readValue(&raw_value, ev);
 }
 
 int MEDDLY::dd_edge::getLevel() const
@@ -227,7 +231,7 @@ void MEDDLY::dd_edge::setEdgeValue(long value)
   MEDDLY_DCASSERT(parent);
   MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
   MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
-  expert_forest::EVencoder<long>::writeValue(&raw_value, value);
+  EVencoder<long>::writeValue(&raw_value, value);
 }
 
 void MEDDLY::dd_edge::setEdgeValue(float value)
@@ -235,7 +239,7 @@ void MEDDLY::dd_edge::setEdgeValue(float value)
   MEDDLY_DCASSERT(parent);
   MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
   MEDDLY_DCASSERT(forest::REAL == parent->getRangeType());
-  expert_forest::EVencoder<float>::writeValue(&raw_value, value);
+  EVencoder<float>::writeValue(&raw_value, value);
 }
 
 void MEDDLY::dd_edge::setLabel(const char* L)

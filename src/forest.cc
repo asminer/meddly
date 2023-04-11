@@ -29,6 +29,7 @@
 #include "old_meddly_expert.h"
 #include "old_meddly_expert.hh"
 #include "unique_table.h"
+#include "relation_node.h"
 #include "impl_unique_table.h"
 #include "hash_stream.h"
 // #include "storage/bytepack.h"
@@ -648,71 +649,6 @@ MEDDLY::forest::edge_visitor::~edge_visitor()
 // *                                                                *
 // ******************************************************************
 
-// ******************************************************************
-// *                                                                *
-// *                 expert_forest encoder  methods                 *
-// *                                                                *
-// ******************************************************************
-
-void MEDDLY::expert_forest::bool_Tencoder::show(output &s, node_handle h)
-{
-  s.put(handle2value(h) ? 'T' : 'F');
-}
-
-void MEDDLY::expert_forest::bool_Tencoder::write(output &s, node_handle h)
-{
-  s.put(handle2value(h) ? 'T' : 'F');
-}
-
-MEDDLY::node_handle MEDDLY::expert_forest::bool_Tencoder::read(input &s)
-{
-  s.stripWS();
-  int c = s.get_char();
-  if ('T' == c) return value2handle(true);
-  if ('F' == c) return value2handle(false);
-  throw error(error::INVALID_FILE, __FILE__, __LINE__);
-}
-
-// ******************************************************************
-
-void MEDDLY::expert_forest::int_Tencoder::show(output &s, node_handle h)
-{
-  s << "t" << handle2value(h);
-}
-
-void MEDDLY::expert_forest::int_Tencoder::write(output &s, node_handle h)
-{
-  s << "t" << handle2value(h);
-}
-
-MEDDLY::node_handle MEDDLY::expert_forest::int_Tencoder::read(input &s)
-{
-  s.stripWS();
-  int c = s.get_char();
-  if ('t' != c) throw error(error::INVALID_FILE, __FILE__, __LINE__);
-  return value2handle(s.get_integer());
-}
-
-// ******************************************************************
-
-void MEDDLY::expert_forest::float_Tencoder::show(output &s, node_handle h)
-{
-  s << "t" << handle2value(h);
-}
-
-void MEDDLY::expert_forest::float_Tencoder::write(output &s, node_handle h)
-{
-  s.put('t');
-  s.put(handle2value(h), 8, 8, 'e');
-}
-
-MEDDLY::node_handle MEDDLY::expert_forest::float_Tencoder::read(input &s)
-{
-  s.stripWS();
-  int c = s.get_char();
-  if ('t' != c) throw error(error::INVALID_FILE, __FILE__, __LINE__);
-  return value2handle(s.get_real());
-}
 
 // ******************************************************************
 // *                                                                *

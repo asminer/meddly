@@ -23,6 +23,8 @@ namespace MEDDLY {
     class dd_edge;
     class forest;
 
+    class input;
+    class output;
     class binary_operation;
 };
 

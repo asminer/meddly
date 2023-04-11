@@ -16,6 +16,7 @@ libmeddly_la_SOURCES = \
     old_meddly.cc \
     error.cc \
     io.cc \
+    encoders.cc \
     memstats.cc \
     variable.cc varorder.cc \
     domain.cc \
