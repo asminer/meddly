@@ -1191,7 +1191,7 @@ bool MEDDLY::expert_forest
   }
 
   s.put(' ');
-  unpacked_node* un = unpackNode(unpacked_node::New(), p, FULL_OR_SPARSE);
+  unpacked_node* un = newUnpacked(p, FULL_OR_SPARSE);
   un->show(s, flags & SHOW_DETAILS);
   unpacked_node::recycle(un);
 
@@ -1949,7 +1949,7 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
   if (!isExtensible(p) || isExtensibleLevel(getNodeLevel(p))) {
-    unpacked_node* key = unpackNode(unpacked_node::New(), p, SPARSE_ONLY);
+    unpacked_node* key = newUnpacked(p, SPARSE_ONLY);
     key->computeHash();
     if (unique->find(*key, getVarByLevel(key->getLevel())) != p) {
       fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
@@ -2135,7 +2135,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   unique->add(nb.hash(), p);
 
 #ifdef DEVELOPMENT_CODE
-  unpacked_node* key = unpackNode(unpacked_node::New(), p, SPARSE_ONLY);
+  unpacked_node* key = newUnpacked(p, SPARSE_ONLY);
   key->computeHash();
   MEDDLY_DCASSERT(key->hash() == nb.hash());
   node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
@@ -2313,7 +2313,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   unique->add(nb.hash(), p);
 
 #ifdef DEVELOPMENT_CODE
-  unpacked_node* key = unpackNode(unpacked_node::New(), p, SPARSE_ONLY);
+  unpacked_node* key = newUnpacked(p, SPARSE_ONLY);
   key->computeHash();
   MEDDLY_DCASSERT(key->hash() == nb.hash());
   node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
@@ -2356,7 +2356,7 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_nod
   unique->add(un->hash(), p);
 
 #ifdef DEVELOPMENT_CODE
-  unpacked_node* key = unpackNode(unpacked_node::New(), p, SPARSE_ONLY);
+  unpacked_node* key = newUnpacked(p, SPARSE_ONLY);
   key->computeHash();
   MEDDLY_DCASSERT(key->hash() == un->hash());
   node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
@@ -2442,7 +2442,7 @@ void MEDDLY::expert_forest::recycle(unpacked_node* n)
 // Stuff that used to be inlined but now can't
 //
 
-MEDDLY::unpacked_node*
+void
 MEDDLY::expert_forest::unpackNode(MEDDLY::unpacked_node* un,
     MEDDLY::node_handle node, node_storage_flags st2) const
 {
@@ -2452,6 +2452,5 @@ MEDDLY::expert_forest::unpackNode(MEDDLY::unpacked_node* un,
     un->bind_to_forest(this, level, unsigned(getLevelSize(level)), true);
     MEDDLY_DCASSERT(getNodeAddress(node));
     nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
-    return un;
 }
 
