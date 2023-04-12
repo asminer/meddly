@@ -122,7 +122,7 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newRedundant(const expert_forest *f,
                 int k, node_handle node, bool full)
         {
-            unpacked_node* U = useUnpackedNode();
+            unpacked_node* U = New();
             MEDDLY_DCASSERT(U);
             U->initRedundant(f, k, node, full);
             return U;
@@ -131,7 +131,7 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newRedundant(const expert_forest *f,
                 int k, long ev, node_handle node, bool full)
         {
-            unpacked_node* U = useUnpackedNode();
+            unpacked_node* U = New();
             MEDDLY_DCASSERT(U);
             U->initRedundant(f, k, ev, node, full);
             return U;
@@ -140,7 +140,7 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newRedundant(const expert_forest *f,
                 int k, float ev, node_handle node, bool full)
         {
-            unpacked_node* U = useUnpackedNode();
+            unpacked_node* U = New();
             MEDDLY_DCASSERT(U);
             U->initRedundant(f, k, ev, node, full);
             return U;
@@ -149,7 +149,7 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newIdentity(const expert_forest *f,
                 int k, unsigned i, node_handle node, bool full)
         {
-            unpacked_node* U = useUnpackedNode();
+            unpacked_node* U = New();
             MEDDLY_DCASSERT(U);
             U->initIdentity(f, k, i, node, full);
             return U;
@@ -158,7 +158,7 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newIdentity(const expert_forest *f,
                 int k, unsigned i, long ev, node_handle node, bool full)
         {
-            unpacked_node* U = useUnpackedNode();
+            unpacked_node* U = New();
             MEDDLY_DCASSERT(U);
             U->initIdentity(f, k, i, ev, node, full);
             return U;
@@ -167,7 +167,7 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newIdentity(const expert_forest *f,
                 int k, unsigned i, float ev, node_handle node, bool full)
         {
-            unpacked_node* U = useUnpackedNode();
+            unpacked_node* U = New();
             MEDDLY_DCASSERT(U);
             U->initIdentity(f, k, i, ev, node, full);
             return U;
@@ -177,7 +177,7 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newFull(expert_forest *f,
                 int levl, unsigned tsz)
         {
-            unpacked_node* U = useUnpackedNode();
+            unpacked_node* U = New();
             MEDDLY_DCASSERT(U);
             U->initFull(f, levl, tsz);
             U->clearFullEdges();
@@ -189,7 +189,7 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newSparse(expert_forest *f,
                 int levl, unsigned nnzs)
         {
-            unpacked_node* U = useUnpackedNode();
+            unpacked_node* U = New();
             MEDDLY_DCASSERT(U);
             U->initSparse(f, levl, nnzs);
             U->clearSparseEdges();
@@ -651,7 +651,8 @@ class MEDDLY::unpacked_node {
         // Centralized recycling
 
         // Pull a recycled node off the free list
-        static inline unpacked_node* useUnpackedNode()
+        // static inline unpacked_node* useUnpackedNode()
+        static inline unpacked_node* New()
         {
             unpacked_node* nr;
             if (freeList) {

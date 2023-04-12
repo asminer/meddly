@@ -85,8 +85,8 @@ int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) 
     int var = _source->getVarByLevel(_source->getNodeLevel(pv));
     int size = _source->getVariableSize(var);
     MEDDLY_DCASSERT(size == 2);
-    unpacked_node *nr = unpacked_node::useUnpackedNode();
-    nr->initFromNode(_source, pv, true);
+    unpacked_node *nr =
+        _source->unpackNode(unpacked_node::New(), pv, FULL_ONLY);
     for(int i = 1; i < size; i++) {
       if(nr->d(i) != nr->d(0)) {
         if(var == top_var) {
@@ -232,8 +232,8 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::restrict(node_handle p,
     }
 
     if (level1 > level2) {
-      unpacked_node* nr = unpacked_node::useUnpackedNode();
-      nr->initFromNode(_source, p, true);
+      unpacked_node* nr =
+        _source->unpackNode(unpacked_node::New(), p, FULL_ONLY);
 
       int size = _source->getVariableSize(_source->getVarByLevel(level1));
       unpacked_node* nb = unpacked_node::newFull(_source, level1, size);
@@ -348,8 +348,8 @@ bool MEDDLY::global_rebuilder::restrict_exist(node_handle p,
     }
 
     if (level1 > level2) {
-      unpacked_node* nr = unpacked_node::useUnpackedNode();
-      nr->initFromNode(_source, p, true);
+      unpacked_node* nr =
+          _source->unpackNode(unpacked_node::New(), p, FULL_ONLY);
 
       int size = _source->getVariableSize(_source->getVarByLevel(level1));
       unpacked_node* nb = unpacked_node::newFull(_source, level1, size);
@@ -560,8 +560,8 @@ int MEDDLY::global_rebuilder::TopDownSignatureGenerator::signature(
     int size = source->getVariableSize(source->getVarByLevel(level));
     MEDDLY_DCASSERT(size == 2);
 
-    unpacked_node* nr = unpacked_node::useUnpackedNode();
-    nr->initFromNode(source, pv, true);
+    unpacked_node* nr =
+        source->unpackNode(unpacked_node::New(), pv, FULL_ONLY);
     for (int i = 0; i < size; i++) {
       if (source->isTerminalNode(nr->d(i))) {
         if (nr->d(i) != 0) {
@@ -654,8 +654,8 @@ int MEDDLY::global_rebuilder::BottomUpSignatureGenerator::rec_signature(node_han
   int size = source->getVariableSize(source->getVarByLevel(level));
   MEDDLY_DCASSERT(size == 2);
 
-  unpacked_node* nr = unpacked_node::useUnpackedNode();
-  nr->initFromNode(source, p, true);
+  unpacked_node* nr =
+      source->unpackNode(unpacked_node::New(), p, FULL_ONLY);
   for (int i = 0; i < size; i++) {
     sig += (i == 0 ? 1 - PRIMES[level] : PRIMES[level]) * rec_signature(nr->d(i));
   }
