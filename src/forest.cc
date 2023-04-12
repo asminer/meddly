@@ -1054,7 +1054,7 @@ MEDDLY::expert_forest
   // Breadth-first search
   for (int mexpl=0; mexpl<mlen; mexpl++) {
     // explore node marked[mexpl]
-    M->initFromNode(this, marked[mexpl], false);
+    unpackNode(M, marked[mexpl], SPARSE_ONLY);
     for (unsigned i=0; i<M->getNNZs(); i++) {
       if (isTerminalNode(M->d(i))) continue;
       MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, M->d(i)-1, a_last);
@@ -1129,7 +1129,7 @@ long MEDDLY::expert_forest::getEdgeCount(node_handle p, bool countZeroes) const
   long ec=0;
   unpacked_node *M = unpacked_node::useUnpackedNode();
   for (long i=0; list[i]; i++) {
-    M->initFromNode(this, list[i], countZeroes);
+    unpackNode(M, list[i], countZeroes ? FULL_ONLY : SPARSE_ONLY);
     ec += countZeroes ? M->getSize() : M->getNNZs();
   }
   unpacked_node::recycle(M);
@@ -1191,7 +1191,8 @@ bool MEDDLY::expert_forest
   }
 
   s.put(' ');
-  unpacked_node* un = unpacked_node::newFromNode(this, p, unpacked_node::AS_STORED);
+  unpacked_node* un =
+      unpackNode(unpacked_node::useUnpackedNode(), p, FULL_OR_SPARSE);
   un->show(s, flags & SHOW_DETAILS);
   unpacked_node::recycle(un);
 
@@ -1249,6 +1250,7 @@ void MEDDLY::expert_forest
   node_handle* list = markNodesInSubgraph(p, n, true);
   if (0==list) return;
 
+  unpacked_node *un = unpacked_node::useUnpackedNode();
   std::string dot_fn(filename);
   dot_fn += ".dot";
   std::ofstream s(dot_fn.c_str());
@@ -1316,7 +1318,7 @@ void MEDDLY::expert_forest
         if (getNodeLevel(list[i]) != k) continue;
 
         s << " s" << list[i] << " [label=\"";
-        unpacked_node* un = unpacked_node::newFromNode(this, list[i], unpacked_node::SPARSE_NODE);
+        unpackNode(un, list[i], SPARSE_ONLY);
 
         // print index pointers
         MEDDLY_DCASSERT(isMultiTerminal());
@@ -1338,7 +1340,6 @@ void MEDDLY::expert_forest
           s << " [samehead = true];\n";
         }
 
-        unpacked_node::recycle(un);
       }
     }
 
@@ -1375,6 +1376,7 @@ void MEDDLY::expert_forest
 
   free(list);
   s.close();
+  unpacked_node::recycle(un);
 
   // convert dot file to extension
   std::stringstream cmd;
@@ -1506,7 +1508,7 @@ void MEDDLY::expert_forest
   unpacked_node* un = unpacked_node::useUnpackedNode();
   for (int i=0; output2index[i]; i++) {
     s << getNodeLevel(output2index[i]) << " ";
-    un->initFromNode(this, output2index[i], unpacked_node::AS_STORED);
+    unpackNode(un, output2index[i], FULL_OR_SPARSE);
     un->write(s, index2output);
   }
   unpacked_node::recycle(un);
@@ -1948,7 +1950,8 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
   if (!isExtensible(p) || isExtensibleLevel(getNodeLevel(p))) {
-    unpacked_node* key = unpacked_node::newFromNode(this, p, false);
+    unpacked_node* key =
+        unpackNode(unpacked_node::useUnpackedNode(), p, SPARSE_ONLY);
     key->computeHash();
     if (unique->find(*key, getVarByLevel(key->getLevel())) != p) {
       fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
@@ -2134,7 +2137,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
   unique->add(nb.hash(), p);
 
 #ifdef DEVELOPMENT_CODE
-  unpacked_node* key = unpacked_node::newFromNode(this, p, false);
+  unpacked_node* key =
+      unpackNode(unpacked_node::useUnpackedNode(), p, SPARSE_ONLY);
   key->computeHash();
   MEDDLY_DCASSERT(key->hash() == nb.hash());
   node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
@@ -2312,7 +2316,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
   unique->add(nb.hash(), p);
 
 #ifdef DEVELOPMENT_CODE
-  unpacked_node* key = unpacked_node::newFromNode(this, p, false);
+  unpacked_node* key =
+      unpackNode(unpacked_node::useUnpackedNode(), p, SPARSE_ONLY);
   key->computeHash();
   MEDDLY_DCASSERT(key->hash() == nb.hash());
   node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
@@ -2355,7 +2360,8 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_nod
   unique->add(un->hash(), p);
 
 #ifdef DEVELOPMENT_CODE
-  unpacked_node* key = unpacked_node::newFromNode(this, p, false);
+  unpacked_node* key =
+      unpackNode(unpacked_node::useUnpackedNode(), p, SPARSE_ONLY);
   key->computeHash();
   MEDDLY_DCASSERT(key->hash() == un->hash());
   node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
@@ -2441,7 +2447,7 @@ void MEDDLY::expert_forest::recycle(unpacked_node* n)
 // Stuff that used to be inlined but now can't
 //
 
-void
+MEDDLY::unpacked_node*
 MEDDLY::expert_forest::unpackNode(MEDDLY::unpacked_node* un,
     MEDDLY::node_handle node, node_storage_flags st2) const
 {
@@ -2451,5 +2457,6 @@ MEDDLY::expert_forest::unpackNode(MEDDLY::unpacked_node* un,
     un->bind_to_forest(this, level, unsigned(getLevelSize(level)), true);
     MEDDLY_DCASSERT(getNodeAddress(node));
     nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
+    return un;
 }
 

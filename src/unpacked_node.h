@@ -52,10 +52,12 @@ class MEDDLY::unpacked_node {
         /** Constructor.
             The class must be "filled" by a forest before
             it can be used, however.
+
+            TBD: make this private
         */
         unpacked_node();
 
-        /// Destructor.
+        /// Destructor.  TBD: make this private
         ~unpacked_node();
 
         /// Free memory, but don't delete.
@@ -64,58 +66,49 @@ class MEDDLY::unpacked_node {
     public:
         /* Initialization methods, primarily for reading */
 
-        /*
-        inline void initFromNode(const expert_forest *f, node_handle node,
-                node_storage_flags st2)
-        {
-            MEDDLY_DCASSERT(f);
-            f->fillUnpacked(*this, node, st2);
-        }
-        */
-
         //
         // Build redundant nodes
         //
 
-        void initRedundant(expert_forest *f, int k, node_handle node,
+        void initRedundant(const expert_forest *f, int k, node_handle node,
                 bool full);
 
-        void initRedundant(expert_forest *f, int k, int ev,
+        void initRedundant(const expert_forest *f, int k, int ev,
                 node_handle node, bool full);
 
-        void initRedundant(expert_forest *f, int k, long ev,
+        void initRedundant(const expert_forest *f, int k, long ev,
                 node_handle node, bool full);
 
-        void initRedundant(expert_forest *f, int k, float ev,
+        void initRedundant(const expert_forest *f, int k, float ev,
                 node_handle node, bool full);
 
         //
         // Build identity nodes
         //
 
-        void initIdentity(expert_forest *f, int k, unsigned i,
+        void initIdentity(const expert_forest *f, int k, unsigned i,
                 node_handle node, bool full);
 
-        void initIdentity(expert_forest *f, int k, unsigned i,
+        void initIdentity(const expert_forest *f, int k, unsigned i,
                 int ev, node_handle node, bool full);
 
-        void initIdentity(expert_forest *f, int k, unsigned i,
+        void initIdentity(const expert_forest *f, int k, unsigned i,
                 long ev, node_handle node, bool full);
 
-        void initIdentity(expert_forest *f, int k, unsigned i,
+        void initIdentity(const expert_forest *f, int k, unsigned i,
                 float ev, node_handle node, bool full);
 
         //
         // Create blank nodes, primarily for writing
         //
 
-        inline void initFull(expert_forest *f, int levl, unsigned tsz)
+        inline void initFull(const expert_forest *f, int levl, unsigned tsz)
         {
             MEDDLY_DCASSERT(f);
             bind_to_forest(f, levl, tsz, true);
         }
 
-        inline void initSparse(expert_forest *f, int levl, unsigned nnz)
+        inline void initSparse(const expert_forest *f, int levl, unsigned nnz)
         {
             MEDDLY_DCASSERT(f);
             bind_to_forest(f, levl, nnz, false);
@@ -126,19 +119,7 @@ class MEDDLY::unpacked_node {
         // For convenience: get recycled instance and initialize
         //
 
-        /* use expert_forest::unpackNode(useUnpackedNode(), node, std) instead
-         *
-        static inline unpacked_node* newFromNode(const expert_forest *f,
-                node_handle node, node_storage_flags st2)
-        {
-            unpacked_node* U = useUnpackedNode();
-            MEDDLY_DCASSERT(U);
-            U->initFromNode(f, node, st2);
-            return U;
-        }
-        */
-
-        static inline unpacked_node* newRedundant(expert_forest *f,
+        static inline unpacked_node* newRedundant(const expert_forest *f,
                 int k, node_handle node, bool full)
         {
             unpacked_node* U = useUnpackedNode();
@@ -147,7 +128,7 @@ class MEDDLY::unpacked_node {
             return U;
         }
 
-        static inline unpacked_node* newRedundant(expert_forest *f,
+        static inline unpacked_node* newRedundant(const expert_forest *f,
                 int k, long ev, node_handle node, bool full)
         {
             unpacked_node* U = useUnpackedNode();
@@ -156,7 +137,7 @@ class MEDDLY::unpacked_node {
             return U;
         }
 
-        static inline unpacked_node* newRedundant(expert_forest *f,
+        static inline unpacked_node* newRedundant(const expert_forest *f,
                 int k, float ev, node_handle node, bool full)
         {
             unpacked_node* U = useUnpackedNode();
@@ -165,7 +146,7 @@ class MEDDLY::unpacked_node {
             return U;
         }
 
-        static inline unpacked_node* newIdentity(expert_forest *f,
+        static inline unpacked_node* newIdentity(const expert_forest *f,
                 int k, unsigned i, node_handle node, bool full)
         {
             unpacked_node* U = useUnpackedNode();
@@ -174,7 +155,7 @@ class MEDDLY::unpacked_node {
             return U;
         }
 
-        static inline unpacked_node* newIdentity(expert_forest *f,
+        static inline unpacked_node* newIdentity(const expert_forest *f,
                 int k, unsigned i, long ev, node_handle node, bool full)
         {
             unpacked_node* U = useUnpackedNode();
@@ -183,7 +164,7 @@ class MEDDLY::unpacked_node {
             return U;
         }
 
-        static inline unpacked_node* newIdentity(expert_forest *f,
+        static inline unpacked_node* newIdentity(const expert_forest *f,
                 int k, unsigned i, float ev, node_handle node, bool full)
         {
             unpacked_node* U = useUnpackedNode();
@@ -200,7 +181,7 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(U);
             U->initFull(f, levl, tsz);
             U->clearFullEdges();
-            addToBuildList(U);
+            addToBuildList(U, f);
             return U;
         }
 
@@ -212,7 +193,7 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(U);
             U->initSparse(f, levl, nnzs);
             U->clearSparseEdges();
-            addToBuildList(U);
+            addToBuildList(U, f);
             return U;
         }
 
@@ -556,255 +537,218 @@ class MEDDLY::unpacked_node {
             return edge_bytes;
         }
 
+    public:
+        /// Get the node's hash
+        inline unsigned hash() const
+        {
+#ifdef DEVELOPMENT_CODE
+            MEDDLY_DCASSERT(has_hash);
+#endif
+            return h;
+        }
 
+
+        /// Set the node's hash
+        inline void setHash(unsigned H)
+        {
+#ifdef DEVELOPMENT_CODE
+            MEDDLY_DCASSERT(!has_hash);
+            has_hash = true;
+#endif
+            h = H;
+        }
+
+        /// Compute the node's hash
+        void computeHash();
+
+        /// Removes redundant trailing edges.
+        /// If the unpacked node is sparse, it assumes its indices
+        /// to be in ascending order.
+        void trim();
+
+        /// If the unpacked node is sparse, it is sorted so that the
+        /// indices are in ascending order.
+        void sort();
+
+        /// Checks if the node is has no trailing redundant edges
+        bool isTrim() const;
+
+        // checks if the node indices are in ascending order
+        bool isSorted() const;
+
+        // Is this a "build" node?  Important for mark and sweep.
+        inline bool isBuildNode() const
+        {
+            return is_in_build_list;
+        }
 
 
     public:
 
+        /// Change the size of a node
+        void resize(unsigned ns);
 
-    // For debugging unique table.
-    unsigned hash() const;
+        /// Shrink the size of a (truncated) full node
+        inline void shrinkFull(unsigned ns)
+        {
+            MEDDLY_DCASSERT(isFull());
+            MEDDLY_DCASSERT(ns >= 0);
+            MEDDLY_DCASSERT(ns <= size);
+            size = ns;
+        }
 
-    void setHash(unsigned H);
 
-    void computeHash();
+        /// Shrink the size of a sparse node
+        inline void shrinkSparse(unsigned ns)
+        {
+            MEDDLY_DCASSERT(isSparse());
+            MEDDLY_DCASSERT(ns >= 0);
+            MEDDLY_DCASSERT(ns <= nnzs);
+            nnzs = ns;
+        }
 
-    /// Removes redundant trailing edges.
-    /// If the unpacked node is sparse, it assumes its indices to be in ascending order.
-    void trim();
 
-    /// If the unpacked node is sparse, it is sorted so that the
-    /// indices are in ascending order.
-    void sort();
+        /// Called within expert_forest to allocate space.
+        ///   @param  p     Parent, for building nodes.
+        ///   @param  k     Level number.
+        ///   @param  ns    Size of node.
+        ///   @param  full  If true, we'll be filling a full reader.
+        ///                 Otherwise it is a sparse one.
+        void bind_to_forest(const expert_forest* p, int k, unsigned ns, bool full);
 
-    /// Checks if the node is has no trailing redundant edges
-    bool isTrim() const;
+        /// Called by node_storage when building an unpacked
+        /// node based on how it's stored.
+        /*
+        inline void bind_as_full(bool full)
+        {
+            is_full = full;
+        }
+        */
 
-    // checks if the node indices are in ascending order
-    bool isSorted() const;
+    protected:
+        /// Set all down edges (and values) to 0, for full storage
+        inline void clearFullEdges()
+        {
+            MEDDLY_DCASSERT(isFull());
+            memset(down, 0, unsigned(size) * sizeof(node_handle));
+            if (edge_bytes) {
+                memset(edge, 0, unsigned(size) * edge_bytes);
+            }
+        }
 
-    // Is this a "build" node?  Important for mark and sweep.
-    bool isBuildNode() const;
+        /// Set all down edges (and values) to 0, for sparse storage
+        inline void clearSparseEdges()
+        {
+            MEDDLY_DCASSERT(isSparse());
+            memset(down, 0, unsigned(nnzs) * sizeof(node_handle));
+            if (edge_bytes) {
+                memset(edge, 0, unsigned(nnzs) * edge_bytes);
+            }
+        }
 
-  public:
 
-    /// Change the size of a node
-    void resize(unsigned ns);
+    public:
+        // Centralized recycling
 
-    /// Shrink the size of a (truncated) full node
-    void shrinkFull(unsigned ns);
-
-    /// Shrink the size of a sparse node
-    void shrinkSparse(unsigned ns);
-
-    /// Called within expert_forest to allocate space.
-    ///   @param  p     Parent.
-    ///   @param  k     Level number.
-    ///   @param  ns    Size of node.
-    ///   @param  full  If true, we'll be filling a full reader.
-    ///                 Otherwise it is a sparse one.
-    void bind_to_forest(expert_forest* p, int k, unsigned ns, bool full);
-
-    /// Called by node_storage when building an unpacked
-    /// node based on how it's stored.
-    void bind_as_full(bool full);
-
-  protected:
-    void clearFullEdges();
-    void clearSparseEdges();
-
-  public:
-    // Centralized recycling
-    static unpacked_node* useUnpackedNode();
-    static void recycle(unpacked_node* r);
-    static void freeRecycled();
-
-    // Lists so we can treat nodes under construction
-    // as root nodes for mark and sweep
-
-    static void addToBuildList(unpacked_node* b);
-    static void removeFromBuildList(unpacked_node* b);
-    static void markBuildListChildren(expert_forest* F);
-
-  private:
-    const forest* parent;
-    expert_forest* eparent;
-
-    static unpacked_node* freeList;
-    static unpacked_node* buildList;
-
-    unpacked_node* next; // for recycled list, and list of nodes being built
-    bool is_in_build_list;
-
-    /*
-      TBD - extra info that is not hashed
-    */
-    void* extra_unhashed;
-    unsigned ext_uh_alloc;
-    unsigned ext_uh_size;
-    /*
-     Extra info that is hashed
-     */
-    void* extra_hashed;
-    unsigned ext_h_alloc;
-    unsigned ext_h_size;
-    /*
-     Down pointers, indexes, edge values.
-     */
-    node_handle* down;
-    unsigned* index;
-    void* edge;
-    bool can_be_extensible;
-    bool is_extensible;
-    unsigned alloc;
-    unsigned ealloc;
-    unsigned size;
-    unsigned nnzs;
-    int level;
-    unsigned h;
-    unsigned char edge_bytes; // number of bytes for an edge value.
-    bool is_full;
+        // Pull a recycled node off the free list
+        static inline unpacked_node* useUnpackedNode()
+        {
+            unpacked_node* nr;
+            if (freeList) {
+                nr = freeList;
+                freeList = nr->next;
+            } else {
+                nr = new unpacked_node;
+            }
 #ifdef DEVELOPMENT_CODE
-    bool has_hash;
+            nr->has_hash = false;
+#endif
+            nr->is_in_build_list = false;
+            return nr;
+        }
+
+
+        // Add a recycled node to the free list
+        static inline void recycle(unpacked_node* r)
+        {
+            if (r) {
+                if (r->is_in_build_list) {
+                    removeFromBuildList(r);
+                }
+                r->next = freeList;
+                freeList = r;
+            }
+        }
+
+        // delete all nodes in the free list
+        static void freeRecycled();
+
+        // Lists so we can treat nodes under construction
+        // as root nodes for mark and sweep
+
+        // Add a node to the build list
+        // Signifies that we are building this node, so we link/unlink
+        // the down pointers.
+        static inline void addToBuildList(unpacked_node* b, expert_forest *mp)
+        {
+#ifdef DEBUG_BUILDLIST
+            printf("Adding unpacked node at level %d to build list\n", b->getLevel());
+#endif
+            MEDDLY_DCASSERT(b);
+            MEDDLY_DCASSERT(b->eparent == mp);
+            b->modparent = mp;
+
+            b->is_in_build_list = true;
+            b->next = buildList;
+            buildList = b;
+        }
+
+        static void removeFromBuildList(unpacked_node* b);
+        static void markBuildListChildren(expert_forest* F);
+
+    private:
+        const forest* parent;   // TBD: eventually remove
+        const expert_forest* eparent;
+        expert_forest* modparent;
+
+        static unpacked_node* freeList;
+        static unpacked_node* buildList;
+
+        unpacked_node* next; // for recycled list, and list of nodes being built
+        bool is_in_build_list;
+
+        /*
+            TBD - extra info that is not hashed
+        */
+        void* extra_unhashed;
+        unsigned ext_uh_alloc;
+        unsigned ext_uh_size;
+        /*
+            Extra info that is hashed
+        */
+        void* extra_hashed;
+        unsigned ext_h_alloc;
+        unsigned ext_h_size;
+        /*
+            Down pointers, indexes, edge values.
+        */
+        node_handle* down;
+        unsigned* index;
+        void* edge;
+        bool can_be_extensible;
+        bool is_extensible;
+        unsigned alloc;
+        unsigned ealloc;
+        unsigned size;
+        unsigned nnzs;
+        int level;
+        unsigned h;
+        unsigned char edge_bytes; // number of bytes for an edge value.
+        bool is_full;
+#ifdef DEVELOPMENT_CODE
+        bool has_hash;
 #endif
 };
-
-// ******************************************************************
-// *                                                                *
-// *                 inlined  unpacked_node methods                 *
-// *                                                                *
-// ******************************************************************
-
-// ---------------------------------------------
-// Extensible portion of the node
-// ---------------------------------------------
-
-
-// --- End of Extensible portion of the node ---
-
-inline unsigned
-MEDDLY::unpacked_node::hash() const
-{
-#ifdef DEVELOPMENT_CODE
-  MEDDLY_DCASSERT(has_hash);
-#endif
-  return h;
-}
-
-inline void
-MEDDLY::unpacked_node::setHash(unsigned H)
-{
-#ifdef DEVELOPMENT_CODE
-  MEDDLY_DCASSERT(!has_hash);
-  has_hash = true;
-#endif
-  h = H;
-}
-
-inline bool
-MEDDLY::unpacked_node::isBuildNode() const
-{
-  return is_in_build_list;
-}
-
-inline void
-MEDDLY::unpacked_node::shrinkFull(unsigned ns)
-{
-  MEDDLY_DCASSERT(isFull());
-  MEDDLY_DCASSERT(ns >= 0);
-  MEDDLY_DCASSERT(ns <= size);
-  size = ns;
-}
-
-inline void
-MEDDLY::unpacked_node::shrinkSparse(unsigned ns)
-{
-  MEDDLY_DCASSERT(isSparse());
-  MEDDLY_DCASSERT(ns >= 0);
-  MEDDLY_DCASSERT(ns <= nnzs);
-  nnzs = ns;
-}
-
-inline void
-MEDDLY::unpacked_node::bind_as_full(bool full)
-{
-  is_full = full;
-}
-
-inline void
-MEDDLY::unpacked_node::clearFullEdges()
-{
-  MEDDLY_DCASSERT(isFull());
-  memset(down, 0, unsigned(size) * sizeof(node_handle));
-  if (edge_bytes) {
-    memset(edge, 0, unsigned(size) * edge_bytes);
-  }
-}
-
-inline void
-MEDDLY::unpacked_node::clearSparseEdges()
-{
-  MEDDLY_DCASSERT(isSparse());
-  memset(down, 0, unsigned(nnzs) * sizeof(node_handle));
-  if (edge_bytes) {
-    memset(edge, 0, unsigned(nnzs) * edge_bytes);
-  }
-}
-
-inline MEDDLY::unpacked_node*
-MEDDLY::unpacked_node::useUnpackedNode()
-{
-  unpacked_node* nr;
-  if (freeList) {
-    nr = freeList;
-    freeList = nr->next;
-  }
-  else {
-    nr = new unpacked_node;
-  }
-#ifdef DEVELOPMENT_CODE
-  nr->has_hash = false;
-#endif
-  nr->is_in_build_list = false;
-  return nr;
-}
-
-inline void
-MEDDLY::unpacked_node::recycle(MEDDLY::unpacked_node* r)
-{
-  if (r) {
-    if (r->is_in_build_list) {
-      removeFromBuildList(r);
-    }
-    r->next = freeList;
-    freeList = r;
-  }
-}
-
-inline void
-MEDDLY::unpacked_node::freeRecycled()
-{
-  while (freeList) {
-    MEDDLY::unpacked_node* n = freeList->next;
-    delete freeList;
-    freeList = n;
-  }
-}
-
-inline void
-MEDDLY::unpacked_node::addToBuildList(unpacked_node* b)
-{
-#ifdef DEBUG_BUILDLIST
-  printf("Adding unpacked node at level %d to build list\n", b->getLevel());
-#endif
-  MEDDLY_DCASSERT(b);
-  b->is_in_build_list = true;
-  b->next = buildList;
-  buildList = b;
-}
-
-
-
 
 
 #endif

@@ -36,8 +36,9 @@
 
 MEDDLY::unpacked_node::unpacked_node()
 {
-  parent = 0;
-  eparent = 0;
+  parent = nullptr;
+  eparent = nullptr;
+  modparent = nullptr;
   extra_unhashed = 0;
   ext_uh_alloc = 0;
   ext_uh_size = 0;
@@ -95,7 +96,7 @@ void MEDDLY::unpacked_node::clear()
           repeat for all indices till +infinity.
 */
 
-void MEDDLY::unpacked_node::initRedundant(expert_forest *f, int k,
+void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -114,7 +115,7 @@ void MEDDLY::unpacked_node::initRedundant(expert_forest *f, int k,
   is_extensible = f->isExtensibleLevel(k);
 }
 
-void MEDDLY::unpacked_node::initRedundant(expert_forest *f, int k,
+void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   float ev, node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -133,7 +134,7 @@ void MEDDLY::unpacked_node::initRedundant(expert_forest *f, int k,
   }
 }
 
-void MEDDLY::unpacked_node::initRedundant(expert_forest *f, int k,
+void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   int ev, node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -152,7 +153,7 @@ void MEDDLY::unpacked_node::initRedundant(expert_forest *f, int k,
   }
 }
 
-void MEDDLY::unpacked_node::initRedundant(expert_forest *f, int k,
+void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   long ev, node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -171,7 +172,7 @@ void MEDDLY::unpacked_node::initRedundant(expert_forest *f, int k,
   }
 }
 
-void MEDDLY::unpacked_node::initIdentity(expert_forest *f, int k,
+void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -191,7 +192,7 @@ void MEDDLY::unpacked_node::initIdentity(expert_forest *f, int k,
   }
 }
 
-void MEDDLY::unpacked_node::initIdentity(expert_forest *f, int k,
+void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, int ev, node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -213,7 +214,7 @@ void MEDDLY::unpacked_node::initIdentity(expert_forest *f, int k,
   }
 }
 
-void MEDDLY::unpacked_node::initIdentity(expert_forest *f, int k,
+void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, long ev, node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -235,7 +236,7 @@ void MEDDLY::unpacked_node::initIdentity(expert_forest *f, int k,
   }
 }
 
-void MEDDLY::unpacked_node::initIdentity(expert_forest *f, int k,
+void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, float ev, node_handle node, bool full)
 {
   MEDDLY_DCASSERT(f);
@@ -399,11 +400,12 @@ void MEDDLY::unpacked_node
   }
 }
 
-void MEDDLY::unpacked_node::bind_to_forest(expert_forest* f,
+void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f,
     int k, unsigned ns, bool full)
 {
   parent = f;
   eparent = f;
+  modparent = 0;
   level = k;
   is_full = full;
 
@@ -413,7 +415,7 @@ void MEDDLY::unpacked_node::bind_to_forest(expert_forest* f,
   resize(ns);
 
   // Allocate headers
-  ext_h_size = eparent->hashedHeaderBytes();
+  ext_h_size = f->hashedHeaderBytes();
   if (ext_h_size > ext_h_alloc) {
     ext_h_alloc = ((ext_h_size/8)+1)*8;
     MEDDLY_DCASSERT(ext_h_alloc > ext_h_size);
@@ -422,7 +424,7 @@ void MEDDLY::unpacked_node::bind_to_forest(expert_forest* f,
     if (0==extra_hashed) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
 
-  ext_uh_size = eparent->unhashedHeaderBytes();
+  ext_uh_size = f->unhashedHeaderBytes();
   if (ext_uh_size > ext_uh_alloc) {
     ext_uh_alloc = ((ext_uh_size/8)+1)*8;
     MEDDLY_DCASSERT(ext_uh_alloc > ext_uh_size);
@@ -433,20 +435,6 @@ void MEDDLY::unpacked_node::bind_to_forest(expert_forest* f,
 }
 
 
-/*
-void MEDDLY::unpacked_node
-::resize_header(int extra_bytes)
-{
-  ext_h_size = extra_bytes;
-  if (ext_h_size > ext_h_alloc) {
-    ext_h_alloc = ((ext_h_size/8)+1)*8;
-    MEDDLY_DCASSERT(ext_h_alloc > ext_h_size);
-    MEDDLY_DCASSERT(ext_h_alloc>0);
-    extra_hashed =  realloc(extra_hashed, ext_h_alloc);
-    if (0==extra_hashed) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  }
-}
-*/
 
 void MEDDLY::unpacked_node::removeFromBuildList(unpacked_node* b)
 {
@@ -621,11 +609,12 @@ void MEDDLY::unpacked_node::trim()
   }
 
   MEDDLY_DCASSERT(isExtensible() && !isTrim());
+  MEDDLY_DCASSERT(modparent);
 
   if (isSparse()) {
     unsigned z = getNNZs()-1;
     while (z > 0 && (i(z-1)+1) == i(z) && d(z-1) == d(z)) {
-      eparent->unlinkNode(d(z));
+      modparent->unlinkNode(d(z));
       z--;
     }
     if (z != (getNNZs() - 1)) {
@@ -635,7 +624,7 @@ void MEDDLY::unpacked_node::trim()
   } else {
     unsigned z = getSize()-1;
     while (z > 0 && d(z-1) == d(z)) {
-      eparent->unlinkNode(d(z));
+      modparent->unlinkNode(d(z));
       z--;
     }
     if (z != (getSize()-1)) {
@@ -670,6 +659,16 @@ bool MEDDLY::unpacked_node::isSorted() const
   }
 
   return true;
+}
+
+void
+MEDDLY::unpacked_node::freeRecycled()
+{
+  while (freeList) {
+    MEDDLY::unpacked_node* n = freeList->next;
+    delete freeList;
+    freeList = n;
+  }
 }
 
 

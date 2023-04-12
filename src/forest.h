@@ -1968,9 +1968,10 @@ class MEDDLY::expert_forest: public forest
     node_handle getTransparentNode() const;
 
   // ------------------------------------------------------------
-  // Copy a node into an unpacked node
+  // Copy a node into an unpacked node, and return it
 
-    void unpackNode(unpacked_node* un, node_handle node, node_storage_flags st2)    const;
+    unpacked_node* unpackNode(unpacked_node* un, node_handle node,
+            node_storage_flags st2) const;
 
     // KILL THIS:
   // void fillUnpacked(unpacked_node &un, node_handle node, node_storage_flags st2) const;
