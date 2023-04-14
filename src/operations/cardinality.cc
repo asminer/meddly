@@ -130,7 +130,7 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   }
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // Recurse
   long card = 0;
@@ -198,7 +198,7 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   }
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // Recurse
   long card = 0;
@@ -282,7 +282,7 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   }
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // Recurse
   double card = 0;
@@ -351,7 +351,7 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
   }
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // Recurse
   double card = 0;
@@ -458,7 +458,7 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
   MEDDLY_DCASSERT(!A->isExtensible());
 
   // Recurse
@@ -548,7 +548,7 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // Recurse
   mpz_object tmp;

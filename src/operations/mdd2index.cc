@@ -90,7 +90,7 @@ MEDDLY::mdd2index_operation
     return;
   }
   if (0 == k) {
-    bdn = expert_forest::bool_Tencoder::value2handle(true);
+    bdn = bool_Tencoder::value2handle(true);
     bcard = 1;
     return;
   }
@@ -122,11 +122,11 @@ MEDDLY::mdd2index_operation
   unpacked_node* nb = unpacked_node::newFull(resF, k, size);
 
   // Initialize node reader
-  unpacked_node *A = unpacked_node::useUnpackedNode();
+  unpacked_node *A = unpacked_node::New();
   if (aLevel < k) {
     A->initRedundant(argF, k, a, true);
   } else {
-    A->initFromNode(argF, a, true);
+    argF->unpackNode(A, a, FULL_ONLY);
   }
 
   // recurse

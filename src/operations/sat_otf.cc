@@ -633,7 +633,7 @@ void findConfirmedStates(MEDDLY::satotf_opname::otf_relation* rel,
     }
     // mdd_level == level
     visited.insert(mdd);
-    MEDDLY::unpacked_node *nr = MEDDLY::unpacked_node::newFromNode(insetF, mdd, false);
+    MEDDLY::unpacked_node *nr = insetF->newUnpacked(mdd, MEDDLY::SPARSE_ONLY);
     for (unsigned i = 0; i < nr->getNNZs(); i++) {
       if (!confirmed[level][nr->i(i)]) {
         rel->confirm(level, int(nr->i(i)));
@@ -750,7 +750,7 @@ double MEDDLY::satotf_opname::otf_relation::getArcCount(
 
   // Build confirmed mask
   dd_edge confirmed_local_states(outsetF);
-  confirmed_local_states.set(MEDDLY::expert_forest::bool_Tencoder::value2handle(true));
+  confirmed_local_states.set(bool_Tencoder::value2handle(true));
   for (int k = 1; k < num_levels; k++) {
     node_handle current_node = confirmed_local_states.getNode();
     int current_level = outsetF->getNodeLevel(current_node);
@@ -887,7 +887,7 @@ MEDDLY::node_handle MEDDLY::satotf_opname::otf_relation::getBoundedMxd(
 
   int mxd_level = mxdF->getNodeLevel(mxd);
   int result_size = bounds[ABS(mxd_level)];
-  unpacked_node *mxd_node = unpacked_node::newFromNode(mxdF, mxd, true);
+  unpacked_node *mxd_node = mxdF->newUnpacked(mxd, FULL_ONLY);
   unpacked_node *bounded_node = unpacked_node::newFull(mxdF, mxd_level, result_size);
   MEDDLY::node_handle ext_d = mxd_node->ext_d();
 
@@ -1202,11 +1202,11 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
 
   unpacked_node* nb = unpacked_node::newFull(resF, k, sz);
   // Initialize mdd reader
-  unpacked_node *mddDptrs = unpacked_node::useUnpackedNode();
+  unpacked_node *mddDptrs = unpacked_node::New();
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, true);
   } else {
-    mddDptrs->initFromNode(argF, mdd, true);
+    argF->unpackNode(mddDptrs, mdd, FULL_ONLY);
   }
 
   // Do computation
@@ -1400,7 +1400,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
     if (0==mxd.getNode()) {
       Ru[ei] = 0;
     } else {
-      Ru[ei] = unpacked_node::useUnpackedNode();
+      Ru[ei] = unpacked_node::New();
       const int eventLevel = mxd.getLevel();
       if (ABS(eventLevel) < level || eventLevel < 0) {
         // Takes care of two situations:
@@ -1408,11 +1408,11 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         // - skipped unprimed and primed levels (due to Fully Identity Reduced)
         Ru[ei]->initRedundant(arg2F, level, mxd.getNode(), true);
       } else {
-        Ru[ei]->initFromNode(arg2F, mxd.getNode(), true);
+        arg2F->unpackNode(Ru[ei], mxd.getNode(), FULL_ONLY);
       }
     }
   }
-  unpacked_node* Rp = unpacked_node::useUnpackedNode();
+  unpacked_node* Rp = unpacked_node::New();
 
   dd_edge nbdj(resF), newst(resF);
 
@@ -1445,7 +1445,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
           }
         } else {
           if (0==Ru[ei]) {
-            Ru[ei] = unpacked_node::useUnpackedNode();
+            Ru[ei] = unpacked_node::New();
           }
           const int eventLevel = mxd.getLevel();
           if (ABS(eventLevel) < level || eventLevel < 0) {
@@ -1454,7 +1454,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
             // - skipped unprimed and primed levels (due to Fully Identity Reduced)
             Ru[ei]->initRedundant(arg2F, level, mxd.getNode(), true);
           } else {
-            Ru[ei]->initFromNode(arg2F, mxd.getNode(), true);
+            arg2F->unpackNode(Ru[ei], mxd.getNode(), FULL_ONLY);
           }
         }
       }
@@ -1470,7 +1470,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       const int dlevel = arg2F->getNodeLevel(ei_i);
 
       if (dlevel == -level) {
-        Rp->initFromNode(arg2F, ei_i, false);
+        arg2F->unpackNode(Rp, ei_i, SPARSE_ONLY);
       } else {
         Rp->initIdentity(arg2F, -level, i, ei_i, false);
       }
@@ -1572,11 +1572,11 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::useUnpackedNode();
+  unpacked_node *A = unpacked_node::New();
   if (mddLevel < rLevel) {
     A->initRedundant(arg1F, rLevel, mdd, true);
   } else {
-    A->initFromNode(arg1F, mdd, true);
+    arg1F->unpackNode(A, mdd, FULL_ONLY);
   }
 
   if (mddLevel > ABS(mxdLevel)) {
@@ -1594,12 +1594,12 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::useUnpackedNode();
-    unpacked_node *Rp = unpacked_node::useUnpackedNode();
+    unpacked_node *Ru = unpacked_node::New();
+    unpacked_node *Rp = unpacked_node::New();
     if (mxdLevel < 0) {
       Ru->initRedundant(arg2F, rLevel, mxd, false);
     } else {
-      Ru->initFromNode(arg2F, mxd, false);
+      arg2F->unpackNode(Ru, mxd, SPARSE_ONLY);
     }
 
 #if 0
@@ -1611,7 +1611,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
       if (isLevelAbove(-rLevel, arg2F->getNodeLevel(pnode))) {
         Rp->initIdentity(arg2F, rLevel, i, pnode, false);
       } else {
-        Rp->initFromNode(arg2F, pnode, false);
+        arg2F->unpackNode(Rp, pnode, SPARSE_ONLY);
       }
 
       // loop over mxd "columns"
@@ -1696,7 +1696,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::recFireHelper(
   if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru_i))) {
     Rp->initIdentity(arg2F, rLevel, i, Ru_i, false);
   } else {
-    Rp->initFromNode(arg2F, Ru_i, false);
+    arg2F->unpackNode(Rp, Ru_i, SPARSE_ONLY);
   }
 
   MEDDLY_DCASSERT(!Rp->isExtensible());

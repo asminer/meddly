@@ -212,13 +212,13 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
 
   if (aLevel < bLevel) {
     // For all i and j, r[i][j] = compute_rec(a, b[i][j])
-    unpacked_node* nrb = unpacked_node::useUnpackedNode();
-    unpacked_node* nrbp = unpacked_node::useUnpackedNode();
-    nrb->initFromNode(arg2F, b, false);
+    unpacked_node* nrb = unpacked_node::New();
+    unpacked_node* nrbp = unpacked_node::New();
+    arg2F->unpackNode(nrb, b, SPARSE_ONLY);
     for (unsigned iz = 0; iz < nrb->getNNZs(); ++iz) {
       unpacked_node* nbri = unpacked_node::newFull(resF, -rLevel, rSize);
       for (unsigned i = 0; i < rSize; ++i) nbri->d_ref(i) = 0;
-      nrbp->initFromNode(arg2F, nrb->d(iz), false);
+      arg2F->unpackNode(nrbp, nrb->d(iz), SPARSE_ONLY);
       unsigned i = nrb->i(iz);
       for (unsigned jz = 0; jz < nrbp->getNNZs(); ++jz) {
         unsigned j = nrbp->i(jz);
@@ -233,13 +233,13 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
   }
   else if (aLevel > bLevel) {
     // For all i and j, r[i][j]=compute_rec(a[i][j], b)
-    unpacked_node* nra = unpacked_node::useUnpackedNode();
-    unpacked_node* nrap = unpacked_node::useUnpackedNode();
-    nra->initFromNode(arg1F, a, false);
+    unpacked_node* nra = unpacked_node::New();
+    unpacked_node* nrap = unpacked_node::New();
+    arg1F->unpackNode(nra, a, SPARSE_ONLY);
     for (unsigned iz = 0; iz < nra->getNNZs(); ++iz) {
       unpacked_node* nbri = unpacked_node::newFull(resF, -rLevel, rSize);
       for (unsigned i = 0; i < rSize; ++i) nbri->d_ref(i) = 0;
-      nrap->initFromNode(arg1F, nra->d(iz), false);
+      arg1F->unpackNode(nrap, nra->d(iz), SPARSE_ONLY);
       unsigned i = nra->i(iz);
       for (unsigned jz = 0; jz < nrap->getNNZs(); ++jz) {
         unsigned j = nrap->i(jz);
@@ -258,13 +258,13 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     MEDDLY_DCASSERT(bLevel == rLevel);
 
     // Node readers for a, b and all b[j].
-    unpacked_node* nra = unpacked_node::useUnpackedNode();
-    nra->initFromNode(arg1F, a, false);
+    unpacked_node* nra = unpacked_node::New();
+    arg1F->unpackNode(nra, a, SPARSE_ONLY);
 
-    unpacked_node* nrb = unpacked_node::useUnpackedNode();
-    nrb->initFromNode(arg2F, b, true);
+    unpacked_node* nrb = unpacked_node::New();
+    arg2F->unpackNode(nrb, b, FULL_ONLY);
 
-    unpacked_node* nrap = unpacked_node::useUnpackedNode();
+    unpacked_node* nrap = unpacked_node::New();
 
     unpacked_node** nrbp = new unpacked_node*[nrb->getSize()];
     for (unsigned i = 0; i < nrb->getSize(); ++i) {
@@ -272,8 +272,8 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
         nrbp[i] = 0;
         continue;
       }
-      nrbp[i] = unpacked_node::useUnpackedNode();
-      nrbp[i]->initFromNode(arg2F, nrb->d(i), false);
+      nrbp[i] = unpacked_node::New();
+      arg2F->unpackNode(nrbp[i], nrb->d(i), SPARSE_ONLY);
     }
 
     // For all i, j, and k:
@@ -281,7 +281,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     for (unsigned iz = 0; iz < nra->getNNZs(); ++iz) {
       unpacked_node* nbri = unpacked_node::newFull(resF, -rLevel, rSize);
       for (unsigned i = 0; i < rSize; ++i) nbri->d_ref(i) = 0;
-      nrap->initFromNode(arg1F, nra->d(iz), false);
+      arg1F->unpackNode(nrap, nra->d(iz), SPARSE_ONLY);
       unsigned i = nra->i(iz);
       for (unsigned jz = 0; jz < nrap->getNNZs(); ++jz) {
         unsigned j = nrap->i(jz);

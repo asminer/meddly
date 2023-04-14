@@ -134,7 +134,7 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
 {
   // Handles the unprimed levels of a
   if (0==k) {
-    y[0] += x[0] * expert_forest::float_Tencoder::handle2value(a);
+    y[0] += x[0] * float_Tencoder::handle2value(a);
     return;
   }
 
@@ -149,7 +149,7 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   if (0==aLevel && (x_ind == y_ind)) {
     if (fx == fy && fx->isIndexSet()) {
       // yes we can
-      float v = expert_forest::float_Tencoder::handle2value(a);
+      float v = float_Tencoder::handle2value(a);
       for (long i = fx->getIndexSetCardinality(x_ind)-1; i>=0; i--) {
         y[i] += x[i] * v;
       }
@@ -162,8 +162,8 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   //
   if (ABS(aLevel) < k) {
     // Init sparse readers
-    unpacked_node* xR = unpacked_node::newFromNode(fx, x_ind, false);
-    unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, false);
+    unpacked_node* xR = fx->newUnpacked(x_ind, SPARSE_ONLY);
+    unpacked_node* yR = fy->newUnpacked(y_ind, SPARSE_ONLY);
 
     unsigned xp = 0;
     unsigned yp = 0;
@@ -199,15 +199,15 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   //
 
   // Init sparse readers
-  unpacked_node* aR = unpacked_node::useUnpackedNode();
+  unpacked_node* aR = unpacked_node::New();
   if (aLevel == k) {
-    aR->initFromNode(fA, a, false);
+    fA->unpackNode(aR, a, SPARSE_ONLY);
   } else {
     aR->initRedundant(fA, k, a, false);
   }
 
-  unpacked_node* xR = unpacked_node::useUnpackedNode();
-  xR->initFromNode(fx, x_ind, false);
+  unpacked_node* xR = unpacked_node::New();
+  fx->unpackNode(xR, x_ind, SPARSE_ONLY);
 
   unsigned xp = 0;
   unsigned ap = 0;
@@ -240,19 +240,19 @@ void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
 {
   // Handles the primed levels of A
   if (0==k) {
-    y[0] += x[0] * expert_forest::float_Tencoder::handle2value(a);
+    y[0] += x[0] * float_Tencoder::handle2value(a);
     return;
   }
 
   // Init sparse readers
-  unpacked_node* aR = unpacked_node::useUnpackedNode();
+  unpacked_node* aR = unpacked_node::New();
   if (fA->getNodeLevel(a) == -k) {
-    aR->initFromNode(fA, a, false);
+    fA->unpackNode(aR, a, SPARSE_ONLY);
   } else {
     aR->initIdentity(fA, k, ain, a, false);
   }
 
-  unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, false);
+  unpacked_node* yR = fy->newUnpacked(y_ind, SPARSE_ONLY);
 
 
   unsigned yp = 0;
@@ -312,7 +312,7 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
 {
   // Handles the unprimed levels of a
   if (0==k) {
-    y[0] += x[0] * expert_forest::float_Tencoder::handle2value(a);
+    y[0] += x[0] * float_Tencoder::handle2value(a);
     return;
   }
 
@@ -327,7 +327,7 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   if (0==aLevel && (x_ind == y_ind)) {
     if (fx == fy && fx->isIndexSet()) {
       // yes we can
-      float v = expert_forest::float_Tencoder::handle2value(a);
+      float v = float_Tencoder::handle2value(a);
       for (long i = fy->getIndexSetCardinality(y_ind)-1; i>=0; i--) {
         y[i] += x[i] * v;
       }
@@ -340,8 +340,8 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   //
   if (ABS(aLevel) < k) {
     // Init sparse readers
-    unpacked_node* xR = unpacked_node::newFromNode(fx, x_ind, false);
-    unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, false);
+    unpacked_node* xR = fx->newUnpacked(x_ind, SPARSE_ONLY);
+    unpacked_node* yR = fy->newUnpacked(y_ind, SPARSE_ONLY);
 
     unsigned xp = 0;
     unsigned yp = 0;
@@ -377,14 +377,14 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   //
 
   // Init sparse readers
-  unpacked_node* aR = unpacked_node::useUnpackedNode();
+  unpacked_node* aR = unpacked_node::New();
   if (aLevel == k) {
-    aR->initFromNode(fA, a, false);
+    fA->unpackNode(aR, a, SPARSE_ONLY);
   } else {
     aR->initRedundant(fA, k, a, false);
   }
 
-  unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, false);
+  unpacked_node* yR = fy->newUnpacked(y_ind, SPARSE_ONLY);
 
 
   unsigned yp = 0;
@@ -418,19 +418,19 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
 {
   // Handles the primed levels of A
   if (0==k) {
-    y[0] += x[0] * expert_forest::float_Tencoder::handle2value(a);
+    y[0] += x[0] * float_Tencoder::handle2value(a);
     return;
   }
 
   // Init sparse readers
-  unpacked_node* aR = unpacked_node::useUnpackedNode();
+  unpacked_node* aR = unpacked_node::New();
   if (fA->getNodeLevel(a) == -k) {
-    aR->initFromNode(fA, a, false);
+    fA->unpackNode(aR, a, SPARSE_ONLY);
   } else {
     aR->initIdentity(fA, k, ain, a, false);
   }
 
-  unpacked_node* xR = unpacked_node::newFromNode(fx, x_ind, false);
+  unpacked_node* xR = fx->newUnpacked(x_ind, SPARSE_ONLY);
 
 
   unsigned xp = 0;

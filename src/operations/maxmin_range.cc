@@ -146,7 +146,7 @@ public:
 int MEDDLY::maxrange_int::compute_r(node_handle a)
 {
   // Terminal case
-  if (argF->isTerminalNode(a)) return expert_forest::int_Tencoder::handle2value(a);
+  if (argF->isTerminalNode(a)) return int_Tencoder::handle2value(a);
 
   // Check compute table
   int max;
@@ -154,7 +154,7 @@ int MEDDLY::maxrange_int::compute_r(node_handle a)
   if (0==Key) return max;
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // recurse
   max = compute_r(A->d(0));
@@ -189,7 +189,7 @@ public:
 int MEDDLY::minrange_int::compute_r(node_handle a)
 {
   // Terminal case
-  if (argF->isTerminalNode(a)) return expert_forest::int_Tencoder::handle2value(a);
+  if (argF->isTerminalNode(a)) return int_Tencoder::handle2value(a);
 
   // Check compute table
   int min;
@@ -197,7 +197,7 @@ int MEDDLY::minrange_int::compute_r(node_handle a)
   if (0==Key) return min;
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // recurse
   min = compute_r(A->d(0));
@@ -234,7 +234,7 @@ public:
 float MEDDLY::maxrange_real::compute_r(node_handle a)
 {
   // Terminal case
-  if (argF->isTerminalNode(a)) return expert_forest::float_Tencoder::handle2value(a);
+  if (argF->isTerminalNode(a)) return float_Tencoder::handle2value(a);
 
   // Check compute table
   float max;
@@ -242,7 +242,7 @@ float MEDDLY::maxrange_real::compute_r(node_handle a)
   if (0==Key) return max;
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // recurse
   max = compute_r(A->d(0));
@@ -279,7 +279,7 @@ public:
 float MEDDLY::minrange_real::compute_r(node_handle a)
 {
   // Terminal case
-  if (argF->isTerminalNode(a)) return expert_forest::float_Tencoder::handle2value(a);
+  if (argF->isTerminalNode(a)) return float_Tencoder::handle2value(a);
 
   // Check compute table
   float min;
@@ -287,7 +287,7 @@ float MEDDLY::minrange_real::compute_r(node_handle a)
   if (0==Key) return min;
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::newFromNode(argF, a, false);
+  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // recurse
   min = compute_r(A->d(0));

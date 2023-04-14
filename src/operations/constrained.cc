@@ -313,7 +313,7 @@ void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
     // Initialize readers
     unpacked_node* Ru = isLevelAbove(level, mxdLevel)
       ? unpacked_node::newRedundant(transF, level, root.getNode(), true)
-      : unpacked_node::newFromNode(transF, root.getNode(), true);
+      : transF->newUnpacked(root.getNode(), FULL_ONLY);
 
     bool first = true;
 
@@ -323,7 +323,7 @@ void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
       int mxdPLevel = transF->getNodeLevel(Ru->d(i));
       unpacked_node* Rp = isLevelAbove(-level, mxdPLevel)
         ? unpacked_node::newIdentity(transF, -level, i, Ru->d(i), true)
-        : unpacked_node::newFromNode(transF, Ru->d(i), true);
+        : transF->newUnpacked(Ru->d(i), FULL_ONLY);
 
       // Intersect along the diagonal
       if (first) {
@@ -415,11 +415,11 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
   // Initialize mxd readers, note we might skip the unprimed level
   unpacked_node* Ru = (mxdLevel < 0)
     ? unpacked_node::newRedundant(transF, nb.getLevel(), mxd.getNode(), true)
-    : unpacked_node::newFromNode(transF, mxd.getNode(), true);
+    : transF->newUnpacked(mxd.getNode(), FULL_ONLY);
 
   unpacked_node* A = isLevelAbove(nb.getLevel(), consF->getNodeLevel(a))
     ? unpacked_node::newRedundant(consF, nb.getLevel(), a, true)
-    : unpacked_node::newFromNode(consF, a, true);
+    : consF->newUnpacked(a, FULL_ONLY);
 
   dd_edge nbdj(resF), newst(resF);
 
@@ -440,7 +440,7 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
     }
     else {
       Rps[i] = (transF->getNodeLevel(Ru->d(i)) == -nb.getLevel())
-        ? unpacked_node::newFromNode(transF, Ru->d(i), false)
+        ? transF->newUnpacked(Ru->d(i), SPARSE_ONLY)
         : unpacked_node::newIdentity(transF, -nb.getLevel(), i, Ru->d(i), false);
     }
   }
@@ -544,10 +544,10 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
   // Initialize evmdd reader
   unpacked_node* A = isLevelAbove(level, aLevel)
     ? unpacked_node::newRedundant(consF, level, a, true)
-    : unpacked_node::newFromNode(consF, a, true);
+    : consF->newUnpacked(a, FULL_ONLY);
   unpacked_node* B = isLevelAbove(level, bLevel)
     ? unpacked_node::newRedundant(argF, level, b, true)
-    : unpacked_node::newFromNode(argF, b, true);
+    : argF->newUnpacked(b, FULL_ONLY);
 
   unpacked_node* T = unpacked_node::newFull(resF, level, size);
   if (ABS(rLevel) < level) {
@@ -573,7 +573,7 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node* Ru = (rLevel < 0)
       ? unpacked_node::newRedundant(transF, -rLevel, r, false)
-      : unpacked_node::newFromNode(transF, r, false);
+      : transF->newUnpacked(r, SPARSE_ONLY);
 
     // loop over mxd "rows"
     for (int iz = 0; iz < Ru->getNNZs(); iz++) {
@@ -581,7 +581,7 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
 
       unpacked_node* Rp = isLevelAbove(-level, transF->getNodeLevel(Ru->d(iz)))
         ? unpacked_node::newIdentity(transF, -level, i, Ru->d(iz), false)
-        : unpacked_node::newFromNode(transF, Ru->d(iz), false);
+        : transF->newUnpacked(Ru->d(iz), SPARSE_ONLY);
 
       // loop over mxd "columns"
       for (int jz = 0; jz < Rp->getNNZs(); jz++) {
@@ -655,11 +655,11 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
   // Initialize mxd readers, note we might skip the unprimed level
   unpacked_node* Ru = (mxdLevel < 0)
     ? unpacked_node::newRedundant(transF, nb.getLevel(), mxd.getNode(), false)
-    : unpacked_node::newFromNode(transF, mxd.getNode(), false);
+    : transF->newUnpacked(mxd.getNode(), SPARSE_ONLY);
 
   unpacked_node* A = isLevelAbove(nb.getLevel(), consF->getNodeLevel(a))
     ? unpacked_node::newRedundant(consF, nb.getLevel(), a, true)
-    : unpacked_node::newFromNode(consF, a, true);
+    : consF->newUnpacked(a, FULL_ONLY);
 
   dd_edge nbdi(resF), newst(resF);
 
@@ -681,7 +681,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
     }
     else {
       Rps[iz] = (transF->getNodeLevel(Ru->d(iz)) == -nb.getLevel())
-        ? unpacked_node::newFromNode(transF, Ru->d(iz), true)
+        ? transF->newUnpacked(Ru->d(iz), FULL_ONLY)
         : unpacked_node::newIdentity(transF, -nb.getLevel(), i, Ru->d(iz), true);
     }
   }
@@ -783,10 +783,10 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
   // Initialize evmdd reader
   unpacked_node* A = isLevelAbove(level, aLevel)
     ? unpacked_node::newRedundant(consF, level, a, true)
-    : unpacked_node::newFromNode(consF, a, true);
+    : consF->newUnpacked(a, FULL_ONLY);
   unpacked_node* B = isLevelAbove(level, bLevel)
     ? unpacked_node::newRedundant(argF, level, b, true)
-    : unpacked_node::newFromNode(argF, b, true);
+    : argF->newUnpacked(b, FULL_ONLY);
 
   dd_edge Tdi(resF), newst(resF);
 
@@ -814,7 +814,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node* Ru = (rLevel < 0)
       ? unpacked_node::newRedundant(transF, -rLevel, r, false)
-      : unpacked_node::newFromNode(transF, r, false);
+      : transF->newUnpacked(r, SPARSE_ONLY);
 
     // loop over mxd "rows"
     for (int iz = 0; iz < Ru->getNNZs(); iz++) {
@@ -825,7 +825,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
 
       unpacked_node* Rp = isLevelAbove(-level, transF->getNodeLevel(Ru->d(iz)))
         ? unpacked_node::newIdentity(transF, -level, i, Ru->d(iz), false)
-        : unpacked_node::newFromNode(transF, Ru->d(iz), false);
+        : transF->newUnpacked(Ru->d(iz), SPARSE_ONLY);
 
       // loop over mxd "columns"
       for (int jz = 0; jz < Rp->getNNZs(); jz++) {
@@ -985,10 +985,10 @@ void MEDDLY::constrained_saturation_mt::saturate(node_handle a, node_handle b, i
 
   unpacked_node* A = (aLevel < level)
     ? unpacked_node::newRedundant(consF, level, a, true)
-    : unpacked_node::newFromNode(consF, a, true);
+    : consF->newUnpacked(a, FULL_ONLY);
   unpacked_node* B = (bLevel < level)
     ? unpacked_node::newRedundant(argF, level, b, true)
-    : unpacked_node::newFromNode(argF, b, true);
+    : argF->newUnpacked(b, FULL_ONLY);
 
   // Do computation
   unpacked_node* T = unpacked_node::newFull(resF, level, sz);
@@ -1115,7 +1115,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
     // Initialize readers
     unpacked_node* Ru = isLevelAbove(level, mxdLevel)
       ? unpacked_node::newRedundant(transF, level, root.getNode(), true)
-      : unpacked_node::newFromNode(transF, root.getNode(), true);
+      : transF->newUnpacked(root.getNode(), FULL_ONLY);
 
     bool first = true;
 
@@ -1125,7 +1125,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
       int mxdPLevel = transF->getNodeLevel(Ru->d(i));
       unpacked_node* Rp = isLevelAbove(-level, mxdPLevel)
         ? unpacked_node::newIdentity(transF, -level, i, Ru->d(i), true)
-        : unpacked_node::newFromNode(transF, Ru->d(i), true);
+        : transF->newUnpacked(Ru->d(i), FULL_ONLY);
 
       // Intersect along the diagonal
       if (first) {
@@ -1207,11 +1207,11 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
   // Initialize mxd readers, note we might skip the unprimed level
   unpacked_node* Ru = (mxdLevel < 0)
     ? unpacked_node::newRedundant(transF, nb.getLevel(), mxd.getNode(), false)
-    : unpacked_node::newFromNode(transF, mxd.getNode(), false);
+    : transF->newUnpacked(mxd.getNode(), SPARSE_ONLY);
 
   unpacked_node* A = isLevelAbove(nb.getLevel(), consF->getNodeLevel(a))
     ? unpacked_node::newRedundant(consF, nb.getLevel(), 0L, a, true)
-    : unpacked_node::newFromNode(consF, a, true);
+    : consF->newUnpacked(a, FULL_ONLY);
 
   // indices to explore
   std::deque<int> queue;
@@ -1231,7 +1231,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
     }
     else {
       Rps[iz] = (transF->getNodeLevel(Ru->d(iz)) == -nb.getLevel())
-        ? unpacked_node::newFromNode(transF, Ru->d(iz), true)
+        ? transF->newUnpacked(Ru->d(iz), FULL_ONLY)
         : unpacked_node::newIdentity(transF, -nb.getLevel(), i, Ru->d(iz), true);
     }
   }
@@ -1364,10 +1364,10 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
   // Initialize evmdd reader
   unpacked_node* A = isLevelAbove(level, aLevel)
     ? unpacked_node::newRedundant(consF, level, 0L, a, true)
-    : unpacked_node::newFromNode(consF, a, true);
+    : consF->newUnpacked(a, FULL_ONLY);
   unpacked_node* B = isLevelAbove(level, bLevel)
     ? unpacked_node::newRedundant(argF, level, 0L, b, true)
-    : unpacked_node::newFromNode(argF, b, true);
+    : argF->newUnpacked(b, FULL_ONLY);
 
   unpacked_node* T = unpacked_node::newFull(resF, level, size);
   if (ABS(rLevel) < level) {
@@ -1398,7 +1398,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node* Ru = (rLevel < 0)
       ? unpacked_node::newRedundant(transF, -rLevel, r, false)
-      : unpacked_node::newFromNode(transF, r, false);
+      : transF->newUnpacked(r, SPARSE_ONLY);
 
     // loop over mxd "rows"
     for (int iz = 0; iz < Ru->getNNZs(); iz++) {
@@ -1410,7 +1410,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
 
       unpacked_node* Rp = isLevelAbove(-level, transF->getNodeLevel(Ru->d(iz)))
         ? unpacked_node::newIdentity(transF, -level, i, Ru->d(iz), false)
-        : unpacked_node::newFromNode(transF, Ru->d(iz), false);
+        : transF->newUnpacked(Ru->d(iz), SPARSE_ONLY);
 
       // loop over mxd "columns"
       for (int jz = 0; jz < Rp->getNNZs(); jz++) {
@@ -1612,10 +1612,10 @@ void MEDDLY::constrained_saturation_evplus::saturate(int aev, node_handle a, int
 
   unpacked_node* A = (aLevel < level)
     ? unpacked_node::newRedundant(consF, level, 0L, a, true)
-    : unpacked_node::newFromNode(consF, a, true);
+    : consF->newUnpacked(a, FULL_ONLY);
   unpacked_node* B = (bLevel < level)
     ? unpacked_node::newRedundant(argF, level, 0L, b, true)
-    : unpacked_node::newFromNode(argF, b, true);
+    : argF->newUnpacked(b, FULL_ONLY);
 
   // Do computation
   unpacked_node* T = unpacked_node::newFull(resF, level, sz);

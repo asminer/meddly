@@ -208,11 +208,11 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
   unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::useUnpackedNode();
+  unpacked_node *A = unpacked_node::New();
   if (mddLevel < rLevel) {
     A->initRedundant(argV, rLevel, mdd, true);
   } else {
-    A->initFromNode(argV, mdd, true);
+    argV->unpackNode(A, mdd, FULL_ONLY);
   }
 
   if (mddLevel > ABS(mxdLevel)) {
@@ -231,12 +231,12 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
     for (unsigned i=0; i<rSize; i++) C->d_ref(i) = 0;
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::useUnpackedNode();
-    unpacked_node *Rp = unpacked_node::useUnpackedNode();
+    unpacked_node *Ru = unpacked_node::New();
+    unpacked_node *Rp = unpacked_node::New();
     if (mxdLevel < 0) {
       Ru->initRedundant(argM, rLevel, mxd, false);
     } else {
-      Ru->initFromNode(argM, mxd, false);
+      argM->unpackNode(Ru, mxd, SPARSE_ONLY);
     }
 
     dd_edge newstatesE(resF), cdi(resF);
@@ -247,7 +247,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
       if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(iz)))) {
         Rp->initIdentity(argM, rLevel, i, Ru->d(iz), false);
       } else {
-        Rp->initFromNode(argM, Ru->d(iz), false);
+        argM->unpackNode(Rp, Ru->d(iz), SPARSE_ONLY);
       }
 
       // loop over mxd "columns"
@@ -351,11 +351,11 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
   unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::useUnpackedNode();
+  unpacked_node *A = unpacked_node::New();
   if (mddLevel < rLevel) {
     A->initRedundant(argV, rLevel, mdd, true);
   } else {
-    A->initFromNode(argV, mdd, true);
+    argV->unpackNode(A, mdd, FULL_ONLY);
   }
 
   if (mddLevel > ABS(mxdLevel)) {
@@ -374,12 +374,12 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
     for (unsigned i=0; i<rSize; i++) C->d_ref(i) = 0;
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::useUnpackedNode();
-    unpacked_node *Rp = unpacked_node::useUnpackedNode();
+    unpacked_node *Ru = unpacked_node::New();
+    unpacked_node *Rp = unpacked_node::New();
     if (mxdLevel < 0) {
       Ru->initRedundant(argM, rLevel, mxd, false);
     } else {
-      Ru->initFromNode(argM, mxd, false);
+      argM->unpackNode(Ru, mxd, SPARSE_ONLY);
     }
 
     dd_edge newstatesE(resF), cdj(resF);
@@ -391,7 +391,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
       if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(iz)))) {
         Rp->initIdentity(argM, rLevel, i, Ru->d(iz), false);
       } else {
-        Rp->initFromNode(argM, Ru->d(iz), false);
+        argM->unpackNode(Rp, Ru->d(iz), SPARSE_ONLY);
       }
 
       // loop over mxd "columns"
@@ -694,7 +694,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   // Initialize evmdd reader
   unpacked_node *A = (evmddLevel < rLevel)
     ? unpacked_node::newRedundant(argV, rLevel, 0L, evmdd, true)
-    : unpacked_node::newFromNode(argV, evmdd, true);
+    : argV->newUnpacked(evmdd, FULL_ONLY);
 
   if (evmddLevel > ABS(mxdLevel)) {
     //
@@ -720,12 +720,12 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
     }
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::useUnpackedNode();
-    unpacked_node *Rp = unpacked_node::useUnpackedNode();
+    unpacked_node *Ru = unpacked_node::New();
+    unpacked_node *Rp = unpacked_node::New();
     if (mxdLevel < 0) {
       Ru->initRedundant(argM, rLevel, mxd, false);
     } else {
-      Ru->initFromNode(argM, mxd, false);
+      argM->unpackNode(Ru, mxd, SPARSE_ONLY);
     }
 
     dd_edge newstatesE(resF), cdi(resF);
@@ -736,7 +736,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
       if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(iz)))) {
         Rp->initIdentity(argM, rLevel, i, Ru->d(iz), false);
       } else {
-        Rp->initFromNode(argM, Ru->d(iz), false);
+        argM->unpackNode(Rp, Ru->d(iz), SPARSE_ONLY);
       }
 
       // loop over mxd "columns"
@@ -842,7 +842,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   // Initialize evmdd reader
   unpacked_node *A = (evmddLevel < rLevel)
     ? unpacked_node::newRedundant(argV, rLevel, 0L, evmdd, true)
-    : unpacked_node::newFromNode(argV, evmdd, true);
+    : argV->newUnpacked(evmdd, FULL_ONLY);
 
   if (evmddLevel > ABS(mxdLevel)) {
     //
@@ -868,12 +868,12 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
     }
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::useUnpackedNode();
-    unpacked_node *Rp = unpacked_node::useUnpackedNode();
+    unpacked_node *Ru = unpacked_node::New();
+    unpacked_node *Rp = unpacked_node::New();
     if (mxdLevel < 0) {
       Ru->initRedundant(argM, rLevel, mxd, false);
     } else {
-      Ru->initFromNode(argM, mxd, false);
+      argM->unpackNode(Ru, mxd, SPARSE_ONLY);
     }
 
     dd_edge newstatesE(resF), cdj(resF);
@@ -885,7 +885,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
       if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(iz)))) {
         Rp->initIdentity(argM, rLevel, i, Ru->d(iz), false);
       } else {
-        Rp->initFromNode(argM, Ru->d(iz), false);
+        argM->unpackNode(Rp, Ru->d(iz), SPARSE_ONLY);
       }
 
       // loop over mxd "columns"
@@ -1062,13 +1062,13 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
   // Initialize evmdd reader
   unpacked_node* A = isLevelAbove(rLevel, evmxdLevel)
     ? unpacked_node::newRedundant(argV, rLevel, 0L, evmxd, true)
-    : unpacked_node::newFromNode(argV, evmxd, true);
+    : argV->newUnpacked(evmxd, FULL_ONLY);
 
   for (unsigned i = 0; i < rSize; i++) {
     int pLevel = argV->getNodeLevel(A->d(i));
     unpacked_node* B = isLevelAbove(-rLevel, pLevel)
       ? unpacked_node::newIdentity(argV, -rLevel, i, 0L, A->d(i), true)
-      : unpacked_node::newFromNode(argV, A->d(i), true);
+      : argV->newUnpacked(A->d(i), FULL_ONLY);
 
     unpacked_node* D = unpacked_node::newFull(resF, -rLevel, rSize);
     if (rLevel > ABS(mxdLevel)) {
@@ -1096,12 +1096,12 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
       }
 
       // Initialize mxd readers, note we might skip the unprimed level
-      unpacked_node *Ru = unpacked_node::useUnpackedNode();
-      unpacked_node *Rp = unpacked_node::useUnpackedNode();
+      unpacked_node *Ru = unpacked_node::New();
+      unpacked_node *Rp = unpacked_node::New();
       if (mxdLevel < 0) {
         Ru->initRedundant(argM, rLevel, mxd, false);
       } else {
-        Ru->initFromNode(argM, mxd, false);
+        argM->unpackNode(Ru, mxd, SPARSE_ONLY);
       }
 
       dd_edge newstatesE(resF), djp(resF);
@@ -1116,7 +1116,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
         if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(jz)))) {
           Rp->initIdentity(argM, rLevel, j, Ru->d(jz), false);
         } else {
-          Rp->initFromNode(argM, Ru->d(jz), false);
+          argM->unpackNode(Rp, Ru->d(jz), SPARSE_ONLY);
         }
 
         // loop over mxd "columns"

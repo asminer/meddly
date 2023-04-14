@@ -134,8 +134,8 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handl
   if (0==Key) return b;
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::useUnpackedNode();
-  A->initFromNode(argF, a, false);
+  unpacked_node* A = unpacked_node::New();
+  argF->unpackNode(A, a, SPARSE_ONLY);
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
@@ -198,7 +198,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
   }
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::useUnpackedNode();
+  unpacked_node* A = unpacked_node::New();
   if (isLevelAbove(k, aLevel)) {
     if (k<0 && argF->isIdentityReduced()) {
       A->initIdentity(argF, k, unsigned(in), a, false);
@@ -206,7 +206,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
       A->initRedundant(argF, k, a, false);
     }
   } else {
-    A->initFromNode(argF, a, false);
+    argF->unpackNode(A, a, SPARSE_ONLY);
   }
 
   // Initialize node builder
@@ -330,7 +330,7 @@ void MEDDLY::copy_MT2EV<TYPE>
     else {
       argF->getValueFromHandle(a, bev);
     }
-    b = expert_forest::bool_Tencoder::value2handle(true);
+    b = bool_Tencoder::value2handle(true);
     return;
   }
 
@@ -339,8 +339,8 @@ void MEDDLY::copy_MT2EV<TYPE>
   if (0==Key) return;
 
   // Initialize sparse node reader
-  unpacked_node* A = unpacked_node::useUnpackedNode();
-  A->initFromNode(argF, a, false);
+  unpacked_node* A = unpacked_node::New();
+  argF->unpackNode(A, a, SPARSE_ONLY);
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
@@ -379,7 +379,7 @@ void MEDDLY::copy_MT2EV<TYPE>
     else {
       argF->getValueFromHandle(a, bev);
     }
-    b = expert_forest::bool_Tencoder::value2handle(true);
+    b = bool_Tencoder::value2handle(true);
     return;
   }
 
@@ -402,7 +402,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   }
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::useUnpackedNode();
+  unpacked_node* A = unpacked_node::New();
   if (isLevelAbove(k, aLevel)) {
     if (k<0 && argF->isIdentityReduced()) {
       A->initIdentity(argF, k, unsigned(in), a, false);
@@ -410,7 +410,7 @@ void MEDDLY::copy_MT2EV<TYPE>
       A->initRedundant(argF, k, a, false);
     }
   } else {
-    A->initFromNode(argF, a, false);
+    argF->unpackNode(A, a, SPARSE_ONLY);
   }
 
   // Initialize node builder
@@ -514,7 +514,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   if (argF->isTerminalNode(a)) {
     MEDDLY_DCASSERT(a != argF->getTransparentNode());
     if (resF->getRangeType() == forest::BOOLEAN) {
-      return expert_forest::bool_Tencoder::value2handle(true);
+      return bool_Tencoder::value2handle(true);
     }
     else {
       return resF->handleForValue(ev);
@@ -527,8 +527,8 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   if (0==Key) return b;
 
   // Initialize sparse node reader
-  unpacked_node* A = unpacked_node::useUnpackedNode();
-  A->initFromNode(argF, a, false);
+  unpacked_node* A = unpacked_node::New();
+  argF->unpackNode(A, a, SPARSE_ONLY);
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
@@ -561,7 +561,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   if (0==k) {
     MEDDLY_DCASSERT(a != argF->getTransparentNode());
     if (resF->getRangeType() == forest::BOOLEAN) {
-      return expert_forest::bool_Tencoder::value2handle(true);
+      return bool_Tencoder::value2handle(true);
     }
     else {
       return resF->handleForValue(ev);
@@ -588,7 +588,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   }
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::useUnpackedNode();
+  unpacked_node* A = unpacked_node::New();
   if (isLevelAbove(k, aLevel)) {
     if (k<0 && argF->isIdentityReduced()) {
       TYPE rev;
@@ -600,7 +600,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
       A->initRedundant(argF, k, rev, a, false);
     }
   } else {
-    A->initFromNode(argF, a, false);
+    argF->unpackNode(A, a, SPARSE_ONLY);
   }
 
   // Initialize node builder
@@ -691,7 +691,7 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    return expert_forest::bool_Tencoder::value2handle(a != 0);
+    return bool_Tencoder::value2handle(a != 0);
   }
 
   // Check compute table
@@ -700,8 +700,8 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
   if (0==Key) return b;
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::useUnpackedNode();
-  A->initFromNode(argF, a, false);
+  unpacked_node* A = unpacked_node::New();
+  argF->unpackNode(A, a, SPARSE_ONLY);
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
@@ -828,7 +828,7 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   // Check terminals
   if (0==k) {
     bv = av;
-    bn = expert_forest::bool_Tencoder::value2handle(an != 0);
+    bn = bool_Tencoder::value2handle(an != 0);
     return;
   }
 
@@ -851,7 +851,7 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   }
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::useUnpackedNode();
+  unpacked_node* A = unpacked_node::New();
   if (isLevelAbove(k, aLevel)) {
     if (k<0 && argF->isIdentityReduced()) {
       INTYPE rev;
@@ -863,7 +863,7 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
       A->initRedundant(argF, k, rev, an, false);
     }
   } else {
-    A->initFromNode(argF, an, false);
+    argF->unpackNode(A, an, SPARSE_ONLY);
   }
 
   // Initialize node builder

@@ -22,6 +22,7 @@
 #include "old_meddly.hh"
 #include "old_meddly_expert.h"
 #include "old_meddly_expert.hh"
+#include "relation_node.h"
 #include "sat_impl.h"
 #include <typeinfo> // for "bad_cast" exception
 #include <set>
@@ -197,7 +198,7 @@ void findConfirmedStatesImpl(MEDDLY::satimpl_opname::implicit_relation* rel,
     }
     // mdd_level == level
     visited.insert(mdd);
-    MEDDLY::unpacked_node *nr = MEDDLY::unpacked_node::newFromNode(insetF, mdd, false);
+    MEDDLY::unpacked_node *nr = insetF->newUnpacked(mdd, MEDDLY::SPARSE_ONLY);
     for (int i = 0; i < nr->getNNZs(); i++) {
       if (!confirmed[level][nr->i(i)]) {
         rel->setConfirmedStates(level, nr->i(i));
@@ -243,7 +244,7 @@ MEDDLY::satimpl_opname::implicit_relation::~implicit_relation()
 }
 
 
-rel_node_handle
+    MEDDLY::rel_node_handle
 MEDDLY::satimpl_opname::implicit_relation::isUniqueNode(relation_node* n)
 {
   bool is_unique_node = true;
@@ -258,7 +259,7 @@ MEDDLY::satimpl_opname::implicit_relation::isUniqueNode(relation_node* n)
   return 0;
 }
 
-rel_node_handle
+    MEDDLY::rel_node_handle
 MEDDLY::satimpl_opname::implicit_relation::registerNode(bool is_event_top, relation_node* n)
 {
 
@@ -491,7 +492,7 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
 // ******************************************************************
 
 
-std::unordered_map<long,std::vector<rel_node_handle>>
+std::unordered_map<long,std::vector<MEDDLY::rel_node_handle>>
 MEDDLY::satimpl_opname::implicit_relation::getListOfNexts(int level, long i, relation_node **R)
 {
   std::unordered_map<long,std::vector<rel_node_handle>> jList;
@@ -1028,11 +1029,11 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   dd_edge nbdj(resF), newst(resF);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::useUnpackedNode();
+  unpacked_node *A = unpacked_node::New();
   if (mddLevel < rLevel) {
     A->initRedundant(arg1F, rLevel, mdd, true);
   } else {
-    A->initFromNode(arg1F, mdd, true);
+    arg1F->unpackNode(A, mdd, FULL_ONLY);
   }
 
   //Re-Think
@@ -1393,11 +1394,11 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
 
   unpacked_node* nb = unpacked_node::newFull(resF, k, sz);
   // Initialize mdd reader
-  unpacked_node *mddDptrs = unpacked_node::useUnpackedNode();
+  unpacked_node *mddDptrs = unpacked_node::New();
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, true);
   } else {
-    mddDptrs->initFromNode(argF, mdd, true);
+    argF->unpackNode(mddDptrs, mdd, FULL_ONLY);
   }
 
   // Do computation
@@ -1469,11 +1470,11 @@ bool isIntersectionEmpty(
   // unpack nodes
   MEDDLY::unpacked_node* unp_A =
     mddF->getNodeLevel(node_A) >= mddF->getNodeLevel(node_B)
-    ? MEDDLY::unpacked_node::newFromNode(mddF, node_A, true)
+    ? mddF->newUnpacked(node_A, MEDDLY::FULL_ONLY)
     : MEDDLY::unpacked_node::newRedundant(mddF, mddF->getNodeLevel(node_B), node_A, true);
   MEDDLY::unpacked_node* unp_B =
     mddF->getNodeLevel(node_B) >= mddF->getNodeLevel(node_A)
-    ? MEDDLY::unpacked_node::newFromNode(mddF, node_B, true)
+    ? mddF->newUnpacked(node_B, MEDDLY::FULL_ONLY)
     : MEDDLY::unpacked_node::newRedundant(mddF, mddF->getNodeLevel(node_A), node_B, true);
 
   // compute result
@@ -1594,20 +1595,20 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   const int constraint_level = argF->getNodeLevel(constraint);
 
   // Initialize mdd reader
-  unpacked_node *mddDptrs = unpacked_node::useUnpackedNode();
+  unpacked_node *mddDptrs = unpacked_node::New();
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, true);
   } else {
-    mddDptrs->initFromNode(argF, mdd, true);
+    argF->unpackNode(mddDptrs, mdd, FULL_ONLY);
   }
   MEDDLY_DCASSERT(!mddDptrs->isExtensible());
 
   // Initialize constraint reader
-  unpacked_node* consDptrs = unpacked_node::useUnpackedNode();
+  unpacked_node* consDptrs = unpacked_node::New();
   if (constraint_level < k) {
     consDptrs->initRedundant(argF, k, constraint, true);
   } else {
-    consDptrs->initFromNode(argF, constraint, true);
+    argF->unpackNode(consDptrs, constraint, FULL_ONLY);
   }
 
   // Initialize writer for result node, nb.
@@ -1685,11 +1686,11 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
   const int level = nb.getLevel();
 
   // Initialize constraint reader
-  unpacked_node* consDptrs = unpacked_node::useUnpackedNode();
+  unpacked_node* consDptrs = unpacked_node::New();
   if (constraint_level < level) {
     consDptrs->initRedundant(arg1F, level, constraint, true);
   } else {
-    consDptrs->initFromNode(arg1F, constraint, true);
+    arg1F->unpackNode(consDptrs, constraint, FULL_ONLY);
   }
   const node_handle cons_ext_d = consDptrs->isExtensible() ? consDptrs->ext_d() : 0;
 
@@ -1848,19 +1849,19 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   dd_edge nbdj(resF), newst(resF);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::useUnpackedNode();
+  unpacked_node *A = unpacked_node::New();
   if (mddLevel < rLevel) {
     A->initRedundant(arg1F, rLevel, mdd, true);
   } else {
-    A->initFromNode(arg1F, mdd, true);
+    arg1F->unpackNode(A, mdd, FULL_ONLY);
   }
 
   // Initialize constraint reader
-  unpacked_node* consDptrs = unpacked_node::useUnpackedNode();
+  unpacked_node* consDptrs = unpacked_node::New();
   if (constraint_level < rLevel) {
     consDptrs->initRedundant(arg1F, rLevel, constraint, true);
   } else {
-    consDptrs->initFromNode(arg1F, constraint, true);
+    arg1F->unpackNode(consDptrs, constraint, FULL_ONLY);
   }
   const node_handle cons_ext_d = consDptrs->isExtensible() ? consDptrs->ext_d() : 0;
 

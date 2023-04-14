@@ -97,8 +97,8 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    return expert_forest::bool_Tencoder::value2handle(
-      !expert_forest::bool_Tencoder::handle2value(a)
+    return bool_Tencoder::value2handle(
+      !bool_Tencoder::handle2value(a)
     );
   }
 
@@ -112,7 +112,7 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
   bool addRedundentNode=(resF->isQuasiReduced() && level>1);
 
   // Initialize unpacked nodes
-  unpacked_node* A = unpacked_node::newFromNode(argF, a, true);
+  unpacked_node* A = argF->newUnpacked(a, FULL_ONLY);
   unpacked_node* C = unpacked_node::newFull(resF, level, size);
 
   // recurse
@@ -168,15 +168,15 @@ void MEDDLY::compl_mxd::computeDDEdge(const dd_edge& a, dd_edge& b, bool userFla
 MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
 {
   if (0==k) {
-    return expert_forest::bool_Tencoder::value2handle(
-      !expert_forest::bool_Tencoder::handle2value(a)
+    return bool_Tencoder::value2handle(
+      !bool_Tencoder::handle2value(a)
     );
   }
   if (argF->isTerminalNode(a) &&
       resF->isFullyReduced())
   {
-    return expert_forest::bool_Tencoder::value2handle(
-      !expert_forest::bool_Tencoder::handle2value(a)
+    return bool_Tencoder::value2handle(
+      !bool_Tencoder::handle2value(a)
     );
   }
   // Check compute table
@@ -202,10 +202,10 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
   const unsigned size = unsigned(resF->getLevelSize(k));
   const int aLevel = argF->getNodeLevel(a);
   MEDDLY_DCASSERT(!isLevelAbove(aLevel, k));
-  unpacked_node* A = unpacked_node::useUnpackedNode();
+  unpacked_node* A = unpacked_node::New();
   bool canSave = true;
   if (aLevel == k) {
-    A->initFromNode(argF, a, true);
+    argF->unpackNode(A, a, FULL_ONLY);
   } else if (k>0 || argF->isFullyReduced()) {
     A->initRedundant(argF, k, a, true);
   } else {
