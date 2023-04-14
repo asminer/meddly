@@ -6,7 +6,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -118,7 +118,7 @@ bool MEDDLY::evmxd_pluslong::isRedundant(const unpacked_node &nb) const
 
 bool MEDDLY::evmxd_pluslong::isIdentityEdge(const unpacked_node &nb, int i) const
 {
-  return isIdentityEdgeTempl<OP>(nb, i); 
+  return isIdentityEdgeTempl<OP>(nb, i);
 }
 
 void MEDDLY::evmxd_pluslong::normalize(unpacked_node &nb, long& ev) const
@@ -230,7 +230,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_iterator::next()
 
   int k = -1;
   node_handle down = 0;
-  for (;;) { 
+  for (;;) {
     nzp[k]++;
     if (nzp[k] < path[k].getNNZs()) {
       index[k] = path[k].i(nzp[k]);
@@ -277,7 +277,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_iterator::first(int k, node_handle down)
         path[k].initIdentity(F, k, index[-k], 0L, down, false);
       }
     } else {
-      path[k].initFromNode(F, down, false);
+      F->unpackNode(path+k, down, SPARSE_ONLY);
     }
     nzp[k] = 0;
     index[k] = path[k].i(0);
@@ -328,7 +328,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedrow_iter::next()
 
   node_handle down = 0;
   // Only try to advance the column, because the row is fixed.
-  for (int k=-1; k>=-maxLevel; k--) { 
+  for (int k=-1; k>=-maxLevel; k--) {
     for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
       index[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
@@ -396,12 +396,12 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedrow_iter::first(int k, node_handle dow
       path[k].initIdentity(F, k, index[k], 0L, cdown, false);
     }
     return true;
-  } 
+  }
 
   // Proper node here.
-  // cycle through it and recurse... 
+  // cycle through it and recurse...
 
-  path[k].initFromNode(F, cdown, false);
+  F->unpackNode(path+k, cdown, SPARSE_ONLY);
 
   for (int z=0; z<path[k].getNNZs(); z++) {
     long ev;
@@ -454,7 +454,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::next()
 
   node_handle down = 0;
   // Only try to advance the row, because the column is fixed.
-  for (int k=1; k<=maxLevel; k++) { 
+  for (int k=1; k<=maxLevel; k++) {
     for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
       index[k] = path[k].i(nzp[k]);
       down = path[k].d(nzp[k]);
@@ -541,8 +541,8 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::first(int k, node_handle dow
   }
 
   // Level is not skipped.
-  path[k].initFromNode(F, down, false);
-  
+  F->unpackNode(path+k, down, SPARSE_ONLY);
+
   for (int z=0; z<path[k].getNNZs(); z++) {
     index[k] = path[k].i(z);
     long ev;
