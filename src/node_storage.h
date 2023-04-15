@@ -22,13 +22,13 @@
 #include "policies.h"
 
 namespace MEDDLY {
-  class node_storage_style;
-  class node_storage;
+    class node_storage_style;
+    class node_storage;
 
-  class expert_forest;
-  class memory_manager_style;
-  class output;
-  class unpacked_node;
+    class expert_forest;
+    class memory_manager_style;
+    class output;
+    class unpacked_node;
 };
 
 // ******************************************************************

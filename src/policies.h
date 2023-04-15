@@ -125,12 +125,12 @@ namespace MEDDLY {
         these are the possible ranges for a function.
     */
     enum class range_type {
-      /// boolean-valued functions.
-      BOOLEAN,
-      /// integer-valued functions.
-      INTEGER,
-      /// real-valued functions.
-      REAL
+        /// boolean-valued functions.
+        BOOLEAN,
+        /// integer-valued functions.
+        INTEGER,
+        /// real-valued functions.
+        REAL
     };
 
     // ******************************************************************
@@ -139,15 +139,15 @@ namespace MEDDLY {
 
     /// Edge annotation mechanism.
     enum class edge_labeling {
-      /// Edges unlabeled, all values stored in distinct terminals.
-      MULTI_TERMINAL,
-      /// Edges labeled, values summed along path.
-      EVPLUS,
-      /// Special case of EVPLUS for indexed sets.
-      INDEX_SET,
-      /// Edges labeled, values multiplied along path.
-      EVTIMES
-      // TBD: there may be others in the future :^)
+        /// Edges unlabeled, all values stored in distinct terminals.
+        MULTI_TERMINAL,
+        /// Edges labeled, values summed along path.
+        EVPLUS,
+        /// Special case of EVPLUS for indexed sets.
+        INDEX_SET,
+        /// Edges labeled, values multiplied along path.
+        EVTIMES
+        // TBD: there may be others in the future :^)
     };
 
 
@@ -175,35 +175,37 @@ struct MEDDLY::policies {
         PESSIMISTIC
     };
 
-    // Supported variable swap strategies.
-    // Work for relations only.
+    /// Supported variable swap strategies.
+    /// Work for relations only.
     enum class variable_swap_type {
-  	  // Swap adjacent variables in one go.
-  	  VAR,
-  	  // Swap adjacent variables through swapping levels 4 time.
-  	  // Do not work for fully-identity reduced relations.
-  	  LEVEL
+  	    /// Swap adjacent variables in one go.
+  	    VAR,
+  	    /// Swap adjacent variables through swapping levels 4 time.
+  	    /// Do not work for fully-identity reduced relations.
+  	    LEVEL
     };
 
+    /// Schedule heuristic for reordering via swaps.
     enum class reordering_type {
-      // Always choose the lowest swappable inversion
-      LOWEST_INVERSION,
-      // Always choose the highest swappable inversion
-      HIGHEST_INVERSION,
-      // Sink down the "heaviest" variables
-      SINK_DOWN,
-      // Bubble up the "lightest" variables
-      BRING_UP,
-      // Always choose the swappabel inversion where the variable on the top
-      // has the fewest associated nodes
-      LOWEST_COST,
-      // Always choose the swappable inversion that will result in
-      // the lowest memory consumption
-      LOWEST_MEMORY,
-      // Choose the swappable inversion randomly
-      RANDOM,
-      // Always choose the swappable inversion with the lowest average reference count
-      LARC
+        /// Always choose the lowest swappable inversion
+        LOWEST_INVERSION,
+        /// Always choose the highest swappable inversion
+        HIGHEST_INVERSION,
+        /// Sink down the "heaviest" variables
+        SINK_DOWN,
+        /// Bubble up the "lightest" variables
+        BRING_UP,
+        /// Always choose the swappabel inversion where the variable on the top
+        /// has the fewest associated nodes
+        LOWEST_COST,
+        /// Always choose the swappable inversion that will result in
+        /// the lowest memory consumption
+        LOWEST_MEMORY,
+        /// Choose the swappable inversion randomly
+        RANDOM,
+        /// Always choose the swappable inversion with the
+        /// lowest average reference count
+        LARC
     };
 
     /// Defaults: how may we store nodes for all levels in the forest.
@@ -353,9 +355,6 @@ struct MEDDLY::policies {
         swap = variable_swap_type::LEVEL;
     }
 
+};
 
-
-}; // end of struct policies
-
-// end of struct policies
 #endif

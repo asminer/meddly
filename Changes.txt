@@ -1,0 +1,96 @@
+
+Interface changes (aside from moving header files around)
+======================================================================
+
+Encoders that were in expert_forest are now stand-alone classes
+in encoders.h
+
+unpacked_node::storage_style is removed in favor of node_storage_flags.
+
+
+All calls to
+    node_storage::moveNodeOffset(node, old, new)
+should be replaced with
+    node_storage::getParent()->moveNodeOffset(node, old, new)
+
+
+All calls to
+    un->initFromNode(f, nh, howstored)
+
+should now be to
+    f->unpackNode(un, nh, howstored)
+
+
+All calls to
+    unpacked_node::useUnpackedNode()
+should now be
+    unpacked_node::New()
+
+
+All calls to
+    unpacked_node::newFromNode(f, nh, howstored)
+should now be to
+    expert_forest::newUnpacked(nh, howstored)
+
+    howstored is one of:
+        FULL_ONLY       (old 'true')
+        SPARSE_ONLY     (old 'false')
+        FULL_OR_SPARSE
+
+
+Moved lots of enums and made them enum class.
+
+
+TBD: change calls to
+    domain::createForest(...)
+to ?
+    static within forest class
+
+
+TBD: global functions
+    createDomain(...)
+become static within domain class e.g.
+    domain::create(...)
+
+
+
+TBD: getOperation -> (static?) method inside opcode classes?
+
+    unary_operation* getOperation(const unary_opname* code, arg, res)
+becomes
+    unary_operation* code->getOperation(arg, res)
+
+    binary_operation* getOperation(const binary_opname* code, arg1, arg2, res)
+becomes
+    binary_operation* code->getOperation(arg1, arg2, res)
+
+
+
+Files that need updating / cleanup
+------------------------------------------------------------
+dd_edge.h               dd_edge.cc
+defines.h
+domain.h                domain.cc
+encoders.h              encoders.cc
+forest.h                forest.cc
+hash_stream.h
+heap.h
+impl_unique_table.h     impl_unique_table.cc
+loggers.h               loggers.cc
+memstats.h              memstats.cc
+node_headers.h          node_headers.cc
+relation_node.h         relation_node.cc
+timer.h (move?)
+unique_table.h          unique_table.cc
+unpacked_node.h         unpacked_node.cc
+variable.h              variable.cc
+varorder.h              varorder.cc
+
+
+In good shape
+------------------------------------------------------------
+error.h                 error.cc
+io.h                    io.cc
+node_storage.h          node_storage.cc
+policies.h              policies.cc
+

@@ -42,26 +42,26 @@ MEDDLY::input::~input()
 
 void MEDDLY::input::stripWS()
 {
-  bool comment = false;
-  for (;;) {
-    int c = get_char();
-    if (EOF == c) throw error(error::INVALID_FILE, __FILE__, __LINE__);
-    if ('\n'== c) {
-      comment = false;
-      continue;
+    bool comment = false;
+    for (;;) {
+        int c = get_char();
+        if (EOF == c) throw error(error::INVALID_FILE, __FILE__, __LINE__);
+        if ('\n'== c) {
+            comment = false;
+            continue;
+        }
+        if (comment) continue;
+        if (' ' == c) continue;
+        if ('\t' == c) continue;
+        if ('\r' == c) continue;
+        if ('#' == c) {
+            comment = true;
+            continue;
+        }
+        // not whitespace
+        unget(c);
+        return;
     }
-    if (comment) continue;
-    if (' ' == c) continue;
-    if ('\t' == c) continue;
-    if ('\r' == c) continue;
-    if ('#' == c) {
-      comment = true;
-      continue;
-    }
-    // not whitespace
-    unget(c);
-    return;
-  }
 }
 
 void MEDDLY::input::consumeKeyword(const char* keyword)
@@ -80,7 +80,7 @@ void MEDDLY::input::consumeKeyword(const char* keyword)
 
 MEDDLY::FILE_input::FILE_input(FILE* _inf)
 {
-  inf = _inf;
+    inf = _inf;
 }
 
 MEDDLY::FILE_input::~FILE_input()
@@ -90,45 +90,45 @@ MEDDLY::FILE_input::~FILE_input()
 
 bool MEDDLY::FILE_input::eof() const
 {
-  return feof(inf);
+    return feof(inf);
 }
 
 int MEDDLY::FILE_input::get_char()
 {
-  // TBD - deal with errors
-  return fgetc(inf);
+    // TBD - deal with errors
+    return fgetc(inf);
 }
 
 void MEDDLY::FILE_input::unget(char x)
 {
-  if (EOF==ungetc(x, inf)) {
-    throw error(error::COULDNT_READ, __FILE__, __LINE__);
-    // probably not the most descriptive error message,
-    // but it was in fact an error on file input
-  }
+    if (EOF==ungetc(x, inf)) {
+        throw error(error::COULDNT_READ, __FILE__, __LINE__);
+        // probably not the most descriptive error message,
+        // but it was in fact an error on file input
+    }
 }
 
 long MEDDLY::FILE_input::get_integer()
 {
-  long data;
-  if (fscanf(inf, "%ld", &data) != 1) {
-    throw error(error::INVALID_FILE, __FILE__, __LINE__);
-  }
-  return data;
+    long data;
+    if (fscanf(inf, "%ld", &data) != 1) {
+        throw error(error::INVALID_FILE, __FILE__, __LINE__);
+    }
+    return data;
 }
 
 double MEDDLY::FILE_input::get_real()
 {
-  double data;
-  if (fscanf(inf, "%lf", &data) != 1) {
-    throw error(error::INVALID_FILE, __FILE__, __LINE__);
-  }
-  return data;
+    double data;
+    if (fscanf(inf, "%lf", &data) != 1) {
+        throw error(error::INVALID_FILE, __FILE__, __LINE__);
+    }
+    return data;
 }
 
 size_t MEDDLY::FILE_input::read(size_t bytes, unsigned char* buffer)
 {
-  return fread(buffer, 1, bytes, inf);
+    return fread(buffer, 1, bytes, inf);
 }
 
 // ******************************************************************
@@ -143,45 +143,45 @@ MEDDLY::istream_input::istream_input(std::istream &inf) : in(inf)
 
 MEDDLY::istream_input::~istream_input()
 {
-  // DO NOT close file, user may want it!
+    // DO NOT close file, user may want it!
 }
 
 bool MEDDLY::istream_input::eof() const
 {
-  return in.eof();
+    return in.eof();
 }
 
 int MEDDLY::istream_input::get_char()
 {
-  return in.get();
-  // TBD - how to deal with errors?
+    return in.get();
+    // TBD - how to deal with errors?
 }
 
 void MEDDLY::istream_input::unget(char x)
 {
-  in.unget();
+    in.unget();
 }
 
 long MEDDLY::istream_input::get_integer()
 {
-  long data;
-  in >> data;
-  // TBD - how to deal with errors?
-  return data;
+    long data;
+    in >> data;
+    // TBD - how to deal with errors?
+    return data;
 }
 
 double MEDDLY::istream_input::get_real()
 {
-  double data;
-  in >> data;
-  // TBD - how to deal with errors?
-  return data;
+    double data;
+    in >> data;
+    // TBD - how to deal with errors?
+    return data;
 }
 
 size_t MEDDLY::istream_input::read(size_t bytes, unsigned char* buffer)
 {
-  in.read((char*) buffer, long(bytes));
-  return size_t(in.gcount());
+    in.read((char*) buffer, long(bytes));
+    return size_t(in.gcount());
 }
 
 
@@ -201,33 +201,33 @@ MEDDLY::output::~output()
 
 void MEDDLY::output::put_mem(size_t m, bool human)
 {
-  if ((!human) || (m<1024)) {
-    put((unsigned long)m);
-    put(" bytes");
-    return;
-  }
-  double approx = m;
-  approx /= 1024;
-  if (approx < 1024) {
+    if ((!human) || (m<1024)) {
+        put((unsigned long)m);
+        put(" bytes");
+        return;
+    }
+    double approx = m;
+    approx /= 1024;
+    if (approx < 1024) {
+        put(approx, 3, 2, 'f');
+        put(" Kbytes");
+        return;
+    }
+    approx /= 1024;
+    if (approx < 1024) {
+        put(approx, 3, 2, 'f');
+        put(" Mbytes");
+        return;
+    }
+    approx /= 1024;
+    if (approx < 1024) {
+        put(approx, 3, 2, 'f');
+        put(" Gbytes");
+        return;
+    }
+    approx /= 1024;
     put(approx, 3, 2, 'f');
-    put(" Kbytes");
-    return;
-  }
-  approx /= 1024;
-  if (approx < 1024) {
-    put(approx, 3, 2, 'f');
-    put(" Mbytes");
-    return;
-  }
-  approx /= 1024;
-  if (approx < 1024) {
-    put(approx, 3, 2, 'f');
-    put(" Gbytes");
-    return;
-  }
-  approx /= 1024;
-  put(approx, 3, 2, 'f');
-  put(" Tbytes");
+    put(" Tbytes");
 }
 
 // ******************************************************************
@@ -238,77 +238,77 @@ void MEDDLY::output::put_mem(size_t m, bool human)
 
 MEDDLY::FILE_output::FILE_output(FILE* _outf)
 {
-  outf = _outf;
+    outf = _outf;
 }
 
 MEDDLY::FILE_output::~FILE_output()
 {
-  // DON'T close the file, the user might need to add more to it
+    // DON'T close the file, the user might need to add more to it
 }
 
 void MEDDLY::FILE_output::put(char x)
 {
-  if (EOF == fputc(x, outf)) {
-    throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
-  }
+    if (EOF == fputc(x, outf)) {
+        throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
+    }
 }
 
 void MEDDLY::FILE_output::put(const char* x, int w)
 {
-  if (fprintf(outf, "%*s", w, x)<0) {
-    throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
-  }
+    if (fprintf(outf, "%*s", w, x)<0) {
+        throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
+    }
 }
 
 void MEDDLY::FILE_output::put(long x, int w)
 {
-  if (fprintf(outf, "%*ld", w, x)<0) {
-    throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
-  }
+    if (fprintf(outf, "%*ld", w, x)<0) {
+        throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
+    }
 }
 
 void MEDDLY::FILE_output::put(unsigned long x, int w)
 {
-  if (fprintf(outf, "%*lu", w, x)<0) {
-    throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
-  }
+    if (fprintf(outf, "%*lu", w, x)<0) {
+        throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
+    }
 }
 
 void MEDDLY::FILE_output::put_hex(unsigned long x, int w)
 {
-  if (fprintf(outf, "%*lx", w, x)<0) {
-    throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
-  }
+    if (fprintf(outf, "%*lx", w, x)<0) {
+        throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
+    }
 }
 
 
 void MEDDLY::FILE_output::put(double x, int w, int p, char f)
 {
-  int out=-1;
-  switch (f) {
-    case 'e':
+    int out=-1;
+    switch (f) {
+        case 'e':
               out = fprintf(outf, "%*.*e", w, p, x);
               break;
-    case 'f':
+        case 'f':
               out = fprintf(outf, "%*.*f", w, p, x);
               break;
-    default:  // 'g' is the default
+        default:  // 'g' is the default
               out = fprintf(outf, "%*.*g", w, p, x);
               break;
-  }
-  if (out < 0) {
-    throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
-  }
+    }
+    if (out < 0) {
+        throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
+    }
 }
 
 size_t MEDDLY::FILE_output::write(size_t bytes, const unsigned char* buffer)
 {
-  return fwrite(buffer, 1, bytes, outf);
+    return fwrite(buffer, 1, bytes, outf);
 }
 
 void MEDDLY::FILE_output::flush()
 {
-  fflush(outf);
+    fflush(outf);
 }
 
 // ******************************************************************
@@ -323,76 +323,76 @@ MEDDLY::ostream_output::ostream_output(std::ostream &outs) : out(outs)
 
 MEDDLY::ostream_output::~ostream_output()
 {
-  // DON'T close the file, the user might need to add more to it
+    // DON'T close the file, the user might need to add more to it
 }
 
 void MEDDLY::ostream_output::put(char x)
 {
-  out.put(x);
-  // TBD - what about errors?
+    out.put(x);
+    // TBD - what about errors?
 }
 
 void MEDDLY::ostream_output::put(const char* x, int w)
 {
-  out.width(w);
-  out << x;
-  // TBD - what about errors?
+    out.width(w);
+    out << x;
+    // TBD - what about errors?
 }
 
 void MEDDLY::ostream_output::put(long x, int w)
 {
-  out.setf(std::ios::dec, std::ios::basefield);
-  out.width(w);
-  out << x;
-  // TBD - what about errors?
+    out.setf(std::ios::dec, std::ios::basefield);
+    out.width(w);
+    out << x;
+    // TBD - what about errors?
 }
 
 void MEDDLY::ostream_output::put(unsigned long x, int w)
 {
-  out.setf(std::ios::dec, std::ios::basefield);
-  out.width(w);
-  out << x;
-  // TBD - what about errors?
+    out.setf(std::ios::dec, std::ios::basefield);
+    out.width(w);
+    out << x;
+    // TBD - what about errors?
 }
 
 void MEDDLY::ostream_output::put_hex(unsigned long x, int w)
 {
-  out.setf(std::ios::hex, std::ios::basefield);
-  out.width(w);
-  out << x;
-  // TBD - what about errors?
+    out.setf(std::ios::hex, std::ios::basefield);
+    out.width(w);
+    out << x;
+    // TBD - what about errors?
 }
 
 void MEDDLY::ostream_output::put(double x, int w, int p, char f)
 {
-  switch (f) {
-    case 'e':
+    switch (f) {
+        case 'e':
               out.setf(std::ios_base::scientific, std::ios_base::floatfield);
               break;
 
-    case 'f':
+        case 'f':
               out.setf(std::ios_base::fixed, std::ios_base::floatfield);
               break;
 
-    default:  // g is the default
+        default:  // g is the default
               out.setf(std::ios_base::fmtflags(0), std::ios_base::floatfield);
               break;
-  }
-  out.setf(std::ios::dec, std::ios::basefield);
-  out.precision(p);
-  out.width(w);
-  out << x;
+    }
+    out.setf(std::ios::dec, std::ios::basefield);
+    out.precision(p);
+    out.width(w);
+    out << x;
 }
 
 size_t MEDDLY::ostream_output::write(size_t bytes, const unsigned char* buffer)
 {
-  out.write((const char*) buffer, long(bytes));
-  // Not sure how to catch this one, so...
-  return bytes;
+    out.write((const char*) buffer, long(bytes));
+    // Not sure how to catch this one, so...
+    return bytes;
 }
 
 void MEDDLY::ostream_output::flush()
 {
-  out.flush();
+    out.flush();
 }
 
