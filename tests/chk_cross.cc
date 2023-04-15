@@ -234,9 +234,9 @@ int main(int argc, const char** argv)
   domain* myd = createDomainBottomUp(vars, 6);
   assert(myd);
 
-  forest* mdd = myd->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mdd = myd->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   assert(mdd);
-  forest* mxd = myd->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mxd = myd->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   assert(mxd);
 
   for (int m=1; m<=20; m++) {

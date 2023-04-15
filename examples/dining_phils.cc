@@ -498,24 +498,24 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
   assert(d != NULL);
 
   // Set up MDD options
-  forest::policies pmdd(false);
+  policies pmdd(false);
   if (sw.pessimistic) pmdd.setPessimistic();
   else                pmdd.setOptimistic();
 
   // Create an MDD forest in this domain (to store states)
   forest* mdd =
-    d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL, pmdd);
+    d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
   assert(mdd != NULL);
   mdd->setLogger(LOG, "MDD");
 
   // Set up MXD options
-  forest::policies pmxd(true);
+  policies pmxd(true);
   if (sw.pessimistic) pmdd.setPessimistic();
   else                pmdd.setOptimistic();
 
   // Create a MXD forest in domain (to store transition diagrams)
   forest* mxd =
-    d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL, pmxd);
+    d->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmxd);
   assert(mxd != NULL);
   mxd->setLogger(LOG, "MxD");
 
@@ -671,7 +671,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
   if (sw.printReachableStates) {
     // Create a EV+MDD forest in this domain (to store index set)
     forest* evplusmdd =
-      d->createForest(false, forest::INTEGER, forest::INDEX_SET);
+      d->createForest(false, range_type::INTEGER, edge_labeling::INDEX_SET);
     assert(evplusmdd != NULL);
 
     // Test Convert MDD to Index Set EV+MDD

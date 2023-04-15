@@ -38,9 +38,9 @@ int main(int argc, char *argv[])
   int height[sz] = {0, 1, 2, 3};
   forest_type f = EVMDD;
 #if 0
-  reduction_rule r = forest::QUASI_REDUCED;
+  reduction_rule r = reduction_rule::QUASI_REDUCED;
 #else
-  reduction_rule r = forest::FULLY_REDUCED;
+  reduction_rule r = reduction_rule::FULLY_REDUCED;
 #endif
   node_storage s = FULL_OR_SPARSE_STORAGE;
 

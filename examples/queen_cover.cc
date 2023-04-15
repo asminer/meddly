@@ -58,22 +58,22 @@ dd_edge** qidp;
 dd_edge** qidm;
 
 
-forest* buildQueenForest(forest::policies &p)
+forest* buildQueenForest(policies &p)
 {
   printf("Initializing domain and forest\n");
   const char* ndp = "unknown node deletion";
   if (!p.useReferenceCounts) {
     ndp = "mark and sweep node deletion";
   } else switch (p.deletion) {
-    case forest::policies::NEVER_DELETE:
+      case policies::node_deletion::NEVER:
         ndp = "never delete";
         break;
 
-    case forest::policies::OPTIMISTIC_DELETION:
+      case policies::node_deletion::OPTIMISTIC:
         ndp = "optimistic node deletion";
         break;
 
-    case forest::policies::PESSIMISTIC_DELETION:
+      case policies::node_deletion::PESSIMISTIC:
         ndp = "pessimistic node deletion";
         break;
   }
@@ -87,7 +87,7 @@ forest* buildQueenForest(forest::policies &p)
   domain* d = createDomainBottomUp(vars, N*N);
   assert(d);
   forest* f =
-    d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL, p);
+    d->createForest(false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
   assert(f);
 
   delete[] vars;
@@ -248,7 +248,7 @@ int main(int argc, const char** argv)
   }
   initialize(INIT);
 
-  forest::policies p(false);
+  policies p(false);
   if (mark_sweep) {
     p.useReferenceCounts = false;
   } else if (pessimistic) {

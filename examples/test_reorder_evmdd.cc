@@ -310,12 +310,12 @@ int main(int argc, char *argv[])
   assert(d != 0);
 
   // Create a MTMDD forest in this domain
-  forest::policies p1(false);
+  policies p1(false);
   p1.setPessimistic();
 #if USE_REALS
-  forest* evmdd = d->createForest(false, forest::REAL, forest::EVTIMES, p1);
+  forest* evmdd = d->createForest(false, range_type::REAL, edge_labeling::EVTIMES, p1);
 #else
-  forest* evmdd = d->createForest(false, forest::INTEGER, forest::EVPLUS, p1);
+  forest* evmdd = d->createForest(false, range_type::INTEGER, edge_labeling::EVPLUS, p1);
 #endif
   assert(evmdd != 0);
 

@@ -865,10 +865,10 @@ void InitForest() {
   CheckVars();
 #if 1
   relation =
-    CreateForest(d, MXD, false, forest::IDENTITY_REDUCED, FULL_OR_SPARSE_STORAGE);
+    CreateForest(d, MXD, false, reduction_rule::IDENTITY_REDUCED, FULL_OR_SPARSE_STORAGE);
 #else
   relation =
-    CreateForest(d, MXD, false, forest::IDENTITY_REDUCED, FULL_STORAGE);
+    CreateForest(d, MXD, false, reduction_rule::IDENTITY_REDUCED, FULL_STORAGE);
 #endif
 
   if (INVALID_FOREST == relation) {

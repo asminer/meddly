@@ -286,7 +286,7 @@ int main()
   // Build NSF for possible "1-step" moves
   //
   timer watch;
-  forest* mxd = D->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mxd = D->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   watch.note_time();
   Square1NSF(nsf);
@@ -300,9 +300,9 @@ int main()
   //
   // Build initial configuration
   //
-  forest::policies p(true);
+  policies p(true);
 //  p.setPessimistic();
-  forest* mdd = D->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mdd = D->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge initial(mdd);
   int perm = 0;
   for (int i=1; i<=Vars; i++) {

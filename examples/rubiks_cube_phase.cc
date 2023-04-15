@@ -596,10 +596,10 @@ void RubiksCubeModel::destroy()
 
 void RubiksCubeModel::buildForests()
 {
-  forest::policies p(false);
+  policies p(false);
   p.setSinkDown();
 
-  _state = _domain->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL, p);
+  _state = _domain->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
   if (_state == nullptr) {
     cerr << "Couldn't create forest of states" << endl;
     exit(1);
@@ -607,7 +607,7 @@ void RubiksCubeModel::buildForests()
   cout << "Created forest of states" << endl;
 
   for (int i = 0; i < _config.num_phases; i++) {
-    forest* relation = _domain->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
+    forest* relation = _domain->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
     if (relation == nullptr) {
       cerr << "Couldn't create forest of relations" << endl;
       exit(1);

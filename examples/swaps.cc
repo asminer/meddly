@@ -254,8 +254,8 @@ void runWithArgs(int N, char method, bool alternate)
   int* initial = new int[N+1];
   initial[0] = 0;
   for (int i=1; i<=N; i++) initial[i] = i-1;
-  forest::policies p(false);
-  forest* mdd = D->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL, p);
+  policies p(false);
+  forest* mdd = D->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
   delete[] initial;
@@ -263,7 +263,7 @@ void runWithArgs(int N, char method, bool alternate)
   /*
      Build next-state function
   */
-  forest* mxd = D->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mxd = D->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   satpregen_opname::pregen_relation* ensf = 0;
   specialized_operation* sat = 0;

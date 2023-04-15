@@ -128,10 +128,10 @@ long buildQueenSolutions(int N)
   domain* d = createDomainBottomUp(varsizes, N);
   assert(d);
   delete[] varsizes;
-  forest::policies p(false);
+  policies p(false);
   p.setPessimistic();
   forest* f =
-    d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL, p);
+    d->createForest(false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
   assert(f);
 
   printf(" q");

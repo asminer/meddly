@@ -314,16 +314,6 @@ inline const char* MEDDLY::dd_edge::getLabel() const {
   return label;
 }
 
-/*
-inline double MEDDLY::dd_edge::getCardinality() const {
-  double c;
-  apply(CARDINALITY, *this, c);
-  return c;
-}
-*/
-
-
-
 inline bool MEDDLY::dd_edge::operator==(const MEDDLY::dd_edge& e) const {
   if (parent != e.parent) return false;
   return (node == e.node) && (raw_value == e.raw_value);

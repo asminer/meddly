@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
 
   // Create a forest to store MTMDDs. Terminal values being integers.
   forest *f = 0;
-  if (0 == (f = d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL))) {
+  if (0 == (f = d->createForest(false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL))) {
     fprintf(stderr, "Couldn't create forest\n");
     return 1;
   }
@@ -373,17 +373,17 @@ void printElements(FILE* strm, dd_edge& e)
       fprintf(strm, " %d", minterm[i]);
     }
     switch ((e.getForest())->getRangeType()) {
-      case forest::BOOLEAN:
+      case range_type::BOOLEAN:
         fprintf(strm, " --> T]\n");
         break;
-      case forest::INTEGER:
+      case range_type::INTEGER:
         {
           int val = 0;
           iter.getValue(val);
           fprintf(strm, " --> %d]\n", val);
         }
         break;
-      case forest::REAL:
+      case range_type::REAL:
         {
           float val = 0;
           iter.getValue(val);

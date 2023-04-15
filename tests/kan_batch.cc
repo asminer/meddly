@@ -125,8 +125,8 @@ bool checkRS(int N, const char* rs[])
 
   for (int i=15; i>=0; i--) sizes[i] = N+1;
   domain* d = createDomainBottomUp(sizes, 16);
-  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
-  forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mdd = d->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mxd = d->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 
   dd_edge reachable = buildReachsetSAT(mdd, mxd, N);
 

@@ -26,6 +26,9 @@
 #include "memstats.h"
 #include "variable.h"
 #include "varorder.h"
+#include "domain.h"
+#include "forest.h"
+#include "relation_node.h"
 
 #else
 
@@ -37,5 +40,8 @@
 #include "meddly/memstats.h"
 #include "meddly/variable.h"
 #include "meddly/varorder.h"
+#include "meddly/domain.h"
+#include "meddly/forest.h"
+#include "meddly/relation_node.h"
 
 #endif

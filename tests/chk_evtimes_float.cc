@@ -97,8 +97,8 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
   forest* f = out.getForest();
   int Vars = f->getDomain()->getNumVariables();
 
-  if (f->getRangeType() != forest::BOOLEAN &&
-      f->getRangeType() != forest::REAL) {
+  if (f->getRangeType() != range_type::BOOLEAN &&
+      f->getRangeType() != range_type::REAL) {
     printf("Invalid forest: does not store booleans or reals!\n\n");
     exit(1);
   }
@@ -118,7 +118,7 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
     adjustMinterms(minterm, minprime, Vars+1);
     float f_value = float(Equilikely(1, varSize));
     dd_edge temp(out);
-    if (f->getRangeType() == forest::BOOLEAN) {
+    if (f->getRangeType() == range_type::BOOLEAN) {
       f->createEdge(&minterm, &minprime, 1, temp);
     } else {
       f->createEdge(&minterm, &minprime, &f_value, 1, temp);
@@ -136,15 +136,15 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
 void writeType(const forest* f)
 {
   switch (f->getRangeType()) {
-    case forest::BOOLEAN:
+    case range_type::BOOLEAN:
       printf("bool ");
       break;
 
-    case forest::INTEGER:
+    case range_type::INTEGER:
       printf("int. ");
       break;
 
-    case forest::REAL:
+    case range_type::REAL:
       printf("real ");
       break;
 
@@ -155,15 +155,15 @@ void writeType(const forest* f)
 
   switch(f->getReductionRule()) {
 
-    case forest::policies::FULLY_REDUCED:
+    case reduction_rule::FULLY_REDUCED:
       printf("FR ");
       break;
 
-    case forest::policies::QUASI_REDUCED:
+    case reduction_rule::QUASI_REDUCED:
       printf("QR ");
       break;
 
-    case forest::policies::IDENTITY_REDUCED:
+    case reduction_rule::IDENTITY_REDUCED:
       printf("IR ");
       break;
 
@@ -173,19 +173,19 @@ void writeType(const forest* f)
   }
 
   switch (f->getEdgeLabeling()) {
-    case forest::MULTI_TERMINAL:
+    case edge_labeling::MULTI_TERMINAL:
       printf(" mt");
       break;
 
-    case forest::EVPLUS:
+    case edge_labeling::EVPLUS:
       printf("ev+");
       break;
 
-    case forest::INDEX_SET:
+    case edge_labeling::INDEX_SET:
       printf("ind");
       break;
 
-    case forest::EVTIMES:
+    case edge_labeling::EVTIMES:
       printf("ev*");
       break;
 
@@ -218,14 +218,14 @@ void testEVTimesMXD(forest* srcF, forest* destF)
       buildRandomFunc(save_seed, t, srcE);
       buildRandomFunc(save_seed, t, destE);
 
-      if (srcF->getRangeType() == forest::BOOLEAN) {
-        if (destF->getRangeType() == forest::INTEGER) {
+      if (srcF->getRangeType() == range_type::BOOLEAN) {
+        if (destF->getRangeType() == range_type::INTEGER) {
           // convert destE to boolean
           dd_edge zero(destF);
           destF->createEdge(long(0), zero);
           apply(NOT_EQUAL, destE, zero, destE);
         }
-        if (destF->getRangeType() == forest::REAL) {
+        if (destF->getRangeType() == range_type::REAL) {
           // convert destE to boolean
           dd_edge zero(destF);
           destF->createEdge(float(0), zero);
@@ -346,20 +346,20 @@ int processArgs(int argc, const char** argv)
 }
 
 void addMXDforests(domain* D, forest** list, int &i,
-  forest::edge_labeling ev, forest::range_type type)
+  edge_labeling ev, range_type type)
 {
 #ifdef ENABLE_IDENTITY_REDUCED
-  forest::policies ir(true);
+  policies ir(true);
   ir.setIdentityReduced();
   list[i++] = D->createForest(1, type, ev, ir);
 #endif
 #ifdef ENABLE_FULLY_REDUCED
-  forest::policies fr(true);
+  policies fr(true);
   fr.setFullyReduced();
   list[i++] = D->createForest(1, type, ev, fr);
 #endif
 #ifdef ENABLE_QUASI_REDUCED
-  forest::policies qr(true);
+  policies qr(true);
   qr.setQuasiReduced();
   list[i++] = D->createForest(1, type, ev, qr);
 #endif
@@ -367,10 +367,10 @@ void addMXDforests(domain* D, forest** list, int &i,
 
 void addRealMXDforests(int& i, domain* D, forest** list)
 {
-  addMXDforests(D, list, i, forest::EVTIMES, forest::REAL);
-  // addMXDforests(D, list, i, forest::MULTI_TERMINAL, forest::REAL);
+  addMXDforests(D, list, i, edge_labeling::EVTIMES, range_type::REAL);
+  // addMXDforests(D, list, i, edge_labeling::MULTI_TERMINAL, range_type::REAL);
   // TBD - these are not supported yet
-//  addMXDforests(D, list, i, forest::EVPLUS, forest::REAL);
+//  addMXDforests(D, list, i, edge_labeling::EVPLUS, range_type::REAL);
   // TBD
 }
 
@@ -382,9 +382,9 @@ int makeRealMXDforests(domain* D, forest** list)
 }
 
 void addIRMXDforest(domain* D, forest** list, int &i,
-  forest::edge_labeling ev, forest::range_type type)
+  edge_labeling ev, range_type type)
 {
-  forest::policies ir(true);
+  policies ir(true);
   ir.setIdentityReduced();
   list[i++] = D->createForest(1, type, ev, ir);
 }
@@ -392,9 +392,9 @@ void addIRMXDforest(domain* D, forest** list, int &i,
 int makeIRMXDforests(domain* D, forest** list)
 {
   int i = 0;
-  addIRMXDforest(D, list, i, forest::MULTI_TERMINAL, forest::BOOLEAN);
-  addIRMXDforest(D, list, i, forest::MULTI_TERMINAL, forest::REAL);
-  addIRMXDforest(D, list, i, forest::EVTIMES, forest::REAL);
+  addIRMXDforest(D, list, i, edge_labeling::MULTI_TERMINAL, range_type::BOOLEAN);
+  addIRMXDforest(D, list, i, edge_labeling::MULTI_TERMINAL, range_type::REAL);
+  addIRMXDforest(D, list, i, edge_labeling::EVTIMES, range_type::REAL);
   return i;
 }
 

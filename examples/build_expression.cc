@@ -100,12 +100,12 @@ int main(int argc, char *argv[])
   // Create an MXD forest in this domain (to store states)
 
 #if USE_REALS
-  forest::range_type range = forest::REAL;
+  range_type range = range_type::REAL;
 #else
-  forest::range_type range = forest::INTEGER;
+  range_type range = range_type::INTEGER;
 #endif
 
-  forest* states = d->createForest(false, range, forest::MULTI_TERMINAL);
+  forest* states = d->createForest(false, range, edge_labeling::MULTI_TERMINAL);
   assert(states != 0);
 
 #if 1
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
   // expr.show(mout, 2);
 #endif
 
-  forest* mtmxd = d->createForest(true, range, forest::MULTI_TERMINAL);
+  forest* mtmxd = d->createForest(true, range, edge_labeling::MULTI_TERMINAL);
   assert(mtmxd != 0);
 
   dd_edge incrY1 = buildIncrY1(mtmxd);

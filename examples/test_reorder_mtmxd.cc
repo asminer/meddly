@@ -158,13 +158,13 @@ int main(int argc, char *argv[])
   assert(d != 0);
 
   // Create a MTMXD forest in this domain
-  forest::policies p(true);
+  policies p(true);
   p.setVarSwap();
 //  p.setLevelSwap();
   p.setFullyReduced();
 
   forest* mtmxd =
-    d->createForest(true, forest::INTEGER, forest::MULTI_TERMINAL, p);
+    d->createForest(true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
   assert(mtmxd != 0);
 
   timer start;

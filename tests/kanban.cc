@@ -66,7 +66,7 @@ long buildReachset(int N, bool useSat)
   int* initial = new int[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
-  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mdd = d->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
   delete[] initial;
@@ -77,7 +77,7 @@ long buildReachset(int N, bool useSat)
 #endif
 
   // Build next-state function
-  forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mxd = d->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   buildNextStateFunction(kanban, 16, mxd, nsf);
 

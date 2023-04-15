@@ -334,15 +334,15 @@ int main(int argc, char *argv[])
 
   /* Create forests */
 #if 1
-  states = CreateForest(d, EVMDD, false, forest::FULLY_REDUCED, FULL_OR_SPARSE_STORAGE);
+  states = CreateForest(d, EVMDD, false, reduction_rule::FULLY_REDUCED, FULL_OR_SPARSE_STORAGE);
 #else
-  states = CreateForest(d, EVMDD, false, forest::QUASI_REDUCED, FULL_STORAGE);
+  states = CreateForest(d, EVMDD, false, reduction_rule::QUASI_REDUCED, FULL_STORAGE);
 #endif
 
 #if 1
-  relation = CreateForest(d, MXD, false, forest::IDENTITY_REDUCED, FULL_OR_SPARSE_STORAGE);
+  relation = CreateForest(d, MXD, false, reduction_rule::IDENTITY_REDUCED, FULL_OR_SPARSE_STORAGE);
 #else
-  relation = CreateForest(d, MXD, false, forest::IDENTITY_REDUCED, FULL_STORAGE);
+  relation = CreateForest(d, MXD, false, reduction_rule::IDENTITY_REDUCED, FULL_STORAGE);
 #endif
 
   if (INVALID_FOREST == states) {

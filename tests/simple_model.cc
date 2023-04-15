@@ -60,12 +60,12 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 
 #ifdef TEST_EVTIMES
   forest* mtmxd = d->createForest(
-    true, forest::REAL, forest::EVTIMES
+    true, range_type::REAL, edge_labeling::EVTIMES
   );
   float* temp = new float[maxBound];
 #else
   forest* mtmxd = d->createForest(
-    true, forest::INTEGER, forest::MULTI_TERMINAL
+    true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL
   );
   long* temp = new long[maxBound];
 #endif

@@ -78,10 +78,10 @@ namespace MEDDLY {
         Holes are managed using the original grid structure.
     */
     extern const node_storage_style* COMPACT_GRID;
-};
 
-/// Collection of forest policies.
-struct MEDDLY::policies {
+    // ******************************************************************
+    // *                         reduction rules                        *
+    // ******************************************************************
 
     /** Supported node reduction rules.
         Currently, the following reduction rules are allowed:
@@ -102,6 +102,63 @@ struct MEDDLY::policies {
         /// Nodes are user-defined reduced
         USER_DEFINED
     };
+
+
+    // ******************************************************************
+    // *                       node storage  rules                      *
+    // ******************************************************************
+
+    /// Flags for node storage.
+    typedef unsigned char node_storage_flags;
+
+    const node_storage_flags FULL_ONLY      = 0x01;
+    const node_storage_flags SPARSE_ONLY    = 0x02;
+    const node_storage_flags FULL_OR_SPARSE = 0x03;
+
+
+    // ******************************************************************
+    // *                           range types                          *
+    // ******************************************************************
+
+    /** Types of values that we can currently store in forests.
+        I.e., if every node in a forest is a function,
+        these are the possible ranges for a function.
+    */
+    enum class range_type {
+      /// boolean-valued functions.
+      BOOLEAN,
+      /// integer-valued functions.
+      INTEGER,
+      /// real-valued functions.
+      REAL
+    };
+
+    // ******************************************************************
+    // *                         edge  labelings                        *
+    // ******************************************************************
+
+    /// Edge annotation mechanism.
+    enum class edge_labeling {
+      /// Edges unlabeled, all values stored in distinct terminals.
+      MULTI_TERMINAL,
+      /// Edges labeled, values summed along path.
+      EVPLUS,
+      /// Special case of EVPLUS for indexed sets.
+      INDEX_SET,
+      /// Edges labeled, values multiplied along path.
+      EVTIMES
+      // TBD: there may be others in the future :^)
+    };
+
+
+};
+
+// ******************************************************************
+// *                         policies struct                        *
+// ******************************************************************
+
+/// Collection of forest policies.
+struct MEDDLY::policies {
 
     /// Supported node deletion policies.
     enum class node_deletion {

@@ -1339,8 +1339,8 @@ int main(int argc, char *argv[])
   }
 
   // Create forests
-  states = d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
-  relation = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  states = d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  relation = d->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 
   if (NULL == states) {
     fprintf(stderr, "Couldn't create forest of states\n");

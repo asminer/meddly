@@ -67,7 +67,7 @@ bool checkReachset(int N)
   int* initial = new int[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
-  forest* mdd = dom->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mdd = dom->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
   delete[] initial;
@@ -75,7 +75,7 @@ bool checkReachset(int N)
   fflush(stdout);
 
   // Build next-state function
-  forest* mxd = dom->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mxd = dom->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   buildNextStateFunction(kanban, 16, mxd, nsf);
   printf("\tbuilt next-state function\n");
@@ -88,7 +88,7 @@ bool checkReachset(int N)
   fflush(stdout);
 
   // Build index set for reachable states
-  forest* evmdd = dom->createForest(0, forest::INTEGER, forest::INDEX_SET);
+  forest* evmdd = dom->createForest(0, range_type::INTEGER, edge_labeling::INDEX_SET);
   dd_edge reach_index(evmdd);
   apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
 #ifdef SHOW_INDEXES

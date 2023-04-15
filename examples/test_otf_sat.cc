@@ -246,14 +246,14 @@ void pn::buildDomain() {
 }
 
 void pn::buildMdd() {
-  forest::policies p(false);
+  policies p(false);
   p.setQuasiReduced();
-  mdd = static_cast<expert_forest*>(dom->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL, p));
+  mdd = static_cast<expert_forest*>(dom->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p));
   assert(mdd);
 }
 
 void pn::buildMxd() {
-  mxd = static_cast<expert_forest*>(dom->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL));
+  mxd = static_cast<expert_forest*>(dom->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL));
   assert(mxd);
 }
 

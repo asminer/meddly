@@ -161,7 +161,7 @@ forest::logger* buildLogger(const char* lfile, int lagg)
   return LOG;
 }
 
-forest* buildForest(forest::policies &p, int N, const varorder &V)
+forest* buildForest(policies &p, int N, const varorder &V)
 {
   int M = V.queens();
 
@@ -195,20 +195,20 @@ forest* buildForest(forest::policies &p, int N, const varorder &V)
   */
   const char* ndp = "unknown node deletion";
   switch (p.deletion) {
-    case forest::policies::NEVER_DELETE:
+      case policies::node_deletion::NEVER:
         ndp = "`never delete'";
         break;
 
-    case forest::policies::OPTIMISTIC_DELETION:
+      case policies::node_deletion::OPTIMISTIC:
         ndp = "optimistic node deletion";
         break;
 
-    case forest::policies::PESSIMISTIC_DELETION:
+      case policies::node_deletion::PESSIMISTIC:
         ndp = "pessimistic node deletion";
         break;
   }
   printf("Initializing forest with %s policy\n", ndp);
-  return d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL, p);
+  return d->createForest(false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
 }
 
 
@@ -776,7 +776,7 @@ int usage(const char* who)
 int main(int argc, const char** argv)
 {
   /* Parse command line */
-  forest::policies p(false);
+  policies p(false);
   p.setPessimistic();
   const char* lfile = 0;
   int lagg = 16;

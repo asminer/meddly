@@ -72,7 +72,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   // set up auxiliary mtmxd forest and edges
   domain* d = mxd->useDomain();
   forest* mtmxd = d->createForest(
-    true, forest::INTEGER, forest::MULTI_TERMINAL
+    true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL
   );
   int nVars = d->getNumVariables();
   int maxBound = d->getVariableBound(1, false);

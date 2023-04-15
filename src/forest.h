@@ -302,7 +302,7 @@ class MEDDLY::forest {
     policies& getPolicies();
 
     /// Returns the reduction rule used by this forest.
-    policies::reduction_rule getReductionRule() const;
+    reduction_rule getReductionRule() const;
 
     /// Returns true if the forest is fully reduced.
     bool isFullyReduced() const;
@@ -1145,7 +1145,7 @@ inline MEDDLY::policies& MEDDLY::forest::getPolicies() {
   return deflt;
 }
 
-inline MEDDLY::policies::reduction_rule MEDDLY::forest::getReductionRule() const {
+inline MEDDLY::reduction_rule MEDDLY::forest::getReductionRule() const {
   return deflt.reduction;
 }
 

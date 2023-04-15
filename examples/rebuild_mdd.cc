@@ -293,14 +293,14 @@ int main(int argc, char *argv[])
   assert(d != 0);
 
   // Create a MTMDD forest in this domain
-  forest::policies p(false);
+  policies p(false);
   p.setPessimistic();
 #if USE_REALS
   forest* mtmdd =
-    d->createForest(false, forest::REAL, forest::MULTI_TERMINAL, p);
+    d->createForest(false, range_type::REAL, edge_labeling::MULTI_TERMINAL, p);
 #else
   forest* mtmdd =
-    d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL, p);
+    d->createForest(false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
 #endif
   assert(mtmdd != 0);
 
@@ -335,7 +335,7 @@ int main(int argc, char *argv[])
 #if 0
   // Convert mtmdd to mdd
   forest* mdd =
-    d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
+    d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 
   dd_edge toMdd(mdd);
   printf("\n\nConversion MTMDD to MDD: ");
@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
 
   // Convert mtmdd to ev+mdd
   forest* evmdd =
-    d->createForest(false, forest::INTEGER, forest::EVPLUS);
+    d->createForest(false, range_type::INTEGER, forest::EVPLUS);
   assert(evmdd != 0);
   assert(forest::SUCCESS ==
       //  evmdd->setNodeDeletion(forest::PESSIMISTIC_DELETION));

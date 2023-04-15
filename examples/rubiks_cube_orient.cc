@@ -402,9 +402,9 @@ class rubiks {
       }
 
       // Create forests
-      mdd = d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL);
-      mxd = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
-      mtmxd = d->createForest(true, forest::INTEGER, forest::MULTI_TERMINAL);
+      mdd = d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+      mxd = d->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+      mtmxd = d->createForest(true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
 
       if (0 == mdd) {
         fprintf(stderr, "Couldn't create forest for states\n");

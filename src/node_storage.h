@@ -19,7 +19,7 @@
 #ifndef MEDDLY_NODE_STORAGE
 #define MEDDLY_NODE_STORAGE
 
-#include "defines.h"
+#include "policies.h"
 
 namespace MEDDLY {
   class node_storage_style;

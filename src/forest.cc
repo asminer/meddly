@@ -246,7 +246,7 @@ MEDDLY::forest
 
   // check policies
   if (!isRelation) {
-    if (policies::reduction_rule::IDENTITY_REDUCED == deflt.reduction)
+    if (reduction_rule::IDENTITY_REDUCED == deflt.reduction)
       throw error(error::INVALID_POLICY, __FILE__, __LINE__);
 
     for(int i=1;i<=d->getNumVariables();i++)
@@ -2332,8 +2332,8 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_nod
 void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
 {
   switch (getReductionRule()) {
-    case policies::reduction_rule::IDENTITY_REDUCED:
-    case policies::reduction_rule::FULLY_REDUCED:
+    case reduction_rule::IDENTITY_REDUCED:
+    case reduction_rule::FULLY_REDUCED:
       if (nb.isSparse()) {
         for (unsigned z=0; z<nb.getNNZs(); z++) {
           if (isTerminalNode(nb.d(z))) continue;
@@ -2361,7 +2361,7 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
       }
       break;
 
-    case policies::reduction_rule::QUASI_REDUCED:
+    case reduction_rule::QUASI_REDUCED:
 #ifdef DEVELOPMENT_CODE
       int nextLevel;
       if (isForRelations())

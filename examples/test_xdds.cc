@@ -34,7 +34,7 @@ domain* initDomain() {
 }
 
 forest* createForest(domain *d, bool relation) {
-  forest* mxd = d->createForest(relation, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mxd = d->createForest(relation, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   assert(mxd);
   return mxd;
 }

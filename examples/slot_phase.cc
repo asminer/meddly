@@ -255,17 +255,17 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   delete[] sizes;
 
   // Initialize forests
-  forest::policies p(false);
+  policies p(false);
   p.setSinkDown();
-  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mdd = d->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 
   std::vector<forest*> mxds;
   for (int i = 0; i < num_phases; i++) {
-    forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+    forest* mxd = d->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
     mxds.push_back(mxd);
   }
 
-//  forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+//  forest* mxd = d->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   if (LOG) {
     mdd->setLogger(LOG, "MDD");
     //mxd->setLogger(LOG, "MxD");

@@ -187,8 +187,8 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, forest::logg
   domain* d = createDomainBottomUp(sizes, N*8);
 
   // Initialize forests
-  forest* mdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL);
-  forest* mxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mdd = d->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mxd = d->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   if (LOG) {
     mdd->setLogger(LOG, "MDD");
     mxd->setLogger(LOG, "MxD");

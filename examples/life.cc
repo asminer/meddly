@@ -257,7 +257,7 @@ void numTrueEquals(const int* levels, int n, dd_edge &e)
 {
   int* bottom = new int[n+1];
   for (int i=0; i<n; i++) bottom[i] = 0;
-  bottom[n] = expert_forest::int_Tencoder::value2handle(1);
+  bottom[n] = int_Tencoder::value2handle(1);
   numTrueGeneral(levels, bottom, n+1, 0, e);
   delete[] bottom;
 }
@@ -266,14 +266,14 @@ void numTrueGreaterThan(const int* levels, int n, dd_edge &e)
 {
   int* bottom = new int[n+1];
   for (int i=0; i<n+1; i++) bottom[i] = 0;
-  numTrueGeneral(levels, bottom, n+1, expert_forest::int_Tencoder::value2handle(1), e);
+  numTrueGeneral(levels, bottom, n+1, int_Tencoder::value2handle(1), e);
   delete[] bottom;
 }
 
 void numTrueLessThan(const int* levels, int n, dd_edge &e)
 {
   int* bottom = new int[n];
-  for (int i=0; i<n; i++) bottom[i] = expert_forest::int_Tencoder::value2handle(1);
+  for (int i=0; i<n; i++) bottom[i] = int_Tencoder::value2handle(1);
   numTrueGeneral(levels, bottom, n, 0, e);
   delete[] bottom;
 }
@@ -478,7 +478,7 @@ int main(int argc, const char** argv)
   } display = some_minimal;
   bool show_stats = false;
   bool show_hist = false;
-  forest::policies p(false);
+  policies p(false);
   p.setPessimistic();
 
   using namespace std;
@@ -545,7 +545,7 @@ int main(int argc, const char** argv)
   domain* d = createDomainBottomUp(scratch, N);
   assert(d);
   expert_forest* f = dynamic_cast <expert_forest*> (
-    d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL, p)
+    d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p)
   );
   assert(f);
 

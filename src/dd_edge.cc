@@ -248,6 +248,13 @@ void MEDDLY::dd_edge::setLabel(const char* L)
   label = strdup(L);
 }
 
+double MEDDLY::dd_edge::getCardinality() const
+{
+  double c;
+  apply(CARDINALITY, *this, c);
+  return c;
+}
+
 unsigned MEDDLY::dd_edge::getNodeCount() const
 {
   return smart_cast<expert_forest*>(parent)->getNodeCount(node);
@@ -317,7 +324,6 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator/=(const dd_edge& e)
   // apply will call set() which in turn will set updateNeeded to true
   return *this;
 }
-
 
 // Display the edge information.
 void MEDDLY::dd_edge::show(output &strm, int verbosity) const
@@ -442,3 +448,4 @@ void MEDDLY::dd_edge::writePicture(const char* filename, const char* extension) 
     eParent->writeNodeGraphPicture(filename, extension, &node, &label, 1);
   }
 }
+

@@ -225,7 +225,7 @@ int main(int argc, const char** argv)
   }
   initialize(INIT);
 
-  forest::policies p(false);
+  policies p(false);
   if (mark_sweep) {
     p.useReferenceCounts = false;
   } else if (pessimistic) {
@@ -249,15 +249,15 @@ int main(int argc, const char** argv)
     ndp = "mark and sweep node deletion";
   } else {
     switch (p.deletion) {
-      case forest::policies::NEVER_DELETE:
+      case policies::node_deletion::NEVER:
         ndp = "never delete";
         break;
 
-      case forest::policies::OPTIMISTIC_DELETION:
+      case policies::node_deletion::OPTIMISTIC:
         ndp = "optimistic node deletion";
         break;
 
-      case forest::policies::PESSIMISTIC_DELETION:
+      case policies::node_deletion::PESSIMISTIC:
         ndp = "pessimistic node deletion";
         break;
     }
@@ -272,7 +272,7 @@ int main(int argc, const char** argv)
   assert(d);
   delete[] varsizes;
   expert_forest* f = (expert_forest*)
-    d->createForest(false, forest::INTEGER, forest::MULTI_TERMINAL, p);
+    d->createForest(false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
   assert(f);
 
   std::ofstream log;

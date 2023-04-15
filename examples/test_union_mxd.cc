@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
   assert(d != 0);
 
   // Create an MXD forest in this domain (to store a relation)
-  forest* xd = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* xd = d->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   assert(xd != 0);
 
   dd_edge initial_state(xd);

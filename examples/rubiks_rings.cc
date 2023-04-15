@@ -458,7 +458,7 @@ int main(int argc, const char** argv)
 
   int red = 11;
   int blue = 11;
-  forest::policies p(false);
+  policies p(false);
   p.setOptimistic();
   bool decinc = false;
   bool saturate = true;
@@ -514,7 +514,7 @@ int main(int argc, const char** argv)
   // Build NSF for possible "1-step" moves
   //
   timer watch;
-  forest* mxd = D->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mxd = D->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
 
   watch.note_time();
@@ -526,7 +526,7 @@ int main(int argc, const char** argv)
   //
   // Build initial configuration
   //
-  forest* mdd = D->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL, p);
+  forest* mdd = D->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
   dd_edge initial(mdd);
   for (int i=0; i<leftring; i++)  scratch[leftvar[i]]   = leftinit[i];
   for (int i=0; i<rightring; i++) scratch[rightvar[i]]  = rightinit[i];

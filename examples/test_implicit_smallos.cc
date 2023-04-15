@@ -163,9 +163,9 @@ int* sizes = new int[PLACES];
 for (int i=PLACES-1; i>=0; i--) sizes[i] = BOUNDS;
 d = createDomainBottomUp(sizes, PLACES);
 delete[] sizes;
-forest::policies pr(true);
+policies pr(true);
   pr.setPessimistic();
-forest::policies p(false);
+policies p(false);
   p.setPessimistic();
   // p.setQuasiReduced();
 
@@ -185,8 +185,8 @@ if('i' == method)
 {
 
 //CREATE FORESTS
-  forest* inmdd = d->createForest(0, forest::BOOLEAN, forest::MULTI_TERMINAL,p);
-  forest* relmxd = d->createForest(1, forest::BOOLEAN, forest::MULTI_TERMINAL,pr);
+  forest* inmdd = d->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,p);
+  forest* relmxd = d->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,pr);
 
   expert_domain* dm = static_cast<expert_domain*>(inmdd->useDomain());
   dm->enlargeVariableBound(p1_position, false, MT+1);

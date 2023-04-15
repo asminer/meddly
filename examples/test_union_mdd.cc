@@ -149,8 +149,8 @@ int main(int argc, char *argv[])
   assert(d != 0);
 
   // Create an MDD forest in this domain (to store states)
-  forest* states = d->createForest(false, forest::BOOLEAN,
-      forest::MULTI_TERMINAL);
+  forest* states = d->createForest(false, range_type::BOOLEAN,
+      edge_labeling::MULTI_TERMINAL);
   assert(states != 0);
 
 #if 0
@@ -238,8 +238,8 @@ int main(int argc, char *argv[])
 
 #ifdef BUILD_INDEX_SET
   // TEST
-  forest* evmdd = d->createForest(false, forest::INTEGER,
-      forest::INDEX_SET);
+  forest* evmdd = d->createForest(false, range_type::INTEGER,
+      edge_labeling::INDEX_SET);
   assert(evmdd != 0);
   dd_edge evmdd_states(evmdd);
   apply(CONVERT_TO_INDEX_SET, initial_state, evmdd_states);

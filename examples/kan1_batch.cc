@@ -195,17 +195,17 @@ int main(int argc, char* argv[])
 
 
   // Create an MDD forest in this domain (to store states)
-  forest::policies pmdd(false);
+  policies pmdd(false);
   pmdd.setPessimistic();
-  forest* mdd = d->createForest(false, forest::BOOLEAN,
-    forest::MULTI_TERMINAL, pmdd);
+  forest* mdd = d->createForest(false, range_type::BOOLEAN,
+    edge_labeling::MULTI_TERMINAL, pmdd);
   assert(mdd != NULL);
 
   // Create a MXD forest in domain (to store transition diagrams)
-  forest::policies pmxd(true);
+  policies pmxd(true);
   pmxd.setPessimistic();
-  forest* mxd = d->createForest(true, forest::BOOLEAN,
-    forest::MULTI_TERMINAL, pmxd);
+  forest* mxd = d->createForest(true, range_type::BOOLEAN,
+    edge_labeling::MULTI_TERMINAL, pmxd);
   assert(mxd != NULL);
 
   // Set up initial set of states
@@ -474,7 +474,7 @@ void testIndexSet(domain* d, const dd_edge& mdd)
   assert(d);
 
   // Create a EV+MDD forest in this domain (to store index set)
-  forest* evplusmdd = d->createForest(false, forest::INTEGER, forest::INDEX_SET);
+  forest* evplusmdd = d->createForest(false, range_type::INTEGER, edge_labeling::INDEX_SET);
   assert(evplusmdd);
   expert_forest* ef = static_cast<expert_forest*>(evplusmdd);
 

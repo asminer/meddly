@@ -51,15 +51,15 @@ int main(int argc, char *argv[])
   assert(d != NULL);
 
   // Create an MDD forest in this domain (to store states)
-  forest::policies pmdd(false);
+  policies pmdd(false);
   // pmdd.setQuasiReduced();
   pmdd.setFullyReduced();
   forest* mdd =
-    d->createForest(false, forest::BOOLEAN, forest::MULTI_TERMINAL, pmdd);
+    d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
   assert(mdd != NULL);
 
   // Create a MXD forest in domain (to store transition diagrams)
-  forest* mxd = d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mxd = d->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   assert(mxd != NULL);
 
   // Set up initial state array

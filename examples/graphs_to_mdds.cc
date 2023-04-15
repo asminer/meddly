@@ -91,8 +91,8 @@ int main(int argv, char *argc[])
   // Create a forest in the above domain
   forest* mdd = d->createForest(
       false,                    // this is not a relation
-      forest::BOOLEAN,          // terminals are either true or false
-      forest::MULTI_TERMINAL    // disables edge-labeling
+      range_type::BOOLEAN,          // terminals are either true or false
+      edge_labeling::MULTI_TERMINAL    // disables edge-labeling
       );
   assert(mdd != 0);
 

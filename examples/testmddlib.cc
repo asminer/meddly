@@ -73,8 +73,8 @@ int main(int argc, char *argv[])
   d->createVariablesBottomUp(bounds, N);
 
   // Create an MDD forest in this domain (to store states)
-  forest* states = d->createForest(false, forest::BOOLEAN,
-      forest::MULTI_TERMINAL, forest::policies(false));
+  forest* states = d->createForest(false, range_type::BOOLEAN,
+      edge_labeling::MULTI_TERMINAL, policies(false));
 
 #if 1
   printf("Constructing initial set of states\n");
@@ -137,8 +137,8 @@ int main(int argc, char *argv[])
   // Intersect (*) the two edges
 
   // Create a MXD forest in domain (to store transition diagrams)
-  forest* transitions = d->createForest(true, forest::BOOLEAN,
-      forest::MULTI_TERMINAL, forest::policies(true));
+  forest* transitions = d->createForest(true, range_type::BOOLEAN,
+      edge_labeling::MULTI_TERMINAL, policies(true));
 
   // Construct a transition diagram in the MXD forest (using +, *)
   // Note: x here denotes "value does not change"

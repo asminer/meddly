@@ -326,13 +326,13 @@ int main(int argc, char *argv[])
   assert(d != 0);
 
   // Create a MTMXD forest in this domain
-  forest::policies p(true);
+  policies p(true);
 #if USE_REALS
   forest* mtmxd =
-    d->createForest(true, forest::REAL, forest::MULTI_TERMINAL, p);
+    d->createForest(true, range_type::REAL, edge_labeling::MULTI_TERMINAL, p);
 #else
   forest* mtmxd =
-    d->createForest(true, forest::INTEGER, forest::MULTI_TERMINAL, p);
+    d->createForest(true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
 #endif
   assert(mtmxd != 0);
 
@@ -458,7 +458,7 @@ int main(int argc, char *argv[])
 #if 0
   // Convert mtmxd to mxd
   forest* mxd =
-    d->createForest(true, forest::BOOLEAN, forest::MULTI_TERMINAL);
+    d->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 
   dd_edge toMxd(mxd);
   printf("Conversion MTMXD to MXD: ");
