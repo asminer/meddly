@@ -72,6 +72,7 @@ dd_edge.h               dd_edge.cc
 defines.h
 domain.h                domain.cc
 encoders.h              encoders.cc
+enumerator.h            enumerator.cc
 forest.h                forest.cc
 hash_stream.h
 heap.h

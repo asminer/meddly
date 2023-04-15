@@ -30,6 +30,7 @@
 #include "unpacked_node.h"
 #include "policies.h"
 #include "domain.h"
+#include "enumerator.h"
 
 #include <memory>
 

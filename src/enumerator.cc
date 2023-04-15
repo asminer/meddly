@@ -20,6 +20,8 @@
 
 
 #include "defines.h"
+#include "enumerator.h"
+
 #include "old_meddly.h"
 #include "old_meddly.hh"
 #include "old_meddly_expert.h"
