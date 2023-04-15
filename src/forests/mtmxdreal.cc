@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,8 +21,8 @@
 #include "mtmxdreal.h"
 
 MEDDLY::mt_mxd_real::mt_mxd_real(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, float tv)
-: mtmxd_forest(dsl, d, REAL, p, level_reduction_rule)
-{ 
+: mtmxd_forest(dsl, d, range_type::REAL, p, level_reduction_rule)
+{
   initializeForest();
 
   transparent=float_Tencoder::value2handle(tv);
@@ -95,7 +95,7 @@ createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 #endif
 }
 
-void MEDDLY::mt_mxd_real::evaluate(const dd_edge &f, const int* vlist, 
+void MEDDLY::mt_mxd_real::evaluate(const dd_edge &f, const int* vlist,
   const int* vplist, float &term) const
 {
   term = float_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));

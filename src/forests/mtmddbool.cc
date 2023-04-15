@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,8 +21,8 @@
 #include "mtmddbool.h"
 
 MEDDLY::mt_mdd_bool::mt_mdd_bool(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, bool tv)
-: mtmdd_forest(dsl, d, BOOLEAN, p, level_reduction_rule)
-{ 
+: mtmdd_forest(dsl, d, range_type::BOOLEAN, p, level_reduction_rule)
+{
   initializeForest();
 
   transparent=bool_Tencoder::value2handle(tv);
@@ -44,7 +44,7 @@ void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
   binary_operation* unionOp = getOperation(UNION, this, this, this);
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);
-  
+
   int num_vars=getNumVariables();
 
   // Create vlist following the mapping between variable and level

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -21,8 +21,8 @@
 #include "mtmddreal.h"
 
 MEDDLY::mt_mdd_real::mt_mdd_real(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, float tv)
-: mtmdd_forest(dsl, d, REAL, p, level_reduction_rule)
-{ 
+: mtmdd_forest(dsl, d, range_type::REAL, p, level_reduction_rule)
+{
   initializeForest();
 
   transparent=float_Tencoder::value2handle(tv);

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -36,7 +36,8 @@ int  MEDDLY::mt_forest::order_size;
 
 MEDDLY::mt_forest::mt_forest(unsigned dsl, domain *d, bool rel,
   range_type t, const policies &p, int* level_reduction_rule)
-: expert_forest(dsl, d, rel, t, MULTI_TERMINAL, p, level_reduction_rule)
+: expert_forest(dsl, d, rel, t, edge_labeling::MULTI_TERMINAL,
+        p, level_reduction_rule)
 {
 }
 
@@ -70,7 +71,7 @@ bool MEDDLY::mt_forest::isRedundant(const unpacked_node &nb) const
     int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
     if (rawsize < getLevelSize(nb.getLevel())) return false;
     int common = nb.d(0);
-    for (int i=1; i<rawsize; i++) 
+    for (int i=1; i<rawsize; i++)
       if (nb.d(i) != common) return false;
     return true;
   }
@@ -85,15 +86,15 @@ bool MEDDLY::mt_forest::isIdentityEdge(const unpacked_node &nb, int i) const
 }
 
 
-MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d) 
+MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d)
 {
   MEDDLY_DCASSERT(abs(k) >= abs(getNodeLevel(d)));
 
-  if (isFullyReduced()) return d; 
+  if (isFullyReduced()) return d;
 
   if (isQuasiReduced() && d==getTransparentNode()) return d;
 
-  int dk = getNodeLevel(d); 
+  int dk = getNodeLevel(d);
   while (dk != k) {
     int up;
     if (dk<0) up = -dk;

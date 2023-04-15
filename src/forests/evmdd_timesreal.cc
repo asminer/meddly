@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -28,7 +28,8 @@
 // ******************************************************************
 
 MEDDLY::evmdd_timesreal::evmdd_timesreal(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule)
- : evmdd_forest(dsl, d, REAL, EVTIMES, p, level_reduction_rule)
+ : evmdd_forest(dsl, d, range_type::REAL, edge_labeling::EVTIMES,
+         p, level_reduction_rule)
 {
   setEdgeSize(sizeof(float), true);
   initializeForest();
@@ -109,7 +110,7 @@ bool MEDDLY::evmdd_timesreal::isRedundant(const unpacked_node &nb) const
 
 bool MEDDLY::evmdd_timesreal::isIdentityEdge(const unpacked_node &nb, int i) const
 {
-  return isIdentityEdgeTempl<OP>(nb, i); 
+  return isIdentityEdgeTempl<OP>(nb, i);
 }
 
 

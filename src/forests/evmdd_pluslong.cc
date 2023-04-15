@@ -34,7 +34,9 @@
 
 MEDDLY::evmdd_pluslong
  ::evmdd_pluslong(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, bool index_set)
- : evmdd_forest(dsl, d, INTEGER, index_set ? INDEX_SET : EVPLUS, p, level_reduction_rule)
+ : evmdd_forest(dsl, d, range_type::INTEGER,
+         index_set ? edge_labeling::INDEX_SET : edge_labeling::EVPLUS,
+         p, level_reduction_rule)
 {
   setEdgeSize(sizeof(long), true);
   if (index_set) setUnhashedSize(sizeof(long));

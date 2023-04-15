@@ -30,7 +30,8 @@
 // ******************************************************************
 
 MEDDLY::evmxd_pluslong::evmxd_pluslong(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule)
- : evmxd_forest(dsl, d, INTEGER, EVPLUS, p, level_reduction_rule)
+ : evmxd_forest(dsl, d, range_type::INTEGER, edge_labeling::EVPLUS,
+         p, level_reduction_rule)
 {
   // Edge's are longs and are NOT hashed.
   setEdgeSize(sizeof(long), false);

@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -34,7 +34,7 @@ MEDDLY::ev_forest::ev_forest(unsigned dsl, domain *d, bool rel,
   range_type t, edge_labeling ev, const policies &p, int* level_reduction_rule)
 : expert_forest(dsl, d, rel, t, ev, p, level_reduction_rule)
 {
-  MEDDLY_DCASSERT(ev != MULTI_TERMINAL);
+  MEDDLY_DCASSERT(ev != edge_labeling::MULTI_TERMINAL);
 
   transparent=bool_Tencoder::value2handle(false);
 }
