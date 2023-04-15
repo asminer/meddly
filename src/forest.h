@@ -19,6 +19,7 @@
 #ifndef MEDDLY_FOREST_H
 #define MEDDLY_FOREST_H
 
+#include "defines.h"
 #include "memstats.h"
 #include "varorder.h"
 #include "io.h"
@@ -27,6 +28,7 @@
 #include "node_storage.h"
 #include "dd_edge.h"
 #include "unpacked_node.h"
+#include "policies.h"
 #include "domain.h"
 
 #include <memory>
@@ -70,32 +72,6 @@ class MEDDLY::forest {
   public:
     int *level_reduction_rule;
 
-    /** Types of values that we can currently store in forests.
-        I.e., if every node in a forest is a function,
-        these are the possible ranges for a function.
-    */
-    enum range_type {
-      /// boolean-valued functions.
-      BOOLEAN,
-      /// integer-valued functions.
-      INTEGER,
-      /// real-valued functions.
-      REAL
-    };
-
-    /// Edge annotation mechanism.
-    enum edge_labeling {
-      /// Edges unlabeled, all values stored in distinct terminals.
-      MULTI_TERMINAL,
-      /// Edges labeled, values summed along path.
-      EVPLUS,
-      /// Special case of EVPLUS for indexed sets.
-      INDEX_SET,
-      /// Edges labeled, values multiplied along path.
-      EVTIMES
-      // TBD: there may be others in the future :^)
-    };
-
     /// Status indicators for nodes.
     enum node_status {
       /// Node is active: it can be used without issue.
@@ -109,144 +85,6 @@ class MEDDLY::forest {
     };
 
 
-    /// Collection of forest policies.
-    struct policies {
-
-      /** Supported node reduction rules.
-          Currently, the following reduction rules are allowed:
-            - Fully reduced, meaning that duplicate and redundant nodes are
-              eliminated.
-            - Quasi reduced, meaning that duplicate nodes are eliminated.
-            - Identity reduced, for relations only, meaning that duplicate
-              nodes are eliminated, as are "identity" pairs of primed, unprimed
-              variables.
-      */
-      enum reduction_rule {
-          /// Nodes are fully reduced.
-          FULLY_REDUCED,
-          /// Nodes are quasi-reduced.
-          QUASI_REDUCED,
-          /// Nodes are identity-reduced.
-          IDENTITY_REDUCED,
-          /// Nodes are user-defined reduced
-          USER_DEFINED
-      };
-
-      /// Supported node deletion policies.
-      enum node_deletion {
-          /** Never delete nodes.
-              Useful for debugging the garbage collector.
-          */
-          NEVER_DELETE,
-          /** Nodes are marked for deletion.
-              We assume that a deleted node might be used again,
-              so we keep it until it no longer appears in any compute table.
-          */
-          OPTIMISTIC_DELETION,
-          /// Nodes are removed as soon as they become disconnected.
-          PESSIMISTIC_DELETION
-      };
-
-      // Supported variable swap strategies.
-      // Work for relations only.
-      enum class variable_swap_type {
-    	  // Swap adjacent variables in one go.
-    	  VAR,
-    	  // Swap adjacent variables through swapping levels 4 time.
-    	  // Do not work for fully-identity reduced relations.
-    	  LEVEL
-      };
-
-      enum class reordering_type {
-        // Always choose the lowest swappable inversion
-        LOWEST_INVERSION,
-        // Always choose the highest swappable inversion
-        HIGHEST_INVERSION,
-        // Sink down the "heaviest" variables
-        SINK_DOWN,
-        // Bubble up the "lightest" variables
-        BRING_UP,
-        // Always choose the swappabel inversion where the variable on the top
-        // has the fewest associated nodes
-        LOWEST_COST,
-        // Always choose the swappable inversion that will result in
-        // the lowest memory consumption
-        LOWEST_MEMORY,
-        // Choose the swappable inversion randomly
-        RANDOM,
-        // Always choose the swappable inversion with the lowest average reference count
-        LARC
-      };
-
-      /// Defaults: how may we store nodes for all levels in the forest.
-      node_storage_flags storage_flags;
-      /// Default reduction rule for all levels in the forest.
-      reduction_rule reduction;
-      /// Default deletion policy for all levels in the forest.
-      node_deletion deletion;
-      // Default variable reorder strategy.
-      reordering_type reorder;
-      // Default variable swap strategy.
-      variable_swap_type swap;
-
-      /// Backend memory management mechanism for nodes.
-      const memory_manager_style* nodemm;
-
-      /// Backend storage mechanism for nodes.
-      const node_storage_style* nodestor;
-
-      /// Memory compactor: never run if fewer than this many unused slots.
-      // int compact_min;
-      /// Memory compactor: always run if more than this many unused slots.
-      // int compact_max;
-      /// Memory compactor: fraction of unused slots to trigger.
-      // int compact_frac;
-
-      /// Number of zombie nodes to trigger garbage collection
-      // int zombieTrigger;
-      /// Number of orphan nodes to trigger garbage collection
-      // int orphanTrigger;
-      /// Should we run the memory compactor after garbage collection
-      // bool compactAfterGC;
-      /// Should we run the memory compactor before trying to expand
-      // bool compactBeforeExpand;
-
-      /// Use reference counts to know when nodes can be recycled.
-      /// Otherwise, use mark and sweep to recycle disconnected nodes.
-      bool useReferenceCounts;
-
-      /// Empty constructor, for setting up defaults later
-      policies();
-
-      /// Constructor; sets reasonable defaults
-      policies(bool rel);
-
-      /// Set to hard-wired defaults
-      void useDefaults(bool rel);
-
-      void setFullStorage();
-      void setSparseStorage();
-      void setFullOrSparse();
-      void setFullyReduced();
-      void setQuasiReduced();
-      void setIdentityReduced();
-      void setUserDefinedReduced();
-      void setNeverDelete();
-      void setOptimistic();
-      void setPessimistic();
-
-      void setLowestInversion();
-      void setHighestInversion();
-      void setSinkDown();
-      void setBringUp();
-      void setLowestCost();
-      void setLowestMemory();
-      void setRandom();
-      void setLARC();
-
-      void setVarSwap();
-      void setLevelSwap();
-    }; // end of struct policies
 
     /// Collection of various stats for performance measurement
     struct statset {
@@ -1172,83 +1010,6 @@ class MEDDLY::forest {
 // ******************************************************************
 
 
-inline void MEDDLY::forest::policies::setFullStorage() {
-  storage_flags = FULL_ONLY;
-}
-
-inline void MEDDLY::forest::policies::setSparseStorage() {
-  storage_flags = SPARSE_ONLY;
-}
-
-inline void MEDDLY::forest::policies::setFullOrSparse() {
-  storage_flags = FULL_OR_SPARSE;
-}
-
-inline void MEDDLY::forest::policies::setFullyReduced() {
-  reduction = FULLY_REDUCED;
-}
-
-inline void MEDDLY::forest::policies::setQuasiReduced() {
-  reduction = QUASI_REDUCED;
-}
-
-inline void MEDDLY::forest::policies::setIdentityReduced() {
-  reduction = IDENTITY_REDUCED;
-}
-
-inline void MEDDLY::forest::policies::setNeverDelete() {
-  deletion = NEVER_DELETE;
-}
-
-inline void MEDDLY::forest::policies::setOptimistic() {
-  deletion = OPTIMISTIC_DELETION;
-}
-
-inline void MEDDLY::forest::policies::setPessimistic() {
-  deletion = PESSIMISTIC_DELETION;
-}
-
-inline void MEDDLY::forest::policies::setLowestInversion() {
-  reorder = reordering_type::LOWEST_INVERSION;
-}
-
-inline void MEDDLY::forest::policies::setHighestInversion() {
-  reorder = reordering_type::HIGHEST_INVERSION;
-}
-
-inline void MEDDLY::forest::policies::setSinkDown() {
-  reorder = reordering_type::SINK_DOWN;
-}
-
-inline void MEDDLY::forest::policies::setBringUp() {
-  reorder = reordering_type::BRING_UP;
-}
-
-inline void MEDDLY::forest::policies::setLowestCost() {
-  reorder = reordering_type::LOWEST_COST;
-}
-
-inline void MEDDLY::forest::policies::setLowestMemory() {
-  reorder = reordering_type::LOWEST_MEMORY;
-}
-
-inline void MEDDLY::forest::policies::setRandom() {
-  reorder = reordering_type::RANDOM;
-}
-
-inline void MEDDLY::forest::policies::setLARC() {
-  reorder = reordering_type::LARC;
-}
-
-inline void MEDDLY::forest::policies::setVarSwap() {
-  swap = variable_swap_type::VAR;
-}
-
-inline void MEDDLY::forest::policies::setLevelSwap() {
-  swap = variable_swap_type::LEVEL;
-}
-
-// end of struct policies
 
 // forest::statset::
 inline void MEDDLY::forest::statset::incActive(long b) {
@@ -1303,12 +1064,12 @@ inline int MEDDLY::forest::upLevel(int k) {
   return (k<0) ? (-k) : (-k-1);
 }
 
-inline const MEDDLY::forest::policies& MEDDLY::forest::getDefaultPoliciesMDDs()
+inline const MEDDLY::policies& MEDDLY::forest::getDefaultPoliciesMDDs()
 {
   return mddDefaults;
 }
 
-inline const MEDDLY::forest::policies& MEDDLY::forest::getDefaultPoliciesMXDs()
+inline const MEDDLY::policies& MEDDLY::forest::getDefaultPoliciesMXDs()
 {
   return mxdDefaults;
 }
@@ -1343,66 +1104,66 @@ inline bool MEDDLY::forest::isForRelations() const {
   return isRelation;
 }
 
-inline MEDDLY::forest::range_type MEDDLY::forest::getRangeType() const {
+inline MEDDLY::range_type MEDDLY::forest::getRangeType() const {
   return rangeType;
 }
 
-inline bool MEDDLY::forest::isRangeType(MEDDLY::forest::range_type r) const {
+inline bool MEDDLY::forest::isRangeType(MEDDLY::range_type r) const {
   return r == rangeType;
 }
 
-inline MEDDLY::forest::edge_labeling MEDDLY::forest::getEdgeLabeling() const {
+inline MEDDLY::edge_labeling MEDDLY::forest::getEdgeLabeling() const {
   return edgeLabel;
 }
 
 inline bool MEDDLY::forest::isMultiTerminal() const {
-  return MULTI_TERMINAL == edgeLabel;
+  return edge_labeling::MULTI_TERMINAL == edgeLabel;
 }
 
 inline bool MEDDLY::forest::isEVPlus() const {
-  return EVPLUS == edgeLabel;
+  return edge_labeling::EVPLUS == edgeLabel;
 }
 
 inline bool MEDDLY::forest::isIndexSet() const {
-  return INDEX_SET == edgeLabel;
+  return edge_labeling::INDEX_SET == edgeLabel;
 }
 
 inline bool MEDDLY::forest::isEVTimes() const {
-  return EVTIMES == edgeLabel;
+  return edge_labeling::EVTIMES == edgeLabel;
 }
 
-inline bool MEDDLY::forest::matches(bool isR, MEDDLY::forest::range_type rt,
-  MEDDLY::forest::edge_labeling el) const {
+inline bool MEDDLY::forest::matches(bool isR, MEDDLY::range_type rt,
+  MEDDLY::edge_labeling el) const {
   return (isRelation == isR) && (rangeType == rt) && (edgeLabel == el);
 }
 
-inline const MEDDLY::forest::policies& MEDDLY::forest::getPolicies() const {
+inline const MEDDLY::policies& MEDDLY::forest::getPolicies() const {
   return deflt;
 }
 
-inline MEDDLY::forest::policies& MEDDLY::forest::getPolicies() {
+inline MEDDLY::policies& MEDDLY::forest::getPolicies() {
   return deflt;
 }
 
-inline MEDDLY::forest::policies::reduction_rule MEDDLY::forest::getReductionRule() const {
+inline MEDDLY::policies::reduction_rule MEDDLY::forest::getReductionRule() const {
   return deflt.reduction;
 }
 
 
 inline bool MEDDLY::forest::isFullyReduced() const {
-    return MEDDLY::forest::policies::FULLY_REDUCED == deflt.reduction;
+    return deflt.isFullyReduced();
 }
 
 inline bool MEDDLY::forest::isQuasiReduced() const {
-    return MEDDLY::forest::policies::QUASI_REDUCED == deflt.reduction;
+    return deflt.isQuasiReduced();
 }
 
 inline bool MEDDLY::forest::isIdentityReduced() const {
-    return MEDDLY::forest::policies::IDENTITY_REDUCED == deflt.reduction;
+    return deflt.isIdentityReduced();
 }
 
 inline bool MEDDLY::forest::isUserDefinedReduced() const {
-    return MEDDLY::forest::policies::USER_DEFINED == deflt.reduction;
+    return deflt.isUserDefinedReduced();
 }
 
 inline int* MEDDLY::forest::getLevelReductionRule() const{
@@ -1438,12 +1199,12 @@ inline MEDDLY::node_storage_flags MEDDLY::forest::getNodeStorage() const {
   return deflt.storage_flags;
 }
 
-inline MEDDLY::forest::policies::node_deletion MEDDLY::forest::getNodeDeletion() const {
+inline MEDDLY::policies::node_deletion MEDDLY::forest::getNodeDeletion() const {
   return deflt.deletion;
 }
 
 inline bool MEDDLY::forest::isPessimistic() const {
-  return MEDDLY::forest::policies::PESSIMISTIC_DELETION == deflt.deletion;
+  return deflt.isPessimistic();
 }
 
 inline bool MEDDLY::forest::areSparseNodesEnabled() const {
@@ -1490,13 +1251,24 @@ inline bool MEDDLY::forest::isMarkedForDeletion() const {
   return is_marked_for_deletion;
 }
 
-inline void MEDDLY::forest::createEdgeForVar(int vh, bool pr, dd_edge& a) {
-  switch (rangeType) {
-    case BOOLEAN:   createEdgeForVar(vh, pr, (bool*)  0, a);  break;
-    case INTEGER:   createEdgeForVar(vh, pr, (long*)  0, a);  break;
-    case REAL:      createEdgeForVar(vh, pr, (float*) 0, a);  break;
-    default:        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-  }
+inline void MEDDLY::forest::createEdgeForVar(int vh, bool pr, dd_edge& a)
+{
+    switch (rangeType) {
+        case range_type::BOOLEAN:
+                createEdgeForVar(vh, pr, (bool*)  0, a);
+                break;
+
+        case range_type::INTEGER:
+                createEdgeForVar(vh, pr, (long*)  0, a);
+                break;
+
+        case range_type::REAL:
+                createEdgeForVar(vh, pr, (float*) 0, a);
+                break;
+
+        default:
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    }
 };
 
 inline void MEDDLY::forest::setLogger(logger* L, const char* name) {
@@ -1522,7 +1294,7 @@ inline void MEDDLY::forest::visitRegisteredEdges(edge_visitor &ev) {
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::expert_forest: public forest
+class MEDDLY::expert_forest: public MEDDLY::forest
 {
     // flags for reporting; DO NOT rely on specific values
   public:
@@ -2452,87 +2224,87 @@ class MEDDLY::expert_forest: public forest
 // ******************************************************************
 
 template<typename T>
-  inline MEDDLY::node_handle
-  MEDDLY::expert_forest::handleForValue(T v) const
-  {
-    switch (getRangeType()) {
-      case BOOLEAN:
-        return bool_Tencoder::value2handle(v);
-      case INTEGER:
-        return int_Tencoder::value2handle(v);
-      case REAL:
-        return float_Tencoder::value2handle(v);
-      default:
-        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+inline MEDDLY::node_handle
+MEDDLY::expert_forest::handleForValue(T v) const
+{
+    switch (this->getRangeType()) {
+        case range_type::BOOLEAN:
+            return bool_Tencoder::value2handle(v);
+        case range_type::INTEGER:
+            return int_Tencoder::value2handle(v);
+        case range_type::REAL:
+            return float_Tencoder::value2handle(v);
+        default:
+            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     }
-  }
+}
 
 template<typename T>
-  inline void
-  MEDDLY::expert_forest::getValueFromHandle(MEDDLY::node_handle n, T& v) const
-  {
+inline void
+MEDDLY::expert_forest::getValueFromHandle(MEDDLY::node_handle n, T& v) const
+{
     MEDDLY_DCASSERT(isTerminalNode(n));
     switch (getRangeType()) {
-      case BOOLEAN:
-        v = bool_Tencoder::handle2value(n);
-        return;
-      case INTEGER:
-        v = int_Tencoder::handle2value(n);
-        return;
-      case REAL:
-        v = float_Tencoder::handle2value(n);
-        return;
-      default:
-        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+        case range_type::BOOLEAN:
+            v = bool_Tencoder::handle2value(n);
+            return;
+        case range_type::INTEGER:
+            v = int_Tencoder::handle2value(n);
+            return;
+        case range_type::REAL:
+            v = float_Tencoder::handle2value(n);
+            return;
+        default:
+            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     }
-  }
+}
 
 inline bool
 MEDDLY::expert_forest::getBooleanFromHandle(MEDDLY::node_handle n) const
 {
-  MEDDLY_DCASSERT(isTerminalNode(n));
-  switch (getRangeType()) {
-    case BOOLEAN:
-      return bool_Tencoder::handle2value(n);
-    case INTEGER:
-      return int_Tencoder::handle2value(n);
-    case REAL:
-      return float_Tencoder::handle2value(n);
-    default:
-      throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-  }
+    MEDDLY_DCASSERT(isTerminalNode(n));
+    switch (getRangeType()) {
+        case range_type::BOOLEAN:
+            return bool_Tencoder::handle2value(n);
+        case range_type::INTEGER:
+            return int_Tencoder::handle2value(n);
+        case range_type::REAL:
+            return float_Tencoder::handle2value(n);
+        default:
+            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    }
 }
 
 inline int
 MEDDLY::expert_forest::getIntegerFromHandle(MEDDLY::node_handle n) const
 {
-  MEDDLY_DCASSERT(isTerminalNode(n));
-  switch (getRangeType()) {
-    case BOOLEAN:
-      return bool_Tencoder::handle2value(n);
-    case INTEGER:
-      return int_Tencoder::handle2value(n);
-    case REAL:
-      return float_Tencoder::handle2value(n);
-    default:
-      throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-  }
+    MEDDLY_DCASSERT(isTerminalNode(n));
+    switch (getRangeType()) {
+        case range_type::BOOLEAN:
+            return bool_Tencoder::handle2value(n);
+        case range_type::INTEGER:
+            return int_Tencoder::handle2value(n);
+        case range_type::REAL:
+            return float_Tencoder::handle2value(n);
+        default:
+            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    }
 }
 
 inline float
 MEDDLY::expert_forest::getRealFromHandle(MEDDLY::node_handle n) const
 {
-  MEDDLY_DCASSERT(isTerminalNode(n));
-  switch (getRangeType()) {
-    case BOOLEAN:
-      return bool_Tencoder::handle2value(n);
-    case INTEGER:
-      return int_Tencoder::handle2value(n);
-    case REAL:
-      return float_Tencoder::handle2value(n);
-    default:
-      throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-  }
+    MEDDLY_DCASSERT(isTerminalNode(n));
+    switch (getRangeType()) {
+        case range_type::BOOLEAN:
+            return bool_Tencoder::handle2value(n);
+        case range_type::INTEGER:
+            return int_Tencoder::handle2value(n);
+        case range_type::REAL:
+            return float_Tencoder::handle2value(n);
+        default:
+            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    }
 }
 
 inline MEDDLY::memstats&

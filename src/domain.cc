@@ -172,9 +172,9 @@ void MEDDLY::domain::deleteDomList()
   free_list = -1;
 }
 
-/*
-MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
-    forest::edge_labeling e, const forest::policies &p, int* level_reduction_rule, int tv)
+
+MEDDLY::forest* MEDDLY::domain::createForest(bool rel, range_type t,
+    edge_labeling e, const policies &p, int* level_reduction_rule, int tv)
 {
   unsigned slot = findEmptyForestSlot();
 
@@ -237,12 +237,12 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, forest::range_type t,
 
 MEDDLY::forest*
 MEDDLY::domain
-::createForest(bool rel, forest::range_type t, forest::edge_labeling e)
+::createForest(bool rel, range_type t, edge_labeling e)
 {
   return createForest(rel, t, e,
     rel ? forest::getDefaultPoliciesMXDs() : forest::getDefaultPoliciesMDDs(),NULL, 0);
 }
-*/
+
 
 void MEDDLY::domain::showInfo(output &strm)
 {

@@ -67,7 +67,6 @@ namespace MEDDLY {
   class expert_forest;
   class unpacked_node;
 
-  class memory_manager_style;
   class node_storage_style;
 
   class variable;
@@ -101,66 +100,6 @@ namespace MEDDLY {
   ct_object& get_mpz_wrapper();
   void unwrap(const ct_object &, mpz_t &value);
 #endif
-
-  // ******************************************************************
-  // *                    Memory management schemes                   *
-  // ******************************************************************
-
-  extern const memory_manager_style* ORIGINAL_GRID;
-  extern const memory_manager_style* ARRAY_PLUS_GRID;
-  extern const memory_manager_style* MALLOC_MANAGER;
-  extern const memory_manager_style* HEAP_MANAGER;
-  extern const memory_manager_style* FREELISTS;   // used for compute tables
-
-  // ******************************************************************
-  // *                     Node storage mechanisms                    *
-  // ******************************************************************
-
-  /**
-    New, "simple" style with memory manager removed.
-    This node storage mechanism relies on the
-    memory_manager_style for memory management.
-  */
-  extern const node_storage_style* SIMPLE_STORAGE;
-
-
-   extern const node_storage_style* PATTERN_STORAGE;
-   extern const node_storage_style* BEST_STORAGE;
-
-
-  //
-  // From here are "old" mechanisms for node storage,
-  // with built-in memory managers.
-  //
-
-  /** "Classic" node storage mechanism.
-      The node storage mechanism from early versions of this library.
-  */
-  extern const node_storage_style* CLASSIC_STORAGE;
-
-  /** Similar to classic.
-      Differences are in class design, so we can measure overhead
-      (if any) of class design differences.
-  */
-  extern const node_storage_style* SIMPLE_GRID;
-
-  /** Like classic, but use an array of lists for hole management.
-  */
-  extern const node_storage_style* SIMPLE_ARRAY;
-
-  /** Like classic, but use heaps for hole management.
-  */
-  extern const node_storage_style* SIMPLE_HEAP;
-
-  /** Classic node storage but no hole management.
-  */
-  extern const node_storage_style* SIMPLE_NONE;
-
-  /** Nodes are stored in a compressed form.
-      Holes are managed using the original grid structure.
-  */
-  extern const node_storage_style* COMPACT_GRID;
-
 
   // ******************************************************************
   // *                     Named unary operations                     *

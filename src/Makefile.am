@@ -18,6 +18,7 @@ libmeddly_la_SOURCES = \
     io.cc \
     encoders.cc \
     memstats.cc \
+    policies.cc \
     variable.cc varorder.cc \
     domain.cc \
     node_headers.cc node_storage.cc unpacked_node.cc relation_node.cc \
@@ -123,7 +124,7 @@ libmeddly_la_SOURCES = \
 include_HEADERS = meddly.h meddly_expert.h
 
 pkginclude_HEADERS = \
-    error.h io.h memstats.h \
+    error.h io.h memstats.h policies.h \
     variable.h varorder.h \
     domain.h \
     node_headers.h node_storage.h unpacked_node.h relation_node.h \

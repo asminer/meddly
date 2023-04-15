@@ -217,6 +217,32 @@ namespace MEDDLY {
     */
     typedef unsigned long node_address;
 
+    /** Types of values that we can currently store in forests.
+        I.e., if every node in a forest is a function,
+        these are the possible ranges for a function.
+    */
+    enum class range_type {
+      /// boolean-valued functions.
+      BOOLEAN,
+      /// integer-valued functions.
+      INTEGER,
+      /// real-valued functions.
+      REAL
+    };
+
+    /// Edge annotation mechanism.
+    enum class edge_labeling {
+      /// Edges unlabeled, all values stored in distinct terminals.
+      MULTI_TERMINAL,
+      /// Edges labeled, values summed along path.
+      EVPLUS,
+      /// Special case of EVPLUS for indexed sets.
+      INDEX_SET,
+      /// Edges labeled, values multiplied along path.
+      EVTIMES
+      // TBD: there may be others in the future :^)
+    };
+
 };
 
 

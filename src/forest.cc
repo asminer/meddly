@@ -78,52 +78,6 @@
 
 // ******************************************************************
 // *                                                                *
-// *                    forest::policies methods                    *
-// *                                                                *
-// ******************************************************************
-
-
-MEDDLY::forest::policies::policies()
-{
-  nodemm = 0;   //
-  nodestor = 0; // should cause an exception later
-}
-
-MEDDLY::forest::policies::policies(bool rel)
-{
-  useDefaults(rel);
-}
-
-void MEDDLY::forest::policies::useDefaults(bool rel)
-{
-  reduction = rel ? IDENTITY_REDUCED : FULLY_REDUCED;
-  storage_flags = FULL_OR_SPARSE;
-  deletion = OPTIMISTIC_DELETION;
-  // compact_min = 100;
-  // compact_max = 1000000;
-  // compact_frac = 40;
-  // zombieTrigger = 1000000;
-  // orphanTrigger = 500000;
-  // compactAfterGC = false;
-  // compactBeforeExpand = true;
-
-  useReferenceCounts = true;
-
-  // nodemm = ORIGINAL_GRID;
-  nodemm = ARRAY_PLUS_GRID;
-  // nodemm = MALLOC_MANAGER;
-  // nodemm = HEAP_MANAGER;
-
-  nodestor = SIMPLE_STORAGE;
-  //nodestor = PATTERN_STORAGE;
-  //nodestor = BEST_STORAGE;
-
-  reorder = reordering_type::SINK_DOWN;
-  swap = variable_swap_type::VAR;
-}
-
-// ******************************************************************
-// *                                                                *
 // *                    forest::statset  methods                    *
 // *                                                                *
 // ******************************************************************

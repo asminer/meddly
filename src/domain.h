@@ -20,6 +20,7 @@
 #define MEDDLY_DOMAIN_H
 
 #include "variable.h"
+#include "policies.h"
 #include <vector>
 #include <memory>
 
@@ -93,12 +94,11 @@ class MEDDLY::domain {
         @param  level_reduction_rule       Rules for reduction on different levels.
         @return 0       if an error occurs, a new forest otherwise.
     */
-    // forest* createForest(bool rel, forest::range_type t,
-      // forest::edge_labeling ev, const forest::policies &p, int* level_reduction_rule=NULL, int tv=0);
+    forest* createForest(bool rel, range_type t, edge_labeling ev,
+            const policies &p, int* level_reduction_rule=NULL, int tv=0);
 
     /// Create a forest using the library default policies.
-    // forest* createForest(bool rel, forest::range_type t,
-      // forest::edge_labeling ev);
+    forest* createForest(bool rel, range_type t, edge_labeling ev);
 
     /// Get the number of variables in this domain.
     int getNumVariables() const;
