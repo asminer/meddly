@@ -307,7 +307,7 @@ int main()
 
   char filename[20];
   strcpy(filename, "kan_io.data.XXXXXX");
-  mktemp(filename);
+  mkstemp(filename);
 #ifdef DEBUG_FILE
   printf("Creating file %s\n", filename);
 #endif
