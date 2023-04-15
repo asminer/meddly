@@ -131,7 +131,7 @@ class MEDDLY::simple_separated : public node_storage {
     virtual void markDownPointers(node_address addr);
 
     virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
-    virtual void fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style) const;
+    virtual void fillUnpacked(unpacked_node &nr, node_address addr, node_storage_flags) const;
 
     virtual unsigned hashNode(int level, node_address addr) const;
     virtual int getSingletonIndex(node_address addr, node_handle &down) const;
@@ -375,12 +375,12 @@ MEDDLY::node_address MEDDLY::simple_separated
 
   node_address addr = 0;
 
-  if (0==(forest::policies::ALLOW_SPARSE_STORAGE & opt)) {
+  if (FULL_ONLY == opt) {
     //
     // Sparse nodes disabled?  Just build a full one
     //
     addr = makeFullNode(p, truncsize, nb);
-  } else if (0==(forest::policies::ALLOW_FULL_STORAGE & opt)) {
+  } else if (SPARSE_ONLY == opt) {
     //
     // Full nodes disabled?  Just build a sparse one
     //
@@ -645,7 +645,7 @@ bool MEDDLY::simple_separated
 
 
 void MEDDLY::simple_separated
-::fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style st2) const
+::fillUnpacked(unpacked_node &nr, node_address addr, node_storage_flags st2) const
 {
 #ifdef DEBUG_DECODING
   FILE_output out(stdout);
@@ -683,9 +683,9 @@ void MEDDLY::simple_separated
      Set the unpacked node storage style based on settings
      */
   switch (st2) {
-    case unpacked_node::FULL_NODE:     nr.bind_as_full(true);    break;
-    case unpacked_node::SPARSE_NODE:   nr.bind_as_full(false);   break;
-    case unpacked_node::AS_STORED:     nr.bind_as_full(is_sparse); break;
+    case FULL_ONLY:         nr.bind_as_full(true);    break;
+    case SPARSE_ONLY:       nr.bind_as_full(false);   break;
+    case FULL_OR_SPARSE:    nr.bind_as_full(is_sparse); break;
 
     default:            assert(0);
   };
@@ -789,7 +789,7 @@ void MEDDLY::simple_separated
           memcpy(nr.eptr_write(i), edge + i*slots_per_edge, nr.edgeBytes());
         }
       }
-      if (unpacked_node::AS_STORED == st2 && is_extensible == nr.isExtensible()) {
+      if (FULL_OR_SPARSE == st2 && is_extensible == nr.isExtensible()) {
         nr.shrinkFull(size);
       } else {
         const int ext_d = is_extensible? down[size-1]: tv;

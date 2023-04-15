@@ -135,7 +135,7 @@ public:
   virtual void markDownPointers(node_address addr);
 
   virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
-  virtual void fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style) const;
+  virtual void fillUnpacked(unpacked_node &nr, node_address addr, node_storage_flags) const;
 
   virtual unsigned hashNode(int level, node_address addr) const;
   virtual int getSingletonIndex(node_address addr, node_handle &down) const;
@@ -579,7 +579,7 @@ bool MEDDLY::pattern_storage
 
 
 void MEDDLY::pattern_storage
-::fillUnpacked(unpacked_node &nr, node_address addr, unpacked_node::storage_style st2) const
+::fillUnpacked(unpacked_node &nr, node_address addr, node_storage_flags st2) const
 {
 
 #ifdef DEBUG_DECODING
@@ -616,9 +616,9 @@ void MEDDLY::pattern_storage
    */
 
   switch (st2) {
-    case unpacked_node::FULL_NODE:     nr.bind_as_full(true);    break;
-    case unpacked_node::SPARSE_NODE:   nr.bind_as_full(false);   break;
-    case unpacked_node::AS_STORED:     nr.bind_as_full(true);    break; // Since is_sparse makes no sense here, lets go with full
+    case FULL_ONLY:         nr.bind_as_full(true);    break;
+    case SPARSE_ONLY:       nr.bind_as_full(false);   break;
+    case FULL_OR_SPARSE:    nr.bind_as_full(true);    break; // Since is_sparse makes no sense here, lets go with full
     default:            assert(0);
   };
 

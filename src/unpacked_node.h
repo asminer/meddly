@@ -618,12 +618,10 @@ class MEDDLY::unpacked_node {
 
         /// Called by node_storage when building an unpacked
         /// node based on how it's stored.
-        /*
         inline void bind_as_full(bool full)
         {
             is_full = full;
         }
-        */
 
     protected:
         /// Set all down edges (and values) to 0, for full storage
