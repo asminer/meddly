@@ -67,13 +67,13 @@ bool MEDDLY::multiply_mdd::checkTerminals(node_handle a, node_handle b, node_han
   }
   if (arg1F->isTerminalNode(a)) {
     if (arg2F->isTerminalNode(b)) {
-      if (resF->getRangeType() == forest::INTEGER) {
+      if (resF->getRangeType() == range_type::INTEGER) {
         int av, bv;
         arg1F->getValueFromHandle(a, av);
         arg2F->getValueFromHandle(b, bv);
         c = resF->handleForValue(av * bv);
       } else {
-        MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
+        MEDDLY_DCASSERT(resF->getRangeType() == range_type::REAL);
         float av, bv;
         arg1F->getValueFromHandle(a, av);
         arg2F->getValueFromHandle(b, bv);
@@ -82,13 +82,13 @@ bool MEDDLY::multiply_mdd::checkTerminals(node_handle a, node_handle b, node_han
       return true;
     }
     if (arg2F != resF) return false;
-    if (resF->getRangeType() == forest::INTEGER) {
+    if (resF->getRangeType() == range_type::INTEGER) {
       if (1==arg1F->getIntegerFromHandle(a)) {
         c = arg2F->linkNode(b);
         return true;
       }
     } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == range_type::REAL);
       if (1.0==arg1F->getRealFromHandle(a)) {
         c = arg2F->linkNode(b);
         return true;
@@ -97,13 +97,13 @@ bool MEDDLY::multiply_mdd::checkTerminals(node_handle a, node_handle b, node_han
   } // a is terminal
   if (arg2F->isTerminalNode(b)) {
     if (arg1F != resF) return false;
-    if (resF->getRangeType() == forest::INTEGER) {
+    if (resF->getRangeType() == range_type::INTEGER) {
       if (1==arg2F->getIntegerFromHandle(b)) {
         c = arg1F->linkNode(a);
         return true;
       }
     } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == range_type::REAL);
       if (1.0==arg2F->getRealFromHandle(b)) {
         c = arg1F->linkNode(a);
         return true;
@@ -146,13 +146,13 @@ bool MEDDLY::multiply_mxd::checkTerminals(node_handle a, node_handle b, node_han
 
   if (arg1F->isTerminalNode(a)) {
     if (arg2F->isTerminalNode(b)) {
-      if (resF->getRangeType() == forest::INTEGER) {
+      if (resF->getRangeType() == range_type::INTEGER) {
         int av, bv;
         arg1F->getValueFromHandle(a, av);
         arg2F->getValueFromHandle(b, bv);
         c = resF->handleForValue(av * bv);
       } else {
-        MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
+        MEDDLY_DCASSERT(resF->getRangeType() == range_type::REAL);
         float av, bv;
         arg1F->getValueFromHandle(a, av);
         arg2F->getValueFromHandle(b, bv);
@@ -161,13 +161,13 @@ bool MEDDLY::multiply_mxd::checkTerminals(node_handle a, node_handle b, node_han
       return true;
     }
     if (arg2F != resF) return false;
-    if (resF->getRangeType() == forest::INTEGER) {
+    if (resF->getRangeType() == range_type::INTEGER) {
       if (1==arg1F->getIntegerFromHandle(a)) {
         c = arg2F->linkNode(b);
         return true;
       }
     } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == range_type::REAL);
       if (1.0==arg1F->getRealFromHandle(a)) {
         c = arg2F->linkNode(b);
         return true;
@@ -176,13 +176,13 @@ bool MEDDLY::multiply_mxd::checkTerminals(node_handle a, node_handle b, node_han
   } // a is terminal
   if (arg2F->isTerminalNode(b)) {
     if (arg1F != resF) return false;
-    if (resF->getRangeType() == forest::INTEGER) {
+    if (resF->getRangeType() == range_type::INTEGER) {
       if (1==arg2F->getIntegerFromHandle(b)) {
         c = arg1F->linkNode(a);
         return true;
       }
     } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == range_type::REAL);
       if (1.0==arg2F->getRealFromHandle(b)) {
         c = arg1F->linkNode(a);
         return true;
@@ -306,11 +306,11 @@ MEDDLY::multiply_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a2->isForRelations() != r->isForRelations()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (r->getRangeType() == forest::BOOLEAN)
+    (r->getRangeType() == range_type::BOOLEAN)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     if (r->isForRelations())
       return new multiply_mxd(this, a1, a2, r);
     else
@@ -323,10 +323,10 @@ MEDDLY::multiply_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  if (r->getEdgeLabeling() == forest::EVPLUS)
+  if (r->getEdgeLabeling() == edge_labeling::EVPLUS)
     return new multiply_evplus(this, a1, a2, r);
 
-  if (r->getEdgeLabeling() == forest::EVTIMES)
+  if (r->getEdgeLabeling() == edge_labeling::EVTIMES)
     return new multiply_evtimes(this, a1, a2, r);
 
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);

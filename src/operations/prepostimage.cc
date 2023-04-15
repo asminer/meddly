@@ -1226,21 +1226,21 @@ MEDDLY::preimage_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     !a2->isForRelations()   ||
     r->isForRelations()     ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL)
+    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   binary_operation* acc = 0;
-  if (a1->getEdgeLabeling() == forest::EVPLUS || r->getRangeType() == forest::BOOLEAN) {
+  if (a1->getEdgeLabeling() == edge_labeling::EVPLUS || r->getRangeType() == range_type::BOOLEAN) {
     acc = getOperation(UNION, r, r, r);
   } else {
     acc = getOperation(MAXIMUM, r, r, r);
   }
 
-  if (a1->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+  if (a1->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     return new mtmatr_mtvect<bool>(this, a1, a2, r, acc);
   }
-  else if (a1->getEdgeLabeling() == forest::EVPLUS) {
+  else if (a1->getEdgeLabeling() == edge_labeling::EVPLUS) {
     return new mtmatr_evplusvect<int>(this, a1, a2, r, acc);
   }
   else {
@@ -1284,21 +1284,21 @@ MEDDLY::postimage_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     !a2->isForRelations()   ||
     r->isForRelations()     ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL)
+    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   binary_operation* acc = 0;
-  if (a1->getEdgeLabeling() == forest::EVPLUS || r->getRangeType() == forest::BOOLEAN) {
+  if (a1->getEdgeLabeling() == edge_labeling::EVPLUS || r->getRangeType() == range_type::BOOLEAN) {
     acc = getOperation(UNION, r, r, r);
   } else {
     acc = getOperation(MAXIMUM, r, r, r);
   }
 
-  if (a1->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+  if (a1->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     return new mtvect_mtmatr<bool>(this, a1, a2, r, acc);
   }
-  else if(a1->getEdgeLabeling() == forest::EVPLUS) {
+  else if(a1->getEdgeLabeling() == edge_labeling::EVPLUS) {
       return new evplusvect_mtmatr<int>(this, a1, a2, r, acc);
   }
   else {
@@ -1340,9 +1340,9 @@ MEDDLY::transitive_closure_postimage_opname::buildOperation(expert_forest* a1, e
     !a1->isForRelations()    ||
     !a2->isForRelations()   ||
     !r->isForRelations()     ||
-    (a1->getEdgeLabeling() != forest::EVPLUS) ||
-    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
-    (r->getEdgeLabeling() != forest::EVPLUS)
+    (a1->getEdgeLabeling() != edge_labeling::EVPLUS) ||
+    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
+    (r->getEdgeLabeling() != edge_labeling::EVPLUS)
   )
     throw error(error::TYPE_MISMATCH);
 
@@ -1381,25 +1381,25 @@ MEDDLY::VMmult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
-    (a1->getRangeType() == forest::BOOLEAN) ||
-    (a2->getRangeType() == forest::BOOLEAN) ||
-    (r->getRangeType() == forest::BOOLEAN) ||
+    (a1->getRangeType() == range_type::BOOLEAN) ||
+    (a2->getRangeType() == range_type::BOOLEAN) ||
+    (r->getRangeType() == range_type::BOOLEAN) ||
     a1->isForRelations()    ||
     !a2->isForRelations()   ||
     r->isForRelations()     ||
-    (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
-    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
-    (r->getEdgeLabeling() != forest::MULTI_TERMINAL)
+    (a1->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
+    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
+    (r->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   binary_operation* acc = getOperation(PLUS, r, r, r);
 
   switch (r->getRangeType()) {
-    case forest::INTEGER:
+    case range_type::INTEGER:
       return new mtvect_mtmatr<int>(this, a1, a2, r, acc);
 
-    case forest::REAL:
+    case range_type::REAL:
       return new mtvect_mtmatr<float>(this, a1, a2, r, acc);
 
     default:
@@ -1438,15 +1438,15 @@ MEDDLY::MVmult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
-    (a1->getRangeType() == forest::BOOLEAN) ||
-    (a2->getRangeType() == forest::BOOLEAN) ||
-    (r->getRangeType() == forest::BOOLEAN) ||
+    (a1->getRangeType() == range_type::BOOLEAN) ||
+    (a2->getRangeType() == range_type::BOOLEAN) ||
+    (r->getRangeType() == range_type::BOOLEAN) ||
     !a1->isForRelations()    ||
     a2->isForRelations()   ||
     r->isForRelations()     ||
-    (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
-    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
-    (r->getEdgeLabeling() != forest::MULTI_TERMINAL)
+    (a1->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
+    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
+    (r->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
@@ -1457,10 +1457,10 @@ MEDDLY::MVmult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   //
 
   switch (r->getRangeType()) {
-    case forest::INTEGER:
+    case range_type::INTEGER:
       return new mtmatr_mtvect<int>(this, a2, a1, r, acc);
 
-    case forest::REAL:
+    case range_type::REAL:
       return new mtmatr_mtvect<float>(this, a2, a1, r, acc);
 
     default:

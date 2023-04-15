@@ -145,16 +145,16 @@ MEDDLY::divide_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     switch (r->getRangeType()) {
 
-      case forest::INTEGER:
+      case range_type::INTEGER:
           if (r->isForRelations())
             return new divide_mxd<int>(this, a1, a2, r);
           else
             return new divide_mdd<int>(this, a1, a2, r);
 
-      case forest::REAL:
+      case range_type::REAL:
           if (r->isForRelations())
             return new divide_mxd<float>(this, a1, a2, r);
           else

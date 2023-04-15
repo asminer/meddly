@@ -154,7 +154,7 @@ class MEDDLY::forwd_bfs_mt : public common_bfs {
 MEDDLY::forwd_bfs_mt::forwd_bfs_mt(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res) : common_bfs(oc, a1, a2, res)
 {
-  if (res->getRangeType() == forest::BOOLEAN) {
+  if (res->getRangeType() == range_type::BOOLEAN) {
     setUnionOp( getOperation(UNION, res, res, res) );
   } else {
     setUnionOp( getOperation(MAXIMUM, res, res, res) );
@@ -179,7 +179,7 @@ class MEDDLY::bckwd_bfs_mt : public common_bfs {
 MEDDLY::bckwd_bfs_mt::bckwd_bfs_mt(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res) : common_bfs(oc, a1, a2, res)
 {
-  if (res->getRangeType() == forest::BOOLEAN) {
+  if (res->getRangeType() == range_type::BOOLEAN) {
     setUnionOp( getOperation(UNION, res, res, res) );
   } else {
     setUnionOp( getOperation(MAXIMUM, res, res, res) );
@@ -294,7 +294,7 @@ MEDDLY::forwd_bfs_evplus::forwd_bfs_evplus(const binary_opname* oc, expert_fores
   // expert_forest* a2, expert_forest* res) : common_bfs_evplus(oc, a1, a2, res)
   expert_forest* a2, expert_forest* res) : common_bfs(oc, a1, a2, res)
 {
-  if (res->getRangeType() == forest::INTEGER) {
+  if (res->getRangeType() == range_type::INTEGER) {
     setUnionOp( getOperation(UNION, res, res, res) );
   } else {
     throw error(error::INVALID_OPERATION);
@@ -305,7 +305,7 @@ MEDDLY::forwd_bfs_evplus::forwd_bfs_evplus(const binary_opname* oc, expert_fores
 /*
 void MEDDLY::forwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd)
 {
-  if (resF->getRangeType() == forest::INTEGER) {
+  if (resF->getRangeType() == range_type::INTEGER) {
     unionMinOp = getOperation(UNION, resF, resF, resF);
   } else {
     throw error(error::INVALID_OPERATION);
@@ -334,7 +334,7 @@ MEDDLY::bckwd_bfs_evplus::bckwd_bfs_evplus(const binary_opname* oc, expert_fores
   // expert_forest* a2, expert_forest* res) : common_bfs_evplus(oc, a1, a2, res)
   expert_forest* a2, expert_forest* res) : common_bfs(oc, a1, a2, res)
 {
-  if (res->getRangeType() == forest::INTEGER) {
+  if (res->getRangeType() == range_type::INTEGER) {
     setUnionOp( getOperation(UNION, res, res, res) );
   } else {
     throw error(error::INVALID_OPERATION);
@@ -345,7 +345,7 @@ MEDDLY::bckwd_bfs_evplus::bckwd_bfs_evplus(const binary_opname* oc, expert_fores
 /*
 void MEDDLY::bckwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd)
 {
-  if (resF->getRangeType() == forest::INTEGER) {
+  if (resF->getRangeType() == range_type::INTEGER) {
     unionMinOp = getOperation(UNION, resF, resF, resF);
   } else {
     throw error(error::INVALID_OPERATION);
@@ -393,14 +393,14 @@ MEDDLY::forwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     r->isForRelations()     ||
     (a1->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL)
+    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  if (a1->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+  if (a1->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     return new forwd_bfs_mt(this, a1, a2, r);
   }
-  else if (a1->getEdgeLabeling() == forest::EVPLUS) {
+  else if (a1->getEdgeLabeling() == edge_labeling::EVPLUS) {
     return new forwd_bfs_evplus(this, a1, a2, r);
   }
   else {
@@ -447,14 +447,14 @@ MEDDLY::bckwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     r->isForRelations()     ||
     (a1->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL)
+    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  if (a1->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+  if (a1->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     return new bckwd_bfs_mt(this, a1, a2, r);
   }
-  else if (a1->getEdgeLabeling() == forest::EVPLUS) {
+  else if (a1->getEdgeLabeling() == edge_labeling::EVPLUS) {
     return new bckwd_bfs_evplus(this, a1, a2, r);
   }
   else {

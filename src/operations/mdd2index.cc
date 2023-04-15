@@ -194,11 +194,11 @@ MEDDLY::mdd2index_opname
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (arg->isForRelations() ||
-      arg->getRangeType() != forest::BOOLEAN ||
-      arg->getEdgeLabeling() != forest::MULTI_TERMINAL ||
+      arg->getRangeType() != range_type::BOOLEAN ||
+      arg->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL ||
       res->isForRelations() ||
-      res->getRangeType() != forest::INTEGER ||
-      res->getEdgeLabeling() != forest::INDEX_SET
+      res->getRangeType() != range_type::INTEGER ||
+      res->getEdgeLabeling() != edge_labeling::INDEX_SET
   ) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   return new mdd2index_operation(this, arg, res);

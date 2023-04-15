@@ -1571,14 +1571,14 @@ MEDDLY::forwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     !a2->isForRelations()   ||
     r->isForRelations()     ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL)
+    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  if (a1->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+  if (a1->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     return new forwd_dfs_mt(this, a1, a2, r);
   }
-  else if (a1->getEdgeLabeling() == forest::EVPLUS) {
+  else if (a1->getEdgeLabeling() == edge_labeling::EVPLUS) {
     return new forwd_dfs_evplus(this, a1, a2, r);
   }
   else {
@@ -1624,8 +1624,8 @@ MEDDLY::bckwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   if (
     a1->isForRelations()    ||
     !a2->isForRelations()   ||
-    (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
-    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL)
+    (a1->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
+    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 

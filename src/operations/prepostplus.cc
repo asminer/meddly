@@ -364,9 +364,9 @@ MEDDLY::preplus_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 
   // Exception: EV+MXD + EVMDD = EV+MXD
   if (
-    a1->getEdgeLabeling() == forest::EVPLUS ||
-    a2->getEdgeLabeling() == forest::EVPLUS ||
-    r->getEdgeLabeling() == forest::EVPLUS ||
+    a1->getEdgeLabeling() == edge_labeling::EVPLUS ||
+    a2->getEdgeLabeling() == edge_labeling::EVPLUS ||
+    r->getEdgeLabeling() == edge_labeling::EVPLUS ||
     a1->isForRelations() ||
     !a2->isForRelations() ||
     r->isForRelations()
@@ -410,9 +410,9 @@ MEDDLY::postplus_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 
   // Exception: EV+MXD + EVMDD = EV+MXD
   if (
-    a1->getEdgeLabeling() == forest::EVPLUS ||
-    a2->getEdgeLabeling() == forest::EVPLUS ||
-    r->getEdgeLabeling() == forest::EVPLUS ||
+    a1->getEdgeLabeling() == edge_labeling::EVPLUS ||
+    a2->getEdgeLabeling() == edge_labeling::EVPLUS ||
+    r->getEdgeLabeling() == edge_labeling::EVPLUS ||
     a1->isForRelations() ||
     !a2->isForRelations() ||
     r->isForRelations()

@@ -570,14 +570,14 @@ MEDDLY::union_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     if (r->isForRelations())
       return new union_mxd(this, a1, a2, r);
     else
       return new union_mdd(this, a1, a2, r);
   }
 
-  if (r->getEdgeLabeling() == forest::EVPLUS) {
+  if (r->getEdgeLabeling() == edge_labeling::EVPLUS) {
     if (r->isForRelations()) {
       return new union_min_evplus_mxd(this, a1, a2, r);
     }

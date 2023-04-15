@@ -495,11 +495,11 @@ MEDDLY::VM_opname::buildOperation(arguments* a) const
 
   // Check edge types
   if (
-           (fy->getRangeType() != forest::INTEGER)
+           (fy->getRangeType() != range_type::INTEGER)
         || (fy->isForRelations())
-        || (fx->getRangeType() != forest::INTEGER)
+        || (fx->getRangeType() != range_type::INTEGER)
         || (fx->isForRelations())
-        || (fA->getRangeType() != forest::REAL)
+        || (fA->getRangeType() != range_type::REAL)
         || (!fA->isForRelations())
       )
   {
@@ -517,10 +517,10 @@ MEDDLY::VM_opname::buildOperation(arguments* a) const
   }
 
   switch (fA->getEdgeLabeling()) {
-    case forest::MULTI_TERMINAL:
+    case edge_labeling::MULTI_TERMINAL:
       return new VM_evplus_mt(this, na->x_ind, na->A, na->y_ind);
 
-    case forest::EVTIMES:
+    case edge_labeling::EVTIMES:
       throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
     default:
@@ -566,11 +566,11 @@ MEDDLY::MV_opname::buildOperation(arguments* a) const
 
   // Check edge types
   if (
-           (fy->getRangeType() != forest::INTEGER)
+           (fy->getRangeType() != range_type::INTEGER)
         || (fy->isForRelations())
-        || (fx->getRangeType() != forest::INTEGER)
+        || (fx->getRangeType() != range_type::INTEGER)
         || (fx->isForRelations())
-        || (fA->getRangeType() != forest::REAL)
+        || (fA->getRangeType() != range_type::REAL)
         || (!fA->isForRelations())
       )
   {
@@ -588,10 +588,10 @@ MEDDLY::MV_opname::buildOperation(arguments* a) const
   }
 
   switch (fA->getEdgeLabeling()) {
-    case forest::MULTI_TERMINAL:
+    case edge_labeling::MULTI_TERMINAL:
       return new MV_evplus_mt(this, na->x_ind, na->A, na->y_ind);
 
-    case forest::EVTIMES:
+    case edge_labeling::EVTIMES:
       throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
     default:

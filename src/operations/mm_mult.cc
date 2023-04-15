@@ -397,25 +397,25 @@ MEDDLY::mm_mult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
   if (
-    (a1->getRangeType() == forest::BOOLEAN) ||
-    (a2->getRangeType() == forest::BOOLEAN) ||
-    (r->getRangeType()  == forest::BOOLEAN) ||
+    (a1->getRangeType() == range_type::BOOLEAN) ||
+    (a2->getRangeType() == range_type::BOOLEAN) ||
+    (r->getRangeType()  == range_type::BOOLEAN) ||
     !a1->isForRelations()   ||
     !a2->isForRelations()   ||
     !r->isForRelations()    ||
-    (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
-    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
-    (r->getEdgeLabeling()  != forest::MULTI_TERMINAL)
+    (a1->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
+    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
+    (r->getEdgeLabeling()  != edge_labeling::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   binary_operation* acc = getOperation(PLUS, r, r, r);
 
   switch (r->getRangeType()) {
-    case forest::INTEGER:
+    case range_type::INTEGER:
       return new mm_mult_mt<int>(this, a1, a2, r, acc);
 
-    case forest::REAL:
+    case range_type::REAL:
       return new mm_mult_mt<float>(this, a1, a2, r, acc);
 
     default:

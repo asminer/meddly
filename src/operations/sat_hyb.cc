@@ -22,6 +22,7 @@
 #include "old_meddly.hh"
 #include "old_meddly_expert.h"
 #include "old_meddly_expert.hh"
+#include "relation_node.h"
 //#include "event_ordering.h"
 #include "sat_hyb.h"
 #include <typeinfo> // for "bad_cast" exception
@@ -98,9 +99,9 @@ MEDDLY::sathyb_opname::hybrid_relation::hybrid_relation(forest* inmdd, forest* r
       insetF->isForRelations()    ||
       outsetF->isForRelations()   ||
       !hybRelF->isForRelations()  ||
-      (insetF->getEdgeLabeling() != forest::MULTI_TERMINAL)   ||
-      (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)  ||
-      (hybRelF->getEdgeLabeling() != forest::MULTI_TERMINAL)
+      (insetF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)   ||
+      (outsetF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)  ||
+      (hybRelF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
       )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
@@ -331,7 +332,7 @@ void findConfirmedStatesImpl(MEDDLY::sathyb_opname::hybrid_relation* rel,
     }
     // mdd_level == level
     visited.insert(mdd);
-    MEDDLY::unpacked_node *nr = insetF->newUnpacked(mdd, SPARSE_ONLY);
+    MEDDLY::unpacked_node *nr = insetF->newUnpacked(mdd, MEDDLY::SPARSE_ONLY);
     for (int i = 0; i < nr->getNNZs(); i++) {
       if (!confirmed[level][nr->i(i)]) {
         rel->setConfirmedStates(level, nr->i(i));
@@ -514,7 +515,7 @@ MEDDLY::sathyb_opname::hybrid_relation::buildMxdForest()
 
   domain *d = outsetF->useDomain();
 
-  forest* mxd = d->createForest(true,forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mxd = d->createForest(true,forest::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
 
   dd_edge* monolithic_nsf = new dd_edge(mxd);

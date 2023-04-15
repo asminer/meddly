@@ -193,9 +193,9 @@ MEDDLY::equal_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     bool use_reals = (
-      a1->getRangeType() == forest::REAL || a2->getRangeType() == forest::REAL
+      a1->getRangeType() == range_type::REAL || a2->getRangeType() == range_type::REAL
     );
     if (use_reals) {
       if (r->isForRelations())
@@ -210,7 +210,7 @@ MEDDLY::equal_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     }
   }
 
-  if (r->getEdgeLabeling() == forest::EVTIMES) {
+  if (r->getEdgeLabeling() == edge_labeling::EVTIMES) {
     if (
       (a1->getRangeType() != r->getRangeType()) ||
       (a1->getRangeType() != r->getRangeType())

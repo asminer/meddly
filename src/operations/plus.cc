@@ -62,13 +62,13 @@ MEDDLY::plus_mdd::plus_mdd(const binary_opname* opcode,
 bool MEDDLY::plus_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
-    if (resF->getRangeType() == forest::INTEGER) {
+    if (resF->getRangeType() == range_type::INTEGER) {
       int av, bv;
       arg1F->getValueFromHandle(a, av);
       arg2F->getValueFromHandle(b, bv);
       c = resF->handleForValue(av + bv);
     } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == range_type::REAL);
       float av, bv;
       arg1F->getValueFromHandle(a, av);
       arg2F->getValueFromHandle(b, bv);
@@ -120,13 +120,13 @@ MEDDLY::plus_mxd::plus_mxd(const binary_opname* opcode,
 bool MEDDLY::plus_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
 {
   if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
-    if (resF->getRangeType() == forest::INTEGER) {
+    if (resF->getRangeType() == range_type::INTEGER) {
       int av, bv;
       arg1F->getValueFromHandle(a, av);
       arg2F->getValueFromHandle(b, bv);
       c = resF->handleForValue(av + bv);
     } else {
-      MEDDLY_DCASSERT(resF->getRangeType() == forest::REAL);
+      MEDDLY_DCASSERT(resF->getRangeType() == range_type::REAL);
       float av, bv;
       arg1F->getValueFromHandle(a, av);
       arg2F->getValueFromHandle(b, bv);
@@ -320,11 +320,11 @@ MEDDLY::plus_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a2->isForRelations() != r->isForRelations()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (r->getRangeType() == forest::BOOLEAN)
+    (r->getRangeType() == range_type::BOOLEAN)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     if (r->isForRelations())
       return new plus_mxd(this, a1, a2, r);
     else
@@ -338,10 +338,10 @@ MEDDLY::plus_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
 
-  if (r->getEdgeLabeling() == forest::EVPLUS)
+  if (r->getEdgeLabeling() == edge_labeling::EVPLUS)
     return new plus_evplus(this, a1, a2, r);
 
-  if (r->getEdgeLabeling() == forest::EVTIMES)
+  if (r->getEdgeLabeling() == edge_labeling::EVTIMES)
     return new plus_evtimes(this, a1, a2, r);
 
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);

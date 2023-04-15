@@ -83,7 +83,7 @@ MEDDLY::transitive_closure_forwd_bfs::transitive_closure_forwd_bfs(const constra
   expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res)
   : common_transitive_closure(code, 0, cons, tc, trans, res)
 {
-  if (resF->getRangeType() == forest::INTEGER && resF->isForRelations()) {
+  if (resF->getRangeType() == range_type::INTEGER && resF->isForRelations()) {
     plusOp = getOperation(POST_PLUS, resF, consF, resF);
     minOp = getOperation(UNION, resF, resF, resF);
   } else {

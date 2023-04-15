@@ -324,7 +324,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   // Check terminals
   if (argF->isTerminalNode(a)) {
     MEDDLY_DCASSERT(a != argF->getTransparentNode());
-    if (argF->getRangeType() == forest::BOOLEAN) {
+    if (argF->getRangeType() == range_type::BOOLEAN) {
       bev = 0;
     }
     else {
@@ -373,7 +373,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   // Check terminals
   if (0==k) {
     MEDDLY_DCASSERT(a != argF->getTransparentNode());
-    if (argF->getRangeType() == forest::BOOLEAN) {
+    if (argF->getRangeType() == range_type::BOOLEAN) {
       bev = 0;
     }
     else {
@@ -513,7 +513,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   // Check terminals
   if (argF->isTerminalNode(a)) {
     MEDDLY_DCASSERT(a != argF->getTransparentNode());
-    if (resF->getRangeType() == forest::BOOLEAN) {
+    if (resF->getRangeType() == range_type::BOOLEAN) {
       return bool_Tencoder::value2handle(true);
     }
     else {
@@ -560,7 +560,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   // Check terminals
   if (0==k) {
     MEDDLY_DCASSERT(a != argF->getTransparentNode());
-    if (resF->getRangeType() == forest::BOOLEAN) {
+    if (resF->getRangeType() == range_type::BOOLEAN) {
       return bool_Tencoder::value2handle(true);
     }
     else {
@@ -942,13 +942,13 @@ MEDDLY::copy_opname
     // MT copies, handled by the new template class!
     //
     switch (res->getRangeType()) {
-      case forest::BOOLEAN:
+      case range_type::BOOLEAN:
         return new copy_MT_tmpl<bool>(this, arg, res);
 
-      case forest::INTEGER:
+      case range_type::INTEGER:
         return new copy_MT_tmpl<int>(this, arg, res);
 
-      case forest::REAL:
+      case range_type::REAL:
         return new copy_MT_tmpl<float>(this, arg, res);
 
 
@@ -968,10 +968,10 @@ MEDDLY::copy_opname
     // MT to EV conversion
     //
     switch (res->getRangeType()) {
-      case forest::INTEGER:
+      case range_type::INTEGER:
         return new copy_MT2EV<long>(this, arg, res, "N:LN");
 
-      case forest::REAL:
+      case range_type::REAL:
         return new copy_MT2EV<float>(this, arg, res, "N:FN");
 
       default:
@@ -985,10 +985,10 @@ MEDDLY::copy_opname
     // EV+ to MT conversion
     //
     switch (arg->getRangeType()) {
-      case forest::INTEGER:
+      case range_type::INTEGER:
         return new copy_EV2MT<long,PLUS>(this, arg, res, "LN:N");
 
-      case forest::REAL:
+      case range_type::REAL:
         return new copy_EV2MT<float,PLUS>(this, arg, res, "FN:N");
 
       default:
@@ -1002,10 +1002,10 @@ MEDDLY::copy_opname
     // EV* to MT conversion  (untested!)
     //
     switch (arg->getRangeType()) {
-      case forest::INTEGER:
+      case range_type::INTEGER:
         return new copy_EV2MT<long,TIMES>(this, arg, res, "LN:N");
 
-      case forest::REAL:
+      case range_type::REAL:
         return new copy_EV2MT<float,TIMES>(this, arg, res, "FN:N");
 
       default:
@@ -1030,22 +1030,22 @@ MEDDLY::copy_opname
     {
 
       switch (arg->getRangeType()) {
-        case forest::INTEGER:
+        case range_type::INTEGER:
             switch (res->getRangeType()) {
-                case forest::INTEGER:
+                case range_type::INTEGER:
                     return new copy_EV2EV_fast<long,long>(this, arg, res);
-                case forest::REAL:
+                case range_type::REAL:
                     return new copy_EV2EV_fast<long,float>(this, arg, res);
                 default:
                     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
             };
             break;    // in case anything falls through
 
-        case forest::REAL:
+        case range_type::REAL:
             switch (res->getRangeType()) {
-                case forest::INTEGER:
+                case range_type::INTEGER:
                     break;    // not safe to go from real -> integer this way
-                case forest::REAL:
+                case range_type::REAL:
                     return new copy_EV2EV_fast<float,float>(this, arg, res);
                 default:
                     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -1066,21 +1066,21 @@ MEDDLY::copy_opname
 
     switch (arg->getRangeType()) {
 
-      case forest::INTEGER:
+      case range_type::INTEGER:
           switch (res->getRangeType()) {
-            case forest::INTEGER:
+            case range_type::INTEGER:
                 return new copy_EV2EV_slow<long,PLUS,long>(this, arg, res, "LN:LN");
-            case forest::REAL:
+            case range_type::REAL:
                 return new copy_EV2EV_slow<long,PLUS,float>(this, arg, res, "LN:FN");
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
 
-      case forest::REAL:
+      case range_type::REAL:
           switch (res->getRangeType()) {
-            case forest::INTEGER:
+            case range_type::INTEGER:
                 return new copy_EV2EV_slow<float,PLUS,long>(this, arg, res, "FN:LN");
-            case forest::REAL:
+            case range_type::REAL:
                 return new copy_EV2EV_slow<float,PLUS,float>(this, arg, res, "FN:FN");
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -1098,21 +1098,21 @@ MEDDLY::copy_opname
 
     switch (arg->getRangeType()) {
 
-      case forest::INTEGER:
+      case range_type::INTEGER:
           switch (res->getRangeType()) {
-            case forest::INTEGER:
+            case range_type::INTEGER:
                 return new copy_EV2EV_slow<long,TIMES,long>(this, arg, res, "LN:LN");
-            case forest::REAL:
+            case range_type::REAL:
                 return new copy_EV2EV_slow<long,TIMES,float>(this, arg, res, "LN:FN");
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
 
-      case forest::REAL:
+      case range_type::REAL:
           switch (res->getRangeType()) {
-            case forest::INTEGER:
+            case range_type::INTEGER:
                 return new copy_EV2EV_slow<float,TIMES,long>(this, arg, res, "FN:LN");
-            case forest::REAL:
+            case range_type::REAL:
                 return new copy_EV2EV_slow<float,TIMES,float>(this, arg, res, "FN:FN");
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);

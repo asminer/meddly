@@ -177,11 +177,11 @@ MEDDLY::diffr_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     (a2->getRangeType() != r->getRangeType()) ||
     (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
     (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (r->getRangeType() != forest::BOOLEAN)
+    (r->getRangeType() != range_type::BOOLEAN)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     if (r->isForRelations())
       return new diffr_mxd(this, a1, a2, r);
     else

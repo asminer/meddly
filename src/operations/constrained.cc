@@ -107,7 +107,7 @@ MEDDLY::constrained_bckwd_bfs_evplus::constrained_bckwd_bfs_evplus(const constra
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
   : common_constrained(code, 0, cons, arg, trans, res)
 {
-  if (resF->getRangeType() == forest::INTEGER) {
+  if (resF->getRangeType() == range_type::INTEGER) {
     plusOp = getOperation(PLUS, resF, consF, resF);
     minOp = getOperation(UNION, resF, resF, resF);
   } else {
@@ -120,7 +120,7 @@ void MEDDLY::constrained_bckwd_bfs_evplus::compute(const dd_edge& a, const dd_ed
 {
   MEDDLY_DCASSERT(res.getForest() == resF);
 
-  if (resF->getRangeType() == forest::INTEGER) {
+  if (resF->getRangeType() == range_type::INTEGER) {
     plusOp = getOperation(PLUS, resF, consF, resF);
     minOp = getOperation(UNION, resF, resF, resF);
   } else {

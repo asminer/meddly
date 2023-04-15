@@ -430,9 +430,9 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
     outsetF->isForRelations()   ||
     (insetF->getRangeType() != mxdF->getRangeType())        ||
     (outsetF->getRangeType() != mxdF->getRangeType())       ||
-    (insetF->getEdgeLabeling() != forest::MULTI_TERMINAL)   ||
-    (mxdF->getEdgeLabeling() != forest::MULTI_TERMINAL)     ||
-    (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)
+    (insetF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)   ||
+    (mxdF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)     ||
+    (outsetF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 

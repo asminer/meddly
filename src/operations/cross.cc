@@ -198,14 +198,14 @@ MEDDLY::cross_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 
   if (
     a1->isForRelations()  ||
-    (a1->getRangeType() != forest::BOOLEAN) ||
-    (a1->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    (a1->getRangeType() != range_type::BOOLEAN) ||
+    (a1->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
     a2->isForRelations()  ||
-    (a2->getRangeType() != forest::BOOLEAN) ||
-    (a2->getEdgeLabeling() != forest::MULTI_TERMINAL) ||
+    (a2->getRangeType() != range_type::BOOLEAN) ||
+    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
     (!r->isForRelations())  ||
-    (r->getRangeType() != forest::BOOLEAN) ||
-    (r->getEdgeLabeling() != forest::MULTI_TERMINAL)
+    (r->getRangeType() != range_type::BOOLEAN) ||
+    (r->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 

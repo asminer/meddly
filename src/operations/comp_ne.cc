@@ -148,9 +148,9 @@ MEDDLY::unequal_opname::buildOperation(expert_forest* a1, expert_forest* a2,
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   bool use_reals = (
-    a1->getRangeType() == forest::REAL || a2->getRangeType() == forest::REAL
+    a1->getRangeType() == range_type::REAL || a2->getRangeType() == range_type::REAL
   );
-  if (r->getEdgeLabeling() == forest::MULTI_TERMINAL) {
+  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     if (use_reals) {
       if (r->isForRelations())
         return new unequal_mxd<float>(this, a1, a2, r);

@@ -272,10 +272,10 @@ MEDDLY::compl_opname
   if (arg->getDomain() != res->getDomain())
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
-  if (arg->getRangeType() != forest::BOOLEAN ||
-      arg->getEdgeLabeling() != forest::MULTI_TERMINAL ||
-      res->getRangeType() != forest::BOOLEAN ||
-      res->getEdgeLabeling() != forest::MULTI_TERMINAL ||
+  if (arg->getRangeType() != range_type::BOOLEAN ||
+      arg->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL ||
+      res->getRangeType() != range_type::BOOLEAN ||
+      res->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL ||
       arg->isForRelations() != res->isForRelations()
   ) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 

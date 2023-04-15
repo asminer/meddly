@@ -83,8 +83,8 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd, fore
   if (
       insetF->isForRelations()    ||
       outsetF->isForRelations()   ||
-      (insetF->getEdgeLabeling() != forest::MULTI_TERMINAL)   ||
-      (outsetF->getEdgeLabeling() != forest::MULTI_TERMINAL)
+      (insetF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)   ||
+      (outsetF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
       )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
@@ -399,7 +399,7 @@ MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
 
   domain *d = outsetF->useDomain();
 
-  forest* mxd = d->createForest(true,forest::BOOLEAN, forest::MULTI_TERMINAL);
+  forest* mxd = d->createForest(true,range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
 
   dd_edge* monolithic_nsf = new dd_edge(mxd);
