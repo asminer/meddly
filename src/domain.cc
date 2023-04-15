@@ -181,19 +181,19 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, range_type t,
   expert_forest* f = 0;
 
   switch (e) {
-    case forest::MULTI_TERMINAL:
+    case edge_labeling::MULTI_TERMINAL:
         switch (t) {
-            case forest::BOOLEAN:
+            case range_type::BOOLEAN:
                 if (rel)  f = new mt_mxd_bool(slot, this, p,level_reduction_rule, tv==0 ? false : true);
                 else      f = new mt_mdd_bool(slot, this, p,level_reduction_rule, tv==0 ? false : true);
                 break;
 
-            case forest::INTEGER:
+            case range_type::INTEGER:
                 if (rel)  f = new mt_mxd_int(slot, this, p,level_reduction_rule, tv);
                 else      f = new mt_mdd_int(slot, this, p,level_reduction_rule, tv);
                 break;
 
-            case forest::REAL:
+            case range_type::REAL:
                 if (rel)  f = new mt_mxd_real(slot, this, p,level_reduction_rule, (float)tv);
                 else      f = new mt_mdd_real(slot, this, p,level_reduction_rule, (float)tv);
                 break;
@@ -203,24 +203,24 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, range_type t,
         }; // range type switch
         break;
 
-    case forest::EVPLUS:
-      if (forest::INTEGER != t) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    case edge_labeling::EVPLUS:
+      if (range_type::INTEGER != t) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       if (rel)  f = new evmxd_pluslong(slot, this, p, level_reduction_rule);
       else      f = new evmdd_pluslong(slot, this, p, level_reduction_rule);
       break;
 
-    case forest::INDEX_SET:
-      if (forest::INTEGER != t || rel) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    case edge_labeling::INDEX_SET:
+      if (range_type::INTEGER != t || rel) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
       f = new evmdd_index_set_long(slot, this, p, level_reduction_rule);
       break;
 
-    case forest::EVTIMES:
+    case edge_labeling::EVTIMES:
 #if 0
-      if (forest::REAL != t || !rel ||
-        p.reduction != forest::policies::IDENTITY_REDUCED)
+      if (range_type::REAL != t || !rel ||
+        !p.isIdentityReduced())
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 #else
-      if (forest::REAL != t || !rel)
+      if (range_type::REAL != t || !rel)
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 #endif
       f = new evmxd_timesreal(slot, this, p);

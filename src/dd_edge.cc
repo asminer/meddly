@@ -166,24 +166,24 @@ void MEDDLY::dd_edge::setForest(forest* f)
 //void MEDDLY::dd_edge::getEdgeValue(int& ev) const
 //{
 //  MEDDLY_DCASSERT(parent);
-//  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
-//  MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
+//  MEDDLY_DCASSERT(edge_labeling::MULTI_TERMINAL != parent->getEdgeLabeling());
+//  MEDDLY_DCASSERT(range_type::INTEGER == parent->getRangeType());
 //  expert_forest::EVencoder<int>::readValue(&raw_value, ev);
 //}
 
 void MEDDLY::dd_edge::getEdgeValue(long& ev) const
 {
   MEDDLY_DCASSERT(parent);
-  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
-  MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
+  MEDDLY_DCASSERT(edge_labeling::MULTI_TERMINAL != parent->getEdgeLabeling());
+  MEDDLY_DCASSERT(range_type::INTEGER == parent->getRangeType());
   EVencoder<long>::readValue(&raw_value, ev);
 }
 
 void MEDDLY::dd_edge::getEdgeValue(float& ev) const
 {
   MEDDLY_DCASSERT(parent);
-  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
-  MEDDLY_DCASSERT(forest::REAL == parent->getRangeType());
+  MEDDLY_DCASSERT(edge_labeling::MULTI_TERMINAL != parent->getEdgeLabeling());
+  MEDDLY_DCASSERT(range_type::REAL == parent->getRangeType());
   EVencoder<float>::readValue(&raw_value, ev);
 }
 
@@ -229,16 +229,16 @@ void MEDDLY::dd_edge::setEdgeValue(int value)
 void MEDDLY::dd_edge::setEdgeValue(long value)
 {
   MEDDLY_DCASSERT(parent);
-  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
-  MEDDLY_DCASSERT(forest::INTEGER == parent->getRangeType());
+  MEDDLY_DCASSERT(edge_labeling::MULTI_TERMINAL != parent->getEdgeLabeling());
+  MEDDLY_DCASSERT(range_type::INTEGER == parent->getRangeType());
   EVencoder<long>::writeValue(&raw_value, value);
 }
 
 void MEDDLY::dd_edge::setEdgeValue(float value)
 {
   MEDDLY_DCASSERT(parent);
-  MEDDLY_DCASSERT(forest::MULTI_TERMINAL != parent->getEdgeLabeling());
-  MEDDLY_DCASSERT(forest::REAL == parent->getRangeType());
+  MEDDLY_DCASSERT(edge_labeling::MULTI_TERMINAL != parent->getEdgeLabeling());
+  MEDDLY_DCASSERT(range_type::REAL == parent->getRangeType());
   EVencoder<float>::writeValue(&raw_value, value);
 }
 
@@ -263,7 +263,7 @@ unsigned MEDDLY::dd_edge::getEdgeCount(bool countZeroes) const
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator+=(const dd_edge& e)
 {
   if (opPlus == 0) {
-    if (parent->getRangeType() == forest::BOOLEAN)
+    if (parent->getRangeType() == range_type::BOOLEAN)
       opPlus = getOperation(UNION, *this, e, *this);
     else
       opPlus = getOperation(PLUS, *this, e, *this);
@@ -279,7 +279,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator+=(const dd_edge& e)
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator*=(const dd_edge& e)
 {
   if (opStar == 0) {
-    if (parent->getRangeType() == forest::BOOLEAN)
+    if (parent->getRangeType() == range_type::BOOLEAN)
       opStar = getOperation(INTERSECTION, *this, e, *this);
     else
       opStar = getOperation(MULTIPLY, *this, e, *this);
@@ -295,7 +295,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator*=(const dd_edge& e)
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator-=(const dd_edge& e)
 {
   if (opMinus == 0) {
-    if (parent->getRangeType() == forest::BOOLEAN)
+    if (parent->getRangeType() == range_type::BOOLEAN)
       opMinus = getOperation(DIFFERENCE, *this, e, *this);
     else
       opMinus = getOperation(MINUS, *this, e, *this);
@@ -341,7 +341,7 @@ void MEDDLY::dd_edge::show(output &strm, int verbosity) const
     strm << "node: " << long(node) << ", ";
   }
   if (!eParent->isMultiTerminal()) {
-    if (eParent->getRangeType() == forest::REAL) {
+    if (eParent->getRangeType() == range_type::REAL) {
       float ev;
       getEdgeValue(ev);
       strm << "value: " << ev << ", ";
