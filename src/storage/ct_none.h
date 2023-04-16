@@ -18,8 +18,10 @@
 */
 
 
-#ifndef CT_NONE_H
-#define CT_NONE_H
+#ifndef MEDDLY_CT_NONE_H
+#define MEDDLY_CT_NONE_H
+
+#include "../node_storage.h"
 
 // **********************************************************************
 // *                                                                    *

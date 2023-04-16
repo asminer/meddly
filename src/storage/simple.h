@@ -17,14 +17,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SIMPLE_H
-#define SIMPLE_H
+#ifndef MEDDLY_SIMPLE_H
+#define MEDDLY_SIMPLE_H
 
-#include "../defines.h"
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
+#include "../node_storage.h"
 
 namespace MEDDLY {
   class simple_separated_style;

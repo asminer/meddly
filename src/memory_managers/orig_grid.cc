@@ -24,12 +24,9 @@
 // #define DONT_RECYCLE_FROM_GRID
 // #define DONT_RECYCLE_FROM_LARGE
 
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
 #include "hole_base.h"
 #include "orig_grid.h"
+#include "../io.h"
 
 namespace MEDDLY {
 

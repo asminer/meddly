@@ -23,10 +23,7 @@
 // #define DEBUG_GRID
 // #define REPORT_ALL_MEDIUM_LISTS
 
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
+#include "../io.h"
 #include "hole_base.h"
 #include "array_grid.h"
 

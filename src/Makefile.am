@@ -32,6 +32,7 @@ libmeddly_la_SOURCES = \
     loggers.h loggers.cc \
     global_rebuilder.cc \
     initializer.cc \
+    memory.cc \
     \
     reordering/reordering_factory.h \
     reordering/bring_up_reordering.h \
@@ -62,7 +63,6 @@ libmeddly_la_SOURCES = \
     forests/evmxd_timesreal.h   forests/evmxd_timesreal.cc \
     forests/init_forests.h      forests/init_forests.cc \
     \
-    memory_managers/base_manager.cc \
     memory_managers/init_managers.h     memory_managers/init_managers.cc  \
     memory_managers/hole_base.h         \
     memory_managers/array_grid.h        memory_managers/array_grid.cc  \
@@ -132,7 +132,10 @@ pkginclude_HEADERS = \
     encoders.h forest.h \
     dd_edge.h \
     enumerator.h \
+    forest.h \
+    compute_table.h \
     initializer.h \
+    memory.h \
     old_meddly.h old_meddly.hh \
     old_meddly_expert.h old_meddly_expert.hh
 

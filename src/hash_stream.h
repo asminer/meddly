@@ -20,8 +20,7 @@
 #ifndef HASH_STREAM_H
 #define HASH_STREAM_H
 
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
+#include "error.h"
 
 namespace MEDDLY {
   class hash_stream;

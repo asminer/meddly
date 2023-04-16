@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -16,6 +16,12 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#ifndef MEDDLY_INIT_MANAGERS_H
+#define MEDDLY_INIT_MANAGERS_H
+
+#include "../memory.h"
+#include "../initializer.h"
 
 namespace MEDDLY {
   class memman_initializer;
@@ -36,3 +42,4 @@ class MEDDLY::memman_initializer : public initializer_list {
     virtual void cleanup();
 };
 
+#endif

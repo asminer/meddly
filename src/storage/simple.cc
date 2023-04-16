@@ -24,6 +24,9 @@
 #include "simple.h"
 
 #include "../hash_stream.h"
+#include "../unpacked_node.h"
+#include "../memory.h"
+#include "../forest.h"
 
 // #define DEBUG_ENCODING
 // #define DEBUG_DECODING

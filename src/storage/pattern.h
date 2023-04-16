@@ -1,4 +1,3 @@
-
 /*
  Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
  Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -17,14 +16,10 @@
  along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PATTERN_H
-#define PATTERN_H
+#ifndef MEDDLY_PATTERN_H
+#define MEDDLY_PATTERN_H
 
-#include "../defines.h"
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
+#include "../node_storage.h"
 
 namespace MEDDLY {
   class pattern_storage_style;

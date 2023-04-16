@@ -22,6 +22,9 @@
 // TODO: Testing
 
 #include "best.h"
+#include "../unpacked_node.h"
+#include "../memory.h"
+#include "../forest.h"
 #include <set>
 #include <map>
 

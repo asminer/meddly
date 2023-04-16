@@ -18,14 +18,10 @@
  along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef BEST_H
-#define BEST_H
+#ifndef MEDDLY_BEST_H
+#define MEDDLY_BEST_H
 
-#include "../defines.h"
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
+#include "../node_storage.h"
 
 namespace MEDDLY {
   class best_storage_style;

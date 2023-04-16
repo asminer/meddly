@@ -18,8 +18,10 @@
 */
 
 
-#ifndef CT_TYPEBASED_H
-#define CT_TYPEBASED_H
+#ifndef MEDDLY_CT_TYPEBASED_H
+#define MEDDLY_CT_TYPEBASED_H
+
+#include "../node_storage.h"
 
 // **********************************************************************
 // *                                                                    *

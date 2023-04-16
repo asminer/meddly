@@ -17,14 +17,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef CT_CLASSIC_H
-#define CT_CLASSIC_H
+#ifndef MEDDLY_CT_CLASSIC_H
+#define MEDDLY_CT_CLASSIC_H
 
-#include "../defines.h"
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
+#include "../node_storage.h"
 
 
 // **********************************************************************

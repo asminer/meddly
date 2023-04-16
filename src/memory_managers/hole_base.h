@@ -17,14 +17,12 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef HOLE_BASE_H
-#define HOLE_BASE_H
+#ifndef MEDDLY_HOLE_BASE_H
+#define MEDDLY_HOLE_BASE_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#include "../defines.h"
+#include "../memory.h"
 #include "orig_grid.h"
+#include "../io.h"
 
 #if 0
 #ifdef HAVE_MALLOC_GOOD_SIZE

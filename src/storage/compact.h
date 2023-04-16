@@ -18,16 +18,12 @@
 */
 
 
-#ifndef COMPACT_STORAGE_H
-#define COMPACT_STORAGE_H
+#ifndef MEDDLY_COMPACT_STORAGE_H
+#define MEDDLY_COMPACT_STORAGE_H
 
 // TODO: Testing
 
-#include "../defines.h"
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
+#include "../node_storage.h"
 #include "../hash_stream.h"
 #include "holeman.h"
 #include "bytepack.h"

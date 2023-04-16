@@ -70,6 +70,7 @@ becomes
 
 Files that need updating / cleanup
 ------------------------------------------------------------
+compute_table.h         compute_table.cc
 dd_edge.h               dd_edge.cc
 defines.h
 domain.h                domain.cc
@@ -80,6 +81,7 @@ hash_stream.h
 heap.h
 impl_unique_table.h     impl_unique_table.cc
 loggers.h               loggers.cc
+memory.h                memory.cc
 memstats.h              memstats.cc
 node_headers.h          node_headers.cc
 relation_node.h         relation_node.cc
