@@ -280,8 +280,8 @@ class MEDDLY::expert_domain : public domain {
     */
     int findLevelOfVariable(const variable* v) const;
 
-    expert_variable* getExpertVar(int lev) const;
-    const expert_variable* readExpertVar(int lev) const;
+    variable* getExpertVar(int lev) const;
+    const variable* readExpertVar(int lev) const;
 
     /** Add a new variable with bound 1.
       Can be used when the domain already has forests, in which case
@@ -347,16 +347,16 @@ class MEDDLY::expert_domain : public domain {
 // *                                                                *
 // ******************************************************************
 
-inline MEDDLY::expert_variable*
+inline MEDDLY::variable*
 MEDDLY::expert_domain::getExpertVar(int lev) const
 {
-  return (expert_variable*) vars[lev];
+  return vars[lev];
 }
 
-inline const MEDDLY::expert_variable*
+inline const MEDDLY::variable*
 MEDDLY::expert_domain::readExpertVar(int lev) const
 {
-  return (expert_variable*) vars[lev];
+  return vars[lev];
 }
 
 inline void

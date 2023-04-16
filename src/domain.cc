@@ -66,7 +66,7 @@ MEDDLY::domain::domain(variable** v, int N)
   vars = v;
   nVars = N;
   for (int i=1; i<=N; i++) {
-    ((expert_variable*)vars[i])->addToList(this);
+    vars[i]->addToList(this);
   }
   is_marked_for_deletion = false;
   forests = 0;
@@ -122,7 +122,7 @@ MEDDLY::domain::~domain()
   // Delete my variables
   //
   for (int i=1; i<=nVars; i++) {
-    ((expert_variable*)vars[i])->removeFromList(this);
+    vars[i]->removeFromList(this);
   }
   free(vars);
 
@@ -384,7 +384,7 @@ void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
   vars[0] = 0;
   for (int i=1; i<=N; i++) {
     vars[i] = MEDDLY::createVariable(bounds[i-1], 0);
-    ((expert_variable*)vars[i])->addToList(this);
+    vars[i]->addToList(this);
   }
 
   // Create the default variable order
@@ -413,7 +413,7 @@ void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
   vars[0] = 0;
   for (int i=N; i; i--) {
     vars[N-i+1] = MEDDLY::createVariable(bounds[i], 0);
-    ((expert_variable*)vars[i])->addToList(this);
+    vars[i]->addToList(this);
   }
 
   // Create the default variable order
@@ -495,7 +495,7 @@ void MEDDLY::expert_domain::read(input &s)
     s.stripWS();
     bound = s.get_integer();
     vars[nVars-i+1] = MEDDLY::createVariable(bound, 0);
-    ((expert_variable*)vars[i])->addToList(this);
+    vars[i]->addToList(this);
   }
   s.stripWS();
   s.consumeKeyword("mod");

@@ -274,17 +274,6 @@ namespace MEDDLY {
   // *                   object creation  functions                   *
   // ******************************************************************
 
-  /** Front-end function to create a variable.
-      This is required because variable is an abstract class.
-        @param  bound   The initial bound for the variable.
-                        If bound<=0, the variable is marked as extensible,
-                        with initial bound as abs(bound).
-                        Note: an extensible variable has a range [1 .. +infinity].
-        @param  name    Variable name (used only in display / debugging), or 0.
-        @return A new variable, or 0 on error.
-  */
-  variable* createVariable(int bound, char* name);
-
   /** Front-end function to create a domain with the given variables.
         @param  vars    List of variables, in order.
                         vars[i] gives the variable at level i.
