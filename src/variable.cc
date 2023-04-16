@@ -35,10 +35,6 @@ MEDDLY::variable::variable(int b, char* n)
     }
     un_bound = b;
     pr_bound = b;
-
-    domlist = 0;
-    dl_alloc = 0;
-    dl_used = 0;
 }
 
 MEDDLY::variable::~variable()
@@ -47,7 +43,6 @@ MEDDLY::variable::~variable()
     printf("destroying variable %s\n", name);
 #endif
     delete[] name;
-    free(domlist);
 }
 
 void MEDDLY::variable::setName(char *n)
@@ -56,30 +51,21 @@ void MEDDLY::variable::setName(char *n)
     name = n;
 }
 
-void MEDDLY::variable::addToList(domain* d)
-{
-    if (dl_used >= dl_alloc) {
-        int ns = dl_alloc+8;
-        domain** dl = (domain**) realloc(domlist, ns * sizeof(void*));
-        if (0==dl) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-        dl_alloc = ns;
-        domlist = dl;
-    }
-    domlist[dl_used] = d;
-    dl_used++;
-}
-
 void MEDDLY::variable::removeFromList(const domain* d)
 {
-    int find;
-    for (find=0; find<dl_used; find++) {
+    const unsigned size = domlist.size();
+    if (size<1) return;
+    const unsigned last = size-1;
+
+    unsigned find;
+    for (find=0; find<size; find++) {
         if (d == domlist[find]) break;
     }
-    if (find >= dl_used) return;  // not found; should we throw something?
-    domlist[find] = domlist[dl_used-1];
-    dl_used--;
-    // if that was the last domain...
-    if (0==dl_used) delete this;
+
+    if (find != last) {
+        SWAP(domlist[find], domlist[last]);
+    }
+    domlist.pop_back();
 }
 
 void MEDDLY::variable::enlargeBound(bool prime, int b)

@@ -19,6 +19,8 @@
 #ifndef MEDDLY_VARIABLE_H
 #define MEDDLY_VARIABLE_H
 
+#include <vector>
+
 namespace MEDDLY {
     class variable;
     class domain;
@@ -57,7 +59,9 @@ class MEDDLY::variable {
         }
 
         /// Update our list of domains: add \a d.
-        void addToList(domain* d);
+        inline void addToList(domain* d) {
+            domlist.push_back(d);
+        }
 
         /// Update our list of domains: remove \a d.
         void removeFromList(const domain* d);
@@ -88,10 +92,8 @@ class MEDDLY::variable {
         void shrinkBound(int b, bool force);
 
     private:
-        // TBD: use vector<domain*> instead here
-        domain** domlist;
-        int dl_alloc;
-        int dl_used;
+        // List of all domains this variable belongs to
+        std::vector <domain*> domlist;
 
         char* name;
         int un_bound;

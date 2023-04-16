@@ -40,6 +40,8 @@ should now be to
 
 Moved lots of enums and made them enum class.
 
+Merged expert_variable class into variable class
+
 
 TBD: change calls to
     domain::createForest(...)
@@ -84,7 +86,6 @@ relation_node.h         relation_node.cc
 timer.h (move?)
 unique_table.h          unique_table.cc
 unpacked_node.h         unpacked_node.cc
-variable.h              variable.cc
 varorder.h              varorder.cc
 
 
@@ -94,4 +95,4 @@ error.h                 error.cc
 io.h                    io.cc
 node_storage.h          node_storage.cc
 policies.h              policies.cc
-
+variable.h              variable.cc
