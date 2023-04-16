@@ -31,6 +31,7 @@ libmeddly_la_SOURCES = \
     impl_unique_table.cc \
     loggers.h loggers.cc \
     global_rebuilder.cc \
+    initializer.cc \
     \
     reordering/reordering_factory.h \
     reordering/bring_up_reordering.h \
@@ -131,6 +132,7 @@ pkginclude_HEADERS = \
     encoders.h forest.h \
     dd_edge.h \
     enumerator.h \
+    initializer.h \
     old_meddly.h old_meddly.hh \
     old_meddly_expert.h old_meddly_expert.hh
 

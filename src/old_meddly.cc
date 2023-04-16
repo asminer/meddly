@@ -271,30 +271,6 @@ void MEDDLY::apply(const binary_opname* code, const dd_edge &a,
 // front end - create and destroy objects
 //----------------------------------------------------------------------
 
-MEDDLY::domain* MEDDLY::createDomain(variable** vars, int N)
-{
-  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
-  return new expert_domain(vars, N);
-}
-
-MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
-{
-  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
-  domain* d = new expert_domain(0, 0);
-  d->createVariablesBottomUp(bounds, N);
-  return d;
-}
-
-void MEDDLY::destroyDomain(MEDDLY::domain* &d)
-{
-  if (0==d) return;
-  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
-  d->markForDeletion();
-  purgeMarkedOperations();
-  delete d;
-  d = 0;
-}
-
 void MEDDLY::destroyForest(MEDDLY::forest* &f)
 {
   if (0==f) return;
@@ -474,33 +450,5 @@ const char* MEDDLY::getLibraryInfo(int what)
       return MEDDLY_DATE;
   }
   return 0;
-}
-
-// ******************************************************************
-// *                                                                *
-// *                    initializer_list methods                    *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::initializer_list::initializer_list(initializer_list* prev)
-{
-  previous = prev;
-}
-
-MEDDLY::initializer_list::~initializer_list()
-{
-  delete previous;
-}
-
-void MEDDLY::initializer_list::setupAll()
-{
-  if (previous) previous->setupAll();
-  setup();
-}
-
-void MEDDLY::initializer_list::cleanupAll()
-{
-  cleanup();
-  if (previous) previous->cleanupAll();
 }
 

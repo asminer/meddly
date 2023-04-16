@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -17,31 +16,33 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "initializer.h"
 
-/*! \file meddly.hh
+// ******************************************************************
+// *                                                                *
+// *                    initializer_list methods                    *
+// *                                                                *
+// ******************************************************************
 
-    Implementation details for interface in meddly.h.
-*/
-
-#ifndef MEDDLY_HH
-#define MEDDLY_HH
-
-#include "defines.h"
-#include "error.h"
-
-//---------------------- Inlines ---------------------------------------------
-
-// MEDDLY::
-
-#ifdef __GMP_H__
-inline void MEDDLY::apply(const unary_opname* op, const dd_edge &a, mpz_t &c) {
-  ct_object& x = get_mpz_wrapper();
-  apply(op, a, opnd_type::HUGEINT, x);
-  unwrap(x, c);
+MEDDLY::initializer_list::initializer_list(initializer_list* prev)
+{
+    previous = prev;
 }
-#endif
 
+MEDDLY::initializer_list::~initializer_list()
+{
+    delete previous;
+}
 
+void MEDDLY::initializer_list::setupAll()
+{
+    if (previous) previous->setupAll();
+    setup();
+}
 
+void MEDDLY::initializer_list::cleanupAll()
+{
+    cleanup();
+    if (previous) previous->cleanupAll();
+}
 
-#endif

@@ -86,13 +86,15 @@ relation_node.h         relation_node.cc
 timer.h (move?)
 unique_table.h          unique_table.cc
 unpacked_node.h         unpacked_node.cc
-varorder.h              varorder.cc
 
 
 In good shape
 ------------------------------------------------------------
 error.h                 error.cc
+initializer.h           initializer.cc
 io.h                    io.cc
 node_storage.h          node_storage.cc
 policies.h              policies.cc
 variable.h              variable.cc
+varorder.h              varorder.cc
+

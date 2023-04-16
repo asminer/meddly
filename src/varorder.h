@@ -35,37 +35,29 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::variable_order {
-  protected:
-    std::vector<int> level2var;
-    std::vector<int> var2level;
+    protected:
+        std::vector<int> level2var;
+        std::vector<int> var2level;
 
-  public:
-    variable_order(const int* order, int size);
-    variable_order(const variable_order& order);
+    public:
+        variable_order(const int* order, int size);
+        variable_order(const variable_order& order);
 
-    int getVarByLevel(int level) const;
-    int getLevelByVar(int var) const;
+        inline int getVarByLevel(int level) const {
+            MEDDLY_DCASSERT(level>=0);
+            return level2var[size_t(level)];
+        }
+        inline int getLevelByVar(int var) const {
+            MEDDLY_DCASSERT(var>=0);
+            return var2level[size_t(var)];
+        }
 
-    // Exchange two variables
-    // The two variables don't have to be adjacent
-    void exchange(int var1, int var2);
+        // Exchange two variables
+        // The two variables don't have to be adjacent
+        void exchange(int var1, int var2);
 
-    bool is_compatible_with(const int* order) const;
-    bool is_compatible_with(const variable_order& order) const;
+        bool is_compatible_with(const int* order) const;
+        bool is_compatible_with(const variable_order& order) const;
 };
-
-
-inline int MEDDLY::variable_order::getVarByLevel(int level) const
-{
-  MEDDLY_DCASSERT(level>=0);
-  return level2var[size_t(level)];
-}
-
-inline int MEDDLY::variable_order::getLevelByVar(int var) const
-{
-  MEDDLY_DCASSERT(var>=0);
-  return var2level[size_t(var)];
-}
-
 
 #endif

@@ -43,6 +43,7 @@
 #include <map>
 #include <set>
 
+#include "initializer.h"
 
 // #define DEBUG_MARK_SWEEP
 // #define DEBUG_BUILDLIST
@@ -280,71 +281,9 @@ namespace MEDDLY {
 
   */
 
-  /**
-    Build list of initializers for Meddly.
-    Custom-built initialization lists will usually include this list.
-      @param    prev    Initializers to execute before the default list;
-                        can be null.
-
-      @return   List of initializers.
-  */
-  initializer_list* defaultInitializerList(initializer_list* prev);
-
-
-  /** Initialize the library with custom settings.
-      Should be called before using any other functions.
-        @param  L   List of initializers.  Will execute the "setup()"
-                    methods in order now, and the "cleanup()" methods
-                    in reverse order on library cleanup.
-  */
-  void initialize(initializer_list* L);
-
-
 }; // namespace MEDDLY
 
 
-
-// ******************************************************************
-// *                                                                *
-// *                     initializer_list class                     *
-// *                                                                *
-// ******************************************************************
-
-/** Mechanism for initializing and/or cleaning up library structures.
-    Any user additions to the library should utilize this class.
-    Derive a class from this one, provide the \a setup and \a cleanup
-    methods.
-    Implementation in meddly.cc
-*/
-class MEDDLY::initializer_list {
-  public:
-    /**
-        Constructor.
-        Takes the initializer(s) to run before this one.
-        Cleanup runs in the reverse order.
-    */
-    initializer_list(initializer_list* previous);
-    virtual ~initializer_list();
-
-    /**
-        Run all setup methods for the list of initializers,
-        "previous first".
-    */
-    void setupAll();
-
-    /**
-        Run all cleanup methods for the list of initializers,
-        "previous last".
-    */
-    void cleanupAll();
-
-  protected:
-    virtual void setup() = 0;
-    virtual void cleanup() = 0;
-
-  private:
-    initializer_list* previous;
-};
 
 // ******************************************************************
 // *                                                                *
