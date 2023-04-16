@@ -274,10 +274,6 @@ namespace MEDDLY {
   // *                  object destruction functions                  *
   // ******************************************************************
 
-  /** Front-end function to destroy a forest.
-  */
-  void destroyForest(forest* &f);
-
   // ******************************************************************
   // *                          Unary  apply                          *
   // ******************************************************************

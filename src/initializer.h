@@ -55,7 +55,6 @@ namespace MEDDLY {
     Any user additions to the library should utilize this class.
     Derive a class from this one, provide the \a setup and \a cleanup
     methods.
-    Implementation in meddly.cc
 */
 class MEDDLY::initializer_list {
     public:

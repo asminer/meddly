@@ -46,6 +46,10 @@ namespace MEDDLY {
     class impl_unique_table;
     class relation_node;
     class global_rebuilder;
+
+    /** Front-end function to destroy a forest.
+    */
+    void destroyForest(forest* &f);
 };
 
 // ******************************************************************

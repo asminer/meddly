@@ -48,6 +48,8 @@
 namespace MEDDLY {
   // "global" variables
 
+    // TBD: make all of these static in some class
+
   initializer_list* meddlyInitializers;
 
 
@@ -270,16 +272,6 @@ void MEDDLY::apply(const binary_opname* code, const dd_edge &a,
 //----------------------------------------------------------------------
 // front end - create and destroy objects
 //----------------------------------------------------------------------
-
-void MEDDLY::destroyForest(MEDDLY::forest* &f)
-{
-  if (0==f) return;
-  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
-  f->markForDeletion();
-  purgeMarkedOperations();
-  delete f;
-  f = 0;
-}
 
 void MEDDLY::purgeMarkedOperations()
 {

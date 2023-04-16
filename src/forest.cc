@@ -68,6 +68,13 @@
 // #define REPORT_ON_DESTROY
 // #define DUMP_ON_FOREST_DESTROY
 
+namespace MEDDLY {
+    // TBD: fix this:
+    extern bool libraryRunning;
+    void purgeMarkedOperations();
+};
+
+
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -2408,4 +2415,20 @@ MEDDLY::expert_forest::unpackNode(MEDDLY::unpacked_node* un,
     MEDDLY_DCASSERT(getNodeAddress(node));
     nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
 }
+
+//----------------------------------------------------------------------
+// front end - create and destroy objects
+//----------------------------------------------------------------------
+
+
+void MEDDLY::destroyForest(MEDDLY::forest* &f)
+{
+  if (0==f) return;
+  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  f->markForDeletion();
+  purgeMarkedOperations();
+  delete f;
+  f = 0;
+}
+
 
