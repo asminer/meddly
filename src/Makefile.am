@@ -26,7 +26,7 @@ libmeddly_la_SOURCES = \
     dd_edge.cc \
     enumerator.cc \
     forest.cc \
-    compute_table.cc \
+    ct_entry_type.cc compute_table.cc \
     unique_table.cc \
     impl_unique_table.cc \
     loggers.h loggers.cc \
@@ -133,7 +133,7 @@ pkginclude_HEADERS = \
     dd_edge.h \
     enumerator.h \
     forest.h \
-    compute_table.h \
+    ct_entry_type.h compute_table.h \
     initializer.h \
     memory.h \
     old_meddly.h old_meddly.hh \

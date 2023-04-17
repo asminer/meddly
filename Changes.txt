@@ -71,6 +71,7 @@ becomes
 Files that need updating / cleanup
 ------------------------------------------------------------
 compute_table.h         compute_table.cc
+ct_entry_type.h         ct_entry_type.cc
 dd_edge.h               dd_edge.cc
 defines.h
 domain.h                domain.cc

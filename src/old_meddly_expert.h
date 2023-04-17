@@ -104,6 +104,7 @@ namespace MEDDLY {
   class ct_initializer;
   class compute_table_style;
   class compute_table;
+  class ct_entry_type;
 
   class operation;
   class unary_operation;
@@ -1592,6 +1593,8 @@ class MEDDLY::sathyb_opname: public specialized_opname {
 // *                                                                *
 // ******************************************************************
 
+// #include "compute_table.h"
+
 /** Generic operation.
     Operations are tied to specific forests.
     Necessary for compute table entries.
@@ -1632,7 +1635,7 @@ class MEDDLY::operation {
         Owned by the compute_table class; we have
         these pointers for convenience.
     */
-    compute_table::entry_type** etype;
+    ct_entry_type** etype;
     /** Array of entry results.
         Use these during computation.
         We only ever need one result per entry type.
@@ -1661,7 +1664,7 @@ class MEDDLY::operation {
 
     virtual bool checkForestCompatibility() const = 0;
 
-    void registerEntryType(unsigned slot, compute_table::entry_type* et);
+    void registerEntryType(unsigned slot, ct_entry_type* et);
     void buildCTs();
 
     friend class forest;
