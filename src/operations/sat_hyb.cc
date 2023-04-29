@@ -31,6 +31,7 @@
 #include <vector>
 #include <algorithm>
 
+#include "ct_entry_result.h"
 
    #define OUT_OF_BOUNDS -1
    #define NOT_KNOWN -2
@@ -1403,9 +1404,9 @@ public:
 
 
 protected:
-  inline compute_table::entry_key*
+  inline ct_entry_key*
   findSaturateResult(node_handle a, int level, node_handle& b) {
-    compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+    ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
     MEDDLY_DCASSERT(CTsrch);
     CTsrch->writeN(a);
     if (argF->isFullyReduced()) CTsrch->writeI(level);
@@ -1415,10 +1416,10 @@ protected:
     CT0->recycle(CTsrch);
     return 0;
   }
-  inline void recycleCTKey(compute_table::entry_key* CTsrch) {
+  inline void recycleCTKey(ct_entry_key* CTsrch) {
     CT0->recycle(CTsrch);
   }
-  inline node_handle saveSaturateResult(compute_table::entry_key* Key,
+  inline node_handle saveSaturateResult(ct_entry_key* Key,
                                         node_handle a, node_handle b)
   {
     CTresult[0].reset();
@@ -1446,10 +1447,10 @@ public:
 
 
 protected:
-  inline compute_table::entry_key*
+  inline ct_entry_key*
   findResult(node_handle a, node_handle* b, int num_se, node_handle &c)
   {
-    compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], num_se);
+    ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], num_se);
     MEDDLY_DCASSERT(CTsrch);
     CTsrch->writeN(a);
     for(int i = 0; i<num_se; i++)
@@ -1460,10 +1461,10 @@ protected:
     CT0->recycle(CTsrch);
     return 0;
   }
-  inline void recycleCTKey(compute_table::entry_key* CTsrch) {
+  inline void recycleCTKey(ct_entry_key* CTsrch) {
     CT0->recycle(CTsrch);
   }
-  inline node_handle saveResult(compute_table::entry_key* Key,
+  inline node_handle saveResult(ct_entry_key* Key,
                                 node_handle a, node_handle* b, int num_se, node_handle c)
   {
     CTresult[0].reset();
@@ -1868,7 +1869,7 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
 
   // check the cache
   MEDDLY::node_handle result = 0;
-  compute_table::entry_key* Key = findResult(mdd, seHandles, num_se, result);
+  ct_entry_key* Key = findResult(mdd, seHandles, num_se, result);
   if (0==Key) return result;
 
   #ifdef TRACE_RECFIRE
@@ -2080,7 +2081,7 @@ MEDDLY::common_hyb_dfs_by_events_mt::common_hyb_dfs_by_events_mt(
   registerInForest(arg1F);
   registerInForest(arg2F);
   registerInForest(resF);
-  compute_table::entry_type* et = new compute_table::entry_type(opcode->getName(), "N.N:N");
+  ct_entry_type* et = new ct_entry_type(opcode->getName(), "N.N:N");
   et->setForestForSlot(0, arg1F);
   et->setForestForSlot(2, arg2F);
   et->setForestForSlot(4, resF);
@@ -2236,15 +2237,15 @@ MEDDLY::saturation_hyb_by_events_op
   parent = p;
 
   const char* name = saturation_hyb_by_events_opname::getInstance()->getName();
-  compute_table::entry_type* et;
+  ct_entry_type* et;
 
   if (argF->isFullyReduced()) {
     // CT entry includes level info
-    et = new compute_table::entry_type(name, "NI:N");
+    et = new ct_entry_type(name, "NI:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(3, resF);
   } else {
-    et = new compute_table::entry_type(name, "N:N");
+    et = new ct_entry_type(name, "N:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(2, resF);
   }
@@ -2283,7 +2284,7 @@ MEDDLY::saturation_hyb_by_events_op::saturate(node_handle mdd, int k)
 
   // search compute table
   MEDDLY::node_handle n = 0;
-  compute_table::entry_key* Key = findSaturateResult(mdd, k, n);
+  ct_entry_key* Key = findSaturateResult(mdd, k, n);
   if (0==Key) return n;
 
   const int sz = argF->getLevelSize(k);               // size

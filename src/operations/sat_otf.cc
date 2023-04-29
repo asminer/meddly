@@ -26,6 +26,8 @@
 #include <typeinfo> // for "bad_cast" exception
 #include <set>
 
+#include "ct_entry_result.h"
+
 namespace MEDDLY {
   class otfsat_by_events_opname;
   class otfsat_by_events_op;
@@ -953,9 +955,9 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
     node_handle saturate(node_handle mdd, int level);
 
   protected:
-    inline compute_table::entry_key*
+    inline ct_entry_key*
     findSaturateResult(node_handle a, int level, node_handle& b) {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       if (argF->isFullyReduced()) CTsrch->writeI(level);
@@ -965,7 +967,7 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline node_handle saveSaturateResult(compute_table::entry_key* Key,
+    inline node_handle saveSaturateResult(ct_entry_key* Key,
       node_handle a, node_handle b)
     {
       CTresult[0].reset();
@@ -992,10 +994,10 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
     virtual void saturateHelper(unpacked_node& mdd) = 0;
 
   protected:
-    inline compute_table::entry_key*
+    inline ct_entry_key*
     findResult(node_handle a, node_handle b, node_handle &c)
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
@@ -1005,7 +1007,7 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::entry_key* Key,
+    inline node_handle saveResult(ct_entry_key* Key,
       node_handle a, node_handle b, node_handle c)
     {
       CTresult[0].reset();
@@ -1142,15 +1144,15 @@ MEDDLY::otfsat_by_events_op
   parent = p;
 
   const char* name = otfsat_by_events_opname::getInstance()->getName();
-  compute_table::entry_type* et;
+  ct_entry_type* et;
 
   if (argF->isFullyReduced()) {
     // CT entry includes level info
-    et = new compute_table::entry_type(name, "NI:N");
+    et = new ct_entry_type(name, "NI:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(3, resF);
   } else {
-    et = new compute_table::entry_type(name, "N:N");
+    et = new ct_entry_type(name, "N:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(2, resF);
   }
@@ -1189,7 +1191,7 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
 
   // search compute table
   node_handle n = 0;
-  compute_table::entry_key* Key = findSaturateResult(mdd, k, n);
+  ct_entry_key* Key = findSaturateResult(mdd, k, n);
   if (0==Key) return n;
 
   const unsigned sz = unsigned(argF->getLevelSize(k));    // size
@@ -1256,7 +1258,7 @@ MEDDLY::common_otf_dfs_by_events_mt::common_otf_dfs_by_events_mt(
   registerInForest(arg2F);
   registerInForest(resF);
 
-  compute_table::entry_type* et = new compute_table::entry_type(opcode->getName(), "NN:N");
+  ct_entry_type* et = new ct_entry_type(opcode->getName(), "NN:N");
   et->setForestForSlot(0, arg1F);
   et->setForestForSlot(1, arg2F);
   et->setForestForSlot(3, resF);
@@ -1550,7 +1552,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
 
   // check the cache
   node_handle result = 0;
-  compute_table::entry_key* Key = findResult(mdd, mxd, result);
+  ct_entry_key* Key = findResult(mdd, mxd, result);
   if (0==Key) return result;
 
 #ifdef TRACE_RECFIRE

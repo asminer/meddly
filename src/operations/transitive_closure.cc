@@ -27,6 +27,8 @@
 #include "old_meddly_expert.hh"
 #include "transitive_closure.h"
 
+#include "ct_entry_result.h"
+
 // ******************************************************************
 // *                                                                *
 // *                       common_constraint                        *
@@ -192,7 +194,7 @@ MEDDLY::transitive_closure_dfs::transitive_closure_dfs(const constrained_opname*
 
   splits = nullptr;
 
-  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "LNNN:LN");
+  ct_entry_type* et = new ct_entry_type(code->getName(), "LNNN:LN");
   et->setForestForSlot(1, cons);
   et->setForestForSlot(2, tc);
   et->setForestForSlot(3, trans);
@@ -217,10 +219,10 @@ bool MEDDLY::transitive_closure_dfs::checkTerminals(int aev, node_handle a, int 
   return false;
 }
 
-MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_dfs::findResult(long aev, node_handle a,
+MEDDLY::ct_entry_key* MEDDLY::transitive_closure_dfs::findResult(long aev, node_handle a,
     long bev, node_handle b, node_handle c, long& dev, node_handle &d)
 {
-  compute_table::entry_key* key = CT0->useEntryKey(etype[0], 0);
+  ct_entry_key* key = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(key);
   key->writeL(aev);
   key->writeN(a);
@@ -247,7 +249,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_dfs::findResult(lon
   return 0;
 }
 
-void MEDDLY::transitive_closure_dfs::saveResult(compute_table::entry_key* key,
+void MEDDLY::transitive_closure_dfs::saveResult(ct_entry_key* key,
   long aev, node_handle a, long bev, node_handle b, node_handle c, long dev, node_handle d)
 {
   CTresult[0].reset();
@@ -540,7 +542,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
   }
 
   // check the cache
-  compute_table::entry_key* key = findResult(aev, a, bev, b, r, cev, c);
+  ct_entry_key* key = findResult(aev, a, bev, b, r, cev, c);
   if (key == 0) {
     MEDDLY_DCASSERT(cev >= 0);
     return;
@@ -722,16 +724,16 @@ MEDDLY::transitive_closure_evplus::transitive_closure_evplus(transitive_closure_
   registerInForest(tcF);
   registerInForest(resF);
 
-  compute_table::entry_type* et;
+  ct_entry_type* et;
 
   if (tcF->isFullyReduced() || tcF->isIdentityReduced()) {
     // CT entry includes level info
-    et = new compute_table::entry_type("transitive_closure_evplus", "LNNI:LN");
+    et = new ct_entry_type("transitive_closure_evplus", "LNNI:LN");
     et->setForestForSlot(1, cons);
     et->setForestForSlot(2, tc);
     et->setForestForSlot(6, res);
   } else {
-    et = new compute_table::entry_type("transitive_closure_evplus", "LNN:LN");
+    et = new ct_entry_type("transitive_closure_evplus", "LNN:LN");
     et->setForestForSlot(1, cons);
     et->setForestForSlot(2, tc);
     et->setForestForSlot(5, res);
@@ -771,10 +773,10 @@ bool MEDDLY::transitive_closure_evplus::checkTerminals(int aev, node_handle a, i
   return false;
 }
 
-MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_evplus::findResult(long aev, node_handle a,
+MEDDLY::ct_entry_key* MEDDLY::transitive_closure_evplus::findResult(long aev, node_handle a,
     long bev, node_handle b, int level, long& cev, node_handle &c)
 {
-  compute_table::entry_key* key = CT0->useEntryKey(etype[0], 0);
+  ct_entry_key* key = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(key);
   key->writeL(aev);
   key->writeN(a);
@@ -800,7 +802,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::transitive_closure_evplus::findResult(
   return 0;
 }
 
-void MEDDLY::transitive_closure_evplus::saveResult(compute_table::entry_key* key,
+void MEDDLY::transitive_closure_evplus::saveResult(ct_entry_key* key,
   long aev, node_handle a, long bev, node_handle b, int level, long cev, node_handle c)
 {
   CTresult[0].reset();
@@ -829,7 +831,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
     return;
   }
 
-  compute_table::entry_key* key = findResult(aev, a, bev, b, level, cev, c);
+  ct_entry_key* key = findResult(aev, a, bev, b, level, cev, c);
   if (key == 0) {
     return;
   }

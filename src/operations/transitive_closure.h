@@ -102,9 +102,9 @@ protected:
 
   bool checkTerminals(int aev, node_handle a, int bev, node_handle b, node_handle c, long& dev, node_handle& d);
 
-  compute_table::entry_key* findResult(long aev, node_handle a,
+  ct_entry_key* findResult(long aev, node_handle a,
     long bev, node_handle b, node_handle c, long& dev, node_handle& d);
-  void saveResult(compute_table::entry_key* key,
+  void saveResult(ct_entry_key* key,
     long aev, node_handle a, long bev, node_handle b, node_handle c, long dev, node_handle d);
 
   void splitMxd(const dd_edge& mxd);
@@ -148,9 +148,9 @@ protected:
 
   bool checkTerminals(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c);
 
-  compute_table::entry_key* findResult(long aev, node_handle a,
+  ct_entry_key* findResult(long aev, node_handle a,
     long bev, node_handle b, int level, long& cev, node_handle &c);
-  void saveResult(compute_table::entry_key* Key,
+  void saveResult(ct_entry_key* Key,
     long aev, node_handle a, long bev, node_handle b, int level, long cev, node_handle c);
 
 public:

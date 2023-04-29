@@ -31,6 +31,8 @@
 #include "cardinality.h"
 #include "mpz_object.h"
 
+#include "ct_entry_result.h"
+
 // #define DEBUG_CARD
 
 namespace MEDDLY {
@@ -85,7 +87,7 @@ protected:
 MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, opnd_type::INTEGER)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:L");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:L");
   et->setForestForSlot(0, arg);
   registerEntryType(0, et);
   buildCTs();
@@ -120,7 +122,7 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   }
 
   // Check compute table
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+  ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a);
   CT0->find(CTsrch, CTresult[0]);
@@ -188,7 +190,7 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   }
 
   // Check compute table
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+  ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a);
   CT0->find(CTsrch, CTresult[0]);
@@ -237,7 +239,7 @@ public:
 MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, opnd_type::REAL)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:D");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:D");
   et->setForestForSlot(0, arg);
   registerEntryType(0, et);
   buildCTs();
@@ -272,7 +274,7 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   }
 
   // Check compute table
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+  ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a);
   CT0->find(CTsrch, CTresult[0]);
@@ -341,7 +343,7 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
   }
 
   // Check compute table
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+  ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a);
   CT0->find(CTsrch, CTresult[0]);
@@ -395,7 +397,7 @@ public:
 MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, opnd_type::HUGEINT)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:G");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:G");
   et->setForestForSlot(0, arg);
   registerEntryType(0, et);
   buildCTs();
@@ -444,7 +446,7 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
 
   // Check compute table
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+  ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a);
   CT0->find(CTsrch, CTresult[0]);
@@ -534,7 +536,7 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
 
   // Check compute table
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+  ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeN(a);
   CT0->find(CTsrch, CTresult[0]);

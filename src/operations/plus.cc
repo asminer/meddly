@@ -150,9 +150,9 @@ class MEDDLY::plus_evplus : public generic_binary_evplus {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual compute_table::entry_key* findResult(long aev, node_handle a,
+    virtual ct_entry_key* findResult(long aev, node_handle a,
       long bev, node_handle b, long& cev, node_handle &c);
-    virtual void saveResult(compute_table::entry_key* key,
+    virtual void saveResult(ct_entry_key* key,
       long aev, node_handle a, long bev, node_handle b, long cev, node_handle c);
 
     virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
@@ -166,10 +166,10 @@ MEDDLY::plus_evplus::plus_evplus(const binary_opname* opcode,
   operationCommutes();
 }
 
-MEDDLY::compute_table::entry_key* MEDDLY::plus_evplus::findResult(long aev, node_handle a,
+MEDDLY::ct_entry_key* MEDDLY::plus_evplus::findResult(long aev, node_handle a,
   long bev, node_handle b, long& cev, node_handle &c)
 {
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+  ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
   if (can_commute && a > b) {
     CTsrch->writeL(0);
@@ -196,7 +196,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::plus_evplus::findResult(long aev, node
   return 0;
 }
 
-void MEDDLY::plus_evplus::saveResult(compute_table::entry_key* key,
+void MEDDLY::plus_evplus::saveResult(ct_entry_key* key,
   long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
 {
   CTresult[0].reset();

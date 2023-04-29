@@ -28,6 +28,8 @@
 #include "old_meddly_expert.hh"
 #include "prepostimage.h"
 
+#include "ct_entry_result.h"
+
 // #define TRACE_ALL_OPS
 
 namespace MEDDLY {
@@ -71,10 +73,10 @@ class MEDDLY::image_op : public binary_operation {
     image_op(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
-    inline compute_table::entry_key*
+    inline ct_entry_key*
     findResult(node_handle a, node_handle b, node_handle &c)
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
@@ -84,7 +86,7 @@ class MEDDLY::image_op : public binary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::entry_key* Key,
+    inline node_handle saveResult(ct_entry_key* Key,
       node_handle a, node_handle b, node_handle c)
     {
       CTresult[0].reset();
@@ -118,7 +120,7 @@ MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
     if (!a2->isForRelations()) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   }
 
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "NN:N");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "NN:N");
   et->setForestForSlot(0, argV);
   et->setForestForSlot(1, argM);
   et->setForestForSlot(3, res);
@@ -197,7 +199,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
 
   // check the cache
   node_handle result = 0;
-  compute_table::entry_key* Key = findResult(mdd, mxd, result);
+  ct_entry_key* Key = findResult(mdd, mxd, result);
   if (0==Key) return result;
 
   // check if mxd and mdd are at the same level
@@ -329,7 +331,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
 
   // check the cache
   node_handle result = 0;
-  compute_table::entry_key* Key = findResult(mdd, mxd, result);
+  ct_entry_key* Key = findResult(mdd, mxd, result);
   if (0==Key) {
 #ifdef TRACE_ALL_OPS
     printf("computing new setXrel(%d, %d), got %d from cache\n", mdd, mxd, result);
@@ -556,10 +558,10 @@ class MEDDLY::image_op_evplus : public binary_operation {
     image_op_evplus(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
-    inline compute_table::entry_key*
+    inline ct_entry_key*
     findResult(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle &resEvmdd)
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(evmdd);
       CTsrch->writeN(mxd);
@@ -573,7 +575,7 @@ class MEDDLY::image_op_evplus : public binary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline void saveResult(compute_table::entry_key* Key,
+    inline void saveResult(ct_entry_key* Key,
       long ev, node_handle evmdd, node_handle mxd, long resEv, node_handle resEvmdd)
     {
       CTresult[0].reset();
@@ -601,7 +603,7 @@ MEDDLY::image_op_evplus::image_op_evplus(const binary_opname* oc, expert_forest*
   argV = a1;
   argM = a2;
 
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "NN:LN");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "NN:LN");
   et->setForestForSlot(0, a1);
   et->setForestForSlot(1, a2);
   et->setForestForSlot(4, res);
@@ -679,7 +681,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   }
 
   // check the cache
-  compute_table::entry_key* Key = findResult(ev, evmdd, mxd, resEv, resEvmdd);
+  ct_entry_key* Key = findResult(ev, evmdd, mxd, resEv, resEvmdd);
   if (0==Key) {
     return;
   }
@@ -827,7 +829,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   }
 
   // check the cache
-  compute_table::entry_key* Key = findResult(ev, evmdd, mxd, resEv, resEvmdd);
+  ct_entry_key* Key = findResult(ev, evmdd, mxd, resEv, resEvmdd);
   if (0==Key) {
     return;
   }
@@ -1047,7 +1049,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
   }
 
   // check the cache
-  compute_table::entry_key* Key = findResult(ev, evmxd, mxd, resEv, resEvmdd);
+  ct_entry_key* Key = findResult(ev, evmxd, mxd, resEv, resEvmdd);
   if (0==Key) {
     return;
   }

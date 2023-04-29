@@ -27,6 +27,8 @@
 #include "old_meddly_expert.hh"
 #include "mdd2index.h"
 
+#include "ct_entry_result.h"
+
 // #define TRACE_ALL_OPS
 
 namespace MEDDLY {
@@ -56,7 +58,7 @@ MEDDLY::mdd2index_operation::mdd2index_operation(const unary_opname* oc,
 {
   // answer[0] : node
   // answer[1] : cardinality
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:NL");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:NL");
   et->setForestForSlot(0, arg);
   et->setForestForSlot(2, res);
   registerEntryType(0, et);
@@ -99,7 +101,7 @@ MEDDLY::mdd2index_operation
   MEDDLY_DCASSERT(aLevel <= k);
 
   // Check compute table
-  compute_table::entry_key* CTsrch = 0;
+  ct_entry_key* CTsrch = 0;
   if (aLevel == k) {
     CTsrch = CT0->useEntryKey(etype[0], 0);
     MEDDLY_DCASSERT(CTsrch);

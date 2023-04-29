@@ -50,9 +50,9 @@ class MEDDLY::prepostplus_evplus : public generic_binary_evplus {
       expert_forest* arg2, expert_forest* res);
 
   protected:
-    virtual compute_table::entry_key* findResult(long aev, node_handle a,
+    virtual ct_entry_key* findResult(long aev, node_handle a,
       long bev, node_handle b, long& cev, node_handle &c);
-    virtual void saveResult(compute_table::entry_key* Key,
+    virtual void saveResult(ct_entry_key* Key,
       long aev, node_handle a, long bev, node_handle b, long cev, node_handle c);
 
     virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
@@ -69,10 +69,10 @@ MEDDLY::prepostplus_evplus::prepostplus_evplus(const binary_opname* opcode,
   operationCommutes();
 }
 
-MEDDLY::compute_table::entry_key* MEDDLY::prepostplus_evplus::findResult(long aev, node_handle a,
+MEDDLY::ct_entry_key* MEDDLY::prepostplus_evplus::findResult(long aev, node_handle a,
   long bev, node_handle b, long& cev, node_handle &c)
 {
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+  ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
   MEDDLY_DCASSERT(!can_commute);
   CTsrch->writeL(0);
@@ -91,7 +91,7 @@ MEDDLY::compute_table::entry_key* MEDDLY::prepostplus_evplus::findResult(long ae
   return 0;
 }
 
-void MEDDLY::prepostplus_evplus::saveResult(compute_table::entry_key* Key,
+void MEDDLY::prepostplus_evplus::saveResult(ct_entry_key* Key,
   long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
 {
   CTresult[0].reset();
@@ -143,7 +143,7 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
   if (checkTerminals(aev, a, bev, b, cev, c))
     return;
 
-  compute_table::entry_key* Key = findResult(aev, a, bev, b, cev, c);
+  ct_entry_key* Key = findResult(aev, a, bev, b, cev, c);
   if (0==Key) return;
 
   // Get level information
@@ -250,7 +250,7 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
   if (checkTerminals(aev, a, bev, b, cev, c))
     return;
 
-  compute_table::entry_key* Key = findResult(aev, a, bev, b, cev, c);
+  ct_entry_key* Key = findResult(aev, a, bev, b, cev, c);
   if (0==Key) return;
 
   // Get level information

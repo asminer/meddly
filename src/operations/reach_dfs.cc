@@ -28,6 +28,8 @@
 #include "old_meddly_expert.hh"
 #include "reach_dfs.h"
 
+#include "ct_entry_result.h"
+
 // #define TRACE_RECFIRE
 // #define DEBUG_DFS
 // #define DEBUG_INITIAL
@@ -101,9 +103,9 @@ class MEDDLY::saturation_op : public unary_operation {
     node_handle saturate(node_handle mdd, int level);
 
   protected:
-    inline compute_table::entry_key*
+    inline ct_entry_key*
     findSaturateResult(node_handle a, int level, node_handle& b) {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       if (argF->isFullyReduced()) CTsrch->writeI(level);
@@ -113,7 +115,7 @@ class MEDDLY::saturation_op : public unary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline node_handle saveSaturateResult(compute_table::entry_key* Key,
+    inline node_handle saveSaturateResult(ct_entry_key* Key,
       node_handle a, node_handle b)
     {
       CTresult[0].reset();
@@ -140,9 +142,9 @@ class MEDDLY::saturation_evplus_op : public unary_operation {
     void saturate(long ev, node_handle evmdd, int level, long& resEv, node_handle& resEvmdd);
 
   protected:
-    inline compute_table::entry_key*
+    inline ct_entry_key*
     findSaturateResult(long aev, node_handle a, int level, long& bev, node_handle& b) {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       if (argF->isFullyReduced()) CTsrch->writeI(level);
@@ -154,7 +156,7 @@ class MEDDLY::saturation_evplus_op : public unary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline node_handle saveSaturateResult(compute_table::entry_key* Key,
+    inline node_handle saveSaturateResult(ct_entry_key* Key,
       long aev, node_handle a, long bev, node_handle b)
     {
       CTresult[0].reset();
@@ -301,10 +303,10 @@ class MEDDLY::common_dfs_mt : public common_dfs {
     virtual void saturateHelper(unpacked_node &mdd) = 0;
 
   protected:
-    inline compute_table::entry_key*
+    inline ct_entry_key*
     findResult(node_handle a, node_handle b, node_handle &c)
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
@@ -314,7 +316,7 @@ class MEDDLY::common_dfs_mt : public common_dfs {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::entry_key* Key,
+    inline node_handle saveResult(ct_entry_key* Key,
       node_handle a, node_handle b, node_handle c)
     {
       CTresult[0].reset();
@@ -340,10 +342,10 @@ class MEDDLY::common_dfs_evplus : public common_dfs {
     virtual void saturateHelper(unpacked_node &mdd) = 0;
 
   protected:
-    inline compute_table::entry_key*
+    inline ct_entry_key*
     findResult(long aev, node_handle a, node_handle b, long& cev, node_handle& c)
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
@@ -358,7 +360,7 @@ class MEDDLY::common_dfs_evplus : public common_dfs {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline void saveResult(compute_table::entry_key* Key,
+    inline void saveResult(ct_entry_key* Key,
       long aev, node_handle a, node_handle b, long cev, node_handle c)
     {
       CTresult[0].reset();
@@ -381,15 +383,15 @@ MEDDLY::saturation_op
   parent = p;
 
   const char* name = saturation_opname::getInstance()->getName();
-  compute_table::entry_type* et;
+  ct_entry_type* et;
 
   if (argF->isFullyReduced()) {
     // CT entry includes level info
-    et = new compute_table::entry_type(name, "NI:N");
+    et = new ct_entry_type(name, "NI:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(3, resF);
   } else {
-    et = new compute_table::entry_type(name, "N:N");
+    et = new ct_entry_type(name, "N:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(2, resF);
   }
@@ -417,7 +419,7 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
 
   // search compute table
   node_handle n = 0;
-  compute_table::entry_key* Key = findSaturateResult(mdd, k, n);
+  ct_entry_key* Key = findSaturateResult(mdd, k, n);
   if (0==Key) return n;
 
   const unsigned sz = unsigned(argF->getLevelSize(k));    // size
@@ -472,15 +474,15 @@ MEDDLY::saturation_evplus_op
   parent = p;
 
   const char* name = saturation_opname::getInstance()->getName();
-  compute_table::entry_type* et;
+  ct_entry_type* et;
 
   if (argF->isFullyReduced()) {
     // CT entry includes level info
-    et = new compute_table::entry_type(name, "NI:LN");
+    et = new ct_entry_type(name, "NI:LN");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(4, resF);
   } else {
-    et = new compute_table::entry_type(name, "N:LN");
+    et = new ct_entry_type(name, "N:LN");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(3, resF);
   }
@@ -516,7 +518,7 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
   }
 
   // search compute table
-  compute_table::entry_key* Key = findSaturateResult(ev, evmdd, k, resEv, resEvmdd);
+  ct_entry_key* Key = findSaturateResult(ev, evmdd, k, resEv, resEvmdd);
   if (0==Key) {
     return;
   }
@@ -737,7 +739,7 @@ MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res)
 : common_dfs(oc, a1, a2, res)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "NN:N");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "NN:N");
   et->setForestForSlot(0, a1);
   et->setForestForSlot(1, a2);
   et->setForestForSlot(3, res);
@@ -908,7 +910,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
 
   // check the cache
   node_handle result = 0;
-  compute_table::entry_key* Key = findResult(mdd, mxd, result);
+  ct_entry_key* Key = findResult(mdd, mxd, result);
   if (0==Key) return result;
 
 #ifdef TRACE_RECFIRE
@@ -1135,7 +1137,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
 
   // check the cache
   node_handle result = 0;
-  compute_table::entry_key* Key = findResult(mdd, mxd, result);
+  ct_entry_key* Key = findResult(mdd, mxd, result);
   if (0==Key) return result;
 
   // check if mxd and mdd are at the same level
@@ -1232,7 +1234,7 @@ MEDDLY::common_dfs_evplus::common_dfs_evplus(const binary_opname* oc, expert_for
   expert_forest* a2, expert_forest* res)
 : common_dfs(oc, a1, a2, res)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "NN:LN");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "NN:LN");
   et->setForestForSlot(0, a1);
   et->setForestForSlot(1, a2);
   et->setForestForSlot(4, res);
@@ -1422,7 +1424,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
   }
 
   // check the cache
-  compute_table::entry_key* Key = findResult(ev, evmdd, mxd, resEv, resEvmdd);
+  ct_entry_key* Key = findResult(ev, evmdd, mxd, resEv, resEvmdd);
   if (0==Key) return;
 
 #ifdef TRACE_RECFIRE

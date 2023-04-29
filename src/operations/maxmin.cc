@@ -28,6 +28,8 @@
 #include "maxmin.h"
 #include "apply_base.h"
 
+#include "ct_entry_result.h"
+
 namespace MEDDLY {
   class maximum_mdd;
   class maximum_mxd;

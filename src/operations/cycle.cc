@@ -24,6 +24,8 @@
 #include "old_meddly_expert.hh"
 #include "cycle.h"
 
+#include "ct_entry_result.h"
+
 namespace MEDDLY {
   class cycle_opname;
 
@@ -46,10 +48,10 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
   protected:
     virtual void compute_r(long aev, node_handle a, int k, long& bev, node_handle& b);
 
-    inline compute_table::entry_key*
+    inline ct_entry_key*
     findResult(long aev, node_handle a, long& bev, node_handle &b)
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CT0->find(CTsrch, CTresult[0]);
@@ -62,7 +64,7 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::entry_key* Key,
+    inline node_handle saveResult(ct_entry_key* Key,
       long aev, node_handle a, long bev, node_handle b)
     {
       CTresult[0].reset();
@@ -79,7 +81,7 @@ MEDDLY::cycle_EV2EV::cycle_EV2EV(const unary_opname* oc, expert_forest* arg, exp
   MEDDLY_DCASSERT(argF->isEVPlus() && argF->isForRelations());
   MEDDLY_DCASSERT(resF->isEVPlus() && !resF->isForRelations());
 
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "LN:LN");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "LN:LN");
   et->setForestForSlot(1, arg);
   et->setForestForSlot(4, res);
   registerEntryType(0, et);
@@ -126,7 +128,7 @@ void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, int k, long& bev, n
   }
 
   // check the cache
-  compute_table::entry_key* key = findResult(aev, a, bev, b);
+  ct_entry_key* key = findResult(aev, a, bev, b);
   if (key == 0) {
     return;
   }

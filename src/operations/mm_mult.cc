@@ -28,6 +28,8 @@
 #include "old_meddly_expert.hh"
 #include "mm_mult.h"
 
+#include "ct_entry_result.h"
+
 // #define TRACE_ALL_OPS
 
 namespace MEDDLY {
@@ -60,10 +62,10 @@ class MEDDLY::mm_mult_op : public binary_operation {
     mm_mult_op(const binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
-    inline compute_table::entry_key*
+    inline ct_entry_key*
     findResult(node_handle a, node_handle b, node_handle &c)
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
@@ -73,7 +75,7 @@ class MEDDLY::mm_mult_op : public binary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::entry_key* Key,
+    inline node_handle saveResult(ct_entry_key* Key,
       node_handle a, node_handle b, node_handle c)
     {
       CTresult[0].reset();
@@ -97,7 +99,7 @@ MEDDLY::mm_mult_op::mm_mult_op(const binary_opname* oc, expert_forest* a1,
   if (!a1->isForRelations() || !a2->isForRelations())
     throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "NN:N");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "NN:N");
   et->setForestForSlot(0, a1);
   et->setForestForSlot(1, a2);
   et->setForestForSlot(3, res);
@@ -159,7 +161,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
 
   // check the cache
   node_handle result = 0;
-  compute_table::entry_key* Key = findResult(a, b, result);
+  ct_entry_key* Key = findResult(a, b, result);
   if (0==Key) return result;
 
   /**

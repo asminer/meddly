@@ -20,7 +20,8 @@
 #ifndef MEDDLY_CT_STYLES_H
 #define MEDDLY_CT_STYLES_H
 
-#include "../node_storage.h"
+#include "node_storage.h"
+#include "compute_table.h"
 
 
 // **********************************************************************

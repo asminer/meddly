@@ -27,6 +27,8 @@
 #include "old_meddly_expert.hh"
 #include "cross.h"
 
+#include "ct_entry_result.h"
+
 // #define TRACE_ALL_OPS
 // #define DEBUG_CROSS
 
@@ -56,7 +58,7 @@ MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res)
 : binary_operation(oc, 1, a1, a2, res)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "INN:N");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "INN:N");
   et->setForestForSlot(1, a1);
   et->setForestForSlot(2, a2);
   et->setForestForSlot(4, res);
@@ -84,7 +86,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   }
 
   // check compute table
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+  ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeI(k);
   CTsrch->writeN(a);

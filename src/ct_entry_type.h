@@ -39,6 +39,9 @@ namespace MEDDLY {
         DOUBLE = 5,
         GENERIC = 6 // ct_object
     };
+    inline int intOf(ct_typeID t) {
+        return static_cast<typename std::underlying_type<ct_typeID>::type>(t);
+    }
 
     union ct_entry_item {
         int I;

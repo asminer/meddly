@@ -27,6 +27,8 @@
 #include "old_meddly_expert.hh"
 #include "maxmin_range.h"
 
+#include "ct_entry_result.h"
+
 namespace MEDDLY {
 
   class range_int;
@@ -54,10 +56,10 @@ class MEDDLY::range_int : public unary_operation {
     range_int(const unary_opname* oc, expert_forest* arg);
 
   protected:
-    inline compute_table::entry_key*
+    inline ct_entry_key*
     findResult(node_handle a, int &b)
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CT0->find(CTsrch, CTresult[0]);
@@ -66,7 +68,7 @@ class MEDDLY::range_int : public unary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline long saveResult(compute_table::entry_key* Key,
+    inline long saveResult(ct_entry_key* Key,
       node_handle a, int &b)
     {
       CTresult[0].reset();
@@ -79,7 +81,7 @@ class MEDDLY::range_int : public unary_operation {
 MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, opnd_type::INTEGER)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:I");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:I");
   et->setForestForSlot(0, arg);
   registerEntryType(0, et);
   buildCTs();
@@ -97,8 +99,8 @@ class MEDDLY::range_real : public unary_operation {
     range_real(const unary_opname* oc, expert_forest* arg);
 
   protected:
-    inline compute_table::entry_key* findResult(node_handle a, float &b) {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+    inline ct_entry_key* findResult(node_handle a, float &b) {
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CT0->find(CTsrch, CTresult[0]);
@@ -107,7 +109,7 @@ class MEDDLY::range_real : public unary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline float saveResult(compute_table::entry_key* Key,
+    inline float saveResult(ct_entry_key* Key,
       node_handle a, float &b)
     {
       CTresult[0].reset();
@@ -120,7 +122,7 @@ class MEDDLY::range_real : public unary_operation {
 MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, opnd_type::REAL)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:F");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:F");
   et->setForestForSlot(0, arg);
   registerEntryType(0, et);
   buildCTs();
@@ -150,7 +152,7 @@ int MEDDLY::maxrange_int::compute_r(node_handle a)
 
   // Check compute table
   int max;
-  compute_table::entry_key* Key = findResult(a, max);
+  ct_entry_key* Key = findResult(a, max);
   if (0==Key) return max;
 
   // Initialize node reader
@@ -193,7 +195,7 @@ int MEDDLY::minrange_int::compute_r(node_handle a)
 
   // Check compute table
   int min;
-  compute_table::entry_key* Key = findResult(a, min);
+  ct_entry_key* Key = findResult(a, min);
   if (0==Key) return min;
 
   // Initialize node reader
@@ -238,7 +240,7 @@ float MEDDLY::maxrange_real::compute_r(node_handle a)
 
   // Check compute table
   float max;
-  compute_table::entry_key* Key = findResult(a, max);
+  ct_entry_key* Key = findResult(a, max);
   if (0==Key) return max;
 
   // Initialize node reader
@@ -283,7 +285,7 @@ float MEDDLY::minrange_real::compute_r(node_handle a)
 
   // Check compute table
   float min;
-  compute_table::entry_key* Key = findResult(a, min);
+  ct_entry_key* Key = findResult(a, min);
   if (0==Key) return min;
 
   // Initialize node reader

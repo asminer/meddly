@@ -24,6 +24,8 @@
 #include "../forests/mt.h"
 #include "complement.h"
 
+#include "ct_entry_result.h"
+
 namespace MEDDLY {
   class compl_mdd;
   class compl_mxd;
@@ -47,10 +49,10 @@ class MEDDLY::compl_mdd : public unary_operation {
   protected:
     node_handle compute_r(node_handle a);
 
-    inline compute_table::entry_key*
+    inline ct_entry_key*
     findResult(node_handle a, node_handle &b)
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CT0->find(CTsrch, CTresult[0]);
@@ -59,7 +61,7 @@ class MEDDLY::compl_mdd : public unary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::entry_key* Key,
+    inline node_handle saveResult(ct_entry_key* Key,
       node_handle a, node_handle b)
     {
       CTresult[0].reset();
@@ -73,7 +75,7 @@ MEDDLY::compl_mdd
 ::compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
  : unary_operation(oc, 1, arg, res)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:N");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:N");
   et->setForestForSlot(0, arg);
   et->setForestForSlot(2, res);
   registerEntryType(0, et);
@@ -104,7 +106,7 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
 
   // Check compute table
   node_handle b;
-  compute_table::entry_key* Key = findResult(a, b);
+  ct_entry_key* Key = findResult(a, b);
   if (0==Key) return b;
 
   const int level = argF->getNodeLevel(a);
@@ -152,7 +154,7 @@ MEDDLY::compl_mxd
 ::compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
  : unary_operation(oc, 1, arg, res)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "IN:N");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "IN:N");
   et->setForestForSlot(1, arg);
   et->setForestForSlot(3, res);
   registerEntryType(0, et);
@@ -180,7 +182,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
     );
   }
   // Check compute table
-  compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+  ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
   CTsrch->writeI(k);
   CTsrch->writeN(a);
