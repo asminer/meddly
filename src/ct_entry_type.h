@@ -20,6 +20,7 @@
 #define MEDDLY_CT_ENTRY_TYPE_H
 
 namespace MEDDLY {
+    class ct_object;
     class ct_entry_type;
     class compute_table;
 
@@ -32,7 +33,36 @@ namespace MEDDLY {
         DOUBLE = 5,
         GENERIC = 6
     };
+
+    union ct_entry_item {
+        int I;
+        unsigned int U;
+        long L;
+        unsigned long UL;
+        node_handle N;
+        float F;
+        double D;
+        ct_object* G;
+    };
+
 };
+
+// ******************************************************************
+// *                                                                *
+// *                         ct_object class                        *
+// *                                                                *
+// ******************************************************************
+
+/** Generic objects in compute tables.
+    Used for things other than dd_edges and simple types.
+*/
+class MEDDLY::ct_object {
+  public:
+    ct_object();
+    virtual ~ct_object();
+    virtual opnd_type getType() = 0;
+};
+
 
 // ******************************************************************
 // *                                                                *

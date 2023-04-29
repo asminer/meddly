@@ -19,37 +19,21 @@
 #ifndef MEDDLY_COMPUTE_TABLE_H
 #define MEDDLY_COMPUTE_TABLE_H
 
-#include "ct_entry_type.h"
+// #include "ct_entry_type.h"
 #include "old_meddly_expert.h"   // for operation
 #include "forest.h"
 
 namespace MEDDLY {
     class operation;
     class ct_entry_type;
+    class ct_entry_key;
+    class ct_entry_result;
 
     class ct_object;
     class ct_initializer;
     class compute_table_style;
     class compute_table;
 };
-
-// ******************************************************************
-// *                                                                *
-// *                         ct_object class                        *
-// *                                                                *
-// ******************************************************************
-
-/** Generic objects in compute tables.
-    Used for things other than dd_edges and simple types.
-    Defined in compute_table.cc
-*/
-class MEDDLY::ct_object {
-  public:
-    ct_object();
-    virtual ~ct_object();
-    virtual opnd_type getType() = 0;
-};
-
 
 // ******************************************************************
 // *                                                                *
@@ -220,167 +204,6 @@ class MEDDLY::compute_table {
       // ******************************************************************
       //
 
-      /*
-       * Moved to ct_entry_type.h, with name
-       * enum class ct_typeID
-       *
-      enum typeID {
-        ERROR = 0,
-        NODE = 1,
-        INTEGER = 2,
-        LONG = 3,
-        FLOAT = 4,
-        DOUBLE = 5,
-        GENERIC = 6
-      };
-      */
-
-      //
-      // ******************************************************************
-      //
-
-      union entry_item {
-        int I;
-        unsigned int U;
-        long L;
-        unsigned long UL;
-        node_handle N;
-        float F;
-        double D;
-        ct_object* G;
-      };
-
-      //
-      // ******************************************************************
-      //
-
-      /**
-        The key portion of an entry.
-        Internally, in the compute table, we may store
-        entries differently.  This class is used to build
-        keys for searching and to construct CT entries.
-      */
-      class entry_key {
-        public:
-          entry_key();
-          ~entry_key();
-
-        protected:
-          /// Start using for this operation
-          void setup(const ct_entry_type* et, unsigned repeats);
-
-        public:
-          const ct_entry_type* getET() const;
-
-          // interface, for operations.  All inlined in meddly_expert.hh
-          void writeN(node_handle nh);
-          void writeI(int i);
-          void writeL(long i);
-          void writeF(float f);
-          // For templates
-          inline void write_ev(long i)  { writeL(i); }
-          inline void write_ev(float f) { writeF(f); }
-
-        public:
-          // interface, for compute_table.  All inlined in meddly_expert.hh
-          const entry_item* rawData() const;
-          unsigned dataLength() const;
-          unsigned numRepeats() const;
-
-          const void* readTempData() const;
-          unsigned numTempBytes() const;
-          void* allocTempData(unsigned bytes);
-          /// Increase cache counters for nodes in this portion of the entry.
-          void cacheNodes() const;
-          unsigned getHash() const;
-
-        protected:
-          // protected interface, for compute_table.  All inlined in meddly_expert.hh
-          void setHash(unsigned h);
-
-        private:
-          ct_typeID theSlotType() const;
-
-        private:
-          const ct_entry_type* etype;
-          entry_item* data;
-          void* temp_data;
-          unsigned temp_bytes;
-          unsigned temp_alloc;
-          unsigned num_repeats;
-          unsigned hash_value;
-          unsigned data_alloc;
-
-          unsigned currslot;
-          unsigned total_slots;
-#ifdef DEVELOPMENT_CODE
-          bool has_hash;
-#endif
-        protected:
-          /// Used for linked-list of recycled search keys in compute_table
-          entry_key* next;
-
-        friend class compute_table;
-      };
-
-      //
-      // ******************************************************************
-      //
-
-      /**
-        The result portion of an entry.
-        Internally, in the compute table, we may store
-        entries differently.  This class is used to return
-        results from searches and to construct CT entries.
-      */
-      class entry_result {
-        public:
-          entry_result();
-          ~entry_result();
-
-        public:
-          // For delayed construction
-          void initialize(const ct_entry_type* et);
-
-          // interface, for operations (reading).
-          node_handle readN();
-          int readI();
-          float readF();
-          long readL();
-          double readD();
-          ct_object* readG();
-          // for templates
-          void read_ev(long &l)   { l = readL(); }
-          void read_ev(float &f)  { f = readF(); }
-
-          // interface, for operations (building).
-          void reset();
-          void writeN(node_handle nh);
-          void writeI(int i);
-          void writeF(float f);
-          void writeL(long L);
-          void writeD(double D);
-          void writeG(ct_object* G);
-
-          // interface, for compute tables.
-          void setValid();
-          void setValid(const entry_item* d);
-          void setInvalid();
-          operator bool() const;
-          /// Increase cache counters for nodes in this portion of the entry.
-          void cacheNodes() const;
-
-          const entry_item* rawData() const;
-          unsigned dataLength() const;
-
-
-        private:
-          const ct_entry_type* etype;
-          entry_item* build;
-          const entry_item* data;
-          bool is_valid;
-          unsigned currslot;
-      };
 
       //
       // ******************************************************************
@@ -411,12 +234,12 @@ class MEDDLY::compute_table {
       /**
           Start using an entry_key for the given operation.
       */
-      static entry_key* useEntryKey(const ct_entry_type* et, unsigned repeats);
+      static ct_entry_key* useEntryKey(const ct_entry_type* et, unsigned repeats);
 
       /**
           Done using an entry_key.
       */
-      static void recycle(entry_key* k);
+      static void recycle(ct_entry_key* k);
 
 
       /// Is this a per-operation compute table?
@@ -426,21 +249,21 @@ class MEDDLY::compute_table {
           @param  key   Key to search for.
           @param  res   Where to store the result, if any.
       */
-      virtual void find(entry_key* key, entry_result &res) = 0;
+      virtual void find(ct_entry_key* key, ct_entry_result &res) = 0;
 
       /**
           Add an entry (key plus result) to the compute table.
             @param  key   Key portion of the entry.  Will be recycled.
             @param  res   Result portion of the entry.
       */
-      virtual void addEntry(entry_key* key, const entry_result &res) = 0;
+      virtual void addEntry(ct_entry_key* key, const ct_entry_result &res) = 0;
 
       /**
           Update an existing entry in the compute table.
             @param  key   Key portion of the entry.  Will be recycled.
             @param  res   Updated result portion of the entry.
       */
-      virtual void updateEntry(entry_key* key, const entry_result &res) = 0;
+      virtual void updateEntry(ct_entry_key* key, const ct_entry_result &res) = 0;
 
       /** Remove all stale entries.
           Scans the table for entries that are no longer valid (i.e. they are
@@ -498,7 +321,7 @@ class MEDDLY::compute_table {
       static const ct_entry_type* getEntryType(unsigned etID);
 
     protected:
-      void setHash(entry_key *k, unsigned h);
+      void setHash(ct_entry_key *k, unsigned h);
 
     protected:
       /// The maximum size of the hash table.
@@ -518,306 +341,16 @@ class MEDDLY::compute_table {
       static unsigned entryInfoSize;
 
     private:
-      static entry_key* free_keys;
+      static ct_entry_key* free_keys;
 
     friend class operation;
 };
 
 // ******************************************************************
 // *                                                                *
-// *                   inlined ct_object  methods                   *
-// *                                                                *
-// ******************************************************************
-
-
-// ******************************************************************
-// *                                                                *
 // *                 inlined  compute_table methods                 *
 // *                                                                *
 // ******************************************************************
-
-inline void
-MEDDLY::compute_table::entry_key::setup(const ct_entry_type* et, unsigned repeats)
-{
-  MEDDLY_DCASSERT(et);
-  etype = et;
-  num_repeats = repeats;
-  MEDDLY_DCASSERT( 0==repeats || et->isRepeating() );
-  total_slots = et->getKeySize(repeats);
-  if (total_slots > data_alloc) {
-    data_alloc = (1+(data_alloc / 8)) * 8;   // allocate in chunks of size 8
-    data = (entry_item*) realloc(data, data_alloc*sizeof(entry_item));
-    if (0==data) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  }
-  memset(data, 0, total_slots * sizeof(entry_item));
-  currslot = 0;
-#ifdef DEVELOPMENT_CODE
-  has_hash = false;
-#endif
-}
-
-inline const MEDDLY::ct_entry_type*
-MEDDLY::compute_table::entry_key::getET() const
-{
-  return etype;
-}
-
-inline void MEDDLY::compute_table::entry_key::writeN(node_handle nh)
-{
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
-  MEDDLY_DCASSERT(ct_typeID::NODE == theSlotType());
-  data[currslot++].N = nh;
-}
-
-inline void MEDDLY::compute_table::entry_key::writeI(int i)
-{
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
-  MEDDLY_DCASSERT(ct_typeID::INTEGER == theSlotType());
-  data[currslot++].I = i;
-}
-
-inline void MEDDLY::compute_table::entry_key::writeL(long i)
-{
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
-  MEDDLY_DCASSERT(ct_typeID::LONG == theSlotType());
-  data[currslot++].L = i;
-}
-
-inline void MEDDLY::compute_table::entry_key::writeF(float f)
-{
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
-  MEDDLY_DCASSERT(ct_typeID::FLOAT == theSlotType());
-  data[currslot++].F = f;
-}
-
-inline const MEDDLY::compute_table::entry_item*
-MEDDLY::compute_table::entry_key::rawData() const
-{
-  return data;
-}
-
-inline unsigned MEDDLY::compute_table::entry_key::dataLength() const
-{
-  return total_slots;
-}
-
-inline unsigned MEDDLY::compute_table::entry_key::numRepeats() const
-{
-  return num_repeats;
-}
-
-inline const void*
-MEDDLY::compute_table::entry_key::readTempData() const
-{
-  return temp_data;
-}
-
-inline unsigned
-MEDDLY::compute_table::entry_key::numTempBytes() const
-{
-  return temp_bytes;
-}
-
-inline void*
-MEDDLY::compute_table::entry_key::allocTempData(unsigned bytes)
-{
-  temp_bytes = bytes;
-  if (bytes > temp_alloc) {
-    temp_alloc = (1+(temp_bytes/64)) * 64;    // allocate in chunks of 64 bytes
-    temp_data = realloc(temp_data, temp_alloc);
-    if (0==temp_data) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  }
-  return temp_data;
-}
-
-inline void
-MEDDLY::compute_table::entry_key::cacheNodes() const
-{
-  for (unsigned i=0; i<total_slots; i++) {
-    expert_forest* f = etype->getKeyForest(i);
-    if (f) {
-      f->cacheNode(data[i].N);
-    }
-  }
-}
-
-inline unsigned MEDDLY::compute_table::entry_key::getHash() const
-{
-  MEDDLY_DCASSERT(has_hash);
-  return hash_value;
-}
-
-inline void MEDDLY::compute_table::entry_key::setHash(unsigned h)
-{
-  hash_value = h;
-#ifdef DEVELOPMENT_CODE
-  has_hash = true;
-#endif
-}
-
-inline MEDDLY::ct_typeID MEDDLY::compute_table::entry_key::theSlotType() const
-{
-  //
-  // Adjust currslot for OP entry, and number of repeats entry
-  //
-  // return etype->getKeyType(currslot - (etype->isRepeating() ? 2 : 1) );
-  return etype->getKeyType(currslot);
-}
-
-// ******************************************************************
-
-inline MEDDLY::node_handle MEDDLY::compute_table::entry_result::readN()
-{
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(ct_typeID::NODE == etype->getResultType(currslot));
-  return data[currslot++].N;
-}
-
-inline int MEDDLY::compute_table::entry_result::readI()
-{
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(ct_typeID::INTEGER == etype->getResultType(currslot));
-  return data[currslot++].I;
-}
-
-inline float MEDDLY::compute_table::entry_result::readF()
-{
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(ct_typeID::FLOAT == etype->getResultType(currslot));
-  return data[currslot++].F;
-}
-
-inline long MEDDLY::compute_table::entry_result::readL()
-{
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::LONG == etype->getResultType(currslot));
-  return data[currslot++].L;
-}
-
-inline double MEDDLY::compute_table::entry_result::readD()
-{
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::DOUBLE == etype->getResultType(currslot));
-  return data[currslot++].D;
-}
-
-inline MEDDLY::ct_object* MEDDLY::compute_table::entry_result::readG()
-{
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::GENERIC == etype->getResultType(currslot));
-  return data[currslot++].G;
-}
-
-
-inline void MEDDLY::compute_table::entry_result::reset()
-{
-  currslot = 0;
-}
-
-inline void MEDDLY::compute_table::entry_result::writeN(node_handle nh)
-{
-  MEDDLY_DCASSERT(build);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::NODE == etype->getResultType(currslot));
-  build[currslot++].N = nh;
-}
-
-inline void MEDDLY::compute_table::entry_result::writeI(int i)
-{
-  MEDDLY_DCASSERT(build);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::INTEGER == etype->getResultType(currslot));
-  build[currslot++].I = i;
-}
-
-inline void MEDDLY::compute_table::entry_result::writeF(float f)
-{
-  MEDDLY_DCASSERT(build);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::FLOAT == etype->getResultType(currslot));
-  build[currslot++].F = f;
-}
-
-inline void MEDDLY::compute_table::entry_result::writeL(long L)
-{
-  MEDDLY_DCASSERT(build);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::LONG == etype->getResultType(currslot));
-  build[currslot++].L = L;
-}
-
-inline void MEDDLY::compute_table::entry_result::writeD(double D)
-{
-  MEDDLY_DCASSERT(build);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::DOUBLE == etype->getResultType(currslot));
-  build[currslot++].D = D;
-}
-
-inline void MEDDLY::compute_table::entry_result::writeG(ct_object* G)
-{
-  MEDDLY_DCASSERT(build);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::GENERIC == etype->getResultType(currslot));
-  build[currslot++].G = G;
-}
-
-inline void
-MEDDLY::compute_table::entry_result::setValid()
-{
-  is_valid = true;
-  data = build;
-}
-
-inline void
-MEDDLY::compute_table::entry_result::setValid(const entry_item* d)
-{
-  is_valid = true;
-  data = d;
-}
-
-inline void
-MEDDLY::compute_table::entry_result::setInvalid()
-{
-  is_valid = false;
-}
-
-inline
-MEDDLY::compute_table::entry_result::operator bool() const
-{
-  return is_valid;
-}
-
-inline void
-MEDDLY::compute_table::entry_result::cacheNodes() const
-{
-  for (unsigned i=0; i<etype->getResultSize(); i++) {
-    expert_forest* f = etype->getResultForest(i);
-    if (f) {
-      f->cacheNode(build[i].N);
-    }
-  }
-}
-
-inline const MEDDLY::compute_table::entry_item*
-MEDDLY::compute_table::entry_result
-::rawData() const
-{
-  return build;
-}
-
-inline unsigned MEDDLY::compute_table::entry_result
-::dataLength() const
-{
-  return etype->getResultSize();
-}
-
 
 // ******************************************************************
 

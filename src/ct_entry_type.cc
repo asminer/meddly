@@ -18,6 +18,25 @@
 
 #include "ct_entry_type.h"
 
+// **********************************************************************
+// *                                                                    *
+// *                         ct_object  methods                         *
+// *                                                                    *
+// **********************************************************************
+
+MEDDLY::ct_object::ct_object()
+{
+}
+
+MEDDLY::ct_object::~ct_object()
+{
+}
+
+// **********************************************************************
+// *                                                                    *
+// *                          Helper functions                          *
+// *                                                                    *
+// **********************************************************************
 
 inline unsigned bytes4typeID(MEDDLY::compute_table::typeID t)
 {
@@ -44,6 +63,25 @@ inline char typeID2char(MEDDLY::compute_table::typeID t)
     default:    return '?';
   }
 }
+
+inline MEDDLY::compute_table::typeID char2typeID(char c)
+{
+  switch (c) {
+    case 'N':   return MEDDLY::compute_table::NODE;
+    case 'I':   return MEDDLY::compute_table::INTEGER;
+    case 'L':   return MEDDLY::compute_table::LONG;
+    case 'F':   return MEDDLY::compute_table::FLOAT;
+    case 'D':   return MEDDLY::compute_table::DOUBLE;
+    case 'G':   return MEDDLY::compute_table::GENERIC;
+    default:    return MEDDLY::compute_table::ERROR;
+  }
+}
+
+// **********************************************************************
+// *                                                                    *
+// *                       ct_entry_type  methods                       *
+// *                                                                    *
+// **********************************************************************
 
 MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pattern)
 {

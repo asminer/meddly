@@ -28,20 +28,6 @@
 // #define DEBUG_ENTRY_TYPE
 // #define DEBUG_ENTRY_REGISTRY
 
-// **********************************************************************
-// *                                                                    *
-// *                         ct_object  methods                         *
-// *                                                                    *
-// **********************************************************************
-
-MEDDLY::ct_object::ct_object()
-{
-}
-
-MEDDLY::ct_object::~ct_object()
-{
-}
-
 // ******************************************************************
 // *                                                                *
 // *                     ct_initializer  methods                    *
@@ -390,57 +376,3 @@ void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
 
 // **********************************************************************
 
-MEDDLY::compute_table::entry_key::entry_key()
-{
-  data_alloc = 8;
-  etype = 0;
-  data = (entry_item*) malloc(data_alloc * sizeof(entry_item));
-  temp_data = 0;
-  temp_bytes = 0;
-  temp_alloc = 0;
-  // malloc: because realloc later
-}
-
-MEDDLY::compute_table::entry_key::~entry_key()
-{
-  free(data);
-  free(temp_data);
-}
-
-// **********************************************************************
-
-MEDDLY::compute_table::entry_result::entry_result()
-{
-  build = 0;
-  data = 0;
-  etype = 0;
-}
-
-void MEDDLY::compute_table::entry_result::initialize(const compute_table::entry_type* et)
-{
-  MEDDLY_DCASSERT(et);
-  etype = et;
-  const unsigned slots = etype->getResultSize();
-  MEDDLY_DCASSERT(0==build);
-  build = new entry_item[slots];
-}
-
-MEDDLY::compute_table::entry_result::~entry_result()
-{
-  delete[] build;
-}
-
-// **********************************************************************
-
-inline MEDDLY::compute_table::typeID char2typeID(char c)
-{
-  switch (c) {
-    case 'N':   return MEDDLY::compute_table::NODE;
-    case 'I':   return MEDDLY::compute_table::INTEGER;
-    case 'L':   return MEDDLY::compute_table::LONG;
-    case 'F':   return MEDDLY::compute_table::FLOAT;
-    case 'D':   return MEDDLY::compute_table::DOUBLE;
-    case 'G':   return MEDDLY::compute_table::GENERIC;
-    default:    return MEDDLY::compute_table::ERROR;
-  }
-}

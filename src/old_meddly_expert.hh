@@ -512,6 +512,7 @@ MEDDLY::sathyb_opname::subevent::usesExtensibleVariables() const {
 // *                                                                *
 // ******************************************************************
 
+#include "compute_table.h"
 
 inline void
 MEDDLY::operation::registerInForest(MEDDLY::forest* f)

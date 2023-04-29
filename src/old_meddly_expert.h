@@ -105,6 +105,7 @@ namespace MEDDLY {
   class compute_table_style;
   class compute_table;
   class ct_entry_type;
+  class ct_entry_result;
 
   class operation;
   class unary_operation;
@@ -1640,7 +1641,7 @@ class MEDDLY::operation {
         Use these during computation.
         We only ever need one result per entry type.
     */
-    compute_table::entry_result* CTresult;
+    ct_entry_result* CTresult;
 
     /**
       Number of entry_types needed by this operation.

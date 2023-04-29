@@ -67,11 +67,23 @@ becomes
     binary_operation* code->getOperation(arg1, arg2, res)
 
 
+Compute table changes:
+    OLD                               NEW                               WHERE
+    ------------------------------    ------------------------------    --------------------
+    compute_table::typeID             ct_typeID                         ct_entry_type.h
+    compute_table::entry_item         ct_entry_item                     ct_entry_type.h
+    ct_object                         ct_object                         ct_entry_type.h
+
+    compute_table::entry_key          ct_entry_key                      ct_entry_key.h
+
+    compute_table::entry_result       ct_entry_result                   ct_entry_result.h
+
 
 Files that need updating / cleanup
 ------------------------------------------------------------
 compute_table.h         compute_table.cc
 ct_entry_type.h         ct_entry_type.cc
+
 dd_edge.h               dd_edge.cc
 defines.h
 domain.h                domain.cc
