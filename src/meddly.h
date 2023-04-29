@@ -29,6 +29,7 @@
 #include "domain.h"
 #include "forest.h"
 #include "relation_node.h"
+#include "memory.h"
 
 #else
 
@@ -43,5 +44,6 @@
 #include "meddly/domain.h"
 #include "meddly/forest.h"
 #include "meddly/relation_node.h"
+#include "meddly/memory.h"
 
 #endif

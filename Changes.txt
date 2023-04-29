@@ -68,7 +68,7 @@ becomes
 
 
 Compute table changes:
-    OLD                               NEW                               WHERE
+    OLD (inner) class                 NEW class                         WHERE
     ------------------------------    ------------------------------    --------------------
     compute_table::typeID             ct_typeID                         ct_entry_type.h
     compute_table::entry_item         ct_entry_item                     ct_entry_type.h
@@ -84,6 +84,8 @@ Files that need updating / cleanup
 ------------------------------------------------------------
 compute_table.h         compute_table.cc
 ct_entry_type.h         ct_entry_type.cc
+ct_entry_key.h          ct_entry_key.cc
+ct_entry_result.h       ct_entry_result.h
 
 dd_edge.h               dd_edge.cc
 defines.h
