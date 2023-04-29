@@ -20,6 +20,7 @@
 #define MEDDLY_CT_ENTRY_RESULT_H
 
 #include "ct_entry_type.h"
+#include "forest.h"
 
 namespace MEDDLY {
     class ct_entry_result;
@@ -83,7 +84,7 @@ class MEDDLY::ct_entry_result {
 
 // ******************************************************************
 
-inline MEDDLY::node_handle MEDDLY::compute_table::entry_result::readN()
+inline MEDDLY::node_handle MEDDLY::ct_entry_result::readN()
 {
   MEDDLY_DCASSERT(currslot < dataLength());
   MEDDLY_DCASSERT(data);
@@ -91,7 +92,7 @@ inline MEDDLY::node_handle MEDDLY::compute_table::entry_result::readN()
   return data[currslot++].N;
 }
 
-inline int MEDDLY::compute_table::entry_result::readI()
+inline int MEDDLY::ct_entry_result::readI()
 {
   MEDDLY_DCASSERT(currslot < dataLength());
   MEDDLY_DCASSERT(data);
@@ -99,7 +100,7 @@ inline int MEDDLY::compute_table::entry_result::readI()
   return data[currslot++].I;
 }
 
-inline float MEDDLY::compute_table::entry_result::readF()
+inline float MEDDLY::ct_entry_result::readF()
 {
   MEDDLY_DCASSERT(currslot < dataLength());
   MEDDLY_DCASSERT(data);
@@ -107,7 +108,7 @@ inline float MEDDLY::compute_table::entry_result::readF()
   return data[currslot++].F;
 }
 
-inline long MEDDLY::compute_table::entry_result::readL()
+inline long MEDDLY::ct_entry_result::readL()
 {
   MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(currslot < dataLength());
@@ -115,7 +116,7 @@ inline long MEDDLY::compute_table::entry_result::readL()
   return data[currslot++].L;
 }
 
-inline double MEDDLY::compute_table::entry_result::readD()
+inline double MEDDLY::ct_entry_result::readD()
 {
   MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(currslot < dataLength());
@@ -123,7 +124,7 @@ inline double MEDDLY::compute_table::entry_result::readD()
   return data[currslot++].D;
 }
 
-inline MEDDLY::ct_object* MEDDLY::compute_table::entry_result::readG()
+inline MEDDLY::ct_object* MEDDLY::ct_entry_result::readG()
 {
   MEDDLY_DCASSERT(data);
   MEDDLY_DCASSERT(currslot < dataLength());
@@ -132,12 +133,12 @@ inline MEDDLY::ct_object* MEDDLY::compute_table::entry_result::readG()
 }
 
 
-inline void MEDDLY::compute_table::entry_result::reset()
+inline void MEDDLY::ct_entry_result::reset()
 {
   currslot = 0;
 }
 
-inline void MEDDLY::compute_table::entry_result::writeN(node_handle nh)
+inline void MEDDLY::ct_entry_result::writeN(node_handle nh)
 {
   MEDDLY_DCASSERT(build);
   MEDDLY_DCASSERT(currslot < dataLength());
@@ -145,7 +146,7 @@ inline void MEDDLY::compute_table::entry_result::writeN(node_handle nh)
   build[currslot++].N = nh;
 }
 
-inline void MEDDLY::compute_table::entry_result::writeI(int i)
+inline void MEDDLY::ct_entry_result::writeI(int i)
 {
   MEDDLY_DCASSERT(build);
   MEDDLY_DCASSERT(currslot < dataLength());
@@ -153,7 +154,7 @@ inline void MEDDLY::compute_table::entry_result::writeI(int i)
   build[currslot++].I = i;
 }
 
-inline void MEDDLY::compute_table::entry_result::writeF(float f)
+inline void MEDDLY::ct_entry_result::writeF(float f)
 {
   MEDDLY_DCASSERT(build);
   MEDDLY_DCASSERT(currslot < dataLength());
@@ -161,7 +162,7 @@ inline void MEDDLY::compute_table::entry_result::writeF(float f)
   build[currslot++].F = f;
 }
 
-inline void MEDDLY::compute_table::entry_result::writeL(long L)
+inline void MEDDLY::ct_entry_result::writeL(long L)
 {
   MEDDLY_DCASSERT(build);
   MEDDLY_DCASSERT(currslot < dataLength());
@@ -169,7 +170,7 @@ inline void MEDDLY::compute_table::entry_result::writeL(long L)
   build[currslot++].L = L;
 }
 
-inline void MEDDLY::compute_table::entry_result::writeD(double D)
+inline void MEDDLY::ct_entry_result::writeD(double D)
 {
   MEDDLY_DCASSERT(build);
   MEDDLY_DCASSERT(currslot < dataLength());
@@ -177,7 +178,7 @@ inline void MEDDLY::compute_table::entry_result::writeD(double D)
   build[currslot++].D = D;
 }
 
-inline void MEDDLY::compute_table::entry_result::writeG(ct_object* G)
+inline void MEDDLY::ct_entry_result::writeG(ct_object* G)
 {
   MEDDLY_DCASSERT(build);
   MEDDLY_DCASSERT(currslot < dataLength());
@@ -186,33 +187,33 @@ inline void MEDDLY::compute_table::entry_result::writeG(ct_object* G)
 }
 
 inline void
-MEDDLY::compute_table::entry_result::setValid()
+MEDDLY::ct_entry_result::setValid()
 {
   is_valid = true;
   data = build;
 }
 
 inline void
-MEDDLY::compute_table::entry_result::setValid(const ct_entry_item* d)
+MEDDLY::ct_entry_result::setValid(const ct_entry_item* d)
 {
   is_valid = true;
   data = d;
 }
 
 inline void
-MEDDLY::compute_table::entry_result::setInvalid()
+MEDDLY::ct_entry_result::setInvalid()
 {
   is_valid = false;
 }
 
 inline
-MEDDLY::compute_table::entry_result::operator bool() const
+MEDDLY::ct_entry_result::operator bool() const
 {
   return is_valid;
 }
 
 inline void
-MEDDLY::compute_table::entry_result::cacheNodes() const
+MEDDLY::ct_entry_result::cacheNodes() const
 {
   for (unsigned i=0; i<etype->getResultSize(); i++) {
     expert_forest* f = etype->getResultForest(i);
@@ -222,14 +223,14 @@ MEDDLY::compute_table::entry_result::cacheNodes() const
   }
 }
 
-inline const MEDDLY::compute_table::ct_entry_item*
-MEDDLY::compute_table::entry_result
+inline const MEDDLY::ct_entry_item*
+MEDDLY::ct_entry_result
 ::rawData() const
 {
   return build;
 }
 
-inline unsigned MEDDLY::compute_table::entry_result
+inline unsigned MEDDLY::ct_entry_result
 ::dataLength() const
 {
   return etype->getResultSize();

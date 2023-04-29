@@ -17,9 +17,6 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 #include "../defines.h"
 #include "../forests/mt.h"
 #include "apply_base.h"
@@ -39,7 +36,7 @@ MEDDLY::generic_binary_mdd::generic_binary_mdd(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : binary_operation(code, 1, arg1, arg2, res)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "NN:N");
+  ct_entry_type* et = new ct_entry_type(code->getName(), "NN:N");
   et->setForestForSlot(0, arg1);
   et->setForestForSlot(1, arg2);
   et->setForestForSlot(3, res);
@@ -84,7 +81,7 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
   if (checkTerminals(a, b, result))
     return result;
 
-  compute_table::entry_key* Key = findResult(a, b, result);
+  ct_entry_key* Key = findResult(a, b, result);
   if (0==Key) {
 #ifdef TRACE_ALL_OPS
     printf("computing %s(%d, %d), got %d from cache\n", getName(), a, b, result);
@@ -414,7 +411,7 @@ MEDDLY::generic_binary_mxd::generic_binary_mxd(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : binary_operation(code, 1, arg1, arg2, res)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "NN:N");
+  ct_entry_type* et = new ct_entry_type(code->getName(), "NN:N");
   et->setForestForSlot(0, arg1);
   et->setForestForSlot(1, arg2);
   et->setForestForSlot(3, res);
@@ -445,7 +442,7 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
   if (checkTerminals(a, b, result))
     return result;
 
-  compute_table::entry_key* Key = findResult(a, b, result);
+  ct_entry_key* Key = findResult(a, b, result);
   if (0==Key) return result;
 
   // Get level information
@@ -482,7 +479,7 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
   //
   // Note - we cache the primed levels, but only when "safe"
   //
-  compute_table::entry_key* Key = findResult(a, b, result);
+  ct_entry_key* Key = findResult(a, b, result);
   if (0==Key) {
   printf("Found %s pr (%d, %d) = %d\n", getName(), a, b, result);
   printf("\tat level %d\n", k);
@@ -1017,7 +1014,7 @@ MEDDLY::generic_binbylevel_mxd
  : binary_operation(code, 1, arg1, arg2, res)
 {
   can_commute = false;
-  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "INN:N");
+  ct_entry_type* et = new ct_entry_type(code->getName(), "INN:N");
   et->setForestForSlot(1, arg1);
   et->setForestForSlot(2, arg2);
   et->setForestForSlot(4, res);
@@ -1061,7 +1058,7 @@ MEDDLY::generic_binbylevel_mxd
   //
   // Note - we cache the primed levels, but only when "safe"
   //
-  compute_table::entry_key* Key = findResult(resultLevel, a, b, result);
+  ct_entry_key* Key = findResult(resultLevel, a, b, result);
   if (0==Key) return result;
 
   // Get level information
@@ -1145,7 +1142,7 @@ MEDDLY::generic_binbylevel_mxd
   //
   // Note - we cache the primed levels, but only when "safe"
   //
-  compute_table::entry_key* Key = findResult(resultLevel, a, b, result);
+  ct_entry_key* Key = findResult(resultLevel, a, b, result);
   if (0==Key) return result;
 
   // Get level information
@@ -1296,7 +1293,7 @@ MEDDLY::generic_binary_evplus::generic_binary_evplus(const binary_opname* code,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_ev(code, arg1, arg2, res)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "LNLN:LN");
+  ct_entry_type* et = new ct_entry_type(code->getName(), "LNLN:LN");
   et->setForestForSlot(1, arg1);
   et->setForestForSlot(3, arg2);
   et->setForestForSlot(6, res);
@@ -1329,7 +1326,7 @@ void MEDDLY::generic_binary_evplus
   if (checkTerminals(aev, a, bev, b, cev, c))
     return;
 
-  compute_table::entry_key* Key = findResult(aev, a, bev, b, cev, c);
+  ct_entry_key* Key = findResult(aev, a, bev, b, cev, c);
   if (0==Key) return;
 
   // Get level information
@@ -1392,7 +1389,7 @@ MEDDLY::generic_binary_evplus_mxd::generic_binary_evplus_mxd(const binary_opname
   if (!arg1->isForRelations() || !arg2->isForRelations() || !res->isForRelations()) {
     throw error::TYPE_MISMATCH;
   }
-  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "LNLN:LN");
+  ct_entry_type* et = new ct_entry_type(code->getName(), "LNLN:LN");
   et->setForestForSlot(1, arg1);
   et->setForestForSlot(3, arg2);
   et->setForestForSlot(6, res);
@@ -1426,7 +1423,7 @@ void MEDDLY::generic_binary_evplus_mxd
     return;
   }
 
-  compute_table::entry_key* Key = findResult(aev, a, bev, b, cev, c);
+  ct_entry_key* Key = findResult(aev, a, bev, b, cev, c);
   if (0 == Key) {
     return;
   }
@@ -1543,7 +1540,7 @@ MEDDLY::generic_binary_evtimes
   expert_forest* arg2, expert_forest* res)
 : generic_binary_ev(code, arg1, arg2, res)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(code->getName(), "FNFN:FN");
+  ct_entry_type* et = new ct_entry_type(code->getName(), "FNFN:FN");
   et->setForestForSlot(1, arg1);
   et->setForestForSlot(3, arg2);
   et->setForestForSlot(6, res);
@@ -1580,7 +1577,7 @@ void MEDDLY::generic_binary_evtimes
     return;
 
 #ifndef DISABLE_CACHE
-  compute_table::entry_key* Key = findResult(aev, a, bev, b, cev, c);
+  ct_entry_key* Key = findResult(aev, a, bev, b, cev, c);
   if (0==Key) return;
 #endif
 

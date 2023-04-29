@@ -28,6 +28,10 @@
 #include "old_meddly.hh"
 #include "old_meddly_expert.h"
 #include "old_meddly_expert.hh"
+//
+
+#include "ct_entry_result.h"
+
 // #include "compute_table.h"
 
 // #define DEBUG_CLEANUP
@@ -199,7 +203,7 @@ MEDDLY::operation::operation(const opname* n, unsigned et_slots)
   // Set up slots to save our entry_types.
   //
   if (et_slots) {
-    etype = new compute_table::entry_type* [et_slots];
+    etype = new ct_entry_type* [et_slots];
     for (unsigned i=0; i<et_slots; i++) {
       etype[i] = 0;
     }
@@ -211,7 +215,7 @@ MEDDLY::operation::operation(const opname* n, unsigned et_slots)
   // Allocate CTresults
   //
   if (et_slots) {
-    CTresult = new compute_table::entry_result [et_slots];
+    CTresult = new ct_entry_result [et_slots];
   } else {
     CTresult = 0;
   }

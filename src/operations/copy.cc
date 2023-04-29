@@ -27,6 +27,8 @@
 #include "old_meddly_expert.hh"
 #include "copy.h"
 
+#include "ct_entry_result.h"
+
 // #define DEBUG_COPY_COMPUTE_ALL
 
 namespace MEDDLY {
@@ -50,10 +52,10 @@ class MEDDLY::copy_MT : public unary_operation {
   protected:
     virtual node_handle compute_r(node_handle a) = 0;
 
-    inline compute_table::entry_key*
+    inline ct_entry_key*
     findResult(node_handle a, node_handle &b)
     {
-      compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CT0->find(CTsrch, CTresult[0]);
@@ -62,7 +64,7 @@ class MEDDLY::copy_MT : public unary_operation {
       CT0->recycle(CTsrch);
       return 0;
     }
-    inline node_handle saveResult(compute_table::entry_key* Key,
+    inline node_handle saveResult(ct_entry_key* Key,
       node_handle a, node_handle b)
     {
       CTresult[0].reset();
@@ -76,7 +78,7 @@ MEDDLY::copy_MT
 :: copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res)
  : unary_operation(oc, 1, arg, res)
 {
-  compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:N");
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:N");
   et->setForestForSlot(0, arg);
   et->setForestForSlot(2, res);
   registerEntryType(0, et);
@@ -130,7 +132,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handl
 
   // Check compute table
   node_handle b;
-  compute_table::entry_key* Key = findResult(a, b);
+  ct_entry_key* Key = findResult(a, b);
   if (0==Key) return b;
 
   // Initialize node reader
@@ -185,7 +187,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
 
   // Check compute table
   node_handle b;
-  compute_table::entry_key* Key = 0;
+  ct_entry_key* Key = 0;
   if (k == aLevel && k>0) {
     Key = findResult(a, b);
     if (0==Key) return b;
@@ -255,7 +257,7 @@ namespace MEDDLY {
         // entry[1]: EV value (output)
         // entry[2]: EV node (output)
         //
-        compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), pattern);
+        ct_entry_type* et = new ct_entry_type(oc->getName(), pattern);
         et->setForestForSlot(0, arg);
         et->setForestForSlot(3, res);
         registerEntryType(0, et);
@@ -277,10 +279,10 @@ namespace MEDDLY {
       void computeAll(int in, int k, node_handle a, node_handle &b, TYPE &bev);
 
     protected:
-      inline compute_table::entry_key*
+      inline ct_entry_key*
       inCache(node_handle a, node_handle &b, TYPE &bev)
       {
-        compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+        ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->writeN(a);
         CT0->find(CTsrch, CTresult[0]);
@@ -293,7 +295,7 @@ namespace MEDDLY {
         return CTsrch;
       }
 
-      inline void addToCache(compute_table::entry_key* Key,
+      inline void addToCache(ct_entry_key* Key,
         node_handle a, node_handle b, long bev)
       {
         MEDDLY_DCASSERT(bev != Inf<long>());
@@ -303,7 +305,7 @@ namespace MEDDLY {
         CT0->addEntry(Key, CTresult[0]);
       }
 
-      inline void addToCache(compute_table::entry_key* Key,
+      inline void addToCache(ct_entry_key* Key,
         node_handle a, node_handle b, float bev)
       {
         MEDDLY_DCASSERT(bev != Inf<float>());
@@ -335,7 +337,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   }
 
   // Check compute table
-  compute_table::entry_key* Key = inCache(a, b, bev);
+  ct_entry_key* Key = inCache(a, b, bev);
   if (0==Key) return;
 
   // Initialize sparse node reader
@@ -387,7 +389,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   const int aLevel = argF->getNodeLevel(a);
 
   // Check compute table
-  compute_table::entry_key* Key = 0;
+  ct_entry_key* Key = 0;
   if (k == aLevel && k>0) {
     Key = inCache(a, b, bev);
     if (0==Key) return;
@@ -455,7 +457,7 @@ namespace MEDDLY {
         // entry[1]: EV node
         // entry[2]: mt node (output)
         //
-        compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), pattern);
+        ct_entry_type* et = new ct_entry_type(oc->getName(), pattern);
         et->setForestForSlot(1, arg);
         et->setForestForSlot(3, res);
         registerEntryType(0, et);
@@ -478,10 +480,10 @@ namespace MEDDLY {
       node_handle computeAll(int in, int k, TYPE ev, node_handle a);
 
     protected:
-      inline compute_table::entry_key*
+      inline ct_entry_key*
       inCache(TYPE ev, node_handle a, node_handle &b)
       {
-        compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+        ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->write_ev(ev);
         CTsrch->writeN(a);
@@ -494,7 +496,7 @@ namespace MEDDLY {
         return CTsrch;
       }
 
-      inline void addToCache(compute_table::entry_key* Key,
+      inline void addToCache(ct_entry_key* Key,
         TYPE ev, node_handle a, node_handle b)
       {
         CTresult[0].reset();
@@ -523,7 +525,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
 
   // Check compute table
   node_handle b;
-  compute_table::entry_key* Key = inCache(ev, a, b);
+  ct_entry_key* Key = inCache(ev, a, b);
   if (0==Key) return b;
 
   // Initialize sparse node reader
@@ -573,7 +575,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
 
   // Check compute table
   node_handle b;
-  compute_table::entry_key* Key = 0;
+  ct_entry_key* Key = 0;
   if (k == aLevel && k>0) {
     Key = inCache(ev, a, b);
     if (0==Key) return b;
@@ -642,7 +644,7 @@ namespace MEDDLY {
       {
         // entry[0]: EV node
         // entry[1]: EV node
-        compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), "N:N");
+        ct_entry_type* et = new ct_entry_type(oc->getName(), "N:N");
         et->setForestForSlot(0, arg);
         et->setForestForSlot(2, res);
         registerEntryType(0, et);
@@ -661,10 +663,10 @@ namespace MEDDLY {
       node_handle computeSkip(int in, node_handle a);
 
     protected:
-      inline compute_table::entry_key*
+      inline ct_entry_key*
       findResult(node_handle a, node_handle &b)
       {
-        compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+        ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->writeN(a);
         CT0->find(CTsrch, CTresult[0]);
@@ -673,7 +675,7 @@ namespace MEDDLY {
         CT0->recycle(CTsrch);
         return 0;
       }
-      inline node_handle saveResult(compute_table::entry_key* Key,
+      inline node_handle saveResult(ct_entry_key* Key,
         node_handle a, node_handle b)
       {
         CTresult[0].reset();
@@ -696,7 +698,7 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
 
   // Check compute table
   node_handle b;
-  compute_table::entry_key* Key = findResult(a, b);
+  ct_entry_key* Key = findResult(a, b);
   if (0==Key) return b;
 
   // Initialize node reader
@@ -753,7 +755,7 @@ namespace MEDDLY {
         // entry[2]: EV value
         // entry[3]: EV node
         //
-        compute_table::entry_type* et = new compute_table::entry_type(oc->getName(), pattern);
+        ct_entry_type* et = new ct_entry_type(oc->getName(), pattern);
         et->setForestForSlot(1, arg);
         et->setForestForSlot(4, res);
         registerEntryType(0, et);
@@ -780,10 +782,10 @@ namespace MEDDLY {
         OUTTYPE &bv, node_handle &bn);
 
     protected:
-      inline compute_table::entry_key*
+      inline ct_entry_key*
       inCache(INTYPE av, node_handle an, OUTTYPE &bv, node_handle &bn)
       {
-        compute_table::entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+        ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
         MEDDLY_DCASSERT(CTsrch);
         CTsrch->write_ev(av);
         CTsrch->writeN(an);
@@ -797,7 +799,7 @@ namespace MEDDLY {
         return CTsrch;
       }
 
-      inline void addToCache(compute_table::entry_key* Key,
+      inline void addToCache(ct_entry_key* Key,
         INTYPE av, node_handle an, long bv, node_handle &bn)
       {
         CTresult[0].reset();
@@ -806,7 +808,7 @@ namespace MEDDLY {
         CT0->addEntry(Key, CTresult[0]);
       }
 
-      inline void addToCache(compute_table::entry_key* Key,
+      inline void addToCache(ct_entry_key* Key,
         INTYPE av, node_handle a, float bv, node_handle &bn)
       {
         CTresult[0].reset();
@@ -836,7 +838,7 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   const int aLevel = argF->getNodeLevel(an);
 
   // Check compute table
-  compute_table::entry_key* Key = 0;
+  ct_entry_key* Key = 0;
   if (k == aLevel && k>0) {
     Key = inCache(av, an, bv, bn);
     if (0==Key) return;

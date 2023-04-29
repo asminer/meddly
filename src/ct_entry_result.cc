@@ -20,14 +20,14 @@
 
 // **********************************************************************
 
-MEDDLY::compute_table::entry_result::entry_result()
+MEDDLY::ct_entry_result::ct_entry_result()
 {
   build = 0;
   data = 0;
   etype = 0;
 }
 
-void MEDDLY::compute_table::entry_result::initialize(const compute_table::entry_type* et)
+void MEDDLY::ct_entry_result::initialize(const ct_entry_type* et)
 {
   MEDDLY_DCASSERT(et);
   etype = et;
@@ -36,7 +36,7 @@ void MEDDLY::compute_table::entry_result::initialize(const compute_table::entry_
   build = new ct_entry_item[slots];
 }
 
-MEDDLY::compute_table::entry_result::~entry_result()
+MEDDLY::ct_entry_result::~ct_entry_result()
 {
   delete[] build;
 }

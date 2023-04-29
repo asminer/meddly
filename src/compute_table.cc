@@ -181,10 +181,10 @@ MEDDLY::compute_table_style::create(const ct_initializer::settings &s,
 // **********************************************************************
 
 
-MEDDLY::compute_table::entry_type** MEDDLY::compute_table::entryInfo;
+MEDDLY::ct_entry_type** MEDDLY::compute_table::entryInfo;
 unsigned MEDDLY::compute_table::entryInfoAlloc;
 unsigned MEDDLY::compute_table::entryInfoSize;
-MEDDLY::compute_table::entry_key* MEDDLY::compute_table::free_keys;
+MEDDLY::ct_entry_key* MEDDLY::compute_table::free_keys;
 
 MEDDLY::compute_table::compute_table(const ct_initializer::settings &s,
   operation* op, unsigned slot)
@@ -248,7 +248,7 @@ void MEDDLY::compute_table::initialize()
 void MEDDLY::compute_table::destroy()
 {
   while (free_keys) {
-    entry_key* n = free_keys->next;
+    ct_entry_key* n = free_keys->next;
     delete free_keys;
     free_keys = n;
   }
@@ -322,7 +322,7 @@ void MEDDLY::compute_table::registerOp(operation* op, unsigned num_ids)
     //
     // Need to enlarge
     //
-    entry_type** net = new entry_type* [entryInfoAlloc+256];
+    ct_entry_type** net = new ct_entry_type* [entryInfoAlloc+256];
     unsigned i;
     for (i=0; i<entryInfoAlloc; i++) {
       net[i] = entryInfo[i];
@@ -336,7 +336,7 @@ void MEDDLY::compute_table::registerOp(operation* op, unsigned num_ids)
   }
 }
 
-void MEDDLY::compute_table::registerEntryType(unsigned etid, entry_type* et)
+void MEDDLY::compute_table::registerEntryType(unsigned etid, ct_entry_type* et)
 {
     MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, etid, entryInfoSize);
   MEDDLY_DCASSERT(0==entryInfo[etid]);

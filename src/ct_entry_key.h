@@ -20,6 +20,8 @@
 #define MEDDLY_CT_ENTRY_KEY_H
 
 #include "ct_entry_type.h"
+#include "error.h"
+#include "forest.h"
 
 namespace MEDDLY {
     class ct_entry_key;
@@ -34,8 +36,8 @@ namespace MEDDLY {
 */
 class MEDDLY::ct_entry_key {
     public:
-          entry_key();
-          ~entry_key();
+          ct_entry_key();
+          ~ct_entry_key();
 
     protected:
           /// Start using for this operation
@@ -90,7 +92,7 @@ class MEDDLY::ct_entry_key {
 #endif
     protected:
           /// Used for linked-list of recycled search keys in compute_table
-          entry_key* next;
+          ct_entry_key* next;
 
     friend class compute_table;
 };
@@ -102,7 +104,7 @@ class MEDDLY::ct_entry_key {
 // ******************************************************************
 
 inline void
-MEDDLY::compute_table::entry_key::setup(const ct_entry_type* et, unsigned repeats)
+MEDDLY::ct_entry_key::setup(const ct_entry_type* et, unsigned repeats)
 {
   MEDDLY_DCASSERT(et);
   etype = et;
@@ -122,69 +124,69 @@ MEDDLY::compute_table::entry_key::setup(const ct_entry_type* et, unsigned repeat
 }
 
 inline const MEDDLY::ct_entry_type*
-MEDDLY::compute_table::entry_key::getET() const
+MEDDLY::ct_entry_key::getET() const
 {
   return etype;
 }
 
-inline void MEDDLY::compute_table::entry_key::writeN(node_handle nh)
+inline void MEDDLY::ct_entry_key::writeN(node_handle nh)
 {
   MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
   MEDDLY_DCASSERT(ct_typeID::NODE == theSlotType());
   data[currslot++].N = nh;
 }
 
-inline void MEDDLY::compute_table::entry_key::writeI(int i)
+inline void MEDDLY::ct_entry_key::writeI(int i)
 {
   MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
   MEDDLY_DCASSERT(ct_typeID::INTEGER == theSlotType());
   data[currslot++].I = i;
 }
 
-inline void MEDDLY::compute_table::entry_key::writeL(long i)
+inline void MEDDLY::ct_entry_key::writeL(long i)
 {
   MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
   MEDDLY_DCASSERT(ct_typeID::LONG == theSlotType());
   data[currslot++].L = i;
 }
 
-inline void MEDDLY::compute_table::entry_key::writeF(float f)
+inline void MEDDLY::ct_entry_key::writeF(float f)
 {
   MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
   MEDDLY_DCASSERT(ct_typeID::FLOAT == theSlotType());
   data[currslot++].F = f;
 }
 
-inline const MEDDLY::compute_table::ct_entry_item*
-MEDDLY::compute_table::entry_key::rawData() const
+inline const MEDDLY::ct_entry_item*
+MEDDLY::ct_entry_key::rawData() const
 {
   return data;
 }
 
-inline unsigned MEDDLY::compute_table::entry_key::dataLength() const
+inline unsigned MEDDLY::ct_entry_key::dataLength() const
 {
   return total_slots;
 }
 
-inline unsigned MEDDLY::compute_table::entry_key::numRepeats() const
+inline unsigned MEDDLY::ct_entry_key::numRepeats() const
 {
   return num_repeats;
 }
 
 inline const void*
-MEDDLY::compute_table::entry_key::readTempData() const
+MEDDLY::ct_entry_key::readTempData() const
 {
   return temp_data;
 }
 
 inline unsigned
-MEDDLY::compute_table::entry_key::numTempBytes() const
+MEDDLY::ct_entry_key::numTempBytes() const
 {
   return temp_bytes;
 }
 
 inline void*
-MEDDLY::compute_table::entry_key::allocTempData(unsigned bytes)
+MEDDLY::ct_entry_key::allocTempData(unsigned bytes)
 {
   temp_bytes = bytes;
   if (bytes > temp_alloc) {
@@ -196,7 +198,7 @@ MEDDLY::compute_table::entry_key::allocTempData(unsigned bytes)
 }
 
 inline void
-MEDDLY::compute_table::entry_key::cacheNodes() const
+MEDDLY::ct_entry_key::cacheNodes() const
 {
   for (unsigned i=0; i<total_slots; i++) {
     expert_forest* f = etype->getKeyForest(i);
@@ -206,13 +208,13 @@ MEDDLY::compute_table::entry_key::cacheNodes() const
   }
 }
 
-inline unsigned MEDDLY::compute_table::entry_key::getHash() const
+inline unsigned MEDDLY::ct_entry_key::getHash() const
 {
   MEDDLY_DCASSERT(has_hash);
   return hash_value;
 }
 
-inline void MEDDLY::compute_table::entry_key::setHash(unsigned h)
+inline void MEDDLY::ct_entry_key::setHash(unsigned h)
 {
   hash_value = h;
 #ifdef DEVELOPMENT_CODE
@@ -220,7 +222,7 @@ inline void MEDDLY::compute_table::entry_key::setHash(unsigned h)
 #endif
 }
 
-inline MEDDLY::ct_typeID MEDDLY::compute_table::entry_key::theSlotType() const
+inline MEDDLY::ct_typeID MEDDLY::ct_entry_key::theSlotType() const
 {
   //
   // Adjust currslot for OP entry, and number of repeats entry

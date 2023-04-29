@@ -19,7 +19,10 @@
 #ifndef MEDDLY_COMPUTE_TABLE_H
 #define MEDDLY_COMPUTE_TABLE_H
 
-// #include "ct_entry_type.h"
+#include "ct_entry_type.h"
+#include "ct_entry_key.h"
+
+
 #include "old_meddly_expert.h"   // for operation
 #include "forest.h"
 
@@ -232,12 +235,12 @@ class MEDDLY::compute_table {
       virtual ~compute_table();
 
       /**
-          Start using an entry_key for the given operation.
+          Start using an ct_entry_key for the given operation.
       */
       static ct_entry_key* useEntryKey(const ct_entry_type* et, unsigned repeats);
 
       /**
-          Done using an entry_key.
+          Done using an ct_entry_key.
       */
       static void recycle(ct_entry_key* k);
 
@@ -381,25 +384,25 @@ MEDDLY::compute_table::readEV(const MEDDLY::node_handle* p, float &ev)
   ev = f[0];
 }
 
-inline MEDDLY::compute_table::entry_key*
+inline MEDDLY::ct_entry_key*
 MEDDLY::compute_table::useEntryKey(const ct_entry_type* et, unsigned repeats)
 {
   if (0==et) return 0;
   MEDDLY_DCASSERT( (0==repeats) || et->isRepeating() );
 
-  entry_key* k;
+  ct_entry_key* k;
   if (free_keys) {
     k = free_keys;
     free_keys = free_keys->next;
   } else {
-    k = new entry_key();
+    k = new ct_entry_key();
   }
   k->setup(et, repeats);
   return k;
 }
 
 inline void
-MEDDLY::compute_table::recycle(entry_key* k)
+MEDDLY::compute_table::recycle(ct_entry_key* k)
 {
   if (k) {
     k->next = free_keys;
@@ -431,7 +434,7 @@ MEDDLY::compute_table::getEntryType(unsigned etid)
 }
 
 inline void
-MEDDLY::compute_table::setHash(entry_key *k, unsigned h)
+MEDDLY::compute_table::setHash(ct_entry_key *k, unsigned h)
 {
   MEDDLY_DCASSERT(k);
   k->setHash(h);

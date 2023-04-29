@@ -19,10 +19,16 @@
 #ifndef MEDDLY_CT_ENTRY_TYPE_H
 #define MEDDLY_CT_ENTRY_TYPE_H
 
+#include "defines.h"
+
+#include "old_meddly.h"
+
 namespace MEDDLY {
     class ct_object;
     class ct_entry_type;
     class compute_table;
+
+    class expert_forest;
 
     enum class ct_typeID {
         ERROR = 0,
@@ -31,7 +37,7 @@ namespace MEDDLY {
         LONG = 3,
         FLOAT = 4,
         DOUBLE = 5,
-        GENERIC = 6
+        GENERIC = 6 // ct_object
     };
 
     union ct_entry_item {

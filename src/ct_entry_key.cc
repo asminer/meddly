@@ -19,7 +19,7 @@
 #include "ct_entry_key.h"
 
 
-MEDDLY::compute_table::entry_key::entry_key()
+MEDDLY::ct_entry_key::ct_entry_key()
 {
   data_alloc = 8;
   etype = 0;
@@ -30,7 +30,7 @@ MEDDLY::compute_table::entry_key::entry_key()
   // malloc: because realloc later
 }
 
-MEDDLY::compute_table::entry_key::~entry_key()
+MEDDLY::ct_entry_key::~ct_entry_key()
 {
   free(data);
   free(temp_data);

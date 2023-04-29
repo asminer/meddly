@@ -17,6 +17,8 @@
 */
 
 #include "ct_entry_type.h"
+#include "error.h"
+#include "forest.h"
 
 // **********************************************************************
 // *                                                                    *
@@ -38,42 +40,42 @@ MEDDLY::ct_object::~ct_object()
 // *                                                                    *
 // **********************************************************************
 
-inline unsigned bytes4typeID(MEDDLY::compute_table::typeID t)
+inline unsigned bytes4typeID(MEDDLY::ct_typeID t)
 {
   switch (t) {
-    case MEDDLY::compute_table::NODE      : return sizeof(MEDDLY::node_handle);
-    case MEDDLY::compute_table::INTEGER   : return sizeof(int);
-    case MEDDLY::compute_table::LONG      : return sizeof(long);
-    case MEDDLY::compute_table::FLOAT     : return sizeof(float);
-    case MEDDLY::compute_table::DOUBLE    : return sizeof(double);
-    case MEDDLY::compute_table::GENERIC   : return sizeof(MEDDLY::ct_object*);
+    case MEDDLY::ct_typeID::NODE    : return sizeof(MEDDLY::node_handle);
+    case MEDDLY::ct_typeID::INTEGER : return sizeof(int);
+    case MEDDLY::ct_typeID::LONG    : return sizeof(long);
+    case MEDDLY::ct_typeID::FLOAT   : return sizeof(float);
+    case MEDDLY::ct_typeID::DOUBLE  : return sizeof(double);
+    case MEDDLY::ct_typeID::GENERIC : return sizeof(MEDDLY::ct_object*);
     default:    return 0;
   }
 }
 
-inline char typeID2char(MEDDLY::compute_table::typeID t)
+inline char typeID2char(MEDDLY::ct_typeID t)
 {
   switch (t) {
-    case MEDDLY::compute_table::NODE      : return 'N';
-    case MEDDLY::compute_table::INTEGER   : return 'I';
-    case MEDDLY::compute_table::LONG      : return 'L';
-    case MEDDLY::compute_table::FLOAT     : return 'F';
-    case MEDDLY::compute_table::DOUBLE    : return 'D';
-    case MEDDLY::compute_table::GENERIC   : return 'G';
+    case MEDDLY::ct_typeID::NODE    : return 'N';
+    case MEDDLY::ct_typeID::INTEGER : return 'I';
+    case MEDDLY::ct_typeID::LONG    : return 'L';
+    case MEDDLY::ct_typeID::FLOAT   : return 'F';
+    case MEDDLY::ct_typeID::DOUBLE  : return 'D';
+    case MEDDLY::ct_typeID::GENERIC : return 'G';
     default:    return '?';
   }
 }
 
-inline MEDDLY::compute_table::typeID char2typeID(char c)
+inline MEDDLY::ct_typeID char2typeID(char c)
 {
   switch (c) {
-    case 'N':   return MEDDLY::compute_table::NODE;
-    case 'I':   return MEDDLY::compute_table::INTEGER;
-    case 'L':   return MEDDLY::compute_table::LONG;
-    case 'F':   return MEDDLY::compute_table::FLOAT;
-    case 'D':   return MEDDLY::compute_table::DOUBLE;
-    case 'G':   return MEDDLY::compute_table::GENERIC;
-    default:    return MEDDLY::compute_table::ERROR;
+    case 'N':   return MEDDLY::ct_typeID::NODE;
+    case 'I':   return MEDDLY::ct_typeID::INTEGER;
+    case 'L':   return MEDDLY::ct_typeID::LONG;
+    case 'F':   return MEDDLY::ct_typeID::FLOAT;
+    case 'D':   return MEDDLY::ct_typeID::DOUBLE;
+    case 'G':   return MEDDLY::ct_typeID::GENERIC;
+    default:    return MEDDLY::ct_typeID::ERROR;
   }
 }
 
@@ -83,7 +85,7 @@ inline MEDDLY::compute_table::typeID char2typeID(char c)
 // *                                                                    *
 // **********************************************************************
 
-MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pattern)
+MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
 {
   name = _name;
   is_marked_for_deletion = false;
@@ -147,7 +149,7 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
   //
   ks_bytes = 0;
   if (len_ks_type) {
-    ks_type = new typeID[len_ks_type];
+    ks_type = new ct_typeID[len_ks_type];
     ks_forest = new expert_forest*[len_ks_type];
     for (unsigned i=0; i<len_ks_type; i++) {
       ks_type[i] = char2typeID(pattern[i]);
@@ -165,7 +167,7 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
   //
   kr_bytes = 0;
   if (len_kr_type) {
-    kr_type = new typeID[len_kr_type];
+    kr_type = new ct_typeID[len_kr_type];
     kr_forest = new expert_forest*[len_kr_type];
     for (unsigned i=0; i<len_kr_type; i++) {
       kr_type[i] = char2typeID(pattern[i + dot_slot + 1]);
@@ -182,7 +184,7 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
   //
   MEDDLY_DCASSERT(len_r_type);
   r_bytes = 0;
-  r_type = new typeID[len_r_type];
+  r_type = new ct_typeID[len_r_type];
   r_forest = new expert_forest*[len_r_type];
   for (unsigned i=0; i<len_r_type; i++) {
     r_type[i] = char2typeID(pattern[i + colon_slot + 1]);
@@ -210,7 +212,7 @@ MEDDLY::compute_table::entry_type::entry_type(const char* _name, const char* pat
 #endif
 }
 
-MEDDLY::compute_table::entry_type::~entry_type()
+MEDDLY::ct_entry_type::~ct_entry_type()
 {
   delete[] ks_type;
   delete[] ks_forest;
@@ -220,10 +222,10 @@ MEDDLY::compute_table::entry_type::~entry_type()
   delete[] r_forest;
 }
 
-void MEDDLY::compute_table::entry_type::setForestForSlot(unsigned i, expert_forest* f)
+void MEDDLY::ct_entry_type::setForestForSlot(unsigned i, expert_forest* f)
 {
   if (i<len_ks_type) {
-    if (NODE != ks_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+    if (ct_typeID::NODE != ks_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
     ks_forest[i] = f;
     return;
   }
@@ -233,7 +235,7 @@ void MEDDLY::compute_table::entry_type::setForestForSlot(unsigned i, expert_fore
     // adjust for the .
     i--;
     if (i<len_kr_type) {
-      if (NODE != kr_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+      if (ct_typeID::NODE != kr_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
       kr_forest[i] = f;
       return;
     }
@@ -244,7 +246,7 @@ void MEDDLY::compute_table::entry_type::setForestForSlot(unsigned i, expert_fore
   i--;
 
   if (i < len_r_type) {
-    if (NODE != r_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+    if (ct_typeID::NODE != r_type[i]) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
     r_forest[i] = f;
     return;
   }
@@ -253,7 +255,7 @@ void MEDDLY::compute_table::entry_type::setForestForSlot(unsigned i, expert_fore
   throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
 }
 
-void MEDDLY::compute_table::entry_type::clearForestCTBits(bool* skipF, unsigned N) const
+void MEDDLY::ct_entry_type::clearForestCTBits(bool* skipF, unsigned N) const
 {
   unsigned i;
   for (i=0; i<len_ks_type; i++) {
@@ -282,7 +284,7 @@ void MEDDLY::compute_table::entry_type::clearForestCTBits(bool* skipF, unsigned 
   }
 }
 
-void MEDDLY::compute_table::entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
+void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
 {
   unsigned i;
   for (i=0; i<len_ks_type; i++) {
