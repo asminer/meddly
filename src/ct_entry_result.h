@@ -28,215 +28,146 @@ namespace MEDDLY {
 };
 
 /**
-        The result portion of an entry.
-        Internally, in the compute table, we may store
-        entries differently.  This class is used to return
-        results from searches and to construct CT entries.
+    The result portion of an entry.
+    Internally, in the compute table, we may store
+    entries differently.  This class is used to return
+    results from searches and to construct CT entries.
 */
 class MEDDLY::ct_entry_result {
-        public:
-          ct_entry_result();
-          ~ct_entry_result();
+    public:
+        ct_entry_result();
+        ~ct_entry_result();
 
-        public:
-          // For delayed construction
-          void initialize(const ct_entry_type* et);
+    public:
+        /// Initialize after construction
+        void initialize(const ct_entry_type* et);
 
-          // interface, for operations (reading).
-          node_handle readN();
-          int readI();
-          float readF();
-          long readL();
-          double readD();
-          ct_object* readG();
-          // for templates
-          void read_ev(long &l)   { l = readL(); }
-          void read_ev(float &f)  { f = readF(); }
+        //
+        // interface, for operations (reading).
+        //
 
-          // interface, for operations (building).
-          void reset();
-          void writeN(node_handle nh);
-          void writeI(int i);
-          void writeF(float f);
-          void writeL(long L);
-          void writeD(double D);
-          void writeG(ct_object* G);
+        inline node_handle readN() {
+            READ_SLOT(ct_typeID::NODE);
+            return data[currslot++].N;
+        }
 
-          // interface, for compute tables.
-          void setValid();
-          void setValid(const ct_entry_item* d);
-          void setInvalid();
-          operator bool() const;
-          /// Increase cache counters for nodes in this portion of the entry.
-          void cacheNodes() const;
+        inline int readI() {
+            READ_SLOT(ct_typeID::INTEGER);
+            return data[currslot++].I;
+        }
 
-          const ct_entry_item* rawData() const;
-          unsigned dataLength() const;
+        inline float readF() {
+            READ_SLOT(ct_typeID::FLOAT);
+            return data[currslot++].F;
+        }
+
+        inline long readL() {
+            READ_SLOT(ct_typeID::LONG);
+            return data[currslot++].L;
+        }
+
+        inline double readD() {
+            READ_SLOT(ct_typeID::DOUBLE);
+            return data[currslot++].D;
+        }
+
+        inline ct_object* readG() {
+            READ_SLOT(ct_typeID::GENERIC);
+            return data[currslot++].G;
+        }
+
+        // for templates
+        void read_ev(long &l)   { l = readL(); }
+        void read_ev(float &f)  { f = readF(); }
+
+        //
+        // interface, for operations (building).
+        //
+
+        inline void reset() { currslot = 0; }
+
+        inline void writeN(node_handle nh) {
+            WRITE_SLOT(ct_typeID::NODE);
+            build[currslot++].N = nh;
+        }
+
+        inline void writeI(int i) {
+            WRITE_SLOT(ct_typeID::INTEGER);
+            build[currslot++].I = i;
+        }
+
+        inline void writeF(float f) {
+            WRITE_SLOT(ct_typeID::FLOAT);
+            build[currslot++].F = f;
+        }
+
+        inline void writeL(long L) {
+            WRITE_SLOT(ct_typeID::LONG);
+            build[currslot++].L = L;
+        }
+
+        inline void writeD(double D) {
+            WRITE_SLOT(ct_typeID::DOUBLE);
+            build[currslot++].D = D;
+        }
+
+        inline void writeG(ct_object* G) {
+            WRITE_SLOT(ct_typeID::GENERIC);
+            build[currslot++].G = G;
+        }
+
+        //
+        // interface, for compute tables.
+        //
+
+        inline void setValid() {
+            is_valid = true;
+            data = build;
+        }
+
+        inline void setValid(const ct_entry_item* d) {
+            is_valid = true;
+            data = d;
+        }
+
+        inline void setInvalid() { is_valid = false; }
+
+        inline operator bool() const { return is_valid; }
+
+        inline const ct_entry_item* rawData() const { return build; }
+        inline unsigned dataLength() const { return etype->getResultSize(); }
+
+        /// Increase cache counters for nodes in this portion of the entry.
+        inline void cacheNodes() const {
+            for (unsigned i=0; i<etype->getResultSize(); i++) {
+                expert_forest* f = etype->getResultForest(i);
+                if (f) {
+                    f->cacheNode(build[i].N);
+                }
+            }
+        }
+
+    private:
+        inline void READ_SLOT(ct_typeID t)
+        {
+            MEDDLY_DCASSERT(data);
+            MEDDLY_DCASSERT(currslot < dataLength());
+            MEDDLY_DCASSERT(t == etype->getResultType(currslot));
+        }
+        inline void WRITE_SLOT(ct_typeID t)
+        {
+            MEDDLY_DCASSERT(build);
+            MEDDLY_DCASSERT(currslot < dataLength());
+            MEDDLY_DCASSERT(t == etype->getResultType(currslot));
+        }
 
 
-        private:
-          const ct_entry_type* etype;
-          ct_entry_item* build;
-          const ct_entry_item* data;
-          bool is_valid;
-          unsigned currslot;
+    private:
+        const ct_entry_type* etype;
+        ct_entry_item* build;
+        const ct_entry_item* data;
+        bool is_valid;
+        unsigned currslot;
 };
-
-// ******************************************************************
-
-inline MEDDLY::node_handle MEDDLY::ct_entry_result::readN()
-{
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(ct_typeID::NODE == etype->getResultType(currslot));
-  return data[currslot++].N;
-}
-
-inline int MEDDLY::ct_entry_result::readI()
-{
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(ct_typeID::INTEGER == etype->getResultType(currslot));
-  return data[currslot++].I;
-}
-
-inline float MEDDLY::ct_entry_result::readF()
-{
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(ct_typeID::FLOAT == etype->getResultType(currslot));
-  return data[currslot++].F;
-}
-
-inline long MEDDLY::ct_entry_result::readL()
-{
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::LONG == etype->getResultType(currslot));
-  return data[currslot++].L;
-}
-
-inline double MEDDLY::ct_entry_result::readD()
-{
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::DOUBLE == etype->getResultType(currslot));
-  return data[currslot++].D;
-}
-
-inline MEDDLY::ct_object* MEDDLY::ct_entry_result::readG()
-{
-  MEDDLY_DCASSERT(data);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::GENERIC == etype->getResultType(currslot));
-  return data[currslot++].G;
-}
-
-
-inline void MEDDLY::ct_entry_result::reset()
-{
-  currslot = 0;
-}
-
-inline void MEDDLY::ct_entry_result::writeN(node_handle nh)
-{
-  MEDDLY_DCASSERT(build);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::NODE == etype->getResultType(currslot));
-  build[currslot++].N = nh;
-}
-
-inline void MEDDLY::ct_entry_result::writeI(int i)
-{
-  MEDDLY_DCASSERT(build);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::INTEGER == etype->getResultType(currslot));
-  build[currslot++].I = i;
-}
-
-inline void MEDDLY::ct_entry_result::writeF(float f)
-{
-  MEDDLY_DCASSERT(build);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::FLOAT == etype->getResultType(currslot));
-  build[currslot++].F = f;
-}
-
-inline void MEDDLY::ct_entry_result::writeL(long L)
-{
-  MEDDLY_DCASSERT(build);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::LONG == etype->getResultType(currslot));
-  build[currslot++].L = L;
-}
-
-inline void MEDDLY::ct_entry_result::writeD(double D)
-{
-  MEDDLY_DCASSERT(build);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::DOUBLE == etype->getResultType(currslot));
-  build[currslot++].D = D;
-}
-
-inline void MEDDLY::ct_entry_result::writeG(ct_object* G)
-{
-  MEDDLY_DCASSERT(build);
-  MEDDLY_DCASSERT(currslot < dataLength());
-  MEDDLY_DCASSERT(ct_typeID::GENERIC == etype->getResultType(currslot));
-  build[currslot++].G = G;
-}
-
-inline void
-MEDDLY::ct_entry_result::setValid()
-{
-  is_valid = true;
-  data = build;
-}
-
-inline void
-MEDDLY::ct_entry_result::setValid(const ct_entry_item* d)
-{
-  is_valid = true;
-  data = d;
-}
-
-inline void
-MEDDLY::ct_entry_result::setInvalid()
-{
-  is_valid = false;
-}
-
-inline
-MEDDLY::ct_entry_result::operator bool() const
-{
-  return is_valid;
-}
-
-inline void
-MEDDLY::ct_entry_result::cacheNodes() const
-{
-  for (unsigned i=0; i<etype->getResultSize(); i++) {
-    expert_forest* f = etype->getResultForest(i);
-    if (f) {
-      f->cacheNode(build[i].N);
-    }
-  }
-}
-
-inline const MEDDLY::ct_entry_item*
-MEDDLY::ct_entry_result
-::rawData() const
-{
-  return build;
-}
-
-inline unsigned MEDDLY::ct_entry_result
-::dataLength() const
-{
-  return etype->getResultSize();
-}
-
-
-
 
 #endif // #include guard

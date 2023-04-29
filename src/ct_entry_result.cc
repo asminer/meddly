@@ -22,23 +22,23 @@
 
 MEDDLY::ct_entry_result::ct_entry_result()
 {
-  build = 0;
-  data = 0;
-  etype = 0;
-}
-
-void MEDDLY::ct_entry_result::initialize(const ct_entry_type* et)
-{
-  MEDDLY_DCASSERT(et);
-  etype = et;
-  const unsigned slots = etype->getResultSize();
-  MEDDLY_DCASSERT(0==build);
-  build = new ct_entry_item[slots];
+    build = 0;
+    data = 0;
+    etype = 0;
 }
 
 MEDDLY::ct_entry_result::~ct_entry_result()
 {
-  delete[] build;
+    delete[] build;
+}
+
+void MEDDLY::ct_entry_result::initialize(const ct_entry_type* et)
+{
+    MEDDLY_DCASSERT(et);
+    etype = et;
+    const unsigned slots = etype->getResultSize();
+    MEDDLY_DCASSERT(0==build);
+    build = new ct_entry_item[slots];
 }
 
 

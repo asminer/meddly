@@ -83,7 +83,6 @@ Compute table changes:
 Files that need updating / cleanup
 ------------------------------------------------------------
 compute_table.h         compute_table.cc
-ct_entry_result.h       ct_entry_result.h
 
 dd_edge.h               dd_edge.cc
 defines.h
@@ -107,6 +106,7 @@ unpacked_node.h         unpacked_node.cc
 In good shape
 ------------------------------------------------------------
 ct_entry_key.h          ct_entry_key.cc
+ct_entry_result.h       ct_entry_result.h
 ct_entry_type.h         ct_entry_type.cc
 
 error.h                 error.cc
