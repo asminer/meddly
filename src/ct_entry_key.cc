@@ -18,21 +18,63 @@
 
 #include "ct_entry_key.h"
 
+// **********************************************************************
+// *                                                                    *
+// *                        ct_entry_key methods                        *
+// *                                                                    *
+// **********************************************************************
+
 
 MEDDLY::ct_entry_key::ct_entry_key()
 {
-  data_alloc = 8;
-  etype = 0;
-  data = (ct_entry_item*) malloc(data_alloc * sizeof(ct_entry_item));
-  temp_data = 0;
-  temp_bytes = 0;
-  temp_alloc = 0;
-  // malloc: because realloc later
+    data_alloc = 8;
+    etype = nullptr;
+    data = (ct_entry_item*) malloc(data_alloc * sizeof(ct_entry_item));
+    temp_data = nullptr;
+    temp_bytes = 0;
+    temp_alloc = 0;
+    // malloc: because realloc later
 }
 
 MEDDLY::ct_entry_key::~ct_entry_key()
 {
-  free(data);
-  free(temp_data);
+    free(data);
+    free(temp_data);
+}
+
+void MEDDLY::ct_entry_key::setup(const ct_entry_type* et, unsigned repeats)
+{
+    MEDDLY_DCASSERT(et);
+    etype = et;
+    num_repeats = repeats;
+    MEDDLY_DCASSERT( 0==repeats || et->isRepeating() );
+    total_slots = et->getKeySize(repeats);
+    if (total_slots > data_alloc) {
+        // Allocate in chunks of size 8
+        data_alloc = (1+(data_alloc / 8)) * 8;
+        data = (ct_entry_item*) realloc(data, data_alloc*sizeof(ct_entry_item));
+        if (!data) {
+            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        }
+    }
+    memset(data, 0, total_slots * sizeof(ct_entry_item));
+    currslot = 0;
+#ifdef DEVELOPMENT_CODE
+    has_hash = false;
+#endif
+}
+
+void* MEDDLY::ct_entry_key::allocTempData(unsigned bytes)
+{
+    temp_bytes = bytes;
+    if (bytes > temp_alloc) {
+        // Allocate in chunks of 64 bytes
+        temp_alloc = (1+(temp_bytes/64)) * 64;
+        temp_data = realloc(temp_data, temp_alloc);
+        if (!temp_data) {
+            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        }
+    }
+    return temp_data;
 }
 
