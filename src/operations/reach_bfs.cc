@@ -22,12 +22,9 @@
 #include "config.h"
 #endif
 #include "../defines.h"
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
 #include "reach_bfs.h"
 
+#include "../forest.h"
 #include "../oper_binary.h"
 
 // #define DEBUG_BFS

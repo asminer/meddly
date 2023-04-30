@@ -19,11 +19,9 @@
 #ifdef _MEDDLY_NOINST_
 
 #include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
 
 #else
 
 #include "meddly/old_meddly_expert.h"
-#include "meddly/old_meddly_expert.hh"
 
 #endif

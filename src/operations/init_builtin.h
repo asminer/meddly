@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -16,6 +16,15 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#ifndef MEDDLY_INIT_BUILTIN
+#define MEDDLY_INIT_BUILTIN
+
+#include "../opname.h"
+#include "../opname.h"
+#include "../opname_numer.h"
+#include "../opname_satur.h"
+#include "../initializer.h"
 
 namespace MEDDLY {
   class builtin_initializer;
@@ -88,3 +97,4 @@ protected:
   virtual void cleanup();
 };
 
+#endif // #include guard

@@ -18,10 +18,6 @@
  */
 
 #include "../defines.h"
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
 #include "relation_node.h"
 #include "sat_impl.h"
 #include <typeinfo> // for "bad_cast" exception

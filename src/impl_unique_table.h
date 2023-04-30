@@ -2,10 +2,7 @@
 #define IMPL_UNIQUE_TABLE_H
 
 #include "defines.h"
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
+#include "forest.h"
 
 namespace MEDDLY {
   class impl_unique_table;

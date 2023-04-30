@@ -24,10 +24,6 @@
 #include <gmp.h>
 #endif
 #include "../defines.h"
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
 #include "cardinality.h"
 #include "mpz_object.h"
 

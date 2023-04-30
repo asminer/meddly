@@ -20,6 +20,7 @@
 
 namespace MEDDLY {
   class storage_initializer;
+  class node_storage_style;
 };
 
 class MEDDLY::storage_initializer : public initializer_list {

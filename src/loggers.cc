@@ -19,10 +19,6 @@
 
 
 #include "defines.h"
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
 #include "loggers.h"
 
 #define BATCH

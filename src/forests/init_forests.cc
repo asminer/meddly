@@ -21,10 +21,8 @@
 #include "config.h"
 #endif
 #include "../defines.h"
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
+#include "../forest.h"
+#include "../initializer.h"
 #include "init_forests.h"
 
 #include "mt.h"

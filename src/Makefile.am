@@ -23,7 +23,6 @@ libmeddly_la_SOURCES = \
     node_headers.cc node_storage.cc unpacked_node.cc relation_node.cc \
     opname.cc opname_numer.cc opname_satur.cc \
     oper.cc oper_unary.cc oper_binary.cc oper_special.cc \
-    ops.cc \
     dd_edge.cc \
     enumerator.cc \
     forest.cc \
@@ -145,6 +144,6 @@ pkginclude_HEADERS = \
     initializer.h \
     memory.h \
     old_meddly.h old_meddly.hh \
-    old_meddly_expert.h old_meddly_expert.hh
+    old_meddly_expert.h
 
 AM_CXXFLAGS = -Wall

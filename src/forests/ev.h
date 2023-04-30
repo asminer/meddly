@@ -21,10 +21,7 @@
 #define EV_FOREST
 
 #include "../defines.h"
-#include "../old_meddly.h"
-#include "../old_meddly.hh"
-#include "../old_meddly_expert.h"
-#include "../old_meddly_expert.hh"
+#include "../forest.h"
 
 namespace MEDDLY {
   class ev_forest;

@@ -17,11 +17,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
 #include "unique_table.h"
+#include "forest.h"
 
 MEDDLY::unique_table::unique_table(expert_forest* ef)
 : parent(ef)

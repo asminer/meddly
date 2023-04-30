@@ -24,10 +24,6 @@
 #include <fstream>
 #include <sstream>
 #include "defines.h"
-#include "old_meddly.h"
-#include "old_meddly.hh"
-#include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
 #include "unique_table.h"
 #include "relation_node.h"
 #include "impl_unique_table.h"

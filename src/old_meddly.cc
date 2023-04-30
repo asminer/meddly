@@ -35,7 +35,6 @@
 #include "old_meddly.h"
 #include "old_meddly.hh"
 #include "old_meddly_expert.h"
-#include "old_meddly_expert.hh"
 #include "revision.h"
 // #include "compute_table.h"
 #include "memory_managers/init_managers.h"
