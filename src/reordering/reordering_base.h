@@ -2,9 +2,8 @@
 #ifndef REORDERING_BASE_H
 #define REORDERING_BASE_H
 
-#include "../old_meddly_expert.h"
-
 namespace MEDDLY{
+    class expert_forest;
 
 class reordering_base
 {

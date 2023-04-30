@@ -16,12 +16,5 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef _MEDDLY_NOINST_
+// DEPRECATED!
 
-#include "old_meddly_expert.h"
-
-#else
-
-#include "meddly/old_meddly_expert.h"
-
-#endif

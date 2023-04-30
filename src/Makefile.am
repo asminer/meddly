@@ -144,7 +144,6 @@ pkginclude_HEADERS = \
     initializer.h \
     memory.h \
     old_meddly.h old_meddly.hh \
-    old_meddly_expert.h \
     global_rebuilder.h
 
 AM_CXXFLAGS = -Wall

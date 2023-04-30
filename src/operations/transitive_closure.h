@@ -21,7 +21,6 @@
 #define TRANSITIVE_CLOSURE_H
 
 #include "old_meddly.h"
-#include "old_meddly_expert.h"
 #include "../opname_satur.h"
 #include "../oper_special.h"
 #include "../ct_entry_key.h"
