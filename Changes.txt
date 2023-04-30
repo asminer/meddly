@@ -61,6 +61,15 @@ opname hierarcy
     sat*_opname                     opname_satur.h/cc       but mostly still in operations/sat*
 
 
+operation hierarchy
+    CLASS                           NEW LOCATION
+    ----------------------------    ----------------------------
+    operation                       oper.h/cc
+    unary_operation                 oper_unary.h/cc
+    binary_operation                oper_binary.h/cc
+    specialized_operation           oper_special.h/cc
+
+
 TBD: getOperation -> (static?) method inside opcode classes?
 
     unary_operation* getOperation(const unary_opname* code, arg, res)

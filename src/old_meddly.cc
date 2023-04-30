@@ -43,6 +43,10 @@
 #include "forests/init_forests.h"
 #include "storage/init_storage.h"
 
+#include "oper.h"
+#include "oper_unary.h"
+#include "oper_binary.h"
+
 // #define STATS_ON_DESTROY
 
 namespace MEDDLY {

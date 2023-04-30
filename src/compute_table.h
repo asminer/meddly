@@ -22,8 +22,6 @@
 #include "ct_entry_type.h"
 #include "ct_entry_key.h"
 
-
-#include "old_meddly_expert.h"   // for operation
 #include "forest.h"
 
 namespace MEDDLY {
