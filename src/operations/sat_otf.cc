@@ -26,8 +26,12 @@
 #include <typeinfo> // for "bad_cast" exception
 #include <set>
 
-#include "ct_entry_result.h"
-#include "opname_satur.h"
+#include "../ct_entry_result.h"
+#include "../compute_table.h"
+#include "../oper_unary.h"
+#include "../oper_binary.h"
+#include "../oper_special.h"
+#include "../opname_satur.h"
 
 namespace MEDDLY {
   class otfsat_by_events_opname;

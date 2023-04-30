@@ -50,15 +50,15 @@ domain (PLANNED; NOT DONE YET. TBD)
 opname hierarcy
     CLASS                           NEW LOCATION
     ----------------------------    ----------------------------
-    opname                          opname.h/cc
-    unary_opname                    opname.h/cc
-    binary_opname                   opname.h/cc
-    specialized_opname              opname.h/cc
+    opname                          opname.h
+    unary_opname                    opname.h
+    binary_opname                   opname.h
+    specialized_opname              opname.h
 
-    numerical_opname                opname_numer.h/cc
+    numerical_opname                opname_numer.h
 
-    constrained_opname              opname_satur.h/cc
-    sat*_opname                     opname_satur.h/cc       but mostly still in operations/sat*
+    constrained_opname              opname_satur.h
+    sat*_opname                     opname_satur.h          but mostly still in operations/sat*
 
 
 operation hierarchy
@@ -84,6 +84,9 @@ becomes
 Compute table changes:
     OLD (inner) class                 NEW class                         WHERE
     ------------------------------    ------------------------------    --------------------
+    ct_initializer::settings          ct_settings                       ct_initializer.h
+    ct_initializer                    (same)                            ct_initializer.h
+
     compute_table::typeID             ct_typeID                         ct_entry_type.h
     compute_table::entry_item         ct_entry_item                     ct_entry_type.h
     ct_object                         ct_object                         ct_entry_type.h

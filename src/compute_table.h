@@ -23,6 +23,7 @@
 #include "ct_entry_key.h"
 
 #include "forest.h"
+#include "oper.h"
 
 namespace MEDDLY {
     class operation;
@@ -32,107 +33,9 @@ namespace MEDDLY {
 
     class ct_object;
     class ct_initializer;
+    struct ct_settings;
     class compute_table_style;
     class compute_table;
-};
-
-// ******************************************************************
-// *                                                                *
-// *                      ct_initializer  class                     *
-// *                                                                *
-// ******************************************************************
-
-/** Interface for initializing Meddly's compute table(s).
-    Note - this is a singleton class but this is not enforced.
-
-    This is exposed here because it allows us to avoid a
-    "chicken and egg" problem:  to initialize the library, we want to
-    set the compute table style, but we cannot guarantee that those
-    pointers are set up before we initialize the library.
-    So, settings for compute tables should be made as follows.
-
-    (1) call defaultInitializerList(), to build an instance of this class,
-        and save the result.  That will set up the default settings.
-
-    (2) change settings using static members
-
-    (3) initialize Meddly using the saved initializer list.
-
-*/
-class MEDDLY::ct_initializer : public initializer_list {
-    public:
-        enum staleRemovalOption {
-            /// Whenever we see a stale entry, remove it.
-            Aggressive,
-            /// Only remove stales when we need to expand the table
-            Moderate,
-            /// Only remove stales during Garbage Collection.
-            Lazy
-        };
-
-        enum builtinCTstyle {
-            /// One huge hash table that uses chaining.
-            MonolithicChainedHash,
-
-            /// One huge hash table that does not use chaining.
-            MonolithicUnchainedHash,
-
-            /// A hash table (with chaining) for each operation.
-            OperationChainedHash,
-
-            /// A hash table (no chaining) for each operation.
-            OperationUnchainedHash,
-        };
-
-        enum compressionOption {
-            /// No compression at all
-            None,
-            /// Compression based on item type
-            TypeBased
-            // TBD - others
-        };
-
-        struct settings {
-            public:
-                /// Memory manager to use for compute table entries
-                const memory_manager_style *MMS;
-                /// Maximum compute table size
-                size_t maxSize;
-                /// Stale removal policy
-                staleRemovalOption staleRemoval;
-                /// Compression policy
-                compressionOption compression;
-            public:
-                settings() {
-                    MMS = nullptr;
-                }
-        };
-
-
-    public:
-        ct_initializer(initializer_list* previous);
-        virtual ~ct_initializer();
-
-    protected:
-        virtual void setup();
-        virtual void cleanup();
-        static void setMemoryManager(const memory_manager_style*);
-
-    // use these to change defaults, before library initialization
-    public:
-        static void setStaleRemoval(staleRemovalOption sro);
-        static void setMaxSize(unsigned ms);
-        static void setBuiltinStyle(builtinCTstyle cts);
-        static void setUserStyle(const compute_table_style*);
-        static void setCompression(compressionOption co);
-
-        // for convenience
-        static compute_table* createForOp(operation* op, unsigned slot);
-
-    private:
-        static settings the_settings;
-        static const compute_table_style* ct_factory;
-        static compute_table_style* builtin_ct_factory;
 };
 
 // ******************************************************************
@@ -154,7 +57,7 @@ class MEDDLY::compute_table_style {
 
             Default throws an error.
         */
-        virtual compute_table* create(const ct_initializer::settings &s)
+        virtual compute_table* create(const ct_settings &s)
             const;
 
 
@@ -162,7 +65,7 @@ class MEDDLY::compute_table_style {
             Build a new table for a single operation.
             Default throws an error.
         */
-        virtual compute_table* create(const ct_initializer::settings &s,
+        virtual compute_table* create(const ct_settings &s,
             operation* op, unsigned slot) const;
 
 
@@ -224,7 +127,7 @@ class MEDDLY::compute_table {
                                 completely identifies the kinds of entries
                                 in the table.
         */
-        compute_table(const ct_initializer::settings &s, operation* op,
+        compute_table(const ct_settings &s, operation* op,
                 unsigned slot);
 
         /** Destructor.

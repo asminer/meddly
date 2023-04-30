@@ -28,7 +28,10 @@
 #include "old_meddly_expert.hh"
 #include "reach_dfs.h"
 
-#include "ct_entry_result.h"
+#include "../ct_entry_result.h"
+#include "../compute_table.h"
+#include "../oper_unary.h"
+#include "../oper_binary.h"
 
 // #define TRACE_RECFIRE
 // #define DEBUG_DFS

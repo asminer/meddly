@@ -74,6 +74,10 @@ namespace MEDDLY {
     */
     void destroyOperation(unary_operation* &op);
 
+
+    //
+    //
+    extern bool libraryRunning;
 };
 
 
@@ -140,58 +144,5 @@ MEDDLY::unary_operation::matches(const MEDDLY::expert_forest* arg, opnd_type res
 {
   return (arg == argF && resultType == res);
 }
-
-inline bool
-MEDDLY::unary_operation::checkForestCompatibility() const
-{
-  if (resultType == opnd_type::FOREST) {
-    auto o1 = argF->variableOrder();
-    auto o2 = resF->variableOrder();
-    return o1->is_compatible_with(*o2);
-  }
-  else {
-    return true;
-  }
-}
-
-inline void
-MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
-{
-  if (!checkForestCompatibility()) {
-    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-  }
-  computeDDEdge(arg, res, true);
-}
-
-inline void
-MEDDLY::unary_operation::computeTemp(const dd_edge &arg, dd_edge &res)
-{
-  if (!checkForestCompatibility()) {
-    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-  }
-  computeDDEdge(arg, res, false);
-}
-
-// ******************************************************************
-// *                                                                *
-// *                       inlined  functions                       *
-// *                                                                *
-// ******************************************************************
-
-inline MEDDLY::unary_operation*
-MEDDLY::getOperation(const unary_opname* code, const dd_edge& arg,
-    const dd_edge& res)
-{
-  return getOperation(code, (MEDDLY::expert_forest*) arg.getForest(),
-      (MEDDLY::expert_forest*) res.getForest());
-}
-
-inline MEDDLY::unary_operation*
-MEDDLY::getOperation(const unary_opname* code, const dd_edge& arg,
-    opnd_type res)
-{
-  return getOperation(code, (MEDDLY::expert_forest*) arg.getForest(), res);
-}
-
 
 #endif // #include guard

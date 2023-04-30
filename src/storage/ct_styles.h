@@ -48,7 +48,7 @@ namespace MEDDLY {
 class MEDDLY::monolithic_chained_style : public compute_table_style {
   public:
     monolithic_chained_style();
-    virtual compute_table* create(const ct_initializer::settings &s) const;
+    virtual compute_table* create(const ct_settings &s) const;
     virtual bool usesMonolithic() const;
 };
 
@@ -61,7 +61,7 @@ class MEDDLY::monolithic_chained_style : public compute_table_style {
 class MEDDLY::monolithic_unchained_style : public compute_table_style {
   public:
     monolithic_unchained_style();
-    virtual compute_table* create(const ct_initializer::settings &s) const;
+    virtual compute_table* create(const ct_settings &s) const;
     virtual bool usesMonolithic() const;
 };
 
@@ -74,7 +74,7 @@ class MEDDLY::monolithic_unchained_style : public compute_table_style {
 class MEDDLY::operation_chained_style : public compute_table_style {
   public:
     operation_chained_style();
-    virtual compute_table* create(const ct_initializer::settings &s,
+    virtual compute_table* create(const ct_settings &s,
       operation* op, unsigned slot) const;
     virtual bool usesMonolithic() const;
 };
@@ -88,7 +88,7 @@ class MEDDLY::operation_chained_style : public compute_table_style {
 class MEDDLY::operation_unchained_style : public compute_table_style {
   public:
     operation_unchained_style();
-    virtual compute_table* create(const ct_initializer::settings &s,
+    virtual compute_table* create(const ct_settings &s,
       operation* op, unsigned slot) const;
     virtual bool usesMonolithic() const;
 };

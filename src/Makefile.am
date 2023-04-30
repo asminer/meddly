@@ -22,12 +22,14 @@ libmeddly_la_SOURCES = \
     domain.cc \
     node_headers.cc node_storage.cc unpacked_node.cc relation_node.cc \
     opname.cc opname_numer.cc opname_satur.cc \
-    oper.cc oper_unary.cc uper_binary.cc oper_special.cc \
+    oper.cc oper_unary.cc oper_binary.cc oper_special.cc \
     ops.cc \
     dd_edge.cc \
     enumerator.cc \
     forest.cc \
-    ct_entry_type.cc ct_entry_key.cc ct_entry_result.cc compute_table.cc \
+    ct_initializer.cc \
+    ct_entry_type.cc ct_entry_key.cc ct_entry_result.cc \
+    compute_table.cc \
     unique_table.cc \
     impl_unique_table.cc \
     loggers.h loggers.cc \
@@ -133,11 +135,13 @@ pkginclude_HEADERS = \
     node_headers.h node_storage.h unpacked_node.h relation_node.h \
     encoders.h forest.h \
     opname.h  opname_numer.h  opname_satur.h  \
-    oper.h  oper_unary.h  uper_binary.h  oper_special.h  \
+    oper.h  oper_unary.h  oper_binary.h  oper_special.h  \
     dd_edge.h \
     enumerator.h \
     forest.h \
-    ct_entry_type.h ct_entry_key.h ct_entry_result.h compute_table.h \
+    ct_initializer.h \
+    ct_entry_type.h ct_entry_key.h ct_entry_result.h \
+    compute_table.h \
     initializer.h \
     memory.h \
     old_meddly.h old_meddly.hh \

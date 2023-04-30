@@ -27,7 +27,9 @@
 #include "old_meddly_expert.hh"
 #include "copy.h"
 
-#include "ct_entry_result.h"
+#include "../ct_entry_result.h"
+#include "../compute_table.h"
+#include "../oper_unary.h"
 
 // #define DEBUG_COPY_COMPUTE_ALL
 

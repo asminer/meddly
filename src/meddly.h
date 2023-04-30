@@ -35,6 +35,13 @@
 #include "opname_numer.h"
 #include "opname_satur.h"
 
+#include "oper.h"
+#include "oper_unary.h"
+#include "oper_binary.h"
+#include "oper_special.h"
+
+#include "ct_initializer.h"
+
 #else
 
 #include "meddly/old_meddly.h"
@@ -53,5 +60,12 @@
 #include "meddly/opname.h"
 #include "meddly/opname_numer.h"
 #include "meddly/opname_satur.h"
+
+#include "meddly/oper.h"
+#include "meddly/oper_unary.h"
+#include "meddly/oper_binary.h"
+#include "meddly/oper_special.h"
+
+#include "meddly/ct_initializer.h"
 
 #endif

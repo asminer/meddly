@@ -61,12 +61,12 @@ MEDDLY::monolithic_chained_style::monolithic_chained_style()
 }
 
 MEDDLY::compute_table*
-MEDDLY::monolithic_chained_style::create(const ct_initializer::settings &s) const
+MEDDLY::monolithic_chained_style::create(const ct_settings &s) const
 {
   switch (s.compression) {
-    case ct_initializer::None:
+    case compressionOption::None:
                                     return new ct_none<true, true>(s, 0, 0);
-    case ct_initializer::TypeBased:
+    case compressionOption::TypeBased:
                                     return new ct_typebased<true, true>(s, 0, 0);
     default:
                                     return 0;
@@ -90,12 +90,12 @@ MEDDLY::monolithic_unchained_style::monolithic_unchained_style()
 }
 
 MEDDLY::compute_table*
-MEDDLY::monolithic_unchained_style::create(const ct_initializer::settings &s) const
+MEDDLY::monolithic_unchained_style::create(const ct_settings &s) const
 {
   switch (s.compression) {
-    case ct_initializer::None:
+    case compressionOption::None:
                                     return new ct_none<true, false>(s, 0, 0);
-    case ct_initializer::TypeBased:
+    case compressionOption::TypeBased:
                                     return new ct_typebased<true, false>(s, 0, 0);
     default:
                                     return 0;
@@ -118,12 +118,12 @@ MEDDLY::operation_chained_style::operation_chained_style()
 }
 
 MEDDLY::compute_table*
-MEDDLY::operation_chained_style::create(const ct_initializer::settings &s, operation* op, unsigned slot) const
+MEDDLY::operation_chained_style::create(const ct_settings &s, operation* op, unsigned slot) const
 {
   switch (s.compression) {
-    case ct_initializer::None:
+    case compressionOption::None:
                                     return new ct_none<false, true>(s, 0, 0);
-    case ct_initializer::TypeBased:
+    case compressionOption::TypeBased:
                                     return new ct_typebased<false, true>(s, 0, 0);
     default:
                                     return 0;
@@ -148,12 +148,12 @@ MEDDLY::operation_unchained_style::operation_unchained_style()
 }
 
 MEDDLY::compute_table*
-MEDDLY::operation_unchained_style::create(const ct_initializer::settings &s, operation* op, unsigned slot) const
+MEDDLY::operation_unchained_style::create(const ct_settings &s, operation* op, unsigned slot) const
 {
   switch (s.compression) {
-    case ct_initializer::None:
+    case compressionOption::None:
                                     return new ct_none<false, false>(s, 0, 0);
-    case ct_initializer::TypeBased:
+    case compressionOption::TypeBased:
                                     return new ct_typebased<false, false>(s, 0, 0);
     default:
                                     return 0;

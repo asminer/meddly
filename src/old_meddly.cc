@@ -43,9 +43,13 @@
 #include "forests/init_forests.h"
 #include "storage/init_storage.h"
 
+#include "ct_initializer.h"
+#include "compute_table.h"
+
 #include "oper.h"
 #include "oper_unary.h"
 #include "oper_binary.h"
+#include "oper_special.h"
 
 // #define STATS_ON_DESTROY
 

@@ -21,6 +21,7 @@
 #define MTMXD_H
 
 #include "mt.h"
+#include "../oper_binary.h"
 
 namespace MEDDLY {
   class mtmxd_forest;

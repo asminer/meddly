@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -23,6 +23,8 @@
 #ifdef HAVE_LIBGMP
 #include <gmp.h>
 
+#include "../ct_entry_type.h"
+
 namespace MEDDLY {
 
 class mpz_object : public ct_object {
@@ -33,7 +35,7 @@ public:
   mpz_object(const mpz_object &v);
   virtual ~mpz_object();
   virtual opnd_type getType();
-  
+
   inline void copyInto(mpz_t &x) const {
     mpz_set(x, value);
   }
@@ -55,7 +57,7 @@ public:
   static void clearBuffer();
 
 private:
-  
+
   static char* buffer;  // for show().
   static int bufsize;   // for show().
   static void enlargeBuffer(int digits);

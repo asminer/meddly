@@ -21,6 +21,7 @@
 #define EVMXD_H
 
 #include "ev.h"
+#include "../oper_binary.h"
 
 namespace MEDDLY {
   class evmxd_forest;

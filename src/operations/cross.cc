@@ -27,7 +27,9 @@
 #include "old_meddly_expert.hh"
 #include "cross.h"
 
-#include "ct_entry_result.h"
+#include "../ct_entry_result.h"
+#include "../compute_table.h"
+#include "../oper_binary.h"
 
 // #define TRACE_ALL_OPS
 // #define DEBUG_CROSS

@@ -21,9 +21,10 @@
 #ifndef MEDDLY_CT_TYPEBASED_H
 #define MEDDLY_CT_TYPEBASED_H
 
-#include "node_storage.h"
-#include "compute_table.h"
-#include "ct_entry_result.h"
+#include "../node_storage.h"
+#include "../compute_table.h"
+#include "../ct_entry_result.h"
+#include "../ct_initializer.h"
 
 // **********************************************************************
 // *                                                                    *
@@ -37,7 +38,7 @@ namespace MEDDLY {
   template <bool MONOLITHIC, bool CHAINED>
   class ct_typebased : public compute_table {
     public:
-      ct_typebased(const ct_initializer::settings &s, operation* op, unsigned slot);
+      ct_typebased(const ct_settings &s, operation* op, unsigned slot);
       virtual ~ct_typebased();
 
       /**
@@ -424,7 +425,7 @@ namespace MEDDLY {
 
 template <bool MONOLITHIC, bool CHAINED>
 MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::ct_typebased(
-  const ct_initializer::settings &s, operation* op, unsigned slot)
+  const ct_settings &s, operation* op, unsigned slot)
 : compute_table(s, op, slot)
 {
   if (MONOLITHIC) {

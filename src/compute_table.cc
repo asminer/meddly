@@ -23,130 +23,11 @@
 #include "old_meddly_expert.h"
 #include "old_meddly_expert.hh"
 
-#include "storage/ct_styles.h"
+#include "ct_initializer.h"
+#include "compute_table.h"
 
 // #define DEBUG_ENTRY_TYPE
 // #define DEBUG_ENTRY_REGISTRY
-
-// ******************************************************************
-// *                                                                *
-// *                     ct_initializer  methods                    *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::ct_initializer::settings MEDDLY::ct_initializer::the_settings;
-const MEDDLY::compute_table_style* MEDDLY::ct_initializer::ct_factory;
-MEDDLY::compute_table_style* MEDDLY::ct_initializer::builtin_ct_factory;
-
-MEDDLY::ct_initializer::ct_initializer(initializer_list* prev)
-    : initializer_list(prev)
-{
-    ct_factory = nullptr;
-    builtin_ct_factory = nullptr;
-
-    setBuiltinStyle(MonolithicUnchainedHash);
-    setMaxSize(16777216);
-    setStaleRemoval(Moderate);
-    //  setCompression(None);
-    setCompression(TypeBased);
-
-    //
-    // Set to null for now.
-    // Set to the proper manager in setup()
-    //
-    setMemoryManager(nullptr);
-}
-
-MEDDLY::ct_initializer::~ct_initializer()
-{
-    delete builtin_ct_factory;
-    builtin_ct_factory = nullptr;
-}
-
-void MEDDLY::ct_initializer::setup()
-{
-    if (!ct_factory) {
-        throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
-    }
-
-    MEDDLY_DCASSERT(FREELISTS);
-    setMemoryManager(FREELISTS);
-
-    if (ct_factory->usesMonolithic()) {
-        operation::Monolithic_CT = ct_factory->create(the_settings);
-    }
-
-    compute_table::initialize();
-}
-
-void MEDDLY::ct_initializer::cleanup()
-{
-    delete operation::Monolithic_CT;
-    operation::Monolithic_CT = nullptr;
-
-    compute_table::destroy();
-}
-
-void MEDDLY::ct_initializer::setStaleRemoval(staleRemovalOption sro)
-{
-    the_settings.staleRemoval = sro;
-}
-
-void MEDDLY::ct_initializer::setMaxSize(unsigned ms)
-{
-    the_settings.maxSize = ms;
-}
-
-void MEDDLY::ct_initializer::setBuiltinStyle(builtinCTstyle cts)
-{
-    delete builtin_ct_factory;
-    builtin_ct_factory = nullptr;
-    switch (cts) {
-        case MonolithicUnchainedHash:
-            builtin_ct_factory = new monolithic_unchained_style;
-            break;
-
-        case MonolithicChainedHash:
-            builtin_ct_factory = new monolithic_chained_style;
-            break;
-
-        case OperationUnchainedHash:
-            builtin_ct_factory = new operation_unchained_style;
-            break;
-
-        case OperationChainedHash:
-            builtin_ct_factory = new operation_chained_style;
-            break;
-    }
-
-    ct_factory = builtin_ct_factory;
-}
-
-void MEDDLY::ct_initializer::setUserStyle(const compute_table_style* cts)
-{
-    delete builtin_ct_factory;
-    builtin_ct_factory = nullptr;
-    ct_factory = cts;
-}
-
-void MEDDLY::ct_initializer::setCompression(compressionOption co)
-{
-    the_settings.compression = co;
-}
-
-void MEDDLY::ct_initializer::setMemoryManager(const memory_manager_style* mms)
-{
-    the_settings.MMS = mms;
-}
-
-MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(operation* op, unsigned slot)
-{
-    if (ct_factory) {
-        return ct_factory->create(the_settings, op, slot);
-    } else {
-        return nullptr;
-    }
-}
 
 // **********************************************************************
 // *                                                                    *
@@ -163,14 +44,14 @@ MEDDLY::compute_table_style::~compute_table_style()
 }
 
 MEDDLY::compute_table*
-MEDDLY::compute_table_style::create(const ct_initializer::settings &s) const
+MEDDLY::compute_table_style::create(const ct_settings &s) const
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 
 MEDDLY::compute_table*
-MEDDLY::compute_table_style::create(const ct_initializer::settings &s,
+MEDDLY::compute_table_style::create(const ct_settings &s,
       operation* op, unsigned slot) const
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -188,7 +69,7 @@ unsigned MEDDLY::compute_table::entryInfoAlloc;
 unsigned MEDDLY::compute_table::entryInfoSize;
 MEDDLY::ct_entry_key* MEDDLY::compute_table::free_keys;
 
-MEDDLY::compute_table::compute_table(const ct_initializer::settings &s,
+MEDDLY::compute_table::compute_table(const ct_settings &s,
   operation* op, unsigned slot)
 {
     maxSize = s.maxSize;
@@ -197,15 +78,15 @@ MEDDLY::compute_table::compute_table(const ct_initializer::settings &s,
     }
 
     switch (s.staleRemoval) {
-        case ct_initializer::Aggressive:
+        case staleRemovalOption::Aggressive:
             checkStalesOnFind = true;
             checkStalesOnResize = true;
             break;
-        case ct_initializer::Moderate:
+        case staleRemovalOption::Moderate:
             checkStalesOnFind = false;
             checkStalesOnResize = true;
             break;
-        case ct_initializer::Lazy:
+        case staleRemovalOption::Lazy:
             checkStalesOnFind = false;
             checkStalesOnResize = false;
             break;

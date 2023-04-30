@@ -27,7 +27,9 @@
 #include "old_meddly_expert.hh"
 #include "mdd2index.h"
 
-#include "ct_entry_result.h"
+#include "../ct_entry_result.h"
+#include "../compute_table.h"
+#include "../oper_unary.h"
 
 // #define TRACE_ALL_OPS
 

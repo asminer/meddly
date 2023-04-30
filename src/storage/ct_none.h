@@ -22,6 +22,9 @@
 #define MEDDLY_CT_NONE_H
 
 #include "../node_storage.h"
+#include "../compute_table.h"
+#include "../ct_entry_result.h"
+#include "../ct_initializer.h"
 
 // **********************************************************************
 // *                                                                    *
@@ -35,7 +38,7 @@ namespace MEDDLY {
   template <bool MONOLITHIC, bool CHAINED>
   class ct_none : public compute_table {
     public:
-      ct_none(const ct_initializer::settings &s, operation* op, unsigned slot);
+      ct_none(const ct_settings &s, operation* op, unsigned slot);
       virtual ~ct_none();
 
       /**
@@ -388,7 +391,7 @@ namespace MEDDLY {
 
 template <bool MONOLITHIC, bool CHAINED>
 MEDDLY::ct_none<MONOLITHIC, CHAINED>::ct_none(
-  const ct_initializer::settings &s, operation* op, unsigned slot)
+  const ct_settings &s, operation* op, unsigned slot)
 : compute_table(s, op, slot)
 {
   if (MONOLITHIC) {

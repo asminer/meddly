@@ -28,6 +28,8 @@
 #include "old_meddly_expert.hh"
 #include "reach_bfs.h"
 
+#include "../oper_binary.h"
+
 // #define DEBUG_BFS
 // #define VERBOSE_BFS
 

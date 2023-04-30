@@ -27,8 +27,10 @@
 #include "old_meddly_expert.hh"
 #include "transitive_closure.h"
 
-#include "ct_entry_result.h"
-#include "opname_satur.h"
+#include "../ct_entry_result.h"
+#include "../compute_table.h"
+#include "../oper_binary.h"
+#include "../opname_satur.h"
 
 // ******************************************************************
 // *                                                                *

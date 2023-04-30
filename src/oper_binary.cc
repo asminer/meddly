@@ -18,6 +18,7 @@
 
 #include "oper_binary.h"
 #include "error.h"
+#include "forest.h"
 
 // ******************************************************************
 // *                    binary_operation methods                    *
@@ -82,6 +83,51 @@ void MEDDLY::binary_operation::compute(float av, node_handle ap,
 {
   throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
 }
+
+bool
+MEDDLY::binary_operation::checkForestCompatibility() const
+{
+  auto o1 = arg1F->variableOrder();
+  auto o2 = arg2F->variableOrder();
+  auto o3 = resF->variableOrder();
+  return o1->is_compatible_with(*o2) && o1->is_compatible_with(*o3);
+}
+
+void
+MEDDLY::binary_operation::compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
+{
+  if (!checkForestCompatibility()) {
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+  }
+  computeDDEdge(ar1, ar2, res, true);
+}
+
+void
+MEDDLY::binary_operation::computeTemp(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
+{
+  if (!checkForestCompatibility()) {
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+  }
+  computeDDEdge(ar1, ar2, res, false);
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                      front-end  functions                      *
+// *                                                                *
+// ******************************************************************
+
+
+MEDDLY::binary_operation*
+MEDDLY::getOperation(const binary_opname* code, const dd_edge& arg1,
+    const dd_edge& arg2, const dd_edge& res)
+{
+  return getOperation(code, (MEDDLY::expert_forest*) arg1.getForest(),
+      (MEDDLY::expert_forest*) arg2.getForest(), (MEDDLY::expert_forest*) res.getForest());
+}
+
+
 
 #endif
 

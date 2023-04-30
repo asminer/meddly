@@ -35,6 +35,8 @@
 // #include "storage/bytepack.h"
 #include "reordering/reordering_factory.h"
 
+#include "oper.h"
+
 // for timestamps.
 // to do - check during configuration that these are present,
 // and act accordingly here

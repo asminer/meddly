@@ -27,6 +27,8 @@
 #include "old_meddly_expert.hh"
 #include "select.h"
 
+#include "../oper_unary.h"
+
 namespace MEDDLY {
   class select;
   class select_MT;
