@@ -83,10 +83,10 @@ class MEDDLY::error {
         /// Return a human-readable error message
         const char* getName() const;
 
-        constexpr operator code() const         { return errcode; }
-        constexpr code getCode() const          { return errcode; }
-        constexpr const char* getFile() const   { return fname; }
-        constexpr unsigned getLine() const      { return lineno; }
+        inline operator code() const        { return errcode; }
+        inline code getCode() const         { return errcode; }
+        inline const char* getFile() const  { return fname; }
+        inline unsigned getLine() const     { return lineno; }
 
     private:
         code errcode;

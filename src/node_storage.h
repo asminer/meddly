@@ -61,7 +61,7 @@ class MEDDLY::node_storage_style {
         virtual node_storage* createForForest(expert_forest* f,
             const memory_manager_style* mmst) const = 0;
 
-        constexpr const char* getName() const { return name; }
+        inline const char* getName() const { return name; }
 };
 
 
@@ -269,7 +269,7 @@ class MEDDLY::node_storage {
         /**
             Return the name of the style that created us.
         */
-        constexpr const char* getStyleName() const {
+        inline const char* getStyleName() const {
             return style_name;
         }
 
