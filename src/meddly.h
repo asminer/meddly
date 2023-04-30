@@ -18,58 +18,38 @@
 
 #ifdef _MEDDLY_NOINST_
 
-#include "old_meddly.h"
-#include "old_meddly.hh"
-
-#include "error.h"
-#include "io.h"
-#include "memstats.h"
-#include "variable.h"
-#include "varorder.h"
-#include "domain.h"
-#include "forest.h"
-#include "relation_node.h"
-#include "memory.h"
-
-#include "opname.h"
-#include "opname_numer.h"
-#include "opname_satur.h"
-
-#include "oper.h"
-#include "oper_unary.h"
-#include "oper_binary.h"
-#include "oper_special.h"
-
-#include "ct_initializer.h"
-
-#include "global_rebuilder.h"
+#define PATH(X) X
 
 #else
 
-#include "meddly/old_meddly.h"
-#include "meddly/old_meddly.hh"
-
-#include "meddly/error.h"
-#include "meddly/io.h"
-#include "meddly/memstats.h"
-#include "meddly/variable.h"
-#include "meddly/varorder.h"
-#include "meddly/domain.h"
-#include "meddly/forest.h"
-#include "meddly/relation_node.h"
-#include "meddly/memory.h"
-
-#include "meddly/opname.h"
-#include "meddly/opname_numer.h"
-#include "meddly/opname_satur.h"
-
-#include "meddly/oper.h"
-#include "meddly/oper_unary.h"
-#include "meddly/oper_binary.h"
-#include "meddly/oper_special.h"
-
-#include "meddly/ct_initializer.h"
-
-#include "meddly/global_rebuilder.h"
+#define PATH(X) "meddly/" ## X
 
 #endif
+
+
+#include PATH("old_meddly.h")
+#include PATH("old_meddly.hh")
+
+#include PATH("error.h")
+#include PATH("io.h")
+#include PATH("memstats.h")
+#include PATH("variable.h")
+#include PATH("varorder.h")
+#include PATH("domain.h")
+#include PATH("forest.h")
+#include PATH("relation_node.h")
+#include PATH("memory.h")
+
+#include PATH("opname.h")
+#include PATH("opname_numer.h")
+#include PATH("opname_satur.h")
+
+#include PATH("oper.h")
+#include PATH("oper_unary.h")
+#include PATH("oper_binary.h")
+#include PATH("oper_special.h")
+
+#include PATH("ct_initializer.h")
+
+#include PATH("global_rebuilder.h")
+
