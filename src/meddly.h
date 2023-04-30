@@ -42,6 +42,8 @@
 
 #include "ct_initializer.h"
 
+#include "global_rebuilder.h"
+
 #else
 
 #include "meddly/old_meddly.h"
@@ -67,5 +69,7 @@
 #include "meddly/oper_special.h"
 
 #include "meddly/ct_initializer.h"
+
+#include "meddly/global_rebuilder.h"
 
 #endif
