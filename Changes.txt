@@ -5,32 +5,32 @@ Interface changes (aside from moving header files around)
 Encoders that were in expert_forest are now stand-alone classes
 in encoders.h
 
-unpacked_node::storage_style is removed in favor of node_storage_flags.
+Moved lots of enums and made them enum class.
 
 
-All calls to
+expert_variable class
+    -> merged into variable class
+
+
+Node storage methods
+    Old calls
+    ---------------------------------------------
     node_storage::moveNodeOffset(node, old, new)
-should be replaced with
+
+    New Calls
+    ---------------------------------------------
     node_storage::getParent()->moveNodeOffset(node, old, new)
 
 
-All calls to
-    un->initFromNode(f, nh, howstored)
+Unpacked node
 
-should now be to
-    f->unpackNode(un, nh, howstored)
+    unpacked_node::storage_style is removed in favor of node_storage_flags.
 
-
-All calls to
-    unpacked_node::useUnpackedNode()
-should now be
-    unpacked_node::New()
-
-
-All calls to
-    unpacked_node::newFromNode(f, nh, howstored)
-should now be to
-    expert_forest::newUnpacked(nh, howstored)
+    OLD method calls                                NEW method calls
+    ---------------------------------------------   ---------------------------------------------
+    un->initFromNode(f, nh, howstored)              f->unpackNode(un, nh, howstored)
+    unpacked_node::useUnpackedNode()                unpacked_node::New()
+    unpacked_node::newFromNode(f, nh, howstored)    expert_forest::newUnpacked(nh, howstored)
 
     howstored is one of:
         FULL_ONLY       (old 'true')
@@ -38,21 +38,14 @@ should now be to
         FULL_OR_SPARSE
 
 
-Moved lots of enums and made them enum class.
+domain (PLANNED; NOT DONE YET. TBD)
 
-Merged expert_variable class into variable class
+    OLD method calls                                NEW method calls
+    ---------------------------------------------   ---------------------------------------------
+    domain::createForest(...)                       static within forest class
 
+    global createDomain(...)                        static domain::create(...)
 
-TBD: change calls to
-    domain::createForest(...)
-to ?
-    static within forest class
-
-
-TBD: global functions
-    createDomain(...)
-become static within domain class e.g.
-    domain::create(...)
 
 
 
