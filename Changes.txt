@@ -115,6 +115,11 @@ node_headers.h          node_headers.cc
 opname.h                opname.cc
 opname_numer.h          opname_numer.cc
 opname_satur.h          opname_satur.cc
+
+oper.h                  oper.cc
+oper_binary.h           oper_binary.cc
+oper_unary.h            oper_unary.cc
+
 relation_node.h         relation_node.cc
 timer.h (move?)
 unique_table.h          unique_table.cc
@@ -127,6 +132,7 @@ compute_table.h         compute_table.cc
 ct_entry_key.h          ct_entry_key.cc
 ct_entry_result.h       ct_entry_result.h
 ct_entry_type.h         ct_entry_type.cc
+ct_initializer.h        ct_initializer.cc
 
 error.h                 error.cc
 initializer.h           initializer.cc

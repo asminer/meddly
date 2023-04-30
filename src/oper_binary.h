@@ -68,80 +68,46 @@ namespace MEDDLY {
     Specific operations will be derived from this class.
 */
 class MEDDLY::binary_operation : public operation {
-  protected:
-    bool can_commute;
-    expert_forest* arg1F;
-    expert_forest* arg2F;
-    expert_forest* resF;
-    opnd_type resultType;
+    public:
+        binary_operation(const binary_opname* code, unsigned et_slots,
+            expert_forest* arg1, expert_forest* arg2, expert_forest* res);
 
-    virtual ~binary_operation();
-    void operationCommutes();
+    protected:
+        virtual ~binary_operation();
 
-    // Check if the variables orders of relevant forests are compatible
-    virtual bool checkForestCompatibility() const;
+    public:
+        inline bool matches(const expert_forest* arg1,
+            const expert_forest* arg2, const expert_forest* res) const
+        {
+            return (arg1 == arg1F && arg2 == arg2F && res == resF);
+        }
 
-  public:
-    binary_operation(const binary_opname* code, unsigned et_slots,
-      expert_forest* arg1, expert_forest* arg2, expert_forest* res);
+        // high-level front-end
 
-    bool matches(const expert_forest* arg1, const expert_forest* arg2,
-      const expert_forest* res) const;
+        /**
+            Checks forest comatability and then calls computeDDEdge().
+        */
+        void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
+        void computeTemp(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
 
-    // high-level front-end
+        virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2,
+                dd_edge &res, bool userFlag) = 0;
 
-    /**
-      Checks forest comatability and then calls computeDDEdge().
-    */
-    void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
-    void computeTemp(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
+    protected:
+        inline void operationCommutes() {
+            can_commute = (arg1F == arg2F);
+        }
 
-    virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res, bool userFlag)
-      = 0;
+        // Check if the variables orders of relevant forests are compatible
+        virtual bool checkForestCompatibility() const;
 
-    // low-level front ends.  TBD - REMOVE THESE BECAUSE THEY BREAK MARK & SWEEP
-
-#ifdef KEEP_LL_COMPUTES
-
-    /// Low-level compute on nodes a and b, return result.
-    virtual node_handle compute(node_handle a, node_handle b);
-    /// Low-level compute at level k on nodes a and b, return result.
-    virtual node_handle compute(int k, node_handle a, node_handle b);
-
-    /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
-    virtual void compute(int av, node_handle ap, int bv, node_handle bp,
-      int &cv, node_handle &cp);
-    virtual void compute(long av, node_handle ap, long bv, node_handle bp,
-      long &cv, node_handle &cp);
-    virtual void compute(long av, node_handle ap, node_handle bp,
-      long &cv, node_handle &cp);
-
-    /// Low-level compute on EV edges (av, ap) and (bv, bp), return result.
-    virtual void compute(float av, node_handle ap, float bv, node_handle bp,
-      float &cv, node_handle &cp);
-
-#endif
-
+    protected:
+        bool can_commute;
+        expert_forest* arg1F;
+        expert_forest* arg2F;
+        expert_forest* resF;
+        opnd_type resultType;
 };
 
-// ******************************************************************
-// *                                                                *
-// *                inlined binary_operation methods                *
-// *                                                                *
-// ******************************************************************
-
-
-inline bool
-MEDDLY::binary_operation::matches(const MEDDLY::expert_forest* arg1,
-    const MEDDLY::expert_forest* arg2, const MEDDLY::expert_forest* res) const
-{
-  return (arg1 == arg1F && arg2 == arg2F && res == resF);
-}
-
-inline void
-MEDDLY::binary_operation::operationCommutes()
-{
-  can_commute = (arg1F == arg2F);
-}
 
 #endif // #include guard

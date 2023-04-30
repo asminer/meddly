@@ -25,90 +25,51 @@
 // ******************************************************************
 
 MEDDLY::binary_operation::binary_operation(const binary_opname* op,
-  unsigned et_slots, expert_forest* arg1, expert_forest* arg2, expert_forest* res)
-: operation(op, et_slots)
+    unsigned et_slots, expert_forest* arg1, expert_forest* arg2,
+    expert_forest* res) : operation(op, et_slots)
 {
-  arg1F = arg1;
-  arg2F = arg2;
-  resF = res;
+    arg1F = arg1;
+    arg2F = arg2;
+    resF = res;
 
-  registerInForest(arg1F);
-  registerInForest(arg2F);
-  registerInForest(resF);
+    registerInForest(arg1F);
+    registerInForest(arg2F);
+    registerInForest(resF);
 
-  can_commute = false;
+    can_commute = false;
 }
 
 MEDDLY::binary_operation::~binary_operation()
 {
-  unregisterInForest(arg1F);
-  unregisterInForest(arg2F);
-  unregisterInForest(resF);
+    unregisterInForest(arg1F);
+    unregisterInForest(arg2F);
+    unregisterInForest(resF);
 }
 
-#ifdef KEEP_LL_COMPUTES
-
-MEDDLY::node_handle
-MEDDLY::binary_operation::compute(node_handle a, node_handle b)
+void MEDDLY::binary_operation::compute(const dd_edge &ar1,
+    const dd_edge &ar2, dd_edge &res)
 {
-  throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
+    if (!checkForestCompatibility()) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+    computeDDEdge(ar1, ar2, res, true);
 }
 
-MEDDLY::node_handle
-MEDDLY::binary_operation::compute(int k, node_handle a, node_handle b)
+void MEDDLY::binary_operation::computeTemp(const dd_edge &ar1,
+    const dd_edge &ar2, dd_edge &res)
 {
-  throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
+    if (!checkForestCompatibility()) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+    computeDDEdge(ar1, ar2, res, false);
 }
 
-void MEDDLY::binary_operation::compute(int av, node_handle ap,
-  int bv, node_handle bp, int &cv, node_handle &cp)
+bool MEDDLY::binary_operation::checkForestCompatibility() const
 {
-  throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
-}
-
-void MEDDLY::binary_operation::compute(long av, node_handle ap,
-  long bv, node_handle bp, long &cv, node_handle &cp)
-{
-  throw error(error::WRONG_NUMBER);
-}
-
-void MEDDLY::binary_operation::compute(long av, node_handle ap,
-  node_handle bp, long &cv, node_handle &cp)
-{
-  throw error(error::WRONG_NUMBER);
-}
-
-void MEDDLY::binary_operation::compute(float av, node_handle ap,
-  float bv, node_handle bp, float &cv, node_handle &cp)
-{
-  throw error(error::WRONG_NUMBER, __FILE__, __LINE__);
-}
-
-bool
-MEDDLY::binary_operation::checkForestCompatibility() const
-{
-  auto o1 = arg1F->variableOrder();
-  auto o2 = arg2F->variableOrder();
-  auto o3 = resF->variableOrder();
-  return o1->is_compatible_with(*o2) && o1->is_compatible_with(*o3);
-}
-
-void
-MEDDLY::binary_operation::compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
-{
-  if (!checkForestCompatibility()) {
-    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-  }
-  computeDDEdge(ar1, ar2, res, true);
-}
-
-void
-MEDDLY::binary_operation::computeTemp(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res)
-{
-  if (!checkForestCompatibility()) {
-    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-  }
-  computeDDEdge(ar1, ar2, res, false);
+    auto o1 = arg1F->variableOrder();
+    auto o2 = arg2F->variableOrder();
+    auto o3 = resF->variableOrder();
+    return o1->is_compatible_with(*o2) && o1->is_compatible_with(*o3);
 }
 
 
@@ -126,9 +87,4 @@ MEDDLY::getOperation(const binary_opname* code, const dd_edge& arg1,
   return getOperation(code, (MEDDLY::expert_forest*) arg1.getForest(),
       (MEDDLY::expert_forest*) arg2.getForest(), (MEDDLY::expert_forest*) res.getForest());
 }
-
-
-
-#endif
-
 
