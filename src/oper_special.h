@@ -22,6 +22,7 @@
 #include "oper.h"
 
 namespace MEDDLY {
+    class dd_edge;
     class specialized_operation;
 
     /// Safely destroy the given specialized operation.
