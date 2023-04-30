@@ -19,6 +19,8 @@
 #ifndef MEDDLY_DD_EDGE_H
 #define MEDDLY_DD_EDGE_H
 
+#include "defines.h"
+
 namespace MEDDLY {
     class dd_edge;
     class forest;

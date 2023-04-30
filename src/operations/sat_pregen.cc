@@ -26,6 +26,7 @@
 #include <typeinfo> // for "bad_cast" exception
 
 #include "ct_entry_result.h"
+#include "opname_satur.h"
 
 #define DEBUG_FINALIZE
 // #define DEBUG_FINALIZE_SPLIT

@@ -47,6 +47,18 @@ domain (PLANNED; NOT DONE YET. TBD)
     global createDomain(...)                        static domain::create(...)
 
 
+opname hierarcy
+    CLASS                           NEW LOCATION
+    ----------------------------    ----------------------------
+    opname                          opname.h/cc
+    unary_opname                    opname.h/cc
+    binary_opname                   opname.h/cc
+    specialized_opname              opname.h/cc
+
+    numerical_opname                opname_numer.h/cc
+
+    constrained_opname              opname_satur.h/cc
+    sat*_opname                     opname_satur.h/cc       but mostly still in operations/sat*
 
 
 TBD: getOperation -> (static?) method inside opcode classes?
@@ -88,6 +100,9 @@ loggers.h               loggers.cc
 memory.h                memory.cc
 memstats.h              memstats.cc
 node_headers.h          node_headers.cc
+opname.h                opname.cc
+opname_numer.h          opname_numer.cc
+opname_satur.h          opname_satur.cc
 relation_node.h         relation_node.cc
 timer.h (move?)
 unique_table.h          unique_table.cc

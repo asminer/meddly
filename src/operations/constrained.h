@@ -23,6 +23,8 @@
 #include "old_meddly.h"
 #include "old_meddly_expert.h"
 
+#include "opname_satur.h"
+
 namespace MEDDLY {
   class common_constrained;
 

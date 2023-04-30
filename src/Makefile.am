@@ -12,7 +12,6 @@
 lib_LTLIBRARIES = libmeddly.la
 
 libmeddly_la_SOURCES = \
-    defines.h revision.h hash_stream.h heap.h timer.h unique_table.h \
     old_meddly.cc \
     error.cc \
     io.cc \
@@ -22,6 +21,7 @@ libmeddly_la_SOURCES = \
     variable.cc varorder.cc \
     domain.cc \
     node_headers.cc node_storage.cc unpacked_node.cc relation_node.cc \
+    opname.cc opname_numer.cc opname_satur.cc \
     ops.cc \
     dd_edge.cc \
     enumerator.cc \
@@ -125,11 +125,13 @@ libmeddly_la_SOURCES = \
 include_HEADERS = meddly.h meddly_expert.h
 
 pkginclude_HEADERS = \
+    defines.h revision.h hash_stream.h heap.h timer.h unique_table.h \
     error.h io.h memstats.h policies.h \
     variable.h varorder.h \
     domain.h \
     node_headers.h node_storage.h unpacked_node.h relation_node.h \
     encoders.h forest.h \
+    opname.h  opname_numer.h  opname_satur.h  \
     dd_edge.h \
     enumerator.h \
     forest.h \

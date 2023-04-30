@@ -25,6 +25,8 @@
 #include "vect_matr.h"
 #include <typeinfo> // for "bad_cast" exception
 
+#include "opname_numer.h"
+
 namespace MEDDLY {
   class base_evplus_mt;
 

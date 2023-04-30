@@ -27,6 +27,7 @@
 #include <set>
 
 #include "ct_entry_result.h"
+#include "opname_satur.h"
 
 namespace MEDDLY {
   class otfsat_by_events_opname;

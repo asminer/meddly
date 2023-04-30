@@ -28,6 +28,7 @@
 #include "transitive_closure.h"
 
 #include "ct_entry_result.h"
+#include "opname_satur.h"
 
 // ******************************************************************
 // *                                                                *

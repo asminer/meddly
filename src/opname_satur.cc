@@ -16,42 +16,17 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef _MEDDLY_NOINST_
-
-#include "old_meddly.h"
-#include "old_meddly.hh"
-
-#include "error.h"
-#include "io.h"
-#include "memstats.h"
-#include "variable.h"
-#include "varorder.h"
-#include "domain.h"
-#include "forest.h"
-#include "relation_node.h"
-#include "memory.h"
-
-#include "opname.h"
-#include "opname_numer.h"
 #include "opname_satur.h"
 
-#else
 
-#include "meddly/old_meddly.h"
-#include "meddly/old_meddly.hh"
+// ******************************************************************
+// *                                                                *
+// *                   constrained_opname methods                   *
+// *                                                                *
+// ******************************************************************
 
-#include "meddly/error.h"
-#include "meddly/io.h"
-#include "meddly/memstats.h"
-#include "meddly/variable.h"
-#include "meddly/varorder.h"
-#include "meddly/domain.h"
-#include "meddly/forest.h"
-#include "meddly/relation_node.h"
-#include "meddly/memory.h"
+MEDDLY::constrained_opname::constrained_opname(const char* n)
+  : specialized_opname(n)
+{
+}
 
-#include "meddly/opname.h"
-#include "meddly/opname_numer.h"
-#include "meddly/opname_satur.h"
-
-#endif
