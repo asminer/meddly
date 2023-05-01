@@ -22,6 +22,8 @@
 #include "error.h"
 #include "io.h"
 
+#include <cstring>
+
 /*
     Classes to encode and decode terminal values and edge values.
     As classes, because we can use them in template functions.

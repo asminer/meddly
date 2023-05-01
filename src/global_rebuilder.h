@@ -19,6 +19,8 @@
 #ifndef MEDDLY_GLOBAL_REBUILDER_H
 #define MEDDLY_GLOBAL_REBUILDER_H
 
+#include <unordered_map>
+
 namespace MEDDLY {
     class global_rebuilder;
 };

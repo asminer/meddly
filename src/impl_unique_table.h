@@ -4,6 +4,8 @@
 #include "defines.h"
 #include "forest.h"
 
+#include <unordered_map>
+
 namespace MEDDLY {
   class impl_unique_table;
 };

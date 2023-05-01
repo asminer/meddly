@@ -24,6 +24,7 @@
 #include "error.h"
 #include "forest.h"
 
+#include <unordered_map>
 #include <map>
 #include <set>
 
