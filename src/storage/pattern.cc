@@ -22,11 +22,13 @@
 // TODO: Testing
 
 #include "pattern.h"
+#include "../defines.h"
 #include "../unpacked_node.h"
 #include "../memory.h"
 #include "../forest.h"
 #include <set>
 #include <map>
+#include <cassert>
 
 #include "../hash_stream.h"
 #define MAX_PATTERN_LEN 10

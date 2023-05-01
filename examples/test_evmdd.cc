@@ -28,6 +28,7 @@
 
 #define _MEDDLY_NOINST_
 #include <iostream>
+#include <cassert>
 #include "../src/meddly.h"
 
 // #define USE_EXPERT_INTERFACE

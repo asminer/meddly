@@ -45,11 +45,11 @@ class MEDDLY::variable_order {
 
         inline int getVarByLevel(int level) const {
             MEDDLY_DCASSERT(level>=0);
-            return level2var[size_t(level)];
+            return level2var[std::size_t(level)];
         }
         inline int getLevelByVar(int var) const {
             MEDDLY_DCASSERT(var>=0);
-            return var2level[size_t(var)];
+            return var2level[std::size_t(var)];
         }
 
         // Exchange two variables

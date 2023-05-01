@@ -20,6 +20,7 @@
 #define _MEDDLY_NOINST_
 #include <cstdlib>
 #include <iostream>
+#include <cassert>
 #include "../src/meddly.h"
 
 using namespace MEDDLY;

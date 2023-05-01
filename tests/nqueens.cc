@@ -26,6 +26,8 @@
 #define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 
+#include <cassert>
+
 using namespace MEDDLY;
 
 const int N_LOW  = 1;

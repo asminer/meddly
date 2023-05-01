@@ -71,6 +71,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+#include <cassert>
 
 #define _MEDDLY_NOINST_
 #include "../src/meddly.h"

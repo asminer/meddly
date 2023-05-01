@@ -36,6 +36,7 @@
 
 #include <cstdlib>
 #include <fstream>
+#include <cassert>
 
 #define _MEDDLY_NOINST_
 #include "../src/meddly.h"

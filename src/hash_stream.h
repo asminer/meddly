@@ -180,9 +180,9 @@ class MEDDLY::hash_stream {
             default: throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         };
     }
-    inline void push(const void* data, size_t bytes) {
+    inline void push(const void* data, std::size_t bytes) {
       const unsigned* hack = (const unsigned*) data;
-      size_t num_unsigneds = (bytes / sizeof(unsigned));
+      std::size_t num_unsigneds = (bytes / sizeof(unsigned));
       const unsigned* hackend = hack + num_unsigneds;
       for (; hack < hackend; hack++) {
         push(*hack);

@@ -28,6 +28,7 @@
 #define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include <cstdlib>
+#include <cassert>
 
 #define VERBOSE
 

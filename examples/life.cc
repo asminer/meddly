@@ -25,6 +25,7 @@
 #include <iostream>
 #include <string.h>
 #include <stdlib.h>
+#include <cassert>
 
 #define _MEDDLY_WITHOUT_CSTDIO_
 #define _MEDDLY_NOINST_

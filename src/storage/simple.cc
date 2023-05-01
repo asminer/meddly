@@ -23,10 +23,13 @@
 
 #include "simple.h"
 
+#include "../defines.h"
 #include "../hash_stream.h"
 #include "../unpacked_node.h"
 #include "../memory.h"
 #include "../forest.h"
+
+#include <cassert>
 
 // #define DEBUG_ENCODING
 // #define DEBUG_DECODING

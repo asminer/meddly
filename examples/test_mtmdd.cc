@@ -29,6 +29,7 @@
 #define _MEDDLY_NOINST_
 #include <iostream>
 #include <string.h>
+#include <cassert>
 #include "../src/meddly.h"
 #include "../src/meddly_expert.h"
 
