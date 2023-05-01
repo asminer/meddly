@@ -182,7 +182,7 @@ updatehtml()
 
 runchild()
 {
-  $@ > $OUTTXT 2>&1 &
+  $@ 2>&1 | tee $OUTTXT 2>&1 &
   pid=$!
   echo $pid > $PIDTXT
   sleepandkill $pid &
@@ -202,10 +202,6 @@ run()
   thismem=`awk '/peak memory allocated/{print $1" "$2";"}' $OUTTXT`
 }
 
-# Keep output displayed
-echo "" > $OUTTXT
-tail -f $OUTTXT &
-tid=$!
 
 # Terminate cleanly on ctrl-C
 
@@ -216,7 +212,6 @@ ctrl_c() {
   cat $PIDTXT | xargs
   printf "\n\n"
   cat $PIDTXT | xargs kill
-  kill -9 $tid
   rm -f $OUTTXT $TIMESTXT $PIDTXT
   exit 1
 }
@@ -301,5 +296,4 @@ if [ "$HTMLFILE" != "" ]; then
 fi
 
 # Kill tail process
-kill -9 $tid
 rm -f $OUTTXT $TIMESTXT $PIDTXT
