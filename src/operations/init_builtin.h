@@ -31,15 +31,6 @@ namespace MEDDLY {
 };
 
 class MEDDLY::builtin_initializer : public initializer_list {
-  unary_opname* COPY;
-  unary_opname* CARD;
-  unary_opname* COMPL;
-  unary_opname* MAXRANGE;
-  unary_opname* MINRANGE;
-  unary_opname* MDD2INDEX;
-  unary_opname* CYCLE;
-  unary_opname* SELECT;
-
   binary_opname* UNION;
   binary_opname* INTERSECT;
   binary_opname* DIFFERENCE;

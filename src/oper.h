@@ -21,6 +21,7 @@
 
 #include "defines.h"
 #include "opname.h"
+#include "io.h"
 
 namespace MEDDLY {
     class opname;

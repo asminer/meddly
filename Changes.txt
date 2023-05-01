@@ -61,6 +61,10 @@ opname hierarcy
     sat*_opname                     opname_satur.h          but mostly still in operations/sat*
 
 
+Operation names (COMPLEMENT, CARDINALITY, etc.)
+have changed type, but user code should mostly be unaffected.
+
+
 operation hierarchy
     CLASS                           NEW LOCATION
     ----------------------------    ----------------------------

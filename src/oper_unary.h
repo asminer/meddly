@@ -23,6 +23,7 @@
 
 namespace MEDDLY {
     class dd_edge;
+    class ct_object;
     class unary_operation;
 
     // ******************************************************************

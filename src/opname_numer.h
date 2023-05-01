@@ -23,6 +23,7 @@
 
 namespace MEDDLY {
     class numerical_opname;
+    class dd_edge;
 
     // ******************************************************************
     // *                                                                *

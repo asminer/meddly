@@ -39,6 +39,7 @@
 
 #include <vector>
 #include <memory>
+#include "defines.h"
 
 namespace MEDDLY {
   /** Special value for minterms: don't care what this variable does.
@@ -81,17 +82,6 @@ namespace MEDDLY {
   class unary_operation;
   class binary_operation;
 
-  /// Argument and result types for apply operations.
-  enum class opnd_type {
-    FOREST      = 0,
-    BOOLEAN     = 1,
-    INTEGER     = 2,
-    REAL        = 3,
-    HUGEINT     = 4,
-    FLOATVECT   = 5,
-    DOUBLEVECT  = 6
-  };
-
   // ******************************************************************
   // *                    miscellaneous  functions                    *
   // ******************************************************************
@@ -105,35 +95,27 @@ namespace MEDDLY {
   // *                     Named unary operations                     *
   // ******************************************************************
 
-  /** Create a copy of a dd_edge.
-      The copy may be stored in any forest as long as it belongs to the
-      same domain as the original and the transformation is valid.
-      Copying is valid with the following:
-      MDD to MTMDD, MTMDD to MDD, MXD to MTMXD, MTMXD to MXD.
-  */
-  extern const unary_opname* COPY;
-
   /// Unary operation.  Return the number of variable assignments
   /// so that the function evaluates to non-zero.
-  extern const unary_opname* CARDINALITY;
+  // extern const unary_opname* CARDINALITY;
 
   /// For BOOLEAN forests, flip the return values.
-  extern const unary_opname* COMPLEMENT;
+  // extern const unary_opname* COMPLEMENT;
 
   /// Find the largest value returned by the function.
-  extern const unary_opname* MAX_RANGE;
+  // extern const unary_opname* MAX_RANGE;
 
   /// Find the smallest value returned by the function.
-  extern const unary_opname* MIN_RANGE;
+  // extern const unary_opname* MIN_RANGE;
 
   /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
-  extern const unary_opname* CONVERT_TO_INDEX_SET;
+  // extern const unary_opname* CONVERT_TO_INDEX_SET;
 
   /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
-  extern const unary_opname* CYCLE;
+  // extern const unary_opname* CYCLE;
 
   /// Randomly select one state from a set of states
-  extern const unary_opname* SELECT;
+  // extern const unary_opname* SELECT;
 
   // ******************************************************************
   // *                    Named  binary operations                    *
@@ -286,7 +268,9 @@ namespace MEDDLY {
         @param  a     Operand.
         @param  c     Output parameter: the result, where \a c = \a op \a a.
   */
-  void apply(const unary_opname* op, const dd_edge &a, dd_edge &c);
+  void apply(const unary_opname* (*op)(), const dd_edge &a, dd_edge &c);
+
+
 
   /** Apply a unary operator.
       For operators whose result is an integer.
@@ -294,7 +278,7 @@ namespace MEDDLY {
         @param  a     Operand.
         @param  c     Output parameter: the result, where \a c = \a op \a a.
   */
-  void apply(const unary_opname* op, const dd_edge &a, long &c);
+  void apply(const unary_opname* (*op)(), const dd_edge &a, long &c);
 
   /** Apply a unary operator.
       For operators whose result is a real.
@@ -302,9 +286,9 @@ namespace MEDDLY {
         @param  a     Operand.
         @param  c     Output parameter: the result, where \a c = \a op \a a.
   */
-  void apply(const unary_opname* op, const dd_edge &a, double &c);
+  void apply(const unary_opname* (*op)(), const dd_edge &a, double &c);
 
-  void apply(const unary_opname* op, const dd_edge &a, opnd_type cr,
+  void apply(const unary_opname* (*op)(), const dd_edge &a, opnd_type cr,
     ct_object &c);
 
 #ifdef __GMP_H__
@@ -316,7 +300,7 @@ namespace MEDDLY {
         @param  c     Input: an initialized MP integer.
                       Output parameter: the result, where \a c = \a op \a a.
   */
-  void apply(const unary_opname* op, const dd_edge &a, mpz_t &c);
+  void apply(const unary_opname* (*op)(), const dd_edge &a, mpz_t &c);
 #endif
 
   // ******************************************************************

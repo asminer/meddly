@@ -70,18 +70,6 @@
 #include "mpz_object.h"
 
 namespace MEDDLY {
-
-  // unary operation "codes"
-
-  const unary_opname* COPY = 0;
-  const unary_opname* CARDINALITY = 0;
-  const unary_opname* COMPLEMENT = 0;
-  const unary_opname* MAX_RANGE = 0;
-  const unary_opname* MIN_RANGE = 0;
-  const unary_opname* CONVERT_TO_INDEX_SET = 0;
-  const unary_opname* CYCLE = 0;
-  const unary_opname* SELECT = 0;
-
   // binary operation "codes"
 
   const binary_opname* UNION = 0;
@@ -158,14 +146,6 @@ inline void initP(const T* &global, T* &local, T* init)
 
 void MEDDLY::builtin_initializer::setup()
 {
-  initP(MEDDLY::COPY,                 COPY,       initializeCopy()          );
-  initP(MEDDLY::CARDINALITY,          CARD,       initializeCardinality()   );
-  initP(MEDDLY::COMPLEMENT,           COMPL,      initializeComplement()    );
-  initP(MEDDLY::MAX_RANGE,            MAXRANGE,   initializeMaxRange()      );
-  initP(MEDDLY::MIN_RANGE,            MINRANGE,   initializeMaxRange()      );
-  initP(MEDDLY::CONVERT_TO_INDEX_SET, MDD2INDEX,  initializeMDD2INDEX()     );
-  initP(MEDDLY::CYCLE,                CYCLE,      initializeCycle()         );
-  initP(MEDDLY::SELECT,               SELECT,     initializeSelect()        );
 
   initP(MEDDLY::UNION,                UNION,      initializeUnion()         );
   initP(MEDDLY::INTERSECTION,         INTERSECT,  initializeIntersection()  );
@@ -232,13 +212,6 @@ inline void cleanPair(T *local, const T* &global)
 
 void MEDDLY::builtin_initializer::cleanup()
 {
-  cleanPair(COPY,           MEDDLY::COPY);
-  cleanPair(CARD,           MEDDLY::CARDINALITY);
-  cleanPair(COMPL,          MEDDLY::COMPLEMENT);
-  cleanPair(MAXRANGE,       MEDDLY::MAX_RANGE);
-  cleanPair(MINRANGE,       MEDDLY::MIN_RANGE);
-  cleanPair(MDD2INDEX,      MEDDLY::CONVERT_TO_INDEX_SET);
-  cleanPair(CYCLE,          MEDDLY::CYCLE);
 
   cleanPair(UNION,          MEDDLY::UNION);
   cleanPair(INTERSECT,      MEDDLY::INTERSECTION);

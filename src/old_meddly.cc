@@ -223,44 +223,44 @@ void MEDDLY::removeOperationFromCache(operation* op)
   curr->setNext(0);
 }
 
-void MEDDLY::apply(const unary_opname* code, const dd_edge &a, dd_edge &c)
+void MEDDLY::apply(const unary_opname* (*code)(), const dd_edge &a, dd_edge &c)
 {
   if (!libraryRunning)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
     throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-  unary_operation* op = getOperation(code, a, c);
+  unary_operation* op = getOperation(code(), a, c);
   op->computeTemp(a, c);
 }
 
-void MEDDLY::apply(const unary_opname* code, const dd_edge &a, long &c)
+void MEDDLY::apply(const unary_opname* (*code)(), const dd_edge &a, long &c)
 {
   if (!libraryRunning)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
     throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-  unary_operation* op = getOperation(code, a, opnd_type::INTEGER);
+  unary_operation* op = getOperation(code(), a, opnd_type::INTEGER);
   op->compute(a, c);
 }
 
-void MEDDLY::apply(const unary_opname* code, const dd_edge &a, double &c)
+void MEDDLY::apply(const unary_opname* (*code)(), const dd_edge &a, double &c)
 {
   if (!libraryRunning)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
     throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-  unary_operation* op = getOperation(code, a, opnd_type::REAL);
+  unary_operation* op = getOperation(code(), a, opnd_type::REAL);
   op->compute(a, c);
 }
 
-void MEDDLY::apply(const unary_opname* code, const dd_edge &a, opnd_type cr,
+void MEDDLY::apply(const unary_opname* (*code)(), const dd_edge &a, opnd_type cr,
   ct_object &c)
 {
   if (!libraryRunning)
     throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   if (0==code)
     throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-  unary_operation* op = getOperation(code, a, cr);
+  unary_operation* op = getOperation(code(), a, cr);
   op->compute(a, c);
 }
 
@@ -333,6 +333,7 @@ MEDDLY::initializer_list* MEDDLY::defaultInitializerList(initializer_list* prev)
   prev = new memman_initializer(prev);
   prev = new ct_initializer(prev);
   prev = new storage_initializer(prev);
+  prev = opname::makeInitializer(prev);
   prev = new builtin_initializer(prev);
   prev = new forest_initializer(prev);
 
@@ -344,13 +345,13 @@ void MEDDLY::initialize(initializer_list* L)
 {
   if (libraryRunning) throw error(error::ALREADY_INITIALIZED, __FILE__, __LINE__);
 
-  opname::next_index = 0;
+  // opname::next_index = 0;
 
   if (L) L->setupAll();
   meddlyInitializers = L;
 
   // set up operation cache
-  op_cache_size = opname::next_index;
+  op_cache_size = opname::nextIndex();
   op_cache = new operation*[op_cache_size];
   for (int i=0; i<op_cache_size; i++) {
     op_cache[i] = 0;
