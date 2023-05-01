@@ -28,39 +28,39 @@
 namespace MEDDLY {
 
 class mpz_object : public ct_object {
-  mpz_t value;
+    mpz_t value;
 public:
-  mpz_object();
-  mpz_object(const mpz_t &v);
-  mpz_object(const mpz_object &v);
-  virtual ~mpz_object();
-  virtual opnd_type getType();
+    mpz_object();
+    mpz_object(const mpz_t &v);
+    mpz_object(const mpz_object &v);
+    virtual ~mpz_object();
+    virtual opnd_type getType();
 
-  inline void copyInto(mpz_t &x) const {
-    mpz_set(x, value);
-  }
-  inline void copyInto(mpz_object &x) const {
-    mpz_set(x.value, value);
-  }
-  inline void setValue(long i) {
-    mpz_set_si(value, i);
-  }
-  void show(output &strm) const;
-  inline void multiply(long i) {
-    mpz_mul_si(value, value, i);
-  }
-  inline void add(const mpz_object &x) {
-    mpz_add(value, value, x.value);
-  }
+    inline void copyInto(mpz_t &x) const {
+        mpz_set(x, value);
+    }
+    inline void copyInto(mpz_object &x) const {
+        mpz_set(x.value, value);
+    }
+    inline void setValue(long i) {
+        mpz_set_si(value, i);
+    }
+    void show(output &strm) const;
+    inline void multiply(long i) {
+        mpz_mul_si(value, value, i);
+    }
+    inline void add(const mpz_object &x) {
+        mpz_add(value, value, x.value);
+    }
 
-  static void initBuffer();
-  static void clearBuffer();
+    static void initBuffer();
+    static void clearBuffer();
 
 private:
 
-  static char* buffer;  // for show().
-  static int bufsize;   // for show().
-  static void enlargeBuffer(int digits);
+    static char* buffer;  // for show().
+    static size_t bufsize;   // for show().
+    static void enlargeBuffer(size_t digits);
 };
 
 }

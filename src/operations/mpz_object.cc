@@ -38,68 +38,72 @@
 
 MEDDLY::mpz_object::mpz_object()
 {
-  mpz_init(value);
+    mpz_init(value);
 }
 
 MEDDLY::mpz_object::mpz_object(const mpz_t &v)
 {
-  mpz_init_set(value, v);
+    mpz_init_set(value, v);
 }
 
 MEDDLY::mpz_object::mpz_object(const mpz_object &x)
 {
-  mpz_init_set(value, x.value);
+    mpz_init_set(value, x.value);
 }
 
 
 MEDDLY::mpz_object::~mpz_object()
 {
-  mpz_clear(value);
+    mpz_clear(value);
 }
 
 MEDDLY::opnd_type MEDDLY::mpz_object::getType()
 {
-  return opnd_type::HUGEINT;
+    return opnd_type::HUGEINT;
 }
 
 void MEDDLY::mpz_object::show(output &strm) const
 {
-  // Make sure temporary string has enough space
-  int digits = mpz_sizeinbase(value, 10)+2;
-  enlargeBuffer(digits);
-  // Write into a string
-  mpz_get_str(buffer, 10, value);
-  // Display the string
-  strm.put(buffer);
+    // Make sure temporary string has enough space
+    size_t digits = mpz_sizeinbase(value, 10)+2;
+    enlargeBuffer(digits);
+    // Write into a string
+    mpz_get_str(buffer, 10, value);
+    // Display the string
+    strm.put(buffer);
 }
 
 void MEDDLY::mpz_object::initBuffer()
 {
-  buffer = 0;
-  bufsize = 0;
+    buffer = 0;
+    bufsize = 0;
 }
 
 void MEDDLY::mpz_object::clearBuffer()
 {
-  free(buffer);
-  buffer = 0;
-  bufsize = 0;
+    free(buffer);
+    buffer = 0;
+    bufsize = 0;
 }
 
-void MEDDLY::mpz_object::enlargeBuffer(int digits)
+void MEDDLY::mpz_object::enlargeBuffer(size_t digits)
 {
-  if (digits > bufsize) {
-    int newbufsize = (1+digits / 1024) * 1024;
-    if (newbufsize <= 0) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    char* newbuf = (char*) realloc(buffer, newbufsize);
-    if (0==newbuf) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    buffer = newbuf;
-    bufsize = newbufsize;
-  }
+    if (digits > bufsize) {
+        size_t newbufsize = (1+digits / 1024) * 1024;
+        if (newbufsize < digits) {
+            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+        }
+        char* newbuf = (char*) realloc(buffer, newbufsize);
+        if (!newbuf) {
+            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        }
+        buffer = newbuf;
+        bufsize = newbufsize;
+    }
 }
 
 char* MEDDLY::mpz_object::buffer;
-int   MEDDLY::mpz_object::bufsize;
+size_t MEDDLY::mpz_object::bufsize;
 
 
 
@@ -112,15 +116,15 @@ int   MEDDLY::mpz_object::bufsize;
 
 MEDDLY::ct_object& MEDDLY::get_mpz_wrapper()
 {
-  static MEDDLY::mpz_object foo;
-  return foo;
+    static MEDDLY::mpz_object foo;
+    return foo;
 }
 
 void MEDDLY::unwrap(const ct_object &x, mpz_t &value)
 {
-  using namespace MEDDLY;
-  const mpz_object &mx = static_cast <const mpz_object &> (x);
-  mx.copyInto(value);
+    using namespace MEDDLY;
+    const mpz_object &mx = static_cast <const mpz_object &> (x);
+    mx.copyInto(value);
 }
 
 #endif
