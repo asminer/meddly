@@ -72,6 +72,7 @@ unary_opname and binary_opname changes:
     getOperation(unary_opname* code, ...)   ->  code->getOperation(...)
     getOperation(binary_opname* code, ...)  ->  code->getOperation(...)
 
+    inlined functions provided for backward compatability
 
 
 operation hierarchy

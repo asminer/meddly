@@ -1,10 +1,9 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -17,15 +16,14 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MDD2INDEX_H
-#define MDD2INDEX_H
+#ifndef MEDDLY_MDD2INDEX_H
+#define MEDDLY_MDD2INDEX_H
 
 namespace MEDDLY {
-  class unary_opname;
+    class unary_opname;
 
-  /// Minimalist interface.
-  /// Set up a unary_opname for the "convert to index set" operation.
-  unary_opname* initializeMDD2INDEX();
+    /// Set up a unary_opname for the "convert to index set" operation.
+    unary_opname* initializeMDD2INDEX();
 };
 
 #endif

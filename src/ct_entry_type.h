@@ -21,7 +21,7 @@
 
 #include "defines.h"
 
-#include "old_meddly.h"
+#include "opname.h"
 
 namespace MEDDLY {
     class ct_object;

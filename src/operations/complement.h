@@ -1,10 +1,9 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -17,15 +16,13 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef COMPLEMENT_H
-#define COMPLEMENT_H
+#ifndef MEDDLY_COMPLEMENT_H
+#define MEDDLY_COMPLEMENT_H
 
 namespace MEDDLY {
-  class unary_opname;
+    class unary_opname;
 
-  /// Minimalist interface.
-  /// Set up a unary_opname for the "complement" operation.
-  unary_opname* initializeComplement();
+    unary_opname* initializeComplement();
 };
 
 #endif

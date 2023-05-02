@@ -63,7 +63,8 @@ namespace MEDDLY {
         This is useful, for instance, for copying a function to a new forest.
             @param  op    Operator handle.
             @param  a     Operand.
-            @param  c     Output parameter: the result, where \a c = \a op \a a.
+            @param  c     Output parameter: the result,
+                            where \a c = \a op \a a.
     */
     void apply(unary_opname* (*op)(), const dd_edge &a, dd_edge &c);
 
@@ -72,7 +73,8 @@ namespace MEDDLY {
         For operators whose result is an integer.
             @param  op    Operator handle.
             @param  a     Operand.
-            @param  c     Output parameter: the result, where \a c = \a op \a a.
+            @param  c     Output parameter: the result,
+                            where \a c = \a op \a a.
     */
     void apply(unary_opname* (*op)(), const dd_edge &a, long &c);
 
@@ -80,7 +82,8 @@ namespace MEDDLY {
         For operators whose result is a real.
             @param  op    Operator handle.
             @param  a     Operand.
-            @param  c     Output parameter: the result, where \a c = \a op \a a.
+            @param  c     Output parameter: the result,
+                            where \a c = \a op \a a.
     */
     void apply(unary_opname* (*op)(), const dd_edge &a, double &c);
 
@@ -88,7 +91,8 @@ namespace MEDDLY {
         For operators whose result is a anything else.
             @param  op    Operator handle.
             @param  a     Operand.
-            @param  c     Output parameter: the result, where \a c = \a op \a a.
+            @param  c     Output parameter: the result,
+                            where \a c = \a op \a a.
     */
     void apply(unary_opname* (*op)(), const dd_edge &a, opnd_type cr,
         ct_object &c);
@@ -100,7 +104,7 @@ namespace MEDDLY {
             @param  op  Operator handle.
             @param  a   Operand.
             @param  c   Input: an initialized MP integer.
-                        Output parameter: the result, where \a c = \a op \a a.
+                        Output: the result, where \a c = \a op \a a.
     */
     void apply(unary_opname* (*op)(), const dd_edge &a, mpz_t &c);
 #endif
@@ -131,9 +135,6 @@ namespace MEDDLY {
     // *                     Named unary operations                     *
     // ******************************************************************
 
-    /// Copy a function across forests, with the same domain.
-    unary_opname* COPY();
-
     /// Unary operation.  Return the number of variable assignments
     /// so that the function evaluates to non-zero.
     unary_opname* CARDINALITY();
@@ -141,17 +142,20 @@ namespace MEDDLY {
     /// For BOOLEAN forests, flip the return values.
     unary_opname* COMPLEMENT();
 
+    /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
+    unary_opname* CONVERT_TO_INDEX_SET();
+
+    /// Copy a function across forests, with the same domain.
+    unary_opname* COPY();
+
+    /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
+    unary_opname* CYCLE();
+
     /// Find the largest value returned by the function.
     unary_opname* MAX_RANGE();
 
     /// Find the smallest value returned by the function.
     unary_opname* MIN_RANGE();
-
-    /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
-    unary_opname* CONVERT_TO_INDEX_SET();
-
-    /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
-    unary_opname* CYCLE();
 
     /// Randomly select one state from a set of states
     unary_opname* SELECT();
@@ -160,6 +164,105 @@ namespace MEDDLY {
     // *                    Named  binary operations                    *
     // ******************************************************************
 
+    /// Set union operation for forests with range_type of BOOLEAN
+    binary_opname* UNION();
+
+    /// Set intersection operation for forests with range_type of BOOLEAN
+    binary_opname* INTERSECTION();
+
+    /// Set difference operation for forests with range_type of BOOLEAN
+    binary_opname* DIFFERENCE();
+
+    /// Combine two functions into a single one, where the operands are MDDs
+    /// and the result is an MXD.  Specifically, for MDD operands f and g,
+    /// produces MXD h where
+    ///     h(xn, x'n, ..., x1, x'1) = f(xn, ..., x1) * g(x'n, ..., x'1).
+    /// Works for BOOLEAN forests.
+    binary_opname* CROSS();
+
+    /// The minimum of two functions, with range_type INTEGER or REAL
+    binary_opname* MINIMUM();
+
+    /// The maximum of two functions, with range_type INTEGER or REAL
+    binary_opname* MAXIMUM();
+
+    /// Add two functions, with range type INTEGER and REAL
+    binary_opname* PLUS();
+
+    /// Subtract two functions, with range type INTEGER and REAL
+    binary_opname* MINUS();
+
+    /// Multiply two functions, with range type INTEGER and REAL
+    binary_opname* MULTIPLY();
+
+    /// Divide two functions, with range type INTEGER and REAL
+    binary_opname* DIVIDE();
+
+    /// Take the remainder of two functions, with range type INTEGER
+    binary_opname* MODULO();
+
+    /// Compare for equality, two functions with range type INTEGER or REAL
+    binary_opname* EQUAL();
+
+    /// Compare for inequality, two functions with range type INTEGER or REAL
+    binary_opname* NOT_EQUAL();
+
+    /// Compare for <, two functions with range type INTEGER or REAL
+    binary_opname* LESS_THAN();
+
+    /// Compare for <=, two functions with range type INTEGER or REAL
+    binary_opname* LESS_THAN_EQUAL();
+
+    /// Compare for >, two functions with range type INTEGER or REAL
+    binary_opname* GREATER_THAN();
+
+    /// Compare for >=, two functions with range type INTEGER or REAL
+    binary_opname* GREATER_THAN_EQUAL();
+
+    /** Plus operation used to compute transitive closure and further
+        minimum witness. The first operand must be an EV+MxD and the second
+        operand must be an EV+MDD. The result is an EV+MxD.
+    */
+    binary_opname* PRE_PLUS();
+    binary_opname* POST_PLUS();
+
+    /** Image operations on a set-of-states with a transition function.
+        The first operand must be the set-of-states and the second operand
+        must be the transition function. The result is a set-of-states that
+        must be stored in the same forest as the first operand.
+
+        Applies to:
+        PRE_IMAGE, POST_IMAGE,
+        TC_POST_IMAGE,
+        REACHABLE_STATES_DFS, REACHABLE_STATES_BFS,
+        REVERSE_REACHABLE_DFS, REVERSE_REACHABLE_BFS.
+    */
+    binary_opname* PRE_IMAGE();
+    binary_opname* POST_IMAGE();
+    binary_opname* TC_POST_IMAGE();
+    binary_opname* REACHABLE_STATES_DFS();
+    binary_opname* REACHABLE_STATES_BFS();
+    binary_opname* REVERSE_REACHABLE_DFS();
+    binary_opname* REVERSE_REACHABLE_BFS();
+
+    /** Vector matrix multiply, where the first argument is vector (MDD),
+        the second argument is a matrix (MXD),
+        and the result is a vector (MDD).
+    */
+    binary_opname* VM_MULTIPLY();
+
+    /** Matrix vector multiply, where the first argument is a matrix (MXD),
+        the second argument is a vector (MDD),
+        and the result is a vector (MDD).
+    */
+    binary_opname* MV_MULTIPLY();
+
+    /** Matrix multiplication, where the first argument is a matrix (MXD),
+        the second argument is a matrix (MXD),
+        and the result is a matrix (MXD),
+        such that, C[m][n] += A[m][i] * B[i][n], for all m, n and i.
+    */
+    binary_opname* MM_MULTIPLY();
 };
 
 // ******************************************************************
@@ -174,40 +277,12 @@ namespace MEDDLY {
     (tied to forests) to be applied to decision diagrams
 */
 class MEDDLY::opname {
-    public:
-        inline static unary_opname* COPY() {
-            return _COPY;
-        }
-        inline static unary_opname* CARDINALITY() {
-            return _CARD;
-        }
-        inline static unary_opname* COMPLEMENT() {
-            return _COMPL;
-        }
-        inline static unary_opname* MAX_RANGE() {
-            return _MAXRANGE;
-        }
-        inline static unary_opname* MIN_RANGE() {
-            return _MINRANGE;
-        }
-        inline static unary_opname* CONVERT_TO_INDEX_SET() {
-            return _MDD2INDEX;
-        }
-        inline static unary_opname* CYCLE() {
-            return _CYCLE;
-        }
-        inline static unary_opname* SELECT() {
-            return _SELECT;
-        }
-
+        friend class MEDDLY::opname_init;
     public:
         opname(const char* n);
         virtual ~opname();
 
-//        inline size_t getIndex() const { return index; }
         inline const char* getName() const { return name; }
-
-//        inline static size_t nextIndex() { return next_index; }
 
         static initializer_list* makeInitializer(initializer_list* prev);
 
@@ -219,23 +294,159 @@ class MEDDLY::opname {
 
     private:
         const char* name;
-//        size_t index;   // TBD - needed?
-//        static size_t next_index;
 
     private:
-        static unary_opname* _COPY;
         static unary_opname* _CARD;
         static unary_opname* _COMPL;
+        static unary_opname* _MDD2INDEX;
+        static unary_opname* _COPY;
+        static unary_opname* _CYCLE;
         static unary_opname* _MAXRANGE;
         static unary_opname* _MINRANGE;
-        static unary_opname* _MDD2INDEX;
-        static unary_opname* _CYCLE;
         static unary_opname* _SELECT;
-
-    friend class MEDDLY::opname_init;
-
-        friend void MEDDLY::initialize(initializer_list *);
-        friend void MEDDLY::cleanup();
+    private:
+        static binary_opname* _UNION;
+        static binary_opname* _INTERSECT;
+        static binary_opname* _DIFFERENCE;
+        static binary_opname* _CROSS;
+        static binary_opname* _MIN;
+        static binary_opname* _MAX;
+        static binary_opname* _PLUS;
+        static binary_opname* _MINUS;
+        static binary_opname* _MULTIPLY;
+        static binary_opname* _DIVIDE;
+        static binary_opname* _MODULO;
+        static binary_opname* _EQ;
+        static binary_opname* _NE;
+        static binary_opname* _LT;
+        static binary_opname* _LE;
+        static binary_opname* _GT;
+        static binary_opname* _GE;
+        static binary_opname* _PRE_PLUS;
+        static binary_opname* _POST_PLUS;
+        static binary_opname* _PRE_IMAGE;
+        static binary_opname* _POST_IMAGE;
+        static binary_opname* _TC_POST_IMAGE;
+        static binary_opname* _FORWARD_DFS;
+        static binary_opname* _FORWARD_BFS;
+        static binary_opname* _BACKWARD_DFS;
+        static binary_opname* _BACKWARD_BFS;
+        static binary_opname* _VM_MULTIPLY;
+        static binary_opname* _MV_MULTIPLY;
+        static binary_opname* _MM_MULTIPLY;
+    public:
+        inline static unary_opname* CARDINALITY() {
+            return _CARD;
+        }
+        inline static unary_opname* COMPLEMENT() {
+            return _COMPL;
+        }
+        inline static unary_opname* CONVERT_TO_INDEX_SET() {
+            return _MDD2INDEX;
+        }
+        inline static unary_opname* COPY() {
+            return _COPY;
+        }
+        inline static unary_opname* CYCLE() {
+            return _CYCLE;
+        }
+        inline static unary_opname* MAX_RANGE() {
+            return _MAXRANGE;
+        }
+        inline static unary_opname* MIN_RANGE() {
+            return _MINRANGE;
+        }
+        inline static unary_opname* SELECT() {
+            return _SELECT;
+        }
+    public:
+        inline static binary_opname* UNION() {
+            return _UNION;
+        }
+        inline static binary_opname* INTERSECTION() {
+            return _INTERSECT;
+        }
+        inline static binary_opname* DIFFERENCE() {
+            return _DIFFERENCE;
+        }
+        inline static binary_opname* CROSS() {
+            return _CROSS;
+        }
+        inline static binary_opname* MINIMUM() {
+            return _MIN;
+        }
+        inline static binary_opname* MAXIMUM() {
+            return _MAX;
+        }
+        inline static binary_opname* PLUS() {
+            return _PLUS;
+        }
+        inline static binary_opname* MINUS() {
+            return _MINUS;
+        }
+        inline static binary_opname* MULTIPLY() {
+            return _MULTIPLY;
+        }
+        inline static binary_opname* DIVIDE() {
+            return _DIVIDE;
+        }
+        inline static binary_opname* MODULO() {
+            return _MODULO;
+        }
+        inline static binary_opname* EQUAL() {
+            return _EQ;
+        }
+        inline static binary_opname* NOT_EQUAL() {
+            return _NE;
+        }
+        inline static binary_opname* LESS_THAN() {
+            return _LT;
+        }
+        inline static binary_opname* LESS_THAN_EQUAL() {
+            return _LE;
+        }
+        inline static binary_opname* GREATER_THAN() {
+            return _GT;
+        }
+        inline static binary_opname* GREATER_THAN_EQUAL() {
+            return _GE;
+        }
+        inline static binary_opname* PRE_PLUS() {
+            return _PRE_PLUS;
+        }
+        inline static binary_opname* POST_PLUS() {
+            return _POST_PLUS;
+        }
+        inline static binary_opname* PRE_IMAGE() {
+            return _PRE_IMAGE;
+        }
+        inline static binary_opname* POST_IMAGE() {
+            return _POST_IMAGE;
+        }
+        inline static binary_opname* TC_POST_IMAGE() {
+            return _TC_POST_IMAGE;
+        }
+        inline static binary_opname* REACHABLE_STATES_DFS() {
+            return _FORWARD_DFS;
+        }
+        inline static binary_opname* REACHABLE_STATES_BFS() {
+            return _FORWARD_BFS;
+        }
+        inline static binary_opname* REVERSE_REACHABLE_DFS() {
+            return _BACKWARD_DFS;
+        }
+        inline static binary_opname* REVERSE_REACHABLE_BFS() {
+            return _BACKWARD_BFS;
+        }
+        inline static binary_opname* VM_MULTIPLY() {
+            return _VM_MULTIPLY;
+        }
+        inline static binary_opname* MV_MULTIPLY() {
+            return _MV_MULTIPLY;
+        }
+        inline static binary_opname* MM_MULTIPLY() {
+            return _MM_MULTIPLY;
+        }
 };
 
 // ******************************************************************

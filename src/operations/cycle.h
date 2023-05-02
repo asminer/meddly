@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -17,14 +16,14 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef CYCLE_H
-#define CYCLE_H
+#ifndef MEDDLY_CYCLE_H
+#define MEDDLY_CYCLE_H
 
 namespace MEDDLY {
-  class unary_opname;
+    class unary_opname;
 
-  /// Set up a cycle_opname for the "cycle" operation.
-  unary_opname* initializeCycle();
+    /// Set up a unary_opname for the "cycle" operation.
+    unary_opname* initializeCycle();
 }
 
 #endif

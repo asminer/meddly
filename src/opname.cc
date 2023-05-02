@@ -38,7 +38,31 @@
 #include "operations/mdd2index.h"
 #include "operations/cycle.h"
 #include "operations/select.h"
-
+//
+// Binary operations
+//
+#include "operations/union.h"
+#include "operations/intersection.h"
+#include "operations/difference.h"
+#include "operations/cross.h"
+#include "operations/maxmin.h"
+#include "operations/plus.h"
+#include "operations/minus.h"
+#include "operations/multiply.h"
+#include "operations/divide.h"
+#include "operations/modulo.h"
+#include "operations/comp_eq.h"
+#include "operations/comp_ne.h"
+#include "operations/comp_lt.h"
+#include "operations/comp_le.h"
+#include "operations/comp_gt.h"
+#include "operations/comp_ge.h"
+#include "operations/prepostplus.h"
+#include "operations/prepostimage.h"
+#include "operations/reach_bfs.h"
+#include "operations/reach_dfs.h"
+#include "operations/vect_matr.h"
+#include "operations/mm_mult.h"
 
 // ******************************************************************
 // *                         Helper methods                         *
@@ -84,13 +108,18 @@ class MEDDLY::opname_init : public initializer_list {
             delete p;
             p = nullptr;
         }
+        inline void mydelete(binary_opname* &p) {
+            delete p;
+            p = nullptr;
+        }
 };
 
 MEDDLY::opname_init::opname_init(initializer_list* p)
     : initializer_list(p)
 {
-    // opname::next_index = 0;
-
+    //
+    // Unary ops
+    //
     opname::_COPY       = nullptr;
     opname::_CARD       = nullptr;
     opname::_COMPL      = nullptr;
@@ -99,6 +128,38 @@ MEDDLY::opname_init::opname_init(initializer_list* p)
     opname::_MDD2INDEX  = nullptr;
     opname::_CYCLE      = nullptr;
     opname::_SELECT     = nullptr;
+    //
+    // Binary ops
+    //
+    opname::_UNION          = nullptr;
+    opname::_INTERSECT      = nullptr;
+    opname::_DIFFERENCE     = nullptr;
+    opname::_CROSS          = nullptr;
+    opname::_MIN            = nullptr;
+    opname::_MAX            = nullptr;
+    opname::_PLUS           = nullptr;
+    opname::_MINUS          = nullptr;
+    opname::_MULTIPLY       = nullptr;
+    opname::_DIVIDE         = nullptr;
+    opname::_MODULO         = nullptr;
+    opname::_EQ             = nullptr;
+    opname::_NE             = nullptr;
+    opname::_LT             = nullptr;
+    opname::_LE             = nullptr;
+    opname::_GT             = nullptr;
+    opname::_GE             = nullptr;
+    opname::_PRE_PLUS       = nullptr;
+    opname::_POST_PLUS      = nullptr;
+    opname::_PRE_IMAGE      = nullptr;
+    opname::_POST_IMAGE     = nullptr;
+    opname::_TC_POST_IMAGE  = nullptr;
+    opname::_FORWARD_DFS    = nullptr;
+    opname::_FORWARD_BFS    = nullptr;
+    opname::_BACKWARD_DFS   = nullptr;
+    opname::_BACKWARD_BFS   = nullptr;
+    opname::_VM_MULTIPLY    = nullptr;
+    opname::_MV_MULTIPLY    = nullptr;
+    opname::_MM_MULTIPLY    = nullptr;
 }
 
 void MEDDLY::opname_init::setup()
@@ -106,19 +167,53 @@ void MEDDLY::opname_init::setup()
     //
     // Unary ops
     //
-    opname::_COPY       = initializeCopy();
-    opname::_CARD       = initializeCardinality();
-    opname::_COMPL      = initializeComplement();
-    opname::_MAXRANGE   = initializeMaxRange();
-    opname::_MINRANGE   = initializeMaxRange();
-    opname::_MDD2INDEX  = initializeMDD2INDEX();
-    opname::_CYCLE      = initializeCycle();
-    opname::_SELECT     = initializeSelect();
-
+    opname::_COPY       =   initializeCopy()        ;
+    opname::_CARD       =   initializeCardinality() ;
+    opname::_COMPL      =   initializeComplement()  ;
+    opname::_MAXRANGE   =   initializeMaxRange()    ;
+    opname::_MINRANGE   =   initializeMaxRange()    ;
+    opname::_MDD2INDEX  =   initializeMDD2INDEX()   ;
+    opname::_CYCLE      =   initializeCycle()       ;
+    opname::_SELECT     =   initializeSelect()      ;
+    //
+    // Binary ops
+    //
+    opname::_UNION          =   initializeUnion()           ;
+    opname::_INTERSECT      =   initializeIntersection()    ;
+    opname::_DIFFERENCE     =   initializeDifference()      ;
+    opname::_CROSS          =   initializeCross()           ;
+    opname::_MAX            =   initializeMaximum()         ;
+    opname::_MIN            =   initializeMinimum()         ;
+    opname::_PLUS           =   initializePlus()            ;
+    opname::_MINUS          =   initializeMinus()           ;
+    opname::_MULTIPLY       =   initializeMultiply()        ;
+    opname::_DIVIDE         =   initializeDivide()          ;
+    opname::_MODULO         =   initializeModulo()          ;
+    opname::_EQ             =   initializeEQ()              ;
+    opname::_NE             =   initializeNE()              ;
+    opname::_LT             =   initializeLT()              ;
+    opname::_LE             =   initializeLE()              ;
+    opname::_GT             =   initializeGT()              ;
+    opname::_GE             =   initializeGE()              ;
+    opname::_PRE_PLUS       =   initializePrePlus()         ;
+    opname::_POST_PLUS      =   initializePostPlus()        ;
+    opname::_PRE_IMAGE      =   initializePreImage()        ;
+    opname::_POST_IMAGE     =   initializePostImage()       ;
+    opname::_TC_POST_IMAGE  =   initializeTCPostImage()     ;
+    opname::_FORWARD_DFS    =   initializeForwardDFS()      ;
+    opname::_FORWARD_BFS    =   initializeForwardBFS()      ;
+    opname::_BACKWARD_DFS   =   initializeBackwardDFS()     ;
+    opname::_BACKWARD_BFS   =   initializeBackwardBFS()     ;
+    opname::_VM_MULTIPLY    =   initializeVMmult()          ;
+    opname::_MV_MULTIPLY    =   initializeMVmult()          ;
+    opname::_MM_MULTIPLY    =   initializeMMMultiply()      ;
 }
 
 void MEDDLY::opname_init::cleanup()
 {
+    //
+    // Unary ops
+    //
     mydelete(opname::_COPY);
     mydelete(opname::_CARD);
     mydelete(opname::_COMPL);
@@ -127,8 +222,38 @@ void MEDDLY::opname_init::cleanup()
     mydelete(opname::_MDD2INDEX);
     mydelete(opname::_CYCLE);
     mydelete(opname::_SELECT);
-
-    // opname::next_index = 0;
+    //
+    // Binary ops
+    //
+    mydelete(opname::_UNION);
+    mydelete(opname::_INTERSECT);
+    mydelete(opname::_DIFFERENCE);
+    mydelete(opname::_CROSS);
+    mydelete(opname::_MIN);
+    mydelete(opname::_MAX);
+    mydelete(opname::_PLUS);
+    mydelete(opname::_MINUS);
+    mydelete(opname::_MULTIPLY);
+    mydelete(opname::_DIVIDE);
+    mydelete(opname::_MODULO);
+    mydelete(opname::_EQ);
+    mydelete(opname::_NE);
+    mydelete(opname::_LT);
+    mydelete(opname::_LE);
+    mydelete(opname::_GT);
+    mydelete(opname::_GE);
+    mydelete(opname::_PRE_PLUS);
+    mydelete(opname::_POST_PLUS);
+    mydelete(opname::_PRE_IMAGE);
+    mydelete(opname::_POST_IMAGE);
+    mydelete(opname::_TC_POST_IMAGE);
+    mydelete(opname::_FORWARD_DFS);
+    mydelete(opname::_FORWARD_BFS);
+    mydelete(opname::_BACKWARD_DFS);
+    mydelete(opname::_BACKWARD_BFS);
+    mydelete(opname::_VM_MULTIPLY);
+    mydelete(opname::_MV_MULTIPLY);
+    mydelete(opname::_MM_MULTIPLY);
 }
 
 // ******************************************************************
@@ -435,6 +560,15 @@ void MEDDLY::apply(unary_opname* (*code)(), const dd_edge &a,
     unary_operation* op = opn->getOperation(a, cr);
     op->compute(a, c);
 }
+
+#ifdef __GMP_H__
+void MEDDLY::apply(const unary_opname* (*code)(), const dd_edge &a, mpz_t &c)
+{
+    ct_object& x = get_mpz_wrapper();
+    apply(op, a, opnd_type::HUGEINT, x);
+    unwrap(x, c);
+}
+#endif
 
 void MEDDLY::apply(binary_opname* (*code)(), const dd_edge &a,
     const dd_edge &b, dd_edge &c)

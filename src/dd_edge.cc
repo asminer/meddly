@@ -25,6 +25,7 @@
 #include "encoders.h"
 #include "io.h"
 
+#include "opname.h"
 #include "oper_binary.h"
 
 // #define DEBUG_CLEANUP
@@ -269,60 +270,69 @@ unsigned MEDDLY::dd_edge::getEdgeCount(bool countZeroes) const
 // Operator +=
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator+=(const dd_edge& e)
 {
-  if (opPlus == 0) {
-    if (parent->getRangeType() == range_type::BOOLEAN)
-      opPlus = getOperation(UNION, *this, e, *this);
-    else
-      opPlus = getOperation(PLUS, *this, e, *this);
-    MEDDLY_DCASSERT(opPlus != 0);
-  }
-  opPlus->computeTemp(*this, e, *this);
-  // apply will call set() which in turn will set updateNeeded to true
-  return *this;
+    if (!opPlus) {
+        binary_opname* theop;
+        theop = (parent->getRangeType() == range_type::BOOLEAN)
+                    ? UNION()
+                    : PLUS();
+        MEDDLY_DCASSERT(theop);
+        opPlus = theop->getOperation(*this, e, *this);
+        MEDDLY_DCASSERT(opPlus);
+    }
+    opPlus->computeTemp(*this, e, *this);
+    // apply will call set() which in turn will set updateNeeded to true
+    return *this;
 }
 
 
 // Operator *=
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator*=(const dd_edge& e)
 {
-  if (opStar == 0) {
-    if (parent->getRangeType() == range_type::BOOLEAN)
-      opStar = getOperation(INTERSECTION, *this, e, *this);
-    else
-      opStar = getOperation(MULTIPLY, *this, e, *this);
-    MEDDLY_DCASSERT(opStar != 0);
-  }
-  opStar->computeTemp(*this, e, *this);
-  // apply will call set() which in turn will set updateNeeded to true
-  return *this;
+    if (!opStar) {
+        binary_opname* theop;
+        theop = (parent->getRangeType() == range_type::BOOLEAN)
+                    ? INTERSECTION()
+                    : MULTIPLY();
+        MEDDLY_DCASSERT(theop);
+        opStar = theop->getOperation(*this, e, *this);
+        MEDDLY_DCASSERT(opStar);
+    }
+    opStar->computeTemp(*this, e, *this);
+    // apply will call set() which in turn will set updateNeeded to true
+    return *this;
 }
 
 
 // Operator -=
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator-=(const dd_edge& e)
 {
-  if (opMinus == 0) {
-    if (parent->getRangeType() == range_type::BOOLEAN)
-      opMinus = getOperation(DIFFERENCE, *this, e, *this);
-    else
-      opMinus = getOperation(MINUS, *this, e, *this);
-    MEDDLY_DCASSERT(opMinus != 0);
-  }
-  opMinus->computeTemp(*this, e, *this);
-  // apply will call set() which in turn will set updateNeeded to true
-  return *this;
+    if (!opMinus) {
+        binary_opname* theop;
+        theop = (parent->getRangeType() == range_type::BOOLEAN)
+                    ? DIFFERENCE()
+                    : MINUS();
+        MEDDLY_DCASSERT(theop);
+        opMinus = theop->getOperation(*this, e, *this);
+        MEDDLY_DCASSERT(opMinus);
+    }
+    opMinus->computeTemp(*this, e, *this);
+    // apply will call set() which in turn will set updateNeeded to true
+    return *this;
 }
 
 
 // Operator /=
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator/=(const dd_edge& e)
 {
-  if (opDivide == 0) {
-    opDivide = getOperation(DIVIDE, *this, e, *this);
-  }
-  opDivide->computeTemp(*this, e, *this);
-  // apply will call set() which in turn will set updateNeeded to true
-  return *this;
+    if (!opDivide) {
+        binary_opname* theop = DIVIDE();
+        MEDDLY_DCASSERT(theop);
+        opDivide = theop->getOperation(*this, e, *this);
+        MEDDLY_DCASSERT(opDivide);
+    }
+    opDivide->computeTemp(*this, e, *this);
+    // apply will call set() which in turn will set updateNeeded to true
+    return *this;
 }
 
 // Display the edge information.

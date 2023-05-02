@@ -23,13 +23,13 @@
 #include "../defines.h"
 #include "init_builtin.h"
 
-#include "copy.h"
-#include "cardinality.h"
-#include "complement.h"
-#include "maxmin_range.h"
-#include "mdd2index.h"
-#include "cycle.h"
-#include "select.h"
+// #include "copy.h"
+// #include "cardinality.h"
+// #include "complement.h"
+// #include "maxmin_range.h"
+// #include "mdd2index.h"
+// #include "cycle.h"
+// #include "select.h"
 
 #include "union.h"
 #include "intersection.h"
@@ -147,41 +147,6 @@ inline void initP(const T* &global, T* &local, T* init)
 void MEDDLY::builtin_initializer::setup()
 {
 
-  initP(MEDDLY::UNION,                UNION,      initializeUnion()         );
-  initP(MEDDLY::INTERSECTION,         INTERSECT,  initializeIntersection()  );
-  initP(MEDDLY::DIFFERENCE,           DIFFERENCE, initializeDifference()    );
-  initP(MEDDLY::CROSS,                CROSS,      initializeCross()         );
-
-  initP(MEDDLY::MAXIMUM,              MAX,        initializeMaximum()       );
-  initP(MEDDLY::MINIMUM,              MIN,        initializeMinimum()       );
-  initP(MEDDLY::PLUS,                 PLUS,       initializePlus()          );
-  initP(MEDDLY::MINUS,                MINUS,      initializeMinus()         );
-  initP(MEDDLY::MULTIPLY,             MULTIPLY,   initializeMultiply()      );
-  initP(MEDDLY::DIVIDE,               DIVIDE,     initializeDivide()        );
-  initP(MEDDLY::MODULO,               MODULO,     initializeModulo()        );
-
-  initP(MEDDLY::EQUAL,                EQ,           initializeEQ()          );
-  initP(MEDDLY::NOT_EQUAL,            NE,           initializeNE()          );
-  initP(MEDDLY::LESS_THAN,            LT,           initializeLT()          );
-  initP(MEDDLY::LESS_THAN_EQUAL,      LE,           initializeLE()          );
-  initP(MEDDLY::GREATER_THAN,         GT,           initializeGT()          );
-  initP(MEDDLY::GREATER_THAN_EQUAL,   GE,           initializeGE()          );
-
-  initP(MEDDLY::PRE_PLUS,             PRE_PLUS,     initializePrePlus()     );
-  initP(MEDDLY::POST_PLUS,            POST_PLUS,    initializePostPlus()    );
-
-  initP(MEDDLY::PRE_IMAGE,            PRE_IMAGE,    initializePreImage()    );
-  initP(MEDDLY::POST_IMAGE,           POST_IMAGE,   initializePostImage()   );
-  initP(MEDDLY::TC_POST_IMAGE,        TC_POST_IMAGE,initializeTCPostImage() );
-  initP(MEDDLY::REACHABLE_STATES_DFS, FORWARD_DFS,  initializeForwardDFS()  );
-  initP(MEDDLY::REACHABLE_STATES_BFS, FORWARD_BFS,  initializeForwardBFS()  );
-  initP(MEDDLY::REVERSE_REACHABLE_DFS,BACKWARD_DFS, initializeBackwardDFS() );
-  initP(MEDDLY::REVERSE_REACHABLE_BFS,BACKWARD_BFS, initializeBackwardBFS() );
-
-  initP(MEDDLY::VM_MULTIPLY,          VM_MULTIPLY,  initializeVMmult()      );
-  initP(MEDDLY::MV_MULTIPLY,          MV_MULTIPLY,  initializeMVmult()      );
-
-  initP(MEDDLY::MM_MULTIPLY,          MM_MULTIPLY,  initializeMMMultiply()  );
 
   initP(MEDDLY::EXPLVECT_MATR_MULT, EXPLVECT_MATR_MULT, initExplVectorMatrixMult()  );
   initP(MEDDLY::MATR_EXPLVECT_MULT, MATR_EXPLVECT_MULT, initMatrixExplVectorMult()  );

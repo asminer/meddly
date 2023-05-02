@@ -31,41 +31,6 @@ namespace MEDDLY {
 };
 
 class MEDDLY::builtin_initializer : public initializer_list {
-  binary_opname* UNION;
-  binary_opname* INTERSECT;
-  binary_opname* DIFFERENCE;
-  binary_opname* CROSS;
-
-  binary_opname* MIN;
-  binary_opname* MAX;
-  binary_opname* PLUS;
-  binary_opname* MINUS;
-  binary_opname* MULTIPLY;
-  binary_opname* DIVIDE;
-  binary_opname* MODULO;
-
-  binary_opname* EQ;
-  binary_opname* NE;
-  binary_opname* LT;
-  binary_opname* LE;
-  binary_opname* GT;
-  binary_opname* GE;
-
-  binary_opname* PRE_PLUS;
-  binary_opname* POST_PLUS;
-
-  binary_opname* PRE_IMAGE;
-  binary_opname* POST_IMAGE;
-  binary_opname* TC_POST_IMAGE;
-  binary_opname* FORWARD_DFS;
-  binary_opname* FORWARD_BFS;
-  binary_opname* BACKWARD_DFS;
-  binary_opname* BACKWARD_BFS;
-
-  binary_opname* VM_MULTIPLY;
-  binary_opname* MV_MULTIPLY;
-
-  binary_opname* MM_MULTIPLY;
 
   numerical_opname* EXPLVECT_MATR_MULT;
   numerical_opname* MATR_EXPLVECT_MULT;

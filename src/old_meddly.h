@@ -121,6 +121,7 @@ namespace MEDDLY {
   // *                    Named  binary operations                    *
   // ******************************************************************
 
+#if 0
   /// Set operation for forests with range_type of BOOLEAN. All operands
   /// must belong to the same forest.
   extern const binary_opname* UNION;
@@ -220,6 +221,7 @@ namespace MEDDLY {
       such that, C[m][n] += A[m][i] * B[i][n], for all m, n and i.
   */
   extern const binary_opname* MM_MULTIPLY;
+#endif
 
   // ******************************************************************
   // *                  library management functions                  *
