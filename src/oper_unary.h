@@ -30,6 +30,7 @@ namespace MEDDLY {
     // *                      Operation management                      *
     // ******************************************************************
 
+#if 0
     /** Find, or build if necessary, a unary operation.
             @param  code    Operation we want
             @param  arg     Argument forest
@@ -70,6 +71,7 @@ namespace MEDDLY {
     unary_operation* getOperation(const unary_opname* code,
         const dd_edge& arg, opnd_type result);
 
+#endif
 
     /** Safely destroy the given unary operation.
         It should be unnecessary to call this directly.
@@ -93,15 +95,6 @@ namespace MEDDLY {
     Specific operations will be derived from this class.
 */
 class MEDDLY::unary_operation : public operation {
-  protected:
-    expert_forest* argF;
-    expert_forest* resF;
-    opnd_type resultType;
-
-    virtual ~unary_operation();
-
-    virtual bool checkForestCompatibility() const;
-
   public:
     unary_operation(const unary_opname* code, unsigned et_slots,
       expert_forest* arg, expert_forest* res);
@@ -109,10 +102,12 @@ class MEDDLY::unary_operation : public operation {
     unary_operation(const unary_opname* code, unsigned et_slots,
       expert_forest* arg, opnd_type res);
 
-    bool matches(const expert_forest* arg, const expert_forest* res)
-      const;
+  protected:
+    virtual ~unary_operation();
 
-    bool matches(const expert_forest* arg, opnd_type res) const;
+  public:
+    bool matches(const dd_edge &arg, const dd_edge &res) const;
+    bool matches(const dd_edge &arg, opnd_type res) const;
 
     // high-level front-ends
 
@@ -126,6 +121,16 @@ class MEDDLY::unary_operation : public operation {
     virtual void compute(const dd_edge &arg, double &res);
     virtual void compute(const dd_edge &arg, ct_object &c);
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
+
+  protected:
+    virtual bool checkForestCompatibility() const;
+
+
+  protected:
+    expert_forest* argF;
+    expert_forest* resF;
+    opnd_type resultType;
+
 };
 
 // ******************************************************************
@@ -133,18 +138,5 @@ class MEDDLY::unary_operation : public operation {
 // *                inlined  unary_operation methods                *
 // *                                                                *
 // ******************************************************************
-
-inline bool
-MEDDLY::unary_operation::matches(const MEDDLY::expert_forest* arg,
-    const MEDDLY::expert_forest* res) const
-{
-  return (arg == argF && res == resF);
-}
-
-inline bool
-MEDDLY::unary_operation::matches(const MEDDLY::expert_forest* arg, opnd_type res) const
-{
-  return (arg == argF && resultType == res);
-}
 
 #endif // #include guard

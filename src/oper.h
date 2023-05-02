@@ -28,6 +28,7 @@ namespace MEDDLY {
     class operation;
     class compute_table;
     class forest;
+    class expert_forest;
 
     class ct_initializer;
     class ct_entry_type;
@@ -88,7 +89,9 @@ class MEDDLY::operation {
             return is_marked_for_deletion;
         }
 
-        // TBD: who is using a list of operations?
+        //
+        // List of operations; used as operation cache in opname classes
+        //
 
         inline void setNext(operation* n) { next = n; }
         inline operation* getNext() const { return next; }

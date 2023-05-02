@@ -19,6 +19,7 @@
 #include "oper_unary.h"
 #include "error.h"
 #include "forest.h"
+#include "dd_edge.h"
 
 // ******************************************************************
 // *                    unary_operation  methods                    *
@@ -53,17 +54,19 @@ MEDDLY::unary_operation::~unary_operation()
   unregisterInForest(resF);
 }
 
-bool
-MEDDLY::unary_operation::checkForestCompatibility() const
+
+inline bool
+MEDDLY::unary_operation::matches(const MEDDLY::dd_edge &arg,
+        const MEDDLY::dd_edge &res) const
 {
-  if (resultType == opnd_type::FOREST) {
-    auto o1 = argF->variableOrder();
-    auto o2 = resF->variableOrder();
-    return o1->is_compatible_with(*o2);
-  }
-  else {
-    return true;
-  }
+  return (arg.getForest() == argF && res.getForest() == resF);
+}
+
+inline bool
+MEDDLY::unary_operation::matches(const MEDDLY::dd_edge &arg, opnd_type res)
+        const
+{
+  return (arg.getForest() == argF && resultType == res);
 }
 
 
@@ -106,12 +109,27 @@ MEDDLY::unary_operation::computeTemp(const dd_edge &arg, dd_edge &res)
   computeDDEdge(arg, res, false);
 }
 
+bool
+MEDDLY::unary_operation::checkForestCompatibility() const
+{
+  if (resultType == opnd_type::FOREST) {
+    auto o1 = argF->variableOrder();
+    auto o2 = resF->variableOrder();
+    return o1->is_compatible_with(*o2);
+  }
+  else {
+    return true;
+  }
+}
+
 
 // ******************************************************************
 // *                                                                *
 // *                      front-end  functions                      *
 // *                                                                *
 // ******************************************************************
+
+/*
 
 MEDDLY::unary_operation*
 MEDDLY::getOperation(const unary_opname* code, const dd_edge& arg,
@@ -128,4 +146,4 @@ MEDDLY::getOperation(const unary_opname* code, const dd_edge& arg,
   return getOperation(code, (MEDDLY::expert_forest*) arg.getForest(), res);
 }
 
-
+*/

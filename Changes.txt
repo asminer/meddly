@@ -64,6 +64,15 @@ opname hierarcy
 Operation names (COMPLEMENT, CARDINALITY, etc.)
 have changed type, but user code should mostly be unaffected.
 
+unary_opname and binary_opname changes:
+
+    unary_opname::buildOperation    expert_forest* arguments changed to const dd_edge&
+    binary_opname::buildOperation   expert_forest* arguments changed to const dd_edge&
+
+    getOperation(unary_opname* code, ...)   ->  code->getOperation(...)
+    getOperation(binary_opname* code, ...)  ->  code->getOperation(...)
+
+
 
 operation hierarchy
     CLASS                           NEW LOCATION
@@ -74,15 +83,6 @@ operation hierarchy
     specialized_operation           oper_special.h/cc
 
 
-TBD: getOperation -> (static?) method inside opcode classes?
-
-    unary_operation* getOperation(const unary_opname* code, arg, res)
-becomes
-    unary_operation* code->getOperation(arg, res)
-
-    binary_operation* getOperation(const binary_opname* code, arg1, arg2, res)
-becomes
-    binary_operation* code->getOperation(arg1, arg2, res)
 
 
 Compute table changes:

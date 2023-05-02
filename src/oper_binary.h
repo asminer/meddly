@@ -29,6 +29,7 @@ namespace MEDDLY {
     // *                      Operation management                      *
     // ******************************************************************
 
+#if 0
     /** Find, or build if necessary, a binary operation.
             @param  code    Operation we want
             @param  arg1    Argument 1 forest
@@ -50,6 +51,8 @@ namespace MEDDLY {
     */
     binary_operation* getOperation(const binary_opname* code,
         const dd_edge& arg1, const dd_edge& arg2, const dd_edge& res);
+
+#endif
 
     /** Safely destroy the given binary operation.
         It should be unnecessary to call this directly.
@@ -76,11 +79,8 @@ class MEDDLY::binary_operation : public operation {
         virtual ~binary_operation();
 
     public:
-        inline bool matches(const expert_forest* arg1,
-            const expert_forest* arg2, const expert_forest* res) const
-        {
-            return (arg1 == arg1F && arg2 == arg2F && res == resF);
-        }
+        bool matches(const dd_edge &arg1, const dd_edge &arg2,
+                const dd_edge &res) const;
 
         // high-level front-end
 

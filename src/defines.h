@@ -209,17 +209,6 @@ namespace MEDDLY {
     */
     typedef unsigned long node_address;
 
-    /// Argument and result types for apply operations.
-    enum class opnd_type {
-        FOREST      = 0,
-        BOOLEAN     = 1,
-        INTEGER     = 2,
-        REAL        = 3,
-        HUGEINT     = 4,
-        FLOATVECT   = 5,
-        DOUBLEVECT  = 6
-    };
-
 };
 
 

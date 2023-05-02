@@ -46,6 +46,15 @@ MEDDLY::binary_operation::~binary_operation()
     unregisterInForest(resF);
 }
 
+bool MEDDLY::binary_operation::matches(const dd_edge &arg1,
+        const dd_edge &arg2, const dd_edge &res) const
+{
+    return (arg1.getForest() == arg1F
+        && arg2.getForest() == arg2F
+        && res.getForest() == resF);
+}
+
+
 void MEDDLY::binary_operation::compute(const dd_edge &ar1,
     const dd_edge &ar2, dd_edge &res)
 {
@@ -79,7 +88,7 @@ bool MEDDLY::binary_operation::checkForestCompatibility() const
 // *                                                                *
 // ******************************************************************
 
-
+/*
 MEDDLY::binary_operation*
 MEDDLY::getOperation(const binary_opname* code, const dd_edge& arg1,
     const dd_edge& arg2, const dd_edge& res)
@@ -87,4 +96,5 @@ MEDDLY::getOperation(const binary_opname* code, const dd_edge& arg1,
   return getOperation(code, (MEDDLY::expert_forest*) arg1.getForest(),
       (MEDDLY::expert_forest*) arg2.getForest(), (MEDDLY::expert_forest*) res.getForest());
 }
+*/
 

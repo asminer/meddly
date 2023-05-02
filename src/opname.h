@@ -27,46 +27,139 @@ namespace MEDDLY {
     class binary_opname;
     class specialized_opname;
 
+    class operation;
     class unary_operation;
     class binary_operation;
     class specialized_operation;
 
+    class ct_object;
+    class dd_edge;
+
     class initializer_list;
-    class expert_forest;
 
     void initialize(initializer_list *);
     void cleanup();
 
     class opname_init;      // hidden in opname.cc
 
+    /// Argument and result types for apply operations.
+    enum class opnd_type {
+        FOREST      = 0,
+        BOOLEAN     = 1,
+        INTEGER     = 2,
+        REAL        = 3,
+        HUGEINT     = 4,
+        FLOATVECT   = 5,
+        DOUBLEVECT  = 6
+    };
+
+    // ******************************************************************
+    // *                          Unary  apply                          *
+    // ******************************************************************
+
+    /** Apply a unary operator.
+        The operand and the result are not necessarily in the same forest,
+        but they must belong to forests that share the same domain.
+        This is useful, for instance, for copying a function to a new forest.
+            @param  op    Operator handle.
+            @param  a     Operand.
+            @param  c     Output parameter: the result, where \a c = \a op \a a.
+    */
+    void apply(unary_opname* (*op)(), const dd_edge &a, dd_edge &c);
+
+
+    /** Apply a unary operator.
+        For operators whose result is an integer.
+            @param  op    Operator handle.
+            @param  a     Operand.
+            @param  c     Output parameter: the result, where \a c = \a op \a a.
+    */
+    void apply(unary_opname* (*op)(), const dd_edge &a, long &c);
+
+    /** Apply a unary operator.
+        For operators whose result is a real.
+            @param  op    Operator handle.
+            @param  a     Operand.
+            @param  c     Output parameter: the result, where \a c = \a op \a a.
+    */
+    void apply(unary_opname* (*op)(), const dd_edge &a, double &c);
+
+    /** Apply a unary operator.
+        For operators whose result is a anything else.
+            @param  op    Operator handle.
+            @param  a     Operand.
+            @param  c     Output parameter: the result, where \a c = \a op \a a.
+    */
+    void apply(unary_opname* (*op)(), const dd_edge &a, opnd_type cr,
+        ct_object &c);
+
+#ifdef __GMP_H__
+    /** Apply a unary operator.
+        For operators whose result is an arbitrary-precision integer
+        (as supplied by the GNU MP library).
+            @param  op  Operator handle.
+            @param  a   Operand.
+            @param  c   Input: an initialized MP integer.
+                        Output parameter: the result, where \a c = \a op \a a.
+    */
+    void apply(unary_opname* (*op)(), const dd_edge &a, mpz_t &c);
+#endif
+
+    // ******************************************************************
+    // *                          Binary apply                          *
+    // ******************************************************************
+
+    /** Apply a binary operator.
+        \a a, \a b and \a c are not required to be in the same forest,
+        but they must have the same domain. The result will be in the
+        same forest as \a result. The operator decides the type of forest
+        for each \a dd_edge.
+        Useful, for example, for constructing comparisons
+        where the resulting type is "boolean" but the operators are not,
+        e.g., c = f EQUALS g.
+            @param  op    Operator handle.
+            @param  a     First operand.
+            @param  b     Second operand.
+            @param  c     Output parameter: the result,
+                          where \a c = \a a \a op \a b.
+    */
+    void apply(binary_opname* (*op)(), const dd_edge &a, const dd_edge &b,
+        dd_edge &c);
+
+
     // ******************************************************************
     // *                     Named unary operations                     *
     // ******************************************************************
 
     /// Copy a function across forests, with the same domain.
-    const unary_opname* COPY();
+    unary_opname* COPY();
 
     /// Unary operation.  Return the number of variable assignments
     /// so that the function evaluates to non-zero.
-    const unary_opname* CARDINALITY();
+    unary_opname* CARDINALITY();
 
     /// For BOOLEAN forests, flip the return values.
-    const unary_opname* COMPLEMENT();
+    unary_opname* COMPLEMENT();
 
     /// Find the largest value returned by the function.
-    const unary_opname* MAX_RANGE();
+    unary_opname* MAX_RANGE();
 
     /// Find the smallest value returned by the function.
-    const unary_opname* MIN_RANGE();
+    unary_opname* MIN_RANGE();
 
     /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
-    const unary_opname* CONVERT_TO_INDEX_SET();
+    unary_opname* CONVERT_TO_INDEX_SET();
 
     /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
-    const unary_opname* CYCLE();
+    unary_opname* CYCLE();
 
     /// Randomly select one state from a set of states
-    const unary_opname* SELECT();
+    unary_opname* SELECT();
+
+    // ******************************************************************
+    // *                    Named  binary operations                    *
+    // ******************************************************************
+
 };
 
 // ******************************************************************
@@ -82,28 +175,28 @@ namespace MEDDLY {
 */
 class MEDDLY::opname {
     public:
-        inline static const unary_opname* COPY() {
+        inline static unary_opname* COPY() {
             return _COPY;
         }
-        inline static const unary_opname* CARDINALITY() {
+        inline static unary_opname* CARDINALITY() {
             return _CARD;
         }
-        inline static const unary_opname* COMPLEMENT() {
+        inline static unary_opname* COMPLEMENT() {
             return _COMPL;
         }
-        inline static const unary_opname* MAX_RANGE() {
+        inline static unary_opname* MAX_RANGE() {
             return _MAXRANGE;
         }
-        inline static const unary_opname* MIN_RANGE() {
+        inline static unary_opname* MIN_RANGE() {
             return _MINRANGE;
         }
-        inline static const unary_opname* CONVERT_TO_INDEX_SET() {
+        inline static unary_opname* CONVERT_TO_INDEX_SET() {
             return _MDD2INDEX;
         }
-        inline static const unary_opname* CYCLE() {
+        inline static unary_opname* CYCLE() {
             return _CYCLE;
         }
-        inline static const unary_opname* SELECT() {
+        inline static unary_opname* SELECT() {
             return _SELECT;
         }
 
@@ -111,17 +204,23 @@ class MEDDLY::opname {
         opname(const char* n);
         virtual ~opname();
 
-        inline size_t getIndex() const { return index; }
+//        inline size_t getIndex() const { return index; }
         inline const char* getName() const { return name; }
 
-        inline static size_t nextIndex() { return next_index; }
+//        inline static size_t nextIndex() { return next_index; }
 
         static initializer_list* makeInitializer(initializer_list* prev);
 
+    protected:
+        void removeFromCache(operation* op);
+
+    protected:
+        operation* cache;
+
     private:
         const char* name;
-        size_t index;
-        static size_t next_index;
+//        size_t index;   // TBD - needed?
+//        static size_t next_index;
 
     private:
         static unary_opname* _COPY;
@@ -151,11 +250,18 @@ class MEDDLY::unary_opname : public opname {
         unary_opname(const char* n);
         virtual ~unary_opname();
 
+        unary_operation* getOperation(const dd_edge &arg, const dd_edge &res);
+        unary_operation* getOperation(const dd_edge &arg, opnd_type res);
+
+        void removeOperationFromCache(unary_operation* op);
+
+    protected:
         virtual unary_operation*
-            buildOperation(expert_forest* arg, expert_forest* res) const;
+            buildOperation(const dd_edge &arg, const dd_edge &res) const;
 
         virtual unary_operation*
-            buildOperation(expert_forest* arg, opnd_type res) const;
+            buildOperation(const dd_edge &arg, opnd_type res) const;
+
 };
 
 // ******************************************************************
@@ -170,8 +276,14 @@ class MEDDLY::binary_opname : public opname {
         binary_opname(const char* n);
         virtual ~binary_opname();
 
-        virtual binary_operation* buildOperation(expert_forest* arg1,
-            expert_forest* arg2, expert_forest* res) const = 0;
+        binary_operation* getOperation(const dd_edge &arg1,
+                const dd_edge &arg2, const dd_edge &res);
+
+        void removeOperationFromCache(binary_operation* op);
+
+    protected:
+        virtual binary_operation* buildOperation(const dd_edge &arg1,
+            const dd_edge &arg2, const dd_edge &res) const = 0;
 };
 
 

@@ -62,9 +62,9 @@ namespace MEDDLY {
   bool libraryRunning = 0;
 
   // cache of operations
-  operation** op_cache = 0;
+  // operation** op_cache = 0;
   // size of cache
-  int op_cache_size = 0;
+  // int op_cache_size = 0;
 
   // Monolithic compute table, if used
   compute_table* operation::Monolithic_CT = 0;
@@ -100,6 +100,8 @@ namespace MEDDLY {
 //----------------------------------------------------------------------
 // front end - unary operations
 //----------------------------------------------------------------------
+
+/*
 
 MEDDLY::unary_operation* MEDDLY::getOperation(const unary_opname* code,
   expert_forest* arg, expert_forest* res)
@@ -223,6 +225,9 @@ void MEDDLY::removeOperationFromCache(operation* op)
   curr->setNext(0);
 }
 
+*/
+
+/*
 void MEDDLY::apply(const unary_opname* (*code)(), const dd_edge &a, dd_edge &c)
 {
   if (!libraryRunning)
@@ -274,6 +279,7 @@ void MEDDLY::apply(const binary_opname* code, const dd_edge &a,
   binary_operation* op = getOperation(code, a, b, c);
   op->computeTemp(a, b, c);
 }
+*/
 
 //----------------------------------------------------------------------
 // front end - create and destroy objects
@@ -351,11 +357,13 @@ void MEDDLY::initialize(initializer_list* L)
   meddlyInitializers = L;
 
   // set up operation cache
+/*
   op_cache_size = opname::nextIndex();
   op_cache = new operation*[op_cache_size];
   for (int i=0; i<op_cache_size; i++) {
     op_cache[i] = 0;
   }
+  */
 
   libraryRunning = 1;
 }
@@ -384,8 +392,10 @@ void MEDDLY::cleanup()
   domain::deleteDomList();
 
   // clean up operation cache
+  /*
   delete[] op_cache;
   op_cache = 0;
+  */
 
   // clean up recycled unpacked nodes
   unpacked_node::freeRecycled();
