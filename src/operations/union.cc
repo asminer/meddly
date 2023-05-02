@@ -537,8 +537,8 @@ bool MEDDLY::union_min_evplus_mxd::checkTerminals(long aev, node_handle a, long 
 class MEDDLY::union_opname : public binary_opname {
   public:
     union_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+    virtual binary_operation* buildOperation(const dd_edge &a1,
+      const dd_edge &a2, const dd_edge &r) const;
 };
 
 MEDDLY::union_opname::union_opname()
@@ -547,9 +547,13 @@ MEDDLY::union_opname::union_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::union_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r) const
+MEDDLY::union_opname::buildOperation(const dd_edge &e1, const dd_edge &e2,
+  const dd_edge &er) const
 {
+    expert_forest* a1 = static_cast <expert_forest*> (e1.getForest());
+    expert_forest* a2 = static_cast <expert_forest*> (e2.getForest());
+    expert_forest*  r = static_cast <expert_forest*> (er.getForest());
+
   if (0==a1 || 0==a2 || 0==r) return 0;
 
   if (

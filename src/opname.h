@@ -37,9 +37,6 @@ namespace MEDDLY {
 
     class initializer_list;
 
-    void initialize(initializer_list *);
-    void cleanup();
-
     class opname_init;      // hidden in opname.cc
 
     /// Argument and result types for apply operations.
@@ -52,6 +49,15 @@ namespace MEDDLY {
         FLOATVECT   = 5,
         DOUBLEVECT  = 6
     };
+
+    // ******************************************************************
+    // *                    Wrapper for GMP integers                    *
+    // ******************************************************************
+
+#ifdef __GMP_H__
+    ct_object& get_mpz_wrapper();
+    void unwrap(const ct_object &, mpz_t &value);
+#endif
 
     // ******************************************************************
     // *                          Unary  apply                          *
@@ -106,7 +112,11 @@ namespace MEDDLY {
             @param  c   Input: an initialized MP integer.
                         Output: the result, where \a c = \a op \a a.
     */
-    void apply(unary_opname* (*op)(), const dd_edge &a, mpz_t &c);
+    inline void apply(unary_opname* (*op)(), const dd_edge &a, mpz_t &c) {
+        ct_object& x = get_mpz_wrapper();
+        apply(op, a, opnd_type::HUGEINT, x);
+        unwrap(x, c);
+    }
 #endif
 
     // ******************************************************************
@@ -551,6 +561,38 @@ class MEDDLY::specialized_opname : public opname {
                         if autoDestroy() is set for the arguments.
         */
         virtual specialized_operation* buildOperation(arguments* a) const = 0;
+};
+
+// ******************************************************************
+// *                                                                *
+// *                      Old interface  stuff                      *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    unary_operation* getOperation(unary_opname* (*op)(),
+            const dd_edge &a, const dd_edge &c)
+    {
+        unary_opname* uop = op();
+        MEDDLY_DCASSERT(uop);
+        return uop->getOperation(a, c);
+    }
+
+    unary_operation* getOperation(unary_opname* (*op)(),
+            const dd_edge &arg, opnd_type res)
+    {
+        unary_opname* uop = op();
+        MEDDLY_DCASSERT(uop);
+        return uop->getOperation(arg, res);
+    }
+
+    binary_operation* getOperation(binary_opname* (*op)(),
+            const dd_edge &a1, const dd_edge &a2, const dd_edge &r)
+    {
+        binary_opname* bop = op();
+        MEDDLY_DCASSERT(bop);
+        return bop->getOperation(a1, a2, r);
+    }
 };
 
 #endif // #include guard

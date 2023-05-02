@@ -17,6 +17,7 @@
 */
 
 #include "defines.h"
+#include "operations/mpz_object.h"  // for mpz wrapper
 #include "opname.h"
 #include "error.h"
 
@@ -89,6 +90,29 @@ FindUnary(MEDDLY::operation* list, const MEDDLY::dd_edge &arg, const RT &res)
     }
     return nullptr;
 }
+
+// ******************************************************************
+// *                                                                *
+// *                     gmp  wrapper functions                     *
+// *                                                                *
+// ******************************************************************
+
+#ifdef HAVE_LIBGMP
+
+MEDDLY::ct_object& MEDDLY::get_mpz_wrapper()
+{
+    static MEDDLY::mpz_object foo;
+    return foo;
+}
+
+void MEDDLY::unwrap(const ct_object &x, mpz_t &value)
+{
+    using namespace MEDDLY;
+    const mpz_object &mx = static_cast <const mpz_object &> (x);
+    mx.copyInto(value);
+}
+
+#endif
 
 
 // ******************************************************************
@@ -560,15 +584,6 @@ void MEDDLY::apply(unary_opname* (*code)(), const dd_edge &a,
     unary_operation* op = opn->getOperation(a, cr);
     op->compute(a, c);
 }
-
-#ifdef __GMP_H__
-void MEDDLY::apply(const unary_opname* (*code)(), const dd_edge &a, mpz_t &c)
-{
-    ct_object& x = get_mpz_wrapper();
-    apply(op, a, opnd_type::HUGEINT, x);
-    unwrap(x, c);
-}
-#endif
 
 void MEDDLY::apply(binary_opname* (*code)(), const dd_edge &a,
     const dd_edge &b, dd_edge &c)

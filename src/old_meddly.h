@@ -83,15 +83,6 @@ namespace MEDDLY {
   class binary_operation;
 
   // ******************************************************************
-  // *                    miscellaneous  functions                    *
-  // ******************************************************************
-
-#ifdef __GMP_H__
-  ct_object& get_mpz_wrapper();
-  void unwrap(const ct_object &, mpz_t &value);
-#endif
-
-  // ******************************************************************
   // *                     Named unary operations                     *
   // ******************************************************************
 

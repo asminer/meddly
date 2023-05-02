@@ -17,14 +17,11 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "../defines.h"
 
 #ifdef HAVE_LIBGMP
 
 #include <gmp.h>
-#include "../defines.h"
 #include "../io.h"
 #include "../error.h"
 #include "mpz_object.h"
@@ -106,26 +103,6 @@ char* MEDDLY::mpz_object::buffer;
 size_t MEDDLY::mpz_object::bufsize;
 
 
-
-// ******************************************************************
-// *                                                                *
-// *                      mpz_object functions                      *
-// *                                                                *
-// ******************************************************************
-
-
-MEDDLY::ct_object& MEDDLY::get_mpz_wrapper()
-{
-    static MEDDLY::mpz_object foo;
-    return foo;
-}
-
-void MEDDLY::unwrap(const ct_object &x, mpz_t &value)
-{
-    using namespace MEDDLY;
-    const mpz_object &mx = static_cast <const mpz_object &> (x);
-    mx.copyInto(value);
-}
 
 #endif
 

@@ -26,8 +26,11 @@
 #include "../ct_entry_type.h"
 
 namespace MEDDLY {
+    class output;
+    class mpz_object;
+};
 
-class mpz_object : public ct_object {
+class MEDDLY::mpz_object : public ct_object {
     mpz_t value;
 public:
     mpz_object();
@@ -62,8 +65,6 @@ private:
     static size_t bufsize;   // for show().
     static void enlargeBuffer(size_t digits);
 };
-
-}
 
 #endif
 #endif
