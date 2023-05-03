@@ -32,8 +32,10 @@ namespace MEDDLY {
 
 class MEDDLY::builtin_initializer : public initializer_list {
 
+    /*
   numerical_opname* EXPLVECT_MATR_MULT;
   numerical_opname* MATR_EXPLVECT_MULT;
+  */
 
   satpregen_opname* SATURATION_FORWARD;
   satpregen_opname* SATURATION_BACKWARD;

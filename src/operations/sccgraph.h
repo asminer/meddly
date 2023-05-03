@@ -17,8 +17,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SCCGRAPH_H
-#define SCCGRAPH_H
+#ifndef MEDDLY_SCCGRAPH_H
+#define MEDDLY_SCCGRAPH_H
 
 #include "../io.h"
 

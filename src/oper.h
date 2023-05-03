@@ -36,8 +36,7 @@ namespace MEDDLY {
 
     /// Remove an existing operation from the operation cache.
     /// TBD: make this a static method inside class operation
-    /// Still in old_meddly.cc
-    void removeOperationFromCache(operation* );
+//    void removeOperationFromCache(operation* );
 
     /// Should not be called directly.
     /// TBD: make this a static method inside class operation
@@ -66,7 +65,7 @@ class MEDDLY::operation {
                                     Derived class constructors must register
                                     exactly this many entry types.
         */
-        operation(const opname* n, unsigned et_slots);
+        operation(opname* n, unsigned et_slots);
 
     protected:
         virtual ~operation();
@@ -88,6 +87,8 @@ class MEDDLY::operation {
         inline bool isMarkedForDeletion() const {
             return is_marked_for_deletion;
         }
+
+        void markForDeletion();
 
         //
         // List of operations; used as operation cache in opname classes
@@ -152,7 +153,6 @@ class MEDDLY::operation {
 
 
     protected:
-        void markForDeletion();
         void registerInForest(forest* f);
         void unregisterInForest(forest* f);
 
@@ -165,6 +165,8 @@ class MEDDLY::operation {
 
         void registerEntryType(unsigned slot, ct_entry_type* et);
         void buildCTs();
+
+        inline opname* getParent() { return theOpName; }
 
     private:
         // should ONLY be called during library cleanup.
@@ -204,7 +206,7 @@ class MEDDLY::operation {
 
     private:
 
-        const opname* theOpName;
+        opname* theOpName;
         unsigned oplist_index;
         bool is_marked_for_deletion;
 
@@ -235,10 +237,5 @@ class MEDDLY::operation {
 
 };
 
-// ******************************************************************
-// *                                                                *
-// *                   inlined  operation methods                   *
-// *                                                                *
-// ******************************************************************
 
 #endif // #include guard

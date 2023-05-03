@@ -4,7 +4,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -17,14 +17,14 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef COMP_EQ_H
-#define COMP_EQ_H
+#ifndef MEDDLY_COMP_EQ_H
+#define MEDDLY_COMP_EQ_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class binary_opname;
 
-  /// Set up a binary_opname for the "equal" operator.
-  binary_opname* initializeEQ();
+    /// Set up a binary_opname for the "equal" operator.
+    binary_opname* initializeEQ();
 }
 
 #endif

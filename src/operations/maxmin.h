@@ -17,8 +17,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MAXMIN_H
-#define MAXMIN_H
+#ifndef MEDDLY_MAXMIN_H
+#define MEDDLY_MAXMIN_H
 
 namespace MEDDLY {
   class binary_opname;

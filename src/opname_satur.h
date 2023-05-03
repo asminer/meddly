@@ -90,7 +90,7 @@ class MEDDLY::satpregen_opname : public specialized_opname {
     virtual ~satpregen_opname();
 
     /// Arguments should have type "pregen_relation".
-    virtual specialized_operation* buildOperation(arguments* a) const = 0;
+    virtual specialized_operation* buildOperation(arguments* a) = 0;
 
     /** Class for a partitioned transition relation, already known
         The relation can be partitioned "by events" or "by levels".
@@ -279,7 +279,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
     virtual ~satotf_opname();
 
     /// Arguments should have type "otf_relation", below
-    virtual specialized_operation* buildOperation(arguments* a) const = 0;
+    virtual specialized_operation* buildOperation(arguments* a) = 0;
 
     class otf_relation;
 
@@ -724,7 +724,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
     virtual ~satimpl_opname();
 
     /// Arguments should have type "implicit_relation", below
-    virtual specialized_operation* buildOperation(arguments* a) const;
+    virtual specialized_operation* buildOperation(arguments* a);
 
   public:
 
@@ -1074,7 +1074,7 @@ class MEDDLY::sathyb_opname: public specialized_opname {
     virtual ~sathyb_opname();
 
     /// Arguments should have type "implicit_relation", below
-    virtual specialized_operation* buildOperation(arguments* a) const;
+    virtual specialized_operation* buildOperation(arguments* a);
 
   public:
 

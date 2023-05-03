@@ -1439,7 +1439,7 @@ protected:
 
 class MEDDLY::common_hyb_dfs_by_events_mt : public specialized_operation {
 public:
-  common_hyb_dfs_by_events_mt(const sathyb_opname* opcode,
+  common_hyb_dfs_by_events_mt(sathyb_opname* opcode,
                                sathyb_opname::hybrid_relation* rel);
   virtual ~common_hyb_dfs_by_events_mt();
 
@@ -1598,7 +1598,7 @@ protected:
 
 class MEDDLY::forwd_hyb_dfs_by_events_mt : public common_hyb_dfs_by_events_mt {
 public:
-  forwd_hyb_dfs_by_events_mt(const sathyb_opname* opcode,
+  forwd_hyb_dfs_by_events_mt(sathyb_opname* opcode,
                               sathyb_opname::hybrid_relation* rel);
 protected:
   virtual void saturateHelper(unpacked_node& nb);
@@ -1614,7 +1614,7 @@ protected:
 
 
 MEDDLY::forwd_hyb_dfs_by_events_mt::forwd_hyb_dfs_by_events_mt(
-                                                                 const sathyb_opname* opcode,
+                                                                 sathyb_opname* opcode,
                                                                  sathyb_opname::hybrid_relation* rel)
 : common_hyb_dfs_by_events_mt(opcode, rel)
 {
@@ -2065,7 +2065,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
 // ******************************************************************
 
 MEDDLY::common_hyb_dfs_by_events_mt::common_hyb_dfs_by_events_mt(
-                                                                   const sathyb_opname* opcode,
+                                                                   sathyb_opname* opcode,
                                                                    sathyb_opname::hybrid_relation* relation)
 : specialized_operation(opcode, 1)
 {
@@ -2212,7 +2212,7 @@ MEDDLY::sathyb_opname* MEDDLY::initHybSaturationForward()
 
 
 MEDDLY::specialized_operation*
-MEDDLY::sathyb_opname::buildOperation(arguments* a) const
+MEDDLY::sathyb_opname::buildOperation(arguments* a)
 {
 
   hybrid_relation* rel = dynamic_cast<hybrid_relation*>(a);

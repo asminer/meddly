@@ -40,7 +40,7 @@ namespace MEDDLY {
 template <typename T>
 class morethan_mdd : public generic_binary_mdd {
   public:
-    morethan_mdd(const binary_opname* opcode, expert_forest* arg1,
+    morethan_mdd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res)
       : generic_binary_mdd(opcode, arg1, arg2, res) { }
 
@@ -75,7 +75,7 @@ namespace MEDDLY {
 template <typename T>
 class morethan_mxd : public generic_binbylevel_mxd {
   public:
-    morethan_mxd(const binary_opname* opcode, expert_forest* arg1,
+    morethan_mxd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res)
       : generic_binbylevel_mxd(opcode, arg1, arg2, res) { }
 
@@ -109,7 +109,7 @@ class MEDDLY::morethan_opname : public binary_opname {
   public:
     morethan_opname();
     virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+      expert_forest* a2, expert_forest* r);
 };
 
 MEDDLY::morethan_opname::morethan_opname()
@@ -119,7 +119,7 @@ MEDDLY::morethan_opname::morethan_opname()
 
 MEDDLY::binary_operation*
 MEDDLY::morethan_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r) const
+  expert_forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 

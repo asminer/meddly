@@ -17,8 +17,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef UNION_H
-#define UNION_H
+#ifndef MEDDLY_UNION_H
+#define MEDDLY_UNION_H
 
 namespace MEDDLY {
   class binary_opname;

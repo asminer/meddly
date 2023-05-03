@@ -17,8 +17,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef VECT_MATR_H
-#define VECT_MATR_H
+#ifndef MEDDLY_VECT_MATR_H
+#define MEDDLY_VECT_MATR_H
 
 namespace MEDDLY {
   class numerical_opname;

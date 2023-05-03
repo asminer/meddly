@@ -60,8 +60,6 @@
 #include "sat_impl.h"
 #include "sat_hyb.h"
 
-#include "vect_matr.h"
-
 #include "mm_mult.h"
 
 #include "constrained.h"
@@ -114,8 +112,10 @@ namespace MEDDLY {
 
   // numerical operation "codes"
 
+  /*
   const numerical_opname* EXPLVECT_MATR_MULT = 0;
   const numerical_opname* MATR_EXPLVECT_MULT = 0;
+  */
 
   // saturation operation "codes"
 
@@ -152,8 +152,10 @@ void MEDDLY::builtin_initializer::setup()
 {
 
 
+    /*
   initP(MEDDLY::EXPLVECT_MATR_MULT, EXPLVECT_MATR_MULT, initExplVectorMatrixMult()  );
   initP(MEDDLY::MATR_EXPLVECT_MULT, MATR_EXPLVECT_MULT, initMatrixExplVectorMult()  );
+  */
 
   initP(MEDDLY::SATURATION_FORWARD,   SATURATION_FORWARD,   initSaturationForward()   );
   initP(MEDDLY::SATURATION_BACKWARD,  SATURATION_BACKWARD,  initSaturationBackward()  );

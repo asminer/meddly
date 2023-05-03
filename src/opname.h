@@ -482,10 +482,10 @@ class MEDDLY::unary_opname : public opname {
 
     protected:
         virtual unary_operation*
-            buildOperation(const dd_edge &arg, const dd_edge &res) const;
+            buildOperation(const dd_edge &arg, const dd_edge &res);
 
         virtual unary_operation*
-            buildOperation(const dd_edge &arg, opnd_type res) const;
+            buildOperation(const dd_edge &arg, opnd_type res);
 
 };
 
@@ -509,7 +509,7 @@ class MEDDLY::binary_opname : public opname {
     protected:
         // OLD interface
         virtual binary_operation* buildOperation(expert_forest* arg1,
-            expert_forest* arg2, expert_forest* res) const = 0;
+            expert_forest* arg2, expert_forest* res) = 0;
 };
 
 
@@ -565,7 +565,7 @@ class MEDDLY::specialized_opname : public opname {
             @param  a   Arguments.  Will be destroyed when we are finished,
                         if autoDestroy() is set for the arguments.
         */
-        virtual specialized_operation* buildOperation(arguments* a) const = 0;
+        virtual specialized_operation* buildOperation(arguments* a) = 0;
 };
 
 // ******************************************************************

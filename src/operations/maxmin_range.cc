@@ -51,7 +51,7 @@ namespace MEDDLY {
 /// Abstract base class: max or min range that returns an integer.
 class MEDDLY::range_int : public unary_operation {
   public:
-    range_int(const unary_opname* oc, expert_forest* arg);
+    range_int(unary_opname* oc, expert_forest* arg);
 
   protected:
     inline ct_entry_key*
@@ -76,7 +76,7 @@ class MEDDLY::range_int : public unary_operation {
     }
 };
 
-MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
+MEDDLY::range_int::range_int(unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, opnd_type::INTEGER)
 {
   ct_entry_type* et = new ct_entry_type(oc->getName(), "N:I");
@@ -94,7 +94,7 @@ MEDDLY::range_int::range_int(const unary_opname* oc, expert_forest* arg)
 /// Abstract base class: max or min range that returns a real.
 class MEDDLY::range_real : public unary_operation {
   public:
-    range_real(const unary_opname* oc, expert_forest* arg);
+    range_real(unary_opname* oc, expert_forest* arg);
 
   protected:
     inline ct_entry_key* findResult(node_handle a, float &b) {
@@ -117,7 +117,7 @@ class MEDDLY::range_real : public unary_operation {
     }
 };
 
-MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
+MEDDLY::range_real::range_real(unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, opnd_type::REAL)
 {
   ct_entry_type* et = new ct_entry_type(oc->getName(), "N:F");
@@ -135,7 +135,7 @@ MEDDLY::range_real::range_real(const unary_opname* oc, expert_forest* arg)
 /// Max range, returns an integer
 class MEDDLY::maxrange_int : public range_int {
 public:
-  maxrange_int(const unary_opname* oc, expert_forest* arg)
+  maxrange_int(unary_opname* oc, expert_forest* arg)
     : range_int(oc, arg) { }
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute_r(arg.getNode());
@@ -178,7 +178,7 @@ int MEDDLY::maxrange_int::compute_r(node_handle a)
 /// Min range, returns an integer
 class MEDDLY::minrange_int : public range_int {
 public:
-  minrange_int(const unary_opname* oc, expert_forest* arg)
+  minrange_int(unary_opname* oc, expert_forest* arg)
     : range_int(oc, arg) { }
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute_r(arg.getNode());
@@ -223,7 +223,7 @@ int MEDDLY::minrange_int::compute_r(node_handle a)
 /// Max range, returns a real
 class MEDDLY::maxrange_real : public range_real {
 public:
-  maxrange_real(const unary_opname* oc, expert_forest* arg)
+  maxrange_real(unary_opname* oc, expert_forest* arg)
     : range_real(oc, arg) { }
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute_r(arg.getNode());
@@ -268,7 +268,7 @@ float MEDDLY::maxrange_real::compute_r(node_handle a)
 /// Min range, returns a real
 class MEDDLY::minrange_real : public range_real {
 public:
-  minrange_real(const unary_opname* oc, expert_forest* arg)
+  minrange_real(unary_opname* oc, expert_forest* arg)
     : range_real(oc, arg) { }
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute_r(arg.getNode());
@@ -314,7 +314,7 @@ class MEDDLY::maxrange_opname : public unary_opname {
   public:
     maxrange_opname();
     virtual unary_operation*
-      buildOperation(expert_forest* ar, opnd_type res) const;
+      buildOperation(expert_forest* ar, opnd_type res);
 };
 
 MEDDLY::maxrange_opname::maxrange_opname() : unary_opname("Max_range")
@@ -322,7 +322,7 @@ MEDDLY::maxrange_opname::maxrange_opname() : unary_opname("Max_range")
 }
 
 MEDDLY::unary_operation*
-MEDDLY::maxrange_opname::buildOperation(expert_forest* ar, opnd_type res) const
+MEDDLY::maxrange_opname::buildOperation(expert_forest* ar, opnd_type res)
 {
   if (0==ar) return 0;
 
@@ -357,7 +357,7 @@ class MEDDLY::minrange_opname : public unary_opname {
   public:
     minrange_opname();
     virtual unary_operation*
-      buildOperation(expert_forest* ar, opnd_type res) const;
+      buildOperation(expert_forest* ar, opnd_type res);
 };
 
 MEDDLY::minrange_opname::minrange_opname() : unary_opname("Min_range")
@@ -365,7 +365,7 @@ MEDDLY::minrange_opname::minrange_opname() : unary_opname("Min_range")
 }
 
 MEDDLY::unary_operation*
-MEDDLY::minrange_opname::buildOperation(expert_forest* ar, opnd_type res) const
+MEDDLY::minrange_opname::buildOperation(expert_forest* ar, opnd_type res)
 {
   if (0==ar) return 0;
 

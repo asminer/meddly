@@ -68,7 +68,7 @@ namespace MEDDLY {
 //  Abstract base class: cardinality that returns an integer
 class MEDDLY::card_int : public unary_operation {
 public:
-  card_int(const unary_opname* oc, expert_forest* arg);
+  card_int(unary_opname* oc, expert_forest* arg);
 
 protected:
   static inline void overflow_acc(long &a, long x) {
@@ -82,7 +82,7 @@ protected:
   }
 };
 
-MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
+MEDDLY::card_int::card_int(unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, opnd_type::INTEGER)
 {
   ct_entry_type* et = new ct_entry_type(oc->getName(), "N:L");
@@ -100,7 +100,7 @@ MEDDLY::card_int::card_int(const unary_opname* oc, expert_forest* arg)
 //  Cardinality on MDDs, returning integer
 class MEDDLY::card_mdd_int : public card_int {
 public:
-  card_mdd_int(const unary_opname* oc, expert_forest* arg)
+  card_mdd_int(unary_opname* oc, expert_forest* arg)
     : card_int(oc, arg) { }
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
@@ -163,7 +163,7 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
 //  Cardinality on MxDs, returning integer
 class MEDDLY::card_mxd_int : public card_int {
 public:
-  card_mxd_int(const unary_opname* oc, expert_forest* arg)
+  card_mxd_int(unary_opname* oc, expert_forest* arg)
     : card_int(oc, arg) { }
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
@@ -231,10 +231,10 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
 //  Abstract base class: cardinality that returns a real
 class MEDDLY::card_real : public unary_operation {
 public:
-  card_real(const unary_opname* oc, expert_forest* arg);
+  card_real(unary_opname* oc, expert_forest* arg);
 };
 
-MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
+MEDDLY::card_real::card_real(unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, opnd_type::REAL)
 {
   ct_entry_type* et = new ct_entry_type(oc->getName(), "N:D");
@@ -252,7 +252,7 @@ MEDDLY::card_real::card_real(const unary_opname* oc, expert_forest* arg)
 //  Cardinality on MDDs, returning real
 class MEDDLY::card_mdd_real : public card_real {
 public:
-  card_mdd_real(const unary_opname* oc, expert_forest* arg)
+  card_mdd_real(unary_opname* oc, expert_forest* arg)
     : card_real(oc, arg) { }
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
@@ -316,7 +316,7 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
 //  Cardinality on MxDs, returning real
 class MEDDLY::card_mxd_real : public card_real {
 public:
-  card_mxd_real(const unary_opname* oc, expert_forest* arg)
+  card_mxd_real(unary_opname* oc, expert_forest* arg)
     : card_real(oc, arg) { }
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
@@ -389,10 +389,10 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
 //  Abstract base class: cardinality that returns large (mpz) integers.
 class MEDDLY::card_mpz : public unary_operation {
 public:
-  card_mpz(const unary_opname* oc, expert_forest* arg);
+  card_mpz(unary_opname* oc, expert_forest* arg);
 };
 
-MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
+MEDDLY::card_mpz::card_mpz(unary_opname* oc, expert_forest* arg)
  : unary_operation(oc, 1, arg, opnd_type::HUGEINT)
 {
   ct_entry_type* et = new ct_entry_type(oc->getName(), "N:G");
@@ -414,7 +414,7 @@ MEDDLY::card_mpz::card_mpz(const unary_opname* oc, expert_forest* arg)
 /// Cardinality of MDDs, returning large (mpz) integers.
 class MEDDLY::card_mdd_mpz : public card_mpz {
 public:
-  card_mdd_mpz(const unary_opname* oc, expert_forest* arg)
+  card_mdd_mpz(unary_opname* oc, expert_forest* arg)
     : card_mpz(oc, arg) { }
   virtual void compute(const dd_edge& a, ct_object &res) {
     mpz_object& mcard = dynamic_cast <mpz_object &> (res);
@@ -499,7 +499,7 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 /// Cardinality of MxDs, returning large (mpz) integers.
 class MEDDLY::card_mxd_mpz : public card_mpz {
 public:
-  card_mxd_mpz(const unary_opname* oc, expert_forest* arg)
+  card_mxd_mpz(unary_opname* oc, expert_forest* arg)
     : card_mpz(oc, arg) { }
   virtual void compute(const dd_edge& a, ct_object &res) {
     mpz_object& mcard = dynamic_cast <mpz_object &> (res);
@@ -589,7 +589,7 @@ class MEDDLY::card_opname : public unary_opname {
   public:
     card_opname();
     virtual unary_operation*
-      buildOperation(expert_forest* ar, opnd_type res) const;
+      buildOperation(expert_forest* ar, opnd_type res);
 };
 
 MEDDLY::card_opname::card_opname()
@@ -598,7 +598,7 @@ MEDDLY::card_opname::card_opname()
 }
 
 MEDDLY::unary_operation*
-MEDDLY::card_opname::buildOperation(expert_forest* arg, opnd_type res) const
+MEDDLY::card_opname::buildOperation(expert_forest* arg, opnd_type res)
 {
   if (0==arg) return 0;
   switch (res) {

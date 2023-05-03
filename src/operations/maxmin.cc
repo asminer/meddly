@@ -44,14 +44,14 @@ namespace MEDDLY {
 
 class MEDDLY::maximum_mdd : public generic_binary_mdd {
   public:
-    maximum_mdd(const binary_opname* opcode, expert_forest* arg1,
+    maximum_mdd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::maximum_mdd::maximum_mdd(const binary_opname* opcode,
+MEDDLY::maximum_mdd::maximum_mdd(binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
@@ -87,14 +87,14 @@ bool MEDDLY::maximum_mdd::checkTerminals(node_handle a, node_handle b, node_hand
 
 class MEDDLY::maximum_mxd : public generic_binary_mxd {
   public:
-    maximum_mxd(const binary_opname* opcode, expert_forest* arg1,
+    maximum_mxd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::maximum_mxd::maximum_mxd(const binary_opname* opcode,
+MEDDLY::maximum_mxd::maximum_mxd(binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
@@ -132,7 +132,7 @@ class MEDDLY::maximum_opname : public binary_opname {
   public:
     maximum_opname();
     virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+      expert_forest* a2, expert_forest* r);
 };
 
 MEDDLY::maximum_opname::maximum_opname()
@@ -142,7 +142,7 @@ MEDDLY::maximum_opname::maximum_opname()
 
 MEDDLY::binary_operation*
 MEDDLY::maximum_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r) const
+  expert_forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
@@ -179,14 +179,14 @@ MEDDLY::maximum_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 
 class MEDDLY::minimum_mdd : public generic_binary_mdd {
   public:
-    minimum_mdd(const binary_opname* opcode, expert_forest* arg1,
+    minimum_mdd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::minimum_mdd::minimum_mdd(const binary_opname* opcode,
+MEDDLY::minimum_mdd::minimum_mdd(binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
@@ -222,14 +222,14 @@ bool MEDDLY::minimum_mdd::checkTerminals(node_handle a, node_handle b, node_hand
 
 class MEDDLY::minimum_mxd : public generic_binary_mxd {
   public:
-    minimum_mxd(const binary_opname* opcode, expert_forest* arg1,
+    minimum_mxd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::minimum_mxd::minimum_mxd(const binary_opname* opcode,
+MEDDLY::minimum_mxd::minimum_mxd(binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
@@ -267,7 +267,7 @@ class MEDDLY::minimum_opname : public binary_opname {
   public:
     minimum_opname();
     virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+      expert_forest* a2, expert_forest* r);
 };
 
 MEDDLY::minimum_opname::minimum_opname()
@@ -277,7 +277,7 @@ MEDDLY::minimum_opname::minimum_opname()
 
 MEDDLY::binary_operation*
 MEDDLY::minimum_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r) const
+  expert_forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 

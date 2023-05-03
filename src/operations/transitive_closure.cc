@@ -34,7 +34,7 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::common_transitive_closure::common_transitive_closure(const constrained_opname* code,
+MEDDLY::common_transitive_closure::common_transitive_closure(constrained_opname* code,
   unsigned slots,
   expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res)
   : specialized_operation(code, slots)
@@ -80,7 +80,7 @@ bool MEDDLY::common_transitive_closure::checkForestCompatibility() const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::transitive_closure_forwd_bfs::transitive_closure_forwd_bfs(const constrained_opname* code,
+MEDDLY::transitive_closure_forwd_bfs::transitive_closure_forwd_bfs(constrained_opname* code,
   expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res)
   : common_transitive_closure(code, 0, cons, tc, trans, res)
 {
@@ -167,7 +167,7 @@ MEDDLY::transitive_closure_dfs_opname::transitive_closure_dfs_opname()
 {
 }
 
-MEDDLY::specialized_operation* MEDDLY::transitive_closure_dfs_opname::buildOperation(arguments* a) const
+MEDDLY::specialized_operation* MEDDLY::transitive_closure_dfs_opname::buildOperation(arguments* a)
 {
   constrained_opname::constrained_args* args = dynamic_cast<constrained_opname::constrained_args*>(a);
   return new transitive_closure_forwd_dfs(this,
@@ -183,7 +183,7 @@ MEDDLY::specialized_operation* MEDDLY::transitive_closure_dfs_opname::buildOpera
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::transitive_closure_dfs::transitive_closure_dfs(const constrained_opname* code,
+MEDDLY::transitive_closure_dfs::transitive_closure_dfs(constrained_opname* code,
   expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res)
   : common_transitive_closure(code, 1, cons, tc, trans, res)
 {
@@ -382,7 +382,7 @@ void MEDDLY::transitive_closure_dfs::_compute(int aev, node_handle a, int bev, n
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::transitive_closure_forwd_dfs::transitive_closure_forwd_dfs(const constrained_opname* code,
+MEDDLY::transitive_closure_forwd_dfs::transitive_closure_forwd_dfs(constrained_opname* code,
   expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res)
   : transitive_closure_dfs(code, cons, tc, trans, res)
 {

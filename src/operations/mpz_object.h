@@ -17,8 +17,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MPZ_OBJECT
-#define MPZ_OBJECT
+#ifndef MEDDLY_MPZ_OBJECT
+#define MEDDLY_MPZ_OBJECT
 
 #ifdef HAVE_LIBGMP
 #include <gmp.h>

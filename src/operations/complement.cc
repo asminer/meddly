@@ -44,7 +44,7 @@ namespace MEDDLY {
 
 class MEDDLY::compl_mdd : public unary_operation {
   public:
-    compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
+    compl_mdd(unary_opname* oc, expert_forest* arg, expert_forest* res);
 
     virtual void computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag);
 
@@ -74,7 +74,7 @@ class MEDDLY::compl_mdd : public unary_operation {
 };
 
 MEDDLY::compl_mdd
-::compl_mdd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
+::compl_mdd(unary_opname* oc, expert_forest* arg, expert_forest* res)
  : unary_operation(oc, 1, arg, res)
 {
   ct_entry_type* et = new ct_entry_type(oc->getName(), "N:N");
@@ -145,7 +145,7 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
 
 class MEDDLY::compl_mxd : public unary_operation {
   public:
-    compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res);
+    compl_mxd(unary_opname* oc, expert_forest* arg, expert_forest* res);
 
     virtual void computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag);
 
@@ -153,7 +153,7 @@ class MEDDLY::compl_mxd : public unary_operation {
 };
 
 MEDDLY::compl_mxd
-::compl_mxd(const unary_opname* oc, expert_forest* arg, expert_forest* res)
+::compl_mxd(unary_opname* oc, expert_forest* arg, expert_forest* res)
  : unary_operation(oc, 1, arg, res)
 {
   ct_entry_type* et = new ct_entry_type(oc->getName(), "IN:N");
@@ -259,7 +259,7 @@ class MEDDLY::compl_opname : public unary_opname {
   public:
     compl_opname();
     virtual unary_operation*
-      buildOperation(expert_forest* ar, expert_forest* res) const;
+      buildOperation(expert_forest* ar, expert_forest* res);
 };
 
 MEDDLY::compl_opname::compl_opname()
@@ -269,7 +269,7 @@ MEDDLY::compl_opname::compl_opname()
 
 MEDDLY::unary_operation*
 MEDDLY::compl_opname
-::buildOperation(expert_forest* arg, expert_forest* res) const
+::buildOperation(expert_forest* arg, expert_forest* res)
 {
   if (0==arg || 0==res) return 0;
 

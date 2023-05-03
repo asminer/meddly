@@ -57,7 +57,7 @@ namespace MEDDLY {
 /// Abstract base class for all matrix-matrix multiplication operations.
 class MEDDLY::mm_mult_op : public binary_operation {
   public:
-    mm_mult_op(const binary_opname* opcode, expert_forest* arg1,
+    mm_mult_op(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
     inline ct_entry_key*
@@ -88,7 +88,7 @@ class MEDDLY::mm_mult_op : public binary_operation {
     virtual node_handle compute_rec(node_handle a, node_handle b) = 0;
 };
 
-MEDDLY::mm_mult_op::mm_mult_op(const binary_opname* oc, expert_forest* a1,
+MEDDLY::mm_mult_op::mm_mult_op(binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res, binary_operation* acc)
 : binary_operation(oc, 1, a1, a2, res)
 {
@@ -132,7 +132,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_op::compute(node_handle a, node_handle b)
 */
 class MEDDLY::mm_mult_mxd: public mm_mult_op {
   public:
-    mm_mult_mxd(const binary_opname* opcode, expert_forest* arg1,
+    mm_mult_mxd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
   protected:
@@ -140,7 +140,7 @@ class MEDDLY::mm_mult_mxd: public mm_mult_op {
     virtual node_handle processTerminals(node_handle a, node_handle b) = 0;
 };
 
-MEDDLY::mm_mult_mxd::mm_mult_mxd(const binary_opname* oc,
+MEDDLY::mm_mult_mxd::mm_mult_mxd(binary_opname* oc,
   expert_forest* a1, expert_forest* a2, expert_forest* res,
   binary_operation* acc)
 : mm_mult_op(oc, a1, a2, res, acc)
@@ -335,7 +335,7 @@ namespace MEDDLY {
   template <typename RTYPE>
   class mm_mult_mt : public mm_mult_mxd {
     public:
-      mm_mult_mt(const binary_opname* opcode, expert_forest* arg1,
+      mm_mult_mt(binary_opname* opcode, expert_forest* arg1,
         expert_forest* arg2, expert_forest* res, binary_operation* acc)
         : mm_mult_mxd(opcode, arg1, arg2, res, acc) { }
 
@@ -376,7 +376,7 @@ class MEDDLY::mm_mult_opname : public binary_opname {
   public:
     mm_mult_opname();
     virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+      expert_forest* a2, expert_forest* r);
 };
 
 MEDDLY::mm_mult_opname::mm_mult_opname()
@@ -386,7 +386,7 @@ MEDDLY::mm_mult_opname::mm_mult_opname()
 
 MEDDLY::binary_operation*
 MEDDLY::mm_mult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r) const
+  expert_forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 

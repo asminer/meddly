@@ -53,6 +53,7 @@ namespace MEDDLY {
 
   class forwd_dfs_opname;
   class bckwd_dfs_opname;
+
 };
 
 
@@ -69,7 +70,7 @@ class MEDDLY::saturation_opname : public unary_opname {
   public:
     saturation_opname();
 
-    static const saturation_opname* getInstance();
+    static saturation_opname* getInstance();
 
 };
 
@@ -80,7 +81,7 @@ MEDDLY::saturation_opname::saturation_opname()
 {
 }
 
-const MEDDLY::saturation_opname* MEDDLY::saturation_opname::getInstance()
+MEDDLY::saturation_opname* MEDDLY::saturation_opname::getInstance()
 {
   if (0==instance) instance = new saturation_opname;
   return instance;
@@ -174,7 +175,7 @@ class MEDDLY::saturation_evplus_op : public unary_operation {
 
 class MEDDLY::common_dfs : public binary_operation {
   public:
-    common_dfs(const binary_opname* opcode, expert_forest* arg1,
+    common_dfs(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
   protected:
@@ -295,7 +296,7 @@ class MEDDLY::common_dfs : public binary_operation {
 
 class MEDDLY::common_dfs_mt : public common_dfs {
   public:
-    common_dfs_mt(const binary_opname* opcode, expert_forest* arg1,
+    common_dfs_mt(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
@@ -334,7 +335,7 @@ class MEDDLY::common_dfs_mt : public common_dfs {
 
 class MEDDLY::common_dfs_evplus : public common_dfs {
   public:
-    common_dfs_evplus(const binary_opname* opcode, expert_forest* arg1,
+    common_dfs_evplus(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
@@ -572,7 +573,7 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::common_dfs::common_dfs(const binary_opname* oc, expert_forest* a1,
+MEDDLY::common_dfs::common_dfs(binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res)
 : binary_operation(oc, 1, a1, a2, res)
 {
@@ -734,7 +735,7 @@ void MEDDLY::common_dfs::charbuf::resize(unsigned sz)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::common_dfs_mt::common_dfs_mt(const binary_opname* oc, expert_forest* a1,
+MEDDLY::common_dfs_mt::common_dfs_mt(binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res)
 : common_dfs(oc, a1, a2, res)
 {
@@ -790,14 +791,14 @@ void MEDDLY::common_dfs_mt
 
 class MEDDLY::forwd_dfs_mt : public common_dfs_mt {
   public:
-    forwd_dfs_mt(const binary_opname* opcode, expert_forest* arg1,
+    forwd_dfs_mt(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
   protected:
     virtual void saturateHelper(unpacked_node &mdd);
     node_handle recFire(node_handle mdd, node_handle mxd);
 };
 
-MEDDLY::forwd_dfs_mt::forwd_dfs_mt(const binary_opname* opcode,
+MEDDLY::forwd_dfs_mt::forwd_dfs_mt(binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : common_dfs_mt(opcode, arg1, arg2, res)
 {
@@ -1024,14 +1025,14 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
 
 class MEDDLY::bckwd_dfs_mt : public common_dfs_mt {
   public:
-    bckwd_dfs_mt(const binary_opname* opcode, expert_forest* arg1,
+    bckwd_dfs_mt(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
   protected:
     virtual void saturateHelper(unpacked_node& mdd);
     node_handle recFire(node_handle mdd, node_handle mxd);
 };
 
-MEDDLY::bckwd_dfs_mt::bckwd_dfs_mt(const binary_opname* opcode,
+MEDDLY::bckwd_dfs_mt::bckwd_dfs_mt(binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : common_dfs_mt(opcode, arg1, arg2, res)
 {
@@ -1229,7 +1230,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::common_dfs_evplus::common_dfs_evplus(const binary_opname* oc, expert_forest* a1,
+MEDDLY::common_dfs_evplus::common_dfs_evplus(binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res)
 : common_dfs(oc, a1, a2, res)
 {
@@ -1286,14 +1287,14 @@ void MEDDLY::common_dfs_evplus
 
 class MEDDLY::forwd_dfs_evplus : public common_dfs_evplus {
   public:
-  forwd_dfs_evplus(const binary_opname* opcode, expert_forest* arg1,
+  forwd_dfs_evplus(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
   protected:
     virtual void saturateHelper(unpacked_node &mdd);
     void recFire(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
 };
 
-MEDDLY::forwd_dfs_evplus::forwd_dfs_evplus(const binary_opname* opcode,
+MEDDLY::forwd_dfs_evplus::forwd_dfs_evplus(binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : common_dfs_evplus(opcode, arg1, arg2, res)
 {
@@ -1547,7 +1548,7 @@ class MEDDLY::forwd_dfs_opname : public binary_opname {
   public:
     forwd_dfs_opname();
     virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+      expert_forest* a2, expert_forest* r);
 };
 
 MEDDLY::forwd_dfs_opname::forwd_dfs_opname()
@@ -1557,7 +1558,7 @@ MEDDLY::forwd_dfs_opname::forwd_dfs_opname()
 
 MEDDLY::binary_operation*
 MEDDLY::forwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r) const
+  expert_forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
@@ -1599,7 +1600,7 @@ class MEDDLY::bckwd_dfs_opname : public binary_opname {
   public:
     bckwd_dfs_opname();
     virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+      expert_forest* a2, expert_forest* r);
 };
 
 MEDDLY::bckwd_dfs_opname::bckwd_dfs_opname()
@@ -1609,7 +1610,7 @@ MEDDLY::bckwd_dfs_opname::bckwd_dfs_opname()
 
 MEDDLY::binary_operation*
 MEDDLY::bckwd_dfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r) const
+  expert_forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 

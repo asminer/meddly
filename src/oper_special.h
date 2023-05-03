@@ -39,7 +39,7 @@ namespace MEDDLY {
 */
 class MEDDLY::specialized_operation : public operation {
   public:
-    specialized_operation(const specialized_opname* code, unsigned et_slots);
+    specialized_operation(specialized_opname* code, unsigned et_slots);
   protected:
     virtual ~specialized_operation();
   public:

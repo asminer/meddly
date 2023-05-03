@@ -44,7 +44,7 @@ namespace MEDDLY {
 /// Abstract base class for copying between multi-terminal DDs.
 class MEDDLY::copy_MT : public unary_operation {
   public:
-    copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res);
+    copy_MT(unary_opname* oc, expert_forest* arg, expert_forest* res);
 
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
   protected:
@@ -73,7 +73,7 @@ class MEDDLY::copy_MT : public unary_operation {
 };
 
 MEDDLY::copy_MT
-:: copy_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res)
+:: copy_MT(unary_opname* oc, expert_forest* arg, expert_forest* res)
  : unary_operation(oc, 1, arg, res)
 {
   ct_entry_type* et = new ct_entry_type(oc->getName(), "N:N");
@@ -100,7 +100,7 @@ namespace MEDDLY {
   template <typename RESULT>
   class copy_MT_tmpl : public copy_MT {
     public:
-      copy_MT_tmpl(const unary_opname* N, expert_forest* A, expert_forest* R)
+      copy_MT_tmpl(unary_opname* N, expert_forest* A, expert_forest* R)
         : copy_MT(N, A, R) { }
     protected:
       virtual node_handle compute_r(node_handle a) {
@@ -245,7 +245,7 @@ namespace MEDDLY {
   template <typename TYPE>
   class copy_MT2EV : public unary_operation {
     public:
-      copy_MT2EV(const unary_opname* oc, expert_forest* arg, expert_forest* res,
+      copy_MT2EV(unary_opname* oc, expert_forest* arg, expert_forest* res,
         const char* pattern) : unary_operation(oc, 1, arg, res)
       {
         //
@@ -445,7 +445,7 @@ namespace MEDDLY {
   template <typename TYPE, class OP>
   class copy_EV2MT : public unary_operation {
     public:
-      copy_EV2MT(const unary_opname* oc, expert_forest* arg, expert_forest* res,
+      copy_EV2MT(unary_opname* oc, expert_forest* arg, expert_forest* res,
         const char* pattern) : unary_operation(oc, 1, arg, res)
       {
         //
@@ -637,7 +637,7 @@ namespace MEDDLY {
   template <typename INTYPE, typename OUTTYPE>
   class copy_EV2EV_fast : public unary_operation {
     public:
-      copy_EV2EV_fast(const unary_opname* oc, expert_forest* arg,
+      copy_EV2EV_fast(unary_opname* oc, expert_forest* arg,
         expert_forest* res) : unary_operation(oc, 1, arg, res)
       {
         // entry[0]: EV node
@@ -742,7 +742,7 @@ namespace MEDDLY {
   template <typename INTYPE, class INOP, typename OUTTYPE>
   class copy_EV2EV_slow : public unary_operation {
     public:
-      copy_EV2EV_slow(const unary_opname* oc, expert_forest* arg, expert_forest* res,
+      copy_EV2EV_slow(unary_opname* oc, expert_forest* arg, expert_forest* res,
         const char* pattern) : unary_operation(oc, 1, arg, res)
       {
         //
@@ -899,7 +899,7 @@ class MEDDLY::copy_opname : public unary_opname {
   public:
     copy_opname();
     virtual unary_operation*
-      buildOperation(expert_forest* ar, expert_forest* res) const;
+      buildOperation(expert_forest* ar, expert_forest* res);
 
 
   private:
@@ -926,7 +926,7 @@ MEDDLY::copy_opname::copy_opname()
 
 MEDDLY::unary_operation*
 MEDDLY::copy_opname
-::buildOperation(expert_forest* arg, expert_forest* res) const
+::buildOperation(expert_forest* arg, expert_forest* res)
 {
   if (0==arg || 0==res) return 0;
 

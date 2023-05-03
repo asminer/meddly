@@ -42,7 +42,7 @@ namespace MEDDLY {
 template <typename T>
 class equal_mdd : public generic_binary_mdd {
   public:
-    equal_mdd(const binary_opname* opcode, expert_forest* arg1,
+    equal_mdd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res)
       : generic_binary_mdd(opcode, arg1, arg2, res)
       {
@@ -84,7 +84,7 @@ namespace MEDDLY {
 template <typename T>
 class equal_mxd : public generic_binbylevel_mxd {
   public:
-    equal_mxd(const binary_opname* opcode, expert_forest* arg1,
+    equal_mxd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res)
       : generic_binbylevel_mxd(opcode, arg1, arg2, res)
       {
@@ -119,7 +119,7 @@ bool equal_mxd<T>
 
 class MEDDLY::equal_evtimes : public generic_binary_evtimes {
   public:
-    equal_evtimes(const binary_opname* opcode, expert_forest* arg1,
+    equal_evtimes(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
   protected:
@@ -127,7 +127,7 @@ class MEDDLY::equal_evtimes : public generic_binary_evtimes {
       float &cv, node_handle& c);
 };
 
-MEDDLY::equal_evtimes::equal_evtimes(const binary_opname* opcode,
+MEDDLY::equal_evtimes::equal_evtimes(binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_evtimes(opcode, arg1, arg2, res)
 {
@@ -161,7 +161,7 @@ class MEDDLY::equal_opname : public binary_opname {
   public:
     equal_opname();
     virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+      expert_forest* a2, expert_forest* r);
 };
 
 MEDDLY::equal_opname::equal_opname()
@@ -171,7 +171,7 @@ MEDDLY::equal_opname::equal_opname()
 
 MEDDLY::binary_operation*
 MEDDLY::equal_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r) const
+  expert_forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 

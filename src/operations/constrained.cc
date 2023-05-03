@@ -33,7 +33,7 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::common_constrained::common_constrained(const constrained_opname* code,
+MEDDLY::common_constrained::common_constrained(constrained_opname* code,
   unsigned slots,
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
   : specialized_operation(code, slots)
@@ -80,7 +80,7 @@ MEDDLY::constrained_bfs_opname::constrained_bfs_opname(bool fwd)
   forward = fwd;
 }
 
-MEDDLY::specialized_operation* MEDDLY::constrained_bfs_opname::buildOperation(arguments* a) const
+MEDDLY::specialized_operation* MEDDLY::constrained_bfs_opname::buildOperation(arguments* a)
 {
   constrained_opname::constrained_args* args = dynamic_cast<constrained_opname::constrained_args*>(a);
   specialized_operation* op = 0;
@@ -103,7 +103,7 @@ MEDDLY::specialized_operation* MEDDLY::constrained_bfs_opname::buildOperation(ar
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constrained_bckwd_bfs_evplus::constrained_bckwd_bfs_evplus(const constrained_opname* code,
+MEDDLY::constrained_bckwd_bfs_evplus::constrained_bckwd_bfs_evplus(constrained_opname* code,
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
   : common_constrained(code, 0, cons, arg, trans, res)
 {
@@ -187,7 +187,7 @@ MEDDLY::constrained_dfs_opname::constrained_dfs_opname(bool fwd)
   forward = fwd;
 }
 
-MEDDLY::specialized_operation* MEDDLY::constrained_dfs_opname::buildOperation(arguments* a) const
+MEDDLY::specialized_operation* MEDDLY::constrained_dfs_opname::buildOperation(arguments* a)
 {
   constrained_opname::constrained_args* args = dynamic_cast<constrained_opname::constrained_args*>(a);
   specialized_operation* op = 0;
@@ -235,7 +235,7 @@ MEDDLY::specialized_operation* MEDDLY::constrained_dfs_opname::buildOperation(ar
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constrained_dfs_mt::constrained_dfs_mt(const constrained_opname* code,
+MEDDLY::constrained_dfs_mt::constrained_dfs_mt(constrained_opname* code,
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
   : common_constrained(code, 1, cons, arg, trans, res)
 {
@@ -394,7 +394,7 @@ void MEDDLY::constrained_dfs_mt::_compute(node_handle a, node_handle b, node_han
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constrained_forwd_dfs_mt::constrained_forwd_dfs_mt(const constrained_opname* code,
+MEDDLY::constrained_forwd_dfs_mt::constrained_forwd_dfs_mt(constrained_opname* code,
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
   : constrained_dfs_mt(code, cons, arg, trans, res)
 {
@@ -634,7 +634,7 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constrained_bckwd_dfs_mt::constrained_bckwd_dfs_mt(const constrained_opname* code,
+MEDDLY::constrained_bckwd_dfs_mt::constrained_bckwd_dfs_mt(constrained_opname* code,
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
   : constrained_dfs_mt(code, cons, arg, trans, res)
 {
@@ -1021,7 +1021,7 @@ void MEDDLY::constrained_saturation_mt::saturate(node_handle a, node_handle b, i
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constrained_bckwd_dfs_evplus::constrained_bckwd_dfs_evplus(const constrained_opname* code,
+MEDDLY::constrained_bckwd_dfs_evplus::constrained_bckwd_dfs_evplus(constrained_opname* code,
   expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
   : common_constrained(code, 1, cons, arg, trans, res)
 {

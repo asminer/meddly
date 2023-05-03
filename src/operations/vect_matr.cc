@@ -48,7 +48,7 @@ namespace MEDDLY {
 
 class MEDDLY::base_evplus_mt : public specialized_operation {
   public:
-    base_evplus_mt(const numerical_opname* code, const dd_edge &x_ind,
+    base_evplus_mt(numerical_opname* code, const dd_edge &x_ind,
       const dd_edge& A, const dd_edge &y_ind);
 
     virtual ~base_evplus_mt();
@@ -76,7 +76,7 @@ class MEDDLY::base_evplus_mt : public specialized_operation {
     }
 };
 
-MEDDLY::base_evplus_mt::base_evplus_mt(const numerical_opname* code,
+MEDDLY::base_evplus_mt::base_evplus_mt(numerical_opname* code,
   const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
  : specialized_operation(code, 0)
 {
@@ -112,7 +112,7 @@ void MEDDLY::base_evplus_mt::compute(double* y, const double* x)
 
 class MEDDLY::VM_evplus_mt : public base_evplus_mt {
   public:
-    VM_evplus_mt(const numerical_opname* code, const dd_edge &x_ind,
+    VM_evplus_mt(numerical_opname* code, const dd_edge &x_ind,
       const dd_edge& A, const dd_edge &y_ind);
 
     virtual void compute_r(int k, double* y, node_handle y_ind, const double* x,
@@ -123,7 +123,7 @@ class MEDDLY::VM_evplus_mt : public base_evplus_mt {
 
 };
 
-MEDDLY::VM_evplus_mt::VM_evplus_mt(const numerical_opname* code,
+MEDDLY::VM_evplus_mt::VM_evplus_mt(numerical_opname* code,
   const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
   : base_evplus_mt(code, x_ind, A, y_ind)
 {
@@ -290,7 +290,7 @@ void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
 
 class MEDDLY::MV_evplus_mt : public base_evplus_mt {
   public:
-    MV_evplus_mt(const numerical_opname* code, const dd_edge &x_ind,
+    MV_evplus_mt(numerical_opname* code, const dd_edge &x_ind,
       const dd_edge& A, const dd_edge &y_ind);
 
     virtual void compute_r(int k, double* y, node_handle y_ind, const double* x,
@@ -301,7 +301,7 @@ class MEDDLY::MV_evplus_mt : public base_evplus_mt {
 
 };
 
-MEDDLY::MV_evplus_mt::MV_evplus_mt(const numerical_opname* code,
+MEDDLY::MV_evplus_mt::MV_evplus_mt(numerical_opname* code,
   const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
   : base_evplus_mt(code, x_ind, A, y_ind)
 {
@@ -469,7 +469,7 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
 class MEDDLY::VM_opname : public numerical_opname {
   public:
     VM_opname();
-    virtual specialized_operation* buildOperation(arguments* a) const;
+    virtual specialized_operation* buildOperation(arguments* a);
 };
 
 MEDDLY::VM_opname::VM_opname() : numerical_opname("VectMatrMult")
@@ -477,7 +477,7 @@ MEDDLY::VM_opname::VM_opname() : numerical_opname("VectMatrMult")
 }
 
 MEDDLY::specialized_operation*
-MEDDLY::VM_opname::buildOperation(arguments* a) const
+MEDDLY::VM_opname::buildOperation(arguments* a)
 {
   numerical_args* na = dynamic_cast<numerical_args*>(a);
   if (0==na) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
@@ -539,7 +539,7 @@ MEDDLY::VM_opname::buildOperation(arguments* a) const
 class MEDDLY::MV_opname : public numerical_opname {
   public:
     MV_opname();
-    virtual specialized_operation* buildOperation(arguments* a) const;
+    virtual specialized_operation* buildOperation(arguments* a);
 };
 
 MEDDLY::MV_opname::MV_opname() : numerical_opname("MatrVectMult")
@@ -547,7 +547,7 @@ MEDDLY::MV_opname::MV_opname() : numerical_opname("MatrVectMult")
 }
 
 MEDDLY::specialized_operation*
-MEDDLY::MV_opname::buildOperation(arguments* a) const
+MEDDLY::MV_opname::buildOperation(arguments* a)
 {
   numerical_args* na = dynamic_cast<numerical_args*>(a);
   if (0==na) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);

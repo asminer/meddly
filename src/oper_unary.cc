@@ -25,7 +25,7 @@
 // *                    unary_operation  methods                    *
 // ******************************************************************
 
-MEDDLY::unary_operation::unary_operation(const unary_opname* code,
+MEDDLY::unary_operation::unary_operation(unary_opname* code,
   unsigned et_slots, expert_forest* arg, expert_forest* res)
 : operation(code, et_slots)
 {
@@ -37,7 +37,7 @@ MEDDLY::unary_operation::unary_operation(const unary_opname* code,
   registerInForest(resF);
 }
 
-MEDDLY::unary_operation::unary_operation(const unary_opname* code,
+MEDDLY::unary_operation::unary_operation(unary_opname* code,
   unsigned et_slots, expert_forest* arg, opnd_type res)
 : operation(code, et_slots)
 {
@@ -54,15 +54,21 @@ MEDDLY::unary_operation::~unary_operation()
   unregisterInForest(resF);
 }
 
+void MEDDLY::unary_operation::removeFromOpnameCache()
+{
+    unary_opname* parent = dynamic_cast<unary_opname*>(getParent());
+    if (!parent) return;
+    parent->removeOperationFromCache(this);
+}
 
-inline bool
+bool
 MEDDLY::unary_operation::matches(const MEDDLY::dd_edge &arg,
         const MEDDLY::dd_edge &res) const
 {
   return (arg.getForest() == argF && res.getForest() == resF);
 }
 
-inline bool
+bool
 MEDDLY::unary_operation::matches(const MEDDLY::dd_edge &arg, opnd_type res)
         const
 {
@@ -122,28 +128,20 @@ MEDDLY::unary_operation::checkForestCompatibility() const
   }
 }
 
-
 // ******************************************************************
 // *                                                                *
 // *                      front-end  functions                      *
 // *                                                                *
 // ******************************************************************
 
-/*
-
-MEDDLY::unary_operation*
-MEDDLY::getOperation(const unary_opname* code, const dd_edge& arg,
-    const dd_edge& res)
+void MEDDLY::destroyOperation(MEDDLY::unary_operation* &op)
 {
-  return getOperation(code, (MEDDLY::expert_forest*) arg.getForest(),
-      (MEDDLY::expert_forest*) res.getForest());
+  if (!op) return;
+  op->removeFromOpnameCache();
+  if (!op->isMarkedForDeletion()) {
+    op->markForDeletion();
+    operation::removeStalesFromMonolithic();
+  }
+  op = nullptr;
 }
 
-MEDDLY::unary_operation*
-MEDDLY::getOperation(const unary_opname* code, const dd_edge& arg,
-    opnd_type res)
-{
-  return getOperation(code, (MEDDLY::expert_forest*) arg.getForest(), res);
-}
-
-*/

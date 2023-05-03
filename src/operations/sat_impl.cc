@@ -634,7 +634,7 @@ protected:
 
 class MEDDLY::common_impl_dfs_by_events_mt : public specialized_operation {
 public:
-  common_impl_dfs_by_events_mt(const satimpl_opname* opcode,
+  common_impl_dfs_by_events_mt(satimpl_opname* opcode,
                                satimpl_opname::implicit_relation* rel);
   virtual ~common_impl_dfs_by_events_mt();
 
@@ -793,7 +793,7 @@ protected:
 
 class MEDDLY::forwd_impl_dfs_by_events_mt : public common_impl_dfs_by_events_mt {
 public:
-  forwd_impl_dfs_by_events_mt(const satimpl_opname* opcode,
+  forwd_impl_dfs_by_events_mt(satimpl_opname* opcode,
                               satimpl_opname::implicit_relation* rel);
 protected:
   virtual void saturateHelper(unpacked_node& mdd);
@@ -812,7 +812,7 @@ protected:
  };
 
 MEDDLY::forwd_impl_dfs_by_events_mt::forwd_impl_dfs_by_events_mt(
-                                                                 const satimpl_opname* opcode,
+                                                                 satimpl_opname* opcode,
                                                                  satimpl_opname::implicit_relation* rel)
 : common_impl_dfs_by_events_mt(opcode, rel)
 {
@@ -1133,7 +1133,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
 // ******************************************************************
 
 MEDDLY::common_impl_dfs_by_events_mt::common_impl_dfs_by_events_mt(
-                                                                   const satimpl_opname* opcode,
+                                                                   satimpl_opname* opcode,
                                                                    satimpl_opname::implicit_relation* relation)
 : specialized_operation(opcode, 1)
 {
@@ -1311,7 +1311,7 @@ MEDDLY::satimpl_opname* MEDDLY::initImplSaturationForward()
 
 
 MEDDLY::specialized_operation*
-MEDDLY::satimpl_opname::buildOperation(arguments* a) const
+MEDDLY::satimpl_opname::buildOperation(arguments* a)
 {
 
   implicit_relation* rel = dynamic_cast<implicit_relation*>(a);

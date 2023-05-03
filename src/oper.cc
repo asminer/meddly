@@ -28,7 +28,7 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::operation::operation(const opname* n, unsigned et_slots)
+MEDDLY::operation::operation(opname* n, unsigned et_slots)
 {
 #ifdef DEBUG_CLEANUP
     fprintf(stdout, "Creating operation %p\n", this);
@@ -349,3 +349,33 @@ void MEDDLY::operation::destroyAllOps()
   free_list = 0;
 }
 
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+/*
+void MEDDLY::removeOperationFromCache(operation* op)
+{
+  if (0==op || 0==op_cache) return;
+  if (!libraryRunning)
+    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  const opname* code = op->getOpName();
+
+  operation* curr;
+  operation* prev = 0;
+  for (curr=op_cache[code->getIndex()]; curr; curr=curr->getNext()) {
+    if (curr == op) break;
+    prev = curr;
+  } // for
+  if (0==curr) return;  // not found
+  // remove curr
+  if (prev) {
+    prev->setNext(curr->getNext());
+  } else {
+    op_cache[code->getIndex()] = curr->getNext();
+  }
+  curr->setNext(0);
+}
+*/

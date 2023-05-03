@@ -40,7 +40,7 @@ namespace MEDDLY {
 template <typename T>
 class unequal_mdd : public generic_binary_mdd {
   public:
-    unequal_mdd(const binary_opname* opcode, expert_forest* arg1,
+    unequal_mdd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res)
       : generic_binary_mdd(opcode, arg1, arg2, res)
       {
@@ -78,7 +78,7 @@ namespace MEDDLY {
 template <typename T>
 class unequal_mxd : public generic_binbylevel_mxd {
   public:
-    unequal_mxd(const binary_opname* opcode, expert_forest* arg1,
+    unequal_mxd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res)
       : generic_binbylevel_mxd(opcode, arg1, arg2, res)
       {
@@ -115,7 +115,7 @@ class MEDDLY::unequal_opname : public binary_opname {
   public:
     unequal_opname();
     virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+      expert_forest* a2, expert_forest* r);
 };
 
 MEDDLY::unequal_opname::unequal_opname()
@@ -125,7 +125,7 @@ MEDDLY::unequal_opname::unequal_opname()
 
 MEDDLY::binary_operation*
 MEDDLY::unequal_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r) const
+  expert_forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 

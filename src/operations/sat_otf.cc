@@ -921,7 +921,7 @@ class MEDDLY::otfsat_by_events_opname : public unary_opname {
   public:
     otfsat_by_events_opname();
 
-    static const otfsat_by_events_opname* getInstance();
+    static otfsat_by_events_opname* getInstance();
 
 };
 
@@ -932,7 +932,7 @@ MEDDLY::otfsat_by_events_opname::otfsat_by_events_opname()
 {
 }
 
-const MEDDLY::otfsat_by_events_opname* MEDDLY::otfsat_by_events_opname::getInstance()
+MEDDLY::otfsat_by_events_opname* MEDDLY::otfsat_by_events_opname::getInstance()
 {
   if (0==instance) instance = new otfsat_by_events_opname;
   return instance;
@@ -987,7 +987,7 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
 
 class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
   public:
-    common_otf_dfs_by_events_mt(const satotf_opname* opcode,
+    common_otf_dfs_by_events_mt(satotf_opname* opcode,
       satotf_opname::otf_relation* rel);
     virtual ~common_otf_dfs_by_events_mt();
 
@@ -1241,7 +1241,7 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
 // ******************************************************************
 
 MEDDLY::common_otf_dfs_by_events_mt::common_otf_dfs_by_events_mt(
-  const satotf_opname* opcode,
+  satotf_opname* opcode,
   satotf_opname::otf_relation* relation)
 : specialized_operation(opcode, 1)
 {
@@ -1372,7 +1372,7 @@ void MEDDLY::common_otf_dfs_by_events_mt::charbuf::resize(unsigned sz)
 
 class MEDDLY::forwd_otf_dfs_by_events_mt : public common_otf_dfs_by_events_mt {
   public:
-    forwd_otf_dfs_by_events_mt(const satotf_opname* opcode,
+    forwd_otf_dfs_by_events_mt(satotf_opname* opcode,
     satotf_opname::otf_relation* rel);
   protected:
     virtual void saturateHelper(unpacked_node& mdd);
@@ -1382,7 +1382,7 @@ class MEDDLY::forwd_otf_dfs_by_events_mt : public common_otf_dfs_by_events_mt {
 };
 
 MEDDLY::forwd_otf_dfs_by_events_mt::forwd_otf_dfs_by_events_mt(
-  const satotf_opname* opcode,
+  satotf_opname* opcode,
   satotf_opname::otf_relation* rel)
   : common_otf_dfs_by_events_mt(opcode, rel)
 {
@@ -1749,7 +1749,7 @@ class MEDDLY::fb_otf_saturation_opname : public satotf_opname {
     bool forward;
   public:
     fb_otf_saturation_opname(bool fwd);
-    virtual specialized_operation* buildOperation(arguments* a) const;
+    virtual specialized_operation* buildOperation(arguments* a);
 };
 
 MEDDLY::fb_otf_saturation_opname::fb_otf_saturation_opname(bool fwd)
@@ -1759,7 +1759,7 @@ MEDDLY::fb_otf_saturation_opname::fb_otf_saturation_opname(bool fwd)
 }
 
 MEDDLY::specialized_operation*
-MEDDLY::fb_otf_saturation_opname::buildOperation(arguments* a) const
+MEDDLY::fb_otf_saturation_opname::buildOperation(arguments* a)
 {
   otf_relation* rel = dynamic_cast<otf_relation*>(a);
   if (0==rel) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);

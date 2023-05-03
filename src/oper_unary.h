@@ -30,58 +30,8 @@ namespace MEDDLY {
     // *                      Operation management                      *
     // ******************************************************************
 
-#if 0
-    /** Find, or build if necessary, a unary operation.
-            @param  code    Operation we want
-            @param  arg     Argument forest
-            @param  res     Result forest
-            @return         The matching operation, if it already exists;
-                            a new operation, otherwise.
-    */
-    unary_operation* getOperation(const unary_opname* code,
-        expert_forest* arg, expert_forest* res);
-
-    /** Find, or build if necessary, a unary operation.
-            @param  code    Operation we want
-            @param  arg     Argument forest from this dd_edge
-            @param  res     Result forest from this dd_edge
-            @return         The matching operation, if it already exists;
-                            a new operation, otherwise.
-    */
-    unary_operation* getOperation(const unary_opname* code,
-        const dd_edge& arg, const dd_edge& res);
-
-    /** Find, or build if necessary, a unary operation.
-            @param  code    Operation we want
-            @param  arg     Argument forest
-            @param  res     Result type
-            @return         The matching operation, if it already exists;
-                            a new operation, otherwise.
-    */
-    unary_operation* getOperation(const unary_opname* code,
-        expert_forest* arg, opnd_type result);
-
-    /** Find, or build if necessary, a unary operation.
-            @param  code    Operation we want
-            @param  arg     Argument forest from this dd_edge
-            @param  res     Result type
-            @return         The matching operation, if it already exists;
-                            a new operation, otherwise.
-    */
-    unary_operation* getOperation(const unary_opname* code,
-        const dd_edge& arg, opnd_type result);
-
-#endif
-
-    /** Safely destroy the given unary operation.
-        It should be unnecessary to call this directly.
-    */
+    /// Safely destroy the given unary operation.
     void destroyOperation(unary_operation* &op);
-
-
-    //
-    //
-    extern bool libraryRunning;
 };
 
 
@@ -96,16 +46,18 @@ namespace MEDDLY {
 */
 class MEDDLY::unary_operation : public operation {
   public:
-    unary_operation(const unary_opname* code, unsigned et_slots,
+    unary_operation(unary_opname* code, unsigned et_slots,
       expert_forest* arg, expert_forest* res);
 
-    unary_operation(const unary_opname* code, unsigned et_slots,
+    unary_operation(unary_opname* code, unsigned et_slots,
       expert_forest* arg, opnd_type res);
 
   protected:
     virtual ~unary_operation();
 
   public:
+    void removeFromOpnameCache();
+
     bool matches(const dd_edge &arg, const dd_edge &res) const;
     bool matches(const dd_edge &arg, opnd_type res) const;
 

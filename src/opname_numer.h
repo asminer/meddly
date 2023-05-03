@@ -25,6 +25,8 @@ namespace MEDDLY {
     class numerical_opname;
     class dd_edge;
 
+    class numerical_opname_init;    // hidden
+
     // ******************************************************************
     // *                                                                *
     // *                   Named numerical operations                   *
@@ -36,7 +38,7 @@ namespace MEDDLY {
         x_ind and y_ind specify how minterms are mapped to indexes
         for vectors x and y, respectively.
     */
-    extern const numerical_opname* EXPLVECT_MATR_MULT;
+    numerical_opname* EXPLVECT_MATR_MULT();
     // extern const numerical_opname* VECT_MATR_MULT; // renamed!
 
     /** Computes y = y + Ax.
@@ -44,7 +46,7 @@ namespace MEDDLY {
         x_ind and y_ind specify how minterms are mapped to indexes
         for vectors x and y, respectively.
     */
-    extern const numerical_opname* MATR_EXPLVECT_MULT;
+    numerical_opname* MATR_EXPLVECT_MULT();
     // extern const numerical_opname* MATR_VECT_MULT; // renamed!
 
 };
@@ -57,42 +59,46 @@ namespace MEDDLY {
 
 /// Numerical operation names.
 class MEDDLY::numerical_opname : public specialized_opname {
-  public:
-    class numerical_args : public specialized_opname::arguments {
-      public:
-        const dd_edge &x_ind;
-        const dd_edge &A;
-        const dd_edge &y_ind;
+        friend class MEDDLY::numerical_opname_init;
+    public:
+        class numerical_args : public specialized_opname::arguments {
+            public:
+                const dd_edge &x_ind;
+                const dd_edge &A;
+                const dd_edge &y_ind;
 
-        numerical_args(const dd_edge &xi, const dd_edge &a, const dd_edge &yi);
-        virtual ~numerical_args();
-    };
+                numerical_args(const dd_edge &xi, const dd_edge &a,
+                        const dd_edge &yi);
+                virtual ~numerical_args();
+        };
 
-    numerical_opname(const char* n);
-    virtual ~numerical_opname();
-    virtual specialized_operation* buildOperation(arguments* a) const = 0;
+    public:
+        numerical_opname(const char* n);
+        virtual ~numerical_opname();
+        virtual specialized_operation* buildOperation(arguments* a) = 0;
 
-    /// For convenience, and backward compatability :^)
-    specialized_operation* buildOperation(const dd_edge &x_ind,
-      const dd_edge &A, const dd_edge &y_ind) const;
+        /// For convenience, and backward compatability :^)
+        inline specialized_operation* buildOperation(const dd_edge &x_ind,
+            const dd_edge &A, const dd_edge &y_ind)
+        {
+            numerical_args na(x_ind, A, y_ind);
+            na.setAutoDestroy(false); // na will be destroyed when we return
+            return buildOperation(&na);
+        }
+
+        static initializer_list* makeInitializer(initializer_list* prev);
+
+    private:
+        static numerical_opname* _EXPLVECT_MATR_MULT;
+        static numerical_opname* _MATR_EXPLVECT_MULT;
+
+    public:
+        static inline numerical_opname* EXPLVECT_MATR_MULT() {
+            return _EXPLVECT_MATR_MULT;
+        }
+        static inline numerical_opname* MATR_EXPLVECT_MULT() {
+            return _MATR_EXPLVECT_MULT;
+        }
 };
-
-
-// ******************************************************************
-// *                                                                *
-// *                inlined numerical_opname methods                *
-// *                                                                *
-// ******************************************************************
-
-inline MEDDLY::specialized_operation*
-MEDDLY::numerical_opname::buildOperation(const dd_edge &x_ind,
-    const dd_edge &A, const dd_edge &y_ind) const
-{
-  numerical_args na(x_ind, A, y_ind);
-  na.setAutoDestroy(false); // na will be destroyed when we return
-  return buildOperation(&na);
-}
-
-
 
 #endif // #include guard

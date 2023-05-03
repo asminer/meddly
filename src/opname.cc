@@ -397,13 +397,13 @@ void MEDDLY::unary_opname::removeOperationFromCache(unary_operation* op)
 }
 
 MEDDLY::unary_operation*
-MEDDLY::unary_opname::buildOperation(const dd_edge &, const dd_edge &) const
+MEDDLY::unary_opname::buildOperation(const dd_edge &, const dd_edge &)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 MEDDLY::unary_operation*
-MEDDLY::unary_opname::buildOperation(const dd_edge &, opnd_type) const
+MEDDLY::unary_opname::buildOperation(const dd_edge &, opnd_type)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }

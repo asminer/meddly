@@ -42,14 +42,14 @@ namespace MEDDLY {
 
 class MEDDLY::union_mdd : public generic_binary_mdd {
   public:
-    union_mdd(const binary_opname* opcode, expert_forest* arg1,
+    union_mdd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::union_mdd::union_mdd(const binary_opname* opcode,
+MEDDLY::union_mdd::union_mdd(binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
@@ -100,7 +100,7 @@ bool MEDDLY::union_mdd::checkTerminals(node_handle a, node_handle b, node_handle
 
 class MEDDLY::union_mxd : public generic_binary_mxd {
   public:
-    union_mxd(const binary_opname* opcode, expert_forest* arg1,
+    union_mxd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
   protected:
@@ -108,7 +108,7 @@ class MEDDLY::union_mxd : public generic_binary_mxd {
     virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
 };
 
-MEDDLY::union_mxd::union_mxd(const binary_opname* opcode,
+MEDDLY::union_mxd::union_mxd(binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
@@ -282,7 +282,7 @@ MEDDLY::union_mxd::compute_ext(node_handle a, node_handle b)
 
 class MEDDLY::union_min_evplus : public generic_binary_evplus {
   public:
-    union_min_evplus(const binary_opname* opcode, expert_forest* arg1,
+    union_min_evplus(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
   protected:
@@ -295,7 +295,7 @@ class MEDDLY::union_min_evplus : public generic_binary_evplus {
       long& cev, node_handle& c);
 };
 
-MEDDLY::union_min_evplus::union_min_evplus(const binary_opname* opcode,
+MEDDLY::union_min_evplus::union_min_evplus(binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_evplus(opcode, arg1, arg2, res)
 {
@@ -409,7 +409,7 @@ bool MEDDLY::union_min_evplus::checkTerminals(long aev, node_handle a, long bev,
 
 class MEDDLY::union_min_evplus_mxd : public generic_binary_evplus_mxd {
   public:
-    union_min_evplus_mxd(const binary_opname* opcode, expert_forest* arg1,
+    union_min_evplus_mxd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res);
 
   protected:
@@ -422,7 +422,7 @@ class MEDDLY::union_min_evplus_mxd : public generic_binary_evplus_mxd {
       long& cev, node_handle& c);
 };
 
-MEDDLY::union_min_evplus_mxd::union_min_evplus_mxd(const binary_opname* opcode,
+MEDDLY::union_min_evplus_mxd::union_min_evplus_mxd(binary_opname* opcode,
   expert_forest* arg1, expert_forest* arg2, expert_forest* res)
   : generic_binary_evplus_mxd(opcode, arg1, arg2, res)
 {
@@ -538,7 +538,7 @@ class MEDDLY::union_opname : public binary_opname {
   public:
     union_opname();
     virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+      expert_forest* a2, expert_forest* r);
 };
 
 MEDDLY::union_opname::union_opname()
@@ -548,7 +548,7 @@ MEDDLY::union_opname::union_opname()
 
 MEDDLY::binary_operation*
 MEDDLY::union_opname::buildOperation(expert_forest *a1, expert_forest* a2,
-  expert_forest* r) const
+  expert_forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 

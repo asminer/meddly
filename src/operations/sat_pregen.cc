@@ -463,7 +463,7 @@ class MEDDLY::saturation_by_events_opname : public unary_opname {
   public:
     saturation_by_events_opname();
 
-    static const saturation_by_events_opname* getInstance();
+    static saturation_by_events_opname* getInstance();
 
 };
 
@@ -474,7 +474,7 @@ MEDDLY::saturation_by_events_opname::saturation_by_events_opname()
 {
 }
 
-const MEDDLY::saturation_by_events_opname* MEDDLY::saturation_by_events_opname::getInstance()
+MEDDLY::saturation_by_events_opname* MEDDLY::saturation_by_events_opname::getInstance()
 {
   if (0==instance) instance = new saturation_by_events_opname;
   return instance;
@@ -528,7 +528,7 @@ class MEDDLY::saturation_by_events_op : public unary_operation {
 
 class MEDDLY::common_dfs_by_events_mt : public specialized_operation {
   public:
-    common_dfs_by_events_mt(const satpregen_opname* opcode,
+    common_dfs_by_events_mt(satpregen_opname* opcode,
       satpregen_opname::pregen_relation* rel);
     virtual ~common_dfs_by_events_mt();
 
@@ -773,7 +773,7 @@ MEDDLY::saturation_by_events_op::saturate(node_handle mdd, int k)
 // ******************************************************************
 
 MEDDLY::common_dfs_by_events_mt::common_dfs_by_events_mt(
-  const satpregen_opname* opcode,
+  satpregen_opname* opcode,
   satpregen_opname::pregen_relation* relation)
 : specialized_operation(opcode, 1)
 {
@@ -910,7 +910,7 @@ void MEDDLY::common_dfs_by_events_mt::charbuf::resize(unsigned sz)
 
 class MEDDLY::forwd_dfs_by_events_mt : public common_dfs_by_events_mt {
   public:
-    forwd_dfs_by_events_mt(const satpregen_opname* opcode,
+    forwd_dfs_by_events_mt(satpregen_opname* opcode,
     satpregen_opname::pregen_relation* rel);
   protected:
     virtual void saturateHelper(unpacked_node& mdd);
@@ -918,7 +918,7 @@ class MEDDLY::forwd_dfs_by_events_mt : public common_dfs_by_events_mt {
 };
 
 MEDDLY::forwd_dfs_by_events_mt::forwd_dfs_by_events_mt(
-  const satpregen_opname* opcode,
+  satpregen_opname* opcode,
   satpregen_opname::pregen_relation* rel)
   : common_dfs_by_events_mt(opcode, rel)
 {
@@ -1145,7 +1145,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
 
 class MEDDLY::bckwd_dfs_by_events_mt : public common_dfs_by_events_mt {
   public:
-    bckwd_dfs_by_events_mt(const satpregen_opname* opcode,
+    bckwd_dfs_by_events_mt(satpregen_opname* opcode,
     satpregen_opname::pregen_relation* rel);
   protected:
     virtual void saturateHelper(unpacked_node& mdd);
@@ -1153,7 +1153,7 @@ class MEDDLY::bckwd_dfs_by_events_mt : public common_dfs_by_events_mt {
 };
 
 MEDDLY::bckwd_dfs_by_events_mt::bckwd_dfs_by_events_mt(
-  const satpregen_opname* opcode,
+  satpregen_opname* opcode,
   satpregen_opname::pregen_relation* rel)
   : common_dfs_by_events_mt(opcode, rel)
 {
@@ -1366,7 +1366,7 @@ class MEDDLY::fb_saturation_opname : public satpregen_opname {
     bool forward;
   public:
     fb_saturation_opname(bool fwd);
-    virtual specialized_operation* buildOperation(arguments* a) const;
+    virtual specialized_operation* buildOperation(arguments* a);
 };
 
 MEDDLY::fb_saturation_opname::fb_saturation_opname(bool fwd)
@@ -1376,7 +1376,7 @@ MEDDLY::fb_saturation_opname::fb_saturation_opname(bool fwd)
 }
 
 MEDDLY::specialized_operation*
-MEDDLY::fb_saturation_opname::buildOperation(arguments* a) const
+MEDDLY::fb_saturation_opname::buildOperation(arguments* a)
 {
   pregen_relation* rel = dynamic_cast<pregen_relation*>(a);
   if (0==rel) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);

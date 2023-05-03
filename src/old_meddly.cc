@@ -44,6 +44,9 @@
 #include "ct_initializer.h"
 #include "compute_table.h"
 
+#include "opname.h"
+#include "opname_numer.h"
+
 #include "oper.h"
 #include "oper_unary.h"
 #include "oper_binary.h"
@@ -202,29 +205,6 @@ MEDDLY::binary_operation* MEDDLY::getOperation(const binary_opname* code,
   return (binary_operation*) curr;
 }
 
-void MEDDLY::removeOperationFromCache(operation* op)
-{
-  if (0==op || 0==op_cache) return;
-  if (!libraryRunning)
-    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
-  const opname* code = op->getOpName();
-
-  operation* curr;
-  operation* prev = 0;
-  for (curr=op_cache[code->getIndex()]; curr; curr=curr->getNext()) {
-    if (curr == op) break;
-    prev = curr;
-  } // for
-  if (0==curr) return;  // not found
-  // remove curr
-  if (prev) {
-    prev->setNext(curr->getNext());
-  } else {
-    op_cache[code->getIndex()] = curr->getNext();
-  }
-  curr->setNext(0);
-}
-
 */
 
 /*
@@ -297,6 +277,7 @@ void MEDDLY::purgeMarkedOperations()
   }
 }
 
+/*
 inline void MEDDLY::destroyOpInternal(MEDDLY::operation* op)
 {
   if (0==op) return;
@@ -307,12 +288,6 @@ inline void MEDDLY::destroyOpInternal(MEDDLY::operation* op)
     operation::removeStalesFromMonolithic();
   }
   delete op;
-}
-
-void MEDDLY::destroyOperation(MEDDLY::unary_operation* &op)
-{
-  destroyOpInternal(op);
-  op = 0;
 }
 
 void MEDDLY::destroyOperation(MEDDLY::binary_operation* &op)
@@ -327,6 +302,7 @@ void MEDDLY::destroyOperation(MEDDLY::specialized_operation* &op)
   op = 0;
 }
 
+*/
 
 
 
@@ -340,6 +316,7 @@ MEDDLY::initializer_list* MEDDLY::defaultInitializerList(initializer_list* prev)
   prev = new ct_initializer(prev);
   prev = new storage_initializer(prev);
   prev = opname::makeInitializer(prev);
+  prev = numerical_opname::makeInitializer(prev);
   prev = new builtin_initializer(prev);
   prev = new forest_initializer(prev);
 

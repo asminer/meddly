@@ -24,7 +24,7 @@
 // *                    binary_operation methods                    *
 // ******************************************************************
 
-MEDDLY::binary_operation::binary_operation(const binary_opname* op,
+MEDDLY::binary_operation::binary_operation(binary_opname* op,
     unsigned et_slots, expert_forest* arg1, expert_forest* arg2,
     expert_forest* res) : operation(op, et_slots)
 {
@@ -45,6 +45,14 @@ MEDDLY::binary_operation::~binary_operation()
     unregisterInForest(arg2F);
     unregisterInForest(resF);
 }
+
+void MEDDLY::binary_operation::removeFromOpnameCache()
+{
+    binary_opname* parent = dynamic_cast<binary_opname*>(getParent());
+    if (!parent) return;
+    parent->removeOperationFromCache(this);
+}
+
 
 bool MEDDLY::binary_operation::matches(const dd_edge &arg1,
         const dd_edge &arg2, const dd_edge &res) const
@@ -88,13 +96,14 @@ bool MEDDLY::binary_operation::checkForestCompatibility() const
 // *                                                                *
 // ******************************************************************
 
-/*
-MEDDLY::binary_operation*
-MEDDLY::getOperation(const binary_opname* code, const dd_edge& arg1,
-    const dd_edge& arg2, const dd_edge& res)
+void MEDDLY::destroyOperation(MEDDLY::binary_operation* &op)
 {
-  return getOperation(code, (MEDDLY::expert_forest*) arg1.getForest(),
-      (MEDDLY::expert_forest*) arg2.getForest(), (MEDDLY::expert_forest*) res.getForest());
+  if (!op) return;
+  op->removeFromOpnameCache();
+  if (!op->isMarkedForDeletion()) {
+    op->markForDeletion();
+    operation::removeStalesFromMonolithic();
+  }
+  op = nullptr;
 }
-*/
 

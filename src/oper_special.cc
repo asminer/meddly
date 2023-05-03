@@ -25,7 +25,7 @@
 
 MEDDLY::
 specialized_operation::
-specialized_operation(const specialized_opname* op, unsigned et_slots)
+specialized_operation(specialized_opname* op, unsigned et_slots)
  : operation(op, et_slots)
 {
 }

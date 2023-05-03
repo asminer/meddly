@@ -17,8 +17,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SAT_CONSTRAINED_H
-#define SAT_CONSTRAINED_H
+#ifndef MEDDLY_SAT_CONSTRAINED_H
+#define MEDDLY_SAT_CONSTRAINED_H
 
 #include "old_meddly.h"
 
@@ -58,7 +58,7 @@ protected:
   virtual bool checkForestCompatibility() const;
 
 public:
-  common_constrained(const constrained_opname* code, unsigned slots,
+  common_constrained(constrained_opname* code, unsigned slots,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
   ~common_constrained();
 };
@@ -84,7 +84,7 @@ protected:
   void iterate(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& c);
 
 public:
-  constrained_bckwd_bfs_evplus(const constrained_opname* code,
+  constrained_bckwd_bfs_evplus(constrained_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
   virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
@@ -116,7 +116,7 @@ protected:
   void splitMxd(const dd_edge& mxd);
 
 public:
-  constrained_dfs_mt(const constrained_opname* code,
+  constrained_dfs_mt(constrained_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
   virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
@@ -131,7 +131,7 @@ protected:
   void recFire(node_handle a, node_handle b, node_handle r, node_handle& c);
 
 public:
-  constrained_forwd_dfs_mt(const constrained_opname* code,
+  constrained_forwd_dfs_mt(constrained_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
   virtual void saturateHelper(node_handle a, unpacked_node& nb) override;
@@ -143,7 +143,7 @@ protected:
   void recFire(node_handle a, node_handle b, node_handle r, node_handle& c);
 
 public:
-  constrained_bckwd_dfs_mt(const constrained_opname* code,
+  constrained_bckwd_dfs_mt(constrained_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
   virtual void saturateHelper(node_handle a, unpacked_node& nb) override;
@@ -200,7 +200,7 @@ protected:
   void recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
 public:
-  constrained_bckwd_dfs_evplus(const constrained_opname* code,
+  constrained_bckwd_dfs_evplus(constrained_opname* code,
     expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
   virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);

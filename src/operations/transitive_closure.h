@@ -17,8 +17,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef TRANSITIVE_CLOSURE_H
-#define TRANSITIVE_CLOSURE_H
+#ifndef MEDDLY_TRANSITIVE_CLOSURE_H
+#define MEDDLY_TRANSITIVE_CLOSURE_H
 
 #include "old_meddly.h"
 #include "../opname_satur.h"
@@ -53,7 +53,7 @@ protected:
   virtual bool checkForestCompatibility() const;
 
 public:
-  common_transitive_closure(const constrained_opname* code, unsigned slots,
+  common_transitive_closure(constrained_opname* code, unsigned slots,
     expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
   ~common_transitive_closure();
 };
@@ -81,7 +81,7 @@ protected:
   void iterate(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& c);
 
 public:
-  transitive_closure_forwd_bfs(const constrained_opname* code,
+  transitive_closure_forwd_bfs(constrained_opname* code,
     expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
 
   virtual void compute(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res);
@@ -114,7 +114,7 @@ protected:
   virtual void recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c) = 0;
 
 public:
-  transitive_closure_dfs(const constrained_opname* code,
+  transitive_closure_dfs(constrained_opname* code,
     expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
 
   virtual void compute(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res);
@@ -129,7 +129,7 @@ protected:
   virtual void recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
 public:
-  transitive_closure_forwd_dfs(const constrained_opname* code,
+  transitive_closure_forwd_dfs(constrained_opname* code,
     expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
 
   virtual void saturateHelper(long aev, node_handle a, int in, unpacked_node& nb);

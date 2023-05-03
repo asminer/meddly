@@ -29,34 +29,7 @@ namespace MEDDLY {
     // *                      Operation management                      *
     // ******************************************************************
 
-#if 0
-    /** Find, or build if necessary, a binary operation.
-            @param  code    Operation we want
-            @param  arg1    Argument 1 forest
-            @param  arg2    Argument 2 forest
-            @param  res     Result forest
-            @return         The matching operation, if it already exists;
-                            a new operation, otherwise.
-    */
-    binary_operation* getOperation(const binary_opname* code,
-        expert_forest* arg1, expert_forest* arg2, expert_forest* res);
-
-    /** Find, or build if necessary, a binary operation.
-            @param  code    Operation we want
-            @param  arg1    Argument 1 forest taken from this dd_edge
-            @param  arg2    Argument 2 forest taken from this dd_edge
-            @param  res     Result forest taken from this dd_edge
-            @return         The matching operation, if it already exists;
-                            a new operation, otherwise.
-    */
-    binary_operation* getOperation(const binary_opname* code,
-        const dd_edge& arg1, const dd_edge& arg2, const dd_edge& res);
-
-#endif
-
-    /** Safely destroy the given binary operation.
-        It should be unnecessary to call this directly.
-    */
+    /// Safely destroy the given binary operation.
     void destroyOperation(binary_operation* &op);
 
 };
@@ -72,13 +45,15 @@ namespace MEDDLY {
 */
 class MEDDLY::binary_operation : public operation {
     public:
-        binary_operation(const binary_opname* code, unsigned et_slots,
+        binary_operation(binary_opname* code, unsigned et_slots,
             expert_forest* arg1, expert_forest* arg2, expert_forest* res);
 
     protected:
         virtual ~binary_operation();
 
     public:
+        void removeFromOpnameCache();
+
         bool matches(const dd_edge &arg1, const dd_edge &arg2,
                 const dd_edge &res) const;
 

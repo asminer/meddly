@@ -69,7 +69,7 @@ namespace MEDDLY {
 /// Abstract base class for all MT-based pre/post image operations.
 class MEDDLY::image_op : public binary_operation {
   public:
-    image_op(const binary_opname* opcode, expert_forest* arg1,
+    image_op(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
     inline ct_entry_key*
@@ -103,7 +103,7 @@ class MEDDLY::image_op : public binary_operation {
     expert_forest* argM;
 };
 
-MEDDLY::image_op::image_op(const binary_opname* oc, expert_forest* a1,
+MEDDLY::image_op::image_op(binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res, binary_operation* acc)
 : binary_operation(oc, 1, a1, a2, res)
 {
@@ -169,7 +169,7 @@ MEDDLY::node_handle MEDDLY::image_op::compute(node_handle a, node_handle b)
 */
 class MEDDLY::relXset_mdd : public image_op {
   public:
-    relXset_mdd(const binary_opname* opcode, expert_forest* arg1,
+    relXset_mdd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
   protected:
@@ -177,7 +177,7 @@ class MEDDLY::relXset_mdd : public image_op {
     virtual node_handle processTerminals(node_handle mdd, node_handle mxd) = 0;
 };
 
-MEDDLY::relXset_mdd::relXset_mdd(const binary_opname* oc, expert_forest* a1,
+MEDDLY::relXset_mdd::relXset_mdd(binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res, binary_operation* acc)
 : image_op(oc, a1, a2, res, acc)
 {
@@ -301,7 +301,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
 */
 class MEDDLY::setXrel_mdd : public image_op {
   public:
-    setXrel_mdd(const binary_opname* opcode, expert_forest* arg1,
+    setXrel_mdd(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
   protected:
@@ -309,7 +309,7 @@ class MEDDLY::setXrel_mdd : public image_op {
     virtual node_handle processTerminals(node_handle mdd, node_handle mxd) = 0;
 };
 
-MEDDLY::setXrel_mdd::setXrel_mdd(const binary_opname* oc,
+MEDDLY::setXrel_mdd::setXrel_mdd(binary_opname* oc,
   expert_forest* a1, expert_forest* a2, expert_forest* res, binary_operation* acc)
 : image_op(oc, a1, a2, res, acc)
 {
@@ -447,7 +447,7 @@ namespace MEDDLY {
   template <typename RTYPE>
   class mtmatr_mtvect : public relXset_mdd {
     public:
-      mtmatr_mtvect(const binary_opname* opcode, expert_forest* arg1,
+      mtmatr_mtvect(binary_opname* opcode, expert_forest* arg1,
         expert_forest* arg2, expert_forest* res, binary_operation* acc)
         : relXset_mdd(opcode, arg1, arg2, res, acc) { }
 
@@ -468,7 +468,7 @@ namespace MEDDLY {
   template <>
   class mtmatr_mtvect<bool> : public relXset_mdd {
     public:
-      mtmatr_mtvect(const binary_opname* opcode, expert_forest* arg1,
+      mtmatr_mtvect(binary_opname* opcode, expert_forest* arg1,
         expert_forest* arg2, expert_forest* res, binary_operation* acc)
         : relXset_mdd(opcode, arg1, arg2, res, acc) { }
 
@@ -505,7 +505,7 @@ namespace MEDDLY {
   template <typename RTYPE>
   class mtvect_mtmatr : public setXrel_mdd {
     public:
-      mtvect_mtmatr(const binary_opname* opcode, expert_forest* arg1,
+      mtvect_mtmatr(binary_opname* opcode, expert_forest* arg1,
         expert_forest* arg2, expert_forest* res, binary_operation* acc)
         : setXrel_mdd(opcode, arg1, arg2, res, acc) { }
 
@@ -526,7 +526,7 @@ namespace MEDDLY {
   template <>
   class mtvect_mtmatr<bool> : public setXrel_mdd {
     public:
-      mtvect_mtmatr(const binary_opname* opcode, expert_forest* arg1,
+      mtvect_mtmatr(binary_opname* opcode, expert_forest* arg1,
         expert_forest* arg2, expert_forest* res, binary_operation* acc)
         : setXrel_mdd(opcode, arg1, arg2, res, acc) { }
 
@@ -554,7 +554,7 @@ namespace MEDDLY {
 /// Abstract base class for all MT-based pre/post image operations.
 class MEDDLY::image_op_evplus : public binary_operation {
   public:
-    image_op_evplus(const binary_opname* opcode, expert_forest* arg1,
+    image_op_evplus(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
     inline ct_entry_key*
@@ -593,7 +593,7 @@ class MEDDLY::image_op_evplus : public binary_operation {
 };
 
 
-MEDDLY::image_op_evplus::image_op_evplus(const binary_opname* oc, expert_forest* a1,
+MEDDLY::image_op_evplus::image_op_evplus(binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res, binary_operation* acc)
 : binary_operation(oc, 1, a1, a2, res)
 {
@@ -644,7 +644,7 @@ void MEDDLY::image_op_evplus::compute(long ev, node_handle evmdd, node_handle mx
 */
 class MEDDLY::relXset_evplus : public image_op_evplus {
   public:
-    relXset_evplus(const binary_opname* opcode, expert_forest* arg1,
+    relXset_evplus(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
   protected:
@@ -652,7 +652,7 @@ class MEDDLY::relXset_evplus : public image_op_evplus {
     virtual void processTerminals(long ev, node_handle mdd, node_handle mxd, long& resEv, node_handle& resEvmdd) = 0;
 };
 
-MEDDLY::relXset_evplus::relXset_evplus(const binary_opname* oc,
+MEDDLY::relXset_evplus::relXset_evplus(binary_opname* oc,
   expert_forest* a1, expert_forest* a2, expert_forest* res, binary_operation* acc)
 : image_op_evplus(oc, a1, a2, res, acc)
 {
@@ -792,7 +792,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
 */
 class MEDDLY::setXrel_evplus : public image_op_evplus {
   public:
-    setXrel_evplus(const binary_opname* opcode, expert_forest* arg1,
+    setXrel_evplus(binary_opname* opcode, expert_forest* arg1,
       expert_forest* arg2, expert_forest* res, binary_operation* acc);
 
   protected:
@@ -800,7 +800,7 @@ class MEDDLY::setXrel_evplus : public image_op_evplus {
     virtual void processTerminals(long ev, node_handle mdd, node_handle mxd, long& resEv, node_handle& resEvmdd) = 0;
 };
 
-MEDDLY::setXrel_evplus::setXrel_evplus(const binary_opname* oc,
+MEDDLY::setXrel_evplus::setXrel_evplus(binary_opname* oc,
   expert_forest* a1, expert_forest* a2, expert_forest* res, binary_operation* acc)
 : image_op_evplus(oc, a1, a2, res, acc)
 {
@@ -945,7 +945,7 @@ namespace MEDDLY {
   template <typename RTYPE>
   class mtmatr_evplusvect : public relXset_evplus {
     public:
-    mtmatr_evplusvect(const binary_opname* opcode, expert_forest* arg1,
+    mtmatr_evplusvect(binary_opname* opcode, expert_forest* arg1,
         expert_forest* arg2, expert_forest* res, binary_operation* acc)
         : relXset_evplus(opcode, arg1, arg2, res, acc) { }
 
@@ -981,7 +981,7 @@ namespace MEDDLY {
   template <typename RTYPE>
   class evplusvect_mtmatr : public setXrel_evplus {
     public:
-    evplusvect_mtmatr(const binary_opname* opcode, expert_forest* arg1,
+    evplusvect_mtmatr(binary_opname* opcode, expert_forest* arg1,
         expert_forest* arg2, expert_forest* res, binary_operation* acc)
         : setXrel_evplus(opcode, arg1, arg2, res, acc) { }
 
@@ -1012,7 +1012,7 @@ namespace MEDDLY {
 */
 class MEDDLY::tcXrel_evplus : public image_op_evplus {
   public:
-    tcXrel_evplus(const binary_opname* opcode, expert_forest* tc,
+    tcXrel_evplus(binary_opname* opcode, expert_forest* tc,
       expert_forest* trans, expert_forest* res, binary_operation* acc);
 
   protected:
@@ -1020,7 +1020,7 @@ class MEDDLY::tcXrel_evplus : public image_op_evplus {
     virtual void processTerminals(long ev, node_handle evmxd, node_handle mxd, long& resEv, node_handle& resEvmxd);
 };
 
-MEDDLY::tcXrel_evplus::tcXrel_evplus(const binary_opname* oc,
+MEDDLY::tcXrel_evplus::tcXrel_evplus(binary_opname* oc,
   expert_forest* tc, expert_forest* trans, expert_forest* res, binary_operation* acc)
 : image_op_evplus(oc, tc, trans, res, acc)
 {
@@ -1202,7 +1202,7 @@ class MEDDLY::preimage_opname : public binary_opname {
   public:
     preimage_opname();
     virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+      expert_forest* a2, expert_forest* r);
 };
 
 MEDDLY::preimage_opname::preimage_opname()
@@ -1212,7 +1212,7 @@ MEDDLY::preimage_opname::preimage_opname()
 
 MEDDLY::binary_operation*
 MEDDLY::preimage_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r) const
+  expert_forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
@@ -1264,7 +1264,7 @@ class MEDDLY::postimage_opname : public binary_opname {
   public:
     postimage_opname();
     virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+      expert_forest* a2, expert_forest* r);
 };
 
 MEDDLY::postimage_opname::postimage_opname()
@@ -1274,7 +1274,7 @@ MEDDLY::postimage_opname::postimage_opname()
 
 MEDDLY::binary_operation*
 MEDDLY::postimage_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r) const
+  expert_forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
@@ -1325,7 +1325,7 @@ class MEDDLY::transitive_closure_postimage_opname : public binary_opname {
   public:
   transitive_closure_postimage_opname();
     virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+      expert_forest* a2, expert_forest* r);
 };
 
 MEDDLY::transitive_closure_postimage_opname::transitive_closure_postimage_opname()
@@ -1335,7 +1335,7 @@ MEDDLY::transitive_closure_postimage_opname::transitive_closure_postimage_opname
 
 MEDDLY::binary_operation*
 MEDDLY::transitive_closure_postimage_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r) const
+  expert_forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
@@ -1372,7 +1372,7 @@ class MEDDLY::VMmult_opname : public binary_opname {
   public:
     VMmult_opname();
     virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+      expert_forest* a2, expert_forest* r);
 };
 
 MEDDLY::VMmult_opname::VMmult_opname()
@@ -1382,7 +1382,7 @@ MEDDLY::VMmult_opname::VMmult_opname()
 
 MEDDLY::binary_operation*
 MEDDLY::VMmult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r) const
+  expert_forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
@@ -1432,7 +1432,7 @@ class MEDDLY::MVmult_opname : public binary_opname {
   public:
     MVmult_opname();
     virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+      expert_forest* a2, expert_forest* r);
 };
 
 MEDDLY::MVmult_opname::MVmult_opname()
@@ -1442,7 +1442,7 @@ MEDDLY::MVmult_opname::MVmult_opname()
 
 MEDDLY::binary_operation*
 MEDDLY::MVmult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r) const
+  expert_forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 

@@ -43,7 +43,7 @@ namespace MEDDLY {
 
 class MEDDLY::cross_bool : public binary_operation {
   public:
-    cross_bool(const binary_opname* oc, expert_forest* a1,
+    cross_bool(binary_opname* oc, expert_forest* a1,
       expert_forest* a2, expert_forest* res);
 
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
@@ -52,7 +52,7 @@ class MEDDLY::cross_bool : public binary_operation {
     node_handle compute_un(int ht, node_handle a, node_handle b);
 };
 
-MEDDLY::cross_bool::cross_bool(const binary_opname* oc, expert_forest* a1,
+MEDDLY::cross_bool::cross_bool(binary_opname* oc, expert_forest* a1,
   expert_forest* a2, expert_forest* res)
 : binary_operation(oc, 1, a1, a2, res)
 {
@@ -176,7 +176,7 @@ class MEDDLY::cross_opname : public binary_opname {
   public:
     cross_opname();
     virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r) const;
+      expert_forest* a2, expert_forest* r);
 };
 
 MEDDLY::cross_opname::cross_opname()
@@ -186,7 +186,7 @@ MEDDLY::cross_opname::cross_opname()
 
 MEDDLY::binary_operation*
 MEDDLY::cross_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r) const
+  expert_forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 

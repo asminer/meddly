@@ -43,11 +43,11 @@ namespace MEDDLY {
 /// Abstract base class for selecting one state randomly from a set of states.
 class MEDDLY::select : public unary_operation {
   public:
-    select(const unary_opname* oc, expert_forest* arg, expert_forest* res);
+    select(unary_opname* oc, expert_forest* arg, expert_forest* res);
 };
 
 MEDDLY::select
-:: select(const unary_opname* oc, expert_forest* arg, expert_forest* res)
+:: select(unary_opname* oc, expert_forest* arg, expert_forest* res)
  : unary_operation(oc, 0, arg, res)
 {
   MEDDLY_DCASSERT(!argF->isForRelations());
@@ -63,13 +63,13 @@ MEDDLY::select
 // States are not selected with equal probability.
 class MEDDLY::select_MT : public select {
   public:
-    select_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res);
+    select_MT(unary_opname* oc, expert_forest* arg, expert_forest* res);
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
     virtual node_handle _compute(node_handle node, int level);
 };
 
 MEDDLY::select_MT
-:: select_MT(const unary_opname* oc, expert_forest* arg, expert_forest* res)
+:: select_MT(unary_opname* oc, expert_forest* arg, expert_forest* res)
  : select(oc, arg, res)
 {
   MEDDLY_DCASSERT(argF->isMultiTerminal());
@@ -119,13 +119,13 @@ MEDDLY::node_handle MEDDLY::select_MT::_compute(node_handle a, int level)
 // States are not selected with equal probability.
 class MEDDLY::select_EVPlus : public select {
   public:
-    select_EVPlus(const unary_opname* oc, expert_forest* arg, expert_forest* res);
+    select_EVPlus(unary_opname* oc, expert_forest* arg, expert_forest* res);
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
     virtual void _compute(long aev, node_handle a, int level, long& bev, node_handle& b);
 };
 
 MEDDLY::select_EVPlus
-:: select_EVPlus(const unary_opname* oc, expert_forest* arg, expert_forest* res)
+:: select_EVPlus(unary_opname* oc, expert_forest* arg, expert_forest* res)
  : select(oc, arg, res)
 {
   MEDDLY_DCASSERT(argF->isEVPlus());
@@ -198,7 +198,7 @@ class MEDDLY::select_opname : public unary_opname {
   public:
     select_opname();
     virtual unary_operation*
-      buildOperation(expert_forest* ar, expert_forest* res) const;
+      buildOperation(expert_forest* ar, expert_forest* res);
 };
 
 MEDDLY::select_opname::select_opname()
@@ -208,7 +208,7 @@ MEDDLY::select_opname::select_opname()
 
 MEDDLY::unary_operation*
 MEDDLY::select_opname
-::buildOperation(expert_forest* arg, expert_forest* res) const
+::buildOperation(expert_forest* arg, expert_forest* res)
 {
   if (0==arg || 0==res) return 0;
 
