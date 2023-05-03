@@ -72,6 +72,8 @@
 namespace MEDDLY {
   // binary operation "codes"
 
+#if 0
+
   const binary_opname* UNION = 0;
   const binary_opname* INTERSECTION = 0;
   const binary_opname* DIFFERENCE = 0;
@@ -107,6 +109,8 @@ namespace MEDDLY {
   const binary_opname* MV_MULTIPLY = 0;
 
   const binary_opname* MM_MULTIPLY = 0;
+
+#endif
 
   // numerical operation "codes"
 
@@ -178,6 +182,7 @@ inline void cleanPair(T *local, const T* &global)
 void MEDDLY::builtin_initializer::cleanup()
 {
 
+#if 0
   cleanPair(UNION,          MEDDLY::UNION);
   cleanPair(INTERSECT,      MEDDLY::INTERSECTION);
   cleanPair(DIFFERENCE,     MEDDLY::DIFFERENCE);
@@ -209,16 +214,20 @@ void MEDDLY::builtin_initializer::cleanup()
   cleanPair(BACKWARD_DFS,   MEDDLY::REVERSE_REACHABLE_DFS);
   cleanPair(BACKWARD_BFS,   MEDDLY::REVERSE_REACHABLE_BFS);
 
+#endif
+
   cleanPair(SATURATION_BACKWARD,      MEDDLY::SATURATION_BACKWARD );
   cleanPair(SATURATION_FORWARD,       MEDDLY::SATURATION_FORWARD  );
   cleanPair(SATURATION_OTF_FORWARD,   MEDDLY::SATURATION_OTF_FORWARD  );
   cleanPair(SATURATION_IMPL_FORWARD,   MEDDLY::SATURATION_IMPL_FORWARD  );
   cleanPair(SATURATION_HYB_FORWARD,   MEDDLY::SATURATION_HYB_FORWARD  );
 
+#if 0
   cleanPair(EXPLVECT_MATR_MULT, MEDDLY::EXPLVECT_MATR_MULT);
   cleanPair(MATR_EXPLVECT_MULT, MEDDLY::MATR_EXPLVECT_MULT);
 
   cleanPair(MM_MULTIPLY,    MEDDLY::MM_MULTIPLY);
+#endif
 
 
 #ifdef HAVE_LIBGMP

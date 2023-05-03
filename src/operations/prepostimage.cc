@@ -1231,12 +1231,16 @@ MEDDLY::preimage_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  binary_operation* acc = 0;
+  binary_opname* accop = nullptr;
   if (a1->getEdgeLabeling() == edge_labeling::EVPLUS || r->getRangeType() == range_type::BOOLEAN) {
-    acc = getOperation(UNION, r, r, r);
+    accop = UNION();
   } else {
-    acc = getOperation(MAXIMUM, r, r, r);
+    accop = MAXIMUM();
   }
+  MEDDLY_DCASSERT(accop);
+
+  dd_edge er(r);
+  binary_operation* acc = accop->getOperation(er, er, er);
 
   if (a1->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     return new mtmatr_mtvect<bool>(this, a1, a2, r, acc);
@@ -1289,12 +1293,16 @@ MEDDLY::postimage_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  binary_operation* acc = 0;
+  binary_opname* accop = nullptr;
   if (a1->getEdgeLabeling() == edge_labeling::EVPLUS || r->getRangeType() == range_type::BOOLEAN) {
-    acc = getOperation(UNION, r, r, r);
+    accop = UNION();
   } else {
-    acc = getOperation(MAXIMUM, r, r, r);
+    accop = MAXIMUM();
   }
+  MEDDLY_DCASSERT(accop);
+
+  dd_edge er(r);
+  binary_operation* acc = accop->getOperation(er, er, er);
 
   if (a1->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     return new mtvect_mtmatr<bool>(this, a1, a2, r, acc);
@@ -1347,7 +1355,10 @@ MEDDLY::transitive_closure_postimage_opname::buildOperation(expert_forest* a1, e
   )
     throw error(error::TYPE_MISMATCH);
 
-  binary_operation* acc = getOperation(UNION, r, r, r);
+  binary_opname* accop = UNION();
+  MEDDLY_DCASSERT(accop);
+  dd_edge er(r);
+  binary_operation* acc = accop->getOperation(er, er, er);
   return new tcXrel_evplus(this, a1, a2, r, acc);
 }
 
@@ -1394,7 +1405,10 @@ MEDDLY::VMmult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  binary_operation* acc = getOperation(PLUS, r, r, r);
+  binary_opname* accop = PLUS();
+  MEDDLY_DCASSERT(accop);
+  dd_edge er(r);
+  binary_operation* acc = accop->getOperation(er, er, er);
 
   switch (r->getRangeType()) {
     case range_type::INTEGER:
@@ -1451,7 +1465,10 @@ MEDDLY::MVmult_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  binary_operation* acc = getOperation(PLUS, r, r, r);
+  binary_opname* accop = PLUS();
+  MEDDLY_DCASSERT(accop);
+  dd_edge er(r);
+  binary_operation* acc = accop->getOperation(er, er, er);
 
   //
   // We're switching the order of the arguments

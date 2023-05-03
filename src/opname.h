@@ -27,6 +27,9 @@ namespace MEDDLY {
     class binary_opname;
     class specialized_opname;
 
+    typedef unary_opname* (*unary_handle)();
+    typedef binary_opname* (*binary_handle)();
+
     class operation;
     class unary_operation;
     class binary_operation;
@@ -34,6 +37,7 @@ namespace MEDDLY {
 
     class ct_object;
     class dd_edge;
+    class expert_forest;
 
     class initializer_list;
 
@@ -72,7 +76,7 @@ namespace MEDDLY {
             @param  c     Output parameter: the result,
                             where \a c = \a op \a a.
     */
-    void apply(unary_opname* (*op)(), const dd_edge &a, dd_edge &c);
+    void apply(unary_handle op, const dd_edge &a, dd_edge &c);
 
 
     /** Apply a unary operator.
@@ -82,7 +86,7 @@ namespace MEDDLY {
             @param  c     Output parameter: the result,
                             where \a c = \a op \a a.
     */
-    void apply(unary_opname* (*op)(), const dd_edge &a, long &c);
+    void apply(unary_handle op, const dd_edge &a, long &c);
 
     /** Apply a unary operator.
         For operators whose result is a real.
@@ -91,7 +95,7 @@ namespace MEDDLY {
             @param  c     Output parameter: the result,
                             where \a c = \a op \a a.
     */
-    void apply(unary_opname* (*op)(), const dd_edge &a, double &c);
+    void apply(unary_handle op, const dd_edge &a, double &c);
 
     /** Apply a unary operator.
         For operators whose result is a anything else.
@@ -100,7 +104,7 @@ namespace MEDDLY {
             @param  c     Output parameter: the result,
                             where \a c = \a op \a a.
     */
-    void apply(unary_opname* (*op)(), const dd_edge &a, opnd_type cr,
+    void apply(unary_handle op, const dd_edge &a, opnd_type cr,
         ct_object &c);
 
 #ifdef __GMP_H__
@@ -112,7 +116,7 @@ namespace MEDDLY {
             @param  c   Input: an initialized MP integer.
                         Output: the result, where \a c = \a op \a a.
     */
-    inline void apply(unary_opname* (*op)(), const dd_edge &a, mpz_t &c) {
+    inline void apply(unary_handle op, const dd_edge &a, mpz_t &c) {
         ct_object& x = get_mpz_wrapper();
         apply(op, a, opnd_type::HUGEINT, x);
         unwrap(x, c);
@@ -137,12 +141,12 @@ namespace MEDDLY {
             @param  c     Output parameter: the result,
                           where \a c = \a a \a op \a b.
     */
-    void apply(binary_opname* (*op)(), const dd_edge &a, const dd_edge &b,
+    void apply(binary_handle op, const dd_edge &a, const dd_edge &b,
         dd_edge &c);
 
 
     // ******************************************************************
-    // *                     Named unary operations                     *
+    // *                    unary  operation handles                    *
     // ******************************************************************
 
     /// Unary operation.  Return the number of variable assignments
@@ -171,7 +175,7 @@ namespace MEDDLY {
     unary_opname* SELECT();
 
     // ******************************************************************
-    // *                    Named  binary operations                    *
+    // *                    binary operation handles                    *
     // ******************************************************************
 
     /// Set union operation for forests with range_type of BOOLEAN
@@ -503,8 +507,9 @@ class MEDDLY::binary_opname : public opname {
         void removeOperationFromCache(binary_operation* op);
 
     protected:
-        virtual binary_operation* buildOperation(const dd_edge &arg1,
-            const dd_edge &arg2, const dd_edge &res) const = 0;
+        // OLD interface
+        virtual binary_operation* buildOperation(expert_forest* arg1,
+            expert_forest* arg2, expert_forest* res) const = 0;
 };
 
 
@@ -570,7 +575,7 @@ class MEDDLY::specialized_opname : public opname {
 // ******************************************************************
 
 namespace MEDDLY {
-    unary_operation* getOperation(unary_opname* (*op)(),
+    inline unary_operation* getOperation(unary_handle op,
             const dd_edge &a, const dd_edge &c)
     {
         unary_opname* uop = op();
@@ -578,7 +583,7 @@ namespace MEDDLY {
         return uop->getOperation(a, c);
     }
 
-    unary_operation* getOperation(unary_opname* (*op)(),
+    inline unary_operation* getOperation(unary_handle op,
             const dd_edge &arg, opnd_type res)
     {
         unary_opname* uop = op();
@@ -586,7 +591,7 @@ namespace MEDDLY {
         return uop->getOperation(arg, res);
     }
 
-    binary_operation* getOperation(binary_opname* (*op)(),
+    inline binary_operation* getOperation(binary_handle op,
             const dd_edge &a1, const dd_edge &a2, const dd_edge &r)
     {
         binary_opname* bop = op();

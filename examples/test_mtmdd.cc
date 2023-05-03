@@ -103,7 +103,7 @@ op_info* getOp(forest* f, old_operation* op)
 // Tests a mtmdd operation on the elements provided.
 // This function assumes that each element[i] represents
 // an element in the given MTMDD.
-dd_edge test_mtmdd(forest* mtmdd, const binary_opname* opCode,
+dd_edge test_mtmdd(forest* mtmdd, binary_handle opCode,
     int** element, element_type* terms, int nElements)
 {
   // A = first nElements/2 elements combined using +.

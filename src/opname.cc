@@ -20,6 +20,8 @@
 #include "operations/mpz_object.h"  // for mpz wrapper
 #include "opname.h"
 #include "error.h"
+#include "dd_edge.h"
+#include "forest.h"
 
 #include "initializer.h"
 
@@ -444,7 +446,11 @@ MEDDLY::binary_opname::getOperation(const dd_edge &a1, const dd_edge &a2,
     //
     // Not found; build a new one and add it to the front
     //
-    match = buildOperation(a1, a2, res);
+    match = buildOperation(
+                static_cast<expert_forest*>(a1.getForest()),
+                static_cast<expert_forest*>(a2.getForest()),
+                static_cast<expert_forest*>(res.getForest())
+            );
     match->setNext(cache);
     cache = match;
     return match;
@@ -528,11 +534,163 @@ MEDDLY::unary_opname* MEDDLY::SELECT()
 
 // ******************************************************************
 // *                                                                *
+// *                  front end: binary operations                  *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::binary_opname* MEDDLY::UNION()
+{
+    return opname::UNION();
+}
+
+MEDDLY::binary_opname* MEDDLY::INTERSECTION()
+{
+    return opname::INTERSECTION();
+}
+
+MEDDLY::binary_opname* MEDDLY::DIFFERENCE()
+{
+    return opname::DIFFERENCE();
+}
+
+MEDDLY::binary_opname* MEDDLY::CROSS()
+{
+    return opname::CROSS();
+}
+
+MEDDLY::binary_opname* MEDDLY::MINIMUM()
+{
+    return opname::MINIMUM();
+}
+
+MEDDLY::binary_opname* MEDDLY::MAXIMUM()
+{
+    return opname::MAXIMUM();
+}
+
+MEDDLY::binary_opname* MEDDLY::PLUS()
+{
+    return opname::PLUS();
+}
+
+MEDDLY::binary_opname* MEDDLY::MINUS()
+{
+    return opname::MINUS();
+}
+
+MEDDLY::binary_opname* MEDDLY::MULTIPLY()
+{
+    return opname::MULTIPLY();
+}
+
+MEDDLY::binary_opname* MEDDLY::DIVIDE()
+{
+    return opname::DIVIDE();
+}
+
+MEDDLY::binary_opname* MEDDLY::MODULO()
+{
+    return opname::MODULO();
+}
+
+MEDDLY::binary_opname* MEDDLY::EQUAL()
+{
+    return opname::EQUAL();
+}
+
+MEDDLY::binary_opname* MEDDLY::NOT_EQUAL()
+{
+    return opname::NOT_EQUAL();
+}
+
+MEDDLY::binary_opname* MEDDLY::LESS_THAN()
+{
+    return opname::LESS_THAN();
+}
+
+MEDDLY::binary_opname* MEDDLY::LESS_THAN_EQUAL()
+{
+    return opname::LESS_THAN_EQUAL();
+}
+
+MEDDLY::binary_opname* MEDDLY::GREATER_THAN()
+{
+    return opname::GREATER_THAN();
+}
+
+MEDDLY::binary_opname* MEDDLY::GREATER_THAN_EQUAL()
+{
+    return opname::GREATER_THAN_EQUAL();
+}
+
+MEDDLY::binary_opname* MEDDLY::PRE_PLUS()
+{
+    return opname::PRE_PLUS();
+}
+
+MEDDLY::binary_opname* MEDDLY::POST_PLUS()
+{
+    return opname::POST_PLUS();
+}
+
+MEDDLY::binary_opname* MEDDLY::PRE_IMAGE()
+{
+    return opname::PRE_IMAGE();
+}
+
+MEDDLY::binary_opname* MEDDLY::POST_IMAGE()
+{
+    return opname::POST_IMAGE();
+}
+
+MEDDLY::binary_opname* MEDDLY::TC_POST_IMAGE()
+{
+    return opname::TC_POST_IMAGE();
+}
+
+MEDDLY::binary_opname* MEDDLY::REACHABLE_STATES_DFS()
+{
+    return opname::REACHABLE_STATES_DFS();
+}
+
+MEDDLY::binary_opname* MEDDLY::REACHABLE_STATES_BFS()
+{
+    return opname::REACHABLE_STATES_BFS();
+}
+
+MEDDLY::binary_opname* MEDDLY::REVERSE_REACHABLE_DFS()
+{
+    return opname::REVERSE_REACHABLE_DFS();
+}
+
+MEDDLY::binary_opname* MEDDLY::REVERSE_REACHABLE_BFS()
+{
+    return opname::REVERSE_REACHABLE_BFS();
+}
+
+MEDDLY::binary_opname* MEDDLY::VM_MULTIPLY()
+{
+    return opname::VM_MULTIPLY();
+}
+
+MEDDLY::binary_opname* MEDDLY::MV_MULTIPLY()
+{
+    return opname::MV_MULTIPLY();
+}
+
+MEDDLY::binary_opname* MEDDLY::MM_MULTIPLY()
+{
+    return opname::MM_MULTIPLY();
+}
+
+
+// ******************************************************************
+// *                                                                *
 // *                        apply  functions                        *
 // *                                                                *
 // ******************************************************************
 
-void MEDDLY::apply(unary_opname* (*code)(), const dd_edge &a, dd_edge &c)
+void MEDDLY::apply(unary_handle code, const dd_edge &a, dd_edge &c)
 {
     if (nullptr == code) {
         throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
@@ -545,7 +703,7 @@ void MEDDLY::apply(unary_opname* (*code)(), const dd_edge &a, dd_edge &c)
     op->computeTemp(a, c);
 }
 
-void MEDDLY::apply(unary_opname* (*code)(), const dd_edge &a, long &c)
+void MEDDLY::apply(unary_handle code, const dd_edge &a, long &c)
 {
     if (nullptr == code) {
         throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
@@ -558,7 +716,7 @@ void MEDDLY::apply(unary_opname* (*code)(), const dd_edge &a, long &c)
     op->compute(a, c);
 }
 
-void MEDDLY::apply(unary_opname* (*code)(), const dd_edge &a, double &c)
+void MEDDLY::apply(unary_handle code, const dd_edge &a, double &c)
 {
     if (nullptr == code) {
         throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
@@ -571,7 +729,7 @@ void MEDDLY::apply(unary_opname* (*code)(), const dd_edge &a, double &c)
     op->compute(a, c);
 }
 
-void MEDDLY::apply(unary_opname* (*code)(), const dd_edge &a,
+void MEDDLY::apply(unary_handle code, const dd_edge &a,
     opnd_type cr, ct_object &c)
 {
     if (nullptr == code) {
@@ -585,7 +743,7 @@ void MEDDLY::apply(unary_opname* (*code)(), const dd_edge &a,
     op->compute(a, c);
 }
 
-void MEDDLY::apply(binary_opname* (*code)(), const dd_edge &a,
+void MEDDLY::apply(binary_handle code, const dd_edge &a,
     const dd_edge &b, dd_edge &c)
 {
     if (nullptr == code) {

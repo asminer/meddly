@@ -181,7 +181,7 @@ dd_edge doPlus(forest* mtmxd, int** from, int** to, element_type* terms, int N)
 // Tests a mtmxd operation on the elements provided.
 // This function assumes that each from[i] and to[i] combine
 // to make up an element in the given MTMXD.
-dd_edge test_mtmxd(forest* mtmxd, binary_opname* opCode,
+dd_edge test_mtmxd(forest* mtmxd, binary_handle opCode,
     int** from, int** to, element_type* terms, int nElements)
 {
   // A = first nElements/2 elements combined using +.
