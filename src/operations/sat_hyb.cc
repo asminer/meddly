@@ -1370,7 +1370,7 @@ class MEDDLY::saturation_hyb_by_events_opname : public unary_opname {
 public:
   saturation_hyb_by_events_opname();
 
-  static const saturation_hyb_by_events_opname* getInstance();
+  static saturation_hyb_by_events_opname* getInstance();
 
 };
 
@@ -1381,7 +1381,7 @@ MEDDLY::saturation_hyb_by_events_opname::saturation_hyb_by_events_opname()
 {
 }
 
-const MEDDLY::saturation_hyb_by_events_opname* MEDDLY::saturation_hyb_by_events_opname::getInstance()
+MEDDLY::saturation_hyb_by_events_opname* MEDDLY::saturation_hyb_by_events_opname::getInstance()
 {
   if (0==instance) instance = new saturation_hyb_by_events_opname;
   return instance;

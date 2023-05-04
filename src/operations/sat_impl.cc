@@ -557,7 +557,7 @@ class MEDDLY::saturation_impl_by_events_opname : public unary_opname {
 public:
   saturation_impl_by_events_opname();
 
-  static const saturation_impl_by_events_opname* getInstance();
+  static saturation_impl_by_events_opname* getInstance();
 
 };
 
@@ -568,7 +568,7 @@ MEDDLY::saturation_impl_by_events_opname::saturation_impl_by_events_opname()
 {
 }
 
-const MEDDLY::saturation_impl_by_events_opname* MEDDLY::saturation_impl_by_events_opname::getInstance()
+MEDDLY::saturation_impl_by_events_opname* MEDDLY::saturation_impl_by_events_opname::getInstance()
 {
   if (0==instance) instance = new saturation_impl_by_events_opname;
   return instance;
@@ -1988,7 +1988,9 @@ bool
 MEDDLY::satimpl_opname::implicit_relation::isReachable(const dd_edge& initial_states, const dd_edge& constraint)
 {
   // build implicit saturation operation operation
-  specialized_operation* satop = SATURATION_IMPL_FORWARD->buildOperation(this);
+  satimpl_opname* satopn = SATURATION_IMPL_FORWARD();
+  MEDDLY_DCASSERT(satopn);
+  specialized_operation* satop = satopn->buildOperation(this);
   MEDDLY_DCASSERT(satop);
   forwd_impl_dfs_by_events_mt* op = dynamic_cast<forwd_impl_dfs_by_events_mt*>(satop);
   MEDDLY_DCASSERT(op);

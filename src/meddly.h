@@ -28,7 +28,6 @@
 
 
 #include PATH("old_meddly.h")
-#include PATH("old_meddly.hh")
 
 #include PATH("error.h")
 #include PATH("io.h")
@@ -40,6 +39,7 @@
 #include PATH("relation_node.h")
 #include PATH("memory.h")
 
+#include PATH("ops_builtin.h")
 #include PATH("opname.h")
 #include PATH("opname_numer.h")
 #include PATH("opname_satur.h")

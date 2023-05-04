@@ -27,6 +27,7 @@
 #include "../compute_table.h"
 #include "../oper_binary.h"
 #include "../opname_satur.h"
+#include "../ops_builtin.h"
 
 // ******************************************************************
 // *                                                                *

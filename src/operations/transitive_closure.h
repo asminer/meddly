@@ -61,9 +61,9 @@ public:
 class MEDDLY::transitive_closure_bfs_opname : public constrained_opname {
 public:
   transitive_closure_bfs_opname();
-  virtual specialized_operation* buildOperation(expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res) const;
+  virtual specialized_operation* buildOperation(expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
 
-  virtual specialized_operation* buildOperation(arguments* a) const
+  virtual specialized_operation* buildOperation(arguments* a)
   {
     throw error::NOT_IMPLEMENTED;
   }
@@ -91,7 +91,7 @@ class MEDDLY::transitive_closure_dfs_opname : public constrained_opname {
 public:
   transitive_closure_dfs_opname();
 
-  virtual specialized_operation* buildOperation(arguments* a) const;
+  virtual specialized_operation* buildOperation(arguments* a);
 };
 
 class MEDDLY::transitive_closure_dfs: public common_transitive_closure

@@ -70,7 +70,7 @@ protected:
 public:
   constrained_bfs_opname(bool fwd);
 
-  virtual specialized_operation* buildOperation(arguments* a) const;
+  virtual specialized_operation* buildOperation(arguments* a);
 };
 
 class MEDDLY::constrained_bckwd_bfs_evplus: public common_constrained
@@ -97,7 +97,7 @@ protected:
 public:
   constrained_dfs_opname(bool fwd);
 
-  virtual specialized_operation* buildOperation(arguments* a) const;
+  virtual specialized_operation* buildOperation(arguments* a);
 };
 
 class MEDDLY::constrained_dfs_mt: public common_constrained
