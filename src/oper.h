@@ -34,16 +34,15 @@ namespace MEDDLY {
     class ct_entry_type;
     class ct_entry_result;
 
-    /// Remove an existing operation from the operation cache.
-    /// TBD: make this a static method inside class operation
-//    void removeOperationFromCache(operation* );
-
-    /// Should not be called directly.
-    /// TBD: make this a static method inside class operation
-    /// Still in old_meddly.cc
-    void destroyOpInternal(operation* op);
-
     void cleanup();
+
+    // ******************************************************************
+    // *                      Operation management                      *
+    // ******************************************************************
+
+    /// Safely destroy the given operation.
+    /// TBD: see if this can go in the operation destructor?
+    void destroyOperation(operation* &op);
 };
 
 // ******************************************************************
@@ -57,6 +56,7 @@ namespace MEDDLY {
     Necessary for compute table entries.
 */
 class MEDDLY::operation {
+        friend void destroyOperation(operation* &op);
     public:
         /** Constructor.
                 @param  n           Operation "name"
@@ -152,6 +152,9 @@ class MEDDLY::operation {
         void showComputeTable(output &, int verbLevel) const;
 
 
+        // TBD MOVE THIS HERE
+        static void purgeAllMarked();
+
     protected:
         void registerInForest(forest* f);
         void unregisterInForest(forest* f);
@@ -230,7 +233,6 @@ class MEDDLY::operation {
         unsigned first_etid;
 
     friend class forest;
-    friend void destroyOpInternal(operation* op);
     friend void cleanup();
 
     friend class ct_initializer;

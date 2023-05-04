@@ -84,6 +84,10 @@ operation hierarchy
     specialized_operation           oper_special.h/cc
 
 
+operation functions
+
+    purgeMarkedOperations()     ->  operation::purgeAllMarked()
+
 
 
 Compute table changes:

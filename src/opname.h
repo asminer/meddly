@@ -162,8 +162,7 @@ class MEDDLY::opname {
 
         inline const char* getName() const { return name; }
 
-    protected:
-        void removeFromCache(operation* op);
+        void removeOperationFromCache(operation* op);
 
     protected:
         operation* cache;
@@ -186,8 +185,6 @@ class MEDDLY::unary_opname : public opname {
 
         unary_operation* getOperation(const dd_edge &arg, const dd_edge &res);
         unary_operation* getOperation(const dd_edge &arg, opnd_type res);
-
-        void removeOperationFromCache(unary_operation* op);
 
     protected:
         virtual unary_operation*
@@ -212,8 +209,6 @@ class MEDDLY::binary_opname : public opname {
 
         binary_operation* getOperation(const dd_edge &arg1,
                 const dd_edge &arg2, const dd_edge &res);
-
-        void removeOperationFromCache(binary_operation* op);
 
     protected:
         // OLD interface

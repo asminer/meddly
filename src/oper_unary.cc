@@ -54,13 +54,6 @@ MEDDLY::unary_operation::~unary_operation()
   unregisterInForest(resF);
 }
 
-void MEDDLY::unary_operation::removeFromOpnameCache()
-{
-    unary_opname* parent = dynamic_cast<unary_opname*>(getParent());
-    if (!parent) return;
-    parent->removeOperationFromCache(this);
-}
-
 bool
 MEDDLY::unary_operation::matches(const MEDDLY::dd_edge &arg,
         const MEDDLY::dd_edge &res) const
@@ -126,23 +119,5 @@ MEDDLY::unary_operation::checkForestCompatibility() const
   else {
     return true;
   }
-}
-
-// ******************************************************************
-// *                                                                *
-// *                      front-end  functions                      *
-// *                                                                *
-// ******************************************************************
-
-void MEDDLY::destroyOperation(MEDDLY::unary_operation* &op)
-{
-  if (!op) return;
-  op->removeFromOpnameCache();
-  if (!op->isMarkedForDeletion()) {
-    op->markForDeletion();
-    operation::removeStalesFromMonolithic();
-  }
-  delete op;
-  op = nullptr;
 }
 

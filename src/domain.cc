@@ -56,7 +56,6 @@
 namespace MEDDLY {
     // TBD: fix this:
     extern bool libraryRunning;
-    void purgeMarkedOperations();
 };
 
 // #define DEBUG_CLEANUP
@@ -531,7 +530,7 @@ void MEDDLY::destroyDomain(MEDDLY::domain* &d)
   if (0==d) return;
   if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   d->markForDeletion();
-  purgeMarkedOperations();
+  operation::purgeAllMarked();
   delete d;
   d = 0;
 }

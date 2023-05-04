@@ -94,8 +94,8 @@ namespace MEDDLY {
   unpacked_node* unpacked_node::buildList = 0;
 
   // helper functions
-  void purgeMarkedOperations();
-  void destroyOpInternal(operation* op);
+  // void purgeMarkedOperations();
+  // void destroyOpInternal(operation* op);
 
 };
 
@@ -264,6 +264,7 @@ void MEDDLY::apply(const binary_opname* code, const dd_edge &a,
 // front end - create and destroy objects
 //----------------------------------------------------------------------
 
+/*
 void MEDDLY::purgeMarkedOperations()
 {
   operation::removeStalesFromMonolithic();
@@ -275,6 +276,7 @@ void MEDDLY::purgeMarkedOperations()
     }
   }
 }
+*/
 
 /*
 inline void MEDDLY::destroyOpInternal(MEDDLY::operation* op)

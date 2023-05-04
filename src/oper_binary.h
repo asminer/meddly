@@ -24,14 +24,6 @@
 namespace MEDDLY {
     class dd_edge;
     class binary_operation;
-
-    // ******************************************************************
-    // *                      Operation management                      *
-    // ******************************************************************
-
-    /// Safely destroy the given binary operation.
-    void destroyOperation(binary_operation* &op);
-
 };
 
 // ******************************************************************
@@ -53,8 +45,6 @@ class MEDDLY::binary_operation : public operation {
         virtual ~binary_operation();
 
     public:
-        void removeFromOpnameCache();
-
         bool matches(const dd_edge &arg1, const dd_edge &arg2,
                 const dd_edge &res) const;
 

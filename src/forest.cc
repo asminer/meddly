@@ -69,7 +69,6 @@
 namespace MEDDLY {
     // TBD: fix this:
     extern bool libraryRunning;
-    void purgeMarkedOperations();
 };
 
 
@@ -2424,7 +2423,7 @@ void MEDDLY::destroyForest(MEDDLY::forest* &f)
   if (0==f) return;
   if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
   f->markForDeletion();
-  purgeMarkedOperations();
+  operation::purgeAllMarked();
   delete f;
   f = 0;
 }

@@ -25,13 +25,6 @@ namespace MEDDLY {
     class dd_edge;
     class ct_object;
     class unary_operation;
-
-    // ******************************************************************
-    // *                      Operation management                      *
-    // ******************************************************************
-
-    /// Safely destroy the given unary operation.
-    void destroyOperation(unary_operation* &op);
 };
 
 
@@ -57,8 +50,6 @@ class MEDDLY::unary_operation : public operation {
     virtual ~unary_operation();
 
   public:
-    void removeFromOpnameCache();
-
     bool matches(const dd_edge &arg, const dd_edge &res) const;
     bool matches(const dd_edge &arg, opnd_type res) const;
 
@@ -85,11 +76,5 @@ class MEDDLY::unary_operation : public operation {
     opnd_type resultType;
 
 };
-
-// ******************************************************************
-// *                                                                *
-// *                inlined  unary_operation methods                *
-// *                                                                *
-// ******************************************************************
 
 #endif // #include guard

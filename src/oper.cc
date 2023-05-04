@@ -243,6 +243,17 @@ void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
     }
 }
 
+void MEDDLY::operation::purgeAllMarked()
+{
+    removeStalesFromMonolithic();
+    for (unsigned i=0; i<list_size; i++) {
+        if (!op_list[i]) continue;
+        if (op_list[i]->isMarkedForDeletion()) {
+            destroyOperation(op_list[i]);
+        }
+    }
+}
+
 void MEDDLY::operation::showComputeTable(output &s, int verbLevel) const
 {
     bool has_monolithic = false;
@@ -351,31 +362,20 @@ void MEDDLY::operation::destroyAllOps()
 
 // ******************************************************************
 // *                                                                *
-// *                           Front  end                           *
+// *                      front-end  functions                      *
 // *                                                                *
 // ******************************************************************
 
-/*
-void MEDDLY::removeOperationFromCache(operation* op)
+void MEDDLY::destroyOperation(MEDDLY::operation* &op)
 {
-  if (0==op || 0==op_cache) return;
-  if (!libraryRunning)
-    throw error(error::UNINITIALIZED, __FILE__, __LINE__);
-  const opname* code = op->getOpName();
-
-  operation* curr;
-  operation* prev = 0;
-  for (curr=op_cache[code->getIndex()]; curr; curr=curr->getNext()) {
-    if (curr == op) break;
-    prev = curr;
-  } // for
-  if (0==curr) return;  // not found
-  // remove curr
-  if (prev) {
-    prev->setNext(curr->getNext());
-  } else {
-    op_cache[code->getIndex()] = curr->getNext();
-  }
-  curr->setNext(0);
+    if (!op) return;
+    opname* parent = op->getParent();
+    if (parent) parent->removeOperationFromCache(op);
+    if (!op->isMarkedForDeletion()) {
+        op->markForDeletion();
+        operation::removeStalesFromMonolithic();
+    }
+    delete op;
+    op = nullptr;
 }
-*/
+

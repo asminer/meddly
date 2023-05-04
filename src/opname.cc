@@ -102,7 +102,7 @@ MEDDLY::opname::~opname()
 }
 
 void
-MEDDLY::opname::removeFromCache(operation* op)
+MEDDLY::opname::removeOperationFromCache(operation* op)
 {
     if (!op) return;
     operation* prev = nullptr;
@@ -173,11 +173,6 @@ MEDDLY::unary_opname::getOperation(const dd_edge &ar, opnd_type res)
     return match;
 }
 
-void MEDDLY::unary_opname::removeOperationFromCache(unary_operation* op)
-{
-    removeFromCache(op);
-}
-
 MEDDLY::unary_operation*
 MEDDLY::unary_opname::buildOperation(const dd_edge &, const dd_edge &)
 {
@@ -237,12 +232,6 @@ MEDDLY::binary_opname::getOperation(const dd_edge &a1, const dd_edge &a2,
     cache = match;
     return match;
 }
-
-void MEDDLY::binary_opname::removeOperationFromCache(binary_operation* op)
-{
-    removeFromCache(op);
-}
-
 
 // ******************************************************************
 // *                                                                *
