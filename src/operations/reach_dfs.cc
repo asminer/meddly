@@ -28,6 +28,7 @@
 #include "../compute_table.h"
 #include "../oper_unary.h"
 #include "../oper_binary.h"
+#include "../ops_builtin.h"
 
 // #define TRACE_RECFIRE
 // #define DEBUG_DFS

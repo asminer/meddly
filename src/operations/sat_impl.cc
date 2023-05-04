@@ -30,6 +30,7 @@
 #include "../oper_binary.h"
 #include "../oper_special.h"
 #include "../opname_satur.h"
+#include "../ops_builtin.h"
 
    #define OUT_OF_BOUNDS -1
    #define NOT_KNOWN -2

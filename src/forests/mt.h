@@ -28,6 +28,8 @@
 
 #include "../defines.h"
 #include "../forest.h"
+#include "../oper_binary.h"
+#include "../ops_builtin.h"
 
 namespace MEDDLY {
   class mt_forest;

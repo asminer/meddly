@@ -59,14 +59,23 @@ namespace MEDDLY {
 #include "operations/comp_ge.h"
 #include "operations/prepostplus.h"
 #include "operations/prepostimage.h"
-#include "operations/reach_bfs.h"
-#include "operations/reach_dfs.h"
 #include "operations/vect_matr.h"
 #include "operations/mm_mult.h"
 //
 // For initializing numerical operations
 //
 #include "operations/vect_matr.h"
+//
+// For initializing saturation-line operations
+//
+#include "operations/reach_bfs.h"
+#include "operations/reach_dfs.h"
+#include "operations/sat_pregen.h"
+#include "operations/sat_otf.h"
+#include "operations/sat_impl.h"
+#include "operations/sat_hyb.h"
+#include "operations/constrained.h"
+#include "operations/transitive_closure.h"
 
 
 
@@ -130,7 +139,73 @@ class MEDDLY::builtin_init : public initializer_list {
     public:
         static numerical_opname* _EXPLVECT_MATR_MULT;
         static numerical_opname* _MATR_EXPLVECT_MULT;
+    public:
+        static satpregen_opname* _SATURATION_FORWARD;
+        static satpregen_opname* _SATURATION_BACKWARD;
+        static satotf_opname* _SATURATION_OTF_FORWARD;
+        static satimpl_opname* _SATURATION_IMPL_FORWARD;
+        static sathyb_opname* _SATURATION_HYB_FORWARD;
+
+        static constrained_opname* _CONSTRAINED_BACKWARD_BFS;
+        static constrained_opname* _CONSTRAINED_FORWARD_DFS;
+        static constrained_opname* _CONSTRAINED_BACKWARD_DFS;
+        static constrained_opname* _TRANSITIVE_CLOSURE_DFS;
 };
+
+// ******************************************************************
+
+MEDDLY::unary_opname* MEDDLY::builtin_init::_CARD;
+MEDDLY::unary_opname* MEDDLY::builtin_init::_COMPL;
+MEDDLY::unary_opname* MEDDLY::builtin_init::_MDD2INDEX;
+MEDDLY::unary_opname* MEDDLY::builtin_init::_COPY;
+MEDDLY::unary_opname* MEDDLY::builtin_init::_CYCLE;
+MEDDLY::unary_opname* MEDDLY::builtin_init::_MAXRANGE;
+MEDDLY::unary_opname* MEDDLY::builtin_init::_MINRANGE;
+MEDDLY::unary_opname* MEDDLY::builtin_init::_SELECT;
+
+MEDDLY::binary_opname* MEDDLY::builtin_init::_UNION;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_INTERSECT;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_DIFFERENCE;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_CROSS;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_MIN;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_MAX;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_PLUS;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_MINUS;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_MULTIPLY;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_DIVIDE;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_MODULO;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_EQ;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_NE;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_LT;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_LE;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_GT;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_GE;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_PLUS;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_PLUS;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_IMAGE;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_IMAGE;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_TC_POST_IMAGE;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_DFS;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_BFS;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_DFS;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_BFS;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_VM_MULTIPLY;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_MV_MULTIPLY;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_MM_MULTIPLY;
+
+MEDDLY::numerical_opname* MEDDLY::builtin_init::_EXPLVECT_MATR_MULT;
+MEDDLY::numerical_opname* MEDDLY::builtin_init::_MATR_EXPLVECT_MULT;
+
+MEDDLY::satpregen_opname* MEDDLY::builtin_init::_SATURATION_FORWARD;
+MEDDLY::satpregen_opname* MEDDLY::builtin_init::_SATURATION_BACKWARD;
+MEDDLY::satotf_opname* MEDDLY::builtin_init::_SATURATION_OTF_FORWARD;
+MEDDLY::satimpl_opname* MEDDLY::builtin_init::_SATURATION_IMPL_FORWARD;
+MEDDLY::sathyb_opname* MEDDLY::builtin_init::_SATURATION_HYB_FORWARD;
+
+MEDDLY::constrained_opname* MEDDLY::builtin_init::_CONSTRAINED_BACKWARD_BFS;
+MEDDLY::constrained_opname* MEDDLY::builtin_init::_CONSTRAINED_FORWARD_DFS;
+MEDDLY::constrained_opname* MEDDLY::builtin_init::_CONSTRAINED_BACKWARD_DFS;
+MEDDLY::constrained_opname* MEDDLY::builtin_init::_TRANSITIVE_CLOSURE_DFS;
 
 // ******************************************************************
 
@@ -185,6 +260,19 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     //
     _EXPLVECT_MATR_MULT = nullptr;
     _MATR_EXPLVECT_MULT = nullptr;
+    //
+    // Saturation-like ops
+    //
+    _SATURATION_FORWARD         = nullptr;
+    _SATURATION_BACKWARD        = nullptr;
+    _SATURATION_OTF_FORWARD     = nullptr;
+    _SATURATION_IMPL_FORWARD    = nullptr;
+    _SATURATION_HYB_FORWARD     = nullptr;
+
+    _CONSTRAINED_BACKWARD_BFS   = nullptr;
+    _CONSTRAINED_FORWARD_DFS    = nullptr;
+    _CONSTRAINED_BACKWARD_DFS   = nullptr;
+    _TRANSITIVE_CLOSURE_DFS     = nullptr;
 }
 
 void MEDDLY::builtin_init::setup()
@@ -237,6 +325,19 @@ void MEDDLY::builtin_init::setup()
     //
     _EXPLVECT_MATR_MULT = initExplVectorMatrixMult()  ;
     _MATR_EXPLVECT_MULT = initMatrixExplVectorMult()  ;
+    //
+    // Saturation-like ops
+    //
+    _SATURATION_FORWARD         =   initSaturationForward()         ;
+    _SATURATION_BACKWARD        =   initSaturationBackward()        ;
+    _SATURATION_OTF_FORWARD     =   initOtfSaturationForward()      ;
+    _SATURATION_IMPL_FORWARD    =   initImplSaturationForward()     ;
+    _SATURATION_HYB_FORWARD     =   initHybSaturationForward()      ;
+
+    _CONSTRAINED_BACKWARD_BFS   =   initConstrainedBFSBackward()    ;
+    _CONSTRAINED_FORWARD_DFS    =   initConstrainedDFSForward()     ;
+    _CONSTRAINED_BACKWARD_DFS   =   initConstrainedDFSBackward()    ;
+    _TRANSITIVE_CLOSURE_DFS     =   initTransitiveClosureDFS()      ;
 }
 
 void MEDDLY::builtin_init::cleanup()
@@ -289,6 +390,19 @@ void MEDDLY::builtin_init::cleanup()
     //
     mydelete(_EXPLVECT_MATR_MULT);
     mydelete(_MATR_EXPLVECT_MULT);
+    //
+    // Saturation-like ops
+    //
+    mydelete(_SATURATION_FORWARD);
+    mydelete(_SATURATION_BACKWARD);
+    mydelete(_SATURATION_OTF_FORWARD);
+    mydelete(_SATURATION_IMPL_FORWARD);
+    mydelete(_SATURATION_HYB_FORWARD);
+
+    mydelete(_CONSTRAINED_BACKWARD_BFS);
+    mydelete(_CONSTRAINED_FORWARD_DFS);
+    mydelete(_CONSTRAINED_BACKWARD_DFS);
+    mydelete(_TRANSITIVE_CLOSURE_DFS);
 }
 
 // ******************************************************************
@@ -427,6 +541,40 @@ MEDDLY::numerical_opname* MEDDLY::EXPLVECT_MATR_MULT() {
 }
 MEDDLY::numerical_opname* MEDDLY::MATR_EXPLVECT_MULT() {
     return builtin_init::_MATR_EXPLVECT_MULT;
+}
+
+// ******************************************************************
+// *                                                                *
+// *             front end:  saturation-like operations             *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::satpregen_opname* MEDDLY::SATURATION_FORWARD() {
+    return builtin_init::_SATURATION_FORWARD;
+}
+MEDDLY::satpregen_opname* MEDDLY::SATURATION_BACKWARD() {
+    return builtin_init::_SATURATION_BACKWARD;
+}
+MEDDLY::satotf_opname* MEDDLY::SATURATION_OTF_FORWARD() {
+    return builtin_init::_SATURATION_OTF_FORWARD;
+}
+MEDDLY::satimpl_opname* MEDDLY::SATURATION_IMPL_FORWARD() {
+    return builtin_init::_SATURATION_IMPL_FORWARD;
+}
+MEDDLY::sathyb_opname* MEDDLY::SATURATION_HYB_FORWARD() {
+    return builtin_init::_SATURATION_HYB_FORWARD;
+}
+MEDDLY::constrained_opname* MEDDLY::CONSTRAINED_BACKWARD_BFS() {
+    return builtin_init::_CONSTRAINED_BACKWARD_BFS;
+}
+MEDDLY::constrained_opname* MEDDLY::CONSTRAINED_FORWARD_DFS() {
+    return builtin_init::_CONSTRAINED_FORWARD_DFS;
+}
+MEDDLY::constrained_opname* MEDDLY::CONSTRAINED_BACKWARD_DFS() {
+    return builtin_init::_CONSTRAINED_BACKWARD_DFS;
+}
+MEDDLY::constrained_opname* MEDDLY::TRANSITIVE_CLOSURE_DFS() {
+    return builtin_init::_TRANSITIVE_CLOSURE_DFS;
 }
 
 // ******************************************************************

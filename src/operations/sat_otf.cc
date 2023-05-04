@@ -28,6 +28,7 @@
 #include "../oper_binary.h"
 #include "../oper_special.h"
 #include "../opname_satur.h"
+#include "../ops_builtin.h"
 
 namespace MEDDLY {
   class otfsat_by_events_opname;

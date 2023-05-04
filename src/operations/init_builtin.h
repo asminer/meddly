@@ -37,17 +37,6 @@ class MEDDLY::builtin_initializer : public initializer_list {
   numerical_opname* MATR_EXPLVECT_MULT;
   */
 
-  satpregen_opname* SATURATION_FORWARD;
-  satpregen_opname* SATURATION_BACKWARD;
-  satotf_opname* SATURATION_OTF_FORWARD;
-  satimpl_opname* SATURATION_IMPL_FORWARD;
-  sathyb_opname* SATURATION_HYB_FORWARD;
-
-  constrained_opname* CONSTRAINED_BACKWARD_BFS;
-  constrained_opname* CONSTRAINED_FORWARD_DFS;
-  constrained_opname* CONSTRAINED_BACKWARD_DFS;
-  constrained_opname* TRANSITIVE_CLOSURE_DFS;
-
 public:
   builtin_initializer(initializer_list *p);
 protected:

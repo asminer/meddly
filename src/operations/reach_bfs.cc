@@ -26,6 +26,7 @@
 
 #include "../forest.h"
 #include "../oper_binary.h"
+#include "../ops_builtin.h"
 
 // #define DEBUG_BFS
 // #define VERBOSE_BFS

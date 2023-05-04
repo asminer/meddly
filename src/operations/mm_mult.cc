@@ -27,6 +27,7 @@
 #include "../ct_entry_result.h"
 #include "../compute_table.h"
 #include "../oper_binary.h"
+#include "../ops_builtin.h"
 
 // #define TRACE_ALL_OPS
 
