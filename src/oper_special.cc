@@ -61,3 +61,20 @@ void MEDDLY::specialized_operation::compute(const dd_edge &ar1,
   throw error(error::TYPE_MISMATCH);
 }
 
+// ******************************************************************
+// *                                                                *
+// *                      front-end  functions                      *
+// *                                                                *
+// ******************************************************************
+
+void MEDDLY::destroyOperation(MEDDLY::specialized_operation* &op)
+{
+  if (!op) return;
+  if (!op->isMarkedForDeletion()) {
+    op->markForDeletion();
+    operation::removeStalesFromMonolithic();
+  }
+  delete op;
+  op = nullptr;
+}
+

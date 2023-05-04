@@ -38,12 +38,12 @@ namespace MEDDLY {
 /** Mechanism to apply specialized operations.
 */
 class MEDDLY::specialized_operation : public operation {
+    friend void destroyOperation(specialized_operation* &op);
   public:
     specialized_operation(specialized_opname* code, unsigned et_slots);
   protected:
     virtual ~specialized_operation();
   public:
-
     /** For unary (like) operations.
         Note that there could be other "built in" operands.
         Default behavior is to throw an exception.

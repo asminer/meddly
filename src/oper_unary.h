@@ -45,6 +45,7 @@ namespace MEDDLY {
     Specific operations will be derived from this class.
 */
 class MEDDLY::unary_operation : public operation {
+    friend void destroyOperation(unary_operation* &op);
   public:
     unary_operation(unary_opname* code, unsigned et_slots,
       expert_forest* arg, expert_forest* res);

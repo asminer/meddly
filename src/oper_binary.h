@@ -44,6 +44,7 @@ namespace MEDDLY {
     Specific operations will be derived from this class.
 */
 class MEDDLY::binary_operation : public operation {
+        friend void destroyOperation(binary_operation* &op);
     public:
         binary_operation(binary_opname* code, unsigned et_slots,
             expert_forest* arg1, expert_forest* arg2, expert_forest* res);

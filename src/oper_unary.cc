@@ -142,6 +142,7 @@ void MEDDLY::destroyOperation(MEDDLY::unary_operation* &op)
     op->markForDeletion();
     operation::removeStalesFromMonolithic();
   }
+  delete op;
   op = nullptr;
 }
 
