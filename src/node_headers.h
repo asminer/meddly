@@ -21,8 +21,8 @@
 
 // #define OLD_NODE_HEADERS
 
+#include "defines.h"
 #include "old_meddly.h"
-#include "old_meddly.hh"
 #include <cstring>  // for memset
 
 namespace MEDDLY {

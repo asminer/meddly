@@ -33,11 +33,9 @@
 #include "unpacked_node.h"
 
 #include "old_meddly.h"
-#include "old_meddly.hh"
 #include "revision.h"
 // #include "compute_table.h"
 #include "memory_managers/init_managers.h"
-#include "operations/init_builtin.h"
 #include "forests/init_forests.h"
 #include "storage/init_storage.h"
 
@@ -317,7 +315,6 @@ MEDDLY::initializer_list* MEDDLY::defaultInitializerList(initializer_list* prev)
     prev = new ct_initializer(prev);
     prev = new storage_initializer(prev);
     prev = makeBuiltinInitializer(prev);
-    prev = new builtin_initializer(prev);
     prev = new forest_initializer(prev);
 
     return prev;

@@ -143,7 +143,7 @@ pkginclude_HEADERS = \
     compute_table.h \
     initializer.h \
     memory.h \
-    old_meddly.h old_meddly.hh \
+    old_meddly.h \
     global_rebuilder.h
 
 AM_CXXFLAGS = -Wall
