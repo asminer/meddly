@@ -188,10 +188,10 @@ class MEDDLY::unary_opname : public opname {
 
     protected:
         virtual unary_operation*
-            buildOperation(const dd_edge &arg, const dd_edge &res);
+            buildOperation(expert_forest* arg, expert_forest* res);
 
         virtual unary_operation*
-            buildOperation(const dd_edge &arg, opnd_type res);
+            buildOperation(expert_forest* arg, opnd_type res);
 
 };
 
