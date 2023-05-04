@@ -925,8 +925,10 @@ class rubiks {
       // Perform Reacability via "saturation".
       start.note_time();
       if (ensf) {
-        if (0==SATURATION_FORWARD) throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-        specialized_operation *sat = SATURATION_FORWARD->buildOperation(ensf);
+        if (!SATURATION_FORWARD()) {
+            throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
+        }
+        specialized_operation *sat = SATURATION_FORWARD()->buildOperation(ensf);
         if (0==sat) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
         sat->compute(initial, initial);
       } else {

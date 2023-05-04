@@ -267,10 +267,10 @@ int main(int argc, const char** argv)
         if ('k'==method)  printf(" by levels\n");
         else              printf(" by events\n");
         fflush(stdout);
-        if (0==SATURATION_FORWARD) {
+        if (!SATURATION_FORWARD()) {
           throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
         }
-        sat = SATURATION_FORWARD->buildOperation(ensf);
+        sat = SATURATION_FORWARD()->buildOperation(ensf);
         if (0==sat) {
           throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
         }
