@@ -232,16 +232,16 @@ int main(int argc, const char** argv)
 
       #ifdef TEST_HYB
         printf("\nBuilding reachability set using saturation hybrid relation");
-        if (0==SATURATION_HYB_FORWARD) {
+        if (!SATURATION_HYB_FORWARD()) {
           throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
         }
-        sat = SATURATION_HYB_FORWARD->buildOperation(IMPR);
+        sat = SATURATION_HYB_FORWARD()->buildOperation(IMPR);
       #else
         printf("\nBuilding reachability set using saturation implicit relation");
-        if (0==SATURATION_IMPL_FORWARD) {
+        if (!SATURATION_IMPL_FORWARD()) {
           throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
         }
-        sat = SATURATION_IMPL_FORWARD->buildOperation(T);
+        sat = SATURATION_IMPL_FORWARD()->buildOperation(T);
       #endif
 
       if (0==sat) {

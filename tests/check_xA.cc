@@ -180,7 +180,7 @@ bool expl_xA_check(const dd_edge &ss, const dd_edge &P)
   double q_alt[3];
   p[0] = 0; p[1] = 1; p[2] = 0;
   printf("xA multiplications (explicit):\n");
-  specialized_operation* VM = EXPLVECT_MATR_MULT->buildOperation(ss, P, ss);
+  specialized_operation* VM = EXPLVECT_MATR_MULT()->buildOperation(ss, P, ss);
   for (i=0; i<9; i++) {
     printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
     q[0] = q[1] = q[2] = 0;
@@ -251,7 +251,7 @@ bool expl_Ax_check(const dd_edge &ss, const dd_edge &P)
   double q_alt[3];
   p[0] = 0; p[1] = 1; p[2] = 0;
   printf("Ax multiplications (explicit):\n");
-  specialized_operation* MV = MATR_EXPLVECT_MULT->buildOperation(ss, P, ss);
+  specialized_operation* MV = MATR_EXPLVECT_MULT()->buildOperation(ss, P, ss);
   for (i=0; i<9; i++) {
     printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
     q[0] = q[1] = q[2] = 0;

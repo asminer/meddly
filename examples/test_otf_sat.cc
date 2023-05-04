@@ -309,7 +309,8 @@ void pn::buildOtfSaturationOp() {
       otf_rel = new satotf_opname::otf_relation(mdd, mxd, mdd, &events[0], 1);
     }
     assert(otf_rel);
-    otf_sat_op = SATURATION_OTF_FORWARD->buildOperation(otf_rel);
+    assert(SATURATION_OTF_FORWARD());
+    otf_sat_op = SATURATION_OTF_FORWARD()->buildOperation(otf_rel);
     assert(otf_sat_op);
   }
 }
