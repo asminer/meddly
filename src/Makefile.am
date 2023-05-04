@@ -22,6 +22,7 @@ libmeddly_la_SOURCES = \
     domain.cc \
     node_headers.cc node_storage.cc unpacked_node.cc relation_node.cc \
     opname.cc opname_numer.cc opname_satur.cc \
+    ops_builtin.cc \
     oper.cc oper_unary.cc oper_binary.cc oper_special.cc \
     dd_edge.cc \
     enumerator.cc \
@@ -73,45 +74,44 @@ libmeddly_la_SOURCES = \
     memory_managers/heap_manager.h      memory_managers/heap_manager.cc  \
     memory_managers/freelists.h         memory_managers/freelists.cc  \
     \
-    operations/apply_base.h     operations/apply_base.cc   \
-    operations/mpz_object.h     operations/mpz_object.cc   \
-    operations/copy.h           operations/copy.cc         \
-    operations/cardinality.h    operations/cardinality.cc  \
-    operations/complement.h     operations/complement.cc   \
-    operations/maxmin_range.h   operations/maxmin_range.cc \
-    operations/mdd2index.h      operations/mdd2index.cc    \
-    operations/union.h          operations/union.cc        \
-    operations/intersection.h   operations/intersection.cc \
-    operations/difference.h     operations/difference.cc   \
-    operations/cross.h          operations/cross.cc        \
-    operations/maxmin.h         operations/maxmin.cc       \
-    operations/plus.h           operations/plus.cc         \
-    operations/minus.h          operations/minus.cc        \
-    operations/multiply.h       operations/multiply.cc     \
-    operations/divide.h         operations/divide.cc       \
-    operations/modulo.h         operations/modulo.cc       \
-    operations/comp_eq.h        operations/comp_eq.cc      \
-    operations/comp_ne.h        operations/comp_ne.cc      \
-    operations/comp_lt.h        operations/comp_lt.cc      \
-    operations/comp_le.h        operations/comp_le.cc      \
-    operations/comp_gt.h        operations/comp_gt.cc      \
-    operations/comp_ge.h        operations/comp_ge.cc      \
-    operations/prepostplus.h    operations/prepostplus.cc  \
-    operations/prepostimage.h   operations/prepostimage.cc \
-    operations/reach_bfs.h      operations/reach_bfs.cc    \
-    operations/reach_dfs.h      operations/reach_dfs.cc    \
-    operations/sat_pregen.h     operations/sat_pregen.cc   \
-    operations/sat_otf.h        operations/sat_otf.cc      \
-    operations/vect_matr.h      operations/vect_matr.cc    \
-    operations/mm_mult.h        operations/mm_mult.cc      \
-    operations/init_builtin.h   operations/init_builtin.cc \
-    operations/sat_impl.h        operations/sat_impl.cc    \
-    operations/sat_hyb.h        operations/sat_hyb.cc    \
-    operations/constrained.h      operations/constrained.cc \
-    operations/transitive_closure.h   operations/transitive_closure.cc \
-    operations/cycle.h          operations/cycle.cc        \
-    operations/select.h         operations/select.cc       \
-    operations/sccgraph.h       operations/sccgraph.cc     \
+    operations/apply_base.h             operations/apply_base.cc   \
+    operations/mpz_object.h             operations/mpz_object.cc   \
+    operations/copy.h                   operations/copy.cc         \
+    operations/cardinality.h            operations/cardinality.cc  \
+    operations/complement.h             operations/complement.cc   \
+    operations/maxmin_range.h           operations/maxmin_range.cc \
+    operations/mdd2index.h              operations/mdd2index.cc    \
+    operations/union.h                  operations/union.cc        \
+    operations/intersection.h           operations/intersection.cc \
+    operations/difference.h             operations/difference.cc   \
+    operations/cross.h                  operations/cross.cc        \
+    operations/maxmin.h                 operations/maxmin.cc       \
+    operations/plus.h                   operations/plus.cc         \
+    operations/minus.h                  operations/minus.cc        \
+    operations/multiply.h               operations/multiply.cc     \
+    operations/divide.h                 operations/divide.cc       \
+    operations/modulo.h                 operations/modulo.cc       \
+    operations/comp_eq.h                operations/comp_eq.cc      \
+    operations/comp_ne.h                operations/comp_ne.cc      \
+    operations/comp_lt.h                operations/comp_lt.cc      \
+    operations/comp_le.h                operations/comp_le.cc      \
+    operations/comp_gt.h                operations/comp_gt.cc      \
+    operations/comp_ge.h                operations/comp_ge.cc      \
+    operations/prepostplus.h            operations/prepostplus.cc  \
+    operations/prepostimage.h           operations/prepostimage.cc \
+    operations/reach_bfs.h              operations/reach_bfs.cc    \
+    operations/reach_dfs.h              operations/reach_dfs.cc    \
+    operations/sat_pregen.h             operations/sat_pregen.cc   \
+    operations/sat_otf.h                operations/sat_otf.cc      \
+    operations/vect_matr.h              operations/vect_matr.cc    \
+    operations/mm_mult.h                operations/mm_mult.cc      \
+    operations/sat_impl.h               operations/sat_impl.cc    \
+    operations/sat_hyb.h                operations/sat_hyb.cc    \
+    operations/constrained.h            operations/constrained.cc \
+    operations/transitive_closure.h     operations/transitive_closure.cc \
+    operations/cycle.h                  operations/cycle.cc        \
+    operations/select.h                 operations/select.cc       \
+    operations/sccgraph.h               operations/sccgraph.cc     \
     \
     storage/bytepack.h  \
     storage/simple.h          storage/simple.cc \

@@ -44,8 +44,7 @@
 #include "ct_initializer.h"
 #include "compute_table.h"
 
-#include "opname.h"
-#include "opname_numer.h"
+#include "ops_builtin.h"
 
 #include "oper.h"
 #include "oper_unary.h"
@@ -312,15 +311,14 @@ void MEDDLY::destroyOperation(MEDDLY::specialized_operation* &op)
 
 MEDDLY::initializer_list* MEDDLY::defaultInitializerList(initializer_list* prev)
 {
-  prev = new memman_initializer(prev);
-  prev = new ct_initializer(prev);
-  prev = new storage_initializer(prev);
-  prev = opname::makeInitializer(prev);
-  prev = numerical_opname::makeInitializer(prev);
-  prev = new builtin_initializer(prev);
-  prev = new forest_initializer(prev);
+    prev = new memman_initializer(prev);
+    prev = new ct_initializer(prev);
+    prev = new storage_initializer(prev);
+    prev = makeBuiltinInitializer(prev);
+    prev = new builtin_initializer(prev);
+    prev = new forest_initializer(prev);
 
-  return prev;
+    return prev;
 }
 
 // void MEDDLY::initialize(const settings &s, initializer_list* L)

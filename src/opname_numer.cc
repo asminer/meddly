@@ -20,58 +20,11 @@
 #include "opname_numer.h"
 #include "initializer.h"
 
-//
-// For initializing numerical operations
-//
-#include "operations/vect_matr.h"
-
-
-// ******************************************************************
-// *                                                                *
-// *                  numerical_opname_init  class                  *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::numerical_opname_init : public initializer_list {
-    public:
-        numerical_opname_init(initializer_list* p);
-    protected:
-        virtual void setup();
-        virtual void cleanup();
-    private:
-        inline void mydelete(numerical_opname* &p) {
-            delete p;
-            p = nullptr;
-        }
-};
-
-MEDDLY::numerical_opname_init::numerical_opname_init(initializer_list* p)
-    : initializer_list(p)
-{
-    numerical_opname::_EXPLVECT_MATR_MULT = nullptr;
-    numerical_opname::_MATR_EXPLVECT_MULT = nullptr;
-}
-
-void MEDDLY::numerical_opname_init::setup()
-{
-    numerical_opname::_EXPLVECT_MATR_MULT   =   initExplVectorMatrixMult()  ;
-    numerical_opname::_MATR_EXPLVECT_MULT   =   initMatrixExplVectorMult()  ;
-}
-
-void MEDDLY::numerical_opname_init::cleanup()
-{
-    mydelete(numerical_opname::_EXPLVECT_MATR_MULT);
-    mydelete(numerical_opname::_MATR_EXPLVECT_MULT);
-}
-
 // ******************************************************************
 // *                                                                *
 // *                    numerical_opname methods                    *
 // *                                                                *
 // ******************************************************************
-
-MEDDLY::numerical_opname* MEDDLY::numerical_opname::_EXPLVECT_MATR_MULT;
-MEDDLY::numerical_opname* MEDDLY::numerical_opname::_MATR_EXPLVECT_MULT;
 
 MEDDLY::numerical_opname::numerical_args
 ::numerical_args(const dd_edge &xi, const dd_edge &a, const dd_edge &yi)
@@ -91,28 +44,5 @@ MEDDLY::numerical_opname::numerical_opname(const char* n)
 
 MEDDLY::numerical_opname::~numerical_opname()
 {
-}
-
-MEDDLY::initializer_list*
-MEDDLY::numerical_opname::makeInitializer(initializer_list* prev)
-{
-    return new numerical_opname_init(prev);
-}
-
-
-// ******************************************************************
-// *                                                                *
-// *                front end:  numerical operations                *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::numerical_opname* MEDDLY::EXPLVECT_MATR_MULT()
-{
-    return numerical_opname::EXPLVECT_MATR_MULT();
-}
-
-MEDDLY::numerical_opname* MEDDLY::MATR_EXPLVECT_MULT()
-{
-    return numerical_opname::MATR_EXPLVECT_MULT();
 }
 

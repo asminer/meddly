@@ -34,45 +34,6 @@ namespace MEDDLY {
     class satimpl_opname;
     class sathyb_opname;
     class constrained_opname;
-
-    // ******************************************************************
-    // *                                                                *
-    // *                  Named saturation operations                   *
-    // *                                                                *
-    // ******************************************************************
-
-    /** Forward reachability using saturation.
-        Transition relation is already known.
-    */
-    extern const satpregen_opname* SATURATION_FORWARD;
-
-    /** Backward reachability using saturation.
-        Transition relation is already known.
-    */
-    extern const satpregen_opname* SATURATION_BACKWARD;
-
-    /** Forward reachability using saturation.
-        Transition relation is not completely known,
-        will be built along with reachability set.
-    */
-    extern const satotf_opname* SATURATION_OTF_FORWARD;
-
-    /** Forward reachability using saturation.
-        Transition relation is specified implicitly.
-    */
-    extern const satimpl_opname* SATURATION_IMPL_FORWARD;
-
-    /** Forward reachability using saturation.
-        Allows hybrid representation of transition relation.
-    */
-    extern const sathyb_opname* SATURATION_HYB_FORWARD;
-
-    /** Minimum-witness operations.
-    */
-    extern const constrained_opname* CONSTRAINED_BACKWARD_BFS;
-    extern const constrained_opname* CONSTRAINED_FORWARD_DFS;
-    extern const constrained_opname* CONSTRAINED_BACKWARD_DFS;
-    extern const constrained_opname* TRANSITIVE_CLOSURE_DFS;
 };
 
 // ******************************************************************

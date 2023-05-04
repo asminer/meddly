@@ -24,31 +24,6 @@
 namespace MEDDLY {
     class numerical_opname;
     class dd_edge;
-
-    class numerical_opname_init;    // hidden
-
-    // ******************************************************************
-    // *                                                                *
-    // *                   Named numerical operations                   *
-    // *                                                                *
-    // ******************************************************************
-
-    /** Computes y = y + xA.
-        x and y are vectors, stored explicitly, and A is a matrix.
-        x_ind and y_ind specify how minterms are mapped to indexes
-        for vectors x and y, respectively.
-    */
-    numerical_opname* EXPLVECT_MATR_MULT();
-    // extern const numerical_opname* VECT_MATR_MULT; // renamed!
-
-    /** Computes y = y + Ax.
-        x and y are vectors, stored explicitly, and A is a matrix.
-        x_ind and y_ind specify how minterms are mapped to indexes
-        for vectors x and y, respectively.
-    */
-    numerical_opname* MATR_EXPLVECT_MULT();
-    // extern const numerical_opname* MATR_VECT_MULT; // renamed!
-
 };
 
 // ******************************************************************
@@ -59,7 +34,6 @@ namespace MEDDLY {
 
 /// Numerical operation names.
 class MEDDLY::numerical_opname : public specialized_opname {
-        friend class MEDDLY::numerical_opname_init;
     public:
         class numerical_args : public specialized_opname::arguments {
             public:
@@ -86,19 +60,6 @@ class MEDDLY::numerical_opname : public specialized_opname {
             return buildOperation(&na);
         }
 
-        static initializer_list* makeInitializer(initializer_list* prev);
-
-    private:
-        static numerical_opname* _EXPLVECT_MATR_MULT;
-        static numerical_opname* _MATR_EXPLVECT_MULT;
-
-    public:
-        static inline numerical_opname* EXPLVECT_MATR_MULT() {
-            return _EXPLVECT_MATR_MULT;
-        }
-        static inline numerical_opname* MATR_EXPLVECT_MULT() {
-            return _MATR_EXPLVECT_MULT;
-        }
 };
 
 #endif // #include guard
