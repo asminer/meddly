@@ -24,6 +24,7 @@
 #include <fstream>
 #include <sstream>
 #include "defines.h"
+#include "initializer.h"
 #include "unique_table.h"
 #include "relation_node.h"
 #include "impl_unique_table.h"
@@ -65,12 +66,6 @@
 
 // #define REPORT_ON_DESTROY
 // #define DUMP_ON_FOREST_DESTROY
-
-namespace MEDDLY {
-    // TBD: fix this:
-    extern bool libraryRunning;
-};
-
 
 // ******************************************************************
 // *                                                                *
@@ -2421,7 +2416,9 @@ MEDDLY::expert_forest::unpackNode(MEDDLY::unpacked_node* un,
 void MEDDLY::destroyForest(MEDDLY::forest* &f)
 {
   if (0==f) return;
-  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  if (!initializer_list::libraryIsRunning()) {
+      throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  }
   f->markForDeletion();
   operation::purgeAllMarked();
   delete f;
