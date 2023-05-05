@@ -22,6 +22,10 @@
 namespace MEDDLY {
     class initializer_list;
 
+    // ******************************************************************
+    // *                  library management functions                  *
+    // ******************************************************************
+
     /**
         Build list of initializers for Meddly.
         Custom-built initialization lists will usually include this list.
@@ -29,8 +33,6 @@ namespace MEDDLY {
                             can be null.
 
             @return   List of initializers.
-
-        TBD: maybe move this into "library.h" and "library.cc"?
     */
     initializer_list* defaultInitializerList(initializer_list* prev);
 
@@ -42,6 +44,33 @@ namespace MEDDLY {
                         in reverse order on library cleanup.
     */
     void initialize(initializer_list* L);
+
+    /** Initialize the library with default settings.
+        See meddly_expert.h for functions to initialize
+        the library with non-default settings.
+        Should be called before using any other functions.
+    */
+    void initialize();
+
+    /** Clean up the library.
+        Can be called to free memory used by the library;
+        after it is called, the library may be initialized again.
+    */
+    void cleanup();
+
+    /** Get the information about the library.
+        @param  what  Determines the type of information to obtain.
+        @return A human-readable information string.
+                The string depends on parameter \a what, as follows.
+                0: Title string, e.g., "MDD library version 0.0.0"
+                1: Copyright string
+                2: License string
+                3: Reference url
+                4: String with library features
+                5: Release date
+                Anything else: null string.
+    */
+    const char* getLibraryInfo(int what = 0);
 
 };
 
@@ -67,16 +96,18 @@ class MEDDLY::initializer_list {
         virtual ~initializer_list();
 
         /**
-            Run all setup methods for the list of initializers,
-            "previous first".
+            Initialize the library from the given list.
         */
-        void setupAll();
+        static void initializeLibrary(initializer_list* L);
+
+        /// Did we initialize the library?
+        static inline bool libraryIsRunning() { return isRunning; }
 
         /**
-            Run all cleanup methods for the list of initializers,
-            "previous last".
+            Clean up the library using the same list
+            passed to initializeLibrary().
         */
-        void cleanupAll();
+        static void cleanupLibrary();
 
     protected:
         virtual void setup() = 0;
@@ -84,6 +115,8 @@ class MEDDLY::initializer_list {
 
     private:
         initializer_list* previous;
+        static initializer_list* meddlyInitializers;
+        static bool isRunning;
 };
 
 #endif

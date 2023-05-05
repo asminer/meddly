@@ -66,9 +66,6 @@ have changed type, but user code should mostly be unaffected.
 
 unary_opname and binary_opname changes:
 
-    unary_opname::buildOperation    expert_forest* arguments changed to const dd_edge&
-    binary_opname::buildOperation   expert_forest* arguments changed to const dd_edge&
-
     getOperation(unary_opname* code, ...)   ->  code->getOperation(...)
     getOperation(binary_opname* code, ...)  ->  code->getOperation(...)
 

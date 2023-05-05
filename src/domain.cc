@@ -26,6 +26,8 @@
 #include "domain.h"
 #include "io.h"
 
+#include "initializer.h"
+
 #include "unique_table.h"
 
 #if 0
@@ -46,11 +48,6 @@
 #include "forests/evmxd_timesreal.h"
 #endif
 
-
-namespace MEDDLY {
-    // TBD: fix this:
-    extern bool libraryRunning;
-};
 
 // #define DEBUG_CLEANUP
 // #define DUMP_ON_FOREST_DESTROY
@@ -507,13 +504,17 @@ void MEDDLY::expert_domain::read(input &s)
 
 MEDDLY::domain* MEDDLY::createDomain(variable** vars, int N)
 {
-  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  if (!initializer_list::libraryIsRunning()) {
+      throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  }
   return new expert_domain(vars, N);
 }
 
 MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
 {
-  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  if (!initializer_list::libraryIsRunning()) {
+      throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  }
   domain* d = new expert_domain(0, 0);
   d->createVariablesBottomUp(bounds, N);
   return d;
@@ -522,7 +523,9 @@ MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
 void MEDDLY::destroyDomain(MEDDLY::domain* &d)
 {
   if (0==d) return;
-  if (!libraryRunning) throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  if (!initializer_list::libraryIsRunning()) {
+      throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+  }
   d->markForDeletion();
   operation::purgeAllMarked();
   delete d;

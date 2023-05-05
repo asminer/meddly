@@ -233,7 +233,7 @@ class MEDDLY::operation {
         unsigned first_etid;
 
     friend class forest;
-    friend void cleanup();
+    friend class initializer_list;
 
     friend class ct_initializer;
 

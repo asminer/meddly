@@ -25,6 +25,7 @@
 #include <memory>
 
 namespace MEDDLY {
+    class initializer_list;
     class variable_order;
 
     class domain;
@@ -97,6 +98,8 @@ namespace MEDDLY {
     When a domain is destroyed, all of its forests are destroyed.
 */
 class MEDDLY::domain {
+    friend class initializer_list;
+    friend void destroyDomain(domain* &d);
   public:
     static const int TERMINALS;
   public:
@@ -209,9 +212,6 @@ class MEDDLY::domain {
 
     /// Mark this domain for deletion
     void markForDeletion();
-
-    friend void MEDDLY::destroyDomain(domain* &d);
-    friend void MEDDLY::cleanup();
 
   public:
     bool hasForests() const;
