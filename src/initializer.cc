@@ -29,6 +29,8 @@
 #include "forests/init_forests.h"
 #include "revision.h"
 
+// #define DEBUG_INITLIST
+
 // ******************************************************************
 // *                                                                *
 // *                    initializer_list methods                    *
@@ -45,7 +47,7 @@ MEDDLY::initializer_list::initializer_list(initializer_list* prev)
 
 MEDDLY::initializer_list::~initializer_list()
 {
-    delete previous;
+    // DON'T delete previous
 }
 
 void MEDDLY::initializer_list::initializeLibrary(initializer_list* L)
@@ -64,6 +66,9 @@ void MEDDLY::initializer_list::initializeLibrary(initializer_list* L)
     }
     // Run through intializers
     for (initializer_list* curr = reverse; curr; curr = curr->previous) {
+#ifdef DEBUG_INITLIST
+        printf("setup() on object %p\n", curr);
+#endif
         curr->setup();
     }
     // Reverse it back
@@ -102,6 +107,9 @@ void MEDDLY::initializer_list::cleanupLibrary()
 
     while (meddlyInitializers) {
         initializer_list* prev = meddlyInitializers->previous;
+#ifdef DEBUG_INITLIST
+        printf("cleanup() on object %p\n", meddlyInitializers);
+#endif
         meddlyInitializers->cleanup();
         delete meddlyInitializers;
         meddlyInitializers = prev;
