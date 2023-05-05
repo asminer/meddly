@@ -26,7 +26,6 @@
 
 #define _MEDDLY_NOINST_
 #include "../src/meddly.h"
-#include "../src/meddly_expert.h"
 #include "simple_model.h"
 #include "../src/timer.h"
 #include "../src/loggers.h"

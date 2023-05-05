@@ -12,137 +12,153 @@
 lib_LTLIBRARIES = libmeddly.la
 
 libmeddly_la_SOURCES = \
-    error.cc \
-    io.cc \
-    encoders.cc \
-    memstats.cc \
-    policies.cc \
-    variable.cc varorder.cc \
-    domain.cc \
-    node_headers.cc node_storage.cc unpacked_node.cc relation_node.cc \
-    opname.cc opname_numer.cc opname_satur.cc \
-    ops_builtin.cc \
-    oper.cc oper_unary.cc oper_binary.cc oper_special.cc \
-    dd_edge.cc \
-    enumerator.cc \
-    forest.cc \
-    ct_initializer.cc \
-    ct_entry_type.cc ct_entry_key.cc ct_entry_result.cc \
     compute_table.cc \
-    unique_table.cc \
-    impl_unique_table.cc \
-    loggers.h loggers.cc \
+    ct_entry_key.cc \
+    ct_entry_result.cc \
+    ct_entry_type.cc \
+    ct_initializer.cc \
+    dd_edge.cc \
+    domain.cc \
+    encoders.cc \
+    enumerator.cc \
+    error.cc \
+    forest.cc \
     global_rebuilder.cc \
+    impl_unique_table.cc \
     initializer.cc \
+    io.cc \
+    loggers.cc \
     memory.cc \
+    memstats.cc \
+    node_headers.cc \
+    node_storage.cc \
+    oper.cc \
+    oper_binary.cc \
+    oper_special.cc \
+    oper_unary.cc \
+    opname.cc \
+    opname_numer.cc \
+    opname_satur.cc \
+    ops_builtin.cc \
+    policies.cc \
+    relation_node.cc \
+    unique_table.cc \
+    unpacked_node.cc \
+    variable.cc \
+    varorder.cc \
     \
-    reordering/reordering_factory.h \
-    reordering/bring_up_reordering.h \
-    reordering/highest_inversion_reordering.h \
-    reordering/larc_reordering.h \
-    reordering/lowest_cost_reordering.h \
-    reordering/lowest_inversion_reordering.h \
-    reordering/lowest_memory_reordering.h \
-    reordering/random_reordering.h \
-    reordering/reordering_base.h \
-    reordering/sink_down_reordering.h \
+    forests/ev.cc \
+    forests/evmdd.cc \
+    forests/evmdd_pluslong.cc \
+    forests/evmdd_timesreal.cc \
+    forests/evmxd.cc \
+    forests/evmxd_pluslong.cc \
+    forests/evmxd_timesreal.cc \
+    forests/init_forests.cc \
+    forests/mt.cc \
+    forests/mtmdd.cc \
+    forests/mtmddbool.cc \
+    forests/mtmddint.cc \
+    forests/mtmddreal.cc \
+    forests/mtmxd.cc \
+    forests/mtmxdbool.cc \
+    forests/mtmxdint.cc \
+    forests/mtmxdreal.cc \
     \
-    forests/mt.h                forests/mt.cc \
-    forests/mtmdd.h             forests/mtmdd.cc \
-    forests/mtmddbool.h         forests/mtmddbool.cc \
-    forests/mtmddint.h          forests/mtmddint.cc \
-    forests/mtmddreal.h         forests/mtmddreal.cc \
-    forests/mtmxd.h             forests/mtmxd.cc \
-    forests/mtmxdbool.h         forests/mtmxdbool.cc \
-    forests/mtmxdint.h          forests/mtmxdint.cc \
-    forests/mtmxdreal.h         forests/mtmxdreal.cc \
-    forests/ev.h                forests/ev.cc \
-    forests/evmdd.h             forests/evmdd.cc \
-    forests/evmxd.h             forests/evmxd.cc \
-    forests/evmdd_pluslong.h    forests/evmdd_pluslong.cc \
-    forests/evmxd_pluslong.h    forests/evmxd_pluslong.cc \
-    forests/evmdd_timesreal.h   \
-    forests/evmxd_timesreal.h   forests/evmxd_timesreal.cc \
-    forests/init_forests.h      forests/init_forests.cc \
+    memory_managers/array_grid.cc  \
+    memory_managers/freelists.cc  \
+    memory_managers/heap_manager.cc  \
+    memory_managers/init_managers.cc  \
+    memory_managers/malloc_style.cc  \
+    memory_managers/orig_grid.cc  \
     \
-    memory_managers/init_managers.h     memory_managers/init_managers.cc  \
-    memory_managers/hole_base.h         \
-    memory_managers/array_grid.h        memory_managers/array_grid.cc  \
-    memory_managers/orig_grid.h         memory_managers/orig_grid.cc  \
-    memory_managers/malloc_style.h      memory_managers/malloc_style.cc  \
-    memory_managers/heap_manager.h      memory_managers/heap_manager.cc  \
-    memory_managers/freelists.h         memory_managers/freelists.cc  \
+    operations/apply_base.cc  \
+    operations/cardinality.cc  \
+    operations/comp_eq.cc      \
+    operations/comp_ge.cc      \
+    operations/comp_gt.cc      \
+    operations/comp_le.cc      \
+    operations/comp_lt.cc      \
+    operations/comp_ne.cc      \
+    operations/complement.cc   \
+    operations/constrained.cc   \
+    operations/copy.cc         \
+    operations/cross.cc        \
+    operations/cycle.cc        \
+    operations/difference.cc   \
+    operations/divide.cc       \
+    operations/intersection.cc \
+    operations/maxmin.cc       \
+    operations/maxmin_range.cc \
+    operations/mdd2index.cc    \
+    operations/minus.cc        \
+    operations/mm_mult.cc      \
+    operations/modulo.cc       \
+    operations/mpz_object.cc   \
+    operations/multiply.cc     \
+    operations/plus.cc         \
+    operations/prepostimage.cc \
+    operations/prepostplus.cc  \
+    operations/reach_bfs.cc    \
+    operations/reach_dfs.cc    \
+    operations/sat_hyb.cc    \
+    operations/sat_impl.cc    \
+    operations/sat_otf.cc      \
+    operations/sat_pregen.cc   \
+    operations/sccgraph.cc     \
+    operations/select.cc       \
+    operations/transitive_closure.cc \
+    operations/union.cc        \
+    operations/vect_matr.cc    \
     \
-    operations/apply_base.h             operations/apply_base.cc   \
-    operations/mpz_object.h             operations/mpz_object.cc   \
-    operations/copy.h                   operations/copy.cc         \
-    operations/cardinality.h            operations/cardinality.cc  \
-    operations/complement.h             operations/complement.cc   \
-    operations/maxmin_range.h           operations/maxmin_range.cc \
-    operations/mdd2index.h              operations/mdd2index.cc    \
-    operations/union.h                  operations/union.cc        \
-    operations/intersection.h           operations/intersection.cc \
-    operations/difference.h             operations/difference.cc   \
-    operations/cross.h                  operations/cross.cc        \
-    operations/maxmin.h                 operations/maxmin.cc       \
-    operations/plus.h                   operations/plus.cc         \
-    operations/minus.h                  operations/minus.cc        \
-    operations/multiply.h               operations/multiply.cc     \
-    operations/divide.h                 operations/divide.cc       \
-    operations/modulo.h                 operations/modulo.cc       \
-    operations/comp_eq.h                operations/comp_eq.cc      \
-    operations/comp_ne.h                operations/comp_ne.cc      \
-    operations/comp_lt.h                operations/comp_lt.cc      \
-    operations/comp_le.h                operations/comp_le.cc      \
-    operations/comp_gt.h                operations/comp_gt.cc      \
-    operations/comp_ge.h                operations/comp_ge.cc      \
-    operations/prepostplus.h            operations/prepostplus.cc  \
-    operations/prepostimage.h           operations/prepostimage.cc \
-    operations/reach_bfs.h              operations/reach_bfs.cc    \
-    operations/reach_dfs.h              operations/reach_dfs.cc    \
-    operations/sat_pregen.h             operations/sat_pregen.cc   \
-    operations/sat_otf.h                operations/sat_otf.cc      \
-    operations/vect_matr.h              operations/vect_matr.cc    \
-    operations/mm_mult.h                operations/mm_mult.cc      \
-    operations/sat_impl.h               operations/sat_impl.cc    \
-    operations/sat_hyb.h                operations/sat_hyb.cc    \
-    operations/constrained.h            operations/constrained.cc \
-    operations/transitive_closure.h     operations/transitive_closure.cc \
-    operations/cycle.h                  operations/cycle.cc        \
-    operations/select.h                 operations/select.cc       \
-    operations/sccgraph.h               operations/sccgraph.cc     \
-    \
-    storage/bytepack.h  \
-    storage/simple.h          storage/simple.cc \
-    storage/pattern.h         storage/pattern.cc \
-    storage/best.h            storage/best.cc \
-    storage/ct_styles.h       storage/ct_styles.cc \
-    storage/ct_typebased.h    \
-    storage/init_storage.h    storage/init_storage.cc
+    storage/best.cc \
+    storage/ct_styles.cc \
+    storage/init_storage.cc \
+    storage/pattern.cc \
+    storage/simple.cc
 
 
 ## compile apps
 
-include_HEADERS = meddly.h meddly_expert.h
+include_HEADERS = meddly.h
 
 pkginclude_HEADERS = \
-    defines.h revision.h hash_stream.h heap.h timer.h unique_table.h \
-    error.h io.h memstats.h policies.h \
-    variable.h varorder.h \
-    domain.h \
-    minterms.h \
-    node_headers.h node_storage.h unpacked_node.h relation_node.h \
-    encoders.h forest.h \
-    opname.h  opname_numer.h  opname_satur.h  \
-    oper.h  oper_unary.h  oper_binary.h  oper_special.h  \
-    dd_edge.h \
-    enumerator.h \
-    forest.h \
-    ct_initializer.h \
-    ct_entry_type.h ct_entry_key.h ct_entry_result.h \
     compute_table.h \
+    ct_entry_key.h \
+    ct_entry_result.h \
+    ct_entry_type.h \
+    ct_initializer.h \
+    dd_edge.h \
+    defines.h \
+    domain.h \
+    encoders.h \
+    enumerator.h \
+    error.h \
+    forest.h \
+    global_rebuilder.h \
+    hash_stream.h \
+    heap.h \
     initializer.h \
+    io.h \
     memory.h \
-    global_rebuilder.h
+    memstats.h \
+    minterms.h \
+    node_headers.h \
+    node_storage.h \
+    oper.h  \
+    oper_binary.h  \
+    oper_special.h  \
+    oper_unary.h  \
+    opname.h  \
+    opname_numer.h  \
+    opname_satur.h  \
+    policies.h \
+    relation_node.h \
+    revision.h \
+    timer.h \
+    unique_table.h \
+    unpacked_node.h \
+    variable.h \
+    varorder.h
 
 AM_CXXFLAGS = -Wall

@@ -2,6 +2,9 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
+Removed meddly_expert.h; use meddly.h instead.
+
+
 Encoders that were in expert_forest are now stand-alone classes
 in encoders.h
 

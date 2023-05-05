@@ -31,7 +31,6 @@
 #include <string.h>
 #define _MEDDLY_NOINST_
 #include "../src/meddly.h"
-#include "../src/meddly_expert.h"
 
 using namespace MEDDLY;
 

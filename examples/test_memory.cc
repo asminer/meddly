@@ -22,7 +22,6 @@
 #include <fstream>
 #include <map>  // for symbol table
 #include "../src/meddly.h"
-#include "../src/meddly_expert.h"
 
 // #define DEBUG_PARSER
 

@@ -29,7 +29,6 @@
 
 #define _MEDDLY_NOINST_
 #include "../src/meddly.h"
-#include "../src/meddly_expert.h"
 #include "../src/timer.h"
 
 // #define DEBUG_EVENTS

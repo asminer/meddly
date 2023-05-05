@@ -32,9 +32,6 @@
 #include "../src/meddly.h"
 
 // #define USE_EXPERT_INTERFACE
-#ifdef USE_EXPERT_INTERFACE
-#include "../src/meddly_expert.h"
-#endif
 
 using namespace MEDDLY;
 
