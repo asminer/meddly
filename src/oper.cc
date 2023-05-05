@@ -23,6 +23,17 @@
 #include "ct_initializer.h"
 
 // ******************************************************************
+// *                       operation  statics                       *
+// ******************************************************************
+
+MEDDLY::compute_table* MEDDLY::operation::Monolithic_CT;
+MEDDLY::operation** MEDDLY::operation::op_list;
+unsigned* MEDDLY::operation::op_holes;
+unsigned MEDDLY::operation::list_size;
+unsigned MEDDLY::operation::list_alloc;
+unsigned MEDDLY::operation::free_list;
+
+// ******************************************************************
 // *                                                                *
 // *                       operation  methods                       *
 // *                                                                *
@@ -348,16 +359,22 @@ void MEDDLY::operation::buildCTs()
 // Private
 //
 
+void MEDDLY::operation::initializeStatics()
+{
+  op_list = nullptr;
+  op_holes = nullptr;
+  list_size = 0;
+  list_alloc = 0;
+  free_list = 0;
+  Monolithic_CT = 0;
+}
+
 void MEDDLY::operation::destroyAllOps()
 {
   for (unsigned i=0; i<list_size; i++) delete op_list[i];
   free(op_list);
   free(op_holes);
-  op_list = 0;
-  op_holes = 0;
-  list_size = 0;
-  list_alloc = 0;
-  free_list = 0;
+  initializeStatics();
 }
 
 // ******************************************************************

@@ -38,6 +38,7 @@ namespace MEDDLY {
     class domain;
     class expert_domain;
 
+    class operation;
     class forest;
     class expert_forest;
     class node_storage;

@@ -56,6 +56,9 @@ void MEDDLY::initializer_list::initializeLibrary(initializer_list* L)
         throw error(error::ALREADY_INITIALIZED, __FILE__, __LINE__);
     }
 
+    // Hard-coded statics
+    operation::initializeStatics();
+
     // Reverse the list
     initializer_list* reverse = nullptr;
     while (L) {

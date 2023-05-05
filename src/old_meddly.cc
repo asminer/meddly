@@ -54,18 +54,6 @@ namespace MEDDLY {
   // "global" variables
 
 
-  // Monolithic compute table, if used
-  compute_table* operation::Monolithic_CT = 0;
-
-  //
-  // List of operations
-  //
-  operation** operation::op_list = 0;
-  unsigned* operation::op_holes = 0;
-  unsigned operation::list_size = 0;
-  unsigned operation::list_alloc = 0;
-  unsigned operation::free_list = 0;
-
   //
   // List of all domains
   //

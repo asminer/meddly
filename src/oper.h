@@ -30,6 +30,7 @@ namespace MEDDLY {
     class forest;
     class expert_forest;
 
+    class initializer_list;
     class ct_initializer;
     class ct_entry_type;
     class ct_entry_result;
@@ -56,6 +57,7 @@ namespace MEDDLY {
     Necessary for compute table entries.
 */
 class MEDDLY::operation {
+        friend class initializer_list;
         friend void destroyOperation(operation* &op);
     public:
         /** Constructor.
@@ -172,6 +174,9 @@ class MEDDLY::operation {
         inline opname* getParent() { return theOpName; }
 
     private:
+        // should be called during library init.
+        static void initializeStatics();
+
         // should ONLY be called during library cleanup.
         static void destroyAllOps();
 
@@ -206,6 +211,8 @@ class MEDDLY::operation {
         // compute_table::entry_key* CTsrch;
         // for cache of operations.
         operation* next;
+
+    private:
 
     private:
 

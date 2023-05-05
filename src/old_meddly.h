@@ -37,10 +37,6 @@
 #ifndef MEDDLY_H
 #define MEDDLY_H
 
-#include <vector>
-#include <memory>
-#include "defines.h"
-
 namespace MEDDLY {
   /** Special value for minterms: don't care what this variable does.
       I.e., do the same thing for all possible assignments for a variable.
@@ -51,38 +47,6 @@ namespace MEDDLY {
       Undefined for unprimed variables.
   */
   const int DONT_CHANGE = -2;
-
-  // Typedefs
-  // Classes
-
-  class memstats;
-  class initializer_list;
-  class input;
-//  class FILE_input;
-  // class istream_input;
-  class output;
-  // class FILE_output;
-  // class ostream_output;
-
-  class forest;
-  class expert_forest;
-  class unpacked_node;
-
-  class node_storage_style;
-
-  class variable;
-  class variable_order;
-  class domain;
-  class dd_edge;
-  class enumerator;
-  class ct_object;
-  class unary_opname;
-  class binary_opname;
-  class operation;
-  class unary_operation;
-  class binary_operation;
-
-
 
 };  // namespace MEDDLY
 
