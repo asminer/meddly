@@ -20,8 +20,8 @@
 #define MEDDLY_CT_ENTRY_TYPE_H
 
 #include "defines.h"
-
 #include "opname.h"
+#include <type_traits>
 
 namespace MEDDLY {
     class ct_object;
