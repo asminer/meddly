@@ -88,6 +88,7 @@ class MEDDLY::ct_object {
   with the compute table.
 */
 class MEDDLY::ct_entry_type {
+        friend class compute_table;
     public:
         /** Constructor.
               @param  name    Name of the entry type; used only for displaying
@@ -385,8 +386,6 @@ class MEDDLY::ct_entry_type {
 
         /// For deleting all entries of this type
         bool is_marked_for_deletion;
-
-        friend class compute_table;
 };
 
 #endif

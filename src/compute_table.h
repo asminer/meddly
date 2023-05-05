@@ -87,6 +87,7 @@ class MEDDLY::compute_table_style {
     Implementation is in compute_table.cc.
 */
 class MEDDLY::compute_table {
+        friend class operation;
     public:
         struct stats {
             unsigned long numEntries;
@@ -290,8 +291,6 @@ class MEDDLY::compute_table {
 
     private:
         static ct_entry_key* free_keys;
-
-    friend class operation;
 };
 
 #endif

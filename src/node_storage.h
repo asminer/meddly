@@ -329,21 +329,4 @@ class MEDDLY::node_storage {
         expert_forest* parent;
 };
 
-// ******************************************************************
-// *                                                                *
-// *                  inlined node_storage methods                  *
-// *                                                                *
-// ******************************************************************
-
-/*
-inline void
-MEDDLY::node_storage::moveNodeOffset(MEDDLY::node_handle node, node_address old_addr,
-    node_address new_addr)
-{
-  MEDDLY_DCASSERT(parent);
-  parent->moveNodeOffset(node, old_addr, new_addr);
-}
-*/
-
-
 #endif

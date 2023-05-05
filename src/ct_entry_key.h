@@ -35,6 +35,7 @@ namespace MEDDLY {
     keys for searching and to construct CT entries.
 */
 class MEDDLY::ct_entry_key {
+        friend class compute_table;
     public:
         ct_entry_key();
         ~ct_entry_key();
@@ -142,8 +143,6 @@ class MEDDLY::ct_entry_key {
     protected:
         /// Used for linked-list of recycled search keys in compute_table
         ct_entry_key* next;
-
-    friend class compute_table;
 };
 
 
