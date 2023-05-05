@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -17,49 +16,27 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*
-    Implementation of the "global" functions given in
-    meddly.h and meddly_expert.h.
+#ifndef MEDDLY_MINTERMS_H
+#define MEDDLY_MINTERMS_H
 
-*/
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#include "defines.h"
-
-#include "variable.h"
-#include "domain.h"
-#include "unpacked_node.h"
-
-#include "old_meddly.h"
-// #include "compute_table.h"
-#include "memory_managers/init_managers.h"
-#include "forests/init_forests.h"
-#include "storage/init_storage.h"
-
-#include "ct_initializer.h"
-#include "compute_table.h"
-
-#include "ops_builtin.h"
-
-#include "oper.h"
-#include "oper_unary.h"
-#include "oper_binary.h"
-#include "oper_special.h"
-
-// #define STATS_ON_DESTROY
+//
+// Idea: define minterm objects, for both full and sparse storage,
+// and for set vs relation.
+//
+// For now: defines that should eventually be part of minterm objects
+//
 
 namespace MEDDLY {
-  // "global" variables
+  /** Special value for minterms: don't care what this variable does.
+      I.e., do the same thing for all possible assignments for a variable.
+  */
+  const int DONT_CARE  = -1;
+  /** Special value for primed minterms: don't change this variable.
+      Forces the primed value to equal the unprimed value for a variable.
+      Undefined for unprimed variables.
+  */
+  const int DONT_CHANGE = -2;
 
+};  // namespace MEDDLY
 
-  //
-  // List of all domains
-  //
-
-  //
-  // List of free unpacked nodes
-};
-
-
+#endif

@@ -4,8 +4,6 @@
 
 #include <memory>
 
-#include "old_meddly.h"
-
 #include "reordering_base.h"
 
 #include "lowest_inversion_reordering.h"

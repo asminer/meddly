@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -20,7 +19,6 @@
 #ifndef MEDDLY_TRANSITIVE_CLOSURE_H
 #define MEDDLY_TRANSITIVE_CLOSURE_H
 
-#include "old_meddly.h"
 #include "../opname_satur.h"
 #include "../oper_special.h"
 #include "../ct_entry_key.h"

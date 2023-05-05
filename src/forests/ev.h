@@ -21,6 +21,7 @@
 #define EV_FOREST
 
 #include "../defines.h"
+#include "../minterms.h"
 #include "../forest.h"
 #include "../oper_binary.h"
 #include "../ops_builtin.h"

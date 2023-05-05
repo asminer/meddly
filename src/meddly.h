@@ -27,14 +27,13 @@
 #endif
 
 
-#include PATH("old_meddly.h")
-
 #include PATH("error.h")
 #include PATH("io.h")
 #include PATH("memstats.h")
 #include PATH("variable.h")
 #include PATH("varorder.h")
 #include PATH("domain.h")
+#include PATH("minterms.h")
 #include PATH("forest.h")
 #include PATH("relation_node.h")
 #include PATH("memory.h")

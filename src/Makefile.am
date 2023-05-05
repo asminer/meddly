@@ -12,7 +12,6 @@
 lib_LTLIBRARIES = libmeddly.la
 
 libmeddly_la_SOURCES = \
-    old_meddly.cc \
     error.cc \
     io.cc \
     encoders.cc \
@@ -131,6 +130,7 @@ pkginclude_HEADERS = \
     error.h io.h memstats.h policies.h \
     variable.h varorder.h \
     domain.h \
+    minterms.h \
     node_headers.h node_storage.h unpacked_node.h relation_node.h \
     encoders.h forest.h \
     opname.h  opname_numer.h  opname_satur.h  \
@@ -143,7 +143,6 @@ pkginclude_HEADERS = \
     compute_table.h \
     initializer.h \
     memory.h \
-    old_meddly.h \
     global_rebuilder.h
 
 AM_CXXFLAGS = -Wall

@@ -20,8 +20,6 @@
 #ifndef MEDDLY_SAT_CONSTRAINED_H
 #define MEDDLY_SAT_CONSTRAINED_H
 
-#include "old_meddly.h"
-
 #include "../opname_satur.h"
 #include "../oper_special.h"
 #include "../ct_entry_key.h"
