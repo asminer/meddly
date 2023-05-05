@@ -52,9 +52,21 @@
 // #define DEBUG_CLEANUP
 // #define DUMP_ON_FOREST_DESTROY
 
-// ----------------------------------------------------------------------
-// domain
-// ----------------------------------------------------------------------
+// ******************************************************************
+// *                         domain statics                         *
+// ******************************************************************
+
+MEDDLY::domain** MEDDLY::domain::dom_list;
+int* MEDDLY::domain::dom_free;
+int MEDDLY::domain::dom_list_size;
+int MEDDLY::domain::free_list;
+
+// ******************************************************************
+// *                                                                *
+// *                         domain methods                         *
+// *                                                                *
+// ******************************************************************
+
 
 const int MEDDLY::domain::TERMINALS = 0;
 
@@ -131,6 +143,14 @@ MEDDLY::domain::~domain()
   free_list = my_index;
 }
 
+void MEDDLY::domain::initDomList()
+{
+  dom_list_size = 0;
+  dom_list = 0;
+  dom_free = 0;
+  free_list = -1;
+}
+
 void MEDDLY::domain::expandDomList()
 {
   int ndls = dom_list_size + 16;
@@ -163,10 +183,7 @@ void MEDDLY::domain::deleteDomList()
   }
   free(dom_list);
   free(dom_free);
-  dom_list_size = 0;
-  dom_list = 0;
-  dom_free = 0;
-  free_list = -1;
+  initDomList();
 }
 
 

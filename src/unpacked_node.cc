@@ -27,6 +27,14 @@
 #include "hash_stream.h"
 
 // ******************************************************************
+// *                     unpacked_node  statics                     *
+// ******************************************************************
+
+MEDDLY::unpacked_node* MEDDLY::unpacked_node::freeList;
+MEDDLY::unpacked_node* MEDDLY::unpacked_node::buildList;
+
+
+// ******************************************************************
 // *                                                                *
 // *                                                                *
 // *                     unpacked_node  methods                     *
@@ -671,4 +679,9 @@ MEDDLY::unpacked_node::freeRecycled()
   }
 }
 
+void MEDDLY::unpacked_node::initStatics()
+{
+  freeList = nullptr;
+  buildList = nullptr;
+}
 

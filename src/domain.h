@@ -76,7 +76,6 @@ namespace MEDDLY {
 */
 
     void destroyDomain(domain* &d);
-    void cleanup();
 };
 
 // ******************************************************************
@@ -234,6 +233,7 @@ class MEDDLY::domain {
     /// Index of this domain in the domain list.
     int my_index;
 
+    static void initDomList();
     static void expandDomList();
     static void markDomList();
     static void deleteDomList();

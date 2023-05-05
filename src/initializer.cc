@@ -58,6 +58,8 @@ void MEDDLY::initializer_list::initializeLibrary(initializer_list* L)
 
     // Hard-coded statics
     operation::initializeStatics();
+    domain::initDomList();
+    unpacked_node::initStatics();
 
     // Reverse the list
     initializer_list* reverse = nullptr;

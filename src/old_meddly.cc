@@ -57,16 +57,9 @@ namespace MEDDLY {
   //
   // List of all domains
   //
-  domain** domain::dom_list = 0;
-  int* domain::dom_free = 0;
-  int domain::dom_list_size = 0;
-  int domain::free_list = -1;
 
   //
   // List of free unpacked nodes
-  unpacked_node* unpacked_node::freeList = 0;
-  unpacked_node* unpacked_node::buildList = 0;
-
 };
 
 

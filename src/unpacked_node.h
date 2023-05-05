@@ -27,6 +27,7 @@ namespace MEDDLY {
     class unpacked_node;
     class forest;
     class expert_forest;
+    class initializer_list;
 }
 
 // ******************************************************************
@@ -48,6 +49,7 @@ namespace MEDDLY {
       "compact" chunk of memory for edge values
 */
 class MEDDLY::unpacked_node {
+        friend class initializer_list;
     public:
         /** Constructor.
             The class must be "filled" by a forest before
@@ -704,6 +706,8 @@ class MEDDLY::unpacked_node {
 
         static void removeFromBuildList(unpacked_node* b);
         static void markBuildListChildren(expert_forest* F);
+    private:
+        static void initStatics();
 
     private:
         const forest* parent;   // TBD: eventually remove
