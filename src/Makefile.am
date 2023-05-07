@@ -11,6 +11,11 @@
 
 lib_LTLIBRARIES = libmeddly.la
 
+##
+## This list should include any source file that should be part of
+## the library's tarball
+##
+
 libmeddly_la_SOURCES = \
     compute_table.h         compute_table.cc \
     ct_entry_key.h          ct_entry_key.cc \
@@ -141,6 +146,11 @@ libmeddly_la_SOURCES = \
 ## compile apps
 
 include_HEADERS = meddly.h
+
+##
+## List of headers to be copied into (prefix)/include/meddly
+## during installation
+##
 
 pkginclude_HEADERS = \
     compute_table.h \
