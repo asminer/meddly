@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -17,18 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-/*! \file loggers.h
-
-    meddly.h should be included before this file.
-
-
-    Various built-in loggers.
-*/
-
-
-#ifndef LOGGERS_H
-#define LOGGERS_H
+#ifndef MEDDLY_LOGGERS_H
+#define MEDDLY_LOGGERS_H
 
 #include "forest.h"
 #include "io.h"
@@ -100,4 +89,4 @@ class MEDDLY::simple_logger : public MEDDLY::forest::logger {
     void flushLog();
 };
 
-#endif
+#endif // #include guard

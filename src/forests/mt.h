@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -23,8 +22,8 @@
 //TODO: add a mechanism to mt_forest so that reduction rule can
 //      be set after instantiation of the mt_forest.
 
-#ifndef MT_FOREST
-#define MT_FOREST
+#ifndef MEDDLY_MT_FOREST
+#define MEDDLY_MT_FOREST
 
 #include "../defines.h"
 #include "../minterms.h"

@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -19,8 +18,8 @@
 
 // This hasn't been tested very much yet...
 
-#ifndef EVMDD_TIMESREAL_H
-#define EVMDD_TIMESREAL_H
+#ifndef MEDDLY_EVMDD_TIMESREAL_H
+#define MEDDLY_EVMDD_TIMESREAL_H
 
 #include "evmdd.h"
 

@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -20,7 +19,7 @@
 #include <deque>
 #include <vector>
 
-#include "defines.h"
+#include "../defines.h"
 #include "constrained.h"
 
 #include "../ct_entry_result.h"

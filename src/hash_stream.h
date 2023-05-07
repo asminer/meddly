@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -17,8 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef HASH_STREAM_H
-#define HASH_STREAM_H
+#ifndef MEDDLY_HASH_STREAM_H
+#define MEDDLY_HASH_STREAM_H
 
 #include "error.h"
 
@@ -352,4 +351,4 @@ class MEDDLY::hash_stream {
     }
 };
 
-#endif
+#endif // #include guard

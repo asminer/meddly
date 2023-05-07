@@ -1,6 +1,23 @@
+/*
+    Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
+    Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
-#ifndef HEAP_H
-#define HEAP_H
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef MEDDLY_HEAP_H
+#define MEDDLY_HEAP_H
 
 #include <vector>
 
@@ -103,7 +120,7 @@ public:
 	void push(int key, T value)
 	{
 		if(!is_in_heap(key)){
-			_indices[key] = _heap.size(); 
+			_indices[key] = _heap.size();
 			Item i; i.key = key; i.value = value;
 			_heap.push_back(i);
 			percolate_up(key);
@@ -158,4 +175,4 @@ public:
 template <typename T, typename Comp>
 const int IndexedHeap<T, Comp>::NOT_IN_HEAP;
 
-#endif
+#endif // #include guard

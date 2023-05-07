@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -17,8 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MTMXDINT_H
-#define MTMXDINT_H
+#ifndef MEDDLY_MTMXDINT_H
+#define MEDDLY_MTMXDINT_H
 
 #include "mtmxd.h"
 

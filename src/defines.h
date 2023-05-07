@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -17,24 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
-/** @name defines.h
-    @type File
-    @args \
-
-  The base of all files.  So if you change this, everything gets to recompile.
-
-  This file is for good global defines, such as ASSERT and TRACE and crud.
-
-  Since this file is only intended for global definitions, there is no
-  associated defines.c or defines.cc file.
- */
-
-//@{
-
-#ifndef DEFINES_H
-#define DEFINES_H
+#ifndef MEDDLY_DEFINES_H
+#define MEDDLY_DEFINES_H
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -212,7 +195,5 @@ namespace MEDDLY {
 };
 
 
-#endif
-
-//@}
+#endif // #include guard
 

@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -17,9 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-#ifndef UNIQUE_TABLE_H
-#define UNIQUE_TABLE_H
+#ifndef MEDDLY_UNIQUE_TABLE_H
+#define MEDDLY_UNIQUE_TABLE_H
 
 #include "defines.h"
 #include "forest.h"
@@ -242,4 +240,4 @@ inline unsigned MEDDLY::unique_table::getItems(int var, node_handle* items, unsi
   return tables[var].getItems(items, sz);
 }
 
-#endif
+#endif // #include guard
