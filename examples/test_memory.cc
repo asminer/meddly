@@ -17,7 +17,6 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define _MEDDLY_NOINST_
 #include <iostream>
 #include <fstream>
 #include <map>  // for symbol table

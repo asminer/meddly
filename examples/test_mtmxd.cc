@@ -26,7 +26,6 @@
  * Operations: min, max, +, -, *, /.
  */
 
-#define _MEDDLY_NOINST_
 #include <iostream>
 #include <string.h>
 #include <cassert>

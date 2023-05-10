@@ -1,14 +1,38 @@
 
+TBD BEFORE MERGING BACK INTO MAIN BRANCH:
+    do a compile and install,
+    and then make sure an example application works with #include "meddly.h"
+    assuming -I/path/to/include and -L/path/to/lib
+
+
 Interface changes (aside from moving header files around)
 ======================================================================
 
 Removed meddly_expert.h; use meddly.h instead.
 
-
 Encoders that were in expert_forest are now stand-alone classes
 in encoders.h
 
-Moved lots of enums and made them enum class.
+Moved lots of enums and made them enum class:
+
+    MEDDLY::forest::policies -> MEDDLY::policies
+    MEDDLY::forest::policies::reduction_rule -> MEDDLY::reduction_rule
+    MEDDLY::forest::range_type -> MEDDLY::range_type
+    MEDDLY::forest::edge_labeling -> MEDDLY::edge_labeling
+
+    MEDDLY::forest::policies::PESSIMISTIC_DELETION -> MEDDLY::policies::node_deletion::PESSIMISTIC
+    MEDDLY::forest::policies::OPTIMISTIC_DELETION -> MEDDLY::policies::node_deletion::OPTIMISTIC
+    MEDDLY::forest::policies::NEVER_DELETE -> MEDDLY::policies::node_deletion::NEVER
+
+    MEDDLY::forest::BOOLEAN -> MEDDLY::range_type::BOOLEAN
+    MEDDLY::forest::INTEGER -> MEDDLY::range_type::INTEGER
+    MEDDLY::forest::REAL -> MEDDLY::range_type::REAL
+
+    MEDDLY::forest::MULTI_TERMINAL -> MEDDLY::edge_labeling::MULTI_TERMINAL
+    MEDDLY::forest::EVPLUS -> MEDDLY::edge_labeling::EVPLUS
+    MEDDLY::forest::EVTIMES -> MEDDLY::edge_labeling::EVTIMES
+    MEDDLY::forest::INDEX_SET -> MEDDLY::edge_labeling::INDEX_SET
+
 
 
 expert_variable class

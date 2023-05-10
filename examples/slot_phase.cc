@@ -25,7 +25,6 @@
 #include <algorithm>
 #include <iostream>
 
-#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "simple_model.h"
 #include "../src/timer.h"

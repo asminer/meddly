@@ -23,7 +23,6 @@
 
 #include <iostream>
 #include <stdlib.h>
-#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 
 int main(int argc, const char** argv)

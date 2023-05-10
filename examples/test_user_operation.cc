@@ -32,7 +32,6 @@
 
 
 #include <vector>
-#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 
 #define MAX(A, B) ((A > B)? A: B)

@@ -25,7 +25,6 @@
   Test1: Test fully reduced MDDs with Saturation.
 */
 
-#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include <cstdlib>
 #include <cassert>

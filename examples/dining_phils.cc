@@ -94,7 +94,6 @@
   #include <gmp.h>
 #endif
 
-#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "../src/timer.h"
 #include "../src/loggers.h"

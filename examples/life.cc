@@ -28,7 +28,6 @@
 #include <cassert>
 
 #define _MEDDLY_WITHOUT_CSTDIO_
-#define _MEDDLY_NOINST_
 
 #include "../src/meddly.h"
 #include "../src/timer.h"

@@ -30,7 +30,6 @@
   Initial state: A = N, B = 0
 */
 
-#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include <cassert>
 

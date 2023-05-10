@@ -26,7 +26,6 @@
 #include <time.h>
 #include <cassert>
 
-#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 
 #define CHECK_ALL_MTMDDS

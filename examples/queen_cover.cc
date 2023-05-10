@@ -38,7 +38,6 @@
 #include <fstream>
 #include <cassert>
 
-#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 #include "../src/loggers.h"
 #include "../src/timer.h"

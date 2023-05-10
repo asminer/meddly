@@ -23,7 +23,6 @@
     Note: most of thest tests were automatically generated :^)
 */
 
-#define _MEDDLY_NOINST_
 #include <cstdlib>
 #include "../src/meddly.h"
 

@@ -29,7 +29,6 @@
 #include <iostream>
 #include <stdlib.h>
 #include <string.h>
-#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 
 using namespace MEDDLY;

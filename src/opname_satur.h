@@ -875,7 +875,7 @@ class MEDDLY::satimpl_opname: public specialized_opname {
 
        Return the map.
        */
-      std::unordered_map<long,std::vector<rel_node_handle>> getListOfNexts(int level, long i, relation_node **R);
+      std::unordered_map<long,std::vector<rel_node_handle> > getListOfNexts(int level, long i, relation_node **R);
 
       /*
        Returns whether there exist a possibility of doing union
@@ -1206,7 +1206,7 @@ class MEDDLY::sathyb_opname: public specialized_opname {
       inline node_handle getTopComponent()  { return *level_component[top].begin(); }
 
       ///Get the entire map of subevent-nodeHandles_by_topLevel
-      inline std::map<int, std::set<node_handle>> getComponents()  { return level_component; }
+      inline std::map<int, std::set<node_handle> > getComponents()  { return level_component; }
 
       ///Get the entire map of subevent-nodeHandles_by_topLevel
       inline node_handle* getAllComponents()  {  return all_components; }
@@ -1288,7 +1288,7 @@ class MEDDLY::sathyb_opname: public specialized_opname {
       int num_rel_vars;
       int* relNode_vars;
 
-      std::map<int,std::set<node_handle>> level_component; // stores the set of subevent node_handles whose top is this level.
+      std::map<int,std::set<node_handle> > level_component; // stores the set of subevent node_handles whose top is this level.
       std::map<node_handle,bool> component_se_type; //enabling:0 firing/rn:1
       node_handle* all_components; // set of subevent's top node_handles
 
@@ -1474,7 +1474,7 @@ class MEDDLY::sathyb_opname: public specialized_opname {
 
        Return the map.
        */
-      std::unordered_map<long,std::vector<node_handle>> getListOfNexts(int level, long i, relation_node **R);
+      std::unordered_map<long,std::vector<node_handle> > getListOfNexts(int level, long i, relation_node **R);
 
       /*
        Returns whether there exist a possibility of doing union

@@ -32,7 +32,6 @@
 #include <chrono>
 #include <cassert>
 
-#define _MEDDLY_NOINST_
 #include "../src/meddly.h"
 
 using namespace MEDDLY;

@@ -145,7 +145,7 @@ libmeddly_la_SOURCES = \
 
 ## compile apps
 
-include_HEADERS = meddly.h
+# include_HEADERS = meddly.h
 
 ##
 ## List of headers to be copied into (prefix)/include/meddly
@@ -170,6 +170,7 @@ pkginclude_HEADERS = \
     heap.h \
     initializer.h \
     io.h \
+    meddly.h \
     memory.h \
     memstats.h \
     minterms.h \
@@ -182,6 +183,7 @@ pkginclude_HEADERS = \
     opname.h  \
     opname_numer.h  \
     opname_satur.h  \
+    ops_builtin.h \
     policies.h \
     relation_node.h \
     revision.h \
