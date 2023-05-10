@@ -1,14 +1,9 @@
 
-TBD BEFORE MERGING BACK INTO MAIN BRANCH:
-    do a compile and install,
-    and then make sure an example application works with #include "meddly.h"
-    assuming -I/path/to/include and -L/path/to/lib
-
-
 Interface changes (aside from moving header files around)
 ======================================================================
 
 Removed meddly_expert.h; use meddly.h instead.
+When compiling, use -I/path/to/meddly/include/meddly
 
 Encoders that were in expert_forest are now stand-alone classes
 in encoders.h

@@ -5,6 +5,7 @@ autom4te.cache
 compile
 config.*
 configure
+configure~
 configure.ac.old
 depcomp
 include/

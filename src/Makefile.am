@@ -193,4 +193,7 @@ pkginclude_HEADERS = \
     variable.h \
     varorder.h
 
+install-data-local:
+	rm -f $(pkgincludedir)/*
+
 AM_CXXFLAGS = -Wall
