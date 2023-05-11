@@ -2,6 +2,56 @@
 #
 #
 
+REVFILE="src/revision.h"
+RELDIR="docs/_releases"
+UNRELNOTES="$RELDIR/unreleased.md"
+NAVFILE="docs/_data/navigation.yml"
+
+#
+# Arg1: version
+#
+update_revision()
+{
+    local rdate=`date +"%Y %B %d"`
+    printf "const char* MEDDLY_DATE = \"%s\";\n" "$rdate"
+    printf "const char* MEDDLY_VERS = \"%s\";\n" "$1"
+}
+
+#
+# Arg1: version
+#
+update_docs()
+{
+    local ddate=`date +"%Y-%m-%d"`
+    echo "---"
+    echo "title: New in Version $1"
+    echo "shorttitle: Version $1"
+    echo "number: $1"
+    echo "date: $ddate"
+    echo "---"
+
+    sed '/^---$/,/^---$/d' ../$UNRELNOTES
+}
+
+#
+# Arg1: version
+#
+update_nav()
+{
+    # Copy first part
+    #
+    sed -n '1,/url: "\/releases\/unreleased"/p' ../$NAVFILE
+
+    #
+    # Add new entry
+    echo "      - title: \"Version $1\""
+    echo "        url: \"/releases/$1\""
+
+    # Copy remaining part
+    #
+    sed '1,/url: "\/releases\/unreleased"/d' ../$NAVFILE
+}
+
 usage()
 {
     printf "\nUsage: $1 -M | -m \n\n"
@@ -40,28 +90,51 @@ if [ ! -f ../configure.ac ]; then
     exit 1
 fi
 
+if [ ! -f ../$UNRELNOTES ]; then
+    printf "Missing release docs; check file $UNRELNOTES\n\n"
+    exit 1
+fi
+
+if diff -q blank_unreleased.md ../$UNRELNOTES; then
+    printf "Update release documentation $UNRELNOTES\n\n"
+    exit 1
+fi
+
 version=`awk '/AC_INIT/{print $2}' ../configure.ac | tr -d '[],'`
 if [ "$major" ]; then
     version=`awk -F. '{for (i=1; i<NF-1; i++) printf($i"."); print $(NF-1)+1".0"}' <<< $version`
 fi
 
+if [ -f ../$RELDIR/$version.md ]; then
+    printf "Can't update documentation; file $RELDIR/$version.md exists\n"
+    exit 1
+fi
+
 
 printf "Creating release for version $version\n"
 
-rdate=`date +"%Y %B %d"`
-printf "const char* MEDDLY_DATE = \"%s\";\n" "$rdate" > ../src/revision.h
-printf "const char* MEDDLY_VERS = \"%s\";\n" "$version" >> ../src/revision.h
+printf "    updating $REVFILE\n"
+update_revision "$version" > ../$REVFILE
+
+
+printf "    creating $RELDIR/$version.md\n"
+update_docs "$version"  > ../$RELDIR/$version.md
+cp -f blank_unreleased.md ../$UNRELNOTES
+
+printf "    updating $NAVFILE\n"
+update_nav $version > newnav.yml
+mv -f newnav.yml ../$NAVFILE
 
 nextver=`awk -F. '{for (i=1; i<NF; i++) printf($i"."); print $NF+1}' <<< $version`
 
-echo "New version would be $nextver"
+printf "\nNext version will be $nextver\n"
 
 #
 # Save changes
 #
 
-git add ../src/revision.h
-git commit -m "Updated release date for $version"
+git add ../src/revision.h ../$RELDIR/$version.md ../$UNRELNOTES
+git commit -m "Updated for $version release"
 git push
 git push sourceforge
 

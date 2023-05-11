@@ -3,13 +3,14 @@ Preferred mechanism to "release" the library:
 
 (0) git commit and push
 
-(1) Run ./Release script
+(1) Run ./Release.sh script, which automatically
+    (a) updates version number in configure.ac
+    (b) updates release documentation in docs/_releases,
+        and docs/_data/navigation.yml
+    (c) tags release
+
+    Probably good to double-check these files.
 
 (2) upload tarball sourceforge (under "Files")
 
-(3) check new version in configure.ac
-
-(4) add an entry in docs/_releases, and update
-    docs/_data/navigation.yml
-
-(5) bask in the glory of a job well-done
+(3) bask in the glory of a job well-done
