@@ -3,7 +3,9 @@ Preferred mechanism to "release" the library:
 
 (0) git commit and push
 
-(1) Run ./Release.sh script, which automatically
+(1) Finalize any release notes in docs/_releases/unreleased.md
+
+(2) Run ./Release.sh script, which automatically
     (a) updates version number in configure.ac
     (b) updates release documentation in docs/_releases,
         and docs/_data/navigation.yml
@@ -11,6 +13,6 @@ Preferred mechanism to "release" the library:
 
     Probably good to double-check these files.
 
-(2) upload tarball sourceforge (under "Files")
+(3) upload tarball sourceforge (under "Files")
 
-(3) bask in the glory of a job well-done
+(4) bask in the glory of a job well-done
