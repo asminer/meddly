@@ -1,0 +1,30 @@
+The online documentation lives in /docs, mostly as markdown files.
+To preview the site before it goes live, do the following.
+
+
+(1) Install Ruby and Ruby development
+
+    Fedora:# sudo dnf install ruby ruby-devel
+
+
+(2) Set bundle configuration to a local directory
+
+    # bundle config set --local path 'vendor/bundle'
+
+(3) Install jekyll
+
+    # gem install jekyll bundler
+
+    and test with
+
+    # jekyll --version
+
+(3) In the docs directory, run (as ordinary user)
+
+    # bundle install
+
+(4) Start jekyll
+
+    # bundle exec jekyll serve
+
+
