@@ -2,7 +2,7 @@ The online documentation lives in /docs, mostly as markdown files.
 To preview the site before it goes live, do the following.
 
 
-(1) Install Ruby and Ruby development
+(1) Install Ruby and Ruby development, if needed
 
     Fedora:     # sudo dnf install ruby ruby-devel
     MacPorts:   # sudo port install ruby ruby-devel
