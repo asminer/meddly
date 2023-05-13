@@ -5,59 +5,8 @@ Interface changes (aside from moving header files around)
 Removed meddly_expert.h; use meddly.h instead.
 When compiling, use -I/path/to/meddly/include/meddly
 
-Encoders that were in expert_forest are now stand-alone classes
-in encoders.h
-
-Moved lots of enums and made them enum class:
-
-    MEDDLY::forest::policies -> MEDDLY::policies
-    MEDDLY::forest::policies::reduction_rule -> MEDDLY::reduction_rule
-    MEDDLY::forest::range_type -> MEDDLY::range_type
-    MEDDLY::forest::edge_labeling -> MEDDLY::edge_labeling
-
-    MEDDLY::forest::policies::PESSIMISTIC_DELETION -> MEDDLY::policies::node_deletion::PESSIMISTIC
-    MEDDLY::forest::policies::OPTIMISTIC_DELETION -> MEDDLY::policies::node_deletion::OPTIMISTIC
-    MEDDLY::forest::policies::NEVER_DELETE -> MEDDLY::policies::node_deletion::NEVER
-
-    MEDDLY::forest::BOOLEAN -> MEDDLY::range_type::BOOLEAN
-    MEDDLY::forest::INTEGER -> MEDDLY::range_type::INTEGER
-    MEDDLY::forest::REAL -> MEDDLY::range_type::REAL
-
-    MEDDLY::forest::MULTI_TERMINAL -> MEDDLY::edge_labeling::MULTI_TERMINAL
-    MEDDLY::forest::EVPLUS -> MEDDLY::edge_labeling::EVPLUS
-    MEDDLY::forest::EVTIMES -> MEDDLY::edge_labeling::EVTIMES
-    MEDDLY::forest::INDEX_SET -> MEDDLY::edge_labeling::INDEX_SET
 
 
-
-expert_variable class
-    -> merged into variable class
-
-
-Node storage methods
-    Old calls
-    ---------------------------------------------
-    node_storage::moveNodeOffset(node, old, new)
-
-    New Calls
-    ---------------------------------------------
-    node_storage::getParent()->moveNodeOffset(node, old, new)
-
-
-Unpacked node
-
-    unpacked_node::storage_style is removed in favor of node_storage_flags.
-
-    OLD method calls                                NEW method calls
-    ---------------------------------------------   ---------------------------------------------
-    un->initFromNode(f, nh, howstored)              f->unpackNode(un, nh, howstored)
-    unpacked_node::useUnpackedNode()                unpacked_node::New()
-    unpacked_node::newFromNode(f, nh, howstored)    expert_forest::newUnpacked(nh, howstored)
-
-    howstored is one of:
-        FULL_ONLY       (old 'true')
-        SPARSE_ONLY     (old 'false')
-        FULL_OR_SPARSE
 
 
 domain (PLANNED; NOT DONE YET. TBD)
@@ -68,60 +17,6 @@ domain (PLANNED; NOT DONE YET. TBD)
 
     global createDomain(...)                        static domain::create(...)
 
-
-opname hierarcy
-    CLASS                           NEW LOCATION
-    ----------------------------    ----------------------------
-    opname                          opname.h
-    unary_opname                    opname.h
-    binary_opname                   opname.h
-    specialized_opname              opname.h
-
-    numerical_opname                opname_numer.h
-
-    constrained_opname              opname_satur.h
-    sat*_opname                     opname_satur.h          but mostly still in operations/sat*
-
-
-Operation names (COMPLEMENT, CARDINALITY, etc.)
-have changed type, but user code should mostly be unaffected.
-
-unary_opname and binary_opname changes:
-
-    getOperation(unary_opname* code, ...)   ->  code->getOperation(...)
-    getOperation(binary_opname* code, ...)  ->  code->getOperation(...)
-
-    inlined functions provided for backward compatability
-
-
-operation hierarchy
-    CLASS                           NEW LOCATION
-    ----------------------------    ----------------------------
-    operation                       oper.h/cc
-    unary_operation                 oper_unary.h/cc
-    binary_operation                oper_binary.h/cc
-    specialized_operation           oper_special.h/cc
-
-
-operation functions
-
-    purgeMarkedOperations()     ->  operation::purgeAllMarked()
-
-
-
-Compute table changes:
-    OLD (inner) class                 NEW class                         WHERE
-    ------------------------------    ------------------------------    --------------------
-    ct_initializer::settings          ct_settings                       ct_initializer.h
-    ct_initializer                    (same)                            ct_initializer.h
-
-    compute_table::typeID             ct_typeID                         ct_entry_type.h
-    compute_table::entry_item         ct_entry_item                     ct_entry_type.h
-    ct_object                         ct_object                         ct_entry_type.h
-
-    compute_table::entry_key          ct_entry_key                      ct_entry_key.h
-
-    compute_table::entry_result       ct_entry_result                   ct_entry_result.h
 
 
 
