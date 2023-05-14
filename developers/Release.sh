@@ -52,6 +52,14 @@ update_nav()
     sed '1,/url: "\/releases\/unreleased"/d' ../$NAVFILE
 }
 
+#
+# Arg1: version
+#
+update_config()
+{
+    sed "s|^\(AC_INIT(\[[A-Z]*\]\), \[[0-9.]*\], \(.*\)|\1, $1, \2|" ../configure.ac
+}
+
 usage()
 {
     printf "\nUsage: $1 -M | -m \n\n"
@@ -101,6 +109,7 @@ if diff -q blank_unreleased.md ../$UNRELNOTES; then
 fi
 
 version=`awk '/AC_INIT/{print $2}' ../configure.ac | tr -d '[],'`
+oldversion="$version"
 if [ "$major" ]; then
     version=`awk -F. '{for (i=1; i<NF-1; i++) printf($i"."); print $(NF-1)+1".0"}' <<< $version`
 fi
@@ -112,6 +121,12 @@ fi
 
 
 printf "Creating release for version $version\n"
+
+cp ../configure.ac ../configure.ac.old
+if [ "$version" != "$oldversion" ]; then
+    update_config $version > ../configure.ac.new
+    mv -f ../configure.ac.new ../configure.ac
+fi
 
 printf "    updating $REVFILE\n"
 update_revision "$version" > ../$REVFILE
@@ -133,7 +148,7 @@ printf "\nNext version will be $nextver\n"
 # Save changes
 #
 
-git add ../src/revision.h ../$RELDIR/$version.md ../$UNRELNOTES
+git add ../src/revision.h ../$RELDIR/$version.md ../$UNRELNOTES ../$NAVFILE ../configure.ac
 git commit -m "Updated for $version release"
 git push
 git push sourceforge
@@ -151,14 +166,12 @@ git push sourceforge v$version
 # Build distribution
 #
 
-make dist
+make -C .. dist
 
 #
 # Automatically bump the version number
 #
 
 printf "Updating version to $nextver\n"
-sed "/AC_INIT/s/$version/$nextver/" ../configure.ac > ../configure.new
-mv -f ../configure.ac ../configure.ac.old
-mv ../configure.new ../configure.ac
-
+update_config $nextver > ../configure.ac.new
+mv -f ../configure.ac.new ../configure.ac
