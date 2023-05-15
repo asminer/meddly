@@ -24,9 +24,41 @@
 #include <cstddef>  // for size_t
 
 namespace MEDDLY {
+    class trackpeak;
     class memstats;
 };
 
+/**
+    Class to track peak size
+*/
+class MEDDLY::trackpeak {
+    public:
+        inline void operator += (size_t s) {
+            current += s;
+            if (current > peak) peak = current;
+        }
+        inline void operator -= (size_t s) {
+            MEDDLY_DCASSERT(current >= s);
+            current -= s;
+        }
+        inline void operator -= (const trackpeak &s) {
+            MEDDLY_DCASSERT(current >= s.current);
+            current -= s.current;
+        }
+        inline void zero() {
+            current = 0;
+        }
+        inline void init() {
+            current = 0;
+            peak = 0;
+        }
+
+        inline size_t getCurrent()  const { return current; }
+        inline size_t getPeak()     const { return peak; }
+    private:
+        size_t current;
+        size_t peak;
+};
 
 /**
     Class for memory statistics.
@@ -35,142 +67,69 @@ class MEDDLY::memstats {
     public:
         memstats();
 
-        void incMemUsed(size_t b);
-        void decMemUsed(size_t b);
-        void incMemAlloc(size_t b);
-        void decMemAlloc(size_t b);
+        inline void incMemUsed(size_t b) {
+            memused += b;
+            global_memused += b;
+        }
+        inline void decMemUsed(size_t b) {
+            memused -= b;
+            global_memused -= b;
+        }
 
-        void zeroMemUsed();
-        void zeroMemAlloc();
+        inline void incMemAlloc(size_t b) {
+            memalloc += b;
+            global_memalloc += b;
+        }
 
-        size_t getMemUsed() const;
-        size_t getMemAlloc() const;
-        size_t getPeakMemUsed() const;
-        size_t getPeakMemAlloc() const;
+        inline void decMemAlloc(size_t b) {
+            memalloc -= b;
+            global_memalloc -= b;
+        }
 
-        static size_t getGlobalMemUsed();
-        static size_t getGlobalMemAlloc();
-        static size_t getGlobalPeakMemUsed();
-        static size_t getGlobalPeakMemAlloc();
+        inline void zeroMemUsed() {
+            global_memused -= memused;
+            memused.zero();
+        }
+        inline void zeroMemAlloc() {
+            global_memalloc -= memalloc;
+            memalloc.zero();
+        }
+
+        inline size_t getMemUsed() const {
+            return memused.getCurrent();
+        }
+        inline size_t getMemAlloc() const {
+            return memalloc.getCurrent();
+        }
+        inline size_t getPeakMemUsed() const {
+            return memused.getPeak();
+        }
+        inline size_t getPeakMemAlloc() const {
+            return memalloc.getPeak();
+        }
+
+        static inline size_t getGlobalMemUsed() {
+            return global_memused.getCurrent();
+        }
+        static inline size_t getGlobalMemAlloc() {
+            return global_memalloc.getCurrent();
+        }
+        static inline size_t getGlobalPeakMemUsed() {
+            return global_memused.getPeak();
+        }
+        static inline size_t getGlobalPeakMemAlloc() {
+            return global_memalloc.getPeak();
+        }
+
+        static void initGlobalStats();
 
     private:
-        /// Current memory used
-        size_t memory_used;
-        /// Current memory allocated
-        size_t memory_alloc;
-        /// Peak memory used
-        size_t peak_memory_used;
-        /// Peak memory allocated
-        size_t peak_memory_alloc;
+        trackpeak memused;
+        trackpeak memalloc;
 
-        // global memory usage
-        static size_t global_memory_used;
-        static size_t global_memory_alloc;
-        static size_t global_peak_used;
-        static size_t global_peak_alloc;
+        static trackpeak global_memused;
+        static trackpeak global_memalloc;
 };
-
-
-// ******************************************************************
-// *                                                                *
-// *                    memstats inline methods                     *
-// *                                                                *
-// ******************************************************************
-
-inline void MEDDLY::memstats::incMemUsed(size_t b)
-{
-  memory_used += b;
-  if (memory_used > peak_memory_used) {
-    peak_memory_used = memory_used;
-  }
-  global_memory_used += b;
-  if (global_memory_used > global_peak_used) {
-    global_peak_used = global_memory_used;
-  }
-}
-
-inline void MEDDLY::memstats::decMemUsed(size_t b)
-{
-  MEDDLY_DCASSERT(memory_used >= b);
-  memory_used -= b;
-  MEDDLY_DCASSERT(global_memory_used >= b);
-  global_memory_used -= b;
-}
-
-inline void MEDDLY::memstats::incMemAlloc(size_t b)
-{
-  memory_alloc += b;
-  if (memory_alloc > peak_memory_alloc) {
-    peak_memory_alloc = memory_alloc;
-  }
-  global_memory_alloc += b;
-  if (global_memory_alloc > global_peak_alloc) {
-    global_peak_alloc = global_memory_alloc;
-  }
-}
-
-inline void MEDDLY::memstats::decMemAlloc(size_t b)
-{
-  MEDDLY_DCASSERT(memory_alloc >= b);
-  memory_alloc -= b;
-  MEDDLY_DCASSERT(global_memory_alloc >= b);
-  global_memory_alloc -= b;
-}
-
-inline void MEDDLY::memstats::zeroMemUsed()
-{
-  MEDDLY_DCASSERT(global_memory_used >= memory_used);
-  global_memory_used -= memory_used;
-  memory_used = 0;
-}
-
-inline void MEDDLY::memstats::zeroMemAlloc()
-{
-  MEDDLY_DCASSERT(global_memory_alloc >= memory_alloc);
-  global_memory_alloc -= memory_alloc;
-  memory_alloc = 0;
-}
-
-inline size_t MEDDLY::memstats::getMemUsed() const
-{
-  return memory_used;
-}
-
-inline size_t MEDDLY::memstats::getMemAlloc() const
-{
-  return memory_alloc;
-}
-
-inline size_t MEDDLY::memstats::getPeakMemUsed() const
-{
-  return peak_memory_used;
-}
-
-inline size_t MEDDLY::memstats::getPeakMemAlloc() const
-{
-  return peak_memory_alloc;
-}
-
-
-inline size_t MEDDLY::memstats::getGlobalMemUsed()
-{
-  return global_memory_used;
-}
-
-inline size_t MEDDLY::memstats::getGlobalMemAlloc()
-{
-  return global_memory_alloc;
-}
-
-inline size_t MEDDLY::memstats::getGlobalPeakMemUsed()
-{
-  return global_peak_used;
-}
-
-inline size_t MEDDLY::memstats::getGlobalPeakMemAlloc()
-{
-  return global_peak_alloc;
-}
 
 
 #endif

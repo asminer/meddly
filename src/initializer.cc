@@ -57,6 +57,7 @@ void MEDDLY::initializer_list::initializeLibrary(initializer_list* L)
     }
 
     // Hard-coded statics
+    memstats::initGlobalStats();
     operation::initializeStatics();
     domain::initDomList();
     unpacked_node::initStatics();
