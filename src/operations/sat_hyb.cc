@@ -1153,7 +1153,7 @@ MEDDLY::sathyb_opname::event::event(subevent** p, int np, relation_node** r, int
   event_mask_to_minterm = 0;
   needs_rebuilding = is_disabled ? false: true;
 
-  printf("\n Event cumulative = %d",f->getImplicitTableCount());
+//  printf("\n Event cumulative = %d",f->getImplicitTableCount());
 
 }
 
@@ -1913,7 +1913,7 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
   } else {
     //
     // Need to process this level in the MXD.
-    MEDDLY_DCASSERT(mxdLevel >= mddLevel);
+    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
     // Initialize mxd readers, note we might skip the unprimed level
 

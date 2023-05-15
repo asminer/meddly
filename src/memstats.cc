@@ -32,9 +32,9 @@ size_t MEDDLY::memstats::global_peak_alloc = 0;
 
 MEDDLY::memstats::memstats()
 {
-  memory_used = 0;
-  memory_alloc = 0;
-  peak_memory_used = 0;
-  peak_memory_alloc = 0;
+    memory_used = 0;
+    memory_alloc = 0;
+    peak_memory_used = 0;
+    peak_memory_alloc = 0;
 }
 

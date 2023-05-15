@@ -53,6 +53,8 @@ class MEDDLY::memstats {
         static size_t getGlobalPeakMemUsed();
         static size_t getGlobalPeakMemAlloc();
 
+        static void resetGlobalMemory();
+
     private:
         /// Current memory used
         size_t memory_used;
