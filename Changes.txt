@@ -39,7 +39,6 @@ oper_unary.h            oper_unary.cc
 relation_node.h         relation_node.cc
 timer.h (move?)
 unique_table.h          unique_table.cc
-unpacked_node.h         unpacked_node.cc
 
 
 In good shape
@@ -56,6 +55,9 @@ io.h                    io.cc
 memstats.h              memstats.cc
 node_storage.h          node_storage.cc
 policies.h              policies.cc
+
+unpacked_node.h         unpacked_node.cc
+
 variable.h              variable.cc
 varorder.h              varorder.cc
 
