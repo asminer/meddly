@@ -16,7 +16,3 @@ To preview the site before it goes live, do the following.
     # bundle exec jekyll serve
 
 
-On some systems, you may need to install jekyll:
-
-    # gem install jekyll bundler
-    # jekyll --version
