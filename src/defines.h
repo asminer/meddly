@@ -140,7 +140,7 @@ namespace MEDDLY {
     inline void CHECK_RANGE(const char* fn, unsigned ln,
             long min, long value, INT max)
     {
-        if (value < min || (unsigned long) value >= (unsigned long) max ) {
+        if (value < min || (INT) value >= max ) {
             std::cerr << "Check range at " << fn << " line " << ln;
             std::cerr << " failed:\n    min: " << min;
             std::cerr << "\n    val: " << value;
