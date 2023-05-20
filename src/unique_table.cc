@@ -45,7 +45,8 @@ MEDDLY::unique_table::unique_table(expert_forest* ef) : parent(ef)
             tables[i].init(parent);
             tables[-i].init(parent);
         }
-  } else {
+    } else {
+        min_var = 0;
         tables = new subtable[max_var+1];
         if (!tables) {
             throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
@@ -228,7 +229,7 @@ MEDDLY::node_handle MEDDLY::unique_table::subtable::remove(unsigned hash,
 {
     unsigned h = hash%size;
 
-    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, h, size);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, h, size);
 
     node_handle prev = 0;
     for (node_handle ptr = table[h]; ptr!=0; ptr = parent->getNext(ptr)) {

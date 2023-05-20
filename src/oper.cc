@@ -318,7 +318,7 @@ void MEDDLY::operation::unregisterInForest(MEDDLY::forest* f)
 
 void MEDDLY::operation::registerEntryType(unsigned slot, ct_entry_type* et)
 {
-    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, slot, num_etids);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, slot, num_etids);
     MEDDLY_DCASSERT(etype);
     MEDDLY_DCASSERT(0==etype[slot]);
     etype[slot] = et;

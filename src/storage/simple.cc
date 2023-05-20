@@ -205,7 +205,7 @@ class MEDDLY::simple_separated : public node_storage {
         int high = N;
         while (low < high) {
           int z = (low+high)/2;
-          MEDDLY_CHECK_RANGE(0, z, N);
+          MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, z, N);
           if (index[z] == i) return z;
           if (index[z] < i) low = z + 1;
           else              high = z;
@@ -1421,7 +1421,7 @@ MEDDLY::node_address MEDDLY::simple_separated
   //
   // Set size
   //
-  MEDDLY_CHECK_RANGE(0, size_slot, slots_given);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, (size_t)0, (size_t)size_slot, slots_given);
   chunk[size_slot] = getRawSize(size, false, nb.isExtensible());
 
   //
@@ -1453,7 +1453,7 @@ MEDDLY::node_address MEDDLY::simple_separated
         }
         for (int z=0; z<nb.getNNZs(); z++) {
           int i = nb.i(z);
-          MEDDLY_CHECK_RANGE(0, i, size);
+          MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, size);
           down[i] = nb.d(z);
           memcpy(edge + i * edge_bytes, nb.eptr(z), edge_bytes);
         }
@@ -1473,7 +1473,7 @@ MEDDLY::node_address MEDDLY::simple_separated
           down[i] = tv;
         }
         for (int z=0; z<nb.getNNZs(); z++) {
-          MEDDLY_CHECK_RANGE(0, nb.i(z), size);
+          MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, (int)nb.i(z), size);
           down[nb.i(z)] = nb.d(z);
         }
       } else {
@@ -1540,7 +1540,7 @@ MEDDLY::node_address MEDDLY::simple_separated
   //
   // Set size
   //
-  MEDDLY_CHECK_RANGE(0, size_slot, slots_given);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, (size_t)0, (size_t)size_slot, slots_given);
   chunk[size_slot] = getRawSize(size, true, nb.isExtensible());
 
   //
@@ -1579,7 +1579,7 @@ MEDDLY::node_address MEDDLY::simple_separated
         int z = 0;
         for (int i=0; i<nb.getSize(); i++) {
           if (getParent()->isTransparentEdge(nb.d(i), nb.eptr(i))) continue;
-          MEDDLY_CHECK_RANGE(0, z, size);
+          MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, z, size);
           down[z] = nb.d(i);
           index[z] = i;
           memcpy(edge + z * edge_bytes, nb.eptr(i), edge_bytes);
@@ -1602,7 +1602,7 @@ MEDDLY::node_address MEDDLY::simple_separated
         const node_handle tv = getParent()->getTransparentNode();
         for (int i=0; i<nb.getSize(); i++) {
           if (nb.d(i)!=tv) {
-            MEDDLY_CHECK_RANGE(0, z, size);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, z, size);
             down[z] = nb.d(i);
             index[z] = i;
             z++;

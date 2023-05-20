@@ -174,7 +174,7 @@ inline MEDDLY::dd_edge*
 MEDDLY::satpregen_opname::pregen_relation::arrayForLevel(int k) const
 {
   MEDDLY_DCASSERT(isFinalized());
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, k, K + 1);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1u, (unsigned)k, K + 1);
   if (level_index) {
     // "by events"
     if (level_index[k - 1] > level_index[k]) {
@@ -195,7 +195,7 @@ inline unsigned
 MEDDLY::satpregen_opname::pregen_relation::lengthForLevel(int k) const
 {
   MEDDLY_DCASSERT(isFinalized());
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, k, K + 1);
+  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1u, (unsigned)k, K + 1);
   if (level_index) {
     // "by events"
     return level_index[k - 1] - level_index[k];

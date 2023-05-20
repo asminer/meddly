@@ -172,7 +172,7 @@ class MEDDLY::unique_table {
                 template <typename T> int find(const T &key) const
                 {
                     unsigned h = key.hash() % size;
-                    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, h, size);
+                    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, h, size);
                     node_handle prev = 0;
                     for (node_handle ptr = table[h];
                             ptr != 0;

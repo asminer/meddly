@@ -75,7 +75,7 @@ namespace MEDDLY {
 #ifdef USE_SLOW_GET_CHUNK_ADDRESS
       virtual void* slowChunkAddress(node_address h) const {
         MEDDLY_DCASSERT(data);
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, h, data_alloc);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1lu, h, data_alloc);
         return data + h;
       }
 #endif
@@ -128,7 +128,7 @@ namespace MEDDLY {
     protected:
       inline bool isHole(node_address h) const {
         MEDDLY_DCASSERT(data);
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, h, 1+last_used_slot);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0lu, h, 1+last_used_slot);
         return data[h] & MSB;
         // Because we set data[0] to 0, this will work
         // correctly also for h=0 (which is not a hole).
@@ -140,8 +140,8 @@ namespace MEDDLY {
       inline void setHoleSize(node_address h, INT hs) {
         MEDDLY_DCASSERT(data);
         MEDDLY_DCASSERT(hs>0);
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, h, 1+last_used_slot);
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, h+hs-1, 1+last_used_slot);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1lu, h, 1+last_used_slot);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1lu, h+hs-1, 1+last_used_slot);
         data[h] = data[h+hs-1] = (hs | MSB);
       }
       inline void clearHole(node_address h, INT hs) const {
@@ -155,13 +155,13 @@ namespace MEDDLY {
 
       inline INT readSlot(node_address h, const int slot) const {
         MEDDLY_DCASSERT(isHole(h));
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, h+slot, 1+last_used_slot);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1lu, h+slot, 1+last_used_slot);
         return data[h+slot];
       }
 
       inline INT& refSlot(node_address h, const unsigned slot) {
         MEDDLY_DCASSERT(isHole(h));
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, h+slot, 1+last_used_slot);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1lu, h+slot, 1+last_used_slot);
         return data[h+slot];
       }
 

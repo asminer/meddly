@@ -291,7 +291,7 @@ class MEDDLY::ct_entry_type {
         */
         inline void getResultType(unsigned i, ct_typeID &t, expert_forest* &f)
         const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, len_r_type);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, len_r_type);
             MEDDLY_DCASSERT(r_type);
             MEDDLY_DCASSERT(r_forest);
             t = r_type[i];
@@ -304,7 +304,7 @@ class MEDDLY::ct_entry_type {
               @param  i   Slot number, between 0 and getResultSize().
         */
         inline ct_typeID getResultType(unsigned i) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, len_r_type);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, len_r_type);
             MEDDLY_DCASSERT(r_type);
             return r_type[i];
         }
@@ -317,7 +317,7 @@ class MEDDLY::ct_entry_type {
                           is not 'N'.
         */
         inline expert_forest* getResultForest(unsigned i) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, len_r_type);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, len_r_type);
             MEDDLY_DCASSERT(r_forest);
             return r_forest[i];
         }

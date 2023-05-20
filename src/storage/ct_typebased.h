@@ -1022,7 +1022,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::updateEntry(ct_entry_key* key, c
     ct_typeID t;
     expert_forest* f;
     et->getResultType(i, t, f);
-    MEDDLY_CHECK_RANGE(0, intOf(t), 7);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
     if (f) {
       MEDDLY_DCASSERT(ct_typeID::NODE == t);
       f->uncacheNode( *ptr );
@@ -1378,7 +1378,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
         ct_typeID t;
         expert_forest* ef;
         et->getKeyType(i, t, ef);
-        MEDDLY_CHECK_RANGE(0, intOf(t), 7);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
         if (f == ef) {
           if (*entry>0) {
 #ifdef DEBUG_VALIDATE_COUNTS
@@ -1397,7 +1397,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
         ct_typeID t;
         expert_forest* ef;
         et->getResultType(i, t, ef);
-        MEDDLY_CHECK_RANGE(0, intOf(t), 7);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
         if (f == ef) {
           if (*entry>0) {
 #ifdef DEBUG_VALIDATE_COUNTS
@@ -1699,7 +1699,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     ct_typeID t;
     expert_forest* f;
     et->getKeyType(i, t, f);
-    MEDDLY_CHECK_RANGE(0, intOf(t), 7);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
     if (f) {
 #ifdef DEBUG_ISSTALE
       printf("\tchecking key item %u\n", i);
@@ -1729,7 +1729,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     ct_typeID t;
     expert_forest* f;
     et->getResultType(i, t, f);
-    MEDDLY_CHECK_RANGE(0, intOf(t), 7);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
     if (f) {
 #ifdef DEBUG_ISSTALE
       printf("\tchecking result item %u\n", i);
@@ -1793,7 +1793,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     ct_typeID t;
     expert_forest* f;
     et->getResultType(i, t, f);
-    MEDDLY_CHECK_RANGE(0, intOf(t), 7);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
     if (f) {
 #ifdef DEBUG_ISDEAD
       printf("\tchecking result item %u\n", i);
@@ -1879,7 +1879,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     ct_typeID t;
     expert_forest* f;
     et->getKeyType(i, t, f);
-    MEDDLY_CHECK_RANGE(0, intOf(t), 7);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
     //
     // Believe it or not, this switch statement is actually
     // more efficient than using two if's
@@ -1924,7 +1924,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     ct_typeID t;
     expert_forest* f;
     et->getResultType(i, t, f);
-    MEDDLY_CHECK_RANGE(0, intOf(t), 7);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
     //
     // Believe it or not, this switch statement is actually
     // more efficient than using two if's

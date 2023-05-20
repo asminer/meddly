@@ -135,31 +135,23 @@ namespace MEDDLY {
 #ifdef RANGE_CHECK_ON
 #include <cassert>
 #include <iostream>
+#endif
 namespace MEDDLY {
     template <class INT>
     inline void CHECK_RANGE(const char* fn, unsigned ln,
-            long min, long value, INT max)
+            INT min, INT value, INT max)
     {
-        if (value < min || (INT) value >= max ) {
+#ifdef RANGE_CHECK_ON
+        if (value < min || value >= max ) {
             std::cerr << "Check range at " << fn << " line " << ln;
             std::cerr << " failed:\n    min: " << min;
             std::cerr << "\n    val: " << value;
             std::cerr << "\n    max: " << max << '\n';
             assert(false);
         }
-    }
-}
-#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX) { assert(VALUE < MAX); assert(VALUE >= MIN); }
-#else
-namespace MEDDLY {
-    template <class INT>
-    inline void CHECK_RANGE(const char*, unsigned, long, long, INT)
-    {
-    }
-}
-
-#define MEDDLY_CHECK_RANGE(MIN, VALUE, MAX)
 #endif
+    }
+}
 
 
 //
