@@ -27,7 +27,6 @@ heap.h
 impl_unique_table.h     impl_unique_table.cc
 loggers.h               loggers.cc
 memory.h                memory.cc
-memstats.h              memstats.cc
 node_headers.h          node_headers.cc
 opname.h                opname.cc
 opname_numer.h          opname_numer.cc
@@ -39,8 +38,6 @@ oper_unary.h            oper_unary.cc
 
 relation_node.h         relation_node.cc
 timer.h (move?)
-unique_table.h          unique_table.cc
-unpacked_node.h         unpacked_node.cc
 
 
 In good shape
@@ -54,8 +51,13 @@ ct_initializer.h        ct_initializer.cc
 error.h                 error.cc
 initializer.h           initializer.cc
 io.h                    io.cc
+memstats.h              memstats.cc
 node_storage.h          node_storage.cc
 policies.h              policies.cc
+
+unique_table.h          unique_table.cc
+unpacked_node.h         unpacked_node.cc
+
 variable.h              variable.cc
 varorder.h              varorder.cc
 

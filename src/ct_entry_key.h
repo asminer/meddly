@@ -49,28 +49,28 @@ class MEDDLY::ct_entry_key {
 
         /// Write a node into the next slot
         inline void writeN(node_handle nh) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, currslot, total_slots);
             MEDDLY_DCASSERT(ct_typeID::NODE == theSlotType());
             data[currslot++].N = nh;
         }
 
         /// Write an integer into the next slot
         inline void writeI(int i) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, currslot, total_slots);
             MEDDLY_DCASSERT(ct_typeID::INTEGER == theSlotType());
             data[currslot++].I = i;
         }
 
         /// Write a long into the next slot
         inline void writeL(long i) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, currslot, total_slots);
             MEDDLY_DCASSERT(ct_typeID::LONG == theSlotType());
             data[currslot++].L = i;
         }
 
         /// Write a float into the next slot
         inline void writeF(float f) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, currslot, total_slots);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, currslot, total_slots);
             MEDDLY_DCASSERT(ct_typeID::FLOAT == theSlotType());
             data[currslot++].F = f;
         }

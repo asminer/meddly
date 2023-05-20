@@ -185,16 +185,16 @@ class MEDDLY::compute_table {
                 unsigned slot)
         {
             MEDDLY_DCASSERT(op);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, slot, op->getNumETids());
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, slot, op->getNumETids());
             unsigned etid = op->getFirstETid() + slot;
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, etid, entryInfoSize);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, etid, entryInfoSize);
             return entryInfo[etid];
         }
 
         /// Find entry type for given entryID
         inline static const ct_entry_type* getEntryType(unsigned etid)
         {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, etid, entryInfoSize);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, etid, entryInfoSize);
             return entryInfo[etid];
         }
 

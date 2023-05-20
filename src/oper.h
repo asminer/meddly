@@ -108,7 +108,7 @@ class MEDDLY::operation {
 
         /// Find the operation with the given index.
         inline static operation* getOpWithIndex(unsigned i) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, list_size);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, list_size);
             return op_list[i];
         }
 

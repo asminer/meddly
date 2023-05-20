@@ -274,7 +274,7 @@ class MEDDLY::unpacked_node {
         inline node_handle d(unsigned n) const
         {
             MEDDLY_DCASSERT(down);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n,
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n,
                     is_full ? size : nnzs);
             return down[n];
         }
@@ -289,7 +289,7 @@ class MEDDLY::unpacked_node {
         inline node_handle& d_ref(unsigned n)
         {
             MEDDLY_DCASSERT(down);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n,
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n,
                     is_full ? size : nnzs);
             return down[n];
         }
@@ -299,7 +299,7 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(parent == E.parent);
             MEDDLY_DCASSERT(0==edge_bytes);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n,
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n,
                     is_full ? size : nnzs);
             down[n] = E.node;
             E.node = 0; // avoid having to adjust the link count
@@ -312,7 +312,7 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(index);
             MEDDLY_DCASSERT(!is_full);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, nnzs);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, nnzs);
             return index[n];
         }
 
@@ -323,7 +323,7 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(index);
             MEDDLY_DCASSERT(!is_full);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, nnzs);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, nnzs);
             return index[n];
         }
 
@@ -332,7 +332,7 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(edge);
             MEDDLY_DCASSERT(edge_bytes);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i,
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
                     is_full ? size : nnzs);
             return ((char*) edge) + i * edge_bytes;
         }
@@ -342,7 +342,7 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(edge);
             MEDDLY_DCASSERT(edge_bytes);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i,
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
                     is_full ? size : nnzs);
             return ((char*) edge) + i * edge_bytes;
         }
@@ -353,7 +353,7 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(parent == E.parent);
             MEDDLY_DCASSERT(edge);
             MEDDLY_DCASSERT(edge_bytes);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n,
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n,
                     is_full ? size : nnzs);
             down[n] = E.node;
             memcpy(

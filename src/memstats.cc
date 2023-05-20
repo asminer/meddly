@@ -18,13 +18,12 @@
 
 #include "memstats.h"
 
+
 //
 // static members
 //
-size_t MEDDLY::memstats::global_memory_used = 0;
-size_t MEDDLY::memstats::global_memory_alloc = 0;
-size_t MEDDLY::memstats::global_peak_used = 0;
-size_t MEDDLY::memstats::global_peak_alloc = 0;
+MEDDLY::trackpeak MEDDLY::memstats::global_memused;
+MEDDLY::trackpeak MEDDLY::memstats::global_memalloc;
 
 //
 // non-inlined methods
@@ -32,9 +31,12 @@ size_t MEDDLY::memstats::global_peak_alloc = 0;
 
 MEDDLY::memstats::memstats()
 {
-    memory_used = 0;
-    memory_alloc = 0;
-    peak_memory_used = 0;
-    peak_memory_alloc = 0;
+    memused.init();
+    memalloc.init();
 }
 
+void MEDDLY::memstats::initGlobalStats()
+{
+    global_memused.init();
+    global_memalloc.init();
+}
