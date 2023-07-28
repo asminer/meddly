@@ -39,7 +39,6 @@ namespace MEDDLY {
 /** Class for reading nodes.
     Ideally - used anywhere we want to read node data.
     Backend implementation may change :^)
-    Implemented in node_wrappers.cc.
     Readers may be "full" or "sparse",
     regardless of how the actual node is stored.
 

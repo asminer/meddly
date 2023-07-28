@@ -39,7 +39,7 @@ namespace MEDDLY {
 
 /** Abstract base class for node storage factories.
 
-    The base class is implemented in node_wrappers.cc;
+    The base class is implemented in node_storage.cc;
     various backends are implemented in directory storage/.
 
 */
@@ -73,7 +73,7 @@ class MEDDLY::node_storage_style {
 
 /** Abstract base class for node storage.
 
-    The base class is implemented in node_wrappers.cc;
+    The base class is implemented in node_storage.cc;
     various backends are implemented in directory storage/,
     or you may implement your own scheme :^)
 
