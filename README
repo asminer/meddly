@@ -3,8 +3,8 @@ Subdirectories:
 ---------------
 
 developers/   Documentation and scripts useful to Meddly developers
-docs/         Generated docs from source code, for users (include files only)
-docs-devel/   Generated docs from source code, for developers (all source files)
+docs/         Online documentation for github pages
+doxygen/      Generated doxygen docs from source code
 examples/     Stand-alone applications that use the library
 include/      Include files installed here, unless prefix is changed
 lib/          Compiled library installed here, unless prefix is changed
@@ -28,7 +28,7 @@ You will need g++, autoconf, automake and libtool.
 
 1. $ ./configure
    This will setup the build files.
-   Can be used to set various compile options; 
+   Can be used to set various compile options;
    see "Configuration Options" below.
    An alternate would be:
    $ ./configure --prefix=/other/install/location
@@ -93,7 +93,7 @@ To build a debuggable version of the library:
 
 $ ./configure CPPFLAGS="-DDEVELOPMENT_CODE" CXXFLAGS="-ggdb"
 
-To set the location of the gmp library, by hand 
+To set the location of the gmp library, by hand
 (only necessary if ./configure fails to find it):
 
 $ ./configure CPPFLAGS="-I/path/to/gmp/header" LDFLAGS="-L/path/to/gmp/lib"

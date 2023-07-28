@@ -2,7 +2,11 @@
 Expectations for developers
 ----------------------------------------------------------------------
 
-(1) Source code should not contain TAB characters.
+(0) Source code should not contain TAB characters.
+
+(1) Developers are strongly encouraged to use a text editor that
+    supports EditorConfig; see https://EditorConfig.org and note
+    the .editorconfig file(s) in the repository.
 
 (2) There is no mandated coding or naming style, but keep in mind
     that other developers will occasionally need to maintain your
@@ -12,15 +16,15 @@ Expectations for developers
 (3) Ideally, the library builds with NO COMPILER WARNINGs, even with
     -Wall.  This is complicated by the fact that different compilers
     enable different warnings with -Wall, and some code beyond our
-    control (other libraries, headers, etc.) may produce warnings.  
-    Nonetheless, please work to keep your code free of compiler 
+    control (other libraries, headers, etc.) may produce warnings.
+    Nonetheless, please work to keep your code free of compiler
     warnings.
 
-(4) When implementing features or other disruptive changes, the 
+(4) When implementing features or other disruptive changes, the
     recommended mechanism is to create a branch.  Keep in mind that,
     ideally, the main branch always compiles and works as expected.
 
-(5) Make sure your code passes regression tests (make check) before 
+(5) Make sure your code passes regression tests (make check) before
     checking into the main branch
 
 (6) You are strongly encouraged to create your own regression tests
