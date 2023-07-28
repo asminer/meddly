@@ -142,7 +142,10 @@ class MEDDLY::domain {
     forest* createForest(bool rel, range_type t, edge_labeling ev);
 
     /// Get the number of variables in this domain.
-    int getNumVariables() const;
+    inline int getNumVariables() const {
+        return nVars;
+    }
+
 
     /** Get the specified bound of a variable.
         No range checking, for speed.
@@ -152,12 +155,21 @@ class MEDDLY::domain {
                         the primed variable.
         @return         The bound set for variable at level \a lev.
     */
-    int getVariableBound(int lev, bool prime = false) const;
+    inline int getVariableBound(int lev, bool prime = false) const {
+        return vars[lev]->getBound(prime);
+    }
+
 
     /// @return The variable at level \a lev.
-    const variable* getVar(int lev) const;
+    inline const variable* getVar(int lev) const {
+        return vars[lev];
+    }
+
     /// @return The variable at level \a lev.
-    variable* useVar(int lev);
+    inline variable* useVar(int lev) {
+        return vars[lev];
+    }
+
 
     /** Write the domain to a file in a format that can be read back later.
           @param  s   Stream to write to
@@ -213,12 +225,20 @@ class MEDDLY::domain {
     void markForDeletion();
 
   public:
-    bool hasForests() const;
-    bool isMarkedForDeletion() const;
+    inline bool hasForests() const {
+        return forests;
+    }
+
+    inline bool isMarkedForDeletion() const {
+        return is_marked_for_deletion;
+    }
+
 
     std::shared_ptr<const variable_order> makeVariableOrder(const int* order);
     std::shared_ptr<const variable_order> makeVariableOrder(const variable_order& order);
-    std::shared_ptr<const variable_order> makeDefaultVariableOrder();
+    inline std::shared_ptr<const variable_order> makeDefaultVariableOrder() {
+        return default_var_order;
+    }
     void cleanVariableOrders();
 
   private:
@@ -239,38 +259,8 @@ class MEDDLY::domain {
     static void deleteDomList();
 
   public:
-    int ID() const;
+    inline int ID() const { return my_index; }
 };
-
-// ******************************************************************
-// *                     inlined domain methods                     *
-// ******************************************************************
-
-inline int MEDDLY::domain::getNumVariables() const { return nVars; }
-
-inline int
-MEDDLY::domain::getVariableBound(int lev, bool prime) const {
-  return vars[lev]->getBound(prime);
-}
-
-inline const MEDDLY::variable* MEDDLY::domain::getVar(int var) const {
-  return vars[var];
-}
-
-inline MEDDLY::variable* MEDDLY::domain::useVar(int lev) { return vars[lev]; }
-
-inline bool MEDDLY::domain::hasForests() const { return forests; }
-
-inline bool MEDDLY::domain::isMarkedForDeletion() const {
-  return is_marked_for_deletion;
-}
-
-inline std::shared_ptr<const MEDDLY::variable_order> MEDDLY::domain::makeDefaultVariableOrder() {
-  return default_var_order;
-}
-
-inline int MEDDLY::domain::ID() const { return my_index; }
-
 
 // ******************************************************************
 // *                                                                *

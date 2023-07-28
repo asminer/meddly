@@ -13,6 +13,13 @@ domain (PLANNED; NOT DONE YET. TBD)
 
 
 
+    Replace array of all domains with (doubly?) linked list
+        (keep unique IDs)
+
+    Replace array of forests with (doubly?) linked list
+        (keep unique IDs)
+
+
 
 Files that need updating / cleanup
 ------------------------------------------------------------
