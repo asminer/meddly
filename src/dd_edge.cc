@@ -53,22 +53,13 @@ MEDDLY::dd_edge::dd_edge(forest* p)
     edge_int = 0;
 }
 
-
 // Copy Constructor.
 MEDDLY::dd_edge::dd_edge(const dd_edge& e)
 {
 #ifdef DEBUG_CLEANUP
     fprintf(stderr, "Creating dd_edge %p\n", this);
 #endif
-    if (e.parent) {
-        parent = e.parent;
-        node = parent->add_root(e.node);
-        edge_int = e.edge_int;
-    } else {
-        parent = nullptr;
-        node = 0;
-        edge_int = 0;
-    }
+    init(e);
 }
 
 
@@ -76,12 +67,8 @@ MEDDLY::dd_edge::dd_edge(const dd_edge& e)
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator=(const dd_edge& e)
 {
     if (&e != this) {
-        attach(e.parent);
-        node = e.node;
-        edge_int = e.edge_int;
-        if (parent) {
-            parent->add_root(node);
-        }
+        detach();
+        init(e);
     }
     return *this;
 }
@@ -102,6 +89,26 @@ void MEDDLY::dd_edge::attach(forest* p)
         edge_int = 0;
     }
     parent = p;
+}
+
+void MEDDLY::dd_edge::setLabel(const char* L)
+{
+  if (label) free(label);
+  label = L ? strdup(L) : nullptr;
+}
+
+
+void MEDDLY::dd_edge::init(const dd_edge &e)
+{
+    if (e.parent) {
+        parent = e.parent;
+        node = parent->addRoot(e.node);
+        edge_int = e.edge_int;
+    } else {
+        parent = nullptr;
+        node = 0;
+        edge_int = 0;
+    }
 }
 
 #else

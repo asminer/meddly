@@ -30,7 +30,7 @@ namespace MEDDLY {
     class binary_operation;
 };
 
-#define NEW_DD_EDGES
+// #define NEW_DD_EDGES
 
 #ifdef NEW_DD_EDGES
 
@@ -76,6 +76,9 @@ class MEDDLY::dd_edge {
             @param  L   Label to use; will be copied.
         */
         void setLabel(const char* L);
+
+    private:
+        void init(const dd_edge &e);
 
     private:
         char* label;    // for displaying
