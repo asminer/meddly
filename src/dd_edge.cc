@@ -32,6 +32,88 @@
 
 // #define DEBUG_ITER_BEGIN
 
+#ifdef NEW_DD_EDGES
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                        dd_edge  methods                        *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::dd_edge::dd_edge(forest* p)
+{
+#ifdef DEBUG_CLEANUP
+    fprintf(stderr, "Creating dd_edge %p\n", this);
+#endif
+    label = nullptr;
+    parent = p;
+    node = 0;
+    edge_int = 0;
+}
+
+
+// Copy Constructor.
+MEDDLY::dd_edge::dd_edge(const dd_edge& e)
+{
+#ifdef DEBUG_CLEANUP
+    fprintf(stderr, "Creating dd_edge %p\n", this);
+#endif
+    if (e.parent) {
+        parent = e.parent;
+        node = parent->add_root(e.node);
+        edge_int = e.edge_int;
+    } else {
+        parent = nullptr;
+        node = 0;
+        edge_int = 0;
+    }
+}
+
+
+// Assignment operator.
+MEDDLY::dd_edge& MEDDLY::dd_edge::operator=(const dd_edge& e)
+{
+    if (&e != this) {
+        attach(e.parent);
+        node = e.node;
+        edge_int = e.edge_int;
+        if (parent) {
+            parent->add_root(node);
+        }
+    }
+    return *this;
+}
+
+// Destructor.  Will notify parent as appropriate.
+MEDDLY::dd_edge::~dd_edge()
+{
+#ifdef DEBUG_CLEANUP
+    fprintf(stderr, "Deleting dd_edge %p\n", this);
+#endif
+    detach();
+}
+
+void MEDDLY::dd_edge::attach(forest* p)
+{
+    if (parent) {
+        node = parent->remove_root(node);
+        edge_int = 0;
+    }
+    parent = p;
+}
+
+#else
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                        dd_edge  methods (old)                  *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
 // Helper functions
 inline void linkNode(MEDDLY::forest* p, int node)
 {
@@ -48,13 +130,6 @@ inline void unlinkNode(MEDDLY::forest* p, int node)
   }
 }
 
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                        dd_edge  methods                        *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
 
 MEDDLY::dd_edge::dd_edge()
 : parent(0), index(0),
@@ -459,3 +534,4 @@ void MEDDLY::dd_edge::writePicture(const char* filename, const char* extension) 
   }
 }
 
+#endif

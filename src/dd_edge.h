@@ -30,6 +30,67 @@ namespace MEDDLY {
     class binary_operation;
 };
 
+#define NEW_DD_EDGES
+
+#ifdef NEW_DD_EDGES
+
+/** New minimalist structure for handles to edges in forests.
+
+    A dd_edge is a handle for user manipulation of functions stored in
+    forests.  Based on the forest type, edges may or may not include
+    edge values.
+
+    There are a few useful operations that can be applied directly
+    to a dd_edge; all the rest are done either through the "parent" forest,
+    or through operations.  These include:
+
+    - Deletion of a dd_edge.  This will cause the parent forest to recycle
+      nodes as appropriate.
+
+    - Checking for equality of two dd_edges, using the method equals().
+*/
+class MEDDLY::dd_edge {
+    public:
+        /// Construct and attach to a forest.
+        dd_edge(forest* p=nullptr);
+
+        /// Copy Constructor.
+        dd_edge(const dd_edge &e);
+
+        /// Assignment operator.
+        dd_edge& operator=(const dd_edge &e);
+
+        /// Destructor.  Will notify parent as appropriate.
+        ~dd_edge();
+
+        /// Attach to a forest.
+        void attach(forest* p);
+
+        /// Detach from the forest.
+        inline void detach() { attach(nullptr); }
+
+        /// Get this dd_edge's label
+        inline const char* getLabel() const { return label; }
+
+        /** Set the edge's label.
+            @param  L   Label to use; will be copied.
+        */
+        void setLabel(const char* L);
+
+    private:
+        char* label;    // for displaying
+        forest *parent;
+        node_handle node;
+        union {
+            long edge_int;
+            float edge_float;
+        };
+
+        friend class forest;
+};
+
+#else // not NEW_DD_EDGES
+
 /** Structure for handles to edges in forests.
 
     A dd_edge is a handle for user manipulation of functions stored in
@@ -350,5 +411,6 @@ inline void MEDDLY::dd_edge::orphan() {
   parent = 0;
 }
 
-
 #endif
+
+#endif // include guard
