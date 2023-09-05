@@ -957,6 +957,7 @@ class MEDDLY::forest {
     /// Called only within operation.
     void unregisterOperation(const operation* op);
 
+#ifndef NEW_DD_EDGES
   private:  // For edge registration
     friend class dd_edge;
 
@@ -989,7 +990,13 @@ class MEDDLY::forest {
         virtual ~edge_visitor();
         virtual void visit(dd_edge &e) = 0;
     };
-    void visitRegisteredEdges(edge_visitor &ev);
+    inline void visitRegisteredEdges(edge_visitor &ev) {
+        for (unsigned i = 0; i < firstFree; ++i) {
+            if (edge[i].edge) ev.visit(*(edge[i].edge));
+        }
+    }
+
+#endif
 
   private:
     bool isRelation;
@@ -1281,13 +1288,6 @@ inline void MEDDLY::forest::createEdgeForVar(int vh, bool pr, dd_edge& a)
 inline void MEDDLY::forest::setLogger(logger* L, const char* name) {
   theLogger = L;
   if (theLogger) theLogger->logForestInfo(this, name);
-}
-
-// forest::edge_visitor::
-inline void MEDDLY::forest::visitRegisteredEdges(edge_visitor &ev) {
-  for (unsigned i = 0; i < firstFree; ++i) {
-    if (edge[i].edge) ev.visit(*(edge[i].edge));
-  }
 }
 
 // end of class forest

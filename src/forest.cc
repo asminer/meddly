@@ -257,6 +257,9 @@ MEDDLY::forest
   opCount = 0;
   szOpCount = 0;
   //
+
+#ifndef NEW_DD_EDGES
+  //
   // Initialize list of registered dd_edges
   //
   firstHole = 0;  // firstHole == 0 indicates no holes.
@@ -269,6 +272,7 @@ MEDDLY::forest
     edge[i].nextHole = 0;
     edge[i].edge = 0;
   }
+#endif
 
   //
   // Empty logger
@@ -284,11 +288,15 @@ MEDDLY::forest::~forest()
 #endif
   // operations are deleted elsewhere...
   free(opCount);
+
+#ifndef NEW_DD_EDGES
   // Make SURE our edges are orphaned
   for (unsigned i = 0; i < firstFree; ++i) {
     if (edge[i].edge) edge[i].edge->orphan();
   }
   free(edge);
+#endif
+
   // NOTE: since the user is provided with the dd_edges instances (as opposed
   // to a pointer), the user program will automatically call the
   // destructor for each dd_edge when the corresponding variable goes out of
@@ -309,7 +317,9 @@ void MEDDLY::forest::markForDeletion()
       operation* op = operation::getOpWithIndex(i);
       op->markForDeletion();
     }
+#ifndef NEW_DD_EDGES
   unregisterDDEdges();
+#endif
 }
 
 void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
@@ -492,6 +502,8 @@ void MEDDLY::forest::unregisterOperation(const operation* op)
   opCount[op->getIndex()] --;
 }
 
+#ifndef NEW_DD_EDGES
+
 void MEDDLY::forest::registerEdge(dd_edge& e)
 {
   // add to collection of edges for this forest.
@@ -593,6 +605,7 @@ MEDDLY::forest::edge_visitor::~edge_visitor()
 {
 }
 
+#endif
 
 // ******************************************************************
 // *                                                                *

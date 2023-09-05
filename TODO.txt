@@ -4,12 +4,12 @@ Plan for this branch (testing after each big step):
 
 (1) Switch to minimalist dd_edges
 
-    (*) forests need to implement addRoot and removeRoot
+    (v) forests need to implement addRoot and removeRoot
         reference counting: just link, unlink nodes
         mark & sweep: conceptually, an array of 'root counts'
             for each node; will be sparse though.  (use std::map)
 
-    (*) binary operators +=, &=, etc
+    ( ) binary operators +=, &=, etc
         just call apply
 
 
@@ -25,3 +25,8 @@ Plan for this branch (testing after each big step):
 (4) Apply implementations use dd_edges
 
 (5) Compute tables use dd_edges
+
+(6) How to handle dd_edges whose forest was deleted?
+    Some options:
+        (a) Use shared_ptr
+        (b) Do it ourself: forests have reference counts
