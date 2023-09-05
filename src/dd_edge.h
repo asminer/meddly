@@ -30,7 +30,7 @@ namespace MEDDLY {
     class binary_operation;
 };
 
-#define NEW_DD_EDGES
+// #define NEW_DD_EDGES
 
 #ifdef NEW_DD_EDGES
 
@@ -101,6 +101,29 @@ class MEDDLY::dd_edge {
         */
         inline bool operator!=(const dd_edge& e) const {
             return !equals(e);
+        }
+
+        //
+        // Methods that will soon be replaced?
+        // Added here to ease the transition
+        //
+        void set(node_handle n);
+
+        inline void setEdgeValue(long value) {
+            edge_int = value;
+        }
+
+        inline void setEdgeValue(float value) {
+            edge_float = value;
+        }
+
+        inline void set(node_handle n, long value) {
+            set(n);
+            setEdgeValue(value);
+        }
+        inline void set(node_handle n, float value) {
+            set(n);
+            setEdgeValue(value);
         }
 
     private:

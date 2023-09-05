@@ -112,6 +112,16 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
     }
 }
 
+void MEDDLY::dd_edge::set(node_handle n)
+{
+    if (node != n) {
+        MEDDLY_DCASSERT(parent);
+        expert_forest* efp = static_cast <expert_forest*> (parent);
+        efp->removeRoot(node);
+        node = efp->addRoot(n);
+    }
+}
+
 #else
 
 // ******************************************************************
