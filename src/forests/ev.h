@@ -121,7 +121,7 @@ class MEDDLY::ev_forest : public expert_forest {
       */
       if (vh < 0 || vh > getNumVariables())
         throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
-      if (result.getForest() != this)
+      if (!result.isAttachedTo(this))
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
       if (!isForRelations() && pr)
         throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
@@ -165,10 +165,12 @@ class MEDDLY::ev_forest : public expert_forest {
 
     template <class OPERATION, class T>
     inline void createEdgeTempl(T term, dd_edge& e) {
-      if (e.getForest() != this) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-      node_handle ed = bool_Tencoder::value2handle(true);
-      makeNodeAtTop<OPERATION, T>(term, ed);
-      e.set(ed, term);
+        if (!e.isAttachedTo(this)) {
+          throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+        }
+        node_handle ed = bool_Tencoder::value2handle(true);
+        makeNodeAtTop<OPERATION, T>(term, ed);
+        e.set(ed, term);
     }
 
 

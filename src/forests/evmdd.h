@@ -39,7 +39,7 @@ class MEDDLY::evmdd_forest : public ev_forest {
     template <class OPERATION, typename TYPE>
     inline void evaluateT(const dd_edge &f, const int* vlist, TYPE &val) const
     {
-      if (f.getForest() != this) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+      if (!f.isAttachedTo(this)) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
       if (vlist == 0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
 
       // assumption: vlist does not contain any special values (-1, -2, etc).

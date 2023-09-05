@@ -87,6 +87,9 @@ class MEDDLY::dd_edge {
         inline long getEdgeInt() const { return edge_int; }
         inline float getEdgeFloat() const { return edge_float; }
 
+        inline void getEdgeValue(long &v) const { v = edge_int; }
+        inline void getEdgeValue(float &v) const { v = edge_float; }
+
         /** Check for equality.
             @return true    iff this edge has the same parent and refers to
                             the same edge as \a e.
