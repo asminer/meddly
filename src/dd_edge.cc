@@ -84,7 +84,8 @@ MEDDLY::dd_edge::~dd_edge()
 void MEDDLY::dd_edge::attach(forest* p)
 {
     if (parent) {
-        node = parent->removeRoot(node);
+        expert_forest* efp = static_cast <expert_forest*> (parent);
+        node = efp->removeRoot(node);
         edge_int = 0;
     }
     parent = p;
@@ -101,7 +102,8 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
 {
     if (e.parent) {
         parent = e.parent;
-        node = parent->addRoot(e.node);
+        expert_forest* efp = static_cast <expert_forest*> (parent);
+        node = efp->addRoot(e.node);
         edge_int = e.edge_int;
     } else {
         parent = nullptr;

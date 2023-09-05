@@ -33,6 +33,7 @@
 #include "enumerator.h"
 
 #include <memory>
+#include <map>
 
 namespace MEDDLY {
     class domain;
@@ -1462,6 +1463,9 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     /// Returns true if we are tracking incoming counts
     // bool trackingInCounts() const;
 
+    //
+    // TBD: will we need these, if dd_edge handles it?
+
     /// Returns the in-count for a node.
     unsigned long getNodeInCount(node_handle p) const;
 
@@ -1494,6 +1498,28 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     /// Mark all "root" nodes; i.e. start the mark phase.
     /// Not inlined; implemented in forest.cc
     void markAllRoots();
+
+#ifdef NEW_DD_EDGES
+    inline node_handle addRoot(node_handle r) {
+        if (deflt.useReferenceCounts) {
+            return nodeHeaders.linkNode(r);
+        } else {
+            ++roots[r];
+            return r;
+        }
+    }
+    inline node_handle removeRoot(node_handle r) {
+        if (deflt.useReferenceCounts) {
+            nodeHeaders.unlinkNode(r);
+        } else {
+            MEDDLY_DCASSERT(roots[r]>0);
+            if (0== --roots[r]) {
+                roots.erase(r);
+            }
+        }
+        return 0;
+    }
+#endif
 
   // --------------------------------------------------
   // Managing cache counts
@@ -2216,6 +2242,12 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     unsigned char unhashed_bytes;
     /// Number of bytes of hashed header
     unsigned char hashed_bytes;
+
+
+#ifdef NEW_DD_EDGES
+    /// Set of root edges (mark & sweep only)
+    std::map <MEDDLY::node_handle, unsigned> roots;
+#endif
 
     class nodecounter;
     class nodemarker;
