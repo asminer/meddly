@@ -69,6 +69,11 @@ class MEDDLY::dd_edge {
         /// Detach from the forest.
         inline void detach() { attach(nullptr); }
 
+        /// Check our parent
+        inline bool isAttachedTo(const forest* p) const {
+            return p == parent;
+        }
+
         /// Get this dd_edge's label
         inline const char* getLabel() const { return label; }
 
@@ -77,8 +82,37 @@ class MEDDLY::dd_edge {
         */
         void setLabel(const char* L);
 
+        inline long getNode() const { return node; }
+        inline unsigned long getEdgeRaw() const { return raw_value; }
+        inline long getEdgeInt() const { return edge_int; }
+        inline float getEdgeFloat() const { return edge_float; }
+
+        /** Check for equality.
+            @return true    iff this edge has the same parent and refers to
+                            the same edge as \a e.
+        */
+        inline bool operator==(const dd_edge& e) const {
+            return equals(e);
+        }
+
+        /** Check for inequality.
+            @return true    iff this edge does not refer to the
+                            same edge as \a e.
+        */
+        inline bool operator!=(const dd_edge& e) const {
+            return !equals(e);
+        }
+
     private:
         void init(const dd_edge &e);
+
+        inline bool equals(const dd_edge e) const {
+            return
+                (parent == e.parent) &&
+                (node == e.node) &&
+                (raw_value == e.raw_value);
+        }
+
 
     private:
         char* label;    // for displaying
@@ -87,9 +121,13 @@ class MEDDLY::dd_edge {
         union {
             long edge_int;
             float edge_float;
+
+            unsigned long raw_value;    // must be at least as large
+                                        // as the largest union element.
         };
 
         friend class forest;
+        friend class unpacked_node;
 };
 
 #else // not NEW_DD_EDGES
@@ -149,6 +187,12 @@ class MEDDLY::dd_edge {
         @return         the forest to which this edge belongs to.
     */
     forest* getForest() const;
+
+        /// Check our parent
+        inline bool isAttachedTo(const forest* p) const {
+            return p == parent;
+        }
+
 
     /// Set the forest owning this edge.
     void setForest(forest* f);

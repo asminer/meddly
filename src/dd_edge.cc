@@ -66,10 +66,9 @@ MEDDLY::dd_edge::dd_edge(const dd_edge& e)
 // Assignment operator.
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator=(const dd_edge& e)
 {
-    if (&e != this) {
-        detach();
-        init(e);
-    }
+    if (equals(e)) return *this;
+    detach();
+    init(e);
     return *this;
 }
 
@@ -85,7 +84,7 @@ MEDDLY::dd_edge::~dd_edge()
 void MEDDLY::dd_edge::attach(forest* p)
 {
     if (parent) {
-        node = parent->remove_root(node);
+        node = parent->removeRoot(node);
         edge_int = 0;
     }
     parent = p;
@@ -93,8 +92,8 @@ void MEDDLY::dd_edge::attach(forest* p)
 
 void MEDDLY::dd_edge::setLabel(const char* L)
 {
-  if (label) free(label);
-  label = L ? strdup(L) : nullptr;
+    if (label) free(label);
+    label = L ? strdup(L) : nullptr;
 }
 
 

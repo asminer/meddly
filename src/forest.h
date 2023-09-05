@@ -2477,7 +2477,7 @@ MEDDLY::expert_forest::linkNode(MEDDLY::node_handle p)
 inline MEDDLY::node_handle
 MEDDLY::expert_forest::linkNode(const MEDDLY::dd_edge &p)
 {
-  MEDDLY_DCASSERT(p.getForest() == this);
+  MEDDLY_DCASSERT(p.isAttachedTo(this));
   if (deflt.useReferenceCounts) {
     return nodeHeaders.linkNode(p.getNode());
   } else {
