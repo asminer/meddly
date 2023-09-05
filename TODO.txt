@@ -1,0 +1,27 @@
+
+Plan for this branch (testing after each big step):
+----------------------------------------------------------------------
+
+(1) Switch to minimalist dd_edges
+
+    (*) forests need to implement addRoot and removeRoot
+        reference counting: just link, unlink nodes
+        mark & sweep: conceptually, an array of 'root counts'
+            for each node; will be sparse though.  (use std::map)
+
+    (*) binary operators +=, &=, etc
+        just call apply
+
+
+(2) Add method
+
+        forest::reduceUnpacked(unpacked_node *un, dd_edge &e);
+
+    maybe virtual (if derived classes handle edges differently?)
+
+
+(3) Unpacked nodes become arrays of dd_edges
+
+(4) Apply implementations use dd_edges
+
+(5) Compute tables use dd_edges
