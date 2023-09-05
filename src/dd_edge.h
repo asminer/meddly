@@ -74,6 +74,12 @@ class MEDDLY::dd_edge {
             return p == parent;
         }
 
+        /// For now - get our parent
+        /// (try to avoid the need for this)
+        inline forest* getParent() const {
+            return parent;
+        }
+
         /// Get this dd_edge's label
         inline const char* getLabel() const { return label; }
 
