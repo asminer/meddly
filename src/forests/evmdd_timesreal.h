@@ -88,6 +88,13 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
       return new evtrmdd_iterator(this);
     }
 
+#ifdef NEW_DD_EDGES
+    protected:
+        virtual void readEdgeValue(input &s, dd_edge &E) const;
+        virtual void writeEdgeValue(output &s, const dd_edge &E) const;
+        virtual void showEdgeValue(output &s, const dd_edge &E) const;
+#endif
+
   protected:
     virtual void normalize(unpacked_node &nb, float& ev) const;
     virtual void showEdgeValue(output &s, const void* edge) const;

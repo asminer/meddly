@@ -114,6 +114,7 @@ class MEDDLY::dd_edge {
 
         //
         // Methods that will soon be replaced?
+        // Or at least, made private?
         // Added here to ease the transition
         //
         void set(node_handle n);
@@ -159,7 +160,7 @@ class MEDDLY::dd_edge {
         };
 
         friend class forest;
-        friend class unpacked_node;
+        friend class unpacked_node; // maybe?
 };
 
 #else // not NEW_DD_EDGES

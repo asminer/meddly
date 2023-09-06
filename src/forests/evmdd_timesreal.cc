@@ -112,6 +112,28 @@ bool MEDDLY::evmdd_timesreal::isIdentityEdge(const unpacked_node &nb, int i) con
   return isIdentityEdgeTempl<OP>(nb, i);
 }
 
+#ifdef NEW_DD_EDGES
+
+void MEDDLY::evmdd_timesreal::readEdgeValue(input &s, dd_edge &E) const
+{
+    s.stripWS();
+    E.edge_float = s.get_real();
+}
+
+void MEDDLY::evmdd_timesreal::writeEdgeValue(output &s, const dd_edge &E) const
+{
+    s.put(E.edge_float);
+    s.put(' ');
+}
+
+void MEDDLY::evmdd_timesreal::showEdgeValue(output &s, const dd_edge &E) const
+{
+    s.put(E.edge_float);
+    s.put(' ');
+}
+
+#endif
+
 
 void MEDDLY::evmdd_timesreal::normalize(unpacked_node &nb, float& ev) const
 {

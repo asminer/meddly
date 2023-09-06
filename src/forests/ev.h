@@ -21,6 +21,7 @@
 
 #include "../defines.h"
 #include "../minterms.h"
+#include "../dd_edge.h"
 #include "../forest.h"
 #include "../oper_binary.h"
 #include "../ops_builtin.h"

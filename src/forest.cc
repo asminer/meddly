@@ -436,6 +436,57 @@ void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
   throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 }
 
+//
+
+#ifdef NEW_DD_EDGES
+
+void MEDDLY::forest::readEdge(input &s, dd_edge &E, const node_handle* map)
+{
+    E.attach(this);
+    readEdgeValue(s, E);
+    s.stripWS();
+    long lnode = s.get_integer();
+    if (lnode <= 0) {
+        // Terminal
+        E.set(lnode);
+    } else {
+        // Non-terminal
+        E.set(map[lnode]);
+    }
+}
+
+void MEDDLY::forest::writeEdge(output &s, const dd_edge &E, const node_handle* map) const
+{
+    MEDDLY_DCASSERT(E.isAttachedTo(this));
+    writeEdgeValue(s, E);
+    if (E.node <= 0) {
+        s.put(long(E.node));
+    } else {
+        s.put(long(map[node]));
+    }
+    s.put('\n');
+}
+
+#else
+
+void MEDDLY::forest::showEdgeValue(output &s, const void* edge) const
+{
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::forest::writeEdgeValue(output &s, const void* edge) const
+{
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::forest::readEdgeValue(input &s, void* edge)
+{
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+
+#endif
+
 void MEDDLY::forest::removeStaleComputeTableEntries()
 {
   if (operation::usesMonolithicComputeTable()) {
@@ -1488,7 +1539,11 @@ void MEDDLY::expert_forest
   // Write the actual edge pointers
   s << "ptrs " << n << "\n";
   for (int i=0; i<n; i++) {
+#ifdef NEW_DD_EDGES
+      writeEdge(s, E[i], index2output);
+#else
     E[i].write(s, index2output);
+#endif
   }
   s << "srtp\n";
 
@@ -1658,7 +1713,11 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
       throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
     }
     for (int i=0; i<num_ptrs; i++) {
+#ifdef NEW_DD_EDGES
+        readEdge(s, E[i], map);
+#else
       E[i].read(this, s, map);
+#endif
     }
 
     s.stripWS();
@@ -1820,21 +1879,6 @@ void MEDDLY::expert_forest::writeTerminal(output &s, node_handle tnode) const
 MEDDLY::node_handle MEDDLY::expert_forest::readTerminal(input &s)
 {
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-void MEDDLY::expert_forest::showEdgeValue(output &s, const void* edge) const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::expert_forest::writeEdgeValue(output &s, const void* edge) const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::expert_forest::readEdgeValue(input &s, void* edge)
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::expert_forest::showHashedHeader(output &s, const void* hh) const

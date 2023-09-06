@@ -27,6 +27,7 @@
 
 #include "../defines.h"
 #include "../minterms.h"
+#include "../dd_edge.h"
 #include "../forest.h"
 #include "../oper_binary.h"
 #include "../ops_builtin.h"
@@ -56,6 +57,15 @@ class MEDDLY::mt_forest : public expert_forest {
 
     /// Add redundant nodes from level k to the given node.
     node_handle makeNodeAtLevel(int k, node_handle d);
+
+#ifdef NEW_DD_EDGES
+    protected:
+        // No edge values right now, so these are no-ops
+        // That could change with complement edges.
+        virtual void readEdgeValue(input &s, dd_edge &E) const;
+        virtual void writeEdgeValue(output &s, const dd_edge &E) const;
+        virtual void showEdgeValue(output &s, const dd_edge &E) const;
+#endif
 
   protected:
     /// make a node at the top level

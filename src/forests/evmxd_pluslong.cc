@@ -119,6 +119,28 @@ bool MEDDLY::evmxd_pluslong::isIdentityEdge(const unpacked_node &nb, int i) cons
   return isIdentityEdgeTempl<OP>(nb, i);
 }
 
+#ifdef NEW_DD_EDGES
+
+void MEDDLY::evmxd_pluslong::readEdgeValue(input &s, dd_edge &E) const
+{
+    s.stripWS();
+    E.edge_int = s.get_integer();
+}
+
+void MEDDLY::evmxd_pluslong::writeEdgeValue(output &s, const dd_edge &E) const
+{
+    s.put(E.edge_int);
+    s.put(' ');
+}
+
+void MEDDLY::evmxd_pluslong::showEdgeValue(output &s, const dd_edge &E) const
+{
+    s.put(E.edge_int);
+    s.put(' ');
+}
+
+#endif
+
 void MEDDLY::evmxd_pluslong::normalize(unpacked_node &nb, long& ev) const
 {
   long minindex = -1;

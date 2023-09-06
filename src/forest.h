@@ -867,6 +867,37 @@ class MEDDLY::forest {
     */
     virtual void readEdges(input &s, dd_edge* E, int n) = 0;
 
+#ifdef NEW_DD_EDGES
+    protected:
+        virtual void readEdgeValue(input &s, dd_edge &E) const = 0;
+        virtual void writeEdgeValue(output &s, const dd_edge &E) const = 0;
+        virtual void showEdgeValue(output &s, const dd_edge &E) const = 0;
+
+        void readEdge(input &s, dd_edge &E, const node_handle* map);
+        void writeEdge(output &s, const dd_edge &E, const node_handle* map) const;
+#else
+        /** Show an edge value.
+            @param  s       Stream to write to.
+            @param  edge    Pointer to edge value chunk
+        */
+        virtual void showEdgeValue(output &s, const void* edge) const;
+
+        /** Write an edge value in machine-readable format.
+            @param  s       Stream to write to.
+            @param  edge    Pointer to edge value chunk
+        */
+        virtual void writeEdgeValue(output &s, const void* edge) const;
+
+        /** Read an edge value in machine-readable format.
+            @param  s       Stream to read from.
+            @param  edge    Pointer to edge value chunk
+        */
+        virtual void readEdgeValue(input &s, void* edge);
+#endif
+
+
+public:
+
     /** Force garbage collection.
         All disconnected nodes in this forest are discarded along with any
         compute table entries that may include them.
@@ -2004,24 +2035,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     */
     virtual node_handle readTerminal(input &s);
 
-    /** Show an edge value.
-          @param  s       Stream to write to.
-          @param  edge    Pointer to edge value chunk
-    */
-    virtual void showEdgeValue(output &s, const void* edge) const;
-
-    /** Write an edge value in machine-readable format.
-          @param  s       Stream to write to.
-          @param  edge    Pointer to edge value chunk
-    */
-    virtual void writeEdgeValue(output &s, const void* edge) const;
-
-    /** Read an edge value in machine-readable format.
-          @param  s       Stream to read from.
-          @param  edge    Pointer to edge value chunk
-    */
-    virtual void readEdgeValue(input &s, void* edge);
-
+  public:
     /** Show the hashed header values.
           @param  s       Stream to write to.
           @param  hh      Pointer to hashed header data.
