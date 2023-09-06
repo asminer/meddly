@@ -90,6 +90,7 @@ class MEDDLY::dd_edge {
 
         inline long getNode() const { return node; }
         inline unsigned long getEdgeRaw() const { return raw_value; }
+        inline const unsigned long* getEdgePtr() const { return &raw_value; }
         inline long getEdgeInt() const { return edge_int; }
         inline float getEdgeFloat() const { return edge_float; }
 

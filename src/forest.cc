@@ -460,9 +460,9 @@ void MEDDLY::forest::writeEdge(output &s, const dd_edge &E, const node_handle* m
     MEDDLY_DCASSERT(E.isAttachedTo(this));
     writeEdgeValue(s, E);
     if (E.node <= 0) {
-        s.put(long(E.node));
+        s.put(long(E.getNode()));
     } else {
-        s.put(long(map[node]));
+        s.put(long(map[E.getNode()]));
     }
     s.put('\n');
 }
@@ -666,6 +666,7 @@ MEDDLY::forest::edge_visitor::~edge_visitor()
 // *                                                                *
 // ******************************************************************
 
+#ifndef NEW_DD_EDGES
 
 // ******************************************************************
 // *                                                                *
@@ -746,6 +747,9 @@ void MEDDLY::expert_forest::nodemarker::visit(dd_edge &e)
 #endif
   parent->markNode(e.getNode());
 }
+
+#endif
+
 
 // ******************************************************************
 // *                                                                *
@@ -858,8 +862,18 @@ void MEDDLY::expert_forest::markAllRoots()
 #endif
 
   nodeHeaders.clearAllReachableBits();
+
+#ifdef NEW_DD_EDGES
+    for (const auto& r : roots) {
+#ifdef DEBUG_MARK_SWEEP
+        printf("  marking root %ld appears %u times\n", long(r.first), r.second);
+#endif
+        markNode(r.first);
+    }
+#else
   nodemarker foo(this);
   visitRegisteredEdges(foo);
+#endif
   unpacked_node::markBuildListChildren(this);
 }
 
@@ -1639,11 +1653,19 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
       printf(" down ");
 #endif
 
+#ifdef NEW_DD_EDGES
+      dd_edge hack(this);
+#endif
+
       // read edges
       if (nb->hasEdges()) {
         for (int i=0; i<n; i++) {
+#ifdef NEW_DD_EDGES
+          readEdgeValue(s, hack);
+#else
           s.stripWS();
           readEdgeValue(s, nb->eptr_write(i));
+#endif
         }
 #ifdef DEBUG_READ
         printf("edges ");
