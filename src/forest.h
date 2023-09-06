@@ -1501,21 +1501,20 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 
 #ifdef NEW_DD_EDGES
     inline node_handle addRoot(node_handle r) {
+        ++roots[r];
         if (deflt.useReferenceCounts) {
             return nodeHeaders.linkNode(r);
         } else {
-            ++roots[r];
             return r;
         }
     }
     inline node_handle removeRoot(node_handle r) {
+        MEDDLY_DCASSERT(roots[r]>0);
+        if (0== --roots[r]) {
+            roots.erase(r);
+        }
         if (deflt.useReferenceCounts) {
             nodeHeaders.unlinkNode(r);
-        } else {
-            MEDDLY_DCASSERT(roots[r]>0);
-            if (0== --roots[r]) {
-                roots.erase(r);
-            }
         }
         return 0;
     }
@@ -2245,7 +2244,9 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 
 
 #ifdef NEW_DD_EDGES
-    /// Set of root edges (mark & sweep only)
+    /// Set of root edges.
+    /// Required with mark and sweep.
+    /// Used only to validate incoming counts with reference counting.
     std::map <MEDDLY::node_handle, unsigned> roots;
 #endif
 
