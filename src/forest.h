@@ -1045,6 +1045,11 @@ public:
 
     // global one
     static unsigned gfid;
+
+
+    // We should be able to remove this after updating unpacked_node
+    //
+    friend class unpacked_node;
 };
 
 

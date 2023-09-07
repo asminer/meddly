@@ -142,11 +142,7 @@ MEDDLY::enumerator::enumerator(type t, const forest* F)
 MEDDLY::enumerator::enumerator(const dd_edge &e)
 {
   I = 0;
-#ifdef NEW_DD_EDGES
-  init(FULL, e.getParent());
-#else
   init(FULL, e.getForest());
-#endif
   start(e);
 }
 

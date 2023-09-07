@@ -74,9 +74,7 @@ class MEDDLY::dd_edge {
             return p == parent;
         }
 
-        /// For now - get our parent
-        /// (try to avoid the need for this)
-        inline forest* getParent() const {
+        inline forest* getForest() const {
             return parent;
         }
 
@@ -96,6 +94,11 @@ class MEDDLY::dd_edge {
 
         inline void getEdgeValue(long &v) const { v = edge_int; }
         inline void getEdgeValue(float &v) const { v = edge_float; }
+
+        /** Get this dd_edge's level.
+            @return         the level.
+        */
+        int getLevel() const;
 
         /** Check for equality.
             @return true    iff this edge has the same parent and refers to
@@ -160,7 +163,12 @@ class MEDDLY::dd_edge {
                                         // as the largest union element.
         };
 
-        friend class forest;
+        // Add any edge-valued forests here
+        friend class evmdd_pluslong;
+        friend class evmxd_pluslong;
+        friend class evmdd_timesreal;
+        friend class evmxd_timesreal;
+
         friend class unpacked_node; // maybe?
 };
 
@@ -220,7 +228,8 @@ class MEDDLY::dd_edge {
     /** Obtain a modifiable copy of the forest owning this edge.
         @return         the forest to which this edge belongs to.
     */
-    forest* getForest() const;
+    inline forest* getForest() const { return parent; }
+
 
         /// Check our parent
         inline bool isAttachedTo(const forest* p) const {
@@ -444,10 +453,6 @@ inline void MEDDLY::dd_edge::clear() {
   MEDDLY_DCASSERT(index);
   set(0);
   raw_value = 0;
-}
-
-inline MEDDLY::forest* MEDDLY::dd_edge::getForest() const {
-  return parent;
 }
 
 inline MEDDLY::node_handle MEDDLY::dd_edge::getNode() const {

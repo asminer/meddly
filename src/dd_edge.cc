@@ -97,6 +97,15 @@ void MEDDLY::dd_edge::setLabel(const char* L)
     label = L ? strdup(L) : nullptr;
 }
 
+int MEDDLY::dd_edge::getLevel() const
+{
+    if (0==node) return 0;
+    MEDDLY_DCASSERT(parent);
+    const expert_forest* ef = dynamic_cast <expert_forest*>(parent);
+    MEDDLY_DCASSERT(ef);
+    return ef->getNodeLevel(node);
+}
+
 
 void MEDDLY::dd_edge::init(const dd_edge &e)
 {
@@ -281,15 +290,6 @@ void MEDDLY::dd_edge::getEdgeValue(float& ev) const
   EVencoder<float>::readValue(&raw_value, ev);
 }
 
-int MEDDLY::dd_edge::getLevel() const
-{
-  if (0==node) return 0;
-  MEDDLY_DCASSERT(parent);
-  const expert_forest* ef = dynamic_cast <expert_forest*>(parent);
-  MEDDLY_DCASSERT(ef);
-  return ef->getNodeLevel(node);
-}
-
 void MEDDLY::dd_edge::set(node_handle n)
 {
   MEDDLY_DCASSERT(parent);
@@ -341,6 +341,16 @@ void MEDDLY::dd_edge::setLabel(const char* L)
   if (label) free(label);
   label = strdup(L);
 }
+
+int MEDDLY::dd_edge::getLevel() const
+{
+    if (0==node) return 0;
+    MEDDLY_DCASSERT(parent);
+    const expert_forest* ef = dynamic_cast <expert_forest*>(parent);
+    MEDDLY_DCASSERT(ef);
+    return ef->getNodeLevel(node);
+}
+
 
 double MEDDLY::dd_edge::getCardinality() const
 {

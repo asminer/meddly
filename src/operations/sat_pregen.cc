@@ -110,7 +110,11 @@ MEDDLY::satpregen_opname::pregen_relation
     events = new dd_edge[num_events];
     next = new unsigned[num_events];
     for (unsigned e=0; e<num_events; e++) {
+#ifdef NEW_DD_EDGES
+      events[e].attach(mxdF);
+#else
       events[e].setForest(mxdF);
+#endif
     }
   } else {
     events = 0;
@@ -129,7 +133,11 @@ MEDDLY::satpregen_opname::pregen_relation
 
   events = new dd_edge[K+1];
   for (unsigned k=0; k<=K; k++) {
-    events[k].setForest(mxdF);
+#ifdef NEW_DD_EDGES
+      events[k].attach(mxdF);
+#else
+      events[k].setForest(mxdF);
+#endif
   }
 
   next = 0;

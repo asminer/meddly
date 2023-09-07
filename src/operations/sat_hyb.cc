@@ -1196,10 +1196,10 @@ void MEDDLY::sathyb_opname::event::buildEventMask()
 
    f->createEdge(&event_mask_from_minterm, &event_mask_to_minterm, 1, event_mask);
 
-//#ifdef DEBUG_EVENT_MASK
+#ifdef DEBUG_EVENT_MASK
   ostream_output out(std::cout);
   event_mask.show(out, 2);
-//#endif
+#endif
 }
 
 

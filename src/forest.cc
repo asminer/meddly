@@ -459,7 +459,7 @@ void MEDDLY::forest::writeEdge(output &s, const dd_edge &E, const node_handle* m
 {
     MEDDLY_DCASSERT(E.isAttachedTo(this));
     writeEdgeValue(s, E);
-    if (E.node <= 0) {
+    if (E.getNode() <= 0) {
         s.put(long(E.getNode()));
     } else {
         s.put(long(map[E.getNode()]));

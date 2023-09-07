@@ -49,9 +49,10 @@ MEDDLY::binary_operation::~binary_operation()
 bool MEDDLY::binary_operation::matches(const dd_edge &arg1,
         const dd_edge &arg2, const dd_edge &res) const
 {
-    return (arg1.getForest() == arg1F
-        && arg2.getForest() == arg2F
-        && res.getForest() == resF);
+    return
+        arg1.isAttachedTo(arg1F) &&
+        arg2.isAttachedTo(arg2F) &&
+        res.isAttachedTo(resF);
 }
 
 
