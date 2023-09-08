@@ -171,7 +171,7 @@ MEDDLY::satpregen_opname::pregen_relation
   if (0==level_index) {
     // relation is "by levels"
 
-    events[k] += r;
+    apply(UNION, events[k], r, events[k]);
 
   } else {
     // relation is "by events"
@@ -340,7 +340,7 @@ MEDDLY::satpregen_opname::pregen_relation
 
   dd_edge u(mxdF);
   for (unsigned k=1; k<=K; k++) {
-    u += events[k];
+    apply(UNION, u, events[k], u);
     events[k].set(0);
   }
   events[u.getLevel()] = u;

@@ -907,7 +907,9 @@ void MEDDLY::sathyb_opname::subevent::buildRoot() {
       dd_edge sum(root);
       f->createEdge(unpminterms, pminterms, num_minterms, sum);
       num_minterms = 0;
-      root += sum;
+      //
+      // root += sum;
+      MEDDLY::apply(MEDDLY::UNION, root, sum, root);
     } else {
        f->createEdge(unpminterms, pminterms, num_minterms, root);
     }

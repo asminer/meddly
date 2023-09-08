@@ -371,6 +371,7 @@ unsigned MEDDLY::dd_edge::getEdgeCount(bool countZeroes) const
 
 //
 // Operator +=
+/*
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator+=(const dd_edge& e)
 {
     if (!opPlus) {
@@ -386,9 +387,10 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator+=(const dd_edge& e)
     // apply will call set() which in turn will set updateNeeded to true
     return *this;
 }
-
+*/
 
 // Operator *=
+/*
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator*=(const dd_edge& e)
 {
     if (!opStar) {
@@ -404,9 +406,11 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator*=(const dd_edge& e)
     // apply will call set() which in turn will set updateNeeded to true
     return *this;
 }
+*/
 
 
 // Operator -=
+/*
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator-=(const dd_edge& e)
 {
     if (!opMinus) {
@@ -422,9 +426,11 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator-=(const dd_edge& e)
     // apply will call set() which in turn will set updateNeeded to true
     return *this;
 }
+*/
 
 
 // Operator /=
+/*
 MEDDLY::dd_edge& MEDDLY::dd_edge::operator/=(const dd_edge& e)
 {
     if (!opDivide) {
@@ -437,6 +443,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator/=(const dd_edge& e)
     // apply will call set() which in turn will set updateNeeded to true
     return *this;
 }
+*/
 
 // Display the edge information.
 void MEDDLY::dd_edge::show(output &strm, int verbosity) const

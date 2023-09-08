@@ -406,9 +406,15 @@ MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
   dd_edge nsf(mxd);
 
   dd_edge* monolithic_nsf = new dd_edge(mxd);
-  for(int i=0;i<nEvents;i++)
-    {
-    (*monolithic_nsf) += buildEventMxd(event_tops[i],mxd);
+
+    binary_operation* opUnion = UNION()->getOperation(mxd, mxd, mxd);
+    for(int i=0;i<nEvents;i++) {
+        opUnion->computeTemp(
+            *monolithic_nsf,  buildEventMxd(event_tops[i],mxd),
+            *monolithic_nsf
+        );
+        // OLD
+        // (*monolithic_nsf) += buildEventMxd(event_tops[i],mxd);
     }
 
   node_handle monolithic_nsf_handle = monolithic_nsf->getNode();

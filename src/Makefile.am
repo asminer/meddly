@@ -181,6 +181,7 @@ pkginclude_HEADERS = \
     oper_binary.h  \
     oper_special.h  \
     oper_unary.h  \
+    operators.h \
     opname.h  \
     opname_numer.h  \
     opname_satur.h  \

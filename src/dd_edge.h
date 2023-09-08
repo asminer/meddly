@@ -347,7 +347,7 @@ class MEDDLY::dd_edge {
         @param  e       dd_edge to Union/Add with this dd_edge.
         @return         \a this + \a e.
     */
-    const dd_edge operator+(const dd_edge& e) const;
+    // const dd_edge operator+(const dd_edge& e) const;
 
     /** Compound Plus operator.
         BOOLEAN forests: Union; INTEGER/REAL forests: Addition.
@@ -355,14 +355,14 @@ class MEDDLY::dd_edge {
         @param  e       dd_edge to Union/Add with this dd_edge.
         @return         \a this + \a e.
     */
-    dd_edge& operator+=(const dd_edge &e);
+    // dd_edge& operator+=(const dd_edge &e);
 
     /** Star operator.
         BOOLEAN forests: Intersection; INTEGER/REAL forests: Multiplication.
         @param  e       dd_edge to Intersection/Multiply with this dd_edge.
         @return         \a this * \a e.
     */
-    const dd_edge operator*(const dd_edge& e) const;
+    // const dd_edge operator*(const dd_edge& e) const;
 
     /** Compound Star operator.
         BOOLEAN forests: Intersection; INTEGER/REAL forests: Multiplication.
@@ -370,14 +370,14 @@ class MEDDLY::dd_edge {
         @param  e       dd_edge to Intersection/Multiply with this dd_edge.
         @return         \a this * \a e.
     */
-    dd_edge& operator*=(const dd_edge &e);
+    // dd_edge& operator*=(const dd_edge &e);
 
     /** Minus operator.
         BOOLEAN forests: Difference; INTEGER/REAL forests: Subtraction.
         @param  e       dd_edge for difference/subtract.
         @return         \a this - \a e.
     */
-    const dd_edge operator-(const dd_edge& e) const;
+    // const dd_edge operator-(const dd_edge& e) const;
 
     /** Compound Minus operator.
         BOOLEAN forests: Difference; INTEGER/REAL forests: Subtraction.
@@ -385,14 +385,14 @@ class MEDDLY::dd_edge {
         @param  e       dd_edge for difference/subtract.
         @return         \a this - \a e.
     */
-    dd_edge& operator-=(const dd_edge &e);
+    // dd_edge& operator-=(const dd_edge &e);
 
     /** Divide operator.
         BOOLEAN forests: INVALID; INTEGER/REAL forests: Division.
         @param  e       dd_edge for division.
         @return         \a this / \a e.
     */
-    const dd_edge operator/(const dd_edge& e) const;
+    // const dd_edge operator/(const dd_edge& e) const;
 
     /** Compound Divide operator.
         BOOLEAN forests: INVALID; INTEGER/REAL forests: Division.
@@ -400,7 +400,7 @@ class MEDDLY::dd_edge {
         @param  e       dd_edge for division.
         @return         \a this / \a e.
     */
-    dd_edge& operator/=(const dd_edge &e);
+    // dd_edge& operator/=(const dd_edge &e);
 
     /** Display the edge information.
         This is primarily for aid in debugging.
@@ -480,6 +480,7 @@ inline bool MEDDLY::dd_edge::operator!=(const MEDDLY::dd_edge& e) const {
   return !(*this == e);
 }
 
+/*
 inline const MEDDLY::dd_edge
 MEDDLY::dd_edge::operator+(const MEDDLY::dd_edge& e) const {
   return dd_edge(*this) += e;
@@ -492,6 +493,7 @@ inline const MEDDLY::dd_edge MEDDLY::dd_edge::operator*(const MEDDLY::dd_edge& e
 inline const MEDDLY::dd_edge MEDDLY::dd_edge::operator-(const MEDDLY::dd_edge& e) const {
   return dd_edge(*this) -= e;
 }
+*/
 
 inline void MEDDLY::dd_edge::setIndex(unsigned ind) {
   index = ind;
