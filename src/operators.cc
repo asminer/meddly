@@ -16,29 +16,20 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "error.h"
-#include "io.h"
-#include "memstats.h"
-#include "variable.h"
-#include "varorder.h"
-#include "domain.h"
-#include "minterms.h"
-#include "forest.h"
-#include "relation_node.h"
-#include "memory.h"
-
 #include "operators.h"
 #include "ops_builtin.h"
-#include "opname.h"
-#include "opname_numer.h"
-#include "opname_satur.h"
+#include "error.h"
 
-#include "oper.h"
-#include "oper_unary.h"
-#include "oper_binary.h"
-#include "oper_special.h"
+MEDDLY::dd_edge operator+(const MEDDLY::dd_edge &e1, const MEDDLY::dd_edge &e2)
+{
+    if (! e1.sameForest(e2)) {
+        throw MEDDLY::error(MEDDLY::error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
 
-#include "ct_initializer.h"
+    // make a new edge with the same forest
 
-#include "global_rebuilder.h"
+    // call apply
+
+    // return that edge
+}
 

@@ -73,6 +73,10 @@ class MEDDLY::dd_edge {
         inline bool isAttachedTo(const forest* p) const {
             return p == parent;
         }
+        /// Check if edges have the same parent forest
+        inline bool sameForest(const dd_edge &e) const {
+            return parent == e.parent;
+        }
 
         inline forest* getForest() const {
             return parent;
@@ -236,6 +240,10 @@ class MEDDLY::dd_edge {
             return p == parent;
         }
 
+        /// Check if edges have the same parent forest
+        inline bool sameForest(const dd_edge &e) const {
+            return parent == e.parent;
+        }
 
     /// Set the forest owning this edge.
     void setForest(forest* f);

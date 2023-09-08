@@ -9,8 +9,8 @@ Plan for this branch (testing after each big step):
         mark & sweep: conceptually, an array of 'root counts'
             for each node; will be sparse though.  (use std::map)
 
-    ( ) binary operators +=, &=, etc
-        move to operators, check for same forests
+    ( ) binary operators +, +=, &=, etc
+        move to operators.h/.cc, check for same forests
 
 
 (2) Add method

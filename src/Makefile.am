@@ -45,6 +45,7 @@ libmeddly_la_SOURCES = \
     oper_binary.h           oper_binary.cc \
     oper_special.h          oper_special.cc \
     oper_unary.h            oper_unary.cc \
+    operators.h             operators.cc \
     opname.h                opname.cc \
     opname_numer.h          opname_numer.cc \
     opname_satur.h          opname_satur.cc \
