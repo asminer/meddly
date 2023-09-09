@@ -783,18 +783,20 @@ double MEDDLY::satotf_opname::otf_relation::getArcCount(
   }
 
   dd_edge confirmed_local_states_mask(mask);
-  MEDDLY::apply(MEDDLY::INTERSECTION, confirmed_local_states_mask,
+  apply(INTERSECTION, confirmed_local_states_mask,
         confirmed_local_states, confirmed_local_states_mask);
 
-  MEDDLY::apply(MEDDLY::CROSS, confirmed_local_states_mask, confirmed_local_states_mask, mxd_mask);
+  apply(CROSS, confirmed_local_states_mask, confirmed_local_states_mask, mxd_mask);
 
   if (count_duplicates) {
     for (int k = 1; k < num_levels; k++) {
       for (int ei = 0; ei < getNumOfEvents(k); ei++) {
         // start with (num_level-1) to correctly count edges in skipped levels
         dd_edge rg_ei = events_by_top_level[k][ei]->getRoot();
-        MEDDLY::apply(MEDDLY::INTERSECTION, rg_ei, mxd_mask, rg_ei);
-        arc_count += rg_ei.getCardinality();
+        apply(INTERSECTION, rg_ei, mxd_mask, rg_ei);
+        double c;
+        apply(CARDINALITY, rg_ei, c);
+        arc_count += c;
       }
     }
   } else {
@@ -803,12 +805,12 @@ double MEDDLY::satotf_opname::otf_relation::getArcCount(
     for (int k = 1; k < num_levels; k++) {
       dd_edge nsf_i(mxdF);
       for (int ei = 0; ei < getNumOfEvents(k); ei++) {
-        MEDDLY::apply(MEDDLY::UNION, nsf_i, events_by_top_level[k][ei]->getRoot(), nsf_i);
+        apply(UNION, nsf_i, events_by_top_level[k][ei]->getRoot(), nsf_i);
       }
-      MEDDLY::apply(MEDDLY::UNION, monolithic_nsf, nsf_i, monolithic_nsf);
+      apply(UNION, monolithic_nsf, nsf_i, monolithic_nsf);
     }
-    MEDDLY::apply(MEDDLY::INTERSECTION, monolithic_nsf, mxd_mask, monolithic_nsf);
-    arc_count = monolithic_nsf.getCardinality();
+    apply(INTERSECTION, monolithic_nsf, mxd_mask, monolithic_nsf);
+    apply(CARDINALITY, monolithic_nsf, arc_count);
   }
   return arc_count;
 }

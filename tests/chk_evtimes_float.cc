@@ -286,13 +286,16 @@ void testEV(forest* mxd, forest* mtmxd, forest* evmxd)
       buildRandomFunc(save_seed, t, EVMXD);
 
       if (MTMXD.getNodeCount() < EVMXD.getNodeCount()
-        || MTMXD.getEdgeCount(false) < EVMXD.getEdgeCount(false)) {
+        || MTMXD.getEdgeCount(false) < EVMXD.getEdgeCount(false))
+      {
         printf("failed!\n\n");
+        double mxdcard, mtmxdcard, evmxdcard;
+        apply(CARDINALITY, MXD, mxdcard);
+        apply(CARDINALITY, MTMXD, mtmxdcard);
+        apply(CARDINALITY, EVMXD, evmxdcard);
 
         printf("\nCardinality: MxD = %f, MTMxD = %f, EV*MxD = %f",
-            MXD.getCardinality(),
-            MTMXD.getCardinality(),
-            EVMXD.getCardinality());
+            mxdcard, mtmxdcard, evmxdcard);
         printf("\nNode Count: MxD = %d, MTMxD = %d, EV*MxD = %d",
             MXD.getNodeCount(),
             MTMXD.getNodeCount(),

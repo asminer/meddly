@@ -352,12 +352,14 @@ int MEDDLY::dd_edge::getLevel() const
 }
 
 
+/*
 double MEDDLY::dd_edge::getCardinality() const
 {
   double c;
   apply(CARDINALITY, *this, c);
   return c;
 }
+*/
 
 unsigned MEDDLY::dd_edge::getNodeCount() const
 {
@@ -507,8 +509,10 @@ void MEDDLY::dd_edge::show(output &strm, int verbosity) const
     eParent->showNodeGraph(strm, &node, 1);
   }
   if (verbosity == 1 || verbosity == 3) {
+    double card;
+    apply(CARDINALITY, *this, card);
     strm << "Cardinality of node " << long(node) << ": ";
-    strm.put(getCardinality(), 0, 8, 'e');
+    strm.put(card, 0, 8, 'e');
     strm.put('\n');
   }
 }

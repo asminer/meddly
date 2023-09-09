@@ -273,7 +273,7 @@ class MEDDLY::dd_edge {
         Use apply(CARDINALITY, ...) instead.
         @return         the cardinality of the node.
     */
-    double getCardinality() const;
+    // double getCardinality() const;
 
     /** Counts the number of unique nodes in this decision diagram.
         @return       the number of unique nodes starting at the root node

@@ -381,7 +381,9 @@ int main(int argc, char *argv[])
     start.note_time();
     printf("Iterator traversal time (%0.4e elements): %0.4e seconds\n",
         double(counter), start.get_last_seconds());
-    printf("Cardinality: %0.4e\n", reachableStates.getCardinality());
+    double card;
+    apply(CARDINALITY, reachableStates, card);
+    printf("Cardinality: %0.4e\n", card);
   }
 
 
@@ -424,7 +426,9 @@ int main(int argc, char *argv[])
   }
 #endif
 
-  printf("MDD Cardinality: %1.6e\n", mddResult.getCardinality());
+  double card;
+  apply(CARDINALITY, mddResult, card);
+  printf("MDD Cardinality: %1.6e\n", card);
   printf("Peak Nodes in MDD: %ld\n", mdd->getPeakNumNodes());
   /* TBD: FIX
   printf("Entries in compute table: %ld\n",
@@ -459,7 +463,8 @@ int main(int argc, char *argv[])
   }
 #endif
 
-  printf("Index Set Cardinality: %1.6e\n", indexSet.getCardinality());
+  apply(CARDINALITY, indexSet, card);
+  printf("Index Set Cardinality: %1.6e\n", card);
   printf("Peak Nodes in Index Set: %ld\n", evplusmdd->getPeakNumNodes());
   /* TBD: FIX
   printf("Entries in compute table: %ld\n",

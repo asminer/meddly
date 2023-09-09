@@ -678,7 +678,8 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
     testIndexSet(reachableStates, indexSet);
     int* element = (int *) malloc((nLevels + 1) * sizeof(int));
 
-    double cardinality = indexSet.getCardinality();
+    double cardinality;
+    apply(CARDINALITY, indexSet, cardinality);
     for (int index = 0; index < int(cardinality); index++)
     {
       evplusmdd->getElement(indexSet, index, element);

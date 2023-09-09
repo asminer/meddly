@@ -953,8 +953,9 @@ int doBfs(const moves& m)
   fflush(stdout);
   fprintf(stdout, "Time for constructing reachability set: %.4e seconds\n",
       start.get_last_seconds());
-  fprintf(stdout, "# of reachable states: %1.6e\n",
-      initial.getCardinality());
+  double card;
+  apply(CARDINALITY, initial, card);
+  fprintf(stdout, "# of reachable states: %1.6e\n", card);
   fflush(stdout);
 
   return 0;
@@ -1011,8 +1012,10 @@ int doDfs(const moves& m, char saturation_type, bool split)
   fflush(stdout);
   fprintf(stdout, "Time for constructing reachability set: %.4e seconds\n",
       start.get_last_seconds());
-  fprintf(stdout, "# of reachable states: %1.6e\n",
-      initial.getCardinality());
+
+  double card;
+  apply(CARDINALITY, initial, card);
+  fprintf(stdout, "# of reachable states: %1.6e\n", card);
   fflush(stdout);
 
   return 0;
@@ -1069,6 +1072,7 @@ int doChoice()
   dd_edge temp(states);
   bool continueLoop = true;
   int choice = 21;
+  double card;
 
   while (continueLoop)
   {
@@ -1119,7 +1123,8 @@ int doChoice()
       case 20:
         // Print Report.
         // For now, print the cardinality of result.
-        printf("Cardinality of result: %1.6e\n", result.getCardinality());
+        apply(CARDINALITY, result, card);
+        printf("Cardinality of result: %1.6e\n", card);
         break;
       case 21:
         // Quit.
@@ -1177,6 +1182,7 @@ int doSteppedBfs()
 
   bool continueLoop = true;
   int choice = 4;
+  double card;
 
   while (continueLoop)
   {
@@ -1218,11 +1224,12 @@ int doSteppedBfs()
       case 2:
         // Print Report.
         // For now, print the cardinality of result.
-        printf("Cardinality of result: %1.6e\n", result.getCardinality());
+        apply(CARDINALITY, result, card);
+        printf("Cardinality of result: %1.6e\n", card);
         for (int i = 0; i < nFaces; i++)
         {
-          printf("Cardinality of event[%d]: %1.6e\n",
-              i, eventResults[i].getCardinality());
+          apply(CARDINALITY, eventResults[i], card);
+          printf("Cardinality of event[%d]: %1.6e\n", card);
         }
         break;
       case 3:

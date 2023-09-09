@@ -9,9 +9,10 @@ Plan for this branch (testing after each big step):
         mark & sweep: conceptually, an array of 'root counts'
             for each node; will be sparse though.  (use std::map)
 
-    ( ) binary operators +, +=, &=, etc
+    (v) binary operators +, +=, &=, etc
         move to operators.h/.cc, check for same forests
 
+    (v) remove getCardinality since apply is almost as easy
 
 (2) Add method
 
@@ -22,11 +23,14 @@ Plan for this branch (testing after each big step):
 
 (3) Unpacked nodes become arrays of dd_edges
 
-(4) Apply implementations use dd_edges
+(4) dd_edges keep track of which level the edge starts from
+    (needed for quasi reduced)
 
-(5) Compute tables use dd_edges
+(5) Apply implementations use dd_edges
 
-(6) How to handle dd_edges whose forest was deleted?
+(6) Compute tables use dd_edges
+
+(7) How to handle dd_edges whose forest was deleted?
     Some options:
         (a) Use shared_ptr
         (b) Do it ourself: forests have reference counts

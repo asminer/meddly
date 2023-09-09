@@ -167,7 +167,9 @@ void show_node(const dd_edge& e)
   cout << "# Peak Nodes: " << e.getForest()->getPeakNumNodes() << endl;
 //  FILE_output out(stdout);
 //  e.show(out, 2);
-  cout << "# States: " << e.getCardinality() << endl;
+  double card;
+  apply(CARDINALITY, e, card);
+  cout << "# States: " << card << endl;
 }
 
 double reorder_time = 0;

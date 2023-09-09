@@ -909,7 +909,7 @@ void MEDDLY::sathyb_opname::subevent::buildRoot() {
       num_minterms = 0;
       //
       // root += sum;
-      MEDDLY::apply(MEDDLY::UNION, root, sum, root);
+      apply(UNION, root, sum, root);
     } else {
        f->createEdge(unpminterms, pminterms, num_minterms, root);
     }
@@ -952,7 +952,7 @@ void MEDDLY::sathyb_opname::subevent::showInfo(output& out) const {
     }
     out << "]\n";
   }
-  root.show(out, 2);
+  // root.show(out, 2);
 }
 
 long MEDDLY::sathyb_opname::subevent::mintermMemoryUsage() const {
