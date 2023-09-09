@@ -12,7 +12,11 @@ Plan for this branch (testing after each big step):
     (v) binary operators +, +=, &=, etc
         move to operators.h/.cc, check for same forests
 
-    (v) remove getCardinality since apply is almost as easy
+    (v) remove getCardinality() since apply is almost as easy
+
+    ( ) overload << so we can do output << dd_edge
+        then remove show() method
+
 
 (2) Add method
 
