@@ -51,7 +51,7 @@ void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
   apply(CONVERT_TO_INDEX_SET, mdd, indexSet);
 
 #if 1
-  indexSet.show(meddlyout, 3);
+  indexSet.showGraph(meddlyout);
 #else
   indexSet.show(meddlyout, 1);
 #endif
@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
 
 #ifdef VERBOSE
   printf("\n\nInitial State:\n");
-  initial_state.show(meddlyout, 2);
+  initial_state.showGraph(meddlyout);
 #endif
 
   double c;

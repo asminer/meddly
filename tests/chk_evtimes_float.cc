@@ -242,18 +242,18 @@ void testEVTimesMXD(forest* srcF, forest* destF)
         printf("failed!\n\n");
 
         printf("Source (first forest):\n");
-        srcE.show(meddlyout, 3);
+        srcE.showGraph(meddlyout);
 
         printf("Destination (should get):\n");
-        destE.show(meddlyout, 3);
+        destE.showGraph(meddlyout);
 
         printf("Copy (built from source):\n");
-        copyE.show(meddlyout, 3);
+        copyE.showGraph(meddlyout);
 
         dd_edge diff(destF);
         apply(MINUS, destE, copyE, diff);
         printf("Difference:\n");
-        diff.show(meddlyout, 3);
+        diff.showGraph(meddlyout);
 
         exit(1);
       }
@@ -296,11 +296,11 @@ void testEV(forest* mxd, forest* mtmxd, forest* evmxd)
 
         printf("\nCardinality: MxD = %f, MTMxD = %f, EV*MxD = %f",
             mxdcard, mtmxdcard, evmxdcard);
-        printf("\nNode Count: MxD = %d, MTMxD = %d, EV*MxD = %d",
+        printf("\nNode Count: MxD = %lu, MTMxD = %lu, EV*MxD = %lu",
             MXD.getNodeCount(),
             MTMXD.getNodeCount(),
             EVMXD.getNodeCount());
-        printf("\nEdge Count: MxD = %d, MTMxD = %d, EV*MxD = %d",
+        printf("\nEdge Count: MxD = %lu, MTMxD = %lu, EV*MxD = %lu",
             MXD.getEdgeCount(false),
             MTMXD.getEdgeCount(false),
             EVMXD.getEdgeCount(false));

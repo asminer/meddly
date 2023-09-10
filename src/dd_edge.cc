@@ -100,12 +100,14 @@ void MEDDLY::dd_edge::setLabel(const char* L)
 
 unsigned long MEDDLY::dd_edge::getNodeCount() const
 {
-  return smart_cast<expert_forest*>(parent)->getNodeCount(node);
+    if (!parent) return 0;
+    return smart_cast<expert_forest*>(parent)->getNodeCount(node);
 }
 
 unsigned long MEDDLY::dd_edge::getEdgeCount(bool countZeroes) const
 {
-  return smart_cast<expert_forest*>(parent)->getEdgeCount(node, countZeroes);
+    if (!parent) return 0;
+    return smart_cast<expert_forest*>(parent)->getEdgeCount(node, countZeroes);
 }
 
 int MEDDLY::dd_edge::getLevel() const
@@ -194,6 +196,16 @@ void MEDDLY::dd_edge::showGraph(output &s) const
     s.put(">\n");
     eParent->showNodeGraph(s, &node, 1);
 }
+
+void MEDDLY::dd_edge::writePicture(const char* filename,
+        const char* extension) const
+{
+    if (parent) {
+        expert_forest* eParent = smart_cast<expert_forest*>(parent);
+        eParent->writeNodeGraphPicture(filename, extension, &node, &label, 1);
+    }
+}
+
 
 //
 // Private

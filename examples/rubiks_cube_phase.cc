@@ -1186,7 +1186,7 @@ void RubiksCubeModel::show_node(const dd_edge& e)
 
   cout << "# Nodes: " << e.getForest()->getCurrentNumNodes() << endl;
   FILE_output out(stdout);
-  e.show(out, 2);
+  e.showGraph(out);
   double card;
   apply(CARDINALITY, e, card);
   cout << "# States: " << card << endl;

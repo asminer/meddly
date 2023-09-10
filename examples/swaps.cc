@@ -292,7 +292,7 @@ void runWithArgs(int N, char method, bool alternate)
   printf("Next-state function construction took %.4f seconds\n",
           watch.get_last_seconds());
   if (0==ensf) {
-    printf("Next-state function MxD has\n\t%d nodes\n\t\%d edges\n",
+    printf("Next-state function MxD has\n\t%lu nodes\n\t%lu edges\n",
       nsf.getNodeCount(), nsf.getEdgeCount());
   }
 
@@ -344,7 +344,7 @@ void runWithArgs(int N, char method, bool alternate)
   watch.note_time();
   printf("Reachability set construction took %.4f seconds\n",
           watch.get_last_seconds());
-  printf("Reachability set MDD has\n\t%d nodes\n\t\%d edges\n",
+  printf("Reachability set MDD has\n\t%lu nodes\n\t%lu edges\n",
     reachable.getNodeCount(), reachable.getEdgeCount());
   fflush(stdout);
 //  mdd->garbageCollect();

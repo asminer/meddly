@@ -51,16 +51,16 @@ int main()
 #ifdef VERBOSE
         FILE_output out(stdout);
         printf("Initial state:\n");
-        init_state.show(out, 2);
+        init_state.showGraph(out);
 
         printf("NSF:\n");
-        nsf.show(out, 2);
+        nsf.showGraph(out);
 
         printf("DFS states:\n");
-        reachable1.show(out, 2);
+        reachable1.showGraph(out);
 
         printf("BFS states:\n");
-        reachable2.show(out, 2);
+        reachable2.showGraph(out);
 #endif
 
         int retval;

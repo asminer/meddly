@@ -91,16 +91,16 @@ int main(int argc, char *argv[])
   FILE_output meddlyout(stdout);
 
   printf("Initial States:\n");
-  initialStates.show(meddlyout, 2);
+  initialStates.showGraph(meddlyout);
 
   printf("Next-State Function:\n");
-  nsf.show(meddlyout, 2);
+  nsf.showGraph(meddlyout);
 
   printf("BFS states\n");
-  reachBFS.show(meddlyout, 2);
+  reachBFS.showGraph(meddlyout);
 
   printf("DFS states\n");
-  reachDFS.show(meddlyout, 2);
+  reachDFS.showGraph(meddlyout);
 
   if (retval) {
     printf("\nReachable states DO NOT match\n\n");

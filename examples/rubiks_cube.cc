@@ -1229,7 +1229,7 @@ int doSteppedBfs()
         for (int i = 0; i < nFaces; i++)
         {
           apply(CARDINALITY, eventResults[i], card);
-          printf("Cardinality of event[%d]: %1.6e\n", card);
+          printf("Cardinality of event[%d]: %1.6e\n", i, card);
         }
         break;
       case 3:

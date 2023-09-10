@@ -150,7 +150,7 @@ int main(int argc, char* argv[]) {
   dd_edge rss = model.getReachableStateSet();
 
   ostream_output s(std::cout);
-  rss.show(s, 2);
+  rss.showGraph(s);
   double rss_card;
   apply(CARDINALITY, rss, rss_card);
   std::cout << "\n\nNumber of states: " << rss_card << std::endl;

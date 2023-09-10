@@ -69,6 +69,9 @@ class MEDDLY::dd_edge {
         /// Detach from the forest.
         inline void detach() { attach(nullptr); }
 
+        /// Clear the edge (for backward compatability)
+        inline void clear() { detach(); }
+
         /// Check our parent
         inline bool isAttachedTo(const forest* p) const {
             return p == parent;
@@ -149,6 +152,13 @@ class MEDDLY::dd_edge {
         */
         void showGraph(output &s) const;
 
+        /** Draws a pictographical representation of the graph with
+            this node as the root.
+                @param  filename  Name of output file (without extension)
+                @param  extension File extension (without ".").
+                        E.g. "dot", "pdf", "ps"
+        */
+        void writePicture(const char* filename, const char* extension) const;
 
         //
         // Methods that will soon be replaced?
@@ -165,6 +175,10 @@ class MEDDLY::dd_edge {
             edge_float = value;
         }
 
+        inline void set(node_handle n, int value) {
+            set(n);
+            setEdgeValue(long(value));
+        }
         inline void set(node_handle n, long value) {
             set(n);
             setEdgeValue(value);

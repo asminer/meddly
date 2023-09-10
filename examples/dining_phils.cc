@@ -578,7 +578,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
   printf("Next-state function construction took %.4e seconds\n",
           start.get_last_seconds());
   if (!ensf) {
-    printf("Next-state function MxD has\n\t%d nodes\n\t\%d edges\n",
+    printf("Next-state function MxD has\n\t%lu nodes\n\t%lu edges\n",
       nsf.getNodeCount(), nsf.getEdgeCount());
   }
 
@@ -639,8 +639,8 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
   printf("Reachability set construction took %.4e seconds\n",
           start.get_last_seconds() );
   fflush(stdout);
-  printf("#Nodes: %d\n", reachableStates.getNodeCount());
-  printf("#Edges: %d\n", reachableStates.getEdgeCount());
+  printf("#Nodes: %lu\n", reachableStates.getNodeCount());
+  printf("#Edges: %lu\n", reachableStates.getEdgeCount());
 
 #ifdef SHOW_MDD
   printf("Reachability set:\n");

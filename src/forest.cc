@@ -1410,6 +1410,10 @@ void MEDDLY::expert_forest
   s.close();
   unpacked_node::recycle(un);
 
+  if (0==strcmp("dot", ext)) {
+      return;
+  }
+
   // convert dot file to extension
   std::stringstream cmd;
   cmd << "dot -T" << ext << " -o \"" << filename << "." << ext << "\" \"" << dot_fn << "\"";
