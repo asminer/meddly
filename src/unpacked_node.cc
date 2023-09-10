@@ -292,11 +292,7 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
         }
         if (eparent->edgeBytes()) {
             s.put('<');
-#ifdef NEW_DD_EDGES
-            s.put("edge value");    // FIX ME TBD
-#else
             eparent->showEdgeValue(s, eptr(z));
-#endif
             s.put(", ");
         }
         if (eparent->isTerminalNode(d(z))) {
@@ -328,7 +324,7 @@ void MEDDLY::unpacked_node::write(output &s, const node_handle* map) const
 {
     unsigned stop;
     if (isSparse()) {
-        s.put(long(-nnzs));
+        s.put(-long(nnzs));
         stop = nnzs;
     } else {
         s.put(long(size));
@@ -369,11 +365,7 @@ void MEDDLY::unpacked_node::write(output &s, const node_handle* map) const
         s.put('\t');
         for (unsigned z=0; z<stop; z++) {
             s.put(' ');
-#ifdef NEW_DD_EDGES
-            s.put("edge value");    // FIX ME TBD
-#else
             eparent->showEdgeValue(s, eptr(z));
-#endif
         }
     }
     s.put('\n');
