@@ -1133,39 +1133,41 @@ MEDDLY::expert_forest
   return marked;
 }
 
-long MEDDLY::expert_forest::getNodeCount(node_handle p) const
+unsigned long MEDDLY::expert_forest::getNodeCount(node_handle p) const
 {
-  node_handle* list = markNodesInSubgraph(&p, 1, true);
-  if (0==list) return 0;
-  long i;
-  for (i=0; list[i]; i++) { }
-  free(list);
-  return i;
+    node_handle* list = markNodesInSubgraph(&p, 1, true);
+    if (0==list) return 0;
+    unsigned long i;
+    for (i=0; list[i]; i++) { }
+    free(list);
+    return i;
 }
 
-long MEDDLY::expert_forest::getNodeCount(const node_handle* roots, int N) const
+unsigned long MEDDLY::expert_forest::getNodeCount(const node_handle* roots,
+        int N) const
 {
-  node_handle* list = markNodesInSubgraph(roots, N, false);
-  if (0==list) return 0;
-  long i;
-  for (i=0; list[i]; i++) { }
-  free(list);
-  return i;
+    node_handle* list = markNodesInSubgraph(roots, N, false);
+    if (0==list) return 0;
+    unsigned long i;
+    for (i=0; list[i]; i++) { }
+    free(list);
+    return i;
 }
 
-long MEDDLY::expert_forest::getEdgeCount(node_handle p, bool countZeroes) const
+unsigned long MEDDLY::expert_forest::getEdgeCount(node_handle p,
+        bool countZeroes) const
 {
-  node_handle* list = markNodesInSubgraph(&p, 1, true);
-  if (0==list) return 0;
-  long ec=0;
-  unpacked_node *M = unpacked_node::New();
-  for (long i=0; list[i]; i++) {
-    unpackNode(M, list[i], countZeroes ? FULL_ONLY : SPARSE_ONLY);
-    ec += countZeroes ? M->getSize() : M->getNNZs();
-  }
-  unpacked_node::recycle(M);
-  free(list);
-  return ec;
+    node_handle* list = markNodesInSubgraph(&p, 1, true);
+    if (0==list) return 0;
+    unsigned long ec=0;
+    unpacked_node *M = unpacked_node::New();
+    for (unsigned long i=0; list[i]; i++) {
+        unpackNode(M, list[i], countZeroes ? FULL_ONLY : SPARSE_ONLY);
+        ec += countZeroes ? M->getSize() : M->getNNZs();
+    }
+    unpacked_node::recycle(M);
+    free(list);
+    return ec;
 }
 
 bool MEDDLY::expert_forest

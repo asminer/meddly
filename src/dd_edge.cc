@@ -98,6 +98,16 @@ void MEDDLY::dd_edge::setLabel(const char* L)
     label = L ? strdup(L) : nullptr;
 }
 
+unsigned long MEDDLY::dd_edge::getNodeCount() const
+{
+  return smart_cast<expert_forest*>(parent)->getNodeCount(node);
+}
+
+unsigned long MEDDLY::dd_edge::getEdgeCount(bool countZeroes) const
+{
+  return smart_cast<expert_forest*>(parent)->getEdgeCount(node, countZeroes);
+}
+
 int MEDDLY::dd_edge::getLevel() const
 {
     if (0==node) return 0;
@@ -106,6 +116,7 @@ int MEDDLY::dd_edge::getLevel() const
     MEDDLY_DCASSERT(ef);
     return ef->getNodeLevel(node);
 }
+
 
 void MEDDLY::dd_edge::show(output &s) const
 {
@@ -442,12 +453,12 @@ double MEDDLY::dd_edge::getCardinality() const
 }
 */
 
-unsigned MEDDLY::dd_edge::getNodeCount() const
+unsigned long MEDDLY::dd_edge::getNodeCount() const
 {
   return smart_cast<expert_forest*>(parent)->getNodeCount(node);
 }
 
-unsigned MEDDLY::dd_edge::getEdgeCount(bool countZeroes) const
+unsigned long MEDDLY::dd_edge::getEdgeCount(bool countZeroes) const
 {
   return smart_cast<expert_forest*>(parent)->getEdgeCount(node, countZeroes);
 }

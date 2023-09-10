@@ -457,7 +457,10 @@ void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 
   FILE_output mout(stdout);
 #if 1
-  indexSet.show(mout, 3);
+  double card;
+  apply(CARDINALITY, indexSet, card);
+  mout << "Index set has cardinality " << card << "\n";
+  indexSet.showGraph(mout);
 #else
   indexSet.show(mout, 1);
 #endif

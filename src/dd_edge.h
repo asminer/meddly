@@ -99,6 +99,25 @@ class MEDDLY::dd_edge {
         inline void getEdgeValue(long &v) const { v = edge_int; }
         inline void getEdgeValue(float &v) const { v = edge_float; }
 
+        /** Counts the number of unique nodes below this edge.
+            @return     The number of unique nodes starting at the root node
+                        of this dd_edge.
+        */
+        unsigned long getNodeCount() const;
+
+        /** Counts the number of unique edges in this decision diagram.
+            @param  countZeroes
+                        if true, the stored zero edges are also counted
+                        (sparse nodes do not store zero edges, so this
+                        does not effect them; truncated nodes do store
+                        some zero edges, so those edges will be counted).
+
+            @return     the number of unique edges starting at the root node
+                        of this dd_edge.
+        */
+        unsigned long getEdgeCount(bool countZeroes = false) const;
+
+
         /** Get this dd_edge's level.
             @return         the level.
         */
@@ -290,7 +309,7 @@ class MEDDLY::dd_edge {
         @return       the number of unique nodes starting at the root node
                       of this dd_edge.
     */
-    unsigned getNodeCount() const;
+    unsigned long getNodeCount() const;
 
     /** Counts the number of unique edges in this decision diagram.
         @param  countZeroes
@@ -298,10 +317,11 @@ class MEDDLY::dd_edge {
                       (sparse nodes do not store zero edges, so this
                       does not effect them; truncated nodes do store
                       some zero edges, so those edges will be counted).
+
         @return       the number of unique edges starting at the root node
                       of this dd_edge.
     */
-    unsigned getEdgeCount(bool countZeroes = false) const;
+    unsigned long getEdgeCount(bool countZeroes = false) const;
 
     /** Modifies the dd_edge fields.
         The dd_edge is cleared (it will still belong to the same forest),

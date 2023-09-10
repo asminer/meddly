@@ -1688,17 +1688,17 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     /** Count and return the number of non-terminal nodes
         in the subgraph below the given node.
     */
-    long getNodeCount(node_handle node) const;
+    unsigned long getNodeCount(node_handle node) const;
 
     /** Count and return the number of non-terminal nodes
         in the subgraph below the given nodes.
     */
-    long getNodeCount(const node_handle* roots, int N) const;
+    unsigned long getNodeCount(const node_handle* roots, int N) const;
 
     /** Count and return the number of edges
         in the subgraph below the given node.
     */
-    long getEdgeCount(node_handle node, bool countZeroes) const;
+    unsigned long getEdgeCount(node_handle node, bool countZeroes) const;
 
     /** Display the contents of a single node.
           @param  s       File stream to write to.
