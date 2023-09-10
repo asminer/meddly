@@ -59,7 +59,6 @@ class MEDDLY::mt_forest : public expert_forest {
     node_handle makeNodeAtLevel(int k, node_handle d);
 
 #ifdef NEW_DD_EDGES
-    protected:
         // No edge values right now, so these are no-ops
         // That could change with complement edges.
         virtual void readEdgeValue(input &s, dd_edge &E) const;

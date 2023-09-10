@@ -183,7 +183,7 @@ inline void EVencoder<int>::write(output &s, const void* ptr)
 {
   int val;
   readValue(ptr, val);
-  s << val;
+  s.put(val);
 }
 
 template<>
@@ -191,7 +191,7 @@ inline void EVencoder<long>::write(output &s, const void* ptr)
 {
   long val;
   readValue(ptr, val);
-  s << val;
+  s.put(val);
 }
 
 template<>

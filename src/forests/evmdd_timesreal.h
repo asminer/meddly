@@ -89,7 +89,6 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
     }
 
 #ifdef NEW_DD_EDGES
-    protected:
         virtual void readEdgeValue(input &s, dd_edge &E) const;
         virtual void writeEdgeValue(output &s, const dd_edge &E) const;
         virtual void showEdgeValue(output &s, const dd_edge &E) const;

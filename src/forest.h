@@ -22,11 +22,10 @@
 #include "defines.h"
 #include "memstats.h"
 #include "varorder.h"
-#include "io.h"
+#include "operators.h"
 #include "encoders.h"
 #include "node_headers.h"
 #include "node_storage.h"
-#include "dd_edge.h"
 #include "unpacked_node.h"
 #include "policies.h"
 #include "domain.h"
@@ -868,14 +867,13 @@ class MEDDLY::forest {
     virtual void readEdges(input &s, dd_edge* E, int n) = 0;
 
 #ifdef NEW_DD_EDGES
-    protected:
         virtual void readEdgeValue(input &s, dd_edge &E) const = 0;
         virtual void writeEdgeValue(output &s, const dd_edge &E) const = 0;
         virtual void showEdgeValue(output &s, const dd_edge &E) const = 0;
 
         void readEdge(input &s, dd_edge &E, const node_handle* map);
         void writeEdge(output &s, const dd_edge &E, const node_handle* map) const;
-#else
+#endif
         /** Show an edge value.
             @param  s       Stream to write to.
             @param  edge    Pointer to edge value chunk
@@ -893,7 +891,6 @@ class MEDDLY::forest {
             @param  edge    Pointer to edge value chunk
         */
         virtual void readEdgeValue(input &s, void* edge);
-#endif
 
 
 public:

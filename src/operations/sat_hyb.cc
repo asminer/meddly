@@ -930,7 +930,7 @@ void MEDDLY::sathyb_opname::subevent::buildRoot() {
 
     rnh = f->unionOneMinterm(root_handle, unpminterms1, pminterms1, f->getNumVariables());
     root.set(rnh);
-    //if(w == num_minterms-1) root.show(out, 2);
+    //if(w == num_minterms-1) root.showGraph(out);
     root_handle = root.getNode();
   }
   num_minterms = 0;
@@ -939,7 +939,7 @@ void MEDDLY::sathyb_opname::subevent::buildRoot() {
   root_handle = root.getNode();
   //out << "\nEquivalent event: " << root.getNode() << "\n";
   //out << "Result: ";
-  //root.show(out, 2);
+  //root.showGraph(out);
 }
 
 
@@ -952,7 +952,7 @@ void MEDDLY::sathyb_opname::subevent::showInfo(output& out) const {
     }
     out << "]\n";
   }
-  // root.show(out, 2);
+  // root.showGraph(out);
 }
 
 long MEDDLY::sathyb_opname::subevent::mintermMemoryUsage() const {
@@ -1200,7 +1200,7 @@ void MEDDLY::sathyb_opname::event::buildEventMask()
 
 #ifdef DEBUG_EVENT_MASK
   ostream_output out(std::cout);
-  event_mask.show(out, 2);
+  event_mask.showGraph(out);
 #endif
 }
 
@@ -1261,10 +1261,10 @@ bool MEDDLY::sathyb_opname::event::rebuild()
       f->useDomain()->showInfo(out);
       for (int i = 0; i < num_subevents; i++) {
         out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
-        subevents[i]->getRoot().show(out, 2);
+        subevents[i]->getRoot().showGraph(out);
       }
       out << "event: " << partial_root.getNode() << "\n";
-      partial_root.show(out, 2);
+      partial_root.showGraph(out);
       #endif
 
     #else
@@ -1298,7 +1298,7 @@ bool MEDDLY::sathyb_opname::event::rebuild()
         ostream_output out(std::cout);
         for (int i = 0; i < num_subevents; i++) {
         out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
-        if(subevents[i]->getRoot().getNode()) subevents[i]->getRoot().show(out, 2);
+        if(subevents[i]->getRoot().getNode()) subevents[i]->getRoot().showGraph(out);
         }
         #endif
     #endif
@@ -2119,12 +2119,12 @@ void MEDDLY::common_hyb_dfs_by_events_mt
 #ifdef DEBUG_INITIAL
   printf("Calling saturate for states:\n");
   ostream_output s(std::cout);
-  a.show(s, 2);
+  a.showGraph(s);
   std::cout.flush();
 #endif
 #ifdef DEBUG_NSF
   printf("Calling saturate for NSF:\n");
-  // b.show(stdout, 2);
+  // b.showGraph(stdout);
 #endif
 
   // Execute saturation operation

@@ -14,8 +14,11 @@ Plan for this branch (testing after each big step):
 
     (v) remove getCardinality() since apply is almost as easy
 
-    ( ) overload << so we can do output << dd_edge
-        then remove show() method
+    ( ) change show() method: no verbosity argument,
+        use showGraph() to display the graph.
+
+    (v) overload << so we can do output << dd_edge
+
 
 
 (2) Add method

@@ -19,6 +19,7 @@
 #ifndef MEDDLY_OPERATORS_H
 #define MEDDLY_OPERATORS_H
 
+#include "io.h"
 #include "dd_edge.h"
 
 /*
@@ -56,6 +57,58 @@ namespace MEDDLY {
 
     dd_edge operator&=(dd_edge &e1, const dd_edge &e2);
     dd_edge operator|=(dd_edge &e1, const dd_edge &e2);
+
+    /*
+        These will let us do C++ style output, with our output class.
+    */
+
+    inline output& operator<<(output &s, const dd_edge &e)
+    {
+        e.show(s);
+        return s;
+    }
+
+    inline output& operator<< (output &s, char x)
+    {
+        s.put(x);
+        return s;
+    }
+
+    inline output& operator<< (output &s, const char* x)
+    {
+        s.put(x);
+        return s;
+    }
+
+    inline output& operator<< (output &s, int x)
+    {
+        s.put(long(x));
+        return s;
+    }
+
+    inline output& operator<< (output &s, long x)
+    {
+        s.put(x);
+        return s;
+    }
+
+    inline output& operator<< (output &s, unsigned x)
+    {
+        s.put((unsigned long)x);
+        return s;
+    }
+
+    inline output& operator<< (output &s, unsigned long x)
+    {
+        s.put(x);
+        return s;
+    }
+
+    inline output& operator<< (output &s, double x)
+    {
+        s.put(x);
+        return s;
+    }
 
 };
 

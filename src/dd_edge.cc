@@ -27,6 +27,7 @@
 #include "opname.h"
 #include "oper_binary.h"
 #include "ops_builtin.h"
+#include "operators.h"
 
 // #define DEBUG_CLEANUP
 
@@ -106,6 +107,86 @@ int MEDDLY::dd_edge::getLevel() const
     return ef->getNodeLevel(node);
 }
 
+void MEDDLY::dd_edge::show(output &s) const
+{
+    if (!parent) {
+        s.put("<null edge>");
+        return;
+    }
+    expert_forest* eParent = smart_cast<expert_forest*>(parent);
+    MEDDLY_DCASSERT(eParent);
+
+    s.put('<');
+    if (!eParent->isMultiTerminal()) {
+        eParent->showEdgeValue(s, *this);
+        s.put(", ");
+    }
+    if (eParent->isTerminalNode(node)) {
+        eParent->showTerminal(s, node);
+    } else {
+        s.put('#');
+        s.put(long(node));
+    }
+    s.put(" in ");
+    if (eParent->isMultiTerminal()) {
+        s.put("MT");
+    }
+    if (eParent->isEVPlus()) {
+        s.put("EV+");
+    }
+    if (eParent->isEVTimes()) {
+        s.put("EV*");
+    }
+    if (eParent->isForRelations()) {
+        s.put("MxD");
+    } else {
+        s.put("MDD");
+    }
+    s.put(" forest ");
+    s.put((unsigned long) eParent->FID());
+    s.put('>');
+}
+
+void MEDDLY::dd_edge::showGraph(output &s) const
+{
+    if (!parent) {
+        s.put("null graph\n");
+        return;
+    }
+    expert_forest* eParent = smart_cast<expert_forest*>(parent);
+    MEDDLY_DCASSERT(eParent);
+    if (eParent->isMultiTerminal()) {
+        s.put("MT");
+    }
+    if (eParent->isEVPlus()) {
+        s.put("EV+");
+    }
+    if (eParent->isEVTimes()) {
+        s.put("EV*");
+    }
+    if (eParent->isForRelations()) {
+        s.put("MxD");
+    } else {
+        s.put("MDD");
+    }
+    s.put(" rooted at edge <");
+    if (!eParent->isMultiTerminal()) {
+        eParent->showEdgeValue(s, *this);
+        s.put(", ");
+    }
+    if (eParent->isTerminalNode(node)) {
+        eParent->showTerminal(s, node);
+    } else {
+        s.put('#');
+        s.put(long(node));
+    }
+    s.put(">\n");
+    eParent->showNodeGraph(s, &node, 1);
+}
+
+//
+// Private
+//
 
 void MEDDLY::dd_edge::init(const dd_edge &e)
 {
@@ -452,34 +533,39 @@ void MEDDLY::dd_edge::show(output &strm, int verbosity) const
 {
   expert_forest* eParent = smart_cast<expert_forest*>(parent);
 
-  strm << "(Forest Addr: ";
+  strm.put("(Forest Addr: ");
   strm.put_hex((unsigned long) parent);
-  strm << ", ";
+  strm.put(", ");
 
-  strm << "transparent: ";
+  strm.put("transparent: ");
   eParent->showTerminal(strm, eParent->getTransparentNode());
-  strm << ", ";
+  strm.put(", ");
 
   if (eParent->isTerminalNode(node)) {
-    strm << "node: ";
+    strm.put("node: ");
     eParent->showTerminal(strm, node);
-    strm << "*, ";
+    strm.put("*, ");
   }
   else {
-    strm << "node: " << long(node) << ", ";
+    strm.put("node: ");
+    strm.put(long(node));
+    strm.put(", ");
   }
   if (!eParent->isMultiTerminal()) {
+    strm.put("value: ");
     if (eParent->getRangeType() == range_type::REAL) {
       float ev;
       getEdgeValue(ev);
-      strm << "value: " << ev << ", ";
+      strm.put(ev);
     } else {
       long iv = Inf<long>();
       getEdgeValue(iv);
-      strm << "value: " << iv << ", ";
+      strm.put(iv);
     }
+    strm.put(", ");
   }
-  strm << "level: " << getLevel();
+  strm.put("level: ");
+  strm.put(getLevel());
   if (0 != getLevel()) {
     strm << ", extensible: " << eParent->isExtensible(node);
   }

@@ -830,11 +830,11 @@ void MEDDLY::common_dfs_by_events_mt
 
 #ifdef DEBUG_INITIAL
   printf("Calling saturate for states:\n");
-  a.show(stdout, 2);
+  a.showGraph(stdout);
 #endif
 #ifdef DEBUG_NSF
   printf("Calling saturate for NSF:\n");
-  // b.show(stdout, 2);
+  // b.showGraph(stdout);
 #endif
 
   // Execute saturation operation

@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
   v[1][0] = 0; v[1][1] = 1; v[1][2] = 0;
   dd_edge initial_state(states);
   states->createEdge(v, 1, initial_state);
-  initial_state.show(meddlyout, 2);
+  initial_state.showGraph(meddlyout);
   // states->showInfo(meddlyout);
   // initial_state.clear();
   // initial_state.show(meddlyout, 2);
@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
   dd_edge xd(transitions);
   printf("Constructing transition diagram\n");
   transitions->createEdge(vlist, vplist, num_of_transitions, xd);
-  xd.show(meddlyout, 2);
+  xd.showGraph(meddlyout);
   // transitions->showInfo(meddlyout);
 
   printf("\nCompute Table:\n");
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
         reachableStates);
     printf("%ld\n", long(reachableStates.getNode()));
   }
-  reachableStates.show(meddlyout, 2);
+  reachableStates.showGraph(meddlyout);
 
 #if 0
   // Do PreImage

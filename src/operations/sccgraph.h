@@ -19,7 +19,7 @@
 #ifndef MEDDLY_SCCGRAPH_H
 #define MEDDLY_SCCGRAPH_H
 
-#include "../io.h"
+#include "../operators.h"
 
 namespace MEDDLY {
   class sccgraph;

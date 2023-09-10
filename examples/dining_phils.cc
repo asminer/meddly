@@ -586,7 +586,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
 
 #ifdef SHOW_MXD
   printf("Next-State Function:\n");
-  nsf.show(meddlyout, 2);
+  nsf.showGraph(meddlyout);
 #endif
 
 
@@ -641,7 +641,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
 
 #ifdef SHOW_MDD
   printf("Reachability set:\n");
-  reachableStates.show(meddlyout, 2);
+  reachableStates.showGraph(meddlyout);
 #endif
 
   // Show stats for rs construction

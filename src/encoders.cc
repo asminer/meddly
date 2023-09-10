@@ -48,12 +48,14 @@ MEDDLY::node_handle MEDDLY::bool_Tencoder::read(input &s)
 
 void MEDDLY::int_Tencoder::show(output &s, node_handle h)
 {
-  s << "t" << handle2value(h);
+  s.put('t');
+  s.put(handle2value(h));
 }
 
 void MEDDLY::int_Tencoder::write(output &s, node_handle h)
 {
-  s << "t" << handle2value(h);
+  s.put('t');
+  s.put(handle2value(h));
 }
 
 MEDDLY::node_handle MEDDLY::int_Tencoder::read(input &s)
@@ -70,7 +72,8 @@ MEDDLY::node_handle MEDDLY::int_Tencoder::read(input &s)
 
 void MEDDLY::float_Tencoder::show(output &s, node_handle h)
 {
-  s << "t" << handle2value(h);
+  s.put('t');
+  s.put(handle2value(h));
 }
 
 void MEDDLY::float_Tencoder::write(output &s, node_handle h)

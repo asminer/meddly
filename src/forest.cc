@@ -32,6 +32,7 @@
 #include "reordering/reordering_factory.h"
 
 #include "oper.h"
+#include "operators.h"
 
 // for timestamps.
 // to do - check during configuration that these are present,
@@ -467,7 +468,7 @@ void MEDDLY::forest::writeEdge(output &s, const dd_edge &E, const node_handle* m
     s.put('\n');
 }
 
-#else
+#endif
 
 void MEDDLY::forest::showEdgeValue(output &s, const void* edge) const
 {
@@ -485,7 +486,6 @@ void MEDDLY::forest::readEdgeValue(input &s, void* edge)
 }
 
 
-#endif
 
 void MEDDLY::forest::removeStaleComputeTableEntries()
 {

@@ -120,6 +120,17 @@ class MEDDLY::dd_edge {
             return !equals(e);
         }
 
+        /**
+            Display the edge information, compactly.
+        */
+        void show(output &s) const;
+
+        /**
+            Display the graph rooted at this node.
+        */
+        void showGraph(output &s) const;
+
+
         //
         // Methods that will soon be replaced?
         // Or at least, made private?
@@ -412,6 +423,10 @@ class MEDDLY::dd_edge {
                           3: default + cardinality + graph.
     */
     void show(output &s, int verbosity = 0) const;
+
+    inline void showGraph(output &s) const {
+        show(s, 2);
+    }
 
     /** Draws a pictographical representation of the graph with this node as the root.
         @param  filename  Name of output file (without extension)
