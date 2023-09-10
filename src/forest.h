@@ -1534,6 +1534,8 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 
 #ifdef NEW_DD_EDGES
     inline node_handle addRoot(node_handle r) {
+        if (isTerminalNode(r)) return r;
+        MEDDLY_DCASSERT(r>0);
         ++roots[r];
         if (deflt.useReferenceCounts) {
             return nodeHeaders.linkNode(r);
@@ -1542,6 +1544,8 @@ class MEDDLY::expert_forest: public MEDDLY::forest
         }
     }
     inline node_handle removeRoot(node_handle r) {
+        if (isTerminalNode(r)) return 0;
+        MEDDLY_DCASSERT(r>0);
         MEDDLY_DCASSERT(roots[r]>0);
         if (0== --roots[r]) {
             roots.erase(r);

@@ -998,7 +998,7 @@ void MEDDLY::expert_forest::validateCacheCounts() const
 #endif
   for (node_handle i=1; i<N; i++) {
     if (nodeHeaders.getNodeCacheCount(i) == counts[i]) continue;
-    printf("\tCount mismatch node %ld\n", i);
+    printf("\tCount mismatch node %ld\n", long(i));
     printf("\t  We counted %lu\n", counts[i]);
     printf("\t  node  says %lu\n", nodeHeaders.getNodeCacheCount(i));
   }
