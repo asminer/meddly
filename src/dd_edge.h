@@ -72,17 +72,17 @@ class MEDDLY::dd_edge {
         /// Clear the edge (for backward compatability)
         inline void clear() { detach(); }
 
-        /// Check our parent
-        inline bool isAttachedTo(const forest* p) const {
-            return p == parent;
-        }
         /// Check if edges have the same parent forest
         inline bool sameForest(const dd_edge &e) const {
-            return parent == e.parent;
+            return parentFID == e.parentFID;
         }
 
-        inline forest* getForest() const {
-            return parent;
+        /// Get the forest that contains us, or null
+        forest* getForest() const;
+
+        /// Check our parent
+        inline bool isAttachedTo(const forest* p) const {
+            return getForest() == p;
         }
 
         /// Get this dd_edge's label
@@ -193,15 +193,15 @@ class MEDDLY::dd_edge {
 
         inline bool equals(const dd_edge e) const {
             return
-                (parent == e.parent) &&
+                (parentFID == e.parentFID) &&
                 (node == e.node) &&
                 (raw_value == e.raw_value);
         }
 
 
     private:
-        char* label;    // for displaying
-        forest *parent;
+        char* label;            // for displaying
+        unsigned parentFID;     // ID of parent forest
         node_handle node;
         union {
             long edge_int;

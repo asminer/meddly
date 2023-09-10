@@ -69,12 +69,51 @@ namespace MEDDLY {
     depending on your conceptual view) represented in a single
     decision diagram forest over a common domain.
 
+    Each forest is assigned a unique identifier "forever"
+    (actually, until the library is re-initialized).
+
     TBD: discussion of garbage collection.
 
-    When a forest is destroyed, all of the corresponding dd_edges
-    are also destroyed, as are any compute table entries for the forest.
 */
 class MEDDLY::forest {
+
+    public:
+        /// Returns the forest identifier, a unique positive integer per forest.
+        /// FID 0 can safely be used to indicate "no forest".
+        inline unsigned FID() const { return fid; }
+
+        /// Returns the largest forest identifier ever seen.
+        static inline unsigned MaxFID() { return gfid; }
+
+        static inline forest* getForestWithID(unsigned id) {
+            if (id >= max_forests) return nullptr;
+            return all_forests[id];
+        }
+
+    private:
+        static void initStatics();
+        static void freeStatics();
+        static void registerForest(forest* f);
+        static void unregisterForest(forest* f);
+
+    private:
+        // All forests
+        static forest** all_forests;
+        // Size of forests array
+        static unsigned max_forests;
+
+        // our ID
+        unsigned fid;
+
+        // global one
+        static unsigned gfid;
+
+        friend class initializer_list;
+
+    // ===================================================================
+    // To be cleaned up still, below here.
+    // ===================================================================
+
   public:
     int *level_reduction_rule;
 
@@ -263,12 +302,6 @@ class MEDDLY::forest {
   // ------------------------------------------------------------
   // inlines.
   public:
-
-    /// Returns the forest identifier, a unique integer per forest.
-    unsigned FID() const;
-
-    /// Returns the largest forest identifier ever seen.
-    static unsigned MaxFID();
 
     /// Returns a non-modifiable pointer to this forest's domain.
     const domain* getDomain() const;
@@ -1037,12 +1070,6 @@ public:
 
     friend void MEDDLY::destroyForest(MEDDLY::forest* &f);
 
-    // our ID
-    unsigned fid;
-
-    // global one
-    static unsigned gfid;
-
 
     // We should be able to remove this after updating unpacked_node
     //
@@ -1129,14 +1156,6 @@ inline void MEDDLY::forest::setDefaultPoliciesMDDs(const policies& p)
 inline void MEDDLY::forest::setDefaultPoliciesMXDs(const policies& p)
 {
   mxdDefaults = p;
-}
-
-inline unsigned MEDDLY::forest::FID() const {
-  return fid;
-}
-
-inline unsigned MEDDLY::forest::MaxFID() {
-  return gfid;
 }
 
 inline const MEDDLY::domain* MEDDLY::forest::getDomain() const {

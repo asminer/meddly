@@ -49,7 +49,7 @@ MEDDLY::dd_edge::dd_edge(forest* p)
     fprintf(stderr, "Creating dd_edge %p\n", this);
 #endif
     label = nullptr;
-    parent = p;
+    parentFID = p ? p->FID() : 0;
     node = 0;
     edge_int = 0;
 }
@@ -84,12 +84,19 @@ MEDDLY::dd_edge::~dd_edge()
 
 void MEDDLY::dd_edge::attach(forest* p)
 {
-    if (parent) {
-        expert_forest* efp = static_cast <expert_forest*> (parent);
+    expert_forest* efp = static_cast <expert_forest*> (
+                forest::getForestWithID(parentFID)
+    );
+    if (efp) {
         node = efp->removeRoot(node);
         edge_int = 0;
     }
-    parent = p;
+    parentFID = p ? p->FID() : 0;
+}
+
+MEDDLY::forest* MEDDLY::dd_edge::getForest() const
+{
+    return forest::getForestWithID(parentFID);
 }
 
 void MEDDLY::dd_edge::setLabel(const char* L)
@@ -100,110 +107,123 @@ void MEDDLY::dd_edge::setLabel(const char* L)
 
 unsigned long MEDDLY::dd_edge::getNodeCount() const
 {
-    if (!parent) return 0;
-    return smart_cast<expert_forest*>(parent)->getNodeCount(node);
+    expert_forest* efp = static_cast <expert_forest*> (
+                forest::getForestWithID(parentFID)
+    );
+    return efp ? efp->getNodeCount(node) : 0;
 }
 
 unsigned long MEDDLY::dd_edge::getEdgeCount(bool countZeroes) const
 {
-    if (!parent) return 0;
-    return smart_cast<expert_forest*>(parent)->getEdgeCount(node, countZeroes);
+    expert_forest* efp = static_cast <expert_forest*> (
+                forest::getForestWithID(parentFID)
+    );
+    return efp ? efp->getEdgeCount(node, countZeroes) : 0;
 }
 
 int MEDDLY::dd_edge::getLevel() const
 {
     if (0==node) return 0;
-    MEDDLY_DCASSERT(parent);
-    const expert_forest* ef = dynamic_cast <expert_forest*>(parent);
-    MEDDLY_DCASSERT(ef);
-    return ef->getNodeLevel(node);
+
+    expert_forest* efp = static_cast <expert_forest*> (
+                forest::getForestWithID(parentFID)
+    );
+    MEDDLY_DCASSERT(efp);
+    return efp->getNodeLevel(node);
 }
 
 
 void MEDDLY::dd_edge::show(output &s) const
 {
-    if (!parent) {
+    if (!parentFID) {
         s.put("<null edge>");
         return;
     }
-    expert_forest* eParent = smart_cast<expert_forest*>(parent);
-    MEDDLY_DCASSERT(eParent);
+
+    expert_forest* efp = static_cast <expert_forest*> (
+                forest::getForestWithID(parentFID)
+    );
+    if (!efp) {
+        s.put("<orphaned edge>");
+        return;
+    }
 
     s.put('<');
-    if (!eParent->isMultiTerminal()) {
-        eParent->showEdgeValue(s, *this);
+    if (!efp->isMultiTerminal()) {
+        efp->showEdgeValue(s, *this);
         s.put(", ");
     }
-    if (eParent->isTerminalNode(node)) {
-        eParent->showTerminal(s, node);
+    if (efp->isTerminalNode(node)) {
+        efp->showTerminal(s, node);
     } else {
         s.put('#');
         s.put(long(node));
     }
     s.put(" in ");
-    if (eParent->isMultiTerminal()) {
+    if (efp->isMultiTerminal()) {
         s.put("MT");
     }
-    if (eParent->isEVPlus()) {
+    if (efp->isEVPlus()) {
         s.put("EV+");
     }
-    if (eParent->isEVTimes()) {
+    if (efp->isEVTimes()) {
         s.put("EV*");
     }
-    if (eParent->isForRelations()) {
+    if (efp->isForRelations()) {
         s.put("MxD");
     } else {
         s.put("MDD");
     }
     s.put(" forest ");
-    s.put((unsigned long) eParent->FID());
+    s.put(parentFID);
     s.put('>');
 }
 
 void MEDDLY::dd_edge::showGraph(output &s) const
 {
-    if (!parent) {
+    expert_forest* efp = static_cast <expert_forest*> (
+                forest::getForestWithID(parentFID)
+    );
+    if (!efp) {
         s.put("null graph\n");
         return;
     }
-    expert_forest* eParent = smart_cast<expert_forest*>(parent);
-    MEDDLY_DCASSERT(eParent);
-    if (eParent->isMultiTerminal()) {
+    if (efp->isMultiTerminal()) {
         s.put("MT");
     }
-    if (eParent->isEVPlus()) {
+    if (efp->isEVPlus()) {
         s.put("EV+");
     }
-    if (eParent->isEVTimes()) {
+    if (efp->isEVTimes()) {
         s.put("EV*");
     }
-    if (eParent->isForRelations()) {
+    if (efp->isForRelations()) {
         s.put("MxD");
     } else {
         s.put("MDD");
     }
     s.put(" rooted at edge <");
-    if (!eParent->isMultiTerminal()) {
-        eParent->showEdgeValue(s, *this);
+    if (!efp->isMultiTerminal()) {
+        efp->showEdgeValue(s, *this);
         s.put(", ");
     }
-    if (eParent->isTerminalNode(node)) {
-        eParent->showTerminal(s, node);
+    if (efp->isTerminalNode(node)) {
+        efp->showTerminal(s, node);
     } else {
         s.put('#');
         s.put(long(node));
     }
     s.put(">\n");
-    eParent->showNodeGraph(s, &node, 1);
+    efp->showNodeGraph(s, &node, 1);
 }
 
 void MEDDLY::dd_edge::writePicture(const char* filename,
         const char* extension) const
 {
-    if (parent) {
-        expert_forest* eParent = smart_cast<expert_forest*>(parent);
-        eParent->writeNodeGraphPicture(filename, extension, &node, &label, 1);
-    }
+    expert_forest* efp = static_cast <expert_forest*> (
+                forest::getForestWithID(parentFID)
+    );
+    if (efp) efp->writeNodeGraphPicture(filename, extension, &node, &label, 1);
 }
 
 
@@ -213,13 +233,15 @@ void MEDDLY::dd_edge::writePicture(const char* filename,
 
 void MEDDLY::dd_edge::init(const dd_edge &e)
 {
-    if (e.parent) {
-        parent = e.parent;
-        expert_forest* efp = static_cast <expert_forest*> (parent);
+    expert_forest* efp = static_cast <expert_forest*> (
+                forest::getForestWithID(e.parentFID)
+    );
+    if (efp) {
+        parentFID = e.parentFID;
         node = efp->addRoot(e.node);
         edge_int = e.edge_int;
     } else {
-        parent = nullptr;
+        parentFID = 0;
         node = 0;
         edge_int = 0;
     }
@@ -228,10 +250,15 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
 void MEDDLY::dd_edge::set(node_handle n)
 {
     if (node != n) {
-        MEDDLY_DCASSERT(parent);
-        expert_forest* efp = static_cast <expert_forest*> (parent);
-        efp->removeRoot(node);
-        node = efp->addRoot(n);
+        expert_forest* efp = static_cast <expert_forest*> (
+                forest::getForestWithID(parentFID)
+        );
+        if (efp) {
+            efp->removeRoot(node);
+            node = efp->addRoot(n);
+        } else {
+            node = 0;
+        }
     }
 }
 

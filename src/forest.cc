@@ -70,7 +70,75 @@
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                          forest stuff                          *
+// *                          forest class                          *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+//
+// Static members
+//
+
+MEDDLY::forest** MEDDLY::forest::all_forests;
+unsigned MEDDLY::forest::max_forests;
+unsigned MEDDLY::forest::gfid;
+
+//
+// Forest registry methods
+//
+
+void MEDDLY::forest::initStatics()
+{
+    all_forests = new forest* [256];
+    max_forests = 256;
+    for (unsigned i=0; i<max_forests; i++) {
+        all_forests[i] = nullptr;
+    }
+    gfid = 0;
+}
+
+void MEDDLY::forest::freeStatics()
+{
+    delete[] all_forests;
+    max_forests = 0;
+}
+
+void MEDDLY::forest::registerForest(forest* f)
+{
+    gfid++;
+    f->fid = gfid;
+    if (gfid >= max_forests) {
+        // enlarge array
+        unsigned newmax = max_forests * 2;
+        if (newmax > 1000000000) {
+            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        }
+        forest** newall = new forest* [newmax];
+        unsigned i;
+        for (i=0; i<max_forests; i++) {
+            newall[i] = all_forests[i];
+        }
+        for ( ; i<newmax; i++) {
+            newall[i] = nullptr;
+        }
+        delete[] all_forests;
+        all_forests = newall;
+        max_forests = newmax;
+    }
+    all_forests[gfid] = f;
+}
+
+void MEDDLY::forest::unregisterForest(forest* f)
+{
+    if (f->fid <= max_forests) {
+        all_forests[f->fid] = nullptr;
+    }
+}
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *              OLD,  still unorganized forest stuff              *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
@@ -164,8 +232,6 @@ void MEDDLY::forest::logger::currentTime(long &sec, long &usec)
 // *                                                                *
 // ******************************************************************
 
-unsigned MEDDLY::forest::gfid = 0;
-
 MEDDLY::policies MEDDLY::forest::mddDefaults;
 MEDDLY::policies MEDDLY::forest::mxdDefaults;
 
@@ -174,9 +240,7 @@ MEDDLY::forest
 ::forest(unsigned ds, domain* _d, bool rel, range_type t, edge_labeling ev,
   const policies &p,int* lrr) : deflt(p)
 {
-  // FID
-  //
-  fid = ++gfid;
+    registerForest(this);
 
 #ifdef DEBUG_CLEANUP
   fprintf(stderr, "Creating forest #%u in domain #%d\n", ds, _d->ID());
@@ -303,6 +367,8 @@ MEDDLY::forest::~forest()
   // destructor for each dd_edge when the corresponding variable goes out of
   // scope. Therefore there is no need to destruct dd_edges from here.
   d->unlinkForest(this, d_slot);
+
+    unregisterForest(this);
 }
 
 void MEDDLY::forest::markForDeletion()

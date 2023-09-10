@@ -237,6 +237,10 @@ class MEDDLY::output {
         */
         virtual void put(unsigned long x, int w=0) = 0;
 
+        inline void put(unsigned x, int w=0) {
+            put((unsigned long) x, w);
+        }
+
         /**
             Write hex digits to the output stream.
                 @param  x   Value to write

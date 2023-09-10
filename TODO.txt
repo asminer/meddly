@@ -14,12 +14,13 @@ Plan for this branch (testing after each big step):
 
     (v) remove getCardinality() since apply is almost as easy
 
-    ( ) change show() method: no verbosity argument,
+    (v) change show() method: no verbosity argument,
         use showGraph() to display the graph.
 
     (v) overload << so we can do output << dd_edge
 
-
+    (v) Use forest ID instead of pointer
+        Forest IDs must be unique forever
 
 (2) Add method
 
