@@ -23,7 +23,6 @@ domain (PLANNED; NOT DONE YET. TBD)
 
 Files that need updating / cleanup
 ------------------------------------------------------------
-dd_edge.h               dd_edge.cc
 defines.h
 domain.h                domain.cc
 encoders.h              encoders.cc
@@ -55,12 +54,16 @@ ct_entry_result.h       ct_entry_result.h
 ct_entry_type.h         ct_entry_type.cc
 ct_initializer.h        ct_initializer.cc
 
+dd_edge.h               dd_edge.cc
+
 error.h                 error.cc
 initializer.h           initializer.cc
 io.h                    io.cc
 memstats.h              memstats.cc
 node_storage.h          node_storage.cc
 policies.h              policies.cc
+
+operators.h             operators.cc
 
 unique_table.h          unique_table.cc
 unpacked_node.h         unpacked_node.cc
