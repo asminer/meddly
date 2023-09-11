@@ -117,7 +117,6 @@ bool MEDDLY::evmxd_timesreal::isIdentityEdge(const unpacked_node &nb, int i) con
   return isIdentityEdgeTempl<OP>(nb, i);
 }
 
-#ifdef NEW_DD_EDGES
 
 void MEDDLY::evmxd_timesreal::readEdgeValue(input &s, dd_edge &E) const
 {
@@ -137,7 +136,6 @@ void MEDDLY::evmxd_timesreal::showEdgeValue(output &s, const dd_edge &E) const
     s.put(' ');
 }
 
-#endif
 
 void MEDDLY::evmxd_timesreal::normalize(unpacked_node &nb, float& ev) const
 {

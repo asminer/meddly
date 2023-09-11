@@ -79,11 +79,9 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
 
     virtual void swapAdjacentVariables(int level);
 
-#ifdef NEW_DD_EDGES
         virtual void readEdgeValue(input &s, dd_edge &E) const;
         virtual void writeEdgeValue(output &s, const dd_edge &E) const;
         virtual void showEdgeValue(output &s, const dd_edge &E) const;
-#endif
 
   protected:
     virtual void normalize(unpacked_node &nb, long& ev) const;

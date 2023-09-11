@@ -387,13 +387,11 @@ class MEDDLY::unpacked_node {
 #endif
         }
 
-#ifdef NEW_DD_EDGES
         // Temporary hack, until we re-do this object
         //
         inline void setEdge(unsigned i, const dd_edge &E) {
             memcpy(eptr_write(i), E.getEdgePtr(), edge_bytes);
         }
-#endif
 
         /// Set the edge value, as a float.
         inline void setEdge(unsigned i, float ev)

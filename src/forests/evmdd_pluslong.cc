@@ -277,7 +277,6 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
   //    printf("#Node: %d\n", getCurrentNumNodes());
 }
 
-#ifdef NEW_DD_EDGES
 
 void MEDDLY::evmdd_pluslong::readEdgeValue(input &s, dd_edge &E) const
 {
@@ -297,7 +296,6 @@ void MEDDLY::evmdd_pluslong::showEdgeValue(output &s, const dd_edge &E) const
     s.put(' ');
 }
 
-#endif
 
 void MEDDLY::evmdd_pluslong::normalize(unpacked_node &nb, long& ev) const
 {

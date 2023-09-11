@@ -174,22 +174,14 @@ void MEDDLY::forest::registerEdge(dd_edge& e)
     roots[index].edge = &e;
     roots[index].nextHole = 0;
     e.index = index;
-#ifdef NEW_DD_EDGES
     e.parentFID = fid;
-#else
-    e.parent = this;
-#endif
 }
 
 
 void MEDDLY::forest::unregisterEdge(dd_edge& e)
 {
     // remove a root edge.
-#ifdef NEW_DD_EDGES
     MEDDLY_DCASSERT(e.parentFID == fid);
-#else
-    MEDDLY_DCASSERT(e.parent == this);
-#endif
     MEDDLY_DCASSERT(e.index > 0);
     MEDDLY_DCASSERT(roots[e.index].edge == &e);
 
@@ -212,11 +204,7 @@ void MEDDLY::forest::unregisterEdge(dd_edge& e)
 
     roots[e.index].edge = nullptr;
     e.index = 0;
-#ifdef NEW_DD_EDGES
     e.parentFID = 0;
-#else
-    e.parent = nullptr;
-#endif
 }
 
 
@@ -234,11 +222,7 @@ void MEDDLY::forest::unregisterDDEdges()
             MEDDLY_DCASSERT(0==roots[i].nextHole);
             roots[i].edge->clear();
             roots[i].edge->index = 0;
-#ifdef NEW_DD_EDGES
             roots[i].edge->parentFID = 0;
-#else
-            roots[i].edge->parent = nullptr;
-#endif
         }
     }
 
@@ -469,11 +453,7 @@ MEDDLY::forest::~forest()
 
   for (unsigned i = 0; i < roots_size; ++i) {
       if (roots[i].edge) {
-#ifdef NEW_DD_EDGES
           roots[i].edge->parentFID = 0;
-#else
-          roots[i].edge->parent = nullptr;
-#endif
           roots[i].edge->node = 0;
           roots[i].edge->raw_value = 0;
       }
@@ -621,8 +601,6 @@ void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
 
 //
 
-#ifdef NEW_DD_EDGES
-
 void MEDDLY::forest::readEdge(input &s, dd_edge &E, const node_handle* map)
 {
     E.attach(this);
@@ -649,8 +627,6 @@ void MEDDLY::forest::writeEdge(output &s, const dd_edge &E, const node_handle* m
     }
     s.put('\n');
 }
-
-#endif
 
 void MEDDLY::forest::showEdgeValue(output &s, const void* edge) const
 {
@@ -1647,11 +1623,7 @@ void MEDDLY::expert_forest
   // Write the actual edge pointers
   s << "ptrs " << n << "\n";
   for (int i=0; i<n; i++) {
-#ifdef NEW_DD_EDGES
       writeEdge(s, E[i], index2output);
-#else
-    E[i].write(s, index2output);
-#endif
   }
   s << "srtp\n";
 
@@ -1747,20 +1719,13 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
       printf(" down ");
 #endif
 
-#ifdef NEW_DD_EDGES
       dd_edge hack(this);
-#endif
 
       // read edges
       if (nb->hasEdges()) {
         for (int i=0; i<n; i++) {
-#ifdef NEW_DD_EDGES
           readEdgeValue(s, hack);
           nb->setEdge(i, hack);
-#else
-          s.stripWS();
-          readEdgeValue(s, nb->eptr_write(i));
-#endif
         }
 #ifdef DEBUG_READ
         printf("edges ");
@@ -1830,11 +1795,7 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
       throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
     }
     for (int i=0; i<num_ptrs; i++) {
-#ifdef NEW_DD_EDGES
         readEdge(s, E[i], map);
-#else
-      E[i].read(this, s, map);
-#endif
     }
 
     s.stripWS();

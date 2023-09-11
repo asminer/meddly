@@ -102,11 +102,9 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
       return new evtrmxd_fixedcol_iter(this);
     }
 
-#ifdef NEW_DD_EDGES
         virtual void readEdgeValue(input &s, dd_edge &E) const;
         virtual void writeEdgeValue(output &s, const dd_edge &E) const;
         virtual void showEdgeValue(output &s, const dd_edge &E) const;
-#endif
 
 
   protected:
