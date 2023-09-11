@@ -1734,6 +1734,7 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
         for (int i=0; i<n; i++) {
 #ifdef NEW_DD_EDGES
           readEdgeValue(s, hack);
+          nb->setEdge(i, hack);
 #else
           s.stripWS();
           readEdgeValue(s, nb->eptr_write(i));

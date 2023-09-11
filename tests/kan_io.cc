@@ -211,6 +211,13 @@ bool generateAndRead(FILE* s, int N)
   evmdd->readEdges(mys, list, 1);
   if (list[0] != reach_index) {
     printf("Failed to generate and read reachable state indexes\n");
+    FILE_output myout(stdout);
+    myout << "reach_index: " << reach_index << "\n";
+    myout << "from file  : " << list[0] << "\n";
+#ifdef DEBUG_FILE
+    reach_index.showGraph(myout);
+    list[0].showGraph(myout);
+#endif
     return false;
   }
 #endif
