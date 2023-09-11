@@ -12,12 +12,12 @@ Some method changes:
 
 * Use method ```attach()``` in place of ```setForest()```.
 
-* For method ```writePicture```, using an extension of ```dot```
+* For method ```writePicture()```, using an extension of ```dot```
   will produce a dot file, without running any of the Graphviz utilities.
 
 * Method ```show()``` does not take the verbosity level parameter
   any more.
-  To display the graph, use new method ```showGraph'''.
+  To display the graph, use new method ```showGraph()```.
 
 * Method ```getCardinality()``` has been removed
     (use apply(CARDINALITY...) instead).
