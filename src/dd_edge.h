@@ -30,7 +30,7 @@ namespace MEDDLY {
     class binary_operation;
 };
 
-#define NEW_DD_EDGES
+// #define NEW_DD_EDGES
 
 #ifdef NEW_DD_EDGES
 

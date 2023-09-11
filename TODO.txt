@@ -22,6 +22,10 @@ Plan for this branch (testing after each big step):
     (v) Use forest ID instead of pointer
         Forest IDs must be unique forever
 
+
+    ( ) go back to array of pointers to dd_edges in forests;
+        remove the roots map
+
 (2) Add method
 
         forest::reduceUnpacked(unpacked_node *un, dd_edge &e);
