@@ -731,6 +731,8 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
     LOG->newPhase(mxd, "Cleanup");
   }
 
+  printf("Destroying dd_edges\n");
+  fflush(stdout);
   return d;
 }
 
@@ -894,6 +896,8 @@ int main(int argc, char *argv[])
 
   try {
     domain* d = runWithOptions(nPhilosophers, sw, LOG);
+    printf("Cleaning up\n");
+    fflush(stdout);
     if (LOG) {
       MEDDLY::destroyDomain(d);
       delete LOG;

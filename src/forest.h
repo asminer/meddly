@@ -90,6 +90,50 @@ class MEDDLY::forest {
             return all_forests[id];
         }
 
+    /*
+     *  Methods and members for keeping track of root edges.
+     *  They should normally not be called directly.
+     *
+     */
+
+    public:
+        // Register a dd_edge with this forest.
+        // Called automatically in dd_edge.
+        void registerEdge(dd_edge& e);
+
+        // Unregister a dd_edge with this forest.
+        // Called automatically in dd_edge.
+        void unregisterEdge(dd_edge& e);
+
+    protected:
+        /// structure to store references to registered dd_edges.
+        struct edge_data {
+            /// Index of the next hole (spot with a null edge).
+            unsigned nextHole;
+            /// registered dd_edge
+            dd_edge* edge;
+        };
+
+        /// Array of root edges
+        edge_data* roots;
+
+        /// Array index: 1 + (last used slot in roots[])
+        unsigned roots_next;
+
+    private:
+        void unregisterDDEdges();
+
+    private:
+        /// Dimension of roots[]
+        unsigned roots_size;
+        /// Array index: most recently created hole in roots[]
+        unsigned roots_hole;
+
+    /*
+     *  Methods and members for the global forest registry.
+     *
+     */
+
     private:
         static void initStatics();
         static void freeStatics();
@@ -105,14 +149,16 @@ class MEDDLY::forest {
         // our ID
         unsigned fid;
 
-        // global one
+        // global ID
         static unsigned gfid;
 
         friend class initializer_list;
 
-    // ===================================================================
-    // To be cleaned up still, below here.
-    // ===================================================================
+// ===================================================================
+//
+// To be cleaned up still, below here.
+//
+// ===================================================================
 
   public:
     int *level_reduction_rule;
@@ -1018,47 +1064,6 @@ public:
     /// Called only within operation.
     void unregisterOperation(const operation* op);
 
-#ifndef NEW_DD_EDGES
-  private:  // For edge registration
-    friend class dd_edge;
-
-    /// structure to store references to registered dd_edges.
-    struct edge_data {
-      /// Index of the next hole (spot with a 0 edge).
-      unsigned nextHole;
-      /// registered dd_edge
-      dd_edge* edge;
-    };
-
-    // Array of registered dd_edges
-    edge_data *edge;
-
-    // Size of edge[]
-    unsigned edge_sz;
-    // Array index: 1 + (last used slot in edge[])
-    unsigned firstFree;
-    // Array index: most recently created hole in edge[]
-    unsigned firstHole;
-
-    void registerEdge(dd_edge& e);
-    void unregisterEdge(dd_edge& e);
-    void unregisterDDEdges();
-
-  protected:
-    class edge_visitor {
-      public:
-        edge_visitor();
-        virtual ~edge_visitor();
-        virtual void visit(dd_edge &e) = 0;
-    };
-    inline void visitRegisteredEdges(edge_visitor &ev) {
-        for (unsigned i = 0; i < firstFree; ++i) {
-            if (edge[i].edge) ev.visit(*(edge[i].edge));
-        }
-    }
-
-#endif
-
   private:
     bool isRelation;
     bool is_marked_for_deletion;
@@ -1551,30 +1556,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     /// Not inlined; implemented in forest.cc
     void markAllRoots();
 
-#ifdef NEW_DD_EDGES
-    inline node_handle addRoot(node_handle r) {
-        if (isTerminalNode(r)) return r;
-        MEDDLY_DCASSERT(r>0);
-        ++roots[r];
-        if (deflt.useReferenceCounts) {
-            return nodeHeaders.linkNode(r);
-        } else {
-            return r;
-        }
-    }
-    inline node_handle removeRoot(node_handle r) {
-        if (isTerminalNode(r)) return 0;
-        MEDDLY_DCASSERT(r>0);
-        MEDDLY_DCASSERT(roots[r]>0);
-        if (0== --roots[r]) {
-            roots.erase(r);
-        }
-        if (deflt.useReferenceCounts) {
-            nodeHeaders.unlinkNode(r);
-        }
-        return 0;
-    }
-#endif
 
   // --------------------------------------------------
   // Managing cache counts
@@ -2282,12 +2263,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     unsigned char hashed_bytes;
 
 
-#ifdef NEW_DD_EDGES
-    /// Set of root edges.
-    /// Required with mark and sweep.
-    /// Used only to validate incoming counts with reference counting.
-    std::map <MEDDLY::node_handle, unsigned> roots;
-#endif
 
     class nodecounter;
     class nodemarker;

@@ -30,7 +30,7 @@ namespace MEDDLY {
     class binary_operation;
 };
 
-// #define NEW_DD_EDGES
+#define NEW_DD_EDGES
 
 #ifdef NEW_DD_EDGES
 
@@ -205,6 +205,7 @@ class MEDDLY::dd_edge {
     private:
         char* label;            // for displaying
         unsigned parentFID;     // ID of parent forest
+        unsigned index;         // our index in the parent forest
         node_handle node;
         union {
             long edge_int;
@@ -215,6 +216,7 @@ class MEDDLY::dd_edge {
         };
 
         // Add any edge-valued forests here
+        friend class forest;
         friend class evmdd_pluslong;
         friend class evmxd_pluslong;
         friend class evmdd_timesreal;

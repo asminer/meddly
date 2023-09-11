@@ -135,6 +135,117 @@ void MEDDLY::forest::unregisterForest(forest* f)
     }
 }
 
+//
+// Root edge registry methods
+//
+
+void MEDDLY::forest::registerEdge(dd_edge& e)
+{
+    unsigned index;
+    if (roots_hole) {
+        // Pull from the free list
+        //
+        index = roots_hole;
+        roots_hole = roots[roots_hole].nextHole;
+    } else {
+        // Pull from the array.
+        // Check if we need to expand
+        if (roots_next >= roots_size) {
+            unsigned new_size = roots_size * 2;
+            if (new_size > 1000000000) {
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+            }
+            edge_data* new_roots = new edge_data[new_size];
+            unsigned i;
+            for (i=0; i<roots_size; i++) {
+                new_roots[i] = roots[i];
+            }
+            for (; i<new_size; i++) {
+                new_roots[i].nextHole = 0;
+                new_roots[i].edge = nullptr;
+            }
+            delete[] roots;
+            roots = new_roots;
+            roots_size = new_size;
+        }
+        index = roots_next++;
+    }
+
+    roots[index].edge = &e;
+    roots[index].nextHole = 0;
+    e.index = index;
+#ifdef NEW_DD_EDGES
+    e.parentFID = fid;
+#else
+    e.parent = this;
+#endif
+}
+
+
+void MEDDLY::forest::unregisterEdge(dd_edge& e)
+{
+    // remove a root edge.
+#ifdef NEW_DD_EDGES
+    MEDDLY_DCASSERT(e.parentFID == fid);
+#else
+    MEDDLY_DCASSERT(e.parent == this);
+#endif
+    MEDDLY_DCASSERT(e.index > 0);
+    MEDDLY_DCASSERT(roots[e.index].edge == &e);
+
+    if (e.index+1 == roots_next) {
+        //
+        // Instead of adding to the free list,
+        // absorb this "hole" at the end of the array
+        //
+        MEDDLY_DCASSERT(roots_next);
+        roots_next--;
+        MEDDLY_DCASSERT(roots_next);
+        roots[e.index].nextHole = 0;
+    } else {
+        //
+        // Add to the front of the free list
+        //
+        roots[e.index].nextHole = roots_hole;
+        roots_hole = e.index;
+    }
+
+    roots[e.index].edge = nullptr;
+    e.index = 0;
+#ifdef NEW_DD_EDGES
+    e.parentFID = 0;
+#else
+    e.parent = nullptr;
+#endif
+}
+
+
+void MEDDLY::forest::unregisterDDEdges()
+{
+    // Unregister ALL root edges
+    // (e.g., because we're destroying the forest)
+
+    MEDDLY_DCASSERT(roots);
+    MEDDLY_DCASSERT(0==roots[0].edge);
+
+    // ignore the NULLs; release the rest
+    for (unsigned i = 1; i < roots_next; ++i) {
+        if (roots[i].edge) {
+            MEDDLY_DCASSERT(0==roots[i].nextHole);
+            roots[i].edge->clear();
+            roots[i].edge->index = 0;
+#ifdef NEW_DD_EDGES
+            roots[i].edge->parentFID = 0;
+#else
+            roots[i].edge->parent = nullptr;
+#endif
+        }
+    }
+
+    roots_hole = 0;
+    roots_next = 1;
+}
+
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -245,6 +356,8 @@ MEDDLY::forest
 #ifdef DEBUG_CLEANUP
   fprintf(stderr, "Creating forest #%u in domain #%d\n", ds, _d->ID());
 #endif
+
+
   d_slot = ds;
   is_marked_for_deletion = false;
   d = _d;
@@ -316,34 +429,34 @@ MEDDLY::forest
         if(level_reduction_rule[i]==-3)              //isIdentityReduced()
          throw error(error::INVALID_POLICY, __FILE__, __LINE__);
   }
-  //
-  // Initialize array of operations
-  //
-  opCount = 0;
-  szOpCount = 0;
-  //
 
-#ifndef NEW_DD_EDGES
-  //
-  // Initialize list of registered dd_edges
-  //
-  firstHole = 0;  // firstHole == 0 indicates no holes.
-  firstFree = 1;  // never use slot 0
-  edge_sz = 256;
 
-  // Create an array to store pointers to dd_edges.
-  edge = (edge_data *) malloc(edge_sz * sizeof(edge_data));
-  for (unsigned i = 0; i < edge_sz; ++i) {
-    edge[i].nextHole = 0;
-    edge[i].edge = 0;
-  }
-#endif
+    //
+    // Initialize array of operations
+    //
+    opCount = 0;
+    szOpCount = 0;
 
-  //
-  // Empty logger
-  //
 
-  theLogger = 0;
+    //
+    // Initialize the root edges
+    //
+    roots_hole = 0;  // firstHole == 0 indicates no holes.
+    roots_next = 1;  // never use slot 0
+    roots_size = 1024;
+
+    // Create an array to store pointers to dd_edges.
+    roots = new edge_data [roots_size];
+    for (unsigned i = 0; i < roots_size; ++i) {
+        roots[i].nextHole = 0;
+        roots[i].edge = nullptr;
+    }
+
+    //
+    // Empty logger
+    //
+
+    theLogger = 0;
 }
 
 MEDDLY::forest::~forest()
@@ -354,13 +467,18 @@ MEDDLY::forest::~forest()
   // operations are deleted elsewhere...
   free(opCount);
 
-#ifndef NEW_DD_EDGES
-  // Make SURE our edges are orphaned
-  for (unsigned i = 0; i < firstFree; ++i) {
-    if (edge[i].edge) edge[i].edge->orphan();
-  }
-  free(edge);
+  for (unsigned i = 0; i < roots_size; ++i) {
+      if (roots[i].edge) {
+#ifdef NEW_DD_EDGES
+          roots[i].edge->parentFID = 0;
+#else
+          roots[i].edge->parent = nullptr;
 #endif
+          roots[i].edge->node = 0;
+          roots[i].edge->raw_value = 0;
+      }
+  }
+  delete[] roots;
 
   // NOTE: since the user is provided with the dd_edges instances (as opposed
   // to a pointer), the user program will automatically call the
@@ -384,9 +502,7 @@ void MEDDLY::forest::markForDeletion()
       operation* op = operation::getOpWithIndex(i);
       op->markForDeletion();
     }
-#ifndef NEW_DD_EDGES
   unregisterDDEdges();
-#endif
 }
 
 void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
@@ -619,100 +735,11 @@ void MEDDLY::forest::unregisterOperation(const operation* op)
   opCount[op->getIndex()] --;
 }
 
-#ifndef NEW_DD_EDGES
 
-void MEDDLY::forest::registerEdge(dd_edge& e)
-{
-  // add to collection of edges for this forest.
-  // change e.index to help find this edge at a later time.
-  if (firstHole) {
-    // hole available; fill it up
-    unsigned index = firstHole;
-    firstHole = edge[firstHole].nextHole;
-    edge[index].edge = &e;
-    edge[index].nextHole = 0;
-    e.setIndex(index);
-  } else {
-    // no holes available, add to end of array
-    if (firstFree >= edge_sz) {
-      // expand edge[]
-      unsigned new_sz = edge_sz * 2;
-      edge_data* new_edge =
-          (edge_data*) realloc(edge, new_sz * sizeof(edge_data));
-      if (0 == new_edge) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-      edge = new_edge;
-      for (unsigned i = edge_sz; i < new_sz; ++i)
-      {
-        edge[i].nextHole = 0;
-        edge[i].edge = 0;
-      }
-      edge_sz = new_sz;
-    }
-    MEDDLY_DCASSERT(firstFree > 0);
-    MEDDLY_DCASSERT(firstFree < edge_sz);
-    edge[firstFree].nextHole = 0;
-    edge[firstFree].edge = &e;
-    e.setIndex(firstFree);
-    ++firstFree;
-  }
-}
-
-
-void MEDDLY::forest::unregisterEdge(dd_edge& e)
-{
-  // remove this edge from the collection of edges for this forest.
-  // change e.index to -1.
-  MEDDLY_DCASSERT(e.getIndex() >= 0);
-  unsigned index = e.getIndex();
-  MEDDLY_DCASSERT(edge[index].edge == &e);
-  e.setIndex(0);
-
-  if (index+1 == firstFree) {
-    //
-    // Instead of adding to the free list,
-    // absorb this "hole" at the end of the array
-    //
-    MEDDLY_DCASSERT(firstFree);
-    firstFree--;
-    MEDDLY_DCASSERT(firstFree);
-  } else {
-    //
-    // Add to the free list
-    //
-    edge[index].edge = 0;
-    edge[index].nextHole = firstHole;
-    firstHole = index;
-  }
-}
-
-
-void MEDDLY::forest::unregisterDDEdges()
-{
-  // Go through the list of valid edges (value > 0), and set
-  // the e.index to -1 (indicating unregistered edge).
-
-  MEDDLY_DCASSERT(edge);
-  MEDDLY_DCASSERT(0==edge[0].edge);
-
-  // ignore the NULLs; release the rest
-  for (unsigned i = 1; i < firstFree; ++i) {
-    if (edge[i].edge) {
-      MEDDLY_DCASSERT(0==edge[i].nextHole);
-      edge[i].edge->clear();
-      edge[i].edge->setIndex(0);
-    }
-  }
-
-  // firstHole < 0 indicates no holes.
-  for (unsigned i = 1; i < firstFree; ++i) {
-    edge[i].nextHole = 0;
-    edge[i].edge = 0;
-  }
-  firstHole = 0;
-  firstFree = 1;
-}
 
 // ******************************************************************
+
+#ifdef EDGE_VISITORS
 
 MEDDLY::forest::edge_visitor::edge_visitor()
 {
@@ -732,7 +759,7 @@ MEDDLY::forest::edge_visitor::~edge_visitor()
 // *                                                                *
 // ******************************************************************
 
-#ifndef NEW_DD_EDGES
+#ifdef EDGE_VISITORS
 
 // ******************************************************************
 // *                                                                *
@@ -919,28 +946,23 @@ void MEDDLY::expert_forest::initializeForest()
 
 void MEDDLY::expert_forest::markAllRoots()
 {
-  if (deflt.useReferenceCounts) return;
+    if (deflt.useReferenceCounts) return;
 
-  stats.reachable_scans++;
+    stats.reachable_scans++;
 
 #ifdef DEBUG_MARK_SWEEP
-  printf("Determining which nodes are reachable in forest %u\n", FID());
+    printf("Determining which nodes are reachable in forest %u\n", FID());
 #endif
 
-  nodeHeaders.clearAllReachableBits();
+    nodeHeaders.clearAllReachableBits();
 
-#ifdef NEW_DD_EDGES
-    for (const auto& r : roots) {
-#ifdef DEBUG_MARK_SWEEP
-        printf("  marking root %ld appears %u times\n", long(r.first), r.second);
-#endif
-        markNode(r.first);
+    for (unsigned i=1; i<roots_next; i++) {
+        dd_edge* r = roots[i].edge;
+        if (r) markNode(r->getNode());
     }
-#else
-  nodemarker foo(this);
-  visitRegisteredEdges(foo);
-#endif
-  unpacked_node::markBuildListChildren(this);
+
+    // TBD: this goes away when unpacked nodes use dd_edges :)
+    unpacked_node::markBuildListChildren(this);
 }
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''

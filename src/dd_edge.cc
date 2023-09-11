@@ -49,9 +49,10 @@ MEDDLY::dd_edge::dd_edge(forest* p)
     fprintf(stderr, "Creating dd_edge %p\n", this);
 #endif
     label = nullptr;
-    parentFID = p ? p->FID() : 0;
     node = 0;
     edge_int = 0;
+    if (p)  p->registerEdge(*this);
+    else    parentFID = 0;
 }
 
 // Copy Constructor.
@@ -87,11 +88,18 @@ void MEDDLY::dd_edge::attach(forest* p)
     expert_forest* efp = static_cast <expert_forest*> (
                 forest::getForestWithID(parentFID)
     );
+    if (p == efp) return;
     if (efp) {
-        node = efp->removeRoot(node);
+        efp->unlinkNode(node);
+        node = 0;
         edge_int = 0;
+        efp->unregisterEdge(*this);
     }
-    parentFID = p ? p->FID() : 0;
+    if (p) {
+        p->registerEdge(*this);
+    } else {
+        parentFID = 0;
+    }
 }
 
 MEDDLY::forest* MEDDLY::dd_edge::getForest() const
@@ -237,8 +245,8 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
                 forest::getForestWithID(e.parentFID)
     );
     if (efp) {
-        parentFID = e.parentFID;
-        node = efp->addRoot(e.node);
+        efp->registerEdge(*this);
+        node = efp->linkNode(e.node);
         edge_int = e.edge_int;
     } else {
         parentFID = 0;
@@ -254,8 +262,8 @@ void MEDDLY::dd_edge::set(node_handle n)
                 forest::getForestWithID(parentFID)
         );
         if (efp) {
-            efp->removeRoot(node);
-            node = efp->addRoot(n);
+            efp->unlinkNode(node);
+            node = efp->linkNode(n);
         } else {
             node = 0;
         }
@@ -302,7 +310,7 @@ MEDDLY::dd_edge::dd_edge()
 
 // Constructor.
 MEDDLY::dd_edge::dd_edge(forest* p)
-: parent(p), index(0),
+:
   node(0), raw_value(0),
   opPlus(0), opStar(0), opMinus(0), opDivide(0)
 {
@@ -310,8 +318,9 @@ MEDDLY::dd_edge::dd_edge(forest* p)
   fprintf(stderr, "Creating dd_edge %p\n", this);
 #endif
   MEDDLY_DCASSERT(p != NULL);
-  parent->registerEdge(*this);
+  p->registerEdge(*this);
   MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(parent == p);
   label = 0;
 }
 
@@ -374,26 +383,24 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
 //
 void MEDDLY::dd_edge::destroy()
 {
-  if (index) {
-    // still registered; unregister before discarding
-    int old = node;
-    node = 0;
-    unlinkNode(parent, old);
-    if (parent) parent->unregisterEdge(*this);
-  }
-  parent = 0;
-  index = 0;
-  free(label);
-  label = 0;
+    if (index) {
+        // still registered; unregister before discarding
+        if (parent) {
+            unlinkNode(parent, node);
+            parent->unregisterEdge(*this);
+        }
+        node = 0;
+    }
+    free(label);
+    label = 0;
 }
 
 void MEDDLY::dd_edge::setForest(forest* f)
 {
   destroy();
-  parent = f;
-  if (parent) {
-    parent->registerEdge(*this);
-    MEDDLY_DCASSERT(index);
+  if (f) {
+      f->registerEdge(*this);
+      MEDDLY_DCASSERT(index);
   }
 }
 
