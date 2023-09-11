@@ -231,6 +231,8 @@ void testCopy(forest* srcF, forest* destF)
 
       dd_edge copyE(destF);
       apply(COPY, srcE, copyE);
+      printf(".");
+      fflush(stdout);
 
       if (copyE != destE) {
         FILE_output meddlyout(stdout);

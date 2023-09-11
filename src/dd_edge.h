@@ -69,8 +69,11 @@ class MEDDLY::dd_edge {
         /// Detach from the forest.
         inline void detach() { attach(nullptr); }
 
-        /// Clear the edge (for backward compatability)
-        inline void clear() { detach(); }
+        /// Clear the edge but keep the forest
+        inline void clear() {
+            set(0);
+            raw_value = 0;
+        }
 
         /// Check if edges have the same parent forest
         inline bool sameForest(const dd_edge &e) const {
