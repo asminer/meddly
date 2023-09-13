@@ -20,7 +20,7 @@
 #include <iomanip>
 #include <cstdlib>
 
-// #include "../src/meddly.h"
+#include "../src/meddly.h"
 
 // using namespace MEDDLY;
 
@@ -103,7 +103,7 @@ void board::reverse_vars()
 }
 
 board B;
-bool verbose;
+bool verbose, debug;
 
 class coord_list {
         coord* coords;
@@ -225,9 +225,15 @@ inline std::ostream& showVarOf(std::ostream &s, const coord &sq)
 }
 
 
-void buildConstraints(const coord &sq)
+// Forest for multi-terminal MDDs
+MEDDLY::forest* mtF;
+// Forest for boolean constraints
+MEDDLY::forest* boolF;
+
+void buildConstraints(const coord &sq, MEDDLY::dd_edge &cons)
 {
     using namespace std;
+    using namespace MEDDLY;
 
     if (verbose) {
         cout << "--------------------------------------\n";
@@ -237,6 +243,7 @@ void buildConstraints(const coord &sq)
 
     unsigned i, j;
     coord_list moves(8);
+    MEDDLY::ostream_output sout(cout);
 
     knight_moves(sq, moves);
     if (verbose) {
@@ -248,10 +255,14 @@ void buildConstraints(const coord &sq)
     }
     if (verbose) cout << "    Disjunction of:\n";
     for (i=0; i<moves.length(); i++) {
+        dd_edge ands(boolF);
+        boolF->createEdge(true, ands);
         if (verbose) cout << "\t";
         for (j=0; j<moves.length(); j++) {
             if (verbose) {
                 if (j) cout << " ^ ";
+            }
+            if (verbose || debug) {
                 cout << "(1+";
                 showVarOf(cout, sq);
                 if (i == j) {
@@ -262,9 +273,40 @@ void buildConstraints(const coord &sq)
                 showVarOf(cout, moves.get(j)) << ")";
             }
             // build constraint here...
+            //
+            dd_edge xsq(mtF);
+            dd_edge one(mtF);
+            mtF->createEdgeForVar(B.get_var(sq), false, xsq);
+            mtF->createEdge(long(1), one);
+            xsq += one;
+
+            dd_edge xmv(mtF);
+            mtF->createEdgeForVar(B.get_var(moves.get(j)), false, xmv);
+
+            dd_edge term(boolF);
+            if (i == j) {
+                apply(EQUAL, xsq, xmv, term);
+            } else {
+                apply(NOT_EQUAL, xsq, xmv, term);
+            }
+
+            if (debug) {
+                cout << "\n";
+                term.show(sout, 2);
+            }
+            ands *= term;
         }
         if (verbose) cout << "\n";
+        if (debug) {
+            cout << "\nANDS:\n\n";
+            ands.show(sout, 2);
+        }
         // OR with the others here
+        cons += ands;
+    }
+    if (debug) {
+        cout << "\nEntire constraint:\n\n";
+        cons.show(sout, 2);
     }
 }
 
@@ -274,7 +316,9 @@ void usage(const char* arg)
     cout << "\nUsage: " << arg << " [switches]\n\n";
     cout << "Build and count solutions to the Knight's tour on an NxM chessboard.\n";
     cout << "\nLegal switches:\n";
-    cout << "\t-h:\tThis help\n";
+    cout << "\t-h:\tThis help\n\n";
+    cout << "\t-b n m\tBeginning position (default is 1 1)\n";
+    cout << "\t-d:\tToggle debugging (default: off)\n";
     cout << "\t-n N\tSet number of rows\n";
     cout << "\t-m M\tSet number of columns\n";
     cout << "\t-o x\tSet ordering heuristic:\n";
@@ -299,7 +343,7 @@ inline char charFrom(const char* arg)
     return arg[0];
 }
 
-void process_args(int argc, const char** argv)
+void process_args(int argc, const char** argv, coord &start)
 {
     // Set defaults for everything
     int N = 4;
@@ -307,7 +351,10 @@ void process_args(int argc, const char** argv)
     char order='m';
     bool reverse = false;
     verbose = false;
-    long L;
+    debug = false;
+    start.n = 1;
+    start.m = 1;
+    long L, L2;
 
     // Go through args
     unsigned i;
@@ -322,19 +369,47 @@ void process_args(int argc, const char** argv)
             case 'h':   usage(argv[0]);
                         continue;
 
-            case 'n':   L = intFrom(argv[++i]);
-                        if (L<1 || L>10) {
-                            std::cerr << "Value " << L << " for N out of range; ignoring\n";
+            case 'b':   if (i+2<argc) {
+                            L = intFrom(argv[++i]);
+                            L2 = intFrom(argv[++i]);
+                            if (L<1 || L>10 || L2<1 || L2>10) {
+                                std::cerr << "Value for -b out of range; ignoring\n";
+                            } else {
+                                start.n = L;
+                                start.m = L2;
+                            }
                         } else {
-                            N = L;
+                            std::cerr << "Switch -b requires two arguments\n";
+                            exit(2);
                         }
                         continue;
 
-            case 'm':   L = intFrom(argv[++i]);
-                        if (L<1 || L>10) {
-                            std::cerr << "Value " << L << " for M out of range; ignoring\n";
+            case 'd':   debug = !debug;
+                        continue;
+
+            case 'n':   if (i+1<argc) {
+                            L = intFrom(argv[++i]);
+                            if (L<1 || L>10) {
+                                std::cerr << "Value " << L << " for -n out of range; ignoring\n";
+                            } else {
+                                N = L;
+                            }
                         } else {
-                            M = L;
+                            std::cerr << "Switch -n requires an argument\n";
+                            exit(2);
+                        }
+                        continue;
+
+            case 'm':   if (i+1<argc) {
+                            L = intFrom(argv[++i]);
+                            if (L<1 || L>10) {
+                                std::cerr << "Value " << L << " for -m out of range; ignoring\n";
+                            } else {
+                                M = L;
+                            }
+                        } else {
+                            std::cerr << "Switch -m requires an argument\n";
+                            exit(2);
                         }
                         continue;
 
@@ -356,19 +431,61 @@ void process_args(int argc, const char** argv)
     std::cout << "Knights tour on " << N << "x" << M << " chessboard\n";
     B.init(N, M);
 
-    initVars(order, 1, 1);
+    if (!B.in_bounds(start.n, start.m)) {
+        std::cerr << "Starting position " << start << " is not on the board\n";
+        exit(2);
+    }
+
+    initVars(order, start.n, start.m);
     if (reverse) B.reverse_vars();
     showVars();
 }
 
 int main(int argc, const char** argv)
 {
-    process_args(argc, argv);
+    coord start;
+    process_args(argc, argv, start);
 
+    unsigned i = unsigned(B.getN() * B.getM());
+    int* bounds = new int[i];
+    while (i) {
+        --i;
+        bounds[i] = B.getN() * B.getM();
+    }
+
+    using namespace MEDDLY;
+
+    initialize();
+    domain* D = createDomainBottomUp(bounds, B.getN()*B.getM());
+
+    mtF = D->createForest(false, range_type::INTEGER,
+                    edge_labeling::MULTI_TERMINAL);
+
+    boolF = D->createForest(false, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL);
+
+    dd_edge* constr = new dd_edge[B.getN()*B.getM()];
+    i = unsigned(B.getN() * B.getM());
+    while (i) {
+        --i;
+        constr[i].setForest(boolF);
+
+    }
+
+    std::cout << "Building constraints per square" << std::endl;
+
+    /*
+     * Build constraints for each square, determining
+     * what must come after
+     */
     coord c;
     for (c.n=1; c.n<=B.getN(); c.n++)
-        for (c.m=1; c.m<=B.getM(); c.m++)
-            buildConstraints(c);
+        for (c.m=1; c.m<=B.getM(); c.m++) {
+            buildConstraints(c, constr[(c.n-1)*B.getM()+c.m-1]);
+        }
 
+
+
+    MEDDLY::cleanup();
     return 0;
 }
