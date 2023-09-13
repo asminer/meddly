@@ -26,6 +26,7 @@
 
 // Board dimensions
 
+#define MAXDIM 10
 
 struct coord {
     signed char n, m;
@@ -43,7 +44,7 @@ std::ostream& operator<< (std::ostream &s, coord c)
 class board {
         int N, M;
 
-        unsigned* var_at;
+        int* var_at;
 
     public:
         board();
@@ -62,10 +63,10 @@ class board {
             return true;
         }
 
-        inline unsigned get_var(const coord &c) const {
+        inline int get_var(const coord &c) const {
             return var_at[(c.n-1)*M+c.m-1];
         }
-        inline void set_var(const coord &c, unsigned v) {
+        inline void set_var(const coord &c, int v) {
             var_at[(c.n-1)*M+c.m-1] = v;
         }
         void reverse_vars();
@@ -88,7 +89,7 @@ void board::init(int n, int m)
     delete[] var_at;
     N = n;
     M = m;
-    var_at = new unsigned[N*M];
+    var_at = new int[N*M];
     for (int i=0; i<N*M; i++) {
         var_at[i] = 0;
     }
@@ -96,9 +97,8 @@ void board::init(int n, int m)
 
 void board::reverse_vars()
 {
-    unsigned adj = unsigned(N*M+1);
     for (int i=0; i<N*M; i++) {
-        var_at[i] = adj - var_at[i];
+        var_at[i] = N*M+1 - var_at[i];
     }
 }
 
@@ -129,7 +129,7 @@ class coord_list {
         inline void reach(const coord &c) {
             if (coords_len >= coords_size) throw "ugh";
             coords[coords_len++].set(c.n, c.m);
-            B.set_var(c, coords_len);
+            B.set_var(c, int(coords_len));
         }
 };
 
@@ -144,6 +144,43 @@ coord_list::coord_list(unsigned sz)
 coord_list::~coord_list()
 {
     delete[] coords;
+}
+
+struct constraint {
+        MEDDLY::dd_edge the_dd;
+        bool vardeps[1+MAXDIM*MAXDIM];
+    public:
+        constraint(MEDDLY::forest* F);
+};
+
+constraint::constraint(MEDDLY::forest* F)
+{
+    the_dd.setForest(F);
+    for (unsigned i=0; i<=MAXDIM*MAXDIM; i++) {
+        vardeps[i] = false;
+    }
+}
+
+bool less_than(const constraint* c1, const constraint* c2)
+{
+    unsigned i;
+    for (i=MAXDIM*MAXDIM; i>0; i--) {
+        if (c1->vardeps[i]) {
+            if (c2->vardeps[i])  continue;
+            else                return false;
+        }
+        if (c2->vardeps[i]) return true;
+    }
+    // equal?
+    return false;
+}
+
+void show_deps(const constraint* c, unsigned N)
+{
+    for (unsigned i=1; i<=N; i++) {
+        if (c->vardeps[i])  std::cout << '1';
+        else                std::cout << '.';
+    }
 }
 
 void knight_moves(const coord &p, coord_list &L)
@@ -230,8 +267,10 @@ MEDDLY::forest* mtF;
 // Forest for boolean constraints
 MEDDLY::forest* boolF;
 
-void buildConstraints(const coord &sq, MEDDLY::dd_edge &cons)
+void buildConstraints(const coord &sq, constraint* C)
 {
+    if (0==C) return;
+
     using namespace std;
     using namespace MEDDLY;
 
@@ -240,6 +279,8 @@ void buildConstraints(const coord &sq, MEDDLY::dd_edge &cons)
         cout << "Constraints for ";
         showVarOf(cout, sq) << "\n";
     }
+
+    C->vardeps[B.get_var(sq)] = true;
 
     unsigned i, j;
     coord_list moves(8);
@@ -253,7 +294,23 @@ void buildConstraints(const coord &sq, MEDDLY::dd_edge &cons)
             showVarOf(cout, moves.get(i)) << " = " << moves.get(i) << "\n";
         }
     }
-    if (verbose) cout << "    Disjunction of:\n";
+    if (verbose) {
+        cout << "    Disjunction of:\n";
+        cout << "\t(";
+        showVarOf(cout, sq);
+        cout << "==" << B.getN()*B.getM() << ")\n";
+    }
+    dd_edge xsq(mtF);
+    mtF->createEdgeForVar(B.get_var(sq), false, xsq);
+    dd_edge NxM(mtF);
+    mtF->createEdge(long(B.getN()*B.getM()), NxM);
+    apply(EQUAL, xsq, NxM, C->the_dd);
+
+    // Permanently add one to xsq
+    dd_edge one(mtF);
+    mtF->createEdge(long(1), one);
+    xsq += one;
+
     for (i=0; i<moves.length(); i++) {
         dd_edge ands(boolF);
         boolF->createEdge(true, ands);
@@ -274,14 +331,11 @@ void buildConstraints(const coord &sq, MEDDLY::dd_edge &cons)
             }
             // build constraint here...
             //
-            dd_edge xsq(mtF);
-            dd_edge one(mtF);
-            mtF->createEdgeForVar(B.get_var(sq), false, xsq);
-            mtF->createEdge(long(1), one);
-            xsq += one;
 
             dd_edge xmv(mtF);
-            mtF->createEdgeForVar(B.get_var(moves.get(j)), false, xmv);
+            int vm = B.get_var(moves.get(j));
+            mtF->createEdgeForVar(vm, false, xmv);
+            C->vardeps[vm] = true;
 
             dd_edge term(boolF);
             if (i == j) {
@@ -302,11 +356,11 @@ void buildConstraints(const coord &sq, MEDDLY::dd_edge &cons)
             ands.show(sout, 2);
         }
         // OR with the others here
-        cons += ands;
+        C->the_dd += ands;
     }
     if (debug) {
         cout << "\nEntire constraint:\n\n";
-        cons.show(sout, 2);
+        C->the_dd.show(sout, 2);
     }
 }
 
@@ -372,7 +426,7 @@ void process_args(int argc, const char** argv, coord &start)
             case 'b':   if (i+2<argc) {
                             L = intFrom(argv[++i]);
                             L2 = intFrom(argv[++i]);
-                            if (L<1 || L>10 || L2<1 || L2>10) {
+                            if (L<1 || L>MAXDIM || L2<1 || L2>MAXDIM) {
                                 std::cerr << "Value for -b out of range; ignoring\n";
                             } else {
                                 start.n = L;
@@ -389,7 +443,7 @@ void process_args(int argc, const char** argv, coord &start)
 
             case 'n':   if (i+1<argc) {
                             L = intFrom(argv[++i]);
-                            if (L<1 || L>10) {
+                            if (L<1 || L>MAXDIM) {
                                 std::cerr << "Value " << L << " for -n out of range; ignoring\n";
                             } else {
                                 N = L;
@@ -402,7 +456,7 @@ void process_args(int argc, const char** argv, coord &start)
 
             case 'm':   if (i+1<argc) {
                             L = intFrom(argv[++i]);
-                            if (L<1 || L>10) {
+                            if (L<1 || L>MAXDIM) {
                                 std::cerr << "Value " << L << " for -m out of range; ignoring\n";
                             } else {
                                 M = L;
@@ -446,8 +500,9 @@ int main(int argc, const char** argv)
     coord start;
     process_args(argc, argv, start);
 
-    unsigned i = unsigned(B.getN() * B.getM());
-    int* bounds = new int[i];
+    const unsigned NxM = unsigned(B.getN() * B.getM());
+    int* bounds = new int[NxM];
+    unsigned i = NxM;
     while (i) {
         --i;
         bounds[i] = B.getN() * B.getM();
@@ -464,12 +519,12 @@ int main(int argc, const char** argv)
     boolF = D->createForest(false, range_type::BOOLEAN,
                     edge_labeling::MULTI_TERMINAL);
 
-    dd_edge* constr = new dd_edge[B.getN()*B.getM()];
-    i = unsigned(B.getN() * B.getM());
+    constraint** clist = new constraint* [B.getN()*B.getM()];
+
+    i = NxM;
     while (i) {
         --i;
-        constr[i].setForest(boolF);
-
+        clist[i] = new constraint(boolF);
     }
 
     std::cout << "Building constraints per square" << std::endl;
@@ -481,9 +536,53 @@ int main(int argc, const char** argv)
     coord c;
     for (c.n=1; c.n<=B.getN(); c.n++)
         for (c.m=1; c.m<=B.getM(); c.m++) {
-            buildConstraints(c, constr[(c.n-1)*B.getM()+c.m-1]);
+            buildConstraints(c, clist[(c.n-1)*B.getM()+c.m-1]);
         }
 
+    /*
+     * Build initial position constraint
+     *
+     */
+    dd_edge all(boolF);
+    dd_edge xst(mtF);
+    dd_edge zero(mtF);
+
+    mtF->createEdgeForVar(B.get_var(start), false, xst);
+    mtF->createEdge(long(0), zero);
+    apply(EQUAL, xst, zero, all);
+
+    std::cout << "Sorting constraints" << std::endl;
+    i = NxM;
+    while (i) {
+        i--;
+        // Put 'smallest' at end
+        unsigned min = i;
+        for (unsigned j=0; j<i; j++) {
+            if (less_than(clist[j], clist[min])) {
+                min = j;
+            }
+        }
+        if (min != i) {
+            SWAP(clist[i], clist[min]);
+        }
+    }
+
+    std::cout << "Anding constraints" << std::endl;
+    i=NxM;
+    while (i) {
+        std::cout << "    " << std::setw(2) << i << " : ";
+        i--;
+        show_deps(clist[i], NxM);
+        std::cout << std::endl;
+
+        all *= clist[i]->the_dd;
+        delete clist[i];
+        clist[i] = nullptr;
+
+        long allcard;
+        apply(CARDINALITY, all, allcard);
+        std::cout << allcard << " tours so far\n";
+    }
 
 
     MEDDLY::cleanup();
