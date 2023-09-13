@@ -14,6 +14,7 @@ rubiks_cube_orient \
 nqueens \
 queen_cover \
 qc2 \
+knight \
 kanban \
 slot \
 life \
@@ -40,12 +41,12 @@ test_implicit_smallos \
 test_sccs
 
 
-# test_user_operation 
+# test_user_operation
 
 AM_CXXFLAGS = -Wall
 
 ## testmddlib_SOURCES = `$(CXX) testmddlib.cc -MM`
-testmddlib_SOURCES = testmddlib.cc 
+testmddlib_SOURCES = testmddlib.cc
 testmddlib_LDADD = ../src/libmeddly.la
 
 graphs_to_mdds_SOURCES = graphs_to_mdds.cc
@@ -92,6 +93,9 @@ queen_cover_LDADD = ../src/libmeddly.la
 
 qc2_SOURCES = qc2.cc
 qc2_LDADD = ../src/libmeddly.la
+
+knight_SOURCES = knight.cc
+knight_LDADD = ../src/libmeddly.la
 
 kanban_SOURCES = kanban.cc simple_model.h simple_model.cc
 kanban_LDADD = ../src/libmeddly.la
@@ -144,6 +148,6 @@ test_implicit_smallos_LDADD = ../src/libmeddly.la
 test_memory_SOURCES = test_memory.cc
 test_memory_LDADD = ../src/libmeddly.la
 
-test_sccs_SOURCES = test_sccs.cc 
+test_sccs_SOURCES = test_sccs.cc
 test_sccs_LDADD = ../src/libmeddly.la
 
