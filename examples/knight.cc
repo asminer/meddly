@@ -527,11 +527,16 @@ int main(int argc, const char** argv)
     initialize();
     domain* D = createDomainBottomUp(bounds, B.getN()*B.getM());
 
+    policies p;
+    p.useDefaults(false);
+    p.useReferenceCounts = false;
+    // p.setPessimistic();
+
     mtF = D->createForest(false, range_type::INTEGER,
-                    edge_labeling::MULTI_TERMINAL);
+                    edge_labeling::MULTI_TERMINAL, p);
 
     boolF = D->createForest(false, range_type::BOOLEAN,
-                    edge_labeling::MULTI_TERMINAL);
+                    edge_labeling::MULTI_TERMINAL, p);
 
     constraint** clist = new constraint* [B.getN()*B.getM()];
 
@@ -588,12 +593,14 @@ int main(int argc, const char** argv)
             std::cout << "    " << std::setw(2) << i << " : ";
             i--;
             show_deps(clist[i], NxM);
-            std::cout << std::endl;
+            std::cout.flush();
 
             all *= clist[i]->the_dd;
             delete clist[i];
             clist[i] = nullptr;
 
+            std::cout << "  (" << boolF->getCurrentNumNodes() << " nodes)"
+                << std::endl;
         }
 
         long allcard;
@@ -607,6 +614,16 @@ int main(int argc, const char** argv)
             show_solution(std::cout, sol.getAssignments());
         }
 
+        // Memory stats
+        std::cout << "Forest stats:\n";
+        ostream_output myout(std::cout);
+        expert_forest* ef = (expert_forest*)boolF;
+        ef->reportStats(myout, "\t",
+            expert_forest::HUMAN_READABLE_MEMORY  |
+            expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
+            expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED |
+            expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED
+        );
     }
     catch (MEDDLY::error e) {
         std::cerr << "\n\nCaught MEDDLY error: " << e.getName() << "\n";
