@@ -366,6 +366,18 @@ void buildConstraints(const coord &sq, constraint* C)
     }
 }
 
+void show_solution(std::ostream &s, const int* minterm)
+{
+    using namespace std;
+    coord c;
+    for (c.n=1; c.n<=B.getN(); c.n++) {
+        for (c.m=1; c.m<=B.getM(); c.m++) {
+            cout << setfill(' ') << setw(3) << minterm[B.get_var(c)] << ' ';
+        }
+        cout << '\n';
+    }
+}
+
 void usage(const char* arg)
 {
     using namespace std;
@@ -587,6 +599,14 @@ int main(int argc, const char** argv)
         long allcard;
         apply(CARDINALITY, all, allcard);
         std::cout << allcard << " tours total\n";
+
+        // Show solutions
+        enumerator sol(all);
+        for (; sol; ++sol) {
+            std::cout << "Solution:\n";
+            show_solution(std::cout, sol.getAssignments());
+        }
+
     }
     catch (MEDDLY::error e) {
         std::cerr << "\n\nCaught MEDDLY error: " << e.getName() << "\n";
