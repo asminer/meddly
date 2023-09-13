@@ -35,6 +35,10 @@ struct coord {
     }
 };
 
+std::ostream& operator<< (std::ostream &s, coord c)
+{
+    return s << '(' << int(c.n) << ", " << int(c.m) << ')';
+}
 
 class board {
         int N, M;
@@ -99,6 +103,7 @@ void board::reverse_vars()
 }
 
 board B;
+bool verbose;
 
 class coord_list {
         coord* coords;
@@ -126,7 +131,6 @@ class coord_list {
             coords[coords_len++].set(c.n, c.m);
             B.set_var(c, coords_len);
         }
-
 };
 
 
@@ -215,6 +219,55 @@ void showVars()
     }
 }
 
+inline std::ostream& showVarOf(std::ostream &s, const coord &sq)
+{
+    return s << "x_" << std::setfill('0') << std::setw(2) << B.get_var(sq);
+}
+
+
+void buildConstraints(const coord &sq)
+{
+    using namespace std;
+
+    if (verbose) {
+        cout << "--------------------------------------\n";
+        cout << "Constraints for ";
+        showVarOf(cout, sq) << "\n";
+    }
+
+    unsigned i, j;
+    coord_list moves(8);
+
+    knight_moves(sq, moves);
+    if (verbose) {
+        cout << "    Moves:\n";
+        for (i=0; i<moves.length(); i++) {
+            cout << "\t-> ";
+            showVarOf(cout, moves.get(i)) << " = " << moves.get(i) << "\n";
+        }
+    }
+    if (verbose) cout << "    Disjunction of:\n";
+    for (i=0; i<moves.length(); i++) {
+        if (verbose) cout << "\t";
+        for (j=0; j<moves.length(); j++) {
+            if (verbose) {
+                if (j) cout << " ^ ";
+                cout << "(1+";
+                showVarOf(cout, sq);
+                if (i == j) {
+                    cout << "==";
+                } else {
+                    cout << "!=";
+                }
+                showVarOf(cout, moves.get(j)) << ")";
+            }
+            // build constraint here...
+        }
+        if (verbose) cout << "\n";
+        // OR with the others here
+    }
+}
+
 void usage(const char* arg)
 {
     using namespace std;
@@ -225,10 +278,11 @@ void usage(const char* arg)
     cout << "\t-n N\tSet number of rows\n";
     cout << "\t-m M\tSet number of columns\n";
     cout << "\t-o x\tSet ordering heuristic:\n";
-    cout << "\t\t-o r: by rows\n";
-    cout << "\t\t-o c: by columns\n";
-    cout << "\t\t-o m: by moves\n";
-    cout << "\t-r: Reverse variable order\n";
+    cout << "\t\t    -o r: by rows\n";
+    cout << "\t\t    -o c: by columns\n";
+    cout << "\t\t    -o m: by moves\n";
+    cout << "\t-r:\tReverse variable order\n";
+    cout << "\t-v:\tToggle verbosity (default: off)\n";
     cout << "\n";
     exit(1);
 }
@@ -252,6 +306,7 @@ void process_args(int argc, const char** argv)
     int M = 4;
     char order='m';
     bool reverse = false;
+    verbose = false;
     long L;
 
     // Go through args
@@ -289,6 +344,9 @@ void process_args(int argc, const char** argv)
             case 'r':   reverse = !reverse;
                         continue;
 
+            case 'v':   verbose = !verbose;
+                        continue;
+
             default:    std::cerr << "\nUnknown option: " << arg << "\n";
                         std::cerr << "Run with -h for help\n\n";
                         exit(2);
@@ -306,6 +364,11 @@ void process_args(int argc, const char** argv)
 int main(int argc, const char** argv)
 {
     process_args(argc, argv);
+
+    coord c;
+    for (c.n=1; c.n<=B.getN(); c.n++)
+        for (c.m=1; c.m<=B.getM(); c.m++)
+            buildConstraints(c);
 
     return 0;
 }
