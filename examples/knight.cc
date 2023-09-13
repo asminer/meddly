@@ -571,20 +571,28 @@ int main(int argc, const char** argv)
 
     std::cout << "Anding constraints" << std::endl;
     i=NxM;
-    while (i) {
-        std::cout << "    " << std::setw(2) << i << " : ";
-        i--;
-        show_deps(clist[i], NxM);
-        std::cout << std::endl;
+    try {
+        while (i) {
+            std::cout << "    " << std::setw(2) << i << " : ";
+            i--;
+            show_deps(clist[i], NxM);
+            std::cout << std::endl;
 
-        all *= clist[i]->the_dd;
-        delete clist[i];
-        clist[i] = nullptr;
+            all *= clist[i]->the_dd;
+            delete clist[i];
+            clist[i] = nullptr;
+
+        }
 
         long allcard;
         apply(CARDINALITY, all, allcard);
-        std::cout << allcard << " tours so far\n";
+        std::cout << allcard << " tours total\n";
     }
+    catch (MEDDLY::error e) {
+        std::cerr << "\n\nCaught MEDDLY error: " << e.getName() << "\n";
+        std::cerr << "    thrown at " << e.getFile() << " line " << e.getLine() << "\n";
+    }
+
 
 
     MEDDLY::cleanup();
