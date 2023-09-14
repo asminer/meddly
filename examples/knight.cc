@@ -28,9 +28,9 @@
 
 #define MAXDIM 10
 
-bool reverse, verbose, debug;
+bool topdown, reverse, verbose, debug;
 int N, M;
-int start_n, start_m;
+long start_n, start_m;
 
 
 // Forest for multi-terminal MDDs
@@ -50,6 +50,44 @@ const char* with_sign(long delta)
         buffer[1] = '0' + delta;
     }
     return buffer;
+}
+
+void setStart(int moveno, MEDDLY::dd_edge& constr)
+{
+    using namespace std;
+    using namespace MEDDLY;
+
+    if (verbose) {
+        cout << "--------------------------------------\n";
+        cout << "Constraint for starting position\n";
+    }
+    const int thisrow = moveno*2;
+    const int thiscol = thisrow-1;
+    dd_edge xtrow(mtF), xtcol(mtF), strow(mtF), stcol(mtF);
+
+    if (verbose) {
+        cout << "    (x_" << thiscol << " == " << start_m << ") ^ ";
+        cout << "(x_" << thisrow << " == " << start_n << ")\n";
+    }
+
+    mtF->createEdgeForVar(thisrow, false, xtrow);
+    mtF->createEdgeForVar(thiscol, false, xtcol);
+
+    mtF->createEdge(start_n, strow);
+    mtF->createEdge(start_m, stcol);
+
+    dd_edge term2(boolF);
+
+    apply(EQUAL, xtrow, strow, constr);
+    apply(EQUAL, xtcol, stcol, term2);
+    constr *= term2;
+
+    if (debug) {
+        cout << "Forest for start\n";
+        ostream_output myout(cout);
+        constr.show(myout, 2);
+    }
+
 }
 
 void buildConstraint(int moveno, MEDDLY::dd_edge& constr)
@@ -115,6 +153,8 @@ void usage(const char* arg)
     cout << "Build and count solutions to the Knight's tour on an NxM chessboard.\n";
     cout << "\nLegal switches:\n";
     cout << "\t-h:\tThis help\n\n";
+    cout << "\t-a t\tAccumulate from top down\n";
+    cout << "\t-a b\tAccumulate from bottom up (default)\n";
     cout << "\t-b n m\tBeginning position (default is 1 1)\n";
     cout << "\t-d:\tToggle debugging (default: off)\n";
     cout << "\t-n N\tSet number of rows\n";
@@ -131,6 +171,13 @@ inline long intFrom(const char* arg)
     return atol(arg);
 }
 
+inline char charFrom(const char* arg)
+{
+    if (0==arg) return 0;
+    return arg[0];
+}
+
+
 void process_args(int argc, const char** argv)
 {
     // Set defaults for everything
@@ -141,6 +188,7 @@ void process_args(int argc, const char** argv)
     reverse = false;
     verbose = false;
     debug = false;
+    topdown = false;
     long L, L2;
 
     // Go through args
@@ -154,6 +202,24 @@ void process_args(int argc, const char** argv)
 
         switch (sw) {
             case 'h':   usage(argv[0]);
+                        continue;
+
+            case 'a':   if (i+1<argc) {
+                            sw = charFrom(argv[++i]);
+                            if ('t' == sw) {
+                                topdown = true;
+                                continue;
+                            }
+                            if ('b' == sw) {
+                                topdown = false;
+                                continue;
+                            }
+                            std::cerr << "Invalid argument " << sw << " for -a\n";
+                            exit(2);
+                        } else {
+                            std::cerr << "Switch -a requires an argument\n";
+                            exit(2);
+                        }
                         continue;
 
             case 'b':   if (i+2<argc) {
@@ -257,15 +323,51 @@ void generate()
                     edge_labeling::MULTI_TERMINAL, p);
 
 
-    //
-    // TBD HERE
-    //
-    dd_edge foo(boolF);
+    dd_edge* moves = new dd_edge[N*M];
+    for (int i=1; i<N*M; i++) {
+        moves[i-1].setForest(boolF);
+        buildConstraint(i, moves[i-1]);
+    }
 
+    moves[0].setForest(boolF);
+    moves[N*M-1].setForest(boolF);
 
-    buildConstraint(1, foo);
+    if (reverse) {
+        moves[0].set(-1);
+        setStart(N*M-1, moves[N*M]);
+    } else {
+        moves[N*M-1].set(-1);
+        setStart(1, moves[0]);
+    }
 
+    dd_edge tours(boolF);
+    tours.set(1);
 
+    std::cout << "\nDetermining all " << N*M-1 << " knight moves\n";
+    if (topdown) {
+        for (int i=N*M-1; i>=0; i--) {
+            std::cout << "  " << i;
+            std::cout.flush();
+            tours *= moves[i];
+            moves[i].set(0);
+        }
+    } else {
+        for (int i=0; i<N*M; i++) {
+            std::cout << "  " << i;
+            std::cout.flush();
+            tours *= moves[i];
+            moves[i].set(0);
+        }
+    }
+    delete[] moves;
+    moves = nullptr;
+    std::cout << "\n";
+
+    double card;
+    apply(CARDINALITY, tours, card);
+    std::cout << "Approx. " << card << " total moves\n";
+
+    std::cout << "\nRestricting to tours\n";
 }
 
 int main(int argc, const char** argv)
