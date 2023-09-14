@@ -146,6 +146,48 @@ void buildConstraint(int moveno, MEDDLY::dd_edge& constr)
     }
 }
 
+void notEqual(int movea, int moveb, MEDDLY::dd_edge& constr)
+{
+    using namespace std;
+    using namespace MEDDLY;
+
+    if (verbose) {
+        cout << "\n--------------------------------------\n";
+        cout << "Constraints for position " << movea << " != position " << moveb << "\n";
+    }
+
+    const int rowa = movea*2;
+    const int cola = rowa-1;
+    const int rowb = moveb*2;
+    const int colb = rowb-1;
+
+    if (verbose) {
+        cout << "    (x_" << rowa << " != " << rowb << ") v ";
+        cout << "(x_" << cola << " != " << colb << ")\n";
+    }
+
+    dd_edge xrowa(mtF), xcola(mtF), xrowb(mtF), xcolb(mtF);
+
+    mtF->createEdgeForVar(rowa, false, xrowa);
+    mtF->createEdgeForVar(cola, false, xcola);
+    mtF->createEdgeForVar(rowb, false, xrowb);
+    mtF->createEdgeForVar(colb, false, xcolb);
+
+    dd_edge term(boolF);
+
+    apply(NOT_EQUAL, xrowa, xrowb, term);
+    apply(NOT_EQUAL, xcola, xcolb, constr);
+    constr += term;
+
+    if (debug) {
+        cout << "Forest for constraint:\n";
+        ostream_output myout(cout);
+        constr.show(myout, 2);
+    }
+
+}
+
+
 void usage(const char* arg)
 {
     using namespace std;
