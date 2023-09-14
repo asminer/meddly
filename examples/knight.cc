@@ -77,7 +77,6 @@ void buildConstraint(int moveno, MEDDLY::dd_edge& constr)
             cout << "(x_" << thisrow << with_sign(drow[i]) << " == x_" << nextrow << ")\n";
         }
 
-        /*
         dd_edge move(boolF);
         dd_edge rowch(boolF), colch(boolF);
 
@@ -100,7 +99,12 @@ void buildConstraint(int moveno, MEDDLY::dd_edge& constr)
         apply(INTERSECTION, rowch, colch, move);
 
         constr += move;
-        */
+    }
+
+    if (debug) {
+        cout << "Forest for move " << moveno << "\n";
+        ostream_output myout(cout);
+        constr.show(myout, 2);
     }
 }
 
