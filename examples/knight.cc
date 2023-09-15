@@ -87,7 +87,7 @@ void setStart(int moveno, MEDDLY::dd_edge& constr)
     if (debug) {
         cout << "Forest for start\n";
         ostream_output myout(cout);
-        constr.show(myout, 2);
+        constr.showGraph(myout);
     }
 
 }
@@ -146,7 +146,7 @@ void buildConstraint(int movea, int moveb, MEDDLY::dd_edge& constr)
     if (debug) {
         cout << "Forest for move\n";
         ostream_output myout(cout);
-        constr.show(myout, 2);
+        constr.showGraph(myout);
     }
 }
 
@@ -195,7 +195,7 @@ void uniqueDown(int pnum, MEDDLY::dd_edge &constr)
     if (debug) {
         cout << "Forest for constraint:\n";
         ostream_output myout(cout);
-        constr.show(myout, 2);
+        constr.showGraph(myout);
     }
 }
 
@@ -421,12 +421,12 @@ void generate()
 
     dd_edge* moves = new dd_edge[N*M+1];
     for (int i=1; i<N*M; i++) {
-        moves[i].setForest(boolF);
+        moves[i].attach(boolF);
         buildConstraint(i, i+1, moves[i]);
     }
 
-    moves[0].setForest(boolF);
-    moves[N*M].setForest(boolF);
+    moves[0].attach(boolF);
+    moves[N*M].attach(boolF);
 
     if (reverse) {
         boolF->createEdge(true, moves[0]);
