@@ -27,9 +27,11 @@
 // Board dimensions
 
 #define MAXDIM 10
+#define SHOWSOLS 10
 
 bool topdown, reverse, verbose, debug;
 int N, M;
+long maxsols;
 long start_n, start_m;
 
 
@@ -90,21 +92,21 @@ void setStart(int moveno, MEDDLY::dd_edge& constr)
 
 }
 
-void buildConstraint(int moveno, MEDDLY::dd_edge& constr)
+void buildConstraint(int movea, int moveb, MEDDLY::dd_edge& constr)
 {
     using namespace std;
     using namespace MEDDLY;
 
     if (verbose) {
         cout << "--------------------------------------\n";
-        cout << "Constraints for move " << moveno << "\n";
+        cout << "Constraints for move from position " << movea << "->" << moveb << "\n";
         cout << "Disjunction of:\n";
     }
 
-    const int thisrow = moveno*2;
+    const int thisrow = movea*2;
     const int thiscol = thisrow-1;
-    const int nextcol = thisrow+1;
-    const int nextrow = nextcol+1;
+    const int nextrow = moveb*2;
+    const int nextcol = nextrow-1;
 
     const long drow[] = {  1,  1, -1, -1,  2,  2, -2, -2, 0 };
     const long dcol[] = {  2, -2,  2, -2,  1, -1,  1, -1, 0 };
@@ -142,7 +144,7 @@ void buildConstraint(int moveno, MEDDLY::dd_edge& constr)
     }
 
     if (debug) {
-        cout << "Forest for move " << moveno << "\n";
+        cout << "Forest for move\n";
         ostream_output myout(cout);
         constr.show(myout, 2);
     }
@@ -211,6 +213,7 @@ void usage(const char* arg)
     cout << "\t-n N\tSet number of rows\n";
     cout << "\t-m M\tSet number of columns\n";
     cout << "\t-r:\tReverse variable order\n";
+    cout << "\t-s #\tMax number of solutions to display\n";
     cout << "\t-v:\tToggle verbosity (default: off)\n";
     cout << "\n";
     exit(1);
@@ -240,6 +243,7 @@ void process_args(int argc, const char** argv)
     verbose = false;
     debug = false;
     topdown = false;
+    maxsols = 1;
     long L, L2;
 
     // Go through args
@@ -320,6 +324,18 @@ void process_args(int argc, const char** argv)
             case 'r':   reverse = !reverse;
                         continue;
 
+            case 's':   if (i+1<argc) {
+                            L = intFrom(argv[++i]);
+                            if (L<0) {
+                                L=0;
+                            }
+                            maxsols = L;
+                        } else {
+                            std::cerr << "Switch -s requires an argument\n";
+                            exit(2);
+                        }
+                        continue;
+
             case 'v':   verbose = !verbose;
                         continue;
 
@@ -350,6 +366,19 @@ void showSolution(std::ostream& s, const int* minterm, const char* sep=nullptr)
         }
         s << '(' << setfill(' ') << setw(2) << minterm[i*2];
         s << ',' << setfill(' ') << setw(2) << minterm[i*2-1] << ')';
+    }
+}
+
+void showAtMost(std::ostream& s, const MEDDLY::dd_edge &sols, long count)
+{
+    MEDDLY::enumerator iter(sols);
+    long c = 0;
+    for (; iter; ++iter) {
+        ++c;
+        if (c>count) return;
+        s << "#" << c << ":  ";
+        showSolution(s, iter.getAssignments(), " -> ");
+        s << std::endl;
     }
 }
 
@@ -393,7 +422,7 @@ void generate()
     dd_edge* moves = new dd_edge[N*M+1];
     for (int i=1; i<N*M; i++) {
         moves[i].setForest(boolF);
-        buildConstraint(i, moves[i]);
+        buildConstraint(i, i+1, moves[i]);
     }
 
     moves[0].setForest(boolF);
@@ -460,14 +489,40 @@ void generate()
     apply(CARDINALITY, tours, card);
     std::cout << "Approx. " << card << " tours (no repeated squares)\n";
 
-    // Show solutions
-    enumerator sol(tours);
-    for (; sol; ++sol) {
-        std::cout << "    ";
-        showSolution(std::cout, sol.getAssignments(), " -> ");
-        std::cout << std::endl;
+    dd_edge hamil(boolF);
+    buildConstraint(1, N*M, hamil);
+    hamil *= tours;
 
+    apply(CARDINALITY, hamil, card);
+    std::cout << "Approx. " << card << " Hamiltonian tours\n";
+
+    dd_edge unsat(boolF);
+    boolF->createEdge(false, unsat);
+
+    if (maxsols) {
+        //
+        // Display some solutions
+        //
+
+        if (hamil != unsat) {
+            std::cout << "First " << maxsols << " Hamiltonian tours:\n";
+            showAtMost(std::cout, hamil, maxsols);
+        } else if (tours != unsat) {
+            std::cout << "First " << maxsols << " tours:\n";
+            showAtMost(std::cout, tours, maxsols);
+        }
     }
+
+    // Memory stats
+    std::cout << "Forest stats:\n";
+    ostream_output myout(std::cout);
+    expert_forest* ef = (expert_forest*)boolF;
+    ef->reportStats(myout, "\t",
+            expert_forest::HUMAN_READABLE_MEMORY  |
+            expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
+            expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED |
+            expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED
+    );
 }
 
 int main(int argc, const char** argv)
