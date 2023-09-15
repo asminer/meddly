@@ -155,7 +155,7 @@ struct constraint {
 
 constraint::constraint(MEDDLY::forest* F)
 {
-    the_dd.setForest(F);
+    the_dd.attach(F);
     for (unsigned i=0; i<=MAXDIM*MAXDIM; i++) {
         vardeps[i] = false;
     }
@@ -348,21 +348,21 @@ void buildConstraints(const coord &sq, constraint* C)
 
             if (debug) {
                 cout << "\n";
-                term.show(sout, 2);
+                term.showGraph(sout);
             }
             ands *= term;
         }
         if (verbose) cout << "\n";
         if (debug) {
             cout << "\nANDS:\n\n";
-            ands.show(sout, 2);
+            ands.showGraph(sout);
         }
         // OR with the others here
         C->the_dd += ands;
     }
     if (debug) {
         cout << "\nEntire constraint:\n\n";
-        C->the_dd.show(sout, 2);
+        C->the_dd.showGraph(sout);
     }
 }
 

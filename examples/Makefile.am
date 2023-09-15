@@ -15,6 +15,7 @@ nqueens \
 queen_cover \
 qc2 \
 knight \
+knight2 \
 kanban \
 slot \
 life \
@@ -96,6 +97,10 @@ qc2_LDADD = ../src/libmeddly.la
 
 knight_SOURCES = knight.cc
 knight_LDADD = ../src/libmeddly.la
+
+knight2_SOURCES = knight2.cc
+knight2_LDADD = ../src/libmeddly.la
+
 
 kanban_SOURCES = kanban.cc simple_model.h simple_model.cc
 kanban_LDADD = ../src/libmeddly.la
