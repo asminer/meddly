@@ -472,7 +472,10 @@ void generate()
             std::cout << "..1";
             std::cout.flush();
             tours *= nodup;
-            std::cout << std::endl;
+
+            std::cout << " \t(" << boolF->getCurrentNumNodes()
+                      << " forest nodes)"
+                      << std::endl;
         }
     } else {
         for (int i=1; i<=N*M; i++) {
@@ -482,7 +485,10 @@ void generate()
             std::cout << "..1";
             std::cout.flush();
             tours *= nodup;
-            std::cout << std::endl;
+
+            std::cout << " \t(" << boolF->getCurrentNumNodes()
+                      << " forest nodes)"
+                      << std::endl;
         }
     }
 
