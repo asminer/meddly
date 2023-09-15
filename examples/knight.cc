@@ -109,6 +109,8 @@ void buildConstraint(int moveno, MEDDLY::dd_edge& constr)
     const long drow[] = {  1,  1, -1, -1,  2,  2, -2, -2, 0 };
     const long dcol[] = {  2, -2,  2, -2,  1, -1,  1, -1, 0 };
 
+    boolF->createEdge(false, constr);
+
     for (unsigned i=0; drow[i]; i++) {
         if (verbose) {
             cout << "    (x_" << thiscol << with_sign(dcol[i]) << " == x_" << nextcol << ") ^ ";
@@ -146,47 +148,54 @@ void buildConstraint(int moveno, MEDDLY::dd_edge& constr)
     }
 }
 
-void notEqual(int movea, int moveb, MEDDLY::dd_edge& constr)
+void uniqueDown(int pnum, MEDDLY::dd_edge &constr)
 {
     using namespace std;
     using namespace MEDDLY;
 
     if (verbose) {
         cout << "\n--------------------------------------\n";
-        cout << "Constraints for position " << movea << " != position " << moveb << "\n";
+        cout << "Position " << pnum << " different from all previous\n";
+        cout << "Conjunction of:\n";
     }
 
-    const int rowa = movea*2;
+    const int rowa = pnum*2;
     const int cola = rowa-1;
-    const int rowb = moveb*2;
-    const int colb = rowb-1;
-
-    if (verbose) {
-        cout << "    (x_" << rowa << " != x_" << rowb << ") v ";
-        cout << "(x_" << cola << " != x_" << colb << ")\n";
-    }
 
     dd_edge xrowa(mtF), xcola(mtF), xrowb(mtF), xcolb(mtF);
+    dd_edge disj1(boolF), disj2(boolF);
 
     mtF->createEdgeForVar(rowa, false, xrowa);
     mtF->createEdgeForVar(cola, false, xcola);
-    mtF->createEdgeForVar(rowb, false, xrowb);
-    mtF->createEdgeForVar(colb, false, xcolb);
 
-    dd_edge term(boolF);
+    boolF->createEdge(true, constr);
 
-    apply(NOT_EQUAL, xrowa, xrowb, term);
-    apply(NOT_EQUAL, xcola, xcolb, constr);
-    constr += term;
+    for (int i=pnum-1; i>0; i--) {
+        const int rowb = i*2;
+        const int colb = rowb-1;
+
+        if (verbose) {
+            cout << "    (x_" << rowa << " != x_" << rowb << ") v ";
+            cout << "(x_" << cola << " != x_" << colb << ")\n";
+        }
+
+        mtF->createEdgeForVar(rowb, false, xrowb);
+        mtF->createEdgeForVar(colb, false, xcolb);
+
+        apply(NOT_EQUAL, xrowa, xrowb, disj1);
+        apply(NOT_EQUAL, xcola, xcolb, disj2);
+        disj1 += disj2;
+
+
+        constr *= disj1;
+    }
 
     if (debug) {
         cout << "Forest for constraint:\n";
         ostream_output myout(cout);
         constr.show(myout, 2);
     }
-
 }
-
 
 void usage(const char* arg)
 {
@@ -197,7 +206,7 @@ void usage(const char* arg)
     cout << "\t-h:\tThis help\n\n";
     cout << "\t-a t\tAccumulate/remove from top down\n";
     cout << "\t-a b\tAccumulate/remove from bottom up (default)\n";
-    cout << "\t-b n m\tBeginning position (default is 1 1)\n";
+    cout << "\t-b n m\tBeginning position (default is 0 0)\n";
     cout << "\t-d:\tToggle debugging (default: off)\n";
     cout << "\t-n N\tSet number of rows\n";
     cout << "\t-m M\tSet number of columns\n";
@@ -225,8 +234,8 @@ void process_args(int argc, const char** argv)
     // Set defaults for everything
     N = 4;
     M = 4;
-    start_n = 1;
-    start_m = 1;
+    start_n = 0;
+    start_m = 0;
     reverse = false;
     verbose = false;
     debug = false;
@@ -284,7 +293,7 @@ void process_args(int argc, const char** argv)
 
             case 'n':   if (i+1<argc) {
                             L = intFrom(argv[++i]);
-                            if (L<1 || L>MAXDIM) {
+                            if (L<0 || L>=MAXDIM) {
                                 std::cerr << "Value " << L << " for -n out of range; ignoring\n";
                             } else {
                                 N = L;
@@ -297,7 +306,7 @@ void process_args(int argc, const char** argv)
 
             case 'm':   if (i+1<argc) {
                             L = intFrom(argv[++i]);
-                            if (L<1 || L>MAXDIM) {
+                            if (L<0 || L>=MAXDIM) {
                                 std::cerr << "Value " << L << " for -m out of range; ignoring\n";
                             } else {
                                 M = L;
@@ -320,12 +329,28 @@ void process_args(int argc, const char** argv)
         }
     }
 
-    if (start_n<1 || start_n>N || start_m<1 || start_m>M) {
+    if (start_n<0 || start_n>=N || start_m<0 || start_m>=M) {
         std::cerr << "Starting position " << start_n << "," << start_m
                   << " is not on the board\n";
         exit(2);
     }
 
+}
+
+void showSolution(std::ostream& s, const int* minterm, const char* sep=nullptr)
+{
+    using namespace std;
+    bool first = true;
+    for (int i=N*M; i; i--) {
+        if (!first) {
+            if (sep) s << sep;
+            else s << endl;
+        } else {
+            first = false;
+        }
+        s << '(' << setfill(' ') << setw(2) << minterm[i*2];
+        s << ',' << setfill(' ') << setw(2) << minterm[i*2-1] << ')';
+    }
 }
 
 void generate()
@@ -355,8 +380,8 @@ void generate()
 
     policies p;
     p.useDefaults(false);
-    p.useReferenceCounts = false;
-    // p.setPessimistic();
+    // p.useReferenceCounts = false;
+    p.setPessimistic();
 
     mtF = D->createForest(false, range_type::INTEGER,
                     edge_labeling::MULTI_TERMINAL, p);
@@ -365,40 +390,38 @@ void generate()
                     edge_labeling::MULTI_TERMINAL, p);
 
 
-    dd_edge* moves = new dd_edge[N*M];
+    dd_edge* moves = new dd_edge[N*M+1];
     for (int i=1; i<N*M; i++) {
-        moves[i-1].setForest(boolF);
-        buildConstraint(i, moves[i-1]);
+        moves[i].setForest(boolF);
+        buildConstraint(i, moves[i]);
     }
 
     moves[0].setForest(boolF);
-    moves[N*M-1].setForest(boolF);
+    moves[N*M].setForest(boolF);
 
     if (reverse) {
-        moves[0].set(-1);
-        setStart(N*M-1, moves[N*M]);
+        boolF->createEdge(true, moves[0]);
+        setStart(N*M, moves[N*M]);
     } else {
-        moves[N*M-1].set(-1);
+        boolF->createEdge(true, moves[N*M]);
         setStart(1, moves[0]);
     }
 
     dd_edge tours(boolF);
-    tours.set(1);
+    boolF->createEdge(true, tours);
 
     std::cout << "\nDetermining all " << N*M-1 << " knight moves\n";
     if (topdown) {
-        for (int i=N*M-1; i>=0; i--) {
+        for (int i=N*M; i>=0; i--) {
             std::cout << "  " << i;
             std::cout.flush();
             tours *= moves[i];
-            moves[i].set(0);
         }
     } else {
-        for (int i=0; i<N*M; i++) {
+        for (int i=0; i<=N*M; i++) {
             std::cout << "  " << i;
             std::cout.flush();
             tours *= moves[i];
-            moves[i].set(0);
         }
     }
     delete[] moves;
@@ -412,33 +435,39 @@ void generate()
     std::cout << "\nRestricting to tours\n";
 
     dd_edge nodup(boolF);
-
     if (topdown) {
         for (int i=N*M; i>0; i--) {
             std::cout << "    " << i;
-            for (int j=i-1; j>0; j--) {
-                std::cout << '.';
-                std::cout.flush();
-                notEqual(i, j, nodup);
-                tours *= nodup;
-            }
+            std::cout.flush();
+            uniqueDown(i, nodup);
+            std::cout << "..1";
+            std::cout.flush();
+            tours *= nodup;
             std::cout << std::endl;
         }
     } else {
         for (int i=1; i<=N*M; i++) {
             std::cout << "    " << i;
-            for (int j=i+1; j<=N*M; j++) {
-                std::cout << '.';
-                std::cout.flush();
-                notEqual(i, j, nodup);
-                tours *= nodup;
-            }
+            std::cout.flush();
+            uniqueDown(i, nodup);
+            std::cout << "..1";
+            std::cout.flush();
+            tours *= nodup;
             std::cout << std::endl;
         }
     }
 
     apply(CARDINALITY, tours, card);
     std::cout << "Approx. " << card << " tours (no repeated squares)\n";
+
+    // Show solutions
+    enumerator sol(tours);
+    for (; sol; ++sol) {
+        std::cout << "    ";
+        showSolution(std::cout, sol.getAssignments(), " -> ");
+        std::cout << std::endl;
+
+    }
 }
 
 int main(int argc, const char** argv)
