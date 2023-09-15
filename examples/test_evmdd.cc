@@ -129,11 +129,11 @@ dd_edge test_evmdd(forest* evmdd, binary_handle opCode,
 
   if (verbose > 0) {
     printf("A: ");
-    A.show(meddlyout, 2);
+    A.showGraph(meddlyout);
     printf("\n\nB: ");
-    B.show(meddlyout, 2);
+    B.showGraph(meddlyout);
     printf("\n\nC: ");
-    C.show(meddlyout, 2);
+    C.showGraph(meddlyout);
     printf("\n\n");
   }
 
@@ -156,7 +156,7 @@ dd_edge test_evmdd_plus(forest* evmdd,
     B += A;
     if (verbose > 0) {
       printf(" done.\n");
-      A.show(meddlyout, 2);
+      A.showGraph(meddlyout);
     }
   }
 
@@ -309,12 +309,12 @@ int main(int argc, char *argv[])
   evmdd->createEdge(element, terms, nElements, result);
   start.note_time();
   printf("Batch Addition:\n");
-  if (verbose > 0) result.show(meddlyout, 2);
+  if (verbose > 0) result.showGraph(meddlyout);
 
   printf("Time interval: %.4e seconds\n",
       start.get_last_seconds());
-  printf("#Nodes: %d\n", result.getNodeCount());
-  printf("#Edges: %d\n", result.getEdgeCount());
+  printf("#Nodes: %lu\n", result.getNodeCount());
+  printf("#Edges: %lu\n", result.getEdgeCount());
 
   // print elements
   if (verbose > 0) {
@@ -325,7 +325,7 @@ int main(int argc, char *argv[])
   dd_edge result1 = test_evmdd_plus(evmdd, element, terms, nElements);
   start.note_time();
   printf("Sequential Addition:\n");
-  if (verbose > 0) result1.show(meddlyout, 2);
+  if (verbose > 0) result1.showGraph(meddlyout);
 
   printf("Time interval: %.4e seconds\n",
       start.get_last_seconds());
@@ -339,7 +339,7 @@ int main(int argc, char *argv[])
     assert(compute_manager::SUCCESS ==
         getComputeManager()->apply(compute_manager::EQUAL,
           result, result1, result2));
-    result2.show(meddlyout, 2);
+    result2.showGraph(meddlyout);
 #endif
   }
 #endif
@@ -361,7 +361,7 @@ int main(int argc, char *argv[])
 
 #if 0
   printf("EVMDD: ");
-  result.show(meddlyout, 2);
+  result.showGraph(meddlyout);
 #endif
 
   if (true) {
@@ -381,7 +381,9 @@ int main(int argc, char *argv[])
     start.note_time();
     printf("Iterator traversal time (%0.4e elements): %0.4e seconds\n",
         double(counter), start.get_last_seconds());
-    printf("Cardinality: %0.4e\n", reachableStates.getCardinality());
+    double card;
+    apply(CARDINALITY, reachableStates, card);
+    printf("Cardinality: %0.4e\n", card);
   }
 
 
@@ -424,7 +426,9 @@ int main(int argc, char *argv[])
   }
 #endif
 
-  printf("MDD Cardinality: %1.6e\n", mddResult.getCardinality());
+  double card;
+  apply(CARDINALITY, mddResult, card);
+  printf("MDD Cardinality: %1.6e\n", card);
   printf("Peak Nodes in MDD: %ld\n", mdd->getPeakNumNodes());
   /* TBD: FIX
   printf("Entries in compute table: %ld\n",
@@ -459,7 +463,8 @@ int main(int argc, char *argv[])
   }
 #endif
 
-  printf("Index Set Cardinality: %1.6e\n", indexSet.getCardinality());
+  apply(CARDINALITY, indexSet, card);
+  printf("Index Set Cardinality: %1.6e\n", card);
   printf("Peak Nodes in Index Set: %ld\n", evplusmdd->getPeakNumNodes());
   /* TBD: FIX
   printf("Entries in compute table: %ld\n",

@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
   std::cout << "Peak Nodes in MXD: " << mtmxd->getPeakNumNodes() << std::endl;
 
   FILE_output myout(stdout);
-  result.show(myout, 1);
+  result.show(myout);
 
   expert_forest* emtmxd = static_cast<expert_forest*>(mtmxd);
   emtmxd->removeAllComputeTableEntries();

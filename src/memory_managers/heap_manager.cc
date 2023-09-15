@@ -23,7 +23,7 @@
 
 #include "hole_base.h"
 #include "heap_manager.h"
-#include "../io.h"
+#include "../operators.h"
 
 namespace MEDDLY {
 

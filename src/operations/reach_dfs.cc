@@ -596,7 +596,7 @@ void MEDDLY::common_dfs::splitMxd(node_handle mxd_nh)
 
   // Build from top down
   for (int level = arg2F->getNumVariables(); level; level--) {
-    splits[level].setForest(arg2F);
+    splits[level].attach(arg2F);
 
     if (0==mxd.getNode()) {
       // common and easy special case

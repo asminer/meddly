@@ -183,13 +183,17 @@ void MEDDLY::satotf_opname::subevent::buildRoot() {
     dd_edge sum(root);
     f->createEdge(unpminterms, pminterms, num_minterms, sum);
     num_minterms = 0;
-    root += sum;
+    //
+    // root += sum;
+    binary_operation* opPlus = UNION()->getOperation(root, sum, root);
+    MEDDLY_DCASSERT(opPlus);
+    opPlus->computeTemp(root, sum, root);
   } else {
     f->createEdge(unpminterms, pminterms, num_minterms, root);
   }
   // out << "Equivalent event: " << root.getNode() << "\n";
   // out << "Result: ";
-  // root.show(out, 2);
+  // root.showGraph(out);
 }
 
 
@@ -202,7 +206,7 @@ void MEDDLY::satotf_opname::subevent::showInfo(output& out) const {
     }
     out << "]\n";
   }
-  root.show(out, 2);
+  root.showGraph(out);
 }
 
 long MEDDLY::satotf_opname::subevent::mintermMemoryUsage() const {
@@ -325,7 +329,7 @@ void MEDDLY::satotf_opname::event::buildEventMask()
 #ifdef DEBUG_EVENT_MASK
   printf("event_mask: %d\n" , event_mask.getNode());
   ostream_output out(std::cout);
-  event_mask.show(out, 2);
+  event_mask.showGraph(out);
 #endif
 }
 
@@ -345,7 +349,13 @@ bool MEDDLY::satotf_opname::event::rebuild()
 
   dd_edge e(event_mask);
   for (int i = 0; i < num_subevents; i++) {
-    e *= subevents[i]->getRoot();
+    binary_operation* opAnd = INTERSECTION()->getOperation(
+        e, subevents[i]->getRoot(), e
+    );
+    MEDDLY_DCASSERT(opAnd);
+    opAnd->compute(e, subevents[i]->getRoot(), e);
+    //
+    // e *= subevents[i]->getRoot();
   }
 
   /*
@@ -353,18 +363,18 @@ bool MEDDLY::satotf_opname::event::rebuild()
     ostream_output out(std::cout);
     f->useDomain()->showInfo(out);
     out << "subevent: " << event_mask.getNode() << "\n";
-    event_mask.show(out, 2);
+    event_mask.showGraph(out);
     for (int i = 0; i < num_subevents; i++) {
     out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
-    subevents[i]->getRoot().show(out, 2);
+    subevents[i]->getRoot().showGraph(out);
     }
   }
   ostream_output out(std::cout);
   for (int i = 0; i < num_subevents; i++) {
   out << "subevent: " << subevents[i]->getRoot().getNode() << "\n";
-  subevents[i]->getRoot().show(out, 2);
+  subevents[i]->getRoot().showGraph(out);
   }
-  e.show(out, 2);
+  e.showGraph(out);
   */
   if (e == root) return false;
   root = e;
@@ -707,7 +717,7 @@ void MEDDLY::satotf_opname::otf_relation::showInfo(output &strm) const
       }
       strm << "]\n";
       events_by_top_level[level][ei]->showInfo(strm);
-      events_by_top_level[level][ei]->getRoot().show(strm, 2);
+      events_by_top_level[level][ei]->getRoot().showGraph(strm);
     }
   }
 }
@@ -772,16 +782,21 @@ double MEDDLY::satotf_opname::otf_relation::getArcCount(
     confirmed_local_states.set(next_node);
   }
 
-  dd_edge confirmed_local_states_mask = mask * confirmed_local_states;
-  MEDDLY::apply(MEDDLY::CROSS, confirmed_local_states_mask, confirmed_local_states_mask, mxd_mask);
+  dd_edge confirmed_local_states_mask(mask);
+  apply(INTERSECTION, confirmed_local_states_mask,
+        confirmed_local_states, confirmed_local_states_mask);
+
+  apply(CROSS, confirmed_local_states_mask, confirmed_local_states_mask, mxd_mask);
 
   if (count_duplicates) {
     for (int k = 1; k < num_levels; k++) {
       for (int ei = 0; ei < getNumOfEvents(k); ei++) {
         // start with (num_level-1) to correctly count edges in skipped levels
         dd_edge rg_ei = events_by_top_level[k][ei]->getRoot();
-        rg_ei *= mxd_mask;
-        arc_count += rg_ei.getCardinality();
+        apply(INTERSECTION, rg_ei, mxd_mask, rg_ei);
+        double c;
+        apply(CARDINALITY, rg_ei, c);
+        arc_count += c;
       }
     }
   } else {
@@ -790,12 +805,12 @@ double MEDDLY::satotf_opname::otf_relation::getArcCount(
     for (int k = 1; k < num_levels; k++) {
       dd_edge nsf_i(mxdF);
       for (int ei = 0; ei < getNumOfEvents(k); ei++) {
-        nsf_i += events_by_top_level[k][ei]->getRoot();
+        apply(UNION, nsf_i, events_by_top_level[k][ei]->getRoot(), nsf_i);
       }
-      monolithic_nsf += nsf_i;
+      apply(UNION, monolithic_nsf, nsf_i, monolithic_nsf);
     }
-    monolithic_nsf *= mxd_mask;
-    arc_count = monolithic_nsf.getCardinality();
+    apply(INTERSECTION, monolithic_nsf, mxd_mask, monolithic_nsf);
+    apply(CARDINALITY, monolithic_nsf, arc_count);
   }
   return arc_count;
 }
@@ -1291,11 +1306,11 @@ void MEDDLY::common_otf_dfs_by_events_mt
 
 #ifdef DEBUG_INITIAL
   printf("Calling saturate for states:\n");
-  a.show(stdout, 2);
+  a.showGraph(stdout);
 #endif
 #ifdef DEBUG_NSF
   printf("Calling saturate for NSF:\n");
-  // b.show(stdout, 2);
+  // b.showGraph(stdout);
 #endif
 
   // Execute saturation operation

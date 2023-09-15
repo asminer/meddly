@@ -110,10 +110,10 @@ int main(int argc, char *argv[])
 
 #if 1
   dd_edge expr = buildExpression(states);
-  // expr.show(mout, 2);
+  // expr.showGraph(mout);
 #else
   dd_edge expr = buildExpressionWithTerms(states);
-  // expr.show(mout, 2);
+  // expr.showGraph(mout);
 #endif
 
   forest* mtmxd = d->createForest(true, range, edge_labeling::MULTI_TERMINAL);
@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
 
   dd_edge incrY1 = buildIncrY1(mtmxd);
   fprintf(stdout, "\nMTMXD for (y1' == y1 + 1):\n\n");
-  incrY1.show(mout, 2);
+  incrY1.showGraph(mout);
 
   dd_edge postImage(states);
   int element[] = {0, 0, 0, 0, 0};
@@ -132,19 +132,19 @@ int main(int argc, char *argv[])
 
   fprintf(stdout, "-----------------------------------------------------\n");
   fprintf(stdout, "\nMTMDD for [0 0 0 = 1]:\n\n");
-  postImage.show(mout, 2);
+  postImage.showGraph(mout);
 
   apply(POST_IMAGE, postImage, incrY1, postImage);
   // postImage *= expr;
   fprintf(stdout, "-----------------------------------------------------\n");
   fprintf(stdout, "\nMTMDD after POST_IMAGE:\n\n");
-  postImage.show(mout, 2);
+  postImage.showGraph(mout);
 
   apply(PRE_IMAGE, postImage, incrY1, postImage);
   // postImage *= expr;
   fprintf(stdout, "-----------------------------------------------------\n");
   fprintf(stdout, "\nMTMDD after PRE_IMAGE:\n\n");
-  postImage.show(mout, 2);
+  postImage.showGraph(mout);
 
   // Cleanup
   MEDDLY::destroyDomain(d);
@@ -404,16 +404,16 @@ dd_edge buildTransitionExpression(forest* mtmxd)
   dd_edge y1Prime(mtmxd);
   mtmxd->createEdgeForVar(1, true, y1Prime);
 
-  // y1Prime.show(mout, 2);
+  // y1Prime.showGraph(mout);
 
   apply(EQUAL, y1Prime, y1, y1Prime);
 
-  // y1Prime.show(mout, 2);
+  // y1Prime.showGraph(mout);
 
   dd_edge multiplier = buildMultiplierForVariable(mtmxd, 1);
   y1Prime *= multiplier;
 
-  // y1Prime.show(mout, 2);
+  // y1Prime.showGraph(mout);
 
   return y1Prime;
 }

@@ -296,7 +296,7 @@ class MEDDLY::unpacked_node {
         /// Set the nth pointer from E, and destroy E.
         inline void set_d(unsigned n, dd_edge &E)
         {
-            MEDDLY_DCASSERT(parent == E.parent);
+            MEDDLY_DCASSERT(E.isAttachedTo(parent));
             MEDDLY_DCASSERT(0==edge_bytes);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n,
                     is_full ? size : nnzs);
@@ -349,7 +349,7 @@ class MEDDLY::unpacked_node {
         /// Set the nth pointer and edge value from E, and destroy E.
         inline void set_de(unsigned n, dd_edge &E)
         {
-            MEDDLY_DCASSERT(parent == E.parent);
+            MEDDLY_DCASSERT(E.isAttachedTo(parent));
             MEDDLY_DCASSERT(edge);
             MEDDLY_DCASSERT(edge_bytes);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n,
@@ -385,6 +385,12 @@ class MEDDLY::unpacked_node {
             getEdge(i, test_ev);
             MEDDLY_DCASSERT(test_ev == ev);
 #endif
+        }
+
+        // Temporary hack, until we re-do this object
+        //
+        inline void setEdge(unsigned i, const dd_edge &E) {
+            memcpy(eptr_write(i), E.getEdgePtr(), edge_bytes);
         }
 
         /// Set the edge value, as a float.

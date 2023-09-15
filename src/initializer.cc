@@ -20,6 +20,7 @@
 #include "initializer.h"
 #include "error.h"
 #include "domain.h"
+#include "forest.h"
 #include "oper.h"
 #include "unpacked_node.h"
 #include "ct_initializer.h"
@@ -60,6 +61,7 @@ void MEDDLY::initializer_list::initializeLibrary(initializer_list* L)
     memstats::initGlobalStats();
     operation::initializeStatics();
     domain::initDomList();
+    forest::initStatics();
     unpacked_node::initStatics();
 
     // Reverse the list
@@ -107,6 +109,7 @@ void MEDDLY::initializer_list::cleanupLibrary()
     operation::destroyAllOps();
 
     domain::deleteDomList();
+    forest::freeStatics();
 
     // clean up recycled unpacked nodes
     unpacked_node::freeRecycled();

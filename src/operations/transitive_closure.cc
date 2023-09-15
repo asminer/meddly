@@ -273,13 +273,11 @@ void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
 
   splits = new dd_edge[transF->getNumVariables() + 1];
 
-  dd_edge root(mxd), maxDiag, Rpdi;
-  maxDiag.setForest(transF);
-  Rpdi.setForest(transF);
+  dd_edge root(mxd), maxDiag(transF), Rpdi(transF);
 
   // Build from top down
   for (int level = transF->getNumVariables(); level > 0; level--) {
-    splits[level].setForest(transF);
+    splits[level].attach(transF);
     if (root.getNode() == 0) {
       // common and easy special case
       continue;

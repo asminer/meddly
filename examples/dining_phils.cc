@@ -457,7 +457,10 @@ void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 
   FILE_output mout(stdout);
 #if 1
-  indexSet.show(mout, 3);
+  double card;
+  apply(CARDINALITY, indexSet, card);
+  mout << "Index set has cardinality " << card << "\n";
+  indexSet.showGraph(mout);
 #else
   indexSet.show(mout, 1);
 #endif
@@ -575,7 +578,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
   printf("Next-state function construction took %.4e seconds\n",
           start.get_last_seconds());
   if (!ensf) {
-    printf("Next-state function MxD has\n\t%d nodes\n\t\%d edges\n",
+    printf("Next-state function MxD has\n\t%lu nodes\n\t%lu edges\n",
       nsf.getNodeCount(), nsf.getEdgeCount());
   }
 
@@ -586,7 +589,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
 
 #ifdef SHOW_MXD
   printf("Next-State Function:\n");
-  nsf.show(meddlyout, 2);
+  nsf.showGraph(meddlyout);
 #endif
 
 
@@ -636,12 +639,12 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
   printf("Reachability set construction took %.4e seconds\n",
           start.get_last_seconds() );
   fflush(stdout);
-  printf("#Nodes: %d\n", reachableStates.getNodeCount());
-  printf("#Edges: %d\n", reachableStates.getEdgeCount());
+  printf("#Nodes: %lu\n", reachableStates.getNodeCount());
+  printf("#Edges: %lu\n", reachableStates.getEdgeCount());
 
 #ifdef SHOW_MDD
   printf("Reachability set:\n");
-  reachableStates.show(meddlyout, 2);
+  reachableStates.showGraph(meddlyout);
 #endif
 
   // Show stats for rs construction
@@ -678,7 +681,8 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
     testIndexSet(reachableStates, indexSet);
     int* element = (int *) malloc((nLevels + 1) * sizeof(int));
 
-    double cardinality = indexSet.getCardinality();
+    double cardinality;
+    apply(CARDINALITY, indexSet, cardinality);
     for (int index = 0; index < int(cardinality); index++)
     {
       evplusmdd->getElement(indexSet, index, element);
@@ -727,6 +731,8 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
     LOG->newPhase(mxd, "Cleanup");
   }
 
+  printf("Destroying dd_edges\n");
+  fflush(stdout);
   return d;
 }
 
@@ -890,6 +896,8 @@ int main(int argc, char *argv[])
 
   try {
     domain* d = runWithOptions(nPhilosophers, sw, LOG);
+    printf("Cleaning up\n");
+    fflush(stdout);
     if (LOG) {
       MEDDLY::destroyDomain(d);
       delete LOG;

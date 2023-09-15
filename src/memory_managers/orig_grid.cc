@@ -25,7 +25,7 @@
 
 #include "hole_base.h"
 #include "orig_grid.h"
-#include "../io.h"
+#include "../operators.h"
 
 namespace MEDDLY {
 

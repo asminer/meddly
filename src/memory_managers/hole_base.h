@@ -21,7 +21,7 @@
 
 #include "../memory.h"
 #include "orig_grid.h"
-#include "../io.h"
+#include "../operators.h"
 
 #if 0
 #ifdef HAVE_MALLOC_GOOD_SIZE

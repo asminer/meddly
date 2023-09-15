@@ -19,6 +19,7 @@
 #include "defines.h"
 #include "node_storage.h"
 #include "io.h"
+#include "operators.h"
 
 // ******************************************************************
 // *                                                                *

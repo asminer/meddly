@@ -225,6 +225,10 @@ class MEDDLY::output {
         */
         virtual void put(long x, int w=0) = 0;
 
+        inline void put(int x, int w=0) {
+            put(long(x), w);
+        }
+
         /**
             Write an unsigned, decimal integer to the output stream.
                 @param  x   Integer to write
@@ -232,6 +236,10 @@ class MEDDLY::output {
                 @throws     An appropriate error
         */
         virtual void put(unsigned long x, int w=0) = 0;
+
+        inline void put(unsigned x, int w=0) {
+            put((unsigned long) x, w);
+        }
 
         /**
             Write hex digits to the output stream.
@@ -281,52 +289,6 @@ class MEDDLY::output {
         void put_mem(size_t m, bool human);
 
 };  // end of output class
-
-/*
-  These will let us do C++ style output, with our class.
-*/
-
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, char x)
-{
-    s.put(x);
-    return s;
-}
-
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, const char* x)
-{
-    s.put(x);
-    return s;
-}
-
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, int x)
-{
-    s.put(long(x));
-    return s;
-}
-
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, long x)
-{
-    s.put(x);
-    return s;
-}
-
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, unsigned x)
-{
-    s.put((unsigned long)x);
-    return s;
-}
-
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, unsigned long x)
-{
-    s.put(x);
-    return s;
-}
-
-inline  MEDDLY::output& operator<< (MEDDLY::output &s, double x)
-{
-    s.put(x);
-    return s;
-}
 
 
 // ******************************************************************

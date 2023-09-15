@@ -300,7 +300,7 @@ void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
 
   // Build from top down
   for (int level = transF->getNumVariables(); level > 0; level--) {
-    splits[level].setForest(transF);
+    splits[level].attach(transF);
 
     if (root.getNode() == 0) {
       // common and easy special case
@@ -1103,7 +1103,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
 
   // Build from top down
   for (int level = transF->getNumVariables(); level > 0; level--) {
-    splits[level].setForest(transF);
+    splits[level].attach(transF);
     if (root.getNode() == 0) {
       // common and easy special case
       continue;

@@ -373,7 +373,7 @@ void printStats(const char* who, timer& watch, const dd_edge &node)
   printf("%s construction took %.4f seconds\n",
     who, watch.get_last_seconds()
   );
-  printf("%s has\n\t%d nodes\n\t\%d edges\n",
+  printf("%s has\n\t%lu nodes\n\t%lu edges\n",
     who, node.getNodeCount(), node.getEdgeCount()
   );
   printf("    Stats:\n");

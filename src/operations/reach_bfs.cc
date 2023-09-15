@@ -94,9 +94,9 @@ void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd
 #ifdef DEBUG_BFS
   FILE_output debug(stderr);
   debug << "Relation: ";
-  R.show(debug, 2);
+  R.showGraph(debug);
   debug << "Initial states: ";
-  init.show(debug, 2);
+  init.showGraph(debug);
   long iters = 0;
 #endif
 #ifdef VERBOSE_BFS
@@ -118,7 +118,7 @@ void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd
 #ifdef DEBUG_BFS
     iters++;
     debug << "Iteration " << iters << "\npseudo-frontier: ";
-    front.show(debug, 2);
+    front.showGraph(debug);
 #endif
     unionOp->computeDDEdge(reachableStates, front, reachableStates, userFlag);
 #ifdef VERBOSE_BFS
@@ -128,7 +128,7 @@ void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd
 #endif
 #ifdef DEBUG_BFS
     debug << "Reachable so far: ";
-    reachable.show(debug, 2);
+    reachable.showGraph(debug);
 #endif
   }
 

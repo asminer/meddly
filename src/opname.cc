@@ -153,8 +153,10 @@ MEDDLY::unary_opname::getOperation(const dd_edge &ar, const dd_edge &res)
                 dynamic_cast<expert_forest*>(ar.getForest()),
                 dynamic_cast<expert_forest*>(res.getForest())
             );
-    match->setNext(cache);
-    cache = match;
+    if (match) {
+        match->setNext(cache);
+        cache = match;
+    }
     return match;
 }
 
@@ -174,8 +176,10 @@ MEDDLY::unary_opname::getOperation(const dd_edge &ar, opnd_type res)
                 dynamic_cast<expert_forest*>(ar.getForest()),
                 res
             );
-    match->setNext(cache);
-    cache = match;
+    if (match) {
+        match->setNext(cache);
+        cache = match;
+    }
     return match;
 }
 

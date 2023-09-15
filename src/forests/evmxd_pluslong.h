@@ -92,6 +92,9 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
       return new evtrmxd_fixedcol_iter(this);
     }
 
+        virtual void readEdgeValue(input &s, dd_edge &E) const;
+        virtual void writeEdgeValue(output &s, const dd_edge &E) const;
+        virtual void showEdgeValue(output &s, const dd_edge &E) const;
 
   protected:
     virtual void normalize(unpacked_node &nb, long& ev) const;

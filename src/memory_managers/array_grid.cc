@@ -22,7 +22,7 @@
 // #define DEBUG_GRID
 // #define REPORT_ALL_MEDIUM_LISTS
 
-#include "../io.h"
+#include "../operators.h"
 #include "hole_base.h"
 #include "array_grid.h"
 

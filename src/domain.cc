@@ -29,6 +29,7 @@
 #include "initializer.h"
 
 #include "unique_table.h"
+#include "operators.h"
 
 #if 0
 #include "forests/mdds_ext.h"

@@ -406,9 +406,15 @@ MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
   dd_edge nsf(mxd);
 
   dd_edge* monolithic_nsf = new dd_edge(mxd);
-  for(int i=0;i<nEvents;i++)
-    {
-    (*monolithic_nsf) += buildEventMxd(event_tops[i],mxd);
+
+    binary_operation* opUnion = UNION()->getOperation(mxd, mxd, mxd);
+    for(int i=0;i<nEvents;i++) {
+        opUnion->computeTemp(
+            *monolithic_nsf,  buildEventMxd(event_tops[i],mxd),
+            *monolithic_nsf
+        );
+        // OLD
+        // (*monolithic_nsf) += buildEventMxd(event_tops[i],mxd);
     }
 
   node_handle monolithic_nsf_handle = monolithic_nsf->getNode();
@@ -1177,7 +1183,7 @@ bool MEDDLY::common_impl_dfs_by_events_mt
 #ifdef DEBUG_INITIAL
   printf("Calling isReachable for states:\n");
   ostream_output s(std::cout);
-  a.show(s, 2);
+  a.showGraph(s);
   std::cout.flush();
 #endif
 
@@ -1217,12 +1223,12 @@ void MEDDLY::common_impl_dfs_by_events_mt
 #ifdef DEBUG_INITIAL
   printf("Calling saturate for states:\n");
   ostream_output s(std::cout);
-  a.show(s, 2);
+  a.showGraph(s);
   std::cout.flush();
 #endif
 #ifdef DEBUG_NSF
   printf("Calling saturate for NSF:\n");
-  // b.show(stdout, 2);
+  // b.showGraph(stdout);
 #endif
 
   // Execute saturation operation
@@ -1996,7 +2002,7 @@ MEDDLY::satimpl_opname::implicit_relation::isReachable(const dd_edge& initial_st
 #ifdef DEBUG_IS_REACHABLE
   std::cout << "[In " << __func__ << "] constraint dd_edge:\n";
   ostream_output s(std::cout);
-  constraint.show(s, 2);
+  constraint.showGraph(s);
   std::cout.flush();
 #endif
   return op->isReachable(initial_states, constraint);

@@ -859,8 +859,9 @@ class rubiks {
       fflush(stdout);
       fprintf(stdout, "Time for constructing reachability set: %.4e seconds\n",
           start.get_last_seconds());
-      fprintf(stdout, "# of reachable states: %1.6e\n",
-          initial.getCardinality());
+      double card;
+      apply(CARDINALITY, initial, card);
+      fprintf(stdout, "# of reachable states: %1.6e\n", card);
       fflush(stdout);
 
       return 0;
@@ -936,8 +937,9 @@ class rubiks {
       start.note_time();
       fprintf(stdout, "Time for constructing reachability set: %.4e seconds\n",
           start.get_last_seconds());
-      fprintf(stdout, "# of reachable states: %1.6e\n",
-          initial.getCardinality());
+      double card;
+      apply(CARDINALITY, initial, card);
+      fprintf(stdout, "# of reachable states: %1.6e\n", card);
       fflush(stdout);
 
       return 0;

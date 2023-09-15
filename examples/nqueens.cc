@@ -358,7 +358,7 @@ int main(int argc, const char** argv)
 
   printf("Done.\n\n");
 
-  printf("Set of solutions requires %d nodes\n", solutions->getNodeCount());
+  printf("Set of solutions requires %lu nodes\n", solutions->getNodeCount());
   printf("Forest stats:\n");
   FILE_output myout(stdout);
   f->reportStats(myout, "\t",

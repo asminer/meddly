@@ -27,6 +27,7 @@
 #include "relation_node.h"
 #include "memory.h"
 
+#include "operators.h"
 #include "ops_builtin.h"
 #include "opname.h"
 #include "opname_numer.h"

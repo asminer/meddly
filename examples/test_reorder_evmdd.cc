@@ -131,11 +131,11 @@ dd_edge test_evmdd(forest* evmdd, binary_handle opCode,
 
   if (verbose > 0) {
     printf("A: ");
-    A.show(meddlyout, 2);
+    A.showGraph(meddlyout);
     printf("\n\nB: ");
-    B.show(meddlyout, 2);
+    B.showGraph(meddlyout);
     printf("\n\nC: ");
-    C.show(meddlyout, 2);
+    C.showGraph(meddlyout);
     printf("\n\n");
   }
 
@@ -158,7 +158,7 @@ dd_edge test_evmdd_plus(forest* evmdd,
     B += A;
     if (verbose > 0) {
       printf(" done.\n");
-      A.show(meddlyout, 2);
+      A.showGraph(meddlyout);
     }
   }
 
@@ -331,12 +331,12 @@ int main(int argc, char *argv[])
   evmdd->createEdge(element, terms, nElements, result);
   start.note_time();
 
-  if (verbose > 0) result.show(meddlyout, 2);
+  if (verbose > 0) result.showGraph(meddlyout);
 
   printf("Time interval: %.4e seconds\n",
       start.get_last_seconds());
-  printf("#Nodes: %d\n", result.getNodeCount());
-  printf("#Edges: %d\n", result.getEdgeCount());
+  printf("#Nodes: %lu\n", result.getNodeCount());
+  printf("#Edges: %lu\n", result.getEdgeCount());
 
   // print elements
   if (verbose > 0) {

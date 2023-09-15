@@ -324,7 +324,7 @@ void MEDDLY::unpacked_node::write(output &s, const node_handle* map) const
 {
     unsigned stop;
     if (isSparse()) {
-        s.put(long(-nnzs));
+        s.put(-long(nnzs));
         stop = nnzs;
     } else {
         s.put(long(size));

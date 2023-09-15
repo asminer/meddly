@@ -27,6 +27,7 @@
 
 #include "../defines.h"
 #include "../minterms.h"
+#include "../dd_edge.h"
 #include "../forest.h"
 #include "../oper_binary.h"
 #include "../ops_builtin.h"
@@ -56,6 +57,12 @@ class MEDDLY::mt_forest : public expert_forest {
 
     /// Add redundant nodes from level k to the given node.
     node_handle makeNodeAtLevel(int k, node_handle d);
+
+        // No edge values right now, so these are no-ops
+        // That could change with complement edges.
+        virtual void readEdgeValue(input &s, dd_edge &E) const;
+        virtual void writeEdgeValue(output &s, const dd_edge &E) const;
+        virtual void showEdgeValue(output &s, const dd_edge &E) const;
 
   protected:
     /// make a node at the top level
@@ -92,7 +99,7 @@ class MEDDLY::mt_forest : public expert_forest {
       */
       if (vh < 0 || vh > getNumVariables())
           throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
-      if (result.getForest() != this)
+      if (!result.isAttachedTo(this))
           throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
       if (!isForRelations() && pr)
           throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
@@ -132,8 +139,10 @@ class MEDDLY::mt_forest : public expert_forest {
 
     template <class ENCODER, class T>
     inline void createEdgeTempl(T term, dd_edge& e) {
-      if (e.getForest() != this) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-      e.set(makeNodeAtTop(ENCODER::value2handle(term)));
+        if (!e.isAttachedTo(this)) {
+            throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+        }
+        e.set(makeNodeAtTop(ENCODER::value2handle(term)));
     }
 
   protected:

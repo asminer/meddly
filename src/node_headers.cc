@@ -20,6 +20,7 @@
 #include "defines.h"
 #include "node_headers.h"
 #include "io.h"
+#include "operators.h"
 #include "forest.h"
 #include "storage/bytepack.h"
 #include <climits>

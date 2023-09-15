@@ -231,6 +231,8 @@ void testCopy(forest* srcF, forest* destF)
 
       dd_edge copyE(destF);
       apply(COPY, srcE, copyE);
+      printf(".");
+      fflush(stdout);
 
       if (copyE != destE) {
         FILE_output meddlyout(stdout);
@@ -238,13 +240,13 @@ void testCopy(forest* srcF, forest* destF)
         printf("failed!\n\n");
 
         printf("Source (first forest):\n");
-        srcE.show(meddlyout, 3);
+        srcE.showGraph(meddlyout);
 
         printf("Destination (should get):\n");
-        destE.show(meddlyout, 3);
+        destE.showGraph(meddlyout);
 
         printf("Copy (built from source):\n");
-        copyE.show(meddlyout, 3);
+        copyE.showGraph(meddlyout);
         exit(1);
       }
 

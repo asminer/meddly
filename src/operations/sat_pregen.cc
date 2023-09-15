@@ -110,7 +110,7 @@ MEDDLY::satpregen_opname::pregen_relation
     events = new dd_edge[num_events];
     next = new unsigned[num_events];
     for (unsigned e=0; e<num_events; e++) {
-      events[e].setForest(mxdF);
+      events[e].attach(mxdF);
     }
   } else {
     events = 0;
@@ -129,7 +129,7 @@ MEDDLY::satpregen_opname::pregen_relation
 
   events = new dd_edge[K+1];
   for (unsigned k=0; k<=K; k++) {
-    events[k].setForest(mxdF);
+      events[k].attach(mxdF);
   }
 
   next = 0;
@@ -163,7 +163,7 @@ MEDDLY::satpregen_opname::pregen_relation
   if (0==level_index) {
     // relation is "by levels"
 
-    events[k] += r;
+    apply(UNION, events[k], r, events[k]);
 
   } else {
     // relation is "by events"
@@ -332,7 +332,7 @@ MEDDLY::satpregen_opname::pregen_relation
 
   dd_edge u(mxdF);
   for (unsigned k=1; k<=K; k++) {
-    u += events[k];
+    apply(UNION, u, events[k], u);
     events[k].set(0);
   }
   events[u.getLevel()] = u;
@@ -822,11 +822,11 @@ void MEDDLY::common_dfs_by_events_mt
 
 #ifdef DEBUG_INITIAL
   printf("Calling saturate for states:\n");
-  a.show(stdout, 2);
+  a.showGraph(stdout);
 #endif
 #ifdef DEBUG_NSF
   printf("Calling saturate for NSF:\n");
-  // b.show(stdout, 2);
+  // b.showGraph(stdout);
 #endif
 
   // Execute saturation operation

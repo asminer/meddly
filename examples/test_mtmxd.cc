@@ -200,11 +200,11 @@ dd_edge test_mtmxd(forest* mtmxd, binary_handle opCode,
   if (verbose > 0) {
     FILE_output meddlyout(stdout);
     printf("A: ");
-    A.show(meddlyout, 2);
+    A.showGraph(meddlyout);
     printf("\n\nB: ");
-    B.show(meddlyout, 2);
+    B.showGraph(meddlyout);
     printf("\n\nC: ");
-    C.show(meddlyout, 2);
+    C.showGraph(meddlyout);
   }
 
   return C;
@@ -377,7 +377,7 @@ int main(int argc, char *argv[])
   */
 
   FILE_output myout(stdout);
-  result.show(myout, 2);
+  result.showGraph(myout);
 
   // Use iterator to display elements
   if (true) {

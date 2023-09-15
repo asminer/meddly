@@ -742,7 +742,9 @@ void RubiksCubeModel::execute()
   cout << "Time for constructing reachability set: "
       << start.get_last_seconds() << " s"
       << endl;
-  cout << "# Reachable states: " << initial.getCardinality() << endl,
+  double card;
+  apply(CARDINALITY, initial, card);
+  cout << "# Reachable states: " << card << endl,
 
   destroy();
 }
@@ -1184,8 +1186,10 @@ void RubiksCubeModel::show_node(const dd_edge& e)
 
   cout << "# Nodes: " << e.getForest()->getCurrentNumNodes() << endl;
   FILE_output out(stdout);
-  e.show(out, 2);
-  cout << "# States: " << e.getCardinality() << endl;
+  e.showGraph(out);
+  double card;
+  apply(CARDINALITY, e, card);
+  cout << "# States: " << card << endl;
 }
 
 const char* face_to_string(Face f){

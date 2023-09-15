@@ -110,7 +110,7 @@ void buidPotentialDeadlockStates(forest* mdd,
   result = disabling_ddedges[0];
   for (auto i : disabling_ddedges) {
     std::cout << "\nDisabling dd_edge:\n";
-    i.show(s, 2);
+    i.showGraph(s);
     result *= i;
   }
 }
@@ -133,10 +133,10 @@ void testStateSetForest(domain *d) {
   result += level_3_le_3;
 
   ostream_output s(std::cout);
-  level_1_le_3.show(s, 2);
-  level_2_le_3.show(s, 2);
-  level_3_le_3.show(s, 2);
-  result.show(s, 2);
+  level_1_le_3.showGraph(s);
+  level_2_le_3.showGraph(s);
+  level_3_le_3.showGraph(s);
+  result.showGraph(s);
 
   // building potential deadlock states
   // disabling expressions per transition:
@@ -158,7 +158,7 @@ void testStateSetForest(domain *d) {
 
   buidPotentialDeadlockStates(mdd, disabling_expressions, result);
   std::cout << "\nPotential deadlock states dd_edge:\n";
-  result.show(s, 2);
+  result.showGraph(s);
 }
 
 
@@ -194,12 +194,12 @@ void testRelationForest(domain *d) {
   result += only_dont_cares;
 
   ostream_output s(std::cout);
-  with_dont_change.show(s, 2);
-  only_dont_cares.show(s, 2);
-  result.show(s, 2);
+  with_dont_change.showGraph(s);
+  only_dont_cares.showGraph(s);
+  result.showGraph(s);
 
   mxd->createEdge((int**)(&unp_minterms[0]), (int**)(&p_minterms[0]), 2, result);
-  result.show(s, 2);
+  result.showGraph(s);
 
   delete [] unp_minterm_1;
   delete [] unp_minterm_2;

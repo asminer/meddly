@@ -22,17 +22,17 @@
 #include "defines.h"
 #include "memstats.h"
 #include "varorder.h"
-#include "io.h"
+#include "operators.h"
 #include "encoders.h"
 #include "node_headers.h"
 #include "node_storage.h"
-#include "dd_edge.h"
 #include "unpacked_node.h"
 #include "policies.h"
 #include "domain.h"
 #include "enumerator.h"
 
 #include <memory>
+#include <map>
 
 namespace MEDDLY {
     class domain;
@@ -69,12 +69,97 @@ namespace MEDDLY {
     depending on your conceptual view) represented in a single
     decision diagram forest over a common domain.
 
+    Each forest is assigned a unique identifier "forever"
+    (actually, until the library is re-initialized).
+
     TBD: discussion of garbage collection.
 
-    When a forest is destroyed, all of the corresponding dd_edges
-    are also destroyed, as are any compute table entries for the forest.
 */
 class MEDDLY::forest {
+
+    public:
+        /// Returns the forest identifier, a unique positive integer per forest.
+        /// FID 0 can safely be used to indicate "no forest".
+        inline unsigned FID() const { return fid; }
+
+        /// Returns the largest forest identifier ever seen.
+        static inline unsigned MaxFID() { return gfid; }
+
+        static inline forest* getForestWithID(unsigned id) {
+            if (id >= max_forests) return nullptr;
+            return all_forests[id];
+        }
+
+    /*
+     *  Methods and members for keeping track of root edges.
+     *  They should normally not be called directly.
+     *
+     */
+
+    public:
+        // Register a dd_edge with this forest.
+        // Called automatically in dd_edge.
+        void registerEdge(dd_edge& e);
+
+        // Unregister a dd_edge with this forest.
+        // Called automatically in dd_edge.
+        void unregisterEdge(dd_edge& e);
+
+    protected:
+        /// structure to store references to registered dd_edges.
+        struct edge_data {
+            /// Index of the next hole (spot with a null edge).
+            unsigned nextHole;
+            /// registered dd_edge
+            dd_edge* edge;
+        };
+
+        /// Array of root edges
+        edge_data* roots;
+
+        /// Array index: 1 + (last used slot in roots[])
+        unsigned roots_next;
+
+    private:
+        void unregisterDDEdges();
+
+    private:
+        /// Dimension of roots[]
+        unsigned roots_size;
+        /// Array index: most recently created hole in roots[]
+        unsigned roots_hole;
+
+    /*
+     *  Methods and members for the global forest registry.
+     *
+     */
+
+    private:
+        static void initStatics();
+        static void freeStatics();
+        static void registerForest(forest* f);
+        static void unregisterForest(forest* f);
+
+    private:
+        // All forests
+        static forest** all_forests;
+        // Size of forests array
+        static unsigned max_forests;
+
+        // our ID
+        unsigned fid;
+
+        // global ID
+        static unsigned gfid;
+
+        friend class initializer_list;
+
+// ===================================================================
+//
+// To be cleaned up still, below here.
+//
+// ===================================================================
+
   public:
     int *level_reduction_rule;
 
@@ -263,12 +348,6 @@ class MEDDLY::forest {
   // ------------------------------------------------------------
   // inlines.
   public:
-
-    /// Returns the forest identifier, a unique integer per forest.
-    unsigned FID() const;
-
-    /// Returns the largest forest identifier ever seen.
-    static unsigned MaxFID();
 
     /// Returns a non-modifiable pointer to this forest's domain.
     const domain* getDomain() const;
@@ -866,6 +945,34 @@ class MEDDLY::forest {
     */
     virtual void readEdges(input &s, dd_edge* E, int n) = 0;
 
+        virtual void readEdgeValue(input &s, dd_edge &E) const = 0;
+        virtual void writeEdgeValue(output &s, const dd_edge &E) const = 0;
+        virtual void showEdgeValue(output &s, const dd_edge &E) const = 0;
+
+        void readEdge(input &s, dd_edge &E, const node_handle* map);
+        void writeEdge(output &s, const dd_edge &E, const node_handle* map) const;
+
+        /** Show an edge value.
+            @param  s       Stream to write to.
+            @param  edge    Pointer to edge value chunk
+        */
+        virtual void showEdgeValue(output &s, const void* edge) const;
+
+        /** Write an edge value in machine-readable format.
+            @param  s       Stream to write to.
+            @param  edge    Pointer to edge value chunk
+        */
+        virtual void writeEdgeValue(output &s, const void* edge) const;
+
+        /** Read an edge value in machine-readable format.
+            @param  s       Stream to read from.
+            @param  edge    Pointer to edge value chunk
+        */
+        virtual void readEdgeValue(input &s, void* edge);
+
+
+public:
+
     /** Force garbage collection.
         All disconnected nodes in this forest are discarded along with any
         compute table entries that may include them.
@@ -956,40 +1063,6 @@ class MEDDLY::forest {
     /// Called only within operation.
     void unregisterOperation(const operation* op);
 
-  private:  // For edge registration
-    friend class dd_edge;
-
-    /// structure to store references to registered dd_edges.
-    struct edge_data {
-      /// Index of the next hole (spot with a 0 edge).
-      unsigned nextHole;
-      /// registered dd_edge
-      dd_edge* edge;
-    };
-
-    // Array of registered dd_edges
-    edge_data *edge;
-
-    // Size of edge[]
-    unsigned edge_sz;
-    // Array index: 1 + (last used slot in edge[])
-    unsigned firstFree;
-    // Array index: most recently created hole in edge[]
-    unsigned firstHole;
-
-    void registerEdge(dd_edge& e);
-    void unregisterEdge(dd_edge& e);
-    void unregisterDDEdges();
-
-  protected:
-    class edge_visitor {
-      public:
-        edge_visitor();
-        virtual ~edge_visitor();
-        virtual void visit(dd_edge &e) = 0;
-    };
-    void visitRegisteredEdges(edge_visitor &ev);
-
   private:
     bool isRelation;
     bool is_marked_for_deletion;
@@ -1001,11 +1074,10 @@ class MEDDLY::forest {
 
     friend void MEDDLY::destroyForest(MEDDLY::forest* &f);
 
-    // our ID
-    unsigned fid;
 
-    // global one
-    static unsigned gfid;
+    // We should be able to remove this after updating unpacked_node
+    //
+    friend class unpacked_node;
 };
 
 
@@ -1088,14 +1160,6 @@ inline void MEDDLY::forest::setDefaultPoliciesMDDs(const policies& p)
 inline void MEDDLY::forest::setDefaultPoliciesMXDs(const policies& p)
 {
   mxdDefaults = p;
-}
-
-inline unsigned MEDDLY::forest::FID() const {
-  return fid;
-}
-
-inline unsigned MEDDLY::forest::MaxFID() {
-  return gfid;
 }
 
 inline const MEDDLY::domain* MEDDLY::forest::getDomain() const {
@@ -1282,13 +1346,6 @@ inline void MEDDLY::forest::setLogger(logger* L, const char* name) {
   if (theLogger) theLogger->logForestInfo(this, name);
 }
 
-// forest::edge_visitor::
-inline void MEDDLY::forest::visitRegisteredEdges(edge_visitor &ev) {
-  for (unsigned i = 0; i < firstFree; ++i) {
-    if (edge[i].edge) ev.visit(*(edge[i].edge));
-  }
-}
-
 // end of class forest
 
 
@@ -1462,6 +1519,9 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     /// Returns true if we are tracking incoming counts
     // bool trackingInCounts() const;
 
+    //
+    // TBD: will we need these, if dd_edge handles it?
+
     /// Returns the in-count for a node.
     unsigned long getNodeInCount(node_handle p) const;
 
@@ -1494,6 +1554,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     /// Mark all "root" nodes; i.e. start the mark phase.
     /// Not inlined; implemented in forest.cc
     void markAllRoots();
+
 
   // --------------------------------------------------
   // Managing cache counts
@@ -1630,17 +1691,17 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     /** Count and return the number of non-terminal nodes
         in the subgraph below the given node.
     */
-    long getNodeCount(node_handle node) const;
+    unsigned long getNodeCount(node_handle node) const;
 
     /** Count and return the number of non-terminal nodes
         in the subgraph below the given nodes.
     */
-    long getNodeCount(const node_handle* roots, int N) const;
+    unsigned long getNodeCount(const node_handle* roots, int N) const;
 
     /** Count and return the number of edges
         in the subgraph below the given node.
     */
-    long getEdgeCount(node_handle node, bool countZeroes) const;
+    unsigned long getEdgeCount(node_handle node, bool countZeroes) const;
 
     /** Display the contents of a single node.
           @param  s       File stream to write to.
@@ -1979,24 +2040,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     */
     virtual node_handle readTerminal(input &s);
 
-    /** Show an edge value.
-          @param  s       Stream to write to.
-          @param  edge    Pointer to edge value chunk
-    */
-    virtual void showEdgeValue(output &s, const void* edge) const;
-
-    /** Write an edge value in machine-readable format.
-          @param  s       Stream to write to.
-          @param  edge    Pointer to edge value chunk
-    */
-    virtual void writeEdgeValue(output &s, const void* edge) const;
-
-    /** Read an edge value in machine-readable format.
-          @param  s       Stream to read from.
-          @param  edge    Pointer to edge value chunk
-    */
-    virtual void readEdgeValue(input &s, void* edge);
-
+  public:
     /** Show the hashed header values.
           @param  s       Stream to write to.
           @param  hh      Pointer to hashed header data.
@@ -2216,6 +2260,8 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     unsigned char unhashed_bytes;
     /// Number of bytes of hashed header
     unsigned char hashed_bytes;
+
+
 
     class nodecounter;
     class nodemarker;
@@ -2477,7 +2523,7 @@ MEDDLY::expert_forest::linkNode(MEDDLY::node_handle p)
 inline MEDDLY::node_handle
 MEDDLY::expert_forest::linkNode(const MEDDLY::dd_edge &p)
 {
-  MEDDLY_DCASSERT(p.getForest() == this);
+  MEDDLY_DCASSERT(p.isAttachedTo(this));
   if (deflt.useReferenceCounts) {
     return nodeHeaders.linkNode(p.getNode());
   } else {

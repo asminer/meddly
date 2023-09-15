@@ -136,11 +136,11 @@ dd_edge test_mtmdd(forest* mtmdd, binary_handle  opCode,
   if (verbose > 0) {
     FILE_output meddlyout(stdout);
     printf("A: ");
-    A.show(meddlyout, 2);
+    A.showGraph(meddlyout);
     printf("\n\nB: ");
-    B.show(meddlyout, 2);
+    B.showGraph(meddlyout);
     printf("\n\nC: ");
-    C.show(meddlyout, 2);
+    C.showGraph(meddlyout);
   }
 
   return C;
@@ -201,12 +201,12 @@ void reorderVariablesByRebuilding(dd_edge &e)
 	  start.note_time();
 	  printf("Time interval: %.4e seconds\n", start.get_last_seconds());
 
-	  printf("Source: %d\n", e.getNodeCount());
-	  printf("Final: %d\n", e2.getNodeCount());
+	  printf("Source: %lu\n", e.getNodeCount());
+	  printf("Final: %lu\n", e2.getNodeCount());
 	}
 
 	f->createEdge(long(0), e);
-	printf("Source Discarded: %d\n", e.getNodeCount());
+	printf("Source Discarded: %lu\n", e.getNodeCount());
 
 	{
 	  global_rebuilder gr(target, f);
@@ -217,8 +217,8 @@ void reorderVariablesByRebuilding(dd_edge &e)
 	  start.note_time();
 	  printf("Time interval: %.4e seconds\n", start.get_last_seconds());
 
-	  printf("Final: %d\n", e2.getNodeCount());
-	  printf("Source: %d\n", e.getNodeCount());
+	  printf("Final: %lu\n", e2.getNodeCount());
+	  printf("Source: %lu\n", e.getNodeCount());
 	}
 }
 

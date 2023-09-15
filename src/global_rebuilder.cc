@@ -136,7 +136,7 @@ int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) 
 }
 
 MEDDLY::dd_edge MEDDLY::global_rebuilder::rebuild(const dd_edge& e) {
-  if (e.getForest() != _source) {
+  if (!e.isAttachedTo(_source)) {
     throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 

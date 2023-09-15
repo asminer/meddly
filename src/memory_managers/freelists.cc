@@ -17,7 +17,7 @@
 */
 
 #include "freelists.h"
-#include "../io.h"
+#include "../operators.h"
 #include "../error.h"
 
 // #define DEBUG_FREELISTS
