@@ -612,7 +612,7 @@ void MEDDLY::forest::readEdge(input &s, dd_edge &E, const node_handle* map)
         E.set(lnode);
     } else {
         // Non-terminal
-        E.set(map[lnode]);
+        E.set_and_link(map[lnode]);
     }
 }
 
@@ -1241,7 +1241,10 @@ bool MEDDLY::expert_forest
     Deal with cases where nothing will be displayed.
   */
   bool isReachable =
-    deflt.useReferenceCounts ? (getNodeInCount(p)) : (hasReachableBit(p)) ;
+    isTerminalNode(p) ||
+    (
+        deflt.useReferenceCounts ? (getNodeInCount(p)) : (hasReachableBit(p))
+    );
 
   if (isTerminalNode(p)) {
     if (!(flags & SHOW_TERMINALS))  return false;

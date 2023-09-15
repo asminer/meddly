@@ -42,7 +42,7 @@
 MEDDLY::dd_edge::dd_edge(forest* p)
 {
 #ifdef DEBUG_CLEANUP
-    fprintf(stderr, "Creating dd_edge %p\n", this);
+    std::cout << "Creating dd_edge" << std::endl;
 #endif
     label = nullptr;
     node = 0;
@@ -55,7 +55,7 @@ MEDDLY::dd_edge::dd_edge(forest* p)
 MEDDLY::dd_edge::dd_edge(const dd_edge& e)
 {
 #ifdef DEBUG_CLEANUP
-    fprintf(stderr, "Creating dd_edge %p\n", this);
+    std::cout << "Creating dd_edge via copy" << std::endl;
 #endif
     init(e);
 }
@@ -74,7 +74,7 @@ MEDDLY::dd_edge& MEDDLY::dd_edge::operator=(const dd_edge& e)
 MEDDLY::dd_edge::~dd_edge()
 {
 #ifdef DEBUG_CLEANUP
-    fprintf(stderr, "Deleting dd_edge %p\n", this);
+    std::cout << "Deleting dd_edge" << std::endl;
 #endif
     detach();
 }
@@ -86,6 +86,9 @@ void MEDDLY::dd_edge::attach(forest* p)
     );
     if (p == efp) return;
     if (efp) {
+#ifdef DEBUG_CLEANUP
+        std::cout << "unlinking " << node << " in dd_edge::attach" << std::endl;
+#endif
         efp->unlinkNode(node);
         node = 0;
         edge_int = 0;
@@ -258,6 +261,28 @@ void MEDDLY::dd_edge::set(node_handle n)
                 forest::getForestWithID(parentFID)
         );
         if (efp) {
+#ifdef DEBUG_CLEANUP
+            std::cout << "unlinking " << node << " in dd_edge::set" << std::endl;
+#endif
+            efp->unlinkNode(node);
+            node = n;
+        } else {
+            node = 0;
+        }
+    }
+}
+
+void MEDDLY::dd_edge::set_and_link(node_handle n)
+{
+    if (node != n) {
+        expert_forest* efp = static_cast <expert_forest*> (
+                forest::getForestWithID(parentFID)
+        );
+        if (efp) {
+#ifdef DEBUG_CLEANUP
+            std::cout << "unlinking " << node << " in dd_edge::set" << std::endl;
+            std::cout << "linking " << n << " in dd_edge::set" << std::endl;
+#endif
             efp->unlinkNode(node);
             node = efp->linkNode(n);
         } else {
@@ -265,4 +290,5 @@ void MEDDLY::dd_edge::set(node_handle n)
         }
     }
 }
+
 

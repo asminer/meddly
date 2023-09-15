@@ -1033,9 +1033,7 @@ MEDDLY::node_headers::linkNode(node_handle p)
     }
 
 #ifdef TRACK_DELETIONS
-    fprintf(stdout, "\t+Node %d count now %ld\n",
-            p, incoming_counts->get(size_t(p)));
-    fflush(stdout);
+    std::cout << "\t+Node " << p << " count now " << incoming_counts->get(size_t(p)) << std::endl;
 #endif
 
     return p;
@@ -1055,16 +1053,13 @@ MEDDLY::node_headers::unlinkNode(node_handle p)
 
     if (incoming_counts->isPositiveAfterDecrement(size_t(p))) {
 #ifdef TRACK_DELETIONS
-        fprintf(stdout, "\t+Node %d count now %ld\n",
-                p, incoming_counts->get(size_t(p)));
-        fflush(stdout);
+        std::cout << "\t-Node " << p << " count now " << incoming_counts->get(size_t(p)) << std::endl;
 #endif
         return;
     }
 
 #ifdef TRACK_DELETIONS
-    fprintf(stdout, "\t+Node %d count now zero\n", p);
-    fflush(stdout);
+    std::cout << "\t-Node " << p << " count now zero" << std::endl;
 #endif
 
     lastUnlink(p);

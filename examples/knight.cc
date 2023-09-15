@@ -529,6 +529,8 @@ void generate()
             expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED |
             expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED
     );
+
+//    boolF->showInfo(myout, 1);
 }
 
 int main(int argc, const char** argv)

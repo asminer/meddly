@@ -165,6 +165,7 @@ class MEDDLY::dd_edge {
         // Added here to ease the transition
         //
         void set(node_handle n);
+        void set_and_link(node_handle n);
 
         inline void setEdgeValue(long value) {
             edge_int = value;
@@ -196,7 +197,6 @@ class MEDDLY::dd_edge {
                 (node == e.node) &&
                 (raw_value == e.raw_value);
         }
-
 
     private:
         char* label;            // for displaying
