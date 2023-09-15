@@ -162,8 +162,8 @@ void notEqual(int movea, int moveb, MEDDLY::dd_edge& constr)
     const int colb = rowb-1;
 
     if (verbose) {
-        cout << "    (x_" << rowa << " != " << rowb << ") v ";
-        cout << "(x_" << cola << " != " << colb << ")\n";
+        cout << "    (x_" << rowa << " != x_" << rowb << ") v ";
+        cout << "(x_" << cola << " != x_" << colb << ")\n";
     }
 
     dd_edge xrowa(mtF), xcola(mtF), xrowb(mtF), xcolb(mtF);
@@ -195,8 +195,8 @@ void usage(const char* arg)
     cout << "Build and count solutions to the Knight's tour on an NxM chessboard.\n";
     cout << "\nLegal switches:\n";
     cout << "\t-h:\tThis help\n\n";
-    cout << "\t-a t\tAccumulate from top down\n";
-    cout << "\t-a b\tAccumulate from bottom up (default)\n";
+    cout << "\t-a t\tAccumulate/remove from top down\n";
+    cout << "\t-a b\tAccumulate/remove from bottom up (default)\n";
     cout << "\t-b n m\tBeginning position (default is 1 1)\n";
     cout << "\t-d:\tToggle debugging (default: off)\n";
     cout << "\t-n N\tSet number of rows\n";
@@ -410,6 +410,35 @@ void generate()
     std::cout << "Approx. " << card << " total moves\n";
 
     std::cout << "\nRestricting to tours\n";
+
+    dd_edge nodup(boolF);
+
+    if (topdown) {
+        for (int i=N*M; i>0; i--) {
+            std::cout << "    " << i;
+            for (int j=i-1; j>0; j--) {
+                std::cout << '.';
+                std::cout.flush();
+                notEqual(i, j, nodup);
+                tours *= nodup;
+            }
+            std::cout << std::endl;
+        }
+    } else {
+        for (int i=1; i<=N*M; i++) {
+            std::cout << "    " << i;
+            for (int j=i+1; j<=N*M; j++) {
+                std::cout << '.';
+                std::cout.flush();
+                notEqual(i, j, nodup);
+                tours *= nodup;
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    apply(CARDINALITY, tours, card);
+    std::cout << "Approx. " << card << " tours (no repeated squares)\n";
 }
 
 int main(int argc, const char** argv)
