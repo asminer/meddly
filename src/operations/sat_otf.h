@@ -25,9 +25,11 @@ namespace MEDDLY {
   /// Set up a numerical_opname for "forward saturation".
   satotf_opname* initOtfSaturationForward();
 
+  satotf_opname* initOtfBfsForward();
+
+
   /// Set up a numerical_opname for "backward saturation".
   satotf_opname* initOtfSaturationBackward();
 }
 
 #endif
-

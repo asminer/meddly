@@ -216,6 +216,8 @@ namespace MEDDLY {
     */
     satotf_opname* SATURATION_OTF_FORWARD();
 
+    satotf_opname* BFS_OTF_FORWARD();
+    
     /** Forward reachability using saturation.
         Transition relation is specified implicitly.
     */

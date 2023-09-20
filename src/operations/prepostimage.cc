@@ -23,6 +23,7 @@
 #include "../compute_table.h"
 #include "../oper_binary.h"
 #include "../ops_builtin.h"
+#include <list>
 
 // #define TRACE_ALL_OPS
 
@@ -89,10 +90,13 @@ class MEDDLY::image_op : public binary_operation {
       return c;
     }
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
+    virtual void computeDDEdgeSC(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag,std::list<int>* shouldConfirm);
     virtual node_handle compute(node_handle a, node_handle b);
+    virtual node_handle computeSC(node_handle a, node_handle b,std::list<int>* shouldConfirm);
   protected:
     binary_operation* accumulateOp;
     virtual node_handle compute_rec(node_handle a, node_handle b) = 0;
+    virtual node_handle compute_recSC(node_handle a, node_handle b,std::list<int>* shouldConfirm) = 0;
 
     expert_forest* argV;
     expert_forest* argM;
@@ -145,11 +149,41 @@ void MEDDLY::image_op
   }
   c.set(cnode);
 }
+void MEDDLY::image_op
+::computeDDEdgeSC(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag,std::list<int>* shouldConfirm)
+{
+  node_handle cnode;
+  if (a.getForest() == argV) {
+#ifdef TRACE_ALL_OPS
+    printf("computing top-level product(%d, %d)\n", a.getNode(), b.getNode());
+#endif
+    // printf("computeDDEdgeSC calling computeSC\n" );
+    cnode = computeSC(a.getNode(), b.getNode(),shouldConfirm);
+#ifdef TRACE_ALL_OPS
+    printf("computed top-level product(%d, %d) = %d\n", a.getNode(), b.getNode(), cnode);
+#endif
+  } else {
+#ifdef TRACE_ALL_OPS
+    printf("computing top-level product(%d, %d)\n", b.getNode(), a.getNode());
+#endif
+    cnode = compute(b.getNode(), a.getNode());
+#ifdef TRACE_ALL_OPS
+    printf("computed top-level product(%d, %d) = %d\n", b.getNode(), a.getNode(), cnode);
+#endif
+  }
+  c.set(cnode);
+}
 
 MEDDLY::node_handle MEDDLY::image_op::compute(node_handle a, node_handle b)
 {
   MEDDLY_DCASSERT(accumulateOp);
   return compute_rec(a, b);
+}
+
+MEDDLY::node_handle MEDDLY::image_op::computeSC(node_handle a, node_handle b,std::list<int>* shouldConfirm)
+{
+  MEDDLY_DCASSERT(accumulateOp);
+  return compute_recSC(a, b,shouldConfirm);
 }
 
 // ******************************************************************
@@ -169,6 +203,7 @@ class MEDDLY::relXset_mdd : public image_op {
 
   protected:
     virtual node_handle compute_rec(node_handle a, node_handle b);
+    virtual node_handle compute_recSC(node_handle a, node_handle b,std::list<int>* shouldConfirm);
     virtual node_handle processTerminals(node_handle mdd, node_handle mxd) = 0;
 };
 
@@ -177,6 +212,8 @@ MEDDLY::relXset_mdd::relXset_mdd(binary_opname* oc, expert_forest* a1,
 : image_op(oc, a1, a2, res, acc)
 {
 }
+
+MEDDLY::node_handle MEDDLY::relXset_mdd::compute_recSC(node_handle a, node_handle b,std::list<int>* shouldConfirm){printf("return 0\n" );return 0;}
 
 MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handle mxd)
 {
@@ -301,6 +338,7 @@ class MEDDLY::setXrel_mdd : public image_op {
 
   protected:
     virtual node_handle compute_rec(node_handle a, node_handle b);
+    virtual node_handle compute_recSC(node_handle a, node_handle b,std::list<int>* shouldConfirm);
     virtual node_handle processTerminals(node_handle mdd, node_handle mxd) = 0;
 };
 
@@ -308,6 +346,123 @@ MEDDLY::setXrel_mdd::setXrel_mdd(binary_opname* oc,
   expert_forest* a1, expert_forest* a2, expert_forest* res, binary_operation* acc)
 : image_op(oc, a1, a2, res, acc)
 {
+}
+
+MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_recSC(node_handle mdd, node_handle mxd,std::list<int>* shouldConfirm)
+{
+  // termination conditions
+  if (mxd == 0 || mdd == 0) return 0;
+  if (argM->isTerminalNode(mxd)) {
+    if (argV->isTerminalNode(mdd)) {
+      return processTerminals(mdd, mxd);
+    }
+    // mxd is identity
+    if (argV == resF)
+      return resF->linkNode(mdd);
+  }
+
+  // check the cache
+  node_handle result = 0;
+  ct_entry_key* Key = findResult(mdd, mxd, result);
+  if (0==Key) {
+#ifdef TRACE_ALL_OPS
+    printf("computing new setXrel(%d, %d), got %d from cache\n", mdd, mxd, result);
+#endif
+
+    return result;
+  }
+
+#ifdef TRACE_ALL_OPS
+  printf("computing new setXrel(%d, %d)\n", mdd, mxd);
+#endif
+
+
+  // check if mxd and mdd are at the same level
+  const int mddLevel = argV->getNodeLevel(mdd);
+  const int mxdLevel = argM->getNodeLevel(mxd);
+  const int rLevel = MAX(ABS(mxdLevel), mddLevel);
+  const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
+  unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
+
+  // Initialize mdd reader
+  unpacked_node *A = unpacked_node::New();
+  if (mddLevel < rLevel) {
+    A->initRedundant(argV, rLevel, mdd, true);
+  } else {
+    argV->unpackNode(A, mdd, FULL_ONLY);
+  }
+
+  if (mddLevel > ABS(mxdLevel)) {
+    //
+    // Skipped levels in the MXD,
+    // that's an important special case that we can handle quickly.
+    for (unsigned i=0; i<rSize; i++) {
+      C->d_ref(i) = compute_recSC(A->d(i), mxd,shouldConfirm);
+    }
+  } else {
+    //
+    // Need to process this level in the MXD.
+    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
+
+    // clear out result (important!)
+    for (unsigned i=0; i<rSize; i++) C->d_ref(i) = 0;
+
+    // Initialize mxd readers, note we might skip the unprimed level
+    unpacked_node *Ru = unpacked_node::New();
+    unpacked_node *Rp = unpacked_node::New();
+    if (mxdLevel < 0) {
+      Ru->initRedundant(argM, rLevel, mxd, false);
+    } else {
+      argM->unpackNode(Ru, mxd, SPARSE_ONLY);
+    }
+
+    dd_edge newstatesE(resF), cdj(resF);
+
+    // loop over mxd "rows"
+    for (unsigned iz=0; iz<Ru->getNNZs(); iz++) {
+      unsigned i = Ru->i(iz);
+      if (0==A->d(i))   continue;
+      if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(iz)))) {
+        Rp->initIdentity(argM, rLevel, i, Ru->d(iz), false);
+      } else {
+        argM->unpackNode(Rp, Ru->d(iz), SPARSE_ONLY);
+      }
+
+      // loop over mxd "columns"
+      for (unsigned jz=0; jz<Rp->getNNZs(); jz++) {
+        unsigned j = Rp->i(jz);
+        // ok, there is an i->j "edge".
+        // determine new states to be added (recursively)
+        // and add them
+        node_handle newstates = compute_recSC(A->d(i), Rp->d(jz),shouldConfirm);
+        if (0==newstates) continue;
+        shouldConfirm[mddLevel].push_back(j);
+        if (0==C->d(j)) {
+          C->d_ref(j) = newstates;
+          continue;
+        }
+
+        // there's new states and existing states; union them.
+        newstatesE.set(newstates);
+        cdj.set(C->d(j));
+        accumulateOp->computeTemp(newstatesE, cdj, cdj);
+        C->set_d(j, cdj);
+      } // for j
+
+    } // for i
+
+    unpacked_node::recycle(Rp);
+    unpacked_node::recycle(Ru);
+  } // else
+
+  // cleanup mdd reader
+  unpacked_node::recycle(A);
+
+  result = resF->createReducedNode(-1, C);
+#ifdef TRACE_ALL_OPS
+  printf("computed new setXrel(%d, %d) = %d\n", mdd, mxd, result);
+#endif
+  return saveResult(Key, mdd, mxd, result);
 }
 
 MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handle mxd)
@@ -1512,4 +1667,3 @@ MEDDLY::binary_opname* MEDDLY::initializeMVmult()
 {
   return new MVmult_opname;
 }
-

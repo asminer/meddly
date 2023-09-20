@@ -20,6 +20,7 @@
 #define MEDDLY_OPER_BINARY_H
 
 #include "oper.h"
+#include <list>
 
 namespace MEDDLY {
     class dd_edge;
@@ -58,6 +59,8 @@ class MEDDLY::binary_operation : public operation {
 
         virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2,
                 dd_edge &res, bool userFlag) = 0;
+        virtual void computeDDEdgeSC(const dd_edge &ar1, const dd_edge &ar2,
+                dd_edge &res, bool userFlag,std::list<int>* shouldConfirm){};
 
     protected:
         inline void operationCommutes() {
