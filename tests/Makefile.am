@@ -10,7 +10,8 @@ noinst_PROGRAMS = \
   bug_02 \
   chk_evtimes_float \
   sat_test nqueens check_xA chk_copy chk_cross \
-  kanban kan_show kan_batch kan_index kan_io
+  kanban kan_show kan_batch kan_index kan_io \
+  refcount
 
 TESTS = \
   bug_00 \
@@ -18,7 +19,8 @@ TESTS = \
   bug_02 \
   chk_evtimes_float \
   sat_test nqueens check_xA chk_copy chk_cross \
-  kanban kan_show kan_batch kan_index kan_io
+  kanban kan_show kan_batch kan_index kan_io \
+  refcount
 
 AM_CXXFLAGS = -Wall
 
@@ -68,3 +70,6 @@ kan_index_LDADD = ../src/libmeddly.la
 
 kan_io_SOURCES = kan_io.cc simple_model.h simple_model.cc
 kan_io_LDADD = ../src/libmeddly.la
+
+refcount_SOURCES = refcount.cc
+refcount_LDADD = ../src/libmeddly.la

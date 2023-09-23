@@ -18,5 +18,6 @@ kan_io
 kan_show
 kanban
 nqueens
+refcount
 sat_test
 kan_io.data.*
