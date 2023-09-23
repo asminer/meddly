@@ -462,8 +462,10 @@ void generate()
     std::cout << "Approx. " << card << " total moves\n";
 
     std::cout << "\nRestricting to tours\n";
+    std::cout << "\tBuilding unique constraint\n";
 
-    dd_edge nodup(boolF);
+    dd_edge unique(boolF), nodup(boolF);
+    boolF->createEdge(true, unique);
     if (topdown) {
         for (int i=N*M; i>0; i--) {
             std::cout << "    " << i;
@@ -471,7 +473,7 @@ void generate()
             uniqueDown(i, nodup);
             std::cout << "..1";
             std::cout.flush();
-            tours *= nodup;
+            unique *= nodup;
 
             std::cout << " \t(" << boolF->getCurrentNumNodes()
                       << " forest nodes)"
@@ -484,13 +486,16 @@ void generate()
             uniqueDown(i, nodup);
             std::cout << "..1";
             std::cout.flush();
-            tours *= nodup;
+            unique *= nodup;
 
             std::cout << " \t(" << boolF->getCurrentNumNodes()
                       << " forest nodes)"
                       << std::endl;
         }
     }
+
+    std::cout << "\tApplying unique constraint\n";
+    tours *= unique;
 
     apply(CARDINALITY, tours, card);
     std::cout << "Approx. " << card << " tours (no repeated squares)\n";
