@@ -73,7 +73,7 @@ void test_MT_full_Reductions(expert_forest* f, const char* what)
     fixed[3] = x1.getNode();
     fixed[4] = x2.getNode();
 
-    std::cerr << "Building " << what << " nodes from full ";
+    std::cerr << "    Building " << what << " MT nodes from full ";
 
     timer T;
 
@@ -89,6 +89,55 @@ void test_MT_full_Reductions(expert_forest* f, const char* what)
                 un->d_ref(i) = f->linkNode(fixed[d]);
             }
             roots[b] = f->createReducedNode(-1, un);
+        } // for b
+        for (unsigned b=0; b<BATCHSIZE; b++) {
+            f->unlinkNode(roots[b]);
+        }
+    } // for n
+
+    T.note_time();
+
+    std::cerr << ' ' << T.get_last_seconds() << " seconds\n";
+
+#ifdef REPORTING
+    ostream_output out(std::cout);
+    f->reportStats(out, "    ", ~0u);
+#endif
+}
+
+
+void test_EV_full_Reductions(expert_forest* f, const char* what)
+{
+    dd_edge zero(f), x1(f), x2(f);
+
+    f->createEdge(0L, zero);
+
+    f->createEdgeForVar(1, false, x1);
+    f->createEdgeForVar(2, false, x2);
+
+    node_handle fixed[3];
+    fixed[0] = zero.getNode();
+    fixed[1] = x1.getNode();
+    fixed[2] = x2.getNode();
+
+    std::cerr << "    Building " << what << " EV nodes from full ";
+
+    timer T;
+
+    node_handle roots[BATCHSIZE];
+
+    for (unsigned n=0; n<NUMBATCHES; n++) {
+        if (0==n%64) std::cerr << '.';
+        for (unsigned b=0; b<BATCHSIZE; b++) {
+            unpacked_node* un = unpacked_node::New();
+            un->bind_to_forest(f, 3, VARSIZE, true);
+            for (unsigned i=0; i<VARSIZE; i++) {
+                int d = Equilikely(0, 2);
+                un->d_ref(i) = f->linkNode(fixed[d]);
+                un->setEdge(i, long(Equilikely(0, 10)));
+            }
+            long x;
+            f->createReducedNode(-1, un, x, roots[b]);
         } // for b
         for (unsigned b=0; b<BATCHSIZE; b++) {
             f->unlinkNode(roots[b]);
@@ -134,6 +183,18 @@ int main()
         F = D->createForest(false, range_type::INTEGER,
                         edge_labeling::MULTI_TERMINAL, p);
         test_MT_full_Reductions((expert_forest*) F, "sparse");
+        destroyForest(F);
+
+        p.setFullStorage();
+        F = D->createForest(false, range_type::INTEGER,
+                        edge_labeling::EVPLUS, p);
+        test_EV_full_Reductions((expert_forest*) F, "  full");
+        destroyForest(F);
+
+        p.setSparseStorage();
+        F = D->createForest(false, range_type::INTEGER,
+                        edge_labeling::EVPLUS, p);
+        test_EV_full_Reductions((expert_forest*) F, "sparse");
         destroyForest(F);
 
         MEDDLY::cleanup();

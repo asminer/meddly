@@ -98,8 +98,14 @@ void MEDDLY::evmdd_pluslong
   int sz = this->getVariableSize(vh);
 
   long* terms_long = new long[sz];
-  for (int i = 0; i < sz; i++) {
-    terms_long[i] = terms[i];
+  if (terms) {
+    for (int i = 0; i < sz; i++) {
+        terms_long[i] = terms[i];
+    }
+  } else {
+    for (int i = 0; i < sz; i++) {
+        terms_long[i] = i;
+    }
   }
 
   createEdgeForVarTempl<OP, long>(vh, vp, terms_long, a);
