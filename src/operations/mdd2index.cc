@@ -110,7 +110,7 @@ MEDDLY::mdd2index_operation
   }
 
 #ifdef TRACE_ALL_OPS
-  printf("calling mdd2index::compute(%d, %d)\n", height, a);
+  printf("calling mdd2index::compute(%d, %d)\n", k, a);
 #endif
 
   // Initialize node builder
