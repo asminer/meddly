@@ -59,7 +59,8 @@ AC_CHECK_FUNCS([getrusage gettimeofday memmove memset strtol malloc_size malloc_
 AC_CONFIG_FILES([Makefile
                  examples/Makefile
                  src/Makefile
-                 tests/Makefile])
+                 tests/Makefile
+                 timing/Makefile])
 
 AC_OUTPUT
 

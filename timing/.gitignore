@@ -1,0 +1,7 @@
+*.o
+*.lo
+.dirstamp
+*.log
+*.trs
+.libs
+reduce
