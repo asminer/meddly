@@ -197,6 +197,8 @@ int main()
         test_EV_full_Reductions((expert_forest*) F, "sparse");
         destroyForest(F);
 
+        std::cerr << "\n";
+
         MEDDLY::cleanup();
         return 0;
     }
