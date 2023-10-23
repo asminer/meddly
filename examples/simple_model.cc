@@ -313,7 +313,7 @@ void explicitReachset(const char* const* events, int nEvents,
   // exploration loop.
   MEDDLY::enumerator I(expl);
   for (;;) {
-    unexplored.clear();
+    f->createEdge(false, unexplored);
     I.start(expl);
     if (!I) break;    // nothing left to explore, bail out
     // explore everything in expl

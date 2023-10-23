@@ -220,7 +220,7 @@ void MEDDLY::forest::unregisterDDEdges()
     for (unsigned i = 1; i < roots_next; ++i) {
         if (roots[i].edge) {
             MEDDLY_DCASSERT(0==roots[i].nextHole);
-            roots[i].edge->clear();
+            roots[i].edge->set(0);
             roots[i].edge->index = 0;
             roots[i].edge->parentFID = 0;
         }

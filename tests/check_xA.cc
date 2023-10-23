@@ -298,8 +298,8 @@ int main(int argc, const char** argv)
   if (!impl_Ax_check(x, P)) return 1;
 
   // Avoid active node warning
-  ss.clear();
-  P.clear();
+  evpmdds->createEdge(long(0), ss);
+  mtmxds->createEdge(float(0), P);
 
   cleanup();
   return 0;

@@ -110,7 +110,7 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
   int* minterm = new int[Vars+1];
   int* minprime = new int[Vars+1];
 
-  out.clear();
+  f->createEdge(float(0), out);
   for (int i=0; i<terms; i++) {
 
     randomizeMinterm(false, varSize-1, minterm, Vars+1);

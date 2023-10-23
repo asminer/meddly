@@ -92,7 +92,19 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
   if (f->isForRelations()) minprime = new int[Vars+1];
 
 
-  out.clear();
+  switch (f->getRangeType()) {
+      case range_type::BOOLEAN:
+              f->createEdge(false, out);
+              break;
+
+      case range_type::INTEGER:
+              f->createEdge(long(0), out);
+              break;
+
+      case range_type::REAL:
+              f->createEdge(float(0), out);
+              break;
+  }
   for (int i=0; i<terms; i++) {
     randomizeMinterm(false, 4, minterm, Vars+1);
     if (minprime) {

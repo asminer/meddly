@@ -380,7 +380,7 @@ void AndAlongRowsThenCols(dd_edge *C, const lifegrid &G)
       std::cerr << ".";
       std::cerr.flush();
       apply(INTERSECTION, C[i], C[j], C[j]);
-      C[i].clear();
+      C[i].set(0);
     } // for c
     std::cerr << "\n";
   } // for r
@@ -399,7 +399,7 @@ void AndAlongColsThenRows(dd_edge *C, const lifegrid &G)
       std::cerr << ".";
       std::cerr.flush();
       apply(INTERSECTION, C[i], C[j], C[j]);
-      C[i].clear();
+      C[i].set(0);
     } // for c
     std::cerr << "\n";
   } // for r
@@ -413,7 +413,7 @@ void AndAlongColsThenRows(dd_edge *C, const lifegrid &G)
     std::cerr << c;
     std::cerr.flush();
     apply(INTERSECTION, C[i], C[j], C[j]);
-    C[i].clear();
+    C[i].set(0);
   }
   std::cerr << "\nDone!\n";
 }
@@ -571,7 +571,7 @@ int main(int argc, const char** argv)
   watch.note_time();
   AndAlongColsThenRows(C, G);
   answer = C[N];
-  C[N].clear();
+  C[N].set(0);
   delete[] C;
   watch.note_time();
   cerr << "Constraint combination took " << watch.get_last_seconds();

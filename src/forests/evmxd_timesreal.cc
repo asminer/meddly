@@ -136,6 +136,7 @@ void MEDDLY::evmxd_timesreal::normalize(unpacked_node &nb, float& ev) const
       temp = double(temp) / ev;
       nb.setEdge(i, temp);
     } else {
+      nb.d_ref(i) = 0;
       nb.setEdge(i, 0.0f);
     }
   }

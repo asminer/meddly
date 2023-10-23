@@ -87,11 +87,11 @@ int main()
 
     if (badCount(5, x1)) return 1;
 
-    tmp.clear();
+    mdd->createEdge(false, tmp);
 
     if (badCount(1, x123)) return 1;
 
-    x123.clear();
+    mdd->createEdge(false, x123);
 
     if (badCount(1, x1)) return 1;
 

@@ -108,7 +108,6 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(edge_type::VOID == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = f->isExtensibleLevel(k) ? 1 : unsigned(f->getLevelSize(k));
@@ -127,7 +126,6 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   float ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = unsigned(f->getLevelSize(k));
@@ -146,7 +144,6 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   int ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(edge_type::INT == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = unsigned(f->getLevelSize(k));
@@ -165,7 +162,6 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   long ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = unsigned(f->getLevelSize(k));
@@ -184,7 +180,6 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(edge_type::VOID == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = unsigned(f->getLevelSize(k));
@@ -204,7 +199,6 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, int ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(edge_type::INT == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = unsigned(f->getLevelSize(k));
@@ -226,7 +220,6 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, long ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = unsigned(f->getLevelSize(k));
@@ -248,7 +241,6 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, float ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = unsigned(f->getLevelSize(k));
@@ -399,10 +391,8 @@ void MEDDLY::unpacked_node
         index = (unsigned*) realloc(index, nalloc*sizeof(unsigned));
         if (!index) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
         alloc = nalloc;
-        if (edge_type::VOID != the_edge_type) {
-            edge = (edge_value*) realloc(edge, nalloc*sizeof(edge_value));
-            if (!edge) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-        }
+        edge = (edge_value*) realloc(edge, nalloc*sizeof(edge_value));
+        if (!edge) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
 }
 
@@ -667,12 +657,13 @@ bool MEDDLY::unpacked_node::isSorted() const
 
 void MEDDLY::unpacked_node::clearEdges(unsigned stop)
 {
+    MEDDLY_DCASSERT(down);
+    MEDDLY_DCASSERT(edge);
     if (edge_type::VOID == the_edge_type) {
         for (unsigned i=0; i<stop; i++) {
             down[i] = eparent->getTransparentNode();
         }
     } else {
-        MEDDLY_DCASSERT(edge);
         for (unsigned i=0; i<stop; i++) {
             eparent->getTransparentEdge(down[i], edge[i]);
         }
