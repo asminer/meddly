@@ -32,18 +32,23 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
   public:
     class OP : public EVencoder<float> {
       public:
+          /*
         static inline void setEdge(edge_value &ptr, float v) {
             ptr.set(v);
         }
+        */
         static inline bool isIdentityEdge(const edge_value& ev) {
             return ev.equals(float(1.0));
         }
+        /*
         static inline bool isTransparentEdge(const edge_value& ev) {
             return ev.equals(float(0.0));
         }
+        */
         static inline double apply(double a, double b) {
           return a*b;
         }
+        /*
         static inline void makeEmptyEdge(dd_edge &e) {
           e.set(0, float(0));
         }
@@ -51,10 +56,12 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
           ep = 0;
           ev.set(0.0f);
         }
+        */
         static inline void unionEq(float &a, float b) {
           a += b;
         }
         // bonus
+        /*
         static inline bool notClose(float a, float b) {
           if (a) {
             double diff = a-b;
@@ -63,6 +70,7 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
             return ABS(b) > 1e-10;
           }
         }
+        */
     };
 
   public:

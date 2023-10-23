@@ -77,7 +77,7 @@ class MEDDLY::edge_value {
         // Getters for the value
         //
 
-        inline long getInt() const {
+        inline int getInt() const {
             MEDDLY_DCASSERT(isInt());
             return ev_int;
         }
@@ -85,11 +85,11 @@ class MEDDLY::edge_value {
             MEDDLY_DCASSERT(isLong());
             return ev_long;
         }
-        inline long getFloat() const {
+        inline float getFloat() const {
             MEDDLY_DCASSERT(isFloat());
             return ev_float;
         }
-        inline long getDouble() const {
+        inline double getDouble() const {
             MEDDLY_DCASSERT(isDouble());
             return ev_double;
         }

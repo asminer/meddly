@@ -194,7 +194,7 @@ namespace MEDDLY {
           createEdge(k-1, start, batchP, dc_val, dc_ptr);
           dontcare.set(dc_ptr, dc_val);
         } else {
-          OPERATION::makeEmptyEdge(dontcare);
+          F->getTransparentEdge(dontcare);
         }
 
         //
@@ -245,7 +245,7 @@ namespace MEDDLY {
             createEdge(k-1, start, batchP, these_val, these_ptr);
             these.set(these_ptr, these_val);
           } else {
-            OPERATION::makeEmptyEdge(these);
+            F->getTransparentEdge(dontcare);
           }
 
           //

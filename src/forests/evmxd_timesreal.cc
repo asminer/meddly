@@ -130,14 +130,13 @@ void MEDDLY::evmxd_timesreal::normalize(unpacked_node &nb, float& ev) const
   MEDDLY_DCASSERT(ev != 0.0f);
   for (int i=0; i<stop; i++) {
     if (0==nb.d(i)) continue;
-    float temp;
-    nb.getEdge(i, temp);
-    if (OP::notClose(0.0f, temp)) {
-      temp = double(temp) / ev;
-      nb.setEdge(i, temp);
-    } else {
+    if (nb.getEdge(i).equals(float(0))) {
       nb.d_ref(i) = 0;
       nb.setEdge(i, 0.0f);
+    } else {
+      double temp = nb.getEdge(i).getFloat();
+      temp /= ev;
+      nb.setEdge(i, float(temp));
     }
   }
 }

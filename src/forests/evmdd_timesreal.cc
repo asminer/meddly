@@ -128,10 +128,14 @@ void MEDDLY::evmdd_timesreal::normalize(unpacked_node &nb, float& ev) const
   ev = nb.ef(minindex);
   for (int i=0; i<stop; i++) {
     if (0==nb.d(i)) continue;
-    float temp;
-    nb.getEdge(i, temp);
-    temp /= ev;
-    nb.setEdge(i, temp);
+    if (nb.getEdge(i).equals(float(0))) {
+      nb.d_ref(i) = 0;
+      nb.setEdge(i, 0.0f);
+    } else {
+      double temp = nb.getEdge(i).getFloat();
+      temp /= ev;
+      nb.setEdge(i, float(temp));
+    }
   }
 }
 

@@ -30,24 +30,30 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
   public:
     class OP : public EVencoder<long> {
       public:
+          /*
         static inline void setEdge(edge_value &ptr, long v) {
           ptr.set(v);
         }
+        */
         static inline bool isIdentityEdge(const edge_value &p) {
           return p.equals(0L);
         }
+        /*
         static inline bool isTransparentEdge(const edge_value &p) {
           return isIdentityEdge(p);
         }
         static inline long getRedundantEdge() {
           return 0;
         }
+        */
         static inline long apply(double a, double b) {
           return a + b;
         }
+        /*
         static inline void makeEmptyEdge(dd_edge &e) {
           e.set(0, long(0));
         }
+        */
         static inline void unionEq(long &a, long b) {
           if (b < a) {
             a = b;

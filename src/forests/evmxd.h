@@ -300,7 +300,7 @@ namespace MEDDLY {
         // Process "don't care, don't change" pairs, if any
         //
         dd_edge dontcare(F);
-        OPERATION::makeEmptyEdge(dontcare);
+        F->getTransparentEdge(dontcare);
 
         if (dch > start) {
           T dc_ev;
@@ -434,7 +434,7 @@ namespace MEDDLY {
           createEdgeUn(-k-1, start, batchP, dc_val, dc_ptr);
           dontcare.set(dc_ptr, dc_val);
         } else {
-          OPERATION::makeEmptyEdge(dontcare);
+          F->getTransparentEdge(dontcare);
         }
 
         //
@@ -487,7 +487,7 @@ namespace MEDDLY {
             createEdgeUn(-k-1, start, batchP, these_val, these_ptr);
             these.set(these_ptr, these_val);
           } else {
-            OPERATION::makeEmptyEdge(these);
+            F->getTransparentEdge(dontcare);
           }
 
           //
