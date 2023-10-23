@@ -46,7 +46,6 @@ MEDDLY::dd_edge::dd_edge(forest* p)
 #endif
     label = nullptr;
     node = 0;
-    edge_int = 0;
     if (p)  p->registerEdge(*this);
     else    parentFID = 0;
 }
@@ -91,7 +90,6 @@ void MEDDLY::dd_edge::attach(forest* p)
 #endif
         efp->unlinkNode(node);
         node = 0;
-        edge_int = 0;
         efp->unregisterEdge(*this);
     }
     if (p) {
@@ -246,11 +244,11 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
     if (efp) {
         efp->registerEdge(*this);
         node = efp->linkNode(e.node);
-        edge_int = e.edge_int;
+        edgeval = e.edgeval;
     } else {
         parentFID = 0;
         node = 0;
-        edge_int = 0;
+        edgeval.set();
     }
 }
 

@@ -30,15 +30,13 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
   public:
     class OP : public EVencoder<long> {
       public:
-        static inline void setEdge(void* ptr, long v) {
-          writeValue(ptr, v);
+        static inline void setEdge(edge_value &ptr, long v) {
+          ptr.set(v);
         }
-        static inline bool isIdentityEdge(const void* p) {
-          long ev;
-          readValue(p, ev);
-          return (0 == ev);
+        static inline bool isIdentityEdge(const edge_value &p) {
+          return p.equals(0L);
         }
-        static inline bool isTransparentEdge(const void* p) {
+        static inline bool isTransparentEdge(const edge_value &p) {
           return isIdentityEdge(p);
         }
         static inline long getRedundantEdge() {
@@ -72,9 +70,6 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
       const int* vplist, long &term) const;
 
 
-    virtual bool isTransparentEdge(node_handle p, const void* v) const;
-    virtual void getTransparentEdge(node_handle &p, void* v) const;
-    virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
     virtual bool isRedundant(const unpacked_node &nb) const;
     virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;
 
@@ -98,9 +93,9 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
 
   protected:
     virtual void normalize(unpacked_node &nb, long& ev) const;
-    virtual void showEdgeValue(output &s, const void* edge) const;
-    virtual void writeEdgeValue(output &s, const void* edge) const;
-    virtual void readEdgeValue(input &s, void* edge);
+    virtual void showEdgeValue(output &s, const edge_value &edge) const;
+    virtual void writeEdgeValue(output &s, const edge_value &edge) const;
+    virtual void readEdgeValue(input &s, edge_value &edge);
     virtual const char* codeChars() const;
 
   protected:

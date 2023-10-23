@@ -21,6 +21,7 @@
 
 #include "error.h"
 #include "io.h"
+#include "edge_value.h"
 
 #include <cstring>
 
@@ -80,11 +81,11 @@ namespace MEDDLY {
     class MEDDLY::EVencoder {
         public:
             static size_t edgeBytes();
-            static void writeValue(void* ptr, T val);
-            static void readValue(const void* ptr, T &val);
-            static void show(output &s, const void* ptr);
-            static void write(output &s, const void* ptr);
-            static void read(input &s, void* ptr);
+            static void writeValue(edge_value &ptr, T val);
+            static void readValue(const edge_value &ptr, T &val);
+            static void show(output &s, const edge_value &ptr);
+            static void write(output &s, const edge_value &ptr);
+            static void read(input &s, edge_value &ptr);
     };
 
 inline MEDDLY::node_handle
@@ -157,19 +158,19 @@ MEDDLY::EVencoder<T>::edgeBytes()
 }
 template<typename T>
 inline void
-MEDDLY::EVencoder<T>::writeValue(void* ptr, T val)
+MEDDLY::EVencoder<T>::writeValue(edge_value &ptr, T val)
 {
-  memcpy(ptr, &val, sizeof(T));
+    ptr.set(val);
 }
 template<typename T>
 inline void
-MEDDLY::EVencoder<T>::readValue(const void* ptr, T &val)
+MEDDLY::EVencoder<T>::readValue(const edge_value &ptr, T &val)
 {
-  memcpy(&val, ptr, sizeof(T));
+    ptr.get(val);
 }
 
 template<typename T>
-inline void MEDDLY::EVencoder<T>::show(output &s, const void* ptr)
+inline void MEDDLY::EVencoder<T>::show(output &s, const edge_value &ptr)
 {
   T val;
   readValue(ptr, val);
@@ -179,7 +180,7 @@ inline void MEDDLY::EVencoder<T>::show(output &s, const void* ptr)
 namespace MEDDLY {
 
 template<>
-inline void EVencoder<int>::write(output &s, const void* ptr)
+inline void EVencoder<int>::write(output &s, const edge_value &ptr)
 {
   int val;
   readValue(ptr, val);
@@ -187,7 +188,7 @@ inline void EVencoder<int>::write(output &s, const void* ptr)
 }
 
 template<>
-inline void EVencoder<long>::write(output &s, const void* ptr)
+inline void EVencoder<long>::write(output &s, const edge_value &ptr)
 {
   long val;
   readValue(ptr, val);
@@ -195,7 +196,7 @@ inline void EVencoder<long>::write(output &s, const void* ptr)
 }
 
 template<>
-inline void EVencoder<float>::write(output &s, const void* ptr)
+inline void EVencoder<float>::write(output &s, const edge_value &ptr)
 {
   float val;
   readValue(ptr, val);
@@ -203,7 +204,7 @@ inline void EVencoder<float>::write(output &s, const void* ptr)
 }
 
 template<>
-inline void EVencoder<double>::write(output &s, const void* ptr)
+inline void EVencoder<double>::write(output &s, const edge_value &ptr)
 {
   double val;
   readValue(ptr, val);
@@ -211,25 +212,25 @@ inline void EVencoder<double>::write(output &s, const void* ptr)
 }
 
 template<>
-inline void EVencoder<int>::read(input &s, void* ptr)
+inline void EVencoder<int>::read(input &s, edge_value &ptr)
 {
   writeValue(ptr, int(s.get_integer()));
 }
 
 template<>
-inline void EVencoder<long>::read(input &s, void* ptr)
+inline void EVencoder<long>::read(input &s, edge_value &ptr)
 {
   writeValue(ptr, long(s.get_integer()));
 }
 
 template<>
-inline void EVencoder<float>::read(input &s, void* ptr)
+inline void EVencoder<float>::read(input &s, edge_value &ptr)
 {
   writeValue(ptr, float(s.get_real()));
 }
 
 template<>
-inline void EVencoder<double>::read(input &s, void* ptr)
+inline void EVencoder<double>::read(input &s, edge_value &ptr)
 {
   writeValue(ptr, double(s.get_real()));
 }

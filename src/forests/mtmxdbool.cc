@@ -23,8 +23,6 @@ MEDDLY::mt_mxd_bool::mt_mxd_bool(unsigned dsl, domain *d, const policies &p, int
 : mtmxd_forest(dsl, d, range_type::BOOLEAN, p, level_reduction_rule)
 {
   initializeForest();
-
-  transparent=bool_Tencoder::value2handle(tv);
 }
 
 MEDDLY::mt_mxd_bool::~mt_mxd_bool()

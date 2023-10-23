@@ -31,16 +31,14 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
   public:
     class OP : public EVencoder<long> {
       public:
-        static inline void setEdge(void* ptr, long v) {
-          writeValue(ptr, v);
+        static inline void setEdge(edge_value &ptr, long v) {
+          ptr.set(v);
         }
-        static inline bool isIdentityEdge(const void* p) {
-          long ev;
-          readValue(p, ev);
-          return (0 == ev);
+        static inline bool isIdentityEdge(const edge_value& ev) {
+            return ev.equals(long(0));
         }
-        static inline bool isTransparentEdge(const void* p) {
-          return isIdentityEdge(p);
+        static inline bool isTransparentEdge(const edge_value& ev) {
+          return isIdentityEdge(ev);
         }
         static inline long getRedundantEdge() {
           return 0;
@@ -67,9 +65,6 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
     virtual void createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a);
     virtual void evaluate(const dd_edge &f, const int* vlist, long &term) const;
 
-    virtual bool isTransparentEdge(node_handle p, const void* v) const;
-    virtual void getTransparentEdge(node_handle &p, void* v) const;
-    virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
     virtual bool isRedundant(const unpacked_node &nb) const;
     virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;
 
@@ -85,9 +80,9 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
 
   protected:
     virtual void normalize(unpacked_node &nb, long& ev) const;
-    virtual void showEdgeValue(output &s, const void* edge) const;
-    virtual void writeEdgeValue(output &s, const void* edge) const;
-    virtual void readEdgeValue(input &s, void* edge);
+    virtual void showEdgeValue(output &s, const edge_value &edge) const;
+    virtual void writeEdgeValue(output &s, const edge_value &edge) const;
+    virtual void readEdgeValue(input &s, edge_value &edge);
     virtual void showUnhashedHeader(output &s, const void* uh) const;
     virtual void writeUnhashedHeader(output &s, const void* uh) const;
     virtual void readUnhashedHeader(input &s, unpacked_node &nb) const;

@@ -30,8 +30,10 @@ MEDDLY::evmdd_timesreal::evmdd_timesreal(unsigned dsl, domain *d, const policies
  : evmdd_forest(dsl, d, range_type::REAL, edge_labeling::EVTIMES,
          p, level_reduction_rule)
 {
-  setEdgeSize(sizeof(float), true);
-  initializeForest();
+    setFloatEdges();
+    transparent_node = 0;
+    transparent_edge.set(float(0));
+    initializeForest();
 }
 
 MEDDLY::evmdd_timesreal::~evmdd_timesreal()
@@ -80,27 +82,6 @@ void MEDDLY::evmdd_timesreal
   evaluateT<OP, float>(f, vlist, term);
 }
 
-bool MEDDLY::evmdd_timesreal
-::isTransparentEdge(node_handle ep, const void* ev) const
-{
-  if (ep) return false;
-  return OP::isTransparentEdge(ev);
-}
-
-void MEDDLY::evmdd_timesreal
-::getTransparentEdge(node_handle &ep, void* ev) const
-{
-  OP::makeEmptyEdge(ep, ev);
-}
-
-bool MEDDLY::evmdd_timesreal
-::areEdgeValuesEqual(const void* eva, const void* evb) const
-{
-  float val1, val2;
-  OP::readValue(eva, val1);
-  OP::readValue(evb, val2);
-  return !OP::notClose(val1, val2);
-}
 
 bool MEDDLY::evmdd_timesreal::isRedundant(const unpacked_node &nb) const
 {
@@ -116,18 +97,18 @@ bool MEDDLY::evmdd_timesreal::isIdentityEdge(const unpacked_node &nb, int i) con
 void MEDDLY::evmdd_timesreal::readEdgeValue(input &s, dd_edge &E) const
 {
     s.stripWS();
-    E.edge_float = s.get_real();
+    E.setEdgeValue(float(s.get_real()));
 }
 
 void MEDDLY::evmdd_timesreal::writeEdgeValue(output &s, const dd_edge &E) const
 {
-    s.put(E.edge_float);
+    s.put(E.getEdgeFloat());
     s.put(' ');
 }
 
 void MEDDLY::evmdd_timesreal::showEdgeValue(output &s, const dd_edge &E) const
 {
-    s.put(E.edge_float);
+    s.put(E.getEdgeFloat());
     s.put(' ');
 }
 
@@ -154,17 +135,17 @@ void MEDDLY::evmdd_timesreal::normalize(unpacked_node &nb, float& ev) const
   }
 }
 
-void MEDDLY::evmdd_timesreal::showEdgeValue(output &s, const void* edge) const
+void MEDDLY::evmdd_timesreal::showEdgeValue(output &s, const edge_value &edge) const
 {
   OP::show(s, edge);
 }
 
-void MEDDLY::evmdd_timesreal::writeEdgeValue(output &s, const void* edge) const
+void MEDDLY::evmdd_timesreal::writeEdgeValue(output &s, const edge_value &edge) const
 {
   OP::write(s, edge);
 }
 
-void MEDDLY::evmdd_timesreal::readEdgeValue(input &s, void* edge)
+void MEDDLY::evmdd_timesreal::readEdgeValue(input &s, edge_value &edge)
 {
   OP::read(s, edge);
 }

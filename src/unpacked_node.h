@@ -21,6 +21,7 @@
 
 #include "defines.h"
 #include "encoders.h"
+#include "edge_value.h"
 #include "dd_edge.h"
 
 namespace MEDDLY {
@@ -297,7 +298,7 @@ class MEDDLY::unpacked_node {
         inline void set_d(unsigned n, dd_edge &E)
         {
             MEDDLY_DCASSERT(E.isAttachedTo(parent));
-            MEDDLY_DCASSERT(0==edge_bytes);
+            MEDDLY_DCASSERT(edge_type::VOID == the_edge_type);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n,
                     is_full ? size : nnzs);
             down[n] = E.node;
@@ -326,6 +327,7 @@ class MEDDLY::unpacked_node {
             return index[n];
         }
 
+        /*
         /// Get a pointer to an edge
         inline const void* eptr(unsigned i) const
         {
@@ -345,60 +347,79 @@ class MEDDLY::unpacked_node {
                     is_full ? size : nnzs);
             return ((char*) edge) + i * edge_bytes;
         }
+        */
 
         /// Set the nth pointer and edge value from E, and destroy E.
         inline void set_de(unsigned n, dd_edge &E)
         {
             MEDDLY_DCASSERT(E.isAttachedTo(parent));
             MEDDLY_DCASSERT(edge);
-            MEDDLY_DCASSERT(edge_bytes);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n,
                     is_full ? size : nnzs);
             down[n] = E.node;
-            memcpy(
-                ((char*) edge) + n * edge_bytes, & (E.raw_value), edge_bytes
-            );
+            edge[n] = E.getEdgeValue();
             E.node = 0; // avoid having to adjust the link count
         }
 
         /// Get the edge value, as an integer.
         inline void getEdge(unsigned i, long& val) const
         {
-            MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
-            MEDDLY::EVencoder<long>::readValue(eptr(i), val);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
+                    is_full ? size : nnzs);
+            MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
+            edge[i].get(val);
         }
 
         /// Get the edge value, as a float.
         inline void getEdge(unsigned i, float& val) const
         {
-            MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
-            MEDDLY::EVencoder<float>::readValue(eptr(i), val);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
+                    is_full ? size : nnzs);
+            MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
+            edge[i].get(val);
+        }
+
+        /// Get the edge value, generic
+        inline const edge_value& getEdge(unsigned i) const
+        {
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
+                    is_full ? size : nnzs);
+            return edge[i];
         }
 
         /// Set the edge value, as an integer.
         inline void setEdge(unsigned i, long ev)
         {
-            MEDDLY_DCASSERT(sizeof(long) == edge_bytes);
-            MEDDLY::EVencoder<long>::writeValue(eptr_write(i), ev);
-#ifdef DEVELOPMENT_CODE
-            long test_ev = 256;
-            getEdge(i, test_ev);
-            MEDDLY_DCASSERT(test_ev == ev);
-#endif
-        }
-
-        // Temporary hack, until we re-do this object
-        //
-        inline void setEdge(unsigned i, const dd_edge &E) {
-            memcpy(eptr_write(i), E.getEdgePtr(), edge_bytes);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
+                    is_full ? size : nnzs);
+            MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
+            edge[i].set(ev);
         }
 
         /// Set the edge value, as a float.
         inline void setEdge(unsigned i, float ev)
         {
-            MEDDLY_DCASSERT(sizeof(float) == edge_bytes);
-            MEDDLY::EVencoder<float>::writeValue(eptr_write(i), ev);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
+                    is_full ? size : nnzs);
+            MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
+            edge[i].set(ev);
         }
+
+        // Set the edge value, generic
+        inline void setEdge(unsigned i, const edge_value &ev) {
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
+                    is_full ? size : nnzs);
+            MEDDLY_DCASSERT(ev.hasType(the_edge_type));
+            edge[i] = ev;
+        }
+
+        // Set the edge value, generic
+        inline edge_value& setEdge(unsigned i) {
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
+                    is_full ? size : nnzs);
+            return edge[i];
+        }
+
 
         /// Get the edge value, as an integer.
         inline long ei(unsigned i) const
@@ -535,14 +556,22 @@ class MEDDLY::unpacked_node {
         /// Does this node have edge values?
         inline bool hasEdges() const
         {
-            return edge_bytes;
+            return the_edge_type != edge_type::VOID;
+            // return edge_bytes;
+        }
+
+        /// Edge type
+        inline edge_type getEdgeType() const {
+            return the_edge_type;
         }
 
         /// Number of bytes per edge
+        /*
         inline unsigned edgeBytes() const
         {
             return edge_bytes;
         }
+        */
 
     public:
         /// Get the node's hash
@@ -630,26 +659,22 @@ class MEDDLY::unpacked_node {
             is_full = full;
         }
 
-    protected:
+    public:
+        /// Set down edges from 0..stop-1 to the transparent edge
+        void clearEdges(unsigned stop);
+
         /// Set all down edges (and values) to 0, for full storage
-        inline void clearFullEdges()
-        {
+        inline void clearFullEdges() {
             MEDDLY_DCASSERT(isFull());
-            memset(down, 0, unsigned(size) * sizeof(node_handle));
-            if (edge_bytes) {
-                memset(edge, 0, unsigned(size) * edge_bytes);
-            }
+            clearEdges(size);
         }
 
         /// Set all down edges (and values) to 0, for sparse storage
-        inline void clearSparseEdges()
-        {
+        inline void clearSparseEdges() {
             MEDDLY_DCASSERT(isSparse());
-            memset(down, 0, unsigned(nnzs) * sizeof(node_handle));
-            if (edge_bytes) {
-                memset(edge, 0, unsigned(nnzs) * edge_bytes);
-            }
+            clearEdges(nnzs);
         }
+
 
 
     public:
@@ -742,16 +767,17 @@ class MEDDLY::unpacked_node {
         */
         node_handle* down;
         unsigned* index;
-        void* edge;
+        edge_value* edge;
+        edge_type the_edge_type;
         bool can_be_extensible;
         bool is_extensible;
         unsigned alloc;
-        unsigned ealloc;
+        // unsigned ealloc;
         unsigned size;
         unsigned nnzs;
         int level;
         unsigned h;
-        unsigned char edge_bytes; // number of bytes for an edge value.
+        // unsigned char edge_bytes; // number of bytes for an edge value.
         bool is_full;
 #ifdef DEVELOPMENT_CODE
         bool has_hash;

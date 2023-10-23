@@ -275,7 +275,30 @@ MEDDLY::pattern_storage
   hashed_slots = slotsForBytes(f->hashedHeaderBytes());
   identifier_start = hashed_start + hashed_slots;
   down_start = identifier_start + 1;
-  slots_per_edge = slotsForBytes(f->edgeBytes()); // 0 if not a part of edge-valued forest
+    switch (f->getEdgeType()) {
+        case edge_type::VOID:
+            slots_per_edge = 0;
+            break;
+
+        case edge_type::INT:
+            slots_per_edge = slotsForBytes(sizeof(int));
+            break;
+
+        case edge_type::LONG:
+            slots_per_edge = slotsForBytes(sizeof(long));
+            break;
+
+        case edge_type::FLOAT:
+            slots_per_edge = slotsForBytes(sizeof(float));
+            break;
+
+        case edge_type::DOUBLE:
+            slots_per_edge = slotsForBytes(sizeof(double));
+            break;
+
+        default:
+           MEDDLY_DCASSERT(false);
+    }
 }
 
 MEDDLY::pattern_storage::~pattern_storage()

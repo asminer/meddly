@@ -335,7 +335,30 @@ MEDDLY::best_storage
   hashed_start = unhashed_start + unhashed_slots;
   hashed_slots = slotsForBytes(f->hashedHeaderBytes());
   down_start =  hashed_start + hashed_slots;
-  slots_per_edge = slotsForBytes(f->edgeBytes());
+    switch (f->getEdgeType()) {
+        case edge_type::VOID:
+            slots_per_edge = 0;
+            break;
+
+        case edge_type::INT:
+            slots_per_edge = slotsForBytes(sizeof(int));
+            break;
+
+        case edge_type::LONG:
+            slots_per_edge = slotsForBytes(sizeof(long));
+            break;
+
+        case edge_type::FLOAT:
+            slots_per_edge = slotsForBytes(sizeof(float));
+            break;
+
+        case edge_type::DOUBLE:
+            slots_per_edge = slotsForBytes(sizeof(double));
+            break;
+
+        default:
+           MEDDLY_DCASSERT(false);
+    }
 }
 
 MEDDLY::best_storage::~best_storage()
@@ -406,7 +429,7 @@ MEDDLY::node_address MEDDLY::best_storage
       // EV, check for transparent edges
       //
       for (int i=0; i<nb.getSize(); i++) {
-        if (!getParent()->isTransparentEdge(nb.d(i), nb.eptr(i))) {
+        if (!parent->isTransparentEdge(nb.d(i), nb.getEdge(i))) {
           nnzs++;
           truncsize = i+1;
         }
@@ -415,7 +438,7 @@ MEDDLY::node_address MEDDLY::best_storage
       //
       // MT, check for pointers to transparent nodes
       //
-      const node_handle tv = getParent()->getTransparentNode();
+      const node_handle tv = parent->getTransparentNode();
       for (int i=0; i<nb.getSize(); i++) {
         if (nb.d(i) != tv) {
           nnzs++;
@@ -456,7 +479,7 @@ MEDDLY::node_address MEDDLY::best_storage
       MEDDLY_DCASSERT(nb.getSize()<MAX_PATTERN_LEN);
 
       if (!slots_per_edge) {
-        const node_handle tv = getParent()->getTransparentNode();
+        const node_handle tv = parent->getTransparentNode();
 
         int nhseq = 1;
         for (int i=0; i<nb.getSize(); i++) {
@@ -617,11 +640,11 @@ void MEDDLY::best_storage::unlinkDownAndRecycle(node_address addr)
 
     for (unsigned int i=0; i<trunc_pattern_size; i++) {
       if(pattern_from_index[i]!='t')
-        getParent()->unlinkNode(down[pattern_from_index[i]-'A']);
+        parent->unlinkNode(down[pattern_from_index[i]-'A']);
     }
     } else {
       for (unsigned int i=0; i<size; i++) {
-        getParent()->unlinkNode(down[i]);
+        parent->unlinkNode(down[i]);
       }
     }
 
@@ -684,11 +707,11 @@ void MEDDLY::best_storage::markDownPointers(node_address addr)
 
     for (unsigned int i=0; i<trunc_pattern_size; i++) {
       if(pattern_from_index[i]!='t')
-        getParent()->markNode(down[pattern_from_index[i]-'A']);
+        parent->markNode(down[pattern_from_index[i]-'A']);
     }
     } else {
       for (unsigned int i=0; i<size; i++) {
-        getParent()->markNode(down[i]);
+        parent->markNode(down[i]);
       }
     }
 }
@@ -734,7 +757,7 @@ bool MEDDLY::best_storage
     if (is_extensible) return false;
   }
 
-  const node_handle tv = getParent()->getTransparentNode();
+  const node_handle tv = parent->getTransparentNode();
   const node_handle* down = chunk + down_start;
 
 
@@ -750,7 +773,7 @@ bool MEDDLY::best_storage
       if(pattern_from_index[i]!='t')
         trunc_pattern_size = i+1;
       }
-    const node_handle tv = getParent()->getTransparentNode();
+    const node_handle tv = parent->getTransparentNode();
     if(n.isFull())
       {
       //
@@ -825,9 +848,9 @@ bool MEDDLY::best_storage
         //
         if (edge) {
           for (unsigned int z=0; z<nnz; z++) {
-            if (!getParent()->areEdgeValuesEqual(
-                                                 edge + z*slots_per_edge, n.eptr(index[z])
-                                                 )) return false;
+            if (! n.getEdge(index[z]).equals(edge + z*slots_per_edge)) {
+              return false;
+            }
           } // for z
         }
         // must be equal
@@ -845,7 +868,7 @@ bool MEDDLY::best_storage
         // check that edges match
         if (n.hasEdges()) {
           for (unsigned int z=0; z<nnz; z++) {
-            if (!getParent()->areEdgeValuesEqual(edge + z*slots_per_edge, n.eptr(z))) {
+            if (! n.getEdge(z).equals(edge + z*slots_per_edge)) {
               return false;
             }
           }
@@ -875,7 +898,7 @@ bool MEDDLY::best_storage
         // check edges
         if (n.hasEdges()) {
           for (unsigned int i=0; i<size; i++) if (down[i]) {
-            if (!getParent()->areEdgeValuesEqual(edge + i*slots_per_edge, n.eptr(i))) {
+            if (! n.getEdge(i).equals(edge + i*slots_per_edge)) {
               return false;
             }
           }
@@ -903,7 +926,7 @@ bool MEDDLY::best_storage
                                             //
         if (n.hasEdges()) {
           for (int z=0; z<n.getNNZs(); z++) {
-            if (!getParent()->areEdgeValuesEqual(edge + n.i(z) * slots_per_edge, n.eptr(z))) {
+            if (! n.getEdge(z).equals(edge + n.i(z) * slots_per_edge)) {
               return false;
             }
           } // for z
@@ -964,7 +987,7 @@ void MEDDLY::best_storage
   };
 
   // if (is_extensible) nr.markAsExtensible(); else nr.markAsNotExtensible();
-  if (is_extensible && getParent()->isExtensibleLevel(nr.getLevel()))
+  if (is_extensible && parent->isExtensibleLevel(nr.getLevel()))
     nr.markAsExtensible();
   else
     nr.markAsNotExtensible();
@@ -972,11 +995,11 @@ void MEDDLY::best_storage
   // Make sure that when an extensible node is unpacked that the trailing edges
   // are filled correctly (regardless of the storage scheme of the unpacked node)
 
-  const node_handle tv = getParent()->getTransparentNode();
+  const node_handle tv = parent->getTransparentNode();
 
   if(is_pattern){
 
-    MEDDLY_DCASSERT(getParent()->isExtensibleLevel(nr.getLevel()) == false);
+    MEDDLY_DCASSERT(parent->isExtensibleLevel(nr.getLevel()) == false);
 
     //pattern node is stored with size of unique pointers + the unique pointers + identifier for the pattern thus formed
 
@@ -1061,18 +1084,14 @@ void MEDDLY::best_storage
       // Copying into a full node
       //
       // Clear locations [0, ext_i]
-      for (int i=0; i<=ext_i; i++) {
-        nr.d_ref(i) = tv;
-        if (nr.hasEdges()) {
-          memset(nr.eptr_write(i), 0, nr.edgeBytes());
-        }
-      }
+      nr.clearEdges(ext_i+1);
+
       // Write the sparse edges
       for (int z=0; z<nnz; z++) {
         int i = index[z];
         nr.d_ref(i) = down[z];
-        if (nr.hasEdges()) {
-          memcpy(nr.eptr_write(i), edge + z*slots_per_edge, nr.edgeBytes());
+        if (edge_type::VOID != nr.getEdgeType()) {
+            nr.setEdge(i).set(parent->getEdgeType(), edge + z*slots_per_edge);
         }
       }
       // Write the extensible edge to the rest (trailing locations)
@@ -1080,9 +1099,9 @@ void MEDDLY::best_storage
         nr.d_ref(i) = ext_d;
         if (nr.hasEdges()) {
           if (ext_ptr)
-            memcpy(nr.eptr_write(i), ext_ptr, nr.edgeBytes());
+            nr.setEdge(i).set(parent->getEdgeType(), ext_ptr);
           else
-            memset(nr.eptr_write(i), 0, nr.edgeBytes());
+            nr.setEdge(i) = parent->getTransparentEdge();
         }
       }
     } else {
@@ -1094,7 +1113,7 @@ void MEDDLY::best_storage
         nr.d_ref(z) = down[z];
         nr.i_ref(z) = index[z];
         if (nr.hasEdges()) {
-          memcpy(nr.eptr_write(z), edge + z*slots_per_edge, nr.edgeBytes());
+          nr.setEdge(z).set(parent->getEdgeType(), edge + z*slots_per_edge);
         }
       } // for z
       if (nr.isExtensible() == is_extensible) {
@@ -1108,9 +1127,9 @@ void MEDDLY::best_storage
           nr.d_ref(z) = ext_d;
           if (nr.hasEdges()) {
             if (ext_ptr)
-              memcpy(nr.eptr_write(z), ext_ptr, nr.edgeBytes());
+              nr.setEdge(z).set(parent->getEdgeType(), ext_ptr);
             else
-              memset(nr.eptr_write(z), 0, nr.edgeBytes());
+              nr.setEdge(z) = parent->getTransparentEdge();
           }
         }
       }
@@ -1129,7 +1148,7 @@ void MEDDLY::best_storage
       for (i=0; i<size; i++) {
         nr.d_ref(i) = down[i];
         if (nr.hasEdges()) {
-          memcpy(nr.eptr_write(i), edge + i*slots_per_edge, nr.edgeBytes());
+          nr.setEdge(i).set(parent->getEdgeType(), edge + i*slots_per_edge);
         }
       }
       if (FULL_OR_SPARSE == st2 && is_extensible == nr.isExtensible()) {
@@ -1141,9 +1160,9 @@ void MEDDLY::best_storage
           nr.d_ref(i) = ext_d;
           if (nr.hasEdges()) {
             if (ext_ptr)
-              memcpy(nr.eptr_write(i), ext_ptr, nr.edgeBytes());
+              nr.setEdge(i).set(parent->getEdgeType(), ext_ptr);
             else
-              memset(nr.eptr_write(i), 0, nr.edgeBytes());
+              nr.setEdge(i) = parent->getTransparentEdge();
           }
         }
       }
@@ -1157,7 +1176,7 @@ void MEDDLY::best_storage
         nr.d_ref(z) = down[i];
         nr.i_ref(z) = i;
         if (nr.hasEdges()) {
-          memcpy(nr.eptr_write(z), edge + i*slots_per_edge, nr.edgeBytes());
+          nr.setEdge(z).set(parent->getEdgeType(), edge + i*slots_per_edge);
         }
         z++;
       } // for i
@@ -1173,9 +1192,9 @@ void MEDDLY::best_storage
           nr.d_ref(z) = ext_d;
           if (nr.hasEdges()) {
             if (ext_ptr)
-              memcpy(nr.eptr_write(z), ext_ptr, nr.edgeBytes());
+              nr.setEdge(z).set(parent->getEdgeType(), ext_ptr);
             else
-              memset(nr.eptr_write(z), 0, nr.edgeBytes());
+              nr.setEdge(z) = parent->getTransparentEdge();
           }
         }
       }
@@ -1190,7 +1209,7 @@ void MEDDLY::best_storage
 #endif
 
 #ifdef DEVELOPMENT_CODE
-  if (!is_extensible || getParent()->isExtensibleLevel(nr.getLevel())) {
+  if (!is_extensible || parent->isExtensibleLevel(nr.getLevel())) {
 #ifdef VERIFY_DECODING
     if (!areDuplicates(addr, nr)) {
       FILE_output out(stdout);
@@ -1222,7 +1241,7 @@ unsigned MEDDLY::best_storage::hashNode(int level, node_address addr) const
   //
 
   if (hashed_slots) {
-    s.push(chunk + hashed_start, getParent()->hashedHeaderBytes());
+    s.push(chunk + hashed_start, parent->hashedHeaderBytes());
   }
 
   //
@@ -1262,7 +1281,7 @@ unsigned MEDDLY::best_storage::hashNode(int level, node_address addr) const
       int nnz = size;
       const node_handle* index = down + nnz;
       const node_handle* edge = slots_per_edge ? (index + nnz) : 0;
-      if (getParent()->areEdgeValuesHashed()) {
+      if (parent->areEdgeValuesHashed()) {
         const int edge_bytes = bytesForSlots(slots_per_edge);
         for (int z=0; z<nnz; z++) {
           s.push(index[z], down[z]);
@@ -1277,9 +1296,9 @@ unsigned MEDDLY::best_storage::hashNode(int level, node_address addr) const
       //
       // Node is full
       //
-      const node_handle tv=getParent()->getTransparentNode();
+      const node_handle tv=parent->getTransparentNode();
       const node_handle* edge = slots_per_edge ? (down + size) : 0;
-      if (getParent()->areEdgeValuesHashed()) {
+      if (parent->areEdgeValuesHashed()) {
         const int edge_bytes = bytesForSlots(slots_per_edge);
         for (unsigned i=0; i<size; i++) {
           if (down[i]!=tv) {
@@ -1348,7 +1367,7 @@ int MEDDLY::best_storage
   //
   // full node
   //
-  const node_handle tv=getParent()->getTransparentNode();
+  const node_handle tv=parent->getTransparentNode();
   const node_handle* dnptr = chunk + down_start;
   for (unsigned i=0; i<size; i++) {
     if (tv==dnptr[i]) continue;
@@ -1374,11 +1393,11 @@ MEDDLY::best_storage
   int sz = getSize(raw_size);
   const node_handle* down = chunk + down_start;
   if (isSparse(raw_size)) {
-    MEDDLY_DCASSERT(down[sz-1] != getParent()->getTransparentNode());
+    MEDDLY_DCASSERT(down[sz-1] != parent->getTransparentNode());
     const node_handle* index = down + sz;
     return index[sz-1];
   } else {
-    MEDDLY_DCASSERT(down[sz-1] != getParent()->getTransparentNode());
+    MEDDLY_DCASSERT(down[sz-1] != parent->getTransparentNode());
     return sz-1;
   }
 }
@@ -1403,7 +1422,7 @@ MEDDLY::best_storage
     std::string pattern = generatePatternFromIndex(size);
     return
     (pattern[i]=='t') ?
-    getParent()->getTransparentNode()
+    parent->getTransparentNode()
     : down[pattern[i]-'A'];
   }
 
@@ -1420,7 +1439,7 @@ MEDDLY::best_storage
   }
   return
   (z < 0)
-  ? getParent()->getTransparentNode()
+  ? parent->getTransparentNode()
   : down[z];
 }
 
@@ -1622,7 +1641,7 @@ MEDDLY::best_storage
 
   MEDDLY_DCASSERT(MM);
 
-  int awidth = digits(getParent()->getLastNode());
+  int awidth = digits(parent->getLastNode());
 
   if (!MM->isAddressInUse(a)) {
     //
@@ -1751,13 +1770,9 @@ MEDDLY::best_storage
       for (unsigned int i=0; i<dnlen; i++) {
         if (i) s.put(", ");
 
-        getParent()->showEdgeValue(s, end);
-        s << "=(";
-        for (int j=0; j<slots_per_edge; j++) {
-          if (j) s.put('|');
-          s.put_hex(*end);
-          end++;
-        } // for each slot
+        edge_value ev;
+        ev.set(parent->getEdgeType(), end);
+        parent->showEdgeValue(s, ev);
         s << ")";
       } // for each edge value
       if (isExtensible(raw_size)) s.put(" (ext)");
@@ -1854,19 +1869,23 @@ MEDDLY::node_address MEDDLY::best_storage
     char* edge = (char*) (down + size);
     int edge_bytes = bytesForSlots(slots_per_edge);
     if (nb.isSparse()) {
+      const node_handle tv = parent->getTransparentNode();
+      const edge_value &te = parent->getTransparentEdge();
       for (int i=0; i<size; i++) {
-        getParent()->getTransparentEdge(down[i], edge + i * edge_bytes);
+        down[i] = tv;
+        te.get(parent->getEdgeType(), edge + i * edge_bytes);
       }
       for (int z=0; z<nb.getNNZs(); z++) {
         int i = nb.i(z);
         MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, size);
         down[i] = nb.d(z);
-        memcpy(edge + i * edge_bytes, nb.eptr(z), edge_bytes);
+        nb.getEdge(z).get(parent->getEdgeType(), edge + i * edge_bytes);
       }
     } else {
-      for (int i=0; i<size; i++) down[i] = nb.d(i);
-      // kinda hacky
-      memcpy(edge, nb.eptr(0), size * edge_bytes);
+      for (int i=0; i<size; i++) {
+          down[i] = nb.d(i);
+          nb.getEdge(i).get(parent->getEdgeType(), edge + i * edge_bytes);
+      }
     }
   } else {
     //
@@ -1874,12 +1893,12 @@ MEDDLY::node_address MEDDLY::best_storage
     //
     MEDDLY_DCASSERT(!nb.hasEdges());
     if (nb.isSparse()) {
-      const node_handle tv = getParent()->getTransparentNode();
+      const node_handle tv = parent->getTransparentNode();
       for (int i=0; i<size; i++) {
         down[i] = tv;
       }
       for (int z=0; z<nb.getNNZs(); z++) {
-          MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, (int)nb.i(z), size);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, (int)nb.i(z), size);
         down[nb.i(z)] = nb.d(z);
       }
     } else {
@@ -1977,17 +1996,16 @@ MEDDLY::node_address MEDDLY::best_storage
       for (int z=0; z<size; z++) {
         down[z] = nb.d(z);
         index[z] = nb.i(z);
+        nb.getEdge(z).get(parent->getEdgeType(), edge + z * edge_bytes);
       }
-      // kinda hacky
-      memcpy(edge, nb.eptr(0), size * edge_bytes);
     } else {
       int z = 0;
       for (int i=0; i<nb.getSize(); i++) {
-        if (getParent()->isTransparentEdge(nb.d(i), nb.eptr(i))) continue;
+        if (parent->isTransparentEdge(nb.d(i), nb.getEdge(i))) continue;
         MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, z, size);
         down[z] = nb.d(i);
         index[z] = i;
-        memcpy(edge + z * edge_bytes, nb.eptr(i), edge_bytes);
+        nb.getEdge(i).get(parent->getEdgeType(), edge + z * edge_bytes);
         z++;
       }
       MEDDLY_DCASSERT(size == z);
@@ -2004,7 +2022,7 @@ MEDDLY::node_address MEDDLY::best_storage
       }
     } else {
       int z = 0;
-      const node_handle tv = getParent()->getTransparentNode();
+      const node_handle tv = parent->getTransparentNode();
       for (int i=0; i<nb.getSize(); i++) {
         if (nb.d(i)!=tv) {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, z, size);
@@ -2211,7 +2229,7 @@ std::string MEDDLY::best_storage
   std::string node_pattern;
   char seqid='A';
   std::map<node_handle,char> node_rep;
-  const node_handle tv = getParent()->getTransparentNode();
+  const node_handle tv = parent->getTransparentNode();
   //build the pattern
   if(nb.isSparse())
     {

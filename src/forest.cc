@@ -455,7 +455,7 @@ MEDDLY::forest::~forest()
       if (roots[i].edge) {
           roots[i].edge->parentFID = 0;
           roots[i].edge->node = 0;
-          roots[i].edge->raw_value = 0;
+          roots[i].edge->edgeval.set();
       }
   }
   delete[] roots;
@@ -628,17 +628,17 @@ void MEDDLY::forest::writeEdge(output &s, const dd_edge &E, const node_handle* m
     s.put('\n');
 }
 
-void MEDDLY::forest::showEdgeValue(output &s, const void* edge) const
+void MEDDLY::forest::showEdgeValue(output &s, const edge_value &edge) const
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::forest::writeEdgeValue(output &s, const void* edge) const
+void MEDDLY::forest::writeEdgeValue(output &s, const edge_value &edge) const
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::forest::readEdgeValue(input &s, void* edge)
+void MEDDLY::forest::readEdgeValue(input &s, edge_value &edge)
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -877,7 +877,7 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   //
   // Initialize node characteristics to defaults
   //
-  edge_bytes = 0;
+  the_edge_type = edge_type::VOID;
   hash_edge_values = false;
   unhashed_bytes = 0;
   hashed_bytes = 0;
@@ -1728,7 +1728,7 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
       if (nb->hasEdges()) {
         for (int i=0; i<n; i++) {
           readEdgeValue(s, hack);
-          nb->setEdge(i, hack);
+          nb->setEdge(i, hack.getEdgeValue());
         }
 #ifdef DEBUG_READ
         printf("edges ");

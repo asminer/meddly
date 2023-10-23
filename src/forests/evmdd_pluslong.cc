@@ -35,9 +35,11 @@ MEDDLY::evmdd_pluslong
          index_set ? edge_labeling::INDEX_SET : edge_labeling::EVPLUS,
          p, level_reduction_rule)
 {
-  setEdgeSize(sizeof(long), true);
-  if (index_set) setUnhashedSize(sizeof(long));
-  initializeForest();
+    setLongEdges();
+    transparent_node = 0;
+    transparent_edge.set(long(0));
+    if (index_set) setUnhashedSize(sizeof(long));
+    initializeForest();
 }
 
 MEDDLY::evmdd_pluslong::~evmdd_pluslong()
@@ -120,29 +122,6 @@ void MEDDLY::evmdd_pluslong
   evaluateT<OP, long>(f, vlist, term);
 }
 
-bool MEDDLY::evmdd_pluslong
-::isTransparentEdge(node_handle ep, const void* ev) const
-{
-  MEDDLY_DCASSERT(ep != 0 || OP::isTransparentEdge(ev));
-  if (ep != getTransparentNode()) return false;
-  return OP::isTransparentEdge(ev);
-}
-
-void MEDDLY::evmdd_pluslong
-::getTransparentEdge(node_handle &ep, void* ev) const
-{
-  ep = 0;
-  OP::setEdge(ev, OP::getRedundantEdge());
-}
-
-bool MEDDLY::evmdd_pluslong
-::areEdgeValuesEqual(const void* eva, const void* evb) const
-{
-  long val1, val2;
-  OP::readValue(eva, val1);
-  OP::readValue(evb, val2);
-  return (val1 == val2);
-}
 
 bool MEDDLY::evmdd_pluslong::isRedundant(const unpacked_node &nb) const
 {
@@ -287,18 +266,18 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
 void MEDDLY::evmdd_pluslong::readEdgeValue(input &s, dd_edge &E) const
 {
     s.stripWS();
-    E.edge_int = s.get_integer();
+    E.setEdgeValue(s.get_integer());
 }
 
 void MEDDLY::evmdd_pluslong::writeEdgeValue(output &s, const dd_edge &E) const
 {
-    s.put(E.edge_int);
+    s.put(E.getEdgeInt());
     s.put(' ');
 }
 
 void MEDDLY::evmdd_pluslong::showEdgeValue(output &s, const dd_edge &E) const
 {
-    s.put(E.edge_int);
+    s.put(E.getEdgeInt());
     s.put(' ');
 }
 
@@ -332,17 +311,17 @@ void MEDDLY::evmdd_pluslong::normalize(unpacked_node &nb, long& ev) const
   }
 }
 
-void MEDDLY::evmdd_pluslong::showEdgeValue(output &s, const void* edge) const
+void MEDDLY::evmdd_pluslong::showEdgeValue(output &s, const edge_value &edge) const
 {
   OP::show(s, edge);
 }
 
-void MEDDLY::evmdd_pluslong::writeEdgeValue(output &s, const void* edge) const
+void MEDDLY::evmdd_pluslong::writeEdgeValue(output &s, const edge_value &edge) const
 {
   OP::write(s, edge);
 }
 
-void MEDDLY::evmdd_pluslong::readEdgeValue(input &s, void* edge)
+void MEDDLY::evmdd_pluslong::readEdgeValue(input &s, edge_value &edge)
 {
   OP::read(s, edge);
 }

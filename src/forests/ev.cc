@@ -34,8 +34,6 @@ MEDDLY::ev_forest::ev_forest(unsigned dsl, domain *d, bool rel,
 : expert_forest(dsl, d, rel, t, ev, p, level_reduction_rule)
 {
   MEDDLY_DCASSERT(ev != edge_labeling::MULTI_TERMINAL);
-
-  transparent=bool_Tencoder::value2handle(false);
 }
 
 void MEDDLY::ev_forest::showTerminal(output &s, node_handle tnode) const

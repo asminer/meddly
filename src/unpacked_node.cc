@@ -53,13 +53,13 @@ MEDDLY::unpacked_node::unpacked_node()
     extra_hashed = 0;
     ext_h_alloc = 0;
     ext_h_size = 0;
-    down = 0;
-    index = 0;
-    edge = 0;
+    down = nullptr;
+    index = nullptr;
+    edge = nullptr;
     is_extensible = false;
     can_be_extensible = false;
     alloc = 0;
-    ealloc = 0;
+    // ealloc = 0;
     size = 0;
     nnzs = 0;
     level = 0;
@@ -81,12 +81,12 @@ void MEDDLY::unpacked_node::clear()
     free(down);
     free(index);
     free(edge);
-    down = 0;
-    index = 0;
-    edge = 0;
+    down = nullptr;
+    index = nullptr;
+    edge = nullptr;
     is_extensible = false;
     alloc = 0;
-    ealloc = 0;
+    // ealloc = 0;
     size = 0;
     nnzs = 0;
     level = 0;
@@ -108,7 +108,7 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(0==f->edgeBytes());
+    MEDDLY_DCASSERT(edge_type::VOID == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = f->isExtensibleLevel(k) ? 1 : unsigned(f->getLevelSize(k));
@@ -127,14 +127,14 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   float ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(sizeof(float)==f->edgeBytes());
+    MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = unsigned(f->getLevelSize(k));
     bind_to_forest(f, k, nsize, full);
     for (unsigned i=0; i<nsize; i++) {
         down[i] = node;
-        ((float*)edge)[i] = ev;
+        edge[i].set(ev);
     }
     if (!full) {
         for (unsigned i=0; i<nsize; i++) index[i] = i;
@@ -146,14 +146,14 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   int ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(sizeof(int)==f->edgeBytes());
+    MEDDLY_DCASSERT(edge_type::INT == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = unsigned(f->getLevelSize(k));
     bind_to_forest(f, k, nsize, full);
     for (unsigned i=0; i<nsize; i++) {
         down[i] = node;
-        ((int*)edge)[i] = ev;
+        edge[i].set(ev);
     }
     if (!full) {
         for (unsigned i=0; i<nsize; i++) index[i] = i;
@@ -165,14 +165,14 @@ void MEDDLY::unpacked_node::initRedundant(const expert_forest *f, int k,
   long ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT((sizeof ev)==f->edgeBytes());
+    MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = unsigned(f->getLevelSize(k));
     bind_to_forest(f, k, nsize, full);
     for (unsigned i=0; i<nsize; i++) {
         down[i] = node;
-        ((long*)edge)[i] = ev;
+        edge[i].set(ev);
     }
     if (!full) {
         for (unsigned i=0; i<nsize; i++) index[i] = i;
@@ -184,7 +184,7 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(0==f->edgeBytes());
+    MEDDLY_DCASSERT(edge_type::VOID == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = unsigned(f->getLevelSize(k));
@@ -204,7 +204,7 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, int ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(sizeof(int)==f->edgeBytes());
+    MEDDLY_DCASSERT(edge_type::INT == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = unsigned(f->getLevelSize(k));
@@ -212,12 +212,12 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
         bind_to_forest(f, k, nsize, full);
         clearFullEdges();
         down[i] = node;
-        ((int*)edge)[i] = ev;
+        edge[i].set(ev);
     } else {
         bind_to_forest(f, k, 1, full);
         nnzs = 1;
         down[0] = node;
-        ((int*)edge)[0] = ev;
+        edge[0].set(ev);
         index[0] = i;
     }
 }
@@ -226,7 +226,7 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, long ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT((sizeof ev)==f->edgeBytes());
+    MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = unsigned(f->getLevelSize(k));
@@ -234,12 +234,12 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
         bind_to_forest(f, k, nsize, full);
         clearFullEdges();
         down[i] = node;
-        ((long*)edge)[i] = ev;
+        edge[i].set(ev);
     } else {
         bind_to_forest(f, k, 1, full);
         nnzs = 1;
         down[0] = node;
-        ((long*)edge)[0] = ev;
+        edge[0].set(ev);
         index[0] = i;
     }
 }
@@ -248,7 +248,7 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
   unsigned i, float ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(sizeof(float)==f->edgeBytes());
+    MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     unsigned nsize = unsigned(f->getLevelSize(k));
@@ -256,12 +256,12 @@ void MEDDLY::unpacked_node::initIdentity(const expert_forest *f, int k,
         bind_to_forest(f, k, nsize, full);
         clearFullEdges();
         down[i] = node;
-        ((float*)edge)[i] = ev;
+        edge[i].set(ev);
     } else {
         bind_to_forest(f, k, 1, full);
         nnzs = 1;
         down[0] = node;
-        ((float*)edge)[0] = ev;
+        edge[0].set(ev);
         index[0] = i;
     }
 }
@@ -290,9 +290,9 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
         } else {
             if (z) s.put('|');
         }
-        if (eparent->edgeBytes()) {
+        if (edge_type::VOID != the_edge_type) {
             s.put('<');
-            eparent->showEdgeValue(s, eptr(z));
+            eparent->showEdgeValue(s, edge[z]);
             s.put(", ");
         }
         if (eparent->isTerminalNode(d(z))) {
@@ -300,7 +300,9 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
         } else {
             s.put(long(d(z)));
         }
-        if (eparent->edgeBytes()) s.put('>');
+        if (edge_type::VOID != the_edge_type) {
+            s.put('>');
+        }
     }
 
     if (isExtensible()) s.put('*');
@@ -360,12 +362,12 @@ void MEDDLY::unpacked_node::write(output &s, const node_handle* map) const
     //
     // write edges
     //
-    if (eparent->edgeBytes()) {
+    if (edge_type::VOID != the_edge_type) {
         s.put('\n');
         s.put('\t');
         for (unsigned z=0; z<stop; z++) {
             s.put(' ');
-            eparent->showEdgeValue(s, eptr(z));
+            eparent->writeEdgeValue(s, edge[z]);
         }
     }
     s.put('\n');
@@ -397,14 +399,10 @@ void MEDDLY::unpacked_node
         index = (unsigned*) realloc(index, nalloc*sizeof(unsigned));
         if (!index) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
         alloc = nalloc;
-    }
-    if (edge_bytes * size > ealloc) {
-        unsigned nalloc = ((edge_bytes * size)/8+1)*8;
-        MEDDLY_DCASSERT(nalloc>0);
-        MEDDLY_DCASSERT(nalloc>ealloc);
-        edge = realloc(edge, nalloc);
-        if (!edge) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-        ealloc = nalloc;
+        if (edge_type::VOID != the_edge_type) {
+            edge = (edge_value*) realloc(edge, nalloc*sizeof(edge_value));
+            if (!edge) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        }
     }
 }
 
@@ -419,7 +417,7 @@ void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f,
 
     can_be_extensible = f->isExtensibleLevel(k);
     markAsNotExtensible();
-    edge_bytes = f->edgeBytes();
+    the_edge_type = f->getEdgeType();
     resize(ns);
 
     // Allocate headers
@@ -520,9 +518,9 @@ void MEDDLY::unpacked_node::computeHash()
     if (isSparse()) {
         if (eparent->areEdgeValuesHashed()) {
             for (unsigned z=0; z<nnzs; z++) {
-                MEDDLY_DCASSERT(!eparent->isTransparentEdge(d(z), eptr(z)));
+                MEDDLY_DCASSERT(!eparent->isTransparentEdge(d(z), edge[z]));
                 s.push(i(z), unsigned(d(z)));
-                s.push(eptr(z), eparent->edgeBytes());
+                edge[z].hash(s);
             }
         } else {
             for (unsigned z=0; z<nnzs; z++) {
@@ -533,9 +531,9 @@ void MEDDLY::unpacked_node::computeHash()
     } else {
         if (eparent->areEdgeValuesHashed()) {
             for (unsigned n=0; n<size; n++) {
-                if (!eparent->isTransparentEdge(d(n), eptr(n))) {
+                if (!eparent->isTransparentEdge(d(n), edge[n])) {
                     s.push(n, unsigned(d(n)));
-                    s.push(eptr(n), eparent->edgeBytes());
+                    edge[n].hash(s);
                 }
             }
         } else {
@@ -574,7 +572,7 @@ void MEDDLY::unpacked_node::sort()
     // allocate new arrays for index, node handles and edge-values
     node_handle* old_down = down;
     unsigned* old_index = index;
-    void* old_edge = edge;
+    edge_value* old_edge = edge;
     unsigned old_nnzs = nnzs;
 
     down = 0;
@@ -583,20 +581,18 @@ void MEDDLY::unpacked_node::sort()
     size = 0;
     nnzs = 0;
     alloc = 0;
-    ealloc = 0;
     resize(old_nnzs);
 
     // copy into new arrays
     memcpy(down, old_down, sizeof(node_handle) * k);
     memcpy(index, old_index, sizeof(unsigned) * k);
-    memcpy(edge, old_edge, edge_bytes * k);
+    memcpy(edge, old_edge, sizeof(edge_value) * k);
 
     for (auto s_iter = sorter.begin(); s_iter != sorter.end(); s_iter++, k++) {
         unsigned old_location = s_iter->second;
         index[k] = old_index[old_location];
         down[k] = old_down[old_location];
-        memcpy((char*)edge + (k * edge_bytes),
-            (char*)old_edge + (old_location * edge_bytes), edge_bytes);
+        edge[k] = old_edge[old_location];
     }
 
     free(old_down);
@@ -667,6 +663,20 @@ bool MEDDLY::unpacked_node::isSorted() const
     }
 
     return true;
+}
+
+void MEDDLY::unpacked_node::clearEdges(unsigned stop)
+{
+    if (edge_type::VOID == the_edge_type) {
+        for (unsigned i=0; i<stop; i++) {
+            down[i] = eparent->getTransparentNode();
+        }
+    } else {
+        MEDDLY_DCASSERT(edge);
+        for (unsigned i=0; i<stop; i++) {
+            eparent->getTransparentEdge(down[i], edge[i]);
+        }
+    }
 }
 
 void

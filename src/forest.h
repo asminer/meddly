@@ -77,6 +77,62 @@ namespace MEDDLY {
 */
 class MEDDLY::forest {
 
+
+    // ------------------------------------------------------------
+    public: // interpreting edges in the forest
+    // ------------------------------------------------------------
+
+        /**
+            Get the transparent node.
+            This is the default node value for "skipped" edges in sparse nodes.
+        */
+        inline node_handle getTransparentNode() const {
+            return transparent_node;
+        }
+
+        /**
+            Get the transparent edge value.
+            This is the default node value for "skipped" edges in sparse nodes.
+        */
+        inline const edge_value& getTransparentEdge() const {
+            return transparent_edge;
+        }
+
+        /**
+            Is the given edge transparent?
+            If so it may be "skipped" in a sparse node.
+                @param  ep    Node part of the edge to check
+                @param  ev    Value part of the edge to check
+        */
+        inline bool isTransparentEdge(node_handle ep, const edge_value &ev) const {
+            if (ep != transparent_node) return false;
+            return ev == transparent_edge;
+        }
+
+        /**
+            Get the transparent edge value.
+            This is the default edge value for "skipped" edges in sparse nodes.
+            Copy the transparent edge value into the parameters.
+                @param  ep      Put node part of the edge here.
+                @param  ev      Put value part of the edge here.
+        */
+        inline void getTransparentEdge(node_handle &ep, edge_value &ptr) const {
+            ep = transparent_node;
+            ptr = transparent_edge;
+        }
+
+    // ------------------------------------------------------------
+    protected: // transparent edge info, set by derived classes
+    // ------------------------------------------------------------
+
+        /// Transparent node value
+        node_handle transparent_node;
+
+        /// Transparent edge value
+        edge_value  transparent_edge;
+
+
+
     public:
         /// Returns the forest identifier, a unique positive integer per forest.
         /// FID 0 can safely be used to indicate "no forest".
@@ -954,21 +1010,21 @@ class MEDDLY::forest {
 
         /** Show an edge value.
             @param  s       Stream to write to.
-            @param  edge    Pointer to edge value chunk
+            @param  edge    Edge value
         */
-        virtual void showEdgeValue(output &s, const void* edge) const;
+        virtual void showEdgeValue(output &s, const edge_value &edge) const;
 
         /** Write an edge value in machine-readable format.
             @param  s       Stream to write to.
-            @param  edge    Pointer to edge value chunk
+            @param  edge    Edge value
         */
-        virtual void writeEdgeValue(output &s, const void* edge) const;
+        virtual void writeEdgeValue(output &s, const edge_value &edge) const;
 
         /** Read an edge value in machine-readable format.
             @param  s       Stream to read from.
-            @param  edge    Pointer to edge value chunk
+            @param  edge    Edge value
         */
-        virtual void readEdgeValue(input &s, void* edge);
+        virtual void readEdgeValue(input &s, edge_value &edge);
 
 
 public:
@@ -1463,7 +1519,12 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 
     memstats& changeMemStats();
     /// Number of bytes for an edge value.
-    unsigned char edgeBytes() const;
+    // unsigned char edgeBytes() const;
+    /// Get the edge type.
+    inline edge_type getEdgeType() const {
+        return the_edge_type;
+    }
+
     /// Are edge values included when computing the hash.
     bool areEdgeValuesHashed() const;
     /// Extra bytes per node, not hashed.
@@ -1800,11 +1861,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     */
     void getDownPtr(node_handle p, int index, float& ev, node_handle& dn) const;
 
-    /**
-        Get the transparent node.
-        This is the default node value for "skipped" edges in sparse nodes.
-    */
-    node_handle getTransparentNode() const;
 
   // ------------------------------------------------------------
   // Copy a node into an unpacked node
@@ -1904,36 +1960,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
   // abstract virtual, must be overridden.
   //
 
-    /**
-        Is the given edge transparent?
-        If so it may be "skipped" in a sparse node.
-        Should not be called for multi-terminal; it is better to simply
-        compare with the transparent node as given by getTransparentNode().
-          @param  ep    Node part of the edge to check
-          @param  ev    Value part of the edge to check
-    */
-    virtual bool isTransparentEdge(node_handle ep, const void* ev) const = 0;
-
-    /**
-        Get the transparent edge value.
-        This is the default edge value for "skipped" edges in sparse nodes.
-        Copy the transparent edge value into the parameters.
-          @param  ep      Put node part of the edge here.
-          @param  ev      Put value part of the edge here.
-    */
-    virtual void getTransparentEdge(node_handle &ep, void* ptr) const = 0;
-
-    /** Are the given edge values "duplicates".
-        I.e., when determining if two nodes are duplicates,
-        do the given edge values qualify as duplicate values.
-          @param  eva     Pointer to the first edge value
-          @param  evb     Pointer to the second edge value
-
-          @return     true, iff the edge values are "equal".
-          @throws     A TYPE_MISMATCH error if the forest
-                      does not store edge values.
-    */
-    virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const = 0;
 
     virtual void normalize(unpacked_node &nb, long& ev) const;
 
@@ -2099,7 +2125,35 @@ class MEDDLY::expert_forest: public MEDDLY::forest
   // ------------------------------------------------------------
   // inlined setters for derived classes to use.
 
-    void setEdgeSize(unsigned char ebytes, bool hashed);
+    // void setEdgeSize(unsigned char ebytes, bool hashed);
+    /*
+    inline void setEdgeSize(unsigned char ebytes, bool hashed) {
+        MEDDLY_DCASSERT(0 == edge_bytes);
+        edge_bytes = ebytes;
+        hash_edge_values = hashed;
+    }
+    */
+    inline void setVoidEdges() {
+        the_edge_type = edge_type::VOID;
+        hash_edge_values = false;
+    }
+    inline void setIntEdges(bool hashed = true) {
+        the_edge_type = edge_type::INT;
+        hash_edge_values = hashed;
+    }
+    inline void setLongEdges(bool hashed = true) {
+        the_edge_type = edge_type::LONG;
+        hash_edge_values = hashed;
+    }
+    inline void setFloatEdges(bool hashed = false) {
+        the_edge_type = edge_type::FLOAT;
+        hash_edge_values = hashed;
+    }
+    inline void setDoubleEdges(bool hashed = false) {
+        the_edge_type = edge_type::DOUBLE;
+        hash_edge_values = hashed;
+    }
+
     void setUnhashedSize(unsigned char ubytes);
     void setHashedSize(unsigned char hbytes);
 
@@ -2233,9 +2287,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     /// Class that stores nodes.
     node_storage* nodeMan;
 
-    /// Transparent value
-    node_handle transparent;
-
     std::shared_ptr<const variable_order> var_order;
 
   private:
@@ -2252,8 +2303,10 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     node_headers nodeHeaders;
 
 
+    /// Edge type.
+    edge_type the_edge_type;
     /// Number of bytes for an edge
-    unsigned char edge_bytes;
+    // unsigned char edge_bytes;
     /// Are edge values hashed?
     bool hash_edge_values;
     /// Number of bytes of unhashed header
@@ -2363,12 +2416,6 @@ inline MEDDLY::memstats&
 MEDDLY::expert_forest::changeMemStats()
 {
   return mstats;
-}
-
-inline unsigned char
-MEDDLY::expert_forest::edgeBytes() const
-{
-  return edge_bytes;
 }
 
 inline bool
@@ -2800,12 +2847,6 @@ MEDDLY::expert_forest::getDownPtr(MEDDLY::node_handle p, int index, float& ev,
   nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
 }
 
-inline MEDDLY::node_handle
-MEDDLY::expert_forest::getTransparentNode() const
-{
-  return transparent;
-}
-
 inline unsigned
 MEDDLY::expert_forest::getImplicitTableCount() const
 {
@@ -2873,14 +2914,6 @@ MEDDLY::expert_forest::areDuplicates(MEDDLY::node_handle node, const MEDDLY::unp
     return false;
   }
   return nodeMan->areDuplicates(nodeHeaders.getNodeAddress(node), nr);
-}
-
-inline void
-MEDDLY::expert_forest::setEdgeSize(unsigned char ebytes, bool hashed)
-{
-  MEDDLY_DCASSERT(0 == edge_bytes);
-  edge_bytes = ebytes;
-  hash_edge_values = hashed;
 }
 
 inline void

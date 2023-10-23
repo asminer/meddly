@@ -30,18 +30,14 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
   public:
     class OP : public EVencoder<float> {
       public:
-        static inline void setEdge(void* ptr, float v) {
-          writeValue(ptr, v);
+        static inline void setEdge(edge_value &ptr, float v) {
+          ptr.set(v);
         }
-        static inline bool isIdentityEdge(const void* p) {
-          float ev;
-          readValue(p, ev);
-          return !notClose(ev, 1.0);
+        static inline bool isIdentityEdge(const edge_value &p) {
+          return p.equals(1.0f);
         }
-        static inline bool isTransparentEdge(const void* p) {
-          float ev;
-          readValue(p, ev);
-          return (0.0 == ev);
+        static inline bool isTransparentEdge(const edge_value &p) {
+          return p.equals(0.0f);
         }
         static inline double getRedundantEdge() {
           return 1.0f;
@@ -52,9 +48,9 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
         static inline void makeEmptyEdge(dd_edge &e) {
           e.set(0, float(0));
         }
-        static inline void makeEmptyEdge(node_handle &ep, void* ev) {
+        static inline void makeEmptyEdge(node_handle &ep, edge_value &ev) {
           ep = 0;
-          writeValue(ev, 0);
+          ev.set(0.0f);
         }
         static inline void unionEq(float &a, float b) {
           a += b;
@@ -82,9 +78,6 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
     virtual void evaluate(const dd_edge &f, const int* vlist,
       const int* vplist, float &term) const;
 
-    virtual bool isTransparentEdge(node_handle p, const void* v) const;
-    virtual void getTransparentEdge(node_handle &p, void* v) const;
-    virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
     virtual bool isRedundant(const unpacked_node &nb) const;
     virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;
 
@@ -109,9 +102,9 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
 
   protected:
     virtual void normalize(unpacked_node &nb, float& ev) const;
-    virtual void showEdgeValue(output &s, const void* edge) const;
-    virtual void writeEdgeValue(output &s, const void* edge) const;
-    virtual void readEdgeValue(input &s, void* edge);
+    virtual void showEdgeValue(output &s, const edge_value &edge) const;
+    virtual void writeEdgeValue(output &s, const edge_value &edge) const;
+    virtual void readEdgeValue(input &s, edge_value &edge);
     virtual const char* codeChars() const;
 
   protected:

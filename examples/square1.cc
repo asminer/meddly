@@ -89,7 +89,7 @@ void rotateMove(const int* delta, int N, dd_edge &answer)
     bottom = EF->createReducedNode(-1, nk);
   } // for k
 
-  answer.set(bottom, 0);
+  answer.set(bottom, long(0));
 }
 
 
@@ -142,7 +142,7 @@ void exchangeMove(bool left, dd_edge &answer)
     bottom = EF->createReducedNode(-1, nk);
   } //for k
 
-  answer.set(bottom, 0);
+  answer.set(bottom, long(0));
 }
 
 

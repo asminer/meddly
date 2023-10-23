@@ -38,24 +38,9 @@ MEDDLY::mt_forest::mt_forest(unsigned dsl, domain *d, bool rel,
 : expert_forest(dsl, d, rel, t, edge_labeling::MULTI_TERMINAL,
         p, level_reduction_rule)
 {
-}
-
-bool MEDDLY::mt_forest
-::isTransparentEdge(node_handle p, const void* v) const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::mt_forest
-::getTransparentEdge(node_handle &p, void* v) const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-bool MEDDLY::mt_forest
-::areEdgeValuesEqual(const void* eva, const void* evb) const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    setVoidEdges();
+    transparent_node = 0;
+    transparent_edge.set();
 }
 
 bool MEDDLY::mt_forest::isRedundant(const unpacked_node &nb) const

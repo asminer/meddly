@@ -25,6 +25,7 @@ libmeddly_la_SOURCES = \
     dd_edge.h               dd_edge.cc \
     defines.h               \
     domain.h                domain.cc \
+    edge_value.h            edge_value.cc \
     encoders.h              encoders.cc \
     enumerator.h            enumerator.cc \
     error.h                 error.cc \

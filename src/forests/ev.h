@@ -36,7 +36,7 @@ namespace MEDDLY {
     Derived classes probably want to build an OPERATION class
     that contains inlined static methods:
         void setEdge(void*, type v);
-        bool isIdentityEdge(const void*);
+        bool isIdentityEdge(const edge_value &);
 */
 class MEDDLY::ev_forest : public expert_forest {
   protected:
@@ -62,7 +62,7 @@ class MEDDLY::ev_forest : public expert_forest {
       }
       // This might be expensive, so split the loops to cheapest first
       for (unsigned i=0; i<rawsize; i++) {
-        if (!OPERATION::isIdentityEdge(nb.eptr(i))) return false;
+        if (!OPERATION::isIdentityEdge(nb.getEdge(i))) return false;
       }
       return true;
     }
@@ -72,7 +72,8 @@ class MEDDLY::ev_forest : public expert_forest {
       if (nb.getLevel() > 0) return false;
       if (!isIdentityReduced()) return false;
       if (i<0) return false;
-      return (nb.d(unsigned(i)) != 0)  &&  OPERATION::isIdentityEdge(nb.eptr(unsigned(i)));
+      return (nb.d(unsigned(i)) != 0)
+          &&  OPERATION::isIdentityEdge(nb.getEdge(i));
     }
 
   // ------------------------------------------------------------

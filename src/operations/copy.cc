@@ -760,14 +760,18 @@ namespace MEDDLY {
         INTYPE av;
         node_handle an, bn;
         OUTTYPE bv;
-        arg.getEdgeValue(av);
         an = arg.getNode();
 
-        if (argF->isTransparentEdge(an, &av) && argF->getTransparentNode() == resF->getTransparentNode()) {
-          resF->getTransparentEdge(bn, &bv);
+        if (argF->isTransparentEdge(an, arg.getEdgeValue())
+                && argF->getTransparentNode() == resF->getTransparentNode())
+        {
+            edge_value bev;
+            resF->getTransparentEdge(bn, bev);
+            bev.get(bv);
         }
         else {
           // need to visit every level...
+          arg.getEdgeValue(av);
           computeAll(-1, resF->getNumVariables(), av, an, bv, bn);
         }
         res.set(bn, bv);

@@ -321,12 +321,13 @@ class MEDDLY::node_storage {
             return parent;
         }
 
+    protected:
+        /// Parent forest.
+        expert_forest* parent;
+
     private:
         /// Name of the style that invoked us
         const char* style_name;
-
-        /// Parent forest.
-        expert_forest* parent;
 };
 
 #endif

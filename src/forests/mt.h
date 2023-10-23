@@ -46,9 +46,6 @@ class MEDDLY::mt_forest : public expert_forest {
     mt_forest(unsigned dsl, domain *d, bool rel, range_type t, const policies &p, int* level_reduction_rule=NULL);
 
   public:
-    virtual bool isTransparentEdge(node_handle p, const void* v) const;
-    virtual void getTransparentEdge(node_handle &p, void* v) const;
-    virtual bool areEdgeValuesEqual(const void* eva, const void* evb) const;
     virtual bool isRedundant(const unpacked_node &nb) const;
     virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;
 

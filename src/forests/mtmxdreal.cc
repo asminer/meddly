@@ -22,9 +22,8 @@
 MEDDLY::mt_mxd_real::mt_mxd_real(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, float tv)
 : mtmxd_forest(dsl, d, range_type::REAL, p, level_reduction_rule)
 {
+  transparent_node = float_Tencoder::value2handle(tv);
   initializeForest();
-
-  transparent=float_Tencoder::value2handle(tv);
 }
 
 MEDDLY::mt_mxd_real::~mt_mxd_real()

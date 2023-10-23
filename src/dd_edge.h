@@ -20,6 +20,7 @@
 #define MEDDLY_DD_EDGE_H
 
 #include "defines.h"
+#include "edge_value.h"
 
 namespace MEDDLY {
     class dd_edge;
@@ -68,7 +69,7 @@ class MEDDLY::dd_edge {
         /// Clear the edge but keep the forest
         inline void clear() {
             set(0);
-            raw_value = 0;
+            edgeval.set();
         }
 
         /// Check if edges have the same parent forest
@@ -93,13 +94,12 @@ class MEDDLY::dd_edge {
         void setLabel(const char* L);
 
         inline long getNode() const { return node; }
-        inline unsigned long getEdgeRaw() const { return raw_value; }
-        inline const unsigned long* getEdgePtr() const { return &raw_value; }
-        inline long getEdgeInt() const { return edge_int; }
-        inline float getEdgeFloat() const { return edge_float; }
+        inline const edge_value& getEdgeValue() const { return edgeval; }
+        inline long getEdgeInt() const { return edgeval.getLong(); }
+        inline float getEdgeFloat() const { return edgeval.getFloat(); }
 
-        inline void getEdgeValue(long &v) const { v = edge_int; }
-        inline void getEdgeValue(float &v) const { v = edge_float; }
+        inline void getEdgeValue(long &v) const { edgeval.get(v); }
+        inline void getEdgeValue(float &v) const { edgeval.get(v); }
 
         /** Counts the number of unique nodes below this edge.
             @return     The number of unique nodes starting at the root node
@@ -168,17 +168,13 @@ class MEDDLY::dd_edge {
         void set_and_link(node_handle n);
 
         inline void setEdgeValue(long value) {
-            edge_int = value;
+            edgeval.set(value);
         }
 
         inline void setEdgeValue(float value) {
-            edge_float = value;
+            edgeval.set(value);
         }
 
-        inline void set(node_handle n, int value) {
-            set(n);
-            setEdgeValue(long(value));
-        }
         inline void set(node_handle n, long value) {
             set(n);
             setEdgeValue(value);
@@ -186,6 +182,10 @@ class MEDDLY::dd_edge {
         inline void set(node_handle n, float value) {
             set(n);
             setEdgeValue(value);
+        }
+        inline void set(node_handle n, edge_value v) {
+            set(n);
+            edgeval = v;
         }
 
     private:
@@ -195,7 +195,7 @@ class MEDDLY::dd_edge {
             return
                 (parentFID == e.parentFID) &&
                 (node == e.node) &&
-                (raw_value == e.raw_value);
+                (edgeval == e.edgeval);
         }
 
     private:
@@ -203,13 +203,7 @@ class MEDDLY::dd_edge {
         unsigned parentFID;     // ID of parent forest
         unsigned index;         // our index in the parent forest
         node_handle node;
-        union {
-            long edge_int;
-            float edge_float;
-
-            unsigned long raw_value;    // must be at least as large
-                                        // as the largest union element.
-        };
+        edge_value edgeval;
 
         friend class forest;
         // Add any edge-valued forests here
