@@ -72,7 +72,7 @@ MEDDLY::mdd2index_operation
   long card = 0;
   int nVars = argF->getDomain()->getNumVariables();
   compute_r(nVars, arg.getNode(), down, card);
-  res.set(down);
+  res.set(down, long(0));
 }
 
 void
