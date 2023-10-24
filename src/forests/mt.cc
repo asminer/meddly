@@ -39,8 +39,6 @@ MEDDLY::mt_forest::mt_forest(unsigned dsl, domain *d, bool rel,
         p, level_reduction_rule)
 {
     setVoidEdges();
-    transparent_node = 0;
-    transparent_edge.set();
 }
 
 bool MEDDLY::mt_forest::isRedundant(const unpacked_node &nb) const

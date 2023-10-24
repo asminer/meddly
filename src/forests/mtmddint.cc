@@ -22,8 +22,8 @@
 MEDDLY::mt_mdd_int::mt_mdd_int(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, int tv)
 : mtmdd_forest(dsl, d, range_type::INTEGER, p, level_reduction_rule)
 {
-  transparent_node = int_Tencoder::value2handle(tv);
-  initializeForest();
+    setTransparentEdge(int_Tencoder::value2handle(tv));
+    initializeForest();
 }
 
 MEDDLY::mt_mdd_int::~mt_mdd_int()

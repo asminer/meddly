@@ -877,8 +877,6 @@ MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
   //
   // Initialize node characteristics to defaults
   //
-  the_edge_type = edge_type::VOID;
-  hash_edge_values = false;
   unhashed_bytes = 0;
   hashed_bytes = 0;
 }

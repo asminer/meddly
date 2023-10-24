@@ -31,8 +31,7 @@ MEDDLY::evmxd_pluslong::evmxd_pluslong(unsigned dsl, domain *d, const policies &
          p, level_reduction_rule)
 {
     setLongEdges();
-    transparent_node = 0;
-    transparent_edge.set(long(0));
+    setTransparentEdge(0, long(0));
     initializeForest();
 }
 

@@ -128,8 +128,74 @@ class MEDDLY::forest {
             e.set(transparent_node, transparent_edge);
         }
 
+        /// Get the edge type.
+        inline edge_type getEdgeType() const {
+            return the_edge_type;
+        }
+
+        /// Are edge values included when computing the hash.
+        inline bool areEdgeValuesHashed() const {
+            return hash_edge_values;
+        }
+
     // ------------------------------------------------------------
-    protected: // transparent edge info, set by derived classes
+    protected: // methods to set edge info, for derived classes
+    // ------------------------------------------------------------
+
+        // Call one of these first...
+
+        inline void setVoidEdges() {
+            the_edge_type = edge_type::VOID;
+            hash_edge_values = false;
+        }
+        inline void setIntEdges(bool hashed = true) {
+            the_edge_type = edge_type::INT;
+            hash_edge_values = hashed;
+        }
+        inline void setLongEdges(bool hashed = true) {
+            the_edge_type = edge_type::LONG;
+            hash_edge_values = hashed;
+        }
+        inline void setFloatEdges(bool hashed = false) {
+            the_edge_type = edge_type::FLOAT;
+            hash_edge_values = hashed;
+        }
+        inline void setDoubleEdges(bool hashed = false) {
+            the_edge_type = edge_type::DOUBLE;
+            hash_edge_values = hashed;
+        }
+
+        // ... then one of these
+
+        inline void setTransparentEdge(node_handle p) {
+            MEDDLY_DCASSERT(edge_type::VOID == the_edge_type);
+            transparent_node = p;
+            transparent_edge.set();
+        }
+        inline void setTransparentEdge(node_handle p, int v) {
+            MEDDLY_DCASSERT(edge_type::INT == the_edge_type);
+            transparent_node = p;
+            transparent_edge.set(v);
+        }
+        inline void setTransparentEdge(node_handle p, long v) {
+            MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
+            transparent_node = p;
+            transparent_edge.set(v);
+        }
+        inline void setTransparentEdge(node_handle p, float v) {
+            MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
+            transparent_node = p;
+            transparent_edge.set(v);
+        }
+        inline void setTransparentEdge(node_handle p, double v) {
+            MEDDLY_DCASSERT(edge_type::DOUBLE == the_edge_type);
+            transparent_node = p;
+            transparent_edge.set(v);
+        }
+
+
+    // ------------------------------------------------------------
+    private: // transparent edge info
     // ------------------------------------------------------------
 
         /// Transparent node value
@@ -137,6 +203,12 @@ class MEDDLY::forest {
 
         /// Transparent edge value
         edge_value  transparent_edge;
+
+        /// Edge type.
+        edge_type the_edge_type;
+
+        /// Are edge values hashed?
+        bool hash_edge_values;
 
 
 
@@ -1525,15 +1597,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     float getRealFromHandle(node_handle n) const;
 
     memstats& changeMemStats();
-    /// Number of bytes for an edge value.
-    // unsigned char edgeBytes() const;
-    /// Get the edge type.
-    inline edge_type getEdgeType() const {
-        return the_edge_type;
-    }
 
-    /// Are edge values included when computing the hash.
-    bool areEdgeValuesHashed() const;
     /// Extra bytes per node, not hashed.
     unsigned char unhashedHeaderBytes() const;
     /// Extra bytes per node, hashed.
@@ -2132,35 +2196,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
   // ------------------------------------------------------------
   // inlined setters for derived classes to use.
 
-    // void setEdgeSize(unsigned char ebytes, bool hashed);
-    /*
-    inline void setEdgeSize(unsigned char ebytes, bool hashed) {
-        MEDDLY_DCASSERT(0 == edge_bytes);
-        edge_bytes = ebytes;
-        hash_edge_values = hashed;
-    }
-    */
-    inline void setVoidEdges() {
-        the_edge_type = edge_type::VOID;
-        hash_edge_values = false;
-    }
-    inline void setIntEdges(bool hashed = true) {
-        the_edge_type = edge_type::INT;
-        hash_edge_values = hashed;
-    }
-    inline void setLongEdges(bool hashed = true) {
-        the_edge_type = edge_type::LONG;
-        hash_edge_values = hashed;
-    }
-    inline void setFloatEdges(bool hashed = false) {
-        the_edge_type = edge_type::FLOAT;
-        hash_edge_values = hashed;
-    }
-    inline void setDoubleEdges(bool hashed = false) {
-        the_edge_type = edge_type::DOUBLE;
-        hash_edge_values = hashed;
-    }
-
     void setUnhashedSize(unsigned char ubytes);
     void setHashedSize(unsigned char hbytes);
 
@@ -2310,12 +2345,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     node_headers nodeHeaders;
 
 
-    /// Edge type.
-    edge_type the_edge_type;
-    /// Number of bytes for an edge
-    // unsigned char edge_bytes;
-    /// Are edge values hashed?
-    bool hash_edge_values;
     /// Number of bytes of unhashed header
     unsigned char unhashed_bytes;
     /// Number of bytes of hashed header
@@ -2423,12 +2452,6 @@ inline MEDDLY::memstats&
 MEDDLY::expert_forest::changeMemStats()
 {
   return mstats;
-}
-
-inline bool
-MEDDLY::expert_forest::areEdgeValuesHashed() const
-{
-  return hash_edge_values;
 }
 
 inline unsigned char

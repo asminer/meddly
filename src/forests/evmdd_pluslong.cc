@@ -36,8 +36,7 @@ MEDDLY::evmdd_pluslong
          p, level_reduction_rule)
 {
     setLongEdges();
-    transparent_node = 0;
-    transparent_edge.set(long(0));
+    setTransparentEdge(0, long(0));
     if (index_set) setUnhashedSize(sizeof(long));
     initializeForest();
 }

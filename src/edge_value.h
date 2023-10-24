@@ -118,19 +118,19 @@ class MEDDLY::edge_value {
         //
         // Getters, for low-level storage objects
         //
-        inline void get_int(void *p) const {
+        inline void getInt(void *p) const {
             MEDDLY_DCASSERT(p);
             get( *((int*) p) );
         }
-        inline void get_long(void *p) const {
+        inline void getLong(void *p) const {
             MEDDLY_DCASSERT(p);
             get( *((long*) p) );
         }
-        inline void get_float(void *p) const {
+        inline void getFloat(void *p) const {
             MEDDLY_DCASSERT(p);
             get( *((float*) p) );
         }
-        inline void get_double(void *p) const {
+        inline void getDouble(void *p) const {
             MEDDLY_DCASSERT(p);
             get( *((double*) p) );
         }
@@ -140,19 +140,19 @@ class MEDDLY::edge_value {
                     return;
 
                 case edge_type::INT:
-                    get_int(p);
+                    getInt(p);
                     return;
 
                 case edge_type::LONG:
-                    get_long(p);
+                    getLong(p);
                     return;
 
                 case edge_type::FLOAT:
-                    get_float(p);
+                    getFloat(p);
                     return;
 
                 case edge_type::DOUBLE:
-                    get_double(p);
+                    getDouble(p);
                     return;
 
                 default:
@@ -186,45 +186,45 @@ class MEDDLY::edge_value {
         //
         // Setters, for low-level storage objects
         //
-        inline void set_void(const void *p) {
+        inline void setVoid(const void *p) {
             mytype = edge_type::VOID;
         }
-        inline void set_int(const void *p) {
+        inline void setInt(const void *p) {
             MEDDLY_DCASSERT(p);
             set( *((const int*) p) );
         }
-        inline void set_long(const void *p) {
+        inline void setLong(const void *p) {
             MEDDLY_DCASSERT(p);
             set( *((const long*) p) );
         }
-        inline void set_float(const void *p) {
+        inline void setFloat(const void *p) {
             MEDDLY_DCASSERT(p);
             set( *((const float*) p) );
         }
-        inline void set_double(const void *p) {
+        inline void setDouble(const void *p) {
             MEDDLY_DCASSERT(p);
             set( *((const double*) p) );
         }
         inline void set(edge_type et, const void* p) {
             switch (et) {
                 case edge_type::VOID:
-                    set_void(p);
+                    setVoid(p);
                     return;
 
                 case edge_type::INT:
-                    set_int(p);
+                    setInt(p);
                     return;
 
                 case edge_type::LONG:
-                    set_long(p);
+                    setLong(p);
                     return;
 
                 case edge_type::FLOAT:
-                    set_float(p);
+                    setFloat(p);
                     return;
 
                 case edge_type::DOUBLE:
-                    set_double(p);
+                    setDouble(p);
                     return;
 
                 default:

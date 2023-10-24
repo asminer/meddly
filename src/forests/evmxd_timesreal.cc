@@ -31,8 +31,7 @@ MEDDLY::evmxd_timesreal::evmxd_timesreal(unsigned dsl, domain *d, const policies
          p, level_reduction_rule)
 {
     setFloatEdges();
-    transparent_node = 0;
-    transparent_edge.set(float(0));
+    setTransparentEdge(0, float(0));
     initializeForest();
 }
 
