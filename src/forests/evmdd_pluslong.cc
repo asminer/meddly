@@ -309,32 +309,6 @@ void MEDDLY::evmdd_pluslong::normalize(unpacked_node &nb, long& ev) const
   }
 }
 
-void MEDDLY::evmdd_pluslong::showHeaderInfo(output &s, const unpacked_node &nb)
-    const
-{
-  s.put(" card: ");
-  s.put(static_cast<const long*>(nb.UHptr())[0]);
-  // fprintf(s, " card: %d", ((const node_handle*)uh)[0]);
-}
-
-void MEDDLY::evmdd_pluslong::writeHeaderInfo(output &s, const unpacked_node &nb)
-    const
-{
-  s.put('\t');
-  s.put(static_cast<const long*>(nb.UHptr())[0]);
-  s.put('\n');
-  // th_fprintf(s, "\t %d\n", ((const node_handle*)uh)[0]);
-}
-
-void MEDDLY::evmdd_pluslong::readHeaderInfo(input &s, unpacked_node &nb) const
-{
-    long card = s.get_integer();
-    static_cast<long*>(nb.UHdata())[0] = card;
-#ifdef DEBUG_READ_DD
-    std::cerr << "    got cardinality " << card << "\n";
-#endif
-}
-
 const char* MEDDLY::evmdd_pluslong::codeChars() const
 {
   return "dd_epvi";
@@ -500,5 +474,33 @@ void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, long index, int*
   } // for k
   e[0] = (index > 0 ? 0 : -p);
   unpacked_node::recycle(R);
+}
+
+void MEDDLY::evmdd_index_set_long::showHeaderInfo(output &s,
+        const unpacked_node &nb) const
+{
+
+  s.put(" card: ");
+  s.put(static_cast<const long*>(nb.UHptr())[0]);
+  // fprintf(s, " card: %d", ((const node_handle*)uh)[0]);
+}
+
+void MEDDLY::evmdd_index_set_long::writeHeaderInfo(output &s,
+        const unpacked_node &nb) const
+{
+  s.put('\t');
+  s.put(static_cast<const long*>(nb.UHptr())[0]);
+  s.put('\n');
+  // th_fprintf(s, "\t %d\n", ((const node_handle*)uh)[0]);
+}
+
+void MEDDLY::evmdd_index_set_long::readHeaderInfo(input &s,
+        unpacked_node &nb) const
+{
+    long card = s.get_integer();
+    static_cast<long*>(nb.UHdata())[0] = card;
+#ifdef DEBUG_READ_DD
+    std::cerr << "    got cardinality " << card << "\n";
+#endif
 }
 

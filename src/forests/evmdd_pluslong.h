@@ -66,9 +66,6 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
 
   protected:
     virtual void normalize(unpacked_node &nb, long& ev) const;
-    virtual void showHeaderInfo(output &s, const unpacked_node &uh) const;
-    virtual void writeHeaderInfo(output &s, const unpacked_node &uh) const;
-    virtual void readHeaderInfo(input &s, unpacked_node &nb) const;
     virtual const char* codeChars() const;
 
   protected:
@@ -96,6 +93,10 @@ class MEDDLY::evmdd_index_set_long : public evmdd_pluslong {
 
     virtual void getElement(const dd_edge& a, int index, int* e);
     virtual void getElement(const dd_edge& a, long index, int* e);
+  protected:
+    virtual void showHeaderInfo(output &s, const unpacked_node &uh) const;
+    virtual void writeHeaderInfo(output &s, const unpacked_node &uh) const;
+    virtual void readHeaderInfo(input &s, unpacked_node &nb) const;
 };
 
 #endif

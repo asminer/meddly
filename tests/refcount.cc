@@ -21,80 +21,93 @@
 
 using namespace MEDDLY;
 
-bool badCount(unsigned long expected, const dd_edge &e)
+void checkCount(unsigned long expected, const dd_edge &e)
 {
     using namespace std;
 
-    cout << "Checking ref count (expecting " << expected << "): ";
+    cout << "Checking ref count (node " << e.getNode() << ", expecting " << expected << "): ";
 
     const expert_forest* f = dynamic_cast <expert_forest*>(e.getForest());
-    if (!f) return true;
+    if (!f) throw "Bad forest";
 
     const unsigned long cnt = f->getNodeInCount(e.getNode());
     cout << cnt << endl;
 
-    return cnt != expected;
+    if (cnt != expected) throw "Bad count";
 }
 
 int main()
 {
-    MEDDLY::initialize();
+    try {
+        MEDDLY::initialize();
 
-    ostream_output s(std::cout);
+        ostream_output s(std::cout);
 
-    const int bounds[] = { 5, 5, 5 };
+        const int bounds[] = { 5, 5, 5 };
 
-    domain* d = createDomainBottomUp(bounds, 3);
-    policies p;
-    p.useDefaults(false);
-    p.useReferenceCounts = true;
-    p.setPessimistic();
+        domain* d = createDomainBottomUp(bounds, 3);
+        policies p;
+        p.useDefaults(false);
+        p.useReferenceCounts = true;
+        p.setPessimistic();
 
-    forest* mdd = d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
+        forest* mdd = d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
 
-    dd_edge x1(mdd), x2(mdd), x3(mdd), x123(mdd), tmp(mdd);
+        dd_edge x1(mdd), x2(mdd), x3(mdd), x123(mdd), tmp(mdd);
 
-    mdd->createEdgeForVar(1, false, x1);
-    mdd->createEdgeForVar(2, false, x2);
-    mdd->createEdgeForVar(3, false, x3);
+        mdd->createEdgeForVar(1, false, x1);
+        mdd->createEdgeForVar(2, false, x2);
+        mdd->createEdgeForVar(3, false, x3);
 
-    if (badCount(1, x1)) return 1;
-    if (badCount(1, x2)) return 1;
-    if (badCount(1, x3)) return 1;
+        checkCount(1, x1);
+        checkCount(1, x2);
+        checkCount(1, x3);
 
-    x123 = x1;
+        x123 = x1;
 
-    if (badCount(2, x1)) return 1;
-    if (badCount(2, x123)) return 1;
+        checkCount(2, x1);
+        checkCount(2, x123);
 
-    x123 *= x2;
+        x123 *= x2;
 
-    x123.showGraph(s);
+        x123.showGraph(s);
 
-    if (badCount(5, x1)) return 1;
+        checkCount(5, x1);
 
-    x123 *= x3;
+        x123 *= x3;
 
-    if (badCount(1, x123)) return 1;
+        checkCount(1, x123);
 
-    tmp = x1;
+        tmp = x1;
 
-    if (badCount(6, x1)) return 1;
+        checkCount(6, x1);
 
-    tmp *= x123;
+        tmp *= x123;
 
-    if (badCount(2, x123)) return 1;
+        checkCount(2, x123);
 
-    if (badCount(5, x1)) return 1;
+        checkCount(5, x1);
 
-    mdd->createEdge(false, tmp);
+        mdd->createEdge(false, tmp);
 
-    if (badCount(1, x123)) return 1;
+        checkCount(1, x123);
 
-    mdd->createEdge(false, x123);
+        mdd->createEdge(false, x123);
 
-    if (badCount(1, x1)) return 1;
+        checkCount(1, x1);
 
-    MEDDLY::cleanup();
-    return 0;
+        MEDDLY::cleanup();
+        return 0;
+    }
+    catch (MEDDLY::error e) {
+        std::cerr << "Caught meddly error '" << e.getName() << "'\n";
+        std::cerr << "    thrown in " << e.getFile() << " line " << e.getLine() << "\n";
+        return 1;
+    }
+    catch (const char* e) {
+        std::cerr << "Caught our own error: " << e << "\n";
+        return 2;
+    }
+    std::cerr << "Some other error?\n";
+    return 3;
 }
