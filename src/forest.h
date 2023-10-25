@@ -1976,8 +1976,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
         return un;
     }
 
-    // KILL THIS:
-  // void fillUnpacked(unpacked_node &un, node_handle node, node_storage_flags st2) const;
 
   /**   Return a forest node equal to the one given.
         The node is constructed as necessary.
@@ -2144,26 +2142,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     virtual void dynamicReorderVariables(int top, int bottom) {
     	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
-
-    /** Show a terminal node.
-          @param  s       Stream to write to.
-          @param  tnode   Handle to a terminal node.
-    */
-    // virtual void showTerminal(output &s, node_handle tnode) const;
-
-    /** Write a terminal node in machine-readable format.
-          @param  s       Stream to write to.
-          @param  tnode   Handle to a terminal node.
-    */
-    // virtual void writeTerminal(output &s, node_handle tnode) const;
-
-    /** Read a terminal node in machine-readable format.
-          @param  s       Stream to read from.
-          @return         Handle to a terminal node.
-          @throws         An invalid file exception if the stream does not
-                          contain a valid terminal node.
-    */
-    // virtual node_handle readTerminal(input &s);
 
   public:
     /** Show the header information.

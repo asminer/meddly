@@ -113,24 +113,6 @@ void MEDDLY::mt_mxd_bool::showEdge(output &s, const edge_value &ev,
 }
 
 
-/*
-
-void MEDDLY::mt_mxd_bool::showTerminal(output &s, node_handle tnode) const
-{
-  bool_Tencoder::show(s, tnode);
-}
-
-void MEDDLY::mt_mxd_bool::writeTerminal(output &s, node_handle tnode) const
-{
-  bool_Tencoder::write(s, tnode);
-}
-
-MEDDLY::node_handle MEDDLY::mt_mxd_bool::readTerminal(input &s)
-{
-  return bool_Tencoder::read(s);
-}
-*/
-
 const char* MEDDLY::mt_mxd_bool::codeChars() const
 {
   return "dd_txb";

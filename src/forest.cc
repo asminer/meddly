@@ -601,52 +601,6 @@ void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
 
 //
 
-/*
-void MEDDLY::forest::readEdge(input &s, dd_edge &E, const node_handle* map)
-{
-    E.attach(this);
-    E.setEdgeValue().read(s);
-    s.stripWS();
-    long lnode = s.get_integer();
-    if (lnode <= 0) {
-        // Terminal
-        E.set(lnode);
-    } else {
-        // Non-terminal
-        E.set_and_link(map[lnode]);
-    }
-}
-
-void MEDDLY::forest::writeEdge(output &s, const dd_edge &E, const node_handle* map) const
-{
-    MEDDLY_DCASSERT(E.isAttachedTo(this));
-    E.getEdgeValue().write(s);
-    if (E.getNode() <= 0) {
-        s.put(long(E.getNode()));
-    } else {
-        s.put(long(map[E.getNode()]));
-    }
-    s.put('\n');
-}
-*/
-
-/*
-
-void MEDDLY::forest::showEdgeValue(output &s, const edge_value &edge) const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::writeEdgeValue(output &s, const edge_value &edge) const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::readEdgeValue(input &s, edge_value &edge)
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-*/
 
 
 void MEDDLY::forest::removeStaleComputeTableEntries()
@@ -1905,22 +1859,6 @@ void MEDDLY::expert_forest::reportForestStats(output &s, const char* pad) const
   // default - do nothing
 }
 
-/*
-void MEDDLY::expert_forest::showTerminal(output &s, node_handle tnode) const
-{
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-void MEDDLY::expert_forest::writeTerminal(output &s, node_handle tnode) const
-{
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-MEDDLY::node_handle MEDDLY::expert_forest::readTerminal(input &s)
-{
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-*/
 
 void MEDDLY::expert_forest::showHeaderInfo(output &s, const unpacked_node &) const
 {

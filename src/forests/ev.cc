@@ -36,30 +36,6 @@ MEDDLY::ev_forest::ev_forest(unsigned dsl, domain *d, bool rel,
   MEDDLY_DCASSERT(ev != edge_labeling::MULTI_TERMINAL);
 }
 
-/*
-void MEDDLY::ev_forest::showTerminal(output &s, node_handle tnode) const
-{
-  s.put('t');
-  s.put(long(-tnode));
-}
-
-void MEDDLY::ev_forest::writeTerminal(output &s, node_handle tnode) const
-{
-  s.put('t');
-  s.put(long(-tnode));
-}
-
-MEDDLY::node_handle MEDDLY::ev_forest::readTerminal(input &s)
-{
-  s.stripWS();
-  int c = s.get_char();
-  if ('t' == c) {
-    return -s.get_integer();
-  }
-  throw error(error::INVALID_FILE, __FILE__, __LINE__);
-}
-*/
-
 // statics
 
 void MEDDLY::ev_forest::initStatics()

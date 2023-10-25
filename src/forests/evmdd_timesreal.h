@@ -59,17 +59,10 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
       return new evtrmdd_iterator(this);
     }
 
-        // virtual void readEdgeValue(input &s, dd_edge &E) const;
-        // virtual void writeEdgeValue(output &s, const dd_edge &E) const;
-        // virtual void showEdgeValue(output &s, const dd_edge &E) const;
-
     virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
 
   protected:
     virtual void normalize(unpacked_node &nb, float& ev) const;
-    // virtual void showEdgeValue(output &s, const edge_value &edge) const;
-    // virtual void writeEdgeValue(output &s, const edge_value &edge) const;
-    // virtual void readEdgeValue(input &s, edge_value &edge);
     virtual const char* codeChars() const;
 
   protected:

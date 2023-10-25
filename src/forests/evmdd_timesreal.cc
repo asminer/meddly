@@ -92,26 +92,6 @@ bool MEDDLY::evmdd_timesreal::isIdentityEdge(const unpacked_node &nb, int i) con
   return isIdentityEdgeTempl<OP>(nb, i);
 }
 
-/*
-void MEDDLY::evmdd_timesreal::readEdgeValue(input &s, dd_edge &E) const
-{
-    s.stripWS();
-    E.setEdgeValue(float(s.get_real()));
-}
-
-void MEDDLY::evmdd_timesreal::writeEdgeValue(output &s, const dd_edge &E) const
-{
-    s.put(E.getEdgeFloat());
-    s.put(' ');
-}
-
-void MEDDLY::evmdd_timesreal::showEdgeValue(output &s, const dd_edge &E) const
-{
-    s.put(E.getEdgeFloat());
-    s.put(' ');
-}
-*/
-
 void MEDDLY::evmdd_timesreal::showEdge(output &s, const edge_value &ev,
         node_handle d) const
 {
@@ -156,23 +136,6 @@ void MEDDLY::evmdd_timesreal::normalize(unpacked_node &nb, float& ev) const
     }
   }
 }
-
-/*
-void MEDDLY::evmdd_timesreal::showEdgeValue(output &s, const edge_value &edge) const
-{
-  OP::show(s, edge);
-}
-
-void MEDDLY::evmdd_timesreal::writeEdgeValue(output &s, const edge_value &edge) const
-{
-  OP::write(s, edge);
-}
-
-void MEDDLY::evmdd_timesreal::readEdgeValue(input &s, edge_value &edge)
-{
-  OP::read(s, edge);
-}
-*/
 
 const char* MEDDLY::evmdd_timesreal::codeChars() const
 {

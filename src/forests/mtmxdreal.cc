@@ -114,25 +114,6 @@ void MEDDLY::mt_mxd_real::showEdge(output &s, const edge_value &ev,
 }
 
 
-/*
-
-void MEDDLY::mt_mxd_real::showTerminal(output &s, node_handle tnode) const
-{
-  float_Tencoder::show(s, tnode);
-}
-
-void MEDDLY::mt_mxd_real::writeTerminal(output &s, node_handle tnode) const
-{
-  float_Tencoder::write(s, tnode);
-}
-
-MEDDLY::node_handle MEDDLY::mt_mxd_real::readTerminal(input &s)
-{
-  return float_Tencoder::read(s);
-}
-
-*/
-
 const char* MEDDLY::mt_mxd_real::codeChars() const
 {
   return "dd_txr";

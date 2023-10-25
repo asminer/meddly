@@ -115,24 +115,6 @@ void MEDDLY::mt_mxd_int::showEdge(output &s, const edge_value &ev,
 
 
 
-/*
-
-void MEDDLY::mt_mxd_int::showTerminal(output &s, node_handle tnode) const
-{
-  int_Tencoder::show(s, tnode);
-}
-
-void MEDDLY::mt_mxd_int::writeTerminal(output &s, node_handle tnode) const
-{
-  int_Tencoder::write(s, tnode);
-}
-
-MEDDLY::node_handle MEDDLY::mt_mxd_int::readTerminal(input &s)
-{
-  return int_Tencoder::read(s);
-}
-*/
-
 const char* MEDDLY::mt_mxd_int::codeChars() const
 {
   return "dd_txi";

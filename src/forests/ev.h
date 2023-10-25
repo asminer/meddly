@@ -43,11 +43,6 @@ class MEDDLY::ev_forest : public expert_forest {
     ev_forest(unsigned dsl, domain *d, bool rel, range_type t, edge_labeling ev,
       const policies &p, int* level_reduction_rule=NULL);
 
-  protected:
-//    virtual void showTerminal(output &s, node_handle tnode) const;
-//    virtual void writeTerminal(output &s, node_handle tnode) const;
-//    virtual node_handle readTerminal(input &s);
-
   public:
 
     template <class OPERATION>

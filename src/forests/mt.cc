@@ -127,20 +127,6 @@ MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d)
   return d;
 }
 
-/*
-void MEDDLY::mt_forest::readEdgeValue(input &s, dd_edge &E) const
-{
-}
-
-void MEDDLY::mt_forest::writeEdgeValue(output &s, const dd_edge &E) const
-{
-}
-
-void MEDDLY::mt_forest::showEdgeValue(output &s, const dd_edge &E) const
-{
-}
-*/
-
 void MEDDLY::mt_forest::initStatics()
 {
   order = 0;
