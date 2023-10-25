@@ -97,7 +97,7 @@ bool MEDDLY::evmxd_pluslong::isIdentityEdge(const unpacked_node &nb, int i) cons
   return isIdentityEdgeTempl<OP>(nb, i);
 }
 
-
+/*
 void MEDDLY::evmxd_pluslong::readEdgeValue(input &s, dd_edge &E) const
 {
     s.stripWS();
@@ -114,6 +114,26 @@ void MEDDLY::evmxd_pluslong::showEdgeValue(output &s, const dd_edge &E) const
 {
     s.put(E.getEdgeInt());
     s.put(' ');
+}
+*/
+
+void MEDDLY::evmxd_pluslong::showEdge(output &s, const edge_value &ev,
+        node_handle d) const
+{
+    if (d == 0) {
+        s.put("<oo, w>");
+    } else {
+        s.put('<');
+        s.put(ev.getLong());
+        s.put(", ");
+        if (d < 0) {
+            s.put('w');
+        } else {
+            s.put('#');
+            s.put(d);
+        }
+        s.put('>');
+    }
 }
 
 
@@ -146,6 +166,7 @@ void MEDDLY::evmxd_pluslong::normalize(unpacked_node &nb, long& ev) const
   }
 }
 
+/*
 void MEDDLY::evmxd_pluslong::showEdgeValue(output &s, const edge_value &edge) const
 {
   OP::show(s, edge);
@@ -160,6 +181,7 @@ void MEDDLY::evmxd_pluslong::readEdgeValue(input &s, edge_value &edge)
 {
   OP::read(s, edge);
 }
+*/
 
 const char* MEDDLY::evmxd_pluslong::codeChars() const
 {

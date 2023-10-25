@@ -308,7 +308,11 @@ bool readAndGenerate(FILE* s, int N)
 */
 int main()
 {
+#ifdef DEBUG_FILE
+  const int N = 2;
+#else
   const int N = 11;
+#endif
   MEDDLY::initialize();
 
   char filename[20];
@@ -396,7 +400,8 @@ int main()
     remove(filename);
 #endif
     MEDDLY::cleanup();
-    printf("\nError: %s\n", e.getName());
+    printf("\nError: %s, thrown at %s line %u\n", e.getName(),
+            e.getFile(), e.getLine());
     return 1;
   }
   catch (...) {

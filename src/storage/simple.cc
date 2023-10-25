@@ -1367,7 +1367,7 @@ MEDDLY::simple_separated
 
         edge_value ev;
         ev.set(parent->getEdgeType(), end);
-        parent->showEdgeValue(s, ev);
+        ev.write(s);
         s << ")";
       } // for each edge value
       if (isExtensible(raw_size)) s.put(" (ext)");

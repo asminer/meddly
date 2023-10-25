@@ -153,17 +153,7 @@ void MEDDLY::dd_edge::show(output &s) const
         return;
     }
 
-    s.put('<');
-    if (!efp->isMultiTerminal()) {
-        efp->showEdgeValue(s, *this);
-        s.put(", ");
-    }
-    if (efp->isTerminalNode(node)) {
-        efp->showTerminal(s, node);
-    } else {
-        s.put('#');
-        s.put(long(node));
-    }
+    efp->showEdge(s, edgeval, node);
     s.put(" in ");
     if (efp->isMultiTerminal()) {
         s.put("MT");
@@ -181,7 +171,6 @@ void MEDDLY::dd_edge::show(output &s) const
     }
     s.put(" forest ");
     s.put(parentFID);
-    s.put('>');
 }
 
 void MEDDLY::dd_edge::showGraph(output &s) const
@@ -207,18 +196,9 @@ void MEDDLY::dd_edge::showGraph(output &s) const
     } else {
         s.put("MDD");
     }
-    s.put(" rooted at edge <");
-    if (!efp->isMultiTerminal()) {
-        efp->showEdgeValue(s, *this);
-        s.put(", ");
-    }
-    if (efp->isTerminalNode(node)) {
-        efp->showTerminal(s, node);
-    } else {
-        s.put('#');
-        s.put(long(node));
-    }
-    s.put(">\n");
+    s.put(" rooted at edge ");
+    efp->showEdge(s, edgeval, node);
+    s.put('\n');
     efp->showNodeGraph(s, &node, 1);
 }
 
@@ -229,6 +209,73 @@ void MEDDLY::dd_edge::writePicture(const char* filename,
                 forest::getForestWithID(parentFID)
     );
     if (efp) efp->writeNodeGraphPicture(filename, extension, &node, &label, 1);
+}
+
+
+void MEDDLY::dd_edge::write(output &s, node_handle* map) const
+{
+    //
+    // Edge info
+    //
+    edgeval.write(s);
+    s.put(' ');
+
+    //
+    // Node info
+    //
+    if (node <= 0) {
+        //
+        // terminal
+        //
+        expert_forest* efp = static_cast <expert_forest*> (
+                forest::getForestWithID(parentFID)
+        );
+        terminal t;
+        t.setFromHandle(efp->getTerminalType(), node);
+        t.write(s);
+    } else {
+        //
+        // non-terminal
+        //
+        s.put("n ");
+        s.put(long( map ? map[node] : node ));
+    }
+}
+
+void MEDDLY::dd_edge::read(input &s, node_handle* map)
+{
+#ifdef DEBUG_READ_DD
+    std::cerr << "    in dd_edge::read\n";
+#endif
+    //
+    // Edge info
+    //
+    edgeval.read(s);
+    s.stripWS();
+
+    //
+    // Node info
+    //
+    int c = s.get_char();
+    if ('n' == c) {
+        //
+        // non-terminal
+        //
+        long d = s.get_integer();
+        if (d<0) throw error(error::INVALID_FILE, __FILE__, __LINE__);
+        set_and_link(map ? map[d] : d);
+    } else {
+        //
+        // terminal
+        //
+        s.unget(c);
+        terminal t;
+        t.read(s);
+        set(t.getHandle());
+    }
+#ifdef DEBUG_READ_DD
+    std::cerr << "    done dd_edge::read\n";
+#endif
 }
 
 

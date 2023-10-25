@@ -23,6 +23,7 @@
 #include "encoders.h"
 #include "edge_value.h"
 #include "dd_edge.h"
+#include "terminal.h"
 
 namespace MEDDLY {
     class unpacked_node;
@@ -218,6 +219,14 @@ class MEDDLY::unpacked_node {
                             Allows us to renumber nodes as we write them.
         */
         void write(output &s, const node_handle* map) const;
+
+        /** Read a node in machine-readable format.
+
+            @param  s       Input stream.
+            @param  map     Translation to use on node handles.
+                            Allows us to renumber nodes as we read them.
+        */
+        void read(input &s, const node_handle* map);
 
     public:
         //
@@ -769,6 +778,7 @@ class MEDDLY::unpacked_node {
         unsigned* index;
         edge_value* edge;
         edge_type the_edge_type;
+        terminal_type the_terminal_type;
         bool can_be_extensible;
         bool is_extensible;
         unsigned alloc;

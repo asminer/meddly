@@ -42,9 +42,11 @@ class MEDDLY::mt_mxd_int : public mtmxd_forest {
     void evaluate(const dd_edge& f, const int* vlist, const int* vplist,
         long &term) const;
 
-    virtual void showTerminal(output &s, node_handle tnode) const;
-    virtual void writeTerminal(output &s, node_handle tnode) const;
-    virtual node_handle readTerminal(input &s);
+    // virtual void showTerminal(output &s, node_handle tnode) const;
+    // virtual void writeTerminal(output &s, node_handle tnode) const;
+    // virtual node_handle readTerminal(input &s);
+
+    virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
 
   protected:
     virtual const char* codeChars() const;

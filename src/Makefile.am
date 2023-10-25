@@ -53,6 +53,7 @@ libmeddly_la_SOURCES = \
     ops_builtin.h           ops_builtin.cc \
     policies.h              policies.cc \
     relation_node.h         relation_node.cc \
+    terminal.h              terminal.cc \
     timer.h                 \
     unique_table.h          unique_table.cc \
     unpacked_node.h         unpacked_node.cc \

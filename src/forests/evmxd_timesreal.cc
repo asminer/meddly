@@ -96,7 +96,7 @@ bool MEDDLY::evmxd_timesreal::isIdentityEdge(const unpacked_node &nb, int i) con
   return isIdentityEdgeTempl<OP>(nb, i);
 }
 
-
+/*
 void MEDDLY::evmxd_timesreal::readEdgeValue(input &s, dd_edge &E) const
 {
     s.stripWS();
@@ -113,6 +113,27 @@ void MEDDLY::evmxd_timesreal::showEdgeValue(output &s, const dd_edge &E) const
 {
     s.put(E.getEdgeFloat());
     s.put(' ');
+}
+
+*/
+
+void MEDDLY::evmxd_timesreal::showEdge(output &s, const edge_value &ev,
+        node_handle d) const
+{
+    if (d == 0) {
+        s.put("<0, w>");
+    } else {
+        s.put('<');
+        s.put(ev.getFloat());
+        s.put(", ");
+        if (d < 0) {
+            s.put('w');
+        } else {
+            s.put('#');
+            s.put(d);
+        }
+        s.put('>');
+    }
 }
 
 
@@ -140,6 +161,8 @@ void MEDDLY::evmxd_timesreal::normalize(unpacked_node &nb, float& ev) const
   }
 }
 
+/*
+
 void MEDDLY::evmxd_timesreal::showEdgeValue(output &s, const edge_value &edge) const
 {
   OP::show(s, edge);
@@ -154,6 +177,8 @@ void MEDDLY::evmxd_timesreal::readEdgeValue(input &s, edge_value &edge)
 {
   OP::read(s, edge);
 }
+
+*/
 
 const char* MEDDLY::evmxd_timesreal::codeChars() const
 {

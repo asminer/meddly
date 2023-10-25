@@ -99,6 +99,23 @@ void MEDDLY::mt_mxd_real::evaluate(const dd_edge &f, const int* vlist,
   term = float_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));
 }
 
+void MEDDLY::mt_mxd_real::showEdge(output &s, const edge_value &ev,
+        node_handle d) const
+{
+    if (d>0) {
+        s.put('#');
+        s.put(d);
+    } else {
+        terminal t;
+        t.setFromHandle(terminal_type::REAL, d);
+        s.put('t');
+        s.put( t.getReal() );
+    }
+}
+
+
+/*
+
 void MEDDLY::mt_mxd_real::showTerminal(output &s, node_handle tnode) const
 {
   float_Tencoder::show(s, tnode);
@@ -113,6 +130,8 @@ MEDDLY::node_handle MEDDLY::mt_mxd_real::readTerminal(input &s)
 {
   return float_Tencoder::read(s);
 }
+
+*/
 
 const char* MEDDLY::mt_mxd_real::codeChars() const
 {

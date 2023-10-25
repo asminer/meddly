@@ -42,9 +42,12 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest {
     virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
       const;
 
+    virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
+    /*
     virtual void showTerminal(output &s, node_handle tnode) const;
     virtual void writeTerminal(output &s, node_handle tnode) const;
     virtual node_handle readTerminal(input &s);
+    */
 
   protected:
     virtual const char* codeChars() const;

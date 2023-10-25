@@ -25,6 +25,7 @@
 #include "unpacked_node.h"
 #include "forest.h"
 #include "hash_stream.h"
+#include "terminal.h"
 
 // ******************************************************************
 // *                     unpacked_node  statics                     *
@@ -282,19 +283,7 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
         } else {
             if (z) s.put('|');
         }
-        if (edge_type::VOID != the_edge_type) {
-            s.put('<');
-            eparent->showEdgeValue(s, edge[z]);
-            s.put(", ");
-        }
-        if (eparent->isTerminalNode(d(z))) {
-            eparent->showTerminal(s, d(z));
-        } else {
-            s.put(long(d(z)));
-        }
-        if (edge_type::VOID != the_edge_type) {
-            s.put('>');
-        }
+        eparent->showEdge(s, edge[z], down[z]);
     }
 
     if (isExtensible()) s.put('*');
@@ -306,12 +295,7 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
     }
 
     // show extra header stuff
-    if (ext_uh_size) {
-        eparent->showUnhashedHeader(s, extra_unhashed);
-    }
-    if (ext_h_size) {
-        eparent->showHashedHeader(s, extra_hashed);
-    }
+    eparent->showHeaderInfo(s, *this);
 }
 
 void MEDDLY::unpacked_node::write(output &s, const node_handle* map) const
@@ -344,36 +328,116 @@ void MEDDLY::unpacked_node::write(output &s, const node_handle* map) const
     s.put('\t');
     for (unsigned z=0; z<stop; z++) {
         s.put(' ');
-        if (eparent->isTerminalNode(d(z))) {
-            eparent->writeTerminal(s, d(z));
+        if (d(z) <= 0) {
+            // terminal
+            terminal t;
+            t.setFromHandle(the_terminal_type, d(z));
+            t.write(s);
         } else {
+            // non-terminal
+            s.put("n ");
             s.put(long( map ? map[d(z)] : d(z) ));
         }
     }
 
     //
-    // write edges
+    // write edge values, if any
     //
     if (edge_type::VOID != the_edge_type) {
         s.put('\n');
         s.put('\t');
         for (unsigned z=0; z<stop; z++) {
             s.put(' ');
-            eparent->writeEdgeValue(s, edge[z]);
+            edge[z].write(s);
         }
     }
     s.put('\n');
 
 
-    // write extra header stuff
-    // this goes LAST so we can read it into a built node
-    if (ext_uh_size) {
-        eparent->writeUnhashedHeader(s, extra_unhashed);
-    }
-    if (ext_h_size) {
-        eparent->writeHashedHeader(s, extra_hashed);
+    // write extra header stuff, should no-op if there isn't any
+    eparent->writeHeaderInfo(s, *this);
+}
+
+void MEDDLY::unpacked_node::read(input &s, const node_handle* map)
+{
+#ifdef DEBUG_READ_DD
+    std::cerr << "  in unpacked_node::read\n";
+#endif
+    MEDDLY_DCASSERT(modparent);
+    //
+    // We already read the size
+    //
+
+    //
+    // read indexes (sparse only)
+    //
+    unsigned stop;
+    if (isSparse()) {
+#ifdef DEBUG_READ_DD
+        std::cerr << "    reading indexes\n";
+#endif
+        for (unsigned z=0; z<nnzs; z++) {
+            s.stripWS();
+            long ndx = s.get_integer();
+            if (ndx < 0) {
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            i_ref(z) = unsigned(ndx);
+        }
+        stop = nnzs;
+    } else {
+        stop = size;
     }
 
+    //
+    // read down pointers
+    //
+#ifdef DEBUG_READ_DD
+    std::cerr << "    reading " << stop << " down pointers\n";
+#endif
+    for (unsigned z=0; z<stop; z++) {
+        s.stripWS();
+        int c = s.get_char();
+        if ('n' == c) {
+            // non-terminal
+            node_handle d = s.get_integer();
+#ifdef DEBUG_READ_DD
+            std::cerr << "\tgot nonterm " << d << "\n";
+#endif
+            if (d < 0) {
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            d_ref(z) = modparent->linkNode(map ? map[d] : d);
+        } else {
+            // terminal
+            s.unget(c);
+            terminal t;
+            t.read(s);
+            d_ref(z) = t.getHandle();
+        }
+    }
+
+    //
+    // read edge values, if any
+    //
+    if (edge_type::VOID != the_edge_type) {
+#ifdef DEBUG_READ_DD
+        std::cerr << "    reading " << stop << " edge values\n";
+#endif
+        for (unsigned z=0; z<stop; z++) {
+            s.stripWS();
+            edge[z].read(s);
+        }
+    }
+
+    //
+    // read extra header stuff, if any
+    //
+    eparent->readHeaderInfo(s, *this);
+
+#ifdef DEBUG_READ_DD
+    std::cerr << "  done unpacked_node::read\n";
+#endif
 }
 
 void MEDDLY::unpacked_node
@@ -408,6 +472,7 @@ void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f,
     can_be_extensible = f->isExtensibleLevel(k);
     markAsNotExtensible();
     the_edge_type = f->getEdgeType();
+    the_terminal_type = f->getTerminalType();
     resize(ns);
 
     // Allocate headers

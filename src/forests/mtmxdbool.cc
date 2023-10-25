@@ -99,6 +99,22 @@ void MEDDLY::mt_mxd_bool::evaluate(const dd_edge &f, const int* vlist,
   term = bool_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));
 }
 
+void MEDDLY::mt_mxd_bool::showEdge(output &s, const edge_value &ev,
+        node_handle d) const
+{
+    if (d>0) {
+        s.put('#');
+        s.put(d);
+    } else {
+        terminal t;
+        t.setFromHandle(terminal_type::BOOLEAN, d);
+        s.put( t.getBoolean() ? 'T' : 'F' );
+    }
+}
+
+
+/*
+
 void MEDDLY::mt_mxd_bool::showTerminal(output &s, node_handle tnode) const
 {
   bool_Tencoder::show(s, tnode);
@@ -113,6 +129,7 @@ MEDDLY::node_handle MEDDLY::mt_mxd_bool::readTerminal(input &s)
 {
   return bool_Tencoder::read(s);
 }
+*/
 
 const char* MEDDLY::mt_mxd_bool::codeChars() const
 {

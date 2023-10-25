@@ -19,6 +19,7 @@
 
 
 #include "edge_value.h"
+#include "io.h"
 
 // ******************************************************************
 // *                                                                *
@@ -31,5 +32,123 @@
 MEDDLY::edge_value::edge_value()
 {
     set();
+}
+
+MEDDLY::edge_value::edge_value(int v)
+{
+    set(v);
+}
+
+MEDDLY::edge_value::edge_value(long v)
+{
+    set(v);
+}
+
+MEDDLY::edge_value::edge_value(float v)
+{
+    set(v);
+}
+
+MEDDLY::edge_value::edge_value(double v)
+{
+    set(v);
+}
+
+
+void MEDDLY::edge_value::read(input &s)
+{
+#ifdef DEBUG_READ_DD
+    std::cerr << "\tin edge_value::read\n";
+#endif
+    s.stripWS();
+    // Get the type
+    //      v: void
+    //      i: integer
+    //      l: long
+    //      f: float
+    //      d: double
+    int t = s.get_char();
+    s.stripWS();
+
+    switch (t) {
+        case 'v':
+            set();
+#ifdef DEBUG_READ_DD
+            std::cerr << "\t  got void\n";
+#endif
+            break;
+
+        case 'i':
+            set(int(s.get_integer()));
+#ifdef DEBUG_READ_DD
+            std::cerr << "\t  got int " << ev_int << "\n";
+#endif
+            break;
+
+        case 'l':
+            set(long(s.get_integer()));
+#ifdef DEBUG_READ_DD
+            std::cerr << "\t  got long " << ev_long << "\n";
+#endif
+            break;
+
+        case 'f':
+            set(float(s.get_real()));
+#ifdef DEBUG_READ_DD
+            std::cerr << "\t  got float " << ev_float << "\n";
+#endif
+            break;
+
+        case 'd':
+            set(double(s.get_real()));
+#ifdef DEBUG_READ_DD
+            std::cerr << "\t  got double " << ev_double << "\n";
+#endif
+            break;
+
+        default:
+            throw error(error::INVALID_FILE, __FILE__, __LINE__);
+
+    }
+#ifdef DEBUG_READ_DD
+    std::cerr << "\tdone edge_value::read\n";
+#endif
+
+}
+
+void MEDDLY::edge_value::write(output &s) const
+{
+    switch (mytype) {
+        case edge_type::VOID:
+            s.put("v ");
+            return;
+
+        case edge_type::INT:
+            s.put("i ");
+            s.put(ev_int);
+            s.put(' ');
+            return;
+
+        case edge_type::LONG:
+            s.put("l ");
+            s.put(ev_long);
+            s.put(' ');
+            return;
+
+        case edge_type::FLOAT:
+            s.put("f ");
+            s.put(ev_float);
+            s.put(' ');
+            return;
+
+        case edge_type::DOUBLE:
+            s.put("d ");
+            s.put(ev_double);
+            s.put(' ');
+            return;
+
+        default:
+            MEDDLY_DCASSERT(false);
+    }
 }
 

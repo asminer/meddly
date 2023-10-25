@@ -18,6 +18,7 @@
 
 
 #include "mtmddbool.h"
+#include "../terminal.h"
 
 MEDDLY::mt_mdd_bool::mt_mdd_bool(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, bool tv)
 : mtmdd_forest(dsl, d, range_type::BOOLEAN, p, level_reduction_rule)
@@ -89,6 +90,20 @@ void MEDDLY::mt_mdd_bool
   term = bool_Tencoder::handle2value(evaluateRaw(f, vlist));
 }
 
+void MEDDLY::mt_mdd_bool::showEdge(output &s, const edge_value &ev,
+        node_handle d) const
+{
+    if (d>0) {
+        s.put('#');
+        s.put(d);
+    } else {
+        terminal t;
+        t.setFromHandle(terminal_type::BOOLEAN, d);
+        s.put( t.getBoolean() ? 'T' : 'F' );
+    }
+}
+
+/*
 void MEDDLY::mt_mdd_bool::showTerminal(output &s, node_handle tnode) const
 {
   bool_Tencoder::show(s, tnode);
@@ -103,6 +118,7 @@ MEDDLY::node_handle MEDDLY::mt_mdd_bool::readTerminal(input &s)
 {
   return bool_Tencoder::read(s);
 }
+*/
 
 const char* MEDDLY::mt_mdd_bool::codeChars() const
 {

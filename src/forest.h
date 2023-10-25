@@ -138,6 +138,11 @@ class MEDDLY::forest {
             return hash_edge_values;
         }
 
+        /// Get the terminal node type.
+        inline terminal_type getTerminalType() const {
+            return the_terminal_type;
+        }
+
     // ------------------------------------------------------------
     protected: // methods to set edge info, for derived classes
     // ------------------------------------------------------------
@@ -145,22 +150,39 @@ class MEDDLY::forest {
         // Call one of these first...
 
         inline void setVoidEdges() {
+            switch (rangeType) {
+                case range_type::BOOLEAN:
+                        the_terminal_type = terminal_type::BOOLEAN;
+                        break;
+                case range_type::INTEGER:
+                        the_terminal_type = terminal_type::INTEGER;
+                        break;
+                case range_type::REAL:
+                        the_terminal_type = terminal_type::REAL;
+                        break;
+                default:
+                        MEDDLY_DCASSERT(false);
+            }
             the_edge_type = edge_type::VOID;
             hash_edge_values = false;
         }
         inline void setIntEdges(bool hashed = true) {
+            the_terminal_type = terminal_type::OMEGA;
             the_edge_type = edge_type::INT;
             hash_edge_values = hashed;
         }
         inline void setLongEdges(bool hashed = true) {
+            the_terminal_type = terminal_type::OMEGA;
             the_edge_type = edge_type::LONG;
             hash_edge_values = hashed;
         }
         inline void setFloatEdges(bool hashed = false) {
+            the_terminal_type = terminal_type::OMEGA;
             the_edge_type = edge_type::FLOAT;
             hash_edge_values = hashed;
         }
         inline void setDoubleEdges(bool hashed = false) {
+            the_terminal_type = terminal_type::OMEGA;
             the_edge_type = edge_type::DOUBLE;
             hash_edge_values = hashed;
         }
@@ -206,6 +228,9 @@ class MEDDLY::forest {
 
         /// Edge type.
         edge_type the_edge_type;
+
+        /// Terminal node type.
+        terminal_type the_terminal_type;
 
         /// Are edge values hashed?
         bool hash_edge_values;
@@ -1080,30 +1105,33 @@ class MEDDLY::forest {
     */
     virtual void readEdges(input &s, dd_edge* E, int n) = 0;
 
-        virtual void readEdgeValue(input &s, dd_edge &E) const = 0;
-        virtual void writeEdgeValue(output &s, const dd_edge &E) const = 0;
-        virtual void showEdgeValue(output &s, const dd_edge &E) const = 0;
+//        virtual void readEdgeValue(input &s, dd_edge &E) const = 0;
+        // virtual void writeEdgeValue(output &s, const dd_edge &E) const = 0;
+        // virtual void showEdgeValue(output &s, const dd_edge &E) const = 0;
 
-        void readEdge(input &s, dd_edge &E, const node_handle* map);
-        void writeEdge(output &s, const dd_edge &E, const node_handle* map) const;
+        // void readEdge(input &s, dd_edge &E, const node_handle* map);
+        // void writeEdge(output &s, const dd_edge &E, const node_handle* map) const;
 
-        /** Show an edge value.
-            @param  s       Stream to write to.
-            @param  edge    Edge value
+        /**
+            Show an edge, compactly.
+            Called for example for each child when displaying an entire node.
+                @param  s       Stream to write to.
+                @param  ev      Edge value
+                @param  d       Down pointer
         */
-        virtual void showEdgeValue(output &s, const edge_value &edge) const;
+        virtual void showEdge(output &s, const edge_value &ev, node_handle d) const = 0;
 
         /** Write an edge value in machine-readable format.
             @param  s       Stream to write to.
             @param  edge    Edge value
         */
-        virtual void writeEdgeValue(output &s, const edge_value &edge) const;
+        // virtual void writeEdgeValue(output &s, const edge_value &edge) const;
 
         /** Read an edge value in machine-readable format.
             @param  s       Stream to read from.
             @param  edge    Edge value
         */
-        virtual void readEdgeValue(input &s, edge_value &edge);
+        // virtual void readEdgeValue(input &s, edge_value &edge);
 
 
 public:
@@ -2121,13 +2149,13 @@ class MEDDLY::expert_forest: public MEDDLY::forest
           @param  s       Stream to write to.
           @param  tnode   Handle to a terminal node.
     */
-    virtual void showTerminal(output &s, node_handle tnode) const;
+    // virtual void showTerminal(output &s, node_handle tnode) const;
 
     /** Write a terminal node in machine-readable format.
           @param  s       Stream to write to.
           @param  tnode   Handle to a terminal node.
     */
-    virtual void writeTerminal(output &s, node_handle tnode) const;
+    // virtual void writeTerminal(output &s, node_handle tnode) const;
 
     /** Read a terminal node in machine-readable format.
           @param  s       Stream to read from.
@@ -2135,44 +2163,27 @@ class MEDDLY::expert_forest: public MEDDLY::forest
           @throws         An invalid file exception if the stream does not
                           contain a valid terminal node.
     */
-    virtual node_handle readTerminal(input &s);
+    // virtual node_handle readTerminal(input &s);
 
   public:
-    /** Show the hashed header values.
+    /** Show the header information.
           @param  s       Stream to write to.
-          @param  hh      Pointer to hashed header data.
+          @param  nr      Unpacked node containing header data.
     */
-    virtual void showHashedHeader(output &s, const void* hh) const;
+    virtual void showHeaderInfo(output &s, const unpacked_node &nr) const;
 
-    /** Write the hashed header in machine-readable format.
+    /** Write the header information in machine-readable format.
           @param  s       Stream to write to.
-          @param  hh      Pointer to hashed header data.
+          @param  nr      Unpacked node containing header data.
     */
-    virtual void writeHashedHeader(output &s, const void* hh) const;
+    virtual void writeHeaderInfo(output &s, const unpacked_node &nr) const;
 
-    /** Read the hashed header in machine-readable format.
-          @param  s       Stream to write to.
+    /** Read the header information in machine-readable format.
+          @param  s       Stream to read from.
           @param  nb      Node we're building.
     */
-    virtual void readHashedHeader(input &s, unpacked_node &nb) const;
+    virtual void readHeaderInfo(input &s, unpacked_node &nb) const;
 
-    /** Show the unhashed header values.
-          @param  s       Stream to write to.
-          @param  uh      Array of all unhashed header values.
-    */
-    virtual void showUnhashedHeader(output &s, const void* uh) const;
-
-    /** Write the unhashed header in machine-readable format.
-          @param  s       Stream to write to.
-          @param  hh      Pointer to unhashed header data.
-    */
-    virtual void writeUnhashedHeader(output &s, const void* uh) const;
-
-    /** Read the unhashed header in machine-readable format.
-          @param  s       Stream to write to.
-          @param  nb      Node we're building.
-    */
-    virtual void readUnhashedHeader(input &s, unpacked_node &nb) const;
 
 
 

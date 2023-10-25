@@ -39,6 +39,9 @@ namespace MEDDLY {
     };
 
     class edge_value;
+
+    class input;
+    class output;
 };
 
 
@@ -48,7 +51,16 @@ namespace MEDDLY {
 class MEDDLY::edge_value {
 
     public:
+        /// Initializes to VOID
         edge_value();
+        /// Initializes to INT
+        edge_value(int v);
+        /// Initializes to LONG
+        edge_value(long v);
+        /// Initializes to FLOAT
+        edge_value(float v);
+        /// Initializes to DOUBLE
+        edge_value(double v);
 
         //
         // Getters for the type
@@ -338,6 +350,23 @@ class MEDDLY::edge_value {
                     MEDDLY_DCASSERT(false);
             }
         }
+
+        //
+        // File I/O
+        //
+
+        /**
+            Read an edge value from an input file (stream).
+            This will set the edge type appropriately.
+        */
+        void read(input &s);
+
+        /**
+            Write an edge value to an output file (stream).
+            Formatted so that we can read the value back
+            using read().
+        */
+        void write(output &s) const;
 
     private:
         union {

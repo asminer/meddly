@@ -261,6 +261,7 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
   //    printf("#Node: %d\n", getCurrentNumNodes());
 }
 
+/*
 
 void MEDDLY::evmdd_pluslong::readEdgeValue(input &s, dd_edge &E) const
 {
@@ -279,7 +280,25 @@ void MEDDLY::evmdd_pluslong::showEdgeValue(output &s, const dd_edge &E) const
     s.put(E.getEdgeInt());
     s.put(' ');
 }
-
+*/
+void MEDDLY::evmdd_pluslong::showEdge(output &s, const edge_value &ev,
+        node_handle d) const
+{
+    if (d == 0) {
+        s.put("<oo, w>");
+    } else {
+        s.put('<');
+        s.put(ev.getLong());
+        s.put(", ");
+        if (d < 0) {
+            s.put('w');
+        } else {
+            s.put('#');
+            s.put(d);
+        }
+        s.put('>');
+    }
+}
 
 void MEDDLY::evmdd_pluslong::normalize(unpacked_node &nb, long& ev) const
 {
@@ -310,6 +329,8 @@ void MEDDLY::evmdd_pluslong::normalize(unpacked_node &nb, long& ev) const
   }
 }
 
+/*
+
 void MEDDLY::evmdd_pluslong::showEdgeValue(output &s, const edge_value &edge) const
 {
   OP::show(s, edge);
@@ -324,26 +345,32 @@ void MEDDLY::evmdd_pluslong::readEdgeValue(input &s, edge_value &edge)
 {
   OP::read(s, edge);
 }
+*/
 
-void MEDDLY::evmdd_pluslong::showUnhashedHeader(output &s, const void* uh) const
+void MEDDLY::evmdd_pluslong::showHeaderInfo(output &s, const unpacked_node &nb)
+    const
 {
   s.put(" card: ");
-  s.put(static_cast<const long*>(uh)[0]);
+  s.put(static_cast<const long*>(nb.UHptr())[0]);
   // fprintf(s, " card: %d", ((const node_handle*)uh)[0]);
 }
 
-void MEDDLY::evmdd_pluslong::writeUnhashedHeader(output &s, const void* uh) const
+void MEDDLY::evmdd_pluslong::writeHeaderInfo(output &s, const unpacked_node &nb)
+    const
 {
-  s.put("\t ");
-  s.put(static_cast<const long*>(uh)[0]);
+  s.put('\t');
+  s.put(static_cast<const long*>(nb.UHptr())[0]);
   s.put('\n');
   // th_fprintf(s, "\t %d\n", ((const node_handle*)uh)[0]);
 }
 
-void MEDDLY::evmdd_pluslong::readUnhashedHeader(input &s, unpacked_node &nb) const
+void MEDDLY::evmdd_pluslong::readHeaderInfo(input &s, unpacked_node &nb) const
 {
-  static_cast<long*>(nb.UHdata())[0] = s.get_integer();
-  // th_fscanf(1, s, "%d", (node_handle*)nb.UHptr());
+    long card = s.get_integer();
+    static_cast<long*>(nb.UHdata())[0] = card;
+#ifdef DEBUG_READ_DD
+    std::cerr << "    got cardinality " << card << "\n";
+#endif
 }
 
 const char* MEDDLY::evmdd_pluslong::codeChars() const

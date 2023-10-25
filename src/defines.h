@@ -25,6 +25,7 @@
 
 // #define DEBUG_SLOW
 // #define TRACE_ALL_OPS
+// #define DEBUG_READ_DD
 
 #include <limits>
 

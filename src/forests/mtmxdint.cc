@@ -99,6 +99,24 @@ void MEDDLY::mt_mxd_int::evaluate(const dd_edge &f, const int* vlist,
   term = int_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));
 }
 
+void MEDDLY::mt_mxd_int::showEdge(output &s, const edge_value &ev,
+        node_handle d) const
+{
+    if (d>0) {
+        s.put('#');
+        s.put(d);
+    } else {
+        terminal t;
+        t.setFromHandle(terminal_type::INTEGER, d);
+        s.put('t');
+        s.put( t.getInteger() );
+    }
+}
+
+
+
+/*
+
 void MEDDLY::mt_mxd_int::showTerminal(output &s, node_handle tnode) const
 {
   int_Tencoder::show(s, tnode);
@@ -113,6 +131,7 @@ MEDDLY::node_handle MEDDLY::mt_mxd_int::readTerminal(input &s)
 {
   return int_Tencoder::read(s);
 }
+*/
 
 const char* MEDDLY::mt_mxd_int::codeChars() const
 {

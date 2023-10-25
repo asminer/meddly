@@ -161,6 +161,22 @@ class MEDDLY::dd_edge {
         */
         void writePicture(const char* filename, const char* extension) const;
 
+        /**
+            Write the edge information to a file (stream).
+                @param  s       Stream to write to
+                @param  map     Mapping for non-terminal handles,
+                                or null for identity mapping.
+        */
+        void write(output &s, node_handle* map) const;
+
+        /**
+            Read the edge information from a file (stream).
+                @param  s       Stream to read from
+                @param  map     Mapping for non-terminal handles,
+                                or null for identity mapping.
+        */
+        void read(input &s, node_handle* map);
+
         //
         // Methods that will soon be replaced?
         // Or at least, made private?
@@ -175,6 +191,10 @@ class MEDDLY::dd_edge {
 
         inline void setEdgeValue(float value) {
             edgeval.set(value);
+        }
+
+        inline edge_value& setEdgeValue() {
+            return edgeval;
         }
 
         inline void set(node_handle n, long value) {

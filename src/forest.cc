@@ -601,10 +601,11 @@ void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
 
 //
 
+/*
 void MEDDLY::forest::readEdge(input &s, dd_edge &E, const node_handle* map)
 {
     E.attach(this);
-    readEdgeValue(s, E);
+    E.setEdgeValue().read(s);
     s.stripWS();
     long lnode = s.get_integer();
     if (lnode <= 0) {
@@ -619,7 +620,7 @@ void MEDDLY::forest::readEdge(input &s, dd_edge &E, const node_handle* map)
 void MEDDLY::forest::writeEdge(output &s, const dd_edge &E, const node_handle* map) const
 {
     MEDDLY_DCASSERT(E.isAttachedTo(this));
-    writeEdgeValue(s, E);
+    E.getEdgeValue().write(s);
     if (E.getNode() <= 0) {
         s.put(long(E.getNode()));
     } else {
@@ -627,6 +628,9 @@ void MEDDLY::forest::writeEdge(output &s, const dd_edge &E, const node_handle* m
     }
     s.put('\n');
 }
+*/
+
+/*
 
 void MEDDLY::forest::showEdgeValue(output &s, const edge_value &edge) const
 {
@@ -642,7 +646,7 @@ void MEDDLY::forest::readEdgeValue(input &s, edge_value &edge)
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
-
+*/
 
 
 void MEDDLY::forest::removeStaleComputeTableEntries()
@@ -1531,107 +1535,109 @@ void MEDDLY::expert_forest
 void MEDDLY::expert_forest
 ::writeEdges(output &s, const dd_edge* E, int n) const
 {
-  node_handle* eRaw = new node_handle[n];
-  for (int i=0; i<n; i++) {
-    eRaw[i] = E[i].getNode();
-  }
-  node_handle* output2index = markNodesInSubgraph(eRaw, n, false);
-  delete[] eRaw;
+    node_handle* eRaw = new node_handle[n];
+    for (int i=0; i<n; i++) {
+        eRaw[i] = E[i].getNode();
+    }
+    node_handle* output2index = markNodesInSubgraph(eRaw, n, false);
+    delete[] eRaw;
 
-  // Make a dummy array for fringe case where
-  // there are no non-zero nodes in the subgraph.
-  if (0 == output2index) {
-    output2index = (node_handle*) malloc(1*sizeof(node_handle));
-    output2index[0] = 0;
-  }
-
-  // move a pointer to the end of the list, and
-  // find the largest node index we're writing
-  int maxnode = 0;
-  int last;
-  for (last = 0; output2index[last]; last++) {
-    maxnode = MAX(maxnode, output2index[last]);
-  };
-  int num_nodes = last;
-  last--;
-
-  // arrange nodes to output, by levels
-  for (int k=getNumVariables(); k; ) {
-    int i = 0;
-    while (i < last) {
-      // move last to the left, until we have something not at level k
-      for (; i < last; last--) {
-        if (getNodeLevel(output2index[last]) != k) break;
-      }
-      // move i to the right, until we have something at level k
-      for (; i < last; i++) {
-        if (getNodeLevel(output2index[i]) == k) break;
-      }
-      if (i < last) {
-        SWAP(output2index[i], output2index[last]);
-      }
+    // Make a dummy array for fringe case where
+    // there are no non-zero nodes in the subgraph.
+    if (0 == output2index) {
+        output2index = (node_handle*) malloc(1*sizeof(node_handle));
+        output2index[0] = 0;
     }
 
-    // next level
-    k *= -1;
-    if (k>0) k--;
-  } // loop over levels
+    // move a pointer to the end of the list, and
+    // find the largest node index we're writing
+    int maxnode = 0;
+    int last;
+    for (last = 0; output2index[last]; last++) {
+        maxnode = MAX(maxnode, output2index[last]);
+    };
+    int num_nodes = last;
+    last--;
 
-  // build the inverse mapping
-  node_handle* index2output = new node_handle[maxnode+1];
-  for (int i=0; i<maxnode; i++) index2output[i] = 0;
-  for (int i=0; output2index[i]; i++) {
-      MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, output2index[i], maxnode+1);
-    index2output[output2index[i]] = i+1;
-  }
+    // arrange nodes to output, by levels
+    for (int k=getNumVariables(); k; ) {
+        int i = 0;
+        while (i < last) {
+            // move last to the left, until we have something not at level k
+            for (; i < last; last--) {
+                if (getNodeLevel(output2index[last]) != k) break;
+            }
+            // move i to the right, until we have something at level k
+            for (; i < last; i++) {
+                if (getNodeLevel(output2index[i]) == k) break;
+            }
+            if (i < last) {
+                SWAP(output2index[i], output2index[last]);
+            }
+        }
+
+        // next level
+        k *= -1;
+        if (k>0) k--;
+    } // loop over levels
+
+    // build the inverse mapping
+    node_handle* index2output = new node_handle[maxnode+1];
+    for (int i=0; i<maxnode; i++) index2output[i] = 0;
+    for (int i=0; output2index[i]; i++) {
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, output2index[i], maxnode+1);
+        index2output[output2index[i]] = i+1;
+    }
 
 #ifdef DEBUG_WRITE
-  printf("Writing edges:\n");
-  showNodeGraph(stdout, eRaw, n);
-  printf("Got list of nodes:\n");
-  for (int i=0; output2index[i]; i++) {
-    if (i) printf(", ");
-    printf("%ld", long(output2index[i]));
-  }
-  printf("\n");
-  printf("Got inverse list:\n");
-  for (int i=0; i<=maxnode; i++) {
-    if (i) printf(", ");
-    printf("%ld", long(index2output[i]));
-  }
-  printf("\n");
+    printf("Writing edges:\n");
+    showNodeGraph(stdout, eRaw, n);
+    printf("Got list of nodes:\n");
+    for (int i=0; output2index[i]; i++) {
+        if (i) printf(", ");
+        printf("%ld", long(output2index[i]));
+    }
+    printf("\n");
+    printf("Got inverse list:\n");
+    for (int i=0; i<=maxnode; i++) {
+        if (i) printf(", ");
+        printf("%ld", long(index2output[i]));
+    }
+    printf("\n");
 #endif
 
-  // Write the nodes
-  const char* block = codeChars();
-  s << block << " " << num_nodes << "\n";
+    // Write the nodes
+    const char* block = codeChars();
+    s << block << " " << num_nodes << "\n";
 
-  unpacked_node* un = unpacked_node::New();
-  for (int i=0; output2index[i]; i++) {
-    s << getNodeLevel(output2index[i]) << " ";
-    unpackNode(un, output2index[i], FULL_OR_SPARSE);
-    un->write(s, index2output);
-  }
-  unpacked_node::recycle(un);
+    unpacked_node* un = unpacked_node::New();
+    for (int i=0; output2index[i]; i++) {
+        s << getNodeLevel(output2index[i]) << " ";
+        unpackNode(un, output2index[i], FULL_OR_SPARSE);
+        un->write(s, index2output);
+    }
+    unpacked_node::recycle(un);
 
-  // reverse the block
-  for (int i=strlen(block); i; ) {
-    i--;
-    s.put(block[i]);
-  }
-  s.put('\n');
+    // reverse the block
+    for (int i=strlen(block); i; ) {
+        i--;
+        s.put(block[i]);
+    }
+    s.put('\n');
 
-  // Write the actual edge pointers
-  s << "ptrs " << n << "\n";
-  for (int i=0; i<n; i++) {
-      writeEdge(s, E[i], index2output);
-  }
-  s << "srtp\n";
+    // Write the actual edge pointers
+    s << "ptrs " << n << "\n";
+    for (int i=0; i<n; i++) {
+        s.put('\t');
+        E[i].write(s, index2output);
+        s.put('\n');
+    }
+    s << "srtp\n";
 
 
-  // Cleanup
-  delete[] index2output;
-  free(output2index);
+    // Cleanup
+    delete[] index2output;
+    free(output2index);
 }
 
 void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
@@ -1643,6 +1649,9 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
     s.consumeKeyword(block);
     s.stripWS();
     int num_nodes = s.get_integer();
+#ifdef DEBUG_READ_DD
+    std::cerr << "Reading " << num_nodes << " nodes in " << block << " forest\n";
+#endif
 #ifdef DEBUG_READ
     printf("Reading %d nodes in forest %s\n", num_nodes, codeChars());
 #endif
@@ -1677,71 +1686,11 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
       printf("%d ", rawsize);
 #endif
 
-      // read indexes (sparse only)
-      if (rawsize<0) {
-        for (int i=0; i<n; i++) {
-          s.stripWS();
-          nb->i_ref(i) = s.get_integer();
-        }
-#ifdef DEBUG_READ
-        printf("indexes ");
-#endif
-      } else {
-#ifdef DEBUG_READ
-        printf("no indexes ");
-#endif
-      }
+      //
+      // read the node
+      //
+      nb->read(s, map);
 
-      // read down
-      for (int i=0; i<n; i++) {
-        s.stripWS();
-        int c = s.get_char();
-        s.unget(c);
-        if (c>='0' && c<='9') {
-          // a regular non-terminal node
-#ifdef DEBUG_READ
-          printf("n");
-#endif
-          long down = s.get_integer();
-          MEDDLY_DCASSERT(down>=0);
-          if (down >= node_index) {
-            throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
-          }
-          nb->d_ref(i) = linkNode(map[down]);
-        } else {
-          // must be a terminal node
-#ifdef DEBUG_READ
-          printf("t");
-#endif
-          nb->d_ref(i) = readTerminal(s);
-        }
-      }
-#ifdef DEBUG_READ
-      printf(" down ");
-#endif
-
-      dd_edge hack(this);
-
-      // read edges
-      if (nb->hasEdges()) {
-        for (int i=0; i<n; i++) {
-          readEdgeValue(s, hack);
-          nb->setEdge(i, hack.getEdgeValue());
-        }
-#ifdef DEBUG_READ
-        printf("edges ");
-#endif
-      }
-
-      // any extra header info?  read it
-      if (unhashedHeaderBytes()) {
-        s.stripWS();
-        readUnhashedHeader(s, *nb);
-      }
-      if (hashedHeaderBytes()) {
-        s.stripWS();
-        readHashedHeader(s, *nb);
-      }
 
       // ok, done reading; time to reduce it
       map[node_index] = createReducedNode(-1, nb);
@@ -1773,6 +1722,9 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
 #ifdef DEBUG_READ
     printf("Got %s\n", buffer);
 #endif
+#ifdef DEBUG_READ_DD
+    std::cerr << "Finished " << buffer << " forest\n";
+#endif
 
     // Read the pointers
     s.stripWS();
@@ -1786,6 +1738,9 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
 #ifdef DEBUG_READ
     printf("Reading %d pointers\n", num_ptrs);
 #endif
+#ifdef DEBUG_READ_DD
+    std::cerr << "Reading " << num_ptrs << " pointers\n";
+#endif
     MEDDLY_DCASSERT(num_ptrs <= n);
     if (num_ptrs > n) {
 #ifdef DEBUG_READ
@@ -1796,11 +1751,16 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
       throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
     }
     for (int i=0; i<num_ptrs; i++) {
-        readEdge(s, E[i], map);
+        E[i].attach(this);
+        E[i].read(s, map);
     }
 
     s.stripWS();
     s.consumeKeyword("srtp");
+
+#ifdef DEBUG_READ_DD
+    std::cerr << "Done reading pointers\n";
+#endif
 
     // unlink map pointers
     for (int i=0; i<=num_nodes; i++) unlinkNode(map[i]);
@@ -1945,6 +1905,7 @@ void MEDDLY::expert_forest::reportForestStats(output &s, const char* pad) const
   // default - do nothing
 }
 
+/*
 void MEDDLY::expert_forest::showTerminal(output &s, node_handle tnode) const
 {
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
@@ -1959,36 +1920,20 @@ MEDDLY::node_handle MEDDLY::expert_forest::readTerminal(input &s)
 {
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
+*/
 
-void MEDDLY::expert_forest::showHashedHeader(output &s, const void* hh) const
+void MEDDLY::expert_forest::showHeaderInfo(output &s, const unpacked_node &) const
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::expert_forest::writeHashedHeader(output &s, const void* hh) const
+void MEDDLY::expert_forest::writeHeaderInfo(output &s, const unpacked_node &) const
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::expert_forest::readHashedHeader(input &s, unpacked_node &nb) const
+void MEDDLY::expert_forest::readHeaderInfo(input &s, unpacked_node &) const
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::expert_forest::showUnhashedHeader(output &s, const void* uh) const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::expert_forest::writeUnhashedHeader(output &s, const void* uh) const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::expert_forest::readUnhashedHeader(input &s, unpacked_node &nb) const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
 
 void MEDDLY::expert_forest::reorderVariables(const int* level2var)
 {
