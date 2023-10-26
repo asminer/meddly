@@ -35,7 +35,7 @@
 using namespace MEDDLY;
 
 // Timer class
-#include "../src/timer.h"
+#include "../timing/timer.h"
 
 #define TEST_INDEX_SET
 #define USE_SEQUENTIAL_PLUS 0

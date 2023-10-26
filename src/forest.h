@@ -143,6 +143,54 @@ class MEDDLY::forest {
             return the_terminal_type;
         }
 
+        /**
+            Convenience function.
+            Based on the forest type, convert the desired value
+            into a terminal node handle.
+                @param  v   Value to encode
+                @return     Handle for terminal node
+        */
+        template <typename T>
+        inline node_handle handleForValue(T v) const {
+            terminal t;
+            t.setFromValue(the_terminal_type, v);
+            return t.getHandle();
+        }
+
+        /**
+            Convenience function.
+            Based on the forest type, convert the terminal node handle
+            into its encoded value.
+                @param  n   Node handle
+                @param  v   Output: encoded value
+        */
+        template <typename T>
+        inline void getValueFromHandle(node_handle n, T& v) const {
+            MEDDLY_DCASSERT(n <= 0);
+            terminal t;
+            t.setFromHandle(the_terminal_type, n);
+            t.getValue(v);
+        }
+
+        inline bool getBooleanFromHandle(MEDDLY::node_handle n) const {
+            bool v;
+            getValueFromHandle(n, v);
+            return v;
+        }
+
+        inline int getIntegerFromHandle(MEDDLY::node_handle n) const {
+            int v;
+            getValueFromHandle(n, v);
+            return v;
+        }
+
+        inline float getRealFromHandle(MEDDLY::node_handle n) const {
+            float v;
+            getValueFromHandle(n, v);
+            return v;
+        }
+
+
     // ------------------------------------------------------------
     protected: // methods to set edge info, for derived classes
     // ------------------------------------------------------------
@@ -1587,8 +1635,8 @@ class MEDDLY::expert_forest: public MEDDLY::forest
           @param  v   Value to encode
           @return     Handle for terminal node
     */
-    template <typename T>
-    node_handle handleForValue(T v) const;
+    // template <typename T>
+    // node_handle handleForValue(T v) const;
 
     /**
         Convenience function.
@@ -1597,8 +1645,8 @@ class MEDDLY::expert_forest: public MEDDLY::forest
           @param  n   Node handle
           @param  v   Output: encoded value
     */
-    template <typename T>
-    void getValueFromHandle(node_handle n, T& v) const;
+    // template <typename T>
+    // void getValueFromHandle(node_handle n, T& v) const;
 
     /**
         Convenience function.
@@ -1606,7 +1654,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
         into its encoded boolean value.
           @param  n   Node handle
     */
-    bool getBooleanFromHandle(node_handle n) const;
+    // bool getBooleanFromHandle(node_handle n) const;
 
     /**
         Convenience function.
@@ -1614,7 +1662,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
         into its encoded integer value.
           @param  n   Node handle
     */
-    int getIntegerFromHandle(node_handle n) const;
+    // int getIntegerFromHandle(node_handle n) const;
 
     /**
         Convenience function.
@@ -1622,7 +1670,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
         into its encoded real (float) value.
           @param  n   Node handle
     */
-    float getRealFromHandle(node_handle n) const;
+    // float getRealFromHandle(node_handle n) const;
 
     memstats& changeMemStats();
 
@@ -2353,6 +2401,8 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 // *                                                                *
 // ******************************************************************
 
+/*
+
 template<typename T>
 inline MEDDLY::node_handle
 MEDDLY::expert_forest::handleForValue(T v) const
@@ -2436,6 +2486,8 @@ MEDDLY::expert_forest::getRealFromHandle(MEDDLY::node_handle n) const
             throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     }
 }
+
+*/
 
 inline MEDDLY::memstats&
 MEDDLY::expert_forest::changeMemStats()

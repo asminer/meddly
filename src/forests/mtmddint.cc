@@ -22,7 +22,9 @@
 MEDDLY::mt_mdd_int::mt_mdd_int(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, int tv)
 : mtmdd_forest(dsl, d, range_type::INTEGER, p, level_reduction_rule)
 {
-    setTransparentEdge(int_Tencoder::value2handle(tv));
+    terminal t(tv);
+    setTransparentEdge(t.getHandle());
+    // setTransparentEdge(int_Tencoder::value2handle(tv));
     initializeForest();
 }
 
@@ -31,7 +33,8 @@ MEDDLY::mt_mdd_int::~mt_mdd_int()
 
 void MEDDLY::mt_mdd_int::createEdge(long term, dd_edge& e)
 {
-  createEdgeTempl<int_Tencoder, long>(term, e);
+  // createEdgeTempl<int_Tencoder, long>(term, e);
+  createEdgeTempl<long>(term, e);
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
@@ -62,7 +65,8 @@ void MEDDLY::mt_mdd_int::createEdge(const int* const* vlist, const long* terms, 
 	  }
   }
 
-  mtmdd_edgemaker<int_Tencoder, long>
+  // mtmdd_edgemaker<int_Tencoder, long>
+  mtmdd_edgemaker<long>
   EM(this, ordered_vlist, terms, order, N, num_vars, unionOp);
 
   e.set(EM.createEdge());
@@ -77,7 +81,8 @@ void MEDDLY::mt_mdd_int::createEdge(const int* const* vlist, const long* terms, 
 void MEDDLY::mt_mdd_int::
 createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 {
-  createEdgeForVarTempl<int_Tencoder, long>(vh, vp, terms, a);
+  // createEdgeForVarTempl<int_Tencoder, long>(vh, vp, terms, a);
+  createEdgeForVarTempl<long>(vh, vp, terms, a);
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
@@ -86,7 +91,10 @@ createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 void MEDDLY::mt_mdd_int
 ::evaluate(const dd_edge &f, const int* vlist, long &term) const
 {
-  term = int_Tencoder::handle2value(evaluateRaw(f, vlist));
+    terminal t;
+    t.setFromHandle(terminal_type::INTEGER, evaluateRaw(f, vlist));
+    term = t.getInteger();
+    // term = int_Tencoder::handle2value(evaluateRaw(f, vlist));
 }
 
 void MEDDLY::mt_mdd_int::showEdge(output &s, const edge_value &ev,

@@ -28,7 +28,7 @@
 */
 
 #include "../src/meddly.h"
-#include "../src/timer.h"
+#include "../timing/timer.h"
 
 // #define DEBUG_EVENTS
 // #define DUMP_NSF

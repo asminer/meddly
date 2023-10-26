@@ -764,7 +764,8 @@ double MEDDLY::satotf_opname::otf_relation::getArcCount(
 
   // Build confirmed mask
   dd_edge confirmed_local_states(outsetF);
-  confirmed_local_states.set(bool_Tencoder::value2handle(true));
+  terminal one_terminal(true);
+  confirmed_local_states.set(one_terminal.getHandle());
   for (int k = 1; k < num_levels; k++) {
     node_handle current_node = confirmed_local_states.getNode();
     int current_level = outsetF->getNodeLevel(current_node);

@@ -30,6 +30,8 @@
     As classes, because we can use them in template functions.
 */
 
+#if 0
+
 namespace MEDDLY {
 
     class bool_Tencoder;
@@ -237,5 +239,6 @@ inline void EVencoder<double>::read(input &s, edge_value &ptr)
 
 }
 
+#endif
 
 #endif

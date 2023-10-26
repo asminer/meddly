@@ -111,7 +111,8 @@ class MEDDLY::mtmxd_forest : public mt_forest {
 
 namespace MEDDLY {
 
-  template <class ENCODER, typename T>
+  // template <class ENCODER, typename T>
+  template <typename T>
   class mtmxd_edgemaker {
       mtmxd_forest* F;
       const int* const* vulist;
@@ -121,6 +122,7 @@ namespace MEDDLY {
       int N;
       int K;
       binary_operation* unionOp;
+      node_handle zero_terminal;
     public:
       mtmxd_edgemaker(mtmxd_forest* f,
         const int* const* mt, const int* const* mp, const T* v, int* o, int n,
@@ -134,6 +136,8 @@ namespace MEDDLY {
         N = n;
         K = k;
         unionOp = unOp;
+        terminal t(T(0));
+        zero_terminal = t.getHandle();
       }
 
       inline const int* unprimed(int i) const {
@@ -179,8 +183,10 @@ namespace MEDDLY {
         // Fast special case
         //
         if (1==stop-start) {
+          terminal t(term(start));
           return createEdgePath(k, unprimed(start), primed(start),
-            ENCODER::value2handle(term(start))
+            t.getHandle()
+            // ENCODER::value2handle(term(start))
           );
         }
         //
@@ -191,7 +197,9 @@ namespace MEDDLY {
           for (int i=start+1; i<stop; i++) {
             accumulate += term(i);
           }
-          return ENCODER::value2handle(accumulate);
+          terminal t(accumulate);
+          // return ENCODER::value2handle(accumulate);
+          return t.getHandle();
         }
 
         // size of variables at level k
@@ -475,7 +483,7 @@ namespace MEDDLY {
       {
         MEDDLY_DCASSERT(F->isForRelations());
 
-        if (0==next && (!F->isQuasiReduced() || F->getTransparentNode()==ENCODER::value2handle(0))) {
+        if (0==next && (!F->isQuasiReduced() || F->getTransparentNode()==zero_terminal)) {
           return next;
         }
 
@@ -523,7 +531,7 @@ namespace MEDDLY {
               // DO NOTHING
               nextpr = next;
             }
-            else if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
+            else if(F->isQuasiReduced() && F->getTransparentNode()!=zero_terminal){
               unsigned sz = unsigned(F->getLevelSize(-i));
               unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
               node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
@@ -545,7 +553,7 @@ namespace MEDDLY {
           }
           else {
             // sane value
-            if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
+            if(F->isQuasiReduced() && F->getTransparentNode()!=zero_terminal){
               unsigned sz = unsigned(F->getLevelSize(-i));
               unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
               node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
@@ -608,7 +616,7 @@ namespace MEDDLY {
             next = F->createReducedNode(-1, nb);
           } else {
             // sane value
-            if(F->isQuasiReduced() && F->getTransparentNode()!=ENCODER::value2handle(0)){
+            if(F->isQuasiReduced() && F->getTransparentNode()!=zero_terminal){
               unsigned sz = unsigned(F->getLevelSize(i));
               unpacked_node* nb = unpacked_node::newFull(F, i, sz);
               node_handle zero = makeOpaqueZeroNodeAtLevel(-i);
@@ -639,9 +647,9 @@ namespace MEDDLY {
       node_handle makeOpaqueZeroNodeAtLevel(int k)
       {
   	    MEDDLY_DCASSERT(F->isQuasiReduced());
-  	    MEDDLY_DCASSERT(F->getTransparentNode()!=ENCODER::value2handle(0));
+  	    MEDDLY_DCASSERT(F->getTransparentNode()!=zero_terminal);
 
-  	    return F->makeNodeAtLevel(k, ENCODER::value2handle(0));
+  	    return F->makeNodeAtLevel(k, zero_terminal);
       }
 
   }; // class mtmxd_edgemaker

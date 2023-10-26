@@ -27,7 +27,7 @@
 
 #include "../src/meddly.h"
 #include "simple_model.h"
-#include "../src/timer.h"
+#include "../timing/timer.h"
 #include "../src/loggers.h"
 
 using namespace MEDDLY;

@@ -22,8 +22,10 @@
 MEDDLY::mt_mxd_int::mt_mxd_int(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, int tv)
 : mtmxd_forest(dsl, d, range_type::INTEGER, p, level_reduction_rule)
 {
-  setTransparentEdge( int_Tencoder::value2handle(tv) );
-  initializeForest();
+    terminal t(tv);
+    setTransparentEdge(t.getHandle());
+    // setTransparentEdge(int_Tencoder::value2handle(tv));
+    initializeForest();
 }
 
 MEDDLY::mt_mxd_int::~mt_mxd_int()
@@ -31,9 +33,10 @@ MEDDLY::mt_mxd_int::~mt_mxd_int()
 
 void MEDDLY::mt_mxd_int::createEdge(long term, dd_edge& e)
 {
-  createEdgeTempl<int_Tencoder, long>(term, e);
+    // createEdgeTempl<int_Tencoder, long>(term, e);
+    createEdgeTempl<long>(term, e);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+    validateIncounts(true);
 #endif
 }
 
@@ -71,7 +74,8 @@ void MEDDLY::mt_mxd_int
 	  }
   }
 
-  mtmxd_edgemaker<int_Tencoder, long>
+  // mtmxd_edgemaker<int_Tencoder, long>
+  mtmxd_edgemaker<long>
   EM(this, ordered_vlist, ordered_vplist, terms, order, N, num_vars, unionOp);
 
   e.set(EM.createEdge());
@@ -87,16 +91,20 @@ void MEDDLY::mt_mxd_int
 void MEDDLY::mt_mxd_int::
 createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 {
-  createEdgeForVarTempl<int_Tencoder, long>(vh, vp, terms, a);
+    // createEdgeForVarTempl<int_Tencoder, long>(vh, vp, terms, a);
+    createEdgeForVarTempl<long>(vh, vp, terms, a);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+    validateIncounts(true);
 #endif
 }
 
 void MEDDLY::mt_mxd_int::evaluate(const dd_edge &f, const int* vlist,
   const int* vplist, long &term) const
 {
-  term = int_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));
+    terminal t;
+    t.setFromHandle(terminal_type::INTEGER, evaluateRaw(f, vlist, vplist));
+    term = t.getInteger();
+    // term = int_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));
 }
 
 void MEDDLY::mt_mxd_int::showEdge(output &s, const edge_value &ev,

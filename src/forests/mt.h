@@ -89,7 +89,8 @@ class MEDDLY::mt_forest : public expert_forest {
       }
     }
 
-    template <class ENCODER, typename T>
+    // template <class ENCODER, typename T>
+    template <typename T>
     inline
     void createEdgeForVarTempl(int vh, bool pr, const T* vals, dd_edge& result)
     {
@@ -122,9 +123,8 @@ class MEDDLY::mt_forest : public expert_forest {
       */
       unpacked_node* nb = unpacked_node::newFull(this, k, sz);
       for (unsigned i=0; i<sz; i++) {
-        nb->d_ref(i) = makeNodeAtLevel(km1,
-          ENCODER::value2handle(vals ? vals[i] : i)
-        );
+        terminal t(vals ? vals[i] : T(i));
+        nb->d_ref(i) = makeNodeAtLevel(km1, t.getHandle());
       }
 
       /*
@@ -136,12 +136,15 @@ class MEDDLY::mt_forest : public expert_forest {
     }
 
 
-    template <class ENCODER, class T>
+    // template <class ENCODER, class T>
+    template <typename T>
     inline void createEdgeTempl(T term, dd_edge& e) {
         if (!e.isAttachedTo(this)) {
             throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
         }
-        e.set(makeNodeAtTop(ENCODER::value2handle(term)));
+        // e.set(makeNodeAtTop(ENCODER::value2handle(term)));
+        terminal t(term);
+        e.set(makeNodeAtTop(t.getHandle()));
     }
 
   protected:

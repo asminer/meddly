@@ -142,7 +142,12 @@ public:
 int MEDDLY::maxrange_int::compute_r(node_handle a)
 {
   // Terminal case
-  if (argF->isTerminalNode(a)) return int_Tencoder::handle2value(a);
+  if (argF->isTerminalNode(a)) {
+      terminal t;
+      t.setFromHandle(terminal_type::INTEGER, a);
+      return t.getInteger();
+      // return int_Tencoder::handle2value(a);
+  }
 
   // Check compute table
   int max;
@@ -185,7 +190,12 @@ public:
 int MEDDLY::minrange_int::compute_r(node_handle a)
 {
   // Terminal case
-  if (argF->isTerminalNode(a)) return int_Tencoder::handle2value(a);
+  if (argF->isTerminalNode(a)) {
+      terminal t;
+      t.setFromHandle(terminal_type::INTEGER, a);
+      return t.getInteger();
+      // return int_Tencoder::handle2value(a);
+  }
 
   // Check compute table
   int min;
@@ -230,7 +240,12 @@ public:
 float MEDDLY::maxrange_real::compute_r(node_handle a)
 {
   // Terminal case
-  if (argF->isTerminalNode(a)) return float_Tencoder::handle2value(a);
+  if (argF->isTerminalNode(a)) {
+      terminal t;
+      t.setFromHandle(terminal_type::REAL, a);
+      return t.getReal();
+      // return float_Tencoder::handle2value(a);
+  }
 
   // Check compute table
   float max;
@@ -275,7 +290,12 @@ public:
 float MEDDLY::minrange_real::compute_r(node_handle a)
 {
   // Terminal case
-  if (argF->isTerminalNode(a)) return float_Tencoder::handle2value(a);
+  if (argF->isTerminalNode(a)) {
+      terminal t;
+      t.setFromHandle(terminal_type::REAL, a);
+      return t.getReal();
+      // return float_Tencoder::handle2value(a);
+  }
 
   // Check compute table
   float min;

@@ -91,6 +91,9 @@ void MEDDLY::unpacked_node::clear()
     size = 0;
     nnzs = 0;
     level = 0;
+#ifdef DEVELOPMENT_CODE
+    has_hash = false;
+#endif
 }
 
 /*
@@ -458,6 +461,9 @@ void MEDDLY::unpacked_node
         edge = (edge_value*) realloc(edge, nalloc*sizeof(edge_value));
         if (!edge) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
+#ifdef DEVELOPMENT_CODE
+    has_hash = false;
+#endif
 }
 
 void MEDDLY::unpacked_node::bind_to_forest(const expert_forest* f,

@@ -22,7 +22,9 @@
 MEDDLY::mt_mxd_bool::mt_mxd_bool(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, bool tv)
 : mtmxd_forest(dsl, d, range_type::BOOLEAN, p, level_reduction_rule)
 {
-    setTransparentEdge(bool_Tencoder::value2handle(tv));
+    terminal t(tv);
+    setTransparentEdge(t.getHandle());
+    // setTransparentEdge(bool_Tencoder::value2handle(tv));
     initializeForest();
 }
 
@@ -31,7 +33,8 @@ MEDDLY::mt_mxd_bool::~mt_mxd_bool()
 
 void MEDDLY::mt_mxd_bool::createEdge(bool term, dd_edge& e)
 {
-  createEdgeTempl<bool_Tencoder, bool>(term, e);
+  // createEdgeTempl<bool_Tencoder, bool>(term, e);
+  createEdgeTempl<bool>(term, e);
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
@@ -71,7 +74,8 @@ void MEDDLY::mt_mxd_bool
 	  }
   }
 
-  mtmxd_edgemaker<bool_Tencoder, bool>
+  // mtmxd_edgemaker<bool_Tencoder, bool>
+  mtmxd_edgemaker<bool>
   EM(this, ordered_vlist, ordered_vplist, 0, order, N, num_vars, unionOp);
 
   e.set(EM.createEdge());
@@ -87,7 +91,8 @@ void MEDDLY::mt_mxd_bool
 void MEDDLY::mt_mxd_bool::
 createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 {
-  createEdgeForVarTempl<bool_Tencoder, bool>(vh, vp, terms, a);
+  // createEdgeForVarTempl<bool_Tencoder, bool>(vh, vp, terms, a);
+  createEdgeForVarTempl<bool>(vh, vp, terms, a);
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
@@ -96,7 +101,9 @@ createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 void MEDDLY::mt_mxd_bool::evaluate(const dd_edge &f, const int* vlist,
   const int* vplist, bool &term) const
 {
-  term = bool_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));
+    terminal t;
+    t.setFromHandle(terminal_type::BOOLEAN, evaluateRaw(f, vlist, vplist));
+    term = t.getBoolean();
 }
 
 void MEDDLY::mt_mxd_bool::showEdge(output &s, const edge_value &ev,
@@ -121,12 +128,13 @@ const char* MEDDLY::mt_mxd_bool::codeChars() const
 bool
 MEDDLY::mt_mxd_bool::checkTerminalMinterm(node_handle a,  int* from,  int* to, int levelRead, node_handle &result)
 {
+    terminal one_terminal(true);
 
    if (a <= 0 && levelRead == 0 )
     {
-    result = handleForValue(true);
-    //printf("\n I am TERMINAL\n");
-    return true;
+        result = one_terminal.getHandle();
+        //printf("\n I am TERMINAL\n");
+        return true;
     }
 
   //initial forest is empty and I am adding a single term
@@ -134,7 +142,7 @@ MEDDLY::mt_mxd_bool::checkTerminalMinterm(node_handle a,  int* from,  int* to, i
   if( getNodeLevel(a) == 0 && levelRead > 0 )
     {
 
-        node_handle below = handleForValue(true);
+        node_handle below = one_terminal.getHandle();
         for(int i = 1; i <= levelRead; i++)
           {
               int level_from = i;
@@ -249,17 +257,19 @@ MEDDLY::mt_mxd_bool::unionOneMinterm_r(int in, int k, node_handle a,  int* from,
 
   unpacked_node* C = unpacked_node::newFull(this, k, resultSize);
 
+  terminal one_terminal(true);
+
   //if a is terminal
   if(aLevel == 0)
   {
-    if(a == handleForValue(true))
+    if(a == one_terminal.getHandle())
     {
       return a;
     }
     else {
       if(to[bLevel] == DONT_CARE)
       {
-        return handleForValue(true);
+        return one_terminal.getHandle();
       }
       else {
         for (unsigned j=0; j<resultSize; j++) {

@@ -44,6 +44,12 @@ MEDDLY::terminal::terminal(int t)
     setInteger(t);
 }
 
+MEDDLY::terminal::terminal(long t)
+{
+    // TBD: check for overflow?
+    setInteger(t);
+}
+
 MEDDLY::terminal::terminal(float t)
 {
     setReal(t);

@@ -28,7 +28,7 @@ namespace MEDDLY {
 
 class MEDDLY::evmxd_pluslong : public evmxd_forest {
   public:
-    class OP : public EVencoder<long> {
+    class OP {
       public:
         static inline bool isIdentityEdge(const edge_value &p) {
           return p.equals(0L);

@@ -23,7 +23,9 @@
 MEDDLY::mt_mdd_bool::mt_mdd_bool(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, bool tv)
 : mtmdd_forest(dsl, d, range_type::BOOLEAN, p, level_reduction_rule)
 {
-    setTransparentEdge(bool_Tencoder::value2handle(tv));
+    terminal t(tv);
+    setTransparentEdge(t.getHandle());
+    // setTransparentEdge(bool_Tencoder::value2handle(tv));
     initializeForest();
 }
 
@@ -32,7 +34,8 @@ MEDDLY::mt_mdd_bool::~mt_mdd_bool()
 
 void MEDDLY::mt_mdd_bool::createEdge(bool term, dd_edge& e)
 {
-  createEdgeTempl<bool_Tencoder, bool>(term, e);
+  // createEdgeTempl<bool_Tencoder, bool>(term, e);
+  createEdgeTempl<bool>(term, e);
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
@@ -63,8 +66,9 @@ void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
 	  }
   }
 
-  mtmdd_edgemaker<bool_Tencoder, bool>
-  EM(this, ordered_vlist, 0, order, N, getDomain()->getNumVariables(), unionOp);
+  // mtmdd_edgemaker<bool_Tencoder, bool>
+  mtmdd_edgemaker<bool>
+    EM(this, ordered_vlist, 0, order, N, getDomain()->getNumVariables(), unionOp);
 
   e.set(EM.createEdge());
 
@@ -78,7 +82,8 @@ void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
 void MEDDLY::mt_mdd_bool::
 createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 {
-  createEdgeForVarTempl<bool_Tencoder, bool>(vh, vp, terms, a);
+  //createEdgeForVarTempl<bool_Tencoder, bool>(vh, vp, terms, a);
+  createEdgeForVarTempl<bool>(vh, vp, terms, a);
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
@@ -87,7 +92,10 @@ createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 void MEDDLY::mt_mdd_bool
 ::evaluate(const dd_edge &f, const int* vlist, bool &term) const
 {
-  term = bool_Tencoder::handle2value(evaluateRaw(f, vlist));
+    terminal t;
+    t.setFromHandle(terminal_type::BOOLEAN, evaluateRaw(f, vlist));
+    term = t.getBoolean();
+    // term = bool_Tencoder::handle2value(evaluateRaw(f, vlist));
 }
 
 void MEDDLY::mt_mdd_bool::showEdge(output &s, const edge_value &ev,

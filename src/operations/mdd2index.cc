@@ -86,7 +86,8 @@ MEDDLY::mdd2index_operation
     return;
   }
   if (0 == k) {
-    bdn = bool_Tencoder::value2handle(true);
+    terminal t(true);
+    bdn = t.getHandle();
     bcard = 1;
     return;
   }

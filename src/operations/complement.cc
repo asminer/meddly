@@ -95,12 +95,12 @@ void MEDDLY::compl_mdd::computeDDEdge(const dd_edge& a, dd_edge& b, bool userFla
 
 MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
 {
-  // Check terminals
-  if (argF->isTerminalNode(a)) {
-    return bool_Tencoder::value2handle(
-      !bool_Tencoder::handle2value(a)
-    );
-  }
+    // Check terminals
+    if (argF->isTerminalNode(a)) {
+        bool ta;
+        argF->getValueFromHandle(a, ta);
+        return argF->handleForValue(!ta);
+    }
 
   // Check compute table
   node_handle b;
@@ -167,18 +167,13 @@ void MEDDLY::compl_mxd::computeDDEdge(const dd_edge& a, dd_edge& b, bool userFla
 
 MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
 {
-  if (0==k) {
-    return bool_Tencoder::value2handle(
-      !bool_Tencoder::handle2value(a)
-    );
-  }
-  if (argF->isTerminalNode(a) &&
-      resF->isFullyReduced())
-  {
-    return bool_Tencoder::value2handle(
-      !bool_Tencoder::handle2value(a)
-    );
-  }
+    // Check terminals
+    if ( (0==k) || (argF->isTerminalNode(a) && resF->isFullyReduced()) ) {
+        bool ta;
+        argF->getValueFromHandle(a, ta);
+        return argF->handleForValue(!ta);
+    }
+
   // Check compute table
   ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);

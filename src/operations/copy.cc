@@ -326,7 +326,8 @@ void MEDDLY::copy_MT2EV<TYPE>
     else {
       argF->getValueFromHandle(a, bev);
     }
-    b = bool_Tencoder::value2handle(true);
+    terminal t(true);
+    b = t.getHandle();
     return;
   }
 
@@ -375,7 +376,8 @@ void MEDDLY::copy_MT2EV<TYPE>
     else {
       argF->getValueFromHandle(a, bev);
     }
-    b = bool_Tencoder::value2handle(true);
+    terminal t(true);
+    b = t.getHandle();
     return;
   }
 
@@ -510,7 +512,8 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   if (argF->isTerminalNode(a)) {
     MEDDLY_DCASSERT(a != argF->getTransparentNode());
     if (resF->getRangeType() == range_type::BOOLEAN) {
-      return bool_Tencoder::value2handle(true);
+      terminal t(true);
+      return t.getHandle();
     }
     else {
       return resF->handleForValue(ev);
@@ -557,7 +560,8 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   if (0==k) {
     MEDDLY_DCASSERT(a != argF->getTransparentNode());
     if (resF->getRangeType() == range_type::BOOLEAN) {
-      return bool_Tencoder::value2handle(true);
+      terminal t(true);
+      return t.getHandle();
     }
     else {
       return resF->handleForValue(ev);
@@ -687,7 +691,8 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
 {
   // Check terminals
   if (argF->isTerminalNode(a)) {
-    return bool_Tencoder::value2handle(a != 0);
+      terminal t(a != 0);
+      return t.getHandle();
   }
 
   // Check compute table
@@ -828,7 +833,8 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   // Check terminals
   if (0==k) {
     bv = av;
-    bn = bool_Tencoder::value2handle(an != 0);
+    terminal t(an != 0);
+    bn = t.getHandle();
     return;
   }
 

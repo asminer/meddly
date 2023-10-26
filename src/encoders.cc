@@ -18,6 +18,8 @@
 
 #include "encoders.h"
 
+#if 0
+
 // ******************************************************************
 // *                     bool_Tencoder  methods                     *
 // ******************************************************************
@@ -89,3 +91,4 @@ MEDDLY::node_handle MEDDLY::float_Tencoder::read(input &s)
   if ('t' != c) throw error(error::INVALID_FILE, __FILE__, __LINE__);
   return value2handle(s.get_real());
 }
+#endif

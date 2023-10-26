@@ -26,7 +26,7 @@
 */
 
 #include "../src/meddly.h"
-#include "../src/timer.h"
+#include "../timing/timer.h"
 #include <cstdio>
 #include <stdarg.h>
 

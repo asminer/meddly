@@ -29,7 +29,7 @@
 #include <iostream>
 #include <cassert>
 #include "../src/meddly.h"
-#include "../src/timer.h"
+#include "../timing/timer.h"
 
 using namespace MEDDLY;
 

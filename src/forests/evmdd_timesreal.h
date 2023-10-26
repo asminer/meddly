@@ -30,7 +30,7 @@ namespace MEDDLY {
 
 class MEDDLY::evmdd_timesreal : public evmdd_forest {
   public:
-    class OP : public EVencoder<float> {
+    class OP {
       public:
         static inline bool isIdentityEdge(const edge_value& ev) {
             return ev.equals(float(1.0));

@@ -74,7 +74,7 @@
 #include <cassert>
 
 #include "../src/meddly.h"
-#include "../src/timer.h"
+#include "../timing/timer.h"
 
 #define DEBUG
 

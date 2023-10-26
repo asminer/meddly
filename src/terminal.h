@@ -54,6 +54,8 @@ class MEDDLY::terminal {
         terminal(bool t);
         /// Initialize to integer
         terminal(int t);
+        /// Initialize to integer
+        terminal(long t);
         /// Initialize to real
         terminal(float t);
 
@@ -96,6 +98,35 @@ class MEDDLY::terminal {
         inline float getReal() const {
             MEDDLY_DCASSERT(isReal());
             return t_real;
+        }
+
+        //
+        // Get the label into any type
+        // Allows for type conversions
+        //
+        template <typename T>
+        inline void getValue(T &v) const {
+            switch (mytype) {
+                case terminal_type::OMEGA:
+                        v = T(t_omega);
+                        return;
+
+                case terminal_type::BOOLEAN:
+                        v = T(t_boolean);
+                        return;
+
+                case terminal_type::INTEGER:
+                        v = T(t_integer);
+                        return;
+
+                case terminal_type::REAL:
+                        v = T(t_real);
+                        return;
+
+                default:
+                        MEDDLY_DCASSERT(false);
+            }
+
         }
 
         //
@@ -157,6 +188,35 @@ class MEDDLY::terminal {
             mytype = terminal_type::REAL;
             // TBD: should we mask off the lsb here?
             t_real = v;
+        }
+
+        //
+        // Set the terminal from any value
+        // Allows for type conversions
+        //
+        template <typename T>
+        inline void setFromValue(terminal_type t, T v) {
+            switch (mytype=t) {
+                case terminal_type::OMEGA:
+                        t_omega = v;
+                        return;
+
+                case terminal_type::BOOLEAN:
+                        t_boolean = v;
+                        return;
+
+                case terminal_type::INTEGER:
+                        t_integer = int(v);
+                        return;
+
+                case terminal_type::REAL:
+                        t_real = float(v);
+                        return;
+
+                default:
+                        MEDDLY_DCASSERT(false);
+            }
+
         }
 
         //

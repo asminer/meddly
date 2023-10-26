@@ -133,7 +133,7 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
 {
   // Handles the unprimed levels of a
   if (0==k) {
-    y[0] += x[0] * float_Tencoder::handle2value(a);
+    y[0] += x[0] * fA->getRealFromHandle(a);
     return;
   }
 
@@ -148,7 +148,7 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   if (0==aLevel && (x_ind == y_ind)) {
     if (fx == fy && fx->isIndexSet()) {
       // yes we can
-      float v = float_Tencoder::handle2value(a);
+      float v = fA->getRealFromHandle(a);
       for (long i = fx->getIndexSetCardinality(x_ind)-1; i>=0; i--) {
         y[i] += x[i] * v;
       }
@@ -239,7 +239,7 @@ void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
 {
   // Handles the primed levels of A
   if (0==k) {
-    y[0] += x[0] * float_Tencoder::handle2value(a);
+    y[0] += x[0] * fA->getRealFromHandle(a);
     return;
   }
 
@@ -311,7 +311,7 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
 {
   // Handles the unprimed levels of a
   if (0==k) {
-    y[0] += x[0] * float_Tencoder::handle2value(a);
+    y[0] += x[0] * fA->getRealFromHandle(a);
     return;
   }
 
@@ -326,7 +326,7 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   if (0==aLevel && (x_ind == y_ind)) {
     if (fx == fy && fx->isIndexSet()) {
       // yes we can
-      float v = float_Tencoder::handle2value(a);
+      float v = fA->getRealFromHandle(a);
       for (long i = fy->getIndexSetCardinality(y_ind)-1; i>=0; i--) {
         y[i] += x[i] * v;
       }
@@ -417,7 +417,7 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
 {
   // Handles the primed levels of A
   if (0==k) {
-    y[0] += x[0] * float_Tencoder::handle2value(a);
+    y[0] += x[0] * fA->getRealFromHandle(a);
     return;
   }
 

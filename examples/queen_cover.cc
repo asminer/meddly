@@ -40,7 +40,7 @@
 
 #include "../src/meddly.h"
 #include "../src/loggers.h"
-#include "../src/timer.h"
+#include "../timing/timer.h"
 
 using namespace MEDDLY;
 

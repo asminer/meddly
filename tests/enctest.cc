@@ -20,7 +20,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../src/timer.h"
+#include "../timing/timer.h"
 
 // super hack
 

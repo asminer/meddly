@@ -22,7 +22,9 @@
 MEDDLY::mt_mdd_real::mt_mdd_real(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, float tv)
 : mtmdd_forest(dsl, d, range_type::REAL, p, level_reduction_rule)
 {
-    setTransparentEdge(float_Tencoder::value2handle(tv));
+    terminal t(tv);
+    setTransparentEdge(t.getHandle());
+    // setTransparentEdge(float_Tencoder::value2handle(tv));
     initializeForest();
 }
 
@@ -31,7 +33,8 @@ MEDDLY::mt_mdd_real::~mt_mdd_real()
 
 void MEDDLY::mt_mdd_real::createEdge(float term, dd_edge& e)
 {
-  createEdgeTempl<float_Tencoder, float>(term, e);
+  // createEdgeTempl<float_Tencoder, float>(term, e);
+  createEdgeTempl<float>(term, e);
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
@@ -62,7 +65,8 @@ void MEDDLY::mt_mdd_real::createEdge(const int* const* vlist, const float* terms
 	  }
   }
 
-  mtmdd_edgemaker<float_Tencoder, float>
+  // mtmdd_edgemaker<float_Tencoder, float>
+  mtmdd_edgemaker<float>
   EM(this, ordered_vlist, terms, order, N, num_vars, unionOp);
 
   e.set(EM.createEdge());
@@ -77,7 +81,8 @@ void MEDDLY::mt_mdd_real::createEdge(const int* const* vlist, const float* terms
 void MEDDLY::mt_mdd_real::
 createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 {
-  createEdgeForVarTempl<float_Tencoder, float>(vh, vp, terms, a);
+  // createEdgeForVarTempl<float_Tencoder, float>(vh, vp, terms, a);
+  createEdgeForVarTempl<float>(vh, vp, terms, a);
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
@@ -87,7 +92,10 @@ createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 void MEDDLY::mt_mdd_real
 ::evaluate(const dd_edge &f, const int* vlist, float &term) const
 {
-  term = float_Tencoder::handle2value(evaluateRaw(f, vlist));
+    terminal t;
+    t.setFromHandle(terminal_type::REAL, evaluateRaw(f, vlist));
+    term = t.getReal();
+    // term = float_Tencoder::handle2value(evaluateRaw(f, vlist));
 }
 
 void MEDDLY::mt_mdd_real::showEdge(output &s, const edge_value &ev,

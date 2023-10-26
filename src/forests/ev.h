@@ -143,7 +143,9 @@ class MEDDLY::ev_forest : public expert_forest {
       unpacked_node *nb = unpacked_node::newFull(this, k, sz);
       for (unsigned i=0; i<sz; i++) {
         T ev = vals ? vals[i] : i;
-        node_handle ed = bool_Tencoder::value2handle(true);
+        terminal t;
+        t.setOmega();
+        node_handle ed = t.getHandle();
         makeNodeAtLevel<OPERATION, T>(km1, ev, ed);
         nb->d_ref(i) = ed;
         nb->setEdge(i, ev);
@@ -165,7 +167,9 @@ class MEDDLY::ev_forest : public expert_forest {
         if (!e.isAttachedTo(this)) {
           throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
         }
-        node_handle ed = bool_Tencoder::value2handle(true);
+        terminal t;
+        t.setOmega();
+        node_handle ed = t.getHandle();
         makeNodeAtTop<OPERATION, T>(term, ed);
         e.set(ed, term);
     }

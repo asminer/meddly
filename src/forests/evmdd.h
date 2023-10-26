@@ -151,7 +151,9 @@ namespace MEDDLY {
         //
         if (1==stop-start) {
           ev = term(start);
-          ed = bool_Tencoder::value2handle(true);
+          terminal t;
+          t.setOmega();
+          ed = t.getHandle();
           F->createEdgePath<OPERATION, T>(k, unprimed(start), ev, ed);
           return;
         }
@@ -163,7 +165,9 @@ namespace MEDDLY {
           for (int i=start+1; i<stop; i++) {
             OPERATION::unionEq(ev, term(i));
           }
-          ed = bool_Tencoder::value2handle(true);
+          terminal t;
+          t.setOmega();
+          ed = t.getHandle();
           return;
         }
 
