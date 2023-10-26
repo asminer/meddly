@@ -21,7 +21,6 @@
 #include "defines.h"
 #include "dd_edge.h"
 #include "forest.h"
-#include "encoders.h"
 #include "io.h"
 
 #include "opname.h"

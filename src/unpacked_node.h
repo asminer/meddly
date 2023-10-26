@@ -20,7 +20,6 @@
 #define MEDDLY_UNPACKED_NODE_H
 
 #include "defines.h"
-#include "encoders.h"
 #include "edge_value.h"
 #include "dd_edge.h"
 #include "terminal.h"

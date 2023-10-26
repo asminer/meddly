@@ -26,7 +26,6 @@ libmeddly_la_SOURCES = \
     defines.h               \
     domain.h                domain.cc \
     edge_value.h            edge_value.cc \
-    encoders.h              encoders.cc \
     enumerator.h            enumerator.cc \
     error.h                 error.cc \
     forest.h                forest.cc \
@@ -163,7 +162,6 @@ pkginclude_HEADERS = \
     dd_edge.h \
     defines.h \
     domain.h \
-    encoders.h \
     enumerator.h \
     error.h \
     forest.h \

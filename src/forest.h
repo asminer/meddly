@@ -23,7 +23,6 @@
 #include "memstats.h"
 #include "varorder.h"
 #include "operators.h"
-#include "encoders.h"
 #include "node_headers.h"
 #include "node_storage.h"
 #include "unpacked_node.h"
