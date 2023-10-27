@@ -333,8 +333,7 @@ void MEDDLY::unpacked_node::write(output &s, const node_handle* map) const
         s.put(' ');
         if (d(z) <= 0) {
             // terminal
-            terminal t;
-            t.setFromHandle(the_terminal_type, d(z));
+            terminal t(the_terminal_type, d(z));
             t.write(s);
         } else {
             // non-terminal

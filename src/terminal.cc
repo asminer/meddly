@@ -29,32 +29,6 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::terminal::terminal()
-{
-    setOmega();
-}
-
-MEDDLY::terminal::terminal(bool t)
-{
-    setBoolean(t);
-}
-
-MEDDLY::terminal::terminal(int t)
-{
-    setInteger(t);
-}
-
-MEDDLY::terminal::terminal(long t)
-{
-    // TBD: check for overflow?
-    setInteger(t);
-}
-
-MEDDLY::terminal::terminal(float t)
-{
-    setReal(t);
-}
-
 
 
 void MEDDLY::terminal::read(input &s)

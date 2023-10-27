@@ -173,8 +173,7 @@ MEDDLY::mt_forest::mt_iterator::~mt_iterator()
 void MEDDLY::mt_forest::mt_iterator::getValue(int &termVal) const
 {
   MEDDLY_DCASSERT(index);
-  terminal t;
-  t.setFromHandle(terminal_type::INTEGER, index[0]);
+  terminal t(terminal_type::INTEGER, index[0]);
   termVal = t.getInteger();
   // termVal = int_Tencoder::handle2value(index[0]);
 }
@@ -182,8 +181,7 @@ void MEDDLY::mt_forest::mt_iterator::getValue(int &termVal) const
 void MEDDLY::mt_forest::mt_iterator::getValue(float &termVal) const
 {
   MEDDLY_DCASSERT(index);
-  terminal t;
-  t.setFromHandle(terminal_type::REAL, index[0]);
+  terminal t(terminal_type::REAL, index[0]);
   termVal = t.getReal();
   // termVal = float_Tencoder::handle2value(index[0]);
 }

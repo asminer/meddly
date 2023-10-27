@@ -91,8 +91,7 @@ createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 void MEDDLY::mt_mdd_int
 ::evaluate(const dd_edge &f, const int* vlist, long &term) const
 {
-    terminal t;
-    t.setFromHandle(terminal_type::INTEGER, evaluateRaw(f, vlist));
+    terminal t(terminal_type::INTEGER, evaluateRaw(f, vlist));
     term = t.getInteger();
     // term = int_Tencoder::handle2value(evaluateRaw(f, vlist));
 }
@@ -104,8 +103,7 @@ void MEDDLY::mt_mdd_int::showEdge(output &s, const edge_value &ev,
         s.put('#');
         s.put(d);
     } else {
-        terminal t;
-        t.setFromHandle(terminal_type::INTEGER, d);
+        terminal t(terminal_type::INTEGER, d);
         s.put('t');
         s.put( t.getInteger() );
     }

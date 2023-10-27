@@ -101,8 +101,7 @@ createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 void MEDDLY::mt_mxd_bool::evaluate(const dd_edge &f, const int* vlist,
   const int* vplist, bool &term) const
 {
-    terminal t;
-    t.setFromHandle(terminal_type::BOOLEAN, evaluateRaw(f, vlist, vplist));
+    terminal t(terminal_type::BOOLEAN, evaluateRaw(f, vlist, vplist));
     term = t.getBoolean();
 }
 
@@ -113,8 +112,7 @@ void MEDDLY::mt_mxd_bool::showEdge(output &s, const edge_value &ev,
         s.put('#');
         s.put(d);
     } else {
-        terminal t;
-        t.setFromHandle(terminal_type::BOOLEAN, d);
+        terminal t(terminal_type::BOOLEAN, d);
         s.put( t.getBoolean() ? 'T' : 'F' );
     }
 }

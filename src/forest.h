@@ -151,8 +151,7 @@ class MEDDLY::forest {
         */
         template <typename T>
         inline node_handle handleForValue(T v) const {
-            terminal t;
-            t.setFromValue(the_terminal_type, v);
+            terminal t(v, the_terminal_type);
             return t.getHandle();
         }
 
@@ -166,8 +165,7 @@ class MEDDLY::forest {
         template <typename T>
         inline void getValueFromHandle(node_handle n, T& v) const {
             MEDDLY_DCASSERT(n <= 0);
-            terminal t;
-            t.setFromHandle(the_terminal_type, n);
+            terminal t(the_terminal_type, n);
             t.getValue(v);
         }
 

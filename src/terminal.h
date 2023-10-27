@@ -27,6 +27,8 @@ namespace MEDDLY {
 
     /// Type of terminal value.
     enum class terminal_type {
+        /// Null type
+        NOTHING,
         /// Nothing; for EV
         OMEGA,
         /// For MT boolean
@@ -48,16 +50,49 @@ namespace MEDDLY {
 class MEDDLY::terminal {
 
     public:
-        /// Initialize as 'standard' omega.
-        terminal();
-        /// Initialize to boolean
-        terminal(bool t);
-        /// Initialize to integer
-        terminal(int t);
-        /// Initialize to integer
-        terminal(long t);
-        /// Initialize to real
-        terminal(float t);
+        /// Don't initialize
+        terminal() {
+            mytype = terminal_type::NOTHING;
+        }
+
+        /// Initialize from a handle.
+        terminal(terminal_type t, node_handle h) {
+            setFromHandle(t, h);
+        }
+
+        /// Initialize from a boolean label
+        terminal(bool v) {
+            setBoolean(v);
+        }
+        /// Initialize from an integer label
+        terminal(int v) {
+            setInteger(v);
+        }
+        /// Initialize from an integer label
+        terminal(long v) {
+            setInteger(v);
+        }
+        /// Initialize from a real label
+        terminal(float v) {
+            setReal(v);
+        }
+
+        /// Initialize from a boolean label, but convert types if needed
+        terminal(bool v, terminal_type t) {
+            setFromValue(t, v);
+        }
+        /// Initialize from an integer label, but convert types if needed
+        terminal(int v, terminal_type t) {
+            setFromValue(t, v);
+        }
+        /// Initialize from an integer label, but convert types if needed
+        terminal(long v, terminal_type t) {
+            setFromValue(t, v);
+        }
+        /// Initialize from a real label, but convert types if needed
+        terminal(float v, terminal_type t) {
+            setFromValue(t, v);
+        }
 
         //
         // Getters for the type

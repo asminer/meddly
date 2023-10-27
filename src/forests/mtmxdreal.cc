@@ -101,8 +101,7 @@ createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 void MEDDLY::mt_mxd_real::evaluate(const dd_edge &f, const int* vlist,
   const int* vplist, float &term) const
 {
-    terminal t;
-    t.setFromHandle(terminal_type::REAL, evaluateRaw(f, vlist, vplist));
+    terminal t(terminal_type::REAL, evaluateRaw(f, vlist, vplist));
     term = t.getReal();
     // term = float_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));
 }
@@ -114,8 +113,7 @@ void MEDDLY::mt_mxd_real::showEdge(output &s, const edge_value &ev,
         s.put('#');
         s.put(d);
     } else {
-        terminal t;
-        t.setFromHandle(terminal_type::REAL, d);
+        terminal t(terminal_type::REAL, d);
         s.put('t');
         s.put( t.getReal() );
     }
