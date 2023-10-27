@@ -193,6 +193,7 @@ class MEDDLY::terminal {
 
                 default:
                         MEDDLY_DCASSERT(false);
+                        return 0;
             }
         }
 
