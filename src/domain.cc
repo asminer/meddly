@@ -291,6 +291,15 @@ void MEDDLY::domain::unlinkForest(forest* f, unsigned slot)
   forests[slot] = 0;
 }
 
+void MEDDLY::domain::testMarkAllDomains(bool mark)
+{
+    for (int i=0; i<dom_list_size; i++) {
+        if (dom_list[i]) {
+            dom_list[i]->is_marked_for_deletion = mark;
+        }
+    }
+}
+
 unsigned MEDDLY::domain::findEmptyForestSlot()
 {
   for (unsigned slot=0; slot<szForests; slot++) {

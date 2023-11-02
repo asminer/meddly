@@ -197,6 +197,12 @@ class MEDDLY::domain {
     /// Free the slot that the forest is using.
     void unlinkForest(forest* f, unsigned slot);
 
+    /**
+        For domain testing only.
+        Mark/unmark all domains.
+     */
+    static void testMarkAllDomains(bool mark);
+
     // --------------------------------------------------------------------
 
   protected:

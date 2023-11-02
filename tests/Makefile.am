@@ -13,6 +13,7 @@ noinst_PROGRAMS = \
     chk_copy \
     chk_cross \
     chk_evtimes_float \
+    domain_list \
     kan_batch \
     kan_index \
     kan_io \
@@ -31,6 +32,7 @@ TESTS = \
     chk_copy \
     chk_cross \
     chk_evtimes_float \
+    domain_list \
     kan_batch \
     kan_index \
     kan_io \
@@ -76,6 +78,8 @@ chk_cross_LDADD = ../src/libmeddly.la
 chk_evtimes_float_SOURCES = chk_evtimes_float.cc
 chk_evtimes_float_LDADD = ../src/libmeddly.la
 
+domain_list_SOURCES = domain_list.cc
+domain_list_LDADD = ../src/libmeddly.la
 
 kan_batch_SOURCES = kan_batch.cc simple_model.h simple_model.cc \
                   kan_rs1.h kan_rs2.h kan_rs3.h
