@@ -464,7 +464,7 @@ MEDDLY::forest::~forest()
   // to a pointer), the user program will automatically call the
   // destructor for each dd_edge when the corresponding variable goes out of
   // scope. Therefore there is no need to destruct dd_edges from here.
-  d->unlinkForest(this, d_slot);
+  d->unregisterForest(this);
 
     unregisterForest(this);
 }

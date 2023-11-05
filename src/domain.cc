@@ -141,6 +141,34 @@ void MEDDLY::domain::testMarkAllDomains(bool mark)
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Forest registry.
+// Not inlined to hide forest details from our header file.
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+void MEDDLY::domain::registerForest(forest* f)
+{
+    MEDDLY_DCASSERT(f);
+#ifdef DEBUG_CLEANUP
+    std::cerr << "In domain " << this << ": registering forest " << f->FID() << "\n";
+#endif
+    forestReg.insert(f->FID());
+}
+
+void MEDDLY::domain::unregisterForest(forest* f)
+{
+    // Don't bother with the registry if we're marked for deletion.
+    // Also, this prevents us from trying to change the container
+    // while we're iterating through it in our destructor.
+    if (is_marked_for_deletion) return;
+
+    MEDDLY_DCASSERT(f);
+#ifdef DEBUG_CLEANUP
+    std::cerr << "In domain " << this << ": unregistering forest " << f->FID() << "\n";
+#endif
+    forestReg.erase(f->FID());
+}
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Still to be reorganized
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -154,9 +182,6 @@ MEDDLY::domain::domain(variable** v, int N)
         vars[i]->addToList(this);
     }
     is_marked_for_deletion = false;
-
-    forests = 0;
-    szForests = 0;
 
     //
     // Create the default variable order
@@ -185,16 +210,19 @@ MEDDLY::domain::~domain()
     //
     // Delete all forests using this domain
     //
-    for (unsigned i=0; i<szForests; i++) {
+    MEDDLY_DCASSERT(is_marked_for_deletion);
+    for (auto it=forestReg.begin(); it!=forestReg.end(); ++it) {
+        forest* f = forest::getForestWithID(*it);
+        if (!f) continue;
 #ifdef DUMP_ON_FOREST_DESTROY
-        expert_forest* ef = dynamic_cast <expert_forest*> (forests[i]);
-        if (0==ef) continue;
-        printf("Destroying forest %u:\n", ef->FID());
-        ef->dump(stdout, expert_forest::SHOW_DETAILS);
+        expert_forest* ef = dynamic_cast <expert_forest*> (f);
+        MEDDLY_DCASSERT(ef);
+        std::cerr << "Destroying forest #" << *it << "\n";
+        ostream_output s(std::cerr);
+        ef->dump(s, SHOW_DETAILS);
 #endif
-        delete forests[i];
+        delete f;
     }
-    free(forests);
 
     //
     // Delete my variables
@@ -288,7 +316,7 @@ void MEDDLY::domain::deleteDomList()
 MEDDLY::forest* MEDDLY::domain::createForest(bool rel, range_type t,
     edge_labeling e, const policies &p, int* level_reduction_rule, int tv)
 {
-  unsigned slot = findEmptyForestSlot();
+  unsigned slot = 0;    // TBD: remove this from forest constructors
 
   expert_forest* f = 0;
 
@@ -343,7 +371,7 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, range_type t,
   } // edge label switch
 
   MEDDLY_DCASSERT(f);
-  forests[slot] = f;
+  registerForest(f);
   return f;
 }
 
@@ -381,6 +409,7 @@ void MEDDLY::domain::showInfo(output &strm)
 #endif
 }
 
+/*
 void MEDDLY::domain::unlinkForest(forest* f, unsigned slot)
 {
   if (forests[slot] != f)
@@ -423,6 +452,25 @@ void MEDDLY::domain::markForDeletion()
   for (unsigned slot=0; slot<szForests; slot++)
     if (forests[slot]) forests[slot]->markForDeletion();
 }
+*/
+
+void MEDDLY::domain::markForDeletion()
+{
+    if (is_marked_for_deletion) return;
+#ifdef DEBUG_CLEANUP
+    std::cerr << "Marking domain " << this << " for deletion\n";
+#endif
+    is_marked_for_deletion = true;
+
+
+    for (auto it = forestReg.begin(); it != forestReg.end(); ++it) {
+        forest* f = forest::getForestWithID(*it);
+        if (f) {
+            f->markForDeletion();
+        }
+    }
+}
+
 
 std::shared_ptr<const MEDDLY::variable_order> MEDDLY::domain::makeVariableOrder(const int* order)
 {

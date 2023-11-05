@@ -23,6 +23,7 @@
 #include "policies.h"
 #include <vector>
 #include <memory>
+#include <set> // for the forest registry
 
 namespace MEDDLY {
     class initializer_list;
@@ -98,6 +99,40 @@ class MEDDLY::domain {
         */
         static void testMarkAllDomains(bool mark);
 
+    public:
+        //
+        // Inlined Getters for variables and variable information.
+        //
+
+        /// Get the number of variables in this domain.
+        inline unsigned getNumVariables() const {
+            return nVars;
+        }
+
+        /** Get the specified bound of a variable.
+            @param  lev     Level number, should be 1 for bottom-most
+                            and getNumVariables() for top-most.
+            @param  prime   If prime is true, get the bound for
+                            the primed variable.
+            @return         The bound set for variable at level \a lev.
+        */
+        inline int getVariableBound(unsigned lev, bool prime = false) const {
+            CHECK_RANGE(__FILE__, __LINE__, 1U, lev, 1+nVars);
+            return vars[lev]->getBound(prime);
+        }
+
+    public:
+        //
+        // Registry of all functions with this domain.
+        // Stored as a set of FIDs.
+        //
+        void registerForest(forest* f);
+        void unregisterForest(forest* f);
+
+    private:
+        std::set<unsigned> forestReg;
+
+
         //
         // TBD: reorganize below here
         //
@@ -145,23 +180,6 @@ class MEDDLY::domain {
     /// Create a forest using the library default policies.
     forest* createForest(bool rel, range_type t, edge_labeling ev);
 
-    /// Get the number of variables in this domain.
-    inline int getNumVariables() const {
-        return nVars;
-    }
-
-
-    /** Get the specified bound of a variable.
-        No range checking, for speed.
-        @param  lev     Level number, should be 1 for bottom-most
-                        and getNumVariables() for top-most.
-        @param  prime   If prime is true, get the bound for
-                        the primed variable.
-        @return         The bound set for variable at level \a lev.
-    */
-    inline int getVariableBound(int lev, bool prime = false) const {
-        return vars[lev]->getBound(prime);
-    }
 
 
     /// @return The variable at level \a lev.
@@ -198,9 +216,6 @@ class MEDDLY::domain {
     */
     void showInfo(output &strm);
 
-    /// Free the slot that the forest is using.
-    void unlinkForest(forest* f, unsigned slot);
-
     // --------------------------------------------------------------------
 
   protected:
@@ -211,7 +226,7 @@ class MEDDLY::domain {
     virtual ~domain();
 
     variable** vars;
-    int nVars;
+    unsigned nVars;
 
     // var_orders[0] is reserved to store the default variable order
     std::vector< std::shared_ptr<const variable_order> > var_orders;
@@ -219,18 +234,21 @@ class MEDDLY::domain {
 
   private:
     bool is_marked_for_deletion;
+
+    /*
     forest** forests;
     unsigned szForests;
 
     /// Find a free slot for a new forest.
     unsigned findEmptyForestSlot();
+    */
 
     /// Mark this domain for deletion
     void markForDeletion();
 
   public:
     inline bool hasForests() const {
-        return forests;
+        return !forestReg.empty();
     }
 
     inline bool isMarkedForDeletion() const {
