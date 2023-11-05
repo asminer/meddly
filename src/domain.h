@@ -36,46 +36,6 @@ namespace MEDDLY {
 
     class forest;
 
-    /** Front-end function to create a domain with the given variables.
-            @param  vars    List of variables, in order.
-                            vars[i] gives the variable at level i.
-                            Note that vars[0] should be 0.
-            @param  N       Number of variables.
-                            vars[N] refers to the top-most variable.
-
-            @return A new domain.
-    */
-    domain* createDomain(variable** vars=nullptr, int N=0);
-
-    /** Front-end function to create a domain with given variable bounds.
-        Equivalent to creating an empty domain and then building the
-        domain bottom up.
-
-            @param  bounds  variable bounds.
-                            bounds[i] gives the bound for the variable
-                            at level i+1.
-                            If bound<=0, the variable is marked as extensible,
-                            with initial bound as abs(bound).
-                            Note: an extensible variable has a range [1 .. +infinity].
-            @param  N       Number of variables.
-
-            @return A new domain.
-    */
-    domain* createDomainBottomUp(const int* bounds, int N);
-
-/* Commented out as of version 0.10
-#ifdef _MSC_VER
-  __declspec(deprecated)
-#endif
-#ifdef __GNUC__
-  __attribute__ ((deprecated))
-#endif
-  /// This function is deprecated as of version 0.4;
-  /// use "createDomain" instead.
-  domain* MEDDLY_createDomain();
-*/
-
-    void destroyDomain(domain* &d);
 };
 
 // ******************************************************************
@@ -97,10 +57,54 @@ namespace MEDDLY {
     When a domain is destroyed, all of its forests are destroyed.
 */
 class MEDDLY::domain {
-    friend class initializer_list;
-    friend void destroyDomain(domain* &d);
+    public:
+        /** Front-end function to create a domain with the given variables.
+                @param  vars    List of variables, in order.
+                                vars[i] gives the variable at level i.
+                                Note that vars[0] should be 0.
+                @param  N       Number of variables.
+                                vars[N] refers to the top-most variable.
+
+                @return A new domain.
+        */
+        static domain* create(variable** vars=nullptr, unsigned N=0);
+
+        /** Front-end function to create a domain with given variable bounds.
+            Equivalent to creating an empty domain and then building the
+            domain bottom up.
+
+                @param  bounds  variable bounds.  bounds[i] gives the bound
+                                for the variable at level i+1.  If bound<=0,
+                                the variable is marked as extensible,
+                                with initial bound as abs(bound).
+                                Note: an extensible variable has a
+                                range [1 .. +infinity].
+
+                @param  N       Number of variables.
+
+                @return A new domain.
+        */
+        static domain* createBottomUp(const int* bounds, unsigned N);
+
+        /**
+            Destroy a domain.  Will destroy all forests associated
+            with the domain, and remove this domain from the domain_list.
+        */
+        static void destroy(domain* &d);
+
+        /**
+            For domain testing only.
+            Mark/unmark all domains.
+        */
+        static void testMarkAllDomains(bool mark);
+
+        //
+        // TBD: reorganize below here
+        //
+
   public:
     static const int TERMINALS;
+
   public:
     /** Create all variables at once, from the bottom up.
         Requires the domain to be "empty" (containing no variables or
@@ -197,12 +201,6 @@ class MEDDLY::domain {
     /// Free the slot that the forest is using.
     void unlinkForest(forest* f, unsigned slot);
 
-    /**
-        For domain testing only.
-        Mark/unmark all domains.
-     */
-    static void testMarkAllDomains(bool mark);
-
     // --------------------------------------------------------------------
 
   protected:
@@ -247,6 +245,7 @@ class MEDDLY::domain {
     }
     void cleanVariableOrders();
 
+/*
   private:
     /// List of all domains; initialized in meddly.cc
     static domain** dom_list;
@@ -266,6 +265,25 @@ class MEDDLY::domain {
 
   public:
     inline int ID() const { return my_index; }
+*/
+    private:
+        //
+        // Registry of all domains.
+        // Kept as a doubly-linked list.
+        //
+        domain* prev;
+        domain* next;
+
+        static domain* domain_list;
+
+        static void initDomList();
+        static void markDomList();
+        static void deleteDomList();
+
+        /*
+            Initializer_list will call initDomList() and deleteDomList().
+        */
+        friend class initializer_list;
 };
 
 // ******************************************************************
@@ -405,5 +423,30 @@ MEDDLY::expert_domain::shrinkVariableBound(int vh, int b, bool force)
 {
   getExpertVar(vh)->shrinkBound(b, force);
 }
+
+// ******************************************************************
+// *                                                                *
+// *             OLD deprecated methods,  replace usage             *
+// *                                                                *
+// ******************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_2
+namespace MEDDLY {
+    inline domain* createDomain(variable** vars=nullptr, unsigned N=0)
+    {
+        return domain::create(vars, N);
+    }
+
+    inline domain* createDomainBottomUp(const int* bounds, unsigned N)
+    {
+        return domain::createBottomUp(bounds, N);
+    }
+
+    inline void destroyDomain(domain* &d)
+    {
+        domain::destroy(d);
+    }
+};
+#endif
 
 #endif

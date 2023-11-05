@@ -57,10 +57,14 @@
 // *                         domain statics                         *
 // ******************************************************************
 
+MEDDLY::domain* MEDDLY::domain::domain_list;
+
+/*
 MEDDLY::domain** MEDDLY::domain::dom_list;
 int* MEDDLY::domain::dom_free;
 int MEDDLY::domain::dom_list_size;
 int MEDDLY::domain::free_list;
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -68,81 +72,145 @@ int MEDDLY::domain::free_list;
 // *                                                                *
 // ******************************************************************
 
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Public static
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+MEDDLY::domain* MEDDLY::domain::create(variable** vars, unsigned N)
+{
+    if (!initializer_list::libraryIsRunning()) {
+        throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+    }
+    return new expert_domain(vars, N);
+}
+
+MEDDLY::domain* MEDDLY::domain::createBottomUp(const int* bounds, unsigned N)
+{
+    if (!initializer_list::libraryIsRunning()) {
+        throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+    }
+    domain* d = new expert_domain(nullptr, 0);
+    d->createVariablesBottomUp(bounds, N);
+    return d;
+}
+
+
+void MEDDLY::domain::destroy(MEDDLY::domain* &d)
+{
+    if (!d) return;
+    if (!initializer_list::libraryIsRunning()) {
+        throw error(error::UNINITIALIZED, __FILE__, __LINE__);
+    }
+    d->markForDeletion();
+    operation::purgeAllMarked();
+
+    //
+    // Remove d from the domain_list
+    //
+    domain* dp = d->prev;
+    domain* dn = d->next;
+    if (dp) {
+        MEDDLY_DCASSERT(dp->next == d);
+        MEDDLY_DCASSERT(domain_list != d);
+        dp->next = dn;
+    } else {
+        MEDDLY_DCASSERT(domain_list == d);
+        domain_list = dn;
+    }
+    if (dn) {
+        MEDDLY_DCASSERT(dn->prev == d);
+        dn->prev = dp;
+    }
+    delete d;
+    d = nullptr;
+}
+
+
+void MEDDLY::domain::testMarkAllDomains(bool mark)
+{
+#ifdef DEVELOPMENT_CODE
+    domain* p = nullptr;
+#endif
+    for (domain* d = domain_list; d; d=d->next) {
+        MEDDLY_DCASSERT(d->prev == p);
+        d->is_marked_for_deletion = mark;
+#ifdef DEVELOPMENT_CODE
+        p = d;
+#endif
+    }
+}
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Still to be reorganized
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 const int MEDDLY::domain::TERMINALS = 0;
 
 MEDDLY::domain::domain(variable** v, int N)
 {
-  vars = v;
-  nVars = N;
-  for (int i=1; i<=N; i++) {
-    vars[i]->addToList(this);
-  }
-  is_marked_for_deletion = false;
-  forests = 0;
-  szForests = 0;
+    vars = v;
+    nVars = N;
+    for (int i=1; i<=N; i++) {
+        vars[i]->addToList(this);
+    }
+    is_marked_for_deletion = false;
 
-  //
-  // Add myself to the master list
-  //
-  if (-1 == free_list) {
-    expandDomList();
-  }
-  MEDDLY_DCASSERT(free_list != -1);
-  my_index = free_list;
-  free_list = dom_free[free_list];
-  dom_list[my_index] = this;
-  dom_free[my_index] = -1;
+    forests = 0;
+    szForests = 0;
 
-  // Create the default variable order
-  int* defaultOrder = new int[N + 1];
-  for (int i = 0; i < N + 1; i++) {
-    defaultOrder[i] = i;
-  }
-  default_var_order = std::make_shared<variable_order>(defaultOrder, N);
-  delete[] defaultOrder;
-  var_orders.push_back(default_var_order);
+    //
+    // Create the default variable order
+    //
+    int* defaultOrder = new int[N + 1];
+    for (int i = 0; i < N + 1; i++) {
+        defaultOrder[i] = i;
+    }
+    default_var_order = std::make_shared<variable_order>(defaultOrder, N);
+    delete[] defaultOrder;
+    var_orders.push_back(default_var_order);
 
-#ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Creating domain #%d\n", my_index);
-#endif
+    //
+    // Add myself to the master list of domains
+    //
+    if (domain_list) {
+        domain_list->prev = this;
+    }
+    prev = nullptr;
+    next = domain_list;
+    domain_list = this;
 }
 
 MEDDLY::domain::~domain()
 {
-#ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Deleting domain #%d\n", my_index);
-#endif
-
-  //
-  // Delete all forests using this domain
-  //
-  for (unsigned i=0; i<szForests; i++) {
+    //
+    // Delete all forests using this domain
+    //
+    for (unsigned i=0; i<szForests; i++) {
 #ifdef DUMP_ON_FOREST_DESTROY
-    expert_forest* ef = dynamic_cast <expert_forest*> (forests[i]);
-    if (0==ef) continue;
-    printf("Destroying forest %u:\n", ef->FID());
-    ef->dump(stdout, expert_forest::SHOW_DETAILS);
+        expert_forest* ef = dynamic_cast <expert_forest*> (forests[i]);
+        if (0==ef) continue;
+        printf("Destroying forest %u:\n", ef->FID());
+        ef->dump(stdout, expert_forest::SHOW_DETAILS);
 #endif
-    delete forests[i];
-  }
-  free(forests);
+        delete forests[i];
+    }
+    free(forests);
 
-  //
-  // Delete my variables
-  //
-  for (int i=1; i<=nVars; i++) {
-    vars[i]->removeFromList(this);
-  }
-  free(vars);
+    //
+    // Delete my variables
+    //
+    for (int i=1; i<=nVars; i++) {
+        vars[i]->removeFromList(this);
+    }
+    free(vars);
 
-  //
-  // Remove myself from the master list
-  //
-  dom_list[my_index] = 0;
-  dom_free[my_index] = free_list;
-  free_list = my_index;
+    //
+    // DON'T remove myself from the master list
+    // That's done in domain::destroy()
+    //
 }
+
+/*
 
 void MEDDLY::domain::initDomList()
 {
@@ -186,6 +254,35 @@ void MEDDLY::domain::deleteDomList()
   free(dom_free);
   initDomList();
 }
+*/
+
+//
+// Domain list management, for real
+//
+
+void MEDDLY::domain::initDomList()
+{
+    domain_list = nullptr;
+}
+
+void MEDDLY::domain::markDomList()
+{
+    for (domain* d = domain_list; d; d=d->next) {
+        d->markForDeletion();
+    }
+}
+
+void MEDDLY::domain::deleteDomList()
+{
+    while (domain_list) {
+        domain* dn = domain_list->next;
+        delete domain_list;
+        domain_list = dn;
+    }
+    MEDDLY_DCASSERT(!domain_list);
+}
+
+
 
 
 MEDDLY::forest* MEDDLY::domain::createForest(bool rel, range_type t,
@@ -289,15 +386,6 @@ void MEDDLY::domain::unlinkForest(forest* f, unsigned slot)
   if (forests[slot] != f)
     throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
   forests[slot] = 0;
-}
-
-void MEDDLY::domain::testMarkAllDomains(bool mark)
-{
-    for (int i=0; i<dom_list_size; i++) {
-        if (dom_list[i]) {
-            dom_list[i]->is_marked_for_deletion = mark;
-        }
-    }
 }
 
 unsigned MEDDLY::domain::findEmptyForestSlot()
@@ -529,6 +617,7 @@ void MEDDLY::expert_domain::read(input &s)
 // front end - create and destroy domains
 //----------------------------------------------------------------------
 
+/*
 MEDDLY::domain* MEDDLY::createDomain(variable** vars, int N)
 {
   if (!initializer_list::libraryIsRunning()) {
@@ -558,5 +647,6 @@ void MEDDLY::destroyDomain(MEDDLY::domain* &d)
   delete d;
   d = 0;
 }
+*/
 
 
