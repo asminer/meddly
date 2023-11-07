@@ -187,6 +187,14 @@ class MEDDLY::domain {
         }
 
 
+        /** Are we marked for deletion?
+            Not sure if this is useful anywhere; right now it is used
+            only for testing the domain list
+        */
+        inline bool isMarkedForDeletion() const {
+            return is_marked_for_deletion;
+        }
+
     private:
         //
         // Registry of all functions with this domain.
@@ -200,13 +208,15 @@ class MEDDLY::domain {
     private:
         std::set<unsigned> forestReg;
 
+    protected:
+        inline bool hasForests() const {
+            return !forestReg.empty();
+        }
+
 
         //
         // TBD: reorganize below here
         //
-
-  // public:
-    // static const int TERMINALS;
 
   public:
     /** Create all variables at once, from the bottom up.
@@ -297,15 +307,8 @@ class MEDDLY::domain {
     /// Mark this domain for deletion
     void markForDeletion();
 
+
   public:
-    inline bool hasForests() const {
-        return !forestReg.empty();
-    }
-
-    inline bool isMarkedForDeletion() const {
-        return is_marked_for_deletion;
-    }
-
 
     std::shared_ptr<const variable_order> makeVariableOrder(const int* order);
     std::shared_ptr<const variable_order> makeVariableOrder(const variable_order& order);

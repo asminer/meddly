@@ -11,16 +11,27 @@ layout: single
 
 * ```terminal```: object for terminal nodes.
 
+### Updated objects
+
+
 ### Interface changes
 
-Mostly I/O related, but overall the interface will gradually replace
-overloaded methods for specific edge value types, with a single method
-using the generic edge value object.
-Similar for terminal nodes.
+Uncomment ```ALLOW_DEPRECATED_0_17_2``` in ```defines.h```
+to use deprecated methods.
+This is intended to help developers migrate to the new interface.
 
-Source files ```encoders.h``` and ```encoders.cc``` were removed,
-as this functionality is now captured by the new ```edge_value```
-and ```terminal``` objects.
+*   Mostly I/O related, but overall the interface will gradually replace
+    overloaded methods for specific edge value types, with a single method
+    using the generic edge value object.
+    Similar for terminal nodes.
+
+*   Source files ```encoders.h``` and ```encoders.cc``` were removed,
+    as this functionality is now captured by the new ```edge_value```
+    and ```terminal``` objects.
+
+*   The ```expert_domain``` class has been merged into ```domain```.
+
+*   Removed ```domain::getExpertVar()```; use ```domain::getVar()``` instead.
 
 ### Implementation
 
