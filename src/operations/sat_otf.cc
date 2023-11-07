@@ -823,6 +823,16 @@ double MEDDLY::satotf_opname::otf_relation::getArcCount(
   return arc_count;
 }
 
+MEDDLY::dd_edge MEDDLY::satotf_opname::otf_relation::getMonolithicNSF() const
+{
+    dd_edge monolithic_nsf(mxdF);
+    for (int k = 1; k < num_levels; k++) {
+      for (int ei = 0; ei < getNumOfEvents(k); ei++) {
+        (monolithic_nsf) += events_by_top_level[k][ei]->getRoot();
+      }
+    }
+    return monolithic_nsf;
+}
 
 void MEDDLY::satotf_opname::otf_relation::getBoundedMonolithicNSF(dd_edge &root) const
 {
@@ -1526,33 +1536,47 @@ void MEDDLY::otfbfs_by_events_op::RSBFSfly(const dd_edge& init, dd_edge& reachab
   reachableStates=init;
   dd_edge prevReachable(resF);
   dd_edge front(resF);
+  int i=0;
    while (prevReachable != reachableStates) {
+       i++;
        prevReachable = reachableStates;
        for(int level=1; level<argF->getNumVariables()+1; level++){
            for (int ei = 0; ei < rel->getNumOfEvents(level); ei++) {
                rel->rebuildEvent(level, ei);
            }
        }
-       for(int level=1; level<argF->getNumVariables()+1; level++){
-            int nEventsAtThisLevel = rel->getNumOfEvents(level);
-           for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
-             rel->rebuildEvent(level, ei);
-             const dd_edge& mxd = rel->getEvent(level, ei);
-             if (0==mxd.getNode()) {}
-             else{
-                 std::list<int>* shouldConfirm=new std::list<int>[argF->getNumVariables()+1];
-                 parent->mddImage->computeDDEdgeSC(reachableStates, mxd, front, true,shouldConfirm);
-                 for(int listidx=0;listidx<argF->getNumVariables()+1;listidx++){
-                     for (auto const &scidx: shouldConfirm[listidx]) {
-                         rel->confirm(listidx, int(scidx));
-                     }
-                 }
-                parent->mddUnion->computeDDEdge(reachableStates, front, reachableStates, true);
-                delete[]shouldConfirm;
-             }
-            }
+       dd_edge urel(argF);
+       urel=rel->getMonolithicNSF();
+       std::list<int>* shouldConfirm=new std::list<int>[argF->getNumVariables()+1];
+       parent->mddImage->computeDDEdgeSC(reachableStates, urel, front, true,shouldConfirm);
+       for(int listidx=0;listidx<argF->getNumVariables()+1;listidx++){
+           for (auto const &scidx: shouldConfirm[listidx]) {
+               rel->confirm(listidx, int(scidx));
+           }
        }
+        parent->mddUnion->computeDDEdge(reachableStates, front, reachableStates, true);
+        delete[]shouldConfirm;
+       // for(int level=1; level<argF->getNumVariables()+1; level++){
+       //      int nEventsAtThisLevel = rel->getNumOfEvents(level);
+       //     for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
+       //       rel->rebuildEvent(level, ei);
+       //       const dd_edge& mxd = rel->getEvent(level, ei);
+       //       if (0==mxd.getNode()) {}
+       //       else{
+       //           std::list<int>* shouldConfirm=new std::list<int>[argF->getNumVariables()+1];
+       //           parent->mddImage->computeDDEdgeSC(reachableStates, mxd, front, true,shouldConfirm);
+       //           for(int listidx=0;listidx<argF->getNumVariables()+1;listidx++){
+       //               for (auto const &scidx: shouldConfirm[listidx]) {
+       //                   rel->confirm(listidx, int(scidx));
+       //               }
+       //           }
+       //          parent->mddUnion->computeDDEdge(reachableStates, front, reachableStates, true);
+       //          delete[]shouldConfirm;
+       //       }
+       //      }
+       // }
    }
+   printf("number of steps %d\n",i );
 }
 
 

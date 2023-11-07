@@ -36,6 +36,7 @@ libmeddly_la_SOURCES = \
     initializer.h           initializer.cc \
     io.h                    io.cc \
     loggers.h               loggers.cc \
+		markcmp.h							  markcmp.cc\
     memory.h                memory.cc \
     memstats.h              memstats.cc \
     minterms.h              \
@@ -96,6 +97,7 @@ libmeddly_la_SOURCES = \
     operations/constrained.h            operations/constrained.cc   \
     operations/copy.h                   operations/copy.cc         \
     operations/cross.h                  operations/cross.cc        \
+		operations/equant.h									operations/equant.cc			 \
     operations/cycle.h                  operations/cycle.cc        \
     operations/difference.h             operations/difference.cc   \
     operations/divide.h                 operations/divide.cc       \
@@ -109,13 +111,14 @@ libmeddly_la_SOURCES = \
     operations/mpz_object.h             operations/mpz_object.cc   \
     operations/multiply.h               operations/multiply.cc     \
     operations/plus.h                   operations/plus.cc         \
-    operations/prepostimage.h           operations/prepostimage.cc \
     operations/prepostplus.h            operations/prepostplus.cc  \
     operations/reach_bfs.h              operations/reach_bfs.cc    \
     operations/reach_dfs.h              operations/reach_dfs.cc    \
     operations/sat_hyb.h                operations/sat_hyb.cc    \
     operations/sat_impl.h               operations/sat_impl.cc    \
     operations/sat_otf.h                operations/sat_otf.cc      \
+		operations/prepostimage.h           operations/prepostimage.cc \
+    operations/cov.h                    operations/cov.cc      \
     operations/sat_pregen.h             operations/sat_pregen.cc   \
     operations/sccgraph.h               operations/sccgraph.cc     \
     operations/select.h                 operations/select.cc       \
@@ -154,6 +157,7 @@ libmeddly_la_SOURCES = \
 ##
 
 pkginclude_HEADERS = \
+		markcmp.h\
     compute_table.h \
     ct_entry_key.h \
     ct_entry_result.h \

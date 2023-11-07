@@ -37,10 +37,14 @@ namespace MEDDLY {
   class setXrel_evplus;
   class tcXrel_evplus;
 
+  class image_op_mxd;
+  class mrrc;
+
   class preimage_opname;
   class postimage_opname;
 
   class transitive_closure_postimage_opname;
+  class maintain_reachabilityrelation_cover_opname;
 
   class VMmult_opname;
   class MVmult_opname;
@@ -782,6 +786,195 @@ void MEDDLY::image_op_evplus::compute(long ev, node_handle evmdd, node_handle mx
   compute_rec(ev, evmdd, mxd, resEv, resEvmdd);
 }
 
+
+// ******************************************************************
+// *                                                                *
+// *                         image_op_mxd class                         *
+// *                                                                *
+// ******************************************************************
+
+enum RV
+{
+ G=-1,
+ E= -2,
+ L= -3,
+ N= -4
+
+};
+/// Abstract base class for all MT-based pre/post image operations.
+class MEDDLY::image_op_mxd : public binary_operation {
+  public:
+    image_op_mxd(binary_opname* opcode, expert_forest* arg1,
+      expert_forest* arg2, expert_forest* res,expert_forest* res2,expert_forest* res3,binary_operation* acc);
+
+    inline ct_entry_key*
+    findResult(node_handle a, node_handle b, node_handle &c,node_handle &d,node_handle &e,int above, int& below)
+    {
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->writeN(a);
+      CTsrch->writeN(b);
+       CTsrch->writeI(above);
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      c = resF->linkNode(CTresult[0].readN());
+      d = resF->linkNode(CTresult[0].readN());
+      e = resF->linkNode(CTresult[0].readN());
+
+      below = CTresult[0].readI();
+      CT0->recycle(CTsrch);
+      return 0;
+    }
+    inline node_handle saveResult(ct_entry_key* Key,
+      node_handle a, node_handle b, node_handle c, node_handle d,node_handle e,int above,int below)
+    {
+      CTresult[0].reset();
+      CTresult[0].writeN(c);
+      CTresult[0].writeN(d);
+      CTresult[0].writeN(e);
+      CTresult[0].writeI(below);
+      CT0->addEntry(Key, CTresult[0]);
+      return c;
+    }
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
+    virtual void computeDDEdgeSC(const dd_edge& a, const dd_edge& b, dd_edge &c,dd_edge& d, bool userFlag,std::list<int>* shouldConfirm);
+    virtual void computeDDEdgeSC(const dd_edge& a, const dd_edge& b, dd_edge &c,dd_edge& d,dd_edge &e,int& f, bool userFlag,std::list<int>* shouldConfirm,markcmp* cmp);
+
+    virtual void compute(node_handle a, node_handle b,node_handle& c);
+    virtual void computeSC(node_handle a, node_handle b,node_handle& c,node_handle& d,node_handle& e,int& f, std::list<int>* shouldConfirm,markcmp* cmp);
+  protected:
+    binary_operation* accumulateOp;
+    virtual void compute_rec(node_handle a, node_handle b,node_handle& c) = 0;
+    virtual void compute_recSC(node_handle a, node_handle b,node_handle& c,node_handle& d,node_handle& e,node_handle& f,std::list<int>* shouldConfirm,markcmp* cmp, RV& above, RV& below) = 0;
+    virtual void compute_recSC(node_handle a, node_handle b,node_handle& c,node_handle& d,std::list<int>* shouldConfirm) = 0;
+
+    expert_forest* argV;
+    expert_forest* argM;
+};
+
+MEDDLY::image_op_mxd::image_op_mxd(binary_opname* oc, expert_forest* a1,
+  expert_forest* a2, expert_forest* res,expert_forest* res2,expert_forest* res3, binary_operation* acc)
+: binary_operation(oc, 1, a1, a2, res,res2,res3)
+{
+    accumulateOp = acc;
+
+    argV = a1;
+    argM = a2;
+    int above, below;
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "NNI:NNNI");
+  et->setForestForSlot(0, argV);
+  et->setForestForSlot(1, argM);
+  et->setForestForSlot(4, res);
+  et->setForestForSlot(5, res2);
+  et->setForestForSlot(6, res3);
+  registerEntryType(0, et);
+  buildCTs();
+}
+
+void MEDDLY::image_op_mxd
+::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
+{
+  node_handle cnode;
+  if (a.getForest() == argV) {
+#ifdef TRACE_ALL_OPS
+    printf("computing top-level product(%d, %d)\n", a.getNode(), b.getNode());
+#endif
+    compute(a.getNode(), b.getNode(),cnode);
+#ifdef TRACE_ALL_OPS
+    printf("computed top-level product(%d, %d) = %d\n", a.getNode(), b.getNode(), cnode);
+#endif
+  } else {
+#ifdef TRACE_ALL_OPS
+    printf("computing top-level product(%d, %d)\n", b.getNode(), a.getNode());
+#endif
+    compute(b.getNode(), a.getNode(),cnode);
+#ifdef TRACE_ALL_OPS
+    printf("computed top-level product(%d, %d) = %d\n", b.getNode(), a.getNode(), cnode);
+#endif
+  }
+  c.set(cnode);
+}
+void MEDDLY::image_op_mxd
+::computeDDEdgeSC(const dd_edge &a, const dd_edge &b, dd_edge &c,dd_edge &d, dd_edge &e,int &f, bool userFlag,std::list<int>* shouldConfirm,markcmp* cmp)
+{
+
+  node_handle cnode=0;
+   node_handle dnode=0;
+   node_handle enode=0;
+  if (a.getForest() == argV) {
+#ifdef TRACE_ALL_OPS
+    printf("computing top-level product(%d, %d)\n", a.getNode(), b.getNode());
+#endif
+    computeSC(a.getNode(), b.getNode(),cnode,dnode,enode,f,shouldConfirm,cmp);
+#ifdef TRACE_ALL_OPS
+    printf("computed top-level product(%d, %d) = %d\n", a.getNode(), b.getNode(), cnode);
+#endif
+  } else {
+#ifdef TRACE_ALL_OPS
+    printf("computing top-level product(%d, %d)\n", b.getNode(), a.getNode());
+#endif
+    compute(b.getNode(), a.getNode(),cnode);
+#ifdef TRACE_ALL_OPS
+    printf("computed top-level product(%d, %d) = %d\n", b.getNode(), a.getNode(), cnode);
+#endif
+  }
+  c.set(cnode);
+  d.set(dnode);
+  e.set(enode);
+}
+
+void MEDDLY::image_op_mxd
+::computeDDEdgeSC(const dd_edge &a, const dd_edge &b, dd_edge &c,dd_edge &d, bool userFlag,std::list<int>* shouldConfirm)
+{
+  node_handle cnode=0;
+   node_handle dnode=0;
+   node_handle enode=0;
+    int fnode=0;
+  if (a.getForest() == argV) {
+#ifdef TRACE_ALL_OPS
+    printf("computing top-level product(%d, %d)\n", a.getNode(), b.getNode());
+#endif
+    computeSC(a.getNode(), b.getNode(),cnode,dnode,enode,fnode,shouldConfirm,0);
+#ifdef TRACE_ALL_OPS
+    printf("computed top-level product(%d, %d) = %d\n", a.getNode(), b.getNode(), cnode);
+#endif
+  } else {
+#ifdef TRACE_ALL_OPS
+    printf("computing top-level product(%d, %d)\n", b.getNode(), a.getNode());
+#endif
+    compute(b.getNode(), a.getNode(),cnode);
+#ifdef TRACE_ALL_OPS
+    printf("computed top-level product(%d, %d) = %d\n", b.getNode(), a.getNode(), cnode);
+#endif
+  }
+  c.set(cnode);
+  d.set(dnode);
+}
+
+void MEDDLY::image_op_mxd::compute(node_handle a, node_handle b,node_handle& c)
+{
+  MEDDLY_DCASSERT(accumulateOp);
+  compute_rec(a, b,c);
+}
+
+void MEDDLY::image_op_mxd::computeSC(node_handle a, node_handle b,node_handle& c,node_handle& d,node_handle& e,int& f,std::list<int>* shouldConfirm,markcmp* cmp)
+{
+  MEDDLY_DCASSERT(accumulateOp);
+  if(cmp!=0){
+      RV rva;
+      RV rvb;
+      rva=E;
+      rvb=E;
+  compute_recSC(a, b,c,d,e,f,shouldConfirm,cmp,rva,rvb);
+
+    }
+  else{
+
+  compute_recSC(a, b,c,d,shouldConfirm);
+    }
+}
+
+
 // ******************************************************************
 // *                                                                *
 // *                     relXset_evplus  class                      *
@@ -1332,6 +1525,552 @@ void MEDDLY::tcXrel_evplus::processTerminals(long ev, node_handle evmxd, node_ha
   resEvmxd = resF->handleForValue(rval);
 }
 
+
+// ******************************************************************
+// *                                                                *
+// *                   mrrc  class                                  *
+// *                                                                *
+// ******************************************************************
+
+/** Generic base for maintain reachability relation.
+    Changing what happens at the terminals can give
+    different meanings to this operation :^)
+*/
+
+class MEDDLY::mrrc : public image_op_mxd {
+  public:
+    mrrc(binary_opname* opcode, expert_forest* tc,
+      expert_forest* trans, expert_forest* res,expert_forest* res2,expert_forest* res3, binary_operation* acc);
+
+  protected:
+      int l=-1;
+      virtual void compute_rec(node_handle a, node_handle b, node_handle&c);
+      virtual void compute_recSC(node_handle a, node_handle b, node_handle&c,node_handle&d,node_handle&e,int&f,std::list<int>* shouldConfirm,markcmp* cmp, RV& above, RV& below);
+      virtual void compute_recSC(node_handle a, node_handle b, node_handle&c,node_handle&d,std::list<int>* shouldConfirm);
+    virtual void processTerminals(node_handle evmxd, node_handle mxd, node_handle& resEvmxd,node_handle& eq,node_handle& leq);
+    void AddtoNH(unpacked_node* D, int i, node_handle s );
+};
+
+MEDDLY::mrrc::mrrc(binary_opname* oc,
+  expert_forest* tc, expert_forest* trans, expert_forest* res,expert_forest* res2,expert_forest* res3, binary_operation* acc)
+: image_op_mxd(oc, tc, trans, res,res2,res3, acc)
+{
+}
+
+void MEDDLY::mrrc::compute_rec(node_handle a, node_handle b,node_handle&c){printf("SHOULD Implemented!! return 0\n" );getchar();return ;}
+
+void MEDDLY::mrrc::compute_recSC(node_handle evmxd, node_handle mxd, node_handle& resEvmdd,node_handle& eq,std::list<int>* shouldConfirm)
+{
+  // termination conditions
+  if (mxd == 0 || evmxd == 0) {
+    resEvmdd = 0;
+    eq=0;
+    return;
+  }
+  if (argM->isTerminalNode(mxd)) {
+    if (argV->isTerminalNode(evmxd)) {
+      processTerminals( evmxd, mxd, resEvmdd,eq,eq);
+      return;
+    }
+  }
+
+  // check the cache
+  int iabove,ibelow;
+  ct_entry_key* Key = findResult( evmxd, mxd, resEvmdd,eq,eq,iabove,ibelow);
+  if (0==Key) {
+    return;
+  }
+
+  // check if mxd and evmdd are at the same level
+  const int evmxdLevel = argV->getNodeLevel(evmxd);
+  const int mxdLevel = argM->getNodeLevel(mxd);
+  const int rLevel = MAX(ABS(mxdLevel), ABS(evmxdLevel));
+  const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
+  unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
+  unpacked_node* H = unpacked_node::newFull(resF, rLevel, rSize);
+
+
+  // Initialize evmdd reader
+  unpacked_node* A = isLevelAbove(rLevel, evmxdLevel)
+    ? unpacked_node::newRedundant(argV, rLevel, evmxd, true)
+    : argV->newUnpacked(evmxd, FULL_ONLY);
+     unpacked_node** nst = new unpacked_node*[rSize];
+     for (unsigned i = 0; i < rSize; i++) {
+         nst[i]=unpacked_node::newFull(resF, -rLevel, rSize);
+     }
+
+  for (unsigned i = 0; i < rSize; i++) {
+    int pLevel = argV->getNodeLevel(A->d(i));
+    unpacked_node* B = isLevelAbove(-rLevel, pLevel)
+      ? unpacked_node::newIdentity(argV, -rLevel, i,  A->d(i), true)
+      : argV->newUnpacked(A->d(i), FULL_ONLY);
+
+    unpacked_node* D = unpacked_node::newFull(resF, -rLevel, rSize);
+
+    if (rLevel > ABS(mxdLevel)) {
+
+      // Skipped levels in the MXD,
+      // that's an important special case that we can handle quickly.
+      for (unsigned j = 0; j < rSize; j++) {
+        node_handle newstates = 0;
+        node_handle eqnewstates = 0;
+
+        compute_recSC( B->d(j), mxd, newstates,eqnewstates,shouldConfirm);
+
+        if(newstates!=0 && eqnewstates==0){
+            printf("ERROR! %d %d\n", newstates,eqnewstates);
+        }
+        D->d_ref(j) = newstates;
+        if(eqnewstates!=0){
+        nst[j]->d_ref(j) = eqnewstates;
+        }
+        // else{
+        //     // printf("NST0 not set\n" );
+        // }
+      }
+    }
+    else {
+
+      // Need to process this level in the MXD.
+      MEDDLY_DCASSERT(ABS(mxdLevel) >= ABS(pLevel));
+
+      // clear out result (important!)
+      for (unsigned j = 0; j < rSize; j++) {
+        D->d_ref(j) = 0;
+      }
+
+      // Initialize mxd readers, note we might skip the unprimed level
+      unpacked_node *Ru = unpacked_node::New();
+      unpacked_node *Rp = unpacked_node::New();
+      if (mxdLevel < 0) {
+        Ru->initRedundant(argM, rLevel, mxd, false);
+      } else {
+        argM->unpackNode(Ru, mxd, SPARSE_ONLY);
+      }
+
+      dd_edge newstatesE(resF), djp(resF);
+      dd_edge newstatesEg(resF), djpg(resF);
+
+      dd_edge newstatesEQ(resF), djpq(resF);
+
+      // loop over mxd "rows"
+      for (unsigned jz = 0; jz < Ru->getNNZs(); jz++) {
+        unsigned j = Ru->i(jz);
+        if (0 == B->d(j)) {
+          continue;
+        }
+
+        if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(jz)))) {
+          Rp->initIdentity(argM, rLevel, j, Ru->d(jz), false);
+        } else {
+          argM->unpackNode(Rp, Ru->d(jz), SPARSE_ONLY);
+        }
+
+        // loop over mxd "columns"
+        for (unsigned jpz = 0; jpz < Rp->getNNZs(); jpz++) {
+          unsigned jp = Rp->i(jpz);
+          // ok, there is an i->j "edge".
+          // determine new states to be added (recursively)
+          // and add them
+          node_handle newstates = 0;
+          node_handle eqnewstates = 0;
+
+          compute_recSC( B->d(j), Rp->d(jpz), newstates,eqnewstates,shouldConfirm);
+          if(newstates!=0 && eqnewstates==0){
+              printf("ERROR P2! %d %d\n", newstates,eqnewstates);
+              getchar();
+          }
+          if (0==newstates) {
+            continue;
+          }
+          shouldConfirm[mxdLevel].push_back(jp);
+          if (0 == D->d(jp)) {
+            D->d_ref(jp) = newstates;
+            if(nst[jp]->d(jp)==0){
+                if(eqnewstates!=0)
+            nst[jp]->d_ref(jp)=eqnewstates;
+            }
+            continue;
+          }
+          // there's new states and existing states; union them.
+          newstatesE.set(newstates);
+          djp.set(D->d(jp));
+          accumulateOp->computeTemp(newstatesE, djp, djp);
+          D->set_d(jp, djp);
+
+          if(eqnewstates!=0){
+          dd_edge newstatesEnst(resF), djpnst(resF);
+          newstatesEnst.set(eqnewstates);
+          djpnst.set(nst[jp]->d(jp));
+          accumulateOp->computeTemp(newstatesEnst, djpnst, djpnst);
+          nst[jp]->set_d(jp, djpnst);
+            }
+        } // for j
+    } // for jz
+
+      unpacked_node::recycle(Rp);
+      unpacked_node::recycle(Ru);
+    } // else
+    node_handle cnode = 0;
+    cnode=resF->createReducedNode(int(i), D);
+    C->d_ref(i) = cnode;
+    ostream_output meddlyout(std::cout);
+    unpacked_node::recycle(B);
+} //for i
+for (unsigned i = 0; i < rSize; i++) {
+     dd_edge newstatesEG(resF);
+     node_handle nstnode = 0;
+     nstnode=resF->createReducedNode(int(i), nst[i]);
+     ostream_output meddlyout(std::cout);
+ // nst[i]->show(meddlyout,true);
+
+     if(H->d(i)==0){
+     H->d_ref(i) = nstnode;
+    }else{
+        printf("WRONGWRONG!SETING TWICE!\n" );
+    }
+}
+
+for (unsigned i = 0; i < rSize; i++) {
+    nst[i]=0;
+}
+delete[] nst;
+
+  // cleanup mdd reader
+  unpacked_node::recycle(A);
+
+  resEvmdd=resF->createReducedNode(-1, C);
+  eq=resF->createReducedNode(-1, H);
+#ifdef TRACE_ALL_OPS
+  printf("computed new tcXrel(<%ld, %d>, %d) = <%ld, %d>\n", ev, evmxd, mxd, resEv, resEvmdd);
+#endif
+  saveResult(Key, evmxd, mxd, resEvmdd,eq,eq,0,0);
+
+}
+
+
+void MEDDLY::mrrc::compute_recSC(node_handle evmxd, node_handle mxd, node_handle& resEvmdd,node_handle& eq,node_handle& leq,int& geq,std::list<int>* shouldConfirm,markcmp* cmp,RV& above, RV& below)
+{
+bool d=false;
+if(d) {
+        // printf("call compute_recSC for evmxd %d, mxd %d, above %d, below %d\n",evmxd,mxd,above,below );
+}
+// termination conditions
+if (mxd == 0 || evmxd == 0) {
+        resEvmdd = 0;
+        eq=0;
+        leq=0;
+        geq=0;
+        below=N;
+        if(above==G) { below=G;}
+
+        return;
+}
+if (argM->isTerminalNode(mxd)) {
+        if (argV->isTerminalNode(evmxd)) {
+                if(above==G) { below=G; resEvmdd=0; eq=0; return; }
+                processTerminals( evmxd, mxd, resEvmdd,eq, leq/*, geq*/);
+                if (d)
+                printf("terminal res%d eq %d above %d below %d\n",resEvmdd,eq,above, below );
+                if(above==N) { below=N; }
+                else if(above==L) { below=L; }
+                else {below=E;}
+                return;
+        }
+}
+
+// check the cache
+int iabove=(int)above, igeq=0;
+ct_entry_key* Key = findResult( evmxd, mxd, resEvmdd,eq,leq,iabove,igeq);
+if (0==Key) {
+        if(d) {
+                printf("FOUND IN CACHE  %d\n",igeq );
+        }
+        if(igeq>0) geq=igeq;
+        return;
+}
+
+// check if mxd and evmdd are at the same level
+const int evmxdLevel = argV->getNodeLevel(evmxd);
+const int mxdLevel = argM->getNodeLevel(mxd);
+const int rLevel = MAX(ABS(mxdLevel), ABS(evmxdLevel));
+const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
+unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
+unpacked_node* CLEQ = unpacked_node::newFull(resF, rLevel, rSize);
+unpacked_node* CEQ = unpacked_node::newFull(resF, rLevel, rSize);
+
+
+// Initialize evmdd reader
+unpacked_node* A = isLevelAbove(rLevel, evmxdLevel)
+    ? unpacked_node::newRedundant(argV, rLevel, evmxd, true)
+    : argV->newUnpacked(evmxd, FULL_ONLY);
+RV savedAbove=above;
+for (unsigned i = 0; i < rSize; i++) {
+
+        int pLevel = argV->getNodeLevel(A->d(i));
+        unpacked_node* B = isLevelAbove(-rLevel, pLevel)
+      ? unpacked_node::newIdentity(argV, -rLevel, i,  A->d(i), true)
+      : argV->newUnpacked(A->d(i), FULL_ONLY);
+
+        unpacked_node* D = unpacked_node::newFull(resF, -rLevel, rSize);
+        unpacked_node* DLEQ = unpacked_node::newFull(resF, -rLevel, rSize);
+        above=savedAbove;
+        if (rLevel > ABS(mxdLevel)) {
+                if(d) {
+                        printf("IF a %d b %d mxdl %d l %d \n",above, below,argM->getNodeLevel(evmxdLevel),l );
+                }
+
+                // Skipped levels in the MXD,
+                // that's an important special case that we can handle quickly.
+                for (unsigned j = 0; j < rSize; j++) {
+                        above=savedAbove;
+                        RV newabove=above;
+                        RV newbelow=below;
+                        int compareijresult=cmp->compare(i,j,evmxdLevel);
+                        // printf("i %d j %d cij %d\n",i,j,compareijresult );
+
+                        if(i==j) {
+                                ;
+                        }else if(compareijresult>0) { //i<=j
+                                if(above==G || above==N) {newabove=N; }//printf("above set to N1\n" );}
+                                else if(above==L || above==E) {newabove=L; if(d) printf("above set to L1\n" ); }
+                        }else if(compareijresult==-1) { //i>j
+                                if(above==G || above==E) newabove=G;
+                                else if(above==L || above==N) {newabove=N;}//printf("above set to N2\n" );}
+                        }else if(compareijresult==-4) { // i is not comparable to j!
+                                newabove=N;//printf("above set to N3\n" );
+                        }
+                        node_handle newstates = 0;
+                        node_handle eqnewstates = 0;
+                        node_handle leqnewstates = 0;
+                        node_handle geqnewstates = 0;
+
+                        compute_recSC( B->d(j), mxd, newstates,eqnewstates,leqnewstates,geqnewstates,shouldConfirm,cmp,newabove,newbelow);
+
+                        if(newstates!=0 && eqnewstates==0) {
+                                printf("ERROR! %d %d\n", newstates,eqnewstates);
+                        }
+
+                        // printf("newstates %d\n", newstates);
+                        if(newstates!=0 || eqnewstates!=0 || leqnewstates!=0) {
+                                shouldConfirm[evmxdLevel].push_back(j);
+
+                                if(d)
+                                printf("IF LVL%d  cij %d i:%d , j: %d, above: %d, below:%d leqnewstates: %d \n",evmxdLevel,compareijresult,i,j, above,below,leqnewstates );
+                                if((leqnewstates!=0)&&((above==E&&compareijresult>0)||(above==L&&compareijresult>0))) {
+                                    geq=1;
+
+                                        if(compareijresult>=rSize) {
+                                                shouldConfirm[evmxdLevel].push_back(compareijresult);
+                                                // if(d)
+                                                printf("IF OMEGA2  set HERE!!\n" );
+                                        }else{
+                                                if(d)
+                                                printf("IF OMEGA2 inside HERE!!\n" );
+                                                AddtoNH(DLEQ,compareijresult,leqnewstates);
+                                                unpacked_node* DEQ = unpacked_node::newFull(resF, -rLevel, rSize);
+                                                AddtoNH(DEQ,compareijresult,eqnewstates);
+                                                node_handle denode = 0;
+                                                denode=resF->createReducedNode(int(compareijresult), DEQ);
+                                                AddtoNH(CEQ,compareijresult,denode);
+                                        }
+                                }else{
+                                    if(d)
+                                    printf("CAme to IF AddtoNH !\n" );
+                                        AddtoNH(D,j,newstates);
+                                        unpacked_node* DEQ = unpacked_node::newFull(resF, -rLevel, rSize);
+                                        AddtoNH(DEQ,j,eqnewstates);
+                                        node_handle denode = 0;
+                                        denode=resF->createReducedNode(int(j), DEQ);
+                                        AddtoNH(CEQ,j,denode);
+                                        if((above==L &&  compareijresult==-2)||(above==E&& compareijresult==-2/* &&leqnewstates>0*/) ) {
+                                            if(d)
+                                            printf("CAme to IF AddtoNH ADDED!\n" );
+
+                                                AddtoNH(DLEQ,j,leqnewstates);
+                                        }
+                                }
+                        }
+                }
+        }else {
+                if(d) {
+                        printf("ELSE a %d b %d mxdl %d  l %d\n",above, below,argM->getNodeLevel(evmxdLevel),l );
+                }
+
+                // Need to process this level in the MXD.
+                MEDDLY_DCASSERT(ABS(mxdLevel) >= ABS(pLevel));
+
+                // clear out result (important!)
+                for (unsigned j = 0; j < rSize; j++) {
+                        D->d_ref(j) = 0;
+                        DLEQ->d_ref(j) = 0;
+                }
+
+                // Initialize mxd readers, note we might skip the unprimed level
+                unpacked_node *Ru = unpacked_node::New();
+                unpacked_node *Rp = unpacked_node::New();
+                if (mxdLevel < 0) {
+                        Ru->initRedundant(argM, rLevel, mxd, false);
+                } else {
+                        argM->unpackNode(Ru, mxd, SPARSE_ONLY);
+                }
+
+                dd_edge newstatesE(resF), djp(resF);
+                dd_edge newstatesEg(resF), djpg(resF);
+
+                dd_edge newstatesEQ(resF), djpq(resF);
+
+                // loop over mxd "rows"
+                for (unsigned jz = 0; jz < Ru->getNNZs(); jz++) {
+                        unsigned j = Ru->i(jz);
+                        if (0 == B->d(j)) {
+                                continue;
+                        }
+
+                        if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(jz)))) {
+                                Rp->initIdentity(argM, rLevel, j, Ru->d(jz), false);
+                        } else {
+                                argM->unpackNode(Rp, Ru->d(jz), SPARSE_ONLY);
+                        }
+
+                        // loop over mxd "columns"
+                        for (unsigned jpz = 0; jpz < Rp->getNNZs(); jpz++) {
+                                unsigned jp = Rp->i(jpz);
+                                // ok, there is an i->j "edge".
+                                // determine new states to be added (recursively)
+                                // and add them
+                                // printf("i %d jp %d\n",i,jp );
+                                int compareijresult=cmp->compare(i,jp,mxdLevel);
+                                if(Rp->d(jpz)==0) {
+                                        printf("NEED TO CHECK JP!\n" );
+                                }
+                                above=savedAbove;
+                                RV newabove=above;
+                                RV newbelow=below;
+                                // printf("above %d below %d\n",above, below );
+                                if(i==jp) {
+                                        newabove=above;
+                                }else if(compareijresult>0) {
+                                        if(above==G || above==N) {newabove=N;} //printf("above set to N4\n" );}
+                                        else if(above==L || above==E) {newabove=L; if(d) printf("above set to L4\n" ); }
+                                }else if(compareijresult==-1) {
+                                        if(above==G || above==E) newabove=G;
+                                        else if(above==L || above==N) {newabove=N;}// printf("above set to N5\n" );}
+                                }else if(compareijresult==-4) {
+                                        newabove=N; //printf("above set to N6\n" );
+                                }
+
+                                node_handle newstates = 0;
+                                node_handle eqnewstates = 0;
+                                node_handle leqnewstates = 0;
+                                node_handle geqnewstates = 0;
+
+                                compute_recSC( B->d(j), Rp->d(jpz), newstates,eqnewstates,leqnewstates,geqnewstates,shouldConfirm,cmp,newabove,newbelow);
+                                if(newstates!=0 && eqnewstates==0) {
+                                        printf("ERROR P2! %d %d\n", newstates,eqnewstates);
+                                        getchar();
+                                }
+                                if (newstates==0 && eqnewstates==0 && leqnewstates==0) {
+                                        continue;
+                                }
+                                shouldConfirm[mxdLevel].push_back(jp);
+                                if(d)
+                                printf("ELSE LVL%d cij %d i:%d , jp: %d, above: %d, below:%d leqnewstates: %d \n",mxdLevel,compareijresult, i,jp, above,below,leqnewstates );
+                                        // printf("LVL%d  cij %d i:%d , j: %d, above: %d, below:%d \n",evmxdLevel,compareijresult,i,j, above,below );
+                                        if((leqnewstates!=0)&&((above==E&&compareijresult>0)||(above==L&&compareijresult>0))) {
+                                            geq=1;
+
+                                                if(compareijresult>=rSize) {
+                                                        shouldConfirm[evmxdLevel].push_back(compareijresult);
+                                                        // if(d)
+                                                        printf(" OMEGA2  set HERE!!\n" );
+                                                }else{
+                                                        if(d)
+                                                        printf("ELSE OMEGA2 inside HERE %d !!\n",eqnewstates );
+                                                        AddtoNH(DLEQ,compareijresult,leqnewstates);
+                                                        unpacked_node* DEQ = unpacked_node::newFull(resF, -rLevel, rSize);
+                                                        AddtoNH(DEQ,compareijresult,eqnewstates);
+                                                        node_handle denode = 0;
+                                                        denode=resF->createReducedNode(int(compareijresult), DEQ);//, cev, cnode);
+                                                        AddtoNH(CEQ,compareijresult,denode);
+                                                }
+                                        }else{
+                                            if(d)
+                                            printf("CAme to else AddtoNH\n" );
+                                                AddtoNH(D,jp,newstates);
+                                                unpacked_node* DEQ = unpacked_node::newFull(resF, -rLevel, rSize);
+                                                AddtoNH(DEQ,jp,eqnewstates);
+                                                node_handle denode = 0;
+                                                denode=resF->createReducedNode(int(jp), DEQ);//, cev, cnode);
+                                                AddtoNH(CEQ,jp,denode);
+                                                if((above==L &&  compareijresult==-2)||(above==E&& compareijresult==-2 /*&&leqnewstates>0*/) ) {
+                                                        if(d)
+                                                        printf("CAme to else AddtoNH ADDED!\n" );
+                                                        AddtoNH(DLEQ,jp,leqnewstates);
+                                                }
+                                        }
+                        }
+                } // for jz
+
+                unpacked_node::recycle(Rp);
+                unpacked_node::recycle(Ru);
+        } // else
+        node_handle cnode = 0;
+        cnode=resF->createReducedNode(int(i), D);
+        C->d_ref(i) = cnode;
+
+        node_handle cleqnode = 0;
+        cleqnode=resF->createReducedNode(int(i), DLEQ);
+        if(d)
+        printf("cleqnode %d\n",cleqnode );
+        CLEQ->d_ref(i) = cleqnode;
+
+        ostream_output meddlyout(std::cout);
+        unpacked_node::recycle(B);
+
+} //for i
+// cleanup mdd reader
+unpacked_node::recycle(A);
+
+resEvmdd=resF->createReducedNode(-1, C);
+eq=resF->createReducedNode(-1, CEQ);
+
+leq=resF->createReducedNode(-1, CLEQ);
+if(d)
+printf("leq %d\n",leq );
+#ifdef TRACE_ALL_OPS
+printf("computed new tcXrel(<%ld, %d>, %d) = <%ld, %d>\n", ev, evmxd, mxd, resEv, resEvmdd);
+#endif
+saveResult(Key, evmxd, mxd, resEvmdd,eq,leq,above,geq);
+}
+void MEDDLY::mrrc::AddtoNH(unpacked_node* UN, int i, node_handle s ){
+    if(0!=s)
+    if (0 == UN->d(i)) {
+        UN->d_ref(i) = s;
+
+    }else{ // there's new states and existing states; union them.
+        dd_edge newstatesE(resF), djp(resF);
+        newstatesE.set(s);
+        djp.set(UN->d(i));
+        accumulateOp->computeTemp(newstatesE, djp, djp);
+        UN->set_d(i, djp);
+    }
+}
+
+void MEDDLY::mrrc::processTerminals( node_handle evmxd, node_handle mxd, node_handle& resEvmxd,node_handle& eq,node_handle& leq)
+{
+  long evmddval;
+  long mxdval;
+  long rval;
+  argV->getValueFromHandle(evmxd, evmddval);
+  argM->getValueFromHandle(mxd, mxdval);
+  rval = evmddval * mxdval;
+  resEvmxd = resF->handleForValue(rval);
+  eq = resF->handleForValue(rval);
+  leq = resF->handleForValue(rval);
+}
+
+
 // ************************************************************************
 // *                                                                      *
 // *                                                                      *
@@ -1512,6 +2251,53 @@ MEDDLY::transitive_closure_postimage_opname::buildOperation(expert_forest* a1, e
   return new tcXrel_evplus(this, a1, a2, r, acc);
 }
 
+
+// ******************************************************************
+// *                                                                *
+// *    maintain_reachabilityrelation_cover_opname class            *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::maintain_reachabilityrelation_cover_opname : public binary_opname {
+  public:
+  maintain_reachabilityrelation_cover_opname();
+    virtual binary_operation* buildOperation(expert_forest* a1,
+      expert_forest* a2, expert_forest* r);
+};
+
+MEDDLY::maintain_reachabilityrelation_cover_opname::maintain_reachabilityrelation_cover_opname()
+ : binary_opname("Maintain RR and cover")
+{
+}
+
+MEDDLY::binary_operation*
+MEDDLY::maintain_reachabilityrelation_cover_opname::buildOperation(expert_forest* a1, expert_forest* a2,
+  expert_forest* r)
+{
+  if (0==a1 || 0==a2 || 0==r) return 0;
+
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
+  )
+    throw error(error::DOMAIN_MISMATCH);
+  if (
+    !a1->isForRelations()    ||
+    !a2->isForRelations()   ||
+    !r->isForRelations()
+    )
+    {
+
+        throw error(error::TYPE_MISMATCH);
+    }
+
+  binary_opname* accop = UNION();
+  MEDDLY_DCASSERT(accop);
+  dd_edge er(r);
+  binary_operation* acc = accop->getOperation(er,er,er);
+  return new mrrc(this, a1, a2, r,r,r, acc);
+}
+
 // ******************************************************************
 // *                                                                *
 // *                      VMmult_opname  class                      *
@@ -1656,6 +2442,11 @@ MEDDLY::binary_opname* MEDDLY::initializePostImage()
 MEDDLY::binary_opname* MEDDLY::initializeTCPostImage()
 {
   return new transitive_closure_postimage_opname;
+}
+
+MEDDLY::binary_opname* MEDDLY::initializeMRCPostImage()
+{
+  return new maintain_reachabilityrelation_cover_opname;
 }
 
 MEDDLY::binary_opname* MEDDLY::initializeVMmult()

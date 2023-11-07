@@ -209,11 +209,15 @@ class MEDDLY::binary_opname : public opname {
 
         binary_operation* getOperation(const dd_edge &arg1,
                 const dd_edge &arg2, const dd_edge &res);
-
+        binary_operation* getOperationW(const dd_edge &arg1,
+                const dd_edge &arg2, const dd_edge &res,const dd_edge &res2,
+                const dd_edge &res3);
     protected:
         // OLD interface
         virtual binary_operation* buildOperation(expert_forest* arg1,
             expert_forest* arg2, expert_forest* res) = 0;
+        virtual binary_operation* buildOperationW(expert_forest* arg1,
+            expert_forest* arg2, expert_forest* res,expert_forest* res2){return 0;};
 };
 
 
@@ -301,6 +305,14 @@ namespace MEDDLY {
         binary_opname* bop = op();
         MEDDLY_DCASSERT(bop);
         return bop->getOperation(a1, a2, r);
+    }
+
+    inline binary_operation* getOperationW(binary_handle op,
+            const dd_edge &a1, const dd_edge &a2, const dd_edge &r,const dd_edge &r2,const dd_edge &r3)
+    {
+        binary_opname* bop = op();
+        MEDDLY_DCASSERT(bop);
+        return bop->getOperationW(a1, a2, r,r2,r3);
     }
 };
 

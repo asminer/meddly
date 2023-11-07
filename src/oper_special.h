@@ -24,6 +24,7 @@
 namespace MEDDLY {
     class dd_edge;
     class specialized_operation;
+    class compareij;
 
     /// Safely destroy the given specialized operation.
     void destroyOperation(specialized_operation* &op);
@@ -49,6 +50,11 @@ class MEDDLY::specialized_operation : public operation {
         Default behavior is to throw an exception.
     */
     virtual void compute(const dd_edge &arg, dd_edge &res);
+    virtual void compute(const dd_edge &arg, dd_edge &res, compareij &comp);
+    virtual void compute(const dd_edge &arg, dd_edge &res, compareij *comp);
+    virtual void computeMXD(const dd_edge &arg, dd_edge &res);
+
+    virtual void setComparefunction(compareij* a);
 
     /** For unary (like) operations with boolean results.
         Note that there could be other "built in" operands.

@@ -57,6 +57,7 @@ namespace MEDDLY {
     /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
     unary_opname* CYCLE();
 
+    unary_opname* EQUANT();
     /// Find the largest value returned by the function.
     unary_opname* MAX_RANGE();
 
@@ -148,6 +149,7 @@ namespace MEDDLY {
     binary_opname* PRE_IMAGE();
     binary_opname* POST_IMAGE();
     binary_opname* TC_POST_IMAGE();
+    binary_opname* MRC_POST_IMAGE();
     binary_opname* REACHABLE_STATES_DFS();
     binary_opname* REACHABLE_STATES_BFS();
     binary_opname* REVERSE_REACHABLE_DFS();
@@ -217,7 +219,10 @@ namespace MEDDLY {
     satotf_opname* SATURATION_OTF_FORWARD();
 
     satotf_opname* BFS_OTF_FORWARD();
-    
+
+    satotf_opname* COV();
+
+
     /** Forward reachability using saturation.
         Transition relation is specified implicitly.
     */

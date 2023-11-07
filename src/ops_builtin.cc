@@ -45,6 +45,7 @@ namespace MEDDLY {
 #include "operations/intersection.h"
 #include "operations/difference.h"
 #include "operations/cross.h"
+#include "operations/equant.h"
 #include "operations/maxmin.h"
 #include "operations/plus.h"
 #include "operations/minus.h"
@@ -72,6 +73,7 @@ namespace MEDDLY {
 #include "operations/reach_dfs.h"
 #include "operations/sat_pregen.h"
 #include "operations/sat_otf.h"
+#include "operations/cov.h"
 #include "operations/sat_impl.h"
 #include "operations/sat_hyb.h"
 #include "operations/constrained.h"
@@ -103,6 +105,7 @@ class MEDDLY::builtin_init : public initializer_list {
         static unary_opname* _MDD2INDEX;
         static unary_opname* _COPY;
         static unary_opname* _CYCLE;
+        static unary_opname* _EQUANT;
         static unary_opname* _MAXRANGE;
         static unary_opname* _MINRANGE;
         static unary_opname* _SELECT;
@@ -129,6 +132,7 @@ class MEDDLY::builtin_init : public initializer_list {
         static binary_opname* _PRE_IMAGE;
         static binary_opname* _POST_IMAGE;
         static binary_opname* _TC_POST_IMAGE;
+        static binary_opname* _MRC_POST_IMAGE;
         static binary_opname* _FORWARD_DFS;
         static binary_opname* _FORWARD_BFS;
         static binary_opname* _BACKWARD_DFS;
@@ -144,6 +148,7 @@ class MEDDLY::builtin_init : public initializer_list {
         static satpregen_opname* _SATURATION_BACKWARD;
         static satotf_opname* _SATURATION_OTF_FORWARD;
         static satotf_opname* _BFS_OTF_FORWARD;
+        static satotf_opname* _COV;
         static satimpl_opname* _SATURATION_IMPL_FORWARD;
         static sathyb_opname* _SATURATION_HYB_FORWARD;
 
@@ -160,6 +165,7 @@ MEDDLY::unary_opname* MEDDLY::builtin_init::_COMPL;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_MDD2INDEX;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_COPY;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_CYCLE;
+MEDDLY::unary_opname* MEDDLY::builtin_init::_EQUANT;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_MAXRANGE;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_MINRANGE;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_SELECT;
@@ -186,6 +192,7 @@ MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_PLUS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_IMAGE;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_IMAGE;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_TC_POST_IMAGE;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_MRC_POST_IMAGE;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_DFS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_BFS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_DFS;
@@ -201,6 +208,8 @@ MEDDLY::satpregen_opname* MEDDLY::builtin_init::_SATURATION_FORWARD;
 MEDDLY::satpregen_opname* MEDDLY::builtin_init::_SATURATION_BACKWARD;
 MEDDLY::satotf_opname* MEDDLY::builtin_init::_SATURATION_OTF_FORWARD;
 MEDDLY::satotf_opname* MEDDLY::builtin_init::_BFS_OTF_FORWARD;
+MEDDLY::satotf_opname* MEDDLY::builtin_init::_COV;
+
 MEDDLY::satimpl_opname* MEDDLY::builtin_init::_SATURATION_IMPL_FORWARD;
 MEDDLY::sathyb_opname* MEDDLY::builtin_init::_SATURATION_HYB_FORWARD;
 
@@ -224,6 +233,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     _MINRANGE   = nullptr;
     _MDD2INDEX  = nullptr;
     _CYCLE      = nullptr;
+    _EQUANT     = nullptr;
     _SELECT     = nullptr;
     //
     // Binary ops
@@ -250,6 +260,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     _PRE_IMAGE      = nullptr;
     _POST_IMAGE     = nullptr;
     _TC_POST_IMAGE  = nullptr;
+    _MRC_POST_IMAGE  = nullptr;
     _FORWARD_DFS    = nullptr;
     _FORWARD_BFS    = nullptr;
     _BACKWARD_DFS   = nullptr;
@@ -269,6 +280,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     _SATURATION_BACKWARD        = nullptr;
     _SATURATION_OTF_FORWARD     = nullptr;
     _BFS_OTF_FORWARD            = nullptr;
+    _COV                        = nullptr;
     _SATURATION_IMPL_FORWARD    = nullptr;
     _SATURATION_HYB_FORWARD     = nullptr;
 
@@ -296,6 +308,7 @@ void MEDDLY::builtin_init::setup()
     //
     _UNION          =   initializeUnion()           ;
     _INTERSECT      =   initializeIntersection()    ;
+    _EQUANT     =  initializeEquant()      ;
     _DIFFERENCE     =   initializeDifference()      ;
     _CROSS          =   initializeCross()           ;
     _MAX            =   initializeMaximum()         ;
@@ -316,6 +329,7 @@ void MEDDLY::builtin_init::setup()
     _PRE_IMAGE      =   initializePreImage()        ;
     _POST_IMAGE     =   initializePostImage()       ;
     _TC_POST_IMAGE  =   initializeTCPostImage()     ;
+    _MRC_POST_IMAGE =   initializeMRCPostImage()    ;
     _FORWARD_DFS    =   initializeForwardDFS()      ;
     _FORWARD_BFS    =   initializeForwardBFS()      ;
     _BACKWARD_DFS   =   initializeBackwardDFS()     ;
@@ -336,6 +350,7 @@ void MEDDLY::builtin_init::setup()
     _SATURATION_OTF_FORWARD     =   initOtfSaturationForward()      ;
     _SATURATION_IMPL_FORWARD    =   initImplSaturationForward()     ;
     _BFS_OTF_FORWARD            =   initOtfBfsForward()             ;
+    _COV                        =   initCov()                       ;
     _SATURATION_HYB_FORWARD     =   initHybSaturationForward()      ;
 
     _CONSTRAINED_BACKWARD_BFS   =   initConstrainedBFSBackward()    ;
@@ -356,6 +371,7 @@ void MEDDLY::builtin_init::cleanup()
     mydelete(_MINRANGE);
     mydelete(_MDD2INDEX);
     mydelete(_CYCLE);
+    mydelete(_EQUANT);
     mydelete(_SELECT);
     //
     // Binary ops
@@ -382,6 +398,7 @@ void MEDDLY::builtin_init::cleanup()
     mydelete(_PRE_IMAGE);
     mydelete(_POST_IMAGE);
     mydelete(_TC_POST_IMAGE);
+    mydelete(_MRC_POST_IMAGE);
     mydelete(_FORWARD_DFS);
     mydelete(_FORWARD_BFS);
     mydelete(_BACKWARD_DFS);
@@ -402,6 +419,7 @@ void MEDDLY::builtin_init::cleanup()
     mydelete(_SATURATION_OTF_FORWARD);
     mydelete(_SATURATION_IMPL_FORWARD);
     mydelete(_BFS_OTF_FORWARD);
+    mydelete(_COV);
     mydelete(_SATURATION_HYB_FORWARD);
 
     mydelete(_CONSTRAINED_BACKWARD_BFS);
@@ -430,6 +448,10 @@ MEDDLY::unary_opname* MEDDLY::COPY() {
 }
 MEDDLY::unary_opname* MEDDLY::CYCLE() {
     return builtin_init::_CYCLE;
+}
+
+MEDDLY::unary_opname* MEDDLY::EQUANT() {
+    return builtin_init::_EQUANT;
 }
 MEDDLY::unary_opname* MEDDLY::MAX_RANGE() {
     return builtin_init::_MAXRANGE;
@@ -513,6 +535,9 @@ MEDDLY::binary_opname* MEDDLY::POST_IMAGE() {
 MEDDLY::binary_opname* MEDDLY::TC_POST_IMAGE() {
     return builtin_init::_TC_POST_IMAGE;
 }
+MEDDLY::binary_opname* MEDDLY::MRC_POST_IMAGE() {
+    return builtin_init::_MRC_POST_IMAGE;
+}
 MEDDLY::binary_opname* MEDDLY::REACHABLE_STATES_DFS() {
     return builtin_init::_FORWARD_DFS;
 }
@@ -565,6 +590,9 @@ MEDDLY::satotf_opname* MEDDLY::SATURATION_OTF_FORWARD() {
 }
 MEDDLY::satotf_opname* MEDDLY::BFS_OTF_FORWARD() {
     return builtin_init::_BFS_OTF_FORWARD;
+}
+MEDDLY::satotf_opname* MEDDLY::COV() {
+    return builtin_init::_COV;
 }
 MEDDLY::satimpl_opname* MEDDLY::SATURATION_IMPL_FORWARD() {
     return builtin_init::_SATURATION_IMPL_FORWARD;

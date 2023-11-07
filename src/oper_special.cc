@@ -39,6 +39,30 @@ void MEDDLY::specialized_operation::compute(const dd_edge &arg, dd_edge &res)
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
+void MEDDLY::specialized_operation::compute(const dd_edge &arg, dd_edge &res, compareij &comp)
+{
+    printf("specialized_operation::compute\n");
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::specialized_operation::compute(const dd_edge &arg, dd_edge &res, compareij *comp)
+{
+    printf("specialized_operation::compute\n");
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::specialized_operation::computeMXD(const dd_edge &arg, dd_edge &res){
+    printf("specialized_operation::computeMXD\n");
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+
+void MEDDLY::specialized_operation::setComparefunction(compareij *comp)
+{
+    printf("calling setComparefunction\n");
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
 void MEDDLY::specialized_operation::compute(const dd_edge &arg, bool &res)
 {
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);

@@ -23,6 +23,7 @@
 #include "dd_edge.h"
 #include "error.h"
 #include "forest.h"
+#include "markcmp.h"
 
 #include <unordered_map>
 #include <map>
@@ -242,6 +243,14 @@ class MEDDLY::satotf_opname : public specialized_opname {
     /// Arguments should have type "otf_relation", below
     virtual specialized_operation* buildOperation(arguments* a) = 0;
 
+    virtual specialized_operation* buildOperationW(arguments* a,arguments* a2)
+    {
+      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    };
+    virtual specialized_operation* buildOperationX(arguments* a,MEDDLY::markcmp* a2)
+    {
+      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    };
     class otf_relation;
 
     // ============================================================
@@ -485,6 +494,8 @@ class MEDDLY::satotf_opname : public specialized_opname {
             variable to that of the largest confirmed index.
         */
         void getBoundedMonolithicNSF(dd_edge &root) const;
+
+        MEDDLY::dd_edge getMonolithicNSF() const;
 
         /** Bound all extensible variables
             using the maximum confirmed local state as the bound.

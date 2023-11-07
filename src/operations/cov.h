@@ -16,31 +16,14 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MEDDLY_PREPOSTIMAGE_H
-#define MEDDLY_PREPOSTIMAGE_H
+#ifndef MEDDLY_COV_H
+#define MEDDLY_COV_H
 
 namespace MEDDLY {
-  class binary_opname;
-
-  /// Set up a binary_opname for the "preimage" operation.
-  binary_opname* initializePreImage();
-
-  /// Set up a binary_opname for the "postimage" operation.
-  binary_opname* initializePostImage();
-
-  /// Set up a binary_opname for the "transitive closure postimage" operation.
-  binary_opname* initializeTCPostImage();
-
-  /// Set up a binary_opname for vector matrix multiplication.
-  binary_opname* initializeVMmult();
-
-  /// Set up a binary_opname for matrix vector multiplication.
-  binary_opname* initializeMVmult();
-
   class satotf_opname;
+  
+  satotf_opname* initCov();
 
-  binary_opname* initializeMRCPostImage();
 }
 
 #endif
-

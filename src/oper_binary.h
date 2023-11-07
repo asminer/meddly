@@ -21,7 +21,7 @@
 
 #include "oper.h"
 #include <list>
-
+#include "markcmp.h"
 namespace MEDDLY {
     class dd_edge;
     class binary_operation;
@@ -41,6 +41,8 @@ class MEDDLY::binary_operation : public operation {
     public:
         binary_operation(binary_opname* code, unsigned et_slots,
             expert_forest* arg1, expert_forest* arg2, expert_forest* res);
+        binary_operation(binary_opname* code, unsigned et_slots,
+            expert_forest* arg1, expert_forest* arg2, expert_forest* res,expert_forest* res2,expert_forest* res3);
 
     protected:
         virtual ~binary_operation();
@@ -48,6 +50,8 @@ class MEDDLY::binary_operation : public operation {
     public:
         bool matches(const dd_edge &arg1, const dd_edge &arg2,
                 const dd_edge &res) const;
+        bool matches(const dd_edge &arg1, const dd_edge &arg2,
+                const dd_edge &res,const dd_edge &res2,const dd_edge &res3) const;
 
         // high-level front-end
 
@@ -61,7 +65,10 @@ class MEDDLY::binary_operation : public operation {
                 dd_edge &res, bool userFlag) = 0;
         virtual void computeDDEdgeSC(const dd_edge &ar1, const dd_edge &ar2,
                 dd_edge &res, bool userFlag,std::list<int>* shouldConfirm){};
-
+        virtual void computeDDEdgeSC(const dd_edge &ar1, const dd_edge &ar2,
+                dd_edge &res, dd_edge &res2, bool userFlag,std::list<int>* shouldConfirm){};
+        virtual void computeDDEdgeSC(const dd_edge &ar1, const dd_edge &ar2,
+                dd_edge &res, dd_edge &res2, dd_edge &res3, int &res4, bool userFlag,std::list<int>* shouldConfirm, markcmp* cij){};
     protected:
         inline void operationCommutes() {
             can_commute = (arg1F == arg2F);
@@ -75,6 +82,8 @@ class MEDDLY::binary_operation : public operation {
         expert_forest* arg1F;
         expert_forest* arg2F;
         expert_forest* resF;
+        expert_forest* resF2;
+        expert_forest* resF3;
         opnd_type resultType;
 };
 

@@ -243,6 +243,40 @@ MEDDLY::binary_opname::getOperation(const dd_edge &a1, const dd_edge &a2,
     return match;
 }
 
+MEDDLY::binary_operation*
+MEDDLY::binary_opname::getOperationW(const dd_edge &a1, const dd_edge &a2,
+        const dd_edge &res, const dd_edge &res2,const dd_edge &res3/*, const dd_edge &res4*/)
+{
+    binary_operation* match = nullptr;
+    operation* prev = nullptr;
+    operation* curr;
+    for (curr = cache; curr; curr = curr->getNext()) {
+        match = static_cast <binary_operation*> (curr);
+        if (match->matches(a1, a2, res,res2,res3/*,res4*/)) {
+            // Move to front, unless it's already there
+            if (prev) {
+                prev->setNext(curr->getNext());
+                curr->setNext(cache);
+                cache = curr;
+            }
+            return match;
+        }
+    }
+
+    //
+    // Not found; build a new one and add it to the front
+    //
+    match = buildOperation(
+                static_cast<expert_forest*>(a1.getForest()),
+                static_cast<expert_forest*>(a2.getForest()),
+                static_cast<expert_forest*>(res.getForest())
+            );
+    match->setNext(cache);
+    cache = match;
+    return match;
+}
+
+
 // ******************************************************************
 // *                                                                *
 // *                   specialized_opname methods                   *

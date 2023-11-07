@@ -39,6 +39,27 @@ MEDDLY::binary_operation::binary_operation(binary_opname* op,
     can_commute = false;
 }
 
+MEDDLY::binary_operation::binary_operation(binary_opname* op,
+    unsigned et_slots, expert_forest* arg1, expert_forest* arg2,
+    expert_forest* res,expert_forest* res2,
+    expert_forest* res3) : operation(op, et_slots)
+{
+    arg1F = arg1;
+    arg2F = arg2;
+    resF = res;
+    resF2=res2;
+    resF3=res3;
+
+    registerInForest(arg1F);
+    registerInForest(arg2F);
+    registerInForest(resF);
+    registerInForest(resF2);
+    registerInForest(resF3);
+
+    can_commute = false;
+}
+
+
 MEDDLY::binary_operation::~binary_operation()
 {
     unregisterInForest(arg1F);
@@ -53,6 +74,17 @@ bool MEDDLY::binary_operation::matches(const dd_edge &arg1,
         arg1.isAttachedTo(arg1F) &&
         arg2.isAttachedTo(arg2F) &&
         res.isAttachedTo(resF);
+}
+
+bool MEDDLY::binary_operation::matches(const dd_edge &arg1,
+        const dd_edge &arg2, const dd_edge &res,const dd_edge &res2, const dd_edge &res3) const
+{
+    return
+        arg1.isAttachedTo(arg1F) &&
+        arg2.isAttachedTo(arg2F) &&
+        res.isAttachedTo(resF)   &&
+        res2.isAttachedTo(resF2) &&
+        res3.isAttachedTo(resF3);
 }
 
 
