@@ -109,6 +109,28 @@ class MEDDLY::domain {
             return nVars;
         }
 
+        /// @return The variable at level \a lev. Const version.
+        inline const variable* getVar(unsigned lev) const {
+            CHECK_RANGE(__FILE__, __LINE__, 1U, lev, 1+nVars);
+            return vars[lev];
+        }
+
+        /// @return The variable at level \a lev.
+        inline variable* getVar(unsigned lev) {
+            CHECK_RANGE(__FILE__, __LINE__, 1U, lev, 1+nVars);
+            return vars[lev];
+        }
+
+#ifdef ALLOW_DEPRECATED_0_17_2
+        inline variable* useVar(unsigned lev) {
+            return getVar(lev);
+        }
+        inline variable* getExpertVar(unsigned lev) {
+            return getVar(lev);
+        }
+#endif
+
+
         /** Get the specified bound of a variable.
             @param  lev     Level number, should be 1 for bottom-most
                             and getNumVariables() for top-most.
@@ -121,13 +143,59 @@ class MEDDLY::domain {
             return vars[lev]->getBound(prime);
         }
 
-    public:
+        /**
+            Enlarge the possible values for a variable.
+            This could modify all nodes in all forests, depending on the
+            choice of reduction rule.
+                @param  lev     Level number, should be 1 for bottom-most
+                                and getNumVariables() for top-most.
+
+                @param  prime   If prime is true, enlarge the bound for
+                                the primed variable only, otherwise both
+                                the primed and unprimed are enlarged.
+
+                @param  b       New bound, if less than the current bound
+                                an error code is returned.  If bound<=0,
+                                the variable is marked as extensible,
+                                with initial bound as abs(bound).
+                                Note: an extensible variable has
+                                a range [1 .. +infinity].
+        */
+        inline void enlargeVariableBound(unsigned lev, bool prime, int b) {
+            CHECK_RANGE(__FILE__, __LINE__, 1U, lev, 1+nVars);
+            vars[lev]->enlargeBound(prime, b);
+        }
+
+
+        /**
+            Shrink the possible values for a variable.
+            This could modify all nodes in all forests, depending on the
+            choice of reduction rule.
+
+                @param  lev     Level number, should be 1 for bottom-most
+                                and getNumVariables() for top-most.
+
+                @param  b       New bound.
+
+                @param  force   If \a b is too small, and information will
+                                be lost, proceed anyway if \a force is true,
+                                otherwise throw an error.
+        */
+        inline void shrinkVariableBound(unsigned lev, int b, bool force) {
+            CHECK_RANGE(__FILE__, __LINE__, 1U, lev, 1+nVars);
+            vars[lev]->shrinkBound(b, force);
+        }
+
+
+    private:
         //
         // Registry of all functions with this domain.
         // Stored as a set of FIDs.
         //
         void registerForest(forest* f);
         void unregisterForest(forest* f);
+
+        friend class forest; // calls the above two methods
 
     private:
         std::set<unsigned> forestReg;
@@ -137,8 +205,8 @@ class MEDDLY::domain {
         // TBD: reorganize below here
         //
 
-  public:
-    static const int TERMINALS;
+  // public:
+    // static const int TERMINALS;
 
   public:
     /** Create all variables at once, from the bottom up.
@@ -182,15 +250,6 @@ class MEDDLY::domain {
 
 
 
-    /// @return The variable at level \a lev.
-    inline const variable* getVar(int lev) const {
-        return vars[lev];
-    }
-
-    /// @return The variable at level \a lev.
-    inline variable* useVar(int lev) {
-        return vars[lev];
-    }
 
 
     /** Write the domain to a file in a format that can be read back later.
@@ -235,14 +294,6 @@ class MEDDLY::domain {
   private:
     bool is_marked_for_deletion;
 
-    /*
-    forest** forests;
-    unsigned szForests;
-
-    /// Find a free slot for a new forest.
-    unsigned findEmptyForestSlot();
-    */
-
     /// Mark this domain for deletion
     void markForDeletion();
 
@@ -263,27 +314,6 @@ class MEDDLY::domain {
     }
     void cleanVariableOrders();
 
-/*
-  private:
-    /// List of all domains; initialized in meddly.cc
-    static domain** dom_list;
-    /// List of free slots (same dimension as dom_list); c.f. meddly.cc
-    static int* dom_free;
-    /// Size of domain list; initialized in meddly.cc
-    static int dom_list_size;
-    /// First free slot; initialized in meddly.cc
-    static int free_list;
-    /// Index of this domain in the domain list.
-    int my_index;
-
-    static void initDomList();
-    static void expandDomList();
-    static void markDomList();
-    static void deleteDomList();
-
-  public:
-    inline int ID() const { return my_index; }
-*/
     private:
         //
         // Registry of all domains.
@@ -302,6 +332,56 @@ class MEDDLY::domain {
             Initializer_list will call initDomList() and deleteDomList().
         */
         friend class initializer_list;
+
+
+    //
+    // Ideas for future expansion.
+    //
+#if 0
+        /**
+            Insert a new variable.
+                @param  lev     Level to insert above; use 0 for a
+                                new bottom-most level.
+                @param  v       Variable to insert.
+        */
+        inline void insertVariableAboveLevel(unsigned lev, variable* v)
+        {
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+        }
+
+        /** Remove a variable at the specified level.
+            An error is thrown if the variable size is not 1.
+            Use shrinkVariableBound() to make the bound 1.
+            All forests are modified as appropriate.
+                @param  lev   Level number.
+        */
+        inline void removeVariableAtLevel(unsigned lev)
+        {
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+        }
+
+
+        /** Swap the locations of variables in forests.
+            I.e., changes the variable ordering of all forests with this domain.
+                @param  lev1    Level of first variable.
+                @param  lev2    Level of second variable.
+        */
+        inline void swapOrderOfVariables(unsigned lev1, unsigned lev2)
+        {
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+        }
+
+        /** Find the actual bound of a variable.
+                @param  lev     Level number.
+                @return         The smallest shrinkable bound before
+                                information loss for variable at level \a lev.
+        */
+        inline unsigned findVariableBound(unsigned vh) const
+        {
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+        }
+#endif
+
 };
 
 // ******************************************************************
@@ -329,20 +409,7 @@ class MEDDLY::expert_domain : public domain {
     */
     void createVariablesTopDown(const int* bounds, int N);
 
-    /** Insert a new variable.
-          @param  lev   Level to insert above; use 0 for a
-                        new bottom-most level.
-          @param  v     Variable to insert.
-    */
-    void insertVariableAboveLevel(int lev, variable* v);
 
-    /** Remove a variable at the specified level.
-        An error is thrown if the variable size is not 1.
-        Use shrinkVariableBound() to make the bound 1.
-        All forests are modified as appropriate.
-          @param  lev   Level number.
-    */
-    void removeVariableAtLevel(int lev);
 
     /** Find the level of a given variable.
           @param  v   Variable to search for.
@@ -351,8 +418,6 @@ class MEDDLY::expert_domain : public domain {
     */
     int findLevelOfVariable(const variable* v) const;
 
-    variable* getExpertVar(int lev) const;
-    const variable* readExpertVar(int lev) const;
 
     /** Add a new variable with bound 1.
       Can be used when the domain already has forests, in which case
@@ -363,47 +428,8 @@ class MEDDLY::expert_domain : public domain {
     void createVariable(int below);
 
 
-    /** Swap the locations of variables in forests.
-      I.e., changes the variable ordering of all forests with this domain.
-      @param  lev1    Level of first variable.
-      @param  lev2    Level of second variable.
-    */
-    void swapOrderOfVariables(int lev1, int lev2);
 
-    /** Find the actual bound of a variable.
-      @param  vh      Variable handle.
-      @return         The smallest shrinkable bound before information loss
-                      for variable \a vh. If \a vh is invalid, or TERMINALS,
-                      returns 0.
-    */
-    int findVariableBound(int vh) const;
 
-    /** Enlarge the possible values for a variable.
-      This could modify all nodes in all forests, depending on the
-      choice of reduction rule.
-      @param  vh     Variable handle.
-      @param  prime   If prime is true, enlarge the bound for
-                      the primed variable only, otherwise both
-                      the primed and unprimed are enlarged.
-      @param  b       New bound, if less than the current bound
-                      an error code is returned.
-                      If bound<=0, the variable is marked as extensible,
-                      with initial bound as abs(bound).
-                      Note: an extensible variable has a range [1 .. +infinity].
-    */
-    void enlargeVariableBound(int vh, bool prime, int b);
-
-    /** Shrink the possible values for a variable.
-      This could modify all nodes in all forests, depending on the
-      choice of reduction rule.
-      @param  lev     Variable handle.
-      @param  b       New bound, if more than the current bound
-                      an error code is returned.
-      @param  force   If \a b is too small, and information will be lost,
-                      proceed anyway if \a force is true, otherwise
-                      return an error code.
-    */
-    void shrinkVariableBound(int vh, int b, bool force);
 
     virtual void write(output &s) const;
     virtual void read(input &s);
@@ -418,29 +444,6 @@ class MEDDLY::expert_domain : public domain {
 // *                                                                *
 // ******************************************************************
 
-inline MEDDLY::variable*
-MEDDLY::expert_domain::getExpertVar(int lev) const
-{
-  return vars[lev];
-}
-
-inline const MEDDLY::variable*
-MEDDLY::expert_domain::readExpertVar(int lev) const
-{
-  return vars[lev];
-}
-
-inline void
-MEDDLY::expert_domain::enlargeVariableBound(int vh, bool prime, int b)
-{
-  getExpertVar(vh)->enlargeBound(prime, b);
-}
-
-inline void
-MEDDLY::expert_domain::shrinkVariableBound(int vh, int b, bool force)
-{
-  getExpertVar(vh)->shrinkBound(b, force);
-}
 
 // ******************************************************************
 // *                                                                *

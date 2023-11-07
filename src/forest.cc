@@ -105,8 +105,11 @@ void MEDDLY::forest::freeStatics()
 
 void MEDDLY::forest::registerForest(forest* f)
 {
+    // Assign global ID to f
     gfid++;
     f->fid = gfid;
+
+    // Get slot for f
     if (gfid >= max_forests) {
         // enlarge array
         unsigned newmax = max_forests * 2;
@@ -126,13 +129,20 @@ void MEDDLY::forest::registerForest(forest* f)
         max_forests = newmax;
     }
     all_forests[gfid] = f;
+
+    // Register in the domain
+    f->d->registerForest(f);
 }
 
 void MEDDLY::forest::unregisterForest(forest* f)
 {
+    // Remove from forest slot
     if (f->fid <= max_forests) {
         all_forests[f->fid] = nullptr;
     }
+
+    // Unregister in the domain
+    f->d->unregisterForest(f);
 }
 
 //
@@ -335,6 +345,11 @@ MEDDLY::forest
 ::forest(unsigned ds, domain* _d, bool rel, range_type t, edge_labeling ev,
   const policies &p,int* lrr) : deflt(p)
 {
+    d = _d;
+    isRelation = rel;
+    rangeType = t;
+    edgeLabel = ev;
+
     registerForest(this);
 
 #ifdef DEBUG_CLEANUP
@@ -344,10 +359,6 @@ MEDDLY::forest
 
   d_slot = ds;
   is_marked_for_deletion = false;
-  d = _d;
-  isRelation = rel;
-  rangeType = t;
-  edgeLabel = ev;
 
 
     if(lrr==NULL){
@@ -464,7 +475,6 @@ MEDDLY::forest::~forest()
   // to a pointer), the user program will automatically call the
   // destructor for each dd_edge when the corresponding variable goes out of
   // scope. Therefore there is no need to destruct dd_edges from here.
-  d->unregisterForest(this);
 
     unregisterForest(this);
 }

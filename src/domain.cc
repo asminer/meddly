@@ -59,13 +59,6 @@
 
 MEDDLY::domain* MEDDLY::domain::domain_list;
 
-/*
-MEDDLY::domain** MEDDLY::domain::dom_list;
-int* MEDDLY::domain::dom_free;
-int MEDDLY::domain::dom_list_size;
-int MEDDLY::domain::free_list;
-*/
-
 // ******************************************************************
 // *                                                                *
 // *                         domain methods                         *
@@ -172,7 +165,6 @@ void MEDDLY::domain::unregisterForest(forest* f)
 // Still to be reorganized
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-const int MEDDLY::domain::TERMINALS = 0;
 
 MEDDLY::domain::domain(variable** v, int N)
 {
@@ -238,51 +230,6 @@ MEDDLY::domain::~domain()
     //
 }
 
-/*
-
-void MEDDLY::domain::initDomList()
-{
-  dom_list_size = 0;
-  dom_list = 0;
-  dom_free = 0;
-  free_list = -1;
-}
-
-void MEDDLY::domain::expandDomList()
-{
-  int ndls = dom_list_size + 16;
-  domain** tmp_dl = (domain**) realloc(dom_list, ndls * sizeof(domain*));
-  if (0==tmp_dl) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  dom_list = tmp_dl;
-  int* tmp_df = (int*) realloc(dom_free, ndls * sizeof(int));
-  if (0==tmp_df) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  dom_free = tmp_df;
-  for (int i=dom_list_size; i<ndls; i++) {
-    dom_list[i] = 0;
-    dom_free[i] = i+1;
-  }
-  dom_free[ndls-1] = -1;
-  free_list = dom_list_size;
-  dom_list_size = ndls;
-}
-
-void MEDDLY::domain::markDomList()
-{
-  for (int i=0; i<dom_list_size; i++) {
-    if (dom_list[i]) dom_list[i]->markForDeletion();
-  }
-}
-
-void MEDDLY::domain::deleteDomList()
-{
-  for (int i=0; i<dom_list_size; i++) {
-    delete dom_list[i];
-  }
-  free(dom_list);
-  free(dom_free);
-  initDomList();
-}
-*/
 
 //
 // Domain list management, for real
@@ -371,7 +318,6 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, range_type t,
   } // edge label switch
 
   MEDDLY_DCASSERT(f);
-  registerForest(f);
   return f;
 }
 
@@ -409,50 +355,6 @@ void MEDDLY::domain::showInfo(output &strm)
 #endif
 }
 
-/*
-void MEDDLY::domain::unlinkForest(forest* f, unsigned slot)
-{
-  if (forests[slot] != f)
-    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-  forests[slot] = 0;
-}
-
-unsigned MEDDLY::domain::findEmptyForestSlot()
-{
-  for (unsigned slot=0; slot<szForests; slot++) {
-    if (0==forests[slot]) return slot;
-  }
-  // need to expand
-  unsigned newSize;
-  if (szForests) {
-    if (szForests > 16) newSize = szForests + 16;
-    else                newSize = szForests * 2;
-  } else {
-    newSize = 4;
-  }
-  forest** temp = (forest **) realloc(
-    forests, newSize * sizeof (expert_forest *)
-  );
-  if (0 == temp) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  forests = temp;
-  memset(forests + szForests, 0,
-      (newSize - szForests) * sizeof(expert_forest*));
-  unsigned slot = szForests;
-  szForests = newSize;
-  return slot;
-}
-
-void MEDDLY::domain::markForDeletion()
-{
-#ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Marking domain #%d for deletion\n", my_index);
-#endif
-  if (is_marked_for_deletion) return;
-  is_marked_for_deletion = true;
-  for (unsigned slot=0; slot<szForests; slot++)
-    if (forests[slot]) forests[slot]->markForDeletion();
-}
-*/
 
 void MEDDLY::domain::markForDeletion()
 {
@@ -588,15 +490,6 @@ void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
   var_orders.push_back(default_var_order);
 }
 
-void MEDDLY::expert_domain::insertVariableAboveLevel(int lev, variable* v)
-{
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-void MEDDLY::expert_domain::removeVariableAtLevel(int lev)
-{
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
 
 int MEDDLY::expert_domain::findLevelOfVariable(const variable *v) const
 {
@@ -608,19 +501,7 @@ int MEDDLY::expert_domain::findLevelOfVariable(const variable *v) const
   return i;
 }
 
-// TODO: not implemented
-void MEDDLY::expert_domain::swapOrderOfVariables(int vh1, int vh2)
-{
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
 
-// TODO: not implemented
-int MEDDLY::expert_domain::findVariableBound(int vh) const
-{
-  printf("expert_domain::findVariableBound() not implemented;");
-  printf(" use getVariableBound().\n");
-  return getVariableBound(vh, false);
-}
 
 void MEDDLY::expert_domain::write(output &s) const
 {
@@ -660,41 +541,4 @@ void MEDDLY::expert_domain::read(input &s)
   s.stripWS();
   s.consumeKeyword("mod");
 }
-
-//----------------------------------------------------------------------
-// front end - create and destroy domains
-//----------------------------------------------------------------------
-
-/*
-MEDDLY::domain* MEDDLY::createDomain(variable** vars, int N)
-{
-  if (!initializer_list::libraryIsRunning()) {
-      throw error(error::UNINITIALIZED, __FILE__, __LINE__);
-  }
-  return new expert_domain(vars, N);
-}
-
-MEDDLY::domain* MEDDLY::createDomainBottomUp(const int* bounds, int N)
-{
-  if (!initializer_list::libraryIsRunning()) {
-      throw error(error::UNINITIALIZED, __FILE__, __LINE__);
-  }
-  domain* d = new expert_domain(0, 0);
-  d->createVariablesBottomUp(bounds, N);
-  return d;
-}
-
-void MEDDLY::destroyDomain(MEDDLY::domain* &d)
-{
-  if (0==d) return;
-  if (!initializer_list::libraryIsRunning()) {
-      throw error(error::UNINITIALIZED, __FILE__, __LINE__);
-  }
-  d->markForDeletion();
-  operation::purgeAllMarked();
-  delete d;
-  d = 0;
-}
-*/
-
 
