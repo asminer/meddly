@@ -42,6 +42,24 @@
 #include <sys/time.h>
 #endif
 
+//
+// For constructing forests.
+//
+#include "forests/mtmddbool.h"
+#include "forests/mtmddint.h"
+#include "forests/mtmddreal.h"
+
+#include "forests/mtmxdbool.h"
+#include "forests/mtmxdint.h"
+#include "forests/mtmxdreal.h"
+
+#include "forests/evmdd_pluslong.h"
+#include "forests/evmdd_timesreal.h"
+
+#include "forests/evmxd_pluslong.h"
+#include "forests/evmxd_timesreal.h"
+
+
 //#include <set>
 //#include <queue>
 //#include <vector>
@@ -82,6 +100,76 @@
 MEDDLY::forest** MEDDLY::forest::all_forests;
 unsigned MEDDLY::forest::max_forests;
 unsigned MEDDLY::forest::gfid;
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Static "constructors"
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+MEDDLY::forest*
+MEDDLY::forest::create(domain* d, set_or_rel sr, range_type t,
+            edge_labeling el, const policies &p,
+            int* level_reduction_rule, int tv)
+{
+    switch (el) {
+        case edge_labeling::MULTI_TERMINAL:
+            switch (t) {
+                case range_type::BOOLEAN:
+                    if (sr)
+                        return new mt_mxd_bool(d, p, level_reduction_rule, tv);
+                    else
+                        return new mt_mdd_bool(d, p, level_reduction_rule, tv);
+
+                case range_type::INTEGER:
+                    if (sr)
+                        return new mt_mxd_int(d, p, level_reduction_rule, tv);
+                    else
+                        return new mt_mdd_int(d, p, level_reduction_rule, tv);
+
+                case range_type::REAL:
+                    if (sr)
+                        return new mt_mxd_real(d, p, level_reduction_rule, (float)tv);
+                    else
+                        return new mt_mdd_real(d, p, level_reduction_rule, (float)tv);
+
+                default:
+                    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            }; // range type switch
+            // should never get here
+            return nullptr;
+
+
+        case edge_labeling::EVPLUS:
+            if (range_type::INTEGER != t) {
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            }
+            if (sr)
+                return new evmxd_pluslong(d, p, level_reduction_rule);
+            else
+                return new evmdd_pluslong(d, p, level_reduction_rule);
+
+
+        case edge_labeling::INDEX_SET:
+            if (range_type::INTEGER != t || sr) {
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            }
+            return new evmdd_index_set_long(d, p, level_reduction_rule);
+
+
+        case edge_labeling::EVTIMES:
+            if (range_type::REAL != t || !sr) {
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            }
+            return new evmxd_timesreal(d, p);
+
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    } // edge label switch
+
+    // should never get here
+    return nullptr;
+}
+
 
 //
 // Forest registry methods

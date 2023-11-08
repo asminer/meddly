@@ -30,7 +30,6 @@ namespace MEDDLY {
     class variable_order;
 
     class domain;
-    class expert_domain;
 
     class input;
     class output;
@@ -376,42 +375,22 @@ class MEDDLY::domain {
         */
         friend class initializer_list;
 
+    public:
 
+#ifdef ALLOW_DEPRECATED_0_17_2
 
-        //
-        // TBD: reorganize below here
-        //
+        /**
+            Deprecated; use forest::create() instead.
+        */
+        forest* createForest(bool rel, range_type t, edge_labeling ev,
+                const policies &p, int* level_reduction_rule=NULL, int tv=0);
 
-  public:
+        /**
+            Deprecated; use forest::create() instead.
+        */
+        forest* createForest(bool rel, range_type t, edge_labeling ev);
 
-    /** Create a forest in this domain.
-        Conceptually, a forest is a structure used to represent a
-        collection of functions over a common domain. For simplicity
-        (although it is a slight abuse of notation) a forest may represent
-        "vectors" or "sets" over a domain, or "matrices" or "relations".
-        In case of matrices / relations, the forest uses primed and unprimed
-        versions of every variable in the domain.
-
-        @param  rel     Is this a relation / matrix, versus a set / vector.
-        @param  t       Range type of the functions, namely,
-                        booleans, integers, or reals.
-        @param  ev      Edge labeling mechanism, i.e., should this be a
-                        Multi-terminal decision diagram forest,
-                        edge-valued with plus/times decision diagram forest.
-        @param  p       Policies to use within the forest.
-        @param  tv      Transparent value.
-        @param  level_reduction_rule       Rules for reduction on different levels.
-        @return 0       if an error occurs, a new forest otherwise.
-    */
-    forest* createForest(bool rel, range_type t, edge_labeling ev,
-            const policies &p, int* level_reduction_rule=NULL, int tv=0);
-
-    /// Create a forest using the library default policies.
-    forest* createForest(bool rel, range_type t, edge_labeling ev);
-
-
-
-
+#endif
 
 
     // --------------------------------------------------------------------
@@ -489,16 +468,20 @@ class MEDDLY::domain {
 
 #ifdef ALLOW_DEPRECATED_0_17_2
 namespace MEDDLY {
+
+    /// Deprecated; use domain::create() instead.
     inline domain* createDomain(variable** vars=nullptr, unsigned N=0)
     {
         return domain::create(vars, N);
     }
 
+    /// Deprecated; use domain::create() instead.
     inline domain* createDomainBottomUp(const int* bounds, unsigned N)
     {
         return domain::createBottomUp(bounds, N);
     }
 
+    /// Deprecated; use domain::destroy() instead.
     inline void destroyDomain(domain* &d)
     {
         domain::destroy(d);

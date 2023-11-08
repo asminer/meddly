@@ -76,6 +76,51 @@ namespace MEDDLY {
 */
 class MEDDLY::forest {
 
+    // ------------------------------------------------------------
+    public: // static "constructors"
+    // ------------------------------------------------------------
+
+        /** Create a forest.
+            Conceptually, a forest is a structure used to represent a
+            collection of functions over a common domain. For simplicity
+            (although it is a slight abuse of notation) a forest may represent
+            "vectors" or "sets" over a domain, or "matrices" or "relations".
+            In case of matrices / relations, the forest uses primed and
+            unprimed versions of every variable in the domain.
+
+            @param  sr      Is this a relation / matrix, versus a set / vector.
+
+            @param  t       Range type of the functions, namely,
+                            booleans, integers, or reals.
+
+            @param  ev      Edge labeling mechanism, i.e., should this be a
+                            Multi-terminal decision diagram forest,
+                            edge-valued with plus/times decision diagram forest.
+
+            @param  p       Policies to use within the forest.
+
+            @param  level_reduction_rule
+                            Rules for reduction on different levels.
+
+            @param  tv      Transparent value.
+
+            @return nullptr if an error occurs, a new forest otherwise.
+        */
+        static forest* create(domain* d, set_or_rel sr, range_type t,
+            edge_labeling ev, const policies &p,
+            int* level_reduction_rule=nullptr, int tv=0);
+
+        /// Create a forest using the library default policies.
+        inline static forest* create(domain* d, set_or_rel sr, range_type t,
+            edge_labeling ev)
+        {
+            return create(d, sr, t, ev,
+                sr ? getDefaultPoliciesMXDs() : getDefaultPoliciesMDDs(),
+                nullptr, 0
+            );
+        }
+
+
 
     // ------------------------------------------------------------
     public: // interpreting edges in the forest

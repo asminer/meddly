@@ -16,12 +16,6 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
-// TODO: Testing.
-// TODO: Finish the advanced functions in expert_domain.
-
-
 #include "defines.h"
 #include "domain.h"
 #include "io.h"
@@ -31,24 +25,7 @@
 #include "unique_table.h"
 #include "operators.h"
 
-#if 0
-#include "forests/mdds_ext.h"
-#else
-#include "forests/mtmddbool.h"
-#include "forests/mtmddint.h"
-#include "forests/mtmddreal.h"
-
-#include "forests/mtmxdbool.h"
-#include "forests/mtmxdint.h"
-#include "forests/mtmxdreal.h"
-
-#include "forests/evmdd_pluslong.h"
-#include "forests/evmdd_timesreal.h"
-
-#include "forests/evmxd_pluslong.h"
-#include "forests/evmxd_timesreal.h"
-#endif
-
+#include "oper.h"
 
 // #define DEBUG_CLEANUP
 // #define DUMP_ON_FOREST_DESTROY
@@ -475,77 +452,24 @@ void MEDDLY::domain::deleteDomList()
     MEDDLY_DCASSERT(!domain_list);
 }
 
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Still to be reorganized
+// OLD: Forest building
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-
+#ifdef ALLOW_DEPRECATED_0_17_2
 
 MEDDLY::forest* MEDDLY::domain::createForest(bool rel, range_type t,
     edge_labeling e, const policies &p, int* level_reduction_rule, int tv)
 {
-  expert_forest* f = 0;
-
-  switch (e) {
-    case edge_labeling::MULTI_TERMINAL:
-        switch (t) {
-            case range_type::BOOLEAN:
-                if (rel)  f = new mt_mxd_bool(this, p,level_reduction_rule, tv==0 ? false : true);
-                else      f = new mt_mdd_bool(this, p,level_reduction_rule, tv==0 ? false : true);
-                break;
-
-            case range_type::INTEGER:
-                if (rel)  f = new mt_mxd_int(this, p,level_reduction_rule, tv);
-                else      f = new mt_mdd_int(this, p,level_reduction_rule, tv);
-                break;
-
-            case range_type::REAL:
-                if (rel)  f = new mt_mxd_real(this, p,level_reduction_rule, (float)tv);
-                else      f = new mt_mdd_real(this, p,level_reduction_rule, (float)tv);
-                break;
-
-            default:
-                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-        }; // range type switch
-        break;
-
-    case edge_labeling::EVPLUS:
-      if (range_type::INTEGER != t) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-      if (rel)  f = new evmxd_pluslong(this, p, level_reduction_rule);
-      else      f = new evmdd_pluslong(this, p, level_reduction_rule);
-      break;
-
-    case edge_labeling::INDEX_SET:
-      if (range_type::INTEGER != t || rel) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-      f = new evmdd_index_set_long(this, p, level_reduction_rule);
-      break;
-
-    case edge_labeling::EVTIMES:
-#if 0
-      if (range_type::REAL != t || !rel ||
-        !p.isIdentityReduced())
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-#else
-      if (range_type::REAL != t || !rel)
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-#endif
-      f = new evmxd_timesreal(this, p);
-      break;
-
-    default:
-      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-  } // edge label switch
-
-  MEDDLY_DCASSERT(f);
-  return f;
+    return forest::create(this, rel, t, e, p, level_reduction_rule, tv);
 }
 
 MEDDLY::forest*
 MEDDLY::domain
 ::createForest(bool rel, range_type t, edge_labeling e)
 {
-  return createForest(rel, t, e,
-    rel ? forest::getDefaultPoliciesMXDs() : forest::getDefaultPoliciesMDDs(),NULL, 0);
+    return forest::create(this, rel, t, e);
 }
 
-
+#endif

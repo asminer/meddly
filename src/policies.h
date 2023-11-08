@@ -115,6 +115,20 @@ namespace MEDDLY {
     const node_storage_flags SPARSE_ONLY    = 0x02;
     const node_storage_flags FULL_OR_SPARSE = 0x03;
 
+    // ******************************************************************
+    // *                         set vs relation                        *
+    // ******************************************************************
+
+    /// Set vs relation identifiers, for improved readability.
+    typedef bool set_or_rel;
+
+    const set_or_rel    SET             = false;
+    const set_or_rel    VECTOR          = false;
+    const set_or_rel    UNPRIMED_ONLY   = false;
+
+    const set_or_rel    RELATION        = true;
+    const set_or_rel    MATRIX          = true;
+    const set_or_rel    WITH_PRIMED     = true;
 
     // ******************************************************************
     // *                           range types                          *
