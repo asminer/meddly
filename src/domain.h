@@ -345,7 +345,7 @@ class MEDDLY::domain {
 
     protected:
         /// Constructor.
-        domain(variable** v, int N);
+        domain(variable** v, unsigned N);
 
         /// Destructor.
         virtual ~domain();
@@ -506,7 +506,7 @@ namespace MEDDLY {
 
     class expert_domain : public domain {
         protected:
-            expert_domain(variable** v, int N) : domain(v, N) { }
+            expert_domain(variable** v, unsigned N) : domain(v, N) { }
             virtual ~expert_domain()  { };
 
             friend class domain;

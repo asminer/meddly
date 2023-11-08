@@ -254,8 +254,8 @@ void MEDDLY::domain::createVariablesTopDown(const int* bounds, unsigned N)
     var_orders.clear();
     int* defaultOrder = new int[N + 1];
     defaultOrder[0] = 0;
-    for (int i = N; i >= 1; i--) {
-        defaultOrder[N - i + 1] = i;
+    for (unsigned i = N; i >= 1; i--) {
+        defaultOrder[N - i + 1] = int(i);
     }
     default_var_order = std::make_shared<variable_order>(defaultOrder, N);
     delete[] defaultOrder;
@@ -383,7 +383,7 @@ void MEDDLY::domain::markForDeletion()
 
 
 
-MEDDLY::domain::domain(variable** v, int N)
+MEDDLY::domain::domain(variable** v, unsigned N)
 {
     vars = v;
     nVars = N;
