@@ -19,8 +19,8 @@
 
 #include "mtmxdint.h"
 
-MEDDLY::mt_mxd_int::mt_mxd_int(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, int tv)
-: mtmxd_forest(dsl, d, range_type::INTEGER, p, level_reduction_rule)
+MEDDLY::mt_mxd_int::mt_mxd_int(domain *d, const policies &p, int* level_reduction_rule, int tv)
+: mtmxd_forest(d, range_type::INTEGER, p, level_reduction_rule)
 {
     terminal t(tv);
     setTransparentEdge(t.getHandle());

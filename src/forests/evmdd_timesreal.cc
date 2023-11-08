@@ -26,8 +26,8 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmdd_timesreal::evmdd_timesreal(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule)
- : evmdd_forest(dsl, d, range_type::REAL, edge_labeling::EVTIMES,
+MEDDLY::evmdd_timesreal::evmdd_timesreal(domain *d, const policies &p, int* level_reduction_rule)
+ : evmdd_forest(d, range_type::REAL, edge_labeling::EVTIMES,
          p, level_reduction_rule)
 {
     setFloatEdges();

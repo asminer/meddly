@@ -49,11 +49,9 @@ namespace MEDDLY {
 
 
 /** Domain class.
-    Abstract base class.
     A domain is an ordered collection of variables,
     along with a rich set of operations for adding and removing variables.
-    A variable may be shared in more than one domain
-    (see the expert interface on how to do this safely).
+    A variable may be shared in more than one domain.
 
     When a domain is destroyed, all of its forests are destroyed.
 */
@@ -128,6 +126,9 @@ class MEDDLY::domain {
         inline variable* getExpertVar(unsigned lev) {
             return getVar(lev);
         }
+        inline const variable* getExpertVar(unsigned lev) const {
+            return getVar(lev);
+        }
 #endif
 
 
@@ -139,8 +140,9 @@ class MEDDLY::domain {
             @return         The bound set for variable at level \a lev.
         */
         inline int getVariableBound(unsigned lev, bool prime = false) const {
-            CHECK_RANGE(__FILE__, __LINE__, 1U, lev, 1+nVars);
-            return vars[lev]->getBound(prime);
+            const variable* v = getVar(lev);
+            MEDDLY_DCASSERT(v);
+            return v->getBound(prime);
         }
 
         /**
@@ -162,8 +164,9 @@ class MEDDLY::domain {
                                 a range [1 .. +infinity].
         */
         inline void enlargeVariableBound(unsigned lev, bool prime, int b) {
-            CHECK_RANGE(__FILE__, __LINE__, 1U, lev, 1+nVars);
-            vars[lev]->enlargeBound(prime, b);
+            variable* v = getVar(lev);
+            MEDDLY_DCASSERT(v);
+            v->enlargeBound(prime, b);
         }
 
 
@@ -182,8 +185,9 @@ class MEDDLY::domain {
                                 otherwise throw an error.
         */
         inline void shrinkVariableBound(unsigned lev, int b, bool force) {
-            CHECK_RANGE(__FILE__, __LINE__, 1U, lev, 1+nVars);
-            vars[lev]->shrinkBound(b, force);
+            variable* v = getVar(lev);
+            MEDDLY_DCASSERT(v);
+            v->shrinkBound(b, force);
         }
 
 
@@ -194,6 +198,36 @@ class MEDDLY::domain {
         inline bool isMarkedForDeletion() const {
             return is_marked_for_deletion;
         }
+
+    public:
+        //
+        // File I/O to save and recover a domain
+
+        /**
+            Write the domain to a file in a format that can be read back later.
+                @param  s   Stream to write to
+
+                @throws     COULDNT_WRITE, if writing failed
+        */
+        void write(output &s) const;
+
+        /**
+            Initialize the domain from data in a file.
+            Allows reconstruction of a domain that we saved using \a write().
+            The domain should be empty.
+                @param  s   Stream to read from
+
+                @throws     INVALID_FILE, if the file does not match
+                            what we expect
+        */
+        void read(input &s);
+
+        /**
+            Display lots of information about the domain.
+            This is primarily for aid in debugging.
+                @param  strm    Stream to write to.
+        */
+        void showInfo(output &strm);
 
     private:
         //
@@ -261,29 +295,6 @@ class MEDDLY::domain {
 
 
 
-
-    /** Write the domain to a file in a format that can be read back later.
-          @param  s   Stream to write to
-
-          @throws     COULDNT_WRITE, if writing failed
-    */
-    virtual void write(output &s) const = 0;
-
-    /** Initialize the domain from data in a file.
-        Allows reconstruction of a domain that
-        we saved using \a write().
-        The domain should be empty.
-          @param  s   Stream to read from
-
-          @throws     INVALID_FILE, if the file does not match what we expect
-    */
-    virtual void read(input &s) = 0;
-
-    /** Display lots of information about the domain.
-        This is primarily for aid in debugging.
-        @param  strm    Stream to write to.
-    */
-    void showInfo(output &strm);
 
     // --------------------------------------------------------------------
 
@@ -434,18 +445,10 @@ class MEDDLY::expert_domain : public domain {
 
 
 
-    virtual void write(output &s) const;
-    virtual void read(input &s);
-
   protected:
     ~expert_domain();
 };
 
-// ******************************************************************
-// *                                                                *
-// *                 inlined  expert_domain methods                 *
-// *                                                                *
-// ******************************************************************
 
 
 // ******************************************************************

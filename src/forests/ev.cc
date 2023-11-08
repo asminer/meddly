@@ -29,9 +29,9 @@
 int* MEDDLY::ev_forest::order;
 int  MEDDLY::ev_forest::order_size;
 
-MEDDLY::ev_forest::ev_forest(unsigned dsl, domain *d, bool rel,
+MEDDLY::ev_forest::ev_forest(domain *d, bool rel,
   range_type t, edge_labeling ev, const policies &p, int* level_reduction_rule)
-: expert_forest(dsl, d, rel, t, ev, p, level_reduction_rule)
+: expert_forest(d, rel, t, ev, p, level_reduction_rule)
 {
   MEDDLY_DCASSERT(ev != edge_labeling::MULTI_TERMINAL);
 }

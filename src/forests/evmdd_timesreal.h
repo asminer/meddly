@@ -44,7 +44,7 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
     };
 
   public:
-    evmdd_timesreal(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule=NULL);
+    evmdd_timesreal(domain *d, const policies &p, int* level_reduction_rule=NULL);
     ~evmdd_timesreal();
 
     virtual void createEdge(float val, dd_edge &e);

@@ -23,8 +23,8 @@
 #include "../unique_table.h"
 
 MEDDLY::mtmxd_forest
-::mtmxd_forest(unsigned dsl, domain* d, range_type t, const policies &p, int* level_reduction_rule)
- : mt_forest(dsl, d, true, t, p, level_reduction_rule)
+::mtmxd_forest(domain* d, range_type t, const policies &p, int* level_reduction_rule)
+ : mt_forest(d, true, t, p, level_reduction_rule)
 {
   // anything to construct?
 }

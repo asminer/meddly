@@ -43,7 +43,7 @@ namespace MEDDLY {
 */
 class MEDDLY::mt_forest : public expert_forest {
   protected:
-    mt_forest(unsigned dsl, domain *d, bool rel, range_type t, const policies &p, int* level_reduction_rule=NULL);
+    mt_forest(domain *d, bool rel, range_type t, const policies &p, int* level_reduction_rule=NULL);
 
   public:
     virtual bool isRedundant(const unpacked_node &nb) const;

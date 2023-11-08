@@ -19,8 +19,8 @@
 
 #include "mtmxdbool.h"
 
-MEDDLY::mt_mxd_bool::mt_mxd_bool(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, bool tv)
-: mtmxd_forest(dsl, d, range_type::BOOLEAN, p, level_reduction_rule)
+MEDDLY::mt_mxd_bool::mt_mxd_bool(domain *d, const policies &p, int* level_reduction_rule, bool tv)
+: mtmxd_forest(d, range_type::BOOLEAN, p, level_reduction_rule)
 {
     terminal t(tv);
     setTransparentEdge(t.getHandle());

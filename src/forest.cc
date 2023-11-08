@@ -342,7 +342,7 @@ MEDDLY::policies MEDDLY::forest::mxdDefaults;
 
 
 MEDDLY::forest
-::forest(unsigned ds, domain* _d, bool rel, range_type t, edge_labeling ev,
+::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
   const policies &p,int* lrr) : deflt(p)
 {
     d = _d;
@@ -357,7 +357,6 @@ MEDDLY::forest
 #endif
 
 
-  d_slot = ds;
   is_marked_for_deletion = false;
 
 
@@ -456,9 +455,6 @@ MEDDLY::forest
 
 MEDDLY::forest::~forest()
 {
-#ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Deleting forest #%u in domain #%d\n", d_slot, d->ID());
-#endif
   // operations are deleted elsewhere...
   free(opCount);
 
@@ -481,9 +477,6 @@ MEDDLY::forest::~forest()
 
 void MEDDLY::forest::markForDeletion()
 {
-#ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Marking forest #%d for deletion in domain #%d\n", d_slot, d->ID());
-#endif
   if (is_marked_for_deletion) return;
   is_marked_for_deletion = true;
   // deal with operations associated with this forest
@@ -818,9 +811,9 @@ const unsigned int MEDDLY::expert_forest::SHOW_INDEX        = 0x02;
 const unsigned int MEDDLY::expert_forest::SHOW_TERMINALS    = 0x01;
 
 
-MEDDLY::expert_forest::expert_forest(int ds, domain *d, bool rel, range_type t,
+MEDDLY::expert_forest::expert_forest(domain *d, bool rel, range_type t,
   edge_labeling ev, const policies &p, int* level_reduction_rule)
-: forest(ds, d, rel, t, ev, p, level_reduction_rule), nodeHeaders(*this)
+: forest(d, rel, t, ev, p, level_reduction_rule), nodeHeaders(*this)
 {
   nodeHeaders.setPessimistic(isPessimistic());
 

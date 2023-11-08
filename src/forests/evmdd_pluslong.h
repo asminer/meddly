@@ -45,7 +45,7 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
     };
 
   public:
-    evmdd_pluslong(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule=NULL, bool index_set=false);
+    evmdd_pluslong(domain *d, const policies &p, int* level_reduction_rule=NULL, bool index_set=false);
     ~evmdd_pluslong();
 
     virtual void createEdge(long val, dd_edge &e);
@@ -88,7 +88,7 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
 
 class MEDDLY::evmdd_index_set_long : public evmdd_pluslong {
   public:
-    evmdd_index_set_long(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule);
+    evmdd_index_set_long(domain *d, const policies &p, int* level_reduction_rule);
     ~evmdd_index_set_long();
 
     virtual void getElement(const dd_edge& a, int index, int* e);

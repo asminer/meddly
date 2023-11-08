@@ -20,8 +20,8 @@
 #include "mtmddbool.h"
 #include "../terminal.h"
 
-MEDDLY::mt_mdd_bool::mt_mdd_bool(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, bool tv)
-: mtmdd_forest(dsl, d, range_type::BOOLEAN, p, level_reduction_rule)
+MEDDLY::mt_mdd_bool::mt_mdd_bool(domain *d, const policies &p, int* level_reduction_rule, bool tv)
+: mtmdd_forest(d, range_type::BOOLEAN, p, level_reduction_rule)
 {
     terminal t(tv);
     setTransparentEdge(t.getHandle());

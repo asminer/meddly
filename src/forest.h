@@ -495,7 +495,6 @@ class MEDDLY::forest {
 
   protected:
     /** Constructor -- this class cannot be instantiated.
-      @param  dslot   slot used to store the forest, in the domain
       @param  d       domain to which this forest belongs to.
       @param  rel     does this forest represent a relation.
       @param  t       the range of the functions represented in this forest.
@@ -503,7 +502,7 @@ class MEDDLY::forest {
       @param  p       Polcies for reduction, storage, deletion.
       @param  level_reduction_rule       Rules for reduction on different levels.
     */
-    forest(unsigned dslot, domain* d, bool rel, range_type t, edge_labeling ev,
+    forest(domain* d, bool rel, range_type t, edge_labeling ev,
       const policies &p, int* level_reduction_rule);
 
     /// Destructor.
@@ -1254,7 +1253,6 @@ public:
 
   private:  // Domain info
     friend class domain;
-    unsigned d_slot;
     domain* d;
 
   private:  // For operation registration
@@ -1611,7 +1609,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     friend class reordering_base;
 
     /** Constructor.
-      @param  dslot   slot used to store the forest, in the domain
       @param  d       domain to which this forest belongs to.
       @param  rel     does this forest represent a relation.
       @param  t       the range of the functions represented in this forest.
@@ -1619,7 +1616,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
       @param  p       Polcies for reduction, storage, deletion.
       @param  level_reduction_rule       Rules for reduction on different levels.
     */
-    expert_forest(int dslot, domain *d, bool rel, range_type t,
+    expert_forest(domain *d, bool rel, range_type t,
                   edge_labeling ev, const policies &p, int* level_reduction_rule);
 
   // ------------------------------------------------------------

@@ -19,8 +19,8 @@
 
 #include "mtmddreal.h"
 
-MEDDLY::mt_mdd_real::mt_mdd_real(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule, float tv)
-: mtmdd_forest(dsl, d, range_type::REAL, p, level_reduction_rule)
+MEDDLY::mt_mdd_real::mt_mdd_real(domain *d, const policies &p, int* level_reduction_rule, float tv)
+: mtmdd_forest(d, range_type::REAL, p, level_reduction_rule)
 {
     terminal t(tv);
     setTransparentEdge(t.getHandle());

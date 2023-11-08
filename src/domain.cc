@@ -134,6 +134,67 @@ void MEDDLY::domain::testMarkAllDomains(bool mark)
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// I/O methods
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+void MEDDLY::domain::write(output &s) const
+{
+    s << "dom\n" << nVars << "\n";
+    for (unsigned i=nVars; i; i--) {
+        s.put(long(vars[i]->getBound(false)));
+        s.put(' ');
+        MEDDLY_DCASSERT(vars[i]->getBound(false) == vars[i]->getBound(true));
+    }
+    s << "\nmod\n";
+}
+
+void MEDDLY::domain::read(input &s)
+{
+    // domain must be empty -- no variables defined so far
+    if (!forestReg.empty() || nVars) {
+        throw error(error::DOMAIN_NOT_EMPTY, __FILE__, __LINE__);
+    }
+
+    s.stripWS();
+    s.consumeKeyword("dom");
+    s.stripWS();
+    nVars = unsigned(s.get_integer());
+    if (nVars) {
+        vars = new variable*[1+nVars];
+        vars[0] = nullptr;
+    } else {
+        vars = nullptr;
+    }
+    for (unsigned i=nVars; i; i--) {
+        s.stripWS();
+        long bound = s.get_integer();
+        vars[nVars-i+1] = new variable(bound, nullptr);
+        vars[i]->addToList(this);
+    }
+    s.stripWS();
+    s.consumeKeyword("mod");
+}
+
+void MEDDLY::domain::showInfo(output &strm)
+{
+    // list variables handles, their bounds and heights.
+    strm << "Domain info:\n";
+    strm << "  #variables: " << nVars << "\n";
+    strm << "  Variables listed in height-order (ascending):\n";
+    strm << "    height\t\tname\t\textensible\t\tbound\t\tprime-bound\n";
+    for (unsigned i = 1; i < nVars + 1; ++i) {
+        const char* name = vars[i]->getName();
+        if (!name) name = "null";
+        strm    << "    " << i << "\t\t" << name
+                << "\t\t" << (vars[i]->isExtensible()? "yes": "no")
+                << "\t\t" << vars[i]->getBound(false)
+                << "\t\t" << vars[i]->getBound(true) << "\n";
+  }
+}
+
+
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Forest registry.
 // Not inlined to hide forest details from our header file.
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -263,26 +324,24 @@ void MEDDLY::domain::deleteDomList()
 MEDDLY::forest* MEDDLY::domain::createForest(bool rel, range_type t,
     edge_labeling e, const policies &p, int* level_reduction_rule, int tv)
 {
-  unsigned slot = 0;    // TBD: remove this from forest constructors
-
   expert_forest* f = 0;
 
   switch (e) {
     case edge_labeling::MULTI_TERMINAL:
         switch (t) {
             case range_type::BOOLEAN:
-                if (rel)  f = new mt_mxd_bool(slot, this, p,level_reduction_rule, tv==0 ? false : true);
-                else      f = new mt_mdd_bool(slot, this, p,level_reduction_rule, tv==0 ? false : true);
+                if (rel)  f = new mt_mxd_bool(this, p,level_reduction_rule, tv==0 ? false : true);
+                else      f = new mt_mdd_bool(this, p,level_reduction_rule, tv==0 ? false : true);
                 break;
 
             case range_type::INTEGER:
-                if (rel)  f = new mt_mxd_int(slot, this, p,level_reduction_rule, tv);
-                else      f = new mt_mdd_int(slot, this, p,level_reduction_rule, tv);
+                if (rel)  f = new mt_mxd_int(this, p,level_reduction_rule, tv);
+                else      f = new mt_mdd_int(this, p,level_reduction_rule, tv);
                 break;
 
             case range_type::REAL:
-                if (rel)  f = new mt_mxd_real(slot, this, p,level_reduction_rule, (float)tv);
-                else      f = new mt_mdd_real(slot, this, p,level_reduction_rule, (float)tv);
+                if (rel)  f = new mt_mxd_real(this, p,level_reduction_rule, (float)tv);
+                else      f = new mt_mdd_real(this, p,level_reduction_rule, (float)tv);
                 break;
 
             default:
@@ -292,13 +351,13 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, range_type t,
 
     case edge_labeling::EVPLUS:
       if (range_type::INTEGER != t) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-      if (rel)  f = new evmxd_pluslong(slot, this, p, level_reduction_rule);
-      else      f = new evmdd_pluslong(slot, this, p, level_reduction_rule);
+      if (rel)  f = new evmxd_pluslong(this, p, level_reduction_rule);
+      else      f = new evmdd_pluslong(this, p, level_reduction_rule);
       break;
 
     case edge_labeling::INDEX_SET:
       if (range_type::INTEGER != t || rel) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-      f = new evmdd_index_set_long(slot, this, p, level_reduction_rule);
+      f = new evmdd_index_set_long(this, p, level_reduction_rule);
       break;
 
     case edge_labeling::EVTIMES:
@@ -310,7 +369,7 @@ MEDDLY::forest* MEDDLY::domain::createForest(bool rel, range_type t,
       if (range_type::REAL != t || !rel)
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 #endif
-      f = new evmxd_timesreal(slot, this, p);
+      f = new evmxd_timesreal(this, p);
       break;
 
     default:
@@ -327,32 +386,6 @@ MEDDLY::domain
 {
   return createForest(rel, t, e,
     rel ? forest::getDefaultPoliciesMXDs() : forest::getDefaultPoliciesMDDs(),NULL, 0);
-}
-
-
-void MEDDLY::domain::showInfo(output &strm)
-{
-  // list variables handles, their bounds and heights.
-  strm << "Domain info:\n";
-  strm << "  #variables: " << nVars << "\n";
-  strm << "  Variables listed in height-order (ascending):\n";
-  strm << "    height\t\tname\t\textensible\t\tbound\t\tprime-bound\n";
-  for (int i = 1; i < nVars + 1; ++i) {
-    const char* name = vars[i]->getName();
-    if (0==name) name = "null";
-    strm  << "    " << i << "\t\t" << name
-          << "\t\t" << (vars[i]->isExtensible()? "yes": "no")
-          << "\t\t" << vars[i]->getBound(false)
-          << "\t\t" << vars[i]->getBound(true) << "\n";
-  }
-
-#if 0
-  // call showNodes for each of the forests in this domain.
-  for (unsigned i = 0; i < szForests; i++) {
-    if (forests[i] != 0)
-      forests[i]->showInfo(strm, 2);
-  }
-#endif
 }
 
 
@@ -502,43 +535,4 @@ int MEDDLY::expert_domain::findLevelOfVariable(const variable *v) const
 }
 
 
-
-void MEDDLY::expert_domain::write(output &s) const
-{
-  s << "dom\n" << nVars << "\n";
-  for (int i=nVars; i; i--) {
-    s.put(long(vars[i]->getBound(false)));
-    s.put(' ');
-    MEDDLY_DCASSERT(vars[i]->getBound(false) == vars[i]->getBound(true));
-  }
-  s << "\nmod\n";
-}
-
-void MEDDLY::expert_domain::read(input &s)
-{
-  // domain must be empty -- no variables defined so far
-  if (hasForests() || nVars != 0)
-    throw error(error::DOMAIN_NOT_EMPTY, __FILE__, __LINE__);
-
-  s.stripWS();
-  s.consumeKeyword("dom");
-  s.stripWS();
-  nVars = s.get_integer();
-  if (nVars) {
-    vars = (variable**) malloc((1+nVars) * sizeof(void*));
-    if (0==vars) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  } else {
-    vars = 0;
-  }
-  vars[0] = 0;
-  for (int i=nVars; i; i--) {
-    long bound;
-    s.stripWS();
-    bound = s.get_integer();
-    vars[nVars-i+1] = MEDDLY::createVariable(bound, 0);
-    vars[i]->addToList(this);
-  }
-  s.stripWS();
-  s.consumeKeyword("mod");
-}
 

@@ -33,9 +33,9 @@
 int* MEDDLY::mt_forest::order;
 int  MEDDLY::mt_forest::order_size;
 
-MEDDLY::mt_forest::mt_forest(unsigned dsl, domain *d, bool rel,
+MEDDLY::mt_forest::mt_forest(domain *d, bool rel,
   range_type t, const policies &p, int* level_reduction_rule)
-: expert_forest(dsl, d, rel, t, edge_labeling::MULTI_TERMINAL,
+: expert_forest(d, rel, t, edge_labeling::MULTI_TERMINAL,
         p, level_reduction_rule)
 {
     setVoidEdges();

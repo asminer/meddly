@@ -26,8 +26,8 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmxd_pluslong::evmxd_pluslong(unsigned dsl, domain *d, const policies &p, int* level_reduction_rule)
- : evmxd_forest(dsl, d, range_type::INTEGER, edge_labeling::EVPLUS,
+MEDDLY::evmxd_pluslong::evmxd_pluslong(domain *d, const policies &p, int* level_reduction_rule)
+ : evmxd_forest(d, range_type::INTEGER, edge_labeling::EVPLUS,
          p, level_reduction_rule)
 {
     setLongEdges();
