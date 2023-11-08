@@ -277,9 +277,18 @@ class MEDDLY::domain {
         */
         unsigned findLevelOfVariable(const variable* v) const;
 
+    private:
+        //
+        // Variable ordering/reordering members
+        //
+
+        // var_orders[0] is reserved to store the default variable order
+        std::vector< std::shared_ptr<const variable_order> > var_orders;
+        std::shared_ptr<const variable_order> default_var_order;
+
     public:
         //
-        // Variable ordering/reordering
+        // Variable ordering/reordering methods
         //
 
         std::shared_ptr<const variable_order> makeVariableOrder(const int* order);
@@ -290,6 +299,10 @@ class MEDDLY::domain {
         void cleanVariableOrders();
 
     private:
+        //
+        // Forest registry members
+        //
+
         /// Registry of all functions with this domain.
         /// Stored as a set of FIDs.
         std::set<unsigned> forestReg;
@@ -299,6 +312,10 @@ class MEDDLY::domain {
 
 
     private:
+        //
+        // Forest registry methods
+        //
+
         /// Does the registry contain any forests?
         inline bool hasForests() const {
             return !forestReg.empty();
@@ -324,6 +341,40 @@ class MEDDLY::domain {
         inline bool isMarkedForDeletion() const {
             return is_marked_for_deletion;
         }
+
+
+    protected:
+        /// Constructor.
+        domain(variable** v, int N);
+
+        /// Destructor.
+        virtual ~domain();
+
+
+    private:
+        //
+        // Members and methods for the registry of all domains.
+        //
+
+        /// domain before us in the registry
+        domain* prev;
+        /// domain after us in the registry
+        domain* next;
+
+        /// Global domain registry
+        static domain* domain_list;
+
+        /// Initialize the domain registry (on library initialization)
+        static void initDomList();
+        /// Mark all domains in the registry
+        static void markDomList();
+        /// Delete all domains in the registry (on library cleanup)
+        static void deleteDomList();
+
+        /*
+            Initializer_list will call initDomList() and deleteDomList().
+        */
+        friend class initializer_list;
 
 
 
@@ -362,50 +413,12 @@ class MEDDLY::domain {
 
 
 
+
     // --------------------------------------------------------------------
-
-  protected:
-    /// Constructor.
-    domain(variable** v, int N);
-
-    /// Destructor.
-    virtual ~domain();
-
-  private:
-
-
-    // var_orders[0] is reserved to store the default variable order
-    std::vector< std::shared_ptr<const variable_order> > var_orders;
-    std::shared_ptr<const variable_order> default_var_order;
-
-
-
-  public:
-
-
-    private:
-        //
-        // Registry of all domains.
-        // Kept as a doubly-linked list.
-        //
-        domain* prev;
-        domain* next;
-
-        static domain* domain_list;
-
-        static void initDomList();
-        static void markDomList();
-        static void deleteDomList();
-
-        /*
-            Initializer_list will call initDomList() and deleteDomList().
-        */
-        friend class initializer_list;
-
-
     //
     // Ideas for future expansion.
     //
+
 #if 0
         /**
             Insert a new variable.
@@ -496,7 +509,7 @@ namespace MEDDLY {
             expert_domain(variable** v, int N) : domain(v, N) { }
             virtual ~expert_domain()  { };
 
-        friend class domain;
+            friend class domain;
     };
 };
 #endif

@@ -74,7 +74,11 @@ MEDDLY::domain* MEDDLY::domain::create(variable** vars, unsigned N)
     if (!initializer_list::libraryIsRunning()) {
         throw error(error::UNINITIALIZED, __FILE__, __LINE__);
     }
+#ifdef ALLOW_DEPRECATED_0_17_2
     return new expert_domain(vars, N);
+#else
+    return new domain(vars, N);
+#endif
 }
 
 MEDDLY::domain* MEDDLY::domain::createBottomUp(const int* bounds, unsigned N)
@@ -82,7 +86,11 @@ MEDDLY::domain* MEDDLY::domain::createBottomUp(const int* bounds, unsigned N)
     if (!initializer_list::libraryIsRunning()) {
         throw error(error::UNINITIALIZED, __FILE__, __LINE__);
     }
+#ifdef ALLOW_DEPRECATED_0_17_2
     domain* d = new expert_domain(nullptr, 0);
+#else
+    domain* d = new domain(nullptr, 0);
+#endif
     d->createVariablesBottomUp(bounds, N);
     return d;
 }
@@ -370,8 +378,9 @@ void MEDDLY::domain::markForDeletion()
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Still to be reorganized
+// domain constructor/destructor
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 
 MEDDLY::domain::domain(variable** v, int N)
@@ -439,9 +448,10 @@ MEDDLY::domain::~domain()
 }
 
 
-//
-// Domain list management, for real
-//
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Domain registry
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 void MEDDLY::domain::initDomList()
 {
@@ -465,6 +475,9 @@ void MEDDLY::domain::deleteDomList()
     MEDDLY_DCASSERT(!domain_list);
 }
 
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Still to be reorganized
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
 
