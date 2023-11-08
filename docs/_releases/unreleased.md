@@ -11,9 +11,6 @@ layout: single
 
 * ```terminal```: object for terminal nodes.
 
-### Updated objects
-
-
 ### Interface changes
 
 Uncomment ```ALLOW_DEPRECATED_0_17_2``` in ```defines.h```
@@ -32,6 +29,9 @@ This is intended to help developers migrate to the new interface.
 *   The ```expert_domain``` class has been merged into ```domain```.
 
 *   Removed ```domain::getExpertVar()```; use ```domain::getVar()``` instead.
+
+*   Methods ```domain::createForest()``` should be replaced with
+    ```forest::create()```.
 
 ### Implementation
 
