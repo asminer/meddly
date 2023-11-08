@@ -133,6 +133,7 @@ void MEDDLY::domain::testMarkAllDomains(bool mark)
     }
 }
 
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // I/O methods
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -350,6 +351,24 @@ void MEDDLY::domain::unregisterForest(forest* f)
     forestReg.erase(f->FID());
 }
 
+void MEDDLY::domain::markForDeletion()
+{
+    if (is_marked_for_deletion) return;
+#ifdef DEBUG_CLEANUP
+    std::cerr << "Marking domain " << this << " for deletion\n";
+#endif
+    is_marked_for_deletion = true;
+
+
+    for (auto it = forestReg.begin(); it != forestReg.end(); ++it) {
+        forest* f = forest::getForestWithID(*it);
+        if (f) {
+            f->markForDeletion();
+        }
+    }
+}
+
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Still to be reorganized
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -514,24 +533,6 @@ MEDDLY::domain
 {
   return createForest(rel, t, e,
     rel ? forest::getDefaultPoliciesMXDs() : forest::getDefaultPoliciesMDDs(),NULL, 0);
-}
-
-
-void MEDDLY::domain::markForDeletion()
-{
-    if (is_marked_for_deletion) return;
-#ifdef DEBUG_CLEANUP
-    std::cerr << "Marking domain " << this << " for deletion\n";
-#endif
-    is_marked_for_deletion = true;
-
-
-    for (auto it = forestReg.begin(); it != forestReg.end(); ++it) {
-        forest* f = forest::getForestWithID(*it);
-        if (f) {
-            f->markForDeletion();
-        }
-    }
 }
 
 

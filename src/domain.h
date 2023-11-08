@@ -97,6 +97,15 @@ class MEDDLY::domain {
         */
         static void testMarkAllDomains(bool mark);
 
+    private:
+        /// Number of variables.
+        unsigned nVars;
+
+        /// Array of pointers to variables.
+        /// Dimension is 1+nVars and element 0 is always null,
+        /// so that vars[level] gives the variable for a given level.
+        variable** vars;
+
     public:
         //
         // Inlined Getters for variables and variable information.
@@ -191,14 +200,6 @@ class MEDDLY::domain {
         }
 
 
-        /** Are we marked for deletion?
-            Not sure if this is useful anywhere; right now it is used
-            only for testing the domain list
-        */
-        inline bool isMarkedForDeletion() const {
-            return is_marked_for_deletion;
-        }
-
     public:
         //
         // File I/O to save and recover a domain
@@ -289,21 +290,41 @@ class MEDDLY::domain {
         void cleanVariableOrders();
 
     private:
-        //
-        // Registry of all functions with this domain.
-        // Stored as a set of FIDs.
-        //
-        void registerForest(forest* f);
-        void unregisterForest(forest* f);
+        /// Registry of all functions with this domain.
+        /// Stored as a set of FIDs.
+        std::set<unsigned> forestReg;
 
-        friend class forest; // calls the above two methods
+        /// Are we about to delete the domain.
+        bool is_marked_for_deletion;
 
+
+    private:
+        /// Does the registry contain any forests?
         inline bool hasForests() const {
             return !forestReg.empty();
         }
 
-    private:
-        std::set<unsigned> forestReg;
+        /// Add f to the forest registry.
+        void registerForest(forest* f);
+
+        /// Remove f from the forest registry.
+        void unregisterForest(forest* f);
+
+        friend class forest; // calls the above two methods
+
+        /// Mark this domain, and all forests in our registry, for deletion
+        void markForDeletion();
+
+    public:
+
+        /** Are we marked for deletion?
+            Not sure if this is useful anywhere; right now it is used
+            only for testing the domain list
+        */
+        inline bool isMarkedForDeletion() const {
+            return is_marked_for_deletion;
+        }
+
 
 
         //
@@ -352,18 +373,11 @@ class MEDDLY::domain {
 
   private:
 
-    variable** vars;
-    unsigned nVars;
 
     // var_orders[0] is reserved to store the default variable order
     std::vector< std::shared_ptr<const variable_order> > var_orders;
     std::shared_ptr<const variable_order> default_var_order;
 
-  private:
-    bool is_marked_for_deletion;
-
-    /// Mark this domain for deletion
-    void markForDeletion();
 
 
   public:
