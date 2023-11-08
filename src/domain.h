@@ -202,6 +202,7 @@ class MEDDLY::domain {
     public:
         //
         // File I/O to save and recover a domain
+        //
 
         /**
             Write the domain to a file in a format that can be read back later.
@@ -229,6 +230,52 @@ class MEDDLY::domain {
         */
         void showInfo(output &strm);
 
+    public:
+        //
+        // Domain building
+        //
+
+        /**
+            Create all variables at once, from the bottom up.
+            Requires the domain to be "empty" (containing no variables or
+            forests).
+
+                @param  bounds  variable bounds.  bounds[i] gives the bound
+                                for the variable at level i+1.  If bound<=0,
+                                the variable is marked as extensible,
+                                with initial bound as abs(bound).
+                                Note: an extensible variable has a
+                                range [1 .. +infinity].
+
+                @param  N       Number of variables.
+        */
+        void createVariablesBottomUp(const int* bounds, unsigned N);
+
+        /**
+            Create all variables at once, from the top down.
+            Requires the domain to be "empty" (containing no variables or
+            forests).
+
+                @param  bounds  Current variable bounds.  bounds[0] gives
+                                the bound for the top-most variable, and
+                                bounds[N-1] gives the bound for the bottom-most
+                                variable.  If bound<=0, the variable is marked
+                                as extensible, with initial bound as abs(bound).
+                                Note: an extensible variable has a
+                                range [1 .. +infinity].
+
+                @param  N       Number of variables.
+        */
+        void createVariablesTopDown(const int* bounds, unsigned N);
+
+        /** Find the level of a given variable.
+                @param  v   Variable to search for.
+
+                @return 0,  if the variable was not found;
+                        i,  with getVar(i) == v, otherwise.
+        */
+        unsigned findLevelOfVariable(const variable* v) const;
+
     private:
         //
         // Registry of all functions with this domain.
@@ -253,19 +300,6 @@ class MEDDLY::domain {
         //
 
   public:
-    /** Create all variables at once, from the bottom up.
-        Requires the domain to be "empty" (containing no variables or
-        forests).
-
-        @param  bounds  variable bounds.
-                        bounds[i] gives the bound for the variable
-                        at level i+1.
-                        If bound<=0, the variable is marked as extensible,
-                        with initial bound as abs(bound).
-                        Note: an extensible variable has a range [1 .. +infinity].
-        @param  N       Number of variables.
-    */
-    virtual void createVariablesBottomUp(const int* bounds, int N) = 0;
 
     /** Create a forest in this domain.
         Conceptually, a forest is a structure used to represent a
@@ -363,6 +397,19 @@ class MEDDLY::domain {
             throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
         }
 
+        /**
+            Add a new variable with bound 1.
+            Can be used when the domain already has forests, in which case
+            all forests are modified as appropriate.
+                @param  below   Placement information: the new variable will
+                                appear immediately above the level \a below.
+        */
+        inline void createVariable(int below)
+        {
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+        }
+
+
         /** Remove a variable at the specified level.
             An error is thrown if the variable size is not 1.
             Use shrinkVariableBound() to make the bound 1.
@@ -398,57 +445,6 @@ class MEDDLY::domain {
 
 };
 
-// ******************************************************************
-// *                                                                *
-// *                      expert_domain  class                      *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::expert_domain : public domain {
-  public:
-    expert_domain(variable**, int);
-
-    virtual void createVariablesBottomUp(const int* bounds, int N);
-
-    /** Create all variables at once, from the top down.
-      Requires the domain to be "empty" (containing no variables or forests).
-      @param  bounds  Current variable bounds.
-                      bounds[0] gives the bound for the top-most variable,
-                      and bounds[N-1] gives the bound for the bottom-most
-                      variable.
-                      If bound<=0, the variable is marked as extensible,
-                      with initial bound as abs(bound).
-                      Note: an extensible variable has a range [1 .. +infinity].
-      @param  N       Number of variables.
-    */
-    void createVariablesTopDown(const int* bounds, int N);
-
-
-
-    /** Find the level of a given variable.
-          @param  v   Variable to search for.
-          @return 0, if the variable was not found;
-                  i, with getVar(i) == v, otherwise.
-    */
-    int findLevelOfVariable(const variable* v) const;
-
-
-    /** Add a new variable with bound 1.
-      Can be used when the domain already has forests, in which case
-      all forests are modified as appropriate.
-      @param  below   Placement information: the new variable will appear
-                      immediately above the level \a below.
-    */
-    void createVariable(int below);
-
-
-
-
-
-  protected:
-    ~expert_domain();
-};
-
 
 
 // ******************************************************************
@@ -473,6 +469,14 @@ namespace MEDDLY {
     {
         domain::destroy(d);
     }
+
+    class expert_domain : public domain {
+        protected:
+            expert_domain(variable** v, int N) : domain(v, N) { }
+            virtual ~expert_domain()  { };
+
+        friend class domain;
+    };
 };
 #endif
 

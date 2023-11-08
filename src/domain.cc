@@ -192,6 +192,79 @@ void MEDDLY::domain::showInfo(output &strm)
   }
 }
 
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Domain building
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+void MEDDLY::domain::createVariablesBottomUp(const int* bounds, unsigned N)
+{
+    // domain must be empty -- no variables defined so far
+    if (hasForests() || nVars != 0) {
+        throw error(error::DOMAIN_NOT_EMPTY, __FILE__, __LINE__);
+    }
+
+    vars = new variable*[1+N];
+    nVars = N;
+
+    vars[0] = nullptr;
+    for (unsigned i=1; i<=N; i++) {
+        vars[i] = new variable(bounds[i-1], nullptr);
+        vars[i]->addToList(this);
+    }
+
+    // Create the default variable order
+    var_orders.clear();
+    int* defaultOrder = new int[N + 1];
+    defaultOrder[0] = 0;
+    for (int i = 1; i <= N; i++) {
+        defaultOrder[i] = i;
+    }
+    default_var_order = std::make_shared<variable_order>(defaultOrder, N);
+    delete[] defaultOrder;
+    var_orders.push_back(default_var_order);
+}
+
+
+void MEDDLY::domain::createVariablesTopDown(const int* bounds, unsigned N)
+{
+    // domain must be empty -- no variables defined so far
+    if (hasForests() || nVars != 0) {
+        throw error(error::DOMAIN_NOT_EMPTY, __FILE__, __LINE__);
+    }
+
+    vars = new variable*[1+N];
+    nVars = N;
+
+    vars[0] = nullptr;
+    for (unsigned i=N; i; i--) {
+        vars[N-i+1] = MEDDLY::createVariable(bounds[i], 0);
+        vars[i]->addToList(this);
+    }
+
+    // Create the default variable order
+    var_orders.clear();
+    int* defaultOrder = new int[N + 1];
+    defaultOrder[0] = 0;
+    for (int i = N; i >= 1; i--) {
+        defaultOrder[N - i + 1] = i;
+    }
+    default_var_order = std::make_shared<variable_order>(defaultOrder, N);
+    delete[] defaultOrder;
+    var_orders.push_back(default_var_order);
+}
+
+
+unsigned MEDDLY::domain::findLevelOfVariable(const variable *v) const
+{
+    // TBD: more efficient implementation based on binary search?
+    unsigned i;
+    for (i=nVars; i; i--) {
+        if (vars[i] == v) break;
+    }
+    return i;
+}
+
+
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -283,7 +356,7 @@ MEDDLY::domain::~domain()
     for (int i=1; i<=nVars; i++) {
         vars[i]->removeFromList(this);
     }
-    free(vars);
+    delete[] vars;
 
     //
     // DON'T remove myself from the master list
@@ -451,88 +524,4 @@ void MEDDLY::domain::cleanVariableOrders()
     }
   }
 }
-
-// ----------------------------------------------------------------------
-// expert_domain
-// ----------------------------------------------------------------------
-
-MEDDLY::expert_domain::expert_domain(variable** x, int n)
-: domain(x, n)
-{
-}
-
-
-MEDDLY::expert_domain::~expert_domain()
-{
-}
-
-void MEDDLY::expert_domain::createVariablesBottomUp(const int* bounds, int N)
-{
-  // domain must be empty -- no variables defined so far
-  if (hasForests() || nVars != 0)
-    throw error(error::DOMAIN_NOT_EMPTY, __FILE__, __LINE__);
-
-  vars = (variable**) malloc((1+N) * sizeof(void*));
-  if (0==vars) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  nVars = N;
-
-  vars[0] = 0;
-  for (int i=1; i<=N; i++) {
-    vars[i] = MEDDLY::createVariable(bounds[i-1], 0);
-    vars[i]->addToList(this);
-  }
-
-  // Create the default variable order
-  var_orders.clear();
-  int* defaultOrder = new int[N + 1];
-  defaultOrder[0] = 0;
-  for (int i = 1; i <= N; i++) {
-    defaultOrder[i] = i;
-  }
-  default_var_order = std::make_shared<variable_order>(defaultOrder, N);
-  delete[] defaultOrder;
-  var_orders.push_back(default_var_order);
-}
-
-
-void MEDDLY::expert_domain::createVariablesTopDown(const int* bounds, int N)
-{
-  // domain must be empty -- no variables defined so far
-  if (hasForests() || nVars != 0)
-    throw error(error::DOMAIN_NOT_EMPTY, __FILE__, __LINE__);
-
-  vars = (variable**) malloc((1+N) * sizeof(void*));
-  if (0==vars) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  nVars = N;
-
-  vars[0] = 0;
-  for (int i=N; i; i--) {
-    vars[N-i+1] = MEDDLY::createVariable(bounds[i], 0);
-    vars[i]->addToList(this);
-  }
-
-  // Create the default variable order
-  var_orders.clear();
-  int* defaultOrder = new int[N + 1];
-  defaultOrder[0] = 0;
-  for (int i = N; i >= 1; i--) {
-    defaultOrder[N - i + 1] = i;
-  }
-  default_var_order = std::make_shared<variable_order>(defaultOrder, N);
-  delete[] defaultOrder;
-  var_orders.push_back(default_var_order);
-}
-
-
-int MEDDLY::expert_domain::findLevelOfVariable(const variable *v) const
-{
-  // TBD: more efficient implementation based on binary search?
-  int i;
-  for (i=nVars; i; i--) {
-    if (vars[i] == v) break;
-  }
-  return i;
-}
-
-
 
