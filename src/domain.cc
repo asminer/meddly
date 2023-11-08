@@ -265,6 +265,61 @@ unsigned MEDDLY::domain::findLevelOfVariable(const variable *v) const
 }
 
 
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Variable ordering/reordering
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+std::shared_ptr<const MEDDLY::variable_order>
+MEDDLY::domain::makeVariableOrder(const int* order)
+{
+    cleanVariableOrders();
+
+    for (const auto& p : var_orders) {
+        if (p->is_compatible_with(order)) {
+            return p;
+        }
+    }
+
+    std::shared_ptr<const variable_order>
+        p = std::make_shared<variable_order>(order, getNumVariables());
+
+    var_orders.push_back(p);
+    return p;
+}
+
+std::shared_ptr<const MEDDLY::variable_order>
+MEDDLY::domain::makeVariableOrder(const variable_order& order)
+{
+    cleanVariableOrders();
+
+    for (const auto& p : var_orders) {
+        if (p->is_compatible_with(order)) {
+            return p;
+        }
+    }
+
+    std::shared_ptr<const variable_order>
+        p = std::make_shared<variable_order>(order);
+
+    var_orders.push_back(p);
+    return p;
+}
+
+void MEDDLY::domain::cleanVariableOrders()
+{
+    // var_orders[0] is reserved
+    size_t i = 1;
+    while (i < var_orders.size()) {
+        if (var_orders[i].use_count() == 1) {
+            var_orders[i] = var_orders.back();
+            var_orders.pop_back();
+        }
+        else {
+            i++;
+        }
+    }
+}
+
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -479,49 +534,4 @@ void MEDDLY::domain::markForDeletion()
     }
 }
 
-
-std::shared_ptr<const MEDDLY::variable_order> MEDDLY::domain::makeVariableOrder(const int* order)
-{
-  cleanVariableOrders();
-
-  for (const auto& p : var_orders) {
-    if (p->is_compatible_with(order)) {
-      return p;
-    }
-  }
-
-  std::shared_ptr<const variable_order> p = std::make_shared<variable_order>(order, getNumVariables());
-  var_orders.push_back(p);
-  return p;
-}
-
-std::shared_ptr<const MEDDLY::variable_order> MEDDLY::domain::makeVariableOrder(const variable_order& order)
-{
-  cleanVariableOrders();
-
-  for (const auto& p : var_orders) {
-    if (p->is_compatible_with(order)) {
-      return p;
-    }
-  }
-
-  std::shared_ptr<const variable_order> p = std::make_shared<variable_order>(order);
-  var_orders.push_back(p);
-  return p;
-}
-
-void MEDDLY::domain::cleanVariableOrders()
-{
-  // var_orders[0] is reserved
-  size_t i = 1;
-  while (i < var_orders.size()) {
-    if (var_orders[i].use_count() == 1) {
-      var_orders[i] = var_orders.back();
-      var_orders.pop_back();
-    }
-    else {
-      i++;
-    }
-  }
-}
 

@@ -276,6 +276,18 @@ class MEDDLY::domain {
         */
         unsigned findLevelOfVariable(const variable* v) const;
 
+    public:
+        //
+        // Variable ordering/reordering
+        //
+
+        std::shared_ptr<const variable_order> makeVariableOrder(const int* order);
+        std::shared_ptr<const variable_order> makeVariableOrder(const variable_order& order);
+        inline std::shared_ptr<const variable_order> makeDefaultVariableOrder() {
+            return default_var_order;
+        }
+        void cleanVariableOrders();
+
     private:
         //
         // Registry of all functions with this domain.
@@ -286,13 +298,12 @@ class MEDDLY::domain {
 
         friend class forest; // calls the above two methods
 
-    private:
-        std::set<unsigned> forestReg;
-
-    protected:
         inline bool hasForests() const {
             return !forestReg.empty();
         }
+
+    private:
+        std::set<unsigned> forestReg;
 
 
         //
@@ -339,6 +350,8 @@ class MEDDLY::domain {
     /// Destructor.
     virtual ~domain();
 
+  private:
+
     variable** vars;
     unsigned nVars;
 
@@ -355,12 +368,6 @@ class MEDDLY::domain {
 
   public:
 
-    std::shared_ptr<const variable_order> makeVariableOrder(const int* order);
-    std::shared_ptr<const variable_order> makeVariableOrder(const variable_order& order);
-    inline std::shared_ptr<const variable_order> makeDefaultVariableOrder() {
-        return default_var_order;
-    }
-    void cleanVariableOrders();
 
     private:
         //
