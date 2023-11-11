@@ -64,14 +64,14 @@ int main(int argc, char* argv[])
 
   // Build a domain for the levels defined above.
   domain *d = 0;
-  if (0 == (d = createDomainBottomUp(sizes, nLevels))) {
+  if (0 == (d = domain::createBottomUp(sizes, nLevels))) {
     fprintf(stderr, "Couldn't create domain\n");
     return 1;
   }
 
   // Create a forest to store MTMDDs. Terminal values being integers.
   forest *f = 0;
-  if (0 == (f = d->createForest(false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL))) {
+  if (0 == (f = forest::create(d, false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL))) {
     fprintf(stderr, "Couldn't create forest\n");
     return 1;
   }
@@ -194,7 +194,7 @@ int main(int argc, char* argv[])
   cleanup();
 #if 0
   destroyForest(f);
-  destroyDomain(d);
+  domain::destroy(d);
 #endif
 
   return 0;

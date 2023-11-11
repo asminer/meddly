@@ -70,7 +70,7 @@ int main(int argv, char *argc[])
   std::cout << getLibraryInfo();
 
   // Create a domain
-  domain* d = createDomain();
+  domain* d = domain::create();
   assert(d != 0);
 
   // We have three variables A, B and C.
@@ -88,7 +88,7 @@ int main(int argv, char *argc[])
     << " variables\n";
 
   // Create a forest in the above domain
-  forest* mdd = d->createForest(
+  forest* mdd = forest::create(d,
       false,                    // this is not a relation
       range_type::BOOLEAN,          // terminals are either true or false
       edge_labeling::MULTI_TERMINAL    // disables edge-labeling

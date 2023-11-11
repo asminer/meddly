@@ -153,7 +153,7 @@ int main(int argc, const char** argv)
   if (argc<4) return usage(argv[0]);
   if (N<0) return usage(argv[0]);
 
-  domain* d = 0;
+  domain* dm = 0;
   try {
 
     MEDDLY::initialize();
@@ -169,7 +169,7 @@ int main(int argc, const char** argv)
     // Initialize domain
     int* sizes = new int[PLACES];
     for (int i=PLACES-1; i>=0; i--) sizes[i] = BOUNDS;
-    d = createDomainBottomUp(sizes, PLACES);
+    dm = domain::createBottomUp(sizes, PLACES);
     delete[] sizes;
     policies pr(true);
     pr.setPessimistic();
@@ -192,10 +192,8 @@ int main(int argc, const char** argv)
       {
 
       //CREATE FORESTS
-      forest* inmdd = d->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,p);
-      forest* relmxd = d->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,pr);
-
-      expert_domain* dm = static_cast<expert_domain*>(inmdd->useDomain());
+      forest* inmdd = forest::create(dm, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,p);
+      forest* relmxd = forest::create(dm, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,pr);
 
       dm->enlargeVariableBound(p1_position, false, N+1);
       dm->enlargeVariableBound(p13_position, false, N+1);

@@ -544,10 +544,10 @@ int main(int argc, const char** argv)
   int N = G.height * G.width;
   int* scratch = new int[N+1];
   for (int i=0; i<=N; i++) scratch[i] = 2;
-  domain* d = createDomainBottomUp(scratch, N);
+  domain* d = domain::createBottomUp(scratch, N);
   assert(d);
   expert_forest* f = dynamic_cast <expert_forest*> (
-    d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p)
+    forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p)
   );
   assert(f);
 

@@ -122,11 +122,11 @@ int main(int argc, char *argv[])
   initialize(L);
 
   // Create a domain
-  domain *d = createDomainBottomUp(bounds, nVariables);
+  domain *d = domain::createBottomUp(bounds, nVariables);
   assert(d != 0);
 
   // Create an MXD forest in this domain (to store a relation)
-  forest* xd = d->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* xd = forest::create(d, true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   assert(xd != 0);
 
   dd_edge initial_state(xd);
@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
 #endif
 
   // Cleanup; in this case simply delete the domain
-  destroyDomain(d);
+  domain::destroy(d);
   cleanup();
 
   free(bounds);

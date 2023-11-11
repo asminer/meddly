@@ -1331,7 +1331,7 @@ int main(int argc, char *argv[])
   MEDDLY::initialize(L);
 
   // Set up the state variables, as described earlier
-  d = createDomainBottomUp(sizes, num_levels);
+  d = domain::createBottomUp(sizes, num_levels);
   if (NULL == d) {
     fprintf(stderr, "Couldn't create domain\n");
     return 1;
@@ -1341,14 +1341,13 @@ int main(int argc, char *argv[])
   int topVar = d->getNumVariables();
   while (topVar > 0)
   {
-    printf("level %d, size %d\n", topVar,
-        static_cast<expert_domain*>(d)->getVariableBound(topVar));
+    printf("level %d, size %d\n", topVar, d->getVariableBound(topVar));
     topVar--;
   }
 
   // Create forests
-  states = d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  relation = d->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  states = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  relation = forest::create(d, true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 
   if (NULL == states) {
     fprintf(stderr, "Couldn't create forest of states\n");
@@ -1388,7 +1387,7 @@ int main(int argc, char *argv[])
 #endif
   }
 
-  destroyDomain(d);
+  domain::destroy(d);
   cleanup();
   fprintf(stderr, "\n\nDONE\n");
   return 0;

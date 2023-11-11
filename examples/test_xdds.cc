@@ -28,13 +28,13 @@ domain* initDomain() {
   MEDDLY::initialize();
   int bounds[] = {-1, -1, -1};
   const int n_vars = 3;
-  domain* d = createDomainBottomUp(bounds, n_vars);
+  domain* d = domain::createBottomUp(bounds, n_vars);
   assert(d);
   return d;
 }
 
 forest* createForest(domain *d, bool relation) {
-  forest* mxd = d->createForest(relation, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mxd = forest::create(d, relation, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   assert(mxd);
   return mxd;
 }

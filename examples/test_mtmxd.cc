@@ -321,17 +321,17 @@ int main(int argc, char *argv[])
   initialize();
 
   // Create a domain
-  domain *d = createDomainBottomUp(bounds, nVariables);
+  domain *d = domain::createBottomUp(bounds, nVariables);
   assert(d != 0);
 
   // Create a MTMXD forest in this domain
   policies p(true);
 #if USE_REALS
   forest* mtmxd =
-    d->createForest(true, range_type::REAL, edge_labeling::MULTI_TERMINAL, p);
+    forest::create(d, true, range_type::REAL, edge_labeling::MULTI_TERMINAL, p);
 #else
   forest* mtmxd =
-    d->createForest(true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
+    forest::create(d, true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
 #endif
   assert(mtmxd != 0);
 
@@ -457,7 +457,7 @@ int main(int argc, char *argv[])
 #if 0
   // Convert mtmxd to mxd
   forest* mxd =
-    d->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+    forest::create(d, true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 
   dd_edge toMxd(mxd);
   printf("Conversion MTMXD to MXD: ");
@@ -479,7 +479,7 @@ int main(int argc, char *argv[])
 #endif
 
   // Cleanup; in this case simply delete the domain
-  destroyDomain(d);
+  domain::destroy(d);
   cleanup();
 
   free(bounds);

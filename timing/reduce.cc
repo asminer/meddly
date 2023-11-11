@@ -168,31 +168,31 @@ int main()
         int bounds[3];
         bounds[0] = bounds[1] = bounds[2] = VARSIZE;
 
-        domain *D = createDomainBottomUp(bounds, 3);
+        domain *D = domain::createBottomUp(bounds, 3);
         forest* F;
         policies p;
         p.useDefaults(false);
 
         p.setFullStorage();
-        F = D->createForest(false, range_type::INTEGER,
+        F = forest::create(D, false, range_type::INTEGER,
                         edge_labeling::MULTI_TERMINAL, p);
         test_MT_full_Reductions((expert_forest*) F, "  full");
         destroyForest(F);
 
         p.setSparseStorage();
-        F = D->createForest(false, range_type::INTEGER,
+        F = forest::create(D, false, range_type::INTEGER,
                         edge_labeling::MULTI_TERMINAL, p);
         test_MT_full_Reductions((expert_forest*) F, "sparse");
         destroyForest(F);
 
         p.setFullStorage();
-        F = D->createForest(false, range_type::INTEGER,
+        F = forest::create(D, false, range_type::INTEGER,
                         edge_labeling::EVPLUS, p);
         test_EV_full_Reductions((expert_forest*) F, "  full");
         destroyForest(F);
 
         p.setSparseStorage();
-        F = D->createForest(false, range_type::INTEGER,
+        F = forest::create(D, false, range_type::INTEGER,
                         edge_labeling::EVPLUS, p);
         test_EV_full_Reductions((expert_forest*) F, "sparse");
         destroyForest(F);

@@ -525,17 +525,17 @@ int main(int argc, const char** argv)
     using namespace MEDDLY;
 
     initialize();
-    domain* D = createDomainBottomUp(bounds, B.getN()*B.getM());
+    domain* D = domain::createBottomUp(bounds, B.getN()*B.getM());
 
     policies p;
     p.useDefaults(false);
     p.useReferenceCounts = false;
     // p.setPessimistic();
 
-    mtF = D->createForest(false, range_type::INTEGER,
+    mtF = forest::create(D, false, range_type::INTEGER,
                     edge_labeling::MULTI_TERMINAL, p);
 
-    boolF = D->createForest(false, range_type::BOOLEAN,
+    boolF = forest::create(D, false, range_type::BOOLEAN,
                     edge_labeling::MULTI_TERMINAL, p);
 
     constraint** clist = new constraint* [B.getN()*B.getM()];

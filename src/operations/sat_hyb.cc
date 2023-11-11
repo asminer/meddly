@@ -480,7 +480,7 @@ void MEDDLY::sathyb_opname::hybrid_relation::bindExtensibleVariables() {
   //
   // Find the bounds for each extensbile variable
   //
-  expert_domain* ed = static_cast<expert_domain*>(outsetF->useDomain());
+  domain* ed = outsetF->getDomain();
 
   for (int k = 1; k < num_levels; k++) {
     int bound = 0;
@@ -755,7 +755,7 @@ bool MEDDLY::sathyb_opname::subevent::addMinterm(const int* from, const int* to)
     // out << unpminterms[num_minterms][i] << " -> " << pminterms[num_minterms][i] << " , ";
   }
  //  out << "]\n";
-  expert_domain* d = static_cast<expert_domain*>(f->useDomain());
+  domain* d = f->getDomain();
   for (int i = num_vars - 1; i >= 0; i--) {
     int level = vars[i];
     // expand "to" since the set of unconfirmed local states is always larger
@@ -1325,14 +1325,14 @@ int MEDDLY::sathyb_opname::event::downLevel(int level) const{
 
 void MEDDLY::sathyb_opname::event::enlargeVariables()
 {
-  expert_domain* ed = static_cast<expert_forest*>(f)->useExpertDomain();
+  domain* ed = f->getDomain();
   for (int i = 0; i < num_vars; i++) {
     int unprimed = ABS(vars[i]);
     int primed = -unprimed;
     int unprimedSize = f->getLevelSize(unprimed);
     int primedSize = f->getLevelSize(primed);
     if (unprimedSize < primedSize) {
-      variable* vh = ed->getExpertVar(unprimed);
+      variable* vh = ed->getVar(unprimed);
       if (vh->isExtensible())
         vh->enlargeBound(false, -primedSize);
       else
@@ -1660,7 +1660,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
   dd_edge nbdj(resF), newst(resF);
 
-  expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
+  domain* dm = resF->getDomain();
 
   int* event_Ru_Rn_index = (int*)malloc(nEventsAtThisLevel*sizeof(int));
   unpacked_node** Ru = new unpacked_node*[nEventsAtThisLevel];
@@ -1891,7 +1891,7 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
   const int rLevel = MAX(ABS(mxdLevel), mddLevel);
   int rSize = resF->getLevelSize(rLevel);
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
-  expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
+  domain* dm = resF->getDomain();
 
   dd_edge nbdj(resF), newst(resF);
 
@@ -2033,7 +2033,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
         rel->setConfirmedStates(rLevel,j); // confirm and enlarge
         if (j >= nb->getSize()) {
           int new_var_bound = resF->isExtensibleLevel(nb->getLevel())? -(j+1) : (j+1);
-          expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
+          domain* dm = resF->getDomain();
           dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);
           int oldSize = nb->getSize();
           nb->resize(j+1);

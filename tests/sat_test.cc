@@ -96,9 +96,9 @@ forest* makeBinaryForest(int N)
 {
   int* b = new int[N];
   for (int i=0; i<N; i++) b[i] = 2;
-  domain* d = createDomainBottomUp(b, N);
+  domain* d = domain::createBottomUp(b, N);
   delete[] b;
-  return d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  return forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 }
 
 void check_solution(const char* name, forest* f, dd_edge& M, const int* sol)

@@ -275,16 +275,16 @@ int main(int argc, char *argv[])
   initialize();
 
   // Create a domain
-  domain *d = createDomainBottomUp(bounds, nVariables);
+  domain *d = domain::createBottomUp(bounds, nVariables);
   assert(d != 0);
 
   // Create a MTMDD forest in this domain
   policies p1(false);
   p1.setPessimistic();
 #if USE_REALS
-  forest* evmdd = d->createForest(false, range_type::REAL, edge_labeling::EVTIMES, p1);
+  forest* evmdd = forest::create(d, false, range_type::REAL, edge_labeling::EVTIMES, p1);
 #else
-  forest* evmdd = d->createForest(false, range_type::INTEGER, edge_labeling::EVPLUS, p1);
+  forest* evmdd = forest::create(d, false, range_type::INTEGER, edge_labeling::EVPLUS, p1);
 #endif
   assert(evmdd != 0);
 
@@ -395,7 +395,7 @@ int main(int argc, char *argv[])
   policies p2(false);
   p2.setPessimistic();
   forest* mdd
-    = d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p2);
+    = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p2);
   assert(mdd != 0);
 
   start.note_time();
@@ -436,7 +436,7 @@ int main(int argc, char *argv[])
   */
 
   // Create a EV+MDD forest in this domain (to store index set)
-  forest* evplusmdd = d->createForest(false, range_type::INTEGER, edge_labeling::INDEX_SET);
+  forest* evplusmdd = forest::create(d, false, range_type::INTEGER, edge_labeling::INDEX_SET);
   assert(evplusmdd != NULL);
 
   // Convert MDD to Index Set EV+MDD and print the states
@@ -475,7 +475,7 @@ int main(int argc, char *argv[])
 
   printf("\n");
   // Cleanup; in this case simply delete the domain
-  destroyDomain(d);
+  domain::destroy(d);
   cleanup();
 
   free(bounds);

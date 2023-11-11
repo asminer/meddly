@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
   for (int i = nLevels; i; i--) { vars[i] = createVariable(2, 0); }
 
   // Create a domain and set up the state variables.
-  domain *d = createDomain(vars, nLevels);
+  domain *d = domain::create(vars, nLevels);
   assert(d != NULL);
 
   // Create an MDD forest in this domain (to store states)
@@ -55,11 +55,11 @@ int main(int argc, char *argv[])
   // pmdd.setQuasiReduced();
   pmdd.setFullyReduced();
   forest* mdd =
-    d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
+    forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
   assert(mdd != NULL);
 
   // Create a MXD forest in domain (to store transition diagrams)
-  forest* mxd = d->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mxd = forest::create(d, true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   assert(mxd != NULL);
 
   // Set up initial state array

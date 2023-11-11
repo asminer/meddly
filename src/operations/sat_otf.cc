@@ -151,7 +151,7 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
     // out << unpminterms[num_minterms][i] << " -> " << pminterms[num_minterms][i] << " , ";
   }
   // out << "]\n";
-  expert_domain* d = static_cast<expert_domain*>(f->useDomain());
+  domain* d = f->getDomain();
   for (int i = num_vars - 1; i >= 0; i--) {
     int level = vars[i];
     // expand "to" since the set of unconfirmed local states is always larger
@@ -383,14 +383,14 @@ bool MEDDLY::satotf_opname::event::rebuild()
 
 void MEDDLY::satotf_opname::event::enlargeVariables()
 {
-  expert_domain* ed = static_cast<expert_forest*>(f)->useExpertDomain();
+  domain* ed = f->getDomain();
   for (int i = 0; i < num_vars; i++) {
     int unprimed = ABS(vars[i]);
     int primed = -unprimed;
     int unprimedSize = f->getLevelSize(unprimed);
     int primedSize = f->getLevelSize(primed);
     if (unprimedSize < primedSize) {
-      variable* vh = ed->getExpertVar(unprimed);
+      variable* vh = ed->getVar(unprimed);
       if (vh->isExtensible())
         vh->enlargeBound(false, -primedSize);
       else
@@ -736,7 +736,7 @@ void MEDDLY::satotf_opname::otf_relation::bindExtensibleVariables() {
   //
   // Find the bounds for each extensbile variable
   //
-  expert_domain* ed = mxdF->useExpertDomain();
+  domain* ed = mxdF->getDomain();
   for (int k = 1; k < num_levels; k++) {
     int bound = 0;
     int n_confirmed = 0;

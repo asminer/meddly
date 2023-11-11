@@ -305,16 +305,16 @@ int main(int argc, char *argv[])
   initialize();
 
   // Create a domain
-  domain *d = createDomainBottomUp(bounds, nVariables);
+  domain *d = domain::createBottomUp(bounds, nVariables);
   assert(d != 0);
 
   // Create a MTMDD forest in this domain
   policies p1(false);
   p1.setPessimistic();
 #if USE_REALS
-  forest* evmdd = d->createForest(false, range_type::REAL, edge_labeling::EVTIMES, p1);
+  forest* evmdd = forest::create(d, false, range_type::REAL, edge_labeling::EVTIMES, p1);
 #else
-  forest* evmdd = d->createForest(false, range_type::INTEGER, edge_labeling::EVPLUS, p1);
+  forest* evmdd = forest::create(d, false, range_type::INTEGER, edge_labeling::EVPLUS, p1);
 #endif
   assert(evmdd != 0);
 
@@ -392,7 +392,7 @@ int main(int argc, char *argv[])
 
   printf("\n");
   // Cleanup; in this case simply delete the domain
-  destroyDomain(d);
+  domain::destroy(d);
   cleanup();
 
   free(bounds);

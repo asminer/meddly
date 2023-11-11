@@ -2353,7 +2353,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   // Expand level size
   const int nb_ext_i = nb.ext_i();
   if (nb_ext_i >= getLevelSize(nb.getLevel())) {
-    useExpertDomain()->enlargeVariableBound(nb.getLevel(), false, -(nb_ext_i+1));
+    getDomain()->enlargeVariableBound(nb.getLevel(), false, -(nb_ext_i+1));
   }
 
   // Grab a new node

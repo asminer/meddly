@@ -464,7 +464,7 @@ namespace MEDDLY {
 //        if(p==F->getTransparentNode()){
 //        	return p;
 //        }
-        MEDDLY_DCASSERT(!(F->getExpertDomain()->getExpertVar(k)->isExtensible()));
+        MEDDLY_DCASSERT(!(F->getDomain()->getVar(k)->isExtensible()));
         // build an identity node by hand
         unsigned lastV = unsigned(F->getLevelSize(k));
         unpacked_node* nb = unpacked_node::newFull(F, k, lastV);

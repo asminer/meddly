@@ -241,19 +241,19 @@ void pn::initializeMeddly() {
 
 void pn::buildDomain() {
   int bounds[] = {-1, -1, -1};
-  dom = createDomainBottomUp((int*)&bounds[0], n_vars);
+  dom = domain::createBottomUp((int*)&bounds[0], n_vars);
   assert(dom);
 }
 
 void pn::buildMdd() {
   policies p(false);
   p.setQuasiReduced();
-  mdd = static_cast<expert_forest*>(dom->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p));
+  mdd = static_cast<expert_forest*>(forest::create(dom, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p));
   assert(mdd);
 }
 
 void pn::buildMxd() {
-  mxd = static_cast<expert_forest*>(dom->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL));
+  mxd = static_cast<expert_forest*>(forest::create(dom, true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL));
   assert(mxd);
 }
 

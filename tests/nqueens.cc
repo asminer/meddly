@@ -126,13 +126,13 @@ long buildQueenSolutions(int N)
   for (int i=0; i<N; i++) {
     varsizes[i] = N;
   }
-  domain* d = createDomainBottomUp(varsizes, N);
+  domain* d = domain::createBottomUp(varsizes, N);
   assert(d);
   delete[] varsizes;
   policies p(false);
   p.setPessimistic();
   forest* f =
-    d->createForest(false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
+    forest::create(d, false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
   assert(f);
 
   printf(" q");
@@ -194,7 +194,7 @@ long buildQueenSolutions(int N)
   delete[] dgm;
   delete[] constr;
   destroyForest(f);
-  destroyDomain(d);
+  domain::destroy(d);
   return c;
 }
 

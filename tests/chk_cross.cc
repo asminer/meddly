@@ -231,19 +231,19 @@ int main(int argc, const char** argv)
 
   initialize();
 
-  domain* myd = createDomainBottomUp(vars, 6);
+  domain* myd = domain::createBottomUp(vars, 6);
   assert(myd);
 
-  forest* mdd = myd->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mdd = forest::create(myd, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   assert(mdd);
-  forest* mxd = myd->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mxd = forest::create(myd, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   assert(mxd);
 
   for (int m=1; m<=20; m++) {
     printf("\tChecking cross-product for %2d random minterms\n", m);
     test(mdd, mxd, m);
   }
-  destroyDomain(myd);
+  domain::destroy(myd);
   cleanup();
   return 0;
 }

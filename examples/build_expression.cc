@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     bounds[i] = variableBound;
 
   // Create a domain
-  domain *d = createDomainBottomUp(bounds, nVariables);
+  domain *d = domain::createBottomUp(bounds, nVariables);
   assert(d != 0);
 
   // Create an MXD forest in this domain (to store states)
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
   range_type range = range_type::INTEGER;
 #endif
 
-  forest* states = d->createForest(false, range, edge_labeling::MULTI_TERMINAL);
+  forest* states = forest::create(d, false, range, edge_labeling::MULTI_TERMINAL);
   assert(states != 0);
 
 #if 1
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
   // expr.showGraph(mout);
 #endif
 
-  forest* mtmxd = d->createForest(true, range, edge_labeling::MULTI_TERMINAL);
+  forest* mtmxd = forest::create(d, true, range, edge_labeling::MULTI_TERMINAL);
   assert(mtmxd != 0);
 
   dd_edge incrY1 = buildIncrY1(mtmxd);
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
   postImage.showGraph(mout);
 
   // Cleanup
-  MEDDLY::destroyDomain(d);
+  domain::destroy(d);
   MEDDLY::cleanup();
 
   return 0;

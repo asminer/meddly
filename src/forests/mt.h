@@ -80,7 +80,7 @@ class MEDDLY::mt_forest : public expert_forest {
         }
         if (maxv < 1) continue;
         if (maxv >= getDomain()->getVariableBound(k, primed)) {
-          variable* vh = useExpertDomain()->getExpertVar(k);
+          variable* vh = getDomain()->getVar(k);
           if (vh->isExtensible())
             vh->enlargeBound(primed, -(maxv+1));
           else

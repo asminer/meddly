@@ -45,13 +45,13 @@ int main()
 
         const int bounds[] = { 5, 5, 5 };
 
-        domain* d = createDomainBottomUp(bounds, 3);
+        domain* d = domain::createBottomUp(bounds, 3);
         policies p;
         p.useDefaults(false);
         p.useReferenceCounts = true;
         p.setPessimistic();
 
-        forest* mdd = d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
+        forest* mdd = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
 
         dd_edge x1(mdd), x2(mdd), x3(mdd), x123(mdd), tmp(mdd);
 

@@ -188,21 +188,21 @@ int main(int argc, char* argv[])
 
   // Create a domain and set up the state variables.
   // Use one per "machine", with 4 values each: {W = 0, M, B, G}
-  domain *d = createDomainBottomUp(sizes, N-1);
+  domain *d = domain::createBottomUp(sizes, N-1);
   assert(d != NULL);
 
 
   // Create an MDD forest in this domain (to store states)
   policies pmdd(false);
   pmdd.setPessimistic();
-  forest* mdd = d->createForest(false, range_type::BOOLEAN,
+  forest* mdd = forest::create(d, false, range_type::BOOLEAN,
     edge_labeling::MULTI_TERMINAL, pmdd);
   assert(mdd != NULL);
 
   // Create a MXD forest in domain (to store transition diagrams)
   policies pmxd(true);
   pmxd.setPessimistic();
-  forest* mxd = d->createForest(true, range_type::BOOLEAN,
+  forest* mxd = forest::create(d, true, range_type::BOOLEAN,
     edge_labeling::MULTI_TERMINAL, pmxd);
   assert(mxd != NULL);
 
@@ -224,7 +224,7 @@ int main(int argc, char* argv[])
   if (doMTMXDIterator)      testMTMXDIterator(nsf);
 
   // Cleanup
-  destroyDomain(d);
+  domain::destroy(d);
   cleanup();
 
   fprintf(stderr, "\nDone\n");
@@ -472,7 +472,7 @@ void testIndexSet(domain* d, const dd_edge& mdd)
   assert(d);
 
   // Create a EV+MDD forest in this domain (to store index set)
-  forest* evplusmdd = d->createForest(false, range_type::INTEGER, edge_labeling::INDEX_SET);
+  forest* evplusmdd = forest::create(d, false, range_type::INTEGER, edge_labeling::INDEX_SET);
   assert(evplusmdd);
   expert_forest* ef = static_cast<expert_forest*>(evplusmdd);
 

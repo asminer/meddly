@@ -506,13 +506,13 @@ int main(int argc, const char** argv)
   //
   int scratch[1+LEVELS];
   for (int k=0; k<LEVELS; k++) scratch[k] = COLORS;
-  domain* D = createDomainBottomUp(scratch, LEVELS);
+  domain* D = domain::createBottomUp(scratch, LEVELS);
 
   //
   // Build NSF for possible "1-step" moves
   //
   timer watch;
-  forest* mxd = D->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mxd = forest::create(D, true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
 
   watch.note_time();
@@ -524,7 +524,7 @@ int main(int argc, const char** argv)
   //
   // Build initial configuration
   //
-  forest* mdd = D->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
+  forest* mdd = forest::create(D, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
   dd_edge initial(mdd);
   for (int i=0; i<leftring; i++)  scratch[leftvar[i]]   = leftinit[i];
   for (int i=0; i<rightring; i++) scratch[rightvar[i]]  = rightinit[i];

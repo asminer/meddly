@@ -292,7 +292,7 @@ unpacked_node* build_node(expert_forest* f, unsigned who, bool full)
 
 void test_nodes(domain* d, range_type r, edge_labeling e, policies &p)
 {
-    forest* f = d->createForest( (e==edge_labeling::EVTIMES), r, e, p);
+    forest* f = forest::create(d,  (e==edge_labeling::EVTIMES), r, e, p);
     expert_forest* ef = (expert_forest*) f;
 
     node_handle nh;
@@ -371,7 +371,7 @@ int main()
         MEDDLY::initialize();
 
         const int bounds[] = { 9, 9, 9, 9, 9 };
-        domain* d = createDomainBottomUp(bounds, 5);
+        domain* d = domain::createBottomUp(bounds, 5);
         policies p;
         p.useDefaults(false);
 

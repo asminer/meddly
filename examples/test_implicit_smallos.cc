@@ -142,7 +142,7 @@ if (argc<5) return usage(argv[0]);
 if (MT<0) return usage(argv[0]);
 if (DC<0) return usage(argv[0]);
 BOUNDS = 2;
-domain* d = 0;
+domain* dm = 0;
 
 try {
 
@@ -159,7 +159,7 @@ fflush(stdout);
 // Initialize domain
 int* sizes = new int[PLACES];
 for (int i=PLACES-1; i>=0; i--) sizes[i] = BOUNDS;
-d = createDomainBottomUp(sizes, PLACES);
+dm = domain::createBottomUp(sizes, PLACES);
 delete[] sizes;
 policies pr(true);
   pr.setPessimistic();
@@ -183,10 +183,9 @@ if('i' == method)
 {
 
 //CREATE FORESTS
-  forest* inmdd = d->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,p);
-  forest* relmxd = d->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,pr);
+  forest* inmdd = forest::create(dm, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,p);
+  forest* relmxd = forest::create(dm, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,pr);
 
-  expert_domain* dm = static_cast<expert_domain*>(inmdd->useDomain());
   dm->enlargeVariableBound(p1_position, false, MT+1);
   dm->enlargeVariableBound(p3_position, false, MT+1);
   dm->enlargeVariableBound(p5_position, false, DC+1);

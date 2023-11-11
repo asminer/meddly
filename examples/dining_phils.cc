@@ -496,7 +496,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
   printf("Initiailzing forests\n");
 
   // Create a domain and set up the state variables.
-  domain *d = createDomain(vars, M2V.numLevels());
+  domain *d = domain::create(vars, M2V.numLevels());
   assert(d != NULL);
 
   // Set up MDD options
@@ -506,7 +506,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
 
   // Create an MDD forest in this domain (to store states)
   forest* mdd =
-    d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
+    forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
   assert(mdd != NULL);
   mdd->setLogger(LOG, "MDD");
 
@@ -517,7 +517,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
 
   // Create a MXD forest in domain (to store transition diagrams)
   forest* mxd =
-    d->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmxd);
+    forest::create(d, true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmxd);
   assert(mxd != NULL);
   mxd->setLogger(LOG, "MxD");
 
@@ -673,7 +673,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
   if (sw.printReachableStates) {
     // Create a EV+MDD forest in this domain (to store index set)
     forest* evplusmdd =
-      d->createForest(false, range_type::INTEGER, edge_labeling::INDEX_SET);
+      forest::create(d, false, range_type::INTEGER, edge_labeling::INDEX_SET);
     assert(evplusmdd != NULL);
 
     // Test Convert MDD to Index Set EV+MDD
@@ -899,7 +899,7 @@ int main(int argc, char *argv[])
     printf("Cleaning up\n");
     fflush(stdout);
     if (LOG) {
-      MEDDLY::destroyDomain(d);
+      domain::destroy(d);
       delete LOG;
     }
     MEDDLY::cleanup();

@@ -278,13 +278,13 @@ int main()
     }
   } // for i
 
-  domain* D = createDomainBottomUp(scratch, Vars);
+  domain* D = domain::createBottomUp(scratch, Vars);
 
   //
   // Build NSF for possible "1-step" moves
   //
   timer watch;
-  forest* mxd = D->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mxd = forest::create(D, true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   watch.note_time();
   Square1NSF(nsf);
@@ -300,7 +300,7 @@ int main()
   //
   policies p(true);
 //  p.setPessimistic();
-  forest* mdd = D->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mdd = forest::create(D, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge initial(mdd);
   int perm = 0;
   for (int i=1; i<=Vars; i++) {

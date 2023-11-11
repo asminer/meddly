@@ -59,13 +59,13 @@ long buildReachset(int N, bool useSat)
   int sizes[16];
 
   for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = createDomainBottomUp(sizes, 16);
+  domain* d = domain::createBottomUp(sizes, 16);
 
   // Build initial state
   int* initial = new int[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
-  forest* mdd = d->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
   delete[] initial;
@@ -76,7 +76,7 @@ long buildReachset(int N, bool useSat)
 #endif
 
   // Build next-state function
-  forest* mxd = d->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   buildNextStateFunction(kanban, 16, mxd, nsf);
 
@@ -104,7 +104,7 @@ long buildReachset(int N, bool useSat)
   fflush(stdout);
 #endif
 
-  destroyDomain(d);
+  domain::destroy(d);
 
 #ifdef PROGRESS
   fputc(' ', stdout);

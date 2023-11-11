@@ -185,7 +185,7 @@ void reorderVariablesByRebuilding(dd_edge &e)
 	}
 	shuffle(level2var, 1, num_var);
 
-	expert_forest* target = (expert_forest*)f->useDomain()->createForest(f->isForRelations(),
+	expert_forest* target = (expert_forest*)forest::create(f->getDomain(), f->isForRelations(),
 			f->getRangeType(), f->getEdgeLabeling() , f->getPolicies());
 	target->reorderVariables(level2var);
 	delete[] level2var;
@@ -288,7 +288,7 @@ int main(int argc, char *argv[])
   initialize();
 
   // Create a domain
-  domain *d = createDomainBottomUp(bounds, nVariables);
+  domain *d = domain::createBottomUp(bounds, nVariables);
   assert(d != 0);
 
   // Create a MTMDD forest in this domain
@@ -296,10 +296,10 @@ int main(int argc, char *argv[])
   p.setPessimistic();
 #if USE_REALS
   forest* mtmdd =
-    d->createForest(false, range_type::REAL, edge_labeling::MULTI_TERMINAL, p);
+    forest::create(d, false, range_type::REAL, edge_labeling::MULTI_TERMINAL, p);
 #else
   forest* mtmdd =
-    d->createForest(false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
+    forest::create(d, false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
 #endif
   assert(mtmdd != 0);
 
@@ -334,7 +334,7 @@ int main(int argc, char *argv[])
 #if 0
   // Convert mtmdd to mdd
   forest* mdd =
-    d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+    forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 
   dd_edge toMdd(mdd);
   printf("\n\nConversion MTMDD to MDD: ");
@@ -356,7 +356,7 @@ int main(int argc, char *argv[])
 
   // Convert mtmdd to ev+mdd
   forest* evmdd =
-    d->createForest(false, range_type::INTEGER, forest::EVPLUS);
+    forest::create(d, false, range_type::INTEGER, forest::EVPLUS);
   assert(evmdd != 0);
   assert(forest::SUCCESS ==
       //  evmdd->setNodeDeletion(forest::PESSIMISTIC_DELETION));
@@ -408,7 +408,7 @@ int main(int argc, char *argv[])
 //  }
 
   // Cleanup; in this case simply delete the domain
-  destroyDomain(d);
+  domain::destroy(d);
 
   free(bounds);
   for (int i = 0; i < nElements; ++i)

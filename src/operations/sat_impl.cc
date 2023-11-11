@@ -365,7 +365,7 @@ void MEDDLY::satimpl_opname::implicit_relation::bindExtensibleVariables() {
   //
   // Find the bounds for each extensbile variable
   //
-  expert_domain* ed = static_cast<expert_domain*>(outsetF->useDomain());
+  domain* ed = outsetF->getDomain();
 
   for (int k = 1; k <= num_levels; k++) {
     int bound = 0;
@@ -402,7 +402,8 @@ MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
 
   domain *d = outsetF->useDomain();
 
-  forest* mxd = d->createForest(true,range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
+                                edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
 
   dd_edge* monolithic_nsf = new dd_edge(mxd);
@@ -846,7 +847,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
   dd_edge nbdj(resF), newst(resF);
 
-  expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
+  domain* dm = resF->getDomain();
 
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
@@ -1033,7 +1034,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   const int rLevel = MAX(mxdLevel, mddLevel);
    int rSize = resF->getLevelSize(rLevel);
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
-  expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
+  domain* dm = resF->getDomain();
 
   dd_edge nbdj(resF), newst(resF);
 
@@ -1716,7 +1717,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
 
   dd_edge nbdj(resF), newst(resF);
 
-  expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
+  domain* dm = resF->getDomain();
 
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
@@ -1853,7 +1854,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   const int constraint_level = arg1F->getNodeLevel(constraint);
   int rSize = resF->getLevelSize(rLevel);
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
-  expert_domain* dm = static_cast<expert_domain*>(resF->useDomain());
+  domain* dm = resF->getDomain();
 
   dd_edge nbdj(resF), newst(resF);
 

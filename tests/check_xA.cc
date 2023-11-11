@@ -276,13 +276,13 @@ int main(int argc, const char** argv)
 {
   initialize();
 
-  domain* ozd = createDomainBottomUp(vars, 3);
+  domain* ozd = domain::createBottomUp(vars, 3);
   assert(ozd);
-  forest* evpmdds = ozd->createForest(0, range_type::INTEGER, edge_labeling::EVPLUS);
+  forest* evpmdds = forest::create(ozd, 0, range_type::INTEGER, edge_labeling::EVPLUS);
   assert(evpmdds);
-  forest* mtmxds = ozd->createForest(1, range_type::REAL, edge_labeling::MULTI_TERMINAL);
+  forest* mtmxds = forest::create(ozd, 1, range_type::REAL, edge_labeling::MULTI_TERMINAL);
   assert(mtmxds);
-  forest* mtmdds = ozd->createForest(0, range_type::REAL, edge_labeling::MULTI_TERMINAL);
+  forest* mtmdds = forest::create(ozd, 0, range_type::REAL, edge_labeling::MULTI_TERMINAL);
   assert(mtmdds);
 
   dd_edge ss(evpmdds);

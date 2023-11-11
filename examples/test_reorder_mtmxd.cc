@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
   initialize();
 
   // Create a domain
-  domain *d = createDomainBottomUp(bounds, nVariables);
+  domain *d = domain::createBottomUp(bounds, nVariables);
   assert(d != 0);
 
   // Create a MTMXD forest in this domain
@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
   p.setFullyReduced();
 
   forest* mtmxd =
-    d->createForest(true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
+    forest::create(d, true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
   assert(mtmxd != 0);
 
   timer start;
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
   delete[] level2var_origin;
 
   // Cleanup; in this case simply delete the domain
-  destroyDomain(d);
+  domain::destroy(d);
   cleanup();
 
   delete[] bounds;

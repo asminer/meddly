@@ -5,7 +5,6 @@
 
 ## bin_PROGRAMS = \
 noinst_PROGRAMS = \
-testmddlib \
 graphs_to_mdds \
 build_expression \
 dining_phils \
@@ -39,16 +38,13 @@ test_memory \
 test_implicit_kanban \
 test_implicit_pool \
 test_implicit_smallos \
-test_sccs
+test_sccs \
+testmddlib
 
 
 # test_user_operation
 
 AM_CXXFLAGS = -Wall
-
-## testmddlib_SOURCES = `$(CXX) testmddlib.cc -MM`
-testmddlib_SOURCES = testmddlib.cc
-testmddlib_LDADD = ../src/libmeddly.la
 
 graphs_to_mdds_SOURCES = graphs_to_mdds.cc
 graphs_to_mdds_LDADD = ../src/libmeddly.la
@@ -155,4 +151,9 @@ test_memory_LDADD = ../src/libmeddly.la
 
 test_sccs_SOURCES = test_sccs.cc
 test_sccs_LDADD = ../src/libmeddly.la
+
+## testmddlib_SOURCES = `$(CXX) testmddlib.cc -MM`
+testmddlib_SOURCES = testmddlib.cc
+testmddlib_LDADD = ../src/libmeddly.la
+
 

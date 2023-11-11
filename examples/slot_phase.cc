@@ -251,21 +251,21 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
   for (int i = N * 8 - 1; i >= 0; i--) {
     sizes[i] = 2;
   }
-  domain* d = createDomainBottomUp(sizes, N * 8);
+  domain* d = domain::createBottomUp(sizes, N * 8);
   delete[] sizes;
 
   // Initialize forests
   policies p(false);
   p.setSinkDown();
-  forest* mdd = d->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 
   std::vector<forest*> mxds;
   for (int i = 0; i < num_phases; i++) {
-    forest* mxd = d->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+    forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
     mxds.push_back(mxd);
   }
 
-//  forest* mxd = d->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+//  forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   if (LOG) {
     mdd->setLogger(LOG, "MDD");
     //mxd->setLogger(LOG, "MxD");
@@ -394,7 +394,7 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
 
   if (LOG) {
     LOG->newPhase(mdd, "Cleanup");
-    MEDDLY::destroyDomain(d);
+    domain::destroy(d);
   }
 }
 

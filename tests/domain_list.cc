@@ -25,9 +25,9 @@ void flip(MEDDLY::domain* &d)
 {
     const int bounds[] = { 5, 5, 5, 5, 5 };
     if (d) {
-        destroyDomain(d);
+        domain::destroy(d);
     } else {
-        d = createDomainBottomUp(bounds, 5);
+        d = domain::createBottomUp(bounds, 5);
     }
 }
 

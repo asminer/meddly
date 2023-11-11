@@ -18,11 +18,11 @@ int main()
         tmp[0] = 3;
         tmp[1] = 3;
         tmp[2] = 3;
-        domain* d = createDomainBottomUp(tmp, 3);
+        domain* d = domain::createBottomUp(tmp, 3);
 
         // Initialize forests
-        forest* mdd = d->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-        forest* mxd = d->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        forest* mdd = forest::create(d,0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        forest* mxd = forest::create(d,1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 
         // build initial state
         tmp[1] = 2;

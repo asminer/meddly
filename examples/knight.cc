@@ -405,17 +405,17 @@ void generate()
     //      row of last position
     //
 
-    domain* D = createDomainBottomUp(bounds, numvars);
+    domain* D = domain::createBottomUp(bounds, numvars);
 
     policies p;
     p.useDefaults(false);
     // p.useReferenceCounts = false;
     p.setPessimistic();
 
-    mtF = D->createForest(false, range_type::INTEGER,
+    mtF = forest::create(D, false, range_type::INTEGER,
                     edge_labeling::MULTI_TERMINAL, p);
 
-    boolF = D->createForest(false, range_type::BOOLEAN,
+    boolF = forest::create(D, false, range_type::BOOLEAN,
                     edge_labeling::MULTI_TERMINAL, p);
 
 

@@ -167,12 +167,12 @@ int main(int argc, const char** argv)
     // Initialize domain
     int* sizes = new int[16];
     for (int i=15; i>=0; i--) sizes[i] = N+1;
-    d = createDomainBottomUp(sizes, 16);
+    d = domain::createBottomUp(sizes, 16);
     delete[] sizes;
 
     // Initialize forests
-    forest* mdd = d->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-    forest* mxd = d->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+    forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+    forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 
     // associate loggers
     std::ofstream log;
@@ -325,7 +325,7 @@ int main(int argc, const char** argv)
     if (LOG) {
       LOG->newPhase(mdd, "Cleanup");
       LOG->newPhase(mxd, "Cleanup");
-      MEDDLY::destroyDomain(d);
+      domain::destroy(d);
       delete LOG;
     }
     MEDDLY::cleanup();

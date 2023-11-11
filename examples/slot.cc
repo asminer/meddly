@@ -182,11 +182,11 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, forest::logg
   // Initialize domain
   int* sizes = new int[N*8];
   for (int i=N*8-1; i>=0; i--) sizes[i] = 2;
-  domain* d = createDomainBottomUp(sizes, N*8);
+  domain* d = domain::createBottomUp(sizes, N*8);
 
   // Initialize forests
-  forest* mdd = d->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  forest* mxd = d->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   if (LOG) {
     mdd->setLogger(LOG, "MDD");
     mxd->setLogger(LOG, "MxD");
@@ -324,7 +324,7 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, forest::logg
   if (LOG) {
     LOG->newPhase(mdd, "Cleanup");
     LOG->newPhase(mxd, "Cleanup");
-    MEDDLY::destroyDomain(d);
+    domain::destroy(d);
   }
 }
 

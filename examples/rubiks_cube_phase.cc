@@ -578,7 +578,7 @@ void RubiksCubeModel::buildDomain()
     sizes[i] = getVarSize(i + 1);
   }
 
-  _domain = createDomainBottomUp(sizes, _config.num_components());
+  _domain = domain::createBottomUp(sizes, _config.num_components());
   if (_domain == nullptr) {
     cerr << "Couldn't create domain" << endl;
     exit(1);
@@ -589,7 +589,7 @@ void RubiksCubeModel::buildDomain()
 
 void RubiksCubeModel::destroy()
 {
-  destroyDomain(_domain);
+  domain::destroy(_domain);
 }
 
 void RubiksCubeModel::buildForests()
@@ -597,7 +597,7 @@ void RubiksCubeModel::buildForests()
   policies p(false);
   p.setSinkDown();
 
-  _state = _domain->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
+  _state = forest::create(_domain, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
   if (_state == nullptr) {
     cerr << "Couldn't create forest of states" << endl;
     exit(1);
@@ -605,7 +605,7 @@ void RubiksCubeModel::buildForests()
   cout << "Created forest of states" << endl;
 
   for (int i = 0; i < _config.num_phases; i++) {
-    forest* relation = _domain->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+    forest* relation = forest::create(_domain, true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
     if (relation == nullptr) {
       cerr << "Couldn't create forest of relations" << endl;
       exit(1);

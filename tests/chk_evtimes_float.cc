@@ -354,17 +354,17 @@ void addMXDforests(domain* D, forest** list, int &i,
 #ifdef ENABLE_IDENTITY_REDUCED
   policies ir(true);
   ir.setIdentityReduced();
-  list[i++] = D->createForest(1, type, ev, ir);
+  list[i++] = forest::create(D, 1, type, ev, ir);
 #endif
 #ifdef ENABLE_FULLY_REDUCED
   policies fr(true);
   fr.setFullyReduced();
-  list[i++] = D->createForest(1, type, ev, fr);
+  list[i++] = forest::create(D, 1, type, ev, fr);
 #endif
 #ifdef ENABLE_QUASI_REDUCED
   policies qr(true);
   qr.setQuasiReduced();
-  list[i++] = D->createForest(1, type, ev, qr);
+  list[i++] = forest::create(D, 1, type, ev, qr);
 #endif
 }
 
@@ -389,7 +389,7 @@ void addIRMXDforest(domain* D, forest** list, int &i,
 {
   policies ir(true);
   ir.setIdentityReduced();
-  list[i++] = D->createForest(1, type, ev, ir);
+  list[i++] = forest::create(D, 1, type, ev, ir);
 }
 
 int makeIRMXDforests(domain* D, forest** list)
@@ -416,7 +416,7 @@ int main(int argc, const char** argv)
   initialize();
 
   int vars[] = {varSize, varSize, varSize, varSize, varSize, varSize};
-  domain* myd = createDomainBottomUp(vars, 6);
+  domain* myd = domain::createBottomUp(vars, 6);
   assert(myd);
 
   //

@@ -238,7 +238,7 @@ class rubiks {
       delete[] order;
       delete[] variableSize;
 
-      MEDDLY::destroyDomain(d);
+      domain::destroy(d);
       //MEDDLY::cleanup();
     }
 
@@ -388,7 +388,7 @@ class rubiks {
       MEDDLY::initialize(L);
 
       // Set up the state variables, as described earlier
-      d = createDomainBottomUp(&variableSize[1], nLevels);
+      d = domain::createBottomUp(&variableSize[1], nLevels);
       if (0 == d) {
         fprintf(stderr, "Couldn't create domain\n");
         assert(false);
@@ -396,14 +396,13 @@ class rubiks {
 
       printf("Variable Order:\n");
       for (int i = d->getNumVariables(); i > 0; i--) {
-        printf("level %d, location %d, size %d\n", i, order[i],
-            static_cast<expert_domain*>(d)->getVariableBound(i));
+        printf("level %d, location %d, size %d\n", i, order[i], d->getVariableBound(i));
       }
 
       // Create forests
-      mdd = d->createForest(false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-      mxd = d->createForest(true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-      mtmxd = d->createForest(true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
+      mdd = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+      mxd = forest::create(d, true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+      mtmxd = forest::create(d, true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
 
       if (0 == mdd) {
         fprintf(stderr, "Couldn't create forest for states\n");

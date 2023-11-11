@@ -60,13 +60,13 @@ dd_edge buildReachset(domain* d, int N)
   int* initial = new int[17];
   for (int i=16; i; i--) initial[i] = 0;
   initial[1] = initial[5] = initial[9] = initial[13] = N;
-  forest* mdd = d->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
   delete[] initial;
 
   // Build next-state function
-  forest* mxd = d->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   buildNextStateFunction(kanban, 16, mxd, nsf);
 
@@ -88,7 +88,7 @@ long checkRS(int N, const char* rs[])
   int sizes[16];
 
   for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = createDomainBottomUp(sizes, 16);
+  domain* d = domain::createBottomUp(sizes, 16);
 
   dd_edge reachable = buildReachset(d, N);
 
@@ -106,7 +106,7 @@ long checkRS(int N, const char* rs[])
     c++;
   }
 
-  destroyDomain(d);
+  domain::destroy(d);
   return c;
 }
 
@@ -115,7 +115,7 @@ void showRS(int N)
   int sizes[16];
 
   for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = createDomainBottomUp(sizes, 16);
+  domain* d = domain::createBottomUp(sizes, 16);
 
   dd_edge reachable = buildReachset(d, N);
 
@@ -129,7 +129,7 @@ void showRS(int N)
     c++;
   }
 
-  destroyDomain(d);
+  domain::destroy(d);
 }
 
 int main()

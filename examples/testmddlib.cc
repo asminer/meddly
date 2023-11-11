@@ -64,14 +64,14 @@ int main(int argc, char *argv[])
 
   initialize();
   // Create a domain
-  domain *d = createDomain();
+  domain *d = domain::create();
   const int N = 2;
   const int bounds[N] = {4, 2};
   // d->createVariablesTopDown(bounds, N);
   d->createVariablesBottomUp(bounds, N);
 
   // Create an MDD forest in this domain (to store states)
-  forest* states = d->createForest(false, range_type::BOOLEAN,
+  forest* states = forest::create(d, false, range_type::BOOLEAN,
       edge_labeling::MULTI_TERMINAL, policies(false));
 
 #if 1
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
   // Intersect (*) the two edges
 
   // Create a MXD forest in domain (to store transition diagrams)
-  forest* transitions = d->createForest(true, range_type::BOOLEAN,
+  forest* transitions = forest::create(d, true, range_type::BOOLEAN,
       edge_labeling::MULTI_TERMINAL, policies(true));
 
   // Construct a transition diagram in the MXD forest (using +, *)
@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
 #endif
 
   // Cleanup; in this case simply delete the domain
-  destroyDomain(d);
+  domain::destroy(d);
   cleanup();
 
   return 0;

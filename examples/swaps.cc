@@ -243,7 +243,7 @@ void runWithArgs(int N, char method, bool alternate)
   */
   int* sizes = new int[N];
   for (int i=0; i<N; i++) sizes[i] = N;
-  domain* D = createDomainBottomUp(sizes, N);
+  domain* D = domain::createBottomUp(sizes, N);
   delete[] sizes;
 
   /*
@@ -253,7 +253,7 @@ void runWithArgs(int N, char method, bool alternate)
   initial[0] = 0;
   for (int i=1; i<=N; i++) initial[i] = i-1;
   policies p(false);
-  forest* mdd = D->createForest(0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
+  forest* mdd = forest::create(D, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
   dd_edge init_state(mdd);
   mdd->createEdge(&initial, 1, init_state);
   delete[] initial;
@@ -261,7 +261,7 @@ void runWithArgs(int N, char method, bool alternate)
   /*
      Build next-state function
   */
-  forest* mxd = D->createForest(1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mxd = forest::create(D, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   satpregen_opname::pregen_relation* ensf = 0;
   specialized_operation* sat = 0;

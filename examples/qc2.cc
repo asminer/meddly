@@ -173,7 +173,7 @@ forest* buildForest(policies &p, int N, const varorder &V)
   for (int i=0; i<2*M; i++) {
     vars[i] = N;
   }
-  domain* d = createDomainBottomUp(vars, 2*M);
+  domain* d = domain::createBottomUp(vars, 2*M);
   delete[] vars;
   if (0==d) return 0;
 
@@ -206,7 +206,7 @@ forest* buildForest(policies &p, int N, const varorder &V)
         break;
   }
   printf("Initializing forest with %s policy\n", ndp);
-  return d->createForest(false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
+  return forest::create(d, false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
 }
 
 

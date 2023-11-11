@@ -267,11 +267,11 @@ int main(int argc, const char** argv)
   for (int i=0; i<N; i++) {
     varsizes[i] = N;
   }
-  domain* d = createDomainBottomUp(varsizes, N);
+  domain* d = domain::createBottomUp(varsizes, N);
   assert(d);
   delete[] varsizes;
   expert_forest* f = (expert_forest*)
-    d->createForest(false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
+    forest::create(d, false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
   assert(f);
 
   std::ofstream log;
@@ -401,7 +401,7 @@ int main(int argc, const char** argv)
   operation::showAllComputeTables(myout, 3);
   if (LOG) {
     LOG->newPhase(f, "Cleanup");
-    destroyDomain(d);
+    domain::destroy(d);
   }
   cleanup();
   delete LOG;

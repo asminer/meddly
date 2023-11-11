@@ -35,7 +35,6 @@
 
 namespace MEDDLY {
     class domain;
-    class expert_domain;
 
     class operation;
     class forest;
@@ -599,10 +598,21 @@ class MEDDLY::forest {
   public:
 
     /// Returns a non-modifiable pointer to this forest's domain.
-    const domain* getDomain() const;
+    inline const domain* getDomain() const {
+        return d;
+    }
 
     /// Returns a pointer to this forest's domain.
-    domain* useDomain();
+    inline domain* getDomain() {
+        return d;
+    }
+
+    /// Returns a pointer to this forest's domain.
+    /// Deprecated; use getDomain() instead.
+    inline domain* useDomain() {
+        return getDomain();
+    }
+
 
     /// Does this forest represent relations or matrices?
     bool isForRelations() const;
@@ -1413,14 +1423,6 @@ inline void MEDDLY::forest::setDefaultPoliciesMXDs(const policies& p)
   mxdDefaults = p;
 }
 
-inline const MEDDLY::domain* MEDDLY::forest::getDomain() const {
-  return d;
-}
-
-inline MEDDLY::domain* MEDDLY::forest::useDomain() {
-  return d;
-}
-
 inline bool MEDDLY::forest::isForRelations() const {
   return isRelation;
 }
@@ -1717,9 +1719,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     unsigned char unhashedHeaderBytes() const;
     /// Extra bytes per node, hashed.
     unsigned char hashedHeaderBytes() const;
-
-    const expert_domain* getExpertDomain() const;
-    expert_domain* useExpertDomain();
 
   // --------------------------------------------------
   // Node address information
@@ -2210,7 +2209,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 
     /*
      * Swap the variables at level and level+1.
-     * This method should only be called by expert_domain.
+     * This method should only be called by domain.
      */
     virtual void swapAdjacentVariables(int level) = 0;
 
@@ -2544,18 +2543,6 @@ inline unsigned char
 MEDDLY::expert_forest::hashedHeaderBytes() const
 {
   return hashed_bytes;
-}
-
-inline const MEDDLY::expert_domain*
-MEDDLY::expert_forest::getExpertDomain() const
-{
-  return (MEDDLY::expert_domain*) getDomain();
-}
-
-inline MEDDLY::expert_domain*
-MEDDLY::expert_forest::useExpertDomain()
-{
-  return (MEDDLY::expert_domain*) useDomain();
 }
 
 // --------------------------------------------------
