@@ -24,8 +24,6 @@ domain (PLANNED; NOT DONE YET. TBD)
 Files that need updating / cleanup
 ------------------------------------------------------------
 defines.h
-domain.h                domain.cc
-encoders.h              encoders.cc
 enumerator.h            enumerator.cc
 forest.h                forest.cc
 hash_stream.h
@@ -55,6 +53,7 @@ ct_entry_type.h         ct_entry_type.cc
 ct_initializer.h        ct_initializer.cc
 
 dd_edge.h               dd_edge.cc
+domain.h                domain.cc
 
 error.h                 error.cc
 initializer.h           initializer.cc
