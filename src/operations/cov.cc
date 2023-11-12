@@ -423,6 +423,7 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
         }else if(prevReachable == reachableStates&& first==false){
             first=true;
         }
+        auto stop = high_resolution_clock::now();
         auto duration = duration_cast<minutes>(stop - start);
         if(duration>TimeLimit){
             printf("TimeOut\n" );
