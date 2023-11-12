@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
-
+int TimeLimit=30;
 #include "../defines.h"
 #include "cov.h"
 #include <typeinfo> // for "bad_cast" exception
@@ -344,6 +344,8 @@ void MEDDLY::cov_by_events_op::RSBFSfly(const dd_edge& init, dd_edge& reachableS
 }
 
 
+#include <chrono>
+using namespace std::chrono;
 
 void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reachableStates, satotf_opname::otf_relation* rel ,markcmp* cij)
 {
@@ -353,6 +355,7 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
   int i=0;
   bool first=true;
    // while (prevReachable != reachableStates) {
+   auto start = high_resolution_clock::now();
    do{
        // first=false;
        i++;
@@ -419,6 +422,11 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
             first=false;
         }else if(prevReachable == reachableStates&& first==false){
             first=true;
+        }
+        auto duration = duration_cast<minutes>(stop - start);
+        if(duration>TimeLimit){
+            printf("TimeOut\n" );
+            return;
         }
 
    }while (prevReachable != reachableStates || first==false);
