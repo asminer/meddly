@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
-int TimeLimit=30;
+int TimeLimit=15;
 #include "../defines.h"
 #include "cov.h"
 #include <typeinfo> // for "bad_cast" exception
@@ -425,7 +425,7 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
         }
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<minutes>(stop - start);
-        if(duration>TimeLimit){
+        if(duration.count()>TimeLimit){
             printf("TimeOut\n" );
             return;
         }
