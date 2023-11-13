@@ -1547,6 +1547,7 @@ class MEDDLY::mrrc : public image_op_mxd {
       virtual void compute_rec(node_handle a, node_handle b, node_handle&c);
       virtual void compute_recSC(node_handle a, node_handle b, node_handle&c,node_handle&d,node_handle&e,int&f,std::list<int>* shouldConfirm,markcmp* cmp, RV& above, RV& below);
       virtual void compute_recSC(node_handle a, node_handle b, node_handle&c,node_handle&d,std::list<int>* shouldConfirm);
+    virtual void processTerminals(node_handle evmxd, node_handle mxd, node_handle& resEvmxd,node_handle& eq,node_handle& leq,RV& above);
     virtual void processTerminals(node_handle evmxd, node_handle mxd, node_handle& resEvmxd,node_handle& eq,node_handle& leq);
     void AddtoNH(unpacked_node* D, int i, node_handle s );
 };
@@ -1752,9 +1753,9 @@ delete[] nst;
 void MEDDLY::mrrc::compute_recSC(node_handle evmxd, node_handle mxd, node_handle& resEvmdd,node_handle& eq,node_handle& leq,int& geq,std::list<int>* shouldConfirm,markcmp* cmp,RV& above, RV& below)
 {
 bool d=false;
-if(d) {
-        // printf("call compute_recSC for evmxd %d, mxd %d, above %d, below %d\n",evmxd,mxd,above,below );
-}
+if(d)
+    printf("call compute_recSC for evmxd %d, mxd %d, above %d, below %d\n",evmxd,mxd,above,below );
+
 // termination conditions
 if (mxd == 0 || evmxd == 0) {
         resEvmdd = 0;
@@ -1768,10 +1769,10 @@ if (mxd == 0 || evmxd == 0) {
 }
 if (argM->isTerminalNode(mxd)) {
         if (argV->isTerminalNode(evmxd)) {
-                if(above==G) { below=G; resEvmdd=0; eq=0; return; }
-                processTerminals( evmxd, mxd, resEvmdd,eq, leq/*, geq*/);
+                if(above==G) { below=G; resEvmdd=0; eq=0; leq=0; return; }
+                processTerminals( evmxd, mxd, resEvmdd,eq, leq, above);
                 if (d)
-                printf("terminal res%d eq %d above %d below %d\n",resEvmdd,eq,above, below );
+                printf("terminal res%d eq %d  leq %d above %d \n",resEvmdd,eq,leq,above );
                 if(above==N) { below=N; }
                 else if(above==L) { below=L; }
                 else {below=E;}
@@ -1783,9 +1784,8 @@ if (argM->isTerminalNode(mxd)) {
 int iabove=(int)above, igeq=0;
 ct_entry_key* Key = findResult( evmxd, mxd, resEvmdd,eq,leq,iabove,igeq);
 if (0==Key) {
-        if(d) {
-                printf("FOUND IN CACHE  %d\n",igeq );
-        }
+        if(d)
+            printf("FOUND IN CACHE  resEvmdd%d,eq%d,leq%d,\n",resEvmdd,eq,leq );
         if(igeq>0) geq=igeq;
         return;
 }
@@ -1847,11 +1847,6 @@ for (unsigned i = 0; i < rSize; i++) {
 
                         compute_recSC( B->d(j), mxd, newstates,eqnewstates,leqnewstates,geqnewstates,shouldConfirm,cmp,newabove,newbelow);
 
-                        if(newstates!=0 && eqnewstates==0) {
-                                printf("ERROR! %d %d\n", newstates,eqnewstates);
-                        }
-
-                        // printf("newstates %d\n", newstates);
                         if(newstates!=0 || eqnewstates!=0 || leqnewstates!=0) {
                                 shouldConfirm[evmxdLevel].push_back(j);
 
@@ -1862,24 +1857,45 @@ for (unsigned i = 0; i < rSize; i++) {
 
                                         if(compareijresult>=rSize) {
                                                 shouldConfirm[evmxdLevel].push_back(compareijresult);
-                                                // if(d)
                                                 printf("IF OMEGA2  set HERE!!\n" );
                                         }else{
                                                 if(d)
                                                 printf("IF OMEGA2 inside HERE!!\n" );
+                                                if(newstates!=0){
+                                                    AddtoNH(D,j,newstates);
+                                                    if(d)
+                                                    printf("D[%d]=%d\n",j,newstates );
+                                                    unpacked_node* DEQ = unpacked_node::newFull(resF, -rLevel, rSize);
+                                                    AddtoNH(DEQ,j,eqnewstates);
+                                                    if(d)
+                                                    printf("DEQ[%d]=%d\n",j,eqnewstates );
+                                                    node_handle denode = 0;
+                                                    denode=resF->createReducedNode(int(j), DEQ);//, cev, cnode);
+                                                    AddtoNH(CEQ,j,denode);
+                                                }
+                                                if(leqnewstates!=0){
                                                 AddtoNH(DLEQ,compareijresult,leqnewstates);
+                                                if(d)
+                                                printf("DLEQ[%d]=%d\n",compareijresult,eqnewstates );
                                                 unpacked_node* DEQ = unpacked_node::newFull(resF, -rLevel, rSize);
                                                 AddtoNH(DEQ,compareijresult,eqnewstates);
+                                                if(d)
+                                                printf("DEQ[%d]=%d\n",compareijresult,eqnewstates );
                                                 node_handle denode = 0;
-                                                denode=resF->createReducedNode(int(compareijresult), DEQ);
+                                                denode=resF->createReducedNode(int(compareijresult), DEQ);//, cev, cnode);
                                                 AddtoNH(CEQ,compareijresult,denode);
+                                                }
                                         }
                                 }else{
                                     if(d)
                                     printf("CAme to IF AddtoNH !\n" );
                                         AddtoNH(D,j,newstates);
+                                        if(d)
+                                        printf("D[%d]=%d\n",j,newstates );
                                         unpacked_node* DEQ = unpacked_node::newFull(resF, -rLevel, rSize);
                                         AddtoNH(DEQ,j,eqnewstates);
+                                        if(d)
+                                        printf("DEQ[%d]=%d\n",j,eqnewstates );
                                         node_handle denode = 0;
                                         denode=resF->createReducedNode(int(j), DEQ);
                                         AddtoNH(CEQ,j,denode);
@@ -1888,6 +1904,8 @@ for (unsigned i = 0; i < rSize; i++) {
                                             printf("CAme to IF AddtoNH ADDED!\n" );
 
                                                 AddtoNH(DLEQ,j,leqnewstates);
+                                                if(d)
+                                                printf("DLEQ[%d]=%d\n",j,leqnewstates );
                                         }
                                 }
                         }
@@ -1966,10 +1984,7 @@ for (unsigned i = 0; i < rSize; i++) {
                                 node_handle geqnewstates = 0;
 
                                 compute_recSC( B->d(j), Rp->d(jpz), newstates,eqnewstates,leqnewstates,geqnewstates,shouldConfirm,cmp,newabove,newbelow);
-                                if(newstates!=0 && eqnewstates==0) {
-                                        printf("ERROR P2! %d %d\n", newstates,eqnewstates);
-                                        getchar();
-                                }
+
                                 if (newstates==0 && eqnewstates==0 && leqnewstates==0) {
                                         continue;
                                 }
@@ -1979,7 +1994,6 @@ for (unsigned i = 0; i < rSize; i++) {
                                         // printf("LVL%d  cij %d i:%d , j: %d, above: %d, below:%d \n",evmxdLevel,compareijresult,i,j, above,below );
                                         if((leqnewstates!=0)&&((above==E&&compareijresult>0)||(above==L&&compareijresult>0))) {
                                             geq=1;
-
                                                 if(compareijresult>=rSize) {
                                                         shouldConfirm[evmxdLevel].push_back(compareijresult);
                                                         // if(d)
@@ -1987,26 +2001,61 @@ for (unsigned i = 0; i < rSize; i++) {
                                                 }else{
                                                         if(d)
                                                         printf("ELSE OMEGA2 inside HERE %d !!\n",eqnewstates );
+                                                        if(d)
+                                                        printf("Omega part newstates%d,leqnewstates%d,eqnewstates%d\n",newstates,leqnewstates,eqnewstates );
+                                                        if(newstates!=0){
+                                                            AddtoNH(D,jp,newstates);
+                                                            if(d)
+                                                            printf("D[%d]=%d\n",jp,newstates );
+                                                            unpacked_node* DEQ = unpacked_node::newFull(resF, -rLevel, rSize);
+                                                            AddtoNH(DEQ,jp,eqnewstates);
+                                                            if(d)
+                                                            printf("DEQ[%d]=%d\n",jp,eqnewstates );
+
+                                                            node_handle denode = 0;
+                                                            denode=resF->createReducedNode(int(jp), DEQ);//, cev, cnode);
+                                                            AddtoNH(CEQ,jp,denode);
+                                                        }
+                                                        if(leqnewstates!=0){
                                                         AddtoNH(DLEQ,compareijresult,leqnewstates);
+                                                        if(d)
+                                                        printf("DLEQ[%d]=%d\n",compareijresult,leqnewstates );
+
                                                         unpacked_node* DEQ = unpacked_node::newFull(resF, -rLevel, rSize);
                                                         AddtoNH(DEQ,compareijresult,eqnewstates);
+                                                        if(d)
+                                                        printf("DEQ[%d]=%d\n",compareijresult,eqnewstates );
+
                                                         node_handle denode = 0;
                                                         denode=resF->createReducedNode(int(compareijresult), DEQ);//, cev, cnode);
                                                         AddtoNH(CEQ,compareijresult,denode);
+                                                        }
                                                 }
                                         }else{
                                             if(d)
                                             printf("CAme to else AddtoNH\n" );
+                                            if(d)
+                                            printf("newstates%d,leqnewstates%d,eqnewstates%d\n",newstates,leqnewstates,eqnewstates );
+
                                                 AddtoNH(D,jp,newstates);
+                                                if(d)
+                                                printf("D[%d]=%d\n",jp,newstates );
+
                                                 unpacked_node* DEQ = unpacked_node::newFull(resF, -rLevel, rSize);
                                                 AddtoNH(DEQ,jp,eqnewstates);
+                                                if(d)
+                                                printf("DEQ[%d]=%d\n",jp,eqnewstates );
+
                                                 node_handle denode = 0;
-                                                denode=resF->createReducedNode(int(jp), DEQ);//, cev, cnode);
+                                                denode=resF->createReducedNode(int(jp), DEQ);
                                                 AddtoNH(CEQ,jp,denode);
-                                                if((above==L &&  compareijresult==-2)||(above==E&& compareijresult==-2 /*&&leqnewstates>0*/) ) {
+                                                if((above==L &&  compareijresult==-2)||(above==E&& compareijresult==-2 ) ) {
                                                         if(d)
                                                         printf("CAme to else AddtoNH ADDED!\n" );
                                                         AddtoNH(DLEQ,jp,leqnewstates);
+                                                        if(d)
+                                                        printf("DLEQ[%d]=%d\n",jp,leqnewstates );
+
                                                 }
                                         }
                         }
@@ -2042,6 +2091,8 @@ printf("leq %d\n",leq );
 printf("computed new tcXrel(<%ld, %d>, %d) = <%ld, %d>\n", ev, evmxd, mxd, resEv, resEvmdd);
 #endif
 saveResult(Key, evmxd, mxd, resEvmdd,eq,leq,above,geq);
+if(d)
+printf("SAVED!evmxd %d, mxd %d, resEvmdd%d,eq%d,leq%d,above%d,geq%d \n", evmxd, mxd, resEvmdd,eq,leq,above,geq);
 }
 void MEDDLY::mrrc::AddtoNH(unpacked_node* UN, int i, node_handle s ){
     if(0!=s)
@@ -2068,6 +2119,33 @@ void MEDDLY::mrrc::processTerminals( node_handle evmxd, node_handle mxd, node_ha
   resEvmxd = resF->handleForValue(rval);
   eq = resF->handleForValue(rval);
   leq = resF->handleForValue(rval);
+}
+
+void MEDDLY::mrrc::processTerminals( node_handle evmxd, node_handle mxd, node_handle& resEvmxd,node_handle& eq,node_handle& leq, RV& above)
+{
+  long evmddval;
+  long mxdval;
+  long rval;
+  argV->getValueFromHandle(evmxd, evmddval);
+  argM->getValueFromHandle(mxd, mxdval);
+  rval = evmddval * mxdval;
+  if(above==N){
+      resEvmxd = resF->handleForValue(rval);
+      eq = resF->handleForValue(rval);
+      leq = 0;
+  }else if(above==L){
+      resEvmxd =0;
+      eq = resF->handleForValue(rval);
+      leq = resF->handleForValue(rval);
+  }else if(above==E){
+      resEvmxd =0;
+      eq = resF->handleForValue(rval);
+      leq = 0;
+  }else if(above==G){
+      resEvmxd =0;
+      eq =0;
+      leq = 0;
+  }
 }
 
 
