@@ -287,7 +287,7 @@ class MEDDLY::node_headers : public array_watcher {
 
     private:
 
-
+#if 0
         /**
             Stores incoming or cache counts for each node,
             as an array.  This allows us to disable counts,
@@ -332,6 +332,8 @@ class MEDDLY::node_headers : public array_watcher {
                 void shrink32to16(size_t ns);
                 void shrink32to8(size_t ns);
             };
+
+#endif
 
         /**
             Stores the address of each node, as either an
@@ -476,6 +478,8 @@ class MEDDLY::node_headers : public array_watcher {
 // *          inlined node_headers::counter_array  methods          *
 // *                                                                *
 // ******************************************************************
+
+#if 0
 
 inline unsigned int MEDDLY::node_headers::counter_array::get(size_t i) const
 {
@@ -634,6 +638,7 @@ inline bool MEDDLY::node_headers::counter_array
     return --data32[i] > 0;
 }
 
+#endif
 
 // ******************************************************************
 // *                                                                *

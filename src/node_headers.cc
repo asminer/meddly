@@ -120,6 +120,8 @@ inline void dump_handle_info(const MEDDLY::node_headers &NH, long size)
 // *                                                                *
 // ******************************************************************
 
+#if 0
+
 MEDDLY::node_headers::counter_array::counter_array(node_headers &p) : parent(p)
 {
   data8 = 0;
@@ -401,6 +403,8 @@ void MEDDLY::node_headers::counter_array::shrink32to8(size_t ns)
   data32 = 0;
 }
 
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *              node_headers::address_array  methods              *
@@ -654,9 +658,9 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   addresses = new address_array(*this);
   levels = new level_array(parent.getNumVariables(), this);
   if (parent.getPolicies().useReferenceCounts) {
-    cache_counts = new counter_array(*this);
+    cache_counts = new counter_array(this);
     is_in_cache = 0;
-    incoming_counts = new counter_array(*this);
+    incoming_counts = new counter_array(this);
     is_reachable = 0;
   } else {
     cache_counts = 0;
