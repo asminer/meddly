@@ -113,142 +113,6 @@ inline void dump_handle_info(const MEDDLY::node_headers &NH, long size)
 }
 #endif
 
-// ******************************************************************
-// *                                                                *
-// *               node_headers::level_array  methods               *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::node_headers::level_array::level_array(node_headers &p, int max_level)
- : parent(p)
-{
-  data8 = 0;
-  data16 = 0;
-  data32 = 0;
-  size = 0;
-
-  if (max_level < 128) {
-    bytes = 1;
-    MEDDLY_DCASSERT(1 == sizeof(char));
-  } else if (max_level < 32768) {
-    bytes = 2;
-    MEDDLY_DCASSERT(2 == sizeof(short));
-  } else {
-    bytes = 4;
-    MEDDLY_DCASSERT(4 == sizeof(int));
-  }
-
-  parent.changeHeaderSize(0, bytes*8);
-}
-
-MEDDLY::node_headers::level_array::~level_array()
-{
-  free(data8);
-  free(data16);
-  free(data32);
-  parent.changeHeaderSize(bytes*8, 0);
-}
-
-void MEDDLY::node_headers::level_array::expand(size_t ns)
-{
-  if (ns <= size) return;
-
-  char* d8 = 0;
-  short* d16 = 0;
-  int* d32 = 0;
-
-  switch (bytes) {
-    case 1:   // char array
-              d8 = (char*) realloc(data8, ns * bytes);
-              if (0==d8) {
-                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-              }
-              memset(d8 + size, 0, (ns-size) * bytes );
-              data8 = d8;
-              break;
-
-    case 2:   // short array
-              d16 = (short*) realloc(data16, ns * bytes);
-              if (0==d16) {
-                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-              }
-              memset(d16 + size, 0, (ns-size) * bytes );
-              data16 = d16;
-              break;
-
-    case 4:   // int array
-              d32 = (int*) realloc(data32, ns * bytes);
-              if (0==d32) {
-                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-              }
-              memset(d32 + size, 0, (ns-size) * bytes );
-              data32 = d32;
-              break;
-
-    default:
-              MEDDLY_DCASSERT(0);
-  }
-
-  size = ns;
-#ifdef DEBUG_LEVEL_RESIZE
-  printf("Enlarged level array, new size %lu\n", size);
-#endif
-}
-
-void MEDDLY::node_headers::level_array::shrink(size_t ns)
-{
-  if (ns >= size) return;
-
-  char* d8 = 0;
-  short* d16 = 0;
-  int* d32 = 0;
-
-  switch (bytes) {
-    case 1:   // char array
-              d8 = (char*) realloc(data8, ns * bytes);
-              if (0==d8) {
-                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-              }
-              data8 = d8;
-              break;
-
-    case 2:   // short array
-              d16 = (short*) realloc(data16, ns * bytes);
-              if (0==d16) {
-                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-              }
-              data16 = d16;
-              break;
-
-    case 4:   // int array
-              d32 = (int*) realloc(data32, ns * bytes);
-              if (0==d32) {
-                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-              }
-              data32 = d32;
-              break;
-
-    default:
-              MEDDLY_DCASSERT(0);
-  }
-
-  size = ns;
-#ifdef DEBUG_LEVEL_RESIZE
-  printf("Reduced level array, new size %lu\n", size);
-#endif
-}
-
-void MEDDLY::node_headers::level_array
-  ::show(output &s, size_t first, size_t last, int width) const
-{
-  s << "[";
-  s.put(long(get(first)), width);
-  for (size_t i=first+1; i<=last; i++) {
-    s.put('|');
-    s.put(long(get(i)), width);
-  }
-  s << "]";
-}
 
 // ******************************************************************
 // *                                                                *
@@ -788,7 +652,7 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   a_lowest_index = 8;
   a_sweep = SIZE_MAX;
   addresses = new address_array(*this);
-  levels = new level_array(*this, parent.getNumVariables());
+  levels = new level_array(parent.getNumVariables(), this);
   if (parent.getPolicies().useReferenceCounts) {
     cache_counts = new counter_array(*this);
     is_in_cache = 0;
@@ -814,6 +678,32 @@ MEDDLY::node_headers::~node_headers()
   delete incoming_counts;
   delete is_reachable;
   delete implicit_bits;
+}
+
+// ******************************************************************
+
+void MEDDLY::node_headers::expandElementSize(unsigned oldbits, unsigned newbits)
+{
+    MEDDLY_DCASSERT(oldbits <= newbits);
+
+    parent.mstats.incMemUsed((a_last - a_freed)*(newbits-oldbits)/8);
+    parent.mstats.incMemAlloc(a_size*(newbits-oldbits)/8);
+
+    h_bits += newbits;
+    h_bits -= oldbits;
+}
+
+// ******************************************************************
+
+void MEDDLY::node_headers::shrinkElementSize(unsigned oldbits, unsigned newbits)
+{
+    MEDDLY_DCASSERT(oldbits >= newbits);
+
+    parent.mstats.decMemUsed((a_last - a_freed)*(oldbits-newbits)/8);
+    parent.mstats.decMemAlloc(a_size*(oldbits-newbits)/8);
+
+    h_bits += newbits;
+    h_bits -= oldbits;
 }
 
 // ******************************************************************

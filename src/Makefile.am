@@ -17,6 +17,7 @@ lib_LTLIBRARIES = libmeddly.la
 ##
 
 libmeddly_la_SOURCES = \
+    arrays.h                arrays.cc \
     compute_table.h         compute_table.cc \
     ct_entry_key.h          ct_entry_key.cc \
     ct_entry_result.h       ct_entry_result.cc \

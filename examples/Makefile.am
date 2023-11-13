@@ -5,20 +5,20 @@
 
 ## bin_PROGRAMS = \
 noinst_PROGRAMS = \
-graphs_to_mdds \
 build_expression \
 dining_phils \
+graphs_to_mdds \
+kanban \
+knight \
+knight2 \
+libinfo \
+life \
 rubiks_cube \
 rubiks_cube_orient \
 nqueens \
 queen_cover \
 qc2 \
-knight \
-knight2 \
-kanban \
 slot \
-life \
-libinfo \
 square1 \
 swaps \
 rubiks_rings \
@@ -46,32 +46,32 @@ testmddlib
 
 AM_CXXFLAGS = -Wall
 
-graphs_to_mdds_SOURCES = graphs_to_mdds.cc
-graphs_to_mdds_LDADD = ../src/libmeddly.la
-
-test_union_mdd_SOURCES = test_union_mdd.cc
-test_union_mdd_LDADD = ../src/libmeddly.la
-
-test_union_mxd_SOURCES = test_union_mxd.cc
-test_union_mxd_LDADD = ../src/libmeddly.la
-
-test_mtmdd_SOURCES = test_mtmdd.cc
-test_mtmdd_LDADD = ../src/libmeddly.la
-
-test_mtmxd_SOURCES = test_mtmxd.cc
-test_mtmxd_LDADD = ../src/libmeddly.la
-
-test_xdds_SOURCES = test_xdds.cc
-test_xdds_LDADD = ../src/libmeddly.la
-
-test_otf_sat_SOURCES = test_otf_sat.cc
-test_otf_sat_LDADD = ../src/libmeddly.la
 
 build_expression_SOURCES = build_expression.cc
 build_expression_LDADD = ../src/libmeddly.la
 
 dining_phils_SOURCES = dining_phils.cc
 dining_phils_LDADD = ../src/libmeddly.la
+
+graphs_to_mdds_SOURCES = graphs_to_mdds.cc
+graphs_to_mdds_LDADD = ../src/libmeddly.la
+
+kanban_SOURCES = kanban.cc simple_model.h simple_model.cc
+kanban_LDADD = ../src/libmeddly.la
+
+knight_SOURCES = knight.cc
+knight_LDADD = ../src/libmeddly.la
+
+knight2_SOURCES = knight2.cc
+knight2_LDADD = ../src/libmeddly.la
+
+libinfo_SOURCES = libinfo.cc
+libinfo_LDADD = ../src/libmeddly.la
+
+life_SOURCES = life.cc
+life_LDADD = ../src/libmeddly.la
+
+
 
 rubiks_cube_SOURCES = rubiks_cube.cc
 rubiks_cube_LDADD = ../src/libmeddly.la
@@ -91,24 +91,9 @@ queen_cover_LDADD = ../src/libmeddly.la
 qc2_SOURCES = qc2.cc
 qc2_LDADD = ../src/libmeddly.la
 
-knight_SOURCES = knight.cc
-knight_LDADD = ../src/libmeddly.la
-
-knight2_SOURCES = knight2.cc
-knight2_LDADD = ../src/libmeddly.la
-
-
-kanban_SOURCES = kanban.cc simple_model.h simple_model.cc
-kanban_LDADD = ../src/libmeddly.la
 
 slot_SOURCES = slot.cc simple_model.h simple_model.cc
 slot_LDADD = ../src/libmeddly.la
-
-life_SOURCES = life.cc
-life_LDADD = ../src/libmeddly.la
-
-libinfo_SOURCES = libinfo.cc
-libinfo_LDADD = ../src/libmeddly.la
 
 square1_SOURCES = square1.cc
 square1_LDADD = ../src/libmeddly.la
@@ -156,4 +141,21 @@ test_sccs_LDADD = ../src/libmeddly.la
 testmddlib_SOURCES = testmddlib.cc
 testmddlib_LDADD = ../src/libmeddly.la
 
+test_union_mdd_SOURCES = test_union_mdd.cc
+test_union_mdd_LDADD = ../src/libmeddly.la
+
+test_union_mxd_SOURCES = test_union_mxd.cc
+test_union_mxd_LDADD = ../src/libmeddly.la
+
+test_mtmdd_SOURCES = test_mtmdd.cc
+test_mtmdd_LDADD = ../src/libmeddly.la
+
+test_mtmxd_SOURCES = test_mtmxd.cc
+test_mtmxd_LDADD = ../src/libmeddly.la
+
+test_xdds_SOURCES = test_xdds.cc
+test_xdds_LDADD = ../src/libmeddly.la
+
+test_otf_sat_SOURCES = test_otf_sat.cc
+test_otf_sat_LDADD = ../src/libmeddly.la
 

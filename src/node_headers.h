@@ -19,10 +19,8 @@
 #ifndef MEDDLY_NODE_HEADERS_H
 #define MEDDLY_NODE_HEADERS_H
 
-// #define OLD_NODE_HEADERS
 
-#include "defines.h"
-#include <cstring>  // for memset
+#include "arrays.h"
 
 namespace MEDDLY {
     class node_headers;
@@ -71,10 +69,19 @@ namespace MEDDLY {
     or (more likely) to save space.
 
 */
-class MEDDLY::node_headers {
+class MEDDLY::node_headers : public array_watcher {
     public:
         node_headers(expert_forest &P);
-        ~node_headers();
+        virtual ~node_headers();
+
+    public:
+        //
+        // array_watcher overloads
+        //
+        virtual void expandElementSize(unsigned oldbits, unsigned newbits);
+        virtual void shrinkElementSize(unsigned oldbits, unsigned newbits);
+
+    public:
 
 
         /** Show various memory stats.
@@ -280,92 +287,6 @@ class MEDDLY::node_headers {
 
     private:
 
-        /*
-            Stores the level of each node,
-            as an array. This allows us to
-            shrink the array elements based on
-            the number of levels, to one of
-            char, short, or int.
-         */
-        class level_array {
-                node_headers &parent;
-                char* data8;
-                short* data16;
-                int* data32;
-                size_t size;
-                unsigned char bytes;
-            public:
-                level_array(node_headers &p, int max_level);
-                ~level_array();
-
-                void expand(size_t ns);
-                void shrink(size_t ns);
-
-                void show(output &s, size_t first, size_t last, int width)
-                    const;
-
-                inline size_t entry_bits() const {
-                    return size_t(bytes) * 8;
-                }
-
-                inline int get(size_t i) const
-                {
-                    MEDDLY_DCASSERT(i<size);
-                    if (data8) {
-                        MEDDLY_DCASSERT(!data16);
-                        MEDDLY_DCASSERT(!data32);
-                        return data8[i];
-                    }
-                    if (data16) {
-                        MEDDLY_DCASSERT(!data32);
-                        return data16[i];
-                    }
-                    MEDDLY_DCASSERT(data32);
-                    return data32[i];
-                }
-
-                inline void set(size_t i, int v)
-                {
-                    MEDDLY_DCASSERT(i<size);
-                    if (data8) {
-                        MEDDLY_DCASSERT(!data16);
-                        MEDDLY_DCASSERT(!data32);
-                        MEDDLY_DCASSERT(v>-128);
-                        MEDDLY_DCASSERT(v<128);
-                        data8[i] = v;
-                        return;
-                    }
-                    if (data16) {
-                        MEDDLY_DCASSERT(!data32);
-                        MEDDLY_DCASSERT(v>-32768);
-                        MEDDLY_DCASSERT(v<32768);
-                        data16[i] = v;
-                        return;
-                    }
-                    MEDDLY_DCASSERT(data32);
-                    data32[i] = v;
-                }
-
-                inline void swap(size_t i, size_t j)
-                {
-                    MEDDLY_DCASSERT(i<size);
-                    MEDDLY_DCASSERT(j<size);
-                    if (data8) {
-                        MEDDLY_DCASSERT(!data16);
-                        MEDDLY_DCASSERT(!data32);
-                        SWAP(data8[i], data8[j]);
-                        return;
-                    }
-                    if (data16) {
-                        MEDDLY_DCASSERT(!data32);
-                        SWAP(data16[i], data16[j]);
-                        return;
-                    }
-                    MEDDLY_DCASSERT(data32);
-                    SWAP(data32[i], data32[j]);
-                }
-
-        };
 
         /**
             Stores incoming or cache counts for each node,
