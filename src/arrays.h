@@ -29,6 +29,7 @@ namespace MEDDLY {
 
     class level_array;
     class counter_array;
+    class address_array;
 };
 
 
@@ -342,5 +343,106 @@ class MEDDLY::counter_array {
         void shrink32to8(size_t ns);
 };
 
+// ******************************************************************
+// *                                                                *
+// *                      address_array  class                      *
+// *                                                                *
+// ******************************************************************
+
+/**
+    An array of addresses.
+    Stored either as an array of ints or an array of longs.
+    The element size is expanded as needed, based on if any entries
+    don't fit into an int.
+*/
+
+class MEDDLY::address_array {
+        array_watcher* watch;
+        unsigned int* data32;
+        unsigned long* data64;
+        size_t size;
+        size_t num_large_elements;
+        unsigned bytes;
+    public:
+        address_array(array_watcher *w=nullptr);
+        ~address_array();
+
+        void expand(size_t ns);
+        void shrink(size_t ns);
+
+        void show(output &s, size_t first, size_t last, int width) const;
+        inline size_t entry_bits() const { return size_t(bytes) * 8; }
+
+        inline unsigned long get(size_t i) const {
+            CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
+            if (4==bytes) {
+                MEDDLY_DCASSERT(data32);
+                MEDDLY_DCASSERT(!data64);
+                MEDDLY_DCASSERT(0==num_large_elements);
+                return data32[i];
+            }
+            MEDDLY_DCASSERT(8==bytes);
+            MEDDLY_DCASSERT(!data32);
+            MEDDLY_DCASSERT(data64);
+            return data64[i];
+        }
+
+        inline void set(size_t i, unsigned long v) {
+            CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
+            if (4==bytes) {
+                MEDDLY_DCASSERT(data32);
+                MEDDLY_DCASSERT(!data64);
+                MEDDLY_DCASSERT(0==num_large_elements);
+
+                if (v & 0xffffffff00000000) {
+                    // v won't fit in 32 bits
+                    expand32to64(); // will set num_large_elements = 1
+                    MEDDLY_DCASSERT(data64);
+                    data64[i] = v;
+                } else {
+                    // v will fit in 32 bits
+                    data32[i] = v;
+                }
+                return;
+            }
+            MEDDLY_DCASSERT(8==bytes);
+            MEDDLY_DCASSERT(!data32);
+            MEDDLY_DCASSERT(data64);
+            if (v & 0xffffffff00000000) {
+                // v is large
+                if (0 == (data64[i] & 0xffffffff00000000)) {
+                    // replacing small
+                    num_large_elements++;
+                }
+            } else {
+                // v is small
+                if (data64[i] & 0xffffffff00000000) {
+                    // replacing large
+                    MEDDLY_DCASSERT(num_large_elements);
+                    num_large_elements--;
+                }
+            }
+            data64[i] = v;
+        }
+
+        inline void swap(size_t i, size_t j) {
+            CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
+            CHECK_RANGE(__FILE__, __LINE__, size_t(0), j, size);
+            if (4==bytes) {
+                MEDDLY_DCASSERT(data32);
+                MEDDLY_DCASSERT(!data64);
+                SWAP(data32[i], data32[j]);
+                return;
+            }
+            MEDDLY_DCASSERT(8==bytes);
+            MEDDLY_DCASSERT(!data32);
+            MEDDLY_DCASSERT(data64);
+            SWAP(data64[i], data64[j]);
+        }
+
+    private:
+        void expand32to64();
+        void shrink64to32(size_t ns);
+};
 
 #endif

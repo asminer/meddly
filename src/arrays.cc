@@ -475,3 +475,158 @@ void MEDDLY::counter_array::shrink32to8(size_t ns)
 }
 
 
+// ******************************************************************
+// *                                                                *
+// *                     address_array  methods                     *
+// *                                                                *
+// ******************************************************************
+
+
+MEDDLY::address_array::address_array(array_watcher *w)
+{
+    watch = w;
+    data32 = nullptr;
+    data64 = nullptr;
+    num_large_elements = 0;
+    bytes = 4;
+    size = 0;
+    if (watch) watch->expandElementSize(0, bytes*8);
+}
+
+MEDDLY::address_array::~address_array()
+{
+    free(data32);
+    free(data64);
+    if (watch) watch->shrinkElementSize(bytes*8, 0);
+}
+
+void MEDDLY::address_array::expand(size_t ns)
+{
+    if (ns <= size) return;
+
+    if (4==bytes) {
+        MEDDLY_DCASSERT(!data64);
+        unsigned int* d = (unsigned int*) realloc(data32, ns * bytes);
+        if (!d) {
+            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        }
+        memset(d + size, 0, (ns-size) * bytes);
+        data32 = d;
+    } else {
+        MEDDLY_DCASSERT(!data32);
+        MEDDLY_DCASSERT(8==bytes);
+        if (num_large_elements) {
+            // Stay at 64 bits
+            unsigned long* d = (unsigned long*) realloc(data64, ns * bytes);
+            if (!d) {
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+            }
+            memset(d + size, 0, (ns-size) * sizeof(unsigned long) );
+            data64 = d;
+        } else {
+            shrink64to32(ns);
+        }
+    }
+
+    size = ns;
+#ifdef DEBUG_ADDRESS_RESIZE
+    std::cerr << "Enlarged address array, new size " << size << std::endl;
+#endif
+}
+
+void MEDDLY::address_array::shrink(size_t ns)
+{
+    if (ns >= size) return;
+
+    if (4==bytes) {
+        MEDDLY_DCASSERT(data32);
+        MEDDLY_DCASSERT(!data64);
+        unsigned int* d = (unsigned int*) realloc(data32, ns * bytes);
+        if (!d) {
+        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        }
+        data32 = d;
+    } else {
+        MEDDLY_DCASSERT(8==bytes);
+        MEDDLY_DCASSERT(0==data32);
+        if (num_large_elements) {
+            // Stay at 64 bits
+            unsigned long* d = (unsigned long*)
+                realloc(data64, ns * sizeof(unsigned long));
+            if (!d) {
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+            }
+            data64 = d;
+        } else {
+            shrink64to32(ns);
+        }
+    }
+
+    size = ns;
+#ifdef DEBUG_ADDRESS_RESIZE
+    std::cerr << "Reduced address array, new size " << size << std::endl;
+#endif
+}
+
+void MEDDLY::address_array::show(output &s, size_t first, size_t last,
+                int width) const
+{
+    s.put('[');
+    s.put(get(first), width);
+    for (size_t i=first+1; i<=last; i++) {
+        s.put('|');
+        s.put(get(i), width);
+    }
+    s.put(']');
+}
+
+void MEDDLY::address_array::expand32to64()
+{
+#ifdef DEBUG_ADDRESS_RESIZE
+    std::cerr << "Widening counter array from 32 to 64 bits\n";
+#endif
+    MEDDLY_DCASSERT(4==bytes);
+    MEDDLY_DCASSERT(!data64);
+    MEDDLY_DCASSERT(!num_large_elements);
+
+    bytes = 8;
+    MEDDLY_DCASSERT(sizeof(unsigned long) == bytes);
+    data64 = (unsigned long*) malloc(size * bytes);
+    if (!data64) {
+        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+    for (size_t i=0; i<size; i++) {
+        data64[i] = data32[i];
+    }
+    free(data32);
+    data32 = nullptr;
+    num_large_elements = 1;
+    if (watch) watch->expandElementSize(32, 64);
+}
+
+void MEDDLY::address_array::shrink64to32(size_t ns)
+{
+#ifdef DEBUG_ADDRESS_RESIZE
+    std::cerr << "Narrowing counter array from 64 to 32 bits\n";
+#endif
+    MEDDLY_DCASSERT(8==bytes);
+    MEDDLY_DCASSERT(data64);
+    MEDDLY_DCASSERT(!data32);
+    MEDDLY_DCASSERT(!num_large_elements);
+
+    bytes = 4;
+    MEDDLY_DCASSERT(sizeof(unsigned int) == bytes);
+    data32 = (unsigned int*) malloc(ns * bytes);
+    if (!data32) {
+        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+    size_t stop = (ns < size) ? ns : size;
+    for (size_t i=0; i<stop; i++) {
+        data32[i] = data64[i];
+    }
+    free(data64);
+    data64 = nullptr;
+    if (watch) watch->shrinkElementSize(64, 32);
+}
+
+

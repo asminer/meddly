@@ -287,7 +287,7 @@ class MEDDLY::node_headers : public array_watcher {
 
     private:
 
-
+#if 0
         /**
             Stores the address of each node, as either an
             array of ints or an array of longs.
@@ -318,6 +318,7 @@ class MEDDLY::node_headers : public array_watcher {
                 void expand32to64();
                 void shrink64to32(size_t ns);
         };
+#endif
 
         /**
             Array of booleans.
@@ -433,6 +434,8 @@ class MEDDLY::node_headers : public array_watcher {
 // *                                                                *
 // ******************************************************************
 
+#if 0
+
 inline unsigned long MEDDLY::node_headers::address_array::get(size_t i) const
 {
     MEDDLY_DCASSERT(i<size);
@@ -502,6 +505,8 @@ inline void MEDDLY::node_headers::address_array::swap(size_t i, size_t j)
     MEDDLY_DCASSERT(data64);
     SWAP(data64[i], data64[j]);
 }
+
+#endif
 
 // ******************************************************************
 // *                                                                *

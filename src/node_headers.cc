@@ -121,6 +121,8 @@ inline void dump_handle_info(const MEDDLY::node_headers &NH, long size)
 // *                                                                *
 // ******************************************************************
 
+#if 0
+
 MEDDLY::node_headers::address_array::address_array(node_headers &p) : parent(p)
 {
   data32 = 0;
@@ -267,6 +269,8 @@ void MEDDLY::node_headers::address_array::shrink64to32(size_t ns)
   parent.changeHeaderSize(64, 32);
 }
 
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *                node_headers::bitvector  methods                *
@@ -365,7 +369,7 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
   for (int i=0; i<8; i++) a_unused[i] = 0;
   a_lowest_index = 8;
   a_sweep = SIZE_MAX;
-  addresses = new address_array(*this);
+  addresses = new address_array(this);
   levels = new level_array(parent.getNumVariables(), this);
   if (parent.getPolicies().useReferenceCounts) {
     cache_counts = new counter_array(this);
