@@ -287,38 +287,6 @@ class MEDDLY::node_headers : public array_watcher {
 
     private:
 
-#if 0
-        /**
-            Stores the address of each node, as either an
-            array of ints or an array of longs.
-        */
-        class address_array {
-                node_headers &parent;
-                unsigned int* data32;
-                unsigned long* data64;
-                size_t size;
-                size_t num_large_elements;
-                unsigned char bytes;
-            public:
-                address_array(node_headers &p);
-                ~address_array();
-
-                void expand(size_t ns);
-                void shrink(size_t ns);
-
-                unsigned long get(size_t i) const;
-                void set(size_t i, unsigned long v);
-                void swap(size_t i, size_t j);
-
-                void show(output &s, size_t first, size_t last, int width)
-                    const;
-                inline size_t entry_bits() const { return size_t(bytes) * 8; }
-
-
-                void expand32to64();
-                void shrink64to32(size_t ns);
-        };
-#endif
 
         /**
             Array of booleans.
@@ -428,85 +396,6 @@ class MEDDLY::node_headers : public array_watcher {
 };
 
 
-// ******************************************************************
-// *                                                                *
-// *          inlined node_headers::address_array  methods          *
-// *                                                                *
-// ******************************************************************
-
-#if 0
-
-inline unsigned long MEDDLY::node_headers::address_array::get(size_t i) const
-{
-    MEDDLY_DCASSERT(i<size);
-    if (4==bytes) {
-        MEDDLY_DCASSERT(data32);
-        MEDDLY_DCASSERT(!data64);
-        MEDDLY_DCASSERT(0==num_large_elements);
-        return data32[i];
-    }
-    MEDDLY_DCASSERT(8==bytes);
-    MEDDLY_DCASSERT(!data32);
-    MEDDLY_DCASSERT(data64);
-    return data64[i];
-}
-
-inline void MEDDLY::node_headers::address_array::set(size_t i, unsigned long v)
-{
-    MEDDLY_DCASSERT(i<size);
-    if (4==bytes) {
-        MEDDLY_DCASSERT(data32);
-        MEDDLY_DCASSERT(!data64);
-        MEDDLY_DCASSERT(0==num_large_elements);
-
-        if (v & 0xffffffff00000000) {
-            // v won't fit in 32 bits
-            expand32to64();
-            MEDDLY_DCASSERT(data64);
-            data64[i] = v;
-        } else {
-            // v will fit in 32 bits
-            data32[i] = v;
-        }
-        return;
-    }
-    MEDDLY_DCASSERT(8==bytes);
-    MEDDLY_DCASSERT(!data32);
-    MEDDLY_DCASSERT(data64);
-    if (v & 0xffffffff00000000) {
-        // v is large
-        if (0 == (data64[i] & 0xffffffff00000000)) {
-            // replacing small
-            num_large_elements++;
-        }
-    } else {
-        // v is small
-        if (data64[i] & 0xffffffff00000000) {
-            // replacing large
-            MEDDLY_DCASSERT(num_large_elements);
-            num_large_elements--;
-        }
-    }
-    data64[i] = v;
-}
-
-inline void MEDDLY::node_headers::address_array::swap(size_t i, size_t j)
-{
-    MEDDLY_DCASSERT(i<size);
-    MEDDLY_DCASSERT(j<size);
-    if (4==bytes) {
-        MEDDLY_DCASSERT(data32);
-        MEDDLY_DCASSERT(!data64);
-        SWAP(data32[i], data32[j]);
-        return;
-    }
-    MEDDLY_DCASSERT(8==bytes);
-    MEDDLY_DCASSERT(!data32);
-    MEDDLY_DCASSERT(data64);
-    SWAP(data64[i], data64[j]);
-}
-
-#endif
 
 // ******************************************************************
 // *                                                                *
