@@ -81,6 +81,95 @@ class MEDDLY::node_headers : public array_watcher {
         virtual void expandElementSize(unsigned oldbits, unsigned newbits);
         virtual void shrinkElementSize(unsigned oldbits, unsigned newbits);
 
+
+    public:
+        //
+        // Inlined getters
+        //
+
+        /**
+            Get largest handle of active nodes.
+        */
+        inline node_handle lastUsedHandle() const {
+            return a_last;
+        }
+
+
+    public:
+        //
+        // Node status
+        //
+
+        /// Is this a deleted node
+        inline bool isDeleted(node_handle p) const {
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(levels);
+            return (0==levels->get(size_t(p)));
+        }
+
+        /// Is this node active?
+        inline bool isActive(node_handle p) const {
+            return !isDeleted(p);
+        }
+
+        /// Set the given node as inactive/deleted
+        inline void deactivate(node_handle p) {
+            MEDDLY_DCASSERT(isActive(p));
+            MEDDLY_DCASSERT(levels);
+            levels->set(size_t(p), 0);
+        }
+
+
+    public:
+        //
+        // Node attributes:
+        //      address,
+        //      level,
+        //
+
+        /// Get the address for node p.
+        inline node_address getNodeAddress(node_handle p) const {
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(addresses);
+            return addresses->get(size_t(p));
+        }
+
+        /// Set the address for node p to a.
+        inline void setNodeAddress(node_handle p, node_address a) {
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(addresses);
+            addresses->set(size_t(p), a);
+        }
+
+        /** Change the address for node p.
+            Same as setNodeAddress, except we can verify the old address
+            as a sanity check.
+        */
+        inline void moveNodeAddress(node_handle p, node_address old_addr,
+                node_address new_addr)
+        {
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(addresses);
+            MEDDLY_DCASSERT(old_addr == addresses->get(size_t(p)));
+            addresses->set(size_t(p), new_addr);
+        }
+
+        /// Get the level for node p.
+        inline int getNodeLevel(node_handle p) const {
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(levels);
+            return levels->get(size_t(p));
+        }
+
+        /// Set the level for node p to k.
+        inline void setNodeLevel(node_handle p, int k) {
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(levels);
+            levels->set(size_t(p), k);
+        }
+
+
+
     public:
 
 
@@ -99,21 +188,6 @@ class MEDDLY::node_headers : public array_watcher {
         */
         void showHeader(output &s, node_handle p) const;
 
-        /**
-            Indicate that we don't need to track cache counts.
-            The default is that we will track cache counts.
-            For efficiency, this should be called soon after
-            construction (otherwise we may allocate space for nothing).
-        */
-        // void turnOffCacheCounts();
-
-        /**
-            Indicate that we don't need to track incoming counts.
-            The default is that we will track incoming counts.
-            For efficiency, this should be called soon after
-            construction (otherwise we may allocate space for nothing).
-        */
-        // void turnOffIncomingCounts();
 
         /**
             Set node recycling to pessimistic or optimistic.
@@ -121,7 +195,10 @@ class MEDDLY::node_headers : public array_watcher {
             Optimistic:     disconnected nodes are recycled only when
                             they no longer appear in any caches.
         */
-        void setPessimistic(bool pess);
+        inline void setPessimistic(bool pess) {
+            pessimistic = pess;
+        }
+
 
     public: // node handle management
 
@@ -141,10 +218,6 @@ class MEDDLY::node_headers : public array_watcher {
         */
         void recycleNodeHandle(node_handle p);
 
-        /**
-            Get largest handle of active nodes.
-        */
-        node_handle lastUsedHandle() const;
 
         /**
             Swap two nodes.
@@ -157,43 +230,13 @@ class MEDDLY::node_headers : public array_watcher {
         void swapNodes(node_handle p, node_handle q, bool swap_incounts);
 
     public: // node status
-        /// Is this node active?
-        bool isActive(node_handle p) const;
 
-        /// Is this a zombie node (dead but not able to be deleted yet)
-        // bool isZombie(node_handle p) const;
 
-        /// Is this a deleted node
-        bool isDeleted(node_handle p) const;
-
-        /// Deactivated: 0 level
-        // bool isDeactivated(node_handle p) const;
-
-        void deactivate(node_handle p);
 
 
     public: // address stuff
 
-        /// Get the address for node p.
-        node_address getNodeAddress(node_handle p) const;
-
-        /// Set the address for node p to a.
-        void setNodeAddress(node_handle p, node_address a);
-
-        /** Change the address for node p.
-            Same as setNodeAddress, except we can verify the old address
-            as a sanity check.
-        */
-        void moveNodeAddress(node_handle p, node_address old_addr,
-                node_address new_addr);
-
     public: // level stuff
-
-        /// Get the level for node p.
-        int getNodeLevel(node_handle p) const;
-
-        /// Set the level for node p to k.
-        void setNodeLevel(node_handle p, int k);
 
     public: // cache count stuff
 
@@ -342,134 +385,8 @@ class MEDDLY::node_headers : public array_watcher {
 // *                                                                *
 // ******************************************************************
 
-inline void MEDDLY::node_headers::setPessimistic(bool pess)
-{
-  pessimistic = pess;
-}
-
-// ******************************************************************
-
-inline MEDDLY::node_handle
-MEDDLY::node_headers::lastUsedHandle() const
-{
-  return a_last;
-}
-
-// ******************************************************************
-
-inline bool
-MEDDLY::node_headers::isActive(node_handle p) const
-{
-  return !isDeleted(p);
-}
-
-// ******************************************************************
-
-/*
-inline bool
-MEDDLY::node_headers::isZombie(node_handle p) const
-{
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
-  MEDDLY_DCASSERT(addresses);
-  MEDDLY_DCASSERT(levels);
-  return (0==addresses->get(size_t(p))) && (0!=levels->get(size_t(p)));
-}
-*/
-
-// ******************************************************************
-
-inline bool
-MEDDLY::node_headers::isDeleted(node_handle p) const
-{
-    MEDDLY_DCASSERT(p>0);
-    MEDDLY_DCASSERT(levels);
-    return (0==levels->get(size_t(p)));
-}
-
-// ******************************************************************
-
-/*
-inline bool
-MEDDLY::node_headers::isDeactivated(node_handle p) const
-{
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(p<=a_last);
-  MEDDLY_DCASSERT(levels);
-  return (0==levels->get(size_t(p)));
-}
-*/
-
-// ******************************************************************
-
-inline void
-MEDDLY::node_headers::deactivate(node_handle p)
-{
-    MEDDLY_DCASSERT(isActive(p));
-    MEDDLY_DCASSERT(levels);
-    levels->set(size_t(p), 0);
-}
 
 
-// ******************************************************************
-
-inline MEDDLY::node_address
-MEDDLY::node_headers::getNodeAddress(node_handle p) const
-{
-    MEDDLY_DCASSERT(p>0);
-    MEDDLY_DCASSERT(addresses);
-    return addresses->get(size_t(p));
-}
-
-// ******************************************************************
-
-inline void MEDDLY::node_headers::setNodeAddress(node_handle p, node_address a)
-{
-    MEDDLY_DCASSERT(p>0);
-    MEDDLY_DCASSERT(addresses);
-    addresses->set(size_t(p), a);
-}
-
-// ******************************************************************
-
-inline void MEDDLY::node_headers::moveNodeAddress(node_handle p,
-  node_address old_addr, node_address new_addr)
-{
-    MEDDLY_DCASSERT(p>0);
-    MEDDLY_DCASSERT(addresses);
-    MEDDLY_DCASSERT(old_addr == addresses->get(size_t(p)));
-    addresses->set(size_t(p), new_addr);
-}
-
-// ******************************************************************
-
-inline int
-MEDDLY::node_headers::getNodeLevel(node_handle p) const
-{
-    MEDDLY_DCASSERT(p>0);
-    MEDDLY_DCASSERT(levels);
-    return levels->get(size_t(p));
-}
-
-// ******************************************************************
-
-inline void
-MEDDLY::node_headers::setNodeLevel(node_handle p, int k)
-{
-    MEDDLY_DCASSERT(p>0);
-    MEDDLY_DCASSERT(levels);
-    levels->set(size_t(p), k);
-}
-
-// ******************************************************************
-
-/*
-inline bool
-MEDDLY::node_headers::trackingCacheCounts() const
-{
-  return cache_counts;
-}
-*/
 
 // ******************************************************************
 
