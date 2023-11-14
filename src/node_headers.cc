@@ -572,6 +572,7 @@ void MEDDLY::node_headers::validateFreeLists() const
 
 // ******************************************************************
 
+/*
 void MEDDLY::node_headers::changeHeaderSize(unsigned oldbits, unsigned newbits)
 {
   if (oldbits < newbits) {
@@ -584,6 +585,7 @@ void MEDDLY::node_headers::changeHeaderSize(unsigned oldbits, unsigned newbits)
   h_bits += newbits;
   h_bits -= oldbits;
 }
+*/
 
 // ******************************************************************
 

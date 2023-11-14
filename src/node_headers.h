@@ -128,7 +128,8 @@ class MEDDLY::node_headers : public array_watcher {
         //      cache count,    (if using reference counts)
         //      in some cache,  (if using mark and sweep)
         //      incoming count, (if using reference counts)
-        //      reachable       (if using mark and sweep)
+        //      reachable,      (if using mark and sweep)
+        //      implicit        (for implicit nodes)
         //
 
         /// Get the address for node p.
@@ -233,10 +234,105 @@ class MEDDLY::node_headers : public array_watcher {
             is_in_cache->clearAll();
         }
 
+        // ----------------------------------------------------------
+
+        /// Get the incoming count for node p.
+        inline unsigned long getIncomingCount(node_handle p) const {
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(incoming_counts);
+            return incoming_counts->get(size_t(p));
+        }
+
+        /// Increment the incoming count for node p and return p.
+        inline node_handle linkNode(node_handle p) {
+            if (p<1) return p;    // terminal node
+
+            MEDDLY_DCASSERT(isActive(p));
+            MEDDLY_DCASSERT(incoming_counts);
+
+            if (incoming_counts->isZeroBeforeIncrement(size_t(p))) {
+                reviveNode(p);
+            }
+
+#ifdef TRACK_DELETIONS
+            std::cerr << "\t+Node " << p << " count now "
+                  << incoming_counts->get(size_t(p)) << std::endl;
+#endif
+
+            return p;
+        }
+
+        /// Decrement the incoming count for node p.
+        inline void unlinkNode(node_handle p) {
+            if (p<1) return;    // terminal node
+
+            MEDDLY_DCASSERT(isActive(p));
+            MEDDLY_DCASSERT(incoming_counts);
+
+            if (incoming_counts->isPositiveAfterDecrement(size_t(p))) {
+#ifdef TRACK_DELETIONS
+                std::cerr << "\t-Node " << p << " count now "
+                      << incoming_counts->get(size_t(p)) << std::endl;
+#endif
+                return;
+            }
+
+#ifdef TRACK_DELETIONS
+            std::cerr << "\t-Node " << p << " count now zero" << std::endl;
+#endif
+
+            lastUnlink(p);
+        }
+
+        // ----------------------------------------------------------
+
+        /// Indicate that node p is (or might be) reachable in the forest.
+        inline void setReachableBit(node_handle p) {
+            if (p<1) return;    // terminal node
+            MEDDLY_DCASSERT(isActive(p));
+            MEDDLY_DCASSERT(is_reachable);
+            is_reachable->set(size_t(p), 1);
+        }
+
+        /// Does node p have its reachable bit set?
+        inline bool hasReachableBit(node_handle p) const {
+            if (p<1) return 1;    // terminal node
+
+            MEDDLY_DCASSERT(is_reachable);
+            return is_reachable->get(size_t(p));
+        }
+
+        /// Clear reachable bit for all nodes
+        inline void clearAllReachableBits() {
+            MEDDLY_DCASSERT(is_reachable);
+            is_reachable->clearAll();
+        }
+
+        // ----------------------------------------------------------
+
+        /// Get whether node p is implicit.
+        inline int getNodeImplicitFlag(node_handle p) const {
+            MEDDLY_DCASSERT(p>0);
+            return (implicit_bits) ? implicit_bits->get(size_t(p)) : false;
+        }
+
+        /// Set as true if node p is implicit.
+        inline void setNodeImplicitFlag(node_handle p,bool flag) {
+            MEDDLY_DCASSERT(p>0);
+            if (implicit_bits) {
+                implicit_bits->set(size_t(p), flag);
+            } else {
+                if (!flag) return;
+                implicit_bits = new bitvector(this);
+                implicit_bits->expand(a_size);
+                implicit_bits->set(size_t(p), flag);
+            }
+        }
 
         //
         // HERE
         //
+
 
 
     public:
@@ -305,38 +401,7 @@ class MEDDLY::node_headers : public array_watcher {
 
 
 
-    public: // incoming count stuff
 
-        /// Are we tracking incoming counts
-        // bool trackingIncomingCounts() const;
-
-        /// Get the incoming count for node p.
-        unsigned long getIncomingCount(node_handle p) const;
-
-        /// Increment the incoming count for node p and return p.
-        node_handle linkNode(node_handle p);
-
-        /// Decrement the incoming count for node p.
-        void unlinkNode(node_handle p);
-
-    public: // reachable bit stuff (if we're not using incoming counts)
-
-        /// Indicate that node p is (or might be) reachable in the forest.
-        void setReachableBit(node_handle p);
-
-        /// Does node p have its reachable bit set?
-        bool hasReachableBit(node_handle p) const;
-
-        /// Clear reachable bit for all nodes
-        void clearAllReachableBits();
-
-    public: // implicit stuff
-
-        /// Get whether node p is implicit.
-        int getNodeImplicitFlag(node_handle p) const;
-
-        /// Set as true if node p is implicit.
-        void setNodeImplicitFlag(node_handle p,bool flag);
 
 
     public: // for debugging
@@ -345,7 +410,7 @@ class MEDDLY::node_headers : public array_watcher {
 
 
     public: // interface for node header size changes
-        void changeHeaderSize(unsigned oldbits, unsigned newbits);
+        // void changeHeaderSize(unsigned oldbits, unsigned newbits);
 
     private:  // helper methods
 
@@ -367,8 +432,20 @@ class MEDDLY::node_headers : public array_watcher {
         /// Called when the cache count reaches zero.
         void lastUncache(node_handle p);
 
-        size_t getNextOf(size_t p) const;
-        void setNextOf(size_t p, size_t n);
+        /// Get next deleted node header.
+        inline size_t getNextOf(size_t p) const {
+            MEDDLY_DCASSERT(isDeleted(p));
+            MEDDLY_DCASSERT(addresses);
+            return addresses->get(size_t(p));
+        }
+
+        /// Set next deleted node header.
+        inline void setNextOf(size_t p, size_t n) {
+            MEDDLY_DCASSERT(isDeleted(p));
+            MEDDLY_DCASSERT(n>=0);
+            MEDDLY_DCASSERT(addresses);
+            addresses->set(size_t(p), node_address(n));
+        }
 
 
     private:
@@ -378,7 +455,6 @@ class MEDDLY::node_headers : public array_watcher {
         bitvector* is_in_cache;
         counter_array* incoming_counts;
         bitvector* is_reachable;
-
         bitvector* implicit_bits;
 
         /// Last used address.
@@ -420,150 +496,5 @@ class MEDDLY::node_headers : public array_watcher {
 };
 
 
-
-// ******************************************************************
-// *                                                                *
-// *                  inlined node_headers methods                  *
-// *                                                                *
-// ******************************************************************
-
-
-
-// ******************************************************************
-
-inline unsigned long
-MEDDLY::node_headers::getIncomingCount(node_handle p) const
-{
-    MEDDLY_DCASSERT(p>0);
-    MEDDLY_DCASSERT(incoming_counts);
-    return incoming_counts->get(size_t(p));
-}
-
-// ******************************************************************
-
-inline MEDDLY::node_handle
-MEDDLY::node_headers::linkNode(node_handle p)
-{
-    if (p<1) return p;    // terminal node
-
-    MEDDLY_DCASSERT(isActive(p));
-    MEDDLY_DCASSERT(incoming_counts);
-    if (incoming_counts->isZeroBeforeIncrement(size_t(p))) {
-        reviveNode(p);
-    }
-
-#ifdef TRACK_DELETIONS
-    std::cout << "\t+Node " << p << " count now " << incoming_counts->get(size_t(p)) << std::endl;
-#endif
-
-    return p;
-}
-
-// ******************************************************************
-
-inline void
-MEDDLY::node_headers::unlinkNode(node_handle p)
-{
-    if (p<1) return;    // terminal node
-
-    MEDDLY_DCASSERT(isActive(p));
-
-    MEDDLY_DCASSERT(incoming_counts);
-    MEDDLY_DCASSERT(addresses);
-
-    if (incoming_counts->isPositiveAfterDecrement(size_t(p))) {
-#ifdef TRACK_DELETIONS
-        std::cout << "\t-Node " << p << " count now " << incoming_counts->get(size_t(p)) << std::endl;
-#endif
-        return;
-    }
-
-#ifdef TRACK_DELETIONS
-    std::cout << "\t-Node " << p << " count now zero" << std::endl;
-#endif
-
-    lastUnlink(p);
-}
-
-// ******************************************************************
-
-inline void
-MEDDLY::node_headers::setReachableBit(node_handle p)
-{
-    if (p<1) return;    // terminal node
-    MEDDLY_DCASSERT(isActive(p));
-    MEDDLY_DCASSERT(is_reachable);
-    is_reachable->set(size_t(p), 1);
-}
-
-// ******************************************************************
-
-inline bool
-MEDDLY::node_headers::hasReachableBit(node_handle p) const
-{
-    if (p<1) return 1;    // terminal node
-
-    MEDDLY_DCASSERT(is_reachable);
-    return is_reachable->get(size_t(p));
-}
-
-// ******************************************************************
-
-inline void
-MEDDLY::node_headers::clearAllReachableBits()
-{
-    MEDDLY_DCASSERT(is_reachable);
-    is_reachable->clearAll();
-}
-
-// ******************************************************************
-
-inline int
-MEDDLY::node_headers::getNodeImplicitFlag(node_handle p) const
-{
-    MEDDLY_DCASSERT(p>0);
-    return (implicit_bits) ? implicit_bits->get(size_t(p)) : false;
-}
-
-// ******************************************************************
-
-inline void
-MEDDLY::node_headers::setNodeImplicitFlag(node_handle p, bool flag)
-{
-    MEDDLY_DCASSERT(p>0);
-    if (implicit_bits) {
-        implicit_bits->set(size_t(p), flag);
-    } else {
-        if (!flag) return;
-        implicit_bits = new bitvector(this);
-        implicit_bits->expand(a_size);
-        implicit_bits->set(size_t(p), flag);
-    }
-}
-
-// ******************************************************************
-
-inline size_t
-MEDDLY::node_headers::getNextOf(size_t p) const
-{
-    MEDDLY_DCASSERT(p>0);
-    MEDDLY_DCASSERT(addresses);
-    MEDDLY_DCASSERT(levels);
-    MEDDLY_DCASSERT(0==levels->get(size_t(p)));
-    return addresses->get(size_t(p));
-}
-
-// ******************************************************************
-
-inline void
-MEDDLY::node_headers::setNextOf(size_t p, size_t n)
-{
-    MEDDLY_DCASSERT(p>0);
-    MEDDLY_DCASSERT(n>=0);
-    MEDDLY_DCASSERT(addresses);
-    MEDDLY_DCASSERT(levels);
-    MEDDLY_DCASSERT(0==levels->get(size_t(p)));
-    addresses->set(size_t(p), node_address(n));
-}
 
 #endif
