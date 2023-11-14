@@ -2,8 +2,6 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
-(1) Move node_header vectors into arrays.h, arrays.cc
-    so other code can use it
 
 (2) markNodesInSubgraph:
     move out of forest object as a stand-alone thing
@@ -25,7 +23,6 @@ heap.h
 impl_unique_table.h     impl_unique_table.cc
 loggers.h               loggers.cc
 memory.h                memory.cc
-node_headers.h          node_headers.cc
 opname.h                opname.cc
 opname_numer.h          opname_numer.cc
 opname_satur.h          opname_satur.cc
@@ -53,6 +50,7 @@ error.h                 error.cc
 initializer.h           initializer.cc
 io.h                    io.cc
 memstats.h              memstats.cc
+node_headers.h          node_headers.cc
 node_storage.h          node_storage.cc
 policies.h              policies.cc
 

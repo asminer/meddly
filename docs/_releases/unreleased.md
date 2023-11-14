@@ -7,5 +7,7 @@ layout: single
 
 ### Interface Changes
 
+* Moved ```node_headers``` inner classes to ```arrays.h```
+
 ### Implementation
 

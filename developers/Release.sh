@@ -57,7 +57,7 @@ update_nav()
 #
 update_config()
 {
-    sed "s|^\(AC_INIT(\[[A-Z]*\]\), \[[0-9.]*\], \(.*\)|\1, $1, \2|" ../configure.ac
+    sed "s|^\(AC_INIT(MEDDLY\), [0-9.]*, \(.*\)|\1, $1, \2|" ../configure.ac
 }
 
 usage()
@@ -173,5 +173,5 @@ make -C .. dist
 #
 
 printf "Updating version to $nextver\n"
-update_config $nextver > ../configure.ac.new
+update_config "$nextver" > ../configure.ac.new
 mv -f ../configure.ac.new ../configure.ac
