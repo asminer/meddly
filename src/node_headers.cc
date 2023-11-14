@@ -371,7 +371,7 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
     unsigned i = bytesRequiredForDown(p) -1;
     setNextOf(pp, a_unused[i]);
     a_unused[i] = pp;
-    a_lowest_index = MIN(a_lowest_index, (char)i);
+    a_lowest_index = MIN(a_lowest_index, i);
 
     // if this was the last node, collapse nodes into the
     // "not yet allocated" pile.  But, we don't remove them
@@ -427,214 +427,224 @@ void MEDDLY::node_headers::swapNodes(node_handle p, node_handle q,
 
 // ******************************************************************
 
-// HERE
+template <class A>
+inline void show_num_bits(MEDDLY::output &s, const char* pad, const char* what, const A* array)
+{
+    if (array) {
+        s << pad << "    " << what;
+        s.put(array->entry_bits(), 3);
+        s << " bits\n";
+    }
+}
 
 void MEDDLY::node_headers
 ::reportStats(output &s, const char* pad, unsigned flags) const
 {
-  if (flags & (expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED) ) {
-    s << pad << "Node headers: array based\n";
-  }
-  if (flags & expert_forest::STORAGE_STATS) {
-    s << pad << "  Node header: " << int(h_bits) << " bits\n";
-  }
+    if (flags & (expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED) ) {
+        s << pad << "Node headers: array based\n";
+    }
+    if (flags & expert_forest::STORAGE_STATS) {
+        s << pad << "  Node header : ";
+        s.put(h_bits, 3);
+        s << " bits\n";
+    }
 
-  if (flags & expert_forest::STORAGE_DETAILED) {
-    if (addresses)        s << pad << "    address   : " << addresses->entry_bits() << " bits\n";
-    if (levels)           s << pad << "    level     : " << levels->entry_bits() << " bits\n";
-    if (cache_counts)     s << pad << "    #caches   : " << cache_counts->entry_bits() << " bits\n";
-    if (is_in_cache)      s << pad << "    in_cache? : " << is_in_cache->entry_bits() << " bits\n";
-    if (incoming_counts)  s << pad << "    #incoming : " << incoming_counts->entry_bits() << " bits\n";
-    if (is_reachable)     s << pad << "    reachable?: " << is_reachable->entry_bits() << " bits\n";
-    if (implicit_bits)    s << pad << "    implicit? : " << implicit_bits->entry_bits() << " bits\n";
-  }
+    if (flags & expert_forest::STORAGE_DETAILED) {
+        show_num_bits(s, pad, "address   : ", addresses);
+        show_num_bits(s, pad, "level     : ", levels);
+        show_num_bits(s, pad, "#caches   : ", cache_counts);
+        show_num_bits(s, pad, "in_cache? : ", is_in_cache);
+        show_num_bits(s, pad, "#incoming : ", incoming_counts);
+        show_num_bits(s, pad, "reachable?: ", is_reachable);
+        show_num_bits(s, pad, "implicit? : ", implicit_bits);
+    }
 
-  if (flags & expert_forest::STORAGE_STATS) {
-    s << pad << "  " << a_size << " headers allocated\n";
-    s << pad << "  " << a_last << " last header\n";
-    s << pad << "  " << a_freed << " recycled headers\n";
-    s << pad << "  " << a_last - a_freed << " headers in use\n";
-  }
+    if (flags & expert_forest::STORAGE_STATS) {
+        s << pad << "  " << a_size << " headers allocated\n";
+        s << pad << "  " << a_last << " last header\n";
+        s << pad << "  " << a_freed << " recycled headers\n";
+        s << pad << "  " << a_last - a_freed << " headers in use\n";
+    }
 
 }
 
 // ******************************************************************
 
-void MEDDLY::node_headers
-::showHeader(output &s, node_handle p) const
+template <class A>
+inline void show_element(MEDDLY::output &s, const char* what, const A* array,
+            MEDDLY::node_handle p)
+{
+    if (array) {
+        s << what << (unsigned long)array->get((size_t)p);
+    }
+}
+
+void MEDDLY::node_headers::showHeader(output &s, node_handle p) const
 {
     MEDDLY_DCASSERT(p>0);
 
-  int k = ABS(getNodeLevel(p));
-  const variable* v = parent.getDomain()->getVar(parent.getVarByLevel(k));
-  if (v->getName()) {
-    s << " level: " << v->getName();
-  } else {
-    s << " level: " <<  k;
-  }
-  s.put( (getNodeLevel(p) < 0) ? '\'' : ' ' );
+    int k = ABS(getNodeLevel(p));
+    const variable* v = parent.getDomain()->getVar(
+            unsigned(parent.getVarByLevel(k))
+    );
 
-  if (incoming_counts)  s << " in: " << (unsigned long)incoming_counts->get((size_t)p);
-  if (cache_counts)     s << " cc: " << (unsigned long)cache_counts->get((size_t)p);
-  if (is_reachable)     s << " reach: " << (unsigned long)is_reachable->get((size_t)p);
-  if (is_in_cache)      s << " cache: " << (unsigned long)is_in_cache->get((size_t)p);
+    if (v->getName()) {
+        s << " level: " << v->getName();
+    } else {
+        s << " level: " <<  k;
+    }
+    s.put( (getNodeLevel(p) < 0) ? '\'' : ' ' );
+
+    show_element(s, " in: ", incoming_counts, p);
+    show_element(s, " cc: ", cache_counts, p);
+    show_element(s, " reach: ", is_reachable, p);
+    show_element(s, " cache: ", is_in_cache, p);
 }
-
 
 // ******************************************************************
 
+template <class A>
+inline void show_array(MEDDLY::output &s, const char* what, const A* array,
+        size_t a_last, int awidth)
+{
+    s << "    " << what;
+    if (array) {
+        array->show(s, 1, a_last, awidth);
+        s.put('\n');
+    } else {
+        s << "(null)\n";
+    }
+}
 
 void MEDDLY::node_headers::dumpInternal(output &s) const
 {
-  s << "Node headers and management:\n";
-  for (int i=0; i<8; i++) {
-    s << "    First " << i << "-byte unused node index: " << a_unused[i] << "\n";
-  }
-  int awidth = digits(a_last);
-  s << "    Node# :  ";
-  for (unsigned long p=1; p<=a_last; p++) {
-    if (p>1) s.put(' ');
-    s.put(p, awidth);
-  }
-  s << "\n    Level  : ";
-  if (levels) {
-    levels->show(s, 1, a_last, awidth);
-    s << "\n";
-  } else {
-    s << "(null)\n";
-  }
-  s << "\n    Offset : ";
-  if (addresses) {
-    addresses->show(s, 1, a_last, awidth);
-    s << "\n";
-  } else {
-    s << "(null)\n";
-  }
-  s << "\n   Incount : ";
-  if (incoming_counts) {
-    incoming_counts->show(s, 1, a_last, awidth);
-    s << "\n";
-  } else {
-    s << "(null)\n";
-  }
-  s << "\n    Cache  : ";
-  if (cache_counts) {
-    cache_counts->show(s, 1, a_last, awidth);
-    s << "\n";
-  } else {
-    s << "(null)\n";
-  }
-  s << "\n";
+    s << "Node headers and management:\n";
+    for (unsigned i=0; i<8; i++) {
+        s << "    First " << i << "-byte unused node index: "
+          << a_unused[i] << "\n";
+    }
+    int awidth = digits(a_last);
+    s << "    Node# :  ";
+    for (unsigned long p=1; p<=a_last; p++) {
+        if (p>1) s.put(' ');
+        s.put(p, awidth);
+    }
+    s.put('\n');
+
+    show_array(s, "Level  : ", levels, a_last, awidth);
+    show_array(s, "Offset : ", addresses, a_last, awidth);
+    show_array(s, "Incount: ", incoming_counts, a_last, awidth);
+    show_array(s, "Cache  : ", cache_counts, a_last, awidth);
 }
 
 // ******************************************************************
 
 void MEDDLY::node_headers::validateFreeLists() const
 {
-  const int MAX_ERRORS = 25;
-  int errors = 0;
-  printf("  Validating Free Lists\n");
-  bool* inlist = new bool[a_last+1];
-  for (size_t i=0; i<=a_last; i++) {
-    inlist[i] = false;
-  }
-  for (unsigned i=0; i<8; i++) {
-    for (size_t curr = size_t(a_unused[i]); curr; curr = size_t(getNextOf(curr))) {
-      if (curr > a_last) continue;
-      inlist[curr] = true;
-      if (isDeleted(curr)) continue;
-      printf("\tBAD FREE LIST: item %lu in free list %u is not deleted?\n",
-        curr, i
-      );
-      ++errors;
-      if (errors >= MAX_ERRORS) {
-        printf("\tToo many errors, not printing the rest\n");
-        exit(1);
-      }
+    const unsigned MAX_ERRORS = 25;
+    unsigned errors = 0;
+    std::cerr << "  Validating free lists\n";
+    bool* inlist = new bool[a_last+1];
+    for (size_t i=0; i<=a_last; i++) {
+        inlist[i] = false;
     }
-  }
-  for (size_t i=1; i<=a_last; i++) {
-    if (!isDeleted(i)) continue;
-    if (inlist[i]) continue;
-    printf("\tMISSING: item %lu is deleted, not in any free list\n", i);
-    ++errors;
-    if (errors >= MAX_ERRORS) {
-      printf("\tToo many errors, not printing the rest\n");
-      exit(1);
+    for (unsigned i=0; i<8; i++) {
+        for (size_t curr = a_unused[i]; curr; curr = getNextOf(curr)) {
+            if (curr > a_last) continue;
+            inlist[curr] = true;
+            if (isDeleted(curr)) continue;
+            std::cerr << "\tBAD FREE LIST: item " << curr
+                << " in free list#" << i << " is not deleted?\n",
+            ++errors;
+            if (errors >= MAX_ERRORS) {
+                std::cerr << "\tToo many errors, not printing the rest\n";
+                exit(1);
+            }
+        }
     }
-  }
-  printf("  Done validating free lists\n");
-  delete[] inlist;
-  if (errors>0) exit(1);
+    for (size_t i=1; i<=a_last; i++) {
+        if (!isDeleted(i)) continue;
+        if (inlist[i]) continue;
+        std::cerr << "\tMISSING: item " << i
+            << " is deleted, not in any free list\n";
+        ++errors;
+        if (errors >= MAX_ERRORS) {
+            std::cerr << "\tToo many errors, not printing the rest\n";
+            exit(1);
+        }
+    }
+    std::cerr << "  Done validating free lists\n";
+    delete[] inlist;
+    if (errors>0) exit(1);
 }
 
 // ******************************************************************
 
 void MEDDLY::node_headers::expandHandleList()
 {
-  //
-  // If we're not using reference counts,
-  // determine which nodes are reachable.
-  //
-  if (!parent.getPolicies().useReferenceCounts) {
+    //
+    // If we're not using reference counts,
+    // determine which nodes are reachable.
+    //
+    if (!parent.getPolicies().useReferenceCounts) {
 
 #ifdef DEBUG_SWEEP
-      printf("Forest %u starting unreachable scan\n", parent.FID());
+        std::cerr << "Forest " << parent.FID() << " starting unreachable scan\n";
 #endif
 
-      parent.markAllRoots();
+        parent.markAllRoots();
 
 #ifdef DEBUG_SWEEP
-      printf("Forest %u finished unreachable scan\n", parent.FID());
+        std::cerr << "Forest " << parent.FID() << " finished unreachable scan\n";
 #endif
 #ifdef DEBUG_SWEEP_DETAIL
-      printf("Unreachable nodes:\n\t");
+        std::cerr << "Unreachable nodes:\n\t";
 
-      for (node_handle p=1; p<=a_last; p++) {
-        MEDDLY_DCASSERT(is_reachable);
-        if (is_reachable->get(p)) continue;
-        printf("%d, ", p);
-      }
-      printf(".\n");
-
+        for (node_handle p=1; p<=a_last; p++) {
+            MEDDLY_DCASSERT(is_reachable);
+            if (is_reachable->get(p)) continue;
+            std::cerr << p << ", ";
+        }
+        std::cerr << ".\n";
 #endif  // DEBUG_SWEEP_DETAIL
 
-      //
-      // Because there's no way for us to recover
-      // an unreachable node, go ahead and delete them now.
-      //
-      MEDDLY_DCASSERT(is_reachable);
-      size_t unrch = 0;
-      for (;;) {
-          unrch = is_reachable->firstZero(++unrch);
-          if (unrch >= a_size) break;
-          if (!isDeleted(unrch)) parent.deleteNode(unrch);
-      }
+        //
+        // Because there's no way for us to recover
+        // an unreachable node, go ahead and delete them now.
+        //
+        MEDDLY_DCASSERT(is_reachable);
+        size_t unrch = 0;
+        for (;;) {
+            unrch = is_reachable->firstZero(++unrch);
+            if (unrch >= a_size) break;
+            if (!isDeleted(unrch)) parent.deleteNode(unrch);
+        }
 
-  } // no incoming counts
+    } // no incoming counts
 
-  //
-  // Done with GC, now work on expanding
-  //
+    //
+    // Done with GC, now work on expanding
+    //
 
-  size_t old_size = a_size;
-  do {
-    a_next_shrink = next_check(a_next_shrink);
-    a_size = next_size(a_size);
-  } while (a_last+1 >= a_size);
+    size_t old_size = a_size;
+    do {
+        a_next_shrink = next_check(a_next_shrink);
+        a_size = next_size(a_size);
+    } while (a_last+1 >= a_size);
 
-  parent.mstats.incMemAlloc( ((a_size-old_size)*h_bits)/8 );
+    parent.mstats.incMemAlloc( ((a_size-old_size)*h_bits)/8 );
 
-  if (addresses)        addresses->expand(a_size);
-  if (levels)           levels->expand(a_size);
-  if (cache_counts)     cache_counts->expand(a_size);
-  if (is_in_cache)      is_in_cache->expand(a_size);
-  if (incoming_counts)  incoming_counts->expand(a_size);
-  if (is_reachable)     is_reachable->expand(a_size);
-  if (implicit_bits)    implicit_bits->expand(a_size);
+    if (addresses)        addresses->expand(a_size);
+    if (levels)           levels->expand(a_size);
+    if (cache_counts)     cache_counts->expand(a_size);
+    if (is_in_cache)      is_in_cache->expand(a_size);
+    if (incoming_counts)  incoming_counts->expand(a_size);
+    if (is_reachable)     is_reachable->expand(a_size);
+    if (implicit_bits)    implicit_bits->expand(a_size);
 
 #ifdef DEBUG_ADDRESS_RESIZE
-  printf("Expanded node headers arrays, new size %lu (shrink check %lu)\n", a_size, a_next_shrink);
+    std::cerr << "Expanded node header arrays, new size "
+        << a_size << " (shrink check " << a_next_shrink << ")\n";
 #endif
 }
 
@@ -644,56 +654,58 @@ void MEDDLY::node_headers::expandHandleList()
 void MEDDLY::node_headers::shrinkHandleList()
 {
 #ifdef DEBUG_ADDRESS_RESIZE
-  printf("About to shrink node headers arrays (current size %ld)...\n",
-    a_size);
-  validateFreeLists();
+    std::cerr << "About to shrink node headers arrays (current size "
+        << a_size << ")...\n";
+    validateFreeLists();
 #endif
 
-  // clean out free lists, because we're about
-  // to shrink the address list which holds the pointers
-  for (int i=0; i<8; i++) {
-    //
-    // clean list i
-    //
-    size_t prev = 0;
-    size_t curr;
-    for (curr = a_unused[i]; curr; curr=getNextOf(curr))
-    {
-      if (curr > a_last) continue;  // don't add to the list
-      if (prev) {
-        setNextOf(prev, curr);
-      } else {
-        a_unused[i] = curr;
-      }
-      prev = curr;
-    }
-    if (prev) {
-      setNextOf(prev, 0);
-    } else {
-      a_unused[i] = 0;
-    }
-  } // for i
+    // clean out free lists, because we're about
+    // to shrink the address list which holds the pointers
+    for (unsigned i=0; i<8; i++) {
+        //
+        // clean list i
+        //
+        size_t prev = 0;
+        size_t curr;
+        for (curr = a_unused[i]; curr; curr=getNextOf(curr))
+        {
+            if (curr > a_last) continue;  // don't add to the list
+            if (prev) {
+                setNextOf(prev, curr);
+            } else {
+                a_unused[i] = curr;
+            }
+            prev = curr;
+        }
+        if (prev) {
+            setNextOf(prev, 0);
+        } else {
+            a_unused[i] = 0;
+        }
+    } // for i
 
-  size_t old_size = a_size;
-  do {
-    a_size = prev_size(a_size);
-    a_next_shrink = (a_size > START_SIZE) ? prev_check(a_next_shrink) : 0;
-  } while (a_last < a_next_shrink);
+    size_t old_size = a_size;
+    do {
+        a_size = prev_size(a_size);
+        a_next_shrink = (a_size > START_SIZE) ? prev_check(a_next_shrink) : 0;
+    } while (a_last < a_next_shrink);
 
-  parent.mstats.decMemAlloc( ((old_size-a_size)*h_bits)/8 );
+    parent.mstats.decMemAlloc( ((old_size-a_size)*h_bits)/8 );
 
-  if (addresses)        addresses->shrink(a_size);
-  if (levels)           levels->shrink(a_size);
-  if (cache_counts)     cache_counts->shrink(a_size);
-  if (is_in_cache)      is_in_cache->shrink(a_size);
-  if (incoming_counts)  incoming_counts->shrink(a_size);
-  if (is_reachable)     is_reachable->shrink(a_size);
-  if (implicit_bits)    implicit_bits->shrink(a_size);
+    if (addresses)        addresses->shrink(a_size);
+    if (levels)           levels->shrink(a_size);
+    if (cache_counts)     cache_counts->shrink(a_size);
+    if (is_in_cache)      is_in_cache->shrink(a_size);
+    if (incoming_counts)  incoming_counts->shrink(a_size);
+    if (is_reachable)     is_reachable->shrink(a_size);
+    if (implicit_bits)    implicit_bits->shrink(a_size);
 
 #ifdef DEBUG_ADDRESS_RESIZE
-  printf("Shrank node headers arrays, new size %lu (shrink check %lu)\n", a_size, a_next_shrink);
-  printf("Done shrinking node headers arrays (size is now %ld)...\n", a_size);
-  validateFreeLists();
+    std::cerr << "Shrank node header arrays, new size "
+        << a_size << " (shrink check " << a_next_shrink << ")\n";
+    std::cerr << "Done shrinking node headers arrays (size is now "
+        << a_size << ")...\n";
+    validateFreeLists();
 #endif
 }
 

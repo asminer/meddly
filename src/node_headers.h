@@ -472,7 +472,7 @@ class MEDDLY::node_headers : public array_watcher {
         /// Pointer to unused address lists, based on size
         size_t a_unused[8];  // number of bytes per handle
         /// Lowest non-empty address list
-        char a_lowest_index;
+        unsigned a_lowest_index;
 
         //
         // Place to search next for free items,
