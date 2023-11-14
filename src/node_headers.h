@@ -122,9 +122,13 @@ class MEDDLY::node_headers : public array_watcher {
 
     public:
         //
-        // Node attributes:
+        // Inlined node attribute setters/getters:
         //      address,
         //      level,
+        //      cache count,    (if using reference counts)
+        //      in some cache,  (if using mark and sweep)
+        //      incoming count, (if using reference counts)
+        //      reachable       (if using mark and sweep)
         //
 
         /// Get the address for node p.
@@ -154,6 +158,8 @@ class MEDDLY::node_headers : public array_watcher {
             addresses->set(size_t(p), new_addr);
         }
 
+        // ----------------------------------------------------------
+
         /// Get the level for node p.
         inline int getNodeLevel(node_handle p) const {
             MEDDLY_DCASSERT(p>0);
@@ -168,10 +174,78 @@ class MEDDLY::node_headers : public array_watcher {
             levels->set(size_t(p), k);
         }
 
+        // ----------------------------------------------------------
+
+        /// Get the cache count for node p.
+        inline unsigned long getNodeCacheCount(node_handle p) const {
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(cache_counts);
+            return cache_counts->get(size_t(p));
+        }
+
+
+        /// Increment the cache count for node p and return p.
+        inline void cacheNode(node_handle p) {
+            if (p<1) return;    // terminal node
+
+            MEDDLY_DCASSERT(isActive(p));
+            MEDDLY_DCASSERT(cache_counts);
+            cache_counts->increment(size_t(p));
+#ifdef TRACK_CACHECOUNT
+            std::cerr << "\t+Node " << p << " is in " <<
+                cache_counts->get(size_t(p)) << " caches" << std::endl;
+#endif
+        }
+
+        /// Decrement the cache count for node p.
+        inline void uncacheNode(node_handle p) {
+            if (p<1) return;
+
+            MEDDLY_DCASSERT(cache_counts);
+
+            if (cache_counts->isPositiveAfterDecrement(size_t(p))) {
+#ifdef TRACK_CACHECOUNT
+                std::cerr << "\t-Node " << p << " is in " <<
+                    cache_counts->get(size_t(p)) << " caches" << std::endl;
+#endif
+                return;
+            }
+
+#ifdef TRACK_CACHECOUNT
+            std::cerr << "\t-Node " << p << " is not in any caches" << std::endl;
+#endif
+            lastUncache(p);
+        }
+
+        // ----------------------------------------------------------
+
+        /// Indicate that node p is (or might be) in some cache entry.
+        inline void setInCacheBit(node_handle p) {
+            if (p<1) return;    // terminal node
+
+            MEDDLY_DCASSERT(is_in_cache);
+            is_in_cache->set(size_t(p), 1);
+        }
+
+        /// Clear cache entry bit for all nodes
+        inline void clearAllInCacheBits() {
+            MEDDLY_DCASSERT(is_in_cache);
+            is_in_cache->clearAll();
+        }
+
+
+        //
+        // HERE
+        //
 
 
     public:
+        //
+        // Substantial methods
+        //
 
+        /// Called when done setting InCacheBits
+        void sweepAllInCacheBits();
 
         /** Show various memory stats.
                 @param  s       Output stream to write to
@@ -229,39 +303,7 @@ class MEDDLY::node_headers : public array_watcher {
         */
         void swapNodes(node_handle p, node_handle q, bool swap_incounts);
 
-    public: // node status
 
-
-
-
-    public: // address stuff
-
-    public: // level stuff
-
-    public: // cache count stuff
-
-        /// Are we tracking cache counts
-        // bool trackingCacheCounts() const;
-
-        /// Get the cache count for node p.
-        unsigned long getNodeCacheCount(node_handle p) const;
-
-        /// Increment the cache count for node p and return p.
-        void cacheNode(node_handle p);
-
-        /// Decrement the cache count for node p.
-        void uncacheNode(node_handle p);
-
-    public: // cache bit stuff (if we're not using cache counts)
-
-        /// Indicate that node p is (or might be) in some cache entry.
-        void setInCacheBit(node_handle p);
-
-        /// Clear cache entry bit for all nodes
-        void clearAllInCacheBits();
-
-        /// Called when done setting InCacheBits
-        void sweepAllInCacheBits();
 
     public: // incoming count stuff
 
@@ -386,91 +428,6 @@ class MEDDLY::node_headers : public array_watcher {
 // ******************************************************************
 
 
-
-
-// ******************************************************************
-
-inline unsigned long
-MEDDLY::node_headers::getNodeCacheCount(node_handle p) const
-{
-    MEDDLY_DCASSERT(p>0);
-    MEDDLY_DCASSERT(cache_counts);
-    return cache_counts->get(size_t(p));
-}
-
-// ******************************************************************
-
-inline void
-MEDDLY::node_headers::cacheNode(node_handle p)
-{
-    if (p<1) return;    // terminal node
-
-    MEDDLY_DCASSERT(isActive(p));
-    MEDDLY_DCASSERT(cache_counts);
-    cache_counts->increment(size_t(p));
-#ifdef TRACK_CACHECOUNT
-    fprintf(stdout, "\t+Node %d is in %u caches\n",
-            p, cache_counts->get(size_t(p)));
-    fflush(stdout);
-#endif
-}
-
-// ******************************************************************
-
-inline void
-MEDDLY::node_headers::uncacheNode(MEDDLY::node_handle p)
-{
-    if (p<1) return;
-
-    MEDDLY_DCASSERT(addresses);
-    MEDDLY_DCASSERT(cache_counts);
-
-    if (cache_counts->isPositiveAfterDecrement(size_t(p))) {
-#ifdef TRACK_CACHECOUNT
-        fprintf(stdout, "\t-Node %d is in %lu caches\n",
-                p, cache_counts->get(size_t(p)));
-        fflush(stdout);
-#endif
-        return;
-    }
-
-#ifdef TRACK_CACHECOUNT
-    fprintf(stdout, "\t-Node %d is not in any caches\n", p);
-    fflush(stdout);
-#endif
-
-    lastUncache(p);
-}
-
-// ******************************************************************
-
-inline void
-MEDDLY::node_headers::setInCacheBit(node_handle p)
-{
-    if (p<1) return;    // terminal node
-
-    MEDDLY_DCASSERT(is_in_cache);
-    is_in_cache->set(size_t(p), 1);
-}
-
-// ******************************************************************
-
-inline void
-MEDDLY::node_headers::clearAllInCacheBits()
-{
-    MEDDLY_DCASSERT(is_in_cache);
-    is_in_cache->clearAll();
-}
-
-// ******************************************************************
-
-/*
-inline bool
-MEDDLY::node_headers::trackingIncomingCounts() const
-{
-  return incoming_counts;
-}
-*/
 
 // ******************************************************************
 

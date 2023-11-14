@@ -47,70 +47,106 @@
 #ifdef DEBUG_HANDLE_FREELIST
 void print_sequence(long a)
 {
-  static bool printed;
-  static long first = 0;
-  static long last = -1;
-  if (a<=0) {
-    if (first>last) return;
-    if (printed) printf(", ");
-    printed = false;
+    static bool printed;
+    static long first = 0;
+    static long last = -1;
+    if (a<=0) {
+        if (first>last) return;
+        if (printed) printf(", ");
+        printed = false;
+        if (first < last) {
+            if (first+1<last) {
+                printf("%ld ... %ld", first, last);
+            } else {
+                printf("%ld, %ld", first, last);
+            }
+        } else {
+            printf("%ld", first);
+        }
+        first = 0;
+        last = -1;
+        return;
+    }
+    // a > 0
+    if (0==first) {
+        first = last = a;
+        return;
+    }
+    if (last+1 == a) {
+        last++;
+        return;
+    }
+    // break in the sequence, we need to print
+    if (printed) printf(", "); else printed = true;
     if (first < last) {
-      if (first+1<last) {
-        printf("%ld ... %ld", first, last);
-      } else {
-        printf("%ld, %ld", first, last);
-      }
+        if (first+1<last) {
+            printf("%ld ... %ld", first, last);
+        } else {
+            printf("%ld, %ld", first, last);
+        }
     } else {
-      printf("%ld", first);
+        printf("%ld", first);
     }
-    first = 0;
-    last = -1;
-    return;
-  }
-  // a > 0
-  if (0==first) {
     first = last = a;
-    return;
-  }
-  if (last+1 == a) {
-    last++;
-    return;
-  }
-  // break in the sequence, we need to print
-  if (printed) printf(", "); else printed = true;
-  if (first < last) {
-    if (first+1<last) {
-      printf("%ld ... %ld", first, last);
-    } else {
-      printf("%ld, %ld", first, last);
-    }
-  } else {
-    printf("%ld", first);
-  }
-  first = last = a;
 }
 
 // ******************************************************************
 
 inline void dump_handle_info(const MEDDLY::node_headers &NH, long size)
 {
-  printf("Used handles:  ");
-  print_sequence(0);
-  for (long i=1; i<size; i++) if (!NH.isDeleted(i)) {
-    print_sequence(i);
-  }
-  print_sequence(0);
-  printf("\nFree handles:  ");
-  for (long i=1; i<size; i++) if (NH.isDeleted(i)) {
-    print_sequence(i);
-  }
-  print_sequence(0);
-  printf("\n");
+    printf("Used handles:  ");
+    print_sequence(0);
+    for (long i=1; i<size; i++) if (!NH.isDeleted(i)) {
+        print_sequence(i);
+    }
+    print_sequence(0);
+    printf("\nFree handles:  ");
+    for (long i=1; i<size; i++) if (NH.isDeleted(i)) {
+        print_sequence(i);
+    }
+    print_sequence(0);
+    printf("\n");
 }
 #endif
 
+// ******************************************************************
+//
+// Helpers for dealing with node header array sizes
+//
+// ******************************************************************
+
+const size_t START_SIZE = 512;
+// const size_t MAX_ADD = 65536;
+const size_t MAX_ADD = 16777216;
+
+inline size_t next_size(size_t s)
+{
+    if (0==s) return START_SIZE;
+    if (s < MAX_ADD) return s*2;
+    return s+MAX_ADD;
+}
+
+inline size_t prev_size(size_t s)
+{
+    if (s <= MAX_ADD) return s/2;
+    return s-MAX_ADD;
+}
+
+inline size_t next_check(size_t s)
+{
+    if (0==s) return START_SIZE/4;
+    if (s < MAX_ADD) return s*2;
+    return s+MAX_ADD;
+}
+
+inline size_t prev_check(size_t s)
+{
+    if (s <= MAX_ADD) return s/2;
+    return s-MAX_ADD;
+}
 
 
+// HERE
 
 
 // ******************************************************************
@@ -120,36 +156,6 @@ inline void dump_handle_info(const MEDDLY::node_headers &NH, long size)
 // *                                                                *
 // *                                                                *
 // ******************************************************************
-
-const size_t START_SIZE = 512;
-// const size_t MAX_ADD = 65536;
-const size_t MAX_ADD = 16777216;
-
-inline size_t next_size(size_t s)
-{
-  if (0==s) return START_SIZE;
-  if (s < MAX_ADD) return s*2;
-  return s+MAX_ADD;
-}
-
-inline size_t prev_size(size_t s)
-{
-  if (s <= MAX_ADD) return s/2;
-  return s-MAX_ADD;
-}
-
-inline size_t next_check(size_t s)
-{
-  if (0==s) return START_SIZE/4;
-  if (s < MAX_ADD) return s*2;
-  return s+MAX_ADD;
-}
-
-inline size_t prev_check(size_t s)
-{
-  if (s <= MAX_ADD) return s/2;
-  return s-MAX_ADD;
-}
 
 MEDDLY::node_headers::node_headers(expert_forest &P)
   : parent(P)
