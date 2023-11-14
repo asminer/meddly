@@ -30,6 +30,7 @@ namespace MEDDLY {
     class level_array;
     class counter_array;
     class address_array;
+    class bitvector;
 };
 
 
@@ -444,5 +445,66 @@ class MEDDLY::address_array {
         void expand32to64();
         void shrink64to32(size_t ns);
 };
+
+// ******************************************************************
+// *                                                                *
+// *                        bitvector  class                        *
+// *                                                                *
+// ******************************************************************
+
+/**
+    Array of booleans.
+    Right now this is just an array of booleans,
+    but we might pack bits together later.
+*/
+class MEDDLY::bitvector {
+        array_watcher* watch;
+        bool* data;
+        size_t size;
+    public:
+        bitvector(array_watcher* w = nullptr);
+        ~bitvector();
+
+        void expand(size_t ns);
+        void shrink(size_t ns);
+
+        inline size_t entry_bits() const { return sizeof(bool) * 8; }
+
+        inline bool get(size_t i) const {
+            CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
+            MEDDLY_DCASSERT(data);
+            return data[i];
+        }
+
+        inline void set(size_t i, bool v) {
+            CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
+            MEDDLY_DCASSERT(data);
+            data[i] = v;
+        }
+
+        inline void clearAll() {
+            if (size) {
+                MEDDLY_DCASSERT(data);
+                memset(data, 0, size * sizeof(bool));
+            }
+        }
+
+        inline void swap(size_t i, size_t j) {
+            CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
+            CHECK_RANGE(__FILE__, __LINE__, size_t(0), j, size);
+            MEDDLY_DCASSERT(data);
+            SWAP(data[i], data[j]);
+        }
+
+        /// Return smallest index i >= start with bit i cleared.
+        inline size_t firstZero(size_t start) const {
+            for (; start < size; start++) {
+                if (0==data[start]) return start;
+            }
+            return size;
+        }
+
+};
+
 
 #endif

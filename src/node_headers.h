@@ -285,67 +285,6 @@ class MEDDLY::node_headers : public array_watcher {
         size_t getNextOf(size_t p) const;
         void setNextOf(size_t p, size_t n);
 
-    private:
-
-
-        /**
-            Array of booleans.
-            Used for mark and sweep, or any other
-            cases where we need a bit per node.
-        */
-        class bitvector {
-                node_headers &parent;
-                bool* data;
-                size_t size;
-            public:
-                bitvector(node_headers &p);
-                ~bitvector();
-
-                void expand(size_t ns);
-                void shrink(size_t ns);
-
-                inline bool get(size_t i) const
-                {
-                    MEDDLY_DCASSERT(data);
-                    MEDDLY_DCASSERT(i<size);
-                    return data[i];
-                }
-
-                inline void set(size_t i, bool v)
-                {
-                    MEDDLY_DCASSERT(data);
-                    MEDDLY_DCASSERT(i<size);
-                    data[i] = v;
-                }
-
-                inline void clearAll()
-                {
-                    if (size) {
-                        MEDDLY_DCASSERT(data);
-                        memset(data, 0, size * sizeof(bool));
-                    }
-                }
-
-                inline void swap(size_t i, size_t j)
-                {
-                    MEDDLY_DCASSERT(data);
-                    MEDDLY_DCASSERT(i<size);
-                    MEDDLY_DCASSERT(j<size);
-                    SWAP(data[i], data[j]);
-                }
-
-                inline size_t entry_bits() const { return sizeof(bool) * 8; }
-
-                /// Return smallest index i >= start with bit i cleared.
-                inline size_t firstZero(size_t start) const
-                {
-                    for (; start < size; start++) {
-                        if (0==data[start]) return start;
-                    }
-                    return size;
-                }
-
-        };
 
     private:
         address_array* addresses;
@@ -722,7 +661,7 @@ MEDDLY::node_headers::setNodeImplicitFlag(node_handle p, bool flag)
         implicit_bits->set(size_t(p), flag);
     } else {
         if (!flag) return;
-        implicit_bits = new bitvector(*this);
+        implicit_bits = new bitvector(this);
         implicit_bits->expand(a_size);
         implicit_bits->set(size_t(p), flag);
     }

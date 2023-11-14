@@ -21,6 +21,10 @@
 
 #include "arrays.h"
 
+// #define DEBUG_COUNTER_RESIZE
+// #define DEBUG_ADDRESS_RESIZE
+
+
 // ******************************************************************
 // *                                                                *
 // *                     array_watcher  methods                     *
@@ -629,4 +633,55 @@ void MEDDLY::address_array::shrink64to32(size_t ns)
     if (watch) watch->shrinkElementSize(64, 32);
 }
 
+
+// ******************************************************************
+// *                                                                *
+// *                       bitvector  methods                       *
+// *                                                                *
+// ******************************************************************
+
+
+MEDDLY::bitvector::bitvector(array_watcher *w)
+{
+    watch = w;
+    data = nullptr;
+    size = 0;
+    if (watch) watch->expandElementSize(0, sizeof(bool)*8);
+}
+
+MEDDLY::bitvector::~bitvector()
+{
+    free(data);
+    if (watch) watch->shrinkElementSize(sizeof(bool)*8, 0);
+}
+
+void MEDDLY::bitvector::expand(size_t ns)
+{
+    if (ns <= size) return;
+
+    bool* d = (bool*) realloc(data, ns * sizeof(bool));
+    if (!d) {
+        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+    memset(d + size, 0, (ns-size) * sizeof(bool) );
+    size = ns;
+    data = d;
+#ifdef DEBUG_BITVECTOR_RESIZE
+    std::cerr << "Enlarged bitvector, new size " << size << std::endl;
+#endif
+}
+
+void MEDDLY::bitvector::shrink(size_t ns)
+{
+    if (ns >= size) return;
+    bool* d = (bool*) realloc(data, ns * sizeof(bool));
+    if (!d) {
+        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+    size = ns;
+    data = d;
+#ifdef DEBUG_BITVECTOR_RESIZE
+    std::cerr << "Reduced bitvector, new size " << size << std::endl;
+#endif
+}
 

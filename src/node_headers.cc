@@ -25,15 +25,11 @@
 #include "storage/bytepack.h"
 #include <climits>
 
-// #define DEBUG_COUNTER_RESIZE
-
 // #define DEBUG_HANDLE_MGT
 
 // #define DEBUG_HANDLE_FREELIST
 
 // #define ALWAYS_CHECK_FREELISTS
-
-// #define DEBUG_ADDRESS_RESIZE
 
 // #define DEBUG_SWEEP
 // #define DEBUG_SWEEP_DETAIL
@@ -116,54 +112,6 @@ inline void dump_handle_info(const MEDDLY::node_headers &NH, long size)
 
 
 
-// ******************************************************************
-// *                                                                *
-// *                node_headers::bitvector  methods                *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::node_headers::bitvector::bitvector(node_headers &p) : parent(p)
-{
-  data = 0;
-  size = 0;
-  parent.changeHeaderSize(0, sizeof(bool)*8);
-}
-
-MEDDLY::node_headers::bitvector::~bitvector()
-{
-  free(data);
-  parent.changeHeaderSize(sizeof(bool)*8, 0);
-}
-
-void MEDDLY::node_headers::bitvector::expand(size_t ns)
-{
-  if (ns <= size) return;
-
-  bool* d = (bool*) realloc(data, ns * sizeof(bool));
-  if (0==d) {
-    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  }
-  memset(d + size, 0, (ns-size) * sizeof(bool) );
-  size = ns;
-  data = d;
-#ifdef DEBUG_BITVECTOR_RESIZE
-  printf("Enlarged bitvector, new size %lu\n", size);
-#endif
-}
-
-void MEDDLY::node_headers::bitvector::shrink(size_t ns)
-{
-  if (ns >= size) return;
-  bool* d = (bool*) realloc(data, ns * sizeof(bool));
-  if (0==d) {
-    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  }
-  size = ns;
-  data = d;
-#ifdef DEBUG_BITVECTOR_RESIZE
-  printf("Reduced bitvector, new size %lu\n", size);
-#endif
-}
 
 // ******************************************************************
 // *                                                                *
@@ -223,9 +171,9 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
     is_reachable = 0;
   } else {
     cache_counts = 0;
-    is_in_cache = new bitvector(*this);
+    is_in_cache = new bitvector(this);
     incoming_counts = 0;
-    is_reachable = new bitvector(*this);
+    is_reachable = new bitvector(this);
   }
   implicit_bits = 0;
 }
