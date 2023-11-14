@@ -84,7 +84,7 @@ class MEDDLY::node_headers : public array_watcher {
 
     public:
         //
-        // Inlined getters
+        // Misc. Inlined getters/setters
         //
 
         /**
@@ -93,6 +93,17 @@ class MEDDLY::node_headers : public array_watcher {
         inline node_handle lastUsedHandle() const {
             return a_last;
         }
+
+        /**
+            Set node recycling to pessimistic or optimistic.
+            Pessimistic:    disconnected nodes are recycled immediately.
+            Optimistic:     disconnected nodes are recycled only when
+                            they no longer appear in any caches.
+        */
+        inline void setPessimistic(bool pess) {
+            pessimistic = pess;
+        }
+
 
 
     public:
@@ -329,11 +340,6 @@ class MEDDLY::node_headers : public array_watcher {
             }
         }
 
-        //
-        // HERE
-        //
-
-
 
     public:
         //
@@ -343,34 +349,10 @@ class MEDDLY::node_headers : public array_watcher {
         /// Called when done setting InCacheBits
         void sweepAllInCacheBits();
 
-        /** Show various memory stats.
-                @param  s       Output stream to write to
-                @param  pad     Padding string, written at the start of
-                                each output line.
-                @param  flags   Which stats to display, as "flags";
-                                use bitwise or to combine values.
-        */
-        void reportStats(output &s, const char* pad, unsigned flags) const;
 
-        /** Display header information, primarily for debugging.
-                @param  s     Output stream to write to
-                @param  p     Node to display
-        */
-        void showHeader(output &s, node_handle p) const;
-
-
-        /**
-            Set node recycling to pessimistic or optimistic.
-            Pessimistic:    disconnected nodes are recycled immediately.
-            Optimistic:     disconnected nodes are recycled only when
-                            they no longer appear in any caches.
-        */
-        inline void setPessimistic(bool pess) {
-            pessimistic = pess;
-        }
-
-
-    public: // node handle management
+        //
+        // Node handle management
+        //
 
         /**
             Get an unused node handle.
@@ -400,19 +382,33 @@ class MEDDLY::node_headers : public array_watcher {
         void swapNodes(node_handle p, node_handle q, bool swap_incounts);
 
 
+        //
+        // I/O related methods
+        //
 
+        /** Show various memory stats.
+                @param  s       Output stream to write to
+                @param  pad     Padding string, written at the start of
+                                each output line.
+                @param  flags   Which stats to display, as "flags";
+                                use bitwise or to combine values.
+        */
+        void reportStats(output &s, const char* pad, unsigned flags) const;
 
+        /** Display header information, primarily for debugging.
+                @param  s     Output stream to write to
+                @param  p     Node to display
+        */
+        void showHeader(output &s, node_handle p) const;
 
-
-    public: // for debugging
-
+        /// Show internal data structures for debugging.
         void dumpInternal(output &s) const;
 
 
-    public: // interface for node header size changes
-        // void changeHeaderSize(unsigned oldbits, unsigned newbits);
-
-    private:  // helper methods
+    private:
+        //
+        // helper methods
+        //
 
         // for debugging
         void validateFreeLists() const;

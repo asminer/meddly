@@ -146,9 +146,6 @@ inline size_t prev_check(size_t s)
 }
 
 
-// HERE
-
-
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -160,41 +157,41 @@ inline size_t prev_check(size_t s)
 MEDDLY::node_headers::node_headers(expert_forest &P)
   : parent(P)
 {
-  h_bits = 0;
-  a_last = 0;
-  a_size = 0;
-  a_freed = 0;
-  a_next_shrink = 0;
-  for (int i=0; i<8; i++) a_unused[i] = 0;
-  a_lowest_index = 8;
-  a_sweep = SIZE_MAX;
-  addresses = new address_array(this);
-  levels = new level_array(parent.getNumVariables(), this);
-  if (parent.getPolicies().useReferenceCounts) {
-    cache_counts = new counter_array(this);
-    is_in_cache = 0;
-    incoming_counts = new counter_array(this);
-    is_reachable = 0;
-  } else {
-    cache_counts = 0;
-    is_in_cache = new bitvector(this);
-    incoming_counts = 0;
-    is_reachable = new bitvector(this);
-  }
-  implicit_bits = 0;
+    h_bits = 0;
+    a_last = 0;
+    a_size = 0;
+    a_freed = 0;
+    a_next_shrink = 0;
+    for (unsigned i=0; i<8; i++) a_unused[i] = 0;
+    a_lowest_index = 8;
+    a_sweep = SIZE_MAX;
+    addresses = new address_array(this);
+    levels = new level_array(parent.getNumVariables(), this);
+    if (parent.getPolicies().useReferenceCounts) {
+        cache_counts = new counter_array(this);
+        is_in_cache = nullptr;
+        incoming_counts = new counter_array(this);
+        is_reachable = nullptr;
+    } else {
+        cache_counts = nullptr;
+        is_in_cache = new bitvector(this);
+        incoming_counts = nullptr;
+        is_reachable = new bitvector(this);
+    }
+    implicit_bits = nullptr;
 }
 
 // ******************************************************************
 
 MEDDLY::node_headers::~node_headers()
 {
-  delete addresses;
-  delete levels;
-  delete cache_counts;
-  delete is_in_cache;
-  delete incoming_counts;
-  delete is_reachable;
-  delete implicit_bits;
+    delete addresses;
+    delete levels;
+    delete cache_counts;
+    delete is_in_cache;
+    delete incoming_counts;
+    delete is_reachable;
+    delete implicit_bits;
 }
 
 // ******************************************************************
@@ -224,6 +221,213 @@ void MEDDLY::node_headers::shrinkElementSize(unsigned oldbits, unsigned newbits)
 }
 
 // ******************************************************************
+
+void MEDDLY::node_headers::sweepAllInCacheBits()
+{
+    a_sweep = 0;
+
+#ifdef DEBUG_SWEEP
+    std::cerr << "Forest " << parent.FID() << " finished cache scan\n";
+#endif
+#ifdef DEBUG_SWEEP_DETAIL
+    std::cerr << "Done cache scan; nodes that will be reclaimed:\n\t";
+
+    MEDDLY_DCASSERT(is_in_cache);
+    MEDDLY_DCASSERT(is_reachable);
+    size_t p = 0;
+    for (;;) {
+        p = is_in_cache->firstZero(++p);
+        if (is_reachable->get(p)) continue;
+        std::cerr << p << ". ";
+    } // infinite loop
+    std::cerr << ".\n";
+
+#ifdef DEBUG_SWEEP_DETAIL_CT
+    std::cerr << "Compute tables:\n";
+    stream_output s(stderr);
+    operation::showAllComputeTables(s, 5);
+#endif
+#endif
+
+    // TBD - scan backwards and collapse a_last, and then shrink array if needed
+}
+
+
+// ******************************************************************
+
+MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
+{
+    parent.mstats.incMemUsed(h_bits/8);
+    node_handle found = 0;
+    for (unsigned i=a_lowest_index; i<8; i++) {
+        // try the various lists
+        while (a_unused[i] > a_last) {
+            a_unused[i] = getNextOf(a_unused[i]);
+        }
+        if (a_unused[i]) {  // get a recycled one from list i
+            found = a_unused[i];
+            a_unused[i] = getNextOf(a_unused[i]);
+            break;
+        } else {
+            if (i == a_lowest_index) a_lowest_index++;
+        }
+    }
+
+    if (found) {
+        //
+        // We got something from a free list.
+        //
+#ifdef DEBUG_HANDLE_FREELIST
+        // address[found].setNotDeleted();
+        dump_handle_info(*this, a_last+1);
+#endif
+#ifdef DEBUG_HANDLE_MGT
+        std::cerr << "Forest " << parent.FID()
+            << " using recycled handle " << found << std::endl;
+#endif
+        a_freed--;
+        return found;
+    }
+
+    //
+    // Free lists are empty.
+    // Use sweep index if it's small enough (this is set
+    // if we're using mark and sweep).
+    //
+    if (a_sweep < a_last) {
+        MEDDLY_DCASSERT(addresses);
+        MEDDLY_DCASSERT(is_in_cache);
+        MEDDLY_DCASSERT(is_reachable);
+        for (;;) {
+            a_sweep = is_in_cache->firstZero(++a_sweep);
+            if (a_sweep > a_last) break;
+            if (is_reachable->get(a_sweep)) continue;
+            found = a_sweep;
+            break;
+        }
+        if (found) {
+            MEDDLY_DCASSERT(0==addresses->get((size_t)found));
+        } else {
+            // we're done sweeping
+            a_sweep = SIZE_MAX;
+        }
+    }
+
+    if (found) {
+        //
+        // We're using a swept node handle.
+        //
+#ifdef DEBUG_HANDLE_FREELIST
+        // address[found].setNotDeleted();
+        dump_handle_info(*this, a_last+1);
+#endif
+#ifdef DEBUG_HANDLE_MGT
+        std::cerr << "Forest " << parent.FID()
+            << " using swept handle " << found << std::endl;
+#endif
+        return found;
+    }
+
+    //
+    // Nothing free; pull off the end of the list,
+    // expanding the arrays if necessary.
+    //
+
+    if (a_last+1 >= a_size) {
+        expandHandleList();
+    }
+    a_last++;
+    MEDDLY_DCASSERT(a_last < a_size);
+
+#ifdef DEBUG_HANDLE_FREELIST
+    dump_handle_info(*this, a_last+1);
+#endif
+#ifdef DEBUG_HANDLE_MGT
+    std::cerr << "Forest " << parent.FID()
+        << " using end handle " << a_last << std::endl;
+#endif
+    return a_last;
+}
+
+// ******************************************************************
+
+void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
+{
+    MEDDLY_DCASSERT(p>0);
+    const size_t pp = size_t(p);
+
+    MEDDLY_DCASSERT(0==getNodeCacheCount(p));
+
+#ifdef DEBUG_HANDLE_MGT
+    std::cerr << "Forest " << parent.FID()
+        << " recycling handle " << p << std::endl;
+#endif
+
+    parent.mstats.decMemUsed(h_bits/8);
+    a_freed++;
+
+    // Determine which list to add this into,
+    // and add it there
+    unsigned i = bytesRequiredForDown(p) -1;
+    setNextOf(pp, a_unused[i]);
+    a_unused[i] = pp;
+    a_lowest_index = MIN(a_lowest_index, (char)i);
+
+    // if this was the last node, collapse nodes into the
+    // "not yet allocated" pile.  But, we don't remove them
+    // from the free list(s); we simply discard any too-large
+    // ones when we pull from the free list(s).
+    if (pp == a_last) {
+        while (a_last && isDeleted(a_last) && (0==getNodeCacheCount(a_last))) {
+            a_last--;
+            a_freed--;
+        }
+
+#ifdef DEBUG_HANDLE_MGT
+        std::cerr << "Forest " << parent.FID()
+            << " collapsing handle end from " << p
+            << " to " << a_last << std::endl;
+#endif
+
+        if (a_last < a_next_shrink) {
+#ifdef DEBUG_HANDLE_MGT
+            std::cerr << "Forest " << parent.FID()
+                << " triggered shrink check " << a_next_shrink << std::endl;
+#endif
+            shrinkHandleList();
+        }
+
+    }
+
+#ifdef DEBUG_HANDLE_FREELIST
+    dump_handle_info(*this, a_last+1);
+#endif
+#ifdef ALWAYS_CHECK_FREELISTS
+    validateFreeLists();
+#endif
+}
+
+// ******************************************************************
+
+void MEDDLY::node_headers::swapNodes(node_handle p, node_handle q,
+        bool swap_incounts)
+{
+    MEDDLY_DCASSERT(p!=q);
+    MEDDLY_DCASSERT(p>0);
+    MEDDLY_DCASSERT(q>0);
+
+    const size_t sp = size_t(p);
+    const size_t sq = size_t(q);
+    if (addresses)                          addresses->swap(sp, sq);
+    if (levels)                             levels->swap(sp, sq);
+    if (cache_counts)                       cache_counts->swap(sp, sq);
+    if (swap_incounts && incoming_counts)   incoming_counts->swap(sp, sq);
+    if (implicit_bits)                      implicit_bits->swap(sp, sq);
+}
+
+// ******************************************************************
+
+// HERE
 
 void MEDDLY::node_headers
 ::reportStats(output &s, const char* pad, unsigned flags) const
@@ -276,215 +480,9 @@ void MEDDLY::node_headers
   if (is_in_cache)      s << " cache: " << (unsigned long)is_in_cache->get((size_t)p);
 }
 
-// ******************************************************************
-
-/*
-void MEDDLY::node_headers::turnOffCacheCounts()
-{
-  delete cache_counts;
-  cache_counts = 0;
-}
-*/
 
 // ******************************************************************
 
-/*
-void MEDDLY::node_headers::turnOffIncomingCounts()
-{
-  delete incoming_counts;
-  incoming_counts = 0;
-}
-*/
-
-// ******************************************************************
-
-MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
-{
-  parent.mstats.incMemUsed(h_bits/8);
-  node_handle found = 0;
-  for (int i=a_lowest_index; i<8; i++) {
-    // try the various lists
-    while (a_unused[i] > a_last) {
-      a_unused[i] = getNextOf(a_unused[i]);
-    }
-    if (a_unused[i]) {  // get a recycled one from list i
-      found = a_unused[i];
-      a_unused[i] = getNextOf(a_unused[i]);
-      break;
-    } else {
-      if (i == a_lowest_index) a_lowest_index++;
-    }
-  }
-  //
-  // We got something from a free list.
-  //
-  if (found) {
-#ifdef DEBUG_HANDLE_FREELIST
-    // address[found].setNotDeleted();
-    dump_handle_info(*this, a_last+1);
-#endif
-#ifdef DEBUG_HANDLE_MGT
-    printf("Forest %u using recycled handle %d\n", parent.FID(), found);
-#endif
-    a_freed--;
-    return found;
-  }
-
-  //
-  // Free lists are empty.
-  // Use sweep index if it's small enough (this is set
-  // if we're using mark and sweep).
-  //
-  if (a_sweep < a_last) {
-    MEDDLY_DCASSERT(addresses);
-    MEDDLY_DCASSERT(is_in_cache);
-    MEDDLY_DCASSERT(is_reachable);
-    for (;;) {
-      a_sweep = is_in_cache->firstZero(++a_sweep);
-      if (a_sweep > a_last) break;
-      if (is_reachable->get(a_sweep)) continue;
-      found = a_sweep;
-      break;
-    }
-    if (found) {
-      MEDDLY_DCASSERT(0==addresses->get((size_t)found));
-    } else {
-      // we're done sweeping
-      a_sweep = SIZE_MAX;
-    }
-  }
-
-  if (found) {
-#ifdef DEBUG_HANDLE_FREELIST
-    // address[found].setNotDeleted();
-    dump_handle_info(*this, a_last+1);
-#endif
-#ifdef DEBUG_HANDLE_MGT
-    printf("Forest %u using swept handle %d\n", parent.FID(), found);
-#endif
-    return found;
-  }
-
-  if (a_last+1 >= a_size) {
-    expandHandleList();
-  }
-  a_last++;
-  MEDDLY_DCASSERT(a_last < a_size);
-
-#ifdef DEBUG_HANDLE_FREELIST
-  dump_handle_info(*this, a_last+1);
-#endif
-#ifdef DEBUG_HANDLE_MGT
-  printf("Forest %u using end handle %lu\n", parent.FID(), size_t(a_last));
-#endif
-  return a_last;
-}
-
-// ******************************************************************
-
-void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
-{
-    MEDDLY_DCASSERT(p>0);
-    const size_t pp = size_t(p);
-
-  MEDDLY_DCASSERT(0==getNodeCacheCount(p));
-
-#ifdef DEBUG_HANDLE_MGT
-  printf("Forest %u recycling handle %d\n", parent.FID(), p);
-#endif
-
-  parent.mstats.decMemUsed(h_bits/8);
-  a_freed++;
-
-  // Determine which list to add this into,
-  // and add it there
-  int i = bytesRequiredForDown(p) -1;
-  setNextOf(pp, a_unused[i]);
-  a_unused[i] = pp;
-  a_lowest_index = MIN(a_lowest_index, (char)i);
-
-  // if this was the last node, collapse nodes into the
-  // "not yet allocated" pile.  But, we don't remove them
-  // from the free list(s); we simply discard any too-large
-  // ones when we pull from the free list(s).
-  if (pp == a_last) {
-    while (a_last && isDeleted(a_last) && (0==getNodeCacheCount(a_last))) {
-      a_last--;
-      a_freed--;
-    }
-
-#ifdef DEBUG_HANDLE_MGT
-    printf("Forest %u collapsing handle end from %d to %lu\n", parent.FID(), p, size_t(a_last));
-#endif
-
-    if (a_last < a_next_shrink) {
-#ifdef DEBUG_HANDLE_MGT
-      printf("Forest %u collapsed end less than shrink check %lu\n", parent.FID(), size_t(a_next_shrink));
-#endif
-      shrinkHandleList();
-    }
-
-  }
-#ifdef DEBUG_HANDLE_FREELIST
-  dump_handle_info(*this, a_last+1);
-#endif
-#ifdef ALWAYS_CHECK_FREELISTS
-  validateFreeLists();
-#endif
-}
-
-// ******************************************************************
-
-void MEDDLY::node_headers::swapNodes(node_handle p, node_handle q, bool swap_incounts)
-{
-  MEDDLY_DCASSERT(p!=q);
-  MEDDLY_DCASSERT(p>0);
-  MEDDLY_DCASSERT(q>0);
-
-  const size_t sp = size_t(p);
-  const size_t sq = size_t(q);
-  if (addresses)                          addresses->swap(sp, sq);
-  if (levels)                             levels->swap(sp, sq);
-  if (cache_counts)                       cache_counts->swap(sp, sq);
-  if (swap_incounts && incoming_counts)   incoming_counts->swap(sp, sq);
-  if (implicit_bits)                      implicit_bits->swap(sp, sq);
-}
-
-// ******************************************************************
-
-void MEDDLY::node_headers::sweepAllInCacheBits()
-{
-  a_sweep = 0;
-
-#ifdef DEBUG_SWEEP
-  printf("Forest %u finished cache scan\n", parent.FID());
-#endif
-
-#ifdef DEBUG_SWEEP_DETAIL
-  printf("Done sweeping; nodes that will be reclaimed:\n\t");
-
-  MEDDLY_DCASSERT(is_in_cache);
-  MEDDLY_DCASSERT(is_reachable);
-  size_t p = 0;
-  for (;;) {
-    p = is_in_cache->firstZero(++p);
-    if (is_reachable->get(p)) continue;
-    printf("%d, ", p);
-  } // infinite loop
-  printf(".\n");
-
-#ifdef DEBUG_SWEEP_DETAIL_CT
-  printf("Compute tables:\n");
-  FILE_output s(stdout);
-  operation::showAllComputeTables(s, 5);
-#endif
-#endif
-
-  // TBD - scan backwards and collapse a_last, and then shrink array if needed
-}
-
-
-// ******************************************************************
 
 void MEDDLY::node_headers::dumpInternal(output &s) const
 {
@@ -569,23 +567,6 @@ void MEDDLY::node_headers::validateFreeLists() const
   delete[] inlist;
   if (errors>0) exit(1);
 }
-
-// ******************************************************************
-
-/*
-void MEDDLY::node_headers::changeHeaderSize(unsigned oldbits, unsigned newbits)
-{
-  if (oldbits < newbits) {
-    parent.mstats.incMemUsed((a_last - a_freed)*(newbits-oldbits)/8);
-    parent.mstats.incMemAlloc(a_size*(newbits-oldbits)/8);
-  } else {
-    parent.mstats.decMemUsed((a_last - a_freed)*(oldbits-newbits)/8);
-    parent.mstats.decMemAlloc(a_size*(oldbits-newbits)/8);
-  }
-  h_bits += newbits;
-  h_bits -= oldbits;
-}
-*/
 
 // ******************************************************************
 

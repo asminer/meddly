@@ -36,7 +36,7 @@
 // ******************************************************************
 
 template <class INT>
-inline int bytesRequired4(INT a)
+inline unsigned bytesRequired4(INT a)
 {
   // proceed with byte examinations
   static const long byte2 = 0xff00;
@@ -58,7 +58,7 @@ inline int bytesRequired4(INT a)
 }
 
 template <class INT>
-inline int bytesRequired8(INT a)
+inline unsigned bytesRequired8(INT a)
 {
   // proceed with byte examinations
   static const long byte2 = 0xff00;
@@ -100,22 +100,22 @@ inline int bytesRequired8(INT a)
 }
 
 template <int N, class INT>
-inline int bytesRequired(INT a);
+inline unsigned bytesRequired(INT a);
 
 template <>
-inline int bytesRequired<4>(int a)
+inline unsigned bytesRequired<4>(int a)
 {
   return bytesRequired4(a);
 }
 
 template <>
-inline int bytesRequired<4>(long a)
+inline unsigned bytesRequired<4>(long a)
 {
   return bytesRequired4(a);
 }
 
 template <>
-inline int bytesRequired<8>(long a)
+inline unsigned bytesRequired<8>(long a)
 {
   return bytesRequired8(a);
 }
@@ -154,7 +154,7 @@ inline void stripSignedEncodingForSizing(INT &a)
 
       so the implementation takes that encoding into account.
 */
-inline int bytesRequiredForDown(int a)
+inline unsigned bytesRequiredForDown(int a)
 {
   stripDownEncodingForSizing(a);
   return bytesRequired<sizeof(int)>(a);
@@ -169,7 +169,7 @@ inline int bytesRequiredForDown(int a)
 
       so the implementation takes that encoding into account.
 */
-inline int bytesRequiredForDown(long a)
+inline unsigned bytesRequiredForDown(long a)
 {
   stripDownEncodingForSizing(a);
   return bytesRequired<sizeof(long)>(a);
@@ -179,7 +179,7 @@ inline int bytesRequiredForDown(long a)
       Determine the bytes required for a signed value \a a.
       We are effectively assuming 2s complement storage.
 */
-inline int bytesRequiredForSigned(int a)
+inline unsigned bytesRequiredForSigned(int a)
 {
   stripSignedEncodingForSizing(a);
   return bytesRequired<sizeof(int)>(a);
@@ -189,7 +189,7 @@ inline int bytesRequiredForSigned(int a)
       Determine the bytes required for a signed value \a a.
       We are effectively assuming 2s complement storage.
 */
-inline int bytesRequiredForSigned(long a)
+inline unsigned bytesRequiredForSigned(long a)
 {
   stripSignedEncodingForSizing(a);
   return bytesRequired<sizeof(long)>(a);
