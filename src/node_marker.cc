@@ -16,7 +16,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "node_mark.h"
+#include "node_marker.h"
 
 
 MEDDLY::node_marker::node_marker(node_headers *H, node_storage *nm)

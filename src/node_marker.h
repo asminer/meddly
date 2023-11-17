@@ -16,8 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MEDDLY_NODE_MARK_H
-#define MEDDLY_NODE_MARK_H
+#ifndef MEDDLY_NODE_MARKER_H
+#define MEDDLY_NODE_MARKER_H
 
 #include "forest.h"
 
