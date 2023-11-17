@@ -19,7 +19,7 @@
 #include "node_marker.h"
 
 
-MEDDLY::node_marker::node_marker(node_headers *H, node_storage *nm)
+MEDDLY::node_marker::node_marker(node_headers *H, const node_storage *nm)
     : marked(H)
 {
     nodeHead = H;
@@ -42,5 +42,5 @@ void MEDDLY::node_marker::_mark(node_handle p)
     MEDDLY_DCASSERT(nodeHead);
 
     marked.set(p, true);
-    nodeMan->markDownPointers( nodeHead->getNodeAddress(p) );
+    nodeMan->markDownPointers( *this, nodeHead->getNodeAddress(p) );
 }

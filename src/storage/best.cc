@@ -25,6 +25,7 @@
 #include "../unpacked_node.h"
 #include "../memory.h"
 #include "../forest.h"
+#include "../node_marker.h"
 #include <set>
 #include <map>
 #include <cassert>
@@ -137,6 +138,7 @@ public:
 
   virtual void unlinkDownAndRecycle(node_address addr);
   virtual void markDownPointers(node_address addr);
+  virtual void markDownPointers(node_marker &m, node_address addr) const;
 
   virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
   virtual void fillUnpacked(unpacked_node &nr, node_address addr, node_storage_flags) const;
@@ -716,6 +718,53 @@ void MEDDLY::best_storage::markDownPointers(node_address addr)
     }
 }
 
+void MEDDLY::best_storage::markDownPointers(node_marker &nm, node_address addr) const
+{
+#ifdef DEBUG_MARK_SWEEP
+  printf("marking children at address %ld\n", addr);
+  FILE_output out(stdout);
+  dumpInternalNode(out, addr, 0x03);
+#endif
+  const node_handle* chunk = getChunkAddress(addr);
+  MEDDLY_DCASSERT(chunk);
+
+  const unsigned int raw_size = getRawSize(chunk);
+  const unsigned int size = getSize(raw_size);
+  const unsigned int is_sparse = isSparse(raw_size);
+  const unsigned int is_pattern = isPattern(raw_size);
+
+  //
+  // Mark down pointers
+  //
+  const node_handle* down = chunk + down_start;
+  int uniqnnzs = 0;
+  if(is_pattern)
+    {
+    std::string pattern_from_index = generatePatternFromIndex(size);
+
+    int trunc_pattern_size = 0;
+    std::set<char> uniqnh;
+    for(int i=0;i<MAX_PATTERN_LEN;i++)
+      {
+      if(pattern_from_index[i]!='t')
+        {
+        trunc_pattern_size = i+1;
+        uniqnh.insert(pattern_from_index[i]);
+        }
+      uniqnnzs = uniqnh.size();
+      }
+
+    for (unsigned int i=0; i<trunc_pattern_size; i++)
+      {
+      if(pattern_from_index[i]!='t')
+        nm.mark(down[pattern_from_index[i]-'A']);
+      }
+    } else {
+      for (unsigned int i=0; i<size; i++) {
+        nm.mark(down[i]);
+      }
+    }
+}
 
 
 bool MEDDLY::best_storage

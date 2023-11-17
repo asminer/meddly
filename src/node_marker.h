@@ -31,7 +31,7 @@ namespace MEDDLY {
 */
 class MEDDLY::node_marker {
     public:
-        node_marker(node_headers *H, node_storage *nm);
+        node_marker(node_headers *H, const node_storage *nm);
         ~node_marker();
 
         inline void expand(size_t ns) {
@@ -67,7 +67,7 @@ class MEDDLY::node_marker {
     private:
         bitvector marked;
         node_headers* nodeHead;
-        node_storage* nodeMan;
+        const node_storage* nodeMan;
 };
 
 
