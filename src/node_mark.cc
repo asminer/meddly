@@ -19,10 +19,11 @@
 #include "node_mark.h"
 
 
-MEDDLY::node_marker::node_marker(node_headers *H)
+MEDDLY::node_marker::node_marker(node_headers *H, node_storage *nm)
     : marked(H)
 {
-    // No other data structures to initialize
+    nodeHead = H;
+    nodeMan = nm;
 }
 
 MEDDLY::node_marker::~node_marker()
@@ -37,6 +38,9 @@ MEDDLY::node_marker::~node_marker()
 void MEDDLY::node_marker::_mark(node_handle p)
 {
     CHECK_RANGE(__FILE__, __LINE__, 1, p, (node_handle) marked.getSize());
+    MEDDLY_DCASSERT(nodeMan);
+    MEDDLY_DCASSERT(nodeHead);
 
-    // TBD, copy from forest
+    marked.set(p, true);
+    nodeMan->markDownPointers( nodeHead->getNodeAddress(p) );
 }

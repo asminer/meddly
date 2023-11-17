@@ -24,6 +24,7 @@
 namespace MEDDLY {
     class node_storage_style;
     class node_storage;
+    class node_marker;
 
     class expert_forest;
     class memory_manager_style;
@@ -146,6 +147,13 @@ class MEDDLY::node_storage {
                 @param  addr    Address of the node.
         */
         virtual void markDownPointers(node_address addr) = 0;
+
+        /** Mark a node.
+            Traverse the downward pointers, and mark all of them.
+                @param  mark    Node marking mechanism.
+                @param  addr    Address of the node.
+        */
+        virtual void markDownPointers(node_marker &mark, node_address addr) const = 0;
 
     // various ways to read a node
 
