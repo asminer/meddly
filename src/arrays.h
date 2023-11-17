@@ -470,6 +470,8 @@ class MEDDLY::bitvector {
 
         inline size_t entry_bits() const { return sizeof(bool) * 8; }
 
+        inline size_t getSize() const { return size; }
+
         inline bool get(size_t i) const {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
             MEDDLY_DCASSERT(data);
@@ -500,6 +502,14 @@ class MEDDLY::bitvector {
         inline size_t firstZero(size_t start) const {
             for (; start < size; start++) {
                 if (0==data[start]) return start;
+            }
+            return size;
+        }
+
+        /// Return smallest index i >= start with bit i set.
+        inline size_t firstOne(size_t start) const {
+            for (; start < size; start++) {
+                if (1==data[start]) return start;
             }
             return size;
         }

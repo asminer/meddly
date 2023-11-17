@@ -41,6 +41,7 @@ libmeddly_la_SOURCES = \
     memstats.h              memstats.cc \
     minterms.h              \
     node_headers.h          node_headers.cc \
+    node_mark.h             node_mark.cc \
     node_storage.h          node_storage.cc \
     oper.h                  oper.cc \
     oper_binary.h           oper_binary.cc \
