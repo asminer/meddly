@@ -19,10 +19,10 @@
 #include "node_marker.h"
 
 
-MEDDLY::node_marker::node_marker(node_headers *H, const node_storage *nm)
-    : marked(H)
+MEDDLY::node_marker::node_marker(bool permanent, node_headers &H,
+        const node_storage *nm)
+    : marked(permanent, &H), nodeHead(H)
 {
-    nodeHead = H;
     nodeMan = nm;
 }
 
@@ -39,8 +39,7 @@ void MEDDLY::node_marker::_mark(node_handle p)
 {
     CHECK_RANGE(__FILE__, __LINE__, 1, p, (node_handle) marked.getSize());
     MEDDLY_DCASSERT(nodeMan);
-    MEDDLY_DCASSERT(nodeHead);
 
     marked.set(p, true);
-    nodeMan->markDownPointers( *this, nodeHead->getNodeAddress(p) );
+    nodeMan->markDownPointers( *this, nodeHead.getNodeAddress(p) );
 }

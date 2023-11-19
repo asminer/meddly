@@ -462,7 +462,7 @@ class MEDDLY::bitvector {
         bool* data;
         size_t size;
     public:
-        bitvector(array_watcher* w = nullptr);
+        bitvector(bool link, array_watcher* w = nullptr);
         ~bitvector();
 
         void expand(size_t ns);
@@ -514,6 +514,8 @@ class MEDDLY::bitvector {
             return size;
         }
 
+        /// Return number of bits set
+        size_t count() const;
 };
 
 

@@ -31,7 +31,7 @@ namespace MEDDLY {
 */
 class MEDDLY::node_marker {
     public:
-        node_marker(node_headers *H, const node_storage *nm);
+        node_marker(bool permanent, node_headers &H, const node_storage *nm);
         ~node_marker();
 
         inline void expand(size_t ns) {
@@ -61,12 +61,16 @@ class MEDDLY::node_marker {
             return (node_handle) marked.firstOne( (size_t) i );
         }
 
+        inline size_t countMarked() const {
+            return marked.count();
+        }
+
     private:
         void _mark(node_handle p);
 
     private:
         bitvector marked;
-        node_headers* nodeHead;
+        node_headers& nodeHead;
         const node_storage* nodeMan;
 };
 

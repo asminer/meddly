@@ -39,6 +39,7 @@ namespace MEDDLY {
     class operation;
     class forest;
     class expert_forest;
+    class node_marker;
     class node_storage;
     class unpacked_node;
     class unique_table;
@@ -1911,6 +1912,12 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 
   // ------------------------------------------------------------
   // non-virtual, handy methods.
+
+    /**
+        Build a node marker.
+    */
+    node_marker* makeNodeMarker();
+
 
     /** Build a list of nodes in the subgraph below the given node.
         This for example is used to determine which nodes must

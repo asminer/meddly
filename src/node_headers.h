@@ -334,7 +334,7 @@ class MEDDLY::node_headers : public array_watcher {
                 implicit_bits->set(size_t(p), flag);
             } else {
                 if (!flag) return;
-                implicit_bits = new bitvector(this);
+                implicit_bits = new bitvector(true, this);
                 implicit_bits->expand(a_size);
                 implicit_bits->set(size_t(p), flag);
             }

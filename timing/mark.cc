@@ -25,393 +25,214 @@
 #include "../src/meddly.h"
 #include "simple_model.h"
 #include "timer.h"
-#include "../src/loggers.h"
 
 using namespace MEDDLY;
 
-FILE_output meddlyout(stdout);
 
-int usage(const char* who)
+
+inline char* newEvent(unsigned N)
 {
-  /* Strip leading directory, if any: */
-  const char* name = who;
-  for (const char* ptr=who; *ptr; ptr++) {
-    if ('/' == *ptr) name = ptr+1;
-  }
-  printf("\nUsage: %s nnnn [options]\n\n", name);
-  printf("\tnnnn: number of parts\n\n");
-  printf("\t-bfs: use traditional iterations\n\n");
-  printf("\t-dfs: use fastest saturation (currently, -msat)\n");
-  printf("\t-esat: use saturation by events\n");
-  printf("\t-ksat: use saturation by levels\n");
-  printf("\t-msat: use monolithic saturation (default)\n\n");
-  printf("\t-exp: use explicit (very slow)\n");
-  printf("\t-pdf: Write MDD for reachable states to out.pdf\n\n");
-  printf("\t--batch b: specify explicit batch size\n\n");
-  printf("\t -l lfile: Write logging information to specified file\n\n");
-  return 1;
+    char* ev = new char[N*8+1];
+    for (unsigned i=N*8; i; i--) ev[i] = '.';
+    ev[0] = '_';
+    return ev;
 }
 
-void printStats(const char* who, const forest* f)
+char* Get(unsigned i, int N)
 {
-  printf("%s stats:\n", who);
-  const expert_forest* ef = (expert_forest*) f;
-  ef->reportStats(meddlyout, "\t",
-    expert_forest::HUMAN_READABLE_MEMORY  |
-    expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
-    expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS |
-    expert_forest::HOLE_MANAGER_DETAILED
-  );
+    char* t = newEvent(N);
+    char* tloc = t+8*i;
+    tloc[6] = '-';
+    tloc[8] = '-';
+    tloc[3] = '+';
+    tloc[5] = '+';
+    return t;
 }
 
-
-
-inline char* newEvent(int N)
+char* Free(unsigned i, unsigned N)
 {
-  char* ev = new char[N*8+1];
-  for (int i=N*8; i; i--) ev[i] = '.';
-  ev[0] = '_';
-  return ev;
+    char* t = newEvent(N);
+    char* tloc = t+8*i;
+    char* t_rt = i ? t+(8*i-8) : t+(8*N-8);
+    tloc[5] = '-';
+    tloc[6] = '+';
+    t_rt[3] = '-';
+    t_rt[2] = '+';
+    return t;
 }
 
-char* Get(int i, int N)
+char* Put(unsigned i, unsigned N)
 {
-  char* t = newEvent(N);
-  char* tloc = t+8*i;
-  tloc[6] = '-';
-  tloc[8] = '-';
-  tloc[3] = '+';
-  tloc[5] = '+';
-  return t;
+    char* t = newEvent(N);
+    char* tloc = t+8*i;
+    tloc[3] = '+';
+    tloc[7] = '+';
+    tloc[4] = '-';
+    tloc[6] = '-';
+    return t;
 }
 
-char* Free(int i, int N)
+char* Used(unsigned i, unsigned N)
 {
-  char* t = newEvent(N);
-  char* tloc = t+8*i;
-  char* t_rt = i ? t+(8*i-8) : t+(8*N-8);
-  tloc[5] = '-';
-  tloc[6] = '+';
-  t_rt[3] = '-';
-  t_rt[2] = '+';
-  return t;
+    char* t = newEvent(N);
+    char* tloc = t+8*i;
+    char* t_rt = i ? t+(8*i-8) : t+(8*N-8);
+    tloc[7] = '-';
+    tloc[6] = '+';
+    t_rt[3] = '-';
+    t_rt[1] = '+';
+    return t;
 }
 
-char* Put(int i, int N)
+char* Other(unsigned i, unsigned N)
 {
-  char* t = newEvent(N);
-  char* tloc = t+8*i;
-  tloc[3] = '+';
-  tloc[7] = '+';
-  tloc[4] = '-';
-  tloc[6] = '-';
-  return t;
+    char* t = newEvent(N);
+    char* tloc = t+8*i;
+    tloc[1] = '-';
+    tloc[4] = '+';
+    return t;
 }
 
-char* Used(int i, int N)
+char* Owner(unsigned i, unsigned N)
 {
-  char* t = newEvent(N);
-  char* tloc = t+8*i;
-  char* t_rt = i ? t+(8*i-8) : t+(8*N-8);
-  tloc[7] = '-';
-  tloc[6] = '+';
-  t_rt[3] = '-';
-  t_rt[1] = '+';
-  return t;
+    char* t = newEvent(N);
+    char* tloc = t+8*i;
+    tloc[1] = '-';
+    tloc[2] = '+';
+    return t;
 }
 
-char* Other(int i, int N)
+char* Write(unsigned i, unsigned N)
 {
-  char* t = newEvent(N);
-  char* tloc = t+8*i;
-  tloc[1] = '-';
-  tloc[4] = '+';
-  return t;
+    char* t = newEvent(N);
+    char* tloc = t+8*i;
+    tloc[2] = '-';
+    tloc[4] = '+';
+    return t;
 }
 
-char* Owner(int i, int N)
+char* Go(unsigned i, unsigned N)
 {
-  char* t = newEvent(N);
-  char* tloc = t+8*i;
-  tloc[1] = '-';
-  tloc[2] = '+';
-  return t;
+    char* t = newEvent(N);
+    char* tloc = t+8*i;
+    tloc[2] = '-';
+    tloc[8] = '+';
+    return t;
 }
 
-char* Write(int i, int N)
+void markTest(const char* name, const dd_edge &E, unsigned marks, unsigned dots)
 {
-  char* t = newEvent(N);
-  char* tloc = t+8*i;
-  tloc[2] = '-';
-  tloc[4] = '+';
-  return t;
-}
+    expert_forest* ef = dynamic_cast<expert_forest*> (E.getForest());
+    if (!ef) throw "null expert_forest";
+    node_marker* M = ef->makeNodeMarker();
+    if (!M) throw "null node_marker";
 
-char* Go(int i, int N)
-{
-  char* t = newEvent(N);
-  char* tloc = t+8*i;
-  tloc[2] = '-';
-  tloc[8] = '+';
-  return t;
-}
+    std::cout << "Marking " << name;
+    std::cout.flush();
+    timer T;
 
-void runWithArgs(int N, char method, int batchsize, bool build_pdf, forest::logger* LOG)
-{
-  timer start;
-
-  printf("+-------------------------------------------------+\n");
-  printf("|   Initializing Slotted ring model for N = %-4d  |\n", N);
-  printf("+-------------------------------------------------+\n");
-  fflush(stdout);
-
-  char** events = new char*[8*N];
-  char** fill = events;
-  for (int i=0; i<N; i++) {
-    fill[0] = Other(i, N);
-    fill[1] = Owner(i, N);
-    fill[2] = Write(i, N);
-    fill[3] = Go(i, N);
-    fill[4] = Get(i, N);
-    fill[5] = Put(i, N);
-    fill[6] = Used(i, N);
-    fill[7] = Free(i, N);
-    fill += 8;
-  }
-
-  // Initialize domain
-  int* sizes = new int[N*8];
-  for (int i=N*8-1; i>=0; i--) sizes[i] = 2;
-  domain* d = domain::createBottomUp(sizes, N*8);
-
-  // Initialize forests
-  forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  if (LOG) {
-    mdd->setLogger(LOG, "MDD");
-    mxd->setLogger(LOG, "MxD");
-  }
-
-  //
-  // Build initial state
-  //
-  if (LOG) LOG->newPhase(mdd, "Building initial state");
-  int* initial = new int[1+N*8];
-  for (int i=N*8; i; i--) initial[i] = 0;
-  int* initLocal = initial;
-  for (int i=0; i<N; i++) {
-    initLocal[3] = initLocal[5] = 1;
-    initLocal += 8;
-  }
-  dd_edge init_state(mdd);
-  mdd->createEdge(&initial, 1, init_state);
-
-  //
-  // Build next-state function
-  //
-  if (LOG) LOG->newPhase(mxd, "Building next-state function");
-  dd_edge nsf(mxd);
-  satpregen_opname::pregen_relation* ensf = 0;
-  specialized_operation* sat = 0;
-
-  if ('s' == method) {
-    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd, 8*N);
-  }
-  if ('k' == method) {
-    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd);
-  }
-
-  if ('e' != method) {
-
-    if (ensf) {
-        start.note_time();
-        buildNextStateFunction(events, 8*N, ensf, 2);
-        start.note_time();
-    } else {
-        start.note_time();
-        buildNextStateFunction(events, 8*N, mxd, nsf, 2);
-        start.note_time();
-#ifdef DUMP_NSF
-        printf("Next-state function:\n");
-        nsf.show(meddlyout, 2);
-#endif
-    }
-    printf("Next-state function construction took %.4e seconds\n",
-      start.get_last_seconds() );
-    printStats("MxD", mxd);
-  }
-
-  //
-  // Build reachable states
-  //
-  if (LOG) LOG->newPhase(mdd, "Building reachability set");
-  dd_edge reachable(mdd);
-  start.note_time();
-  switch (method) {
-    case 'b':
-        printf("Building reachability set using traditional algorithm\n");
-        fflush(stdout);
-        apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
-        break;
-
-    case 'm':
-        printf("Building reachability set using saturation, monolithic relation\n");
-        fflush(stdout);
-        apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
-        break;
-
-    case 'e':
-        printf("Building reachability set using explicit search\n");
-        printf("Using batch size: %d\n", batchsize);
-        fflush(stdout);
-        explicitReachset(events, 8*N, mdd, init_state, reachable, batchsize);
-        break;
-
-    case 'k':
-    case 's':
-        printf("Building reachability set using saturation, relation");
-        if ('k'==method)  printf(" by levels\n");
-        else              printf(" by events\n");
-        fflush(stdout);
-        if (!SATURATION_FORWARD()) {
-          throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
+    while (marks) {
+        if (0==marks % dots) {
+            std::cout << '.';
+            std::cout.flush();
         }
-        sat = SATURATION_FORWARD()->buildOperation(ensf);
-        if (0==sat) {
-          throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-        }
-        sat->compute(init_state, reachable);
-        break;
+        --marks;
+        M->unmarkAll();
+        M->mark(E.getNode());
+    }
 
-    default:
-        printf("Error - unknown method\n");
-        exit(2);
-  }
-  start.note_time();
-  printf("Done\n");
-  printf("Reachability set construction took %.4e seconds\n",
-          start.get_last_seconds());
-  fflush(stdout);
+    T.note_time();
+    std::cout << ' ' << T.get_last_seconds() << " seconds\n";
+    std::cout << "    " << M->countMarked() << " marked nodes\n";
+    std::cout << "    " << ef->getNodeCount(E.getNode()) << " according to expert_forest\n";
+    delete M;
 
-#ifdef SHOW_STATES
-  int count = 0;
-  for (enumerator i(reachable); i; ++i, ++count) {
-    const int* element = i.getAssignments();
-    printf("State %4d: [%d", count, element[1]);
-    for (int j=2; j<=8*N; j++) {
-      printf(", %d", element[j]);
-    } // for j
-    printf("]\n");
-  }  // for i
-#endif
-
-  printStats("MDD", mdd);
-  fflush(stdout);
-
-  double c;
-  apply(CARDINALITY, reachable, c);
-  operation::showAllComputeTables(meddlyout, 3);
-
-  printf("Approx. %g reachable states\n", c);
-  destroyOperation(sat);
-  // or, don't, and let cleanup() take care of it?
-
-  if (build_pdf) {
-    reachable.setLabel("reachable");
-    reachable.writePicture("out", "pdf");
-  }
-
-  if (LOG) {
-    LOG->newPhase(mdd, "Cleanup");
-    LOG->newPhase(mxd, "Cleanup");
-    domain::destroy(d);
-  }
 }
 
-int main(int argc, const char** argv)
+void runWithArgs(unsigned N, unsigned marks, unsigned dots)
 {
-  int N = -1;
-  char method = 'm';
-  int batchsize = 256;
-  const char* lfile = 0;
-  bool build_pdf = false;
+    std::cout << "Building Slotted ring model for N = " << N << std::endl;
 
-  for (int i=1; i<argc; i++) {
-    if (strcmp("-bfs", argv[i])==0) {
-      method = 'b';
-      continue;
+    char** events = new char*[8*N];
+    char** fill = events;
+    for (unsigned i=0; i<N; i++) {
+        fill[0] = Other(i, N);
+        fill[1] = Owner(i, N);
+        fill[2] = Write(i, N);
+        fill[3] = Go(i, N);
+        fill[4] = Get(i, N);
+        fill[5] = Put(i, N);
+        fill[6] = Used(i, N);
+        fill[7] = Free(i, N);
+        fill += 8;
     }
-    if (strcmp("-dfs", argv[i])==0) {
-      method = 'm';
-      continue;
-    }
-    if (strcmp("-esat", argv[i])==0) {
-      method = 's';
-      continue;
-    }
-    if (strcmp("-ksat", argv[i])==0) {
-      method = 'k';
-      continue;
-    }
-    if (strcmp("-msat", argv[i])==0) {
-      method = 'm';
-      continue;
-    }
-    if (strcmp("-exp", argv[i])==0) {
-      method = 'e';
-      continue;
-    }
-    if (strcmp("-l", argv[i])==0) {
-      lfile = argv[i+1];
-      i++;
-      continue;
-    }
-    if (strcmp("-pdf", argv[i])==0) {
-      build_pdf = true;
-      continue;
-    }
-    if (strcmp("--batch", argv[i])==0) {
-      i++;
-      if (argv[i]) batchsize = atoi(argv[i]);
-      continue;
-    }
-    N = atoi(argv[i]);
-  }
 
-  if (N<0) return usage(argv[0]);
+    std::cout << "Building domain and forests" << std::endl;
 
-  MEDDLY::initialize();
+    // Initialize domain
+    int* sizes = new int[N*8];
+    for (int i=N*8-1; i>=0; i--) sizes[i] = 2;
+    domain* d = domain::createBottomUp(sizes, N*8);
 
-  //
-  // Set up logger, if any
-  //
+    // Initialize forests
+    forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+    forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 
-  std::ofstream log;
-  forest::logger* LOG = 0;
-  if (lfile) {
-    log.open(lfile, std::ofstream::out);
-    if (!log) {
-      printf("Couldn't open %s for writing, no logging\n", lfile);
-    } else {
-      LOG = new simple_logger(log);
-      LOG->recordNodeCounts();
-      char comment[80];
-      snprintf(comment, 80, "Automatically generated by slot (N=%d)", N);
-      LOG->addComment(comment);
+    //
+    // Build initial state
+    //
+    std::cout << "Building initial state" << std::endl;
+    int* initial = new int[1+N*8];
+    for (int i=N*8; i; i--) initial[i] = 0;
+    int* initLocal = initial;
+    for (int i=0; i<N; i++) {
+        initLocal[3] = initLocal[5] = 1;
+        initLocal += 8;
     }
-  }
+    dd_edge init_state(mdd);
+    mdd->createEdge(&initial, 1, init_state);
 
-  try {
-    runWithArgs(N, method, batchsize, build_pdf, LOG);
-    delete LOG;
-    MEDDLY::cleanup();
-    return 0;
-  }
-  catch (MEDDLY::error e) {
-    printf("Caught MEDDLY error: %s\n", e.getName());
-    return 1;
-  }
+    //
+    // Build next-state function
+    //
+    std::cout << "Building next-state function" << std::endl;
+    dd_edge nsf(mxd);
+    buildNextStateFunction(events, 8*N, mxd, nsf);
 
+    //
+    // Build reachable states
+    //
+    std::cout << "Building reachability set" << std::endl;
+    dd_edge reachable(mdd);
+    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+
+    //
+    // Mark timing tests, finally
+    //
+    markTest("reachability set    ", reachable, marks, dots);
+    markTest("transition relation ", nsf, marks, dots);
+}
+
+int main()
+{
+    try {
+        MEDDLY::initialize();
+        runWithArgs(100, 256*8, 256);
+        MEDDLY::cleanup();
+        return 0;
+    }
+    catch (MEDDLY::error e) {
+        std::cerr   << "\nCaught meddly error '" << e.getName()
+                    << "'\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
+        return 1;
+    }
+    catch (const char* e) {
+        std::cerr << "\nCaught our own error: " << e << "\n";
+        return 2;
+    }
+    std::cerr << "\nSome other error?\n";
+    return 3;
 }
 
 

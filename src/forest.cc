@@ -33,6 +33,7 @@
 
 #include "oper.h"
 #include "operators.h"
+#include "node_marker.h"
 
 // for timestamps.
 // to do - check during configuration that these are present,
@@ -1153,6 +1154,14 @@ void MEDDLY::expert_forest::countNodesByLevel(long* active) const
 // '                      public handy methods                      '
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+MEDDLY::node_marker*
+MEDDLY::expert_forest::makeNodeMarker()
+{
+    node_marker* nm = new node_marker(false, nodeHeaders, nodeMan);
+    nm->expand(nodeHeaders.lastUsedHandle()+1);
+    return nm;
+}
 
 MEDDLY::node_handle*
 MEDDLY::expert_forest

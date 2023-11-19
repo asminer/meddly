@@ -24,6 +24,7 @@
 #include "domain.h"
 #include "minterms.h"
 #include "forest.h"
+#include "node_marker.h"
 #include "relation_node.h"
 #include "memory.h"
 

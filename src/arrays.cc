@@ -641,9 +641,9 @@ void MEDDLY::address_array::shrink64to32(size_t ns)
 // ******************************************************************
 
 
-MEDDLY::bitvector::bitvector(array_watcher *w)
+MEDDLY::bitvector::bitvector(bool link, array_watcher *w)
 {
-    watch = w;
+    watch = link ? w : nullptr;
     data = nullptr;
     size = 0;
     if (watch) watch->expandElementSize(0, sizeof(bool)*8);
@@ -685,3 +685,11 @@ void MEDDLY::bitvector::shrink(size_t ns)
 #endif
 }
 
+size_t MEDDLY::bitvector::count() const
+{
+    size_t c = 0;
+    for (size_t i=0; i<size; i++) {
+        if (data[i]) c++;
+    }
+    return c;
+}
