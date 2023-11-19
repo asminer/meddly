@@ -127,7 +127,7 @@ void markTest(const char* name, const dd_edge &E, unsigned marks, unsigned dots)
     node_marker* M = ef->makeNodeMarker();
     if (!M) throw "null node_marker";
 
-    std::cout << "Marking " << name;
+    std::cout << "Marking " << std::setw(6) << marks << "x " << name;
     std::cout.flush();
     timer T;
 
@@ -145,6 +145,7 @@ void markTest(const char* name, const dd_edge &E, unsigned marks, unsigned dots)
     std::cout << ' ' << T.get_last_seconds() << " seconds\n";
     std::cout << "    " << M->countMarked() << " marked nodes\n";
     std::cout << "    " << ef->getNodeCount(E.getNode()) << " according to expert_forest\n";
+    std::cout << "    " << M->getSize() << " total nodes\n";
     delete M;
 
 }
@@ -210,14 +211,14 @@ void runWithArgs(unsigned N, unsigned marks, unsigned dots)
     // Mark timing tests, finally
     //
     markTest("reachability set    ", reachable, marks, dots);
-    markTest("transition relation ", nsf, marks, dots);
+    markTest("transition relation ", nsf, marks*16, dots*16);
 }
 
 int main()
 {
     try {
         MEDDLY::initialize();
-        runWithArgs(100, 256*8, 256);
+        runWithArgs(100, 1024*16, 1024);
         MEDDLY::cleanup();
         return 0;
     }

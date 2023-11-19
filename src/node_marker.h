@@ -61,6 +61,10 @@ class MEDDLY::node_marker {
             return (node_handle) marked.firstOne( (size_t) i );
         }
 
+        inline size_t getSize() const {
+            return marked.getSize();
+        }
+
         inline size_t countMarked() const {
             return marked.count();
         }
