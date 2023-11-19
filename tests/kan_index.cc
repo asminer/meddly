@@ -76,7 +76,7 @@ bool checkReachset(int N)
   // Build next-state function
   forest* mxd = forest::create(dom, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
-  buildNextStateFunction(kanban, 16, mxd, nsf);
+  buildNextStateFunction(kanban, 16, mxd, nsf, 0);
   printf("\tbuilt next-state function\n");
   fflush(stdout);
 
