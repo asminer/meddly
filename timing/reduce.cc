@@ -20,6 +20,7 @@
 #include "timer.h"
 
 #include <iostream>
+#include <iomanip>
 
 // #define REPORTING
 
@@ -53,6 +54,26 @@ inline int Equilikely(int a, int b)
 {
     return (a + (int) ((b - a + 1) * Random()));
 }
+
+
+std::ostream& show_sec(std::ostream &s, const timer &T, int a, int b)
+{
+    long sec, usec;
+    T.get_last(sec, usec);
+    s << std::setw(a) << sec;
+    if (b) {
+        s << '.';
+        long d = 100000;
+        for (int i=0; i<b; i++) {
+            s << (usec / d);
+            usec %= d;
+            d /= 10;
+        }
+    }
+    return s;
+}
+
+
 
 
 void test_MT_full_Reductions(expert_forest* f, const char* what)
@@ -97,7 +118,7 @@ void test_MT_full_Reductions(expert_forest* f, const char* what)
 
     T.note_time();
 
-    std::cerr << ' ' << T.get_last_seconds() << " seconds\n";
+    show_sec(std::cerr, T, 3, 3) << " seconds\n";
 
 #ifdef REPORTING
     ostream_output out(std::cout);
@@ -146,7 +167,7 @@ void test_EV_full_Reductions(expert_forest* f, const char* what)
 
     T.note_time();
 
-    std::cerr << ' ' << T.get_last_seconds() << " seconds\n";
+    show_sec(std::cerr, T, 3, 3) << " seconds\n";
 
 #ifdef REPORTING
     ostream_output out(std::cout);

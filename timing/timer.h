@@ -70,14 +70,20 @@ class timer
             update(usage.ru_utime);
 	    }
 
-	    inline long get_last_interval()
+	    inline long get_last_interval() const
 	    {
 		    return last_interval;
 	    }
 
-        inline double get_last_seconds()
+        inline double get_last_seconds() const
         {
             return last_interval / 1000000.0;
+        }
+
+        inline void get_last(long &sec, long &usec) const
+        {
+            sec = last_interval / 1000000;
+            usec = last_interval % 1000000;
         }
 
     private:
@@ -122,15 +128,22 @@ class timer
             update(curr_time);
 	    }
 
-	    inline long get_last_interval()
+	    inline long get_last_interval() const
 	    {
 		    return last_interval;
 	    }
 
-        inline double get_last_seconds()
+        inline double get_last_seconds() const
         {
             return last_interval / 1000000.0;
         }
+
+        inline void get_last(long &sec, long &usec) const
+        {
+            sec = last_interval / 1000000;
+            usec = last_interval % 1000000;
+        }
+
 
 private:
         inline void update(const struct timeval &curr)
@@ -163,18 +176,25 @@ class timer
 	    {
 	    }
 
-	    inline long get_last_interval()
+	    inline long get_last_interval() const
 	    {
 		    return 0;
 	    }
 
-        inline double get_last_seconds()
+        inline double get_last_seconds() const
         {
             return 0.0;
+        }
+
+        inline void get_last(long &sec, long &usec) const
+        {
+            sec = 0;
+            usec = 0;
         }
 };
 
 #endif
 #endif
-#endif
+
+#endif // ifdef TIMERS_H
 

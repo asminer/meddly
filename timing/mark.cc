@@ -20,7 +20,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string.h>
-#include <fstream>
+#include <iostream>
+#include <iomanip>
 
 #include "../src/meddly.h"
 #include "simple_model.h"
@@ -28,6 +29,22 @@
 
 using namespace MEDDLY;
 
+std::ostream& show_sec(std::ostream &s, const timer &T, int a, int b)
+{
+    long sec, usec;
+    T.get_last(sec, usec);
+    s << std::setw(a) << sec;
+    if (b) {
+        s << '.';
+        long d = 100000;
+        for (int i=0; i<b; i++) {
+            s << (usec / d);
+            usec %= d;
+            d /= 10;
+        }
+    }
+    return s;
+}
 
 
 inline char* newEvent(unsigned N)
@@ -147,7 +164,7 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
     }
 
     T.note_time();
-    std::cout << ' ' << T.get_last_seconds() << " seconds\n";
+    show_sec(std::cout, T, 3, 3) << " seconds\n";
     std::cout << "        " << M->countMarked() << " marked nodes\n";
     std::cout << "        " << ef->getNodeCount(E.getNode()) << " according to expert_forest\n";
 
@@ -163,7 +180,7 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
         eco = M->countNonzeroEdges();
     }
     T.note_time();
-    std::cout << ' ' << T.get_last_seconds() << " seconds\n";
+    show_sec(std::cout, T, 3, 3) << " seconds\n";
     std::cout << "        " << eco << " non-zero edges\n";
     std::cout << "        " << ef->getEdgeCount(E.getNode(), false) << " according to expert_forest\n";
 
