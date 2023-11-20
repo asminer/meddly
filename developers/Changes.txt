@@ -2,13 +2,10 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
-(2) Add printing capabilities to node_marker
-
 (3) Change mark and sweep to use node_marker in forests
 
 (4) Change printing, etc to use this
 
-(6) Optimize implementation
 
 
 
@@ -36,32 +33,4 @@ oper_unary.h            oper_unary.cc
 
 relation_node.h         relation_node.cc
 timer.h (move?)
-
-
-In good shape
-------------------------------------------------------------
-compute_table.h         compute_table.cc
-ct_entry_key.h          ct_entry_key.cc
-ct_entry_result.h       ct_entry_result.h
-ct_entry_type.h         ct_entry_type.cc
-ct_initializer.h        ct_initializer.cc
-
-dd_edge.h               dd_edge.cc
-domain.h                domain.cc
-
-error.h                 error.cc
-initializer.h           initializer.cc
-io.h                    io.cc
-memstats.h              memstats.cc
-node_headers.h          node_headers.cc
-node_storage.h          node_storage.cc
-policies.h              policies.cc
-
-operators.h             operators.cc
-
-unique_table.h          unique_table.cc
-unpacked_node.h         unpacked_node.cc
-
-variable.h              variable.cc
-varorder.h              varorder.cc
 
