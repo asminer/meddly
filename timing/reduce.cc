@@ -26,8 +26,13 @@
 
 using namespace MEDDLY;
 
+#ifdef DEVELOPMENT_CODE
+const unsigned BATCHSIZE =   512;
+const unsigned NUMBATCHES = 1024;
+#else
 const unsigned BATCHSIZE = 16384;
 const unsigned NUMBATCHES = 1024;
+#endif
 const unsigned TOTAL = BATCHSIZE * NUMBATCHES;
 
 const unsigned VARSIZE = 10;
