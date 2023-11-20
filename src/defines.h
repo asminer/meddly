@@ -55,13 +55,13 @@ namespace MEDDLY {
   /// POSITIVE "macro".
   template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
 
-  // Number of digits
-  template <class T>
-  inline int digits(T a) {
-    int d;
-    for (d=1; a; d++) { a /= 10; }
-    return d;
-  }
+    // Number of digits
+    template <class T>
+    inline unsigned digits(T a) {
+        unsigned d;
+        for (d=1; a; d++) { a /= 10; }
+        return d;
+    }
 
   /// Get the "top level" of an operation.  Works for primed & unprimed.
   inline int topLevel(int k1, int k2) {

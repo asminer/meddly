@@ -1158,8 +1158,9 @@ void MEDDLY::expert_forest::countNodesByLevel(long* active) const
 MEDDLY::node_marker*
 MEDDLY::expert_forest::makeNodeMarker()
 {
-    node_marker* nm = new node_marker(false, nodeHeaders, nodeMan);
+    node_marker* nm = new node_marker(false, nodeHeaders, nodeMan, this);
     nm->expand(nodeHeaders.lastUsedHandle()+1);
+    nm->unmarkAll();
     return nm;
 }
 

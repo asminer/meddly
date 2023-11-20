@@ -31,7 +31,8 @@ namespace MEDDLY {
 */
 class MEDDLY::node_marker {
     public:
-        node_marker(bool permanent, node_headers &H, const node_storage *nm);
+        node_marker(bool permanent, node_headers &H, const node_storage *nm,
+                expert_forest* f);
         ~node_marker();
 
         inline void expand(size_t ns) {
@@ -69,6 +70,17 @@ class MEDDLY::node_marker {
             return marked.count();
         }
 
+        /// Count the number of outgoing edges for marked nodes.
+        size_t countEdges() const;
+
+        /// Count the number of non-transparent outgoing edges for marked nodes.
+        size_t countNonzeroEdges() const;
+
+        /// Display all marked nodes, by levels.
+        void showByLevels(output &s) const;
+
+        /// TBD: writeNodeGraphPicture()
+
     private:
         void _mark(node_handle p);
 
@@ -76,6 +88,7 @@ class MEDDLY::node_marker {
         bitvector marked;
         node_headers& nodeHead;
         const node_storage* nodeMan;
+        expert_forest* For;
 };
 
 

@@ -120,37 +120,60 @@ char* Go(unsigned i, unsigned N)
     return t;
 }
 
-void markTest(const char* name, const dd_edge &E, unsigned marks, unsigned dots)
+void markTest(const char* name, const dd_edge &E, const unsigned marks,
+        const unsigned counts)
 {
+    const unsigned mdots = marks/16;
+    const unsigned cdots = counts/16;
+
     expert_forest* ef = dynamic_cast<expert_forest*> (E.getForest());
     if (!ef) throw "null expert_forest";
     node_marker* M = ef->makeNodeMarker();
     if (!M) throw "null node_marker";
 
-    std::cout << "Marking " << std::setw(6) << marks << "x " << name;
+    std::cout << "Testing " << name << " (" << M->getSize() << " total nodes)\n";
+    std::cout << "     Marking " << std::setw(6) << marks << "x ";
     std::cout.flush();
+
     timer T;
 
-    while (marks) {
-        if (0==marks % dots) {
+    for (unsigned i=marks; i; --i) {
+        if (0==i % mdots) {
             std::cout << '.';
             std::cout.flush();
         }
-        --marks;
         M->unmarkAll();
         M->mark(E.getNode());
     }
 
     T.note_time();
     std::cout << ' ' << T.get_last_seconds() << " seconds\n";
-    std::cout << "    " << M->countMarked() << " marked nodes\n";
-    std::cout << "    " << ef->getNodeCount(E.getNode()) << " according to expert_forest\n";
-    std::cout << "    " << M->getSize() << " total nodes\n";
+    std::cout << "        " << M->countMarked() << " marked nodes\n";
+    std::cout << "        " << ef->getNodeCount(E.getNode()) << " according to expert_forest\n";
+
+    std::cout << "    Counting " << std::setw(6) << counts << "x ";
+    std::cout.flush();
+
+    size_t eco = 0;
+    for (unsigned i=counts; i; --i) {
+        if (0==i % cdots) {
+            std::cout << '.';
+            std::cout.flush();
+        }
+        eco = M->countNonzeroEdges();
+    }
+    T.note_time();
+    std::cout << ' ' << T.get_last_seconds() << " seconds\n";
+    std::cout << "        " << eco << " non-zero edges\n";
+    std::cout << "        " << ef->getEdgeCount(E.getNode(), false) << " according to expert_forest\n";
+
+
     delete M;
 
 }
 
-void runWithArgs(unsigned N, unsigned marks, unsigned dots)
+
+void runWithArgs(unsigned N, unsigned marks, unsigned counts)
 {
     std::cout << "Building Slotted ring model for N = " << N << std::endl;
 
@@ -210,15 +233,20 @@ void runWithArgs(unsigned N, unsigned marks, unsigned dots)
     //
     // Mark timing tests, finally
     //
-    markTest("reachability set    ", reachable, marks, dots);
-    markTest("transition relation ", nsf, marks*16, dots*16);
+    markTest("reachability set    ", reachable, marks, counts);
+    markTest("transition relation ", nsf, marks*16, counts*16);
 }
+
 
 int main()
 {
     try {
         MEDDLY::initialize();
-        runWithArgs(100, 1024*16, 1024);
+#ifdef DEVELOPMENT_CODE
+        runWithArgs(50, 256, 64);
+#else
+        runWithArgs(100, 16384, 4096);
+#endif
         MEDDLY::cleanup();
         return 0;
     }

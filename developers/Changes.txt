@@ -2,45 +2,11 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
+(2) Add printing capabilities to node_marker
 
-(2) markNodesInSubgraph:
-    move out of forest object as a stand-alone thing
-    maybe an operation?
-
-    /*
-        Set of forest nodes.
-    */
-    class node_set {
-        public:
-            node_set();
-            ~node_set();
-
-            void clear();
-
-            void addNodesBelow(const dd_edge &e);
-
-            inline unsigned numNodes() const;
-            inline unsigned numStoredEdges() const;
-            inline unsigned numOpaqueEdges() const;
-
-            /// Get nodes in visited order.
-            void getVisitedNodes(vector <node_handle> &v) const;
-
-            /// Get nodes in sorted order.
-            void getSortedNodes(vector <node_handle> &v) const;
-
-        private:
-            forest* parent;
-
-            // bitvector for the set
-            // visited order array of nodes
-    };
-
-(3) Change mark and sweep to use this in forests
+(3) Change mark and sweep to use node_marker in forests
 
 (4) Change printing, etc to use this
-
-(5) Make a timing test for marking a huge MDD
 
 (6) Optimize implementation
 
