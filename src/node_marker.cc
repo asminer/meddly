@@ -131,7 +131,7 @@ void MEDDLY::node_marker::_mark(node_handle p)
     MEDDLY_DCASSERT(nodeMan);
 
     marked.set(p, true);
-    nodeMan->markDownPointers( *this, nodeHead.getNodeAddress(p) );
+    nodeMan->addDownToQueue( *this, nodeHead.getNodeAddress(p) );
 }
 
 

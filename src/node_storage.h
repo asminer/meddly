@@ -148,12 +148,11 @@ class MEDDLY::node_storage {
         */
         virtual void markDownPointers(node_address addr) = 0;
 
-        /** Mark a node.
-            Traverse the downward pointers, and mark all of them.
+        /** Schedule down pointers for exploration.
                 @param  mark    Node marking mechanism.
                 @param  addr    Address of the node.
         */
-        virtual void markDownPointers(node_marker &mark, node_address addr) const = 0;
+        virtual void addDownToQueue(node_marker &mark, node_address addr) const = 0;
 
     // various ways to read a node
 

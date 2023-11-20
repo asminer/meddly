@@ -135,7 +135,7 @@ class MEDDLY::simple_separated : public node_storage {
 
     virtual void unlinkDownAndRecycle(node_address addr);
     virtual void markDownPointers(node_address addr);
-    virtual void markDownPointers(node_marker &nm, node_address addr) const;
+    virtual void addDownToQueue(node_marker &nm, node_address addr) const;
 
     virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
     virtual void fillUnpacked(unpacked_node &nr, node_address addr, node_storage_flags) const;
@@ -508,7 +508,7 @@ void MEDDLY::simple_separated::markDownPointers(node_address addr)
 }
 
 
-void MEDDLY::simple_separated::markDownPointers(node_marker &nm,
+void MEDDLY::simple_separated::addDownToQueue(node_marker &nm,
         node_address addr) const
 {
 #ifdef DEBUG_MARK_SWEEP
@@ -527,7 +527,7 @@ void MEDDLY::simple_separated::markDownPointers(node_marker &nm,
   //
   const node_handle* down = chunk + down_start;
   for (unsigned int i=0; i<size; i++) {
-    nm.mark(down[i]);
+    nm.addToQueue(down[i]);
   }
 }
 

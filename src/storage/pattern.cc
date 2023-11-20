@@ -138,7 +138,7 @@ public:
 
   virtual void unlinkDownAndRecycle(node_address addr);
   virtual void markDownPointers(node_address addr);
-  virtual void markDownPointers(node_marker &nm, node_address addr) const;
+  virtual void addDownToQueue(node_marker &nm, node_address addr) const;
 
   virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
   virtual void fillUnpacked(unpacked_node &nr, node_address addr, node_storage_flags) const;
@@ -521,7 +521,7 @@ void MEDDLY::pattern_storage::markDownPointers(node_address addr)
 }
 
 
-void MEDDLY::pattern_storage::markDownPointers(node_marker &nm, node_address addr) const
+void MEDDLY::pattern_storage::addDownToQueue(node_marker &nm, node_address addr) const
 {
 #ifdef DEBUG_MARK_SWEEP
   printf("marking children at address %ld\n", addr);
@@ -554,7 +554,7 @@ void MEDDLY::pattern_storage::markDownPointers(node_marker &nm, node_address add
 
   for (int i=0; i<trunc_pattern_size; i++) {
     if(pattern_from_index[i]!='t')
-      nm.mark(down[pattern_from_index[i]-'A']);
+      nm.addToQueue(down[pattern_from_index[i]-'A']);
   }
 }
 

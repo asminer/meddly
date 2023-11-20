@@ -56,6 +56,12 @@ class MEDDLY::node_marker {
             if (p>0 && !marked.get(p)) _mark(p);
         }
 
+        /// Add a node to the queue to be explored.
+        inline void addToQueue(node_handle p) {
+            // TBD: try out an actual explore queue
+            if (p>0 && !marked.get(p)) _mark(p);
+        }
+
         /// Return smallest non-terminal node handle >= i that is marked.
         inline node_handle nextMarked(node_handle i) const {
             if (i<1) return marked.firstOne(1);
