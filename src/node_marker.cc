@@ -18,6 +18,7 @@
 
 #include "node_marker.h"
 
+// #define DEBUG_MARK
 
 MEDDLY::node_marker::node_marker(bool permanent, node_headers &H,
         const node_storage *nm, expert_forest* F)
@@ -28,11 +29,23 @@ MEDDLY::node_marker::node_marker(bool permanent, node_headers &H,
 
     MEDDLY_DCASSERT(nodeMan);
     MEDDLY_DCASSERT(For);
+
+    S_top = nullptr;
+    S_free = nullptr;
 }
 
 MEDDLY::node_marker::~node_marker()
 {
-    // No other data structures to destroy
+    while (S_top) {
+        mystack* n = S_top->next;
+        delete S_top;
+        S_top = n;
+    }
+    while (S_free) {
+        mystack* n = S_free->next;
+        delete S_free;
+        S_free = n;
+    }
 }
 
 //
@@ -130,8 +143,48 @@ void MEDDLY::node_marker::_mark(node_handle p)
     CHECK_RANGE(__FILE__, __LINE__, 1, p, (node_handle) marked.getSize());
     MEDDLY_DCASSERT(nodeMan);
 
-    marked.set(p, true);
-    nodeMan->addDownToQueue( *this, nodeHead.getNodeAddress(p) );
+    MEDDLY_DCASSERT(!S_top);
+
+    push();
+    addToQueue(p);
+
+    while (S_top) {
+#ifdef DEBUG_MARK
+        debug(S_top);
+#endif
+        if (S_top->queue.empty()) {
+#ifdef DEBUG_MARK
+            std::cerr << "\tempty; popping\n";
+#endif
+            pop();
+            continue;
+        }
+
+        p = S_top->queue.back();
+        S_top->queue.pop_back();
+#ifdef DEBUG_MARK
+        std::cerr << "\texploring " << p << "\n";
+#endif
+        CHECK_RANGE(__FILE__, __LINE__, 1L, long(p), long(marked.getSize()));
+
+        //
+        // If S_top is empty, we can re-use it; otherwise
+        // we need to push an empty queue onto the stack.
+        //
+        if (!S_top->queue.empty()) {
+            push();
+        }
+        nodeMan->addDownToQueue( *this, nodeHead.getNodeAddress(p) );
+    }
+
 }
 
-
+void MEDDLY::node_marker::debug(const mystack *s)
+{
+    std::cerr << "Exploring " << s << ": {";
+    for (unsigned i=0; i<s->queue.size(); i++) {
+        if (i) std::cerr << ", ";
+        std::cerr << s->queue[i];
+    }
+    std::cerr << "}\n";
+}

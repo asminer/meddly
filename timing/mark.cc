@@ -259,6 +259,10 @@ int main()
 {
     try {
         MEDDLY::initialize();
+
+//          runWithArgs(5, 1, 1);
+//          return 0;
+
 #ifdef DEVELOPMENT_CODE
         runWithArgs(50, 256, 64);
 #else

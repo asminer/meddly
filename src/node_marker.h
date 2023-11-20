@@ -58,8 +58,11 @@ class MEDDLY::node_marker {
 
         /// Add a node to the queue to be explored.
         inline void addToQueue(node_handle p) {
-            // TBD: try out an actual explore queue
-            if (p>0 && !marked.get(p)) _mark(p);
+            if (p>0 && !marked.get(p)) {
+                MEDDLY_DCASSERT(S_top);
+                marked.set(p, true);
+                S_top->queue.push_back(p);
+            }
         }
 
         /// Return smallest non-terminal node handle >= i that is marked.
@@ -91,10 +94,41 @@ class MEDDLY::node_marker {
         void _mark(node_handle p);
 
     private:
+        struct mystack {
+            mystack* next;
+            std::vector <node_handle> queue;
+        };
+
+    private:
+        inline void push() {
+            mystack* n;
+            if (S_free) {
+                n = S_free;
+                S_free = S_free->next;
+            } else {
+                n = new mystack;
+            }
+            n->next = S_top;
+            S_top = n;
+        }
+        inline void pop() {
+            MEDDLY_DCASSERT(S_top);
+            mystack* n = S_top->next;
+            S_top->next = S_free;
+            S_free = S_top;
+            S_top = n;
+        }
+
+        void debug(const mystack *s);
+
+    private:
         bitvector marked;
         node_headers& nodeHead;
         const node_storage* nodeMan;
         expert_forest* For;
+
+        mystack* S_top;
+        mystack* S_free;
 };
 
 
