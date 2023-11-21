@@ -36,6 +36,7 @@ libmeddly_la_SOURCES = \
     impl_unique_table.h     impl_unique_table.cc \
     initializer.h           initializer.cc \
     io.h                    io.cc \
+    io_dot.h                io_dot.cc \
     loggers.h               loggers.cc \
     memory.h                memory.cc \
     memstats.h              memstats.cc \

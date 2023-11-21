@@ -79,6 +79,10 @@ class MEDDLY::node_marker {
             return marked.count();
         }
 
+        inline expert_forest* Forest() const {
+            return For;
+        }
+
         /// Count the number of outgoing edges for marked nodes.
         size_t countEdges() const;
 
@@ -87,6 +91,13 @@ class MEDDLY::node_marker {
 
         /// Display all marked nodes, by levels.
         void showByLevels(output &s) const;
+
+        /**
+            Add marked nodes at the specified level, to the list.
+                @param  k       Level number to match.
+                @param  v       Vector of nodes to add to.
+        */
+        void getNodesAtLevel(int k, std::vector <node_handle> &v) const;
 
         /// TBD: writeNodeGraphPicture()
 

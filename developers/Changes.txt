@@ -2,9 +2,19 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
-(3) Change mark and sweep to use node_marker in forests
+(1) In io.h: make a graph writer object for making dot files
+
+(2) node_marker: can write marked nodes to the graph writer object
+
+(3) can add root edges to the graph writer object
+
+
 
 (4) Change printing, etc to use this
+
+
+(3) Change mark and sweep to use node_marker in forests
+
 
 
 

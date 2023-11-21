@@ -134,6 +134,17 @@ void MEDDLY::node_marker::showByLevels(output &s) const
     unpacked_node::recycle(M);
 }
 
+void MEDDLY::node_marker::getNodesAtLevel(int k, std::vector <node_handle> &v)
+    const
+{
+    node_handle i=0;
+    while( (i=marked.firstOne(i+1)) < marked.getSize() )
+    {
+        if (For->getNodeLevel(i) != k) continue;
+        v.push_back(i);
+    } // for i
+}
+
 //
 // Private methods
 //
