@@ -145,6 +145,24 @@ void MEDDLY::node_marker::getNodesAtLevel(int k, std::vector <node_handle> &v)
     } // for i
 }
 
+void MEDDLY::node_marker::getTerminals(std::set <node_handle> &v) const
+{
+    unpacked_node* M = unpacked_node::New();
+
+    node_handle i=0;
+    while( (i=marked.firstOne(i+1)) < marked.getSize() )
+    {
+        For->unpackNode(M, i, SPARSE_ONLY);
+        for (unsigned j=0; j<M->getNNZs(); j++) {
+            if (M->d(j)>0) continue;
+            // M->d(j) is a terminal node handle
+            v.insert(M->d(j));
+        }
+    }
+
+    unpacked_node::recycle(M);
+}
+
 //
 // Private methods
 //

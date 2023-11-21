@@ -65,6 +65,50 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
     outfile << "    node [shape=record, height=0.5];\n";
 
     //
+    // Write terminal nodes
+    //
+    std::set <node_handle> terms;
+    nm.getTerminals(terms);
+    outfile << "\n";
+    outfile << "    L0 [shape=plaintext, label=\"Terminals\"];\n";
+    outfile << "    { rank=same; L0";
+    for (auto t = terms.begin(); t != terms.end(); t++)
+    {
+        outfile << " T" << -(*t);
+    }
+    outfile << "; }\n";
+    for (auto t = terms.begin(); t != terms.end(); t++)
+    {
+        outfile << "        T" << -(*t);
+        outfile << " [shape=box, style=bold, label=\"";
+        terminal T(nm.Forest()->getTerminalType(), *t);
+
+        switch (nm.Forest()->getTerminalType()) {
+            case terminal_type::OMEGA:
+                outfile << T.getOmega();
+                break;
+
+            case terminal_type::BOOLEAN:
+                outfile << (T.getBoolean() ? "true" : "false");
+                break;
+
+            case terminal_type::INTEGER:
+                outfile << T.getInteger();
+                break;
+
+            case terminal_type::REAL:
+                outfile << T.getReal();
+                break;
+
+            default:
+                MEDDLY_DCASSERT(0);
+        }
+
+        outfile << "\"];\n";
+    }
+
+
+    //
     // Loop over levels, from bottom up
     //
     int prev_level = 0;
@@ -82,7 +126,7 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
         // Write the level label
         //
         outfile << "\n";
-        outfile << "    l" << k_rank << " [shape=plaintext, label=\"Level: ";
+        outfile << "    L" << k_rank << " [shape=plaintext, label=\"Level: ";
         const variable* v = D->getVar(nm.Forest()->getVarByLevel(ABS(k)));
         if (v->getName()) {
             outfile << v->getName();
@@ -95,10 +139,8 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
         //
         // Chain the levels
         //
-        if (prev_level) {
-            outfile << "    edge[color=transparent];\n";
-            outfile << "    l" << k_rank << " -> l" << prev_level << ";\n";
-        }
+        outfile << "    edge[color=transparent];\n";
+        outfile << "    L" << k_rank << " -> L" << prev_level << ";\n";
 
         //
         // Grab the list of marked nodes at this level.
@@ -113,11 +155,11 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
             //
             // Set these nodes to have the same rank.
             //
-            outfile << "    { rank=same; l" << k_rank;
+            outfile << "    { rank=same; L" << k_rank;
             for (size_t i=0; i<nodeList.size(); i++) {
-                outfile << " s" << nodeList[i];
+                outfile << " N" << nodeList[i];
             }
-            outfile << ";}\n";
+            outfile << "; }\n";
 
             //
             // Display the nodes
@@ -127,13 +169,12 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
                 nm.Forest()->unpackNode(M, nodeList[i], SPARSE_ONLY);
 
                 const double nodewidth = 0.25 * M->getNNZs();
-                outfile << "        s" << nodeList[i] << " [";
+                outfile << "        N" << nodeList[i] << " [";
                 if (M->getNNZs()) outfile << "width=" << nodewidth << ", ";
                 outfile << "label=\"";
                 for (unsigned j=0; j<M->getNNZs(); j++) {
                     if (j) outfile << "|";
                     outfile << "<" << j << ">" << M->i(j);
-                    if (M->d(j)<0) outfile <<":T";    // TBD: show terminal
                 }
                 outfile << "\"];\n";
             }
@@ -146,10 +187,13 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
                 nm.Forest()->unpackNode(M, nodeList[i], SPARSE_ONLY);
 
                 for (unsigned j=0; j<M->getNNZs(); j++) {
-                    if (M->d(j)<0) continue;
-                    outfile << "        s" << nodeList[i] << ":"
-                            << j << " -> s" << M->d(j)
-                            << " [samehead = true];\n";
+                    outfile << "        N" << nodeList[i] << ":" << j << " -> ";
+                    if (M->d(j)>0) {
+                        outfile << "N" << M->d(j);
+                    } else {
+                        outfile << "T" << -M->d(j);
+                    }
+                    outfile << " [samehead = true];\n";
                 }
             }
 

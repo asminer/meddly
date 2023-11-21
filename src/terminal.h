@@ -290,6 +290,29 @@ class MEDDLY::terminal {
         }
 
         //
+        // Comparisons, so we can have sets of terminals
+        //
+        inline bool operator<(const terminal &t) const {
+            switch (mytype) {
+                case terminal_type::OMEGA:
+                        return t_omega < t.getOmega();
+
+                case terminal_type::BOOLEAN:
+                        return t_boolean < t.getBoolean();
+
+                case terminal_type::INTEGER:
+                        return t_integer < t.getInteger();
+
+                case terminal_type::REAL:
+                        return t_real < t.getReal();
+
+                default:
+                        MEDDLY_DCASSERT(false);
+            }
+            return false;
+        }
+
+        //
         // File I/O
         //
 

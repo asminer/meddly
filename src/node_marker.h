@@ -20,6 +20,7 @@
 #define MEDDLY_NODE_MARKER_H
 
 #include "forest.h"
+#include "terminal.h"
 
 namespace MEDDLY {
     class node_marker;
@@ -99,7 +100,13 @@ class MEDDLY::node_marker {
         */
         void getNodesAtLevel(int k, std::vector <node_handle> &v) const;
 
-        /// TBD: writeNodeGraphPicture()
+        /**
+            Determine all reached terminals.
+            Visit all marked nodes, and for any non-transparent
+            edge to a terminal node, add the terminal node to the set.
+                @param  v       Vector of terminals to add to.
+        */
+        void getTerminals(std::set <node_handle> &v) const;
 
     private:
         void _mark(node_handle p);
