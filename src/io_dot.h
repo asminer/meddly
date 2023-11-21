@@ -34,11 +34,26 @@ namespace MEDDLY {
 /**
     Helper object for creating graphs from MDDs.
 
+    Done as follows.
+        (1) Use the constructor to set the forest, and the base name
+            (without "extension").
+            This will cause the creation of a file, basename.dot
+
+        (2) Add root edges to the graph, using addRootEdge().
+            All nodes below the root edge will be added.
+            This may be called several times.
+
+        (3) Call doneGraph(), to write basename.dot.
+
+        (4) Zero or more times: call runDot,
+            to generate a file basename.ext from basename.dot.
+            This issues a system call to the dot utility.
+
     TBD:
         we could have methods for setting various graph attributes
         different from the defaults
         (size, edge colors, BDD-style, etc.)
-        that would be called between construction and startGraph().
+        that would be called between construction and doneGraph().
  */
 class MEDDLY::dot_maker {
 

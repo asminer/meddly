@@ -15,7 +15,9 @@ layout: single
 * Created ```dot_maker``` object in file ```io_dot.h```,
     for creating dot files from MDDs.
 
-* TBD: removed or simplified forest methods
+* Methods ```expert_forest::writeNodeGraphPicture```
+    and ```dd_edge::writePicture```
+    are now deprecated; use object ```dot_maker``` instead.
 
 ### Implementation
 
