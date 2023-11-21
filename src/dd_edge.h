@@ -88,12 +88,14 @@ class MEDDLY::dd_edge {
         }
 
         /// Get this dd_edge's label
-        inline const char* getLabel() const { return label; }
+        inline const char* getLabel() const { return label.c_str(); }
 
         /** Set the edge's label.
             @param  L   Label to use; will be copied.
         */
-        void setLabel(const char* L);
+        inline void setLabel(const char* L) {
+            label = L;
+        }
 
         inline long getNode() const { return node; }
         inline const edge_value& getEdgeValue() const { return edgeval; }
@@ -153,13 +155,17 @@ class MEDDLY::dd_edge {
         */
         void showGraph(output &s) const;
 
-        /** Draws a pictographical representation of the graph with
+
+#ifdef ALLOW_DEPRECATED_0_17_3
+        /** DEPRECATED; use dot_maker object instead (see io_dot.h).
+            Draws a pictographical representation of the graph with
             this node as the root.
                 @param  filename  Name of output file (without extension)
                 @param  extension File extension (without ".").
                         E.g. "dot", "pdf", "ps"
         */
         void writePicture(const char* filename, const char* extension) const;
+#endif
 
         /**
             Write the edge information to a file (stream).
@@ -221,7 +227,7 @@ class MEDDLY::dd_edge {
         }
 
     private:
-        char* label;            // for displaying
+        std::string label;            // for displaying
         unsigned parentFID;     // ID of parent forest
         unsigned index;         // our index in the parent forest
         node_handle node;

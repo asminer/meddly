@@ -21,26 +21,42 @@
 
 #include "io_dot.h"
 
-MEDDLY::dot_maker::dot_maker(const char* bn)
+MEDDLY::dot_maker::dot_maker(forest* F, const char* bn)
 {
     basename = bn;
     std::string fname = basename + ".dot";
     outfile.open(fname);
 
-    graph_started = false;
-    graph_finished = false;
+    For = dynamic_cast <expert_forest*> (F);
+    MEDDLY_DCASSERT(For);
+
+    nm = For->makeNodeMarker();
+    MEDDLY_DCASSERT(nm);
 }
 
 MEDDLY::dot_maker::~dot_maker()
 {
+    delete nm;
 }
 
-void MEDDLY::dot_maker::startGraph(const node_marker &nm)
+void MEDDLY::dot_maker::addRootEdge(const dd_edge &E)
 {
-    if (graph_started) {
+    if (!nm) {
         throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     }
-    graph_started = true;
+    if (!E.isAttachedTo(For)) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+
+    roots.push_back(E);
+    nm->mark(E.getNode());
+}
+
+void MEDDLY::dot_maker::doneGraph()
+{
+    if (!nm) {
+        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    }
 
     if (!outfile) {
         throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
@@ -54,7 +70,6 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
     // Some default options
     //
     const char* edgecolor = "blue";
-    const char* nodecolor = "black";
 
 
     //
@@ -65,10 +80,19 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
     outfile << "    node [shape=record, height=0.5];\n";
 
     //
-    // Write terminal nodes
+    // Build set of terminal nodes
     //
     std::set <node_handle> terms;
-    nm.getTerminals(terms);
+    nm->getTerminals(terms);
+    for (unsigned i=0; i<roots.size(); i++) {
+        if (roots[i].getNode() <= 0) {
+            terms.insert(roots[i].getNode());
+        }
+    }
+
+    //
+    // Write the terminal nodes
+    //
     outfile << "\n";
     outfile << "    L0 [shape=plaintext, label=\"Terminals\"];\n";
     outfile << "    { rank=same; L0";
@@ -81,9 +105,9 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
     {
         outfile << "        T" << -(*t);
         outfile << " [shape=box, style=bold, label=\"";
-        terminal T(nm.Forest()->getTerminalType(), *t);
+        terminal T(For->getTerminalType(), *t);
 
-        switch (nm.Forest()->getTerminalType()) {
+        switch (For->getTerminalType()) {
             case terminal_type::OMEGA:
                 outfile << T.getOmega();
                 break;
@@ -112,11 +136,11 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
     // Loop over levels, from bottom up
     //
     int prev_level = 0;
-    const int TopLevel = nm.Forest()->getNumVariables();
-    const domain* D = nm.Forest()->getDomain();
+    const int TopLevel = For->getNumVariables();
+    const domain* D = For->getDomain();
     unpacked_node* M = unpacked_node::New();
 
-    for (int k= nm.Forest()->isForRelations() ? -1 : 1; ABS(k) <= TopLevel; )
+    for (int k= For->isForRelations() ? -1 : 1; ABS(k) <= TopLevel; )
     {
         // Graph rank for this level
         const int k_rank = (k<0) ? (-k*2) -1 : k*2;
@@ -127,7 +151,7 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
         //
         outfile << "\n";
         outfile << "    L" << k_rank << " [shape=plaintext, label=\"Level: ";
-        const variable* v = D->getVar(nm.Forest()->getVarByLevel(ABS(k)));
+        const variable* v = D->getVar(For->getVarByLevel(ABS(k)));
         if (v->getName()) {
             outfile << v->getName();
         } else {
@@ -146,7 +170,7 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
         // Grab the list of marked nodes at this level.
         //
         nodeList.clear();
-        nm.getNodesAtLevel(k, nodeList);
+        nm->getNodesAtLevel(k, nodeList);
 
         // Do nothing if no nodes.
         if (nodeList.size())
@@ -164,9 +188,8 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
             //
             // Display the nodes
             //
-            outfile << "    edge [color=" << nodecolor << "];\n";
             for (size_t i=0; i<nodeList.size(); i++) {
-                nm.Forest()->unpackNode(M, nodeList[i], SPARSE_ONLY);
+                For->unpackNode(M, nodeList[i], SPARSE_ONLY);
 
                 const double nodewidth = 0.25 * M->getNNZs();
                 outfile << "        N" << nodeList[i] << " [";
@@ -184,7 +207,7 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
             //
             outfile << "    edge [color=" << edgecolor << "];\n";
             for (size_t i=0; i<nodeList.size(); i++) {
-                nm.Forest()->unpackNode(M, nodeList[i], SPARSE_ONLY);
+                For->unpackNode(M, nodeList[i], SPARSE_ONLY);
 
                 for (unsigned j=0; j<M->getNNZs(); j++) {
                     outfile << "        N" << nodeList[i] << ":" << j << " -> ";
@@ -203,7 +226,7 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
         // Get ready for next iteration
         //
         prev_level = k_rank;
-        if (nm.Forest()->isForRelations()) {
+        if (For->isForRelations()) {
             k = (k>=0) ? -(k+1) : -k;
         } else {
             ++k;
@@ -211,48 +234,76 @@ void MEDDLY::dot_maker::startGraph(const node_marker &nm)
     }
 
     unpacked_node::recycle(M);
-}
 
-void MEDDLY::dot_maker::addRootEdge(const dd_edge &E)
-{
-    if (!graph_started) {
-        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    }
-    if (graph_finished) {
-        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    }
-
-
-    // TBD: add E to a vector, because we need to write all roots at once
-    // (to have the same rank)
-}
-
-void MEDDLY::dot_maker::doneGraph()
-{
-    if (!graph_started) {
-        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    }
-    if (graph_finished) {
-        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    }
-    graph_finished = true;
-
-    if (!outfile) {
-        throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
-    }
-
-    // TBD: write all the root edges
-    // and close out the graph file.
     //
+    // Write all the root labels
+    //
+    outfile << "\n";
+    const int rootlevel = 2 * (For->getNumVariables()+1);
+    outfile << "    L" << rootlevel << "[shape=plaintext, label=\"\"];\n";
+    outfile << "    edge [color=transparent];\n";
+    outfile << "    L" << rootlevel << " -> L" << rootlevel-2 << ";\n";
+    outfile << "    {rank=same; L" << rootlevel;
+    for (unsigned i=0; i<roots.size(); i++) {
+        outfile << " R" << i;
+    }
+    outfile << "; }\n";
+    for (unsigned i=0; i<roots.size(); i++) {
+        outfile << "        R" << i << " [shape=plaintext, label=\"";
+        if (roots[i].getLabel()) {
+            outfile << roots[i].getLabel();
+        }
+        outfile << "\"];\n";
+    }
+
+    //
+    // Root edges
+    //
+    outfile << "    edge [color=" << edgecolor << "];\n";
+    for (unsigned i=0; i<roots.size(); i++) {
+        outfile << "        R" << i << " -> ";
+        if (roots[i].getNode() > 0) {
+            outfile << "N" << roots[i].getNode();
+        } else {
+            outfile << "T" << -roots[i].getNode();
+        }
+        outfile << " [samehead = true];\n";
+    }
+
     outfile << "}\n";
     outfile.close();
+
+    delete nm;
+    nm = nullptr;
 }
 
 void MEDDLY::dot_maker::runDot(const char* ext)
 {
-    if (!graph_finished) {
+    if (nm) {
         throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     }
 
-    // TBD
+    if (!ext) return;
+    if (0==strcmp("dot", ext)) return;
+
+    //
+    // Build the command string
+    //
+    std::string cmd = "dot -T";
+    cmd += ext;
+    cmd += " -o \"";
+    cmd += basename;
+    cmd += ".";
+    cmd += ext;
+    cmd += "\" \"";
+    cmd += basename;
+    cmd += ".dot\"";
+
+    //
+    // Run dot on the dotfile
+    //
+    if (system(cmd.c_str())) {
+        std::cerr << __func__ << ": Error executing DOT command:\n\t" << cmd << "\n";
+        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    }
 }

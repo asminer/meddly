@@ -28,6 +28,10 @@
 #include "ops_builtin.h"
 #include "operators.h"
 
+#ifdef ALLOW_DEPRECATED_0_17_3
+#include "io_dot.h"
+#endif
+
 // #define DEBUG_CLEANUP
 
 // ******************************************************************
@@ -43,7 +47,6 @@ MEDDLY::dd_edge::dd_edge(forest* p)
 #ifdef DEBUG_CLEANUP
     std::cout << "Creating dd_edge" << std::endl;
 #endif
-    label = nullptr;
     node = 0;
     if (p)  p->registerEdge(*this);
     else    parentFID = 0;
@@ -101,12 +104,6 @@ void MEDDLY::dd_edge::attach(forest* p)
 MEDDLY::forest* MEDDLY::dd_edge::getForest() const
 {
     return forest::getForestWithID(parentFID);
-}
-
-void MEDDLY::dd_edge::setLabel(const char* L)
-{
-    if (label) free(label);
-    label = L ? strdup(L) : nullptr;
 }
 
 unsigned long MEDDLY::dd_edge::getNodeCount() const
@@ -201,14 +198,17 @@ void MEDDLY::dd_edge::showGraph(output &s) const
     efp->showNodeGraph(s, &node, 1);
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_3
 void MEDDLY::dd_edge::writePicture(const char* filename,
         const char* extension) const
 {
-    expert_forest* efp = static_cast <expert_forest*> (
-                forest::getForestWithID(parentFID)
-    );
-    if (efp) efp->writeNodeGraphPicture(filename, extension, &node, &label, 1);
+    dot_maker DM(forest::getForestWithID(parentFID), filename);
+
+    DM.addRootEdge(*this);
+    DM.doneGraph();
+    DM.runDot(extension);
 }
+#endif
 
 
 void MEDDLY::dd_edge::write(output &s, node_handle* map) const
@@ -291,6 +291,7 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
         efp->registerEdge(*this);
         node = efp->linkNode(e.node);
         edgeval = e.edgeval;
+        label = e.label;
     } else {
         parentFID = 0;
         node = 0;

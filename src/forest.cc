@@ -61,6 +61,10 @@
 #include "forests/evmxd_timesreal.h"
 
 
+#ifdef ALLOW_DEPRECATED_0_17_3
+#include "io_dot.h"
+#endif
+
 //#include <set>
 //#include <queue>
 //#include <vector>
@@ -1392,161 +1396,34 @@ void MEDDLY::expert_forest
   free(list);
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_3
+
 void MEDDLY::expert_forest
 ::writeNodeGraphPicture(const char* filename, const char *ext,
-    const node_handle* p, const char* const* labels, int n) const
+    const node_handle* p, const char* const* labels, int n)
 {
-  if (filename == NULL || ext == NULL || p == NULL) return;
-  if (!isMultiTerminal()) {
-    fprintf(stderr,
-        "%s: Error. Only implemented for Multi-Terminal MDDs\n",
-        __func__);
-    return;
-  }
-  node_handle* list = markNodesInSubgraph(p, n, true);
-  if (0==list) return;
-
-  unpacked_node *un = unpacked_node::New();
-  std::string dot_fn(filename);
-  dot_fn += ".dot";
-  std::ofstream s(dot_fn.c_str());
-
-  if (!s.is_open()) {
-    std::cerr << __func__ << ": Error opening file " << dot_fn << "\n";
-    exit(1);
-  }
-
-  // initialize the dot file
-  s << "digraph structs {\n";
-  // s << "  rankdir=LR;\n";
-  s << "  size=\"5,5\";\n";
-  s << "  node [shape=record, height=0.5, width=0.5];\n";
-
-  const char blue[] = "blue";
-  // const char black[] = "black";
-  // const char white[] = "transparent";
-
-  // Print by levels
-  // s << "  l0 [label=\"<0>level 0 \"];\n";
-  // s << "  {rank=same; l0 s0;}\n";
-  // s << "  s0 [label=\"<0>1\"];\n";
-  bool lowest_level = true;
-  for (int k = (isForRelations()? -1: 1); ABS(k) <= getNumVariables(); ) {
-    int map_k = ((k < 0)? (-k)*2 - 1: k*2);
-
-    // write the level node (to identify the height at which the rest of the nodes
-    // are to be displayed)
-    s << "  l" << map_k << " [label=\"<0>level: ";
-
-    const variable* v = getDomain()->getVar(getVarByLevel(ABS(k)));
-    if (v->getName()) {
-      s << v->getName();
-    } else {
-      s << ABS(k);
-    }
-    if (k < 0) s << "' ";
-    s << "\"];\n";
-
-    MEDDLY_DCASSERT(map_k > 0);
-    bool do_once = true;
-
-    // write rank info for all nodes at this level
-    for (long i=0; list[i]; i++) {
-      if (getNodeLevel(list[i]) != k) continue;
-      if (do_once) {
-        if (lowest_level) {
-          lowest_level = false;
-        } else {
-          s << "  edge [color=transparent];\n";
-          s << "  l" << map_k << ":0 -> l" << (isForRelations()? map_k-1: map_k-2) << ";\n";
-          s << "  edge [color=black];\n";
-        }
-        s << "  {rank=same; l" << map_k << " ";
-        do_once = false;
-      }
-      s << "s" << list[i] << " ";
-    }
-    if (!do_once) {
-      s << ";}\n";
-
-      // write label info for all nodes at this level
-      for (long i=0; list[i]; i++) {
-        if (getNodeLevel(list[i]) != k) continue;
-
-        s << " s" << list[i] << " [label=\"";
-        unpackNode(un, list[i], SPARSE_ONLY);
-
-        // print index pointers
-        MEDDLY_DCASSERT(isMultiTerminal());
-        bool first_index = true;
-        for (unsigned j = 0; j < un->getNNZs(); j++) {
-          if (first_index) first_index=false; else s << "|";
-          s << "<" << j << ">";
-          s << un->i(j);
-          if (-1 == un->d(j)) s <<":T";
-        }
-        s << "\"];\n";
-
-        // print down pointers
-        for (unsigned j = 0; j < un->getNNZs(); j++) {
-          if (-1 == un->d(j)) continue;
-          s << "  edge [color=" << blue /*((un->i(j) % 2 == 0)? black: blue)*/ << "];\n";
-          s << "  s" << list[i] << ":" << j;
-          s << " -> s" << un->d(j);
-          s << " [samehead = true];\n";
-        }
-
-      }
+    if (filename == NULL || ext == NULL || p == NULL) return;
+    if (!isMultiTerminal()) {
+        fprintf(stderr,
+            "%s: Error. Only implemented for Multi-Terminal MDDs\n",
+            __func__);
+        return;
     }
 
-    // next level
-    if (isForRelations()) {
-      k = (k >= 0)? -(k+1): -k;
-    } else {
-      k++;
+    dot_maker DM(this, filename);
+
+    for (unsigned i=0; i<n; i++) {
+        dd_edge E(this);
+
+        if (labels) E.setLabel(labels[i]);
+        E.set_and_link(p[i]);
+
+        DM.addRootEdge(E);
     }
-  } // for k
-
-  /* Write all the labels */
-  s << "  node [shape=plaintext];\n";
-  int rootlevel = 2*(getNumVariables()+1);
-  s << "  l" << rootlevel << "[label=\"\"];\n";
-  s << "  edge [color=transparent];\n";
-  s << "  l" << rootlevel << " -> l" << rootlevel-2 << ";\n";
-  s << "  {rank=same; l" << rootlevel;
-  for (int i=0; i<n; i++) {
-    s << " root" << i;
-  }
-  s << " ;}\n";
-
-  for (int i=0; i<n; i++) {
-    s << "  root" << i << " [label=\"";
-    if (labels[i]) s << labels[i];
-    s << "\"];\n";
-    s << "  edge [color=blue];\n";
-    s << "  root" << i << " -> s" << p[i] << " [samehead = true];\n";
-  }
-
-
-  s << "}\n";
-
-  free(list);
-  s.close();
-  unpacked_node::recycle(un);
-
-  if (0==strcmp("dot", ext)) {
-      return;
-  }
-
-  // convert dot file to extension
-  std::stringstream cmd;
-  cmd << "dot -T" << ext << " -o \"" << filename << "." << ext << "\" \"" << dot_fn << "\"";
-  if (system(cmd.str().c_str())) {
-    std::cerr << __func__ << ": Error executing DOT command: ";
-    std::cerr << cmd.str().c_str() << "\n";
-    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-  }
+    DM.doneGraph();
+    DM.runDot(ext);
 }
+#endif
 
 void MEDDLY::expert_forest
 ::reportStats(output &s, const char* pad, unsigned flags) const

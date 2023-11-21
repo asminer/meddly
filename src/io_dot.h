@@ -23,6 +23,8 @@
 #include <string>
 
 namespace MEDDLY {
+    class forest;
+    class expert_forest;
     class node_marker;
     class dd_edge;
 
@@ -43,25 +45,19 @@ class MEDDLY::dot_maker {
     public:
         /**
             Constructor.
+                @param  F           Forest
                 @param  basename    Base name of the file;
                                     will add .dot for the dot input file.
-
-            TBD: add a forest?
-                then make sure the node marker and edges have the same forest.
          */
-        dot_maker(const char* basename);
+        dot_maker(forest* F, const char* basename);
 
         /// Destructor for cleanup.
         ~dot_maker();
 
         /**
-            Start the .dot file from the set of marked nodes.
-                @param  nm      Marked nodes
-        */
-        void startGraph(const node_marker &nm);
-
-        /**
             Add (possibly labeled) root edges to the .dot file.
+            This should be done first.
+            Can be called several times.
          */
         void addRootEdge(const dd_edge &E);
 
@@ -82,8 +78,10 @@ class MEDDLY::dot_maker {
         std::string basename;
         std::ofstream outfile;
 
-        bool graph_started;
-        bool graph_finished;
+        std::vector <dd_edge> roots;
+
+        expert_forest* For;
+        node_marker* nm;
 };
 
 
