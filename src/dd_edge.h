@@ -22,6 +22,8 @@
 #include "defines.h"
 #include "edge_value.h"
 
+#include <string>
+
 namespace MEDDLY {
     class dd_edge;
     class forest;
@@ -226,21 +228,24 @@ class MEDDLY::dd_edge {
                 (edgeval == e.edgeval);
         }
 
+    //
+    // Actual edge information
+    //
     private:
         std::string label;            // for displaying
         unsigned parentFID;     // ID of parent forest
-        unsigned index;         // our index in the parent forest
         node_handle node;
         edge_value edgeval;
 
-        friend class forest;
-        // Add any edge-valued forests here
-        friend class evmdd_pluslong;
-        friend class evmxd_pluslong;
-        friend class evmdd_timesreal;
-        friend class evmxd_timesreal;
+        friend class unpacked_node;
 
-        friend class unpacked_node; // maybe?
+    //
+    // for the dd_edge registry in the parent forest
+    //
+    private:
+        unsigned index;         // our index in the parent forest
+        friend class forest;
+
 };
 
 #endif // include guard

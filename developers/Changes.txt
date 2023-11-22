@@ -2,16 +2,19 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
-(3) node_marker: have a doubly-linked list of these, per node_header
-    so that they can be automatically expanded as needed
-    and their memory reported.
+(*) dd_edge registry timing test
+
+(*) dd_edge registry in a forest -> doubly-linked list
+
+(*) Change mark and sweep to use node_marker in forests
 
 
-(4) deprecate expert_forest::showNodeGraph and dd_edge::showGraph
+(*) unpacked node create/destroy timing test
 
+(*) tie unpacked nodes to forests
+    distinguish between "root" and "read only" unpacked nodes?
 
-(5) Change mark and sweep to use node_marker in forests
-
+    (could do this in forest methods, returning const or not)
 
 
 
@@ -39,5 +42,4 @@ oper_binary.h           oper_binary.cc
 oper_unary.h            oper_unary.cc
 
 relation_node.h         relation_node.cc
-timer.h (move?)
 

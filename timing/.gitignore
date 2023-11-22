@@ -4,5 +4,6 @@
 *.log
 *.trs
 .libs
+ddedge
 mark
 reduce

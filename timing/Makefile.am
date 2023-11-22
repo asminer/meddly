@@ -4,10 +4,14 @@
 ## compile library
 
 noinst_PROGRAMS = \
+    ddedge \
     mark \
     reduce
 
 AM_CXXFLAGS = -Wall
+
+ddedge_SOURCES = timer.h ddedge.cc
+ddedge_LDADD = ../src/libmeddly.la
 
 mark_SOURCES = timer.h mark.cc simple_model.h simple_model.cc
 mark_LDADD = ../src/libmeddly.la

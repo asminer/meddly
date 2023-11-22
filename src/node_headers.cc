@@ -174,9 +174,9 @@ MEDDLY::node_headers::node_headers(expert_forest &P)
         is_reachable = nullptr;
     } else {
         cache_counts = nullptr;
-        is_in_cache = new bitvector(this);
+        is_in_cache = new bitvector(true, this);
         incoming_counts = nullptr;
-        is_reachable = new bitvector(this);
+        is_reachable = new bitvector(true, this);
     }
     implicit_bits = nullptr;
 }
