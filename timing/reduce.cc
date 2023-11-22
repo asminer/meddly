@@ -99,14 +99,17 @@ void test_MT_full_Reductions(expert_forest* f, const char* what)
     fixed[3] = x1.getNode();
     fixed[4] = x2.getNode();
 
-    std::cerr << "    Building " << what << " MT nodes from full ";
+    std::cout << "    Building " << what << " MT nodes from full ";
 
     timer T;
 
     node_handle roots[BATCHSIZE];
 
     for (unsigned n=0; n<NUMBATCHES; n++) {
-        if (0==n%64) std::cerr << '.';
+        if (0==n%64) {
+            std::cout << '.';
+            std::cout.flush();
+        }
         for (unsigned b=0; b<BATCHSIZE; b++) {
             unpacked_node* un = unpacked_node::New();
             un->bind_to_forest(f, 3, VARSIZE, true);
@@ -123,7 +126,7 @@ void test_MT_full_Reductions(expert_forest* f, const char* what)
 
     T.note_time();
 
-    show_sec(std::cerr, T, 3, 3) << " seconds\n";
+    show_sec(std::cout, T, 3, 3) << " seconds\n";
 
 #ifdef REPORTING
     ostream_output out(std::cout);
@@ -146,14 +149,17 @@ void test_EV_full_Reductions(expert_forest* f, const char* what)
     fixed[1] = x1.getNode();
     fixed[2] = x2.getNode();
 
-    std::cerr << "    Building " << what << " EV nodes from full ";
+    std::cout << "    Building " << what << " EV nodes from full ";
 
     timer T;
 
     node_handle roots[BATCHSIZE];
 
     for (unsigned n=0; n<NUMBATCHES; n++) {
-        if (0==n%64) std::cerr << '.';
+        if (0==n%64) {
+            std::cout << '.';
+            std::cout.flush();
+        }
         for (unsigned b=0; b<BATCHSIZE; b++) {
             unpacked_node* un = unpacked_node::New();
             un->bind_to_forest(f, 3, VARSIZE, true);
@@ -172,7 +178,7 @@ void test_EV_full_Reductions(expert_forest* f, const char* what)
 
     T.note_time();
 
-    show_sec(std::cerr, T, 3, 3) << " seconds\n";
+    show_sec(std::cout, T, 3, 3) << " seconds\n";
 
 #ifdef REPORTING
     ostream_output out(std::cout);
@@ -184,7 +190,7 @@ void test_EV_full_Reductions(expert_forest* f, const char* what)
 int main()
 {
     try {
-        std::cerr   << "Timing experiments for building "
+        std::cout   << "Timing experiments for building "
                     << TOTAL << " nodes, in batches of " << BATCHSIZE << "\n\n";
 
         MEDDLY::initialize();
@@ -223,7 +229,7 @@ int main()
         test_EV_full_Reductions((expert_forest*) F, "sparse");
         destroyForest(F);
 
-        std::cerr << "\n";
+        std::cout << "\n";
 
         MEDDLY::cleanup();
         return 0;
