@@ -347,13 +347,16 @@ class MEDDLY::forest {
      */
 
     public:
-        // Register a dd_edge with this forest.
-        // Called automatically in dd_edge.
+        /// Register a dd_edge with this forest.
+        /// Called automatically in dd_edge.
         void registerEdge(dd_edge& e);
 
-        // Unregister a dd_edge with this forest.
-        // Called automatically in dd_edge.
+        /// Unregister a dd_edge with this forest.
+        /// Called automatically in dd_edge.
         void unregisterEdge(dd_edge& e);
+
+        /// For debugging: count number of registered dd_edges.
+        unsigned countRegisteredEdges() const;
 
         /*
     protected:

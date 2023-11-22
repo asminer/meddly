@@ -17,7 +17,6 @@
 */
 
 #include "../src/meddly.h"
-#include "timer.h"
 
 #include <iostream>
 #include <iomanip>
@@ -27,13 +26,7 @@
 using namespace MEDDLY;
 
 const unsigned EDGES = 1024;
-
-#ifdef DEVELOPMENT_CODE
 const unsigned CHANGES = 1024 * 1024;
-#else
-const unsigned CHANGES = 32 * 1024 * 1024;
-#endif
-
 
 long seed = -1;
 
@@ -59,24 +52,6 @@ inline unsigned Equilikely(unsigned a, unsigned b)
 }
 
 
-std::ostream& show_sec(std::ostream &s, const timer &T, int a, int b)
-{
-    long sec, usec;
-    T.get_last(sec, usec);
-    s << std::setw(a) << sec;
-    if (b) {
-        s << '.';
-        long d = 100000;
-        for (int i=0; i<b; i++) {
-            s << (usec / d);
-            usec %= d;
-            d /= 10;
-        }
-    }
-    return s;
-}
-
-
 void test_edge_registry(forest* F1, forest* F2)
 {
     std::cout << "Creating array of " << EDGES << " edges\n";
@@ -91,7 +66,6 @@ void test_edge_registry(forest* F1, forest* F2)
 
     std::cout << "Updating array " << CHANGES*16 << " times ";
 
-    timer T;
     for (unsigned i=0; i<16; i++) {
         std::cout << '.';
         std::cout.flush();
@@ -131,10 +105,7 @@ void test_edge_registry(forest* F1, forest* F2)
             throw "unknown forest";
         }
     }
-    T.note_time();
 
-    std::cout << ' ';
-    show_sec(std::cout, T, 3, 3);
     std::cout << "\n\n";
     std::cout << "Max edges in forest 1: " << f1max << "\n";
     std::cout << "Max edges in forest 2: " << f2max << "\n\n";
@@ -144,8 +115,14 @@ void test_edge_registry(forest* F1, forest* F2)
     std::cout << "Current  F2  edges: " << f2curr << "\n";
     std::cout << "                    " << nocurr + f1curr + f2curr << "\n\n";
 
-    std::cout << "F1 reports " << F1->countRegisteredEdges() << " edges\n";
-    std::cout << "F2 reports " << F2->countRegisteredEdges() << " edges\n\n";
+    const unsigned F1count = F1->countRegisteredEdges();
+    const unsigned F2count = F2->countRegisteredEdges();
+
+    std::cout << "F1 reports " << F1count << " edges\n";
+    std::cout << "F2 reports " << F2count << " edges\n\n";
+
+    if (F1count != f1curr) throw "edge count mismatch";
+    if (F2count != f2curr) throw "edge count mismatch";
 
     std::cout << "Deleting all edges\n\n";
     delete[] E;
@@ -176,6 +153,9 @@ int main()
 
         std::cout << "F1 reports " << F1->countRegisteredEdges() << " edges\n";
         std::cout << "F2 reports " << F2->countRegisteredEdges() << " edges\n\n";
+
+        if (F1->countRegisteredEdges()) throw "F1 count mismatch";
+        if (F2->countRegisteredEdges()) throw "F2 count mismatch";
 
         MEDDLY::cleanup();
         return 0;

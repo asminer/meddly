@@ -13,6 +13,7 @@ noinst_PROGRAMS = \
     chk_copy \
     chk_cross \
     chk_evtimes_float \
+    ddedge \
     domain_list \
     kan_batch \
     kan_index \
@@ -32,6 +33,7 @@ TESTS = \
     chk_copy \
     chk_cross \
     chk_evtimes_float \
+    ddedge \
     domain_list \
     kan_batch \
     kan_index \
@@ -65,7 +67,6 @@ bug_01_LDADD = ../src/libmeddly.la
 bug_02_SOURCES = bug_02.cc
 bug_02_LDADD = ../src/libmeddly.la
 
-
 check_xA_SOURCES = check_xA.cc
 check_xA_LDADD = ../src/libmeddly.la
 
@@ -77,6 +78,9 @@ chk_cross_LDADD = ../src/libmeddly.la
 
 chk_evtimes_float_SOURCES = chk_evtimes_float.cc
 chk_evtimes_float_LDADD = ../src/libmeddly.la
+
+ddedge_SOURCES = ddedge.cc
+ddedge_LDADD = ../src/libmeddly.la
 
 domain_list_SOURCES = domain_list.cc
 domain_list_LDADD = ../src/libmeddly.la

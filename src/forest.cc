@@ -332,6 +332,14 @@ void MEDDLY::forest::unregisterEdge(dd_edge& e)
     e.parentFID = 0;
 }
 
+unsigned MEDDLY::forest::countRegisteredEdges() const
+{
+    unsigned count = 0;
+    for (const dd_edge* r = roots; r; r=r->next) {
+        ++count;
+    }
+    return count;
+}
 
 void MEDDLY::forest::unregisterDDEdges()
 {

@@ -11,6 +11,7 @@ check_xA
 chk_copy
 chk_cross
 chk_evtimes_float
+ddedge
 domain_list
 enctest
 kan_batch
