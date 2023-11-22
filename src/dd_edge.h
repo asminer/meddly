@@ -155,8 +155,8 @@ class MEDDLY::dd_edge {
         */
         void showGraph(output &s) const;
 
-
 #ifdef ALLOW_DEPRECATED_0_17_3
+
         /** DEPRECATED; use dot_maker object instead (see io_dot.h).
             Draws a pictographical representation of the graph with
             this node as the root.

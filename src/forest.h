@@ -1966,18 +1966,18 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     */
     bool showNode(output &s, node_handle node, unsigned int flags = 0) const;
 
-    /// Show all the nodes in the subgraph below the given nodes.
-    void showNodeGraph(output &s, const node_handle* node, int n) const;
-
-
 #ifdef ALLOW_DEPRECATED_0_17_3
+
+    /// Show all the nodes in the subgraph below the given nodes.
+    void showNodeGraph(output &s, const node_handle* node, int n);
+
     /// DEPRECATED; use dot_maker instead (see io_dot.h).
     /// Write all the nodes in the subgraph below the given nodes
     /// in a graphical format specified by the extension.
     void writeNodeGraphPicture(const char* filename, const char *extension,
         const node_handle* nodes, const char* const* labels, int n);
-#endif
 
+#endif
 
     /** Show various stats for this forest.
           @param  s       Output stream to write to

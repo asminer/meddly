@@ -1359,44 +1359,24 @@ bool MEDDLY::expert_forest
   return true;
 }
 
-void MEDDLY::expert_forest
-::showNodeGraph(output &s, const node_handle* p, int n) const
-{
-  node_handle* list = markNodesInSubgraph(p, n, true);
-  if (0==list) return;
-
-  // Print by levels
-  for (int k = getNumVariables(); k; )
-  {
-    bool printed = false;
-    for (long i=0; list[i]; i++) {
-      if (getNodeLevel(list[i]) != k) continue;
-
-      if (!printed) {
-        const variable* v = getDomain()->getVar(getVarByLevel(ABS(k)));
-        char primed = (k>0) ? ' ' : '\'';
-        if (v->getName()) {
-          s << "Level: " << k << " Var: " << v->getName() << primed << '\n';
-        } else {
-          s << "Level: " << k << " Var: " << getVarByLevel(ABS(k)) << primed << '\n';
-        }
-        printed = true;
-      }
-
-      s << "  ";
-      showNode(s, list[i]);
-      s.put('\n');
-    }
-
-    // next level
-    k *= -1;
-    if (k>0) k--;
-  } // for k
-
-  free(list);
-}
 
 #ifdef ALLOW_DEPRECATED_0_17_3
+
+void MEDDLY::expert_forest
+::showNodeGraph(output &s, const node_handle* p, int n)
+{
+    node_marker* M = makeNodeMarker();
+    MEDDLY_DCASSERT(M);
+
+    for (int i=0; i<n; i++) {
+        M->mark(p[i]);
+    }
+
+    M->showByLevels(s);
+
+    delete M;
+}
+
 
 void MEDDLY::expert_forest
 ::writeNodeGraphPicture(const char* filename, const char *ext,

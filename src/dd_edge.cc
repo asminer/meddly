@@ -23,6 +23,8 @@
 #include "forest.h"
 #include "io.h"
 
+#include "node_marker.h"
+
 #include "opname.h"
 #include "oper_binary.h"
 #include "ops_builtin.h"
@@ -195,10 +197,16 @@ void MEDDLY::dd_edge::showGraph(output &s) const
     s.put(" rooted at edge ");
     efp->showEdge(s, edgeval, node);
     s.put('\n');
-    efp->showNodeGraph(s, &node, 1);
+
+    node_marker* M = efp->makeNodeMarker();
+    MEDDLY_DCASSERT(M);
+    M->mark(node);
+    M->showByLevels(s);
+    delete M;
 }
 
 #ifdef ALLOW_DEPRECATED_0_17_3
+
 void MEDDLY::dd_edge::writePicture(const char* filename,
         const char* extension) const
 {
@@ -208,8 +216,8 @@ void MEDDLY::dd_edge::writePicture(const char* filename,
     DM.doneGraph();
     DM.runDot(extension);
 }
-#endif
 
+#endif
 
 void MEDDLY::dd_edge::write(output &s, node_handle* map) const
 {
