@@ -243,8 +243,10 @@ class MEDDLY::dd_edge {
     // for the dd_edge registry in the parent forest
     //
     private:
-        unsigned index;         // our index in the parent forest
+        dd_edge* prev;          // previous edge in forest registry
+        dd_edge* next;          // next edge in forest registry
         friend class forest;
+        friend class expert_forest; // until we move 'markAllRoots'
 
 };
 

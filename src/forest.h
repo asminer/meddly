@@ -355,6 +355,7 @@ class MEDDLY::forest {
         // Called automatically in dd_edge.
         void unregisterEdge(dd_edge& e);
 
+        /*
     protected:
         /// structure to store references to registered dd_edges.
         struct edge_data {
@@ -371,13 +372,19 @@ class MEDDLY::forest {
         unsigned roots_next;
 
     private:
-        void unregisterDDEdges();
-
-    private:
         /// Dimension of roots[]
         unsigned roots_size;
         /// Array index: most recently created hole in roots[]
         unsigned roots_hole;
+        */
+
+    private:
+        void unregisterDDEdges();
+
+    protected: // until we move 'markAllRoots' out of expert_forest
+        /// Registry of dd_edges
+        dd_edge* roots;
+
 
     /*
      *  Methods and members for the global forest registry.

@@ -2,10 +2,6 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
-(*) dd_edge registry timing test
-
-(*) dd_edge registry in a forest -> doubly-linked list
-
 (*) Change mark and sweep to use node_marker in forests
 
 

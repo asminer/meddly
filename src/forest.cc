@@ -244,6 +244,7 @@ void MEDDLY::forest::unregisterForest(forest* f)
 
 void MEDDLY::forest::registerEdge(dd_edge& e)
 {
+    /*
     unsigned index;
     if (roots_hole) {
         // Pull from the free list
@@ -277,6 +278,14 @@ void MEDDLY::forest::registerEdge(dd_edge& e)
     roots[index].edge = &e;
     roots[index].nextHole = 0;
     e.index = index;
+    */
+
+    e.next = roots;
+    if (roots) {
+        roots->prev = &e;
+    }
+    e.prev = nullptr;
+    roots = &e;
     e.parentFID = fid;
 }
 
@@ -285,6 +294,8 @@ void MEDDLY::forest::unregisterEdge(dd_edge& e)
 {
     // remove a root edge.
     MEDDLY_DCASSERT(e.parentFID == fid);
+
+    /*
     MEDDLY_DCASSERT(e.index > 0);
     MEDDLY_DCASSERT(roots[e.index].edge == &e);
 
@@ -307,6 +318,17 @@ void MEDDLY::forest::unregisterEdge(dd_edge& e)
 
     roots[e.index].edge = nullptr;
     e.index = 0;
+    */
+
+    if (e.prev) {
+        e.prev->next = e.next;
+    } else {
+        MEDDLY_DCASSERT(&e == roots);
+        roots = e.next;
+    }
+    if (e.next) {
+        e.next->prev = e.prev;
+    }
     e.parentFID = 0;
 }
 
@@ -316,6 +338,7 @@ void MEDDLY::forest::unregisterDDEdges()
     // Unregister ALL root edges
     // (e.g., because we're destroying the forest)
 
+    /*
     MEDDLY_DCASSERT(roots);
     MEDDLY_DCASSERT(0==roots[0].edge);
 
@@ -331,6 +354,19 @@ void MEDDLY::forest::unregisterDDEdges()
 
     roots_hole = 0;
     roots_next = 1;
+    */
+
+    while (roots) {
+        dd_edge* n = roots->next;
+
+        // Clear out the edge.
+        roots->next = nullptr;
+        roots->prev = nullptr;
+        roots->parentFID = 0;
+        roots->node = 0;
+
+        roots = n;
+    }
 }
 
 // ******************************************************************
@@ -528,6 +564,7 @@ MEDDLY::forest
     //
     // Initialize the root edges
     //
+    /*
     roots_hole = 0;  // firstHole == 0 indicates no holes.
     roots_next = 1;  // never use slot 0
     roots_size = 1024;
@@ -538,6 +575,8 @@ MEDDLY::forest
         roots[i].nextHole = 0;
         roots[i].edge = nullptr;
     }
+    */
+    roots = nullptr;
 
     //
     // Empty logger
@@ -548,9 +587,10 @@ MEDDLY::forest
 
 MEDDLY::forest::~forest()
 {
-  // operations are deleted elsewhere...
-  free(opCount);
+    // operations are deleted elsewhere...
+    free(opCount);
 
+  /*
   for (unsigned i = 0; i < roots_size; ++i) {
       if (roots[i].edge) {
           roots[i].edge->parentFID = 0;
@@ -559,12 +599,8 @@ MEDDLY::forest::~forest()
       }
   }
   delete[] roots;
-
-  // NOTE: since the user is provided with the dd_edges instances (as opposed
-  // to a pointer), the user program will automatically call the
-  // destructor for each dd_edge when the corresponding variable goes out of
-  // scope. Therefore there is no need to destruct dd_edges from here.
-
+  */
+    unregisterDDEdges();
     unregisterForest(this);
 }
 
@@ -984,9 +1020,8 @@ void MEDDLY::expert_forest::markAllRoots()
 
     nodeHeaders.clearAllReachableBits();
 
-    for (unsigned i=1; i<roots_next; i++) {
-        dd_edge* r = roots[i].edge;
-        if (r) markNode(r->getNode());
+    for (const dd_edge* r = roots; r; r=r->next) {
+        markNode(r->getNode());
     }
 
     unpacked_node::markBuildListChildren(this);

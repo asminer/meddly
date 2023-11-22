@@ -50,6 +50,8 @@ MEDDLY::dd_edge::dd_edge(forest* p)
     std::cout << "Creating dd_edge" << std::endl;
 #endif
     node = 0;
+    prev = nullptr;
+    next = nullptr;
     if (p)  p->registerEdge(*this);
     else    parentFID = 0;
 }
@@ -60,6 +62,8 @@ MEDDLY::dd_edge::dd_edge(const dd_edge& e)
 #ifdef DEBUG_CLEANUP
     std::cout << "Creating dd_edge via copy" << std::endl;
 #endif
+    prev = nullptr;
+    next = nullptr;
     init(e);
 }
 
