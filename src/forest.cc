@@ -244,42 +244,6 @@ void MEDDLY::forest::unregisterForest(forest* f)
 
 void MEDDLY::forest::registerEdge(dd_edge& e)
 {
-    /*
-    unsigned index;
-    if (roots_hole) {
-        // Pull from the free list
-        //
-        index = roots_hole;
-        roots_hole = roots[roots_hole].nextHole;
-    } else {
-        // Pull from the array.
-        // Check if we need to expand
-        if (roots_next >= roots_size) {
-            unsigned new_size = roots_size * 2;
-            if (new_size > 1000000000) {
-                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-            }
-            edge_data* new_roots = new edge_data[new_size];
-            unsigned i;
-            for (i=0; i<roots_size; i++) {
-                new_roots[i] = roots[i];
-            }
-            for (; i<new_size; i++) {
-                new_roots[i].nextHole = 0;
-                new_roots[i].edge = nullptr;
-            }
-            delete[] roots;
-            roots = new_roots;
-            roots_size = new_size;
-        }
-        index = roots_next++;
-    }
-
-    roots[index].edge = &e;
-    roots[index].nextHole = 0;
-    e.index = index;
-    */
-
     e.next = roots;
     if (roots) {
         roots->prev = &e;
@@ -294,31 +258,6 @@ void MEDDLY::forest::unregisterEdge(dd_edge& e)
 {
     // remove a root edge.
     MEDDLY_DCASSERT(e.parentFID == fid);
-
-    /*
-    MEDDLY_DCASSERT(e.index > 0);
-    MEDDLY_DCASSERT(roots[e.index].edge == &e);
-
-    if (e.index+1 == roots_next) {
-        //
-        // Instead of adding to the free list,
-        // absorb this "hole" at the end of the array
-        //
-        MEDDLY_DCASSERT(roots_next);
-        roots_next--;
-        MEDDLY_DCASSERT(roots_next);
-        roots[e.index].nextHole = 0;
-    } else {
-        //
-        // Add to the front of the free list
-        //
-        roots[e.index].nextHole = roots_hole;
-        roots_hole = e.index;
-    }
-
-    roots[e.index].edge = nullptr;
-    e.index = 0;
-    */
 
     if (e.prev) {
         e.prev->next = e.next;
@@ -345,24 +284,6 @@ void MEDDLY::forest::unregisterDDEdges()
 {
     // Unregister ALL root edges
     // (e.g., because we're destroying the forest)
-
-    /*
-    MEDDLY_DCASSERT(roots);
-    MEDDLY_DCASSERT(0==roots[0].edge);
-
-    // ignore the NULLs; release the rest
-    for (unsigned i = 1; i < roots_next; ++i) {
-        if (roots[i].edge) {
-            MEDDLY_DCASSERT(0==roots[i].nextHole);
-            roots[i].edge->set(0);
-            roots[i].edge->index = 0;
-            roots[i].edge->parentFID = 0;
-        }
-    }
-
-    roots_hole = 0;
-    roots_next = 1;
-    */
 
     while (roots) {
         dd_edge* n = roots->next;
@@ -598,31 +519,21 @@ MEDDLY::forest::~forest()
     // operations are deleted elsewhere...
     free(opCount);
 
-  /*
-  for (unsigned i = 0; i < roots_size; ++i) {
-      if (roots[i].edge) {
-          roots[i].edge->parentFID = 0;
-          roots[i].edge->node = 0;
-          roots[i].edge->edgeval.set();
-      }
-  }
-  delete[] roots;
-  */
     unregisterDDEdges();
     unregisterForest(this);
 }
 
 void MEDDLY::forest::markForDeletion()
 {
-  if (is_marked_for_deletion) return;
-  is_marked_for_deletion = true;
-  // deal with operations associated with this forest
-  for (unsigned i=0; i<szOpCount; i++)
-    if (opCount[i]) {
-      operation* op = operation::getOpWithIndex(i);
-      op->markForDeletion();
-    }
-  unregisterDDEdges();
+    if (is_marked_for_deletion) return;
+    is_marked_for_deletion = true;
+    // deal with operations associated with this forest
+    for (unsigned i=0; i<szOpCount; i++)
+        if (opCount[i]) {
+            operation* op = operation::getOpWithIndex(i);
+            op->markForDeletion();
+        }
+    unregisterDDEdges();
 }
 
 void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)

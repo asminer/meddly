@@ -120,7 +120,84 @@ class MEDDLY::forest {
             );
         }
 
+    // ------------------------------------------------------------
+    public: // Getting/setting the global default policies
+    // ------------------------------------------------------------
 
+        /**
+            Get the default policies for all MDD forests.
+        */
+        inline static const policies& getDefaultPoliciesMDDs() {
+            return mddDefaults;
+        }
+
+        /**
+            Get the default policies for all MxD forests.
+        */
+        inline static const policies& getDefaultPoliciesMXDs() {
+            return mxdDefaults;
+        }
+
+        /**
+            Set the default policies for all MDD forests.
+        */
+        inline static void setDefaultPoliciesMDDs(const policies &p) {
+            mddDefaults = p;
+        }
+
+        /**
+            Set the default policies for all MxD forests.
+        */
+        inline static void setDefaultPoliciesMXDs(const policies &p) {
+            mxdDefaults = p;
+        }
+
+    // ------------------------------------------------------------
+    public: // Getting/setting policies for this forest
+    // ------------------------------------------------------------
+
+        /// Returns the current policies used by this forest.
+        inline const policies& getPolicies() const {
+            return deflt;
+        }
+
+        /// Returns the current policies used by this forest.
+        inline policies& getPolicies() {
+            return deflt;
+        }
+
+        inline bool isVarSwap() const {
+    	    return deflt.swap == policies::variable_swap_type::VAR;
+        }
+
+        inline bool isLevelSwap() const {
+    	    return deflt.swap == policies::variable_swap_type::LEVEL;
+        }
+
+        /// Returns the storage mechanism used by this forest.
+        inline node_storage_flags getNodeStorage() const {
+            return deflt.storage_flags;
+        }
+
+        /// Returns the node deletion policy used by this forest.
+        inline policies::node_deletion getNodeDeletion() const {
+            return deflt.deletion;
+        }
+
+        /// Are we using pessimistic deletion
+        inline bool isPessimistic() const {
+            return deflt.isPessimistic();
+        }
+
+        /// Can we store nodes sparsely
+        inline bool areSparseNodesEnabled() const {
+            return SPARSE_ONLY & deflt.storage_flags;
+        }
+
+        /// Can we store nodes fully
+        inline bool areFullNodesEnabled() const {
+            return FULL_ONLY & deflt.storage_flags;
+        }
 
     // ------------------------------------------------------------
     public: // interpreting edges in the forest
@@ -358,29 +435,6 @@ class MEDDLY::forest {
         /// For debugging: count number of registered dd_edges.
         unsigned countRegisteredEdges() const;
 
-        /*
-    protected:
-        /// structure to store references to registered dd_edges.
-        struct edge_data {
-            /// Index of the next hole (spot with a null edge).
-            unsigned nextHole;
-            /// registered dd_edge
-            dd_edge* edge;
-        };
-
-        /// Array of root edges
-        edge_data* roots;
-
-        /// Array index: 1 + (last used slot in roots[])
-        unsigned roots_next;
-
-    private:
-        /// Dimension of roots[]
-        unsigned roots_size;
-        /// Array index: most recently created hole in roots[]
-        unsigned roots_hole;
-        */
-
     private:
         void unregisterDDEdges();
 
@@ -582,26 +636,6 @@ class MEDDLY::forest {
     */
     static int upLevel(int k);
 
-    /**
-        Get the default policies for MDD forests.
-    */
-    static const policies& getDefaultPoliciesMDDs();
-
-    /**
-        Get the default policies for MxD forests.
-    */
-    static const policies& getDefaultPoliciesMXDs();
-
-    /**
-        Set the default policies for MDD forests.
-    */
-    static void setDefaultPoliciesMDDs(const policies&);
-
-    /**
-        Set the default policies for MxD forests.
-    */
-    static void setDefaultPoliciesMXDs(const policies&);
-
 
 
   // ------------------------------------------------------------
@@ -652,10 +686,6 @@ class MEDDLY::forest {
     /// Check if we match a specific type of forest
     bool matches(bool isR, range_type rt, edge_labeling el) const;
 
-    /// Returns the current policies used by this forest.
-    const policies& getPolicies() const;
-    policies& getPolicies();
-
     /// Returns the reduction rule used by this forest.
     reduction_rule getReductionRule() const;
 
@@ -684,27 +714,6 @@ class MEDDLY::forest {
 
 
 
-    inline bool isVarSwap() const {
-    	return deflt.swap == policies::variable_swap_type::VAR;
-    }
-    inline bool isLevelSwap() const {
-    	return deflt.swap == policies::variable_swap_type::LEVEL;
-    }
-
-    /// Returns the storage mechanism used by this forest.
-    node_storage_flags getNodeStorage() const;
-
-    /// Returns the node deletion policy used by this forest.
-    policies::node_deletion getNodeDeletion() const;
-
-    /// Are we using pessimistic deletion
-    bool isPessimistic() const;
-
-    /// Can we store nodes sparsely
-    bool areSparseNodesEnabled() const;
-
-    /// Can we store nodes fully
-    bool areFullNodesEnabled() const;
 
     /// Get forest performance stats.
     const statset& getStats() const;
@@ -1414,26 +1423,6 @@ inline int MEDDLY::forest::upLevel(int k) {
   return (k<0) ? (-k) : (-k-1);
 }
 
-inline const MEDDLY::policies& MEDDLY::forest::getDefaultPoliciesMDDs()
-{
-  return mddDefaults;
-}
-
-inline const MEDDLY::policies& MEDDLY::forest::getDefaultPoliciesMXDs()
-{
-  return mxdDefaults;
-}
-
-inline void MEDDLY::forest::setDefaultPoliciesMDDs(const policies& p)
-{
-  mddDefaults = p;
-}
-
-inline void MEDDLY::forest::setDefaultPoliciesMXDs(const policies& p)
-{
-  mxdDefaults = p;
-}
-
 inline bool MEDDLY::forest::isForRelations() const {
   return isRelation;
 }
@@ -1469,14 +1458,6 @@ inline bool MEDDLY::forest::isEVTimes() const {
 inline bool MEDDLY::forest::matches(bool isR, MEDDLY::range_type rt,
   MEDDLY::edge_labeling el) const {
   return (isRelation == isR) && (rangeType == rt) && (edgeLabel == el);
-}
-
-inline const MEDDLY::policies& MEDDLY::forest::getPolicies() const {
-  return deflt;
-}
-
-inline MEDDLY::policies& MEDDLY::forest::getPolicies() {
-  return deflt;
 }
 
 inline MEDDLY::reduction_rule MEDDLY::forest::getReductionRule() const {
@@ -1528,26 +1509,6 @@ inline bool MEDDLY::forest::isIdentityReduced(int k) const {
 }
 
 
-
-inline MEDDLY::node_storage_flags MEDDLY::forest::getNodeStorage() const {
-  return deflt.storage_flags;
-}
-
-inline MEDDLY::policies::node_deletion MEDDLY::forest::getNodeDeletion() const {
-  return deflt.deletion;
-}
-
-inline bool MEDDLY::forest::isPessimistic() const {
-  return deflt.isPessimistic();
-}
-
-inline bool MEDDLY::forest::areSparseNodesEnabled() const {
-  return SPARSE_ONLY & deflt.storage_flags;
-}
-
-inline bool MEDDLY::forest::areFullNodesEnabled() const {
-  return FULL_ONLY & deflt.storage_flags;
-}
 
 inline const MEDDLY::forest::statset& MEDDLY::forest::getStats() const {
   return stats;
