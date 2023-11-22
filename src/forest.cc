@@ -989,7 +989,6 @@ void MEDDLY::expert_forest::markAllRoots()
         if (r) markNode(r->getNode());
     }
 
-    // TBD: this goes away when unpacked nodes use dd_edges :)
     unpacked_node::markBuildListChildren(this);
 }
 
