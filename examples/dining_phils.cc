@@ -719,7 +719,10 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LO
 
   if (sw.build_pdf) {
     reachableStates.setLabel("reachable");
-    reachableStates.writePicture("out", "pdf");
+    dot_maker dm(mdd, "out");
+    dm.addRootEdge(reachableStates);
+    dm.doneGraph();
+    dm.runDot("pdf");
   }
 
   /*

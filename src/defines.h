@@ -24,7 +24,7 @@
 #endif
 
 // #define ALLOW_DEPRECATED_0_17_2
-#define ALLOW_DEPRECATED_0_17_3
+// #define ALLOW_DEPRECATED_0_17_3
 
 // #define DEBUG_SLOW
 // #define TRACE_ALL_OPS

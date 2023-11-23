@@ -414,7 +414,10 @@ int main(int argc, const char** argv)
 
   if (build_pdf) {
     solutions.setLabel("queen-cover");
-    solutions.writePicture("out", "pdf");
+    dot_maker dm(f, "out");
+    dm.addRootEdge(solutions);
+    dm.doneGraph();
+    dm.runDot("pdf");
   }
 
   if (LOG) LOG->newPhase(f, "Cleanup");

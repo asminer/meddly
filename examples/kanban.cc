@@ -314,10 +314,16 @@ int main(int argc, const char** argv)
 
     if (build_pdf) {
       reachable.setLabel("reachable");
-      reachable.writePicture("kanban", "pdf");
+      dot_maker mdd_dot(mdd, "kanban");
+      mdd_dot.addRootEdge(reachable);
+      mdd_dot.doneGraph();
+      mdd_dot.runDot("pdf");
       if ('m' == method) {
         nsf.setLabel("next-state");
-        nsf.writePicture("kanban-nsf", "pdf");
+        dot_maker mxd_dot(mxd, "kanban-nsf");
+        mxd_dot.addRootEdge(nsf);
+        mxd_dot.doneGraph();
+        mxd_dot.runDot("pdf");
       }
     }
 

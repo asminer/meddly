@@ -318,7 +318,10 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, forest::logg
 
   if (build_pdf) {
     reachable.setLabel("reachable");
-    reachable.writePicture("out", "pdf");
+    dot_maker dm(mdd, "out");
+    dm.addRootEdge(reachable);
+    dm.doneGraph();
+    dm.runDot("pdf");
   }
 
   if (LOG) {

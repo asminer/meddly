@@ -394,7 +394,10 @@ int main(int argc, const char** argv)
 #endif
   if (build_pdf) {
     solutions->setLabel("queens");
-    solutions->writePicture("out", "pdf");
+    dot_maker dm(f, "out");
+    dm.addRootEdge(*solutions);
+    dm.doneGraph();
+    dm.runDot("pdf");
   }
   delete solutions;
   f->validateCacheCounts();
