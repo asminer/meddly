@@ -7,6 +7,11 @@ layout: single
 
 ### Interface Changes
 
+Uncomment ```ALLOW_DEPRECATED_0_17_3``` in ```defines.h```
+to use these deprecated methods.
+This is intended to help developers migrate to the new interface.
+
+
 * Moved ```node_headers``` inner classes to ```arrays.h```
 
 * Created ```node_marker``` object, for mark and sweep
