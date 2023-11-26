@@ -68,7 +68,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   if (verb) fprintf(stderr, "Building next-state function\n");
 
   // set up auxiliary mtmxd forest and edges
-  domain* d = mxd->useDomain();
+  domain* d = mxd->getDomain();
   forest* mtmxd = forest::create(d,
     true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL
   );

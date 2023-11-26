@@ -400,7 +400,7 @@ MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
       event_tops[e++]=arrayForLevel(i)[j];
     }
 
-  domain *d = outsetF->useDomain();
+  domain *d = outsetF->getDomain();
 
   forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
                                 edge_labeling::MULTI_TERMINAL);

@@ -42,10 +42,10 @@ MEDDLY::mtmxd_forest::mtmxd_iterator::mtmxd_iterator(const expert_forest *F)
 
 void MEDDLY::mtmxd_forest::swapAdjacentVariables(int level)
 {
-  if (isVarSwap()) {
+  if (getPolicies().isVarSwap()) {
     swapAdjacentVariablesByVarSwap(level);
   }
-  else if (isLevelSwap()) {
+  else if (getPolicies().isLevelSwap()) {
     swapAdjacentVariablesByLevelSwap(level);
   }
 }

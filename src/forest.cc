@@ -863,7 +863,7 @@ MEDDLY::expert_forest::expert_forest(domain *d, bool rel, range_type t,
   edge_labeling ev, const policies &p, int* level_reduction_rule)
 : forest(d, rel, t, ev, p, level_reduction_rule), nodeHeaders(*this)
 {
-  nodeHeaders.setPessimistic(isPessimistic());
+  nodeHeaders.setPessimistic(getPolicies().isPessimistic());
 
   // Initialize variable order
   var_order = d->makeDefaultVariableOrder();
@@ -1795,7 +1795,7 @@ void MEDDLY::expert_forest::reorderVariables(const int* level2var)
   auto reordering = reordering_factory::create(getPolicies().reorder);
   reordering->reorderVariables(this, level2var);
 
-  var_order = useDomain()->makeVariableOrder(*var_order);
+  var_order = getDomain()->makeVariableOrder(*var_order);
 }
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -2011,7 +2011,9 @@ MEDDLY::node_handle MEDDLY::expert_forest
   }
 
   // All of the work is in nodeMan now :^)
-  nodeHeaders.setNodeAddress(p, nodeMan->makeNode(p, nb, getNodeStorage()));
+  nodeHeaders.setNodeAddress(p,
+          nodeMan->makeNode(p, nb, getPolicies().storage_flags)
+  );
   linkNode(p);
 
   // add to UT
@@ -2188,7 +2190,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   }
 
   // All of the work is in nodeMan now :^)
-  nodeHeaders.setNodeAddress(p, nodeMan->makeNode(p, nb, getNodeStorage()));
+  nodeHeaders.setNodeAddress(p, nodeMan->makeNode(p, nb, getPolicies().storage_flags));
   // TODO: need to link?
   linkNode(p);
 
@@ -2232,7 +2234,7 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_nod
   un->computeHash();
 
   nodeHeaders.setNodeLevel(p, un->getLevel());
-  node_address addr = nodeMan->makeNode(p, *un, getNodeStorage());
+  node_address addr = nodeMan->makeNode(p, *un, getPolicies().storage_flags);
   nodeHeaders.setNodeAddress(p, addr);
   // incoming count, cache count remains unchanged
 

@@ -166,12 +166,13 @@ class MEDDLY::forest {
             return deflt;
         }
 
+#ifdef ALLOW_DEPRECATED_0_17_3
         inline bool isVarSwap() const {
-    	    return deflt.swap == policies::variable_swap_type::VAR;
+    	    return deflt.isVarSwap();
         }
 
         inline bool isLevelSwap() const {
-    	    return deflt.swap == policies::variable_swap_type::LEVEL;
+    	    return deflt.isLevelSwap();
         }
 
         /// Returns the storage mechanism used by this forest.
@@ -191,13 +192,37 @@ class MEDDLY::forest {
 
         /// Can we store nodes sparsely
         inline bool areSparseNodesEnabled() const {
-            return SPARSE_ONLY & deflt.storage_flags;
+            return deflt.allowsSparse();
         }
 
         /// Can we store nodes fully
         inline bool areFullNodesEnabled() const {
-            return FULL_ONLY & deflt.storage_flags;
+            return deflt.allowsFull();
         }
+#endif
+
+    // ------------------------------------------------------------
+    public: // Getters for forest attributes (domain, range, etc.)
+    // ------------------------------------------------------------
+
+        /// Returns a non-modifiable pointer to this forest's domain.
+        inline const domain* getDomain() const {
+            return d;
+        }
+
+        /// Returns a pointer to this forest's domain.
+        inline domain* getDomain() {
+            return d;
+        }
+
+#ifdef ALLOW_DEPRECATED_0_17_3
+        /// Returns a pointer to this forest's domain.
+        /// Deprecated; use getDomain() instead.
+        inline domain* useDomain() {
+            return getDomain();
+        }
+#endif
+
 
     // ------------------------------------------------------------
     public: // interpreting edges in the forest
@@ -626,7 +651,10 @@ class MEDDLY::forest {
             @param  k   Current level
             @return Level immediately below level k
     */
-    static int downLevel(int k);
+    static inline int downLevel(int k) {
+        return (k>0) ? (-k) : (-k-1);
+    }
+
 
     /** Go "up a level" in a relation.
         Safest to use this, in case in later versions
@@ -634,30 +662,14 @@ class MEDDLY::forest {
             @param  k   Current level
             @return Level immediately above level k
     */
-    static int upLevel(int k);
-
+    static inline int upLevel(int k) {
+        return (k<0) ? (-k) : (-k-1);
+    }
 
 
   // ------------------------------------------------------------
   // inlines.
   public:
-
-    /// Returns a non-modifiable pointer to this forest's domain.
-    inline const domain* getDomain() const {
-        return d;
-    }
-
-    /// Returns a pointer to this forest's domain.
-    inline domain* getDomain() {
-        return d;
-    }
-
-    /// Returns a pointer to this forest's domain.
-    /// Deprecated; use getDomain() instead.
-    inline domain* useDomain() {
-        return getDomain();
-    }
-
 
     /// Does this forest represent relations or matrices?
     bool isForRelations() const;
@@ -1415,13 +1427,6 @@ inline void MEDDLY::forest::logger::fixLogger() {
 // end of forest::logger
 
 // forest::
-
-inline int MEDDLY::forest::downLevel(int k) {
-  return (k>0) ? (-k) : (-k-1);
-}
-inline int MEDDLY::forest::upLevel(int k) {
-  return (k<0) ? (-k) : (-k-1);
-}
 
 inline bool MEDDLY::forest::isForRelations() const {
   return isRelation;

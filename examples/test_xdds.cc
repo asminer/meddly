@@ -41,7 +41,7 @@ forest* createForest(domain *d, bool relation) {
 
 void createEdge(forest* mdd, int var, const std::vector<int>& indices, dd_edge& result) {
   // one minterm per index
-  const int nVars = mdd->useDomain()->getNumVariables();
+  const int nVars = mdd->getDomain()->getNumVariables();
   int** minterms = new int*[indices.size()];
   for (unsigned i = 0; i < indices.size(); i++) {
     minterms[i] = new int[nVars+1];
@@ -57,7 +57,7 @@ void createEdge(forest* mdd, int var, const std::vector<int>& indices, dd_edge& 
 
 void createEdge(forest* mdd, int var, int value, dd_edge& result) {
   // one minterm per index
-  const int nVars = mdd->useDomain()->getNumVariables();
+  const int nVars = mdd->getDomain()->getNumVariables();
   int** minterms = new int*[value];
   for (int i = 0; i < value; i++) {
     minterms[i] = new int[nVars+1];

@@ -268,6 +268,10 @@ struct MEDDLY::policies {
     /// Set to hard-wired defaults
     void useDefaults(bool rel);
 
+    //
+    // Node storage helper methods
+    //
+
     inline void setFullStorage() {
         storage_flags = FULL_ONLY;
     }
@@ -279,6 +283,18 @@ struct MEDDLY::policies {
     inline void setFullOrSparse() {
         storage_flags = FULL_OR_SPARSE;
     }
+
+    inline bool allowsSparse() const {
+        return SPARSE_ONLY & storage_flags;
+    }
+
+    inline bool allowsFull() const {
+        return FULL_ONLY & storage_flags;
+    }
+
+    //
+    // Reduction rule helper methods
+    //
 
     inline void setFullyReduced() {
         reduction = reduction_rule::FULLY_REDUCED;
@@ -308,6 +324,10 @@ struct MEDDLY::policies {
         return reduction_rule::USER_DEFINED == reduction;
     }
 
+    //
+    // Node deletion policy helper methods
+    //
+
     inline void setNeverDelete() {
         deletion = node_deletion::NEVER;
     }
@@ -328,6 +348,10 @@ struct MEDDLY::policies {
     inline bool isPessimistic() const {
         return node_deletion::PESSIMISTIC == deletion;
     }
+
+    //
+    // Reordering policy helper methods
+    //
 
     inline void setLowestInversion() {
         reorder = reordering_type::LOWEST_INVERSION;
@@ -365,8 +389,16 @@ struct MEDDLY::policies {
         swap = variable_swap_type::VAR;
     }
 
+    inline bool isVarSwap() const {
+        return variable_swap_type::VAR == swap;
+    }
+
     inline void setLevelSwap() {
         swap = variable_swap_type::LEVEL;
+    }
+
+    inline bool isLevelSwap() const {
+        return variable_swap_type::VAR == swap;
     }
 
 };
