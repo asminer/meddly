@@ -374,10 +374,10 @@ void printStats(const char* who, const forest* f)
   const expert_forest* ef = (expert_forest*) f;
   FILE_output mout(stdout);
   ef->reportStats(mout, "\t",
-    expert_forest::HUMAN_READABLE_MEMORY  |
-    expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
-    expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED |
-    expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED
+    HUMAN_READABLE_MEMORY  |
+    BASIC_STATS | EXTRA_STATS |
+    STORAGE_STATS | STORAGE_DETAILED |
+    HOLE_MANAGER_STATS | HOLE_MANAGER_DETAILED
   );
 }
 

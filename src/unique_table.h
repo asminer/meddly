@@ -21,6 +21,7 @@
 
 #include "defines.h"
 #include "forest.h"
+#include "policies.h"
 
 namespace MEDDLY {
     class unique_table;
@@ -127,7 +128,7 @@ class MEDDLY::unique_table {
         /// Get the total memory used (sum over all variables)
         unsigned getMemUsed() const;
 
-        void reportStats(output &s, const char* pad, unsigned flags) const;
+        void reportStats(output &s, const char* pad, reporting_flags flags) const;
 
         /// For debugging
         void show(output &s) const;
@@ -150,8 +151,8 @@ class MEDDLY::unique_table {
                     return size * sizeof(node_handle);
                 }
 
-                void reportStats(output &s, const char* pad, unsigned flags)
-                    const;
+                void reportStats(output &s, const char* pad,
+                        reporting_flags flags) const;
 
                 /// For debugging
                 void show(output& s) const;

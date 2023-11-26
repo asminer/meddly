@@ -165,6 +165,37 @@ namespace MEDDLY {
     };
 
 
+    // ******************************************************************
+    // *                         reporting flags                        *
+    // ******************************************************************
+
+    /// Flags for forest reports
+    typedef unsigned reporting_flags;
+
+    const reporting_flags HUMAN_READABLE_MEMORY   = 0x0001;
+    const reporting_flags BASIC_STATS             = 0x0002;
+    const reporting_flags EXTRA_STATS             = 0x0004;
+    const reporting_flags FOREST_STATS            = 0x0008;
+    const reporting_flags STORAGE_STATS           = 0x0010;
+    const reporting_flags STORAGE_DETAILED        = 0x0020;
+    const reporting_flags UNIQUE_TABLE_STATS      = 0x0040;
+    const reporting_flags UNIQUE_TABLE_DETAILED   = 0x0080;
+    const reporting_flags HOLE_MANAGER_STATS      = 0x0100;
+    const reporting_flags HOLE_MANAGER_DETAILED   = 0x0200;
+
+
+    // ******************************************************************
+    // *                          display flags                         *
+    // ******************************************************************
+
+    typedef unsigned display_flags;
+
+    const display_flags SHOW_TERMINALS    = 0x01;
+    const display_flags SHOW_INDEX        = 0x02;
+    const display_flags SHOW_DETAILS      = 0x04;
+    const display_flags SHOW_UNREACHABLE  = 0x08;
+    const display_flags SHOW_DELETED      = 0x10;
+
 };
 
 // ******************************************************************

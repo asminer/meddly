@@ -131,7 +131,8 @@ public:
   // required interface
 public:
   virtual void collectGarbage(bool shrink);
-  virtual void reportStats(output &s, const char* pad, unsigned flags) const;
+  virtual void reportStats(output &s, const char* pad, reporting_flags flags)
+      const;
 
   virtual node_address makeNode(node_handle p, const unpacked_node &nb,
                                 node_storage_flags opt);
@@ -375,23 +376,21 @@ void MEDDLY::best_storage::collectGarbage(bool shrink)
 }
 
 void MEDDLY::best_storage::reportStats(output &s, const char* pad,
-                                       unsigned flags) const
+                                       reporting_flags flags) const
 {
-  static unsigned STORAGE =
-  expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED;
+  static unsigned STORAGE = STORAGE_STATS | STORAGE_DETAILED;
 
   if (flags & STORAGE) {
     // s << pad << "Stats for " << getStyleName() << "\n";
 
   }
 
-  static unsigned HOLEMAN =
-  expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED;
+  static unsigned HOLEMAN = HOLE_MANAGER_STATS | HOLE_MANAGER_DETAILED;
 
   if (flags & HOLEMAN) {
     MM->reportStats(s, pad,
-                    flags & expert_forest::HUMAN_READABLE_MEMORY,
-                    flags & expert_forest::HOLE_MANAGER_DETAILED);
+                    flags & HUMAN_READABLE_MEMORY,
+                    flags & HOLE_MANAGER_DETAILED);
   }
 
 

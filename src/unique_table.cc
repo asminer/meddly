@@ -122,9 +122,9 @@ unsigned MEDDLY::unique_table::getMemUsed() const
 }
 
 void MEDDLY::unique_table::reportStats(output &s, const char* pad,
-        unsigned flags) const
+        reporting_flags flags) const
 {
-    if (flags & expert_forest::UNIQUE_TABLE_STATS) {
+    if (flags & UNIQUE_TABLE_STATS) {
         s << pad << "Unique table stats:\n";
         s << pad << "    " << long(getSize()) << " current size\n";
         s << pad << "    " << long(getNumEntries()) << " current entries\n";
@@ -170,9 +170,9 @@ MEDDLY::unique_table::subtable::~subtable()
 }
 
 void MEDDLY::unique_table::subtable::reportStats(output &s, const char* pad,
-        unsigned flags) const
+        reporting_flags flags) const
 {
-    if (flags & expert_forest::UNIQUE_TABLE_STATS) {
+    if (flags & UNIQUE_TABLE_STATS) {
         s << pad << "Unique table stats:\n";
         s << pad << "    " << long(getSize()) << " current size\n";
         s << pad << "    " << long(getNumEntries()) << " current entries\n";

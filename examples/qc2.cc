@@ -895,7 +895,7 @@ int main(int argc, const char** argv)
   printf("Basic constraints are done:\n");
   expert_forest* ef = (expert_forest*) F;
   ef->reportStats(meddlyout, "\t",
-    expert_forest::HUMAN_READABLE_MEMORY | expert_forest::BASIC_STATS
+    HUMAN_READABLE_MEMORY | BASIC_STATS
   );
 
   dd_edge* acc = new dd_edge[N*N];
@@ -994,9 +994,9 @@ int main(int argc, const char** argv)
 
   printf("Forest stats:\n");
   ef->reportStats(meddlyout, "\t",
-    expert_forest::HUMAN_READABLE_MEMORY  |
-    expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
-    expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
+    HUMAN_READABLE_MEMORY  |
+    BASIC_STATS | EXTRA_STATS |
+    STORAGE_STATS | HOLE_MANAGER_STATS
   );
   operation::showAllComputeTables(meddlyout, 3);
 

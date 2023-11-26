@@ -837,6 +837,7 @@ void MEDDLY::expert_forest::nodemarker::visit(dd_edge &e)
 // *                                                                *
 // ******************************************************************
 
+/*
 const unsigned MEDDLY::expert_forest::HUMAN_READABLE_MEMORY   = 0x0001;
 const unsigned MEDDLY::expert_forest::BASIC_STATS             = 0x0002;
 const unsigned MEDDLY::expert_forest::EXTRA_STATS             = 0x0004;
@@ -857,6 +858,7 @@ const unsigned int MEDDLY::expert_forest::SHOW_UNREACHABLE  = 0x08;
 const unsigned int MEDDLY::expert_forest::SHOW_DETAILS      = 0x04;
 const unsigned int MEDDLY::expert_forest::SHOW_INDEX        = 0x02;
 const unsigned int MEDDLY::expert_forest::SHOW_TERMINALS    = 0x01;
+*/
 
 
 MEDDLY::expert_forest::expert_forest(domain *d, bool rel, range_type t,

@@ -438,18 +438,18 @@ inline void show_num_bits(MEDDLY::output &s, const char* pad, const char* what, 
 }
 
 void MEDDLY::node_headers
-::reportStats(output &s, const char* pad, unsigned flags) const
+::reportStats(output &s, const char* pad, display_flags flags) const
 {
-    if (flags & (expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED) ) {
+    if (flags & (STORAGE_STATS | STORAGE_DETAILED) ) {
         s << pad << "Node headers: array based\n";
     }
-    if (flags & expert_forest::STORAGE_STATS) {
+    if (flags & STORAGE_STATS) {
         s << pad << "  Node header : ";
         s.put(h_bits, 3);
         s << " bits\n";
     }
 
-    if (flags & expert_forest::STORAGE_DETAILED) {
+    if (flags & STORAGE_DETAILED) {
         show_num_bits(s, pad, "address   : ", addresses);
         show_num_bits(s, pad, "level     : ", levels);
         show_num_bits(s, pad, "#caches   : ", cache_counts);
@@ -459,7 +459,7 @@ void MEDDLY::node_headers
         show_num_bits(s, pad, "implicit? : ", implicit_bits);
     }
 
-    if (flags & expert_forest::STORAGE_STATS) {
+    if (flags & STORAGE_STATS) {
         s << pad << "  " << a_size << " headers allocated\n";
         s << pad << "  " << a_last << " last header\n";
         s << pad << "  " << a_freed << " recycled headers\n";

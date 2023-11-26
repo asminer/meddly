@@ -21,6 +21,7 @@
 
 
 #include "arrays.h"
+#include "policies.h"
 
 namespace MEDDLY {
     class node_headers;
@@ -390,10 +391,10 @@ class MEDDLY::node_headers : public array_watcher {
                 @param  s       Output stream to write to
                 @param  pad     Padding string, written at the start of
                                 each output line.
-                @param  flags   Which stats to display, as "flags";
-                                use bitwise or to combine values.
+                @param  flags   Which stats to display, as "flags" (see
+                                policies.h); use bitwise or to combine values.
         */
-        void reportStats(output &s, const char* pad, unsigned flags) const;
+        void reportStats(output &s, const char* pad, display_flags flags) const;
 
         /** Display header information, primarily for debugging.
                 @param  s     Output stream to write to

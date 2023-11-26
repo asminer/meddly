@@ -584,9 +584,9 @@ int main(int argc, const char** argv)
   // f->garbageCollect();
   // f->compactMemory();
   f->reportStats(meddlyout, "\t",
-    expert_forest::HUMAN_READABLE_MEMORY  |
-    expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
-    expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
+    HUMAN_READABLE_MEMORY  |
+    BASIC_STATS | EXTRA_STATS |
+    STORAGE_STATS | HOLE_MANAGER_STATS
   );
 
   //
@@ -686,9 +686,9 @@ int main(int argc, const char** argv)
     cerr << "Library stats:\n";
     const expert_forest* ef = (expert_forest*) f;
     ef->reportStats(meddlyout, "\t",
-      expert_forest::HUMAN_READABLE_MEMORY  |
-      expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
-      expert_forest::STORAGE_STATS | expert_forest::HOLE_MANAGER_STATS
+      HUMAN_READABLE_MEMORY  |
+      BASIC_STATS | EXTRA_STATS |
+      STORAGE_STATS | HOLE_MANAGER_STATS
     );
     cerr << "Operation stats:\n";
     operation::showAllComputeTables(meddlyout, 3);

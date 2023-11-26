@@ -619,10 +619,10 @@ int main(int argc, const char** argv)
         ostream_output myout(std::cout);
         expert_forest* ef = (expert_forest*)boolF;
         ef->reportStats(myout, "\t",
-            expert_forest::HUMAN_READABLE_MEMORY  |
-            expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
-            expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED |
-            expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED
+            HUMAN_READABLE_MEMORY  |
+            BASIC_STATS | EXTRA_STATS |
+            STORAGE_STATS | STORAGE_DETAILED |
+            HOLE_MANAGER_STATS | HOLE_MANAGER_DETAILED
         );
     }
     catch (MEDDLY::error e) {

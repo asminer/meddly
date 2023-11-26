@@ -1589,47 +1589,7 @@ inline void MEDDLY::forest::setLogger(logger* L, const char* name) {
 
 class MEDDLY::expert_forest: public MEDDLY::forest
 {
-    // flags for reporting; DO NOT rely on specific values
   public:
-    /// Should memory be reported in a human readable format
-    static const unsigned HUMAN_READABLE_MEMORY;
-    /// Basic forest stats
-    static const unsigned BASIC_STATS;
-    static const unsigned EXTRA_STATS;
-    /// Specific forest stats, dependent on forest type
-    static const unsigned FOREST_STATS;
-    /// Stats specific to the node storage mechanism.
-    static const unsigned STORAGE_STATS;
-    /// Detailed stats for the node storage mechanism.
-    static const unsigned STORAGE_DETAILED;
-    /// Stats specific to the unique table.
-    static const unsigned UNIQUE_TABLE_STATS;
-    /// Stats specific to the unique table.
-    static const unsigned UNIQUE_TABLE_DETAILED;
-    /// Stats specific to the hole manager.
-    static const unsigned HOLE_MANAGER_STATS;
-    /// Stats specific to the hole manager.
-    static const unsigned HOLE_MANAGER_DETAILED;
-
-    // ************************************************************
-    // *                                                          *
-    // *               Constants for  showing nodes               *
-    // *                                                          *
-    // ************************************************************
-
-    /// Display deleted nodes
-    static const unsigned int SHOW_DELETED;
-    /// Display unreachable nodes
-    static const unsigned int SHOW_UNREACHABLE;
-    /// Display node details
-    static const unsigned int SHOW_DETAILS;
-    /// Display the node index
-    static const unsigned int SHOW_INDEX;
-    /// Display terminal nodes
-    static const unsigned int SHOW_TERMINALS;
-
-
-
     friend class reordering_base;
 
     /** Constructor.
@@ -1646,49 +1606,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
   // ------------------------------------------------------------
   // inlined helpers.
 
-    /**
-        Convenience function.
-        Based on the forest type, convert the desired value
-        into a terminal node handle.
-          @param  v   Value to encode
-          @return     Handle for terminal node
-    */
-    // template <typename T>
-    // node_handle handleForValue(T v) const;
-
-    /**
-        Convenience function.
-        Based on the forest type, convert the terminal node handle
-        into its encoded value.
-          @param  n   Node handle
-          @param  v   Output: encoded value
-    */
-    // template <typename T>
-    // void getValueFromHandle(node_handle n, T& v) const;
-
-    /**
-        Convenience function.
-        Based on the forest type, convert the terminal node handle
-        into its encoded boolean value.
-          @param  n   Node handle
-    */
-    // bool getBooleanFromHandle(node_handle n) const;
-
-    /**
-        Convenience function.
-        Based on the forest type, convert the terminal node handle
-        into its encoded integer value.
-          @param  n   Node handle
-    */
-    // int getIntegerFromHandle(node_handle n) const;
-
-    /**
-        Convenience function.
-        Based on the forest type, convert the terminal node handle
-        into its encoded real (float) value.
-          @param  n   Node handle
-    */
-    // float getRealFromHandle(node_handle n) const;
 
     memstats& changeMemStats();
 
@@ -2426,93 +2343,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 // *                                                                *
 // ******************************************************************
 
-/*
-
-template<typename T>
-inline MEDDLY::node_handle
-MEDDLY::expert_forest::handleForValue(T v) const
-{
-    switch (this->getRangeType()) {
-        case range_type::BOOLEAN:
-            return bool_Tencoder::value2handle(v);
-        case range_type::INTEGER:
-            return int_Tencoder::value2handle(v);
-        case range_type::REAL:
-            return float_Tencoder::value2handle(v);
-        default:
-            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    }
-}
-
-template<typename T>
-inline void
-MEDDLY::expert_forest::getValueFromHandle(MEDDLY::node_handle n, T& v) const
-{
-    MEDDLY_DCASSERT(isTerminalNode(n));
-    switch (getRangeType()) {
-        case range_type::BOOLEAN:
-            v = bool_Tencoder::handle2value(n);
-            return;
-        case range_type::INTEGER:
-            v = int_Tencoder::handle2value(n);
-            return;
-        case range_type::REAL:
-            v = float_Tencoder::handle2value(n);
-            return;
-        default:
-            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    }
-}
-
-inline bool
-MEDDLY::expert_forest::getBooleanFromHandle(MEDDLY::node_handle n) const
-{
-    MEDDLY_DCASSERT(isTerminalNode(n));
-    switch (getRangeType()) {
-        case range_type::BOOLEAN:
-            return bool_Tencoder::handle2value(n);
-        case range_type::INTEGER:
-            return int_Tencoder::handle2value(n);
-        case range_type::REAL:
-            return float_Tencoder::handle2value(n);
-        default:
-            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    }
-}
-
-inline int
-MEDDLY::expert_forest::getIntegerFromHandle(MEDDLY::node_handle n) const
-{
-    MEDDLY_DCASSERT(isTerminalNode(n));
-    switch (getRangeType()) {
-        case range_type::BOOLEAN:
-            return bool_Tencoder::handle2value(n);
-        case range_type::INTEGER:
-            return int_Tencoder::handle2value(n);
-        case range_type::REAL:
-            return float_Tencoder::handle2value(n);
-        default:
-            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    }
-}
-
-inline float
-MEDDLY::expert_forest::getRealFromHandle(MEDDLY::node_handle n) const
-{
-    MEDDLY_DCASSERT(isTerminalNode(n));
-    switch (getRangeType()) {
-        case range_type::BOOLEAN:
-            return bool_Tencoder::handle2value(n);
-        case range_type::INTEGER:
-            return int_Tencoder::handle2value(n);
-        case range_type::REAL:
-            return float_Tencoder::handle2value(n);
-        default:
-            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    }
-}
-
-*/
 
 inline MEDDLY::memstats&
 MEDDLY::expert_forest::changeMemStats()

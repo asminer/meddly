@@ -30,5 +30,18 @@ This is intended to help developers migrate to the new interface.
 * Removed method ```forest::useDomain()```, use ```forest::getDomain()```
     (now overloaded) instead.
 
+* Moved reporting flags (```HUMAN_READABLE_MEMORY```, ```BASIC_STATS```,
+    ```EXTRA_STATS```, ```FOREST_STATS```, ```STORAGE_STATS```,
+    ```STORAGE_DETAILED```, ```UNIQUE_TABLE_STATS```,
+    ```UNIQUE_TABLE_DETAILED```, ```HOLE_MANAGER_STATS```,
+    ```HOLE_MANAGER_DETAILED```)
+    out of ```expert_forest``` and into ```policies.h```.
+
+* Moved display flags (```SHOW_TERMINALS```, ```SHOW_INDEX```,
+    ```SHOW_DETAILS```, ```SHOW_UNREACHABLE```, ```SHOW_DELETED```)
+    out of ```expert_forest``` and into ```policies.h```.
+
 ### Implementation
+
+Slightly faster node marking implementation.
 
