@@ -154,31 +154,30 @@ inline size_t prev_check(size_t s)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::node_headers::node_headers(expert_forest &P)
+MEDDLY::node_headers::node_headers(forest &P)
   : parent(P)
 {
-    h_bits = 0;
+    addresses = nullptr;
+    levels = nullptr;
+    cache_counts = nullptr;
+    is_in_cache = nullptr;
+    incoming_counts = nullptr;
+    implicit_bits = nullptr;
+    is_reachable = nullptr;
+    pessimistic = true;
+
+    //
+    // Set up handle information and recycling
+    //
     a_last = 0;
     a_size = 0;
-    a_freed = 0;
     a_next_shrink = 0;
+    a_freed = 0;
     for (unsigned i=0; i<8; i++) a_unused[i] = 0;
     a_lowest_index = 8;
     a_sweep = SIZE_MAX;
-    addresses = new address_array(this);
-    levels = new level_array(parent.getNumVariables(), this);
-    if (parent.getPolicies().useReferenceCounts) {
-        cache_counts = new counter_array(this);
-        is_in_cache = nullptr;
-        incoming_counts = new counter_array(this);
-        is_reachable = nullptr;
-    } else {
-        cache_counts = nullptr;
-        is_in_cache = new bitvector(true, this);
-        incoming_counts = nullptr;
-        is_reachable = new bitvector(true, this);
-    }
-    implicit_bits = nullptr;
+    h_bits = 0;
+
 }
 
 // ******************************************************************
@@ -190,8 +189,25 @@ MEDDLY::node_headers::~node_headers()
     delete cache_counts;
     delete is_in_cache;
     delete incoming_counts;
-    delete is_reachable;
     delete implicit_bits;
+    // DON'T delete is_reachable, we don't own it
+    // delete is_reachable;
+}
+
+// ******************************************************************
+
+void MEDDLY::node_headers::initialize()
+{
+    addresses = new address_array(this);
+    levels = new level_array(parent.getNumVariables(), this);
+    if (parent.getPolicies().useReferenceCounts) {
+        cache_counts = new counter_array(this);
+        incoming_counts = new counter_array(this);
+    } else {
+        is_in_cache = new bitvector(true, this);
+    }
+
+    pessimistic = parent.getPolicies().isPessimistic();
 }
 
 // ******************************************************************
@@ -233,7 +249,6 @@ void MEDDLY::node_headers::sweepAllInCacheBits()
     std::cerr << "Done cache scan; nodes that will be reclaimed:\n\t";
 
     MEDDLY_DCASSERT(is_in_cache);
-    MEDDLY_DCASSERT(is_reachable);
     size_t p = 0;
     for (;;) {
         p = is_in_cache->firstZero(++p);

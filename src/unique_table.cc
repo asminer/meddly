@@ -25,7 +25,7 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unique_table::unique_table(expert_forest* ef) : parent(ef)
+MEDDLY::unique_table::unique_table(forest* ef) : parent((expert_forest*) ef)
 {
     max_var = parent->getNumVariables();
 

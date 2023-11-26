@@ -138,7 +138,7 @@ public:
                                 node_storage_flags opt);
 
   virtual void unlinkDownAndRecycle(node_address addr);
-  virtual void markDownPointers(node_address addr);
+  // virtual void markDownPointers(node_address addr);
   virtual void addDownToQueue(node_marker &m, node_address addr) const;
 
   virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
@@ -670,6 +670,7 @@ void MEDDLY::best_storage::unlinkDownAndRecycle(node_address addr)
 
 
 
+/*
 void MEDDLY::best_storage::markDownPointers(node_address addr)
 {
 #ifdef DEBUG_MARK_SWEEP
@@ -716,6 +717,7 @@ void MEDDLY::best_storage::markDownPointers(node_address addr)
       }
     }
 }
+*/
 
 void MEDDLY::best_storage::addDownToQueue(node_marker &nm, node_address addr) const
 {

@@ -34,7 +34,7 @@ namespace MEDDLY {
  */
 class MEDDLY::unique_table {
     public:
-        unique_table(expert_forest *ef);
+        unique_table(forest *ef);
         ~unique_table();
 
         /// Get the hash table size for a given variable

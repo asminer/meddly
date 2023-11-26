@@ -175,6 +175,21 @@ MEDDLY::forest::create(domain* d, set_or_rel sr, range_type t,
     return nullptr;
 }
 
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Node unpacking methods
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+void MEDDLY::forest::unpackNode(MEDDLY::unpacked_node* un,
+    node_handle node, node_storage_flags st2) const
+{
+    MEDDLY_DCASSERT(un);
+    const int level = getNodeLevel(node);
+    MEDDLY_DCASSERT(0 != level);
+    un->bind_to_forest(this, level, unsigned(getLevelSize(level)), true);
+    MEDDLY_DCASSERT(getNodeAddress(node));
+    nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
+}
+
 
 //
 // Forest registry methods
@@ -279,6 +294,26 @@ unsigned MEDDLY::forest::countRegisteredEdges() const
     }
     return count;
 }
+
+void MEDDLY::forest::markAllRoots()
+{
+    if (!reachable) return;
+
+    stats.reachable_scans++;
+
+#ifdef DEBUG_MARK_SWEEP
+    printf("Determining which nodes are reachable in forest %u\n", FID());
+#endif
+
+    reachable->unmarkAll();
+
+    for (const dd_edge* r = roots; r; r=r->next) {
+        reachable->mark(r->getNode());
+    }
+
+    unpacked_node::markBuildListChildren(reachable);
+}
+
 
 void MEDDLY::forest::unregisterDDEdges()
 {
@@ -401,27 +436,26 @@ MEDDLY::policies MEDDLY::forest::mxdDefaults;
 
 MEDDLY::forest
 ::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
-  const policies &p,int* lrr) : deflt(p)
+  const policies &p, int* lrr) : nodeHeaders(*this), deflt(p)
 {
+    // Set up domain
     d = _d;
+
+    // Initialize variable order
+    var_order = d->makeDefaultVariableOrder();
+
     isRelation = rel;
     rangeType = t;
     edgeLabel = ev;
 
     registerForest(this);
 
-#ifdef DEBUG_CLEANUP
-  fprintf(stderr, "Creating forest #%u in domain #%d\n", ds, _d->ID());
-#endif
-
-
-  is_marked_for_deletion = false;
-
+    is_marked_for_deletion = false;
 
     if(lrr==NULL){
 
         if(isUserDefinedReduced()){
-		throw error(error::INVALID_POLICY, __FILE__, __LINE__);
+		    throw error(error::INVALID_POLICY, __FILE__, __LINE__);
         }
 
 	else{
@@ -493,25 +527,30 @@ MEDDLY::forest
     //
     // Initialize the root edges
     //
-    /*
-    roots_hole = 0;  // firstHole == 0 indicates no holes.
-    roots_next = 1;  // never use slot 0
-    roots_size = 1024;
-
-    // Create an array to store pointers to dd_edges.
-    roots = new edge_data [roots_size];
-    for (unsigned i = 0; i < roots_size; ++i) {
-        roots[i].nextHole = 0;
-        roots[i].edge = nullptr;
-    }
-    */
     roots = nullptr;
 
     //
     // Empty logger
     //
-
     theLogger = 0;
+
+    //
+    // Unique table(s)
+    //
+    unique = new unique_table(this);
+    implUT = new impl_unique_table(this);
+
+    //
+    // Finish initializing nodeHeaders
+    //
+    nodeHeaders.initialize();
+
+    if (deflt.useReferenceCounts) {
+        reachable = nullptr;
+    } else {
+        reachable = new node_marker(true, nodeHeaders, *this);
+        nodeHeaders.linkReachable(reachable->linkBits());
+    }
 }
 
 MEDDLY::forest::~forest()
@@ -520,6 +559,11 @@ MEDDLY::forest::~forest()
     free(opCount);
 
     unregisterDDEdges();
+
+    // unique table
+    delete unique;
+    delete implUT;
+
     unregisterForest(this);
 }
 
@@ -863,12 +907,9 @@ const unsigned int MEDDLY::expert_forest::SHOW_TERMINALS    = 0x01;
 
 MEDDLY::expert_forest::expert_forest(domain *d, bool rel, range_type t,
   edge_labeling ev, const policies &p, int* level_reduction_rule)
-: forest(d, rel, t, ev, p, level_reduction_rule), nodeHeaders(*this)
+: forest(d, rel, t, ev, p, level_reduction_rule)
 {
-  nodeHeaders.setPessimistic(getPolicies().isPessimistic());
 
-  // Initialize variable order
-  var_order = d->makeDefaultVariableOrder();
 
   //
   // Initialize misc. protected data
@@ -878,8 +919,6 @@ MEDDLY::expert_forest::expert_forest(domain *d, bool rel, range_type t,
   //
   // Initialize misc. private data
   //
-  unique = new unique_table(this);
-  implUT = new impl_unique_table(this);
   performing_gc = false;
   in_validate = 0;
   in_val_size = 0;
@@ -902,10 +941,6 @@ MEDDLY::expert_forest::~expert_forest()
 
   delete nodeMan;
 
-  // unique table
-  delete unique;
-  delete implUT;
-
   // Misc. private data
   free(in_validate);
 }
@@ -921,31 +956,6 @@ void MEDDLY::expert_forest::initializeForest()
   //
   nodeMan = deflt.nodestor->createForForest(this, deflt.nodemm);
 
-}
-
-// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-// '                                                                '
-// '                  public mark & sweep  methods                  '
-// '                                                                '
-// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-void MEDDLY::expert_forest::markAllRoots()
-{
-    if (deflt.useReferenceCounts) return;
-
-    stats.reachable_scans++;
-
-#ifdef DEBUG_MARK_SWEEP
-    printf("Determining which nodes are reachable in forest %u\n", FID());
-#endif
-
-    nodeHeaders.clearAllReachableBits();
-
-    for (const dd_edge* r = roots; r; r=r->next) {
-        markNode(r->getNode());
-    }
-
-    unpacked_node::markBuildListChildren(this);
 }
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -1117,7 +1127,7 @@ void MEDDLY::expert_forest::countNodesByLevel(long* active) const
 MEDDLY::node_marker*
 MEDDLY::expert_forest::makeNodeMarker()
 {
-    node_marker* nm = new node_marker(false, nodeHeaders, nodeMan, this);
+    node_marker* nm = new node_marker(false, nodeHeaders, *this);
     nm->expand(nodeHeaders.lastUsedHandle()+1);
     nm->unmarkAll();
     return nm;
@@ -1259,7 +1269,9 @@ bool MEDDLY::expert_forest
   bool isReachable =
     isTerminalNode(p) ||
     (
-        deflt.useReferenceCounts ? (getNodeInCount(p)) : (hasReachableBit(p))
+        reachable
+            ? reachable->isMarked(p)
+            : getNodeInCount(p)
     );
 
   if (isTerminalNode(p)) {
@@ -1823,13 +1835,13 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
   delete_depth++;
 #endif
 
-  MEDDLY_DCASSERT(isValidNonterminalIndex(p));
-  MEDDLY_DCASSERT(isActiveNode(p));
-  if (deflt.useReferenceCounts) {
-    MEDDLY_DCASSERT(getNodeInCount(p) == 0);
-  } else {
-    MEDDLY_DCASSERT(!hasReachableBit(p));
-  }
+    CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+nodeHeaders.lastUsedHandle());
+    MEDDLY_DCASSERT(isActiveNode(p));
+    if (reachable) {
+        MEDDLY_DCASSERT(!reachable->isMarked(p));
+    } else {
+        MEDDLY_DCASSERT(getNodeInCount(p) == 0);
+    }
 
   unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
@@ -1997,15 +2009,15 @@ MEDDLY::node_handle MEDDLY::expert_forest
 #endif
 
   // Grab a new node
-  node_handle p = nodeHeaders.getFreeNodeHandle();
-  nodeHeaders.setNodeLevel(p, nb.getLevel());
-  if (deflt.useReferenceCounts) {
-    MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
-    MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
-  } else {
-    nodeHeaders.setReachableBit(p);
-    nodeHeaders.setInCacheBit(p);
-  }
+    node_handle p = nodeHeaders.getFreeNodeHandle();
+    nodeHeaders.setNodeLevel(p, nb.getLevel());
+    if (reachable) {
+        reachable->setMarked(p);
+        nodeHeaders.setInCacheBit(p);
+    } else {
+        MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
+        MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
+    }
 
   stats.incActive(1);
   if (theLogger && theLogger->recordingNodeCounts()) {
@@ -2328,18 +2340,6 @@ void MEDDLY::expert_forest::recycle(unpacked_node* n)
 //
 // Stuff that used to be inlined but now can't
 //
-
-void
-MEDDLY::expert_forest::unpackNode(MEDDLY::unpacked_node* un,
-    MEDDLY::node_handle node, node_storage_flags st2) const
-{
-    MEDDLY_DCASSERT(un);
-    const int level = getNodeLevel(node);
-    MEDDLY_DCASSERT(0 != level);
-    un->bind_to_forest(this, level, unsigned(getLevelSize(level)), true);
-    MEDDLY_DCASSERT(getNodeAddress(node));
-    nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
-}
 
 //----------------------------------------------------------------------
 // front end - create and destroy objects

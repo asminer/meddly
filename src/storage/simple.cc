@@ -135,7 +135,7 @@ class MEDDLY::simple_separated : public node_storage {
         node_storage_flags opt);
 
     virtual void unlinkDownAndRecycle(node_address addr);
-    virtual void markDownPointers(node_address addr);
+    // virtual void markDownPointers(node_address addr);
     virtual void addDownToQueue(node_marker &nm, node_address addr) const;
 
     virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
@@ -484,6 +484,7 @@ void MEDDLY::simple_separated::unlinkDownAndRecycle(node_address addr)
 }
 
 
+/*
 void MEDDLY::simple_separated::markDownPointers(node_address addr)
 {
 #ifdef DEBUG_MARK_SWEEP
@@ -505,7 +506,7 @@ void MEDDLY::simple_separated::markDownPointers(node_address addr)
     getParent()->markNode(down[i]);
   }
 }
-
+*/
 
 void MEDDLY::simple_separated::addDownToQueue(node_marker &nm,
         node_address addr) const

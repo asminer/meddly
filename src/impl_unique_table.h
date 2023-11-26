@@ -34,7 +34,7 @@ namespace MEDDLY {
  */
 class MEDDLY::impl_unique_table {
   public:
-  impl_unique_table(expert_forest *ef);
+  impl_unique_table(forest *ef);
   ~impl_unique_table();
 
   inline unsigned getNumEntries() { return table.size(); }
@@ -61,7 +61,7 @@ class MEDDLY::impl_unique_table {
 
   private:
     // To which forest does this unique table belong to
-    expert_forest *parent;
+    forest *parent;
 
     // The contents of the table
     std::unordered_map<node_handle, relation_node*> table;

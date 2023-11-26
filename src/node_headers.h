@@ -25,7 +25,7 @@
 
 namespace MEDDLY {
     class node_headers;
-    class expert_forest;
+    class forest;
     class output;
 };
 
@@ -72,8 +72,11 @@ namespace MEDDLY {
 */
 class MEDDLY::node_headers : public array_watcher {
     public:
-        node_headers(expert_forest &P);
+        node_headers(forest &P);
         virtual ~node_headers();
+
+        /// Delay initialization, so we can set up the forest first.
+        void initialize();
 
     public:
         //
@@ -94,18 +97,6 @@ class MEDDLY::node_headers : public array_watcher {
         inline node_handle lastUsedHandle() const {
             return a_last;
         }
-
-        /**
-            Set node recycling to pessimistic or optimistic.
-            Pessimistic:    disconnected nodes are recycled immediately.
-            Optimistic:     disconnected nodes are recycled only when
-                            they no longer appear in any caches.
-        */
-        inline void setPessimistic(bool pess) {
-            pessimistic = pess;
-        }
-
-
 
     public:
         //
@@ -298,27 +289,41 @@ class MEDDLY::node_headers : public array_watcher {
 
         // ----------------------------------------------------------
 
+        /// Set the node marker for reachable nodes.
+        inline void linkReachable(bitvector* R) {
+            is_reachable = R;
+        }
+
+        /*
         /// Indicate that node p is (or might be) reachable in the forest.
         inline void setReachableBit(node_handle p) {
             if (p<1) return;    // terminal node
             MEDDLY_DCASSERT(isActive(p));
-            MEDDLY_DCASSERT(is_reachable);
-            is_reachable->set(size_t(p), 1);
+            MEDDLY_DCASSERT(reachable);
+            reachable->setMarked(p);
         }
 
-        /// Does node p have its reachable bit set?
-        inline bool hasReachableBit(node_handle p) const {
-            if (p<1) return 1;    // terminal node
+        /// Mark a node
+        inline void setReachable(node_handle p) {
+            MEDDLY_DCASSERT(reachable);
+            reachable->mark(p);
+        }
 
-            MEDDLY_DCASSERT(is_reachable);
-            return is_reachable->get(size_t(p));
+        /// Is a node marked?
+        inline bool isReachable(node_handle p) const {
+            return reachable->isMarked(p);
         }
 
         /// Clear reachable bit for all nodes
         inline void clearAllReachableBits() {
-            MEDDLY_DCASSERT(is_reachable);
-            is_reachable->clearAll();
+            MEDDLY_DCASSERT(reachable);
+            reachable->unmarkAll();
         }
+
+        inline node_marker* getReachableMarker() {
+            return reachable;
+        }
+        */
 
         // ----------------------------------------------------------
 
@@ -451,8 +456,8 @@ class MEDDLY::node_headers : public array_watcher {
         counter_array* cache_counts;
         bitvector* is_in_cache;
         counter_array* incoming_counts;
-        bitvector* is_reachable;
         bitvector* implicit_bits;
+        bitvector* is_reachable;
 
         /// Last used address.
         size_t a_last;
@@ -489,7 +494,7 @@ class MEDDLY::node_headers : public array_watcher {
         bool pessimistic;
 
         /// Parent forest, needed for recycling
-        expert_forest &parent;
+        forest &parent;
 };
 
 

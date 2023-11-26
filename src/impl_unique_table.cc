@@ -21,7 +21,7 @@
 
 #define TERMINAL_NODE 1
 
-MEDDLY::impl_unique_table::impl_unique_table(expert_forest* ef)
+MEDDLY::impl_unique_table::impl_unique_table(forest* ef)
 : parent(ef)
 {
   size = 0;

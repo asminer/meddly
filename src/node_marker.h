@@ -21,9 +21,12 @@
 
 #include "forest.h"
 #include "terminal.h"
+#include <set>
 
 namespace MEDDLY {
     class node_marker;
+    class node_headers;
+    class node_storage;
 };
 
 
@@ -32,9 +35,12 @@ namespace MEDDLY {
 */
 class MEDDLY::node_marker {
     public:
-        node_marker(bool permanent, node_headers &H, const node_storage *nm,
-                expert_forest* f);
+        node_marker(bool permanent, node_headers &H, forest &F);
         ~node_marker();
+
+        inline bool hasParent(const forest* f) const {
+            return (&For) == f;
+        }
 
         inline void expand(size_t ns) {
             marked.expand(ns);
@@ -51,6 +57,12 @@ class MEDDLY::node_marker {
         inline bool isMarked(node_handle p) const {
             if (p<0) return false;
             return marked.get(p);
+        }
+
+        inline void setMarked(node_handle p) {
+            if (p>0) {
+                marked.set(p, true);
+            }
         }
 
         inline void mark(node_handle p) {
@@ -78,10 +90,6 @@ class MEDDLY::node_marker {
 
         inline size_t countMarked() const {
             return marked.count();
-        }
-
-        inline expert_forest* Forest() const {
-            return For;
         }
 
         /// Count the number of outgoing edges for marked nodes.
@@ -142,11 +150,18 @@ class MEDDLY::node_marker {
     private:
         bitvector marked;
         node_headers& nodeHead;
-        const node_storage* nodeMan;
-        expert_forest* For;
+        forest &For;
 
         mystack* S_top;
         mystack* S_free;
+
+    private:
+        inline bitvector* linkBits() {
+            return &marked;
+        }
+
+        friend class MEDDLY::forest;
+
 };
 
 

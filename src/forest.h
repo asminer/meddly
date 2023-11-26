@@ -121,88 +121,29 @@ class MEDDLY::forest {
         }
 
     // ------------------------------------------------------------
-    public: // Getting/setting the global default policies
+    public: // Retrieve a node from the forest
     // ------------------------------------------------------------
 
-        /**
-            Get the default policies for all MDD forests.
-        */
-        inline static const policies& getDefaultPoliciesMDDs() {
-            return mddDefaults;
+        /// Copy into an unpacked node.
+        ///     @param  un      Unpacked node to copy into
+        ///     @param  p       Handle of node to retrieve
+        ///     @param  st2     Storage: full only, sparse only, or
+        ///                     whatever is easier.
+        void unpackNode(unpacked_node* un, node_handle p,
+                node_storage_flags st2) const;
+
+        /// Copy into a new unpacked node.
+        inline unpacked_node* newUnpacked(node_handle p,
+                node_storage_flags f) const
+        {
+            unpacked_node* un = unpacked_node::New();
+            unpackNode(un, p, f);
+            return un;
         }
 
-        /**
-            Get the default policies for all MxD forests.
-        */
-        inline static const policies& getDefaultPoliciesMXDs() {
-            return mxdDefaults;
-        }
-
-        /**
-            Set the default policies for all MDD forests.
-        */
-        inline static void setDefaultPoliciesMDDs(const policies &p) {
-            mddDefaults = p;
-        }
-
-        /**
-            Set the default policies for all MxD forests.
-        */
-        inline static void setDefaultPoliciesMXDs(const policies &p) {
-            mxdDefaults = p;
-        }
 
     // ------------------------------------------------------------
-    public: // Getting/setting policies for this forest
-    // ------------------------------------------------------------
-
-        /// Returns the current policies used by this forest.
-        inline const policies& getPolicies() const {
-            return deflt;
-        }
-
-        /// Returns the current policies used by this forest.
-        inline policies& getPolicies() {
-            return deflt;
-        }
-
-#ifdef ALLOW_DEPRECATED_0_17_3
-        inline bool isVarSwap() const {
-    	    return deflt.isVarSwap();
-        }
-
-        inline bool isLevelSwap() const {
-    	    return deflt.isLevelSwap();
-        }
-
-        /// Returns the storage mechanism used by this forest.
-        inline node_storage_flags getNodeStorage() const {
-            return deflt.storage_flags;
-        }
-
-        /// Returns the node deletion policy used by this forest.
-        inline policies::node_deletion getNodeDeletion() const {
-            return deflt.deletion;
-        }
-
-        /// Are we using pessimistic deletion
-        inline bool isPessimistic() const {
-            return deflt.isPessimistic();
-        }
-
-        /// Can we store nodes sparsely
-        inline bool areSparseNodesEnabled() const {
-            return deflt.allowsSparse();
-        }
-
-        /// Can we store nodes fully
-        inline bool areFullNodesEnabled() const {
-            return deflt.allowsFull();
-        }
-#endif
-
-    // ------------------------------------------------------------
-    public: // Getters for forest attributes (domain, range, etc.)
+    public: // Getters related to the domain / levels
     // ------------------------------------------------------------
 
         /// Returns a non-modifiable pointer to this forest's domain.
@@ -222,6 +163,67 @@ class MEDDLY::forest {
             return getDomain();
         }
 #endif
+
+        inline int getNumVariables() const {
+            return d->getNumVariables();
+        }
+
+        /**
+            Negative values are used for primed levels or variables.
+        */
+        inline int getVarByLevel(int level) const {
+            return level > 0
+                ? var_order->getVarByLevel(level)
+                : -var_order->getVarByLevel(-level);
+        }
+        inline int getLevelByVar(int var) const {
+            return var > 0
+                ? var_order->getLevelByVar(var)
+                : -var_order->getLevelByVar(-var);
+        }
+
+        /// returns 0 or -K, depending if it's a relation
+        inline int getMinLevelIndex() const {
+            return isForRelations() ? -getNumVariables() : 0;
+        }
+
+        /// Check if the given level is valid
+        inline bool isValidLevel(int k) const {
+            return (k >= getMinLevelIndex()) && (k <= getNumVariables());
+        }
+
+        /// Can we have extensible nodes at level k?
+        inline bool isExtensibleLevel(int k) const {
+            MEDDLY_DCASSERT(isValidLevel(k));
+            return d->getVar(k < 0? -k: k)->isExtensible();
+        }
+
+        /// The maximum size (number of indices) a node at this level can have
+        inline int getLevelSize(int k) const {
+            MEDDLY_DCASSERT(isValidLevel(k));
+            int var=getVarByLevel(k);
+            if (var < 0) {
+                return getDomain()->getVariableBound(-var, true);
+            } else {
+                return getDomain()->getVariableBound(var, false);
+            }
+        }
+
+        /// The maximum size (number of indices) a variable can have.
+        inline int getVariableSize(int var) const {
+            return getDomain()->getVariableBound(var, false);
+        }
+
+
+    // ------------------------------------------------------------
+    private: // Domain info
+    // ------------------------------------------------------------
+        domain* d;
+        friend class domain;
+
+    protected:
+        std::shared_ptr<const variable_order> var_order;
+
 
 
     // ------------------------------------------------------------
@@ -334,6 +336,275 @@ class MEDDLY::forest {
             return v;
         }
 
+    // ------------------------------------------------------------
+    public: // node header getters/setters
+    // ------------------------------------------------------------
+        /// Return the level number for a given node
+        inline int getNodeLevel(node_handle p) const {
+            if (isTerminalNode(p)) return 0;
+            return nodeHeaders.getNodeLevel(p);
+        }
+
+        /// Is a given node at a primed level?
+        inline bool isPrimedNode(node_handle p) const {
+            return getNodeLevel(p) < 0;
+        }
+
+        /// Is a given node at an unprimed level?
+        inline bool isUnprimedNode(node_handle p) const {
+            return getNodeLevel(p) > 0;
+        }
+
+        /// Is a given node still active (not recycled)?
+        inline bool isActiveNode(node_handle p) const {
+            return nodeHeaders.isActive(p);
+        }
+
+        /// Is a given node deleted?
+        inline bool isDeletedNode(node_handle p) const {
+            return nodeHeaders.isDeleted(p);
+        }
+
+        /// Is a given node a terminal node?
+        inline static bool isTerminalNode(node_handle p) {
+            return (p < 1);
+        }
+
+#ifdef ALLOW_DEPRECATED_0_17_3
+        inline bool isValidNonterminalIndex(MEDDLY::node_handle p) const {
+            return (p > 0) && (p <= nodeHeaders.lastUsedHandle());
+        }
+
+        inline bool isValidNodeIndex(MEDDLY::node_handle p) const {
+            return p <= nodeHeaders.lastUsedHandle();
+        }
+#endif
+
+        inline node_handle getLastNode() const {
+            return nodeHeaders.lastUsedHandle();
+        }
+
+        /// Returns the in-count for a node.
+        inline unsigned long getNodeInCount(node_handle p) const {
+            MEDDLY_DCASSERT(deflt.useReferenceCounts);
+            return nodeHeaders.getIncomingCount(p);
+        }
+
+
+        /** Increase the link count to this node.
+            Call this when another node is made to point to this node.
+                @return p, for convenience.
+        */
+        inline node_handle linkNode(node_handle p) {
+            if (deflt.useReferenceCounts) {
+                return nodeHeaders.linkNode(p);
+            } else {
+                return p;
+            }
+        }
+
+        /** Increase the link count to this node.
+            Call this when another node is made to point to this node.
+                @return the node handle, for convenience.
+        */
+        inline node_handle linkNode(const dd_edge &p) {
+            MEDDLY_DCASSERT(p.isAttachedTo(this));
+            if (deflt.useReferenceCounts) {
+                return nodeHeaders.linkNode(p.getNode());
+            } else {
+                return p.getNode();
+            }
+        }
+
+        /** Decrease the link count to this node.
+            If link count reduces to 0, this node may get marked for deletion.
+            Call this when another node releases its connection to this node.
+        */
+        inline void unlinkNode(node_handle p) {
+            if (deflt.useReferenceCounts) {
+                nodeHeaders.unlinkNode(p);
+            }
+        }
+
+
+        /** Increase the cache count for this node.
+            Call this whenever this node is added to a cache.
+            Do nothing if we are not using reference counts for caches.
+                @param  p     Node we care about.
+        */
+        inline void cacheNode(node_handle p) {
+            if (deflt.useReferenceCounts) {
+                nodeHeaders.cacheNode(p);
+            }
+        }
+
+        /** Decrease the cache count for this node.
+            Call this whenever this node is added to a cache.
+            Do nothing if we are not using reference counts for caches.
+                @param  p     Node we care about.
+        */
+        inline void uncacheNode(node_handle p) {
+            if (deflt.useReferenceCounts) {
+                nodeHeaders.uncacheNode(p);
+            }
+        }
+
+        /** Mark the node as belonging to some cache entry.
+            Do nothing if we are using reference counts for caches.
+                @param p    Node we care about.
+        */
+        inline void setCacheBit(node_handle p) {
+            if (!deflt.useReferenceCounts) {
+                nodeHeaders.setInCacheBit(p);
+            }
+        }
+
+        /** Clear all cache bits.
+            Do nothing if we are using reference counts for caches.
+        */
+        inline void clearAllCacheBits() {
+            if (!deflt.useReferenceCounts) {
+#ifdef DEBUG_MARK_SWEEP
+                std::cerr << "Clearing cache bits for forest "
+                          << FID() << "\n";
+#endif
+                nodeHeaders.clearAllInCacheBits();
+            }
+        }
+
+
+        /** Sweep all cache bits.
+            Called by CT to indicate we can begin sweep phase
+            on cache bits.
+        */
+        inline void sweepAllCacheBits() {
+            if (!deflt.useReferenceCounts) {
+#ifdef DEBUG_MARK_SWEEP
+                std::cerr << "Sweeping cache bits for forest "
+                          << FID() << "\n";
+#endif
+                nodeHeaders.sweepAllInCacheBits();
+            }
+        }
+
+
+    // ------------------------------------------------------------
+    public: // node manager getters
+    // ------------------------------------------------------------
+
+        inline const node_storage* getNodeManager() const {
+            return nodeMan;
+        }
+
+
+
+    // ------------------------------------------------------------
+    protected: // more node header getters/setters
+    // ------------------------------------------------------------
+
+        /// Set the level of a node
+        inline void setNodeLevel(node_handle p, int level) {
+            nodeHeaders.setNodeLevel(p, level);
+        }
+
+        inline node_address getNodeAddress(node_handle p) const {
+            return nodeHeaders.getNodeAddress(p);
+        }
+
+        inline void setNodeAddress(node_handle p, node_address a) {
+            nodeHeaders.setNodeAddress(p, a);
+        }
+
+    // ------------------------------------------------------------
+    protected:  // Eventually: make this private?
+    // ------------------------------------------------------------
+        /// Node header information
+        node_headers nodeHeaders;
+
+        /// Used for mark & sweep
+        node_marker* reachable;
+
+
+    // ------------------------------------------------------------
+    public: // Getting/setting the global default policies
+    // ------------------------------------------------------------
+
+        /**
+            Get the default policies for all MDD forests.
+        */
+        inline static const policies& getDefaultPoliciesMDDs() {
+            return mddDefaults;
+        }
+
+        /**
+            Get the default policies for all MxD forests.
+        */
+        inline static const policies& getDefaultPoliciesMXDs() {
+            return mxdDefaults;
+        }
+
+        /**
+            Set the default policies for all MDD forests.
+        */
+        inline static void setDefaultPoliciesMDDs(const policies &p) {
+            mddDefaults = p;
+        }
+
+        /**
+            Set the default policies for all MxD forests.
+        */
+        inline static void setDefaultPoliciesMXDs(const policies &p) {
+            mxdDefaults = p;
+        }
+
+    // ------------------------------------------------------------
+    public: // Getting/setting policies for this forest
+    // ------------------------------------------------------------
+
+        /// Returns the current policies used by this forest.
+        inline const policies& getPolicies() const {
+            return deflt;
+        }
+
+        /// Returns the current policies used by this forest.
+        inline policies& getPolicies() {
+            return deflt;
+        }
+
+#ifdef ALLOW_DEPRECATED_0_17_3
+        inline bool isVarSwap() const {
+    	    return deflt.isVarSwap();
+        }
+
+        inline bool isLevelSwap() const {
+    	    return deflt.isLevelSwap();
+        }
+
+        /// Returns the storage mechanism used by this forest.
+        inline node_storage_flags getNodeStorage() const {
+            return deflt.storage_flags;
+        }
+
+        /// Returns the node deletion policy used by this forest.
+        inline policies::node_deletion getNodeDeletion() const {
+            return deflt.deletion;
+        }
+
+        /// Are we using pessimistic deletion
+        inline bool isPessimistic() const {
+            return deflt.isPessimistic();
+        }
+
+        /// Can we store nodes sparsely
+        inline bool areSparseNodesEnabled() const {
+            return deflt.allowsSparse();
+        }
+
+        /// Can we store nodes fully
+        inline bool areFullNodesEnabled() const {
+            return deflt.allowsFull();
+        }
+#endif
 
     // ------------------------------------------------------------
     protected: // methods to set edge info, for derived classes
@@ -460,10 +731,13 @@ class MEDDLY::forest {
         /// For debugging: count number of registered dd_edges.
         unsigned countRegisteredEdges() const;
 
+        /// Mark all registered dd_edges.
+        void markAllRoots();
+
     private:
         void unregisterDDEdges();
 
-    protected: // until we move 'markAllRoots' out of expert_forest
+    private:
         /// Registry of dd_edges
         dd_edge* roots;
 
@@ -1264,6 +1538,17 @@ class MEDDLY::forest {
         */
         // virtual void readEdgeValue(input &s, edge_value &edge);
 
+private:
+    /**
+        TBD: virtual for now;
+        eventually the implementation will move here.
+
+        Disconnects all downward pointers from p,
+        and removes p from the unique table.
+    */
+    virtual void deleteNode(node_handle p) = 0;
+
+    friend class node_headers;
 
 public:
 
@@ -1331,16 +1616,27 @@ public:
     memstats mstats;
     logger *theLogger;
 
+  protected:
+    /// uniqueness table, still used by derived classes.
+    unique_table* unique;
+
+    /// uniqueness table for relation nodes.
+    impl_unique_table* implUT;
+
+    /// Should a terminal node be considered a stale entry in the compute table.
+    /// per-forest policy, derived classes may change as appropriate.
+    MEDDLY::forest::node_status terminalNodesStatus;
+
+    /// Class that stores nodes.
+    node_storage* nodeMan;
+
+
   // ------------------------------------------------------------
   // Ugly details from here down.
   private:  // Defaults
     friend class forest_initializer;
     static policies mddDefaults;
     static policies mxdDefaults;
-
-  private:  // Domain info
-    friend class domain;
-    domain* d;
 
   private:  // For operation registration
     friend class operation;
@@ -1614,132 +1910,36 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     /// Extra bytes per node, hashed.
     unsigned char hashedHeaderBytes() const;
 
-  // --------------------------------------------------
-  // Node address information
-  // --------------------------------------------------
-  protected:
-    node_address getNodeAddress(node_handle p) const;
-    void setNodeAddress(node_handle p, node_address a);
 
   // --------------------------------------------------
   // Node level information
   // --------------------------------------------------
   public:
-    /**
-        Negative values are used for primed levels or variables.
-    */
-    int getVarByLevel(int level) const {
-      return level > 0 ? var_order->getVarByLevel(level) : -var_order->getVarByLevel(-level);
-    }
-    int getLevelByVar(int var) const {
-      return var > 0 ? var_order->getLevelByVar(var) : -var_order->getLevelByVar(-var);
-    }
 
-    int getNodeLevel(node_handle p) const;
-    bool isPrimedNode(node_handle p) const;
-    bool isUnprimedNode(node_handle p) const;
-    int getNumVariables() const;
-    // returns 0 or -K
-    int getMinLevelIndex() const;
-    bool isValidLevel(int k) const;
-    bool isExtensibleLevel(int k) const;
-
-    /// The maximum size (number of indices) a node at this level can have
-    int getLevelSize(int lh) const;
-    // The maximum size (number of indices) a variable can have.
-    int getVariableSize(int var) const;
-
-  protected:
-    void setNodeLevel(node_handle p, int level);
 
   // --------------------------------------------------
   // Managing incoming edge counts
   // --------------------------------------------------
   public:
-    /// Returns true if we are tracking incoming counts
-    // bool trackingInCounts() const;
 
-    //
-    // TBD: will we need these, if dd_edge handles it?
-
-    /// Returns the in-count for a node.
-    unsigned long getNodeInCount(node_handle p) const;
-
-    /** Increase the link count to this node. Call this when another node is
-        made to point to this node.
-          @return p, for convenience.
-    */
-    node_handle linkNode(node_handle p);
-
-    /** Increase the link count to this node. Call this when another node is
-        made to point to this node.
-          @return the node handle, for convenience.
-    */
-    node_handle linkNode(const dd_edge &p);
 
     void getDownPtr(node_handle p, int index, long& ev, node_handle& dn) const;
 
-    /** Decrease the link count to this node. If link count reduces to 0, this
-        node may get marked for deletion. Call this when another node releases
-        its connection to this node.
-    */
-    void unlinkNode(node_handle p);
-
     /// Set reachable bits for p and its descendants.
-    void markNode(node_handle p);
+    // void markNode(node_handle p);
 
     /// Does a node have its reachable bit set?
-    bool hasReachableBit(node_handle p) const;
-
-    /// Mark all "root" nodes; i.e. start the mark phase.
-    /// Not inlined; implemented in forest.cc
-    void markAllRoots();
+    // bool hasReachableBit(node_handle p) const;
 
 
-  // --------------------------------------------------
-  // Managing cache counts
-  // --------------------------------------------------
-  public:
-    /// Returns true if we are tracking incoming counts
-    // bool trackingCacheCounts() const;
 
-    /** Increase the cache count for this node. Call this whenever this node
-        is added to a cache.
-        Do nothing if we are not using reference counts for caches.
-          @param  p     Node we care about.
-          @return p, for convenience.
-    */
-    void cacheNode(node_handle p);
-
-    /** Increase the cache count for this node. Call this whenever this node
-        is added to a cache.
-        Do nothing if we are not using reference counts for caches.
-          @param  p     Node we care about.
-    */
-    void uncacheNode(node_handle p);
-
-    /** Mark the node as belonging to some cache entry.
-        Do nothing if we are using reference counts for caches.
-          @param p    Node we care about.
-    */
-    void setCacheBit(node_handle p);
-
-    /** Clear all cache bits.
-        Do nothing if we are using reference counts for caches.
-    */
-    void clearAllCacheBits();
-
-    /** Sweep all cache bits.
-        Called by CT to indicate we can begin sweep phase
-        on cache bits.
-    */
-    void sweepAllCacheBits();
 
 
   // --------------------------------------------------
   // Node status
   // --------------------------------------------------
   public:
+    /*
     bool isActiveNode(node_handle p) const;
     // bool isZombieNode(node_handle p) const;
     bool isDeletedNode(node_handle p) const;
@@ -1749,6 +1949,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     /// Sanity check: is this a valid node index.
     bool isValidNodeIndex(node_handle p) const;
     node_handle getLastNode() const;
+    */
 
     // --------------------------------------------------
     // Extensible Node Information:
@@ -1950,21 +2151,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     */
     void getDownPtr(node_handle p, int index, float& ev, node_handle& dn) const;
 
-
-  // ------------------------------------------------------------
-  // Copy a node into an unpacked node
-
-    void unpackNode(unpacked_node* un, node_handle node,
-            node_storage_flags st2) const;
-
-  // ------------------------------------------------------------
-  // Get a new unpacked node, and unpack into it
-    inline unpacked_node* newUnpacked(node_handle p, node_storage_flags f) const
-    {
-        unpacked_node* un = unpacked_node::New();
-        unpackNode(un, p, f);
-        return un;
-    }
 
 
   /**   Return a forest node equal to the one given.
@@ -2252,7 +2438,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
         Disconnects all downward pointers from p,
         and removes p from the unique table.
     */
-    void deleteNode(node_handle p);
+    virtual void deleteNode(node_handle p);
 
     /** Apply reduction rule to the temporary node and finalize it.
         Once a node is reduced, its contents cannot be modified.
@@ -2294,22 +2480,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
   // |                                                                |
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  protected:
-    /// uniqueness table, still used by derived classes.
-    unique_table* unique;
-
-    /// uniqueness table for relation nodes.
-    impl_unique_table* implUT;
-
-    /// Should a terminal node be considered a stale entry in the compute table.
-    /// per-forest policy, derived classes may change as appropriate.
-    MEDDLY::forest::node_status terminalNodesStatus;
-
-    /// Class that stores nodes.
-    node_storage* nodeMan;
-
-    std::shared_ptr<const variable_order> var_order;
-
   private:
     // Garbage collection in progress
     bool performing_gc;
@@ -2319,10 +2489,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     int  in_val_size;
     // depth of delete/zombie stack; validate when 0
     int delete_depth;
-
-    /// Node header information
-    node_headers nodeHeaders;
-
 
     /// Number of bytes of unhashed header
     unsigned char unhashed_bytes;
@@ -2367,90 +2533,9 @@ MEDDLY::expert_forest::hashedHeaderBytes() const
 // --------------------------------------------------
 
 
-inline MEDDLY::node_address
-MEDDLY::expert_forest::getNodeAddress(node_handle p) const
-{
-  return nodeHeaders.getNodeAddress(p);
-}
-
-inline void
-MEDDLY::expert_forest::setNodeAddress(node_handle p, node_address a)
-{
-  nodeHeaders.setNodeAddress(p, a);
-}
-
 // --------------------------------------------------
 // Node level information
 // --------------------------------------------------
-
-inline int
-MEDDLY::expert_forest::getNodeLevel(node_handle p) const
-{
-  if (isTerminalNode(p)) return 0;
-  return nodeHeaders.getNodeLevel(p);
-}
-
-inline bool
-MEDDLY::expert_forest::isPrimedNode(node_handle p) const
-{
-  return getNodeLevel(p) < 0;
-}
-
-inline bool
-MEDDLY::expert_forest::isUnprimedNode(node_handle p) const
-{
-  return getNodeLevel(p) > 0;
-}
-
-inline int
-MEDDLY::expert_forest::getNumVariables() const
-{
-  return getDomain()->getNumVariables();
-}
-
-inline int
-MEDDLY::expert_forest::getMinLevelIndex() const
-{
-  return isForRelations() ? -getNumVariables() : 0;
-}
-
-inline bool
-MEDDLY::expert_forest::isValidLevel(int k) const
-{
-  return (k >= getMinLevelIndex()) && (k <= getNumVariables());
-}
-
-inline bool
-MEDDLY::expert_forest::isExtensibleLevel(int k) const
-{
-  MEDDLY_DCASSERT(isValidLevel(k));
-  return getDomain()->getVar(k < 0? -k: k)->isExtensible();
-}
-
-inline int
-MEDDLY::expert_forest::getLevelSize(int lh) const
-{
-  MEDDLY_DCASSERT(isValidLevel(lh));
-  int var=getVarByLevel(lh);
-  if (var < 0) {
-    return getDomain()->getVariableBound(-var, true);
-  }
-  else {
-    return getDomain()->getVariableBound(var, false);
-  }
-}
-
-inline int
-MEDDLY::expert_forest::getVariableSize(int var) const
-{
-  return getDomain()->getVariableBound(var, false);
-}
-
-inline void
-MEDDLY::expert_forest::setNodeLevel(node_handle p, int level)
-{
-  nodeHeaders.setNodeLevel(p, level);
-}
 
 // --------------------------------------------------
 // Managing incoming edge counts
@@ -2464,42 +2549,7 @@ MEDDLY::expert_forest::trackingInCounts() const
 }
 */
 
-inline unsigned long
-MEDDLY::expert_forest::getNodeInCount(MEDDLY::node_handle p) const
-{
-  MEDDLY_DCASSERT(deflt.useReferenceCounts);
-  return nodeHeaders.getIncomingCount(p);
-}
-
-inline MEDDLY::node_handle
-MEDDLY::expert_forest::linkNode(MEDDLY::node_handle p)
-{
-  if (deflt.useReferenceCounts) {
-    return nodeHeaders.linkNode(p);
-  } else {
-    return p;
-  }
-}
-
-inline MEDDLY::node_handle
-MEDDLY::expert_forest::linkNode(const MEDDLY::dd_edge &p)
-{
-  MEDDLY_DCASSERT(p.isAttachedTo(this));
-  if (deflt.useReferenceCounts) {
-    return nodeHeaders.linkNode(p.getNode());
-  } else {
-    return p.getNode();
-  }
-}
-
-inline void
-MEDDLY::expert_forest::unlinkNode(MEDDLY::node_handle p)
-{
-  if (deflt.useReferenceCounts) {
-    nodeHeaders.unlinkNode(p);
-  }
-}
-
+/*
 inline void
 MEDDLY::expert_forest::markNode(node_handle p)
 {
@@ -2523,6 +2573,7 @@ MEDDLY::expert_forest::hasReachableBit(node_handle p) const
   MEDDLY_DCASSERT(!deflt.useReferenceCounts);
   return nodeHeaders.hasReachableBit(p);
 }
+*/
 
 // --------------------------------------------------
 // Managing cache counts
@@ -2536,104 +2587,9 @@ MEDDLY::expert_forest::trackingCacheCounts() const
 }
 */
 
-inline void
-MEDDLY::expert_forest::cacheNode(MEDDLY::node_handle p)
-{
-  if (deflt.useReferenceCounts) {
-    nodeHeaders.cacheNode(p);
-    return;
-  }
-}
-
-inline void
-MEDDLY::expert_forest::uncacheNode(MEDDLY::node_handle p)
-{
-  if (deflt.useReferenceCounts) {
-    nodeHeaders.uncacheNode(p);
-  }
-}
-
-inline void
-MEDDLY::expert_forest::setCacheBit(MEDDLY::node_handle p)
-{
-  if (!deflt.useReferenceCounts) {
-    nodeHeaders.setInCacheBit(p);
-  }
-}
-
-inline void
-MEDDLY::expert_forest::clearAllCacheBits()
-{
-  if (!deflt.useReferenceCounts) {
-#ifdef DEBUG_MARK_SWEEP
-    printf("Clearing cache bits for forest %u\n", FID());
-#endif
-    nodeHeaders.clearAllInCacheBits();
-  }
-}
-
-inline void
-MEDDLY::expert_forest::sweepAllCacheBits()
-{
-  if (!deflt.useReferenceCounts) {
-#ifdef DEBUG_MARK_SWEEP
-    printf("Sweeping cache bits for forest %u\n", FID());
-#endif
-    nodeHeaders.sweepAllInCacheBits();
-  }
-}
-
 // --------------------------------------------------
 // Node status
 // --------------------------------------------------
-
-inline bool
-MEDDLY::expert_forest::isActiveNode(node_handle p) const
-{
-  return nodeHeaders.isActive(p);
-}
-
-/*
-inline bool
-MEDDLY::expert_forest::isZombieNode(node_handle p) const
-{
-  return nodeHeaders.isZombie(p);
-}
-*/
-
-inline bool
-MEDDLY::expert_forest::isDeletedNode(node_handle p) const
-{
-  return nodeHeaders.isDeleted(p);
-}
-
-inline bool
-MEDDLY::expert_forest::isTerminalNode(MEDDLY::node_handle p)
-{
-  return (p < 1);
-}
-
-
-inline bool
-MEDDLY::expert_forest::isValidNonterminalIndex(MEDDLY::node_handle node) const
-{
-  const node_handle a_last = nodeHeaders.lastUsedHandle();
-  return (node > 0) && (node <= a_last);
-}
-
-inline bool
-MEDDLY::expert_forest::isValidNodeIndex(MEDDLY::node_handle node) const
-{
-  const node_handle a_last = nodeHeaders.lastUsedHandle();
-  return node <= a_last;
-}
-
-inline MEDDLY::node_handle
-MEDDLY::expert_forest::getLastNode() const
-{
-  const node_handle a_last = nodeHeaders.lastUsedHandle();
-  return a_last;
-}
 
 // --------------------------------------------------
 // Extensible Node Information:
