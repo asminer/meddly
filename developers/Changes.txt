@@ -2,7 +2,6 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
-(*) Change mark and sweep to use node_marker in forests
 
 
 (*) unpacked node create/destroy timing test
@@ -12,7 +11,9 @@ Interface changes (aside from moving header files around)
 
     (could do this in forest methods, returning const or not)
 
+(*) node_storage::getDownPtr timing test
 
+(*) One version of node_storage::getDownPtr, using edge_value
 
 
 Go through examples/ directory,
