@@ -306,7 +306,7 @@ void MEDDLY::unique_table::subtable::buildFromList(node_handle front)
 {
     for (node_handle next = 0; front != 0; front = next) {
         next = parent->getNext(front);
-        unsigned h = parent->hash(front) % size;
+        unsigned h = parent->hashNode(front) % size;
         MEDDLY_DCASSERT(h < size);
         parent->setNext(front, table[h]);
         table[h] = front;

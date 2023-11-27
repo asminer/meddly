@@ -71,6 +71,8 @@ namespace MEDDLY {
     Each forest is assigned a unique identifier "forever"
     (actually, until the library is re-initialized).
 
+    TBD: node header / node storage split
+
     TBD: discussion of garbage collection.
 
 */
@@ -487,19 +489,13 @@ class MEDDLY::forest {
             }
         }
 
-
-    // ------------------------------------------------------------
-    public: // node manager getters
-    // ------------------------------------------------------------
-
-        inline const node_storage* getNodeManager() const {
-            return nodeMan;
+        /// Is the implicit bit set for the given node?
+        inline bool isImplicit(node_handle p) const {
+            return nodeHeaders.getNodeImplicitFlag(p);
         }
 
-
-
     // ------------------------------------------------------------
-    protected: // more node header getters/setters
+    protected: // protected node header getters/setters
     // ------------------------------------------------------------
 
         /// Set the level of a node
@@ -524,6 +520,141 @@ class MEDDLY::forest {
         /// Used for mark & sweep
         node_marker* reachable;
 
+
+    // ------------------------------------------------------------
+    public: // node storage getters/setters
+    // ------------------------------------------------------------
+
+        inline const node_storage* getNodeManager() const {
+            return nodeMan;
+        }
+
+        /// Get next node in the unique table chain
+        inline node_handle getNext(node_handle p) const {
+            return nodeMan->getNextOf(getNodeAddress(p));
+        }
+
+        /// Set the next node in the unique table chain
+        inline void setNext(node_handle p, node_handle n) {
+            nodeMan->setNextOf(getNodeAddress(p), n);
+        }
+
+        /// Compute a hash for a node.
+        inline unsigned hashNode(node_handle p) const {
+            return nodeMan->hashNode(getNodeLevel(p), getNodeAddress(p));
+        }
+
+
+        /** Check and find the index of a single downward pointer.
+
+            @param  node    Node we care about
+            @param  down    Output:
+                            The singleton downward pointer, or undefined.
+
+            @return     If the node has only one non-zero downward pointer,
+                        then return the index for that pointer.
+                        Otherwise, return a negative value.
+        */
+        inline int getSingletonIndex(node_handle p, node_handle &down) const {
+            return nodeMan->getSingletonIndex(getNodeAddress(p), down);
+        }
+
+
+        /** Check and get a single downward pointer.
+
+            @param  node    Node we care about
+            @param  index   Index we're trying to match
+
+            @return     If the only non-zero downward pointer for
+                        this node happens at \a index, then return the pointer.
+                        Otherwise, return 0.
+        */
+        inline node_handle getSingletonDown(node_handle node, int index) const {
+            MEDDLY::node_handle down;
+            if (getSingletonIndex(node, down) == index) return down;
+            return 0;
+        }
+
+
+        /** For a given node, get a specified downward pointer.
+
+            This is designed to be used for one or two indexes only.
+            For reading all or several downward pointers, an
+            unpacked_node should be used instead.
+
+            @param  p       Node to look at
+            @param  index   Index of the pointer we want.
+
+            @return         The downward pointer at that index.
+        */
+        inline node_handle getDownPtr(node_handle p, int index) const {
+            return nodeMan->getDownPtr(getNodeAddress(p), index);
+        }
+
+
+        /** For a given node, get a specified downward pointer.
+
+            This is designed to be used for one or two indexes only.
+            For reading all or several downward pointers, an
+            unpacked_node should be used instead.
+
+            @param  p       Node to look at
+            @param  index   Index of the pointer we want.
+
+            @param  ev      Output: edge value at that index.
+            @param  dn      Output: downward pointer at that index.
+        */
+        inline void getDownPtr(node_handle p, int index, int& ev,
+                node_handle& dn) const
+        {
+            nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
+        }
+
+
+        /** For a given node, get a specified downward pointer.
+
+            This is designed to be used for one or two indexes only.
+            For reading all or several downward pointers, an
+            unpacked_node should be used instead.
+
+            @param  p       Node to look at
+            @param  index   Index of the pointer we want.
+
+            @param  ev      Output: edge value at that index.
+            @param  dn      Output: downward pointer at that index.
+        */
+        inline void getDownPtr(node_handle p, int index, long& ev,
+                node_handle& dn) const
+        {
+            nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
+        }
+
+
+        /** For a given node, get a specified downward pointer.
+
+            This is designed to be used for one or two indexes only.
+            For reading all or several downward pointers, a
+            unpacked_node should be used instead.
+
+            @param  p       Node to look at
+            @param  index   Index of the pointer we want.
+
+            @param  ev      Output: edge value at that index.
+            @param  dn      Output: downward pointer at that index.
+        */
+        inline void getDownPtr(node_handle p, int index, float& ev,
+                node_handle& dn) const
+        {
+            nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
+        }
+
+
+    // ------------------------------------------------------------
+    protected: // node storage members
+    // ------------------------------------------------------------
+
+        /// Class that stores nodes.
+        node_storage* nodeMan;
 
     // ------------------------------------------------------------
     public: // Getting/setting the global default policies
@@ -1627,8 +1758,6 @@ public:
     /// per-forest policy, derived classes may change as appropriate.
     MEDDLY::forest::node_status terminalNodesStatus;
 
-    /// Class that stores nodes.
-    node_storage* nodeMan;
 
 
   // ------------------------------------------------------------
@@ -1911,29 +2040,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     unsigned char hashedHeaderBytes() const;
 
 
-  // --------------------------------------------------
-  // Node level information
-  // --------------------------------------------------
-  public:
-
-
-  // --------------------------------------------------
-  // Managing incoming edge counts
-  // --------------------------------------------------
-  public:
-
-
-    void getDownPtr(node_handle p, int index, long& ev, node_handle& dn) const;
-
-    /// Set reachable bits for p and its descendants.
-    // void markNode(node_handle p);
-
-    /// Does a node have its reachable bit set?
-    // bool hasReachableBit(node_handle p) const;
-
-
-
-
 
   // --------------------------------------------------
   // Node status
@@ -1966,13 +2072,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     /// Get the cardinality of an Index Set.
     int getIndexSetCardinality(node_handle node) const;
 
-    // --------------------------------------------------
-    // Used by the unique table
-    // --------------------------------------------------
-    node_handle getNext(node_handle p) const;
-    bool isImplicit(node_handle p) const;
-    void setNext(node_handle p, node_handle n);
-    unsigned hash(node_handle p) const;
 
 
     /// A node can be discarded once it goes stale. Whether a node is
@@ -2084,72 +2183,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     void reportStats(output &s, const char* pad, unsigned flags) const;
 
 
-    /// Compute a hash for a node.
-    unsigned hashNode(node_handle p) const;
-
-    /** Check and find the index of a single downward pointer.
-
-          @param  node    Node we care about
-          @param  down    Output:
-                          The singleton downward pointer, or undefined.
-
-          @return   If the node has only one non-zero downward pointer,
-                    then return the index for that pointer.
-                    Otherwise, return a negative value.
-    */
-    int getSingletonIndex(node_handle p, node_handle &down) const;
-
-    /** Check and get a single downward pointer.
-
-          @param  node    Node we care about
-          @param  index   Index we're trying to match
-
-          @return   If the only non-zero downward pointer for
-                    this node happens at \a index, then return the pointer.
-                    Otherwise, return 0.
-    */
-    node_handle getSingletonDown(node_handle node, int index) const;
-
-    /** For a given node, get a specified downward pointer.
-
-        This is designed to be used for one or two indexes only.
-        For reading all or several downward pointers, a
-        unpacked_node should be used instead.
-
-          @param  p       Node to look at
-          @param  index   Index of the pointer we want.
-
-          @return         The downward pointer at that index.
-    */
-    node_handle getDownPtr(node_handle p, int index) const;
-
-    /** For a given node, get a specified downward pointer.
-
-        This is designed to be used for one or two indexes only.
-        For reading all or several downward pointers, a
-        unpacked_node should be used instead.
-
-          @param  p       Node to look at
-          @param  index   Index of the pointer we want.
-
-          @param  ev      Output: edge value at that index.
-          @param  dn      Output: downward pointer at that index.
-    */
-    void getDownPtr(node_handle p, int index, int& ev, node_handle& dn) const;
-
-    /** For a given node, get a specified downward pointer.
-
-        This is designed to be used for one or two indexes only.
-        For reading all or several downward pointers, a
-        unpacked_node should be used instead.
-
-          @param  p       Node to look at
-          @param  index   Index of the pointer we want.
-
-          @param  ev      Output: edge value at that index.
-          @param  dn      Output: downward pointer at that index.
-    */
-    void getDownPtr(node_handle p, int index, float& ev, node_handle& dn) const;
 
 
 
@@ -2528,64 +2561,6 @@ MEDDLY::expert_forest::hashedHeaderBytes() const
   return hashed_bytes;
 }
 
-// --------------------------------------------------
-// Node address information
-// --------------------------------------------------
-
-
-// --------------------------------------------------
-// Node level information
-// --------------------------------------------------
-
-// --------------------------------------------------
-// Managing incoming edge counts
-// --------------------------------------------------
-
-/*
-inline bool
-MEDDLY::expert_forest::trackingInCounts() const
-{
-  return nodeHeaders.trackingIncomingCounts();
-}
-*/
-
-/*
-inline void
-MEDDLY::expert_forest::markNode(node_handle p)
-{
-  if (deflt.useReferenceCounts) return;
-  if (p<1) return;
-  if (nodeHeaders.hasReachableBit(p)) return;
-
-#ifdef DEBUG_MARK_SWEEP
-  printf("Marking node %d\n", p);
-#endif
-
-  nodeHeaders.setReachableBit(p);
-
-  MEDDLY_DCASSERT(nodeMan);
-  nodeMan->markDownPointers( nodeHeaders.getNodeAddress(p) );
-}
-
-inline bool
-MEDDLY::expert_forest::hasReachableBit(node_handle p) const
-{
-  MEDDLY_DCASSERT(!deflt.useReferenceCounts);
-  return nodeHeaders.hasReachableBit(p);
-}
-*/
-
-// --------------------------------------------------
-// Managing cache counts
-// --------------------------------------------------
-
-/*
-inline bool
-MEDDLY::expert_forest::trackingCacheCounts() const
-{
-  return nodeHeaders.trackingCacheCounts();
-}
-*/
 
 // --------------------------------------------------
 // Node status
@@ -2613,29 +2588,6 @@ MEDDLY::expert_forest::getIndexSetCardinality(MEDDLY::node_handle node) const
   const int* uhh = (const int*) nodeMan->getUnhashedHeaderOf(getNodeAddress(node));
   MEDDLY_DCASSERT(*uhh > 0);
   return *uhh;
-}
-
-inline MEDDLY::node_handle
-MEDDLY::expert_forest::getNext(MEDDLY::node_handle p) const
-{
-  return nodeMan->getNextOf(getNodeAddress(p));
-}
-
-inline void
-MEDDLY::expert_forest::setNext(MEDDLY::node_handle p, MEDDLY::node_handle n)
-{
-  nodeMan->setNextOf(getNodeAddress(p), n);
-}
-inline bool
-MEDDLY::expert_forest::isImplicit(node_handle p) const
-{
-  return nodeHeaders.getNodeImplicitFlag(p);
-}
-
-inline unsigned
-MEDDLY::expert_forest::hash(MEDDLY::node_handle p) const
-{
-  return hashNode(p);
 }
 
 inline MEDDLY::forest::node_status
@@ -2670,52 +2622,6 @@ MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
   return MEDDLY::forest::ACTIVE;
 }
 
-inline unsigned
-MEDDLY::expert_forest::hashNode(MEDDLY::node_handle p) const
-{
-  return nodeMan->hashNode(getNodeLevel(p), getNodeAddress(p));
-}
-
-inline int
-MEDDLY::expert_forest::getSingletonIndex(MEDDLY::node_handle p, MEDDLY::node_handle &down) const
-{
-  return nodeMan->getSingletonIndex(getNodeAddress(p), down);
-}
-
-inline MEDDLY::node_handle
-MEDDLY::expert_forest::getSingletonDown(MEDDLY::node_handle node, int index) const
-{
-  MEDDLY::node_handle down;
-  if (getSingletonIndex(node, down) == index) return down;
-  return 0;
-}
-
-inline MEDDLY::node_handle
-MEDDLY::expert_forest::getDownPtr(MEDDLY::node_handle p, int index) const
-{
-  return nodeMan->getDownPtr(getNodeAddress(p), index);
-}
-
-inline void
-MEDDLY::expert_forest::getDownPtr(MEDDLY::node_handle p, int index, int& ev,
-    MEDDLY::node_handle& dn) const
-{
-  nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
-}
-
-inline void
-MEDDLY::expert_forest::getDownPtr(MEDDLY::node_handle p, int index, long& ev,
-    MEDDLY::node_handle& dn) const
-{
-  nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
-}
-
-inline void
-MEDDLY::expert_forest::getDownPtr(MEDDLY::node_handle p, int index, float& ev,
-    MEDDLY::node_handle& dn) const
-{
-  nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
-}
 
 inline unsigned
 MEDDLY::expert_forest::getImplicitTableCount() const
