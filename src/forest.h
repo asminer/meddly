@@ -649,6 +649,21 @@ class MEDDLY::forest {
         }
 
 
+        /** Check if an unpacked node duplicates one in the forest.
+                @param  p       Handle to a node in the forest.
+                @param  nr      Unpacked node to check.
+
+                @return   true, iff the nodes are duplicates.
+        */
+        inline bool areDuplicates(node_handle p, const unpacked_node &nr) const
+        {
+            MEDDLY_DCASSERT(p > 0);
+            if (nodeHeaders.getNodeLevel(p) != nr.getLevel()) {
+                return false;
+            }
+            return nodeMan->areDuplicates(nodeHeaders.getNodeAddress(p), nr);
+        }
+
     // ------------------------------------------------------------
     protected: // node storage members
     // ------------------------------------------------------------
@@ -2269,14 +2284,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 
     virtual void normalize(unpacked_node &nb, long& ev) const;
 
-    /** Discover duplicate nodes.
-        Right now, used for sanity checks only.
-          @param  node    Handle to a node.
-          @param  nr      Some other node.
-
-          @return   true, iff the nodes are duplicates.
-    */
-    bool areDuplicates(node_handle node, const unpacked_node &nr) const;
 
     /** Is this a redundant node that can be eliminated?
         Must be implemented in derived forests
@@ -2682,15 +2689,6 @@ MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un, T& e
   recycle(un);
 }
 
-inline bool
-MEDDLY::expert_forest::areDuplicates(MEDDLY::node_handle node, const MEDDLY::unpacked_node &nr) const
-{
-  MEDDLY_DCASSERT(node > 0);
-  if (nodeHeaders.getNodeLevel(node) != nr.getLevel()) {
-    return false;
-  }
-  return nodeMan->areDuplicates(nodeHeaders.getNodeAddress(node), nr);
-}
 
 inline void
 MEDDLY::expert_forest::setUnhashedSize(unsigned char ubytes)

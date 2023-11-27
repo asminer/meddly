@@ -30,7 +30,7 @@ namespace MEDDLY {
 /** Unique table for discovering duplicate nodes.
 
     This is now a stand-alone, non-template class
-    designed specifically for expert_forests.
+    designed specifically for forests.
  */
 class MEDDLY::unique_table {
     public:
@@ -160,7 +160,7 @@ class MEDDLY::unique_table {
                 /**
                     Initialize the sub table. Must be called before use.
                 */
-                void init(expert_forest *ef);
+                void init(forest *ef);
 
                 /** If table contains key, move it to the front of the list.
                     Otherwise, do nothing.
@@ -240,7 +240,7 @@ class MEDDLY::unique_table {
                 void shrink();
 
             private:
-                expert_forest* parent;
+                forest* parent;
                 unsigned size;
                 unsigned num_entries;
                 unsigned next_expand;
@@ -254,7 +254,7 @@ class MEDDLY::unique_table {
 
 
     private:
-        expert_forest* parent;
+        forest* parent;
         subtable* tables;
         int min_var, max_var;
 };

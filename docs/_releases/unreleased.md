@@ -41,6 +41,8 @@ This is intended to help developers migrate to the new interface.
     ```SHOW_DETAILS```, ```SHOW_UNREACHABLE```, ```SHOW_DELETED```)
     out of ```expert_forest``` and into ```policies.h```.
 
+* Moved several methods and members from ```expert_forest``` to ```forest```.
+
 ### Implementation
 
 Slightly faster node marking implementation.

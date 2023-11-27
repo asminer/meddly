@@ -25,7 +25,7 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unique_table::unique_table(forest* ef) : parent((expert_forest*) ef)
+MEDDLY::unique_table::unique_table(forest* ef) : parent(ef)
 {
     max_var = parent->getNumVariables();
 
@@ -193,7 +193,7 @@ void MEDDLY::unique_table::subtable::show(output &s) const
     s.flush();
 }
 
-void MEDDLY::unique_table::subtable::init(expert_forest *ef)
+void MEDDLY::unique_table::subtable::init(forest *ef)
 {
     parent = ef;
     size = MIN_SIZE;
