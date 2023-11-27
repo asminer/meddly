@@ -73,7 +73,7 @@ class MEDDLY::mt_forest : public expert_forest {
         Enlarge variables to include all given minterms.
     */
     inline void enlargeVariables(const int* const* vlist, int N, bool primed) {
-      for (int k=1; k<=getDomain()->getNumVariables(); k++) {
+      for (unsigned k=1; k<=getDomain()->getNumVariables(); k++) {
         int maxv = vlist[0][k];
         for (int i=1; i<N; i++) {
           maxv = MAX(maxv, vlist[i][k]);

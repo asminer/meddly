@@ -202,7 +202,7 @@ void MEDDLY::domain::createVariablesBottomUp(const int* bounds, unsigned N)
     var_orders.clear();
     int* defaultOrder = new int[N + 1];
     defaultOrder[0] = 0;
-    for (int i = 1; i <= N; i++) {
+    for (unsigned i = 1; i <= N; i++) {
         defaultOrder[i] = i;
     }
     default_var_order = std::make_shared<variable_order>(defaultOrder, N);
@@ -364,7 +364,7 @@ MEDDLY::domain::domain(variable** v, unsigned N)
 {
     vars = v;
     nVars = N;
-    for (int i=1; i<=N; i++) {
+    for (unsigned i=1; i<=N; i++) {
         vars[i]->addToList(this);
     }
     is_marked_for_deletion = false;
@@ -373,7 +373,7 @@ MEDDLY::domain::domain(variable** v, unsigned N)
     // Create the default variable order
     //
     int* defaultOrder = new int[N + 1];
-    for (int i = 0; i < N + 1; i++) {
+    for (unsigned i = 0; i < N + 1; i++) {
         defaultOrder[i] = i;
     }
     default_var_order = std::make_shared<variable_order>(defaultOrder, N);
@@ -413,7 +413,7 @@ MEDDLY::domain::~domain()
     //
     // Delete my variables
     //
-    for (int i=1; i<=nVars; i++) {
+    for (unsigned i=1; i<=nVars; i++) {
         vars[i]->removeFromList(this);
     }
     delete[] vars;
