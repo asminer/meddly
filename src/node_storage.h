@@ -142,11 +142,6 @@ class MEDDLY::node_storage {
         */
         virtual void unlinkDownAndRecycle(node_address addr) = 0;
 
-        /** Mark a node.
-            Traverse the downward pointers, and mark all of them.
-                @param  addr    Address of the node.
-        */
-        // virtual void markDownPointers(node_address addr) = 0;
 
         /** Schedule down pointers for exploration.
                 @param  mark    Node marking mechanism.
@@ -311,8 +306,6 @@ class MEDDLY::node_storage {
         // Hooks from other classes, so we don't need to make
         // all the derived classes "friends".
 
-        //void moveNodeOffset(node_handle node, node_address old_addr,
-            //node_address new_addr);
 
         //
         // Methods for derived classes to deal with

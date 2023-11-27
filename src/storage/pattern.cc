@@ -138,7 +138,6 @@ public:
                                 node_storage_flags opt);
 
   virtual void unlinkDownAndRecycle(node_address addr);
-  // virtual void markDownPointers(node_address addr);
   virtual void addDownToQueue(node_marker &nm, node_address addr) const;
 
   virtual bool areDuplicates(node_address addr, const unpacked_node &nr) const;
@@ -482,44 +481,6 @@ void MEDDLY::pattern_storage::unlinkDownAndRecycle(node_address addr)
 }
 
 
-/*
-void MEDDLY::pattern_storage::markDownPointers(node_address addr)
-{
-#ifdef DEBUG_MARK_SWEEP
-  printf("marking children at address %ld\n", addr);
-  FILE_output out(stdout);
-  dumpInternalNode(out, addr, 0x03);
-#endif
-  const node_handle* chunk = getChunkAddress(addr);
-  MEDDLY_DCASSERT(chunk);
-
-  //
-  // Mark down pointers
-  //
-  const node_handle* index = chunk + identifier_start;
-  const node_handle* down = chunk + down_start;
-
-  std::string pattern_from_index = generatePatternFromIndex(index[0]);
-
-
-  int trunc_pattern_size = 0;
-  std::set<char> uniqnh;
-  for(int i=0;i<MAX_PATTERN_LEN;i++)
-    {
-    if(pattern_from_index[i]!='t')
-      {
-      trunc_pattern_size = i+1;
-      uniqnh.insert(pattern_from_index[i]);
-      }
-    }
-  const unsigned int uniqnnzs = uniqnh.size();
-
-  for (int i=0; i<trunc_pattern_size; i++) {
-    if(pattern_from_index[i]!='t')
-      getParent()->markNode(down[pattern_from_index[i]-'A']);
-  }
-}
-*/
 
 void MEDDLY::pattern_storage::addDownToQueue(node_marker &nm, node_address addr) const
 {
