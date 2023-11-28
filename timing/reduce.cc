@@ -132,7 +132,8 @@ void test_MT_full_Reductions(expert_forest* f, const char* what)
     if (startReport(T, __FILE__)) {
         unsigned long N = NUMBATCHES;
         N *= BATCHSIZE;
-        report  << " Built " << N << ' ' << what
+        report  << what << " MT $ "
+                << " Built " << N << ' ' << what
                 << " MT nodes from full" << std::endl;
     }
 
@@ -191,7 +192,8 @@ void test_EV_full_Reductions(expert_forest* f, const char* what)
     if (startReport(T, __FILE__)) {
         unsigned long N = NUMBATCHES;
         N *= BATCHSIZE;
-        report  << " Built " << N << ' ' << what
+        report  << what << " EV $ "
+                << " Built " << N << ' ' << what
                 << " EV nodes from full" << std::endl;
     }
 

@@ -59,7 +59,6 @@ void setReport(int argc, const char** argv);
 ///
 bool startReport(const timer &T, const char* exe);
 
-
 extern std::ofstream report;
 
 #endif

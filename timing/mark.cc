@@ -169,7 +169,8 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
     show_sec(std::cout, T, 3, 3) << " seconds\n";
 
     if (startReport(T, __FILE__)) {
-        report  << "Marked " << name << marks << " times" << std::endl;
+        report  << name << " mark $ "
+                << "Marked " << name << marks << " times" << std::endl;
     }
 
     std::cout << "        " << M->countMarked() << " marked nodes\n";
@@ -190,7 +191,8 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
     show_sec(std::cout, T, 3, 3) << " seconds\n";
 
     if (startReport(T, __FILE__)) {
-        report  << "Counted nodes in " << name << counts << " times" << std::endl;
+        report  << name << " count $ "
+                << "Counted nodes in " << name << counts << " times" << std::endl;
     }
 
     std::cout << "        " << eco << " non-zero edges\n";
@@ -262,8 +264,8 @@ void runWithArgs(unsigned N, unsigned marks, unsigned counts)
     //
     // Mark timing tests, finally
     //
-    markTest("reachability set ", reachable, marks, counts);
-    markTest("transition relation ", nsf, marks*16, counts*16);
+    markTest("RS ", reachable, marks, counts);
+    markTest("nsf ", nsf, marks*16, counts*16);
 }
 
 
