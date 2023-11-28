@@ -18,6 +18,7 @@
 
 #include "../src/meddly.h"
 #include "timer.h"
+#include "reporting.h"
 
 #include <iostream>
 #include <iomanip>
@@ -128,6 +129,13 @@ void test_MT_full_Reductions(expert_forest* f, const char* what)
 
     show_sec(std::cout, T, 3, 3) << " seconds\n";
 
+    if (startReport(T, __FILE__)) {
+        unsigned long N = NUMBATCHES;
+        N *= BATCHSIZE;
+        report  << " Built " << N << ' ' << what
+                << " MT nodes from full" << std::endl;
+    }
+
 #ifdef REPORTING
     ostream_output out(std::cout);
     f->reportStats(out, "    ", ~0u);
@@ -180,6 +188,13 @@ void test_EV_full_Reductions(expert_forest* f, const char* what)
 
     show_sec(std::cout, T, 3, 3) << " seconds\n";
 
+    if (startReport(T, __FILE__)) {
+        unsigned long N = NUMBATCHES;
+        N *= BATCHSIZE;
+        report  << " Built " << N << ' ' << what
+                << " EV nodes from full" << std::endl;
+    }
+
 #ifdef REPORTING
     ostream_output out(std::cout);
     f->reportStats(out, "    ", ~0u);
@@ -187,9 +202,11 @@ void test_EV_full_Reductions(expert_forest* f, const char* what)
 }
 
 
-int main()
+int main(int argc, const char** argv)
 {
     try {
+        setReport(argc, argv);
+
         std::cout   << "Timing experiments for building "
                     << TOTAL << " nodes, in batches of " << BATCHSIZE << "\n\n";
 
@@ -245,6 +262,10 @@ int main()
         std::cerr << "\nCaught our own error: " << e << "\n";
         return 2;
     }
+    catch (two_strings p) {
+        std::cerr << "\t" << p.first << p.second << "\n";
+        return 3;
+    }
     std::cerr << "\nSome other error?\n";
-    return 3;
+    return 4;
 }

@@ -26,8 +26,10 @@
 #include "../src/meddly.h"
 #include "simple_model.h"
 #include "timer.h"
+#include "reporting.h"
 
 using namespace MEDDLY;
+
 
 std::ostream& show_sec(std::ostream &s, const timer &T, int a, int b)
 {
@@ -165,6 +167,11 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
 
     T.note_time();
     show_sec(std::cout, T, 3, 3) << " seconds\n";
+
+    if (startReport(T, __FILE__)) {
+        report  << "Marked " << name << marks << " times" << std::endl;
+    }
+
     std::cout << "        " << M->countMarked() << " marked nodes\n";
     std::cout << "        " << ef->getNodeCount(E.getNode()) << " according to expert_forest\n";
 
@@ -181,6 +188,11 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
     }
     T.note_time();
     show_sec(std::cout, T, 3, 3) << " seconds\n";
+
+    if (startReport(T, __FILE__)) {
+        report  << "Counted nodes in " << name << counts << " times" << std::endl;
+    }
+
     std::cout << "        " << eco << " non-zero edges\n";
     std::cout << "        " << ef->getEdgeCount(E.getNode(), false) << " according to expert_forest\n";
 
@@ -250,14 +262,16 @@ void runWithArgs(unsigned N, unsigned marks, unsigned counts)
     //
     // Mark timing tests, finally
     //
-    markTest("reachability set    ", reachable, marks, counts);
+    markTest("reachability set ", reachable, marks, counts);
     markTest("transition relation ", nsf, marks*16, counts*16);
 }
 
 
-int main()
+int main(int argc, const char** argv)
 {
     try {
+        setReport(argc, argv);
+
         MEDDLY::initialize();
 
 //          runWithArgs(5, 1, 1);
@@ -281,8 +295,12 @@ int main()
         std::cerr << "\nCaught our own error: " << e << "\n";
         return 2;
     }
+    catch (two_strings p) {
+        std::cerr << "\t" << p.first << p.second << "\n";
+        return 3;
+    }
     std::cerr << "\nSome other error?\n";
-    return 3;
+    return 4;
 }
 
 

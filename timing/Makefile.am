@@ -10,12 +10,12 @@ noinst_PROGRAMS = \
 
 AM_CXXFLAGS = -Wall
 
-ddedge_SOURCES = timer.h ddedge.cc
+ddedge_SOURCES = timer.h ddedge.cc reporting.h reporting.cc
 ddedge_LDADD = ../src/libmeddly.la
 
-mark_SOURCES = timer.h mark.cc simple_model.h simple_model.cc
+mark_SOURCES = timer.h mark.cc reporting.h reporting.cc simple_model.h simple_model.cc
 mark_LDADD = ../src/libmeddly.la
 
-reduce_SOURCES = timer.h reduce.cc
+reduce_SOURCES = timer.h reduce.cc reporting.h reporting.cc
 reduce_LDADD = ../src/libmeddly.la
 

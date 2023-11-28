@@ -18,6 +18,7 @@
 
 #include "../src/meddly.h"
 #include "timer.h"
+#include "reporting.h"
 
 #include <iostream>
 #include <iomanip>
@@ -33,7 +34,6 @@ const unsigned CHANGES = 1024 * 1024;
 #else
 const unsigned CHANGES = 32 * 1024 * 1024;
 #endif
-
 
 long seed = -1;
 
@@ -136,6 +136,12 @@ void test_edge_registry(forest* F1, forest* F2)
     std::cout << ' ';
     show_sec(std::cout, T, 3, 3);
     std::cout << "\n\n";
+
+    if (startReport(T, __FILE__)) {
+        report  << "Updated ddedge registry " << CHANGES * 16
+                << " times" << std::endl;
+    }
+
     std::cout << "Max edges in forest 1: " << f1max << "\n";
     std::cout << "Max edges in forest 2: " << f2max << "\n\n";
 
@@ -153,9 +159,11 @@ void test_edge_registry(forest* F1, forest* F2)
 
 
 
-int main()
+int main(int argc, const char** argv)
 {
     try {
+        setReport(argc, argv);
+
         MEDDLY::initialize();
 
         seed = 123456789;
@@ -191,6 +199,10 @@ int main()
         std::cerr << "\nCaught our own error: " << e << "\n";
         return 2;
     }
+    catch (two_strings p) {
+        std::cerr << "\t" << p.first << p.second << "\n";
+        return 3;
+    }
     std::cerr << "\nSome other error?\n";
-    return 3;
+    return 4;
 }
