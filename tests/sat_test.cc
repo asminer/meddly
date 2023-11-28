@@ -33,7 +33,7 @@ void clauses2MDD(forest* f, const int** C, dd_edge &M, int verb)
   // build array of constraints, by level
   const domain* d = f->getDomain();
   dd_edge** ce = new dd_edge* [d->getNumVariables()+1];
-  for (int i=0; i<=d->getNumVariables(); i++) ce[i] = 0;
+  for (unsigned i=0; i<=d->getNumVariables(); i++) ce[i] = 0;
 
   // Encode clauses, by "top" level
   if (verb>1) printf("Encoding clauses ");
@@ -77,7 +77,7 @@ void clauses2MDD(forest* f, const int** C, dd_edge &M, int verb)
 
   if (verb>1) printf("\nMerging clauses by level\n\t");
   f->createEdge(true, M);
-  for (int i=1; i<=d->getNumVariables(); i++) {
+  for (unsigned i=1; i<=d->getNumVariables(); i++) {
     if (ce[i]) {
       M *= (*ce[i]);
       delete ce[i];

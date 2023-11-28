@@ -482,12 +482,12 @@ MEDDLY::forest
             lrr=(int*)malloc(sizeof(int)*(d->getNumVariables()+1));
             lrr[0]=-4;
             if(isQuasiReduced())
-                for(int i=1;i<=d->getNumVariables();i++)
+                for(unsigned i=1;i<=d->getNumVariables();i++)
                     lrr[i]=-2;
 
             else
                 if (isFullyReduced())
-                for(int i=1;i<=d->getNumVariables();i++)
+                for(unsigned i=1;i<=d->getNumVariables();i++)
                     lrr[i]=-1;
 
         }
@@ -511,7 +511,7 @@ MEDDLY::forest
     if (reduction_rule::IDENTITY_REDUCED == deflt.reduction)
       throw error(error::INVALID_POLICY, __FILE__, __LINE__);
 
-    for(int i=1;i<=d->getNumVariables();i++)
+    for(unsigned i=1;i<=d->getNumVariables();i++)
         if(level_reduction_rule[i]==-3)              //isIdentityReduced()
          throw error(error::INVALID_POLICY, __FILE__, __LINE__);
   }
@@ -1918,7 +1918,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
 #endif
 
     // Check for identity nodes
-    if (1==nnz && in==nb.i(0)) {
+    if (1==nnz && in==long(nb.i(0))) {
       if (isIdentityEdge(nb, 0)) {
 #ifdef DEBUG_CREATE_REDUCED
         printf("Identity node ");
@@ -1947,7 +1947,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   } else {
     // Reductions for full nodes
-    MEDDLY_DCASSERT(nb.getSize() <= getLevelSize(nb.getLevel()));
+    MEDDLY_DCASSERT(long(nb.getSize()) <= long(getLevelSize(nb.getLevel())));
     nnz = 0;
     for (unsigned i=0; i<nb.getSize(); i++) {
       if (nb.d(i)!=getTransparentNode()) nnz++;
@@ -1955,7 +1955,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
     // Check for identity nodes
     if (1==nnz) {
-      if (in < nb.getSize() && isIdentityEdge(nb, in)) {
+      if (in < long(nb.getSize()) && isIdentityEdge(nb, in)) {
 #ifdef DEBUG_CREATE_REDUCED
         printf("Identity node ");
         FILE_output s(stdout);
