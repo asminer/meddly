@@ -191,7 +191,7 @@ primarily for tracking performance changes over time.
 EOF
         for r in $RUNLIST; do
             lines=`wc -l < report.$PID.$r.txt`
-            echo "    <th colspan=$lines>$r</th>" >> $1
+            printf "    <th colspan=%d>$r</th>\n" "$lines" >> $1
         done
         echo "</tr>" >> $1
         echo "<tr>" >> $1
