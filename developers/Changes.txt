@@ -6,6 +6,10 @@ Interface changes (aside from moving header files around)
 
 (*) unpacked node create/destroy timing test
 
+        build {blank, redundant, identity} x {full, sparse}
+        for MT and EV forests
+
+
 (*) tie unpacked nodes to forests
     distinguish between "root" and "read only" unpacked nodes?
 
