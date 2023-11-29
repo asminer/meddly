@@ -199,7 +199,33 @@ EOF
             printSummary $r >> $1
         done
         echo "</tr>" >> $1
+        echo "</table>" >> $1
+        echo "</body>" >> $1
+        echo "</html>" >> $1
     fi
+
+    #
+    # Strip off the bottom </table> </body> </html> lines
+    #
+
+    mv -f $1 $1.old
+    grep -v "</table>" $1.old | grep -v "</body>" | grep -v "</html>" > $1
+
+    #
+    # Add new lines
+    #
+    echo "<tr>" >> $1
+    echo "</tr>" >> $1
+
+    echo "    <td>$REVDATE</td>" >> $1
+    echo "    <td>$VERSION $BRANCH</td>" >> $1
+    for r in $RUNLIST; do
+        awk '{print "    <td>" $1 "</td>"}' report.$PID.$r.txt >> $1
+    done
+
+    echo "</table>" >> $1
+    echo "</body>" >> $1
+    echo "</html>" >> $1
 }
 
 textInfo | tee $TEXTFILE
