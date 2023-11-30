@@ -7,7 +7,7 @@
 # List of executables to run
 #
 
-RUNLIST="ddedge mark reduce"
+RUNLIST="ddedge mark reduce unpacked"
 PID="$$"
 
 #
@@ -36,6 +36,8 @@ ctrl_c() {
     cleanup
     exit 1
 }
+
+trap ctrl_c INT
 
 #
 # Figure out where things are
@@ -126,7 +128,7 @@ myPrint() {
     echo "======================================================================"
     while read time prog line; do
         details=`awk -F$ '{print $2}' <<< $line`
-        printf "    %3.3f ........ %s\n" "$time" "$details"
+        printf "    %7.3f ........ %s\n" "$time" "$details"
     done < report.$PID.$1.txt
     echo
 }

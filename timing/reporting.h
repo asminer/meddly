@@ -61,4 +61,15 @@ bool startReport(const timer &T, const char* exe);
 
 extern std::ofstream report;
 
+///
+/// Show seconds elapsed with specified precision.
+///
+///     @param  s   Stream to write to
+///     @param  T   Timer to display
+///     @param  a   Spaces to allow before the .
+///     @param  b   Digits to show after the .
+///                 Basically like printf("%a.bf")
+///
+void show_sec(std::ostream &s, const timer &T, int a, int b);
+
 #endif

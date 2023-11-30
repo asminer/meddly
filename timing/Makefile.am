@@ -6,16 +6,32 @@
 noinst_PROGRAMS = \
     ddedge \
     mark \
-    reduce
+    reduce \
+    unpacked
 
 AM_CXXFLAGS = -Wall
 
-ddedge_SOURCES = timer.h ddedge.cc reporting.h reporting.cc
-ddedge_LDADD = ../src/libmeddly.la
+ddedge_SOURCES =    timer.h \
+                    park_random.h \
+                    reporting.h reporting.cc \
+                    ddedge.cc
+ddedge_LDADD =      ../src/libmeddly.la
 
-mark_SOURCES = timer.h mark.cc reporting.h reporting.cc simple_model.h simple_model.cc
-mark_LDADD = ../src/libmeddly.la
+mark_SOURCES =      timer.h \
+                    reporting.h reporting.cc \
+                    simple_model.h simple_model.cc \
+                    mark.cc
+mark_LDADD =        ../src/libmeddly.la
 
-reduce_SOURCES = timer.h reduce.cc reporting.h reporting.cc
-reduce_LDADD = ../src/libmeddly.la
+reduce_SOURCES =    timer.h \
+                    park_random.h \
+                    reporting.h reporting.cc \
+                    reduce.cc
+reduce_LDADD =      ../src/libmeddly.la
+
+unpacked_SOURCES =  timer.h \
+                    park_random.h \
+                    reporting.h reporting.cc \
+                    unpacked.cc
+unpacked_LDADD =    ../src/libmeddly.la
 

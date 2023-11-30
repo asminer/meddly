@@ -19,6 +19,7 @@
 #include "../src/meddly.h"
 #include "timer.h"
 #include "reporting.h"
+#include "park_random.h"
 
 #include <iostream>
 #include <iomanip>
@@ -34,48 +35,6 @@ const unsigned CHANGES = 1024 * 1024;
 #else
 const unsigned CHANGES = 32 * 1024 * 1024;
 #endif
-
-long seed = -1;
-
-inline double Random()
-{
-    static const long MODULUS = 2147483647L;
-    static const long MULTIPLIER = 48271L;
-    static const long Q = MODULUS / MULTIPLIER;
-    static const long R = MODULUS % MULTIPLIER;
-
-    long t = MULTIPLIER * (seed % Q) - R * (seed / Q);
-    if (t > 0) {
-        seed = t;
-    } else {
-        seed = t + MODULUS;
-    }
-    return ((double) seed / MODULUS);
-}
-
-inline unsigned Equilikely(unsigned a, unsigned b)
-{
-    return (a + (unsigned) ((b - a + 1) * Random()));
-}
-
-
-std::ostream& show_sec(std::ostream &s, const timer &T, int a, int b)
-{
-    long sec, usec;
-    T.get_last(sec, usec);
-    s << std::setw(a) << sec;
-    if (b) {
-        s << '.';
-        long d = 100000;
-        for (int i=0; i<b; i++) {
-            s << (usec / d);
-            usec %= d;
-            d /= 10;
-        }
-    }
-    return s;
-}
-
 
 void test_edge_registry(forest* F1, forest* F2)
 {
@@ -133,9 +92,7 @@ void test_edge_registry(forest* F1, forest* F2)
     }
     T.note_time();
 
-    std::cout << ' ';
     show_sec(std::cout, T, 3, 3);
-    std::cout << "\n\n";
 
     if (startReport(T, __FILE__)) {
         report  << "updates $ "
@@ -167,7 +124,7 @@ int main(int argc, const char** argv)
 
         MEDDLY::initialize();
 
-        seed = 123456789;
+        SeedRNG(123456789);
 
         int bounds[3];
         bounds[0] = bounds[1] = bounds[2] = 5;

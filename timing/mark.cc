@@ -31,24 +31,6 @@
 using namespace MEDDLY;
 
 
-std::ostream& show_sec(std::ostream &s, const timer &T, int a, int b)
-{
-    long sec, usec;
-    T.get_last(sec, usec);
-    s << std::setw(a) << sec;
-    if (b) {
-        s << '.';
-        long d = 100000;
-        for (int i=0; i<b; i++) {
-            s << (usec / d);
-            usec %= d;
-            d /= 10;
-        }
-    }
-    return s;
-}
-
-
 inline char* newEvent(unsigned N)
 {
     char* ev = new char[N*8+1];
@@ -166,7 +148,7 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
     }
 
     T.note_time();
-    show_sec(std::cout, T, 3, 3) << " seconds\n";
+    show_sec(std::cout, T, 3, 3);
 
     if (startReport(T, __FILE__)) {
         report  << name << " mark $ "
@@ -188,7 +170,7 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
         eco = M->countNonzeroEdges();
     }
     T.note_time();
-    show_sec(std::cout, T, 3, 3) << " seconds\n";
+    show_sec(std::cout, T, 3, 3);
 
     if (startReport(T, __FILE__)) {
         report  << name << " count $ "

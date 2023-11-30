@@ -19,6 +19,7 @@
 #include "../src/meddly.h"
 #include "timer.h"
 #include "reporting.h"
+#include "park_random.h"
 
 #include <iostream>
 #include <iomanip>
@@ -37,49 +38,6 @@ const unsigned NUMBATCHES = 1024;
 const unsigned TOTAL = BATCHSIZE * NUMBATCHES;
 
 const unsigned VARSIZE = 10;
-
-long seed = -1;
-
-inline double Random()
-{
-    static const long MODULUS = 2147483647L;
-    static const long MULTIPLIER = 48271L;
-    static const long Q = MODULUS / MULTIPLIER;
-    static const long R = MODULUS % MULTIPLIER;
-
-    long t = MULTIPLIER * (seed % Q) - R * (seed / Q);
-    if (t > 0) {
-        seed = t;
-    } else {
-        seed = t + MODULUS;
-    }
-    return ((double) seed / MODULUS);
-}
-
-inline int Equilikely(int a, int b)
-{
-    return (a + (int) ((b - a + 1) * Random()));
-}
-
-
-std::ostream& show_sec(std::ostream &s, const timer &T, int a, int b)
-{
-    long sec, usec;
-    T.get_last(sec, usec);
-    s << std::setw(a) << sec;
-    if (b) {
-        s << '.';
-        long d = 100000;
-        for (int i=0; i<b; i++) {
-            s << (usec / d);
-            usec %= d;
-            d /= 10;
-        }
-    }
-    return s;
-}
-
-
 
 
 void test_MT_full_Reductions(expert_forest* f, const char* what)
@@ -115,7 +73,7 @@ void test_MT_full_Reductions(expert_forest* f, const char* what)
             unpacked_node* un = unpacked_node::New();
             un->bind_to_forest(f, 3, VARSIZE, true);
             for (unsigned i=0; i<VARSIZE; i++) {
-                int d = Equilikely(0, 4);
+                unsigned d = Equilikely(0, 4);
                 un->d_ref(i) = f->linkNode(fixed[d]);
             }
             roots[b] = f->createReducedNode(-1, un);
@@ -127,7 +85,7 @@ void test_MT_full_Reductions(expert_forest* f, const char* what)
 
     T.note_time();
 
-    show_sec(std::cout, T, 3, 3) << " seconds\n";
+    show_sec(std::cout, T, 3, 3);
 
     if (startReport(T, __FILE__)) {
         unsigned long N = NUMBATCHES;
@@ -173,7 +131,7 @@ void test_EV_full_Reductions(expert_forest* f, const char* what)
             unpacked_node* un = unpacked_node::New();
             un->bind_to_forest(f, 3, VARSIZE, true);
             for (unsigned i=0; i<VARSIZE; i++) {
-                int d = Equilikely(0, 2);
+                unsigned d = Equilikely(0, 2);
                 un->d_ref(i) = f->linkNode(fixed[d]);
                 un->setEdge(i, long(Equilikely(0, 10)));
             }
@@ -187,7 +145,7 @@ void test_EV_full_Reductions(expert_forest* f, const char* what)
 
     T.note_time();
 
-    show_sec(std::cout, T, 3, 3) << " seconds\n";
+    show_sec(std::cout, T, 3, 3);
 
     if (startReport(T, __FILE__)) {
         unsigned long N = NUMBATCHES;
@@ -214,7 +172,7 @@ int main(int argc, const char** argv)
 
         MEDDLY::initialize();
 
-        seed = 123456789;
+        SeedRNG(123456789);
 
         int bounds[3];
         bounds[0] = bounds[1] = bounds[2] = VARSIZE;
