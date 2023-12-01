@@ -282,10 +282,10 @@ class MEDDLY::unpacked_node {
         */
         inline node_handle d(unsigned n) const
         {
-            MEDDLY_DCASSERT(down);
+            MEDDLY_DCASSERT(_down);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n,
                     is_full ? size : nnzs);
-            return down[n];
+            return _down[n];
         }
 
         /** Reference to a downward pointer.
@@ -297,10 +297,10 @@ class MEDDLY::unpacked_node {
         */
         inline node_handle& d_ref(unsigned n)
         {
-            MEDDLY_DCASSERT(down);
+            MEDDLY_DCASSERT(_down);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n,
                     is_full ? size : nnzs);
-            return down[n];
+            return _down[n];
         }
 
         /// Set the nth pointer from E, and destroy E.
@@ -310,7 +310,7 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(edge_type::VOID == the_edge_type);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n,
                     is_full ? size : nnzs);
-            down[n] = E.node;
+            _down[n] = E.node;
             E.node = 0; // avoid having to adjust the link count
         }
 
@@ -319,10 +319,10 @@ class MEDDLY::unpacked_node {
         */
         inline unsigned i(unsigned n) const
         {
-            MEDDLY_DCASSERT(index);
+            MEDDLY_DCASSERT(_index);
             MEDDLY_DCASSERT(!is_full);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, nnzs);
-            return index[n];
+            return _index[n];
         }
 
         /** Modify the index of the nth non-zero pointer.
@@ -330,10 +330,10 @@ class MEDDLY::unpacked_node {
         */
         inline unsigned& i_ref(unsigned n)
         {
-            MEDDLY_DCASSERT(index);
+            MEDDLY_DCASSERT(_index);
             MEDDLY_DCASSERT(!is_full);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, nnzs);
-            return index[n];
+            return _index[n];
         }
 
         /*
@@ -362,11 +362,11 @@ class MEDDLY::unpacked_node {
         inline void set_de(unsigned n, dd_edge &E)
         {
             MEDDLY_DCASSERT(E.isAttachedTo((forest*) parent));
-            MEDDLY_DCASSERT(edge);
+            MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n,
                     is_full ? size : nnzs);
-            down[n] = E.node;
-            edge[n] = E.getEdgeValue();
+            _down[n] = E.node;
+            _edge[n] = E.getEdgeValue();
             E.node = 0; // avoid having to adjust the link count
         }
 
@@ -376,7 +376,7 @@ class MEDDLY::unpacked_node {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
                     is_full ? size : nnzs);
             MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
-            edge[i].get(val);
+            _edge[i].get(val);
         }
 
         /// Get the edge value, as a float.
@@ -385,7 +385,7 @@ class MEDDLY::unpacked_node {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
                     is_full ? size : nnzs);
             MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
-            edge[i].get(val);
+            _edge[i].get(val);
         }
 
         /// Get the edge value, generic
@@ -393,7 +393,7 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
                     is_full ? size : nnzs);
-            return edge[i];
+            return _edge[i];
         }
 
         /// Set the edge value, as an integer.
@@ -402,7 +402,7 @@ class MEDDLY::unpacked_node {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
                     is_full ? size : nnzs);
             MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
-            edge[i].set(ev);
+            _edge[i].set(ev);
         }
 
         /// Set the edge value, as a float.
@@ -411,7 +411,7 @@ class MEDDLY::unpacked_node {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
                     is_full ? size : nnzs);
             MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
-            edge[i].set(ev);
+            _edge[i].set(ev);
         }
 
         // Set the edge value, generic
@@ -419,14 +419,14 @@ class MEDDLY::unpacked_node {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
                     is_full ? size : nnzs);
             MEDDLY_DCASSERT(ev.hasType(the_edge_type));
-            edge[i] = ev;
+            _edge[i] = ev;
         }
 
         // Set the edge value, generic
         inline edge_value& setEdge(unsigned i) {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i,
                     is_full ? size : nnzs);
-            return edge[i];
+            return _edge[i];
         }
 
 
@@ -773,9 +773,9 @@ class MEDDLY::unpacked_node {
         /*
             Down pointers, indexes, edge values.
         */
-        node_handle* down;
-        unsigned* index;
-        edge_value* edge;
+        node_handle* _down;
+        unsigned* _index;
+        edge_value* _edge;
         edge_type the_edge_type;
         terminal_type the_terminal_type;
         bool can_be_extensible;

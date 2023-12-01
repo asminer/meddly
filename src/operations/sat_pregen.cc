@@ -395,7 +395,7 @@ MEDDLY::satpregen_opname::pregen_relation
   printf("events array: [");
   for (unsigned i=0; i<last_event; i++) {
     if (i) printf(", ");
-    printf("%d", events[i].getNode());
+    printf("%ld", long(events[i].getNode()));
   }
   printf("]\n");
   printf("next array: [");
@@ -439,7 +439,7 @@ MEDDLY::satpregen_opname::pregen_relation
   printf("events array: [");
   for (unsigned i=0; i<last_event; i++) {
     if (i) printf(", ");
-    printf("%d", events[i].getNode());
+    printf("%ld", long(events[i].getNode()));
   }
   printf("]\n");
   printf("level_index array: [%d", level_index[1]);

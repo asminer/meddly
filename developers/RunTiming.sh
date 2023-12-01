@@ -228,6 +228,8 @@ EOF
     echo "</table>" >> $1
     echo "</body>" >> $1
     echo "</html>" >> $1
+
+    rm -f $1.old
 }
 
 textInfo | tee $TEXTFILE

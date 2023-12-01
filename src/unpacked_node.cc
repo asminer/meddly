@@ -54,9 +54,9 @@ MEDDLY::unpacked_node::unpacked_node()
     extra_hashed = 0;
     ext_h_alloc = 0;
     ext_h_size = 0;
-    down = nullptr;
-    index = nullptr;
-    edge = nullptr;
+    _down = nullptr;
+    _index = nullptr;
+    _edge = nullptr;
     is_extensible = false;
     can_be_extensible = false;
     alloc = 0;
@@ -79,12 +79,12 @@ void MEDDLY::unpacked_node::clear()
 {
     free(extra_unhashed);
     free(extra_hashed);
-    free(down);
-    free(index);
-    free(edge);
-    down = nullptr;
-    index = nullptr;
-    edge = nullptr;
+    free(_down);
+    free(_index);
+    free(_edge);
+    _down = nullptr;
+    _index = nullptr;
+    _edge = nullptr;
     is_extensible = false;
     alloc = 0;
     // ealloc = 0;
@@ -117,10 +117,10 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
     unsigned nsize = f->isExtensibleLevel(k) ? 1 : unsigned(f->getLevelSize(k));
     bind_to_forest(f, k, nsize, full);
     for (unsigned i=0; i<nsize; i++) {
-        down[i] = node;
+        _down[i] = node;
     }
     if (!full) {
-        for (unsigned i=0; i<nsize; i++) index[i] = i;
+        for (unsigned i=0; i<nsize; i++) _index[i] = i;
         nnzs = nsize;
     }
     is_extensible = f->isExtensibleLevel(k);
@@ -135,11 +135,11 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
     unsigned nsize = unsigned(f->getLevelSize(k));
     bind_to_forest(f, k, nsize, full);
     for (unsigned i=0; i<nsize; i++) {
-        down[i] = node;
-        edge[i].set(ev);
+        _down[i] = node;
+        _edge[i].set(ev);
     }
     if (!full) {
-        for (unsigned i=0; i<nsize; i++) index[i] = i;
+        for (unsigned i=0; i<nsize; i++) _index[i] = i;
         nnzs = nsize;
     }
 }
@@ -153,11 +153,11 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
     unsigned nsize = unsigned(f->getLevelSize(k));
     bind_to_forest(f, k, nsize, full);
     for (unsigned i=0; i<nsize; i++) {
-        down[i] = node;
-        edge[i].set(ev);
+        _down[i] = node;
+        _edge[i].set(ev);
     }
     if (!full) {
-        for (unsigned i=0; i<nsize; i++) index[i] = i;
+        for (unsigned i=0; i<nsize; i++) _index[i] = i;
         nnzs = nsize;
     }
 }
@@ -171,11 +171,11 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
     unsigned nsize = unsigned(f->getLevelSize(k));
     bind_to_forest(f, k, nsize, full);
     for (unsigned i=0; i<nsize; i++) {
-        down[i] = node;
-        edge[i].set(ev);
+        _down[i] = node;
+        _edge[i].set(ev);
     }
     if (!full) {
-        for (unsigned i=0; i<nsize; i++) index[i] = i;
+        for (unsigned i=0; i<nsize; i++) _index[i] = i;
         nnzs = nsize;
     }
 }
@@ -190,12 +190,12 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
     if (full) {
         bind_to_forest(f, k, nsize, full);
         clearFullEdges();
-        down[i] = node;
+        _down[i] = node;
     } else {
         bind_to_forest(f, k, 1, full);
         nnzs = 1;
-        down[0] = node;
-        index[0] = i;
+        _down[0] = node;
+        _index[0] = i;
     }
 }
 
@@ -209,14 +209,14 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
     if (full) {
         bind_to_forest(f, k, nsize, full);
         clearFullEdges();
-        down[i] = node;
-        edge[i].set(ev);
+        _down[i] = node;
+        _edge[i].set(ev);
     } else {
         bind_to_forest(f, k, 1, full);
         nnzs = 1;
-        down[0] = node;
-        edge[0].set(ev);
-        index[0] = i;
+        _down[0] = node;
+        _edge[0].set(ev);
+        _index[0] = i;
     }
 }
 
@@ -230,14 +230,14 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
     if (full) {
         bind_to_forest(f, k, nsize, full);
         clearFullEdges();
-        down[i] = node;
-        edge[i].set(ev);
+        _down[i] = node;
+        _edge[i].set(ev);
     } else {
         bind_to_forest(f, k, 1, full);
         nnzs = 1;
-        down[0] = node;
-        edge[0].set(ev);
-        index[0] = i;
+        _down[0] = node;
+        _edge[0].set(ev);
+        _index[0] = i;
     }
 }
 
@@ -251,14 +251,14 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
     if (full) {
         bind_to_forest(f, k, nsize, full);
         clearFullEdges();
-        down[i] = node;
-        edge[i].set(ev);
+        _down[i] = node;
+        _edge[i].set(ev);
     } else {
         bind_to_forest(f, k, 1, full);
         nnzs = 1;
-        down[0] = node;
-        edge[0].set(ev);
-        index[0] = i;
+        _down[0] = node;
+        _edge[0].set(ev);
+        _index[0] = i;
     }
 }
 
@@ -286,7 +286,7 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
         } else {
             if (z) s.put('|');
         }
-        parent->showEdge(s, edge[z], down[z]);
+        parent->showEdge(s, _edge[z], _down[z]);
     }
 
     if (isExtensible()) s.put('*');
@@ -350,7 +350,7 @@ void MEDDLY::unpacked_node::write(output &s, const node_handle* map) const
         s.put('\t');
         for (unsigned z=0; z<stop; z++) {
             s.put(' ');
-            edge[z].write(s);
+            _edge[z].write(s);
         }
     }
     s.put('\n');
@@ -428,7 +428,7 @@ void MEDDLY::unpacked_node::read(input &s, const node_handle* map)
 #endif
         for (unsigned z=0; z<stop; z++) {
             s.stripWS();
-            edge[z].read(s);
+            _edge[z].read(s);
         }
     }
 
@@ -452,13 +452,13 @@ void MEDDLY::unpacked_node
         MEDDLY_DCASSERT(nalloc > ns);
         MEDDLY_DCASSERT(nalloc>0);
         MEDDLY_DCASSERT(nalloc>alloc);
-        down = (node_handle*) realloc(down, nalloc*sizeof(node_handle));
-        if (!down) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-        index = (unsigned*) realloc(index, nalloc*sizeof(unsigned));
-        if (!index) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        _down = (node_handle*) realloc(_down, nalloc*sizeof(node_handle));
+        if (!_down) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        _index = (unsigned*) realloc(_index, nalloc*sizeof(unsigned));
+        if (!_index) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
         alloc = nalloc;
-        edge = (edge_value*) realloc(edge, nalloc*sizeof(edge_value));
-        if (!edge) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        _edge = (edge_value*) realloc(_edge, nalloc*sizeof(edge_value));
+        if (!_edge) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
 #ifdef DEVELOPMENT_CODE
     has_hash = false;
@@ -577,9 +577,9 @@ void MEDDLY::unpacked_node::computeHash()
     if (isSparse()) {
         if (parent->areEdgeValuesHashed()) {
             for (unsigned z=0; z<nnzs; z++) {
-                MEDDLY_DCASSERT(!parent->isTransparentEdge(d(z), edge[z]));
+                MEDDLY_DCASSERT(!parent->isTransparentEdge(d(z), _edge[z]));
                 s.push(i(z), unsigned(d(z)));
-                edge[z].hash(s);
+                _edge[z].hash(s);
             }
         } else {
             for (unsigned z=0; z<nnzs; z++) {
@@ -590,9 +590,9 @@ void MEDDLY::unpacked_node::computeHash()
     } else {
         if (parent->areEdgeValuesHashed()) {
             for (unsigned n=0; n<size; n++) {
-                if (!parent->isTransparentEdge(d(n), edge[n])) {
+                if (!parent->isTransparentEdge(d(n), _edge[n])) {
                     s.push(n, unsigned(d(n)));
-                    edge[n].hash(s);
+                    _edge[n].hash(s);
                 }
             }
         } else {
@@ -629,29 +629,29 @@ void MEDDLY::unpacked_node::sort()
     }
 
     // allocate new arrays for index, node handles and edge-values
-    node_handle* old_down = down;
-    unsigned* old_index = index;
-    edge_value* old_edge = edge;
+    node_handle* old_down = _down;
+    unsigned* old_index = _index;
+    edge_value* old_edge = _edge;
     unsigned old_nnzs = nnzs;
 
-    down = 0;
-    index = 0;
-    edge = 0;
+    _down = nullptr;
+    _index = nullptr;
+    _edge = nullptr;
     size = 0;
     nnzs = 0;
     alloc = 0;
     resize(old_nnzs);
 
     // copy into new arrays
-    memcpy(down, old_down, sizeof(node_handle) * k);
-    memcpy(index, old_index, sizeof(unsigned) * k);
-    memcpy(edge, old_edge, sizeof(edge_value) * k);
+    memcpy(_down, old_down, sizeof(node_handle) * k);
+    memcpy(_index, old_index, sizeof(unsigned) * k);
+    memcpy(_edge, old_edge, sizeof(edge_value) * k);
 
     for (auto s_iter = sorter.begin(); s_iter != sorter.end(); s_iter++, k++) {
         unsigned old_location = s_iter->second;
-        index[k] = old_index[old_location];
-        down[k] = old_down[old_location];
-        edge[k] = old_edge[old_location];
+        _index[k] = old_index[old_location];
+        _down[k] = old_down[old_location];
+        _edge[k] = old_edge[old_location];
     }
 
     free(old_down);
@@ -726,15 +726,15 @@ bool MEDDLY::unpacked_node::isSorted() const
 
 void MEDDLY::unpacked_node::clearEdges(unsigned stop)
 {
-    MEDDLY_DCASSERT(down);
-    MEDDLY_DCASSERT(edge);
+    MEDDLY_DCASSERT(_down);
+    MEDDLY_DCASSERT(_edge);
     if (edge_type::VOID == the_edge_type) {
         for (unsigned i=0; i<stop; i++) {
-            down[i] = parent->getTransparentNode();
+            _down[i] = parent->getTransparentNode();
         }
     } else {
         for (unsigned i=0; i<stop; i++) {
-            parent->getTransparentEdge(down[i], edge[i]);
+            parent->getTransparentEdge(_down[i], _edge[i]);
         }
     }
 }

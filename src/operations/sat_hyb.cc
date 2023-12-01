@@ -806,11 +806,12 @@ void MEDDLY::sathyb_opname::subevent::buildRoot() {
   terms.push_back(pterms);
   */
 
-  node_handle rnh = 0;
-
 // Arrange minterms before union-ing
 
  #if 0
+
+  node_handle rnh = 0;
+
  bool semi_union = false;
 
  // adding first minterm
@@ -1724,7 +1725,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       int jC;
       if(imFlag)
       {
-        int j = Rn[event_Ru_Rn_index[ei]]->nextOf(i);
+      //  int j = Rn[event_Ru_Rn_index[ei]]->nextOf(i);
         jC = 1;
 
       } else {
@@ -1891,7 +1892,7 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
   const int rLevel = MAX(ABS(mxdLevel), mddLevel);
   int rSize = resF->getLevelSize(rLevel);
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
-  domain* dm = resF->getDomain();
+  // domain* dm = resF->getDomain();
 
   dd_edge nbdj(resF), newst(resF);
 
