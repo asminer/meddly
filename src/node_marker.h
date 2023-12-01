@@ -34,11 +34,11 @@ namespace MEDDLY {
 */
 class MEDDLY::node_marker {
     public:
-        node_marker(const forest &F, array_watcher* w = nullptr);
+        node_marker(const forest* F, array_watcher* w = nullptr);
         ~node_marker();
 
         inline bool hasParent(const forest* f) const {
-            return (&For) == f;
+            return f == For;
         }
 
         inline void expand(size_t ns) {
@@ -148,7 +148,7 @@ class MEDDLY::node_marker {
 
     private:
         bitvector marked;
-        const forest &For;
+        const forest* For;
 
         mystack* S_top;
         mystack* S_free;

@@ -2122,11 +2122,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
   // ------------------------------------------------------------
   // non-virtual, handy methods.
 
-    /**
-        Build a node marker.
-    */
-    node_marker* makeNodeMarker() const;
-
 
     /** Build a list of nodes in the subgraph below the given node.
         This for example is used to determine which nodes must

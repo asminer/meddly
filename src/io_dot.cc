@@ -30,7 +30,7 @@ MEDDLY::dot_maker::dot_maker(forest* F, const char* bn)
     For = dynamic_cast <expert_forest*> (F);
     MEDDLY_DCASSERT(For);
 
-    nm = For->makeNodeMarker();
+    nm = new node_marker(For);
     MEDDLY_DCASSERT(nm);
 }
 

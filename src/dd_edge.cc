@@ -202,11 +202,9 @@ void MEDDLY::dd_edge::showGraph(output &s) const
     efp->showEdge(s, edgeval, node);
     s.put('\n');
 
-    node_marker* M = efp->makeNodeMarker();
-    MEDDLY_DCASSERT(M);
-    M->mark(node);
-    M->showByLevels(s);
-    delete M;
+    node_marker M(efp);
+    M.mark(node);
+    M.showByLevels(s);
 }
 
 #ifdef ALLOW_DEPRECATED_0_17_3

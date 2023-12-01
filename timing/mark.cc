@@ -129,10 +129,9 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
 
     expert_forest* ef = dynamic_cast<expert_forest*> (E.getForest());
     if (!ef) throw "null expert_forest";
-    node_marker* M = ef->makeNodeMarker();
-    if (!M) throw "null node_marker";
+    node_marker M(ef);
 
-    std::cout << "Testing " << name << " (" << M->getSize() << " total nodes)\n";
+    std::cout << "Testing " << name << " (" << M.getSize() << " total nodes)\n";
     std::cout << "     Marking " << std::setw(6) << marks << "x ";
     std::cout.flush();
 
@@ -143,8 +142,8 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
             std::cout << '.';
             std::cout.flush();
         }
-        M->unmarkAll();
-        M->mark(E.getNode());
+        M.unmarkAll();
+        M.mark(E.getNode());
     }
 
     T.note_time();
@@ -155,7 +154,7 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
                 << "Marked " << name << marks << " times" << std::endl;
     }
 
-    std::cout << "        " << M->countMarked() << " marked nodes\n";
+    std::cout << "        " << M.countMarked() << " marked nodes\n";
     std::cout << "        " << ef->getNodeCount(E.getNode()) << " according to expert_forest\n";
 
     std::cout << "    Counting " << std::setw(6) << counts << "x ";
@@ -167,7 +166,7 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
             std::cout << '.';
             std::cout.flush();
         }
-        eco = M->countNonzeroEdges();
+        eco = M.countNonzeroEdges();
     }
     T.note_time();
     show_sec(std::cout, T, 3, 3);
@@ -179,9 +178,6 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
 
     std::cout << "        " << eco << " non-zero edges\n";
     std::cout << "        " << ef->getEdgeCount(E.getNode(), false) << " according to expert_forest\n";
-
-
-    delete M;
 
 }
 

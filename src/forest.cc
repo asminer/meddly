@@ -548,7 +548,7 @@ MEDDLY::forest
     if (deflt.useReferenceCounts) {
         reachable = nullptr;
     } else {
-        reachable = new node_marker(*this, &nodeHeaders);
+        reachable = new node_marker(this, &nodeHeaders);
         nodeHeaders.linkReachable(reachable->linkBits());
     }
 }
@@ -1124,14 +1124,6 @@ void MEDDLY::expert_forest::countNodesByLevel(long* active) const
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-MEDDLY::node_marker*
-MEDDLY::expert_forest::makeNodeMarker() const
-{
-    node_marker* nm = new node_marker(*this);
-    nm->expand(nodeHeaders.lastUsedHandle()+1);
-    nm->unmarkAll();
-    return nm;
-}
 
 MEDDLY::node_handle*
 MEDDLY::expert_forest
@@ -1225,28 +1217,51 @@ MEDDLY::expert_forest
 
 unsigned long MEDDLY::expert_forest::getNodeCount(node_handle p) const
 {
+#if 0
+    // Original implementation
+
     node_handle* list = markNodesInSubgraph(&p, 1, true);
     if (0==list) return 0;
     unsigned long i;
     for (i=0; list[i]; i++) { }
     free(list);
     return i;
+
+#else
+    node_marker nm(this);
+    nm.mark(p);
+    return nm.countMarked();
+#endif
 }
 
 unsigned long MEDDLY::expert_forest::getNodeCount(const node_handle* roots,
         int N) const
 {
+#if 0
+    // Original implementation
+
     node_handle* list = markNodesInSubgraph(roots, N, false);
     if (0==list) return 0;
     unsigned long i;
     for (i=0; list[i]; i++) { }
     free(list);
     return i;
+
+#else
+    node_marker nm(this);
+    for (int i=0; i<N; i++) {
+        nm.mark(roots[i]);
+    }
+    return nm.countMarked();
+#endif
 }
 
 unsigned long MEDDLY::expert_forest::getEdgeCount(node_handle p,
         bool countZeroes) const
 {
+#if 0
+    // Original implementation
+
     node_handle* list = markNodesInSubgraph(&p, 1, true);
     if (0==list) return 0;
     unsigned long ec=0;
@@ -1258,6 +1273,12 @@ unsigned long MEDDLY::expert_forest::getEdgeCount(node_handle p,
     unpacked_node::recycle(M);
     free(list);
     return ec;
+
+#else
+    node_marker nm(this);
+    nm.mark(p);
+    return countZeroes ? nm.countEdges() : nm.countNonzeroEdges();
+#endif
 }
 
 bool MEDDLY::expert_forest
