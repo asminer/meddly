@@ -64,7 +64,7 @@ class MEDDLY::dot_maker {
                 @param  basename    Base name of the file;
                                     will add .dot for the dot input file.
          */
-        dot_maker(forest* F, const char* basename);
+        dot_maker(const forest* F, const char* basename);
 
         /// Destructor for cleanup.
         ~dot_maker();
@@ -95,7 +95,7 @@ class MEDDLY::dot_maker {
 
         std::vector <dd_edge> roots;
 
-        expert_forest* For;
+        const expert_forest* For;
         node_marker* nm;
 };
 

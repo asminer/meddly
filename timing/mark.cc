@@ -155,7 +155,7 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
     }
 
     std::cout << "        " << M.countMarked() << " marked nodes\n";
-    std::cout << "        " << ef->getNodeCount(E.getNode()) << " according to expert_forest\n";
+    std::cout << "        " << E.getNodeCount() << " according to dd_edge\n";
 
     std::cout << "    Counting " << std::setw(6) << counts << "x ";
     std::cout.flush();
@@ -177,7 +177,7 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
     }
 
     std::cout << "        " << eco << " non-zero edges\n";
-    std::cout << "        " << ef->getEdgeCount(E.getNode(), false) << " according to expert_forest\n";
+    std::cout << "        " << E.getEdgeCount(false) << " according to dd_edge\n";
 
 }
 

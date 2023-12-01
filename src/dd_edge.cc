@@ -114,18 +114,26 @@ MEDDLY::forest* MEDDLY::dd_edge::getForest() const
 
 unsigned long MEDDLY::dd_edge::getNodeCount() const
 {
-    expert_forest* efp = static_cast <expert_forest*> (
-                forest::getForestWithID(parentFID)
-    );
-    return efp ? efp->getNodeCount(node) : 0;
+    forest* fp = forest::getForestWithID(parentFID);
+
+    if (fp) {
+        node_marker M(fp);
+        M.mark(node);
+        return M.countMarked();
+    }
+    return 0;
 }
 
 unsigned long MEDDLY::dd_edge::getEdgeCount(bool countZeroes) const
 {
-    expert_forest* efp = static_cast <expert_forest*> (
-                forest::getForestWithID(parentFID)
-    );
-    return efp ? efp->getEdgeCount(node, countZeroes) : 0;
+    forest* fp = forest::getForestWithID(parentFID);
+
+    if (fp) {
+        node_marker M(fp);
+        M.mark(node);
+        return countZeroes ? M.countEdges() : M.countNonzeroEdges();
+    }
+    return 0;
 }
 
 int MEDDLY::dd_edge::getLevel() const

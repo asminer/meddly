@@ -2122,8 +2122,11 @@ class MEDDLY::expert_forest: public MEDDLY::forest
   // ------------------------------------------------------------
   // non-virtual, handy methods.
 
+#ifdef ALLOW_DEPRECATED_0_17_3
 
     /** Build a list of nodes in the subgraph below the given node.
+        DEPRECATED; use a node_marker object for this instead.
+
         This for example is used to determine which nodes must
         be printed to display a subgraph.
         Terminal nodes are NOT included.
@@ -2147,18 +2150,32 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 
     /** Count and return the number of non-terminal nodes
         in the subgraph below the given node.
+        DEPRECATED; use a node_marker object for this.
     */
-    unsigned long getNodeCount(node_handle node) const;
+    unsigned long getNodeCount(node_handle p) const;
 
     /** Count and return the number of non-terminal nodes
         in the subgraph below the given nodes.
+        DEPRECATED; use a node_marker object for this.
     */
     unsigned long getNodeCount(const node_handle* roots, int N) const;
 
     /** Count and return the number of edges
         in the subgraph below the given node.
+        DEPRECATED; use a node_marker object for this.
     */
-    unsigned long getEdgeCount(node_handle node, bool countZeroes) const;
+    unsigned long getEdgeCount(node_handle p, bool countZeroes) const;
+
+    /// Show all the nodes in the subgraph below the given nodes.
+    void showNodeGraph(output &s, const node_handle* node, int n) const;
+
+    /// DEPRECATED; use dot_maker instead (see io_dot.h).
+    /// Write all the nodes in the subgraph below the given nodes
+    /// in a graphical format specified by the extension.
+    void writeNodeGraphPicture(const char* filename, const char *extension,
+        const node_handle* nodes, const char* const* labels, int n);
+
+#endif
 
     /** Display the contents of a single node.
           @param  s       File stream to write to.
@@ -2170,18 +2187,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     */
     bool showNode(output &s, node_handle node, unsigned int flags = 0) const;
 
-#ifdef ALLOW_DEPRECATED_0_17_3
-
-    /// Show all the nodes in the subgraph below the given nodes.
-    void showNodeGraph(output &s, const node_handle* node, int n) const;
-
-    /// DEPRECATED; use dot_maker instead (see io_dot.h).
-    /// Write all the nodes in the subgraph below the given nodes
-    /// in a graphical format specified by the extension.
-    void writeNodeGraphPicture(const char* filename, const char *extension,
-        const node_handle* nodes, const char* const* labels, int n) const;
-
-#endif
 
     /** Show various stats for this forest.
           @param  s       Output stream to write to

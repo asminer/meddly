@@ -1124,6 +1124,7 @@ void MEDDLY::expert_forest::countNodesByLevel(long* active) const
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+#ifdef ALLOW_DEPRECATED_0_17_3
 
 MEDDLY::node_handle*
 MEDDLY::expert_forest
@@ -1215,71 +1216,69 @@ MEDDLY::expert_forest
   return marked;
 }
 
+
 unsigned long MEDDLY::expert_forest::getNodeCount(node_handle p) const
 {
-#if 0
-    // Original implementation
-
-    node_handle* list = markNodesInSubgraph(&p, 1, true);
-    if (0==list) return 0;
-    unsigned long i;
-    for (i=0; list[i]; i++) { }
-    free(list);
-    return i;
-
-#else
     node_marker nm(this);
     nm.mark(p);
     return nm.countMarked();
-#endif
 }
 
-unsigned long MEDDLY::expert_forest::getNodeCount(const node_handle* roots,
-        int N) const
+unsigned long MEDDLY::expert_forest::getNodeCount(const node_handle* roots, int N) const
 {
-#if 0
-    // Original implementation
-
-    node_handle* list = markNodesInSubgraph(roots, N, false);
-    if (0==list) return 0;
-    unsigned long i;
-    for (i=0; list[i]; i++) { }
-    free(list);
-    return i;
-
-#else
     node_marker nm(this);
     for (int i=0; i<N; i++) {
         nm.mark(roots[i]);
     }
     return nm.countMarked();
-#endif
 }
 
-unsigned long MEDDLY::expert_forest::getEdgeCount(node_handle p,
-        bool countZeroes) const
+unsigned long MEDDLY::expert_forest::getEdgeCount(node_handle p, bool countZeroes) const
 {
-#if 0
-    // Original implementation
-
-    node_handle* list = markNodesInSubgraph(&p, 1, true);
-    if (0==list) return 0;
-    unsigned long ec=0;
-    unpacked_node *M = unpacked_node::New();
-    for (unsigned long i=0; list[i]; i++) {
-        unpackNode(M, list[i], countZeroes ? FULL_ONLY : SPARSE_ONLY);
-        ec += countZeroes ? M->getSize() : M->getNNZs();
-    }
-    unpacked_node::recycle(M);
-    free(list);
-    return ec;
-
-#else
     node_marker nm(this);
     nm.mark(p);
     return countZeroes ? nm.countEdges() : nm.countNonzeroEdges();
-#endif
 }
+
+
+void MEDDLY::expert_forest
+::showNodeGraph(output &s, const node_handle* p, int n) const
+{
+    node_marker M(this);
+    for (int i=0; i<n; i++) {
+        M.mark(p[i]);
+    }
+    M.showByLevels(s);
+}
+
+
+void MEDDLY::expert_forest
+::writeNodeGraphPicture(const char* filename, const char *ext,
+    const node_handle* p, const char* const* labels, int n)
+{
+    if (filename == NULL || ext == NULL || p == NULL) return;
+    if (!isMultiTerminal()) {
+        fprintf(stderr,
+            "%s: Error. Only implemented for Multi-Terminal MDDs\n",
+            __func__);
+        return;
+    }
+
+    dot_maker DM(this, filename);
+
+    for (unsigned i=0; i<n; i++) {
+        dd_edge E(this);
+
+        if (labels) E.setLabel(labels[i]);
+        E.set_and_link(p[i]);
+
+        DM.addRootEdge(E);
+    }
+    DM.doneGraph();
+    DM.runDot(ext);
+}
+
+#endif
 
 bool MEDDLY::expert_forest
 ::showNode(output &s, node_handle p, unsigned int flags) const
@@ -1348,50 +1347,6 @@ bool MEDDLY::expert_forest
 }
 
 
-#ifdef ALLOW_DEPRECATED_0_17_3
-
-void MEDDLY::expert_forest
-::showNodeGraph(output &s, const node_handle* p, int n) const
-{
-    node_marker* M = makeNodeMarker();
-    MEDDLY_DCASSERT(M);
-
-    for (int i=0; i<n; i++) {
-        M->mark(p[i]);
-    }
-
-    M->showByLevels(s);
-
-    delete M;
-}
-
-
-void MEDDLY::expert_forest
-::writeNodeGraphPicture(const char* filename, const char *ext,
-    const node_handle* p, const char* const* labels, int n) const
-{
-    if (filename == NULL || ext == NULL || p == NULL) return;
-    if (!isMultiTerminal()) {
-        fprintf(stderr,
-            "%s: Error. Only implemented for Multi-Terminal MDDs\n",
-            __func__);
-        return;
-    }
-
-    dot_maker DM(this, filename);
-
-    for (unsigned i=0; i<n; i++) {
-        dd_edge E(this);
-
-        if (labels) E.setLabel(labels[i]);
-        E.set_and_link(p[i]);
-
-        DM.addRootEdge(E);
-    }
-    DM.doneGraph();
-    DM.runDot(ext);
-}
-#endif
 
 void MEDDLY::expert_forest
 ::reportStats(output &s, const char* pad, unsigned flags) const
@@ -1435,6 +1390,7 @@ void MEDDLY::expert_forest
 void MEDDLY::expert_forest
 ::writeEdges(output &s, const dd_edge* E, int n) const
 {
+
     node_handle* eRaw = new node_handle[n];
     for (int i=0; i<n; i++) {
         eRaw[i] = E[i].getNode();

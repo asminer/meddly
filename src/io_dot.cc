@@ -21,13 +21,13 @@
 
 #include "io_dot.h"
 
-MEDDLY::dot_maker::dot_maker(forest* F, const char* bn)
+MEDDLY::dot_maker::dot_maker(const forest* F, const char* bn)
 {
     basename = bn;
     std::string fname = basename + ".dot";
     outfile.open(fname);
 
-    For = dynamic_cast <expert_forest*> (F);
+    For = dynamic_cast <const expert_forest*> (F);
     MEDDLY_DCASSERT(For);
 
     nm = new node_marker(For);
