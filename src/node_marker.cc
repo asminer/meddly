@@ -20,13 +20,13 @@
 
 // #define DEBUG_MARK
 
-MEDDLY::node_marker::node_marker(bool permanent, node_headers &H,
-        forest &F)
-    : marked(permanent, &H), nodeHead(H), For(F)
+MEDDLY::node_marker::node_marker(const forest &F, array_watcher* w)
+    : marked(w), For(F)
 {
     S_top = nullptr;
     S_free = nullptr;
 }
+
 
 MEDDLY::node_marker::~node_marker()
 {
@@ -198,7 +198,7 @@ void MEDDLY::node_marker::_mark(node_handle p)
         if (!S_top->queue.empty()) {
             push();
         }
-        nodeMan->addDownToQueue( *this, nodeHead.getNodeAddress(p) );
+        nodeMan->addDownToQueue( *this, For.getNodeAddress(p) );
     }
 
 }

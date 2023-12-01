@@ -641,18 +641,27 @@ void MEDDLY::address_array::shrink64to32(size_t ns)
 // ******************************************************************
 
 
-MEDDLY::bitvector::bitvector(bool link, array_watcher *w)
+MEDDLY::bitvector::bitvector(array_watcher *w)
 {
-    watch = link ? w : nullptr;
+    watch = nullptr;
     data = nullptr;
     size = 0;
-    if (watch) watch->expandElementSize(0, sizeof(bool)*8);
+    attach(w);
 }
 
 MEDDLY::bitvector::~bitvector()
 {
     free(data);
     if (watch) watch->shrinkElementSize(sizeof(bool)*8, 0);
+}
+
+void MEDDLY::bitvector::attach(array_watcher *w)
+{
+    MEDDLY_DCASSERT(!watch);
+    MEDDLY_DCASSERT(!size);
+    if (!w) return;
+    watch = w;
+    watch->expandElementSize(0, sizeof(bool)*8);
 }
 
 void MEDDLY::bitvector::expand(size_t ns)

@@ -462,8 +462,10 @@ class MEDDLY::bitvector {
         bool* data;
         size_t size;
     public:
-        bitvector(bool link, array_watcher* w = nullptr);
+        bitvector(array_watcher* w=nullptr);
         ~bitvector();
+
+        void attach(array_watcher* w);
 
         void expand(size_t ns);
         void shrink(size_t ns);

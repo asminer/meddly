@@ -25,8 +25,7 @@
 
 namespace MEDDLY {
     class node_marker;
-    class node_headers;
-    class node_storage;
+    class array_watcher;
 };
 
 
@@ -35,7 +34,7 @@ namespace MEDDLY {
 */
 class MEDDLY::node_marker {
     public:
-        node_marker(bool permanent, node_headers &H, forest &F);
+        node_marker(const forest &F, array_watcher* w = nullptr);
         ~node_marker();
 
         inline bool hasParent(const forest* f) const {
@@ -149,8 +148,7 @@ class MEDDLY::node_marker {
 
     private:
         bitvector marked;
-        node_headers& nodeHead;
-        forest &For;
+        const forest &For;
 
         mystack* S_top;
         mystack* S_free;

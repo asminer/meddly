@@ -494,6 +494,11 @@ class MEDDLY::forest {
             return nodeHeaders.getNodeImplicitFlag(p);
         }
 
+        /// Get a node's address
+        inline node_address getNodeAddress(node_handle p) const {
+            return nodeHeaders.getNodeAddress(p);
+        }
+
     // ------------------------------------------------------------
     protected: // protected node header getters/setters
     // ------------------------------------------------------------
@@ -501,10 +506,6 @@ class MEDDLY::forest {
         /// Set the level of a node
         inline void setNodeLevel(node_handle p, int level) {
             nodeHeaders.setNodeLevel(p, level);
-        }
-
-        inline node_address getNodeAddress(node_handle p) const {
-            return nodeHeaders.getNodeAddress(p);
         }
 
         inline void setNodeAddress(node_handle p, node_address a) {
@@ -2124,7 +2125,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     /**
         Build a node marker.
     */
-    node_marker* makeNodeMarker();
+    node_marker* makeNodeMarker() const;
 
 
     /** Build a list of nodes in the subgraph below the given node.
@@ -2177,13 +2178,13 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 #ifdef ALLOW_DEPRECATED_0_17_3
 
     /// Show all the nodes in the subgraph below the given nodes.
-    void showNodeGraph(output &s, const node_handle* node, int n);
+    void showNodeGraph(output &s, const node_handle* node, int n) const;
 
     /// DEPRECATED; use dot_maker instead (see io_dot.h).
     /// Write all the nodes in the subgraph below the given nodes
     /// in a graphical format specified by the extension.
     void writeNodeGraphPicture(const char* filename, const char *extension,
-        const node_handle* nodes, const char* const* labels, int n);
+        const node_handle* nodes, const char* const* labels, int n) const;
 
 #endif
 

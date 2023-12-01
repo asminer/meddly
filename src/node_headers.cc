@@ -204,7 +204,7 @@ void MEDDLY::node_headers::initialize()
         cache_counts = new counter_array(this);
         incoming_counts = new counter_array(this);
     } else {
-        is_in_cache = new bitvector(true, this);
+        is_in_cache = new bitvector(this);
     }
 
     pessimistic = parent.getPolicies().isPessimistic();

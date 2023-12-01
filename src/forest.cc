@@ -548,7 +548,7 @@ MEDDLY::forest
     if (deflt.useReferenceCounts) {
         reachable = nullptr;
     } else {
-        reachable = new node_marker(true, nodeHeaders, *this);
+        reachable = new node_marker(*this, &nodeHeaders);
         nodeHeaders.linkReachable(reachable->linkBits());
     }
 }
@@ -1125,9 +1125,9 @@ void MEDDLY::expert_forest::countNodesByLevel(long* active) const
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 MEDDLY::node_marker*
-MEDDLY::expert_forest::makeNodeMarker()
+MEDDLY::expert_forest::makeNodeMarker() const
 {
-    node_marker* nm = new node_marker(false, nodeHeaders, *this);
+    node_marker* nm = new node_marker(*this);
     nm->expand(nodeHeaders.lastUsedHandle()+1);
     nm->unmarkAll();
     return nm;
@@ -1330,7 +1330,7 @@ bool MEDDLY::expert_forest
 #ifdef ALLOW_DEPRECATED_0_17_3
 
 void MEDDLY::expert_forest
-::showNodeGraph(output &s, const node_handle* p, int n)
+::showNodeGraph(output &s, const node_handle* p, int n) const
 {
     node_marker* M = makeNodeMarker();
     MEDDLY_DCASSERT(M);
@@ -1347,7 +1347,7 @@ void MEDDLY::expert_forest
 
 void MEDDLY::expert_forest
 ::writeNodeGraphPicture(const char* filename, const char *ext,
-    const node_handle* p, const char* const* labels, int n)
+    const node_handle* p, const char* const* labels, int n) const
 {
     if (filename == NULL || ext == NULL || p == NULL) return;
     if (!isMultiTerminal()) {
