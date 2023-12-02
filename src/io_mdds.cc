@@ -376,14 +376,12 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
 #endif
 }
 
-bool MEDDLY::mdd_reader::readRootEdge(dd_edge &E)
+void MEDDLY::mdd_reader::readRootEdge(dd_edge &E)
 {
     if (rptr >= roots.size()) {
-        return false;
-    } else {
-        E = roots[rptr];
-        ++rptr;
-        return true;
+        throw error(error::COULDNT_READ, __FILE__, __LINE__);
     }
+    E = roots[rptr];
+    ++rptr;
 }
 

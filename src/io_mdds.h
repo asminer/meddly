@@ -55,7 +55,8 @@ class MEDDLY::mdd_writer {
 class MEDDLY::mdd_reader {
     public:
         mdd_reader(input &s, forest* F);
-        bool readRootEdge(dd_edge &E);
+        void readRootEdge(dd_edge &E);
+        inline unsigned numRoots() const { return roots.size(); }
     private:
         std::vector <dd_edge> roots;
         unsigned rptr;

@@ -133,20 +133,23 @@ long writeReachset(FILE* s, int N)
 
   FILE_output mys(s);
 #ifdef WRITE_MXD
-  // Write NSF
-  mxd->writeEdges(mys, &nsf, 1);
+  mdd_writer wmxd(mys, mxd);
+  wmxd.writeRootEdge(nsf);
+  wmxd.finish();
 #endif
 
 #ifdef WRITE_MDD
   // Write initial state + reachable states
-  dd_edge list[2];
-  list[0] = init_state;
-  list[1] = reachable;
-  mdd->writeEdges(mys, list, 2);
+  mdd_writer wmdd(mys, mdd);
+  wmdd.writeRootEdge(init_state);
+  wmdd.writeRootEdge(reachable);
+  wmdd.finish();
 #endif
 
 #ifdef WRITE_EVMDD
-  evmdd->writeEdges(mys, &reach_index, 1);
+  mdd_writer wevmdd(mys, evmdd);
+  wevmdd.writeRootEdge(reach_index);
+  wevmdd.finish();
 #endif
 
   domain::destroy(d);
@@ -188,35 +191,42 @@ bool generateAndRead(FILE* s, int N)
 
   dd_edge list[2];
 #ifdef WRITE_MXD
-  mxd->readEdges(mys, list, 1);
-  if (list[0] != nsf) {
+  mdd_reader R_mxd(mys, mxd);
+  dd_edge r_nsf;
+  R_mxd.readRootEdge(r_nsf);
+  if (r_nsf != nsf) {
     printf("Failed to generate and read MXD\n");
     return false;
   }
 #endif
 
 #ifdef WRITE_MDD
-  mdd->readEdges(mys, list, 2);
-  if (list[0] != init_state) {
+  mdd_reader R_mdd(mys, mdd);
+  dd_edge r_init, r_reach;
+  R_mdd.readRootEdge(r_init);
+  R_mdd.readRootEdge(r_reach);
+  if (r_init != init_state) {
     printf("Failed to generate and read initial state\n");
     return false;
   }
-  if (list[1] != reachable) {
+  if (r_reach != reachable) {
     printf("Failed to generate and read reachable states\n");
     return false;
   }
 #endif
 
 #ifdef WRITE_EVMDD
-  evmdd->readEdges(mys, list, 1);
-  if (list[0] != reach_index) {
+  mdd_reader R_evmdd(mys, evmdd);
+  dd_edge r_index;
+  R_evmdd.readRootEdge(r_index);
+  if (r_index != reach_index) {
     printf("Failed to generate and read reachable state indexes\n");
     FILE_output myout(stdout);
     myout << "reach_index: " << reach_index << "\n";
-    myout << "from file  : " << list[0] << "\n";
+    myout << "from file  : " << r_index << "\n";
 #ifdef DEBUG_FILE
     reach_index.showGraph(myout);
-    list[0].showGraph(myout);
+    r_index.showGraph(myout);
 #endif
     return false;
   }
@@ -244,17 +254,21 @@ bool readAndGenerate(FILE* s, int N)
   forest* evmdd = forest::create(d, 0, range_type::INTEGER, edge_labeling::INDEX_SET);
 
   dd_edge mxdfile;
-  dd_edge mddfile[2];
+  dd_edge mddfile0, mddfile1;
   dd_edge indexfile;
   // Read from the file
 #ifdef WRITE_MXD
-  mxd->readEdges(mys, &mxdfile, 1);
+  mdd_reader R_mxd(mys, mxd);
+  R_mxd.readRootEdge(mxdfile);
 #endif
 #ifdef WRITE_MDD
-  mdd->readEdges(mys, mddfile, 2);
+  mdd_reader R_mdd(mys, mdd);
+  R_mdd.readRootEdge(mddfile0);
+  R_mdd.readRootEdge(mddfile1);
 #endif
 #ifdef WRITE_EVMDD
-  evmdd->readEdges(mys, &indexfile, 1);
+  mdd_reader R_evmdd(mys, evmdd);
+  R_evmdd.readRootEdge(indexfile);
 #endif
 
   // Build initial state
@@ -281,11 +295,11 @@ bool readAndGenerate(FILE* s, int N)
   }
 #endif
 #ifdef WRITE_MDD
-  if (mddfile[0] != init_state) {
+  if (mddfile0 != init_state) {
     printf("Failed to generate and read initial state\n");
     return false;
   }
-  if (mddfile[1] != reachable) {
+  if (mddfile1 != reachable) {
     printf("Failed to generate and read reachable states\n");
     return false;
   }
