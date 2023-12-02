@@ -1736,10 +1736,14 @@ MEDDLY::expert_forest::makeFixedColumnIter() const
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_3
+
 const char* MEDDLY::expert_forest::codeChars() const
 {
   return "unknown dd";
 }
+
+#endif
 
 void MEDDLY::expert_forest::normalize(unpacked_node &nb, int& ev) const
 {

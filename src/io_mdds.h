@@ -32,13 +32,20 @@ namespace MEDDLY {
 };
 
 
-/**     Object for writing MDDs to an exchange file.
+/**
+        Object for writing MDDs to an exchange file.
+        After construction, call writeRootEdge() for all
+        root edges to be included in the file, in order.
+        Call finish() to write the file to the stream.
+        A second call to finish() will do nothing.
+        Note the the destructor calls finish().
 */
 class MEDDLY::mdd_writer {
     public:
         mdd_writer(output &s, const forest* F);
         ~mdd_writer();
         inline void writeRootEdge(const dd_edge &E) {
+            MEDDLY_DCASSERT(!finished);
             roots.push_back(E);
         }
         void finish();
@@ -50,7 +57,13 @@ class MEDDLY::mdd_writer {
         bool finished;
 };
 
-/**     Object for reading MDDs from an exchange file.
+/**
+        Object for reading MDDs from an exchange file.
+        The file is read during object construction;
+        after that we can pull off the root edges from
+        the file by calling readRootEdge(),
+        in the same order that writeRootEdge() was called
+        when writing the file.
 */
 class MEDDLY::mdd_reader {
     public:

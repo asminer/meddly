@@ -2400,8 +2400,10 @@ class MEDDLY::expert_forest: public MEDDLY::forest
   // virtual, with default implementation.
   // Should be overridden in appropriate derived classes.
 
+#ifdef ALLOW_DEPRECATED_0_17_3
     /// Character sequence used when writing forests to files.
     virtual const char* codeChars() const;
+#endif
 
 
     /** Normalize a node.

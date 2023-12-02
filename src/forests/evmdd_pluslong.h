@@ -66,7 +66,9 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
 
   protected:
     virtual void normalize(unpacked_node &nb, long& ev) const;
+#ifdef ALLOW_DEPRECATED_0_17_3
     virtual const char* codeChars() const;
+#endif
 
   protected:
     class evpimdd_iterator : public enumerator::iterator {

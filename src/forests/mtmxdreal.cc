@@ -119,9 +119,11 @@ void MEDDLY::mt_mxd_real::showEdge(output &s, const edge_value &ev,
     }
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_3
 
 const char* MEDDLY::mt_mxd_real::codeChars() const
 {
   return "dd_txr";
 }
 
+#endif

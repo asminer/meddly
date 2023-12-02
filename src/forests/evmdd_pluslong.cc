@@ -309,10 +309,14 @@ void MEDDLY::evmdd_pluslong::normalize(unpacked_node &nb, long& ev) const
   }
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_3
+
 const char* MEDDLY::evmdd_pluslong::codeChars() const
 {
   return "dd_epvi";
 }
+
+#endif
 
 // ******************************************************************
 // *                                                                *

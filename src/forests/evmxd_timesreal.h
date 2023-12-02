@@ -74,7 +74,9 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
 
   protected:
     virtual void normalize(unpacked_node &nb, float& ev) const;
+#ifdef ALLOW_DEPRECATED_0_17_3
     virtual const char* codeChars() const;
+#endif
 
   protected:
     class evtrmxd_baseiter : public enumerator::iterator {

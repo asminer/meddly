@@ -118,10 +118,14 @@ void MEDDLY::mt_mxd_bool::showEdge(output &s, const edge_value &ev,
 }
 
 
+#ifdef ALLOW_DEPRECATED_0_17_3
+
 const char* MEDDLY::mt_mxd_bool::codeChars() const
 {
   return "dd_txb";
 }
+
+#endif
 
 bool
 MEDDLY::mt_mxd_bool::checkTerminalMinterm(node_handle a,  int* from,  int* to, int levelRead, node_handle &result)

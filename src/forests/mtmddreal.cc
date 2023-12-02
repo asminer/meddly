@@ -110,8 +110,11 @@ void MEDDLY::mt_mdd_real::showEdge(output &s, const edge_value &ev,
     }
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_3
+
 const char* MEDDLY::mt_mdd_real::codeChars() const
 {
   return "dd_tvr";
 }
 
+#endif

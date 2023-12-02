@@ -146,10 +146,14 @@ void MEDDLY::evmxd_pluslong::normalize(unpacked_node &nb, long& ev) const
   }
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_3
+
 const char* MEDDLY::evmxd_pluslong::codeChars() const
 {
   return "dd_etxr";
 }
+
+#endif
 
 // ******************************************************************
 // *                                                                *

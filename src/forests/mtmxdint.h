@@ -44,8 +44,10 @@ class MEDDLY::mt_mxd_int : public mtmxd_forest {
 
     virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
 
+#ifdef ALLOW_DEPRECATED_0_17_3
   protected:
     virtual const char* codeChars() const;
+#endif
 };
 
 #endif

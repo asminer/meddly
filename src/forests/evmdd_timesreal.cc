@@ -137,10 +137,14 @@ void MEDDLY::evmdd_timesreal::normalize(unpacked_node &nb, float& ev) const
   }
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_3
+
 const char* MEDDLY::evmdd_timesreal::codeChars() const
 {
   return "dd_etvr";
 }
+
+#endif
 
 // ******************************************************************
 // *                                                                *

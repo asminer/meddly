@@ -120,9 +120,11 @@ void MEDDLY::mt_mxd_int::showEdge(output &s, const edge_value &ev,
 }
 
 
+#ifdef ALLOW_DEPRECATED_0_17_3
 
 const char* MEDDLY::mt_mxd_int::codeChars() const
 {
   return "dd_txi";
 }
 
+#endif
