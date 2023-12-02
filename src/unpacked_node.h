@@ -212,14 +212,6 @@ class MEDDLY::unpacked_node {
         */
         void show(output &s, bool details) const;
 
-        /** Write a node in machine-readable format.
-            OLD VERSION.
-
-            @param  s       Output stream.
-            @param  map     Translation to use on node handles.
-                            Allows us to renumber nodes as we write them.
-        */
-        void write(output &s, const node_handle* map) const;
 
         /** Write a node in machine-readable format.
 

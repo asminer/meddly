@@ -301,65 +301,6 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
     parent->showHeaderInfo(s, *this);
 }
 
-void MEDDLY::unpacked_node::write(output &s, const node_handle* map) const
-{
-    unsigned stop;
-    if (isSparse()) {
-        s.put(-long(nnzs));
-        stop = nnzs;
-    } else {
-        s.put(long(size));
-        stop = size;
-    }
-
-    //
-    // write indexes (sparse only)
-    //
-    if (isSparse()) {
-        s.put('\n');
-        s.put('\t');
-        for (unsigned z=0; z<nnzs; z++) {
-            s.put(' ');
-            s.put((unsigned long) i(z));
-        }
-    }
-
-    //
-    // write down pointers
-    //
-    s.put('\n');
-    s.put('\t');
-    for (unsigned z=0; z<stop; z++) {
-        s.put(' ');
-        if (d(z) <= 0) {
-            // terminal
-            terminal t(the_terminal_type, d(z));
-            t.write(s);
-        } else {
-            // non-terminal
-            s.put("n ");
-            s.put(long( map ? map[d(z)] : d(z) ));
-        }
-    }
-
-    //
-    // write edge values, if any
-    //
-    if (edge_type::VOID != the_edge_type) {
-        s.put('\n');
-        s.put('\t');
-        for (unsigned z=0; z<stop; z++) {
-            s.put(' ');
-            _edge[z].write(s);
-        }
-    }
-    s.put('\n');
-
-
-    // write extra header stuff, should no-op if there isn't any
-    parent->writeHeaderInfo(s, *this);
-}
-
 
 void MEDDLY::unpacked_node::write(output &s, const std::vector <unsigned> &map)
     const
@@ -420,6 +361,7 @@ void MEDDLY::unpacked_node::write(output &s, const std::vector <unsigned> &map)
     // write extra header stuff, should no-op if there isn't any
     parent->writeHeaderInfo(s, *this);
 }
+
 
 void MEDDLY::unpacked_node::read(input &s, const node_handle* map)
 {
