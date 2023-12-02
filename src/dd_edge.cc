@@ -229,35 +229,6 @@ void MEDDLY::dd_edge::writePicture(const char* filename,
 
 #endif
 
-void MEDDLY::dd_edge::write(output &s, node_handle* map) const
-{
-    //
-    // Edge info
-    //
-    edgeval.write(s);
-    s.put(' ');
-
-    //
-    // Node info
-    //
-    if (node <= 0) {
-        //
-        // terminal
-        //
-        expert_forest* efp = static_cast <expert_forest*> (
-                forest::getForestWithID(parentFID)
-        );
-        terminal t;
-        t.setFromHandle(efp->getTerminalType(), node);
-        t.write(s);
-    } else {
-        //
-        // non-terminal
-        //
-        s.put("n ");
-        s.put(long( map ? map[node] : node ));
-    }
-}
 
 void MEDDLY::dd_edge::write(output &s, const std::vector <unsigned> &map) const
 {
@@ -289,7 +260,8 @@ void MEDDLY::dd_edge::write(output &s, const std::vector <unsigned> &map) const
     }
 }
 
-void MEDDLY::dd_edge::read(input &s, node_handle* map)
+
+void MEDDLY::dd_edge::read(input &s, const std::vector <node_handle> &map)
 {
 #ifdef DEBUG_READ_DD
     std::cerr << "    in dd_edge::read\n";
@@ -310,7 +282,7 @@ void MEDDLY::dd_edge::read(input &s, node_handle* map)
         //
         long d = s.get_integer();
         if (d<0) throw error(error::INVALID_FILE, __FILE__, __LINE__);
-        set_and_link(map ? map[d] : d);
+        set_and_link(map[d]);
     } else {
         //
         // terminal

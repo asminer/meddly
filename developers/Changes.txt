@@ -2,12 +2,20 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
+(*) forest i/o:
+    make a helper like io_dot.h, maybe io_mdd.h
 
+        class mdd_writer {
+            mdd_writer(output &s, const forest* F);
+            void writeRootEdge(const dd_edge &E);
+            void finish();
+        };
 
-(*) unpacked node create/destroy timing test
+        class mdd_reader {
+            mdd_reader(input &s, forest* F);
+            void readRootEdge(dd_edge &e);
+        };
 
-        build {blank, redundant, identity} x {full, sparse}
-        for MT and EV forests
 
 
 (*) tie unpacked nodes to forests

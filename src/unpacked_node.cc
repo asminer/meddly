@@ -363,7 +363,7 @@ void MEDDLY::unpacked_node::write(output &s, const std::vector <unsigned> &map)
 }
 
 
-void MEDDLY::unpacked_node::read(input &s, const node_handle* map)
+void MEDDLY::unpacked_node::read(input &s, const std::vector<node_handle> &map)
 {
 #ifdef DEBUG_READ_DD
     std::cerr << "  in unpacked_node::read\n";
@@ -412,7 +412,7 @@ void MEDDLY::unpacked_node::read(input &s, const node_handle* map)
             if (d < 0) {
                 throw error(error::INVALID_FILE, __FILE__, __LINE__);
             }
-            d_ref(z) = modparent->linkNode(map ? map[d] : d);
+            d_ref(z) = modparent->linkNode(map[d]);
         } else {
             // terminal
             s.unget(c);

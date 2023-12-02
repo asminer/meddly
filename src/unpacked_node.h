@@ -216,7 +216,7 @@ class MEDDLY::unpacked_node {
         /** Write a node in machine-readable format.
 
             @param  s       Output stream.
-            @param  map     Translation to use on node handles.
+            @param  map     Translation to use from node handle to file node#.
                             Allows us to renumber nodes as we write them.
         */
         void write(output &s, const std::vector <unsigned> &map) const;
@@ -225,10 +225,10 @@ class MEDDLY::unpacked_node {
         /** Read a node in machine-readable format.
 
             @param  s       Input stream.
-            @param  map     Translation to use on node handles.
+            @param  map     Translation from file node# to node handles.
                             Allows us to renumber nodes as we read them.
         */
-        void read(input &s, const node_handle* map);
+        void read(input &s, const std::vector <node_handle> &map);
 
     public:
         //

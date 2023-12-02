@@ -1480,150 +1480,164 @@ void MEDDLY::expert_forest
 
 void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, unsigned n)
 {
-  try {
-    const char* block = codeChars();
+    try {
+        const char* block = codeChars();
 
-    s.stripWS();
-    s.consumeKeyword(block);
-    s.stripWS();
-    int num_nodes = s.get_integer();
+        s.stripWS();
+        s.consumeKeyword(block);
+        s.stripWS();
+        unsigned num_nodes = unsigned(s.get_integer());
 #ifdef DEBUG_READ_DD
-    std::cerr << "Reading " << num_nodes << " nodes in " << block << " forest\n";
+        std::cerr << "Reading " << num_nodes << " nodes in " << block << " forest\n";
 #endif
 #ifdef DEBUG_READ
-    printf("Reading %d nodes in forest %s\n", num_nodes, codeChars());
+        std::cerr << "Reading " << num_nodes << " nodes in forest " << block << "\n";
+
 #endif
 
-    // start a mapping
-    node_handle* map = new node_handle[num_nodes+1];
-    for (int i=0; i<=num_nodes; i++) map[i] = 0;
+        //
+        // Build translation from file node# to forest node handles
+        //
+        std::vector <node_handle> map(1+num_nodes);
 
-    for (int node_index=1; node_index<=num_nodes; node_index++) {
-      // Read this node
+        for (unsigned node_index=1; node_index<=num_nodes; node_index++) {
+            // Read this node
 
-      // read the level number
-      s.stripWS();
-      int k = s.get_integer();
-      if (!isValidLevel(k)) {
-        throw error(error::INVALID_LEVEL, __FILE__, __LINE__);
-      }
+            //
+            // read the level number
+            //
+            s.stripWS();
+            int k = s.get_integer();
+            if (!isValidLevel(k)) {
+                throw error(error::INVALID_LEVEL, __FILE__, __LINE__);
+            }
 
 #ifdef DEBUG_READ
-      printf("Reading %d ", k);
+            std::cerr << "Reading: level " << k;
 #endif
 
-      // read the node size (sparse/full)
-      s.stripWS();
-      int rawsize = s.get_integer();
-      int n;
-      unpacked_node* nb = (rawsize < 0)
-        ? unpacked_node::newSparse(this, k, n=-rawsize)
-        : unpacked_node::newFull(this, k, n=rawsize);
+            //
+            // read the node size (sparse/full)
+            //
+            s.stripWS();
+            int rawsize = s.get_integer();
+            int n;
+            unpacked_node* nb = (rawsize < 0)
+                ? unpacked_node::newSparse(this, k, n=-rawsize)
+                : unpacked_node::newFull(this, k, n=rawsize);
 
 #ifdef DEBUG_READ
-      printf("%d ", rawsize);
+            std::cerr << " rawsize " << rawsize << '\n';
 #endif
 
-      //
-      // read the node
-      //
-      nb->read(s, map);
+            //
+            // read the node
+            //
+            nb->read(s, map);
 
-
-      // ok, done reading; time to reduce it
-      map[node_index] = createReducedNode(-1, nb);
+            //
+            // Reduce the node, and update the translation
+            //
+            map[node_index] = createReducedNode(-1, nb);
 
 #ifdef DEBUG_READ
-      printf("\nNode index %d reduced to ", node_index);
-      FILE_output myout(stdout);
-      showNode(myout, map[node_index], SHOW_DETAILS | SHOW_INDEX);
-      printf("\n");
+            std::cerr << "File node " << node_index << " reduced to ";
+            ostream_output myout(std::cerr);
+            showNode(myout, map[node_index], SHOW_DETAILS | SHOW_INDEX);
+            std::cerr << std::endl;
 #endif
 
-  } // for node_index
+        } // for node_index
 
-    // reverse the block
-    static char buffer[40];
-    int blocklen = strlen(block);
-    MEDDLY_DCASSERT(blocklen < 40);
-    for (int i=0; i<blocklen; i++) {
-      buffer[i] = block[blocklen-i-1];
-    }
-    buffer[blocklen] = 0;
+        // reverse the block
+        static char buffer[40];
+        int blocklen = strlen(block);
+        MEDDLY_DCASSERT(blocklen < 40);
+        for (int i=0; i<blocklen; i++) {
+            buffer[i] = block[blocklen-i-1];
+        }
+        buffer[blocklen] = 0;
 #ifdef DEBUG_READ
-    printf("Done reading, expecting %s keyword\n", buffer);
+        std::cerr << "Done reading, expecting " << buffer << " keyword\n";
 #endif
 
-    // match the reversed block
-    s.stripWS();
-    s.consumeKeyword(buffer);
+        //
+        // match the reversed block
+        //
+        s.stripWS();
+        s.consumeKeyword(buffer);
 #ifdef DEBUG_READ
-    printf("Got %s\n", buffer);
-#endif
-#ifdef DEBUG_READ_DD
-    std::cerr << "Finished " << buffer << " forest\n";
-#endif
-
-    // Read the pointers
-    s.stripWS();
-    s.consumeKeyword("ptrs");
-#ifdef DEBUG_READ
-    printf("Got ptrs\n");
-#endif
-
-    s.stripWS();
-    int num_ptrs = s.get_integer();
-#ifdef DEBUG_READ
-    printf("Reading %d pointers\n", num_ptrs);
+        std::cerr << "  got " << buffer << "\n";
 #endif
 #ifdef DEBUG_READ_DD
-    std::cerr << "Reading " << num_ptrs << " pointers\n";
+        std::cerr << "Finished " << buffer << " forest\n";
 #endif
-    MEDDLY_DCASSERT(num_ptrs <= n);
-    if (num_ptrs > n) {
-#ifdef DEBUG_READ
-      printf("Error at %s:%d, E[] is of size %d, needs to be at least %d\n",
-        __FILE__, __LINE__, n, num_ptrs);
-      fflush(stdout);
-#endif
-      throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
-    }
-    for (int i=0; i<num_ptrs; i++) {
-        E[i].attach(this);
-        E[i].read(s, map);
-    }
 
-    s.stripWS();
-    s.consumeKeyword("srtp");
+        //
+        // Read the pointers
+        //
+        s.stripWS();
+        s.consumeKeyword("ptrs");
+#ifdef DEBUG_READ
+        std::cerr << "Got ptrs\n";
+#endif
+
+        s.stripWS();
+        unsigned num_ptrs = unsigned(s.get_integer());
+#ifdef DEBUG_READ
+        std::cerr << "Reading " << num_ptrs << " pointers\n";
+#endif
+#ifdef DEBUG_READ_DD
+        std::cerr << "Reading " << num_ptrs << " pointers\n";
+#endif
+        MEDDLY_DCASSERT(num_ptrs <= n);
+        if (num_ptrs > n) {
+#ifdef DEBUG_READ
+            std::cerr   << "Error at " << __FILE__ << ":" << __LINE__
+                        << ", E[] is of size " << n
+                        << ", needs to be at least " << num_ptrs << std::endl;
+#endif
+            throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
+        }
+        for (unsigned i=0; i<num_ptrs; i++) {
+            E[i].attach(this);
+            E[i].read(s, map);
+        }
+
+        s.stripWS();
+        s.consumeKeyword("srtp");
 
 #ifdef DEBUG_READ_DD
-    std::cerr << "Done reading pointers\n";
+        std::cerr << "Done reading pointers\n";
 #endif
 
-    // unlink map pointers
-    for (int i=0; i<=num_nodes; i++) unlinkNode(map[i]);
-    delete[] map;
+        //
+        // unlink map pointers
+        //
+        for (unsigned i=1; i<=num_nodes; i++) {
+            unlinkNode(map[i]);
+        }
 
 #ifdef DEVELOPMENT_CODE
-    validateIncounts(true);
+        validateIncounts(true);
 #endif
-  } // try
-  catch (error& e) {
+    } // try
+    catch (error& e) {
 #ifdef DEBUG_READ
-    printf("Read failed (error: %s)\n", e.getName());
-    printf("Failed, next few characters of file:\n");
-    for (int i=0; i<10; i++) {
-      int c = s.get_char();
-      if (EOF == c) {
-        printf("EOF");
-        break;
-      }
-      printf("%c (%d) ", c, c);
-    }
-    fputc('\n', stdout);
+        std::cerr << "Read failed (error: " << e.getName() << ")\n";
+        std::cerr << "Next few characters of file:\n";
+        for (unsigned i=0; i<20; i++) {
+            int c = s.get_char();
+            if (EOF == c) {
+                std::cerr << "EOF";
+                break;
+            }
+            std::cerr << char(c) << " (" << c << ") ";
+        }
+        std::cerr << std::endl;
 #endif
-    throw e;
-  }
+        throw e;
+    }
 }
 
 /*
