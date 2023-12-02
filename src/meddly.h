@@ -19,6 +19,7 @@
 #include "error.h"
 #include "io.h"
 #include "io_dot.h"
+#include "io_mdds.h"
 #include "memstats.h"
 #include "variable.h"
 #include "varorder.h"

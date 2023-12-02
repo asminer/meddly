@@ -1387,6 +1387,8 @@ void MEDDLY::expert_forest
 // '                                                                '
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+#ifdef ALLOW_DEPRECATED_0_17_3
+
 void MEDDLY::expert_forest
 ::writeEdges(output &s, const dd_edge* E, unsigned n) const
 {
@@ -1639,6 +1641,8 @@ void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, unsigned n)
         throw e;
     }
 }
+
+#endif
 
 /*
 

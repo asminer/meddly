@@ -1632,9 +1632,13 @@ class MEDDLY::forest {
   // ------------------------------------------------------------
   // abstract virtual.
   public:
+
+#ifdef ALLOW_DEPRECATED_0_17_3
+
     /** Write edges to a file in a format that can be read back later.
         This implies that all nodes "below" those edges are also
         written to the file.
+        DEPRECATED; use mdd_writer object instead (see io_mdds.h).
           @param  s   Stream to write to
           @param  E   Array of edges
           @param  n   Dimension of the edge array
@@ -1648,6 +1652,7 @@ class MEDDLY::forest {
         saved using \a writeEdges().
         The forest does not need to be empty;
         the edges are added to the forest as necessary.
+        DEPRECATED; use mdd_reader object instead (see io_mdds.h).
           @param  s   Stream to read from
           @param  E   Array of edges
           @param  n   Dimension of the edge array
@@ -1656,13 +1661,7 @@ class MEDDLY::forest {
                       including different number of edges specified.
     */
     virtual void readEdges(input &s, dd_edge* E, unsigned n) = 0;
-
-//        virtual void readEdgeValue(input &s, dd_edge &E) const = 0;
-        // virtual void writeEdgeValue(output &s, const dd_edge &E) const = 0;
-        // virtual void showEdgeValue(output &s, const dd_edge &E) const = 0;
-
-        // void readEdge(input &s, dd_edge &E, const node_handle* map);
-        // void writeEdge(output &s, const dd_edge &E, const node_handle* map) const;
+#endif
 
         /**
             Show an edge, compactly.
@@ -1673,17 +1672,6 @@ class MEDDLY::forest {
         */
         virtual void showEdge(output &s, const edge_value &ev, node_handle d) const = 0;
 
-        /** Write an edge value in machine-readable format.
-            @param  s       Stream to write to.
-            @param  edge    Edge value
-        */
-        // virtual void writeEdgeValue(output &s, const edge_value &edge) const;
-
-        /** Read an edge value in machine-readable format.
-            @param  s       Stream to read from.
-            @param  edge    Edge value
-        */
-        // virtual void readEdgeValue(input &s, edge_value &edge);
 
 private:
     /**
@@ -2272,8 +2260,11 @@ class MEDDLY::expert_forest: public MEDDLY::forest
   // virtual in the base class, but implemented here.
   // See meddly.h for descriptions of these methods.
 
+#ifdef ALLOW_DEPRECATED_0_17_3
     virtual void writeEdges(output &s, const dd_edge* E, unsigned n) const;
     virtual void readEdges(input &s, dd_edge* E, unsigned n);
+#endif
+
     // virtual void garbageCollect();
     // virtual void compactMemory();
     virtual void showInfo(output &strm, int verbosity);
