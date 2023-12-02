@@ -1641,7 +1641,7 @@ class MEDDLY::forest {
 
           @throws     COULDNT_WRITE, if writing failed
     */
-    virtual void writeEdges(output &s, const dd_edge* E, int n) const = 0;
+    virtual void writeEdges(output &s, const dd_edge* E, unsigned n) const = 0;
 
     /** Read edges from a file.
         Allows reconstruction of edges that we
@@ -1655,7 +1655,7 @@ class MEDDLY::forest {
           @throws     INVALID_FILE, if the file does not match what we expect,
                       including different number of edges specified.
     */
-    virtual void readEdges(input &s, dd_edge* E, int n) = 0;
+    virtual void readEdges(input &s, dd_edge* E, unsigned n) = 0;
 
 //        virtual void readEdgeValue(input &s, dd_edge &E) const = 0;
         // virtual void writeEdgeValue(output &s, const dd_edge &E) const = 0;
@@ -2272,8 +2272,8 @@ class MEDDLY::expert_forest: public MEDDLY::forest
   // virtual in the base class, but implemented here.
   // See meddly.h for descriptions of these methods.
 
-    virtual void writeEdges(output &s, const dd_edge* E, int n) const;
-    virtual void readEdges(input &s, dd_edge* E, int n);
+    virtual void writeEdges(output &s, const dd_edge* E, unsigned n) const;
+    virtual void readEdges(input &s, dd_edge* E, unsigned n);
     // virtual void garbageCollect();
     // virtual void compactMemory();
     virtual void showInfo(output &strm, int verbosity);

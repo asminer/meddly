@@ -45,16 +45,19 @@ namespace MEDDLY {
 
   // Handy Macros
 
-  /// Standard MAX "macro".
-  template <class T> inline T MAX(T X,T Y) { return ((X>Y)?X:Y); }
-  /// Standard MIN "macro".
-  template <class T> inline T MIN(T X,T Y) { return ((X<Y)?X:Y); }
-  /// Standard ABS "macro".
-  template <class T> inline T ABS(T X) { return ((X<0)?(-X):(X)); }
-  /// SWAP "macro".
-  template <class T> inline void SWAP(T &x, T &y) { T tmp=x; x=y; y=tmp; }
-  /// POSITIVE "macro".
-  template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
+    /// Standard MAX "macro".
+    template <class T> inline T MAX(T X,T Y) { return ((X>Y)?X:Y); }
+    /// Standard MIN "macro".
+    template <class T> inline T MIN(T X,T Y) { return ((X<Y)?X:Y); }
+    /// Standard ABS "macro".
+    template <class T> inline T ABS(T X) { return ((X<0)?(-X):(X)); }
+    /// SWAP "macro".
+    template <class T> inline void SWAP(T &x, T &y) { T tmp=x; x=y; y=tmp; }
+    /// POSITIVE "macro".
+    template <class T> inline bool POSITIVE(T X) { return (X>0) ? true : false; }
+
+    /// Update a maximum
+    template <class T> inline void UPDATEMAX(T &X, T Y) { if (Y > X) X = Y; }
 
     // Number of digits
     template <class T>

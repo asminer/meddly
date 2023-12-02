@@ -1388,29 +1388,31 @@ void MEDDLY::expert_forest
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 void MEDDLY::expert_forest
-::writeEdges(output &s, const dd_edge* E, int n) const
+::writeEdges(output &s, const dd_edge* E, unsigned n) const
 {
+
+#if 0
 
     node_handle* eRaw = new node_handle[n];
     for (int i=0; i<n; i++) {
         eRaw[i] = E[i].getNode();
     }
-    node_handle* output2index = markNodesInSubgraph(eRaw, n, false);
+    node_handle* output2handle = markNodesInSubgraph(eRaw, n, false);
     delete[] eRaw;
 
     // Make a dummy array for fringe case where
     // there are no non-zero nodes in the subgraph.
-    if (0 == output2index) {
-        output2index = (node_handle*) malloc(1*sizeof(node_handle));
-        output2index[0] = 0;
+    if (0 == output2handle) {
+        output2handle = (node_handle*) malloc(1*sizeof(node_handle));
+        output2handle[0] = 0;
     }
 
     // move a pointer to the end of the list, and
     // find the largest node index we're writing
     int maxnode = 0;
     int last;
-    for (last = 0; output2index[last]; last++) {
-        maxnode = MAX(maxnode, output2index[last]);
+    for (last = 0; output2handle[last]; last++) {
+        maxnode = MAX(maxnode, output2handle[last]);
     };
     int num_nodes = last;
     last--;
@@ -1421,14 +1423,14 @@ void MEDDLY::expert_forest
         while (i < last) {
             // move last to the left, until we have something not at level k
             for (; i < last; last--) {
-                if (getNodeLevel(output2index[last]) != k) break;
+                if (getNodeLevel(output2handle[last]) != k) break;
             }
             // move i to the right, until we have something at level k
             for (; i < last; i++) {
-                if (getNodeLevel(output2index[i]) == k) break;
+                if (getNodeLevel(output2handle[i]) == k) break;
             }
             if (i < last) {
-                SWAP(output2index[i], output2index[last]);
+                SWAP(output2handle[i], output2handle[last]);
             }
         }
 
@@ -1438,28 +1440,72 @@ void MEDDLY::expert_forest
     } // loop over levels
 
     // build the inverse mapping
-    node_handle* index2output = new node_handle[maxnode+1];
-    for (int i=0; i<maxnode; i++) index2output[i] = 0;
-    for (int i=0; output2index[i]; i++) {
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, output2index[i], maxnode+1);
-        index2output[output2index[i]] = i+1;
+    node_handle* handle2output = new node_handle[maxnode+1];
+    for (int i=0; i<maxnode; i++) handle2output[i] = 0;
+    for (int i=0; output2handle[i]; i++) {
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, output2handle[i], maxnode+1);
+        handle2output[output2handle[i]] = i+1;
     }
 
+#else
+    //
+    // Mark all reachable nodes
+    //
+    node_marker M(this);
+    for (unsigned i=0; i<n; i++) {
+        M.mark(E[i].getNode());
+    }
+
+    //
+    // Build list of nodes to write, in bottom-up order.
+    // When finished, output2handle[i] gives the handle
+    // of the ith node to write.
+    //
+    vector <node_handle> output2handle;
+    for (int k=1; k <= getNumVariables(); k++) {
+        if (isForRelations()) {
+            M.getNodesAtLevel(-k, output2handle);
+        }
+
+        M.getNodesAtLevel(k, output2handle);
+    } // for k
+    const unsigned num_nodes = output2handle.size();
+
+    //
+    // Build the inverse list.
+    // When finished, handle2output[h] gives 0 if the node with handle h
+    // will not be written; otherwise it gives the order it appears in
+    // the output file.
+    //
+    node_handle maxnode = 0;
+    for (unsigned i=0; i<output2handle.size(); i++) {
+        UPDATEMAX(maxnode, output2handle[i]);
+    }
+    vector <unsigned> handle2output (1+maxnode);
+    for (unsigned i=0; i<output2handle.size(); i++) {
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, output2handle[i], maxnode+1);
+        handle2output[output2handle[i]] = i+1;
+    }
+
+
+#endif
+
 #ifdef DEBUG_WRITE
-    printf("Writing edges:\n");
-    showNodeGraph(stdout, eRaw, n);
-    printf("Got list of nodes:\n");
-    for (int i=0; output2index[i]; i++) {
-        if (i) printf(", ");
-        printf("%ld", long(output2index[i]));
+    ostream_output out(std::cout);
+    // out << "Writing edges:\n";
+    // showNodeGraph(out, eRaw, n);
+    out << "Got list of nodes:\n";
+    for (int i=0; output2handle[i]; i++) {
+        if (i) out << ", ";
+        out << output2handle[i];
     }
-    printf("\n");
-    printf("Got inverse list:\n");
+    out << "\n";
+    out << "Got inverse list:\n";
     for (int i=0; i<=maxnode; i++) {
-        if (i) printf(", ");
-        printf("%ld", long(index2output[i]));
+        if (i) out << ", ";
+        out << handle2output[i];
     }
-    printf("\n");
+    out << "\n";
 #endif
 
     // Write the nodes
@@ -1467,10 +1513,11 @@ void MEDDLY::expert_forest
     s << block << " " << num_nodes << "\n";
 
     unpacked_node* un = unpacked_node::New();
-    for (int i=0; output2index[i]; i++) {
-        s << getNodeLevel(output2index[i]) << " ";
-        unpackNode(un, output2index[i], FULL_OR_SPARSE);
-        un->write(s, index2output);
+    // for (int i=0; output2handle[i]; i++) {
+    for (unsigned i=0; i<output2handle.size(); i++) {
+        s << getNodeLevel(output2handle[i]) << " ";
+        unpackNode(un, output2handle[i], FULL_OR_SPARSE);
+        un->write(s, handle2output);
     }
     unpacked_node::recycle(un);
 
@@ -1483,20 +1530,22 @@ void MEDDLY::expert_forest
 
     // Write the actual edge pointers
     s << "ptrs " << n << "\n";
-    for (int i=0; i<n; i++) {
+    for (unsigned i=0; i<n; i++) {
         s.put('\t');
-        E[i].write(s, index2output);
+        E[i].write(s, handle2output);
         s.put('\n');
     }
     s << "srtp\n";
 
 
+#if 0
     // Cleanup
-    delete[] index2output;
-    free(output2index);
+    delete[] handle2output;
+    free(output2handle);
+#endif
 }
 
-void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, int n)
+void MEDDLY::expert_forest::readEdges(input &s, dd_edge* E, unsigned n)
 {
   try {
     const char* block = codeChars();

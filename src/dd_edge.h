@@ -171,11 +171,20 @@ class MEDDLY::dd_edge {
 
         /**
             Write the edge information to a file (stream).
+            OLD VERSION.
                 @param  s       Stream to write to
                 @param  map     Mapping for non-terminal handles,
                                 or null for identity mapping.
         */
         void write(output &s, node_handle* map) const;
+
+        /**
+            Write the edge information to a file (stream).
+                @param  s       Stream to write to
+                @param  map     Mapping for non-terminal handles,
+                                or null for identity mapping.
+        */
+        void write(output &s, const std::vector <unsigned> &map) const;
 
         /**
             Read the edge information from a file (stream).

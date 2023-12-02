@@ -35,7 +35,7 @@ class MEDDLY::trackpeak {
     public:
         inline void operator += (size_t s) {
             current += s;
-            if (current > peak) peak = current;
+            UPDATEMAX(peak, current);
         }
         inline void operator -= (size_t s) {
             MEDDLY_DCASSERT(current >= s);

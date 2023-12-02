@@ -259,6 +259,36 @@ void MEDDLY::dd_edge::write(output &s, node_handle* map) const
     }
 }
 
+void MEDDLY::dd_edge::write(output &s, const std::vector <unsigned> &map) const
+{
+    //
+    // Edge info
+    //
+    edgeval.write(s);
+    s.put(' ');
+
+    //
+    // Node info
+    //
+    if (node <= 0) {
+        //
+        // terminal
+        //
+        expert_forest* efp = static_cast <expert_forest*> (
+                forest::getForestWithID(parentFID)
+        );
+        terminal t;
+        t.setFromHandle(efp->getTerminalType(), node);
+        t.write(s);
+    } else {
+        //
+        // non-terminal
+        //
+        s.put("n ");
+        s.put(map[node]);
+    }
+}
+
 void MEDDLY::dd_edge::read(input &s, node_handle* map)
 {
 #ifdef DEBUG_READ_DD
