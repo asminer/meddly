@@ -276,7 +276,7 @@ void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
   dd_edge root(mxd), maxDiag(transF), Rpdi(transF);
 
   // Build from top down
-  for (int level = transF->getNumVariables(); level > 0; level--) {
+  for (int level = transF->getMaxLevelIndex(); level > 0; level--) {
     splits[level].attach(transF);
     if (root.getNode() == 0) {
       // common and easy special case
@@ -325,7 +325,7 @@ void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
 #ifdef DEBUG_SPLIT
   printf("After splitting monolithic event in msat\n");
   printf("splits array: [");
-  for (int k = 0; k <= transF->getNumVariables(); k++) {
+  for (unsigned k = 0; k <= transF->getNumVariables(); k++) {
     if (k) printf(", ");
     printf("%d", splits[k]);
   }
@@ -817,7 +817,7 @@ void MEDDLY::transitive_closure_evplus::saveResult(ct_entry_key* key,
 
 void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c)
 {
-  saturate(aev, a, bev, b, tcF->getNumVariables(), cev, c);
+  saturate(aev, a, bev, b, tcF->getMaxLevelIndex(), cev, c);
 }
 
 void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev, node_handle b, int level, long& cev, node_handle& c)

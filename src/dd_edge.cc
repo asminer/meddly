@@ -256,7 +256,7 @@ void MEDDLY::dd_edge::write(output &s, const std::vector <unsigned> &map) const
         // non-terminal
         //
         s.put("n ");
-        s.put(map[node]);
+        s.put(map[unsigned(node)]);
     }
 }
 
@@ -282,7 +282,7 @@ void MEDDLY::dd_edge::read(input &s, const std::vector <node_handle> &map)
         //
         long d = s.get_integer();
         if (d<0) throw error(error::INVALID_FILE, __FILE__, __LINE__);
-        set_and_link(map[d]);
+        set_and_link(map[unsigned(d)]);
     } else {
         //
         // terminal

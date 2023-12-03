@@ -109,7 +109,7 @@ MEDDLY::sathyb_opname::hybrid_relation::hybrid_relation(forest* inmdd, forest* r
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   // Forests are good; set number of variables
-  num_levels = insetF->getDomain()->getNumVariables() + 1;
+  num_levels = insetF->getMaxLevelIndex() + 1;
 
   //Allocate event_list
   event_list = (node_handle**)malloc(unsigned(num_levels)*sizeof(node_handle*));
@@ -502,7 +502,7 @@ MEDDLY::sathyb_opname::hybrid_relation::buildMxdForest()
 {
 
   //Get number of Variables and Events
-  int nVars = outsetF->getDomain()->getNumVariables();
+  int nVars = outsetF->getMaxLevelIndex();
   int nEvents = getTotalEvent(nVars);
 
 
@@ -545,7 +545,7 @@ MEDDLY::dd_edge
 MEDDLY::sathyb_opname::hybrid_relation::buildEventMxd(node_handle eventTop, forest *mxd)
 {
   //mxd is built on a domain obtained from result of saturation
-  int nVars = outsetF->getDomain()->getNumVariables();
+  int nVars = outsetF->getMaxLevelIndex();
   //int* sizes = new int[nVars];
   relation_node* Rnode = nodeExists(eventTop);
   node_handle* rnh_array = (node_handle*)malloc((nVars+1)*sizeof(node_handle));
@@ -726,7 +726,7 @@ bool MEDDLY::sathyb_opname::subevent::addMinterm(const int* from, const int* to)
 
    ostream_output out(std::cout);
    /*out << "Adding MEDDLY minterm: [";
-   for (int i = f->getNumVariables(); i >= 0; i--) {
+   for (int i = f->getMaxLevelIndex(); i >= 0; i--) {
    out << from[i] << " -> " << to[i] << " , ";
    }
    out << "]\n";
@@ -749,7 +749,7 @@ bool MEDDLY::sathyb_opname::subevent::addMinterm(const int* from, const int* to)
     pminterms[num_minterms] = new int[f->getNumVariables() + 1];
   }
   // out << "Added minterm: [";
-  for (int i = f->getNumVariables(); i >= 0; i--) {
+  for (int i = f->getMaxLevelIndex(); i >= 0; i--) {
     unpminterms[num_minterms][i] = from[i];
     pminterms[num_minterms][i] = to[i];
     // out << unpminterms[num_minterms][i] << " -> " << pminterms[num_minterms][i] << " , ";
@@ -785,7 +785,7 @@ void MEDDLY::sathyb_opname::subevent::buildRoot() {
    /*out << "\nBuilding subevent from " << num_minterms << " minterms\n";
    for (int i = 0; i < num_minterms; i++) {
    out << "minterm[" << i << "]: [ ";
-   for (int j = f->getNumVariables(); j >= 0; j--) {
+   for (int j = f->getMaxLevelIndex(); j >= 0; j--) {
    out << unpminterms[i][j] << " -> " << pminterms[i][j] << ", ";
    }
    out << " ]\n";
@@ -797,7 +797,7 @@ void MEDDLY::sathyb_opname::subevent::buildRoot() {
   std::vector<int> pterms;
   std::vector<int> unpterms;
 
- /* for(int i=1;i<=f->getNumVariables();i++)
+ /* for(int i=1;i<=f->getMaxLevelIndex();i++)
     {
       unpterms.push_back(unpminterms[process_minterm_pos][i]);
       pterms.push_back(pminterms[process_minterm_pos][i]);
@@ -828,7 +828,7 @@ void MEDDLY::sathyb_opname::subevent::buildRoot() {
   //lets do CT-less union
   while(num_minterms != 0)
     {
-      for(int i=1;i<=f->getNumVariables();i++)
+      for(int i=1;i<=f->getMaxLevelIndex();i++)
         {
         //unpterms.push_back(unpminterms[processed_minterm_pos+1][i]);
         //pterms.push_back(pminterms[processed_minterm_pos+1][i]);
@@ -857,7 +857,7 @@ void MEDDLY::sathyb_opname::subevent::buildRoot() {
  {
    while(num_minterms != 0)
     {
-      for(int i=1;i<=f->getNumVariables();i++)
+      for(int i=1;i<=f->getMaxLevelIndex();i++)
         {
         //unpterms.push_back(unpminterms[processed_minterm_pos+1][i]);
         //pterms.push_back(pminterms[processed_minterm_pos+1][i]);
@@ -920,16 +920,16 @@ void MEDDLY::sathyb_opname::subevent::buildRoot() {
   // Union minterm one-by-one w/o bulding mxd
   #if 0
   for( int w = 0;w <num_minterms; w++){
-    int* pminterms1 = new int[f->getNumVariables() + 1];
-    int* unpminterms1 = new int[f->getNumVariables() + 1];
+    int* pminterms1 = new int[f->getMaxLevelIndex() + 1];
+    int* unpminterms1 = new int[f->getMaxLevelIndex() + 1];
 
-    for( int kk=0; kk<=f->getNumVariables(); kk++ )
+    for( int kk=0; kk<=f->getMaxLevelIndex(); kk++ )
     {
       pminterms1[kk] = pminterms[w][kk];
       unpminterms1[kk] = unpminterms[w][kk];
     }
 
-    rnh = f->unionOneMinterm(root_handle, unpminterms1, pminterms1, f->getNumVariables());
+    rnh = f->unionOneMinterm(root_handle, unpminterms1, pminterms1, f->getMaxLevelIndex());
     root.set(rnh);
     //if(w == num_minterms-1) root.showGraph(out);
     root_handle = root.getNode();
@@ -945,7 +945,7 @@ void MEDDLY::sathyb_opname::subevent::buildRoot() {
 
 
 void MEDDLY::sathyb_opname::subevent::showInfo(output& out) const {
-  int num_levels = f->getDomain()->getNumVariables();
+  int num_levels = f->getMaxLevelIndex();
   for (int i = 0; i < num_minterms; i++) {
     out << "minterm[" << i << "]: ";
     for (int lvl = num_levels; lvl > 0; lvl--) {
@@ -961,7 +961,7 @@ long MEDDLY::sathyb_opname::subevent::mintermMemoryUsage() const {
   for (int i = 0; i < size_minterms; i++) {
     if (unpminterms[i] != 0) n_minterms++;
   }
-  return long(n_minterms * 2) * long(f->getDomain()->getNumVariables()) * long(sizeof(int));
+  return long(n_minterms * 2) * long(f->getMaxLevelIndex()) * long(sizeof(int));
 }
 
 // ============================================================
@@ -2273,7 +2273,7 @@ MEDDLY::node_handle MEDDLY::saturation_hyb_by_events_op::saturate(MEDDLY::node_h
   argF->showNodeGraph(s, &mdd, 1);
   std::cout.flush();
 #endif
-  return saturate(mdd, argF->getNumVariables());
+  return saturate(mdd, argF->getMaxLevelIndex());
 }
 
 MEDDLY::node_handle

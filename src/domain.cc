@@ -203,7 +203,7 @@ void MEDDLY::domain::createVariablesBottomUp(const int* bounds, unsigned N)
     int* defaultOrder = new int[N + 1];
     defaultOrder[0] = 0;
     for (unsigned i = 1; i <= N; i++) {
-        defaultOrder[i] = i;
+        defaultOrder[i] = int(i);
     }
     default_var_order = std::make_shared<variable_order>(defaultOrder, N);
     delete[] defaultOrder;
@@ -374,7 +374,7 @@ MEDDLY::domain::domain(variable** v, unsigned N)
     //
     int* defaultOrder = new int[N + 1];
     for (unsigned i = 0; i < N + 1; i++) {
-        defaultOrder[i] = i;
+        defaultOrder[i] = int(i);
     }
     default_var_order = std::make_shared<variable_order>(defaultOrder, N);
     delete[] defaultOrder;

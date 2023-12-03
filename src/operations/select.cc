@@ -74,7 +74,7 @@ MEDDLY::select_MT
 
 void MEDDLY::select_MT::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
 {
-  node_handle result = _compute(arg.getNode(), resF->getNumVariables());
+  node_handle result = _compute(arg.getNode(), resF->getMaxLevelIndex());
   res.set(result);
 }
 
@@ -134,7 +134,7 @@ void MEDDLY::select_EVPlus::computeDDEdge(const dd_edge &arg, dd_edge &res, bool
   node_handle b = 0;
   long aev = 0;
   arg.getEdgeValue(aev);
-  _compute(aev, arg.getNode(), resF->getNumVariables(), bev, b);
+  _compute(aev, arg.getNode(), resF->getMaxLevelIndex(), bev, b);
   res.set(b, bev);
 }
 

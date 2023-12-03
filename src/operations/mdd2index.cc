@@ -70,7 +70,7 @@ MEDDLY::mdd2index_operation
   MEDDLY_DCASSERT(argF->handleForValue(false) == 0);
   node_handle down;
   long card = 0;
-  int nVars = argF->getDomain()->getNumVariables();
+  int nVars = argF->getMaxLevelIndex();
   compute_r(nVars, arg.getNode(), down, card);
   res.set(down, long(0));
 }

@@ -97,7 +97,7 @@ MEDDLY::satpregen_opname::pregen_relation
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   // Forests are good; set number of variables
-  K = unsigned(mxdF->getDomain()->getNumVariables());
+  K = mxdF->getMaxLevelIndex();
 }
 
 MEDDLY::satpregen_opname::pregen_relation
@@ -709,7 +709,7 @@ MEDDLY::saturation_by_events_op::~saturation_by_events_op()
 
 void MEDDLY::saturation_by_events_op::saturate(const dd_edge& in, dd_edge& out)
 {
-  out.set( saturate(in.getNode(), argF->getNumVariables()) );
+  out.set( saturate(in.getNode(), argF->getMaxLevelIndex()) );
 }
 
 MEDDLY::node_handle

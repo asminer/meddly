@@ -136,7 +136,7 @@ void MEDDLY::dot_maker::doneGraph()
     // Loop over levels, from bottom up
     //
     int prev_level = 0;
-    const int TopLevel = For->getNumVariables();
+    const int TopLevel = int(For->getNumVariables());
     const domain* D = For->getDomain();
     unpacked_node* M = unpacked_node::New();
 
@@ -151,7 +151,7 @@ void MEDDLY::dot_maker::doneGraph()
         //
         outfile << "\n";
         outfile << "    L" << k_rank << " [shape=plaintext, label=\"Level: ";
-        const variable* v = D->getVar(For->getVarByLevel(ABS(k)));
+        const variable* v = D->getVar(unsigned(For->getVarByLevel(ABS(k))));
         if (v->getName()) {
             outfile << v->getName();
         } else {
@@ -239,7 +239,7 @@ void MEDDLY::dot_maker::doneGraph()
     // Write all the root labels
     //
     outfile << "\n";
-    const int rootlevel = 2 * (For->getNumVariables()+1);
+    const int rootlevel = int(2 * (For->getNumVariables()+1));
     outfile << "    L" << rootlevel << "[shape=plaintext, label=\"\"];\n";
     outfile << "    edge [color=transparent];\n";
     outfile << "    L" << rootlevel << " -> L" << rootlevel-2 << ";\n";

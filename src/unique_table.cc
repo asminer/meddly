@@ -27,7 +27,7 @@
 
 MEDDLY::unique_table::unique_table(forest* ef) : parent(ef)
 {
-    max_var = parent->getNumVariables();
+    max_var = (int) parent->getNumVariables();
 
     if (parent->isForRelations()) {
         min_var = -max_var;
@@ -70,15 +70,15 @@ MEDDLY::unique_table::~unique_table()
 unsigned MEDDLY::unique_table::getSize() const
 {
     unsigned num = 0;
-    int num_vars = parent->getNumVariables();
+    const unsigned num_vars = parent->getNumVariables();
     if (parent->isForRelations()) {
-        for(int i = 1; i <= num_vars; i++){
+        for(unsigned i = 1; i <= num_vars; i++){
             num += tables[i].getSize();
             num += tables[-i].getSize();
         }
     }
     else {
-        for (int i = 1; i <= num_vars; i++) {
+        for (unsigned i = 1; i <= num_vars; i++) {
             num += tables[i].getSize();
         }
     }
@@ -88,15 +88,15 @@ unsigned MEDDLY::unique_table::getSize() const
 unsigned MEDDLY::unique_table::getNumEntries() const
 {
     unsigned num = 0;
-    int num_vars = parent->getNumVariables();
+    const unsigned num_vars = parent->getNumVariables();
     if (parent->isForRelations()) {
-        for (int i = 1; i <= num_vars; i++) {
+        for (unsigned i = 1; i <= num_vars; i++) {
             num += tables[i].getNumEntries();
             num += tables[-i].getNumEntries();
         }
     }
     else {
-        for (int i = 1; i <= num_vars; i++) {
+        for (unsigned i = 1; i <= num_vars; i++) {
             num += tables[i].getNumEntries();
         }
     }
@@ -106,15 +106,15 @@ unsigned MEDDLY::unique_table::getNumEntries() const
 unsigned MEDDLY::unique_table::getMemUsed() const
 {
     unsigned num = 0;
-    int num_vars = parent->getNumVariables();
+    const unsigned num_vars = parent->getNumVariables();
     if (parent->isForRelations()) {
-        for (int i = 1; i <= num_vars; i++) {
+        for (unsigned i = 1; i <= num_vars; i++) {
             num += tables[i].getMemUsed();
             num += tables[-i].getMemUsed();
         }
     }
     else {
-        for (int i = 1; i <= num_vars; i++) {
+        for (unsigned i = 1; i <= num_vars; i++) {
             num += tables[i].getMemUsed();
         }
     }
@@ -133,9 +133,9 @@ void MEDDLY::unique_table::reportStats(output &s, const char* pad,
 
 void MEDDLY::unique_table::show(output &s) const
 {
-    int num_vars = parent->getNumVariables();
+    const unsigned num_vars = parent->getNumVariables();
     if (parent->isForRelations()) {
-        for (int i = 1; i <= num_vars; i++) {
+        for (unsigned i = 1; i <= num_vars; i++) {
             s << "Unique table (Var " << i << "):\n";
             tables[i].show(s);
             s << "Unique table (Var " << -i << "):\n";
@@ -143,7 +143,7 @@ void MEDDLY::unique_table::show(output &s) const
         }
     }
     else {
-        for (int i = 1; i <= num_vars; i++) {
+        for (unsigned i = 1; i <= num_vars; i++) {
             s << "Unique table (Var " << i << "):\n";
             tables[i].show(s);
         }

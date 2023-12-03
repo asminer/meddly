@@ -99,7 +99,7 @@ public:
   card_mdd_int(unary_opname* oc, expert_forest* arg)
     : card_int(oc, arg) { }
   virtual void compute(const dd_edge &arg, long &res) {
-    res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
+    res = compute_r(argF->getMaxLevelIndex(), arg.getNode());
   }
   long compute_r(int k, node_handle a);
 };
@@ -162,7 +162,7 @@ public:
   card_mxd_int(unary_opname* oc, expert_forest* arg)
     : card_int(oc, arg) { }
   virtual void compute(const dd_edge &arg, long &res) {
-    res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
+    res = compute_r(argF->getMaxLevelIndex(), arg.getNode());
   }
   long compute_r(int k, node_handle a);
 };
@@ -251,7 +251,7 @@ public:
   card_mdd_real(unary_opname* oc, expert_forest* arg)
     : card_real(oc, arg) { }
   virtual void compute(const dd_edge &arg, double &res) {
-    res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
+    res = compute_r(argF->getMaxLevelIndex(), arg.getNode());
   }
   double compute_r(int ht, node_handle a);
 };
@@ -315,7 +315,7 @@ public:
   card_mxd_real(unary_opname* oc, expert_forest* arg)
     : card_real(oc, arg) { }
   virtual void compute(const dd_edge &arg, double &res) {
-    res = compute_r(argF->getDomain()->getNumVariables(), arg.getNode());
+    res = compute_r(argF->getMaxLevelIndex(), arg.getNode());
   }
   double compute_r(int k, node_handle a);
 };
@@ -414,7 +414,7 @@ public:
     : card_mpz(oc, arg) { }
   virtual void compute(const dd_edge& a, ct_object &res) {
     mpz_object& mcard = dynamic_cast <mpz_object &> (res);
-    compute_r(argF->getDomain()->getNumVariables(), a.getNode(), mcard);
+    compute_r(argF->getMaxLevelIndex(), a.getNode(), mcard);
   }
   void compute_r(int k, node_handle a, mpz_object &b);
 };
@@ -499,7 +499,7 @@ public:
     : card_mpz(oc, arg) { }
   virtual void compute(const dd_edge& a, ct_object &res) {
     mpz_object& mcard = dynamic_cast <mpz_object &> (res);
-    compute_r(argF->getDomain()->getNumVariables(), a.getNode(), mcard);
+    compute_r(argF->getMaxLevelIndex(), a.getNode(), mcard);
   }
   void compute_r(int k, node_handle a, mpz_object &b);
 };

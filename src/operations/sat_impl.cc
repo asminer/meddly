@@ -92,7 +92,7 @@ MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd, fore
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   // Forests are good; set number of variables
-  num_levels = insetF->getDomain()->getNumVariables();
+  num_levels = insetF->getMaxLevelIndex();
 
 
 
@@ -386,7 +386,7 @@ MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
 {
 
   //Get number of Variables and Events
-  int nVars = outsetF->getDomain()->getNumVariables();
+  int nVars = outsetF->getMaxLevelIndex();
   int nEvents = getTotalEvent(nVars);
 
 
@@ -436,7 +436,7 @@ MEDDLY::dd_edge
 MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTop, forest *mxd)
 {
   //mxd is built on a domain obtained from result of saturation
-  int nVars = outsetF->getDomain()->getNumVariables();
+  int nVars = outsetF->getMaxLevelIndex();
   //int* sizes = new int[nVars];
   relation_node* Rnode = nodeExists(eventTop);
   rel_node_handle* rnh_array = (rel_node_handle*)malloc((nVars+1)*sizeof(rel_node_handle));
@@ -1375,7 +1375,7 @@ MEDDLY::node_handle MEDDLY::saturation_impl_by_events_op::saturate(MEDDLY::node_
   argF->showNodeGraph(s, &mdd, 1);
   std::cout.flush();
 #endif
-  return saturate(mdd, argF->getNumVariables());
+  return saturate(mdd, argF->getMaxLevelIndex());
 }
 
 MEDDLY::node_handle
@@ -1531,7 +1531,7 @@ bool MEDDLY::saturation_impl_by_events_op::isReachable(MEDDLY::node_handle mdd, 
   MEDDLY::node_handle saturation_result = 0;
   bool result =
     isIntersectionEmpty(argF, mdd, constraint)
-    ? isReachable(mdd, argF->getNumVariables(), constraint, saturation_result)
+    ? isReachable(mdd, argF->getMaxLevelIndex(), constraint, saturation_result)
       // nothing reachable in initial state, continue exploring
     : true;
       // found reachable state in initial state

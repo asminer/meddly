@@ -28,7 +28,7 @@ MEDDLY::node_marker::node_marker(const forest* F, array_watcher* w)
 
     For = F;
     if (For) {
-        marked.expand(For->getLastNode() + 2);
+        marked.expand(unsigned(For->getLastNode() + 2));
     }
     marked.clearAll();
 }
@@ -58,7 +58,7 @@ size_t MEDDLY::node_marker::countEdges() const
 
     size_t ec = 0;
     unpacked_node* M = unpacked_node::New();
-    node_handle i=0;
+    size_t i=0;
     while( (i=marked.firstOne(i+1)) < marked.getSize() )
     {
         For->unpackNode(M, i, FULL_ONLY);
@@ -74,7 +74,7 @@ size_t MEDDLY::node_marker::countNonzeroEdges() const
 
     size_t ec = 0;
     unpacked_node* M = unpacked_node::New();
-    node_handle i=0;
+    size_t i=0;
     while( (i=marked.firstOne(i+1)) < marked.getSize() )
     {
         For->unpackNode(M, i, SPARSE_ONLY);
@@ -90,14 +90,14 @@ void MEDDLY::node_marker::showByLevels(output &s) const
 
     unpacked_node* M = unpacked_node::New();
 
-    const unsigned lwid = digits(For->getNumVariables());
-    const unsigned nwid = digits(getSize());
+    const int lwid = (int) digits(For->getNumVariables());
+    const int nwid = (int) digits(getSize());
 
-    for (int k=For->getNumVariables(); k; k = forest::downLevel(k)) {
+    for (int k=int(For->getNumVariables()); k; k = forest::downLevel(k)) {
 
         bool level_printed = false;
 
-        node_handle i=0;
+        size_t i=0;
         while( (i=marked.firstOne(i+1)) < marked.getSize() )
         {
             if (For->getNodeLevel(i) != k) continue;
@@ -113,7 +113,7 @@ void MEDDLY::node_marker::showByLevels(output &s) const
                 s.put(k, lwid);
                 s << " Var: ";
                 const variable* v = For->getDomain()->getVar(
-                    For->getVarByLevel(ABS(k))
+                    unsigned(For->getVarByLevel(ABS(k)))
                 );
                 char primed = (k>0) ? ' ' : '\'';
                 if (v->getName()) {
@@ -145,7 +145,7 @@ void MEDDLY::node_marker::getNodesAtLevel(int k, std::vector <node_handle> &v)
 {
     MEDDLY_DCASSERT(For);
 
-    node_handle i=0;
+    size_t i=0;
     while( (i=marked.firstOne(i+1)) < marked.getSize() )
     {
         if (For->getNodeLevel(i) != k) continue;
@@ -159,7 +159,7 @@ void MEDDLY::node_marker::getTerminals(std::set <node_handle> &v) const
 
     unpacked_node* M = unpacked_node::New();
 
-    node_handle i=0;
+    size_t i=0;
     while( (i=marked.firstOne(i+1)) < marked.getSize() )
     {
         For->unpackNode(M, i, SPARSE_ONLY);

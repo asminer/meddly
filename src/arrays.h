@@ -85,7 +85,7 @@ class MEDDLY::level_array {
         size_t size;
         unsigned bytes;
     public:
-        level_array(int max_level, array_watcher* w=nullptr);
+        level_array(unsigned max_level, array_watcher* w=nullptr);
         ~level_array();
 
         void expand(size_t ns);

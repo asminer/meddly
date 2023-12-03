@@ -104,7 +104,7 @@ namespace MEDDLY {
           return computeSkip(-1, a);  // same skipping rule, ok
         } else {
           // need to visit every level...
-          return computeAll(-1, resF->getNumVariables(), a);
+          return computeAll(-1, resF->getMaxLevelIndex(), a);
         }
       }
 
@@ -265,7 +265,7 @@ namespace MEDDLY {
           computeSkip(-1, arg.getNode(), b, bev);  // same skipping rule, ok
         } else {
           // need to visit every level...
-          computeAll(-1, resF->getNumVariables(), arg.getNode(), b, bev);
+          computeAll(-1, resF->getMaxLevelIndex(), arg.getNode(), b, bev);
         }
         res.set(b, bev);
       }
@@ -468,7 +468,7 @@ namespace MEDDLY {
           b = computeSkip(-1, ev, arg.getNode());  // same skipping rule, ok
         } else {
           // need to visit every level...
-          b = computeAll(-1, resF->getNumVariables(), ev, arg.getNode());
+          b = computeAll(-1, resF->getMaxLevelIndex(), ev, arg.getNode());
         }
         res.set(b);
       }
@@ -777,7 +777,7 @@ namespace MEDDLY {
         else {
           // need to visit every level...
           arg.getEdgeValue(av);
-          computeAll(-1, resF->getNumVariables(), av, an, bv, bn);
+          computeAll(-1, resF->getMaxLevelIndex(), av, an, bv, bn);
         }
         res.set(bn, bv);
       }

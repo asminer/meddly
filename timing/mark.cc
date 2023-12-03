@@ -39,7 +39,7 @@ inline char* newEvent(unsigned N)
     return ev;
 }
 
-char* Get(unsigned i, int N)
+char* Get(unsigned i, unsigned N)
 {
     char* t = newEvent(N);
     char* tloc = t+8*i;
@@ -204,7 +204,7 @@ void runWithArgs(unsigned N, unsigned marks, unsigned counts)
 
     // Initialize domain
     int* sizes = new int[N*8];
-    for (int i=N*8-1; i>=0; i--) sizes[i] = 2;
+    for (int i=int(N*8-1); i>=0; i--) sizes[i] = 2;
     domain* d = domain::createBottomUp(sizes, N*8);
 
     // Initialize forests
@@ -216,9 +216,9 @@ void runWithArgs(unsigned N, unsigned marks, unsigned counts)
     //
     std::cout << "Building initial state" << std::endl;
     int* initial = new int[1+N*8];
-    for (int i=N*8; i; i--) initial[i] = 0;
+    for (unsigned i=N*8; i; i--) initial[i] = 0;
     int* initLocal = initial;
-    for (int i=0; i<N; i++) {
+    for (unsigned i=0; i<N; i++) {
         initLocal[3] = initLocal[5] = 1;
         initLocal += 8;
     }
@@ -230,7 +230,7 @@ void runWithArgs(unsigned N, unsigned marks, unsigned counts)
     //
     std::cout << "Building next-state function" << std::endl;
     dd_edge nsf(mxd);
-    buildNextStateFunction(events, 8*N, mxd, nsf);
+    buildNextStateFunction(events, int(8*N), mxd, nsf);
 
     //
     // Build reachable states

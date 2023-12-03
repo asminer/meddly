@@ -401,7 +401,7 @@ MEDDLY::saturation_op::~saturation_op()
 
 void MEDDLY::saturation_op::saturate(const dd_edge& in, dd_edge& out)
 {
-  out.set( saturate(in.getNode(), argF->getNumVariables()) );
+  out.set( saturate(in.getNode(), argF->getMaxLevelIndex()) );
 }
 
 MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
@@ -496,7 +496,7 @@ void MEDDLY::saturation_evplus_op::saturate(const dd_edge& in, dd_edge& out)
   in.getEdgeValue(aev);
   long cev = Inf<long>();
   node_handle cnode = 0;
-  saturate(aev, in.getNode(), argF->getNumVariables(), cev, cnode);
+  saturate(aev, in.getNode(), argF->getMaxLevelIndex(), cev, cnode);
   out.set(cnode, cev);
 }
 
@@ -595,7 +595,7 @@ void MEDDLY::common_dfs::splitMxd(node_handle mxd_nh)
   mxd.set( arg2F->linkNode(mxd_nh) );
 
   // Build from top down
-  for (int level = arg2F->getNumVariables(); level; level--) {
+  for (int level = arg2F->getMaxLevelIndex(); level; level--) {
     splits[level].attach(arg2F);
 
     if (0==mxd.getNode()) {
@@ -648,7 +648,7 @@ void MEDDLY::common_dfs::splitMxd(node_handle mxd_nh)
 #ifdef DEBUG_SPLIT
   printf("After splitting monolithic event in msat\n");
   printf("splits array: [");
-  for (int k=0; k <= arg2F->getNumVariables(); k++) {
+  for (unsigned k=0; k <= arg2F->getNumVariables(); k++) {
     if (k) printf(", ");
     printf("%d", splits[k]);
   }

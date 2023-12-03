@@ -56,7 +56,7 @@ void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &
   );
 #endif
   node_handle cnode = compute(a.getNode(), b.getNode());
-  const int num_levels = resF->getDomain()->getNumVariables();
+  const int num_levels = resF->getMaxLevelIndex();
   if ( userFlag && resF->isQuasiReduced() && cnode != resF->getTransparentNode()
     && resF->getNodeLevel(cnode) < num_levels) {
     node_handle temp = ((mt_forest*)resF)->makeNodeAtLevel(num_levels, cnode);
@@ -1029,7 +1029,7 @@ void MEDDLY::generic_binbylevel_mxd
 ::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c, bool userFlag)
 {
   node_handle result = compute(
-    resF->getDomain()->getNumVariables(), a.getNode(), b.getNode()
+    resF->getMaxLevelIndex(), a.getNode(), b.getNode()
   );
   c.set(result);
 #ifdef DEVELOPMENT_CODE

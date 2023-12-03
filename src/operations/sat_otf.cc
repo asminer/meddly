@@ -122,7 +122,7 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
   /*
   ostream_output out(std::cout);
   out << "Adding minterm: [";
-  for (int i = f->getNumVariables(); i >= 0; i--) {
+  for (int i = f->getMaxLevelIndex(); i >= 0; i--) {
     out << from[i] << " -> " << to[i] << " , ";
   }
   out << "]\n";
@@ -145,7 +145,7 @@ bool MEDDLY::satotf_opname::subevent::addMinterm(const int* from, const int* to)
     pminterms[num_minterms] = new int[f->getNumVariables() + 1];
   }
   // out << "Added minterm: [";
-  for (int i = f->getNumVariables(); i >= 0; i--) {
+  for (int i = f->getMaxLevelIndex(); i >= 0; i--) {
     unpminterms[num_minterms][i] = from[i];
     pminterms[num_minterms][i] = to[i];
     // out << unpminterms[num_minterms][i] << " -> " << pminterms[num_minterms][i] << " , ";
@@ -173,7 +173,7 @@ void MEDDLY::satotf_opname::subevent::buildRoot() {
   out << "Building subevent from " << num_minterms << " minterms\n";
   for (int i = 0; i < num_minterms; i++) {
     out << "minterm[" << i << "]: [ ";
-    for (int j = f->getNumVariables(); j >= 0; j--) {
+    for (int j = f->getMaxLevelIndex(); j >= 0; j--) {
       out << unpminterms[i][j] << " -> " << pminterms[i][j] << ", ";
     }
     out << " ]\n";
@@ -198,7 +198,7 @@ void MEDDLY::satotf_opname::subevent::buildRoot() {
 
 
 void MEDDLY::satotf_opname::subevent::showInfo(output& out) const {
-  int num_levels = f->getDomain()->getNumVariables();
+  int num_levels = f->getMaxLevelIndex();
   for (int i = 0; i < num_minterms; i++) {
     out << "minterm[" << i << "]: ";
     for (int lvl = num_levels; lvl > 0; lvl--) {
@@ -214,7 +214,7 @@ long MEDDLY::satotf_opname::subevent::mintermMemoryUsage() const {
   for (int i = 0; i < size_minterms; i++) {
     if (unpminterms[i] != 0) n_minterms++;
   }
-  return long(n_minterms * 2) * long(f->getDomain()->getNumVariables()) * long(sizeof(int));
+  return long(n_minterms * 2) * long(f->getMaxLevelIndex()) * long(sizeof(int));
 }
 
 // ============================================================
@@ -451,7 +451,7 @@ MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   // Forests are good; set number of variables
-  num_levels = mxdF->getDomain()->getNumVariables() + 1;
+  num_levels = mxdF->getMaxLevelIndex() + 1;
 
   // Build the events-per-level data structure
   // (0) Initialize
@@ -1186,14 +1186,14 @@ MEDDLY::otfsat_by_events_op::~otfsat_by_events_op()
 void MEDDLY::otfsat_by_events_op::saturate(const dd_edge& in, dd_edge& out)
 {
   // Saturate
-  out.set( saturate(in.getNode(), argF->getNumVariables()) );
+  out.set( saturate(in.getNode(), argF->getMaxLevelIndex()) );
 }
 
 /*
 MEDDLY::node_handle MEDDLY::otfsat_by_events_op::saturate(node_handle mdd)
 {
   // Saturate
-  return saturate(mdd, argF->getNumVariables());
+  return saturate(mdd, argF->getMaxLevelIndex());
 }
 */
 

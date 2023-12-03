@@ -299,7 +299,7 @@ void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
   dd_edge maxDiag(transF), root(mxd), Rpdi(transF);
 
   // Build from top down
-  for (int level = transF->getNumVariables(); level > 0; level--) {
+  for (int level = transF->getMaxLevelIndex(); level > 0; level--) {
     splits[level].attach(transF);
 
     if (root.getNode() == 0) {
@@ -349,7 +349,7 @@ void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
 #ifdef DEBUG_SPLIT
   printf("After splitting monolithic event in msat\n");
   printf("splits array: [");
-  for (int k = 0; k <= transF->getNumVariables(); k++) {
+  for (unsigned k = 0; k <= transF->getNumVariables(); k++) {
     if (k) printf(", ");
     printf("%d", splits[k]);
   }
@@ -965,7 +965,7 @@ void MEDDLY::constrained_saturation_mt::saveResult(ct_entry_key* key,
 
 void MEDDLY::constrained_saturation_mt::saturate(node_handle a, node_handle b, node_handle& c)
 {
-  saturate(a, b, argF->getNumVariables(), c);
+  saturate(a, b, argF->getMaxLevelIndex(), c);
 }
 
 void MEDDLY::constrained_saturation_mt::saturate(node_handle a, node_handle b, int level, node_handle& c)
@@ -1102,7 +1102,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
   dd_edge root(mxd), maxDiag(transF), Rpdi(transF);
 
   // Build from top down
-  for (int level = transF->getNumVariables(); level > 0; level--) {
+  for (int level = transF->getMaxLevelIndex(); level > 0; level--) {
     splits[level].attach(transF);
     if (root.getNode() == 0) {
       // common and easy special case
@@ -1151,7 +1151,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
 #ifdef DEBUG_SPLIT
   printf("After splitting monolithic event in msat\n");
   printf("splits array: [");
-  for (int k = 0; k <= transF->getNumVariables(); k++) {
+  for (unsigned k = 0; k <= transF->getNumVariables(); k++) {
     if (k) printf(", ");
     printf("%d", splits[k]);
   }
@@ -1592,7 +1592,7 @@ void MEDDLY::constrained_saturation_evplus::saveResult(ct_entry_key* key,
 
 void MEDDLY::constrained_saturation_evplus::saturate(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c)
 {
-  saturate(aev, a, bev, b, argF->getNumVariables(), cev, c);
+  saturate(aev, a, bev, b, argF->getMaxLevelIndex(), cev, c);
 }
 
 void MEDDLY::constrained_saturation_evplus::saturate(int aev, node_handle a, int bev, node_handle b, int level, long& cev, node_handle& c)

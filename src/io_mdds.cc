@@ -154,10 +154,10 @@ void MEDDLY::mdd_writer::finish()
     for (unsigned i=0; i<output2handle.size(); i++) {
         UPDATEMAX(maxnode, output2handle[i]);
     }
-    std::vector <unsigned> handle2output (1+maxnode);
+    std::vector <unsigned> handle2output (unsigned(1+maxnode));
     for (unsigned i=0; i<output2handle.size(); i++) {
         MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, output2handle[i], maxnode+1);
-        handle2output[output2handle[i]] = i+1;
+        handle2output[unsigned(output2handle[i])] = i+1;
     }
 
 #ifdef DEBUG_WRITE
@@ -273,10 +273,10 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
             //
             s.stripWS();
             int rawsize = s.get_integer();
-            int n;
+            // int n;
             unpacked_node* nb = (rawsize < 0)
-                ? unpacked_node::newSparse(F, k, n=-rawsize)
-                : unpacked_node::newFull(F, k, n=rawsize);
+                ? unpacked_node::newSparse(F, k, unsigned(-rawsize))
+                : unpacked_node::newFull(F, k, unsigned(rawsize));
 
 #ifdef DEBUG_READ
             std::cerr << " rawsize " << rawsize << '\n';

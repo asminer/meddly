@@ -53,7 +53,7 @@ void MEDDLY::array_watcher::shrinkElementSize(unsigned, unsigned)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::level_array::level_array(int max_level, array_watcher* w)
+MEDDLY::level_array::level_array(unsigned max_level, array_watcher* w)
 {
     watch = w;
 

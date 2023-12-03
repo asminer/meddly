@@ -88,7 +88,7 @@ MEDDLY::base_evplus_mt::base_evplus_mt(numerical_opname* code,
   x_root = x_ind.getNode();
   A_root = A.getNode();
   y_root = y_ind.getNode();
-  L = fx->getDomain()->getNumVariables();
+  L = fx->getMaxLevelIndex();
 }
 
 MEDDLY::base_evplus_mt::~base_evplus_mt()

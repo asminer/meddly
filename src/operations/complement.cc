@@ -83,7 +83,7 @@ MEDDLY::compl_mdd
 void MEDDLY::compl_mdd::computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag)
 {
   node_handle result = compute_r(a.getNode());
-  const int num_levels = resF->getDomain()->getNumVariables();
+  const int num_levels = resF->getMaxLevelIndex();
   if (userFlag && result != resF->getTransparentNode() && resF->isQuasiReduced() &&
       resF->getNodeLevel(result) < num_levels) {
     node_handle temp = ((mt_forest*)resF)->makeNodeAtLevel(num_levels, result);
@@ -161,7 +161,7 @@ MEDDLY::compl_mxd
 
 void MEDDLY::compl_mxd::computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag)
 {
-  node_handle result = compute_r(-1, argF->getDomain()->getNumVariables(), a.getNode());
+  node_handle result = compute_r(-1, argF->getMaxLevelIndex(), a.getNode());
   b.set(result);
 }
 

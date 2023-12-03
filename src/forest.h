@@ -166,7 +166,7 @@ class MEDDLY::forest {
         }
 #endif
 
-        inline int getNumVariables() const {
+        inline unsigned getNumVariables() const {
             return d->getNumVariables();
         }
 
@@ -186,18 +186,23 @@ class MEDDLY::forest {
 
         /// returns 0 or -K, depending if it's a relation
         inline int getMinLevelIndex() const {
-            return isForRelations() ? -getNumVariables() : 0;
+            return isForRelations() ? -int(getNumVariables()) : 0;
+        }
+
+        /// returns 0 or -K, depending if it's a relation
+        inline int getMaxLevelIndex() const {
+            return int(getNumVariables());
         }
 
         /// Check if the given level is valid
         inline bool isValidLevel(int k) const {
-            return (k >= getMinLevelIndex()) && (k <= getNumVariables());
+            return (k >= getMinLevelIndex()) && (k <= getMaxLevelIndex());
         }
 
         /// Can we have extensible nodes at level k?
         inline bool isExtensibleLevel(int k) const {
             MEDDLY_DCASSERT(isValidLevel(k));
-            return d->getVar(k < 0? -k: k)->isExtensible();
+            return d->getVar(unsigned(k < 0? -k: k))->isExtensible();
         }
 
         /// The maximum size (number of indices) a node at this level can have
@@ -205,15 +210,15 @@ class MEDDLY::forest {
             MEDDLY_DCASSERT(isValidLevel(k));
             int var=getVarByLevel(k);
             if (var < 0) {
-                return getDomain()->getVariableBound(-var, true);
+                return getDomain()->getVariableBound(unsigned(-var), true);
             } else {
-                return getDomain()->getVariableBound(var, false);
+                return getDomain()->getVariableBound(unsigned(var), false);
             }
         }
 
         /// The maximum size (number of indices) a variable can have.
         inline int getVariableSize(int var) const {
-            return getDomain()->getVariableBound(var, false);
+            return getDomain()->getVariableBound(unsigned(var), false);
         }
 
 

@@ -63,7 +63,7 @@ MEDDLY::cross_bool::cross_bool(binary_opname* oc, expert_forest* a1,
 void
 MEDDLY::cross_bool::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
 {
-  int L = arg1F->getDomain()->getNumVariables();
+  int L = arg1F->getMaxLevelIndex();
   node_handle cnode = compute_un(L, a.getNode(), b.getNode());
   c.set(cnode);
 }
