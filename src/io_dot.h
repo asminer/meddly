@@ -21,6 +21,7 @@
 
 #include <fstream>
 #include <string>
+#include <vector>
 
 namespace MEDDLY {
     class forest;
