@@ -135,7 +135,7 @@ void MEDDLY::mdd_writer::finish()
     // of the ith node to write.
     //
     std::vector <node_handle> output2handle;
-    for (int k=1; k <= For->getNumVariables(); k++) {
+    for (int k=1; k <= (int) For->getNumVariables(); k++) {
         if (For->isForRelations()) {
             M.getNodesAtLevel(-k, output2handle);
         }

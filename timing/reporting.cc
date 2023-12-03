@@ -19,6 +19,9 @@
 #include "timer.h"
 #include "reporting.h"
 
+#include <cstring>
+#include <iomanip>
+
 std::ofstream report;
 
 void setReport(int argc, const char** argv)

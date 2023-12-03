@@ -23,6 +23,7 @@
 #include "edge_value.h"
 
 #include <string>
+#include <vector>
 
 namespace MEDDLY {
     class dd_edge;

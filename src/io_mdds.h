@@ -21,6 +21,8 @@
 
 #include "defines.h"
 
+#include <vector>
+
 namespace MEDDLY {
     class output;
     class input;

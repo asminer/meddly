@@ -2713,7 +2713,7 @@ MEDDLY::expert_forest::getVariableOrder(int* level2var) const
 {
   // Assume sufficient space has been allocated for order
   level2var[0] = 0;
-  for (int i = 1; i < getNumVariables() + 1; i++) {
+  for (unsigned i = 1; i < getNumVariables() + 1; i++) {
     level2var[i] = var_order->getVarByLevel(i);
   }
 }
