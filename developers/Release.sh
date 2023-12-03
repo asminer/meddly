@@ -78,6 +78,10 @@ usage()
     exit 1
 }
 
+#
+# Checks
+#
+
 if [ $# -ne 1 ]; then
     usage $0
 fi
@@ -107,6 +111,18 @@ if diff -q blank_unreleased.md ../$UNRELNOTES; then
     printf "Update release documentation $UNRELNOTES\n\n"
     exit 1
 fi
+
+remotes=`git remote`
+for r in origin subversion; do
+    if ! grep $r > /dev/null <<< $remotes; then
+        printf "Missing expected remote: $r\n\n"
+        exit 1
+    fi
+done
+
+#
+# Determine version number
+#
 
 version=`awk '/AC_INIT/{print $2}' ../configure.ac | tr -d '[],'`
 oldversion="$version"
