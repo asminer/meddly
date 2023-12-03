@@ -113,7 +113,7 @@ if diff -q blank_unreleased.md ../$UNRELNOTES; then
 fi
 
 remotes=`git remote`
-for r in origin subversion; do
+for r in origin sourceforge; do
     if ! grep $r > /dev/null <<< $remotes; then
         printf "Missing expected remote: $r\n\n"
         exit 1
