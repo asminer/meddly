@@ -2049,17 +2049,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
   // Node status
   // --------------------------------------------------
   public:
-    /*
-    bool isActiveNode(node_handle p) const;
-    // bool isZombieNode(node_handle p) const;
-    bool isDeletedNode(node_handle p) const;
-    static bool isTerminalNode(node_handle p);
-    /// Sanity check: is this a valid nonterminal node index.
-    bool isValidNonterminalIndex(node_handle p) const;
-    /// Sanity check: is this a valid node index.
-    bool isValidNodeIndex(node_handle p) const;
-    node_handle getLastNode() const;
-    */
 
     // --------------------------------------------------
     // Extensible Node Information:

@@ -767,110 +767,12 @@ void MEDDLY::forest::unregisterOperation(const operation* op)
 
 
 // ******************************************************************
-
-#ifdef EDGE_VISITORS
-
-MEDDLY::forest::edge_visitor::edge_visitor()
-{
-}
-
-MEDDLY::forest::edge_visitor::~edge_visitor()
-{
-}
-
-#endif
-
-// ******************************************************************
 // *                                                                *
 // *                                                                *
 // *                      expert_forest  stuff                      *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
-
-#ifdef EDGE_VISITORS
-
-// ******************************************************************
-// *                                                                *
-// *                expert_forest::nodecounter class                *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::expert_forest::nodecounter: public edge_visitor {
-    expert_forest* parent;
-    int* counts;
-  public:
-    nodecounter(expert_forest*p, int* c);
-    virtual ~nodecounter();
-    virtual void visit(dd_edge &e);
-};
-
-
-// ******************************************************************
-// *               expert_forest::nodecounter methods               *
-// ******************************************************************
-
-MEDDLY::expert_forest::nodecounter::nodecounter(expert_forest *p, int* c)
- : edge_visitor()
-{
-  parent = p;
-  counts = c;
-}
-
-MEDDLY::expert_forest::nodecounter::~nodecounter()
-{
-  // DO NOT delete counts.
-}
-
-void MEDDLY::expert_forest::nodecounter::visit(dd_edge &e)
-{
-  int n = e.getNode();
-  if (parent->isTerminalNode(n)) return;
-  MEDDLY_DCASSERT(n>0);
-  MEDDLY_DCASSERT(n<=parent->getLastNode());
-  counts[n]++;
-}
-
-// ******************************************************************
-// *                                                                *
-// *                expert_forest::nodemarker  class                *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::expert_forest::nodemarker: public edge_visitor {
-    expert_forest* parent;
-  public:
-    nodemarker(expert_forest *p);
-    virtual ~nodemarker();
-    virtual void visit(dd_edge &e);
-};
-
-
-// ******************************************************************
-// *               expert_forest::nodemarker  methods               *
-// ******************************************************************
-
-MEDDLY::expert_forest::nodemarker::nodemarker(expert_forest *p)
- : edge_visitor()
-{
-  parent = p;
-}
-
-MEDDLY::expert_forest::nodemarker::~nodemarker()
-{
-  // nothing to do
-}
-
-void MEDDLY::expert_forest::nodemarker::visit(dd_edge &e)
-{
-  if (e.getForest() != parent) return;
-#ifdef DEBUG_MARK_SWEEP
-  printf("Traversing root node %ld\n", e.getNode());
-#endif
-  parent->markNode(e.getNode());
-}
-
-#endif
 
 
 // ******************************************************************
@@ -880,29 +782,6 @@ void MEDDLY::expert_forest::nodemarker::visit(dd_edge &e)
 // *                                                                *
 // *                                                                *
 // ******************************************************************
-
-/*
-const unsigned MEDDLY::expert_forest::HUMAN_READABLE_MEMORY   = 0x0001;
-const unsigned MEDDLY::expert_forest::BASIC_STATS             = 0x0002;
-const unsigned MEDDLY::expert_forest::EXTRA_STATS             = 0x0004;
-const unsigned MEDDLY::expert_forest::FOREST_STATS            = 0x0008;
-const unsigned MEDDLY::expert_forest::STORAGE_STATS           = 0x0010;
-const unsigned MEDDLY::expert_forest::STORAGE_DETAILED        = 0x0020;
-const unsigned MEDDLY::expert_forest::UNIQUE_TABLE_STATS      = 0x0040;
-const unsigned MEDDLY::expert_forest::UNIQUE_TABLE_DETAILED   = 0x0080;
-const unsigned MEDDLY::expert_forest::HOLE_MANAGER_STATS      = 0x0100;
-const unsigned MEDDLY::expert_forest::HOLE_MANAGER_DETAILED   = 0x0200;
-
-//
-// Display flags
-//
-
-const unsigned int MEDDLY::expert_forest::SHOW_DELETED      = 0x10;
-const unsigned int MEDDLY::expert_forest::SHOW_UNREACHABLE  = 0x08;
-const unsigned int MEDDLY::expert_forest::SHOW_DETAILS      = 0x04;
-const unsigned int MEDDLY::expert_forest::SHOW_INDEX        = 0x02;
-const unsigned int MEDDLY::expert_forest::SHOW_TERMINALS    = 0x01;
-*/
 
 
 MEDDLY::expert_forest::expert_forest(domain *d, bool rel, range_type t,

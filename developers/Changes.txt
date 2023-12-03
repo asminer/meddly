@@ -2,22 +2,6 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
-(*) forest i/o:
-    make a helper like io_dot.h, maybe io_mdd.h
-
-        class mdd_writer {
-            mdd_writer(output &s, const forest* F);
-            void writeRootEdge(const dd_edge &E);
-            void finish();
-        };
-
-        class mdd_reader {
-            mdd_reader(input &s, forest* F);
-            void readRootEdge(dd_edge &e);
-        };
-
-
-
 (*) tie unpacked nodes to forests
     distinguish between "root" and "read only" unpacked nodes?
 
