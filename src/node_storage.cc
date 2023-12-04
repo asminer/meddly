@@ -46,7 +46,7 @@ MEDDLY::node_storage_style::~node_storage_style()
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::node_storage::node_storage(const char* n, expert_forest* f)
+MEDDLY::node_storage::node_storage(const char* n, forest* f)
 {
     style_name = n;
     parent = f;

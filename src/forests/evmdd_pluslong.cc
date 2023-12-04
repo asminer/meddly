@@ -38,7 +38,7 @@ MEDDLY::evmdd_pluslong
     setLongEdges();
     setTransparentEdge(0, long(0));
     if (index_set) setUnhashedSize(sizeof(long));
-    initializeForest();
+    initializeStorage();
 }
 
 MEDDLY::evmdd_pluslong::~evmdd_pluslong()

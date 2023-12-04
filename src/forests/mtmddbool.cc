@@ -26,7 +26,7 @@ MEDDLY::mt_mdd_bool::mt_mdd_bool(domain *d, const policies &p, int* level_reduct
     terminal t(tv);
     setTransparentEdge(t.getHandle());
     // setTransparentEdge(bool_Tencoder::value2handle(tv));
-    initializeForest();
+    initializeStorage();
 }
 
 MEDDLY::mt_mdd_bool::~mt_mdd_bool()

@@ -190,6 +190,40 @@ void MEDDLY::forest::unpackNode(MEDDLY::unpacked_node* un,
     nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
 }
 
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Node manager initialization
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+void MEDDLY::forest::initializeStorage()
+{
+  //
+  // Initialize node storage
+  //
+
+  if (!deflt.nodestor) {
+    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+  }
+  nodeMan = deflt.nodestor->createForForest(this, deflt.nodemm, mstats);
+}
+
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// I/O methods
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+void MEDDLY::forest::showHeaderInfo(output &s, const unpacked_node &) const
+{
+}
+
+void MEDDLY::forest::writeHeaderInfo(output &s, const unpacked_node &) const
+{
+}
+
+void MEDDLY::forest::readHeaderInfo(input &s, unpacked_node &) const
+{
+}
+
+
 
 //
 // Forest registry methods
@@ -516,6 +550,10 @@ MEDDLY::forest
          throw error(error::INVALID_POLICY, __FILE__, __LINE__);
   }
 
+    //
+    // Initialize misc. protected data
+    //
+    terminalNodesStatus = MEDDLY::forest::ACTIVE;
 
     //
     // Initialize array of operations
@@ -551,6 +589,17 @@ MEDDLY::forest
         reachable = new node_marker(this, &nodeHeaders);
         nodeHeaders.linkReachable(reachable->linkBits());
     }
+
+    //
+    // nodeMan is initialized in initializeStorage()
+    //
+    nodeMan = nullptr;
+
+    //
+    // Initialize node characteristics to defaults
+    //
+    unhashed_bytes = 0;
+    hashed_bytes = 0;
 }
 
 MEDDLY::forest::~forest()
@@ -563,6 +612,9 @@ MEDDLY::forest::~forest()
     // unique table
     delete unique;
     delete implUT;
+
+    // node storage
+    delete nodeMan;
 
     unregisterForest(this);
 }
@@ -791,11 +843,6 @@ MEDDLY::expert_forest::expert_forest(domain *d, bool rel, range_type t,
 
 
   //
-  // Initialize misc. protected data
-  //
-  terminalNodesStatus = MEDDLY::forest::ACTIVE;
-
-  //
   // Initialize misc. private data
   //
   performing_gc = false;
@@ -803,11 +850,6 @@ MEDDLY::expert_forest::expert_forest(domain *d, bool rel, range_type t,
   in_val_size = 0;
   delete_depth = 0;
 
-  //
-  // Initialize node characteristics to defaults
-  //
-  unhashed_bytes = 0;
-  hashed_bytes = 0;
 }
 
 
@@ -818,23 +860,8 @@ MEDDLY::expert_forest::~expert_forest()
   reportMemoryUsage(stdout, "\t", 9);
 #endif
 
-  delete nodeMan;
-
   // Misc. private data
   free(in_validate);
-}
-
-void MEDDLY::expert_forest::initializeForest()
-{
-  if (!deflt.nodestor) {
-    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-  }
-
-  //
-  // Initialize node storage
-  //
-  nodeMan = deflt.nodestor->createForForest(this, deflt.nodemm);
-
 }
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -1642,19 +1669,6 @@ void MEDDLY::expert_forest::normalize(unpacked_node &nb, float& ev) const
 void MEDDLY::expert_forest::reportForestStats(output &s, const char* pad) const
 {
   // default - do nothing
-}
-
-
-void MEDDLY::expert_forest::showHeaderInfo(output &s, const unpacked_node &) const
-{
-}
-
-void MEDDLY::expert_forest::writeHeaderInfo(output &s, const unpacked_node &) const
-{
-}
-
-void MEDDLY::expert_forest::readHeaderInfo(input &s, unpacked_node &) const
-{
 }
 
 

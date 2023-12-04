@@ -125,7 +125,8 @@ namespace MEDDLY {
  */
 class MEDDLY::best_storage : public node_storage {
 public:
-  best_storage(const char* n, expert_forest* f, const memory_manager_style* mst);
+  best_storage(const char* n, forest* f, const memory_manager_style* mst,
+          memstats &ms);
   virtual ~best_storage();
 
   // required interface
@@ -327,10 +328,11 @@ private:
 // ******************************************************************
 
 MEDDLY::best_storage
-::best_storage(const char* n, expert_forest* f, const memory_manager_style* mst)
+::best_storage(const char* n, forest* f, const memory_manager_style* mst,
+        memstats &ms)
 : node_storage(n, f)
 {
-  MM = mst->initManager(sizeof(node_handle), slotsForNode(0, false), f->changeMemStats());
+  MM = mst->initManager(sizeof(node_handle), slotsForNode(0, false), ms);
 
   unhashed_start = header_slots;
   unhashed_slots = slotsForBytes(f->unhashedHeaderBytes());
@@ -2460,10 +2462,10 @@ MEDDLY::best_storage_style::~best_storage_style()
 }
 
 MEDDLY::node_storage* MEDDLY::best_storage_style
-::createForForest(expert_forest* f, const memory_manager_style* mst) const
+::createForForest(forest* f, const memory_manager_style* mst, memstats &ms) const
 {
   //  return 0;
-  return new best_storage(getName(), f, mst);
+  return new best_storage(getName(), f, mst, ms);
 }
 
 

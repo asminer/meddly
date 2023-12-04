@@ -25,8 +25,9 @@ namespace MEDDLY {
     class node_storage_style;
     class node_storage;
     class node_marker;
+    class memstats;
 
-    class expert_forest;
+    class forest;
     class memory_manager_style;
     class output;
     class unpacked_node;
@@ -55,12 +56,13 @@ class MEDDLY::node_storage_style {
 
             @param  f   Forest to bind to
             @param  mm  Memory manager style to use
+            @param  ms  Memory stats to update
 
             @return     A pointer to a node storage class,
                         initialized for forest f.
         */
-        virtual node_storage* createForForest(expert_forest* f,
-            const memory_manager_style* mmst) const = 0;
+        virtual node_storage* createForForest(forest* f,
+            const memory_manager_style* mmst, memstats &ms) const = 0;
 
         inline const char* getName() const { return name; }
 };
@@ -91,7 +93,7 @@ class MEDDLY::node_storage_style {
 */
 class MEDDLY::node_storage {
     public:
-        node_storage(const char* sn, expert_forest* f);
+        node_storage(const char* sn, forest* f);
         virtual ~node_storage();
 
         /** Go through and collect any garbage.
@@ -312,18 +314,18 @@ class MEDDLY::node_storage {
         // members owned by the base class
         //
 
-        inline const expert_forest* getParent() const {
+        inline const forest* getParent() const {
             MEDDLY_DCASSERT(parent);
             return parent;
         }
-        inline expert_forest* getParent() {
+        inline forest* getParent() {
             MEDDLY_DCASSERT(parent);
             return parent;
         }
 
     protected:
         /// Parent forest.
-        expert_forest* parent;
+        forest* parent;
 
     private:
         /// Name of the style that invoked us

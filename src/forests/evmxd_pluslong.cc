@@ -32,7 +32,7 @@ MEDDLY::evmxd_pluslong::evmxd_pluslong(domain *d, const policies &p, int* level_
 {
     setLongEdges();
     setTransparentEdge(0, long(0));
-    initializeForest();
+    initializeStorage();
 }
 
 MEDDLY::evmxd_pluslong::~evmxd_pluslong()

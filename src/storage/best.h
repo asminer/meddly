@@ -42,8 +42,8 @@ class MEDDLY::best_storage_style : public node_storage_style {
 public:
   best_storage_style(const char* n);
   virtual ~best_storage_style();
-  virtual node_storage* createForForest(expert_forest* f,
-                                        const memory_manager_style* mst) const;
+  virtual node_storage* createForForest(forest* f,
+          const memory_manager_style* mst, memstats &ms) const;
 };
 
 

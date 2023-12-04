@@ -122,7 +122,8 @@ namespace MEDDLY {
 */
 class MEDDLY::simple_separated : public node_storage {
   public:
-    simple_separated(const char* n, expert_forest* f, const memory_manager_style* mst);
+    simple_separated(const char* n, forest* f, const memory_manager_style* mst,
+            memstats &ms);
     virtual ~simple_separated();
 
   // required interface
@@ -279,10 +280,11 @@ class MEDDLY::simple_separated : public node_storage {
 // ******************************************************************
 
 MEDDLY::simple_separated
-::simple_separated(const char* n, expert_forest* f, const memory_manager_style* mst)
+::simple_separated(const char* n, forest* f, const memory_manager_style* mst,
+        memstats &ms)
 : node_storage(n, f)
 {
-  MM = mst->initManager(sizeof(node_handle), slotsForNode(0, false), f->changeMemStats());
+  MM = mst->initManager(sizeof(node_handle), slotsForNode(0, false), ms);
 
   unhashed_start = header_slots;
   unhashed_slots = slotsForBytes(f->unhashedHeaderBytes());
@@ -1692,9 +1694,9 @@ MEDDLY::simple_separated_style::~simple_separated_style()
 }
 
 MEDDLY::node_storage* MEDDLY::simple_separated_style
-::createForForest(expert_forest* f, const memory_manager_style* mst) const
+::createForForest(forest* f, const memory_manager_style* mst, memstats &ms) const
 {
-  return new simple_separated(getName(), f, mst);
+  return new simple_separated(getName(), f, mst, ms);
 }
 
 

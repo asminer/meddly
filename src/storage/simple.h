@@ -41,8 +41,8 @@ class MEDDLY::simple_separated_style : public node_storage_style {
   public:
     simple_separated_style(const char* n);
     virtual ~simple_separated_style();
-    virtual node_storage* createForForest(expert_forest* f,
-        const memory_manager_style* mst) const;
+    virtual node_storage* createForForest(forest* f,
+        const memory_manager_style* mst, memstats &ms) const;
 };
 
 

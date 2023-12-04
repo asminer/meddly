@@ -32,7 +32,7 @@ MEDDLY::evmdd_timesreal::evmdd_timesreal(domain *d, const policies &p, int* leve
 {
     setFloatEdges();
     setTransparentEdge(0, float(0));
-    initializeForest();
+    initializeStorage();
 }
 
 MEDDLY::evmdd_timesreal::~evmdd_timesreal()

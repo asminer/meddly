@@ -850,28 +850,109 @@ class MEDDLY::forest {
         /// Are edge values hashed?
         bool hash_edge_values;
 
+    // ------------------------------------------------------------
+    public: // methods to get header size
+    // ------------------------------------------------------------
 
-
-    public:
-        /// Returns the forest identifier, a unique positive integer per forest.
-        /// FID 0 can safely be used to indicate "no forest".
-        inline unsigned FID() const { return fid; }
-
-        /// Returns the largest forest identifier ever seen.
-        static inline unsigned MaxFID() { return gfid; }
-
-        static inline forest* getForestWithID(unsigned id) {
-            if (id >= max_forests) return nullptr;
-            return all_forests[id];
+        /// Extra bytes per node, not hashed.
+        inline unsigned unhashedHeaderBytes() const {
+            return unhashed_bytes;
         }
 
+        /// Extra bytes per node, hashed.
+        inline unsigned hashedHeaderBytes() const {
+            return hashed_bytes;
+        }
+
+
+    // ------------------------------------------------------------
+    protected: // methods to set header size, for derived classes
+    // ------------------------------------------------------------
+
+        /// Set the unhashed extra bytes per node.
+        /// Call as needed in derived classes;
+        /// otherwise we assume 0 bytes.
+        inline void setUnhashedSize(unsigned ubytes) {
+            MEDDLY_DCASSERT(0 == unhashed_bytes);
+            unhashed_bytes = ubytes;
+        }
+
+        /// Set the hashed extra bytes per node.
+        /// Call as needed in derived classes;
+        /// otherwise we assume 0 bytes.
+        inline void setHashedSize(unsigned hbytes) {
+            MEDDLY_DCASSERT(0 == hashed_bytes);
+            hashed_bytes = hbytes;
+        }
+
+
+    // ------------------------------------------------------------
+    private: // members for header size
+    // ------------------------------------------------------------
+
+        /// Number of bytes of unhashed header
+        unsigned unhashed_bytes;
+
+        /// Number of bytes of hashed header
+        unsigned hashed_bytes;
+
+
+    // ------------------------------------------------------------
+    protected: // must be called in derived class constructors
+    // ------------------------------------------------------------
+
+        /** Initialize node storage.
+            Should be called in the child class constructors,
+            after calling setHashedSize() and setUnhashedSize().
+            Allows us to use class properties to initialize the data.
+        */
+        void initializeStorage();
+
+
+
     /*
-     *  Methods and members for keeping track of root edges.
-     *  They should normally not be called directly.
+     *  Methods for I/O
      *
      */
 
-    public:
+    // ------------------------------------------------------------
+    public: // Public I/O methods
+    // ------------------------------------------------------------
+
+        /** Show the header information in human-readable format.
+            Default behavior does nothing; override in derived
+            forests if there is any extra header information.
+                @param  s       Stream to write to.
+                @param  nr      Unpacked node containing header data.
+        */
+        virtual void showHeaderInfo(output &s, const unpacked_node &nr) const;
+
+        /** Write the header information in machine-readable format.
+            Default behavior does nothing; override in derived
+            forests if there is any extra header information.
+                @param  s       Stream to write to.
+                @param  nr      Unpacked node containing header data.
+        */
+        virtual void writeHeaderInfo(output &s, const unpacked_node &nr) const;
+
+        /** Read the header information in machine-readable format.
+            Default behavior does nothing; override in derived
+            forests if there is any extra header information.
+                @param  s       Stream to read from.
+                @param  nb      Node we're building.
+        */
+        virtual void readHeaderInfo(input &s, unpacked_node &nb) const;
+
+
+    /*
+     *  Methods and members for keeping track of root edges.
+     *
+     */
+
+    // ------------------------------------------------------------
+    public: // Public methods for root edge registry
+    // ------------------------------------------------------------
+
         /// Register a dd_edge with this forest.
         /// Called automatically in dd_edge.
         void registerEdge(dd_edge& e);
@@ -886,10 +967,14 @@ class MEDDLY::forest {
         /// Mark all registered dd_edges.
         void markAllRoots();
 
-    private:
+    // ------------------------------------------------------------
+    private: // Private methods for root edge registry
+    // ------------------------------------------------------------
         void unregisterDDEdges();
 
-    private:
+    // ------------------------------------------------------------
+    private: // Private members for root edge registry
+    // ------------------------------------------------------------
         /// Registry of dd_edges
         dd_edge* roots;
 
@@ -899,13 +984,37 @@ class MEDDLY::forest {
      *
      */
 
-    private:
+    // ------------------------------------------------------------
+    public: // public methods for the forest registry
+    // ------------------------------------------------------------
+
+        /// Returns the forest identifier, a unique positive integer per forest.
+        /// FID 0 can safely be used to indicate "no forest".
+        inline unsigned FID() const { return fid; }
+
+        /// Returns the largest forest identifier ever seen.
+        static inline unsigned MaxFID() { return gfid; }
+
+        /// Find the forest with the given FID.
+        /// If the forest has been deleted, this will be null.
+        static inline forest* getForestWithID(unsigned id) {
+            if (id >= max_forests) return nullptr;
+            return all_forests[id];
+        }
+
+
+    // ------------------------------------------------------------
+    private: // private methods for the forest registry
+    // ------------------------------------------------------------
         static void initStatics();
         static void freeStatics();
         static void registerForest(forest* f);
         static void unregisterForest(forest* f);
 
-    private:
+
+    // ------------------------------------------------------------
+    private: // private members for the forest registry
+    // ------------------------------------------------------------
         // All forests
         static forest** all_forests;
         // Size of forests array
@@ -924,6 +1033,7 @@ class MEDDLY::forest {
 // To be cleaned up still, below here.
 //
 // ===================================================================
+
 
   public:
     int *level_reduction_rule;
@@ -1157,7 +1267,10 @@ class MEDDLY::forest {
     const statset& getStats() const;
 
     /// Get forest memory stats.
-    const memstats& getMemoryStats() const;
+    inline const memstats& getMemoryStats() const {
+        return mstats;
+    }
+
 
     /** Get the current number of nodes in the forest, at all levels.
         @return     The current number of nodes, not counting deleted or
@@ -1953,10 +2066,6 @@ inline const MEDDLY::forest::statset& MEDDLY::forest::getStats() const {
   return stats;
 }
 
-inline const MEDDLY::memstats& MEDDLY::forest::getMemoryStats() const {
-  return mstats;
-}
-
 inline long MEDDLY::forest::getCurrentNumNodes() const {
   return stats.active_nodes;
 }
@@ -2036,18 +2145,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     */
     expert_forest(domain *d, bool rel, range_type t,
                   edge_labeling ev, const policies &p, int* level_reduction_rule);
-
-  // ------------------------------------------------------------
-  // inlined helpers.
-
-
-    memstats& changeMemStats();
-
-    /// Extra bytes per node, not hashed.
-    unsigned char unhashedHeaderBytes() const;
-    /// Extra bytes per node, hashed.
-    unsigned char hashedHeaderBytes() const;
-
 
 
   // --------------------------------------------------
@@ -2345,26 +2442,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
-  public:
-    /** Show the header information.
-          @param  s       Stream to write to.
-          @param  nr      Unpacked node containing header data.
-    */
-    virtual void showHeaderInfo(output &s, const unpacked_node &nr) const;
-
-    /** Write the header information in machine-readable format.
-          @param  s       Stream to write to.
-          @param  nr      Unpacked node containing header data.
-    */
-    virtual void writeHeaderInfo(output &s, const unpacked_node &nr) const;
-
-    /** Read the header information in machine-readable format.
-          @param  s       Stream to read from.
-          @param  nb      Node we're building.
-    */
-    virtual void readHeaderInfo(input &s, unpacked_node &nb) const;
-
-
 
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2377,18 +2454,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     /// Destructor.
     virtual ~expert_forest();
 
-    /** Initialize data.
-        Should be called in the child class constructors.
-        Allows us to use class properties to initialize the data.
-    */
-    void initializeForest();
 
-
-  // ------------------------------------------------------------
-  // inlined setters for derived classes to use.
-
-    void setUnhashedSize(unsigned char ubytes);
-    void setHashedSize(unsigned char hbytes);
 
   // ------------------------------------------------------------
   // virtual, with default implementation.
@@ -2518,12 +2584,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     // depth of delete/zombie stack; validate when 0
     int delete_depth;
 
-    /// Number of bytes of unhashed header
-    unsigned char unhashed_bytes;
-    /// Number of bytes of hashed header
-    unsigned char hashed_bytes;
-
-
 
     class nodecounter;
     class nodemarker;
@@ -2536,25 +2596,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 // *                 inlined  expert_forest methods                 *
 // *                                                                *
 // ******************************************************************
-
-
-inline MEDDLY::memstats&
-MEDDLY::expert_forest::changeMemStats()
-{
-  return mstats;
-}
-
-inline unsigned char
-MEDDLY::expert_forest::unhashedHeaderBytes() const
-{
-  return unhashed_bytes;
-}
-
-inline unsigned char
-MEDDLY::expert_forest::hashedHeaderBytes() const
-{
-  return hashed_bytes;
-}
 
 
 // --------------------------------------------------
@@ -2677,20 +2718,6 @@ MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un, T& e
   recycle(un);
 }
 
-
-inline void
-MEDDLY::expert_forest::setUnhashedSize(unsigned char ubytes)
-{
-  MEDDLY_DCASSERT(0 == unhashed_bytes);
-  unhashed_bytes = ubytes;
-}
-
-inline void
-MEDDLY::expert_forest::setHashedSize(unsigned char hbytes)
-{
-  MEDDLY_DCASSERT(0 == hashed_bytes);
-  hashed_bytes = hbytes;
-}
 
 /*
 inline bool

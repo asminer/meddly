@@ -471,7 +471,7 @@ void MEDDLY::unpacked_node
 void MEDDLY::unpacked_node::bind_to_forest(const forest* f,
     int k, unsigned ns, bool full)
 {
-    parent = (const expert_forest*) f;
+    parent = f;
     modparent = 0;
     level = k;
     is_full = full;

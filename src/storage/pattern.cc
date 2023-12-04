@@ -125,7 +125,8 @@ namespace MEDDLY {
  */
 class MEDDLY::pattern_storage : public node_storage {
 public:
-  pattern_storage(const char* n, expert_forest* f, const memory_manager_style* mst);
+  pattern_storage(const char* n, forest* f, const memory_manager_style* mst,
+          memstats &ms);
   virtual ~pattern_storage();
 
   // required interface
@@ -265,11 +266,12 @@ private:
 // ******************************************************************
 
 MEDDLY::pattern_storage
-::pattern_storage(const char* n, expert_forest* f, const memory_manager_style* mst)
+::pattern_storage(const char* n, forest* f, const memory_manager_style* mst,
+        memstats &ms)
 : node_storage(n, f)
 {
 
-  MM = mst->initManager(sizeof(node_handle), slotsForNode(0), f->changeMemStats());
+  MM = mst->initManager(sizeof(node_handle), slotsForNode(0), ms);
 
   unhashed_start = header_slots;
   unhashed_slots = slotsForBytes(f->unhashedHeaderBytes());
@@ -1510,10 +1512,10 @@ MEDDLY::pattern_storage_style::~pattern_storage_style()
 }
 
 MEDDLY::node_storage* MEDDLY::pattern_storage_style
-::createForForest(expert_forest* f, const memory_manager_style* mst) const
+::createForForest(forest* f, const memory_manager_style* mst, memstats &ms) const
 {
   //  return 0;
-  return new pattern_storage(getName(), f, mst);
+  return new pattern_storage(getName(), f, mst, ms);
 }
 
 

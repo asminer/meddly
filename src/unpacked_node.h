@@ -27,7 +27,7 @@
 namespace MEDDLY {
     class unpacked_node;
     class forest;
-    class expert_forest;
+    // class expert_forest;
     class initializer_list;
     class node_marker;
 }
@@ -55,8 +55,6 @@ class MEDDLY::unpacked_node {
         /** Constructor.
             The class must be "filled" by a forest before
             it can be used, however.
-
-            TBD: make this private
         */
         unpacked_node();
 
@@ -737,8 +735,8 @@ class MEDDLY::unpacked_node {
             printf("Adding unpacked node at level %d to build list\n", b->getLevel());
 #endif
             MEDDLY_DCASSERT(b);
-            MEDDLY_DCASSERT(b->parent == (expert_forest*) mp);
-            b->modparent = (expert_forest*) mp;
+            MEDDLY_DCASSERT(b->parent == mp);
+            b->modparent = mp;
 
             b->is_in_build_list = true;
             b->next = buildList;
@@ -751,8 +749,8 @@ class MEDDLY::unpacked_node {
         static void initStatics();
 
     private:
-        const expert_forest* parent;
-        expert_forest* modparent;
+        const forest* parent;
+        forest* modparent;
 
         static unpacked_node* freeList;
         static unpacked_node* buildList;

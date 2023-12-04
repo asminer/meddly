@@ -25,7 +25,7 @@ MEDDLY::mt_mxd_int::mt_mxd_int(domain *d, const policies &p, int* level_reductio
     terminal t(tv);
     setTransparentEdge(t.getHandle());
     // setTransparentEdge(int_Tencoder::value2handle(tv));
-    initializeForest();
+    initializeStorage();
 }
 
 MEDDLY::mt_mxd_int::~mt_mxd_int()

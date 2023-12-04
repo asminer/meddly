@@ -25,7 +25,7 @@ MEDDLY::mt_mxd_real::mt_mxd_real(domain *d, const policies &p, int* level_reduct
     terminal t(tv);
     setTransparentEdge(t.getHandle());
     // setTransparentEdge(float_Tencoder::value2handle(tv));
-    initializeForest();
+    initializeStorage();
 }
 
 MEDDLY::mt_mxd_real::~mt_mxd_real()
