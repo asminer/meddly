@@ -27,10 +27,13 @@
 namespace MEDDLY {
     class unpacked_node;
     class forest;
-    // class expert_forest;
     class initializer_list;
     class node_marker;
+
+    struct unpacked_lists;
 }
+
+// #define REMOVE_OLD
 
 // ******************************************************************
 // *                                                                *
@@ -38,31 +41,49 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-/** Class for reading nodes.
-    Ideally - used anywhere we want to read node data.
-    Backend implementation may change :^)
-    Readers may be "full" or "sparse",
-    regardless of how the actual node is stored.
+/**
+    Class for unpacked nodes, i.e., copies of nodes outside a forest.
+    Ideally - used anywhere we want to read node data, or create nodes.
+    Unpacked nodes may be "full" or "sparse", independent of how
+    the actual node is stored in the forest.
 
-    Currently, a node is:
+    Currently, an unpacked node is:
       array of node_handles, for the downward pointers
       array of integers, for indexes (sparse only)
-      "compact" chunk of memory for edge values
+      array of edge_values, for edge values
+            (unless there are no edge values)
+    All arrays are the same size, which could be larger than
+    the requested size.
+
+    If a node is extensible, the last element of the arrays
+    is the extensible edge. In sparse storage, the index gives
+    the starting index for the extensible edges.
+
+    Unpacked nodes may be created and destroyed using the
+    constructor and destructor as usual, or with static
+    methods New() and Recycle(), which will pull from
+    per-forest pools of Recycled nodes.
+
 */
 class MEDDLY::unpacked_node {
         friend class initializer_list;
     public:
+
         /** Constructor.
             The class must be "filled" by a forest before
             it can be used, however.
+                @param  f   Parent forest.
+                            If null, we must call attach()
+                            before use.
         */
-        unpacked_node();
+        unpacked_node(const forest* f = nullptr);
 
-        /// Destructor.  TBD: make this private
+        /// Destructor.
         ~unpacked_node();
 
-        /// Free memory, but don't delete.
-        void clear();
+        /// Attach the parent forest.
+        void attach(const forest* f);
+
 
     public:
         /* Initialization methods, primarily for reading */
@@ -71,22 +92,64 @@ class MEDDLY::unpacked_node {
         // Build redundant nodes
         //
 
+        void initRedundant(const forest *f, int k, const edge_value &ev,
+                node_handle node, node_storage_flags fs);
+
+#ifdef ALLOW_DEPRECATED_0_17_4
+#ifdef REMOVE_OLD
+        inline void initRedundant(const forest *f, int k, node_handle node,
+                bool full)
+        {
+            edge_value ev;
+            initRedundant(f, k, ev, node, full ? FULL_ONLY : SPARSE_ONLY);
+        }
+
+        template <class T>
+        inline void initRedundant(const forest *f, int k, T _ev, node_handle node,
+                bool full)
+        {
+            edge_value ev(_ev);
+            initRedundant(f, k, ev, node, full ? FULL_ONLY : SPARSE_ONLY);
+        }
+#else
         void initRedundant(const forest *f, int k, node_handle node,
                 bool full);
 
-        void initRedundant(const forest *f, int k, int ev,
-                node_handle node, bool full);
+        void initRedundant(const forest *f, int k, int ev, node_handle node,
+                bool full);
 
-        void initRedundant(const forest *f, int k, long ev,
-                node_handle node, bool full);
+        void initRedundant(const forest *f, int k, long ev, node_handle node,
+                bool full);
 
-        void initRedundant(const forest *f, int k, float ev,
-                node_handle node, bool full);
+        void initRedundant(const forest *f, int k, float ev, node_handle node,
+                bool full);
+#endif
+#endif
 
         //
         // Build identity nodes
         //
 
+        void initIdentity(const forest *f, int k, unsigned i,
+                const edge_value &ev, node_handle node, node_storage_flags fs);
+
+#ifdef ALLOW_DEPRECATED_0_17_4
+#ifdef REMOVE_OLD
+        inline void initIdentity(const forest *f, int k, unsigned i,
+                node_handle node, bool full)
+        {
+            edge_value ev;
+            initIdentity(f, k, i, ev, node, full ? FULL_ONLY : SPARSE_ONLY);
+        }
+
+        template <class T>
+        inline void initIdentity(const forest *f, int k, unsigned i, T _ev,
+                node_handle node, bool full)
+        {
+            edge_value ev(_ev);
+            initIdentity(f, k, i, ev, node, full ? FULL_ONLY : SPARSE_ONLY);
+        }
+#else
         void initIdentity(const forest *f, int k, unsigned i,
                 node_handle node, bool full);
 
@@ -98,11 +161,15 @@ class MEDDLY::unpacked_node {
 
         void initIdentity(const forest *f, int k, unsigned i,
                 float ev, node_handle node, bool full);
+#endif
+#endif
 
         //
         // Create blank nodes, primarily for writing
         //
 
+
+/*
         inline void initFull(const forest *f, int levl, unsigned tsz)
         {
             MEDDLY_DCASSERT(f);
@@ -114,16 +181,27 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(f);
             bind_to_forest(f, levl, nnz, false);
         }
+*/
 
     public:
         //
         // For convenience: get recycled instance and initialize
         //
 
+        static inline unpacked_node* newRedundant(const forest *f, int k,
+                const edge_value &ev, node_handle node, node_storage_flags fs)
+        {
+            unpacked_node* U = New(f);
+            MEDDLY_DCASSERT(U);
+            U->initRedundant(f, k, ev, node, fs);
+            return U;
+        }
+
+#ifdef ALLOW_DEPRECATED_0_17_4
         static inline unpacked_node* newRedundant(const forest *f,
                 int k, node_handle node, bool full)
         {
-            unpacked_node* U = New();
+            unpacked_node* U = New(f);
             MEDDLY_DCASSERT(U);
             U->initRedundant(f, k, node, full);
             return U;
@@ -132,7 +210,7 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newRedundant(const forest *f,
                 int k, long ev, node_handle node, bool full)
         {
-            unpacked_node* U = New();
+            unpacked_node* U = New(f);
             MEDDLY_DCASSERT(U);
             U->initRedundant(f, k, ev, node, full);
             return U;
@@ -141,16 +219,28 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newRedundant(const forest *f,
                 int k, float ev, node_handle node, bool full)
         {
-            unpacked_node* U = New();
+            unpacked_node* U = New(f);
             MEDDLY_DCASSERT(U);
             U->initRedundant(f, k, ev, node, full);
             return U;
         }
+#endif
 
+        static inline unpacked_node* newIdentity(const forest *f, int k,
+                unsigned i, const edge_value &ev, node_handle node,
+                node_storage_flags fs)
+        {
+            unpacked_node* U = New(f);
+            MEDDLY_DCASSERT(U);
+            U->initIdentity(f, k, i, ev, node, fs);
+            return U;
+        }
+
+#ifdef ALLOW_DEPRECATED_0_17_4
         static inline unpacked_node* newIdentity(const forest *f,
                 int k, unsigned i, node_handle node, bool full)
         {
-            unpacked_node* U = New();
+            unpacked_node* U = New(f);
             MEDDLY_DCASSERT(U);
             U->initIdentity(f, k, i, node, full);
             return U;
@@ -159,7 +249,7 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newIdentity(const forest *f,
                 int k, unsigned i, long ev, node_handle node, bool full)
         {
-            unpacked_node* U = New();
+            unpacked_node* U = New(f);
             MEDDLY_DCASSERT(U);
             U->initIdentity(f, k, i, ev, node, full);
             return U;
@@ -168,21 +258,23 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newIdentity(const forest *f,
                 int k, unsigned i, float ev, node_handle node, bool full)
         {
-            unpacked_node* U = New();
+            unpacked_node* U = New(f);
             MEDDLY_DCASSERT(U);
             U->initIdentity(f, k, i, ev, node, full);
             return U;
         }
+#endif
 
         /** Create a zeroed-out full node */
         static inline unpacked_node* newFull(forest *f,
                 int levl, unsigned tsz)
         {
-            unpacked_node* U = New();
+            unpacked_node* U = New(f);
             MEDDLY_DCASSERT(U);
-            U->initFull(f, levl, tsz);
-            U->clearFullEdges();
-            addToBuildList(U, f);
+            U->level = levl;
+            U->resize(tsz);
+            U->setFull();
+            U->allowWrites(f);
             return U;
         }
 
@@ -190,11 +282,12 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newSparse(forest *f,
                 int levl, unsigned nnzs)
         {
-            unpacked_node* U = New();
+            unpacked_node* U = New(f);
             MEDDLY_DCASSERT(U);
-            U->initSparse(f, levl, nnzs);
-            U->clearSparseEdges();
-            addToBuildList(U, f);
+            U->level = levl;
+            U->resize(nnzs);
+            U->setSparse();
+            U->allowWrites(f);
             return U;
         }
 
@@ -202,6 +295,8 @@ class MEDDLY::unpacked_node {
         //
         // Display methods
         //
+
+// HERE <<<------------
 
         /** Write a node in human-readable format.
 
@@ -536,19 +631,19 @@ class MEDDLY::unpacked_node {
             level = k;
         }
 
-        /// Get the size of this node (full readers only).
+        /// Get the size of this node.
         inline unsigned getSize() const
         {
-            MEDDLY_DCASSERT(is_full);
             return size;
         }
 
+#ifdef ALLOW_DEPRECATED_0_17_4
         /// Get the number of nonzeroes of this node (sparse readers only).
         inline unsigned getNNZs() const
         {
-            MEDDLY_DCASSERT(!is_full);
             return nnzs;
         }
+#endif
 
         /// Is this a sparse reader?
         inline bool isSparse() const
@@ -565,22 +660,13 @@ class MEDDLY::unpacked_node {
         /// Does this node have edge values?
         inline bool hasEdges() const
         {
-            return the_edge_type != edge_type::VOID;
-            // return edge_bytes;
+            return edge_type::VOID != parent->getEdgeType();
         }
 
         /// Edge type
         inline edge_type getEdgeType() const {
-            return the_edge_type;
+            return parent->getEdgeType();
         }
-
-        /// Number of bytes per edge
-        /*
-        inline unsigned edgeBytes() const
-        {
-            return edge_bytes;
-        }
-        */
 
     public:
         /// Get the node's hash
@@ -631,8 +717,19 @@ class MEDDLY::unpacked_node {
     public:
 
         /// Change the size of a node
-        void resize(unsigned ns);
+        inline void resize(unsigned ns) {
+            size = ns;
+            if (ns > alloc) enlarge(ns);
+        }
 
+        /// Shrink the size of a node
+        inline void shrink(unsigned ns)
+        {
+            MEDDLY_DCASSERT(ns <= size);
+            size = ns;
+        }
+
+#ifdef ALLOW_DEPRECATED_0_17_4
         /// Shrink the size of a (truncated) full node
         inline void shrinkFull(unsigned ns)
         {
@@ -651,7 +748,7 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(ns <= nnzs);
             nnzs = ns;
         }
-
+#endif
 
         /// Called within forest to allocate space.
         ///   @param  p     Parent, for building nodes.
@@ -659,13 +756,25 @@ class MEDDLY::unpacked_node {
         ///   @param  ns    Size of node.
         ///   @param  full  If true, we'll be filling a full reader.
         ///                 Otherwise it is a sparse one.
-        void bind_to_forest(const forest* p, int k, unsigned ns, bool full);
+        // void bind_to_forest(const forest* p, int k, unsigned ns, bool full);
 
-        /// Called by node_storage when building an unpacked
-        /// node based on how it's stored.
-        inline void bind_as_full(bool full)
-        {
-            is_full = full;
+        /// Set the node as sparse.
+        inline void setSparse() {
+            is_full = false;
+        }
+
+        /// Set the node as truncated full.
+        inline void setFull() {
+            is_full = true;
+        }
+
+        /// Allow writing to this node.
+        inline void allowWrites(forest* mp) {
+            if (modparent == mp) return;
+            MEDDLY_DCASSERT(nullptr == modparent);
+            MEDDLY_DCASSERT(parent == mp);
+            modparent = mp;
+            AddToBuildList(this);
         }
 
     public:
@@ -685,13 +794,27 @@ class MEDDLY::unpacked_node {
         }
 
 
-
     public:
-        // Centralized recycling
+        //
+        // Centralized per-forest (using FIDs) recycling
+        //
 
+        /// Pull a recycled node off of f's free list,
+        /// or create a new one if needed.
+        static unpacked_node* New(const forest* f);
+
+        /// Add r to its forest's build list
+        static void AddToBuildList(unpacked_node* r);
+
+        /// Remove r from its forest's build list if needed,
+        /// and add r back to its forest's recycle list.
+        static void Recycle(unpacked_node* r);
+
+
+/*
         // Pull a recycled node off the free list
         // static inline unpacked_node* useUnpackedNode()
-        static inline unpacked_node* New()
+        static inline unpacked_node* New(const forest* f)
         {
             unpacked_node* nr;
             if (freeList) {
@@ -745,52 +868,95 @@ class MEDDLY::unpacked_node {
 
         static void removeFromBuildList(unpacked_node* b);
         static void markBuildListChildren(node_marker* M);
+*/
+
+
+        /// forest should call this in its destructor.
+        /// deletes all recycled nodes for forest f.
+        static void doneForest(const forest* f);
+
     private:
         static void initStatics();
+        static void doneStatics();
 
     private:
+        /// Per-forest free and build lists.
+        /// Stored as an array, indexed by the forest's FID.
+        static unpacked_lists* ForLists;
+        /// Allocated size of ForLists
+        static unsigned ForListsAlloc;
+
+    private:
+        void expand(unsigned ns);
+
+    private:
+        /// Next in list
+        unpacked_node* next;
+        /// Previous in list
+        unpacked_node* prev;
+
+        /// Forest where the node belongs
         const forest* parent;
+
+        /// Modifiable parent forest; required for writable nodes
         forest* modparent;
 
-        static unpacked_node* freeList;
-        static unpacked_node* buildList;
 
-        unpacked_node* next; // for recycled list, and list of nodes being built
-        bool is_in_build_list;
-
-        /*
-            TBD - extra info that is not hashed
-        */
-        void* extra_unhashed;
-        unsigned ext_uh_alloc;
-        unsigned ext_uh_size;
-        /*
-            Extra info that is hashed
-        */
-        void* extra_hashed;
-        unsigned ext_h_alloc;
-        unsigned ext_h_size;
-        /*
-            Down pointers, indexes, edge values.
-        */
+        /// Down pointers
         node_handle* _down;
+
+        /// Indexes, for sparse; otherwise unused
         unsigned* _index;
+
+        /// Edge values; or null if void edges
         edge_value* _edge;
-        edge_type the_edge_type;
-        terminal_type the_terminal_type;
-        bool can_be_extensible;
-        bool is_extensible;
+
+        /// Allocated sizes of arrays
         unsigned alloc;
-        // unsigned ealloc;
+
+        /// Used sizes of arrays
         unsigned size;
-        unsigned nnzs;
+
+        /// Extra header information that is not hashed
+        void* extra_unhashed;
+        /// Number of bytes in extra unhashed header
+        unsigned extra_unhashed_size;
+
+        /// Extra header information that is hashed
+        void* extra_hashed;
+        /// Number of bytes in extra hashed header
+        unsigned extra_hashed_size;
+
+        /// Level of the node
         int level;
+
+        /// Hash of the node
         unsigned h;
-        // unsigned char edge_bytes; // number of bytes for an edge value.
+
+        /// only node pointers built by new() should be recycle()d.
+        bool can_be_recycled;
+
+        /// Are we assuming full storage?
         bool is_full;
+
+        /// Can this node be extensible?
+        /// Determined by the parent forest.
+        bool can_be_extensible;
+
+        /// Is this node extensible?
+        bool is_extensible;
+
 #ifdef DEVELOPMENT_CODE
+        /// Has the hash been computed
         bool has_hash;
 #endif
+
+        // TBD: do we need these?
+
+        edge_type the_edge_type;
+        terminal_type the_terminal_type;
+
+
 };
 
 
