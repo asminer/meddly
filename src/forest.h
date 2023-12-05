@@ -138,7 +138,7 @@ class MEDDLY::forest {
         inline unpacked_node* newUnpacked(node_handle p,
                 node_storage_flags f) const
         {
-            unpacked_node* un = unpacked_node::New();
+            unpacked_node* un = unpacked_node::New(this);
             unpackNode(un, p, f);
             return un;
         }
@@ -2566,8 +2566,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     // Sanity check; used in development code.
     void validateDownPointers(const unpacked_node &nb) const;
 
-    static void recycle(unpacked_node *n);
-
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // |                                                                |
   // |                              Data                              |
@@ -2698,7 +2696,7 @@ MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un)
 #ifdef TRACK_DELETIONS
   printf("Created node %d\n", q);
 #endif
-  recycle(un);
+  unpacked_node::Recycle(un);
   return q;
 }
 
@@ -2715,7 +2713,7 @@ MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un, T& e
 #ifdef TRACK_DELETIONS
   printf("Created node %d\n", node);
 #endif
-  recycle(un);
+  unpacked_node::Recycle(un);
 }
 
 

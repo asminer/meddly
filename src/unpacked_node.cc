@@ -103,6 +103,7 @@ void MEDDLY::unpacked_node::attach(const forest* f)
 
     parent = f;
     modparent = nullptr;
+    the_edge_type = parent->getEdgeType();
 
     //
     // Allocate extra headers if needed
@@ -372,26 +373,19 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
     Display methods
 */
 
-// HERE <<<------------
-
-
 void MEDDLY::unpacked_node::show(output &s, bool details) const
 {
-    unsigned stop;
-    if (isSparse()) {
-        if (details) s << "nnzs: " << (unsigned long)nnzs << (isExtensible()? "*": "") << " ";
-        s << "down: (";
-        stop = nnzs;
-    } else {
-        if (details) s << "size: " << (unsigned long)size << (isExtensible()? "*": "") << " ";
-        s << "down: [";
-        stop = size;
+    if (details) {
+        s << (isSparse() ? "nnzs: " : "size: ") << long(size);
+        if (isExtensible()) s.put('*');
+        s.put(' ');
     }
+    s << "down: " << (isSparse() ? '(' : '[');
 
-    for (unsigned z=0; z<stop; z++) {
+    for (unsigned z=0; z<size; z++) {
         if (isSparse()) {
             if (z) s << ", ";
-            s << (unsigned long) i(z) << ":";
+            s << (unsigned long) _index[z] << ":";
         } else {
             if (z) s.put('|');
         }
@@ -400,11 +394,7 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
 
     if (isExtensible()) s.put('*');
 
-    if (isSparse()) {
-        s.put(')');
-    } else {
-        s.put(']');
-    }
+    s.put( isSparse() ? ')' : ']' );
 
     // show extra header stuff
     parent->showHeaderInfo(s, *this);
@@ -414,13 +404,12 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
 void MEDDLY::unpacked_node::write(output &s, const std::vector <unsigned> &map)
     const
 {
-    unsigned stop;
+    MEDDLY_DCASSERT(parent);
+
     if (isSparse()) {
-        s.put(-long(nnzs));
-        stop = nnzs;
+        s.put(-long(size));
     } else {
         s.put(long(size));
-        stop = size;
     }
 
     //
@@ -429,9 +418,9 @@ void MEDDLY::unpacked_node::write(output &s, const std::vector <unsigned> &map)
     if (isSparse()) {
         s.put('\n');
         s.put('\t');
-        for (unsigned z=0; z<nnzs; z++) {
+        for (unsigned z=0; z<size; z++) {
             s.put(' ');
-            s.put((unsigned long) i(z));
+            s.put((unsigned long) _index[z]);
         }
     }
 
@@ -440,11 +429,11 @@ void MEDDLY::unpacked_node::write(output &s, const std::vector <unsigned> &map)
     //
     s.put('\n');
     s.put('\t');
-    for (unsigned z=0; z<stop; z++) {
+    for (unsigned z=0; z<size; z++) {
         s.put(' ');
         if (d(z) <= 0) {
             // terminal
-            terminal t(the_terminal_type, d(z));
+            terminal t(parent->getTerminalType(), d(z));
             t.write(s);
         } else {
             // non-terminal
@@ -456,10 +445,10 @@ void MEDDLY::unpacked_node::write(output &s, const std::vector <unsigned> &map)
     //
     // write edge values, if any
     //
-    if (edge_type::VOID != the_edge_type) {
+    if (hasEdges()) {
         s.put('\n');
         s.put('\t');
-        for (unsigned z=0; z<stop; z++) {
+        for (unsigned z=0; z<size; z++) {
             s.put(' ');
             _edge[z].write(s);
         }
@@ -485,12 +474,11 @@ void MEDDLY::unpacked_node::read(input &s, const std::vector<node_handle> &map)
     //
     // read indexes (sparse only)
     //
-    unsigned stop;
     if (isSparse()) {
 #ifdef DEBUG_READ_DD
         std::cerr << "    reading indexes\n";
 #endif
-        for (unsigned z=0; z<nnzs; z++) {
+        for (unsigned z=0; z<size; z++) {
             s.stripWS();
             long ndx = s.get_integer();
             if (ndx < 0) {
@@ -498,18 +486,15 @@ void MEDDLY::unpacked_node::read(input &s, const std::vector<node_handle> &map)
             }
             i_ref(z) = unsigned(ndx);
         }
-        stop = nnzs;
-    } else {
-        stop = size;
     }
 
     //
     // read down pointers
     //
 #ifdef DEBUG_READ_DD
-    std::cerr << "    reading " << stop << " down pointers\n";
+    std::cerr << "    reading " << size << " down pointers\n";
 #endif
-    for (unsigned z=0; z<stop; z++) {
+    for (unsigned z=0; z<size; z++) {
         s.stripWS();
         int c = s.get_char();
         if ('n' == c) {
@@ -534,11 +519,11 @@ void MEDDLY::unpacked_node::read(input &s, const std::vector<node_handle> &map)
     //
     // read edge values, if any
     //
-    if (edge_type::VOID != the_edge_type) {
+    if (hasEdges()) {
 #ifdef DEBUG_READ_DD
         std::cerr << "    reading " << stop << " edge values\n";
 #endif
-        for (unsigned z=0; z<stop; z++) {
+        for (unsigned z=0; z<size; z++) {
             s.stripWS();
             _edge[z].read(s);
         }
@@ -552,6 +537,100 @@ void MEDDLY::unpacked_node::read(input &s, const std::vector<node_handle> &map)
 #ifdef DEBUG_READ_DD
     std::cerr << "  done unpacked_node::read\n";
 #endif
+}
+
+//
+// Helpers for checking in a node
+//
+
+void MEDDLY::unpacked_node::computeHash()
+{
+    MEDDLY_DCASSERT(!has_hash);
+    trim();
+
+    hash_stream s;
+    s.start(0);
+
+    if (ext_h_size) {
+        s.push(extra_hashed, extra_hashed_size);
+    }
+
+    if (isSparse()) {
+        if (parent->areEdgeValuesHashed()) {
+            for (unsigned z=0; z<size; z++) {
+                MEDDLY_DCASSERT(!parent->isTransparentEdge(_down[z], _edge[z]));
+                s.push(_index[z], unsigned(_down[z]));
+                _edge[z].hash(s);
+            }
+        } else {
+            for (unsigned z=0; z<size; z++) {
+                MEDDLY_DCASSERT(_down[z]!=parent->getTransparentNode());
+                s.push(_index[z], unsigned(_down[z]));
+            }
+        }
+    } else {
+        if (parent->areEdgeValuesHashed()) {
+            for (unsigned n=0; n<size; n++) {
+                if (!parent->isTransparentEdge(_down[n], _edge[n])) {
+                    s.push(n, unsigned(_down[n]));
+                    _edge[n].hash(s);
+                }
+            }
+        } else {
+            for (unsigned n=0; n<size; n++) {
+                if (_down[n]!=parent->getTransparentNode()) {
+                    s.push(n, unsigned(_down[n]));
+                }
+            }
+        }
+    }
+
+    h = s.finish();
+#ifdef DEVELOPMENT_CODE
+    has_hash = true;
+#endif
+}
+
+//
+// HERE <<<------------
+//
+
+// remove all edges starting at the given index
+void MEDDLY::unpacked_node::trim()
+{
+    if (isTrim()) return;
+
+    // If extensible edge is transparent, mark the node as not-extensible and return
+    if (d((isSparse()? getNNZs() : getSize()) - 1) == parent->getTransparentNode()) {
+        markAsNotExtensible();
+        return;
+    }
+
+    MEDDLY_DCASSERT(isExtensible() && !isTrim());
+    MEDDLY_DCASSERT(modparent);
+
+    if (isSparse()) {
+        unsigned z = getNNZs()-1;
+        while (z > 0 && (i(z-1)+1) == _index[z] && d(z-1) == d(z)) {
+            modparent->unlinkNode(d(z));
+            z--;
+        }
+        if (z != (getNNZs() - 1)) {
+            // node is smaller than before, shrink it to the correct size.
+            shrinkSparse(z+1);
+        }
+    } else {
+        unsigned z = getSize()-1;
+        while (z > 0 && d(z-1) == d(z)) {
+            modparent->unlinkNode(d(z));
+            z--;
+        }
+        if (z != (getSize()-1)) {
+            shrinkFull(z+1);
+        }
+    }
+
+    MEDDLY_DCASSERT(isExtensible() && isTrim());
 }
 
 void MEDDLY::unpacked_node::expand(unsigned ns)
@@ -587,7 +666,7 @@ void MEDDLY::unpacked_node::bind_to_forest(const forest* f,
     can_be_extensible = f->isExtensibleLevel(k);
     markAsNotExtensible();
     the_edge_type = f->getEdgeType();
-    the_terminal_type = f->getTerminalType();
+    // the_terminal_type = f->getTerminalType();
     resize(ns);
 
     // Allocate headers
@@ -673,54 +752,6 @@ void MEDDLY::unpacked_node::markBuildListChildren(node_marker* M)
     } // for curr
 }
 
-void MEDDLY::unpacked_node::computeHash()
-{
-    MEDDLY_DCASSERT(!has_hash);
-    trim();
-
-    hash_stream s;
-    s.start(0);
-
-    if (ext_h_size) {
-        s.push(extra_hashed, ext_h_size);
-    }
-
-    if (isSparse()) {
-        if (parent->areEdgeValuesHashed()) {
-            for (unsigned z=0; z<nnzs; z++) {
-                MEDDLY_DCASSERT(!parent->isTransparentEdge(d(z), _edge[z]));
-                s.push(i(z), unsigned(d(z)));
-                _edge[z].hash(s);
-            }
-        } else {
-            for (unsigned z=0; z<nnzs; z++) {
-                MEDDLY_DCASSERT(d(z)!=parent->getTransparentNode());
-                s.push(i(z), unsigned(d(z)));
-            }
-        }
-    } else {
-        if (parent->areEdgeValuesHashed()) {
-            for (unsigned n=0; n<size; n++) {
-                if (!parent->isTransparentEdge(d(n), _edge[n])) {
-                    s.push(n, unsigned(d(n)));
-                    _edge[n].hash(s);
-                }
-            }
-        } else {
-            for (unsigned n=0; n<size; n++) {
-                if (d(n)!=parent->getTransparentNode()) {
-                    s.push(n, unsigned(d(n)));
-                }
-            }
-        }
-    }
-
-    h = s.finish();
-#ifdef DEVELOPMENT_CODE
-    has_hash = true;
-#endif
-}
-
 
 // check is the node is written in order,
 // if not rearrange it in ascending order of indices.
@@ -770,58 +801,6 @@ void MEDDLY::unpacked_node::sort()
     free(old_edge);
 }
 
-// remove all edges starting at the given index
-void MEDDLY::unpacked_node::trim()
-{
-    if (!isExtensible()) return;
-    if (isTrim()) return;
-
-    // If extensible edge is transparent, mark the node as not-extensible and return
-    if (d((isSparse()? getNNZs() : getSize()) - 1) == parent->getTransparentNode()) {
-        markAsNotExtensible();
-        return;
-    }
-
-    MEDDLY_DCASSERT(isExtensible() && !isTrim());
-    MEDDLY_DCASSERT(modparent);
-
-    if (isSparse()) {
-        unsigned z = getNNZs()-1;
-        while (z > 0 && (i(z-1)+1) == i(z) && d(z-1) == d(z)) {
-            modparent->unlinkNode(d(z));
-            z--;
-        }
-        if (z != (getNNZs() - 1)) {
-            // node is smaller than before, shrink it to the correct size.
-            shrinkSparse(z+1);
-        }
-    } else {
-        unsigned z = getSize()-1;
-        while (z > 0 && d(z-1) == d(z)) {
-            modparent->unlinkNode(d(z));
-            z--;
-        }
-        if (z != (getSize()-1)) {
-            shrinkFull(z+1);
-        }
-    }
-
-    MEDDLY_DCASSERT(isExtensible() && isTrim());
-}
-
-// checks if the node is has no trailing redundant edges
-bool MEDDLY::unpacked_node::isTrim() const
-{
-    if (!isExtensible()) return true;
-
-    if (isSparse()) {
-        unsigned nnz = getNNZs();
-        return (nnz < 2 || i(nnz-1) != (i(nnz-2)+1) || d(nnz-1) != d(nnz-2));
-    } else {
-        unsigned sz = getSize();
-        return (sz < 2 || d(sz-1) != d(sz-2));
-    }
-}
 
 // checks if the node indices are in ascending order
 bool MEDDLY::unpacked_node::isSorted() const
@@ -829,7 +808,7 @@ bool MEDDLY::unpacked_node::isSorted() const
     if (!isSparse()) return true;
 
     for (unsigned z = 1; z < getNNZs(); z++) {
-        if (i(z-1) >= i(z)) return false;
+        if (i(z-1) >= _index[z]) return false;
     }
 
     return true;
@@ -839,13 +818,13 @@ void MEDDLY::unpacked_node::clearEdges(unsigned stop)
 {
     MEDDLY_DCASSERT(_down);
     MEDDLY_DCASSERT(_edge);
-    if (edge_type::VOID == the_edge_type) {
+    if (hasEdges()) {
         for (unsigned i=0; i<stop; i++) {
-            _down[i] = parent->getTransparentNode();
+            parent->getTransparentEdge(_down[i], _edge[i]);
         }
     } else {
         for (unsigned i=0; i<stop; i++) {
-            parent->getTransparentEdge(_down[i], _edge[i]);
+            _down[i] = parent->getTransparentNode();
         }
     }
 }

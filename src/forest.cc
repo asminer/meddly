@@ -274,6 +274,9 @@ void MEDDLY::forest::registerForest(forest* f)
 
     // Register in the domain
     f->d->registerForest(f);
+
+    // Initialize unpacked node entries for f
+    unpacked_node::initForest(f);
 }
 
 void MEDDLY::forest::unregisterForest(forest* f)
@@ -285,6 +288,9 @@ void MEDDLY::forest::unregisterForest(forest* f)
 
     // Unregister in the domain
     f->d->unregisterForest(f);
+
+    // Clear out unpacked node entries for f
+    unpacked_node::doneForest(f);
 }
 
 //
@@ -345,7 +351,7 @@ void MEDDLY::forest::markAllRoots()
         reachable->mark(r->getNode());
     }
 
-    unpacked_node::markBuildListChildren(reachable);
+    unpacked_node::MarkWritable(*reachable);
 }
 
 
@@ -1095,7 +1101,7 @@ MEDDLY::expert_forest
     } // for i
   } // for mexpl
 
-  unpacked_node::recycle(M);
+  unpacked_node::Recycle(M);
 
   // sort
   if (sort && mlen>0) {
@@ -1247,7 +1253,7 @@ bool MEDDLY::expert_forest
   s.put(' ');
   unpacked_node* un = newUnpacked(p, FULL_OR_SPARSE);
   un->show(s, flags & SHOW_DETAILS);
-  unpacked_node::recycle(un);
+  unpacked_node::Recycle(un);
 
   return true;
 }
@@ -1365,7 +1371,7 @@ void MEDDLY::expert_forest
         unpackNode(un, output2handle[i], FULL_OR_SPARSE);
         un->write(s, handle2output);
     }
-    unpacked_node::recycle(un);
+    unpacked_node::Recycle(un);
 
     // reverse the block
     for (int i=strlen(block); i; ) {
@@ -1731,7 +1737,7 @@ void MEDDLY::expert_forest::deleteNode(node_handle p)
     }
     node_handle x = unique->remove(h, p);
     MEDDLY_DCASSERT(p == x);
-    unpacked_node::recycle(key);
+    unpacked_node::Recycle(key);
   }
 #else
   unique->remove(h, p);
@@ -1913,7 +1919,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   MEDDLY_DCASSERT(key->hash() == nb.hash());
   node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
   MEDDLY_DCASSERT(f == p);
-  unpacked_node::recycle(key);
+  unpacked_node::Recycle(key);
 #endif
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node ");
@@ -2091,7 +2097,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   MEDDLY_DCASSERT(key->hash() == nb.hash());
   node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
   MEDDLY_DCASSERT(f == p);
-  unpacked_node::recycle(key);
+  unpacked_node::Recycle(key);
 #endif
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node ");
@@ -2134,7 +2140,7 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_nod
   MEDDLY_DCASSERT(key->hash() == un->hash());
   node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
   MEDDLY_DCASSERT(f == p);
-  unpacked_node::recycle(key);
+  unpacked_node::Recycle(key);
 #endif
 #ifdef DEBUG_CREATE_REDUCED
   printf("Created node ");
@@ -2143,7 +2149,7 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_nod
   printf("\n");
 #endif
 
-  unpacked_node::recycle(un);
+  unpacked_node::Recycle(un);
   return p;
 }
 
@@ -2206,10 +2212,6 @@ void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
 
 }
 
-void MEDDLY::expert_forest::recycle(unpacked_node* n)
-{
-    unpacked_node::recycle(n);
-}
 
 //
 // Stuff that used to be inlined but now can't
