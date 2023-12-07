@@ -773,28 +773,18 @@ class MEDDLY::unpacked_node {
             return false;
         }
 
-// HERE <<<------------
 
         /// Removes redundant trailing edges.
         /// If the unpacked node is sparse, it assumes its indices
         /// to be in ascending order.
         void trim();
 
-        /// checks if the node indices are in ascending order
-        bool isSorted() const;
-
         /// If the unpacked node is sparse, it is sorted so that the
         /// indices are in ascending order.
         void sort();
 
-        /*
-        // Is this a "build" node?  Important for mark and sweep.
-        inline bool isBuildNode() const
-        {
-            return is_in_build_list;
-        }
-        */
-
+        /// checks if the node indices are in ascending order
+        bool isSorted() const;
     public:
 
         /// Change the size of a node
@@ -829,14 +819,6 @@ class MEDDLY::unpacked_node {
         }
 #endif
 
-        /// Called within forest to allocate space.
-        ///   @param  p     Parent, for building nodes.
-        ///   @param  k     Level number.
-        ///   @param  ns    Size of node.
-        ///   @param  full  If true, we'll be filling a full reader.
-        ///                 Otherwise it is a sparse one.
-        // void bind_to_forest(const forest* p, int k, unsigned ns, bool full);
-
         /// Set the node as sparse.
         inline void setSparse() {
             is_full = false;
@@ -856,23 +838,6 @@ class MEDDLY::unpacked_node {
             AddToBuildList(this);
         }
 
-        /*
-    public:
-        /// Set down edges from 0..stop-1 to the transparent edge
-        void clearEdges(unsigned stop);
-
-        /// Set all down edges (and values) to 0, for full storage
-        inline void clearFullEdges() {
-            MEDDLY_DCASSERT(isFull());
-            clearEdges(size);
-        }
-
-        /// Set all down edges (and values) to 0, for sparse storage
-        inline void clearSparseEdges() {
-            MEDDLY_DCASSERT(isSparse());
-            clearEdges(nnzs);
-        }
-    */
 
     public:
         //
@@ -883,8 +848,8 @@ class MEDDLY::unpacked_node {
         /// or create a new one if needed.
         static unpacked_node* New(const forest* f);
 
-        /// Add r to its forest's build list
-        static void AddToBuildList(unpacked_node* r);
+        /// Add a node to the build list for the appropriate forest.
+        static void AddToBuildList(unpacked_node* n);
 
         /// Mark children in writable nodes.
         ///     @param  M   node marker we should use to mark nodes;
@@ -896,65 +861,6 @@ class MEDDLY::unpacked_node {
         /// and add r back to its forest's recycle list.
         static void Recycle(unpacked_node* r);
 
-
-/*
-        // Pull a recycled node off the free list
-        // static inline unpacked_node* useUnpackedNode()
-        static inline unpacked_node* New(const forest* f)
-        {
-            unpacked_node* nr;
-            if (freeList) {
-                nr = freeList;
-                freeList = nr->next;
-            } else {
-                nr = new unpacked_node;
-            }
-#ifdef DEVELOPMENT_CODE
-            nr->has_hash = false;
-#endif
-            nr->is_in_build_list = false;
-            return nr;
-        }
-
-
-        // Add a recycled node to the free list
-        static inline void recycle(unpacked_node* r)
-        {
-            if (r) {
-                if (r->is_in_build_list) {
-                    removeFromBuildList(r);
-                }
-                r->next = freeList;
-                freeList = r;
-            }
-        }
-
-        // delete all nodes in the free list
-        static void freeRecycled();
-
-        // Lists so we can treat nodes under construction
-        // as root nodes for mark and sweep
-
-        // Add a node to the build list
-        // Signifies that we are building this node, so we link/unlink
-        // the down pointers.
-        static inline void addToBuildList(unpacked_node* b, forest *mp)
-        {
-#ifdef DEBUG_BUILDLIST
-            printf("Adding unpacked node at level %d to build list\n", b->getLevel());
-#endif
-            MEDDLY_DCASSERT(b);
-            MEDDLY_DCASSERT(b->parent == mp);
-            b->modparent = mp;
-
-            b->is_in_build_list = true;
-            b->next = buildList;
-            buildList = b;
-        }
-
-        static void removeFromBuildList(unpacked_node* b);
-        static void markBuildListChildren(node_marker* M);
-*/
 
         /// forest should call this in its constructor, after it has its FID.
         /// Initializes empty lists for forest f.
@@ -976,21 +882,29 @@ class MEDDLY::unpacked_node {
         /// Allocated size of ForLists
         static unsigned ForListsAlloc;
 
+// HERE <<<------------
+
     private:
         void expand(unsigned ns);
+
+        // Set edges to transparent
+        void clear(unsigned low, unsigned high);
+
+        // Set all edges to transparent
+        inline void clear() {
+            clear(0, size);
+        }
 
     private:
         /// Next in list
         unpacked_node* next;
-        /// Previous in list
+        /// Previous in list (for build lists only)
         unpacked_node* prev;
 
         /// Forest where the node belongs
         const forest* parent;
-
         /// Modifiable parent forest; required for writable nodes
         forest* modparent;
-
 
         /// Down pointers
         node_handle* _down;
@@ -1023,8 +937,8 @@ class MEDDLY::unpacked_node {
         /// Hash of the node
         unsigned h;
 
-        /// only node pointers built by new() should be recycle()d.
-        bool can_be_recycled;
+        /// FID of the parent
+        unsigned pFID;
 
         /// Are we assuming full storage?
         bool is_full;
@@ -1037,6 +951,9 @@ class MEDDLY::unpacked_node {
         bool is_extensible;
 
 #ifdef DEVELOPMENT_CODE
+        /// only node pointers built by New() should be Recycle()d.
+        bool can_be_recycled;
+
         /// Has the hash been computed
         bool has_hash;
 #endif

@@ -16,7 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
+//
+// TBD: add zero-out range [low, high)
+// TBD: on node recycle, set down + edge to transparent on [low, high)
+//
 
 // TODO: Testing
 
@@ -59,6 +62,7 @@ MEDDLY::unpacked_node::unpacked_node(const forest* f)
 
     parent = nullptr;
     modparent = nullptr;
+    pFID = 0;
 
     _down = nullptr;
     _index = nullptr;
@@ -75,11 +79,11 @@ MEDDLY::unpacked_node::unpacked_node(const forest* f)
 
     level = 0;
 
-    can_be_recycled = false;
     can_be_extensible = false;
     is_extensible = false;
 
 #ifdef DEVELOPMENT_CODE
+    can_be_recycled = false;
     has_hash = false;
 #endif
 
@@ -103,6 +107,7 @@ void MEDDLY::unpacked_node::attach(const forest* f)
 
     parent = f;
     modparent = nullptr;
+    pFID = f->FID();
     the_edge_type = parent->getEdgeType();
 
     //
@@ -591,69 +596,330 @@ void MEDDLY::unpacked_node::computeHash()
 #endif
 }
 
-//
-// HERE <<<------------
-//
 
 // remove all edges starting at the given index
 void MEDDLY::unpacked_node::trim()
 {
     if (isTrim()) return;
 
-    // If extensible edge is transparent, mark the node as not-extensible and return
-    if (d((isSparse()? getNNZs() : getSize()) - 1) == parent->getTransparentNode()) {
+    //
+    // If extensible edge is transparent,
+    // mark the node as not-extensible and return
+    //
+    if (parent->getTransparentNode() == _down[size-1]) {
         markAsNotExtensible();
+        // TBD: do we need to shrink the size by 1?
+        // --size;
         return;
     }
 
-    MEDDLY_DCASSERT(isExtensible() && !isTrim());
     MEDDLY_DCASSERT(modparent);
 
     if (isSparse()) {
-        unsigned z = getNNZs()-1;
-        while (z > 0 && (i(z-1)+1) == _index[z] && d(z-1) == d(z)) {
-            modparent->unlinkNode(d(z));
+        unsigned z = size-1;
+        while (z && (_index[z-1]+1 == _index[z]) && (_down[z-1] == _down[z])) {
+            modparent->unlinkNode(_down[z]);
             z--;
         }
-        if (z != (getNNZs() - 1)) {
-            // node is smaller than before, shrink it to the correct size.
-            shrinkSparse(z+1);
-        }
+        shrinkSparse(z+1);
     } else {
-        unsigned z = getSize()-1;
-        while (z > 0 && d(z-1) == d(z)) {
-            modparent->unlinkNode(d(z));
+        unsigned z = size-1;
+        while (z && (_down[z-1] == _down[z])) {
+            modparent->unlinkNode(_down[z]);
             z--;
         }
-        if (z != (getSize()-1)) {
-            shrinkFull(z+1);
-        }
+        shrinkFull(z+1);
     }
 
     MEDDLY_DCASSERT(isExtensible() && isTrim());
 }
 
+
+// check is the node is written in order,
+// if not rearrange it in ascending order of indices.
+void MEDDLY::unpacked_node::sort()
+{
+    if (!isSparse()) return;
+    MEDDLY_DCASSERT(_index);
+
+    //
+    // First, scan indexes to see if we're already sorted,
+    // and obtain the largest index.
+    //
+    unsigned maxind = 0;
+    bool sorted = true;
+    for (unsigned i=0; i<size; i++) {
+        unsigned ip1 = 1+_index[i];
+        if (ip1 > maxind) {
+            maxind = ip1;
+        } else {
+            sorted = false;
+        }
+    }
+    if (sorted) return;
+
+    //
+    // Build an array that gives, for each index,
+    // its current position +1 in the list.
+    //
+    unsigned* position = new unsigned[maxind];
+    for (unsigned i=0; i<maxind; i++) {
+        position[i] = 0;
+    }
+    for (unsigned i=0; i<size; i++) {
+        if (position[_index[i]]) {
+            // two of the same indexes, that's bad
+            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+        }
+        position[_index[i]] = i+1;
+    }
+
+    //
+    // Do the sort.
+    // Scan the position array, skip zeroes (indexes not present).
+    // Then, swap the current position of the element with its
+    // desired position.
+    //
+    unsigned zd = 0;
+    for (unsigned i=0; i<maxind; i++) {
+        if (position[i]) {
+            const unsigned zn = position[i]-1;
+            if (zn != zd) {
+                if (_edge) SWAP(_edge[zd], _edge[zn]);
+                SWAP(_down[zd], _down[zn]);
+                SWAP(position[_index[zd]], position[_index[zn]]);
+                SWAP(_index[zd], _index[zn]);
+            }
+            ++zd;
+        }
+    }
+
+    //
+    // Cleanup
+    //
+    delete[] position;
+}
+
+bool MEDDLY::unpacked_node::isSorted() const
+{
+    if (!isSparse()) {
+        return true;
+    }
+    for (unsigned z = 1; z < size; z++) {
+        if (_index[z-1] >= _index[z]) return false;
+    }
+    return true;
+}
+
+
+//
+// Static methods for free lists
+//
+
+MEDDLY::unpacked_node* MEDDLY::unpacked_node::New(const forest* f)
+{
+    MEDDLY_DCASSERT(f);
+    const unsigned FID = f->FID();
+    CHECK_RANGE(1, FID, ForListsAlloc);
+    MEDDLY_DCASSERT(ForLists);
+
+    if (ForLists[FID].recycled) {
+        // pull from free list
+        unpacked_node* n = ForLists[FID].recycled;
+        ForLists[FID].recycled = n->next;
+        n->prev = nullptr;
+        n->next = nullptr;
+#ifdef DEVELOPMENT_CODE
+        n->has_hash = false;
+#endif
+        n->clear();
+        return n;
+    } else {
+        // Our free list is empty
+        unpacked_node* n = new unpacked_node(f);
+#ifdef DEVELOPMENT_CODE
+        n->can_be_recycled = true;
+#endif
+        return n;
+    }
+}
+
+void MEDDLY::unpacked_node::AddToBuildList(unpacked_node* n)
+{
+    if (!n) return;
+
+    CHECK_RANGE(1, pFID, ForListsAlloc);
+    MEDDLY_DCASSERT(ForLists);
+
+    if (ForLists[pFID].building) {
+        ForLists[pFID].building->prev = n;
+    }
+    n->next = ForLists[pFID].building;
+    n->prev = nullptr;
+    ForLists[pFID].building = n;
+}
+
+void MEDDLY::unpacked_node::MarkWritable(node_marker &M)
+{
+    MEDDLY_DCASSERT(M.getParent());
+    const unsigned FID = M.getParent()->FID();
+
+    for (const unpacked_node* curr = ForLists[FID].building; curr; curr=curr->next)
+    {
+#ifdef DEBUG_MARK_SWEEP
+        std::cerr   << "Traversing unpacked node at level "
+                    << curr->getLevel() << "\n\t";
+        stream_output s(std::cerr);
+        curr->show(s, true);
+        std::cerr << '\n';
+#endif
+        for (unsigned i=0; i<curr->size; i++) {
+            M->mark(curr->_down[i]);
+        }
+    } // for curr
+}
+
+void MEDDLY::unpacked_node::Recycle(unpacked_node* r)
+{
+    if (!r) return;
+
+#ifdef DEVELOPMENT_CODE
+    MEDDLY_DCASSERT(r->can_be_recycled);
+#endif
+    CHECK_RANGE(1, pFID, ForListsAlloc);
+    MEDDLY_DCASSERT(ForLists);
+
+    if (modparent) {
+        // remove from building list (it's doubly linked)
+        unpacked_node* n = r->next;
+        if (r->prev) {
+            unpacked_node* p = r->prev;
+            p->next = n;
+            if (n) n->prev = p;
+        } else {
+            // r is the front of the list
+            MEDDLY_DCASSERT(ForLists[pFID].building == r);
+            ForLists[pFID].building = n;
+            if (n) n->prev = nullptr;
+        }
+        r->prev = nullptr;
+    }
+
+    //
+    // Push onto recycled list (it's singly linked)
+    //
+    r->next = ForLists[pFID].recycled;
+    ForLists[pFID].recycled = r;
+}
+
+void MEDDLY::unpacked_node::initForest(const forest* f)
+{
+    if (!f) return;
+    if (f->FID() < ForListsAlloc) return;
+
+    unsigned newalloc = (f->FID()/16 + 1) * 16;
+    ForLists = (unpacked_lists*) realloc(ForLists, newalloc * sizeof (void*));
+    if (!ForLists) {
+        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+    for (; ForListsAlloc < newalloc; ++ForListsAlloc) {
+        ForLists[ForListsAlloc].recycled = nullptr;
+        ForLists[ForListsAlloc].building = nullptr;
+    }
+}
+
+void MEDDLY::unpacked_node::doneForest(const forest* f)
+{
+    if (!f) return;
+    const unsigned FID = f->FID();
+    CHECK_RANGE(1, FID, ForListsAlloc);
+
+    while (ForLists[FID]) {
+        unpacked_node* n = ForLists[FID]->next;
+        delete ForLists[FID];
+        ForLists[FID] = n;
+    }
+}
+
+void MEDDLY::unpacked_node::initStatics()
+{
+    ForLists = nullptr;
+    ForListsAlloc = 0;
+}
+
+void MEDDLY::unpacked_node::doneStatics()
+{
+    for (unsigned i=0; i<ForListsAlloc; i++) {
+        // Should be empty, but just in case...
+        while (ForLists[i]) {
+            unpacked_node* n = ForLists[i]->next;
+            delete ForLists[i];
+            ForLists[i] = n;
+        }
+    }
+    free(ForLists);
+    ForLists = nullptr;
+    ForListsAlloc = 0;
+}
+
+
+//
+// Private helpers
+//
+
+// HERE <<<------------
+
+
 void MEDDLY::unpacked_node::expand(unsigned ns)
 {
-    size = ns;
-    nnzs = ns;
-    if (size > alloc) {
-        unsigned nalloc = ((ns/8)+1)*8;
+    if (ns > alloc) {
+        unsigned nalloc = ((ns/16)+1)*16;
         MEDDLY_DCASSERT(nalloc > ns);
         MEDDLY_DCASSERT(nalloc>0);
         MEDDLY_DCASSERT(nalloc>alloc);
         _down = (node_handle*) realloc(_down, nalloc*sizeof(node_handle));
-        if (!_down) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        if (!_down) {
+            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        }
         _index = (unsigned*) realloc(_index, nalloc*sizeof(unsigned));
-        if (!_index) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-        alloc = nalloc;
+        if (!_index) {
+            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        }
         _edge = (edge_value*) realloc(_edge, nalloc*sizeof(edge_value));
-        if (!_edge) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        if (!_edge) {
+            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        }
+        alloc = nalloc;
+        clear(size, ns);
+    }
+    size = ns;
+#ifdef DEVELOPMENT_CODE
+    has_hash = false;
+#endif
+}
+
+void MEDDLY::unpacked_node::clear(unsigned low, unsigned high)
+{
+    CHECK_RANGE(0, low, alloc);
+    CHECK_RANGE(0, high, alloc);
+
+    MEDDLY_DCASSERT(_down);
+    if (hasEdges()) {
+        MEDDLY_DCASSERT(_edge);
+        for (unsigned i=low; i<high; i++) {
+            parent->getTransparentEdge(_down[i], _edge[i]);
+        }
+    } else {
+        for (unsigned i=low; i<high; i++) {
+            _down[i] = parent->getTransparentNode();
+        }
     }
 #ifdef DEVELOPMENT_CODE
     has_hash = false;
 #endif
 }
+
+/*
 
 void MEDDLY::unpacked_node::bind_to_forest(const forest* f,
     int k, unsigned ns, bool full)
@@ -753,67 +1019,6 @@ void MEDDLY::unpacked_node::markBuildListChildren(node_marker* M)
 }
 
 
-// check is the node is written in order,
-// if not rearrange it in ascending order of indices.
-void MEDDLY::unpacked_node::sort()
-{
-    if (!isSparse()) return;
-
-    unsigned k = 1;
-    for (k = 1; k < getNNZs() && i(k-1) < i(k) ; k++);
-    if (k == getNNZs()) return; // already sorted
-
-    // sort from (k-1) to (nnz-1)
-    --k;
-    std::map<unsigned, unsigned> sorter;
-    for (unsigned m = k; m < getNNZs(); m++) {
-        sorter[i(m)] = m;
-    }
-
-    // allocate new arrays for index, node handles and edge-values
-    node_handle* old_down = _down;
-    unsigned* old_index = _index;
-    edge_value* old_edge = _edge;
-    unsigned old_nnzs = nnzs;
-
-    _down = nullptr;
-    _index = nullptr;
-    _edge = nullptr;
-    size = 0;
-    nnzs = 0;
-    alloc = 0;
-    resize(old_nnzs);
-
-    // copy into new arrays
-    memcpy(_down, old_down, sizeof(node_handle) * k);
-    memcpy(_index, old_index, sizeof(unsigned) * k);
-    memcpy(_edge, old_edge, sizeof(edge_value) * k);
-
-    for (auto s_iter = sorter.begin(); s_iter != sorter.end(); s_iter++, k++) {
-        unsigned old_location = s_iter->second;
-        _index[k] = old_index[old_location];
-        _down[k] = old_down[old_location];
-        _edge[k] = old_edge[old_location];
-    }
-
-    free(old_down);
-    free(old_index);
-    free(old_edge);
-}
-
-
-// checks if the node indices are in ascending order
-bool MEDDLY::unpacked_node::isSorted() const
-{
-    if (!isSparse()) return true;
-
-    for (unsigned z = 1; z < getNNZs(); z++) {
-        if (i(z-1) >= _index[z]) return false;
-    }
-
-    return true;
-}
-
 void MEDDLY::unpacked_node::clearEdges(unsigned stop)
 {
     MEDDLY_DCASSERT(_down);
@@ -828,20 +1033,5 @@ void MEDDLY::unpacked_node::clearEdges(unsigned stop)
         }
     }
 }
-
-void
-MEDDLY::unpacked_node::freeRecycled()
-{
-    while (freeList) {
-        MEDDLY::unpacked_node* n = freeList->next;
-        delete freeList;
-        freeList = n;
-    }
-}
-
-void MEDDLY::unpacked_node::initStatics()
-{
-    freeList = nullptr;
-    buildList = nullptr;
-}
+*/
 

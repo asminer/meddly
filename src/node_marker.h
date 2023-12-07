@@ -41,6 +41,10 @@ class MEDDLY::node_marker {
             return f == For;
         }
 
+        inline const forest* getParent() const {
+            return For;
+        }
+
         inline void expand(size_t ns) {
             marked.expand(ns);
         }
