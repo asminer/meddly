@@ -125,7 +125,7 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
   }
 
   // cleanup and Reduce
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
   b = resF->createReducedNode(-1, C);
 
   // Add to compute table
@@ -197,7 +197,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
   const unsigned size = unsigned(resF->getLevelSize(k));
   const int aLevel = argF->getNodeLevel(a);
   MEDDLY_DCASSERT(!isLevelAbove(aLevel, k));
-  unpacked_node* A = unpacked_node::New();
+  unpacked_node* A = unpacked_node::New(argF);
   bool canSave = true;
   if (aLevel == k) {
     argF->unpackNode(A, a, FULL_ONLY);
@@ -226,7 +226,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
   }
 
   // reduce, save in CT
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
   node_handle result = resF->createReducedNode(in, C);
   if (k<0 && 1==nnz) canSave = false;
   if (canSave) {

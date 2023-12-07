@@ -119,7 +119,7 @@ MEDDLY::mdd2index_operation
   unpacked_node* nb = unpacked_node::newFull(resF, k, size);
 
   // Initialize node reader
-  unpacked_node *A = unpacked_node::New();
+  unpacked_node *A = unpacked_node::New(argF);
   if (aLevel < k) {
     A->initRedundant(argF, k, a, true);
   } else {
@@ -143,7 +143,7 @@ MEDDLY::mdd2index_operation
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Reduce
   memcpy(nb->UHdata(), &bcard, sizeof(bcard));

@@ -192,7 +192,7 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
       nb2->setEdge(j, ev);
     }
 
-    unpacked_node::recycle(D);
+    unpacked_node::Recycle(D);
 
     // Reduce
     long dev = Inf<long>();
@@ -204,8 +204,8 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   // Reduce
   node_handle cl;
@@ -299,7 +299,7 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
       nb2->setEdge(j, ev);
     }
 
-    unpacked_node::recycle(D);
+    unpacked_node::Recycle(D);
 
     // Reduce
     long dev = Inf<long>();
@@ -311,8 +311,8 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   // Reduce
   node_handle cl;

@@ -204,7 +204,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
   unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New();
+  unpacked_node *A = unpacked_node::New(argV);
   if (mddLevel < rLevel) {
     A->initRedundant(argV, rLevel, mdd, true);
   } else {
@@ -227,8 +227,8 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
     for (unsigned i=0; i<rSize; i++) C->d_ref(i) = 0;
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::New();
-    unpacked_node *Rp = unpacked_node::New();
+    unpacked_node *Ru = unpacked_node::New(argM);
+    unpacked_node *Rp = unpacked_node::New(argM);
     if (mxdLevel < 0) {
       Ru->initRedundant(argM, rLevel, mxd, false);
     } else {
@@ -269,12 +269,12 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
 
     } // for i
 
-    unpacked_node::recycle(Rp);
-    unpacked_node::recycle(Ru);
+    unpacked_node::Recycle(Rp);
+    unpacked_node::Recycle(Ru);
   } // else
 
   // cleanup mdd reader
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   result = resF->createReducedNode(-1, C);
 #ifdef TRACE_ALL_OPS
@@ -347,7 +347,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
   unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New();
+  unpacked_node *A = unpacked_node::New(argV);
   if (mddLevel < rLevel) {
     A->initRedundant(argV, rLevel, mdd, true);
   } else {
@@ -370,8 +370,8 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
     for (unsigned i=0; i<rSize; i++) C->d_ref(i) = 0;
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::New();
-    unpacked_node *Rp = unpacked_node::New();
+    unpacked_node *Ru = unpacked_node::New(argM);
+    unpacked_node *Rp = unpacked_node::New(argM);
     if (mxdLevel < 0) {
       Ru->initRedundant(argM, rLevel, mxd, false);
     } else {
@@ -411,12 +411,12 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
 
     } // for i
 
-    unpacked_node::recycle(Rp);
-    unpacked_node::recycle(Ru);
+    unpacked_node::Recycle(Rp);
+    unpacked_node::Recycle(Ru);
   } // else
 
   // cleanup mdd reader
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   result = resF->createReducedNode(-1, C);
 #ifdef TRACE_ALL_OPS
@@ -716,8 +716,8 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
     }
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::New();
-    unpacked_node *Rp = unpacked_node::New();
+    unpacked_node *Ru = unpacked_node::New(argM);
+    unpacked_node *Rp = unpacked_node::New(argM);
     if (mxdLevel < 0) {
       Ru->initRedundant(argM, rLevel, mxd, false);
     } else {
@@ -761,12 +761,12 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
 
     } // for i
 
-    unpacked_node::recycle(Rp);
-    unpacked_node::recycle(Ru);
+    unpacked_node::Recycle(Rp);
+    unpacked_node::Recycle(Ru);
   } // else
 
   // cleanup mdd reader
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   resF->createReducedNode(-1, C, resEv, resEvmdd);
 #ifdef TRACE_ALL_OPS
@@ -864,8 +864,8 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
     }
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::New();
-    unpacked_node *Rp = unpacked_node::New();
+    unpacked_node *Ru = unpacked_node::New(argM);
+    unpacked_node *Rp = unpacked_node::New(argM);
     if (mxdLevel < 0) {
       Ru->initRedundant(argM, rLevel, mxd, false);
     } else {
@@ -909,12 +909,12 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
 
     } // for i
 
-    unpacked_node::recycle(Rp);
-    unpacked_node::recycle(Ru);
+    unpacked_node::Recycle(Rp);
+    unpacked_node::Recycle(Ru);
   } // else
 
   // cleanup mdd reader
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   resF->createReducedNode(-1, C, resEv, resEvmdd);
 #ifdef TRACE_ALL_OPS
@@ -1092,8 +1092,8 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
       }
 
       // Initialize mxd readers, note we might skip the unprimed level
-      unpacked_node *Ru = unpacked_node::New();
-      unpacked_node *Rp = unpacked_node::New();
+      unpacked_node *Ru = unpacked_node::New(argM);
+      unpacked_node *Rp = unpacked_node::New(argM);
       if (mxdLevel < 0) {
         Ru->initRedundant(argM, rLevel, mxd, false);
       } else {
@@ -1142,8 +1142,8 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
 
       } // for i
 
-      unpacked_node::recycle(Rp);
-      unpacked_node::recycle(Ru);
+      unpacked_node::Recycle(Rp);
+      unpacked_node::Recycle(Ru);
     } // else
 
     long cev = Inf<long>();
@@ -1152,11 +1152,11 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
     C->setEdge(i, cev);
     C->d_ref(i) = cnode;
 
-    unpacked_node::recycle(B);
+    unpacked_node::Recycle(B);
   }
 
   // cleanup mdd reader
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   resF->createReducedNode(-1, C, resEv, resEvmdd);
 #ifdef TRACE_ALL_OPS

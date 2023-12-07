@@ -654,7 +654,7 @@ void findConfirmedStates(MEDDLY::satotf_opname::otf_relation* rel,
       }
       findConfirmedStates(rel, confirmed, num_confirmed, nr->d(i), level-1, visited);
     }
-    MEDDLY::unpacked_node::recycle(nr);
+    MEDDLY::unpacked_node::Recycle(nr);
   }
 }
 
@@ -918,7 +918,7 @@ MEDDLY::node_handle MEDDLY::satotf_opname::otf_relation::getBoundedMxd(
 
   MEDDLY::node_handle result = mxdF->createReducedNode(-1, bounded_node);
   cache[mxd] = mxdF->linkNode(result);
-  unpacked_node::recycle(mxd_node);
+  unpacked_node::Recycle(mxd_node);
 
   return result;
 }
@@ -1222,7 +1222,7 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
 
   unpacked_node* nb = unpacked_node::newFull(resF, k, sz);
   // Initialize mdd reader
-  unpacked_node *mddDptrs = unpacked_node::New();
+  unpacked_node *mddDptrs = unpacked_node::New(argF);
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, true);
   } else {
@@ -1235,7 +1235,7 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
   }
 
   // Cleanup
-  unpacked_node::recycle(mddDptrs);
+  unpacked_node::Recycle(mddDptrs);
 
   parent->saturateHelper(*nb);
   n = resF->createReducedNode(-1, nb);
@@ -1420,7 +1420,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
     if (0==mxd.getNode()) {
       Ru[ei] = 0;
     } else {
-      Ru[ei] = unpacked_node::New();
+      Ru[ei] = unpacked_node::New(arg2F);
       const int eventLevel = mxd.getLevel();
       if (ABS(eventLevel) < level || eventLevel < 0) {
         // Takes care of two situations:
@@ -1432,7 +1432,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       }
     }
   }
-  unpacked_node* Rp = unpacked_node::New();
+  unpacked_node* Rp = unpacked_node::New(arg2F);
 
   dd_edge nbdj(resF), newst(resF);
 
@@ -1460,12 +1460,12 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         const dd_edge& mxd = rel->getEvent(level, ei);
         if (0==mxd.getNode()) {
           if (Ru[ei]) {
-            unpacked_node::recycle(Ru[ei]);
+            unpacked_node::Recycle(Ru[ei]);
             Ru[ei] = 0;
           }
         } else {
           if (0==Ru[ei]) {
-            Ru[ei] = unpacked_node::New();
+            Ru[ei] = unpacked_node::New(arg2F);
           }
           const int eventLevel = mxd.getLevel();
           if (ABS(eventLevel) < level || eventLevel < 0) {
@@ -1534,8 +1534,8 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   } // while there are indexes to explore
 
   // cleanup
-  unpacked_node::recycle(Rp);
-  for (int ei = 0; ei < nEventsAtThisLevel; ei++) unpacked_node::recycle(Ru[ei]);
+  unpacked_node::Recycle(Rp);
+  for (int ei = 0; ei < nEventsAtThisLevel; ei++) unpacked_node::Recycle(Ru[ei]);
   delete[] Ru;
   recycle(queue);
 }
@@ -1592,7 +1592,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New();
+  unpacked_node *A = unpacked_node::New(arg1F);
   if (mddLevel < rLevel) {
     A->initRedundant(arg1F, rLevel, mdd, true);
   } else {
@@ -1614,8 +1614,8 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::New();
-    unpacked_node *Rp = unpacked_node::New();
+    unpacked_node *Ru = unpacked_node::New(arg2F);
+    unpacked_node *Rp = unpacked_node::New(arg2F);
     if (mxdLevel < 0) {
       Ru->initRedundant(arg2F, rLevel, mxd, false);
     } else {
@@ -1683,12 +1683,12 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     }
 #endif
 
-    unpacked_node::recycle(Rp);
-    unpacked_node::recycle(Ru);
+    unpacked_node::Recycle(Rp);
+    unpacked_node::Recycle(Ru);
   } // else
 
   // cleanup mdd reader
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   saturateHelper(*nb);
   result = resF->createReducedNode(-1, nb);

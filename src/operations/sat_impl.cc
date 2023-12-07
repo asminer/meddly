@@ -208,7 +208,7 @@ void findConfirmedStatesImpl(MEDDLY::satimpl_opname::implicit_relation* rel,
       }
       findConfirmedStatesImpl(rel, confirmed, confirm_states, nr->d(i), level-1, visited);
     }
-    MEDDLY::unpacked_node::recycle(nr);
+    MEDDLY::unpacked_node::Recycle(nr);
   }
 }
 
@@ -1039,7 +1039,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   dd_edge nbdj(resF), newst(resF);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New();
+  unpacked_node *A = unpacked_node::New(arg1F);
   if (mddLevel < rLevel) {
     A->initRedundant(arg1F, rLevel, mdd, true);
   } else {
@@ -1107,7 +1107,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   } // else
 
   // cleanup mdd reader
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
 
   saturateHelper(*nb);
@@ -1404,7 +1404,7 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
 
   unpacked_node* nb = unpacked_node::newFull(resF, k, sz);
   // Initialize mdd reader
-  unpacked_node *mddDptrs = unpacked_node::New();
+  unpacked_node *mddDptrs = unpacked_node::New(argF);
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, true);
   } else {
@@ -1417,7 +1417,7 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
     }
 
   // Cleanup
-  unpacked_node::recycle(mddDptrs);
+  unpacked_node::Recycle(mddDptrs);
   parent->saturateHelper(*nb);
   n = resF->createReducedNode(-1, nb);
 
@@ -1495,8 +1495,8 @@ bool isIntersectionEmpty(
   }
 
   // recycle unpacked nodes
-  MEDDLY::unpacked_node::recycle(unp_A);
-  MEDDLY::unpacked_node::recycle(unp_B);
+  MEDDLY::unpacked_node::Recycle(unp_A);
+  MEDDLY::unpacked_node::Recycle(unp_B);
 
   // cache result
   mddF->cacheNode(node_A);
@@ -1605,7 +1605,7 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   const int constraint_level = argF->getNodeLevel(constraint);
 
   // Initialize mdd reader
-  unpacked_node *mddDptrs = unpacked_node::New();
+  unpacked_node *mddDptrs = unpacked_node::New(argF);
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, true);
   } else {
@@ -1614,7 +1614,7 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   MEDDLY_DCASSERT(!mddDptrs->isExtensible());
 
   // Initialize constraint reader
-  unpacked_node* consDptrs = unpacked_node::New();
+  unpacked_node* consDptrs = unpacked_node::New(argF);
   if (constraint_level < k) {
     consDptrs->initRedundant(argF, k, constraint, true);
   } else {
@@ -1641,9 +1641,9 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
       for (int j = 0; j < i; j++) {
         if (nb->d(j)) { argF->unlinkNode(nb->d(j)); nb->d_ref(j) = 0; }
       }
-      unpacked_node::recycle(nb);
-      unpacked_node::recycle(mddDptrs);
-      unpacked_node::recycle(consDptrs);
+      unpacked_node::Recycle(nb);
+      unpacked_node::Recycle(mddDptrs);
+      unpacked_node::Recycle(consDptrs);
       recycleCTKey(Key);
       return true;
     } else {
@@ -1652,8 +1652,8 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   }
 
   // Cleanup
-  unpacked_node::recycle(mddDptrs);
-  unpacked_node::recycle(consDptrs);
+  unpacked_node::Recycle(mddDptrs);
+  unpacked_node::Recycle(consDptrs);
 
   // Reduce nb and save in compute table
   if (parent->saturateHelper(*nb, constraint)) {
@@ -1661,7 +1661,7 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
     for (int j = 0; j < sz; j++) {
       if (nb->d(j)) { argF->unlinkNode(nb->d(j)); nb->d_ref(j) = 0; }
     }
-    unpacked_node::recycle(nb);
+    unpacked_node::Recycle(nb);
     recycleCTKey(Key);
     return true;
   }
@@ -1696,7 +1696,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
   const int level = nb.getLevel();
 
   // Initialize constraint reader
-  unpacked_node* consDptrs = unpacked_node::New();
+  unpacked_node* consDptrs = unpacked_node::New(arg1F);
   if (constraint_level < level) {
     consDptrs->initRedundant(arg1F, level, constraint, true);
   } else {
@@ -1743,7 +1743,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
       node_handle rec = 0;
       if (recFire(nb.d(i), Ru[ei]->getDown(), cons_j, rec)) {
         // found reachable state in constraint
-        unpacked_node::recycle(consDptrs);
+        unpacked_node::Recycle(consDptrs);
         delete[] Ru;
         while (!queue->isEmpty()) queue->remove();
         recycle(queue);
@@ -1859,7 +1859,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   dd_edge nbdj(resF), newst(resF);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New();
+  unpacked_node *A = unpacked_node::New(arg1F);
   if (mddLevel < rLevel) {
     A->initRedundant(arg1F, rLevel, mdd, true);
   } else {
@@ -1867,7 +1867,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   }
 
   // Initialize constraint reader
-  unpacked_node* consDptrs = unpacked_node::New();
+  unpacked_node* consDptrs = unpacked_node::New(arg1F);
   if (constraint_level < rLevel) {
     consDptrs->initRedundant(arg1F, rLevel, constraint, true);
   } else {
@@ -1889,9 +1889,9 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
         for (int j = 0; j < i; j++) {
           if (nb->d(j)) { arg1F->unlinkNode(nb->d(j)); nb->d_ref(j) = 0; }
         }
-        unpacked_node::recycle(nb);
-        unpacked_node::recycle(A);
-        unpacked_node::recycle(consDptrs);
+        unpacked_node::Recycle(nb);
+        unpacked_node::Recycle(A);
+        unpacked_node::Recycle(consDptrs);
         return true;
       }
       nb->d_ref(i) = temp;
@@ -1920,9 +1920,9 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
         for (int k = 0; k < nb->getSize(); k++) {
           if (nb->d(k)) { arg1F->unlinkNode(nb->d(k)); nb->d_ref(k) = 0; }
         }
-        unpacked_node::recycle(nb);
-        unpacked_node::recycle(A);
-        unpacked_node::recycle(consDptrs);
+        unpacked_node::Recycle(nb);
+        unpacked_node::Recycle(A);
+        unpacked_node::Recycle(consDptrs);
         return true;
       }
 
@@ -1959,8 +1959,8 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   } // else
 
   // cleanup mdd reader
-  unpacked_node::recycle(A);
-  unpacked_node::recycle(consDptrs);
+  unpacked_node::Recycle(A);
+  unpacked_node::Recycle(consDptrs);
 
   if (saturateHelper(*nb, constraint)) {
     // found reachable state in constraint
@@ -1968,7 +1968,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     for (int j = 0; j < sz; j++) {
       if (nb->d(j)) { arg1F->unlinkNode(nb->d(j)); nb->d_ref(j) = 0; }
     }
-    unpacked_node::recycle(nb);
+    unpacked_node::Recycle(nb);
     recycleCTKey(Key);
     return true;
   }

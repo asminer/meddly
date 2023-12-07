@@ -130,8 +130,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handl
   if (0==Key) return b;
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::New();
-  argF->unpackNode(A, a, SPARSE_ONLY);
+  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
@@ -147,7 +146,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handl
   if (A->isExtensible()) nb->markAsExtensible();
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Reduce
   b = resF->createReducedNode(in, nb);
@@ -194,7 +193,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
   }
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::New();
+  unpacked_node* A = unpacked_node::New(argF);
   if (isLevelAbove(k, aLevel)) {
     if (k<0 && argF->isIdentityReduced()) {
       A->initIdentity(argF, k, unsigned(in), a, false);
@@ -218,7 +217,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
   if (A->isExtensible()) nb->markAsExtensible();
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Reduce
   b = resF->createReducedNode(in, nb);
@@ -336,8 +335,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   if (0==Key) return;
 
   // Initialize sparse node reader
-  unpacked_node* A = unpacked_node::New();
-  argF->unpackNode(A, a, SPARSE_ONLY);
+  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
@@ -354,7 +352,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Reduce
   resF->createReducedNode(in, nb, bev, b);
@@ -400,7 +398,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   }
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::New();
+  unpacked_node* A = unpacked_node::New(argF);
   if (isLevelAbove(k, aLevel)) {
     if (k<0 && argF->isIdentityReduced()) {
       A->initIdentity(argF, k, unsigned(in), a, false);
@@ -423,7 +421,7 @@ void MEDDLY::copy_MT2EV<TYPE>
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Reduce
   resF->createReducedNode(in, nb, bev, b);
@@ -526,8 +524,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   if (0==Key) return b;
 
   // Initialize sparse node reader
-  unpacked_node* A = unpacked_node::New();
-  argF->unpackNode(A, a, SPARSE_ONLY);
+  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
@@ -542,7 +539,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Reduce
   b = resF->createReducedNode(in, nb);
@@ -588,7 +585,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   }
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::New();
+  unpacked_node* A = unpacked_node::New(argF);
   if (isLevelAbove(k, aLevel)) {
     if (k<0 && argF->isIdentityReduced()) {
       TYPE rev;
@@ -615,7 +612,7 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Reduce
   b = resF->createReducedNode(in, nb);
@@ -701,8 +698,7 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
   if (0==Key) return b;
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::New();
-  argF->unpackNode(A, a, SPARSE_ONLY);
+  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
@@ -720,7 +716,7 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Reduce
   OUTTYPE bv;
@@ -857,7 +853,7 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   }
 
   // Initialize node reader
-  unpacked_node* A = unpacked_node::New();
+  unpacked_node* A = unpacked_node::New(argF);
   if (isLevelAbove(k, aLevel)) {
     if (k<0 && argF->isIdentityReduced()) {
       INTYPE rev;
@@ -886,7 +882,7 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Reduce
   resF->createReducedNode(in, nb, bv, bn);

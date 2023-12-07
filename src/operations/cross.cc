@@ -92,7 +92,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   }
 
   // Initialize unpacked node
-  unpacked_node *A = unpacked_node::New();
+  unpacked_node *A = unpacked_node::New(arg1F);
   if (arg1F->getNodeLevel(a) < k) {
     A->initRedundant(arg1F, k, a, true);
   } else {
@@ -108,7 +108,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   }
 
   // reduce, save in compute table
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
   node_handle c = resF->createReducedNode(-1, C);
 
   CTresult[0].reset();
@@ -133,7 +133,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
   // DON'T check compute table
 
   // Initialize unpacked node
-  unpacked_node *B = unpacked_node::New();
+  unpacked_node *B = unpacked_node::New(arg2F);
   if (arg2F->getNodeLevel(b) < -k) {
     B->initRedundant(arg2F, -k, b, true);
   } else {
@@ -149,7 +149,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
   }
 
   // reduce
-  unpacked_node::recycle(B);
+  unpacked_node::Recycle(B);
   node_handle c = resF->createReducedNode(int(in), C);
 
   // DON'T save in compute table

@@ -136,6 +136,7 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
     const edge_value &ev, node_handle node, node_storage_flags fs)
 {
     MEDDLY_DCASSERT(f);
+    MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     is_extensible = f->isExtensibleLevel(k);
@@ -176,6 +177,7 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
   node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
+    MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     is_extensible = f->isExtensibleLevel(k);
@@ -195,6 +197,7 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
   float ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
+    MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     is_extensible = f->isExtensibleLevel(k);
@@ -215,6 +218,7 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
   int ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
+    MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     is_extensible = f->isExtensibleLevel(k);
@@ -235,6 +239,7 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
   long ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
+    MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     is_extensible = f->isExtensibleLevel(k);
@@ -257,6 +262,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k, unsigned i,
         const edge_value &ev, node_handle node, node_storage_flags fs)
 {
     MEDDLY_DCASSERT(f);
+    MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     level = k;
@@ -283,6 +289,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
   unsigned i, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
+    MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     level = k;
@@ -305,6 +312,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
   unsigned i, int ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
+    MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     level = k;
@@ -329,6 +337,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
   unsigned i, long ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
+    MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     level = k;
@@ -353,6 +362,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
   unsigned i, float ev, node_handle node, bool full)
 {
     MEDDLY_DCASSERT(f);
+    MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
     level = k;
@@ -734,6 +744,7 @@ MEDDLY::unpacked_node* MEDDLY::unpacked_node::New(const forest* f)
         n->has_hash = false;
 #endif
         n->clear();
+        MEDDLY_DCASSERT(n->isAttachedTo(f));
         return n;
     } else {
         // Our free list is empty
@@ -741,6 +752,7 @@ MEDDLY::unpacked_node* MEDDLY::unpacked_node::New(const forest* f)
 #ifdef DEVELOPMENT_CODE
         n->can_be_recycled = true;
 #endif
+        MEDDLY_DCASSERT(n->isAttachedTo(f));
         return n;
     }
 }
@@ -860,8 +872,6 @@ void MEDDLY::unpacked_node::doneStatics()
 //
 // Private helpers
 //
-
-// HERE <<<------------
 
 
 void MEDDLY::unpacked_node::expand(unsigned ns)

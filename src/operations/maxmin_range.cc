@@ -164,7 +164,7 @@ int MEDDLY::maxrange_int::compute_r(node_handle a)
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Add entry to compute table
   return saveResult(Key, a, max);
@@ -212,7 +212,7 @@ int MEDDLY::minrange_int::compute_r(node_handle a)
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Add entry to compute table
   return saveResult(Key, a, min);
@@ -262,7 +262,7 @@ float MEDDLY::maxrange_real::compute_r(node_handle a)
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Add entry to compute table
   return saveResult(Key, a, max);
@@ -312,7 +312,7 @@ float MEDDLY::minrange_real::compute_r(node_handle a)
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Add entry to compute table
   return saveResult(Key, a, min);

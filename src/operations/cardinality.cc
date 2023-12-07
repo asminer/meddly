@@ -136,7 +136,7 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Add entry to compute table
   CTresult[0].reset();
@@ -204,7 +204,7 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Add entry to compute table
   CTresult[0].reset();
@@ -288,7 +288,7 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Add entry to compute table
   CTresult[0].reset();
@@ -357,7 +357,7 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Add entry to compute table
   CTresult[0].reset();
@@ -468,7 +468,7 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Add entry to compute table
   CTresult[0].reset();
@@ -557,7 +557,7 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // Add entry to compute table
   CTresult[0].reset();

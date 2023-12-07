@@ -335,7 +335,7 @@ void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
       }
 
       // cleanup
-      unpacked_node::recycle(Rp);
+      unpacked_node::Recycle(Rp);
     } // for i
 
     // maxDiag is what we can split from here
@@ -343,7 +343,7 @@ void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
     root = maxDiag;
 
     // Cleanup
-    unpacked_node::recycle(Ru);
+    unpacked_node::Recycle(Ru);
   } // for level
 
 #ifdef DEBUG_SPLIT
@@ -504,14 +504,14 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
     }
   }
 
-  unpacked_node::recycle(Ru);
+  unpacked_node::Recycle(Ru);
   for (int i = 0; i < Ru->getSize(); i++) {
     if (Rps[i] != nullptr) {
-      unpacked_node::recycle(Rps[i]);
+      unpacked_node::Recycle(Rps[i]);
     }
   }
   delete[] Rps;
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 }
 
 void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, node_handle r, node_handle& c)
@@ -612,15 +612,15 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
         T->set_d(j, Tdj);
       } // for j
 
-      unpacked_node::recycle(Rp);
+      unpacked_node::Recycle(Rp);
     } // for i
 
-    unpacked_node::recycle(Ru);
+    unpacked_node::Recycle(Ru);
   } // else
 
   // cleanup mdd reader
-  unpacked_node::recycle(A);
-  unpacked_node::recycle(B);
+  unpacked_node::Recycle(A);
+  unpacked_node::Recycle(B);
 
   saturateHelper(a, *T);
   c = resF->createReducedNode(-1, T);
@@ -747,12 +747,12 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
     }
   }
 
-  unpacked_node::recycle(Ru);
+  unpacked_node::Recycle(Ru);
   for (int iz = 0; iz < Ru->getNNZs(); iz++) {
-    unpacked_node::recycle(Rps[iz]);
+    unpacked_node::Recycle(Rps[iz]);
   }
   delete[] Rps;
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 }
 
 void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, node_handle r, node_handle& c)
@@ -853,15 +853,15 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
         T->set_d(i, Tdi);
       } // for j
 
-      unpacked_node::recycle(Rp);
+      unpacked_node::Recycle(Rp);
     } // for i
 
-    unpacked_node::recycle(Ru);
+    unpacked_node::Recycle(Ru);
   } // else
 
   // cleanup mdd reader
-  unpacked_node::recycle(A);
-  unpacked_node::recycle(B);
+  unpacked_node::Recycle(A);
+  unpacked_node::Recycle(B);
 
   saturateHelper(a, *T);
   c = resF->createReducedNode(-1, T);
@@ -1005,8 +1005,8 @@ void MEDDLY::constrained_saturation_mt::saturate(node_handle a, node_handle b, i
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
-  unpacked_node::recycle(B);
+  unpacked_node::Recycle(A);
+  unpacked_node::Recycle(B);
 
   parent->saturateHelper(a, *T);
   c = resF->createReducedNode(-1, T);
@@ -1137,7 +1137,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
       }
 
       // cleanup
-      unpacked_node::recycle(Rp);
+      unpacked_node::Recycle(Rp);
     } // for i
 
     // maxDiag is what we can split from here
@@ -1145,7 +1145,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
     root = maxDiag;
 
     // Cleanup
-    unpacked_node::recycle(Ru);
+    unpacked_node::Recycle(Ru);
   } // for level
 
 #ifdef DEBUG_SPLIT
@@ -1325,12 +1325,12 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
     }
   }
 
-  unpacked_node::recycle(Ru);
+  unpacked_node::Recycle(Ru);
   for (int iz = 0; iz < Ru->getNNZs(); iz++) {
-    unpacked_node::recycle(Rps[iz]);
+    unpacked_node::Recycle(Rps[iz]);
   }
   delete[] Rps;
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 }
 
 void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
@@ -1455,15 +1455,15 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
         T->set_de(i, Tdi);
       } // for j
 
-      unpacked_node::recycle(Rp);
+      unpacked_node::Recycle(Rp);
     } // for i
 
-    unpacked_node::recycle(Ru);
+    unpacked_node::Recycle(Ru);
   } // else
 
   // cleanup mdd reader
-  unpacked_node::recycle(A);
-  unpacked_node::recycle(B);
+  unpacked_node::Recycle(A);
+  unpacked_node::Recycle(B);
 
   saturateHelper(aev, a, *T);
   resF->createReducedNode(-1, T, cev, c);
@@ -1635,8 +1635,8 @@ void MEDDLY::constrained_saturation_evplus::saturate(int aev, node_handle a, int
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
-  unpacked_node::recycle(B);
+  unpacked_node::Recycle(A);
+  unpacked_node::Recycle(B);
 
   parent->saturateHelper(aev, a, *T);
   resF->createReducedNode(-1, T, cev, c);

@@ -311,7 +311,7 @@ void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
       }
 
       // cleanup
-      unpacked_node::recycle(Rp);
+      unpacked_node::Recycle(Rp);
     } // for i
 
     // maxDiag is what we can split from here
@@ -319,7 +319,7 @@ void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
     root = maxDiag;
 
     // Cleanup
-    unpacked_node::recycle(Ru);
+    unpacked_node::Recycle(Ru);
   } // for level
 
 #ifdef DEBUG_SPLIT
@@ -405,7 +405,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
   unpacked_node* Ru = (mxdLevel < 0)
     ? unpacked_node::newRedundant(transF, -nb.getLevel(), mxd.getNode(), true)
     : transF->newUnpacked(mxd.getNode(), FULL_ONLY);
-  unpacked_node* Rp = unpacked_node::New();
+  unpacked_node* Rp = unpacked_node::New(transF);
 
   unpacked_node* A = isLevelAbove(-nb.getLevel(), consF->getNodeLevel(a))
     ? unpacked_node::newRedundant(consF, -nb.getLevel(), 0L, a, true)
@@ -519,9 +519,9 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
     }
   }
 
-  unpacked_node::recycle(Ru);
-  unpacked_node::recycle(Rp);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(Ru);
+  unpacked_node::Recycle(Rp);
+  unpacked_node::Recycle(A);
 }
 
 void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
@@ -563,7 +563,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
   unpacked_node* B = isLevelAbove(level, bLevel)
     ? unpacked_node::newRedundant(tcF, level, 0L, b, true)
     : tcF->newUnpacked(b, FULL_ONLY);
-  unpacked_node* D = unpacked_node::New();
+  unpacked_node* D = unpacked_node::New(tcF);
 
   unpacked_node* T = unpacked_node::newFull(resF, level, size);
 
@@ -610,7 +610,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
       unpacked_node* Ru = (rLevel < 0)
         ? unpacked_node::newRedundant(transF, level, r, false)
         : transF->newUnpacked(r, SPARSE_ONLY);
-      unpacked_node* Rp = unpacked_node::New();
+      unpacked_node* Rp = unpacked_node::New(transF);
 
       // loop over mxd "rows"
       for (int ipz = 0; ipz < Ru->getNNZs(); ipz++) {
@@ -674,8 +674,8 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
         } // for j
       } // for i
 
-      unpacked_node::recycle(Ru);
-      unpacked_node::recycle(Rp);
+      unpacked_node::Recycle(Ru);
+      unpacked_node::Recycle(Rp);
     }
 
     saturateHelper(aev, a, i, *Tp);
@@ -688,9 +688,9 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
   }
 
   // cleanup mdd reader
-  unpacked_node::recycle(A);
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(D);
+  unpacked_node::Recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(D);
 
   resF->createReducedNode(-1, T, cev, c);
   MEDDLY_DCASSERT(cev >= 0);
@@ -872,7 +872,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
           Tp->d_ref(j) = tp;
         }
       }
-      unpacked_node::recycle(D);
+      unpacked_node::Recycle(D);
 
       parent->saturateHelper(aev, a, i, *Tp);
 
@@ -885,8 +885,8 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
   }
 
   // Cleanup
-  unpacked_node::recycle(A);
-  unpacked_node::recycle(B);
+  unpacked_node::Recycle(A);
+  unpacked_node::Recycle(B);
 
   resF->createReducedNode(-1, T, cev, c);
 

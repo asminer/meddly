@@ -101,7 +101,7 @@ MEDDLY::node_handle MEDDLY::select_MT::_compute(node_handle a, int level)
   nb->d_ref(0) = _compute(A->d(nz), level - 1);
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   return resF->createReducedNode(0, nb);
 }
@@ -178,7 +178,7 @@ void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& b
   nb->setEdge(0, tev);
 
   // Cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   resF->createReducedNode(-1, nb, bev, b);
 }

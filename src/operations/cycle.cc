@@ -151,10 +151,10 @@ void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, int k, long& bev, n
     T->setEdge(i, tev);
     T->d_ref(i) = t;
 
-    unpacked_node::recycle(B);
+    unpacked_node::Recycle(B);
   }
 
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   resF->createReducedNode(-1, T, bev, b);
   saveResult(key, aev, a, bev, b);

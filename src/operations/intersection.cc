@@ -358,8 +358,8 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
   C->shrinkSparse(nnz);
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   // reduce result
   node_handle result = resF->createReducedNode(-1, C);

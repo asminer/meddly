@@ -342,7 +342,7 @@ void findConfirmedStatesImpl(MEDDLY::sathyb_opname::hybrid_relation* rel,
       }
       findConfirmedStatesImpl(rel, confirmed, confirm_states, nr->d(i), level-1, visited);
     }
-    MEDDLY::unpacked_node::recycle(nr);
+    MEDDLY::unpacked_node::Recycle(nr);
   }
 }
 
@@ -1666,7 +1666,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   int* event_Ru_Rn_index = (int*)malloc(nEventsAtThisLevel*sizeof(int));
   unpacked_node** Ru = new unpacked_node*[nEventsAtThisLevel];
   relation_node** Rn = new relation_node*[nEventsAtThisLevel];
-  unpacked_node* Rp = unpacked_node::New();
+  unpacked_node* Rp = unpacked_node::New(arg2F);
   int i_Ru = 0;
   int i_Rn = 0;
 
@@ -1679,7 +1679,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       event_Ru_Rn_index[ei] = i_Rn;
       i_Rn++;
     } else {
-      Ru[i_Ru] = unpacked_node::New();
+      Ru[i_Ru] = unpacked_node::New(arg2F);
       if(arg2F->getNodeLevel(se_nh) == level)
           arg2F->unpackNode(Ru[i_Ru], se_nh, FULL_ONLY);  // node is present at unprime-level
       else
@@ -1897,7 +1897,7 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
   dd_edge nbdj(resF), newst(resF);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New();
+  unpacked_node *A = unpacked_node::New(arg1F);
   if (mddLevel < rLevel) {
     A->initRedundant(arg1F, rLevel, mdd, true);
   } else {
@@ -1923,8 +1923,8 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
     bool imFlag = arg2F->isImplicit(mxd);
     int row_size = rSize;
     relation_node* relNode;
-    unpacked_node *Ru = unpacked_node::New();
-    unpacked_node *Rp = unpacked_node::New();
+    unpacked_node *Ru = unpacked_node::New(arg2F);
+    unpacked_node *Rp = unpacked_node::New(arg2F);
 
     if(imFlag) {
       relNode = arg2F->buildImplicitNode(mxd);
@@ -1963,14 +1963,14 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
         if (0==A->d(i)) continue;
         recFireHelper(i, rLevel, Ru->d(iz), A->d(i), Rp, nb, seHandlesLower, imFlag, -1, num_se, which_se);
         }
-        unpacked_node::recycle(Rp);
-        unpacked_node::recycle(Ru);
+        unpacked_node::Recycle(Rp);
+        unpacked_node::Recycle(Ru);
     }
 
   } // else
 
   // cleanup mdd reader
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   saturateHelper(*nb);
   result = resF->createReducedNode(-1, nb);
@@ -2302,7 +2302,7 @@ MEDDLY::saturation_hyb_by_events_op::saturate(node_handle mdd, int k)
 
   unpacked_node* nb = unpacked_node::newFull(resF, k, sz);
   // Initialize mdd reader
-  unpacked_node *mddDptrs = unpacked_node::New();
+  unpacked_node *mddDptrs = unpacked_node::New(argF);
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, true);
   } else {
@@ -2315,7 +2315,7 @@ MEDDLY::saturation_hyb_by_events_op::saturate(node_handle mdd, int k)
     }
 
   // Cleanup
-  unpacked_node::recycle(mddDptrs);
+  unpacked_node::Recycle(mddDptrs);
   parent->saturateHelper(*nb);
   n = resF->createReducedNode(-1, nb);
 

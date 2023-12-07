@@ -164,8 +164,8 @@ MEDDLY::generic_binary_mdd::compute_normal(node_handle a, node_handle b)
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   // reduce and return result
   node_handle result = resF->createReducedNode(-1, C);
@@ -281,8 +281,8 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
   C->shrinkSparse(nnz);
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   if (resF->isQuasiReduced()) {
     int nextLevel = resultLevel - 1;
@@ -377,8 +377,8 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   if (resF->isQuasiReduced()) {
     int nextLevel = resultLevel - 1;
@@ -535,8 +535,8 @@ MEDDLY::generic_binary_mxd::compute_normal(node_handle a, node_handle b)
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   // reduce and return result
   result = resF->createReducedNode(-1, C);
@@ -655,8 +655,8 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   C->shrinkSparse(nnz);
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   // reduce and return result
   result = resF->createReducedNode(-1, C);
@@ -743,8 +743,8 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   // reduce and return result
   result = resF->createReducedNode(-1, C);
@@ -767,8 +767,8 @@ MEDDLY::generic_binary_mxd::compute_r_normal(int in, int k, node_handle a, node_
   unpacked_node* C = unpacked_node::newFull(resF, k, resultSize);
 
   // Initialize readers
-  unpacked_node *A = unpacked_node::New();
-  unpacked_node *B = unpacked_node::New();
+  unpacked_node *A = unpacked_node::New(arg1F);
+  unpacked_node *B = unpacked_node::New(arg2F);
 
   if (aLevel == k) {
     arg1F->unpackNode(A, a, FULL_ONLY);
@@ -794,8 +794,8 @@ MEDDLY::generic_binary_mxd::compute_r_normal(int in, int k, node_handle a, node_
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   // reduce
   node_handle result = resF->createReducedNode(in, C);
@@ -911,8 +911,8 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   return result;
 }
@@ -993,8 +993,8 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   return result;
 }
@@ -1071,8 +1071,8 @@ MEDDLY::generic_binbylevel_mxd
   bool canSaveResult = true;
 
   // Initialize readers
-  unpacked_node* A = unpacked_node::New();
-  unpacked_node* B = unpacked_node::New();
+  unpacked_node* A = unpacked_node::New(arg1F);
+  unpacked_node* B = unpacked_node::New(arg2F);
 
   if (aLevel == resultLevel) {
     arg1F->unpackNode(A, a, FULL_ONLY);
@@ -1106,8 +1106,8 @@ MEDDLY::generic_binbylevel_mxd
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   // reduce
   result = resF->createReducedNode(in, C);
@@ -1150,8 +1150,8 @@ MEDDLY::generic_binbylevel_mxd
   const int dwnLevel = resF->downLevel(resultLevel);
 
   // Initialize readers
-  unpacked_node* A = unpacked_node::New();
-  unpacked_node* B = unpacked_node::New();
+  unpacked_node* A = unpacked_node::New(arg1F);
+  unpacked_node* B = unpacked_node::New(arg2F);
 
   bool canSaveResult = true;
 
@@ -1242,8 +1242,8 @@ MEDDLY::generic_binbylevel_mxd
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   // reduce
   result = resF->createReducedNode(in, C);
@@ -1365,8 +1365,8 @@ void MEDDLY::generic_binary_evplus
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   // Reduce
   resF->createReducedNode(-1, nb, cev, c);
@@ -1461,8 +1461,8 @@ void MEDDLY::generic_binary_evplus_mxd
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   // Reduce
   resF->createReducedNode(-1, nb, cev, c);
@@ -1487,8 +1487,8 @@ void MEDDLY::generic_binary_evplus_mxd
   unpacked_node* C = unpacked_node::newFull(resF, level, resultSize);
 
   // Initialize readers
-  unpacked_node *A = unpacked_node::New();
-  unpacked_node *B = unpacked_node::New();
+  unpacked_node *A = unpacked_node::New(arg1F);
+  unpacked_node *B = unpacked_node::New(arg2F);
 
   if (aLevel == level) {
     arg1F->unpackNode(A, a, FULL_ONLY);
@@ -1517,8 +1517,8 @@ void MEDDLY::generic_binary_evplus_mxd
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   // reduce
   resF->createReducedNode(in, C, cev, c);
@@ -1617,8 +1617,8 @@ void MEDDLY::generic_binary_evtimes
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   // Reduce
   node_handle cl;
@@ -1654,8 +1654,8 @@ void MEDDLY::generic_binary_evtimes
   unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
 
   // Initialize readers
-  unpacked_node *A = unpacked_node::New();
-  unpacked_node *B = unpacked_node::New();
+  unpacked_node *A = unpacked_node::New(arg1F);
+  unpacked_node *B = unpacked_node::New(arg2F);
 
   if (aLevel == resultLevel) {
     arg1F->unpackNode(A, a, FULL_ONLY);
@@ -1688,8 +1688,8 @@ void MEDDLY::generic_binary_evtimes
   }
 
   // cleanup
-  unpacked_node::recycle(B);
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(B);
+  unpacked_node::Recycle(A);
 
   // Reduce
   node_handle cl;
