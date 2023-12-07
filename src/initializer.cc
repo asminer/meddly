@@ -60,9 +60,9 @@ void MEDDLY::initializer_list::initializeLibrary(initializer_list* L)
     // Hard-coded statics
     memstats::initGlobalStats();
     operation::initializeStatics();
+    unpacked_node::initStatics();
     domain::initDomList();
     forest::initStatics();
-    unpacked_node::initStatics();
 
     // Reverse the list
     initializer_list* reverse = nullptr;
@@ -104,16 +104,9 @@ void MEDDLY::initializer_list::cleanupLibrary()
 
 #endif
 
-    domain::markDomList();
-
-    operation::destroyAllOps();
-
-    domain::deleteDomList();
-    forest::freeStatics();
-
-    // clean up recycled unpacked nodes
-    unpacked_node::freeRecycled();
-
+    //
+    // Run through initializers
+    //
     while (meddlyInitializers) {
         initializer_list* prev = meddlyInitializers->previous;
 #ifdef DEBUG_INITLIST
@@ -123,6 +116,15 @@ void MEDDLY::initializer_list::cleanupLibrary()
         delete meddlyInitializers;
         meddlyInitializers = prev;
     }
+
+    domain::markDomList();
+
+    operation::destroyAllOps();
+
+    domain::deleteDomList();
+    forest::freeStatics();
+
+    unpacked_node::doneStatics();
 
     isRunning = false;
 }

@@ -121,7 +121,7 @@ int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) 
       visited.emplace(nr->d(0));
     }
 
-    unpacked_node::recycle(nr);
+    unpacked_node::Recycle(nr);
   }
 
   while(true) {
@@ -253,7 +253,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::restrict(node_handle p,
         MEDDLY_DCASSERT(size==2);
         nb->d_ref(i) = restrict(nr->d(i), pa);
       }
-      unpacked_node::recycle(nr);
+      unpacked_node::Recycle(nr);
 
       node_handle pr = _source->createReducedNode(-1, nb);
 
@@ -308,12 +308,12 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::restrict(node_handle p,
 //					nb.d(i) = result;
 //				}
 //				else {
-//					node_reader::recycle(nr);
+//					node_reader::Recycle(nr);
 //					nb.lock = false;
 //					return false;
 //				}
 //			}
-//			node_reader::recycle(nr);
+//			node_reader::Recycle(nr);
 //
 //			result = _source->createReducedNode(-1, nb);
 //			if(!_source->isTerminalNode(result) && _source->getInCount(result)==1) {
@@ -371,12 +371,12 @@ bool MEDDLY::global_rebuilder::restrict_exist(node_handle p,
           for (int j = 0; j < i; j++) {
             _source->unlinkNode(nb->d(j));
           }
-          unpacked_node::recycle(nr);
-          unpacked_node::recycle(nb);
+          unpacked_node::Recycle(nr);
+          unpacked_node::Recycle(nb);
           return false;
         }
       }
-      unpacked_node::recycle(nr);
+      unpacked_node::Recycle(nr);
 
       result = _source->createReducedNode(-1, nb);
       if (!_source->isTerminalNode(result)
@@ -587,7 +587,7 @@ int MEDDLY::global_rebuilder::TopDownSignatureGenerator::signature(
         }
       }
     }
-    unpacked_node::recycle(nr);
+    unpacked_node::Recycle(nr);
   }
 
   return sig;
@@ -669,7 +669,7 @@ int MEDDLY::global_rebuilder::BottomUpSignatureGenerator::rec_signature(node_han
   for (int i = 0; i < size; i++) {
     sig += (i == 0 ? 1 - PRIMES[level] : PRIMES[level]) * rec_signature(nr->d(i));
   }
-  unpacked_node::recycle(nr);
+  unpacked_node::Recycle(nr);
 
   _cache_rec_sig.emplace(p, sig);
 

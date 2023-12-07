@@ -57,14 +57,14 @@ size_t MEDDLY::node_marker::countEdges() const
     MEDDLY_DCASSERT(For);
 
     size_t ec = 0;
-    unpacked_node* M = unpacked_node::New();
+    unpacked_node* M = unpacked_node::New(For);
     size_t i=0;
     while( (i=marked.firstOne(i+1)) < marked.getSize() )
     {
         For->unpackNode(M, i, FULL_ONLY);
         ec += M->getSize();
     }
-    unpacked_node::recycle(M);
+    unpacked_node::Recycle(M);
     return ec;
 }
 
@@ -73,14 +73,14 @@ size_t MEDDLY::node_marker::countNonzeroEdges() const
     MEDDLY_DCASSERT(For);
 
     size_t ec = 0;
-    unpacked_node* M = unpacked_node::New();
+    unpacked_node* M = unpacked_node::New(For);
     size_t i=0;
     while( (i=marked.firstOne(i+1)) < marked.getSize() )
     {
         For->unpackNode(M, i, SPARSE_ONLY);
         ec += M->getNNZs();
     }
-    unpacked_node::recycle(M);
+    unpacked_node::Recycle(M);
     return ec;
 }
 
@@ -88,7 +88,7 @@ void MEDDLY::node_marker::showByLevels(output &s) const
 {
     MEDDLY_DCASSERT(For);
 
-    unpacked_node* M = unpacked_node::New();
+    unpacked_node* M = unpacked_node::New(For);
 
     const int lwid = (int) digits(For->getNumVariables());
     const int nwid = (int) digits(getSize());
@@ -137,7 +137,7 @@ void MEDDLY::node_marker::showByLevels(output &s) const
         } // for i
 
     } // for k
-    unpacked_node::recycle(M);
+    unpacked_node::Recycle(M);
 }
 
 void MEDDLY::node_marker::getNodesAtLevel(int k, std::vector <node_handle> &v)
@@ -157,7 +157,7 @@ void MEDDLY::node_marker::getTerminals(std::set <node_handle> &v) const
 {
     MEDDLY_DCASSERT(For);
 
-    unpacked_node* M = unpacked_node::New();
+    unpacked_node* M = unpacked_node::New(For);
 
     size_t i=0;
     while( (i=marked.firstOne(i+1)) < marked.getSize() )
@@ -170,7 +170,7 @@ void MEDDLY::node_marker::getTerminals(std::set <node_handle> &v) const
         }
     }
 
-    unpacked_node::recycle(M);
+    unpacked_node::Recycle(M);
 }
 
 //

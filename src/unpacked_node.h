@@ -23,6 +23,7 @@
 #include "edge_value.h"
 #include "dd_edge.h"
 #include "terminal.h"
+#include "policies.h"
 
 namespace MEDDLY {
     class unpacked_node;
@@ -84,6 +85,10 @@ class MEDDLY::unpacked_node {
         /// Attach the parent forest.
         void attach(const forest* f);
 
+        /// Are we attached to f
+        inline bool isAttachedTo(const forest* f) {
+            return f == parent;
+        }
 
     public:
         /* Initialization methods, primarily for reading */
@@ -882,7 +887,6 @@ class MEDDLY::unpacked_node {
         /// Allocated size of ForLists
         static unsigned ForListsAlloc;
 
-// HERE <<<------------
 
     private:
         void expand(unsigned ns);
@@ -893,6 +897,14 @@ class MEDDLY::unpacked_node {
         // Set all edges to transparent
         inline void clear() {
             clear(0, size);
+        }
+
+        static inline void deleteList(unpacked_node* &p) {
+            while (p) {
+                unpacked_node* n = p->next;
+                delete p;
+                p = n;
+            }
         }
 
     private:

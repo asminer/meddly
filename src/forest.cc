@@ -183,11 +183,22 @@ void MEDDLY::forest::unpackNode(MEDDLY::unpacked_node* un,
     node_handle node, node_storage_flags st2) const
 {
     MEDDLY_DCASSERT(un);
+    MEDDLY_DCASSERT(un->isAttachedTo(this));
+    un->setLevel( getNodeLevel(node) );
+    MEDDLY_DCASSERT(un->getLevel() != 0);
+    MEDDLY_DCASSERT(getNodeAddress(node));
+    nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
+    //
+    // OLD
+    //
+    /*
+    MEDDLY_DCASSERT(un);
     const int level = getNodeLevel(node);
     MEDDLY_DCASSERT(0 != level);
     un->bind_to_forest(this, level, unsigned(getLevelSize(level)), true);
     MEDDLY_DCASSERT(getNodeAddress(node));
     nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
+    */
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

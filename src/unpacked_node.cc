@@ -40,6 +40,7 @@ struct MEDDLY::unpacked_lists {
     unpacked_node* building;
 };
 
+
 // ******************************************************************
 // *                     unpacked_node  statics                     *
 // ******************************************************************
@@ -556,7 +557,7 @@ void MEDDLY::unpacked_node::computeHash()
     hash_stream s;
     s.start(0);
 
-    if (ext_h_size) {
+    if (extra_hashed_size) {
         s.push(extra_hashed, extra_hashed_size);
     }
 
@@ -720,7 +721,7 @@ MEDDLY::unpacked_node* MEDDLY::unpacked_node::New(const forest* f)
 {
     MEDDLY_DCASSERT(f);
     const unsigned FID = f->FID();
-    CHECK_RANGE(1, FID, ForListsAlloc);
+    CHECK_RANGE(__FILE__, __LINE__, 1u, FID, ForListsAlloc);
     MEDDLY_DCASSERT(ForLists);
 
     if (ForLists[FID].recycled) {
@@ -748,15 +749,15 @@ void MEDDLY::unpacked_node::AddToBuildList(unpacked_node* n)
 {
     if (!n) return;
 
-    CHECK_RANGE(1, pFID, ForListsAlloc);
+    CHECK_RANGE(__FILE__, __LINE__, 1u, n->pFID, ForListsAlloc);
     MEDDLY_DCASSERT(ForLists);
 
-    if (ForLists[pFID].building) {
-        ForLists[pFID].building->prev = n;
+    if (ForLists[n->pFID].building) {
+        ForLists[n->pFID].building->prev = n;
     }
-    n->next = ForLists[pFID].building;
+    n->next = ForLists[n->pFID].building;
     n->prev = nullptr;
-    ForLists[pFID].building = n;
+    ForLists[n->pFID].building = n;
 }
 
 void MEDDLY::unpacked_node::MarkWritable(node_marker &M)
@@ -774,7 +775,7 @@ void MEDDLY::unpacked_node::MarkWritable(node_marker &M)
         std::cerr << '\n';
 #endif
         for (unsigned i=0; i<curr->size; i++) {
-            M->mark(curr->_down[i]);
+            M.mark(curr->_down[i]);
         }
     } // for curr
 }
@@ -786,10 +787,10 @@ void MEDDLY::unpacked_node::Recycle(unpacked_node* r)
 #ifdef DEVELOPMENT_CODE
     MEDDLY_DCASSERT(r->can_be_recycled);
 #endif
-    CHECK_RANGE(1, pFID, ForListsAlloc);
+    CHECK_RANGE(__FILE__, __LINE__, 1u, r->pFID, ForListsAlloc);
     MEDDLY_DCASSERT(ForLists);
 
-    if (modparent) {
+    if (r->modparent) {
         // remove from building list (it's doubly linked)
         unpacked_node* n = r->next;
         if (r->prev) {
@@ -798,8 +799,8 @@ void MEDDLY::unpacked_node::Recycle(unpacked_node* r)
             if (n) n->prev = p;
         } else {
             // r is the front of the list
-            MEDDLY_DCASSERT(ForLists[pFID].building == r);
-            ForLists[pFID].building = n;
+            MEDDLY_DCASSERT(ForLists[r->pFID].building == r);
+            ForLists[r->pFID].building = n;
             if (n) n->prev = nullptr;
         }
         r->prev = nullptr;
@@ -808,8 +809,8 @@ void MEDDLY::unpacked_node::Recycle(unpacked_node* r)
     //
     // Push onto recycled list (it's singly linked)
     //
-    r->next = ForLists[pFID].recycled;
-    ForLists[pFID].recycled = r;
+    r->next = ForLists[r->pFID].recycled;
+    ForLists[r->pFID].recycled = r;
 }
 
 void MEDDLY::unpacked_node::initForest(const forest* f)
@@ -832,13 +833,10 @@ void MEDDLY::unpacked_node::doneForest(const forest* f)
 {
     if (!f) return;
     const unsigned FID = f->FID();
-    CHECK_RANGE(1, FID, ForListsAlloc);
+    CHECK_RANGE(__FILE__, __LINE__, 1u, FID, ForListsAlloc);
 
-    while (ForLists[FID]) {
-        unpacked_node* n = ForLists[FID]->next;
-        delete ForLists[FID];
-        ForLists[FID] = n;
-    }
+    deleteList(ForLists[FID].building);
+    deleteList(ForLists[FID].recycled);
 }
 
 void MEDDLY::unpacked_node::initStatics()
@@ -851,17 +849,13 @@ void MEDDLY::unpacked_node::doneStatics()
 {
     for (unsigned i=0; i<ForListsAlloc; i++) {
         // Should be empty, but just in case...
-        while (ForLists[i]) {
-            unpacked_node* n = ForLists[i]->next;
-            delete ForLists[i];
-            ForLists[i] = n;
-        }
+        deleteList(ForLists[i].building);
+        deleteList(ForLists[i].recycled);
     }
     free(ForLists);
     ForLists = nullptr;
     ForListsAlloc = 0;
 }
-
 
 //
 // Private helpers
@@ -900,8 +894,8 @@ void MEDDLY::unpacked_node::expand(unsigned ns)
 
 void MEDDLY::unpacked_node::clear(unsigned low, unsigned high)
 {
-    CHECK_RANGE(0, low, alloc);
-    CHECK_RANGE(0, high, alloc);
+    CHECK_RANGE(__FILE__, __LINE__, 0u, low, alloc);
+    CHECK_RANGE(__FILE__, __LINE__, 0u, high, alloc);
 
     MEDDLY_DCASSERT(_down);
     if (hasEdges()) {

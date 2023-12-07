@@ -138,7 +138,7 @@ void MEDDLY::dot_maker::doneGraph()
     int prev_level = 0;
     const int TopLevel = int(For->getNumVariables());
     const domain* D = For->getDomain();
-    unpacked_node* M = unpacked_node::New();
+    unpacked_node* M = unpacked_node::New(For);
 
     for (int k= For->isForRelations() ? -1 : 1; ABS(k) <= TopLevel; )
     {
@@ -233,7 +233,7 @@ void MEDDLY::dot_maker::doneGraph()
         }
     }
 
-    unpacked_node::recycle(M);
+    unpacked_node::Recycle(M);
 
     //
     // Write all the root labels
