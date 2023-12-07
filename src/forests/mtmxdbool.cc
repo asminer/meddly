@@ -325,7 +325,7 @@ MEDDLY::mt_mxd_bool::unionOneMinterm_r(int in, int k, node_handle a,  int* from,
   }
 
   // cleanup
-  unpacked_node::recycle(A);
+  unpacked_node::Recycle(A);
 
   // reduce and return result
 

@@ -170,7 +170,7 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
         break;
       }
     }
-    unpacked_node::recycle(nr);
+    unpacked_node::Recycle(nr);
 
     setNodeLevel(hnodes[i], level);
   }
@@ -218,7 +218,7 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
 
           sum_evs[j][k] = ev1 + ev2;
         }
-        unpacked_node::recycle(nr);
+        unpacked_node::Recycle(nr);
       }
     }
 
@@ -235,7 +235,7 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
       high_nb->setEdge(j, ev);
     }
 
-    unpacked_node::recycle(high_nr);
+    unpacked_node::Recycle(high_nr);
 
     // The reduced node of high_nb must be at level+1
     // Assume the reduced node is at level
@@ -448,7 +448,7 @@ void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, long index, int*
     return;
   }
   int p = a.getNode();
-  unpacked_node* R = unpacked_node::New();
+  unpacked_node* R = unpacked_node::New(this);
   for (int k = getNumVariables(); k > 0; k--) {
 	int var = getVarByLevel(k);
 
@@ -477,7 +477,7 @@ void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, long index, int*
     } // for z
   } // for k
   e[0] = (index > 0 ? 0 : -p);
-  unpacked_node::recycle(R);
+  unpacked_node::Recycle(R);
 }
 
 void MEDDLY::evmdd_index_set_long::showHeaderInfo(output &s,

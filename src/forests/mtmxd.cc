@@ -157,7 +157,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
         unlinkNode(node);
       }
 
-      unpacked_node::recycle(nr);
+      unpacked_node::Recycle(nr);
     }
 
     for (const auto& it : dup) {
@@ -193,7 +193,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
         break;
       }
     }
-    unpacked_node::recycle(nr);
+    unpacked_node::Recycle(nr);
 
     if (skip) {
       // VarLow is DONT_CARE + DONT_CHANGE in the MxD
@@ -248,7 +248,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
         unlinkNode(node);
       }
 
-      unpacked_node::recycle(nr);
+      unpacked_node::Recycle(nr);
     }
 
     for (const auto& it : dup) {
@@ -411,7 +411,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
 //        break;
 //      }
 //    }
-//    unpacked_node::recycle(nr);
+//    unpacked_node::Recycle(nr);
 //
 //    setNodeLevel(hnodes[i], level);
 //  }
@@ -446,7 +446,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
 //      high_nb->d_ref(j) = createReducedNode(-1, low_nb);
 //    }
 //
-//    unpacked_node::recycle(high_nr);
+//    unpacked_node::Recycle(high_nr);
 //
 //    node_handle node = createReducedNode(-1, high_nb);
 //    MEDDLY_DCASSERT(getNodeInCount(node) == 1);

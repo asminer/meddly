@@ -71,7 +71,7 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
         break;
       }
     }
-    unpacked_node::recycle(nr);
+    unpacked_node::Recycle(nr);
 
     setNodeLevel(hnodes[i], level);
   }
@@ -110,7 +110,7 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
         for (int k = 0; k < lsize; k++) {
           children[j][k] = nr->d(k);
         }
-        unpacked_node::recycle(nr);
+        unpacked_node::Recycle(nr);
       }
     }
 
@@ -122,7 +122,7 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
       high_nb->d_ref(j) = createReducedNode(-1, low_nb);
     }
 
-    unpacked_node::recycle(high_nr);
+    unpacked_node::Recycle(high_nr);
 
     // The reduced node of high_nb must be at level+1
     // Assume the reduced node is at level
