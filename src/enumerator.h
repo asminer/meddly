@@ -22,7 +22,6 @@
 namespace MEDDLY {
     class dd_edge;
     class enumerator;
-    class expert_forest;
     class forest;
     class unpacked_node;
 };
@@ -43,7 +42,7 @@ class MEDDLY::enumerator {
   public:
     class iterator {
       public:
-        iterator(const expert_forest* F);
+        iterator(const forest* F);
         virtual ~iterator();
 
         bool build_error() const;
@@ -82,7 +81,7 @@ class MEDDLY::enumerator {
 
       protected:
         // Current parent forest.
-        const expert_forest* F;
+        const forest* F;
         // Path, as list of unpacked nodes
         unpacked_node*    rawpath;
         unpacked_node*    path;   // rawpath, shifted so we can use path[-k]

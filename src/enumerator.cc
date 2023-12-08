@@ -32,7 +32,7 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::enumerator::iterator::iterator(const expert_forest* f)
+MEDDLY::enumerator::iterator::iterator(const forest* f)
 {
   prindex = 0;
   F = f;
@@ -49,6 +49,9 @@ MEDDLY::enumerator::iterator::iterator(const expert_forest* f)
   maxLevel = N;
   if (f->isForRelations()) {
     rawpath = new unpacked_node[2*N+1];
+    for (unsigned i=0; i<2*N+1; i++) {
+        rawpath[i].attach(f);
+    }
     rawnzp = new int[2*N+1];
     rawindex = new int[2*N+1];
     path = rawpath + N;
@@ -57,6 +60,9 @@ MEDDLY::enumerator::iterator::iterator(const expert_forest* f)
     minLevel = -N;
   } else {
     rawpath = new unpacked_node[N+1];
+    for (unsigned i=0; i<N+1; i++) {
+        rawpath[i].attach(f);
+    }
     rawnzp = new int[N+1];
     rawindex = new int[N+1];
     path = rawpath;
