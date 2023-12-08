@@ -925,11 +925,6 @@ void MEDDLY::unpacked_node::initStatics()
 
 void MEDDLY::unpacked_node::doneStatics()
 {
-    for (unsigned i=0; i<ForListsAlloc; i++) {
-        // Should be empty, but just in case...
-        deleteList(ForLists[i].building);
-        deleteList(ForLists[i].recycled);
-    }
     free(ForLists);
     ForLists = nullptr;
     ForListsAlloc = 0;
