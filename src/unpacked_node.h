@@ -97,18 +97,21 @@ class MEDDLY::unpacked_node {
         // Build redundant nodes
         //
 
+        void initRedundant(const forest *f, int k,
+                node_handle node, node_storage_flags fs);
+
+        inline void initRedundant(const forest *f, int k,
+                node_handle node, bool full)
+        {
+            initRedundant(f, k, node, full ? FULL_ONLY : SPARSE_ONLY);
+        }
+
+
         void initRedundant(const forest *f, int k, const edge_value &ev,
                 node_handle node, node_storage_flags fs);
 
 #ifdef ALLOW_DEPRECATED_0_17_4
 #ifdef REMOVE_OLD
-        inline void initRedundant(const forest *f, int k, node_handle node,
-                bool full)
-        {
-            edge_value ev;
-            initRedundant(f, k, ev, node, full ? FULL_ONLY : SPARSE_ONLY);
-        }
-
         template <class T>
         inline void initRedundant(const forest *f, int k, T _ev, node_handle node,
                 bool full)
@@ -117,9 +120,6 @@ class MEDDLY::unpacked_node {
             initRedundant(f, k, ev, node, full ? FULL_ONLY : SPARSE_ONLY);
         }
 #else
-        void initRedundant(const forest *f, int k, node_handle node,
-                bool full);
-
         void initRedundant(const forest *f, int k, int ev, node_handle node,
                 bool full);
 
@@ -136,17 +136,19 @@ class MEDDLY::unpacked_node {
         //
 
         void initIdentity(const forest *f, int k, unsigned i,
+                node_handle node, node_storage_flags fs);
+
+        inline void initIdentity(const forest *f, int k, unsigned i,
+                node_handle node, bool full)
+        {
+            initIdentity(f, k, i, node, full ? FULL_ONLY : SPARSE_ONLY);
+        }
+
+        void initIdentity(const forest *f, int k, unsigned i,
                 const edge_value &ev, node_handle node, node_storage_flags fs);
 
 #ifdef ALLOW_DEPRECATED_0_17_4
 #ifdef REMOVE_OLD
-        inline void initIdentity(const forest *f, int k, unsigned i,
-                node_handle node, bool full)
-        {
-            edge_value ev;
-            initIdentity(f, k, i, ev, node, full ? FULL_ONLY : SPARSE_ONLY);
-        }
-
         template <class T>
         inline void initIdentity(const forest *f, int k, unsigned i, T _ev,
                 node_handle node, bool full)
@@ -155,9 +157,6 @@ class MEDDLY::unpacked_node {
             initIdentity(f, k, i, ev, node, full ? FULL_ONLY : SPARSE_ONLY);
         }
 #else
-        void initIdentity(const forest *f, int k, unsigned i,
-                node_handle node, bool full);
-
         void initIdentity(const forest *f, int k, unsigned i,
                 int ev, node_handle node, bool full);
 

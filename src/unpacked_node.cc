@@ -134,6 +134,32 @@ void MEDDLY::unpacked_node::attach(const forest* f)
     }
 }
 
+
+void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
+    node_handle node, node_storage_flags fs)
+{
+    MEDDLY_DCASSERT(f);
+    MEDDLY_DCASSERT(isAttachedTo(f));
+    MEDDLY_DCASSERT(k);
+    MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+    is_extensible = f->isExtensibleLevel(k);
+    resize( is_extensible ? 1 : unsigned(f->getLevelSize(k)) );
+    level = k;
+
+    if (SPARSE_ONLY == fs) {
+        setSparse();
+        for (unsigned i=0; i<size; i++) {
+            setSparse(i, i, node);
+        }
+    } else {
+        setFull();
+        for (unsigned i=0; i<size; i++) {
+            setFull(i, node);
+        }
+        is_full = true;
+    }
+}
+
 void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
     const edge_value &ev, node_handle node, node_storage_flags fs)
 {
@@ -145,18 +171,16 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
     resize( is_extensible ? 1 : unsigned(f->getLevelSize(k)) );
     level = k;
 
-    for (unsigned i=0; i<size; i++) {
-        _down[i] = node;
-        _edge[i] = ev;
-    }
-
     if (SPARSE_ONLY == fs) {
-        for (unsigned i=0; i<size; i++) {
-            _index[i] = i;
-        }
         setSparse();
+        for (unsigned i=0; i<size; i++) {
+            setSparse(i, i, ev, node);
+        }
     } else {
         setFull();
+        for (unsigned i=0; i<size; i++) {
+            setFull(i, ev, node);
+        }
     }
 }
 
@@ -175,25 +199,6 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
           repeat for all indices till +infinity.
 */
 
-void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
-  node_handle node, bool full)
-{
-    MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(isAttachedTo(f));
-    MEDDLY_DCASSERT(k);
-    MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
-    is_extensible = f->isExtensibleLevel(k);
-    resize( is_extensible ? 1 : unsigned(f->getLevelSize(k)) );
-    level = k;
-
-    for (unsigned i=0; i<size; i++) {
-        _down[i] = node;
-    }
-    if (!full) {
-        for (unsigned i=0; i<size; i++) _index[i] = i;
-    }
-    is_full = full;
-}
 
 void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
   float ev, node_handle node, bool full)
@@ -260,6 +265,29 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
 
 #endif
 
+void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
+  unsigned i, node_handle node, node_storage_flags fs)
+{
+    MEDDLY_DCASSERT(f);
+    MEDDLY_DCASSERT(isAttachedTo(f));
+    MEDDLY_DCASSERT(k);
+    MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+    level = k;
+
+    if (FULL_ONLY == fs) {
+        setFull();
+        resize(f->getLevelSize(k));
+        clear(0, size);
+
+        setFull(i, node);
+    } else {
+        setSparse();
+        resize(1);
+
+        setSparse(0, i, node);
+    }
+}
+
 void MEDDLY::unpacked_node::initIdentity(const forest *f, int k, unsigned i,
         const edge_value &ev, node_handle node, node_storage_flags fs)
 {
@@ -274,43 +302,16 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k, unsigned i,
         resize(f->getLevelSize(k));
         clear(0, size);
 
-        _down[i] = node;
-        _edge[i] = ev;
+        setFull(i, ev, node);
     } else {
         setSparse();
         resize(1);
 
-        _down[0] = node;
-        _index[0] = i;
-        _edge[0] = ev;
+        setSparse(0, i, ev, node);
     }
 }
 
 #ifndef REMOVE_OLD
-
-void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
-  unsigned i, node_handle node, bool full)
-{
-    MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(isAttachedTo(f));
-    MEDDLY_DCASSERT(k);
-    MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
-    level = k;
-
-    if (full) {
-        setFull();
-        resize(f->getLevelSize(k));
-        clear(0, size);
-
-        _down[i] = node;
-    } else {
-        setSparse();
-        resize(1);
-
-        _down[0] = node;
-        _index[0] = i;
-    }
-}
 
 void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
   unsigned i, int ev, node_handle node, bool full)

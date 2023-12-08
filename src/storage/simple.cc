@@ -731,148 +731,199 @@ void MEDDLY::simple_separated
         default:                assert(0);
     };
 
-  // if (is_extensible) nr.markAsExtensible(); else nr.markAsNotExtensible();
-  if (is_extensible && getParent()->isExtensibleLevel(nr.getLevel()))
-    nr.markAsExtensible();
-  else
-    nr.markAsNotExtensible();
-
-  // Make sure that when an extensible node is unpacked that the trailing edges
-  // are filled correctly (regardless of the storage scheme of the unpacked node)
-
-  const node_handle tv = getParent()->getTransparentNode();
-
-  if (is_sparse) {
-    //
-    // Node is sparse
-    //
-    int nnz = size;
-    const node_handle* index = down + nnz;
-    const node_handle* edge = slots_per_edge ? (index + nnz) : 0;
-    const int ext_i = index[nnz-1];
-    const int ext_d = is_extensible? down[nnz-1]: tv;
-    const void* ext_ptr = is_extensible? (edge + (nnz-1)*slots_per_edge): 0;
-
-    if (nr.isFull()) {
-      //
-      // Copying into a full node
-      //
-      nr.clear(0, nr.getSize());
-
-      // Write the sparse edges
-      for (int z=0; z<nnz; z++) {
-        int i = index[z];
-        nr.d_ref(i) = down[z];
-        if (edge_type::VOID != nr.getEdgeType()) {
-            nr.setEdgeRaw(i, edge + z*slots_per_edge);
-        }
-      }
-      // Write the extensible edge to the rest (trailing locations)
-      for (int i=ext_i+1; i<nr.getSize(); i++) {
-        nr.d_ref(i) = ext_d;
-        if (nr.hasEdges()) {
-          if (ext_ptr)
-            nr.setEdgeRaw(i, ext_ptr);
-          else
-            nr.set_edgeval(i, parent->getTransparentEdge());
-        }
-      }
+    if (is_extensible && getParent()->isExtensibleLevel(nr.getLevel())) {
+        nr.markAsExtensible();
     } else {
-      //
-      // Copying into a sparse node
-      //
-
-      for (int z=0; z<nnz; z++) {
-        nr.d_ref(z) = down[z];
-        nr.i_ref(z) = index[z];
-        if (nr.hasEdges()) {
-          nr.setEdgeRaw(z, edge + z*slots_per_edge);
-        }
-      } // for z
-      if (nr.isExtensible() == is_extensible) {
-        nr.shrinkSparse(nnz);
-      } else {
-        MEDDLY_DCASSERT(is_extensible);
-        MEDDLY_DCASSERT(!nr.isExtensible());
-        int i = ext_i+1;
-        for (int z=nnz; z<nr.getNNZs(); z++, i++) {
-          nr.i_ref(z) = i;
-          nr.d_ref(z) = ext_d;
-          if (nr.hasEdges()) {
-            if (ext_ptr)
-              nr.setEdgeRaw(z, ext_ptr);
-            else
-              nr.set_edgeval(z, parent->getTransparentEdge());
-          }
-        }
-      }
+        nr.markAsNotExtensible();
     }
-  } else {
-    //
-    // Node is full
-    //
-    const node_handle* edge = slots_per_edge ? (down + size) : 0;
 
-    if (nr.isFull()) {
-      //
-      // Copying into a full node
-      //
-      unsigned i;
-      for (i=0; i<size; i++) {
-        nr.d_ref(i) = down[i];
-        if (nr.hasEdges()) {
-          nr.setEdgeRaw(i, edge + i*slots_per_edge);
+    // Make sure that when an extensible node is unpacked, the trailing edges
+    // are filled correctly (regardless of the storage scheme of the unpacked node)
+
+    const node_handle tv = getParent()->getTransparentNode();
+
+    if (is_sparse) {
+        //
+        // Node is sparse
+        //
+        const int nnz = size;
+        const node_handle* index = down + nnz;
+        const node_handle* edge = slots_per_edge ? (index + nnz) : 0;
+        const int ext_i = index[nnz-1];
+        edge_value ext_ev;
+        node_handle ext_d = 0;
+        if (is_extensible) {
+            ext_d = down[nnz-1];
+            ext_ev.set(nr.getEdgeType(), edge + (nnz-1)*slots_per_edge);
         }
-      }
-      if (FULL_OR_SPARSE == st2 && is_extensible == nr.isExtensible()) {
-        nr.shrinkFull(size);
-      } else {
-        const int ext_d = is_extensible? down[size-1]: tv;
-        const void* ext_ptr = is_extensible? (edge + (size-1)*slots_per_edge): 0;
-        for (; i<unsigned(nr.getSize()); i++) {
-          nr.d_ref(i) = ext_d;
-          if (nr.hasEdges()) {
-            if (ext_ptr)
-              nr.setEdgeRaw(i, ext_ptr);
-            else
-              nr.set_edgeval(i, parent->getTransparentEdge());
-          }
+
+
+        if (nr.isFull()) {
+            //
+            // Copying into a full node
+            //
+            nr.clear(0, nr.getSize());
+
+            if (nr.hasEdges()) {
+
+                // Write the sparse edges with edge values
+                for (int z=0; z<nnz; z++) {
+                    nr.setFull(index[z], edge + z*slots_per_edge, down[z]);
+                }
+
+                // write the extensible edge to trailing locations
+                if (is_extensible) {
+                    for (int i=ext_i+1; i<nr.getSize(); i++) {
+                        nr.setFull(i, ext_ev, ext_d);
+                    }
+                }
+
+            } else {
+
+                // Write the sparse edges, void edge values
+                for (int z=0; z<nnz; z++) {
+                    nr.setFull(index[z], down[z]);
+                }
+
+                // write the extensible edge to trailing locations
+                if (is_extensible) {
+                    for (int i=ext_i+1; i<nr.getSize(); i++) {
+                        nr.setFull(i, ext_d);
+                    }
+                }
+
+            }
+
+        } else {
+
+            //
+            // Copying into a sparse node
+            //
+            if (nr.hasEdges()) {
+                for (int z=0; z<nnz; z++) {
+                    nr.setSparse(z, index[z], edge + z*slots_per_edge, down[z]);
+                }
+            } else {
+                for (int z=0; z<nnz; z++) {
+                    nr.setSparse(z, index[z], down[z]);
+                }
+            }
+
+            if (nr.isExtensible() == is_extensible) {
+                nr.shrinkSparse(nnz);
+            } else {
+                //
+                //  Not sure about this...
+                //
+                MEDDLY_DCASSERT(is_extensible);
+                MEDDLY_DCASSERT(!nr.isExtensible());
+                int i = ext_i+1;
+                if (nr.hasEdges()) {
+                    for (int z=nnz; z<nr.getSize(); z++, i++) {
+                        nr.setSparse(z, i, ext_ev, ext_d);
+                    }
+                } else {
+                    for (int z=nnz; z<nr.getSize(); z++, i++) {
+                        nr.setSparse(z, i, ext_d);
+                    }
+                }
+
+            }
         }
-      }
     } else {
-      //
-      // Copying into a sparse node
-      //
+        //
+        // Node is full
+        //
+        const node_handle* edge = slots_per_edge ? (down + size) : 0;
 
-      int z = 0;
-      for (unsigned int i=0; i<size; i++) if (down[i]) {
-        nr.d_ref(z) = down[i];
-        nr.i_ref(z) = i;
-        if (nr.hasEdges()) {
-          nr.setEdgeRaw(z, edge + i*slots_per_edge);
+        if (nr.isFull()) {
+            //
+            // Copying into a full node
+            //
+            unsigned i;
+
+            if (FULL_OR_SPARSE == st2 && is_extensible == nr.isExtensible()) {
+                nr.shrinkFull(size);
+            }
+
+            if (nr.hasEdges()) {
+                node_handle ext_d;
+                edge_value ext_ev;
+                if (is_extensible) {
+                    ext_d = down[size-1];
+                    ext_ev.set(nr.getEdgeType(), edge + (size-1)*slots_per_edge);
+                } else {
+                    ext_d = tv;
+                    ext_ev = parent->getTransparentEdge();
+                }
+
+                for (i=0; i<size; i++) {
+                    nr.setFull(i, edge + i*slots_per_edge, down[i]);
+                }
+                for (   ; i<nr.getSize(); i++) {
+                    nr.setFull(i, ext_ev, ext_d);
+                }
+
+            } else {
+                node_handle ext_d;
+                if (is_extensible) {
+                    ext_d = down[size-1];
+                } else {
+                    ext_d = tv;
+                }
+
+                for (i=0; i<size; i++) {
+                    nr.setFull(i, down[i]);
+                }
+                for (   ; i<nr.getSize(); i++) {
+                    nr.setFull(i, ext_d);
+                }
+            }
+
+        } else {
+            //
+            // HERE
+            //
+            //
+            // Copying into a sparse node
+            //
+
+            int z = 0;
+            if (nr.hasEdges()) {
+                for (unsigned i=0; i<size; i++) if (down[i]) {
+                    nr.setSparse(z, i, edge + i*slots_per_edge, down[i]);
+                    z++;
+                } // for i
+            } else {
+                for (unsigned i=0; i<size; i++) if (down[i]) {
+                    nr.setSparse(z, i, down[i]);
+                    z++;
+                } // for i
+            }
+
+            if (nr.isExtensible() == is_extensible) nr.shrinkSparse(z);
+            else {
+                //
+                // Not sure about this either
+                //
+                MEDDLY_DCASSERT(is_extensible);
+                MEDDLY_DCASSERT(!nr.isExtensible());
+                const int ext_i = size-1;
+                const int ext_d = down[ext_i];
+                const void* ext_ptr = (edge + (ext_i)*slots_per_edge);
+                for (int i = ext_i + 1 ; z<nr.getNNZs(); z++, i++) {
+                    nr.i_ref(z) = i;
+                    nr.d_ref(z) = ext_d;
+                    if (nr.hasEdges()) {
+                        if (ext_ptr)
+                            nr.setEdgeRaw(z, ext_ptr);
+                        else
+                            nr.set_edgeval(z, parent->getTransparentEdge());
+                    }
+                } // for i
+            }
         }
-        z++;
-      } // for i
-      if (nr.isExtensible() == is_extensible) nr.shrinkSparse(z);
-      else {
-        MEDDLY_DCASSERT(is_extensible);
-        MEDDLY_DCASSERT(!nr.isExtensible());
-        const int ext_i = size-1;
-        const int ext_d = down[ext_i];
-        const void* ext_ptr = (edge + (ext_i)*slots_per_edge);
-        for (int i = ext_i + 1 ; z<nr.getNNZs(); z++, i++) {
-          nr.i_ref(z) = i;
-          nr.d_ref(z) = ext_d;
-          if (nr.hasEdges()) {
-            if (ext_ptr)
-              nr.setEdgeRaw(z, ext_ptr);
-            else
-              nr.set_edgeval(z, parent->getTransparentEdge());
-          }
-        }
-      }
     }
-  }
 
 #ifdef DEBUG_DECODING
   printf("\n        temp:  ");
