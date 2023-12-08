@@ -22,8 +22,6 @@
 #include "enumerator.h"
 #include "forest.h"
 
-// #define DEBUG_CLEANUP
-
 // #define DEBUG_ITER_BEGIN
 
 // ******************************************************************

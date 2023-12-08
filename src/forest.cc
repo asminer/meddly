@@ -69,7 +69,6 @@
 //#include <queue>
 //#include <vector>
 
-// #define DEBUG_CLEANUP
 // #define DEBUG_ADDRESS_RESIZE
 // #define DEBUG_CREATE_REDUCED
 // #define DEBUG_GC

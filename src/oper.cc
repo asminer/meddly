@@ -130,6 +130,7 @@ MEDDLY::operation::~operation()
             }
         }
         delete[] CT;
+        CT = nullptr;
     }
     // Don't delete the entries in etype, they're owned by compute_table.
     delete[] etype;

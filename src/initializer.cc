@@ -104,6 +104,13 @@ void MEDDLY::initializer_list::cleanupLibrary()
 
 #endif
 
+    domain::markDomList();
+
+    operation::destroyAllOps();
+
+    domain::deleteDomList();
+    forest::freeStatics();
+
     //
     // Run through initializers
     //
@@ -116,13 +123,6 @@ void MEDDLY::initializer_list::cleanupLibrary()
         delete meddlyInitializers;
         meddlyInitializers = prev;
     }
-
-    domain::markDomList();
-
-    operation::destroyAllOps();
-
-    domain::deleteDomList();
-    forest::freeStatics();
 
     unpacked_node::doneStatics();
 
