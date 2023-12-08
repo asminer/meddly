@@ -954,6 +954,9 @@ class MEDDLY::unpacked_node {
             }
         }
 
+        static void showSingly(const unpacked_node* list);
+        static void showDoubly(const unpacked_node* list);
+
     private:
         /// Next in list
         unpacked_node* next;

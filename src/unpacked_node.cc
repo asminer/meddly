@@ -31,6 +31,8 @@
 #include "terminal.h"
 #include "node_marker.h"
 
+// #define DEBUG_FORLISTS
+
 // ******************************************************************
 // *                     unpacked_lists  struct                     *
 // ******************************************************************
@@ -769,6 +771,13 @@ MEDDLY::unpacked_node* MEDDLY::unpacked_node::New(const forest* f)
         n->has_hash = false;
 #endif
         MEDDLY_DCASSERT(n->isAttachedTo(f));
+
+#ifdef DEBUG_FORLISTS
+        std::cerr << "New removed " << n << " from recycled list #" << FID
+                  << "\nList is now: -> ";
+        showSingly(ForLists[FID].recycled);
+#endif
+
         return n;
     } else {
         // Our free list is empty
@@ -794,6 +803,12 @@ void MEDDLY::unpacked_node::AddToBuildList(unpacked_node* n)
     n->next = ForLists[n->pFID].building;
     n->prev = nullptr;
     ForLists[n->pFID].building = n;
+
+#ifdef DEBUG_FORLISTS
+    std::cerr << "Added " << n << " to build list # " << n->pFID
+              << "\nList is now: -> ";
+    showDoubly(ForLists[n->pFID].building);
+#endif
 }
 
 void MEDDLY::unpacked_node::MarkWritable(node_marker &M)
@@ -842,6 +857,12 @@ void MEDDLY::unpacked_node::Recycle(unpacked_node* r)
         r->prev = nullptr;
 
         r->modparent = nullptr;
+
+#ifdef DEBUG_FORLISTS
+        std::cerr << "Recycle removed " << r << " from buildlist #" << r->pFID
+                  << "\nList is now: -> ";
+        showDoubly(ForLists[r->pFID].building);
+#endif
     }
 
     //
@@ -849,22 +870,37 @@ void MEDDLY::unpacked_node::Recycle(unpacked_node* r)
     //
     r->next = ForLists[r->pFID].recycled;
     ForLists[r->pFID].recycled = r;
+
+#ifdef DEBUG_FORLISTS
+    std::cerr << "Recycle added " << r << " to freelist #" << r->pFID
+              << "\nList is now: -> ";
+    showSingly(ForLists[r->pFID].recycled);
+#endif
 }
 
 void MEDDLY::unpacked_node::initForest(const forest* f)
 {
     if (!f) return;
-    if (f->FID() < ForListsAlloc) return;
+    const unsigned FID = f->FID();
+    if (FID >= ForListsAlloc) {
+        unsigned newalloc = (FID/16 + 1) * 16;
 
-    unsigned newalloc = (f->FID()/16 + 1) * 16;
-    ForLists = (unpacked_lists*) realloc(ForLists, newalloc * sizeof (void*));
-    if (!ForLists) {
-        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        ForLists = (unpacked_lists*)
+                   realloc(ForLists, newalloc * sizeof (unpacked_lists));
+
+        if (!ForLists) {
+            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        }
+        ForListsAlloc = newalloc;
     }
-    for (; ForListsAlloc < newalloc; ++ForListsAlloc) {
-        ForLists[ForListsAlloc].recycled = nullptr;
-        ForLists[ForListsAlloc].building = nullptr;
-    }
+
+    ForLists[FID].recycled = nullptr;
+    ForLists[FID].building = nullptr;
+
+#ifdef DEBUG_FORLISTS
+    std::cerr << "initForest #" << FID << " lists are " <<
+        ForLists[FID].building << " and " << ForLists[FID].recycled << "\n";
+#endif
 }
 
 void MEDDLY::unpacked_node::doneForest(const forest* f)
@@ -875,6 +911,10 @@ void MEDDLY::unpacked_node::doneForest(const forest* f)
 
     deleteList(ForLists[FID].building);
     deleteList(ForLists[FID].recycled);
+#ifdef DEBUG_FORLISTS
+    std::cerr << "doneForest #" << FID << " lists are " <<
+        ForLists[FID].building << " and " << ForLists[FID].recycled << "\n";
+#endif
 }
 
 void MEDDLY::unpacked_node::initStatics()
@@ -925,6 +965,24 @@ void MEDDLY::unpacked_node::expand(unsigned ns)
 #ifdef DEVELOPMENT_CODE
     has_hash = false;
 #endif
+}
+
+void MEDDLY::unpacked_node::showSingly(const unpacked_node* list)
+{
+    while (list) {
+        std::cerr << " -> " << list;
+        list = list->next;
+    }
+    std::cerr << " -|\n";
+}
+
+void MEDDLY::unpacked_node::showDoubly(const unpacked_node* list)
+{
+    while (list) {
+        std::cerr << " -> (prev " << list->prev << ") " << list;
+        list = list->next;
+    }
+    std::cerr << " -|\n";
 }
 
 /*
