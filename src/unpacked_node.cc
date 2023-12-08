@@ -270,6 +270,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k, unsigned i,
     if (FULL_ONLY == fs) {
         setFull();
         resize(f->getLevelSize(k));
+        clear();
 
         _down[i] = node;
         _edge[i] = ev;
@@ -297,6 +298,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
     if (full) {
         setFull();
         resize(f->getLevelSize(k));
+        clear();
 
         _down[i] = node;
     } else {
@@ -320,6 +322,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
     if (full) {
         setFull();
         resize(f->getLevelSize(k));
+        clear();
 
         _down[i] = node;
         _edge[i].set(ev);
@@ -345,6 +348,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
     if (full) {
         setFull();
         resize(f->getLevelSize(k));
+        clear();
 
         _down[i] = node;
         _edge[i].set(ev);
@@ -370,6 +374,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
     if (full) {
         setFull();
         resize(f->getLevelSize(k));
+        clear();
 
         _down[i] = node;
         _edge[i].set(ev);
@@ -722,6 +727,26 @@ bool MEDDLY::unpacked_node::isSorted() const
     return true;
 }
 
+void MEDDLY::unpacked_node::clear(unsigned low, unsigned high)
+{
+    CHECK_RANGE(__FILE__, __LINE__, 0u, low, alloc);
+    CHECK_RANGE(__FILE__, __LINE__, 0u, high, alloc);
+
+    MEDDLY_DCASSERT(_down);
+    if (hasEdges()) {
+        MEDDLY_DCASSERT(_edge);
+        for (unsigned i=low; i<high; i++) {
+            parent->getTransparentEdge(_down[i], _edge[i]);
+        }
+    } else {
+        for (unsigned i=low; i<high; i++) {
+            _down[i] = parent->getTransparentNode();
+        }
+    }
+#ifdef DEVELOPMENT_CODE
+    has_hash = false;
+#endif
+}
 
 //
 // Static methods for free lists
@@ -743,8 +768,6 @@ MEDDLY::unpacked_node* MEDDLY::unpacked_node::New(const forest* f)
 #ifdef DEVELOPMENT_CODE
         n->has_hash = false;
 #endif
-        n->clear();
-        n->resize(0);
         MEDDLY_DCASSERT(n->isAttachedTo(f));
         return n;
     } else {
@@ -817,6 +840,8 @@ void MEDDLY::unpacked_node::Recycle(unpacked_node* r)
             if (n) n->prev = nullptr;
         }
         r->prev = nullptr;
+
+        r->modparent = nullptr;
     }
 
     //
@@ -895,30 +920,8 @@ void MEDDLY::unpacked_node::expand(unsigned ns)
             throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
         }
         alloc = nalloc;
-        clear(size, ns);
     }
     size = ns;
-#ifdef DEVELOPMENT_CODE
-    has_hash = false;
-#endif
-}
-
-void MEDDLY::unpacked_node::clear(unsigned low, unsigned high)
-{
-    CHECK_RANGE(__FILE__, __LINE__, 0u, low, alloc);
-    CHECK_RANGE(__FILE__, __LINE__, 0u, high, alloc);
-
-    MEDDLY_DCASSERT(_down);
-    if (hasEdges()) {
-        MEDDLY_DCASSERT(_edge);
-        for (unsigned i=low; i<high; i++) {
-            parent->getTransparentEdge(_down[i], _edge[i]);
-        }
-    } else {
-        for (unsigned i=low; i<high; i++) {
-            _down[i] = parent->getTransparentNode();
-        }
-    }
 #ifdef DEVELOPMENT_CODE
     has_hash = false;
 #endif

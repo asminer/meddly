@@ -321,9 +321,8 @@ class MEDDLY::unpacked_node {
         }
 
         /// Set the unhashed header data
-        inline void setUHdata(void* p)
+        inline void setUHdata(const void* p)
         {
-            MEDDLY_DCASSERT(modparent);
             MEDDLY_DCASSERT(p);
             memcpy(extra_unhashed, p, extra_unhashed_size);
         }
@@ -351,9 +350,8 @@ class MEDDLY::unpacked_node {
         }
 
         /// Set the hashed header data
-        inline void setHHdata(void* p)
+        inline void setHHdata(const void* p)
         {
-            MEDDLY_DCASSERT(modparent);
             MEDDLY_DCASSERT(p);
             memcpy(extra_hashed, p, extra_hashed_size);
         }
@@ -419,7 +417,6 @@ class MEDDLY::unpacked_node {
         */
         inline void setFull(unsigned n, node_handle h)
         {
-            MEDDLY_DCASSERT(modparent);
             MEDDLY_DCASSERT(_down);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             MEDDLY_DCASSERT(!hasEdges());
@@ -436,7 +433,6 @@ class MEDDLY::unpacked_node {
         */
         inline void setFull(unsigned n, const edge_value &v, node_handle h)
         {
-            MEDDLY_DCASSERT(modparent);
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
@@ -456,7 +452,6 @@ class MEDDLY::unpacked_node {
         */
         inline void setFull(unsigned n, const void* p, node_handle h)
         {
-            MEDDLY_DCASSERT(modparent);
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
@@ -475,7 +470,6 @@ class MEDDLY::unpacked_node {
         */
         inline void setSparse(unsigned n, unsigned i, node_handle h)
         {
-            MEDDLY_DCASSERT(modparent);
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
@@ -497,7 +491,6 @@ class MEDDLY::unpacked_node {
         inline void setSparse(unsigned n, unsigned i, const edge_value &v,
                 node_handle h)
         {
-            MEDDLY_DCASSERT(modparent);
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
             MEDDLY_DCASSERT(_edge);
@@ -521,7 +514,6 @@ class MEDDLY::unpacked_node {
         inline void setSparse(unsigned n, unsigned i, const void* p,
                 node_handle h)
         {
-            MEDDLY_DCASSERT(modparent);
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
             MEDDLY_DCASSERT(_edge);
@@ -557,7 +549,6 @@ class MEDDLY::unpacked_node {
         /// Set the nth pointer from E, and destroy E.
         inline void set_d(unsigned n, dd_edge &E)
         {
-            MEDDLY_DCASSERT(modparent);
             MEDDLY_DCASSERT(E.isAttachedTo(parent));
             MEDDLY_DCASSERT(!hasEdges());
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
@@ -610,7 +601,6 @@ class MEDDLY::unpacked_node {
         */
         inline void set_edgeval(unsigned n, const edge_value &v) {
             MEDDLY_DCASSERT(parent);
-            MEDDLY_DCASSERT(modparent);
             MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             MEDDLY_DCASSERT(v.hasType(the_edge_type));
@@ -623,7 +613,6 @@ class MEDDLY::unpacked_node {
         */
         inline void setEdgeRaw(unsigned n, const void* p) {
             MEDDLY_DCASSERT(parent);
-            MEDDLY_DCASSERT(modparent);
             MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             _edge[n].set(the_edge_type, p);
@@ -784,13 +773,6 @@ class MEDDLY::unpacked_node {
             return is_full;
         }
 
-        /// Called by node_storage when building an unpacked
-        /// node based on how it's stored.
-        inline void bind_as_full(bool full)
-        {
-            is_full = full;
-        }
-
         /// Does this node have edge values?
         inline bool hasEdges() const
         {
@@ -883,6 +865,15 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(ns <= size);
             size = ns;
         }
+
+
+        /// Called by node_storage when building an unpacked
+        /// node based on how it's stored.
+        inline void bind_as_full(bool full)
+        {
+            is_full = full;
+        }
+
 #endif
 
         /// Set the node as sparse.
@@ -904,6 +895,13 @@ class MEDDLY::unpacked_node {
             AddToBuildList(this);
         }
 
+        // Set edges to transparent
+        void clear(unsigned low, unsigned high);
+
+        // Set all edges to transparent
+        inline void clear() {
+            clear(0, alloc);
+        }
 
     public:
         //
@@ -951,14 +949,6 @@ class MEDDLY::unpacked_node {
 
     private:
         void expand(unsigned ns);
-
-        // Set edges to transparent
-        void clear(unsigned low, unsigned high);
-
-        // Set all edges to transparent
-        inline void clear() {
-            clear(0, alloc);
-        }
 
         static inline void deleteList(unpacked_node* &p) {
             while (p) {

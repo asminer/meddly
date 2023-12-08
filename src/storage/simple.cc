@@ -680,47 +680,56 @@ void MEDDLY::simple_separated
 ::fillUnpacked(unpacked_node &nr, node_address addr, node_storage_flags st2) const
 {
 #ifdef DEBUG_DECODING
-  FILE_output out(stdout);
-  printf("simple_separeted filling reader\n    internal: ");
-  dumpInternalNode(out, addr, 0x03);
+    stream_output out(std::cerr);
+    std::cerr << "simple_separeted filling reader\n    internal: ";
+    dumpInternalNode(out, addr, 0x03);
 #endif
 
-  const node_handle* chunk = getChunkAddress(addr);
-  MEDDLY_DCASSERT(chunk);
+    const node_handle* chunk = getChunkAddress(addr);
+    MEDDLY_DCASSERT(chunk);
 
-  MEDDLY_DCASSERT(nr.hasEdges() == (slots_per_edge>0) );
+    MEDDLY_DCASSERT(nr.hasEdges() == (slots_per_edge>0) );
 
-  //
-  // Copy any extra header information
-  //
+    //
+    // Copy any extra header information
+    //
 
-  if (unhashed_slots) {
-    memcpy(nr.UHdata(), chunk + unhashed_start, nr.UHbytes());
-  }
-  if (hashed_slots) {
-    memcpy(nr.HHdata(), chunk + hashed_start, nr.HHbytes());
-  }
+    if (unhashed_slots) {
+        nr.setUHdata(chunk + unhashed_start);
+    }
 
-  //
-  // Copy everything else
-  //
+    if (hashed_slots) {
+        nr.setHHdata(chunk + hashed_start);
+    }
 
-  const unsigned int raw_size = getRawSize(chunk);
-  const unsigned int size = getSize(raw_size);
-  const bool is_sparse = isSparse(raw_size);
-  const bool is_extensible = isExtensible(raw_size);
-  const node_handle* down = chunk + down_start;
+    //
+    // Copy everything else
+    //
 
-  /*
-     Set the unpacked node storage style based on settings
-     */
-  switch (st2) {
-    case FULL_ONLY:         nr.bind_as_full(true);    break;
-    case SPARSE_ONLY:       nr.bind_as_full(false);   break;
-    case FULL_OR_SPARSE:    nr.bind_as_full(is_sparse); break;
+    const unsigned int raw_size = getRawSize(chunk);
+    const unsigned int size = getSize(raw_size);
+    const bool is_sparse = isSparse(raw_size);
+    const bool is_extensible = isExtensible(raw_size);
+    const node_handle* down = chunk + down_start;
 
-    default:            assert(0);
-  };
+    //
+    // Set unpacked node storage style and size
+    //
+    switch (st2) {
+        case FULL_ONLY:         nr.setFull();
+                                break;
+
+        case SPARSE_ONLY:       nr.setSparse();
+                                break;
+
+        case FULL_OR_SPARSE:    if (is_sparse)
+                                    nr.setSparse();
+                                else
+                                    nr.setFull();
+                                break;
+
+        default:                assert(0);
+    };
 
   // if (is_extensible) nr.markAsExtensible(); else nr.markAsNotExtensible();
   if (is_extensible && getParent()->isExtensibleLevel(nr.getLevel()))
@@ -748,6 +757,7 @@ void MEDDLY::simple_separated
       //
       // Copying into a full node
       //
+      nr.clear();
 
       // Write the sparse edges
       for (int z=0; z<nnz; z++) {

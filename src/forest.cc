@@ -186,6 +186,7 @@ void MEDDLY::forest::unpackNode(MEDDLY::unpacked_node* un,
     MEDDLY_DCASSERT(un->isAttachedTo(this));
     un->setLevel( getNodeLevel(node) );
     MEDDLY_DCASSERT(un->getLevel() != 0);
+    un->resize( getLevelSize( un->getLevel() ) );
     MEDDLY_DCASSERT(getNodeAddress(node));
     nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
     //
