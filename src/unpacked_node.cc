@@ -270,7 +270,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k, unsigned i,
     if (FULL_ONLY == fs) {
         setFull();
         resize(f->getLevelSize(k));
-        clear();
+        clear(0, size);
 
         _down[i] = node;
         _edge[i] = ev;
@@ -298,7 +298,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
     if (full) {
         setFull();
         resize(f->getLevelSize(k));
-        clear();
+        clear(0, size);
 
         _down[i] = node;
     } else {
@@ -322,7 +322,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
     if (full) {
         setFull();
         resize(f->getLevelSize(k));
-        clear();
+        clear(0, size);
 
         _down[i] = node;
         _edge[i].set(ev);
@@ -348,7 +348,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
     if (full) {
         setFull();
         resize(f->getLevelSize(k));
-        clear();
+        clear(0, size);
 
         _down[i] = node;
         _edge[i].set(ev);
@@ -374,7 +374,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
     if (full) {
         setFull();
         resize(f->getLevelSize(k));
-        clear();
+        clear(0, size);
 
         _down[i] = node;
         _edge[i].set(ev);
@@ -730,7 +730,7 @@ bool MEDDLY::unpacked_node::isSorted() const
 void MEDDLY::unpacked_node::clear(unsigned low, unsigned high)
 {
     CHECK_RANGE(__FILE__, __LINE__, 0u, low, alloc);
-    CHECK_RANGE(__FILE__, __LINE__, 0u, high, alloc);
+    CHECK_RANGE(__FILE__, __LINE__, 0u, high, alloc+1);
 
     MEDDLY_DCASSERT(_down);
     if (hasEdges()) {

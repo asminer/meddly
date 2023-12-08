@@ -757,7 +757,7 @@ void MEDDLY::simple_separated
       //
       // Copying into a full node
       //
-      nr.clear();
+      nr.clear(0, nr.getSize());
 
       // Write the sparse edges
       for (int z=0; z<nnz; z++) {

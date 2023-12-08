@@ -260,6 +260,7 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(U);
             U->level = levl;
             U->resize(tsz);
+            U->clear(0, tsz);
             U->setFull();
             U->allowWrites(f);
             return U;
@@ -897,11 +898,6 @@ class MEDDLY::unpacked_node {
 
         // Set edges to transparent
         void clear(unsigned low, unsigned high);
-
-        // Set all edges to transparent
-        inline void clear() {
-            clear(0, alloc);
-        }
 
     public:
         //
