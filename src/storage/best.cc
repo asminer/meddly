@@ -1085,15 +1085,13 @@ void MEDDLY::best_storage
       //
       // Copying into a full node
       //
-      // Clear locations [0, ext_i]
-      nr.clearEdges(ext_i+1);
 
       // Write the sparse edges
       for (int z=0; z<nnz; z++) {
         int i = index[z];
         nr.d_ref(i) = down[z];
         if (edge_type::VOID != nr.getEdgeType()) {
-            nr.setEdge(i).set(parent->getEdgeType(), edge + z*slots_per_edge);
+            nr.setEdgeRaw(i, edge + z*slots_per_edge);
         }
       }
       // Write the extensible edge to the rest (trailing locations)
@@ -1101,9 +1099,9 @@ void MEDDLY::best_storage
         nr.d_ref(i) = ext_d;
         if (nr.hasEdges()) {
           if (ext_ptr)
-            nr.setEdge(i).set(parent->getEdgeType(), ext_ptr);
+            nr.setEdgeRaw(i, ext_ptr);
           else
-            nr.setEdge(i) = parent->getTransparentEdge();
+            nr.set_edgeval(i, parent->getTransparentEdge());
         }
       }
     } else {
@@ -1115,7 +1113,7 @@ void MEDDLY::best_storage
         nr.d_ref(z) = down[z];
         nr.i_ref(z) = index[z];
         if (nr.hasEdges()) {
-          nr.setEdge(z).set(parent->getEdgeType(), edge + z*slots_per_edge);
+          nr.setEdgeRaw(z, edge + z*slots_per_edge);
         }
       } // for z
       if (nr.isExtensible() == is_extensible) {
@@ -1129,9 +1127,9 @@ void MEDDLY::best_storage
           nr.d_ref(z) = ext_d;
           if (nr.hasEdges()) {
             if (ext_ptr)
-              nr.setEdge(z).set(parent->getEdgeType(), ext_ptr);
+              nr.setEdgeRaw(z, ext_ptr);
             else
-              nr.setEdge(z) = parent->getTransparentEdge();
+              nr.set_edgeval(z, parent->getTransparentEdge());
           }
         }
       }
@@ -1150,7 +1148,7 @@ void MEDDLY::best_storage
       for (i=0; i<size; i++) {
         nr.d_ref(i) = down[i];
         if (nr.hasEdges()) {
-          nr.setEdge(i).set(parent->getEdgeType(), edge + i*slots_per_edge);
+          nr.setEdgeRaw(i, edge + i*slots_per_edge);
         }
       }
       if (FULL_OR_SPARSE == st2 && is_extensible == nr.isExtensible()) {
@@ -1162,9 +1160,9 @@ void MEDDLY::best_storage
           nr.d_ref(i) = ext_d;
           if (nr.hasEdges()) {
             if (ext_ptr)
-              nr.setEdge(i).set(parent->getEdgeType(), ext_ptr);
+              nr.setEdgeRaw(i, ext_ptr);
             else
-              nr.setEdge(i) = parent->getTransparentEdge();
+              nr.set_edgeval(i, parent->getTransparentEdge());
           }
         }
       }
@@ -1178,7 +1176,7 @@ void MEDDLY::best_storage
         nr.d_ref(z) = down[i];
         nr.i_ref(z) = i;
         if (nr.hasEdges()) {
-          nr.setEdge(z).set(parent->getEdgeType(), edge + i*slots_per_edge);
+          nr.setEdgeRaw(z, edge + i*slots_per_edge);
         }
         z++;
       } // for i
@@ -1194,9 +1192,9 @@ void MEDDLY::best_storage
           nr.d_ref(z) = ext_d;
           if (nr.hasEdges()) {
             if (ext_ptr)
-              nr.setEdge(z).set(parent->getEdgeType(), ext_ptr);
+              nr.setEdgeRaw(z, ext_ptr);
             else
-              nr.setEdge(z) = parent->getTransparentEdge();
+              nr.set_edgeval(z, parent->getTransparentEdge());
           }
         }
       }

@@ -75,7 +75,7 @@ void make_blank(const std::vector <forest*> &FA, bool sparse)
             // recycle old in slot u,
             // and build a new blank node there
             //
-            unpacked_node::recycle(UA[u]);
+            unpacked_node::Recycle(UA[u]);
             if (sparse) {
                 UA[u] = unpacked_node::newSparse(f, k, 2);
             } else {
@@ -91,7 +91,7 @@ void make_blank(const std::vector <forest*> &FA, bool sparse)
     std::cout << 'd';
     std::cout.flush();
     for (unsigned i=0; i<USIZE; i++) {
-        unpacked_node::recycle(UA[i]);
+        unpacked_node::Recycle(UA[i]);
     }
     T.note_time();
 
@@ -144,7 +144,7 @@ void make_redundant(const std::vector <forest*> &FA, bool sparse)
             // recycle old in slot u,
             // and build a new redundant node there
             //
-            unpacked_node::recycle(UA[u]);
+            unpacked_node::Recycle(UA[u]);
 
             if (f->isMultiTerminal()) {
                 UA[u] = unpacked_node::newRedundant(f, k, -1, !sparse);
@@ -163,7 +163,7 @@ void make_redundant(const std::vector <forest*> &FA, bool sparse)
     std::cout << 'd';
     std::cout.flush();
     for (unsigned i=0; i<USIZE; i++) {
-        unpacked_node::recycle(UA[i]);
+        unpacked_node::Recycle(UA[i]);
     }
     T.note_time();
 
@@ -221,7 +221,7 @@ void make_identity(const std::vector <forest*> &FA, bool sparse)
             // recycle old in slot u,
             // and build a new redundant node there
             //
-            unpacked_node::recycle(UA[u]);
+            unpacked_node::Recycle(UA[u]);
 
             if (f->isMultiTerminal()) {
                 UA[u] = unpacked_node::newIdentity(f, k, i, -1, !sparse);
@@ -240,7 +240,7 @@ void make_identity(const std::vector <forest*> &FA, bool sparse)
     std::cout << 'd';
     std::cout.flush();
     for (unsigned i=0; i<USIZE; i++) {
-        unpacked_node::recycle(UA[i]);
+        unpacked_node::Recycle(UA[i]);
     }
     T.note_time();
 

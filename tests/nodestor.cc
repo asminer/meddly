@@ -268,7 +268,7 @@ unpacked_node* build_node(expert_forest* f, unsigned who, bool full)
             unsigned dwn = init[i+1]-'0';
 
             un->d_ref(pos) = f->linkNode(e[dwn].getNode());
-            un->setEdge(pos) = e[dwn].getEdgeValue();
+            un->setEdge(pos, e[dwn].getEdgeValue());
         }
     } else {
         un = unpacked_node::newSparse(f, who%4+1, 9);
@@ -278,7 +278,7 @@ unpacked_node* build_node(expert_forest* f, unsigned who, bool full)
             unsigned dwn = init[i+1]-'0';
 
             un->d_ref(nnzs) = f->linkNode(e[dwn].getNode());
-            un->setEdge(nnzs) = e[dwn].getEdgeValue();
+            un->setEdge(nnzs, e[dwn].getEdgeValue());
             un->i_ref(nnzs) = pos;
             ++nnzs;
         }
@@ -315,8 +315,8 @@ void test_nodes(domain* d, range_type r, edge_labeling e, policies &p)
             show_my_node("Reblt ", w, bn);
 
             compare(fn, bn);
-            unpacked_node::recycle(fn);
-            unpacked_node::recycle(bn);
+            unpacked_node::Recycle(fn);
+            unpacked_node::Recycle(bn);
         }
     }
 
@@ -335,8 +335,8 @@ void test_nodes(domain* d, range_type r, edge_labeling e, policies &p)
             show_my_node("Reblt ", w, bn);
 
             compare(int_ev, fn, bn);
-            unpacked_node::recycle(fn);
-            unpacked_node::recycle(bn);
+            unpacked_node::Recycle(fn);
+            unpacked_node::Recycle(bn);
         }
     }
 
@@ -355,8 +355,8 @@ void test_nodes(domain* d, range_type r, edge_labeling e, policies &p)
             show_my_node("Reblt ", w, bn);
 
             compare(real_ev, fn, bn);
-            unpacked_node::recycle(fn);
-            unpacked_node::recycle(bn);
+            unpacked_node::Recycle(fn);
+            unpacked_node::Recycle(bn);
         }
     }
 

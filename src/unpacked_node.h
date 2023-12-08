@@ -376,9 +376,9 @@ class MEDDLY::unpacked_node {
 
         /** Get a downward pointer.
             @param  n   Which pointer.
-            @return     If this is a full reader,
+            @return     If this is a full node,
                         return pointer with index n.
-                        If this is a sparse reader,
+                        If this is a sparse node,
                         return the nth non-zero pointer.
         */
         inline node_handle down(unsigned n) const
@@ -389,7 +389,7 @@ class MEDDLY::unpacked_node {
         }
 
         /** Get the index of the nth non-zero pointer.
-            Use only for sparse readers.
+            Use only for sparse nodes.
             @param  n   Which pointer
             @return     The index of the pointer
         */
@@ -449,6 +449,25 @@ class MEDDLY::unpacked_node {
 
 
         /**
+            Set a full edge.
+                @param  n       Which pointer
+                @param  p       Raw pointer for edge value
+                @param  h       Node handle
+        */
+        inline void setFull(unsigned n, const void* p, node_handle h)
+        {
+            MEDDLY_DCASSERT(modparent);
+            MEDDLY_DCASSERT(_down);
+            MEDDLY_DCASSERT(_edge);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            MEDDLY_DCASSERT(isFull());
+
+            _down[n] = h;
+            _edge[n].set(the_edge_type, p);
+        }
+
+
+        /**
             Set a sparse edge.
                 @param  n       Which nonzero edge
                 @param  i       Index of the edge
@@ -492,6 +511,29 @@ class MEDDLY::unpacked_node {
         }
 
 
+        /**
+            Set a sparse edge.
+                @param  n       Which nonzero edge
+                @param  i       Index of the edge
+                @param  p       Raw pointer for edge value
+                @param  h       Node handle
+        */
+        inline void setSparse(unsigned n, unsigned i, const void* p,
+                node_handle h)
+        {
+            MEDDLY_DCASSERT(modparent);
+            MEDDLY_DCASSERT(_down);
+            MEDDLY_DCASSERT(_index);
+            MEDDLY_DCASSERT(_edge);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            MEDDLY_DCASSERT(isSparse());
+
+            _index[n] = i;
+            _down[n] = h;
+            _edge[n].set(the_edge_type, p);
+        }
+
+
 #ifdef ALLOW_DEPRECATED_0_17_4
         inline node_handle d(unsigned n) const
         {
@@ -500,9 +542,9 @@ class MEDDLY::unpacked_node {
 
         /** Reference to a downward pointer.
             @param  n   Which pointer.
-            @return     If this is a full reader,
+            @return     If this is a full node,
                         modify pointer with index n.
-                        If this is a sparse reader,
+                        If this is a sparse node,
                         modify the nth non-zero pointer.
         */
         inline node_handle& d_ref(unsigned n)
@@ -528,7 +570,7 @@ class MEDDLY::unpacked_node {
         }
 
         /** Modify the index of the nth non-zero pointer.
-            Use only for sparse readers.
+            Use only for sparse nodes.
         */
         inline unsigned& i_ref(unsigned n)
         {
@@ -573,6 +615,18 @@ class MEDDLY::unpacked_node {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             MEDDLY_DCASSERT(v.hasType(the_edge_type));
             _edge[n] = v;
+        }
+
+        /** Set the nth edge value from a pointer.
+            @param  n   Which edge
+            @param  p   Pointer to edge value
+        */
+        inline void setEdgeRaw(unsigned n, const void* p) {
+            MEDDLY_DCASSERT(parent);
+            MEDDLY_DCASSERT(modparent);
+            MEDDLY_DCASSERT(_edge);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            _edge[n].set(the_edge_type, p);
         }
 
         /// Set the edge value
@@ -711,23 +765,30 @@ class MEDDLY::unpacked_node {
         }
 
 #ifdef ALLOW_DEPRECATED_0_17_4
-        /// Get the number of nonzeroes of this node (sparse readers only).
+        /// Get the number of nonzeroes of this node (sparse nodes only).
         inline unsigned getNNZs() const
         {
             return size;
         }
 #endif
 
-        /// Is this a sparse reader?
+        /// Is this a sparse node?
         inline bool isSparse() const
         {
             return !is_full;
         }
 
-        /// Is this a full reader?
+        /// Is this a full node?
         inline bool isFull() const
         {
             return is_full;
+        }
+
+        /// Called by node_storage when building an unpacked
+        /// node based on how it's stored.
+        inline void bind_as_full(bool full)
+        {
+            is_full = full;
         }
 
         /// Does this node have edge values?
@@ -896,7 +957,7 @@ class MEDDLY::unpacked_node {
 
         // Set all edges to transparent
         inline void clear() {
-            clear(0, size);
+            clear(0, alloc);
         }
 
         static inline void deleteList(unpacked_node* &p) {

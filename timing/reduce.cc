@@ -70,8 +70,7 @@ void test_MT_full_Reductions(expert_forest* f, const char* what)
             std::cout.flush();
         }
         for (unsigned b=0; b<BATCHSIZE; b++) {
-            unpacked_node* un = unpacked_node::New();
-            un->bind_to_forest(f, 3, VARSIZE, true);
+            unpacked_node* un = unpacked_node::newFull(f, 3, VARSIZE);
             for (unsigned i=0; i<VARSIZE; i++) {
                 unsigned d = Equilikely(0, 4);
                 un->d_ref(i) = f->linkNode(fixed[d]);
@@ -128,8 +127,7 @@ void test_EV_full_Reductions(expert_forest* f, const char* what)
             std::cout.flush();
         }
         for (unsigned b=0; b<BATCHSIZE; b++) {
-            unpacked_node* un = unpacked_node::New();
-            un->bind_to_forest(f, 3, VARSIZE, true);
+            unpacked_node* un = unpacked_node::newFull(f, 3, VARSIZE);
             for (unsigned i=0; i<VARSIZE; i++) {
                 unsigned d = Equilikely(0, 2);
                 un->d_ref(i) = f->linkNode(fixed[d]);

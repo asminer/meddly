@@ -744,6 +744,7 @@ MEDDLY::unpacked_node* MEDDLY::unpacked_node::New(const forest* f)
         n->has_hash = false;
 #endif
         n->clear();
+        n->resize(0);
         MEDDLY_DCASSERT(n->isAttachedTo(f));
         return n;
     } else {
