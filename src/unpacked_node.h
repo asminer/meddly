@@ -103,33 +103,6 @@ class MEDDLY::unpacked_node {
         void initRedundant(const forest *f, int k, const edge_value &ev,
                 node_handle node, node_storage_flags fs);
 
-#ifdef ALLOW_DEPRECATED_0_17_4
-        inline void initRedundant(const forest *f, int k,
-                node_handle node, bool full)
-        {
-            initRedundant(f, k, node, full ? FULL_ONLY : SPARSE_ONLY);
-        }
-
-
-#ifdef REMOVE_OLD
-        template <class T>
-        inline void initRedundant(const forest *f, int k, T _ev, node_handle node,
-                bool full)
-        {
-            edge_value ev(_ev);
-            initRedundant(f, k, ev, node, full ? FULL_ONLY : SPARSE_ONLY);
-        }
-#else
-        void initRedundant(const forest *f, int k, int ev, node_handle node,
-                bool full);
-
-        void initRedundant(const forest *f, int k, long ev, node_handle node,
-                bool full);
-
-        void initRedundant(const forest *f, int k, float ev, node_handle node,
-                bool full);
-#endif
-#endif
 
         //
         // Build identity nodes
@@ -147,26 +120,6 @@ class MEDDLY::unpacked_node {
         void initIdentity(const forest *f, int k, unsigned i,
                 const edge_value &ev, node_handle node, node_storage_flags fs);
 
-#ifdef ALLOW_DEPRECATED_0_17_4
-#ifdef REMOVE_OLD
-        template <class T>
-        inline void initIdentity(const forest *f, int k, unsigned i, T _ev,
-                node_handle node, bool full)
-        {
-            edge_value ev(_ev);
-            initIdentity(f, k, i, ev, node, full ? FULL_ONLY : SPARSE_ONLY);
-        }
-#else
-        void initIdentity(const forest *f, int k, unsigned i,
-                int ev, node_handle node, bool full);
-
-        void initIdentity(const forest *f, int k, unsigned i,
-                long ev, node_handle node, bool full);
-
-        void initIdentity(const forest *f, int k, unsigned i,
-                float ev, node_handle node, bool full);
-#endif
-#endif
 
 
     public:
@@ -192,35 +145,6 @@ class MEDDLY::unpacked_node {
             return U;
         }
 
-#ifdef ALLOW_DEPRECATED_0_17_4
-        static inline unpacked_node* newRedundant(const forest *f,
-                int k, node_handle node, bool full)
-        {
-            unpacked_node* U = New(f);
-            MEDDLY_DCASSERT(U);
-            U->initRedundant(f, k, node, full);
-            return U;
-        }
-
-        static inline unpacked_node* newRedundant(const forest *f,
-                int k, long ev, node_handle node, bool full)
-        {
-            unpacked_node* U = New(f);
-            MEDDLY_DCASSERT(U);
-            U->initRedundant(f, k, ev, node, full);
-            return U;
-        }
-
-        static inline unpacked_node* newRedundant(const forest *f,
-                int k, float ev, node_handle node, bool full)
-        {
-            unpacked_node* U = New(f);
-            MEDDLY_DCASSERT(U);
-            U->initRedundant(f, k, ev, node, full);
-            return U;
-        }
-#endif
-
         static inline unpacked_node* newIdentity(const forest *f, int k,
                 unsigned i, node_handle node, node_storage_flags fs)
         {
@@ -239,35 +163,6 @@ class MEDDLY::unpacked_node {
             U->initIdentity(f, k, i, ev, node, fs);
             return U;
         }
-
-#ifdef ALLOW_DEPRECATED_0_17_4
-        static inline unpacked_node* newIdentity(const forest *f,
-                int k, unsigned i, node_handle node, bool full)
-        {
-            unpacked_node* U = New(f);
-            MEDDLY_DCASSERT(U);
-            U->initIdentity(f, k, i, node, full);
-            return U;
-        }
-
-        static inline unpacked_node* newIdentity(const forest *f,
-                int k, unsigned i, long ev, node_handle node, bool full)
-        {
-            unpacked_node* U = New(f);
-            MEDDLY_DCASSERT(U);
-            U->initIdentity(f, k, i, ev, node, full);
-            return U;
-        }
-
-        static inline unpacked_node* newIdentity(const forest *f,
-                int k, unsigned i, float ev, node_handle node, bool full)
-        {
-            unpacked_node* U = New(f);
-            MEDDLY_DCASSERT(U);
-            U->initIdentity(f, k, i, ev, node, full);
-            return U;
-        }
-#endif
 
         /** Create a zeroed-out full node */
         static inline unpacked_node* newFull(forest *f,
@@ -345,15 +240,6 @@ class MEDDLY::unpacked_node {
             memcpy(extra_unhashed, p, extra_unhashed_size);
         }
 
-#ifdef ALLOW_DEPRECATED_0_17_4
-        /// Modify a pointer to the unhashed header data
-        inline void* UHdata()
-        {
-            MEDDLY_DCASSERT(extra_unhashed);
-            return extra_unhashed;
-        }
-#endif
-
         /// Get the number of bytes of unhashed header data.
         inline unsigned UHbytes() const
         {
@@ -373,15 +259,6 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(p);
             memcpy(extra_hashed, p, extra_hashed_size);
         }
-
-#ifdef ALLOW_DEPRECATED_0_17_4
-        /// Modify a pointer to the hashed header data.
-        inline void* HHdata()
-        {
-            MEDDLY_DCASSERT(extra_hashed);
-            return extra_hashed;
-        }
-#endif
 
         /// Get the number of bytes of hashed header data.
         inline unsigned HHbytes() const
@@ -567,127 +444,6 @@ class MEDDLY::unpacked_node {
         }
 
 
-#ifdef ALLOW_DEPRECATED_0_17_4
-        inline node_handle d(unsigned n) const
-        {
-            return down(n);
-        }
-
-        /** Reference to a downward pointer.
-            @param  n   Which pointer.
-            @return     If this is a full node,
-                        modify pointer with index n.
-                        If this is a sparse node,
-                        modify the nth non-zero pointer.
-        */
-        inline node_handle& d_ref(unsigned n)
-        {
-            MEDDLY_DCASSERT(_down);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            return _down[n];
-        }
-
-        /// Set the nth pointer from E, and destroy E.
-        inline void set_d(unsigned n, dd_edge &E)
-        {
-            MEDDLY_DCASSERT(E.isAttachedTo(parent));
-            MEDDLY_DCASSERT(!hasEdges());
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            _down[n] = E.node;
-            E.node = 0; // avoid having to adjust the link count
-        }
-
-        inline unsigned i(unsigned n) const {
-            return index(n);
-        }
-
-        /** Modify the index of the nth non-zero pointer.
-            Use only for sparse nodes.
-        */
-        inline unsigned& i_ref(unsigned n)
-        {
-            MEDDLY_DCASSERT(_index);
-            MEDDLY_DCASSERT(!is_full);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            return _index[n];
-        }
-
-        /// Set the nth pointer and edge value from E, and destroy E.
-        inline void set_de(unsigned n, dd_edge &E)
-        {
-            MEDDLY_DCASSERT(E.isAttachedTo((forest*) parent));
-            MEDDLY_DCASSERT(_edge);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            _down[n] = E.node;
-            _edge[n] = E.getEdgeValue();
-            E.node = 0; // avoid having to adjust the link count
-        }
-
-        /// Get the edge value
-        template <class T>
-        inline void getEdge(unsigned i, T& val) const
-        {
-            edgeval(i).get(val);
-        }
-
-        /// Get the edge value, generic
-        inline const edge_value& getEdge(unsigned i) const
-        {
-            return edgeval(i);
-        }
-
-        /** Set the nth edge value.
-            @param  n   Which pointer
-            @param  ev  Edge value
-        */
-        inline void set_edgeval(unsigned n, const edge_value &v) {
-            MEDDLY_DCASSERT(parent);
-            MEDDLY_DCASSERT(_edge);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            MEDDLY_DCASSERT(v.hasType(the_edge_type));
-            _edge[n] = v;
-        }
-
-        /** Set the nth edge value from a pointer.
-            @param  n   Which edge
-            @param  p   Pointer to edge value
-        */
-        inline void setEdgeRaw(unsigned n, const void* p) {
-            MEDDLY_DCASSERT(parent);
-            MEDDLY_DCASSERT(_edge);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            _edge[n].set(the_edge_type, p);
-        }
-
-        /// Set the edge value
-        template <class T>
-        inline void setEdge(unsigned i, T val)
-        {
-            edge_value ev(val);
-            set_edgeval(i, ev);
-        }
-
-        // Set the edge value, generic
-        inline void setEdge(unsigned i, const edge_value &ev) {
-            set_edgeval(i, ev);
-        }
-
-        /// Get the edge value, as an integer.
-        inline long ei(unsigned i) const
-        {
-            long ev;
-            getEdge(i, ev);
-            return ev;
-        }
-
-        /// Get the edge value, as a float.
-        inline float ef(unsigned i) const
-        {
-            float ev;
-            getEdge(i, ev);
-            return ev;
-        }
-#endif
 
     public:
         //
@@ -755,22 +511,6 @@ class MEDDLY::unpacked_node {
             return edgeval(size - 1);
         }
 
-#ifdef ALLOW_DEPRECATED_0_17_4
-        /// Get the extensible edge value, as a long
-        inline long ext_ei() const
-        {
-            MEDDLY_DCASSERT(isExtensible());
-            return ei(size - 1);
-        }
-
-        /// Get the extensible edge value, as a float
-        inline float ext_ef() const
-        {
-            MEDDLY_DCASSERT(isExtensible());
-            return ef(size - 1);
-        }
-#endif
-
     public:
         //
         // Access of other information
@@ -793,14 +533,6 @@ class MEDDLY::unpacked_node {
         {
             return size;
         }
-
-#ifdef ALLOW_DEPRECATED_0_17_4
-        /// Get the number of nonzeroes of this node (sparse nodes only).
-        inline unsigned getNNZs() const
-        {
-            return size;
-        }
-#endif
 
         /// Is this a sparse node?
         inline bool isSparse() const
@@ -893,30 +625,6 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(ns <= size);
             size = ns;
         }
-
-#ifdef ALLOW_DEPRECATED_0_17_4
-        /// Shrink the size of a (truncated) full node
-        inline void shrinkFull(unsigned ns)
-        {
-            shrink(ns);
-        }
-
-
-        /// Shrink the size of a sparse node
-        inline void shrinkSparse(unsigned ns)
-        {
-            shrink(ns);
-        }
-
-
-        /// Called by node_storage when building an unpacked
-        /// node based on how it's stored.
-        inline void bind_as_full(bool full)
-        {
-            is_full = full;
-        }
-
-#endif
 
         /// Set the node as sparse.
         inline void setSparse() {
@@ -1062,7 +770,296 @@ class MEDDLY::unpacked_node {
 #endif
 
         edge_type the_edge_type;
-//         terminal_type the_terminal_type;
+
+
+/*
+    OLD interface below here
+*/
+
+#ifdef ALLOW_DEPRECATED_0_17_4
+
+public:
+        inline void initRedundant(const forest *f, int k,
+                node_handle node, bool full)
+        {
+            initRedundant(f, k, node, full ? FULL_ONLY : SPARSE_ONLY);
+        }
+
+#ifdef REMOVE_OLD
+        template <class T>
+        inline void initRedundant(const forest *f, int k, T _ev, node_handle node,
+                bool full)
+        {
+            edge_value ev(_ev);
+            initRedundant(f, k, ev, node, full ? FULL_ONLY : SPARSE_ONLY);
+        }
+
+        template <class T>
+        inline void initIdentity(const forest *f, int k, unsigned i, T _ev,
+                node_handle node, bool full)
+        {
+            edge_value ev(_ev);
+            initIdentity(f, k, i, ev, node, full ? FULL_ONLY : SPARSE_ONLY);
+        }
+#else
+        void initRedundant(const forest *f, int k, int ev, node_handle node,
+                bool full);
+
+        void initRedundant(const forest *f, int k, long ev, node_handle node,
+                bool full);
+
+        void initRedundant(const forest *f, int k, float ev, node_handle node,
+                bool full);
+
+        void initIdentity(const forest *f, int k, unsigned i,
+                int ev, node_handle node, bool full);
+
+        void initIdentity(const forest *f, int k, unsigned i,
+                long ev, node_handle node, bool full);
+
+        void initIdentity(const forest *f, int k, unsigned i,
+                float ev, node_handle node, bool full);
+#endif
+
+        static inline unpacked_node* newRedundant(const forest *f,
+                int k, node_handle node, bool full)
+        {
+            unpacked_node* U = New(f);
+            MEDDLY_DCASSERT(U);
+            U->initRedundant(f, k, node, full);
+            return U;
+        }
+
+        static inline unpacked_node* newRedundant(const forest *f,
+                int k, long ev, node_handle node, bool full)
+        {
+            unpacked_node* U = New(f);
+            MEDDLY_DCASSERT(U);
+            U->initRedundant(f, k, ev, node, full);
+            return U;
+        }
+
+        static inline unpacked_node* newRedundant(const forest *f,
+                int k, float ev, node_handle node, bool full)
+        {
+            unpacked_node* U = New(f);
+            MEDDLY_DCASSERT(U);
+            U->initRedundant(f, k, ev, node, full);
+            return U;
+        }
+
+        static inline unpacked_node* newIdentity(const forest *f,
+                int k, unsigned i, node_handle node, bool full)
+        {
+            unpacked_node* U = New(f);
+            MEDDLY_DCASSERT(U);
+            U->initIdentity(f, k, i, node, full);
+            return U;
+        }
+
+        static inline unpacked_node* newIdentity(const forest *f,
+                int k, unsigned i, long ev, node_handle node, bool full)
+        {
+            unpacked_node* U = New(f);
+            MEDDLY_DCASSERT(U);
+            U->initIdentity(f, k, i, ev, node, full);
+            return U;
+        }
+
+        static inline unpacked_node* newIdentity(const forest *f,
+                int k, unsigned i, float ev, node_handle node, bool full)
+        {
+            unpacked_node* U = New(f);
+            MEDDLY_DCASSERT(U);
+            U->initIdentity(f, k, i, ev, node, full);
+            return U;
+        }
+
+        /// Modify a pointer to the unhashed header data
+        inline void* UHdata()
+        {
+            MEDDLY_DCASSERT(extra_unhashed);
+            return extra_unhashed;
+        }
+
+        /// Modify a pointer to the hashed header data.
+        inline void* HHdata()
+        {
+            MEDDLY_DCASSERT(extra_hashed);
+            return extra_hashed;
+        }
+
+
+        inline node_handle d(unsigned n) const
+        {
+            return down(n);
+        }
+
+        /** Reference to a downward pointer.
+            @param  n   Which pointer.
+            @return     If this is a full node,
+                        modify pointer with index n.
+                        If this is a sparse node,
+                        modify the nth non-zero pointer.
+        */
+        inline node_handle& d_ref(unsigned n)
+        {
+            MEDDLY_DCASSERT(_down);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            return _down[n];
+        }
+
+        /// Set the nth pointer from E, and destroy E.
+        inline void set_d(unsigned n, dd_edge &E)
+        {
+            MEDDLY_DCASSERT(E.isAttachedTo(parent));
+            MEDDLY_DCASSERT(!hasEdges());
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            _down[n] = E.node;
+            E.node = 0; // avoid having to adjust the link count
+        }
+
+        inline unsigned i(unsigned n) const {
+            return index(n);
+        }
+
+        /** Modify the index of the nth non-zero pointer.
+            Use only for sparse nodes.
+        */
+        inline unsigned& i_ref(unsigned n)
+        {
+            MEDDLY_DCASSERT(_index);
+            MEDDLY_DCASSERT(!is_full);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            return _index[n];
+        }
+
+        /// Set the nth pointer and edge value from E, and destroy E.
+        inline void set_de(unsigned n, dd_edge &E)
+        {
+            MEDDLY_DCASSERT(E.isAttachedTo((forest*) parent));
+            MEDDLY_DCASSERT(_edge);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            _down[n] = E.node;
+            _edge[n] = E.getEdgeValue();
+            E.node = 0; // avoid having to adjust the link count
+        }
+
+        /// Get the edge value
+        template <class T>
+        inline void getEdge(unsigned i, T& val) const
+        {
+            edgeval(i).get(val);
+        }
+
+        /// Get the edge value, generic
+        inline const edge_value& getEdge(unsigned i) const
+        {
+            return edgeval(i);
+        }
+
+        /** Set the nth edge value.
+            @param  n   Which pointer
+            @param  ev  Edge value
+        */
+        inline void set_edgeval(unsigned n, const edge_value &v) {
+            MEDDLY_DCASSERT(parent);
+            MEDDLY_DCASSERT(_edge);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            MEDDLY_DCASSERT(v.hasType(the_edge_type));
+            _edge[n] = v;
+        }
+
+        /** Set the nth edge value from a pointer.
+            @param  n   Which edge
+            @param  p   Pointer to edge value
+        */
+        inline void setEdgeRaw(unsigned n, const void* p) {
+            MEDDLY_DCASSERT(parent);
+            MEDDLY_DCASSERT(_edge);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            _edge[n].set(the_edge_type, p);
+        }
+
+        /// Set the edge value
+        template <class T>
+        inline void setEdge(unsigned i, T val)
+        {
+            edge_value ev(val);
+            set_edgeval(i, ev);
+        }
+
+        // Set the edge value, generic
+        inline void setEdge(unsigned i, const edge_value &ev) {
+            set_edgeval(i, ev);
+        }
+
+        /// Get the edge value, as an integer.
+        inline long ei(unsigned i) const
+        {
+            long ev;
+            getEdge(i, ev);
+            return ev;
+        }
+
+        /// Get the edge value, as a float.
+        inline float ef(unsigned i) const
+        {
+            float ev;
+            getEdge(i, ev);
+            return ev;
+        }
+
+
+        /// Get the extensible edge value, as a long
+        inline long ext_ei() const
+        {
+            MEDDLY_DCASSERT(isExtensible());
+            return ei(size - 1);
+        }
+
+        /// Get the extensible edge value, as a float
+        inline float ext_ef() const
+        {
+            MEDDLY_DCASSERT(isExtensible());
+            return ef(size - 1);
+        }
+
+        /// Get the number of nonzeroes of this node (sparse nodes only).
+        inline unsigned getNNZs() const
+        {
+            return size;
+        }
+
+
+        /// Shrink the size of a (truncated) full node
+        inline void shrinkFull(unsigned ns)
+        {
+            shrink(ns);
+        }
+
+
+        /// Shrink the size of a sparse node
+        inline void shrinkSparse(unsigned ns)
+        {
+            shrink(ns);
+        }
+
+
+        /// Called by node_storage when building an unpacked
+        /// node based on how it's stored.
+        inline void bind_as_full(bool full)
+        {
+            is_full = full;
+        }
+
+#endif
+
+
+
+
+
+
 
 
 };
