@@ -73,7 +73,7 @@ void test_MT_full_Reductions(expert_forest* f, const char* what)
             unpacked_node* un = unpacked_node::newFull(f, 3, VARSIZE);
             for (unsigned i=0; i<VARSIZE; i++) {
                 unsigned d = Equilikely(0, 4);
-                un->d_ref(i) = f->linkNode(fixed[d]);
+                un->setFull(i, f->linkNode(fixed[d]));
             }
             roots[b] = f->createReducedNode(-1, un);
         } // for b
@@ -129,9 +129,9 @@ void test_EV_full_Reductions(expert_forest* f, const char* what)
         for (unsigned b=0; b<BATCHSIZE; b++) {
             unpacked_node* un = unpacked_node::newFull(f, 3, VARSIZE);
             for (unsigned i=0; i<VARSIZE; i++) {
-                unsigned d = Equilikely(0, 2);
-                un->d_ref(i) = f->linkNode(fixed[d]);
-                un->setEdge(i, long(Equilikely(0, 10)));
+                const unsigned d = Equilikely(0, 2);
+                const long ev = long(Equilikely(0, 10));
+                un->setFull(i, ev, f->linkNode(fixed[d]));
             }
             long x;
             f->createReducedNode(-1, un, x, roots[b]);

@@ -191,13 +191,13 @@ void MEDDLY::dot_maker::doneGraph()
             for (size_t i=0; i<nodeList.size(); i++) {
                 For->unpackNode(M, nodeList[i], SPARSE_ONLY);
 
-                const double nodewidth = 0.25 * M->getNNZs();
+                const double nodewidth = 0.25 * M->getSize();
                 outfile << "        N" << nodeList[i] << " [";
-                if (M->getNNZs()) outfile << "width=" << nodewidth << ", ";
+                if (M->getSize()) outfile << "width=" << nodewidth << ", ";
                 outfile << "label=\"";
-                for (unsigned j=0; j<M->getNNZs(); j++) {
+                for (unsigned j=0; j<M->getSize(); j++) {
                     if (j) outfile << "|";
-                    outfile << "<" << j << ">" << M->i(j);
+                    outfile << "<" << j << ">" << M->index(j);
                 }
                 outfile << "\"];\n";
             }
@@ -209,12 +209,12 @@ void MEDDLY::dot_maker::doneGraph()
             for (size_t i=0; i<nodeList.size(); i++) {
                 For->unpackNode(M, nodeList[i], SPARSE_ONLY);
 
-                for (unsigned j=0; j<M->getNNZs(); j++) {
+                for (unsigned j=0; j<M->getSize(); j++) {
                     outfile << "        N" << nodeList[i] << ":" << j << " -> ";
-                    if (M->d(j)>0) {
-                        outfile << "N" << M->d(j);
+                    if (M->down(j)>0) {
+                        outfile << "N" << M->down(j);
                     } else {
-                        outfile << "T" << -M->d(j);
+                        outfile << "T" << -M->down(j);
                     }
                     outfile << " [samehead = true];\n";
                 }

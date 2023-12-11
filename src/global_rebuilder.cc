@@ -101,24 +101,24 @@ int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) 
     MEDDLY_DCASSERT(size == 2);
     unpacked_node *nr = _source->newUnpacked(pv, FULL_ONLY);
     for(int i = 1; i < size; i++) {
-      if(nr->d(i) != nr->d(0)) {
+      if(nr->down(i) != nr->down(0)) {
         if(var == top_var) {
           return top_var;
         }
         else {
           MEDDLY_DCASSERT(!isLevelAbove(_target->getLevelByVar(var), level));
           depended.emplace(var);
-          if(!_source->isTerminalNode(nr->d(i)) && visited.find(nr->d(i)) == visited.end()) {
-            s.emplace(nr->d(i));
-            visited.emplace(nr->d(i));
+          if(!_source->isTerminalNode(nr->down(i)) && visited.find(nr->down(i)) == visited.end()) {
+            s.emplace(nr->down(i));
+            visited.emplace(nr->down(i));
           }
         }
       }
     }
 
-    if(!_source->isTerminalNode(nr->d(0)) && visited.find(nr->d(0)) == visited.end()) {
-      s.emplace(nr->d(0));
-      visited.emplace(nr->d(0));
+    if(!_source->isTerminalNode(nr->down(0)) && visited.find(nr->down(0)) == visited.end()) {
+      s.emplace(nr->down(0));
+      visited.emplace(nr->down(0));
     }
 
     unpacked_node::Recycle(nr);
@@ -204,7 +204,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::transform(node_handle p,
 //    MEDDLY_DCASSERT(_target->getLevelByVar(top_pr) < _target->getLevelByVar(top_var));
 
     _computed_restrict.clear();
-    nb->d_ref(i) = transform(pr, target_level - 1, pa);
+    nb->setFull(i, transform(pr, target_level - 1, pa));
     _source->unlinkNode(pr);
     pa.pop_back();
   }
@@ -251,7 +251,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::restrict(node_handle p,
       unpacked_node* nb = unpacked_node::newFull(_source, level1, size);
       for (int i = 0; i < size; i++) {
         MEDDLY_DCASSERT(size==2);
-        nb->d_ref(i) = restrict(nr->d(i), pa);
+        nb->setFull(i, restrict(nr->down(i), pa));
       }
       unpacked_node::Recycle(nr);
 
@@ -304,7 +304,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::restrict(node_handle p,
 //			int size = _source->getVariableSize(_source->getVarByLevel(level1));
 //			node_builder& nb = _source->useNodeBuilder(level1, size);
 //			for(int i=0; i<size; i++) {
-//				if(restrict_exist(nr->d(i), pa, start, result)) {
+//				if(restrict_exist(nr->down(i), pa, start, result)) {
 //					nb.d(i) = result;
 //				}
 //				else {
@@ -365,11 +365,11 @@ bool MEDDLY::global_rebuilder::restrict_exist(node_handle p,
       int size = _source->getVariableSize(_source->getVarByLevel(level1));
       unpacked_node* nb = unpacked_node::newFull(_source, level1, size);
       for (int i = 0; i < size; i++) {
-        if (restrict_exist(nr->d(i), pa, start, result)) {
-          nb->d_ref(i) = result;
+        if (restrict_exist(nr->down(i), pa, start, result)) {
+          nb->setFull(i, result);
         } else {
           for (int j = 0; j < i; j++) {
-            _source->unlinkNode(nb->d(j));
+            _source->unlinkNode(nb->down(j));
           }
           unpacked_node::Recycle(nr);
           unpacked_node::Recycle(nb);
@@ -574,16 +574,16 @@ int MEDDLY::global_rebuilder::TopDownSignatureGenerator::signature(
     unpacked_node* nr =
         source->newUnpacked(pv, FULL_ONLY);
     for (int i = 0; i < size; i++) {
-      if (source->isTerminalNode(nr->d(i))) {
-        if (nr->d(i) != 0) {
+      if (source->isTerminalNode(nr->down(i))) {
+        if (nr->down(i) != 0) {
           sig += (i == 0 ? 1 - PRIMES[level] : PRIMES[level]) * values[pv];
         }
       } else {
-        values[nr->d(i)] += (i == 0 ? 1 - PRIMES[level] : PRIMES[level])
+        values[nr->down(i)] += (i == 0 ? 1 - PRIMES[level] : PRIMES[level])
             * values[pv];
-        if (visited.find(nr->d(i)) == visited.end()) {
-          visited.emplace(nr->d(i));
-          s.emplace(nr->d(i));
+        if (visited.find(nr->down(i)) == visited.end()) {
+          visited.emplace(nr->down(i));
+          s.emplace(nr->down(i));
         }
       }
     }
@@ -667,7 +667,7 @@ int MEDDLY::global_rebuilder::BottomUpSignatureGenerator::rec_signature(node_han
 
   unpacked_node* nr = source->newUnpacked(p, FULL_ONLY);
   for (int i = 0; i < size; i++) {
-    sig += (i == 0 ? 1 - PRIMES[level] : PRIMES[level]) * rec_signature(nr->d(i));
+    sig += (i == 0 ? 1 - PRIMES[level] : PRIMES[level]) * rec_signature(nr->down(i));
   }
   unpacked_node::Recycle(nr);
 

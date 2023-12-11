@@ -68,7 +68,7 @@ class MEDDLY::ev_forest : public expert_forest {
       if (!isIdentityReduced()) return false;
       if (i<0) return false;
       return (nb.down(unsigned(i)) != 0)
-          &&  OPERATION::isIdentityEdge(nb.edgeval(i));
+          &&  OPERATION::isIdentityEdge(nb.edgeval(unsigned(i)));
     }
 
   // ------------------------------------------------------------
@@ -86,7 +86,7 @@ class MEDDLY::ev_forest : public expert_forest {
     /// make a node at the top level
     template <class OPERATION, typename TYPE>
     inline void makeNodeAtTop(TYPE &ev, node_handle &ed) {
-      makeNodeAtLevel<OPERATION>(getDomain()->getNumVariables(), ev, ed);
+      makeNodeAtLevel<OPERATION>((int) getDomain()->getNumVariables(), ev, ed);
     }
 
     /**

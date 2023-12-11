@@ -185,6 +185,7 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
 }
 
 
+#ifdef ALLOW_DEPRECATED_0_17_4
 #ifndef REMOVE_OLD
 
 /*
@@ -264,6 +265,7 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
 }
 
 #endif
+#endif
 
 void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
   unsigned i, node_handle node, node_storage_flags fs)
@@ -311,6 +313,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k, unsigned i,
     }
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_4
 #ifndef REMOVE_OLD
 
 void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
@@ -392,6 +395,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
 }
 
 #endif
+#endif
 
 /*
     Display methods
@@ -455,14 +459,15 @@ void MEDDLY::unpacked_node::write(output &s, const std::vector <unsigned> &map)
     s.put('\t');
     for (unsigned z=0; z<size; z++) {
         s.put(' ');
-        if (d(z) <= 0) {
+        const long d = down(z);
+        if (d <= 0) {
             // terminal
-            terminal t(parent->getTerminalType(), d(z));
+            terminal t(parent->getTerminalType(), d);
             t.write(s);
         } else {
             // non-terminal
             s.put("n ");
-            s.put(map[d(z)]);
+            s.put(map[(unsigned long) d]);
         }
     }
 
@@ -508,7 +513,7 @@ void MEDDLY::unpacked_node::read(input &s, const std::vector<node_handle> &map)
             if (ndx < 0) {
                 throw error(error::INVALID_FILE, __FILE__, __LINE__);
             }
-            i_ref(z) = unsigned(ndx);
+            _index[z] = unsigned(ndx);
         }
     }
 
@@ -530,13 +535,13 @@ void MEDDLY::unpacked_node::read(input &s, const std::vector<node_handle> &map)
             if (d < 0) {
                 throw error(error::INVALID_FILE, __FILE__, __LINE__);
             }
-            d_ref(z) = modparent->linkNode(map[d]);
+            _down[z] = modparent->linkNode(map[(unsigned long) d]);
         } else {
             // terminal
             s.unget(c);
             terminal t;
             t.read(s);
-            d_ref(z) = t.getHandle();
+            _down[z] = t.getHandle();
         }
     }
 
@@ -609,7 +614,7 @@ void MEDDLY::unpacked_node::computeHash()
         }
     }
 
-    h = s.finish();
+    the_hash = s.finish();
 #ifdef DEVELOPMENT_CODE
     has_hash = true;
 #endif
@@ -640,14 +645,14 @@ void MEDDLY::unpacked_node::trim()
             modparent->unlinkNode(_down[z]);
             z--;
         }
-        shrinkSparse(z+1);
+        shrink(z+1);
     } else {
         unsigned z = size-1;
         while (z && (_down[z-1] == _down[z])) {
             modparent->unlinkNode(_down[z]);
             z--;
         }
-        shrinkFull(z+1);
+        shrink(z+1);
     }
 
     MEDDLY_DCASSERT(isExtensible() && isTrim());

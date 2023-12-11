@@ -79,9 +79,9 @@ class MEDDLY::evmxd_forest : public ev_forest {
           MEDDLY_DCASSERT(DONT_CARE == vlist[i]);
           if (isIdentityReduced()) continue;
           // Build an identity node by hand
-          int sz = getLevelSize(i);
+          unsigned sz = unsigned(getLevelSize(i));
           unpacked_node* nb = unpacked_node::newFull(this, i, sz);
-          for (int v=0; v<sz; v++) {
+          for (unsigned v=0; v<sz; v++) {
             unpacked_node* nbp = unpacked_node::newSparse(this, -i, 1);
             nbp->setSparse(0, v, ev, linkNode(ed));
             TYPE pev;

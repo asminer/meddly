@@ -78,7 +78,7 @@ size_t MEDDLY::node_marker::countNonzeroEdges() const
     while( (i=marked.firstOne(i+1)) < marked.getSize() )
     {
         For->unpackNode(M, i, SPARSE_ONLY);
-        ec += M->getNNZs();
+        ec += M->getSize();
     }
     unpacked_node::Recycle(M);
     return ec;
@@ -163,10 +163,10 @@ void MEDDLY::node_marker::getTerminals(std::set <node_handle> &v) const
     while( (i=marked.firstOne(i+1)) < marked.getSize() )
     {
         For->unpackNode(M, i, SPARSE_ONLY);
-        for (unsigned j=0; j<M->getNNZs(); j++) {
-            if (M->d(j)>0) continue;
-            // M->d(j) is a terminal node handle
-            v.insert(M->d(j));
+        for (unsigned j=0; j<M->getSize(); j++) {
+            if (M->down(j)>0) continue;
+            // M->down(j) is a terminal node handle
+            v.insert(M->down(j));
         }
     }
 

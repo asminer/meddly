@@ -65,17 +65,17 @@ class MEDDLY::evmdd_forest : public ev_forest {
           if (DONT_CARE == vlist[i]) {
             // make a redundant node
             if (isFullyReduced()) continue;
-            int sz = getLevelSize(i);
+            unsigned sz = (unsigned) getLevelSize(i);
             unpacked_node* nb = unpacked_node::newFull(this, i, sz);
             nb->setFull(0, ev, ed);
-            for (int v=1; v<sz; v++) {
+            for (unsigned v=1; v<sz; v++) {
               nb->setFull(v, ev, linkNode(ed));
             }
             createReducedNode(-1, nb, ev, ed);
           } else {
             // make a singleton node
             unpacked_node* nb = unpacked_node::newSparse(this, i, 1);
-            nb->setSparse(0, vlist[i], ev, ed);
+            nb->setSparse(0, unsigned(vlist[i]), ev, ed);
             createReducedNode(-1, nb, ev, ed);
           }
         } // for i

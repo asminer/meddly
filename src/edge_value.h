@@ -245,6 +245,27 @@ class MEDDLY::edge_value {
         }
 
 
+        //
+        // Add to the edge value
+        //
+
+        inline void add(int v) {
+            MEDDLY_DCASSERT(isInt());
+            ev_int += v;
+        }
+        inline void add(long v) {
+            MEDDLY_DCASSERT(isLong());
+            ev_long += v;
+        }
+        inline void add(float v) {
+            MEDDLY_DCASSERT(isFloat());
+            ev_float += v;
+        }
+        inline void add(double v) {
+            MEDDLY_DCASSERT(isDouble());
+            ev_double += v;
+        }
+
 
         //
         // Equality checks

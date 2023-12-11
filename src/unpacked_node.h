@@ -410,6 +410,18 @@ class MEDDLY::unpacked_node {
         }
 
 
+        /** Add to an edge value.
+            @param  n       Which pointer
+            @param  delta   Value to add
+        */
+        template <class T>
+        inline void addToEdge(unsigned n, T v) {
+            MEDDLY_DCASSERT(_edge);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            _edge[n].add(v);
+        }
+
+
         /**
             Set a full edge.
                 @param  n       Which pointer
@@ -791,7 +803,7 @@ class MEDDLY::unpacked_node {
 #ifdef DEVELOPMENT_CODE
             MEDDLY_DCASSERT(has_hash);
 #endif
-            return h;
+            return the_hash;
         }
 
         /// Compute the node's hash
@@ -839,6 +851,11 @@ class MEDDLY::unpacked_node {
         inline void resize(unsigned ns) {
             size = ns;
             if (ns > alloc) expand(ns);
+        }
+
+        inline void resize(int ns) {
+            MEDDLY_DCASSERT(ns>=0);
+            resize(unsigned(ns));
         }
 
         /// Shrink the size of a node
@@ -992,7 +1009,7 @@ class MEDDLY::unpacked_node {
         int level;
 
         /// Hash of the node
-        unsigned h;
+        unsigned the_hash;
 
         /// FID of the parent
         unsigned pFID;

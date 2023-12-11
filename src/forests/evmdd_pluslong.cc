@@ -163,7 +163,7 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
     MEDDLY_DCASSERT(nr->getSize() == hsize);
 
     for (int j = 0; j < hsize; j++) {
-      if (isLevelAbove(getNodeLevel(nr->d(j)), level - 1)) {
+      if (isLevelAbove(getNodeLevel(nr->down(j)), level - 1)) {
         // Remove the nodes corresponding to functions that
         // are independent of the variable to be moved up
         hnodes[num++] = hnodes[i];
@@ -197,23 +197,23 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
 
     unpacked_node* high_nb = unpacked_node::newFull(this, level + 1, lsize);
     for (int j = 0; j < hsize; j++) {
-      long ev1 = high_nr->ei(j);
+      long ev1 = high_nr->edgeval(j).getLong();
       MEDDLY_DCASSERT(ev1 >= 0);
 
-      if (isLevelAbove(level, getNodeLevel(high_nr->d(j)))) {
+      if (isLevelAbove(level, getNodeLevel(high_nr->down(j)))) {
         for (int k = 0; k < lsize; k++) {
-          children[j][k] = high_nr->d(j);
+          children[j][k] = high_nr->down(j);
           sum_evs[j][k] = ev1;
         }
       }
       else {
-        unpacked_node* nr = newUnpacked(high_nr->d(j), FULL_ONLY);
+        unpacked_node* nr = newUnpacked(high_nr->down(j), FULL_ONLY);
 
         MEDDLY_DCASSERT(nr->getSize() == lsize);
         for (int k = 0; k < lsize; k++) {
-          children[j][k] = nr->d(k);
+          children[j][k] = nr->down(k);
 
-          long ev2 = nr->ei(k);
+          long ev2 = nr->edgeval(k).getLong();
           MEDDLY_DCASSERT(ev2 >= 0);
 
           sum_evs[j][k] = ev1 + ev2;
@@ -225,14 +225,16 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
     for (int j = 0; j < lsize; j++) {
       unpacked_node* low_nb = unpacked_node::newFull(this, level, hsize);
       for (int k = 0; k < hsize; k++) {
-        low_nb->d_ref(k) = linkNode(children[k][j]);
-        low_nb->setEdge(k, sum_evs[k][j]);
+        low_nb->setFull(k, sum_evs[k][j], linkNode(children[k][j]));
+        // low_nb->d_ref(k) = linkNode(children[k][j]);
+        // low_nb->setEdge(k, sum_evs[k][j]);
       }
       node_handle node = 0;
       long ev = 0;
       createReducedNode(-1, low_nb, ev, node);
-      high_nb->d_ref(j) = node;
-      high_nb->setEdge(j, ev);
+      high_nb->setFull(j, ev, node);
+      // high_nb->d_ref(j) = node;
+      // high_nb->setEdge(j, ev);
     }
 
     unpacked_node::Recycle(high_nr);
@@ -283,13 +285,13 @@ void MEDDLY::evmdd_pluslong::showEdge(output &s, const edge_value &ev,
 void MEDDLY::evmdd_pluslong::normalize(unpacked_node &nb, long& ev) const
 {
   long minindex = -1;
-  int stop = nb.isSparse() ? nb.getNNZs() : nb.getSize();
-  for (int i = 0; i < stop; i++) {
-    if (0 == nb.d(i)) {
+  for (unsigned i = 0; i < nb.getSize(); i++) {
+    if (0 == nb.down(i)) {
       continue;
     }
-    if ((minindex < 0) || (nb.ei(i) < nb.ei(minindex))) {
+    if ((minindex < 0) || (nb.edgeval(i).getLong() < ev)) {
       minindex = i;
+      ev = nb.edgeval(i).getLong();
     }
   }
   if (minindex < 0) {
@@ -297,15 +299,11 @@ void MEDDLY::evmdd_pluslong::normalize(unpacked_node &nb, long& ev) const
     ev = 0;
     return;
   }
-  ev = nb.ei(minindex);
-  for (int i = 0; i < stop; i++) {
-    if (0 == nb.d(i)) {
+  for (unsigned i = 0; i < nb.getSize(); i++) {
+    if (0 == nb.down(i)) {
       continue;
     }
-    long temp;
-    nb.getEdge(i, temp);
-    temp -= ev;
-    nb.setEdge(i, temp);
+    nb.addToEdge(i, -ev);
   }
 }
 
@@ -370,12 +368,13 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::next()
   node_handle down = 0;
   for (k=1; k<=maxLevel; k++) {
     nzp[k]++;
-    if (nzp[k] < path[k].getNNZs()) {
-      index[k] = path[k].i(nzp[k]);
-      down = path[k].d(nzp[k]);
+    if (nzp[k] < path[k].getSize()) {
+      index[k] = path[k].index(nzp[k]);
+      down = path[k].down(nzp[k]);
       MEDDLY_DCASSERT(down);
-      long ev = Inf<long>();
-      path[k].getEdge(nzp[k], ev);
+      const long ev = path[k].edgeval(nzp[k]).getLong();
+      // long ev = Inf<long>();
+      // path[k].getEdge(nzp[k], ev);
       acc_evs[k-1] = acc_evs[k] + ev;
       break;
     }
@@ -411,10 +410,11 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::first(int k, node_handle down)
         F->unpackNode(path+k, down, SPARSE_ONLY);
     }
     nzp[k] = 0;
-    index[k] = path[k].i(0);
-    down = path[k].d(0);
-    long ev = Inf<long>();
-    path[k].getEdge(0, ev);
+    index[k] = path[k].index(0);
+    down = path[k].down(0);
+    // long ev = Inf<long>();
+    // path[k].getEdge(0, ev);
+    const long ev = path[k].edgeval(0).getLong();
     acc_evs[k-1] = acc_evs[k] + ev;
   }
   // save the terminal value
@@ -471,13 +471,13 @@ void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, long index, int*
     // Find largest i such that edge value i is not greater than index
     e[var] = 0;
     p = 0;
-    for (int z = R->getNNZs() - 1; z >= 0; z--) {
-      if (index < R->ei(z)) {
+    for (int z = R->getSize() - 1; z >= 0; z--) {
+      if (index < R->edgeval(z).getLong()) {
         continue;
       }
-      e[var] = R->i(z);
-      p = R->d(z);
-      index -= R->ei(z);
+      e[var] = R->index(z);
+      p = R->down(z);
+      index -= R->edgeval(z).getLong();
       break;
     } // for z
   } // for k
@@ -507,7 +507,7 @@ void MEDDLY::evmdd_index_set_long::readHeaderInfo(input &s,
         unpacked_node &nb) const
 {
     long card = s.get_integer();
-    static_cast<long*>(nb.UHdata())[0] = card;
+    nb.setUHdata(&card);
 #ifdef DEBUG_READ_DD
     std::cerr << "    got cardinality " << card << "\n";
 #endif

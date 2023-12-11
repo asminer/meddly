@@ -538,7 +538,7 @@ void MEDDLY::node_headers::dumpInternal(output &s) const
         s << "    First " << i << "-byte unused node index: "
           << a_unused[i] << "\n";
     }
-    int awidth = digits(a_last);
+    int awidth = (int) digits(a_last);
     s << "    Node# :  ";
     for (unsigned long p=1; p<=a_last; p++) {
         if (p>1) s.put(' ');
