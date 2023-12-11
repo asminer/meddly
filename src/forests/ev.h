@@ -49,15 +49,15 @@ class MEDDLY::ev_forest : public expert_forest {
     inline bool isRedundantTempl(const unpacked_node &nb) const {
       if (isQuasiReduced()) return false;
       if (nb.getLevel() < 0 && isIdentityReduced()) return false;
-      unsigned rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
+      const unsigned rawsize = nb.getSize();
       if (rawsize < unsigned(getLevelSize(nb.getLevel()))) return false;
-      node_handle common = nb.d(0);
+      node_handle common = nb.down(0);
       for (unsigned i=1; i<rawsize; i++) {
-        if (nb.d(i) != common)  return false;
+        if (nb.down(i) != common)  return false;
       }
       // This might be expensive, so split the loops to cheapest first
       for (unsigned i=0; i<rawsize; i++) {
-        if (!OPERATION::isIdentityEdge(nb.getEdge(i))) return false;
+        if (!OPERATION::isIdentityEdge(nb.edgeval(i))) return false;
       }
       return true;
     }
@@ -67,8 +67,8 @@ class MEDDLY::ev_forest : public expert_forest {
       if (nb.getLevel() > 0) return false;
       if (!isIdentityReduced()) return false;
       if (i<0) return false;
-      return (nb.d(unsigned(i)) != 0)
-          &&  OPERATION::isIdentityEdge(nb.getEdge(i));
+      return (nb.down(unsigned(i)) != 0)
+          &&  OPERATION::isIdentityEdge(nb.edgeval(i));
     }
 
   // ------------------------------------------------------------
@@ -147,8 +147,7 @@ class MEDDLY::ev_forest : public expert_forest {
         t.setOmega();
         node_handle ed = t.getHandle();
         makeNodeAtLevel<OPERATION, T>(km1, ev, ed);
-        nb->d_ref(i) = ed;
-        nb->setEdge(i, ev);
+        nb->setFull(i, ev, ed);
       }
 
       /*
@@ -221,14 +220,12 @@ namespace MEDDLY {
         node_handle sd;
         int si = getSingletonIndex(ed, sd);
         for (unsigned i = 0; i < sz; i++) {
-          nb->d_ref(i) = linkNode( (si == i) ? sd : ed );
-          nb->setEdge(i, ev);
+          nb->setFull(i, ev, linkNode( (si == i) ? sd : ed ) );
         }
       } else {
         // No identity reduction possible.
         for (unsigned i = 0; i < sz; i++) {
-          nb->d_ref(i) = linkNode(ed);
-          nb->setEdge(i, ev);
+          nb->setFull(i, ev, linkNode(ed));
         }
       }
 

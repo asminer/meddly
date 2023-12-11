@@ -124,7 +124,7 @@ class MEDDLY::mt_forest : public expert_forest {
       unpacked_node* nb = unpacked_node::newFull(this, k, sz);
       for (unsigned i=0; i<sz; i++) {
         terminal t(vals ? vals[i] : T(i));
-        nb->d_ref(i) = makeNodeAtLevel(km1, t.getHandle());
+        nb->setFull(i, makeNodeAtLevel(km1, t.getHandle()));
       }
 
       /*

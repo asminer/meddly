@@ -403,8 +403,13 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::first(int k, node_handle down)
     MEDDLY_DCASSERT(down);
     int kdn = F->getNodeLevel(down);
     MEDDLY_DCASSERT(kdn <= k);
-    if (kdn < k)  path[k].initRedundant(F, k, 0, down, false);
-    else          F->unpackNode(path+k, down, SPARSE_ONLY);
+    if (kdn < k)  {
+        edge_value ev(0L);
+        path[k].initRedundant(F, k, ev, down, SPARSE_ONLY);
+    }
+    else {
+        F->unpackNode(path+k, down, SPARSE_ONLY);
+    }
     nzp[k] = 0;
     index[k] = path[k].i(0);
     down = path[k].d(0);

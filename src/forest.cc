@@ -939,9 +939,9 @@ void MEDDLY::expert_forest::validateIncounts(bool exact)
 
     // add to reference counts
     for (int z=0; z<P.getNNZs(); z++) {
-      if (isTerminalNode(P.d(z))) continue;
-      MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, P.d(z), sz);
-      in_validate[P.d(z)]++;
+      if (isTerminalNode(P.down(z))) continue;
+      MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, P.down(z), sz);
+      in_validate[P.down(z)]++;
     }
   } // for i
 
@@ -1798,26 +1798,26 @@ MEDDLY::node_handle MEDDLY::expert_forest
 
   // get sparse, truncated full sizes and check
   // for redundant / identity reductions.
-  int nnz;
+  unsigned nnz = 0;
   if (nb.isSparse()) {
     // Reductions for sparse nodes
-    nnz = nb.getNNZs();
+    nnz = nb.getSize();
 #ifdef DEVELOPMENT_CODE
-    for (int z=0; z<nnz; z++) {
-      MEDDLY_DCASSERT(nb.d(z)!=getTransparentNode());
+    for (unsigned z=0; z<nnz; z++) {
+      MEDDLY_DCASSERT(nb.down(z)!=getTransparentNode());
     } // for z
 #endif
 
     // Check for identity nodes
-    if (1==nnz && in==long(nb.i(0))) {
+    if (1==nnz && in==long(nb.index(0))) {
       if (isIdentityEdge(nb, 0)) {
 #ifdef DEBUG_CREATE_REDUCED
         printf("Identity node ");
         FILE_output s(stdout);
-        showNode(s, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        showNode(s, nb.down(0), SHOW_DETAILS | SHOW_INDEX);
         printf("\n");
 #endif
-        return nb.d(0);
+        return nb.down(0);
       }
     }
 
@@ -1825,14 +1825,14 @@ MEDDLY::node_handle MEDDLY::expert_forest
     if (nnz == getLevelSize(nb.getLevel()) && !isExtensibleLevel(nb.getLevel())) {
       if (isRedundant(nb)) {
         // unlink downward pointers, except the one we're returning.
-        for (int i = 1; i<nnz; i++)  unlinkNode(nb.d(i));
+        unlinkAllDown(nb, 1);
 #ifdef DEBUG_CREATE_REDUCED
         printf("Redundant node ");
         FILE_output s(stdout);
-        showNode(s, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        showNode(s, nb.down(0), SHOW_DETAILS | SHOW_INDEX);
         printf("\n");
 #endif
-        return nb.d(0);
+        return nb.down(0);
       }
     }
 
@@ -1841,7 +1841,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
     MEDDLY_DCASSERT(long(nb.getSize()) <= long(getLevelSize(nb.getLevel())));
     nnz = 0;
     for (unsigned i=0; i<nb.getSize(); i++) {
-      if (nb.d(i)!=getTransparentNode()) nnz++;
+      if (nb.down(i)!=getTransparentNode()) nnz++;
     } // for i
 
     // Check for identity nodes
@@ -1850,10 +1850,10 @@ MEDDLY::node_handle MEDDLY::expert_forest
 #ifdef DEBUG_CREATE_REDUCED
         printf("Identity node ");
         FILE_output s(stdout);
-        showNode(s, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        showNode(s, nb.down(0), SHOW_DETAILS | SHOW_INDEX);
         printf("\n");
 #endif
-        return nb.d(in);
+        return nb.down(in);
       }
     }
 
@@ -1861,14 +1861,14 @@ MEDDLY::node_handle MEDDLY::expert_forest
     if (nnz == getLevelSize(nb.getLevel()) && !isExtensibleLevel(nb.getLevel())) {
       if (isRedundant(nb)) {
         // unlink downward pointers, except the one we're returning.
-        for (unsigned i = 1; i<nb.getSize(); i++)  unlinkNode(nb.d(i));
+        unlinkAllDown(nb, 1);
 #ifdef DEBUG_CREATE_REDUCED
         printf("Redundant node ");
         FILE_output s(stdout);
-        showNode(s, nb.d(0), SHOW_DETAILS | SHOW_INDEX);
+        showNode(s, nb.down(0), SHOW_DETAILS | SHOW_INDEX);
         printf("\n");
 #endif
-        return nb.d(0);
+        return nb.down(0);
       }
     }
   }
@@ -1883,8 +1883,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   node_handle q = unique->find(nb, getVarByLevel(nb.getLevel()));
   if (q) {
     // unlink all downward pointers
-    int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
-    for (int i = 0; i<rawsize; i++)  unlinkNode(nb.d(i));
+    unlinkAllDown(nb);
     return linkNode(q);
   }
 
@@ -2035,9 +2034,8 @@ MEDDLY::node_handle MEDDLY::expert_forest
   // get sparse, truncated full sizes and check
   // for redundant / identity reductions.
   int nnz = 0;
-  const int rawsize = nb.isSparse()? nb.getNNZs(): nb.getSize();
-  for (int i=0; i<rawsize; i++) {
-    if (nb.d(i)!=getTransparentNode()) nnz++;
+  for (unsigned i=0; i<nb.getSize(); i++) {
+    if (nb.down(i)!=getTransparentNode()) nnz++;
   } // for i
 
   // Is this a transparent node?
@@ -2062,7 +2060,7 @@ MEDDLY::node_handle MEDDLY::expert_forest
   node_handle q = unique->find(nb, getVarByLevel(nb.getLevel()));
   if (q) {
     // unlink all downward pointers
-    for (int i = 0; i<rawsize; i++)  unlinkNode(nb.d(i));
+    unlinkAllDown(nb);
     return linkNode(q);
   }
 
@@ -2166,61 +2164,44 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_nod
 
 void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
 {
-  switch (getReductionRule()) {
-    case reduction_rule::IDENTITY_REDUCED:
-    case reduction_rule::FULLY_REDUCED:
-      if (nb.isSparse()) {
-        for (unsigned z=0; z<nb.getNNZs(); z++) {
-          if (isTerminalNode(nb.d(z))) continue;
-          MEDDLY_DCASSERT(!isDeletedNode(nb.d(z)));
-          if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(z)))) continue;
-          FILE_output s(stdout);
-          s << "Down pointer violation in created node at level " << nb.getLevel() << ":\n";
-          nb.show(s, true);
-          s << "\nPointer " << nb.d(z) << " at level " << getNodeLevel(nb.d(z)) << ":\n";
-          showNode(s, nb.d(z), SHOW_DETAILS);
-          MEDDLY_DCASSERT(0);
-        }
-      } else {
-        for (unsigned i=0; i<nb.getSize(); i++) {
-          if (isTerminalNode(nb.d(i))) continue;
-          MEDDLY_DCASSERT(!isDeletedNode(nb.d(i)));
-          if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.d(i)))) continue;
-          FILE_output s(stdout);
-          s << "Down pointer violation in created node at level " << nb.getLevel() << ":\n";
-          nb.show(s, true);
-          s << "\nPointer " << nb.d(i) << " at level " << getNodeLevel(nb.d(i)) << ":\n";
-          showNode(s, nb.d(i), SHOW_DETAILS);
-          MEDDLY_DCASSERT(0);
-        }
-      }
-      break;
+    switch (getReductionRule()) {
+        case reduction_rule::IDENTITY_REDUCED:
+        case reduction_rule::FULLY_REDUCED:
+            for (unsigned i=0; i<nb.getSize(); i++) {
+                if (isTerminalNode(nb.down(i))) continue;
+                MEDDLY_DCASSERT(!isDeletedNode(nb.down(i)));
+                if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.down(i))))
+                    continue;
 
-    case reduction_rule::QUASI_REDUCED:
+                FILE_output s(stdout);
+                s << "Down pointer violation in created node at level "
+                  << nb.getLevel() << ":\n";
+                nb.show(s, true);
+                s << "\nPointer " << nb.down(i) << " at level "
+                  << getNodeLevel(nb.down(i)) << ":\n";
+                showNode(s, nb.down(i), SHOW_DETAILS);
+                MEDDLY_DCASSERT(0);
+            }
+            break;
+
+        case reduction_rule::QUASI_REDUCED:
 #ifdef DEVELOPMENT_CODE
-      int nextLevel;
-      if (isForRelations())
-        nextLevel = (nb.getLevel()<0) ? -(nb.getLevel()+1) : -nb.getLevel();
-      else
-        nextLevel = nb.getLevel()-1;
+            int nextLevel;
+            if (isForRelations()) {
+                nextLevel = downLevel(nb.getLevel());
+            } else {
+                nextLevel = nb.getLevel()-1;
+            }
 #endif
-      if (nb.isSparse()) {
-        for (unsigned z=0; z<nb.getNNZs(); z++) {
-          MEDDLY_DCASSERT(getNodeLevel(nb.d(z)) == nextLevel);
-        }
-      } else {
-        node_handle tv=getTransparentNode();
-        for (unsigned i=0; i<nb.getSize(); i++) {
-          if (nb.d(i)==tv) continue;
-          MEDDLY_DCASSERT(getNodeLevel(nb.d(i)) == nextLevel);
-        }
-      }
-      break;
+            for (unsigned i=0; i<nb.getSize(); i++) {
+                if (nb.down(i)==getTransparentNode()) continue;
+                MEDDLY_DCASSERT(getNodeLevel(nb.down(i)) == nextLevel);
+            }
+            break;
 
-    default:
-      throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-  }
-
+        default:
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    };  // switch
 }
 
 

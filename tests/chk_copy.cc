@@ -81,7 +81,17 @@ void adjustMinterms(int* mtu, int* mtp, int N)
   }
 }
 
-void buildRandomFunc(long s, int terms, dd_edge &out)
+void printMinterm(FILE* out, const char* which, const int* mt, int N)
+{
+    if (0 == mt) return;
+    fprintf(out, "    %s (bottom) [ %d", which, mt[0]);
+    for (int i=1; i<N; i++ ) {
+        fprintf(out, ", %d", mt[i]);
+    }
+    fprintf(out, "] (top)\n");
+}
+
+void buildRandomFunc(long s, int terms, dd_edge &out, FILE* fout)
 {
   seed = s;
   forest* f = out.getForest();
@@ -104,6 +114,9 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
       case range_type::REAL:
               f->createEdge(float(0), out);
               break;
+  }
+  if (fout) {
+      fprintf(fout, "Function(s) based on %d terms:\n", terms);
   }
   for (int i=0; i<terms; i++) {
     randomizeMinterm(false, 4, minterm, Vars+1);
@@ -131,6 +144,14 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
         if (minprime) f->createEdge(&minterm, &minprime, &f_value, 1, temp);
         else          f->createEdge(&minterm, &f_value, 1, temp);
         break;
+    }
+
+    if (fout) {
+        if (f->getRangeType() != range_type::BOOLEAN) {
+            fprintf(fout, "    value %ld\n", i_value);
+        }
+        printMinterm(fout, "unprimed", minterm, Vars+1);
+        printMinterm(fout, "  primed", minprime, Vars+1);
     }
 
     out += temp;
@@ -216,15 +237,15 @@ void testCopy(forest* srcF, forest* destF)
   printf("      ");
   fflush(stdout);
 
-  dd_edge srcE(srcF);
+  dd_edge srcE(srcF), dummy(srcF);
   dd_edge destE(destF);
 
   try {
     for (int t=1; t<=TERMS; t++) {
 
       long save_seed = seed;
-      buildRandomFunc(save_seed, t, srcE);
-      buildRandomFunc(save_seed, t, destE);
+      buildRandomFunc(save_seed, t, srcE, nullptr);
+      buildRandomFunc(save_seed, t, destE, nullptr);
 
       if (srcF->getRangeType() == range_type::BOOLEAN) {
         if (destF->getRangeType() == range_type::INTEGER) {
@@ -259,6 +280,8 @@ void testCopy(forest* srcF, forest* destF)
 
         printf("Copy (built from source):\n");
         copyE.showGraph(meddlyout);
+
+        buildRandomFunc(save_seed, t, dummy, stdout);
         exit(1);
       }
 

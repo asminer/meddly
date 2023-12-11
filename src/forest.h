@@ -434,6 +434,16 @@ class MEDDLY::forest {
         }
 
 
+        /// Unlink down pointers in the unpacked node.
+        inline void unlinkAllDown(const unpacked_node &un, unsigned i=0) {
+            if (deflt.useReferenceCounts) {
+                for ( ; i<un.getSize(); i++) {
+                    nodeHeaders.unlinkNode(un.down(i));
+                }
+            }
+        }
+
+
         /** Increase the cache count for this node.
             Call this whenever this node is added to a cache.
             Do nothing if we are not using reference counts for caches.

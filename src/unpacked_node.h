@@ -100,6 +100,10 @@ class MEDDLY::unpacked_node {
         void initRedundant(const forest *f, int k,
                 node_handle node, node_storage_flags fs);
 
+        void initRedundant(const forest *f, int k, const edge_value &ev,
+                node_handle node, node_storage_flags fs);
+
+#ifdef ALLOW_DEPRECATED_0_17_4
         inline void initRedundant(const forest *f, int k,
                 node_handle node, bool full)
         {
@@ -107,10 +111,6 @@ class MEDDLY::unpacked_node {
         }
 
 
-        void initRedundant(const forest *f, int k, const edge_value &ev,
-                node_handle node, node_storage_flags fs);
-
-#ifdef ALLOW_DEPRECATED_0_17_4
 #ifdef REMOVE_OLD
         template <class T>
         inline void initRedundant(const forest *f, int k, T _ev, node_handle node,
@@ -852,18 +852,14 @@ class MEDDLY::unpacked_node {
         /// Shrink the size of a (truncated) full node
         inline void shrinkFull(unsigned ns)
         {
-            MEDDLY_DCASSERT(isFull());
-            MEDDLY_DCASSERT(ns <= size);
-            size = ns;
+            shrink(ns);
         }
 
 
         /// Shrink the size of a sparse node
         inline void shrinkSparse(unsigned ns)
         {
-            MEDDLY_DCASSERT(isSparse());
-            MEDDLY_DCASSERT(ns <= size);
-            size = ns;
+            shrink(ns);
         }
 
 

@@ -304,8 +304,7 @@ namespace MEDDLY {
 
           node_handle total=createEdgePr(v, F->downLevel(k), start, batchP);
           if(total!=F->getTransparentNode()){
-        	  nb->i_ref(z) = v;
-            nb->d_ref(z) =total;
+            nb->setSparse(z, v, total);
             z++;
           }
         }
@@ -314,7 +313,7 @@ namespace MEDDLY {
         // Union with don't cares
         //
 
-        nb->shrinkSparse(z);
+        nb->shrink(z);
 
         MEDDLY_DCASSERT(unionOp);
         dd_edge dontcaresE(F), built(F);
@@ -430,15 +429,13 @@ namespace MEDDLY {
           // add to sparse node, unless transparent
           //
           if (total!=F->getTransparentNode()){
-            nb->i_ref(z) = v;
-            nb->d_ref(z) = total;
+            nb->setSparse(z, v, total);
             z++;
           }
         } // for v
 
         if (add_extensible_edge) {
-          nb->i_ref(z) = ((z > 0)? nb->i(z-1)+1: 0);
-          nb->d_ref(z) = F->linkNode(dontcares);
+          nb->setSparse(z, ((z > 0)? nb->index(z-1)+1: 0), F->linkNode(dontcares));
           z++;
           nb->markAsExtensible();
         } else {
@@ -449,7 +446,7 @@ namespace MEDDLY {
         // Cleanup
         //
 //         F->unlinkNode(dontcares);
-        nb->shrinkSparse(z);
+        nb->shrink(z);
         return F->createReducedNode(in, nb);
       };
 
@@ -470,9 +467,8 @@ namespace MEDDLY {
         unpacked_node* nb = unpacked_node::newFull(F, k, lastV);
         for (unsigned v=0; v<lastV; v++) {
           unpacked_node* nbp = unpacked_node::newSparse(F, -k, 1);
-          nbp->i_ref(0) = v;
-          nbp->d_ref(0) = F->linkNode(p);
-          nb->d_ref(v) = F->createReducedNode(v, nbp);
+          nbp->setSparse(0, v, F->linkNode(p));
+          nb->setFull(v, F->createReducedNode(v, nbp));
         }
         F->unlinkNode(p);
         return F->createReducedNode(-1, nb);
@@ -501,14 +497,14 @@ namespace MEDDLY {
               unpacked_node* nb = 0;
               if (F->isExtensibleLevel(i)) {
                 nb = unpacked_node::newFull(F, -i, 1);
-                nb->d_ref(0) = next;
+                nb->setFull(0, next);
                 // link count should be unchanged
                 nb->markAsExtensible();
               } else {
                 int sz = F->getLevelSize(-i);
                 nb = unpacked_node::newFull(F, -i, sz);
                 for (int v=0; v<sz; v++) {
-                  nb->d_ref(v) = F->linkNode(next);
+                  nb->setFull(v, F->linkNode(next));
                 }
                 F->unlinkNode(next);
               }
@@ -536,7 +532,9 @@ namespace MEDDLY {
               unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
               node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
               for(unsigned v=0; v<sz; v++){
-                nbp->d_ref(v)=(v==_vlist[i] ? F->linkNode(next) : F->linkNode(zero));
+                nbp->setFull(v,
+                        (v==_vlist[i] ? F->linkNode(next) : F->linkNode(zero))
+                );
               }
               F->unlinkNode(zero);
 
@@ -544,8 +542,7 @@ namespace MEDDLY {
             }
             else {
               unpacked_node* nbp = unpacked_node::newSparse(F, -i, 1);
-              nbp->i_ref(0) = _vlist[i];
-              nbp->d_ref(0) = next;
+              nbp->setSparse(0, _vlist[i], next);
               // link count should be unchanged
 
               nextpr = F->createReducedNode(_vlist[i], nbp);
@@ -558,7 +555,9 @@ namespace MEDDLY {
               unpacked_node* nbp = unpacked_node::newFull(F, -i, sz);
               node_handle zero=makeOpaqueZeroNodeAtLevel(i-1);
               for(unsigned v=0; v<sz; v++){
-                nbp->d_ref(v)=(v==_vplist[i] ? F->linkNode(next) : F->linkNode(zero));
+                nbp->setFull(v,
+                        v==_vplist[i] ? F->linkNode(next) : F->linkNode(zero)
+                );
               }
               F->unlinkNode(zero);
 
@@ -566,8 +565,7 @@ namespace MEDDLY {
             }
             else {
               unpacked_node* nbp = unpacked_node::newSparse(F, -i, 1);
-              nbp->i_ref(0) = _vplist[i];
-              nbp->d_ref(0) = next;
+              nbp->setSparse(0, _vplist[i], next);
               // link count should be unchanged
 
               nextpr = F->createReducedNode(_vlist[i], nbp);
@@ -591,24 +589,24 @@ namespace MEDDLY {
               bool add_edge = (F->isExtensibleLevel(i) && (_vplist[i]+1) == sz);
               nb = unpacked_node::newFull(F, i, add_edge? (1+sz): sz);
               for (unsigned v=0; v<sz; v++) {
-                nb->d_ref(v) = F->linkNode(v == _vplist[i] ? next : nextpr);
+                nb->setFull(v, F->linkNode(v == _vplist[i] ? next : nextpr));
               }
               if (F->isExtensibleLevel(i)) {
                 nb->markAsExtensible();
-                if (add_edge) nb->d_ref(sz) = F->linkNode(nextpr);
+                if (add_edge) nb->setFull(sz, F->linkNode(nextpr));
               }
             } else {
               // Doesn't matter what happened below
 
               if (F->isExtensibleLevel(i)) {
                 nb = unpacked_node::newFull(F, i, 1);
-                nb->d_ref(0) = F->linkNode(nextpr);
+                nb->setFull(0, F->linkNode(nextpr));
                 nb->markAsExtensible();
               } else {
                 unsigned sz = unsigned(F->getLevelSize(i));
                 nb = unpacked_node::newFull(F, i, sz);
                 for (unsigned v=0; v<sz; v++) {
-                  nb->d_ref(v) = F->linkNode(nextpr);
+                  nb->setFull(v, F->linkNode(nextpr));
                 }
               }
             }
@@ -621,7 +619,7 @@ namespace MEDDLY {
               unpacked_node* nb = unpacked_node::newFull(F, i, sz);
               node_handle zero = makeOpaqueZeroNodeAtLevel(-i);
               for(unsigned v=0; v<sz; v++){
-                nb->d_ref(v) = F->linkNode(v==_vlist[i] ? nextpr : zero);
+                nb->setFull(v, F->linkNode(v==_vlist[i] ? nextpr : zero));
               }
               F->unlinkNode(zero);
 
@@ -629,8 +627,7 @@ namespace MEDDLY {
             }
             else {
               unpacked_node* nb = unpacked_node::newSparse(F, i, 1);
-              nb->i_ref(0) = _vlist[i];
-              nb->d_ref(0) = nextpr;
+              nb->setSparse(0, _vlist[i], nextpr);
               // link count should be unchanged
 
               next = F->createReducedNode(-1, nb);

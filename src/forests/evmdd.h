@@ -67,19 +67,15 @@ class MEDDLY::evmdd_forest : public ev_forest {
             if (isFullyReduced()) continue;
             int sz = getLevelSize(i);
             unpacked_node* nb = unpacked_node::newFull(this, i, sz);
-            nb->d_ref(0) = ed;
-            nb->setEdge(0, ev);
+            nb->setFull(0, ev, ed);
             for (int v=1; v<sz; v++) {
-              nb->d_ref(v) = linkNode(ed);
-              nb->setEdge(v, ev);
+              nb->setFull(v, ev, linkNode(ed));
             }
             createReducedNode(-1, nb, ev, ed);
           } else {
             // make a singleton node
             unpacked_node* nb = unpacked_node::newSparse(this, i, 1);
-            nb->i_ref(0) = vlist[i];
-            nb->d_ref(0) = ed;
-            nb->setEdge(0, ev);
+            nb->setSparse(0, vlist[i], ev, ed);
             createReducedNode(-1, nb, ev, ed);
           }
         } // for i
@@ -272,11 +268,8 @@ namespace MEDDLY {
           // add to sparse node, unless empty
           //
           if (0==these.getNode()) continue;
-          nb->i_ref(z) = v;
-          nb->d_ref(z) = F->linkNode(these);
-          T temp;
-          these.getEdgeValue(temp);
-          nb->setEdge(z, temp);
+          nb->setSparse(z, v, these.getEdgeValue(), F->linkNode(these));
+
           z++;
         } // for v
 
@@ -284,7 +277,7 @@ namespace MEDDLY {
         // Cleanup
         //
         // F->unlinkNode(dc_ptr);
-        nb->shrinkSparse(z);
+        nb->shrink(z);
 
         F->createReducedNode(-1, nb, ev, ed);
 

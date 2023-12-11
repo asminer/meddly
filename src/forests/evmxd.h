@@ -83,14 +83,11 @@ class MEDDLY::evmxd_forest : public ev_forest {
           unpacked_node* nb = unpacked_node::newFull(this, i, sz);
           for (int v=0; v<sz; v++) {
             unpacked_node* nbp = unpacked_node::newSparse(this, -i, 1);
-            nbp->i_ref(0) = v;
-            nbp->d_ref(0) = linkNode(ed);
-            nbp->setEdge(0, ev);
+            nbp->setSparse(0, v, ev, linkNode(ed));
             TYPE pev;
             node_handle pd;
             createReducedNode(v, nbp, pev, pd);
-            nb->d_ref(v) = pd;
-            nb->setEdge(v, pev);
+            nb->setFull(v, pev, pd);
           }
           unlinkNode(ed);
           createReducedNode(-1, nb, ev, ed);
@@ -111,8 +108,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
             int sz = getLevelSize(-i);
             unpacked_node* nb = unpacked_node::newFull(this, -i, sz);
             for (int v=0; v<sz; v++) {
-              nb->d_ref(v) = linkNode(ed);
-              nb->setEdge(v, ev);
+              nb->setFull(v, ev, linkNode(ed));
             }
             unlinkNode(ed);
             createReducedNode(-1, nb, evpr, edpr);
@@ -120,9 +116,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
         } else {
           // sane value
           unpacked_node* nb = unpacked_node::newSparse(this, -i, 1);
-          nb->i_ref(0) = vplist[i];
-          nb->d_ref(0) = ed;
-          nb->setEdge(0, ev);
+          nb->setSparse(0, vplist[i], ev, ed);
           createReducedNode(vlist[i], nb, evpr, edpr);
         }
         //
@@ -142,14 +136,12 @@ class MEDDLY::evmxd_forest : public ev_forest {
             // on the appropriate v value
             for (int v=0; v<sz; v++) {
               node_handle dpr = (v == vplist[i]) ? ed : edpr;
-              nb->d_ref(v) = linkNode(dpr);
-              nb->setEdge(v, evpr);
+              nb->setFull(v, evpr, linkNode(dpr));
             }
           } else {
             // Doesn't matter what happened below
             for (int v=0; v<sz; v++) {
-              nb->d_ref(v) = linkNode(edpr);
-              nb->setEdge(v, evpr);
+              nb->setFull(v, evpr, linkNode(edpr));
             }
           }
           unlinkNode(edpr);
@@ -157,9 +149,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
         } else {
           // sane value
           unpacked_node* nb = unpacked_node::newSparse(this, i, 1);
-          nb->i_ref(0) = vlist[i];
-          nb->d_ref(0) = edpr;
-          nb->setEdge(0, evpr);
+          nb->setSparse(0, vlist[i], evpr, edpr);
           createReducedNode(-1, nb, ev, ed);
         }
       } // for i
@@ -372,10 +362,8 @@ namespace MEDDLY {
           if (0==batchP) continue;
           T these_ev;
           node_handle these_ptr;
-          nb->i_ref(z) = v;
           createEdgePr(v, -k, start, batchP, these_ev, these_ptr);
-          nb->d_ref(z) = these_ptr;
-          nb->setEdge(z, these_ev);
+          nb->setSparse(z, v, these_ev, these_ptr);
           z++;
         } // for v
 
@@ -385,7 +373,7 @@ namespace MEDDLY {
         MEDDLY_DCASSERT(unionOp);
         node_handle built_nh;
         T built_ev;
-        nb->shrinkSparse(z);
+        nb->shrink(z);
         F->createReducedNode(-1, nb, built_ev, built_nh);
         dd_edge built(F);
         built.set(built_nh, built_ev);
@@ -504,18 +492,14 @@ namespace MEDDLY {
           // add to sparse node, unless empty
           //
           if (0==these.getNode()) continue;
-          nb->i_ref(z) = v;
-          nb->d_ref(z) = F->linkNode(these);
-          T temp;
-          these.getEdgeValue(temp);
-          nb->setEdge(z, temp);
+          nb->setSparse(z, v, these.getEdgeValue(), F->linkNode(these));
           z++;
         } // for v
 
         //
         // Cleanup
         //
-        nb->shrinkSparse(z);
+        nb->shrink(z);
         F->createReducedNode(in, nb, ev, ed);
       };
 
@@ -532,14 +516,11 @@ namespace MEDDLY {
         unpacked_node* nb = unpacked_node::newFull(F, k, lastV);
         for (unsigned v=0; v<lastV; v++) {
           unpacked_node* nbp = unpacked_node::newSparse(F, -k, 1);
-          nbp->i_ref(0) = v;
-          nbp->d_ref(0) = F->linkNode(p);
-          nbp->setEdge(0, pev);
+          nbp->setSparse(0, v, pev, F->linkNode(p));
           node_handle pr;
           T pr_ev;
           F->createReducedNode(v, nbp, pr_ev, pr);
-          nb->d_ref(v) = pr;
-          nb->setEdge(v, pr_ev);
+          nb->setFull(v, pr_ev, pr);
         } // for v
         F->unlinkNode(p);
         F->createReducedNode(-1, nb, pev, p);
