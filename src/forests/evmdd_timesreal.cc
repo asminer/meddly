@@ -114,25 +114,24 @@ void MEDDLY::evmdd_timesreal::showEdge(output &s, const edge_value &ev,
 
 void MEDDLY::evmdd_timesreal::normalize(unpacked_node &nb, float& ev) const
 {
-  int minindex = -1;
-  int stop = nb.isSparse() ? nb.getNNZs() : nb.getSize();
-  for (int i=0; i<stop; i++) {
-    if (0==nb.d(i)) continue;
-    if ((minindex < 0) || (nb.ef(i) < nb.ef(minindex))) {
-      minindex = i;
-    }
+  ev = 0.0f;
+  int index = -1;
+  for (unsigned i=0; i<nb.getSize(); i++) {
+    if (0==nb.down(i)) continue;
+    ev = nb.edgeval(i).getFloat();
+    if (!ev) continue;
+    index = int(i);
+    break;
   }
-  if (minindex < 0) return; // this node will eventually be reduced to "0".
-  ev = nb.ef(minindex);
-  for (int i=0; i<stop; i++) {
-    if (0==nb.d(i)) continue;
-    if (nb.getEdge(i).equals(float(0))) {
-      nb.d_ref(i) = 0;
-      nb.setEdge(i, 0.0f);
+  if (index < 0) {
+      return; // this node will eventually be reduced to "0".
+  }
+  for (unsigned i=0; i<nb.getSize(); i++) {
+    if (0==nb.down(i)) continue;
+    if (nb.edgeval(i).equals(float(0))) {
+      nb.setFull(i, 0.0f, 0);
     } else {
-      double temp = nb.getEdge(i).getFloat();
-      temp /= ev;
-      nb.setEdge(i, float(temp));
+      nb.divideEdge(i, ev);
     }
   }
 }
@@ -199,12 +198,11 @@ bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::next()
   node_handle down = 0;
   for (k=1; k<=maxLevel; k++) {
     nzp[k]++;
-    if (nzp[k] < path[k].getNNZs()) {
-      index[k] = path[k].i(nzp[k]);
-      down = path[k].d(nzp[k]);
+    if (nzp[k] < path[k].getSize()) {
+      index[k] = path[k].index(nzp[k]);
+      down = path[k].down(nzp[k]);
       MEDDLY_DCASSERT(down);
-      float ev;
-      path[k].getEdge(nzp[k], ev);
+      const float ev = path[k].edgeval(nzp[k]).getFloat();
       acc_evs[k-1] = acc_evs[k] * ev;
       break;
     }
@@ -238,10 +236,9 @@ bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::first(int k, node_handle down)
       F->unpackNode(path+k, down, SPARSE_ONLY);
     }
     nzp[k] = 0;
-    index[k] = path[k].i(0);
-    down = path[k].d(0);
-    float ev;
-    path[k].getEdge(0, ev);
+    index[k] = path[k].index(0);
+    down = path[k].down(0);
+    const float ev = path[k].edgeval(0).getFloat();
     acc_evs[k-1] = acc_evs[k] * ev;
   }
   // save the terminal value

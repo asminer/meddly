@@ -147,11 +147,14 @@ void make_redundant(const std::vector <forest*> &FA, bool sparse)
             unpacked_node::Recycle(UA[u]);
 
             if (f->isMultiTerminal()) {
-                UA[u] = unpacked_node::newRedundant(f, k, -1, !sparse);
+                UA[u] = unpacked_node::newRedundant(f, k, -1,
+                            sparse ? SPARSE_ONLY : FULL_ONLY);
             } else if (f->isEVPlus()) {
-                UA[u] = unpacked_node::newRedundant(f, k, 0L, -1, !sparse);
+                UA[u] = unpacked_node::newRedundant(f, k, edge_value(0L), -1,
+                            sparse ? SPARSE_ONLY : FULL_ONLY);
             } else {
-                UA[u] = unpacked_node::newRedundant(f, k, 1.0f, -1, !sparse);
+                UA[u] = unpacked_node::newRedundant(f, k, edge_value(1.0f), -1,
+                            sparse ? SPARSE_ONLY : FULL_ONLY);
             }
 
             //

@@ -303,7 +303,7 @@ void MEDDLY::evmdd_pluslong::normalize(unpacked_node &nb, long& ev) const
     if (0 == nb.down(i)) {
       continue;
     }
-    nb.addToEdge(i, -ev);
+    nb.subtractFromEdge(i, ev);
   }
 }
 

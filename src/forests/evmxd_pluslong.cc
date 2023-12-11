@@ -120,13 +120,13 @@ void MEDDLY::evmxd_pluslong::showEdge(output &s, const edge_value &ev,
 void MEDDLY::evmxd_pluslong::normalize(unpacked_node &nb, long& ev) const
 {
   long minindex = -1;
-  int stop = nb.isSparse() ? nb.getNNZs() : nb.getSize();
-  for (int i = 0; i < stop; i++) {
-    if (0 == nb.d(i)) {
+  for (unsigned i = 0; i < nb.getSize(); i++) {
+    if (0 == nb.down(i)) {
       continue;
     }
-    if ((minindex < 0) || (nb.ei(i) < nb.ei(minindex))) {
+    if ((minindex < 0) || (nb.edgeval(i).getLong() < ev)) {
       minindex = i;
+      ev = nb.edgeval(i).getLong();
     }
   }
   if (minindex < 0) {
@@ -134,15 +134,11 @@ void MEDDLY::evmxd_pluslong::normalize(unpacked_node &nb, long& ev) const
     ev = 0;
     return;
   }
-  ev = nb.ei(minindex);
-  for (int i = 0; i < stop; i++) {
-    if (0 == nb.d(i)) {
+  for (unsigned i = 0; i < nb.getSize(); i++) {
+    if (0 == nb.down(i)) {
       continue;
     }
-    long temp;
-    nb.getEdge(i, temp);
-    temp -= ev;
-    nb.setEdge(i, temp);
+    nb.subtractFromEdge(i, ev);
   }
 }
 
@@ -217,12 +213,11 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_iterator::next()
   node_handle down = 0;
   for (;;) {
     nzp[k]++;
-    if (nzp[k] < path[k].getNNZs()) {
-      index[k] = path[k].i(nzp[k]);
-      down = path[k].d(nzp[k]);
+    if (nzp[k] < path[k].getSize()) {
+      index[k] = path[k].index(nzp[k]);
+      down = path[k].down(nzp[k]);
       MEDDLY_DCASSERT(down);
-      long ev;
-      path[k].getEdge(nzp[k], ev);
+      const long ev = path[k].edgeval(nzp[k]).getLong();
       acc_evs[downLevel(k)] = acc_evs[k] + ev;
       break;
     }
@@ -265,10 +260,9 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_iterator::first(int k, node_handle down)
       F->unpackNode(path+k, down, SPARSE_ONLY);
     }
     nzp[k] = 0;
-    index[k] = path[k].i(0);
-    down = path[k].d(0);
-    long ev;
-    path[k].getEdge(0, ev);
+    index[k] = path[k].index(0);
+    down = path[k].down(0);
+    const long ev = path[k].edgeval(0).getLong();
     acc_evs[downLevel(k)] = acc_evs[k] + ev;
   }
   // save the terminal value
@@ -314,13 +308,12 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedrow_iter::next()
   node_handle down = 0;
   // Only try to advance the column, because the row is fixed.
   for (int k=-1; k>=-maxLevel; k--) {
-    for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
-      index[k] = path[k].i(nzp[k]);
-      down = path[k].d(nzp[k]);
+    for (nzp[k]++; nzp[k] < path[k].getSize(); nzp[k]++) {
+      index[k] = path[k].index(nzp[k]);
+      down = path[k].down(nzp[k]);
       MEDDLY_DCASSERT(down);
       level_change = k;
-      long ev;
-      path[k].getEdge(nzp[k], ev);
+      const long ev = path[k].edgeval(nzp[k]).getLong();
       acc_evs[downLevel(k)] = acc_evs[k] + ev;
       if (first(downLevel(k), down)) return true;
     }
@@ -388,13 +381,12 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedrow_iter::first(int k, node_handle dow
 
   F->unpackNode(path+k, cdown, SPARSE_ONLY);
 
-  for (int z=0; z<path[k].getNNZs(); z++) {
-    long ev;
-    path[k].getEdge(z, ev);
+  for (unsigned z=0; z<path[k].getSize(); z++) {
+    const long ev = path[k].edgeval(z).getLong();
     acc_evs[downLevel(k)] = acc_evs[k] + ev;
-    if (first(downLevel(k), path[k].d(z))) {
+    if (first(downLevel(k), path[k].down(z))) {
       nzp[k] = z;
-      index[k] = path[k].i(z);
+      index[k] = path[k].index(z);
       return true;
     }
   }
@@ -440,12 +432,11 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::next()
   node_handle down = 0;
   // Only try to advance the row, because the column is fixed.
   for (int k=1; k<=maxLevel; k++) {
-    for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
-      index[k] = path[k].i(nzp[k]);
-      down = path[k].d(nzp[k]);
+    for (nzp[k]++; nzp[k] < path[k].getSize(); nzp[k]++) {
+      index[k] = path[k].index(nzp[k]);
+      down = path[k].down(nzp[k]);
       MEDDLY_DCASSERT(down);
-      long ev;
-      path[k].getEdge(nzp[k], ev);
+      const long ev = path[k].edgeval(nzp[k]).getLong();
       acc_evs[downLevel(k)] = acc_evs[k] + ev;
       level_change = k;
       if (first(downLevel(k), down)) return true;
@@ -528,12 +519,11 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::first(int k, node_handle dow
   // Level is not skipped.
   F->unpackNode(path+k, down, SPARSE_ONLY);
 
-  for (int z=0; z<path[k].getNNZs(); z++) {
-    index[k] = path[k].i(z);
-    long ev;
-    path[k].getEdge(z, ev);
+  for (unsigned z=0; z<path[k].getSize(); z++) {
+    index[k] = path[k].index(z);
+    const long ev = path[k].edgeval(z).getLong();
     acc_evs[downLevel(k)] = acc_evs[k] + ev;
-    if (first(downLevel(k), path[k].d(z))) {
+    if (first(downLevel(k), path[k].down(z))) {
       nzp[k] = z;
       return true;
     }

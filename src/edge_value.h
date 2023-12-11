@@ -246,24 +246,51 @@ class MEDDLY::edge_value {
 
 
         //
-        // Add to the edge value
+        // Subtract from the edge value
+        // Useful for normalization
         //
 
-        inline void add(int v) {
+        inline void subtract(int v) {
             MEDDLY_DCASSERT(isInt());
-            ev_int += v;
+            ev_int -= v;
         }
-        inline void add(long v) {
+        inline void subtract(long v) {
             MEDDLY_DCASSERT(isLong());
-            ev_long += v;
+            ev_long -= v;
         }
-        inline void add(float v) {
+        inline void subtract(float v) {
             MEDDLY_DCASSERT(isFloat());
-            ev_float += v;
+            ev_float -= v;
         }
-        inline void add(double v) {
+        inline void subtract(double v) {
             MEDDLY_DCASSERT(isDouble());
-            ev_double += v;
+            ev_double -= v;
+        }
+
+        //
+        // Divide the edge value
+        // Useful for normalization
+        //
+
+        inline void divide(int v) {
+            MEDDLY_DCASSERT(isInt());
+            MEDDLY_DCASSERT(v);
+            ev_int /= v;
+        }
+        inline void divide(long v) {
+            MEDDLY_DCASSERT(isLong());
+            MEDDLY_DCASSERT(v);
+            ev_long /= v;
+        }
+        inline void divide(float v) {
+            MEDDLY_DCASSERT(isFloat());
+            MEDDLY_DCASSERT(v);
+            ev_float /= v;
+        }
+        inline void divide(double v) {
+            MEDDLY_DCASSERT(isDouble());
+            MEDDLY_DCASSERT(v);
+            ev_double /= v;
         }
 
 

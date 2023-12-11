@@ -175,6 +175,15 @@ class MEDDLY::unpacked_node {
         //
 
         static inline unpacked_node* newRedundant(const forest *f, int k,
+                node_handle node, node_storage_flags fs)
+        {
+            unpacked_node* U = New(f);
+            MEDDLY_DCASSERT(U);
+            U->initRedundant(f, k, node, fs);
+            return U;
+        }
+
+        static inline unpacked_node* newRedundant(const forest *f, int k,
                 const edge_value &ev, node_handle node, node_storage_flags fs)
         {
             unpacked_node* U = New(f);
@@ -211,6 +220,15 @@ class MEDDLY::unpacked_node {
             return U;
         }
 #endif
+
+        static inline unpacked_node* newIdentity(const forest *f, int k,
+                unsigned i, node_handle node, node_storage_flags fs)
+        {
+            unpacked_node* U = New(f);
+            MEDDLY_DCASSERT(U);
+            U->initIdentity(f, k, i, node, fs);
+            return U;
+        }
 
         static inline unpacked_node* newIdentity(const forest *f, int k,
                 unsigned i, const edge_value &ev, node_handle node,
@@ -410,17 +428,28 @@ class MEDDLY::unpacked_node {
         }
 
 
-        /** Add to an edge value.
+        /** Subtract from an edge value.
             @param  n       Which pointer
-            @param  delta   Value to add
+            @param  v       Value to subtract
         */
         template <class T>
-        inline void addToEdge(unsigned n, T v) {
+        inline void subtractFromEdge(unsigned n, T v) {
             MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            _edge[n].add(v);
+            _edge[n].subtract(v);
         }
 
+
+        /** Divide an edge value.
+            @param  n       Which pointer
+            @param  v       Value to divide by
+        */
+        template <class T>
+        inline void divideEdge(unsigned n, T v) {
+            MEDDLY_DCASSERT(_edge);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            _edge[n].divide(v);
+        }
 
         /**
             Set a full edge.
