@@ -1224,7 +1224,7 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
   // Initialize mdd reader
   unpacked_node *mddDptrs = unpacked_node::New(argF);
   if (mdd_level < k) {
-    mddDptrs->initRedundant(argF, k, mdd, true);
+    mddDptrs->initRedundant(argF, k, mdd, FULL_ONLY);
   } else {
     argF->unpackNode(mddDptrs, mdd, FULL_ONLY);
   }
@@ -1426,7 +1426,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         // Takes care of two situations:
         // - skipped unprimed level (due to Fully Reduced)
         // - skipped unprimed and primed levels (due to Fully Identity Reduced)
-        Ru[ei]->initRedundant(arg2F, level, mxd.getNode(), true);
+        Ru[ei]->initRedundant(arg2F, level, mxd.getNode(), FULL_ONLY);
       } else {
         arg2F->unpackNode(Ru[ei], mxd.getNode(), FULL_ONLY);
       }
@@ -1472,7 +1472,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
             // Takes care of two situations:
             // - skipped unprimed level (due to Fully Reduced)
             // - skipped unprimed and primed levels (due to Fully Identity Reduced)
-            Ru[ei]->initRedundant(arg2F, level, mxd.getNode(), true);
+            Ru[ei]->initRedundant(arg2F, level, mxd.getNode(), FULL_ONLY);
           } else {
             arg2F->unpackNode(Ru[ei], mxd.getNode(), FULL_ONLY);
           }
@@ -1492,7 +1492,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       if (dlevel == -level) {
         arg2F->unpackNode(Rp, ei_i, SPARSE_ONLY);
       } else {
-        Rp->initIdentity(arg2F, -level, i, ei_i, false);
+        Rp->initIdentity(arg2F, -level, i, ei_i, SPARSE_ONLY);
       }
 
       MEDDLY_DCASSERT(!Rp->isExtensible());
@@ -1594,7 +1594,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   // Initialize mdd reader
   unpacked_node *A = unpacked_node::New(arg1F);
   if (mddLevel < rLevel) {
-    A->initRedundant(arg1F, rLevel, mdd, true);
+    A->initRedundant(arg1F, rLevel, mdd, FULL_ONLY);
   } else {
     arg1F->unpackNode(A, mdd, FULL_ONLY);
   }
@@ -1617,7 +1617,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     unpacked_node *Ru = unpacked_node::New(arg2F);
     unpacked_node *Rp = unpacked_node::New(arg2F);
     if (mxdLevel < 0) {
-      Ru->initRedundant(arg2F, rLevel, mxd, false);
+      Ru->initRedundant(arg2F, rLevel, mxd, SPARSE_ONLY);
     } else {
       arg2F->unpackNode(Ru, mxd, SPARSE_ONLY);
     }
@@ -1629,7 +1629,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
       if (0==A->d(i)) continue;
       const node_handle pnode = Ru->d(iz);
       if (isLevelAbove(-rLevel, arg2F->getNodeLevel(pnode))) {
-        Rp->initIdentity(arg2F, rLevel, i, pnode, false);
+        Rp->initIdentity(arg2F, rLevel, i, pnode, SPARSE_ONLY);
       } else {
         arg2F->unpackNode(Rp, pnode, SPARSE_ONLY);
       }
@@ -1714,7 +1714,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::recFireHelper(
   unpacked_node* nb)
 {
   if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru_i))) {
-    Rp->initIdentity(arg2F, rLevel, i, Ru_i, false);
+    Rp->initIdentity(arg2F, rLevel, i, Ru_i, SPARSE_ONLY);
   } else {
     arg2F->unpackNode(Rp, Ru_i, SPARSE_ONLY);
   }

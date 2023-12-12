@@ -121,7 +121,7 @@ MEDDLY::mdd2index_operation
   // Initialize node reader
   unpacked_node *A = unpacked_node::New(argF);
   if (aLevel < k) {
-    A->initRedundant(argF, k, a, true);
+    A->initRedundant(argF, k, a, FULL_ONLY);
   } else {
     argF->unpackNode(A, a, FULL_ONLY);
   }

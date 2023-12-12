@@ -94,7 +94,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   // Initialize unpacked node
   unpacked_node *A = unpacked_node::New(arg1F);
   if (arg1F->getNodeLevel(a) < k) {
-    A->initRedundant(arg1F, k, a, true);
+    A->initRedundant(arg1F, k, a, FULL_ONLY);
   } else {
     arg1F->unpackNode(A, a, FULL_ONLY);
   }
@@ -135,7 +135,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
   // Initialize unpacked node
   unpacked_node *B = unpacked_node::New(arg2F);
   if (arg2F->getNodeLevel(b) < -k) {
-    B->initRedundant(arg2F, -k, b, true);
+    B->initRedundant(arg2F, -k, b, FULL_ONLY);
   } else {
     arg2F->unpackNode(B, b, FULL_ONLY);
   }

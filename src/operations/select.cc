@@ -88,7 +88,7 @@ MEDDLY::node_handle MEDDLY::select_MT::_compute(node_handle a, int level)
 
   // Initialize node reader
   unpacked_node* A = isLevelAbove(level, argF->getNodeLevel(a))
-    ? unpacked_node::newRedundant(argF, level, a, false)
+    ? unpacked_node::newRedundant(argF, level, a, SPARSE_ONLY)
     : argF->newUnpacked(a, SPARSE_ONLY);
   MEDDLY_DCASSERT(A->getNNZs() > 0);
 
@@ -150,7 +150,7 @@ void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& b
 
   // Initialize node reader
   unpacked_node* A = isLevelAbove(level, argF->getNodeLevel(a))
-    ? unpacked_node::newRedundant(argF, level, a, false)
+    ? unpacked_node::newRedundant(argF, level, a, SPARSE_ONLY)
     : argF->newUnpacked(a, SPARSE_ONLY);
   MEDDLY_DCASSERT(A->getNNZs() > 0);
 

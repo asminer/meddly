@@ -1041,7 +1041,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   // Initialize mdd reader
   unpacked_node *A = unpacked_node::New(arg1F);
   if (mddLevel < rLevel) {
-    A->initRedundant(arg1F, rLevel, mdd, true);
+    A->initRedundant(arg1F, rLevel, mdd, FULL_ONLY);
   } else {
     arg1F->unpackNode(A, mdd, FULL_ONLY);
   }
@@ -1406,7 +1406,7 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
   // Initialize mdd reader
   unpacked_node *mddDptrs = unpacked_node::New(argF);
   if (mdd_level < k) {
-    mddDptrs->initRedundant(argF, k, mdd, true);
+    mddDptrs->initRedundant(argF, k, mdd, FULL_ONLY);
   } else {
     argF->unpackNode(mddDptrs, mdd, FULL_ONLY);
   }
@@ -1453,10 +1453,12 @@ bool isIntersectionEmpty(
     MEDDLY::node_handle node_A,
     MEDDLY::node_handle node_B)
 {
-  if (MEDDLY::expert_forest::isTerminalNode(node_A)) {
+    using namespace MEDDLY;
+
+  if (expert_forest::isTerminalNode(node_A)) {
     // if (node_A == 0) return true; else return (node_B == 0);
     return (node_A == 0) || (node_B == 0);
-  } else if (MEDDLY::expert_forest::isTerminalNode(node_B)) {
+  } else if (expert_forest::isTerminalNode(node_B)) {
     // if (node_B == 0) return true; else return false;
     return (node_B == 0);
   }
@@ -1464,7 +1466,7 @@ bool isIntersectionEmpty(
   if (node_A > node_B) {
     // lexicographically ordered to improve cache hits
     // intersection is commutative
-    MEDDLY::node_handle temp = node_A;
+    node_handle temp = node_A;
     node_A = node_B;
     node_B = temp;
   }
@@ -1478,14 +1480,14 @@ bool isIntersectionEmpty(
   }
 
   // unpack nodes
-  MEDDLY::unpacked_node* unp_A =
+  unpacked_node* unp_A =
     mddF->getNodeLevel(node_A) >= mddF->getNodeLevel(node_B)
-    ? mddF->newUnpacked(node_A, MEDDLY::FULL_ONLY)
-    : MEDDLY::unpacked_node::newRedundant(mddF, mddF->getNodeLevel(node_B), node_A, true);
-  MEDDLY::unpacked_node* unp_B =
+    ? mddF->newUnpacked(node_A, FULL_ONLY)
+    : unpacked_node::newRedundant(mddF, mddF->getNodeLevel(node_B), node_A, FULL_ONLY);
+  unpacked_node* unp_B =
     mddF->getNodeLevel(node_B) >= mddF->getNodeLevel(node_A)
-    ? mddF->newUnpacked(node_B, MEDDLY::FULL_ONLY)
-    : MEDDLY::unpacked_node::newRedundant(mddF, mddF->getNodeLevel(node_A), node_B, true);
+    ? mddF->newUnpacked(node_B, FULL_ONLY)
+    : unpacked_node::newRedundant(mddF, mddF->getNodeLevel(node_A), node_B, FULL_ONLY);
 
   // compute result
   bool result = true;
@@ -1495,8 +1497,8 @@ bool isIntersectionEmpty(
   }
 
   // recycle unpacked nodes
-  MEDDLY::unpacked_node::Recycle(unp_A);
-  MEDDLY::unpacked_node::Recycle(unp_B);
+  unpacked_node::Recycle(unp_A);
+  unpacked_node::Recycle(unp_B);
 
   // cache result
   mddF->cacheNode(node_A);
@@ -1607,7 +1609,7 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   // Initialize mdd reader
   unpacked_node *mddDptrs = unpacked_node::New(argF);
   if (mdd_level < k) {
-    mddDptrs->initRedundant(argF, k, mdd, true);
+    mddDptrs->initRedundant(argF, k, mdd, FULL_ONLY);
   } else {
     argF->unpackNode(mddDptrs, mdd, FULL_ONLY);
   }
@@ -1616,7 +1618,7 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   // Initialize constraint reader
   unpacked_node* consDptrs = unpacked_node::New(argF);
   if (constraint_level < k) {
-    consDptrs->initRedundant(argF, k, constraint, true);
+    consDptrs->initRedundant(argF, k, constraint, FULL_ONLY);
   } else {
     argF->unpackNode(consDptrs, constraint, FULL_ONLY);
   }
@@ -1698,7 +1700,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
   // Initialize constraint reader
   unpacked_node* consDptrs = unpacked_node::New(arg1F);
   if (constraint_level < level) {
-    consDptrs->initRedundant(arg1F, level, constraint, true);
+    consDptrs->initRedundant(arg1F, level, constraint, FULL_ONLY);
   } else {
     arg1F->unpackNode(consDptrs, constraint, FULL_ONLY);
   }
@@ -1861,7 +1863,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   // Initialize mdd reader
   unpacked_node *A = unpacked_node::New(arg1F);
   if (mddLevel < rLevel) {
-    A->initRedundant(arg1F, rLevel, mdd, true);
+    A->initRedundant(arg1F, rLevel, mdd, FULL_ONLY);
   } else {
     arg1F->unpackNode(A, mdd, FULL_ONLY);
   }
@@ -1869,7 +1871,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   // Initialize constraint reader
   unpacked_node* consDptrs = unpacked_node::New(arg1F);
   if (constraint_level < rLevel) {
-    consDptrs->initRedundant(arg1F, rLevel, constraint, true);
+    consDptrs->initRedundant(arg1F, rLevel, constraint, FULL_ONLY);
   } else {
     arg1F->unpackNode(consDptrs, constraint, FULL_ONLY);
   }

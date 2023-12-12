@@ -1683,7 +1683,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       if(arg2F->getNodeLevel(se_nh) == level)
           arg2F->unpackNode(Ru[i_Ru], se_nh, FULL_ONLY);  // node is present at unprime-level
       else
-         Ru[i_Ru]->initRedundant(arg2F, level, se_nh, false);
+         Ru[i_Ru]->initRedundant(arg2F, level, se_nh, SPARSE_ONLY);
       event_Ru_Rn_index[ei] = i_Ru;
       i_Ru++;
     }
@@ -1742,7 +1742,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         if(arg2F->getNodeLevel(se_nh) == level)
           arg2F->unpackNode(Ru[event_Ru_Rn_index[ei]], se_nh, FULL_ONLY);  // node is present at unprime-level
         else
-          Ru[event_Ru_Rn_index[ei]]->initRedundant(arg2F, level, se_nh, false);  // node was at prime-level, so build redudant node at unprime-level
+          Ru[event_Ru_Rn_index[ei]]->initRedundant(arg2F, level, se_nh, SPARSE_ONLY);  // node was at prime-level, so build redudant node at unprime-level
         }
 
         node_handle ei_i_p = Ru[event_Ru_Rn_index[ei]]->d(i);
@@ -1753,7 +1753,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         if (dlevel == -level)
           arg2F->unpackNode(Rp, ei_i_p, SPARSE_ONLY);
         else
-          Rp->initIdentity(arg2F, -level, i, ei_i_p, false);
+          Rp->initIdentity(arg2F, -level, i, ei_i_p, SPARSE_ONLY);
 
         jC = Rp->getNNZs();
 
@@ -1899,7 +1899,7 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
   // Initialize mdd reader
   unpacked_node *A = unpacked_node::New(arg1F);
   if (mddLevel < rLevel) {
-    A->initRedundant(arg1F, rLevel, mdd, true);
+    A->initRedundant(arg1F, rLevel, mdd, FULL_ONLY);
   } else {
     arg1F->unpackNode(A, mdd, FULL_ONLY);
   }
@@ -1932,7 +1932,7 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
     }
     else {
        if (mxdLevel < 0) {
-        Ru->initRedundant(arg2F, rLevel, mxd, false);
+        Ru->initRedundant(arg2F, rLevel, mxd, SPARSE_ONLY);
       } else {
         arg2F->unpackNode(Ru, mxd, SPARSE_ONLY);
       }
@@ -2304,7 +2304,7 @@ MEDDLY::saturation_hyb_by_events_op::saturate(node_handle mdd, int k)
   // Initialize mdd reader
   unpacked_node *mddDptrs = unpacked_node::New(argF);
   if (mdd_level < k) {
-    mddDptrs->initRedundant(argF, k, mdd, true);
+    mddDptrs->initRedundant(argF, k, mdd, FULL_ONLY);
   } else {
     argF->unpackNode(mddDptrs, mdd, FULL_ONLY);
   }

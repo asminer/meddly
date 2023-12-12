@@ -259,7 +259,7 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg1F, resultLevel, a, false)
+    ? unpacked_node::newRedundant(arg1F, resultLevel, a, SPARSE_ONLY)
     : arg1F->newUnpacked(a, SPARSE_ONLY)
     ;
   const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
@@ -269,7 +269,7 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
   const int A_last_index = last_nz >= 0? int(A->i(unsigned(last_nz))): -1;
 
   unpacked_node *B = (bLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg2F, resultLevel, b, false)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, SPARSE_ONLY)
     : arg2F->newUnpacked(b, SPARSE_ONLY)
     ;
   const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;

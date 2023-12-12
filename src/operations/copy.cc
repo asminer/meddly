@@ -196,9 +196,9 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
   unpacked_node* A = unpacked_node::New(argF);
   if (isLevelAbove(k, aLevel)) {
     if (k<0 && argF->isIdentityReduced()) {
-      A->initIdentity(argF, k, unsigned(in), a, false);
+      A->initIdentity(argF, k, unsigned(in), a, SPARSE_ONLY);
     } else {
-      A->initRedundant(argF, k, a, false);
+      A->initRedundant(argF, k, a, SPARSE_ONLY);
     }
   } else {
     argF->unpackNode(A, a, SPARSE_ONLY);
@@ -401,9 +401,9 @@ void MEDDLY::copy_MT2EV<TYPE>
   unpacked_node* A = unpacked_node::New(argF);
   if (isLevelAbove(k, aLevel)) {
     if (k<0 && argF->isIdentityReduced()) {
-      A->initIdentity(argF, k, unsigned(in), a, false);
+      A->initIdentity(argF, k, unsigned(in), a, SPARSE_ONLY);
     } else {
-      A->initRedundant(argF, k, a, false);
+      A->initRedundant(argF, k, a, SPARSE_ONLY);
     }
   } else {
     argF->unpackNode(A, a, SPARSE_ONLY);
@@ -590,11 +590,11 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
     if (k<0 && argF->isIdentityReduced()) {
       TYPE rev;
       OP::redundant(rev);
-      A->initIdentity(argF, k, unsigned(in), rev, a, false);
+      A->initIdentity(argF, k, unsigned(in), rev, a, SPARSE_ONLY);
     } else {
       TYPE rev;
       OP::redundant(rev);
-      A->initRedundant(argF, k, rev, a, false);
+      A->initRedundant(argF, k, rev, a, SPARSE_ONLY);
     }
   } else {
     argF->unpackNode(A, a, SPARSE_ONLY);
@@ -858,11 +858,11 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
     if (k<0 && argF->isIdentityReduced()) {
       INTYPE rev;
       INOP::redundant(rev);
-      A->initIdentity(argF, k, unsigned(in), rev, an, false);
+      A->initIdentity(argF, k, unsigned(in), rev, an, SPARSE_ONLY);
     } else {
       INTYPE rev;
       INOP::redundant(rev);
-      A->initRedundant(argF, k, rev, an, false);
+      A->initRedundant(argF, k, rev, an, SPARSE_ONLY);
     }
   } else {
     argF->unpackNode(A, an, SPARSE_ONLY);

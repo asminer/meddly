@@ -302,8 +302,8 @@ MEDDLY::mt_mxd_bool::unionOneMinterm_r(int in, int k, node_handle a,  int* from,
   (aLevel == k)
   ? newUnpacked(a, FULL_ONLY)
   : this->isFullyReduced()
-  ? unpacked_node::newRedundant(this, k, a, true)  // has to be a FR mxd.... make sure it is
-  : unpacked_node::newIdentity(this, k, in, a, true)
+  ? unpacked_node::newRedundant(this, k, a, FULL_ONLY)
+  : unpacked_node::newIdentity(this, k, in, a, FULL_ONLY)
   ;
 
   // Do computation

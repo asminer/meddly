@@ -132,13 +132,13 @@ MEDDLY::generic_binary_mdd::compute_normal(node_handle a, node_handle b)
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg1F, resultLevel, a, true)
+    ? unpacked_node::newRedundant(arg1F, resultLevel, a, FULL_ONLY)
     : arg1F->newUnpacked(a, FULL_ONLY)
   ;
   MEDDLY_DCASSERT(!A->isExtensible());
 
   unpacked_node *B = (bLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg2F, resultLevel, b, true)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, FULL_ONLY)
     : arg2F->newUnpacked(b, FULL_ONLY)
   ;
   MEDDLY_DCASSERT(!B->isExtensible());
@@ -186,7 +186,7 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg1F, resultLevel, a, false)
+    ? unpacked_node::newRedundant(arg1F, resultLevel, a, SPARSE_ONLY)
     : arg1F->newUnpacked(a, SPARSE_ONLY)
     ;
   const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
@@ -195,7 +195,7 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
   const int A_last_index = last_nz >= 0? A->i(last_nz): -1;
 
   unpacked_node *B = (bLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg2F, resultLevel, b, false)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, SPARSE_ONLY)
     : arg2F->newUnpacked(b, SPARSE_ONLY)
     ;
   const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
@@ -314,13 +314,13 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg1F, resultLevel, a, true)
+    ? unpacked_node::newRedundant(arg1F, resultLevel, a, FULL_ONLY)
     : arg1F->newUnpacked(a, FULL_ONLY)
     ;
   const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
 
   unpacked_node *B = (bLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg2F, resultLevel, b, true)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, FULL_ONLY)
     : arg2F->newUnpacked(b, FULL_ONLY)
     ;
   const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
@@ -518,13 +518,13 @@ MEDDLY::generic_binary_mxd::compute_normal(node_handle a, node_handle b)
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg1F, resultLevel, a, true)
+    ? unpacked_node::newRedundant(arg1F, resultLevel, a, FULL_ONLY)
     : arg1F->newUnpacked(a, FULL_ONLY)
   ;
   MEDDLY_DCASSERT(!A->isExtensible());
 
   unpacked_node *B = (bLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg2F, resultLevel, b, true)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, FULL_ONLY)
     : arg2F->newUnpacked(b, FULL_ONLY)
   ;
   MEDDLY_DCASSERT(!B->isExtensible());
@@ -560,7 +560,7 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg1F, resultLevel, a, false)
+    ? unpacked_node::newRedundant(arg1F, resultLevel, a, SPARSE_ONLY)
     : arg1F->newUnpacked(a, SPARSE_ONLY)
     ;
   const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
@@ -569,7 +569,7 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   const int A_last_index = last_nz >= 0? A->i(last_nz): -1;
 
   unpacked_node *B = (bLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg2F, resultLevel, b, false)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, SPARSE_ONLY)
     : arg2F->newUnpacked(b, SPARSE_ONLY)
     ;
   const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
@@ -680,13 +680,13 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg1F, resultLevel, a, true)
+    ? unpacked_node::newRedundant(arg1F, resultLevel, a, FULL_ONLY)
     : arg1F->newUnpacked(a, FULL_ONLY)
     ;
   const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
 
   unpacked_node *B = (bLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg2F, resultLevel, b, true)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, FULL_ONLY)
     : arg2F->newUnpacked(b, FULL_ONLY)
     ;
   const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
@@ -773,18 +773,18 @@ MEDDLY::generic_binary_mxd::compute_r_normal(int in, int k, node_handle a, node_
   if (aLevel == k) {
     arg1F->unpackNode(A, a, FULL_ONLY);
   } else if (arg1F->isFullyReduced()) {
-    A->initRedundant(arg1F, k, a, true);
+    A->initRedundant(arg1F, k, a, FULL_ONLY);
   } else {
-    A->initIdentity(arg1F, k, in, a, true);
+    A->initIdentity(arg1F, k, in, a, FULL_ONLY);
   }
   MEDDLY_DCASSERT(A->getSize() == C->getSize());
 
   if (bLevel == k) {
     arg2F->unpackNode(B, b, FULL_ONLY);
   } else if (arg2F->isFullyReduced()) {
-    B->initRedundant(arg2F, k, b, true);
+    B->initRedundant(arg2F, k, b, FULL_ONLY);
   } else {
-    B->initIdentity(arg2F, k, in, b, true);
+    B->initIdentity(arg2F, k, in, b, FULL_ONLY);
   }
   MEDDLY_DCASSERT(B->getSize() == C->getSize());
 
@@ -821,8 +821,8 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
   (aLevel == k)
     ? arg1F->newUnpacked(a, SPARSE_ONLY)
     : arg1F->isFullyReduced()
-    ? unpacked_node::newRedundant(arg1F, k, a, false)
-    : unpacked_node::newIdentity(arg1F, k, in, a, false)
+    ? unpacked_node::newRedundant(arg1F, k, a, SPARSE_ONLY)
+    : unpacked_node::newIdentity(arg1F, k, in, a, SPARSE_ONLY)
     ;
   const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
   int last_nz = A->getNNZs()-1;
@@ -833,8 +833,8 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
   (bLevel == k)
     ? arg2F->newUnpacked(b, SPARSE_ONLY)
     : arg2F->isFullyReduced()
-    ? unpacked_node::newRedundant(arg2F, k, b, false)
-    : unpacked_node::newIdentity(arg2F, k, in, b, false)
+    ? unpacked_node::newRedundant(arg2F, k, b, SPARSE_ONLY)
+    : unpacked_node::newIdentity(arg2F, k, in, b, SPARSE_ONLY)
     ;
   const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
   last_nz = B->getNNZs()-1;
@@ -935,8 +935,8 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
   (aLevel == k)
     ? arg1F->newUnpacked(a, FULL_ONLY)
     : arg1F->isFullyReduced()
-    ? unpacked_node::newRedundant(arg1F, k, a, true)
-    : unpacked_node::newIdentity(arg1F, k, in, a, true)
+    ? unpacked_node::newRedundant(arg1F, k, a, FULL_ONLY)
+    : unpacked_node::newIdentity(arg1F, k, in, a, FULL_ONLY)
     ;
   const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
 
@@ -944,8 +944,8 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
   (bLevel == k)
     ? arg2F->newUnpacked(b, FULL_ONLY)
     : arg2F->isFullyReduced()
-    ? unpacked_node::newRedundant(arg2F, k, b, true)
-    : unpacked_node::newIdentity(arg2F, k, in, b, true)
+    ? unpacked_node::newRedundant(arg2F, k, b, FULL_ONLY)
+    : unpacked_node::newIdentity(arg2F, k, in, b, FULL_ONLY)
     ;
   const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
 
@@ -1077,9 +1077,9 @@ MEDDLY::generic_binbylevel_mxd
   if (aLevel == resultLevel) {
     arg1F->unpackNode(A, a, FULL_ONLY);
   } else if (resultLevel>0 || arg1F->isFullyReduced()) {
-    A->initRedundant(arg1F, resultLevel, a, true);
+    A->initRedundant(arg1F, resultLevel, a, FULL_ONLY);
   } else {
-    A->initIdentity(arg1F, resultLevel, in, a, true);
+    A->initIdentity(arg1F, resultLevel, in, a, FULL_ONLY);
     canSaveResult = false;
   }
 
@@ -1088,9 +1088,9 @@ MEDDLY::generic_binbylevel_mxd
   if (bLevel == resultLevel) {
     arg2F->unpackNode(B, b, FULL_ONLY);
   } else if (resultLevel>0 || arg2F->isFullyReduced()) {
-    B->initRedundant(arg2F, resultLevel, b, true);
+    B->initRedundant(arg2F, resultLevel, b, FULL_ONLY);
   } else {
-    B->initIdentity(arg2F, resultLevel, in, b, true);
+    B->initIdentity(arg2F, resultLevel, in, b, FULL_ONLY);
     canSaveResult = false;
   }
 
@@ -1158,9 +1158,9 @@ MEDDLY::generic_binbylevel_mxd
   if (aLevel == resultLevel) {
     arg1F->unpackNode(A, a, SPARSE_ONLY);
   } else if (resultLevel>0 || arg1F->isFullyReduced()) {
-    A->initRedundant(arg1F, resultLevel, a, false);
+    A->initRedundant(arg1F, resultLevel, a, SPARSE_ONLY);
   } else {
-    A->initIdentity(arg1F, resultLevel, in, a, false);
+    A->initIdentity(arg1F, resultLevel, in, a, SPARSE_ONLY);
     canSaveResult = false;
   }
   const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
@@ -1168,9 +1168,9 @@ MEDDLY::generic_binbylevel_mxd
   if (bLevel == resultLevel) {
     arg2F->unpackNode(B, b, SPARSE_ONLY);
   } else if (resultLevel>0 || arg2F->isFullyReduced()) {
-    B->initRedundant(arg2F, resultLevel, b, false);
+    B->initRedundant(arg2F, resultLevel, b, SPARSE_ONLY);
   } else {
-    B->initIdentity(arg2F, resultLevel, in, b, false);
+    B->initIdentity(arg2F, resultLevel, in, b, SPARSE_ONLY);
     canSaveResult = false;
   }
   const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
@@ -1340,12 +1340,12 @@ void MEDDLY::generic_binary_evplus
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg1F, resultLevel, 0L, a, true)
+    ? unpacked_node::newRedundant(arg1F, resultLevel, 0L, a, FULL_ONLY)
     : arg1F->newUnpacked(a, FULL_ONLY)
   ;
 
   unpacked_node *B = (bLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg2F, resultLevel, 0L, b, true)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, 0L, b, FULL_ONLY)
     : arg2F->newUnpacked(b, FULL_ONLY)
   ;
 
@@ -1439,11 +1439,11 @@ void MEDDLY::generic_binary_evplus_mxd
 
   // Initialize readers
   unpacked_node *A = isLevelAbove(resultLevel, aLevel)
-    ? unpacked_node::newRedundant(arg1F, resultLevel, 0L, a, true)
+    ? unpacked_node::newRedundant(arg1F, resultLevel, 0L, a, FULL_ONLY)
     : arg1F->newUnpacked(a, FULL_ONLY);
 
   unpacked_node *B = isLevelAbove(resultLevel, bLevel)
-    ? unpacked_node::newRedundant(arg2F, resultLevel, 0L, b, true)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, 0L, b, FULL_ONLY)
     : arg2F->newUnpacked(b, FULL_ONLY);
 
   // do computation
@@ -1493,17 +1493,17 @@ void MEDDLY::generic_binary_evplus_mxd
   if (aLevel == level) {
     arg1F->unpackNode(A, a, FULL_ONLY);
   } else if (arg1F->isFullyReduced()) {
-    A->initRedundant(arg1F, level, 0L, a, true);
+    A->initRedundant(arg1F, level, 0L, a, FULL_ONLY);
   } else {
-    A->initIdentity(arg1F, level, in, 0L, a, true);
+    A->initIdentity(arg1F, level, in, 0L, a, FULL_ONLY);
   }
 
   if (bLevel == level) {
     arg2F->unpackNode(B, b, FULL_ONLY);
   } else if (arg2F->isFullyReduced()) {
-    B->initRedundant(arg2F, level, 0L, b, true);
+    B->initRedundant(arg2F, level, 0L, b, FULL_ONLY);
   } else {
-    B->initIdentity(arg2F, level, in, 0L, b, true);
+    B->initIdentity(arg2F, level, in, 0L, b, FULL_ONLY);
   }
 
   // Do computation
@@ -1592,12 +1592,12 @@ void MEDDLY::generic_binary_evtimes
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg1F, resultLevel, 1.0f, a, true)
+    ? unpacked_node::newRedundant(arg1F, resultLevel, 1.0f, a, FULL_ONLY)
     : arg1F->newUnpacked(a, FULL_ONLY)
   ;
 
   unpacked_node *B = (bLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg2F, resultLevel, 1.0f, b, true)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, 1.0f, b, FULL_ONLY)
     : arg2F->newUnpacked(b, FULL_ONLY)
   ;
 
@@ -1660,17 +1660,17 @@ void MEDDLY::generic_binary_evtimes
   if (aLevel == resultLevel) {
     arg1F->unpackNode(A, a, FULL_ONLY);
   } else if (arg1F->isFullyReduced()) {
-    A->initRedundant(arg1F, resultLevel, 1.0f, a, true);
+    A->initRedundant(arg1F, resultLevel, 1.0f, a, FULL_ONLY);
   } else {
-    A->initIdentity(arg1F, resultLevel, in, 1.0f, a, true);
+    A->initIdentity(arg1F, resultLevel, in, 1.0f, a, FULL_ONLY);
   }
 
   if (bLevel == resultLevel) {
     arg2F->unpackNode(B, b, FULL_ONLY);
   } else if (arg2F->isFullyReduced()) {
-    B->initRedundant(arg2F, resultLevel, 1.0f, b, true);
+    B->initRedundant(arg2F, resultLevel, 1.0f, b, FULL_ONLY);
   } else {
-    B->initIdentity(arg2F, resultLevel, in, 1.0f, b, true);
+    B->initIdentity(arg2F, resultLevel, in, 1.0f, b, FULL_ONLY);
   }
 
   MEDDLY_DCASSERT(!A->isExtensible() && !B->isExtensible());

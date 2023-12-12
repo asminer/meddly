@@ -202,10 +202,10 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
   if (aLevel == k) {
     argF->unpackNode(A, a, FULL_ONLY);
   } else if (k>0 || argF->isFullyReduced()) {
-    A->initRedundant(argF, k, a, true);
+    A->initRedundant(argF, k, a, FULL_ONLY);
   } else {
     MEDDLY_DCASSERT(in>=0);
-    A->initIdentity(argF, k, unsigned(in), a, true);
+    A->initIdentity(argF, k, unsigned(in), a, FULL_ONLY);
     canSave = false;
   }
   unpacked_node* C = unpacked_node::newFull(resF, aLevel, size);

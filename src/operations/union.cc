@@ -162,12 +162,12 @@ MEDDLY::union_mxd::compute_ext(node_handle a, node_handle b)
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg1F, resultLevel, a, false)
+    ? unpacked_node::newRedundant(arg1F, resultLevel, a, SPARSE_ONLY)
     : arg1F->newUnpacked(a, SPARSE_ONLY)
     ;
 
   unpacked_node *B = (bLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg2F, resultLevel, b, false)
+    ? unpacked_node::newRedundant(arg2F, resultLevel, b, SPARSE_ONLY)
     : arg2F->newUnpacked(b, SPARSE_ONLY)
     ;
 

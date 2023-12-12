@@ -103,6 +103,13 @@ class MEDDLY::unpacked_node {
         void initRedundant(const forest *f, int k, const edge_value &ev,
                 node_handle node, node_storage_flags fs);
 
+        template <class T>
+        inline void initRedundant(const forest *f, int k, T _ev, node_handle node,
+                node_storage_flags fs)
+        {
+            initRedundant(f, k, edge_value(_ev), node, fs);
+        }
+
 
         //
         // Build identity nodes
@@ -111,15 +118,15 @@ class MEDDLY::unpacked_node {
         void initIdentity(const forest *f, int k, unsigned i,
                 node_handle node, node_storage_flags fs);
 
-        inline void initIdentity(const forest *f, int k, unsigned i,
-                node_handle node, bool full)
-        {
-            initIdentity(f, k, i, node, full ? FULL_ONLY : SPARSE_ONLY);
-        }
-
         void initIdentity(const forest *f, int k, unsigned i,
                 const edge_value &ev, node_handle node, node_storage_flags fs);
 
+        template <class T>
+        inline void initIdentity(const forest *f, int k, unsigned i, T _ev,
+                node_handle node, node_storage_flags fs)
+        {
+            initIdentity(f, k, i, edge_value(_ev), node, fs);
+        }
 
 
     public:
@@ -145,6 +152,15 @@ class MEDDLY::unpacked_node {
             return U;
         }
 
+        template <class T>
+        static inline unpacked_node* newRedundant(const forest *f, int k,
+                T _ev, node_handle node, node_storage_flags fs)
+        {
+            return newRedundant(f, k, edge_value(_ev), node, fs);
+        }
+
+
+
         static inline unpacked_node* newIdentity(const forest *f, int k,
                 unsigned i, node_handle node, node_storage_flags fs)
         {
@@ -162,6 +178,13 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(U);
             U->initIdentity(f, k, i, ev, node, fs);
             return U;
+        }
+
+        template <class T>
+        static inline unpacked_node* newIdentity(const forest *f, int k,
+                unsigned i, T _ev, node_handle node, node_storage_flags fs)
+        {
+            return newIdentity(f, k, i, edge_value(_ev), node, fs);
         }
 
         /** Create a zeroed-out full node */
@@ -783,6 +806,12 @@ public:
                 node_handle node, bool full)
         {
             initRedundant(f, k, node, full ? FULL_ONLY : SPARSE_ONLY);
+        }
+
+        inline void initIdentity(const forest *f, int k, unsigned i,
+                node_handle node, bool full)
+        {
+            initIdentity(f, k, i, node, full ? FULL_ONLY : SPARSE_ONLY);
         }
 
 #ifdef REMOVE_OLD
