@@ -139,7 +139,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
       unpacked_node* nr = newUnpacked(n, FULL_ONLY);
       bool update = false;
       for (int i = 0; i < hsize; i++) {
-        if (dup.find(nr->d(i)) != dup.end()) {
+        if (dup.find(nr->down(i)) != dup.end()) {
           update = true;
           break;
         }
@@ -148,8 +148,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
       if (update) {
         unpacked_node* nb = unpacked_node::newFull(this, level + 1, hsize);
         for (int i = 0; i < hsize; i++) {
-          auto search = dup.find(nr->d(i));
-          nb->d_ref(i) = linkNode(search == dup.end() ? nr->d(i) : search->second);
+          auto search = dup.find(nr->down(i));
+          nb->setFull(i, linkNode(search == dup.end() ? nr->down(i) : search->second));
         }
         node_handle node = createReducedNode(-1, nb);
         MEDDLY_DCASSERT(getNodeInCount(node) == 1 && getNodeLevel(node) == level + 1);
@@ -188,7 +188,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
     unpacked_node* nr = newUnpacked(phnodes[i], FULL_ONLY);
     bool skip = true;
     for (int j = 0; j < hsize; j++){
-      if (!isLevelAbove(-level, getNodeLevel(nr->d(j)))) {
+      if (!isLevelAbove(-level, getNodeLevel(nr->down(j)))) {
         skip = false;
         break;
       }
@@ -230,7 +230,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
 
       bool update = false;
       for (int i = 0; i < hsize; i++) {
-        if(dup.find(nr->d(i)) != dup.end()){
+        if(dup.find(nr->down(i)) != dup.end()){
           update=true;
           break;
         }
@@ -239,8 +239,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
       if (update) {
         unpacked_node* nb = unpacked_node::newFull(this, level + 1, hsize);
         for (int i = 0; i < hsize; i++) {
-          auto search = dup.find(nr->d(i));
-          nb->d_ref(i) = linkNode(search == dup.end() ? nr->d(i) : search->second);
+          auto search = dup.find(nr->down(i));
+          nb->setFull(i, linkNode(search == dup.end() ? nr->down(i) : search->second));
         }
         node_handle node = createReducedNode(-1, nb);
         MEDDLY_DCASSERT(getNodeInCount(node) == 1 && getNodeLevel(node) == level + 1);
@@ -295,13 +295,13 @@ MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesOf(node_handle no
             node_handle node_p = (getNodeLevel(node) == level ? getDownPtr(node, p) : node);
             node_handle node_pq = (getNodeLevel(node_p) == -(level) ? getDownPtr(node_p, q) : node_p);
             node_handle node_pqm = (getNodeLevel(node_pq) == (level+1) ? getDownPtr(node_pq, m) : node_pq);
-            plnb->d_ref(q) = linkNode(getNodeLevel(node_pqm) == -(level+1) ? getDownPtr(node_pqm, n) : node_pqm);
+            plnb->setFull(q, linkNode(getNodeLevel(node_pqm) == -(level+1) ? getDownPtr(node_pqm, n) : node_pqm));
           }
-          lnb->d_ref(p) = createReducedNode(p, plnb);
+          lnb->setFull(p, createReducedNode(p, plnb));
         }
-        phnb->d_ref(n) = createReducedNode(-1, lnb);
+        phnb->setFull(n, createReducedNode(-1, lnb));
       }
-      hnb->d_ref(m) = createReducedNode(m, phnb);
+      hnb->setFull(m, createReducedNode(m, phnb));
     }
   }
   else if (isIdentityReduced()) {
@@ -317,24 +317,24 @@ MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesOf(node_handle no
           for (int q = 0; q < hsize; q++) {
             node_handle node_p = (getNodeLevel(node) == level ? getDownPtr(node, p) : node);
             if (getNodeLevel(node_p) != -(level) && q != p) {
-              plnb->d_ref(q) = linkNode(getTransparentNode());
+              plnb->setFull(q, linkNode(getTransparentNode()));
             }
             else {
               node_handle node_pq = (getNodeLevel(node_p) == -(level) ? getDownPtr(node_p, q) : node_p);
               node_handle node_pqm = (getNodeLevel(node_pq) == (level+1) ? getDownPtr(node_pq, m) : node_pq);
               if (getNodeLevel(node_pqm) != -(level+1) && n != m) {
-                plnb->d_ref(q) = linkNode(getTransparentNode());
+                plnb->setFull(q, linkNode(getTransparentNode()));
               }
               else {
-                plnb->d_ref(q) = linkNode(getNodeLevel(node_pqm) == -(level+1) ? getDownPtr(node_pqm, n) : node_pqm);
+                plnb->setFull(q, linkNode(getNodeLevel(node_pqm) == -(level+1) ? getDownPtr(node_pqm, n) : node_pqm));
               }
             }
           }
-          lnb->d_ref(p) = createReducedNode(p, plnb);
+          lnb->setFull(p, createReducedNode(p, plnb));
         }
-        phnb->d_ref(n) = createReducedNode(-1, lnb);
+        phnb->setFull(n, createReducedNode(-1, lnb));
       }
-      hnb->d_ref(m) = createReducedNode(m, phnb);
+      hnb->setFull(m, createReducedNode(m, phnb));
     }
   }
   else {
@@ -404,7 +404,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
 //    MEDDLY_DCASSERT(nr->getSize() == hsize);
 //
 //    for (int j = 0; j < hsize; j++) {
-//      if (getNodeLevel(nr->d(j)) == level) {
+//      if (getNodeLevel(nr->down(j)) == level) {
 //        // Remove the nodes corresponding to functions that
 //        // are independent of the variable to be moved up
 //        hnodes[num++] = hnodes[i];
@@ -439,7 +439,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
 //    for (int j = 0; j < lsize; j++) {
 //      unpacked_node* low_nb = unpacked_node::newFull(this, level, hsize);
 //      for (int k = 0; k < hsize; k++) {
-//        node_handle node_k = high_nr->d(k);
+//        node_handle node_k = high_nr->down(k);
 //        node_handle node_kj = (getNodeLevel(node_k) == hlevel ? getDownPtr(node_k, j) : node_k);
 //        low_nb->d_ref(k) = linkNode(node_kj);
 //      }
@@ -614,9 +614,9 @@ bool MEDDLY::mtmxd_forest::mtmxd_iterator::next()
   node_handle down = 0;
   for (;;) {
     nzp[k]++;
-    if (nzp[k] < path[k].getNNZs()) {
-      index[k] = path[k].i(nzp[k]);
-      down = path[k].d(nzp[k]);
+    if (nzp[k] < path[k].getSize()) {
+      index[k] = path[k].index(nzp[k]);
+      down = path[k].down(nzp[k]);
       MEDDLY_DCASSERT(down);
       break;
     }
@@ -662,8 +662,8 @@ bool MEDDLY::mtmxd_forest::mtmxd_iterator::first(int k, node_handle down)
       F->unpackNode(path+k, down, SPARSE_ONLY);
     }
     nzp[k] = 0;
-    index[k] = path[k].i(0);
-    down = path[k].d(0);
+    index[k] = path[k].index(0);
+    down = path[k].down(0);
   }
   // save the terminal value
   index[0] = down;
@@ -709,9 +709,9 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::next()
   node_handle down = 0;
   // Only try to advance the column, because the row is fixed.
   for (int k=-1; k>=-maxLevel; k--) {
-    for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
-      index[k] = path[k].i(nzp[k]);
-      down = path[k].d(nzp[k]);
+    for (nzp[k]++; nzp[k] < path[k].getSize(); nzp[k]++) {
+      index[k] = path[k].index(nzp[k]);
+      down = path[k].down(nzp[k]);
       MEDDLY_DCASSERT(down);
       level_change = k;
       if (first(downLevel(k), down)) return true;
@@ -774,10 +774,10 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
 
   F->unpackNode(path+k, cdown, SPARSE_ONLY);
 
-  for (unsigned z=0; z<path[k].getNNZs(); z++) {
-    if (first(downLevel(k), path[k].d(z))) {
+  for (unsigned z=0; z<path[k].getSize(); z++) {
+    if (first(downLevel(k), path[k].down(z))) {
       nzp[k] = z;
-      index[k] = path[k].i(z);
+      index[k] = path[k].index(z);
       return true;
     }
   }
@@ -826,9 +826,9 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::next()
   node_handle down = 0;
   // Only try to advance the row, because the column is fixed.
   for (int k=1; k<=maxLevel; k++) {
-    for (nzp[k]++; nzp[k] < path[k].getNNZs(); nzp[k]++) {
-      index[k] = path[k].i(nzp[k]);
-      down = path[k].d(nzp[k]);
+    for (nzp[k]++; nzp[k] < path[k].getSize(); nzp[k]++) {
+      index[k] = path[k].index(nzp[k]);
+      down = path[k].down(nzp[k]);
       MEDDLY_DCASSERT(down);
       level_change = k;
       if (first(downLevel(k), down)) return true;
@@ -903,9 +903,9 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
   // Level is not skipped.
   F->unpackNode(path+k, down, SPARSE_ONLY);
 
-  for (unsigned z=0; z<path[k].getNNZs(); z++) {
-    index[k] = path[k].i(z);
-    if (first(downLevel(k), path[k].d(z))) {
+  for (unsigned z=0; z<path[k].getSize(); z++) {
+    index[k] = path[k].index(z);
+    if (first(downLevel(k), path[k].down(z))) {
       nzp[k] = z;
       return true;
     }

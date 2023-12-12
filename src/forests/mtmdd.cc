@@ -64,7 +64,7 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
     MEDDLY_DCASSERT(nr->getSize() == hsize);
 
     for (int j = 0; j < hsize; j++) {
-      if (isLevelAbove(getNodeLevel(nr->d(j)), level - 1)) {
+      if (isLevelAbove(getNodeLevel(nr->down(j)), level - 1)) {
         // Remove the nodes corresponding to functions that
         // are independent of the variable to be moved up
         hnodes[num++] = hnodes[i];
@@ -98,17 +98,17 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 
     unpacked_node* high_nb = unpacked_node::newFull(this, level + 1, lsize);
     for (int j = 0; j < hsize; j++) {
-      if (isLevelAbove(level, getNodeLevel(high_nr->d(j)))) {
+      if (isLevelAbove(level, getNodeLevel(high_nr->down(j)))) {
         for (int k = 0; k < lsize; k++) {
-          children[j][k] = high_nr->d(j);
+          children[j][k] = high_nr->down(j);
         }
       }
       else {
-        unpacked_node* nr = newUnpacked(high_nr->d(j), FULL_ONLY);
+        unpacked_node* nr = newUnpacked(high_nr->down(j), FULL_ONLY);
 
         MEDDLY_DCASSERT(nr->getSize() == lsize);
         for (int k = 0; k < lsize; k++) {
-          children[j][k] = nr->d(k);
+          children[j][k] = nr->down(k);
         }
         unpacked_node::Recycle(nr);
       }
@@ -117,9 +117,9 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
     for (int j = 0; j < lsize; j++) {
       unpacked_node* low_nb = unpacked_node::newFull(this, level, hsize);
       for (int k = 0; k < hsize; k++) {
-        low_nb->d_ref(k) = linkNode(children[k][j]);
+        low_nb->setFull(k, linkNode(children[k][j]));
       }
-      high_nb->d_ref(j) = createReducedNode(-1, low_nb);
+      high_nb->setFull(j, createReducedNode(-1, low_nb));
     }
 
     unpacked_node::Recycle(high_nr);
@@ -337,9 +337,9 @@ bool MEDDLY::mtmdd_forest::mtmdd_iterator::next()
   node_handle down = 0;
   for (k=1; k<=maxLevel; k++) {
     nzp[k]++;
-    if (nzp[k] < path[k].getNNZs()) {
-      index[k] = path[k].i(nzp[k]);
-      down = path[k].d(nzp[k]);
+    if (nzp[k] < path[k].getSize()) {
+      index[k] = path[k].index(nzp[k]);
+      down = path[k].down(nzp[k]);
       MEDDLY_DCASSERT(down);
       break;
     }
@@ -369,8 +369,8 @@ bool MEDDLY::mtmdd_forest::mtmdd_iterator::first(int k, node_handle down)
     if (kdn < k)  path[k].initRedundant(F, k, down, false);
     else          F->unpackNode(path + k, down, SPARSE_ONLY);
     nzp[k] = 0;
-    index[k] = path[k].i(0);
-    down = path[k].d(0);
+    index[k] = path[k].index(0);
+    down = path[k].down(0);
   }
   // save the terminal value
   index[0] = down;

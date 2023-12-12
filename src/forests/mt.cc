@@ -46,15 +46,13 @@ bool MEDDLY::mt_forest::isRedundant(const unpacked_node &nb) const
   if (isQuasiReduced()) return false;
   if (nb.getLevel() < 0 && isIdentityReduced()) return false;
   if (nb.isExtensible()) {
-    int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
-    if (rawsize == 1 && nb.ext_i() == 0) return true;
+    if (nb.getSize() == 1 && nb.ext_i() == 0) return true;
     return false;
   } else {
-    int rawsize = nb.isSparse() ? nb.getNNZs() : nb.getSize();
-    if (rawsize < getLevelSize(nb.getLevel())) return false;
-    int common = nb.d(0);
-    for (int i=1; i<rawsize; i++)
-      if (nb.d(i) != common) return false;
+    if (nb.getSize() < getLevelSize(nb.getLevel())) return false;
+    const node_handle common = nb.down(0);
+    for (unsigned i=1; i<nb.getSize(); i++)
+      if (nb.down(i) != common) return false;
     return true;
   }
 }
@@ -64,7 +62,7 @@ bool MEDDLY::mt_forest::isIdentityEdge(const unpacked_node &nb, int i) const
   if (nb.getLevel() > 0) return false;
   if (!isIdentityReduced()) return false;
   if (i<0) return false;
-  return nb.d(i) != 0;
+  return nb.down(i) != 0;
 }
 
 
@@ -97,11 +95,13 @@ MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d)
       nb = unpacked_node::newFull(this, up, (add_edge? (1+sz): sz));
 
       for (int i=0; i<sz; i++) {
-        nb->d_ref(i) = linkNode( (i==si) ? sd : d );
+        nb->setFull(i, linkNode( (i==si) ? sd : d ));
       }
       if (isExtensibleLevel(up)) {
         nb->markAsExtensible();
-        if (add_edge) nb->d_ref(sz) = linkNode(d);
+        if (add_edge) {
+            nb->setFull(sz, linkNode(d));
+        }
       }
     } else {
       //
@@ -109,13 +109,13 @@ MEDDLY::node_handle MEDDLY::mt_forest::makeNodeAtLevel(int k, node_handle d)
 
       if (isExtensibleLevel(up)) {
         nb = unpacked_node::newFull(this, up, 1);
-        nb->d_ref(0) = linkNode(d);
+        nb->setFull(0, linkNode(d));
         nb->markAsExtensible();
       } else {
         int sz = getLevelSize(up);
         nb = unpacked_node::newFull(this, up, sz);
         for (int i=0; i<sz; i++) {
-          nb->d_ref(i) = linkNode(d);
+          nb->setFull(i, linkNode(d));
         }
       }
     }
