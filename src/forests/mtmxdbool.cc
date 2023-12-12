@@ -174,31 +174,21 @@ MEDDLY::mt_mxd_bool::checkTerminalMinterm(node_handle a,  int* from,  int* to, i
               if(b_to >= 0){
               for(int j = 0; j < level_to_size; j++ )
                 {
-                  if (j!=b_to) P_node->d_ref(j) = 0;
-                  else
-                    {
-                      P_node->d_ref(j) = linkNode(below);
-                    }
+                  P_node->setFull(j, (j!=b_to) ? 0 : linkNode(below));
                 }
 
                 for(int j = 0; j < level_from_size; j++ )
                 {
-                 if(j!=b_from) UP_node->d_ref(j) = 0;
-                 else
-                  {
-                    UP_node->d_ref(j) = createReducedNode(j, P_node);
-                  }
+                  UP_node->setFull(j,
+                          (j!=b_from) ? 0 : createReducedNode(j, P_node)
+                  );
                 }
                 below = createReducedNode(-1, UP_node);
                } else {
 
                 for(int j = 0; j < level_from_size; j++ )
                 {
-                 if(j!=b_from) UP_node->d_ref(j) = 0;
-                 else
-                  {
-                    UP_node->d_ref(j) = below;
-                  }
+                  UP_node->setFull(j, (j!=b_from) ? 0 : below);
                 }
                 below = createReducedNode(-1, UP_node);
                }
@@ -236,10 +226,12 @@ MEDDLY::mt_mxd_bool::unionOneMinterm(node_handle a,  int* from,  int* to, int le
 
       if(i == from[bLevel])
       {
-        C->d_ref(i) = unionOneMinterm_r(i, dwnLevel, A->d(i), from, to);
+        C->setFull(i, unionOneMinterm_r(i, dwnLevel, A->down(i), from, to));
       }
       else
-        C->d_ref(i) = linkNode(A->d(i));
+      {
+        C->setFull(i, linkNode(A->down(i)));
+      }
     }
 
     result = createReducedNode(-1, C);
@@ -275,10 +267,11 @@ MEDDLY::mt_mxd_bool::unionOneMinterm_r(int in, int k, node_handle a,  int* from,
       }
       else {
         for (unsigned j=0; j<resultSize; j++) {
-        if(j == to[bLevel])
-          C->d_ref(to[bLevel]) = unionOneMinterm(a, from, to, downLevel(k));
-        else
-          C->d_ref(j) = 0;
+            if(j == to[bLevel]) {
+                C->setFull(j, unionOneMinterm(a, from, to, downLevel(k)));
+            } else {
+                C->setFull(j, 0);
+            }
         }
         result = createReducedNode(-1,C);
         return result;
@@ -294,7 +287,7 @@ MEDDLY::mt_mxd_bool::unionOneMinterm_r(int in, int k, node_handle a,  int* from,
     if(b_to == DONT_CARE) return unionOneMinterm(a, from, to, downLevel(k));
     else if(b_to == DONT_CHANGE)
     {
-      C->d_ref(in) = unionOneMinterm(a, from, to, downLevel(k));
+      C->setFull(in, unionOneMinterm(a, from, to, downLevel(k)));
       return createReducedNode(-1,C);
     }
   } else if( this->isIdentityReduced() && (b_to == DONT_CHANGE) && (aLevel != k) )
@@ -317,11 +310,11 @@ MEDDLY::mt_mxd_bool::unionOneMinterm_r(int in, int k, node_handle a,  int* from,
 
 
   for (unsigned j=0; j<resultSize; j++) {
-    if(j==b_to)
-      {
-        C->d_ref(j) = unionOneMinterm(A->d(j), from, to, downLevel(k));
-      } else
-        C->d_ref(j) = linkNode(A->d(j));
+    if(j==b_to) {
+        C->setFull(j, unionOneMinterm(A->down(j), from, to, downLevel(k)));
+    } else {
+        C->setFull(j, linkNode(A->down(j)));
+    }
   }
 
   // cleanup
