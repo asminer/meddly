@@ -20,6 +20,7 @@
 #define MEDDLY_CT_ENTRY_KEY_H
 
 #include "ct_entry_type.h"
+#include "edge_value.h"
 #include "error.h"
 #include "forest.h"
 
@@ -49,29 +50,51 @@ class MEDDLY::ct_entry_key {
 
         /// Write a node into the next slot
         inline void writeN(node_handle nh) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, currslot, total_slots);
-            MEDDLY_DCASSERT(ct_typeID::NODE == theSlotType());
+            WRITE_SLOT(ct_typeID::NODE);
             data[currslot++].N = nh;
+        }
+
+        /// Write an edge value into the next slot
+        inline void writeEV(const edge_value &ev) {
+            MEDDLY_DCASSERT(currslot < total_slots);
+
+            switch (etype->getKeyType(currslot)) {
+                case ct_typeID::INTEGER:
+                    ev.get(data[currslot++].I);
+                    break;
+
+                case ct_typeID::LONG:
+                    ev.get(data[currslot++].L);
+                    break;
+
+                case ct_typeID::FLOAT:
+                    ev.get(data[currslot++].F);
+                    break;
+
+                case ct_typeID::DOUBLE:
+                    ev.get(data[currslot++].D);
+                    break;
+
+                default:
+                    MEDDLY_DCASSERT(false);
+            }
         }
 
         /// Write an integer into the next slot
         inline void writeI(int i) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, currslot, total_slots);
-            MEDDLY_DCASSERT(ct_typeID::INTEGER == theSlotType());
+            WRITE_SLOT(ct_typeID::INTEGER);
             data[currslot++].I = i;
         }
 
         /// Write a long into the next slot
         inline void writeL(long i) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, currslot, total_slots);
-            MEDDLY_DCASSERT(ct_typeID::LONG == theSlotType());
+            WRITE_SLOT(ct_typeID::LONG);
             data[currslot++].L = i;
         }
 
         /// Write a float into the next slot
         inline void writeF(float f) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, currslot, total_slots);
-            MEDDLY_DCASSERT(ct_typeID::FLOAT == theSlotType());
+            WRITE_SLOT(ct_typeID::FLOAT);
             data[currslot++].F = f;
         }
 
@@ -119,8 +142,10 @@ class MEDDLY::ct_entry_key {
         }
 
     private:
-        inline ct_typeID theSlotType() const {
-            return etype->getKeyType(currslot);
+        inline void WRITE_SLOT(ct_typeID t)
+        {
+            MEDDLY_DCASSERT(currslot < total_slots);
+            MEDDLY_DCASSERT(t == etype->getKeyType(currslot));
         }
 
 

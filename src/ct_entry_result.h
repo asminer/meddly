@@ -91,6 +91,32 @@ class MEDDLY::ct_entry_result {
             build[currslot++].N = nh;
         }
 
+        inline void writeEV(const edge_value &ev) {
+            MEDDLY_DCASSERT(build);
+            MEDDLY_DCASSERT(currslot < dataLength());
+
+            switch (etype->getResultType(currslot)) {
+                case ct_typeID::INTEGER:
+                    ev.get(build[currslot++].I);
+                    break;
+
+                case ct_typeID::LONG:
+                    ev.get(build[currslot++].L);
+                    break;
+
+                case ct_typeID::FLOAT:
+                    ev.get(build[currslot++].F);
+                    break;
+
+                case ct_typeID::DOUBLE:
+                    ev.get(build[currslot++].D);
+                    break;
+
+                default:
+                    MEDDLY_DCASSERT(false);
+            }
+        }
+
         inline void writeI(int i) {
             WRITE_SLOT(ct_typeID::INTEGER);
             build[currslot++].I = i;
