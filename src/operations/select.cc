@@ -90,15 +90,15 @@ MEDDLY::node_handle MEDDLY::select_MT::_compute(node_handle a, int level)
   unpacked_node* A = isLevelAbove(level, argF->getNodeLevel(a))
     ? unpacked_node::newRedundant(argF, level, a, SPARSE_ONLY)
     : argF->newUnpacked(a, SPARSE_ONLY);
-  MEDDLY_DCASSERT(A->getNNZs() > 0);
+  MEDDLY_DCASSERT(A->getSize() > 0);
 
   // Initialize node builder
   unpacked_node* nb = unpacked_node::newSparse(resF, level, 1);
 
   // recurse
-  unsigned nz = rand() % A->getNNZs();
-  nb->i_ref(0) = A->i(nz);
-  nb->d_ref(0) = _compute(A->d(nz), level - 1);
+  unsigned nz = rand() % A->getSize();
+  nb->i_ref(0) = A->index(nz);
+  nb->d_ref(0) = _compute(A->down(nz), level - 1);
 
   // Cleanup
   unpacked_node::Recycle(A);
@@ -152,16 +152,16 @@ void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& b
   unpacked_node* A = isLevelAbove(level, argF->getNodeLevel(a))
     ? unpacked_node::newRedundant(argF, level, a, SPARSE_ONLY)
     : argF->newUnpacked(a, SPARSE_ONLY);
-  MEDDLY_DCASSERT(A->getNNZs() > 0);
+  MEDDLY_DCASSERT(A->getSize() > 0);
 
   // Initialize node builder
   unpacked_node* nb = unpacked_node::newSparse(resF, level, 1);
 
   // recurse
   // Zero-edge-valued indices
-  int* izz = new int[A->getNNZs()];
+  int* izz = new int[A->getSize()];
   unsigned sz = 0;
-  for (unsigned iz = 0; iz < A->getNNZs(); iz++) {
+  for (unsigned iz = 0; iz < A->getSize(); iz++) {
     if (0 == A->ei(iz)) {
       izz[sz] = iz;
       sz++;
@@ -169,11 +169,11 @@ void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& b
   }
   int nz = izz[rand() % sz];
   delete[] izz;
-  nb->i_ref(0) = A->i(nz);
+  nb->i_ref(0) = A->index(nz);
 
   long tev = 0;
   node_handle t = 0;
-  _compute(aev + A->ei(nz), A->d(nz), level - 1, tev, t);
+  _compute(aev + A->ei(nz), A->down(nz), level - 1, tev, t);
   nb->d_ref(0) = t;
   nb->setEdge(0, tev);
 

@@ -233,18 +233,18 @@ MEDDLY::satpregen_opname::pregen_relation
     // Read "rows"
     for (unsigned i = 0; i < Mu->getSize(); i++) {
       // Initialize column reader
-      if (isLevelAbove(-k, mxdF->getNodeLevel(Mu->d(i)))) {
-        Mp->initIdentity(mxdF, -k, i, Mu->d(i), FULL_ONLY);
+      if (isLevelAbove(-k, mxdF->getNodeLevel(Mu->down(i)))) {
+        Mp->initIdentity(mxdF, -k, i, Mu->down(i), FULL_ONLY);
       } else {
-        mxdF->unpackNode(Mp, Mu->d(i), FULL_ONLY);
+        mxdF->unpackNode(Mp, Mu->down(i), FULL_ONLY);
       }
 
       // Intersect along the diagonal
       if (0==i) {
-        maxDiag.set( mxdF->linkNode(Mp->d(i)) );
+        maxDiag.set( mxdF->linkNode(Mp->down(i)) );
       } else {
         dd_edge mpd(mxdF);
-        mpd.set( mxdF->linkNode(Mp->d(i)) );
+        mpd.set( mxdF->linkNode(Mp->down(i)) );
         mxdIntersection->computeTemp(maxDiag, mpd, maxDiag);
       }
     } // for i
@@ -746,7 +746,7 @@ MEDDLY::saturation_by_events_op::saturate(node_handle mdd, int k)
 
   // Do computation
   for (unsigned i=0; i<sz; i++) {
-    nb->d_ref(i) = mddDptrs->d(i) ? saturate(mddDptrs->d(i), k-1) : 0;
+    nb->d_ref(i) = mddDptrs->down(i) ? saturate(mddDptrs->down(i), k-1) : 0;
   }
 
   // Cleanup
@@ -960,22 +960,22 @@ void MEDDLY::forwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
     MEDDLY_DCASSERT(nb.d(i));
 
     for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
-      if (0 == Ru[ei]->d(i)) continue;  // row i of the event ei is empty
+      if (0 == Ru[ei]->down(i)) continue;  // row i of the event ei is empty
 
       // grab column (TBD: build these ahead of time?)
-      int dlevel = arg2F->getNodeLevel(Ru[ei]->d(i));
+      int dlevel = arg2F->getNodeLevel(Ru[ei]->down(i));
 
       if (dlevel == -nb.getLevel()) {
-        arg2F->unpackNode(Rp, Ru[ei]->d(i), SPARSE_ONLY);
+        arg2F->unpackNode(Rp, Ru[ei]->down(i), SPARSE_ONLY);
       } else {
-        Rp->initIdentity(arg2F, -nb.getLevel(), i, Ru[ei]->d(i), SPARSE_ONLY);
+        Rp->initIdentity(arg2F, -nb.getLevel(), i, Ru[ei]->down(i), SPARSE_ONLY);
       }
 
-      for (unsigned jz=0; jz<Rp->getNNZs(); jz++) {
-        unsigned j = Rp->i(jz);
+      for (unsigned jz=0; jz<Rp->getSize(); jz++) {
+        unsigned j = Rp->index(jz);
         if (-1==nb.d(j)) continue;  // nothing can be added to this set
 
-        node_handle rec = recFire(nb.d(i), Rp->d(jz));
+        node_handle rec = recFire(nb.d(i), Rp->down(jz));
 
         if (rec == 0) continue;
         if (rec == nb.d(j)) {
@@ -1065,7 +1065,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
     // that's an important special case that we can handle quickly.
 
     for (unsigned i=0; i<rSize; i++) {
-      nb->d_ref(i) = recFire(A->d(i), mxd);
+      nb->d_ref(i) = recFire(A->down(i), mxd);
     }
 
   } else {
@@ -1083,29 +1083,29 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
     }
 
     // loop over mxd "rows"
-    for (unsigned iz=0; iz<Ru->getNNZs(); iz++) {
-      unsigned i = Ru->i(iz);
-      if (0==A->d(i))   continue;
-      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
-        Rp->initIdentity(arg2F, rLevel, i, Ru->d(iz), SPARSE_ONLY);
+    for (unsigned iz=0; iz<Ru->getSize(); iz++) {
+      unsigned i = Ru->index(iz);
+      if (0==A->down(i))   continue;
+      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->down(iz)))) {
+        Rp->initIdentity(arg2F, rLevel, i, Ru->down(iz), SPARSE_ONLY);
       } else {
-        arg2F->unpackNode(Rp, Ru->d(iz), SPARSE_ONLY);
+        arg2F->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
       }
 
       // loop over mxd "columns"
-      for (unsigned jz=0; jz<Rp->getNNZs(); jz++) {
-        unsigned j = Rp->i(jz);
+      for (unsigned jz=0; jz<Rp->getSize(); jz++) {
+        unsigned j = Rp->index(jz);
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
-        node_handle newstates = recFire(A->d(i), Rp->d(jz));
+        node_handle newstates = recFire(A->down(i), Rp->down(jz));
         if (0==newstates) continue;
-        if (0==nb->d(j)) {
+        if (0==nb->down(j)) {
           nb->d_ref(j) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
-        nbdj.set(nb->d(j));
+        nbdj.set(nb->down(j));
         newst.set(newstates);
         mddUnion->computeTemp(nbdj, newst, nbdj);
         nb->set_d(j, nbdj);
@@ -1195,23 +1195,23 @@ void MEDDLY::bckwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
     // explore all events
     for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
       // explore all rows
-      for (unsigned iz=0; iz<Ru[ei]->getNNZs(); iz++) {
-        unsigned i = Ru[ei]->i(iz);
+      for (unsigned iz=0; iz<Ru[ei]->getSize(); iz++) {
+        unsigned i = Ru[ei]->index(iz);
         // grab column (TBD: build these ahead of time?)
-        int dlevel = arg2F->getNodeLevel(Ru[ei]->d(iz));
+        int dlevel = arg2F->getNodeLevel(Ru[ei]->down(iz));
 
         if (dlevel == -nb.getLevel()) {
-          arg2F->unpackNode(Rp, Ru[ei]->d(iz), SPARSE_ONLY);
+          arg2F->unpackNode(Rp, Ru[ei]->down(iz), SPARSE_ONLY);
         } else {
-          Rp->initIdentity(arg2F, -nb.getLevel(), i, Ru[ei]->d(iz), SPARSE_ONLY);
+          Rp->initIdentity(arg2F, -nb.getLevel(), i, Ru[ei]->down(iz), SPARSE_ONLY);
         }
 
-        for (unsigned jz=0; jz<Rp->getNNZs(); jz++) {
-          unsigned j = Rp->i(jz);
+        for (unsigned jz=0; jz<Rp->getSize(); jz++) {
+          unsigned j = Rp->index(jz);
           if (0==expl->data[j]) continue;
           if (0==nb.d(j))       continue;
           // We have an i->j edge to explore
-          node_handle rec = recFire(nb.d(j), Rp->d(jz));
+          node_handle rec = recFire(nb.d(j), Rp->down(jz));
 
           if (0==rec) continue;
           if (rec == nb.d(i)) {
@@ -1293,7 +1293,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_by_events_mt::recFire(node_handle mdd,
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
     for (unsigned i=0; i<rSize; i++) {
-      nb->d_ref(i) = recFire(A->d(i), mxd);
+      nb->d_ref(i) = recFire(A->down(i), mxd);
     }
   } else {
     //
@@ -1310,29 +1310,29 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_by_events_mt::recFire(node_handle mdd,
     }
 
     // loop over mxd "rows"
-    for (unsigned iz=0; iz<Ru->getNNZs(); iz++) {
-      unsigned i = Ru->i(iz);
-      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->d(iz)))) {
-        Rp->initIdentity(arg2F, rLevel, i, Ru->d(iz), SPARSE_ONLY);
+    for (unsigned iz=0; iz<Ru->getSize(); iz++) {
+      unsigned i = Ru->index(iz);
+      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->down(iz)))) {
+        Rp->initIdentity(arg2F, rLevel, i, Ru->down(iz), SPARSE_ONLY);
       } else {
-        arg2F->unpackNode(Rp, Ru->d(iz), SPARSE_ONLY);
+        arg2F->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
       }
 
       // loop over mxd "columns"
-      for (unsigned jz=0; jz<Rp->getNNZs(); jz++) {
-        unsigned j = Rp->i(jz);
-        if (0==A->d(j))   continue;
+      for (unsigned jz=0; jz<Rp->getSize(); jz++) {
+        unsigned j = Rp->index(jz);
+        if (0==A->down(j))   continue;
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
-        node_handle newstates = recFire(A->d(j), Rp->d(jz));
+        node_handle newstates = recFire(A->down(j), Rp->down(jz));
         if (0==newstates) continue;
-        if (0==nb->d(i)) {
+        if (0==nb->down(i)) {
           nb->d_ref(i) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
-        nbdi.set(nb->d(i));
+        nbdi.set(nb->down(i));
         newst.set(newstates);
         mddUnion->computeTemp(nbdi, newst, nbdi);
         nb->set_d(i, nbdi);

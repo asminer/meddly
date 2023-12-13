@@ -139,15 +139,15 @@ void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, int k, long& bev, n
     : argF->newUnpacked(a, FULL_ONLY);
   unpacked_node* T = unpacked_node::newFull(resF, level, size);
   for (int i = 0; i < size; i++) {
-    unpacked_node* B = isLevelAbove(-level, argF->getNodeLevel(A->d(i)))
+    unpacked_node* B = isLevelAbove(-level, argF->getNodeLevel(A->down(i)))
       ? (argF->isIdentityReduced()
-        ? unpacked_node::newIdentity(argF, -level, i, 0L, A->d(i), FULL_ONLY)
-        : unpacked_node::newRedundant(argF, -level, 0L, A->d(i), FULL_ONLY))
-      : argF->newUnpacked(A->d(i), FULL_ONLY);
+        ? unpacked_node::newIdentity(argF, -level, i, 0L, A->down(i), FULL_ONLY)
+        : unpacked_node::newRedundant(argF, -level, 0L, A->down(i), FULL_ONLY))
+      : argF->newUnpacked(A->down(i), FULL_ONLY);
 
     long tev = Inf<long>();
     node_handle t = 0;
-    compute_r(aev + A->ei(i) + B->ei(i), B->d(i), level - 1, tev, t);
+    compute_r(aev + A->ei(i) + B->ei(i), B->down(i), level - 1, tev, t);
     T->setEdge(i, tev);
     T->d_ref(i) = t;
 

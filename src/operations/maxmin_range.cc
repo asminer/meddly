@@ -158,9 +158,9 @@ int MEDDLY::maxrange_int::compute_r(node_handle a)
   unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // recurse
-  max = compute_r(A->d(0));
+  max = compute_r(A->down(0));
   for (unsigned i=1; i<A->getSize(); i++) {
-    max = MAX(max, compute_r(A->d(i)));
+    max = MAX(max, compute_r(A->down(i)));
   }
 
   // Cleanup
@@ -206,9 +206,9 @@ int MEDDLY::minrange_int::compute_r(node_handle a)
   unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // recurse
-  min = compute_r(A->d(0));
+  min = compute_r(A->down(0));
   for (unsigned i=1; i<A->getSize(); i++) {
-    min = MIN(min, compute_r(A->d(i)));
+    min = MIN(min, compute_r(A->down(i)));
   }
 
   // Cleanup
@@ -256,9 +256,9 @@ float MEDDLY::maxrange_real::compute_r(node_handle a)
   unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // recurse
-  max = compute_r(A->d(0));
+  max = compute_r(A->down(0));
   for (unsigned i=1; i<A->getSize(); i++) {
-    max = MAX(max, compute_r(A->d(i)));
+    max = MAX(max, compute_r(A->down(i)));
   }
 
   // Cleanup
@@ -306,9 +306,9 @@ float MEDDLY::minrange_real::compute_r(node_handle a)
   unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
 
   // recurse
-  min = compute_r(A->d(0));
+  min = compute_r(A->down(0));
   for (unsigned i=1; i<A->getSize(); i++) {
-    min = MIN(min, compute_r(A->d(i)));
+    min = MIN(min, compute_r(A->down(i)));
   }
 
   // Cleanup

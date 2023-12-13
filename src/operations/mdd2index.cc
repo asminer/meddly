@@ -131,7 +131,7 @@ MEDDLY::mdd2index_operation
   for (unsigned i=0; i<size; i++) {
     node_handle ddn;
     long dcard = 0;
-    compute_r(k-1, A->d(i), ddn, dcard);
+    compute_r(k-1, A->down(i), ddn, dcard);
     nb->d_ref(i) = ddn;
     if (ddn) {
       nb->setEdge(i, bcard);

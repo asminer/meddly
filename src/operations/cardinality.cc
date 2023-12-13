@@ -131,8 +131,8 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
   // Recurse
   long card = 0;
   int kdn = k-1;
-  for (unsigned z=0; z<A->getNNZs(); z++) {
-    overflow_acc(card, compute_r(kdn, A->d(z)));
+  for (unsigned z=0; z<A->getSize(); z++) {
+    overflow_acc(card, compute_r(kdn, A->down(z)));
   }
 
   // Cleanup
@@ -199,8 +199,8 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
   // Recurse
   long card = 0;
   int kdn = argF->downLevel(k);
-  for (unsigned z=0; z<A->getNNZs(); z++) {
-    overflow_acc(card, compute_r(kdn, A->d(z)));
+  for (unsigned z=0; z<A->getSize(); z++) {
+    overflow_acc(card, compute_r(kdn, A->down(z)));
   }
 
   // Cleanup
@@ -283,8 +283,8 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
   // Recurse
   double card = 0;
   int kdn = k-1;
-  for (unsigned z=0; z<A->getNNZs(); z++) {
-    card += compute_r(kdn, A->d(z));
+  for (unsigned z=0; z<A->getSize(); z++) {
+    card += compute_r(kdn, A->down(z));
   }
 
   // Cleanup
@@ -352,8 +352,8 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
   // Recurse
   double card = 0;
   int kdn = argF->downLevel(k);
-  for (unsigned z=0; z<A->getNNZs(); z++) {
-    card += compute_r(kdn, A->d(z));
+  for (unsigned z=0; z<A->getSize(); z++) {
+    card += compute_r(kdn, A->down(z));
   }
 
   // Cleanup
@@ -462,8 +462,8 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   tmp.setValue(0);
   card.setValue(0);
   int kdn = k-1;
-  for (unsigned z=0; z<A->getNNZs(); z++) {
-    compute_r(kdn, A->d(z), tmp);
+  for (unsigned z=0; z<A->getSize(); z++) {
+    compute_r(kdn, A->down(z), tmp);
     card.add(tmp);
   }
 
@@ -551,8 +551,8 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
   tmp.setValue(0);
   card.setValue(0);
   int kdn = argF->downLevel(k);
-  for (unsigned z=0; z<A->getNNZs(); z++) {
-    compute_r(kdn, A->d(z), tmp);
+  for (unsigned z=0; z<A->getSize(); z++) {
+    compute_r(kdn, A->down(z), tmp);
     card.add(tmp);
   }
 

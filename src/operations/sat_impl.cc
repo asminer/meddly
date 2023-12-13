@@ -202,11 +202,11 @@ void findConfirmedStatesImpl(MEDDLY::satimpl_opname::implicit_relation* rel,
     // mdd_level == level
     visited.insert(mdd);
     MEDDLY::unpacked_node *nr = insetF->newUnpacked(mdd, MEDDLY::SPARSE_ONLY);
-    for (int i = 0; i < nr->getNNZs(); i++) {
-      if (!confirmed[level][nr->i(i)]) {
-        rel->setConfirmedStates(level, nr->i(i));
+    for (int i = 0; i < nr->getSize(); i++) {
+      if (!confirmed[level][nr->index(i)]) {
+        rel->setConfirmedStates(level, nr->index(i));
       }
-      findConfirmedStatesImpl(rel, confirmed, confirm_states, nr->d(i), level-1, visited);
+      findConfirmedStatesImpl(rel, confirmed, confirm_states, nr->down(i), level-1, visited);
     }
     MEDDLY::unpacked_node::Recycle(nr);
   }
@@ -1053,7 +1053,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     // that's an important special case that we can handle quickly.
 
     for (int i=0; i<rSize; i++) {
-      nb->d_ref(i) = recFire(A->d(i), mxd);
+      nb->d_ref(i) = recFire(A->down(i), mxd);
     }
 
   } else {
@@ -1066,13 +1066,13 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     // loop over mxd "rows"
         for (int iz=0; iz<rSize; iz++) {
           int i = iz; // relation_node enabling condition
-          if (0==A->d(i))   continue;
+          if (0==A->down(i))   continue;
 
           // loop over mxd "columns"
           int j = relNode->nextOf(i);
           if(j==-1) continue;
 
-          node_handle newstates = recFire(A->d(i), relNode->getDown());
+          node_handle newstates = recFire(A->down(i), relNode->getDown());
           if (0==newstates) continue;
 
           //confirm local state
@@ -1091,12 +1091,12 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
           // determine new states to be added (recursively)
           // and add them
 
-          if (0==nb->d(j)) {
+          if (0==nb->down(j)) {
             nb->d_ref(j) = newstates;
             continue;
           }
           // there's new states and existing states; union them.
-          nbdj.set(nb->d(j));
+          nbdj.set(nb->down(j));
           newst.set(newstates);
           mddUnion->computeTemp(nbdj, newst, nbdj);
           nb->set_d(j, nbdj);
@@ -1413,7 +1413,7 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
 
   // Do computation
   for (int i=0; i<sz; i++) {
-    nb->d_ref(i) = mddDptrs->d(i) ? saturate(mddDptrs->d(i), k-1) : 0;
+    nb->d_ref(i) = mddDptrs->down(i) ? saturate(mddDptrs->down(i), k-1) : 0;
     }
 
   // Cleanup
@@ -1493,7 +1493,7 @@ bool isIntersectionEmpty(
   bool result = true;
   int min_size = unp_A->getSize() < unp_B->getSize()? unp_A->getSize(): unp_B->getSize();
   for (int i = 0; i < min_size && result; i++) {
-    if (!isIntersectionEmpty(mddF, unp_A->d(i), unp_B->d(i))) result = false;
+    if (!isIntersectionEmpty(mddF, unp_A->down(i), unp_B->down(i))) result = false;
   }
 
   // recycle unpacked nodes
@@ -1637,11 +1637,11 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   // Do computation
   for (int i=0; i<sz; i++) {
     node_handle temp = 0;
-    node_handle cons_i = (i < consDptrs->getSize() ? consDptrs->d(i) : ext_d);
-    if (isReachable(mddDptrs->d(i), k-1, cons_i, temp)) {
+    node_handle cons_i = (i < consDptrs->getSize() ? consDptrs->down(i) : ext_d);
+    if (isReachable(mddDptrs->down(i), k-1, cons_i, temp)) {
       // found reachable state in constraint, cleanup and return true
       for (int j = 0; j < i; j++) {
-        if (nb->d(j)) { argF->unlinkNode(nb->d(j)); nb->d_ref(j) = 0; }
+        if (nb->down(j)) { argF->unlinkNode(nb->down(j)); nb->d_ref(j) = 0; }
       }
       unpacked_node::Recycle(nb);
       unpacked_node::Recycle(mddDptrs);
@@ -1661,7 +1661,7 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   if (parent->saturateHelper(*nb, constraint)) {
     // found a reachable state in constraint
     for (int j = 0; j < sz; j++) {
-      if (nb->d(j)) { argF->unlinkNode(nb->d(j)); nb->d_ref(j) = 0; }
+      if (nb->down(j)) { argF->unlinkNode(nb->down(j)); nb->d_ref(j) = 0; }
     }
     unpacked_node::Recycle(nb);
     recycleCTKey(Key);
@@ -1741,7 +1741,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
       if(j==-1) continue;
       if (j < nb.getSize() && -1==nb.d(j)) continue; // nothing can be added to this set
 
-      const node_handle cons_j = (j < consDptrs->getSize() ? consDptrs->d(j) : cons_ext_d);
+      const node_handle cons_j = (j < consDptrs->getSize() ? consDptrs->down(j) : cons_ext_d);
       node_handle rec = 0;
       if (recFire(nb.d(i), Ru[ei]->getDown(), cons_j, rec)) {
         // found reachable state in constraint
@@ -1884,12 +1884,12 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     // that's an important special case that we can handle quickly.
 
     for (int i=0; i<rSize; i++) {
-      const node_handle cons_i = (i < consDptrs->getSize() ? consDptrs->d(i) : cons_ext_d);
+      const node_handle cons_i = (i < consDptrs->getSize() ? consDptrs->down(i) : cons_ext_d);
       node_handle temp = 0;
-      if (recFire(A->d(i), mxd, cons_i, temp)) {
+      if (recFire(A->down(i), mxd, cons_i, temp)) {
         // found reachable state in constraint: abort, cleanup and return true
         for (int j = 0; j < i; j++) {
-          if (nb->d(j)) { arg1F->unlinkNode(nb->d(j)); nb->d_ref(j) = 0; }
+          if (nb->down(j)) { arg1F->unlinkNode(nb->down(j)); nb->d_ref(j) = 0; }
         }
         unpacked_node::Recycle(nb);
         unpacked_node::Recycle(A);
@@ -1909,18 +1909,18 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     // loop over mxd "rows"
     for (int iz=0; iz<rSize; iz++) {
       int i = iz; // relation_node enabling condition
-      if (0==A->d(i))   continue;
+      if (0==A->down(i))   continue;
 
       // loop over mxd "columns"
       int j = relNode->nextOf(i);
       if(j==-1) continue;
 
       node_handle newstates = 0;
-      const node_handle cons_j = (j < consDptrs->getSize() ? consDptrs->d(j) : cons_ext_d);
-      if (recFire(A->d(i), relNode->getDown(), cons_j, newstates)) {
+      const node_handle cons_j = (j < consDptrs->getSize() ? consDptrs->down(j) : cons_ext_d);
+      if (recFire(A->down(i), relNode->getDown(), cons_j, newstates)) {
         // found reachable state in constraint: abort, cleanup and return true
         for (int k = 0; k < nb->getSize(); k++) {
-          if (nb->d(k)) { arg1F->unlinkNode(nb->d(k)); nb->d_ref(k) = 0; }
+          if (nb->down(k)) { arg1F->unlinkNode(nb->down(k)); nb->d_ref(k) = 0; }
         }
         unpacked_node::Recycle(nb);
         unpacked_node::Recycle(A);
@@ -1946,12 +1946,12 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
       // determine new states to be added (recursively)
       // and add them
 
-      if (0==nb->d(j)) {
+      if (0==nb->down(j)) {
         nb->d_ref(j) = newstates;
         continue;
       }
       // there's new states and existing states; union them.
-      nbdj.set(nb->d(j));
+      nbdj.set(nb->down(j));
       newst.set(newstates);
       mddUnion->computeTemp(nbdj, newst, nbdj);
       nb->set_d(j, nbdj);
@@ -1968,7 +1968,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     // found reachable state in constraint
     const int sz = nb->getSize();
     for (int j = 0; j < sz; j++) {
-      if (nb->d(j)) { arg1F->unlinkNode(nb->d(j)); nb->d_ref(j) = 0; }
+      if (nb->down(j)) { arg1F->unlinkNode(nb->down(j)); nb->d_ref(j) = 0; }
     }
     unpacked_node::Recycle(nb);
     recycleCTKey(Key);

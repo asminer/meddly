@@ -163,21 +163,21 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
 
   // do computation
   for (unsigned i = 0; i < resultSize; i++) {
-    if (A->d(i) == 0 || B->d(i) == 0) {
+    if (A->down(i) == 0 || B->down(i) == 0) {
       nb->d_ref(i) = 0;
       nb->setEdge(i, 0L);
       continue;
     }
 
-    int dLevel = arg1F->getNodeLevel(A->d(i));
+    int dLevel = arg1F->getNodeLevel(A->down(i));
     unpacked_node *D = (dLevel != -resultLevel)
-      ? unpacked_node::newIdentity(arg1F, -resultLevel, i, 0L, A->d(i), FULL_ONLY)
-      : arg1F->newUnpacked(A->d(i), FULL_ONLY);
+      ? unpacked_node::newIdentity(arg1F, -resultLevel, i, 0L, A->down(i), FULL_ONLY)
+      : arg1F->newUnpacked(A->down(i), FULL_ONLY);
 
     unpacked_node* nb2 = unpacked_node::newFull(resF, -resultLevel, resultSize);
 
     for (unsigned j = 0; j < resultSize; j++) {
-      if (D->d(j) == 0) {
+      if (D->down(j) == 0) {
         nb2->d_ref(j) = 0;
         nb2->setEdge(j, 0L);
         continue;
@@ -185,8 +185,8 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
 
       long ev = Inf<long>();
       node_handle ed = 0;
-      compute(aev + A->ei(i) + D->ei(j), D->d(j),
-        bev + B->ei(i), B->d(i),
+      compute(aev + A->ei(i) + D->ei(j), D->down(j),
+        bev + B->ei(i), B->down(i),
         ev, ed);
       nb2->d_ref(j) = ed;
       nb2->setEdge(j, ev);
@@ -270,21 +270,21 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
 
   // do computation
   for (unsigned i = 0; i < resultSize; i++) {
-    if (A->d(i) == 0) {
+    if (A->down(i) == 0) {
       nb->d_ref(i) = 0;
       nb->setEdge(i, 0L);
       continue;
     }
 
-    int dLevel = arg1F->getNodeLevel(A->d(i));
+    int dLevel = arg1F->getNodeLevel(A->down(i));
     unpacked_node *D = (dLevel != -resultLevel)
-      ? unpacked_node::newIdentity(arg1F, -resultLevel, i, 0L, A->d(i), FULL_ONLY)
-      : arg1F->newUnpacked(A->d(i), FULL_ONLY);
+      ? unpacked_node::newIdentity(arg1F, -resultLevel, i, 0L, A->down(i), FULL_ONLY)
+      : arg1F->newUnpacked(A->down(i), FULL_ONLY);
 
     unpacked_node* nb2 = unpacked_node::newFull(resF, -resultLevel, resultSize);
 
     for (unsigned j = 0; j < resultSize; j++) {
-      if (D->d(j) == 0 || B->d(j) == 0) {
+      if (D->down(j) == 0 || B->down(j) == 0) {
         nb2->d_ref(j) = 0;
         nb2->setEdge(j, 0L);
         continue;
@@ -292,8 +292,8 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
 
       long ev = Inf<long>();
       node_handle ed = 0;
-      compute(aev + A->ei(i) + D->ei(j), D->d(j),
-        bev + B->ei(j), B->d(j),
+      compute(aev + A->ei(i) + D->ei(j), D->down(j),
+        bev + B->ei(j), B->down(j),
         ev, ed);
       nb2->d_ref(j) = ed;
       nb2->setEdge(j, ev);

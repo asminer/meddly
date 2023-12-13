@@ -216,7 +216,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
     for (unsigned i=0; i<rSize; i++) {
-      C->d_ref(i) = compute_rec(A->d(i), mxd);
+      C->d_ref(i) = compute_rec(A->down(i), mxd);
     }
   } else {
     //
@@ -238,31 +238,31 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
     dd_edge newstatesE(resF), cdi(resF);
 
     // loop over mxd "rows"
-    for (unsigned iz=0; iz<Ru->getNNZs(); iz++) {
-      unsigned i = Ru->i(iz);
-      if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(iz)))) {
-        Rp->initIdentity(argM, rLevel, i, Ru->d(iz), SPARSE_ONLY);
+    for (unsigned iz=0; iz<Ru->getSize(); iz++) {
+      unsigned i = Ru->index(iz);
+      if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->down(iz)))) {
+        Rp->initIdentity(argM, rLevel, i, Ru->down(iz), SPARSE_ONLY);
       } else {
-        argM->unpackNode(Rp, Ru->d(iz), SPARSE_ONLY);
+        argM->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
       }
 
       // loop over mxd "columns"
-      for (unsigned jz=0; jz<Rp->getNNZs(); jz++) {
-        unsigned j = Rp->i(jz);
+      for (unsigned jz=0; jz<Rp->getSize(); jz++) {
+        unsigned j = Rp->index(jz);
         MEDDLY_DCASSERT(0<=j && j < A->getSize());
-        if (0==A->d(j))   continue;
+        if (0==A->down(j))   continue;
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
-        node_handle newstates = compute_rec(A->d(j), Rp->d(jz));
+        node_handle newstates = compute_rec(A->down(j), Rp->down(jz));
         if (0==newstates) continue;
-        if (0==C->d(i)) {
+        if (0==C->down(i)) {
           C->d_ref(i) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
         newstatesE.set(newstates);
-        cdi.set(C->d(i));
+        cdi.set(C->down(i));
         accumulateOp->computeTemp(newstatesE, cdi, cdi);
         C->set_d(i, cdi);
       } // for j
@@ -359,7 +359,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
     for (unsigned i=0; i<rSize; i++) {
-      C->d_ref(i) = compute_rec(A->d(i), mxd);
+      C->d_ref(i) = compute_rec(A->down(i), mxd);
     }
   } else {
     //
@@ -381,30 +381,30 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
     dd_edge newstatesE(resF), cdj(resF);
 
     // loop over mxd "rows"
-    for (unsigned iz=0; iz<Ru->getNNZs(); iz++) {
-      unsigned i = Ru->i(iz);
-      if (0==A->d(i))   continue;
-      if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(iz)))) {
-        Rp->initIdentity(argM, rLevel, i, Ru->d(iz), SPARSE_ONLY);
+    for (unsigned iz=0; iz<Ru->getSize(); iz++) {
+      unsigned i = Ru->index(iz);
+      if (0==A->down(i))   continue;
+      if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->down(iz)))) {
+        Rp->initIdentity(argM, rLevel, i, Ru->down(iz), SPARSE_ONLY);
       } else {
-        argM->unpackNode(Rp, Ru->d(iz), SPARSE_ONLY);
+        argM->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
       }
 
       // loop over mxd "columns"
-      for (unsigned jz=0; jz<Rp->getNNZs(); jz++) {
-        unsigned j = Rp->i(jz);
+      for (unsigned jz=0; jz<Rp->getSize(); jz++) {
+        unsigned j = Rp->index(jz);
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
-        node_handle newstates = compute_rec(A->d(i), Rp->d(jz));
+        node_handle newstates = compute_rec(A->down(i), Rp->down(jz));
         if (0==newstates) continue;
-        if (0==C->d(j)) {
+        if (0==C->down(j)) {
           C->d_ref(j) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
         newstatesE.set(newstates);
-        cdj.set(C->d(j));
+        cdj.set(C->down(j));
         accumulateOp->computeTemp(newstatesE, cdj, cdj);
         C->set_d(j, cdj);
       } // for j
@@ -699,7 +699,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
     for (unsigned i=0; i<rSize; i++) {
       long nev = Inf<long>();
       node_handle newstates = 0;
-      compute_rec(A->ei(i), A->d(i), mxd, nev, newstates);
+      compute_rec(A->ei(i), A->down(i), mxd, nev, newstates);
 
       C->setEdge(i, newstates == 0 ? 0L : ev + nev);
       C->d_ref(i) = newstates;
@@ -727,34 +727,34 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
     dd_edge newstatesE(resF), cdi(resF);
 
     // loop over mxd "rows"
-    for (unsigned iz=0; iz<Ru->getNNZs(); iz++) {
-      unsigned i = Ru->i(iz);
-      if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(iz)))) {
-        Rp->initIdentity(argM, rLevel, i, Ru->d(iz), SPARSE_ONLY);
+    for (unsigned iz=0; iz<Ru->getSize(); iz++) {
+      unsigned i = Ru->index(iz);
+      if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->down(iz)))) {
+        Rp->initIdentity(argM, rLevel, i, Ru->down(iz), SPARSE_ONLY);
       } else {
-        argM->unpackNode(Rp, Ru->d(iz), SPARSE_ONLY);
+        argM->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
       }
 
       // loop over mxd "columns"
-      for (unsigned jz=0; jz<Rp->getNNZs(); jz++) {
-        unsigned j = Rp->i(jz);
-        if (0==A->d(j))   continue;
+      for (unsigned jz=0; jz<Rp->getSize(); jz++) {
+        unsigned j = Rp->index(jz);
+        if (0==A->down(j))   continue;
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
         long nev = Inf<long>();
         node_handle newstates = 0;
-        compute_rec(A->ei(j), A->d(j), Rp->d(jz), nev, newstates);
+        compute_rec(A->ei(j), A->down(j), Rp->down(jz), nev, newstates);
         if (0==newstates) continue;
         nev += ev;
-        if (0==C->d(i)) {
+        if (0==C->down(i)) {
           C->setEdge(i, nev);
           C->d_ref(i) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
         newstatesE.set(newstates, nev);
-        cdi.set(C->d(i), C->ei(i));
+        cdi.set(C->down(i), C->ei(i));
         accumulateOp->computeTemp(newstatesE, cdi, cdi);
         C->set_de(i, cdi);
       } // for j
@@ -847,7 +847,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
     for (unsigned i=0; i<rSize; i++) {
       long nev = Inf<long>();
       node_handle newstates = 0;
-      compute_rec(A->ei(i), A->d(i), mxd, nev, newstates);
+      compute_rec(A->ei(i), A->down(i), mxd, nev, newstates);
 
       C->setEdge(i, newstates == 0 ? 0L : ev + nev);
       C->d_ref(i) = newstates;
@@ -875,34 +875,34 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
     dd_edge newstatesE(resF), cdj(resF);
 
     // loop over mxd "rows"
-    for (unsigned iz=0; iz<Ru->getNNZs(); iz++) {
-      unsigned i = Ru->i(iz);
-      if (0==A->d(i))   continue;
-      if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(iz)))) {
-        Rp->initIdentity(argM, rLevel, i, Ru->d(iz), SPARSE_ONLY);
+    for (unsigned iz=0; iz<Ru->getSize(); iz++) {
+      unsigned i = Ru->index(iz);
+      if (0==A->down(i))   continue;
+      if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->down(iz)))) {
+        Rp->initIdentity(argM, rLevel, i, Ru->down(iz), SPARSE_ONLY);
       } else {
-        argM->unpackNode(Rp, Ru->d(iz), SPARSE_ONLY);
+        argM->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
       }
 
       // loop over mxd "columns"
-      for (unsigned jz=0; jz<Rp->getNNZs(); jz++) {
-        unsigned j = Rp->i(jz);
+      for (unsigned jz=0; jz<Rp->getSize(); jz++) {
+        unsigned j = Rp->index(jz);
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
         // and add them
         long nev = Inf<long>();
         node_handle newstates = 0;
-        compute_rec(A->ei(i), A->d(i), Rp->d(jz), nev, newstates);
+        compute_rec(A->ei(i), A->down(i), Rp->down(jz), nev, newstates);
         if (0==newstates) continue;
         nev += ev;
-        if (0==C->d(j)) {
+        if (0==C->down(j)) {
           C->setEdge(j, nev);
           C->d_ref(j) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
         newstatesE.set(newstates, nev);
-        cdj.set(C->d(j), C->ei(j));
+        cdj.set(C->down(j), C->ei(j));
         accumulateOp->computeTemp(newstatesE, cdj, cdj);
         C->set_de(j, cdj);
       } // for j
@@ -1061,10 +1061,10 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
     : argV->newUnpacked(evmxd, FULL_ONLY);
 
   for (unsigned i = 0; i < rSize; i++) {
-    int pLevel = argV->getNodeLevel(A->d(i));
+    int pLevel = argV->getNodeLevel(A->down(i));
     unpacked_node* B = isLevelAbove(-rLevel, pLevel)
-      ? unpacked_node::newIdentity(argV, -rLevel, i, 0L, A->d(i), FULL_ONLY)
-      : argV->newUnpacked(A->d(i), FULL_ONLY);
+      ? unpacked_node::newIdentity(argV, -rLevel, i, 0L, A->down(i), FULL_ONLY)
+      : argV->newUnpacked(A->down(i), FULL_ONLY);
 
     unpacked_node* D = unpacked_node::newFull(resF, -rLevel, rSize);
     if (rLevel > ABS(mxdLevel)) {
@@ -1074,7 +1074,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
       for (unsigned j = 0; j < rSize; j++) {
         long nev = Inf<long>();
         node_handle newstates = 0;
-        compute_rec(A->ei(i) + B->ei(j), B->d(j), mxd, nev, newstates);
+        compute_rec(A->ei(i) + B->ei(j), B->down(j), mxd, nev, newstates);
 
         D->setEdge(j, newstates == 0 ? 0L : ev + nev);
         D->d_ref(j) = newstates;
@@ -1103,39 +1103,39 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
       dd_edge newstatesE(resF), djp(resF);
 
       // loop over mxd "rows"
-      for (unsigned jz = 0; jz < Ru->getNNZs(); jz++) {
-        unsigned j = Ru->i(jz);
-        if (0 == B->d(j)) {
+      for (unsigned jz = 0; jz < Ru->getSize(); jz++) {
+        unsigned j = Ru->index(jz);
+        if (0 == B->down(j)) {
           continue;
         }
 
-        if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(jz)))) {
-          Rp->initIdentity(argM, rLevel, j, Ru->d(jz), SPARSE_ONLY);
+        if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->down(jz)))) {
+          Rp->initIdentity(argM, rLevel, j, Ru->down(jz), SPARSE_ONLY);
         } else {
-          argM->unpackNode(Rp, Ru->d(jz), SPARSE_ONLY);
+          argM->unpackNode(Rp, Ru->down(jz), SPARSE_ONLY);
         }
 
         // loop over mxd "columns"
-        for (unsigned jpz = 0; jpz < Rp->getNNZs(); jpz++) {
-          unsigned jp = Rp->i(jpz);
+        for (unsigned jpz = 0; jpz < Rp->getSize(); jpz++) {
+          unsigned jp = Rp->index(jpz);
           // ok, there is an i->j "edge".
           // determine new states to be added (recursively)
           // and add them
           long nev = Inf<long>();
           node_handle newstates = 0;
-          compute_rec(A->ei(i) + B->ei(j), B->d(j), Rp->d(jpz), nev, newstates);
+          compute_rec(A->ei(i) + B->ei(j), B->down(j), Rp->down(jpz), nev, newstates);
           if (0==newstates) {
             continue;
           }
           nev += ev;
-          if (0 == D->d(jp)) {
+          if (0 == D->down(jp)) {
             D->setEdge(jp, nev);
             D->d_ref(jp) = newstates;
             continue;
           }
           // there's new states and existing states; union them.
           newstatesE.set(newstates, nev);
-          djp.set(D->d(jp), D->ei(jp));
+          djp.set(D->down(jp), D->ei(jp));
           accumulateOp->computeTemp(newstatesE, djp, djp);
           D->set_de(jp, djp);
         } // for j

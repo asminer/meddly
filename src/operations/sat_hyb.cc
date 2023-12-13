@@ -336,11 +336,11 @@ void findConfirmedStatesImpl(MEDDLY::sathyb_opname::hybrid_relation* rel,
     // mdd_level == level
     visited.insert(mdd);
     MEDDLY::unpacked_node *nr = insetF->newUnpacked(mdd, MEDDLY::SPARSE_ONLY);
-    for (int i = 0; i < nr->getNNZs(); i++) {
-      if (!confirmed[level][nr->i(i)]) {
-        rel->setConfirmedStates(level, nr->i(i));
+    for (int i = 0; i < nr->getSize(); i++) {
+      if (!confirmed[level][nr->index(i)]) {
+        rel->setConfirmedStates(level, nr->index(i));
       }
-      findConfirmedStatesImpl(rel, confirmed, confirm_states, nr->d(i), level-1, visited);
+      findConfirmedStatesImpl(rel, confirmed, confirm_states, nr->down(i), level-1, visited);
     }
     MEDDLY::unpacked_node::Recycle(nr);
   }
@@ -1745,7 +1745,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
           Ru[event_Ru_Rn_index[ei]]->initRedundant(arg2F, level, se_nh, SPARSE_ONLY);  // node was at prime-level, so build redudant node at unprime-level
         }
 
-        node_handle ei_i_p = Ru[event_Ru_Rn_index[ei]]->d(i);
+        node_handle ei_i_p = Ru[event_Ru_Rn_index[ei]]->down(i);
         if( 0 == ei_i_p) continue;
 
         const int dlevel = arg2F->getNodeLevel(ei_i_p);
@@ -1755,7 +1755,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         else
           Rp->initIdentity(arg2F, -level, i, ei_i_p, SPARSE_ONLY);
 
-        jC = Rp->getNNZs();
+        jC = Rp->getSize();
 
       }
       int num_se = event_handles[ei]->getNumOfSubevents()+(event_handles[ei]->getNumOfRelnodes()>0?1:0);
@@ -1771,10 +1771,10 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
          if (j < nb.getSize() && -1==nb.d(j)) continue;
          seHandlesForRecursion[0]=Rn[event_Ru_Rn_index[ei]]->getDown();
         } else {
-          j = Rp->i(jz);
+          j = Rp->index(jz);
           if(j==-1) continue; // Not enabled
           if (j < nb.getSize() && -1==nb.d(j)) continue;
-          seHandlesForRecursion[which_se+does_rn_exist] = Rp->d(jz);
+          seHandlesForRecursion[which_se+does_rn_exist] = Rp->down(jz);
         }
 
         node_handle rec = recFire(nb.d(i), seHandlesForRecursion, num_se);
@@ -1910,7 +1910,7 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
     for (int i=0; i<rSize; i++) {
-      nb->d_ref(i) = recFire(A->d(i), seHandles, num_se);
+      nb->d_ref(i) = recFire(A->down(i), seHandles, num_se);
     }
 
   } else {
@@ -1936,7 +1936,7 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
       } else {
         arg2F->unpackNode(Ru, mxd, SPARSE_ONLY);
       }
-      row_size = Ru->getNNZs();
+      row_size = Ru->getSize();
     }
 
 
@@ -1955,13 +1955,13 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
         const unsigned i = iz;
         int j = relNode->nextOf(i);
         if(j==-1) continue;
-        recFireHelper(i, rLevel, relNode->getDown(), A->d(i), Rp, nb, seHandlesLower, imFlag, j, num_se, which_se);
+        recFireHelper(i, rLevel, relNode->getDown(), A->down(i), Rp, nb, seHandlesLower, imFlag, j, num_se, which_se);
        }
        } else  {
         for (int iz=0; iz<row_size; iz++) {
-        const unsigned i = Ru->i(iz);
-        if (0==A->d(i)) continue;
-        recFireHelper(i, rLevel, Ru->d(iz), A->d(i), Rp, nb, seHandlesLower, imFlag, -1, num_se, which_se);
+        const unsigned i = Ru->index(iz);
+        if (0==A->down(i)) continue;
+        recFireHelper(i, rLevel, Ru->down(iz), A->down(i), Rp, nb, seHandlesLower, imFlag, -1, num_se, which_se);
         }
         unpacked_node::Recycle(Rp);
         unpacked_node::Recycle(Ru);
@@ -2011,7 +2011,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
 
   dd_edge nbdj(resF), newst(resF);
 
-  unsigned jc = imFlag ? 1 : Rp->getNNZs();
+  unsigned jc = imFlag ? 1 : Rp->getSize();
 
   for (unsigned jz=0; jz<jc; jz++) {
     if((jz == 0) && imFlag)
@@ -2020,9 +2020,9 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
         recHandles[which_se] = Ru_i;
       }
     else {
-        j = Rp->i(jz);
+        j = Rp->index(jz);
         if (j == -1) continue;
-        recHandles[which_se] = Rp->d(jz);
+        recHandles[which_se] = Rp->down(jz);
       }
 
       MEDDLY::node_handle newstates = recFire(A_i, recHandles, num_se);
@@ -2045,13 +2045,13 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
       // ok, there is an i->j "edge".
       // determine new states to be added (recursively)
       // and add them
-      if (0==nb->d(j)) {
+      if (0==nb->down(j)) {
         nb->d_ref(j) = newstates;
         continue;
       }
 
       // there's new states and existing states; union them.
-      nbdj.set(nb->d(j));
+      nbdj.set(nb->down(j));
       newst.set(newstates);
       mddUnion->computeTemp(nbdj, newst, nbdj);
       nb->set_d(j, nbdj);
@@ -2311,7 +2311,7 @@ MEDDLY::saturation_hyb_by_events_op::saturate(node_handle mdd, int k)
 
   // Do computation
   for (int i=0; i<sz; i++) {
-    nb->d_ref(i) = mddDptrs->d(i) ? saturate(mddDptrs->d(i), k-1) : 0;
+    nb->d_ref(i) = mddDptrs->down(i) ? saturate(mddDptrs->down(i), k-1) : 0;
     }
 
   // Cleanup

@@ -167,22 +167,22 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
     unsigned xp = 0;
     unsigned yp = 0;
     for (;;) {
-      if (xR->i(xp) < yR->i(yp)) {
+      if (xR->index(xp) < yR->index(yp)) {
         xp++;
-        if (xp >= xR->getNNZs()) break;
+        if (xp >= xR->getSize()) break;
         continue;
       }
-      if (xR->i(xp) > yR->i(yp)) {
+      if (xR->index(xp) > yR->index(yp)) {
         yp++;
-        if (yp >= yR->getNNZs()) break;
+        if (yp >= yR->getSize()) break;
         continue;
       }
       // match, need to recurse
-      compute_r(k-1, y + yR->ei(yp), yR->d(yp), x + xR->ei(xp), xR->d(xp), a);
+      compute_r(k-1, y + yR->ei(yp), yR->down(yp), x + xR->ei(xp), xR->down(xp), a);
       xp++;
-      if (xp >= xR->getNNZs()) break;
+      if (xp >= xR->getSize()) break;
       yp++;
-      if (yp >= yR->getNNZs()) break;
+      if (yp >= yR->getSize()) break;
     } // for (;;)
 
     // Cleanup
@@ -210,22 +210,22 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   unsigned xp = 0;
   unsigned ap = 0;
   for (;;) {
-    if (aR->i(ap) < xR->i(xp)) {
+    if (aR->index(ap) < xR->index(xp)) {
       ap++;
-      if (ap >= aR->getNNZs()) break;
+      if (ap >= aR->getSize()) break;
       continue;
     }
-    if (aR->i(ap) > xR->i(xp)) {
+    if (aR->index(ap) > xR->index(xp)) {
       xp++;
-      if (xp >= xR->getNNZs()) break;
+      if (xp >= xR->getSize()) break;
       continue;
     }
     // match, need to recurse
-    comp_pr(k, y, y_ind, x + xR->ei(xp), xR->d(xp), aR->i(ap), aR->d(ap));
+    comp_pr(k, y, y_ind, x + xR->ei(xp), xR->down(xp), aR->index(ap), aR->down(ap));
     ap++;
-    if (ap >= aR->getNNZs()) break;
+    if (ap >= aR->getSize()) break;
     xp++;
-    if (xp >= xR->getNNZs()) break;
+    if (xp >= xR->getSize()) break;
   } // for (;;)
 
   // Cleanup
@@ -256,22 +256,22 @@ void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
   unsigned yp = 0;
   unsigned ap = 0;
   for (;;) {
-    if (aR->i(ap) < yR->i(yp)) {
+    if (aR->index(ap) < yR->index(yp)) {
       ap++;
-      if (ap >= aR->getNNZs()) break;
+      if (ap >= aR->getSize()) break;
       continue;
     }
-    if (aR->i(ap) > yR->i(yp)) {
+    if (aR->index(ap) > yR->index(yp)) {
       yp++;
-      if (yp >= yR->getNNZs()) break;
+      if (yp >= yR->getSize()) break;
       continue;
     }
     // match, need to recurse
-    compute_r(k-1, y + yR->ei(yp), yR->d(yp), x, x_ind, aR->d(ap));
+    compute_r(k-1, y + yR->ei(yp), yR->down(yp), x, x_ind, aR->down(ap));
     ap++;
-    if (ap >= aR->getNNZs()) break;
+    if (ap >= aR->getSize()) break;
     yp++;
-    if (yp >= yR->getNNZs()) break;
+    if (yp >= yR->getSize()) break;
   } // for (;;)
 
   // Cleanup
@@ -344,22 +344,22 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
     unsigned xp = 0;
     unsigned yp = 0;
     for (;;) {
-      if (xR->i(xp) < yR->i(yp)) {
+      if (xR->index(xp) < yR->index(yp)) {
         xp++;
-        if (xp >= xR->getNNZs()) break;
+        if (xp >= xR->getSize()) break;
         continue;
       }
-      if (xR->i(xp) > yR->i(yp)) {
+      if (xR->index(xp) > yR->index(yp)) {
         yp++;
-        if (yp >= yR->getNNZs()) break;
+        if (yp >= yR->getSize()) break;
         continue;
       }
       // match, need to recurse
-      compute_r(k-1, y + yR->ei(yp), yR->d(yp), x + xR->ei(xp), xR->d(xp), a);
+      compute_r(k-1, y + yR->ei(yp), yR->down(yp), x + xR->ei(xp), xR->down(xp), a);
       xp++;
-      if (xp >= xR->getNNZs()) break;
+      if (xp >= xR->getSize()) break;
       yp++;
-      if (yp >= yR->getNNZs()) break;
+      if (yp >= yR->getSize()) break;
     } // for (;;)
 
     // Cleanup
@@ -388,22 +388,22 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   unsigned yp = 0;
   unsigned ap = 0;
   for (;;) {
-    if (aR->i(ap) < yR->i(yp)) {
+    if (aR->index(ap) < yR->index(yp)) {
       ap++;
-      if (ap >= aR->getNNZs()) break;
+      if (ap >= aR->getSize()) break;
       continue;
     }
-    if (aR->i(ap) > yR->i(yp)) {
+    if (aR->index(ap) > yR->index(yp)) {
       yp++;
-      if (yp >= yR->getNNZs()) break;
+      if (yp >= yR->getSize()) break;
       continue;
     }
     // match, need to recurse
-    comp_pr(k, y + yR->ei(yp), yR->d(yp), x, x_ind, aR->i(ap), aR->d(ap));
+    comp_pr(k, y + yR->ei(yp), yR->down(yp), x, x_ind, aR->index(ap), aR->down(ap));
     ap++;
-    if (ap >= aR->getNNZs()) break;
+    if (ap >= aR->getSize()) break;
     yp++;
-    if (yp >= yR->getNNZs()) break;
+    if (yp >= yR->getSize()) break;
   } // for (;;)
 
   // Cleanup
@@ -434,22 +434,22 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
   unsigned xp = 0;
   unsigned ap = 0;
   for (;;) {
-    if (aR->i(ap) < xR->i(xp)) {
+    if (aR->index(ap) < xR->index(xp)) {
       ap++;
-      if (ap >= aR->getNNZs()) break;
+      if (ap >= aR->getSize()) break;
       continue;
     }
-    if (aR->i(ap) > xR->i(xp)) {
+    if (aR->index(ap) > xR->index(xp)) {
       xp++;
-      if (xp >= xR->getNNZs()) break;
+      if (xp >= xR->getSize()) break;
       continue;
     }
     // match, need to recurse
-    compute_r(k-1, y, y_ind, x + xR->ei(xp), xR->d(xp), aR->d(ap));
+    compute_r(k-1, y, y_ind, x + xR->ei(xp), xR->down(xp), aR->down(ap));
     ap++;
-    if (ap >= aR->getNNZs()) break;
+    if (ap >= aR->getSize()) break;
     xp++;
-    if (xp >= xR->getNNZs()) break;
+    if (xp >= xR->getSize()) break;
   } // for (;;)
 
   // Cleanup

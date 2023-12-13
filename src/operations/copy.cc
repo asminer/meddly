@@ -134,12 +134,12 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handl
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
-  unpacked_node* nb = unpacked_node::newSparse(resF, level, A->getNNZs());
+  unpacked_node* nb = unpacked_node::newSparse(resF, level, A->getSize());
 
   // recurse
-  for (unsigned z=0; z<A->getNNZs(); z++) {
-    nb->i_ref(z) = A->i(z);
-    nb->d_ref(z) = computeSkip(int(A->i(z)), A->d(z));
+  for (unsigned z=0; z<A->getSize(); z++) {
+    nb->i_ref(z) = A->index(z);
+    nb->d_ref(z) = computeSkip(int(A->index(z)), A->down(z));
   }
 
   // Handle extensible edge, if any
@@ -205,12 +205,12 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
   }
 
   // Initialize node builder
-  unpacked_node* nb = unpacked_node::newSparse(resF, k, A->getNNZs());
+  unpacked_node* nb = unpacked_node::newSparse(resF, k, A->getSize());
 
   // recurse
-  for (unsigned z=0; z<A->getNNZs(); z++) {
-    nb->i_ref(z) = A->i(z);
-    nb->d_ref(z) = computeAll(int(A->i(z)), nextk, A->d(z));
+  for (unsigned z=0; z<A->getSize(); z++) {
+    nb->i_ref(z) = A->index(z);
+    nb->d_ref(z) = computeAll(int(A->index(z)), nextk, A->down(z));
   }
 
   // Handle extensible edge, if any
@@ -339,14 +339,14 @@ void MEDDLY::copy_MT2EV<TYPE>
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
-  unpacked_node* nb = unpacked_node::newSparse(resF, level, A->getNNZs());
+  unpacked_node* nb = unpacked_node::newSparse(resF, level, A->getSize());
 
   // recurse
-  for (unsigned z=0; z<A->getNNZs(); z++) {
+  for (unsigned z=0; z<A->getSize(); z++) {
     node_handle d;
     TYPE dev = Inf<TYPE>();
-    computeSkip(int(A->i(z)), A->d(z), d, dev);
-    nb->i_ref(z) = A->i(z);
+    computeSkip(int(A->index(z)), A->down(z), d, dev);
+    nb->i_ref(z) = A->index(z);
     nb->d_ref(z) = d;
     nb->setEdge(z, dev);
   }
@@ -410,13 +410,13 @@ void MEDDLY::copy_MT2EV<TYPE>
   }
 
   // Initialize node builder
-  unpacked_node* nb = unpacked_node::newSparse(resF, k, A->getNNZs());
+  unpacked_node* nb = unpacked_node::newSparse(resF, k, A->getSize());
 
   // recurse
-  for (unsigned z=0; z<A->getNNZs(); z++) {
+  for (unsigned z=0; z<A->getSize(); z++) {
     TYPE dev;
-    nb->i_ref(z) = A->i(z);
-    computeAll(int(A->i(z)), nextk, A->d(z), nb->d_ref(z), dev);
+    nb->i_ref(z) = A->index(z);
+    computeAll(int(A->index(z)), nextk, A->down(z), nb->d_ref(z), dev);
     nb->setEdge(z, dev);
   }
 
@@ -528,14 +528,14 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
-  unpacked_node* nb = unpacked_node::newSparse(resF, level, A->getNNZs());
+  unpacked_node* nb = unpacked_node::newSparse(resF, level, A->getSize());
 
   // recurse
-  for (unsigned z=0; z<A->getNNZs(); z++) {
+  for (unsigned z=0; z<A->getSize(); z++) {
     TYPE aev;
     A->getEdge(z, aev);
-    nb->i_ref(z) = A->i(z);
-    nb->d_ref(z) = computeSkip(int(A->i(z)), OP::apply(ev, aev), A->d(z));
+    nb->i_ref(z) = A->index(z);
+    nb->d_ref(z) = computeSkip(int(A->index(z)), OP::apply(ev, aev), A->down(z));
   }
 
   // Cleanup
@@ -601,14 +601,14 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   }
 
   // Initialize node builder
-  unpacked_node* nb = unpacked_node::newSparse(resF, k, A->getNNZs());
+  unpacked_node* nb = unpacked_node::newSparse(resF, k, A->getSize());
 
   // recurse
-  for (unsigned z=0; z<A->getNNZs(); z++) {
+  for (unsigned z=0; z<A->getSize(); z++) {
     TYPE aev;
     A->getEdge(z, aev);
-    nb->i_ref(z) = A->i(z);
-    nb->d_ref(z) = computeAll(int(A->i(z)), nextk, OP::apply(ev, aev), A->d(z));
+    nb->i_ref(z) = A->index(z);
+    nb->d_ref(z) = computeAll(int(A->index(z)), nextk, OP::apply(ev, aev), A->down(z));
   }
 
   // Cleanup
@@ -702,12 +702,12 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
 
   // Initialize node builder
   const int level = argF->getNodeLevel(a);
-  unpacked_node* nb = unpacked_node::newSparse(resF, level, A->getNNZs());
+  unpacked_node* nb = unpacked_node::newSparse(resF, level, A->getSize());
 
   // recurse
-  for (unsigned z=0; z<A->getNNZs(); z++) {
-    nb->i_ref(z) = A->i(z);
-    nb->d_ref(z) = computeSkip(int(A->i(z)), A->d(z));
+  for (unsigned z=0; z<A->getSize(); z++) {
+    nb->i_ref(z) = A->index(z);
+    nb->d_ref(z) = computeSkip(int(A->index(z)), A->down(z));
     INTYPE av;
     OUTTYPE bv;
     A->getEdge(z, av);
@@ -869,15 +869,15 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   }
 
   // Initialize node builder
-  unpacked_node* nb = unpacked_node::newSparse(resF, k, A->getNNZs());
+  unpacked_node* nb = unpacked_node::newSparse(resF, k, A->getSize());
 
   // recurse
-  for (unsigned z=0; z<A->getNNZs(); z++) {
+  for (unsigned z=0; z<A->getSize(); z++) {
     INTYPE adv;
     OUTTYPE bdv;
     A->getEdge(z, adv);
-    nb->i_ref(z) = A->i(z);
-    computeAll(int(A->i(z)), nextk, INOP::apply(av, adv), A->d(z), bdv, nb->d_ref(z));
+    nb->i_ref(z) = A->index(z);
+    computeAll(int(A->index(z)), nextk, INOP::apply(av, adv), A->down(z), bdv, nb->d_ref(z));
     nb->setEdge(z, bdv);
   }
 
