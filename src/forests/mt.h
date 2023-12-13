@@ -53,17 +53,18 @@ class MEDDLY::mt_forest : public expert_forest {
   // Helpers for this and derived classes
 
     /// Add redundant nodes from level k to the given node.
-    node_handle makeNodeAtLevel(int k, node_handle d);
-
-        // No edge values right now, so these are no-ops
-        // That could change with complement edges.
-        /*
-        virtual void readEdgeValue(input &s, dd_edge &E) const;
-        virtual void writeEdgeValue(output &s, const dd_edge &E) const;
-        virtual void showEdgeValue(output &s, const dd_edge &E) const;
-        */
+    template <class T>
+    inline node_handle makeNodeAtLevel(T k, node_handle d)
+    {
+        MEDDLY_DCASSERT(ABS(k) >= ABS(getNodeLevel(d)));
+        if (isFullyReduced()) return d;
+        if (isQuasiReduced() && d==getTransparentNode()) return d;
+        return _makeNodeAtLevel(int(k), d);
+    }
 
   protected:
+    node_handle _makeNodeAtLevel(int k, node_handle d);
+
     /// make a node at the top level
     inline node_handle makeNodeAtTop(node_handle p) {
       return makeNodeAtLevel(getDomain()->getNumVariables(), p);

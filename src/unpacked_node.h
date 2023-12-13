@@ -188,27 +188,30 @@ class MEDDLY::unpacked_node {
         }
 
         /** Create a zeroed-out full node */
+        template <class T>
         static inline unpacked_node* newFull(forest *f,
-                int levl, unsigned tsz)
+                int levl, T tsz)
         {
             unpacked_node* U = New(f);
             MEDDLY_DCASSERT(U);
+            MEDDLY_DCASSERT(tsz >= 0);
             U->level = levl;
-            U->resize(tsz);
-            U->clear(0, tsz);
+            U->resize(unsigned(tsz));
+            U->clear(0, unsigned(tsz));
             U->setFull();
             U->allowWrites(f);
             return U;
         }
 
-        /** Create a zeroed-out sparse node */
+        /** Create a sparse node */
+        template <class T>
         static inline unpacked_node* newSparse(forest *f,
-                int levl, unsigned nnzs)
+                int levl, T nnzs)
         {
             unpacked_node* U = New(f);
             MEDDLY_DCASSERT(U);
             U->level = levl;
-            U->resize(nnzs);
+            U->resize(unsigned(nnzs));
             U->setSparse();
             U->allowWrites(f);
             return U;
@@ -304,6 +307,20 @@ class MEDDLY::unpacked_node {
             return _down[n];
         }
 
+        /** Get a downward pointer.
+            @param  n   Which pointer.
+            @return     If this is a full node,
+                        return pointer with index n.
+                        If this is a sparse node,
+                        return the nth non-zero pointer.
+        */
+        inline node_handle down(int n) const
+        {
+            MEDDLY_DCASSERT(_down);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
+            return _down[n];
+        }
+
         /** Get the index of the nth non-zero pointer.
             Use only for sparse nodes.
             @param  n   Which pointer
@@ -317,6 +334,19 @@ class MEDDLY::unpacked_node {
             return _index[n];
         }
 
+        /** Get the index of the nth non-zero pointer.
+            Use only for sparse nodes.
+            @param  n   Which pointer
+            @return     The index of the pointer
+        */
+        inline unsigned index(int n) const
+        {
+            MEDDLY_DCASSERT(_index);
+            MEDDLY_DCASSERT(!is_full);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
+            return _index[n];
+        }
+
         /** Get the nth edge value.
             @param  n   Which pointer
             @return     The edge value
@@ -327,6 +357,15 @@ class MEDDLY::unpacked_node {
             return _edge[n];
         }
 
+        /** Get the nth edge value.
+            @param  n   Which pointer
+            @return     The edge value
+        */
+        inline const edge_value& edgeval(int n) const {
+            MEDDLY_DCASSERT(_edge);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
+            return _edge[n];
+        }
 
         /** Subtract from an edge value.
             @param  n       Which pointer
