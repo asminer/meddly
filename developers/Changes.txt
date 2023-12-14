@@ -2,6 +2,13 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
+Forest cleanup
+    -> replace expert_forest with forest in compute tables, operations
+        -> split out and simplify (templates and functors) the
+            apply_generic_mdd style classes
+                (goal is for 'check terminals' to be inlined, not virtual)
+
+
 (*) tie unpacked nodes to forests
     distinguish between "root" and "read only" unpacked nodes?
 

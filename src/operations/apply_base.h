@@ -29,64 +29,80 @@
 */
 
 namespace MEDDLY {
-  class generic_binary_mdd;
-  class generic_binary_mxd;
-  class generic_binbylevel_mxd;
-  class generic_binary_ev;
-  class generic_binary_evplus;
-  class generic_binary_evplus_mxd;
-  class generic_binary_evtimes;
+    class generic_binary_mdd;
+    class generic_binary_mxd;
+    class generic_binbylevel_mxd;
+    class generic_binary_ev;
+    class generic_binary_evplus;
+    class generic_binary_evplus_mxd;
+    class generic_binary_evtimes;
 }
 
 // ******************************************************************
 
 class MEDDLY::generic_binary_mdd : public binary_operation {
-  public:
-    generic_binary_mdd(binary_opname* code, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    public:
+        generic_binary_mdd(binary_opname* code, expert_forest* arg1,
+            expert_forest* arg2, expert_forest* res);
 
-  protected:
-    virtual ~generic_binary_mdd();
+    protected:
+        virtual ~generic_binary_mdd();
 
-  public:
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
+    public:
+        virtual void computeDDEdge(const dd_edge& a, const dd_edge& b,
+            dd_edge &c, bool userFlag);
 
-    virtual node_handle compute(node_handle a, node_handle b);
-    virtual node_handle compute_normal(node_handle a, node_handle b);
-    virtual node_handle compute_ext(node_handle a, node_handle b);
+    protected:
+        node_handle compute(node_handle a, node_handle b);
+        node_handle compute_normal(node_handle a, node_handle b);
+        node_handle compute_ext(node_handle a, node_handle b);
 
-  protected:
-    inline ct_entry_key*
-    findResult(node_handle a, node_handle b, node_handle &c)
-    {
-      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
-      if (can_commute && a > b) {
-        CTsrch->writeN(b);
-        CTsrch->writeN(a);
-      } else {
-        CTsrch->writeN(a);
-        CTsrch->writeN(b);
-      }
-      CT0->find(CTsrch, CTresult[0]);
-      if (!CTresult[0]) return CTsrch;
-      c = resF->linkNode(CTresult[0].readN());
-      CT0->recycle(CTsrch);
-      return 0;
-    }
+    protected:
+        /// Check the compute table.
+        ///     @param  a   First operand
+        ///     @param  b   Second operand
+        ///     @param  c   Result, if found, will be stored here
+        ///
+        ///     @return     A null pointer, if there's a matching
+        ///                 compute table entry. In this case we
+        ///                 set \a c to the matched result.
+        ///                 Otherwise, we return a pointer to
+        ///                 a new ct_entry_key, which will be used
+        ///                 at the end to save the result in the
+        ///                 compute table.
+        ///
+        inline ct_entry_key*
+        findResult(node_handle a, node_handle b, node_handle &c)
+        {
+            ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+            MEDDLY_DCASSERT(CTsrch);
+            if (can_commute && a > b) {
+                CTsrch->writeN(b);
+                CTsrch->writeN(a);
+            } else {
+                CTsrch->writeN(a);
+                CTsrch->writeN(b);
+            }
+            CT0->find(CTsrch, CTresult[0]);
+            if (!CTresult[0]) return CTsrch;
+            c = resF->linkNode(CTresult[0].readN());
+            CT0->recycle(CTsrch);
+            return nullptr;
+        }
 
-    inline void saveResult(ct_entry_key* K,
-      node_handle a, node_handle b, node_handle c)
-    {
-      CTresult[0].reset();
-      CTresult[0].writeN(c);
-      CT0->addEntry(K, CTresult[0]);
-    }
+        inline void
+        saveResult(ct_entry_key* K, node_handle a, node_handle b, node_handle c)
+        {
+            CTresult[0].reset();
+            CTresult[0].writeN(c);
+            CT0->addEntry(K, CTresult[0]);
+        }
 
-  protected:
-    // If terminal condition is reached, returns true and the result in c.
-    // Must be provided in derived classes.
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c) = 0;
+    protected:
+        // If terminal condition is reached, returns true and the result in c.
+        // Must be provided in derived classes.
+        virtual bool checkTerminals(node_handle a, node_handle b,
+                        node_handle& c) = 0;
 
 };
 
@@ -103,11 +119,11 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
   public:
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
 
-    virtual node_handle compute(node_handle a, node_handle b);
-    virtual node_handle compute_normal(node_handle a, node_handle b);
-    virtual node_handle compute_ext(node_handle a, node_handle b);
-
   protected:
+    node_handle compute(node_handle a, node_handle b);
+    node_handle compute_normal(node_handle a, node_handle b);
+    node_handle compute_ext(node_handle a, node_handle b);
+
     node_handle compute_r(int i, int k, node_handle a, node_handle b);
     node_handle compute_r_normal(int i, int k, node_handle a, node_handle b);
     node_handle compute_r_ext(int i, int k, node_handle a, node_handle b);
@@ -159,7 +175,8 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
   public:
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
 
-    virtual node_handle compute(int level, node_handle a, node_handle b);
+  protected:
+    node_handle compute(int level, node_handle a, node_handle b);
 
   protected:
     inline ct_entry_key*
