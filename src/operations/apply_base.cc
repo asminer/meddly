@@ -545,7 +545,10 @@ MEDDLY::generic_binary_mxd::compute_normal(node_handle a, node_handle b)
 
   // Do computation
   for (unsigned j=0; j<resultSize; j++) {
-    C->d_ref(j) = compute_r(j, resF->downLevel(resultLevel), A->down(j), B->down(j));
+    C->setFull(j,
+        compute_r(j, resF->downLevel(resultLevel), A->down(j), B->down(j))
+    );
+    // C->d_ref(j) = compute_r(j, resF->downLevel(resultLevel), A->down(j), B->down(j));
   }
 
   // cleanup
@@ -625,8 +628,9 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
     const node_handle b_d = ((j == B->index(B_curr_index))? B->down(B_curr_index++): 0);
     node_handle down = compute_r(j, dwnLevel, a_d, b_d);
     if (down) {
-      C->d_ref(nnz) = down;
-      C->i_ref(nnz) = j;
+      C->setSparse(nnz, j, down);
+      // C->d_ref(nnz) = down;
+      // C->i_ref(nnz) = j;
       nnz++;
     }
   }
@@ -639,8 +643,9 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
     const node_handle a_d = ((j == A->index(A_curr_index))? A->down(A_curr_index++): 0);
     node_handle down = compute_r(j, dwnLevel, a_d, B_ext_d);
     if (down) {
-      C->d_ref(nnz) = down;
-      C->i_ref(nnz) = j;
+      C->setSparse(nnz, j, down);
+      // C->d_ref(nnz) = down;
+      // C->i_ref(nnz) = j;
       nnz++;
     }
   }
@@ -648,8 +653,9 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
     const node_handle b_d = ((j == B->index(B_curr_index))? B->down(B_curr_index++): 0);
     node_handle down = compute_r(j, dwnLevel, A_ext_d, b_d);
     if (down) {
-      C->d_ref(nnz) = down;
-      C->i_ref(nnz) = j;
+      C->setSparse(nnz, j, down);
+      // C->d_ref(nnz) = down;
+      // C->i_ref(nnz) = j;
       nnz++;
     }
   }
@@ -661,8 +667,9 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   MEDDLY_DCASSERT(!C->isExtensible());  // default: not extensible
   if (C_is_extensible) {
     MEDDLY_DCASSERT(C_ext_d);
-    C->d_ref(nnz) = C_ext_d;
-    C->i_ref(nnz) = j;
+    C->setSparse(nnz, j, C_ext_d);
+    // C->d_ref(nnz) = C_ext_d;
+    // C->i_ref(nnz) = j;
     nnz++;
     C->markAsExtensible();
   }
@@ -732,7 +739,8 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   //
   int j = 0;
   for ( ; j < min_size; j++) {
-    C->d_ref(j) = compute_r(j, dwnLevel, A->down(j), B->down(j));
+    C->setFull(j, compute_r(j, dwnLevel, A->down(j), B->down(j)));
+    // C->d_ref(j) = compute_r(j, dwnLevel, A->down(j), B->down(j));
   }
 
   //
@@ -740,10 +748,12 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   // Loop 2: [min(a_last_index,b_last_index)+1, max(a_last_index,b_last_index)]
   //
   for ( ; j < A->getSize(); j++) {
-    C->d_ref(j) = compute_r(j, dwnLevel, A->down(j), B_ext_d);
+    C->setFull(j, compute_r(j, dwnLevel, A->down(j), B_ext_d));
+    // C->d_ref(j) = compute_r(j, dwnLevel, A->down(j), B_ext_d);
   }
   for ( ; j < B->getSize(); j++) {
-    C->d_ref(j) = compute_r(j, dwnLevel, A_ext_d, B->down(j));
+    C->setFull(j, compute_r(j, dwnLevel, A_ext_d, B->down(j)));
+    // C->d_ref(j) = compute_r(j, dwnLevel, A_ext_d, B->down(j));
   }
   MEDDLY_DCASSERT(j == max_size);
 
@@ -752,7 +762,8 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   //
   MEDDLY_DCASSERT(!C->isExtensible());  // default: not extensible
   if (C_is_extensible) {
-    C->d_ref(j) = C_ext_d;
+    C->setFull(j, C_ext_d);
+    // C->d_ref(j) = C_ext_d;
     C->markAsExtensible();
   }
 
@@ -804,7 +815,8 @@ MEDDLY::generic_binary_mxd::compute_r_normal(int in, int k, node_handle a, node_
 
   // Do computation
   for (unsigned j=0; j<resultSize; j++) {
-    C->d_ref(j) = compute(A->down(j), B->down(j));
+    C->setFull(j, compute(A->down(j), B->down(j)));
+    // C->d_ref(j) = compute(A->down(j), B->down(j));
   }
 
   // cleanup
@@ -879,8 +891,9 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
       const node_handle b_d = ((j == B->index(B_curr_index))? B->down(B_curr_index++): 0);
       node_handle down = compute(a_d, b_d);
       if (down) {
-        C->d_ref(nnz) = down;
-        C->i_ref(nnz) = j;
+        C->setSparse(nnz, j, down);
+        // C->d_ref(nnz) = down;
+        // C->i_ref(nnz) = j;
         nnz++;
       }
     }
@@ -892,8 +905,9 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
       const node_handle a_d = ((j == A->index(A_curr_index))? A->down(A_curr_index++): 0);
       node_handle down = compute(a_d, B_ext_d);
       if (down) {
-        C->d_ref(nnz) = down;
-        C->i_ref(nnz) = j;
+        C->setSparse(nnz, j, down);
+        // C->d_ref(nnz) = down;
+        // C->i_ref(nnz) = j;
         nnz++;
       }
     }
@@ -901,8 +915,9 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
       const node_handle b_d = ((j == B->index(B_curr_index))? B->down(B_curr_index++): 0);
       node_handle down = compute(A_ext_d, b_d);
       if (down) {
-        C->d_ref(nnz) = down;
-        C->i_ref(nnz) = j;
+        C->setSparse(nnz, j, down);
+        // C->d_ref(nnz) = down;
+        // C->i_ref(nnz) = j;
         nnz++;
       }
     }
@@ -913,8 +928,9 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
     MEDDLY_DCASSERT(!C->isExtensible());  // default: not extensible
     if (C_is_extensible) {
       MEDDLY_DCASSERT(C_ext_d);
-      C->d_ref(nnz) = C_ext_d;
-      C->i_ref(nnz) = j;
+      C->setSparse(nnz, j, C_ext_d);
+      // C->d_ref(nnz) = C_ext_d;
+      // C->i_ref(nnz) = j;
       nnz++;
       C->markAsExtensible();
     }
@@ -980,17 +996,20 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
     //
     int j = 0;
     for ( ; j < min_size; j++) {
-      C->d_ref(j) = compute(A->down(j), B->down(j));
+      C->setFull(j, compute(A->down(j), B->down(j)));
+      // C->d_ref(j) = compute(A->down(j), B->down(j));
     }
 
     // At most one of the next two loops will execute
     // Loop 2: [min(a_last_index,b_last_index)+1, max(a_last_index,b_last_index)]
     //
     for ( ; j < A->getSize(); j++) {
-      C->d_ref(j) = compute(A->down(j), B_ext_d);
+      C->setFull(j, compute(A->down(j), B_ext_d));
+      // C->d_ref(j) = compute(A->down(j), B_ext_d);
     }
     for ( ; j < B->getSize(); j++) {
-      C->d_ref(j) = compute(A_ext_d, B->down(j));
+      C->setFull(j, compute(A_ext_d, B->down(j)));
+      // C->d_ref(j) = compute(A_ext_d, B->down(j));
     }
     MEDDLY_DCASSERT(j == max_size);
 
@@ -998,7 +1017,8 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
     //
     MEDDLY_DCASSERT(!C->isExtensible());  // default: not extensible
     if (C_is_extensible) {
-      C->d_ref(j) = C_ext_d;
+      C->setFull(j, C_ext_d);
+      // C->d_ref(j) = C_ext_d;
       C->markAsExtensible();
     }
 
@@ -1057,7 +1077,6 @@ MEDDLY::generic_binbylevel_mxd::compute(int level, node_handle a, node_handle b)
   return compute_r(-1, level, a, b);
 }
 
-#if 1
 MEDDLY::node_handle
 MEDDLY::generic_binbylevel_mxd
 ::compute_r(int in, int resultLevel, node_handle a, node_handle b)
@@ -1115,7 +1134,8 @@ MEDDLY::generic_binbylevel_mxd
   unsigned nnz = 0;
   for (unsigned j=0; j<resultSize; j++) {
     node_handle d = compute_r(j, nextLevel, A->down(j), B->down(j));
-    C->d_ref(j) = d;
+    C->setFull(j, d);
+    // C->d_ref(j) = d;
     if (d) nnz++;
   }
 
@@ -1138,144 +1158,6 @@ MEDDLY::generic_binbylevel_mxd
 
   return result;
 }
-
-#else
-
-MEDDLY::node_handle
-MEDDLY::generic_binbylevel_mxd
-::compute_r(int in, int resultLevel, node_handle a, node_handle b)
-{
-  node_handle result = 0;
-  // TODO: can be made more efficient (for example, a==a)
-  if (0==resultLevel) {
-    if (checkTerminals(a, b, result))
-      return result;
-  }
-
-  //
-  // Note - we cache the primed levels, but only when "safe"
-  //
-  ct_entry_key* Key = findResult(resultLevel, a, b, result);
-  if (0==Key) return result;
-
-  // Get level information
-  const int aLevel = arg1F->getNodeLevel(a);
-  const int bLevel = arg2F->getNodeLevel(b);
-  const int dwnLevel = resF->downLevel(resultLevel);
-
-  // Initialize readers
-  unpacked_node* A = unpacked_node::New(arg1F);
-  unpacked_node* B = unpacked_node::New(arg2F);
-
-  bool canSaveResult = true;
-
-  if (aLevel == resultLevel) {
-    arg1F->unpackNode(A, a, SPARSE_ONLY);
-  } else if (resultLevel>0 || arg1F->isFullyReduced()) {
-    A->initRedundant(arg1F, resultLevel, a, SPARSE_ONLY);
-  } else {
-    A->initIdentity(arg1F, resultLevel, in, a, SPARSE_ONLY);
-    canSaveResult = false;
-  }
-  const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
-
-  if (bLevel == resultLevel) {
-    arg2F->unpackNode(B, b, SPARSE_ONLY);
-  } else if (resultLevel>0 || arg2F->isFullyReduced()) {
-    B->initRedundant(arg2F, resultLevel, b, SPARSE_ONLY);
-  } else {
-    B->initIdentity(arg2F, resultLevel, in, b, SPARSE_ONLY);
-    canSaveResult = false;
-  }
-  const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
-
-  const int A_last_index = A->index(A->getSize()-1);
-  const int B_last_index = B->index(B->getSize()-1);
-  const int min_a_b_last_index = MIN(A_last_index, B_last_index);
-  const int max_a_b_last_index = MAX(A_last_index, B_last_index);
-
-  const node_handle C_ext_d =
-    (A->isExtensible() || B->isExtensible())
-    ? compute_r(max_a_b_last_index+1, dwnLevel, A_ext_d, B_ext_d)
-    : 0;
-  const bool C_is_extensible = (C_ext_d != 0);
-  int resultSize = max_a_b_last_index + 1 + (C_is_extensible? 1: 0);
-  unpacked_node* C = unpacked_node::newFull(resF, resultLevel, resultSize);
-
-  //
-  // Three loops to reduce the amount of checking needed:
-  //
-  // Loop 1: deal with indices in
-  //         [0,min(a_last_index,b_last_index)]
-  // Loop 2: deal with indices in
-  //         [min(a_last_index,b_last_index)+1, max(a_last_index,b_last_index)]
-  //
-  // Last index: result of A_ext_d and B_ext_d
-
-  //
-  // Loop 1: [0, min(a_last_index,b_last_index)]
-  //
-  int A_curr_index = 0;
-  int B_curr_index = 0;
-  int j = 0;
-  int nnz = 0;
-  for ( ; j <= min_a_b_last_index; j++) {
-    const node_handle a_d = ((j == A->index(A_curr_index))? A->down(A_curr_index++): 0);
-    const node_handle b_d = ((j == B->index(B_curr_index))? B->down(B_curr_index++): 0);
-    node_handle d = compute_r(j, dwnLevel, a_d, b_d);
-    C->d_ref(j) = d;
-    if (d) nnz++;
-  }
-
-  //
-  // At most one of the next two loops will execute
-  // Loop 2: [min(a_last_index,b_last_index)+1, max(a_last_index,b_last_index)]
-  //
-  for ( ; j <= A_last_index; j++) {
-    const node_handle a_d = ((j == A->index(A_curr_index))? A->down(A_curr_index++): 0);
-    node_handle d = compute_r(j, dwnLevel, a_d, B_ext_d);
-    C->d_ref(j) = d;
-    if (d) nnz++;
-  }
-  for ( ; j <= B_last_index; j++) {
-    const node_handle b_d = ((j == B->index(B_curr_index))? B->down(B_curr_index++): 0);
-    node_handle d = compute_r(j, dwnLevel, A_ext_d, b_d);
-    C->d_ref(j) = d;
-    if (d) nnz++;
-  }
-  MEDDLY_DCASSERT(j == max_a_b_last_index+1);
-
-  //
-  // Last index
-  //
-  MEDDLY_DCASSERT(!C->isExtensible());  // default: not extensible
-  if (C_is_extensible) {
-    C->d_ref(j) = C_ext_d;
-    C->markAsExtensible();
-    nnz++;
-  }
-
-  // cleanup
-  unpacked_node::Recycle(B);
-  unpacked_node::Recycle(A);
-
-  // reduce
-  result = resF->createReducedNode(in, C);
-
-  // save result in compute table, when we can
-  if (resultLevel<0 && 1==nnz) canSaveResult = false;
-  if (canSaveResult)  saveResult(Key, resultLevel, a, b, result);
-  else                CT0->recycle(Key);
-
-#ifdef TRACE_ALL_OPS
-  printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, result);
-  fflush(stdout);
-#endif
-
-  return result;
-}
-
-#endif
 
 
 // ******************************************************************
