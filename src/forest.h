@@ -377,6 +377,31 @@ class MEDDLY::forest {
             return (p < 1);
         }
 
+        /// Is a CT entry containing this node, dead?
+        /// I.e., cannot be used at all?
+        inline bool isDeadEntry(node_handle p) const {
+            if (isMarkedForDeletion()) return true;
+            if (isTerminalNode(p)) return false;
+            return isDeletedNode(p);
+        }
+
+        /// Is a CT entry containing this node, stale?
+        /// Still usable if matched, otherwise should be
+        /// removed from the CT?
+        inline bool isStaleEntry(node_handle p) const {
+            if (isMarkedForDeletion()) return true;
+            if (isTerminalNode(p)) return false;
+            if (isDeletedNode(p)) return true;
+
+            if (deflt.useReferenceCounts) {
+                if (getNodeInCount(p) == 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
 #ifdef ALLOW_DEPRECATED_0_17_3
         inline bool isValidNonterminalIndex(MEDDLY::node_handle p) const {
             return (p > 0) && (p <= nodeHeaders.lastUsedHandle());

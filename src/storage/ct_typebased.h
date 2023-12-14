@@ -1705,7 +1705,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       printf("\tchecking key item %u\n", i);
 #endif
       MEDDLY_DCASSERT(ct_typeID::NODE == t);
-      if (MEDDLY::forest::ACTIVE != f->getNodeStatus(*entry)) {
+      if (f->isStaleEntry(*entry)) {
         return YES_stale();
       } else {
         // Indicate that this node is in some cache entry
@@ -1735,7 +1735,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       printf("\tchecking result item %u\n", i);
 #endif
       MEDDLY_DCASSERT(ct_typeID::NODE == t);
-      if (MEDDLY::forest::ACTIVE != f->getNodeStatus(*entry)) {
+      if (f->isStaleEntry(*entry)) {
         return YES_stale();
       } else {
         if (mark) f->setCacheBit(*entry);
@@ -1799,7 +1799,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       printf("\tchecking result item %u\n", i);
 #endif
       MEDDLY_DCASSERT(ct_typeID::NODE == t);
-      if (MEDDLY::forest::DEAD == f->getNodeStatus(*result)) {
+      if (f->isDeadEntry(*result)) {
         return true;
       }
       result++;

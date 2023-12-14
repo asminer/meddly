@@ -1562,7 +1562,7 @@ bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
 #endif
     if (f) {
       MEDDLY_DCASSERT(ct_typeID::NODE==t);
-      if (MEDDLY::forest::ACTIVE != f->getNodeStatus(entry[i].N)) {
+      if (f->isStaleEntry(entry[i].N)) {
         return true;
       } else {
         f->setCacheBit(entry[i].N);
@@ -1584,7 +1584,7 @@ bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
 #endif
     if (f) {
       MEDDLY_DCASSERT(ct_typeID::NODE==t);
-      if (MEDDLY::forest::ACTIVE != f->getNodeStatus(entry[i].N)) {
+      if (f->isStaleEntry(entry[i].N)) {
         return true;
       } else {
         f->setCacheBit(entry[i].N);
@@ -1616,8 +1616,8 @@ bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
 #endif
     if (f) {
       MEDDLY_DCASSERT(ct_typeID::NODE == t);
-      if (MEDDLY::forest::DEAD == f->getNodeStatus(result[i].N)) {
-        return true;
+      if (f->isDeadEntry(result[i].N)) {
+          return true;
       }
     }
   } // for i
