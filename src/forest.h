@@ -1073,6 +1073,7 @@ class MEDDLY::forest {
   public:
     int *level_reduction_rule;
 
+#ifdef ALLOW_DEPRECATED_0_17_4
     /// Status indicators for nodes.
     enum node_status {
       /// Node is active: it can be used without issue.
@@ -1084,7 +1085,7 @@ class MEDDLY::forest {
       /// and it cannot be used.
       DEAD
     };
-
+#endif
 
 
     /// Collection of various stats for performance measurement
@@ -1911,9 +1912,11 @@ public:
     /// uniqueness table for relation nodes.
     impl_unique_table* implUT;
 
+#ifdef ALLOW_DEPRECATED_0_17_4
     /// Should a terminal node be considered a stale entry in the compute table.
     /// per-forest policy, derived classes may change as appropriate.
     MEDDLY::forest::node_status terminalNodesStatus;
+#endif
 
 
 
@@ -2203,7 +2206,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     int getIndexSetCardinality(node_handle node) const;
 
 
-
+#ifdef ALLOW_DEPRECATED_0_17_4
     /// A node can be discarded once it goes stale. Whether a node is
     /// considered stale depends on the forest's deletion policy.
     /// Optimistic deletion: A node is said to be stale only when both the
@@ -2214,6 +2217,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     ///  then a node cannot be recovered once it is "unreachable"
     ///  because its children might have been recycled
     MEDDLY::forest::node_status getNodeStatus(node_handle node) const;
+#endif
 
   // ------------------------------------------------------------
   // non-virtual, handy methods for debugging or logging.
@@ -2659,6 +2663,7 @@ MEDDLY::expert_forest::getIndexSetCardinality(MEDDLY::node_handle node) const
   return *uhh;
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_4
 inline MEDDLY::forest::node_status
 MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
 {
@@ -2690,7 +2695,7 @@ MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
 
   return MEDDLY::forest::ACTIVE;
 }
-
+#endif
 
 inline unsigned
 MEDDLY::expert_forest::getImplicitTableCount() const

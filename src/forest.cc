@@ -567,10 +567,12 @@ MEDDLY::forest
          throw error(error::INVALID_POLICY, __FILE__, __LINE__);
   }
 
+#ifdef ALLOW_DEPRECATED_0_17_4
     //
     // Initialize misc. protected data
     //
     terminalNodesStatus = MEDDLY::forest::ACTIVE;
+#endif
 
     //
     // Initialize array of operations
