@@ -541,7 +541,7 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
     long cev = Inf<long>();
     node_handle c = 0;
     if (evmddDptrs->down(i) != 0) {
-      saturate(evmddDptrs->ei(i), evmddDptrs->down(i), k-1, cev, c);
+      saturate(evmddDptrs->edge_long(i), evmddDptrs->down(i), k-1, cev, c);
     }
     C->setEdge(i, cev);
     C->d_ref(i) = c;
@@ -1345,7 +1345,7 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
 
       long recev = Inf<long>();
       node_handle rec = 0;
-      recFire(nb.ei(i), nb.d(i), Rp->down(unsigned(jz)), recev, rec);
+      recFire(nb.edge_long(i), nb.d(i), Rp->down(unsigned(jz)), recev, rec);
 
       if (rec == 0) continue;
 
@@ -1353,7 +1353,7 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
       recev++;
 
       if (rec == nb.d(j)) {
-        if (recev < nb.ei(j)) {
+        if (recev < nb.edge_long(j)) {
           nb.setEdge(j, recev);
         }
         resF->unlinkNode(rec);
@@ -1371,7 +1371,7 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
 //        nb.d_ref(j) = -1;
 //      }
       else {
-        nbdj.set(nb.d(j), nb.ei(j));
+        nbdj.set(nb.d(j), nb.edge_long(j));
         temp.set(rec, recev);  // clobbers rec; that's what we want
         mddUnion->computeTemp(nbdj, temp, nbdj);
         updated = (nbdj.getNode() != nb.d(j));
@@ -1455,7 +1455,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
     for (unsigned i=0; i<rSize; i++) {
       long nev = Inf<long>();
       node_handle n = 0;
-      recFire(A->ei(i) + ev, A->down(i), mxd, nev, n);
+      recFire(A->edge_long(i) + ev, A->down(i), mxd, nev, n);
       nb->setEdge(i, nev);
       nb->d_ref(i) = n;
     }
@@ -1494,7 +1494,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
         // and add them
         long nev = Inf<long>();
         node_handle n = 0;
-        recFire(A->ei(i) + ev, A->down(i), Rp->down(jz), nev, n);
+        recFire(A->edge_long(i) + ev, A->down(i), Rp->down(jz), nev, n);
 
         if (0==n) continue;
         if (0==nb->down(j)) {
@@ -1505,7 +1505,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
 
         // there's new states and existing states; union them.
         newst.set(n, nev); // clobber when done
-        nbdj.set(nb->down(j), nb->ei(j));   // also clobber when done
+        nbdj.set(nb->down(j), nb->edge_long(j));   // also clobber when done
         mddUnion->computeTemp(newst, nbdj, nbdj);
         nb->set_de(j, nbdj);
       } // for j

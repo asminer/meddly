@@ -1249,7 +1249,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
     for (int iz = 0; iz < Ru->getSize(); iz++) {
       const int i = Ru->index(iz);
       if (A->down(i) == 0) {
-        MEDDLY_DCASSERT(A->ei(i) == 0);
+        MEDDLY_DCASSERT(A->edge_long(i) == 0);
         continue;
       }
 
@@ -1258,7 +1258,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
       if (Rps[iz]->down(j) != 0) {
         long recev = 0;
         node_handle rec = 0;
-        recFire(aev + A->ei(i), A->down(i), nb.ei(j), nb.d(j), Rps[iz]->down(j), recev, rec);
+        recFire(aev + A->edge_long(i), A->down(i), nb.edge_long(j), nb.d(j), Rps[iz]->down(j), recev, rec);
         MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == 0) {
@@ -1270,7 +1270,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
 
         if (rec == nb.d(i)) {
           // Compute the minimum
-          if (recev < nb.ei(i)) {
+          if (recev < nb.edge_long(i)) {
             nb.setEdge(i, recev);
           }
           resF->unlinkNode(rec);
@@ -1280,12 +1280,12 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
         bool updated = true;
 
         if (nb.d(i) == 0) {
-          MEDDLY_DCASSERT(nb.ei(i) == 0);
+          MEDDLY_DCASSERT(nb.edge_long(i) == 0);
           nb.setEdge(i, recev);
           nb.d_ref(i) = rec;
         }
         else {
-          nbdi.set(nb.d(i), nb.ei(i));
+          nbdi.set(nb.d(i), nb.edge_long(i));
           newst.set(rec, recev);
           minOp->computeTemp(nbdi, newst, nbdi);
           updated = (nbdi.getNode() != nb.d(i));
@@ -1293,7 +1293,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
 /*
           long accev = Inf<long>();
           node_handle acc = 0;
-          minOp->computeTemp(nb.ei(i), nb.d(i), recev, rec, accev, acc);
+          minOp->computeTemp(nb.edge_long(i), nb.d(i), recev, rec, accev, acc);
           resF->unlinkNode(rec);
           if (acc != nb.d(i)) {
             resF->unlinkNode(nb.d(i));
@@ -1301,7 +1301,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
             nb.d_ref(i) = acc;
           }
           else {
-            MEDDLY_DCASSERT(accev == nb.ei(i));
+            MEDDLY_DCASSERT(accev == nb.edge_long(i));
             resF->unlinkNode(acc);
             updated = false;
           }
@@ -1378,7 +1378,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
     for (int i = 0; i < size; i++) {
       long tev = 0;
       node_handle t = 0;
-      recFire(aev + A->ei(i), A->down(i), bev + B->ei(i), B->down(i), r, tev, t);
+      recFire(aev + A->edge_long(i), A->down(i), bev + B->edge_long(i), B->down(i), r, tev, t);
       T->setEdge(i, tev);
       T->d_ref(i) = t;
     }
@@ -1404,7 +1404,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
     for (int iz = 0; iz < Ru->getSize(); iz++) {
       const int i = Ru->index(iz);
       if (A->down(i) == 0) {
-        MEDDLY_DCASSERT(A->ei(i) == 0);
+        MEDDLY_DCASSERT(A->edge_long(i) == 0);
         continue;
       }
 
@@ -1421,7 +1421,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
         // and add them
         long nev = 0;
         node_handle n = 0;
-        recFire(aev + A->ei(i), A->down(i), bev + B->ei(j), B->down(j), Rp->down(jz), nev, n);
+        recFire(aev + A->edge_long(i), A->down(i), bev + B->edge_long(j), B->down(j), Rp->down(jz), nev, n);
 
         if (n == 0) {
           MEDDLY_DCASSERT(nev == 0);
@@ -1429,7 +1429,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
         }
 
         if (T->down(i) == 0) {
-          MEDDLY_DCASSERT(T->ei(i) == 0);
+          MEDDLY_DCASSERT(T->edge_long(i) == 0);
           T->setEdge(i, nev);
           T->d_ref(i) = n;
           continue;
@@ -1440,7 +1440,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
         const node_handle oldi = T->down(i);
         long newev = Inf<long>();
         node_handle newstates = 0;
-        minOp->computeTemp(nev, n, T->ei(i), oldi, newev, newstates);
+        minOp->computeTemp(nev, n, T->edge_long(i), oldi, newev, newstates);
         T->setEdge(i, newev);
         T->d_ref(i) = newstates;
 
@@ -1449,7 +1449,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
 */
 
         // there's new states and existing states; union them.
-        Tdi.set(T->down(i), T->ei(i));
+        Tdi.set(T->down(i), T->edge_long(i));
         newst.set(n, nev);
         minOp->computeTemp(newst, Tdi, Tdi);
         T->set_de(i, Tdi);
@@ -1622,13 +1622,13 @@ void MEDDLY::constrained_saturation_evplus::saturate(int aev, node_handle a, int
   for (int i = 0; i < sz; i++) {
     if (A->down(i) == 0) {
       MEDDLY_DCASSERT(resF == argF);
-      T->setEdge(i, B->ei(i));
+      T->setEdge(i, B->edge_long(i));
       T->d_ref(i) = resF->linkNode(B->down(i));
     }
     else {
       long tev = Inf<long>();
       node_handle t = 0;
-      saturate(aev + A->ei(i), A->down(i), B->ei(i), B->down(i), level - 1, tev, t);
+      saturate(aev + A->edge_long(i), A->down(i), B->edge_long(i), B->down(i), level - 1, tev, t);
       T->setEdge(i, tev);
       T->d_ref(i) = t;
     }

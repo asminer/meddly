@@ -699,7 +699,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
     for (unsigned i=0; i<rSize; i++) {
       long nev = Inf<long>();
       node_handle newstates = 0;
-      compute_rec(A->ei(i), A->down(i), mxd, nev, newstates);
+      compute_rec(A->edge_long(i), A->down(i), mxd, nev, newstates);
 
       C->setEdge(i, newstates == 0 ? 0L : ev + nev);
       C->d_ref(i) = newstates;
@@ -744,7 +744,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
         // and add them
         long nev = Inf<long>();
         node_handle newstates = 0;
-        compute_rec(A->ei(j), A->down(j), Rp->down(jz), nev, newstates);
+        compute_rec(A->edge_long(j), A->down(j), Rp->down(jz), nev, newstates);
         if (0==newstates) continue;
         nev += ev;
         if (0==C->down(i)) {
@@ -754,7 +754,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
         }
         // there's new states and existing states; union them.
         newstatesE.set(newstates, nev);
-        cdi.set(C->down(i), C->ei(i));
+        cdi.set(C->down(i), C->edge_long(i));
         accumulateOp->computeTemp(newstatesE, cdi, cdi);
         C->set_de(i, cdi);
       } // for j
@@ -847,7 +847,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
     for (unsigned i=0; i<rSize; i++) {
       long nev = Inf<long>();
       node_handle newstates = 0;
-      compute_rec(A->ei(i), A->down(i), mxd, nev, newstates);
+      compute_rec(A->edge_long(i), A->down(i), mxd, nev, newstates);
 
       C->setEdge(i, newstates == 0 ? 0L : ev + nev);
       C->d_ref(i) = newstates;
@@ -892,7 +892,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
         // and add them
         long nev = Inf<long>();
         node_handle newstates = 0;
-        compute_rec(A->ei(i), A->down(i), Rp->down(jz), nev, newstates);
+        compute_rec(A->edge_long(i), A->down(i), Rp->down(jz), nev, newstates);
         if (0==newstates) continue;
         nev += ev;
         if (0==C->down(j)) {
@@ -902,7 +902,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
         }
         // there's new states and existing states; union them.
         newstatesE.set(newstates, nev);
-        cdj.set(C->down(j), C->ei(j));
+        cdj.set(C->down(j), C->edge_long(j));
         accumulateOp->computeTemp(newstatesE, cdj, cdj);
         C->set_de(j, cdj);
       } // for j
@@ -1074,7 +1074,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
       for (unsigned j = 0; j < rSize; j++) {
         long nev = Inf<long>();
         node_handle newstates = 0;
-        compute_rec(A->ei(i) + B->ei(j), B->down(j), mxd, nev, newstates);
+        compute_rec(A->edge_long(i) + B->edge_long(j), B->down(j), mxd, nev, newstates);
 
         D->setEdge(j, newstates == 0 ? 0L : ev + nev);
         D->d_ref(j) = newstates;
@@ -1123,7 +1123,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
           // and add them
           long nev = Inf<long>();
           node_handle newstates = 0;
-          compute_rec(A->ei(i) + B->ei(j), B->down(j), Rp->down(jpz), nev, newstates);
+          compute_rec(A->edge_long(i) + B->edge_long(j), B->down(j), Rp->down(jpz), nev, newstates);
           if (0==newstates) {
             continue;
           }
@@ -1135,7 +1135,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
           }
           // there's new states and existing states; union them.
           newstatesE.set(newstates, nev);
-          djp.set(D->down(jp), D->ei(jp));
+          djp.set(D->down(jp), D->edge_long(jp));
           accumulateOp->computeTemp(newstatesE, djp, djp);
           D->set_de(jp, djp);
         } // for j

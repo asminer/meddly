@@ -147,7 +147,7 @@ void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, int k, long& bev, n
 
     long tev = Inf<long>();
     node_handle t = 0;
-    compute_r(aev + A->ei(i) + B->ei(i), B->down(i), level - 1, tev, t);
+    compute_r(aev + A->edge_long(i) + B->edge_long(i), B->down(i), level - 1, tev, t);
     T->setEdge(i, tev);
     T->d_ref(i) = t;
 

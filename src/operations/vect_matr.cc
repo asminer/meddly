@@ -178,7 +178,7 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
         continue;
       }
       // match, need to recurse
-      compute_r(k-1, y + yR->ei(yp), yR->down(yp), x + xR->ei(xp), xR->down(xp), a);
+      compute_r(k-1, y + yR->edge_long(yp), yR->down(yp), x + xR->edge_long(xp), xR->down(xp), a);
       xp++;
       if (xp >= xR->getSize()) break;
       yp++;
@@ -221,7 +221,7 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
       continue;
     }
     // match, need to recurse
-    comp_pr(k, y, y_ind, x + xR->ei(xp), xR->down(xp), aR->index(ap), aR->down(ap));
+    comp_pr(k, y, y_ind, x + xR->edge_long(xp), xR->down(xp), aR->index(ap), aR->down(ap));
     ap++;
     if (ap >= aR->getSize()) break;
     xp++;
@@ -267,7 +267,7 @@ void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
       continue;
     }
     // match, need to recurse
-    compute_r(k-1, y + yR->ei(yp), yR->down(yp), x, x_ind, aR->down(ap));
+    compute_r(k-1, y + yR->edge_long(yp), yR->down(yp), x, x_ind, aR->down(ap));
     ap++;
     if (ap >= aR->getSize()) break;
     yp++;
@@ -355,7 +355,7 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
         continue;
       }
       // match, need to recurse
-      compute_r(k-1, y + yR->ei(yp), yR->down(yp), x + xR->ei(xp), xR->down(xp), a);
+      compute_r(k-1, y + yR->edge_long(yp), yR->down(yp), x + xR->edge_long(xp), xR->down(xp), a);
       xp++;
       if (xp >= xR->getSize()) break;
       yp++;
@@ -399,7 +399,7 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
       continue;
     }
     // match, need to recurse
-    comp_pr(k, y + yR->ei(yp), yR->down(yp), x, x_ind, aR->index(ap), aR->down(ap));
+    comp_pr(k, y + yR->edge_long(yp), yR->down(yp), x, x_ind, aR->index(ap), aR->down(ap));
     ap++;
     if (ap >= aR->getSize()) break;
     yp++;
@@ -445,7 +445,7 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
       continue;
     }
     // match, need to recurse
-    compute_r(k-1, y, y_ind, x + xR->ei(xp), xR->down(xp), aR->down(ap));
+    compute_r(k-1, y, y_ind, x + xR->edge_long(xp), xR->down(xp), aR->down(ap));
     ap++;
     if (ap >= aR->getSize()) break;
     xp++;
