@@ -390,6 +390,17 @@ class MEDDLY::unpacked_node {
             _edge[n].divide(v);
         }
 
+        /// Get the nth edge value, as a long.
+        inline long edge_long(unsigned n) const {
+            return edgeval(n).getLong();
+        }
+
+        /// Get the edge value, as a float.
+        inline float edge_float(unsigned n) const {
+            return edgeval(n).getFloat();
+        }
+
+
         /**
             Set a full edge.
                 @param  n       Which pointer
@@ -1065,17 +1076,13 @@ public:
         /// Get the edge value, as an integer.
         inline long ei(unsigned i) const
         {
-            long ev;
-            getEdge(i, ev);
-            return ev;
+            return edge_long(i);
         }
 
         /// Get the edge value, as a float.
         inline float ef(unsigned i) const
         {
-            float ev;
-            getEdge(i, ev);
-            return ev;
+            return edge_float(i);
         }
 
 
