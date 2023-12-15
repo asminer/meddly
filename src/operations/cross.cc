@@ -104,7 +104,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
 
   // recurse
   for (unsigned i=0; i<resultSize; i++) {
-    C->d_ref(i) = compute_pr(i, -k, A->down(i), b);
+    C->setFull(i, compute_pr(i, -k, A->down(i), b));
   }
 
   // reduce, save in compute table
@@ -145,7 +145,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
 
   // recurse
   for (unsigned i=0; i<resultSize; i++) {
-    C->d_ref(i) = compute_un(-(k+1), a, B->down(i));
+    C->setFull(i, compute_un(-(k+1), a, B->down(i)));
   }
 
   // reduce

@@ -132,13 +132,15 @@ MEDDLY::mdd2index_operation
     node_handle ddn;
     long dcard = 0;
     compute_r(k-1, A->down(i), ddn, dcard);
-    nb->d_ref(i) = ddn;
+    // nb->d_ref(i) = ddn;
     if (ddn) {
-      nb->setEdge(i, bcard);
+      nb->setFull(i, edge_value(bcard), ddn);
+      // nb->setEdge(i, bcard);
       bcard += dcard;
     } else {
       MEDDLY_DCASSERT(0 == dcard);
-      nb->setEdge(i, 0L);
+      nb->setFull(i, edge_value(0L), ddn);
+      // nb->setEdge(i, 0L);
     }
   }
 
@@ -146,7 +148,8 @@ MEDDLY::mdd2index_operation
   unpacked_node::Recycle(A);
 
   // Reduce
-  memcpy(nb->UHdata(), &bcard, sizeof(bcard));
+  nb->setUHdata(&bcard);
+  // memcpy(nb->UHdata(), &bcard, sizeof(bcard));
 
   long dummy = 0;
   node_handle bl;

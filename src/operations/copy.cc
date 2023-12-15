@@ -138,8 +138,7 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handl
 
   // recurse
   for (unsigned z=0; z<A->getSize(); z++) {
-    nb->i_ref(z) = A->index(z);
-    nb->d_ref(z) = computeSkip(int(A->index(z)), A->down(z));
+      nb->setSparse(z, A->index(z), computeSkip(int(A->index(z)), A->down(z)));
   }
 
   // Handle extensible edge, if any
@@ -209,8 +208,8 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
 
   // recurse
   for (unsigned z=0; z<A->getSize(); z++) {
-    nb->i_ref(z) = A->index(z);
-    nb->d_ref(z) = computeAll(int(A->index(z)), nextk, A->down(z));
+      nb->setSparse(z, A->index(z),
+              computeAll(int(A->index(z)), nextk, A->down(z)));
   }
 
   // Handle extensible edge, if any
@@ -346,9 +345,10 @@ void MEDDLY::copy_MT2EV<TYPE>
     node_handle d;
     TYPE dev = Inf<TYPE>();
     computeSkip(int(A->index(z)), A->down(z), d, dev);
-    nb->i_ref(z) = A->index(z);
-    nb->d_ref(z) = d;
-    nb->setEdge(z, dev);
+    nb->setSparse(z, A->index(z), edge_value(dev), d);
+    // nb->i_ref(z) = A->index(z);
+    // nb->d_ref(z) = d;
+    // nb->setEdge(z, dev);
   }
 
   // Cleanup
@@ -415,9 +415,13 @@ void MEDDLY::copy_MT2EV<TYPE>
   // recurse
   for (unsigned z=0; z<A->getSize(); z++) {
     TYPE dev;
-    nb->i_ref(z) = A->index(z);
-    computeAll(int(A->index(z)), nextk, A->down(z), nb->d_ref(z), dev);
-    nb->setEdge(z, dev);
+    node_handle dn;
+    computeAll(int(A->index(z)), nextk, A->down(z), dn, dev);
+    nb->setSparse(z, A->index(z), edge_value(dev), dn);
+
+    // nb->i_ref(z) = A->index(z);
+    // computeAll(int(A->index(z)), nextk, A->down(z), nb->d_ref(z), dev);
+    // nb->setEdge(z, dev);
   }
 
   // Cleanup
@@ -533,9 +537,13 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   // recurse
   for (unsigned z=0; z<A->getSize(); z++) {
     TYPE aev;
-    A->getEdge(z, aev);
-    nb->i_ref(z) = A->index(z);
-    nb->d_ref(z) = computeSkip(int(A->index(z)), OP::apply(ev, aev), A->down(z));
+    A->edgeval(z).get(aev);
+    nb->setSparse(z, A->index(z),
+            computeSkip(int(A->index(z)), OP::apply(ev, aev), A->down(z))
+    );
+    // A->getEdge(z, aev);
+    // nb->i_ref(z) = A->index(z);
+    // nb->d_ref(z) = computeSkip(int(A->index(z)), OP::apply(ev, aev), A->down(z));
   }
 
   // Cleanup
@@ -606,9 +614,13 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   // recurse
   for (unsigned z=0; z<A->getSize(); z++) {
     TYPE aev;
-    A->getEdge(z, aev);
-    nb->i_ref(z) = A->index(z);
-    nb->d_ref(z) = computeAll(int(A->index(z)), nextk, OP::apply(ev, aev), A->down(z));
+    A->edgeval(z).get(aev);
+    nb->setSparse(z, A->index(z),
+        computeAll(int(A->index(z)), nextk, OP::apply(ev, aev), A->down(z))
+    );
+    // A->getEdge(z, aev);
+    // nb->i_ref(z) = A->index(z);
+    // nb->d_ref(z) = computeAll(int(A->index(z)), nextk, OP::apply(ev, aev), A->down(z));
   }
 
   // Cleanup
@@ -706,13 +718,16 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
 
   // recurse
   for (unsigned z=0; z<A->getSize(); z++) {
-    nb->i_ref(z) = A->index(z);
-    nb->d_ref(z) = computeSkip(int(A->index(z)), A->down(z));
     INTYPE av;
-    OUTTYPE bv;
-    A->getEdge(z, av);
-    bv = av;
-    nb->setEdge(z, bv);
+    A->edgeval(z).get(av);
+    OUTTYPE bv = av;
+    nb->setSparse(z, A->index(z), edge_value(bv),
+        computeSkip(int(A->index(z)), A->down(z))
+    );
+
+    //nb->i_ref(z) = A->index(z);
+    //nb->d_ref(z) = computeSkip(int(A->index(z)), A->down(z));
+    //nb->setEdge(z, bv);
   }
 
   // Cleanup
@@ -874,11 +889,13 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   // recurse
   for (unsigned z=0; z<A->getSize(); z++) {
     INTYPE adv;
+    A->edgeval(z).get(adv);
+    // A->getEdge(z, adv);
+    // nb->i_ref(z) = A->index(z);
     OUTTYPE bdv;
-    A->getEdge(z, adv);
-    nb->i_ref(z) = A->index(z);
-    computeAll(int(A->index(z)), nextk, INOP::apply(av, adv), A->down(z), bdv, nb->d_ref(z));
-    nb->setEdge(z, bdv);
+    node_handle bdn;
+    computeAll(int(A->index(z)), nextk, INOP::apply(av, adv), A->down(z), bdv, bdn);
+    nb->setSparse(z, A->index(z), edge_value(bdv), bdn);
   }
 
   // Cleanup

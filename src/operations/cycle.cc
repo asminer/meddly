@@ -116,8 +116,9 @@ void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, int k, long& bev, n
     node_handle t = 0;
     compute_r(aev, a, k - 1, tev, t);
     for (int i = 0; i < size; i++) {
-      T->setEdge(i, tev);
-      T->d_ref(i) = resF->linkNode(t);
+      T->setFull(i, edge_value(tev), resF->linkNode(t));
+      // T->setEdge(i, tev);
+      // T->d_ref(i) = resF->linkNode(t);
     }
     resF->unlinkNode(t);
     resF->createReducedNode(-1, T, bev, b);
@@ -148,8 +149,9 @@ void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, int k, long& bev, n
     long tev = Inf<long>();
     node_handle t = 0;
     compute_r(aev + A->edge_long(i) + B->edge_long(i), B->down(i), level - 1, tev, t);
-    T->setEdge(i, tev);
-    T->d_ref(i) = t;
+    T->setFull(i, edge_value(tev), t);
+    // T->setEdge(i, tev);
+    // T->d_ref(i) = t;
 
     unpacked_node::Recycle(B);
   }

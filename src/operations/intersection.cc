@@ -289,9 +289,8 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
   for ( ; A_curr_index < A_nnzs && B_curr_index < B_nnzs; ) {
     // get a_i, a_d, b_i, b_d
     node_handle a_d, b_d;
-    unsigned a_i, b_i;
-    a_i = A->index(A_curr_index);
-    b_i = B->index(B_curr_index);
+    const unsigned a_i = A->index(A_curr_index);
+    const unsigned b_i = B->index(B_curr_index);
     if (a_i <= b_i) {
       a_d = A->down(A_curr_index);
       A_curr_index++;
@@ -308,24 +307,26 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
     if (a_d == 0 || b_d == 0) continue;
 
     // compute inter(a_d, b_d)
-    unsigned index = (a_d? a_i: b_i);
-    node_handle down = compute_r(int(index), dwnLevel, a_d, b_d);
+    const unsigned index = (a_d? a_i: b_i);
+    const node_handle down = compute_r(int(index), dwnLevel, a_d, b_d);
 
     // if inter is non-zero, add it to the new node
     if (down) {
-      C->i_ref(nnz) = index;
-      C->d_ref(nnz) = down;
+      C->setSparse(nnz, index, down);
+      // C->i_ref(nnz) = index;
+      // C->d_ref(nnz) = down;
       nnz++;
     }
   } // for loop
   if (B_ext_d != 0) {
     for ( ; A_curr_index < A_nnzs; A_curr_index++) {
       // do inter(a_i, b_ext_i)
-      unsigned index = A->index(A_curr_index);
-      node_handle down = compute_r(int(index), dwnLevel, A->down(A_curr_index), B_ext_d);
+      const unsigned index = A->index(A_curr_index);
+      const node_handle down = compute_r(int(index), dwnLevel, A->down(A_curr_index), B_ext_d);
       if (down) {
-        C->i_ref(nnz) = index;
-        C->d_ref(nnz) = down;
+        C->setSparse(nnz, index, down);
+        // C->i_ref(nnz) = index;
+        // C->d_ref(nnz) = down;
         nnz++;
       }
     }
@@ -333,22 +334,24 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
   if (A_ext_d != 0) {
     for ( ; B_curr_index < B_nnzs; B_curr_index++) {
       // do inter(a_ext_i, b_i)
-      unsigned index = B->index(B_curr_index);
+      const unsigned index = B->index(B_curr_index);
       node_handle down = compute_r(int(index), dwnLevel, A_ext_d, B->down(B_curr_index));
       if (down) {
-        C->i_ref(nnz) = index;
-        C->d_ref(nnz) = down;
+        C->setSparse(nnz, index, down);
+        // C->i_ref(nnz) = index;
+        // C->d_ref(nnz) = down;
         nnz++;
       }
     }
   }
   if (A_ext_d != 0 && B_ext_d != 0) {
-    const int index = max_a_b_last_index+1;
+    const unsigned index = max_a_b_last_index+1;
     MEDDLY_DCASSERT(index >= 0);
-    node_handle down = compute_r(index, dwnLevel, A_ext_d, B_ext_d);
+    const node_handle down = compute_r(index, dwnLevel, A_ext_d, B_ext_d);
     if (down) {
-      C->i_ref(nnz) = unsigned(index);
-      C->d_ref(nnz) = down;
+      C->setSparse(nnz, index, down);
+      // C->i_ref(nnz) = unsigned(index);
+      // C->d_ref(nnz) = down;
       C->markAsExtensible();
       nnz++;
     } else {

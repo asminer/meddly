@@ -196,7 +196,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
   dd_edge resultik(resF), temp(resF);
 
   // Clear out result (important!)
-  for (unsigned i = 0; i < rSize; ++i) nbr->d_ref(i) = 0;
+  // nbr->clear(0, rSize); // newFull does this already
 
   /**
    * If a is identity reduced (i.e. lower level than b)
@@ -212,16 +212,18 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     unpacked_node* nrbp = unpacked_node::New(arg2F);
     for (unsigned iz = 0; iz < nrb->getSize(); ++iz) {
       unpacked_node* nbri = unpacked_node::newFull(resF, -rLevel, rSize);
-      for (unsigned i = 0; i < rSize; ++i) nbri->d_ref(i) = 0;
+      // for (unsigned i = 0; i < rSize; ++i) nbri->d_ref(i) = 0;
       arg2F->unpackNode(nrbp, nrb->down(iz), SPARSE_ONLY);
       unsigned i = nrb->index(iz);
       for (unsigned jz = 0; jz < nrbp->getSize(); ++jz) {
         unsigned j = nrbp->index(jz);
         MEDDLY_DCASSERT(0 == nbri->down(j));
-        nbri->d_ref(j) = compute_rec(a, nrbp->down(jz));
+        // nbri->d_ref(j) = compute_rec(a, nrbp->down(jz));
+        nbri->setFull(j, compute_rec(a, nrbp->down(jz)));
       }
       MEDDLY_DCASSERT(0 == nbr->down(i));
-      nbr->d_ref(i) = resF->createReducedNode(int(i), nbri);
+      // nbr->d_ref(i) = resF->createReducedNode(int(i), nbri);
+      nbr->setFull(i, resF->createReducedNode(int(i), nbri));
     }
     unpacked_node::Recycle(nrbp);
     unpacked_node::Recycle(nrb);
@@ -232,16 +234,18 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     unpacked_node* nrap = unpacked_node::New(arg1F);
     for (unsigned iz = 0; iz < nra->getSize(); ++iz) {
       unpacked_node* nbri = unpacked_node::newFull(resF, -rLevel, rSize);
-      for (unsigned i = 0; i < rSize; ++i) nbri->d_ref(i) = 0;
+      // for (unsigned i = 0; i < rSize; ++i) nbri->d_ref(i) = 0;
       arg1F->unpackNode(nrap, nra->down(iz), SPARSE_ONLY);
       unsigned i = nra->index(iz);
       for (unsigned jz = 0; jz < nrap->getSize(); ++jz) {
         unsigned j = nrap->index(jz);
         MEDDLY_DCASSERT(0 == nbri->down(j));
-        nbri->d_ref(j) = compute_rec(nrap->down(jz), b);
+        // nbri->d_ref(j) = compute_rec(nrap->down(jz), b);
+        nbri->setFull(j, compute_rec(nrap->down(jz), b));
       }
       MEDDLY_DCASSERT(0 == nbr->down(i));
-      nbr->d_ref(i) = resF->createReducedNode(int(i), nbri);
+      // nbr->d_ref(i) = resF->createReducedNode(int(i), nbri);
+      nbr->setFull(i, resF->createReducedNode(int(i), nbri));
     }
     unpacked_node::Recycle(nrap);
     unpacked_node::Recycle(nra);
@@ -270,7 +274,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     //    result[i][k] += compute_rec(a[i][j], b[j][k])
     for (unsigned iz = 0; iz < nra->getSize(); ++iz) {
       unpacked_node* nbri = unpacked_node::newFull(resF, -rLevel, rSize);
-      for (unsigned i = 0; i < rSize; ++i) nbri->d_ref(i) = 0;
+      // for (unsigned i = 0; i < rSize; ++i) nbri->d_ref(i) = 0;
       arg1F->unpackNode(nrap, nra->down(iz), SPARSE_ONLY);
       unsigned i = nra->index(iz);
       for (unsigned jz = 0; jz < nrap->getSize(); ++jz) {
@@ -281,7 +285,8 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
           if (0 == res) continue;
           unsigned k = nrbp[j]->index(kz);
           if (0 == nbri->down(k)) {
-            nbri->d_ref(k) = res;
+            nbri->setFull(k, res);
+            // nbri->d_ref(k) = res;
             continue;
           }
           // Do the union
@@ -292,7 +297,8 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
         }
       }
       MEDDLY_DCASSERT(0 == nbr->down(i));
-      nbr->d_ref(i) = resF->createReducedNode(int(i), nbri);
+      // nbr->d_ref(i) = resF->createReducedNode(int(i), nbri);
+      nbr->setFull(i, resF->createReducedNode(int(i), nbri));
     }
     unpacked_node::Recycle(nrap);
     unpacked_node::Recycle(nra);
