@@ -164,8 +164,9 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
   // do computation
   for (unsigned i = 0; i < resultSize; i++) {
     if (A->down(i) == 0 || B->down(i) == 0) {
-      nb->d_ref(i) = 0;
-      nb->setEdge(i, 0L);
+      nb->setFull(i, edge_value(0L), 0);
+      // nb->d_ref(i) = 0;
+      // nb->setEdge(i, 0L);
       continue;
     }
 
@@ -178,8 +179,9 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
 
     for (unsigned j = 0; j < resultSize; j++) {
       if (D->down(j) == 0) {
-        nb2->d_ref(j) = 0;
-        nb2->setEdge(j, 0L);
+        nb2->setFull(j, edge_value(0L), 0);
+        // nb2->d_ref(j) = 0;
+        // nb2->setEdge(j, 0L);
         continue;
       }
 
@@ -188,8 +190,9 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
       compute(aev + A->edge_long(i) + D->edge_long(j), D->down(j),
         bev + B->edge_long(i), B->down(i),
         ev, ed);
-      nb2->d_ref(j) = ed;
-      nb2->setEdge(j, ev);
+      nb2->setFull(j, edge_value(ev), ed);
+      // nb2->d_ref(j) = ed;
+      // nb2->setEdge(j, ev);
     }
 
     unpacked_node::Recycle(D);
@@ -199,8 +202,9 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
     node_handle d = 0;
     resF->createReducedNode(int(i), nb2, dev, d);
 
-    nb->d_ref(i) = d;
-    nb->setEdge(i, dev);
+    nb->setFull(i, edge_value(dev), d);
+    // nb->d_ref(i) = d;
+    // nb->setEdge(i, dev);
   }
 
   // cleanup
@@ -271,8 +275,9 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
   // do computation
   for (unsigned i = 0; i < resultSize; i++) {
     if (A->down(i) == 0) {
-      nb->d_ref(i) = 0;
-      nb->setEdge(i, 0L);
+      nb->setFull(i, edge_value(0L), 0);
+      // nb->d_ref(i) = 0;
+      // nb->setEdge(i, 0L);
       continue;
     }
 
@@ -285,8 +290,9 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
 
     for (unsigned j = 0; j < resultSize; j++) {
       if (D->down(j) == 0 || B->down(j) == 0) {
-        nb2->d_ref(j) = 0;
-        nb2->setEdge(j, 0L);
+        nb2->setFull(j, edge_value(0L), 0);
+        // nb2->d_ref(j) = 0;
+        // nb2->setEdge(j, 0L);
         continue;
       }
 
@@ -295,8 +301,9 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
       compute(aev + A->edge_long(i) + D->edge_long(j), D->down(j),
         bev + B->edge_long(j), B->down(j),
         ev, ed);
-      nb2->d_ref(j) = ed;
-      nb2->setEdge(j, ev);
+      nb2->setFull(j, edge_value(ev), ed);
+      // nb2->d_ref(j) = ed;
+      // nb2->setEdge(j, ev);
     }
 
     unpacked_node::Recycle(D);
@@ -306,8 +313,9 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
     node_handle d = 0;
     resF->createReducedNode(int(i), nb2, dev, d);
 
-    nb->d_ref(i) = d;
-    nb->setEdge(i, dev);
+    nb->setFull(i, edge_value(dev), d);
+    // nb->d_ref(i) = d;
+    // nb->setEdge(i, dev);
   }
 
   // cleanup

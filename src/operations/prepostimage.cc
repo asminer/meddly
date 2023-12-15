@@ -216,7 +216,8 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
     for (unsigned i=0; i<rSize; i++) {
-      C->d_ref(i) = compute_rec(A->down(i), mxd);
+      C->setFull(i, compute_rec(A->down(i), mxd));
+      // C->d_ref(i) = compute_rec(A->down(i), mxd);
     }
   } else {
     //
@@ -224,7 +225,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
     // clear out result (important!)
-    for (unsigned i=0; i<rSize; i++) C->d_ref(i) = 0;
+    C->clear(0, rSize);
 
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node *Ru = unpacked_node::New(argM);
@@ -257,7 +258,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
         node_handle newstates = compute_rec(A->down(j), Rp->down(jz));
         if (0==newstates) continue;
         if (0==C->down(i)) {
-          C->d_ref(i) = newstates;
+          C->setFull(i, newstates);
           continue;
         }
         // there's new states and existing states; union them.
@@ -359,7 +360,8 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
     for (unsigned i=0; i<rSize; i++) {
-      C->d_ref(i) = compute_rec(A->down(i), mxd);
+      C->setFull(i, compute_rec(A->down(i), mxd));
+      // C->d_ref(i) = compute_rec(A->down(i), mxd);
     }
   } else {
     //
@@ -367,7 +369,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
     // clear out result (important!)
-    for (unsigned i=0; i<rSize; i++) C->d_ref(i) = 0;
+    C->clear(0, rSize);
 
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node *Ru = unpacked_node::New(argM);
@@ -399,7 +401,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
         node_handle newstates = compute_rec(A->down(i), Rp->down(jz));
         if (0==newstates) continue;
         if (0==C->down(j)) {
-          C->d_ref(j) = newstates;
+          C->setFull(j, newstates);
           continue;
         }
         // there's new states and existing states; union them.
@@ -701,8 +703,9 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
       node_handle newstates = 0;
       compute_rec(A->edge_long(i), A->down(i), mxd, nev, newstates);
 
-      C->setEdge(i, newstates == 0 ? 0L : ev + nev);
-      C->d_ref(i) = newstates;
+      C->setFull(i, edge_value( newstates ? ev + nev : 0L ), newstates);
+      // C->setEdge(i, newstates == 0 ? 0L : ev + nev);
+      // C->d_ref(i) = newstates;
     }
   } else {
     //
@@ -710,10 +713,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
     MEDDLY_DCASSERT(ABS(mxdLevel) >= evmddLevel);
 
     // clear out result (important!)
-    for (unsigned i=0; i<rSize; i++) {
-      C->setEdge(i, 0L);
-      C->d_ref(i) = 0;
-    }
+    C->clear(0, rSize);
 
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node *Ru = unpacked_node::New(argM);
@@ -748,8 +748,9 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
         if (0==newstates) continue;
         nev += ev;
         if (0==C->down(i)) {
-          C->setEdge(i, nev);
-          C->d_ref(i) = newstates;
+          C->setFull(i, edge_value(nev), newstates);
+          // C->setEdge(i, nev);
+          // C->d_ref(i) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
@@ -849,8 +850,9 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
       node_handle newstates = 0;
       compute_rec(A->edge_long(i), A->down(i), mxd, nev, newstates);
 
-      C->setEdge(i, newstates == 0 ? 0L : ev + nev);
-      C->d_ref(i) = newstates;
+      C->setFull(i, edge_value( newstates ? ev + nev : 0L), newstates);
+      // C->setEdge(i, newstates == 0 ? 0L : ev + nev);
+      // C->d_ref(i) = newstates;
     }
   } else {
     //
@@ -858,10 +860,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
     MEDDLY_DCASSERT(ABS(mxdLevel) >= evmddLevel);
 
     // clear out result (important!)
-    for (unsigned i=0; i<rSize; i++) {
-      C->setEdge(i, 0L);
-      C->d_ref(i) = 0;
-    }
+    C->clear(0, rSize);
 
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node *Ru = unpacked_node::New(argM);
@@ -896,8 +895,9 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
         if (0==newstates) continue;
         nev += ev;
         if (0==C->down(j)) {
-          C->setEdge(j, nev);
-          C->d_ref(j) = newstates;
+          C->setFull(j, nev, newstates);
+          // C->setEdge(j, nev);
+          // C->d_ref(j) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
@@ -1076,8 +1076,9 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
         node_handle newstates = 0;
         compute_rec(A->edge_long(i) + B->edge_long(j), B->down(j), mxd, nev, newstates);
 
-        D->setEdge(j, newstates == 0 ? 0L : ev + nev);
-        D->d_ref(j) = newstates;
+        D->setFull(j, edge_value(newstates ? ev + nev : 0L), newstates);
+        // D->setEdge(j, newstates == 0 ? 0L : ev + nev);
+        // D->d_ref(j) = newstates;
       }
     }
     else {
@@ -1086,10 +1087,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
       MEDDLY_DCASSERT(ABS(mxdLevel) >= ABS(pLevel));
 
       // clear out result (important!)
-      for (unsigned j = 0; j < rSize; j++) {
-        D->setEdge(j, 0L);
-        D->d_ref(j) = 0;
-      }
+      D->clear(0, rSize);
 
       // Initialize mxd readers, note we might skip the unprimed level
       unpacked_node *Ru = unpacked_node::New(argM);
@@ -1129,8 +1127,9 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
           }
           nev += ev;
           if (0 == D->down(jp)) {
-            D->setEdge(jp, nev);
-            D->d_ref(jp) = newstates;
+            D->setFull(jp, edge_value(nev), newstates);
+            // D->setEdge(jp, nev);
+            // D->d_ref(jp) = newstates;
             continue;
           }
           // there's new states and existing states; union them.
@@ -1149,8 +1148,9 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
     long cev = Inf<long>();
     node_handle cnode = 0;
     resF->createReducedNode(int(i), D, cev, cnode);
-    C->setEdge(i, cev);
-    C->d_ref(i) = cnode;
+    C->setFull(i, edge_value(cev), cnode);
+    // C->setEdge(i, cev);
+    // C->d_ref(i) = cnode;
 
     unpacked_node::Recycle(B);
   }
