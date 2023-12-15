@@ -434,6 +434,22 @@ class MEDDLY::unpacked_node {
             _edge[n] = v;
         }
 
+        /**
+            Set a full edge from E, and destroy E.
+                @param  n       Which pointer
+                @param  E       Edge value (if needed) and node
+        */
+        inline void setFull(unsigned n, dd_edge &E)
+        {
+            MEDDLY_DCASSERT(E.isAttachedTo(parent));
+            MEDDLY_DCASSERT(E.getEdgeValue().hasType(the_edge_type));
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            E.swapNode(_down[n]);
+            if (_edge) {
+                _edge[n] = E.getEdgeValue();
+            }
+        }
+
 
         /**
             Set a full edge.
@@ -492,6 +508,28 @@ class MEDDLY::unpacked_node {
             _index[n] = i;
             _down[n] = h;
             _edge[n] = v;
+        }
+
+
+        /**
+            Set a sparse edge.
+                @param  n       Which nonzero edge
+                @param  i       Index of the edge
+                @param  E       Edge value (if needed) and node
+        */
+        inline void setSparse(unsigned n, unsigned i, dd_edge &E)
+        {
+            MEDDLY_DCASSERT(_down);
+            MEDDLY_DCASSERT(_index);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            MEDDLY_DCASSERT(E.getEdgeValue().hasType(the_edge_type));
+            MEDDLY_DCASSERT(isSparse());
+
+            E.swapNode(_down[n]);
+            _index[n] = i;
+            if (_edge) {
+                _edge[n] = E.getEdgeValue();
+            }
         }
 
 

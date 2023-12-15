@@ -100,7 +100,8 @@ class MEDDLY::dd_edge {
             label = L;
         }
 
-        inline long getNode() const { return node; }
+        inline node_handle getNode() const { return node; }
+        inline void swapNode(node_handle &h) { SWAP(node, h); }
         inline const edge_value& getEdgeValue() const { return edgeval; }
         inline long getEdgeInt() const { return edgeval.getLong(); }
         inline float getEdgeFloat() const { return edgeval.getFloat(); }
