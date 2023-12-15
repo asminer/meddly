@@ -418,7 +418,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
   std::deque<int> queue;
   std::vector<bool> waiting(size, false);
   for (int ip = 0; ip < size; ip++) {
-    if (nb.d(ip) != 0 && Ru->down(ip) != 0) {
+    if (nb.down(ip) != 0 && Ru->down(ip) != 0) {
       queue.push_back(ip);
       waiting[ip] = true;
     }
@@ -430,7 +430,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
     queue.pop_front();
     waiting[ip] = false;
 
-    MEDDLY_DCASSERT(nb.d(ip) != 0);
+    MEDDLY_DCASSERT(nb.down(ip) != 0);
     MEDDLY_DCASSERT(Ru->down(ip) != 0);
 
     const int dlevel = transF->getNodeLevel(Ru->down(ip));
@@ -450,7 +450,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
 
       long recev = 0;
       node_handle rec = 0;
-      recFire(aev + A->edge_long(jp), A->down(jp), nb.edge_long(ip), nb.d(ip), Rp->down(jpz), recev, rec);
+      recFire(aev + A->edge_long(jp), A->down(jp), nb.edge_long(ip), nb.down(ip), Rp->down(jpz), recev, rec);
       MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
       if (rec == 0) {
@@ -458,10 +458,10 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
         continue;
       }
 
-      if (rec == nb.d(jp)) {
+      if (rec == nb.down(jp)) {
         // Compute the minimum
         if (recev < nb.edge_long(jp)) {
-          nb.setEdge(jp, recev);
+          nb.setEdgeval(jp, recev);
         }
         resF->unlinkNode(rec);
         continue;
@@ -469,28 +469,29 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
 
       bool updated = true;
 
-      if (nb.d(jp) == 0) {
+      if (nb.down(jp) == 0) {
         MEDDLY_DCASSERT(nb.edge_long(jp) == 0);
-        nb.setEdge(jp, recev);
-        nb.d_ref(jp) = rec;
+        nb.setFull(jp, edge_value(recev), rec);
+        // nb.setEdge(jp, recev);
+        // nb.d_ref(jp) = rec;
       }
       else {
-        nbdj.set(nb.d(jp), nb.edge_long(jp));
+        nbdj.set(nb.down(jp), nb.edge_long(jp));
         newst.set(rec, recev);
         minOp->computeTemp(nbdj, newst, nbdj);
-        updated = (nbdj.getNode() != nb.d(jp));
+        updated = (nbdj.getNode() != nb.down(jp));
         nb.setFull(jp, nbdj);
 
         // OLD
         /*
         long accev = Inf<long>();
         node_handle acc = 0;
-        minOp->computeTemp(nb.edge_long(jp), nb.d(jp), recev, rec, accev, acc);
+        minOp->computeTemp(nb.edge_long(jp), nb.down(jp), recev, rec, accev, acc);
 
         MEDDLY_DCASSERT(acc != 0);
         resF->unlinkNode(rec);
-        if (acc != nb.d(jp)) {
-          resF->unlinkNode(nb.d(jp));
+        if (acc != nb.down(jp)) {
+          resF->unlinkNode(nb.down(jp));
           nb.setEdge(jp, accev);
           nb.d_ref(jp) = acc;
         }
@@ -569,8 +570,9 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
 
   for (int i = 0; i < size; i++) {
     if (B->down(i) == 0) {
-      T->setEdge(i, 0L);
-      T->d_ref(i) = 0;
+      // T->setEdge(i, 0L);
+      // T->d_ref(i) = 0;
+      // T is already zeroed
       continue;
     }
 
@@ -590,8 +592,9 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
         long tev = 0;
         node_handle t = 0;
         recFire(aev + A->edge_long(ip), A->down(ip), bev + B->edge_long(i) + D->edge_long(ip), D->down(ip), r, tev, t);
-        Tp->setEdge(ip, tev);
-        Tp->d_ref(ip) = t;
+        Tp->setFull(ip, edge_value(tev), t);
+        // Tp->setEdge(ip, tev);
+        // Tp->d_ref(ip) = t;
       }
     }
     else {
@@ -601,10 +604,13 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
       // Need to process this level in the MXD.
 
       // clear out result (important!)
+      // Tp is already zeroed
+      /*
       for (int ip = 0; ip < size; ip++) {
         Tp->setEdge(ip, 0L);
         Tp->d_ref(ip) = 0;
       }
+      */
 
       // Initialize mxd readers, note we might skip the unprimed level
       unpacked_node* Ru = (rLevel < 0)
@@ -648,8 +654,9 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
 
           if (Tp->down(jp) == 0) {
             MEDDLY_DCASSERT(Tp->edge_long(jp) == 0);
-            Tp->setEdge(jp, nev);
-            Tp->d_ref(jp) = n;
+            Tp->setFull(jp, edge_value(nev), n);
+            // Tp->setEdge(jp, nev);
+            // Tp->d_ref(jp) = n;
             continue;
           }
 
@@ -683,8 +690,9 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
     long tpev = Inf<long>();
     node_handle tp = 0;
     resF->createReducedNode(i, Tp, tpev, tp);
-    T->setEdge(i, tpev);
-    T->d_ref(i) = tp;
+    T->setFull(i, edge_value(tpev), tp);
+    // T->setEdge(i, tpev);
+    // T->d_ref(i) = tp;
   }
 
   // cleanup mdd reader
@@ -849,27 +857,32 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
   // Do computation
   unpacked_node* T = unpacked_node::newFull(resF, level, sz);
   for (int i = 0; i < sz; i++) {
+      /* T is already zeroed
     if (B->down(i) == 0) {
       MEDDLY_DCASSERT(resF == tcF);
       T->setEdge(i, 0L);
       T->d_ref(i) = 0;
     }
-    else {
+    */
+    if (B->down(i)) {
       unpacked_node* D = isLevelAbove(-level, tcF->getNodeLevel(B->down(i)))
         ? unpacked_node::newIdentity(tcF, -level, i, 0L, B->down(i), FULL_ONLY)
         : tcF->newUnpacked(B->down(i), FULL_ONLY);
       unpacked_node* Tp = unpacked_node::newFull(resF, -level, sz);
       for (int j = 0; j < sz; j++) {
+          /*
         if (A->down(j) == 0 || D->down(j) == 0) {
           Tp->setEdge(j, 0L);
           Tp->d_ref(j) = 0;
         }
-        else {
+        */
+        if (A->down(j) && D->down(j)) {
           long tpev = Inf<long>();
           node_handle tp = 0;
           saturate(aev + A->edge_long(j), A->down(j), bev + B->edge_long(i) + D->edge_long(j), D->down(j), level - 1, tpev, tp);
-          Tp->setEdge(j, tpev);
-          Tp->d_ref(j) = tp;
+          Tp->setFull(j, edge_value(tpev), tp);
+          // Tp->setEdge(j, tpev);
+          // Tp->d_ref(j) = tp;
         }
       }
       unpacked_node::Recycle(D);
@@ -879,8 +892,9 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
       long tev = Inf<long>();
       node_handle t = 0;
       resF->createReducedNode(i, Tp, tev, t);
-      T->setEdge(i, tev);
-      T->d_ref(i) = t;
+      T->setFull(i, edge_value(tev), t);
+      // T->setEdge(i, tev);
+      // T->d_ref(i) = t;
     }
   }
 

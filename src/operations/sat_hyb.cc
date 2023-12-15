@@ -1692,7 +1692,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
   for (int i = 0; i < nb.getSize(); i++) {
-    if (nb.d(i)) {
+    if (nb.down(i)) {
       queue->add(i);
     }
   }
@@ -1702,7 +1702,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   while (!queue->isEmpty()) {
     int i = queue->remove();
 
-    MEDDLY_DCASSERT(nb.d(i));
+    MEDDLY_DCASSERT(nb.down(i));
 
     for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
 
@@ -1768,16 +1768,16 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         if(imFlag) {
          j =  Rn[event_Ru_Rn_index[ei]]->nextOf(i);
          if(j==-1) continue; // Not enabled
-         if (j < nb.getSize() && -1==nb.d(j)) continue;
+         if (j < nb.getSize() && -1==nb.down(j)) continue;
          seHandlesForRecursion[0]=Rn[event_Ru_Rn_index[ei]]->getDown();
         } else {
           j = Rp->index(jz);
           if(j==-1) continue; // Not enabled
-          if (j < nb.getSize() && -1==nb.d(j)) continue;
+          if (j < nb.getSize() && -1==nb.down(j)) continue;
           seHandlesForRecursion[which_se+does_rn_exist] = Rp->down(jz);
         }
 
-        node_handle rec = recFire(nb.d(i), seHandlesForRecursion, num_se);
+        node_handle rec = recFire(nb.down(i), seHandlesForRecursion, num_se);
 
         if (rec == 0) continue;
 
@@ -1789,31 +1789,34 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
           {
           int new_var_bound = resF->isExtensibleLevel(nb.getLevel())? -(j+1): (j+1);
           dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
-          int oldSize = nb.getSize();
+          const unsigned oldSize = nb.getSize();
           nb.resize(j+1);
-          while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
+          nb.clear(oldSize, nb.getSize());
+          // while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
           queue->resize(nb.getSize());
           }
 
-        if (rec == nb.d(j)) {
+        if (rec == nb.down(j)) {
           resF->unlinkNode(rec);
           continue;
         }
 
         bool updated = true;
 
-        if (0 == nb.d(j)) {
-          nb.d_ref(j) = rec;
+        if (0 == nb.down(j)) {
+          nb.setFull(j, rec);
+          // nb.d_ref(j) = rec;
         }
         else if (rec == -1) {
-          resF->unlinkNode(nb.d(j));
-          nb.d_ref(j) = -1;
+          resF->unlinkNode(nb.down(j));
+          nb.setFull(j, rec);
+          // nb.d_ref(j) = rec;
         }
         else {
-          nbdj.set(nb.d(j));  // clobber
+          nbdj.set(nb.down(j));  // clobber
           newst.set(rec);     // clobber
           mddUnion->computeTemp(nbdj, newst, nbdj);
-          updated = (nbdj.getNode() != nb.d(j));
+          updated = (nbdj.getNode() != nb.down(j));
           nb.setFull(j, nbdj);
         }
         if (updated) queue->add(j);
@@ -1910,7 +1913,8 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
     for (int i=0; i<rSize; i++) {
-      nb->d_ref(i) = recFire(A->down(i), seHandles, num_se);
+      nb->setFull(i, recFire(A->down(i), seHandles, num_se));
+      // nb->d_ref(i) = recFire(A->down(i), seHandles, num_se);
     }
 
   } else {
@@ -2036,9 +2040,10 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
           int new_var_bound = resF->isExtensibleLevel(nb->getLevel())? -(j+1) : (j+1);
           domain* dm = resF->getDomain();
           dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);
-          int oldSize = nb->getSize();
+          const unsigned oldSize = nb->getSize();
           nb->resize(j+1);
-          while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
+          nb->clear(oldSize, nb->getSize());
+          // while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
         }
       }
 
@@ -2046,7 +2051,8 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
       // determine new states to be added (recursively)
       // and add them
       if (0==nb->down(j)) {
-        nb->d_ref(j) = newstates;
+        nb->setFull(j, newstates);
+        // nb->d_ref(j) = newstates;
         continue;
       }
 
@@ -2311,8 +2317,9 @@ MEDDLY::saturation_hyb_by_events_op::saturate(node_handle mdd, int k)
 
   // Do computation
   for (int i=0; i<sz; i++) {
-    nb->d_ref(i) = mddDptrs->down(i) ? saturate(mddDptrs->down(i), k-1) : 0;
-    }
+    nb->setFull(i, mddDptrs->down(i) ? saturate(mddDptrs->down(i), k-1) : 0);
+//     nb->d_ref(i) = mddDptrs->down(i) ? saturate(mddDptrs->down(i), k-1) : 0;
+  }
 
   // Cleanup
   unpacked_node::Recycle(mddDptrs);

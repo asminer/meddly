@@ -437,7 +437,9 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
 
   // Do computation
   for (unsigned i=0; i<sz; i++) {
-    C->d_ref(i) = mddDptrs->down(i) ? saturate(mddDptrs->down(i), k-1) : 0;
+    C->setFull(i,
+      mddDptrs->down(i) ? saturate(mddDptrs->down(i), k-1) : 0
+    );
   }
 
   // Cleanup
@@ -543,8 +545,9 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
     if (evmddDptrs->down(i) != 0) {
       saturate(evmddDptrs->edge_long(i), evmddDptrs->down(i), k-1, cev, c);
     }
-    C->setEdge(i, cev);
-    C->d_ref(i) = c;
+    C->setFull(i, edge_value(cev), c);
+    // C->setEdge(i, cev);
+    // C->d_ref(i) = c;
   }
 
   // Cleanup
@@ -820,7 +823,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
   for (unsigned i = 0; i < nb.getSize(); i++) {
-    if (nb.d(i)) queue->add(i);
+    if (nb.down(i)) queue->add(i);
   }
 
   dd_edge nbdj(resF), temp(resF);
@@ -829,7 +832,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
   while (!queue->isEmpty()) {
     const unsigned i = queue->remove();
 
-    MEDDLY_DCASSERT(nb.d(i));
+    MEDDLY_DCASSERT(nb.down(i));
     if (0==Ru->down(i)) continue;  // row i is empty
 
     // grab column (TBD: build these ahead of time?)
@@ -844,30 +847,31 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
     for (int jz=0; jz<Rp->getSize(); jz++) {
       MEDDLY_DCASSERT(jz>=0);
       const unsigned j = Rp->index(unsigned(jz));
-      if (-1==nb.d(j)) continue;  // nothing can be added to this set
+      if (-1==nb.down(j)) continue;  // nothing can be added to this set
 
-      node_handle rec = recFire(nb.d(i), Rp->down(unsigned(jz)));
+      node_handle rec = recFire(nb.down(i), Rp->down(unsigned(jz)));
 
       if (rec == 0) continue;
-      if (rec == nb.d(j)) {
+      if (rec == nb.down(j)) {
         resF->unlinkNode(rec);
         continue;
       }
 
       bool updated = true;
 
-      if (0 == nb.d(j)) {
-        nb.d_ref(j) = rec;
+      if (0 == nb.down(j)) {
+        nb.setFull(j, rec);
+        // nb.d_ref(j) = rec;
       }
       else if (rec == -1) {
-        resF->unlinkNode(nb.d(j));
-        nb.d_ref(j) = -1;
+        resF->unlinkNode(nb.down(j));
+        nb.setFull(j, rec);
       }
       else {
         temp.set(rec);  // clobbers rec; that's what we want
-        nbdj.set( nb.d(j) );
+        nbdj.set( nb.down(j) );
         mddUnion->computeTemp(nbdj, temp, nbdj);
-        updated = (nbdj.getNode() != nb.d(j));
+        updated = (nbdj.getNode() != nb.down(j));
         nb.setFull(j, nbdj);
       }
 
@@ -939,7 +943,8 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
     // that's an important special case that we can handle quickly.
 
     for (unsigned i=0; i<rSize; i++) {
-      nb->d_ref(i) = recFire(A->down(i), mxd);
+      nb->setFull(i, recFire(A->down(i), mxd));
+      // nb->d_ref(i) = recFire(A->down(i), mxd);
     }
 
   } else {
@@ -977,7 +982,8 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
         node_handle newstates = recFire(A->down(i), Rp->down(jz));
         if (0==newstates) continue;
         if (0==nb->down(j)) {
-          nb->d_ref(j) = newstates;
+          nb->setFull(j, newstates);
+          // nb->d_ref(j) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
@@ -1079,30 +1085,32 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(unpacked_node& nb)
       for (unsigned jz=0; jz<Rp->getSize(); jz++) {
         const unsigned j = Rp->index(jz);
         if (0==expl->data[j]) continue;
-        if (0==nb.d(j))       continue;
+        if (0==nb.down(j))       continue;
         // We have an i->j edge to explore
-        node_handle rec = recFire(nb.d(j), Rp->down(jz));
+        node_handle rec = recFire(nb.down(j), Rp->down(jz));
 
         if (0==rec) continue;
-        if (rec == nb.d(i)) {
+        if (rec == nb.down(i)) {
           resF->unlinkNode(rec);
           continue;
         }
 
         bool updated = true;
 
-        if (0 == nb.d(i)) {
-          nb.d_ref(i) = rec;
+        if (0 == nb.down(i)) {
+          nb.setFull(i, rec);
+          // nb.d_ref(i) = rec;
         }
         else if (-1 == rec) {
-          resF->unlinkNode(nb.d(i));
-          nb.d_ref(i) = -1;
+          resF->unlinkNode(nb.down(i));
+          nb.setFull(i, rec);
+          // nb.d_ref(i) = -1;
         }
         else {
-          nbdi.set(nb.d(i));
+          nbdi.set(nb.down(i));
           temp.set(rec);
           mddUnion->computeTemp(nbdi, temp, nbdi);
-          updated = nbdi.getNode() != nb.d(i);
+          updated = nbdi.getNode() != nb.down(i);
           nb.setFull(i, nbdi);
         }
         if (updated) {
@@ -1158,7 +1166,8 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
     // Skipped levels in the MXD,
     // that's an important special case that we can handle quickly.
     for (unsigned i=0; i<rSize; i++) {
-      nb->d_ref(i) = recFire(A->down(i), mxd);
+      nb->setFull(i, recFire(A->down(i), mxd));
+      // nb->d_ref(i) = recFire(A->down(i), mxd);
     }
   } else {
     //
@@ -1193,7 +1202,8 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
         node_handle newstates = recFire(A->down(j), Rp->down(jz));
         if (0==newstates) continue;
         if (0==nb->down(i)) {
-          nb->d_ref(i) = newstates;
+          nb->setFull(i, newstates);
+          // nb->d_ref(i) = newstates;
           continue;
         }
         // there's new states and existing states; union them.
@@ -1316,7 +1326,7 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
   for (unsigned i = 0; i < nb.getSize(); i++) {
-    if (nb.d(i) != 0) {
+    if (nb.down(i) != 0) {
       queue->add(i);
     }
   }
@@ -1327,7 +1337,7 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
   while (!queue->isEmpty()) {
     const unsigned i = queue->remove();
 
-    MEDDLY_DCASSERT(nb.d(i));
+    MEDDLY_DCASSERT(nb.down(i));
     if (0==Ru->down(i)) continue;  // row i is empty
 
     // grab column (TBD: build these ahead of time?)
@@ -1345,16 +1355,17 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
 
       long recev = Inf<long>();
       node_handle rec = 0;
-      recFire(nb.edge_long(i), nb.d(i), Rp->down(unsigned(jz)), recev, rec);
+      recFire(nb.edge_long(i), nb.down(i), Rp->down(unsigned(jz)), recev, rec);
 
       if (rec == 0) continue;
 
       // Increase the distance
       recev++;
 
-      if (rec == nb.d(j)) {
+      if (rec == nb.down(j)) {
         if (recev < nb.edge_long(j)) {
-          nb.setEdge(j, recev);
+          nb.setEdgeval(j, edge_value(recev));
+          // nb.setEdge(j, recev);
         }
         resF->unlinkNode(rec);
         continue;
@@ -1362,19 +1373,20 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
 
       bool updated = true;
 
-      if (0 == nb.d(j)) {
-        nb.setEdge(j, recev);
-        nb.d_ref(j) = rec;
+      if (0 == nb.down(j)) {
+        nb.setFull(j, edge_value(recev), rec);
+        // nb.setEdge(j, recev);
+        // nb.d_ref(j) = rec;
       }
 //      else if (rec == -1) {
-//        resF->unlinkNode(nb.d(j));
+//        resF->unlinkNode(nb.down(j));
 //        nb.d_ref(j) = -1;
 //      }
       else {
-        nbdj.set(nb.d(j), nb.edge_long(j));
+        nbdj.set(nb.down(j), nb.edge_long(j));
         temp.set(rec, recev);  // clobbers rec; that's what we want
         mddUnion->computeTemp(nbdj, temp, nbdj);
-        updated = (nbdj.getNode() != nb.d(j));
+        updated = (nbdj.getNode() != nb.down(j));
         nb.setFull(j, nbdj);
       }
 
@@ -1456,8 +1468,9 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
       long nev = Inf<long>();
       node_handle n = 0;
       recFire(A->edge_long(i) + ev, A->down(i), mxd, nev, n);
-      nb->setEdge(i, nev);
-      nb->d_ref(i) = n;
+      nb->setFull(i, edge_value(nev), n);
+      // nb->setEdge(i, nev);
+      // nb->d_ref(i) = n;
     }
 
   } else {
@@ -1498,8 +1511,9 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
 
         if (0==n) continue;
         if (0==nb->down(j)) {
-          nb->setEdge(j, nev);
-          nb->d_ref(j) = n;
+          nb->setFull(j, edge_value(nev), n);
+          // nb->setEdge(j, nev);
+          // nb->d_ref(j) = n;
           continue;
         }
 

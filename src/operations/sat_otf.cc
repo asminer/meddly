@@ -771,13 +771,19 @@ double MEDDLY::satotf_opname::otf_relation::getArcCount(
     int current_level = outsetF->getNodeLevel(current_node);
     int next_level = outsetF->upLevel(outsetF->upLevel(current_level));
     MEDDLY_DCASSERT(next_level >= 0);
-    unpacked_node* node =
-      unpacked_node::newFull(outsetF, next_level, unsigned(outsetF->getLevelSize(next_level)));
+    unpacked_node* node = unpacked_node::newFull(outsetF, next_level,
+            unsigned(outsetF->getLevelSize(next_level))
+    );
     for (unsigned i = 0; i < node->getSize(); i++) {
+      if (confirmed[next_level][i]) {
+          node->setFull(i, outsetF->linkNode(current_node));
+      }
+      /*
       node->d_ref(i) =
         confirmed[next_level][i]
         ? outsetF->linkNode(current_node)
         : 0;
+      */
     }
     node_handle next_node = outsetF->createReducedNode(-1, node);
     confirmed_local_states.set(next_node);
@@ -1231,7 +1237,10 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
 
   // Do computation
   for (unsigned i=0; i<sz; i++) {
-    nb->d_ref(i) = mddDptrs->down(i) ? saturate(mddDptrs->down(i), k-1) : 0;
+    if (mddDptrs->down(i)) {
+      nb->setFull(i, saturate(mddDptrs->down(i), k-1));
+    }
+    // nb->d_ref(i) = mddDptrs->down(i) ? saturate(mddDptrs->down(i), k-1) : 0;
   }
 
   // Cleanup
@@ -1443,14 +1452,14 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
   for (unsigned i = 0; i < nb.getSize(); i++) {
-    if (nb.d(i)) queue->add(int(i));
+    if (nb.down(i)) queue->add(int(i));
   }
 
   // explore indexes
   while (!queue->isEmpty()) {
     const unsigned i = unsigned(queue->remove());
 
-    MEDDLY_DCASSERT(nb.d(i));
+    MEDDLY_DCASSERT(nb.down(i));
 
     for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
       // If event i needs rebuilding,
@@ -1499,32 +1508,34 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
       for (unsigned jz=0; jz<Rp->getSize(); jz++) {
         const unsigned j = Rp->index(jz);
-        if (j < nb.getSize() && -1==nb.d(j)) continue;  // nothing can be added to this set
+        if (j < nb.getSize() && -1==nb.down(j)) continue;  // nothing can be added to this set
 
-        node_handle newstates = recFire(nb.d(i), Rp->down(jz));
+        node_handle newstates = recFire(nb.down(i), Rp->down(jz));
         if (newstates == 0) continue;
 
         // Confirm local state
         rel->confirm(level, int(j));
 
         if (j >= nb.getSize()) {
-          unsigned oldSize = nb.getSize();
+          const unsigned oldSize = nb.getSize();
           // resize the node builder, and clear out the new entries
           nb.resize(j+1);
-          while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
+          nb.clear(oldSize, nb.getSize());
+          // while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
           // resize the queue, and clear out the new entries
           queue->resize(nb.getSize());
         }
 
         bool updated = true;
 
-        if (0 == nb.d(j)) {
-          nb.d_ref(j) = newstates;
+        if (0 == nb.down(j)) {
+          nb.setFull(j, newstates);
+          // nb.d_ref(j) = newstates;
         } else {
-          nbdj.set(nb.d(j));      // clobber
+          nbdj.set(nb.down(j));      // clobber
           newst.set(newstates);   // clobber
           mddUnion->computeTemp(nbdj, newst, nbdj);
-          updated = (nbdj.getNode() != nb.d(j));
+          updated = (nbdj.getNode() != nb.down(j));
           nb.setFull(j, nbdj);
         }
 
@@ -1605,7 +1616,8 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     // that's an important special case that we can handle quickly.
 
     for (unsigned i=0; i<rSize; i++) {
-      nb->d_ref(i) = recFire(A->down(i), mxd);
+      nb->setFull(i, recFire(A->down(i), mxd));
+      // nb->d_ref(i) = recFire(A->down(i), mxd);
     }
 
   } else {
@@ -1736,14 +1748,16 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::recFireHelper(
     rel->confirm(rLevel, int(j));
 
     if (j >= nb->getSize()) {
-      unsigned oldSize = nb->getSize();
+      const unsigned oldSize = nb->getSize();
       // resize the node builder, and clear out the new entries
       nb->resize(j+1);
-      while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
+      nb->clear(oldSize, nb->getSize());
+      // while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
     }
 
     if (0==nb->down(j)) {
-      nb->d_ref(j) = newstates;
+      nb->setFull(j, newstates);
+      // nb->d_ref(j) = newstates;
     } else {
       // there's new states and existing states; union them.
       nbdj.set(nb->down(j));

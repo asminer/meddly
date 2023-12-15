@@ -97,8 +97,9 @@ MEDDLY::node_handle MEDDLY::select_MT::_compute(node_handle a, int level)
 
   // recurse
   unsigned nz = rand() % A->getSize();
-  nb->i_ref(0) = A->index(nz);
-  nb->d_ref(0) = _compute(A->down(nz), level - 1);
+  nb->setSparse(0, A->index(nz), _compute(A->down(nz), level - 1));
+  // nb->i_ref(0) = A->index(nz);
+  // nb->d_ref(0) = _compute(A->down(nz), level - 1);
 
   // Cleanup
   unpacked_node::Recycle(A);
@@ -169,13 +170,16 @@ void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& b
   }
   int nz = izz[rand() % sz];
   delete[] izz;
-  nb->i_ref(0) = A->index(nz);
 
   long tev = 0;
   node_handle t = 0;
   _compute(aev + A->edge_long(nz), A->down(nz), level - 1, tev, t);
-  nb->d_ref(0) = t;
-  nb->setEdge(0, tev);
+
+  nb->setSparse(0, A->index(nz), edge_value(tev), t);
+
+  // nb->i_ref(0) = A->index(nz);
+  // nb->d_ref(0) = t;
+  // nb->setEdge(0, tev);
 
   // Cleanup
   unpacked_node::Recycle(A);

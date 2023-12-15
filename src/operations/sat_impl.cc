@@ -480,12 +480,16 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
                 {
                    //Create primed node for each valid index of the unprimed node
                   unpacked_node* P_var = unpacked_node::newSparse(ef, -i, 1);
-                  P_var->i_ref(0) = new_j;
-                  P_var->d_ref(0) = ef->linkNode(below); // primed node for new_j index points to terminal or unprime node
-                  UP_var->d_ref(j) = ef->createReducedNode(j, P_var);
+                  P_var->setSparse(0, new_j, ef->linkNode(below));
+
+                  // P_var->i_ref(0) = new_j;
+                  // P_var->d_ref(0) = ef->linkNode(below); // primed node for new_j index points to terminal or unprime node
+                  UP_var->setFull(j, ef->createReducedNode(j, P_var));
+                  // UP_var->d_ref(j) = ef->createReducedNode(j, P_var);
                 }
               else
-                UP_var->d_ref(j) = ef->handleForValue(false); // unprimed node for j index points to false
+                UP_var->setFull(j, ef->handleForValue(false));
+                // UP_var->d_ref(j) = ef->handleForValue(false); // unprimed node for j index points to false
               }
 
               ef->unlinkNode(below);
@@ -852,7 +856,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
   for (int i = 0; i < nb.getSize(); i++) {
-    if (nb.d(i)) {
+    if (nb.down(i)) {
       queue->add(i);
     }
   }
@@ -861,7 +865,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   while (!queue->isEmpty()) {
     int i = queue->remove();
 
-    MEDDLY_DCASSERT(nb.d(i));
+    MEDDLY_DCASSERT(nb.down(i));
 
     bool is_union = rel->isUnionPossible(nb.getLevel(),i,Ru);
 
@@ -871,9 +875,9 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
         int j = Ru[ei]->nextOf(i);
         if(j==-1) continue;
-        if (j < nb.getSize() && -1==nb.d(j)) continue; // nothing can be added to this set
+        if (j < nb.getSize() && -1==nb.down(j)) continue; // nothing can be added to this set
 
-        node_handle rec = recFire(nb.d(i), Ru[ei]->getDown());
+        node_handle rec = recFire(nb.down(i), Ru[ei]->getDown());
 
         if (rec == 0) continue;
 
@@ -884,31 +888,34 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
           {
           int new_var_bound = resF->isExtensibleLevel(nb.getLevel())? -(j+1): (j+1);
           dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
-          int oldSize = nb.getSize();
+          const unsigned oldSize = nb.getSize();
           nb.resize(j+1);
-          while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
+          nb.clear(oldSize, nb.getSize());
+          // while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
           queue->resize(nb.getSize());
           }
 
-        if (rec == nb.d(j)) {
+        if (rec == nb.down(j)) {
           resF->unlinkNode(rec);
           continue;
         }
 
         bool updated = true;
 
-        if (0 == nb.d(j)) {
-          nb.d_ref(j) = rec;
+        if (0 == nb.down(j)) {
+          nb.setFull(j, rec);
+          // nb.d_ref(j) = rec;
         }
         else if (rec == -1) {
-          resF->unlinkNode(nb.d(j));
-          nb.d_ref(j) = -1;
+          resF->unlinkNode(nb.down(j));
+          nb.setFull(j, rec);
+          // nb.d_ref(j) = -1;
         }
         else {
-          nbdj.set(nb.d(j));  // clobber
+          nbdj.set(nb.down(j));  // clobber
           newst.set(rec);     // clobber
           mddUnion->computeTemp(nbdj, newst, nbdj);
-          updated = (nbdj.getNode() != nb.d(j));
+          updated = (nbdj.getNode() != nb.down(j));
           nb.setFull(j, nbdj);
         }
 
@@ -926,9 +933,9 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
       int j = next;
       if(j==-1) continue;
-      if (j < nb.getSize() && -1==nb.d(j)) continue; // nothing can be added to this set
+      if (j < nb.getSize() && -1==nb.down(j)) continue; // nothing can be added to this set
 
-      node_handle rec = recFireSet(nb.d(i), jt->second);
+      node_handle rec = recFireSet(nb.down(i), jt->second);
       if (rec == 0) continue;
 
       //confirm local state
@@ -938,31 +945,34 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         {
         int new_var_bound = resF->isExtensibleLevel(nb.getLevel())? -(j+1): (j+1);
         dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
-        int oldSize = nb.getSize();
+        const unsigned oldSize = nb.getSize();
         nb.resize(j+1);
-        while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
+        nb.clear(oldSize, nb.getSize());
+        // while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
         queue->resize(nb.getSize());
         }
 
-      if (rec == nb.d(j)) {
+      if (rec == nb.down(j)) {
         resF->unlinkNode(rec);
         continue;
       }
 
       bool updated = true;
 
-      if (0 == nb.d(j)) {
-        nb.d_ref(j) = rec;
+      if (0 == nb.down(j)) {
+        nb.setFull(j, rec);
+        // nb.d_ref(j) = rec;
       }
       else if (rec == -1) {
-        resF->unlinkNode(nb.d(j));
-        nb.d_ref(j) = -1;
+        resF->unlinkNode(nb.down(j));
+        nb.setFull(j, rec);
+        // nb.d_ref(j) = -1;
       }
       else {
-        nbdj.set(nb.d(j));  // clobber
+        nbdj.set(nb.down(j));  // clobber
         newst.set(rec);     // clobber
         mddUnion->computeTemp(nbdj, newst, nbdj);
-        updated = (nbdj.getNode() != nb.d(j));
+        updated = (nbdj.getNode() != nb.down(j));
         nb.setFull(j, nbdj);
       }
 
@@ -1053,7 +1063,8 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     // that's an important special case that we can handle quickly.
 
     for (int i=0; i<rSize; i++) {
-      nb->d_ref(i) = recFire(A->down(i), mxd);
+      nb->setFull(i, recFire(A->down(i), mxd));
+      // nb->d_ref(i) = recFire(A->down(i), mxd);
     }
 
   } else {
@@ -1082,9 +1093,10 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
             if (j >= nb->getSize()) {
               int new_var_bound = resF->isExtensibleLevel(nb->getLevel())? -(j+1): (j+1);
               dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);
-              int oldSize = nb->getSize();
+              const unsigned oldSize = nb->getSize();
               nb->resize(j+1);
-              while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
+              // while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
+              nb->clear(oldSize, nb->getSize());
             }
             }
           // ok, there is an i->j "edge".
@@ -1092,7 +1104,8 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
           // and add them
 
           if (0==nb->down(j)) {
-            nb->d_ref(j) = newstates;
+            nb->setFull(j, newstates);
+            // nb->d_ref(j) = newstates;
             continue;
           }
           // there's new states and existing states; union them.
@@ -1413,8 +1426,9 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
 
   // Do computation
   for (int i=0; i<sz; i++) {
-    nb->d_ref(i) = mddDptrs->down(i) ? saturate(mddDptrs->down(i), k-1) : 0;
-    }
+    nb->setFull(i, mddDptrs->down(i) ? saturate(mddDptrs->down(i), k-1) : 0);
+    // nb->d_ref(i) = mddDptrs->down(i) ? saturate(mddDptrs->down(i), k-1) : 0;
+  }
 
   // Cleanup
   unpacked_node::Recycle(mddDptrs);
@@ -1641,7 +1655,11 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
     if (isReachable(mddDptrs->down(i), k-1, cons_i, temp)) {
       // found reachable state in constraint, cleanup and return true
       for (int j = 0; j < i; j++) {
-        if (nb->down(j)) { argF->unlinkNode(nb->down(j)); nb->d_ref(j) = 0; }
+        if (nb->down(j)) {
+            argF->unlinkNode(nb->down(j));
+            nb->setFull(j, 0);
+            // nb->d_ref(j) = 0;
+        }
       }
       unpacked_node::Recycle(nb);
       unpacked_node::Recycle(mddDptrs);
@@ -1649,7 +1667,8 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
       recycleCTKey(Key);
       return true;
     } else {
-      nb->d_ref(i) = temp;
+      nb->setFull(i, temp);
+      // nb->d_ref(i) = temp;
     }
   }
 
@@ -1661,7 +1680,11 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   if (parent->saturateHelper(*nb, constraint)) {
     // found a reachable state in constraint
     for (int j = 0; j < sz; j++) {
-      if (nb->down(j)) { argF->unlinkNode(nb->down(j)); nb->d_ref(j) = 0; }
+      if (nb->down(j)) {
+          argF->unlinkNode(nb->down(j));
+          nb->setFull(j, 0);
+         // nb->d_ref(j) = 0;
+      }
     }
     unpacked_node::Recycle(nb);
     recycleCTKey(Key);
@@ -1724,7 +1747,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
   for (int i = 0; i < nb.getSize(); i++) {
-    if (nb.d(i)) {
+    if (nb.down(i)) {
       queue->add(i);
     }
   }
@@ -1733,17 +1756,17 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
   while (!queue->isEmpty()) {
     int i = queue->remove();
 
-    MEDDLY_DCASSERT(nb.d(i));
+    MEDDLY_DCASSERT(nb.down(i));
 
     for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
 
       int j = Ru[ei]->nextOf(i);
       if(j==-1) continue;
-      if (j < nb.getSize() && -1==nb.d(j)) continue; // nothing can be added to this set
+      if (j < nb.getSize() && -1==nb.down(j)) continue; // nothing can be added to this set
 
       const node_handle cons_j = (j < consDptrs->getSize() ? consDptrs->down(j) : cons_ext_d);
       node_handle rec = 0;
-      if (recFire(nb.d(i), Ru[ei]->getDown(), cons_j, rec)) {
+      if (recFire(nb.down(i), Ru[ei]->getDown(), cons_j, rec)) {
         // found reachable state in constraint
         unpacked_node::Recycle(consDptrs);
         delete[] Ru;
@@ -1761,31 +1784,34 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
       {
         int new_var_bound = resF->isExtensibleLevel(nb.getLevel())? -(j+1): (j+1);
         dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
-        int oldSize = nb.getSize();
+        const unsigned oldSize = nb.getSize();
         nb.resize(j+1);
-        while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
+        nb.clear(oldSize, nb.getSize());
+        // while(oldSize < nb.getSize()) { nb.d_ref(oldSize++) = 0; }
         queue->resize(nb.getSize());
       }
 
-      if (rec == nb.d(j)) {
+      if (rec == nb.down(j)) {
         resF->unlinkNode(rec);
         continue;
       }
 
       bool updated = true;
 
-      if (0 == nb.d(j)) {
-        nb.d_ref(j) = rec;
+      if (0 == nb.down(j)) {
+        nb.setFull(j, rec);
+        // nb.d_ref(j) = rec;
       }
       else if (rec == -1) {
-        resF->unlinkNode(nb.d(j));
-        nb.d_ref(j) = -1;
+        resF->unlinkNode(nb.down(j));
+        nb.setFull(j, rec);
+        // nb.d_ref(j) = -1;
       }
       else {
-        nbdj.set(nb.d(j));  // clobber
+        nbdj.set(nb.down(j));  // clobber
         newst.set(rec);     // clobber
         mddUnion->computeTemp(nbdj, newst, nbdj);
-        updated = (nbdj.getNode() != nb.d(j));
+        updated = (nbdj.getNode() != nb.down(j));
         nb.setFull(j, nbdj);
       }
 
@@ -1889,14 +1915,19 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
       if (recFire(A->down(i), mxd, cons_i, temp)) {
         // found reachable state in constraint: abort, cleanup and return true
         for (int j = 0; j < i; j++) {
-          if (nb->down(j)) { arg1F->unlinkNode(nb->down(j)); nb->d_ref(j) = 0; }
+          if (nb->down(j)) {
+              arg1F->unlinkNode(nb->down(j));
+              nb->setFull(j, 0);
+              //nb->d_ref(j) = 0;
+          }
         }
         unpacked_node::Recycle(nb);
         unpacked_node::Recycle(A);
         unpacked_node::Recycle(consDptrs);
         return true;
       }
-      nb->d_ref(i) = temp;
+      nb->setFull(i, temp);
+      // nb->d_ref(i) = temp;
     }
 
   } else {
@@ -1920,7 +1951,11 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
       if (recFire(A->down(i), relNode->getDown(), cons_j, newstates)) {
         // found reachable state in constraint: abort, cleanup and return true
         for (int k = 0; k < nb->getSize(); k++) {
-          if (nb->down(k)) { arg1F->unlinkNode(nb->down(k)); nb->d_ref(k) = 0; }
+          if (nb->down(k)) {
+              arg1F->unlinkNode(nb->down(k));
+              nb->setFull(k, 0);
+              // nb->d_ref(k) = 0;
+          }
         }
         unpacked_node::Recycle(nb);
         unpacked_node::Recycle(A);
@@ -1939,7 +1974,8 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
           dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);
           int oldSize = nb->getSize();
           nb->resize(j+1);
-          while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
+          nb->clear(oldSize, nb->getSize());
+          // while(oldSize < nb->getSize()) { nb->d_ref(oldSize++) = 0; }
         }
       }
       // ok, there is an i->j "edge".
@@ -1947,7 +1983,8 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
       // and add them
 
       if (0==nb->down(j)) {
-        nb->d_ref(j) = newstates;
+        nb->setFull(j, newstates);
+        // nb->d_ref(j) = newstates;
         continue;
       }
       // there's new states and existing states; union them.
@@ -1968,7 +2005,11 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     // found reachable state in constraint
     const int sz = nb->getSize();
     for (int j = 0; j < sz; j++) {
-      if (nb->down(j)) { arg1F->unlinkNode(nb->down(j)); nb->d_ref(j) = 0; }
+      if (nb->down(j)) {
+          arg1F->unlinkNode(nb->down(j));
+          nb->setFull(j, 0);
+          // nb->d_ref(j) = 0;
+      }
     }
     unpacked_node::Recycle(nb);
     recycleCTKey(Key);

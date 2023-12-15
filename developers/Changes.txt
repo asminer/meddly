@@ -18,6 +18,11 @@ Forest cleanup
 
 (*) One version of node_storage::getDownPtr, using edge_value
 
+(*) binary operations:
+
+    * change interface to use edge_value, node_handle instead of dd_edge
+    * keep dd_edge version as inlined
+
 
 Go through examples/ directory,
 see if some stuff can become test cases
