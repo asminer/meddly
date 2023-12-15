@@ -970,8 +970,9 @@ void MEDDLY::generic_binary_evplus
             bev + B->edge_long(i), B->down(i),
             ev, ed);
     MEDDLY_DCASSERT(ed != 0 || ev == 0);
-    nb->d_ref(i) = ed;
-    nb->setEdge(i, ev);
+    nb->setFull(i, edge_value(ev), ed);
+    // nb->d_ref(i) = ed;
+    // nb->setEdge(i, ev);
   }
 
   // cleanup
@@ -1066,8 +1067,9 @@ void MEDDLY::generic_binary_evplus_mxd
       bev + B->edge_long(i), B->down(i),
       ev, ed);
     MEDDLY_DCASSERT(ed != 0 || ev == 0);
-    nb->d_ref(i) = ed;
-    nb->setEdge(i, ev);
+    nb->setFull(i, edge_value(ev), ed);
+    // nb->d_ref(i) = ed;
+    // nb->setEdge(i, ev);
   }
 
   // cleanup
@@ -1122,8 +1124,9 @@ void MEDDLY::generic_binary_evplus_mxd
     node_handle e = 0;
     compute(aev + A->edge_long(i), A->down(i), bev + B->edge_long(i), B->down(i), ev, e);
     MEDDLY_DCASSERT(e != 0 || ev == 0);
-    C->setEdge(i, ev);
-    C->d_ref(i) = e;
+    C->setFull(i, edge_value(ev), e);
+    // C->setEdge(i, ev);
+    // C->d_ref(i) = e;
   }
 
   // cleanup
@@ -1222,8 +1225,9 @@ void MEDDLY::generic_binary_evtimes
         aev * A->edge_float(i), A->down(i),
         bev * B->edge_float(i), B->down(i),
         ev, ed);
-    nb->d_ref(i) = ed;
-    nb->setEdge(i, ev);
+    nb->setFull(i, edge_value(ev), ed);
+    // nb->d_ref(i) = ed;
+    // nb->setEdge(i, ev);
   }
 
   // cleanup
@@ -1293,8 +1297,9 @@ void MEDDLY::generic_binary_evtimes
         aev * A->edge_float(i), A->down(i),
         bev * B->edge_float(i), B->down(i),
         ev, ed);
-    nb->d_ref(i) = ed;
-    nb->setEdge(i, ev);
+    nb->setFull(i, edge_value(ev), ed);
+    // nb->d_ref(i) = ed;
+    // nb->setEdge(i, ev);
   }
 
   // cleanup

@@ -117,11 +117,15 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
 
   // recurse
   for (unsigned i=0; i<size; i++) {
-    C->d_ref(i) = compute_r(A->down(i));
 
-    if(addRedundentNode && resF->isTerminalNode(C->down(i)) && C->down(i)!=resF->getTransparentNode()){
-    	C->d_ref(i)=((mt_forest*)resF)->makeNodeAtLevel(level-1, C->down(i));
+    node_handle cdi = compute_r(A->down(i));
+
+    if(addRedundentNode && resF->isTerminalNode(cdi) && cdi!=resF->getTransparentNode()){
+    	cdi =((mt_forest*)resF)->makeNodeAtLevel(level-1, cdi);
     }
+
+    C->setFull(i, cdi);
+
   }
 
   // cleanup and Reduce
@@ -217,12 +221,15 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
 
   // recurse
   for (unsigned i=0; i<size; i++) {
-    C->d_ref(i) = compute_r(int(i), nextLevel, A->down(i));
-    if (C->down(i)!=resF->getTransparentNode()) nnz++;
+      node_handle cdi = compute_r(int(i), nextLevel, A->down(i));
 
-    if(addRedundentNode && resF->isTerminalNode(C->down(i)) && C->down(i)!=resF->getTransparentNode()){
-      C->d_ref(i)=((mt_forest*)resF)->makeNodeAtLevel(nextLevel, C->down(i));
+      if (cdi != resF->getTransparentNode()) nnz++;
+
+    if(addRedundentNode && resF->isTerminalNode(cdi) && cdi!=resF->getTransparentNode()){
+      cdi=((mt_forest*)resF)->makeNodeAtLevel(nextLevel, cdi);
     }
+
+    C->setFull(i, cdi);
   }
 
   // reduce, save in CT
