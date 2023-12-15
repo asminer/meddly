@@ -719,7 +719,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
         bool updated = true;
 
         if (nb.down(i) == 0) {
-          nb.d_ref(i) = rec;
+          nb.setFull(i, rec);
         }
         else {
           nbdi.set(nb.down(i));  // clobber
@@ -797,7 +797,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
     for (int i = 0; i < size; i++) {
       node_handle t = 0;
       recFire(A->down(i), B->down(i), r, t);
-      T->d_ref(i) = t;
+      T->setFull(i, t);
     }
   }
   else {
@@ -805,9 +805,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
     // Need to process this level in the MXD.
 
     // clear out result (important!)
-    for (int i = 0; i < size; i++) {
-      T->d_ref(i) = 0;
-    }
+    T->clear(0, size);
 
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node* Ru = (rLevel < 0)
@@ -840,7 +838,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
         }
 
         if (T->down(i) == 0) {
-          T->d_ref(i) = n;
+          T->setFull(i, n);
           continue;
         }
 
@@ -993,12 +991,12 @@ void MEDDLY::constrained_saturation_mt::saturate(node_handle a, node_handle b, i
   for (int i = 0; i < sz; i++) {
     if (A->down(i) == 0) {
       MEDDLY_DCASSERT(resF == argF);
-      T->d_ref(i) = resF->linkNode(B->down(i));
+      T->setFull(i, resF->linkNode(B->down(i)));
     }
     else {
       node_handle t = 0;
       saturate(A->down(i), B->down(i), level - 1, t);
-      T->d_ref(i) = t;
+      T->setFull(i, t);
     }
   }
 
@@ -1245,7 +1243,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
     MEDDLY_DCASSERT(nb.down(j) != 0);
 
     for (int iz = 0; iz < Ru->getSize(); iz++) {
-      const int i = Ru->index(iz);
+      const unsigned i = Ru->index(iz);
       if (A->down(i) == 0) {
         MEDDLY_DCASSERT(A->edge_long(i) == 0);
         continue;
@@ -1269,7 +1267,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
         if (rec == nb.down(i)) {
           // Compute the minimum
           if (recev < nb.edge_long(i)) {
-            nb.setEdge(i, recev);
+            nb.setEdgeval(i, recev);
           }
           resF->unlinkNode(rec);
           continue;
@@ -1279,8 +1277,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
 
         if (nb.down(i) == 0) {
           MEDDLY_DCASSERT(nb.edge_long(i) == 0);
-          nb.setEdge(i, recev);
-          nb.d_ref(i) = rec;
+          nb.setFull(i, edge_value(recev), rec);
         }
         else {
           nbdi.set(nb.down(i), nb.edge_long(i));
@@ -1377,8 +1374,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
       long tev = 0;
       node_handle t = 0;
       recFire(aev + A->edge_long(i), A->down(i), bev + B->edge_long(i), B->down(i), r, tev, t);
-      T->setEdge(i, tev);
-      T->d_ref(i) = t;
+      T->setFull(i, edge_value(tev), t);
     }
   }
   else {
@@ -1386,10 +1382,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
     // Need to process this level in the MXD.
 
     // clear out result (important!)
-    for (int i = 0; i < size; i++) {
-      T->setEdge(i, 0L);
-      T->d_ref(i) = 0;
-    }
+    T->clear(0, size);
 
     dd_edge Tdi(resF), newst(resF);
 
@@ -1428,8 +1421,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
 
         if (T->down(i) == 0) {
           MEDDLY_DCASSERT(T->edge_long(i) == 0);
-          T->setEdge(i, nev);
-          T->d_ref(i) = n;
+          T->setFull(i, edge_value(nev), n);
           continue;
         }
 
@@ -1620,15 +1612,13 @@ void MEDDLY::constrained_saturation_evplus::saturate(int aev, node_handle a, int
   for (int i = 0; i < sz; i++) {
     if (A->down(i) == 0) {
       MEDDLY_DCASSERT(resF == argF);
-      T->setEdge(i, B->edge_long(i));
-      T->d_ref(i) = resF->linkNode(B->down(i));
+      T->setFull(i, B->edgeval(i), resF->linkNode(B->down(i)));
     }
     else {
       long tev = Inf<long>();
       node_handle t = 0;
       saturate(aev + A->edge_long(i), A->down(i), B->edge_long(i), B->down(i), level - 1, tev, t);
-      T->setEdge(i, tev);
-      T->d_ref(i) = t;
+      T->setFull(i, edge_value(tev), t);
     }
   }
 

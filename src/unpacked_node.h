@@ -400,6 +400,19 @@ class MEDDLY::unpacked_node {
             return edgeval(n).getFloat();
         }
 
+        /**
+            Set just the edge value.
+            If you're setting the down pointer also,
+            probably you want to use setFull() or setSparse().
+            @param  n   Which pointer
+            @param  ev  New edge value
+        */
+        inline void setEdgeval(unsigned n, const edge_value &ev) {
+            MEDDLY_DCASSERT(_edge);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            MEDDLY_DCASSERT(ev.hasType(the_edge_type));
+            _edge[n] = ev;
+        }
 
         /**
             Set a full edge.
