@@ -444,7 +444,7 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(E.isAttachedTo(parent));
             MEDDLY_DCASSERT(E.getEdgeValue().hasType(the_edge_type));
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            E.swapNode(_down[n]);
+            E.xferNode(_down[n]);
             if (_edge) {
                 _edge[n] = E.getEdgeValue();
             }
@@ -525,7 +525,7 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(E.getEdgeValue().hasType(the_edge_type));
             MEDDLY_DCASSERT(isSparse());
 
-            E.swapNode(_down[n]);
+            E.xferNode(_down[n]);
             _index[n] = i;
             if (_edge) {
                 _edge[n] = E.getEdgeValue();
@@ -1032,8 +1032,7 @@ public:
             MEDDLY_DCASSERT(E.isAttachedTo(parent));
             MEDDLY_DCASSERT(!hasEdges());
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            _down[n] = E.node;
-            E.node = 0; // avoid having to adjust the link count
+            E.xferNode(_down[n]);
         }
 
         inline unsigned i(unsigned n) const {
@@ -1057,9 +1056,8 @@ public:
             MEDDLY_DCASSERT(E.isAttachedTo((forest*) parent));
             MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            _down[n] = E.node;
+            E.xferNode(_down[n]);
             _edge[n] = E.getEdgeValue();
-            E.node = 0; // avoid having to adjust the link count
         }
 
         /// Get the edge value

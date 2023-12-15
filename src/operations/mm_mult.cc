@@ -288,7 +288,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
           resultik.set(nbri->down(k));
           temp.set(res);
           accumulateOp->computeTemp(resultik, temp, resultik);
-          nbri->set_d(k, resultik);
+          nbri->setFull(k, resultik);
         }
       }
       MEDDLY_DCASSERT(0 == nbr->down(i));

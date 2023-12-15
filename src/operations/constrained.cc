@@ -427,7 +427,7 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
   std::deque<int> queue;
   std::vector<bool> waiting(nb.getSize(), false);
   for (int i = 0; i < nb.getSize(); i++) {
-    if (nb.d(i) != 0 && Ru->down(i) != 0) {
+    if (nb.down(i) != 0 && Ru->down(i) != 0) {
       queue.push_back(i);
       waiting[i] = true;
     }
@@ -451,7 +451,7 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
     queue.pop_front();
     waiting[i] = false;
 
-    MEDDLY_DCASSERT(nb.d(i) != 0 && Rps[i] != nullptr);
+    MEDDLY_DCASSERT(nb.down(i) != 0 && Rps[i] != nullptr);
 
     for (int jz = 0; jz < Rps[i]->getSize(); jz++) {
       const int j = Rps[i]->index(jz);
@@ -461,7 +461,7 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
 
       if (Rps[i]->down(jz) != 0) {
         node_handle rec = 0;
-        recFire(A->down(j), nb.d(i), Rps[i]->down(jz), rec);
+        recFire(A->down(j), nb.down(i), Rps[i]->down(jz), rec);
         MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == 0) {
@@ -470,22 +470,22 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
 
         MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
-        if (rec == nb.d(j)) {
+        if (rec == nb.down(j)) {
           resF->unlinkNode(rec);
           continue;
         }
 
         bool updated = true;
 
-        if (nb.d(j) == 0) {
-          nb.d_ref(j) = rec;
+        if (nb.down(j) == 0) {
+          nb.setFull(j, rec);
         }
         else {
-          nbdj.set(nb.d(j));  // clobber
+          nbdj.set(nb.down(j));  // clobber
           newst.set(rec);     // clobber
           unionOp->computeTemp(nbdj, newst, nbdj);
-          updated = (nbdj.getNode() != nb.d(j));
-          nb.set_d(j, nbdj);
+          updated = (nbdj.getNode() != nb.down(j));
+          nb.setFull(j, nbdj);
         }
 
         if (updated) {
@@ -558,7 +558,7 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
     for (int i = 0; i < size; i++) {
       node_handle t = 0;
       recFire(A->down(i), B->down(i), r, t);
-      T->d_ref(i) = t;
+      T->setFull(i, t);
     }
   }
   else {
@@ -566,9 +566,7 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
     // Need to process this level in the MXD.
 
     // clear out result (important!)
-    for (int i = 0; i < size; i++) {
-      T->d_ref(i) = 0;
-    }
+    T->clear(0, size);
 
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node* Ru = (rLevel < 0)
@@ -601,7 +599,7 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
         }
 
         if (T->down(j) == 0) {
-          T->d_ref(j) = n;
+          T->setFull(j, n);
           continue;
         }
 
@@ -609,7 +607,7 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
         Tdj.set(T->down(j));
         newst.set(n);
         unionOp->computeTemp(newst, Tdj, Tdj);
-        T->set_d(j, Tdj);
+        T->setFull(j, Tdj);
       } // for j
 
       unpacked_node::Recycle(Rp);
@@ -667,7 +665,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
   std::deque<int> queue;
   std::vector<bool> waiting(nb.getSize(), false);
   for (int j = 0; j < nb.getSize(); j++) {
-    if (nb.d(j) != 0) {
+    if (nb.down(j) != 0) {
       queue.push_back(j);
       waiting[j] = true;
     }
@@ -692,7 +690,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
     queue.pop_front();
     waiting[j] = false;
 
-    MEDDLY_DCASSERT(nb.d(j) != 0);
+    MEDDLY_DCASSERT(nb.down(j) != 0);
 
     for (int iz = 0; iz < Ru->getSize(); iz++) {
       const int i = Ru->index(iz);
@@ -704,7 +702,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
 
       if (Rps[iz]->down(j) != 0) {
         node_handle rec = 0;
-        recFire(A->down(i), nb.d(j), Rps[iz]->down(j), rec);
+        recFire(A->down(i), nb.down(j), Rps[iz]->down(j), rec);
         MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == 0) {
@@ -713,22 +711,22 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
 
         MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
-        if (rec == nb.d(i)) {
+        if (rec == nb.down(i)) {
           resF->unlinkNode(rec);
           continue;
         }
 
         bool updated = true;
 
-        if (nb.d(i) == 0) {
+        if (nb.down(i) == 0) {
           nb.d_ref(i) = rec;
         }
         else {
-          nbdi.set(nb.d(i));  // clobber
+          nbdi.set(nb.down(i));  // clobber
           newst.set(rec);     // clobber
           unionOp->computeTemp(nbdi, newst, nbdi);
-          updated = (nbdi.getNode() != nb.d(i));
-          nb.set_d(i, nbdi);
+          updated = (nbdi.getNode() != nb.down(i));
+          nb.setFull(i, nbdi);
         }
 
         if (updated) {
@@ -850,7 +848,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
         Tdi.set(T->down(i));
         newst.set(n);
         unionOp->computeTemp(newst, Tdi, Tdi);
-        T->set_d(i, Tdi);
+        T->setFull(i, Tdi);
       } // for j
 
       unpacked_node::Recycle(Rp);
@@ -1217,7 +1215,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
   std::deque<int> queue;
   std::vector<bool> waiting(nb.getSize(), false);
   for (int j = 0; j < nb.getSize(); j++) {
-    if (nb.d(j) != 0) {
+    if (nb.down(j) != 0) {
       queue.push_back(j);
       waiting[j] = true;
     }
@@ -1244,7 +1242,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
     queue.pop_front();
     waiting[j] = false;
 
-    MEDDLY_DCASSERT(nb.d(j) != 0);
+    MEDDLY_DCASSERT(nb.down(j) != 0);
 
     for (int iz = 0; iz < Ru->getSize(); iz++) {
       const int i = Ru->index(iz);
@@ -1258,7 +1256,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
       if (Rps[iz]->down(j) != 0) {
         long recev = 0;
         node_handle rec = 0;
-        recFire(aev + A->edge_long(i), A->down(i), nb.edge_long(j), nb.d(j), Rps[iz]->down(j), recev, rec);
+        recFire(aev + A->edge_long(i), A->down(i), nb.edge_long(j), nb.down(j), Rps[iz]->down(j), recev, rec);
         MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == 0) {
@@ -1268,7 +1266,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
 
         MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
-        if (rec == nb.d(i)) {
+        if (rec == nb.down(i)) {
           // Compute the minimum
           if (recev < nb.edge_long(i)) {
             nb.setEdge(i, recev);
@@ -1279,24 +1277,24 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
 
         bool updated = true;
 
-        if (nb.d(i) == 0) {
+        if (nb.down(i) == 0) {
           MEDDLY_DCASSERT(nb.edge_long(i) == 0);
           nb.setEdge(i, recev);
           nb.d_ref(i) = rec;
         }
         else {
-          nbdi.set(nb.d(i), nb.edge_long(i));
+          nbdi.set(nb.down(i), nb.edge_long(i));
           newst.set(rec, recev);
           minOp->computeTemp(nbdi, newst, nbdi);
-          updated = (nbdi.getNode() != nb.d(i));
-          nb.set_de(i, nbdi);
+          updated = (nbdi.getNode() != nb.down(i));
+          nb.setFull(i, nbdi);
 /*
           long accev = Inf<long>();
           node_handle acc = 0;
-          minOp->computeTemp(nb.edge_long(i), nb.d(i), recev, rec, accev, acc);
+          minOp->computeTemp(nb.edge_long(i), nb.down(i), recev, rec, accev, acc);
           resF->unlinkNode(rec);
-          if (acc != nb.d(i)) {
-            resF->unlinkNode(nb.d(i));
+          if (acc != nb.down(i)) {
+            resF->unlinkNode(nb.down(i));
             nb.setEdge(i, accev);
             nb.d_ref(i) = acc;
           }
@@ -1452,7 +1450,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
         Tdi.set(T->down(i), T->edge_long(i));
         newst.set(n, nev);
         minOp->computeTemp(newst, Tdi, Tdi);
-        T->set_de(i, Tdi);
+        T->setFull(i, Tdi);
       } // for j
 
       unpacked_node::Recycle(Rp);

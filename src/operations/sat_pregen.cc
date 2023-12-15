@@ -997,7 +997,7 @@ void MEDDLY::forwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
           newst.set(rec);     // clobber
           mddUnion->computeTemp(nbdj, newst, nbdj);
           updated = (nbdj.getNode() != nb.d(j));
-          nb.set_d(j, nbdj);
+          nb.setFull(j, nbdj);
         }
 
         if (updated) queue->add(j);
@@ -1108,7 +1108,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
         nbdj.set(nb->down(j));
         newst.set(newstates);
         mddUnion->computeTemp(nbdj, newst, nbdj);
-        nb->set_d(j, nbdj);
+        nb->setFull(j, nbdj);
       } // for j
 
     } // for i
@@ -1233,7 +1233,7 @@ void MEDDLY::bckwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
             newst.set(rec);
             mddUnion->computeTemp(nbdi, newst, nbdi);
             updated = (nbdi.getNode() != nb.d(i));
-            nb.set_d(i, nbdi);
+            nb.setFull(i, nbdi);
           }
           if (updated) {
             expl->data[i] = 2;
@@ -1335,7 +1335,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_by_events_mt::recFire(node_handle mdd,
         nbdi.set(nb->down(i));
         newst.set(newstates);
         mddUnion->computeTemp(nbdi, newst, nbdi);
-        nb->set_d(i, nbdi);
+        nb->setFull(i, nbdi);
       } // for j
 
     } // for i

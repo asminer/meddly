@@ -479,7 +479,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
         newst.set(rec, recev);
         minOp->computeTemp(nbdj, newst, nbdj);
         updated = (nbdj.getNode() != nb.d(jp));
-        nb.set_de(jp, nbdj);
+        nb.setFull(jp, nbdj);
 
         // OLD
         /*
@@ -670,7 +670,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
           Tdj.set(Tp->down(jp), Tp->edge_long(jp));
           newst.set(n, nev);
           minOp->computeTemp(newst, Tdj, Tdj);
-          Tp->set_de(jp, Tdj);
+          Tp->setFull(jp, Tdj);
         } // for j
       } // for i
 

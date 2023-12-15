@@ -264,7 +264,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
         newstatesE.set(newstates);
         cdi.set(C->down(i));
         accumulateOp->computeTemp(newstatesE, cdi, cdi);
-        C->set_d(i, cdi);
+        C->setFull(i, cdi);
       } // for j
 
     } // for i
@@ -406,7 +406,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
         newstatesE.set(newstates);
         cdj.set(C->down(j));
         accumulateOp->computeTemp(newstatesE, cdj, cdj);
-        C->set_d(j, cdj);
+        C->setFull(j, cdj);
       } // for j
 
     } // for i
@@ -756,7 +756,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
         newstatesE.set(newstates, nev);
         cdi.set(C->down(i), C->edge_long(i));
         accumulateOp->computeTemp(newstatesE, cdi, cdi);
-        C->set_de(i, cdi);
+        C->setFull(i, cdi);
       } // for j
 
     } // for i
@@ -904,7 +904,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
         newstatesE.set(newstates, nev);
         cdj.set(C->down(j), C->edge_long(j));
         accumulateOp->computeTemp(newstatesE, cdj, cdj);
-        C->set_de(j, cdj);
+        C->setFull(j, cdj);
       } // for j
 
     } // for i
@@ -1137,7 +1137,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
           newstatesE.set(newstates, nev);
           djp.set(D->down(jp), D->edge_long(jp));
           accumulateOp->computeTemp(newstatesE, djp, djp);
-          D->set_de(jp, djp);
+          D->setFull(jp, djp);
         } // for j
 
       } // for i

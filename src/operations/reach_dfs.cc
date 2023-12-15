@@ -868,7 +868,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
         nbdj.set( nb.d(j) );
         mddUnion->computeTemp(nbdj, temp, nbdj);
         updated = (nbdj.getNode() != nb.d(j));
-        nb.set_d(j, nbdj);
+        nb.setFull(j, nbdj);
       }
 
       if (updated) {
@@ -984,7 +984,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
         newst.set(newstates); // clobber when done
         nbdj.set(nb->down(j));   // also clobber when done
         mddUnion->computeTemp(newst, nbdj, nbdj);
-        nb->set_d(j, nbdj);
+        nb->setFull(j, nbdj);
       } // for j
 
     } // for i
@@ -1103,7 +1103,7 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(unpacked_node& nb)
           temp.set(rec);
           mddUnion->computeTemp(nbdi, temp, nbdi);
           updated = nbdi.getNode() != nb.d(i);
-          nb.set_d(i, nbdi);
+          nb.setFull(i, nbdi);
         }
         if (updated) {
           expl->data[i] = 2;
@@ -1200,7 +1200,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
         nbdi.set(nb->down(i));
         temp.set(newstates);
         mddUnion->computeTemp(temp, nbdi, nbdi);
-        nb->set_d(i, nbdi);
+        nb->setFull(i, nbdi);
       } // for j
 
     } // for i
@@ -1375,7 +1375,7 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
         temp.set(rec, recev);  // clobbers rec; that's what we want
         mddUnion->computeTemp(nbdj, temp, nbdj);
         updated = (nbdj.getNode() != nb.d(j));
-        nb.set_de(j, nbdj);
+        nb.setFull(j, nbdj);
       }
 
       if (updated) {
@@ -1507,7 +1507,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
         newst.set(n, nev); // clobber when done
         nbdj.set(nb->down(j), nb->edge_long(j));   // also clobber when done
         mddUnion->computeTemp(newst, nbdj, nbdj);
-        nb->set_de(j, nbdj);
+        nb->setFull(j, nbdj);
       } // for j
 
     } // for i

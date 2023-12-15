@@ -101,7 +101,9 @@ class MEDDLY::dd_edge {
         }
 
         inline node_handle getNode() const { return node; }
-        inline void swapNode(node_handle &h) { SWAP(node, h); }
+        inline void xferNode(node_handle &h) {
+            h = node; node = 0;
+        }
         inline const edge_value& getEdgeValue() const { return edgeval; }
         inline long getEdgeInt() const { return edgeval.getLong(); }
         inline float getEdgeFloat() const { return edgeval.getFloat(); }
@@ -237,7 +239,7 @@ class MEDDLY::dd_edge {
         node_handle node;
         edge_value edgeval;
 
-        friend class unpacked_node;
+//        friend class unpacked_node;
 
     //
     // for the dd_edge registry in the parent forest
