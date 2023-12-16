@@ -384,6 +384,273 @@ void MEDDLY::forest::unregisterDDEdges()
     }
 }
 
+//
+// Handy methods for debugging / logging
+//
+
+bool MEDDLY::forest
+::showNode(output &s, node_handle p, unsigned int flags) const
+{
+  /*
+    Deal with cases where nothing will be displayed.
+  */
+  bool isReachable =
+    isTerminalNode(p) ||
+    (
+        reachable
+            ? reachable->isMarked(p)
+            : getNodeInCount(p)
+    );
+
+  if (isTerminalNode(p)) {
+    if (!(flags & SHOW_TERMINALS))  return false;
+  } else
+  if (isDeletedNode(p)) {
+    if (!(flags & SHOW_DELETED))    return false;
+  } else
+  if (!isReachable) {
+    if (!(flags & SHOW_UNREACHABLE))     return false;
+  }
+
+  /*
+    Show the node index, if selected.
+  */
+  if (flags & SHOW_INDEX) {
+    int nwidth = digits(nodeHeaders.lastUsedHandle());
+    s.put(long(p), nwidth);
+    s.put('\t');
+  }
+
+  /*
+    Deal with special cases
+  */
+  if (isTerminalNode(p)) {
+    s << "(terminal)";
+    return true;
+  }
+  if (isDeletedNode(p)) {
+    s << "DELETED";
+    return true;
+  }
+  if (!isReachable) {
+    s << "Unreachable ";
+  }
+
+  /*
+    Ordinary node
+  */
+  if (flags & SHOW_DETAILS) {
+    // node: was already written.
+    nodeHeaders.showHeader(s, p);
+  } else {
+    s << "node: " << long(p);
+  }
+
+  s.put(' ');
+  unpacked_node* un = newUnpacked(p, FULL_OR_SPARSE);
+  un->show(s, flags & SHOW_DETAILS);
+  unpacked_node::Recycle(un);
+
+  return true;
+}
+
+
+
+void MEDDLY::forest
+::reportStats(output &s, const char* pad, unsigned flags) const
+{
+  if (flags & BASIC_STATS) {
+    bool human = flags & HUMAN_READABLE_MEMORY;
+    s << pad << getCurrentNumNodes() << " current nodes\n";
+    s << pad << getPeakNumNodes() << " peak nodes\n" << pad;
+    s.put_mem(getCurrentMemoryUsed(), human);
+    s << " current memory used\n" << pad;
+    s.put_mem(getPeakMemoryUsed(), human);
+    s << " peak memory used\n" << pad;
+    s.put_mem(getCurrentMemoryAllocated(), human);
+    s << " current memory allocated\n" << pad;
+    s.put_mem(getPeakMemoryAllocated(), human);
+    s << " peak memory allocated\n";
+  }
+  if (flags & EXTRA_STATS) {
+    s << pad << stats.reachable_scans << " scans for reachable nodes\n";
+    s << pad << stats.reclaimed_nodes << " reclaimed nodes\n";
+    s << pad << stats.num_compactions << " compactions\n";
+    s << pad << stats.garbage_collections << " garbage collections\n";
+  }
+  // forest specific
+  reportForestStats(s, pad);
+  // header storage
+  nodeHeaders.reportStats(s, pad, flags);
+  // node storage
+  nodeMan->reportStats(s, pad, flags);
+  // unique table
+  unique->reportStats(s, pad, flags);
+}
+
+
+
+void MEDDLY::forest::dump(output &s, unsigned int flags) const
+{
+  for (long p=0; p<=nodeHeaders.lastUsedHandle(); p++) {
+    if (showNode(s, p, flags | SHOW_INDEX)) {
+      s.put('\n');
+      s.flush();
+    }
+  }
+}
+
+void MEDDLY::forest::dumpInternal(output &s) const
+{
+  s << "Internal forest storage\n";
+
+  nodeHeaders.dumpInternal(s);
+
+  nodeMan->dumpInternal(s, 0x03);
+
+  // unique->show(s);
+  s.flush();
+}
+
+void MEDDLY::forest::dumpUniqueTable(output &s) const
+{
+  unique->show(s);
+}
+
+void MEDDLY::forest::validateIncounts(bool exact)
+{
+#ifdef VALIDATE_INCOUNTS
+  static int idnum = 0;
+  idnum++;
+
+  // Inspect every active node's down pointers to determine
+  // the incoming count for every active node.
+
+  node_handle sz = getLastNode() + 1;
+  if (sz > in_val_size) {
+    in_validate = (node_handle*)
+                  realloc(in_validate, a_size * sizeof(node_handle));
+    in_val_size = a_size;
+  }
+  MEDDLY_DCASSERT(sz <= in_val_size);
+  memset(in_validate, 0, sizeof(node_handle) * sz);
+  node_reader P;
+  for (node_handle i = 1; i < sz; ++i) {
+    MEDDLY_DCASSERT(!isTerminalNode(i));
+    if (!isActiveNode(i)) continue;
+    initNodeReader(P, i, false);
+
+    // add to reference counts
+    for (int z=0; z<P.getNNZs(); z++) {
+      if (isTerminalNode(P.down(z))) continue;
+      MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, P.down(z), sz);
+      in_validate[P.down(z)]++;
+    }
+  } // for i
+
+  // Add counts for registered dd_edges
+  nodecounter foo(this, in_validate);
+  visitRegisteredEdges(foo);
+
+  // Validate the incoming count stored with each active node using the
+  // in_count array computed above
+  for (node_handle i = 1; i < sz; ++i) {
+    MEDDLY_DCASSERT(!isTerminalNode(i));
+    if (!isActiveNode(i)) continue;
+    bool fail = exact
+      ?  in_validate[i] != getNodeInCount(i)
+      :  in_validate[i] >  getNodeInCount(i);
+    if (fail) {
+      printf("Validation #%d failed\n", idnum);
+      long l_i = i;
+      long l_v = in_validate[i];
+      long l_c = getNodeInCount(i);
+      printf("For node %ld\n\tcount: %ld\n\tnode:  %ld\n", l_i, l_v, l_c);
+      dump(stdout, SHOW_DETAILS);
+      MEDDLY_DCASSERT(0);
+      throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    }
+    // Note - might not be exactly equal
+    // because there could be dd_edges that refer to nodes
+    // and we didn't count them.
+  }
+
+#ifdef TRACK_DELETIONS
+  printf("Incounts validated #%d\n", idnum);
+#endif
+#endif
+}
+
+
+void MEDDLY::forest::validateCacheCounts() const
+{
+  if (!deflt.useReferenceCounts) return;
+
+#ifdef DEVELOPMENT_CODE
+#ifdef SHOW_VALIDATE_CACHECOUNTS
+  printf("Validating cache counts for %ld handles\n", getLastNode());
+#endif
+  const node_handle N = getLastNode()+1;
+  size_t* counts = new size_t[N];
+
+#ifdef SHOW_VALIDATE_CACHECOUNTS
+  printf("  Counting...\n");
+  fflush(stdout);
+#endif
+  for (node_handle i=0; i<N; i++) counts[i] = 0;
+  operation::countAllNodeEntries(this, counts);
+
+#ifdef SHOW_VALIDATE_CACHECOUNTS
+  printf("  Validating...\n");
+#endif
+  for (node_handle i=1; i<N; i++) {
+    if (nodeHeaders.getNodeCacheCount(i) == counts[i]) continue;
+    printf("\tCount mismatch node %ld\n", long(i));
+    printf("\t  We counted %lu\n", counts[i]);
+    printf("\t  node  says %lu\n", nodeHeaders.getNodeCacheCount(i));
+  }
+  node_handle maxi = 1;
+  for (node_handle i=2; i<N; i++) {
+    if (counts[i] > counts[maxi]) {
+      maxi = i;
+    }
+  }
+#ifdef SHOW_VALIDATE_CACHECOUNTS
+  if (maxi < N) printf("  Largest count: %lu for node %ld at level %d\n",
+    counts[maxi], maxi, nodeHeaders.getNodeLevel(maxi)
+  );
+#endif
+
+  delete[] counts;
+#endif
+}
+
+
+void MEDDLY::forest::countNodesByLevel(long* active) const
+{
+  int L = getNumVariables();
+  int l;
+  if (isForRelations()) {
+    l = -L;
+  } else {
+    l = 0;
+  }
+
+  for (; l<=L; l++) active[l] = 0;
+
+  for (long p=1; p<=nodeHeaders.lastUsedHandle(); p++) {
+    if (nodeHeaders.isDeleted(p)) continue;
+    active[nodeHeaders.getNodeLevel(p)]++;
+  }
+}
+
+void MEDDLY::forest::reportForestStats(output &s, const char* pad) const
+{
+  // default - do nothing
+}
+
+
+
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -391,6 +658,8 @@ void MEDDLY::forest::unregisterDDEdges()
 // *                                                                *
 // *                                                                *
 // ******************************************************************
+
+
 
 // ******************************************************************
 // *                                                                *
@@ -767,6 +1036,72 @@ void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
 
 //
 
+void MEDDLY::forest::deleteNode(node_handle p)
+{
+#ifdef TRACK_DELETIONS
+  for (int i=0; i<delete_depth; i++) printf(" ");
+  printf("Forest %u deleting node ", FID());
+  FILE_output s(stdout);
+  showNode(s, p, SHOW_INDEX | SHOW_DETAILS | SHOW_UNREACHABLE);
+  printf("\n");
+  fflush(stdout);
+#endif
+#ifdef VALIDATE_INCOUNTS_ON_DELETE
+  delete_depth++;
+#endif
+
+    CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+nodeHeaders.lastUsedHandle());
+    MEDDLY_DCASSERT(isActiveNode(p));
+    if (reachable) {
+        MEDDLY_DCASSERT(!reachable->isMarked(p));
+    } else {
+        MEDDLY_DCASSERT(getNodeInCount(p) == 0);
+    }
+
+  unsigned h = hashNode(p);
+#ifdef DEVELOPMENT_CODE
+  if (!isExtensible(p) || isExtensibleLevel(getNodeLevel(p))) {
+    unpacked_node* key = newUnpacked(p, SPARSE_ONLY);
+    key->computeHash();
+    if (unique->find(*key, getVarByLevel(key->getLevel())) != p) {
+      fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
+          static_cast<long>(unique->find(*key, getVarByLevel(key->getLevel()))), static_cast<long>(p));
+      FILE_output myout(stdout);
+      dumpInternal(myout);
+      MEDDLY_DCASSERT(false);
+    }
+    node_handle x = unique->remove(h, p);
+    MEDDLY_DCASSERT(p == x);
+    unpacked_node::Recycle(key);
+  }
+#else
+  unique->remove(h, p);
+#endif
+
+  stats.decActive(1);
+
+#ifdef TRACK_DELETIONS
+  // start at one, because we have incremented the depth
+  // for (int i=1; i<delete_depth; i++) printf(" ");
+  // printf("%s: p = %d, unique->remove(p) = %d\n", __func__, p, x);
+  // fflush(stdout);
+#endif
+
+  // unlink children and recycle node memory
+  nodeMan->unlinkDownAndRecycle(getNodeAddress(p));
+  setNodeAddress(p, 0);
+  nodeHeaders.deactivate(p);
+
+  // if (nodeMan.compactLevel) nodeMan.compact(false);
+
+#ifdef VALIDATE_INCOUNTS_ON_DELETE
+  delete_depth--;
+  if (0==delete_depth) {
+    validateIncounts(false);
+  }
+#endif
+
+}
 
 
 void MEDDLY::forest::removeStaleComputeTableEntries()
@@ -883,165 +1218,6 @@ MEDDLY::expert_forest::~expert_forest()
   free(in_validate);
 }
 
-// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-// '                                                                '
-// '                   public debugging   methods                   '
-// '                                                                '
-// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-void MEDDLY::expert_forest::dump(output &s, unsigned int flags) const
-{
-  for (long p=0; p<=nodeHeaders.lastUsedHandle(); p++) {
-    if (showNode(s, p, flags | SHOW_INDEX)) {
-      s.put('\n');
-      s.flush();
-    }
-  }
-}
-
-void MEDDLY::expert_forest::dumpInternal(output &s) const
-{
-  s << "Internal forest storage\n";
-
-  nodeHeaders.dumpInternal(s);
-
-  nodeMan->dumpInternal(s, 0x03);
-
-  // unique->show(s);
-  s.flush();
-}
-
-void MEDDLY::expert_forest::dumpUniqueTable(output &s) const
-{
-  unique->show(s);
-}
-
-void MEDDLY::expert_forest::validateIncounts(bool exact)
-{
-#ifdef VALIDATE_INCOUNTS
-  static int idnum = 0;
-  idnum++;
-
-  // Inspect every active node's down pointers to determine
-  // the incoming count for every active node.
-
-  node_handle sz = getLastNode() + 1;
-  if (sz > in_val_size) {
-    in_validate = (node_handle*)
-                  realloc(in_validate, a_size * sizeof(node_handle));
-    in_val_size = a_size;
-  }
-  MEDDLY_DCASSERT(sz <= in_val_size);
-  memset(in_validate, 0, sizeof(node_handle) * sz);
-  node_reader P;
-  for (node_handle i = 1; i < sz; ++i) {
-    MEDDLY_DCASSERT(!isTerminalNode(i));
-    if (!isActiveNode(i)) continue;
-    initNodeReader(P, i, false);
-
-    // add to reference counts
-    for (int z=0; z<P.getNNZs(); z++) {
-      if (isTerminalNode(P.down(z))) continue;
-      MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, P.down(z), sz);
-      in_validate[P.down(z)]++;
-    }
-  } // for i
-
-  // Add counts for registered dd_edges
-  nodecounter foo(this, in_validate);
-  visitRegisteredEdges(foo);
-
-  // Validate the incoming count stored with each active node using the
-  // in_count array computed above
-  for (node_handle i = 1; i < sz; ++i) {
-    MEDDLY_DCASSERT(!isTerminalNode(i));
-    if (!isActiveNode(i)) continue;
-    bool fail = exact
-      ?  in_validate[i] != getNodeInCount(i)
-      :  in_validate[i] >  getNodeInCount(i);
-    if (fail) {
-      printf("Validation #%d failed\n", idnum);
-      long l_i = i;
-      long l_v = in_validate[i];
-      long l_c = getNodeInCount(i);
-      printf("For node %ld\n\tcount: %ld\n\tnode:  %ld\n", l_i, l_v, l_c);
-      dump(stdout, SHOW_DETAILS);
-      MEDDLY_DCASSERT(0);
-      throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    }
-    // Note - might not be exactly equal
-    // because there could be dd_edges that refer to nodes
-    // and we didn't count them.
-  }
-
-#ifdef TRACK_DELETIONS
-  printf("Incounts validated #%d\n", idnum);
-#endif
-#endif
-}
-
-
-void MEDDLY::expert_forest::validateCacheCounts() const
-{
-  if (!deflt.useReferenceCounts) return;
-
-#ifdef DEVELOPMENT_CODE
-#ifdef SHOW_VALIDATE_CACHECOUNTS
-  printf("Validating cache counts for %ld handles\n", getLastNode());
-#endif
-  const node_handle N = getLastNode()+1;
-  size_t* counts = new size_t[N];
-
-#ifdef SHOW_VALIDATE_CACHECOUNTS
-  printf("  Counting...\n");
-  fflush(stdout);
-#endif
-  for (node_handle i=0; i<N; i++) counts[i] = 0;
-  operation::countAllNodeEntries(this, counts);
-
-#ifdef SHOW_VALIDATE_CACHECOUNTS
-  printf("  Validating...\n");
-#endif
-  for (node_handle i=1; i<N; i++) {
-    if (nodeHeaders.getNodeCacheCount(i) == counts[i]) continue;
-    printf("\tCount mismatch node %ld\n", long(i));
-    printf("\t  We counted %lu\n", counts[i]);
-    printf("\t  node  says %lu\n", nodeHeaders.getNodeCacheCount(i));
-  }
-  node_handle maxi = 1;
-  for (node_handle i=2; i<N; i++) {
-    if (counts[i] > counts[maxi]) {
-      maxi = i;
-    }
-  }
-#ifdef SHOW_VALIDATE_CACHECOUNTS
-  if (maxi < N) printf("  Largest count: %lu for node %ld at level %d\n",
-    counts[maxi], maxi, nodeHeaders.getNodeLevel(maxi)
-  );
-#endif
-
-  delete[] counts;
-#endif
-}
-
-
-void MEDDLY::expert_forest::countNodesByLevel(long* active) const
-{
-  int L = getNumVariables();
-  int l;
-  if (isForRelations()) {
-    l = -L;
-  } else {
-    l = 0;
-  }
-
-  for (; l<=L; l++) active[l] = 0;
-
-  for (long p=1; p<=nodeHeaders.lastUsedHandle(); p++) {
-    if (nodeHeaders.isDeleted(p)) continue;
-    active[nodeHeaders.getNodeLevel(p)]++;
-  }
-}
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
@@ -1204,106 +1380,6 @@ void MEDDLY::expert_forest
 }
 
 #endif
-
-bool MEDDLY::expert_forest
-::showNode(output &s, node_handle p, unsigned int flags) const
-{
-  /*
-    Deal with cases where nothing will be displayed.
-  */
-  bool isReachable =
-    isTerminalNode(p) ||
-    (
-        reachable
-            ? reachable->isMarked(p)
-            : getNodeInCount(p)
-    );
-
-  if (isTerminalNode(p)) {
-    if (!(flags & SHOW_TERMINALS))  return false;
-  } else
-  if (isDeletedNode(p)) {
-    if (!(flags & SHOW_DELETED))    return false;
-  } else
-  if (!isReachable) {
-    if (!(flags & SHOW_UNREACHABLE))     return false;
-  }
-
-  /*
-    Show the node index, if selected.
-  */
-  if (flags & SHOW_INDEX) {
-    int nwidth = digits(nodeHeaders.lastUsedHandle());
-    s.put(long(p), nwidth);
-    s.put('\t');
-  }
-
-  /*
-    Deal with special cases
-  */
-  if (isTerminalNode(p)) {
-    s << "(terminal)";
-    return true;
-  }
-  if (isDeletedNode(p)) {
-    s << "DELETED";
-    return true;
-  }
-  if (!isReachable) {
-    s << "Unreachable ";
-  }
-
-  /*
-    Ordinary node
-  */
-  if (flags & SHOW_DETAILS) {
-    // node: was already written.
-    nodeHeaders.showHeader(s, p);
-  } else {
-    s << "node: " << long(p);
-  }
-
-  s.put(' ');
-  unpacked_node* un = newUnpacked(p, FULL_OR_SPARSE);
-  un->show(s, flags & SHOW_DETAILS);
-  unpacked_node::Recycle(un);
-
-  return true;
-}
-
-
-
-void MEDDLY::expert_forest
-::reportStats(output &s, const char* pad, unsigned flags) const
-{
-  if (flags & BASIC_STATS) {
-    bool human = flags & HUMAN_READABLE_MEMORY;
-    s << pad << getCurrentNumNodes() << " current nodes\n";
-    s << pad << getPeakNumNodes() << " peak nodes\n" << pad;
-    s.put_mem(getCurrentMemoryUsed(), human);
-    s << " current memory used\n" << pad;
-    s.put_mem(getPeakMemoryUsed(), human);
-    s << " peak memory used\n" << pad;
-    s.put_mem(getCurrentMemoryAllocated(), human);
-    s << " current memory allocated\n" << pad;
-    s.put_mem(getPeakMemoryAllocated(), human);
-    s << " peak memory allocated\n";
-  }
-  if (flags & EXTRA_STATS) {
-    s << pad << stats.reachable_scans << " scans for reachable nodes\n";
-    s << pad << stats.reclaimed_nodes << " reclaimed nodes\n";
-    s << pad << stats.num_compactions << " compactions\n";
-    s << pad << stats.garbage_collections << " garbage collections\n";
-  }
-  // forest specific
-  reportForestStats(s, pad);
-  // header storage
-  nodeHeaders.reportStats(s, pad, flags);
-  // node storage
-  nodeMan->reportStats(s, pad, flags);
-  // unique table
-  unique->reportStats(s, pad, flags);
-}
 
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -1685,12 +1761,6 @@ void MEDDLY::expert_forest::normalize(unpacked_node &nb, float& ev) const
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::expert_forest::reportForestStats(output &s, const char* pad) const
-{
-  // default - do nothing
-}
-
-
 void MEDDLY::expert_forest::reorderVariables(const int* level2var)
 {
   removeAllComputeTableEntries();
@@ -1714,72 +1784,6 @@ void MEDDLY::expert_forest::reorderVariables(const int* level2var)
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 
-void MEDDLY::expert_forest::deleteNode(node_handle p)
-{
-#ifdef TRACK_DELETIONS
-  for (int i=0; i<delete_depth; i++) printf(" ");
-  printf("Forest %u deleting node ", FID());
-  FILE_output s(stdout);
-  showNode(s, p, SHOW_INDEX | SHOW_DETAILS | SHOW_UNREACHABLE);
-  printf("\n");
-  fflush(stdout);
-#endif
-#ifdef VALIDATE_INCOUNTS_ON_DELETE
-  delete_depth++;
-#endif
-
-    CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+nodeHeaders.lastUsedHandle());
-    MEDDLY_DCASSERT(isActiveNode(p));
-    if (reachable) {
-        MEDDLY_DCASSERT(!reachable->isMarked(p));
-    } else {
-        MEDDLY_DCASSERT(getNodeInCount(p) == 0);
-    }
-
-  unsigned h = hashNode(p);
-#ifdef DEVELOPMENT_CODE
-  if (!isExtensible(p) || isExtensibleLevel(getNodeLevel(p))) {
-    unpacked_node* key = newUnpacked(p, SPARSE_ONLY);
-    key->computeHash();
-    if (unique->find(*key, getVarByLevel(key->getLevel())) != p) {
-      fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
-          static_cast<long>(unique->find(*key, getVarByLevel(key->getLevel()))), static_cast<long>(p));
-      FILE_output myout(stdout);
-      dumpInternal(myout);
-      MEDDLY_DCASSERT(false);
-    }
-    node_handle x = unique->remove(h, p);
-    MEDDLY_DCASSERT(p == x);
-    unpacked_node::Recycle(key);
-  }
-#else
-  unique->remove(h, p);
-#endif
-
-  stats.decActive(1);
-
-#ifdef TRACK_DELETIONS
-  // start at one, because we have incremented the depth
-  // for (int i=1; i<delete_depth; i++) printf(" ");
-  // printf("%s: p = %d, unique->remove(p) = %d\n", __func__, p, x);
-  // fflush(stdout);
-#endif
-
-  // unlink children and recycle node memory
-  nodeMan->unlinkDownAndRecycle(getNodeAddress(p));
-  setNodeAddress(p, 0);
-  nodeHeaders.deactivate(p);
-
-  // if (nodeMan.compactLevel) nodeMan.compact(false);
-
-#ifdef VALIDATE_INCOUNTS_ON_DELETE
-  delete_depth--;
-  if (0==delete_depth) {
-    validateIncounts(false);
-  }
-#endif
-
-}
 
 
 

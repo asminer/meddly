@@ -28,7 +28,6 @@ namespace MEDDLY {
     class operation;
     class compute_table;
     class forest;
-    class expert_forest;
 
     class initializer_list;
     class ct_initializer;
@@ -142,8 +141,8 @@ class MEDDLY::operation {
         static void removeStalesFromMonolithic();
         static void removeAllFromMonolithic();
 
-        static void countAllNodeEntries(const expert_forest* f, size_t* counts);
-        void countCTEntries(const expert_forest* f, size_t* counts) const;
+        static void countAllNodeEntries(const forest* f, size_t* counts);
+        void countCTEntries(const forest* f, size_t* counts) const;
 
         //
         // Display, for debugging

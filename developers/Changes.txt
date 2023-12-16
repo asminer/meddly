@@ -9,10 +9,6 @@ Forest cleanup
                 (goal is for 'check terminals' to be inlined, not virtual)
 
 
-(*) tie unpacked nodes to forests
-    distinguish between "root" and "read only" unpacked nodes?
-
-    (could do this in forest methods, returning const or not)
 
 (*) node_storage::getDownPtr timing test
 

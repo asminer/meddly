@@ -206,8 +206,7 @@ void MEDDLY::operation::removeAllFromMonolithic()
     if (Monolithic_CT) Monolithic_CT->removeAll();
 }
 
-void MEDDLY::operation::countAllNodeEntries(const expert_forest* f,
-        size_t* counts)
+void MEDDLY::operation::countAllNodeEntries(const forest* f, size_t* counts)
 {
     if (Monolithic_CT) {
         Monolithic_CT->countNodeEntries(f, counts);
@@ -219,7 +218,7 @@ void MEDDLY::operation::countAllNodeEntries(const expert_forest* f,
     }
 }
 
-void MEDDLY::operation::countCTEntries(const expert_forest* f, size_t* counts)
+void MEDDLY::operation::countCTEntries(const forest* f, size_t* counts)
     const
 {
     if (CT) {

@@ -5,7 +5,20 @@ number: changes
 layout: single
 ---
 
-### Interface Changes
+### Updates to unpacked nodes
+
+The ```unpacked_node``` interface has been updated.
+For efficiency, an unpacked node is now permanently attached to
+one forest, and there is a free list of unpacked nodes for each forest.
+As such, several methods have changed:
+
+
+### Other interface changes
+
+* Several methods moved from ```expert_forest``` class
+    to ```forest``` class.
+
+### Deprecated methods
 
 Uncomment ```ALLOW_DEPRECATED_0_17_4``` in ```defines.h```
 to use these deprecated methods.

@@ -552,6 +552,20 @@ class MEDDLY::forest {
             nodeHeaders.setNodeAddress(p, a);
         }
 
+        /** Change the address of a node.
+            Used by node_storage during compaction.
+            Should not be called by anything else.
+                @param  node        Node we're moving
+                @param  old_addr    Current address of node, for sanity check
+                @param  new_addr    Where we're moving the node to
+        */
+        inline void moveNodeAddress(node_handle node,
+                node_address old_addr, node_address new_addr)
+        {
+            nodeHeaders.moveNodeAddress(node, old_addr, new_addr);
+        }
+
+
     // ------------------------------------------------------------
     protected:  // Eventually: make this private?
     // ------------------------------------------------------------
@@ -703,6 +717,25 @@ class MEDDLY::forest {
                 return false;
             }
             return nodeMan->areDuplicates(nodeHeaders.getNodeAddress(p), nr);
+        }
+
+        /// Is this an extensible node
+        inline bool isExtensible(node_handle p) const {
+            return nodeMan->isExtensible(getNodeAddress(p));
+        }
+
+        /// Get the cardinality of an Index Set.
+        inline int getIndexSetCardinality(node_handle node) const {
+            if (!isIndexSet()) {
+                throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+            }
+            if (isTerminalNode(node)) return (node != 0) ? 1 : 0;
+            // yes iff the unhashed extra header is non-zero.
+            const int* uhh = (const int*) nodeMan->getUnhashedHeaderOf(
+                    getNodeAddress(node)
+            );
+            MEDDLY_DCASSERT(*uhh > 0);
+            return *uhh;
         }
 
     // ------------------------------------------------------------
@@ -1062,6 +1095,59 @@ class MEDDLY::forest {
         static unsigned gfid;
 
         friend class initializer_list;
+
+
+    // ------------------------------------------------------------
+    public: // public methods for debugging or logging
+    // ------------------------------------------------------------
+
+        /** Display the contents of a single node.
+                @param  s       File stream to write to.
+                @param  node    Node to display.
+                @param  flags   Switches to control output;
+                                see constants "SHOW_DETAILED", etc.
+
+                @return true, iff we displayed anything
+        */
+        bool showNode(output &s, node_handle node, unsigned int flags = 0) const;
+
+
+        /** Show various stats for this forest.
+                @param  s       Output stream to write to
+                @param  pad     Padding string, written at the start of
+                                each output line.
+                @param  flags   Which stats to display, as "flags";
+                                use bitwise or to combine values.
+                                For example, BASIC_STATS | FOREST_STATS.
+        */
+        void reportStats(output &s, const char* pad, unsigned flags) const;
+
+
+        /**
+            Display all nodes in the forest.
+                @param  s       File stream to write to
+                @param  flags   Switches to control output;
+                                see constants "SHOW_DETAILED", etc.
+        */
+        void dump(output &s, unsigned int flags) const;
+        void dumpInternal(output &s) const;
+        void dumpUniqueTable(output &s) const;
+        void validateIncounts(bool exact);
+        void validateCacheCounts() const;
+        void countNodesByLevel(long* active) const;
+
+    // ------------------------------------------------------------
+    protected: // protected methods for debugging
+    // ------------------------------------------------------------
+
+        /** Show forest-specific stats.
+            Default does nothing; override in derived classes
+            if there are other stats to display.
+                @param  s     Output stream to use
+                @param  pad   String to display at the beginning of each line.
+        */
+        virtual void reportForestStats(output &s, const char* pad) const;
+
 
 // ===================================================================
 //
@@ -1835,7 +1921,7 @@ private:
         Disconnects all downward pointers from p,
         and removes p from the unique table.
     */
-    virtual void deleteNode(node_handle p) = 0;
+    void deleteNode(node_handle p);
 
     friend class node_headers;
 
@@ -2188,22 +2274,9 @@ class MEDDLY::expert_forest: public MEDDLY::forest
   // --------------------------------------------------
   // Node status
   // --------------------------------------------------
-  public:
-
-    // --------------------------------------------------
-    // Extensible Node Information:
-    // --------------------------------------------------
-    /// Is this an extensible node
-    bool isExtensible(node_handle p) const;
-    /// If \a p is an extensible node, this returns an index
-    /// that can be used by getDownPtr(...) to access the
-    /// extensible portion of this node.
-    int getExtensibleIndex(node_handle p) const;
 
   public:
 
-    /// Get the cardinality of an Index Set.
-    int getIndexSetCardinality(node_handle node) const;
 
 
 #ifdef ALLOW_DEPRECATED_0_17_4
@@ -2218,22 +2291,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     ///  because its children might have been recycled
     MEDDLY::forest::node_status getNodeStatus(node_handle node) const;
 #endif
-
-  // ------------------------------------------------------------
-  // non-virtual, handy methods for debugging or logging.
-
-    /**
-        Display all nodes in the forest.
-          @param  s       File stream to write to
-          @param  flags   Switches to control output;
-                          see constants "SHOW_DETAILED", etc.
-    */
-    void dump(output &s, unsigned int flags) const;
-    void dumpInternal(output &s) const;
-    void dumpUniqueTable(output &s) const;
-    void validateIncounts(bool exact);
-    void validateCacheCounts() const;
-    void countNodesByLevel(long* active) const;
 
 
 
@@ -2294,28 +2351,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
         const node_handle* nodes, const char* const* labels, int n);
 
 #endif
-
-    /** Display the contents of a single node.
-          @param  s       File stream to write to.
-          @param  node    Node to display.
-          @param  flags   Switches to control output;
-                          see constants "SHOW_DETAILED", etc.
-
-          @return true, iff we displayed anything
-    */
-    bool showNode(output &s, node_handle node, unsigned int flags = 0) const;
-
-
-    /** Show various stats for this forest.
-          @param  s       Output stream to write to
-          @param  pad     Padding string, written at the start of
-                          each output line.
-          @param  flags   Which stats to display, as "flags";
-                          use bitwise or to combine values.
-                          For example, BASIC_STATS | FOREST_STATS.
-    */
-    void reportStats(output &s, const char* pad, unsigned flags) const;
-
 
 
 
@@ -2531,12 +2566,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     */
     virtual void normalize(unpacked_node &nb, float& ev) const;
 
-    /** Show forest-specific stats.
-          @param  s     Output stream to use
-          @param  pad   String to display at the beginning of each line.
-    */
-    virtual void reportForestStats(output &s, const char* pad) const;
-
 
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2551,16 +2580,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 
     // bool isTimeToGc() const;
 
-    /** Change the location of a node.
-        Used by node_storage during compaction.
-        Should not be called by anything else.
-          @param  node        Node we're moving
-          @param  old_addr    Current address of node, for sanity check
-          @param  new_addr    Where we're moving the node to
-    */
-    void moveNodeOffset(node_handle node, node_address old_addr, node_address new_addr);
-    friend class MEDDLY::node_storage;
-    friend class MEDDLY::node_headers;  // calls deleteNode().
+    // friend class MEDDLY::node_storage;
 
     friend class MEDDLY::global_rebuilder;
 
@@ -2571,7 +2591,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
         Disconnects all downward pointers from p,
         and removes p from the unique table.
     */
-    virtual void deleteNode(node_handle p);
+    // virtual void deleteNode(node_handle p);
 
     /** Apply reduction rule to the temporary node and finalize it.
         Once a node is reduced, its contents cannot be modified.
@@ -2622,8 +2642,8 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     int delete_depth;
 
 
-    class nodecounter;
-    class nodemarker;
+    // class nodecounter;
+    // class nodemarker;
 };
 // end of expert_forest class.
 
@@ -2635,33 +2655,11 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 // ******************************************************************
 
 
-// --------------------------------------------------
-// Node status
-// --------------------------------------------------
-
-// --------------------------------------------------
-// Extensible Node Information:
-// --------------------------------------------------
-inline bool
-MEDDLY::expert_forest::isExtensible(node_handle p) const
-{
-  return nodeMan->isExtensible(getNodeAddress(p));
-}
 
 //
 // Unorganized from here
 //
 
-inline int
-MEDDLY::expert_forest::getIndexSetCardinality(MEDDLY::node_handle node) const
-{
-  MEDDLY_DCASSERT(isIndexSet());
-  if (isTerminalNode(node)) return (node != 0) ? 1 : 0;
-  // yes iff the unhashed extra header is non-zero.
-  const int* uhh = (const int*) nodeMan->getUnhashedHeaderOf(getNodeAddress(node));
-  MEDDLY_DCASSERT(*uhh > 0);
-  return *uhh;
-}
 
 #ifdef ALLOW_DEPRECATED_0_17_4
 inline MEDDLY::forest::node_status
@@ -2766,12 +2764,6 @@ MEDDLY::expert_forest::isTimeToGc() const
 }
 */
 
-inline void
-MEDDLY::expert_forest::moveNodeOffset(MEDDLY::node_handle node, node_address old_addr,
-    node_address new_addr)
-{
-  nodeHeaders.moveNodeAddress(node, old_addr, new_addr);
-}
 
 inline void
 MEDDLY::expert_forest::getVariableOrder(int* level2var) const

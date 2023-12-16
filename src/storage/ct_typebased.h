@@ -56,7 +56,7 @@ namespace MEDDLY {
       virtual void removeStales();
       virtual void removeAll();
       virtual void show(output &s, int verbLevel = 0);
-      virtual void countNodeEntries(const expert_forest* f, size_t* counts) const;
+      virtual void countNodeEntries(const forest* f, size_t* counts) const;
 
     private:  // helper methods
 
@@ -1311,7 +1311,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 
 template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
-::countNodeEntries(const expert_forest* f, size_t* counts) const
+::countNodeEntries(const forest* f, size_t* counts) const
 {
 #ifdef DEBUG_VALIDATE_COUNTS
   printf("    Counting in ct_typebased\n");

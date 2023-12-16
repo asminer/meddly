@@ -244,7 +244,7 @@ class MEDDLY::compute_table {
             Examine all entries, and for each pointer to forest f node p,
             increment counts[p].
         */
-        virtual void countNodeEntries(const expert_forest* f, size_t* counts)
+        virtual void countNodeEntries(const forest* f, size_t* counts)
             const = 0;
 
     protected:
