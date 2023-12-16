@@ -143,6 +143,12 @@ class MEDDLY::forest {
             return un;
         }
 
+    // ------------------------------------------------------------
+    public: // Add a node to the forest
+    // ------------------------------------------------------------
+
+        // TBD: move createReducedNode() here
+        // and helpers like normalize()
 
     // ------------------------------------------------------------
     public: // Getters related to the domain / levels

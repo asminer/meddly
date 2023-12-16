@@ -160,11 +160,6 @@ class MEDDLY::operation {
         void registerInForest(forest* f);
         void unregisterInForest(forest* f);
 
-        // void allocEntryForests(int nf);
-        // void addEntryForest(int index, expert_forest* f);
-        // void allocEntryObjects(int no);
-        // void addEntryObject(int index);
-
         virtual bool checkForestCompatibility() const = 0;
 
         void registerEntryType(unsigned slot, ct_entry_type* et);

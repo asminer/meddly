@@ -27,7 +27,7 @@ MEDDLY::dot_maker::dot_maker(const forest* F, const char* bn)
     std::string fname = basename + ".dot";
     outfile.open(fname);
 
-    For = dynamic_cast <const expert_forest*> (F);
+    For = F;
     MEDDLY_DCASSERT(For);
 
     nm = new node_marker(For);

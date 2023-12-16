@@ -86,9 +86,7 @@ MEDDLY::dd_edge::~dd_edge()
 
 void MEDDLY::dd_edge::attach(forest* p)
 {
-    expert_forest* efp = static_cast <expert_forest*> (
-                forest::getForestWithID(parentFID)
-    );
+    forest* efp = forest::getForestWithID(parentFID);
     if (p == efp) return;
     if (efp) {
 #ifdef DEBUG_CLEANUP
@@ -138,9 +136,7 @@ int MEDDLY::dd_edge::getLevel() const
 {
     if (0==node) return 0;
 
-    expert_forest* efp = static_cast <expert_forest*> (
-                forest::getForestWithID(parentFID)
-    );
+    forest* efp = forest::getForestWithID(parentFID);
     MEDDLY_DCASSERT(efp);
     return efp->getNodeLevel(node);
 }
@@ -153,9 +149,7 @@ void MEDDLY::dd_edge::show(output &s) const
         return;
     }
 
-    expert_forest* efp = static_cast <expert_forest*> (
-                forest::getForestWithID(parentFID)
-    );
+    forest* efp = forest::getForestWithID(parentFID);
     if (!efp) {
         s.put("<orphaned edge>");
         return;
@@ -183,9 +177,7 @@ void MEDDLY::dd_edge::show(output &s) const
 
 void MEDDLY::dd_edge::showGraph(output &s) const
 {
-    expert_forest* efp = static_cast <expert_forest*> (
-                forest::getForestWithID(parentFID)
-    );
+    forest* efp = forest::getForestWithID(parentFID);
     if (!efp) {
         s.put("null graph\n");
         return;
@@ -243,9 +235,7 @@ void MEDDLY::dd_edge::write(output &s, const std::vector <unsigned> &map) const
         //
         // terminal
         //
-        expert_forest* efp = static_cast <expert_forest*> (
-                forest::getForestWithID(parentFID)
-        );
+        forest* efp = forest::getForestWithID(parentFID);
         terminal t;
         t.setFromHandle(efp->getTerminalType(), node);
         t.write(s);
@@ -302,9 +292,7 @@ void MEDDLY::dd_edge::read(input &s, const std::vector <node_handle> &map)
 
 void MEDDLY::dd_edge::init(const dd_edge &e)
 {
-    expert_forest* efp = static_cast <expert_forest*> (
-                forest::getForestWithID(e.parentFID)
-    );
+    forest* efp = forest::getForestWithID(e.parentFID);
     if (efp) {
         efp->registerEdge(*this);
         node = efp->linkNode(e.node);
@@ -320,9 +308,7 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
 void MEDDLY::dd_edge::set(node_handle n)
 {
     if (node != n) {
-        expert_forest* efp = static_cast <expert_forest*> (
-                forest::getForestWithID(parentFID)
-        );
+        forest* efp = forest::getForestWithID(parentFID);
         if (efp) {
 #ifdef DEBUG_CLEANUP
             std::cout << "unlinking " << node << " in dd_edge::set" << std::endl;
@@ -338,9 +324,7 @@ void MEDDLY::dd_edge::set(node_handle n)
 void MEDDLY::dd_edge::set_and_link(node_handle n)
 {
     if (node != n) {
-        expert_forest* efp = static_cast <expert_forest*> (
-                forest::getForestWithID(parentFID)
-        );
+        forest* efp = forest::getForestWithID(parentFID);
         if (efp) {
 #ifdef DEBUG_CLEANUP
             std::cout << "unlinking " << node << " in dd_edge::set" << std::endl;

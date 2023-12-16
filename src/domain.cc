@@ -400,11 +400,10 @@ MEDDLY::domain::~domain()
         forest* f = forest::getForestWithID(*it);
         if (!f) continue;
 #ifdef DUMP_ON_FOREST_DESTROY
-        expert_forest* ef = dynamic_cast <expert_forest*> (f);
         MEDDLY_DCASSERT(ef);
         std::cerr << "Destroying forest #" << *it << "\n";
         ostream_output s(std::cerr);
-        ef->dump(s, SHOW_DETAILS);
+        f->dump(s, SHOW_DETAILS);
 #endif
         delete f;
     }

@@ -25,7 +25,6 @@
 
 namespace MEDDLY {
     class forest;
-    class expert_forest;
     class node_marker;
     class dd_edge;
 
@@ -96,7 +95,7 @@ class MEDDLY::dot_maker {
 
         std::vector <dd_edge> roots;
 
-        const expert_forest* For;
+        const forest* For;
         node_marker* nm;
 };
 
