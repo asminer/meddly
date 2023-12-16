@@ -20,7 +20,7 @@
 #define MEDDLY_REORDERING_BASE_H
 
 namespace MEDDLY{
-    class expert_forest;
+    class forest;
 
 class reordering_base
 {
@@ -28,19 +28,19 @@ public:
   virtual ~reordering_base() {}
 
 protected:
-  const unique_table* get_unique_table(expert_forest* forest) const;
-  int getInCount(expert_forest* forest, node_handle p) const;
+  const unique_table* get_unique_table(forest* forest) const;
+  int getInCount(forest* forest, node_handle p) const;
 
 public:
-  virtual void reorderVariables(expert_forest* forest, const int* level2var) = 0;
+  virtual void reorderVariables(forest* forest, const int* level2var) = 0;
 };
 
-inline const unique_table* reordering_base::get_unique_table(expert_forest* forest) const
+inline const unique_table* reordering_base::get_unique_table(forest* forest) const
 {
-  return forest->unique;
+  return forest->getUT();
 }
 
-inline int reordering_base::getInCount(expert_forest* forest, node_handle p) const
+inline int reordering_base::getInCount(forest* forest, node_handle p) const
 {
   return forest->getNodeInCount(p);
 }

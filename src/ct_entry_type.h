@@ -28,7 +28,7 @@ namespace MEDDLY {
     class ct_entry_type;
     class compute_table;
 
-    class expert_forest;
+    class forest;
 
     enum class ct_typeID {
         ERROR = 0,
@@ -118,7 +118,7 @@ class MEDDLY::ct_entry_type {
               @param  i   Slot.  Character i in the pattern must be 'N'.
               @param  f   Forest.
         */
-        void setForestForSlot(unsigned i, expert_forest* f);
+        void setForestForSlot(unsigned i, forest* f);
 
         /** Clear CT bits for any forests this entry type uses.
               @param  skipF   If skipF[i] is true, then we do nothing
@@ -210,7 +210,7 @@ class MEDDLY::ct_entry_type {
               @param  f   If t is 'N', the forest for item i.
                           Otherwise, null.
         */
-        inline void getKeyType(unsigned i, ct_typeID &t, expert_forest* &f)
+        inline void getKeyType(unsigned i, ct_typeID &t, forest* &f)
         const {
             if (i<len_ks_type) {
                 MEDDLY_DCASSERT(ks_type);
@@ -257,7 +257,7 @@ class MEDDLY::ct_entry_type {
               @return     Forest for that slot, or 0 if the type
                           is not 'N'.
         */
-        inline expert_forest* getKeyForest(unsigned i) const {
+        inline forest* getKeyForest(unsigned i) const {
             if (i<len_ks_type) {
                 MEDDLY_DCASSERT(ks_forest);
                 return ks_forest[i];
@@ -289,7 +289,7 @@ class MEDDLY::ct_entry_type {
               @param  f   If t is 'N', the forest for item i.
                           Otherwise, null.
         */
-        inline void getResultType(unsigned i, ct_typeID &t, expert_forest* &f)
+        inline void getResultType(unsigned i, ct_typeID &t, forest* &f)
         const {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, len_r_type);
             MEDDLY_DCASSERT(r_type);
@@ -316,7 +316,7 @@ class MEDDLY::ct_entry_type {
               @return     Forest for that slot, or 0 if the type
                           is not 'N'.
         */
-        inline expert_forest* getResultForest(unsigned i) const {
+        inline forest* getResultForest(unsigned i) const {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, len_r_type);
             MEDDLY_DCASSERT(r_forest);
             return r_forest[i];
@@ -347,7 +347,7 @@ class MEDDLY::ct_entry_type {
         ct_typeID* ks_type;
 
         /// Forests in starting portion of key.
-        expert_forest** ks_forest;
+        forest** ks_forest;
 
         /// Length of ks_type and ks_forest arrays.
         unsigned len_ks_type;
@@ -360,7 +360,7 @@ class MEDDLY::ct_entry_type {
         ct_typeID* kr_type;
 
         /// Forests in repeating portion of key (or null).
-        expert_forest** kr_forest;
+        forest** kr_forest;
 
         /// Length of kr_type and kr_forest arrays (zero if no repeats).
         unsigned len_kr_type;
@@ -373,7 +373,7 @@ class MEDDLY::ct_entry_type {
         ct_typeID* r_type;
 
         /// Forests in result
-        expert_forest** r_forest;
+        forest** r_forest;
 
         /// Length of r_type and r_forest arrays.
         unsigned len_r_type;

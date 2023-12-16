@@ -166,7 +166,7 @@ class MEDDLY::ct_entry_result {
         /// Increase cache counters for nodes in this portion of the entry.
         inline void cacheNodes() const {
             for (unsigned i=0; i<etype->getResultSize(); i++) {
-                expert_forest* f = etype->getResultForest(i);
+                forest* f = etype->getResultForest(i);
                 if (f) {
                     f->cacheNode(build[i].N);
                 }

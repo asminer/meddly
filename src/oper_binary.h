@@ -39,7 +39,7 @@ class MEDDLY::binary_operation : public operation {
         friend void destroyOperation(binary_operation* &op);
     public:
         binary_operation(binary_opname* code, unsigned et_slots,
-            expert_forest* arg1, expert_forest* arg2, expert_forest* res);
+            forest* arg1, forest* arg2, forest* res);
 
     protected:
         virtual ~binary_operation();
@@ -69,9 +69,9 @@ class MEDDLY::binary_operation : public operation {
 
     protected:
         bool can_commute;
-        expert_forest* arg1F;
-        expert_forest* arg2F;
-        expert_forest* resF;
+        forest* arg1F;
+        forest* arg2F;
+        forest* resF;
         opnd_type resultType;
 };
 

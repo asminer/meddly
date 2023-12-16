@@ -644,11 +644,74 @@ void MEDDLY::forest::countNodesByLevel(long* active) const
   }
 }
 
+
+void MEDDLY::forest::validateDownPointers(const unpacked_node &nb) const
+{
+    switch (getReductionRule()) {
+        case reduction_rule::IDENTITY_REDUCED:
+        case reduction_rule::FULLY_REDUCED:
+            for (unsigned i=0; i<nb.getSize(); i++) {
+                if (isTerminalNode(nb.down(i))) continue;
+                MEDDLY_DCASSERT(!isDeletedNode(nb.down(i)));
+                if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.down(i))))
+                    continue;
+
+                FILE_output s(stdout);
+                s << "Down pointer violation in created node at level "
+                  << nb.getLevel() << ":\n";
+                nb.show(s, true);
+                s << "\nPointer " << nb.down(i) << " at level "
+                  << getNodeLevel(nb.down(i)) << ":\n";
+                showNode(s, nb.down(i), SHOW_DETAILS);
+                MEDDLY_DCASSERT(0);
+            }
+            break;
+
+        case reduction_rule::QUASI_REDUCED:
+#ifdef DEVELOPMENT_CODE
+            int nextLevel;
+            if (isForRelations()) {
+                nextLevel = downLevel(nb.getLevel());
+            } else {
+                nextLevel = nb.getLevel()-1;
+            }
+#endif
+            for (unsigned i=0; i<nb.getSize(); i++) {
+                if (nb.down(i)==getTransparentNode()) continue;
+                MEDDLY_DCASSERT(getNodeLevel(nb.down(i)) == nextLevel);
+            }
+            break;
+
+        default:
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    };  // switch
+}
+
+
+
 void MEDDLY::forest::reportForestStats(output &s, const char* pad) const
 {
   // default - do nothing
 }
 
+
+//
+// Variable reordering stuff
+//
+
+void MEDDLY::forest::reorderVariables(const int* level2var)
+{
+  removeAllComputeTableEntries();
+
+  // Create a temporary variable order
+  // Support in-place update and avoid interfering other forests
+  var_order = std::make_shared<variable_order>(*var_order);
+
+  auto reordering = reordering_factory::create(getPolicies().reorder);
+  reordering->reorderVariables(this, level2var);
+
+  var_order = getDomain()->makeVariableOrder(*var_order);
+}
 
 
 // ******************************************************************
@@ -1761,19 +1824,6 @@ void MEDDLY::expert_forest::normalize(unpacked_node &nb, float& ev) const
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::expert_forest::reorderVariables(const int* level2var)
-{
-  removeAllComputeTableEntries();
-
-  // Create a temporary variable order
-  // Support in-place update and avoid interfering other forests
-  var_order = std::make_shared<variable_order>(*var_order);
-
-  auto reordering = reordering_factory::create(getPolicies().reorder);
-  reordering->reorderVariables(this, level2var);
-
-  var_order = getDomain()->makeVariableOrder(*var_order);
-}
 
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
@@ -2167,49 +2217,6 @@ MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_nod
   unpacked_node::Recycle(un);
   return p;
 }
-
-void MEDDLY::expert_forest::validateDownPointers(const unpacked_node &nb) const
-{
-    switch (getReductionRule()) {
-        case reduction_rule::IDENTITY_REDUCED:
-        case reduction_rule::FULLY_REDUCED:
-            for (unsigned i=0; i<nb.getSize(); i++) {
-                if (isTerminalNode(nb.down(i))) continue;
-                MEDDLY_DCASSERT(!isDeletedNode(nb.down(i)));
-                if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.down(i))))
-                    continue;
-
-                FILE_output s(stdout);
-                s << "Down pointer violation in created node at level "
-                  << nb.getLevel() << ":\n";
-                nb.show(s, true);
-                s << "\nPointer " << nb.down(i) << " at level "
-                  << getNodeLevel(nb.down(i)) << ":\n";
-                showNode(s, nb.down(i), SHOW_DETAILS);
-                MEDDLY_DCASSERT(0);
-            }
-            break;
-
-        case reduction_rule::QUASI_REDUCED:
-#ifdef DEVELOPMENT_CODE
-            int nextLevel;
-            if (isForRelations()) {
-                nextLevel = downLevel(nb.getLevel());
-            } else {
-                nextLevel = nb.getLevel()-1;
-            }
-#endif
-            for (unsigned i=0; i<nb.getSize(); i++) {
-                if (nb.down(i)==getTransparentNode()) continue;
-                MEDDLY_DCASSERT(getNodeLevel(nb.down(i)) == nextLevel);
-            }
-            break;
-
-        default:
-            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-    };  // switch
-}
-
 
 //
 // Stuff that used to be inlined but now can't

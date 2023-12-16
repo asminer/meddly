@@ -149,10 +149,7 @@ MEDDLY::unary_opname::getOperation(const dd_edge &ar, const dd_edge &res)
     //
     // Not found; build a new one and add it to the front
     //
-    match = buildOperation(
-                dynamic_cast<expert_forest*>(ar.getForest()),
-                dynamic_cast<expert_forest*>(res.getForest())
-            );
+    match = buildOperation(ar.getForest(), res.getForest());
     if (match) {
         match->setNext(cache);
         cache = match;
@@ -172,10 +169,7 @@ MEDDLY::unary_opname::getOperation(const dd_edge &ar, opnd_type res)
     //
     // Not found; build a new one and add it to the front
     //
-    match = buildOperation(
-                dynamic_cast<expert_forest*>(ar.getForest()),
-                res
-            );
+    match = buildOperation(ar.getForest(), res);
     if (match) {
         match->setNext(cache);
         cache = match;
@@ -184,13 +178,13 @@ MEDDLY::unary_opname::getOperation(const dd_edge &ar, opnd_type res)
 }
 
 MEDDLY::unary_operation*
-MEDDLY::unary_opname::buildOperation(expert_forest *, expert_forest *)
+MEDDLY::unary_opname::buildOperation(forest *, forest *)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 MEDDLY::unary_operation*
-MEDDLY::unary_opname::buildOperation(expert_forest *, opnd_type)
+MEDDLY::unary_opname::buildOperation(forest *, opnd_type)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -233,11 +227,7 @@ MEDDLY::binary_opname::getOperation(const dd_edge &a1, const dd_edge &a2,
     //
     // Not found; build a new one and add it to the front
     //
-    match = buildOperation(
-                static_cast<expert_forest*>(a1.getForest()),
-                static_cast<expert_forest*>(a2.getForest()),
-                static_cast<expert_forest*>(res.getForest())
-            );
+    match = buildOperation(a1.getForest(), a2.getForest(), res.getForest());
     match->setNext(cache);
     cache = match;
     return match;

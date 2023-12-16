@@ -27,7 +27,7 @@ namespace MEDDLY{
 class lowest_memory_reordering : public reordering_base
 {
 protected:
-  long calculate_swap_memory_cost(expert_forest* forest, int level)
+  long calculate_swap_memory_cost(forest* forest, int level)
   {
     int lvar = forest->getVarByLevel(level);
     int hvar = forest->getVarByLevel(level+1);
@@ -43,7 +43,7 @@ protected:
   }
 
 public:
-  virtual void reorderVariables(expert_forest* forest, const int* level2var)
+  virtual void reorderVariables(forest* forest, const int* level2var)
   {
     int size = forest->getDomain()->getNumVariables();
 

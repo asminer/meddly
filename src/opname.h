@@ -37,7 +37,7 @@ namespace MEDDLY {
 
     class ct_object;
     class dd_edge;
-    class expert_forest;
+    class forest;
 
     class initializer_list;
 
@@ -188,10 +188,10 @@ class MEDDLY::unary_opname : public opname {
 
     protected:
         virtual unary_operation*
-            buildOperation(expert_forest* arg, expert_forest* res);
+            buildOperation(forest* arg, forest* res);
 
         virtual unary_operation*
-            buildOperation(expert_forest* arg, opnd_type res);
+            buildOperation(forest* arg, opnd_type res);
 
 };
 
@@ -212,8 +212,8 @@ class MEDDLY::binary_opname : public opname {
 
     protected:
         // OLD interface
-        virtual binary_operation* buildOperation(expert_forest* arg1,
-            expert_forest* arg2, expert_forest* res) = 0;
+        virtual binary_operation* buildOperation(forest* arg1,
+            forest* arg2, forest* res) = 0;
 };
 
 

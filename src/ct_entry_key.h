@@ -125,7 +125,7 @@ class MEDDLY::ct_entry_key {
         /// Increase cache counters for nodes in this portion of the entry.
         inline void cacheNodes() const {
             for (unsigned i=0; i<total_slots; i++) {
-                expert_forest* f = etype->getKeyForest(i);
+                forest* f = etype->getKeyForest(i);
                 if (f) {
                     f->cacheNode(data[i].N);
                 }

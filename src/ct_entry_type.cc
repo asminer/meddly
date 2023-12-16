@@ -159,7 +159,7 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
     ks_bytes = 0;
     if (len_ks_type) {
         ks_type = new ct_typeID[len_ks_type];
-        ks_forest = new expert_forest*[len_ks_type];
+        ks_forest = new forest*[len_ks_type];
         for (unsigned i=0; i<len_ks_type; i++) {
             ks_type[i] = char2typeID(pattern[i]);
             ks_bytes += bytes4typeID(ks_type[i]);
@@ -177,7 +177,7 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
     kr_bytes = 0;
     if (len_kr_type) {
         kr_type = new ct_typeID[len_kr_type];
-        kr_forest = new expert_forest*[len_kr_type];
+        kr_forest = new forest*[len_kr_type];
         for (unsigned i=0; i<len_kr_type; i++) {
             kr_type[i] = char2typeID(pattern[i + dot_slot + 1]);
             kr_bytes += bytes4typeID(kr_type[i]);
@@ -194,7 +194,7 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
     MEDDLY_DCASSERT(len_r_type);
     r_bytes = 0;
     r_type = new ct_typeID[len_r_type];
-    r_forest = new expert_forest*[len_r_type];
+    r_forest = new forest*[len_r_type];
     for (unsigned i=0; i<len_r_type; i++) {
         r_type[i] = char2typeID(pattern[i + colon_slot + 1]);
         r_bytes += bytes4typeID(r_type[i]);
@@ -231,7 +231,7 @@ MEDDLY::ct_entry_type::~ct_entry_type()
     delete[] r_forest;
 }
 
-void MEDDLY::ct_entry_type::setForestForSlot(unsigned i, expert_forest* f)
+void MEDDLY::ct_entry_type::setForestForSlot(unsigned i, forest* f)
 {
     if (i<len_ks_type) {
         if (ct_typeID::NODE != ks_type[i]) {
@@ -274,7 +274,7 @@ void MEDDLY::ct_entry_type::clearForestCTBits(bool* skipF, unsigned N) const
 {
     unsigned i;
     for (i=0; i<len_ks_type; i++) {
-        expert_forest* f = ks_forest[i];
+        forest* f = ks_forest[i];
         if (0==f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (skipF[ f->FID() ]) continue;
@@ -282,7 +282,7 @@ void MEDDLY::ct_entry_type::clearForestCTBits(bool* skipF, unsigned N) const
         skipF[ f->FID() ] = 1;
     }
     for (i=0; i<len_kr_type; i++) {
-        expert_forest* f = kr_forest[i];
+        forest* f = kr_forest[i];
         if (0==f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (skipF[ f->FID() ]) continue;
@@ -290,7 +290,7 @@ void MEDDLY::ct_entry_type::clearForestCTBits(bool* skipF, unsigned N) const
         skipF[ f->FID() ] = 1;
     }
     for (i=0; i<len_r_type; i++) {
-        expert_forest* f = r_forest[i];
+        forest* f = r_forest[i];
         if (0==f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (skipF[ f->FID() ]) continue;
@@ -303,7 +303,7 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
 {
     unsigned i;
     for (i=0; i<len_ks_type; i++) {
-        expert_forest* f = ks_forest[i];
+        forest* f = ks_forest[i];
         if (0==f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (whichF[ f->FID() ]) {
@@ -312,7 +312,7 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
         }
     }
     for (i=0; i<len_kr_type; i++) {
-        expert_forest* f = kr_forest[i];
+        forest* f = kr_forest[i];
         if (0==f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (whichF[ f->FID() ]) {
@@ -321,7 +321,7 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
         }
     }
     for (i=0; i<len_r_type; i++) {
-        expert_forest* f = r_forest[i];
+        forest* f = r_forest[i];
         if (0==f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (whichF[ f->FID() ]) {

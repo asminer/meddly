@@ -26,7 +26,7 @@
 // ******************************************************************
 
 MEDDLY::unary_operation::unary_operation(unary_opname* code,
-  unsigned et_slots, expert_forest* arg, expert_forest* res)
+  unsigned et_slots, forest* arg, forest* res)
 : operation(code, et_slots)
 {
   argF = arg;
@@ -38,7 +38,7 @@ MEDDLY::unary_operation::unary_operation(unary_opname* code,
 }
 
 MEDDLY::unary_operation::unary_operation(unary_opname* code,
-  unsigned et_slots, expert_forest* arg, opnd_type res)
+  unsigned et_slots, forest* arg, opnd_type res)
 : operation(code, et_slots)
 {
   argF = arg;

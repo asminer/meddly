@@ -24,7 +24,7 @@ namespace MEDDLY{
 class highest_inversion_reordering : public reordering_base
 {
 public:
-  virtual void reorderVariables(expert_forest* forest, const int* level2var)
+  virtual void reorderVariables(forest* forest, const int* level2var)
   {
     int size = forest->getDomain()->getNumVariables();
 

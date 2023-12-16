@@ -25,8 +25,8 @@
 // ******************************************************************
 
 MEDDLY::binary_operation::binary_operation(binary_opname* op,
-    unsigned et_slots, expert_forest* arg1, expert_forest* arg2,
-    expert_forest* res) : operation(op, et_slots)
+    unsigned et_slots, forest* arg1, forest* arg2,
+    forest* res) : operation(op, et_slots)
 {
     arg1F = arg1;
     arg2F = arg2;

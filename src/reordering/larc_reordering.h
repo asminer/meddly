@@ -30,7 +30,7 @@ namespace MEDDLY{
 class larc_reordering : public reordering_base
 {
 protected:
-  double calculate_average_ref_count(expert_forest* forest, int level)
+  double calculate_average_ref_count(forest* forest, int level)
   {
     int lvar = forest->getVarByLevel(level);
     int lnum = get_unique_table(forest)->getNumEntries(lvar);
@@ -52,7 +52,7 @@ protected:
   }
 
 public:
-  virtual void reorderVariables(expert_forest* forest, const int* level2var)
+  virtual void reorderVariables(forest* forest, const int* level2var)
   {
     int size = forest->getDomain()->getNumVariables();
 

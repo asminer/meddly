@@ -1142,6 +1142,9 @@ class MEDDLY::forest {
         void validateCacheCounts() const;
         void countNodesByLevel(long* active) const;
 
+        // Sanity check; used in development code.
+        void validateDownPointers(const unpacked_node &nb) const;
+
     // ------------------------------------------------------------
     protected: // protected methods for debugging
     // ------------------------------------------------------------
@@ -1154,6 +1157,56 @@ class MEDDLY::forest {
         */
         virtual void reportForestStats(output &s, const char* pad) const;
 
+    // ------------------------------------------------------------
+    public: // public methods for variable re/ordering
+    // ------------------------------------------------------------
+
+        /*
+         * Reorganize the variables in a certain order.
+         */
+        void reorderVariables(const int* level2var);
+
+        inline void getVariableOrder(int* level2var) const {
+            // Assume sufficient space has been allocated for order
+            level2var[0] = 0;
+            for (unsigned i = 1; i < getNumVariables() + 1; i++) {
+                level2var[i] = var_order->getVarByLevel((int) i);
+            }
+        }
+
+        inline std::shared_ptr<const variable_order> variableOrder() const {
+            return var_order;
+        }
+
+
+        /*
+         * Swap the variables at level and level+1.
+         * This method should only be called by domain.
+         */
+        virtual void swapAdjacentVariables(int level) = 0;
+
+        /*
+         * Move the variable at level high down to level low.
+         * The variables from level low to level high-1 will be moved
+         * one level up.
+         */
+        virtual void moveDownVariable(int high, int low) = 0;
+
+        /*
+         * Move the variable at level low up to level high.
+         * The variables from level low+1 to level high will be moved
+         * one level down.
+         */
+        virtual void moveUpVariable(int low, int high) = 0;
+
+        virtual void dynamicReorderVariables(int top, int bottom) {
+    	    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+        }
+
+        // needed by reordering_base.h
+        inline const unique_table* getUT() {
+            return unique;
+        }
 
 // ===================================================================
 //
@@ -2263,7 +2316,6 @@ inline void MEDDLY::forest::setLogger(logger* L, const char* name) {
 class MEDDLY::expert_forest: public MEDDLY::forest
 {
   public:
-    friend class reordering_base;
 
     /** Constructor.
       @param  d       domain to which this forest belongs to.
@@ -2491,37 +2543,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     */
     virtual enumerator::iterator* makeFixedColumnIter() const;
 
-    /*
-     * Reorganize the variables in a certain order.
-     */
-    void reorderVariables(const int* level2var);
-
-    void getVariableOrder(int* level2var) const;
-
-    std::shared_ptr<const variable_order> variableOrder() const;
-
-    /*
-     * Swap the variables at level and level+1.
-     * This method should only be called by domain.
-     */
-    virtual void swapAdjacentVariables(int level) = 0;
-
-    /*
-     * Move the variable at level high down to level low.
-     * The variables from level low to level high-1 will be moved one level up.
-     */
-    virtual void moveDownVariable(int high, int low) = 0;
-
-    /*
-     * Move the variable at level low up to level high.
-     * The variables from level low+1 to level high will be moved one level down.
-     */
-    virtual void moveUpVariable(int low, int high) = 0;
-
-    virtual void dynamicReorderVariables(int top, int bottom) {
-    	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-    }
-
 
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2628,8 +2649,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     */
     node_handle createReducedExtensibleNodeHelper(int in, unpacked_node &nb);
 
-    // Sanity check; used in development code.
-    void validateDownPointers(const unpacked_node &nb) const;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // |                                                                |
@@ -2770,22 +2789,6 @@ MEDDLY::expert_forest::isTimeToGc() const
 }
 */
 
-
-inline void
-MEDDLY::expert_forest::getVariableOrder(int* level2var) const
-{
-  // Assume sufficient space has been allocated for order
-  level2var[0] = 0;
-  for (unsigned i = 1; i < getNumVariables() + 1; i++) {
-    level2var[i] = var_order->getVarByLevel((int) i);
-  }
-}
-
-inline std::shared_ptr<const MEDDLY::variable_order>
-MEDDLY::expert_forest::variableOrder() const
-{
-  return var_order;
-}
 
 
 #endif

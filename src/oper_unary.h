@@ -41,10 +41,10 @@ class MEDDLY::unary_operation : public operation {
     friend void destroyOperation(unary_operation* &op);
   public:
     unary_operation(unary_opname* code, unsigned et_slots,
-      expert_forest* arg, expert_forest* res);
+      forest* arg, forest* res);
 
     unary_operation(unary_opname* code, unsigned et_slots,
-      expert_forest* arg, opnd_type res);
+      forest* arg, opnd_type res);
 
   protected:
     virtual ~unary_operation();
@@ -71,8 +71,8 @@ class MEDDLY::unary_operation : public operation {
 
 
   protected:
-    expert_forest* argF;
-    expert_forest* resF;
+    forest* argF;
+    forest* resF;
     opnd_type resultType;
 
 };
