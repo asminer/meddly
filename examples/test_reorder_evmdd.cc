@@ -345,11 +345,10 @@ int main(int argc, char *argv[])
 
 //  displayElements(result);
 
-  expert_forest* eevmdd = static_cast<expert_forest*>(evmdd);
-  eevmdd->removeAllComputeTableEntries();
+  evmdd->removeAllComputeTableEntries();
 
   int* level2var_origin = new int[nVariables + 1];
-  eevmdd->getVariableOrder(level2var_origin);
+  evmdd->getVariableOrder(level2var_origin);
 
   // order[0] is unused
   int* level2var = new int[nVariables + 1];
@@ -364,7 +363,7 @@ int main(int argc, char *argv[])
     std::cout << "#Edges (Before): " << result.getEdgeCount() << std::endl;
 
     start.note_time();
-    eevmdd->reorderVariables(level2var);
+    evmdd->reorderVariables(level2var);
 //    displayElements(result);
     std::cout << "#Nodes  (After): " << result.getNodeCount() << std::endl;
     std::cout << "#Edges  (After): " << result.getEdgeCount() << std::endl;
@@ -379,7 +378,7 @@ int main(int argc, char *argv[])
   std::cout << "#Edges (Before): " << result.getEdgeCount() << std::endl;
 
   start.note_time();
-  eevmdd->reorderVariables(level2var_origin);
+  evmdd->reorderVariables(level2var_origin);
 //  displayElements(result);
   std::cout << "#Nodes  (After): " << result.getNodeCount() << std::endl;
   std::cout << "#Edges  (After): " << result.getEdgeCount() << std::endl;

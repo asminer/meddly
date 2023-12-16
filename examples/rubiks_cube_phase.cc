@@ -663,7 +663,7 @@ vector<dd_edge> RubiksCubeModel::buildNextStateFunctions()
 
   // Reorder the relations
   for (int i = 0; i < _config.num_phases; i++) {
-    static_cast<expert_forest*>(_relations[i])->reorderVariables(level2vars[i].data());
+    _relations[i]->reorderVariables(level2vars[i].data());
   }
 
   vector<dd_edge> nsfs;
@@ -751,7 +751,7 @@ void RubiksCubeModel::execute()
 
 void RubiksCubeModel::execute_phase(const dd_edge& initial, const dd_edge& nsf, dd_edge& result)
 {
-  expert_forest* relation = static_cast<expert_forest*>(nsf.getForest());
+  forest* relation = nsf.getForest();
   int* rel_level2var = new int[relation->getNumVariables() + 1];
   relation->getVariableOrder(rel_level2var);
 
@@ -760,7 +760,7 @@ void RubiksCubeModel::execute_phase(const dd_edge& initial, const dd_edge& nsf, 
 
   cout << "Reordering..." << endl;
 
-  expert_forest* state = static_cast<expert_forest*>(initial.getForest());
+  forest* state = initial.getForest();
 
   if (_config.reorder_relation) {
     int* state_level2var = new int[relation->getNumVariables() + 1];
@@ -1182,7 +1182,7 @@ dd_edge RubiksCubeModel::buildFlipMoveHelper(forest* relation, int type3_a,
 
 void RubiksCubeModel::show_node(const dd_edge& e)
 {
-  static_cast<expert_forest*>(e.getForest())->removeAllComputeTableEntries();
+  e.getForest()->removeAllComputeTableEntries();
 
   cout << "# Nodes: " << e.getForest()->getCurrentNumNodes() << endl;
   FILE_output out(stdout);

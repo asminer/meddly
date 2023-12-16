@@ -376,8 +376,7 @@ int main(int argc, const char** argv)
   printf("\n%lg seconds CPU time elapsed\n", stopwatch.get_last_seconds());
   printf("Forest stats:\n");
   FILE_output myout(stdout);
-  expert_forest* ef = (expert_forest*)f;
-  ef->reportStats(myout, "\t",
+  f->reportStats(myout, "\t",
     HUMAN_READABLE_MEMORY  |
     BASIC_STATS | EXTRA_STATS |
     STORAGE_STATS | STORAGE_DETAILED |
@@ -410,7 +409,7 @@ int main(int argc, const char** argv)
     fprintf(outfile, "\n");
   }
 
-  ef->validateCacheCounts();
+  f->validateCacheCounts();
 
   if (build_pdf) {
     solutions.setLabel("queen-cover");

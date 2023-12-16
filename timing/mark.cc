@@ -127,8 +127,8 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
     const unsigned mdots = marks/16;
     const unsigned cdots = counts/16;
 
-    expert_forest* ef = dynamic_cast<expert_forest*> (E.getForest());
-    if (!ef) throw "null expert_forest";
+    forest* ef = E.getForest();
+    if (!ef) throw "null forest";
     node_marker M(ef);
 
     std::cout << "Testing " << name << " (" << M.getSize() << " total nodes)\n";

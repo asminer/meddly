@@ -102,9 +102,8 @@ op_info* getOp(forest* f, old_operation* op)
 void printStats(const char* who, const forest* f)
 {
   printf("%s stats:\n", who);
-  const expert_forest* ef = (expert_forest*) f;
   FILE_output mout(stdout);
-  ef->reportStats(mout, "\t",
+  f->reportStats(mout, "\t",
     HUMAN_READABLE_MEMORY  |
     BASIC_STATS | EXTRA_STATS |
     STORAGE_STATS |
@@ -176,7 +175,7 @@ void reorderVariablesByRebuilding(dd_edge &e)
 {
 	printf("Initial: %ld\n", e.getForest()->getCurrentNumNodes());
 
-	expert_forest* f = (expert_forest*)e.getForest();
+	forest* f = e.getForest();
 	int num_var = f->getNumVariables();
 	int* level2var = new int[num_var + 1];
 	level2var[0] = 0;
@@ -185,7 +184,7 @@ void reorderVariablesByRebuilding(dd_edge &e)
 	}
 	shuffle(level2var, 1, num_var);
 
-	expert_forest* target = (expert_forest*)forest::create(f->getDomain(), f->isForRelations(),
+	forest* target = forest::create(f->getDomain(), f->isForRelations(),
 			f->getRangeType(), f->getEdgeLabeling() , f->getPolicies());
 	target->reorderVariables(level2var);
 	delete[] level2var;

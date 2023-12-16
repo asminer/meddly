@@ -378,7 +378,7 @@ void printStats(const char* who, timer& watch, const dd_edge &node)
   );
   printf("    Stats:\n");
   FILE_output meddlyout(stdout);
-  const expert_forest* ef = (expert_forest*) node.getForest();
+  const forest* ef = node.getForest();
   ef->reportStats(meddlyout, "\t",
     HUMAN_READABLE_MEMORY  |
     BASIC_STATS |

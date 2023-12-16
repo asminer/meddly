@@ -180,12 +180,11 @@ int main(int argc, char *argv[])
   FILE_output myout(stdout);
   result.show(myout);
 
-  expert_forest* emtmxd = static_cast<expert_forest*>(mtmxd);
-  emtmxd->removeAllComputeTableEntries();
+  mtmxd->removeAllComputeTableEntries();
 
   // oldOrder[0] is unused
   int* level2var_origin = new int[nVariables + 1];
-  emtmxd->getVariableOrder(level2var_origin);
+  mtmxd->getVariableOrder(level2var_origin);
 
   // order[0] is unused
   int* level2var = new int[nVariables + 1];
@@ -201,7 +200,7 @@ int main(int argc, char *argv[])
     std::cout << "#Nodes (Before): " << mtmxd->getCurrentNumNodes() << std::endl;
 
     start.note_time();
-    emtmxd->reorderVariables(level2var);
+    mtmxd->reorderVariables(level2var);
     //displayElements(result);
     std::cout << "#Nodes  (After): " << mtmxd->getCurrentNumNodes() << std::endl;
 
@@ -215,7 +214,7 @@ int main(int argc, char *argv[])
   std::cout << "#Nodes (Before): " << mtmxd->getCurrentNumNodes() << std::endl;
 
   start.note_time();
-  emtmxd->reorderVariables(level2var_origin);
+  mtmxd->reorderVariables(level2var_origin);
 //  displayElements(result);
   std::cout << "#Nodes  (After): " << mtmxd->getCurrentNumNodes() << std::endl;
 

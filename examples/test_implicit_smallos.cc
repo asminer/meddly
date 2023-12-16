@@ -109,8 +109,7 @@ return 1;
 void printStats(const char* who, const forest* f)
 {
 printf("%s stats:\n", who);
-const expert_forest* ef = (expert_forest*) f;
-ef->reportStats(meddlyout, "\t",
+f->reportStats(meddlyout, "\t",
 HUMAN_READABLE_MEMORY  |
 BASIC_STATS | EXTRA_STATS |
 STORAGE_STATS | HOLE_MANAGER_STATS

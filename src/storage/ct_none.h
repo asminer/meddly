@@ -855,10 +855,10 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::updateEntry(ct_entry_key* key, const 
   for (unsigned i=0; i<et->getResultSize(); i++) {
 #ifdef DEVELOPMENT_CODE
     ct_typeID t;
-    expert_forest* f;
+    forest* f;
     et->getResultType(i, t, f);
 #else
-    expert_forest* f = et->getResultForest(i);
+    forest* f = et->getResultForest(i);
 #endif
     if (f) {
       MEDDLY_DCASSERT(ct_typeID::NODE==t);
@@ -1555,10 +1555,10 @@ bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
   for (unsigned i=0; i<klen; i++) {
 #ifdef DEVELOPMENT_CODE
     ct_typeID t;
-    expert_forest* f;
+    forest* f;
     et->getKeyType(i, t, f);
 #else
-    expert_forest* f = et->getKeyForest(i);
+    forest* f = et->getKeyForest(i);
 #endif
     if (f) {
       MEDDLY_DCASSERT(ct_typeID::NODE==t);
@@ -1577,10 +1577,10 @@ bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
   for (unsigned i=0; i<et->getResultSize(); i++) {
 #ifdef DEVELOPMENT_CODE
     ct_typeID t;
-    expert_forest* f;
+    forest* f;
     et->getResultType(i, t, f);
 #else
-    expert_forest* f = et->getResultForest(i);
+    forest* f = et->getResultForest(i);
 #endif
     if (f) {
       MEDDLY_DCASSERT(ct_typeID::NODE==t);
@@ -1609,10 +1609,10 @@ bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
   for (unsigned i=0; i<et->getResultSize(); i++) {
 #ifdef DEVELOPMENT_CODE
     ct_typeID t;
-    expert_forest* f;
+    forest* f;
     et->getResultType(i, t, f);
 #else
-    expert_forest* f = et->getResultForest(i);
+    forest* f = et->getResultForest(i);
 #endif
     if (f) {
       MEDDLY_DCASSERT(ct_typeID::NODE == t);
@@ -1667,7 +1667,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
   const unsigned stop = et->getKeySize(reps);
   for (unsigned i=0; i<stop; i++) {
     ct_typeID t;
-    expert_forest* f;
+    forest* f;
     et->getKeyType(i, t, f);
     if (f) {
       MEDDLY_DCASSERT(ct_typeID::NODE == t);
@@ -1687,7 +1687,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
   //
   for (unsigned i=0; i<et->getResultSize(); i++) {
     ct_typeID t;
-    expert_forest* f;
+    forest* f;
     et->getResultType(i, t, f);
     if (f) {
       MEDDLY_DCASSERT(ct_typeID::NODE == t);

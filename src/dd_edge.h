@@ -248,7 +248,6 @@ class MEDDLY::dd_edge {
         dd_edge* prev;          // previous edge in forest registry
         dd_edge* next;          // next edge in forest registry
         friend class forest;
-        friend class expert_forest; // until we move 'markAllRoots'
 
 };
 

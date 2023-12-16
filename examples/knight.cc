@@ -527,8 +527,7 @@ void generate()
     // Memory stats
     std::cout << "Forest stats:\n";
     ostream_output myout(std::cout);
-    expert_forest* ef = (expert_forest*)boolF;
-    ef->reportStats(myout, "\t",
+    boolF->reportStats(myout, "\t",
             HUMAN_READABLE_MEMORY  |
             BASIC_STATS | EXTRA_STATS |
             STORAGE_STATS | STORAGE_DETAILED |
@@ -554,45 +553,4 @@ int main(int argc, const char** argv)
         return 1;
     }
 
-    /*
-    std::cout << "Anding constraints" << std::endl;
-    try {
-        while (i) {
-            std::cout << "    " << std::setw(2) << i << " : ";
-            i--;
-            show_deps(clist[i], NxM);
-            std::cout.flush();
-
-            all *= clist[i]->the_dd;
-            delete clist[i];
-            clist[i] = nullptr;
-
-            std::cout << "  (" << boolF->getCurrentNumNodes() << " nodes)"
-                << std::endl;
-        }
-
-        long allcard;
-        apply(CARDINALITY, all, allcard);
-        std::cout << allcard << " tours total\n";
-
-        // Show solutions
-        enumerator sol(all);
-        for (; sol; ++sol) {
-            std::cout << "Solution:\n";
-            show_solution(std::cout, sol.getAssignments());
-        }
-
-        // Memory stats
-        std::cout << "Forest stats:\n";
-        ostream_output myout(std::cout);
-        expert_forest* ef = (expert_forest*)boolF;
-        ef->reportStats(myout, "\t",
-            expert_forest::HUMAN_READABLE_MEMORY  |
-            expert_forest::BASIC_STATS | expert_forest::EXTRA_STATS |
-            expert_forest::STORAGE_STATS | expert_forest::STORAGE_DETAILED |
-            expert_forest::HOLE_MANAGER_STATS | expert_forest::HOLE_MANAGER_DETAILED
-        );
-    }
-
-    */
 }

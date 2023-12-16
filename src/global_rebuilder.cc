@@ -44,8 +44,8 @@ size_t MEDDLY::global_rebuilder::TransformKeyHasher::operator()(
   return s.finish();
 }
 
-MEDDLY::global_rebuilder::global_rebuilder(expert_forest* source,
-    expert_forest* target) :
+MEDDLY::global_rebuilder::global_rebuilder(forest* source,
+    forest* target) :
     _source(source), _target(target), _hit(0), _total(0) {
   if (_source->getDomain() != _target->getDomain()) {
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
@@ -542,7 +542,7 @@ void MEDDLY::global_rebuilder::TopDownSignatureGenerator::precompute()
 
 int MEDDLY::global_rebuilder::TopDownSignatureGenerator::signature(
     node_handle p) {
-  expert_forest* source = _gr._source;
+  forest* source = _gr._source;
   if (source->getNumVariables() > 999) {
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
   }
@@ -600,13 +600,13 @@ MEDDLY::global_rebuilder::BottomUpSignatureGenerator::BottomUpSignatureGenerator
 
 void MEDDLY::global_rebuilder::BottomUpSignatureGenerator::precompute()
 {
-  expert_forest* source = _gr._source;
+  forest* source = _gr._source;
   int num_vars = (int) source->getNumVariables();
   for(int i = 1; i <= num_vars; i++) {
     int var = source->getVarByLevel(i);
-    int size = source->unique->getSize(var);
+    int size = source->getUT()->getSize(var);
     node_handle* nodes = new node_handle[size];
-    source->unique->getItems(var, nodes, size);
+    source->getUT()->getItems(var, nodes, size);
     for(int j = 0; j < size; j++) {
       if(source->isActiveNode(nodes[j])) {
         _cache_sig.emplace(nodes[j], signature(nodes[j]));
@@ -618,7 +618,7 @@ void MEDDLY::global_rebuilder::BottomUpSignatureGenerator::precompute()
 
 int MEDDLY::global_rebuilder::BottomUpSignatureGenerator::signature(node_handle p)
 {
-  expert_forest* source = _gr._source;
+  forest* source = _gr._source;
   if (source->getNumVariables() > 999) {
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
   }
@@ -641,7 +641,7 @@ int MEDDLY::global_rebuilder::BottomUpSignatureGenerator::signature(node_handle 
 
 int MEDDLY::global_rebuilder::BottomUpSignatureGenerator::rec_signature(node_handle p)
 {
-  expert_forest* source = _gr._source;
+  forest* source = _gr._source;
 
   if(source->isTerminalNode(p)) {
     return (p == 0 ? 0 : PRIMES[0]);

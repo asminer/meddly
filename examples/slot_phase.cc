@@ -58,8 +58,7 @@ int usage(const char* who)
 void printStats(const char* who, const forest* f)
 {
   printf("%s stats:\n", who);
-  const expert_forest* ef = (expert_forest*) f;
-  ef->reportStats(meddlyout, "\t",
+  f->reportStats(meddlyout, "\t",
     HUMAN_READABLE_MEMORY  |
     BASIC_STATS | EXTRA_STATS |
     STORAGE_STATS | HOLE_MANAGER_STATS |
@@ -161,7 +160,7 @@ char* Go(int i, int N)
 
 void show_node(const dd_edge& e)
 {
-  static_cast<expert_forest*>(e.getForest())->removeAllComputeTableEntries();
+  e.getForest()->removeAllComputeTableEntries();
 
   cout << "# Nodes: " << e.getForest()->getCurrentNumNodes() << endl;
   cout << "# Peak Nodes: " << e.getForest()->getPeakNumNodes() << endl;
@@ -185,11 +184,11 @@ void execute_phase(const dd_edge& initial, const dd_edge& nsf, dd_edge& result, 
 
     initial.getForest()->resetPeakNumNodes();
 
-    expert_forest* relation = static_cast<expert_forest*>(nsf.getForest());
+    forest* relation = nsf.getForest();
     int* rel_level2var = new int[relation->getNumVariables() + 1];
     relation->getVariableOrder(rel_level2var);
 
-    expert_forest* state = static_cast<expert_forest*>(initial.getForest());
+    forest* state = initial.getForest();
 
     state->reorderVariables(rel_level2var);
     delete[] rel_level2var;
@@ -313,12 +312,12 @@ void runWithArgs(int N, char method, int batchsize, forest::logger* LOG)
     std::rotate(level2var + 1, level2var + ((N - 1) * 8 + 1), level2var + (N * 8 + 1));
 
     for (auto& nsf : nsfs) {
-      static_cast<expert_forest*>(nsf.getForest())->reorderVariables(level2var);
+      nsf.getForest()->reorderVariables(level2var);
       std::rotate(level2var + 1, level2var + ((N / num_phases) * 8 + 1), level2var + (N * 8 + 1));
     }
 
-    static_cast<expert_forest*>(nsfs.back().getForest())->getVariableOrder(level2var);
-    static_cast<expert_forest*>(mdd)->reorderVariables(level2var);
+    nsfs.back().getForest()->getVariableOrder(level2var);
+    mdd->reorderVariables(level2var);
 
     delete[] level2var;
   }

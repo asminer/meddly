@@ -38,8 +38,8 @@ namespace MEDDLY {
 
 class MEDDLY::mdd2index_operation : public unary_operation {
   public:
-    mdd2index_operation(unary_opname* oc, expert_forest* arg,
-      expert_forest* res);
+    mdd2index_operation(unary_opname* oc, forest* arg,
+      forest* res);
 
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
 
@@ -47,7 +47,7 @@ class MEDDLY::mdd2index_operation : public unary_operation {
 };
 
 MEDDLY::mdd2index_operation::mdd2index_operation(unary_opname* oc,
-  expert_forest* arg, expert_forest* res)
+  forest* arg, forest* res)
   : unary_operation(oc, 1, arg, res)
 {
   // answer[0] : node
@@ -176,7 +176,7 @@ class MEDDLY::mdd2index_opname : public unary_opname {
   public:
     mdd2index_opname();
     virtual unary_operation*
-      buildOperation(expert_forest* ar, expert_forest* res);
+      buildOperation(forest* ar, forest* res);
 };
 
 MEDDLY::mdd2index_opname::mdd2index_opname()
@@ -186,7 +186,7 @@ MEDDLY::mdd2index_opname::mdd2index_opname()
 
 MEDDLY::unary_operation*
 MEDDLY::mdd2index_opname
-::buildOperation(expert_forest* arg, expert_forest* res)
+::buildOperation(forest* arg, forest* res)
 {
   if (0==arg || 0==res) return 0;
 

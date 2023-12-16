@@ -56,7 +56,7 @@ bool isNarrow[Vars+1];
 
 void rotateMove(const int* delta, int N, dd_edge &answer)
 {
-  expert_forest* EF = (expert_forest*) answer.getForest();
+  forest* EF = answer.getForest();
   int K = Vars;
 
   /*
@@ -94,7 +94,7 @@ void rotateMove(const int* delta, int N, dd_edge &answer)
 
 void exchangeMove(bool left, dd_edge &answer)
 {
-  expert_forest* EF = (expert_forest*) answer.getForest();
+  forest* EF = answer.getForest();
   int K = EF->getNumVariables();
 
   node_handle bottom = EF->handleForValue(1);
@@ -226,8 +226,7 @@ void Square1NSF(dd_edge &answer)
 void printStats(const char* who, const forest* f)
 {
   printf("%s stats:\n", who);
-  const expert_forest* ef = (expert_forest*) f;
-  ef->reportStats(meddlyout, "\t",
+  f->reportStats(meddlyout, "\t",
     HUMAN_READABLE_MEMORY  |
     BASIC_STATS | EXTRA_STATS |
     STORAGE_STATS | HOLE_MANAGER_STATS |

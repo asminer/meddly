@@ -216,8 +216,6 @@ void MEDDLY::mdd_writer::finish()
 MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
 {
     MEDDLY_DCASSERT(F);
-    expert_forest* EF = dynamic_cast<expert_forest*> (F);
-    MEDDLY_DCASSERT(EF);
 
     rptr = 0;
 
@@ -290,7 +288,7 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
             //
             // Reduce the node, and update the translation
             //
-            map[node_index] = EF->createReducedNode(-1, nb);
+            map[node_index] = F->createReducedNode(-1, nb);
 
 #ifdef DEBUG_READ
             std::cerr << "File node " << node_index << " reduced to ";
@@ -355,7 +353,7 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
         }
 
 #ifdef DEVELOPMENT_CODE
-        EF->validateIncounts(true);
+        F->validateIncounts(true);
 #endif
 #ifdef DEBUG_READ
     } // try

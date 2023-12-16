@@ -37,15 +37,15 @@ namespace MEDDLY {
 
 class MEDDLY::multiply_mdd : public generic_binary_mdd {
   public:
-    multiply_mdd(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    multiply_mdd(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::multiply_mdd::multiply_mdd(binary_opname* opcode,
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  forest* arg1, forest* arg2, forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
   operationCommutes();
@@ -115,15 +115,15 @@ bool MEDDLY::multiply_mdd::checkTerminals(node_handle a, node_handle b, node_han
 
 class MEDDLY::multiply_mxd : public generic_binary_mxd {
   public:
-    multiply_mxd(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    multiply_mxd(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::multiply_mxd::multiply_mxd(binary_opname* opcode,
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  forest* arg1, forest* arg2, forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
   operationCommutes();
@@ -193,8 +193,8 @@ bool MEDDLY::multiply_mxd::checkTerminals(node_handle a, node_handle b, node_han
 
 class MEDDLY::multiply_evplus : public generic_binary_evplus {
   public:
-    multiply_evplus(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    multiply_evplus(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
@@ -202,7 +202,7 @@ class MEDDLY::multiply_evplus : public generic_binary_evplus {
 };
 
 MEDDLY::multiply_evplus::multiply_evplus(binary_opname* opcode,
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  forest* arg1, forest* arg2, forest* res)
   : generic_binary_evplus(opcode, arg1, arg2, res)
 {
   operationCommutes();
@@ -232,8 +232,8 @@ bool MEDDLY::multiply_evplus::checkTerminals(long aev, node_handle a, long bev, 
 
 class MEDDLY::multiply_evtimes : public generic_binary_evtimes {
   public:
-    multiply_evtimes(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    multiply_evtimes(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(float aev, node_handle a, float bev, node_handle b,
@@ -241,7 +241,7 @@ class MEDDLY::multiply_evtimes : public generic_binary_evtimes {
 };
 
 MEDDLY::multiply_evtimes::multiply_evtimes(binary_opname* opcode,
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  forest* arg1, forest* arg2, forest* res)
   : generic_binary_evtimes(opcode, arg1, arg2, res)
 {
   operationCommutes();
@@ -272,8 +272,8 @@ bool MEDDLY::multiply_evtimes::checkTerminals(float aev, node_handle a,
 class MEDDLY::multiply_opname : public binary_opname {
   public:
     multiply_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r);
+    virtual binary_operation* buildOperation(forest* a1,
+      forest* a2, forest* r);
 };
 
 MEDDLY::multiply_opname::multiply_opname()
@@ -282,8 +282,8 @@ MEDDLY::multiply_opname::multiply_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::multiply_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r)
+MEDDLY::multiply_opname::buildOperation(forest* a1, forest* a2,
+  forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 

@@ -617,8 +617,7 @@ int main(int argc, const char** argv)
         // Memory stats
         std::cout << "Forest stats:\n";
         ostream_output myout(std::cout);
-        expert_forest* ef = (expert_forest*)boolF;
-        ef->reportStats(myout, "\t",
+        boolF->reportStats(myout, "\t",
             HUMAN_READABLE_MEMORY  |
             BASIC_STATS | EXTRA_STATS |
             STORAGE_STATS | STORAGE_DETAILED |

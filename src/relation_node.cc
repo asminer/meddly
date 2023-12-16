@@ -29,7 +29,7 @@
 // ******************************************************************
 
 MEDDLY::relation_node::relation_node(unsigned long sign, forest* f, int lvl, node_handle d, long enable_val, long fire_val, long inh_val) :
-f(static_cast<expert_forest*>(f))
+f(f)
 {
   signature  = sign;
   level = lvl;

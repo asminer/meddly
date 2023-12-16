@@ -35,15 +35,15 @@ namespace MEDDLY {
 
 class MEDDLY::diffr_mdd : public generic_binary_mdd {
   public:
-    diffr_mdd(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    diffr_mdd(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::diffr_mdd::diffr_mdd(binary_opname* opcode,
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  forest* arg1, forest* arg2, forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
   //  difference does NOT commute
@@ -88,15 +88,15 @@ bool MEDDLY::diffr_mdd::checkTerminals(node_handle a, node_handle b, node_handle
 
 class MEDDLY::diffr_mxd : public generic_binary_mxd {
   public:
-    diffr_mxd(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    diffr_mxd(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::diffr_mxd::diffr_mxd(binary_opname* opcode,
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  forest* arg1, forest* arg2, forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
   //  difference does NOT commute
@@ -141,8 +141,8 @@ bool MEDDLY::diffr_mxd::checkTerminals(node_handle a, node_handle b, node_handle
 class MEDDLY::diffr_opname : public binary_opname {
   public:
     diffr_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r);
+    virtual binary_operation* buildOperation(forest* a1,
+      forest* a2, forest* r);
 };
 
 MEDDLY::diffr_opname::diffr_opname()
@@ -151,8 +151,8 @@ MEDDLY::diffr_opname::diffr_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::diffr_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r)
+MEDDLY::diffr_opname::buildOperation(forest* a1, forest* a2,
+  forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 

@@ -40,7 +40,7 @@ const unsigned TOTAL = BATCHSIZE * NUMBATCHES;
 const unsigned VARSIZE = 10;
 
 
-void test_MT_full_Reductions(expert_forest* f, const char* what)
+void test_MT_full_Reductions(forest* f, const char* what)
 {
     dd_edge zero(f), one(f), two(f), x1(f), x2(f);
 
@@ -101,7 +101,7 @@ void test_MT_full_Reductions(expert_forest* f, const char* what)
 }
 
 
-void test_EV_full_Reductions(expert_forest* f, const char* what)
+void test_EV_full_Reductions(forest* f, const char* what)
 {
     dd_edge zero(f), x1(f), x2(f);
 
@@ -183,25 +183,25 @@ int main(int argc, const char** argv)
         p.setFullStorage();
         F = forest::create(D, false, range_type::INTEGER,
                         edge_labeling::MULTI_TERMINAL, p);
-        test_MT_full_Reductions((expert_forest*) F, "  full");
+        test_MT_full_Reductions(F, "  full");
         destroyForest(F);
 
         p.setSparseStorage();
         F = forest::create(D, false, range_type::INTEGER,
                         edge_labeling::MULTI_TERMINAL, p);
-        test_MT_full_Reductions((expert_forest*) F, "sparse");
+        test_MT_full_Reductions(F, "sparse");
         destroyForest(F);
 
         p.setFullStorage();
         F = forest::create(D, false, range_type::INTEGER,
                         edge_labeling::EVPLUS, p);
-        test_EV_full_Reductions((expert_forest*) F, "  full");
+        test_EV_full_Reductions(F, "  full");
         destroyForest(F);
 
         p.setSparseStorage();
         F = forest::create(D, false, range_type::INTEGER,
                         edge_labeling::EVPLUS, p);
-        test_EV_full_Reductions((expert_forest*) F, "sparse");
+        test_EV_full_Reductions(F, "sparse");
         destroyForest(F);
 
         std::cout << "\n";

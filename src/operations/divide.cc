@@ -36,8 +36,8 @@ namespace MEDDLY {
 template <typename REAL>
 class divide_mdd : public generic_binary_mdd {
   public:
-    divide_mdd(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res)
+    divide_mdd(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res)
       : generic_binary_mdd(opcode, arg1, arg2, res) { }
 
   protected:
@@ -73,8 +73,8 @@ namespace MEDDLY {
 template <typename REAL>
 class divide_mxd : public generic_binbylevel_mxd {
   public:
-    divide_mxd(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res)
+    divide_mxd(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res)
       : generic_binbylevel_mxd(opcode, arg1, arg2, res) { }
 
   protected:
@@ -108,8 +108,8 @@ bool divide_mxd<REAL>
 class MEDDLY::divide_opname : public binary_opname {
   public:
     divide_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r);
+    virtual binary_operation* buildOperation(forest* a1,
+      forest* a2, forest* r);
 };
 
 MEDDLY::divide_opname::divide_opname()
@@ -118,8 +118,8 @@ MEDDLY::divide_opname::divide_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::divide_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r)
+MEDDLY::divide_opname::buildOperation(forest* a1, forest* a2,
+  forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 

@@ -1195,8 +1195,7 @@ class rubiks {
     void printStats(MEDDLY::output &out, const char* who, const forest* f)
     {
       out << who << " stats:\n";
-      const expert_forest* ef = (expert_forest*) f;
-      ef->reportStats(out, "\t",
+      f->reportStats(out, "\t",
           HUMAN_READABLE_MEMORY  |
           BASIC_STATS | EXTRA_STATS |
           UNIQUE_TABLE_STATS |

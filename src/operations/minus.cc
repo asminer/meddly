@@ -37,15 +37,15 @@ namespace MEDDLY {
 
 class MEDDLY::minus_mdd : public generic_binary_mdd {
   public:
-    minus_mdd(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    minus_mdd(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::minus_mdd::minus_mdd(binary_opname* opcode,
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  forest* arg1, forest* arg2, forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
 }
@@ -86,15 +86,15 @@ bool MEDDLY::minus_mdd::checkTerminals(node_handle a, node_handle b, node_handle
 
 class MEDDLY::minus_mxd : public generic_binary_mxd {
   public:
-    minus_mxd(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    minus_mxd(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
 MEDDLY::minus_mxd::minus_mxd(binary_opname* opcode,
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  forest* arg1, forest* arg2, forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
 }
@@ -128,8 +128,8 @@ bool MEDDLY::minus_mxd::checkTerminals(node_handle a, node_handle b, node_handle
 
 class MEDDLY::minus_evplus : public generic_binary_evplus {
   public:
-    minus_evplus(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    minus_evplus(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
@@ -137,7 +137,7 @@ class MEDDLY::minus_evplus : public generic_binary_evplus {
 };
 
 MEDDLY::minus_evplus::minus_evplus(binary_opname* opcode,
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  forest* arg1, forest* arg2, forest* res)
   : generic_binary_evplus(opcode, arg1, arg2, res)
 {
 }
@@ -167,8 +167,8 @@ bool MEDDLY::minus_evplus::checkTerminals(long aev, node_handle a, long bev, nod
 
 class MEDDLY::minus_evtimes : public generic_binary_evtimes {
   public:
-    minus_evtimes(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    minus_evtimes(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(float aev, node_handle a, float bev, node_handle b,
@@ -176,7 +176,7 @@ class MEDDLY::minus_evtimes : public generic_binary_evtimes {
 };
 
 MEDDLY::minus_evtimes::minus_evtimes(binary_opname* opcode,
-  expert_forest* arg1, expert_forest* arg2, expert_forest* res)
+  forest* arg1, forest* arg2, forest* res)
   : generic_binary_evtimes(opcode, arg1, arg2, res)
 {
 }
@@ -207,8 +207,8 @@ bool MEDDLY::minus_evtimes::checkTerminals(float aev, node_handle a,
 class MEDDLY::minus_opname : public binary_opname {
   public:
     minus_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r);
+    virtual binary_operation* buildOperation(forest* a1,
+      forest* a2, forest* r);
 };
 
 MEDDLY::minus_opname::minus_opname()
@@ -217,8 +217,8 @@ MEDDLY::minus_opname::minus_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::minus_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r)
+MEDDLY::minus_opname::buildOperation(forest* a1, forest* a2,
+  forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 

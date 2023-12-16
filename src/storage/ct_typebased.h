@@ -1020,7 +1020,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::updateEntry(ct_entry_key* key, c
   int* ptr = entry_result;
   for (unsigned i=0; i<et->getResultSize(); i++) {
     ct_typeID t;
-    expert_forest* f;
+    forest* f;
     et->getResultType(i, t, f);
     MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
     if (f) {
@@ -1376,7 +1376,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       //
       for (unsigned i=0; i<klen; i++) {
         ct_typeID t;
-        expert_forest* ef;
+        forest* ef;
         et->getKeyType(i, t, ef);
         MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
         if (f == ef) {
@@ -1395,7 +1395,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       //
       for (unsigned i=0; i<et->getResultSize(); i++) {
         ct_typeID t;
-        expert_forest* ef;
+        forest* ef;
         et->getResultType(i, t, ef);
         MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
         if (f == ef) {
@@ -1697,7 +1697,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   //
   for (unsigned i=0; i<klen; i++) {
     ct_typeID t;
-    expert_forest* f;
+    forest* f;
     et->getKeyType(i, t, f);
     MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
     if (f) {
@@ -1727,7 +1727,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   //
   for (unsigned i=0; i<et->getResultSize(); i++) {
     ct_typeID t;
-    expert_forest* f;
+    forest* f;
     et->getResultType(i, t, f);
     MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
     if (f) {
@@ -1791,7 +1791,7 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   //
   for (unsigned i=0; i<et->getResultSize(); i++) {
     ct_typeID t;
-    expert_forest* f;
+    forest* f;
     et->getResultType(i, t, f);
     MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
     if (f) {
@@ -1877,7 +1877,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   const unsigned stop = et->getKeySize(reps);
   for (unsigned i=0; i<stop; i++) {
     ct_typeID t;
-    expert_forest* f;
+    forest* f;
     et->getKeyType(i, t, f);
     MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
     //
@@ -1922,7 +1922,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   //
   for (unsigned i=0; i<et->getResultSize(); i++) {
     ct_typeID t;
-    expert_forest* f;
+    forest* f;
     et->getResultType(i, t, f);
     MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
     //

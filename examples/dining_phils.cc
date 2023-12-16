@@ -371,9 +371,8 @@ void philsModel::eventsForPhil(int phil, dd_edge &e)
 void printStats(const char* who, const forest* f)
 {
   printf("%s stats:\n", who);
-  const expert_forest* ef = (expert_forest*) f;
   FILE_output mout(stdout);
-  ef->reportStats(mout, "\t",
+  f->reportStats(mout, "\t",
     HUMAN_READABLE_MEMORY  |
     BASIC_STATS | EXTRA_STATS |
     STORAGE_STATS | STORAGE_DETAILED |

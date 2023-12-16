@@ -474,7 +474,6 @@ void testIndexSet(domain* d, const dd_edge& mdd)
   // Create a EV+MDD forest in this domain (to store index set)
   forest* evplusmdd = forest::create(d, false, range_type::INTEGER, edge_labeling::INDEX_SET);
   assert(evplusmdd);
-  expert_forest* ef = static_cast<expert_forest*>(evplusmdd);
 
   // Convert MDD to Index Set EV+MDD and print the states
   dd_edge indexSet(evplusmdd);
@@ -484,7 +483,7 @@ void testIndexSet(domain* d, const dd_edge& mdd)
   double cardinality = indexSet.getCardinality();
   int node = indexSet.getNode();
   fprintf(stderr, "Cardinality of node %d: %d\n", node,
-      ef->getIndexSetCardinality(node));
+      evplusmdd->getIndexSetCardinality(node));
 
   // Print index set elements
   int element[N];
@@ -511,20 +510,20 @@ void testIndexSet(domain* d, const dd_edge& mdd)
       if (visited.find(n) != visited.end()) continue;
       visited.insert(n);
       // explore n
-      if (ef->isFullNode(n)) {
-        int sz = ef->getFullNodeSize(n);
+      if (evplusmdd->isFullNode(n)) {
+        int sz = evplusmdd->getFullNodeSize(n);
         for (int i = 0; i < sz; i++)
         {
-          int dp = ef->getFullNodeDownPtr(n, i);
-          if (!ef->isTerminalNode(dp) && visited.find(dp) == visited.end())
+          int dp = evplusmdd->getFullNodeDownPtr(n, i);
+          if (!evplusmdd->isTerminalNode(dp) && visited.find(dp) == visited.end())
             toVisit.push_back(dp);
         }
       } else {
-        int sz = ef->getSparseNodeSize(n);
+        int sz = evplusmdd->getSparseNodeSize(n);
         for (int i = 0; i < sz; i++)
         {
-          int dp = ef->getSparseNodeDownPtr(n, i);
-          if (!ef->isTerminalNode(dp) && visited.find(dp) == visited.end())
+          int dp = evplusmdd->getSparseNodeDownPtr(n, i);
+          if (!evplusmdd->isTerminalNode(dp) && visited.find(dp) == visited.end())
             toVisit.push_back(dp);
         }
       }
@@ -535,8 +534,8 @@ void testIndexSet(domain* d, const dd_edge& mdd)
         iter != visited.end(); ++iter)
     {
       fprintf(stderr, "Node %d: Cardinality %d, Height: %d, InCount: %d\n",
-          *iter, ef->getIndexSetCardinality(*iter),
-          ef->getNodeHeight(*iter), ef->getInCount(*iter));
+          *iter, evplusmdd->getIndexSetCardinality(*iter),
+          evplusmdd->getNodeHeight(*iter), evplusmdd->getInCount(*iter));
     }
   }
 }

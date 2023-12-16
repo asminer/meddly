@@ -270,8 +270,8 @@ int main(int argc, const char** argv)
   domain* d = domain::createBottomUp(varsizes, N);
   assert(d);
   delete[] varsizes;
-  expert_forest* f = (expert_forest*)
-    forest::create(d, false, range_type::INTEGER, edge_labeling::MULTI_TERMINAL, p);
+  forest* f = forest::create(d, MEDDLY::SET, range_type::INTEGER,
+          edge_labeling::MULTI_TERMINAL, p);
   assert(f);
 
   std::ofstream log;

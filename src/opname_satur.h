@@ -132,7 +132,7 @@ class MEDDLY::satpregen_opname : public specialized_opname {
         void unionLevels();
 
         forest* insetF;
-        expert_forest* mxdF;
+        forest* mxdF;
         forest* outsetF;
         unsigned K;
         // array of sub-relations
@@ -260,7 +260,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
         virtual ~subevent();
 
         /// Get the forest to which this function belongs to.
-        expert_forest* getForest();
+        forest* getForest();
 
         /// Get number of variables this function depends on.
         int getNumVars() const;
@@ -307,7 +307,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
         int num_vars;
         dd_edge root;
         int top;
-        expert_forest* f;
+        forest* f;
         int** unpminterms;
         int** pminterms;
         int num_minterms;
@@ -335,7 +335,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
         virtual ~event();
 
         /// Get the forest to which the subevents belong to
-        inline expert_forest* getForest() { return f; }
+        inline forest* getForest() { return f; }
 
         /// Get number of subevents
         inline int getNumOfSubevents() const { return num_subevents; }
@@ -389,7 +389,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
         int* vars;
         dd_edge root;
         bool needs_rebuilding;
-        expert_forest* f;
+        forest* f;
 
         bool is_disabled;
         int num_firing_vars;
@@ -424,13 +424,13 @@ class MEDDLY::satotf_opname : public specialized_opname {
         virtual ~otf_relation();
 
         /// Returns the MDD forest that stores the initial set of states
-        expert_forest* getInForest() const;
+        forest* getInForest() const;
 
         /// Returns the MXD forest that stores the events
-        expert_forest* getRelForest() const;
+        forest* getRelForest() const;
 
         /// Returns the MDD forest that stores the resultant set of states
-        expert_forest* getOutForest() const;
+        forest* getOutForest() const;
 
         /// Returns true if the local state is already confirmed.
         bool isConfirmed(int level, int index) const;
@@ -516,9 +516,9 @@ class MEDDLY::satotf_opname : public specialized_opname {
             // std::unordered_map<node_handle, node_handle>& cache);
 
       private:
-        expert_forest* insetF;
-        expert_forest* mxdF;
-        expert_forest* outsetF;
+        forest* insetF;
+        forest* mxdF;
+        forest* outsetF;
         int num_levels;
 
         // All events that begin at level i,
@@ -563,7 +563,7 @@ class MEDDLY::satotf_opname : public specialized_opname {
 // ******************************************************************
 
 
-inline MEDDLY::expert_forest*
+inline MEDDLY::forest*
 MEDDLY::satotf_opname::subevent::getForest() {
   return f;
 }
@@ -605,19 +605,19 @@ MEDDLY::satotf_opname::subevent::usesExtensibleVariables() const {
 
 // ****************************************************************************
 
-inline MEDDLY::expert_forest*
+inline MEDDLY::forest*
 MEDDLY::satotf_opname::otf_relation::getInForest() const
 {
   return insetF;
 }
 
-inline MEDDLY::expert_forest*
+inline MEDDLY::forest*
 MEDDLY::satotf_opname::otf_relation::getRelForest() const
 {
   return mxdF;
 }
 
-inline MEDDLY::expert_forest*
+inline MEDDLY::forest*
 MEDDLY::satotf_opname::otf_relation::getOutForest() const
 {
   return outsetF;
@@ -720,15 +720,15 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         virtual ~implicit_relation();
 
         /// Returns the Relation forest that stores the mix of relation nodes and mxd nodes
-        expert_forest* getMixRelForest() const;
+        forest* getMixRelForest() const;
 
 
         /// Returns the MDD forest that stores the initial set of states
-        expert_forest* getInForest() const;
+        forest* getInForest() const;
 
 
         /// Returns the MDD forest that stores the resultant set of states
-        expert_forest* getOutForest() const;
+        forest* getOutForest() const;
 
         /// Returns true iff a state in \a constraint is reachable
         /// from the states in \a initial_states
@@ -780,9 +780,9 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         bool isReserved(rel_node_handle n);
 
       private:
-        expert_forest* insetF;
-        expert_forest* outsetF;
-        expert_forest* mixRelF;
+        forest* insetF;
+        forest* outsetF;
+        forest* mixRelF;
 
         int num_levels;
 
@@ -859,11 +859,11 @@ class MEDDLY::satimpl_opname: public specialized_opname {
         dd_edge buildEventMxd(rel_node_handle event_top, forest *mxd);
 
         /// Get relation forest
-        expert_forest* getRelForest() const;
+        forest* getRelForest() const;
 
 
       private:
-        expert_forest* mxdF;
+        forest* mxdF;
 
      public:
 
@@ -919,19 +919,19 @@ MEDDLY::satimpl_opname::implicit_relation::isReserved(rel_node_handle n)
 
 //************************************************************************
 
-inline MEDDLY::expert_forest*
+inline MEDDLY::forest*
 MEDDLY::satimpl_opname::implicit_relation::getInForest() const
 {
   return insetF;
 }
 
-inline MEDDLY::expert_forest*
+inline MEDDLY::forest*
 MEDDLY::satimpl_opname::implicit_relation::getOutForest() const
 {
   return outsetF;
 }
 
-inline MEDDLY::expert_forest*
+inline MEDDLY::forest*
 MEDDLY::satimpl_opname::implicit_relation::getMixRelForest() const
 {
   return mixRelF;
@@ -963,7 +963,7 @@ MEDDLY::satimpl_opname::implicit_relation::arrayForLevel(int level) const
 
 // ****************************************************************************
 
-inline MEDDLY::expert_forest*
+inline MEDDLY::forest*
 MEDDLY::satimpl_opname::implicit_relation::getRelForest() const
 {
   return mxdF;
@@ -1062,7 +1062,7 @@ class MEDDLY::sathyb_opname: public specialized_opname {
       //semievent* clone();
 
       /// Get the forest to which this function belongs to.
-      expert_forest* getForest();
+      forest* getForest();
 
       /// Get number of variables this function depends on.
       int getNumVars() const; // Returns 1 for implicit node
@@ -1150,7 +1150,7 @@ class MEDDLY::sathyb_opname: public specialized_opname {
       node_handle down;
 
 
-      expert_forest* f;
+      forest* f;
       int** unpminterms; // unpminterms[0] for implicit node
       long enable;
       int** pminterms; // pminterms[0] for implicit node
@@ -1183,7 +1183,7 @@ class MEDDLY::sathyb_opname: public specialized_opname {
       virtual ~event();
 
       /// Get the forest to which the subevents belong to
-      inline expert_forest* getForest() { return f; }
+      inline forest* getForest() { return f; }
 
       /// Get number of subevents
       inline int getNumOfSubevents() const { return num_subevents; }
@@ -1274,7 +1274,7 @@ class MEDDLY::sathyb_opname: public specialized_opname {
       // set because multiple root_handles may exist if sub-events & relNodes are not conjuncted
       std::set<node_handle> root_handle;
       bool needs_rebuilding;
-      expert_forest* f;
+      forest* f;
       dd_edge root;
       bool is_disabled;
       int num_firing_vars;
@@ -1327,15 +1327,15 @@ class MEDDLY::sathyb_opname: public specialized_opname {
         virtual ~hybrid_relation();
 
         /// Returns the Relation forest that stores the mix of relation nodes and mxd nodes
-        expert_forest* getHybridForest() const;
+        forest* getHybridForest() const;
 
 
         /// Returns the MDD forest that stores the initial set of states
-        expert_forest* getInForest() const;
+        forest* getInForest() const;
 
 
         /// Returns the MDD forest that stores the resultant set of states
-        expert_forest* getOutForest() const;
+        forest* getOutForest() const;
 
 
         /// If only relation_nodes are present
@@ -1344,9 +1344,9 @@ class MEDDLY::sathyb_opname: public specialized_opname {
         std::vector<node_handle> getRelNodeAtLevelWithEffect(int level, long effect);
 
       private:
-        expert_forest* insetF;
-        expert_forest* outsetF;
-        expert_forest* hybRelF;
+        forest* insetF;
+        forest* outsetF;
+        forest* hybRelF;
 
         int num_levels;
 
@@ -1498,19 +1498,19 @@ class MEDDLY::sathyb_opname: public specialized_opname {
 // *                                                                *
 // ******************************************************************
 
-inline MEDDLY::expert_forest*
+inline MEDDLY::forest*
 MEDDLY::sathyb_opname::hybrid_relation::getInForest() const
 {
   return insetF;
 }
 
-inline MEDDLY::expert_forest*
+inline MEDDLY::forest*
 MEDDLY::sathyb_opname::hybrid_relation::getOutForest() const
 {
   return outsetF;
 }
 
-inline MEDDLY::expert_forest*
+inline MEDDLY::forest*
 MEDDLY::sathyb_opname::hybrid_relation::getHybridForest() const
 {
   return hybRelF;
@@ -1558,7 +1558,7 @@ MEDDLY::sathyb_opname::hybrid_relation::isConfirmedState(int level,int i)
 // ******************************************************************
 
 
-inline MEDDLY::expert_forest*
+inline MEDDLY::forest*
 MEDDLY::sathyb_opname::subevent::getForest() {
   return f;
 }

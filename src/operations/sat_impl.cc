@@ -68,9 +68,9 @@ MEDDLY::satimpl_opname::~satimpl_opname()
 
 MEDDLY::satimpl_opname::implicit_relation::implicit_relation(forest* inmdd, forest* relmxd,
                                                              forest* outmdd)
-: insetF(static_cast<expert_forest*>(inmdd)), outsetF(static_cast<expert_forest*>(outmdd)), mixRelF(static_cast<expert_forest*>(relmxd))
+: insetF(inmdd), outsetF(outmdd), mixRelF(relmxd)
 {
-  mixRelF = static_cast<expert_forest*>(relmxd);
+  mixRelF = relmxd;
 
   if (0==insetF || 0==outsetF || 0==mixRelF ) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 
@@ -183,7 +183,7 @@ void findConfirmedStatesImpl(MEDDLY::satimpl_opname::implicit_relation* rel,
   if (level == 0) return;
   if (visited.find(mdd) != visited.end()) return;
 
-  MEDDLY::expert_forest* insetF = rel->getInForest();
+  MEDDLY::forest* insetF = rel->getInForest();
   int mdd_level = insetF->getNodeLevel(mdd);
   if (MEDDLY::isLevelAbove(level, mdd_level)) {
     // skipped level; confirm all local states at this level
@@ -419,7 +419,7 @@ MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
     }
 
   node_handle monolithic_nsf_handle = monolithic_nsf->getNode();
-  mxdF = (expert_forest*)mxd;
+  mxdF = (forest*)mxd;
 
   /*for(int i = 0; i<nEvents;i++)
    {
@@ -442,7 +442,7 @@ MEDDLY::satimpl_opname::implicit_relation::buildEventMxd(rel_node_handle eventTo
   rel_node_handle* rnh_array = (rel_node_handle*)malloc((nVars+1)*sizeof(rel_node_handle));
   // int top_level = Rnode->getLevel();
 
-  expert_forest* ef = (expert_forest*) mxd;
+  forest* ef = (forest*) mxd;
 
   //Get relation node handles
   for (int i=nVars; i>=1; i--)
@@ -594,7 +594,7 @@ class MEDDLY::saturation_impl_by_events_op : public unary_operation {
   common_impl_dfs_by_events_mt* parent;
 public:
   saturation_impl_by_events_op(common_impl_dfs_by_events_mt* p,
-                               expert_forest* argF, expert_forest* resF);
+                               forest* argF, forest* resF);
   virtual ~saturation_impl_by_events_op();
 
   node_handle saturate(node_handle mdd);
@@ -688,9 +688,9 @@ protected:
 
   satimpl_opname::implicit_relation* rel;
 
-  expert_forest* arg1F;
-  expert_forest* arg2F;
-  expert_forest* resF;
+  forest* arg1F;
+  forest* arg2F;
+  forest* resF;
 
 protected:
   class indexq {
@@ -1163,9 +1163,9 @@ MEDDLY::common_impl_dfs_by_events_mt::common_impl_dfs_by_events_mt(
   freeqs = 0;
   freebufs = 0;
   rel = relation;
-  arg1F = static_cast<expert_forest*>(rel->getInForest());
-  //arg2F = static_cast<expert_forest*>(rel->getInForest());
-  resF = static_cast<expert_forest*>(rel->getOutForest());
+  arg1F = rel->getInForest();
+  //arg2F = rel->getInForest();
+  resF = rel->getOutForest();
 
   registerInForest(arg1F);
   //registerInForest(arg2F);
@@ -1351,7 +1351,7 @@ MEDDLY::satimpl_opname::buildOperation(arguments* a)
 
 MEDDLY::saturation_impl_by_events_op
 ::saturation_impl_by_events_op(common_impl_dfs_by_events_mt* p,
-                               expert_forest* argF, expert_forest* resF)
+                               forest* argF, forest* resF)
 : unary_operation(saturation_impl_by_events_opname::getInstance(), 1, argF, resF)
 {
   parent = p;
@@ -1463,16 +1463,16 @@ std::map<node_pair, bool> intersection_cache;
 int time_since_gc = 0;
 
 bool isIntersectionEmpty(
-    MEDDLY::expert_forest* mddF,
+    MEDDLY::forest* mddF,
     MEDDLY::node_handle node_A,
     MEDDLY::node_handle node_B)
 {
     using namespace MEDDLY;
 
-  if (expert_forest::isTerminalNode(node_A)) {
+  if (forest::isTerminalNode(node_A)) {
     // if (node_A == 0) return true; else return (node_B == 0);
     return (node_A == 0) || (node_B == 0);
-  } else if (expert_forest::isTerminalNode(node_B)) {
+  } else if (forest::isTerminalNode(node_B)) {
     // if (node_B == 0) return true; else return false;
     return (node_B == 0);
   }

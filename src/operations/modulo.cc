@@ -36,8 +36,8 @@ namespace MEDDLY {
 template <typename REAL>
 class modulo_mdd : public generic_binary_mdd {
   public:
-    modulo_mdd(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res)
+    modulo_mdd(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res)
       : generic_binary_mdd(opcode, arg1, arg2, res) { }
 
   protected:
@@ -73,8 +73,8 @@ namespace MEDDLY {
 template <typename REAL>
 class modulo_mxd : public generic_binbylevel_mxd {
   public:
-    modulo_mxd(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res)
+    modulo_mxd(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res)
       : generic_binbylevel_mxd(opcode, arg1, arg2, res) { }
 
   protected:
@@ -108,8 +108,8 @@ bool modulo_mxd<REAL>
 class MEDDLY::modulo_opname : public binary_opname {
   public:
     modulo_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r);
+    virtual binary_operation* buildOperation(forest* a1,
+      forest* a2, forest* r);
 };
 
 MEDDLY::modulo_opname::modulo_opname()
@@ -118,8 +118,8 @@ MEDDLY::modulo_opname::modulo_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::modulo_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r)
+MEDDLY::modulo_opname::buildOperation(forest* a1, forest* a2,
+  forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 

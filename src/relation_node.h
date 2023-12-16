@@ -24,7 +24,6 @@
 namespace MEDDLY {
     class relation_node;
     class forest;
-    class expert_forest;
 };
 
 // ******************************************************************
@@ -64,7 +63,7 @@ public:
   // the following should be inlined in meddly_expert.hh
 
    // Get the forest to which the node belongs
-  expert_forest* getForest();
+  forest* getForest();
 
   /** A signature for this function.
    This helps class implicit_relation to detect duplicate
@@ -152,7 +151,7 @@ public:
 
 private:
   unsigned long signature;
-  expert_forest* f;
+  forest* f;
   int level;
   long enable;
   long fire;
@@ -182,7 +181,7 @@ MEDDLY::relation_node::getSignature() const
   return signature;
 }
 
-inline MEDDLY::expert_forest*
+inline MEDDLY::forest*
 MEDDLY::relation_node::getForest() {
   return f;
 }

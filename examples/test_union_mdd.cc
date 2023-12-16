@@ -95,16 +95,22 @@ int main(int argc, char *argv[])
 
   // create the elements randomly
 
+#ifdef VERBOSE
   timer mallocTimer;
   long mallocTime = 0;
+#endif
 
   int** elements = (int **) malloc(nElements * sizeof(int *));
   for (int i = 0; i < nElements; ++i)
   {
+#ifdef VERBOSE
     mallocTimer.note_time();
+#endif
     elements[i] = (int *) malloc((nVariables + 1) * sizeof(int));
+#ifdef VERBOSE
     mallocTimer.note_time();
     mallocTime += mallocTimer.get_last_interval();
+#endif
 
     elements[i][0] = 0;
     for (int j = nVariables; j >= 1; --j)
@@ -177,7 +183,7 @@ int main(int argc, char *argv[])
 #ifdef TESTING_TEMP_DD_EDGES
   printf("Hello World!\n");
   temp_dd_edge* temp = new temp_dd_edge;
-  temp->forestHandle = static_cast<expert_forest*>(states);
+  temp->forestHandle = states;
   temp->levelHandle = nVariables;
   for (int i = 0; i < nElements; ++i)
   {
@@ -285,10 +291,14 @@ int main(int argc, char *argv[])
   free(bounds);
   for (int i = 0; i < nElements; ++i)
   {
+#ifdef VERBOSE
     mallocTimer.note_time();
+#endif
     free(elements[i]);
+#ifdef VERBOSE
     mallocTimer.note_time();
     mallocTime += mallocTimer.get_last_interval();
+#endif
   }
   free(elements);
 

@@ -188,7 +188,7 @@ void numTrueGeneral(const int* levels, int* bottom, int n, int deflt, dd_edge &e
   // Build temp storage for "current level"
   //
   int* current = new int[n];
-  expert_forest* ef = (expert_forest*) e.getForest();
+  forest* ef = e.getForest();
 
   //
   // Loop through levels, from bottom up, and build
@@ -546,9 +546,8 @@ int main(int argc, const char** argv)
   for (int i=0; i<=N; i++) scratch[i] = 2;
   domain* d = domain::createBottomUp(scratch, N);
   assert(d);
-  expert_forest* f = dynamic_cast <expert_forest*> (
-    forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p)
-  );
+  forest* f = forest::create(d, MEDDLY::SET, range_type::BOOLEAN,
+          edge_labeling::MULTI_TERMINAL, p);
   assert(f);
 
   //
@@ -684,8 +683,7 @@ int main(int argc, const char** argv)
   //
   if (show_stats) {
     cerr << "Library stats:\n";
-    const expert_forest* ef = (expert_forest*) f;
-    ef->reportStats(meddlyout, "\t",
+    f->reportStats(meddlyout, "\t",
       HUMAN_READABLE_MEMORY  |
       BASIC_STATS | EXTRA_STATS |
       STORAGE_STATS | HOLE_MANAGER_STATS

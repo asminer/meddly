@@ -70,8 +70,8 @@ class pn {
 
     int n_tokens;
     domain* dom;
-    expert_forest* mdd;
-    expert_forest* mxd;
+    forest* mdd;
+    forest* mxd;
     dd_edge* initial_state;
     dd_edge* reachable_states;
 
@@ -248,12 +248,12 @@ void pn::buildDomain() {
 void pn::buildMdd() {
   policies p(false);
   p.setQuasiReduced();
-  mdd = static_cast<expert_forest*>(forest::create(dom, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p));
+  mdd = forest::create(dom, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
   assert(mdd);
 }
 
 void pn::buildMxd() {
-  mxd = static_cast<expert_forest*>(forest::create(dom, true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL));
+  mxd = forest::create(dom, true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   assert(mxd);
 }
 

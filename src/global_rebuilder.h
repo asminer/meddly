@@ -112,8 +112,8 @@ private:
   std::unordered_multimap<TransformKey, TransformEntry, TransformKeyHasher> _computed_transform;
   SignatureGenerator* _sg;
 
-  expert_forest* _source;
-  expert_forest* _target;
+  forest* _source;
+  forest* _target;
   node_handle _root;
   int _hit;
   int _total;
@@ -133,7 +133,7 @@ private:
 public:
   friend class SignatureGenerator;
 
-  global_rebuilder(expert_forest* source, expert_forest* target);
+  global_rebuilder(forest* source, forest* target);
   ~global_rebuilder();
 
   dd_edge rebuild(const dd_edge& e);

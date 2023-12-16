@@ -157,9 +157,7 @@ dd_edge doPlus(forest* mtmxd, int** from, int** to, element_type* terms, int N)
 
   // Step (a): Use getOp() defined above to fetch the operation corresponding
   // to the the forests involved.
-  binary_operation* plusOp = getOperation(PLUS,
-    (expert_forest*) mtmxd, (expert_forest*) mtmxd, (expert_forest*) mtmxd
-  );
+  binary_operation* plusOp = getOperation(PLUS, mtmxd, mtmxd, mtmxd);
 
   dd_edge result(mtmxd);
   dd_edge temp(mtmxd);

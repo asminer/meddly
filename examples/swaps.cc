@@ -56,7 +56,7 @@ inline double factorial(int n)
 */
 void Exchange(int va, int vb, int N, dd_edge &answer)
 {
-  expert_forest* EF = (expert_forest*) answer.getForest();
+  forest* EF = answer.getForest();
 
   /* We're doing this BY HAND which means a 4 levels of nodes */
 
@@ -124,7 +124,7 @@ void ValueNSF(int N, satpregen_opname::pregen_relation* nsf)
 */
 void AltExchange(int pa, int pb, int N, int K, dd_edge &answer)
 {
-  expert_forest* EF = (expert_forest*) answer.getForest();
+  forest* EF = answer.getForest();
 
   /*
       Do the same thing at every level:
@@ -197,8 +197,7 @@ void PositionNSF(int N, satpregen_opname::pregen_relation* nsf)
 void printStats(const char* who, const forest* f)
 {
   printf("%s stats:\n", who);
-  const expert_forest* ef = (expert_forest*) f;
-  ef->reportStats(meddlyout, "\t",
+  f->reportStats(meddlyout, "\t",
     HUMAN_READABLE_MEMORY  |
     BASIC_STATS | EXTRA_STATS |
     STORAGE_STATS | HOLE_MANAGER_STATS |

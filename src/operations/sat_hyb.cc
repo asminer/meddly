@@ -83,9 +83,9 @@ MEDDLY::sathyb_opname::~sathyb_opname()
 
 MEDDLY::sathyb_opname::hybrid_relation::hybrid_relation(forest* inmdd, forest* relmxd,
                                                              forest* outmdd, event** E, int ne)
-: insetF(static_cast<expert_forest*>(inmdd)), outsetF(static_cast<expert_forest*>(outmdd)), hybRelF(static_cast<expert_forest*>(relmxd))
+: insetF(inmdd), outsetF(outmdd), hybRelF(relmxd)
 {
-  hybRelF = static_cast<expert_forest*>(relmxd);
+  hybRelF = relmxd;
 
   if (0==insetF || 0==outsetF || 0==hybRelF ) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 
@@ -317,7 +317,7 @@ void findConfirmedStatesImpl(MEDDLY::sathyb_opname::hybrid_relation* rel,
   if (level == 0) return;
   if (visited.find(mdd) != visited.end()) return;
 
-  MEDDLY::expert_forest* insetF = rel->getInForest();
+  MEDDLY::forest* insetF = rel->getInForest();
   int mdd_level = insetF->getNodeLevel(mdd);
   if (MEDDLY::isLevelAbove(level, mdd_level)) {
     // skipped level; confirm all local states at this level
@@ -528,7 +528,7 @@ MEDDLY::sathyb_opname::hybrid_relation::buildMxdForest()
     }
 
   node_handle monolithic_nsf_handle = monolithic_nsf->getNode();
-  mxdF = (expert_forest*)mxd;
+  mxdF = (forest*)mxd;
 
   /*for(int i = 0; i<nEvents;i++)
    {
@@ -552,7 +552,7 @@ MEDDLY::sathyb_opname::hybrid_relation::buildEventMxd(node_handle eventTop, fore
   // int top_level = Rnode->getLevel();
 
   // domain* d = outsetF->useDomain();
-  expert_forest* ef = (expert_forest*) mxd;
+  forest* ef = (forest*) mxd;
 
   //Get relation node handles
   for (int i=nVars; i>=1; i--)
@@ -661,7 +661,7 @@ MEDDLY::sathyb_opname::hybrid_relation::isUnionPossible(int level, long i, relat
 
 MEDDLY::sathyb_opname::subevent::subevent(forest* f, int* v, int nv, bool firing)
 : vars(0), num_vars(nv), root(dd_edge(f)), top(0),
-f(static_cast<expert_forest*>(f)), is_firing(firing)
+f(f), is_firing(firing)
 {
   MEDDLY_DCASSERT(f != 0);
   MEDDLY_DCASSERT(v != 0);
@@ -1400,7 +1400,7 @@ class MEDDLY::saturation_hyb_by_events_op : public unary_operation {
   common_hyb_dfs_by_events_mt* parent;
 public:
   saturation_hyb_by_events_op(common_hyb_dfs_by_events_mt* p,
-                               expert_forest* argF, expert_forest* resF);
+                               forest* argF, forest* resF);
   virtual ~saturation_hyb_by_events_op();
 
   node_handle saturate(node_handle mdd);
@@ -1485,9 +1485,9 @@ protected:
 
   sathyb_opname::hybrid_relation* rel;
 
-  expert_forest* arg1F;
-  expert_forest* arg2F;
-  expert_forest* resF;
+  forest* arg1F;
+  forest* arg2F;
+  forest* resF;
 
 protected:
   class indexq {
@@ -2085,9 +2085,9 @@ MEDDLY::common_hyb_dfs_by_events_mt::common_hyb_dfs_by_events_mt(
   freeqs = 0;
   freebufs = 0;
   rel = relation;
-  arg1F = static_cast<expert_forest*>(rel->getInForest());
-  arg2F = static_cast<expert_forest*>(rel->getHybridForest());
-  resF = static_cast<expert_forest*>(rel->getOutForest());
+  arg1F = rel->getInForest();
+  arg2F = rel->getHybridForest();
+  resF = rel->getOutForest();
 
   registerInForest(arg1F);
   registerInForest(arg2F);
@@ -2242,7 +2242,7 @@ MEDDLY::sathyb_opname::buildOperation(arguments* a)
 
 MEDDLY::saturation_hyb_by_events_op
 ::saturation_hyb_by_events_op(common_hyb_dfs_by_events_mt* p,
-                               expert_forest* argF, expert_forest* resF)
+                               forest* argF, forest* resF)
 : unary_operation(saturation_hyb_by_events_opname::getInstance(), 1, argF, resF)
 {
   parent = p;

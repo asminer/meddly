@@ -40,7 +40,7 @@
 using namespace std;
 using namespace MEDDLY;
 
-expert_forest* f = 0;
+forest* f = 0;
 
 // Returns a dd_edge representing AndSum(e1, e2)
 dd_edge AndSum(dd_edge& e1, dd_edge& e2);
@@ -175,8 +175,8 @@ int main(int argc, char* argv[])
 
   // e6 = e4 > 1
   dd_edge e6(f);
-  int termOne = static_cast<expert_forest*>(f)->getTerminalNode(1);
-  e6.set(termOne, 0, static_cast<expert_forest*>(f)->getNodeLevel(termOne));
+  int termOne = f->getTerminalNode(1);
+  e6.set(termOne, 0, f->getNodeLevel(termOne));
   // e3 = e1 + e2
   // e4 = e1 x e2;
   // e6 = e4 > 1;
@@ -205,7 +205,7 @@ int main(int argc, char* argv[])
 std::map<int, std::map<int, int> > cache;
 
 
-void printCache(FILE* strm, expert_forest* f)
+void printCache(FILE* strm, forest* f)
 {
   fprintf(strm, "Cache Table:\n");
   for (map<int, map<int, int> >::iterator i = cache.begin();
@@ -220,7 +220,7 @@ void printCache(FILE* strm, expert_forest* f)
 }
 
 
-void clearCache(expert_forest* f)
+void clearCache(forest* f)
 {
   printCache(stdout, f);
   for (map<int, map<int, int> >::iterator i = cache.begin();
@@ -236,7 +236,7 @@ void clearCache(expert_forest* f)
 }
 
 
-void saveInCache(expert_forest* f, int nodeA, int nodeB, int nodeC)
+void saveInCache(forest* f, int nodeA, int nodeB, int nodeC)
 {
   f->linkNode(nodeA);
   f->linkNode(nodeB);
@@ -250,7 +250,7 @@ void saveInCache(expert_forest* f, int nodeA, int nodeB, int nodeC)
 }
 
 
-bool findInCache(expert_forest* f, int nodeA, int nodeB, int& result)
+bool findInCache(forest* f, int nodeA, int nodeB, int& result)
 {
   map<int, map<int, int> >::iterator i = cache.find(nodeA);
   if (i == cache.end()) return false;
@@ -265,7 +265,7 @@ dd_edge AndSum(dd_edge& e1, dd_edge& e2)
 {
   assert(e1.getForest() == e2.getForest());
   // f is used by the recursive AndSum(int, int).
-  f = static_cast<expert_forest*>(e1.getForest());
+  f = e1.getForest();
   int resultNode = AndSum(e1.getNode(), e2.getNode());
   clearCache(f);
   dd_edge result(f);

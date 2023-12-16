@@ -61,7 +61,7 @@ MEDDLY::satotf_opname::~satotf_opname()
 
 MEDDLY::satotf_opname::subevent::subevent(forest* f, int* v, int nv, bool firing)
 : vars(0), num_vars(nv), root(dd_edge(f)), top(0),
-  f(static_cast<expert_forest*>(f)), is_firing(firing)
+  f(f), is_firing(firing)
 {
   MEDDLY_DCASSERT(f != 0);
   MEDDLY_DCASSERT(v != 0);
@@ -420,9 +420,9 @@ long MEDDLY::satotf_opname::event::mintermMemoryUsage() const {
 
 MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
   forest* mxd, forest* outmdd, event** E, int ne)
-: insetF(static_cast<expert_forest*>(inmdd)),
-  mxdF(static_cast<expert_forest*>(mxd)),
-  outsetF(static_cast<expert_forest*>(outmdd))
+: insetF(inmdd),
+  mxdF(mxd),
+  outsetF(outmdd)
 {
   if (0==insetF || 0==outsetF || 0==mxdF) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 
@@ -629,7 +629,7 @@ void findConfirmedStates(MEDDLY::satotf_opname::otf_relation* rel,
   if (level == 0) return;
   if (visited.find(mdd) != visited.end()) return;
 
-  MEDDLY::expert_forest* insetF = rel->getInForest();
+  MEDDLY::forest* insetF = rel->getInForest();
   int mdd_level = insetF->getNodeLevel(mdd);
   if (MEDDLY::isLevelAbove(level, mdd_level)) {
     // skipped level; confirm all local states at this level
@@ -971,7 +971,7 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
     common_otf_dfs_by_events_mt* parent;
   public:
     otfsat_by_events_op(common_otf_dfs_by_events_mt* p,
-      expert_forest* argF, expert_forest* resF);
+      forest* argF, forest* resF);
     virtual ~otfsat_by_events_op();
 
     void saturate(const dd_edge& in, dd_edge& out);
@@ -1047,9 +1047,9 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
 
     satotf_opname::otf_relation* rel;
 
-    expert_forest* arg1F;
-    expert_forest* arg2F;
-    expert_forest* resF;
+    forest* arg1F;
+    forest* arg2F;
+    forest* resF;
 
   protected:
     class indexq {
@@ -1162,7 +1162,7 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
 
 MEDDLY::otfsat_by_events_op
 ::otfsat_by_events_op(common_otf_dfs_by_events_mt* p,
-  expert_forest* argF, expert_forest* resF)
+  forest* argF, forest* resF)
   : unary_operation(otfsat_by_events_opname::getInstance(), 1, argF, resF)
 {
   parent = p;
@@ -1277,9 +1277,9 @@ MEDDLY::common_otf_dfs_by_events_mt::common_otf_dfs_by_events_mt(
   freeqs = 0;
   freebufs = 0;
   rel = relation;
-  arg1F = static_cast<expert_forest*>(rel->getInForest());
-  arg2F = static_cast<expert_forest*>(rel->getRelForest());
-  resF = static_cast<expert_forest*>(rel->getOutForest());
+  arg1F = rel->getInForest();
+  arg2F = rel->getRelForest();
+  resF = rel->getOutForest();
 
   registerInForest(arg1F);
   registerInForest(arg2F);

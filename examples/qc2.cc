@@ -216,7 +216,7 @@ forest* buildForest(policies &p, int N, const varorder &V)
 */
 void queeniRowr(const varorder &V, int i, int r, dd_edge &e)
 {
-  expert_forest* F = dynamic_cast<expert_forest*>(e.getForest());
+  forest* F = e.getForest();
 
   unpacked_node* nb = unpacked_node::newSparse(F, V.queenRow(i), 1);
   nb->setSparse(0, r, F->handleForValue(1));
@@ -235,7 +235,7 @@ void queeniRowr(const varorder &V, int i, int r, dd_edge &e)
 */
 void queeniColc(const varorder &V, int i, int c, dd_edge &e)
 {
-  expert_forest* F = dynamic_cast<expert_forest*>(e.getForest());
+  forest* F = e.getForest();
 
   unpacked_node* nb = unpacked_node::newSparse(F, V.queenCol(i), 1);
   nb->setSparse(0, c, F->handleForValue(1));
@@ -891,8 +891,7 @@ int main(int argc, const char** argv)
   printf("Building covering conditions for each square\n");
   dd_edge** covered = buildConstraintsForSquares(F, V, N);
   printf("Basic constraints are done:\n");
-  expert_forest* ef = (expert_forest*) F;
-  ef->reportStats(meddlyout, "\t",
+  F->reportStats(meddlyout, "\t",
     HUMAN_READABLE_MEMORY | BASIC_STATS
   );
 
@@ -991,7 +990,7 @@ int main(int argc, const char** argv)
   }
 
   printf("Forest stats:\n");
-  ef->reportStats(meddlyout, "\t",
+  F->reportStats(meddlyout, "\t",
     HUMAN_READABLE_MEMORY  |
     BASIC_STATS | EXTRA_STATS |
     STORAGE_STATS | HOLE_MANAGER_STATS

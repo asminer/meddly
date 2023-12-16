@@ -202,7 +202,7 @@ void compare(double ev, const unpacked_node* fnode, const unpacked_node* bnode)
 }
 
 
-unpacked_node* build_node(expert_forest* f, unsigned who, bool full)
+unpacked_node* build_node(forest* f, unsigned who, bool full)
 {
     dd_edge e[7];
 
@@ -292,7 +292,6 @@ unpacked_node* build_node(expert_forest* f, unsigned who, bool full)
 void test_nodes(domain* d, range_type r, edge_labeling e, policies &p)
 {
     forest* f = forest::create(d,  (e==edge_labeling::EVTIMES), r, e, p);
-    expert_forest* ef = (expert_forest*) f;
 
     node_handle nh;
     long int_ev;
@@ -301,16 +300,16 @@ void test_nodes(domain* d, range_type r, edge_labeling e, policies &p)
     if (f->isMultiTerminal()) {
 
         for (unsigned w=0; w<8; w++) {
-            unpacked_node* un = build_node(ef, w, w<4);
+            unpacked_node* un = build_node(f, w, w<4);
 
             show_my_node("Built ", w, un);
 
-            nh = ef->createReducedNode(-1, un);
+            nh = f->createReducedNode(-1, un);
 
-            unpacked_node* fn = ef->newUnpacked(nh, FULL_OR_SPARSE);
+            unpacked_node* fn = f->newUnpacked(nh, FULL_OR_SPARSE);
 
             show_my_node("Pulled", w, fn);
-            unpacked_node* bn = build_node(ef, w, fn->isFull());
+            unpacked_node* bn = build_node(f, w, fn->isFull());
             show_my_node("Reblt ", w, bn);
 
             compare(fn, bn);
@@ -321,16 +320,16 @@ void test_nodes(domain* d, range_type r, edge_labeling e, policies &p)
 
     if (f->isEVPlus()) {
         for (unsigned w=0; w<8; w++) {
-            unpacked_node* un = build_node(ef, w, w<4);
+            unpacked_node* un = build_node(f, w, w<4);
 
             show_my_node("Built ", w, un);
 
-            ef->createReducedNode(-1, un, int_ev, nh);
+            f->createReducedNode(-1, un, int_ev, nh);
 
-            unpacked_node* fn = ef->newUnpacked(nh, FULL_OR_SPARSE);
+            unpacked_node* fn = f->newUnpacked(nh, FULL_OR_SPARSE);
 
             show_my_node("Pulled", w, fn);
-            unpacked_node* bn = build_node(ef, w, fn->isFull());
+            unpacked_node* bn = build_node(f, w, fn->isFull());
             show_my_node("Reblt ", w, bn);
 
             compare(int_ev, fn, bn);
@@ -341,16 +340,16 @@ void test_nodes(domain* d, range_type r, edge_labeling e, policies &p)
 
     if (f->isEVTimes()) {
         for (unsigned w=0; w<8; w++) {
-            unpacked_node* un = build_node(ef, w, w<4);
+            unpacked_node* un = build_node(f, w, w<4);
 
             show_my_node("Built ", w, un);
 
-            ef->createReducedNode(-1, un, real_ev, nh);
+            f->createReducedNode(-1, un, real_ev, nh);
 
-            unpacked_node* fn = ef->newUnpacked(nh, FULL_OR_SPARSE);
+            unpacked_node* fn = f->newUnpacked(nh, FULL_OR_SPARSE);
 
             show_my_node("Pulled", w, fn);
-            unpacked_node* bn = build_node(ef, w, fn->isFull());
+            unpacked_node* bn = build_node(f, w, fn->isFull());
             show_my_node("Reblt ", w, bn);
 
             compare(real_ev, fn, bn);

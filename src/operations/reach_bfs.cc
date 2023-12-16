@@ -48,8 +48,8 @@ namespace MEDDLY {
 
 class MEDDLY::common_bfs : public binary_operation {
   public:
-    common_bfs(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    common_bfs(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
 
@@ -75,8 +75,8 @@ class MEDDLY::common_bfs : public binary_operation {
 };
 
 
-MEDDLY::common_bfs::common_bfs(binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res)
+MEDDLY::common_bfs::common_bfs(binary_opname* oc, forest* a1,
+  forest* a2, forest* res)
 : binary_operation(oc, 0, a1, a2, res)
 {
   unionOp = 0;
@@ -142,12 +142,12 @@ void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd
 
 class MEDDLY::forwd_bfs_mt : public common_bfs {
   public:
-    forwd_bfs_mt(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    forwd_bfs_mt(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 };
 
-MEDDLY::forwd_bfs_mt::forwd_bfs_mt(binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res) : common_bfs(oc, a1, a2, res)
+MEDDLY::forwd_bfs_mt::forwd_bfs_mt(binary_opname* oc, forest* a1,
+  forest* a2, forest* res) : common_bfs(oc, a1, a2, res)
 {
   if (res->getRangeType() == range_type::BOOLEAN) {
     setUnionOp( getOperation(UNION, res, res, res) );
@@ -166,13 +166,13 @@ MEDDLY::forwd_bfs_mt::forwd_bfs_mt(binary_opname* oc, expert_forest* a1,
 
 class MEDDLY::bckwd_bfs_mt : public common_bfs {
   public:
-    bckwd_bfs_mt(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    bckwd_bfs_mt(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 
 };
 
-MEDDLY::bckwd_bfs_mt::bckwd_bfs_mt(binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res) : common_bfs(oc, a1, a2, res)
+MEDDLY::bckwd_bfs_mt::bckwd_bfs_mt(binary_opname* oc, forest* a1,
+  forest* a2, forest* res) : common_bfs(oc, a1, a2, res)
 {
   if (res->getRangeType() == range_type::BOOLEAN) {
     setUnionOp( getOperation(UNION, res, res, res) );
@@ -193,8 +193,8 @@ MEDDLY::bckwd_bfs_mt::bckwd_bfs_mt(binary_opname* oc, expert_forest* a1,
 
 class MEDDLY::common_bfs_evplus : public binary_operation {
   public:
-  common_bfs_evplus(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+  common_bfs_evplus(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
     virtual void compute(long aev, node_handle a, node_handle b, long& resEv, node_handle& resEvmdd) = 0;
@@ -250,8 +250,8 @@ class MEDDLY::common_bfs_evplus : public binary_operation {
 };
 
 
-MEDDLY::common_bfs_evplus::common_bfs_evplus(binary_opname* oc, expert_forest* a1,
-  expert_forest* a2, expert_forest* res)
+MEDDLY::common_bfs_evplus::common_bfs_evplus(binary_opname* oc, forest* a1,
+  forest* a2, forest* res)
 : binary_operation(oc, 0, a1, a2, res)
 {
   unionMinOp = 0;
@@ -279,15 +279,15 @@ void MEDDLY::common_bfs_evplus::computeDDEdge(const dd_edge &a, const dd_edge &b
 
 class MEDDLY::forwd_bfs_evplus : public common_bfs {
   public:
-  forwd_bfs_evplus(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+  forwd_bfs_evplus(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 
 //     virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
 };
 
-MEDDLY::forwd_bfs_evplus::forwd_bfs_evplus(binary_opname* oc, expert_forest* a1,
-  // expert_forest* a2, expert_forest* res) : common_bfs_evplus(oc, a1, a2, res)
-  expert_forest* a2, expert_forest* res) : common_bfs(oc, a1, a2, res)
+MEDDLY::forwd_bfs_evplus::forwd_bfs_evplus(binary_opname* oc, forest* a1,
+  // forest* a2, forest* res) : common_bfs_evplus(oc, a1, a2, res)
+  forest* a2, forest* res) : common_bfs(oc, a1, a2, res)
 {
   if (res->getRangeType() == range_type::INTEGER) {
     setUnionOp( getOperation(UNION, res, res, res) );
@@ -319,15 +319,15 @@ void MEDDLY::forwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle m
 
 class MEDDLY::bckwd_bfs_evplus : public common_bfs {
   public:
-    bckwd_bfs_evplus(binary_opname* opcode, expert_forest* arg1,
-      expert_forest* arg2, expert_forest* res);
+    bckwd_bfs_evplus(binary_opname* opcode, forest* arg1,
+      forest* arg2, forest* res);
 
     // virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
 };
 
-MEDDLY::bckwd_bfs_evplus::bckwd_bfs_evplus(binary_opname* oc, expert_forest* a1,
-  // expert_forest* a2, expert_forest* res) : common_bfs_evplus(oc, a1, a2, res)
-  expert_forest* a2, expert_forest* res) : common_bfs(oc, a1, a2, res)
+MEDDLY::bckwd_bfs_evplus::bckwd_bfs_evplus(binary_opname* oc, forest* a1,
+  // forest* a2, forest* res) : common_bfs_evplus(oc, a1, a2, res)
+  forest* a2, forest* res) : common_bfs(oc, a1, a2, res)
 {
   if (res->getRangeType() == range_type::INTEGER) {
     setUnionOp( getOperation(UNION, res, res, res) );
@@ -361,8 +361,8 @@ void MEDDLY::bckwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle m
 class MEDDLY::forwd_bfs_opname : public binary_opname {
   public:
     forwd_bfs_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r);
+    virtual binary_operation* buildOperation(forest* a1,
+      forest* a2, forest* r);
 };
 
 MEDDLY::forwd_bfs_opname::forwd_bfs_opname()
@@ -371,8 +371,8 @@ MEDDLY::forwd_bfs_opname::forwd_bfs_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::forwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r)
+MEDDLY::forwd_bfs_opname::buildOperation(forest* a1, forest* a2,
+  forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 
@@ -412,8 +412,8 @@ MEDDLY::forwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
 class MEDDLY::bckwd_bfs_opname : public binary_opname {
   public:
     bckwd_bfs_opname();
-    virtual binary_operation* buildOperation(expert_forest* a1,
-      expert_forest* a2, expert_forest* r);
+    virtual binary_operation* buildOperation(forest* a1,
+      forest* a2, forest* r);
 };
 
 MEDDLY::bckwd_bfs_opname::bckwd_bfs_opname()
@@ -422,8 +422,8 @@ MEDDLY::bckwd_bfs_opname::bckwd_bfs_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::bckwd_bfs_opname::buildOperation(expert_forest* a1, expert_forest* a2,
-  expert_forest* r)
+MEDDLY::bckwd_bfs_opname::buildOperation(forest* a1, forest* a2,
+  forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
 

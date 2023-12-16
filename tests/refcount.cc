@@ -27,7 +27,7 @@ void checkCount(unsigned long expected, const dd_edge &e)
 
     cout << "Checking ref count (node " << e.getNode() << ", expecting " << expected << "): ";
 
-    const expert_forest* f = dynamic_cast <expert_forest*>(e.getForest());
+    const forest* f = e.getForest();
     if (!f) throw "Bad forest";
 
     const unsigned long cnt = f->getNodeInCount(e.getNode());

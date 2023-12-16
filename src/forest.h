@@ -147,8 +147,174 @@ class MEDDLY::forest {
     public: // Add a node to the forest
     // ------------------------------------------------------------
 
-        // TBD: move createReducedNode() here
-        // and helpers like normalize()
+        /** Return a forest node equal to the one given.
+            The node is constructed as necessary.
+            This version should be used only for
+            multi terminal forests.
+            The unpacked node is recycled.
+                @param  in  Incoming pointer index;
+                            used for identity reductions.
+                @param  un  Temporary node; will be recycled.
+
+                @return     A node handle equivalent
+                            to \a un, taking into account
+                            the forest reduction rules
+                            and if a duplicate node exists.
+
+        */
+        inline node_handle createReducedNode(int in, unpacked_node *un) {
+            MEDDLY_DCASSERT(un);
+            node_handle q = createReducedHelper(in, *un);
+#ifdef TRACK_DELETIONS
+            std::cerr << "Created node " << q << "\n";
+#endif
+            unpacked_node::Recycle(un);
+            return q;
+        }
+
+
+        /** Return a forest node equal to the one given.
+            The node is constructed as necessary.
+            This version should be used only for
+            edge valuded forests.
+            The node builder nb is recycled.
+                @param  in      Incoming pointer index;
+                                used for identity reductions.
+
+                @param  un      Constructed node.
+
+                @param  ev      Output: edge value
+
+                @param  node    Output: node handle.
+                                On exit, the edge value and the node
+                                handle together are equivalent to nb;
+                                taking into account the forest reduction rules
+                                and if a duplicate node exists.
+
+            TBD: rewrite this to use edge_value instead
+        */
+        template <class T>
+        inline void createReducedNode(int in, unpacked_node* un,
+                T& ev, node_handle& node)
+        {
+            MEDDLY_DCASSERT(un);
+            normalize(*un, ev);
+            node = createReducedHelper(in, *un);
+#ifdef TRACK_DELETIONS
+            std::cerr << "Created node " << node << "\n";
+#endif
+            unpacked_node::Recycle(un);
+        }
+
+
+        /** Return a forest node for implicit node equal to the one given.
+            The implicit node is already constructed inside satimpl_opname.
+            This version should be used only for multi terminal forests.
+                @param  un    Implicit relation node
+
+                @return       A node handle equivalent to \a un.
+
+        */
+        inline node_handle createRelationNode(MEDDLY::relation_node *un) {
+            MEDDLY_DCASSERT(un);
+            node_handle q = createImplicitNode(*un);
+#ifdef TRACK_DELETIONS
+            std::cerr << "Created relation node " << q << "\n";
+#endif
+            return q;
+        }
+
+        relation_node* buildImplicitNode(node_handle rnh);
+
+    // ------------------------------------------------------------
+    protected:  // helpers for reducing nodes
+    // ------------------------------------------------------------
+
+        /** Apply reduction rule to the temporary node and finalize it.
+            Once a node is reduced, its contents cannot be modified.
+                @param  in      Incoming index, used only for identity reduction;
+                                Or -1.
+                @param  un      Unpacked node.
+                @return         Handle to a node that encodes the same thing.
+        */
+        node_handle createReducedHelper(int in, unpacked_node &nb);
+
+        /** Apply reduction rule to the temporary extensible node and finalize it.
+            Once a node is reduced, its contents cannot be modified.
+                @param  in      Incoming index, used only for identity reduction;
+                                Or -1.
+                @param  un      Unpacked extensible node. Must be sorted by
+                                indices if sparse.
+                @return         Handle to a node that encodes the same thing.
+        */
+        node_handle createReducedExtensibleNodeHelper(int in, unpacked_node &nb);
+
+
+        /** Create implicit node in the forest.
+            Just add a handle and it points to original location
+                @param  un    Relation node.
+                @return       Handle to a node that encodes the same thing.
+        */
+        node_handle createImplicitNode(MEDDLY::relation_node &nb);
+
+
+        //
+        // TBD: replace with one normalize(unpacked_node &, edge_value &ev) const;
+        //
+
+        /** Normalize a node.
+            Used only for "edge valued" DDs with range type: integer.
+            Different forest types will have different normalization rules,
+            so the default behavior given here (throw an error) will need
+            to be overridden by all edge-valued forests.
+
+                @param  nb      Array of downward pointers and edge values;
+                                may be modified.
+                @param  ev      The incoming edge value, may be modified
+                                as appropriate to normalize the node.
+        */
+        virtual void normalize(unpacked_node &nb, int& ev) const;
+
+        virtual void normalize(unpacked_node &nb, long& ev) const;
+
+        /** Normalize a node.
+            Used only for "edge valued" DDs with range type: real.
+            Different forest types will have different normalization rules,
+            so the default behavior given here (throw an error) will need
+            to be overridden by all edge-valued forests.
+
+                @param  nb      Array of downward pointers and edge values;
+                                may be modified.
+                @param  ev      The incoming edge value, may be modified
+                                as appropriate to normalize the node.
+        */
+        virtual void normalize(unpacked_node &nb, float& ev) const;
+
+        /** Is this a redundant node that can be eliminated?
+            Must be implemented in derived forests
+            to deal with the default edge value.
+
+                @param  nb      Node we're trying to build.
+
+                @return         True, if nb is a redundant node
+                                AND it should be eliminated.
+        */
+        virtual bool isRedundant(const unpacked_node &nb) const = 0;
+
+        /** Is the specified edge an identity edge, that can be eliminated?
+            Must be implemented in derived forests
+            to deal with the default edge value.
+
+                @param  nb  Node we're trying to build.
+                            We know there is a single non-zero downward pointer.
+
+                @param  i   Candidate edge (or edge index for sparse nodes).
+
+                @return True, if nb[i] is an identity edge, and the
+                              identity node should be eliminated.
+        */
+        virtual bool isIdentityEdge(const unpacked_node &nb, int i) const = 0;
+
 
     // ------------------------------------------------------------
     public: // Getters related to the domain / levels
@@ -2413,57 +2579,11 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 
 
 
-  /**   Return a forest node equal to the one given.
-        The node is constructed as necessary.
-        This version should be used only for
-        multi terminal forests.
-        The unpacked node is recycled.
-          @param  in    Incoming pointer index;
-                        used for identity reductions.
-          @param  un    Temporary node; will be recycled.
-
-          @return       A node handle equivalent
-                        to \a un, taking into account
-                        the forest reduction rules
-                        and if a duplicate node exists.
-
-  */
-  node_handle createReducedNode(int in, unpacked_node *un);
-
-  /** Return a forest node for implicit node equal to the one given.
-   The implicit node is already constructed inside satimpl_opname.
-   This version should be used only for
-   multi terminal forests.
-   @param  un    Implicit relation node
-
-   @return       A node handle equivalent
-   to \a un.
-
-   */
-  node_handle createRelationNode(MEDDLY::relation_node *un);
-
+    /*
   unsigned getImplicitTableCount() const;
-  inline MEDDLY::relation_node* buildImplicitNode(node_handle rnh);
   inline MEDDLY::node_handle getImplicitTerminalNode() const;
-
-
-  /** Return a forest node equal to the one given.
-      The node is constructed as necessary.
-      This version should be used only for
-      edge valuded forests.
-      The node builder nb is recycled.
-        @param  in    Incoming pointer index;
-                      used for identity reductions.
-        @param  nb    Constructed node.
-        @param  ev    Output: edge value
-        @param  node  Output: node handle.
-                      On exit, the edge value and the node
-                      handle together are equivalent to nb;
-                      taking into account the forest reduction rules
-                      and if a duplicate node exists.
   */
-  template <class T>
-  void createReducedNode(int in, unpacked_node* nb, T& ev, node_handle& node);
+
 
 
     /** Swap the content of nodes.
@@ -2497,32 +2617,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
   //
 
 
-    virtual void normalize(unpacked_node &nb, long& ev) const;
 
-
-    /** Is this a redundant node that can be eliminated?
-        Must be implemented in derived forests
-        to deal with the default edge value.
-          @param  nb    Node we're trying to build.
-
-          @return   True, if nr is a redundant node
-                          AND it should be eliminated.
-    */
-    virtual bool isRedundant(const unpacked_node &nb) const = 0;
-
-    /** Is the specified edge an identity edge, that can be eliminated?
-        Must be implemented in derived forests
-        to deal with the default edge value.
-
-          @param  nr    Node we're trying to build.
-                        We know there is a single non-zero downward pointer.
-
-          @param  i     Candidate edge (or edge index for sparse nodes).
-
-          @return True, if nr[i] is an identity edge, and the
-                        identity node should be eliminated.
-    */
-    virtual bool isIdentityEdge(const unpacked_node &nb, int i) const = 0;
 
 
     /**
@@ -2567,32 +2662,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 #endif
 
 
-    /** Normalize a node.
-        Used only for "edge valued" DDs with range type: integer.
-        Different forest types will have different normalization rules,
-        so the default behavior given here (throw an error) will need
-        to be overridden by all edge-valued forests.
-
-          @param  nb    Array of downward pointers and edge values;
-                        may be modified.
-          @param  ev    The incoming edge value, may be modified
-                        as appropriate to normalize the node.
-    */
-    virtual void normalize(unpacked_node &nb, int& ev) const;
-
-    /** Normalize a node.
-        Used only for "edge valued" DDs with range type: real.
-        Different forest types will have different normalization rules,
-        so the default behavior given here (throw an error) will need
-        to be overridden by all edge-valued forests.
-
-          @param  nb    Array of downward pointers and edge values;
-                        may be modified.
-          @param  ev    The incoming edge value, may be modified
-                        as appropriate to normalize the node.
-    */
-    virtual void normalize(unpacked_node &nb, float& ev) const;
-
 
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2614,40 +2683,13 @@ class MEDDLY::expert_forest: public MEDDLY::forest
   // ------------------------------------------------------------
   // helpers for this class
 
-    /**
-        Disconnects all downward pointers from p,
-        and removes p from the unique table.
-    */
-    // virtual void deleteNode(node_handle p);
 
-    /** Apply reduction rule to the temporary node and finalize it.
-        Once a node is reduced, its contents cannot be modified.
-          @param  in    Incoming index, used only for identity reduction;
-                        Or -1.
-          @param  un    Unpacked node.
-          @return       Handle to a node that encodes the same thing.
-    */
-    node_handle createReducedHelper(int in, unpacked_node &nb);
-
-    /** Create implicit node in the forest. Just add a handle and it points to original location
-     @param  un    Relation node.
-     @return       Handle to a node that encodes the same thing.
-     */
-    node_handle createImplicitNode(MEDDLY::relation_node &nb);
-
+    /*
     unsigned getImplTableCount() const;
-    MEDDLY::relation_node* buildImplNode(node_handle rnh);
+    // MEDDLY::relation_node* buildImplNode(node_handle rnh);
     MEDDLY::node_handle getImplTerminalNode() const;
-
-
-    /** Apply reduction rule to the temporary extensible node and finalize it.
-        Once a node is reduced, its contents cannot be modified.
-          @param  in    Incoming index, used only for identity reduction;
-                        Or -1.
-          @param  un    Unpacked extensible node. Must be sorted by indices if sparse.
-          @return       Handle to a node that encodes the same thing.
     */
-    node_handle createReducedExtensibleNodeHelper(int in, unpacked_node &nb);
+
 
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2720,17 +2762,12 @@ MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
 }
 #endif
 
+/*
 inline unsigned
 MEDDLY::expert_forest::getImplicitTableCount() const
 {
   unsigned q = getImplTableCount();
   return q;
-}
-
-inline MEDDLY::relation_node*
-MEDDLY::expert_forest::buildImplicitNode(node_handle rnh)
-{
-  return buildImplNode(rnh);
 }
 
 inline MEDDLY::node_handle
@@ -2739,45 +2776,7 @@ MEDDLY::expert_forest::getImplicitTerminalNode() const
   return getImplTerminalNode();
 }
 
-
-inline MEDDLY::node_handle
-MEDDLY::expert_forest::createRelationNode(MEDDLY::relation_node *un)
-{
-  MEDDLY_DCASSERT(un);
-  MEDDLY::node_handle q = createImplicitNode(*un);
-#ifdef TRACK_DELETIONS
-  printf("Created node %d\n", q);
-#endif
-  return q;
-}
-
-inline MEDDLY::node_handle
-MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un)
-{
-  MEDDLY_DCASSERT(un);
-  MEDDLY::node_handle q = createReducedHelper(in, *un);
-#ifdef TRACK_DELETIONS
-  printf("Created node %d\n", q);
-#endif
-  unpacked_node::Recycle(un);
-  return q;
-}
-
-template<class T>
-inline void
-MEDDLY::expert_forest::createReducedNode(int in, MEDDLY::unpacked_node *un, T& ev,
-      MEDDLY::node_handle& node)
-{
-  MEDDLY_DCASSERT(un);
-  // MEDDLY_DCASSERT(un->isBuildNode());
-  normalize(*un, ev);
-  MEDDLY_DCASSERT(ev >= 0);
-  node = createReducedHelper(in, *un);
-#ifdef TRACK_DELETIONS
-  printf("Created node %d\n", node);
-#endif
-  unpacked_node::Recycle(un);
-}
+*/
 
 
 /*
