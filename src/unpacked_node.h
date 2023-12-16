@@ -266,6 +266,13 @@ class MEDDLY::unpacked_node {
             memcpy(extra_unhashed, p, extra_unhashed_size);
         }
 
+        /// Get the unhashed header data
+        inline void getUHdata(void* p) const
+        {
+            MEDDLY_DCASSERT(p);
+            memcpy(p, extra_unhashed, extra_unhashed_size);
+        }
+
         /// Get the number of bytes of unhashed header data.
         inline unsigned UHbytes() const
         {
@@ -284,6 +291,13 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(p);
             memcpy(extra_hashed, p, extra_hashed_size);
+        }
+
+        /// Get the hashed header data
+        inline void getHHdata(void* p) const
+        {
+            MEDDLY_DCASSERT(p);
+            memcpy(p, extra_hashed, extra_hashed_size);
         }
 
         /// Get the number of bytes of hashed header data.

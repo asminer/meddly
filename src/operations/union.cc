@@ -219,8 +219,9 @@ MEDDLY::union_mxd::compute_ext(node_handle a, node_handle b)
 
     // if union is non-zero, add it to the new node
     if (down) {
-      C->i_ref(nnz) = index;
-      C->d_ref(nnz) = down;
+      C->setSparse(nnz, index, down);
+      // C->i_ref(nnz) = index;
+      // C->d_ref(nnz) = down;
       nnz++;
     }
   }
@@ -229,8 +230,9 @@ MEDDLY::union_mxd::compute_ext(node_handle a, node_handle b)
     unsigned index = A->index(A_curr_index);
     node_handle down = compute_r(int(index), dwnLevel, A->down(A_curr_index), B_ext_d);
     if (down) {
-      C->i_ref(nnz) = index;
-      C->d_ref(nnz) = down;
+      C->setSparse(nnz, index, down);
+      // C->i_ref(nnz) = index;
+      // C->d_ref(nnz) = down;
       nnz++;
     }
   }
@@ -239,18 +241,20 @@ MEDDLY::union_mxd::compute_ext(node_handle a, node_handle b)
     unsigned index = B->index(B_curr_index);
     node_handle down = compute_r(int(index), dwnLevel, A_ext_d, B->down(B_curr_index));
     if (down) {
-      C->i_ref(nnz) = index;
-      C->d_ref(nnz) = down;
+      C->setSparse(nnz, index, down);
+      // C->i_ref(nnz) = index;
+      // C->d_ref(nnz) = down;
       nnz++;
     }
   }
   if (A->isExtensible() || B->isExtensible()) {
-    int index = max_a_b_last_index+1;
+    const unsigned index = max_a_b_last_index+1;
     node_handle down = compute_r(index, dwnLevel, A_ext_d, B_ext_d);
     if (down) {
       MEDDLY_DCASSERT(index >= 0);
-      C->i_ref(nnz) = unsigned(index);
-      C->d_ref(nnz) = down;
+      C->setSparse(nnz, index, down);
+      // C->i_ref(nnz) = unsigned(index);
+      // C->d_ref(nnz) = down;
       C->markAsExtensible();
       nnz++;
     } else {

@@ -363,15 +363,15 @@ MEDDLY::node_address MEDDLY::pattern_storage
     //
     // nb is sparse
     //
-    MEDDLY_DCASSERT(nb.getNNZs()<MAX_PATTERN_LEN);
+    MEDDLY_DCASSERT(nb.getSize()<MAX_PATTERN_LEN);
     int nhseq = 1;
-    for (int i=0; i<nb.getNNZs(); i++)
+    for (int i=0; i<nb.getSize(); i++)
       {
       int old_size = nhset.size();
-      nhset.insert(nb.d(i));
+      nhset.insert(nb.down(i));
       if(nhset.size()>old_size) // if set size increases, then this node_handle is unique
         {
-        nhmap.insert(std::pair<int,node_handle>(nhseq,nb.d(i))); // set contains only unique pointers
+        nhmap.insert(std::pair<int,node_handle>(nhseq,nb.down(i))); // set contains only unique pointers
         nhseq+=1;
         }
       }
@@ -387,12 +387,12 @@ MEDDLY::node_address MEDDLY::pattern_storage
 
       int nhseq = 1;
       for (int i=0; i<nb.getSize(); i++) {
-        if (nb.d(i) != tv) {
+        if (nb.down(i) != tv) {
           int old_size = nhset.size();
-          nhset.insert(nb.d(i));
+          nhset.insert(nb.down(i));
           if(nhset.size()>old_size) // if set size increases, then this node_handle is unique
             {
-            nhmap.insert(std::pair<int,node_handle>(nhseq,nb.d(i))); // insert only the unique non-tv pointers
+            nhmap.insert(std::pair<int,node_handle>(nhseq,nb.down(i))); // insert only the unique non-tv pointers
             nhseq+=1;
             }
         }
@@ -576,12 +576,12 @@ bool MEDDLY::pattern_storage
     // check down
     unsigned int i;
     for (i=0; i<trunc_pattern_size; i++) {
-      if ( ( (n.d(i) != tv) && (down[pattern_from_index[i]-'A'] != n.d(i) ) )
-          || ( (n.d(i) == tv) && (pattern_from_index[i]!='t') )
+      if ( ( (n.down(i) != tv) && (down[pattern_from_index[i]-'A'] != n.down(i) ) )
+          || ( (n.down(i) == tv) && (pattern_from_index[i]!='t') )
           ) return false;
     }
     for (; i<unsigned(n.getSize()); i++) {
-      if (n.d(i)!=tv) return false;
+      if (n.down(i)!=tv) return false;
     }
     //must be equal
     return true;
@@ -591,13 +591,13 @@ bool MEDDLY::pattern_storage
       //
       int i = 0;
       // check down
-      for (int z=0; z<n.getNNZs(); z++) {
-        if (unsigned(n.i(z)) >= trunc_pattern_size) return false;
+      for (int z=0; z<n.getSize(); z++) {
+        if (unsigned(n.index(z)) >= trunc_pattern_size) return false;
         // loop - skipped edges must be transparent
-        for (; i<n.i(z); i++) {
+        for (; i<n.index(z); i++) {
           if (pattern_from_index[i]!='t') return false;
         }
-        if (n.d(z) != down[pattern_from_index[i]-'A']) return false;
+        if (n.down(z) != down[pattern_from_index[i]-'A']) return false;
         i++;
       } // for z
       if (unsigned(i)<trunc_pattern_size) return false; // there WILL be a non-zero down
@@ -628,10 +628,12 @@ void MEDDLY::pattern_storage
   //
 
   if (unhashed_slots) {
-    memcpy(nr.UHdata(), chunk + unhashed_start, nr.UHbytes());
+    nr.setUHdata(chunk + unhashed_start);
+    // memcpy(nr.UHdata(), chunk + unhashed_start, nr.UHbytes());
   }
   if (hashed_slots) {
-    memcpy(nr.HHdata(), chunk + hashed_start, nr.HHbytes());
+    nr.setHHdata(chunk + unhashed_start);
+    // memcpy(nr.HHdata(), chunk + hashed_start, nr.HHbytes());
   }
 
   //
@@ -646,9 +648,9 @@ void MEDDLY::pattern_storage
    */
 
   switch (st2) {
-    case FULL_ONLY:         nr.bind_as_full(true);    break;
-    case SPARSE_ONLY:       nr.bind_as_full(false);   break;
-    case FULL_OR_SPARSE:    nr.bind_as_full(true);    break; // Since is_sparse makes no sense here, lets go with full
+    case FULL_ONLY:         nr.setFull();   break;
+    case SPARSE_ONLY:       nr.setSparse(); break;
+    case FULL_OR_SPARSE:    nr.setFull();   break; // Since is_sparse makes no sense here, lets go with full
     default:            assert(0);
   };
 
@@ -711,7 +713,7 @@ void MEDDLY::pattern_storage
         }
       }
 
-    //populate nr.d() and nr.i()
+    //populate nr.down() and nr.index()
     int z = 0;
     for(int i=0;i<trunc_pattern_size;i++)
       {
@@ -722,7 +724,7 @@ void MEDDLY::pattern_storage
         z++;
         }
       }
-    if (nr.isExtensible() == false) { nr.shrinkSparse(z);}
+    if (nr.isExtensible() == false) { nr.shrink(z);}
 
 
   }
@@ -1158,10 +1160,12 @@ MEDDLY::node_address MEDDLY::pattern_storage
   //
 
   if (unhashed_slots) {
-    memcpy(chunk + unhashed_start, nb.UHptr(), nb.UHbytes());
+    nb.getUHdata(chunk + unhashed_start);
+    // memcpy(chunk + unhashed_start, nb.UHptr(), nb.UHbytes());
   }
   if (hashed_slots) {
-    memcpy(chunk + hashed_start, nb.HHptr(), nb.HHbytes());
+    nb.getHHdata(chunk + unhashed_start);
+    // memcpy(chunk + hashed_start, nb.HHptr(), nb.HHbytes());
   }
 
   //
@@ -1290,24 +1294,24 @@ std::string MEDDLY::pattern_storage
       // not defined
       }else {
         //obtain the last truncated index
-        node_handle full_truncated_size = nb.i(nb.getNNZs()-1) + 1;
+        node_handle full_truncated_size = nb.index(nb.getSize()-1) + 1;
         //
         // All entries before last_index are either given in down or are transparent
         //
         for(int i=0,z=0;i<full_truncated_size;i++)
           {
-          if((z<nb.getNNZs()) && (nb.i(z) == i)) //the index of sparse node is same the current index being read
+          if((z<nb.getSize()) && (nb.index(z) == i)) //the index of sparse node is same the current index being read
             {
-            //assign a new character to the node_handle nb.d(z)
+            //assign a new character to the node_handle nb.down(z)
             //increment z
-            std::map<node_handle,char>::iterator it = node_rep.find(nb.d(z));
+            std::map<node_handle,char>::iterator it = node_rep.find(nb.down(z));
             if(it !=node_rep.end()) // Already exists in the map
               {
               node_pattern +=it->second;
               }
             else // Add to the map
               {
-              node_rep.insert (std::pair<node_handle,char>(nb.d(z),seqid));
+              node_rep.insert (std::pair<node_handle,char>(nb.down(z),seqid));
               node_pattern +=seqid;
               seqid +=1;
               }
@@ -1329,7 +1333,7 @@ std::string MEDDLY::pattern_storage
           //obtain the last truncated index
           node_handle full_truncated_size = 0;
           for (int i=0; i<nb.getSize(); i++) {
-            if (nb.d(i) != tv) {
+            if (nb.down(i) != tv) {
               full_truncated_size = i+1;
             }
           }
@@ -1339,18 +1343,18 @@ std::string MEDDLY::pattern_storage
           //
           for(int i=0;i<full_truncated_size;i++)
             {
-            if(nb.d(i) !=tv) //the down pointer of full node not transparent
+            if(nb.down(i) !=tv) //the down pointer of full node not transparent
               {
-              //assign a new character to the node_handle nb.d(z)
+              //assign a new character to the node_handle nb.down(z)
               //increment z
-              std::map<node_handle,char>::iterator it = node_rep.find(nb.d(i));
+              std::map<node_handle,char>::iterator it = node_rep.find(nb.down(i));
               if(it !=node_rep.end()) // Already exists in the map
                 {
                 node_pattern +=it->second;
                 }
               else // Add to the map
                 {
-                node_rep.insert (std::pair<node_handle,char>(nb.d(i),seqid));
+                node_rep.insert (std::pair<node_handle,char>(nb.down(i),seqid));
                 node_pattern +=seqid;
                 seqid +=1;
                 }
