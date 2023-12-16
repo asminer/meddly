@@ -513,7 +513,7 @@ void MEDDLY::pattern_storage::addDownToQueue(node_marker &nm, node_address addr)
       uniqnh.insert(pattern_from_index[i]);
       }
     }
-  const unsigned int uniqnnzs = uniqnh.size();
+  // const unsigned int uniqnnzs = uniqnh.size();
 
   for (int i=0; i<trunc_pattern_size; i++) {
     if(pattern_from_index[i]!='t')
@@ -685,13 +685,15 @@ void MEDDLY::pattern_storage
 
     for(int i=0;i<nr.getSize();i++)
       {
-      nr.d_ref(i) = tv;
+          nr.setFull(i, tv);
+      // nr.d_ref(i) = tv;
       }
 
     for(int i=0;i<trunc_pattern_size;i++)
       {
       if(node_pattern[i] != 't') //If not transparent
-        nr.d_ref(i) = down[node_pattern[i] - 'A'];
+        nr.setFull(i,  down[node_pattern[i] - 'A']);
+        // nr.d_ref(i) = down[node_pattern[i] - 'A'];
       }
 
   } else {
@@ -719,8 +721,11 @@ void MEDDLY::pattern_storage
       {
       if(node_pattern[i]!='t') //If transparent
         {
+            nr.setSparse(z, i, down[node_pattern[i] - 'A']);
+            /*
         nr.i_ref(z) = i;
         nr.d_ref(z) = down[node_pattern[i] - 'A'];
+        */
         z++;
         }
       }

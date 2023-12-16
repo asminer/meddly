@@ -41,12 +41,12 @@ void compare(const unpacked_node* fnode, const unpacked_node* bnode)
     if (fnode->isFull()) {
         unsigned i;
         for (i=0; i<fnode->getSize(); i++) {
-            if (fnode->d(i) != bnode->d(i)) {
+            if (fnode->down(i) != bnode->down(i)) {
                 throw "Full nodes DIFFER";
             }
         }
         for (; i<bnode->getSize(); i++) {
-            if (bnode->d(i)) {
+            if (bnode->down(i)) {
                 throw "Full nodes DIFFER (extra in built)";
             }
         }
@@ -55,15 +55,15 @@ void compare(const unpacked_node* fnode, const unpacked_node* bnode)
     }
 
     // Both sparse
-    if (fnode->getNNZs() != bnode->getNNZs()) {
+    if (fnode->getSize() != bnode->getSize()) {
         throw "Sparse nodes DIFFER (size mismatch)";
     }
     unsigned z;
-    for (z=0; z<fnode->getNNZs(); z++) {
-        if (fnode->d(z) != bnode->d(z)) {
+    for (z=0; z<fnode->getSize(); z++) {
+        if (fnode->down(z) != bnode->down(z)) {
             throw "Sparse nodes DIFFER";
         }
-        if (fnode->i(z) != bnode->i(z)) {
+        if (fnode->index(z) != bnode->index(z)) {
             throw "Sparse nodes DIFFER";
         }
     }
@@ -82,15 +82,15 @@ void compare(long ev, const unpacked_node* fnode, const unpacked_node* bnode)
     if (fnode->isFull()) {
         unsigned i;
         for (i=0; i<fnode->getSize(); i++) {
-            if (fnode->d(i) != bnode->d(i)) {
+            if (fnode->down(i) != bnode->down(i)) {
                 throw "Full nodes DIFFER";
             }
-            fnode->getEdge(i, fev);
-            bnode->getEdge(i, bev);
+            fnode->edgeval(i).get(fev);
+            bnode->edgeval(i).get(bev);
             //
             // Infinity special case
             //
-            if (0==fnode->d(i)) {
+            if (0==fnode->down(i)) {
                 if ((0==fev) && (0==bev)) continue;
             }
             //
@@ -101,7 +101,7 @@ void compare(long ev, const unpacked_node* fnode, const unpacked_node* bnode)
             }
         }
         for (; i<bnode->getSize(); i++) {
-            if (bnode->d(i)) {
+            if (bnode->down(i)) {
                 throw "Full nodes DIFFER (extra in built)";
             }
         }
@@ -110,15 +110,15 @@ void compare(long ev, const unpacked_node* fnode, const unpacked_node* bnode)
     }
 
     // Both sparse
-    if (fnode->getNNZs() != bnode->getNNZs()) {
+    if (fnode->getSize() != bnode->getSize()) {
         throw "Sparse nodes DIFFER (size mismatch)";
     }
     unsigned z;
-    for (z=0; z<fnode->getNNZs(); z++) {
-        if (fnode->d(z) != bnode->d(z)) {
+    for (z=0; z<fnode->getSize(); z++) {
+        if (fnode->down(z) != bnode->down(z)) {
             throw "Sparse nodes DIFFER";
         }
-        if (fnode->i(z) != bnode->i(z)) {
+        if (fnode->index(z) != bnode->index(z)) {
             throw "Sparse nodes DIFFER";
         }
     }
@@ -155,15 +155,15 @@ void compare(double ev, const unpacked_node* fnode, const unpacked_node* bnode)
     if (fnode->isFull()) {
         unsigned i;
         for (i=0; i<fnode->getSize(); i++) {
-            if (fnode->d(i) != bnode->d(i)) {
+            if (fnode->down(i) != bnode->down(i)) {
                 throw "Full nodes DIFFER";
             }
-            fnode->getEdge(i, fev);
-            bnode->getEdge(i, bev);
+            fnode->edgeval(i).get(fev);
+            bnode->edgeval(i).get(bev);
             //
             // Infinity special case
             //
-            if (0==fnode->d(i)) {
+            if (0==fnode->down(i)) {
                 if ((0==fev) && (0==bev)) continue;
             }
             //
@@ -177,7 +177,7 @@ void compare(double ev, const unpacked_node* fnode, const unpacked_node* bnode)
             }
         }
         for (; i<bnode->getSize(); i++) {
-            if (bnode->d(i)) {
+            if (bnode->down(i)) {
                 throw "Full nodes DIFFER (extra in built)";
             }
         }
@@ -186,15 +186,15 @@ void compare(double ev, const unpacked_node* fnode, const unpacked_node* bnode)
     }
 
     // Both sparse
-    if (fnode->getNNZs() != bnode->getNNZs()) {
+    if (fnode->getSize() != bnode->getSize()) {
         throw "Sparse nodes DIFFER (size mismatch)";
     }
     unsigned z;
-    for (z=0; z<fnode->getNNZs(); z++) {
-        if (fnode->d(z) != bnode->d(z)) {
+    for (z=0; z<fnode->getSize(); z++) {
+        if (fnode->down(z) != bnode->down(z)) {
             throw "Sparse nodes DIFFER";
         }
-        if (fnode->i(z) != bnode->i(z)) {
+        if (fnode->index(z) != bnode->index(z)) {
             throw "Sparse nodes DIFFER";
         }
     }
@@ -267,8 +267,8 @@ unpacked_node* build_node(expert_forest* f, unsigned who, bool full)
             unsigned pos = init[i]-'0';
             unsigned dwn = init[i+1]-'0';
 
-            un->d_ref(pos) = f->linkNode(e[dwn].getNode());
-            un->setEdge(pos, e[dwn].getEdgeValue());
+            un->setFull(pos, e[dwn].getEdgeValue(), f->linkNode(e[dwn].getNode()));
+
         }
     } else {
         un = unpacked_node::newSparse(f, who%4+1, 9);
@@ -277,12 +277,11 @@ unpacked_node* build_node(expert_forest* f, unsigned who, bool full)
             unsigned pos = init[i]-'0';
             unsigned dwn = init[i+1]-'0';
 
-            un->d_ref(nnzs) = f->linkNode(e[dwn].getNode());
-            un->setEdge(nnzs, e[dwn].getEdgeValue());
-            un->i_ref(nnzs) = pos;
+            un->setSparse(nnzs, pos, e[dwn].getEdgeValue(), f->linkNode(e[dwn].getNode()));
+
             ++nnzs;
         }
-        un->shrinkSparse(nnzs);
+        un->shrink(nnzs);
     }
 
     return un;

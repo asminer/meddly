@@ -654,9 +654,9 @@ bool MEDDLY::mtmxd_forest::mtmxd_iterator::first(int k, node_handle down)
 
     if (isLevelAbove(k, kdn)) {
       if (k>0 || isFully) {
-        path[k].initRedundant(F, k, down, false);
+        path[k].initRedundant(F, k, down, SPARSE_ONLY);
       } else {
-        path[k].initIdentity(F, k, index[-k], down, false);
+        path[k].initIdentity(F, k, index[-k], down, SPARSE_ONLY);
       }
     } else {
       F->unpackNode(path+k, down, SPARSE_ONLY);
@@ -760,11 +760,11 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
     // Set up this level.
     nzp[k] = 0;
     if (F->isFullyReduced()) {
-      path[k].initRedundant(F, k, cdown, false);
+      path[k].initRedundant(F, k, cdown, SPARSE_ONLY);
       index[k] = 0;
     } else {
       index[k] = index[upLevel(k)];
-      path[k].initIdentity(F, k, index[k], cdown, false);
+      path[k].initIdentity(F, k, index[k], cdown, SPARSE_ONLY);
     }
     return true;
   }
@@ -879,7 +879,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
       // See if there is a valid path below.
       if (!first(downLevel(kpr), down)) return false;
       // There's one below, set up the one at these levels.
-      path[k].initRedundant(F, k, down, false);
+      path[k].initRedundant(F, k, down, SPARSE_ONLY);
       if (F->isFullyReduced()) {
         nzp[k] = 0;
         index[k] = 0;
@@ -894,7 +894,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
     int cdown = F->getDownPtr(down, index[kpr]);
     if (0==cdown) return false;
     if (!first(kpr, cdown)) return false;
-    path[k].initRedundant(F, k, down, false);
+    path[k].initRedundant(F, k, down, SPARSE_ONLY);
     nzp[k] = 0;
     index[k] = 0;
     return true;

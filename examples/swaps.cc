@@ -69,17 +69,15 @@ void Exchange(int va, int vb, int N, dd_edge &answer)
 
       // Make a singleton for vb' == va (index ia)
       unpacked_node* nbp = unpacked_node::newSparse(EF, -vb, 1);
-      nbp->i_ref(0) = ia;
-      nbp->d_ref(0) = EF->handleForValue(1);
+      nbp->setSparse(0, ia, EF->handleForValue(1));
 
       // Make a singleton for vb == va' (index ja)
       unpacked_node* nb = unpacked_node::newSparse(EF, vb, 1);
-      nb->i_ref(0) = ja;
-      nb->d_ref(0) = EF->createReducedNode(ja, nbp);
+      nb->setSparse(0, ja, EF->createReducedNode(ja, nbp));
 
-      nap->d_ref(ja) = EF->createReducedNode(-1, nb);
+      nap->setFull(ja, EF->createReducedNode(-1, nb));
     } // for ja
-    na->d_ref(ia) = EF->createReducedNode(ia, nap);
+    na->setFull(ia, EF->createReducedNode(ia, nap));
   } // for ia
 
   answer.set(EF->createReducedNode(-1, na));
@@ -142,19 +140,17 @@ void AltExchange(int pa, int pb, int N, int K, dd_edge &answer)
     for (int i=0; i<N; i++) {
       if (pa == i) {
         unpacked_node* nkp = unpacked_node::newSparse(EF, -k, 1);
-        nkp->i_ref(0) = pb;
-        nkp->d_ref(0) = bottom;
-        nk->d_ref(i) = EF->createReducedNode(i, nkp);
+        nkp->setSparse(0, pb, bottom);
+        nk->setFull(i, EF->createReducedNode(i, nkp));
         continue;
       }
       if (pb == i) {
         unpacked_node* nkp = unpacked_node::newSparse(EF, -k, 1);
-        nkp->i_ref(0) = pa;
-        nkp->d_ref(0) = bottom;
-        nk->d_ref(i) = EF->createReducedNode(i, nkp);
+        nkp->setSparse(0, pa, bottom);
+        nk->setFull(i, EF->createReducedNode(i, nkp));
         continue;
       }
-      nk->d_ref(i) = bottom;
+      nk->setFull(i, bottom);
     } // for i
 
     bottom = EF->createReducedNode(-1, nk);

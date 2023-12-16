@@ -366,7 +366,7 @@ bool MEDDLY::mtmdd_forest::mtmdd_iterator::first(int k, node_handle down)
     MEDDLY_DCASSERT(down);
     int kdn = F->getNodeLevel(down);
     MEDDLY_DCASSERT(kdn <= k);
-    if (kdn < k)  path[k].initRedundant(F, k, down, false);
+    if (kdn < k)  path[k].initRedundant(F, k, down, SPARSE_ONLY);
     else          F->unpackNode(path + k, down, SPARSE_ONLY);
     nzp[k] = 0;
     index[k] = path[k].index(0);

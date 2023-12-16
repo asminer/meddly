@@ -249,9 +249,9 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::first(int k, node_handle down)
 
     if (isLevelAbove(k, kdn)) {
       if (k>0 || isFully) {
-        path[k].initRedundant(F, k, 1.0f, down, false);
+        path[k].initRedundant(F, k, 1.0f, down, SPARSE_ONLY);
       } else {
-        path[k].initIdentity(F, k, index[-k], 1.0f, down, false);
+        path[k].initIdentity(F, k, index[-k], 1.0f, down, SPARSE_ONLY);
       }
     } else {
       F->unpackNode(path+k, down, SPARSE_ONLY);
@@ -364,11 +364,11 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::first(int k, node_handle do
     // Set up this level.
     nzp[k] = 0;
     if (F->isFullyReduced()) {
-      path[k].initRedundant(F, k, 1.0f, cdown, false);
+      path[k].initRedundant(F, k, 1.0f, cdown, SPARSE_ONLY);
       index[k] = 0;
     } else {
       index[k] = index[upLevel(k)];
-      path[k].initIdentity(F, k, index[k], 1.0f, cdown, false);
+      path[k].initIdentity(F, k, index[k], 1.0f, cdown, SPARSE_ONLY);
     }
     return true;
   }
@@ -489,7 +489,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::first(int k, node_handle do
       // See if there is a valid path below.
       if (!first(downLevel(kpr), down)) return false;
       // There's one below, set up the one at these levels.
-      path[k].initRedundant(F, k, 1.0f, down, false);
+      path[k].initRedundant(F, k, 1.0f, down, SPARSE_ONLY);
       if (F->isFullyReduced()) {
         nzp[k] = 0;
         index[k] = 0;
@@ -507,7 +507,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::first(int k, node_handle do
     if (0==cdown) return false;
     acc_evs[downLevel(kpr)] = acc_evs[kpr] * ev;
     if (!first(kpr, cdown)) return false;
-    path[k].initRedundant(F, k, 1.0f, down, false);
+    path[k].initRedundant(F, k, 1.0f, down, SPARSE_ONLY);
     nzp[k] = 0;
     index[k] = 0;
     return true;

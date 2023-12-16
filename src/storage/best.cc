@@ -1135,11 +1135,19 @@ void MEDDLY::best_storage
       //
 
       for (int z=0; z<nnz; z++) {
+        if (nr.hasEdges()) {
+            nr.setSparse(z, index[z], edge + z*slots_per_edge, down[z]);
+        } else {
+            nr.setSparse(z, index[z], down[z]);
+        }
+
+        /*
         nr.d_ref(z) = down[z];
         nr.i_ref(z) = index[z];
         if (nr.hasEdges()) {
           nr.setEdgeRaw(z, edge + z*slots_per_edge);
         }
+        */
       } // for z
       if (nr.isExtensible() == is_extensible) {
         nr.shrink(nnz);
@@ -1148,6 +1156,16 @@ void MEDDLY::best_storage
         MEDDLY_DCASSERT(!nr.isExtensible());
         int i = ext_i+1;
         for (unsigned z=nnz; z<nr.getSize(); z++, i++) {
+            if (nr.hasEdges()) {
+                if (ext_ptr) {
+                    nr.setSparse(z, i, ext_ptr, ext_d);
+                } else {
+                    nr.setSparse(z, i, parent->getTransparentEdge(), ext_d);
+                }
+            } else {
+                nr.setSparse(z, i, ext_d);
+            }
+            /*
           nr.i_ref(z) = i;
           nr.d_ref(z) = ext_d;
           if (nr.hasEdges()) {
@@ -1156,6 +1174,7 @@ void MEDDLY::best_storage
             else
               nr.set_edgeval(z, parent->getTransparentEdge());
           }
+          */
         }
       }
     }
@@ -1171,17 +1190,34 @@ void MEDDLY::best_storage
       //
       unsigned i;
       for (i=0; i<size; i++) {
+        if (nr.hasEdges()) {
+            nr.setFull(i, edge + i*slots_per_edge, down[i]);
+        } else {
+            nr.setFull(i, down[i]);
+        }
+          /*
         nr.d_ref(i) = down[i];
         if (nr.hasEdges()) {
           nr.setEdgeRaw(i, edge + i*slots_per_edge);
         }
+        */
       }
       if (FULL_OR_SPARSE == st2 && is_extensible == nr.isExtensible()) {
-        nr.shrinkFull(size);
+        nr.shrink(size);
       } else {
         const int ext_d = is_extensible? down[size-1]: tv;
         const void* ext_ptr = is_extensible? (edge + (size-1)*slots_per_edge): 0;
         for (; i<unsigned(nr.getSize()); i++) {
+            if (nr.hasEdges()) {
+                if (ext_ptr) {
+                    nr.setFull(i, ext_ptr, ext_d);
+                } else {
+                    nr.setFull(i, parent->getTransparentEdge(), ext_d);
+                }
+            } else {
+                nr.setFull(i, ext_d);
+            }
+            /*
           nr.d_ref(i) = ext_d;
           if (nr.hasEdges()) {
             if (ext_ptr)
@@ -1189,6 +1225,7 @@ void MEDDLY::best_storage
             else
               nr.set_edgeval(i, parent->getTransparentEdge());
           }
+          */
         }
       }
     } else {
@@ -1196,13 +1233,22 @@ void MEDDLY::best_storage
       // Copying into a sparse node
       //
 
-      int z = 0;
+      unsigned z = 0;
       for (unsigned int i=0; i<size; i++) if (down[i]) {
+        if (nr.hasEdges()) {
+            nr.setSparse(z, i, edge + i*slots_per_edge, down[i]);
+        } else {
+            nr.setSparse(z, i, down[i]);
+        }
+
+          /*
         nr.d_ref(z) = down[i];
         nr.i_ref(z) = i;
         if (nr.hasEdges()) {
           nr.setEdgeRaw(z, edge + i*slots_per_edge);
         }
+        */
+
         z++;
       } // for i
       if (nr.isExtensible() == is_extensible) nr.shrink(z);
@@ -1213,6 +1259,16 @@ void MEDDLY::best_storage
         const int ext_d = down[ext_i];
         const void* ext_ptr = (edge + (ext_i)*slots_per_edge);
         for (int i = ext_i + 1 ; z<nr.getSize(); z++, i++) {
+            if (nr.hasEdges()) {
+                if (ext_ptr) {
+                    nr.setSparse(z, i, ext_ptr, ext_d);
+                } else {
+                    nr.setSparse(z, i, parent->getTransparentEdge(), ext_d);
+                }
+            } else {
+                nr.setSparse(z, i, ext_d);
+            }
+            /*
           nr.i_ref(z) = i;
           nr.d_ref(z) = ext_d;
           if (nr.hasEdges()) {
@@ -1221,6 +1277,7 @@ void MEDDLY::best_storage
             else
               nr.set_edgeval(z, parent->getTransparentEdge());
           }
+          */
         }
       }
     }

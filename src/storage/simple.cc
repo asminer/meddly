@@ -843,7 +843,7 @@ void MEDDLY::simple_separated
             unsigned i;
 
             if (FULL_OR_SPARSE == st2 && is_extensible == nr.isExtensible()) {
-                nr.shrinkFull(size);
+                nr.shrink(size);
             }
 
             if (nr.hasEdges()) {

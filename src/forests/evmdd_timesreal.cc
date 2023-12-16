@@ -231,7 +231,7 @@ bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::first(int k, node_handle down)
     int kdn = F->getNodeLevel(down);
     MEDDLY_DCASSERT(kdn <= k);
     if (kdn < k)  {
-      path[k].initRedundant(F, k, 1.0f, down, false);
+      path[k].initRedundant(F, k, 1.0f, down, SPARSE_ONLY);
     } else {
       F->unpackNode(path+k, down, SPARSE_ONLY);
     }

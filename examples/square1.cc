@@ -76,12 +76,11 @@ void rotateMove(const int* delta, int N, dd_edge &answer)
 
     for (int i=0; i<N; i++) {
       if (delta[i] < 0) {
-        nk->d_ref(i) = EF->handleForValue(0);
+        nk->setFull(i, EF->handleForValue(0));
       } else {
         unpacked_node* nkp = unpacked_node::newSparse(EF, -k, 1);
-        nkp->i_ref(0) = delta[i];
-        nkp->d_ref(0) = EF->linkNode(bottom);
-        nk->d_ref(i) = EF->createReducedNode(i, nkp);
+        nkp->setSparse(0, delta[i], EF->linkNode(bottom));
+        nk->setFull(i, EF->createReducedNode(i, nkp));
       }
     } // for i
 
@@ -105,13 +104,11 @@ void exchangeMove(bool left, dd_edge &answer)
       // the exchange level
       unpacked_node* nk = unpacked_node::newFull(EF, k, 2);
       unpacked_node* nkp = unpacked_node::newSparse(EF, -k, 1);
-      nkp->i_ref(0) = 1;
-      nkp->d_ref(0) = EF->linkNode(bottom);
-      nk->d_ref(0) = EF->createReducedNode(0, nkp);
+      nkp->setSparse(0, 1, EF->linkNode(bottom));
+      nk->setFull(0, EF->createReducedNode(0, nkp));
       nkp = unpacked_node::newSparse(EF, -k, 1);
-      nkp->i_ref(0) = 0;
-      nkp->d_ref(0) = EF->linkNode(bottom);
-      nk->d_ref(1) = EF->createReducedNode(1, nkp);
+      nkp->setSparse(0, 0, EF->linkNode(bottom));
+      nk->setFull(1, EF->createReducedNode(1, nkp));
       EF->unlinkNode(bottom);
       bottom = EF->createReducedNode(-1, nk);
       continue;
@@ -121,7 +118,6 @@ void exchangeMove(bool left, dd_edge &answer)
     for (int i=0; i<24; i++) {
       if (isWideLeft[k] && 0==i%6) {
         // can't rotate, wide piece is in the way
-        nk->d_ref(i) = 0;
         continue;
       }
 
@@ -129,12 +125,11 @@ void exchangeMove(bool left, dd_edge &answer)
         // exchange this piece
         // i -> (i+12)%24
         unpacked_node* nkp = unpacked_node::newSparse(EF, -k, 1);
-        nkp->i_ref(0) = (i+12)%24;
-        nkp->d_ref(0) = EF->linkNode(bottom);
-        nk->d_ref(i) = EF->createReducedNode(-1, nkp);
+        nkp->setSparse(0, (i+12)%24, EF->linkNode(bottom));
+        nk->setFull(i, EF->createReducedNode(-1, nkp));
       } else {
         // this piece doesn't move
-        nk->d_ref(i) = EF->linkNode(bottom);
+        nk->setFull(i, EF->linkNode(bottom));
       }
 
     } // for i
