@@ -186,7 +186,6 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
 
 
 #ifdef ALLOW_DEPRECATED_0_17_4
-#ifndef REMOVE_OLD
 
 /*
   Initializers
@@ -265,7 +264,6 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
 }
 
 #endif
-#endif
 
 void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
   unsigned i, node_handle node, node_storage_flags fs)
@@ -314,7 +312,6 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k, unsigned i,
 }
 
 #ifdef ALLOW_DEPRECATED_0_17_4
-#ifndef REMOVE_OLD
 
 void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
   unsigned i, int ev, node_handle node, bool full)
@@ -394,7 +391,6 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
     }
 }
 
-#endif
 #endif
 
 /*

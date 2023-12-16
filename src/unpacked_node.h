@@ -34,8 +34,6 @@ namespace MEDDLY {
     struct unpacked_lists;
 }
 
-// #define REMOVE_OLD
-
 // ******************************************************************
 // *                                                                *
 // *                      unpacked_node  class                      *
@@ -929,23 +927,6 @@ public:
             initIdentity(f, k, i, node, full ? FULL_ONLY : SPARSE_ONLY);
         }
 
-#ifdef REMOVE_OLD
-        template <class T>
-        inline void initRedundant(const forest *f, int k, T _ev, node_handle node,
-                bool full)
-        {
-            edge_value ev(_ev);
-            initRedundant(f, k, ev, node, full ? FULL_ONLY : SPARSE_ONLY);
-        }
-
-        template <class T>
-        inline void initIdentity(const forest *f, int k, unsigned i, T _ev,
-                node_handle node, bool full)
-        {
-            edge_value ev(_ev);
-            initIdentity(f, k, i, ev, node, full ? FULL_ONLY : SPARSE_ONLY);
-        }
-#else
         void initRedundant(const forest *f, int k, int ev, node_handle node,
                 bool full);
 
@@ -963,7 +944,6 @@ public:
 
         void initIdentity(const forest *f, int k, unsigned i,
                 float ev, node_handle node, bool full);
-#endif
 
         static inline unpacked_node* newRedundant(const forest *f,
                 int k, node_handle node, bool full)

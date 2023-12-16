@@ -163,7 +163,7 @@ private:
   long piece_size;
 
   // used by the hash table in implicit_relation
-  relation_node* hash_chain;
+  // relation_node* hash_chain;
 
   // friend class implicit_relation;
 };  // class relation_node

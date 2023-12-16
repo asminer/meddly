@@ -97,11 +97,11 @@ namespace MEDDLY {
       virtual node_address getNextAddress(node_address addr) const {
         if (0==addr) return 0;
         if (addr > last_used_slot) return 0;
-        return addr + getHoleSize(addr);
+        return addr + (node_address) getHoleSize(addr);
       }
 
       void showInternal(output &s) const;
-      void showInternalAddr(output &s, node_address addr, int slots) const;
+      void showInternalAddr(output &s, node_address addr, unsigned slots) const;
 
     protected:
       /// Grab a hole from the end of the array
@@ -153,9 +153,10 @@ namespace MEDDLY {
             return data[h] == data[h+ hs - 1];
       }
 
-      inline INT readSlot(node_address h, const int slot) const {
+      inline INT readSlot(node_address h, const unsigned slot) const {
         MEDDLY_DCASSERT(isHole(h));
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1lu, h+slot, 1+last_used_slot);
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1lu, h+slot, 1+last_used_slot
+        );
         return data[h+slot];
       }
 
@@ -236,7 +237,8 @@ void MEDDLY::hole_manager<INT>::showInternal(output &s) const
 // ******************************************************************
 
 template <class INT>
-void MEDDLY::hole_manager<INT>::showInternalAddr(output &s, node_address addr, int slots) const
+void MEDDLY::hole_manager<INT>::showInternalAddr(output &s,
+        node_address addr, unsigned slots) const
 {
   if (0==addr) return;
   if (addr > last_used_slot) {
@@ -251,11 +253,11 @@ void MEDDLY::hole_manager<INT>::showInternalAddr(output &s, node_address addr, i
     MEDDLY_DCASSERT(0);
   }
   s << getHoleSize(addr);
-  for (int i=1; i<=slots; i++) {
+  for (unsigned i=1; i<=slots; i++) {
     s << ", " << data[addr+i];
   }
   s << ", ..., ";
-  addr += getHoleSize(addr)-1;
+  addr += (node_address) getHoleSize(addr)-1;
   if (data[addr] & MSB) {
     s << "1:";
   } else {

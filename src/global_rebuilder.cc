@@ -140,7 +140,7 @@ MEDDLY::dd_edge MEDDLY::global_rebuilder::rebuild(const dd_edge& e) {
     throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
-  int num_var = e.getForest()->getDomain()->getNumVariables();
+  int num_var = (int) e.getForest()->getDomain()->getNumVariables();
   _root = e.getNode();
 
   // Partial assignment
@@ -601,7 +601,7 @@ MEDDLY::global_rebuilder::BottomUpSignatureGenerator::BottomUpSignatureGenerator
 void MEDDLY::global_rebuilder::BottomUpSignatureGenerator::precompute()
 {
   expert_forest* source = _gr._source;
-  int num_vars = source->getNumVariables();
+  int num_vars = (int) source->getNumVariables();
   for(int i = 1; i <= num_vars; i++) {
     int var = source->getVarByLevel(i);
     int size = source->unique->getSize(var);

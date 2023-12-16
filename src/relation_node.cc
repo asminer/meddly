@@ -72,7 +72,7 @@ MEDDLY::relation_node::expandTokenUpdate(long i)
   }
   if(i>0)
   {
-    token_update = (long*)realloc(token_update,(i+1)*sizeof(long));
+    token_update = (long*)realloc(token_update,size_t(i+1)*sizeof(long));
     for(int j = piece_size;j<=i;j++)
       token_update[j]=NOT_KNOWN;
     piece_size = i+1;
