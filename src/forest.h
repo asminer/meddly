@@ -75,6 +75,7 @@ namespace MEDDLY {
 
     TBD: discussion of garbage collection.
 
+    TBD: fix and discuss the by-level reduction rules
 */
 class MEDDLY::forest {
 
@@ -318,6 +319,126 @@ class MEDDLY::forest {
         */
         virtual bool isIdentityEdge(const unpacked_node &nb, int i) const = 0;
 
+    // ------------------------------------------------------------
+    protected: // Moving nodes around; called in derived classes for reordering
+    // ------------------------------------------------------------
+
+        /**
+            Swap the content of nodes.
+            Do not update their parents and inCount.
+        */
+        void swapNodes(node_handle p, node_handle q);
+
+        /**
+            Modify a node in place.
+            Does not check if the modified node is duplicate or redundant.
+            The level of the node may change.
+            Keep the reference number and the cache count of the node.
+        */
+        node_handle modifyReducedNodeInPlace(unpacked_node* un, node_handle p);
+
+    // ------------------------------------------------------------
+    public: // Getters related to the mdd type / reductions
+    // ------------------------------------------------------------
+
+        /// Does this forest represent relations or matrices?
+        inline bool isForRelations() const {
+            return isRelation;
+        }
+
+        /// Returns the range type.
+        inline range_type getRangeType() const {
+            return rangeType;
+        }
+
+        /// Query the range type.
+        inline bool isRangeType(range_type r) const {
+            return r == rangeType;
+        }
+
+        /// Returns the edge labeling mechanism.
+        inline edge_labeling getEdgeLabeling() const {
+            return edgeLabel;
+        }
+
+        /// Is the edge labeling "MULTI_TERMINAL".
+        inline bool isMultiTerminal() const {
+            return edge_labeling::MULTI_TERMINAL == edgeLabel;
+        }
+
+        /// Is the edge labeling "EV_PLUS".
+        inline bool isEVPlus() const {
+            return edge_labeling::EVPLUS == edgeLabel;
+        }
+
+        /// Is the edge labeling "INDEX_SET".
+        inline bool isIndexSet() const {
+            return edge_labeling::INDEX_SET == edgeLabel;
+        }
+
+        /// Is the edge labeling "EV_TIMES".
+        inline bool isEVTimes() const {
+            return edge_labeling::EVTIMES == edgeLabel;
+        }
+
+        /// Check if we match a specific type of forest
+        inline bool matches(bool isR, range_type rt, edge_labeling el) const {
+            return (isRelation == isR) && (rangeType == rt) && (edgeLabel == el);
+        }
+
+        /// Returns the reduction rule used by this forest.
+        inline reduction_rule getReductionRule() const {
+            return deflt.reduction;
+        }
+
+        /// Returns true if the forest is fully reduced.
+        inline bool isFullyReduced() const {
+            return deflt.isFullyReduced();
+        }
+
+        /// Returns true if the forest is quasi reduced.
+        inline bool isQuasiReduced() const {
+            return deflt.isQuasiReduced();
+        }
+
+        /// Returns true if the forest is identity reduced.
+        inline bool isIdentityReduced() const {
+            return deflt.isIdentityReduced();
+        }
+
+        /// Returns true if the forest is user_defined reduced.
+        inline bool isUserDefinedReduced() const {
+            return deflt.isUserDefinedReduced();
+        }
+
+        /// Returns true if the level is fully reduced.
+        inline bool isFullyReduced(int k) const {
+            if(k<0) return level_reduction_rule[2*(-k)   ] == -1;
+            else    return level_reduction_rule[2*(k) - 1] == -1;
+        }
+
+        /// Returns true if the level is quasi reduced.
+        inline bool isQuasiReduced(int k) const {
+            if(k<0) return level_reduction_rule[2*(-k)   ] == -2;
+            else    return level_reduction_rule[2*(k) - 1] == -2;
+        }
+
+        /// Returns true if the level is identity reduced.
+        inline bool isIdentityReduced(int k) const {
+            if(k<0) return level_reduction_rule[2*(-k)   ] == -3;
+            else    return level_reduction_rule[2*(k) - 1] == -3;
+        }
+
+        inline const int* getLevelReductionRule() const {
+            return level_reduction_rule;
+        }
+
+
+    // ------------------------------------------------------------
+    private: // private members for mdd type / reductions
+    // ------------------------------------------------------------
+
+        int *level_reduction_rule;
 
     // ------------------------------------------------------------
     public: // Getters related to the domain / levels
@@ -1391,7 +1512,6 @@ class MEDDLY::forest {
 
 
   public:
-    int *level_reduction_rule;
 
 #ifdef ALLOW_DEPRECATED_0_17_4
     /// Status indicators for nodes.
@@ -1453,59 +1573,6 @@ class MEDDLY::forest {
   // ------------------------------------------------------------
   // inlines.
   public:
-
-    /// Does this forest represent relations or matrices?
-    bool isForRelations() const;
-
-    /// Returns the range type.
-    range_type getRangeType() const;
-
-    /// Query the range type.
-    bool isRangeType(range_type r) const;
-
-    /// Returns the edge labeling mechanism.
-    edge_labeling getEdgeLabeling() const;
-
-    /// Is the edge labeling "MULTI_TERMINAL".
-    bool isMultiTerminal() const;
-
-    /// Is the edge labeling "EV_PLUS".
-    bool isEVPlus() const;
-
-    /// Is the edge labeling "INDEX_SET".
-    bool isIndexSet() const;
-
-    /// Is the edge labeling "EV_TIMES".
-    bool isEVTimes() const;
-
-    /// Check if we match a specific type of forest
-    bool matches(bool isR, range_type rt, edge_labeling el) const;
-
-    /// Returns the reduction rule used by this forest.
-    reduction_rule getReductionRule() const;
-
-    /// Returns true if the forest is fully reduced.
-    bool isFullyReduced() const;
-
-    /// Returns true if the forest is quasi reduced.
-    bool isQuasiReduced() const;
-
-    /// Returns true if the forest is identity reduced.
-    bool isIdentityReduced() const;
-
-     /// Returns true if the forest is user_defined reduced.
-    bool isUserDefinedReduced() const;
-
-    /// Returns true if the level is fully reduced.
-    bool isFullyReduced(int k) const;
-
-    /// Returns true if the level is quasi reduced.
-    bool isQuasiReduced(int k) const;
-
-    /// Returns true if the level is identity reduced.
-    bool isIdentityReduced(int k) const;
-
-    int* getLevelReductionRule() const;
 
 
 
@@ -1716,7 +1783,25 @@ class MEDDLY::forest {
         @param  a     return a handle to a node in the forest such that
                       f(v_1, ..., vh=i, ..., v_n) = i for 0 <= i < size(vh).
     */
-    void createEdgeForVar(int vh, bool pr, dd_edge& a);
+    inline void createEdgeForVar(int vh, bool pr, dd_edge& a) {
+        switch (rangeType) {
+            case range_type::BOOLEAN:
+                createEdgeForVar(vh, pr, (bool*)  0, a);
+                break;
+
+            case range_type::INTEGER:
+                createEdgeForVar(vh, pr, (long*)  0, a);
+                break;
+
+            case range_type::REAL:
+                createEdgeForVar(vh, pr, (float*) 0, a);
+                break;
+
+            default:
+                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+        }
+    };
+
 
     /** Create an edge as the union of several explicit vectors.
         @param  vlist Array of vectors. Each vector has dimension equal
@@ -2061,9 +2146,6 @@ class MEDDLY::forest {
 
 private:
     /**
-        TBD: virtual for now;
-        eventually the implementation will move here.
-
         Disconnects all downward pointers from p,
         and removes p from the unique table.
     */
@@ -2073,32 +2155,6 @@ private:
 
 public:
 
-    /** Force garbage collection.
-        All disconnected nodes in this forest are discarded along with any
-        compute table entries that may include them.
-    */
-    // virtual void garbageCollect() = 0;
-
-    /** Compact the memory for all variables in this forest.
-        This is not the same as garbage collection.
-    */
-    // virtual void compactMemory() = 0;
-
-    /** Create an edge representing the subset of a Matrix Diagram.
-
-        size(vlist) == number of variables in the forest + 1 (for terminals)
-        size(vlist[i]) == size (i.e. bound) of variable i
-        size(vlist) == size(vplist)
-        size(vlist[i]) == size(vplist[i])
-        If vlist[i][j] is true, that index is included in the mask
-        If vlist[i][j] is false, that index is excluded from the mask.
-
-        TODO: write a better description (an example might also help).
-    */
-    /*
-    virtual void createSubMatrix(const bool* const* vlist,
-      const bool* const* vplist, const dd_edge a, dd_edge& b) = 0;
-      */
 
 
 
@@ -2111,7 +2167,7 @@ public:
                           1 : all forest nodes + statistics.
                           2 : internal forest + statistics.
     */
-    virtual void showInfo(output &strm, int verbosity=0) = 0;
+    virtual void showInfo(output &strm, int verbosity=0);
 
 
     /** Start logging stats.
@@ -2190,127 +2246,6 @@ public:
 };
 
 
-// ******************************************************************
-// *                                                                *
-// *                     inlined forest methods                     *
-// *                                                                *
-// ******************************************************************
-
-
-
-
-// forest::
-
-inline bool MEDDLY::forest::isForRelations() const {
-  return isRelation;
-}
-
-inline MEDDLY::range_type MEDDLY::forest::getRangeType() const {
-  return rangeType;
-}
-
-inline bool MEDDLY::forest::isRangeType(MEDDLY::range_type r) const {
-  return r == rangeType;
-}
-
-inline MEDDLY::edge_labeling MEDDLY::forest::getEdgeLabeling() const {
-  return edgeLabel;
-}
-
-inline bool MEDDLY::forest::isMultiTerminal() const {
-  return edge_labeling::MULTI_TERMINAL == edgeLabel;
-}
-
-inline bool MEDDLY::forest::isEVPlus() const {
-  return edge_labeling::EVPLUS == edgeLabel;
-}
-
-inline bool MEDDLY::forest::isIndexSet() const {
-  return edge_labeling::INDEX_SET == edgeLabel;
-}
-
-inline bool MEDDLY::forest::isEVTimes() const {
-  return edge_labeling::EVTIMES == edgeLabel;
-}
-
-inline bool MEDDLY::forest::matches(bool isR, MEDDLY::range_type rt,
-  MEDDLY::edge_labeling el) const {
-  return (isRelation == isR) && (rangeType == rt) && (edgeLabel == el);
-}
-
-inline MEDDLY::reduction_rule MEDDLY::forest::getReductionRule() const {
-  return deflt.reduction;
-}
-
-
-inline bool MEDDLY::forest::isFullyReduced() const {
-    return deflt.isFullyReduced();
-}
-
-inline bool MEDDLY::forest::isQuasiReduced() const {
-    return deflt.isQuasiReduced();
-}
-
-inline bool MEDDLY::forest::isIdentityReduced() const {
-    return deflt.isIdentityReduced();
-}
-
-inline bool MEDDLY::forest::isUserDefinedReduced() const {
-    return deflt.isUserDefinedReduced();
-}
-
-inline int* MEDDLY::forest::getLevelReductionRule() const{
-    return level_reduction_rule;
-
-}
-
-inline bool MEDDLY::forest::isFullyReduced(int k) const {
-    if(k<0)
-        return getLevelReductionRule()[2*(-k)]==-1;
-    else
-        return getLevelReductionRule()[2*(k) - 1]==-1;
-
-}
-
-inline bool MEDDLY::forest::isQuasiReduced(int k) const {
-    if(k<0)
-        return getLevelReductionRule()[2*(-k)]==-2;
-    else
-        return getLevelReductionRule()[2*(k) - 1]==-2;
-}
-
-inline bool MEDDLY::forest::isIdentityReduced(int k) const {
-    if(k<0)
-        return getLevelReductionRule()[2*(-k)]==-3;
-    else
-        return false;
-}
-
-
-
-inline void MEDDLY::forest::createEdgeForVar(int vh, bool pr, dd_edge& a)
-{
-    switch (rangeType) {
-        case range_type::BOOLEAN:
-                createEdgeForVar(vh, pr, (bool*)  0, a);
-                break;
-
-        case range_type::INTEGER:
-                createEdgeForVar(vh, pr, (long*)  0, a);
-                break;
-
-        case range_type::REAL:
-                createEdgeForVar(vh, pr, (float*) 0, a);
-                break;
-
-        default:
-                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    }
-};
-
-
-// end of class forest
-
 
 // ******************************************************************
 // *                                                                *
@@ -2336,9 +2271,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
                   edge_labeling ev, const policies &p, int* level_reduction_rule);
 
 
-  // --------------------------------------------------
-  // Node status
-  // --------------------------------------------------
 
   public:
 
@@ -2421,37 +2353,11 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 
 
 
-    /** Swap the content of nodes.
-        Do not update their parents and inCount.
-    */
-    void swapNodes(node_handle p, node_handle q);
-
-    /*
-     * Modify a node in place.
-     * Does not check if the modified node is duplicate or redundant.
-     * The level of the node may change.
-     * Keep the reference number and the cache count of the node.
-     */
-    node_handle modifyReducedNodeInPlace(unpacked_node* un, node_handle p);
-
-  // ------------------------------------------------------------
-  // virtual in the base class, but implemented here.
-  // See meddly.h for descriptions of these methods.
 
 #ifdef ALLOW_DEPRECATED_0_17_3
     virtual void writeEdges(output &s, const dd_edge* E, unsigned n) const;
     virtual void readEdges(input &s, dd_edge* E, unsigned n);
 #endif
-
-    // virtual void garbageCollect();
-    // virtual void compactMemory();
-    virtual void showInfo(output &strm, int verbosity);
-
-  // ------------------------------------------------------------
-  // abstract virtual, must be overridden.
-  //
-
-
 
 
 
@@ -2496,21 +2402,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     virtual const char* codeChars() const;
 #endif
 
-
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // |                                                                |
-  // |                              Data                              |
-  // |                                                                |
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  private:
-    // Garbage collection in progress
-    // bool performing_gc;
-
-
-    // class nodecounter;
-    // class nodemarker;
 };
 // end of expert_forest class.
 

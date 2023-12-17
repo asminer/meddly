@@ -560,7 +560,54 @@ void MEDDLY::forest::normalize(unpacked_node &nb, float& ev) const
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Moving nodes around
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+void MEDDLY::forest::swapNodes(node_handle p, node_handle q)
+{
+    unique->remove(hashNode(p), p);
+    unique->remove(hashNode(q), q);
+
+    nodeHeaders.swapNodes(p, q, false);
+
+    unique->add(hashNode(p), p);
+    unique->add(hashNode(q), q);
+}
+
+MEDDLY::node_handle MEDDLY::forest
+    ::modifyReducedNodeInPlace(unpacked_node* un, node_handle p)
+{
+    unique->remove(hashNode(p), p);
+    nodeMan->unlinkDownAndRecycle(nodeHeaders.getNodeAddress(p));
+
+    un->computeHash();
+
+    nodeHeaders.setNodeLevel(p, un->getLevel());
+    node_address addr = nodeMan->makeNode(p, *un, getPolicies().storage_flags);
+    nodeHeaders.setNodeAddress(p, addr);
+    // incoming count, cache count remains unchanged
+
+    unique->add(un->hash(), p);
+
+#ifdef DEVELOPMENT_CODE
+    unpacked_node* key = newUnpacked(p, SPARSE_ONLY);
+    key->computeHash();
+    MEDDLY_DCASSERT(key->hash() == un->hash());
+    node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
+    MEDDLY_DCASSERT(f == p);
+    unpacked_node::Recycle(key);
+#endif
+#ifdef DEBUG_CREATE_REDUCED
+    printf("Created node ");
+    FILE_output s(stdout);
+    showNode(s, p, SHOW_DETAILS | SHOW_INDEX);
+    printf("\n");
+#endif
+
+    unpacked_node::Recycle(un);
+    return p;
+}
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Node manager initialization
@@ -1489,6 +1536,22 @@ void MEDDLY::forest::removeAllComputeTableEntries()
   }
 }
 
+void MEDDLY::forest::showInfo(output &s, int verb)
+{
+  // Show forest with appropriate level of detail
+  if (1==verb)  dump(s, SHOW_DETAILS);
+  else          dumpInternal(s);
+  s << "DD stats:\n";
+  reportStats(s, "    ", ~0);
+  // reportMemoryUsage(s, "    ", verb);
+  s << "Unique table stats:\n\t";
+  s.put("Current size:", -24);
+  s << long(unique->getSize()) << "\n\t";
+  s.put("Current entries:", -24);
+  s << long(unique->getNumEntries()) << "\n";
+}
+
+
 void MEDDLY::forest::setLogger(logger* L, const char* name)
 {
     theLogger = L;
@@ -2060,22 +2123,6 @@ void MEDDLY::expert_forest::compactMemory()
 
 */
 
-void MEDDLY::expert_forest::showInfo(output &s, int verb)
-{
-  // Show forest with appropriate level of detail
-  if (1==verb)  dump(s, SHOW_DETAILS);
-  else          dumpInternal(s);
-  s << "DD stats:\n";
-  reportStats(s, "    ", ~0);
-  // reportMemoryUsage(s, "    ", verb);
-  s << "Unique table stats:\n\t";
-  s.put("Current size:", -24);
-  s << long(unique->getSize()) << "\n\t";
-  s.put("Current entries:", -24);
-  s << long(unique->getNumEntries()) << "\n";
-}
-
-
 // ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '                                                                '
 // '    virtual methods to be overridden by some derived classes    '
@@ -2129,49 +2176,6 @@ MEDDLY::node_handle MEDDLY::expert_forest
 */
 
 
-void MEDDLY::expert_forest::swapNodes(node_handle p, node_handle q)
-{
-  unique->remove(hashNode(p), p);
-  unique->remove(hashNode(q), q);
-
-  nodeHeaders.swapNodes(p, q, false);
-
-  unique->add(hashNode(p), p);
-  unique->add(hashNode(q), q);
-}
-
-MEDDLY::node_handle MEDDLY::expert_forest::modifyReducedNodeInPlace(unpacked_node* un, node_handle p)
-{
-  unique->remove(hashNode(p), p);
-  nodeMan->unlinkDownAndRecycle(nodeHeaders.getNodeAddress(p));
-
-  un->computeHash();
-
-  nodeHeaders.setNodeLevel(p, un->getLevel());
-  node_address addr = nodeMan->makeNode(p, *un, getPolicies().storage_flags);
-  nodeHeaders.setNodeAddress(p, addr);
-  // incoming count, cache count remains unchanged
-
-  unique->add(un->hash(), p);
-
-#ifdef DEVELOPMENT_CODE
-  unpacked_node* key = newUnpacked(p, SPARSE_ONLY);
-  key->computeHash();
-  MEDDLY_DCASSERT(key->hash() == un->hash());
-  node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
-  MEDDLY_DCASSERT(f == p);
-  unpacked_node::Recycle(key);
-#endif
-#ifdef DEBUG_CREATE_REDUCED
-  printf("Created node ");
-  FILE_output s(stdout);
-  showNode(s, p, SHOW_DETAILS | SHOW_INDEX);
-  printf("\n");
-#endif
-
-  unpacked_node::Recycle(un);
-  return p;
-}
 
 //
 // Stuff that used to be inlined but now can't
