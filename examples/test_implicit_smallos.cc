@@ -19,7 +19,7 @@ along with this library.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstdlib>
 #include <string.h>
-#include <fstream>
+#include <iostream>
 
 #define _MEDDLY_WITHOUT_IOSTREAM_
 

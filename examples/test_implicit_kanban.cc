@@ -19,7 +19,7 @@
 
 #include <cstdlib>
 #include <string.h>
-#include <fstream>
+#include <iostream>
 
 #define _MEDDLY_WITHOUT_IOSTREAM_
 
