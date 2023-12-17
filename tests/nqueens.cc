@@ -193,7 +193,7 @@ long buildQueenSolutions(int N)
   delete[] dgp;
   delete[] dgm;
   delete[] constr;
-  destroyForest(f);
+  forest::destroy(f);
   domain::destroy(d);
   return c;
 }

@@ -26,5 +26,5 @@ Uncomment ```ALLOW_DEPRECATED_0_17_4``` in ```defines.h```
 to use these deprecated methods.
 This is intended to help developers migrate to the new interface.
 
-
+* ```destroyForest()```; use ```forest::destroy()``` instead.
 

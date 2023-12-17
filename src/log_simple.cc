@@ -18,81 +18,11 @@
 
 
 #include "defines.h"
-#include "loggers.h"
+#include "log_simple.h"
+#include "forest.h"
 
 #define BATCH
 
-// ******************************************************************
-// *                                                                *
-// *                       json_logger methods                      *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::json_logger::json_logger(std::ostream &s)
-  : out(s)
-{
-}
-
-MEDDLY::json_logger::~json_logger()
-{
-}
-
-void MEDDLY::json_logger::addComment(const char*)
-{
-  // Completely ignored
-}
-
-void MEDDLY::json_logger::newPhase(const forest*, const char*)
-{
-  // Completely ignored
-}
-
-void MEDDLY::json_logger::logForestInfo(const forest* f, const char* name)
-{
-  const expert_forest* ef = dynamic_cast<const expert_forest*>(f);
-  MEDDLY_DCASSERT(ef);
-  if (0==ef) return;
-
-  fixLogger();
-
-  int L = ef->getNumVariables();
-  int smallest = ef->isForRelations() ? -L : 1;
-
-  out << "{ \"forest_id\":" << ef->FID() << ", ";
-  if (name) {
-    out << "\"name\":\"" << name << "\", ";
-  }
-  out << "\"left\":" << smallest << ", ";
-  out << "\"right\":" << L;
-  if (recordingNodeCounts()) {
-    long* raw_active;
-    long* active;
-    if (ef->isForRelations()) {
-      raw_active = new long[2*L+1];
-      active = raw_active+L;
-    } else {
-      raw_active = new long[L+1];
-      active = raw_active;
-    }
-    ef->countNodesByLevel(active);
-
-    out << ", \"an\":[";
-    for (int l=smallest; l<=L; l++) {
-      out << active[l];
-      if (l<L) out << ", ";
-    }
-    out << "]";
-  }
-  out << " }\n";
-  out.flush();
-}
-
-void MEDDLY::json_logger::addToActiveNodeCount(const forest* f, int level, long delta)
-{
-  if (0==f) return;
-  out << "{ \"f\":" << f->FID() << ", \"l\":" << level << ", \"anc\":" << delta << " }\n";
-  out.flush();
-}
 
 // ******************************************************************
 // *                                                                *
@@ -100,7 +30,7 @@ void MEDDLY::json_logger::addToActiveNodeCount(const forest* f, int level, long 
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::simple_logger::simple_logger(std::ostream &s, int agg)
+MEDDLY::simple_logger::simple_logger(output &s, int agg)
   : out(s)
 {
   out << "T simple\n";
@@ -136,11 +66,9 @@ void MEDDLY::simple_logger::addComment(const char* str)
   out << "\n";
 }
 
-void MEDDLY::simple_logger::newPhase(const forest* f, const char* str)
+void MEDDLY::simple_logger::newPhase(const forest* ef, const char* str)
 {
   out << "p ";
-  const expert_forest* ef = dynamic_cast<const expert_forest*>(f);
-  MEDDLY_DCASSERT(ef);
   // Failsafe
   if (ef) {
     out << ef->FID() << " ";
@@ -159,10 +87,8 @@ void MEDDLY::simple_logger::newPhase(const forest* f, const char* str)
   out << "\n";
 }
 
-void MEDDLY::simple_logger::logForestInfo(const forest* f, const char* name)
+void MEDDLY::simple_logger::logForestInfo(const forest* ef, const char* name)
 {
-  const expert_forest* ef = dynamic_cast<const expert_forest*>(f);
-  MEDDLY_DCASSERT(ef);
   if (0==ef) return;
 
   fixLogger();

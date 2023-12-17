@@ -19,7 +19,6 @@
 
 #include <cstdlib>
 #include <string.h>
-#include <fstream>
 #include <gmp.h>
 
 #define _MEDDLY_WITHOUT_IOSTREAM_
@@ -27,7 +26,7 @@
 #include "../src/meddly.h"
 #include "simple_model.h"
 #include "../timing/timer.h"
-#include "../src/loggers.h"
+#include "../src/log_simple.h"
 
 // #define DUMP_NSF
 // #define DUMP_REACHABLE
@@ -174,13 +173,14 @@ int main(int argc, const char** argv)
     forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 
     // associate loggers
-    std::ofstream log;
-    forest::logger* LOG = 0;
+    FILE_output log;
+    logger* LOG = 0;
     if (lfile) {
-      log.open(lfile, std::ofstream::out);
-      if (!log) {
+      FILE* fout = fopen(lfile, "w");
+      if (!fout) {
         printf("Couldn't open %s for writing, no logging\n", lfile);
       } else {
+        log.setFILE(fout);
         LOG = new simple_logger(log);
         LOG->recordNodeCounts();
         LOG->recordTimeStamps();

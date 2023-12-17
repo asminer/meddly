@@ -388,7 +388,7 @@ int main(int argc, char *argv[])
 
 
   // Build equivalent MDD
-  destroyForest(evmdd);
+  forest::destroy(evmdd);
 
 #ifdef TEST_INDEX_SET
 

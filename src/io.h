@@ -140,8 +140,15 @@ class MEDDLY::input {
 */
 class MEDDLY::FILE_input : public MEDDLY::input {
     public:
-        FILE_input(FILE* _inf);
+        FILE_input(FILE* _inf = nullptr);
         virtual ~FILE_input();
+
+        inline void setFILE(FILE* _inf) {
+            inf = _inf;
+        }
+        inline operator bool() const {
+            return inf;
+        }
 
         virtual bool eof() const;
         virtual int get_char();
@@ -304,8 +311,16 @@ class MEDDLY::output {
 */
 class MEDDLY::FILE_output : public MEDDLY::output {
     public:
-        FILE_output(FILE* outf);
+        FILE_output(FILE* outf = nullptr);
         virtual ~FILE_output();
+
+        inline void setFILE(FILE* _outf) {
+            outf = _outf;
+        }
+
+        inline operator bool() const {
+            return outf;
+        }
 
         virtual void put(char x);
         virtual void put(const char*, int w);

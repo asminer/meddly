@@ -26,7 +26,6 @@ along with this library.  If not, see <http://www.gnu.org/licenses/>.
 #include "../src/meddly.h"
 #include "simple_model.h"
 #include "../timing/timer.h"
-#include "../src/loggers.h"
 
 // #define DUMP_NSF
 // #define DUMP_REACHABLE

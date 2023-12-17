@@ -20,12 +20,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string.h>
-#include <fstream>
 
 #include "../src/meddly.h"
 #include "simple_model.h"
 #include "../timing/timer.h"
-#include "../src/loggers.h"
+#include "../src/log_simple.h"
 
 using namespace MEDDLY;
 
@@ -155,7 +154,7 @@ char* Go(int i, int N)
   return t;
 }
 
-void runWithArgs(int N, char method, int batchsize, bool build_pdf, forest::logger* LOG)
+void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
 {
   timer start;
 
@@ -388,13 +387,14 @@ int main(int argc, const char** argv)
   // Set up logger, if any
   //
 
-  std::ofstream log;
-  forest::logger* LOG = 0;
+  FILE_output log;
+  logger* LOG = 0;
   if (lfile) {
-    log.open(lfile, std::ofstream::out);
-    if (!log) {
+    FILE* fout = fopen(lfile, "w");
+    if (!fout) {
       printf("Couldn't open %s for writing, no logging\n", lfile);
     } else {
+      log.setFILE(fout);
       LOG = new simple_logger(log);
       LOG->recordNodeCounts();
       char comment[80];

@@ -184,25 +184,25 @@ int main(int argc, const char** argv)
         F = forest::create(D, false, range_type::INTEGER,
                         edge_labeling::MULTI_TERMINAL, p);
         test_MT_full_Reductions(F, "  full");
-        destroyForest(F);
+        forest::destroy(F);
 
         p.setSparseStorage();
         F = forest::create(D, false, range_type::INTEGER,
                         edge_labeling::MULTI_TERMINAL, p);
         test_MT_full_Reductions(F, "sparse");
-        destroyForest(F);
+        forest::destroy(F);
 
         p.setFullStorage();
         F = forest::create(D, false, range_type::INTEGER,
                         edge_labeling::EVPLUS, p);
         test_EV_full_Reductions(F, "  full");
-        destroyForest(F);
+        forest::destroy(F);
 
         p.setSparseStorage();
         F = forest::create(D, false, range_type::INTEGER,
                         edge_labeling::EVPLUS, p);
         test_EV_full_Reductions(F, "sparse");
-        destroyForest(F);
+        forest::destroy(F);
 
         std::cout << "\n";
 

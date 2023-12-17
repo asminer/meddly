@@ -358,7 +358,7 @@ void test_nodes(domain* d, range_type r, edge_labeling e, policies &p)
         }
     }
 
-    destroyForest(f);
+    forest::destroy(f);
 
 }
 

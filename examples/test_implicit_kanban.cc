@@ -26,7 +26,6 @@
 #include "../src/meddly.h"
 #include "simple_model.h"
 #include "../timing/timer.h"
-#include "../src/loggers.h"
 
  #define TEST_HYB
 // #define DUMP_NSF

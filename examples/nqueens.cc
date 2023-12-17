@@ -30,12 +30,11 @@
 */
 
 #include <cstdio>
-#include <fstream>
 #include <cassert>
 
 #include "../src/meddly.h"
 #include "../timing/timer.h"
-#include "../src/loggers.h"
+#include "../src/log_simple.h"
 
 // #define SHOW_ALL_SOLUTIONS
 
@@ -274,13 +273,14 @@ int main(int argc, const char** argv)
           edge_labeling::MULTI_TERMINAL, p);
   assert(f);
 
-  std::ofstream log;
-  forest::logger* LOG = 0;
+  FILE_output log;
+  logger* LOG = 0;
   if (lfile) {
-    log.open(lfile, std::ofstream::out);
-    if (!log) {
+    FILE* fout = fopen(lfile, "w");
+    if (!fout) {
       printf("Couldn't open %s for writing, no logging\n", lfile);
     } else {
+      log.setFILE(fout);
       LOG = new simple_logger(log);
       LOG->recordNodeCounts();
       LOG->recordTimeStamps();

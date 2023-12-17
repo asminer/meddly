@@ -96,7 +96,7 @@
 
 #include "../src/meddly.h"
 #include "../timing/timer.h"
-#include "../src/loggers.h"
+#include "../src/log_simple.h"
 
 
 using namespace MEDDLY;
@@ -465,7 +465,7 @@ void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 #endif
 }
 
-domain* runWithOptions(int nPhilosophers, const switches &sw, forest::logger* LOG)
+domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
 {
   timer start;
   FILE_output meddlyout(stdout);
@@ -879,11 +879,12 @@ int main(int argc, char *argv[])
   // Set up logger, if any
   //
 
-  std::ofstream log;
-  forest::logger* LOG = 0;
+  std::ofstream lstrm;
+  ostream_output log(lstrm);
+  logger* LOG = 0;
   if (lfile) {
-    log.open(lfile, std::ofstream::out);
-    if (!log) {
+    lstrm.open(lfile, std::ofstream::out);
+    if (!lstrm) {
       printf("Couldn't open %s for writing, no logging\n", lfile);
     } else {
       LOG = new simple_logger(log);

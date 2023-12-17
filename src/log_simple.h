@@ -16,43 +16,18 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MEDDLY_LOGGERS_H
-#define MEDDLY_LOGGERS_H
+#ifndef MEDDLY_LOG_SIMPLE_H
+#define MEDDLY_LOG_SIMPLE_H
 
-#include "forest.h"
+#include "logger.h"
 #include "io.h"
-#include <iostream>
-
-// TBD: switch ostream to output everywhere
 
 namespace MEDDLY {
 
-  class json_logger;
   class simple_logger;
 
 };
 
-
-// ******************************************************************
-// *                                                                *
-// *                        json_logger class                       *
-// *                                                                *
-// ******************************************************************
-
-/** For logging stats in json format.
-*/
-
-class MEDDLY::json_logger : public MEDDLY::forest::logger {
-    std::ostream &out;
-  public:
-    json_logger(std::ostream &s);
-    virtual ~json_logger();
-
-    virtual void addComment(const char* comment);
-    virtual void newPhase(const forest* f, const char* comment);
-    virtual void logForestInfo(const forest* f, const char* name);
-    virtual void addToActiveNodeCount(const forest* f, int level, long delta);
-};
 
 // ******************************************************************
 // *                                                                *
@@ -64,8 +39,8 @@ class MEDDLY::json_logger : public MEDDLY::forest::logger {
     No timestamps.
 */
 
-class MEDDLY::simple_logger : public MEDDLY::forest::logger {
-    std::ostream &out;
+class MEDDLY::simple_logger : public MEDDLY::logger {
+    output &out;
     long** active_delta;
     int* left;
     int* right;
@@ -73,7 +48,7 @@ class MEDDLY::simple_logger : public MEDDLY::forest::logger {
     int aggregate;
     int ucount;
   public:
-    simple_logger(std::ostream &s, int agg=16);
+    simple_logger(output &s, int agg=16);
     virtual ~simple_logger();
 
     virtual void addComment(const char* comment);

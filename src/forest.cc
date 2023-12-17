@@ -34,6 +34,7 @@
 #include "oper.h"
 #include "operators.h"
 #include "node_marker.h"
+#include "logger.h"
 
 // for timestamps.
 // to do - check during configuration that these are present,
@@ -1091,56 +1092,6 @@ void MEDDLY::forest::reorderVariables(const int* level2var)
 
 
 
-// ******************************************************************
-// *                                                                *
-// *                     forest::logger methods                     *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::forest::logger::logger()
-{
-  nfix = true;
-  /*
-    All other settings to false;
-    the default logger does nothing!
-  */
-  node_counts = false;
-  time_stamps = false;
-
-  /* Do this now, regardless */
-#ifdef HAVE_SYS_TIME_H
-  static struct timeval curr_time;
-  static struct timezone tz;
-  gettimeofday(&curr_time, &tz);
-  startsec = curr_time.tv_sec;
-  startusec = curr_time.tv_usec;
-#else
-  startsec = 0;
-  startusec = 0;
-#endif
-}
-
-MEDDLY::forest::logger::~logger()
-{
-}
-
-void MEDDLY::forest::logger::currentTime(long &sec, long &usec)
-{
-#ifdef HAVE_SYS_TIME_H
-  static struct timeval curr_time;
-  static struct timezone tz;
-  gettimeofday(&curr_time, &tz);
-  sec = curr_time.tv_sec - startsec;
-  usec = curr_time.tv_usec - startusec;
-  if (usec<0) {
-    sec--;
-    usec += 1000000;
-  }
-#else
-  sec = 0;
-  usec = 0;
-#endif
-}
 
 // ******************************************************************
 // *                                                                *
@@ -1536,6 +1487,12 @@ void MEDDLY::forest::removeAllComputeTableEntries()
         op->removeAllComputeTableEntries();
       }
   }
+}
+
+void MEDDLY::forest::setLogger(logger* L, const char* name)
+{
+    theLogger = L;
+    if (theLogger) theLogger->logForestInfo(this, name);
 }
 
 void MEDDLY::forest::showComputeTable(output &s, int verbLevel) const

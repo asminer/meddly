@@ -226,7 +226,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   delete[] varP;
   delete[] inc;
   delete[] dec;
-  destroyForest(mtmxd);
+  forest::destroy(mtmxd);
 
 #ifdef DEBUG_EVENTS
   printf("Complete NSF:\n");

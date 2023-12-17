@@ -133,7 +133,7 @@ void tiny_test()
 
   clauses2MDD(f, clauses, M, 2);
   check_solution("Tiny test", f, M, sol);
-  destroyForest(f);
+  forest::destroy(f);
 }
 
 void test_10()
@@ -196,7 +196,7 @@ void test_10()
 
   clauses2MDD(f, clauses, M, 2);
   check_solution("Test 10", f, M, sol);
-  destroyForest(f);
+  forest::destroy(f);
 }
 
 void test_20()
@@ -306,7 +306,7 @@ void test_20()
 
   clauses2MDD(f, clauses, M, 2);
   check_solution("Test 20", f, M, sol);
-  destroyForest(f);
+  forest::destroy(f);
 }
 
 void test_30()
@@ -462,7 +462,7 @@ void test_30()
 
   clauses2MDD(f, clauses, M, 2);
   check_solution("Test 30", f, M, sol);
-  destroyForest(f);
+  forest::destroy(f);
 }
 
 void test_40()
@@ -665,7 +665,7 @@ void test_40()
 
   clauses2MDD(f, clauses, M, 2);
   check_solution("Test 40", f, M, sol);
-  destroyForest(f);
+  forest::destroy(f);
 }
 
 void test_50()
@@ -916,7 +916,7 @@ void test_50()
 
   clauses2MDD(f, clauses, M, 2);
   check_solution("Test 50", f, M, sol);
-  destroyForest(f);
+  forest::destroy(f);
 }
 
 

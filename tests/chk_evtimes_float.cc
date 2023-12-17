@@ -404,7 +404,7 @@ int makeIRMXDforests(domain* D, forest** list)
 void clearForests(forest** list, int N)
 {
   for (int i=0; i<N; i++) {
-    destroyForest(list[i]);
+    forest::destroy(list[i]);
     list[i] = 0;
   }
 }

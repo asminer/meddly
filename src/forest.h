@@ -48,6 +48,8 @@ namespace MEDDLY {
     class impl_unique_table;
     class relation_node;
     class global_rebuilder;
+
+    class logger;
 };
 
 // ******************************************************************
@@ -1406,83 +1408,6 @@ class MEDDLY::forest {
 #endif
 
 
-    /**
-        Abstract base class for logging of forest stats.
-        The idea is to allow an external tool to read this information,
-        and display stats in real time.  Potentially much more detailed
-        that the stats collected above.
-    */
-    class logger {
-        bool nfix;
-        bool node_counts;
-        bool time_stamps;
-
-        long startsec;
-        long startusec;
-      public:
-        logger();
-        virtual ~logger();
-
-      /*
-          Settings.
-          Cannot be changed once we attach to a forest.
-      */
-      public:
-        bool recordingNodeCounts() const;
-        void recordNodeCounts();
-        void ignoreNodeCounts();
-
-        bool recordingTimeStamps() const;
-        void recordTimeStamps();
-        void ignoreTimeStamps();
-
-      /*
-          Hooks, used in various places.
-          Must be overridden in derived classes.
-      */
-      public:
-        /**
-            Insert a comment string.
-            May be ignored depending on the file format.
-
-              @param  comment   String to insert.
-        */
-        virtual void addComment(const char* comment) = 0;
-
-        /**
-            Start a new phase of computation.
-            May be ignored depending on the file format.
-
-              @param  f         Forest this applies to.
-              @param  comment   Info to display about this phase.
-        */
-        virtual void newPhase(const forest* f, const char* comment) = 0;
-
-        /**
-            Called once, when the logger is attached to a forest.
-            Must call method fixLogger().
-
-              @param  f       Forest info to log
-              @param  name    Forest name; better for displaying if we
-                              have multiple forests.
-        */
-        virtual void logForestInfo(const forest* f, const char* name) = 0;
-
-        /**
-            Change node counts by specified amounts.
-        */
-        virtual void addToActiveNodeCount(const forest* f, int level, long delta) = 0;
-
-      /*
-          Helpers for derived classes
-      */
-      protected:
-        /* Use this for generating timestamps. */
-        void currentTime(long &sec, long &usec);
-
-        /* Call this inside logForestInfo() */
-        void fixLogger();
-    };
 
 
   protected:
@@ -2274,37 +2199,6 @@ public:
 
 
 
-// forest::logger::
-inline bool MEDDLY::forest::logger::recordingNodeCounts() const {
-  return node_counts;
-}
-
-inline void MEDDLY::forest::logger::recordNodeCounts() {
-  if (nfix) node_counts = true;
-}
-
-inline void MEDDLY::forest::logger::ignoreNodeCounts() {
-  if (nfix) node_counts = false;
-}
-
-inline bool MEDDLY::forest::logger::recordingTimeStamps() const {
-  return time_stamps;
-}
-
-inline void MEDDLY::forest::logger::recordTimeStamps() {
-  if (nfix) time_stamps = true;
-}
-
-inline void MEDDLY::forest::logger::ignoreTimeStamps() {
-  if (nfix) time_stamps = false;
-}
-
-inline void MEDDLY::forest::logger::fixLogger() {
-  nfix = false;
-}
-
-// end of forest::logger
-
 // forest::
 
 inline bool MEDDLY::forest::isForRelations() const {
@@ -2414,10 +2308,6 @@ inline void MEDDLY::forest::createEdgeForVar(int vh, bool pr, dd_edge& a)
     }
 };
 
-inline void MEDDLY::forest::setLogger(logger* L, const char* name) {
-  theLogger = L;
-  if (theLogger) theLogger->logForestInfo(this, name);
-}
 
 // end of class forest
 

@@ -38,7 +38,9 @@ libmeddly_la_SOURCES = \
     io.h                    io.cc \
     io_dot.h                io_dot.cc \
     io_mdds.h               io_mdds.cc \
-    loggers.h               loggers.cc \
+    logger.h                logger.cc \
+    log_json.h              log_json.cc \
+    log_simple.h            log_simple.cc \
     memory.h                memory.cc \
     memstats.h              memstats.cc \
     minterms.h              \
