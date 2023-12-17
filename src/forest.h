@@ -30,6 +30,8 @@
 #include "domain.h"
 #include "enumerator.h"
 
+#include "statset.h"
+
 #include <memory>
 #include <map>
 
@@ -46,10 +48,6 @@ namespace MEDDLY {
     class impl_unique_table;
     class relation_node;
     class global_rebuilder;
-
-    /** Front-end function to destroy a forest.
-    */
-    void destroyForest(forest* &f);
 };
 
 // ******************************************************************
@@ -79,7 +77,7 @@ namespace MEDDLY {
 class MEDDLY::forest {
 
     // ------------------------------------------------------------
-    public: // static "constructors"
+    public: // static "constructors" and "destructors"
     // ------------------------------------------------------------
 
         /** Create a forest.
@@ -121,6 +119,9 @@ class MEDDLY::forest {
                 nullptr, 0
             );
         }
+
+        /// Front-end function to destroy a forest.
+        static void destroy(forest* &f);
 
     // ------------------------------------------------------------
     public: // Retrieve a node from the forest
@@ -1324,6 +1325,12 @@ class MEDDLY::forest {
         virtual void reportForestStats(output &s, const char* pad) const;
 
     // ------------------------------------------------------------
+    private: // private members for debugging
+    // ------------------------------------------------------------
+
+        int delete_depth;
+
+    // ------------------------------------------------------------
     public: // public methods for variable re/ordering
     // ------------------------------------------------------------
 
@@ -1398,38 +1405,6 @@ class MEDDLY::forest {
     };
 #endif
 
-
-    /// Collection of various stats for performance measurement
-    struct statset {
-      /// Number of times we scanned for reachable nodes
-      long reachable_scans;
-      /// Number of times a dead node was resurrected.
-      long reclaimed_nodes;
-      /// Number of times the forest storage array was compacted
-      long num_compactions;
-      /// Number of times the garbage collector ran.
-      long garbage_collections;
-
-#ifdef TRACK_UNREACHABLE_NODES
-      /// Current number of unreachable (disconnected) nodes
-      long unreachable_nodes;
-#endif
-
-      /// Current number of connected nodes
-      long active_nodes;
-      /// Current number of temporary nodes
-      // long temp_nodes;
-
-      /// Peak number of active nodes
-      long peak_active;
-
-      statset();
-
-      // nice helpers
-
-      void incActive(long b);
-      void decActive(long b);
-    };
 
     /**
         Abstract base class for logging of forest stats.
@@ -1611,11 +1586,8 @@ class MEDDLY::forest {
 
 
     /// Get forest performance stats.
-    const statset& getStats() const;
-
-    /// Get forest memory stats.
-    inline const memstats& getMemoryStats() const {
-        return mstats;
+    inline const statset& getStats() const {
+        return stats;
     }
 
 
@@ -1623,21 +1595,9 @@ class MEDDLY::forest {
         @return     The current number of nodes, not counting deleted or
                     marked for deletion nodes.
     */
-    long getCurrentNumNodes() const;
-
-    /** Get the current total memory used by the forest.
-        This should be equal to summing getMemoryUsedForVariable()
-        over all variables.
-        @return     Current memory used by the forest.
-    */
-    size_t getCurrentMemoryUsed() const;
-
-    /** Get the current total memory allocated by the forest.
-        This should be equal to summing getMemoryAllocatedForVariable()
-        over all variables.
-        @return     Current total memory allocated by the forest.
-    */
-    size_t getCurrentMemoryAllocated() const;
+    inline long getCurrentNumNodes() const {
+        return stats.active_nodes;
+    }
 
     /** Get the peak number of nodes in the forest, at all levels.
         This will be at least as large as calling getNumNodes() after
@@ -1645,18 +1605,56 @@ class MEDDLY::forest {
         @return     The peak number of nodes that existed at one time,
                     in the forest.
     */
-    long getPeakNumNodes() const;
+    inline long getPeakNumNodes() const {
+        return stats.peak_active;
+    }
 
     /** Set the peak number of nodes to the number current number of nodes.
     */
     inline void resetPeakNumNodes() {
-      stats.peak_active = stats.active_nodes;
+        stats.peak_active = stats.active_nodes;
     }
+
+
+
+    /// Get forest memory stats.
+    inline const memstats& getMemoryStats() const {
+        return mstats;
+    }
+
+    /** Get the current total memory used by the forest.
+        This should be equal to summing getMemoryUsedForVariable()
+        over all variables.
+        @return     Current memory used by the forest.
+    */
+    inline size_t getCurrentMemoryUsed() const {
+        return mstats.getMemUsed();
+    }
+
+    /** Get the current total memory allocated by the forest.
+        This should be equal to summing getMemoryAllocatedForVariable()
+        over all variables.
+        @return     Current total memory allocated by the forest.
+    */
+    inline size_t getCurrentMemoryAllocated() const {
+        return mstats.getMemAlloc();
+    }
+
+
 
     /** Get the peak memory used by the forest.
         @return     Peak total memory used by the forest.
     */
-    size_t getPeakMemoryUsed() const;
+    inline size_t getPeakMemoryUsed() const {
+        return mstats.getPeakMemUsed();
+    }
+
+    /** Get the peak memory allocated by the forest.
+        @return     Peak memory allocated by the forest.
+    */
+    inline size_t getPeakMemoryAllocated() const {
+        return mstats.getPeakMemAlloc();
+    }
 
 	/** Set the peak memory to the current memory.
 	*/
@@ -1666,13 +1664,11 @@ class MEDDLY::forest {
 	}
   */
 
-    /** Get the peak memory allocated by the forest.
-        @return     Peak memory allocated by the forest.
-    */
-    size_t getPeakMemoryAllocated() const;
-
     /// Are we about to be deleted?
-    bool isMarkedForDeletion() const;
+    inline bool isMarkedForDeletion() const {
+        return is_marked_for_deletion;
+    }
+
 
   // ------------------------------------------------------------
   // non-virtual.
@@ -2261,7 +2257,6 @@ public:
     /// Mark for deletion.
     void markForDeletion();
 
-    friend void MEDDLY::destroyForest(MEDDLY::forest* &f);
 
 
     // We should be able to remove this after updating unpacked_node
@@ -2278,18 +2273,6 @@ public:
 
 
 
-// forest::statset::
-inline void MEDDLY::forest::statset::incActive(long b) {
-  active_nodes += b;
-  if (active_nodes > peak_active)
-    peak_active = active_nodes;
-  MEDDLY_DCASSERT(active_nodes >= 0);
-}
-inline void MEDDLY::forest::statset::decActive(long b) {
-  active_nodes -= b;
-  MEDDLY_DCASSERT(active_nodes >= 0);
-}
-// end of forest::statset
 
 // forest::logger::
 inline bool MEDDLY::forest::logger::recordingNodeCounts() const {
@@ -2410,38 +2393,6 @@ inline bool MEDDLY::forest::isIdentityReduced(int k) const {
 }
 
 
-
-inline const MEDDLY::forest::statset& MEDDLY::forest::getStats() const {
-  return stats;
-}
-
-inline long MEDDLY::forest::getCurrentNumNodes() const {
-  return stats.active_nodes;
-}
-
-inline size_t MEDDLY::forest::getCurrentMemoryUsed() const {
-  return mstats.getMemUsed();
-}
-
-inline size_t MEDDLY::forest::getCurrentMemoryAllocated() const {
-  return mstats.getMemAlloc();
-}
-
-inline long MEDDLY::forest::getPeakNumNodes() const {
-  return stats.peak_active;
-}
-
-inline size_t MEDDLY::forest::getPeakMemoryUsed() const {
-  return mstats.getPeakMemUsed();
-}
-
-inline size_t MEDDLY::forest::getPeakMemoryAllocated() const {
-  return mstats.getPeakMemAlloc();
-}
-
-inline bool MEDDLY::forest::isMarkedForDeletion() const {
-  return is_marked_for_deletion;
-}
 
 inline void MEDDLY::forest::createEdgeForVar(int vh, bool pr, dd_edge& a)
 {
@@ -2665,13 +2616,7 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 
   private:
     // Garbage collection in progress
-    bool performing_gc;
-
-    // memory for validating incounts
-    node_handle* in_validate;
-    int  in_val_size;
-    // depth of delete/zombie stack; validate when 0
-    int delete_depth;
+    // bool performing_gc;
 
 
     // class nodecounter;
@@ -2727,32 +2672,17 @@ MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
 }
 #endif
 
-/*
-inline unsigned
-MEDDLY::expert_forest::getImplicitTableCount() const
-{
-  unsigned q = getImplTableCount();
-  return q;
-}
+#ifdef ALLOW_DEPRECATED_0_17_4
+namespace MEDDLY {
 
-inline MEDDLY::node_handle
-MEDDLY::expert_forest::getImplicitTerminalNode() const
-{
-  return getImplTerminalNode();
-}
-
-*/
-
-
-/*
-inline bool
-MEDDLY::expert_forest::isTimeToGc() const
-{
-  return isPessimistic() ? (stats.zombie_nodes > deflt.zombieTrigger)
-      : (stats.orphan_nodes > deflt.orphanTrigger);
-}
-*/
-
+    /** Front-end function to destroy a forest.
+        DEPRECATED; use forest::destroy() instead.
+    */
+    inline void destroyForest(forest* &f) {
+        forest::destroy(f);
+    }
+};
+#endif
 
 
 #endif
