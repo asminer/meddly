@@ -58,9 +58,9 @@ class MEDDLY::base_evplus_mt : public specialized_operation {
       node_handle x_ind, node_handle A) = 0;
 
   protected:
-    const expert_forest* fx;
-    const expert_forest* fA;
-    const expert_forest* fy;
+    const forest* fx;
+    const forest* fA;
+    const forest* fy;
     node_handle x_root;
     node_handle A_root;
     node_handle y_root;
@@ -79,9 +79,9 @@ MEDDLY::base_evplus_mt::base_evplus_mt(numerical_opname* code,
   const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
  : specialized_operation(code, 0)
 {
-  fx = (const expert_forest*) x_ind.getForest();
-  fA = (const expert_forest*) A.getForest();
-  fy = (const expert_forest*) y_ind.getForest();
+  fx = x_ind.getForest();
+  fA = A.getForest();
+  fy = y_ind.getForest();
   MEDDLY_DCASSERT(fx);
   MEDDLY_DCASSERT(fA);
   MEDDLY_DCASSERT(fy);
@@ -480,9 +480,9 @@ MEDDLY::VM_opname::buildOperation(arguments* a)
   numerical_args* na = dynamic_cast<numerical_args*>(a);
   if (0==na) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
 
-  const expert_forest* fx = (const expert_forest*) na->x_ind.getForest();
-  const expert_forest* fA = (const expert_forest*) na->A.getForest();
-  const expert_forest* fy = (const expert_forest*) na->y_ind.getForest();
+  const forest* fx = na->x_ind.getForest();
+  const forest* fA = na->A.getForest();
+  const forest* fy = na->y_ind.getForest();
 
   // everyone must use the same domain
   if (      (fx->getDomain() != fy->getDomain())
@@ -550,9 +550,9 @@ MEDDLY::MV_opname::buildOperation(arguments* a)
   numerical_args* na = dynamic_cast<numerical_args*>(a);
   if (0==na) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
 
-  const expert_forest* fx = (const expert_forest*) na->x_ind.getForest();
-  const expert_forest* fA = (const expert_forest*) na->A.getForest();
-  const expert_forest* fy = (const expert_forest*) na->y_ind.getForest();
+  const forest* fx = na->x_ind.getForest();
+  const forest* fA = na->A.getForest();
+  const forest* fy = na->y_ind.getForest();
 
 
     // everyone must use the same domain

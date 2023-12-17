@@ -18,6 +18,8 @@ As such, several methods have changed:
 * Several methods moved from ```expert_forest``` class
     to ```forest``` class.
 
+* Several instances of ```expert_forest``` have been replaced by ```forest```.
+
 ### Deprecated methods
 
 Uncomment ```ALLOW_DEPRECATED_0_17_4``` in ```defines.h```

@@ -70,18 +70,24 @@ int main(int argc, char *argv[])
 
   // create the elements randomly
 
+#ifdef VERBOSE
   timer mallocTimer;
   long mallocTime = 0;
+#endif
 
   int** elements = (int **) malloc(nElements * sizeof(int *));
   int** pelements = (int **) malloc(nElements * sizeof(int *));
   for (int i = 0; i < nElements; ++i)
   {
+#ifdef VERBOSE
     mallocTimer.note_time();
+#endif
     elements[i] = (int *) malloc((nVariables + 1) * sizeof(int));
     pelements[i] = (int *) malloc((nVariables + 1) * sizeof(int));
+#ifdef VERBOSE
     mallocTimer.note_time();
     mallocTime += mallocTimer.get_last_interval();
+#endif
 
     elements[i][0] = 0;
     pelements[i][0] = 0;
@@ -188,11 +194,15 @@ int main(int argc, char *argv[])
   free(bounds);
   for (int i = 0; i < nElements; ++i)
   {
+#ifdef VERBOSE
     mallocTimer.note_time();
+#endif
     free(elements[i]);
     free(pelements[i]);
+#ifdef VERBOSE
     mallocTimer.note_time();
     mallocTime += mallocTimer.get_last_interval();
+#endif
   }
   free(elements);
   free(pelements);

@@ -36,7 +36,7 @@
 
 MEDDLY::common_transitive_closure::common_transitive_closure(constrained_opname* code,
   unsigned slots,
-  expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res)
+  forest* cons, forest* tc, forest* trans, forest* res)
   : specialized_operation(code, slots)
 {
   MEDDLY_DCASSERT(cons->isEVPlus() && !cons->isForRelations());
@@ -81,7 +81,7 @@ bool MEDDLY::common_transitive_closure::checkForestCompatibility() const
 // ******************************************************************
 
 MEDDLY::transitive_closure_forwd_bfs::transitive_closure_forwd_bfs(constrained_opname* code,
-  expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res)
+  forest* cons, forest* tc, forest* trans, forest* res)
   : common_transitive_closure(code, 0, cons, tc, trans, res)
 {
   if (resF->getRangeType() == range_type::INTEGER && resF->isForRelations()) {
@@ -171,10 +171,10 @@ MEDDLY::specialized_operation* MEDDLY::transitive_closure_dfs_opname::buildOpera
 {
   constrained_opname::constrained_args* args = dynamic_cast<constrained_opname::constrained_args*>(a);
   return new transitive_closure_forwd_dfs(this,
-    static_cast<expert_forest*>(args->consForest),
-    static_cast<expert_forest*>(args->inForest),
-    static_cast<expert_forest*>(args->relForest),
-    static_cast<expert_forest*>(args->outForest));
+    args->consForest,
+    args->inForest,
+    args->relForest,
+    args->outForest);
 }
 
 // ******************************************************************
@@ -184,7 +184,7 @@ MEDDLY::specialized_operation* MEDDLY::transitive_closure_dfs_opname::buildOpera
 // ******************************************************************
 
 MEDDLY::transitive_closure_dfs::transitive_closure_dfs(constrained_opname* code,
-  expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res)
+  forest* cons, forest* tc, forest* trans, forest* res)
   : common_transitive_closure(code, 1, cons, tc, trans, res)
 {
   mxdIntersectionOp = getOperation(INTERSECTION, transF, transF, transF);
@@ -381,7 +381,7 @@ void MEDDLY::transitive_closure_dfs::_compute(int aev, node_handle a, int bev, n
 // ******************************************************************
 
 MEDDLY::transitive_closure_forwd_dfs::transitive_closure_forwd_dfs(constrained_opname* code,
-  expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res)
+  forest* cons, forest* tc, forest* trans, forest* res)
   : transitive_closure_dfs(code, cons, tc, trans, res)
 {
 }
@@ -713,7 +713,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
 // ******************************************************************
 
 MEDDLY::transitive_closure_evplus::transitive_closure_evplus(transitive_closure_dfs* p,
-  expert_forest* cons, expert_forest* tc, expert_forest* res)
+  forest* cons, forest* tc, forest* res)
   : specialized_operation(nullptr, 1)
 {
   MEDDLY_DCASSERT(cons->isEVPlus() && !cons->isForRelations());

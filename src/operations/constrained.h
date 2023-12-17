@@ -46,17 +46,17 @@ namespace MEDDLY {
 class MEDDLY::common_constrained: public specialized_operation
 {
 protected:
-  expert_forest* consF;
-  expert_forest* argF;
-  expert_forest* transF;
-  expert_forest* resF;
+  forest* consF;
+  forest* argF;
+  forest* transF;
+  forest* resF;
 
   // Check if the variables orders of relevant forests are compatible
   virtual bool checkForestCompatibility() const;
 
 public:
   common_constrained(constrained_opname* code, unsigned slots,
-    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+    forest* cons, forest* arg, forest* trans, forest* res);
   ~common_constrained();
 };
 
@@ -82,7 +82,7 @@ protected:
 
 public:
   constrained_bckwd_bfs_evplus(constrained_opname* code,
-    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+    forest* cons, forest* arg, forest* trans, forest* res);
 
   virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
 };
@@ -114,7 +114,7 @@ protected:
 
 public:
   constrained_dfs_mt(constrained_opname* code,
-    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+    forest* cons, forest* arg, forest* trans, forest* res);
 
   virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
   void _compute(node_handle a, node_handle b, node_handle r, node_handle& c);
@@ -129,7 +129,7 @@ protected:
 
 public:
   constrained_forwd_dfs_mt(constrained_opname* code,
-    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+    forest* cons, forest* arg, forest* trans, forest* res);
 
   virtual void saturateHelper(node_handle a, unpacked_node& nb) override;
 };
@@ -141,7 +141,7 @@ protected:
 
 public:
   constrained_bckwd_dfs_mt(constrained_opname* code,
-    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+    forest* cons, forest* arg, forest* trans, forest* res);
 
   virtual void saturateHelper(node_handle a, unpacked_node& nb) override;
 };
@@ -151,9 +151,9 @@ class MEDDLY::constrained_saturation_mt: public specialized_operation
 protected:
   constrained_dfs_mt* parent;
 
-  expert_forest* consF;
-  expert_forest* argF;
-  expert_forest* resF;
+  forest* consF;
+  forest* argF;
+  forest* resF;
 
   virtual ~constrained_saturation_mt();
 
@@ -168,10 +168,10 @@ protected:
 
 public:
   constrained_saturation_mt(constrained_dfs_mt* p,
-    expert_forest* cons, expert_forest* arg, expert_forest* res);
+    forest* cons, forest* arg, forest* res);
 
-  bool matches(const expert_forest* arg1, const expert_forest* arg2,
-    const expert_forest* res) const;
+  bool matches(const forest* arg1, const forest* arg2,
+    const forest* res) const;
 
   // high-level front-end
   void saturate(node_handle a, node_handle b, node_handle& c);
@@ -198,7 +198,7 @@ protected:
 
 public:
   constrained_bckwd_dfs_evplus(constrained_opname* code,
-    expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+    forest* cons, forest* arg, forest* trans, forest* res);
 
   virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
   void _compute(int aev, node_handle a, int bev, node_handle b, node_handle r, long& cev, node_handle& c);
@@ -211,9 +211,9 @@ class MEDDLY::constrained_saturation_evplus: public specialized_operation
 protected:
   constrained_bckwd_dfs_evplus* parent;
 
-  expert_forest* consF;
-  expert_forest* argF;
-  expert_forest* resF;
+  forest* consF;
+  forest* argF;
+  forest* resF;
 
   virtual ~constrained_saturation_evplus();
 
@@ -229,10 +229,10 @@ protected:
 
 public:
   constrained_saturation_evplus(constrained_bckwd_dfs_evplus* p,
-    expert_forest* cons, expert_forest* arg, expert_forest* res);
+    forest* cons, forest* arg, forest* res);
 
-  bool matches(const expert_forest* arg1, const expert_forest* arg2,
-    const expert_forest* res) const;
+  bool matches(const forest* arg1, const forest* arg2,
+    const forest* res) const;
 
   // high-level front-end
   void saturate(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c);

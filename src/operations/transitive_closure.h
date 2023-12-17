@@ -42,24 +42,24 @@ namespace MEDDLY {
 class MEDDLY::common_transitive_closure: public specialized_operation
 {
 protected:
-  expert_forest* consF;
-  expert_forest* tcF;
-  expert_forest* transF;
-  expert_forest* resF;
+  forest* consF;
+  forest* tcF;
+  forest* transF;
+  forest* resF;
 
   // Check if the variables orders of relevant forests are compatible
   virtual bool checkForestCompatibility() const;
 
 public:
   common_transitive_closure(constrained_opname* code, unsigned slots,
-    expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
+    forest* cons, forest* tc, forest* trans, forest* res);
   ~common_transitive_closure();
 };
 
 class MEDDLY::transitive_closure_bfs_opname : public constrained_opname {
 public:
   transitive_closure_bfs_opname();
-  virtual specialized_operation* buildOperation(expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res);
+  virtual specialized_operation* buildOperation(forest* cons, forest* arg, forest* trans, forest* res);
 
   virtual specialized_operation* buildOperation(arguments* a)
   {
@@ -80,7 +80,7 @@ protected:
 
 public:
   transitive_closure_forwd_bfs(constrained_opname* code,
-    expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
+    forest* cons, forest* tc, forest* trans, forest* res);
 
   virtual void compute(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res);
 };
@@ -113,7 +113,7 @@ protected:
 
 public:
   transitive_closure_dfs(constrained_opname* code,
-    expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
+    forest* cons, forest* tc, forest* trans, forest* res);
 
   virtual void compute(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res);
   void _compute(int aev, node_handle a, int bev, node_handle b, node_handle r, long& cev, node_handle& c);
@@ -128,7 +128,7 @@ protected:
 
 public:
   transitive_closure_forwd_dfs(constrained_opname* code,
-    expert_forest* cons, expert_forest* tc, expert_forest* trans, expert_forest* res);
+    forest* cons, forest* tc, forest* trans, forest* res);
 
   virtual void saturateHelper(long aev, node_handle a, int in, unpacked_node& nb);
 };
@@ -138,9 +138,9 @@ class MEDDLY::transitive_closure_evplus: public specialized_operation
 protected:
   transitive_closure_dfs* parent;
 
-  expert_forest* tcF;
-  expert_forest* consF;
-  expert_forest* resF;
+  forest* tcF;
+  forest* consF;
+  forest* resF;
 
   virtual ~transitive_closure_evplus();
 
@@ -156,7 +156,7 @@ protected:
 
 public:
   transitive_closure_evplus(transitive_closure_dfs* p,
-    expert_forest* cons, expert_forest* tc, expert_forest* res);
+    forest* cons, forest* tc, forest* res);
 
   // high-level front-end
   void saturate(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c);

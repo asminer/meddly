@@ -2579,12 +2579,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 
 
 
-    /*
-  unsigned getImplicitTableCount() const;
-  inline MEDDLY::node_handle getImplicitTerminalNode() const;
-  */
-
-
 
     /** Swap the content of nodes.
         Do not update their parents and inCount.
@@ -2660,35 +2654,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
     /// Character sequence used when writing forests to files.
     virtual const char* codeChars() const;
 #endif
-
-
-
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // |                                                                |
-  // |                        private  methods                        |
-  // |                                                                |
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  private:
-
-  // ------------------------------------------------------------
-  // inlined helpers for this class
-
-    // bool isTimeToGc() const;
-
-    // friend class MEDDLY::node_storage;
-
-    friend class MEDDLY::global_rebuilder;
-
-  // ------------------------------------------------------------
-  // helpers for this class
-
-
-    /*
-    unsigned getImplTableCount() const;
-    // MEDDLY::relation_node* buildImplNode(node_handle rnh);
-    MEDDLY::node_handle getImplTerminalNode() const;
-    */
 
 
 

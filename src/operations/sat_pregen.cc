@@ -68,13 +68,12 @@ MEDDLY::satpregen_opname::pregen_relation
 {
   insetF = inf;
   outsetF = outf;
-  mxdF = smart_cast <MEDDLY::expert_forest*>(mxd);
-  if (0==insetF || 0==outsetF || 0==mxdF) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+  if (0==insetF || 0==outsetF || 0==mxd) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 
   // Check for same domain
   if (
-    (insetF->getDomain() != mxdF->getDomain()) ||
-    (outsetF->getDomain() != mxdF->getDomain())
+    (insetF->getDomain() != mxd->getDomain()) ||
+    (outsetF->getDomain() != mxd->getDomain())
   )
     throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
 
@@ -85,19 +84,19 @@ MEDDLY::satpregen_opname::pregen_relation
   // Check forest types
   if (
     insetF->isForRelations()    ||
-    !mxdF->isForRelations()     ||
+    !mxd->isForRelations()     ||
     outsetF->isForRelations()   ||
-    (insetF->getRangeType() != mxdF->getRangeType())        ||
-    (outsetF->getRangeType() != mxdF->getRangeType())       ||
+    (insetF->getRangeType() != mxd->getRangeType())        ||
+    (outsetF->getRangeType() != mxd->getRangeType())       ||
     (insetF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)   ||
     (outsetF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)  ||
-    (mxdF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)     ||
+    (mxd->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)     ||
     (outsetF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   // Forests are good; set number of variables
-  K = mxdF->getMaxLevelIndex();
+  K = mxd->getMaxLevelIndex();
 }
 
 MEDDLY::satpregen_opname::pregen_relation
@@ -110,7 +109,7 @@ MEDDLY::satpregen_opname::pregen_relation
     events = new dd_edge[num_events];
     next = new unsigned[num_events];
     for (unsigned e=0; e<num_events; e++) {
-      events[e].attach(mxdF);
+      events[e].attach(mxd);
     }
   } else {
     events = 0;
@@ -129,7 +128,7 @@ MEDDLY::satpregen_opname::pregen_relation
 
   events = new dd_edge[K+1];
   for (unsigned k=0; k<=K; k++) {
-      events[k].attach(mxdF);
+      events[k].attach(mxd);
   }
 
   next = 0;
@@ -490,7 +489,7 @@ class MEDDLY::saturation_by_events_op : public unary_operation {
     common_dfs_by_events_mt* parent;
   public:
     saturation_by_events_op(common_dfs_by_events_mt* p,
-      expert_forest* argF, expert_forest* resF);
+      forest* argF, forest* resF);
     virtual ~saturation_by_events_op();
 
     void saturate(const dd_edge& in, dd_edge& out);
@@ -565,9 +564,9 @@ class MEDDLY::common_dfs_by_events_mt : public specialized_operation {
 
     satpregen_opname::pregen_relation* rel;
 
-    expert_forest* arg1F;
-    expert_forest* arg2F;
-    expert_forest* resF;
+    forest* arg1F;
+    forest* arg2F;
+    forest* resF;
 
   protected:
     class indexq {
@@ -680,7 +679,7 @@ class MEDDLY::common_dfs_by_events_mt : public specialized_operation {
 
 MEDDLY::saturation_by_events_op
 ::saturation_by_events_op(common_dfs_by_events_mt* p,
-  expert_forest* argF, expert_forest* resF)
+  forest* argF, forest* resF)
   : unary_operation(saturation_by_events_opname::getInstance(), 1, argF, resF)
 {
   parent = p;
@@ -786,9 +785,9 @@ MEDDLY::common_dfs_by_events_mt::common_dfs_by_events_mt(
   freeqs = 0;
   freebufs = 0;
   rel = relation;
-  arg1F = static_cast<expert_forest*>(rel->getInForest());
-  arg2F = static_cast<expert_forest*>(rel->getRelForest());
-  resF = static_cast<expert_forest*>(rel->getOutForest());
+  arg1F = rel->getInForest();
+  arg2F = rel->getRelForest();
+  resF = rel->getOutForest();
 
   registerInForest(arg1F);
   registerInForest(arg2F);

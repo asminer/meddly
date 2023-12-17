@@ -35,7 +35,7 @@
 
 MEDDLY::common_constrained::common_constrained(constrained_opname* code,
   unsigned slots,
-  expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
+  forest* cons, forest* arg, forest* trans, forest* res)
   : specialized_operation(code, slots)
 {
   consF = cons;
@@ -89,10 +89,10 @@ MEDDLY::specialized_operation* MEDDLY::constrained_bfs_opname::buildOperation(ar
   }
   else {
     op = new constrained_bckwd_bfs_evplus(this,
-      static_cast<expert_forest*>(args->consForest),
-      static_cast<expert_forest*>(args->inForest),
-      static_cast<expert_forest*>(args->relForest),
-      static_cast<expert_forest*>(args->outForest));
+      args->consForest,
+      args->inForest,
+      args->relForest,
+      args->outForest);
   }
   return op;
 }
@@ -104,7 +104,7 @@ MEDDLY::specialized_operation* MEDDLY::constrained_bfs_opname::buildOperation(ar
 // ******************************************************************
 
 MEDDLY::constrained_bckwd_bfs_evplus::constrained_bckwd_bfs_evplus(constrained_opname* code,
-  expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
+  forest* cons, forest* arg, forest* trans, forest* res)
   : common_constrained(code, 0, cons, arg, trans, res)
 {
   if (resF->getRangeType() == range_type::INTEGER) {
@@ -195,10 +195,10 @@ MEDDLY::specialized_operation* MEDDLY::constrained_dfs_opname::buildOperation(ar
     if (args->consForest->isMultiTerminal() && args->inForest->isMultiTerminal()
       && args->relForest->isMultiTerminal() && args->outForest->isMultiTerminal()) {
       op = new constrained_forwd_dfs_mt(this,
-        static_cast<expert_forest*>(args->consForest),
-        static_cast<expert_forest*>(args->inForest),
-        static_cast<expert_forest*>(args->relForest),
-        static_cast<expert_forest*>(args->outForest));
+        args->consForest,
+        args->inForest,
+        args->relForest,
+        args->outForest);
     }
     else {
       throw error(error::NOT_IMPLEMENTED);
@@ -208,18 +208,18 @@ MEDDLY::specialized_operation* MEDDLY::constrained_dfs_opname::buildOperation(ar
     if (args->consForest->isMultiTerminal() && args->inForest->isMultiTerminal()
       && args->relForest->isMultiTerminal() && args->outForest->isMultiTerminal()) {
       op = new constrained_bckwd_dfs_mt(this,
-        static_cast<expert_forest*>(args->consForest),
-        static_cast<expert_forest*>(args->inForest),
-        static_cast<expert_forest*>(args->relForest),
-        static_cast<expert_forest*>(args->outForest));
+        args->consForest,
+        args->inForest,
+        args->relForest,
+        args->outForest);
     }
     else if (args->consForest->isEVPlus() && args->inForest->isEVPlus()
       && args->relForest->isMultiTerminal() && args->outForest->isEVPlus()) {
       op = new constrained_bckwd_dfs_evplus(this,
-        static_cast<expert_forest*>(args->consForest),
-        static_cast<expert_forest*>(args->inForest),
-        static_cast<expert_forest*>(args->relForest),
-        static_cast<expert_forest*>(args->outForest));
+        args->consForest,
+        args->inForest,
+        args->relForest,
+        args->outForest);
     }
     else {
       throw error(error::NOT_IMPLEMENTED);
@@ -236,7 +236,7 @@ MEDDLY::specialized_operation* MEDDLY::constrained_dfs_opname::buildOperation(ar
 // ******************************************************************
 
 MEDDLY::constrained_dfs_mt::constrained_dfs_mt(constrained_opname* code,
-  expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
+  forest* cons, forest* arg, forest* trans, forest* res)
   : common_constrained(code, 1, cons, arg, trans, res)
 {
   MEDDLY_DCASSERT(cons->isMultiTerminal() && !cons->isForRelations());
@@ -363,7 +363,7 @@ void MEDDLY::constrained_dfs_mt::compute(const dd_edge& a, const dd_edge& b, con
 
   node_handle c = 0;
   if (a.getNode() == 0) {
-    c = smart_cast<expert_forest*>(resF)->linkNode(b.getNode());
+    c = smart_cast<forest*>(resF)->linkNode(b.getNode());
   } else {
     // Partition NSF by levels
     splitMxd(r);
@@ -395,7 +395,7 @@ void MEDDLY::constrained_dfs_mt::_compute(node_handle a, node_handle b, node_han
 // ******************************************************************
 
 MEDDLY::constrained_forwd_dfs_mt::constrained_forwd_dfs_mt(constrained_opname* code,
-  expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
+  forest* cons, forest* arg, forest* trans, forest* res)
   : constrained_dfs_mt(code, cons, arg, trans, res)
 {
 }
@@ -633,7 +633,7 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
 // ******************************************************************
 
 MEDDLY::constrained_bckwd_dfs_mt::constrained_bckwd_dfs_mt(constrained_opname* code,
-  expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
+  forest* cons, forest* arg, forest* trans, forest* res)
   : constrained_dfs_mt(code, cons, arg, trans, res)
 {
 }
@@ -872,7 +872,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
 // ******************************************************************
 
 MEDDLY::constrained_saturation_mt::constrained_saturation_mt(constrained_dfs_mt* p,
-  expert_forest* cons, expert_forest* arg, expert_forest* res)
+  forest* cons, forest* arg, forest* res)
   : specialized_operation(nullptr, 1)
 {
   MEDDLY_DCASSERT(cons->isMultiTerminal() && !cons->isForRelations());
@@ -1018,7 +1018,7 @@ void MEDDLY::constrained_saturation_mt::saturate(node_handle a, node_handle b, i
 // ******************************************************************
 
 MEDDLY::constrained_bckwd_dfs_evplus::constrained_bckwd_dfs_evplus(constrained_opname* code,
-  expert_forest* cons, expert_forest* arg, expert_forest* trans, expert_forest* res)
+  forest* cons, forest* arg, forest* trans, forest* res)
   : common_constrained(code, 1, cons, arg, trans, res)
 {
   MEDDLY_DCASSERT(cons->isEVPlus() && !cons->isForRelations());
@@ -1469,7 +1469,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
 // ******************************************************************
 
 MEDDLY::constrained_saturation_evplus::constrained_saturation_evplus(constrained_bckwd_dfs_evplus* p,
-  expert_forest* cons, expert_forest* arg, expert_forest* res)
+  forest* cons, forest* arg, forest* res)
   : specialized_operation(nullptr, 1)
 {
   MEDDLY_DCASSERT(cons->isEVPlus());
