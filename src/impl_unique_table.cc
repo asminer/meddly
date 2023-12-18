@@ -22,11 +22,11 @@
 #define TERMINAL_NODE 1
 
 MEDDLY::impl_unique_table::impl_unique_table(forest* ef)
-: parent(ef)
 {
   size = 0;
   num_entries = 0;
   last_handle = 0;
+  // parent = ef;
 }
 
 MEDDLY::impl_unique_table::~impl_unique_table()

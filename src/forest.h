@@ -1406,7 +1406,7 @@ class MEDDLY::forest {
 
 // ===================================================================
 //
-// Managing root edges
+// Managing root edges (using a registry)
 //
 // ===================================================================
 
@@ -1439,6 +1439,36 @@ class MEDDLY::forest {
     // ------------------------------------------------------------
         /// Registry of dd_edges
         dd_edge* roots;
+
+
+// ===================================================================
+//
+// Managing operations on this forest (using a registry)
+//
+// ===================================================================
+
+  public:
+    /// Remove any stale compute table entries associated with this forest.
+    void removeStaleComputeTableEntries();
+
+    /// Remove all compute table entries associated with this forest.
+    void removeAllComputeTableEntries();
+
+
+
+  private:  // For operation registration
+    friend class operation;
+
+    unsigned* opCount;
+    unsigned szOpCount;
+
+    /// Register an operation with this forest.
+    /// Called only within operation.
+    void registerOperation(const operation* op);
+
+    /// Unregister an operation.
+    /// Called only within operation.
+    void unregisterOperation(const operation* op);
 
 
 // ===================================================================
@@ -1690,16 +1720,6 @@ class MEDDLY::forest {
 
     /// Destructor.
     virtual ~forest();
-
-  // ------------------------------------------------------------
-  // non-virtual.
-  public:
-    /// Remove any stale compute table entries associated with this forest.
-    void removeStaleComputeTableEntries();
-
-    /// Remove all compute table entries associated with this forest.
-    void removeAllComputeTableEntries();
-
 
 
 // ===================================================================
@@ -2179,20 +2199,6 @@ class MEDDLY::forest {
   private:  // Defaults
     static policies mddDefaults;
     static policies mxdDefaults;
-
-  private:  // For operation registration
-    friend class operation;
-
-    unsigned* opCount;
-    unsigned szOpCount;
-
-    /// Register an operation with this forest.
-    /// Called only within operation.
-    void registerOperation(const operation* op);
-
-    /// Unregister an operation.
-    /// Called only within operation.
-    void unregisterOperation(const operation* op);
 
   private:
     bool isRelation;

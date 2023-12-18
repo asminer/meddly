@@ -61,7 +61,7 @@ class MEDDLY::impl_unique_table {
 
   private:
     // To which forest does this unique table belong to
-    forest *parent;
+    // forest *parent;
 
     // The contents of the table
     std::unordered_map<node_handle, relation_node*> table;

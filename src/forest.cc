@@ -796,6 +796,63 @@ void MEDDLY::forest::unregisterDDEdges()
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Operation registry methods
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+void MEDDLY::forest::removeStaleComputeTableEntries()
+{
+  if (operation::usesMonolithicComputeTable()) {
+    operation::removeStalesFromMonolithic();
+  } else {
+    for (unsigned i=0; i<szOpCount; i++)
+      if (opCount[i]) {
+        operation* op = operation::getOpWithIndex(i);
+        op->removeStaleComputeTableEntries();
+      }
+  }
+}
+
+void MEDDLY::forest::removeAllComputeTableEntries()
+{
+  if (is_marked_for_deletion) return;
+  if (operation::usesMonolithicComputeTable()) {
+    is_marked_for_deletion = true;
+    operation::removeStalesFromMonolithic();
+    is_marked_for_deletion = false;
+  } else {
+    for (unsigned i=0; i<szOpCount; i++)
+      if (opCount[i]) {
+        operation* op = operation::getOpWithIndex(i);
+        op->removeAllComputeTableEntries();
+      }
+  }
+}
+
+void MEDDLY::forest::registerOperation(const operation* op)
+{
+  MEDDLY_DCASSERT(op->getIndex() >= 0);
+  if (op->getIndex() >= szOpCount) {
+    // need to expand
+    unsigned newSize = ((op->getIndex() / 16) +1 )*16; // expand in chunks of 16
+    unsigned* tmp = (unsigned*) realloc(opCount, newSize * sizeof(unsigned));
+    if (0==tmp) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    for ( ; szOpCount < newSize; szOpCount++) {
+      tmp[szOpCount] = 0;
+    }
+    opCount = tmp;
+  }
+  opCount[op->getIndex()] ++;
+}
+
+void MEDDLY::forest::unregisterOperation(const operation* op)
+{
+  MEDDLY_DCASSERT(op->getIndex() >= 0);
+  MEDDLY_DCASSERT(szOpCount > op->getIndex());
+  MEDDLY_DCASSERT(opCount[op->getIndex()]>0);
+  opCount[op->getIndex()] --;
+}
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Forest registry methods
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -1563,58 +1620,6 @@ MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedColumnIter() const
 //
 
 
-void MEDDLY::forest::removeStaleComputeTableEntries()
-{
-  if (operation::usesMonolithicComputeTable()) {
-    operation::removeStalesFromMonolithic();
-  } else {
-    for (unsigned i=0; i<szOpCount; i++)
-      if (opCount[i]) {
-        operation* op = operation::getOpWithIndex(i);
-        op->removeStaleComputeTableEntries();
-      }
-  }
-}
-
-void MEDDLY::forest::removeAllComputeTableEntries()
-{
-  if (is_marked_for_deletion) return;
-  if (operation::usesMonolithicComputeTable()) {
-    is_marked_for_deletion = true;
-    operation::removeStalesFromMonolithic();
-    is_marked_for_deletion = false;
-  } else {
-    for (unsigned i=0; i<szOpCount; i++)
-      if (opCount[i]) {
-        operation* op = operation::getOpWithIndex(i);
-        op->removeAllComputeTableEntries();
-      }
-  }
-}
-
-void MEDDLY::forest::registerOperation(const operation* op)
-{
-  MEDDLY_DCASSERT(op->getIndex() >= 0);
-  if (op->getIndex() >= szOpCount) {
-    // need to expand
-    unsigned newSize = ((op->getIndex() / 16) +1 )*16; // expand in chunks of 16
-    unsigned* tmp = (unsigned*) realloc(opCount, newSize * sizeof(unsigned));
-    if (0==tmp) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    for ( ; szOpCount < newSize; szOpCount++) {
-      tmp[szOpCount] = 0;
-    }
-    opCount = tmp;
-  }
-  opCount[op->getIndex()] ++;
-}
-
-void MEDDLY::forest::unregisterOperation(const operation* op)
-{
-  MEDDLY_DCASSERT(op->getIndex() >= 0);
-  MEDDLY_DCASSERT(szOpCount > op->getIndex());
-  MEDDLY_DCASSERT(opCount[op->getIndex()]>0);
-  opCount[op->getIndex()] --;
-}
 
 // ===================================================================
 //

@@ -63,11 +63,11 @@ public:
     }
 
     bool swapped[] = {false, false};
-    int saved = 0;
+    // int saved = 0;
     while (!heap.empty()) {
       int level = heap.top_key();
       if (swapped[0] || swapped[1]) {
-        saved++;
+        // saved++;
         swapped[0] = false;
         swapped[1] = false;
       }
