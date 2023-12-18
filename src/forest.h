@@ -79,8 +79,14 @@ namespace MEDDLY {
 */
 class MEDDLY::forest {
 
+// ===================================================================
+//
+// Static methods to construct, destroy forests
+//
+// ===================================================================
+
     // ------------------------------------------------------------
-    public: // static "constructors" and "destructors"
+    public:
     // ------------------------------------------------------------
 
         /** Create a forest.
@@ -126,6 +132,14 @@ class MEDDLY::forest {
         /// Front-end function to destroy a forest.
         static void destroy(forest* &f);
 
+
+// ===================================================================
+//
+// Methods to manage nodes in the forest
+//
+// ===================================================================
+
+
     // ------------------------------------------------------------
     public: // Retrieve a node from the forest
     // ------------------------------------------------------------
@@ -148,7 +162,7 @@ class MEDDLY::forest {
         }
 
     // ------------------------------------------------------------
-    public: // Add a node to the forest
+    public: // Add /remove a node to the forest
     // ------------------------------------------------------------
 
         /** Return a forest node equal to the one given.
@@ -229,6 +243,15 @@ class MEDDLY::forest {
         }
 
         relation_node* buildImplicitNode(node_handle rnh);
+
+        /** Remove node p.
+            Disconnects all downward pointers from p,
+            and removes p from the unique table.
+            Unless you are implementing a garbage collector,
+            you shouldn't call this yourself.
+        */
+        void deleteNode(node_handle p);
+
 
     // ------------------------------------------------------------
     protected:  // helpers for reducing nodes
@@ -337,307 +360,12 @@ class MEDDLY::forest {
         */
         node_handle modifyReducedNodeInPlace(unpacked_node* un, node_handle p);
 
-    // ------------------------------------------------------------
-    public: // Getters related to the mdd type / reductions
-    // ------------------------------------------------------------
 
-        /// Does this forest represent relations or matrices?
-        inline bool isForRelations() const {
-            return isRelation;
-        }
-
-        /// Returns the range type.
-        inline range_type getRangeType() const {
-            return rangeType;
-        }
-
-        /// Query the range type.
-        inline bool isRangeType(range_type r) const {
-            return r == rangeType;
-        }
-
-        /// Returns the edge labeling mechanism.
-        inline edge_labeling getEdgeLabeling() const {
-            return edgeLabel;
-        }
-
-        /// Is the edge labeling "MULTI_TERMINAL".
-        inline bool isMultiTerminal() const {
-            return edge_labeling::MULTI_TERMINAL == edgeLabel;
-        }
-
-        /// Is the edge labeling "EV_PLUS".
-        inline bool isEVPlus() const {
-            return edge_labeling::EVPLUS == edgeLabel;
-        }
-
-        /// Is the edge labeling "INDEX_SET".
-        inline bool isIndexSet() const {
-            return edge_labeling::INDEX_SET == edgeLabel;
-        }
-
-        /// Is the edge labeling "EV_TIMES".
-        inline bool isEVTimes() const {
-            return edge_labeling::EVTIMES == edgeLabel;
-        }
-
-        /// Check if we match a specific type of forest
-        inline bool matches(bool isR, range_type rt, edge_labeling el) const {
-            return (isRelation == isR) && (rangeType == rt) && (edgeLabel == el);
-        }
-
-        /// Returns the reduction rule used by this forest.
-        inline reduction_rule getReductionRule() const {
-            return deflt.reduction;
-        }
-
-        /// Returns true if the forest is fully reduced.
-        inline bool isFullyReduced() const {
-            return deflt.isFullyReduced();
-        }
-
-        /// Returns true if the forest is quasi reduced.
-        inline bool isQuasiReduced() const {
-            return deflt.isQuasiReduced();
-        }
-
-        /// Returns true if the forest is identity reduced.
-        inline bool isIdentityReduced() const {
-            return deflt.isIdentityReduced();
-        }
-
-        /// Returns true if the forest is user_defined reduced.
-        inline bool isUserDefinedReduced() const {
-            return deflt.isUserDefinedReduced();
-        }
-
-        /// Returns true if the level is fully reduced.
-        inline bool isFullyReduced(int k) const {
-            if(k<0) return level_reduction_rule[2*(-k)   ] == -1;
-            else    return level_reduction_rule[2*(k) - 1] == -1;
-        }
-
-        /// Returns true if the level is quasi reduced.
-        inline bool isQuasiReduced(int k) const {
-            if(k<0) return level_reduction_rule[2*(-k)   ] == -2;
-            else    return level_reduction_rule[2*(k) - 1] == -2;
-        }
-
-        /// Returns true if the level is identity reduced.
-        inline bool isIdentityReduced(int k) const {
-            if(k<0) return level_reduction_rule[2*(-k)   ] == -3;
-            else    return level_reduction_rule[2*(k) - 1] == -3;
-        }
-
-        inline const int* getLevelReductionRule() const {
-            return level_reduction_rule;
-        }
-
-
-    // ------------------------------------------------------------
-    private: // private members for mdd type / reductions
-    // ------------------------------------------------------------
-
-        int *level_reduction_rule;
-
-    // ------------------------------------------------------------
-    public: // Getters related to the domain / levels
-    // ------------------------------------------------------------
-
-        /// Returns a non-modifiable pointer to this forest's domain.
-        inline const domain* getDomain() const {
-            return d;
-        }
-
-        /// Returns a pointer to this forest's domain.
-        inline domain* getDomain() {
-            return d;
-        }
-
-#ifdef ALLOW_DEPRECATED_0_17_3
-        /// Returns a pointer to this forest's domain.
-        /// Deprecated; use getDomain() instead.
-        inline domain* useDomain() {
-            return getDomain();
-        }
-#endif
-
-        inline unsigned getNumVariables() const {
-            return d->getNumVariables();
-        }
-
-        /**
-            Negative values are used for primed levels or variables.
-        */
-        inline int getVarByLevel(int level) const {
-            return level > 0
-                ? var_order->getVarByLevel(level)
-                : -var_order->getVarByLevel(-level);
-        }
-        inline int getLevelByVar(int var) const {
-            return var > 0
-                ? var_order->getLevelByVar(var)
-                : -var_order->getLevelByVar(-var);
-        }
-
-        /// returns 0 or -K, depending if it's a relation
-        inline int getMinLevelIndex() const {
-            return isForRelations() ? -int(getNumVariables()) : 0;
-        }
-
-        /// returns 0 or -K, depending if it's a relation
-        inline int getMaxLevelIndex() const {
-            return int(getNumVariables());
-        }
-
-        /// Check if the given level is valid
-        inline bool isValidLevel(int k) const {
-            return (k >= getMinLevelIndex()) && (k <= getMaxLevelIndex());
-        }
-
-        /// Can we have extensible nodes at level k?
-        inline bool isExtensibleLevel(int k) const {
-            MEDDLY_DCASSERT(isValidLevel(k));
-            return d->getVar(unsigned(k < 0? -k: k))->isExtensible();
-        }
-
-        /// The maximum size (number of indices) a node at this level can have
-        inline int getLevelSize(int k) const {
-            MEDDLY_DCASSERT(isValidLevel(k));
-            int var=getVarByLevel(k);
-            if (var < 0) {
-                return getDomain()->getVariableBound(unsigned(-var), true);
-            } else {
-                return getDomain()->getVariableBound(unsigned(var), false);
-            }
-        }
-
-        /// The maximum size (number of indices) a variable can have.
-        inline int getVariableSize(int var) const {
-            return getDomain()->getVariableBound(unsigned(var), false);
-        }
-
-
-    // ------------------------------------------------------------
-    private: // Domain info
-    // ------------------------------------------------------------
-        domain* d;
-        friend class domain;
-
-    protected:
-        std::shared_ptr<const variable_order> var_order;
-
-
-
-    // ------------------------------------------------------------
-    public: // interpreting edges in the forest
-    // ------------------------------------------------------------
-
-        /**
-            Get the transparent node.
-            This is the default node value for "skipped" edges in sparse nodes.
-        */
-        inline node_handle getTransparentNode() const {
-            return transparent_node;
-        }
-
-        /**
-            Get the transparent edge value.
-            This is the default node value for "skipped" edges in sparse nodes.
-        */
-        inline const edge_value& getTransparentEdge() const {
-            return transparent_edge;
-        }
-
-        /**
-            Is the given edge transparent?
-            If so it may be "skipped" in a sparse node.
-                @param  ep    Node part of the edge to check
-                @param  ev    Value part of the edge to check
-        */
-        inline bool isTransparentEdge(node_handle ep, const edge_value &ev) const {
-            if (ep != transparent_node) return false;
-            return ev == transparent_edge;
-        }
-
-        /**
-            Get the transparent edge value.
-            This is the default edge value for "skipped" edges in sparse nodes.
-            Copy the transparent edge value into the parameters.
-                @param  ep      Put node part of the edge here.
-                @param  ev      Put value part of the edge here.
-        */
-        inline void getTransparentEdge(node_handle &ep, edge_value &ptr) const {
-            ep = transparent_node;
-            ptr = transparent_edge;
-        }
-
-        /**
-            Make a transparent edge
-        */
-        inline void getTransparentEdge(dd_edge &e) const {
-            e.set(transparent_node, transparent_edge);
-        }
-
-        /// Get the edge type.
-        inline edge_type getEdgeType() const {
-            return the_edge_type;
-        }
-
-        /// Are edge values included when computing the hash.
-        inline bool areEdgeValuesHashed() const {
-            return hash_edge_values;
-        }
-
-        /// Get the terminal node type.
-        inline terminal_type getTerminalType() const {
-            return the_terminal_type;
-        }
-
-        /**
-            Convenience function.
-            Based on the forest type, convert the desired value
-            into a terminal node handle.
-                @param  v   Value to encode
-                @return     Handle for terminal node
-        */
-        template <typename T>
-        inline node_handle handleForValue(T v) const {
-            terminal t(v, the_terminal_type);
-            return t.getHandle();
-        }
-
-        /**
-            Convenience function.
-            Based on the forest type, convert the terminal node handle
-            into its encoded value.
-                @param  n   Node handle
-                @param  v   Output: encoded value
-        */
-        template <typename T>
-        inline void getValueFromHandle(node_handle n, T& v) const {
-            MEDDLY_DCASSERT(n <= 0);
-            terminal t(the_terminal_type, n);
-            t.getValue(v);
-        }
-
-        inline bool getBooleanFromHandle(MEDDLY::node_handle n) const {
-            bool v;
-            getValueFromHandle(n, v);
-            return v;
-        }
-
-        inline int getIntegerFromHandle(MEDDLY::node_handle n) const {
-            int v;
-            getValueFromHandle(n, v);
-            return v;
-        }
-
-        inline float getRealFromHandle(MEDDLY::node_handle n) const {
-            float v;
-            getValueFromHandle(n, v);
-            return v;
-        }
+// ===================================================================
+//
+// Methods for getting/setting node information
+//
+// ===================================================================
 
     // ------------------------------------------------------------
     public: // node header getters/setters
@@ -697,16 +425,10 @@ class MEDDLY::forest {
             return false;
         }
 
-
-#ifdef ALLOW_DEPRECATED_0_17_3
-        inline bool isValidNonterminalIndex(MEDDLY::node_handle p) const {
-            return (p > 0) && (p <= nodeHeaders.lastUsedHandle());
+        /// Is the forest about to be deleted?
+        inline bool isMarkedForDeletion() const {
+            return is_marked_for_deletion;
         }
-
-        inline bool isValidNodeIndex(MEDDLY::node_handle p) const {
-            return p <= nodeHeaders.lastUsedHandle();
-        }
-#endif
 
         inline node_handle getLastNode() const {
             return nodeHeaders.lastUsedHandle();
@@ -863,7 +585,7 @@ class MEDDLY::forest {
 
 
     // ------------------------------------------------------------
-    protected:  // Eventually: make this private?
+    private:  // private node header information
     // ------------------------------------------------------------
         /// Node header information
         node_headers nodeHeaders;
@@ -871,6 +593,8 @@ class MEDDLY::forest {
         /// Used for mark & sweep
         node_marker* reachable;
 
+        /// Is the forest marked for deletion
+        bool is_marked_for_deletion;
 
     // ------------------------------------------------------------
     public: // node storage getters/setters
@@ -1035,92 +759,127 @@ class MEDDLY::forest {
         }
 
     // ------------------------------------------------------------
-    protected: // node storage members
+    private: // node storage members
     // ------------------------------------------------------------
 
         /// Class that stores nodes.
         node_storage* nodeMan;
 
+// ===================================================================
+//
+// Methods for terminals, edge values in the forest
+//
+// ===================================================================
+
     // ------------------------------------------------------------
-    public: // Getting/setting the global default policies
+    public: // interpreting edges in the forest
     // ------------------------------------------------------------
 
         /**
-            Get the default policies for all MDD forests.
+            Get the transparent node.
+            This is the default node value for "skipped" edges in sparse nodes.
         */
-        inline static const policies& getDefaultPoliciesMDDs() {
-            return mddDefaults;
+        inline node_handle getTransparentNode() const {
+            return transparent_node;
         }
 
         /**
-            Get the default policies for all MxD forests.
+            Get the transparent edge value.
+            This is the default node value for "skipped" edges in sparse nodes.
         */
-        inline static const policies& getDefaultPoliciesMXDs() {
-            return mxdDefaults;
+        inline const edge_value& getTransparentEdge() const {
+            return transparent_edge;
         }
 
         /**
-            Set the default policies for all MDD forests.
+            Is the given edge transparent?
+            If so it may be "skipped" in a sparse node.
+                @param  ep    Node part of the edge to check
+                @param  ev    Value part of the edge to check
         */
-        inline static void setDefaultPoliciesMDDs(const policies &p) {
-            mddDefaults = p;
+        inline bool isTransparentEdge(node_handle ep, const edge_value &ev) const {
+            if (ep != transparent_node) return false;
+            return ev == transparent_edge;
         }
 
         /**
-            Set the default policies for all MxD forests.
+            Get the transparent edge value.
+            This is the default edge value for "skipped" edges in sparse nodes.
+            Copy the transparent edge value into the parameters.
+                @param  ep      Put node part of the edge here.
+                @param  ev      Put value part of the edge here.
         */
-        inline static void setDefaultPoliciesMXDs(const policies &p) {
-            mxdDefaults = p;
+        inline void getTransparentEdge(node_handle &ep, edge_value &ptr) const {
+            ep = transparent_node;
+            ptr = transparent_edge;
         }
 
-    // ------------------------------------------------------------
-    public: // Getting/setting policies for this forest
-    // ------------------------------------------------------------
-
-        /// Returns the current policies used by this forest.
-        inline const policies& getPolicies() const {
-            return deflt;
+        /**
+            Make a transparent edge
+        */
+        inline void getTransparentEdge(dd_edge &e) const {
+            e.set(transparent_node, transparent_edge);
         }
 
-        /// Returns the current policies used by this forest.
-        inline policies& getPolicies() {
-            return deflt;
+        /// Get the edge type.
+        inline edge_type getEdgeType() const {
+            return the_edge_type;
         }
 
-#ifdef ALLOW_DEPRECATED_0_17_3
-        inline bool isVarSwap() const {
-    	    return deflt.isVarSwap();
+        /// Are edge values included when computing the hash.
+        inline bool areEdgeValuesHashed() const {
+            return hash_edge_values;
         }
 
-        inline bool isLevelSwap() const {
-    	    return deflt.isLevelSwap();
+        /// Get the terminal node type.
+        inline terminal_type getTerminalType() const {
+            return the_terminal_type;
         }
 
-        /// Returns the storage mechanism used by this forest.
-        inline node_storage_flags getNodeStorage() const {
-            return deflt.storage_flags;
+        /**
+            Convenience function.
+            Based on the forest type, convert the desired value
+            into a terminal node handle.
+                @param  v   Value to encode
+                @return     Handle for terminal node
+        */
+        template <typename T>
+        inline node_handle handleForValue(T v) const {
+            terminal t(v, the_terminal_type);
+            return t.getHandle();
         }
 
-        /// Returns the node deletion policy used by this forest.
-        inline policies::node_deletion getNodeDeletion() const {
-            return deflt.deletion;
+        /**
+            Convenience function.
+            Based on the forest type, convert the terminal node handle
+            into its encoded value.
+                @param  n   Node handle
+                @param  v   Output: encoded value
+        */
+        template <typename T>
+        inline void getValueFromHandle(node_handle n, T& v) const {
+            MEDDLY_DCASSERT(n <= 0);
+            terminal t(the_terminal_type, n);
+            t.getValue(v);
         }
 
-        /// Are we using pessimistic deletion
-        inline bool isPessimistic() const {
-            return deflt.isPessimistic();
+        inline bool getBooleanFromHandle(MEDDLY::node_handle n) const {
+            bool v;
+            getValueFromHandle(n, v);
+            return v;
         }
 
-        /// Can we store nodes sparsely
-        inline bool areSparseNodesEnabled() const {
-            return deflt.allowsSparse();
+        inline int getIntegerFromHandle(MEDDLY::node_handle n) const {
+            int v;
+            getValueFromHandle(n, v);
+            return v;
         }
 
-        /// Can we store nodes fully
-        inline bool areFullNodesEnabled() const {
-            return deflt.allowsFull();
+        inline float getRealFromHandle(MEDDLY::node_handle n) const {
+            float v;
+            getValueFromHandle(n, v);
+            return v;
         }
-#endif
 
     // ------------------------------------------------------------
     protected: // methods to set edge info, for derived classes
@@ -1214,6 +973,13 @@ class MEDDLY::forest {
         /// Are edge values hashed?
         bool hash_edge_values;
 
+
+// ===================================================================
+//
+// Methods for extra "header" information in a node (typically none)
+//
+// ===================================================================
+
     // ------------------------------------------------------------
     public: // methods to get header size
     // ------------------------------------------------------------
@@ -1273,185 +1039,109 @@ class MEDDLY::forest {
         void initializeStorage();
 
 
-
-    /*
-     *  Methods for I/O
-     *
-     */
+// ===================================================================
+//
+// Methods for the forest's variables, and ordering
+//
+// ===================================================================
 
     // ------------------------------------------------------------
-    public: // Public I/O methods
+    public: // Getters related to the domain / levels
     // ------------------------------------------------------------
 
-        /** Show the header information in human-readable format.
-            Default behavior does nothing; override in derived
-            forests if there is any extra header information.
-                @param  s       Stream to write to.
-                @param  nr      Unpacked node containing header data.
+        /// Returns a non-modifiable pointer to this forest's domain.
+        inline const domain* getDomain() const {
+            return d;
+        }
+
+        /// Returns a pointer to this forest's domain.
+        inline domain* getDomain() {
+            return d;
+        }
+
+        inline unsigned getNumVariables() const {
+            return d->getNumVariables();
+        }
+
+        /**
+            Negative values are used for primed levels or variables.
         */
-        virtual void showHeaderInfo(output &s, const unpacked_node &nr) const;
+        inline int getVarByLevel(int level) const {
+            return level > 0
+                ? var_order->getVarByLevel(level)
+                : -var_order->getVarByLevel(-level);
+        }
+        inline int getLevelByVar(int var) const {
+            return var > 0
+                ? var_order->getLevelByVar(var)
+                : -var_order->getLevelByVar(-var);
+        }
 
-        /** Write the header information in machine-readable format.
-            Default behavior does nothing; override in derived
-            forests if there is any extra header information.
-                @param  s       Stream to write to.
-                @param  nr      Unpacked node containing header data.
+        /// returns 0 or -K, depending if it's a relation
+        inline int getMinLevelIndex() const {
+            return isForRelations() ? -int(getNumVariables()) : 0;
+        }
+
+        /// returns 0 or -K, depending if it's a relation
+        inline int getMaxLevelIndex() const {
+            return int(getNumVariables());
+        }
+
+        /// Check if the given level is valid
+        inline bool isValidLevel(int k) const {
+            return (k >= getMinLevelIndex()) && (k <= getMaxLevelIndex());
+        }
+
+
+        /** Go "down a level" in a relation.
+            Safest to use this, in case in later versions
+            the level numbering changes, or becomes forest dependent.
+                @param  k   Current level
+                @return Level immediately below level k
         */
-        virtual void writeHeaderInfo(output &s, const unpacked_node &nr) const;
+        static inline int downLevel(int k) {
+            return (k>0) ? (-k) : (-k-1);
+        }
 
-        /** Read the header information in machine-readable format.
-            Default behavior does nothing; override in derived
-            forests if there is any extra header information.
-                @param  s       Stream to read from.
-                @param  nb      Node we're building.
+        /** Go "up a level" in a relation.
+            Safest to use this, in case in later versions
+            the level numbering changes, or becomes forest dependent.
+                @param  k   Current level
+                @return Level immediately above level k
         */
-        virtual void readHeaderInfo(input &s, unpacked_node &nb) const;
+        static inline int upLevel(int k) {
+            return (k<0) ? (-k) : (-k-1);
+        }
 
 
-    /*
-     *  Methods and members for keeping track of root edges.
-     *
-     */
+        /// Can we have extensible nodes at level k?
+        inline bool isExtensibleLevel(int k) const {
+            MEDDLY_DCASSERT(isValidLevel(k));
+            return d->getVar(unsigned(k < 0? -k: k))->isExtensible();
+        }
 
-    // ------------------------------------------------------------
-    public: // Public methods for root edge registry
-    // ------------------------------------------------------------
+        /// The maximum size (number of indices) a node at this level can have
+        inline int getLevelSize(int k) const {
+            MEDDLY_DCASSERT(isValidLevel(k));
+            int var=getVarByLevel(k);
+            if (var < 0) {
+                return getDomain()->getVariableBound(unsigned(-var), true);
+            } else {
+                return getDomain()->getVariableBound(unsigned(var), false);
+            }
+        }
 
-        /// Register a dd_edge with this forest.
-        /// Called automatically in dd_edge.
-        void registerEdge(dd_edge& e);
-
-        /// Unregister a dd_edge with this forest.
-        /// Called automatically in dd_edge.
-        void unregisterEdge(dd_edge& e);
-
-        /// For debugging: count number of registered dd_edges.
-        unsigned countRegisteredEdges() const;
-
-        /// Mark all registered dd_edges.
-        void markAllRoots();
-
-    // ------------------------------------------------------------
-    private: // Private methods for root edge registry
-    // ------------------------------------------------------------
-        void unregisterDDEdges();
-
-    // ------------------------------------------------------------
-    private: // Private members for root edge registry
-    // ------------------------------------------------------------
-        /// Registry of dd_edges
-        dd_edge* roots;
-
-
-    /*
-     *  Methods and members for the global forest registry.
-     *
-     */
-
-    // ------------------------------------------------------------
-    public: // public methods for the forest registry
-    // ------------------------------------------------------------
-
-        /// Returns the forest identifier, a unique positive integer per forest.
-        /// FID 0 can safely be used to indicate "no forest".
-        inline unsigned FID() const { return fid; }
-
-        /// Returns the largest forest identifier ever seen.
-        static inline unsigned MaxFID() { return gfid; }
-
-        /// Find the forest with the given FID.
-        /// If the forest has been deleted, this will be null.
-        static inline forest* getForestWithID(unsigned id) {
-            if (id >= max_forests) return nullptr;
-            return all_forests[id];
+        /// The maximum size (number of indices) a variable can have.
+        inline int getVariableSize(int var) const {
+            return getDomain()->getVariableBound(unsigned(var), false);
         }
 
 
     // ------------------------------------------------------------
-    private: // private methods for the forest registry
+    private: // Domain info
     // ------------------------------------------------------------
-        static void initStatics();
-        static void freeStatics();
-        static void registerForest(forest* f);
-        static void unregisterForest(forest* f);
-
-
-    // ------------------------------------------------------------
-    private: // private members for the forest registry
-    // ------------------------------------------------------------
-        // All forests
-        static forest** all_forests;
-        // Size of forests array
-        static unsigned max_forests;
-
-        // our ID
-        unsigned fid;
-
-        // global ID
-        static unsigned gfid;
-
-        friend class initializer_list;
-
-
-    // ------------------------------------------------------------
-    public: // public methods for debugging or logging
-    // ------------------------------------------------------------
-
-        /** Display the contents of a single node.
-                @param  s       File stream to write to.
-                @param  node    Node to display.
-                @param  flags   Switches to control output;
-                                see constants "SHOW_DETAILED", etc.
-
-                @return true, iff we displayed anything
-        */
-        bool showNode(output &s, node_handle node, unsigned int flags = 0) const;
-
-
-        /** Show various stats for this forest.
-                @param  s       Output stream to write to
-                @param  pad     Padding string, written at the start of
-                                each output line.
-                @param  flags   Which stats to display, as "flags";
-                                use bitwise or to combine values.
-                                For example, BASIC_STATS | FOREST_STATS.
-        */
-        void reportStats(output &s, const char* pad, unsigned flags) const;
-
-
-        /**
-            Display all nodes in the forest.
-                @param  s       File stream to write to
-                @param  flags   Switches to control output;
-                                see constants "SHOW_DETAILED", etc.
-        */
-        void dump(output &s, unsigned int flags) const;
-        void dumpInternal(output &s) const;
-        void dumpUniqueTable(output &s) const;
-        void validateIncounts(bool exact);
-        void validateCacheCounts() const;
-        void countNodesByLevel(long* active) const;
-
-        // Sanity check; used in development code.
-        void validateDownPointers(const unpacked_node &nb) const;
-
-    // ------------------------------------------------------------
-    protected: // protected methods for debugging
-    // ------------------------------------------------------------
-
-        /** Show forest-specific stats.
-            Default does nothing; override in derived classes
-            if there are other stats to display.
-                @param  s     Output stream to use
-                @param  pad   String to display at the beginning of each line.
-        */
-        virtual void reportForestStats(output &s, const char* pad) const;
-
-    // ------------------------------------------------------------
-    private: // private members for debugging
-    // ------------------------------------------------------------
-
-        int delete_depth;
+        domain* d;
+        friend class domain;
 
     // ------------------------------------------------------------
     public: // public methods for variable re/ordering
@@ -1504,30 +1194,486 @@ class MEDDLY::forest {
             return unique;
         }
 
+    protected:
+        std::shared_ptr<const variable_order> var_order;
+
+        /// uniqueness table, still used by derived classes.
+        unique_table* unique;
+
+        /// uniqueness table for relation nodes.
+        impl_unique_table* implUT;
+
+
+// ===================================================================
+//
+// Methods for forest settings
+//
+// ===================================================================
+
+
+    // ------------------------------------------------------------
+    public: // Getters related to the mdd type and other policies
+    // ------------------------------------------------------------
+
+        /// Does this forest represent relations or matrices?
+        inline bool isForRelations() const {
+            return isRelation;
+        }
+
+        /// Returns the range type.
+        inline range_type getRangeType() const {
+            return rangeType;
+        }
+
+        /// Query the range type.
+        inline bool isRangeType(range_type r) const {
+            return r == rangeType;
+        }
+
+        /// Returns the edge labeling mechanism.
+        inline edge_labeling getEdgeLabeling() const {
+            return edgeLabel;
+        }
+
+        /// Is the edge labeling "MULTI_TERMINAL".
+        inline bool isMultiTerminal() const {
+            return edge_labeling::MULTI_TERMINAL == edgeLabel;
+        }
+
+        /// Is the edge labeling "EV_PLUS".
+        inline bool isEVPlus() const {
+            return edge_labeling::EVPLUS == edgeLabel;
+        }
+
+        /// Is the edge labeling "INDEX_SET".
+        inline bool isIndexSet() const {
+            return edge_labeling::INDEX_SET == edgeLabel;
+        }
+
+        /// Is the edge labeling "EV_TIMES".
+        inline bool isEVTimes() const {
+            return edge_labeling::EVTIMES == edgeLabel;
+        }
+
+        /// Check if we match a specific type of forest
+        inline bool matches(bool isR, range_type rt, edge_labeling el) const {
+            return (isRelation == isR) && (rangeType == rt) && (edgeLabel == el);
+        }
+
+
+        /// Returns the current policies used by this forest.
+        inline const policies& getPolicies() const {
+            return deflt;
+        }
+
+        /// Returns the current policies used by this forest.
+        inline policies& getPolicies() {
+            return deflt;
+        }
+
+        /// Returns the reduction rule used by this forest.
+        inline reduction_rule getReductionRule() const {
+            return deflt.reduction;
+        }
+
+        /// Returns true if the forest is fully reduced.
+        inline bool isFullyReduced() const {
+            return deflt.isFullyReduced();
+        }
+
+        /// Returns true if the forest is quasi reduced.
+        inline bool isQuasiReduced() const {
+            return deflt.isQuasiReduced();
+        }
+
+        /// Returns true if the forest is identity reduced.
+        inline bool isIdentityReduced() const {
+            return deflt.isIdentityReduced();
+        }
+
+        /// Returns true if the forest is user_defined reduced.
+        inline bool isUserDefinedReduced() const {
+            return deflt.isUserDefinedReduced();
+        }
+
+        /// Returns true if the level is fully reduced.
+        inline bool isFullyReduced(int k) const {
+            if(k<0) return level_reduction_rule[2*(-k)   ] == -1;
+            else    return level_reduction_rule[2*(k) - 1] == -1;
+        }
+
+        /// Returns true if the level is quasi reduced.
+        inline bool isQuasiReduced(int k) const {
+            if(k<0) return level_reduction_rule[2*(-k)   ] == -2;
+            else    return level_reduction_rule[2*(k) - 1] == -2;
+        }
+
+        /// Returns true if the level is identity reduced.
+        inline bool isIdentityReduced(int k) const {
+            if(k<0) return level_reduction_rule[2*(-k)   ] == -3;
+            else    return level_reduction_rule[2*(k) - 1] == -3;
+        }
+
+        inline const int* getLevelReductionRule() const {
+            return level_reduction_rule;
+        }
+
+
+    // ------------------------------------------------------------
+    private: // private members for mdd type / reductions
+    // ------------------------------------------------------------
+
+        policies deflt;
+        int *level_reduction_rule;
+
+    // ------------------------------------------------------------
+    public: // Getting/setting the global default policies
+    // ------------------------------------------------------------
+
+        /**
+            Get the default policies for all MDD forests.
+        */
+        inline static const policies& getDefaultPoliciesMDDs() {
+            return mddDefaults;
+        }
+
+        /**
+            Get the default policies for all MxD forests.
+        */
+        inline static const policies& getDefaultPoliciesMXDs() {
+            return mxdDefaults;
+        }
+
+        /**
+            Set the default policies for all MDD forests.
+        */
+        inline static void setDefaultPoliciesMDDs(const policies &p) {
+            mddDefaults = p;
+        }
+
+        /**
+            Set the default policies for all MxD forests.
+        */
+        inline static void setDefaultPoliciesMXDs(const policies &p) {
+            mxdDefaults = p;
+        }
+
+
+// ===================================================================
+//
+// Methods for I/O
+//
+// ===================================================================
+
+
+    // ------------------------------------------------------------
+    public: // Public I/O methods
+    // ------------------------------------------------------------
+
+        /**
+            Show an edge, compactly.
+            Called for example for each child when displaying an entire node.
+                @param  s       Stream to write to.
+                @param  ev      Edge value
+                @param  d       Down pointer
+        */
+        virtual void showEdge(output &s, const edge_value &ev, node_handle d)
+            const = 0;
+
+        /** Show the header information in human-readable format.
+            Default behavior does nothing; override in derived
+            forests if there is any extra header information.
+                @param  s       Stream to write to.
+                @param  nr      Unpacked node containing header data.
+        */
+        virtual void showHeaderInfo(output &s, const unpacked_node &nr) const;
+
+        /** Write the header information in machine-readable format.
+            Default behavior does nothing; override in derived
+            forests if there is any extra header information.
+                @param  s       Stream to write to.
+                @param  nr      Unpacked node containing header data.
+        */
+        virtual void writeHeaderInfo(output &s, const unpacked_node &nr) const;
+
+        /** Read the header information in machine-readable format.
+            Default behavior does nothing; override in derived
+            forests if there is any extra header information.
+                @param  s       Stream to read from.
+                @param  nb      Node we're building.
+        */
+        virtual void readHeaderInfo(input &s, unpacked_node &nb) const;
+
+
+// ===================================================================
+//
+// Managing root edges
+//
+// ===================================================================
+
+
+    // ------------------------------------------------------------
+    public: // Public methods for root edge registry
+    // ------------------------------------------------------------
+
+        /// Register a dd_edge with this forest.
+        /// Called automatically in dd_edge.
+        void registerEdge(dd_edge& e);
+
+        /// Unregister a dd_edge with this forest.
+        /// Called automatically in dd_edge.
+        void unregisterEdge(dd_edge& e);
+
+        /// For debugging: count number of registered dd_edges.
+        unsigned countRegisteredEdges() const;
+
+        /// Mark all registered dd_edges.
+        void markAllRoots();
+
+    // ------------------------------------------------------------
+    private: // Private methods for root edge registry
+    // ------------------------------------------------------------
+        void unregisterDDEdges();
+
+    // ------------------------------------------------------------
+    private: // Private members for root edge registry
+    // ------------------------------------------------------------
+        /// Registry of dd_edges
+        dd_edge* roots;
+
+
+// ===================================================================
+//
+// Managing all forests in a registry
+//
+// ===================================================================
+
+    // ------------------------------------------------------------
+    public: // public methods for the forest registry
+    // ------------------------------------------------------------
+
+        /// Returns the forest identifier, a unique positive integer per forest.
+        /// FID 0 can safely be used to indicate "no forest".
+        inline unsigned FID() const { return fid; }
+
+        /// Returns the largest forest identifier ever seen.
+        static inline unsigned MaxFID() { return gfid; }
+
+        /// Find the forest with the given FID.
+        /// If the forest has been deleted, this will be null.
+        static inline forest* getForestWithID(unsigned id) {
+            if (id >= max_forests) return nullptr;
+            return all_forests[id];
+        }
+
+
+    // ------------------------------------------------------------
+    private: // private methods for the forest registry
+    // ------------------------------------------------------------
+        static void initStatics();
+        static void freeStatics();
+        static void registerForest(forest* f);
+        static void unregisterForest(forest* f);
+
+
+    // ------------------------------------------------------------
+    private: // private members for the forest registry
+    // ------------------------------------------------------------
+        // All forests
+        static forest** all_forests;
+        // Size of forests array
+        static unsigned max_forests;
+
+        // our ID
+        unsigned fid;
+
+        // global ID
+        static unsigned gfid;
+
+        friend class initializer_list;
+
+// ===================================================================
+//
+// Misc. debugging or logging
+//
+// ===================================================================
+
+    // ------------------------------------------------------------
+    public: // public methods for debugging or logging
+    // ------------------------------------------------------------
+
+        /** Display the contents of a single node.
+                @param  s       File stream to write to.
+                @param  node    Node to display.
+                @param  flags   Switches to control output;
+                                see constants "SHOW_DETAILED", etc.
+
+                @return true, iff we displayed anything
+        */
+        bool showNode(output &s, node_handle node, unsigned int flags = 0) const;
+
+
+        /** Show various stats for this forest.
+                @param  s       Output stream to write to
+                @param  pad     Padding string, written at the start of
+                                each output line.
+                @param  flags   Which stats to display, as "flags";
+                                use bitwise or to combine values.
+                                For example, BASIC_STATS | FOREST_STATS.
+        */
+        void reportStats(output &s, const char* pad, unsigned flags) const;
+
+
+        /**
+            Display all nodes in the forest.
+                @param  s       File stream to write to
+                @param  flags   Switches to control output;
+                                see constants "SHOW_DETAILED", etc.
+        */
+        void dump(output &s, unsigned int flags) const;
+        void dumpInternal(output &s) const;
+        void dumpUniqueTable(output &s) const;
+        void validateIncounts(bool exact);
+        void validateCacheCounts() const;
+        void countNodesByLevel(long* active) const;
+
+        // Sanity check; used in development code.
+        void validateDownPointers(const unpacked_node &nb) const;
+
+
+        /** Display all active (i.e., connected) nodes in the forest.
+            This is primarily for aid in debugging.
+            @param  strm      Stream to write to.
+            @param  verbosity How much information to display.
+                                0 : just statistics.
+                                1 : all forest nodes + statistics.
+                                2 : internal forest + statistics.
+        */
+        virtual void showInfo(output &strm, int verbosity=0);
+
+
+        /** Start logging stats.
+                @param  L       Logger to use; if 0, we don't log anything.
+                                Will overwrite the old logger.
+                                The logger WILL NOT be deleted by the forest
+                                (in case we want to log for multiple forests).
+
+                @param  name    Name to use for the forest (for display only).
+        */
+        void setLogger(logger* L, const char* name);
+
+        /// Display the compute table(s)
+        void showComputeTable(output &s, int verbLevel) const;
+
+    // ------------------------------------------------------------
+    protected: // protected methods for debugging
+    // ------------------------------------------------------------
+
+        /** Show forest-specific stats.
+            Default does nothing; override in derived classes
+            if there are other stats to display.
+                @param  s     Output stream to use
+                @param  pad   String to display at the beginning of each line.
+        */
+        virtual void reportForestStats(output &s, const char* pad) const;
+
+    // ------------------------------------------------------------
+    private: // private members for debugging
+    // ------------------------------------------------------------
+
+        logger *theLogger;
+        int delete_depth;
+
+// ===================================================================
+//
+// Various forest stats
+//
+// ===================================================================
+
+    // ------------------------------------------------------------
+    public: // public methods for performance stats
+    // ------------------------------------------------------------
+
+        /// Get forest performance stats.
+        inline const statset& getStats() const {
+            return stats;
+        }
+
+        /** Get the current number of nodes in the forest, at all levels.
+            @return     The current number of nodes, not counting deleted or
+                        marked for deletion nodes.
+        */
+        inline long getCurrentNumNodes() const {
+            return stats.active_nodes;
+        }
+
+        /** Get the peak number of nodes in the forest, at all levels.
+            This will be at least as large as calling getNumNodes() after
+            every operation and maintaining the maximum.
+            @return     The peak number of nodes that existed at one time,
+                        in the forest.
+        */
+        inline long getPeakNumNodes() const {
+            return stats.peak_active;
+        }
+
+        /** Set the peak number of nodes to the number current number of nodes.
+        */
+        inline void resetPeakNumNodes() {
+            stats.peak_active = stats.active_nodes;
+        }
+
+    // ------------------------------------------------------------
+    public: // public methods for memory stats
+    // ------------------------------------------------------------
+
+        /// Get forest memory stats.
+        inline const memstats& getMemoryStats() const {
+            return mstats;
+        }
+
+        /** Get the current total memory used by the forest.
+            This should be equal to summing getMemoryUsedForVariable()
+            over all variables.
+            @return     Current memory used by the forest.
+        */
+        inline size_t getCurrentMemoryUsed() const {
+            return mstats.getMemUsed();
+        }
+
+        /** Get the current total memory allocated by the forest.
+            This should be equal to summing getMemoryAllocatedForVariable()
+            over all variables.
+            @return     Current total memory allocated by the forest.
+        */
+        inline size_t getCurrentMemoryAllocated() const {
+            return mstats.getMemAlloc();
+        }
+
+        /** Get the peak memory used by the forest.
+            @return     Peak total memory used by the forest.
+        */
+        inline size_t getPeakMemoryUsed() const {
+            return mstats.getPeakMemUsed();
+        }
+
+        /** Get the peak memory allocated by the forest.
+            @return     Peak memory allocated by the forest.
+        */
+        inline size_t getPeakMemoryAllocated() const {
+            return mstats.getPeakMemAlloc();
+        }
+
+    protected:
+        statset stats;
+        memstats mstats;
+
+
 // ===================================================================
 //
 // To be cleaned up still, below here.
 //
 // ===================================================================
-
-
-  public:
-
-#ifdef ALLOW_DEPRECATED_0_17_4
-    /// Status indicators for nodes.
-    enum node_status {
-      /// Node is active: it can be used without issue.
-      ACTIVE,
-      /// Node is recoverable: it has been marked for garbage collection
-      /// but it can still be used without issue.
-      RECOVERABLE,
-      /// Node is not-recoverable: it has been marked for garbage collection
-      /// and it cannot be used.
-      DEAD
-    };
-#endif
-
-
 
 
   protected:
@@ -1546,123 +1692,6 @@ class MEDDLY::forest {
     virtual ~forest();
 
   // ------------------------------------------------------------
-  // static inlines.
-  public:
-    /** Go "down a level" in a relation.
-        Safest to use this, in case in later versions
-        the level numbering changes, or becomes forest dependent.
-            @param  k   Current level
-            @return Level immediately below level k
-    */
-    static inline int downLevel(int k) {
-        return (k>0) ? (-k) : (-k-1);
-    }
-
-
-    /** Go "up a level" in a relation.
-        Safest to use this, in case in later versions
-        the level numbering changes, or becomes forest dependent.
-            @param  k   Current level
-            @return Level immediately above level k
-    */
-    static inline int upLevel(int k) {
-        return (k<0) ? (-k) : (-k-1);
-    }
-
-
-  // ------------------------------------------------------------
-  // inlines.
-  public:
-
-
-
-
-    /// Get forest performance stats.
-    inline const statset& getStats() const {
-        return stats;
-    }
-
-
-    /** Get the current number of nodes in the forest, at all levels.
-        @return     The current number of nodes, not counting deleted or
-                    marked for deletion nodes.
-    */
-    inline long getCurrentNumNodes() const {
-        return stats.active_nodes;
-    }
-
-    /** Get the peak number of nodes in the forest, at all levels.
-        This will be at least as large as calling getNumNodes() after
-        every operation and maintaining the maximum.
-        @return     The peak number of nodes that existed at one time,
-                    in the forest.
-    */
-    inline long getPeakNumNodes() const {
-        return stats.peak_active;
-    }
-
-    /** Set the peak number of nodes to the number current number of nodes.
-    */
-    inline void resetPeakNumNodes() {
-        stats.peak_active = stats.active_nodes;
-    }
-
-
-
-    /// Get forest memory stats.
-    inline const memstats& getMemoryStats() const {
-        return mstats;
-    }
-
-    /** Get the current total memory used by the forest.
-        This should be equal to summing getMemoryUsedForVariable()
-        over all variables.
-        @return     Current memory used by the forest.
-    */
-    inline size_t getCurrentMemoryUsed() const {
-        return mstats.getMemUsed();
-    }
-
-    /** Get the current total memory allocated by the forest.
-        This should be equal to summing getMemoryAllocatedForVariable()
-        over all variables.
-        @return     Current total memory allocated by the forest.
-    */
-    inline size_t getCurrentMemoryAllocated() const {
-        return mstats.getMemAlloc();
-    }
-
-
-
-    /** Get the peak memory used by the forest.
-        @return     Peak total memory used by the forest.
-    */
-    inline size_t getPeakMemoryUsed() const {
-        return mstats.getPeakMemUsed();
-    }
-
-    /** Get the peak memory allocated by the forest.
-        @return     Peak memory allocated by the forest.
-    */
-    inline size_t getPeakMemoryAllocated() const {
-        return mstats.getPeakMemAlloc();
-    }
-
-	/** Set the peak memory to the current memory.
-	*/
-  /*
-	inline void resetPeakMemoryUsed() {
-	  stats.peak_memory_used = stats.memory_used;
-	}
-  */
-
-    /// Are we about to be deleted?
-    inline bool isMarkedForDeletion() const {
-        return is_marked_for_deletion;
-    }
-
-
-  // ------------------------------------------------------------
   // non-virtual.
   public:
     /// Remove any stale compute table entries associated with this forest.
@@ -1670,6 +1699,16 @@ class MEDDLY::forest {
 
     /// Remove all compute table entries associated with this forest.
     void removeAllComputeTableEntries();
+
+
+
+// ===================================================================
+//
+// Building methods; probably will be moved elsewhere
+//
+// ===================================================================
+
+
 
   // ------------------------------------------------------------
   // virtual, with default implementation.
@@ -1989,6 +2028,15 @@ class MEDDLY::forest {
     */
     virtual void createEdge(float val, dd_edge &e);
 
+// ===================================================================
+//
+// Evaluation methods; probably will be moved elsewhere
+//
+// ===================================================================
+
+    public:
+
+
     /** Evaluate the function encoded by an edge.
         @param  f     Edge (function) to evaluate.
         @param  vlist List of variable assignments, of dimension one higher
@@ -2100,113 +2148,6 @@ class MEDDLY::forest {
     virtual void getElement(const dd_edge& a, int index, int* e);
     virtual void getElement(const dd_edge& a, long index, int* e);
 
-  // ------------------------------------------------------------
-  // abstract virtual.
-  public:
-
-#ifdef ALLOW_DEPRECATED_0_17_3
-
-    /** Write edges to a file in a format that can be read back later.
-        This implies that all nodes "below" those edges are also
-        written to the file.
-        DEPRECATED; use mdd_writer object instead (see io_mdds.h).
-          @param  s   Stream to write to
-          @param  E   Array of edges
-          @param  n   Dimension of the edge array
-
-          @throws     COULDNT_WRITE, if writing failed
-    */
-    virtual void writeEdges(output &s, const dd_edge* E, unsigned n) const = 0;
-
-    /** Read edges from a file.
-        Allows reconstruction of edges that we
-        saved using \a writeEdges().
-        The forest does not need to be empty;
-        the edges are added to the forest as necessary.
-        DEPRECATED; use mdd_reader object instead (see io_mdds.h).
-          @param  s   Stream to read from
-          @param  E   Array of edges
-          @param  n   Dimension of the edge array
-
-          @throws     INVALID_FILE, if the file does not match what we expect,
-                      including different number of edges specified.
-    */
-    virtual void readEdges(input &s, dd_edge* E, unsigned n) = 0;
-#endif
-
-        /**
-            Show an edge, compactly.
-            Called for example for each child when displaying an entire node.
-                @param  s       Stream to write to.
-                @param  ev      Edge value
-                @param  d       Down pointer
-        */
-        virtual void showEdge(output &s, const edge_value &ev, node_handle d) const = 0;
-
-
-private:
-    /**
-        Disconnects all downward pointers from p,
-        and removes p from the unique table.
-    */
-    void deleteNode(node_handle p);
-
-    friend class node_headers;
-
-public:
-
-
-
-
-
-    /** Display all active (i.e., connected) nodes in the forest.
-        This is primarily for aid in debugging.
-        @param  strm      Stream to write to.
-        @param  verbosity How much information to display.
-                          0 : just statistics.
-                          1 : all forest nodes + statistics.
-                          2 : internal forest + statistics.
-    */
-    virtual void showInfo(output &strm, int verbosity=0);
-
-
-    /** Start logging stats.
-          @param  L     Logger to use; if 0, we don't log anything.
-                        Will overwrite the old logger.
-                        The logger WILL NOT be deleted by the forest
-                        (in case we want to log for multiple forests).
-
-          @param  name  Name to use for the forest (for display only).
-    */
-    void setLogger(logger* L, const char* name);
-
-
-  // ------------------------------------------------------------
-  // For derived classes.
-  protected:
-    // for debugging:
-    void showComputeTable(output &s, int verbLevel) const;
-
-  protected:
-    policies deflt;
-    statset stats;
-    memstats mstats;
-    logger *theLogger;
-
-  protected:
-    /// uniqueness table, still used by derived classes.
-    unique_table* unique;
-
-    /// uniqueness table for relation nodes.
-    impl_unique_table* implUT;
-
-#ifdef ALLOW_DEPRECATED_0_17_4
-    /// Should a terminal node be considered a stale entry in the compute table.
-    /// per-forest policy, derived classes may change as appropriate.
-    MEDDLY::forest::node_status terminalNodesStatus;
-#endif
-
-
 
   // ------------------------------------------------------------
   // Ugly details from here down.
@@ -2231,7 +2172,6 @@ public:
 
   private:
     bool isRelation;
-    bool is_marked_for_deletion;
     range_type rangeType;
     edge_labeling edgeLabel;
 
@@ -2239,10 +2179,187 @@ public:
     void markForDeletion();
 
 
+// ===================================================================
+//
+// Deprecated as of version 0.17.4
+//
+// ===================================================================
 
-    // We should be able to remove this after updating unpacked_node
-    //
-    friend class unpacked_node;
+#ifdef ALLOW_DEPRECATED_0_17_4
+    public:
+        /// Status indicators for nodes.
+        enum node_status {
+            /// Node is active: it can be used without issue.
+            ACTIVE,
+            /// Node is recoverable: it has been marked for garbage collection
+            /// but it can still be used without issue.
+            RECOVERABLE,
+            /// Node is not-recoverable: it has been marked for garbage collection
+            /// and it cannot be used.
+            DEAD
+        };
+
+    public:
+        /// A node can be discarded once it goes stale. Whether a node is
+        /// considered stale depends on the forest's deletion policy.
+        /// Optimistic deletion: A node is said to be stale only when both the
+        ///   in-count and cache-count are zero.
+        /// Pessimistic deletion: A node is said to be stale when the in-count
+        ///  is zero regardless of the cache-count.
+        /// If we don't use reference counts and instead mark and sweep,
+        ///  then a node cannot be recovered once it is "unreachable"
+        ///  because its children might have been recycled
+        MEDDLY::forest::node_status getNodeStatus(node_handle node) const;
+
+    protected:
+        /// Should a terminal node be considered a stale entry in a compute table.
+        /// per-forest policy, derived classes may change as appropriate.
+        MEDDLY::forest::node_status terminalNodesStatus;
+#endif
+
+
+// ===================================================================
+//
+// Deprecated as of version 0.17.3
+//
+// ===================================================================
+
+#ifdef ALLOW_DEPRECATED_0_17_3
+    public:
+        /// Returns a pointer to this forest's domain.
+        /// Deprecated; use getDomain() instead.
+        inline domain* useDomain() {
+            return getDomain();
+        }
+
+        inline bool isValidNonterminalIndex(MEDDLY::node_handle p) const {
+            return (p > 0) && (p <= nodeHeaders.lastUsedHandle());
+        }
+
+        inline bool isValidNodeIndex(MEDDLY::node_handle p) const {
+            return p <= nodeHeaders.lastUsedHandle();
+        }
+
+        inline bool isVarSwap() const {
+    	    return deflt.isVarSwap();
+        }
+
+        inline bool isLevelSwap() const {
+    	    return deflt.isLevelSwap();
+        }
+
+        /// Returns the storage mechanism used by this forest.
+        inline node_storage_flags getNodeStorage() const {
+            return deflt.storage_flags;
+        }
+
+        /// Returns the node deletion policy used by this forest.
+        inline policies::node_deletion getNodeDeletion() const {
+            return deflt.deletion;
+        }
+
+        /// Are we using pessimistic deletion
+        inline bool isPessimistic() const {
+            return deflt.isPessimistic();
+        }
+
+        /// Can we store nodes sparsely
+        inline bool areSparseNodesEnabled() const {
+            return deflt.allowsSparse();
+        }
+
+        /// Can we store nodes fully
+        inline bool areFullNodesEnabled() const {
+            return deflt.allowsFull();
+        }
+
+
+        /** Build a list of nodes in the subgraph below the given node.
+            DEPRECATED; use a node_marker object for this instead.
+
+            This for example is used to determine which nodes must
+            be printed to display a subgraph.
+            Terminal nodes are NOT included.
+
+            @param  roots   Array of root nodes in the forest.
+                            Each root node will be included in the list,
+                            except for terminal nodes.
+
+            @param  N       Dimension of \a roots array.
+
+            @param  sort    If true, the list will be in increasing order.
+                            Otherwise, the list will be in some convenient order
+                            (currently, it is the order that nodes
+                            are discovered).
+
+            @return     A malloc'd array of non-terminal nodes, terminated by 0.
+                        Or, a null pointer, if the list is empty.
+        */
+        node_handle*
+        markNodesInSubgraph(const node_handle* roots, int N, bool sort) const;
+
+        /** Count and return the number of non-terminal nodes
+            in the subgraph below the given node.
+            DEPRECATED; use a node_marker object for this.
+        */
+        unsigned long getNodeCount(node_handle p) const;
+
+        /** Count and return the number of non-terminal nodes
+            in the subgraph below the given nodes.
+            DEPRECATED; use a node_marker object for this.
+        */
+        unsigned long getNodeCount(const node_handle* roots, int N) const;
+
+        /** Count and return the number of edges
+            in the subgraph below the given node.
+            DEPRECATED; use a node_marker object for this.
+        */
+        unsigned long getEdgeCount(node_handle p, bool countZeroes) const;
+
+        /// Show all the nodes in the subgraph below the given nodes.
+        void showNodeGraph(output &s, const node_handle* node, int n) const;
+
+        /// DEPRECATED; use dot_maker instead (see io_dot.h).
+        /// Write all the nodes in the subgraph below the given nodes
+        /// in a graphical format specified by the extension.
+        void writeNodeGraphPicture(const char* filename, const char *extension,
+            const node_handle* nodes, const char* const* labels, int n);
+
+
+        /** Write edges to a file in a format that can be read back later.
+            This implies that all nodes "below" those edges are also
+            written to the file.
+            DEPRECATED; use mdd_writer object instead (see io_mdds.h).
+                @param  s   Stream to write to
+                @param  E   Array of edges
+                @param  n   Dimension of the edge array
+
+                @throws     COULDNT_WRITE, if writing failed
+        */
+        void writeEdges(output &s, const dd_edge* E, unsigned n) const;
+
+        /** Read edges from a file.
+            Allows reconstruction of edges that we
+            saved using \a writeEdges().
+            The forest does not need to be empty;
+            the edges are added to the forest as necessary.
+            DEPRECATED; use mdd_reader object instead (see io_mdds.h).
+                @param  s   Stream to read from
+                @param  E   Array of edges
+                @param  n   Dimension of the edge array
+
+                @throws     INVALID_FILE, if the file does not match what we
+                            expect, including a different number of
+                            edges specified.
+        */
+        void readEdges(input &s, dd_edge* E, unsigned n);
+
+        /// Character sequence used when writing forests to files.
+        virtual const char* codeChars() const;
+
+#endif
+
+
 };
 
 
@@ -2273,92 +2390,6 @@ class MEDDLY::expert_forest: public MEDDLY::forest
 
 
   public:
-
-
-
-#ifdef ALLOW_DEPRECATED_0_17_4
-    /// A node can be discarded once it goes stale. Whether a node is
-    /// considered stale depends on the forest's deletion policy.
-    /// Optimistic deletion: A node is said to be stale only when both the
-    ///   in-count and cache-count are zero.
-    /// Pessimistic deletion: A node is said to be stale when the in-count
-    ///  is zero regardless of the cache-count.
-    /// If we don't use reference counts and instead mark and sweep,
-    ///  then a node cannot be recovered once it is "unreachable"
-    ///  because its children might have been recycled
-    MEDDLY::forest::node_status getNodeStatus(node_handle node) const;
-#endif
-
-
-
-  // ------------------------------------------------------------
-  // non-virtual, handy methods.
-
-#ifdef ALLOW_DEPRECATED_0_17_3
-
-    /** Build a list of nodes in the subgraph below the given node.
-        DEPRECATED; use a node_marker object for this instead.
-
-        This for example is used to determine which nodes must
-        be printed to display a subgraph.
-        Terminal nodes are NOT included.
-
-          @param  roots   Array of root nodes in the forest.
-                          Each root node will be included in the list,
-                          except for terminal nodes.
-
-          @param  N       Dimension of \a roots array.
-
-          @param  sort    If true, the list will be in increasing order.
-                          Otherwise, the list will be in some convenient order
-                          (currently, it is the order that nodes
-                          are discovered).
-
-          @return   A malloc'd array of non-terminal nodes, terminated by 0.
-                    Or, a null pointer, if the list is empty.
-    */
-    node_handle*
-    markNodesInSubgraph(const node_handle* roots, int N, bool sort) const;
-
-    /** Count and return the number of non-terminal nodes
-        in the subgraph below the given node.
-        DEPRECATED; use a node_marker object for this.
-    */
-    unsigned long getNodeCount(node_handle p) const;
-
-    /** Count and return the number of non-terminal nodes
-        in the subgraph below the given nodes.
-        DEPRECATED; use a node_marker object for this.
-    */
-    unsigned long getNodeCount(const node_handle* roots, int N) const;
-
-    /** Count and return the number of edges
-        in the subgraph below the given node.
-        DEPRECATED; use a node_marker object for this.
-    */
-    unsigned long getEdgeCount(node_handle p, bool countZeroes) const;
-
-    /// Show all the nodes in the subgraph below the given nodes.
-    void showNodeGraph(output &s, const node_handle* node, int n) const;
-
-    /// DEPRECATED; use dot_maker instead (see io_dot.h).
-    /// Write all the nodes in the subgraph below the given nodes
-    /// in a graphical format specified by the extension.
-    void writeNodeGraphPicture(const char* filename, const char *extension,
-        const node_handle* nodes, const char* const* labels, int n);
-
-#endif
-
-
-
-
-
-
-#ifdef ALLOW_DEPRECATED_0_17_3
-    virtual void writeEdges(output &s, const dd_edge* E, unsigned n) const;
-    virtual void readEdges(input &s, dd_edge* E, unsigned n);
-#endif
-
 
 
     /**
@@ -2397,61 +2428,11 @@ class MEDDLY::expert_forest: public MEDDLY::forest
   // virtual, with default implementation.
   // Should be overridden in appropriate derived classes.
 
-#ifdef ALLOW_DEPRECATED_0_17_3
-    /// Character sequence used when writing forests to files.
-    virtual const char* codeChars() const;
-#endif
-
 };
 // end of expert_forest class.
 
 
-// ******************************************************************
-// *                                                                *
-// *                 inlined  expert_forest methods                 *
-// *                                                                *
-// ******************************************************************
 
-
-
-//
-// Unorganized from here
-//
-
-
-#ifdef ALLOW_DEPRECATED_0_17_4
-inline MEDDLY::forest::node_status
-MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
-{
-  if (isMarkedForDeletion()) {
-    return MEDDLY::forest::DEAD;
-  }
-  if (isTerminalNode(node)) {
-    return terminalNodesStatus;
-  }
-  if (isDeletedNode(node)) {
-    return MEDDLY::forest::DEAD;
-  }
-  // Active node.
-
-  // If we're using reference counts,
-  // and the incoming count is zero,
-  // then we must be using optimistic
-  // and the node is stale but recoverable.
-
-  // If we're NOT using reference counts,
-  // since we're not a deleted node,
-  // assume we are still active.
-
-  if (deflt.useReferenceCounts) {
-    if (getNodeInCount(node) == 0) {
-      return MEDDLY::forest::RECOVERABLE;
-    }
-  }
-
-  return MEDDLY::forest::ACTIVE;
-}
-#endif
 
 #ifdef ALLOW_DEPRECATED_0_17_4
 namespace MEDDLY {

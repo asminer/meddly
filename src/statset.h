@@ -22,12 +22,13 @@
 #include "defines.h"
 
 namespace MEDDLY {
-    struct statset;
+    class statset;
 };
 
 
 /// Collection of various stats for performance measurement
-struct MEDDLY::statset {
+class MEDDLY::statset {
+public:
     /// Number of times we scanned for reachable nodes
     long reachable_scans;
     /// Number of times a dead node was resurrected.

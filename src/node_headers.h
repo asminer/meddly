@@ -27,6 +27,9 @@ namespace MEDDLY {
     class node_headers;
     class forest;
     class output;
+
+    class memstats;
+    class statset;
 };
 
 // ******************************************************************
@@ -72,7 +75,7 @@ namespace MEDDLY {
 */
 class MEDDLY::node_headers : public array_watcher {
     public:
-        node_headers(forest &P);
+        node_headers(forest &P, memstats &ms, statset &ss);
         virtual ~node_headers();
 
         /// Delay initialization, so we can set up the forest first.
@@ -495,6 +498,12 @@ class MEDDLY::node_headers : public array_watcher {
 
         /// Parent forest, needed for recycling
         forest &parent;
+
+        /// Memory stats to update
+        memstats &mstats;
+
+        /// Other stats to update
+        statset &stats;
 };
 
 

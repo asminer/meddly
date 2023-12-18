@@ -154,8 +154,8 @@ inline size_t prev_check(size_t s)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::node_headers::node_headers(forest &P)
-  : parent(P)
+MEDDLY::node_headers::node_headers(forest &P, memstats &ms, statset &ss)
+  : parent(P), mstats(ms), stats(ss)
 {
     addresses = nullptr;
     levels = nullptr;
@@ -216,8 +216,8 @@ void MEDDLY::node_headers::expandElementSize(unsigned oldbits, unsigned newbits)
 {
     MEDDLY_DCASSERT(oldbits <= newbits);
 
-    parent.mstats.incMemUsed((a_last - a_freed)*(newbits-oldbits)/8);
-    parent.mstats.incMemAlloc(a_size*(newbits-oldbits)/8);
+    mstats.incMemUsed((a_last - a_freed)*(newbits-oldbits)/8);
+    mstats.incMemAlloc(a_size*(newbits-oldbits)/8);
 
     h_bits += newbits;
     h_bits -= oldbits;
@@ -229,8 +229,8 @@ void MEDDLY::node_headers::shrinkElementSize(unsigned oldbits, unsigned newbits)
 {
     MEDDLY_DCASSERT(oldbits >= newbits);
 
-    parent.mstats.decMemUsed((a_last - a_freed)*(oldbits-newbits)/8);
-    parent.mstats.decMemAlloc(a_size*(oldbits-newbits)/8);
+    mstats.decMemUsed((a_last - a_freed)*(oldbits-newbits)/8);
+    mstats.decMemAlloc(a_size*(oldbits-newbits)/8);
 
     h_bits += newbits;
     h_bits -= oldbits;
@@ -272,7 +272,7 @@ void MEDDLY::node_headers::sweepAllInCacheBits()
 
 MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
 {
-    parent.mstats.incMemUsed(h_bits/8);
+    mstats.incMemUsed(h_bits/8);
     node_handle found = 0;
     for (unsigned i=a_lowest_index; i<8; i++) {
         // try the various lists
@@ -378,7 +378,7 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
         << " recycling handle " << p << std::endl;
 #endif
 
-    parent.mstats.decMemUsed(h_bits/8);
+    mstats.decMemUsed(h_bits/8);
     a_freed++;
 
     // Determine which list to add this into,
@@ -647,7 +647,7 @@ void MEDDLY::node_headers::expandHandleList()
         a_size = next_size(a_size);
     } while (a_last+1 >= a_size);
 
-    parent.mstats.incMemAlloc( ((a_size-old_size)*h_bits)/8 );
+    mstats.incMemAlloc( ((a_size-old_size)*h_bits)/8 );
 
     if (addresses)        addresses->expand(a_size);
     if (levels)           levels->expand(a_size);
@@ -705,7 +705,7 @@ void MEDDLY::node_headers::shrinkHandleList()
         a_next_shrink = (a_size > START_SIZE) ? prev_check(a_next_shrink) : 0;
     } while (a_last < a_next_shrink);
 
-    parent.mstats.decMemAlloc( ((old_size-a_size)*h_bits)/8 );
+    mstats.decMemAlloc( ((old_size-a_size)*h_bits)/8 );
 
     if (addresses)        addresses->shrink(a_size);
     if (levels)           levels->shrink(a_size);
@@ -756,7 +756,7 @@ void MEDDLY::node_headers::lastUnlink(node_handle p)
         // Optimistic.  Keep unreachables around.
         //
 #ifdef TRACK_UNREACHABLE_NODES
-        parent.stats.unreachable_nodes++;
+        stats.unreachable_nodes++;
 #endif
     }
 }
@@ -766,9 +766,9 @@ void MEDDLY::node_headers::lastUnlink(node_handle p)
 void MEDDLY::node_headers::reviveNode(node_handle p)
 {
     // Reclaim an unreachable
-    parent.stats.reclaimed_nodes++;
+    stats.reclaimed_nodes++;
 #ifdef TRACK_UNREACHABLE_NODES
-    parent.stats.unreachable_nodes--;
+    stats.unreachable_nodes--;
 #endif
 }
 
@@ -785,7 +785,7 @@ void MEDDLY::node_headers::lastUncache(node_handle p)
         // Must be using pessimistic
         //
 #ifdef TRACK_UNREACHABLE_NODES
-        parent.stats.unreachable_nodes--;
+        stats.unreachable_nodes--;
 #endif
         recycleNodeHandle(p);
     } else {
@@ -798,7 +798,7 @@ void MEDDLY::node_headers::lastUncache(node_handle p)
           (is_reachable && (0==is_reachable->get(size_t(p))))
         ) {
 #ifdef TRACK_UNREACHABLE_NODES
-            parent.stats.unreachable_nodes--;
+            stats.unreachable_nodes--;
 #endif
             parent.deleteNode(p);
             recycleNodeHandle(p);
