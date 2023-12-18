@@ -13,12 +13,12 @@ one forest, and there is a free list of unpacked nodes for each forest.
 As such, several methods have changed:
 
 
-### Other interface changes
+### Updates to forests
 
-* Several methods moved from ```expert_forest``` class
+* All methods have been moved from ```expert_forest``` class
     to ```forest``` class.
 
-* Several instances of ```expert_forest``` have been replaced by ```forest```.
+* All instances of ```expert_forest``` have been replaced by ```forest```.
 
 ### Deprecated methods
 

@@ -67,7 +67,7 @@ class MEDDLY::mtmxd_forest : public mt_forest {
   protected:
     class mtmxd_iterator : public mt_iterator {
       public:
-        mtmxd_iterator(const expert_forest* F);
+        mtmxd_iterator(const forest* F);
         virtual ~mtmxd_iterator();
         virtual bool start(const dd_edge &e);
         virtual bool next();
@@ -77,7 +77,7 @@ class MEDDLY::mtmxd_forest : public mt_forest {
 
     class mtmxd_fixedrow_iter : public mt_iterator {
       public:
-        mtmxd_fixedrow_iter(const expert_forest* F);
+        mtmxd_fixedrow_iter(const forest* F);
         virtual ~mtmxd_fixedrow_iter();
         virtual bool start(const dd_edge &e, const int*);
         virtual bool next();
@@ -87,7 +87,7 @@ class MEDDLY::mtmxd_forest : public mt_forest {
 
     class mtmxd_fixedcol_iter : public mt_iterator {
       public:
-        mtmxd_fixedcol_iter(const expert_forest* F);
+        mtmxd_fixedcol_iter(const forest* F);
         virtual ~mtmxd_fixedcol_iter();
         virtual bool start(const dd_edge &e, const int*);
         virtual bool next();

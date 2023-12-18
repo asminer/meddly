@@ -70,7 +70,7 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
   protected:
     class evtrmdd_iterator : public enumerator::iterator {
       public:
-        evtrmdd_iterator(const expert_forest* F);
+        evtrmdd_iterator(const forest* F);
         virtual ~evtrmdd_iterator();
 
         virtual void getValue(float &termVal) const;

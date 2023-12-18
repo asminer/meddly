@@ -159,7 +159,7 @@ const char* MEDDLY::evmxd_pluslong::codeChars() const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmxd_pluslong::evtrmxd_baseiter::evtrmxd_baseiter(const expert_forest *F)
+MEDDLY::evmxd_pluslong::evtrmxd_baseiter::evtrmxd_baseiter(const forest *F)
 : iterator(F)
 {
   int N = F->getNumVariables();

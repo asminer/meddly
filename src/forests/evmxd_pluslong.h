@@ -86,7 +86,7 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
   protected:
     class evtrmxd_baseiter : public enumerator::iterator {
       public:
-        evtrmxd_baseiter(const expert_forest* F);
+        evtrmxd_baseiter(const forest* F);
         virtual ~evtrmxd_baseiter();
         virtual void getValue(long &termVal) const;
       protected:
@@ -97,7 +97,7 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
 
     class evtrmxd_iterator : public evtrmxd_baseiter {
       public:
-        evtrmxd_iterator(const expert_forest* F) : evtrmxd_baseiter(F) { }
+        evtrmxd_iterator(const forest* F) : evtrmxd_baseiter(F) { }
         virtual ~evtrmxd_iterator() { }
 
         virtual bool start(const dd_edge &e);
@@ -108,7 +108,7 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
 
     class evtrmxd_fixedrow_iter : public evtrmxd_baseiter {
       public:
-        evtrmxd_fixedrow_iter(const expert_forest* F) : evtrmxd_baseiter(F) {}
+        evtrmxd_fixedrow_iter(const forest* F) : evtrmxd_baseiter(F) {}
         virtual ~evtrmxd_fixedrow_iter() { }
 
         virtual bool start(const dd_edge &e, const int*);
@@ -119,7 +119,7 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
 
     class evtrmxd_fixedcol_iter : public evtrmxd_baseiter {
       public:
-        evtrmxd_fixedcol_iter(const expert_forest* F) : evtrmxd_baseiter(F) {}
+        evtrmxd_fixedcol_iter(const forest* F) : evtrmxd_baseiter(F) {}
         virtual ~evtrmxd_fixedcol_iter() { }
 
         virtual bool start(const dd_edge &e, const int*);

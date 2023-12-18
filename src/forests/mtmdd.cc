@@ -308,7 +308,7 @@ void MEDDLY::mtmdd_forest::sifting(int var, int top, int bottom)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::mtmdd_forest::mtmdd_iterator::mtmdd_iterator(const expert_forest *_F)
+MEDDLY::mtmdd_forest::mtmdd_iterator::mtmdd_iterator(const forest *_F)
  : mt_iterator(_F)
 {
 }

@@ -73,7 +73,7 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
   protected:
     class evpimdd_iterator : public enumerator::iterator {
       public:
-        evpimdd_iterator(const expert_forest* F);
+        evpimdd_iterator(const forest* F);
         virtual ~evpimdd_iterator();
 
         virtual void getValue(long &termVal) const;

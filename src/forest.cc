@@ -1259,7 +1259,7 @@ MEDDLY::policies MEDDLY::forest::mxdDefaults;
 
 MEDDLY::forest
 ::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
-  const policies &p, int* lrr) : deflt(p), nodeHeaders(*this, mstats, stats)
+  const policies &p, int* lrr) : nodeHeaders(*this, mstats, stats), deflt(p)
 {
     // Set up domain
     d = _d;
@@ -1400,6 +1400,11 @@ MEDDLY::forest
 
 MEDDLY::forest::~forest()
 {
+#ifdef REPORT_ON_DESTROY
+    printf("Destroying forest.  Stats:\n");
+    reportMemoryUsage(stdout, "\t", 9);
+#endif
+
     // operations are deleted elsewhere...
     free(opCount);
 
@@ -1544,6 +1549,19 @@ void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
 
 //
 
+MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedRowIter() const
+{
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedColumnIter() const
+{
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+
+//
+
 
 void MEDDLY::forest::removeStaleComputeTableEntries()
 {
@@ -1606,7 +1624,7 @@ void MEDDLY::forest::unregisterOperation(const operation* op)
 
 #ifdef ALLOW_DEPRECATED_0_17_4
 MEDDLY::forest::node_status
-MEDDLY::expert_forest::getNodeStatus(MEDDLY::node_handle node) const
+MEDDLY::forest::getNodeStatus(MEDDLY::node_handle node) const
 {
     if (isMarkedForDeletion()) {
         return MEDDLY::forest::DEAD;
@@ -2060,14 +2078,6 @@ const char* MEDDLY::forest::codeChars() const
 
 #endif
 
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                      expert_forest  stuff                      *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-
 
 // ******************************************************************
 // *                                                                *
@@ -2077,140 +2087,18 @@ const char* MEDDLY::forest::codeChars() const
 // *                                                                *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_4
 
 MEDDLY::expert_forest::expert_forest(domain *d, bool rel, range_type t,
   edge_labeling ev, const policies &p, int* level_reduction_rule)
 : forest(d, rel, t, ev, p, level_reduction_rule)
 {
-
-
-  //
-  // Initialize misc. private data
-  //
-  // performing_gc = false;
 }
 
 
 MEDDLY::expert_forest::~expert_forest()
 {
-#ifdef REPORT_ON_DESTROY
-  printf("Destroying forest.  Stats:\n");
-  reportMemoryUsage(stdout, "\t", 9);
-#endif
-
 }
 
-
-/*
-
-void MEDDLY::expert_forest::garbageCollect()
-{
-  if (performing_gc) return;
-  performing_gc = true;
-  stats.garbage_collections++;
-
-#ifdef DEBUG_GC
-  printf("Garbage collection in progress... \n");
-  fflush(stdout);
 #endif
-
-  if (isPessimistic()) {
-#ifdef DEBUG_GC
-    printf("Zombie nodes: %ld\n", stats.zombie_nodes);
-#endif
-    // remove the stale nodes entries from caches
-    removeStaleComputeTableEntries();
-#ifdef DEBUG_GC
-    printf("Zombie nodes: %ld\n", stats.zombie_nodes);
-#endif
-#ifdef DEVELOPMENT_CODE
-    if (stats.zombie_nodes != 0) {
-      FILE_output mystderr(stderr);
-      showInfo(mystderr, 1);
-      showComputeTable(mystderr, 6);
-    }
-    MEDDLY_DCASSERT(stats.zombie_nodes == 0);
-#endif
-  } else {
-    // remove the stale nodes entries from caches
-    removeStaleComputeTableEntries();
-  }
-
-  if (deflt.compactAfterGC) {
-#ifdef DEBUG_GC
-    printf("Compacting levels...\n");
-    fflush(stdout);
-#endif
-
-    compactMemory();
-
-#ifdef DEBUG_GC
-    printf("  done compacting.\n");
-    fflush(stdout);
-#endif
-  }
-
-  performing_gc = false;
-}
-
-void MEDDLY::expert_forest::compactMemory()
-{
-  nodeMan->collectGarbage(true);
-}
-
-*/
-
-// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-// '                                                                '
-// '    virtual methods to be overridden by some derived classes    '
-// '                                                                '
-// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-MEDDLY::enumerator::iterator* MEDDLY::expert_forest::makeFixedRowIter() const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-MEDDLY::enumerator::iterator*
-MEDDLY::expert_forest::makeFixedColumnIter() const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-// '                                                                '
-// '                                                                '
-// '                        private  methods                        '
-// '                                                                '
-// '                                                                '
-// ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-
-
-/*
-
-unsigned MEDDLY::expert_forest
-::getImplTableCount() const
-{
-    return implUT->getNumEntries();
-}
-
-MEDDLY::node_handle MEDDLY::expert_forest
-::getImplTerminalNode() const
-{
-  return implUT->getLastHandle();
-}
-
-*/
-
-
-
-//
-// Stuff that used to be inlined but now can't
-//
-
-//----------------------------------------------------------------------
-// front end - create and destroy objects
-//----------------------------------------------------------------------
-
 

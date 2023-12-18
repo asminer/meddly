@@ -38,7 +38,13 @@ namespace MEDDLY {
         void setEdge(void*, type v);
         bool isIdentityEdge(const edge_value &);
 */
-class MEDDLY::ev_forest : public expert_forest {
+class MEDDLY::ev_forest :
+#ifdef ALLOW_DEPRECATED_0_17_4
+    public expert_forest
+#else
+    public forest
+#endif
+{
   protected:
     ev_forest(domain *d, bool rel, range_type t, edge_labeling ev,
       const policies &p, int* level_reduction_rule=NULL);

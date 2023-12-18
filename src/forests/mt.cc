@@ -35,8 +35,12 @@ int  MEDDLY::mt_forest::order_size;
 
 MEDDLY::mt_forest::mt_forest(domain *d, bool rel,
   range_type t, const policies &p, int* level_reduction_rule)
+#ifdef ALLOW_DEPRECATED_0_17_4
 : expert_forest(d, rel, t, edge_labeling::MULTI_TERMINAL,
         p, level_reduction_rule)
+#else
+: forest(d, rel, t, edge_labeling::MULTI_TERMINAL, p, level_reduction_rule)
+#endif
 {
     setVoidEdges();
 }
@@ -155,7 +159,7 @@ void MEDDLY::mt_forest::clearStatics()
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::mt_forest::mt_iterator::mt_iterator(const expert_forest *F)
+MEDDLY::mt_forest::mt_iterator::mt_iterator(const forest *F)
  : iterator(F)
 {
 }

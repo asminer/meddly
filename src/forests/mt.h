@@ -41,7 +41,13 @@ namespace MEDDLY {
     Common things, that do not depend on the terminal type,
     are implemented here.
 */
-class MEDDLY::mt_forest : public expert_forest {
+class MEDDLY::mt_forest :
+#ifdef ALLOW_DEPRECATED_0_17_4
+    public expert_forest
+#else
+    public forest
+#endif
+{
   protected:
     mt_forest(domain *d, bool rel, range_type t, const policies &p, int* level_reduction_rule=NULL);
 
@@ -152,7 +158,7 @@ class MEDDLY::mt_forest : public expert_forest {
     // iterator base class for MT
     class mt_iterator : public enumerator::iterator {
       public:
-        mt_iterator(const expert_forest* F);
+        mt_iterator(const forest* F);
         virtual ~mt_iterator();
 
         virtual void getValue(int &termVal) const;

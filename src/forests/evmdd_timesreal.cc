@@ -153,7 +153,7 @@ const char* MEDDLY::evmdd_timesreal::codeChars() const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmdd_timesreal::evtrmdd_iterator::evtrmdd_iterator(const expert_forest *F)
+MEDDLY::evmdd_timesreal::evtrmdd_iterator::evtrmdd_iterator(const forest *F)
 : iterator(F)
 {
   int N = F->getNumVariables();

@@ -40,7 +40,6 @@ namespace MEDDLY {
 
     class operation;
     class forest;
-    class expert_forest;
     class node_marker;
     class node_storage;
     class unpacked_node;
@@ -1475,6 +1474,7 @@ class MEDDLY::forest {
         static void registerForest(forest* f);
         static void unregisterForest(forest* f);
 
+        friend class forest_initializer;
 
     // ------------------------------------------------------------
     private: // private members for the forest registry
@@ -2149,10 +2149,34 @@ class MEDDLY::forest {
     virtual void getElement(const dd_edge& a, long index, int* e);
 
 
+    /**
+        Build an iterator.
+        Used by class enumerator.
+    */
+    virtual enumerator::iterator* makeFullIter() const = 0;
+
+    /**
+        Build an iterator with a fixed row.
+        Default behavior - throw an "INVALID_FOREST" error.
+    */
+    virtual enumerator::iterator* makeFixedRowIter() const;
+
+    /**
+        Build an iterator with a fixed column.
+        Default behavior - throw an "INVALID_FOREST" error.
+    */
+    virtual enumerator::iterator* makeFixedColumnIter() const;
+
+
+
+
+    //
+    // misc.
+    //
+
   // ------------------------------------------------------------
   // Ugly details from here down.
   private:  // Defaults
-    friend class forest_initializer;
     static policies mddDefaults;
     static policies mxdDefaults;
 
@@ -2364,78 +2388,29 @@ class MEDDLY::forest {
 
 
 
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                      expert_forest  class                      *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::expert_forest: public MEDDLY::forest
-{
-  public:
-
-    /** Constructor.
-      @param  d       domain to which this forest belongs to.
-      @param  rel     does this forest represent a relation.
-      @param  t       the range of the functions represented in this forest.
-      @param  ev      edge annotation.
-      @param  p       Polcies for reduction, storage, deletion.
-      @param  level_reduction_rule       Rules for reduction on different levels.
-    */
-    expert_forest(domain *d, bool rel, range_type t,
-                  edge_labeling ev, const policies &p, int* level_reduction_rule);
-
-
-
-  public:
-
-
-    /**
-        Build an iterator.
-        Used by class enumerator.
-    */
-    virtual enumerator::iterator* makeFullIter() const = 0;
-
-    /**
-        Build an iterator with a fixed row.
-        Default behavior - throw an "INVALID_FOREST" error.
-    */
-    virtual enumerator::iterator* makeFixedRowIter() const;
-
-    /**
-        Build an iterator with a fixed column.
-        Default behavior - throw an "INVALID_FOREST" error.
-    */
-    virtual enumerator::iterator* makeFixedColumnIter() const;
-
-
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // |                                                                |
-  // |                       protected  methods                       |
-  // |                                                                |
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  protected:
-
-    /// Destructor.
-    virtual ~expert_forest();
-
-
-
-  // ------------------------------------------------------------
-  // virtual, with default implementation.
-  // Should be overridden in appropriate derived classes.
-
-};
-// end of expert_forest class.
-
-
+// ===================================================================
+//
+// Deprecated classes / methods as of version 0.17.4
+//
+// ===================================================================
 
 
 #ifdef ALLOW_DEPRECATED_0_17_4
 namespace MEDDLY {
+
+    /// DEPRECATED: expert_forest class
+    class expert_forest: public forest
+    {
+        public:
+            expert_forest(domain *d, bool rel, range_type t,
+                  edge_labeling ev, const policies &p, int* level_reduction_rule);
+
+        protected:
+            virtual ~expert_forest();
+
+    };
+
+
 
     /** Front-end function to destroy a forest.
         DEPRECATED; use forest::destroy() instead.

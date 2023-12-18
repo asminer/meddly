@@ -324,7 +324,7 @@ const char* MEDDLY::evmdd_pluslong::codeChars() const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmdd_pluslong::evpimdd_iterator::evpimdd_iterator(const expert_forest *F)
+MEDDLY::evmdd_pluslong::evpimdd_iterator::evpimdd_iterator(const forest *F)
 : iterator(F)
 {
   int N = F->getNumVariables();

@@ -35,7 +35,7 @@ MEDDLY::mtmxd_forest
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::mtmxd_forest::mtmxd_iterator::mtmxd_iterator(const expert_forest *F)
+MEDDLY::mtmxd_forest::mtmxd_iterator::mtmxd_iterator(const forest *F)
  : mt_iterator(F)
 {
 }
@@ -677,7 +677,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_iterator::first(int k, node_handle down)
 // ******************************************************************
 
 MEDDLY::mtmxd_forest::
-mtmxd_fixedrow_iter::mtmxd_fixedrow_iter(const expert_forest *F)
+mtmxd_fixedrow_iter::mtmxd_fixedrow_iter(const forest *F)
  : mt_iterator(F)
 {
 }
@@ -792,7 +792,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
 // ******************************************************************
 
 MEDDLY::mtmxd_forest::
-mtmxd_fixedcol_iter::mtmxd_fixedcol_iter(const expert_forest *F)
+mtmxd_fixedcol_iter::mtmxd_fixedcol_iter(const forest *F)
  : mt_iterator(F)
 {
 }

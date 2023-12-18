@@ -56,7 +56,7 @@ class MEDDLY::mtmdd_forest : public mt_forest {
   protected:
     class mtmdd_iterator : public mt_iterator {
       public:
-        mtmdd_iterator(const expert_forest* F);
+        mtmdd_iterator(const forest* F);
         virtual ~mtmdd_iterator();
         virtual bool start(const dd_edge &e);
         virtual bool next();

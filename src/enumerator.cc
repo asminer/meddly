@@ -155,13 +155,12 @@ MEDDLY::enumerator::~enumerator()
   delete I;
 }
 
-void MEDDLY::enumerator::init(type t, const forest* f)
+void MEDDLY::enumerator::init(type t, const forest* F)
 {
   delete I;
   is_valid = false;
 
   T = t;
-  const expert_forest* F = smart_cast<const expert_forest*>(f);
   if (0==F) {
     I = 0;
     return;
