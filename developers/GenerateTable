@@ -149,6 +149,7 @@ for oldrel in $oldlist; do
         echo "Skipping version $oldrel"
         continue
     fi
+    rm -rf src
     if git checkout origin/releases/$oldrel; then
         echo "Checkout of $oldrel succeeded"
     else
@@ -173,6 +174,7 @@ for oldrel in $oldlist; do
         echo "Skipping version $oldrel"
         continue
     fi
+    rm -rf src
     if git checkout origin/releases/$oldrel; then
         echo "Checkout of $oldrel succeeded"
     else
@@ -204,6 +206,7 @@ for newrel in $newlist master; do
         echo "Skipping version $newrel"
         continue
     fi
+    rm -rf src
     if git checkout $newrel; then
         echo "Checkout of $newrel succeeded"
     else
