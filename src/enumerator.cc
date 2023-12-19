@@ -45,8 +45,8 @@ MEDDLY::enumerator::iterator::iterator(const forest* f)
     level_change = 0;
     return;
   }
-  int N = int(f->getNumVariables());
-  maxLevel = N;
+  const unsigned N = f->getNumVariables();
+  maxLevel = int(F->getNumVariables());
   if (f->isForRelations()) {
     rawpath = new unpacked_node[2*N+1];
     for (unsigned i=0; i<2*N+1; i++) {

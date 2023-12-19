@@ -425,7 +425,7 @@ void process_args(int argc, const char** argv, coord &start)
     long L, L2;
 
     // Go through args
-    unsigned i;
+    int i;
     for (i=1; i<argc; i++) {
         char sw = ' ';
         const char* arg = argv[i];

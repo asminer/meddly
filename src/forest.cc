@@ -1075,7 +1075,7 @@ void MEDDLY::forest::validateIncounts(bool exact)
         unpackNode(&P, i, SPARSE_ONLY);
 
         // add to reference counts
-        for (int z=0; z<P.getSize(); z++) {
+        for (unsigned z=0; z<P.getSize(); z++) {
             if (isTerminalNode(P.down(z))) continue;
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, P.down(z), sz);
             in_validate[P.down(z)]++;

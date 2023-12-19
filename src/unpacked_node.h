@@ -25,6 +25,8 @@
 #include "terminal.h"
 #include "policies.h"
 
+#include <cstring> // for memcpy
+
 namespace MEDDLY {
     class unpacked_node;
     class forest;
