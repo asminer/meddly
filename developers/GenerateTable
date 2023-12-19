@@ -154,8 +154,32 @@ for oldrel in $oldlist; do
         echo "Build of version $oldrel failed"
         exit 1
     fi
+done
+
+# Checkout, build, and run
+# Checkout and build
+for oldrel in $oldlist; do
+    skip=`contains $oldrel $oldskip`
+    if [ "y" == "$skip" ]; then
+        echo "Skipping version $oldrel"
+        continue
+    fi
+    if git checkout origin/releases/$oldrel; then
+        echo "Checkout of $oldrel succeeded"
+    else
+        echo "Checkout of $oldrel failed"
+        exit 1
+    fi
+    ./autogen.sh
+    if make clean all check; then
+        echo "Build of version $oldrel succeeded"
+    else
+        echo "Build of version $oldrel failed"
+        exit 1
+    fi
     ./RunBenchmarks -h $OUT
 done
+
 
 #
 # New releases
