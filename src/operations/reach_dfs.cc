@@ -213,12 +213,12 @@ class MEDDLY::common_dfs : public binary_operation {
           data[i] = NULPTR;
         }
         inline unsigned remove() {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, (unsigned) head, size);
-          unsigned ans = head;
-          head = data[head];
-          data[ans] = NOTINQ;
-          MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, ans, size);
-          return ans;
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, unsigned(head), size);
+            unsigned ans = unsigned(head);
+            head = data[head];
+            data[ans] = NOTINQ;
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, ans, size);
+            return ans;
         }
     };
 

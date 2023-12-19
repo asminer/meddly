@@ -1255,7 +1255,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       s << "\tNode ";
       s.put(long(curr), 9);
       s << ":  ";
-      showEntry(s, curr);
+      showEntry(s, (unsigned long)curr);
       s.put('\n');
       if (CHAINED) {
 #ifdef INTEGRATED_MEMMAN

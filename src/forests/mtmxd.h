@@ -468,7 +468,7 @@ namespace MEDDLY {
         for (unsigned v=0; v<lastV; v++) {
           unpacked_node* nbp = unpacked_node::newSparse(F, -k, 1);
           nbp->setSparse(0, v, F->linkNode(p));
-          nb->setFull(v, F->createReducedNode(v, nbp));
+          nb->setFull(v, F->createReducedNode(int(v), nbp));
         }
         F->unlinkNode(p);
         return F->createReducedNode(-1, nb);

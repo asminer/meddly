@@ -525,7 +525,7 @@ int main(int argc, const char** argv)
     using namespace MEDDLY;
 
     initialize();
-    domain* D = domain::createBottomUp(bounds, (unsigned) B.getN()*B.getM());
+    domain* D = domain::createBottomUp(bounds, unsigned(B.getN()*B.getM()));
 
     policies p;
     p.useDefaults(false);

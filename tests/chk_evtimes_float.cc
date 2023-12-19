@@ -65,17 +65,17 @@ int Equilikely(int a, int b)
   return (a + (int) ((b - a + 1) * Random()));
 }
 
-void printRandomSet(int* mt, int N)
+void printRandomSet(int* mt, unsigned N)
 {
   printf("Random minterm: [%d", mt[1]);
-  for (int i=2; i<N; i++) printf(", %d", mt[i]);
+  for (unsigned i=2; i<N; i++) printf(", %d", mt[i]);
   printf("]\n");
 }
 
-void randomizeMinterm(bool primed, int max, int* mt, int N)
+void randomizeMinterm(bool primed, int max, int* mt, unsigned N)
 {
   int min = primed ? -2 : -1;
-  for (int i=1; i<N; i++) {
+  for (unsigned i=1; i<N; i++) {
     mt[i] = Equilikely(min, max);
   }
 #ifdef DEBUG_RANDSET
@@ -84,9 +84,9 @@ void randomizeMinterm(bool primed, int max, int* mt, int N)
 #endif
 }
 
-void adjustMinterms(int* mtu, int* mtp, int N)
+void adjustMinterms(int* mtu, int* mtp, unsigned N)
 {
-  for (int i=1; i<N; i++) {
+  for (unsigned i=1; i<N; i++) {
     if (mtp[i] == -2) mtu[i] = -1;
   }
 }
@@ -95,7 +95,7 @@ void buildRandomFunc(long s, int terms, dd_edge &out)
 {
   arg_seed = s;
   forest* f = out.getForest();
-  int Vars = f->getDomain()->getNumVariables();
+  const unsigned Vars = f->getDomain()->getNumVariables();
 
   if (f->getRangeType() != range_type::BOOLEAN &&
       f->getRangeType() != range_type::REAL) {
