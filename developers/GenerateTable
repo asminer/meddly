@@ -2,6 +2,14 @@
 #
 
 #
+# Run config for fast code
+#
+config_for_fast()
+{
+    ./configure CXXFLAGS="-O3" LDFLAGS=-L/opt/local/lib CPPFLAGS=-I/opt/local/include
+}
+
+#
 # Arg1: item to search for
 # Remaining args: list
 #
@@ -147,7 +155,8 @@ for oldrel in $oldlist; do
         echo "Checkout of $oldrel failed"
         exit 1
     fi
-    autoreconf --force --install
+    ./autogen.sh
+    config_for_fast
     if make clean all check; then
         echo "Build of version $oldrel succeeded"
     else
@@ -171,6 +180,7 @@ for oldrel in $oldlist; do
         exit 1
     fi
     ./autogen.sh
+    config_for_fast
     if make clean all check; then
         echo "Build of version $oldrel succeeded"
     else
@@ -201,6 +211,7 @@ for newrel in $newlist master; do
         exit 1
     fi
     ./autogen.sh
+    config_for_fast
     if make clean all check; then
         echo "Build of version $newrel succeeded"
     else
