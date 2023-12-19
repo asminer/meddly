@@ -93,7 +93,7 @@ int main(int argc, const char** argv)
 {
   int N = -1;
   char method = 'm';
-  int batchsize = 256;
+  unsigned batchsize = 256;
   const char* lfile = 0;
   bool build_pdf = false;
   bool approx_count = true;
@@ -138,7 +138,10 @@ int main(int argc, const char** argv)
     }
     if (strcmp("--batch", argv[i])==0) {
       i++;
-      if (argv[i]) batchsize = atoi(argv[i]);
+      if (argv[i]) {
+          int bs = atoi(argv[i]);
+          if (bs>0) batchsize = unsigned(bs);
+      }
       continue;
     }
     if (strcmp("-pdf", argv[i])==0) {

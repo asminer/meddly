@@ -61,31 +61,31 @@ int Equilikely(int a, int b)
   return (a + (int) ((b - a + 1) * Random()));
 }
 
-void randomizeMinterm(bool primed, int max, int* mt, int N)
+void randomizeMinterm(bool primed, int max, int* mt, unsigned N)
 {
   int min = primed ? -2 : -1;
-  for (int i=1; i<N; i++) {
+  for (unsigned i=1; i<N; i++) {
     mt[i] = Equilikely(min, max);
   }
 #ifdef DEBUG_RANDSET
   printf("Random minterm: [%d", minterm[1]);
-  for (int i=2; i<N; i++) printf(", %d", minterm[i]);
+  for (unsigned i=2; i<N; i++) printf(", %d", minterm[i]);
   printf("]\n");
 #endif
 }
 
-void adjustMinterms(int* mtu, int* mtp, int N)
+void adjustMinterms(int* mtu, int* mtp, unsigned N)
 {
-  for (int i=1; i<N; i++) {
+  for (unsigned i=1; i<N; i++) {
     if (mtp[i] == -2) mtu[i] = -1;
   }
 }
 
-void printMinterm(FILE* out, const char* which, const int* mt, int N)
+void printMinterm(FILE* out, const char* which, const int* mt, unsigned N)
 {
     if (0 == mt) return;
     fprintf(out, "    %s (bottom) [ %d", which, mt[0]);
-    for (int i=1; i<N; i++ ) {
+    for (unsigned i=1; i<N; i++ ) {
         fprintf(out, ", %d", mt[i]);
     }
     fprintf(out, "] (top)\n");
@@ -95,7 +95,7 @@ void buildRandomFunc(long s, int terms, dd_edge &out, FILE* fout)
 {
   seed = s;
   forest* f = out.getForest();
-  int Vars = f->getDomain()->getNumVariables();
+  const unsigned Vars = f->getNumVariables();
 
   int* minterm = new int[Vars+1];
   int* minprime = 0;

@@ -544,7 +544,7 @@ int main(int argc, const char** argv)
   int N = G.height * G.width;
   int* scratch = new int[N+1];
   for (int i=0; i<=N; i++) scratch[i] = 2;
-  domain* d = domain::createBottomUp(scratch, N);
+  domain* d = domain::createBottomUp(scratch, (unsigned) N);
   assert(d);
   forest* f = forest::create(d, MEDDLY::SET, range_type::BOOLEAN,
           edge_labeling::MULTI_TERMINAL, p);

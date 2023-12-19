@@ -126,7 +126,7 @@ long buildQueenSolutions(int N)
   for (int i=0; i<N; i++) {
     varsizes[i] = N;
   }
-  domain* d = domain::createBottomUp(varsizes, N);
+  domain* d = domain::createBottomUp(varsizes, unsigned(N));
   assert(d);
   delete[] varsizes;
   policies p(false);

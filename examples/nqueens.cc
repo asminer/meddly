@@ -266,7 +266,7 @@ int main(int argc, const char** argv)
   for (int i=0; i<N; i++) {
     varsizes[i] = N;
   }
-  domain* d = domain::createBottomUp(varsizes, N);
+  domain* d = domain::createBottomUp(varsizes, unsigned(N));
   assert(d);
   delete[] varsizes;
   forest* f = forest::create(d, MEDDLY::SET, range_type::INTEGER,

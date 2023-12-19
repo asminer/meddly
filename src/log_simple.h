@@ -44,7 +44,7 @@ class MEDDLY::simple_logger : public MEDDLY::logger {
     long** active_delta;
     int* left;
     int* right;
-    int batch_forests;
+    unsigned batch_forests;
     int aggregate;
     int ucount;
   public:
@@ -57,7 +57,7 @@ class MEDDLY::simple_logger : public MEDDLY::logger {
     virtual void addToActiveNodeCount(const forest* f, int level, long delta);
 
   protected:
-    inline long* activeArray(int fid) const {
+    inline long* activeArray(unsigned fid) const {
       return (left[fid]<0) ? active_delta[fid] - left[fid] : active_delta[fid];
     }
 

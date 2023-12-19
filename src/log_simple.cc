@@ -46,7 +46,7 @@ MEDDLY::simple_logger::~simple_logger()
 {
   flushLog();
 
-  for (int i=0; i<batch_forests; i++) {
+  for (unsigned i=0; i<batch_forests; i++) {
     delete[] active_delta[i];
   }
   free(active_delta);
@@ -95,14 +95,14 @@ void MEDDLY::simple_logger::logForestInfo(const forest* ef, const char* name)
 
   /* Allocate space for this forest info */
   MEDDLY_DCASSERT(batch_forests >= 0);
-  if (ef->FID() >= (unsigned int)(batch_forests)) {
-    int bf = ((ef->FID() / 16) + 1) * 16;
+  if (ef->FID() >= batch_forests) {
+    const unsigned bf = ((ef->FID() / 16) + 1) * 16;
 
     /* Increase forest dimension if needed */
     if (recordingNodeCounts()) {
       active_delta = (long**) realloc(active_delta, bf * sizeof(long*));
       if (0==active_delta) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-      for (int i=batch_forests; i<bf; i++) {
+      for (unsigned i=batch_forests; i<bf; i++) {
         active_delta[i] = 0;
       }
     }
@@ -112,7 +112,7 @@ void MEDDLY::simple_logger::logForestInfo(const forest* ef, const char* name)
     if (0==left) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     right = (int*) realloc(right, bf * sizeof(int));
     if (0==right) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    for (int i=batch_forests; i<bf; i++) {
+    for (unsigned i=batch_forests; i<bf; i++) {
       left[i] = right[i] = 0;
     }
 
@@ -122,7 +122,7 @@ void MEDDLY::simple_logger::logForestInfo(const forest* ef, const char* name)
   }
 
   /* Get some forest info */
-  int L = ef->getNumVariables();
+  int L = (int) ef->getNumVariables();
   right[ef->FID()] = L;
   left[ef->FID()] = ef->isForRelations() ? -L : 1;
 
@@ -190,7 +190,7 @@ void MEDDLY::simple_logger::flushLog()
 
     out << "a";
 
-    for (int f=1; f<batch_forests; f++) {
+    for (unsigned f=1; f<batch_forests; f++) {
       if (0==active_delta[f]) continue;
       long* active = activeArray(f);
       for (int k=left[f]; k<=right[f]; k++) {

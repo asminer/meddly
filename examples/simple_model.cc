@@ -34,8 +34,12 @@
 
 // #define SAME_FOREST_OPERATIONS
 
+inline unsigned MAX(unsigned a, int b) {
+    if (b<0) return a;
+    return (a> unsigned(b)) ? a : unsigned(b);
+}
 inline int MAX(int a, int b) {
-  return (a>b) ? a : b;
+    return (a>b) ? a : b;
 }
 
 /*
@@ -59,7 +63,7 @@ inline int MAX(int a, int b) {
       @param  verb      Verbosity level.
 */
 
-void buildNextStateFunction(const char* const* events, int nEvents,
+void buildNextStateFunction(const char* const* events, unsigned nEvents,
   MEDDLY::forest* mxd,
   MEDDLY::satpregen_opname::pregen_relation* pnsf,
   MEDDLY::dd_edge* mono, int verb)
@@ -72,9 +76,9 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   forest* mtmxd = forest::create(d,
     true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL
   );
-  int nVars = d->getNumVariables();
-  int maxBound = d->getVariableBound(1, false);
-  for (int i=2; i<=nVars; i++) {
+  const unsigned nVars = d->getNumVariables();
+  unsigned maxBound = 1;
+  for (unsigned i=1; i<=nVars; i++) {
     maxBound = MAX(maxBound, d->getVariableBound(i, false));
   }
   maxBound++;
@@ -89,23 +93,23 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   dec[0] = 0;
 
   //  Create edge for each variable xi'
-  for (int i=1; i<=nVars; i++) {
+  for (unsigned i=1; i<=nVars; i++) {
     varP[i] = new dd_edge(mtmxd);
-    mtmxd->createEdgeForVar(i, true, varP[i][0]);
+    mtmxd->createEdgeForVar(int(i), true, varP[i][0]);
   }
 
   // Create edge for each function xi+1
-  for (int i=0; i<maxBound; i++) temp[i] = i+1;
-  for (int i=1; i<=nVars; i++) {
+  for (unsigned i=0; i<maxBound; i++) temp[i] = i+1;
+  for (unsigned i=1; i<=nVars; i++) {
     inc[i] = new dd_edge(mtmxd);
-    mtmxd->createEdgeForVar(i, false, temp, inc[i][0]);
+    mtmxd->createEdgeForVar(int(i), false, temp, inc[i][0]);
   }
 
   // Create edge for each function xi-1
-  for (int i=0; i<maxBound; i++) temp[i] = i-1;
-  for (int i=1; i<=nVars; i++) {
+  for (unsigned i=0; i<maxBound; i++) temp[i] = i-1;
+  for (unsigned i=1; i<=nVars; i++) {
     dec[i] = new dd_edge(mtmxd);
-    mtmxd->createEdgeForVar(i, false, temp, dec[i][0]);
+    mtmxd->createEdgeForVar(int(i), false, temp, dec[i][0]);
   }
 
   //
@@ -113,7 +117,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
   //
   if (mono) mxd->createEdge(false, *mono);
 
-  for (int e=0; e<nEvents; e++) {
+  for (unsigned e=0; e<nEvents; e++) {
     const char* ev = events[e];
     if (2==verb) fprintf(stderr, "%5d", e);
     if (verb>2) fprintf(stderr, "Event %5d", e);
@@ -143,7 +147,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
     //
     // 'and' with the "do care" levels
     //
-    for (int i=1; i<=nVars; i++) {
+    for (unsigned i=1; i<=nVars; i++) {
 #ifdef SAME_FOREST_OPERATIONS
       dd_edge docare(mtmxd);
 #endif
@@ -235,13 +239,13 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 }
 
 
-void buildNextStateFunction(const char* const* events, int nEvents,
+void buildNextStateFunction(const char* const* events, unsigned nEvents,
   MEDDLY::forest* mxd, MEDDLY::dd_edge &nsf, int verb)
 {
   buildNextStateFunction(events, nEvents, mxd, 0, &nsf, verb);
 }
 
-void buildNextStateFunction(const char* const* events, int nEvents,
+void buildNextStateFunction(const char* const* events, unsigned nEvents,
   MEDDLY::satpregen_opname::pregen_relation* pnsf, int verb)
 {
   if (0==pnsf) return;
@@ -251,7 +255,7 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 #ifdef SHOW_EVENT_HANDLES
   using namespace MEDDLY;
   // check what we got
-  for (int k=16; k; k--) {
+  for (unsigned k=16; k; k--) {
     int len = pnsf->lengthForLevel(k);
     if (0==len) continue;
     printf("Events at level %d:\n\t", k);
@@ -270,9 +274,9 @@ void buildNextStateFunction(const char* const* events, int nEvents,
 //  Explicit RS construction
 //
 
-bool fireEvent(const char* event, const int* current, int* next, int nVars)
+bool fireEvent(const char* event, const int* current, int* next, unsigned nVars)
 {
-  for (int i=nVars; i; i--) {
+  for (unsigned i=nVars; i; i--) {
     if ('.' == event[i]) {
       next[i] = current[i];
       continue;
@@ -292,11 +296,12 @@ bool fireEvent(const char* event, const int* current, int* next, int nVars)
   return true;
 }
 
-void explicitReachset(const char* const* events, int nEvents,
-  MEDDLY::forest* f, MEDDLY::dd_edge &expl, MEDDLY::dd_edge &RS, int batchsize)
+void explicitReachset(const char* const* events, unsigned nEvents,
+  MEDDLY::forest* f, MEDDLY::dd_edge &expl, MEDDLY::dd_edge &RS,
+  unsigned batchsize)
 {
-  int b;
-  int nVars = f->getDomain()->getNumVariables();
+  unsigned b;
+  unsigned nVars = f->getNumVariables();
   if (batchsize < 1) batchsize = 256;
 
   // initialize batch memory
@@ -340,7 +345,7 @@ void explicitReachset(const char* const* events, int nEvents,
         b++;
         if (b>=batchsize) {
           // Buffer is full; flush it
-          f->createEdge(minterms, b, batch);
+          f->createEdge(minterms, int(b), batch);
           unexplored += batch;
           RS += batch;
           b = 0;
@@ -350,7 +355,7 @@ void explicitReachset(const char* const* events, int nEvents,
     // expl is empty.
     // Flush the buffer
     if (b) {
-      f->createEdge(minterms, b, batch);
+      f->createEdge(minterms, int(b), batch);
       unexplored += batch;
       b = 0;
     }

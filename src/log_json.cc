@@ -54,7 +54,7 @@ void MEDDLY::json_logger::logForestInfo(const forest* f, const char* name)
 
   fixLogger();
 
-  int L = f->getNumVariables();
+  int L = (int) f->getNumVariables();
   int smallest = f->isForRelations() ? -L : 1;
 
   out << "{ \"forest_id\":" << f->FID() << ", ";

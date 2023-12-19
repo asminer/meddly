@@ -264,8 +264,8 @@ unpacked_node* build_node(forest* f, unsigned who, bool full)
     if (full) {
         un = unpacked_node::newFull(f, who%4+1, 9);
         for (unsigned i=0; init[i]; i+=2) {
-            unsigned pos = init[i]-'0';
-            unsigned dwn = init[i+1]-'0';
+            unsigned pos = unsigned(init[i]-'0');
+            unsigned dwn = unsigned(init[i+1]-'0');
 
             un->setFull(pos, e[dwn].getEdgeValue(), f->linkNode(e[dwn].getNode()));
 
@@ -274,8 +274,8 @@ unpacked_node* build_node(forest* f, unsigned who, bool full)
         un = unpacked_node::newSparse(f, who%4+1, 9);
         unsigned nnzs = 0;
         for (unsigned i=0; init[i]; i+=2) {
-            unsigned pos = init[i]-'0';
-            unsigned dwn = init[i+1]-'0';
+            unsigned pos = unsigned(init[i]-'0');
+            unsigned dwn = unsigned(init[i+1]-'0');
 
             un->setSparse(nnzs, pos, e[dwn].getEdgeValue(), f->linkNode(e[dwn].getNode()));
 

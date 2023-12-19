@@ -405,7 +405,7 @@ void generate()
     //      row of last position
     //
 
-    domain* D = domain::createBottomUp(bounds, numvars);
+    domain* D = domain::createBottomUp(bounds, (unsigned) numvars);
 
     policies p;
     p.useDefaults(false);

@@ -230,7 +230,7 @@ void runWithArgs(unsigned N, unsigned marks, unsigned counts)
     //
     std::cout << "Building next-state function" << std::endl;
     dd_edge nsf(mxd);
-    buildNextStateFunction(events, int(8*N), mxd, nsf);
+    buildNextStateFunction(events, 8*N, mxd, nsf);
 
     //
     // Build reachable states

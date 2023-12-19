@@ -33,8 +33,8 @@
       @param  e         Edge to store the result.
       @param  verb      Verbosity level.
 */
-void buildNextStateFunction(const char* const* events, int nEvents,
-  MEDDLY::forest* f, MEDDLY::dd_edge &e, int verb=0);
+void buildNextStateFunction(const char* const* events, unsigned nEvents,
+    MEDDLY::forest* f, MEDDLY::dd_edge &e, int verb=0);
 
 /** Build a partitioned next-state function for the given model.
       @param  events    Array of dimension \a nEvents.
@@ -49,8 +49,8 @@ void buildNextStateFunction(const char* const* events, int nEvents,
       @param  pnsf      Structure to store the relation.
       @param  verb      Verbosity level.
 */
-void buildNextStateFunction(const char* const* events, int nEvents,
-  MEDDLY::satpregen_opname::pregen_relation* pnsf, int verb);
+void buildNextStateFunction(const char* const* events, unsigned nEvents,
+    MEDDLY::satpregen_opname::pregen_relation* pnsf, int verb);
 
 /** Use explicit search to build the reachability set.
       @param  events    Array of dimension \a nEvents.
@@ -63,15 +63,18 @@ void buildNextStateFunction(const char* const* events, int nEvents,
                         union operation.  If this is less than 1,
                         we use a default size of 256.
 */
-void explicitReachset(const char* const* events, int nEvents,
-  MEDDLY::forest* f, MEDDLY::dd_edge &init, MEDDLY::dd_edge &e, int batchsize);
+void explicitReachset(const char* const* events, unsigned nEvents,
+    MEDDLY::forest* f, MEDDLY::dd_edge &init, MEDDLY::dd_edge &e,
+    unsigned batchsize);
 
-void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces,
-int bounds, MEDDLY::forest* mddF, MEDDLY::forest* mxdF,
-MEDDLY::satimpl_opname::implicit_relation* T);
+
+void buildImplicitRelation(const int* const* events, int nEvents,
+        int nPlaces, int bounds, MEDDLY::forest* mddF,
+        MEDDLY::forest* mxdF, MEDDLY::satimpl_opname::implicit_relation* T);
 
 MEDDLY::sathyb_opname::event** buildHybridRelation(const int* const* events,
-int nEvents,int nPlaces, int bounds, MEDDLY::forest* mddF, MEDDLY::forest* mxdF);
+        int nEvents, int nPlaces, int bounds,
+        MEDDLY::forest* mddF, MEDDLY::forest* mxdF);
 
 
 

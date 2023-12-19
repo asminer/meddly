@@ -92,10 +92,10 @@ void clauses2MDD(forest* f, const int** C, dd_edge &M, int verb)
   delete[] ce;
 }
 
-forest* makeBinaryForest(int N)
+forest* makeBinaryForest(unsigned N)
 {
   int* b = new int[N];
-  for (int i=0; i<N; i++) b[i] = 2;
+  for (unsigned i=0; i<N; i++) b[i] = 2;
   domain* d = domain::createBottomUp(b, N);
   delete[] b;
   return forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
