@@ -116,7 +116,7 @@ EOF
 # Old releases - are branches
 # oldskip - versions to skip for various reasons
 #
-oldskip="v0.02"
+oldskip=""
 oldlist="v0.02 v0.03 v0.04 v0.05 v0.06 v0.07 v0.08 v0.09 v0.10 v0.11 v0.12 v0.13 v0.14"
 
 
