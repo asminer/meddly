@@ -4,7 +4,7 @@
 # The different versions are obtained from the git repository.
 # Compiles each version, runs the benchmark script, and
 # collects the results.
-# 
+#
 
 if [ $# -ne "1" ]; then
   echo "Usage: $0 <file.html>"
@@ -58,7 +58,7 @@ td {
 <p>
 Gigantic table of MEDDLY stats,
 primarily for tracking performance changes over time.
-Tested on 
+Tested on
 EOF
 date +"%d %B %Y." >> $OUT
 echo "Executables built using" >> $OUT
@@ -116,10 +116,12 @@ for oldrel in v0.02 v0.03 v0.04 v0.05 v0.06 v0.07 v0.08 v0.09 v0.10 v0.11 v0.12 
 done
 
 #
-# New releases 
+# New releases
 #
 
-for newrel in v0.15.0 master; do
+newlist=`git tag | xargs`
+
+for newrel in $newlist master; do
   if git checkout $newrel; then
     echo "Checkout of $newrel succeeded"
   else
