@@ -147,7 +147,7 @@ for oldrel in $oldlist; do
         echo "Checkout of $oldrel failed"
         exit 1
     fi
-    ./autogen.sh
+    autoreconf --force --install
     if make clean all check; then
         echo "Build of version $oldrel succeeded"
     else
