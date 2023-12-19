@@ -6,7 +6,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -55,7 +55,7 @@ compute_manager::getErrorCodeName(compute_manager::error e)
           "Operation not supported for given forest, operand or result type";
     case WRONG_NUMBER:
         return "Operation failed -- incorrect number of operands";
-    case OVERFLOW:
+    case meddly_OVERFLOW:
         return "Operation failed -- calculation will not fit data type";
     default:
         return "Unknown error code";
@@ -78,13 +78,13 @@ const char* MEDDLY_getLibraryInfo(int what)
       if (!title) {
         title = new char[80];
         if (REVISION_NUMBER) {
-          snprintf(title, 80, 
-            "%s version %s.%d (32-bit and 64-bit compatible)", 
+          snprintf(title, 80,
+            "%s version %s.%d (32-bit and 64-bit compatible)",
             PACKAGE_NAME, VERSION, REVISION_NUMBER
           );
         } else {
-          snprintf(title, 80, 
-            "%s version %s (32-bit and 64-bit compatible)", 
+          snprintf(title, 80,
+            "%s version %s (32-bit and 64-bit compatible)",
             PACKAGE_NAME, VERSION
           );
         }
@@ -96,7 +96,7 @@ const char* MEDDLY_getLibraryInfo(int what)
 
     case 2:
       return "Released under the GNU Lesser General Public License, version 3";
- 
+
     case 3:
       return "http://sourceforge.net/projects/meddly/";
 
@@ -213,8 +213,8 @@ compute_manager::error expert_compute_manager::apply(op_info* owner,
 
 
 template <class TYPE>
-inline compute_manager::error 
-unary_apply(expert_compute_manager* CM, compute_manager::op_code op, 
+inline compute_manager::error
+unary_apply(expert_compute_manager* CM, compute_manager::op_code op,
             const dd_edge &a, TYPE &b)
 {
   static op_param plist[2];
@@ -834,7 +834,7 @@ op_info* expert_compute_manager::getOpInfo(const operation* op,
   std::map<custom_op_key, op_info>::iterator itr = customOpEntries->find(key);
   if (itr == customOpEntries->end()) {
     // add new entry
-    op_info entry(const_cast<operation*>(op), 
+    op_info entry(const_cast<operation*>(op),
         const_cast<op_param*>(plist), N, cc);
     (*customOpEntries)[key] = entry;
     itr = customOpEntries->find(key);

@@ -6,7 +6,7 @@
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
 
     This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published 
+    it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -20,16 +20,16 @@
 */
 
 
-/*! \file meddly.h 
+/*! \file meddly.h
 
     MDD library interface.
-    
+
     This interface is enough for "casual" users, i.e., users
     who are happy to use only the built-in operations.
     There is also an "expert" interface for users who would
     like to define new operations (in fact, the built-in
     operations use this same interface).
-    
+
     General naming principles:
     Class names are of the form class_name.
     Method names are of the form verbObjectDetails.
@@ -85,12 +85,12 @@ const char* MEDDLY_getLibraryInfo(int what = 0);
 
 /** Forest class.
     Abstract base class.
-    
+
     A data structure for managing collections of functions
     (or sets, or vectors, or relations, or matrices,
     depending on your conceptual view) represented in a single
     decision diagram forest over a common domain.
-    
+
     Some interesting features of forests:
     - The reduction rule can be different for different variables.
     - The storage rule can be different for different variables.
@@ -195,7 +195,7 @@ class forest {
     forest();
 
     /// Destructor.  Will request the domain to destroy the forest.
-    virtual ~forest();  
+    virtual ~forest();
 
     /** Produce a human-readable name for an error code.
         @param  e   Error code.
@@ -340,7 +340,7 @@ class forest {
         size(vlist[i]) == size(vplist[i])
         If vlist[i][j] is true, that index is included in the mask
         If vlist[i][j] is false, that index is excluded from the mask.
-        
+
         TODO: write a better description (an example might also help).
     */
     virtual error createSubMatrix(const bool* const* vlist,
@@ -348,7 +348,7 @@ class forest {
 
 
     /** Returns element \a e at index \a i from an Index Set EV+MDD.
-    
+
         size(e) = number of variables in the forest + 1 (for terminals).
         TODO: complete this description
     */
@@ -609,7 +609,7 @@ class forest {
                         f(v_1, v'_1, ..., v_n, v'_n) = 0, otherwise.
         @return         An appropriate error code.
     */
-    virtual error createEdge(const int* const* vlist, const int* const* vplist, 
+    virtual error createEdge(const int* const* vlist, const int* const* vplist,
         const float* terms, int N, dd_edge &e) = 0;
 
 
@@ -679,7 +679,7 @@ class forest {
         @param  vlist   List of variable assignments for unprimed variables,
                         of dimension one higher than the largest variable
                         handle.
-        @param  vplist  List of variable assignments for primed variables, 
+        @param  vplist  List of variable assignments for primed variables,
                         of dimension one higher than the largest variable
                         handle.
         @param  term    Output parameter, will be set to
@@ -696,7 +696,7 @@ class forest {
         @param  vlist   List of variable assignments for unprimed variables,
                         of dimension one higher than the largest variable
                         handle.
-        @param  vplist  List of variable assignments for primed variables, 
+        @param  vplist  List of variable assignments for primed variables,
                         of dimension one higher than the largest variable
                         handle.
         @param  term    Output parameter, will be set to
@@ -713,7 +713,7 @@ class forest {
         @param  vlist   List of variable assignments for unprimed variables,
                         of dimension one higher than the largest variable
                         handle.
-        @param  vplist  List of variable assignments for primed variables, 
+        @param  vplist  List of variable assignments for primed variables,
                         of dimension one higher than the largest variable
                         handle.
         @param  term    Output parameter, will be set to
@@ -776,7 +776,7 @@ class forest {
     - variable handles are non-negative integers.
     - when a new variable is created, it is given the lowest unused handle.
     - there is a special variable, TERMINALS, that refers to terminal nodes.
-  
+
     When a domain is destroyed, all of its forests are destroyed.
 */
 class domain {
@@ -805,7 +805,7 @@ class domain {
 
     /** Create all variables at once, from the bottom up.
         Requires the domain to be "empty" (containing no variables or forests).
-        When successful, variable handle \a N will refer to the top-most 
+        When successful, variable handle \a N will refer to the top-most
         variable, and variable handle 1 will refer to the bottom-most variable.
 
         @param  bounds  variable bounds.
@@ -821,7 +821,7 @@ class domain {
         (although it is a slight abuse of notation) a forest may represent
         "vectors" or "sets" over a domain, or "matrices" or "relations".
         In case of matrices / relations, the forest uses primed and unprimed
-        versions of every variable in the domain. 
+        versions of every variable in the domain.
 
         @param  rel     Is this a relation / matrix, versus a set / vector.
         @param  t       Range type of the functions, namely,
@@ -914,10 +914,10 @@ domain* MEDDLY_createDomain();
     There are a few useful operations that can be applied directly
     to a dd_edge; all the rest are done either through the "parent" forest,
     or through operations in the compute_manager class.  These include:
-   
+
     - Deletion of a dd_edge.  This will cause the parent forest
       to recycle nodes as appropriate.
-    
+
     - Checking for equality of two dd_edges, using the method equals().
 */
 class expert_forest;
@@ -1197,8 +1197,8 @@ class dd_edge {
     Substantial operations on decision diagrams are here.
     I.e., this class manages operations on dd_edges
     in (common or different) forests that produce new dd_edges.
-    
-  
+
+
     TODO: do we need a compute table cleanup interface here,
     or compute table policy settings here?
 
@@ -1215,7 +1215,7 @@ class compute_manager {
       */
       COPY=0,
 
-      /// Unary operation.  Return the number of variable assignments 
+      /// Unary operation.  Return the number of variable assignments
       /// so that the function evaluates to non-zero.
       CARDINALITY,
       /// Set operation for forests with range_type of BOOLEAN. All operands
@@ -1280,7 +1280,7 @@ class compute_manager {
           The first operand must be the set-of-states and the second operand
           must be the transition function. The result is a set-of-states that
           must be stored in the same forest as the first operand.
-          
+
           Applies to:
           PRE_IMAGE, POST_IMAGE, REACHABLE_STATES_DFS, REACHABLE_STATES_BFS.
       */
@@ -1315,7 +1315,7 @@ class compute_manager {
       /// Requested operation requires different number of operands.
       WRONG_NUMBER,
       /// If we are counting something and it won't fit in an integer / float.
-      OVERFLOW
+      meddly_OVERFLOW
     };
 
   public:
@@ -1398,7 +1398,7 @@ class compute_manager {
       ct_object& x = MEDDLY_get_mpz_wrapper();
       error e = apply(op, a, x);
       MEDDLY_unwrap(x, c);
-      return e; 
+      return e;
     }
 #endif
 
@@ -1417,7 +1417,7 @@ class compute_manager {
         @param  c     Output parameter: the result,
                       where \a c = \a a \a op \a b.
         @return       An appropriate error code.
-    */ 
+    */
     virtual error apply(op_code op, const dd_edge &a, const dd_edge &b,
         dd_edge &c) = 0;
 
@@ -1436,7 +1436,7 @@ class compute_manager {
 
 /** Function to build and initialize a compute manager.
     Built-in operations are initialized here.
-    
+
     Do we ever instantiate multiple compute_managers, or is one enough?
     One should suffice. Multiple calls will return the same compute_manager.
 */
