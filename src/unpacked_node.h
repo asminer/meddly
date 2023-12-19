@@ -908,9 +908,12 @@ class MEDDLY::unpacked_node {
         edge_type the_edge_type;
 
 
-/*
-    OLD interface below here
-*/
+// ===================================================================
+//
+// Deprecated as of version 0.17.4
+//
+// ===================================================================
+
 
 #ifdef ALLOW_DEPRECATED_0_17_4
 

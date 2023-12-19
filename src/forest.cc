@@ -1659,6 +1659,22 @@ MEDDLY::forest::getNodeStatus(MEDDLY::node_handle node) const
 
     return MEDDLY::forest::ACTIVE;
 }
+
+
+// ******************************************************************
+// *                     expert_forest  methods                     *
+// ******************************************************************
+
+MEDDLY::expert_forest::expert_forest(domain *d, bool rel, range_type t,
+  edge_labeling ev, const policies &p, int* level_reduction_rule)
+: forest(d, rel, t, ev, p, level_reduction_rule)
+{
+}
+
+MEDDLY::expert_forest::~expert_forest()
+{
+}
+
 #endif
 
 
@@ -2079,30 +2095,6 @@ void MEDDLY::forest::readEdges(input &s, dd_edge* E, unsigned n)
 const char* MEDDLY::forest::codeChars() const
 {
   return "unknown dd";
-}
-
-#endif
-
-
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                     expert_forest  methods                     *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-
-#ifdef ALLOW_DEPRECATED_0_17_4
-
-MEDDLY::expert_forest::expert_forest(domain *d, bool rel, range_type t,
-  edge_labeling ev, const policies &p, int* level_reduction_rule)
-: forest(d, rel, t, ev, p, level_reduction_rule)
-{
-}
-
-
-MEDDLY::expert_forest::~expert_forest()
-{
 }
 
 #endif
