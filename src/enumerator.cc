@@ -57,7 +57,7 @@ MEDDLY::enumerator::iterator::iterator(const forest* f)
     path = rawpath + N;
     nzp = rawnzp + N;
     index = rawindex + N;
-    minLevel = -N;
+    minLevel = -int(N);
   } else {
     rawpath = new unpacked_node[N+1];
     for (unsigned i=0; i<N+1; i++) {
@@ -70,7 +70,7 @@ MEDDLY::enumerator::iterator::iterator(const forest* f)
     index = rawindex;
     minLevel = 1;
   }
-  level_change = N+1;
+  level_change = int(N+1);
 }
 
 MEDDLY::enumerator::iterator::~iterator()
