@@ -45,3 +45,41 @@ oper_unary.h            oper_unary.cc
 
 relation_node.h         relation_node.cc
 
+
+======================================================================
+Non-critical to do list (side quests)
+======================================================================
+* Minterm collections, unioning with existing sets
+    full / sparse minterms
+    sets / relations
+
+* Evaluation by overloading() on dd_edge?
+    Using a single minterm? Or vector of integers?
+
+* Enumeration
+    Tie to evaluation?
+    Have 'fixed' variables and 'free' variables
+        all fixed: evaluation
+        all free:  old enumeration
+        primed / unprimed are fixed: like old row / col enumerators
+
+    Fixed levels: use full unpacked
+    Free levels : use sparse unpacked
+
+* Creating functions for variables
+    also functions of single variables
+    currently in forest, does it belong there?
+    maybe goes with sparse minterm collections?
+
+* all different operation
+    intersect a function with 'this set of vars
+    must be all different`.
+    Limit to possible values {0, ..., 31} so we can
+    use unsigned ints for the set of taken values?
+
+* existential quantification operation
+    boolean only? or describe as "max value over these vars"?
+
+* universal quantification operation
+    boolean only? or describe as "min value over these vars"?
+
