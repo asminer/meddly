@@ -21,6 +21,7 @@
 
 #include "defines.h"
 #include "error.h"
+#include <cstring>  // for memcpy
 
 namespace MEDDLY {
     class terminal;
@@ -184,7 +185,8 @@ class MEDDLY::terminal {
 
                 case terminal_type::REAL:
                         if (t_real) {
-                            unsigned x = *( (unsigned*) &t_real );
+                            unsigned x;
+                            memcpy(&x, &t_real, sizeof(unsigned));
                             // strip the lsb in fraction, and add sign bit
                             return node_handle(x>>1) | -2147483648;
                         } else {
@@ -281,7 +283,7 @@ class MEDDLY::terminal {
                 case terminal_type::REAL:
                         // Strip sign bit
                         h <<= 1;
-                        t_real = *( (float*) &h );
+                        memcpy(&t_real, &h, sizeof(float));
                         return;
 
                 default:
