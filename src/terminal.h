@@ -21,7 +21,7 @@
 
 #include "defines.h"
 #include "error.h"
-#include <cstring>  // for memcpy
+// #include <cstring>  // for memcpy
 
 namespace MEDDLY {
     class terminal;
@@ -185,10 +185,19 @@ class MEDDLY::terminal {
 
                 case terminal_type::REAL:
                         if (t_real) {
+                            union {
+                                node_handle h;
+                                float f;
+                            } x;
+                            x.f = t_real;
+                            // const unsigned x = * (unsigned*) (&t_real);
+                            // strip the lsb in fraction, and add sign bit
+                            return (x.h>>1) | -2147483648;
+                            /*
                             unsigned x;
                             memcpy(&x, &t_real, sizeof(unsigned));
-                            // strip the lsb in fraction, and add sign bit
                             return node_handle(x>>1) | -2147483648;
+                            */
                         } else {
                             return 0;
                         }
@@ -281,10 +290,18 @@ class MEDDLY::terminal {
                         return;
 
                 case terminal_type::REAL:
+                        union {
+                            node_handle h;
+                            float f;
+                        } x;
                         // Strip sign bit
+                        x.h = (h << 1);
+                        t_real = x.f;
+                        return;
+                        /*
                         h <<= 1;
                         memcpy(&t_real, &h, sizeof(float));
-                        return;
+                        */
 
                 default:
                         MEDDLY_DCASSERT(false);
