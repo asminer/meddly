@@ -128,7 +128,7 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
     //
     // build mask for this event
     //
-    for (int i=1; i<=nVars; i++) {
+    for (unsigned i=1; i<=nVars; i++) {
       if ('.' == ev[i]) {
         minterm[i] = DONT_CARE;
         mtprime[i] = DONT_CHANGE;
@@ -222,7 +222,7 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
   delete[] mtprime;
   delete[] minterm;
   delete[] temp;
-  for (int i=1; i<=nVars; i++) {
+  for (unsigned i=1; i<=nVars; i++) {
     delete varP[i];
     delete inc[i];
     delete dec[i];
@@ -330,7 +330,7 @@ void explicitReachset(const char* const* events, unsigned nEvents,
       printf(")\n");
 #endif
       // what's enabled?
-      for (int e=0; e<nEvents; e++) {
+      for (unsigned e=0; e<nEvents; e++) {
         if (!fireEvent(events[e], curr, minterms[b], nVars)) continue;
 #ifdef DEBUG_GENERATE
         printf("  -- (event %d) --> (%d", e, minterms[b][1]);

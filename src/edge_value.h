@@ -21,6 +21,7 @@
 
 #include "defines.h"
 #include "hash_stream.h"
+#include "error.h"
 
 namespace MEDDLY {
 
@@ -168,7 +169,7 @@ class MEDDLY::edge_value {
                     return;
 
                 default:
-                   MEDDLY_DCASSERT(false);
+                    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
             }
         }
         //
@@ -240,7 +241,7 @@ class MEDDLY::edge_value {
                     return;
 
                 default:
-                   MEDDLY_DCASSERT(false);
+                    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
             }
         }
 
@@ -341,8 +342,7 @@ class MEDDLY::edge_value {
                     return v.equals(ev_double);
 
                 default:
-                    MEDDLY_DCASSERT(0);
-                    return true;
+                    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
             }
         }
 
@@ -368,7 +368,7 @@ class MEDDLY::edge_value {
                     return equals( *((const double*)p) );
 
                 default:
-                   MEDDLY_DCASSERT(false);
+                    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
             }
         }
 
@@ -395,7 +395,7 @@ class MEDDLY::edge_value {
 
                 case edge_type::VOID:
                 default:
-                    MEDDLY_DCASSERT(false);
+                    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
             }
         }
 

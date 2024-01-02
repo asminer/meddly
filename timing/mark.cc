@@ -30,10 +30,12 @@
 
 using namespace MEDDLY;
 
+// #define DEBUG_EVENTS
 
 inline char* newEvent(unsigned N)
 {
-    char* ev = new char[N*8+1];
+    char* ev = new char[N*8+2];
+    ev[N*8+1] = 0;
     for (unsigned i=N*8; i; i--) ev[i] = '.';
     ev[0] = '_';
     return ev;
@@ -42,82 +44,106 @@ inline char* newEvent(unsigned N)
 char* Get(unsigned i, unsigned N)
 {
     char* t = newEvent(N);
-    char* tloc = t+8*i;
-    tloc[6] = '-';
-    tloc[8] = '-';
-    tloc[3] = '+';
-    tloc[5] = '+';
+    const unsigned loc = 8*i;
+    t[loc+6] = '-';
+    t[loc+8] = '-';
+    t[loc+3] = '+';
+    t[loc+5] = '+';
+#ifdef DEBUG_EVENTS
+    std::cerr << "Built event   Get(" << i << "): " << t << "\n";
+#endif
     return t;
 }
 
 char* Free(unsigned i, unsigned N)
 {
     char* t = newEvent(N);
-    char* tloc = t+8*i;
-    char* t_rt = i ? t+(8*i-8) : t+(8*N-8);
-    tloc[5] = '-';
-    tloc[6] = '+';
-    t_rt[3] = '-';
-    t_rt[2] = '+';
+    const unsigned loc = 8*i;
+    const unsigned _rt = i ? (8*i-8) : (8*N-8);
+    t[loc+5] = '-';
+    t[loc+6] = '+';
+    t[_rt+3] = '-';
+    t[_rt+2] = '+';
+#ifdef DEBUG_EVENTS
+    std::cerr << "Built event  Free(" << i << "): " << t << "\n";
+#endif
     return t;
 }
 
 char* Put(unsigned i, unsigned N)
 {
     char* t = newEvent(N);
-    char* tloc = t+8*i;
-    tloc[3] = '+';
-    tloc[7] = '+';
-    tloc[4] = '-';
-    tloc[6] = '-';
+    const unsigned loc = 8*i;
+    t[loc+3] = '+';
+    t[loc+7] = '+';
+    t[loc+4] = '-';
+    t[loc+6] = '-';
+#ifdef DEBUG_EVENTS
+    std::cerr << "Built event   Put(" << i << "): " << t << "\n";
+#endif
     return t;
 }
 
 char* Used(unsigned i, unsigned N)
 {
     char* t = newEvent(N);
-    char* tloc = t+8*i;
-    char* t_rt = i ? t+(8*i-8) : t+(8*N-8);
-    tloc[7] = '-';
-    tloc[6] = '+';
-    t_rt[3] = '-';
-    t_rt[1] = '+';
+    const unsigned loc = 8*i;
+    const unsigned _rt = i ? (8*i-8) : (8*N-8);
+    t[loc+7] = '-';
+    t[loc+6] = '+';
+    t[_rt+3] = '-';
+    t[_rt+1] = '+';
+#ifdef DEBUG_EVENTS
+    std::cerr << "Built event  Used(" << i << "): " << t << "\n";
+#endif
     return t;
 }
 
 char* Other(unsigned i, unsigned N)
 {
     char* t = newEvent(N);
-    char* tloc = t+8*i;
-    tloc[1] = '-';
-    tloc[4] = '+';
+    const unsigned loc = 8*i;
+    t[loc+1] = '-';
+    t[loc+4] = '+';
+#ifdef DEBUG_EVENTS
+    std::cerr << "Built event Other(" << i << "): " << t << "\n";
+#endif
     return t;
 }
 
 char* Owner(unsigned i, unsigned N)
 {
     char* t = newEvent(N);
-    char* tloc = t+8*i;
-    tloc[1] = '-';
-    tloc[2] = '+';
+    const unsigned loc = 8*i;
+    t[loc+1] = '-';
+    t[loc+2] = '+';
+#ifdef DEBUG_EVENTS
+    std::cerr << "Built event Owner(" << i << "): " << t << "\n";
+#endif
     return t;
 }
 
 char* Write(unsigned i, unsigned N)
 {
     char* t = newEvent(N);
-    char* tloc = t+8*i;
-    tloc[2] = '-';
-    tloc[4] = '+';
+    const unsigned loc = 8*i;
+    t[loc+2] = '-';
+    t[loc+4] = '+';
+#ifdef DEBUG_EVENTS
+    std::cerr << "Built event Write(" << i << "): " << t << "\n";
+#endif
     return t;
 }
 
 char* Go(unsigned i, unsigned N)
 {
     char* t = newEvent(N);
-    char* tloc = t+8*i;
-    tloc[2] = '-';
-    tloc[8] = '+';
+    const unsigned loc = 8*i;
+    t[loc+2] = '-';
+    t[loc+8] = '+';
+#ifdef DEBUG_EVENTS
+    std::cerr << "Built event    Go(" << i << "): " << t << "\n";
+#endif
     return t;
 }
 
