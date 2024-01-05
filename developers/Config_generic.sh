@@ -1,6 +1,20 @@
 #!/bin/bash
 
 #
+# See if the argument is of the form "--prefix=..."
+#
+try_prefix()
+{
+    local tp=`grep '^--prefix=.*' <<< "$1"`
+    if [ "x" != "x$tp" ]; then
+        prefix="$tp"
+        return 0
+    else
+        return 1
+    fi
+}
+
+#
 # Check for gmp at the given locations
 #   Arg1: path for include file
 #   Arg2: path for compiled library
@@ -42,11 +56,15 @@ find_gmp()
 
 usage()
 {
+    printf "\n"
     printf "Usage: %s  [switches]\n\n" "$1"
+    printf "Attempt to locate the GMP library, set compiler flags\n"
+    printf "accordingly, and run the configure script.\n\n"
     printf "Switches:\n"
     printf "\t--debug           Turn on debugging code\n"
     printf "\t--strict          Extra compiler warnings\n"
     printf "\t--without-gmp     Turn off gmp support\n"
+    printf "\t--prefix=...      Pass prefix option through to configure\n"
     printf "\n"
     exit 1
 }
@@ -59,6 +77,7 @@ fi
 gmpargs=""
 cxxdebug="-O3"
 cxxwarn="-Wall -Wno-sign-conversion -Wno-shadow"
+prefix=""
 
 for args; do
     if [ "--debug" == "$args" ]; then
@@ -73,6 +92,9 @@ for args; do
         gmpargs="--without_gmp"
         continue
     fi
+    if try_prefix "$args"; then
+        continue
+    fi
     usage $0
 done
 
@@ -80,10 +102,11 @@ if [ "x" == "x$gmpargs" ]; then
     find_gmp
 fi
 
-./configure CXXFLAGS="$cxxwarn $cxxdebug" $gmpargs  ||  exit 1
+./configure CXXFLAGS="$cxxwarn $cxxdebug" $gmpargs $prefix ||  exit 1
 
 printf "\n"
 printf "Configuration complete\n"
-printf "    CXXFLAGS: %s\n" "$cxxwarn $cxxdebug"
+printf "    CXXFLAGS: %s\n" "$cxxdebug $cxxwarn"
 printf "    GMP     : %s\n" "$gmpargs"
+printf "    %s\n" "$prefix"
 printf "\n"
