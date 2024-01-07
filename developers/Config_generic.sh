@@ -76,7 +76,7 @@ fi
 
 gmpargs=""
 cxxdebug="-O3"
-cxxwarn="-Wall -Wno-sign-conversion -Wno-shadow"
+cxxwarn="-Wall -Wno-sign-conversion -Wno-sign-compare -Wno-shadow"
 prefix=""
 
 for args; do
@@ -85,7 +85,7 @@ for args; do
         continue
     fi
     if [ "--strict" == "$args" ]; then
-        cxxwarn="-Wall -Wsign-conversion -Wshadow"
+        cxxwarn="-Wall -Wsign-conversion -Wsign-compare -Wshadow"
         continue
     fi
     if [ "--without_gmp" == "$args" ]; then

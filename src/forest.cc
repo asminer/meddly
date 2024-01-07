@@ -1086,7 +1086,7 @@ void MEDDLY::forest::validateIncounts(bool exact)
     for (const dd_edge* r = roots; r; r=r->next) {
         if (isTerminalNode(r->getNode())) continue;
         MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, r->getNode(), sz);
-        in_validate[r->getNode()];
+        in_validate[r->getNode()]++;
     }
 
     //
