@@ -40,7 +40,7 @@
 
 #include <map>
 #include <vector>
-
+#include <cstring>
 
 // Flags for development version only. Significant reduction in performance.
 #ifdef DEVELOPMENT_CODE
