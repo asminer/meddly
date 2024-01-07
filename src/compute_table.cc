@@ -22,6 +22,7 @@
 #include "compute_table.h"
 
 #include <map>  // for operation_map
+#include <climits>
 
 // #define DEBUG_SLOW
 // #define DEBUG_CT
