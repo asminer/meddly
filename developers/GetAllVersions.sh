@@ -18,6 +18,10 @@ clone_old()
         echo "Clone (old) into $targdir"
         return 0
     fi
+    if [ -d "$targdir" ]; then
+        echo "$targdir exists, skipping version $version"
+        return 0
+    fi
 
     git clone $url -b releases/v$version $targdir
 }
@@ -36,6 +40,10 @@ clone_new()
 
     if [ "$dry" ]; then
         echo "Clone (new) into $targdir"
+        return 0
+    fi
+    if [ -d "$targdir" ]; then
+        echo "$targdir exists, skipping version $version"
         return 0
     fi
 
