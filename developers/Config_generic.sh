@@ -69,11 +69,6 @@ usage()
     exit 1
 }
 
-if [ ! -f "configure" ]; then
-    echo "Run this in the root directory"
-    exit 1
-fi
-
 gmpargs=""
 cxxdebug="-O3"
 cxxwarn="-Wall -Wno-sign-conversion -Wno-sign-compare -Wno-shadow"
@@ -102,6 +97,13 @@ if [ "x" == "x$gmpargs" ]; then
     find_gmp
 fi
 
+if [ ! -f "autogen.sh" ]; then
+    echo "Run this in the root directory"
+    exit 1
+fi
+if [ ! -f configure ]; then
+    ./autogen.sh
+fi
 ./configure CXXFLAGS="$cxxwarn $cxxdebug" $gmpargs $prefix ||  exit 1
 
 printf "\n"
