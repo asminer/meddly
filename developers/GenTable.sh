@@ -79,7 +79,7 @@ EOF
 # Process arguments
 #
 
-SCRIPTDIR=`pwd`
+SCRIPTDIR="`pwd`/`dirname $0`"
 
 if [ "$#" -lt 1 ]; then
     echo > /dev/stderr
