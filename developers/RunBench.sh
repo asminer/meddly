@@ -7,8 +7,6 @@ declare -r TIMECHK=2
 declare -r OUTTXT="out.$$.txt"
 declare -r TIMETXT="time.$$.txt"
 
-TEXTFILE=""
-
 #
 # Arrays for stats.
 #   (1) Name of the stat
@@ -111,6 +109,26 @@ showResults()
     printf "\n%20s:  %7.2f sec\n\n" "Total" `bc <<< "$totstring"`
 }
 
+#
+# Append results to html table
+#
+showHtml()
+{
+    printf "<tr>\n"
+    for i in ${!statName[@]}; do
+        printf "    <td>${statPrint[$i]}</td>\n" "${statResult[$i]}"
+    done
+    for i in ${!benchName[@]}; do
+        if [ "TO" == "${benchPeak[$i]}" ]; then
+            printf "    <td>timeout</td>\n"
+        else
+            printf "    <td>%7.2f sec</td>\n" "${benchTime[$i]}"
+        fi
+    done
+
+    printf "</tr>\n"
+}
+
 
 #
 # Run with a timeout
@@ -183,6 +201,8 @@ trap bailout INT
 #
 
 MPATH=""
+HTMLFILE=""
+TEXTFILE=""
 
 while [ $# -gt 0 ]; do
     if [ "x$1" == "x-d" ]; then
@@ -192,9 +212,15 @@ while [ $# -gt 0 ]; do
         continue
     fi
 
+    if [ "x$1" == "x-h" ]; then
+        HTMLFILE=$2
+        shift
+        shift
+        continue
+    fi
+
     if [ "x$1" == "x-t" ]; then
         TEXTFILE=$2
-        echo Writing text summary to file: $2
         shift
         shift
         continue
@@ -202,6 +228,7 @@ while [ $# -gt 0 ]; do
 
     printf "\nUsage: $0 [options]\n\nOptions:\n";
     printf "\t-d <path>   Directory of version to test; otherwise . or ..\n"
+    printf "\t-h <file>   Append output, in html format, to file.\n"
     printf "\t-t <file>   Write  output, in text format, to file.\n"
     printf "\n"
     exit 1
@@ -240,6 +267,14 @@ if [ ! -f $EXDIR/kanban ]; then
   exit 1
 fi
 
+
+if [ "$TEXTFILE" ]; then
+    echo Writing text summary to file: $TEXTFILE
+fi
+if [ "$HTMLFILE" ]; then
+    echo Writing html summary to file: $HTMLFILE
+fi
+
 #
 # Determine stats
 #
@@ -276,4 +311,7 @@ cleanup
 
 showResults | tee $TEXTFILE
 
+if [ "$HTMLFILE" ]; then
+    showHtml >> $HTMLFILE
+fi
 
