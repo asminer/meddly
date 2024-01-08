@@ -19,63 +19,71 @@ Building the library:
 ---------------------
 
 You will need g++, autoconf, automake and libtool.
+Do either (1a) or (1b), followed by the remaining steps.
 
-0. If you obtained the library via svn:
-   $ ./autogen.sh
-   This will create the configure script and Makefiles.
-   Run this the first time, and whenever the source code has changes in
-   its file or directory layout.
 
-1. $ ./configure
-   This will setup the build files.
-   Can be used to set various compile options;
-   see "Configuration Options" below.
-   An alternate would be:
-   $ ./configure --prefix=/other/install/location
-   (See "make install" further down for reasons).
+1a. $ developers/Config_generic.sh
+    or
+    $ developers/Config_generic.sh --debug
+    to create and run the configure script, and build the Makefiles.
 
-2. $ make
-   Build the library.
-   Library will be in src/. Applications in src/ and examples/. This may be
-   sufficient for most users.
+1b. Run
+    $ ./autogen.sh
+    to create the configure script. This should be run for the
+    first build, and whenever the source code files or layout changes.
+    Then, run
+    $ ./configure
+    This will setup the build files.
+    Can be used to set various compile options;
+    see "Configuration Options" below.
+    An alternate would be:
+    $ ./configure --prefix=/other/install/location
+    (See "make install" further down for reasons).
 
-3. $ make install
-   Library in lib/, include files in include/.  This can be changed
-   in step (1) by selecting an alternate location, for example using
-    --prefix=/usr/local
-   will install libraries in /usr/local/lib and headers in /usr/local/include.
-   If you reconfigure, make sure you run "make clean" before running "make".
 
-4. $ make uninstall
-   Removes the files installed in bin/ and lib/.
 
-5. $ make clean
-   Removes the results of compilation from src/ and examples/.
+2.  $ make
+    Build the library.
+    Library will be in src/. Applications in src/ and examples/. This may be
+    sufficient for most users.
+
+3.  $ make install
+    Library in lib/, include files in include/.  This can be changed
+    in step (1) by selecting an alternate location, for example using
+        --prefix=/usr/local
+    will install libraries in /usr/local/lib and headers in /usr/local/include.
+    If you reconfigure, make sure you run "make clean" before running "make".
+
+4.  $ make uninstall
+    Removes the files installed in bin/ and lib/.
+
+5.  $ make clean
+    Removes the results of compilation from src/ and examples/.
 
 Build the documentation:
 ------------------------
 
-0. Need to have doxygen installed.
+0.  Need to have doxygen installed.
 
-1. $ cd docs
+1.  $ cd doxygen
 
-2. If you see docs/html/index.html and docs/refman.pdf, your docs have
-   already been built and you can ignore the rest of the steps. Otherwise:
-   $ make
-   This will create the folders docs/html and docs/latex.
-   docs/html: HTML documentation. See index.html.
-   docs/latex: Tex-based documentation. See refman.tex.
-     If you have latex installed:
-     a. $ cd latex
-     b. $ make
+2.  If you see doxygen/html/index.html and doxygen/refman.pdf, your docs have
+    already been built and you can ignore the rest of the steps. Otherwise:
+    $ make
+    This will create the folders doxygen/html and doxygen/latex.
+    doxygen/html: HTML documentation. See index.html.
+    doxygen/latex: Tex-based documentation. See refman.tex.
+    If you have latex installed:
+    a.  $ cd latex
+    b.  $ make
         This will create refman.dvi.
-     c. $ make pdf
+    c.  $ make pdf
         This will create refman.pdf (using ps2pdf).
 
-3. $ make clean
-   Removes docs/ and html/.
+3.  $ make clean
+    Removes doxygen/ and html/.
 
-4. Technical documentation can be generated the same way, in docs-devel/
+4.  Technical documentation can be generated the same way, in doxygen-devel/
 
 Configuration Options
 ---------------------

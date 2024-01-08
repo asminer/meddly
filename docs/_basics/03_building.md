@@ -3,7 +3,7 @@ title: Building
 shorttitle: Building
 ---
 
-## Packages required 
+## Packages required
 
 * gcc and g++, or other C/C++ compiler with support for C++11
 * automake
@@ -11,14 +11,33 @@ shorttitle: Building
 * libtool
 * doxygen, if you want to build documentation
 
-## Packages strongly recommended 
+## Packages strongly recommended
 
 * [GMP](https://gmplib.org), for very large integer support.
 
 
 ## Build Steps
 
-### 0.  Create configure script
+### 1a.  Configure - quick
+
+There is a configuration script in ```developers/``` that
+should work for most setups. Simply run
+```bash
+developers/Config_generic.sh
+```
+for a release version of the library
+(debugging information off, and optimizations on).
+For a development version of the library, run
+```bash
+developers/Config_generic.sh --debug
+```
+(pass ```-h``` to the script to get a list of possible switches).
+
+### 1b.  Configure - detailed
+
+If the quick configuration script does not work for your system,
+or you wish to have more control over the configuration process,
+instead run the following.
 
 Run the script
 ```bash
@@ -27,11 +46,8 @@ Run the script
 for the first build,
 and whenever the source code has changes
 in its file or directory layout.
-
-
-### 1.  Configure
-
-Run
+This should create a ```./configure``` script.
+Then, run
 ```bash
 ./configure
 ```
@@ -128,7 +144,7 @@ Note that turning on development code may produce
 a significantly slower library.
 
 
-To set the location of the gmp library, by hand 
+To set the location of the gmp library, by hand
 (only necessary if configure fails to find it):
 ```bash
 ./configure CPPFLAGS="-I/path/to/gmp/header" LDFLAGS="-L/path/to/gmp/lib"
@@ -142,5 +158,5 @@ To disable gmp support in Meddly:
 To change the install locations for the compiled library and include files
 (for example, to ```/path/for/lib``` and ```/path/for/include```):
 ```bash
-./configure --prefix=/path/for 
+./configure --prefix=/path/for
 ```
