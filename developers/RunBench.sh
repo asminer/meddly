@@ -178,35 +178,20 @@ bailout()
 
 trap bailout INT
 
-
-#
-# Figure out where we are
-#
-
-EXDIR=examples
-SRCDIR=src
-
-if [ ! -d $EXDIR ]; then
-    EXDIR=../examples
-    SRCDIR=../src
-fi
-if [ ! -d $EXDIR ]; then
-    echo "Can't find examples directory; run this script in"
-    echo "the root directory or within developers/."
-    exit 1
-fi
-if [ ! -d $SRCDIR ]; then
-    echo "Can't find src directory; run this script in"
-    echo "the root directory or within developers/."
-    exit 1
-fi
-
-
 #
 # Process switches (these are new!)
 #
 
+MPATH=""
+
 while [ $# -gt 0 ]; do
+    if [ "x$1" == "x-d" ]; then
+        MPATH=$2
+        shift
+        shift
+        continue
+    fi
+
     if [ "x$1" == "x-t" ]; then
         TEXTFILE=$2
         echo Writing text summary to file: $2
@@ -216,18 +201,43 @@ while [ $# -gt 0 ]; do
     fi
 
     printf "\nUsage: $0 [options]\n\nOptions:\n";
+    printf "\t-d <path>   Directory of version to test; otherwise . or ..\n"
     printf "\t-t <file>   Write  output, in text format, to file.\n"
     printf "\n"
     exit 1
 done
 
 #
-# Quick sanity check
+# Find examples and source directories
 #
+
+if [ "$MPATH" ]; then
+    EXDIR="$MPATH/examples"
+    SRCDIR="$MPATH/src"
+elif [ -d "examples" ]; then
+    EXDIR="examples"
+    SRCDIR="src"
+else
+    EXDIR="../examples"
+    SRCDIR="../src"
+fi
+
+if [ ! -d $EXDIR ]; then
+    echo "Didn't find examples directory (tried \"$EXDIR\")."
+    echo "Run this script in the root directory or within developers,"
+    echo "or use the -d switch."
+    exit 1
+fi
+if [ ! -d $SRCDIR ]; then
+    echo "Didn't find source directory (tried \"$EXDIR\")."
+    echo "Run this script in the root directory or within developers,"
+    echo "or use the -d switch."
+    exit 1
+fi
+
 if [ ! -f $EXDIR/kanban ]; then
-  echo "Can't find executables."
-  echo "Are you running this in the main directory?"
-  exit
+  echo "Didn't find executable $EXDIR/kanban"
+  exit 1
 fi
 
 #
@@ -238,7 +248,9 @@ for i in ${!statName[@]}; do
     cmd=`sed "s|#e|$EXDIR|g" <<< "${statCmd[$i]}" | sed "s|#s|$SRCDIR|g"`
     statResult[$i]=`echo "$cmd" | bash 2> /dev/null`
 done
-branch=$(git status | head -n 1 | awk '{print $3}')
+if [ ! "$MPATH" ]; then
+  branch=$(git status | head -n 1 | awk '{print $3}')
+fi
 
 #
 # Run benchmarks
