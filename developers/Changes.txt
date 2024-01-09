@@ -3,7 +3,9 @@ Interface changes (aside from moving header files around)
 ======================================================================
 
 Forest cleanup
-    -> replace expert_forest with forest in compute tables, operations
+    look at node reductions
+
+Operations
         -> split out and simplify (templates and functors) the
             apply_generic_mdd style classes
                 (goal is for 'check terminals' to be inlined, not virtual)
@@ -83,3 +85,4 @@ Non-critical to do list (side quests)
 * universal quantification operation
     boolean only? or describe as "min value over these vars"?
 
+* interval decision diagrams?
