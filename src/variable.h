@@ -20,6 +20,7 @@
 #define MEDDLY_VARIABLE_H
 
 #include <vector>
+#include <string>
 
 namespace MEDDLY {
     class variable;
@@ -45,10 +46,15 @@ namespace MEDDLY {
 */
 class MEDDLY::variable {
     public:
-        variable(int bound, char* name);
+        variable(int bound, std::string name);
         virtual ~variable();
-        void setName(char* newname);
-        inline const char* getName() const {
+        inline void setName(std::string newname) {
+            name = newname;
+        }
+        inline bool hasName() const {
+            return name.length()>0;
+        }
+        inline const std::string& getName() const {
             return name;
         }
         inline int getBound(bool primed) const {
@@ -95,7 +101,7 @@ class MEDDLY::variable {
         // List of all domains this variable belongs to
         std::vector <domain*> domlist;
 
-        char* name;
+        std::string name;
         int un_bound;
         int pr_bound;
         bool is_extensible;
@@ -115,7 +121,7 @@ namespace MEDDLY {
             @param  name    Variable name (used only in display / debugging), or 0.
             @return A new variable, or 0 on error.
     */
-    inline variable* createVariable(int bound, char* name)
+    inline variable* createVariable(int bound, std::string name)
     {
         return new variable(bound, name);
     }

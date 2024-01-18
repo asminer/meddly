@@ -252,9 +252,9 @@ void MEDDLY::FILE_output::put(char x)
     }
 }
 
-void MEDDLY::FILE_output::put(const char* x, int w)
+void MEDDLY::FILE_output::put(std::string x, int w)
 {
-    if (fprintf(outf, "%*s", w, x)<0) {
+    if (fprintf(outf, "%*s", w, x.c_str())<0) {
         throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
     }
 }
@@ -331,7 +331,7 @@ void MEDDLY::ostream_output::put(char x)
     // TBD - what about errors?
 }
 
-void MEDDLY::ostream_output::put(const char* x, int w)
+void MEDDLY::ostream_output::put(std::string x, int w)
 {
     out.width(w);
     out << x;

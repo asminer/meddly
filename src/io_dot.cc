@@ -152,7 +152,7 @@ void MEDDLY::dot_maker::doneGraph()
         outfile << "\n";
         outfile << "    L" << k_rank << " [shape=plaintext, label=\"Level: ";
         const variable* v = D->getVar(unsigned(For->getVarByLevel(ABS(k))));
-        if (v->getName()) {
+        if (v->hasName()) {
             outfile << v->getName();
         } else {
             outfile << ABS(k);

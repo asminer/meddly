@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
   // Set up arrays bounds
   variable** vars = (variable**) malloc((1+nLevels) * sizeof(void*));
   vars[0] = 0;
-  for (int i = nLevels; i; i--) { vars[i] = createVariable(2, 0); }
+  for (int i = nLevels; i; i--) { vars[i] = createVariable(2, ""); }
 
   // Create a domain and set up the state variables.
   domain *d = domain::create(vars, nLevels);

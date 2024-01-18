@@ -216,13 +216,12 @@ class MEDDLY::output {
         virtual void put(char x) = 0;
 
         /**
-            Write a null-terminated string to the output stream.
-            The terminating null is not written.
+            Write a string to the output stream.
                 @param  x   String to write
                 @param  w   Width for formatting
                 @throws     An appropriate error
         */
-        virtual void put(const char* x, int w=0) = 0;
+        virtual void put(std::string s, int w=0) = 0;
 
         /**
             Write a signed, decimal integer to the output stream.
@@ -323,7 +322,7 @@ class MEDDLY::FILE_output : public MEDDLY::output {
         }
 
         virtual void put(char x);
-        virtual void put(const char*, int w);
+        virtual void put(std::string, int w);
         virtual void put(long x, int w);
         virtual void put(unsigned long x, int w);
         virtual void put_hex(unsigned long x, int w);
@@ -355,7 +354,7 @@ class MEDDLY::ostream_output : public MEDDLY::output {
         virtual ~ostream_output();
 
         virtual void put(char x);
-        virtual void put(const char*, int w);
+        virtual void put(std::string, int w);
         virtual void put(long x, int w);
         virtual void put(unsigned long x, int w);
         virtual void put_hex(unsigned long x, int w);

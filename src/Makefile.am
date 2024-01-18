@@ -161,6 +161,7 @@ libmeddly_la_SOURCES = \
 ##
 
 pkginclude_HEADERS = \
+    arrays.h \
     compute_table.h \
     ct_entry_key.h \
     ct_entry_result.h \
@@ -169,6 +170,7 @@ pkginclude_HEADERS = \
     dd_edge.h \
     defines.h \
     domain.h \
+    edge_value.h \
     enumerator.h \
     error.h \
     forest.h \
@@ -177,11 +179,14 @@ pkginclude_HEADERS = \
     heap.h \
     initializer.h \
     io.h \
+    io_dot.h \
+    io_mdds.h \
     meddly.h \
     memory.h \
     memstats.h \
     minterms.h \
     node_headers.h \
+    node_marker.h \
     node_storage.h \
     oper.h  \
     oper_binary.h  \
@@ -195,6 +200,8 @@ pkginclude_HEADERS = \
     policies.h \
     relation_node.h \
     revision.h \
+    statset.h \
+    terminal.h \
     unique_table.h \
     unpacked_node.h \
     variable.h \

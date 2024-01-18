@@ -116,7 +116,7 @@ void MEDDLY::node_marker::showByLevels(output &s) const
                     unsigned(For->getVarByLevel(ABS(k)))
                 );
                 char primed = (k>0) ? ' ' : '\'';
-                if (v->getName()) {
+                if (v->hasName()) {
                     s << v->getName() << primed << '\n';
                 } else {
                     s << For->getVarByLevel(ABS(k)) << primed << '\n';

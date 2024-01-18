@@ -153,7 +153,7 @@ void MEDDLY::domain::read(input &s)
     for (unsigned i=nVars; i; i--) {
         s.stripWS();
         long bound = s.get_integer();
-        vars[nVars-i+1] = new variable(bound, nullptr);
+        vars[nVars-i+1] = new variable(bound, "");
         vars[i]->addToList(this);
     }
     s.stripWS();
@@ -168,9 +168,7 @@ void MEDDLY::domain::showInfo(output &strm)
     strm << "  Variables listed in height-order (ascending):\n";
     strm << "    height\t\tname\t\textensible\t\tbound\t\tprime-bound\n";
     for (unsigned i = 1; i < nVars + 1; ++i) {
-        const char* name = vars[i]->getName();
-        if (!name) name = "null";
-        strm    << "    " << i << "\t\t" << name
+        strm    << "    " << i << "\t\t" << vars[i]->getName().c_str()
                 << "\t\t" << (vars[i]->isExtensible()? "yes": "no")
                 << "\t\t" << vars[i]->getBound(false)
                 << "\t\t" << vars[i]->getBound(true) << "\n";
@@ -193,7 +191,7 @@ void MEDDLY::domain::createVariablesBottomUp(const int* bounds, unsigned N)
 
     vars[0] = nullptr;
     for (unsigned i=1; i<=N; i++) {
-        vars[i] = new variable(bounds[i-1], nullptr);
+        vars[i] = new variable(bounds[i-1], "");
         vars[i]->addToList(this);
     }
 
@@ -222,7 +220,7 @@ void MEDDLY::domain::createVariablesTopDown(const int* bounds, unsigned N)
 
     vars[0] = nullptr;
     for (unsigned i=N; i; i--) {
-        vars[N-i+1] = MEDDLY::createVariable(bounds[i], 0);
+        vars[N-i+1] = MEDDLY::createVariable(bounds[i], "");
         vars[i]->addToList(this);
     }
 

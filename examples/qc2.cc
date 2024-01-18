@@ -181,9 +181,9 @@ forest* buildForest(policies &p, int N, const varorder &V)
   char buffer[20];
   for (int i=0; i<M; i++) {
     snprintf(buffer, 20, "qr%02d", i+1);
-    d->useVar(V.queenRow(i))->setName(strdup(buffer));
+    d->useVar(V.queenRow(i))->setName(buffer);
     snprintf(buffer, 20, "qc%02d", i+1);
-    d->useVar(V.queenCol(i))->setName(strdup(buffer));
+    d->useVar(V.queenCol(i))->setName(buffer);
   }
 #endif
 

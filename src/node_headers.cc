@@ -503,7 +503,7 @@ void MEDDLY::node_headers::showHeader(output &s, node_handle p) const
             unsigned(parent.getVarByLevel(k))
     );
 
-    if (v->getName()) {
+    if (v->hasName()) {
         s << " level: " << v->getName();
     } else {
         s << " level: " <<  k;

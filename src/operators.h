@@ -74,7 +74,7 @@ namespace MEDDLY {
         return s;
     }
 
-    inline output& operator<< (output &s, const char* x)
+    inline output& operator<< (output &s, std::string x)
     {
         s.put(x);
         return s;

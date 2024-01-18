@@ -24,7 +24,7 @@
 // *                        variable methods                        *
 // ******************************************************************
 
-MEDDLY::variable::variable(int b, char* n)
+MEDDLY::variable::variable(int b, std::string n)
 {
     name = n;
     is_extensible = false;
@@ -40,15 +40,8 @@ MEDDLY::variable::variable(int b, char* n)
 MEDDLY::variable::~variable()
 {
 #ifdef DEBUG_CLEANUP
-    printf("destroying variable %s\n", name);
+    std::cerr << "destroying variable " << name << "\n";
 #endif
-    delete[] name;
-}
-
-void MEDDLY::variable::setName(char *n)
-{
-    delete[] name;
-    name = n;
 }
 
 void MEDDLY::variable::removeFromList(const domain* d)

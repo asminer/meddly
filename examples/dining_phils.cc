@@ -406,11 +406,11 @@ variable** initializeVariables(const model2var &M2V)
       exit(1);
     }
 
-    char* name = 0;
+    std::string name;
 #ifdef NAME_VARIABLES
     buffer[0] = 0;
     snprintf(buffer, 32, "fork%d", i);
-    name = strdup(buffer);
+    name = buffer;
 #endif
     vars[v] = createVariable(2, name);
 
@@ -425,11 +425,10 @@ variable** initializeVariables(const model2var &M2V)
       exit(1);
     }
 
-    name = 0;
 #ifdef NAME_VARIABLES
     buffer[0] = 0;
     snprintf(buffer, 32, "phil%d", i);
-    name = strdup(buffer);
+    name = buffer;
 #endif
     vars[v] = createVariable(5, name);
 
