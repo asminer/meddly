@@ -228,8 +228,10 @@ MEDDLY::binary_opname::getOperation(const dd_edge &a1, const dd_edge &a2,
     // Not found; build a new one and add it to the front
     //
     match = buildOperation(a1.getForest(), a2.getForest(), res.getForest());
-    match->setNext(cache);
-    cache = match;
+    if (match) {
+        match->setNext(cache);
+        cache = match;
+    }
     return match;
 }
 
@@ -266,68 +268,83 @@ MEDDLY::specialized_opname::~specialized_opname()
 
 void MEDDLY::apply(unary_handle code, const dd_edge &a, dd_edge &c)
 {
-    if (nullptr == code) {
+    if (!code) {
         throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
     }
     unary_opname* opn = code();
-    if (nullptr == opn) {
+    if (!opn) {
         throw error(error::UNINITIALIZED, __FILE__, __LINE__);
     }
     unary_operation* op = opn->getOperation(a, c);
+    if (!op) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
     op->computeTemp(a, c);
 }
 
 void MEDDLY::apply(unary_handle code, const dd_edge &a, long &c)
 {
-    if (nullptr == code) {
+    if (!code) {
         throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
     }
     unary_opname* opn = code();
-    if (nullptr == opn) {
+    if (!opn) {
         throw error(error::UNINITIALIZED, __FILE__, __LINE__);
     }
     unary_operation* op = opn->getOperation(a, opnd_type::INTEGER);
+    if (!op) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
     op->compute(a, c);
 }
 
 void MEDDLY::apply(unary_handle code, const dd_edge &a, double &c)
 {
-    if (nullptr == code) {
+    if (!code) {
         throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
     }
     unary_opname* opn = code();
-    if (nullptr == opn) {
+    if (!opn) {
         throw error(error::UNINITIALIZED, __FILE__, __LINE__);
     }
     unary_operation* op = opn->getOperation(a, opnd_type::REAL);
+    if (!op) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
     op->compute(a, c);
 }
 
 void MEDDLY::apply(unary_handle code, const dd_edge &a,
     opnd_type cr, ct_object &c)
 {
-    if (nullptr == code) {
+    if (!code) {
         throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
     }
     unary_opname* opn = code();
-    if (nullptr == opn) {
+    if (!opn) {
         throw error(error::UNINITIALIZED, __FILE__, __LINE__);
     }
     unary_operation* op = opn->getOperation(a, cr);
+    if (!op) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
     op->compute(a, c);
 }
 
 void MEDDLY::apply(binary_handle code, const dd_edge &a,
     const dd_edge &b, dd_edge &c)
 {
-    if (nullptr == code) {
+    if (!code) {
         throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
     }
     binary_opname* opn = code();
-    if (nullptr == opn) {
+    if (!opn) {
         throw error(error::UNINITIALIZED, __FILE__, __LINE__);
     }
     binary_operation* op = opn->getOperation(a, b, c);
+    if (!op) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
     op->computeTemp(a, b, c);
 }
 
