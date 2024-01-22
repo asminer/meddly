@@ -212,7 +212,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
     A->initIdentity(argF, k, unsigned(in), a, FULL_ONLY);
     canSave = false;
   }
-  unpacked_node* C = unpacked_node::newFull(resF, aLevel, size);
+  unpacked_node* C = unpacked_node::newFull(resF, k, size);
 
   // recurse
   int nextLevel = argF->downLevel(k);
