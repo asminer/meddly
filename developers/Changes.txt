@@ -17,6 +17,62 @@ Operations
 
 (*) One version of node_storage::getDownPtr, using edge_value
 
+(*) new operations (leave old in place until deprecated)
+
+    builtins are function (pointers) but now use arguments
+        instead of the 'named operation' class.
+        e.g.,
+
+        new_binary* INTERSECTION(forest* op1, forest* op2, forest* result)
+
+    stuff we will probably want/need
+        -   some kind of builtin initializer object that automatically
+            builds a list of operations to initialize / destroy,
+            and fit that into the current library init/destroy sequence.
+
+        -   for each type of operation (e.g., intersection), maintain
+            a list (or vector?) of instantiated operations.
+            could use list of unsigned, assuming there is a global
+            unique ID for operations that is reset on library init/destroy.
+            if so then the builtin functions can return unsigned instead
+            of new_binary*.
+
+        -   new operation hierarchy, or adjust existing one?
+            some thoughts:
+                operation
+                    |
+                    +--- binary_operation
+                            |
+                            +---- binary skip levels
+                            |           inline void compute_top(
+                            |               const dd_edge &a,
+                            |               const dd_edge &b, dd_edge c)
+                            |
+                            |           node_handle compute(node_handle a,
+                            |               node_handle b)
+                            |
+                            +---- binary by levels (for quasi reduced results)
+                            |
+                            |           node_handle compute(int K,
+                            |               node_handle a, node_handle b)
+                            |
+                            +---- binary, EV, skip levels
+                            |
+                            |           compute(const edge_value &av,
+                            |               node_handle an, const edge_value &,
+                            |               node_handle bn, edge_value &ec,
+                            |               node_handle &cn)
+                            |
+                            |           We could use the same iface for MT
+                            |           using void edge values, see if there's
+                            |           overhead and if so keep them split.
+                            |
+                            +---- binary, EV, by levels
+
+
+
+
+
 (*) binary operations:
 
     * change interface to use edge_value, node_handle instead of dd_edge
