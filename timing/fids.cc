@@ -30,7 +30,7 @@ const unsigned FORESTS = 1024;
 const unsigned FTYPES = 9;
 
 #ifdef DEVELOPMENT_CODE
-const unsigned CREATIONS = 64 * 1024;
+const unsigned CREATIONS = 32 * 1024;
 #else
 const unsigned CREATIONS = 1024 * 1024;
 #endif

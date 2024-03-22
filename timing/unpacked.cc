@@ -218,7 +218,7 @@ void make_identity(const std::vector <forest*> &FA, bool sparse)
             //
             // Randomly choose identity index
             //
-            unsigned i = Equilikely(0, VARSIZE);
+            unsigned i = Equilikely(0, VARSIZE-1);
 
             //
             // recycle old in slot u,
