@@ -5,6 +5,7 @@
 *.trs
 .libs
 ddedge
+fids
 mark
 reduce
 unpacked

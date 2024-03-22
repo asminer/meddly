@@ -275,6 +275,7 @@ void runWithArgs(unsigned N, unsigned marks, unsigned counts)
 
 int main(int argc, const char** argv)
 {
+    std::cout << "\nMark (of mark and sweep) timing tests\n\n";
     try {
         setReport(argc, argv);
 

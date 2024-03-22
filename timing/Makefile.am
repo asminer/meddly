@@ -5,6 +5,7 @@
 
 noinst_PROGRAMS = \
     ddedge \
+    fids \
     mark \
     reduce \
     unpacked
@@ -16,6 +17,12 @@ ddedge_SOURCES =    timer.h \
                     reporting.h reporting.cc \
                     ddedge.cc
 ddedge_LDADD =      ../src/libmeddly.la
+
+fids_SOURCES =      timer.h \
+                    park_random.h \
+                    reporting.h reporting.cc \
+                    fids.cc
+fids_LDADD =        ../src/libmeddly.la
 
 mark_SOURCES =      timer.h \
                     reporting.h reporting.cc \

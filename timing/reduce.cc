@@ -165,7 +165,7 @@ int main(int argc, const char** argv)
     try {
         setReport(argc, argv);
 
-        std::cout   << "Timing experiments for building "
+        std::cout   << "\nTiming experiment: build and reduce "
                     << TOTAL << " nodes, in batches of " << BATCHSIZE << "\n\n";
 
         MEDDLY::initialize();
