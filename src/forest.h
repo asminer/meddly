@@ -33,7 +33,8 @@
 #include "statset.h"
 
 #include <memory>
-#include <map>
+// #include <map>
+#include <vector>
 
 namespace MEDDLY {
     class domain;
@@ -50,6 +51,8 @@ namespace MEDDLY {
 
     class logger;
 };
+
+#define VECTOR_REGISTRY
 
 // ******************************************************************
 // *                                                                *
@@ -1486,13 +1489,24 @@ class MEDDLY::forest {
         inline unsigned FID() const { return fid; }
 
         /// Returns the largest forest identifier ever seen.
-        static inline unsigned MaxFID() { return gfid; }
+        static inline unsigned MaxFID() {
+#ifdef VECTOR_REGISTRY
+            return all_forests.size()-1;
+#else
+            return gfid;
+#endif
+        }
 
         /// Find the forest with the given FID.
         /// If the forest has been deleted, this will be null.
         static inline forest* getForestWithID(unsigned id) {
+#ifdef VECTOR_REGISTRY
+            if (id > all_forests.size()) return nullptr;
+            return all_forests[id];
+#else
             if (id >= max_forests) return nullptr;
             return all_forests[id];
+#endif
         }
 
 
@@ -1509,16 +1523,20 @@ class MEDDLY::forest {
     // ------------------------------------------------------------
     private: // private members for the forest registry
     // ------------------------------------------------------------
+#ifdef VECTOR_REGISTRY
+        static std::vector <forest*> all_forests;
+#else
         // All forests
         static forest** all_forests;
         // Size of forests array
         static unsigned max_forests;
+        // global ID
+        static unsigned gfid;
+#endif
 
         // our ID
         unsigned fid;
 
-        // global ID
-        static unsigned gfid;
 
         friend class initializer_list;
 

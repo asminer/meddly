@@ -7,7 +7,7 @@
 # List of executables to run
 #
 
-RUNLIST="ddedge mark reduce unpacked"
+RUNLIST="ddedge fids mark reduce unpacked"
 PID="$$"
 
 #
