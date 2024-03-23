@@ -103,10 +103,6 @@
 
 #ifdef VECTOR_REGISTRY
 std::vector <MEDDLY::forest*> MEDDLY::forest::all_forests;
-#else
-MEDDLY::forest** MEDDLY::forest::all_forests;
-unsigned MEDDLY::forest::max_forests;
-unsigned MEDDLY::forest::gfid;
 #endif
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -866,13 +862,6 @@ void MEDDLY::forest::initStatics()
     all_forests.clear();
     all_forests.push_back(nullptr);
     // reserve index 0 for 'no forest'
-#else
-    all_forests = new forest* [256];
-    max_forests = 256;
-    for (unsigned i=0; i<max_forests; i++) {
-        all_forests[i] = nullptr;
-    }
-    gfid = 0;
 #endif
 }
 
@@ -880,9 +869,6 @@ void MEDDLY::forest::freeStatics()
 {
 #ifdef VECTOR_REGISTRY
     all_forests.clear();
-#else
-    delete[] all_forests;
-    max_forests = 0;
 #endif
 }
 
@@ -892,31 +878,6 @@ void MEDDLY::forest::registerForest(forest* f)
     // Add f to the forest registry
     f->fid = all_forests.size();
     all_forests.push_back(f);
-#else
-    // Assign global ID to f
-    gfid++;
-    f->fid = gfid;
-
-    // Get slot for f
-    if (gfid >= max_forests) {
-        // enlarge array
-        unsigned newmax = max_forests * 2;
-        if (newmax > 1000000000) {
-            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-        }
-        forest** newall = new forest* [newmax];
-        unsigned i;
-        for (i=0; i<max_forests; i++) {
-            newall[i] = all_forests[i];
-        }
-        for ( ; i<newmax; i++) {
-            newall[i] = nullptr;
-        }
-        delete[] all_forests;
-        all_forests = newall;
-        max_forests = newmax;
-    }
-    all_forests[gfid] = f;
 #endif
 
     // Register in the domain
@@ -937,10 +898,6 @@ void MEDDLY::forest::unregisterForest(forest* f)
 #else
         all_forests[f->fid] = nullptr;
 #endif
-    }
-#else
-    if (f->fid <= max_forests) {
-        all_forests[f->fid] = nullptr;
     }
 #endif
 

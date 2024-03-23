@@ -32,8 +32,6 @@
 
 #include "statset.h"
 
-#include <memory>
-// #include <map>
 #include <vector>
 
 namespace MEDDLY {
@@ -1492,8 +1490,6 @@ class MEDDLY::forest {
         static inline unsigned MaxFID() {
 #ifdef VECTOR_REGISTRY
             return all_forests.size()-1;
-#else
-            return gfid;
 #endif
         }
 
@@ -1502,9 +1498,6 @@ class MEDDLY::forest {
         static inline forest* getForestWithID(unsigned id) {
 #ifdef VECTOR_REGISTRY
             if (id > all_forests.size()) return nullptr;
-            return all_forests[id];
-#else
-            if (id >= max_forests) return nullptr;
             return all_forests[id];
 #endif
         }
@@ -1525,13 +1518,6 @@ class MEDDLY::forest {
     // ------------------------------------------------------------
 #ifdef VECTOR_REGISTRY
         static std::vector <forest*> all_forests;
-#else
-        // All forests
-        static forest** all_forests;
-        // Size of forests array
-        static unsigned max_forests;
-        // global ID
-        static unsigned gfid;
 #endif
 
         // our ID
