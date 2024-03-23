@@ -19,6 +19,7 @@
 #include "dd_edge.h"
 #include "node_marker.h"
 
+#include "io.h"
 #include "io_dot.h"
 
 MEDDLY::dot_maker::dot_maker(const forest* F, const char* bn)

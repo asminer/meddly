@@ -101,9 +101,7 @@
 // Static members
 //
 
-#ifdef VECTOR_REGISTRY
 std::vector <MEDDLY::forest*> MEDDLY::forest::all_forests;
-#endif
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Static "constructors" and "destructors"
@@ -858,27 +856,21 @@ void MEDDLY::forest::unregisterOperation(const operation* op)
 
 void MEDDLY::forest::initStatics()
 {
-#ifdef VECTOR_REGISTRY
     all_forests.clear();
     all_forests.push_back(nullptr);
     // reserve index 0 for 'no forest'
-#endif
 }
 
 void MEDDLY::forest::freeStatics()
 {
-#ifdef VECTOR_REGISTRY
     all_forests.clear();
-#endif
 }
 
 void MEDDLY::forest::registerForest(forest* f)
 {
-#ifdef VECTOR_REGISTRY
     // Add f to the forest registry
     f->fid = all_forests.size();
     all_forests.push_back(f);
-#endif
 
     // Register in the domain
     f->d->registerForest(f);
@@ -890,8 +882,6 @@ void MEDDLY::forest::registerForest(forest* f)
 void MEDDLY::forest::unregisterForest(forest* f)
 {
     // Remove from forest slot
-
-#ifdef VECTOR_REGISTRY
     if (f->fid < all_forests.size()) {
 #ifdef DEVELOPMENT_CODE
         all_forests.at(f->fid) = nullptr;
@@ -899,7 +889,6 @@ void MEDDLY::forest::unregisterForest(forest* f)
         all_forests[f->fid] = nullptr;
 #endif
     }
-#endif
 
     // Unregister in the domain
     f->d->unregisterForest(f);

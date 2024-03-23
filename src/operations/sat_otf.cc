@@ -21,6 +21,7 @@
 #include <typeinfo> // for "bad_cast" exception
 #include <set>
 
+#include "../operators.h"
 #include "../minterms.h"
 #include "../ct_entry_result.h"
 #include "../compute_table.h"

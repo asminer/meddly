@@ -20,6 +20,7 @@
 #ifndef MEDDLY_CT_TYPEBASED_H
 #define MEDDLY_CT_TYPEBASED_H
 
+#include "../operators.h"
 #include "../node_storage.h"
 #include "../compute_table.h"
 #include "../ct_entry_result.h"

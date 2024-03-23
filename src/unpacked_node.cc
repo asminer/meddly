@@ -30,6 +30,7 @@
 #include "hash_stream.h"
 #include "terminal.h"
 #include "node_marker.h"
+#include "operators.h"
 
 // #define DEBUG_FORLISTS
 

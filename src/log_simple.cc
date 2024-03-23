@@ -20,6 +20,7 @@
 #include "defines.h"
 #include "log_simple.h"
 #include "forest.h"
+#include "operators.h"
 
 #define BATCH
 

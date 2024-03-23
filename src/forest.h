@@ -22,7 +22,6 @@
 #include "defines.h"
 #include "memstats.h"
 #include "varorder.h"
-#include "operators.h"
 #include "node_headers.h"
 #include "node_storage.h"
 #include "unpacked_node.h"
@@ -49,8 +48,6 @@ namespace MEDDLY {
 
     class logger;
 };
-
-#define VECTOR_REGISTRY
 
 // ******************************************************************
 // *                                                                *
@@ -1488,18 +1485,14 @@ class MEDDLY::forest {
 
         /// Returns the largest forest identifier ever seen.
         static inline unsigned MaxFID() {
-#ifdef VECTOR_REGISTRY
             return all_forests.size()-1;
-#endif
         }
 
         /// Find the forest with the given FID.
         /// If the forest has been deleted, this will be null.
         static inline forest* getForestWithID(unsigned id) {
-#ifdef VECTOR_REGISTRY
             if (id > all_forests.size()) return nullptr;
             return all_forests[id];
-#endif
         }
 
 
@@ -1516,11 +1509,10 @@ class MEDDLY::forest {
     // ------------------------------------------------------------
     private: // private members for the forest registry
     // ------------------------------------------------------------
-#ifdef VECTOR_REGISTRY
+        /// "Registry" of all forests, ever.
         static std::vector <forest*> all_forests;
-#endif
 
-        // our ID
+        /// our ID
         unsigned fid;
 
 

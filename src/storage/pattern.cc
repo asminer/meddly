@@ -25,6 +25,7 @@
 #include "../unpacked_node.h"
 #include "../memory.h"
 #include "../forest.h"
+#include "../operators.h"
 #include "../node_marker.h"
 #include <set>
 #include <map>
