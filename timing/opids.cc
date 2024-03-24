@@ -36,9 +36,9 @@ const unsigned CREATIONS = 2;
 const unsigned FASTSRCH  = 4;
 const unsigned SLOWSRCH  = 4;
 #else
-const unsigned CREATIONS = 2;
-const unsigned FASTSRCH  = 4;
-const unsigned SLOWSRCH  = 4;
+const unsigned CREATIONS = 16;
+const unsigned FASTSRCH  = 32;
+const unsigned SLOWSRCH  = 32;
 #endif
 
 void createOperations(const std::vector <dd_edge> &Edges,
