@@ -167,13 +167,31 @@ class MEDDLY::operation {
 
         inline opname* getParent() { return theOpName; }
 
-    private:
+    // ------------------------------------------------------------
+    private: // private methods for the operation registry
+    // ------------------------------------------------------------
         // should be called during library init.
         static void initializeStatics();
 
         // should ONLY be called during library cleanup.
         static void destroyAllOps();
 
+        static void registerOperation(operation &o);
+        static void unregisterOperation(operation &o);
+
+    // ------------------------------------------------------------
+    private: // private members for the operation registry
+    // ------------------------------------------------------------
+        // declared and initialized in meddly.cc
+        static operation** op_list;
+        // declared and initialized in meddly.cc
+        static unsigned* op_holes;
+        // declared and initialized in meddly.cc
+        static unsigned list_size;
+        // declared and initialized in meddly.cc
+        static unsigned list_alloc;
+        // declared and initialized in meddly.cc
+        static unsigned free_list;
 
     //
     // Members
@@ -208,24 +226,12 @@ class MEDDLY::operation {
 
     private:
 
-    private:
-
         opname* theOpName;
         unsigned oplist_index;
         bool is_marked_for_deletion;
 
         // declared and initialized in meddly.cc
         static compute_table* Monolithic_CT;
-        // declared and initialized in meddly.cc
-        static operation** op_list;
-        // declared and initialized in meddly.cc
-        static unsigned* op_holes;
-        // declared and initialized in meddly.cc
-        static unsigned list_size;
-        // declared and initialized in meddly.cc
-        static unsigned list_alloc;
-        // declared and initialized in meddly.cc
-        static unsigned free_list;
 
         /**
             Starting slot for entry_types, assigned

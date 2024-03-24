@@ -46,6 +46,7 @@ MEDDLY::binary_operation::~binary_operation()
     unregisterInForest(resF);
 }
 
+/*
 bool MEDDLY::binary_operation::matches(const dd_edge &arg1,
         const dd_edge &arg2, const dd_edge &res) const
 {
@@ -54,7 +55,7 @@ bool MEDDLY::binary_operation::matches(const dd_edge &arg1,
         arg2.isAttachedTo(arg2F) &&
         res.isAttachedTo(resF);
 }
-
+*/
 
 void MEDDLY::binary_operation::compute(const dd_edge &ar1,
     const dd_edge &ar2, dd_edge &res)

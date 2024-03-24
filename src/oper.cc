@@ -51,34 +51,7 @@ MEDDLY::operation::operation(opname* n, unsigned et_slots)
     is_marked_for_deletion = false;
     next = nullptr;
 
-    //
-    // assign an index to this operation
-    //
-    if (free_list) {
-        oplist_index = free_list;
-        free_list = op_holes[free_list];
-    } else {
-        if (list_size >= list_alloc) {
-            unsigned nla = list_alloc + 256;
-            op_list = (operation**) realloc(op_list, nla * sizeof(void*));
-            op_holes = (unsigned*) realloc(op_holes, nla * sizeof(unsigned));
-            if (0==op_list || 0==op_holes) {
-                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-            }
-            list_alloc = nla;
-            for (unsigned i=list_size; i<list_alloc; i++) {
-                op_list[i] = 0;
-                op_holes[i] = 0;
-            }
-        }
-        if (0==list_size) {
-            // Never use slot 0
-            list_size++;
-        }
-        oplist_index = list_size;
-        list_size++;
-    }
-    op_list[oplist_index] = this;
+    registerOperation(*this);
 
     //
     // Delay CT initialization!
@@ -136,12 +109,7 @@ MEDDLY::operation::~operation()
     delete[] CTresult;
     compute_table::unregisterOp(this, num_etids);
 
-    if (oplist_index) {
-        MEDDLY_DCASSERT(op_list[oplist_index] == this);
-        op_list[oplist_index] = 0;
-        op_holes[oplist_index] = free_list;
-        free_list = oplist_index;
-    }
+    unregisterOperation(*this);
 #ifdef DEBUG_CLEANUP
     fprintf(stdout, "Deleted operation %p %s\n", this, getName());
     fflush(stdout);
@@ -374,6 +342,48 @@ void MEDDLY::operation::destroyAllOps()
   free(op_list);
   free(op_holes);
   initializeStatics();
+}
+
+void MEDDLY::operation::registerOperation(operation &o)
+{
+    //
+    // assign an index to this operation
+    //
+    if (free_list) {
+        o.oplist_index = free_list;
+        free_list = op_holes[free_list];
+    } else {
+        if (list_size >= list_alloc) {
+            unsigned nla = list_alloc + 256;
+            op_list = (operation**) realloc(op_list, nla * sizeof(void*));
+            op_holes = (unsigned*) realloc(op_holes, nla * sizeof(unsigned));
+            if (0==op_list || 0==op_holes) {
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+            }
+            list_alloc = nla;
+            for (unsigned i=list_size; i<list_alloc; i++) {
+                op_list[i] = 0;
+                op_holes[i] = 0;
+            }
+        }
+        if (0==list_size) {
+            // Never use slot 0
+            list_size++;
+        }
+        o.oplist_index = list_size;
+        list_size++;
+    }
+    op_list[o.oplist_index] = &o;
+}
+
+void MEDDLY::operation::unregisterOperation(operation &o)
+{
+    if (o.oplist_index) {
+        MEDDLY_DCASSERT(op_list[o.oplist_index] == &o);
+        op_list[o.oplist_index] = nullptr;
+        op_holes[o.oplist_index] = free_list;
+        free_list = o.oplist_index;
+    }
 }
 
 // ******************************************************************

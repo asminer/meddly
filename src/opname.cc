@@ -53,6 +53,7 @@ FindUnary(MEDDLY::operation* list, const MEDDLY::dd_edge &arg, const RT &res)
             }
             return match;
         }
+        prev = curr;
     }
     return nullptr;
 }
@@ -222,6 +223,7 @@ MEDDLY::binary_opname::getOperation(const dd_edge &a1, const dd_edge &a2,
             }
             return match;
         }
+        prev = curr;
     }
 
     //

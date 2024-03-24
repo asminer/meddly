@@ -20,6 +20,7 @@
 #define MEDDLY_OPER_BINARY_H
 
 #include "oper.h"
+#include "dd_edge.h"
 
 namespace MEDDLY {
     class dd_edge;
@@ -45,8 +46,14 @@ class MEDDLY::binary_operation : public operation {
         virtual ~binary_operation();
 
     public:
-        bool matches(const dd_edge &arg1, const dd_edge &arg2,
-                const dd_edge &res) const;
+        inline bool matches(const dd_edge &arg1, const dd_edge &arg2,
+                const dd_edge &res) const
+        {
+            return
+                arg1.isAttachedTo(arg1F) &&
+                arg2.isAttachedTo(arg2F) &&
+                res.isAttachedTo(resF);
+        }
 
         // high-level front-end
 
