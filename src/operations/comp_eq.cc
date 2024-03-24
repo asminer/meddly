@@ -38,9 +38,9 @@ namespace MEDDLY {
 template <typename T>
 class equal_mdd : public generic_binary_mdd {
   public:
-    equal_mdd(binary_opname* opcode, forest* arg1,
+    equal_mdd(binary_list &cache, forest* arg1,
       forest* arg2, forest* res)
-      : generic_binary_mdd(opcode, arg1, arg2, res)
+      : generic_binary_mdd(cache, arg1, arg2, res)
       {
         operationCommutes();
       }
@@ -80,7 +80,7 @@ namespace MEDDLY {
 template <typename T>
 class equal_mxd : public generic_binbylevel_mxd {
   public:
-    equal_mxd(binary_opname* opcode, forest* arg1,
+    equal_mxd(binary_list &opcode, forest* arg1,
       forest* arg2, forest* res)
       : generic_binbylevel_mxd(opcode, arg1, arg2, res)
       {
@@ -115,7 +115,7 @@ bool equal_mxd<T>
 
 class MEDDLY::equal_evtimes : public generic_binary_evtimes {
   public:
-    equal_evtimes(binary_opname* opcode, forest* arg1,
+    equal_evtimes(binary_list &opcode, forest* arg1,
       forest* arg2, forest* res);
 
   protected:
@@ -123,7 +123,7 @@ class MEDDLY::equal_evtimes : public generic_binary_evtimes {
       float &cv, node_handle& c);
 };
 
-MEDDLY::equal_evtimes::equal_evtimes(binary_opname* opcode,
+MEDDLY::equal_evtimes::equal_evtimes(binary_list& opcode,
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_evtimes(opcode, arg1, arg2, res)
 {
@@ -156,7 +156,7 @@ bool MEDDLY::equal_evtimes
 class MEDDLY::equal_opname : public binary_opname {
   public:
     equal_opname();
-    virtual binary_operation* buildOperation(forest* a1,
+    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
       forest* a2, forest* r);
 };
 
@@ -166,7 +166,7 @@ MEDDLY::equal_opname::equal_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::equal_opname::buildOperation(forest* a1, forest* a2,
+MEDDLY::equal_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
@@ -191,14 +191,14 @@ MEDDLY::equal_opname::buildOperation(forest* a1, forest* a2,
     );
     if (use_reals) {
       if (r->isForRelations())
-        return new equal_mxd<float>(this, a1, a2, r);
+        return new equal_mxd<float>(c, a1, a2, r);
       else
-        return new equal_mdd<float>(this, a1, a2, r);
+        return new equal_mdd<float>(c, a1, a2, r);
     } else {
       if (r->isForRelations())
-        return new equal_mxd<int>(this, a1, a2, r);
+        return new equal_mxd<int>(c, a1, a2, r);
       else
-        return new equal_mdd<int>(this, a1, a2, r);
+        return new equal_mdd<int>(c, a1, a2, r);
     }
   }
 
@@ -210,7 +210,7 @@ MEDDLY::equal_opname::buildOperation(forest* a1, forest* a2,
     {
       throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
-    return new equal_evtimes(this, a1, a2, r);
+    return new equal_evtimes(c, a1, a2, r);
   }
 
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);

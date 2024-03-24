@@ -36,7 +36,7 @@ namespace MEDDLY {
 template <typename T>
 class lessequal_mdd : public generic_binary_mdd {
   public:
-    lessequal_mdd(binary_opname* opcode, forest* arg1,
+    lessequal_mdd(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res)
       : generic_binary_mdd(opcode, arg1, arg2, res) { }
 
@@ -77,7 +77,7 @@ namespace MEDDLY {
 template <typename T>
 class lessequal_mxd : public generic_binbylevel_mxd {
   public:
-    lessequal_mxd(binary_opname* opcode, forest* arg1,
+    lessequal_mxd(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res)
       : generic_binbylevel_mxd(opcode, arg1, arg2, res) { }
 
@@ -110,7 +110,7 @@ bool lessequal_mxd<T>
 class MEDDLY::lessequal_opname : public binary_opname {
   public:
     lessequal_opname();
-    virtual binary_operation* buildOperation(forest* a1,
+    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
       forest* a2, forest* r);
 };
 
@@ -120,7 +120,7 @@ MEDDLY::lessequal_opname::lessequal_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::lessequal_opname::buildOperation(forest* a1, forest* a2,
+MEDDLY::lessequal_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
@@ -145,14 +145,14 @@ MEDDLY::lessequal_opname::buildOperation(forest* a1, forest* a2,
   if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     if (use_reals) {
       if (r->isForRelations())
-        return new lessequal_mxd<float>(this, a1, a2, r);
+        return new lessequal_mxd<float>(c, a1, a2, r);
       else
-        return new lessequal_mdd<float>(this, a1, a2, r);
+        return new lessequal_mdd<float>(c, a1, a2, r);
     } else {
       if (r->isForRelations())
-        return new lessequal_mxd<int>(this, a1, a2, r);
+        return new lessequal_mxd<int>(c, a1, a2, r);
       else
-        return new lessequal_mdd<int>(this, a1, a2, r);
+        return new lessequal_mdd<int>(c, a1, a2, r);
     }
   }
 

@@ -40,7 +40,7 @@ namespace MEDDLY {
 
 class MEDDLY::compl_mdd : public unary_operation {
   public:
-    compl_mdd(unary_opname* oc, forest* arg, forest* res);
+    compl_mdd(unary_list& oc, forest* arg, forest* res);
 
     virtual void computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag);
 
@@ -70,10 +70,10 @@ class MEDDLY::compl_mdd : public unary_operation {
 };
 
 MEDDLY::compl_mdd
-::compl_mdd(unary_opname* oc, forest* arg, forest* res)
+::compl_mdd(unary_list& oc, forest* arg, forest* res)
  : unary_operation(oc, 1, arg, res)
 {
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:N");
+  ct_entry_type* et = new ct_entry_type(oc.getName(), "N:N");
   et->setForestForSlot(0, arg);
   et->setForestForSlot(2, res);
   registerEntryType(0, et);
@@ -145,7 +145,7 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
 
 class MEDDLY::compl_mxd : public unary_operation {
   public:
-    compl_mxd(unary_opname* oc, forest* arg, forest* res);
+    compl_mxd(unary_list& oc, forest* arg, forest* res);
 
     virtual void computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag);
 
@@ -153,10 +153,10 @@ class MEDDLY::compl_mxd : public unary_operation {
 };
 
 MEDDLY::compl_mxd
-::compl_mxd(unary_opname* oc, forest* arg, forest* res)
+::compl_mxd(unary_list& oc, forest* arg, forest* res)
  : unary_operation(oc, 1, arg, res)
 {
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "IN:N");
+  ct_entry_type* et = new ct_entry_type(oc.getName(), "IN:N");
   et->setForestForSlot(1, arg);
   et->setForestForSlot(3, res);
   registerEntryType(0, et);
@@ -257,7 +257,7 @@ class MEDDLY::compl_opname : public unary_opname {
   public:
     compl_opname();
     virtual unary_operation*
-      buildOperation(forest* ar, forest* res);
+      buildOperation(unary_list &c, forest* ar, forest* res);
 };
 
 MEDDLY::compl_opname::compl_opname()
@@ -267,7 +267,7 @@ MEDDLY::compl_opname::compl_opname()
 
 MEDDLY::unary_operation*
 MEDDLY::compl_opname
-::buildOperation(forest* arg, forest* res)
+::buildOperation(unary_list &c, forest* arg, forest* res)
 {
   if (0==arg || 0==res) return 0;
 
@@ -282,9 +282,9 @@ MEDDLY::compl_opname
   ) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   if (arg->isForRelations())
-    return new compl_mxd(this,  arg,  res);
+    return new compl_mxd(c,  arg,  res);
   else
-    return new compl_mdd(this,  arg,  res);
+    return new compl_mdd(c,  arg,  res);
 }
 
 // ******************************************************************

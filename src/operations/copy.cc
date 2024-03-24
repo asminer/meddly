@@ -40,7 +40,7 @@ namespace MEDDLY {
 /// Abstract base class for copying between multi-terminal DDs.
 class MEDDLY::copy_MT : public unary_operation {
   public:
-    copy_MT(unary_opname* oc, forest* arg, forest* res);
+    copy_MT(unary_list& oc, forest* arg, forest* res);
 
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
   protected:
@@ -69,10 +69,10 @@ class MEDDLY::copy_MT : public unary_operation {
 };
 
 MEDDLY::copy_MT
-:: copy_MT(unary_opname* oc, forest* arg, forest* res)
+:: copy_MT(unary_list& oc, forest* arg, forest* res)
  : unary_operation(oc, 1, arg, res)
 {
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:N");
+  ct_entry_type* et = new ct_entry_type(oc.getName(), "N:N");
   et->setForestForSlot(0, arg);
   et->setForestForSlot(2, res);
   registerEntryType(0, et);
@@ -96,7 +96,7 @@ namespace MEDDLY {
   template <typename RESULT>
   class copy_MT_tmpl : public copy_MT {
     public:
-      copy_MT_tmpl(unary_opname* N, forest* A, forest* R)
+      copy_MT_tmpl(unary_list& N, forest* A, forest* R)
         : copy_MT(N, A, R) { }
     protected:
       virtual node_handle compute_r(node_handle a) {
@@ -239,7 +239,7 @@ namespace MEDDLY {
   template <typename TYPE>
   class copy_MT2EV : public unary_operation {
     public:
-      copy_MT2EV(unary_opname* oc, forest* arg, forest* res,
+      copy_MT2EV(unary_list& oc, forest* arg, forest* res,
         const char* pattern) : unary_operation(oc, 1, arg, res)
       {
         //
@@ -249,7 +249,7 @@ namespace MEDDLY {
         // entry[1]: EV value (output)
         // entry[2]: EV node (output)
         //
-        ct_entry_type* et = new ct_entry_type(oc->getName(), pattern);
+        ct_entry_type* et = new ct_entry_type(oc.getName(), pattern);
         et->setForestForSlot(0, arg);
         et->setForestForSlot(3, res);
         registerEntryType(0, et);
@@ -445,7 +445,7 @@ namespace MEDDLY {
   template <typename TYPE, class OP>
   class copy_EV2MT : public unary_operation {
     public:
-      copy_EV2MT(unary_opname* oc, forest* arg, forest* res,
+      copy_EV2MT(unary_list& oc, forest* arg, forest* res,
         const char* pattern) : unary_operation(oc, 1, arg, res)
       {
         //
@@ -455,7 +455,7 @@ namespace MEDDLY {
         // entry[1]: EV node
         // entry[2]: mt node (output)
         //
-        ct_entry_type* et = new ct_entry_type(oc->getName(), pattern);
+        ct_entry_type* et = new ct_entry_type(oc.getName(), pattern);
         et->setForestForSlot(1, arg);
         et->setForestForSlot(3, res);
         registerEntryType(0, et);
@@ -646,12 +646,12 @@ namespace MEDDLY {
   template <typename INTYPE, typename OUTTYPE>
   class copy_EV2EV_fast : public unary_operation {
     public:
-      copy_EV2EV_fast(unary_opname* oc, forest* arg,
+      copy_EV2EV_fast(unary_list& oc, forest* arg,
         forest* res) : unary_operation(oc, 1, arg, res)
       {
         // entry[0]: EV node
         // entry[1]: EV node
-        ct_entry_type* et = new ct_entry_type(oc->getName(), "N:N");
+        ct_entry_type* et = new ct_entry_type(oc.getName(), "N:N");
         et->setForestForSlot(0, arg);
         et->setForestForSlot(2, res);
         registerEntryType(0, et);
@@ -754,7 +754,7 @@ namespace MEDDLY {
   template <typename INTYPE, class INOP, typename OUTTYPE>
   class copy_EV2EV_slow : public unary_operation {
     public:
-      copy_EV2EV_slow(unary_opname* oc, forest* arg, forest* res,
+      copy_EV2EV_slow(unary_list& oc, forest* arg, forest* res,
         const char* pattern) : unary_operation(oc, 1, arg, res)
       {
         //
@@ -765,7 +765,7 @@ namespace MEDDLY {
         // entry[2]: EV value
         // entry[3]: EV node
         //
-        ct_entry_type* et = new ct_entry_type(oc->getName(), pattern);
+        ct_entry_type* et = new ct_entry_type(oc.getName(), pattern);
         et->setForestForSlot(1, arg);
         et->setForestForSlot(4, res);
         registerEntryType(0, et);
@@ -918,7 +918,7 @@ class MEDDLY::copy_opname : public unary_opname {
   public:
     copy_opname();
     virtual unary_operation*
-      buildOperation(forest* ar, forest* res);
+      buildOperation(unary_list &c, forest* ar, forest* res);
 
 
   private:
@@ -945,7 +945,7 @@ MEDDLY::copy_opname::copy_opname()
 
 MEDDLY::unary_operation*
 MEDDLY::copy_opname
-::buildOperation(forest* arg, forest* res)
+::buildOperation(unary_list &c, forest* arg, forest* res)
 {
   if (0==arg || 0==res) return 0;
 
@@ -962,13 +962,13 @@ MEDDLY::copy_opname
     //
     switch (res->getRangeType()) {
       case range_type::BOOLEAN:
-        return new copy_MT_tmpl<bool>(this, arg, res);
+        return new copy_MT_tmpl<bool>(c, arg, res);
 
       case range_type::INTEGER:
-        return new copy_MT_tmpl<int>(this, arg, res);
+        return new copy_MT_tmpl<int>(c, arg, res);
 
       case range_type::REAL:
-        return new copy_MT_tmpl<float>(this, arg, res);
+        return new copy_MT_tmpl<float>(c, arg, res);
 
 
       default:  // any other types?
@@ -988,10 +988,10 @@ MEDDLY::copy_opname
     //
     switch (res->getRangeType()) {
       case range_type::INTEGER:
-        return new copy_MT2EV<long>(this, arg, res, "N:LN");
+        return new copy_MT2EV<long>(c, arg, res, "N:LN");
 
       case range_type::REAL:
-        return new copy_MT2EV<float>(this, arg, res, "N:FN");
+        return new copy_MT2EV<float>(c, arg, res, "N:FN");
 
       default:
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -1005,10 +1005,10 @@ MEDDLY::copy_opname
     //
     switch (arg->getRangeType()) {
       case range_type::INTEGER:
-        return new copy_EV2MT<long,PLUS>(this, arg, res, "LN:N");
+        return new copy_EV2MT<long,PLUS>(c, arg, res, "LN:N");
 
       case range_type::REAL:
-        return new copy_EV2MT<float,PLUS>(this, arg, res, "FN:N");
+        return new copy_EV2MT<float,PLUS>(c, arg, res, "FN:N");
 
       default:
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -1022,10 +1022,10 @@ MEDDLY::copy_opname
     //
     switch (arg->getRangeType()) {
       case range_type::INTEGER:
-        return new copy_EV2MT<long,TIMES>(this, arg, res, "LN:N");
+        return new copy_EV2MT<long,TIMES>(c, arg, res, "LN:N");
 
       case range_type::REAL:
-        return new copy_EV2MT<float,TIMES>(this, arg, res, "FN:N");
+        return new copy_EV2MT<float,TIMES>(c, arg, res, "FN:N");
 
       default:
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -1052,9 +1052,9 @@ MEDDLY::copy_opname
         case range_type::INTEGER:
             switch (res->getRangeType()) {
                 case range_type::INTEGER:
-                    return new copy_EV2EV_fast<long,long>(this, arg, res);
+                    return new copy_EV2EV_fast<long,long>(c, arg, res);
                 case range_type::REAL:
-                    return new copy_EV2EV_fast<long,float>(this, arg, res);
+                    return new copy_EV2EV_fast<long,float>(c, arg, res);
                 default:
                     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
             };
@@ -1063,9 +1063,9 @@ MEDDLY::copy_opname
         case range_type::REAL:
             switch (res->getRangeType()) {
                 case range_type::INTEGER:
-                    break;    // not safe to go from real -> integer this way
+                    break;    // not safe to go from real -> integer c way
                 case range_type::REAL:
-                    return new copy_EV2EV_fast<float,float>(this, arg, res);
+                    return new copy_EV2EV_fast<float,float>(c, arg, res);
                 default:
                     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
             };
@@ -1088,9 +1088,9 @@ MEDDLY::copy_opname
       case range_type::INTEGER:
           switch (res->getRangeType()) {
             case range_type::INTEGER:
-                return new copy_EV2EV_slow<long,PLUS,long>(this, arg, res, "LN:LN");
+                return new copy_EV2EV_slow<long,PLUS,long>(c, arg, res, "LN:LN");
             case range_type::REAL:
-                return new copy_EV2EV_slow<long,PLUS,float>(this, arg, res, "LN:FN");
+                return new copy_EV2EV_slow<long,PLUS,float>(c, arg, res, "LN:FN");
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
@@ -1098,9 +1098,9 @@ MEDDLY::copy_opname
       case range_type::REAL:
           switch (res->getRangeType()) {
             case range_type::INTEGER:
-                return new copy_EV2EV_slow<float,PLUS,long>(this, arg, res, "FN:LN");
+                return new copy_EV2EV_slow<float,PLUS,long>(c, arg, res, "FN:LN");
             case range_type::REAL:
-                return new copy_EV2EV_slow<float,PLUS,float>(this, arg, res, "FN:FN");
+                return new copy_EV2EV_slow<float,PLUS,float>(c, arg, res, "FN:FN");
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
@@ -1120,9 +1120,9 @@ MEDDLY::copy_opname
       case range_type::INTEGER:
           switch (res->getRangeType()) {
             case range_type::INTEGER:
-                return new copy_EV2EV_slow<long,TIMES,long>(this, arg, res, "LN:LN");
+                return new copy_EV2EV_slow<long,TIMES,long>(c, arg, res, "LN:LN");
             case range_type::REAL:
-                return new copy_EV2EV_slow<long,TIMES,float>(this, arg, res, "LN:FN");
+                return new copy_EV2EV_slow<long,TIMES,float>(c, arg, res, "LN:FN");
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };
@@ -1130,9 +1130,9 @@ MEDDLY::copy_opname
       case range_type::REAL:
           switch (res->getRangeType()) {
             case range_type::INTEGER:
-                return new copy_EV2EV_slow<float,TIMES,long>(this, arg, res, "FN:LN");
+                return new copy_EV2EV_slow<float,TIMES,long>(c, arg, res, "FN:LN");
             case range_type::REAL:
-                return new copy_EV2EV_slow<float,TIMES,float>(this, arg, res, "FN:FN");
+                return new copy_EV2EV_slow<float,TIMES,float>(c, arg, res, "FN:FN");
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
           };

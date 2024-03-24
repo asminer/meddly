@@ -36,7 +36,7 @@
 MEDDLY::common_constrained::common_constrained(constrained_opname* code,
   unsigned slots,
   forest* cons, forest* arg, forest* trans, forest* res)
-  : specialized_operation(code, slots)
+  : specialized_operation(code->getName(), slots)
 {
   consF = cons;
   argF = arg;
