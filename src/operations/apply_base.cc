@@ -30,11 +30,11 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::generic_binary_mdd::generic_binary_mdd(binary_opname* code,
+MEDDLY::generic_binary_mdd::generic_binary_mdd(binary_list& code,
   forest* arg1, forest* arg2, forest* res)
   : binary_operation(code, 1, arg1, arg2, res)
 {
-    ct_entry_type* et = new ct_entry_type(code->getName(), "NN:N");
+    ct_entry_type* et = new ct_entry_type(code.getName(), "NN:N");
     et->setForestForSlot(0, arg1);
     et->setForestForSlot(1, arg2);
     et->setForestForSlot(3, res);
@@ -316,11 +316,11 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::generic_binary_mxd::generic_binary_mxd(binary_opname* code,
+MEDDLY::generic_binary_mxd::generic_binary_mxd(binary_list& code,
   forest* arg1, forest* arg2, forest* res)
   : binary_operation(code, 1, arg1, arg2, res)
 {
-  ct_entry_type* et = new ct_entry_type(code->getName(), "NN:N");
+  ct_entry_type* et = new ct_entry_type(code.getName(), "NN:N");
   et->setForestForSlot(0, arg1);
   et->setForestForSlot(1, arg2);
   et->setForestForSlot(3, res);
@@ -756,12 +756,12 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
 // ******************************************************************
 
 MEDDLY::generic_binbylevel_mxd
-::generic_binbylevel_mxd(binary_opname* code, forest* arg1,
+::generic_binbylevel_mxd(binary_list& code, forest* arg1,
   forest* arg2, forest* res)
  : binary_operation(code, 1, arg1, arg2, res)
 {
   can_commute = false;
-  ct_entry_type* et = new ct_entry_type(code->getName(), "INN:N");
+  ct_entry_type* et = new ct_entry_type(code.getName(), "INN:N");
   et->setForestForSlot(1, arg1);
   et->setForestForSlot(2, arg2);
   et->setForestForSlot(4, res);
@@ -880,7 +880,7 @@ MEDDLY::generic_binbylevel_mxd
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::generic_binary_ev::generic_binary_ev(binary_opname* code,
+MEDDLY::generic_binary_ev::generic_binary_ev(binary_list& code,
   forest* arg1, forest* arg2, forest* res)
   : binary_operation(code, 1, arg1, arg2, res)
 {
@@ -898,11 +898,11 @@ MEDDLY::generic_binary_ev::~generic_binary_ev()
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::generic_binary_evplus::generic_binary_evplus(binary_opname* code,
+MEDDLY::generic_binary_evplus::generic_binary_evplus(binary_list& code,
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_ev(code, arg1, arg2, res)
 {
-  ct_entry_type* et = new ct_entry_type(code->getName(), "LNLN:LN");
+  ct_entry_type* et = new ct_entry_type(code.getName(), "LNLN:LN");
   et->setForestForSlot(1, arg1);
   et->setForestForSlot(3, arg2);
   et->setForestForSlot(6, res);
@@ -992,14 +992,14 @@ void MEDDLY::generic_binary_evplus
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::generic_binary_evplus_mxd::generic_binary_evplus_mxd(binary_opname* code,
+MEDDLY::generic_binary_evplus_mxd::generic_binary_evplus_mxd(binary_list& code,
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_ev(code, arg1, arg2, res)
 {
   if (!arg1->isForRelations() || !arg2->isForRelations() || !res->isForRelations()) {
     throw error::TYPE_MISMATCH;
   }
-  ct_entry_type* et = new ct_entry_type(code->getName(), "LNLN:LN");
+  ct_entry_type* et = new ct_entry_type(code.getName(), "LNLN:LN");
   et->setForestForSlot(1, arg1);
   et->setForestForSlot(3, arg2);
   et->setForestForSlot(6, res);
@@ -1148,11 +1148,11 @@ void MEDDLY::generic_binary_evplus_mxd
 // ******************************************************************
 
 MEDDLY::generic_binary_evtimes
-::generic_binary_evtimes(binary_opname* code, forest* arg1,
+::generic_binary_evtimes(binary_list& code, forest* arg1,
   forest* arg2, forest* res)
 : generic_binary_ev(code, arg1, arg2, res)
 {
-  ct_entry_type* et = new ct_entry_type(code->getName(), "FNFN:FN");
+  ct_entry_type* et = new ct_entry_type(code.getName(), "FNFN:FN");
   et->setForestForSlot(1, arg1);
   et->setForestForSlot(3, arg2);
   et->setForestForSlot(6, res);

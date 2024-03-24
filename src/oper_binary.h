@@ -25,6 +25,7 @@
 namespace MEDDLY {
     class dd_edge;
     class binary_operation;
+    class binary_list;
 };
 
 // ******************************************************************
@@ -37,9 +38,8 @@ namespace MEDDLY {
     Specific operations will be derived from this class.
 */
 class MEDDLY::binary_operation : public operation {
-        friend void destroyOperation(binary_operation* &op);
     public:
-        binary_operation(binary_opname* code, unsigned et_slots,
+        binary_operation(binary_list& owner, unsigned et_slots,
             forest* arg1, forest* arg2, forest* res);
 
     protected:
@@ -80,6 +80,61 @@ class MEDDLY::binary_operation : public operation {
         forest* arg2F;
         forest* resF;
         opnd_type resultType;
+
+    private:
+        binary_list& parent;
+        binary_operation* next;
+
+        friend class binary_list;
+        friend void destroyOperation(binary_operation* &op);
+};
+
+// ******************************************************************
+// *                                                                *
+// *                       binary_list  class                       *
+// *                                                                *
+// ******************************************************************
+
+/**
+    List of binary operations of the same type; used when
+    building binary operations for specific forests.
+*/
+class MEDDLY::binary_list {
+        const char* name;
+        binary_operation* front;
+    public:
+        binary_list(const char* n);
+
+        inline const char* getName() const { return name; }
+
+        inline binary_operation* addOperation(binary_operation* bop) {
+            if (bop) {
+                bop->next = front;
+                front = bop;
+            }
+            return bop;
+        }
+
+        inline void removeOperation(binary_operation* bop)
+        {
+            if (front == bop) {
+                front = front->next;
+                return;
+            }
+            searchRemove(bop);
+        }
+
+        inline binary_operation* findOperation(const forest* arg1F,
+                const forest* arg2F, const forest* resF)
+        {
+            if (!front) return nullptr;
+            if ((front->arg1F == arg1F) && (front->arg2F == arg2F) && (front->resF == resF)) return front;
+            return mtfBinary(arg1F, arg2F, resF);
+        }
+
+    private:
+        binary_operation* mtfBinary(const forest* arg1F, const forest* arg2F, const forest* resF);
+        void searchRemove(binary_operation* uop);
 };
 
 

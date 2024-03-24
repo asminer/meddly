@@ -35,6 +35,7 @@
 // *                         Helper methods                         *
 // ******************************************************************
 
+/*
 template <class RT>
 static MEDDLY::unary_operation*
 FindUnary(MEDDLY::operation* list, const MEDDLY::dd_edge &arg, const RT &res)
@@ -57,6 +58,7 @@ FindUnary(MEDDLY::operation* list, const MEDDLY::dd_edge &arg, const RT &res)
     }
     return nullptr;
 }
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -94,7 +96,7 @@ MEDDLY::opname::opname(const char* n)
 //     index = next_index;
     // next_index++;
 
-    cache = nullptr;
+ //   cache = nullptr;
 }
 
 MEDDLY::opname::~opname()
@@ -102,6 +104,7 @@ MEDDLY::opname::~opname()
     // library must be closing
 }
 
+/*
 void
 MEDDLY::opname::removeOperationFromCache(operation* op)
 {
@@ -122,6 +125,7 @@ MEDDLY::opname::removeOperationFromCache(operation* op)
     }
     curr->setNext(nullptr);
 }
+*/
 
 
 // ******************************************************************
@@ -130,7 +134,8 @@ MEDDLY::opname::removeOperationFromCache(operation* op)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname::unary_opname(const char* n) : opname(n)
+MEDDLY::unary_opname::unary_opname(const char* n)
+    : opname(n), cache(n)
 {
 }
 
@@ -141,51 +146,33 @@ MEDDLY::unary_opname::~unary_opname()
 MEDDLY::unary_operation*
 MEDDLY::unary_opname::getOperation(const dd_edge &ar, const dd_edge &res)
 {
-    unary_operation* match = FindUnary(cache, ar, res);
-    if (match) {
-        cache = match;
-        return match;
-    }
+    unary_operation* match = cache.findOperation(ar.getForest(), res.getForest());
+    if (match) return match;
 
-    //
-    // Not found; build a new one and add it to the front
-    //
-    match = buildOperation(ar.getForest(), res.getForest());
-    if (match) {
-        match->setNext(cache);
-        cache = match;
-    }
-    return match;
+    return cache.addOperation(
+            buildOperation(cache, ar.getForest(), res.getForest())
+    );
 }
 
 MEDDLY::unary_operation*
 MEDDLY::unary_opname::getOperation(const dd_edge &ar, opnd_type res)
 {
-    unary_operation* match = FindUnary(cache, ar, res);
-    if (match) {
-        cache = match;
-        return match;
-    }
+    unary_operation* match = cache.findOperation(ar.getForest(), res);
+    if (match) return match;
 
-    //
-    // Not found; build a new one and add it to the front
-    //
-    match = buildOperation(ar.getForest(), res);
-    if (match) {
-        match->setNext(cache);
-        cache = match;
-    }
-    return match;
+    return cache.addOperation(
+            buildOperation(cache, ar.getForest(), res)
+    );
 }
 
 MEDDLY::unary_operation*
-MEDDLY::unary_opname::buildOperation(forest *, forest *)
+MEDDLY::unary_opname::buildOperation(unary_list &, forest *, forest *)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 MEDDLY::unary_operation*
-MEDDLY::unary_opname::buildOperation(forest *, opnd_type)
+MEDDLY::unary_opname::buildOperation(unary_list &, forest *, opnd_type)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -197,7 +184,8 @@ MEDDLY::unary_opname::buildOperation(forest *, opnd_type)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname::binary_opname(const char* n) : opname(n)
+MEDDLY::binary_opname::binary_opname(const char* n)
+    : opname(n), cache(n)
 {
 }
 
@@ -209,6 +197,16 @@ MEDDLY::binary_operation*
 MEDDLY::binary_opname::getOperation(const dd_edge &a1, const dd_edge &a2,
         const dd_edge &res)
 {
+    binary_operation* match = cache.findOperation(
+            a1.getForest(), a2.getForest(), res.getForest()
+    );
+    if (match) return match;
+
+    return cache.addOperation(
+            buildOperation(cache, a1.getForest(), a2.getForest(), res.getForest())
+    );
+
+    /*
     binary_operation* match = nullptr;
     operation* prev = nullptr;
     operation* curr;
@@ -233,6 +231,7 @@ MEDDLY::binary_opname::getOperation(const dd_edge &a1, const dd_edge &a2,
     match->setNext(cache);
     cache = match;
     return match;
+    */
 }
 
 // ******************************************************************

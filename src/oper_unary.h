@@ -25,6 +25,7 @@ namespace MEDDLY {
     class dd_edge;
     class ct_object;
     class unary_operation;
+    class unary_list;
 };
 
 
@@ -38,43 +39,103 @@ namespace MEDDLY {
     Specific operations will be derived from this class.
 */
 class MEDDLY::unary_operation : public operation {
-    friend void destroyOperation(unary_operation* &op);
-  public:
-    unary_operation(unary_opname* code, unsigned et_slots,
-      forest* arg, forest* res);
+    public:
+        unary_operation(unary_list& owner, unsigned et_slots,
+            forest* arg, forest* res);
 
-    unary_operation(unary_opname* code, unsigned et_slots,
-      forest* arg, opnd_type res);
+        unary_operation(unary_list& owner, unsigned et_slots,
+            forest* arg, opnd_type res);
 
-  protected:
-    virtual ~unary_operation();
+    protected:
+        virtual ~unary_operation();
 
-  public:
-    bool matches(const dd_edge &arg, const dd_edge &res) const;
-    bool matches(const dd_edge &arg, opnd_type res) const;
+    public:
+        // bool matches(const dd_edge &arg, const dd_edge &res) const;
+        // bool matches(const dd_edge &arg, opnd_type res) const;
 
-    // high-level front-ends
+        // high-level front-ends
 
-    /**
-      Checks forest comatability and then calls computeDDEdge().
-    */
-    void compute(const dd_edge &arg, dd_edge &res);
-    void computeTemp(const dd_edge &arg, dd_edge &res);
+        /**
+            Checks forest comatability and then calls computeDDEdge().
+        */
+        void compute(const dd_edge &arg, dd_edge &res);
+        void computeTemp(const dd_edge &arg, dd_edge &res);
 
-    virtual void compute(const dd_edge &arg, long &res);
-    virtual void compute(const dd_edge &arg, double &res);
-    virtual void compute(const dd_edge &arg, ct_object &c);
-    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
+        virtual void compute(const dd_edge &arg, long &res);
+        virtual void compute(const dd_edge &arg, double &res);
+        virtual void compute(const dd_edge &arg, ct_object &c);
+        virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
 
-  protected:
-    virtual bool checkForestCompatibility() const;
+    protected:
+        virtual bool checkForestCompatibility() const;
 
 
-  protected:
-    forest* argF;
-    forest* resF;
-    opnd_type resultType;
+    protected:
+        forest* argF;
+        forest* resF;
+        opnd_type resultType;
 
+    private:
+        unary_list& parent;
+        unary_operation* next;
+
+        friend void destroyOperation(unary_operation* &op);
+        friend class unary_list;
+};
+
+// ******************************************************************
+// *                                                                *
+// *                        unary_list class                        *
+// *                                                                *
+// ******************************************************************
+
+/**
+    List of unary operations of the same type; used when
+    building unary operations for specific forests.
+*/
+class MEDDLY::unary_list {
+        const char* name;
+        unary_operation* front;
+    public:
+        unary_list(const char* n);
+
+        inline const char* getName() const { return name; }
+
+        inline unary_operation* addOperation(unary_operation* uop) {
+            if (uop) {
+                uop->next = front;
+                front = uop;
+            }
+            return uop;
+        }
+
+        inline void removeOperation(unary_operation* uop)
+        {
+            if (front == uop) {
+                front = front->next;
+                return;
+            }
+            searchRemove(uop);
+        }
+
+        inline unary_operation* findOperation(const forest* argF, const forest* resF)
+        {
+            if (!front) return nullptr;
+            if ((front->argF == argF) && (front->resF == resF)) return front;
+            return mtfUnary(argF, resF);
+        }
+
+        inline unary_operation* findOperation(const forest* argF, opnd_type resType)
+        {
+            if (!front) return nullptr;
+            if ((front->argF == argF) && (front->resultType == resType)) return front;
+            return mtfUnary(argF, resType);
+        }
+
+    private:
+        unary_operation* mtfUnary(const forest* argF, const forest* resF);
+        unary_operation* mtfUnary(const forest* argF, opnd_type resType);
+        void searchRemove(unary_operation* uop);
 };
 
 #endif // #include guard

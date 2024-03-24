@@ -18,6 +18,7 @@
 
 
 #include "mtmxdreal.h"
+#include "../opname.h"
 
 MEDDLY::mt_mxd_real::mt_mxd_real(domain *d, const policies &p, int* level_reduction_rule, float tv)
 : mtmxd_forest(d, range_type::REAL, p, level_reduction_rule)

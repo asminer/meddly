@@ -21,6 +21,9 @@
 
 #include "defines.h"
 
+#include "oper_unary.h"
+#include "oper_binary.h"
+
 namespace MEDDLY {
     class opname;
     class unary_opname;
@@ -40,17 +43,6 @@ namespace MEDDLY {
     class forest;
 
     class initializer_list;
-
-    /// Argument and result types for apply operations.
-    enum class opnd_type {
-        FOREST      = 0,
-        BOOLEAN     = 1,
-        INTEGER     = 2,
-        REAL        = 3,
-        HUGEINT     = 4,
-        FLOATVECT   = 5,
-        DOUBLEVECT  = 6
-    };
 
     // ******************************************************************
     // *                    Wrapper for GMP integers                    *
@@ -162,11 +154,6 @@ class MEDDLY::opname {
 
         inline const char* getName() const { return name; }
 
-        void removeOperationFromCache(operation* op);
-
-    protected:
-        operation* cache;
-
     private:
         const char* name;
 };
@@ -186,13 +173,19 @@ class MEDDLY::unary_opname : public opname {
         unary_operation* getOperation(const dd_edge &arg, const dd_edge &res);
         unary_operation* getOperation(const dd_edge &arg, opnd_type res);
 
+        inline void removeOperationFromCache(unary_operation* uop) {
+            cache.removeOperation(uop);
+        }
+
     protected:
         virtual unary_operation*
-            buildOperation(forest* arg, forest* res);
+            buildOperation(unary_list& c, forest* arg, forest* res);
 
         virtual unary_operation*
-            buildOperation(forest* arg, opnd_type res);
+            buildOperation(unary_list& c, forest* arg, opnd_type res);
 
+    private:
+        unary_list cache;
 };
 
 // ******************************************************************
@@ -210,10 +203,16 @@ class MEDDLY::binary_opname : public opname {
         binary_operation* getOperation(const dd_edge &arg1,
                 const dd_edge &arg2, const dd_edge &res);
 
+        inline void removeOperationFromCache(binary_operation* bop) {
+            cache.removeOperation(bop);
+        }
+
     protected:
-        // OLD interface
-        virtual binary_operation* buildOperation(forest* arg1,
-            forest* arg2, forest* res) = 0;
+        virtual binary_operation* buildOperation(binary_list &c,
+            forest* arg1, forest* arg2, forest* res) = 0;
+
+    private:
+        binary_list cache;
 };
 
 

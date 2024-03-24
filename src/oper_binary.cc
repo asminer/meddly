@@ -24,9 +24,9 @@
 // *                    binary_operation methods                    *
 // ******************************************************************
 
-MEDDLY::binary_operation::binary_operation(binary_opname* op,
+MEDDLY::binary_operation::binary_operation(binary_list& owner,
     unsigned et_slots, forest* arg1, forest* arg2,
-    forest* res) : operation(op, et_slots)
+    forest* res) : operation(owner.getName(), et_slots), parent(owner)
 {
     arg1F = arg1;
     arg2F = arg2;
@@ -44,6 +44,8 @@ MEDDLY::binary_operation::~binary_operation()
     unregisterInForest(arg1F);
     unregisterInForest(arg2F);
     unregisterInForest(resF);
+
+    parent.removeOperation(this);
 }
 
 /*
@@ -81,6 +83,53 @@ bool MEDDLY::binary_operation::checkForestCompatibility() const
     auto o2 = arg2F->variableOrder();
     auto o3 = resF->variableOrder();
     return o1->is_compatible_with(*o2) && o1->is_compatible_with(*o3);
+}
+
+// ******************************************************************
+// *                      binary_list  methods                      *
+// ******************************************************************
+
+MEDDLY::binary_list::binary_list(const char* n)
+{
+    name = n;
+    front = nullptr;
+}
+
+MEDDLY::binary_operation*
+MEDDLY::binary_list::mtfBinary(const forest* arg1F,
+        const forest* arg2F, const forest* resF)
+{
+    binary_operation* prev = front;
+    binary_operation* curr = front->next;
+    while (curr) {
+        if ((curr->arg1F == arg1F) && (curr->arg2F == arg2F) && (curr->resF == resF))
+        {
+            // Move to front
+            prev->next = curr->next;
+            curr->next = front;
+            front = curr;
+            return curr;
+        }
+        prev = curr;
+        curr = curr->next;
+    }
+    return nullptr;
+}
+
+
+void MEDDLY::binary_list::searchRemove(binary_operation* bop)
+{
+    if (!front) return;
+    binary_operation* prev = front;
+    binary_operation* curr = front->next;
+    while (curr) {
+        if (curr == bop) {
+            prev->next = curr->next;
+            return;
+        }
+        prev = curr;
+        curr = curr->next;
+    }
 }
 
 

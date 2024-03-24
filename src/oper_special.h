@@ -38,41 +38,44 @@ namespace MEDDLY {
 /** Mechanism to apply specialized operations.
 */
 class MEDDLY::specialized_operation : public operation {
-    friend void destroyOperation(specialized_operation* &op);
-  public:
-    specialized_operation(specialized_opname* code, unsigned et_slots);
-  protected:
-    virtual ~specialized_operation();
-  public:
-    /** For unary (like) operations.
-        Note that there could be other "built in" operands.
-        Default behavior is to throw an exception.
-    */
-    virtual void compute(const dd_edge &arg, dd_edge &res);
+    public:
+        specialized_operation(const char* name, unsigned et_slots);
+    protected:
+        virtual ~specialized_operation();
+    public:
+        /** For unary (like) operations.
+            Note that there could be other "built in" operands.
+            Default behavior is to throw an exception.
+        */
+        virtual void compute(const dd_edge &arg, dd_edge &res);
 
-    /** For unary (like) operations with boolean results.
-        Note that there could be other "built in" operands.
-        Default behavior is to throw an exception.
-    */
-    virtual void compute(const dd_edge &arg, bool &res);
+        /** For unary (like) operations with boolean results.
+            Note that there could be other "built in" operands.
+            Default behavior is to throw an exception.
+        */
+        virtual void compute(const dd_edge &arg, bool &res);
 
-    /** For binary (like) operations.
-        Note that there could be other "built in" operands.
-        Default behavior is to throw an exception.
-    */
-    virtual void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
+        /** For binary (like) operations.
+            Note that there could be other "built in" operands.
+            Default behavior is to throw an exception.
+        */
+        virtual void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
 
-    /** For numerical operations.
-        compute y += some function of x, depending on the operation.
-        Default behavior is to throw an exception.
-    */
-    virtual void compute(double* y, const double* x);
+        /** For numerical operations.
+            compute y += some function of x, depending on the operation.
+            Default behavior is to throw an exception.
+        */
+        virtual void compute(double* y, const double* x);
 
-    /** For tenary (like) operations.
-        Note that there could be other "built in" operands.
-        Default behavior is to throw an exception.
-    */
-    virtual void compute(const dd_edge &ar1, const dd_edge &ar2, const dd_edge &ar3, dd_edge &res);
+        /** For tenary (like) operations.
+            Note that there could be other "built in" operands.
+            Default behavior is to throw an exception.
+        */
+        virtual void compute(const dd_edge &ar1, const dd_edge &ar2, const dd_edge &ar3, dd_edge &res);
+
+    private:
+
+        friend void destroyOperation(specialized_operation* &op);
 };
 
 #endif // #include guard

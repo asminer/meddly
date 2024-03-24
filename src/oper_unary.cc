@@ -25,35 +25,38 @@
 // *                    unary_operation  methods                    *
 // ******************************************************************
 
-MEDDLY::unary_operation::unary_operation(unary_opname* code,
-  unsigned et_slots, forest* arg, forest* res)
-: operation(code, et_slots)
+MEDDLY::unary_operation::unary_operation(unary_list& owner,
+    unsigned et_slots, forest* arg, forest* res)
+    : operation(owner.getName(), et_slots), parent(owner)
 {
-  argF = arg;
-  resultType = opnd_type::FOREST;
-  resF = res;
+    argF = arg;
+    resultType = opnd_type::FOREST;
+    resF = res;
 
-  registerInForest(argF);
-  registerInForest(resF);
+    registerInForest(argF);
+    registerInForest(resF);
 }
 
-MEDDLY::unary_operation::unary_operation(unary_opname* code,
-  unsigned et_slots, forest* arg, opnd_type res)
-: operation(code, et_slots)
+MEDDLY::unary_operation::unary_operation(unary_list& owner,
+    unsigned et_slots, forest* arg, opnd_type res)
+    : operation(owner.getName(), et_slots), parent(owner)
 {
-  argF = arg;
-  resultType = res;
-  resF = 0;
+    parent = owner;
+    argF = arg;
+    resultType = res;
+    resF = nullptr;
 
-  registerInForest(argF);
+    registerInForest(argF);
 }
 
 MEDDLY::unary_operation::~unary_operation()
 {
-  unregisterInForest(argF);
-  unregisterInForest(resF);
+    unregisterInForest(argF);
+    unregisterInForest(resF);
+    parent.removeOperation(this);
 }
 
+/*
 bool
 MEDDLY::unary_operation::matches(const MEDDLY::dd_edge &arg,
         const MEDDLY::dd_edge &res) const
@@ -67,57 +70,120 @@ MEDDLY::unary_operation::matches(const MEDDLY::dd_edge &arg, opnd_type res)
 {
   return arg.isAttachedTo(argF) && (resultType == res);
 }
-
+*/
 
 
 void MEDDLY::unary_operation::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, long &res)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, double &res)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void
 MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
 {
-  if (!checkForestCompatibility()) {
-    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-  }
-  computeDDEdge(arg, res, true);
+    if (!checkForestCompatibility()) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+    computeDDEdge(arg, res, true);
 }
 
 void
 MEDDLY::unary_operation::computeTemp(const dd_edge &arg, dd_edge &res)
 {
-  if (!checkForestCompatibility()) {
-    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-  }
-  computeDDEdge(arg, res, false);
+    if (!checkForestCompatibility()) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+    computeDDEdge(arg, res, false);
 }
 
 bool
 MEDDLY::unary_operation::checkForestCompatibility() const
 {
-  if (resultType == opnd_type::FOREST) {
-    auto o1 = argF->variableOrder();
-    auto o2 = resF->variableOrder();
-    return o1->is_compatible_with(*o2);
-  }
-  else {
-    return true;
-  }
+    if (resultType == opnd_type::FOREST) {
+        auto o1 = argF->variableOrder();
+        auto o2 = resF->variableOrder();
+        return o1->is_compatible_with(*o2);
+    } else {
+        return true;
+    }
+}
+
+// ******************************************************************
+// *                       unary_list methods                       *
+// ******************************************************************
+
+MEDDLY::unary_list::unary_list(const char* n)
+{
+    name = n;
+    front = nullptr;
+}
+
+MEDDLY::unary_operation*
+MEDDLY::unary_list::mtfUnary(const forest* argF, const forest* resF)
+{
+    unary_operation* prev = front;
+    unary_operation* curr = front->next;
+    while (curr) {
+        if ((curr->argF == argF) && (curr->resF == resF)) {
+            // Move to front
+            prev->next = curr->next;
+            curr->next = front;
+            front = curr;
+            return curr;
+        }
+        prev = curr;
+        curr = curr->next;
+    }
+    return nullptr;
+}
+
+MEDDLY::unary_operation*
+MEDDLY::unary_list::mtfUnary(const forest* argF, opnd_type resType)
+{
+    unary_operation* prev = front;
+    unary_operation* curr = front->next;
+    while (curr) {
+        if ((curr->argF == argF) && (curr->resultType == resType)) {
+            // Move to front
+            prev->next = curr->next;
+            curr->next = front;
+            front = curr;
+            return curr;
+        }
+        prev = curr;
+        curr = curr->next;
+    }
+    return nullptr;
+}
+
+
+void MEDDLY::unary_list::searchRemove(unary_operation* uop)
+{
+    if (!front) return;
+    unary_operation* prev = front;
+    unary_operation* curr = front->next;
+    while (curr) {
+        if (curr == uop) {
+            prev->next = curr->next;
+            return;
+        }
+        prev = curr;
+        curr = curr->next;
+    }
 }
 

@@ -18,6 +18,7 @@
 
 #include "oper.h"
 
+#include "opname.h"
 #include "ct_entry_result.h"
 #include "compute_table.h"
 #include "ct_initializer.h"
@@ -39,17 +40,18 @@ unsigned MEDDLY::operation::free_list;
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::operation::operation(opname* n, unsigned et_slots)
+MEDDLY::operation::operation(const char* n, unsigned et_slots)
 {
 #ifdef DEBUG_CLEANUP
     fprintf(stdout, "Creating operation %p\n", this);
     fflush(stdout);
 #endif
-    theOpName = n;
+    name = n;
+    // theOpName = n;
     num_etids = et_slots;
 
     is_marked_for_deletion = false;
-    next = nullptr;
+    // next = nullptr;
 
     registerOperation(*this);
 
@@ -395,8 +397,8 @@ void MEDDLY::operation::unregisterOperation(operation &o)
 void MEDDLY::destroyOperation(MEDDLY::operation* &op)
 {
     if (!op) return;
-    opname* parent = op->getParent();
-    if (parent) parent->removeOperationFromCache(op);
+    // opname* parent = op->getParent();
+    // if (parent) parent->removeOperationFromCache(op);
     if (!op->isMarkedForDeletion()) {
         op->markForDeletion();
         operation::removeStalesFromMonolithic();

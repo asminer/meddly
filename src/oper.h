@@ -20,7 +20,7 @@
 #define MEDDLY_OPER_H
 
 #include "defines.h"
-#include "opname.h"
+// #include "opname.h"
 #include "io.h"
 
 namespace MEDDLY {
@@ -29,12 +29,27 @@ namespace MEDDLY {
     class compute_table;
     class forest;
 
+    class unary_opname;
+    class binary_opname;
+
     class initializer_list;
     class ct_initializer;
     class ct_entry_type;
     class ct_entry_result;
 
     void cleanup();
+
+
+    /// Argument and result types for apply operations.
+    enum class opnd_type {
+        FOREST      = 0,
+        BOOLEAN     = 1,
+        INTEGER     = 2,
+        REAL        = 3,
+        HUGEINT     = 4,
+        FLOATVECT   = 5,
+        DOUBLEVECT  = 6
+    };
 
     // ******************************************************************
     // *                      Operation management                      *
@@ -60,13 +75,13 @@ class MEDDLY::operation {
         friend void destroyOperation(operation* &op);
     public:
         /** Constructor.
-                @param  n           Operation "name"
+                @param  n           Operation name, for debugging
                 @param  et_slots    Number of different compute table entry
                                     types used by this operation.
                                     Derived class constructors must register
                                     exactly this many entry types.
         */
-        operation(opname* n, unsigned et_slots);
+        operation(const char* n, unsigned et_slots);
 
     protected:
         virtual ~operation();
@@ -74,10 +89,10 @@ class MEDDLY::operation {
     public:
 
         /// Get the name of this operation; for display
-        inline const char* getName() const { return theOpName->getName(); }
+        inline const char* getName() const { return name; }
 
         /// Get the opname parent class that built us
-        inline const opname* getOpName() const { return theOpName; }
+        // inline const opname* getOpName() const { return theOpName; }
 
 
 
@@ -95,8 +110,8 @@ class MEDDLY::operation {
         // List of operations; used as operation cache in opname classes
         //
 
-        inline void setNext(operation* n) { next = n; }
-        inline operation* getNext() const { return next; }
+        // inline void setNext(operation* n) { next = n; }
+        // inline operation* getNext() const { return next; }
 
         //
         // Used primarily by compute tables.
@@ -165,7 +180,7 @@ class MEDDLY::operation {
         void registerEntryType(unsigned slot, ct_entry_type* et);
         void buildCTs();
 
-        inline opname* getParent() { return theOpName; }
+        // inline opname* getParent() { return theOpName; }
 
     // ------------------------------------------------------------
     private: // private methods for the operation registry
@@ -222,11 +237,11 @@ class MEDDLY::operation {
         /// Struct for CT searches.
         // compute_table::entry_key* CTsrch;
         // for cache of operations.
-        operation* next;
+        // operation* next;
 
     private:
-
-        opname* theOpName;
+        const char* name;
+        // opname* theOpName;
         unsigned oplist_index;
         bool is_marked_for_deletion;
 
