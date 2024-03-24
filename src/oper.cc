@@ -58,7 +58,6 @@ MEDDLY::operation::operation(opname* n, unsigned et_slots)
         oplist_index = free_list;
         free_list = op_holes[free_list];
     } else {
-        oplist_index = ++list_size;
         if (list_size >= list_alloc) {
             unsigned nla = list_alloc + 256;
             op_list = (operation**) realloc(op_list, nla * sizeof(void*));

@@ -33,10 +33,12 @@ const unsigned DOTS    = 16;
 
 #ifdef DEVELOPMENT_CODE
 const unsigned CREATIONS = 2;
-const unsigned SEARCHES  = 32 * 1024;
+const unsigned FASTSRCH  = 4;
+const unsigned SLOWSRCH  = 4;
 #else
-const unsigned CREATIONS = 32;
-const unsigned SEARCHES  = 1024 * 1024;
+const unsigned CREATIONS = 2;
+const unsigned FASTSRCH  = 4;
+const unsigned SLOWSRCH  = 4;
 #endif
 
 void createOperations(const std::vector <dd_edge> &Edges,
@@ -48,8 +50,7 @@ void createOperations(const std::vector <dd_edge> &Edges,
     for (unsigned i=0; i<Edges.size(); i++) {
         for (unsigned j=0; j<Edges.size(); j++) {
             for (unsigned k=0; k<Edges.size(); k++) {
-                ops[u] = Inter->getOperation(Edges[i], Edges[j], Edges[k]);
-                ++u;
+                ops[u++] = Inter->getOperation(Edges[i], Edges[j], Edges[k]);
             } // for k
         } // for j
     } // for i
@@ -67,14 +68,42 @@ void destroyOperations(std::vector <operation*> &ops)
 
 void searchFast(const std::vector <dd_edge> &Edges)
 {
-}
+    const unsigned numops = operation::getOpListSize();
+    binary_opname* Inter = INTERSECTION();
 
-void searchRandom(const std::vector <dd_edge> &Edges)
-{
+    for (unsigned i=0; i<Edges.size(); i++) {
+        for (unsigned j=0; j<Edges.size(); j++) {
+            for (unsigned k=0; k<Edges.size(); k++) {
+                for (unsigned s=0; s<FASTSRCH; s++) {
+                    Inter->getOperation(Edges[i], Edges[j], Edges[k]);
+                }
+            } // for k
+        } // for j
+    } // for i
+
+    if (operation::getOpListSize() != numops) {
+        throw "some operation was not found in searchFast";
+    }
 }
 
 void searchSlow(const std::vector <dd_edge> &Edges)
 {
+    const unsigned numops = operation::getOpListSize();
+    binary_opname* Inter = INTERSECTION();
+
+    for (unsigned s=0; s<SLOWSRCH; s++) {
+        for (unsigned i=0; i<Edges.size(); i++) {
+            for (unsigned j=0; j<Edges.size(); j++) {
+                for (unsigned k=0; k<Edges.size(); k++) {
+                    Inter->getOperation(Edges[i], Edges[j], Edges[k]);
+                } // for k
+            } // for j
+        } // for i
+    } // for s
+
+    if (operation::getOpListSize() != numops) {
+        throw "some operation was not found in searchSlow";
+    }
 }
 
 int main(int argc, const char** argv)
@@ -125,7 +154,6 @@ int main(int argc, const char** argv)
         } // for i
         T.note_time();
         show_sec(std::cout, T, 3, 3);
-
         if (startReport(T, __FILE__)) {
             report  << "opbuild $ "
                     << "Created and destroyed " << DOTS*CREATIONS*OPCOMBS
@@ -133,12 +161,49 @@ int main(int argc, const char** argv)
                     << std::endl;
         }
 
-        // Test 2
-        // create operations
-        // million times:
-        //      search operations
-        // destroy operations
-        //
+        createOperations(E, Ops);
+
+        // -------------------------------------------------------------------
+
+        std::cout << "Fast search         " << DOTS*FASTSRCH*OPCOMBS << " ops ";
+        T.note_time();
+        for (unsigned i=0; i<DOTS; i++) {
+            std::cout << '.';
+            std::cout.flush();
+            searchFast(E);
+        }
+        T.note_time();
+        show_sec(std::cout, T, 3, 3);
+        if (startReport(T, __FILE__)) {
+            report  << "fastsrch $ "
+                    << "Fast search " << DOTS*FASTSRCH*OPCOMBS
+                    << " operations"
+                    << std::endl;
+        }
+
+        // -------------------------------------------------------------------
+
+        // -------------------------------------------------------------------
+
+        std::cout << "Slow search         " << DOTS*SLOWSRCH*OPCOMBS << " ops ";
+        T.note_time();
+        for (unsigned i=0; i<DOTS; i++) {
+            std::cout << '.';
+            std::cout.flush();
+            searchSlow(E);
+        }
+        T.note_time();
+        show_sec(std::cout, T, 3, 3);
+        if (startReport(T, __FILE__)) {
+            report  << "slowsrch $ "
+                    << "Slow search " << DOTS*SLOWSRCH*OPCOMBS
+                    << " operations"
+                    << std::endl;
+        }
+
+        // -------------------------------------------------------------------
+
+        std::cout << std::endl;
 
         MEDDLY::cleanup();
         return 0;
