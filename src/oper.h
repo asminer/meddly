@@ -20,8 +20,9 @@
 #define MEDDLY_OPER_H
 
 #include "defines.h"
-// #include "opname.h"
 #include "io.h"
+
+#include <vector>
 
 namespace MEDDLY {
     class opname;
@@ -87,14 +88,8 @@ class MEDDLY::operation {
         virtual ~operation();
 
     public:
-
         /// Get the name of this operation; for display
         inline const char* getName() const { return name; }
-
-        /// Get the opname parent class that built us
-        // inline const opname* getOpName() const { return theOpName; }
-
-
 
         /** Are we marked for deletion?
             If so, all compute table entries for this operation
@@ -107,27 +102,8 @@ class MEDDLY::operation {
         void markForDeletion();
 
         //
-        // List of operations; used as operation cache in opname classes
-        //
-
-        // inline void setNext(operation* n) { next = n; }
-        // inline operation* getNext() const { return next; }
-
-        //
         // Used primarily by compute tables.
         //
-
-        /// Unique index for the operation
-        inline unsigned getIndex() const { return oplist_index; }
-
-        /// Find the operation with the given index.
-        inline static operation* getOpWithIndex(unsigned i) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, list_size);
-            return op_list[i];
-        }
-
-        /// How many operations are active?
-        inline static unsigned getOpListSize() { return list_size; }
 
         /// Set the first entry type ID;
         /// the remaining will come right after.
@@ -182,6 +158,28 @@ class MEDDLY::operation {
 
         // inline opname* getParent() { return theOpName; }
 
+
+    // ------------------------------------------------------------
+    public:  // public  methods for the operation registry
+    // ------------------------------------------------------------
+        /// Unique ID > 0 for the operation.
+        inline unsigned getID() const { return oplist_index; }
+
+        /// Find the operation with the given ID.
+        inline static operation* getOpWithID(unsigned i) {
+#ifdef DEVELOPMENT_CODE
+            return op_list.at(i);
+#else
+            return op_list[i];
+#endif
+        }
+
+        /// How many operations are active?
+        inline static unsigned getOpListSize() {
+            return op_list.size();
+        }
+
+
     // ------------------------------------------------------------
     private: // private methods for the operation registry
     // ------------------------------------------------------------
@@ -191,22 +189,23 @@ class MEDDLY::operation {
         // should ONLY be called during library cleanup.
         static void destroyAllOps();
 
-        static void registerOperation(operation &o);
-        static void unregisterOperation(operation &o);
+        inline static void registerOperation(operation &o) {
+            o.oplist_index = op_list.size();
+            op_list.push_back(&o);
+        }
+
+        inline static void unregisterOperation(operation &o) {
+            if (o.oplist_index) {
+                MEDDLY_DCASSERT(op_list[o.oplist_index] == &o);
+                op_list[o.oplist_index] = nullptr;
+            }
+        }
 
     // ------------------------------------------------------------
     private: // private members for the operation registry
     // ------------------------------------------------------------
-        // declared and initialized in meddly.cc
-        static operation** op_list;
-        // declared and initialized in meddly.cc
-        static unsigned* op_holes;
-        // declared and initialized in meddly.cc
-        static unsigned list_size;
-        // declared and initialized in meddly.cc
-        static unsigned list_alloc;
-        // declared and initialized in meddly.cc
-        static unsigned free_list;
+        unsigned oplist_index;
+        static std::vector <operation*> op_list;
 
     //
     // Members
@@ -234,15 +233,8 @@ class MEDDLY::operation {
         */
         unsigned num_etids;
 
-        /// Struct for CT searches.
-        // compute_table::entry_key* CTsrch;
-        // for cache of operations.
-        // operation* next;
-
     private:
         const char* name;
-        // opname* theOpName;
-        unsigned oplist_index;
         bool is_marked_for_deletion;
 
         // declared and initialized in meddly.cc

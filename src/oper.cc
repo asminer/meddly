@@ -28,11 +28,7 @@
 // ******************************************************************
 
 MEDDLY::compute_table* MEDDLY::operation::Monolithic_CT;
-MEDDLY::operation** MEDDLY::operation::op_list;
-unsigned* MEDDLY::operation::op_holes;
-unsigned MEDDLY::operation::list_size;
-unsigned MEDDLY::operation::list_alloc;
-unsigned MEDDLY::operation::free_list;
+std::vector <MEDDLY::operation*> MEDDLY::operation::op_list;
 
 // ******************************************************************
 // *                                                                *
@@ -47,11 +43,9 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     fflush(stdout);
 #endif
     name = n;
-    // theOpName = n;
     num_etids = et_slots;
 
     is_marked_for_deletion = false;
-    // next = nullptr;
 
     registerOperation(*this);
 
@@ -180,7 +174,7 @@ void MEDDLY::operation::countAllNodeEntries(const forest* f, size_t* counts)
     if (Monolithic_CT) {
         Monolithic_CT->countNodeEntries(f, counts);
     }
-    for (unsigned i=0; i<list_size; i++) {
+    for (unsigned i=0; i<op_list.size(); i++) {
         if (op_list[i]) {
             op_list[i]->countCTEntries(f, counts);
         }
@@ -216,7 +210,7 @@ void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
         Monolithic_CT->show(s, verbLevel);
         return;
     }
-    for (unsigned i=0; i<list_size; i++) {
+    for (unsigned i=0; i<op_list.size(); i++) {
         if (op_list[i]) {
             op_list[i]->showComputeTable(s, verbLevel);
         }
@@ -226,7 +220,7 @@ void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
 void MEDDLY::operation::purgeAllMarked()
 {
     removeStalesFromMonolithic();
-    for (unsigned i=0; i<list_size; i++) {
+    for (unsigned i=0; i<op_list.size(); i++) {
         if (!op_list[i]) continue;
         if (op_list[i]->isMarkedForDeletion()) {
             destroyOperation(op_list[i]);
@@ -330,61 +324,23 @@ void MEDDLY::operation::buildCTs()
 
 void MEDDLY::operation::initializeStatics()
 {
-  op_list = nullptr;
-  op_holes = nullptr;
-  list_size = 0;
-  list_alloc = 0;
-  free_list = 0;
-  Monolithic_CT = 0;
+    //
+    // Global operation registry
+    //
+    op_list.clear();
+    op_list.push_back(nullptr);
+
+    //
+    // Monolithic compute table
+    //
+    Monolithic_CT = nullptr;
 }
 
 void MEDDLY::operation::destroyAllOps()
 {
-  for (unsigned i=0; i<list_size; i++) delete op_list[i];
-  free(op_list);
-  free(op_holes);
-  initializeStatics();
-}
-
-void MEDDLY::operation::registerOperation(operation &o)
-{
-    //
-    // assign an index to this operation
-    //
-    if (free_list) {
-        o.oplist_index = free_list;
-        free_list = op_holes[free_list];
-    } else {
-        if (list_size >= list_alloc) {
-            unsigned nla = list_alloc + 256;
-            op_list = (operation**) realloc(op_list, nla * sizeof(void*));
-            op_holes = (unsigned*) realloc(op_holes, nla * sizeof(unsigned));
-            if (0==op_list || 0==op_holes) {
-                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-            }
-            list_alloc = nla;
-            for (unsigned i=list_size; i<list_alloc; i++) {
-                op_list[i] = 0;
-                op_holes[i] = 0;
-            }
-        }
-        if (0==list_size) {
-            // Never use slot 0
-            list_size++;
-        }
-        o.oplist_index = list_size;
-        list_size++;
-    }
-    op_list[o.oplist_index] = &o;
-}
-
-void MEDDLY::operation::unregisterOperation(operation &o)
-{
-    if (o.oplist_index) {
-        MEDDLY_DCASSERT(op_list[o.oplist_index] == &o);
-        op_list[o.oplist_index] = nullptr;
-        op_holes[o.oplist_index] = free_list;
-        free_list = o.oplist_index;
+    while (op_list.size()) {
+        delete op_list.back();
+        op_list.pop_back();
     }
 }
 
