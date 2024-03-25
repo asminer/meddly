@@ -21,6 +21,7 @@
 
 #include "../forest.h"
 #include "../oper_unary.h"
+#include "../opname.h"
 
 namespace MEDDLY {
   class select;
@@ -39,11 +40,11 @@ namespace MEDDLY {
 /// Abstract base class for selecting one state randomly from a set of states.
 class MEDDLY::select : public unary_operation {
   public:
-    select(unary_opname* oc, forest* arg, forest* res);
+    select(unary_list& oc, forest* arg, forest* res);
 };
 
 MEDDLY::select
-:: select(unary_opname* oc, forest* arg, forest* res)
+:: select(unary_list& oc, forest* arg, forest* res)
  : unary_operation(oc, 0, arg, res)
 {
   MEDDLY_DCASSERT(!argF->isForRelations());
@@ -59,13 +60,13 @@ MEDDLY::select
 // States are not selected with equal probability.
 class MEDDLY::select_MT : public select {
   public:
-    select_MT(unary_opname* oc, forest* arg, forest* res);
+    select_MT(unary_list& oc, forest* arg, forest* res);
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
     virtual node_handle _compute(node_handle node, int level);
 };
 
 MEDDLY::select_MT
-:: select_MT(unary_opname* oc, forest* arg, forest* res)
+:: select_MT(unary_list& oc, forest* arg, forest* res)
  : select(oc, arg, res)
 {
   MEDDLY_DCASSERT(argF->isMultiTerminal());
@@ -116,13 +117,13 @@ MEDDLY::node_handle MEDDLY::select_MT::_compute(node_handle a, int level)
 // States are not selected with equal probability.
 class MEDDLY::select_EVPlus : public select {
   public:
-    select_EVPlus(unary_opname* oc, forest* arg, forest* res);
+    select_EVPlus(unary_list& oc, forest* arg, forest* res);
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
     virtual void _compute(long aev, node_handle a, int level, long& bev, node_handle& b);
 };
 
 MEDDLY::select_EVPlus
-:: select_EVPlus(unary_opname* oc, forest* arg, forest* res)
+:: select_EVPlus(unary_list& oc, forest* arg, forest* res)
  : select(oc, arg, res)
 {
   MEDDLY_DCASSERT(argF->isEVPlus());
@@ -197,8 +198,8 @@ void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& b
 class MEDDLY::select_opname : public unary_opname {
   public:
     select_opname();
-    virtual unary_operation*
-      buildOperation(forest* ar, forest* res);
+    virtual unary_operation* buildOperation(unary_list &c,
+            forest* ar, forest* res);
 };
 
 MEDDLY::select_opname::select_opname()
@@ -208,7 +209,7 @@ MEDDLY::select_opname::select_opname()
 
 MEDDLY::unary_operation*
 MEDDLY::select_opname
-::buildOperation(forest* arg, forest* res)
+::buildOperation(unary_list &c, forest* arg, forest* res)
 {
   if (0==arg || 0==res) return 0;
 
@@ -219,11 +220,11 @@ MEDDLY::select_opname
     throw error(error::NOT_IMPLEMENTED);
 
   if (arg->isMultiTerminal() && res->isMultiTerminal()){
-    return new select_MT(this, arg, res);
+    return new select_MT(c, arg, res);
   }
 
   if (arg->isEVPlus() && res->isEVPlus()) {
-    return new select_EVPlus(this, arg, res);
+    return new select_EVPlus(c, arg, res);
   }
 
   //

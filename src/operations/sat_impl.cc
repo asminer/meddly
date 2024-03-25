@@ -562,6 +562,7 @@ MEDDLY::satimpl_opname::implicit_relation::isUnionPossible(int level, long i, re
 
 /** Simple class to keep compute table happy.
  */
+/*
 class MEDDLY::saturation_impl_by_events_opname : public unary_opname {
   static saturation_impl_by_events_opname* instance;
 public:
@@ -583,6 +584,7 @@ MEDDLY::saturation_impl_by_events_opname* MEDDLY::saturation_impl_by_events_opna
   if (0==instance) instance = new saturation_impl_by_events_opname;
   return instance;
 }
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -594,7 +596,7 @@ class MEDDLY::saturation_impl_by_events_op : public unary_operation {
   common_impl_dfs_by_events_mt* parent;
 public:
   saturation_impl_by_events_op(common_impl_dfs_by_events_mt* p,
-                               forest* argF, forest* resF);
+          unary_list &c, forest* argF, forest* resF);
   virtual ~saturation_impl_by_events_op();
 
   node_handle saturate(node_handle mdd);
@@ -1153,9 +1155,8 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
 // ******************************************************************
 
 MEDDLY::common_impl_dfs_by_events_mt::common_impl_dfs_by_events_mt(
-                                                                   satimpl_opname* opcode,
-                                                                   satimpl_opname::implicit_relation* relation)
-: specialized_operation(opcode, 1)
+    satimpl_opname* opcode, satimpl_opname::implicit_relation* relation)
+    : specialized_operation(opcode->getName(), 1)
 {
   mddUnion = 0;
   mxdIntersection = 0;
@@ -1202,7 +1203,9 @@ bool MEDDLY::common_impl_dfs_by_events_mt
 #endif
 
   // Execute saturation operation
-  saturation_impl_by_events_op* so = new saturation_impl_by_events_op(this, arg1F, resF);
+  unary_list dummy("Saturation_by_events");
+  saturation_impl_by_events_op* so = new saturation_impl_by_events_op(this,
+          dummy, arg1F, resF);
   bool is_reachable = so->isReachable(a.getNode(), constraint.getNode());
 
   // Cleanup
@@ -1253,7 +1256,9 @@ void MEDDLY::common_impl_dfs_by_events_mt
    printf("done.\n");
    }*/
 
-  saturation_impl_by_events_op* so = new saturation_impl_by_events_op(this, arg1F, resF);
+  unary_list dummy("Saturation_by_events");
+  saturation_impl_by_events_op* so = new saturation_impl_by_events_op(this,
+          dummy, arg1F, resF);
   node_handle cnode = so->saturate(a.getNode());
   c.set(cnode);
   // Cleanup
@@ -1351,21 +1356,20 @@ MEDDLY::satimpl_opname::buildOperation(arguments* a)
 
 MEDDLY::saturation_impl_by_events_op
 ::saturation_impl_by_events_op(common_impl_dfs_by_events_mt* p,
-                               forest* argF, forest* resF)
-: unary_operation(saturation_impl_by_events_opname::getInstance(), 1, argF, resF)
+        unary_list &c, forest* argF, forest* resF)
+: unary_operation(c, 1, argF, resF)
 {
   parent = p;
 
-  const char* name = saturation_impl_by_events_opname::getInstance()->getName();
   ct_entry_type* et;
 
   if (argF->isFullyReduced()) {
     // CT entry includes level info
-    et = new ct_entry_type(name, "NI:N");
+    et = new ct_entry_type(c.getName(), "NI:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(3, resF);
   } else {
-    et = new ct_entry_type(name, "N:N");
+    et = new ct_entry_type(c.getName(), "N:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(2, resF);
   }

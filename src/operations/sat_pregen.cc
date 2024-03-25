@@ -457,6 +457,7 @@ MEDDLY::satpregen_opname::pregen_relation
 
 /** Simple class to keep compute table happy.
 */
+/*
 class MEDDLY::saturation_by_events_opname : public unary_opname {
   static saturation_by_events_opname* instance;
   public:
@@ -478,6 +479,7 @@ MEDDLY::saturation_by_events_opname* MEDDLY::saturation_by_events_opname::getIns
   if (0==instance) instance = new saturation_by_events_opname;
   return instance;
 }
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -489,7 +491,7 @@ class MEDDLY::saturation_by_events_op : public unary_operation {
     common_dfs_by_events_mt* parent;
   public:
     saturation_by_events_op(common_dfs_by_events_mt* p,
-      forest* argF, forest* resF);
+        unary_list &c, forest* argF, forest* resF);
     virtual ~saturation_by_events_op();
 
     void saturate(const dd_edge& in, dd_edge& out);
@@ -679,21 +681,20 @@ class MEDDLY::common_dfs_by_events_mt : public specialized_operation {
 
 MEDDLY::saturation_by_events_op
 ::saturation_by_events_op(common_dfs_by_events_mt* p,
-  forest* argF, forest* resF)
-  : unary_operation(saturation_by_events_opname::getInstance(), 1, argF, resF)
+    unary_list &c, forest* argF, forest* resF)
+  : unary_operation(c, 1, argF, resF)
 {
   parent = p;
 
-  const char* name = saturation_by_events_opname::getInstance()->getName();
   ct_entry_type* et;
 
   if (argF->isFullyReduced()) {
     // CT entry includes level info
-    et = new ct_entry_type(name, "NI:N");
+    et = new ct_entry_type(c.getName(), "NI:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(3, resF);
   } else {
-    et = new ct_entry_type(name, "N:N");
+    et = new ct_entry_type(c.getName(), "N:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(2, resF);
   }
@@ -777,7 +778,7 @@ MEDDLY::saturation_by_events_op::saturate(node_handle mdd, int k)
 MEDDLY::common_dfs_by_events_mt::common_dfs_by_events_mt(
   satpregen_opname* opcode,
   satpregen_opname::pregen_relation* relation)
-: specialized_operation(opcode, 1)
+: specialized_operation(opcode->getName(), 1)
 {
   mddUnion = 0;
   mxdIntersection = 0;
@@ -838,7 +839,8 @@ void MEDDLY::common_dfs_by_events_mt
     rel->finalize();
     printf("done.\n");
   }
-  saturation_by_events_op* so = new saturation_by_events_op(this, arg1F, resF);
+  unary_list dummy("Pre_Saturate_by_events");
+  saturation_by_events_op* so = new saturation_by_events_op(this, dummy, arg1F, resF);
   so->saturate(a, c);
 
   // Cleanup

@@ -1369,6 +1369,7 @@ long MEDDLY::sathyb_opname::event::mintermMemoryUsage() const {
 
 /** Simple class to keep compute table happy.
  */
+/*
 class MEDDLY::saturation_hyb_by_events_opname : public unary_opname {
   static saturation_hyb_by_events_opname* instance;
 public:
@@ -1390,6 +1391,7 @@ MEDDLY::saturation_hyb_by_events_opname* MEDDLY::saturation_hyb_by_events_opname
   if (0==instance) instance = new saturation_hyb_by_events_opname;
   return instance;
 }
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -1401,7 +1403,7 @@ class MEDDLY::saturation_hyb_by_events_op : public unary_operation {
   common_hyb_dfs_by_events_mt* parent;
 public:
   saturation_hyb_by_events_op(common_hyb_dfs_by_events_mt* p,
-                               forest* argF, forest* resF);
+          unary_list &c, forest* argF, forest* resF);
   virtual ~saturation_hyb_by_events_op();
 
   node_handle saturate(node_handle mdd);
@@ -2076,9 +2078,8 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
 // ******************************************************************
 
 MEDDLY::common_hyb_dfs_by_events_mt::common_hyb_dfs_by_events_mt(
-                                                                   sathyb_opname* opcode,
-                                                                   sathyb_opname::hybrid_relation* relation)
-: specialized_operation(opcode, 1)
+    sathyb_opname* opcode, sathyb_opname::hybrid_relation* relation)
+    : specialized_operation(opcode->getName(), 1)
 {
   mddUnion = 0;
   mxdIntersection = 0;
@@ -2143,7 +2144,9 @@ void MEDDLY::common_hyb_dfs_by_events_mt
    printf("done.\n");
    }*/
 
-  saturation_hyb_by_events_op* so = new saturation_hyb_by_events_op(this, arg1F, resF);
+  unary_list dummy("Saturate_by_events");
+  saturation_hyb_by_events_op* so = new saturation_hyb_by_events_op(this,
+          dummy, arg1F, resF);
 
   MEDDLY::node_handle cnode = so->saturate(a.getNode());
   c.set(cnode);
@@ -2243,21 +2246,20 @@ MEDDLY::sathyb_opname::buildOperation(arguments* a)
 
 MEDDLY::saturation_hyb_by_events_op
 ::saturation_hyb_by_events_op(common_hyb_dfs_by_events_mt* p,
-                               forest* argF, forest* resF)
-: unary_operation(saturation_hyb_by_events_opname::getInstance(), 1, argF, resF)
+    unary_list &c, forest* argF, forest* resF)
+    : unary_operation(c, 1, argF, resF)
 {
   parent = p;
 
-  const char* name = saturation_hyb_by_events_opname::getInstance()->getName();
   ct_entry_type* et;
 
   if (argF->isFullyReduced()) {
     // CT entry includes level info
-    et = new ct_entry_type(name, "NI:N");
+    et = new ct_entry_type(c.getName(), "NI:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(3, resF);
   } else {
-    et = new ct_entry_type(name, "N:N");
+    et = new ct_entry_type(c.getName(), "N:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(2, resF);
   }

@@ -77,7 +77,7 @@ class MEDDLY::base_evplus_mt : public specialized_operation {
 
 MEDDLY::base_evplus_mt::base_evplus_mt(numerical_opname* code,
   const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
- : specialized_operation(code, 0)
+ : specialized_operation(code->getName(), 0)
 {
   fx = x_ind.getForest();
   fA = A.getForest();

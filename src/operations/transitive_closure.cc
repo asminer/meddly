@@ -37,7 +37,7 @@
 MEDDLY::common_transitive_closure::common_transitive_closure(constrained_opname* code,
   unsigned slots,
   forest* cons, forest* tc, forest* trans, forest* res)
-  : specialized_operation(code, slots)
+  : specialized_operation(code->getName(), slots)
 {
   MEDDLY_DCASSERT(cons->isEVPlus() && !cons->isForRelations());
   MEDDLY_DCASSERT(tc->isEVPlus() && tc->isForRelations());
