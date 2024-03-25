@@ -22,6 +22,7 @@
 #include "../forest.h"
 #include "../oper_binary.h"
 #include "../ops_builtin.h"
+#include "../opname.h"
 
 // #define DEBUG_BFS
 // #define VERBOSE_BFS
@@ -48,7 +49,7 @@ namespace MEDDLY {
 
 class MEDDLY::common_bfs : public binary_operation {
   public:
-    common_bfs(binary_opname* opcode, forest* arg1,
+    common_bfs(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
@@ -75,7 +76,7 @@ class MEDDLY::common_bfs : public binary_operation {
 };
 
 
-MEDDLY::common_bfs::common_bfs(binary_opname* oc, forest* a1,
+MEDDLY::common_bfs::common_bfs(binary_list& oc, forest* a1,
   forest* a2, forest* res)
 : binary_operation(oc, 0, a1, a2, res)
 {
@@ -142,11 +143,11 @@ void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd
 
 class MEDDLY::forwd_bfs_mt : public common_bfs {
   public:
-    forwd_bfs_mt(binary_opname* opcode, forest* arg1,
+    forwd_bfs_mt(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 };
 
-MEDDLY::forwd_bfs_mt::forwd_bfs_mt(binary_opname* oc, forest* a1,
+MEDDLY::forwd_bfs_mt::forwd_bfs_mt(binary_list& oc, forest* a1,
   forest* a2, forest* res) : common_bfs(oc, a1, a2, res)
 {
   if (res->getRangeType() == range_type::BOOLEAN) {
@@ -166,12 +167,12 @@ MEDDLY::forwd_bfs_mt::forwd_bfs_mt(binary_opname* oc, forest* a1,
 
 class MEDDLY::bckwd_bfs_mt : public common_bfs {
   public:
-    bckwd_bfs_mt(binary_opname* opcode, forest* arg1,
+    bckwd_bfs_mt(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
 };
 
-MEDDLY::bckwd_bfs_mt::bckwd_bfs_mt(binary_opname* oc, forest* a1,
+MEDDLY::bckwd_bfs_mt::bckwd_bfs_mt(binary_list& oc, forest* a1,
   forest* a2, forest* res) : common_bfs(oc, a1, a2, res)
 {
   if (res->getRangeType() == range_type::BOOLEAN) {
@@ -193,7 +194,7 @@ MEDDLY::bckwd_bfs_mt::bckwd_bfs_mt(binary_opname* oc, forest* a1,
 
 class MEDDLY::common_bfs_evplus : public binary_operation {
   public:
-  common_bfs_evplus(binary_opname* opcode, forest* arg1,
+  common_bfs_evplus(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c);
@@ -250,7 +251,7 @@ class MEDDLY::common_bfs_evplus : public binary_operation {
 };
 
 
-MEDDLY::common_bfs_evplus::common_bfs_evplus(binary_opname* oc, forest* a1,
+MEDDLY::common_bfs_evplus::common_bfs_evplus(binary_list& oc, forest* a1,
   forest* a2, forest* res)
 : binary_operation(oc, 0, a1, a2, res)
 {
@@ -279,13 +280,13 @@ void MEDDLY::common_bfs_evplus::computeDDEdge(const dd_edge &a, const dd_edge &b
 
 class MEDDLY::forwd_bfs_evplus : public common_bfs {
   public:
-  forwd_bfs_evplus(binary_opname* opcode, forest* arg1,
+  forwd_bfs_evplus(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
 //     virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
 };
 
-MEDDLY::forwd_bfs_evplus::forwd_bfs_evplus(binary_opname* oc, forest* a1,
+MEDDLY::forwd_bfs_evplus::forwd_bfs_evplus(binary_list& oc, forest* a1,
   // forest* a2, forest* res) : common_bfs_evplus(oc, a1, a2, res)
   forest* a2, forest* res) : common_bfs(oc, a1, a2, res)
 {
@@ -319,13 +320,13 @@ void MEDDLY::forwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle m
 
 class MEDDLY::bckwd_bfs_evplus : public common_bfs {
   public:
-    bckwd_bfs_evplus(binary_opname* opcode, forest* arg1,
+    bckwd_bfs_evplus(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
     // virtual void compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
 };
 
-MEDDLY::bckwd_bfs_evplus::bckwd_bfs_evplus(binary_opname* oc, forest* a1,
+MEDDLY::bckwd_bfs_evplus::bckwd_bfs_evplus(binary_list& oc, forest* a1,
   // forest* a2, forest* res) : common_bfs_evplus(oc, a1, a2, res)
   forest* a2, forest* res) : common_bfs(oc, a1, a2, res)
 {
@@ -361,7 +362,7 @@ void MEDDLY::bckwd_bfs_evplus::compute(long ev, node_handle evmdd, node_handle m
 class MEDDLY::forwd_bfs_opname : public binary_opname {
   public:
     forwd_bfs_opname();
-    virtual binary_operation* buildOperation(forest* a1,
+    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
       forest* a2, forest* r);
 };
 
@@ -371,7 +372,7 @@ MEDDLY::forwd_bfs_opname::forwd_bfs_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::forwd_bfs_opname::buildOperation(forest* a1, forest* a2,
+MEDDLY::forwd_bfs_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
@@ -393,10 +394,10 @@ MEDDLY::forwd_bfs_opname::buildOperation(forest* a1, forest* a2,
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   if (a1->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    return new forwd_bfs_mt(this, a1, a2, r);
+    return new forwd_bfs_mt(c, a1, a2, r);
   }
   else if (a1->getEdgeLabeling() == edge_labeling::EVPLUS) {
-    return new forwd_bfs_evplus(this, a1, a2, r);
+    return new forwd_bfs_evplus(c, a1, a2, r);
   }
   else {
     throw error(error::TYPE_MISMATCH);
@@ -412,7 +413,7 @@ MEDDLY::forwd_bfs_opname::buildOperation(forest* a1, forest* a2,
 class MEDDLY::bckwd_bfs_opname : public binary_opname {
   public:
     bckwd_bfs_opname();
-    virtual binary_operation* buildOperation(forest* a1,
+    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
       forest* a2, forest* r);
 };
 
@@ -422,7 +423,7 @@ MEDDLY::bckwd_bfs_opname::bckwd_bfs_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::bckwd_bfs_opname::buildOperation(forest* a1, forest* a2,
+MEDDLY::bckwd_bfs_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
@@ -447,10 +448,10 @@ MEDDLY::bckwd_bfs_opname::buildOperation(forest* a1, forest* a2,
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   if (a1->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    return new bckwd_bfs_mt(this, a1, a2, r);
+    return new bckwd_bfs_mt(c, a1, a2, r);
   }
   else if (a1->getEdgeLabeling() == edge_labeling::EVPLUS) {
-    return new bckwd_bfs_evplus(this, a1, a2, r);
+    return new bckwd_bfs_evplus(c, a1, a2, r);
   }
   else {
     throw error(error::TYPE_MISMATCH);

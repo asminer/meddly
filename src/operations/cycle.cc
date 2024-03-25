@@ -38,7 +38,7 @@ namespace MEDDLY {
 // Extract cycles (EV+MDD) from transitive closure (EV+MxD).
 class MEDDLY::cycle_EV2EV : public unary_operation {
   public:
-    cycle_EV2EV(unary_opname* oc, forest* arg, forest* res);
+    cycle_EV2EV(unary_list& oc, forest* arg, forest* res);
 
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
 
@@ -72,13 +72,13 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
     }
 };
 
-MEDDLY::cycle_EV2EV::cycle_EV2EV(unary_opname* oc, forest* arg, forest* res)
+MEDDLY::cycle_EV2EV::cycle_EV2EV(unary_list& oc, forest* arg, forest* res)
   : unary_operation(oc, 1, arg, res)
 {
   MEDDLY_DCASSERT(argF->isEVPlus() && argF->isForRelations());
   MEDDLY_DCASSERT(resF->isEVPlus() && !resF->isForRelations());
 
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "LN:LN");
+  ct_entry_type* et = new ct_entry_type(oc.getName(), "LN:LN");
   et->setForestForSlot(1, arg);
   et->setForestForSlot(4, res);
   registerEntryType(0, et);
@@ -171,7 +171,7 @@ void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, int k, long& bev, n
 class MEDDLY::cycle_opname : public unary_opname {
 public:
   cycle_opname();
-  virtual unary_operation* buildOperation(forest* arg, forest* res);
+  virtual unary_operation* buildOperation(unary_list &c, forest* arg, forest* res);
 };
 
 MEDDLY::cycle_opname::cycle_opname()
@@ -180,11 +180,11 @@ MEDDLY::cycle_opname::cycle_opname()
 }
 
 MEDDLY::unary_operation* MEDDLY::cycle_opname::buildOperation(
-  forest* arg, forest* res)
+  unary_list &c, forest* arg, forest* res)
 {
   unary_operation* op = 0;
   if (arg->isEVPlus() && arg->isForRelations() && res->isEVPlus() && !res->isForRelations()) {
-    op = new cycle_EV2EV(this, arg, res);
+    op = new cycle_EV2EV(c, arg, res);
   }
   else {
     throw error(error::NOT_IMPLEMENTED);

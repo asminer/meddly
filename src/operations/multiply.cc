@@ -37,14 +37,14 @@ namespace MEDDLY {
 
 class MEDDLY::multiply_mdd : public generic_binary_mdd {
   public:
-    multiply_mdd(binary_opname* opcode, forest* arg1,
+    multiply_mdd(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::multiply_mdd::multiply_mdd(binary_opname* opcode,
+MEDDLY::multiply_mdd::multiply_mdd(binary_list& opcode,
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
@@ -115,14 +115,14 @@ bool MEDDLY::multiply_mdd::checkTerminals(node_handle a, node_handle b, node_han
 
 class MEDDLY::multiply_mxd : public generic_binary_mxd {
   public:
-    multiply_mxd(binary_opname* opcode, forest* arg1,
+    multiply_mxd(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::multiply_mxd::multiply_mxd(binary_opname* opcode,
+MEDDLY::multiply_mxd::multiply_mxd(binary_list& opcode,
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
@@ -193,7 +193,7 @@ bool MEDDLY::multiply_mxd::checkTerminals(node_handle a, node_handle b, node_han
 
 class MEDDLY::multiply_evplus : public generic_binary_evplus {
   public:
-    multiply_evplus(binary_opname* opcode, forest* arg1,
+    multiply_evplus(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
   protected:
@@ -201,7 +201,7 @@ class MEDDLY::multiply_evplus : public generic_binary_evplus {
       long& cev, node_handle& c);
 };
 
-MEDDLY::multiply_evplus::multiply_evplus(binary_opname* opcode,
+MEDDLY::multiply_evplus::multiply_evplus(binary_list& opcode,
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_evplus(opcode, arg1, arg2, res)
 {
@@ -232,7 +232,7 @@ bool MEDDLY::multiply_evplus::checkTerminals(long aev, node_handle a, long bev, 
 
 class MEDDLY::multiply_evtimes : public generic_binary_evtimes {
   public:
-    multiply_evtimes(binary_opname* opcode, forest* arg1,
+    multiply_evtimes(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
   protected:
@@ -240,7 +240,7 @@ class MEDDLY::multiply_evtimes : public generic_binary_evtimes {
       float& cev, node_handle& c);
 };
 
-MEDDLY::multiply_evtimes::multiply_evtimes(binary_opname* opcode,
+MEDDLY::multiply_evtimes::multiply_evtimes(binary_list& opcode,
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_evtimes(opcode, arg1, arg2, res)
 {
@@ -272,7 +272,7 @@ bool MEDDLY::multiply_evtimes::checkTerminals(float aev, node_handle a,
 class MEDDLY::multiply_opname : public binary_opname {
   public:
     multiply_opname();
-    virtual binary_operation* buildOperation(forest* a1,
+    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
       forest* a2, forest* r);
 };
 
@@ -282,7 +282,7 @@ MEDDLY::multiply_opname::multiply_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::multiply_opname::buildOperation(forest* a1, forest* a2,
+MEDDLY::multiply_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
@@ -304,9 +304,9 @@ MEDDLY::multiply_opname::buildOperation(forest* a1, forest* a2,
 
   if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     if (r->isForRelations())
-      return new multiply_mxd(this, a1, a2, r);
+      return new multiply_mxd(c, a1, a2, r);
     else
-      return new multiply_mdd(this, a1, a2, r);
+      return new multiply_mdd(c, a1, a2, r);
   }
 
   if (
@@ -316,10 +316,10 @@ MEDDLY::multiply_opname::buildOperation(forest* a1, forest* a2,
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
   if (r->getEdgeLabeling() == edge_labeling::EVPLUS)
-    return new multiply_evplus(this, a1, a2, r);
+    return new multiply_evplus(c, a1, a2, r);
 
   if (r->getEdgeLabeling() == edge_labeling::EVTIMES)
-    return new multiply_evtimes(this, a1, a2, r);
+    return new multiply_evtimes(c, a1, a2, r);
 
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }

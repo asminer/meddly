@@ -47,7 +47,7 @@ namespace MEDDLY {
 /// Abstract base class: max or min range that returns an integer.
 class MEDDLY::range_int : public unary_operation {
   public:
-    range_int(unary_opname* oc, forest* arg);
+    range_int(unary_list& oc, forest* arg);
 
   protected:
     inline ct_entry_key*
@@ -72,10 +72,10 @@ class MEDDLY::range_int : public unary_operation {
     }
 };
 
-MEDDLY::range_int::range_int(unary_opname* oc, forest* arg)
+MEDDLY::range_int::range_int(unary_list& oc, forest* arg)
  : unary_operation(oc, 1, arg, opnd_type::INTEGER)
 {
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:I");
+  ct_entry_type* et = new ct_entry_type(oc.getName(), "N:I");
   et->setForestForSlot(0, arg);
   registerEntryType(0, et);
   buildCTs();
@@ -90,7 +90,7 @@ MEDDLY::range_int::range_int(unary_opname* oc, forest* arg)
 /// Abstract base class: max or min range that returns a real.
 class MEDDLY::range_real : public unary_operation {
   public:
-    range_real(unary_opname* oc, forest* arg);
+    range_real(unary_list& oc, forest* arg);
 
   protected:
     inline ct_entry_key* findResult(node_handle a, float &b) {
@@ -113,10 +113,10 @@ class MEDDLY::range_real : public unary_operation {
     }
 };
 
-MEDDLY::range_real::range_real(unary_opname* oc, forest* arg)
+MEDDLY::range_real::range_real(unary_list& oc, forest* arg)
  : unary_operation(oc, 1, arg, opnd_type::REAL)
 {
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:F");
+  ct_entry_type* et = new ct_entry_type(oc.getName(), "N:F");
   et->setForestForSlot(0, arg);
   registerEntryType(0, et);
   buildCTs();
@@ -131,7 +131,7 @@ MEDDLY::range_real::range_real(unary_opname* oc, forest* arg)
 /// Max range, returns an integer
 class MEDDLY::maxrange_int : public range_int {
 public:
-  maxrange_int(unary_opname* oc, forest* arg)
+  maxrange_int(unary_list& oc, forest* arg)
     : range_int(oc, arg) { }
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute_r(arg.getNode());
@@ -179,7 +179,7 @@ int MEDDLY::maxrange_int::compute_r(node_handle a)
 /// Min range, returns an integer
 class MEDDLY::minrange_int : public range_int {
 public:
-  minrange_int(unary_opname* oc, forest* arg)
+  minrange_int(unary_list& oc, forest* arg)
     : range_int(oc, arg) { }
   virtual void compute(const dd_edge &arg, long &res) {
     res = compute_r(arg.getNode());
@@ -229,7 +229,7 @@ int MEDDLY::minrange_int::compute_r(node_handle a)
 /// Max range, returns a real
 class MEDDLY::maxrange_real : public range_real {
 public:
-  maxrange_real(unary_opname* oc, forest* arg)
+  maxrange_real(unary_list& oc, forest* arg)
     : range_real(oc, arg) { }
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute_r(arg.getNode());
@@ -279,7 +279,7 @@ float MEDDLY::maxrange_real::compute_r(node_handle a)
 /// Min range, returns a real
 class MEDDLY::minrange_real : public range_real {
 public:
-  minrange_real(unary_opname* oc, forest* arg)
+  minrange_real(unary_list& oc, forest* arg)
     : range_real(oc, arg) { }
   virtual void compute(const dd_edge &arg, double &res) {
     res = compute_r(arg.getNode());
@@ -330,7 +330,7 @@ class MEDDLY::maxrange_opname : public unary_opname {
   public:
     maxrange_opname();
     virtual unary_operation*
-      buildOperation(forest* ar, opnd_type res);
+      buildOperation(unary_list &c, forest* ar, opnd_type res);
 };
 
 MEDDLY::maxrange_opname::maxrange_opname() : unary_opname("Max_range")
@@ -338,7 +338,7 @@ MEDDLY::maxrange_opname::maxrange_opname() : unary_opname("Max_range")
 }
 
 MEDDLY::unary_operation*
-MEDDLY::maxrange_opname::buildOperation(forest* ar, opnd_type res)
+MEDDLY::maxrange_opname::buildOperation(unary_list &c, forest* ar, opnd_type res)
 {
   if (0==ar) return 0;
 
@@ -349,12 +349,12 @@ MEDDLY::maxrange_opname::buildOperation(forest* ar, opnd_type res)
     case opnd_type::INTEGER:
       if (range_type::INTEGER != ar->getRangeType())
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-      return new maxrange_int(this,  ar);
+      return new maxrange_int(c,  ar);
 
     case opnd_type::REAL:
       if (range_type::REAL != ar->getRangeType())
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-      return new maxrange_real(this,  ar);
+      return new maxrange_real(c,  ar);
 
     default:
       throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -373,7 +373,7 @@ class MEDDLY::minrange_opname : public unary_opname {
   public:
     minrange_opname();
     virtual unary_operation*
-      buildOperation(forest* ar, opnd_type res);
+      buildOperation(unary_list &c, forest* ar, opnd_type res);
 };
 
 MEDDLY::minrange_opname::minrange_opname() : unary_opname("Min_range")
@@ -381,7 +381,7 @@ MEDDLY::minrange_opname::minrange_opname() : unary_opname("Min_range")
 }
 
 MEDDLY::unary_operation*
-MEDDLY::minrange_opname::buildOperation(forest* ar, opnd_type res)
+MEDDLY::minrange_opname::buildOperation(unary_list &c, forest* ar, opnd_type res)
 {
   if (0==ar) return 0;
 
@@ -392,12 +392,12 @@ MEDDLY::minrange_opname::buildOperation(forest* ar, opnd_type res)
     case opnd_type::INTEGER:
       if (range_type::INTEGER != ar->getRangeType())
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-      return new minrange_int(this,  ar);
+      return new minrange_int(c,  ar);
 
     case opnd_type::REAL:
       if (range_type::REAL != ar->getRangeType())
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-      return new minrange_real(this,  ar);
+      return new minrange_real(c,  ar);
 
     default:
       throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);

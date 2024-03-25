@@ -38,7 +38,7 @@ namespace MEDDLY {
 
 class MEDDLY::prepostplus_evplus : public generic_binary_evplus {
   public:
-    prepostplus_evplus(binary_opname* opcode, forest* arg1,
+    prepostplus_evplus(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
   protected:
@@ -51,7 +51,7 @@ class MEDDLY::prepostplus_evplus : public generic_binary_evplus {
       long& cev, node_handle& c);
 };
 
-MEDDLY::prepostplus_evplus::prepostplus_evplus(binary_opname* opcode,
+MEDDLY::prepostplus_evplus::prepostplus_evplus(binary_list& opcode,
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_evplus(opcode, arg1, arg2, res)
 {
@@ -117,13 +117,13 @@ bool MEDDLY::prepostplus_evplus::checkTerminals(long aev, node_handle a, long be
 
 class MEDDLY::preplus_evplus : public prepostplus_evplus {
   public:
-    preplus_evplus(binary_opname* opcode, forest* arg1,
+    preplus_evplus(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
     virtual void compute(long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
 };
 
-MEDDLY::preplus_evplus::preplus_evplus(binary_opname* opcode,
+MEDDLY::preplus_evplus::preplus_evplus(binary_list& opcode,
   forest* arg1, forest* arg2, forest* res)
   : prepostplus_evplus(opcode, arg1, arg2, res)
 {
@@ -228,13 +228,13 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
 
 class MEDDLY::postplus_evplus : public prepostplus_evplus {
   public:
-    postplus_evplus(binary_opname* opcode, forest* arg1,
+    postplus_evplus(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
     virtual void compute(long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
 };
 
-MEDDLY::postplus_evplus::postplus_evplus(binary_opname* opcode,
+MEDDLY::postplus_evplus::postplus_evplus(binary_list& opcode,
   forest* arg1, forest* arg2, forest* res)
   : prepostplus_evplus(opcode, arg1, arg2, res)
 {
@@ -340,7 +340,7 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
 class MEDDLY::preplus_opname : public binary_opname {
   public:
     preplus_opname();
-    virtual binary_operation* buildOperation(forest* a1,
+    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
       forest* a2, forest* r);
 };
 
@@ -350,7 +350,7 @@ MEDDLY::preplus_opname::preplus_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::preplus_opname::buildOperation(forest* a1, forest* a2,
+MEDDLY::preplus_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
@@ -371,7 +371,7 @@ MEDDLY::preplus_opname::buildOperation(forest* a1, forest* a2,
     !a2->isForRelations() ||
     r->isForRelations()
   ) {
-    return new preplus_evplus(this, a1, a2, r);
+    return new preplus_evplus(c, a1, a2, r);
   }
 
   throw error(error::NOT_IMPLEMENTED);
@@ -386,7 +386,7 @@ MEDDLY::preplus_opname::buildOperation(forest* a1, forest* a2,
 class MEDDLY::postplus_opname : public binary_opname {
   public:
     postplus_opname();
-    virtual binary_operation* buildOperation(forest* a1,
+    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
       forest* a2, forest* r);
 };
 
@@ -396,7 +396,7 @@ MEDDLY::postplus_opname::postplus_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::postplus_opname::buildOperation(forest* a1, forest* a2,
+MEDDLY::postplus_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
@@ -417,7 +417,7 @@ MEDDLY::postplus_opname::buildOperation(forest* a1, forest* a2,
     !a2->isForRelations() ||
     r->isForRelations()
   ) {
-    return new postplus_evplus(this, a1, a2, r);
+    return new postplus_evplus(c, a1, a2, r);
   }
 
   throw error(error::NOT_IMPLEMENTED);

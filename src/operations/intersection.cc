@@ -37,14 +37,14 @@ namespace MEDDLY {
 
 class MEDDLY::inter_mdd : public generic_binary_mdd {
   public:
-    inter_mdd(binary_opname* opcode, forest* arg1,
+    inter_mdd(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::inter_mdd::inter_mdd(binary_opname* opcode,
+MEDDLY::inter_mdd::inter_mdd(binary_list& opcode,
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
@@ -98,7 +98,7 @@ bool MEDDLY::inter_mdd::checkTerminals(node_handle a, node_handle b, node_handle
 
 class MEDDLY::inter_mxd : public generic_binary_mxd {
   public:
-    inter_mxd(binary_opname* opcode, forest* arg1,
+    inter_mxd(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
   protected:
@@ -106,7 +106,7 @@ class MEDDLY::inter_mxd : public generic_binary_mxd {
     virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
 };
 
-MEDDLY::inter_mxd::inter_mxd(binary_opname* opcode,
+MEDDLY::inter_mxd::inter_mxd(binary_list& opcode,
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
@@ -142,7 +142,7 @@ bool MEDDLY::inter_mxd::checkTerminals(node_handle a, node_handle b, node_handle
 
 class MEDDLY::inter_max_evplus : public generic_binary_evplus {
   public:
-    inter_max_evplus(binary_opname* opcode, forest* arg1,
+    inter_max_evplus(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
   protected:
@@ -155,7 +155,7 @@ class MEDDLY::inter_max_evplus : public generic_binary_evplus {
         long& cev, node_handle& c);
 };
 
-MEDDLY::inter_max_evplus::inter_max_evplus(binary_opname* opcode,
+MEDDLY::inter_max_evplus::inter_max_evplus(binary_list& opcode,
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_evplus(opcode, arg1, arg2, res)
 {
@@ -379,7 +379,7 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
 class MEDDLY::inter_opname : public binary_opname {
   public:
     inter_opname();
-    virtual binary_operation* buildOperation(forest* a1,
+    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
       forest* a2, forest* r);
 };
 
@@ -389,7 +389,7 @@ MEDDLY::inter_opname::inter_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::inter_opname::buildOperation(forest* a1, forest* a2,
+MEDDLY::inter_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
@@ -410,9 +410,9 @@ MEDDLY::inter_opname::buildOperation(forest* a1, forest* a2,
 
   if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     if (r->isForRelations())
-      return new inter_mxd(this, a1, a2, r);
+      return new inter_mxd(c, a1, a2, r);
     else
-      return new inter_mdd(this, a1, a2, r);
+      return new inter_mdd(c, a1, a2, r);
   }
 
   if (r->getEdgeLabeling() == edge_labeling::EVPLUS) {
@@ -420,7 +420,7 @@ MEDDLY::inter_opname::buildOperation(forest* a1, forest* a2,
       throw error(error::NOT_IMPLEMENTED);
     }
     else {
-      return new inter_max_evplus(this, a1, a2, r);
+      return new inter_max_evplus(c, a1, a2, r);
     }
   }
 

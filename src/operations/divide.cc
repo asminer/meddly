@@ -36,7 +36,7 @@ namespace MEDDLY {
 template <typename REAL>
 class divide_mdd : public generic_binary_mdd {
   public:
-    divide_mdd(binary_opname* opcode, forest* arg1,
+    divide_mdd(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res)
       : generic_binary_mdd(opcode, arg1, arg2, res) { }
 
@@ -73,7 +73,7 @@ namespace MEDDLY {
 template <typename REAL>
 class divide_mxd : public generic_binbylevel_mxd {
   public:
-    divide_mxd(binary_opname* opcode, forest* arg1,
+    divide_mxd(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res)
       : generic_binbylevel_mxd(opcode, arg1, arg2, res) { }
 
@@ -108,7 +108,7 @@ bool divide_mxd<REAL>
 class MEDDLY::divide_opname : public binary_opname {
   public:
     divide_opname();
-    virtual binary_operation* buildOperation(forest* a1,
+    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
       forest* a2, forest* r);
 };
 
@@ -118,7 +118,7 @@ MEDDLY::divide_opname::divide_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::divide_opname::buildOperation(forest* a1, forest* a2,
+MEDDLY::divide_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
@@ -142,15 +142,15 @@ MEDDLY::divide_opname::buildOperation(forest* a1, forest* a2,
 
       case range_type::INTEGER:
           if (r->isForRelations())
-            return new divide_mxd<int>(this, a1, a2, r);
+            return new divide_mxd<int>(c, a1, a2, r);
           else
-            return new divide_mdd<int>(this, a1, a2, r);
+            return new divide_mdd<int>(c, a1, a2, r);
 
       case range_type::REAL:
           if (r->isForRelations())
-            return new divide_mxd<float>(this, a1, a2, r);
+            return new divide_mxd<float>(c, a1, a2, r);
           else
-            return new divide_mdd<float>(this, a1, a2, r);
+            return new divide_mdd<float>(c, a1, a2, r);
 
       default:
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);

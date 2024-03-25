@@ -38,7 +38,7 @@ namespace MEDDLY {
 
 class MEDDLY::mdd2index_operation : public unary_operation {
   public:
-    mdd2index_operation(unary_opname* oc, forest* arg,
+    mdd2index_operation(unary_list& oc, forest* arg,
       forest* res);
 
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
@@ -46,13 +46,13 @@ class MEDDLY::mdd2index_operation : public unary_operation {
     void compute_r(int k, node_handle a, node_handle &bdn, long &bcard);
 };
 
-MEDDLY::mdd2index_operation::mdd2index_operation(unary_opname* oc,
+MEDDLY::mdd2index_operation::mdd2index_operation(unary_list& oc,
   forest* arg, forest* res)
   : unary_operation(oc, 1, arg, res)
 {
   // answer[0] : node
   // answer[1] : cardinality
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:NL");
+  ct_entry_type* et = new ct_entry_type(oc.getName(), "N:NL");
   et->setForestForSlot(0, arg);
   et->setForestForSlot(2, res);
   registerEntryType(0, et);
@@ -176,7 +176,7 @@ class MEDDLY::mdd2index_opname : public unary_opname {
   public:
     mdd2index_opname();
     virtual unary_operation*
-      buildOperation(forest* ar, forest* res);
+      buildOperation(unary_list &c, forest* ar, forest* res);
 };
 
 MEDDLY::mdd2index_opname::mdd2index_opname()
@@ -186,7 +186,7 @@ MEDDLY::mdd2index_opname::mdd2index_opname()
 
 MEDDLY::unary_operation*
 MEDDLY::mdd2index_opname
-::buildOperation(forest* arg, forest* res)
+::buildOperation(unary_list &c, forest* arg, forest* res)
 {
   if (0==arg || 0==res) return 0;
 
@@ -201,7 +201,7 @@ MEDDLY::mdd2index_opname
       res->getEdgeLabeling() != edge_labeling::INDEX_SET
   ) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  return new mdd2index_operation(this, arg, res);
+  return new mdd2index_operation(c, arg, res);
 }
 
 // ******************************************************************

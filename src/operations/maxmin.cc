@@ -40,14 +40,14 @@ namespace MEDDLY {
 
 class MEDDLY::maximum_mdd : public generic_binary_mdd {
   public:
-    maximum_mdd(binary_opname* opcode, forest* arg1,
+    maximum_mdd(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::maximum_mdd::maximum_mdd(binary_opname* opcode,
+MEDDLY::maximum_mdd::maximum_mdd(binary_list& opcode,
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
@@ -83,14 +83,14 @@ bool MEDDLY::maximum_mdd::checkTerminals(node_handle a, node_handle b, node_hand
 
 class MEDDLY::maximum_mxd : public generic_binary_mxd {
   public:
-    maximum_mxd(binary_opname* opcode, forest* arg1,
+    maximum_mxd(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::maximum_mxd::maximum_mxd(binary_opname* opcode,
+MEDDLY::maximum_mxd::maximum_mxd(binary_list& opcode,
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
@@ -127,7 +127,7 @@ bool MEDDLY::maximum_mxd::checkTerminals(node_handle a, node_handle b, node_hand
 class MEDDLY::maximum_opname : public binary_opname {
   public:
     maximum_opname();
-    virtual binary_operation* buildOperation(forest* a1,
+    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
       forest* a2, forest* r);
 };
 
@@ -137,7 +137,7 @@ MEDDLY::maximum_opname::maximum_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::maximum_opname::buildOperation(forest* a1, forest* a2,
+MEDDLY::maximum_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
@@ -159,9 +159,9 @@ MEDDLY::maximum_opname::buildOperation(forest* a1, forest* a2,
 
   if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     if (r->isForRelations())
-      return new maximum_mxd(this, a1, a2, r);
+      return new maximum_mxd(c, a1, a2, r);
     else
-      return new maximum_mdd(this, a1, a2, r);
+      return new maximum_mdd(c, a1, a2, r);
   }
 
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
@@ -175,14 +175,14 @@ MEDDLY::maximum_opname::buildOperation(forest* a1, forest* a2,
 
 class MEDDLY::minimum_mdd : public generic_binary_mdd {
   public:
-    minimum_mdd(binary_opname* opcode, forest* arg1,
+    minimum_mdd(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::minimum_mdd::minimum_mdd(binary_opname* opcode,
+MEDDLY::minimum_mdd::minimum_mdd(binary_list& opcode,
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_mdd(opcode, arg1, arg2, res)
 {
@@ -218,14 +218,14 @@ bool MEDDLY::minimum_mdd::checkTerminals(node_handle a, node_handle b, node_hand
 
 class MEDDLY::minimum_mxd : public generic_binary_mxd {
   public:
-    minimum_mxd(binary_opname* opcode, forest* arg1,
+    minimum_mxd(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::minimum_mxd::minimum_mxd(binary_opname* opcode,
+MEDDLY::minimum_mxd::minimum_mxd(binary_list& opcode,
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_mxd(opcode, arg1, arg2, res)
 {
@@ -262,7 +262,7 @@ bool MEDDLY::minimum_mxd::checkTerminals(node_handle a, node_handle b, node_hand
 class MEDDLY::minimum_opname : public binary_opname {
   public:
     minimum_opname();
-    virtual binary_operation* buildOperation(forest* a1,
+    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
       forest* a2, forest* r);
 };
 
@@ -272,7 +272,7 @@ MEDDLY::minimum_opname::minimum_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::minimum_opname::buildOperation(forest* a1, forest* a2,
+MEDDLY::minimum_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
@@ -294,9 +294,9 @@ MEDDLY::minimum_opname::buildOperation(forest* a1, forest* a2,
 
   if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     if (r->isForRelations())
-      return new minimum_mxd(this, a1, a2, r);
+      return new minimum_mxd(c, a1, a2, r);
     else
-      return new minimum_mdd(this, a1, a2, r);
+      return new minimum_mdd(c, a1, a2, r);
   }
 
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);

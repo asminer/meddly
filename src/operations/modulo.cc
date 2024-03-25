@@ -36,7 +36,7 @@ namespace MEDDLY {
 template <typename REAL>
 class modulo_mdd : public generic_binary_mdd {
   public:
-    modulo_mdd(binary_opname* opcode, forest* arg1,
+    modulo_mdd(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res)
       : generic_binary_mdd(opcode, arg1, arg2, res) { }
 
@@ -73,7 +73,7 @@ namespace MEDDLY {
 template <typename REAL>
 class modulo_mxd : public generic_binbylevel_mxd {
   public:
-    modulo_mxd(binary_opname* opcode, forest* arg1,
+    modulo_mxd(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res)
       : generic_binbylevel_mxd(opcode, arg1, arg2, res) { }
 
@@ -108,7 +108,7 @@ bool modulo_mxd<REAL>
 class MEDDLY::modulo_opname : public binary_opname {
   public:
     modulo_opname();
-    virtual binary_operation* buildOperation(forest* a1,
+    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
       forest* a2, forest* r);
 };
 
@@ -118,7 +118,7 @@ MEDDLY::modulo_opname::modulo_opname()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::modulo_opname::buildOperation(forest* a1, forest* a2,
+MEDDLY::modulo_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   forest* r)
 {
   if (0==a1 || 0==a2 || 0==r) return 0;
@@ -142,9 +142,9 @@ MEDDLY::modulo_opname::buildOperation(forest* a1, forest* a2,
 
       case range_type::INTEGER:
           if (r->isForRelations())
-            return new modulo_mxd<int>(this, a1, a2, r);
+            return new modulo_mxd<int>(c, a1, a2, r);
           else
-            return new modulo_mdd<int>(this, a1, a2, r);
+            return new modulo_mdd<int>(c, a1, a2, r);
 
       default:
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
