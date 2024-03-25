@@ -189,23 +189,15 @@ class MEDDLY::operation {
         // should ONLY be called during library cleanup.
         static void destroyAllOps();
 
-        inline static void registerOperation(operation &o) {
-            o.oplist_index = op_list.size();
-            op_list.push_back(&o);
-        }
-
-        inline static void unregisterOperation(operation &o) {
-            if (o.oplist_index) {
-                MEDDLY_DCASSERT(op_list[o.oplist_index] == &o);
-                op_list[o.oplist_index] = nullptr;
-            }
-        }
+        static void registerOperation(operation &o);
+        static void unregisterOperation(operation &o);
 
     // ------------------------------------------------------------
     private: // private members for the operation registry
     // ------------------------------------------------------------
         unsigned oplist_index;
         static std::vector <operation*> op_list;
+        static std::vector <unsigned>   free_list;
 
     //
     // Members

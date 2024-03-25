@@ -29,6 +29,7 @@
 
 MEDDLY::compute_table* MEDDLY::operation::Monolithic_CT;
 std::vector <MEDDLY::operation*> MEDDLY::operation::op_list;
+std::vector <unsigned> MEDDLY::operation::free_list;
 
 // ******************************************************************
 // *                                                                *
@@ -329,6 +330,7 @@ void MEDDLY::operation::initializeStatics()
     //
     op_list.clear();
     op_list.push_back(nullptr);
+    free_list.clear();
 
     //
     // Monolithic compute table
@@ -338,9 +340,45 @@ void MEDDLY::operation::initializeStatics()
 
 void MEDDLY::operation::destroyAllOps()
 {
-    while (op_list.size()) {
-        delete op_list.back();
+    unsigned i = op_list.size();
+    while (i) {
+        --i;
+#ifdef DEVELOPMENT_CODE
+        delete op_list.at(i);
+#else
+        delete op_list[i];
+#endif
+        MEDDLY_DCASSERT(nullptr == op_list[i]);
+    }
+    op_list.clear();
+    free_list.clear();
+}
+
+void MEDDLY::operation::registerOperation(operation &o)
+{
+    if (free_list.size()) {
+        unsigned u = free_list.back();
+        free_list.pop_back();
+        MEDDLY_DCASSERT(nullptr == op_list.at(u));
+        o.oplist_index = u;
+        op_list[u] = &o;
+    } else {
+        o.oplist_index = op_list.size();
+        op_list.push_back(&o);
+    }
+}
+
+void MEDDLY::operation::unregisterOperation(operation &o)
+{
+    if (!o.oplist_index) return;
+    MEDDLY_DCASSERT(op_list[o.oplist_index] == &o);
+    op_list[o.oplist_index] = nullptr;
+    if (o.oplist_index == op_list.size()-1) {
+        // last operator, shrink
         op_list.pop_back();
+    } else {
+        // Not last operator, add to free list
+        free_list.push_back(o.oplist_index);
     }
 }
 
