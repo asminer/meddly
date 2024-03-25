@@ -32,35 +32,6 @@
 // These are needed for builtin opname initialization
 
 // ******************************************************************
-// *                         Helper methods                         *
-// ******************************************************************
-
-/*
-template <class RT>
-static MEDDLY::unary_operation*
-FindUnary(MEDDLY::operation* list, const MEDDLY::dd_edge &arg, const RT &res)
-{
-    MEDDLY::unary_operation* match = nullptr;
-    MEDDLY::operation* prev = nullptr;
-    MEDDLY::operation* curr;
-    for (curr = list; curr; curr = curr->getNext()) {
-        match = static_cast <MEDDLY::unary_operation*> (curr);
-        if (match->matches(arg, res)) {
-            // Move to front, unless it's already there
-            if (prev) {
-                prev->setNext(curr->getNext());
-                curr->setNext(list);
-                list = curr;
-            }
-            return match;
-        }
-        prev = curr;
-    }
-    return nullptr;
-}
-*/
-
-// ******************************************************************
 // *                                                                *
 // *                     gmp  wrapper functions                     *
 // *                                                                *
@@ -93,40 +64,11 @@ void MEDDLY::unwrap(const ct_object &x, mpz_t &value)
 MEDDLY::opname::opname(const char* n)
 {
     name = n;
-//     index = next_index;
-    // next_index++;
-
- //   cache = nullptr;
 }
 
 MEDDLY::opname::~opname()
 {
-    // library must be closing
 }
-
-/*
-void
-MEDDLY::opname::removeOperationFromCache(operation* op)
-{
-    if (!op) return;
-    operation* prev = nullptr;
-    operation* curr;
-    for (curr = cache; curr; curr = curr->getNext()) {
-        if (curr == op) break;
-        prev = curr;
-    }
-    if (!curr) return;
-
-    // Remove curr from list
-    if (prev) {
-        prev->setNext(curr->getNext());
-    } else {
-        cache = curr->getNext();
-    }
-    curr->setNext(nullptr);
-}
-*/
-
 
 // ******************************************************************
 // *                                                                *
@@ -205,33 +147,6 @@ MEDDLY::binary_opname::getOperation(const dd_edge &a1, const dd_edge &a2,
     return cache.addOperation(
             buildOperation(cache, a1.getForest(), a2.getForest(), res.getForest())
     );
-
-    /*
-    binary_operation* match = nullptr;
-    operation* prev = nullptr;
-    operation* curr;
-    for (curr = cache; curr; curr = curr->getNext()) {
-        match = static_cast <binary_operation*> (curr);
-        if (match->matches(a1, a2, res)) {
-            // Move to front, unless it's already there
-            if (prev) {
-                prev->setNext(curr->getNext());
-                curr->setNext(cache);
-                cache = curr;
-            }
-            return match;
-        }
-        prev = curr;
-    }
-
-    //
-    // Not found; build a new one and add it to the front
-    //
-    match = buildOperation(a1.getForest(), a2.getForest(), res.getForest());
-    match->setNext(cache);
-    cache = match;
-    return match;
-    */
 }
 
 // ******************************************************************

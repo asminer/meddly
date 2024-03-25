@@ -46,17 +46,6 @@ class MEDDLY::binary_operation : public operation {
         virtual ~binary_operation();
 
     public:
-        inline bool matches(const dd_edge &arg1, const dd_edge &arg2,
-                const dd_edge &res) const
-        {
-            return
-                arg1.isAttachedTo(arg1F) &&
-                arg2.isAttachedTo(arg2F) &&
-                res.isAttachedTo(resF);
-        }
-
-        // high-level front-end
-
         /**
             Checks forest comatability and then calls computeDDEdge().
         */

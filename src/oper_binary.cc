@@ -48,17 +48,6 @@ MEDDLY::binary_operation::~binary_operation()
     parent.removeOperation(this);
 }
 
-/*
-bool MEDDLY::binary_operation::matches(const dd_edge &arg1,
-        const dd_edge &arg2, const dd_edge &res) const
-{
-    return
-        arg1.isAttachedTo(arg1F) &&
-        arg2.isAttachedTo(arg2F) &&
-        res.isAttachedTo(resF);
-}
-*/
-
 void MEDDLY::binary_operation::compute(const dd_edge &ar1,
     const dd_edge &ar2, dd_edge &res)
 {

@@ -50,11 +50,6 @@ class MEDDLY::unary_operation : public operation {
         virtual ~unary_operation();
 
     public:
-        // bool matches(const dd_edge &arg, const dd_edge &res) const;
-        // bool matches(const dd_edge &arg, opnd_type res) const;
-
-        // high-level front-ends
-
         /**
             Checks forest comatability and then calls computeDDEdge().
         */

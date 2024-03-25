@@ -56,22 +56,6 @@ MEDDLY::unary_operation::~unary_operation()
     parent.removeOperation(this);
 }
 
-/*
-bool
-MEDDLY::unary_operation::matches(const MEDDLY::dd_edge &arg,
-        const MEDDLY::dd_edge &res) const
-{
-  return arg.isAttachedTo(argF) && res.isAttachedTo(resF);
-}
-
-bool
-MEDDLY::unary_operation::matches(const MEDDLY::dd_edge &arg, opnd_type res)
-        const
-{
-  return arg.isAttachedTo(argF) && (resultType == res);
-}
-*/
-
 
 void MEDDLY::unary_operation::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
 {
