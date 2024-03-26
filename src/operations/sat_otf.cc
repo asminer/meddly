@@ -186,7 +186,11 @@ void MEDDLY::satotf_opname::subevent::buildRoot() {
     num_minterms = 0;
     //
     // root += sum;
+#ifdef USE_NEW_APPLY
+    binary_operation* opPlus = UNION(root.getForest(), sum.getForest(), root.getForest());
+#else
     binary_operation* opPlus = UNION()->getOperation(root, sum, root);
+#endif
     MEDDLY_DCASSERT(opPlus);
     opPlus->computeTemp(root, sum, root);
   } else {
@@ -350,9 +354,15 @@ bool MEDDLY::satotf_opname::event::rebuild()
 
   dd_edge e(event_mask);
   for (int i = 0; i < num_subevents; i++) {
+#ifdef USE_NEW_APPLY
+    binary_operation* opAnd = INTERSECTION(
+        e.getForest(), subevents[i]->getRoot().getForest(), e.getForest()
+    );
+#else
     binary_operation* opAnd = INTERSECTION()->getOperation(
         e, subevents[i]->getRoot(), e
     );
+#endif
     MEDDLY_DCASSERT(opAnd);
     opAnd->compute(e, subevents[i]->getRoot(), e);
     //

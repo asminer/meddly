@@ -405,10 +405,14 @@ MEDDLY::mm_mult_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
+#ifdef USE_NEW_APPLY
+  binary_operation* acc = PLUS(r, r, r);
+#else
   binary_opname* accop = PLUS();
   MEDDLY_DCASSERT(accop);
   dd_edge er(r);
   binary_operation* acc = accop->getOperation(er, er, er);
+#endif
 
   switch (r->getRangeType()) {
     case range_type::INTEGER:

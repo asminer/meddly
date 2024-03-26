@@ -21,9 +21,12 @@
 
 #include "oper.h"
 
-#ifdef USE_NEW_APPLY
 
 namespace MEDDLY {
+    class initializer_list;
+
+#ifdef USE_NEW_APPLY
+
     class unary_operation;
     class binary_operation;
 
@@ -164,36 +167,11 @@ namespace MEDDLY {
     */
     binary_operation* MM_MULTIPLY(forest* a, forest* b, forest* c);
 
-    //
-    // TBD: numerical operations
-    // TBD: specialized operations
-    //
-
-    // ******************************************************************
-    // *                                                                *
-    // *                   Initialization  front-end                    *
-    // *                                                                *
-    // ******************************************************************
-
-    /// Build the initializer for builtins.
-    initializer_list* makeBuiltinInitializer(initializer_list* prev);
-};
-
 #else
 
-namespace MEDDLY {
     class opname;
     class unary_opname;
     class binary_opname;
-    class numerical_opname;
-
-    class satpregen_opname;
-    class satotf_opname;
-    class satimpl_opname;
-    class sathyb_opname;
-    class constrained_opname;
-
-    class initializer_list;
 
     // ******************************************************************
     // *                                                                *
@@ -332,6 +310,17 @@ namespace MEDDLY {
     */
     binary_opname* MM_MULTIPLY();
 
+#endif // USE_NEW_APPLY
+
+
+    class numerical_opname;
+
+    class satpregen_opname;
+    class satotf_opname;
+    class satimpl_opname;
+    class sathyb_opname;
+    class constrained_opname;
+
     // ******************************************************************
     // *                                                                *
     // *                   Named numerical operations                   *
@@ -402,7 +391,5 @@ namespace MEDDLY {
     /// Build the initializer for builtins.
     initializer_list* makeBuiltinInitializer(initializer_list* prev);
 };
-
-#endif // USE_NEW_APPLY
 
 #endif // #include guard

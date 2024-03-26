@@ -45,12 +45,19 @@ void createOperations(const std::vector <dd_edge> &Edges,
         std::vector <operation*> &ops)
 {
     unsigned u=0;
+#ifndef USE_NEW_APPLY
     binary_opname* Inter = INTERSECTION();
+#endif
 
     for (unsigned i=0; i<Edges.size(); i++) {
         for (unsigned j=0; j<Edges.size(); j++) {
             for (unsigned k=0; k<Edges.size(); k++) {
+#ifdef USE_NEW_APPLY
+                ops[u++] = INTERSECTION(Edges[i].getForest(),
+                        Edges[j].getForest(), Edges[k].getForest());
+#else
                 ops[u++] = Inter->getOperation(Edges[i], Edges[j], Edges[k]);
+#endif
             } // for k
         } // for j
     } // for i
@@ -69,13 +76,20 @@ void destroyOperations(std::vector <operation*> &ops)
 void searchFast(const std::vector <dd_edge> &Edges)
 {
     const unsigned numops = operation::getOpListSize();
+#ifndef USE_NEW_APPLY
     binary_opname* Inter = INTERSECTION();
+#endif
 
     for (unsigned i=0; i<Edges.size(); i++) {
         for (unsigned j=0; j<Edges.size(); j++) {
             for (unsigned k=0; k<Edges.size(); k++) {
                 for (unsigned s=0; s<FASTSRCH; s++) {
+#ifdef USE_NEW_APPLY
+                    INTERSECTION(Edges[i].getForest(),
+                            Edges[j].getForest(), Edges[k].getForest());
+#else
                     Inter->getOperation(Edges[i], Edges[j], Edges[k]);
+#endif
                 }
             } // for k
         } // for j
@@ -89,13 +103,20 @@ void searchFast(const std::vector <dd_edge> &Edges)
 void searchSlow(const std::vector <dd_edge> &Edges)
 {
     const unsigned numops = operation::getOpListSize();
+#ifndef USE_NEW_APPLY
     binary_opname* Inter = INTERSECTION();
+#endif
 
     for (unsigned s=0; s<SLOWSRCH; s++) {
         for (unsigned i=0; i<Edges.size(); i++) {
             for (unsigned j=0; j<Edges.size(); j++) {
                 for (unsigned k=0; k<Edges.size(); k++) {
+#ifdef USE_NEW_APPLY
+                    INTERSECTION(Edges[i].getForest(),
+                            Edges[j].getForest(), Edges[k].getForest());
+#else
                     Inter->getOperation(Edges[i], Edges[j], Edges[k]);
+#endif
                 } // for k
             } // for j
         } // for i

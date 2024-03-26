@@ -174,7 +174,7 @@ namespace MEDDLY {
             @param  c   Output parameter: the result,
                           where \a c = \a op \a a.
     */
-    void apply(unary_builtin2 bu, const dd_edge &a, long &c)
+    inline void apply(unary_builtin2 bu, const dd_edge &a, long &c)
     {
         unary_operation* uop = bu(a.getForest(), opnd_type::INTEGER);
         uop->compute(a, c);
@@ -187,7 +187,7 @@ namespace MEDDLY {
             @param  c   Output parameter: the result,
                           where \a c = \a op \a a.
     */
-    void apply(unary_builtin2 bu, const dd_edge &a, double &c)
+    inline void apply(unary_builtin2 bu, const dd_edge &a, double &c)
     {
         unary_operation* uop = bu(a.getForest(), opnd_type::REAL);
         uop->compute(a, c);
@@ -201,7 +201,8 @@ namespace MEDDLY {
             @param  c   Output parameter: the result,
                           where \a c = \a op \a a.
     */
-    void apply(unary_builtin2 bu, const dd_edge &a, opnd_type rt, ct_object &c)
+    inline void apply(unary_builtin2 bu, const dd_edge &a, opnd_type rt,
+            ct_object &c)
     {
         unary_operation* uop = bu(a.getForest(), rt);
         uop->compute(a, c);

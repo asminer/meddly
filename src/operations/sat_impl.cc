@@ -408,7 +408,11 @@ MEDDLY::satimpl_opname::implicit_relation::buildMxdForest()
 
   dd_edge* monolithic_nsf = new dd_edge(mxd);
 
+#ifdef USE_NEW_APPLY
+    binary_operation* opUnion = UNION(mxd, mxd, mxd);
+#else
     binary_operation* opUnion = UNION()->getOperation(mxd, mxd, mxd);
+#endif
     for(int i=0;i<nEvents;i++) {
         opUnion->computeTemp(
             *monolithic_nsf,  buildEventMxd(event_tops[i],mxd),

@@ -411,6 +411,50 @@ void MEDDLY::builtin_init::cleanup()
 // *                                                                *
 // ******************************************************************
 
+#ifdef USE_NEW_APPLY
+
+MEDDLY::unary_operation* MEDDLY::CARDINALITY(forest* arg, opnd_type res)
+{
+    return builtin_init::_CARD->getOperation(arg, res);
+}
+
+MEDDLY::unary_operation* MEDDLY::COMPLEMENT(forest* arg, forest* res)
+{
+    return builtin_init::_COMPL->getOperation(arg, res);
+}
+
+MEDDLY::unary_operation* MEDDLY::CONVERT_TO_INDEX_SET(forest* arg, forest* res)
+{
+    return builtin_init::_MDD2INDEX->getOperation(arg, res);
+}
+
+MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
+{
+    return builtin_init::_COPY->getOperation(arg, res);
+}
+
+MEDDLY::unary_operation* MEDDLY::CYCLE(forest* arg, forest* res)
+{
+    return builtin_init::_CYCLE->getOperation(arg, res);
+}
+
+MEDDLY::unary_operation* MEDDLY::MAX_RANGE(forest* arg, opnd_type res)
+{
+    return builtin_init::_MAXRANGE->getOperation(arg, res);
+}
+
+MEDDLY::unary_operation* MEDDLY::MIN_RANGE(forest* arg, opnd_type res)
+{
+    return builtin_init::_MINRANGE->getOperation(arg, res);
+}
+
+MEDDLY::unary_operation* MEDDLY::SELECT(forest* arg, forest* res)
+{
+    return builtin_init::_SELECT->getOperation(arg, res);
+}
+
+#else
+
 MEDDLY::unary_opname* MEDDLY::CARDINALITY() {
     return builtin_init::_CARD;
 }
@@ -436,11 +480,169 @@ MEDDLY::unary_opname* MEDDLY::SELECT() {
     return builtin_init::_SELECT;
 }
 
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *                  front end: binary operations                  *
 // *                                                                *
 // ******************************************************************
+
+#ifdef USE_NEW_APPLY
+
+MEDDLY::binary_operation* MEDDLY::UNION(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_UNION->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::INTERSECTION(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_INTERSECT->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::DIFFERENCE(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_DIFFERENCE->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::CROSS(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_CROSS->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::MINIMUM(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_MIN->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::MAXIMUM(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_MAX->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::PLUS(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_PLUS->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::MINUS(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_MINUS->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::MULTIPLY(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_MULTIPLY->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::DIVIDE(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_DIVIDE->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::MODULO(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_MODULO->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::EQUAL(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_EQ->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::NOT_EQUAL(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_NE->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::LESS_THAN(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_LT->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::LESS_THAN_EQUAL(forest* a, forest* b,
+        forest* c)
+{
+    return builtin_init::_LE->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::GREATER_THAN(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_GT->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::GREATER_THAN_EQUAL(forest* a, forest* b,
+        forest* c)
+{
+    return builtin_init::_GE->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::PRE_PLUS(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_PRE_PLUS->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::POST_PLUS(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_POST_PLUS->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::PRE_IMAGE(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_PRE_IMAGE->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::POST_IMAGE(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_POST_IMAGE->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::TC_POST_IMAGE(forest* a, forest* b,
+        forest* c)
+{
+    return builtin_init::_TC_POST_IMAGE->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::REACHABLE_STATES_DFS(forest* a, forest* b,
+        forest* c)
+{
+    return builtin_init::_FORWARD_DFS->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::REACHABLE_STATES_BFS(forest* a, forest* b,
+        forest* c)
+{
+    return builtin_init::_FORWARD_BFS->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::REVERSE_REACHABLE_DFS(forest* a, forest* b,
+        forest* c)
+{
+    return builtin_init::_BACKWARD_DFS->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::REVERSE_REACHABLE_BFS(forest* a, forest* b,
+        forest* c)
+{
+    return builtin_init::_BACKWARD_BFS->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::VM_MULTIPLY(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_VM_MULTIPLY->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::MV_MULTIPLY(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_MV_MULTIPLY->getOperation(a, b, c);
+}
+
+MEDDLY::binary_operation* MEDDLY::MM_MULTIPLY(forest* a, forest* b, forest* c)
+{
+    return builtin_init::_MM_MULTIPLY->getOperation(a, b, c);
+}
+
+#else
 
 MEDDLY::binary_opname* MEDDLY::UNION() {
     return builtin_init::_UNION;
@@ -529,6 +731,8 @@ MEDDLY::binary_opname* MEDDLY::MV_MULTIPLY() {
 MEDDLY::binary_opname* MEDDLY::MM_MULTIPLY() {
     return builtin_init::_MM_MULTIPLY;
 }
+
+#endif
 
 // ******************************************************************
 // *                                                                *
