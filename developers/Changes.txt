@@ -2,6 +2,56 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
+Transition to new binary/unary builtin operation types:
+
+    (1) Implement functions
+            unary_operator* UNARYOP(forest* arg, forest* res)
+        by calling the appropriate unary_opname methods
+
+        Implement functions
+            binary_operator* BINARYOP(forest* a, forest* b, forest* c)
+        by calling the appropriate binary_opname methods
+
+        Build and test.
+
+    (2) Replace unary_opname, binary_opname derived classes
+        with replacement functions.
+        Add initializers and destroyers as needed:
+
+            void OPERATION_init(unary_list &c)
+            void OPERATION_init(binary_list &c)
+
+            void OPERATION_destroy()
+
+        Use an array (vector?) of unary_list, and call *_init
+        on each operation e.g.
+                CARDINALITY_init(unary[u++]);
+                COMPLEMENT_init(unary[u++]);
+
+                PLUS_init(binary[b++]);
+                MINUS_init(binary[b++]);
+                ...
+
+        Build and test
+
+    (3) When done, remove opname class hierarchy
+
+
+forest::registerOperation
+forest::unregisterOperation
+
+    Switch to vector class?
+    Check opid timing
+
+
+Make compute table interface easier to use for simple operations
+    (i.e., most of the time)
+
+
+Reimplement operations
+
+
+
 Forest cleanup
     look at node reductions
 
@@ -11,97 +61,46 @@ Operations
                 (goal is for 'check terminals' to be inlined, not virtual)
 
 
-(*) operation registry in a forest - timing test
-
 (*) node_storage::getDownPtr timing test
 
 (*) One version of node_storage::getDownPtr, using edge_value
 
-(*) new operations (leave old in place until deprecated)
+(*) Adjust operation hierarchy?
 
-    builtins are function (pointers) but now use arguments
-        instead of the 'named operation' class.
-        e.g.,
-
-        new_binary* INTERSECTION(forest* op1, forest* op2, forest* result)
-
-    stuff we will probably want/need
-        -   some kind of builtin initializer object that automatically
-            builds a list of operations to initialize / destroy,
-            and fit that into the current library init/destroy sequence.
-
-        -   for each type of operation (e.g., intersection), maintain
-            a list (or vector?) of instantiated operations.
-            could use list of unsigned, assuming there is a global
-            unique ID for operations that is reset on library init/destroy.
-            if so then the builtin functions can return unsigned instead
-            of new_binary*.
-
-        -   new operation hierarchy, or adjust existing one?
-            some thoughts:
-                operation
-                    |
-                    +--- binary_operation
-                            |
-                            +---- binary skip levels
-                            |           inline void compute_top(
-                            |               const dd_edge &a,
-                            |               const dd_edge &b, dd_edge c)
-                            |
-                            |           node_handle compute(node_handle a,
-                            |               node_handle b)
-                            |
-                            +---- binary by levels (for quasi reduced results)
-                            |
-                            |           node_handle compute(int K,
-                            |               node_handle a, node_handle b)
-                            |
-                            +---- binary, EV, skip levels
-                            |
-                            |           compute(const edge_value &av,
-                            |               node_handle an, const edge_value &,
-                            |               node_handle bn, edge_value &ec,
-                            |               node_handle &cn)
-                            |
-                            |           We could use the same iface for MT
-                            |           using void edge values, see if there's
-                            |           overhead and if so keep them split.
-                            |
-                            +---- binary, EV, by levels
-
-
-    ok so built-in operations are functions that return operation* objects
-    and take forests as parameters (like the old opname::buildOperation
-    virtual method)
-
-    built-in unary operations:
-
-        unary_operation* OPERATION(forest* arg, forest* res)
-    or
-        unary_operation* OPERATION(forest* arg, opnd_type res)
-
-    also:
-
-        void OPERATION_init(unary_list &c)
-
-    optional:
-
-        void OPERATION_destroy()
+        some thoughts:
+            operation
+                |
+                +--- binary_operation
+                        |
+                        +---- binary skip levels
+                        |           inline void compute_top(
+                        |               const dd_edge &a,
+                        |               const dd_edge &b, dd_edge c)
+                        |
+                        |           node_handle compute(node_handle a,
+                        |               node_handle b)
+                        |
+                        +---- binary by levels (for quasi reduced results)
+                        |
+                        |           node_handle compute(int K,
+                        |               node_handle a, node_handle b)
+                        |
+                        +---- binary, EV, skip levels
+                        |
+                        |           compute(const edge_value &av,
+                        |               node_handle an, const edge_value &,
+                        |               node_handle bn, edge_value &ec,
+                        |               node_handle &cn)
+                        |
+                        |           We could use the same iface for MT
+                        |           using void edge values, see if there's
+                        |           overhead and if so keep them split.
+                        |
+                        +---- binary, EV, by levels
 
 
 
 
-(*) binary operations:
-
-    * change interface to use edge_value, node_handle instead of dd_edge
-    * keep dd_edge version as inlined
-
-    built-in bianry operations:
-
-        binary_operation* OPERATION(forest* arg1, forest* arg2, forest* res)
-        void OPERATION_init(binary_list &c)
-    optional
-        void OPERATION_destroy()
 
 
 Go through examples/ directory,

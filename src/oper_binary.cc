@@ -80,8 +80,8 @@ bool MEDDLY::binary_operation::checkForestCompatibility() const
 
 MEDDLY::binary_list::binary_list(const char* n)
 {
-    name = n;
     front = nullptr;
+    setName(n);
 }
 
 MEDDLY::binary_operation*

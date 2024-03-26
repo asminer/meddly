@@ -93,8 +93,9 @@ class MEDDLY::unary_list {
         const char* name;
         unary_operation* front;
     public:
-        unary_list(const char* n);
+        unary_list(const char* n = nullptr);
 
+        inline void setName(const char* n) { name = n; }
         inline const char* getName() const { return name; }
 
         inline unary_operation* addOperation(unary_operation* uop) {

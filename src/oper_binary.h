@@ -92,8 +92,9 @@ class MEDDLY::binary_list {
         const char* name;
         binary_operation* front;
     public:
-        binary_list(const char* n);
+        binary_list(const char* n = nullptr);
 
+        inline void setName(const char* n) { name = n; }
         inline const char* getName() const { return name; }
 
         inline binary_operation* addOperation(binary_operation* bop) {
