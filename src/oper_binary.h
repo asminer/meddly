@@ -139,8 +139,6 @@ namespace MEDDLY {
     typedef binary_operation* (*binary_builtin)(forest* arg1,
             forest* arg2, forest* res);
 
-#ifdef USE_NEW_APPLY
-
     /** Apply a binary operator.
         \a a, \a b and \a c are not required to be in the same forest,
         but they must have the same domain. The result will be in the
@@ -170,7 +168,6 @@ namespace MEDDLY {
     }
 #endif
 
-#endif // USE_NEW_APPLY
 };
 
 #endif // #include guard

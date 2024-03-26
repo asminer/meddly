@@ -411,8 +411,6 @@ void MEDDLY::builtin_init::cleanup()
 // *                                                                *
 // ******************************************************************
 
-#ifdef USE_NEW_APPLY
-
 MEDDLY::unary_operation* MEDDLY::CARDINALITY(forest* arg, opnd_type res)
 {
     return builtin_init::_CARD->getOperation(arg, res);
@@ -453,42 +451,11 @@ MEDDLY::unary_operation* MEDDLY::SELECT(forest* arg, forest* res)
     return builtin_init::_SELECT->getOperation(arg, res);
 }
 
-#else
-
-MEDDLY::unary_opname* MEDDLY::CARDINALITY() {
-    return builtin_init::_CARD;
-}
-MEDDLY::unary_opname* MEDDLY::COMPLEMENT() {
-    return builtin_init::_COMPL;
-}
-MEDDLY::unary_opname* MEDDLY::CONVERT_TO_INDEX_SET() {
-    return builtin_init::_MDD2INDEX;
-}
-MEDDLY::unary_opname* MEDDLY::COPY() {
-    return builtin_init::_COPY;
-}
-MEDDLY::unary_opname* MEDDLY::CYCLE() {
-    return builtin_init::_CYCLE;
-}
-MEDDLY::unary_opname* MEDDLY::MAX_RANGE() {
-    return builtin_init::_MAXRANGE;
-}
-MEDDLY::unary_opname* MEDDLY::MIN_RANGE() {
-    return builtin_init::_MINRANGE;
-}
-MEDDLY::unary_opname* MEDDLY::SELECT() {
-    return builtin_init::_SELECT;
-}
-
-#endif
-
 // ******************************************************************
 // *                                                                *
 // *                  front end: binary operations                  *
 // *                                                                *
 // ******************************************************************
-
-#ifdef USE_NEW_APPLY
 
 MEDDLY::binary_operation* MEDDLY::UNION(forest* a, forest* b, forest* c)
 {
@@ -641,98 +608,6 @@ MEDDLY::binary_operation* MEDDLY::MM_MULTIPLY(forest* a, forest* b, forest* c)
 {
     return builtin_init::_MM_MULTIPLY->getOperation(a, b, c);
 }
-
-#else
-
-MEDDLY::binary_opname* MEDDLY::UNION() {
-    return builtin_init::_UNION;
-}
-MEDDLY::binary_opname* MEDDLY::INTERSECTION() {
-    return builtin_init::_INTERSECT;
-}
-MEDDLY::binary_opname* MEDDLY::DIFFERENCE() {
-    return builtin_init::_DIFFERENCE;
-}
-MEDDLY::binary_opname* MEDDLY::CROSS() {
-    return builtin_init::_CROSS;
-}
-MEDDLY::binary_opname* MEDDLY::MINIMUM() {
-    return builtin_init::_MIN;
-}
-MEDDLY::binary_opname* MEDDLY::MAXIMUM() {
-    return builtin_init::_MAX;
-}
-MEDDLY::binary_opname* MEDDLY::PLUS() {
-    return builtin_init::_PLUS;
-}
-MEDDLY::binary_opname* MEDDLY::MINUS() {
-    return builtin_init::_MINUS;
-}
-MEDDLY::binary_opname* MEDDLY::MULTIPLY() {
-    return builtin_init::_MULTIPLY;
-}
-MEDDLY::binary_opname* MEDDLY::DIVIDE() {
-    return builtin_init::_DIVIDE;
-}
-MEDDLY::binary_opname* MEDDLY::MODULO() {
-    return builtin_init::_MODULO;
-}
-MEDDLY::binary_opname* MEDDLY::EQUAL() {
-    return builtin_init::_EQ;
-}
-MEDDLY::binary_opname* MEDDLY::NOT_EQUAL() {
-    return builtin_init::_NE;
-}
-MEDDLY::binary_opname* MEDDLY::LESS_THAN() {
-    return builtin_init::_LT;
-}
-MEDDLY::binary_opname* MEDDLY::LESS_THAN_EQUAL() {
-    return builtin_init::_LE;
-}
-MEDDLY::binary_opname* MEDDLY::GREATER_THAN() {
-    return builtin_init::_GT;
-}
-MEDDLY::binary_opname* MEDDLY::GREATER_THAN_EQUAL() {
-    return builtin_init::_GE;
-}
-MEDDLY::binary_opname* MEDDLY::PRE_PLUS() {
-    return builtin_init::_PRE_PLUS;
-}
-MEDDLY::binary_opname* MEDDLY::POST_PLUS() {
-    return builtin_init::_POST_PLUS;
-}
-MEDDLY::binary_opname* MEDDLY::PRE_IMAGE() {
-    return builtin_init::_PRE_IMAGE;
-}
-MEDDLY::binary_opname* MEDDLY::POST_IMAGE() {
-    return builtin_init::_POST_IMAGE;
-}
-MEDDLY::binary_opname* MEDDLY::TC_POST_IMAGE() {
-    return builtin_init::_TC_POST_IMAGE;
-}
-MEDDLY::binary_opname* MEDDLY::REACHABLE_STATES_DFS() {
-    return builtin_init::_FORWARD_DFS;
-}
-MEDDLY::binary_opname* MEDDLY::REACHABLE_STATES_BFS() {
-    return builtin_init::_FORWARD_BFS;
-}
-MEDDLY::binary_opname* MEDDLY::REVERSE_REACHABLE_DFS() {
-    return builtin_init::_BACKWARD_DFS;
-}
-MEDDLY::binary_opname* MEDDLY::REVERSE_REACHABLE_BFS() {
-    return builtin_init::_BACKWARD_BFS;
-}
-MEDDLY::binary_opname* MEDDLY::VM_MULTIPLY() {
-    return builtin_init::_VM_MULTIPLY;
-}
-MEDDLY::binary_opname* MEDDLY::MV_MULTIPLY() {
-    return builtin_init::_MV_MULTIPLY;
-}
-MEDDLY::binary_opname* MEDDLY::MM_MULTIPLY() {
-    return builtin_init::_MM_MULTIPLY;
-}
-
-#endif
 
 // ******************************************************************
 // *                                                                *

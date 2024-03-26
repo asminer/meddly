@@ -146,8 +146,6 @@ namespace MEDDLY {
     typedef unary_operation* (*unary_builtin1)(forest* arg, forest* res);
     typedef unary_operation* (*unary_builtin2)(forest* arg, opnd_type res);
 
-#ifdef USE_NEW_APPLY
-
     // ******************************************************************
     // *                          Unary  apply                          *
     // ******************************************************************
@@ -238,10 +236,8 @@ namespace MEDDLY {
     {
         return bu(arg.getForest(), res);
     }
-
 #endif
 
-#endif // USE_NEW_APPLY
 };
 
 

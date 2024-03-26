@@ -41,23 +41,14 @@ const unsigned FASTSRCH  = 32;
 const unsigned SLOWSRCH  = 32;
 #endif
 
-void createOperations(const std::vector <dd_edge> &Edges,
+void createOperations(const std::vector <forest*> &F,
         std::vector <operation*> &ops)
 {
     unsigned u=0;
-#ifndef USE_NEW_APPLY
-    binary_opname* Inter = INTERSECTION();
-#endif
-
-    for (unsigned i=0; i<Edges.size(); i++) {
-        for (unsigned j=0; j<Edges.size(); j++) {
-            for (unsigned k=0; k<Edges.size(); k++) {
-#ifdef USE_NEW_APPLY
-                ops[u++] = INTERSECTION(Edges[i].getForest(),
-                        Edges[j].getForest(), Edges[k].getForest());
-#else
-                ops[u++] = Inter->getOperation(Edges[i], Edges[j], Edges[k]);
-#endif
+    for (unsigned i=0; i<F.size(); i++) {
+        for (unsigned j=0; j<F.size(); j++) {
+            for (unsigned k=0; k<F.size(); k++) {
+                ops[u++] = INTERSECTION(F[i], F[j], F[k]);
             } // for k
         } // for j
     } // for i
@@ -73,23 +64,14 @@ void destroyOperations(std::vector <operation*> &ops)
     }
 }
 
-void searchFast(const std::vector <dd_edge> &Edges)
+void searchFast(const std::vector <forest*> &F)
 {
     const unsigned numops = operation::getOpListSize();
-#ifndef USE_NEW_APPLY
-    binary_opname* Inter = INTERSECTION();
-#endif
-
-    for (unsigned i=0; i<Edges.size(); i++) {
-        for (unsigned j=0; j<Edges.size(); j++) {
-            for (unsigned k=0; k<Edges.size(); k++) {
+    for (unsigned i=0; i<F.size(); i++) {
+        for (unsigned j=0; j<F.size(); j++) {
+            for (unsigned k=0; k<F.size(); k++) {
                 for (unsigned s=0; s<FASTSRCH; s++) {
-#ifdef USE_NEW_APPLY
-                    INTERSECTION(Edges[i].getForest(),
-                            Edges[j].getForest(), Edges[k].getForest());
-#else
-                    Inter->getOperation(Edges[i], Edges[j], Edges[k]);
-#endif
+                    INTERSECTION(F[i], F[j], F[k]);
                 }
             } // for k
         } // for j
@@ -100,23 +82,14 @@ void searchFast(const std::vector <dd_edge> &Edges)
     }
 }
 
-void searchSlow(const std::vector <dd_edge> &Edges)
+void searchSlow(const std::vector <forest*> &F)
 {
     const unsigned numops = operation::getOpListSize();
-#ifndef USE_NEW_APPLY
-    binary_opname* Inter = INTERSECTION();
-#endif
-
     for (unsigned s=0; s<SLOWSRCH; s++) {
-        for (unsigned i=0; i<Edges.size(); i++) {
-            for (unsigned j=0; j<Edges.size(); j++) {
-                for (unsigned k=0; k<Edges.size(); k++) {
-#ifdef USE_NEW_APPLY
-                    INTERSECTION(Edges[i].getForest(),
-                            Edges[j].getForest(), Edges[k].getForest());
-#else
-                    Inter->getOperation(Edges[i], Edges[j], Edges[k]);
-#endif
+        for (unsigned i=0; i<F.size(); i++) {
+            for (unsigned j=0; j<F.size(); j++) {
+                for (unsigned k=0; k<F.size(); k++) {
+                    INTERSECTION(F[i], F[j], F[k]);
                 } // for k
             } // for j
         } // for i
@@ -148,14 +121,12 @@ int main(int argc, const char** argv)
         // just so we can have different operations
         //
         std::vector <forest*> F(FORESTS);
-        std::vector <dd_edge> E(FORESTS);
         std::vector <operation*> Ops(OPCOMBS);
         policies p(SET);
 
         for (unsigned i=0; i<FORESTS; i++) {
             F[i] = forest::create(D, SET, range_type::BOOLEAN,
                     edge_labeling::MULTI_TERMINAL, p);
-            E[i].attach(F[i]);
         }
 
         //
@@ -169,7 +140,7 @@ int main(int argc, const char** argv)
             std::cout << '.';
             std::cout.flush();
             for (unsigned j=0; j<CREATIONS; j++) {
-                createOperations(E, Ops);
+                createOperations(F, Ops);
                 destroyOperations(Ops);
             }
         } // for i
@@ -182,7 +153,7 @@ int main(int argc, const char** argv)
                     << std::endl;
         }
 
-        createOperations(E, Ops);
+        createOperations(F, Ops);
 
         // -------------------------------------------------------------------
 
@@ -191,7 +162,7 @@ int main(int argc, const char** argv)
         for (unsigned i=0; i<DOTS; i++) {
             std::cout << '.';
             std::cout.flush();
-            searchFast(E);
+            searchFast(F);
         }
         T.note_time();
         show_sec(std::cout, T, 3, 3);
@@ -211,7 +182,7 @@ int main(int argc, const char** argv)
         for (unsigned i=0; i<DOTS; i++) {
             std::cout << '.';
             std::cout.flush();
-            searchSlow(E);
+            searchSlow(F);
         }
         T.note_time();
         show_sec(std::cout, T, 3, 3);

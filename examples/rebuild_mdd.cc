@@ -114,13 +114,8 @@ void printStats(const char* who, const forest* f)
 // Tests a mtmdd operation on the elements provided.
 // This function assumes that each element[i] represents
 // an element in the given MTMDD.
-#ifdef USE_NEW_APPLY
 dd_edge test_mtmdd(forest* mtmdd, binary_builtin  opCode,
     int** element, element_type* terms, int nElements)
-#else
-dd_edge test_mtmdd(forest* mtmdd, binary_handle  opCode,
-    int** element, element_type* terms, int nElements)
-#endif
 {
   // A = first nElements/2 elements combined using +.
   // B = second nElements/2 elements combined using +.

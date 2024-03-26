@@ -28,8 +28,6 @@
 // #define ALLOW_DEPRECATED_0_17_4  "12/19/2023"
 #define ALLOW_DEPRECATED_0_17_5
 
-#define USE_NEW_APPLY
-
 // #define DEBUG_CLEANUP
 // #define DEBUG_SLOW
 // #define TRACE_ALL_OPS

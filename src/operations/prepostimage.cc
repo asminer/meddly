@@ -1226,7 +1226,6 @@ MEDDLY::preimage_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-#ifdef USE_NEW_APPLY
   binary_operation *acc = nullptr;
   if (a1->getEdgeLabeling() == edge_labeling::EVPLUS || r->getRangeType() == range_type::BOOLEAN) {
     acc = UNION(r, r, r);
@@ -1234,18 +1233,6 @@ MEDDLY::preimage_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
     acc = MAXIMUM(r, r, r);
   }
   MEDDLY_DCASSERT(acc);
-#else
-  binary_opname* accop = nullptr;
-  if (a1->getEdgeLabeling() == edge_labeling::EVPLUS || r->getRangeType() == range_type::BOOLEAN) {
-    accop = UNION();
-  } else {
-    accop = MAXIMUM();
-  }
-  MEDDLY_DCASSERT(accop);
-
-  dd_edge er(r);
-  binary_operation* acc = accop->getOperation(er, er, er);
-#endif
 
   if (a1->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     return new mtmatr_mtvect<bool>(c, a1, a2, r, acc);
@@ -1298,7 +1285,6 @@ MEDDLY::postimage_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-#ifdef USE_NEW_APPLY
   binary_operation* acc = nullptr;
   if (a1->getEdgeLabeling() == edge_labeling::EVPLUS || r->getRangeType() == range_type::BOOLEAN) {
     acc = UNION(r, r, r);
@@ -1306,18 +1292,6 @@ MEDDLY::postimage_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
     acc = MAXIMUM(r, r, r);
   }
   MEDDLY_DCASSERT(acc);
-#else
-  binary_opname* accop = nullptr;
-  if (a1->getEdgeLabeling() == edge_labeling::EVPLUS || r->getRangeType() == range_type::BOOLEAN) {
-    accop = UNION();
-  } else {
-    accop = MAXIMUM();
-  }
-  MEDDLY_DCASSERT(accop);
-
-  dd_edge er(r);
-  binary_operation* acc = accop->getOperation(er, er, er);
-#endif
 
   if (a1->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
     return new mtvect_mtmatr<bool>(c, a1, a2, r, acc);
@@ -1370,14 +1344,7 @@ MEDDLY::transitive_closure_postimage_opname::buildOperation(binary_list &c, fore
   )
     throw error(error::TYPE_MISMATCH);
 
-#ifdef USE_NEW_APPLY
   binary_operation* acc = UNION(r, r, r);
-#else
-  binary_opname* accop = UNION();
-  MEDDLY_DCASSERT(accop);
-  dd_edge er(r);
-  binary_operation* acc = accop->getOperation(er, er, er);
-#endif
   return new tcXrel_evplus(c, a1, a2, r, acc);
 }
 
@@ -1424,14 +1391,7 @@ MEDDLY::VMmult_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-#ifdef USE_NEW_APPLY
   binary_operation* acc = PLUS(r, r, r);
-#else
-  binary_opname* accop = PLUS();
-  MEDDLY_DCASSERT(accop);
-  dd_edge er(r);
-  binary_operation* acc = accop->getOperation(er, er, er);
-#endif
 
   switch (r->getRangeType()) {
     case range_type::INTEGER:
@@ -1488,14 +1448,7 @@ MEDDLY::MVmult_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-#ifdef USE_NEW_APPLY
   binary_operation* acc = PLUS(r, r, r);
-#else
-  binary_opname* accop = PLUS();
-  MEDDLY_DCASSERT(accop);
-  dd_edge er(r);
-  binary_operation* acc = accop->getOperation(er, er, er);
-#endif
 
   //
   // We're switching the order of the arguments

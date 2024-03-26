@@ -23,18 +23,14 @@
 
 
 namespace MEDDLY {
-    class initializer_list;
-
-#ifdef USE_NEW_APPLY
-
-    class unary_operation;
-    class binary_operation;
 
     // ******************************************************************
     // *                                                                *
     // *                  "built-in"  unary operations                  *
     // *                                                                *
     // ******************************************************************
+
+    class unary_operation;
 
     /// Return the number of variable assignments
     /// so that the function evaluates to non-zero.
@@ -66,6 +62,8 @@ namespace MEDDLY {
     // *                  "built-in" binary operations                  *
     // *                                                                *
     // ******************************************************************
+
+    class binary_operation;
 
     /// Set union operation for forests with range_type of BOOLEAN
     binary_operation* UNION(forest* a, forest* b, forest* c);
@@ -167,165 +165,14 @@ namespace MEDDLY {
     */
     binary_operation* MM_MULTIPLY(forest* a, forest* b, forest* c);
 
-#else
-
-    class opname;
-    class unary_opname;
-    class binary_opname;
-
-    // ******************************************************************
-    // *                                                                *
-    // *                    unary  operation handles                    *
-    // *                                                                *
-    // ******************************************************************
-
-    /// Unary operation.  Return the number of variable assignments
-    /// so that the function evaluates to non-zero.
-    unary_opname* CARDINALITY();
-
-    /// For BOOLEAN forests, flip the return values.
-    unary_opname* COMPLEMENT();
-
-    /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
-    unary_opname* CONVERT_TO_INDEX_SET();
-
-    /// Copy a function across forests, with the same domain.
-    unary_opname* COPY();
-
-    /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
-    unary_opname* CYCLE();
-
-    /// Find the largest value returned by the function.
-    unary_opname* MAX_RANGE();
-
-    /// Find the smallest value returned by the function.
-    unary_opname* MIN_RANGE();
-
-    /// Randomly select one state from a set of states
-    unary_opname* SELECT();
-
-    // ******************************************************************
-    // *                                                                *
-    // *                    binary operation handles                    *
-    // *                                                                *
-    // ******************************************************************
-
-    /// Set union operation for forests with range_type of BOOLEAN
-    binary_opname* UNION();
-
-    /// Set intersection operation for forests with range_type of BOOLEAN
-    binary_opname* INTERSECTION();
-
-    /// Set difference operation for forests with range_type of BOOLEAN
-    binary_opname* DIFFERENCE();
-
-    /// Combine two functions into a single one, where the operands are MDDs
-    /// and the result is an MXD.  Specifically, for MDD operands f and g,
-    /// produces MXD h where
-    ///     h(xn, x'n, ..., x1, x'1) = f(xn, ..., x1) * g(x'n, ..., x'1).
-    /// Works for BOOLEAN forests.
-    binary_opname* CROSS();
-
-    /// The minimum of two functions, with range_type INTEGER or REAL
-    binary_opname* MINIMUM();
-
-    /// The maximum of two functions, with range_type INTEGER or REAL
-    binary_opname* MAXIMUM();
-
-    /// Add two functions, with range type INTEGER and REAL
-    binary_opname* PLUS();
-
-    /// Subtract two functions, with range type INTEGER and REAL
-    binary_opname* MINUS();
-
-    /// Multiply two functions, with range type INTEGER and REAL
-    binary_opname* MULTIPLY();
-
-    /// Divide two functions, with range type INTEGER and REAL
-    binary_opname* DIVIDE();
-
-    /// Take the remainder of two functions, with range type INTEGER
-    binary_opname* MODULO();
-
-    /// Compare for equality, two functions with range type INTEGER or REAL
-    binary_opname* EQUAL();
-
-    /// Compare for inequality, two functions with range type INTEGER or REAL
-    binary_opname* NOT_EQUAL();
-
-    /// Compare for <, two functions with range type INTEGER or REAL
-    binary_opname* LESS_THAN();
-
-    /// Compare for <=, two functions with range type INTEGER or REAL
-    binary_opname* LESS_THAN_EQUAL();
-
-    /// Compare for >, two functions with range type INTEGER or REAL
-    binary_opname* GREATER_THAN();
-
-    /// Compare for >=, two functions with range type INTEGER or REAL
-    binary_opname* GREATER_THAN_EQUAL();
-
-    /** Plus operation used to compute transitive closure and further
-        minimum witness. The first operand must be an EV+MxD and the second
-        operand must be an EV+MDD. The result is an EV+MxD.
-    */
-    binary_opname* PRE_PLUS();
-    binary_opname* POST_PLUS();
-
-    /** Image operations on a set-of-states with a transition function.
-        The first operand must be the set-of-states and the second operand
-        must be the transition function. The result is a set-of-states that
-        must be stored in the same forest as the first operand.
-
-        Applies to:
-        PRE_IMAGE, POST_IMAGE,
-        TC_POST_IMAGE,
-        REACHABLE_STATES_DFS, REACHABLE_STATES_BFS,
-        REVERSE_REACHABLE_DFS, REVERSE_REACHABLE_BFS.
-    */
-    binary_opname* PRE_IMAGE();
-    binary_opname* POST_IMAGE();
-    binary_opname* TC_POST_IMAGE();
-    binary_opname* REACHABLE_STATES_DFS();
-    binary_opname* REACHABLE_STATES_BFS();
-    binary_opname* REVERSE_REACHABLE_DFS();
-    binary_opname* REVERSE_REACHABLE_BFS();
-
-    /** Vector matrix multiply, where the first argument is vector (MDD),
-        the second argument is a matrix (MXD),
-        and the result is a vector (MDD).
-    */
-    binary_opname* VM_MULTIPLY();
-
-    /** Matrix vector multiply, where the first argument is a matrix (MXD),
-        the second argument is a vector (MDD),
-        and the result is a vector (MDD).
-    */
-    binary_opname* MV_MULTIPLY();
-
-    /** Matrix multiplication, where the first argument is a matrix (MXD),
-        the second argument is a matrix (MXD),
-        and the result is a matrix (MXD),
-        such that, C[m][n] += A[m][i] * B[i][n], for all m, n and i.
-    */
-    binary_opname* MM_MULTIPLY();
-
-#endif // USE_NEW_APPLY
-
-
-    class numerical_opname;
-
-    class satpregen_opname;
-    class satotf_opname;
-    class satimpl_opname;
-    class sathyb_opname;
-    class constrained_opname;
 
     // ******************************************************************
     // *                                                                *
     // *                   Named numerical operations                   *
     // *                                                                *
     // ******************************************************************
+
+    class numerical_opname;
 
     /** Computes y = y + xA.
         x and y are vectors, stored explicitly, and A is a matrix.
@@ -348,6 +195,12 @@ namespace MEDDLY {
     // *                  Named saturation operations                   *
     // *                                                                *
     // ******************************************************************
+
+    class satpregen_opname;
+    class satotf_opname;
+    class satimpl_opname;
+    class sathyb_opname;
+    class constrained_opname;
 
     /** Forward reachability using saturation.
         Transition relation is already known.
@@ -387,6 +240,8 @@ namespace MEDDLY {
     // *                   Initialization  front-end                    *
     // *                                                                *
     // ******************************************************************
+
+    class initializer_list;
 
     /// Build the initializer for builtins.
     initializer_list* makeBuiltinInitializer(initializer_list* prev);
