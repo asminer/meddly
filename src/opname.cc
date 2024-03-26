@@ -17,7 +17,6 @@
 */
 
 #include "defines.h"
-#include "operations/mpz_object.h"  // for mpz wrapper
 #include "opname.h"
 #include "error.h"
 #include "dd_edge.h"
@@ -30,30 +29,6 @@
 #include "oper_binary.h"
 
 // These are needed for builtin opname initialization
-
-// ******************************************************************
-// *                                                                *
-// *                     gmp  wrapper functions                     *
-// *                                                                *
-// ******************************************************************
-
-#ifdef HAVE_LIBGMP
-
-MEDDLY::ct_object& MEDDLY::get_mpz_wrapper()
-{
-    static MEDDLY::mpz_object foo;
-    return foo;
-}
-
-void MEDDLY::unwrap(const ct_object &x, mpz_t &value)
-{
-    using namespace MEDDLY;
-    const mpz_object &mx = static_cast <const mpz_object &> (x);
-    mx.copyInto(value);
-}
-
-#endif
-
 
 // ******************************************************************
 // *                                                                *
@@ -180,6 +155,8 @@ MEDDLY::specialized_opname::~specialized_opname()
 // *                                                                *
 // ******************************************************************
 
+#ifndef USE_NEW_APPLY
+
 void MEDDLY::apply(unary_handle code, const dd_edge &a, dd_edge &c)
 {
     if (nullptr == code) {
@@ -247,4 +224,5 @@ void MEDDLY::apply(binary_handle code, const dd_edge &a,
     op->computeTemp(a, b, c);
 }
 
+#endif
 

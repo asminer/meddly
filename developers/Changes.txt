@@ -70,6 +70,24 @@ Operations
                             +---- binary, EV, by levels
 
 
+    ok so built-in operations are functions that return operation* objects
+    and take forests as parameters (like the old opname::buildOperation
+    virtual method)
+
+    built-in unary operations:
+
+        unary_operation* OPERATION(forest* arg, forest* res)
+    or
+        unary_operation* OPERATION(forest* arg, opnd_type res)
+
+    also:
+
+        void OPERATION_init(unary_list &c)
+
+    optional:
+
+        void OPERATION_destroy()
+
 
 
 
@@ -77,6 +95,13 @@ Operations
 
     * change interface to use edge_value, node_handle instead of dd_edge
     * keep dd_edge version as inlined
+
+    built-in bianry operations:
+
+        binary_operation* OPERATION(forest* arg1, forest* arg2, forest* res)
+        void OPERATION_init(binary_list &c)
+    optional
+        void OPERATION_destroy()
 
 
 Go through examples/ directory,

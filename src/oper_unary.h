@@ -19,13 +19,14 @@
 #ifndef MEDDLY_OPER_UNARY_H
 #define MEDDLY_OPER_UNARY_H
 
+#include "dd_edge.h"
 #include "oper.h"
 
 namespace MEDDLY {
-    class dd_edge;
     class ct_object;
     class unary_operation;
     class unary_list;
+    class forest;
 };
 
 
@@ -132,5 +133,115 @@ class MEDDLY::unary_list {
         unary_operation* mtfUnary(const forest* argF, opnd_type resType);
         void searchRemove(unary_operation* uop);
 };
+
+// ******************************************************************
+// *                                                                *
+// *                          Unary  apply                          *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+
+    typedef unary_operation* (*unary_builtin1)(forest* arg, forest* res);
+    typedef unary_operation* (*unary_builtin2)(forest* arg, opnd_type res);
+
+#ifdef USE_NEW_APPLY
+
+    // ******************************************************************
+    // *                          Unary  apply                          *
+    // ******************************************************************
+
+    /** Apply a unary operator.
+        The operand and the result are not necessarily in the same forest,
+        but they must belong to forests that share the same domain.
+        This is useful, for instance, for copying a function to a new forest.
+            @param  bu  Built-in unary operator (function)
+            @param  a   Operand.
+            @param  c   Output parameter: the result,
+                        where \a c = \a op \a a.
+    */
+    inline void apply(unary_builtin1 bu, const dd_edge &a, dd_edge &c)
+    {
+        unary_operation* uop = bu(a.getForest(), c.getForest());
+        uop->compute(a, c);
+    }
+
+    /** Apply a unary operator.
+        For operators whose result is an integer.
+            @param  bu  Built-in unary operator (function)
+            @param  a   Operand.
+            @param  c   Output parameter: the result,
+                          where \a c = \a op \a a.
+    */
+    void apply(unary_builtin2 bu, const dd_edge &a, long &c)
+    {
+        unary_operation* uop = bu(a.getForest(), opnd_type::INTEGER);
+        uop->compute(a, c);
+    }
+
+    /** Apply a unary operator.
+        For operators whose result is a real.
+            @param  bu  Built-in unary operator (function)
+            @param  a   Operand.
+            @param  c   Output parameter: the result,
+                          where \a c = \a op \a a.
+    */
+    void apply(unary_builtin2 bu, const dd_edge &a, double &c)
+    {
+        unary_operation* uop = bu(a.getForest(), opnd_type::REAL);
+        uop->compute(a, c);
+    }
+
+    /** Apply a unary operator.
+        For operators whose result is a anything else.
+            @param  bu  Built-in unary operator (function)
+            @param  a   Operand.
+            @param  rt  Type of result
+            @param  c   Output parameter: the result,
+                          where \a c = \a op \a a.
+    */
+    void apply(unary_builtin2 bu, const dd_edge &a, opnd_type rt, ct_object &c)
+    {
+        unary_operation* uop = bu(a.getForest(), rt);
+        uop->compute(a, c);
+    }
+
+#ifdef __GMP_H__
+    /** Apply a unary operator.
+        For operators whose result is an arbitrary-precision integer
+        (as supplied by the GNU MP library).
+            @param  bu  Built-in unary operator (function)
+            @param  a   Operand.
+            @param  c   Input: an initialized MP integer.
+                        Output: the result, where \a c = \a op \a a.
+    */
+    inline void apply(unary_builtin2 bu, const dd_edge &a, mpz_t &c)
+    {
+        ct_object& x = get_mpz_wrapper();
+        unary_operation* uop = bu(a.getForest(), opnd_type::HUGEINT);
+        uop->compute(a, x);
+        unwrap(x, c);
+    }
+#endif
+
+#ifdef ALLOW_DEPRECATED_0_17_5
+    inline unary_operation* getOperation(unary_builtin1 bu,
+            const dd_edge &a, const dd_edge &c)
+    {
+        return bu(a.getForest(), c.getForest());
+    }
+
+    inline unary_operation* getOperation(unary_builtin2 bu,
+            const dd_edge &arg, opnd_type res)
+    {
+        return bu(arg.getForest(), res);
+    }
+
+#endif
+
+#endif // USE_NEW_APPLY
+};
+
+
 
 #endif // #include guard

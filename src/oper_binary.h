@@ -127,4 +127,49 @@ class MEDDLY::binary_list {
 };
 
 
+// ******************************************************************
+// *                                                                *
+// *                          Binary apply                          *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+
+    typedef binary_operation* (*binary_builtin)(forest* arg1,
+            forest* arg2, forest* res);
+
+#ifdef USE_NEW_APPLY
+
+    /** Apply a binary operator.
+        \a a, \a b and \a c are not required to be in the same forest,
+        but they must have the same domain. The result will be in the
+        same forest as \a result. The operator decides the type of forest
+        for each \a dd_edge.
+        Useful, for example, for constructing comparisons
+        where the resulting type is "boolean" but the operators are not,
+        e.g., c = f EQUALS g.
+            @param  bb    Built-in binary operation.
+            @param  a     First operand.
+            @param  b     Second operand.
+            @param  c     Output parameter: the result,
+                          where \a c = \a a \a op \a b.
+    */
+    inline void apply(binary_builtin bb, const dd_edge &a, const dd_edge &b,
+        dd_edge &c)
+    {
+        binary_operation* bop = bb(a.getForest(), b.getForest(), c.getForest());
+        bop->compute(a, b, c);
+    }
+
+#ifdef ALLOW_DEPRECATED_0_17_5
+    inline binary_operation* getOperation(binary_builtin bb,
+            const dd_edge &a, const dd_edge &b, const dd_edge &c)
+    {
+        return bb(a.getForest(), b.getForest(), c.getForest());
+    }
+#endif
+
+#endif // USE_NEW_APPLY
+};
+
 #endif // #include guard

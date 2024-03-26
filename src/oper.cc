@@ -18,10 +18,34 @@
 
 #include "oper.h"
 
-#include "opname.h"
 #include "ct_entry_result.h"
 #include "compute_table.h"
 #include "ct_initializer.h"
+#include "operations/mpz_object.h"  // for mpz wrapper
+
+// ******************************************************************
+// *                                                                *
+// *                     gmp  wrapper functions                     *
+// *                                                                *
+// ******************************************************************
+
+#ifdef HAVE_LIBGMP
+
+MEDDLY::ct_object& MEDDLY::get_mpz_wrapper()
+{
+    static MEDDLY::mpz_object foo;
+    return foo;
+}
+
+void MEDDLY::unwrap(const ct_object &x, mpz_t &value)
+{
+    using namespace MEDDLY;
+    const mpz_object &mx = static_cast <const mpz_object &> (x);
+    mx.copyInto(value);
+}
+
+#endif
+
 
 // ******************************************************************
 // *                       operation  statics                       *
@@ -391,8 +415,6 @@ void MEDDLY::operation::unregisterOperation(operation &o)
 void MEDDLY::destroyOperation(MEDDLY::operation* &op)
 {
     if (!op) return;
-    // opname* parent = op->getParent();
-    // if (parent) parent->removeOperationFromCache(op);
     if (!op->isMarkedForDeletion()) {
         op->markForDeletion();
         operation::removeStalesFromMonolithic();

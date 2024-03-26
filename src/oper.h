@@ -24,19 +24,20 @@
 
 #include <vector>
 
+#ifdef HAVE_LIBGMP
+#include <gmp.h>
+#endif
+
 namespace MEDDLY {
-    class opname;
     class operation;
     class compute_table;
     class forest;
-
-    class unary_opname;
-    class binary_opname;
 
     class initializer_list;
     class ct_initializer;
     class ct_entry_type;
     class ct_entry_result;
+    class ct_object;
 
     void cleanup();
 
@@ -51,6 +52,15 @@ namespace MEDDLY {
         FLOATVECT   = 5,
         DOUBLEVECT  = 6
     };
+
+    // ******************************************************************
+    // *                    Wrapper for GMP integers                    *
+    // ******************************************************************
+
+#ifdef HAVE_LIBGMP
+    ct_object& get_mpz_wrapper();
+    void unwrap(const ct_object &, mpz_t &value);
+#endif
 
     // ******************************************************************
     // *                      Operation management                      *
@@ -155,8 +165,6 @@ class MEDDLY::operation {
 
         void registerEntryType(unsigned slot, ct_entry_type* et);
         void buildCTs();
-
-        // inline opname* getParent() { return theOpName; }
 
 
     // ------------------------------------------------------------

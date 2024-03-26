@@ -45,17 +45,10 @@ namespace MEDDLY {
     class initializer_list;
 
     // ******************************************************************
-    // *                    Wrapper for GMP integers                    *
-    // ******************************************************************
-
-#ifdef __GMP_H__
-    ct_object& get_mpz_wrapper();
-    void unwrap(const ct_object &, mpz_t &value);
-#endif
-
-    // ******************************************************************
     // *                          Unary  apply                          *
     // ******************************************************************
+
+#ifndef USE_NEW_APPLY
 
     /** Apply a unary operator.
         The operand and the result are not necessarily in the same forest,
@@ -133,6 +126,8 @@ namespace MEDDLY {
     */
     void apply(binary_handle op, const dd_edge &a, const dd_edge &b,
         dd_edge &c);
+
+#endif // !USE_NEW_APPLY
 
 };
 
@@ -277,6 +272,7 @@ class MEDDLY::specialized_opname : public opname {
 // *                                                                *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_5
 namespace MEDDLY {
     inline unary_operation* getOperation(unary_handle op,
             const dd_edge &a, const dd_edge &c)
@@ -302,5 +298,6 @@ namespace MEDDLY {
         return bop->getOperation(a1, a2, r);
     }
 };
+#endif
 
 #endif // #include guard
