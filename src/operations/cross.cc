@@ -27,8 +27,8 @@
 // #define DEBUG_CROSS
 
 namespace MEDDLY {
-  class cross_bool;
-  class cross_opname;
+    class cross_bool;
+    binary_list* CROSS_list = nullptr;
 };
 
 // ******************************************************************
@@ -161,61 +161,54 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
   return c;
 }
 
-
-// ******************************************************************
-// *                                                                *
-// *                       cross_opname class                       *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::cross_opname : public binary_opname {
-  public:
-    cross_opname();
-    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::cross_opname::cross_opname()
- : binary_opname("Cross")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::cross_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    a1->isForRelations()  ||
-    (a1->getRangeType() != range_type::BOOLEAN) ||
-    (a1->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
-    a2->isForRelations()  ||
-    (a2->getRangeType() != range_type::BOOLEAN) ||
-    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
-    (!r->isForRelations())  ||
-    (r->getRangeType() != range_type::BOOLEAN) ||
-    (r->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  return new cross_bool(c, a1, a2, r);
-}
-
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeCross()
+MEDDLY::binary_operation*
+MEDDLY::CROSS(MEDDLY::forest* a, MEDDLY::forest* b, MEDDLY::forest* c)
 {
-  return new cross_opname;
+    if (!a || !b || !c) {
+        return nullptr;
+    }
+
+    MEDDLY_DCASSERT(CROSS_list);
+    binary_operation* bop =  CROSS_list->findOperation(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if  (
+            (a->getDomain() != c->getDomain()) ||
+            (b->getDomain() != c->getDomain())
+        )
+    {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    if  (
+            a->isForRelations()  ||
+            (a->getRangeType() != range_type::BOOLEAN) ||
+            (a->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
+            b->isForRelations()  ||
+            (b->getRangeType() != range_type::BOOLEAN) ||
+            (b->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
+            (!c->isForRelations())  ||
+            (c->getRangeType() != range_type::BOOLEAN) ||
+            (c->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
+        )
+    {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    return CROSS_list->addOperation( new cross_bool(*CROSS_list, a, b, c) );
+}
+
+void MEDDLY::CROSS_init(MEDDLY::binary_list &c)
+{
+    CROSS_list = &c;
+    c.setName("Cross");
 }
 
