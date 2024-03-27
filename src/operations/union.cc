@@ -21,13 +21,13 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class union_mdd;
-  class union_mxd;
+    class union_mdd;
+    class union_mxd;
 
-  class union_min_evplus;
-  class union_min_evplus_mxd;
+    class union_min_evplus;
+    class union_min_evplus_mxd;
 
-  class union_opname;
+    binary_list* UNION_list = nullptr;
 };
 
 // ******************************************************************
@@ -530,69 +530,67 @@ bool MEDDLY::union_min_evplus_mxd::checkTerminals(long aev, node_handle a, long 
 
 // ******************************************************************
 // *                                                                *
-// *                       union_opname class                       *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::union_opname : public binary_opname {
-  public:
-    union_opname();
-    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::union_opname::union_opname()
- : binary_opname("Union")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::union_opname::buildOperation(binary_list &c, forest *a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->isForRelations() != r->isForRelations()) ||
-    (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling())
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    if (r->isForRelations())
-      return new union_mxd(c, a1, a2, r);
-    else
-      return new union_mdd(c, a1, a2, r);
-  }
-
-  if (r->getEdgeLabeling() == edge_labeling::EVPLUS) {
-    if (r->isForRelations()) {
-      return new union_min_evplus_mxd(c, a1, a2, r);
-    }
-    else {
-      return new union_min_evplus(c, a1, a2, r);
-    }
-  }
-
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-// ******************************************************************
-// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeUnion()
+MEDDLY::binary_operation*
+MEDDLY::UNION(MEDDLY::forest* a, MEDDLY::forest* b, MEDDLY::forest* c)
 {
-  return new union_opname;
+    if (!a || !b || !c) {
+        return nullptr;
+    }
+
+    MEDDLY_DCASSERT(UNION_list);
+    binary_operation* bop =  UNION_list->findOperation(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if  (
+            (a->getDomain() != c->getDomain()) ||
+            (b->getDomain() != c->getDomain())
+        )
+    {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    if  (
+            (a->isForRelations() != c->isForRelations()) ||
+            (b->isForRelations() != c->isForRelations()) ||
+            (a->getEdgeLabeling() != c->getEdgeLabeling()) ||
+            (b->getEdgeLabeling() != c->getEdgeLabeling())
+        )
+    {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        if (c->isForRelations()) {
+            bop = new union_mxd(*UNION_list, a, b, c);
+        } else {
+            bop = new union_mdd(*UNION_list, a, b, c);
+        }
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::EVPLUS) {
+        if (c->isForRelations()) {
+            bop = new union_min_evplus_mxd(*UNION_list, a, b, c);
+        } else {
+            bop = new union_min_evplus(*UNION_list, a, b, c);
+        }
+    }
+
+    if (bop) {
+        return UNION_list->addOperation(bop);
+    }
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::UNION_init(MEDDLY::binary_list &c)
+{
+    UNION_list = &c;
+    c.setName("Union");
 }
 

@@ -21,10 +21,10 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class diffr_mdd;
-  class diffr_mxd;
+    class diffr_mdd;
+    class diffr_mxd;
 
-  class diffr_opname;
+    binary_list* DIFFERENCE_list = nullptr;
 };
 
 // ******************************************************************
@@ -131,66 +131,64 @@ bool MEDDLY::diffr_mxd::checkTerminals(node_handle a, node_handle b, node_handle
   return false;
 }
 
-
-// ******************************************************************
-// *                                                                *
-// *                       diffr_opname class                       *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::diffr_opname : public binary_opname {
-  public:
-    diffr_opname();
-    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::diffr_opname::diffr_opname()
- : binary_opname("Difference")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::diffr_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->isForRelations() != r->isForRelations()) ||
-    (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (r->getRangeType() != range_type::BOOLEAN)
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    if (r->isForRelations())
-      return new diffr_mxd(c, a1, a2, r);
-    else
-      return new diffr_mdd(c, a1, a2, r);
-  }
-
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeDifference()
+MEDDLY::binary_operation*
+MEDDLY::DIFFERENCE(MEDDLY::forest* a, MEDDLY::forest* b, MEDDLY::forest* c)
 {
-  return new diffr_opname;
+    if (!a || !b || !c) {
+        return nullptr;
+    }
+
+    MEDDLY_DCASSERT(DIFFERENCE_list);
+    binary_operation* bop =  DIFFERENCE_list->findOperation(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if  (
+            (a->getDomain() != c->getDomain()) ||
+            (b->getDomain() != c->getDomain())
+        )
+    {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    if  (
+            (a->isForRelations() != c->isForRelations()) ||
+            (b->isForRelations() != c->isForRelations()) ||
+            (a->getRangeType() != c->getRangeType()) ||
+            (b->getRangeType() != c->getRangeType()) ||
+            (a->getEdgeLabeling() != c->getEdgeLabeling()) ||
+            (b->getEdgeLabeling() != c->getEdgeLabeling()) ||
+            (c->getRangeType() != range_type::BOOLEAN)
+        )
+    {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        if (c->isForRelations()) {
+            bop = new diffr_mxd(*DIFFERENCE_list, a, b, c);
+        } else {
+            bop = new diffr_mdd(*DIFFERENCE_list, a, b, c);
+        }
+    }
+
+    if (bop) {
+        return DIFFERENCE_list->addOperation(bop);
+    }
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::DIFFERENCE_init(MEDDLY::binary_list &c)
+{
+    DIFFERENCE_list = &c;
+    c.setName("Difference");
 }
 

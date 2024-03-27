@@ -20,10 +20,13 @@
 #define MEDDLY_UNION_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
+    class binary_list;
 
-  /// Set up a binary_opname for the "union" operation.
-  binary_opname* initializeUnion();
+    /// The 'union' operation builder.
+    binary_operation* UNION(forest* a, forest* b, forest* c);
+    void UNION_init(binary_list &c);
 }
 
 #endif
