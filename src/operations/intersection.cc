@@ -37,16 +37,14 @@ namespace MEDDLY {
 
 class MEDDLY::inter_mdd : public generic_binary_mdd {
   public:
-    inter_mdd(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res);
+    inter_mdd(forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::inter_mdd::inter_mdd(binary_list& opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mdd(opcode, arg1, arg2, res)
+MEDDLY::inter_mdd::inter_mdd(forest* arg1, forest* arg2, forest* res)
+  : generic_binary_mdd(*INTERSECTION_list, arg1, arg2, res)
 {
   operationCommutes();
 }
@@ -98,17 +96,15 @@ bool MEDDLY::inter_mdd::checkTerminals(node_handle a, node_handle b, node_handle
 
 class MEDDLY::inter_mxd : public generic_binary_mxd {
   public:
-    inter_mxd(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res);
+    inter_mxd(forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
     virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
 };
 
-MEDDLY::inter_mxd::inter_mxd(binary_list& opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mxd(opcode, arg1, arg2, res)
+MEDDLY::inter_mxd::inter_mxd(forest* arg1, forest* arg2, forest* res)
+  : generic_binary_mxd(*INTERSECTION_list, arg1, arg2, res)
 {
   operationCommutes();
 }
@@ -142,8 +138,7 @@ bool MEDDLY::inter_mxd::checkTerminals(node_handle a, node_handle b, node_handle
 
 class MEDDLY::inter_max_evplus : public generic_binary_evplus {
   public:
-    inter_max_evplus(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res);
+    inter_max_evplus(forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual ct_entry_key* findResult(long aev, node_handle a,
@@ -155,9 +150,9 @@ class MEDDLY::inter_max_evplus : public generic_binary_evplus {
         long& cev, node_handle& c);
 };
 
-MEDDLY::inter_max_evplus::inter_max_evplus(binary_list& opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_evplus(opcode, arg1, arg2, res)
+MEDDLY::inter_max_evplus::inter_max_evplus(forest* arg1,
+        forest* arg2, forest* res)
+  : generic_binary_evplus(*INTERSECTION_list, arg1, arg2, res)
 {
   operationCommutes();
 }
@@ -409,15 +404,15 @@ MEDDLY::INTERSECTION(MEDDLY::forest* a, MEDDLY::forest* b, MEDDLY::forest* c)
 
     if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         if (c->isForRelations()) {
-            bop = new inter_mxd(*INTERSECTION_list, a, b, c);
+            bop = new inter_mxd(a, b, c);
         } else {
-            bop = new inter_mdd(*INTERSECTION_list, a, b, c);
+            bop = new inter_mdd(a, b, c);
         }
     }
 
     if (c->getEdgeLabeling() == edge_labeling::EVPLUS) {
         if (! c->isForRelations()) {
-            bop = new inter_max_evplus(*INTERSECTION_list, a, b, c);
+            bop = new inter_max_evplus(a, b, c);
         }
     }
 

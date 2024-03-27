@@ -39,8 +39,7 @@ namespace MEDDLY {
 
 class MEDDLY::cross_bool : public binary_operation {
   public:
-    cross_bool(binary_list& oc, forest* a1,
-      forest* a2, forest* res);
+    cross_bool(forest* a1, forest* a2, forest* res);
 
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
 
@@ -48,11 +47,10 @@ class MEDDLY::cross_bool : public binary_operation {
     node_handle compute_un(int ht, node_handle a, node_handle b);
 };
 
-MEDDLY::cross_bool::cross_bool(binary_list& oc, forest* a1,
-  forest* a2, forest* res)
-: binary_operation(oc, 1, a1, a2, res)
+MEDDLY::cross_bool::cross_bool(forest* a1, forest* a2, forest* res)
+: binary_operation(*CROSS_list, 1, a1, a2, res)
 {
-  ct_entry_type* et = new ct_entry_type(oc.getName(), "INN:N");
+  ct_entry_type* et = new ct_entry_type(CROSS_list->getName(), "INN:N");
   et->setForestForSlot(1, a1);
   et->setForestForSlot(2, a2);
   et->setForestForSlot(4, res);
@@ -203,7 +201,7 @@ MEDDLY::CROSS(MEDDLY::forest* a, MEDDLY::forest* b, MEDDLY::forest* c)
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
 
-    return CROSS_list->addOperation( new cross_bool(*CROSS_list, a, b, c) );
+    return CROSS_list->addOperation( new cross_bool(a, b, c) );
 }
 
 void MEDDLY::CROSS_init(MEDDLY::binary_list &c)

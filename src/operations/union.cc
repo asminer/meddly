@@ -38,16 +38,14 @@ namespace MEDDLY {
 
 class MEDDLY::union_mdd : public generic_binary_mdd {
   public:
-    union_mdd(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res);
+    union_mdd(forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::union_mdd::union_mdd(binary_list& opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mdd(opcode, arg1, arg2, res)
+MEDDLY::union_mdd::union_mdd(forest* arg1, forest* arg2, forest* res)
+  : generic_binary_mdd(*UNION_list, arg1, arg2, res)
 {
   operationCommutes();
 }
@@ -96,17 +94,15 @@ bool MEDDLY::union_mdd::checkTerminals(node_handle a, node_handle b, node_handle
 
 class MEDDLY::union_mxd : public generic_binary_mxd {
   public:
-    union_mxd(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res);
+    union_mxd(forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
     virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
 };
 
-MEDDLY::union_mxd::union_mxd(binary_list& opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mxd(opcode, arg1, arg2, res)
+MEDDLY::union_mxd::union_mxd(forest* arg1, forest* arg2, forest* res)
+  : generic_binary_mxd(*UNION_list, arg1, arg2, res)
 {
   operationCommutes();
 }
@@ -282,8 +278,7 @@ MEDDLY::union_mxd::compute_ext(node_handle a, node_handle b)
 
 class MEDDLY::union_min_evplus : public generic_binary_evplus {
   public:
-    union_min_evplus(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res);
+    union_min_evplus(forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual ct_entry_key* findResult(long aev, node_handle a,
@@ -295,9 +290,8 @@ class MEDDLY::union_min_evplus : public generic_binary_evplus {
       long& cev, node_handle& c);
 };
 
-MEDDLY::union_min_evplus::union_min_evplus(binary_list& opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_evplus(opcode, arg1, arg2, res)
+MEDDLY::union_min_evplus::union_min_evplus(forest* a, forest* b, forest* c)
+  : generic_binary_evplus(*UNION_list, a, b, c)
 {
   operationCommutes();
 }
@@ -409,7 +403,7 @@ bool MEDDLY::union_min_evplus::checkTerminals(long aev, node_handle a, long bev,
 
 class MEDDLY::union_min_evplus_mxd : public generic_binary_evplus_mxd {
   public:
-    union_min_evplus_mxd(binary_list& opcode, forest* arg1,
+    union_min_evplus_mxd(forest* arg1,
       forest* arg2, forest* res);
 
   protected:
@@ -422,9 +416,9 @@ class MEDDLY::union_min_evplus_mxd : public generic_binary_evplus_mxd {
       long& cev, node_handle& c);
 };
 
-MEDDLY::union_min_evplus_mxd::union_min_evplus_mxd(binary_list& opcode,
+MEDDLY::union_min_evplus_mxd::union_min_evplus_mxd(
   forest* arg1, forest* arg2, forest* res)
-  : generic_binary_evplus_mxd(opcode, arg1, arg2, res)
+  : generic_binary_evplus_mxd(*UNION_list, arg1, arg2, res)
 {
   operationCommutes();
 }
@@ -567,17 +561,17 @@ MEDDLY::UNION(MEDDLY::forest* a, MEDDLY::forest* b, MEDDLY::forest* c)
 
     if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         if (c->isForRelations()) {
-            bop = new union_mxd(*UNION_list, a, b, c);
+            bop = new union_mxd(a, b, c);
         } else {
-            bop = new union_mdd(*UNION_list, a, b, c);
+            bop = new union_mdd(a, b, c);
         }
     }
 
     if (c->getEdgeLabeling() == edge_labeling::EVPLUS) {
         if (c->isForRelations()) {
-            bop = new union_min_evplus_mxd(*UNION_list, a, b, c);
+            bop = new union_min_evplus_mxd(a, b, c);
         } else {
-            bop = new union_min_evplus(*UNION_list, a, b, c);
+            bop = new union_min_evplus(a, b, c);
         }
     }
 

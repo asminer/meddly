@@ -35,16 +35,14 @@ namespace MEDDLY {
 
 class MEDDLY::diffr_mdd : public generic_binary_mdd {
   public:
-    diffr_mdd(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res);
+    diffr_mdd(forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::diffr_mdd::diffr_mdd(binary_list& opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mdd(opcode, arg1, arg2, res)
+MEDDLY::diffr_mdd::diffr_mdd(forest* arg1, forest* arg2, forest* res)
+  : generic_binary_mdd(*DIFFERENCE_list, arg1, arg2, res)
 {
   //  difference does NOT commute
 }
@@ -88,16 +86,14 @@ bool MEDDLY::diffr_mdd::checkTerminals(node_handle a, node_handle b, node_handle
 
 class MEDDLY::diffr_mxd : public generic_binary_mxd {
   public:
-    diffr_mxd(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res);
+    diffr_mxd(forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::diffr_mxd::diffr_mxd(binary_list& opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mxd(opcode, arg1, arg2, res)
+MEDDLY::diffr_mxd::diffr_mxd(forest* arg1, forest* arg2, forest* res)
+  : generic_binary_mxd(*DIFFERENCE_list, arg1, arg2, res)
 {
   //  difference does NOT commute
 }
@@ -173,9 +169,9 @@ MEDDLY::DIFFERENCE(MEDDLY::forest* a, MEDDLY::forest* b, MEDDLY::forest* c)
 
     if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         if (c->isForRelations()) {
-            bop = new diffr_mxd(*DIFFERENCE_list, a, b, c);
+            bop = new diffr_mxd(a, b, c);
         } else {
-            bop = new diffr_mdd(*DIFFERENCE_list, a, b, c);
+            bop = new diffr_mdd(a, b, c);
         }
     }
 
