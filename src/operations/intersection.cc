@@ -25,7 +25,6 @@ namespace MEDDLY {
     class inter_mxd;
     class inter_max_evplus;
 
-//    class inter_opname;
     binary_list* INTERSECTION_list = nullptr;
 };
 
@@ -373,78 +372,9 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
 
 // ******************************************************************
 // *                                                                *
-// *                       inter_opname class                       *
-// *                                                                *
-// ******************************************************************
-
-/*
-class MEDDLY::inter_opname : public binary_opname {
-  public:
-    inter_opname();
-    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::inter_opname::inter_opname()
- : binary_opname("Intersection")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::inter_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->isForRelations() != r->isForRelations()) ||
-    (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling())
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    if (r->isForRelations())
-      return new inter_mxd(c, a1, a2, r);
-    else
-      return new inter_mdd(c, a1, a2, r);
-  }
-
-  if (r->getEdgeLabeling() == edge_labeling::EVPLUS) {
-    if (r->isForRelations()) {
-      throw error(error::NOT_IMPLEMENTED);
-    }
-    else {
-      return new inter_max_evplus(c, a1, a2, r);
-    }
-  }
-
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-*/
-
-// ******************************************************************
-// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
-
-// OLD
-/*
-
-MEDDLY::binary_opname* MEDDLY::initializeIntersection()
-{
-  return new inter_opname;
-}
-
-*/
 
 MEDDLY::binary_operation*
 MEDDLY::INTERSECTION(MEDDLY::forest* a, MEDDLY::forest* b, MEDDLY::forest* c)
