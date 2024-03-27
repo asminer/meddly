@@ -302,10 +302,10 @@ void MEDDLY::builtin_init::setup()
     //
     unsigned bslot=0;
 
-    UNION_init          (bcaches[bslot++]);
-    INTERSECTION_init   (bcaches[bslot++]);
-    DIFFERENCE_init     (bcaches[bslot++]);
-    CROSS_init          (bcaches[bslot++]);
+    UNION_init();
+    INTERSECTION_init();
+    DIFFERENCE_init();
+    CROSS_init();
 
     MEDDLY_DCASSERT(bslot < max_binary);
 
@@ -388,6 +388,10 @@ void MEDDLY::builtin_init::cleanup()
     //
     // Binary ops
     //
+    UNION_done();
+    INTERSECTION_done();
+    DIFFERENCE_done();
+    CROSS_done();
     // mydelete(_UNION);
     // mydelete(_INTERSECT);
     // mydelete(_DIFFERENCE);

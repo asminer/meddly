@@ -24,8 +24,6 @@ namespace MEDDLY {
     class inter_mdd;
     class inter_mxd;
     class inter_max_evplus;
-
-    binary_list* INTERSECTION_list = nullptr;
 };
 
 
@@ -36,17 +34,35 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::inter_mdd : public generic_binary_mdd {
-  public:
-    inter_mdd(forest* arg1, forest* arg2, forest* res);
+    protected:
+        inter_mdd(forest* arg1, forest* arg2, forest* res);
 
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
+        virtual bool checkTerminals(node_handle a, node_handle b,
+                node_handle& c);
+
+    public:
+        static binary_list cache;
+
+        inline static binary_operation* build(forest* a, forest* b, forest* c)
+        {
+            binary_operation* bop =  cache.findOperation(a, b, c);
+            if (bop) {
+                return bop;
+            }
+            return cache.addOperation(new inter_mdd(a, b, c));
+        }
 };
 
+MEDDLY::binary_list MEDDLY::inter_mdd::cache;
+
 MEDDLY::inter_mdd::inter_mdd(forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mdd(*INTERSECTION_list, arg1, arg2, res)
+  : generic_binary_mdd(cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::inter_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -95,18 +111,35 @@ bool MEDDLY::inter_mdd::checkTerminals(node_handle a, node_handle b, node_handle
 // ******************************************************************
 
 class MEDDLY::inter_mxd : public generic_binary_mxd {
-  public:
-    inter_mxd(forest* arg1, forest* arg2, forest* res);
+    protected:
+        inter_mxd(forest* arg1, forest* arg2, forest* res);
 
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-    virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
+        virtual bool checkTerminals(node_handle a, node_handle b,
+                node_handle& c);
+        virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
+    public:
+        static binary_list cache;
+
+        inline static binary_operation* build(forest* a, forest* b, forest* c)
+        {
+            binary_operation* bop =  cache.findOperation(a, b, c);
+            if (bop) {
+                return bop;
+            }
+            return cache.addOperation(new inter_mxd(a, b, c));
+        }
 };
 
+MEDDLY::binary_list MEDDLY::inter_mxd::cache;
+
 MEDDLY::inter_mxd::inter_mxd(forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mxd(*INTERSECTION_list, arg1, arg2, res)
+  : generic_binary_mxd(cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::inter_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -137,24 +170,40 @@ bool MEDDLY::inter_mxd::checkTerminals(node_handle a, node_handle b, node_handle
 // ******************************************************************
 
 class MEDDLY::inter_max_evplus : public generic_binary_evplus {
-  public:
-    inter_max_evplus(forest* arg1, forest* arg2, forest* res);
+    protected:
+        inter_max_evplus(forest* arg1, forest* arg2, forest* res);
 
-  protected:
-    virtual ct_entry_key* findResult(long aev, node_handle a,
-      long bev, node_handle b, long& cev, node_handle &c);
-    virtual void saveResult(ct_entry_key* key,
-      long aev, node_handle a, long bev, node_handle b, long cev, node_handle c);
+        virtual ct_entry_key* findResult(long aev, node_handle a,
+            long bev, node_handle b, long& cev, node_handle &c);
+        virtual void saveResult(ct_entry_key* key, long aev, node_handle a,
+            long bev, node_handle b, long cev, node_handle c);
 
-    virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
-        long& cev, node_handle& c);
+        virtual bool checkTerminals(long aev, node_handle a,
+            long bev, node_handle b, long& cev, node_handle& c);
+
+    public:
+        static binary_list cache;
+
+        inline static binary_operation* build(forest* a, forest* b, forest* c)
+        {
+            binary_operation* bop =  cache.findOperation(a, b, c);
+            if (bop) {
+                return bop;
+            }
+            return cache.addOperation(new inter_max_evplus(a, b, c));
+        }
 };
 
-MEDDLY::inter_max_evplus::inter_max_evplus(forest* arg1,
-        forest* arg2, forest* res)
-  : generic_binary_evplus(*INTERSECTION_list, arg1, arg2, res)
+MEDDLY::binary_list MEDDLY::inter_max_evplus::cache;
+
+MEDDLY::inter_max_evplus::inter_max_evplus(forest* arg1, forest* arg2,
+        forest* res) : generic_binary_evplus(cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVPLUS);
 }
 
 MEDDLY::ct_entry_key* MEDDLY::inter_max_evplus::findResult(long aev, node_handle a,
@@ -378,55 +427,34 @@ MEDDLY::INTERSECTION(MEDDLY::forest* a, MEDDLY::forest* b, MEDDLY::forest* c)
         return nullptr;
     }
 
-    MEDDLY_DCASSERT(INTERSECTION_list);
-    binary_operation* bop =  INTERSECTION_list->findOperation(a, b, c);
-    if (bop) {
-        return bop;
-    }
-
-    if  (
-            (a->getDomain() != c->getDomain()) ||
-            (b->getDomain() != c->getDomain())
-        )
-    {
-        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-    }
-
-    if  (
-            (a->isForRelations() != c->isForRelations()) ||
-            (b->isForRelations() != c->isForRelations()) ||
-            (a->getEdgeLabeling() != c->getEdgeLabeling()) ||
-            (b->getEdgeLabeling() != c->getEdgeLabeling())
-        )
-    {
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
-
     if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         if (c->isForRelations()) {
-            bop = new inter_mxd(a, b, c);
+            return inter_mxd::build(a, b, c);
         } else {
-            bop = new inter_mdd(a, b, c);
+            return inter_mdd::build(a, b, c);
         }
     }
 
     if (c->getEdgeLabeling() == edge_labeling::EVPLUS) {
         if (! c->isForRelations()) {
-            bop = new inter_max_evplus(a, b, c);
+            return inter_max_evplus::build(a, b, c);
         }
-    }
-
-    if (bop) {
-        return INTERSECTION_list->addOperation(bop);
     }
 
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
-
-void MEDDLY::INTERSECTION_init(MEDDLY::binary_list &c)
+void MEDDLY::INTERSECTION_init()
 {
-    INTERSECTION_list = &c;
-    c.setName("Intersection");
+    inter_mdd::cache.reset("Intersection");
+    inter_mxd::cache.reset("Intersection");
+    inter_max_evplus::cache.reset("Intersection");
+}
+
+void MEDDLY::INTERSECTION_done()
+{
+    MEDDLY_DCASSERT(inter_mdd::cache.isEmpty());
+    MEDDLY_DCASSERT(inter_mxd::cache.isEmpty());
+    MEDDLY_DCASSERT(inter_max_evplus::cache.isEmpty());
 }
 

@@ -111,6 +111,19 @@ class MEDDLY::binary_operation : public operation {
                 throw error(error::TYPE_MISMATCH, file, line);
             }
         }
+        /// Make sure the arguments match the range type
+        inline void checkAllRanges(const char* file, unsigned line,
+                range_type rt) const
+        {
+            if  (
+                    (arg1F->getRangeType() != rt)  ||
+                    (arg2F->getRangeType() != rt)  ||
+                    (resF->getRangeType() != rt)
+                )
+            {
+                throw error(error::TYPE_MISMATCH, file, line);
+            }
+        }
 
     public:
         /**
@@ -161,8 +174,10 @@ class MEDDLY::binary_list {
     public:
         binary_list(const char* n = nullptr);
 
-        inline void setName(const char* n) { name = n; }
+        void reset(const char* n);
+
         inline const char* getName() const { return name; }
+        inline bool isEmpty() const { return (!front); }
 
         inline binary_operation* addOperation(binary_operation* bop) {
             if (bop) {

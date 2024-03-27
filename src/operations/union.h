@@ -26,7 +26,8 @@ namespace MEDDLY {
 
     /// The 'union' operation builder.
     binary_operation* UNION(forest* a, forest* b, forest* c);
-    void UNION_init(binary_list &c);
+    void UNION_init();
+    void UNION_done();
 }
 
 #endif

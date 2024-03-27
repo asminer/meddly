@@ -7,26 +7,22 @@ Transition to new binary/unary builtin operation types:
     (1) DONE
 
     (2) Replace unary_opname, binary_opname derived classes
-        with replacement functions.
-        Add initializers and destroyers as needed:
+        with replacement functions. Each operation has its
+        own "cache" (unary_list or binary_list).
+        Add initializers and destroyers:
 
-            void OPERATION_init(unary_list &c)
-            void OPERATION_init(binary_list &c)
-
-            void OPERATION_destroy()
-
-        Use an array (vector?) of unary_list, and call *_init
-        on each operation e.g.
-                CARDINALITY_init(unary[u++]);
-                COMPLEMENT_init(unary[u++]);
-
-                PLUS_init(binary[b++]);
-                MINUS_init(binary[b++]);
-                ...
+            void OPERATION_init()
+            void OPERATION_done()
 
         Build and test
 
-    (3) Figure out what to do about specialized operations,
+    (3) Remove the 'global' caches in base classes binary_operation
+        and unary_operation; behavior is now completely local to
+        each operation derived class.
+
+        Build and test
+
+    (4) Figure out what to do about specialized operations,
         could just have specialized functions e.g.,
 
         specialized_operation*
@@ -35,8 +31,7 @@ Transition to new binary/unary builtin operation types:
         EXPLVECT_MATR_MULT(const dd_edge &x, const dd_edge &A, const dd_edge &y)
 
 
-
-    (4) When done, remove opname class hierarchy
+    (5) When done, remove opname class hierarchy
 
 
 forest::registerOperation

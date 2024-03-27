@@ -26,7 +26,8 @@ namespace MEDDLY {
 
     /// The 'difference' operation builder.
     binary_operation* DIFFERENCE(forest* a, forest* b, forest* c);
-    void DIFFERENCE_init(binary_list &c);
+    void DIFFERENCE_init();
+    void DIFFERENCE_done();
 }
 
 #endif

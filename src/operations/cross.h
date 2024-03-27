@@ -26,7 +26,8 @@ namespace MEDDLY {
 
     /// The 'cross-product' operation builder.
     binary_operation* CROSS(forest* a, forest* b, forest* c);
-    void CROSS_init(binary_list &c);
+    void CROSS_init();
+    void CROSS_done();
 }
 
 #endif

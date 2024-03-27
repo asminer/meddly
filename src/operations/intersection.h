@@ -26,7 +26,8 @@ namespace MEDDLY {
 
     /// The 'intersection' operation builder.
     binary_operation* INTERSECTION(forest* a, forest* b, forest* c);
-    void INTERSECTION_init(binary_list &c);
+    void INTERSECTION_init();
+    void INTERSECTION_done();
 }
 
 #endif
