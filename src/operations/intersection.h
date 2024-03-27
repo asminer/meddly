@@ -20,10 +20,16 @@
 #define MEDDLY_INTERSECTION_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
+    class binary_list;
+
+    /// The 'intersection' operation builder.
+    binary_operation* INTERSECTION(forest* a, forest* b, forest* c);
+    void INTERSECTION_init(binary_list &c);
 
   /// Set up a binary_opname for the "intersection" operation.
-  binary_opname* initializeIntersection();
+  // binary_opname* initializeIntersection();
 }
 
 #endif

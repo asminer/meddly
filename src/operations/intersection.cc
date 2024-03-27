@@ -21,11 +21,12 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class inter_mdd;
-  class inter_mxd;
-  class inter_max_evplus;
+    class inter_mdd;
+    class inter_mxd;
+    class inter_max_evplus;
 
-  class inter_opname;
+//    class inter_opname;
+    binary_list* INTERSECTION_list = nullptr;
 };
 
 
@@ -376,6 +377,7 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
 // *                                                                *
 // ******************************************************************
 
+/*
 class MEDDLY::inter_opname : public binary_opname {
   public:
     inter_opname();
@@ -426,6 +428,7 @@ MEDDLY::inter_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
 
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -433,8 +436,72 @@ MEDDLY::inter_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
 // *                                                                *
 // ******************************************************************
 
+// OLD
+/*
+
 MEDDLY::binary_opname* MEDDLY::initializeIntersection()
 {
   return new inter_opname;
+}
+
+*/
+
+MEDDLY::binary_operation*
+MEDDLY::INTERSECTION(MEDDLY::forest* a, MEDDLY::forest* b, MEDDLY::forest* c)
+{
+    if (!a || !b || !c) {
+        return nullptr;
+    }
+
+    MEDDLY_DCASSERT(INTERSECTION_list);
+    binary_operation* bop =  INTERSECTION_list->findOperation(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if  (
+            (a->getDomain() != c->getDomain()) ||
+            (b->getDomain() != c->getDomain())
+        )
+    {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    if  (
+            (a->isForRelations() != c->isForRelations()) ||
+            (b->isForRelations() != c->isForRelations()) ||
+            (a->getEdgeLabeling() != c->getEdgeLabeling()) ||
+            (b->getEdgeLabeling() != c->getEdgeLabeling())
+        )
+    {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        if (c->isForRelations()) {
+            bop = new inter_mxd(*INTERSECTION_list, a, b, c);
+        } else {
+            bop = new inter_mdd(*INTERSECTION_list, a, b, c);
+        }
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::EVPLUS) {
+        if (! c->isForRelations()) {
+            bop = new inter_max_evplus(*INTERSECTION_list, a, b, c);
+        }
+    }
+
+    if (bop) {
+        return INTERSECTION_list->addOperation(bop);
+    }
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+
+void MEDDLY::INTERSECTION_init(MEDDLY::binary_list &c)
+{
+    INTERSECTION_list = &c;
+    c.setName("Intersection");
 }
 

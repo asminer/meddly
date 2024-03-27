@@ -92,6 +92,12 @@ class MEDDLY::builtin_init : public initializer_list {
         virtual void setup();
         virtual void cleanup();
     private:
+        std::vector <unary_list>  ucaches;
+        std::vector <binary_list> bcaches;
+//
+// Working to remove everything below here
+//
+    private:
         template <class OPN>
         inline void mydelete(OPN* &p) {
             delete p;
@@ -108,7 +114,7 @@ class MEDDLY::builtin_init : public initializer_list {
         static unary_opname* _SELECT;
     public:
         static binary_opname* _UNION;
-        static binary_opname* _INTERSECT;
+        // static binary_opname* _INTERSECT;
         static binary_opname* _DIFFERENCE;
         static binary_opname* _CROSS;
         static binary_opname* _MIN;
@@ -164,7 +170,7 @@ MEDDLY::unary_opname* MEDDLY::builtin_init::_MINRANGE;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_SELECT;
 
 MEDDLY::binary_opname* MEDDLY::builtin_init::_UNION;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_INTERSECT;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_INTERSECT;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_DIFFERENCE;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_CROSS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_MIN;
@@ -227,7 +233,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     // Binary ops
     //
     _UNION          = nullptr;
-    _INTERSECT      = nullptr;
+    // _INTERSECT      = nullptr;
     _DIFFERENCE     = nullptr;
     _CROSS          = nullptr;
     _MIN            = nullptr;
@@ -277,8 +283,31 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
 
 void MEDDLY::builtin_init::setup()
 {
+    const unsigned max_unary  = 10;     // increase as needed
+    const unsigned max_binary = 30;     // increase as needed
+
+    ucaches.resize(max_unary);
+    bcaches.resize(max_binary);
+
     //
     // Unary ops
+    //
+    unsigned uslot=0;
+    // .. tbd
+    MEDDLY_DCASSERT(uslot < max_unary);
+
+
+    //
+    // Binary ops
+    //
+    unsigned bslot=0;
+
+    INTERSECTION_init(bcaches[bslot++]);
+
+    MEDDLY_DCASSERT(bslot < max_binary);
+
+    //
+    // OLD Unary ops
     //
     _COPY       =   initializeCopy()        ;
     _CARD       =   initializeCardinality() ;
@@ -289,10 +318,10 @@ void MEDDLY::builtin_init::setup()
     _CYCLE      =   initializeCycle()       ;
     _SELECT     =   initializeSelect()      ;
     //
-    // Binary ops
+    // OLD Binary ops
     //
     _UNION          =   initializeUnion()           ;
-    _INTERSECT      =   initializeIntersection()    ;
+    // _INTERSECT      =   initializeIntersection()    ;
     _DIFFERENCE     =   initializeDifference()      ;
     _CROSS          =   initializeCross()           ;
     _MAX            =   initializeMaximum()         ;
@@ -357,7 +386,7 @@ void MEDDLY::builtin_init::cleanup()
     // Binary ops
     //
     mydelete(_UNION);
-    mydelete(_INTERSECT);
+    // mydelete(_INTERSECT);
     mydelete(_DIFFERENCE);
     mydelete(_CROSS);
     mydelete(_MIN);
@@ -462,10 +491,12 @@ MEDDLY::binary_operation* MEDDLY::UNION(forest* a, forest* b, forest* c)
     return builtin_init::_UNION->getOperation(a, b, c);
 }
 
+/*
 MEDDLY::binary_operation* MEDDLY::INTERSECTION(forest* a, forest* b, forest* c)
 {
     return builtin_init::_INTERSECT->getOperation(a, b, c);
 }
+*/
 
 MEDDLY::binary_operation* MEDDLY::DIFFERENCE(forest* a, forest* b, forest* c)
 {

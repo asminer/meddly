@@ -4,15 +4,7 @@ Interface changes (aside from moving header files around)
 
 Transition to new binary/unary builtin operation types:
 
-    (1) Implement functions
-            unary_operator* UNARYOP(forest* arg, forest* res)
-        by calling the appropriate unary_opname methods
-
-        Implement functions
-            binary_operator* BINARYOP(forest* a, forest* b, forest* c)
-        by calling the appropriate binary_opname methods
-
-        Build and test.
+    (1) DONE
 
     (2) Replace unary_opname, binary_opname derived classes
         with replacement functions.
@@ -34,7 +26,17 @@ Transition to new binary/unary builtin operation types:
 
         Build and test
 
-    (3) When done, remove opname class hierarchy
+    (3) Figure out what to do about specialized operations,
+        could just have specialized functions e.g.,
+
+        specialized_operation*
+        EXPLVECT_MATR_MULT(forest* x, forest* A, forest* y)
+        or actually
+        EXPLVECT_MATR_MULT(const dd_edge &x, const dd_edge &A, const dd_edge &y)
+
+
+
+    (4) When done, remove opname class hierarchy
 
 
 forest::registerOperation
