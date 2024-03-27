@@ -47,7 +47,11 @@ class MEDDLY::union_mdd : public generic_binary_mdd {
 MEDDLY::union_mdd::union_mdd(forest* arg1, forest* arg2, forest* res)
   : generic_binary_mdd(*UNION_list, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::union_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -104,7 +108,11 @@ class MEDDLY::union_mxd : public generic_binary_mxd {
 MEDDLY::union_mxd::union_mxd(forest* arg1, forest* arg2, forest* res)
   : generic_binary_mxd(*UNION_list, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::union_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -293,7 +301,11 @@ class MEDDLY::union_min_evplus : public generic_binary_evplus {
 MEDDLY::union_min_evplus::union_min_evplus(forest* a, forest* b, forest* c)
   : generic_binary_evplus(*UNION_list, a, b, c)
 {
-  operationCommutes();
+    operationCommutes();
+
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVPLUS);
 }
 
 MEDDLY::ct_entry_key* MEDDLY::union_min_evplus::findResult(long aev, node_handle a,
@@ -420,7 +432,11 @@ MEDDLY::union_min_evplus_mxd::union_min_evplus_mxd(
   forest* arg1, forest* arg2, forest* res)
   : generic_binary_evplus_mxd(*UNION_list, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVPLUS);
 }
 
 MEDDLY::ct_entry_key* MEDDLY::union_min_evplus_mxd::findResult(long aev, node_handle a,

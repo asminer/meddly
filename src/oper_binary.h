@@ -20,7 +20,7 @@
 #define MEDDLY_OPER_BINARY_H
 
 #include "oper.h"
-#include "dd_edge.h"
+#include "forest.h"
 
 namespace MEDDLY {
     class dd_edge;
@@ -44,6 +44,73 @@ class MEDDLY::binary_operation : public operation {
 
     protected:
         virtual ~binary_operation();
+
+    protected:
+        // Fairly standard checks; call these in the operator's constructor.
+        //
+        /// Make sure all three domains are the same.
+        inline void checkDomains(const char* file, unsigned line) const
+        {
+            if  (
+                    (arg1F->getDomain() != resF->getDomain()) ||
+                    (arg2F->getDomain() != resF->getDomain())
+                )
+            {
+                throw error(error::DOMAIN_MISMATCH, file, line);
+            }
+        }
+        /// Make sure the arguments set/relation status matches
+        inline void checkAllRelations(const char* file, unsigned line,
+                set_or_rel a) const
+        {
+            if  (
+                    (arg1F->isForRelations() != a)  ||
+                    (arg2F->isForRelations() != a)  ||
+                    (resF->isForRelations() != a)
+                )
+            {
+                throw error(error::TYPE_MISMATCH, file, line);
+            }
+        }
+        /// Make sure the arguments set/relation status matches
+        inline void checkRelations(const char* file, unsigned line,
+                set_or_rel a1, set_or_rel a2, set_or_rel r) const
+        {
+            if  (
+                    (arg1F->isForRelations() != a1)  ||
+                    (arg2F->isForRelations() != a2)  ||
+                    (resF->isForRelations() != r)
+                )
+            {
+                throw error(error::TYPE_MISMATCH, file, line);
+            }
+        }
+        /// Make sure all arguments match the edge labeling rule
+        inline void checkAllLabelings(const char* file, unsigned line,
+                edge_labeling a) const
+        {
+            if  (
+                    (arg1F->getEdgeLabeling() != a)  ||
+                    (arg2F->getEdgeLabeling() != a)  ||
+                    (resF->getEdgeLabeling() != a)
+                )
+            {
+                throw error(error::TYPE_MISMATCH, file, line);
+            }
+        }
+        /// Make sure the arguments edge labeling rules match
+        inline void checkLabelings(const char* file, unsigned line,
+                edge_labeling a1, edge_labeling a2, edge_labeling r) const
+        {
+            if  (
+                    (arg1F->getEdgeLabeling() != a1)  ||
+                    (arg2F->getEdgeLabeling() != a2)  ||
+                    (resF->getEdgeLabeling() != r)
+                )
+            {
+                throw error(error::TYPE_MISMATCH, file, line);
+            }
+        }
 
     public:
         /**
