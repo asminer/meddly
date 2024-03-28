@@ -28,6 +28,8 @@
 
 namespace MEDDLY {
     class cross_bool;
+
+    binary_list CROSS_cache;
 };
 
 // ******************************************************************
@@ -37,7 +39,7 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::cross_bool : public binary_operation {
-    protected:
+    public:
         cross_bool(forest* a1, forest* a2, forest* res);
 
         virtual void computeDDEdge(const dd_edge& a, const dd_edge& b,
@@ -47,31 +49,17 @@ class MEDDLY::cross_bool : public binary_operation {
                 node_handle b);
 
         node_handle compute_un(int ht, node_handle a, node_handle b);
-
-    public:
-        static binary_list cache;
-
-        inline static binary_operation* build(forest* a, forest* b, forest* c)
-        {
-            binary_operation* bop =  cache.find(a, b, c);
-            if (bop) {
-                return bop;
-            }
-            return cache.add(new cross_bool(a, b, c));
-        }
 };
 
-MEDDLY::binary_list MEDDLY::cross_bool::cache;
-
 MEDDLY::cross_bool::cross_bool(forest* a1, forest* a2, forest* res)
-: binary_operation(cache, 1, a1, a2, res)
+: binary_operation(CROSS_cache, 1, a1, a2, res)
 {
     checkDomains(__FILE__, __LINE__);
     checkAllRanges(__FILE__, __LINE__, range_type::BOOLEAN);
     checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
     checkRelations(__FILE__, __LINE__, SET, SET, RELATION);
 
-    ct_entry_type* et = new ct_entry_type(cache.getName(), "INN:N");
+    ct_entry_type* et = new ct_entry_type(CROSS_cache.getName(), "INN:N");
     et->setForestForSlot(1, a1);
     et->setForestForSlot(2, a2);
     et->setForestForSlot(4, res);
@@ -192,17 +180,21 @@ MEDDLY::CROSS(forest* a, forest* b, forest* c)
     if (!a || !b || !c) {
         return nullptr;
     }
+    binary_operation* bop =  CROSS_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
 
-    return cross_bool::build(a, b, c);
+    return CROSS_cache.add(new cross_bool(a, b, c));
 }
 
 void MEDDLY::CROSS_init()
 {
-    cross_bool::cache.reset("Cross");
+    CROSS_cache.reset("Cross");
 }
 
 void MEDDLY::CROSS_done()
 {
-    MEDDLY_DCASSERT(cross_bool::cache.isEmpty());
+    MEDDLY_DCASSERT(CROSS_cache.isEmpty());
 }
 

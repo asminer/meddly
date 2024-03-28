@@ -23,6 +23,8 @@
 namespace MEDDLY {
     class diffr_mdd;
     class diffr_mxd;
+
+    binary_list DIFFR_cache;
 };
 
 // ******************************************************************
@@ -32,27 +34,14 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::diffr_mdd : public generic_binary_mdd {
-    protected:
+    public:
         diffr_mdd(forest* arg1, forest* arg2, forest* res);
         virtual bool checkTerminals(node_handle a, node_handle b,
                 node_handle& c);
-    public:
-        static binary_list cache;
-
-        inline static binary_operation* build(forest* a, forest* b, forest* c)
-        {
-            binary_operation* bop =  cache.find(a, b, c);
-            if (bop) {
-                return bop;
-            }
-            return cache.add(new diffr_mdd(a, b, c));
-        }
 };
 
-MEDDLY::binary_list MEDDLY::diffr_mdd::cache;
-
 MEDDLY::diffr_mdd::diffr_mdd(forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mdd(cache, arg1, arg2, res)
+  : generic_binary_mdd(DIFFR_cache, arg1, arg2, res)
 {
     //  difference does NOT commute
 
@@ -100,28 +89,15 @@ bool MEDDLY::diffr_mdd::checkTerminals(node_handle a, node_handle b, node_handle
 // ******************************************************************
 
 class MEDDLY::diffr_mxd : public generic_binary_mxd {
-    protected:
+    public:
         diffr_mxd(forest* arg1, forest* arg2, forest* res);
         virtual bool checkTerminals(node_handle a, node_handle b,
                 node_handle& c);
-
-    public:
-        static binary_list cache;
-
-        inline static binary_operation* build(forest* a, forest* b, forest* c)
-        {
-            binary_operation* bop =  cache.find(a, b, c);
-            if (bop) {
-                return bop;
-            }
-            return cache.add(new diffr_mxd(a, b, c));
-        }
 };
 
-MEDDLY::binary_list MEDDLY::diffr_mxd::cache;
 
 MEDDLY::diffr_mxd::diffr_mxd(forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mxd(cache, arg1, arg2, res)
+  : generic_binary_mxd(DIFFR_cache, arg1, arg2, res)
 {
     //  difference does NOT commute
 
@@ -172,12 +148,16 @@ MEDDLY::DIFFERENCE(forest* a, forest* b, forest* c)
     if (!a || !b || !c) {
         return nullptr;
     }
+    binary_operation* bop =  DIFFR_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
 
     if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         if (c->isForRelations()) {
-            return diffr_mxd::build(a, b, c);
+            return DIFFR_cache.add(new diffr_mxd(a, b, c));
         } else {
-            return diffr_mdd::build(a, b, c);
+            return DIFFR_cache.add(new diffr_mdd(a, b, c));
         }
     }
 
@@ -186,12 +166,10 @@ MEDDLY::DIFFERENCE(forest* a, forest* b, forest* c)
 
 void MEDDLY::DIFFERENCE_init()
 {
-    diffr_mdd::cache.reset("Difference");
-    diffr_mxd::cache.reset("Difference");
+    DIFFR_cache.reset("Difference");
 }
 
 void MEDDLY::DIFFERENCE_done()
 {
-    MEDDLY_DCASSERT(diffr_mdd::cache.isEmpty());
-    MEDDLY_DCASSERT(diffr_mxd::cache.isEmpty());
+    MEDDLY_DCASSERT(DIFFR_cache.isEmpty());
 }
