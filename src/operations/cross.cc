@@ -187,7 +187,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
 // ******************************************************************
 
 MEDDLY::binary_operation*
-MEDDLY::CROSS(MEDDLY::forest* a, MEDDLY::forest* b, MEDDLY::forest* c)
+MEDDLY::CROSS(forest* a, forest* b, forest* c)
 {
     if (!a || !b || !c) {
         return nullptr;

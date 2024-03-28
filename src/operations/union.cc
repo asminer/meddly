@@ -595,7 +595,7 @@ bool MEDDLY::union_min_evplus_mxd::checkTerminals(long aev, node_handle a, long 
 // ******************************************************************
 
 MEDDLY::binary_operation*
-MEDDLY::UNION(MEDDLY::forest* a, MEDDLY::forest* b, MEDDLY::forest* c)
+MEDDLY::UNION(forest* a, forest* b, forest* c)
 {
     if (!a || !b || !c) {
         return nullptr;

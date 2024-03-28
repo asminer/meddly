@@ -167,7 +167,7 @@ bool MEDDLY::diffr_mxd::checkTerminals(node_handle a, node_handle b, node_handle
 // ******************************************************************
 
 MEDDLY::binary_operation*
-MEDDLY::DIFFERENCE(MEDDLY::forest* a, MEDDLY::forest* b, MEDDLY::forest* c)
+MEDDLY::DIFFERENCE(forest* a, forest* b, forest* c)
 {
     if (!a || !b || !c) {
         return nullptr;

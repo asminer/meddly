@@ -421,7 +421,7 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
 // ******************************************************************
 
 MEDDLY::binary_operation*
-MEDDLY::INTERSECTION(MEDDLY::forest* a, MEDDLY::forest* b, MEDDLY::forest* c)
+MEDDLY::INTERSECTION(forest* a, forest* b, forest* c)
 {
     if (!a || !b || !c) {
         return nullptr;

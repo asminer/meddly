@@ -113,8 +113,13 @@ MEDDLY::unary_operation::checkForestCompatibility() const
 
 MEDDLY::unary_list::unary_list(const char* n)
 {
+    reset(n);
+}
+
+void MEDDLY::unary_list::reset(const char* n)
+{
     front = nullptr;
-    setName(n);
+    name = n;
 }
 
 MEDDLY::unary_operation*

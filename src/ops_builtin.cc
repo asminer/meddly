@@ -91,9 +91,6 @@ class MEDDLY::builtin_init : public initializer_list {
     protected:
         virtual void setup();
         virtual void cleanup();
-    private:
-        std::vector <unary_list>  ucaches;
-        std::vector <binary_list> bcaches;
 //
 // Working to remove everything below here
 //
@@ -107,7 +104,7 @@ class MEDDLY::builtin_init : public initializer_list {
         static unary_opname* _CARD;
         static unary_opname* _COMPL;
         static unary_opname* _MDD2INDEX;
-        static unary_opname* _COPY;
+        // static unary_opname* _COPY;
         static unary_opname* _CYCLE;
         static unary_opname* _MAXRANGE;
         static unary_opname* _MINRANGE;
@@ -163,7 +160,7 @@ class MEDDLY::builtin_init : public initializer_list {
 MEDDLY::unary_opname* MEDDLY::builtin_init::_CARD;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_COMPL;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_MDD2INDEX;
-MEDDLY::unary_opname* MEDDLY::builtin_init::_COPY;
+// MEDDLY::unary_opname* MEDDLY::builtin_init::_COPY;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_CYCLE;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_MAXRANGE;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_MINRANGE;
@@ -221,7 +218,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     //
     // Unary ops
     //
-    _COPY       = nullptr;
+    // _COPY       = nullptr;
     _CARD       = nullptr;
     _COMPL      = nullptr;
     _MAXRANGE   = nullptr;
@@ -283,36 +280,23 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
 
 void MEDDLY::builtin_init::setup()
 {
-    const unsigned max_unary  = 10;     // increase as needed
-    const unsigned max_binary = 30;     // increase as needed
-
-    ucaches.resize(max_unary);
-    bcaches.resize(max_binary);
-
     //
     // Unary ops
     //
-    unsigned uslot=0;
-    // .. tbd
-    MEDDLY_DCASSERT(uslot < max_unary);
-
+    COPY_init();
 
     //
     // Binary ops
     //
-    unsigned bslot=0;
-
     UNION_init();
     INTERSECTION_init();
     DIFFERENCE_init();
     CROSS_init();
 
-    MEDDLY_DCASSERT(bslot < max_binary);
-
     //
     // OLD Unary ops
     //
-    _COPY       =   initializeCopy()        ;
+    // _COPY       =   initializeCopy()        ;
     _CARD       =   initializeCardinality() ;
     _COMPL      =   initializeComplement()  ;
     _MAXRANGE   =   initializeMaxRange()    ;
@@ -377,7 +361,8 @@ void MEDDLY::builtin_init::cleanup()
     //
     // Unary ops
     //
-    mydelete(_COPY);
+    COPY_done();
+    // mydelete(_COPY);
     mydelete(_CARD);
     mydelete(_COMPL);
     mydelete(_MAXRANGE);
@@ -462,10 +447,12 @@ MEDDLY::unary_operation* MEDDLY::CONVERT_TO_INDEX_SET(forest* arg, forest* res)
     return builtin_init::_MDD2INDEX->getOperation(arg, res);
 }
 
+/*
 MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
 {
     return builtin_init::_COPY->getOperation(arg, res);
 }
+*/
 
 MEDDLY::unary_operation* MEDDLY::CYCLE(forest* arg, forest* res)
 {

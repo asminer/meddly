@@ -19,8 +19,8 @@
 #ifndef MEDDLY_OPER_UNARY_H
 #define MEDDLY_OPER_UNARY_H
 
-#include "dd_edge.h"
 #include "oper.h"
+#include "forest.h"
 
 namespace MEDDLY {
     class ct_object;
@@ -49,6 +49,66 @@ class MEDDLY::unary_operation : public operation {
 
     protected:
         virtual ~unary_operation();
+
+    protected:
+        // Fairly standard checks; call these in the operator's constructor.
+        //
+        /// Make sure all three domains are the same.
+        inline void checkDomains(const char* file, unsigned line) const
+        {
+            if  ( (argF->getDomain() != resF->getDomain()) )
+            {
+                throw error(error::DOMAIN_MISMATCH, file, line);
+            }
+        }
+        /// Make sure the arguments set/relation status matches
+        inline void checkAllRelations(const char* file, unsigned line,
+                set_or_rel a) const
+        {
+            if  (
+                    (argF->isForRelations() != a)  ||
+                    (resF->isForRelations() != a)
+                )
+            {
+                throw error(error::TYPE_MISMATCH, file, line);
+            }
+        }
+        /// Make sure all arguments match the edge labeling rule
+        inline void checkAllLabelings(const char* file, unsigned line,
+                edge_labeling a) const
+        {
+            if  (
+                    (argF->getEdgeLabeling() != a)  ||
+                    (resF->getEdgeLabeling() != a)
+                )
+            {
+                throw error(error::TYPE_MISMATCH, file, line);
+            }
+        }
+        /// Make sure the arguments edge labeling rules match
+        inline void checkLabelings(const char* file, unsigned line,
+                edge_labeling a, edge_labeling r) const
+        {
+            if  (
+                    (argF->getEdgeLabeling() != a)  ||
+                    (resF->getEdgeLabeling() != r)
+                )
+            {
+                throw error(error::TYPE_MISMATCH, file, line);
+            }
+        }
+        /// Make sure the arguments match the range type
+        inline void checkAllRanges(const char* file, unsigned line,
+                range_type rt) const
+        {
+            if  (
+                    (argF->getRangeType() != rt)  ||
+                    (resF->getRangeType() != rt)
+                )
+            {
+                throw error(error::TYPE_MISMATCH, file, line);
+            }
+        }
 
     public:
         /**
@@ -95,8 +155,10 @@ class MEDDLY::unary_list {
     public:
         unary_list(const char* n = nullptr);
 
-        inline void setName(const char* n) { name = n; }
+        void reset(const char* n);
+
         inline const char* getName() const { return name; }
+        inline bool isEmpty() const { return (!front); }
 
         inline unary_operation* addOperation(unary_operation* uop) {
             if (uop) {
