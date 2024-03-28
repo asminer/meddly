@@ -20,10 +20,14 @@
 #define MEDDLY_CYCLE_H
 
 namespace MEDDLY {
-    class unary_opname;
+    class forest;
+    class unary_operation;
+    class unary_list;
 
-    /// Set up a unary_opname for the "cycle" operation.
-    unary_opname* initializeCycle();
+    /// Builder for the 'cycle' detection operation.
+    unary_operation* CYCLE(forest* arg, forest* res);
+    void CYCLE_init();
+    void CYCLE_done();
 }
 
 #endif

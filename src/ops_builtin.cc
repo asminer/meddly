@@ -105,7 +105,7 @@ class MEDDLY::builtin_init : public initializer_list {
         // static unary_opname* _COMPL;
         // static unary_opname* _MDD2INDEX;
         // static unary_opname* _COPY;
-        static unary_opname* _CYCLE;
+        // static unary_opname* _CYCLE;
         // static unary_opname* _MAXRANGE;
         // static unary_opname* _MINRANGE;
         static unary_opname* _SELECT;
@@ -161,7 +161,7 @@ class MEDDLY::builtin_init : public initializer_list {
 // MEDDLY::unary_opname* MEDDLY::builtin_init::_COMPL;
 // MEDDLY::unary_opname* MEDDLY::builtin_init::_MDD2INDEX;
 // MEDDLY::unary_opname* MEDDLY::builtin_init::_COPY;
-MEDDLY::unary_opname* MEDDLY::builtin_init::_CYCLE;
+// MEDDLY::unary_opname* MEDDLY::builtin_init::_CYCLE;
 // MEDDLY::unary_opname* MEDDLY::builtin_init::_MAXRANGE;
 // MEDDLY::unary_opname* MEDDLY::builtin_init::_MINRANGE;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_SELECT;
@@ -224,7 +224,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     // _MAXRANGE   = nullptr;
     // _MINRANGE   = nullptr;
     // _MDD2INDEX  = nullptr;
-    _CYCLE      = nullptr;
+    // _CYCLE      = nullptr;
     _SELECT     = nullptr;
     //
     // Binary ops
@@ -287,6 +287,7 @@ void MEDDLY::builtin_init::setup()
     CARDINALITY_init();
     COMPLEMENT_init();
     CONVERT_TO_INDEX_SET_init();
+    CYCLE_init();
     MAX_RANGE_init();
     MIN_RANGE_init();
 
@@ -307,7 +308,7 @@ void MEDDLY::builtin_init::setup()
     // _MAXRANGE   =   initializeMaxRange()    ;
     // _MINRANGE   =   initializeMaxRange()    ;
     // _MDD2INDEX  =   initializeMDD2INDEX()   ;
-    _CYCLE      =   initializeCycle()       ;
+    // _CYCLE      =   initializeCycle()       ;
     _SELECT     =   initializeSelect()      ;
     //
     // OLD Binary ops
@@ -370,6 +371,7 @@ void MEDDLY::builtin_init::cleanup()
     CARDINALITY_done();
     COMPLEMENT_done();
     CONVERT_TO_INDEX_SET_done();
+    CYCLE_done();
     MAX_RANGE_done();
     MIN_RANGE_done();
     // mydelete(_COPY);
@@ -378,7 +380,7 @@ void MEDDLY::builtin_init::cleanup()
     // mydelete(_MAXRANGE);
     // mydelete(_MINRANGE);
     // mydelete(_MDD2INDEX);
-    mydelete(_CYCLE);
+    // mydelete(_CYCLE);
     mydelete(_SELECT);
     //
     // Binary ops
@@ -462,14 +464,12 @@ MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
 {
     return builtin_init::_COPY->getOperation(arg, res);
 }
-*/
 
 MEDDLY::unary_operation* MEDDLY::CYCLE(forest* arg, forest* res)
 {
     return builtin_init::_CYCLE->getOperation(arg, res);
 }
 
-/*
 MEDDLY::unary_operation* MEDDLY::MAX_RANGE(forest* arg, opnd_type res)
 {
     return builtin_init::_MAXRANGE->getOperation(arg, res);
