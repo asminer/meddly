@@ -24,18 +24,17 @@
 #include "../oper_unary.h"
 
 namespace MEDDLY {
+    class range_int;
+    class range_real;
 
-  class range_int;
-  class range_real;
+    class maxrange_int;
+    class minrange_int;
 
-  class maxrange_int;
-  class minrange_int;
+    class maxrange_real;
+    class minrange_real;
 
-  class maxrange_real;
-  class minrange_real;
-
-  class maxrange_opname;
-  class minrange_opname;
+    unary_list MAXRANGE_cache;
+    unary_list MINRANGE_cache;
 };
 
 // ******************************************************************
@@ -130,13 +129,12 @@ MEDDLY::range_real::range_real(unary_list& oc, forest* arg)
 
 /// Max range, returns an integer
 class MEDDLY::maxrange_int : public range_int {
-public:
-  maxrange_int(unary_list& oc, forest* arg)
-    : range_int(oc, arg) { }
-  virtual void compute(const dd_edge &arg, long &res) {
-    res = compute_r(arg.getNode());
-  }
-  int compute_r(node_handle a);
+    public:
+        maxrange_int(forest* arg) : range_int(MAXRANGE_cache, arg) { }
+        virtual void compute(const dd_edge &arg, long &res) {
+            res = compute_r(arg.getNode());
+        }
+        int compute_r(node_handle a);
 };
 
 int MEDDLY::maxrange_int::compute_r(node_handle a)
@@ -178,13 +176,12 @@ int MEDDLY::maxrange_int::compute_r(node_handle a)
 
 /// Min range, returns an integer
 class MEDDLY::minrange_int : public range_int {
-public:
-  minrange_int(unary_list& oc, forest* arg)
-    : range_int(oc, arg) { }
-  virtual void compute(const dd_edge &arg, long &res) {
-    res = compute_r(arg.getNode());
-  }
-  int compute_r(node_handle a);
+    public:
+        minrange_int(forest* arg) : range_int(MINRANGE_cache, arg) { }
+        virtual void compute(const dd_edge &arg, long &res) {
+            res = compute_r(arg.getNode());
+        }
+        int compute_r(node_handle a);
 };
 
 int MEDDLY::minrange_int::compute_r(node_handle a)
@@ -228,13 +225,12 @@ int MEDDLY::minrange_int::compute_r(node_handle a)
 
 /// Max range, returns a real
 class MEDDLY::maxrange_real : public range_real {
-public:
-  maxrange_real(unary_list& oc, forest* arg)
-    : range_real(oc, arg) { }
-  virtual void compute(const dd_edge &arg, double &res) {
-    res = compute_r(arg.getNode());
-  }
-  float compute_r(node_handle a);
+    public:
+        maxrange_real(forest* arg) : range_real(MAXRANGE_cache, arg) { }
+        virtual void compute(const dd_edge &arg, double &res) {
+            res = compute_r(arg.getNode());
+        }
+        float compute_r(node_handle a);
 };
 
 float MEDDLY::maxrange_real::compute_r(node_handle a)
@@ -278,13 +274,12 @@ float MEDDLY::maxrange_real::compute_r(node_handle a)
 
 /// Min range, returns a real
 class MEDDLY::minrange_real : public range_real {
-public:
-  minrange_real(unary_list& oc, forest* arg)
-    : range_real(oc, arg) { }
-  virtual void compute(const dd_edge &arg, double &res) {
-    res = compute_r(arg.getNode());
-  }
-  float compute_r(node_handle a);
+    public:
+        minrange_real(forest* arg) : range_real(MINRANGE_cache, arg) { }
+        virtual void compute(const dd_edge &arg, double &res) {
+            res = compute_r(arg.getNode());
+        }
+        float compute_r(node_handle a);
 };
 
 float MEDDLY::minrange_real::compute_r(node_handle a)
@@ -319,107 +314,89 @@ float MEDDLY::minrange_real::compute_r(node_handle a)
 }
 
 
-
-// ******************************************************************
-// *                                                                *
-// *                     maxrange_opname  class                     *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::maxrange_opname : public unary_opname {
-  public:
-    maxrange_opname();
-    virtual unary_operation*
-      buildOperation(unary_list &c, forest* ar, opnd_type res);
-};
-
-MEDDLY::maxrange_opname::maxrange_opname() : unary_opname("Max_range")
-{
-}
-
-MEDDLY::unary_operation*
-MEDDLY::maxrange_opname::buildOperation(unary_list &c, forest* ar, opnd_type res)
-{
-  if (0==ar) return 0;
-
-  if (ar->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-
-  switch (res) {
-    case opnd_type::INTEGER:
-      if (range_type::INTEGER != ar->getRangeType())
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-      return new maxrange_int(c,  ar);
-
-    case opnd_type::REAL:
-      if (range_type::REAL != ar->getRangeType())
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-      return new maxrange_real(c,  ar);
-
-    default:
-      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-  } // switch
-
-  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-}
-
-// ******************************************************************
-// *                                                                *
-// *                     minrange_opname  class                     *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::minrange_opname : public unary_opname {
-  public:
-    minrange_opname();
-    virtual unary_operation*
-      buildOperation(unary_list &c, forest* ar, opnd_type res);
-};
-
-MEDDLY::minrange_opname::minrange_opname() : unary_opname("Min_range")
-{
-}
-
-MEDDLY::unary_operation*
-MEDDLY::minrange_opname::buildOperation(unary_list &c, forest* ar, opnd_type res)
-{
-  if (0==ar) return 0;
-
-  if (ar->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-
-  switch (res) {
-    case opnd_type::INTEGER:
-      if (range_type::INTEGER != ar->getRangeType())
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-      return new minrange_int(c,  ar);
-
-    case opnd_type::REAL:
-      if (range_type::REAL != ar->getRangeType())
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-      return new minrange_real(c,  ar);
-
-    default:
-      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-  } // switch
-
-  throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-}
-
-
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeMaxRange()
+MEDDLY::unary_operation* MEDDLY::MAX_RANGE(forest* arg, opnd_type res)
 {
-  return new maxrange_opname;
+    if (!arg) return nullptr;
+    unary_operation* uop = MAXRANGE_cache.find(arg, res);
+    if (uop) {
+        return uop;
+    }
+
+    if (arg->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
+        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+    switch (res) {
+        case opnd_type::INTEGER:
+            if (range_type::INTEGER != arg->getRangeType())
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            return MAXRANGE_cache.add(new maxrange_int(arg));
+
+        case opnd_type::REAL:
+            if (range_type::REAL != arg->getRangeType())
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            return MAXRANGE_cache.add(new maxrange_real(arg));
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    } // switch
+
+    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 }
 
-MEDDLY::unary_opname* MEDDLY::initializeMinRange()
+void MEDDLY::MAX_RANGE_init()
 {
-  return new minrange_opname;
+    MAXRANGE_cache.reset("Max_range");
+}
+
+void MEDDLY::MAX_RANGE_done()
+{
+    MEDDLY_DCASSERT(MAXRANGE_cache.isEmpty());
+}
+
+// ******************************************************************
+
+MEDDLY::unary_operation* MEDDLY::MIN_RANGE(forest* arg, opnd_type res)
+{
+    if (!arg) return nullptr;
+    unary_operation* uop = MINRANGE_cache.find(arg, res);
+    if (uop) {
+        return uop;
+    }
+
+    if (arg->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
+        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+    switch (res) {
+        case opnd_type::INTEGER:
+            if (range_type::INTEGER != arg->getRangeType())
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            return MINRANGE_cache.add(new minrange_int(arg));
+
+        case opnd_type::REAL:
+            if (range_type::REAL != arg->getRangeType())
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            return MINRANGE_cache.add(new minrange_real(arg));
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    } // switch
+
+    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+}
+
+void MEDDLY::MIN_RANGE_init()
+{
+    MINRANGE_cache.reset("Min_range");
+}
+
+void MEDDLY::MIN_RANGE_done()
+{
+    MEDDLY_DCASSERT(MINRANGE_cache.isEmpty());
 }
 
