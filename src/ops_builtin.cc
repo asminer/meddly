@@ -103,7 +103,7 @@ class MEDDLY::builtin_init : public initializer_list {
     public:
         // static unary_opname* _CARD;
         // static unary_opname* _COMPL;
-        static unary_opname* _MDD2INDEX;
+        // static unary_opname* _MDD2INDEX;
         // static unary_opname* _COPY;
         static unary_opname* _CYCLE;
         static unary_opname* _MAXRANGE;
@@ -159,7 +159,7 @@ class MEDDLY::builtin_init : public initializer_list {
 
 // MEDDLY::unary_opname* MEDDLY::builtin_init::_CARD;
 // MEDDLY::unary_opname* MEDDLY::builtin_init::_COMPL;
-MEDDLY::unary_opname* MEDDLY::builtin_init::_MDD2INDEX;
+// MEDDLY::unary_opname* MEDDLY::builtin_init::_MDD2INDEX;
 // MEDDLY::unary_opname* MEDDLY::builtin_init::_COPY;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_CYCLE;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_MAXRANGE;
@@ -223,7 +223,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     // _COMPL      = nullptr;
     _MAXRANGE   = nullptr;
     _MINRANGE   = nullptr;
-    _MDD2INDEX  = nullptr;
+    // _MDD2INDEX  = nullptr;
     _CYCLE      = nullptr;
     _SELECT     = nullptr;
     //
@@ -286,6 +286,7 @@ void MEDDLY::builtin_init::setup()
     COPY_init();
     CARDINALITY_init();
     COMPLEMENT_init();
+    CONVERT_TO_INDEX_SET_init();
 
     //
     // Binary ops
@@ -303,7 +304,7 @@ void MEDDLY::builtin_init::setup()
     // _COMPL      =   initializeComplement()  ;
     _MAXRANGE   =   initializeMaxRange()    ;
     _MINRANGE   =   initializeMaxRange()    ;
-    _MDD2INDEX  =   initializeMDD2INDEX()   ;
+    // _MDD2INDEX  =   initializeMDD2INDEX()   ;
     _CYCLE      =   initializeCycle()       ;
     _SELECT     =   initializeSelect()      ;
     //
@@ -366,12 +367,13 @@ void MEDDLY::builtin_init::cleanup()
     COPY_done();
     CARDINALITY_done();
     COMPLEMENT_done();
+    CONVERT_TO_INDEX_SET_done();
     // mydelete(_COPY);
     // mydelete(_CARD);
     // mydelete(_COMPL);
     mydelete(_MAXRANGE);
     mydelete(_MINRANGE);
-    mydelete(_MDD2INDEX);
+    // mydelete(_MDD2INDEX);
     mydelete(_CYCLE);
     mydelete(_SELECT);
     //
@@ -446,14 +448,12 @@ MEDDLY::unary_operation* MEDDLY::COMPLEMENT(forest* arg, forest* res)
 {
     return builtin_init::_COMPL->getOperation(arg, res);
 }
-*/
 
 MEDDLY::unary_operation* MEDDLY::CONVERT_TO_INDEX_SET(forest* arg, forest* res)
 {
     return builtin_init::_MDD2INDEX->getOperation(arg, res);
 }
 
-/*
 MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
 {
     return builtin_init::_COPY->getOperation(arg, res);

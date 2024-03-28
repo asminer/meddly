@@ -109,6 +109,18 @@ class MEDDLY::unary_operation : public operation {
                 throw error(error::TYPE_MISMATCH, file, line);
             }
         }
+        /// Make sure the arguments match the range type
+        inline void checkRanges(const char* file, unsigned line,
+                range_type a, range_type r) const
+        {
+            if  (
+                    (argF->getRangeType() != a)  ||
+                    (resF->getRangeType() != r)
+                )
+            {
+                throw error(error::TYPE_MISMATCH, file, line);
+            }
+        }
 
     public:
         /**
