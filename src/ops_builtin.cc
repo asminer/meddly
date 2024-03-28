@@ -108,7 +108,7 @@ class MEDDLY::builtin_init : public initializer_list {
         // static unary_opname* _CYCLE;
         // static unary_opname* _MAXRANGE;
         // static unary_opname* _MINRANGE;
-        static unary_opname* _SELECT;
+        // static unary_opname* _SELECT;
     public:
         // static binary_opname* _UNION;
         // static binary_opname* _INTERSECT;
@@ -164,7 +164,7 @@ class MEDDLY::builtin_init : public initializer_list {
 // MEDDLY::unary_opname* MEDDLY::builtin_init::_CYCLE;
 // MEDDLY::unary_opname* MEDDLY::builtin_init::_MAXRANGE;
 // MEDDLY::unary_opname* MEDDLY::builtin_init::_MINRANGE;
-MEDDLY::unary_opname* MEDDLY::builtin_init::_SELECT;
+// MEDDLY::unary_opname* MEDDLY::builtin_init::_SELECT;
 
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_UNION;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_INTERSECT;
@@ -225,7 +225,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     // _MINRANGE   = nullptr;
     // _MDD2INDEX  = nullptr;
     // _CYCLE      = nullptr;
-    _SELECT     = nullptr;
+    // _SELECT     = nullptr;
     //
     // Binary ops
     //
@@ -290,6 +290,7 @@ void MEDDLY::builtin_init::setup()
     CYCLE_init();
     MAX_RANGE_init();
     MIN_RANGE_init();
+    SELECT_init();
 
     //
     // Binary ops
@@ -309,7 +310,7 @@ void MEDDLY::builtin_init::setup()
     // _MINRANGE   =   initializeMaxRange()    ;
     // _MDD2INDEX  =   initializeMDD2INDEX()   ;
     // _CYCLE      =   initializeCycle()       ;
-    _SELECT     =   initializeSelect()      ;
+    // _SELECT     =   initializeSelect()      ;
     //
     // OLD Binary ops
     //
@@ -374,6 +375,7 @@ void MEDDLY::builtin_init::cleanup()
     CYCLE_done();
     MAX_RANGE_done();
     MIN_RANGE_done();
+    SELECT_done();
     // mydelete(_COPY);
     // mydelete(_CARD);
     // mydelete(_COMPL);
@@ -381,7 +383,7 @@ void MEDDLY::builtin_init::cleanup()
     // mydelete(_MINRANGE);
     // mydelete(_MDD2INDEX);
     // mydelete(_CYCLE);
-    mydelete(_SELECT);
+    // mydelete(_SELECT);
     //
     // Binary ops
     //
@@ -479,12 +481,12 @@ MEDDLY::unary_operation* MEDDLY::MIN_RANGE(forest* arg, opnd_type res)
 {
     return builtin_init::_MINRANGE->getOperation(arg, res);
 }
-*/
 
 MEDDLY::unary_operation* MEDDLY::SELECT(forest* arg, forest* res)
 {
     return builtin_init::_SELECT->getOperation(arg, res);
 }
+*/
 
 // ******************************************************************
 // *                                                                *

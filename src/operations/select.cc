@@ -24,11 +24,11 @@
 #include "../opname.h"
 
 namespace MEDDLY {
-  class select;
-  class select_MT;
-  class select_EVPlus;
+    class select;
+    class select_MT;
+    class select_EVPlus;
 
-  class select_opname;
+    unary_list SELECT_cache;
 };
 
 // ******************************************************************
@@ -39,16 +39,15 @@ namespace MEDDLY {
 
 /// Abstract base class for selecting one state randomly from a set of states.
 class MEDDLY::select : public unary_operation {
-  public:
-    select(unary_list& oc, forest* arg, forest* res);
+    public:
+        select(forest* arg, forest* res);
 };
 
-MEDDLY::select
-:: select(unary_list& oc, forest* arg, forest* res)
- : unary_operation(oc, 0, arg, res)
+MEDDLY::select::select(forest* arg, forest* res)
+    : unary_operation(SELECT_cache, 0, arg, res)
 {
-  MEDDLY_DCASSERT(!argF->isForRelations());
-  MEDDLY_DCASSERT(!resF->isForRelations());
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
 }
 
 // ******************************************************************
@@ -60,17 +59,15 @@ MEDDLY::select
 // States are not selected with equal probability.
 class MEDDLY::select_MT : public select {
   public:
-    select_MT(unary_list& oc, forest* arg, forest* res);
+    select_MT(forest* arg, forest* res);
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
     virtual node_handle _compute(node_handle node, int level);
 };
 
-MEDDLY::select_MT
-:: select_MT(unary_list& oc, forest* arg, forest* res)
- : select(oc, arg, res)
+MEDDLY::select_MT::select_MT(forest* arg, forest* res)
+    : select(arg, res)
 {
-  MEDDLY_DCASSERT(argF->isMultiTerminal());
-  MEDDLY_DCASSERT(resF->isMultiTerminal());
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 void MEDDLY::select_MT::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
@@ -117,17 +114,15 @@ MEDDLY::node_handle MEDDLY::select_MT::_compute(node_handle a, int level)
 // States are not selected with equal probability.
 class MEDDLY::select_EVPlus : public select {
   public:
-    select_EVPlus(unary_list& oc, forest* arg, forest* res);
+    select_EVPlus(forest* arg, forest* res);
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
     virtual void _compute(long aev, node_handle a, int level, long& bev, node_handle& b);
 };
 
-MEDDLY::select_EVPlus
-:: select_EVPlus(unary_list& oc, forest* arg, forest* res)
- : select(oc, arg, res)
+MEDDLY::select_EVPlus::select_EVPlus(forest* arg, forest* res)
+    : select(arg, res)
 {
-  MEDDLY_DCASSERT(argF->isEVPlus());
-  MEDDLY_DCASSERT(resF->isEVPlus());
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVPLUS);
 }
 
 void MEDDLY::select_EVPlus::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
@@ -195,6 +190,8 @@ void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& b
 // *                                                                *
 // ******************************************************************
 
+/*
+
 class MEDDLY::select_opname : public unary_opname {
   public:
     select_opname();
@@ -233,6 +230,7 @@ MEDDLY::select_opname
   throw error(error::NOT_IMPLEMENTED);
 
 }
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -240,8 +238,39 @@ MEDDLY::select_opname
 // *                                                                *
 // ******************************************************************
 
+/*
 MEDDLY::unary_opname* MEDDLY::initializeSelect()
 {
   return new select_opname;
+}
+*/
+
+MEDDLY::unary_operation* MEDDLY::SELECT(forest* arg, forest* res)
+{
+    if (!arg || !res) return nullptr;
+    unary_operation* uop =  SELECT_cache.find(arg, res);
+    if (uop) {
+        return uop;
+    }
+    if (arg->isForRelations()) {
+        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    }
+    if (arg->isMultiTerminal()) {
+        return SELECT_cache.add(new select_MT(arg, res));
+    }
+    if (arg->isEVPlus()) {
+        return SELECT_cache.add(new select_EVPlus(arg, res));
+    }
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::SELECT_init()
+{
+    SELECT_cache.reset("Select");
+}
+
+void MEDDLY::SELECT_done()
+{
+    MEDDLY_DCASSERT(SELECT_cache.isEmpty());
 }
 
