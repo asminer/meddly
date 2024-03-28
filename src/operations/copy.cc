@@ -120,11 +120,11 @@ namespace MEDDLY {
 
             inline static unary_operation* build(forest* a, forest* r)
             {
-                unary_operation* uop =  cache.findOperation(a, r);
+                unary_operation* uop =  cache.find(a, r);
                 if (uop) {
                     return uop;
                 }
-                return cache.addOperation(new copy_MT_tmpl<RESULT>(a, r));
+                return cache.add(new copy_MT_tmpl<RESULT>(a, r));
             }
     };
 
@@ -333,11 +333,11 @@ namespace MEDDLY {
             inline static unary_operation* build(forest* a, forest* r,
                     const char* p)
             {
-                unary_operation* uop =  cache.findOperation(a, r);
+                unary_operation* uop =  cache.find(a, r);
                 if (uop) {
                     return uop;
                 }
-                return cache.addOperation(new copy_MT2EV<TYPE>(a, r, p));
+                return cache.add(new copy_MT2EV<TYPE>(a, r, p));
             }
   };
 
@@ -543,11 +543,11 @@ namespace MEDDLY {
             inline static unary_operation* build(forest* a, forest* r,
                     const char* p)
             {
-                unary_operation* uop =  cache.findOperation(a, r);
+                unary_operation* uop =  cache.find(a, r);
                 if (uop) {
                     return uop;
                 }
-                return cache.addOperation(new copy_EV2MT<TYPE,OP>(a, r, p));
+                return cache.add(new copy_EV2MT<TYPE,OP>(a, r, p));
             }
 
   };
@@ -746,11 +746,11 @@ namespace MEDDLY {
 
             inline static unary_operation* build(forest* a, forest* r)
             {
-                unary_operation* uop =  cache.findOperation(a, r);
+                unary_operation* uop =  cache.find(a, r);
                 if (uop) {
                     return uop;
                 }
-                return cache.addOperation(
+                return cache.add(
                         new copy_EV2EV_fast<INTYPE,OUTTYPE>(a, r)
                 );
             }
@@ -905,11 +905,11 @@ namespace MEDDLY {
             inline static unary_operation* build(forest* a, forest* r,
                     const char* p)
             {
-                unary_operation* uop =  cache.findOperation(a, r);
+                unary_operation* uop =  cache.find(a, r);
                 if (uop) {
                     return uop;
                 }
-                return cache.addOperation(
+                return cache.add(
                         new copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>(a, r, p)
                 );
             }

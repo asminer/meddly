@@ -53,7 +53,7 @@ MEDDLY::unary_operation::~unary_operation()
 {
     unregisterInForest(argF);
     unregisterInForest(resF);
-    parent.removeOperation(this);
+    parent.remove(this);
 }
 
 

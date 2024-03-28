@@ -106,11 +106,11 @@ class MEDDLY::card_mdd_int : public card_int {
 
         inline static unary_operation* build(forest* a)
         {
-            unary_operation* uop =  cache.findOperation(a, opnd_type::INTEGER);
+            unary_operation* uop =  cache.find(a, opnd_type::INTEGER);
             if (uop) {
                 return uop;
             }
-            return cache.addOperation(new card_mdd_int(a));
+            return cache.add(new card_mdd_int(a));
         }
 };
 
@@ -181,11 +181,11 @@ class MEDDLY::card_mxd_int : public card_int {
 
         inline static unary_operation* build(forest* a)
         {
-            unary_operation* uop =  cache.findOperation(a, opnd_type::INTEGER);
+            unary_operation* uop =  cache.find(a, opnd_type::INTEGER);
             if (uop) {
                 return uop;
             }
-            return cache.addOperation(new card_mxd_int(a));
+            return cache.add(new card_mxd_int(a));
         }
 };
 
@@ -282,11 +282,11 @@ class MEDDLY::card_mdd_real : public card_real {
 
         inline static unary_operation* build(forest* a)
         {
-            unary_operation* uop =  cache.findOperation(a, opnd_type::REAL);
+            unary_operation* uop =  cache.find(a, opnd_type::REAL);
             if (uop) {
                 return uop;
             }
-            return cache.addOperation(new card_mdd_real(a));
+            return cache.add(new card_mdd_real(a));
         }
 };
 
@@ -358,11 +358,11 @@ class MEDDLY::card_mxd_real : public card_real {
 
         inline static unary_operation* build(forest* a)
         {
-            unary_operation* uop =  cache.findOperation(a, opnd_type::REAL);
+            unary_operation* uop =  cache.find(a, opnd_type::REAL);
             if (uop) {
                 return uop;
             }
-            return cache.addOperation(new card_mxd_real(a));
+            return cache.add(new card_mxd_real(a));
         }
 };
 
@@ -469,11 +469,11 @@ class MEDDLY::card_mdd_mpz : public card_mpz {
 
         inline static unary_operation* build(forest* a)
         {
-            unary_operation* uop =  cache.findOperation(a, opnd_type::REAL);
+            unary_operation* uop =  cache.find(a, opnd_type::REAL);
             if (uop) {
                 return uop;
             }
-            return cache.addOperation(new card_mdd_mpz(a));
+            return cache.add(new card_mdd_mpz(a));
         }
 };
 
@@ -566,11 +566,11 @@ class MEDDLY::card_mxd_mpz : public card_mpz {
 
         inline static unary_operation* build(forest* a)
         {
-            unary_operation* uop =  cache.findOperation(a, opnd_type::REAL);
+            unary_operation* uop =  cache.find(a, opnd_type::REAL);
             if (uop) {
                 return uop;
             }
-            return cache.addOperation(new card_mxd_mpz(a));
+            return cache.add(new card_mxd_mpz(a));
         }
 };
 

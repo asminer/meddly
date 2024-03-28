@@ -71,11 +71,11 @@ class MEDDLY::compl_mdd : public unary_operation {
 
         inline static unary_operation* build(forest* a, forest* r)
         {
-            unary_operation* uop =  cache.findOperation(a, r);
+            unary_operation* uop =  cache.find(a, r);
             if (uop) {
                 return uop;
             }
-            return cache.addOperation(new compl_mdd(a, r));
+            return cache.add(new compl_mdd(a, r));
         }
 };
 
@@ -172,11 +172,11 @@ class MEDDLY::compl_mxd : public unary_operation {
 
         inline static unary_operation* build(forest* a, forest* r)
         {
-            unary_operation* uop =  cache.findOperation(a, r);
+            unary_operation* uop =  cache.find(a, r);
             if (uop) {
                 return uop;
             }
-            return cache.addOperation(new compl_mxd(a, r));
+            return cache.add(new compl_mxd(a, r));
         }
 };
 

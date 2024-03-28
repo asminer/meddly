@@ -45,7 +45,7 @@ MEDDLY::binary_operation::~binary_operation()
     unregisterInForest(arg2F);
     unregisterInForest(resF);
 
-    parent.removeOperation(this);
+    parent.remove(this);
 }
 
 void MEDDLY::binary_operation::compute(const dd_edge &ar1,

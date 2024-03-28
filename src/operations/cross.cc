@@ -53,11 +53,11 @@ class MEDDLY::cross_bool : public binary_operation {
 
         inline static binary_operation* build(forest* a, forest* b, forest* c)
         {
-            binary_operation* bop =  cache.findOperation(a, b, c);
+            binary_operation* bop =  cache.find(a, b, c);
             if (bop) {
                 return bop;
             }
-            return cache.addOperation(new cross_bool(a, b, c));
+            return cache.add(new cross_bool(a, b, c));
         }
 };
 

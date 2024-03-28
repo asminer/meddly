@@ -83,7 +83,7 @@ class MEDDLY::unary_opname : public opname {
         unary_operation* getOperation(const dd_edge &arg, opnd_type res);
 
         inline void removeOperationFromCache(unary_operation* uop) {
-            cache.removeOperation(uop);
+            cache.remove(uop);
         }
 
     protected:
@@ -113,7 +113,7 @@ class MEDDLY::binary_opname : public opname {
                 const dd_edge &arg2, const dd_edge &res);
 
         inline void removeOperationFromCache(binary_operation* bop) {
-            cache.removeOperation(bop);
+            cache.remove(bop);
         }
 
     protected:

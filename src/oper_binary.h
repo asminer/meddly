@@ -179,7 +179,7 @@ class MEDDLY::binary_list {
         inline const char* getName() const { return name; }
         inline bool isEmpty() const { return (!front); }
 
-        inline binary_operation* addOperation(binary_operation* bop) {
+        inline binary_operation* add(binary_operation* bop) {
             if (bop) {
                 bop->next = front;
                 front = bop;
@@ -187,7 +187,7 @@ class MEDDLY::binary_list {
             return bop;
         }
 
-        inline void removeOperation(binary_operation* bop)
+        inline void remove(binary_operation* bop)
         {
             if (front == bop) {
                 front = front->next;
@@ -196,7 +196,7 @@ class MEDDLY::binary_list {
             searchRemove(bop);
         }
 
-        inline binary_operation* findOperation(const forest* arg1F,
+        inline binary_operation* find(const forest* arg1F,
                 const forest* arg2F, const forest* resF)
         {
             if (!front) return nullptr;

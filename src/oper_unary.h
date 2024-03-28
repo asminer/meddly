@@ -160,7 +160,7 @@ class MEDDLY::unary_list {
         inline const char* getName() const { return name; }
         inline bool isEmpty() const { return (!front); }
 
-        inline unary_operation* addOperation(unary_operation* uop) {
+        inline unary_operation* add(unary_operation* uop) {
             if (uop) {
                 uop->next = front;
                 front = uop;
@@ -168,7 +168,7 @@ class MEDDLY::unary_list {
             return uop;
         }
 
-        inline void removeOperation(unary_operation* uop)
+        inline void remove(unary_operation* uop)
         {
             if (front == uop) {
                 front = front->next;
@@ -177,14 +177,14 @@ class MEDDLY::unary_list {
             searchRemove(uop);
         }
 
-        inline unary_operation* findOperation(const forest* argF, const forest* resF)
+        inline unary_operation* find(const forest* argF, const forest* resF)
         {
             if (!front) return nullptr;
             if ((front->argF == argF) && (front->resF == resF)) return front;
             return mtfUnary(argF, resF);
         }
 
-        inline unary_operation* findOperation(const forest* argF, opnd_type resType)
+        inline unary_operation* find(const forest* argF, opnd_type resType)
         {
             if (!front) return nullptr;
             if ((front->argF == argF) && (front->resultType == resType)) return front;

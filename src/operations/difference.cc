@@ -41,11 +41,11 @@ class MEDDLY::diffr_mdd : public generic_binary_mdd {
 
         inline static binary_operation* build(forest* a, forest* b, forest* c)
         {
-            binary_operation* bop =  cache.findOperation(a, b, c);
+            binary_operation* bop =  cache.find(a, b, c);
             if (bop) {
                 return bop;
             }
-            return cache.addOperation(new diffr_mdd(a, b, c));
+            return cache.add(new diffr_mdd(a, b, c));
         }
 };
 
@@ -110,11 +110,11 @@ class MEDDLY::diffr_mxd : public generic_binary_mxd {
 
         inline static binary_operation* build(forest* a, forest* b, forest* c)
         {
-            binary_operation* bop =  cache.findOperation(a, b, c);
+            binary_operation* bop =  cache.find(a, b, c);
             if (bop) {
                 return bop;
             }
-            return cache.addOperation(new diffr_mxd(a, b, c));
+            return cache.add(new diffr_mxd(a, b, c));
         }
 };
 

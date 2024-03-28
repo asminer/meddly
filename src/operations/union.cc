@@ -26,6 +26,8 @@ namespace MEDDLY {
 
     class union_min_evplus;
     class union_min_evplus_mxd;
+
+    binary_list UNION_cache;
 };
 
 // ******************************************************************
@@ -35,29 +37,15 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::union_mdd : public generic_binary_mdd {
-    protected:
+    public:
         union_mdd(forest* arg1, forest* arg2, forest* res);
 
         virtual bool checkTerminals(node_handle a, node_handle b,
                 node_handle& c);
-
-    public:
-        static binary_list cache;
-
-        inline static binary_operation* build(forest* a, forest* b, forest* c)
-        {
-            binary_operation* bop =  cache.findOperation(a, b, c);
-            if (bop) {
-                return bop;
-            }
-            return cache.addOperation(new union_mdd(a, b, c));
-        }
 };
 
-MEDDLY::binary_list MEDDLY::union_mdd::cache;
-
 MEDDLY::union_mdd::union_mdd(forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mdd(cache, arg1, arg2, res)
+  : generic_binary_mdd(UNION_cache, arg1, arg2, res)
 {
     operationCommutes();
 
@@ -109,29 +97,15 @@ bool MEDDLY::union_mdd::checkTerminals(node_handle a, node_handle b, node_handle
 // ******************************************************************
 
 class MEDDLY::union_mxd : public generic_binary_mxd {
-    protected:
+    public:
         union_mxd(forest* arg1, forest* arg2, forest* res);
 
         virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
         virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
-
-    public:
-        static binary_list cache;
-
-        inline static binary_operation* build(forest* a, forest* b, forest* c)
-        {
-            binary_operation* bop =  cache.findOperation(a, b, c);
-            if (bop) {
-                return bop;
-            }
-            return cache.addOperation(new union_mxd(a, b, c));
-        }
 };
 
-MEDDLY::binary_list MEDDLY::union_mxd::cache;
-
 MEDDLY::union_mxd::union_mxd(forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mxd(cache, arg1, arg2, res)
+  : generic_binary_mxd(UNION_cache, arg1, arg2, res)
 {
     operationCommutes();
 
@@ -310,7 +284,7 @@ MEDDLY::union_mxd::compute_ext(node_handle a, node_handle b)
 // ******************************************************************
 
 class MEDDLY::union_min_evplus : public generic_binary_evplus {
-    protected:
+    public:
         union_min_evplus(forest* arg1, forest* arg2, forest* res);
 
         virtual ct_entry_key* findResult(long aev, node_handle a,
@@ -320,24 +294,10 @@ class MEDDLY::union_min_evplus : public generic_binary_evplus {
 
         virtual bool checkTerminals(long aev, node_handle a,
             long bev, node_handle b, long& cev, node_handle& c);
-
-    public:
-        static binary_list cache;
-
-        inline static binary_operation* build(forest* a, forest* b, forest* c)
-        {
-            binary_operation* bop =  cache.findOperation(a, b, c);
-            if (bop) {
-                return bop;
-            }
-            return cache.addOperation(new union_min_evplus(a, b, c));
-        }
 };
 
-MEDDLY::binary_list MEDDLY::union_min_evplus::cache;
-
 MEDDLY::union_min_evplus::union_min_evplus(forest* a, forest* b, forest* c)
-  : generic_binary_evplus(cache, a, b, c)
+  : generic_binary_evplus(UNION_cache, a, b, c)
 {
     operationCommutes();
 
@@ -452,7 +412,7 @@ bool MEDDLY::union_min_evplus::checkTerminals(long aev, node_handle a, long bev,
 // ******************************************************************
 
 class MEDDLY::union_min_evplus_mxd : public generic_binary_evplus_mxd {
-    protected:
+    public:
         union_min_evplus_mxd(forest* arg1, forest* arg2, forest* res);
 
         virtual ct_entry_key* findResult(long aev, node_handle a,
@@ -462,25 +422,11 @@ class MEDDLY::union_min_evplus_mxd : public generic_binary_evplus_mxd {
 
         virtual bool checkTerminals(long aev, node_handle a,
             long bev, node_handle b, long& cev, node_handle& c);
-
-    public:
-        static binary_list cache;
-
-        inline static binary_operation* build(forest* a, forest* b, forest* c)
-        {
-            binary_operation* bop =  cache.findOperation(a, b, c);
-            if (bop) {
-                return bop;
-            }
-            return cache.addOperation(new union_min_evplus_mxd(a, b, c));
-        }
 };
-
-MEDDLY::binary_list MEDDLY::union_min_evplus_mxd::cache;
 
 MEDDLY::union_min_evplus_mxd::union_min_evplus_mxd(
   forest* arg1, forest* arg2, forest* res)
-  : generic_binary_evplus_mxd(cache, arg1, arg2, res)
+  : generic_binary_evplus_mxd(UNION_cache, arg1, arg2, res)
 {
     operationCommutes();
 
@@ -600,20 +546,24 @@ MEDDLY::UNION(forest* a, forest* b, forest* c)
     if (!a || !b || !c) {
         return nullptr;
     }
+    binary_operation* bop =  UNION_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
 
     if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         if (c->isForRelations()) {
-            return union_mxd::build(a, b, c);
+            return UNION_cache.add(new union_mxd(a, b, c));
         } else {
-            return union_mdd::build(a, b, c);
+            return UNION_cache.add(new union_mdd(a, b, c));
         }
     }
 
     if (c->getEdgeLabeling() == edge_labeling::EVPLUS) {
         if (c->isForRelations()) {
-            return union_min_evplus_mxd::build(a, b, c);
+            return UNION_cache.add(new union_min_evplus_mxd(a, b, c));
         } else {
-            return union_min_evplus::build(a, b, c);
+            return UNION_cache.add(new union_min_evplus(a, b, c));
         }
     }
 
@@ -622,17 +572,11 @@ MEDDLY::UNION(forest* a, forest* b, forest* c)
 
 void MEDDLY::UNION_init()
 {
-    union_mdd::cache.reset("Union");
-    union_mxd::cache.reset("Union");
-    union_min_evplus::cache.reset("Union");
-    union_min_evplus_mxd::cache.reset("Union");
+    UNION_cache.reset("Union");
 }
 
 void MEDDLY::UNION_done()
 {
-    MEDDLY_DCASSERT(union_mdd::cache.isEmpty());
-    MEDDLY_DCASSERT(union_mxd::cache.isEmpty());
-    MEDDLY_DCASSERT(union_min_evplus::cache.isEmpty());
-    MEDDLY_DCASSERT(union_min_evplus_mxd::cache.isEmpty());
+    MEDDLY_DCASSERT(UNION_cache.isEmpty());
 }
 
