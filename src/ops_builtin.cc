@@ -114,8 +114,8 @@ class MEDDLY::builtin_init : public initializer_list {
         // static binary_opname* _INTERSECT;
         // static binary_opname* _DIFFERENCE;
         // static binary_opname* _CROSS;
-        static binary_opname* _MIN;
-        static binary_opname* _MAX;
+        // static binary_opname* _MIN;
+        // static binary_opname* _MAX;
         static binary_opname* _PLUS;
         static binary_opname* _MINUS;
         static binary_opname* _MULTIPLY;
@@ -170,8 +170,8 @@ class MEDDLY::builtin_init : public initializer_list {
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_INTERSECT;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_DIFFERENCE;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_CROSS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_MIN;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_MAX;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_MIN;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_MAX;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_PLUS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_MINUS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_MULTIPLY;
@@ -233,8 +233,8 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     // _INTERSECT      = nullptr;
     // _DIFFERENCE     = nullptr;
     // _CROSS          = nullptr;
-    _MIN            = nullptr;
-    _MAX            = nullptr;
+    // _MIN            = nullptr;
+    // _MAX            = nullptr;
     _PLUS           = nullptr;
     _MINUS          = nullptr;
     _MULTIPLY       = nullptr;
@@ -299,6 +299,8 @@ void MEDDLY::builtin_init::setup()
     INTERSECTION_init();
     DIFFERENCE_init();
     CROSS_init();
+    MAXIMUM_init();
+    MINIMUM_init();
 
     //
     // OLD Unary ops
@@ -318,8 +320,8 @@ void MEDDLY::builtin_init::setup()
     // _INTERSECT      =   initializeIntersection()    ;
     // _DIFFERENCE     =   initializeDifference()      ;
     // _CROSS          =   initializeCross()           ;
-    _MAX            =   initializeMaximum()         ;
-    _MIN            =   initializeMinimum()         ;
+    // _MAX            =   initializeMaximum()         ;
+    // _MIN            =   initializeMinimum()         ;
     _PLUS           =   initializePlus()            ;
     _MINUS          =   initializeMinus()           ;
     _MULTIPLY       =   initializeMultiply()        ;
@@ -391,12 +393,14 @@ void MEDDLY::builtin_init::cleanup()
     INTERSECTION_done();
     DIFFERENCE_done();
     CROSS_done();
+    MAXIMUM_done();
+    MINIMUM_done();
     // mydelete(_UNION);
     // mydelete(_INTERSECT);
     // mydelete(_DIFFERENCE);
     // mydelete(_CROSS);
-    mydelete(_MIN);
-    mydelete(_MAX);
+    // mydelete(_MIN);
+    // mydelete(_MAX);
     mydelete(_PLUS);
     mydelete(_MINUS);
     mydelete(_MULTIPLY);
@@ -514,7 +518,6 @@ MEDDLY::binary_operation* MEDDLY::CROSS(forest* a, forest* b, forest* c)
 {
     return builtin_init::_CROSS->getOperation(a, b, c);
 }
-*/
 
 MEDDLY::binary_operation* MEDDLY::MINIMUM(forest* a, forest* b, forest* c)
 {
@@ -525,6 +528,7 @@ MEDDLY::binary_operation* MEDDLY::MAXIMUM(forest* a, forest* b, forest* c)
 {
     return builtin_init::_MAX->getOperation(a, b, c);
 }
+*/
 
 MEDDLY::binary_operation* MEDDLY::PLUS(forest* a, forest* b, forest* c)
 {
