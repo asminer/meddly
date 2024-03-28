@@ -101,7 +101,7 @@ class MEDDLY::builtin_init : public initializer_list {
             p = nullptr;
         }
     public:
-        static unary_opname* _CARD;
+        // static unary_opname* _CARD;
         static unary_opname* _COMPL;
         static unary_opname* _MDD2INDEX;
         // static unary_opname* _COPY;
@@ -157,7 +157,7 @@ class MEDDLY::builtin_init : public initializer_list {
 
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::builtin_init::_CARD;
+// MEDDLY::unary_opname* MEDDLY::builtin_init::_CARD;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_COMPL;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_MDD2INDEX;
 // MEDDLY::unary_opname* MEDDLY::builtin_init::_COPY;
@@ -219,7 +219,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     // Unary ops
     //
     // _COPY       = nullptr;
-    _CARD       = nullptr;
+    // _CARD       = nullptr;
     _COMPL      = nullptr;
     _MAXRANGE   = nullptr;
     _MINRANGE   = nullptr;
@@ -284,6 +284,7 @@ void MEDDLY::builtin_init::setup()
     // Unary ops
     //
     COPY_init();
+    CARDINALITY_init();
 
     //
     // Binary ops
@@ -297,7 +298,7 @@ void MEDDLY::builtin_init::setup()
     // OLD Unary ops
     //
     // _COPY       =   initializeCopy()        ;
-    _CARD       =   initializeCardinality() ;
+    // _CARD       =   initializeCardinality() ;
     _COMPL      =   initializeComplement()  ;
     _MAXRANGE   =   initializeMaxRange()    ;
     _MINRANGE   =   initializeMaxRange()    ;
@@ -362,8 +363,9 @@ void MEDDLY::builtin_init::cleanup()
     // Unary ops
     //
     COPY_done();
+    CARDINALITY_done();
     // mydelete(_COPY);
-    mydelete(_CARD);
+    // mydelete(_CARD);
     mydelete(_COMPL);
     mydelete(_MAXRANGE);
     mydelete(_MINRANGE);
@@ -432,10 +434,12 @@ void MEDDLY::builtin_init::cleanup()
 // *                                                                *
 // ******************************************************************
 
+/*
 MEDDLY::unary_operation* MEDDLY::CARDINALITY(forest* arg, opnd_type res)
 {
     return builtin_init::_CARD->getOperation(arg, res);
 }
+*/
 
 MEDDLY::unary_operation* MEDDLY::COMPLEMENT(forest* arg, forest* res)
 {
