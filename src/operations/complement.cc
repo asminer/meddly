@@ -25,9 +25,8 @@
 #include "../oper_unary.h"
 
 namespace MEDDLY {
-  class compl_mdd;
-  class compl_mxd;
-  class compl_opname;
+    class compl_mdd;
+    class compl_mxd;
 };
 
 // #define DEBUG_MXD_COMPL
@@ -39,45 +38,62 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::compl_mdd : public unary_operation {
-  public:
-    compl_mdd(unary_list& oc, forest* arg, forest* res);
+    protected:
+        compl_mdd(forest* arg, forest* res);
 
-    virtual void computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag);
+        virtual void computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag);
 
-  protected:
-    node_handle compute_r(node_handle a);
+        node_handle compute_r(node_handle a);
 
-    inline ct_entry_key*
-    findResult(node_handle a, node_handle &b)
-    {
-      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeN(a);
-      CT0->find(CTsrch, CTresult[0]);
-      if (!CTresult[0]) return CTsrch;
-      b = resF->linkNode(CTresult[0].readN());
-      CT0->recycle(CTsrch);
-      return 0;
-    }
-    inline node_handle saveResult(ct_entry_key* Key,
-      node_handle a, node_handle b)
-    {
-      CTresult[0].reset();
-      CTresult[0].writeN(b);
-      CT0->addEntry(Key, CTresult[0]);
-      return b;
-    }
+        inline ct_entry_key*
+        findResult(node_handle a, node_handle &b)
+        {
+            ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+            MEDDLY_DCASSERT(CTsrch);
+            CTsrch->writeN(a);
+            CT0->find(CTsrch, CTresult[0]);
+            if (!CTresult[0]) return CTsrch;
+            b = resF->linkNode(CTresult[0].readN());
+            CT0->recycle(CTsrch);
+            return 0;
+        }
+        inline node_handle saveResult(ct_entry_key* Key,
+            node_handle a, node_handle b)
+        {
+            CTresult[0].reset();
+            CTresult[0].writeN(b);
+            CT0->addEntry(Key, CTresult[0]);
+            return b;
+        }
+
+    public:
+        static unary_list cache;
+
+        inline static unary_operation* build(forest* a, forest* r)
+        {
+            unary_operation* uop =  cache.findOperation(a, r);
+            if (uop) {
+                return uop;
+            }
+            return cache.addOperation(new compl_mdd(a, r));
+        }
 };
 
-MEDDLY::compl_mdd
-::compl_mdd(unary_list& oc, forest* arg, forest* res)
- : unary_operation(oc, 1, arg, res)
+MEDDLY::unary_list MEDDLY::compl_mdd::cache;
+
+MEDDLY::compl_mdd::compl_mdd(forest* arg, forest* res)
+    : unary_operation(cache, 1, arg, res)
 {
-  ct_entry_type* et = new ct_entry_type(oc.getName(), "N:N");
-  et->setForestForSlot(0, arg);
-  et->setForestForSlot(2, res);
-  registerEntryType(0, et);
-  buildCTs();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllRanges(__FILE__, __LINE__, range_type::BOOLEAN);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+
+    ct_entry_type* et = new ct_entry_type(cache.getName(), "N:N");
+    et->setForestForSlot(0, arg);
+    et->setForestForSlot(2, res);
+    registerEntryType(0, et);
+    buildCTs();
 }
 
 void MEDDLY::compl_mdd::computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag)
@@ -144,23 +160,41 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
 // ******************************************************************
 
 class MEDDLY::compl_mxd : public unary_operation {
-  public:
-    compl_mxd(unary_list& oc, forest* arg, forest* res);
+    protected:
+        compl_mxd(forest* arg, forest* res);
 
-    virtual void computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag);
+        virtual void computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag);
 
-    node_handle compute_r(int in, int k, node_handle a);
+        node_handle compute_r(int in, int k, node_handle a);
+
+    public:
+        static unary_list cache;
+
+        inline static unary_operation* build(forest* a, forest* r)
+        {
+            unary_operation* uop =  cache.findOperation(a, r);
+            if (uop) {
+                return uop;
+            }
+            return cache.addOperation(new compl_mxd(a, r));
+        }
 };
 
-MEDDLY::compl_mxd
-::compl_mxd(unary_list& oc, forest* arg, forest* res)
- : unary_operation(oc, 1, arg, res)
+MEDDLY::unary_list MEDDLY::compl_mxd::cache;
+
+MEDDLY::compl_mxd::compl_mxd(forest* arg, forest* res)
+ : unary_operation(cache, 1, arg, res)
 {
-  ct_entry_type* et = new ct_entry_type(oc.getName(), "IN:N");
-  et->setForestForSlot(1, arg);
-  et->setForestForSlot(3, res);
-  registerEntryType(0, et);
-  buildCTs();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllRanges(__FILE__, __LINE__, range_type::BOOLEAN);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+
+    ct_entry_type* et = new ct_entry_type(cache.getName(), "IN:N");
+    et->setForestForSlot(1, arg);
+    et->setForestForSlot(3, res);
+    registerEntryType(0, et);
+    buildCTs();
 }
 
 void MEDDLY::compl_mxd::computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag)
@@ -246,55 +280,31 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
   return result;
 }
 
-
-// ******************************************************************
-// *                                                                *
-// *                       compl_opname class                       *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::compl_opname : public unary_opname {
-  public:
-    compl_opname();
-    virtual unary_operation*
-      buildOperation(unary_list &c, forest* ar, forest* res);
-};
-
-MEDDLY::compl_opname::compl_opname()
- : unary_opname("Complement")
-{
-}
-
-MEDDLY::unary_operation*
-MEDDLY::compl_opname
-::buildOperation(unary_list &c, forest* arg, forest* res)
-{
-  if (0==arg || 0==res) return 0;
-
-  if (arg->getDomain() != res->getDomain())
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (arg->getRangeType() != range_type::BOOLEAN ||
-      arg->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL ||
-      res->getRangeType() != range_type::BOOLEAN ||
-      res->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL ||
-      arg->isForRelations() != res->isForRelations()
-  ) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  if (arg->isForRelations())
-    return new compl_mxd(c,  arg,  res);
-  else
-    return new compl_mdd(c,  arg,  res);
-}
-
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeComplement()
+MEDDLY::unary_operation* MEDDLY::COMPLEMENT(forest* arg, forest* res)
 {
-  return new compl_opname;
+    if (!arg || !res) return nullptr;
+
+    if (arg->isForRelations())
+        return compl_mxd::build(arg, res);
+    else
+        return compl_mxd::build(arg, res);
+}
+
+void MEDDLY::COMPLEMENT_init()
+{
+    compl_mdd::cache.reset("Complement");
+    compl_mxd::cache.reset("Complement");
+}
+
+void MEDDLY::COMPLEMENT_done()
+{
+    MEDDLY_DCASSERT( compl_mdd::cache.isEmpty() );
+    MEDDLY_DCASSERT( compl_mxd::cache.isEmpty() );
 }
 
