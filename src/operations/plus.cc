@@ -21,12 +21,12 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class plus_mdd;
-  class plus_mxd;
-  class plus_evplus;
-  class plus_evtimes;
+    class plus_mdd;
+    class plus_mxd;
+    class plus_evplus;
+    class plus_evtimes;
 
-  class plus_opname;
+    binary_list PLUS_cache;
 };
 
 // ******************************************************************
@@ -36,19 +36,21 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::plus_mdd : public generic_binary_mdd {
-  public:
-    plus_mdd(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res);
+    public:
+        plus_mdd(forest* arg1, forest* arg2, forest* res);
 
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
+    protected:
+        virtual bool checkTerminals(node_handle a, node_handle b,
+                node_handle& c);
 };
 
-MEDDLY::plus_mdd::plus_mdd(binary_list& opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mdd(opcode, arg1, arg2, res)
+MEDDLY::plus_mdd::plus_mdd(forest* arg1, forest* arg2, forest* res)
+    : generic_binary_mdd(PLUS_cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::plus_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -86,7 +88,6 @@ bool MEDDLY::plus_mdd::checkTerminals(node_handle a, node_handle b, node_handle&
 }
 
 
-
 // ******************************************************************
 // *                                                                *
 // *                         plus_mxd class                         *
@@ -94,19 +95,21 @@ bool MEDDLY::plus_mdd::checkTerminals(node_handle a, node_handle b, node_handle&
 // ******************************************************************
 
 class MEDDLY::plus_mxd : public generic_binary_mxd {
-  public:
-    plus_mxd(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res);
+    public:
+        plus_mxd(forest* arg1, forest* arg2, forest* res);
 
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
+    protected:
+        virtual bool checkTerminals(node_handle a, node_handle b,
+                node_handle& c);
 };
 
-MEDDLY::plus_mxd::plus_mxd(binary_list& opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mxd(opcode, arg1, arg2, res)
+MEDDLY::plus_mxd::plus_mxd(forest* arg1, forest* arg2, forest* res)
+  : generic_binary_mxd(PLUS_cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::plus_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -138,8 +141,7 @@ bool MEDDLY::plus_mxd::checkTerminals(node_handle a, node_handle b, node_handle&
 
 class MEDDLY::plus_evplus : public generic_binary_evplus {
   public:
-    plus_evplus(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res);
+    plus_evplus(forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual ct_entry_key* findResult(long aev, node_handle a,
@@ -151,11 +153,13 @@ class MEDDLY::plus_evplus : public generic_binary_evplus {
       long& cev, node_handle& c);
 };
 
-MEDDLY::plus_evplus::plus_evplus(binary_list& opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_evplus(opcode, arg1, arg2, res)
+MEDDLY::plus_evplus::plus_evplus(forest* arg1, forest* arg2, forest* res)
+  : generic_binary_evplus(PLUS_cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVPLUS);
 }
 
 MEDDLY::ct_entry_key* MEDDLY::plus_evplus::findResult(long aev, node_handle a,
@@ -228,19 +232,20 @@ bool MEDDLY::plus_evplus::checkTerminals(long aev, node_handle a, long bev, node
 
 class MEDDLY::plus_evtimes : public generic_binary_evtimes {
   public:
-    plus_evtimes(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res);
+    plus_evtimes(forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(float aev, node_handle a, float bev, node_handle b,
       float& cev, node_handle& c);
 };
 
-MEDDLY::plus_evtimes::plus_evtimes(binary_list& opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_evtimes(opcode, arg1, arg2, res)
+MEDDLY::plus_evtimes::plus_evtimes(forest* arg1, forest* arg2, forest* res)
+  : generic_binary_evtimes(PLUS_cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVTIMES);
 }
 
 bool MEDDLY::plus_evtimes::checkTerminals(float aev, node_handle a,
@@ -276,77 +281,52 @@ bool MEDDLY::plus_evtimes::checkTerminals(float aev, node_handle a,
 }
 
 
-
-// ******************************************************************
-// *                                                                *
-// *                       plus_opname  class                       *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::plus_opname : public binary_opname {
-  public:
-    plus_opname();
-    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::plus_opname::plus_opname()
- : binary_opname("Plus")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::plus_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->isForRelations() != r->isForRelations()) ||
-    (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (r->getRangeType() == range_type::BOOLEAN)
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    if (r->isForRelations())
-      return new plus_mxd(c, a1, a2, r);
-    else
-      return new plus_mdd(c, a1, a2, r);
-  }
-
-  if (
-    (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType())
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-
-  if (r->getEdgeLabeling() == edge_labeling::EVPLUS)
-    return new plus_evplus(c, a1, a2, r);
-
-  if (r->getEdgeLabeling() == edge_labeling::EVTIMES)
-    return new plus_evtimes(c, a1, a2, r);
-
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializePlus()
+MEDDLY::binary_operation* MEDDLY::PLUS(forest* a, forest* b, forest* c)
 {
-  return new plus_opname;
+    if (!a || !b || !c) return nullptr;
+
+    binary_operation* bop =  PLUS_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        if (c->isForRelations())
+            return PLUS_cache.add(new plus_mxd(a, b, c));
+        else
+            return PLUS_cache.add(new plus_mdd(a, b, c));
+    }
+
+    if  (
+            (a->getRangeType() != b->getRangeType()) ||
+            (a->getRangeType() != c->getRangeType())
+        )
+    {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::EVPLUS)
+        return PLUS_cache.add(new plus_evplus(a, b, c));
+
+    if (c->getEdgeLabeling() == edge_labeling::EVTIMES)
+        return PLUS_cache.add(new plus_evtimes(a, b, c));
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::PLUS_init()
+{
+    PLUS_cache.reset("Plus");
+}
+
+void MEDDLY::PLUS_done()
+{
+    MEDDLY_DCASSERT(PLUS_cache.isEmpty());
 }
 

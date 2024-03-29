@@ -20,10 +20,14 @@
 #define MEDDLY_PLUS_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
+    class binary_list;
 
-  /// Set up a binary_opname for the "plus" operation.
-  binary_opname* initializePlus();
+    /// The 'plus' operation builder.
+    binary_operation* PLUS(forest* a, forest* b, forest* c);
+    void PLUS_init();
+    void PLUS_done();
 }
 
 #endif
