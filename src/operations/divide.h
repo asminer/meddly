@@ -20,10 +20,14 @@
 #define MEDDLY_DIVIDE_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
+    class binary_list;
 
-  /// Set up a binary_opname for the "divide" operator.
-  binary_opname* initializeDivide();
+    /// The 'divide' operation builder.
+    binary_operation* DIVIDE(forest* a, forest* b, forest* c);
+    void DIVIDE_init();
+    void DIVIDE_done();
 }
 
 #endif

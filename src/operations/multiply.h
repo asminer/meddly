@@ -20,10 +20,14 @@
 #define MEDDLY_MULTIPLY_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
+    class binary_list;
 
-  /// Set up a binary_opname for the "multiply" operation.
-  binary_opname* initializeMultiply();
+    /// The 'multiply' operation builder.
+    binary_operation* MULTIPLY(forest* a, forest* b, forest* c);
+    void MULTIPLY_init();
+    void MULTIPLY_done();
 }
 
 #endif

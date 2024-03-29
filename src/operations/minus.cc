@@ -141,7 +141,7 @@ MEDDLY::minus_evplus::minus_evplus(forest* arg1, forest* arg2, forest* res)
   : generic_binary_evplus(MINUS_cache, arg1, arg2, res)
 {
     checkDomains(__FILE__, __LINE__);
-    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllRelations(__FILE__, __LINE__, arg1->isForRelations());
     checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVPLUS);
 }
 
@@ -181,7 +181,7 @@ MEDDLY::minus_evtimes::minus_evtimes(forest* arg1, forest* arg2, forest* res)
   : generic_binary_evtimes(MINUS_cache, arg1, arg2, res)
 {
     checkDomains(__FILE__, __LINE__);
-    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllRelations(__FILE__, __LINE__, arg1->isForRelations());
     checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVTIMES);
 }
 

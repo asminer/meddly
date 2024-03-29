@@ -158,7 +158,7 @@ MEDDLY::plus_evplus::plus_evplus(forest* arg1, forest* arg2, forest* res)
 {
     operationCommutes();
     checkDomains(__FILE__, __LINE__);
-    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllRelations(__FILE__, __LINE__, arg1->isForRelations());
     checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVPLUS);
 }
 
@@ -244,7 +244,7 @@ MEDDLY::plus_evtimes::plus_evtimes(forest* arg1, forest* arg2, forest* res)
 {
     operationCommutes();
     checkDomains(__FILE__, __LINE__);
-    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllRelations(__FILE__, __LINE__, arg1->isForRelations());
     checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVTIMES);
 }
 
