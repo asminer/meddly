@@ -138,7 +138,7 @@ class MEDDLY::builtin_init : public initializer_list {
         static binary_opname* _BACKWARD_BFS;
         // static binary_opname* _VM_MULTIPLY;
         // static binary_opname* _MV_MULTIPLY;
-        static binary_opname* _MM_MULTIPLY;
+        // static binary_opname* _MM_MULTIPLY;
     public:
         static numerical_opname* _EXPLVECT_MATR_MULT;
         static numerical_opname* _MATR_EXPLVECT_MULT;
@@ -194,7 +194,7 @@ MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_DFS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_BFS;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_VM_MULTIPLY;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_MV_MULTIPLY;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_MM_MULTIPLY;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_MM_MULTIPLY;
 
 MEDDLY::numerical_opname* MEDDLY::builtin_init::_EXPLVECT_MATR_MULT;
 MEDDLY::numerical_opname* MEDDLY::builtin_init::_MATR_EXPLVECT_MULT;
@@ -257,7 +257,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     _BACKWARD_BFS   = nullptr;
     // _VM_MULTIPLY    = nullptr;
     // _MV_MULTIPLY    = nullptr;
-    _MM_MULTIPLY    = nullptr;
+    // _MM_MULTIPLY    = nullptr;
     //
     // Numerical ops
     //
@@ -322,6 +322,7 @@ void MEDDLY::builtin_init::setup()
 
     VM_MULTIPLY_init();
     MV_MULTIPLY_init();
+    MM_MULTIPLY_init();
 
     //
     // OLD Unary ops
@@ -365,7 +366,7 @@ void MEDDLY::builtin_init::setup()
     _BACKWARD_BFS   =   initializeBackwardBFS()     ;
     // _VM_MULTIPLY    =   initializeVMmult()          ;
     // _MV_MULTIPLY    =   initializeMVmult()          ;
-    _MM_MULTIPLY    =   initializeMMMultiply()      ;
+    // _MM_MULTIPLY    =   initializeMMMultiply()      ;
     //
     // Numerical ops
     //
@@ -437,6 +438,7 @@ void MEDDLY::builtin_init::cleanup()
 
     VM_MULTIPLY_done();
     MV_MULTIPLY_done();
+    MM_MULTIPLY_done();
 
     // mydelete(_UNION);
     // mydelete(_INTERSECT);
@@ -466,7 +468,7 @@ void MEDDLY::builtin_init::cleanup()
     mydelete(_BACKWARD_BFS);
     // mydelete(_VM_MULTIPLY);
     // mydelete(_MV_MULTIPLY);
-    mydelete(_MM_MULTIPLY);
+    // mydelete(_MM_MULTIPLY);
     //
     // Numerical ops
     //
@@ -690,12 +692,12 @@ MEDDLY::binary_operation* MEDDLY::MV_MULTIPLY(forest* a, forest* b, forest* c)
 {
     return builtin_init::_MV_MULTIPLY->getOperation(a, b, c);
 }
-*/
 
 MEDDLY::binary_operation* MEDDLY::MM_MULTIPLY(forest* a, forest* b, forest* c)
 {
     return builtin_init::_MM_MULTIPLY->getOperation(a, b, c);
 }
+*/
 
 // ******************************************************************
 // *                                                                *

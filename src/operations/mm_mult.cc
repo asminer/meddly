@@ -27,11 +27,11 @@
 // #define TRACE_ALL_OPS
 
 namespace MEDDLY {
-  class mm_mult_op;
+    class mm_mult_op;
 
-  class mm_mult_mxd;
+    class mm_mult_mxd;
 
-  class mm_mult_opname;
+    binary_list MMMULT_cache;
 };
 
 // ************************************************************************
@@ -53,8 +53,7 @@ namespace MEDDLY {
 /// Abstract base class for all matrix-matrix multiplication operations.
 class MEDDLY::mm_mult_op : public binary_operation {
   public:
-    mm_mult_op(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res, binary_operation* acc);
+    mm_mult_op(forest* arg1, forest* arg2, forest* res, binary_operation* acc);
 
     inline ct_entry_key*
     findResult(node_handle a, node_handle b, node_handle &c)
@@ -84,16 +83,19 @@ class MEDDLY::mm_mult_op : public binary_operation {
     virtual node_handle compute_rec(node_handle a, node_handle b) = 0;
 };
 
-MEDDLY::mm_mult_op::mm_mult_op(binary_list& oc, forest* a1,
-  forest* a2, forest* res, binary_operation* acc)
-: binary_operation(oc, 1, a1, a2, res)
+MEDDLY::mm_mult_op::mm_mult_op(forest* a1, forest* a2, forest* res,
+    binary_operation* acc) : binary_operation(MMMULT_cache, 1, a1, a2, res)
 {
+  checkDomains(__FILE__, __LINE__);
+  checkAllRelations(__FILE__, __LINE__, RELATION);
+  checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+
   accumulateOp = acc;
 
   if (!a1->isForRelations() || !a2->isForRelations())
     throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
 
-  ct_entry_type* et = new ct_entry_type(oc.getName(), "NN:N");
+  ct_entry_type* et = new ct_entry_type(MMMULT_cache.getName(), "NN:N");
   et->setForestForSlot(0, a1);
   et->setForestForSlot(1, a2);
   et->setForestForSlot(3, res);
@@ -128,18 +130,15 @@ MEDDLY::node_handle MEDDLY::mm_mult_op::compute(node_handle a, node_handle b)
 */
 class MEDDLY::mm_mult_mxd: public mm_mult_op {
   public:
-    mm_mult_mxd(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res, binary_operation* acc);
+    mm_mult_mxd(forest* arg1, forest* arg2, forest* res, binary_operation* acc);
 
   protected:
     virtual node_handle compute_rec(node_handle a, node_handle b);
     virtual node_handle processTerminals(node_handle a, node_handle b) = 0;
 };
 
-MEDDLY::mm_mult_mxd::mm_mult_mxd(binary_list& oc,
-  forest* a1, forest* a2, forest* res,
-  binary_operation* acc)
-: mm_mult_op(oc, a1, a2, res, acc)
+MEDDLY::mm_mult_mxd::mm_mult_mxd(forest* a1, forest* a2, forest* res,
+    binary_operation* acc) : mm_mult_op(a1, a2, res, acc)
 {
 }
 
@@ -331,9 +330,8 @@ namespace MEDDLY {
   template <typename RTYPE>
   class mm_mult_mt : public mm_mult_mxd {
     public:
-      mm_mult_mt(binary_list& opcode, forest* arg1,
-        forest* arg2, forest* res, binary_operation* acc)
-        : mm_mult_mxd(opcode, arg1, arg2, res, acc) { }
+      mm_mult_mt(forest* arg1, forest* arg2, forest* res, binary_operation* acc)
+        : mm_mult_mxd(arg1, arg2, res, acc) { }
 
     protected:
       virtual node_handle processTerminals(node_handle a, node_handle b)
@@ -368,6 +366,7 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
+/*
 class MEDDLY::mm_mult_opname : public binary_opname {
   public:
     mm_mult_opname();
@@ -419,7 +418,7 @@ MEDDLY::mm_mult_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   }
 }
 
-
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -427,9 +426,45 @@ MEDDLY::mm_mult_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeMMMultiply()
+MEDDLY::binary_operation* MEDDLY::MM_MULTIPLY(forest* a, forest* b, forest* c)
 {
-  return new mm_mult_opname;
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  MMMULT_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if  (
+            (a->getRangeType() == range_type::BOOLEAN) ||
+            (b->getRangeType() == range_type::BOOLEAN) ||
+            (c->getRangeType() == range_type::BOOLEAN)
+        )
+    {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    switch (c->getRangeType()) {
+        case range_type::INTEGER:
+            return MMMULT_cache.add(
+                new mm_mult_mt<int>(a, b, c, PLUS(c, c, c))
+            );
+
+        case range_type::REAL:
+            return MMMULT_cache.add(
+                new mm_mult_mt<float>(a, b, c, PLUS(c, c, c))
+            );
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
 }
 
+void MEDDLY::MM_MULTIPLY_init()
+{
+    MMMULT_cache.reset("Matrix-matrix multiplication");
+}
 
+void MEDDLY::MM_MULTIPLY_done()
+{
+    MEDDLY_DCASSERT(MMMULT_cache.isEmpty());
+}

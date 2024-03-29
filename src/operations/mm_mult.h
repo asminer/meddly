@@ -20,10 +20,14 @@
 #define MEDDLY_MATRIX_MULTIPLY_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
+    class binary_list;
 
-  /// Set up a binary_opname for the "matrix multiply" operation.
-  binary_opname* initializeMMMultiply();
+    /// The 'matrix-matrix multiply' operation builder.
+    binary_operation* MM_MULTIPLY(forest* a, forest* b, forest* c);
+    void MM_MULTIPLY_init();
+    void MM_MULTIPLY_done();
 }
 
 #endif
