@@ -21,13 +21,13 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class prepostplus_evplus;
+    class prepostplus_evplus;
 
-  class preplus_evplus;
-  class postplus_evplus;
+    class preplus_evplus;
+    class postplus_evplus;
 
-  class preplus_opname;
-  class postplus_opname;
+    binary_list PREPLUS_cache;
+    binary_list POSTPLUS_cache;
 };
 
 // ******************************************************************
@@ -38,8 +38,7 @@ namespace MEDDLY {
 
 class MEDDLY::prepostplus_evplus : public generic_binary_evplus {
   public:
-    prepostplus_evplus(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res);
+    prepostplus_evplus(binary_list &c, forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual ct_entry_key* findResult(long aev, node_handle a,
@@ -51,14 +50,15 @@ class MEDDLY::prepostplus_evplus : public generic_binary_evplus {
       long& cev, node_handle& c);
 };
 
-MEDDLY::prepostplus_evplus::prepostplus_evplus(binary_list& opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_evplus(opcode, arg1, arg2, res)
+MEDDLY::prepostplus_evplus::prepostplus_evplus(binary_list &cache,
+    forest* arg1, forest* arg2, forest* res)
+  : generic_binary_evplus(cache, arg1, arg2, res)
 {
-  MEDDLY_DCASSERT(arg1->isForRelations());
-  MEDDLY_DCASSERT(!arg2->isForRelations());
+    checkDomains(__FILE__, __LINE__);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVPLUS);
 
-  operationCommutes();
+    MEDDLY_DCASSERT(arg1->isForRelations());
+    MEDDLY_DCASSERT(!arg2->isForRelations());
 }
 
 MEDDLY::ct_entry_key* MEDDLY::prepostplus_evplus::findResult(long aev, node_handle a,
@@ -117,15 +117,13 @@ bool MEDDLY::prepostplus_evplus::checkTerminals(long aev, node_handle a, long be
 
 class MEDDLY::preplus_evplus : public prepostplus_evplus {
   public:
-    preplus_evplus(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res);
+    preplus_evplus(forest* arg1, forest* arg2, forest* res);
 
     virtual void compute(long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
 };
 
-MEDDLY::preplus_evplus::preplus_evplus(binary_list& opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : prepostplus_evplus(opcode, arg1, arg2, res)
+MEDDLY::preplus_evplus::preplus_evplus(forest* arg1, forest* arg2, forest* res)
+  : prepostplus_evplus(PREPLUS_cache, arg1, arg2, res)
 {
 }
 
@@ -228,15 +226,14 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
 
 class MEDDLY::postplus_evplus : public prepostplus_evplus {
   public:
-    postplus_evplus(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res);
+    postplus_evplus(forest* arg1, forest* arg2, forest* res);
 
     virtual void compute(long aev, node_handle a, long bev, node_handle b, long& cev, node_handle &c);
 };
 
-MEDDLY::postplus_evplus::postplus_evplus(binary_list& opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : prepostplus_evplus(opcode, arg1, arg2, res)
+MEDDLY::postplus_evplus
+ ::postplus_evplus(forest* arg1, forest* arg2, forest* res)
+  : prepostplus_evplus(POSTPLUS_cache, arg1, arg2, res)
 {
 }
 
@@ -337,6 +334,7 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
 // *                                                                *
 // ******************************************************************
 
+/*
 class MEDDLY::preplus_opname : public binary_opname {
   public:
     preplus_opname();
@@ -376,6 +374,7 @@ MEDDLY::preplus_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
 
   throw error(error::NOT_IMPLEMENTED);
 }
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -383,6 +382,7 @@ MEDDLY::preplus_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
 // *                                                                *
 // ******************************************************************
 
+/*
 class MEDDLY::postplus_opname : public binary_opname {
   public:
     postplus_opname();
@@ -422,6 +422,7 @@ MEDDLY::postplus_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
 
   throw error(error::NOT_IMPLEMENTED);
 }
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -429,12 +430,70 @@ MEDDLY::postplus_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializePrePlus()
+MEDDLY::binary_operation* MEDDLY::PRE_PLUS(forest* a, forest* b, forest* c)
 {
-  return new preplus_opname();
+    if (!a || !b || !c) return nullptr;
+
+    binary_operation* bop =  PREPLUS_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if  (
+            a->getEdgeLabeling() == edge_labeling::EVPLUS ||
+            b->getEdgeLabeling() == edge_labeling::EVPLUS ||
+            c->getEdgeLabeling() == edge_labeling::EVPLUS ||
+            a->isForRelations() ||
+            !b->isForRelations() ||
+            c->isForRelations()
+        )
+    {
+        return PREPLUS_cache.add(new preplus_evplus(a, b, c));
+    }
+
+    throw error(error::NOT_IMPLEMENTED);
 }
 
-MEDDLY::binary_opname* MEDDLY::initializePostPlus()
+void MEDDLY::PRE_PLUS_init()
 {
-  return new postplus_opname();
+    PREPLUS_cache.reset("Pre-plus");
+}
+
+void MEDDLY::PRE_PLUS_done()
+{
+    MEDDLY_DCASSERT(PREPLUS_cache.isEmpty());
+}
+
+MEDDLY::binary_operation* MEDDLY::POST_PLUS(forest* a, forest* b, forest* c)
+{
+    if (!a || !b || !c) return nullptr;
+
+    binary_operation* bop =  POSTPLUS_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if  (
+            a->getEdgeLabeling() == edge_labeling::EVPLUS ||
+            b->getEdgeLabeling() == edge_labeling::EVPLUS ||
+            c->getEdgeLabeling() == edge_labeling::EVPLUS ||
+            a->isForRelations() ||
+            !b->isForRelations() ||
+            c->isForRelations()
+        )
+    {
+        return POSTPLUS_cache.add(new postplus_evplus(a, b, c));
+    }
+
+    throw error(error::NOT_IMPLEMENTED);
+}
+
+void MEDDLY::POST_PLUS_init()
+{
+    POSTPLUS_cache.reset("Post-plus");
+}
+
+void MEDDLY::POST_PLUS_done()
+{
+    MEDDLY_DCASSERT(POSTPLUS_cache.isEmpty());
 }

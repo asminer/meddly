@@ -20,13 +20,19 @@
 #define MEDDLY_PREPOSTPLUS_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
+    class binary_list;
 
-  /// Set up a binary_opname for the "pre-plus" operation.
-  binary_opname* initializePrePlus();
+    /// The 'pre-plus' operation builder.
+    binary_operation* PRE_PLUS(forest* a, forest* b, forest* c);
+    void PRE_PLUS_init();
+    void PRE_PLUS_done();
 
-  /// Set up a binary_opname for the "post-plus" operation.
-  binary_opname* initializePostPlus();
+    /// The 'post-plus' operation builder.
+    binary_operation* POST_PLUS(forest* a, forest* b, forest* c);
+    void POST_PLUS_init();
+    void POST_PLUS_done();
 }
 
 #endif

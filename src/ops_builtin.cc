@@ -127,8 +127,8 @@ class MEDDLY::builtin_init : public initializer_list {
         // static binary_opname* _LE;
         // static binary_opname* _GT;
         // static binary_opname* _GE;
-        static binary_opname* _PRE_PLUS;
-        static binary_opname* _POST_PLUS;
+        // static binary_opname* _PRE_PLUS;
+        // static binary_opname* _POST_PLUS;
         static binary_opname* _PRE_IMAGE;
         static binary_opname* _POST_IMAGE;
         static binary_opname* _TC_POST_IMAGE;
@@ -183,8 +183,8 @@ class MEDDLY::builtin_init : public initializer_list {
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_LE;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_GT;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_GE;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_PLUS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_PLUS;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_PLUS;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_PLUS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_IMAGE;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_IMAGE;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_TC_POST_IMAGE;
@@ -246,8 +246,8 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     // _LE             = nullptr;
     // _GT             = nullptr;
     // _GE             = nullptr;
-    _PRE_PLUS       = nullptr;
-    _POST_PLUS      = nullptr;
+    // _PRE_PLUS       = nullptr;
+    // _POST_PLUS      = nullptr;
     _PRE_IMAGE      = nullptr;
     _POST_IMAGE     = nullptr;
     _TC_POST_IMAGE  = nullptr;
@@ -314,6 +314,9 @@ void MEDDLY::builtin_init::setup()
     GREATER_THAN_init();
     GREATER_THAN_EQUAL_init();
 
+    PRE_PLUS_init();
+    POST_PLUS_init();
+
     //
     // OLD Unary ops
     //
@@ -345,8 +348,8 @@ void MEDDLY::builtin_init::setup()
     // _LE             =   initializeLE()              ;
     // _GT             =   initializeGT()              ;
     // _GE             =   initializeGE()              ;
-    _PRE_PLUS       =   initializePrePlus()         ;
-    _POST_PLUS      =   initializePostPlus()        ;
+    // _PRE_PLUS       =   initializePrePlus()         ;
+    // _POST_PLUS      =   initializePostPlus()        ;
     _PRE_IMAGE      =   initializePreImage()        ;
     _POST_IMAGE     =   initializePostImage()       ;
     _TC_POST_IMAGE  =   initializeTCPostImage()     ;
@@ -419,6 +422,10 @@ void MEDDLY::builtin_init::cleanup()
     LESS_THAN_EQUAL_done();
     GREATER_THAN_done();
     GREATER_THAN_EQUAL_done();
+
+    PRE_PLUS_done();
+    POST_PLUS_done();
+
     // mydelete(_UNION);
     // mydelete(_INTERSECT);
     // mydelete(_DIFFERENCE);
@@ -436,8 +443,8 @@ void MEDDLY::builtin_init::cleanup()
     // mydelete(_LE);
     // mydelete(_GT);
     // mydelete(_GE);
-    mydelete(_PRE_PLUS);
-    mydelete(_POST_PLUS);
+    // mydelete(_PRE_PLUS);
+    // mydelete(_POST_PLUS);
     mydelete(_PRE_IMAGE);
     mydelete(_POST_IMAGE);
     mydelete(_TC_POST_IMAGE);
@@ -609,7 +616,6 @@ MEDDLY::binary_operation* MEDDLY::GREATER_THAN_EQUAL(forest* a, forest* b,
 {
     return builtin_init::_GE->getOperation(a, b, c);
 }
-*/
 
 MEDDLY::binary_operation* MEDDLY::PRE_PLUS(forest* a, forest* b, forest* c)
 {
@@ -620,6 +626,7 @@ MEDDLY::binary_operation* MEDDLY::POST_PLUS(forest* a, forest* b, forest* c)
 {
     return builtin_init::_POST_PLUS->getOperation(a, b, c);
 }
+*/
 
 MEDDLY::binary_operation* MEDDLY::PRE_IMAGE(forest* a, forest* b, forest* c)
 {
