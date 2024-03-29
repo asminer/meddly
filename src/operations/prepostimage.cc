@@ -27,22 +27,21 @@
 // #define TRACE_ALL_OPS
 
 namespace MEDDLY {
-  class image_op;
-  class relXset_mdd;
-  class setXrel_mdd;
+    class image_op;
+    class relXset_mdd;
+    class setXrel_mdd;
 
-  class image_op_evplus;
-  class relXset_evplus;
-  class setXrel_evplus;
-  class tcXrel_evplus;
+    class image_op_evplus;
+    class relXset_evplus;
+    class setXrel_evplus;
+    class tcXrel_evplus;
 
-  class preimage_opname;
-  class postimage_opname;
+    binary_list PRE_IMAGE_cache;
+    binary_list POST_IMAGE_cache;
 
-  class transitive_closure_postimage_opname;
-
-  class VMmult_opname;
-  class MVmult_opname;
+    binary_list TC_POST_IMAGE_cache;
+    binary_list VM_MULTIPLY_cache;
+    binary_list MV_MULTIPLY_cache;
 };
 
 // ************************************************************************
@@ -103,6 +102,9 @@ MEDDLY::image_op::image_op(binary_list& oc, forest* a1,
 : binary_operation(oc, 1, a1, a2, res)
 {
   accumulateOp = acc;
+
+  checkDomains(__FILE__, __LINE__);
+  checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 
   if (a1->isForRelations()) {
     argM = a1;
@@ -176,6 +178,7 @@ MEDDLY::relXset_mdd::relXset_mdd(binary_list& oc, forest* a1,
   forest* a2, forest* res, binary_operation* acc)
 : image_op(oc, a1, a2, res, acc)
 {
+    checkRelations(__FILE__, __LINE__, SET, RELATION, SET);
 }
 
 MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handle mxd)
@@ -309,6 +312,7 @@ MEDDLY::setXrel_mdd::setXrel_mdd(binary_list& oc,
   forest* a1, forest* a2, forest* res, binary_operation* acc)
 : image_op(oc, a1, a2, res, acc)
 {
+    checkRelations(__FILE__, __LINE__, SET, RELATION, SET);
 }
 
 MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handle mxd)
@@ -596,6 +600,13 @@ MEDDLY::image_op_evplus::image_op_evplus(binary_list& oc, forest* a1,
 {
   accumulateOp = acc;
 
+    checkDomains(__FILE__, __LINE__);
+    checkLabelings(__FILE__, __LINE__,
+        edge_labeling::EVPLUS,
+        edge_labeling::MULTI_TERMINAL,
+        edge_labeling::EVPLUS
+    );
+
   argV = a1;
   argM = a2;
 
@@ -653,6 +664,7 @@ MEDDLY::relXset_evplus::relXset_evplus(binary_list& oc,
   forest* a1, forest* a2, forest* res, binary_operation* acc)
 : image_op_evplus(oc, a1, a2, res, acc)
 {
+    checkRelations(__FILE__, __LINE__, RELATION, SET, SET);
 }
 
 void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd)
@@ -800,6 +812,7 @@ MEDDLY::setXrel_evplus::setXrel_evplus(binary_list& oc,
   forest* a1, forest* a2, forest* res, binary_operation* acc)
 : image_op_evplus(oc, a1, a2, res, acc)
 {
+    checkRelations(__FILE__, __LINE__, SET, RELATION, SET);
 }
 
 void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd)
@@ -1019,6 +1032,7 @@ MEDDLY::tcXrel_evplus::tcXrel_evplus(binary_list& oc,
   forest* tc, forest* trans, forest* res, binary_operation* acc)
 : image_op_evplus(oc, tc, trans, res, acc)
 {
+    checkRelations(__FILE__, __LINE__, RELATION, RELATION, RELATION);
 }
 
 void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle mxd, long& resEv, node_handle& resEvmdd)
@@ -1177,324 +1191,219 @@ void MEDDLY::tcXrel_evplus::processTerminals(long ev, node_handle evmxd, node_ha
   resEvmxd = resF->handleForValue(rval);
 }
 
-// ************************************************************************
-// *                                                                      *
-// *                                                                      *
-// *                                                                      *
-// *                           operation  names                           *
-// *                                                                      *
-// *                                                                      *
-// *                                                                      *
-// ************************************************************************
-
-// ******************************************************************
-// *                                                                *
-// *                     preimage_opname  class                     *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::preimage_opname : public binary_opname {
-  public:
-    preimage_opname();
-    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::preimage_opname::preimage_opname()
- : binary_opname("Pre-image")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::preimage_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    a1->isForRelations()    ||
-    !a2->isForRelations()   ||
-    r->isForRelations()     ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  binary_operation *acc = nullptr;
-  if (a1->getEdgeLabeling() == edge_labeling::EVPLUS || r->getRangeType() == range_type::BOOLEAN) {
-    acc = UNION(r, r, r);
-  } else {
-    acc = MAXIMUM(r, r, r);
-  }
-  MEDDLY_DCASSERT(acc);
-
-  if (a1->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    return new mtmatr_mtvect<bool>(c, a1, a2, r, acc);
-  }
-  else if (a1->getEdgeLabeling() == edge_labeling::EVPLUS) {
-    return new mtmatr_evplusvect<int>(c, a1, a2, r, acc);
-  }
-  else {
-    throw error(error::TYPE_MISMATCH);
-  }
-}
-
-
-// ******************************************************************
-// *                                                                *
-// *                     postimage_opname class                     *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::postimage_opname : public binary_opname {
-  public:
-    postimage_opname();
-    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::postimage_opname::postimage_opname()
- : binary_opname("Post-image")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::postimage_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    a1->isForRelations()    ||
-    !a2->isForRelations()   ||
-    r->isForRelations()     ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  binary_operation* acc = nullptr;
-  if (a1->getEdgeLabeling() == edge_labeling::EVPLUS || r->getRangeType() == range_type::BOOLEAN) {
-    acc = UNION(r, r, r);
-  } else {
-    acc = MAXIMUM(r, r, r);
-  }
-  MEDDLY_DCASSERT(acc);
-
-  if (a1->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    return new mtvect_mtmatr<bool>(c, a1, a2, r, acc);
-  }
-  else if(a1->getEdgeLabeling() == edge_labeling::EVPLUS) {
-      return new evplusvect_mtmatr<int>(c, a1, a2, r, acc);
-  }
-  else {
-    throw error(error::TYPE_MISMATCH);
-  }
-}
-
-// ******************************************************************
-// *                                                                *
-// *           transitive_closure_postimage_opname class            *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::transitive_closure_postimage_opname : public binary_opname {
-  public:
-  transitive_closure_postimage_opname();
-    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::transitive_closure_postimage_opname::transitive_closure_postimage_opname()
- : binary_opname("Transitive Closure Post-image")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::transitive_closure_postimage_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH);
-
-  if (
-    !a1->isForRelations()    ||
-    !a2->isForRelations()   ||
-    !r->isForRelations()     ||
-    (a1->getEdgeLabeling() != edge_labeling::EVPLUS) ||
-    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
-    (r->getEdgeLabeling() != edge_labeling::EVPLUS)
-  )
-    throw error(error::TYPE_MISMATCH);
-
-  binary_operation* acc = UNION(r, r, r);
-  return new tcXrel_evplus(c, a1, a2, r, acc);
-}
-
-// ******************************************************************
-// *                                                                *
-// *                      VMmult_opname  class                      *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::VMmult_opname : public binary_opname {
-  public:
-    VMmult_opname();
-    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::VMmult_opname::VMmult_opname()
- : binary_opname("Vector-matrix multiply")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::VMmult_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->getRangeType() == range_type::BOOLEAN) ||
-    (a2->getRangeType() == range_type::BOOLEAN) ||
-    (r->getRangeType() == range_type::BOOLEAN) ||
-    a1->isForRelations()    ||
-    !a2->isForRelations()   ||
-    r->isForRelations()     ||
-    (a1->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
-    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
-    (r->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  binary_operation* acc = PLUS(r, r, r);
-
-  switch (r->getRangeType()) {
-    case range_type::INTEGER:
-      return new mtvect_mtmatr<int>(c, a1, a2, r, acc);
-
-    case range_type::REAL:
-      return new mtvect_mtmatr<float>(c, a1, a2, r, acc);
-
-    default:
-      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-  }
-}
-
-// ******************************************************************
-// *                                                                *
-// *                      MVmult_opname  class                      *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::MVmult_opname : public binary_opname {
-  public:
-    MVmult_opname();
-    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::MVmult_opname::MVmult_opname()
- : binary_opname("Matrix-vector multiply")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::MVmult_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->getRangeType() == range_type::BOOLEAN) ||
-    (a2->getRangeType() == range_type::BOOLEAN) ||
-    (r->getRangeType() == range_type::BOOLEAN) ||
-    !a1->isForRelations()    ||
-    a2->isForRelations()   ||
-    r->isForRelations()     ||
-    (a1->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
-    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
-    (r->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  binary_operation* acc = PLUS(r, r, r);
-
-  //
-  // We're switching the order of the arguments
-  //
-
-  switch (r->getRangeType()) {
-    case range_type::INTEGER:
-      return new mtmatr_mtvect<int>(c, a2, a1, r, acc);
-
-    case range_type::REAL:
-      return new mtmatr_mtvect<float>(c, a2, a1, r, acc);
-
-    default:
-      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-  }
-}
-
-
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializePreImage()
+MEDDLY::binary_operation* MEDDLY::PRE_IMAGE(forest* a, forest* b, forest* c)
 {
-  return new preimage_opname;
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  PRE_IMAGE_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    binary_operation *acc = nullptr;
+    if  (
+            a->getEdgeLabeling() == edge_labeling::EVPLUS ||
+            c->getRangeType() == range_type::BOOLEAN
+        )
+    {
+        acc = UNION(c, c, c);
+    } else {
+        acc = MAXIMUM(c, c, c);
+    }
+    MEDDLY_DCASSERT(acc);
+
+    if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        return PRE_IMAGE_cache.add(
+            new mtmatr_mtvect<bool>(PRE_IMAGE_cache, a, b, c, acc)
+        );
+    }
+    if (a->getEdgeLabeling() == edge_labeling::EVPLUS) {
+        return PRE_IMAGE_cache.add(
+            new mtmatr_evplusvect<int>(PRE_IMAGE_cache, a, b, c, acc)
+        );
+    }
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-MEDDLY::binary_opname* MEDDLY::initializePostImage()
+void MEDDLY::PRE_IMAGE_init()
 {
-  return new postimage_opname;
+    PRE_IMAGE_cache.reset("Pre-image");
 }
 
-MEDDLY::binary_opname* MEDDLY::initializeTCPostImage()
+void MEDDLY::PRE_IMAGE_done()
 {
-  return new transitive_closure_postimage_opname;
+    MEDDLY_DCASSERT(PRE_IMAGE_cache.isEmpty());
 }
 
-MEDDLY::binary_opname* MEDDLY::initializeVMmult()
+// ******************************************************************
+
+MEDDLY::binary_operation* MEDDLY::POST_IMAGE(forest* a, forest* b, forest* c)
 {
-  return new VMmult_opname;
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  POST_IMAGE_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    binary_operation *acc = nullptr;
+    if  (
+            a->getEdgeLabeling() == edge_labeling::EVPLUS ||
+            c->getRangeType() == range_type::BOOLEAN
+        )
+    {
+        acc = UNION(c, c, c);
+    } else {
+        acc = MAXIMUM(c, c, c);
+    }
+    MEDDLY_DCASSERT(acc);
+
+    if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        return POST_IMAGE_cache.add(
+            new mtvect_mtmatr<bool>(POST_IMAGE_cache, a, b, c, acc)
+        );
+    }
+    if (a->getEdgeLabeling() == edge_labeling::EVPLUS) {
+        return POST_IMAGE_cache.add(
+            new evplusvect_mtmatr<int>(POST_IMAGE_cache, a, b, c, acc)
+        );
+    }
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-MEDDLY::binary_opname* MEDDLY::initializeMVmult()
+void MEDDLY::POST_IMAGE_init()
 {
-  return new MVmult_opname;
+    POST_IMAGE_cache.reset("Post-image");
+}
+
+void MEDDLY::POST_IMAGE_done()
+{
+    MEDDLY_DCASSERT(POST_IMAGE_cache.isEmpty());
+}
+
+// ******************************************************************
+
+MEDDLY::binary_operation* MEDDLY::TC_POST_IMAGE(forest* a, forest* b, forest* c)
+{
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  TC_POST_IMAGE_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+    return TC_POST_IMAGE_cache.add(
+        new tcXrel_evplus(TC_POST_IMAGE_cache, a, b, c, UNION(c, c, c))
+    );
+}
+
+void MEDDLY::TC_POST_IMAGE_init()
+{
+    TC_POST_IMAGE_cache.reset("TC-Post-image");
+}
+
+void MEDDLY::TC_POST_IMAGE_done()
+{
+    MEDDLY_DCASSERT(TC_POST_IMAGE_cache.isEmpty());
+}
+
+// ******************************************************************
+
+MEDDLY::binary_operation* MEDDLY::VM_MULTIPLY(forest* a, forest* b, forest* c)
+{
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  VM_MULTIPLY_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if  (
+            (a->getRangeType() == range_type::BOOLEAN) ||
+            (b->getRangeType() == range_type::BOOLEAN) ||
+            (c->getRangeType() == range_type::BOOLEAN)
+        )
+    {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    binary_operation* acc = PLUS(c, c, c);
+
+    switch (c->getRangeType()) {
+        case range_type::INTEGER:
+            return VM_MULTIPLY_cache.add(
+                new mtvect_mtmatr<int>(VM_MULTIPLY_cache, a, b, c, acc)
+            );
+
+        case range_type::REAL:
+            return VM_MULTIPLY_cache.add(
+                new mtvect_mtmatr<float>(VM_MULTIPLY_cache, a, b, c, acc)
+            );
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+}
+
+void MEDDLY::VM_MULTIPLY_init()
+{
+    VM_MULTIPLY_cache.reset("VM-multiply");
+}
+
+void MEDDLY::VM_MULTIPLY_done()
+{
+    MEDDLY_DCASSERT(VM_MULTIPLY_cache.isEmpty());
+}
+
+// ******************************************************************
+
+MEDDLY::binary_operation* MEDDLY::MV_MULTIPLY(forest* a, forest* b, forest* c)
+{
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  MV_MULTIPLY_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if  (
+            (a->getRangeType() == range_type::BOOLEAN) ||
+            (b->getRangeType() == range_type::BOOLEAN) ||
+            (c->getRangeType() == range_type::BOOLEAN)
+        )
+    {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    binary_operation* acc = PLUS(c, c, c);
+
+    //
+    // We're switching the order of the arguments
+    //
+
+    switch (c->getRangeType()) {
+        case range_type::INTEGER:
+            return MV_MULTIPLY_cache.add(
+                new mtmatr_mtvect<int>(MV_MULTIPLY_cache, b, a, c, acc)
+            );
+
+        case range_type::REAL:
+            return MV_MULTIPLY_cache.add(
+                new mtmatr_mtvect<float>(MV_MULTIPLY_cache, b, a, c, acc)
+            );
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+}
+
+void MEDDLY::MV_MULTIPLY_init()
+{
+    MV_MULTIPLY_cache.reset("MV-multiply");
+}
+
+void MEDDLY::MV_MULTIPLY_done()
+{
+    MEDDLY_DCASSERT(MV_MULTIPLY_cache.isEmpty());
 }
 

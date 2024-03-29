@@ -129,15 +129,15 @@ class MEDDLY::builtin_init : public initializer_list {
         // static binary_opname* _GE;
         // static binary_opname* _PRE_PLUS;
         // static binary_opname* _POST_PLUS;
-        static binary_opname* _PRE_IMAGE;
-        static binary_opname* _POST_IMAGE;
-        static binary_opname* _TC_POST_IMAGE;
+        // static binary_opname* _PRE_IMAGE;
+        // static binary_opname* _POST_IMAGE;
+        // static binary_opname* _TC_POST_IMAGE;
         static binary_opname* _FORWARD_DFS;
         static binary_opname* _FORWARD_BFS;
         static binary_opname* _BACKWARD_DFS;
         static binary_opname* _BACKWARD_BFS;
-        static binary_opname* _VM_MULTIPLY;
-        static binary_opname* _MV_MULTIPLY;
+        // static binary_opname* _VM_MULTIPLY;
+        // static binary_opname* _MV_MULTIPLY;
         static binary_opname* _MM_MULTIPLY;
     public:
         static numerical_opname* _EXPLVECT_MATR_MULT;
@@ -185,15 +185,15 @@ class MEDDLY::builtin_init : public initializer_list {
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_GE;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_PLUS;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_PLUS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_IMAGE;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_IMAGE;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_TC_POST_IMAGE;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_IMAGE;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_IMAGE;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_TC_POST_IMAGE;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_DFS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_BFS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_DFS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_BFS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_VM_MULTIPLY;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_MV_MULTIPLY;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_VM_MULTIPLY;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_MV_MULTIPLY;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_MM_MULTIPLY;
 
 MEDDLY::numerical_opname* MEDDLY::builtin_init::_EXPLVECT_MATR_MULT;
@@ -248,15 +248,15 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     // _GE             = nullptr;
     // _PRE_PLUS       = nullptr;
     // _POST_PLUS      = nullptr;
-    _PRE_IMAGE      = nullptr;
-    _POST_IMAGE     = nullptr;
-    _TC_POST_IMAGE  = nullptr;
+    // _PRE_IMAGE      = nullptr;
+    // _POST_IMAGE     = nullptr;
+    // _TC_POST_IMAGE  = nullptr;
     _FORWARD_DFS    = nullptr;
     _FORWARD_BFS    = nullptr;
     _BACKWARD_DFS   = nullptr;
     _BACKWARD_BFS   = nullptr;
-    _VM_MULTIPLY    = nullptr;
-    _MV_MULTIPLY    = nullptr;
+    // _VM_MULTIPLY    = nullptr;
+    // _MV_MULTIPLY    = nullptr;
     _MM_MULTIPLY    = nullptr;
     //
     // Numerical ops
@@ -316,6 +316,12 @@ void MEDDLY::builtin_init::setup()
 
     PRE_PLUS_init();
     POST_PLUS_init();
+    PRE_IMAGE_init();
+    POST_IMAGE_init();
+    TC_POST_IMAGE_init();
+
+    VM_MULTIPLY_init();
+    MV_MULTIPLY_init();
 
     //
     // OLD Unary ops
@@ -350,15 +356,15 @@ void MEDDLY::builtin_init::setup()
     // _GE             =   initializeGE()              ;
     // _PRE_PLUS       =   initializePrePlus()         ;
     // _POST_PLUS      =   initializePostPlus()        ;
-    _PRE_IMAGE      =   initializePreImage()        ;
-    _POST_IMAGE     =   initializePostImage()       ;
-    _TC_POST_IMAGE  =   initializeTCPostImage()     ;
+    // _PRE_IMAGE      =   initializePreImage()        ;
+    // _POST_IMAGE     =   initializePostImage()       ;
+    // _TC_POST_IMAGE  =   initializeTCPostImage()     ;
     _FORWARD_DFS    =   initializeForwardDFS()      ;
     _FORWARD_BFS    =   initializeForwardBFS()      ;
     _BACKWARD_DFS   =   initializeBackwardDFS()     ;
     _BACKWARD_BFS   =   initializeBackwardBFS()     ;
-    _VM_MULTIPLY    =   initializeVMmult()          ;
-    _MV_MULTIPLY    =   initializeMVmult()          ;
+    // _VM_MULTIPLY    =   initializeVMmult()          ;
+    // _MV_MULTIPLY    =   initializeMVmult()          ;
     _MM_MULTIPLY    =   initializeMMMultiply()      ;
     //
     // Numerical ops
@@ -425,6 +431,12 @@ void MEDDLY::builtin_init::cleanup()
 
     PRE_PLUS_done();
     POST_PLUS_done();
+    PRE_IMAGE_done();
+    POST_IMAGE_done();
+    TC_POST_IMAGE_done();
+
+    VM_MULTIPLY_done();
+    MV_MULTIPLY_done();
 
     // mydelete(_UNION);
     // mydelete(_INTERSECT);
@@ -445,15 +457,15 @@ void MEDDLY::builtin_init::cleanup()
     // mydelete(_GE);
     // mydelete(_PRE_PLUS);
     // mydelete(_POST_PLUS);
-    mydelete(_PRE_IMAGE);
-    mydelete(_POST_IMAGE);
-    mydelete(_TC_POST_IMAGE);
+    // mydelete(_PRE_IMAGE);
+    // mydelete(_POST_IMAGE);
+    // mydelete(_TC_POST_IMAGE);
     mydelete(_FORWARD_DFS);
     mydelete(_FORWARD_BFS);
     mydelete(_BACKWARD_DFS);
     mydelete(_BACKWARD_BFS);
-    mydelete(_VM_MULTIPLY);
-    mydelete(_MV_MULTIPLY);
+    // mydelete(_VM_MULTIPLY);
+    // mydelete(_MV_MULTIPLY);
     mydelete(_MM_MULTIPLY);
     //
     // Numerical ops
@@ -626,7 +638,6 @@ MEDDLY::binary_operation* MEDDLY::POST_PLUS(forest* a, forest* b, forest* c)
 {
     return builtin_init::_POST_PLUS->getOperation(a, b, c);
 }
-*/
 
 MEDDLY::binary_operation* MEDDLY::PRE_IMAGE(forest* a, forest* b, forest* c)
 {
@@ -643,6 +654,7 @@ MEDDLY::binary_operation* MEDDLY::TC_POST_IMAGE(forest* a, forest* b,
 {
     return builtin_init::_TC_POST_IMAGE->getOperation(a, b, c);
 }
+*/
 
 MEDDLY::binary_operation* MEDDLY::REACHABLE_STATES_DFS(forest* a, forest* b,
         forest* c)
@@ -668,6 +680,7 @@ MEDDLY::binary_operation* MEDDLY::REVERSE_REACHABLE_BFS(forest* a, forest* b,
     return builtin_init::_BACKWARD_BFS->getOperation(a, b, c);
 }
 
+/*
 MEDDLY::binary_operation* MEDDLY::VM_MULTIPLY(forest* a, forest* b, forest* c)
 {
     return builtin_init::_VM_MULTIPLY->getOperation(a, b, c);
@@ -677,6 +690,7 @@ MEDDLY::binary_operation* MEDDLY::MV_MULTIPLY(forest* a, forest* b, forest* c)
 {
     return builtin_init::_MV_MULTIPLY->getOperation(a, b, c);
 }
+*/
 
 MEDDLY::binary_operation* MEDDLY::MM_MULTIPLY(forest* a, forest* b, forest* c)
 {

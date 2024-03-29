@@ -32,6 +32,17 @@
 
 using namespace MEDDLY;
 
+const char* JOB = nullptr;
+
+inline void trying(const char* j)
+{
+    JOB = j;
+}
+inline void success()
+{
+    JOB = nullptr;
+}
+
 const int vars[] = {10, 10, 10};
 
 int R[] = {0, 3, 1, 4};
@@ -43,20 +54,16 @@ int S[] = {0, 2, 6, 5};
 //    N : 1
 //    S : 2
 
-bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
+void build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
 {
   // Build state indexes
 
   int* sslist[] = { R, N, S };
   long indexes[] = { 0, 1, 2 };
 
-  try {
-    indf->createEdge(sslist, indexes, 3, ss);
-  }
-  catch (MEDDLY::error fe) {
-    printf("Couldn't build indexes: %s\n", fe.getName());
-    return false;
-  }
+  trying("build indexes");
+  indf->createEdge(sslist, indexes, 3, ss);
+  success();
 
 #ifdef SHOW_INDEXES
   printf("Indexes:\n");
@@ -75,20 +82,14 @@ bool build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
     0.5,  0.25, 0.25, 0.5,  0.5,  0.25, 0.25, 0.5
   };
 
-  try {
-    mxd->createEdge(fromlist, tolist, problist, 8, P);
-  }
-  catch (MEDDLY::error fe) {
-    printf("Couldn't build matrix: %s\n", fe.getName());
-    return false;
-  }
+  trying("build matrix");
+  mxd->createEdge(fromlist, tolist, problist, 8, P);
+  success();
 
 #ifdef SHOW_MATRIX
   printf("Matrix:\n");
   P.show(stdout, 2);
 #endif
-
-  return true;
 }
 
 void by_hand_oz_xA(double* y, const double* const x)
@@ -134,7 +135,7 @@ void readVector(const dd_edge &x, double* ans)
   ans[2] = temp;
 }
 
-bool impl_xA_check(dd_edge &x, const dd_edge &P)
+void impl_xA_check(dd_edge &x, const dd_edge &P)
 {
   printf("xA multiplications (implicit):\n");
 
@@ -150,13 +151,9 @@ bool impl_xA_check(dd_edge &x, const dd_edge &P)
     readVector(x, ex);
     printf("p%d: [%lf, %lf, %lf]\n", i, ex[0], ex[1], ex[2]);
     if (i>=9) break;
-    try {
-      apply(VM_MULTIPLY, x, P, x);
-    }
-    catch (MEDDLY::error ce) {
-      printf("Couldn't multiply: %s\n", ce.getName());
-      return false;
-    }
+    trying("multiply");
+    apply(VM_MULTIPLY, x, P, x);
+    success();
 
     // determine product by hand
     exP[0] = exP[1] = exP[2] = 0;
@@ -164,13 +161,12 @@ bool impl_xA_check(dd_edge &x, const dd_edge &P)
 
     // Compare!
     readVector(x, test);
-    if (!equals(test, exP, 3)) return false;
+    if (!equals(test, exP, 3)) throw "vectors not equal";
 
   }
-  return true;
 }
 
-bool expl_xA_check(const dd_edge &ss, const dd_edge &P)
+void expl_xA_check(const dd_edge &ss, const dd_edge &P)
 {
   int i;
   double p[3];
@@ -182,30 +178,25 @@ bool expl_xA_check(const dd_edge &ss, const dd_edge &P)
   for (i=0; i<9; i++) {
     printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
     q[0] = q[1] = q[2] = 0;
-    try {
-      VM->compute(q, p);
-    }
-    catch (MEDDLY::error ce) {
-      printf("Couldn't multiply: %s\n", ce.getName());
-      return false;
-    }
+    trying("multiply");
+    VM->compute(q, p);
+    success();
 
     // determine product by hand
     q_alt[0] = q_alt[1] = q_alt[2] = 0;
     by_hand_oz_xA(q_alt, p);
 
     // Compare!
-    if (!equals(q, q_alt, 3)) return false;
+    if (!equals(q, q_alt, 3)) throw "vectors not equal";
     p[0] = q[0];
     p[1] = q[1];
     p[2] = q[2];
   }
   printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
   destroyOperation(VM);
-  return true;
 }
 
-bool impl_Ax_check(dd_edge &x, const dd_edge &P)
+void impl_Ax_check(dd_edge &x, const dd_edge &P)
 {
   printf("Ax multiplications (implicit):\n");
 
@@ -221,13 +212,9 @@ bool impl_Ax_check(dd_edge &x, const dd_edge &P)
     readVector(x, ex);
     printf("p%d: [%lf, %lf, %lf]\n", i, ex[0], ex[1], ex[2]);
     if (i>=9) break;
-    try {
-      apply(MV_MULTIPLY, P, x, x);
-    }
-    catch (MEDDLY::error ce) {
-      printf("Couldn't multiply: %s\n", ce.getName());
-      return false;
-    }
+    trying("multiply");
+    apply(MV_MULTIPLY, P, x, x);
+    success();
 
     // determine product by hand
     exP[0] = exP[1] = exP[2] = 0;
@@ -235,13 +222,12 @@ bool impl_Ax_check(dd_edge &x, const dd_edge &P)
 
     // Compare!
     readVector(x, test);
-    if (!equals(test, exP, 3)) return false;
+    if (!equals(test, exP, 3)) throw "vectors not equal";
 
   }
-  return true;
 }
 
-bool expl_Ax_check(const dd_edge &ss, const dd_edge &P)
+void expl_Ax_check(const dd_edge &ss, const dd_edge &P)
 {
   int i;
   double p[3];
@@ -253,54 +239,67 @@ bool expl_Ax_check(const dd_edge &ss, const dd_edge &P)
   for (i=0; i<9; i++) {
     printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
     q[0] = q[1] = q[2] = 0;
-    try {
-      MV->compute(q, p);
-    }
-    catch (MEDDLY::error ce) {
-      printf("Couldn't multiply: %s\n", ce.getName());
-      return false;
-    }
+    trying("multiply");
+    MV->compute(q, p);
+    success();
     q_alt[0] = q_alt[1] = q_alt[2] = 0;
     by_hand_oz_Ax(q_alt, p);
-    if (!equals(q, q_alt, 3)) return false;
+    if (!equals(q, q_alt, 3)) throw "vectors not equal";
     p[0] = q[0];
     p[1] = q[1];
     p[2] = q[2];
   }
   printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
   destroyOperation(MV);
-  return true;
 }
 
 int main(int argc, const char** argv)
 {
-  initialize();
+    try {
+        initialize();
 
-  domain* ozd = domain::createBottomUp(vars, 3);
-  assert(ozd);
-  forest* evpmdds = forest::create(ozd, 0, range_type::INTEGER, edge_labeling::EVPLUS);
-  assert(evpmdds);
-  forest* mtmxds = forest::create(ozd, 1, range_type::REAL, edge_labeling::MULTI_TERMINAL);
-  assert(mtmxds);
-  forest* mtmdds = forest::create(ozd, 0, range_type::REAL, edge_labeling::MULTI_TERMINAL);
-  assert(mtmdds);
+        domain* ozd = domain::createBottomUp(vars, 3);
+        assert(ozd);
+        forest* evpmdds = forest::create(ozd, SET, range_type::INTEGER,
+                edge_labeling::EVPLUS);
+        assert(evpmdds);
+        forest* mtmxds = forest::create(ozd, RELATION, range_type::REAL,
+                edge_labeling::MULTI_TERMINAL);
+        assert(mtmxds);
+        forest* mtmdds = forest::create(ozd, SET, range_type::REAL,
+                edge_labeling::MULTI_TERMINAL);
+        assert(mtmdds);
 
-  dd_edge ss(evpmdds);
-  dd_edge P(mtmxds);
-  dd_edge x(mtmdds);
+        dd_edge ss(evpmdds);
+        dd_edge P(mtmxds);
+        dd_edge x(mtmdds);
 
-  if (!build_oz(evpmdds, mtmxds, ss, P)) return 1;
+        build_oz(evpmdds, mtmxds, ss, P);
 
-  if (!expl_xA_check(ss, P)) return 1;
-  if (!impl_xA_check(x, P)) return 1;
+        expl_xA_check(ss, P);
+        impl_xA_check(x, P);
 
-  if (!expl_Ax_check(ss, P)) return 1;
-  if (!impl_Ax_check(x, P)) return 1;
+        expl_Ax_check(ss, P);
+        impl_Ax_check(x, P);
 
-  // Avoid active node warning
-  evpmdds->createEdge(long(0), ss);
-  mtmxds->createEdge(float(0), P);
+        // Avoid active node warning
+        evpmdds->createEdge(long(0), ss);
+        mtmxds->createEdge(float(0), P);
 
-  cleanup();
-  return 0;
+        cleanup();
+        return 0;
+    }
+    catch (MEDDLY::error e) {
+        printf("\nCouldn't %s: %s\n\tThrown at %s line %u\n",
+                JOB, e.getName(), e.getFile(), e.getLine()
+        );
+        return 1;
+    }
+    catch (const char* e) {
+        printf("\nError: %s\n", e);
+        return 2;
+    }
+
+    printf("\nUnknown error\n");
+    return 3;
 }

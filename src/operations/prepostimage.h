@@ -20,22 +20,34 @@
 #define MEDDLY_PREPOSTIMAGE_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
+    class binary_list;
 
-  /// Set up a binary_opname for the "preimage" operation.
-  binary_opname* initializePreImage();
+    /// The 'preimage' operation builder.
+    binary_operation* PRE_IMAGE(forest* a, forest* b, forest* c);
+    void PRE_IMAGE_init();
+    void PRE_IMAGE_done();
 
-  /// Set up a binary_opname for the "postimage" operation.
-  binary_opname* initializePostImage();
+    /// The 'postimage' operation builder.
+    binary_operation* POST_IMAGE(forest* a, forest* b, forest* c);
+    void POST_IMAGE_init();
+    void POST_IMAGE_done();
 
-  /// Set up a binary_opname for the "transitive closure postimage" operation.
-  binary_opname* initializeTCPostImage();
+    /// The 'transitive closure postimage' operation builder.
+    binary_operation* TC_POST_IMAGE(forest* a, forest* b, forest* c);
+    void TC_POST_IMAGE_init();
+    void TC_POST_IMAGE_done();
 
-  /// Set up a binary_opname for vector matrix multiplication.
-  binary_opname* initializeVMmult();
+    /// The 'vector matrix multiplication' operation builder.
+    binary_operation* VM_MULTIPLY(forest* a, forest* b, forest* c);
+    void VM_MULTIPLY_init();
+    void VM_MULTIPLY_done();
 
-  /// Set up a binary_opname for matrix vector multiplication.
-  binary_opname* initializeMVmult();
+    /// The 'matrix vector multiplication' operation builder.
+    binary_operation* MV_MULTIPLY(forest* a, forest* b, forest* c);
+    void MV_MULTIPLY_init();
+    void MV_MULTIPLY_done();
 }
 
 #endif
