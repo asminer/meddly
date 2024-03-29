@@ -117,7 +117,7 @@ class MEDDLY::builtin_init : public initializer_list {
         // static binary_opname* _MIN;
         // static binary_opname* _MAX;
         // static binary_opname* _PLUS;
-        static binary_opname* _MINUS;
+        // static binary_opname* _MINUS;
         static binary_opname* _MULTIPLY;
         static binary_opname* _DIVIDE;
         static binary_opname* _MODULO;
@@ -173,7 +173,7 @@ class MEDDLY::builtin_init : public initializer_list {
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_MIN;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_MAX;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_PLUS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_MINUS;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_MINUS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_MULTIPLY;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_DIVIDE;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_MODULO;
@@ -236,7 +236,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     // _MIN            = nullptr;
     // _MAX            = nullptr;
     // _PLUS           = nullptr;
-    _MINUS          = nullptr;
+    // _MINUS          = nullptr;
     _MULTIPLY       = nullptr;
     _DIVIDE         = nullptr;
     _MODULO         = nullptr;
@@ -302,6 +302,7 @@ void MEDDLY::builtin_init::setup()
     MAXIMUM_init();
     MINIMUM_init();
     PLUS_init();
+    MINUS_init();
 
     //
     // OLD Unary ops
@@ -324,7 +325,7 @@ void MEDDLY::builtin_init::setup()
     // _MAX            =   initializeMaximum()         ;
     // _MIN            =   initializeMinimum()         ;
     // _PLUS           =   initializePlus()            ;
-    _MINUS          =   initializeMinus()           ;
+    // _MINUS          =   initializeMinus()           ;
     _MULTIPLY       =   initializeMultiply()        ;
     _DIVIDE         =   initializeDivide()          ;
     _MODULO         =   initializeModulo()          ;
@@ -397,6 +398,7 @@ void MEDDLY::builtin_init::cleanup()
     MAXIMUM_done();
     MINIMUM_done();
     PLUS_done();
+    MINUS_done();
     // mydelete(_UNION);
     // mydelete(_INTERSECT);
     // mydelete(_DIFFERENCE);
@@ -404,7 +406,7 @@ void MEDDLY::builtin_init::cleanup()
     // mydelete(_MIN);
     // mydelete(_MAX);
     // mydelete(_PLUS);
-    mydelete(_MINUS);
+    // mydelete(_MINUS);
     mydelete(_MULTIPLY);
     mydelete(_DIVIDE);
     mydelete(_MODULO);
@@ -535,12 +537,12 @@ MEDDLY::binary_operation* MEDDLY::PLUS(forest* a, forest* b, forest* c)
 {
     return builtin_init::_PLUS->getOperation(a, b, c);
 }
-*/
 
 MEDDLY::binary_operation* MEDDLY::MINUS(forest* a, forest* b, forest* c)
 {
     return builtin_init::_MINUS->getOperation(a, b, c);
 }
+*/
 
 MEDDLY::binary_operation* MEDDLY::MULTIPLY(forest* a, forest* b, forest* c)
 {
