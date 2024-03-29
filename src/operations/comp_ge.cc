@@ -21,7 +21,7 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class moreequal_opname;
+    binary_list GE_cache;
 };
 
 
@@ -36,9 +36,13 @@ namespace MEDDLY {
 template <typename T>
 class moreequal_mdd : public generic_binary_mdd {
   public:
-    moreequal_mdd(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res)
-      : generic_binary_mdd(opcode, arg1, arg2, res) { }
+    moreequal_mdd(forest* arg1, forest* arg2, forest* res)
+      : generic_binary_mdd(GE_cache, arg1, arg2, res)
+    {
+        checkDomains(__FILE__, __LINE__);
+        checkAllRelations(__FILE__, __LINE__, SET);
+        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+    }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
@@ -71,9 +75,13 @@ namespace MEDDLY {
 template <typename T>
 class moreequal_mxd : public generic_binbylevel_mxd {
   public:
-    moreequal_mxd(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res)
-      : generic_binbylevel_mxd(opcode, arg1, arg2, res) { }
+    moreequal_mxd(forest* arg1, forest* arg2, forest* res)
+      : generic_binbylevel_mxd(GE_cache, arg1, arg2, res)
+    {
+        checkDomains(__FILE__, __LINE__);
+        checkAllRelations(__FILE__, __LINE__, RELATION);
+        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+    }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
@@ -97,70 +105,45 @@ bool moreequal_mxd<T>
 
 // ******************************************************************
 // *                                                                *
-// *                     moreequal_opname class                     *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::moreequal_opname : public binary_opname {
-  public:
-    moreequal_opname();
-    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::moreequal_opname::moreequal_opname()
- : binary_opname("Unequal")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::moreequal_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->isForRelations() != r->isForRelations()) ||
-    (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling())
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  bool use_reals = (
-    a1->getRangeType() == range_type::REAL || a2->getRangeType() == range_type::REAL
-  );
-  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    if (use_reals) {
-      if (r->isForRelations())
-        return new moreequal_mxd<float>(c, a1, a2, r);
-      else
-        return new moreequal_mdd<float>(c, a1, a2, r);
-    } else {
-      if (r->isForRelations())
-        return new moreequal_mxd<int>(c, a1, a2, r);
-      else
-        return new moreequal_mdd<int>(c, a1, a2, r);
-    }
-  }
-
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-// ******************************************************************
-// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeGE()
+MEDDLY::binary_operation* MEDDLY::GREATER_THAN_EQUAL(forest* a, forest* b, forest* c)
 {
-  return new moreequal_opname;
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  GE_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            if (c->isForRelations())
+                return GE_cache.add(new moreequal_mxd<float>(a, b, c));
+            else
+                return GE_cache.add(new moreequal_mdd<float>(a, b, c));
+        } else {
+            if (c->isForRelations())
+                return GE_cache.add(new moreequal_mxd<long>(a, b, c));
+            else
+                return GE_cache.add(new moreequal_mdd<long>(a, b, c));
+        }
+    }
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::GREATER_THAN_EQUAL_init()
+{
+    GE_cache.reset("MoreEqual");
+}
+
+void MEDDLY::GREATER_THAN_EQUAL_done()
+{
+    MEDDLY_DCASSERT(GE_cache.isEmpty());
 }
 

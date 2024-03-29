@@ -20,10 +20,14 @@
 #define MEDDLY_COMP_GE_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
+    class binary_list;
 
-  /// Set up a binary_opname for the "greater than equal" operator.
-  binary_opname* initializeGE();
+    /// The 'greater or equal' operation builder.
+    binary_operation* GREATER_THAN_EQUAL(forest* a, forest* b, forest* c);
+    void GREATER_THAN_EQUAL_init();
+    void GREATER_THAN_EQUAL_done();
 }
 
 #endif

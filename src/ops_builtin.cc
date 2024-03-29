@@ -121,12 +121,12 @@ class MEDDLY::builtin_init : public initializer_list {
         // static binary_opname* _MULTIPLY;
         // static binary_opname* _DIVIDE;
         // static binary_opname* _MODULO;
-        static binary_opname* _EQ;
-        static binary_opname* _NE;
-        static binary_opname* _LT;
-        static binary_opname* _LE;
-        static binary_opname* _GT;
-        static binary_opname* _GE;
+        // static binary_opname* _EQ;
+        // static binary_opname* _NE;
+        // static binary_opname* _LT;
+        // static binary_opname* _LE;
+        // static binary_opname* _GT;
+        // static binary_opname* _GE;
         static binary_opname* _PRE_PLUS;
         static binary_opname* _POST_PLUS;
         static binary_opname* _PRE_IMAGE;
@@ -177,12 +177,12 @@ class MEDDLY::builtin_init : public initializer_list {
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_MULTIPLY;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_DIVIDE;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_MODULO;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_EQ;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_NE;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_LT;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_LE;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_GT;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_GE;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_EQ;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_NE;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_LT;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_LE;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_GT;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_GE;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_PLUS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_PLUS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_IMAGE;
@@ -240,12 +240,12 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     // _MULTIPLY       = nullptr;
     // _DIVIDE         = nullptr;
     // _MODULO         = nullptr;
-    _EQ             = nullptr;
-    _NE             = nullptr;
-    _LT             = nullptr;
-    _LE             = nullptr;
-    _GT             = nullptr;
-    _GE             = nullptr;
+    // _EQ             = nullptr;
+    // _NE             = nullptr;
+    // _LT             = nullptr;
+    // _LE             = nullptr;
+    // _GT             = nullptr;
+    // _GE             = nullptr;
     _PRE_PLUS       = nullptr;
     _POST_PLUS      = nullptr;
     _PRE_IMAGE      = nullptr;
@@ -307,6 +307,13 @@ void MEDDLY::builtin_init::setup()
     DIVIDE_init();
     MODULO_init();
 
+    EQUAL_init();
+    NOT_EQUAL_init();
+    LESS_THAN_init();
+    LESS_THAN_EQUAL_init();
+    GREATER_THAN_init();
+    GREATER_THAN_EQUAL_init();
+
     //
     // OLD Unary ops
     //
@@ -332,12 +339,12 @@ void MEDDLY::builtin_init::setup()
     // _MULTIPLY       =   initializeMultiply()        ;
     // _DIVIDE         =   initializeDivide()          ;
     // _MODULO         =   initializeModulo()          ;
-    _EQ             =   initializeEQ()              ;
-    _NE             =   initializeNE()              ;
-    _LT             =   initializeLT()              ;
-    _LE             =   initializeLE()              ;
-    _GT             =   initializeGT()              ;
-    _GE             =   initializeGE()              ;
+    // _EQ             =   initializeEQ()              ;
+    // _NE             =   initializeNE()              ;
+    // _LT             =   initializeLT()              ;
+    // _LE             =   initializeLE()              ;
+    // _GT             =   initializeGT()              ;
+    // _GE             =   initializeGE()              ;
     _PRE_PLUS       =   initializePrePlus()         ;
     _POST_PLUS      =   initializePostPlus()        ;
     _PRE_IMAGE      =   initializePreImage()        ;
@@ -405,6 +412,13 @@ void MEDDLY::builtin_init::cleanup()
     MULTIPLY_done();
     DIVIDE_done();
     MODULO_done();
+
+    EQUAL_done();
+    NOT_EQUAL_done();
+    LESS_THAN_done();
+    LESS_THAN_EQUAL_done();
+    GREATER_THAN_done();
+    GREATER_THAN_EQUAL_done();
     // mydelete(_UNION);
     // mydelete(_INTERSECT);
     // mydelete(_DIFFERENCE);
@@ -416,12 +430,12 @@ void MEDDLY::builtin_init::cleanup()
     // mydelete(_MULTIPLY);
     // mydelete(_DIVIDE);
     // mydelete(_MODULO);
-    mydelete(_EQ);
-    mydelete(_NE);
-    mydelete(_LT);
-    mydelete(_LE);
-    mydelete(_GT);
-    mydelete(_GE);
+    // mydelete(_EQ);
+    // mydelete(_NE);
+    // mydelete(_LT);
+    // mydelete(_LE);
+    // mydelete(_GT);
+    // mydelete(_GE);
     mydelete(_PRE_PLUS);
     mydelete(_POST_PLUS);
     mydelete(_PRE_IMAGE);
@@ -563,7 +577,6 @@ MEDDLY::binary_operation* MEDDLY::MODULO(forest* a, forest* b, forest* c)
 {
     return builtin_init::_MODULO->getOperation(a, b, c);
 }
-*/
 
 MEDDLY::binary_operation* MEDDLY::EQUAL(forest* a, forest* b, forest* c)
 {
@@ -596,6 +609,7 @@ MEDDLY::binary_operation* MEDDLY::GREATER_THAN_EQUAL(forest* a, forest* b,
 {
     return builtin_init::_GE->getOperation(a, b, c);
 }
+*/
 
 MEDDLY::binary_operation* MEDDLY::PRE_PLUS(forest* a, forest* b, forest* c)
 {

@@ -21,7 +21,7 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class lessthan_opname;
+    binary_list LT_cache;
 };
 
 
@@ -36,9 +36,13 @@ namespace MEDDLY {
 template <typename T>
 class lessthan_mdd : public generic_binary_mdd {
   public:
-    lessthan_mdd(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res)
-      : generic_binary_mdd(opcode, arg1, arg2, res) { }
+    lessthan_mdd(forest* arg1, forest* arg2, forest* res)
+      : generic_binary_mdd(LT_cache, arg1, arg2, res)
+    {
+        checkDomains(__FILE__, __LINE__);
+        checkAllRelations(__FILE__, __LINE__, SET);
+        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+    }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
@@ -71,9 +75,13 @@ namespace MEDDLY {
 template <typename T>
 class lessthan_mxd : public generic_binbylevel_mxd {
   public:
-    lessthan_mxd(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res)
-      : generic_binbylevel_mxd(opcode, arg1, arg2, res) { }
+    lessthan_mxd(forest* arg1, forest* arg2, forest* res)
+      : generic_binbylevel_mxd(LT_cache, arg1, arg2, res)
+    {
+        checkDomains(__FILE__, __LINE__);
+        checkAllRelations(__FILE__, __LINE__, RELATION);
+        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+    }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
@@ -97,70 +105,45 @@ bool lessthan_mxd<T>
 
 // ******************************************************************
 // *                                                                *
-// *                     lessthan_opname  class                     *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::lessthan_opname : public binary_opname {
-  public:
-    lessthan_opname();
-    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::lessthan_opname::lessthan_opname()
- : binary_opname("LessThan")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::lessthan_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->isForRelations() != r->isForRelations()) ||
-    (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling())
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  bool use_reals = (
-    a1->getRangeType() == range_type::REAL || a2->getRangeType() == range_type::REAL
-  );
-  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    if (use_reals) {
-      if (r->isForRelations())
-        return new lessthan_mxd<float>(c, a1, a2, r);
-      else
-        return new lessthan_mdd<float>(c, a1, a2, r);
-    } else {
-      if (r->isForRelations())
-        return new lessthan_mxd<int>(c, a1, a2, r);
-      else
-        return new lessthan_mdd<int>(c, a1, a2, r);
-    }
-  }
-
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-// ******************************************************************
-// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeLT()
+MEDDLY::binary_operation* MEDDLY::LESS_THAN(forest* a, forest* b, forest* c)
 {
-  return new lessthan_opname;
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  LT_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            if (c->isForRelations())
+                return LT_cache.add(new lessthan_mxd<float>(a, b, c));
+            else
+                return LT_cache.add(new lessthan_mdd<float>(a, b, c));
+        } else {
+            if (c->isForRelations())
+                return LT_cache.add(new lessthan_mxd<long>(a, b, c));
+            else
+                return LT_cache.add(new lessthan_mdd<long>(a, b, c));
+        }
+    }
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::LESS_THAN_init()
+{
+    LT_cache.reset("LessThan");
+}
+
+void MEDDLY::LESS_THAN_done()
+{
+    MEDDLY_DCASSERT(LT_cache.isEmpty());
 }
 

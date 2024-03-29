@@ -21,7 +21,7 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class unequal_opname;
+    binary_list NEQ_cache;
 };
 
 
@@ -36,11 +36,13 @@ namespace MEDDLY {
 template <typename T>
 class unequal_mdd : public generic_binary_mdd {
   public:
-    unequal_mdd(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res)
-      : generic_binary_mdd(opcode, arg1, arg2, res)
+    unequal_mdd(forest* arg1, forest* arg2, forest* res)
+      : generic_binary_mdd(NEQ_cache, arg1, arg2, res)
       {
         operationCommutes();
+        checkDomains(__FILE__, __LINE__);
+        checkAllRelations(__FILE__, __LINE__, SET);
+        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
       }
 
   protected:
@@ -74,11 +76,13 @@ namespace MEDDLY {
 template <typename T>
 class unequal_mxd : public generic_binbylevel_mxd {
   public:
-    unequal_mxd(binary_list& opcode, forest* arg1,
-      forest* arg2, forest* res)
-      : generic_binbylevel_mxd(opcode, arg1, arg2, res)
+    unequal_mxd(forest* arg1, forest* arg2, forest* res)
+      : generic_binbylevel_mxd(NEQ_cache, arg1, arg2, res)
       {
         operationCommutes();
+        checkDomains(__FILE__, __LINE__);
+        checkAllRelations(__FILE__, __LINE__, RELATION);
+        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
       }
 
   protected:
@@ -103,70 +107,45 @@ bool unequal_mxd<T>
 
 // ******************************************************************
 // *                                                                *
-// *                      unequal_opname class                      *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::unequal_opname : public binary_opname {
-  public:
-    unequal_opname();
-    virtual binary_operation* buildOperation(binary_list &c, forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::unequal_opname::unequal_opname()
- : binary_opname("Unequal")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::unequal_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->isForRelations() != r->isForRelations()) ||
-    (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling())
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  bool use_reals = (
-    a1->getRangeType() == range_type::REAL || a2->getRangeType() == range_type::REAL
-  );
-  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    if (use_reals) {
-      if (r->isForRelations())
-        return new unequal_mxd<float>(c, a1, a2, r);
-      else
-        return new unequal_mdd<float>(c, a1, a2, r);
-    } else {
-      if (r->isForRelations())
-        return new unequal_mxd<int>(c, a1, a2, r);
-      else
-        return new unequal_mdd<int>(c, a1, a2, r);
-    }
-  }
-
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-// ******************************************************************
-// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeNE()
+MEDDLY::binary_operation* MEDDLY::NOT_EQUAL(forest* a, forest* b, forest* c)
 {
-  return new unequal_opname;
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  NEQ_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            if (c->isForRelations())
+                return NEQ_cache.add(new unequal_mxd<float>(a, b, c));
+            else
+                return NEQ_cache.add(new unequal_mdd<float>(a, b, c));
+        } else {
+            if (c->isForRelations())
+                return NEQ_cache.add(new unequal_mxd<long>(a, b, c));
+            else
+                return NEQ_cache.add(new unequal_mdd<long>(a, b, c));
+        }
+    }
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::NOT_EQUAL_init()
+{
+    NEQ_cache.reset("Unequal");
+}
+
+void MEDDLY::NOT_EQUAL_done()
+{
+    MEDDLY_DCASSERT(NEQ_cache.isEmpty());
 }
 
