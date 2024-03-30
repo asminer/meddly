@@ -26,12 +26,12 @@
 
 namespace MEDDLY {
     class opname;
-    class unary_opname;
-    class binary_opname;
+    // class unary_opname;
+    // class binary_opname;
     class specialized_opname;
 
-    typedef unary_opname* (*unary_handle)();
-    typedef binary_opname* (*binary_handle)();
+    // typedef unary_opname* (*unary_handle)();
+    // typedef binary_opname* (*binary_handle)();
 
     class operation;
     class unary_operation;
@@ -74,6 +74,7 @@ class MEDDLY::opname {
 // ******************************************************************
 
 /// Unary operation names.
+/*
 class MEDDLY::unary_opname : public opname {
     public:
         unary_opname(const char* n);
@@ -96,6 +97,7 @@ class MEDDLY::unary_opname : public opname {
     private:
         unary_list cache;
 };
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -104,6 +106,7 @@ class MEDDLY::unary_opname : public opname {
 // ******************************************************************
 
 /// Binary operation names.
+/*
 class MEDDLY::binary_opname : public opname {
     public:
         binary_opname(const char* n);
@@ -123,7 +126,7 @@ class MEDDLY::binary_opname : public opname {
     private:
         binary_list cache;
 };
-
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -180,38 +183,5 @@ class MEDDLY::specialized_opname : public opname {
         virtual specialized_operation* buildOperation(arguments* a) = 0;
 };
 
-// ******************************************************************
-// *                                                                *
-// *                      Old interface  stuff                      *
-// *                                                                *
-// ******************************************************************
-
-#ifdef ALLOW_DEPRECATED_0_17_5
-namespace MEDDLY {
-    inline unary_operation* getOperation(unary_handle op,
-            const dd_edge &a, const dd_edge &c)
-    {
-        unary_opname* uop = op();
-        MEDDLY_DCASSERT(uop);
-        return uop->getOperation(a, c);
-    }
-
-    inline unary_operation* getOperation(unary_handle op,
-            const dd_edge &arg, opnd_type res)
-    {
-        unary_opname* uop = op();
-        MEDDLY_DCASSERT(uop);
-        return uop->getOperation(arg, res);
-    }
-
-    inline binary_operation* getOperation(binary_handle op,
-            const dd_edge &a1, const dd_edge &a2, const dd_edge &r)
-    {
-        binary_opname* bop = op();
-        MEDDLY_DCASSERT(bop);
-        return bop->getOperation(a1, a2, r);
-    }
-};
-#endif
 
 #endif // #include guard

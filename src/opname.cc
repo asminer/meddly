@@ -51,6 +51,7 @@ MEDDLY::opname::~opname()
 // *                                                                *
 // ******************************************************************
 
+/*
 MEDDLY::unary_opname::unary_opname(const char* n)
     : opname(n), cache(n)
 {
@@ -93,7 +94,7 @@ MEDDLY::unary_opname::buildOperation(unary_list &, forest *, opnd_type)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
-
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -101,6 +102,7 @@ MEDDLY::unary_opname::buildOperation(unary_list &, forest *, opnd_type)
 // *                                                                *
 // ******************************************************************
 
+/*
 MEDDLY::binary_opname::binary_opname(const char* n)
     : opname(n), cache(n)
 {
@@ -123,6 +125,7 @@ MEDDLY::binary_opname::getOperation(const dd_edge &a1, const dd_edge &a2,
             buildOperation(cache, a1.getForest(), a2.getForest(), res.getForest())
     );
 }
+*/
 
 // ******************************************************************
 // *                                                                *
