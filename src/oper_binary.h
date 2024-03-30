@@ -155,7 +155,7 @@ class MEDDLY::binary_operation : public operation {
         binary_operation* next;
 
         friend class binary_list;
-        friend void destroyOperation(binary_operation* &op);
+        // friend void destroyOperation(binary_operation* &op);
 };
 
 // ******************************************************************

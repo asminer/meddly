@@ -67,6 +67,7 @@ void MEDDLY::specialized_operation::compute(const dd_edge &ar1,
 // *                                                                *
 // ******************************************************************
 
+/*
 void MEDDLY::destroyOperation(MEDDLY::specialized_operation* &op)
 {
     if (!op) return;
@@ -77,4 +78,4 @@ void MEDDLY::destroyOperation(MEDDLY::specialized_operation* &op)
     delete op;
     op = nullptr;
 }
-
+*/

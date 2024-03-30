@@ -24,9 +24,6 @@
 namespace MEDDLY {
     class dd_edge;
     class specialized_operation;
-
-    /// Safely destroy the given specialized operation.
-    void destroyOperation(specialized_operation* &op);
 };
 
 // ******************************************************************
@@ -73,9 +70,6 @@ class MEDDLY::specialized_operation : public operation {
         */
         virtual void compute(const dd_edge &ar1, const dd_edge &ar2, const dd_edge &ar3, dd_edge &res);
 
-    private:
-
-        friend void destroyOperation(specialized_operation* &op);
 };
 
 #endif // #include guard

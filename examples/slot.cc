@@ -311,7 +311,7 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
   operation::showAllComputeTables(meddlyout, 3);
 
   printf("Approx. %g reachable states\n", c);
-  destroyOperation(sat);
+  operation::destroy(sat);
   // or, don't, and let cleanup() take care of it?
 
   if (build_pdf) {

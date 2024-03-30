@@ -193,7 +193,7 @@ void expl_xA_check(const dd_edge &ss, const dd_edge &P)
     p[2] = q[2];
   }
   printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
-  destroyOperation(VM);
+  operation::destroy(VM);
 }
 
 void impl_Ax_check(dd_edge &x, const dd_edge &P)
@@ -250,7 +250,7 @@ void expl_Ax_check(const dd_edge &ss, const dd_edge &P)
     p[2] = q[2];
   }
   printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
-  destroyOperation(MV);
+  operation::destroy(MV);
 }
 
 int main(int argc, const char** argv)

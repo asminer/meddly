@@ -147,7 +147,7 @@ class MEDDLY::unary_operation : public operation {
         unary_list& parent;
         unary_operation* next;
 
-        friend void destroyOperation(unary_operation* &op);
+        // friend void destroyOperation(unary_operation* &op);
         friend class unary_list;
 };
 

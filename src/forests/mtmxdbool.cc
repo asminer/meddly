@@ -44,7 +44,7 @@ void MEDDLY::mt_mxd_bool::createEdge(bool term, dd_edge& e)
 void MEDDLY::mt_mxd_bool
 ::createEdge(const int* const* vlist, const int* const* vplist, int N, dd_edge &e)
 {
-  binary_operation* unionOp = getOperation(UNION, this, this, this);
+  binary_operation* unionOp = UNION(this, this, this);
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);
   enlargeVariables(vplist, N, true);

@@ -85,12 +85,12 @@ MEDDLY::transitive_closure_forwd_bfs::transitive_closure_forwd_bfs(constrained_o
   : common_transitive_closure(code, 0, cons, tc, trans, res)
 {
   if (resF->getRangeType() == range_type::INTEGER && resF->isForRelations()) {
-    plusOp = getOperation(POST_PLUS, resF, consF, resF);
-    minOp = getOperation(UNION, resF, resF, resF);
+    plusOp = POST_PLUS(resF, consF, resF);
+    minOp = UNION(resF, resF, resF);
   } else {
     throw error(error::INVALID_OPERATION);
   }
-  imageOp = getOperation(TC_POST_IMAGE, tcF, transF, resF);
+  imageOp = TC_POST_IMAGE(tcF, transF, resF);
 }
 
 void MEDDLY::transitive_closure_forwd_bfs::compute(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res)
@@ -187,9 +187,9 @@ MEDDLY::transitive_closure_dfs::transitive_closure_dfs(constrained_opname* code,
   forest* cons, forest* tc, forest* trans, forest* res)
   : common_transitive_closure(code, 1, cons, tc, trans, res)
 {
-  mxdIntersectionOp = getOperation(INTERSECTION, transF, transF, transF);
-  mxdDifferenceOp = getOperation(DIFFERENCE, transF, transF, transF);
-  minOp = getOperation(UNION, resF, resF, resF);
+  mxdIntersectionOp = INTERSECTION(transF, transF, transF);
+  mxdDifferenceOp = DIFFERENCE(transF, transF, transF);
+  minOp = UNION(resF, resF, resF);
 
   splits = nullptr;
 

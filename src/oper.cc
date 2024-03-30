@@ -137,6 +137,15 @@ MEDDLY::operation::~operation()
 #endif
 }
 
+void MEDDLY::operation::destroy(operation* op)
+{
+    if (!op) return;
+    if (!op->isMarkedForDeletion()) {
+        op->markForDeletion();
+        operation::removeStalesFromMonolithic();
+    }
+    delete op;
+}
 
 void MEDDLY::operation::removeStaleComputeTableEntries()
 {
@@ -248,7 +257,8 @@ void MEDDLY::operation::purgeAllMarked()
     for (unsigned i=0; i<op_list.size(); i++) {
         if (!op_list[i]) continue;
         if (op_list[i]->isMarkedForDeletion()) {
-            destroyOperation(op_list[i]);
+            destroy(op_list[i]);
+            op_list[i] = nullptr;
         }
     }
 }
@@ -404,22 +414,5 @@ void MEDDLY::operation::unregisterOperation(operation &o)
         // Not last operator, add to free list
         free_list.push_back(o.oplist_index);
     }
-}
-
-// ******************************************************************
-// *                                                                *
-// *                      front-end  functions                      *
-// *                                                                *
-// ******************************************************************
-
-void MEDDLY::destroyOperation(MEDDLY::operation* &op)
-{
-    if (!op) return;
-    if (!op->isMarkedForDeletion()) {
-        op->markForDeletion();
-        operation::removeStalesFromMonolithic();
-    }
-    delete op;
-    op = nullptr;
 }
 

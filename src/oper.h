@@ -62,13 +62,6 @@ namespace MEDDLY {
     void unwrap(const ct_object &, mpz_t &value);
 #endif
 
-    // ******************************************************************
-    // *                      Operation management                      *
-    // ******************************************************************
-
-    /// Safely destroy the given operation.
-    /// TBD: see if this can go in the operation destructor?
-    void destroyOperation(operation* &op);
 };
 
 // ******************************************************************
@@ -83,7 +76,6 @@ namespace MEDDLY {
 */
 class MEDDLY::operation {
         friend class initializer_list;
-        friend void destroyOperation(operation* &op);
     public:
         /** Constructor.
                 @param  n           Operation name, for debugging
@@ -93,6 +85,9 @@ class MEDDLY::operation {
                                     exactly this many entry types.
         */
         operation(const char* n, unsigned et_slots);
+
+        /// Safely destroy the given operation.
+        static void destroy(operation* op);
 
     protected:
         virtual ~operation();
@@ -253,5 +248,13 @@ class MEDDLY::operation {
 
 };
 
+#ifdef ALLOW_DEPRECATED_0_17_5
+namespace MEDDLY {
+    inline void destroyOperation(operation* op)
+    {
+        operation::destroy(op);
+    }
+};
+#endif
 
 #endif // #include guard

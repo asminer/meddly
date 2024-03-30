@@ -204,14 +204,13 @@ MEDDLY::satpregen_opname::pregen_relation
 #endif
 
   // Initialize operations
-  binary_operation* mxdUnion = getOperation(UNION, mxdF, mxdF, mxdF);
+  binary_operation* mxdUnion = UNION(mxdF, mxdF, mxdF);
   MEDDLY_DCASSERT(mxdUnion);
 
-  binary_operation* mxdIntersection =
-    getOperation(INTERSECTION, mxdF, mxdF, mxdF);
+  binary_operation* mxdIntersection = INTERSECTION(mxdF, mxdF, mxdF);
   MEDDLY_DCASSERT(mxdIntersection);
 
-  binary_operation* mxdDifference = getOperation(DIFFERENCE, mxdF, mxdF, mxdF);
+  binary_operation* mxdDifference = DIFFERENCE(mxdF, mxdF, mxdF);
   MEDDLY_DCASSERT(mxdDifference);
 
   dd_edge maxDiag(mxdF);
@@ -326,7 +325,7 @@ MEDDLY::satpregen_opname::pregen_relation
 {
   if (K < 1) return;
 
-  binary_operation* mxdUnion = getOperation(UNION, mxdF, mxdF, mxdF);
+  binary_operation* mxdUnion = UNION(mxdF, mxdF, mxdF);
   MEDDLY_DCASSERT(mxdUnion);
 
   dd_edge u(mxdF);
@@ -361,8 +360,7 @@ MEDDLY::satpregen_opname::pregen_relation
         old_events[k] = events[k];
       }
       splitMxd(MonolithicSplit);
-      binary_operation* mxdDifference =
-        getOperation(DIFFERENCE, mxdF, mxdF, mxdF);
+      binary_operation* mxdDifference = DIFFERENCE(mxdF, mxdF, mxdF);
       MEDDLY_DCASSERT(mxdDifference);
       for(unsigned k = 0; k <= K; k++) {
         if (old_events[k] != events[k]) {
@@ -814,13 +812,13 @@ void MEDDLY::common_dfs_by_events_mt
 ::compute(const dd_edge &a, dd_edge &c)
 {
   // Initialize operations
-  mddUnion = getOperation(UNION, resF, resF, resF);
+  mddUnion = UNION(resF, resF, resF);
   MEDDLY_DCASSERT(mddUnion);
 
-  mxdIntersection = getOperation(INTERSECTION, arg2F, arg2F, arg2F);
+  mxdIntersection = INTERSECTION(arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdIntersection);
 
-  mxdDifference = getOperation(DIFFERENCE, arg2F, arg2F, arg2F);
+  mxdDifference = DIFFERENCE(arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdDifference);
 
 #ifdef DEBUG_INITIAL

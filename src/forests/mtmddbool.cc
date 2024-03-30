@@ -44,7 +44,7 @@ void MEDDLY::mt_mdd_bool::createEdge(bool term, dd_edge& e)
 
 void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
 {
-  binary_operation* unionOp = getOperation(UNION, e, e, e);
+  binary_operation* unionOp = UNION(e.getForest(), e.getForest(), e.getForest());
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);
 

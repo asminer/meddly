@@ -53,7 +53,7 @@ void MEDDLY::evmxd_pluslong
   const long* terms, int N, dd_edge &e)
 {
   // XXX: Requires UnionPlus
-  binary_operation* unionOp = getOperation(PLUS, this, this, this);
+  binary_operation* unionOp = PLUS(this, this, this);
   MEDDLY_DCASSERT(unionOp);
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);

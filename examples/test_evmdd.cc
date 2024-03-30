@@ -120,7 +120,7 @@ dd_edge test_evmdd(forest* evmdd, binary_builtin opCode,
   evmdd->createEdge(element + half, terms + half, nElements - half, B);
 
 #ifdef USE_EXPERT_INTERFACE
-  binary_operation* op = getOperation(opCode, A, B, C);
+  binary_operation* op = opCode(A, B, C);
   assert(op != NULL);
   op->compute(A, B, C);
 #else

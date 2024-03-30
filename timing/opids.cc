@@ -60,7 +60,7 @@ void createOperations(const std::vector <forest*> &F,
 void destroyOperations(std::vector <operation*> &ops)
 {
     for (unsigned u=0; u<ops.size(); u++) {
-        destroyOperation(ops[u]);
+        operation::destroy(ops[u]);
     }
 }
 

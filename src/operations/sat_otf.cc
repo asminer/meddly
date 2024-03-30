@@ -1307,13 +1307,13 @@ void MEDDLY::common_otf_dfs_by_events_mt
 ::compute(const dd_edge &a, dd_edge &c)
 {
   // Initialize operations
-  mddUnion = getOperation(UNION, resF, resF, resF);
+  mddUnion = UNION(resF, resF, resF);
   MEDDLY_DCASSERT(mddUnion);
 
-  mxdIntersection = getOperation(INTERSECTION, arg2F, arg2F, arg2F);
+  mxdIntersection = INTERSECTION(arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdIntersection);
 
-  mxdDifference = getOperation(DIFFERENCE, arg2F, arg2F, arg2F);
+  mxdDifference = DIFFERENCE(arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdDifference);
 
 #ifdef DEBUG_INITIAL

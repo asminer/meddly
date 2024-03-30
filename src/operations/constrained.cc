@@ -108,12 +108,12 @@ MEDDLY::constrained_bckwd_bfs_evplus::constrained_bckwd_bfs_evplus(constrained_o
   : common_constrained(code, 0, cons, arg, trans, res)
 {
   if (resF->getRangeType() == range_type::INTEGER) {
-    plusOp = getOperation(PLUS, resF, consF, resF);
-    minOp = getOperation(UNION, resF, resF, resF);
+    plusOp = PLUS(resF, consF, resF);
+    minOp = UNION(resF, resF, resF);
   } else {
     throw error(error::INVALID_OPERATION);
   }
-  imageOp = getOperation(PRE_IMAGE, argF, transF, resF);
+  imageOp = PRE_IMAGE(argF, transF, resF);
 }
 
 void MEDDLY::constrained_bckwd_bfs_evplus::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
@@ -121,12 +121,12 @@ void MEDDLY::constrained_bckwd_bfs_evplus::compute(const dd_edge& a, const dd_ed
   MEDDLY_DCASSERT(res.getForest() == resF);
 
   if (resF->getRangeType() == range_type::INTEGER) {
-    plusOp = getOperation(PLUS, resF, consF, resF);
-    minOp = getOperation(UNION, resF, resF, resF);
+    plusOp = PLUS(resF, consF, resF);
+    minOp = UNION(resF, resF, resF);
   } else {
     throw error(error::INVALID_OPERATION);
   }
-  imageOp = getOperation(PRE_IMAGE, argF, transF, resF);
+  imageOp = PRE_IMAGE(argF, transF, resF);
 
   /*
   long aev = Inf<long>();
@@ -244,9 +244,9 @@ MEDDLY::constrained_dfs_mt::constrained_dfs_mt(constrained_opname* code,
   MEDDLY_DCASSERT(trans->isMultiTerminal() && trans->isForRelations());
   MEDDLY_DCASSERT(res->isMultiTerminal() && !res->isForRelations());
 
-  mxdIntersectionOp = getOperation(INTERSECTION, transF, transF, transF);
-  mxdDifferenceOp = getOperation(DIFFERENCE, transF, transF, transF);
-  unionOp = getOperation(UNION, resF, resF, resF);
+  mxdIntersectionOp = INTERSECTION(transF, transF, transF);
+  mxdDifferenceOp = DIFFERENCE(transF, transF, transF);
+  unionOp = UNION(resF, resF, resF);
 
   splits = nullptr;
 
@@ -1026,9 +1026,9 @@ MEDDLY::constrained_bckwd_dfs_evplus::constrained_bckwd_dfs_evplus(constrained_o
   MEDDLY_DCASSERT(trans->isMultiTerminal() && trans->isForRelations());
   MEDDLY_DCASSERT(res->isEVPlus() && !res->isForRelations());
 
-  mxdIntersectionOp = getOperation(INTERSECTION, transF, transF, transF);
-  mxdDifferenceOp = getOperation(DIFFERENCE, transF, transF, transF);
-  minOp = getOperation(UNION, resF, resF, resF);
+  mxdIntersectionOp = INTERSECTION(transF, transF, transF);
+  mxdDifferenceOp = DIFFERENCE(transF, transF, transF);
+  minOp = UNION(resF, resF, resF);
 
   splits = nullptr;
 

@@ -152,11 +152,11 @@ MEDDLY::forwd_bfs_mt::forwd_bfs_mt(forest* a1, forest* a2, forest* res)
     : common_bfs(FWD_BFS_cache, a1, a2, res)
 {
   if (res->getRangeType() == range_type::BOOLEAN) {
-    setUnionOp( getOperation(UNION, res, res, res) );
+    setUnionOp( UNION(res, res, res) );
   } else {
-    setUnionOp( getOperation(MAXIMUM, res, res, res) );
+    setUnionOp( MAXIMUM(res, res, res) );
   }
-  setImageOp( getOperation(POST_IMAGE, a1, a2, res) );
+  setImageOp( POST_IMAGE(a1, a2, res) );
 }
 
 
@@ -176,11 +176,11 @@ MEDDLY::bckwd_bfs_mt::bckwd_bfs_mt(forest* a1, forest* a2, forest* res)
     : common_bfs(REV_BFS_cache, a1, a2, res)
 {
   if (res->getRangeType() == range_type::BOOLEAN) {
-    setUnionOp( getOperation(UNION, res, res, res) );
+    setUnionOp( UNION(res, res, res) );
   } else {
-    setUnionOp( getOperation(MAXIMUM, res, res, res) );
+    setUnionOp( MAXIMUM(res, res, res) );
   }
-  setImageOp( getOperation(PRE_IMAGE, a1, a2, res) );
+  setImageOp( PRE_IMAGE(a1, a2, res) );
 }
 
 
@@ -199,11 +199,11 @@ MEDDLY::forwd_bfs_evplus::forwd_bfs_evplus(forest* a1, forest* a2, forest* res)
     : common_bfs(FWD_BFS_cache, a1, a2, res)
 {
   if (res->getRangeType() == range_type::INTEGER) {
-    setUnionOp( getOperation(UNION, res, res, res) );
+    setUnionOp( UNION(res, res, res) );
   } else {
     throw error(error::INVALID_OPERATION);
   }
-  setImageOp( getOperation(POST_IMAGE, a1, a2, res) );
+  setImageOp( POST_IMAGE(a1, a2, res) );
 }
 
 
@@ -223,11 +223,11 @@ MEDDLY::bckwd_bfs_evplus::bckwd_bfs_evplus(forest* a1, forest* a2, forest* res)
     : common_bfs(REV_BFS_cache, a1, a2, res)
 {
   if (res->getRangeType() == range_type::INTEGER) {
-    setUnionOp( getOperation(UNION, res, res, res) );
+    setUnionOp( UNION(res, res, res) );
   } else {
     throw error(error::INVALID_OPERATION);
   }
-  setImageOp( getOperation(PRE_IMAGE, a1, a2, res) );
+  setImageOp( PRE_IMAGE(a1, a2, res) );
 }
 
 
