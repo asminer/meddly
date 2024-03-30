@@ -132,10 +132,10 @@ class MEDDLY::builtin_init : public initializer_list {
         // static binary_opname* _PRE_IMAGE;
         // static binary_opname* _POST_IMAGE;
         // static binary_opname* _TC_POST_IMAGE;
-        static binary_opname* _FORWARD_DFS;
-        static binary_opname* _FORWARD_BFS;
-        static binary_opname* _BACKWARD_DFS;
-        static binary_opname* _BACKWARD_BFS;
+        // static binary_opname* _FORWARD_DFS;
+        // static binary_opname* _FORWARD_BFS;
+        // static binary_opname* _BACKWARD_DFS;
+        // static binary_opname* _BACKWARD_BFS;
         // static binary_opname* _VM_MULTIPLY;
         // static binary_opname* _MV_MULTIPLY;
         // static binary_opname* _MM_MULTIPLY;
@@ -188,10 +188,10 @@ class MEDDLY::builtin_init : public initializer_list {
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_IMAGE;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_IMAGE;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_TC_POST_IMAGE;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_DFS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_BFS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_DFS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_BFS;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_DFS;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_BFS;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_DFS;
+// MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_BFS;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_VM_MULTIPLY;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_MV_MULTIPLY;
 // MEDDLY::binary_opname* MEDDLY::builtin_init::_MM_MULTIPLY;
@@ -251,10 +251,10 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     // _PRE_IMAGE      = nullptr;
     // _POST_IMAGE     = nullptr;
     // _TC_POST_IMAGE  = nullptr;
-    _FORWARD_DFS    = nullptr;
-    _FORWARD_BFS    = nullptr;
-    _BACKWARD_DFS   = nullptr;
-    _BACKWARD_BFS   = nullptr;
+    // _FORWARD_DFS    = nullptr;
+    // _FORWARD_BFS    = nullptr;
+    // _BACKWARD_DFS   = nullptr;
+    // _BACKWARD_BFS   = nullptr;
     // _VM_MULTIPLY    = nullptr;
     // _MV_MULTIPLY    = nullptr;
     // _MM_MULTIPLY    = nullptr;
@@ -319,6 +319,10 @@ void MEDDLY::builtin_init::setup()
     PRE_IMAGE_init();
     POST_IMAGE_init();
     TC_POST_IMAGE_init();
+    REACHABLE_STATES_BFS_init();
+    REACHABLE_STATES_DFS_init();
+    REVERSE_REACHABLE_BFS_init();
+    REVERSE_REACHABLE_DFS_init();
 
     VM_MULTIPLY_init();
     MV_MULTIPLY_init();
@@ -360,10 +364,10 @@ void MEDDLY::builtin_init::setup()
     // _PRE_IMAGE      =   initializePreImage()        ;
     // _POST_IMAGE     =   initializePostImage()       ;
     // _TC_POST_IMAGE  =   initializeTCPostImage()     ;
-    _FORWARD_DFS    =   initializeForwardDFS()      ;
-    _FORWARD_BFS    =   initializeForwardBFS()      ;
-    _BACKWARD_DFS   =   initializeBackwardDFS()     ;
-    _BACKWARD_BFS   =   initializeBackwardBFS()     ;
+    // _FORWARD_DFS    =   initializeForwardDFS()      ;
+    // _FORWARD_BFS    =   initializeForwardBFS()      ;
+    // _BACKWARD_DFS   =   initializeBackwardDFS()     ;
+    // _BACKWARD_BFS   =   initializeBackwardBFS()     ;
     // _VM_MULTIPLY    =   initializeVMmult()          ;
     // _MV_MULTIPLY    =   initializeMVmult()          ;
     // _MM_MULTIPLY    =   initializeMMMultiply()      ;
@@ -435,6 +439,10 @@ void MEDDLY::builtin_init::cleanup()
     PRE_IMAGE_done();
     POST_IMAGE_done();
     TC_POST_IMAGE_done();
+    REACHABLE_STATES_BFS_done();
+    REACHABLE_STATES_DFS_done();
+    REVERSE_REACHABLE_BFS_done();
+    REVERSE_REACHABLE_DFS_done();
 
     VM_MULTIPLY_done();
     MV_MULTIPLY_done();
@@ -462,10 +470,10 @@ void MEDDLY::builtin_init::cleanup()
     // mydelete(_PRE_IMAGE);
     // mydelete(_POST_IMAGE);
     // mydelete(_TC_POST_IMAGE);
-    mydelete(_FORWARD_DFS);
-    mydelete(_FORWARD_BFS);
-    mydelete(_BACKWARD_DFS);
-    mydelete(_BACKWARD_BFS);
+    // mydelete(_FORWARD_DFS);
+    // mydelete(_FORWARD_BFS);
+    // mydelete(_BACKWARD_DFS);
+    // mydelete(_BACKWARD_BFS);
     // mydelete(_VM_MULTIPLY);
     // mydelete(_MV_MULTIPLY);
     // mydelete(_MM_MULTIPLY);
@@ -656,7 +664,6 @@ MEDDLY::binary_operation* MEDDLY::TC_POST_IMAGE(forest* a, forest* b,
 {
     return builtin_init::_TC_POST_IMAGE->getOperation(a, b, c);
 }
-*/
 
 MEDDLY::binary_operation* MEDDLY::REACHABLE_STATES_DFS(forest* a, forest* b,
         forest* c)
@@ -682,7 +689,6 @@ MEDDLY::binary_operation* MEDDLY::REVERSE_REACHABLE_BFS(forest* a, forest* b,
     return builtin_init::_BACKWARD_BFS->getOperation(a, b, c);
 }
 
-/*
 MEDDLY::binary_operation* MEDDLY::VM_MULTIPLY(forest* a, forest* b, forest* c)
 {
     return builtin_init::_VM_MULTIPLY->getOperation(a, b, c);

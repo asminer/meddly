@@ -20,13 +20,19 @@
 #define MEDDLY_REACH_DFS_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
+    class binary_list;
 
-  /// Set up a binary_opname for the "reachable dfs" operation.
-  binary_opname* initializeForwardDFS();
+    /// The 'dfs forward reachable' operation builder.
+    binary_operation* REACHABLE_STATES_DFS(forest* a, forest* b, forest* c);
+    void REACHABLE_STATES_DFS_init();
+    void REACHABLE_STATES_DFS_done();
 
-  /// Set up a binary_opname for the "reverse reachable dfs" operation.
-  binary_opname* initializeBackwardDFS();
+    /// The 'dfs backward reachable' operation builder.
+    binary_operation* REVERSE_REACHABLE_DFS(forest* a, forest* b, forest* c);
+    void REVERSE_REACHABLE_DFS_init();
+    void REVERSE_REACHABLE_DFS_done();
 }
 
 #endif
