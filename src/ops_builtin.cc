@@ -101,45 +101,6 @@ class MEDDLY::builtin_init : public initializer_list {
             p = nullptr;
         }
     public:
-        // static unary_opname* _CARD;
-        // static unary_opname* _COMPL;
-        // static unary_opname* _MDD2INDEX;
-        // static unary_opname* _COPY;
-        // static unary_opname* _CYCLE;
-        // static unary_opname* _MAXRANGE;
-        // static unary_opname* _MINRANGE;
-        // static unary_opname* _SELECT;
-    public:
-        // static binary_opname* _UNION;
-        // static binary_opname* _INTERSECT;
-        // static binary_opname* _DIFFERENCE;
-        // static binary_opname* _CROSS;
-        // static binary_opname* _MIN;
-        // static binary_opname* _MAX;
-        // static binary_opname* _PLUS;
-        // static binary_opname* _MINUS;
-        // static binary_opname* _MULTIPLY;
-        // static binary_opname* _DIVIDE;
-        // static binary_opname* _MODULO;
-        // static binary_opname* _EQ;
-        // static binary_opname* _NE;
-        // static binary_opname* _LT;
-        // static binary_opname* _LE;
-        // static binary_opname* _GT;
-        // static binary_opname* _GE;
-        // static binary_opname* _PRE_PLUS;
-        // static binary_opname* _POST_PLUS;
-        // static binary_opname* _PRE_IMAGE;
-        // static binary_opname* _POST_IMAGE;
-        // static binary_opname* _TC_POST_IMAGE;
-        // static binary_opname* _FORWARD_DFS;
-        // static binary_opname* _FORWARD_BFS;
-        // static binary_opname* _BACKWARD_DFS;
-        // static binary_opname* _BACKWARD_BFS;
-        // static binary_opname* _VM_MULTIPLY;
-        // static binary_opname* _MV_MULTIPLY;
-        // static binary_opname* _MM_MULTIPLY;
-    public:
         static numerical_opname* _EXPLVECT_MATR_MULT;
         static numerical_opname* _MATR_EXPLVECT_MULT;
     public:
@@ -156,45 +117,6 @@ class MEDDLY::builtin_init : public initializer_list {
 };
 
 // ******************************************************************
-
-// MEDDLY::unary_opname* MEDDLY::builtin_init::_CARD;
-// MEDDLY::unary_opname* MEDDLY::builtin_init::_COMPL;
-// MEDDLY::unary_opname* MEDDLY::builtin_init::_MDD2INDEX;
-// MEDDLY::unary_opname* MEDDLY::builtin_init::_COPY;
-// MEDDLY::unary_opname* MEDDLY::builtin_init::_CYCLE;
-// MEDDLY::unary_opname* MEDDLY::builtin_init::_MAXRANGE;
-// MEDDLY::unary_opname* MEDDLY::builtin_init::_MINRANGE;
-// MEDDLY::unary_opname* MEDDLY::builtin_init::_SELECT;
-
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_UNION;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_INTERSECT;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_DIFFERENCE;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_CROSS;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_MIN;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_MAX;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_PLUS;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_MINUS;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_MULTIPLY;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_DIVIDE;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_MODULO;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_EQ;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_NE;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_LT;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_LE;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_GT;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_GE;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_PLUS;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_PLUS;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_IMAGE;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_IMAGE;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_TC_POST_IMAGE;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_DFS;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_BFS;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_DFS;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_BFS;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_VM_MULTIPLY;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_MV_MULTIPLY;
-// MEDDLY::binary_opname* MEDDLY::builtin_init::_MM_MULTIPLY;
 
 MEDDLY::numerical_opname* MEDDLY::builtin_init::_EXPLVECT_MATR_MULT;
 MEDDLY::numerical_opname* MEDDLY::builtin_init::_MATR_EXPLVECT_MULT;
@@ -215,49 +137,6 @@ MEDDLY::constrained_opname* MEDDLY::builtin_init::_TRANSITIVE_CLOSURE_DFS;
 MEDDLY::builtin_init::builtin_init(initializer_list* p)
     : initializer_list(p)
 {
-    //
-    // Unary ops
-    //
-    // _COPY       = nullptr;
-    // _CARD       = nullptr;
-    // _COMPL      = nullptr;
-    // _MAXRANGE   = nullptr;
-    // _MINRANGE   = nullptr;
-    // _MDD2INDEX  = nullptr;
-    // _CYCLE      = nullptr;
-    // _SELECT     = nullptr;
-    //
-    // Binary ops
-    //
-    // _UNION          = nullptr;
-    // _INTERSECT      = nullptr;
-    // _DIFFERENCE     = nullptr;
-    // _CROSS          = nullptr;
-    // _MIN            = nullptr;
-    // _MAX            = nullptr;
-    // _PLUS           = nullptr;
-    // _MINUS          = nullptr;
-    // _MULTIPLY       = nullptr;
-    // _DIVIDE         = nullptr;
-    // _MODULO         = nullptr;
-    // _EQ             = nullptr;
-    // _NE             = nullptr;
-    // _LT             = nullptr;
-    // _LE             = nullptr;
-    // _GT             = nullptr;
-    // _GE             = nullptr;
-    // _PRE_PLUS       = nullptr;
-    // _POST_PLUS      = nullptr;
-    // _PRE_IMAGE      = nullptr;
-    // _POST_IMAGE     = nullptr;
-    // _TC_POST_IMAGE  = nullptr;
-    // _FORWARD_DFS    = nullptr;
-    // _FORWARD_BFS    = nullptr;
-    // _BACKWARD_DFS   = nullptr;
-    // _BACKWARD_BFS   = nullptr;
-    // _VM_MULTIPLY    = nullptr;
-    // _MV_MULTIPLY    = nullptr;
-    // _MM_MULTIPLY    = nullptr;
     //
     // Numerical ops
     //
@@ -329,53 +208,11 @@ void MEDDLY::builtin_init::setup()
     MM_MULTIPLY_init();
 
     //
-    // OLD Unary ops
-    //
-    // _COPY       =   initializeCopy()        ;
-    // _CARD       =   initializeCardinality() ;
-    // _COMPL      =   initializeComplement()  ;
-    // _MAXRANGE   =   initializeMaxRange()    ;
-    // _MINRANGE   =   initializeMaxRange()    ;
-    // _MDD2INDEX  =   initializeMDD2INDEX()   ;
-    // _CYCLE      =   initializeCycle()       ;
-    // _SELECT     =   initializeSelect()      ;
-    //
-    // OLD Binary ops
-    //
-    // _UNION          =   initializeUnion()           ;
-    // _INTERSECT      =   initializeIntersection()    ;
-    // _DIFFERENCE     =   initializeDifference()      ;
-    // _CROSS          =   initializeCross()           ;
-    // _MAX            =   initializeMaximum()         ;
-    // _MIN            =   initializeMinimum()         ;
-    // _PLUS           =   initializePlus()            ;
-    // _MINUS          =   initializeMinus()           ;
-    // _MULTIPLY       =   initializeMultiply()        ;
-    // _DIVIDE         =   initializeDivide()          ;
-    // _MODULO         =   initializeModulo()          ;
-    // _EQ             =   initializeEQ()              ;
-    // _NE             =   initializeNE()              ;
-    // _LT             =   initializeLT()              ;
-    // _LE             =   initializeLE()              ;
-    // _GT             =   initializeGT()              ;
-    // _GE             =   initializeGE()              ;
-    // _PRE_PLUS       =   initializePrePlus()         ;
-    // _POST_PLUS      =   initializePostPlus()        ;
-    // _PRE_IMAGE      =   initializePreImage()        ;
-    // _POST_IMAGE     =   initializePostImage()       ;
-    // _TC_POST_IMAGE  =   initializeTCPostImage()     ;
-    // _FORWARD_DFS    =   initializeForwardDFS()      ;
-    // _FORWARD_BFS    =   initializeForwardBFS()      ;
-    // _BACKWARD_DFS   =   initializeBackwardDFS()     ;
-    // _BACKWARD_BFS   =   initializeBackwardBFS()     ;
-    // _VM_MULTIPLY    =   initializeVMmult()          ;
-    // _MV_MULTIPLY    =   initializeMVmult()          ;
-    // _MM_MULTIPLY    =   initializeMMMultiply()      ;
-    //
     // Numerical ops
     //
     _EXPLVECT_MATR_MULT = initExplVectorMatrixMult()  ;
     _MATR_EXPLVECT_MULT = initMatrixExplVectorMult()  ;
+
     //
     // Saturation-like ops
     //
@@ -404,14 +241,7 @@ void MEDDLY::builtin_init::cleanup()
     MAX_RANGE_done();
     MIN_RANGE_done();
     SELECT_done();
-    // mydelete(_COPY);
-    // mydelete(_CARD);
-    // mydelete(_COMPL);
-    // mydelete(_MAXRANGE);
-    // mydelete(_MINRANGE);
-    // mydelete(_MDD2INDEX);
-    // mydelete(_CYCLE);
-    // mydelete(_SELECT);
+
     //
     // Binary ops
     //
@@ -448,35 +278,6 @@ void MEDDLY::builtin_init::cleanup()
     MV_MULTIPLY_done();
     MM_MULTIPLY_done();
 
-    // mydelete(_UNION);
-    // mydelete(_INTERSECT);
-    // mydelete(_DIFFERENCE);
-    // mydelete(_CROSS);
-    // mydelete(_MIN);
-    // mydelete(_MAX);
-    // mydelete(_PLUS);
-    // mydelete(_MINUS);
-    // mydelete(_MULTIPLY);
-    // mydelete(_DIVIDE);
-    // mydelete(_MODULO);
-    // mydelete(_EQ);
-    // mydelete(_NE);
-    // mydelete(_LT);
-    // mydelete(_LE);
-    // mydelete(_GT);
-    // mydelete(_GE);
-    // mydelete(_PRE_PLUS);
-    // mydelete(_POST_PLUS);
-    // mydelete(_PRE_IMAGE);
-    // mydelete(_POST_IMAGE);
-    // mydelete(_TC_POST_IMAGE);
-    // mydelete(_FORWARD_DFS);
-    // mydelete(_FORWARD_BFS);
-    // mydelete(_BACKWARD_DFS);
-    // mydelete(_BACKWARD_BFS);
-    // mydelete(_VM_MULTIPLY);
-    // mydelete(_MV_MULTIPLY);
-    // mydelete(_MM_MULTIPLY);
     //
     // Numerical ops
     //
@@ -497,213 +298,6 @@ void MEDDLY::builtin_init::cleanup()
     mydelete(_TRANSITIVE_CLOSURE_DFS);
 }
 
-// ******************************************************************
-// *                                                                *
-// *                  front end:  unary operations                  *
-// *                                                                *
-// ******************************************************************
-
-/*
-MEDDLY::unary_operation* MEDDLY::CARDINALITY(forest* arg, opnd_type res)
-{
-    return builtin_init::_CARD->getOperation(arg, res);
-}
-
-MEDDLY::unary_operation* MEDDLY::COMPLEMENT(forest* arg, forest* res)
-{
-    return builtin_init::_COMPL->getOperation(arg, res);
-}
-
-MEDDLY::unary_operation* MEDDLY::CONVERT_TO_INDEX_SET(forest* arg, forest* res)
-{
-    return builtin_init::_MDD2INDEX->getOperation(arg, res);
-}
-
-MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
-{
-    return builtin_init::_COPY->getOperation(arg, res);
-}
-
-MEDDLY::unary_operation* MEDDLY::CYCLE(forest* arg, forest* res)
-{
-    return builtin_init::_CYCLE->getOperation(arg, res);
-}
-
-MEDDLY::unary_operation* MEDDLY::MAX_RANGE(forest* arg, opnd_type res)
-{
-    return builtin_init::_MAXRANGE->getOperation(arg, res);
-}
-
-MEDDLY::unary_operation* MEDDLY::MIN_RANGE(forest* arg, opnd_type res)
-{
-    return builtin_init::_MINRANGE->getOperation(arg, res);
-}
-
-MEDDLY::unary_operation* MEDDLY::SELECT(forest* arg, forest* res)
-{
-    return builtin_init::_SELECT->getOperation(arg, res);
-}
-*/
-
-// ******************************************************************
-// *                                                                *
-// *                  front end: binary operations                  *
-// *                                                                *
-// ******************************************************************
-
-/*
-MEDDLY::binary_operation* MEDDLY::UNION(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_UNION->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::INTERSECTION(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_INTERSECT->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::DIFFERENCE(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_DIFFERENCE->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::CROSS(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_CROSS->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::MINIMUM(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_MIN->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::MAXIMUM(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_MAX->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::PLUS(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_PLUS->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::MINUS(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_MINUS->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::MULTIPLY(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_MULTIPLY->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::DIVIDE(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_DIVIDE->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::MODULO(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_MODULO->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::EQUAL(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_EQ->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::NOT_EQUAL(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_NE->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::LESS_THAN(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_LT->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::LESS_THAN_EQUAL(forest* a, forest* b,
-        forest* c)
-{
-    return builtin_init::_LE->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::GREATER_THAN(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_GT->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::GREATER_THAN_EQUAL(forest* a, forest* b,
-        forest* c)
-{
-    return builtin_init::_GE->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::PRE_PLUS(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_PRE_PLUS->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::POST_PLUS(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_POST_PLUS->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::PRE_IMAGE(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_PRE_IMAGE->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::POST_IMAGE(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_POST_IMAGE->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::TC_POST_IMAGE(forest* a, forest* b,
-        forest* c)
-{
-    return builtin_init::_TC_POST_IMAGE->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::REACHABLE_STATES_DFS(forest* a, forest* b,
-        forest* c)
-{
-    return builtin_init::_FORWARD_DFS->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::REACHABLE_STATES_BFS(forest* a, forest* b,
-        forest* c)
-{
-    return builtin_init::_FORWARD_BFS->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::REVERSE_REACHABLE_DFS(forest* a, forest* b,
-        forest* c)
-{
-    return builtin_init::_BACKWARD_DFS->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::REVERSE_REACHABLE_BFS(forest* a, forest* b,
-        forest* c)
-{
-    return builtin_init::_BACKWARD_BFS->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::VM_MULTIPLY(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_VM_MULTIPLY->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::MV_MULTIPLY(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_MV_MULTIPLY->getOperation(a, b, c);
-}
-
-MEDDLY::binary_operation* MEDDLY::MM_MULTIPLY(forest* a, forest* b, forest* c)
-{
-    return builtin_init::_MM_MULTIPLY->getOperation(a, b, c);
-}
-*/
 
 // ******************************************************************
 // *                                                                *
