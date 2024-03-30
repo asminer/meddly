@@ -168,27 +168,18 @@ namespace MEDDLY {
 
     // ******************************************************************
     // *                                                                *
-    // *                   Named numerical operations                   *
+    // *                "built-in"  numerical operations                *
     // *                                                                *
     // ******************************************************************
 
-    class numerical_opname;
+    class numerical_operation;
+    class dd_edge;
 
-    /** Computes y = y + xA.
-        x and y are vectors, stored explicitly, and A is a matrix.
-        x_ind and y_ind specify how minterms are mapped to indexes
-        for vectors x and y, respectively.
-    */
-    numerical_opname* EXPLVECT_MATR_MULT();
-    // extern const numerical_opname* VECT_MATR_MULT; // renamed!
+    numerical_operation* EXPLVECT_MATR_MULT(const dd_edge &xind,
+            const dd_edge &A, const dd_edge &yind);
 
-    /** Computes y = y + Ax.
-        x and y are vectors, stored explicitly, and A is a matrix.
-        x_ind and y_ind specify how minterms are mapped to indexes
-        for vectors x and y, respectively.
-    */
-    numerical_opname* MATR_EXPLVECT_MULT();
-    // extern const numerical_opname* MATR_VECT_MULT; // renamed!
+    numerical_operation* MATR_EXPLVECT_MULT(const dd_edge &xind,
+            const dd_edge &A, const dd_edge &yind);
 
     // ******************************************************************
     // *                                                                *

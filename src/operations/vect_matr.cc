@@ -18,21 +18,15 @@
 
 #include "../defines.h"
 #include "vect_matr.h"
-#include <typeinfo> // for "bad_cast" exception
 
 #include "../forest.h"
-#include "../opname_numer.h"
-#include "../oper_special.h"
+#include "../oper_numer.h"
 
 namespace MEDDLY {
   class base_evplus_mt;
 
   class VM_evplus_mt;
-
   class MV_evplus_mt;
-
-  class VM_opname;
-  class MV_opname;
 
   inline bool isEvPlusStyle(const forest* f) {
     return f->isEVPlus() || f->isIndexSet();
@@ -45,9 +39,9 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::base_evplus_mt : public specialized_operation {
+class MEDDLY::base_evplus_mt : public numerical_operation {
   public:
-    base_evplus_mt(numerical_opname* code, const dd_edge &x_ind,
+    base_evplus_mt(const char* name, const dd_edge &x_ind,
       const dd_edge& A, const dd_edge &y_ind);
 
     virtual ~base_evplus_mt();
@@ -75,20 +69,50 @@ class MEDDLY::base_evplus_mt : public specialized_operation {
     }
 };
 
-MEDDLY::base_evplus_mt::base_evplus_mt(numerical_opname* code,
+MEDDLY::base_evplus_mt::base_evplus_mt(const char* name,
   const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
- : specialized_operation(code->getName(), 0)
+ : numerical_operation(name, 0)
 {
-  fx = x_ind.getForest();
-  fA = A.getForest();
-  fy = y_ind.getForest();
-  MEDDLY_DCASSERT(fx);
-  MEDDLY_DCASSERT(fA);
-  MEDDLY_DCASSERT(fy);
-  x_root = x_ind.getNode();
-  A_root = A.getNode();
-  y_root = y_ind.getNode();
-  L = fx->getMaxLevelIndex();
+    fx = x_ind.getForest();
+    fA = A.getForest();
+    fy = y_ind.getForest();
+    MEDDLY_DCASSERT(fx);
+    MEDDLY_DCASSERT(fA);
+    MEDDLY_DCASSERT(fy);
+    // everyone must use the same domain
+    if  (       (fx->getDomain() != fy->getDomain())
+            ||  (fx->getDomain() != fA->getDomain())  )
+    {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    // Check edge types
+    if (
+               (fy->getRangeType() != range_type::INTEGER)
+            || (fy->isForRelations())
+            || (fx->getRangeType() != range_type::INTEGER)
+            || (fx->isForRelations())
+            || (fA->getRangeType() != range_type::REAL)
+            || (!fA->isForRelations())
+        )
+    {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    // A can't be fully reduced.
+    if (fA->isFullyReduced()) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    // For now, fy and fx must be Indexed sets or EVPLUS forests.
+    if ( !isEvPlusStyle(fy) || !isEvPlusStyle(fx) ) {
+        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    }
+
+    x_root = x_ind.getNode();
+    A_root = A.getNode();
+    y_root = y_ind.getNode();
+    L = fx->getMaxLevelIndex();
 }
 
 MEDDLY::base_evplus_mt::~base_evplus_mt()
@@ -111,7 +135,7 @@ void MEDDLY::base_evplus_mt::compute(double* y, const double* x)
 
 class MEDDLY::VM_evplus_mt : public base_evplus_mt {
   public:
-    VM_evplus_mt(numerical_opname* code, const dd_edge &x_ind,
+    VM_evplus_mt(const char* name, const dd_edge &x_ind,
       const dd_edge& A, const dd_edge &y_ind);
 
     virtual void compute_r(int k, double* y, node_handle y_ind, const double* x,
@@ -122,9 +146,9 @@ class MEDDLY::VM_evplus_mt : public base_evplus_mt {
 
 };
 
-MEDDLY::VM_evplus_mt::VM_evplus_mt(numerical_opname* code,
+MEDDLY::VM_evplus_mt::VM_evplus_mt(const char* name,
   const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
-  : base_evplus_mt(code, x_ind, A, y_ind)
+  : base_evplus_mt(name, x_ind, A, y_ind)
 {
 }
 
@@ -288,7 +312,7 @@ void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
 
 class MEDDLY::MV_evplus_mt : public base_evplus_mt {
   public:
-    MV_evplus_mt(numerical_opname* code, const dd_edge &x_ind,
+    MV_evplus_mt(const char* name, const dd_edge &x_ind,
       const dd_edge& A, const dd_edge &y_ind);
 
     virtual void compute_r(int k, double* y, node_handle y_ind, const double* x,
@@ -299,9 +323,9 @@ class MEDDLY::MV_evplus_mt : public base_evplus_mt {
 
 };
 
-MEDDLY::MV_evplus_mt::MV_evplus_mt(numerical_opname* code,
+MEDDLY::MV_evplus_mt::MV_evplus_mt(const char* name,
   const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
-  : base_evplus_mt(code, x_ind, A, y_ind)
+  : base_evplus_mt(name, x_ind, A, y_ind)
 {
 }
 
@@ -464,10 +488,11 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
 // *                                                                *
 // ******************************************************************
 
+/*
 class MEDDLY::VM_opname : public numerical_opname {
   public:
     VM_opname();
-    virtual specialized_operation* buildOperation(arguments* a);
+    virtual numerical_operation* buildOperation(arguments* a);
 };
 
 MEDDLY::VM_opname::VM_opname() : numerical_opname("VectMatrMult")
@@ -527,6 +552,7 @@ MEDDLY::VM_opname::buildOperation(arguments* a)
 
   if (na->autoDestroy()) delete na;
 }
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -534,6 +560,7 @@ MEDDLY::VM_opname::buildOperation(arguments* a)
 // *                                                                *
 // ******************************************************************
 
+/*
 class MEDDLY::MV_opname : public numerical_opname {
   public:
     MV_opname();
@@ -598,6 +625,7 @@ MEDDLY::MV_opname::buildOperation(arguments* a)
 
   if (na->autoDestroy()) delete na;
 }
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -605,6 +633,7 @@ MEDDLY::MV_opname::buildOperation(arguments* a)
 // *                                                                *
 // ******************************************************************
 
+/*
 MEDDLY::numerical_opname* MEDDLY::initExplVectorMatrixMult()
 {
   return new VM_opname;
@@ -615,3 +644,36 @@ MEDDLY::numerical_opname* MEDDLY::initMatrixExplVectorMult()
   return new MV_opname;
 }
 
+*/
+
+MEDDLY::numerical_operation* MEDDLY::EXPLVECT_MATR_MULT(const dd_edge &xind,
+        const dd_edge &A, const dd_edge &yind)
+{
+    const forest* fA = A.getForest();
+    switch (fA->getEdgeLabeling()) {
+        case edge_labeling::MULTI_TERMINAL:
+            return new VM_evplus_mt("VectMatrMult", xind, A, yind);
+
+        case edge_labeling::EVTIMES:
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    };
+}
+
+MEDDLY::numerical_operation* MEDDLY::MATR_EXPLVECT_MULT(const dd_edge &xind,
+        const dd_edge &A, const dd_edge &yind)
+{
+    const forest* fA = A.getForest();
+    switch (fA->getEdgeLabeling()) {
+        case edge_labeling::MULTI_TERMINAL:
+            return new MV_evplus_mt("MatrVectMult", xind, A, yind);
+
+        case edge_labeling::EVTIMES:
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    };
+}

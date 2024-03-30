@@ -49,6 +49,7 @@ libmeddly_la_SOURCES = \
     node_storage.h          node_storage.cc \
     oper.h                  oper.cc \
     oper_binary.h           oper_binary.cc \
+    oper_numer.h            oper_numer.cc \
     oper_special.h          oper_special.cc \
     oper_unary.h            oper_unary.cc \
     operators.h             operators.cc \
@@ -185,6 +186,7 @@ pkginclude_HEADERS = \
     node_storage.h \
     oper.h  \
     oper_binary.h  \
+    oper_numer.h \
     oper_special.h  \
     oper_unary.h  \
     operators.h \

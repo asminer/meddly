@@ -39,6 +39,7 @@
 #include "oper.h"
 #include "oper_unary.h"
 #include "oper_binary.h"
+#include "oper_numer.h"
 #include "oper_special.h"
 
 #include "ct_initializer.h"

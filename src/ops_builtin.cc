@@ -101,9 +101,6 @@ class MEDDLY::builtin_init : public initializer_list {
             p = nullptr;
         }
     public:
-        static numerical_opname* _EXPLVECT_MATR_MULT;
-        static numerical_opname* _MATR_EXPLVECT_MULT;
-    public:
         static satpregen_opname* _SATURATION_FORWARD;
         static satpregen_opname* _SATURATION_BACKWARD;
         static satotf_opname* _SATURATION_OTF_FORWARD;
@@ -117,9 +114,6 @@ class MEDDLY::builtin_init : public initializer_list {
 };
 
 // ******************************************************************
-
-MEDDLY::numerical_opname* MEDDLY::builtin_init::_EXPLVECT_MATR_MULT;
-MEDDLY::numerical_opname* MEDDLY::builtin_init::_MATR_EXPLVECT_MULT;
 
 MEDDLY::satpregen_opname* MEDDLY::builtin_init::_SATURATION_FORWARD;
 MEDDLY::satpregen_opname* MEDDLY::builtin_init::_SATURATION_BACKWARD;
@@ -137,11 +131,6 @@ MEDDLY::constrained_opname* MEDDLY::builtin_init::_TRANSITIVE_CLOSURE_DFS;
 MEDDLY::builtin_init::builtin_init(initializer_list* p)
     : initializer_list(p)
 {
-    //
-    // Numerical ops
-    //
-    _EXPLVECT_MATR_MULT = nullptr;
-    _MATR_EXPLVECT_MULT = nullptr;
     //
     // Saturation-like ops
     //
@@ -206,12 +195,6 @@ void MEDDLY::builtin_init::setup()
     VM_MULTIPLY_init();
     MV_MULTIPLY_init();
     MM_MULTIPLY_init();
-
-    //
-    // Numerical ops
-    //
-    _EXPLVECT_MATR_MULT = initExplVectorMatrixMult()  ;
-    _MATR_EXPLVECT_MULT = initMatrixExplVectorMult()  ;
 
     //
     // Saturation-like ops
@@ -279,11 +262,6 @@ void MEDDLY::builtin_init::cleanup()
     MM_MULTIPLY_done();
 
     //
-    // Numerical ops
-    //
-    mydelete(_EXPLVECT_MATR_MULT);
-    mydelete(_MATR_EXPLVECT_MULT);
-    //
     // Saturation-like ops
     //
     mydelete(_SATURATION_FORWARD);
@@ -298,19 +276,6 @@ void MEDDLY::builtin_init::cleanup()
     mydelete(_TRANSITIVE_CLOSURE_DFS);
 }
 
-
-// ******************************************************************
-// *                                                                *
-// *                front end:  numerical operations                *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::numerical_opname* MEDDLY::EXPLVECT_MATR_MULT() {
-    return builtin_init::_EXPLVECT_MATR_MULT;
-}
-MEDDLY::numerical_opname* MEDDLY::MATR_EXPLVECT_MULT() {
-    return builtin_init::_MATR_EXPLVECT_MULT;
-}
 
 // ******************************************************************
 // *                                                                *

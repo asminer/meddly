@@ -16,19 +16,20 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MEDDLY_VECT_MATR_H
-#define MEDDLY_VECT_MATR_H
+#include "oper_numer.h"
 
-namespace MEDDLY {
-    class numerical_operation;
-    class dd_edge;
+// ******************************************************************
+// *                  numerical_operation  methods                  *
+// ******************************************************************
 
-    numerical_operation* EXPLVECT_MATR_MULT(const dd_edge &xind,
-            const dd_edge &A, const dd_edge &yind);
-
-    numerical_operation* MATR_EXPLVECT_MULT(const dd_edge &xind,
-            const dd_edge &A, const dd_edge &yind);
-
+MEDDLY::
+numerical_operation::
+numerical_operation(const char* name, unsigned et_slots)
+    : operation(name, et_slots)
+{
 }
-#endif
+
+MEDDLY::numerical_operation::~numerical_operation()
+{
+}
 
