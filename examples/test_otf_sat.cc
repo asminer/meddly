@@ -61,12 +61,12 @@ class pn {
     bool indexOf(int vh, int value, int &index);
     bool valueOf(int vh, int index, int &value);
 
-    satotf_opname::otf_relation* otf_rel;
-    satotf_opname::subevent* A_firing;
-    satotf_opname::subevent* B_firing;
-    satotf_opname::subevent* A_enabling;
-    satotf_opname::event* T_AB;
-    specialized_operation* otf_sat_op;
+    otf_relation* otf_rel;
+    otf_subevent* A_firing;
+    otf_subevent* B_firing;
+    otf_subevent* A_enabling;
+    otf_event* T_AB;
+    saturation_operation* otf_sat_op;
 
     int n_tokens;
     domain* dom;
@@ -88,13 +88,13 @@ class pn {
     friend firing_subevent;
 };
 
-class enabling_subevent : public satotf_opname::subevent {
+class enabling_subevent : public otf_subevent {
   public:
     enabling_subevent(pn* model, forest* mxd,
         int* subevent_vars, int n_subevent_vars,
         int* event_vars, int n_event_vars);
     ~enabling_subevent();
-    virtual void confirm(satotf_opname::otf_relation &rel, int v, int index);
+    virtual void confirm(otf_relation &rel, int v, int index);
     void initializeMinterm();
   protected:
     pn* model;
@@ -107,14 +107,14 @@ class enabling_subevent : public satotf_opname::subevent {
     int minterm_size;
 };
 
-class firing_subevent : public satotf_opname::subevent {
+class firing_subevent : public otf_subevent {
   public:
     firing_subevent(pn* model, forest* mxd,
         int* subevent_vars, int n_subevent_vars,
         int* event_vars, int n_event_vars,
         int offset);
     ~firing_subevent();
-    virtual void confirm(satotf_opname::otf_relation &rel, int v, int index);
+    virtual void confirm(otf_relation &rel, int v, int index);
     void initializeMinterm();
   protected:
     pn* model;
@@ -283,8 +283,8 @@ void pn::buildTransition() {
       2                           // # event dependant variables
       );
 
-  satotf_opname::subevent* subevents[] = {A_firing, B_firing, A_enabling};
-  T_AB = new satotf_opname::event((satotf_opname::subevent**)(&subevents[0]), 3);
+  otf_subevent* subevents[] = {A_firing, B_firing, A_enabling};
+  T_AB = new otf_event((otf_subevent**)(&subevents[0]), 3);
   assert(T_AB);
 }
 
@@ -304,12 +304,12 @@ void pn::buildOtfSaturationOp() {
   if (otf_sat_op == 0) {
     if (otf_rel == 0) {
       // build otf saturation relation
-      satotf_opname::event* events[] = {T_AB};
-      otf_rel = new satotf_opname::otf_relation(mdd, mxd, mdd, &events[0], 1);
+      otf_event* events[] = {T_AB};
+    //  otf_rel = new otf_relation(mdd, mxd, mdd, &events[0], 1);
+      otf_rel = new otf_relation(mxd, &events[0], 1);
     }
     assert(otf_rel);
-    assert(SATURATION_OTF_FORWARD());
-    otf_sat_op = SATURATION_OTF_FORWARD()->buildOperation(otf_rel);
+    otf_sat_op = SATURATION_OTF_FORWARD(mdd, otf_rel, mdd);
     assert(otf_sat_op);
   }
 }
@@ -381,7 +381,7 @@ enabling_subevent::enabling_subevent(
     pn* model, forest* mxd,
     int* se_vars, int n_se_vars,  // subevent vars
     int* e_vars, int n_e_vars)    // event vars
-: satotf_opname::subevent(mxd, se_vars, n_se_vars, false)
+: otf_subevent(mxd, se_vars, n_se_vars, false)
 {
   this->model = model;
   this->mxd = mxd;
@@ -417,7 +417,7 @@ void enabling_subevent::initializeMinterm() {
   }
 }
 
-void enabling_subevent::confirm(satotf_opname::otf_relation &rel, int v, int index) {
+void enabling_subevent::confirm(otf_relation &rel, int v, int index) {
   std::cout << "Confirming (enabling): (" << v << ", " << index << ")\n";
   // add minterm:
   // if (value(v[index]) > 0)
@@ -448,7 +448,7 @@ firing_subevent::firing_subevent(
     int* se_vars, int n_se_vars,  // subevent vars
     int* e_vars, int n_e_vars,    // event vars
     int offset)
-: satotf_opname::subevent(mxd, se_vars, n_se_vars, true)
+: otf_subevent(mxd, se_vars, n_se_vars, true)
 {
   this->model = model;
   this->mxd = mxd;
@@ -485,7 +485,7 @@ void firing_subevent::initializeMinterm() {
   }
 }
 
-void firing_subevent::confirm(satotf_opname::otf_relation &rel, int v, int index) {
+void firing_subevent::confirm(otf_relation &rel, int v, int index) {
   std::cout << "Confirming (firing): (" << v << ", " << index << ")\n";
   // add minterm:
   // if it is a known index

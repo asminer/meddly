@@ -233,6 +233,8 @@ MEDDLY::satpregen_opname::pregen_relation::getOutForest() const
 // *                                                                *
 // ******************************************************************
 
+#if 0
+
 /** Saturation, transition relations built on the fly, operation names.
     Implemented in operations/sat_otf.cc
 */
@@ -670,6 +672,7 @@ MEDDLY::satotf_opname::otf_relation::getNumConfirmed(int level) const
   return num_confirmed[level];
 }
 
+#endif
 
 // ******************************************************************
 // *                                                                *

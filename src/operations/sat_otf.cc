@@ -27,19 +27,19 @@
 #include "../compute_table.h"
 #include "../oper_unary.h"
 #include "../oper_binary.h"
-#include "../oper_special.h"
-#include "../opname_satur.h"
+#include "../oper_satur.h"
+#include "../sat_relations.h"
 #include "../ops_builtin.h"
 
 namespace MEDDLY {
-  class otfsat_by_events_opname;
-  class otfsat_by_events_op;
+  // class otfsat_by_events_opname;
+    class otfsat_by_events_op;
 
-  class common_otf_dfs_by_events_mt;
-  class forwd_otf_dfs_by_events_mt;
-  class bckwd_otf_dfs_by_events_mt;
+    class common_otf_dfs_by_events_mt;
+    class forwd_otf_dfs_by_events_mt;
+    class bckwd_otf_dfs_by_events_mt;
 
-  class fb_otf_saturation_opname;
+  // class fb_otf_saturation_opname;
 };
 
 
@@ -49,6 +49,7 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
+/*
 MEDDLY::satotf_opname::satotf_opname(const char* n)
  : specialized_opname(n)
 {
@@ -57,8 +58,11 @@ MEDDLY::satotf_opname::satotf_opname(const char* n)
 MEDDLY::satotf_opname::~satotf_opname()
 {
 }
+*/
 
 // ============================================================
+
+#if 0
 
 MEDDLY::satotf_opname::subevent::subevent(forest* f, int* v, int nv, bool firing)
 : vars(0), num_vars(nv), root(dd_edge(f)), top(0),
@@ -218,7 +222,11 @@ long MEDDLY::satotf_opname::subevent::mintermMemoryUsage() const {
   return long(n_minterms * 2) * long(f->getMaxLevelIndex()) * long(sizeof(int));
 }
 
+#endif
+
 // ============================================================
+
+#if 0
 
 MEDDLY::satotf_opname::event::event(subevent** p, int np)
 {
@@ -417,7 +425,11 @@ long MEDDLY::satotf_opname::event::mintermMemoryUsage() const {
   return usage;
 }
 
+#endif
+
 // ============================================================
+
+#if 0
 
 MEDDLY::satotf_opname::otf_relation::otf_relation(forest* inmdd,
   forest* mxd, forest* outmdd, event** E, int ne)
@@ -623,42 +635,6 @@ bool MEDDLY::satotf_opname::otf_relation::confirm(int level, int index)
 }
 
 
-void findConfirmedStates(MEDDLY::satotf_opname::otf_relation* rel,
-    bool** confirmed, int* num_confirmed,
-    MEDDLY::node_handle mdd, int level,
-    std::set<MEDDLY::node_handle>& visited) {
-  if (level == 0) return;
-  if (visited.find(mdd) != visited.end()) return;
-
-  MEDDLY::forest* insetF = rel->getInForest();
-  int mdd_level = insetF->getNodeLevel(mdd);
-  if (MEDDLY::isLevelAbove(level, mdd_level)) {
-    // skipped level; confirm all local states at this level
-    // go to the next level
-    int level_size = insetF->getLevelSize(level);
-    for (int i = 0; i < level_size; i++) {
-      if (!confirmed[level][i]) {
-        rel->confirm(level, i);
-      }
-    }
-    findConfirmedStates(rel, confirmed, num_confirmed, mdd, level-1, visited);
-  } else {
-    if (MEDDLY::isLevelAbove(mdd_level, level)) {
-      throw MEDDLY::error(MEDDLY::error::INVALID_VARIABLE, __FILE__, __LINE__);
-    }
-    // mdd_level == level
-    visited.insert(mdd);
-    MEDDLY::unpacked_node *nr = insetF->newUnpacked(mdd, MEDDLY::SPARSE_ONLY);
-    for (unsigned i = 0; i < nr->getSize(); i++) {
-      if (!confirmed[level][nr->index(i)]) {
-        rel->confirm(level, int(nr->index(i)));
-      }
-      findConfirmedStates(rel, confirmed, num_confirmed, nr->down(i), level-1, visited);
-    }
-    MEDDLY::unpacked_node::Recycle(nr);
-  }
-}
-
 void MEDDLY::satotf_opname::otf_relation::confirm(const dd_edge& set)
 {
   // Perform a depth-first traversal of set:
@@ -676,6 +652,43 @@ void MEDDLY::satotf_opname::otf_relation::confirm(const dd_edge& set)
   // showInfo(out);
 }
 
+
+void MEDDLY::otf_relation::findConfirmedStates(bool** confirmed,
+    int* num_confirmed, const dd_edge& mddE, int level,
+    std::set<MEDDLY::node_handle>& visited)
+{
+  if (level == 0) return;
+  forest* insetF = mddE.getForest();
+  node_handle mdd = mddE.getNode();
+  if (visited.find(mdd) != visited.end()) return;
+
+  int mdd_level = insetF->getNodeLevel(mdd);
+  if (isLevelAbove(level, mdd_level)) {
+    // skipped level; confirm all local states at this level
+    // go to the next level
+    int level_size = insetF->getLevelSize(level);
+    for (int i = 0; i < level_size; i++) {
+      if (!confirmed[level][i]) {
+        rel->confirm(level, i);
+      }
+    }
+    findConfirmedStates(confirmed, num_confirmed, mdd, level-1, visited);
+  } else {
+    if (MEDDLY::isLevelAbove(mdd_level, level)) {
+      throw MEDDLY::error(MEDDLY::error::INVALID_VARIABLE, __FILE__, __LINE__);
+    }
+    // mdd_level == level
+    visited.insert(mdd);
+    MEDDLY::unpacked_node *nr = insetF->newUnpacked(mdd, MEDDLY::SPARSE_ONLY);
+    for (unsigned i = 0; i < nr->getSize(); i++) {
+      if (!confirmed[level][nr->index(i)]) {
+        rel->confirm(level, int(nr->index(i)));
+      }
+      findConfirmedStates(rel, confirmed, num_confirmed, nr->down(i), level-1, visited);
+    }
+    MEDDLY::unpacked_node::Recycle(nr);
+  }
+}
 
 
 void MEDDLY::satotf_opname::otf_relation::enlargeConfirmedArrays(int level, int sz)
@@ -931,6 +944,7 @@ MEDDLY::node_handle MEDDLY::satotf_opname::otf_relation::getBoundedMxd(
 }
 
 */
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -970,15 +984,14 @@ MEDDLY::otfsat_by_events_opname* MEDDLY::otfsat_by_events_opname::getInstance()
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::otfsat_by_events_op : public unary_operation {
+class MEDDLY::otfsat_by_events_op : public saturation_operation {
     common_otf_dfs_by_events_mt* parent;
   public:
     otfsat_by_events_op(common_otf_dfs_by_events_mt* p,
-        unary_list &c, forest* argF, forest* resF);
+        const char* name, forest* argF, forest* resF);
     virtual ~otfsat_by_events_op();
 
-    void saturate(const dd_edge& in, dd_edge& out);
-    // node_handle saturate(node_handle mdd);
+    virtual void compute(const dd_edge& in, dd_edge& out);
     node_handle saturate(node_handle mdd, int level);
 
   protected:
@@ -1011,10 +1024,10 @@ class MEDDLY::otfsat_by_events_op : public unary_operation {
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
+class MEDDLY::common_otf_dfs_by_events_mt : public saturation_operation {
   public:
-    common_otf_dfs_by_events_mt(satotf_opname* opcode,
-      satotf_opname::otf_relation* rel);
+    common_otf_dfs_by_events_mt(const char* name, forest* argF,
+            otf_relation* rel, forest* resF);
     virtual ~common_otf_dfs_by_events_mt();
 
     virtual void compute(const dd_edge& a, dd_edge &c);
@@ -1048,11 +1061,8 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
     binary_operation* mxdIntersection;
     binary_operation* mxdDifference;
 
-    satotf_opname::otf_relation* rel;
-
-    forest* arg1F;
-    forest* arg2F;
-    forest* resF;
+    otf_relation* rel;
+    forest* relF;
 
   protected:
     class indexq {
@@ -1165,8 +1175,8 @@ class MEDDLY::common_otf_dfs_by_events_mt : public specialized_operation {
 
 MEDDLY::otfsat_by_events_op
 ::otfsat_by_events_op(common_otf_dfs_by_events_mt* p,
-    unary_list &c, forest* argF, forest* resF)
-  : unary_operation(c, 1, argF, resF)
+    const char* name, forest* argF, forest* resF)
+  : saturation_operation(name, 1, argF, resF)
 {
   parent = p;
 
@@ -1174,11 +1184,11 @@ MEDDLY::otfsat_by_events_op
 
   if (argF->isFullyReduced()) {
     // CT entry includes level info
-    et = new ct_entry_type(c.getName(), "NI:N");
+    et = new ct_entry_type(name, "NI:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(3, resF);
   } else {
-    et = new ct_entry_type(c.getName(), "N:N");
+    et = new ct_entry_type(name, "N:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(2, resF);
   }
@@ -1191,7 +1201,7 @@ MEDDLY::otfsat_by_events_op::~otfsat_by_events_op()
   removeAllComputeTableEntries();
 }
 
-void MEDDLY::otfsat_by_events_op::saturate(const dd_edge& in, dd_edge& out)
+void MEDDLY::otfsat_by_events_op::compute(const dd_edge& in, dd_edge& out)
 {
   // Saturate
   out.set( saturate(in.getNode(), argF->getMaxLevelIndex()) );
@@ -1269,38 +1279,54 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
 // ******************************************************************
 
 MEDDLY::common_otf_dfs_by_events_mt::common_otf_dfs_by_events_mt(
-  satotf_opname* opcode,
-  satotf_opname::otf_relation* relation)
-: specialized_operation(opcode->getName(), 1)
+  const char* name, forest* argF, otf_relation* relation, forest* resF)
+: saturation_operation(name, 1, argF, resF)
 {
-  mddUnion = 0;
-  mxdIntersection = 0;
-  mxdDifference = 0;
-  freeqs = 0;
-  freebufs = 0;
-  rel = relation;
-  arg1F = rel->getInForest();
-  arg2F = rel->getRelForest();
-  resF = rel->getOutForest();
+    if (!argF || !relation || !resF) {
+        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    }
 
-  registerInForest(arg1F);
-  registerInForest(arg2F);
-  registerInForest(resF);
+    rel = relation;
+    relF = relation->getRelForest();
 
-  ct_entry_type* et = new ct_entry_type(opcode->getName(), "NN:N");
-  et->setForestForSlot(0, arg1F);
-  et->setForestForSlot(1, arg2F);
-  et->setForestForSlot(3, resF);
-  registerEntryType(0, et);
-  buildCTs();
+    // for now, anyway, inset and outset must be same forest
+    if (argF != resF) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+
+    // Check for same domain
+    if  (
+            (argF->getDomain() != relF->getDomain()) ||
+            (resF->getDomain() != relF->getDomain())
+        )
+    {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+
+    mddUnion = nullptr;
+    mxdIntersection = nullptr;
+    mxdDifference = nullptr;
+
+    freeqs = 0;
+    freebufs = 0;
+
+    registerInForest(relF);
+
+    ct_entry_type* et = new ct_entry_type(name, "NN:N");
+    et->setForestForSlot(0, argF);
+    et->setForestForSlot(1, relF);
+    et->setForestForSlot(3, resF);
+    registerEntryType(0, et);
+    buildCTs();
 }
 
 MEDDLY::common_otf_dfs_by_events_mt::~common_otf_dfs_by_events_mt()
 {
-  if (rel->autoDestroy()) delete rel;
-  unregisterInForest(arg1F);
-  unregisterInForest(arg2F);
-  unregisterInForest(resF);
+    unregisterInForest(relF);
+    delete rel;
 }
 
 void MEDDLY::common_otf_dfs_by_events_mt
@@ -1310,10 +1336,10 @@ void MEDDLY::common_otf_dfs_by_events_mt
   mddUnion = UNION(resF, resF, resF);
   MEDDLY_DCASSERT(mddUnion);
 
-  mxdIntersection = INTERSECTION(arg2F, arg2F, arg2F);
+  mxdIntersection = INTERSECTION(relF, relF, relF);
   MEDDLY_DCASSERT(mxdIntersection);
 
-  mxdDifference = DIFFERENCE(arg2F, arg2F, arg2F);
+  mxdDifference = DIFFERENCE(relF, relF, relF);
   MEDDLY_DCASSERT(mxdDifference);
 
 #ifdef DEBUG_INITIAL
@@ -1326,9 +1352,8 @@ void MEDDLY::common_otf_dfs_by_events_mt
 #endif
 
   // Execute saturation operation
-  unary_list dummy("Otf_Saturate_by_events");
-  otfsat_by_events_op* so = new otfsat_by_events_op(this, dummy, arg1F, resF);
-  so->saturate(a, c);
+  otfsat_by_events_op* so = new otfsat_by_events_op(this, "Otf_Saturate_by_events", argF, resF);
+  so->compute(a, c);
 
   // Cleanup
   while (freeqs) {
@@ -1401,8 +1426,8 @@ void MEDDLY::common_otf_dfs_by_events_mt::charbuf::resize(unsigned sz)
 
 class MEDDLY::forwd_otf_dfs_by_events_mt : public common_otf_dfs_by_events_mt {
   public:
-    forwd_otf_dfs_by_events_mt(satotf_opname* opcode,
-    satotf_opname::otf_relation* rel);
+    forwd_otf_dfs_by_events_mt(const char* name, forest* argF,
+            otf_relation* rel, forest* resF);
   protected:
     virtual void saturateHelper(unpacked_node& mdd);
     node_handle recFire(node_handle mdd, node_handle mxd);
@@ -1411,9 +1436,8 @@ class MEDDLY::forwd_otf_dfs_by_events_mt : public common_otf_dfs_by_events_mt {
 };
 
 MEDDLY::forwd_otf_dfs_by_events_mt::forwd_otf_dfs_by_events_mt(
-  satotf_opname* opcode,
-  satotf_opname::otf_relation* rel)
-  : common_otf_dfs_by_events_mt(opcode, rel)
+    const char* name, forest* argF, otf_relation* rel, forest* resF)
+  : common_otf_dfs_by_events_mt(name, argF, rel, resF)
 {
 }
 
@@ -1432,19 +1456,19 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
     if (0==mxd.getNode()) {
       Ru[ei] = 0;
     } else {
-      Ru[ei] = unpacked_node::New(arg2F);
+      Ru[ei] = unpacked_node::New(relF);
       const int eventLevel = mxd.getLevel();
       if (ABS(eventLevel) < level || eventLevel < 0) {
         // Takes care of two situations:
         // - skipped unprimed level (due to Fully Reduced)
         // - skipped unprimed and primed levels (due to Fully Identity Reduced)
-        Ru[ei]->initRedundant(arg2F, level, mxd.getNode(), FULL_ONLY);
+        Ru[ei]->initRedundant(relF, level, mxd.getNode(), FULL_ONLY);
       } else {
-        arg2F->unpackNode(Ru[ei], mxd.getNode(), FULL_ONLY);
+        relF->unpackNode(Ru[ei], mxd.getNode(), FULL_ONLY);
       }
     }
   }
-  unpacked_node* Rp = unpacked_node::New(arg2F);
+  unpacked_node* Rp = unpacked_node::New(relF);
 
   dd_edge nbdj(resF), newst(resF);
 
@@ -1477,16 +1501,16 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
           }
         } else {
           if (0==Ru[ei]) {
-            Ru[ei] = unpacked_node::New(arg2F);
+            Ru[ei] = unpacked_node::New(relF);
           }
           const int eventLevel = mxd.getLevel();
           if (ABS(eventLevel) < level || eventLevel < 0) {
             // Takes care of two situations:
             // - skipped unprimed level (due to Fully Reduced)
             // - skipped unprimed and primed levels (due to Fully Identity Reduced)
-            Ru[ei]->initRedundant(arg2F, level, mxd.getNode(), FULL_ONLY);
+            Ru[ei]->initRedundant(relF, level, mxd.getNode(), FULL_ONLY);
           } else {
-            arg2F->unpackNode(Ru[ei], mxd.getNode(), FULL_ONLY);
+            relF->unpackNode(Ru[ei], mxd.getNode(), FULL_ONLY);
           }
         }
       }
@@ -1499,12 +1523,12 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       if (0 == ei_i) continue;
 
       // grab column (TBD: build these ahead of time?)
-      const int dlevel = arg2F->getNodeLevel(ei_i);
+      const int dlevel = relF->getNodeLevel(ei_i);
 
       if (dlevel == -level) {
-        arg2F->unpackNode(Rp, ei_i, SPARSE_ONLY);
+        relF->unpackNode(Rp, ei_i, SPARSE_ONLY);
       } else {
-        Rp->initIdentity(arg2F, -level, i, ei_i, SPARSE_ONLY);
+        Rp->initIdentity(relF, -level, i, ei_i, SPARSE_ONLY);
       }
 
       MEDDLY_DCASSERT(!Rp->isExtensible());
@@ -1573,12 +1597,12 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
 
   // termination conditions
   if (mxd == 0 || mdd == 0) return 0;
-  if (arg2F->isTerminalNode(mxd)) {
-    if (arg1F->isTerminalNode(mdd)) {
+  if (relF->isTerminalNode(mxd)) {
+    if (argF->isTerminalNode(mdd)) {
       return resF->handleForValue(1);
     }
     // mxd is identity
-    if (arg1F == resF)
+    if (argF == resF)
       return resF->linkNode(mdd);
   }
 
@@ -1590,27 +1614,27 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
 #ifdef TRACE_RECFIRE
   printf("computing recFire(%d, %d)\n", mdd, mxd);
   printf("  node %3d ", mdd);
-  arg1F->showNode(stdout, mdd, 1);
+  argF->showNode(stdout, mdd, 1);
   printf("\n  node %3d ", mxd);
-  arg2F->showNode(stdout, mxd, 1);
+  relF->showNode(stdout, mxd, 1);
   printf("\n");
 #endif
 
-  mxd = arg2F->linkNode(mxd);
+  mxd = relF->linkNode(mxd);
 
   // check if mxd and mdd are at the same level
-  const int mddLevel = arg1F->getNodeLevel(mdd);
-  const int mxdLevel = arg2F->getNodeLevel(mxd);
+  const int mddLevel = argF->getNodeLevel(mdd);
+  const int mxdLevel = relF->getNodeLevel(mxd);
   const int rLevel = MAX(ABS(mxdLevel), mddLevel);
   const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New(arg1F);
+  unpacked_node *A = unpacked_node::New(argF);
   if (mddLevel < rLevel) {
-    A->initRedundant(arg1F, rLevel, mdd, FULL_ONLY);
+    A->initRedundant(argF, rLevel, mdd, FULL_ONLY);
   } else {
-    arg1F->unpackNode(A, mdd, FULL_ONLY);
+    argF->unpackNode(A, mdd, FULL_ONLY);
   }
 
   if (mddLevel > ABS(mxdLevel)) {
@@ -1629,12 +1653,12 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::New(arg2F);
-    unpacked_node *Rp = unpacked_node::New(arg2F);
+    unpacked_node *Ru = unpacked_node::New(relF);
+    unpacked_node *Rp = unpacked_node::New(relF);
     if (mxdLevel < 0) {
-      Ru->initRedundant(arg2F, rLevel, mxd, SPARSE_ONLY);
+      Ru->initRedundant(relF, rLevel, mxd, SPARSE_ONLY);
     } else {
-      arg2F->unpackNode(Ru, mxd, SPARSE_ONLY);
+      relF->unpackNode(Ru, mxd, SPARSE_ONLY);
     }
 
 #if 0
@@ -1643,10 +1667,10 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
       const int i = Ru->index(iz);
       if (0==A->down(i)) continue;
       const node_handle pnode = Ru->down(iz);
-      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(pnode))) {
-        Rp->initIdentity(arg2F, rLevel, i, pnode, SPARSE_ONLY);
+      if (isLevelAbove(-rLevel, relF->getNodeLevel(pnode))) {
+        Rp->initIdentity(relF, rLevel, i, pnode, SPARSE_ONLY);
       } else {
-        arg2F->unpackNode(Rp, pnode, SPARSE_ONLY);
+        relF->unpackNode(Rp, pnode, SPARSE_ONLY);
       }
 
       // loop over mxd "columns"
@@ -1728,10 +1752,10 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::recFireHelper(
   unpacked_node *Rp,
   unpacked_node* nb)
 {
-  if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru_i))) {
-    Rp->initIdentity(arg2F, rLevel, i, Ru_i, SPARSE_ONLY);
+  if (isLevelAbove(-rLevel, relF->getNodeLevel(Ru_i))) {
+    Rp->initIdentity(relF, rLevel, i, Ru_i, SPARSE_ONLY);
   } else {
-    arg2F->unpackNode(Rp, Ru_i, SPARSE_ONLY);
+    relF->unpackNode(Rp, Ru_i, SPARSE_ONLY);
   }
 
   MEDDLY_DCASSERT(!Rp->isExtensible());
@@ -1779,6 +1803,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::recFireHelper(
 // *                                                                *
 // ******************************************************************
 
+#if 0
 class MEDDLY::fb_otf_saturation_opname : public satotf_opname {
     bool forward;
   public:
@@ -1816,12 +1841,15 @@ MEDDLY::fb_otf_saturation_opname::buildOperation(arguments* a)
   return op;
 }
 
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
+/*
 MEDDLY::satotf_opname* MEDDLY::initOtfSaturationForward()
 {
   return new fb_otf_saturation_opname(true);
@@ -1831,4 +1859,16 @@ MEDDLY::satotf_opname* MEDDLY::initOtfSaturationBackward()
 {
   return new fb_otf_saturation_opname(false);
 }
+*/
 
+MEDDLY::saturation_operation*
+MEDDLY::SATURATION_OTF_FORWARD(forest* inF, otf_relation* nsf, forest* outF)
+{
+    return new forwd_otf_dfs_by_events_mt("OtfSaturationFwd", inF, nsf, outF);
+}
+
+MEDDLY::saturation_operation*
+MEDDLY::SATURATION_OTF_BACKWARD(forest* inF, otf_relation* nsf, forest* outf)
+{
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}

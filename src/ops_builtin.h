@@ -189,11 +189,17 @@ namespace MEDDLY {
 
     class saturation_operation;
     class pregen_relation;
+    class otf_relation;
 
     saturation_operation* SATURATION_FORWARD(forest* inF,
             pregen_relation* nsf, forest* outf);
     saturation_operation* SATURATION_BACKWARD(forest* inF,
             pregen_relation* nsf, forest* outf);
+
+    saturation_operation* SATURATION_OTF_FORWARD(forest* inF,
+            otf_relation* nsf, forest* outf);
+    saturation_operation* SATURATION_OTF_BACKWARD(forest* inF,
+            otf_relation* nsf, forest* outf);
 
     // OLD BELOW
 
@@ -217,7 +223,7 @@ namespace MEDDLY {
         Transition relation is not completely known,
         will be built along with reachability set.
     */
-    satotf_opname* SATURATION_OTF_FORWARD();
+//     satotf_opname* SATURATION_OTF_FORWARD();
 
     /** Forward reachability using saturation.
         Transition relation is specified implicitly.

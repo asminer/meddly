@@ -20,13 +20,15 @@
 #define MEDDLY_SAT_OTF_H
 
 namespace MEDDLY {
-  class satotf_opname;
+    class forest;
+    class otf_relation;
+    class saturation_operation;
 
-  /// Set up a numerical_opname for "forward saturation".
-  satotf_opname* initOtfSaturationForward();
+    saturation_operation* SATURATION_OTF_FORWARD(forest* inF,
+            otf_relation* nsf, forest* outf);
 
-  /// Set up a numerical_opname for "backward saturation".
-  satotf_opname* initOtfSaturationBackward();
+    saturation_operation* SATURATION_OTF_BACKWARD(forest* inF,
+            otf_relation* nsf, forest* outf);
 }
 
 #endif
