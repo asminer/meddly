@@ -342,21 +342,25 @@ class MEDDLY::otf_relation {
     public:
         /** Constructor.
               @param  mxd         MxD forest containing relations
+              @param  mdd         MDD forest containing result set
               @param  E           List of events
               @param  nE          Number of events
         */
-        otf_relation(forest* mxd, otf_event** E, int ne);
+        otf_relation(forest* mxd, forest* mdd, otf_event** E, int ne);
 
         virtual ~otf_relation();
 
         /// Returns the MXD forest that stores the events
         inline forest* getRelForest() const { return mxdF; }
 
+        /// Returns the MDD forest that stores the result
+        inline forest* getOutForest() const { return resF; }
+
         /// Returns true if the local state is already confirmed.
         inline bool isConfirmed(int level, int i) const
         {
             if (level < num_levels &&  i >= 0) {
-                return (i < insetF->getLevelSize(level) && confirmed[level][i]);
+                return (i < resF->getLevelSize(level) && confirmed[level][i]);
             }
             throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
         }
@@ -453,17 +457,15 @@ class MEDDLY::otf_relation {
 
     protected:
         void findConfirmedStates(bool** confirmed, int* num_confirmed,
-            forest* insetF, node_handle mdd, int level,
-            std::set<MEDDLY::node_handle>& visited);
+            node_handle mdd, int level, std::set<MEDDLY::node_handle>& visited);
 
         void enlargeConfirmedArrays(int level, int sz);
         // node_handle getBoundedMxd(node_handle mxd, const int* bounds_array, int sz,
             // std::unordered_map<node_handle, node_handle>& cache);
 
     private:
-        forest* insetF;
         forest* mxdF;
-        forest* outsetF;
+        forest* resF;
         int num_levels;
 
         // All events that begin at level i,

@@ -751,10 +751,15 @@ long MEDDLY::otf_event::mintermMemoryUsage() const {
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::otf_relation::otf_relation(forest* mxd, otf_event** E, int ne)
-: mxdF(mxd)
+MEDDLY::otf_relation::otf_relation(forest* mxd, forest* mdd,
+    otf_event** E, int ne) : mxdF(mxd), resF(mdd)
 {
-    if (!mxd) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    if (!mxdF) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    if (!resF) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+
+    if (resF->getDomain() != mxdF->getDomain()) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
 
 /*
   // Check for same domain
@@ -785,9 +790,12 @@ MEDDLY::otf_relation::otf_relation(forest* mxd, otf_event** E, int ne)
   // Check forest types
   if (
     !mxdF->isForRelations()     ||
-    (mxdF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
-  )
+    resF->isForRelations()   ||
+    (mxdF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
+    (resF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
+  ) {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+  }
 
   // Forests are good; set number of variables
   num_levels = mxdF->getMaxLevelIndex() + 1;
@@ -970,43 +978,43 @@ void MEDDLY::otf_relation::confirm(const dd_edge& set)
       enlargeConfirmedArrays(i, mxdF->getLevelSize(-i));
   }
   std::set<node_handle> visited;
-  findConfirmedStates(confirmed, num_confirmed, set.getForest(),
-          set.getNode(), num_levels-1, visited);
+  findConfirmedStates(confirmed, num_confirmed, set.getNode(),
+          num_levels-1, visited);
 
   // ostream_output out(std::cout);
   // showInfo(out);
 }
 
 void MEDDLY::otf_relation::findConfirmedStates(bool** confirmed,
-    int* num_confirmed, forest* insetF, node_handle mdd, int level,
+    int* num_confirmed, node_handle mdd, int level,
     std::set<MEDDLY::node_handle>& visited)
 {
   if (level == 0) return;
   if (visited.find(mdd) != visited.end()) return;
 
-  int mdd_level = insetF->getNodeLevel(mdd);
+  int mdd_level = resF->getNodeLevel(mdd);
   if (MEDDLY::isLevelAbove(level, mdd_level)) {
     // skipped level; confirm all local states at this level
     // go to the next level
-    int level_size = insetF->getLevelSize(level);
+    int level_size = resF->getLevelSize(level);
     for (int i = 0; i < level_size; i++) {
       if (!confirmed[level][i]) {
         confirm(level, i);
       }
     }
-    findConfirmedStates(confirmed, num_confirmed, insetF, mdd, level-1, visited);
+    findConfirmedStates(confirmed, num_confirmed, mdd, level-1, visited);
   } else {
     if (MEDDLY::isLevelAbove(mdd_level, level)) {
       throw MEDDLY::error(MEDDLY::error::INVALID_VARIABLE, __FILE__, __LINE__);
     }
     // mdd_level == level
     visited.insert(mdd);
-    MEDDLY::unpacked_node *nr = insetF->newUnpacked(mdd, MEDDLY::SPARSE_ONLY);
+    MEDDLY::unpacked_node *nr = resF->newUnpacked(mdd, MEDDLY::SPARSE_ONLY);
     for (unsigned i = 0; i < nr->getSize(); i++) {
       if (!confirmed[level][nr->index(i)]) {
         confirm(level, int(nr->index(i)));
       }
-      findConfirmedStates(confirmed, num_confirmed, insetF, nr->down(i), level-1, visited);
+      findConfirmedStates(confirmed, num_confirmed, nr->down(i), level-1, visited);
     }
     MEDDLY::unpacked_node::Recycle(nr);
   }
@@ -1093,36 +1101,36 @@ double MEDDLY::otf_relation::getArcCount(
   const dd_edge& mask,
   bool count_duplicates)
 {
-  MEDDLY_DCASSERT(outsetF->isQuasiReduced());
+  MEDDLY_DCASSERT(resF->isQuasiReduced());
   MEDDLY_DCASSERT(mxdF->isIdentityReduced());
 
   double arc_count = 0;
   dd_edge mxd_mask(mxdF);
 
   // Build confirmed mask
-  dd_edge confirmed_local_states(outsetF);
+  dd_edge confirmed_local_states(resF);
   terminal one_terminal(true);
   confirmed_local_states.set(one_terminal.getHandle());
   for (int k = 1; k < num_levels; k++) {
     node_handle current_node = confirmed_local_states.getNode();
-    int current_level = outsetF->getNodeLevel(current_node);
-    int next_level = outsetF->upLevel(outsetF->upLevel(current_level));
+    int current_level = resF->getNodeLevel(current_node);
+    int next_level = resF->upLevel(resF->upLevel(current_level));
     MEDDLY_DCASSERT(next_level >= 0);
-    unpacked_node* node = unpacked_node::newFull(outsetF, next_level,
-            unsigned(outsetF->getLevelSize(next_level))
+    unpacked_node* node = unpacked_node::newFull(resF, next_level,
+            unsigned(resF->getLevelSize(next_level))
     );
     for (unsigned i = 0; i < node->getSize(); i++) {
       if (confirmed[next_level][i]) {
-          node->setFull(i, outsetF->linkNode(current_node));
+          node->setFull(i, resF->linkNode(current_node));
       }
       /*
       node->d_ref(i) =
         confirmed[next_level][i]
-        ? outsetF->linkNode(current_node)
+        ? resF->linkNode(current_node)
         : 0;
       */
     }
-    node_handle next_node = outsetF->createReducedNode(-1, node);
+    node_handle next_node = resF->createReducedNode(-1, node);
     confirmed_local_states.set(next_node);
   }
 

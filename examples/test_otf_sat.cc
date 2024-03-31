@@ -306,7 +306,7 @@ void pn::buildOtfSaturationOp() {
       // build otf saturation relation
       otf_event* events[] = {T_AB};
     //  otf_rel = new otf_relation(mdd, mxd, mdd, &events[0], 1);
-      otf_rel = new otf_relation(mxd, &events[0], 1);
+      otf_rel = new otf_relation(mxd, mdd, &events[0], 1);
     }
     assert(otf_rel);
     otf_sat_op = SATURATION_OTF_FORWARD(mdd, otf_rel, mdd);

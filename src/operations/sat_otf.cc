@@ -32,14 +32,11 @@
 #include "../ops_builtin.h"
 
 namespace MEDDLY {
-  // class otfsat_by_events_opname;
     class otfsat_by_events_op;
 
     class common_otf_dfs_by_events_mt;
     class forwd_otf_dfs_by_events_mt;
     class bckwd_otf_dfs_by_events_mt;
-
-  // class fb_otf_saturation_opname;
 };
 
 
@@ -1864,6 +1861,10 @@ MEDDLY::satotf_opname* MEDDLY::initOtfSaturationBackward()
 MEDDLY::saturation_operation*
 MEDDLY::SATURATION_OTF_FORWARD(forest* inF, otf_relation* nsf, forest* outF)
 {
+    if (!nsf) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    if (nsf->getOutForest() != outF) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
     return new forwd_otf_dfs_by_events_mt("OtfSaturationFwd", inF, nsf, outF);
 }
 
