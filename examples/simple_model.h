@@ -50,7 +50,7 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
       @param  verb      Verbosity level.
 */
 void buildNextStateFunction(const char* const* events, unsigned nEvents,
-    MEDDLY::satpregen_opname::pregen_relation* pnsf, int verb);
+    MEDDLY::pregen_relation* pnsf, int verb);
 
 /** Use explicit search to build the reachability set.
       @param  events    Array of dimension \a nEvents.

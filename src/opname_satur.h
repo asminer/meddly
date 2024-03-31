@@ -29,7 +29,6 @@
 #include <set>
 
 namespace MEDDLY {
-    class satpregen_opname;
     class satotf_opname;
     class satimpl_opname;
     class sathyb_opname;
@@ -41,6 +40,8 @@ namespace MEDDLY {
 // *                     satpregen_opname class                     *
 // *                                                                *
 // ******************************************************************
+
+#if 0
 
 /** Saturation, with already generated transition relations, operation names.
     Implemented in operations/sat_pregen.cc
@@ -224,6 +225,7 @@ MEDDLY::satpregen_opname::pregen_relation::getOutForest() const
   return outsetF;
 }
 
+#endif
 
 // ******************************************************************
 // *                                                                *

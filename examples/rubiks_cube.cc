@@ -789,7 +789,7 @@ class moves {
 
 
 void buildOverallNextStateFunction(const moves& m,
-    satpregen_opname::pregen_relation& ensf, bool split)
+    pregen_relation& ensf, bool split)
 {
   // Build each move using BuildMove().
 
@@ -820,9 +820,9 @@ void buildOverallNextStateFunction(const moves& m,
   if (split) {
     //ensf.finalize(satpregen_opname::pregen_relation::SplitOnly);
     //ensf.finalize(satpregen_opname::pregen_relation::SplitSubtract);
-    ensf.finalize(satpregen_opname::pregen_relation::SplitSubtractAll);
+    ensf.finalize(pregen_relation::SplitSubtractAll);
   } else {
-    ensf.finalize(satpregen_opname::pregen_relation::MonolithicSplit);
+    ensf.finalize(pregen_relation::MonolithicSplit);
   }
 }
 
@@ -964,7 +964,7 @@ int doBfs(const moves& m)
 
 int doDfs(const moves& m, char saturation_type, bool split)
 {
-  satpregen_opname::pregen_relation *ensf = 0;
+  pregen_relation *ensf = 0;
   dd_edge nsf(relation);
 
   // Build initial state.
@@ -975,13 +975,12 @@ int doDfs(const moves& m, char saturation_type, bool split)
   timer start;
 
   if (saturation_type == 'e') {
-    ensf = new satpregen_opname::pregen_relation(states, relation, states,
-        m.countEnabledMoves());
+    ensf = new pregen_relation(relation, m.countEnabledMoves());
     buildOverallNextStateFunction(m, *ensf, split);
     printf("Building reachability set using saturation, relation by events\n");
     fflush(stdout);
   } else if (saturation_type == 'k') {
-    ensf = new satpregen_opname::pregen_relation(states, relation, states);
+    ensf = new pregen_relation(relation);
     buildOverallNextStateFunction(m, *ensf, split);
     printf("Building reachability set using saturation, relation by levels");
     if (split) printf(" with splitting");
@@ -997,10 +996,7 @@ int doDfs(const moves& m, char saturation_type, bool split)
 
   // Perform Reacability via "saturation".
   if (ensf) {
-    if (!SATURATION_FORWARD()) {
-        throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-    }
-    specialized_operation *sat = SATURATION_FORWARD()->buildOperation(ensf);
+    saturation_operation *sat = SATURATION_FORWARD(states, ensf, states);
     if (0==sat) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
     sat->compute(initial, initial);
   } else {

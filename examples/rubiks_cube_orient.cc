@@ -753,7 +753,7 @@ class rubiks {
     }
 
     void buildNextStateFunction(const moves& m,
-        satpregen_opname::pregen_relation& ensf, bool split)
+        pregen_relation& ensf, bool split)
     {
       // Build each move using buildMove().
 
@@ -790,12 +790,12 @@ class rubiks {
       start.note_time();
 
       if (split) {
-        //ensf.finalize(satpregen_opname::pregen_relation::SplitOnly);
-        //ensf.finalize(satpregen_opname::pregen_relation::SplitSubtract);
-        //ensf.finalize(satpregen_opname::pregen_relation::MonolithicSplit);
-        ensf.finalize(satpregen_opname::pregen_relation::SplitSubtractAll);
+        //ensf.finalize(pregen_relation::SplitOnly);
+        //ensf.finalize(pregen_relation::SplitSubtract);
+        //ensf.finalize(pregen_relation::MonolithicSplit);
+        ensf.finalize(pregen_relation::SplitSubtractAll);
       } else {
-        ensf.finalize(satpregen_opname::pregen_relation::MonolithicSplit);
+        ensf.finalize(pregen_relation::MonolithicSplit);
       }
 
       start.note_time();
@@ -873,7 +873,7 @@ class rubiks {
       assert(mxd);
       assert(order);
 
-      satpregen_opname::pregen_relation *ensf = 0;
+      pregen_relation *ensf = 0;
       dd_edge nsf(mxd);
 
       // Build initial state.
@@ -886,11 +886,10 @@ class rubiks {
 
       // Build next state function.
       if (saturation_type == 'e') {
-        ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd,
-            m.countEnabledMoves());
+        ensf = new pregen_relation(mxd, m.countEnabledMoves());
         buildNextStateFunction(m, *ensf, split);
       } else if (saturation_type == 'k') {
-        ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd);
+        ensf = new pregen_relation(mxd);
         buildNextStateFunction(m, *ensf, split);
       } else {
         nsf = buildNextStateFunction(m);
@@ -923,10 +922,7 @@ class rubiks {
       // Perform Reacability via "saturation".
       start.note_time();
       if (ensf) {
-        if (!SATURATION_FORWARD()) {
-            throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-        }
-        specialized_operation *sat = SATURATION_FORWARD()->buildOperation(ensf);
+        saturation_operation *sat = SATURATION_FORWARD(mdd, ensf, mdd);
         if (0==sat) throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
         sat->compute(initial, initial);
       } else {

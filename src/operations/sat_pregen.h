@@ -20,13 +20,15 @@
 #define MEDDLY_SAT_PREGEN_H
 
 namespace MEDDLY {
-  class satpregen_opname;
+    class forest;
+    class saturation_operation;
+    class pregen_relation;
 
-  /// Set up a numerical_opname for "forward saturation".
-  satpregen_opname* initSaturationForward();
+    saturation_operation* SATURATION_FORWARD(forest* inF,
+            pregen_relation* nsf, forest* outf);
+    saturation_operation* SATURATION_BACKWARD(forest* inF,
+            pregen_relation* nsf, forest* outf);
 
-  /// Set up a numerical_opname for "backward saturation".
-  satpregen_opname* initSaturationBackward();
 }
 
 #endif

@@ -65,7 +65,7 @@ inline int MAX(int a, int b) {
 
 void buildNextStateFunction(const char* const* events, unsigned nEvents,
   MEDDLY::forest* mxd,
-  MEDDLY::satpregen_opname::pregen_relation* pnsf,
+  MEDDLY::pregen_relation* pnsf,
   MEDDLY::dd_edge* mono, int verb)
 {
   using namespace MEDDLY;
@@ -246,7 +246,7 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
 }
 
 void buildNextStateFunction(const char* const* events, unsigned nEvents,
-  MEDDLY::satpregen_opname::pregen_relation* pnsf, int verb)
+  MEDDLY::pregen_relation* pnsf, int verb)
 {
   if (0==pnsf) return;
   buildNextStateFunction(events, nEvents, pnsf->getRelForest(), pnsf, 0, verb);

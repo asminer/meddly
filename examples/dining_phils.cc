@@ -538,14 +538,14 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
   // functions that each represent how a philosopher's state can change.
   philsModel model(nPhilosophers, M2V, mxd);
   dd_edge nsf(mxd);
-  satpregen_opname::pregen_relation* ensf = 0;
-  specialized_operation* sat = 0;
+  pregen_relation* ensf = 0;
+  saturation_operation* sat = 0;
 
   if ('s' == sw.method) {
-    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd, 6*nPhilosophers);
+    ensf = new pregen_relation(mxd, 6*nPhilosophers);
   }
   if ('k' == sw.method) {
-    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd);
+    ensf = new pregen_relation(mxd);
   }
 
   if (ensf) {
@@ -618,10 +618,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
         if ('k'==sw.method) printf(" by levels\n");
         else                printf(" by events\n");
         fflush(stdout);
-        if (!SATURATION_FORWARD()) {
-          throw error(error::UNKNOWN_OPERATION);
-        }
-        sat = SATURATION_FORWARD()->buildOperation(ensf);
+        sat = SATURATION_FORWARD(mdd, ensf, mdd);
         if (0==sat) {
           throw error(error::INVALID_OPERATION);
         }

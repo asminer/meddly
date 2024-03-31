@@ -187,7 +187,17 @@ namespace MEDDLY {
     // *                                                                *
     // ******************************************************************
 
-    class satpregen_opname;
+    class saturation_operation;
+    class pregen_relation;
+
+    saturation_operation* SATURATION_FORWARD(forest* inF,
+            pregen_relation* nsf, forest* outf);
+    saturation_operation* SATURATION_BACKWARD(forest* inF,
+            pregen_relation* nsf, forest* outf);
+
+    // OLD BELOW
+
+    // class satpregen_opname;
     class satotf_opname;
     class satimpl_opname;
     class sathyb_opname;
@@ -196,12 +206,12 @@ namespace MEDDLY {
     /** Forward reachability using saturation.
         Transition relation is already known.
     */
-    satpregen_opname* SATURATION_FORWARD();
+    // satpregen_opname* SATURATION_FORWARD();
 
     /** Backward reachability using saturation.
         Transition relation is already known.
     */
-    satpregen_opname* SATURATION_BACKWARD();
+    // satpregen_opname* SATURATION_BACKWARD();
 
     /** Forward reachability using saturation.
         Transition relation is not completely known,

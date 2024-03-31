@@ -16,37 +16,38 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "error.h"
-#include "io.h"
-#include "io_dot.h"
-#include "io_mdds.h"
-#include "memstats.h"
-#include "variable.h"
-#include "varorder.h"
-#include "domain.h"
-#include "minterms.h"
-#include "forest.h"
-#include "node_marker.h"
-#include "relation_node.h"
-#include "memory.h"
-
-#include "operators.h"
-#include "ops_builtin.h"
-#include "opname.h"
-#include "opname_numer.h"
-#include "opname_satur.h"
-
-#include "oper.h"
-#include "oper_unary.h"
-#include "oper_binary.h"
-#include "oper_numer.h"
 #include "oper_satur.h"
+#include "error.h"
+#include "forest.h"
+#include "dd_edge.h"
 
-#include "oper_special.h"
+// ******************************************************************
+// *                  saturation_operation methods                  *
+// ******************************************************************
 
-#include "sat_relations.h"
+MEDDLY::saturation_operation::saturation_operation(const char* name,
+    unsigned et_slots, forest* arg, forest* res)
+    : operation(name, et_slots)
+{
+    argF = arg;
+    resF = res;
 
-#include "ct_initializer.h"
+    registerInForest(argF);
+    registerInForest(resF);
+}
 
-#include "global_rebuilder.h"
+MEDDLY::saturation_operation::~saturation_operation()
+{
+    unregisterInForest(argF);
+    unregisterInForest(resF);
+}
+
+bool
+MEDDLY::saturation_operation::checkForestCompatibility() const
+{
+    auto o1 = argF->variableOrder();
+    auto o2 = resF->variableOrder();
+    return o1->is_compatible_with(*o2);
+}
+
 
