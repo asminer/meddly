@@ -7,7 +7,7 @@
 # List of executables to run
 #
 
-RUNLIST="ddedge fids mark opids reduce unpacked"
+RUNLIST="comptab ddedge fids mark opids reduce unpacked"
 PID="$$"
 
 #

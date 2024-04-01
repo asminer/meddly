@@ -31,7 +31,7 @@ const unsigned DOTS = 16;
 #ifdef DEVELOPMENT_CODE
 const unsigned CREATIONS = 32*1024;
 #else
-const unsigned CREATIONS = 1024;
+const unsigned CREATIONS = 1024*1024;
 #endif
 
 // Request and recycle lots of compute table keys
