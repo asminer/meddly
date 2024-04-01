@@ -1457,8 +1457,7 @@ class MEDDLY::forest {
   private:  // For operation registration
     friend class operation;
 
-    unsigned* opCount;
-    unsigned szOpCount;
+    std::vector <unsigned> opCount;
 
     /// Register an operation with this forest.
     /// Called only within operation.

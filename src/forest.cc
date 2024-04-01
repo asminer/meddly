@@ -802,7 +802,7 @@ void MEDDLY::forest::removeStaleComputeTableEntries()
   if (operation::usesMonolithicComputeTable()) {
     operation::removeStalesFromMonolithic();
   } else {
-    for (unsigned i=0; i<szOpCount; i++)
+    for (unsigned i=0; i<opCount.size(); i++)
       if (opCount[i]) {
         operation* op = operation::getOpWithID(i);
         op->removeStaleComputeTableEntries();
@@ -818,7 +818,7 @@ void MEDDLY::forest::removeAllComputeTableEntries()
     operation::removeStalesFromMonolithic();
     is_marked_for_deletion = false;
   } else {
-    for (unsigned i=0; i<szOpCount; i++)
+    for (unsigned i=0; i<opCount.size(); i++)
       if (opCount[i]) {
         operation* op = operation::getOpWithID(i);
         op->removeAllComputeTableEntries();
@@ -828,26 +828,28 @@ void MEDDLY::forest::removeAllComputeTableEntries()
 
 void MEDDLY::forest::registerOperation(const operation* op)
 {
-  MEDDLY_DCASSERT(op->getID() > 0);
-  if (op->getID() >= szOpCount) {
-    // need to expand
-    unsigned newSize = ((op->getID() / 16) +1 )*16; // expand in chunks of 16
-    unsigned* tmp = (unsigned*) realloc(opCount, newSize * sizeof(unsigned));
-    if (0==tmp) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    for ( ; szOpCount < newSize; szOpCount++) {
-      tmp[szOpCount] = 0;
+    MEDDLY_DCASSERT(op->getID() > 0);
+    if (op->getID() >= opCount.size()) {
+        // need to expand; do so in chunks of 16
+        const unsigned newSize = ((op->getID() / 16) +1 )*16;
+        opCount.resize(newSize, 0);
     }
-    opCount = tmp;
-  }
-  opCount[op->getID()] ++;
+#ifdef DEVELOPMENT_CODE
+    opCount.at(op->getID()) ++;
+#else
+    opCount[op->getID()] ++;
+#endif
 }
 
 void MEDDLY::forest::unregisterOperation(const operation* op)
 {
-  MEDDLY_DCASSERT(op->getID() >= 0);
-  MEDDLY_DCASSERT(szOpCount > op->getID());
-  MEDDLY_DCASSERT(opCount[op->getID()]>0);
-  opCount[op->getID()] --;
+    MEDDLY_DCASSERT(op->getID() >= 0);
+    MEDDLY_DCASSERT(opCount.at(op->getID())>0);
+#ifdef DEVELOPMENT_CODE
+    opCount.at(op->getID()) --;
+#else
+    opCount[op->getID()] --;
+#endif
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1234,7 +1236,7 @@ void MEDDLY::forest::showComputeTable(output &s, int verbLevel) const
   if (operation::usesMonolithicComputeTable()) {
     operation::showMonolithicComputeTable(s, verbLevel);
   } else {
-    for (unsigned i=0; i<szOpCount; i++)
+    for (unsigned i=0; i<opCount.size(); i++)
       if (opCount[i]) {
         operation* op = operation::getOpWithID(i);
         op->showComputeTable(s, verbLevel);
@@ -1381,13 +1383,6 @@ MEDDLY::forest
 #endif
 
     //
-    // Initialize array of operations
-    //
-    opCount = 0;
-    szOpCount = 0;
-
-
-    //
     // Initialize the root edges
     //
     roots = nullptr;
@@ -1439,9 +1434,6 @@ MEDDLY::forest::~forest()
     reportMemoryUsage(stdout, "\t", 9);
 #endif
 
-    // operations are deleted elsewhere...
-    free(opCount);
-
     unregisterDDEdges();
 
     // unique table
@@ -1459,7 +1451,7 @@ void MEDDLY::forest::markForDeletion()
     if (is_marked_for_deletion) return;
     is_marked_for_deletion = true;
     // deal with operations associated with this forest
-    for (unsigned i=0; i<szOpCount; i++)
+    for (unsigned i=0; i<opCount.size(); i++)
         if (opCount[i]) {
             operation* op = operation::getOpWithID(i);
             op->markForDeletion();

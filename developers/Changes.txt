@@ -17,16 +17,6 @@ Transition to new binary/unary builtin operation types:
     (5) When done, remove opname class hierarchy
 
 
-forest::registerOperation
-forest::unregisterOperation
-
-    Switch to vector class?
-    Check opid timing
-
-
-Write a timing test for building compute table search keys
-Write a timing test for adding compute table entries
-Write a timing test for compute table searches
 
 
 Make compute table interface easier to use for simple operations
