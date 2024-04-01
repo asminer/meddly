@@ -62,9 +62,8 @@ void reqKeys(const ct_entry_type *CTE)
     T.note_time();
     show_sec(std::cout, T, 3, 3);
 
-    if (startReport(T, __FILE__)) {
-        report  << "reqkey $ "
-                << "Requested " << DOTS * CREATIONS * LEVELS << " keys"
+    if (startReport(T, __FILE__, "req key")) {
+        report  << "Requested " << DOTS * CREATIONS * LEVELS << " keys"
                 << std::endl;
     }
 }
@@ -101,9 +100,8 @@ void makeKeys(const ct_entry_type *CTE)
     T.note_time();
     show_sec(std::cout, T, 3, 3);
 
-    if (startReport(T, __FILE__)) {
-        report  << "makekey $ "
-                << "Built " << DOTS * CREATIONS * LEVELS << " keys"
+    if (startReport(T, __FILE__, "make key")) {
+        report  << "Built " << DOTS * CREATIONS * LEVELS << " keys"
                 << std::endl;
     }
 }

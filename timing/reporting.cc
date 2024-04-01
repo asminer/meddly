@@ -48,19 +48,19 @@ void setReport(int argc, const char** argv)
     }
 }
 
-bool startReport(const timer &T, const char* exe)
+bool startReport(const timer &T, const char* exe, const char* col,
+        const char* cctd)
 {
-    if (report) {
-        report << T.get_last_seconds() << "  ";
-        for (unsigned i=0; exe[i]; i++) {
-            if ('.' == exe[i]) break;
-            report << exe[i];
-        }
-        report << "  ";
-        return true;
-    } else {
-        return false;
+    if (!report) return false;
+    report << T.get_last_seconds() << "  ";
+    for (unsigned i=0; exe[i]; i++) {
+        if ('.' == exe[i]) break;
+        report << exe[i];
     }
+    report << " " << col;
+    if (cctd) report << cctd;
+    report << " $ ";
+    return true;
 }
 
 void show_sec(std::ostream &s, const timer &T, int a, int b)

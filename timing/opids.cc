@@ -146,9 +146,8 @@ int main(int argc, const char** argv)
         } // for i
         T.note_time();
         show_sec(std::cout, T, 3, 3);
-        if (startReport(T, __FILE__)) {
-            report  << "opbuild $ "
-                    << "Created and destroyed " << DOTS*CREATIONS*OPCOMBS
+        if (startReport(T, __FILE__, "build")) {
+            report  << "Created and destroyed " << DOTS*CREATIONS*OPCOMBS
                     << " operations"
                     << std::endl;
         }
@@ -166,9 +165,8 @@ int main(int argc, const char** argv)
         }
         T.note_time();
         show_sec(std::cout, T, 3, 3);
-        if (startReport(T, __FILE__)) {
-            report  << "fastsrch $ "
-                    << "Fast search " << DOTS*FASTSRCH*OPCOMBS
+        if (startReport(T, __FILE__, "fast srch")) {
+            report  << "Fast search " << DOTS*FASTSRCH*OPCOMBS
                     << " operations"
                     << std::endl;
         }
@@ -186,9 +184,8 @@ int main(int argc, const char** argv)
         }
         T.note_time();
         show_sec(std::cout, T, 3, 3);
-        if (startReport(T, __FILE__)) {
-            report  << "slowsrch $ "
-                    << "Slow search " << DOTS*SLOWSRCH*OPCOMBS
+        if (startReport(T, __FILE__, "slow srch")) {
+            report  << "Slow search " << DOTS*SLOWSRCH*OPCOMBS
                     << " operations"
                     << std::endl;
         }

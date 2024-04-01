@@ -54,10 +54,13 @@ void setReport(int argc, const char** argv);
 ///     @param  T       Timer, with stop time noted already.
 ///     @param  exe     Executable name, possibly with an extra extension,
 ///                     so you can pass __FILE__ as the argument
+///     @param  col     Column name.
+///     @param  cctd    More column name, or null.
 ///
 ///     @return true, if the report stream is set up.
 ///
-bool startReport(const timer &T, const char* exe);
+bool startReport(const timer &T, const char* exe,
+        const char* col, const char* cctd=nullptr);
 
 extern std::ofstream report;
 

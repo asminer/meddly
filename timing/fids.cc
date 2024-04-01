@@ -117,9 +117,8 @@ int main(int argc, const char** argv)
         T.note_time();
         show_sec(std::cout, T, 3, 3);
 
-        if (startReport(T, __FILE__)) {
-            report  << "fbuild $ "
-                    << "Created and destroyed " << 16*CREATIONS << " forests "
+        if (startReport(T, __FILE__, "fbuild")) {
+            report  << "Created and destroyed " << 16*CREATIONS << " forests "
                     << std::endl;
         }
 
