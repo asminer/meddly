@@ -1790,3 +1790,19 @@ MEDDLY::implicit_relation::isUnionPossible(int level, long i, relation_node **R)
     return true;
 }
 
+// ******************************************************************
+// *                                                                *
+// *                    hybrid_relation  methods                    *
+// *                                                                *
+// ******************************************************************
+
+long
+MEDDLY::hybrid_relation::getTotalEvent(int level) const
+{
+  int total_event = 0;
+  for(int i=1;i<=level;i++)
+    total_event +=  lengthForLevel(i);
+
+  return total_event;
+}
+

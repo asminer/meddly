@@ -65,6 +65,7 @@ public:
 // *                      sathyb_opname class                      *
 // *                                                                *
 // ******************************************************************
+#if 0
 
 /** Saturation, transition relations stored implcitly, operation names.
     Implemented in operations/sat_impl.cc
@@ -673,6 +674,8 @@ inline bool
 MEDDLY::sathyb_opname::subevent::usesExtensibleVariables() const {
   return uses_extensible_variables;
 }
+
+#endif
 
 
 #endif // #include guard

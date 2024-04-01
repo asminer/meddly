@@ -32,9 +32,9 @@
 #include "../compute_table.h"
 #include "../oper_unary.h"
 #include "../oper_binary.h"
-#include "../oper_special.h"
-#include "../opname_satur.h"
+#include "../oper_satur.h"
 #include "../ops_builtin.h"
+#include "../sat_relations.h"
 
    #define OUT_OF_BOUNDS -1
    #define NOT_KNOWN -2
