@@ -34,6 +34,8 @@ namespace MEDDLY {
     class otf_subevent;
     class otf_event;
     class otf_relation;
+
+    class implicit_relation;
 };
 
 //
@@ -498,5 +500,244 @@ class MEDDLY::otf_relation {
         int* num_confirmed;
 
 };  // end of class otf_relation
+
+// ******************************************************************
+// *                                                                *
+// *                    implicit_relation  class                    *
+// *                                                                *
+// ******************************************************************
+
+/** An implicit relation, as a DAG of relation_nodes.
+
+    The relation is partitioned by "events", where each event
+    is the conjunction of local functions, and each local function
+    is specified as a single relation_node.  The relation_nodes
+    are chained together with at most one relation_node per state
+    variable, and any skipped variables are taken to be unchanged
+    by the event.
+
+    If the bottom portion (suffix) of two events are identical,
+    then they are merged.  This is done by "registering" nodes
+    which assigns a unique ID to each node, not unlike an MDD forest.
+
+    Note: node handles 0 and 1 are reserved.
+    0 means null node.
+    1 means special bottom-level "terminal" node
+    (in case we need to distinguish 0 and 1).
+*/
+class MEDDLY::implicit_relation {
+    public:
+        /** Constructor.
+
+            @param  inmdd       MDD forest containing initial states
+            @param  outmdd      MDD forest containing result
+
+            Not 100% sure we need these...
+        */
+        implicit_relation(forest* inmdd, forest* relmxd, forest* outmdd);
+        virtual ~implicit_relation();
+
+        /// Returns the Relation forest that stores the mix of relation nodes and mxd nodes
+        inline forest* getMixRelForest() const {
+            return mixRelF;
+        }
+
+
+        /// Returns the MDD forest that stores the initial set of states
+        inline forest* getInForest() const {
+            return insetF;
+        }
+
+
+        /// Returns the MDD forest that stores the resultant set of states
+        inline forest* getOutForest() const {
+            return outsetF;
+        }
+
+
+        /** Register a relation node.
+
+            If we have seen an equivalent node before, then
+            return its handle and destroy n.
+            Otherwise, add n to the unique table, assign it a unique
+            identifier, and return that identifier.
+
+            @param  is_event_top    If true, this is also the top
+                                    node of some event; register it
+                                    in the list of events.
+
+            @param  n               The relation node to register.
+
+            @return Unique identifier to use to refer to n.
+        */
+        rel_node_handle registerNode(bool is_event_top, relation_node* n);
+
+        /** Check if the relation node is unique
+            @param n  The relation node.
+            @return   If unique, 0
+                      Else, existing node handle
+        */
+        rel_node_handle isUniqueNode(relation_node* n);
+
+
+        /** Indicate that there will be no more registered nodes.
+            Allows us to preprocess the events or cleanup or convert
+            to a more useful representation for saturation.
+        */
+
+        //void finalizeNodes();
+
+        /// Get the relation node associated with the given handle.
+        inline relation_node* nodeExists(rel_node_handle n) const
+        {
+            // std::unordered_map<rel_node_handle, relation_node*>::iterator finder = impl_unique.find(n);
+            auto finder = impl_unique.find(n);
+            return (finder!=impl_unique.end()) ? finder->second : nullptr;
+        }
+
+
+        /// Get the relation node associated with the given handle.
+        inline bool isReserved(rel_node_handle n) const
+        {
+            return (n==1);
+        }
+
+    private:
+        forest* insetF;
+        forest* outsetF;
+        forest* mixRelF;
+
+        int num_levels;
+
+    private:
+
+        /// Last used ID of \a relation node.
+        long last_in_node_array;
+
+    private:
+        // TBD - add a data structure for the "uniqueness table"
+        // of relation_nodes, so if we register a node that
+        // is already present in a node_array, we can detect it.
+
+        std::unordered_map<rel_node_handle, relation_node*> impl_unique;
+
+    private:
+        // TBD - add a data structure for list of events with top level k,
+        // for all possible k.
+        // Possibly this data structure is built by method
+        // finalizeNodes().
+
+        rel_node_handle** event_list;
+        long* event_list_alloc; // allocated space
+        long* event_added; //how many events added so far
+
+        long* confirm_states; //total no. of confirmed states of a level
+        bool** confirmed; // stores whether a particular local state is confirmed
+        long* confirmed_array_size; // stores size of confirmed array
+
+
+    public:
+
+        /// Get total number of events upto given level
+        long getTotalEvent(int level);
+
+        /// Resizes the Event List
+        void resizeEventArray(int level);
+
+        /// Returns the number of events that have this level as top
+        inline long lengthForLevel(int level) const
+        {
+            return event_added[level];
+        }
+
+
+        /// Returns the array of events that have this level as top
+        inline rel_node_handle* arrayForLevel(int level) const
+        {
+            return event_list[level];
+        }
+
+
+        /// Returns the number of confirmed states at a level
+        inline long getConfirmedStates(int level) const
+        {
+            return confirm_states[level];
+        }
+
+        /// Confirms the local states at a level
+        inline void setConfirmedStates(int level, int i)
+        {
+            resizeConfirmedArray(level,i);
+            MEDDLY_DCASSERT(confirmed_array_size[level]>i);
+            if (!isConfirmedState(level,i))
+            {
+                confirmed[level][i]=true;
+                confirm_states[level]++;
+            }
+        }
+
+        /// Confirms the local states in the given MDD
+        void setConfirmedStates(const dd_edge &set);
+
+
+        /// Checks if i is confirmed
+        inline bool isConfirmedState(int level, int i)
+        {
+            return (i < insetF->getLevelSize(level) && confirmed[level][i]);
+        }
+
+        /// Expand confirm array
+        void resizeConfirmedArray(int level, int index);
+
+        /** Bound all extensible variables
+            using the maximum confirmed local state as the bound.
+        */
+        void bindExtensibleVariables();
+
+    public:
+        /// Prints the implicit relation
+        void show();
+
+        /// Build mxd forest
+        MEDDLY::node_handle buildMxdForest();
+
+        /// Build each event_mxd
+        dd_edge buildEventMxd(rel_node_handle event_top, forest *mxd);
+
+        /// Get relation forest
+        inline forest* getRelForest() const
+        {
+            return mxdF;
+        }
+
+    private:
+        forest* mxdF;
+
+    public:
+
+      /*
+       Group the list of events at a given level by same next-of values
+       @param level    level at which saturation is called
+       @param i        number of tokens before event is fired
+       @param R        array of events at level top
+
+       Return the map.
+       */
+      std::unordered_map<long,std::vector<rel_node_handle> > getListOfNexts(int level, long i, relation_node **R);
+
+      /*
+       Returns whether there exist a possibility of doing union
+       @param level    level at which saturation is called
+       @param i        number of tokens before event is fired
+       @param R        array of events at level top
+
+       Return bool.
+       */
+      bool isUnionPossible(int level, long i, relation_node **R);
+
+};  // class implicit_relation
+
+
+
 
 #endif // #include guard

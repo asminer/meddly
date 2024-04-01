@@ -20,13 +20,12 @@
 #define MEDDLY_SAT_IMPL_H
 
 namespace MEDDLY {
-  class satimpl_opname;
+    class forest;
+    class implicit_relation;
+    class saturation_operation;
 
-  /// Set up a numerical_opname for "forward saturation".
-  satimpl_opname* initImplSaturationForward();
-
-  /// Set up a numerical_opname for "backward saturation".
-  //satimpl_opname* initImplSaturationBackward();
+    saturation_operation* SATURATION_IMPL_FORWARD(forest* inF,
+            implicit_relation* nsf, forest* outf);
 }
 
 #endif

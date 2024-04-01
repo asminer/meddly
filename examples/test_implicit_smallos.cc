@@ -198,20 +198,17 @@ if('i' == method)
 
 
   //CREATE RELATION
-  satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,relmxd,inmdd);
+  implicit_relation* T = new implicit_relation(inmdd,relmxd,inmdd);
 
   start.note_time();
   buildImplicitRelation(model, TRANS, PLACES, BOUNDS, inmdd, relmxd, T);
   printf("\nNext-state function construction took %.4e seconds\n",
   start.get_last_seconds());
-  specialized_operation* sat = 0;
+  saturation_operation* sat = 0;
 
 
   printf("\nBuilding reachability set using saturation implicit relation");
-  if (!SATURATION_IMPL_FORWARD()) {
-  throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-  }
-  sat = SATURATION_IMPL_FORWARD()->buildOperation(T);
+  sat = SATURATION_IMPL_FORWARD(inmdd, T, inmdd);
 
   if (0==sat) {
   throw error(error::INVALID_OPERATION, __FILE__, __LINE__);

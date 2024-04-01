@@ -4,23 +4,6 @@ Interface changes (aside from moving header files around)
 
 Transition to new binary/unary builtin operation types:
 
-    (1) DONE
-
-    (2) Replace unary_opname, binary_opname derived classes
-        with replacement functions. Each operation has its
-        own "cache" (unary_list or binary_list).
-        Add initializers and destroyers:
-
-            void OPERATION_init()
-            void OPERATION_done()
-
-        Build and test
-
-    (3) Remove the 'global' caches in base classes binary_operation
-        and unary_operation; behavior is now completely local to
-        each operation derived class.
-
-        Build and test
 
     (4) Figure out what to do about specialized operations,
         could just have specialized functions e.g.,
@@ -41,8 +24,17 @@ forest::unregisterOperation
     Check opid timing
 
 
+Write a timing test for building compute table search keys
+Write a timing test for adding compute table entries
+Write a timing test for compute table searches
+
+
 Make compute table interface easier to use for simple operations
     (i.e., most of the time)
+
+    * compute table item class, like edge value class
+        type, and a union
+
 
 
 Reimplement operations

@@ -104,7 +104,7 @@ class MEDDLY::builtin_init : public initializer_list {
         // static satpregen_opname* _SATURATION_FORWARD;
         // static satpregen_opname* _SATURATION_BACKWARD;
         // static satotf_opname* _SATURATION_OTF_FORWARD;
-        static satimpl_opname* _SATURATION_IMPL_FORWARD;
+        // static satimpl_opname* _SATURATION_IMPL_FORWARD;
         static sathyb_opname* _SATURATION_HYB_FORWARD;
 
         static constrained_opname* _CONSTRAINED_BACKWARD_BFS;
@@ -118,7 +118,7 @@ class MEDDLY::builtin_init : public initializer_list {
 // MEDDLY::satpregen_opname* MEDDLY::builtin_init::_SATURATION_FORWARD;
 // MEDDLY::satpregen_opname* MEDDLY::builtin_init::_SATURATION_BACKWARD;
 // MEDDLY::satotf_opname* MEDDLY::builtin_init::_SATURATION_OTF_FORWARD;
-MEDDLY::satimpl_opname* MEDDLY::builtin_init::_SATURATION_IMPL_FORWARD;
+// MEDDLY::satimpl_opname* MEDDLY::builtin_init::_SATURATION_IMPL_FORWARD;
 MEDDLY::sathyb_opname* MEDDLY::builtin_init::_SATURATION_HYB_FORWARD;
 
 MEDDLY::constrained_opname* MEDDLY::builtin_init::_CONSTRAINED_BACKWARD_BFS;
@@ -137,7 +137,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     // _SATURATION_FORWARD         = nullptr;
     // _SATURATION_BACKWARD        = nullptr;
     // _SATURATION_OTF_FORWARD     = nullptr;
-    _SATURATION_IMPL_FORWARD    = nullptr;
+    // _SATURATION_IMPL_FORWARD    = nullptr;
     _SATURATION_HYB_FORWARD     = nullptr;
 
     _CONSTRAINED_BACKWARD_BFS   = nullptr;
@@ -202,7 +202,7 @@ void MEDDLY::builtin_init::setup()
     // _SATURATION_FORWARD         =   initSaturationForward()         ;
     // _SATURATION_BACKWARD        =   initSaturationBackward()        ;
     // _SATURATION_OTF_FORWARD     =   initOtfSaturationForward()      ;
-    _SATURATION_IMPL_FORWARD    =   initImplSaturationForward()     ;
+    // _SATURATION_IMPL_FORWARD    =   initImplSaturationForward()     ;
     _SATURATION_HYB_FORWARD     =   initHybSaturationForward()      ;
 
     _CONSTRAINED_BACKWARD_BFS   =   initConstrainedBFSBackward()    ;
@@ -267,7 +267,7 @@ void MEDDLY::builtin_init::cleanup()
     // mydelete(_SATURATION_FORWARD);
     // mydelete(_SATURATION_BACKWARD);
     // mydelete(_SATURATION_OTF_FORWARD);
-    mydelete(_SATURATION_IMPL_FORWARD);
+    // mydelete(_SATURATION_IMPL_FORWARD);
     mydelete(_SATURATION_HYB_FORWARD);
 
     mydelete(_CONSTRAINED_BACKWARD_BFS);
@@ -294,10 +294,10 @@ MEDDLY::satpregen_opname* MEDDLY::SATURATION_BACKWARD() {
 MEDDLY::satotf_opname* MEDDLY::SATURATION_OTF_FORWARD() {
     return builtin_init::_SATURATION_OTF_FORWARD;
 }
-*/
 MEDDLY::satimpl_opname* MEDDLY::SATURATION_IMPL_FORWARD() {
     return builtin_init::_SATURATION_IMPL_FORWARD;
 }
+*/
 MEDDLY::sathyb_opname* MEDDLY::SATURATION_HYB_FORWARD() {
     return builtin_init::_SATURATION_HYB_FORWARD;
 }

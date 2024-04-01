@@ -70,7 +70,7 @@ void explicitReachset(const char* const* events, unsigned nEvents,
 
 void buildImplicitRelation(const int* const* events, int nEvents,
         int nPlaces, int bounds, MEDDLY::forest* mddF,
-        MEDDLY::forest* mxdF, MEDDLY::satimpl_opname::implicit_relation* T);
+        MEDDLY::forest* mxdF, MEDDLY::implicit_relation* T);
 
 MEDDLY::sathyb_opname::event** buildHybridRelation(const int* const* events,
         int nEvents, int nPlaces, int bounds,

@@ -404,7 +404,7 @@ public:
 };
 
 
-void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::forest* mddF, MEDDLY::forest* mxdF, MEDDLY::satimpl_opname::implicit_relation* T)
+void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::forest* mddF, MEDDLY::forest* mxdF, MEDDLY::implicit_relation* T)
 {
 
   unsigned node_count = 0;

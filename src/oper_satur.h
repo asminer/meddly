@@ -102,6 +102,7 @@ class MEDDLY::saturation_operation : public operation {
     public:
         virtual void compute(const dd_edge &arg, dd_edge &res) = 0;
 
+        virtual bool isReachable(const dd_edge& a, const dd_edge& constraint);
 
     protected:
         forest* argF;

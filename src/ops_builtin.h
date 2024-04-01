@@ -190,6 +190,7 @@ namespace MEDDLY {
     class saturation_operation;
     class pregen_relation;
     class otf_relation;
+    class implicit_relation;
 
     saturation_operation* SATURATION_FORWARD(forest* inF,
             pregen_relation* nsf, forest* outf);
@@ -200,6 +201,9 @@ namespace MEDDLY {
             otf_relation* nsf, forest* outf);
     saturation_operation* SATURATION_OTF_BACKWARD(forest* inF,
             otf_relation* nsf, forest* outf);
+
+    saturation_operation* SATURATION_IMPL_FORWARD(forest* inF,
+            implicit_relation* nsf, forest* outf);
 
     // OLD BELOW
 
@@ -228,7 +232,7 @@ namespace MEDDLY {
     /** Forward reachability using saturation.
         Transition relation is specified implicitly.
     */
-    satimpl_opname* SATURATION_IMPL_FORWARD();
+    // satimpl_opname* SATURATION_IMPL_FORWARD();
 
     /** Forward reachability using saturation.
         Allows hybrid representation of transition relation.
