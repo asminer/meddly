@@ -4,6 +4,7 @@
 ## compile library
 
 noinst_PROGRAMS = \
+    comptab \
     ddedge \
     fids \
     mark \
@@ -12,6 +13,16 @@ noinst_PROGRAMS = \
     unpacked
 
 AM_CXXFLAGS = -Wall
+
+#####################################################################
+
+comptab_SOURCES =   timer.h \
+                    reporting.h reporting.cc \
+                    comptab.cc
+comptab_LDADD =     ../src/libmeddly.la
+
+
+#####################################################################
 
 ddedge_SOURCES =    timer.h \
                     park_random.h \

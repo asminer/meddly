@@ -30,6 +30,7 @@
 #include "relation_node.h"
 #include "memory.h"
 
+#include "compute_table.h"
 #include "operators.h"
 #include "ops_builtin.h"
 #include "opname.h"
