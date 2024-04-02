@@ -1796,7 +1796,7 @@ MEDDLY::implicit_relation::isUnionPossible(int level, long i, relation_node **R)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::sathyb_opname::subevent::subevent(forest* f, int* v, int nv, bool firing)
+MEDDLY::hybrid_subevent::hybrid_subevent(forest* f, int* v, int nv, bool firing)
 : vars(0), num_vars(nv), root(dd_edge(f)), top(0),
 f(f), is_firing(firing)
 {
@@ -1828,7 +1828,7 @@ f(f), is_firing(firing)
   processed_minterm_pos = -1;
 }
 
-MEDDLY::sathyb_opname::subevent::~subevent()
+MEDDLY::hybrid_subevent::~hybrid_subevent()
 {
   if (vars) delete [] vars;
   for (int i=0; i<num_minterms; i++) {
@@ -1839,7 +1839,7 @@ MEDDLY::sathyb_opname::subevent::~subevent()
   free(pminterms);
 }
 
-void MEDDLY::sathyb_opname::subevent::clearMinterms()
+void MEDDLY::hybrid_subevent::clearMinterms()
 {
   for (int i=0; i<num_minterms; i++) {
     delete[] unpminterms[i];
@@ -1852,12 +1852,12 @@ void MEDDLY::sathyb_opname::subevent::clearMinterms()
 }
 
 
-void MEDDLY::sathyb_opname::subevent::confirm(hybrid_relation& rel, int v, int i) {
+void MEDDLY::hybrid_subevent::confirm(hybrid_relation& rel, int v, int i) {
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 
-bool MEDDLY::sathyb_opname::subevent::addMinterm(const int* from, const int* to)
+bool MEDDLY::hybrid_subevent::addMinterm(const int* from, const int* to)
 {
 
 
@@ -1912,7 +1912,7 @@ bool MEDDLY::sathyb_opname::subevent::addMinterm(const int* from, const int* to)
   return true;
 }
 
-void MEDDLY::sathyb_opname::subevent::buildRoot() {
+void MEDDLY::hybrid_subevent::buildRoot() {
 //  printf("\n num_minterms in this se = %d, to be done = %d \n",num_minterms,process_minterm_pos-processed_minterm_pos );
   if (0 == num_minterms) return;
   if (1 == num_vars) return ;
@@ -2081,7 +2081,7 @@ void MEDDLY::sathyb_opname::subevent::buildRoot() {
 }
 
 
-void MEDDLY::sathyb_opname::subevent::showInfo(output& out) const {
+void MEDDLY::hybrid_subevent::showInfo(output& out) const {
   int num_levels = f->getMaxLevelIndex();
   for (int i = 0; i < num_minterms; i++) {
     out << "minterm[" << i << "]: ";
@@ -2093,7 +2093,7 @@ void MEDDLY::sathyb_opname::subevent::showInfo(output& out) const {
   // root.showGraph(out);
 }
 
-long MEDDLY::sathyb_opname::subevent::mintermMemoryUsage() const {
+long MEDDLY::hybrid_subevent::mintermMemoryUsage() const {
   long n_minterms = 0L;
   for (int i = 0; i < size_minterms; i++) {
     if (unpminterms[i] != 0) n_minterms++;
@@ -2108,7 +2108,7 @@ long MEDDLY::sathyb_opname::subevent::mintermMemoryUsage() const {
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::sathyb_opname::event::event(subevent** p, int np, relation_node** r, int nr)
+MEDDLY::hybrid_event::event(subevent** p, int np, relation_node** r, int nr)
 {
 
   if (np == 0 && nr == 0)
@@ -2301,7 +2301,7 @@ MEDDLY::sathyb_opname::event::event(subevent** p, int np, relation_node** r, int
 
 }
 
-MEDDLY::sathyb_opname::event::~event()
+MEDDLY::hybrid_event::~event()
 {
   for (int i=0; i<num_subevents; i++) delete subevents[i];
   for (int i=0; i<num_relnodes; i++) delete relnodes[i];
@@ -2315,7 +2315,7 @@ MEDDLY::sathyb_opname::event::~event()
 }
 
 
-void MEDDLY::sathyb_opname::event::buildEventMask()
+void MEDDLY::hybrid_event::buildEventMask()
 {
   MEDDLY_DCASSERT(num_subevents > 0);
   MEDDLY_DCASSERT(f);
@@ -2347,7 +2347,7 @@ void MEDDLY::sathyb_opname::event::buildEventMask()
 }
 
 
-bool MEDDLY::sathyb_opname::event::rebuild()
+bool MEDDLY::hybrid_event::rebuild()
 {
   /*printf("\n Before rebuilding, subevent handles :");
   for(auto m = all_components.begin(); m!=all_components.end();m++)
@@ -2456,7 +2456,7 @@ bool MEDDLY::sathyb_opname::event::rebuild()
   return true;
 }
 
-int MEDDLY::sathyb_opname::event::downLevel(int level) const{
+int MEDDLY::hybrid_event::downLevel(int level) const{
   for(int i = num_vars; i>0; i--)
     {
       if(vars[i] == level)
@@ -2465,7 +2465,7 @@ int MEDDLY::sathyb_opname::event::downLevel(int level) const{
   return 0;
 }
 
-void MEDDLY::sathyb_opname::event::enlargeVariables()
+void MEDDLY::hybrid_event::enlargeVariables()
 {
   domain* ed = f->getDomain();
   for (int i = 0; i < num_vars; i++) {
@@ -2485,14 +2485,14 @@ void MEDDLY::sathyb_opname::event::enlargeVariables()
 }
 
 
-void MEDDLY::sathyb_opname::event::showInfo(output& out) const {
+void MEDDLY::hybrid_event::showInfo(output& out) const {
   for (int i = 0; i < num_subevents; i++) {
     out << "subevent " << i << "\n";
     subevents[i]->showInfo(out);
   }
 }
 
-long MEDDLY::sathyb_opname::event::mintermMemoryUsage() const {
+long MEDDLY::hybrid_event::mintermMemoryUsage() const {
   long usage = 0;
   for (int i = 0; i < num_subevents; i++) {
     usage += subevents[i]->mintermMemoryUsage();
@@ -2506,7 +2506,7 @@ long MEDDLY::sathyb_opname::event::mintermMemoryUsage() const {
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::sathyb_opname::hybrid_relation::hybrid_relation(forest* inmdd, forest* relmxd,
+MEDDLY::hybrid_relation::hybrid_relation(forest* inmdd, forest* relmxd,
                                                              forest* outmdd, event** E, int ne)
 : insetF(inmdd), outsetF(outmdd), hybRelF(relmxd)
 {
@@ -2690,7 +2690,7 @@ MEDDLY::hybrid_relation::getTotalEvent(int level) const
 }
 
 void
-MEDDLY::sathyb_opname::hybrid_relation::resizeEventArray(int level)
+MEDDLY::hybrid_relation::resizeEventArray(int level)
 {
   event_added[level] += 1;
   if (event_added[level] > event_list_alloc[level]) {
@@ -2705,7 +2705,7 @@ MEDDLY::sathyb_opname::hybrid_relation::resizeEventArray(int level)
 }
 
 void
-MEDDLY::sathyb_opname::hybrid_relation::resizeConfirmedArray(int level, int index)
+MEDDLY::hybrid_relation::resizeConfirmedArray(int level, int index)
 {
   #if 0
   int nalloc = index+1;
@@ -2780,7 +2780,7 @@ void findConfirmedStatesImpl(MEDDLY::sathyb_opname::hybrid_relation* rel,
   }
 }
 
-void MEDDLY::sathyb_opname::hybrid_relation::setConfirmedStates(const dd_edge& set)
+void MEDDLY::hybrid_relation::setConfirmedStates(const dd_edge& set)
 {
   // Perform a depth-first traversal of set:
   //    At each level, mark all enabled states as confirmed.
@@ -2799,7 +2799,7 @@ void MEDDLY::sathyb_opname::hybrid_relation::setConfirmedStates(const dd_edge& s
 }
 
 void
-MEDDLY::sathyb_opname::hybrid_relation::setConfirmedStates(int level, int index)
+MEDDLY::hybrid_relation::setConfirmedStates(int level, int index)
 {
   // For each subevent that affects this level:
   //    (1) call subevent::confirm()
@@ -2840,7 +2840,7 @@ MEDDLY::sathyb_opname::hybrid_relation::setConfirmedStates(int level, int index)
 
 
 
-MEDDLY::sathyb_opname::hybrid_relation::~hybrid_relation()
+MEDDLY::hybrid_relation::~hybrid_relation()
 {
   /*last_in_node_array = 0;
   impl_unique.clear();
@@ -2855,7 +2855,7 @@ MEDDLY::sathyb_opname::hybrid_relation::~hybrid_relation()
 }
 
 void
-MEDDLY::sathyb_opname::hybrid_relation::show()
+MEDDLY::hybrid_relation::show()
 {
   /*node_handle** event_list_copy = (node_handle**)malloc((num_levels)*sizeof(node_handle*));
   if (0==event_list_copy) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
@@ -2910,7 +2910,7 @@ MEDDLY::sathyb_opname::hybrid_relation::show()
 
 }
 
-void MEDDLY::sathyb_opname::hybrid_relation::bindExtensibleVariables() {
+void MEDDLY::hybrid_relation::bindExtensibleVariables() {
   //
   // Find the bounds for each extensbile variable
   //
@@ -2932,7 +2932,7 @@ void MEDDLY::sathyb_opname::hybrid_relation::bindExtensibleVariables() {
 
 #if 0
 MEDDLY::node_handle
-MEDDLY::sathyb_opname::hybrid_relation::buildMxdForest()
+MEDDLY::hybrid_relation::buildMxdForest()
 {
 
   //Get number of Variables and Events
@@ -2976,7 +2976,7 @@ MEDDLY::sathyb_opname::hybrid_relation::buildMxdForest()
 
 
 MEDDLY::dd_edge
-MEDDLY::sathyb_opname::hybrid_relation::buildEventMxd(node_handle eventTop, forest *mxd)
+MEDDLY::hybrid_relation::buildEventMxd(node_handle eventTop, forest *mxd)
 {
   //mxd is built on a domain obtained from result of saturation
   int nVars = outsetF->getMaxLevelIndex();
@@ -3047,7 +3047,7 @@ MEDDLY::sathyb_opname::hybrid_relation::buildEventMxd(node_handle eventTop, fore
 
 
 std::unordered_map<long,std::vector<MEDDLY::node_handle>>
-MEDDLY::sathyb_opname::hybrid_relation::getListOfNexts(int level, long i, relation_node **R)
+MEDDLY::hybrid_relation::getListOfNexts(int level, long i, relation_node **R)
 {
   std::unordered_map<long,std::vector<node_handle>> jList;
   // atleast as many j's as many events
@@ -3063,7 +3063,7 @@ MEDDLY::sathyb_opname::hybrid_relation::getListOfNexts(int level, long i, relati
 }
 
 bool
-MEDDLY::sathyb_opname::hybrid_relation::isUnionPossible(int level, long i, relation_node **R)
+MEDDLY::hybrid_relation::isUnionPossible(int level, long i, relation_node **R)
 {
   if(lengthForLevel(level)==1)
      return false;
