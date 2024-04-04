@@ -333,7 +333,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         if (rec == 0) continue;
 
         //confirm local state
-        rel->setConfirmedStates(level,j);
+        rel->confirm(level,j);
 
         if(j>=nb.getSize())
           {
@@ -390,7 +390,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       if (rec == 0) continue;
 
       //confirm local state
-      rel->setConfirmedStates(level,j);
+      rel->confirm(level,j);
 
       if(j>=nb.getSize())
         {
@@ -540,7 +540,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
           //confirm local state
           if(!rel->isConfirmedState(rLevel,j)) // if not confirmed before
             {
-            rel->setConfirmedStates(rLevel,j); // confirm and enlarge
+            rel->confirm(rLevel,j); // confirm and enlarge
             if (j >= nb->getSize()) {
               int new_var_bound = resF->isExtensibleLevel(nb->getLevel())? -(j+1): (j+1);
               dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);
@@ -1201,7 +1201,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
       if (rec == 0) continue;
 
       //confirm local state
-      rel->setConfirmedStates(level,j);
+      rel->confirm(level,j);
 
       if(j>=nb.getSize())
       {
@@ -1391,7 +1391,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
       //confirm local state
       if(!rel->isConfirmedState(rLevel,j)) // if not confirmed before
       {
-        rel->setConfirmedStates(rLevel,j); // confirm and enlarge
+        rel->confirm(rLevel,j); // confirm and enlarge
         if (j >= nb->getSize()) {
           int new_var_bound = resF->isExtensibleLevel(nb->getLevel())? -(j+1): (j+1);
           dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);

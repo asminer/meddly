@@ -453,7 +453,7 @@ void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, in
 }
 
 
-MEDDLY::sathyb_opname::event** buildHybridRelation(const int* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::forest* mddF, MEDDLY::forest* mxdF) {
+MEDDLY::hybrid_event** buildHybridRelation(const int* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::forest* mddF, MEDDLY::forest* mxdF) {
 
   unsigned node_count = 0;
   int* tops_of_events = (int*)malloc(size_t(nEvents)*sizeof(int));
@@ -473,7 +473,7 @@ MEDDLY::sathyb_opname::event** buildHybridRelation(const int* const* events, int
     }
 
   derRelNode** rNode = (derRelNode**)malloc(node_count*sizeof(derRelNode*));
-  MEDDLY::sathyb_opname::event** T = (MEDDLY::sathyb_opname::event**)malloc(nEvents*sizeof(MEDDLY::sathyb_opname::event*));
+  MEDDLY::hybrid_event** T = (MEDDLY::hybrid_event**)malloc(nEvents*sizeof(MEDDLY::hybrid_event*));
 
   // Add/Subtract Tokens
   nxtList = (int*)malloc((node_count+2)*sizeof(int));
@@ -497,7 +497,7 @@ MEDDLY::sathyb_opname::event** buildHybridRelation(const int* const* events, int
           nxtList[previous_node_handle] = events[e][p];
         }
       }
-       T[e] = new MEDDLY::sathyb_opname::event(NULL, 0, (MEDDLY::relation_node**)(&rNode[rctr-e_rn]), e_rn);
+       T[e] = new MEDDLY::hybrid_event(NULL, 0, (MEDDLY::relation_node**)(&rNode[rctr-e_rn]), e_rn);
     }
 
     return T;

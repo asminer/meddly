@@ -65,13 +65,14 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::saturation_hyb_by_events_op : public unary_operation {
+class MEDDLY::saturation_hyb_by_events_op : public saturation_operation {
   common_hyb_dfs_by_events_mt* parent;
 public:
   saturation_hyb_by_events_op(common_hyb_dfs_by_events_mt* p,
-          unary_list &c, forest* argF, forest* resF);
+          const char* name, forest* argF, forest* resF);
   virtual ~saturation_hyb_by_events_op();
 
+  virtual void compute(const dd_edge &arg, dd_edge &res);
   node_handle saturate(node_handle mdd);
   node_handle saturate(node_handle mdd, int level);
 
@@ -110,10 +111,10 @@ protected:
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::common_hyb_dfs_by_events_mt : public specialized_operation {
+class MEDDLY::common_hyb_dfs_by_events_mt : public saturation_operation {
 public:
-  common_hyb_dfs_by_events_mt(sathyb_opname* opcode,
-                               sathyb_opname::hybrid_relation* rel);
+  common_hyb_dfs_by_events_mt(const char* name, forest* argF,
+          hybrid_relation* rel, forest* resF);
   virtual ~common_hyb_dfs_by_events_mt();
 
   virtual void compute(const dd_edge& a, dd_edge &c);
@@ -152,11 +153,9 @@ protected:
   binary_operation* mxdIntersection;
   binary_operation* mxdDifference;
 
-  sathyb_opname::hybrid_relation* rel;
+  hybrid_relation* rel;
 
-  forest* arg1F;
-  forest* arg2F;
-  forest* resF;
+  inline forest* relF() const { return rel->getHybridForest(); }
 
 protected:
   class indexq {
@@ -271,8 +270,8 @@ protected:
 
 class MEDDLY::forwd_hyb_dfs_by_events_mt : public common_hyb_dfs_by_events_mt {
 public:
-  forwd_hyb_dfs_by_events_mt(sathyb_opname* opcode,
-                              sathyb_opname::hybrid_relation* rel);
+  forwd_hyb_dfs_by_events_mt(const char* name, forest* argF,
+          hybrid_relation* rel, forest* resF);
 protected:
   virtual void saturateHelper(unpacked_node& nb);
  MEDDLY::node_handle recFire(MEDDLY::node_handle mdd, MEDDLY::node_handle* seHandles, int num_se);
@@ -287,9 +286,8 @@ protected:
 
 
 MEDDLY::forwd_hyb_dfs_by_events_mt::forwd_hyb_dfs_by_events_mt(
-                                                                 sathyb_opname* opcode,
-                                                                 sathyb_opname::hybrid_relation* rel)
-: common_hyb_dfs_by_events_mt(opcode, rel)
+        const char* name, forest* argF, hybrid_relation* rel, forest* resF)
+: common_hyb_dfs_by_events_mt(name, argF, rel, resF)
 {
 }
 
@@ -306,7 +304,7 @@ MEDDLY::forwd_hyb_dfs_by_events_mt::getHighestNodeHandles(MEDDLY::node_handle* s
 
     for(int it = 0; it < num_se; it++)
     {
-	    int p_lvl = arg2F->getNodeLevel(seHandles[it]);
+	    int p_lvl = relF()->getNodeLevel(seHandles[it]);
       if(p_lvl<0) p_lvl = -p_lvl;
     	if(p_lvl>=max_level)
         {
@@ -326,7 +324,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
   // Initialize mxd readers, note we might skip the unprimed level
   const int level = nb.getLevel();
-  sathyb_opname::event** event_handles = rel->arrayForLevel(level);
+  hybrid_event** event_handles = rel->arrayForLevel(level);
 
   dd_edge nbdj(resF), newst(resF);
 
@@ -335,7 +333,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   int* event_Ru_Rn_index = (int*)malloc(nEventsAtThisLevel*sizeof(int));
   unpacked_node** Ru = new unpacked_node*[nEventsAtThisLevel];
   relation_node** Rn = new relation_node*[nEventsAtThisLevel];
-  unpacked_node* Rp = unpacked_node::New(arg2F);
+  unpacked_node* Rp = unpacked_node::New(relF());
   int i_Ru = 0;
   int i_Rn = 0;
 
@@ -343,16 +341,16 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
     event_handles[ei]->rebuild();
     //std::set<node_handle> seHandles = event_handles[ei]->getComponentAt(level);
     node_handle se_nh = event_handles[ei]->getTopComponent();
-    if(arg2F->isImplicit(se_nh)) {
-      Rn[i_Rn] = arg2F->buildImplicitNode(se_nh);
+    if(relF()->isImplicit(se_nh)) {
+      Rn[i_Rn] = relF()->buildImplicitNode(se_nh);
       event_Ru_Rn_index[ei] = i_Rn;
       i_Rn++;
     } else {
-      Ru[i_Ru] = unpacked_node::New(arg2F);
-      if(arg2F->getNodeLevel(se_nh) == level)
-          arg2F->unpackNode(Ru[i_Ru], se_nh, FULL_ONLY);  // node is present at unprime-level
+      Ru[i_Ru] = unpacked_node::New(relF());
+      if(relF()->getNodeLevel(se_nh) == level)
+          relF()->unpackNode(Ru[i_Ru], se_nh, FULL_ONLY);  // node is present at unprime-level
       else
-         Ru[i_Ru]->initRedundant(arg2F, level, se_nh, SPARSE_ONLY);
+         Ru[i_Ru]->initRedundant(relF(), level, se_nh, SPARSE_ONLY);
       event_Ru_Rn_index[ei] = i_Ru;
       i_Ru++;
     }
@@ -390,7 +388,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       // Prepare handles to be taken care of during recFire
 
 
-      bool imFlag = arg2F->isImplicit(se_nh);
+      bool imFlag = relF()->isImplicit(se_nh);
       int jC;
       if(imFlag)
       {
@@ -399,7 +397,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
       } else {
         for(int w = 0; w<event_handles[ei]->getNumOfSubevents(); w++) {
-        sathyb_opname::subevent* my_se = event_handles[ei]->getSubevents()[w];
+        hybrid_subevent* my_se = event_handles[ei]->getSubevents()[w];
         if(se_nh == my_se->getRootHandle())
           {
            which_se = w; break;
@@ -408,21 +406,21 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
         if(is_rebuilt)
         {
-        if(arg2F->getNodeLevel(se_nh) == level)
-          arg2F->unpackNode(Ru[event_Ru_Rn_index[ei]], se_nh, FULL_ONLY);  // node is present at unprime-level
+        if(relF()->getNodeLevel(se_nh) == level)
+          relF()->unpackNode(Ru[event_Ru_Rn_index[ei]], se_nh, FULL_ONLY);  // node is present at unprime-level
         else
-          Ru[event_Ru_Rn_index[ei]]->initRedundant(arg2F, level, se_nh, SPARSE_ONLY);  // node was at prime-level, so build redudant node at unprime-level
+          Ru[event_Ru_Rn_index[ei]]->initRedundant(relF(), level, se_nh, SPARSE_ONLY);  // node was at prime-level, so build redudant node at unprime-level
         }
 
         node_handle ei_i_p = Ru[event_Ru_Rn_index[ei]]->down(i);
         if( 0 == ei_i_p) continue;
 
-        const int dlevel = arg2F->getNodeLevel(ei_i_p);
+        const int dlevel = relF()->getNodeLevel(ei_i_p);
 
         if (dlevel == -level)
-          arg2F->unpackNode(Rp, ei_i_p, SPARSE_ONLY);
+          relF()->unpackNode(Rp, ei_i_p, SPARSE_ONLY);
         else
-          Rp->initIdentity(arg2F, -level, i, ei_i_p, SPARSE_ONLY);
+          Rp->initIdentity(relF(), -level, i, ei_i_p, SPARSE_ONLY);
 
         jC = Rp->getSize();
 
@@ -452,7 +450,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
         //confirm local state
         if(!rel->isConfirmedState(level,j))
-           rel->setConfirmedStates(level,j);
+           rel->confirm(level,j);
 
         if(j>=nb.getSize())
           {
@@ -522,7 +520,7 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFireSet(MEDDLY::node_
 
 // Same as post-image, except we saturate before reducing.
 MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
-                                                                 MEDDLY::node_handle mdd, node_handle* seHandles, int num_se)
+        MEDDLY::node_handle mdd, node_handle* seHandles, int num_se)
 {
   // termination conditions
   std::pair<MEDDLY::node_handle, int> mxd_whichse_pair = getHighestNodeHandles(seHandles, num_se);
@@ -533,11 +531,11 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
 
  // printf("\n recFire: mxd<%d>: %d",arg2F->getNodeLevel(mxd), mxd);
   if (mxd==-1) {
-    if (arg1F->isTerminalNode(mdd)) {
+    if (argF->isTerminalNode(mdd)) {
       return resF->handleForValue(1);
     }
     // mxd is identity
-    if (arg1F == resF)
+    if (argF == resF)
       {
        return resF->linkNode(mdd);
       }
@@ -552,15 +550,15 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
   #ifdef TRACE_RECFIRE
   printf("computing recFire(%d, %d)\n", mdd, mxd);
   printf("  node %3d ", mdd);
-  arg1F->showNode(stdout, mdd, 1);
+  argF->showNode(stdout, mdd, 1);
   printf("\n  node %3d ", mxd);
-  arg2F->showNode(stdout, mxd, 1);
+  relF()->showNode(stdout, mxd, 1);
   printf("\n");
   #endif
 
   // check if mxd and mdd are at the same level
-  const int mddLevel = arg1F->getNodeLevel(mdd);
-  const int mxdLevel = arg2F->getNodeLevel(mxd);
+  const int mddLevel = argF->getNodeLevel(mdd);
+  const int mxdLevel = relF()->getNodeLevel(mxd);
   const int rLevel = MAX(ABS(mxdLevel), mddLevel);
   int rSize = resF->getLevelSize(rLevel);
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
@@ -569,11 +567,11 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
   dd_edge nbdj(resF), newst(resF);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New(arg1F);
+  unpacked_node *A = unpacked_node::New(argF);
   if (mddLevel < rLevel) {
-    A->initRedundant(arg1F, rLevel, mdd, FULL_ONLY);
+    A->initRedundant(argF, rLevel, mdd, FULL_ONLY);
   } else {
-    arg1F->unpackNode(A, mdd, FULL_ONLY);
+    argF->unpackNode(A, mdd, FULL_ONLY);
   }
 
   //Re-Think
@@ -593,21 +591,21 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
 
     // Initialize mxd readers, note we might skip the unprimed level
 
-    bool imFlag = arg2F->isImplicit(mxd);
+    bool imFlag = relF()->isImplicit(mxd);
     int row_size = rSize;
     relation_node* relNode;
-    unpacked_node *Ru = unpacked_node::New(arg2F);
-    unpacked_node *Rp = unpacked_node::New(arg2F);
+    unpacked_node *Ru = unpacked_node::New(relF());
+    unpacked_node *Rp = unpacked_node::New(relF());
 
     if(imFlag) {
-      relNode = arg2F->buildImplicitNode(mxd);
+      relNode = relF()->buildImplicitNode(mxd);
       row_size = rSize; // Get the update array size;
     }
     else {
        if (mxdLevel < 0) {
-        Ru->initRedundant(arg2F, rLevel, mxd, SPARSE_ONLY);
+        Ru->initRedundant(relF(), rLevel, mxd, SPARSE_ONLY);
       } else {
-        arg2F->unpackNode(Ru, mxd, SPARSE_ONLY);
+        relF()->unpackNode(Ru, mxd, SPARSE_ONLY);
       }
       row_size = Ru->getSize();
     }
@@ -676,8 +674,8 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
 
 
   if(!imFlag) {
-  if(-rLevel == arg2F->getNodeLevel(Ru_i))
-     arg2F->unpackNode(Rp, Ru_i, SPARSE_ONLY);
+  if(-rLevel == relF()->getNodeLevel(Ru_i))
+     relF()->unpackNode(Rp, Ru_i, SPARSE_ONLY);
   else
      return;
   }
@@ -704,7 +702,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
       //confirm local state
       if(!rel->isConfirmedState(rLevel,j)) // if not confirmed before
       {
-        rel->setConfirmedStates(rLevel,j); // confirm and enlarge
+        rel->confirm(rLevel,j); // confirm and enlarge
         if (j >= nb->getSize()) {
           int new_var_bound = resF->isExtensibleLevel(nb->getLevel())? -(j+1) : (j+1);
           domain* dm = resF->getDomain();
@@ -744,25 +742,50 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
 // ******************************************************************
 
 MEDDLY::common_hyb_dfs_by_events_mt::common_hyb_dfs_by_events_mt(
-    sathyb_opname* opcode, sathyb_opname::hybrid_relation* relation)
-    : specialized_operation(opcode->getName(), 1)
+    const char* name, forest* argF, hybrid_relation* relation, forest* resF)
+    : saturation_operation(name, 1, argF, resF)
 {
-  mddUnion = 0;
-  mxdIntersection = 0;
-  mxdDifference = 0;
+    if (!argF || !relation || !resF) {
+        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    }
+
+    rel = relation;
+
+    if (relation->getInForest() != argF) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+    if (relation->getOutForest() != resF) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+
+    // for now, anyway, inset and outset must be same forest
+    if (argF != resF) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+
+    // Check for same domain
+    if  (
+            (argF->getDomain() != relF()->getDomain()) ||
+            (resF->getDomain() != relF()->getDomain())
+        )
+    {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+
+  mddUnion = nullptr;
+  mxdIntersection = nullptr;
+  mxdDifference = nullptr;
   freeqs = 0;
   freebufs = 0;
-  rel = relation;
-  arg1F = rel->getInForest();
-  arg2F = rel->getHybridForest();
-  resF = rel->getOutForest();
 
-  registerInForest(arg1F);
-  registerInForest(arg2F);
-  registerInForest(resF);
-  ct_entry_type* et = new ct_entry_type(opcode->getName(), "N.N:N");
-  et->setForestForSlot(0, arg1F);
-  et->setForestForSlot(2, arg2F);
+  registerInForest(relF());
+
+  ct_entry_type* et = new ct_entry_type(name, "N.N:N");
+  et->setForestForSlot(0, argF);
+  et->setForestForSlot(2, relF());
   et->setForestForSlot(4, resF);
   registerEntryType(0, et);
   buildCTs();
@@ -770,10 +793,8 @@ MEDDLY::common_hyb_dfs_by_events_mt::common_hyb_dfs_by_events_mt(
 
 MEDDLY::common_hyb_dfs_by_events_mt::~common_hyb_dfs_by_events_mt()
 {
-  if (rel->autoDestroy()) delete rel;
-  unregisterInForest(arg1F);
-  //unregisterInForest(arg2F);
-  unregisterInForest(resF);
+  unregisterInForest(relF());
+  delete rel;
 }
 
 
@@ -785,11 +806,6 @@ void MEDDLY::common_hyb_dfs_by_events_mt
   mddUnion = UNION(resF, resF, resF);
   MEDDLY_DCASSERT(mddUnion);
 
-  /*mxdIntersection = INTERSECTION(arg2F, arg2F, arg2F);
-   MEDDLY_DCASSERT(mxdIntersection);
-
-   mxdDifference = DIFFERENCE(arg2F, arg2F, arg2F);
-   MEDDLY_DCASSERT(mxdDifference);*/
 
 #ifdef DEBUG_INITIAL
   printf("Calling saturate for states:\n");
@@ -810,9 +826,8 @@ void MEDDLY::common_hyb_dfs_by_events_mt
    printf("done.\n");
    }*/
 
-  unary_list dummy("Saturate_by_events");
   saturation_hyb_by_events_op* so = new saturation_hyb_by_events_op(this,
-          dummy, arg1F, resF);
+          "Hybrid_saturation", argF, resF);
 
   MEDDLY::node_handle cnode = so->saturate(a.getNode());
   c.set(cnode);
@@ -879,30 +894,6 @@ void MEDDLY::common_hyb_dfs_by_events_mt::charbuf::resize(int sz)
   if (0==data)
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
 }
-// ******************************************************************
-// *                                                                *
-// *                           Front  end                           *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::sathyb_opname* MEDDLY::initHybSaturationForward()
-{
-  return new sathyb_opname("SaturationFwd");
-}
-
-
-MEDDLY::specialized_operation*
-MEDDLY::sathyb_opname::buildOperation(arguments* a)
-{
-
-  hybrid_relation* rel = dynamic_cast<hybrid_relation*>(a);
-  if (0==rel) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
-
-  MEDDLY::specialized_operation* op = 0;
-  op = new forwd_hyb_dfs_by_events_mt(this, rel);
-
-  return op;
-}
 
 // ******************************************************************
 // *                                                                *
@@ -912,8 +903,8 @@ MEDDLY::sathyb_opname::buildOperation(arguments* a)
 
 MEDDLY::saturation_hyb_by_events_op
 ::saturation_hyb_by_events_op(common_hyb_dfs_by_events_mt* p,
-    unary_list &c, forest* argF, forest* resF)
-    : unary_operation(c, 1, argF, resF)
+    const char* name, forest* argF, forest* resF)
+    : saturation_operation(name, 1, argF, resF)
 {
   parent = p;
 
@@ -921,11 +912,11 @@ MEDDLY::saturation_hyb_by_events_op
 
   if (argF->isFullyReduced()) {
     // CT entry includes level info
-    et = new ct_entry_type(c.getName(), "NI:N");
+    et = new ct_entry_type(name, "NI:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(3, resF);
   } else {
-    et = new ct_entry_type(c.getName(), "N:N");
+    et = new ct_entry_type(name, "N:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(2, resF);
   }
@@ -939,16 +930,19 @@ MEDDLY::saturation_hyb_by_events_op::~saturation_hyb_by_events_op()
 }
 
 
-MEDDLY::node_handle MEDDLY::saturation_hyb_by_events_op::saturate(MEDDLY::node_handle mdd)
+void MEDDLY::saturation_hyb_by_events_op::compute(const dd_edge &arg,
+        dd_edge &res)
 {
+    const node_handle mdd = arg.getNode();
   // Saturate
+
 #ifdef DEBUG_INITIAL
-  printf("Calling saturate for states:\n");
-  ostream_output s(std::cout);
-  argF->showNodeGraph(s, &mdd, 1);
-  std::cout.flush();
+    printf("Calling saturate for states:\n");
+    ostream_output s(std::cout);
+    argF->showNodeGraph(s, &mdd, 1);
+    std::cout.flush();
 #endif
-  return saturate(mdd, argF->getMaxLevelIndex());
+    res.set(saturate(mdd, argF->getMaxLevelIndex()));
 }
 
 MEDDLY::node_handle
@@ -1004,3 +998,38 @@ MEDDLY::saturation_hyb_by_events_op::saturate(node_handle mdd, int k)
 
   return n;
 }
+
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+/*
+
+MEDDLY::sathyb_opname* MEDDLY::initHybSaturationForward()
+{
+  return new sathyb_opname("SaturationFwd");
+}
+
+
+MEDDLY::specialized_operation*
+MEDDLY::sathyb_opname::buildOperation(arguments* a)
+{
+
+  hybrid_relation* rel = dynamic_cast<hybrid_relation*>(a);
+  if (0==rel) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+
+  MEDDLY::specialized_operation* op = 0;
+  op = new forwd_hyb_dfs_by_events_mt(this, rel);
+
+  return op;
+}
+*/
+
+MEDDLY::saturation_operation*
+MEDDLY::SATURATION_HYB_FORWARD(forest* iF, hybrid_relation* nsf, forest* oF)
+{
+    return new forwd_hyb_dfs_by_events_mt("HybridSat", iF, nsf, oF);
+}
+

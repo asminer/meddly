@@ -28,6 +28,58 @@
 
 
 // ******************************************************************
+// Helper template function.
+// Requirements for REL type (methods):
+//
+//      getOutForest()
+//      confirm(level, i)
+//
+// ******************************************************************
+
+template <class REL>
+void findConfirmedStates(REL* rel,
+                             bool** confirmed, int* confirm_states,
+                             MEDDLY::node_handle mdd, int level,
+                             std::set<MEDDLY::node_handle>& visited)
+{
+    if (level == 0) return;
+    if (visited.find(mdd) != visited.end()) return;
+
+    MEDDLY::forest* outsetF = rel->getOutForest();
+    int mdd_level = outsetF->getNodeLevel(mdd);
+    if (MEDDLY::isLevelAbove(level, mdd_level)) {
+        // skipped level; confirm all local states at this level
+        // go to the next level
+        int level_size = outsetF->getLevelSize(level);
+        for (int i = 0; i < level_size; i++) {
+            if (!confirmed[level][i]) {
+                rel->confirm(level, i);
+            }
+        }
+        findConfirmedStates(rel, confirmed, confirm_states,
+                mdd, level-1, visited);
+    } else {
+        if (MEDDLY::isLevelAbove(mdd_level, level)) {
+            throw MEDDLY::error(MEDDLY::error::INVALID_VARIABLE,
+                    __FILE__, __LINE__);
+        }
+        // mdd_level == level
+        visited.insert(mdd);
+        MEDDLY::unpacked_node *nr = outsetF->newUnpacked(mdd,
+                MEDDLY::SPARSE_ONLY);
+        for (int i = 0; i < nr->getSize(); i++) {
+            if (!confirmed[level][nr->index(i)]) {
+                rel->confirm(level, nr->index(i));
+            }
+            findConfirmedStates(rel, confirmed, confirm_states,
+                    nr->down(i), level-1, visited);
+        }
+        MEDDLY::unpacked_node::Recycle(nr);
+    }
+}
+
+
+// ******************************************************************
 // *                                                                *
 // *                    pregen_relation  methods                    *
 // *                                                                *
@@ -984,13 +1036,14 @@ void MEDDLY::otf_relation::confirm(const dd_edge& set)
       enlargeConfirmedArrays(i, mxdF->getLevelSize(-i));
   }
   std::set<node_handle> visited;
-  findConfirmedStates(confirmed, num_confirmed, set.getNode(),
+  findConfirmedStates(this, confirmed, num_confirmed, set.getNode(),
           num_levels-1, visited);
 
   // ostream_output out(std::cout);
   // showInfo(out);
 }
 
+/*
 void MEDDLY::otf_relation::findConfirmedStates(bool** confirmed,
     int* num_confirmed, node_handle mdd, int level,
     std::set<MEDDLY::node_handle>& visited)
@@ -1025,7 +1078,7 @@ void MEDDLY::otf_relation::findConfirmedStates(bool** confirmed,
     MEDDLY::unpacked_node::Recycle(nr);
   }
 }
-
+*/
 
 
 void MEDDLY::otf_relation::enlargeConfirmedArrays(int level, int sz)
@@ -1321,12 +1374,12 @@ MEDDLY::implicit_relation::implicit_relation(forest* inmdd, forest* relmxd,
 
   //Allocate event_list
   event_list = (rel_node_handle**)malloc(unsigned(num_levels+1)*sizeof(rel_node_handle*));
-  event_list_alloc = (long*)malloc(unsigned(num_levels+1)*sizeof(long));
-  event_added = (long*)malloc(unsigned(num_levels+1)*sizeof(long));
+  event_list_alloc = (int*)malloc(unsigned(num_levels+1)*sizeof(int));
+  event_added = (int*)malloc(unsigned(num_levels+1)*sizeof(int));
 
 
-  confirm_states = (long*)malloc(unsigned(num_levels+1)*sizeof(long));
-  confirmed_array_size = (long*)malloc(unsigned(num_levels+1)*sizeof(long));
+  confirm_states = (int*)malloc(unsigned(num_levels+1)*sizeof(int));
+  confirmed_array_size = (int*)malloc(unsigned(num_levels+1)*sizeof(int));
   confirmed = new bool*[num_levels+1];
 
   confirmed[0]=0;
@@ -1410,42 +1463,6 @@ MEDDLY::implicit_relation::resizeConfirmedArray(int level,int index)
 
 }
 
-void findConfirmedStatesImpl(MEDDLY::implicit_relation* rel,
-                             bool** confirmed, long* confirm_states,
-                             MEDDLY::node_handle mdd, int level,
-                             std::set<MEDDLY::node_handle>& visited) {
-  if (level == 0) return;
-  if (visited.find(mdd) != visited.end()) return;
-
-  MEDDLY::forest* insetF = rel->getInForest();
-  int mdd_level = insetF->getNodeLevel(mdd);
-  if (MEDDLY::isLevelAbove(level, mdd_level)) {
-    // skipped level; confirm all local states at this level
-    // go to the next level
-    int level_size = insetF->getLevelSize(level);
-    for (int i = 0; i < level_size; i++) {
-      if (!confirmed[level][i]) {
-        rel->setConfirmedStates(level, i);
-      }
-    }
-    findConfirmedStatesImpl(rel, confirmed, confirm_states, mdd, level-1, visited);
-  } else {
-    if (MEDDLY::isLevelAbove(mdd_level, level)) {
-      throw MEDDLY::error(MEDDLY::error::INVALID_VARIABLE, __FILE__, __LINE__);
-    }
-    // mdd_level == level
-    visited.insert(mdd);
-    MEDDLY::unpacked_node *nr = insetF->newUnpacked(mdd, MEDDLY::SPARSE_ONLY);
-    for (int i = 0; i < nr->getSize(); i++) {
-      if (!confirmed[level][nr->index(i)]) {
-        rel->setConfirmedStates(level, nr->index(i));
-      }
-      findConfirmedStatesImpl(rel, confirmed, confirm_states, nr->down(i), level-1, visited);
-    }
-    MEDDLY::unpacked_node::Recycle(nr);
-  }
-}
-
 void MEDDLY::implicit_relation::setConfirmedStates(const dd_edge& set)
 {
   // Perform a depth-first traversal of set:
@@ -1459,8 +1476,8 @@ void MEDDLY::implicit_relation::setConfirmedStates(const dd_edge& set)
     }
 
     std::set<node_handle> visited;
-    findConfirmedStatesImpl(const_cast<implicit_relation*>(this),
-                      confirmed, confirm_states, set.getNode(), num_levels, visited);
+    findConfirmedStates(this, confirmed, confirm_states,
+            set.getNode(), num_levels, visited);
 
 }
 
@@ -2108,7 +2125,8 @@ long MEDDLY::hybrid_subevent::mintermMemoryUsage() const {
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::hybrid_event::event(subevent** p, int np, relation_node** r, int nr)
+MEDDLY::hybrid_event::hybrid_event(hybrid_subevent** p, int np,
+        relation_node** r, int nr)
 {
 
   if (np == 0 && nr == 0)
@@ -2136,7 +2154,7 @@ MEDDLY::hybrid_event::event(subevent** p, int np, relation_node** r, int nr)
   num_subevents = np;
   if(np>0)
     {
-      subevents = new subevent*[np];
+      subevents = new hybrid_subevent*[np];
       std::vector<int> sorted_by_top_se;
       for (int i = 0; i < np; i++) sorted_by_top_se.push_back(p[i]->getTop());
       std::sort(sorted_by_top_se.begin(),sorted_by_top_se.end());
@@ -2301,7 +2319,7 @@ MEDDLY::hybrid_event::event(subevent** p, int np, relation_node** r, int nr)
 
 }
 
-MEDDLY::hybrid_event::~event()
+MEDDLY::hybrid_event::~hybrid_event()
 {
   for (int i=0; i<num_subevents; i++) delete subevents[i];
   for (int i=0; i<num_relnodes; i++) delete relnodes[i];
@@ -2507,7 +2525,7 @@ long MEDDLY::hybrid_event::mintermMemoryUsage() const {
 // ******************************************************************
 
 MEDDLY::hybrid_relation::hybrid_relation(forest* inmdd, forest* relmxd,
-                                                             forest* outmdd, event** E, int ne)
+    forest* outmdd, hybrid_event** E, int ne)
 : insetF(inmdd), outsetF(outmdd), hybRelF(relmxd)
 {
   hybRelF = relmxd;
@@ -2578,13 +2596,13 @@ MEDDLY::hybrid_relation::hybrid_relation(forest* inmdd, forest* relmxd,
     num_events_by_top_level[E[i]->getTop()]++;
     }
   // (2) Allocate events[i]
-  events_by_top_level = new event**[num_levels];
-  events_by_level = new event**[num_levels];
+  events_by_top_level = new hybrid_event**[num_levels];
+  events_by_level = new hybrid_event**[num_levels];
   for (int i = 0; i < num_levels; i++) {
     events_by_top_level[i] = num_events_by_top_level[i] > 0
-    ? new event*[num_events_by_top_level[i]]: 0;
+    ? new hybrid_event*[num_events_by_top_level[i]]: 0;
     events_by_level[i] = num_events_by_level[i] > 0
-    ? new event*[num_events_by_level[i]]: 0;
+    ? new hybrid_event*[num_events_by_level[i]]: 0;
     num_events_by_top_level[i] = 0; // reset this; to be used by the next loop
     num_events_by_level[i] = 0; // reset this; to be used by the next loop
   }
@@ -2610,7 +2628,7 @@ MEDDLY::hybrid_relation::hybrid_relation(forest* inmdd, forest* relmxd,
   for (int i = 0; i < ne; i++) {
     //if (E[i]->isDisabled()) continue;
     int nse = E[i]->getNumOfSubevents();
-    subevent** se = E[i]->getSubevents();
+    hybrid_subevent** se = E[i]->getSubevents();
     for (int j = 0; j < nse; j++) {
       int nVars = se[j]->getNumVars();
       const int* vars = se[j]->getVars();
@@ -2621,10 +2639,10 @@ MEDDLY::hybrid_relation::hybrid_relation(forest* inmdd, forest* relmxd,
   }
 
   // (2) Allocate subevents[i]
-  subevents_by_level = new subevent**[num_levels];
+  subevents_by_level = new hybrid_subevent**[num_levels];
   for (int i = 0; i < num_levels; i++) {
     subevents_by_level[i] = num_subevents_by_level[i] > 0
-    ? new subevent*[num_subevents_by_level[i]]: 0;
+    ? new hybrid_subevent*[num_subevents_by_level[i]]: 0;
     num_subevents_by_level[i] = 0; // reset this; to be used by the next loop
   }
 
@@ -2632,7 +2650,7 @@ MEDDLY::hybrid_relation::hybrid_relation(forest* inmdd, forest* relmxd,
   for (int i = 0; i < ne; i++) {
     //if (E[i]->isDisabled()) continue;
     int nse = E[i]->getNumOfSubevents();
-    subevent** se = E[i]->getSubevents();
+    hybrid_subevent** se = E[i]->getSubevents();
     for (int j = 0; j < nse; j++) {
       int nVars = se[j]->getNumVars();
       const int* vars = se[j]->getVars();
@@ -2744,6 +2762,7 @@ MEDDLY::hybrid_relation::resizeConfirmedArray(int level, int index)
 
 }
 
+/*
 void findConfirmedStatesImpl(MEDDLY::sathyb_opname::hybrid_relation* rel,
                              bool** confirmed, int* confirm_states,
                              MEDDLY::node_handle mdd, int level,
@@ -2779,6 +2798,7 @@ void findConfirmedStatesImpl(MEDDLY::sathyb_opname::hybrid_relation* rel,
     MEDDLY::unpacked_node::Recycle(nr);
   }
 }
+*/
 
 void MEDDLY::hybrid_relation::setConfirmedStates(const dd_edge& set)
 {
@@ -2793,13 +2813,13 @@ void MEDDLY::hybrid_relation::setConfirmedStates(const dd_edge& set)
     }
 
     std::set<node_handle> visited;
-    findConfirmedStatesImpl(const_cast<hybrid_relation*>(this),
-                      confirmed, confirm_states, set.getNode(), num_levels-1, visited);
+    findConfirmedStates(this, confirmed, confirm_states,
+            set.getNode(), num_levels-1, visited);
 
 }
 
 void
-MEDDLY::hybrid_relation::setConfirmedStates(int level, int index)
+MEDDLY::hybrid_relation::confirm(int level, int index)
 {
   // For each subevent that affects this level:
   //    (1) call subevent::confirm()

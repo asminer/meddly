@@ -463,8 +463,10 @@ class MEDDLY::otf_relation {
         void clearMinterms();
 
     protected:
+        /*
         void findConfirmedStates(bool** confirmed, int* num_confirmed,
             node_handle mdd, int level, std::set<MEDDLY::node_handle>& visited);
+            */
 
         void enlargeConfirmedArrays(int level, int sz);
         // node_handle getBoundedMxd(node_handle mxd, const int* bounds_array, int sz,
@@ -633,12 +635,12 @@ class MEDDLY::implicit_relation {
         // finalizeNodes().
 
         rel_node_handle** event_list;
-        long* event_list_alloc; // allocated space
-        long* event_added; //how many events added so far
+        int* event_list_alloc; // allocated space
+        int* event_added; //how many events added so far
 
-        long* confirm_states; //total no. of confirmed states of a level
+        int* confirm_states; //total no. of confirmed states of a level
         bool** confirmed; // stores whether a particular local state is confirmed
-        long* confirmed_array_size; // stores size of confirmed array
+        int* confirmed_array_size; // stores size of confirmed array
 
 
     public:
@@ -670,7 +672,7 @@ class MEDDLY::implicit_relation {
         }
 
         /// Confirms the local states at a level
-        inline void setConfirmedStates(int level, int i)
+        inline void confirm(int level, int i)
         {
             resizeConfirmedArray(level,i);
             MEDDLY_DCASSERT(confirmed_array_size[level]>i);
@@ -891,7 +893,7 @@ class MEDDLY::hybrid_subevent {
       bool is_firing;
       bool uses_extensible_variables;
 
-};  // end of class subevent
+};  // end of class hybrid_subevent
 
 
 // ******************************************************************
@@ -1195,7 +1197,7 @@ class MEDDLY::hybrid_relation {
         }
 
         /// Confirms the local states at a level
-        void setConfirmedStates(int level, int i);
+        void confirm(int level, int i);
 
         /// Confirms the local states in the given MDD
         void setConfirmedStates(const dd_edge &set);

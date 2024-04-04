@@ -72,7 +72,7 @@ void buildImplicitRelation(const int* const* events, int nEvents,
         int nPlaces, int bounds, MEDDLY::forest* mddF,
         MEDDLY::forest* mxdF, MEDDLY::implicit_relation* T);
 
-MEDDLY::sathyb_opname::event** buildHybridRelation(const int* const* events,
+MEDDLY::hybrid_event** buildHybridRelation(const int* const* events,
         int nEvents, int nPlaces, int bounds,
         MEDDLY::forest* mddF, MEDDLY::forest* mxdF);
 
