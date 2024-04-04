@@ -18,10 +18,6 @@
 
 #include "ops_builtin.h"
 
-#include "opname.h"
-#include "opname_numer.h"
-#include "opname_satur.h"
-
 #include "initializer.h"
 
 namespace MEDDLY {
@@ -91,59 +87,13 @@ class MEDDLY::builtin_init : public initializer_list {
     protected:
         virtual void setup();
         virtual void cleanup();
-//
-// Working to remove everything below here
-//
-    private:
-        template <class OPN>
-        inline void mydelete(OPN* &p) {
-            delete p;
-            p = nullptr;
-        }
-    public:
-        // static satpregen_opname* _SATURATION_FORWARD;
-        // static satpregen_opname* _SATURATION_BACKWARD;
-        // static satotf_opname* _SATURATION_OTF_FORWARD;
-        // static satimpl_opname* _SATURATION_IMPL_FORWARD;
-        // static sathyb_opname* _SATURATION_HYB_FORWARD;
-
-        static constrained_opname* _CONSTRAINED_BACKWARD_BFS;
-        static constrained_opname* _CONSTRAINED_FORWARD_DFS;
-        static constrained_opname* _CONSTRAINED_BACKWARD_DFS;
-        static constrained_opname* _TRANSITIVE_CLOSURE_DFS;
 };
-
-// ******************************************************************
-
-// MEDDLY::satpregen_opname* MEDDLY::builtin_init::_SATURATION_FORWARD;
-// MEDDLY::satpregen_opname* MEDDLY::builtin_init::_SATURATION_BACKWARD;
-// MEDDLY::satotf_opname* MEDDLY::builtin_init::_SATURATION_OTF_FORWARD;
-// MEDDLY::satimpl_opname* MEDDLY::builtin_init::_SATURATION_IMPL_FORWARD;
-// MEDDLY::sathyb_opname* MEDDLY::builtin_init::_SATURATION_HYB_FORWARD;
-
-MEDDLY::constrained_opname* MEDDLY::builtin_init::_CONSTRAINED_BACKWARD_BFS;
-MEDDLY::constrained_opname* MEDDLY::builtin_init::_CONSTRAINED_FORWARD_DFS;
-MEDDLY::constrained_opname* MEDDLY::builtin_init::_CONSTRAINED_BACKWARD_DFS;
-MEDDLY::constrained_opname* MEDDLY::builtin_init::_TRANSITIVE_CLOSURE_DFS;
 
 // ******************************************************************
 
 MEDDLY::builtin_init::builtin_init(initializer_list* p)
     : initializer_list(p)
 {
-    //
-    // Saturation-like ops
-    //
-    // _SATURATION_FORWARD         = nullptr;
-    // _SATURATION_BACKWARD        = nullptr;
-    // _SATURATION_OTF_FORWARD     = nullptr;
-    // _SATURATION_IMPL_FORWARD    = nullptr;
-    // _SATURATION_HYB_FORWARD     = nullptr;
-
-    _CONSTRAINED_BACKWARD_BFS   = nullptr;
-    _CONSTRAINED_FORWARD_DFS    = nullptr;
-    _CONSTRAINED_BACKWARD_DFS   = nullptr;
-    _TRANSITIVE_CLOSURE_DFS     = nullptr;
 }
 
 void MEDDLY::builtin_init::setup()
@@ -196,19 +146,10 @@ void MEDDLY::builtin_init::setup()
     MV_MULTIPLY_init();
     MM_MULTIPLY_init();
 
-    //
-    // Saturation-like ops
-    //
-    // _SATURATION_FORWARD         =   initSaturationForward()         ;
-    // _SATURATION_BACKWARD        =   initSaturationBackward()        ;
-    // _SATURATION_OTF_FORWARD     =   initOtfSaturationForward()      ;
-    // _SATURATION_IMPL_FORWARD    =   initImplSaturationForward()     ;
-    // _SATURATION_HYB_FORWARD     =   initHybSaturationForward()      ;
-
-    _CONSTRAINED_BACKWARD_BFS   =   initConstrainedBFSBackward()    ;
-    _CONSTRAINED_FORWARD_DFS    =   initConstrainedDFSForward()     ;
-    _CONSTRAINED_BACKWARD_DFS   =   initConstrainedDFSBackward()    ;
-    _TRANSITIVE_CLOSURE_DFS     =   initTransitiveClosureDFS()      ;
+    CONSTRAINED_BACKWARD_BFS_init();
+    CONSTRAINED_FORWARD_DFS_init();
+    CONSTRAINED_BACKWARD_DFS_init();
+    TRANSITIVE_CLOSURE_DFS_init();
 }
 
 void MEDDLY::builtin_init::cleanup()
@@ -262,56 +203,13 @@ void MEDDLY::builtin_init::cleanup()
     MM_MULTIPLY_done();
 
     //
-    // Saturation-like ops
+    // Ternary ops
     //
-    // mydelete(_SATURATION_FORWARD);
-    // mydelete(_SATURATION_BACKWARD);
-    // mydelete(_SATURATION_OTF_FORWARD);
-    // mydelete(_SATURATION_IMPL_FORWARD);
-    // mydelete(_SATURATION_HYB_FORWARD);
 
-    mydelete(_CONSTRAINED_BACKWARD_BFS);
-    mydelete(_CONSTRAINED_FORWARD_DFS);
-    mydelete(_CONSTRAINED_BACKWARD_DFS);
-    mydelete(_TRANSITIVE_CLOSURE_DFS);
-}
-
-
-// ******************************************************************
-// *                                                                *
-// *             front end:  saturation-like operations             *
-// *                                                                *
-// ******************************************************************
-
-/*
-MEDDLY::satpregen_opname* MEDDLY::SATURATION_FORWARD() {
-    return builtin_init::_SATURATION_FORWARD;
-}
-MEDDLY::satpregen_opname* MEDDLY::SATURATION_BACKWARD() {
-    return builtin_init::_SATURATION_BACKWARD;
-}
-
-MEDDLY::satotf_opname* MEDDLY::SATURATION_OTF_FORWARD() {
-    return builtin_init::_SATURATION_OTF_FORWARD;
-}
-MEDDLY::satimpl_opname* MEDDLY::SATURATION_IMPL_FORWARD() {
-    return builtin_init::_SATURATION_IMPL_FORWARD;
-}
-MEDDLY::sathyb_opname* MEDDLY::SATURATION_HYB_FORWARD() {
-    return builtin_init::_SATURATION_HYB_FORWARD;
-}
-*/
-MEDDLY::constrained_opname* MEDDLY::CONSTRAINED_BACKWARD_BFS() {
-    return builtin_init::_CONSTRAINED_BACKWARD_BFS;
-}
-MEDDLY::constrained_opname* MEDDLY::CONSTRAINED_FORWARD_DFS() {
-    return builtin_init::_CONSTRAINED_FORWARD_DFS;
-}
-MEDDLY::constrained_opname* MEDDLY::CONSTRAINED_BACKWARD_DFS() {
-    return builtin_init::_CONSTRAINED_BACKWARD_DFS;
-}
-MEDDLY::constrained_opname* MEDDLY::TRANSITIVE_CLOSURE_DFS() {
-    return builtin_init::_TRANSITIVE_CLOSURE_DFS;
+    CONSTRAINED_BACKWARD_BFS_done();
+    CONSTRAINED_FORWARD_DFS_done();
+    CONSTRAINED_BACKWARD_DFS_done();
+    TRANSITIVE_CLOSURE_DFS_done();
 }
 
 // ******************************************************************

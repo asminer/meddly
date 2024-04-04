@@ -22,7 +22,6 @@
 namespace MEDDLY {
     class forest;
     class binary_operation;
-    class binary_list;
 
     /// The 'divide' operation builder.
     binary_operation* DIVIDE(forest* a, forest* b, forest* c);

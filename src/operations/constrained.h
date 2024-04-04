@@ -19,225 +19,28 @@
 #ifndef MEDDLY_SAT_CONSTRAINED_H
 #define MEDDLY_SAT_CONSTRAINED_H
 
-#include "../opname_satur.h"
-#include "../oper_special.h"
-#include "../ct_entry_key.h"
-
 namespace MEDDLY {
-  class common_constrained;
+    class forest;
+    class ternary_operation;
 
-  class constrained_bfs_opname;
-  class constrained_bckwd_bfs_evplus;
+    ternary_operation* CONSTRAINED_BACKWARD_BFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
 
-  class constrained_dfs_opname;
-  class constrained_dfs_mt;
-  class constrained_forwd_dfs_mt;
-  class constrained_bckwd_dfs_mt;
-  class constrained_bckwd_dfs_evplus;
+    void CONSTRAINED_BACKWARD_BFS_init();
+    void CONSTRAINED_BACKWARD_BFS_done();
 
-  class constrained_saturation_mt;
-  class constrained_saturation_evplus;
+    ternary_operation* CONSTRAINED_FORWARD_DFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
 
-  constrained_opname* initConstrainedBFSBackward();
-  constrained_opname* initConstrainedDFSForward();
-  constrained_opname* initConstrainedDFSBackward();
+    void CONSTRAINED_FORWARD_DFS_init();
+    void CONSTRAINED_FORWARD_DFS_done();
+
+    ternary_operation* CONSTRAINED_BACKWARD_DFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
+
+    void CONSTRAINED_BACKWARD_DFS_init();
+    void CONSTRAINED_BACKWARD_DFS_done();
+
 }
-
-class MEDDLY::common_constrained: public specialized_operation
-{
-protected:
-  forest* consF;
-  forest* argF;
-  forest* transF;
-  forest* resF;
-
-  // Check if the variables orders of relevant forests are compatible
-  virtual bool checkForestCompatibility() const;
-
-public:
-  common_constrained(constrained_opname* code, unsigned slots,
-    forest* cons, forest* arg, forest* trans, forest* res);
-  ~common_constrained();
-};
-
-class MEDDLY::constrained_bfs_opname : public constrained_opname {
-protected:
-  bool forward;
-
-public:
-  constrained_bfs_opname(bool fwd);
-
-  virtual specialized_operation* buildOperation(arguments* a);
-};
-
-class MEDDLY::constrained_bckwd_bfs_evplus: public common_constrained
-{
-protected:
-  binary_operation* imageOp;
-  binary_operation* plusOp;
-  binary_operation* minOp;
-
-  // void iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
-  void iterate(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& c);
-
-public:
-  constrained_bckwd_bfs_evplus(constrained_opname* code,
-    forest* cons, forest* arg, forest* trans, forest* res);
-
-  virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
-};
-
-class MEDDLY::constrained_dfs_opname : public constrained_opname {
-protected:
-  bool forward;
-
-public:
-  constrained_dfs_opname(bool fwd);
-
-  virtual specialized_operation* buildOperation(arguments* a);
-};
-
-class MEDDLY::constrained_dfs_mt: public common_constrained
-{
-protected:
-  binary_operation* mxdDifferenceOp;
-  binary_operation* mxdIntersectionOp;
-  binary_operation* unionOp;
-
-  dd_edge* splits;
-
-  ct_entry_key* findResult(node_handle a, node_handle b, node_handle r, node_handle& c);
-  void saveResult(ct_entry_key* key,
-    node_handle a, node_handle b, node_handle r, node_handle c);
-
-  void splitMxd(const dd_edge& mxd);
-
-public:
-  constrained_dfs_mt(constrained_opname* code,
-    forest* cons, forest* arg, forest* trans, forest* res);
-
-  virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
-  void _compute(node_handle a, node_handle b, node_handle r, node_handle& c);
-
-  virtual void saturateHelper(node_handle a, unpacked_node& nb) = 0;
-};
-
-class MEDDLY::constrained_forwd_dfs_mt: public constrained_dfs_mt
-{
-protected:
-  void recFire(node_handle a, node_handle b, node_handle r, node_handle& c);
-
-public:
-  constrained_forwd_dfs_mt(constrained_opname* code,
-    forest* cons, forest* arg, forest* trans, forest* res);
-
-  virtual void saturateHelper(node_handle a, unpacked_node& nb) override;
-};
-
-class MEDDLY::constrained_bckwd_dfs_mt: public constrained_dfs_mt
-{
-protected:
-  void recFire(node_handle a, node_handle b, node_handle r, node_handle& c);
-
-public:
-  constrained_bckwd_dfs_mt(constrained_opname* code,
-    forest* cons, forest* arg, forest* trans, forest* res);
-
-  virtual void saturateHelper(node_handle a, unpacked_node& nb) override;
-};
-
-class MEDDLY::constrained_saturation_mt: public specialized_operation
-{
-protected:
-  constrained_dfs_mt* parent;
-
-  forest* consF;
-  forest* argF;
-  forest* resF;
-
-  virtual ~constrained_saturation_mt();
-
-  // Check if the variables orders of relevant forests are compatible
-  virtual bool checkForestCompatibility() const;
-
-  bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-
-  ct_entry_key* findResult(node_handle a, node_handle b, int level, node_handle &c);
-  void saveResult(ct_entry_key* Key,
-    node_handle a, node_handle b, int level, node_handle c);
-
-public:
-  constrained_saturation_mt(constrained_dfs_mt* p,
-    forest* cons, forest* arg, forest* res);
-
-  bool matches(const forest* arg1, const forest* arg2,
-    const forest* res) const;
-
-  // high-level front-end
-  void saturate(node_handle a, node_handle b, node_handle& c);
-
-  void saturate(node_handle a, node_handle b, int level, node_handle& c);
-};
-
-class MEDDLY::constrained_bckwd_dfs_evplus: public common_constrained
-{
-protected:
-  binary_operation* mxdDifferenceOp;
-  binary_operation* mxdIntersectionOp;
-  binary_operation* minOp;
-
-  dd_edge* splits;
-
-  ct_entry_key* findResult(long aev, node_handle a,
-    long bev, node_handle b, node_handle r, long& dev, node_handle& d);
-  void saveResult(ct_entry_key* key,
-    long aev, node_handle a, long bev, node_handle b, node_handle r, long dev, node_handle d);
-
-  void splitMxd(const dd_edge& mxd);
-  void recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
-
-public:
-  constrained_bckwd_dfs_evplus(constrained_opname* code,
-    forest* cons, forest* arg, forest* trans, forest* res);
-
-  virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
-  void _compute(int aev, node_handle a, int bev, node_handle b, node_handle r, long& cev, node_handle& c);
-
-  void saturateHelper(long aev, node_handle a, unpacked_node& nb);
-};
-
-class MEDDLY::constrained_saturation_evplus: public specialized_operation
-{
-protected:
-  constrained_bckwd_dfs_evplus* parent;
-
-  forest* consF;
-  forest* argF;
-  forest* resF;
-
-  virtual ~constrained_saturation_evplus();
-
-  // Check if the variables orders of relevant forests are compatible
-  virtual bool checkForestCompatibility() const;
-
-  bool checkTerminals(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c);
-
-  ct_entry_key* findResult(long aev, node_handle a,
-    long bev, node_handle b, int level, long& cev, node_handle &c);
-  void saveResult(ct_entry_key* Key,
-    long aev, node_handle a, long bev, node_handle b, int level, long cev, node_handle c);
-
-public:
-  constrained_saturation_evplus(constrained_bckwd_dfs_evplus* p,
-    forest* cons, forest* arg, forest* res);
-
-  bool matches(const forest* arg1, const forest* arg2,
-    const forest* res) const;
-
-  // high-level front-end
-  void saturate(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c);
-
-  void saturate(int aev, node_handle a, int bev, node_handle b, int level, long& cev, node_handle& c);
-};
 
 #endif

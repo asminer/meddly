@@ -209,13 +209,35 @@ namespace MEDDLY {
     saturation_operation* SATURATION_HYB_FORWARD(forest* inF,
             hybrid_relation* nsf, forest* outf);
 
+
+    // ******************************************************************
+    // *                                                                *
+    // *               Constrained saturation operations                *
+    // *                                                                *
+    // ******************************************************************
+
+    class ternary_operation;
+
+    ternary_operation* CONSTRAINED_BACKWARD_BFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
+    ternary_operation* CONSTRAINED_FORWARD_DFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
+    ternary_operation* CONSTRAINED_BACKWARD_DFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
+    ternary_operation* TRANSITIVE_CLOSURE_DFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
+
+    // ******************************************************************
+
     // OLD BELOW
 
+    /*
     // class satpregen_opname;
     class satotf_opname;
     class satimpl_opname;
     class sathyb_opname;
     class constrained_opname;
+    */
 
     /** Forward reachability using saturation.
         Transition relation is already known.
@@ -244,11 +266,11 @@ namespace MEDDLY {
     // sathyb_opname* SATURATION_HYB_FORWARD();
 
     /** Minimum-witness operations.
-    */
     constrained_opname* CONSTRAINED_BACKWARD_BFS();
     constrained_opname* CONSTRAINED_FORWARD_DFS();
     constrained_opname* CONSTRAINED_BACKWARD_DFS();
     constrained_opname* TRANSITIVE_CLOSURE_DFS();
+    */
 
     // ******************************************************************
     // *                                                                *

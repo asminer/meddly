@@ -23,7 +23,6 @@
 
 namespace MEDDLY {
     class unary_operation;
-    class unary_list;
 
     /// Builder for 'cardinality' operations.
     unary_operation* CARDINALITY(forest* arg, opnd_type res);

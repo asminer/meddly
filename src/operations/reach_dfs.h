@@ -22,7 +22,6 @@
 namespace MEDDLY {
     class forest;
     class binary_operation;
-    class binary_list;
 
     /// The 'dfs forward reachable' operation builder.
     binary_operation* REACHABLE_STATES_DFS(forest* a, forest* b, forest* c);

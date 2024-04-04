@@ -22,7 +22,6 @@
 namespace MEDDLY {
     class forest;
     class binary_operation;
-    class binary_list;
 
     /// The 'less than' operation builder.
     binary_operation* LESS_THAN(forest* a, forest* b, forest* c);

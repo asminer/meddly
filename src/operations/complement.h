@@ -22,7 +22,6 @@
 namespace MEDDLY {
     class forest;
     class unary_operation;
-    class unary_list;
 
     /// Builder for 'complement' operations.
     unary_operation* COMPLEMENT(forest* arg, forest* res);

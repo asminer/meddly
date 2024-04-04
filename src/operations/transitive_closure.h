@@ -25,6 +25,17 @@
 
 
 namespace MEDDLY {
+    class forest;
+    class ternary_operation;
+
+    ternary_operation* TRANSITIVE_CLOSURE_DFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
+
+    void TRANSITIVE_CLOSURE_DFS_init();
+    void TRANSITIVE_CLOSURE_DFS_done();
+
+// ===
+
   class common_transitive_closure;
 
   class transitive_closure_bfs_opname;
@@ -37,6 +48,8 @@ namespace MEDDLY {
   class transitive_closure_evplus;
 
   constrained_opname* initTransitiveClosureDFS();
+
+
 }
 
 class MEDDLY::common_transitive_closure: public specialized_operation

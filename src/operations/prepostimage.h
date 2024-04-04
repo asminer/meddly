@@ -22,7 +22,6 @@
 namespace MEDDLY {
     class forest;
     class binary_operation;
-    class binary_list;
 
     /// The 'preimage' operation builder.
     binary_operation* PRE_IMAGE(forest* a, forest* b, forest* c);

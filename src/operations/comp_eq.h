@@ -22,7 +22,6 @@
 namespace MEDDLY {
     class forest;
     class binary_operation;
-    class binary_list;
 
     /// The 'equal' operation builder.
     binary_operation* EQUAL(forest* a, forest* b, forest* c);

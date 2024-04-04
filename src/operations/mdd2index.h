@@ -22,7 +22,6 @@
 namespace MEDDLY {
     class forest;
     class unary_operation;
-    class unary_list;
 
     /// Builder for 'convert to index set' operations.
     unary_operation* CONVERT_TO_INDEX_SET(forest* arg, forest* res);

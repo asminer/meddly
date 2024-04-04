@@ -22,7 +22,6 @@
 namespace MEDDLY {
     class forest;
     class unary_operation;
-    class unary_list;
 
     /// Builder for the 'cycle' detection operation.
     unary_operation* CYCLE(forest* arg, forest* res);

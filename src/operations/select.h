@@ -22,7 +22,6 @@
 namespace MEDDLY {
     class forest;
     class unary_operation;
-    class unary_list;
 
     /// Builder for 'select' operations.
     unary_operation* SELECT(forest* arg, forest* res);

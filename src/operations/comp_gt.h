@@ -22,7 +22,6 @@
 namespace MEDDLY {
     class forest;
     class binary_operation;
-    class binary_list;
 
     /// The 'greater than' operation builder.
     binary_operation* GREATER_THAN(forest* a, forest* b, forest* c);

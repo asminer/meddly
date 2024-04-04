@@ -23,7 +23,6 @@
 
 namespace MEDDLY {
     class unary_operation;
-    class unary_list;
 
     /// Builder for 'maximum range' operations.
     unary_operation* MAX_RANGE(forest* arg, opnd_type res);

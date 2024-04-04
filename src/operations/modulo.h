@@ -22,7 +22,6 @@
 namespace MEDDLY {
     class forest;
     class binary_operation;
-    class binary_list;
 
     /// The 'modulo' operation builder.
     binary_operation* MODULO(forest* a, forest* b, forest* c);
