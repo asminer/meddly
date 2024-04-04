@@ -471,7 +471,8 @@ void MEDDLY::constrained_dfs_mt::_compute(node_handle a, node_handle b, node_han
   node_handle& c)
 {
   // Execute saturation operation
-  constrained_saturation_mt* bckwdSatOp = new constrained_saturation_mt(this, consF, argF, resF);
+  constrained_saturation_mt* bckwdSatOp =
+      new constrained_saturation_mt(this, arg1F, arg2F, resF);
   bckwdSatOp->saturate(a, b, c);
 
   // Cleanup
@@ -511,9 +512,9 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
     ? unpacked_node::newRedundant(arg3F, nb.getLevel(), mxd.getNode(), FULL_ONLY)
     : arg3F->newUnpacked(mxd.getNode(), FULL_ONLY);
 
-  unpacked_node* A = isLevelAbove(nb.getLevel(), consF->getNodeLevel(a))
-    ? unpacked_node::newRedundant(consF, nb.getLevel(), a, FULL_ONLY)
-    : consF->newUnpacked(a, FULL_ONLY);
+  unpacked_node* A = isLevelAbove(nb.getLevel(), arg1F->getNodeLevel(a))
+    ? unpacked_node::newRedundant(arg1F, nb.getLevel(), a, FULL_ONLY)
+    : arg1F->newUnpacked(a, FULL_ONLY);
 
   dd_edge nbdj(resF), newst(resF);
 
@@ -627,8 +628,8 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
   }
 
   // check if mxd and evmdd are at the same level
-  const int aLevel = consF->getNodeLevel(a);
-  const int bLevel = argF->getNodeLevel(b);
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
   const int rLevel = arg3F->getNodeLevel(r);
   const int level = MAX(MAX(ABS(rLevel), bLevel), aLevel);
   const int size = resF->getLevelSize(level);
@@ -637,11 +638,11 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
 
   // Initialize evmdd reader
   unpacked_node* A = isLevelAbove(level, aLevel)
-    ? unpacked_node::newRedundant(consF, level, a, FULL_ONLY)
-    : consF->newUnpacked(a, FULL_ONLY);
+    ? unpacked_node::newRedundant(arg1F, level, a, FULL_ONLY)
+    : arg1F->newUnpacked(a, FULL_ONLY);
   unpacked_node* B = isLevelAbove(level, bLevel)
-    ? unpacked_node::newRedundant(argF, level, b, FULL_ONLY)
-    : argF->newUnpacked(b, FULL_ONLY);
+    ? unpacked_node::newRedundant(arg2F, level, b, FULL_ONLY)
+    : arg2F->newUnpacked(b, FULL_ONLY);
 
   unpacked_node* T = unpacked_node::newFull(resF, level, size);
   if (ABS(rLevel) < level) {
@@ -749,9 +750,9 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
     ? unpacked_node::newRedundant(arg3F, nb.getLevel(), mxd.getNode(), SPARSE_ONLY)
     : arg3F->newUnpacked(mxd.getNode(), SPARSE_ONLY);
 
-  unpacked_node* A = isLevelAbove(nb.getLevel(), consF->getNodeLevel(a))
-    ? unpacked_node::newRedundant(consF, nb.getLevel(), a, FULL_ONLY)
-    : consF->newUnpacked(a, FULL_ONLY);
+  unpacked_node* A = isLevelAbove(nb.getLevel(), arg1F->getNodeLevel(a))
+    ? unpacked_node::newRedundant(arg1F, nb.getLevel(), a, FULL_ONLY)
+    : arg1F->newUnpacked(a, FULL_ONLY);
 
   dd_edge nbdi(resF), newst(resF);
 
@@ -866,19 +867,19 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
   }
 
   // check if mxd and evmdd are at the same level
-  const int aLevel = consF->getNodeLevel(a);
-  const int bLevel = argF->getNodeLevel(b);
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
   const int rLevel = arg3F->getNodeLevel(r);
   const int level = MAX(MAX(ABS(rLevel), bLevel), aLevel);
   const int size = resF->getLevelSize(level);
 
   // Initialize evmdd reader
   unpacked_node* A = isLevelAbove(level, aLevel)
-    ? unpacked_node::newRedundant(consF, level, a, FULL_ONLY)
-    : consF->newUnpacked(a, FULL_ONLY);
+    ? unpacked_node::newRedundant(arg1F, level, a, FULL_ONLY)
+    : arg1F->newUnpacked(a, FULL_ONLY);
   unpacked_node* B = isLevelAbove(level, bLevel)
-    ? unpacked_node::newRedundant(argF, level, b, FULL_ONLY)
-    : argF->newUnpacked(b, FULL_ONLY);
+    ? unpacked_node::newRedundant(arg2F, level, b, FULL_ONLY)
+    : arg2F->newUnpacked(b, FULL_ONLY);
 
   dd_edge Tdi(resF), newst(resF);
 
@@ -1115,7 +1116,7 @@ void MEDDLY::constrained_saturation_mt::saturate(node_handle a, node_handle b, i
 
 MEDDLY::constrained_bckwd_dfs_evplus::constrained_bckwd_dfs_evplus(
     ternary_list &c, forest* cons, forest* arg, forest* trans, forest* res)
-  : common_constrained(c, 1, cons, arg, trans, res)
+  : ternary_operation(c, 1, cons, arg, trans, res)
 {
   MEDDLY_DCASSERT(cons->isEVPlus() && !cons->isForRelations());
   MEDDLY_DCASSERT(arg->isEVPlus() && !arg->isForRelations());
@@ -1273,7 +1274,8 @@ void MEDDLY::constrained_bckwd_dfs_evplus::_compute(int aev, node_handle a, int 
   long& cev, node_handle& c)
 {
   // Execute saturation operation
-  constrained_saturation_evplus* bckwdSatOp = new constrained_saturation_evplus(this, consF, argF, resF);
+  constrained_saturation_evplus* bckwdSatOp =
+      new constrained_saturation_evplus(this, arg1F, arg2F, resF);
   bckwdSatOp->saturate(aev, a, bev, b, cev, c);
 
   // Cleanup
@@ -1301,9 +1303,9 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
     ? unpacked_node::newRedundant(arg3F, nb.getLevel(), mxd.getNode(), SPARSE_ONLY)
     : arg3F->newUnpacked(mxd.getNode(), SPARSE_ONLY);
 
-  unpacked_node* A = isLevelAbove(nb.getLevel(), consF->getNodeLevel(a))
-    ? unpacked_node::newRedundant(consF, nb.getLevel(), 0L, a, FULL_ONLY)
-    : consF->newUnpacked(a, FULL_ONLY);
+  unpacked_node* A = isLevelAbove(nb.getLevel(), arg1F->getNodeLevel(a))
+    ? unpacked_node::newRedundant(arg1F, nb.getLevel(), 0L, a, FULL_ONLY)
+    : arg1F->newUnpacked(a, FULL_ONLY);
 
   // indices to explore
   std::deque<int> queue;
@@ -1446,19 +1448,19 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
   }
 
   // check if mxd and evmdd are at the same level
-  const int aLevel = consF->getNodeLevel(a);
-  const int bLevel = argF->getNodeLevel(b);
+  const int aLevel = arg1F->getNodeLevel(a);
+  const int bLevel = arg2F->getNodeLevel(b);
   const int rLevel = arg3F->getNodeLevel(r);
   const int level = MAX(MAX(ABS(rLevel), bLevel), aLevel);
   const int size = resF->getLevelSize(level);
 
   // Initialize evmdd reader
   unpacked_node* A = isLevelAbove(level, aLevel)
-    ? unpacked_node::newRedundant(consF, level, 0L, a, FULL_ONLY)
-    : consF->newUnpacked(a, FULL_ONLY);
+    ? unpacked_node::newRedundant(arg1F, level, 0L, a, FULL_ONLY)
+    : arg1F->newUnpacked(a, FULL_ONLY);
   unpacked_node* B = isLevelAbove(level, bLevel)
-    ? unpacked_node::newRedundant(argF, level, 0L, b, FULL_ONLY)
-    : argF->newUnpacked(b, FULL_ONLY);
+    ? unpacked_node::newRedundant(arg2F, level, 0L, b, FULL_ONLY)
+    : arg2F->newUnpacked(b, FULL_ONLY);
 
   unpacked_node* T = unpacked_node::newFull(resF, level, size);
   if (ABS(rLevel) < level) {
