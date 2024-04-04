@@ -40,7 +40,9 @@ namespace MEDDLY {
     class constrained_saturation_mt;
     class constrained_saturation_evplus;
 
-
+    ternary_list CONSTRAINED_BACKWARD_BFS_cache;
+    ternary_list CONSTRAINED_BACKWARD_DFS_cache;
+    ternary_list CONSTRAINED_FORWARD_DFS_cache;
 
 };
 
@@ -1889,4 +1891,80 @@ MEDDLY::constrained_opname* MEDDLY::initConstrainedDFSBackward()
   return new constrained_dfs_opname(false);
 }
 */
+
+MEDDLY::ternary_operation* MEDDLY::CONSTRAINED_BACKWARD_BFS(forest* consF,
+        forest* inF, forest* relF, forest* outF)
+{
+    //
+    // Check domains, forest types, etc.  TBD
+    //
+    return new constrained_bckwd_bfs_evplus(CONSTRAINED_BACKWARD_BFS_cache,
+        consF, inF, relF, outF);
+}
+
+void MEDDLY::CONSTRAINED_BACKWARD_BFS_init()
+{
+    CONSTRAINED_BACKWARD_BFS_cache.reset("constr_backward");
+}
+
+void MEDDLY::CONSTRAINED_BACKWARD_BFS_done()
+{
+    MEDDLY_DCASSERT(CONSTRAINED_BACKWARD_BFS_cache.isEmpty());
+}
+
+// ******************************************************************
+
+MEDDLY::ternary_operation* MEDDLY::CONSTRAINED_FORWARD_DFS(forest* consF,
+        forest* inF, forest* relF, forest* outF)
+{
+    // TBD: check domains and such
+    //
+    if (consF->isMultiTerminal() && inF->isMultiTerminal() &&
+        relF->isMultiTerminal() && outF->isMultiTerminal())
+    {
+        return new constrained_forwd_dfs_mt(CONSTRAINED_FORWARD_DFS_cache,
+                consF, inF, relF, outF);
+    }
+    throw error(error::NOT_IMPLEMENTED);
+}
+
+void MEDDLY::CONSTRAINED_FORWARD_DFS_init()
+{
+    CONSTRAINED_FORWARD_DFS_cache.reset("constr_sat_fwd");
+}
+
+void MEDDLY::CONSTRAINED_FORWARD_DFS_done()
+{
+    MEDDLY_DCASSERT(CONSTRAINED_FORWARD_DFS_cache.isEmpty());
+}
+
+// ******************************************************************
+
+MEDDLY::ternary_operation* MEDDLY::CONSTRAINED_BACKWARD_DFS(forest* consF,
+        forest* inF, forest* relF, forest* outF)
+{
+    if (consF->isMultiTerminal() && inF->isMultiTerminal() &&
+        relF->isMultiTerminal() && outF->isMultiTerminal())
+    {
+        return new constrained_bckwd_dfs_mt(CONSTRAINED_BACKWARD_DFS_cache,
+            consF, inF, relF, outF);
+    }
+    if (consF->isEVPlus() && inF->isEVPlus() &&
+        relF->isMultiTerminal() && outF->isEVPlus())
+    {
+        return new constrained_bckwd_dfs_evplus(CONSTRAINED_BACKWARD_DFS_cache,
+            consF, inF, relF, outF);
+    }
+    throw error(error::NOT_IMPLEMENTED);
+}
+
+void MEDDLY::CONSTRAINED_BACKWARD_DFS_init()
+{
+    CONSTRAINED_BACKWARD_DFS_cache.reset("constr_sat_back");
+}
+
+void MEDDLY::CONSTRAINED_BACKWARD_DFS_done()
+{
+    MEDDLY_DCASSERT(CONSTRAINED_BACKWARD_DFS_cache.isEmpty());
+}
 
