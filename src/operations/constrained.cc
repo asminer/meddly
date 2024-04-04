@@ -119,7 +119,7 @@ protected:
   void recFire(node_handle a, node_handle b, node_handle r, node_handle& c);
 
 public:
-  constrained_forwd_dfs_mt(constrained_opname* code,
+  constrained_forwd_dfs_mt(ternary_list &c,
     forest* cons, forest* arg, forest* trans, forest* res);
 
   virtual void saturateHelper(node_handle a, unpacked_node& nb) override;
@@ -137,7 +137,7 @@ protected:
   void recFire(node_handle a, node_handle b, node_handle r, node_handle& c);
 
 public:
-  constrained_bckwd_dfs_mt(constrained_opname* code,
+  constrained_bckwd_dfs_mt(ternary_list &c,
     forest* cons, forest* arg, forest* trans, forest* res);
 
   virtual void saturateHelper(node_handle a, unpacked_node& nb) override;
@@ -149,7 +149,7 @@ public:
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::constrained_saturation_mt: public specialized_operation
+class MEDDLY::constrained_saturation_mt: public operation
 {
 protected:
   constrained_dfs_mt* parent;
@@ -206,7 +206,7 @@ protected:
   void recFire(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
 public:
-  constrained_bckwd_dfs_evplus(constrained_opname* code,
+  constrained_bckwd_dfs_evplus(ternary_list &c,
     forest* cons, forest* arg, forest* trans, forest* res);
 
   virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
@@ -221,7 +221,7 @@ public:
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::constrained_saturation_evplus: public specialized_operation
+class MEDDLY::constrained_saturation_evplus: public operation
 {
 protected:
   constrained_bckwd_dfs_evplus* parent;
@@ -488,9 +488,9 @@ void MEDDLY::constrained_dfs_mt::_compute(node_handle a, node_handle b, node_han
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constrained_forwd_dfs_mt::constrained_forwd_dfs_mt(constrained_opname* code,
+MEDDLY::constrained_forwd_dfs_mt::constrained_forwd_dfs_mt(ternary_list &c,
   forest* cons, forest* arg, forest* trans, forest* res)
-  : constrained_dfs_mt(code, cons, arg, trans, res)
+  : constrained_dfs_mt(c, cons, arg, trans, res)
 {
 }
 
@@ -726,9 +726,9 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constrained_bckwd_dfs_mt::constrained_bckwd_dfs_mt(constrained_opname* code,
+MEDDLY::constrained_bckwd_dfs_mt::constrained_bckwd_dfs_mt(ternary_list &c,
   forest* cons, forest* arg, forest* trans, forest* res)
-  : constrained_dfs_mt(code, cons, arg, trans, res)
+  : constrained_dfs_mt(c, cons, arg, trans, res)
 {
 }
 
@@ -965,15 +965,17 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constrained_saturation_mt::constrained_saturation_mt(constrained_dfs_mt* p,
-  forest* cons, forest* arg, forest* res)
-  : specialized_operation(nullptr, 1)
+MEDDLY::constrained_saturation_mt::constrained_saturation_mt(
+    constrained_dfs_mt* p, forest* cons, forest* arg, forest* res)
+  : operation("constr_sat", 1)
 {
+    // TBD: throw here instead
   MEDDLY_DCASSERT(cons->isMultiTerminal() && !cons->isForRelations());
   MEDDLY_DCASSERT(arg->isMultiTerminal() && !arg->isForRelations());
   MEDDLY_DCASSERT(res->isMultiTerminal() && !res->isForRelations());
 
   parent = p;
+
   consF = cons;
   argF = arg;
   resF = res;
@@ -1111,9 +1113,9 @@ void MEDDLY::constrained_saturation_mt::saturate(node_handle a, node_handle b, i
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constrained_bckwd_dfs_evplus::constrained_bckwd_dfs_evplus(constrained_opname* code,
-  forest* cons, forest* arg, forest* trans, forest* res)
-  : common_constrained(code, 1, cons, arg, trans, res)
+MEDDLY::constrained_bckwd_dfs_evplus::constrained_bckwd_dfs_evplus(
+    ternary_list &c, forest* cons, forest* arg, forest* trans, forest* res)
+  : common_constrained(c, 1, cons, arg, trans, res)
 {
   MEDDLY_DCASSERT(cons->isEVPlus() && !cons->isForRelations());
   MEDDLY_DCASSERT(arg->isEVPlus() && !arg->isForRelations());
@@ -1126,7 +1128,7 @@ MEDDLY::constrained_bckwd_dfs_evplus::constrained_bckwd_dfs_evplus(constrained_o
 
   splits = nullptr;
 
-  ct_entry_type* et = new ct_entry_type(code->getName(), "LNNN:LN");
+  ct_entry_type* et = new ct_entry_type(c.getName(), "LNNN:LN");
   et->setForestForSlot(1, cons);
   et->setForestForSlot(2, arg);
   et->setForestForSlot(3, trans);
@@ -1563,15 +1565,16 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::constrained_saturation_evplus::constrained_saturation_evplus(constrained_bckwd_dfs_evplus* p,
-  forest* cons, forest* arg, forest* res)
-  : specialized_operation(nullptr, 1)
+MEDDLY::constrained_saturation_evplus::constrained_saturation_evplus(
+    constrained_bckwd_dfs_evplus* p, forest* cons, forest* arg, forest* res)
+  : operation("constr_sat_evplus", 1)
 {
   MEDDLY_DCASSERT(cons->isEVPlus());
   MEDDLY_DCASSERT(arg->isEVPlus());
   MEDDLY_DCASSERT(res->isEVPlus());
 
   parent = p;
+
   consF = cons;
   argF = arg;
   resF = res;
@@ -1585,14 +1588,14 @@ MEDDLY::constrained_saturation_evplus::constrained_saturation_evplus(constrained
   if (argF->isFullyReduced()) {
     // CT entry includes level info
     et = new ct_entry_type("constrained_saturation_evplus", "LNNI:LN");
-    et->setForestForSlot(1, cons);
-    et->setForestForSlot(2, arg);
-    et->setForestForSlot(6, res);
+    et->setForestForSlot(1, consF);
+    et->setForestForSlot(2, argF);
+    et->setForestForSlot(6, resF);
   } else {
     et = new ct_entry_type("constrained_saturation_evplus", "LNN:LN");
-    et->setForestForSlot(1, cons);
+    et->setForestForSlot(1, consF);
     et->setForestForSlot(2, arg);
-    et->setForestForSlot(5, res);
+    et->setForestForSlot(5, resF);
   }
   registerEntryType(0, et);
   buildCTs();
