@@ -30,13 +30,14 @@
 
 namespace MEDDLY {
 
-  class transitive_closure_forwd_bfs;
+    class transitive_closure_forwd_bfs;
 
-  class transitive_closure_dfs;
-  class transitive_closure_forwd_dfs;
+    class transitive_closure_dfs;
+    class transitive_closure_forwd_dfs;
 
-  class transitive_closure_evplus;
+    class transitive_closure_evplus;
 
+    ternary_list TRANSITIVE_CLOSURE_DFS_cache;
 }
 
 // ***********************************************************************
@@ -147,7 +148,7 @@ public:
   transitive_closure_dfs(ternary_list &c, forest* cons, forest* tc,
           forest* trans, forest* res);
 
-  virtual void compute(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res);
+  virtual void computeDDEdge(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res, bool uf);
   void _compute(int aev, node_handle a, int bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
   virtual void saturateHelper(long aev, node_handle a, int in, unpacked_node& nb) = 0;
@@ -529,7 +530,7 @@ void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
 #endif
 }
 
-void MEDDLY::transitive_closure_dfs::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
+void MEDDLY::transitive_closure_dfs::computeDDEdge(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res, bool uf)
 {
   MEDDLY_DCASSERT(arg1F == a.getForest());
   MEDDLY_DCASSERT(arg2F == b.getForest());
@@ -1116,3 +1117,22 @@ MEDDLY::constrained_opname* MEDDLY::initTransitiveClosureDFS()
   return new transitive_closure_dfs_opname();
 }
 */
+
+MEDDLY::ternary_operation*
+MEDDLY::TRANSITIVE_CLOSURE_DFS(forest* consF, forest* inF,
+        forest* relF, forest* outF)
+{
+    return new transitive_closure_forwd_dfs(TRANSITIVE_CLOSURE_DFS_cache,
+        consF, inF, relF, outF);
+}
+
+void MEDDLY::TRANSITIVE_CLOSURE_DFS_init()
+{
+    TRANSITIVE_CLOSURE_DFS_cache.reset("trans_closure_dfs");
+}
+
+void MEDDLY::TRANSITIVE_CLOSURE_DFS_done()
+{
+    MEDDLY_DCASSERT( TRANSITIVE_CLOSURE_DFS_cache.isEmpty() );
+}
+
