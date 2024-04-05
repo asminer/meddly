@@ -946,6 +946,20 @@ void MEDDLY::saturation_hyb_by_events_op::compute(const dd_edge &arg,
 }
 
 MEDDLY::node_handle
+MEDDLY::saturation_hyb_by_events_op::saturate(node_handle mdd)
+{
+  // Saturate
+
+#ifdef DEBUG_INITIAL
+    printf("Calling saturate for states:\n");
+    ostream_output s(std::cout);
+    argF->showNodeGraph(s, &mdd, 1);
+    std::cout.flush();
+#endif
+    return saturate(mdd, argF->getMaxLevelIndex());
+}
+
+MEDDLY::node_handle
 MEDDLY::saturation_hyb_by_events_op::saturate(node_handle mdd, int k)
 {
 #ifdef DEBUG_DFS
