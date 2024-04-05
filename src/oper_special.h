@@ -19,6 +19,8 @@
 #ifndef MEDDLY_OPER_SPECIAL_H
 #define MEDDLY_OPER_SPECIAL_H
 
+# if 0
+
 #include "oper.h"
 
 namespace MEDDLY {
@@ -71,5 +73,7 @@ class MEDDLY::specialized_operation : public operation {
         virtual void compute(const dd_edge &ar1, const dd_edge &ar2, const dd_edge &ar3, dd_edge &res);
 
 };
+
+#endif
 
 #endif // #include guard

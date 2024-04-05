@@ -40,8 +40,6 @@
 #include "oper_numer.h"
 #include "oper_satur.h"
 
-#include "oper_special.h"
-
 #include "sat_relations.h"
 
 #include "ct_initializer.h"

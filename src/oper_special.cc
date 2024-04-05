@@ -16,6 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#if 0
+
 #include "oper_special.h"
 #include "error.h"
 
@@ -79,3 +81,6 @@ void MEDDLY::destroyOperation(MEDDLY::specialized_operation* &op)
     op = nullptr;
 }
 */
+
+#endif
+
