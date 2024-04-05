@@ -74,8 +74,8 @@ class MEDDLY::constrained_bckwd_bfs_evplus: public ternary_operation
         constrained_bckwd_bfs_evplus(ternary_list &c, forest* cons,
                 forest* arg, forest* trans, forest* res);
 
-        virtual void compute(const dd_edge& a, const dd_edge& b,
-                const dd_edge& r, dd_edge& res);
+        virtual void computeDDEdge(const dd_edge& a, const dd_edge& b,
+                const dd_edge& r, dd_edge& res, bool);
 };
 
 // ******************************************************************
@@ -103,7 +103,8 @@ public:
   constrained_dfs_mt(ternary_list &c, forest* cons, forest* arg,
           forest* trans, forest* res);
 
-  virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
+  virtual void computeDDEdge(const dd_edge& a, const dd_edge& b,
+          const dd_edge& r, dd_edge& res, bool);
   void _compute(node_handle a, node_handle b, node_handle r, node_handle& c);
 
   virtual void saturateHelper(node_handle a, unpacked_node& nb) = 0;
@@ -211,7 +212,7 @@ public:
   constrained_bckwd_dfs_evplus(ternary_list &c,
     forest* cons, forest* arg, forest* trans, forest* res);
 
-  virtual void compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res);
+  virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res, bool);
   void _compute(int aev, node_handle a, int bev, node_handle b, node_handle r, long& cev, node_handle& c);
 
   void saturateHelper(long aev, node_handle a, unpacked_node& nb);
@@ -284,8 +285,8 @@ MEDDLY::constrained_bckwd_bfs_evplus::constrained_bckwd_bfs_evplus(
     imageOp = PRE_IMAGE(arg2F, arg3F, resF);
 }
 
-void MEDDLY::constrained_bckwd_bfs_evplus::compute(const dd_edge& a,
-        const dd_edge& b, const dd_edge& r, dd_edge& res)
+void MEDDLY::constrained_bckwd_bfs_evplus::computeDDEdge(const dd_edge& a,
+        const dd_edge& b, const dd_edge& r, dd_edge& res, bool f)
 {
     MEDDLY_DCASSERT(res.getForest() == resF);
 
@@ -453,7 +454,7 @@ void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
 #endif
 }
 
-void MEDDLY::constrained_dfs_mt::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
+void MEDDLY::constrained_dfs_mt::computeDDEdge(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res, bool uf)
 {
   MEDDLY_DCASSERT(res.getForest() == resF);
 
@@ -1254,7 +1255,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
 #endif
 }
 
-void MEDDLY::constrained_bckwd_dfs_evplus::compute(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res)
+void MEDDLY::constrained_bckwd_dfs_evplus::computeDDEdge(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res, bool uf)
 {
   MEDDLY_DCASSERT(res.getForest() == resF);
 
