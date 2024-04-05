@@ -64,5 +64,8 @@ to use these deprecated methods:
 
 ### Removed classes
 
-The entire ```opname``` class hierarchy is now deprecated,
-and has been removed.
+*  The entire ```opname``` class hierarchy is now deprecated,
+    and has been removed.
+
+*  Class ```specialized_operation``` is no longer needed,
+    and has been removed.
