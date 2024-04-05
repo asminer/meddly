@@ -2,22 +2,7 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
-Transition to new binary/unary builtin operation types:
-
-
-    (4) Figure out what to do about specialized operations,
-        could just have specialized functions e.g.,
-
-        specialized_operation*
-        EXPLVECT_MATR_MULT(forest* x, forest* A, forest* y)
-        or actually
-        EXPLVECT_MATR_MULT(const dd_edge &x, const dd_edge &A, const dd_edge &y)
-
-
-    (5) When done, remove opname class hierarchy
-
-
-
+Next release:
 
 Make compute table interface easier to use for simple operations
     (i.e., most of the time)
@@ -26,25 +11,11 @@ Make compute table interface easier to use for simple operations
         type, and a union
 
 
+Next release:
 
-Reimplement operations
+Reimplement operations.
 
-
-
-Forest cleanup
-    look at node reductions
-
-Operations
-        -> split out and simplify (templates and functors) the
-            apply_generic_mdd style classes
-                (goal is for 'check terminals' to be inlined, not virtual)
-
-
-(*) node_storage::getDownPtr timing test
-
-(*) One version of node_storage::getDownPtr, using edge_value
-
-(*) Adjust operation hierarchy?
+Depending on how that goes, maybe adjust the operation hierarchy?
 
         some thoughts:
             operation
@@ -77,6 +48,47 @@ Operations
                         |
                         +---- binary, EV, by levels
 
+
+Although, if we make compute tables easy enough to use, then
+the motivation for abstract apply operation implementation goes away.
+
+Ideal:
+    void union::compute(node_handle a, node_handle b, node_handle &c)
+    {
+        if (0==a) return b;
+        if (0==b) return a;
+        if (1==a) return 1;
+        if (1==b) return 1;
+        if (a==b) return a; // same forest only
+
+        commute_order(a, b);    // if we can commute, make sure a<b
+
+        ct_search key(entry0, a, b);
+
+        if (CT.find(key, c)) {
+          return;
+        }
+
+        // do computation
+
+        CT.add(key, c);
+
+    }
+
+
+
+Forest cleanup
+    look at node reductions
+
+Operations
+        -> split out and simplify (templates and functors) the
+            apply_generic_mdd style classes
+                (goal is for 'check terminals' to be inlined, not virtual)
+
+
+(*) node_storage::getDownPtr timing test
+
+(*) One version of node_storage::getDownPtr, using edge_value
 
 
 

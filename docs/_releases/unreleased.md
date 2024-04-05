@@ -5,7 +5,7 @@ number: changes
 layout: single
 ---
 
-### Interface Changes
+### Changes to operations
 
 Builtin operations are now functions with arguments.
 
@@ -16,6 +16,10 @@ Builtin operations are now functions with arguments.
 * For binary operations, the arguments are the forests
     for the input arguments and output result.
 
+* For ternary operations (for example, constrained saturation),
+    the arguments are the forests
+    for the input arguments and output result.
+
 * For numerical operations, the arguments are
     whatever was passed previously to build the
     specialized operation, but without the ```argument```
@@ -23,10 +27,6 @@ Builtin operations are now functions with arguments.
 
 * For saturation operations, the arguments are the initial states
     forest, the relation, and the result forest.
-
-As a result, the entire ```opname``` class hierarchy is now
-obsolete, and has been removed.
-
 
 ### Deprecated methods
 
@@ -37,7 +37,9 @@ to use these deprecated methods:
 
 * ```getOperation```: the builtin operation can be used as a function
     in the same way. For example, instead of ```getOperation(UNION, a, b, c)```,
-    use ```UNION(a, b, c)```.
+    use ```UNION(a, b, c)```,
+    where ```a``` and ```b``` are the forests for the operands,
+    and ```c``` is the forest for the result.
 
 ### Renamed classes
 
@@ -49,5 +51,13 @@ to use these deprecated methods:
 
 * ```satimpl_opname::implicit_relation``` is now ```implicit_relation```
 
-### Implementation
+* ```satimpl_opname::implicit_relation``` is now ```implicit_relation```
 
+* ```sathyb_opname::subevent``` is now ```hybrid_subevent```
+* ```sathyb_opname::event``` is now ```hybrid_event```
+* ```sathyb_opname::hybrid_relation``` is now ```hybrid_relation```
+
+### Removed classes
+
+The entire ```opname``` class hierarchy is now deprecated,
+and has been removed.
