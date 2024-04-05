@@ -22,6 +22,8 @@
 #include "minterms.h"
 #include "relation_node.h"
 
+#include <algorithm>    // for std::sort
+
 #define OUT_OF_BOUNDS -1
 #define NOT_KNOWN -2
 #define TERMINAL_NODE 1
