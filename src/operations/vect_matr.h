@@ -20,14 +20,15 @@
 #define MEDDLY_VECT_MATR_H
 
 namespace MEDDLY {
-  class numerical_opname;
+    class numerical_operation;
+    class dd_edge;
 
-  /// Set up a numerical_opname for "vector matrix multiply".
-  numerical_opname* initExplVectorMatrixMult();
+    numerical_operation* EXPLVECT_MATR_MULT(const dd_edge &xind,
+            const dd_edge &A, const dd_edge &yind);
 
-  /// Set up a numerical_opname for "matrix vector multiply".
-  numerical_opname* initMatrixExplVectorMult();
+    numerical_operation* MATR_EXPLVECT_MULT(const dd_edge &xind,
+            const dd_edge &A, const dd_edge &yind);
+
 }
-
 #endif
 

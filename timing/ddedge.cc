@@ -94,9 +94,8 @@ void test_edge_registry(forest* F1, forest* F2)
 
     show_sec(std::cout, T, 3, 3);
 
-    if (startReport(T, __FILE__)) {
-        report  << "updates $ "
-                << "Updated ddedge registry " << CHANGES * 16
+    if (startReport(T, __FILE__, "updates")) {
+        report  << "Updated ddedge registry " << CHANGES * 16
                 << " times" << std::endl;
     }
 

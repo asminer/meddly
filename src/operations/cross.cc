@@ -27,8 +27,9 @@
 // #define DEBUG_CROSS
 
 namespace MEDDLY {
-  class cross_bool;
-  class cross_opname;
+    class cross_bool;
+
+    binary_list CROSS_cache;
 };
 
 // ******************************************************************
@@ -38,26 +39,32 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::cross_bool : public binary_operation {
-  public:
-    cross_bool(binary_opname* oc, forest* a1,
-      forest* a2, forest* res);
+    public:
+        cross_bool(forest* a1, forest* a2, forest* res);
 
-    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
+        virtual void computeDDEdge(const dd_edge& a, const dd_edge& b,
+                dd_edge &c, bool userFlag);
 
-    node_handle compute_pr(unsigned in, int ht, node_handle a, node_handle b);
-    node_handle compute_un(int ht, node_handle a, node_handle b);
+        node_handle compute_pr(unsigned in, int ht, node_handle a,
+                node_handle b);
+
+        node_handle compute_un(int ht, node_handle a, node_handle b);
 };
 
-MEDDLY::cross_bool::cross_bool(binary_opname* oc, forest* a1,
-  forest* a2, forest* res)
-: binary_operation(oc, 1, a1, a2, res)
+MEDDLY::cross_bool::cross_bool(forest* a1, forest* a2, forest* res)
+: binary_operation(CROSS_cache, 1, a1, a2, res)
 {
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "INN:N");
-  et->setForestForSlot(1, a1);
-  et->setForestForSlot(2, a2);
-  et->setForestForSlot(4, res);
-  registerEntryType(0, et);
-  buildCTs();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRanges(__FILE__, __LINE__, range_type::BOOLEAN);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+    checkRelations(__FILE__, __LINE__, SET, SET, RELATION);
+
+    ct_entry_type* et = new ct_entry_type(CROSS_cache.getName(), "INN:N");
+    et->setForestForSlot(1, a1);
+    et->setForestForSlot(2, a2);
+    et->setForestForSlot(4, res);
+    registerEntryType(0, et);
+    buildCTs();
 }
 
 void
@@ -161,61 +168,33 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
   return c;
 }
 
-
-// ******************************************************************
-// *                                                                *
-// *                       cross_opname class                       *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::cross_opname : public binary_opname {
-  public:
-    cross_opname();
-    virtual binary_operation* buildOperation(forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::cross_opname::cross_opname()
- : binary_opname("Cross")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::cross_opname::buildOperation(forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    a1->isForRelations()  ||
-    (a1->getRangeType() != range_type::BOOLEAN) ||
-    (a1->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
-    a2->isForRelations()  ||
-    (a2->getRangeType() != range_type::BOOLEAN) ||
-    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
-    (!r->isForRelations())  ||
-    (r->getRangeType() != range_type::BOOLEAN) ||
-    (r->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  return new cross_bool(this, a1, a2, r);
-}
-
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeCross()
+MEDDLY::binary_operation*
+MEDDLY::CROSS(forest* a, forest* b, forest* c)
 {
-  return new cross_opname;
+    if (!a || !b || !c) {
+        return nullptr;
+    }
+    binary_operation* bop =  CROSS_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    return CROSS_cache.add(new cross_bool(a, b, c));
+}
+
+void MEDDLY::CROSS_init()
+{
+    CROSS_cache.reset("Cross");
+}
+
+void MEDDLY::CROSS_done()
+{
+    MEDDLY_DCASSERT(CROSS_cache.isEmpty());
 }
 

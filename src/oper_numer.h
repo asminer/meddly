@@ -16,49 +16,35 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MEDDLY_OPNAME_NUMER_H
-#define MEDDLY_OPNAME_NUMER_H
+#ifndef MEDDLY_OPER_NUMER_H
+#define MEDDLY_OPER_NUMER_H
 
-#include "opname.h"
+#include "oper.h"
 
 namespace MEDDLY {
-    class numerical_opname;
     class dd_edge;
+    class numerical_operation;
 };
 
 // ******************************************************************
 // *                                                                *
-// *                     numerical_opname class                     *
+// *                   numerical_operation  class                   *
 // *                                                                *
 // ******************************************************************
 
-/// Numerical operation names.
-class MEDDLY::numerical_opname : public specialized_opname {
+/**
+    Mechanism to apply numerical operations.
+*/
+class MEDDLY::numerical_operation : public operation {
     public:
-        class numerical_args : public specialized_opname::arguments {
-            public:
-                const dd_edge &x_ind;
-                const dd_edge &A;
-                const dd_edge &y_ind;
-
-                numerical_args(const dd_edge &xi, const dd_edge &a,
-                        const dd_edge &yi);
-                virtual ~numerical_args();
-        };
-
+        numerical_operation(const char* name, unsigned et_slots);
+    protected:
+        virtual ~numerical_operation();
     public:
-        numerical_opname(const char* n);
-        virtual ~numerical_opname();
-        virtual specialized_operation* buildOperation(arguments* a) = 0;
-
-        /// For convenience, and backward compatability :^)
-        inline specialized_operation* buildOperation(const dd_edge &x_ind,
-            const dd_edge &A, const dd_edge &y_ind)
-        {
-            numerical_args na(x_ind, A, y_ind);
-            na.setAutoDestroy(false); // na will be destroyed when we return
-            return buildOperation(&na);
-        }
+        /** For numerical operations.
+            compute y += some function of x, depending on the operation.
+        */
+        virtual void compute(double* y, const double* x) = 0;
 
 };
 

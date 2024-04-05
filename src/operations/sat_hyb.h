@@ -20,11 +20,12 @@
 #define MEDDLY_SAT_HYB_H
 
 namespace MEDDLY {
-  class sathyb_opname;
+    class forest;
+    class hybrid_relation;
+    class saturation_operation;
 
-  /// Set up a numerical_opname for "forward saturation".
-  sathyb_opname* initHybSaturationForward();
-
+    saturation_operation* SATURATION_HYB_FORWARD(forest* inF,
+            hybrid_relation* nsf, forest* outf);
 }
 
 #endif

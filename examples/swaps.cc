@@ -102,7 +102,7 @@ void ValueNSF(int N, dd_edge &answer)
     Build partitioned next-state relation, using "array values"
     state variables.  The forest must be IDENTITY REDUCED.
 */
-void ValueNSF(int N, satpregen_opname::pregen_relation* nsf)
+void ValueNSF(int N, pregen_relation* nsf)
 {
   dd_edge temp(nsf->getRelForest());
   for (int i=1; i<N; i++) {
@@ -178,7 +178,7 @@ void PositionNSF(int N, dd_edge &answer)
     Build partitioned next-state relation, using "array positions"
     state variables.  The forest must be IDENTITY REDUCED.
 */
-void PositionNSF(int N, satpregen_opname::pregen_relation* nsf)
+void PositionNSF(int N, pregen_relation* nsf)
 {
   dd_edge temp(nsf->getRelForest());
   for (int i=1; i<N; i++) {
@@ -258,14 +258,14 @@ void runWithArgs(int N, char method, bool alternate)
   */
   forest* mxd = forest::create(D, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
-  satpregen_opname::pregen_relation* ensf = 0;
-  specialized_operation* sat = 0;
+  pregen_relation* ensf = 0;
+  saturation_operation* sat = 0;
 
   if ('s' == method) {
-    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd, 16);
+    ensf = new pregen_relation(mxd, 16);
   }
   if ('k' == method) {
-    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd);
+    ensf = new pregen_relation(mxd);
   }
 
   watch.note_time();
@@ -322,11 +322,8 @@ void runWithArgs(int N, char method, bool alternate)
         if ('k'==method)  printf(" by levels\n");
         else              printf(" by events\n");
         fflush(stdout);
-        if (!SATURATION_FORWARD()) {
-          throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-        }
-        sat = SATURATION_FORWARD()->buildOperation(ensf);
-        if (0==sat) {
+        sat = SATURATION_FORWARD(mdd, ensf, mdd);
+        if (!sat) {
           throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
         }
         sat->compute(init_state, reachable);

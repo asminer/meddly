@@ -20,10 +20,13 @@
 #define MEDDLY_COMP_NE_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
 
-  /// Set up a binary_opname for the "not equal" operator.
-  binary_opname* initializeNE();
+    /// The 'not equal' operation builder.
+    binary_operation* NOT_EQUAL(forest* a, forest* b, forest* c);
+    void NOT_EQUAL_init();
+    void NOT_EQUAL_done();
 }
 
 #endif

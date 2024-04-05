@@ -21,10 +21,10 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class diffr_mdd;
-  class diffr_mxd;
+    class diffr_mdd;
+    class diffr_mxd;
 
-  class diffr_opname;
+    binary_list DIFFR_cache;
 };
 
 // ******************************************************************
@@ -34,19 +34,21 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::diffr_mdd : public generic_binary_mdd {
-  public:
-    diffr_mdd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
-
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
+    public:
+        diffr_mdd(forest* arg1, forest* arg2, forest* res);
+        virtual bool checkTerminals(node_handle a, node_handle b,
+                node_handle& c);
 };
 
-MEDDLY::diffr_mdd::diffr_mdd(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mdd(opcode, arg1, arg2, res)
+MEDDLY::diffr_mdd::diffr_mdd(forest* arg1, forest* arg2, forest* res)
+  : generic_binary_mdd(DIFFR_cache, arg1, arg2, res)
 {
-  //  difference does NOT commute
+    //  difference does NOT commute
+
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllRanges(__FILE__, __LINE__, range_type::BOOLEAN);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::diffr_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -87,19 +89,22 @@ bool MEDDLY::diffr_mdd::checkTerminals(node_handle a, node_handle b, node_handle
 // ******************************************************************
 
 class MEDDLY::diffr_mxd : public generic_binary_mxd {
-  public:
-    diffr_mxd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
-
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
+    public:
+        diffr_mxd(forest* arg1, forest* arg2, forest* res);
+        virtual bool checkTerminals(node_handle a, node_handle b,
+                node_handle& c);
 };
 
-MEDDLY::diffr_mxd::diffr_mxd(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mxd(opcode, arg1, arg2, res)
+
+MEDDLY::diffr_mxd::diffr_mxd(forest* arg1, forest* arg2, forest* res)
+  : generic_binary_mxd(DIFFR_cache, arg1, arg2, res)
 {
-  //  difference does NOT commute
+    //  difference does NOT commute
+
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllRanges(__FILE__, __LINE__, range_type::BOOLEAN);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::diffr_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -131,66 +136,40 @@ bool MEDDLY::diffr_mxd::checkTerminals(node_handle a, node_handle b, node_handle
   return false;
 }
 
-
-// ******************************************************************
-// *                                                                *
-// *                       diffr_opname class                       *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::diffr_opname : public binary_opname {
-  public:
-    diffr_opname();
-    virtual binary_operation* buildOperation(forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::diffr_opname::diffr_opname()
- : binary_opname("Difference")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::diffr_opname::buildOperation(forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->isForRelations() != r->isForRelations()) ||
-    (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (r->getRangeType() != range_type::BOOLEAN)
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    if (r->isForRelations())
-      return new diffr_mxd(this, a1, a2, r);
-    else
-      return new diffr_mdd(this, a1, a2, r);
-  }
-
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeDifference()
+MEDDLY::binary_operation*
+MEDDLY::DIFFERENCE(forest* a, forest* b, forest* c)
 {
-  return new diffr_opname;
+    if (!a || !b || !c) {
+        return nullptr;
+    }
+    binary_operation* bop =  DIFFR_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        if (c->isForRelations()) {
+            return DIFFR_cache.add(new diffr_mxd(a, b, c));
+        } else {
+            return DIFFR_cache.add(new diffr_mdd(a, b, c));
+        }
+    }
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
+void MEDDLY::DIFFERENCE_init()
+{
+    DIFFR_cache.reset("Difference");
+}
+
+void MEDDLY::DIFFERENCE_done()
+{
+    MEDDLY_DCASSERT(DIFFR_cache.isEmpty());
+}

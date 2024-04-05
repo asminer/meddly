@@ -20,10 +20,13 @@
 #define MEDDLY_COMP_EQ_H
 
 namespace MEDDLY {
-    class binary_opname;
+    class forest;
+    class binary_operation;
 
-    /// Set up a binary_opname for the "equal" operator.
-    binary_opname* initializeEQ();
+    /// The 'equal' operation builder.
+    binary_operation* EQUAL(forest* a, forest* b, forest* c);
+    void EQUAL_init();
+    void EQUAL_done();
 }
 
 #endif

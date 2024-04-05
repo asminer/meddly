@@ -43,7 +43,7 @@ void MEDDLY::mt_mxd_real::createEdge(float term, dd_edge& e)
 void MEDDLY::mt_mxd_real
 ::createEdge(const int* const* vlist, const int* const* vplist, const float* terms, int N, dd_edge &e)
 {
-  binary_operation* unionOp = getOperation(PLUS, this, this, this);
+  binary_operation* unionOp = PLUS(this, this, this);
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);
   enlargeVariables(vplist, N, true);

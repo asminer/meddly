@@ -17,8 +17,9 @@
 */
 
 #include "operators.h"
+#include "oper_unary.h"
+#include "oper_binary.h"
 #include "ops_builtin.h"
-#include "opname.h"
 #include "error.h"
 #include "forest.h"
 

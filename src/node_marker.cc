@@ -17,6 +17,7 @@
 */
 
 #include "node_marker.h"
+#include "operators.h"
 
 // #define DEBUG_MARK
 

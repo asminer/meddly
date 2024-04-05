@@ -18,6 +18,7 @@
 
 #include "unique_table.h"
 #include "forest.h"
+#include "operators.h"
 
 // ******************************************************************
 // *                                                                *

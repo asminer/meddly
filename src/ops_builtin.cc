@@ -18,10 +18,6 @@
 
 #include "ops_builtin.h"
 
-#include "opname.h"
-#include "opname_numer.h"
-#include "opname_satur.h"
-
 #include "initializer.h"
 
 namespace MEDDLY {
@@ -91,188 +87,13 @@ class MEDDLY::builtin_init : public initializer_list {
     protected:
         virtual void setup();
         virtual void cleanup();
-    private:
-        template <class OPN>
-        inline void mydelete(OPN* &p) {
-            delete p;
-            p = nullptr;
-        }
-    public:
-        static unary_opname* _CARD;
-        static unary_opname* _COMPL;
-        static unary_opname* _MDD2INDEX;
-        static unary_opname* _COPY;
-        static unary_opname* _CYCLE;
-        static unary_opname* _MAXRANGE;
-        static unary_opname* _MINRANGE;
-        static unary_opname* _SELECT;
-    public:
-        static binary_opname* _UNION;
-        static binary_opname* _INTERSECT;
-        static binary_opname* _DIFFERENCE;
-        static binary_opname* _CROSS;
-        static binary_opname* _MIN;
-        static binary_opname* _MAX;
-        static binary_opname* _PLUS;
-        static binary_opname* _MINUS;
-        static binary_opname* _MULTIPLY;
-        static binary_opname* _DIVIDE;
-        static binary_opname* _MODULO;
-        static binary_opname* _EQ;
-        static binary_opname* _NE;
-        static binary_opname* _LT;
-        static binary_opname* _LE;
-        static binary_opname* _GT;
-        static binary_opname* _GE;
-        static binary_opname* _PRE_PLUS;
-        static binary_opname* _POST_PLUS;
-        static binary_opname* _PRE_IMAGE;
-        static binary_opname* _POST_IMAGE;
-        static binary_opname* _TC_POST_IMAGE;
-        static binary_opname* _FORWARD_DFS;
-        static binary_opname* _FORWARD_BFS;
-        static binary_opname* _BACKWARD_DFS;
-        static binary_opname* _BACKWARD_BFS;
-        static binary_opname* _VM_MULTIPLY;
-        static binary_opname* _MV_MULTIPLY;
-        static binary_opname* _MM_MULTIPLY;
-    public:
-        static numerical_opname* _EXPLVECT_MATR_MULT;
-        static numerical_opname* _MATR_EXPLVECT_MULT;
-    public:
-        static satpregen_opname* _SATURATION_FORWARD;
-        static satpregen_opname* _SATURATION_BACKWARD;
-        static satotf_opname* _SATURATION_OTF_FORWARD;
-        static satimpl_opname* _SATURATION_IMPL_FORWARD;
-        static sathyb_opname* _SATURATION_HYB_FORWARD;
-
-        static constrained_opname* _CONSTRAINED_BACKWARD_BFS;
-        static constrained_opname* _CONSTRAINED_FORWARD_DFS;
-        static constrained_opname* _CONSTRAINED_BACKWARD_DFS;
-        static constrained_opname* _TRANSITIVE_CLOSURE_DFS;
 };
-
-// ******************************************************************
-
-MEDDLY::unary_opname* MEDDLY::builtin_init::_CARD;
-MEDDLY::unary_opname* MEDDLY::builtin_init::_COMPL;
-MEDDLY::unary_opname* MEDDLY::builtin_init::_MDD2INDEX;
-MEDDLY::unary_opname* MEDDLY::builtin_init::_COPY;
-MEDDLY::unary_opname* MEDDLY::builtin_init::_CYCLE;
-MEDDLY::unary_opname* MEDDLY::builtin_init::_MAXRANGE;
-MEDDLY::unary_opname* MEDDLY::builtin_init::_MINRANGE;
-MEDDLY::unary_opname* MEDDLY::builtin_init::_SELECT;
-
-MEDDLY::binary_opname* MEDDLY::builtin_init::_UNION;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_INTERSECT;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_DIFFERENCE;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_CROSS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_MIN;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_MAX;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_PLUS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_MINUS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_MULTIPLY;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_DIVIDE;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_MODULO;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_EQ;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_NE;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_LT;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_LE;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_GT;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_GE;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_PLUS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_PLUS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_IMAGE;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_IMAGE;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_TC_POST_IMAGE;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_DFS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_BFS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_DFS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_BFS;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_VM_MULTIPLY;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_MV_MULTIPLY;
-MEDDLY::binary_opname* MEDDLY::builtin_init::_MM_MULTIPLY;
-
-MEDDLY::numerical_opname* MEDDLY::builtin_init::_EXPLVECT_MATR_MULT;
-MEDDLY::numerical_opname* MEDDLY::builtin_init::_MATR_EXPLVECT_MULT;
-
-MEDDLY::satpregen_opname* MEDDLY::builtin_init::_SATURATION_FORWARD;
-MEDDLY::satpregen_opname* MEDDLY::builtin_init::_SATURATION_BACKWARD;
-MEDDLY::satotf_opname* MEDDLY::builtin_init::_SATURATION_OTF_FORWARD;
-MEDDLY::satimpl_opname* MEDDLY::builtin_init::_SATURATION_IMPL_FORWARD;
-MEDDLY::sathyb_opname* MEDDLY::builtin_init::_SATURATION_HYB_FORWARD;
-
-MEDDLY::constrained_opname* MEDDLY::builtin_init::_CONSTRAINED_BACKWARD_BFS;
-MEDDLY::constrained_opname* MEDDLY::builtin_init::_CONSTRAINED_FORWARD_DFS;
-MEDDLY::constrained_opname* MEDDLY::builtin_init::_CONSTRAINED_BACKWARD_DFS;
-MEDDLY::constrained_opname* MEDDLY::builtin_init::_TRANSITIVE_CLOSURE_DFS;
 
 // ******************************************************************
 
 MEDDLY::builtin_init::builtin_init(initializer_list* p)
     : initializer_list(p)
 {
-    //
-    // Unary ops
-    //
-    _COPY       = nullptr;
-    _CARD       = nullptr;
-    _COMPL      = nullptr;
-    _MAXRANGE   = nullptr;
-    _MINRANGE   = nullptr;
-    _MDD2INDEX  = nullptr;
-    _CYCLE      = nullptr;
-    _SELECT     = nullptr;
-    //
-    // Binary ops
-    //
-    _UNION          = nullptr;
-    _INTERSECT      = nullptr;
-    _DIFFERENCE     = nullptr;
-    _CROSS          = nullptr;
-    _MIN            = nullptr;
-    _MAX            = nullptr;
-    _PLUS           = nullptr;
-    _MINUS          = nullptr;
-    _MULTIPLY       = nullptr;
-    _DIVIDE         = nullptr;
-    _MODULO         = nullptr;
-    _EQ             = nullptr;
-    _NE             = nullptr;
-    _LT             = nullptr;
-    _LE             = nullptr;
-    _GT             = nullptr;
-    _GE             = nullptr;
-    _PRE_PLUS       = nullptr;
-    _POST_PLUS      = nullptr;
-    _PRE_IMAGE      = nullptr;
-    _POST_IMAGE     = nullptr;
-    _TC_POST_IMAGE  = nullptr;
-    _FORWARD_DFS    = nullptr;
-    _FORWARD_BFS    = nullptr;
-    _BACKWARD_DFS   = nullptr;
-    _BACKWARD_BFS   = nullptr;
-    _VM_MULTIPLY    = nullptr;
-    _MV_MULTIPLY    = nullptr;
-    _MM_MULTIPLY    = nullptr;
-    //
-    // Numerical ops
-    //
-    _EXPLVECT_MATR_MULT = nullptr;
-    _MATR_EXPLVECT_MULT = nullptr;
-    //
-    // Saturation-like ops
-    //
-    _SATURATION_FORWARD         = nullptr;
-    _SATURATION_BACKWARD        = nullptr;
-    _SATURATION_OTF_FORWARD     = nullptr;
-    _SATURATION_IMPL_FORWARD    = nullptr;
-    _SATURATION_HYB_FORWARD     = nullptr;
-
-    _CONSTRAINED_BACKWARD_BFS   = nullptr;
-    _CONSTRAINED_FORWARD_DFS    = nullptr;
-    _CONSTRAINED_BACKWARD_DFS   = nullptr;
-    _TRANSITIVE_CLOSURE_DFS     = nullptr;
 }
 
 void MEDDLY::builtin_init::setup()
@@ -280,64 +101,55 @@ void MEDDLY::builtin_init::setup()
     //
     // Unary ops
     //
-    _COPY       =   initializeCopy()        ;
-    _CARD       =   initializeCardinality() ;
-    _COMPL      =   initializeComplement()  ;
-    _MAXRANGE   =   initializeMaxRange()    ;
-    _MINRANGE   =   initializeMaxRange()    ;
-    _MDD2INDEX  =   initializeMDD2INDEX()   ;
-    _CYCLE      =   initializeCycle()       ;
-    _SELECT     =   initializeSelect()      ;
+    COPY_init();
+    CARDINALITY_init();
+    COMPLEMENT_init();
+    CONVERT_TO_INDEX_SET_init();
+    CYCLE_init();
+    MAX_RANGE_init();
+    MIN_RANGE_init();
+    SELECT_init();
+
     //
     // Binary ops
     //
-    _UNION          =   initializeUnion()           ;
-    _INTERSECT      =   initializeIntersection()    ;
-    _DIFFERENCE     =   initializeDifference()      ;
-    _CROSS          =   initializeCross()           ;
-    _MAX            =   initializeMaximum()         ;
-    _MIN            =   initializeMinimum()         ;
-    _PLUS           =   initializePlus()            ;
-    _MINUS          =   initializeMinus()           ;
-    _MULTIPLY       =   initializeMultiply()        ;
-    _DIVIDE         =   initializeDivide()          ;
-    _MODULO         =   initializeModulo()          ;
-    _EQ             =   initializeEQ()              ;
-    _NE             =   initializeNE()              ;
-    _LT             =   initializeLT()              ;
-    _LE             =   initializeLE()              ;
-    _GT             =   initializeGT()              ;
-    _GE             =   initializeGE()              ;
-    _PRE_PLUS       =   initializePrePlus()         ;
-    _POST_PLUS      =   initializePostPlus()        ;
-    _PRE_IMAGE      =   initializePreImage()        ;
-    _POST_IMAGE     =   initializePostImage()       ;
-    _TC_POST_IMAGE  =   initializeTCPostImage()     ;
-    _FORWARD_DFS    =   initializeForwardDFS()      ;
-    _FORWARD_BFS    =   initializeForwardBFS()      ;
-    _BACKWARD_DFS   =   initializeBackwardDFS()     ;
-    _BACKWARD_BFS   =   initializeBackwardBFS()     ;
-    _VM_MULTIPLY    =   initializeVMmult()          ;
-    _MV_MULTIPLY    =   initializeMVmult()          ;
-    _MM_MULTIPLY    =   initializeMMMultiply()      ;
-    //
-    // Numerical ops
-    //
-    _EXPLVECT_MATR_MULT = initExplVectorMatrixMult()  ;
-    _MATR_EXPLVECT_MULT = initMatrixExplVectorMult()  ;
-    //
-    // Saturation-like ops
-    //
-    _SATURATION_FORWARD         =   initSaturationForward()         ;
-    _SATURATION_BACKWARD        =   initSaturationBackward()        ;
-    _SATURATION_OTF_FORWARD     =   initOtfSaturationForward()      ;
-    _SATURATION_IMPL_FORWARD    =   initImplSaturationForward()     ;
-    _SATURATION_HYB_FORWARD     =   initHybSaturationForward()      ;
+    UNION_init();
+    INTERSECTION_init();
+    DIFFERENCE_init();
+    CROSS_init();
+    MAXIMUM_init();
+    MINIMUM_init();
+    PLUS_init();
+    MINUS_init();
+    MULTIPLY_init();
+    DIVIDE_init();
+    MODULO_init();
 
-    _CONSTRAINED_BACKWARD_BFS   =   initConstrainedBFSBackward()    ;
-    _CONSTRAINED_FORWARD_DFS    =   initConstrainedDFSForward()     ;
-    _CONSTRAINED_BACKWARD_DFS   =   initConstrainedDFSBackward()    ;
-    _TRANSITIVE_CLOSURE_DFS     =   initTransitiveClosureDFS()      ;
+    EQUAL_init();
+    NOT_EQUAL_init();
+    LESS_THAN_init();
+    LESS_THAN_EQUAL_init();
+    GREATER_THAN_init();
+    GREATER_THAN_EQUAL_init();
+
+    PRE_PLUS_init();
+    POST_PLUS_init();
+    PRE_IMAGE_init();
+    POST_IMAGE_init();
+    TC_POST_IMAGE_init();
+    REACHABLE_STATES_BFS_init();
+    REACHABLE_STATES_DFS_init();
+    REVERSE_REACHABLE_BFS_init();
+    REVERSE_REACHABLE_DFS_init();
+
+    VM_MULTIPLY_init();
+    MV_MULTIPLY_init();
+    MM_MULTIPLY_init();
+
+    CONSTRAINED_BACKWARD_BFS_init();
+    CONSTRAINED_FORWARD_DFS_init();
+    CONSTRAINED_BACKWARD_DFS_init();
+    TRANSITIVE_CLOSURE_DFS_init();
 }
 
 void MEDDLY::builtin_init::cleanup()
@@ -345,236 +157,59 @@ void MEDDLY::builtin_init::cleanup()
     //
     // Unary ops
     //
-    mydelete(_COPY);
-    mydelete(_CARD);
-    mydelete(_COMPL);
-    mydelete(_MAXRANGE);
-    mydelete(_MINRANGE);
-    mydelete(_MDD2INDEX);
-    mydelete(_CYCLE);
-    mydelete(_SELECT);
+    COPY_done();
+    CARDINALITY_done();
+    COMPLEMENT_done();
+    CONVERT_TO_INDEX_SET_done();
+    CYCLE_done();
+    MAX_RANGE_done();
+    MIN_RANGE_done();
+    SELECT_done();
+
     //
     // Binary ops
     //
-    mydelete(_UNION);
-    mydelete(_INTERSECT);
-    mydelete(_DIFFERENCE);
-    mydelete(_CROSS);
-    mydelete(_MIN);
-    mydelete(_MAX);
-    mydelete(_PLUS);
-    mydelete(_MINUS);
-    mydelete(_MULTIPLY);
-    mydelete(_DIVIDE);
-    mydelete(_MODULO);
-    mydelete(_EQ);
-    mydelete(_NE);
-    mydelete(_LT);
-    mydelete(_LE);
-    mydelete(_GT);
-    mydelete(_GE);
-    mydelete(_PRE_PLUS);
-    mydelete(_POST_PLUS);
-    mydelete(_PRE_IMAGE);
-    mydelete(_POST_IMAGE);
-    mydelete(_TC_POST_IMAGE);
-    mydelete(_FORWARD_DFS);
-    mydelete(_FORWARD_BFS);
-    mydelete(_BACKWARD_DFS);
-    mydelete(_BACKWARD_BFS);
-    mydelete(_VM_MULTIPLY);
-    mydelete(_MV_MULTIPLY);
-    mydelete(_MM_MULTIPLY);
+    UNION_done();
+    INTERSECTION_done();
+    DIFFERENCE_done();
+    CROSS_done();
+    MAXIMUM_done();
+    MINIMUM_done();
+    PLUS_done();
+    MINUS_done();
+    MULTIPLY_done();
+    DIVIDE_done();
+    MODULO_done();
+
+    EQUAL_done();
+    NOT_EQUAL_done();
+    LESS_THAN_done();
+    LESS_THAN_EQUAL_done();
+    GREATER_THAN_done();
+    GREATER_THAN_EQUAL_done();
+
+    PRE_PLUS_done();
+    POST_PLUS_done();
+    PRE_IMAGE_done();
+    POST_IMAGE_done();
+    TC_POST_IMAGE_done();
+    REACHABLE_STATES_BFS_done();
+    REACHABLE_STATES_DFS_done();
+    REVERSE_REACHABLE_BFS_done();
+    REVERSE_REACHABLE_DFS_done();
+
+    VM_MULTIPLY_done();
+    MV_MULTIPLY_done();
+    MM_MULTIPLY_done();
+
     //
-    // Numerical ops
+    // Ternary ops
     //
-    mydelete(_EXPLVECT_MATR_MULT);
-    mydelete(_MATR_EXPLVECT_MULT);
-    //
-    // Saturation-like ops
-    //
-    mydelete(_SATURATION_FORWARD);
-    mydelete(_SATURATION_BACKWARD);
-    mydelete(_SATURATION_OTF_FORWARD);
-    mydelete(_SATURATION_IMPL_FORWARD);
-    mydelete(_SATURATION_HYB_FORWARD);
 
-    mydelete(_CONSTRAINED_BACKWARD_BFS);
-    mydelete(_CONSTRAINED_FORWARD_DFS);
-    mydelete(_CONSTRAINED_BACKWARD_DFS);
-    mydelete(_TRANSITIVE_CLOSURE_DFS);
-}
-
-// ******************************************************************
-// *                                                                *
-// *                  front end:  unary operations                  *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::unary_opname* MEDDLY::CARDINALITY() {
-    return builtin_init::_CARD;
-}
-MEDDLY::unary_opname* MEDDLY::COMPLEMENT() {
-    return builtin_init::_COMPL;
-}
-MEDDLY::unary_opname* MEDDLY::CONVERT_TO_INDEX_SET() {
-    return builtin_init::_MDD2INDEX;
-}
-MEDDLY::unary_opname* MEDDLY::COPY() {
-    return builtin_init::_COPY;
-}
-MEDDLY::unary_opname* MEDDLY::CYCLE() {
-    return builtin_init::_CYCLE;
-}
-MEDDLY::unary_opname* MEDDLY::MAX_RANGE() {
-    return builtin_init::_MAXRANGE;
-}
-MEDDLY::unary_opname* MEDDLY::MIN_RANGE() {
-    return builtin_init::_MINRANGE;
-}
-MEDDLY::unary_opname* MEDDLY::SELECT() {
-    return builtin_init::_SELECT;
-}
-
-// ******************************************************************
-// *                                                                *
-// *                  front end: binary operations                  *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::binary_opname* MEDDLY::UNION() {
-    return builtin_init::_UNION;
-}
-MEDDLY::binary_opname* MEDDLY::INTERSECTION() {
-    return builtin_init::_INTERSECT;
-}
-MEDDLY::binary_opname* MEDDLY::DIFFERENCE() {
-    return builtin_init::_DIFFERENCE;
-}
-MEDDLY::binary_opname* MEDDLY::CROSS() {
-    return builtin_init::_CROSS;
-}
-MEDDLY::binary_opname* MEDDLY::MINIMUM() {
-    return builtin_init::_MIN;
-}
-MEDDLY::binary_opname* MEDDLY::MAXIMUM() {
-    return builtin_init::_MAX;
-}
-MEDDLY::binary_opname* MEDDLY::PLUS() {
-    return builtin_init::_PLUS;
-}
-MEDDLY::binary_opname* MEDDLY::MINUS() {
-    return builtin_init::_MINUS;
-}
-MEDDLY::binary_opname* MEDDLY::MULTIPLY() {
-    return builtin_init::_MULTIPLY;
-}
-MEDDLY::binary_opname* MEDDLY::DIVIDE() {
-    return builtin_init::_DIVIDE;
-}
-MEDDLY::binary_opname* MEDDLY::MODULO() {
-    return builtin_init::_MODULO;
-}
-MEDDLY::binary_opname* MEDDLY::EQUAL() {
-    return builtin_init::_EQ;
-}
-MEDDLY::binary_opname* MEDDLY::NOT_EQUAL() {
-    return builtin_init::_NE;
-}
-MEDDLY::binary_opname* MEDDLY::LESS_THAN() {
-    return builtin_init::_LT;
-}
-MEDDLY::binary_opname* MEDDLY::LESS_THAN_EQUAL() {
-    return builtin_init::_LE;
-}
-MEDDLY::binary_opname* MEDDLY::GREATER_THAN() {
-    return builtin_init::_GT;
-}
-MEDDLY::binary_opname* MEDDLY::GREATER_THAN_EQUAL() {
-    return builtin_init::_GE;
-}
-MEDDLY::binary_opname* MEDDLY::PRE_PLUS() {
-    return builtin_init::_PRE_PLUS;
-}
-MEDDLY::binary_opname* MEDDLY::POST_PLUS() {
-    return builtin_init::_POST_PLUS;
-}
-MEDDLY::binary_opname* MEDDLY::PRE_IMAGE() {
-    return builtin_init::_PRE_IMAGE;
-}
-MEDDLY::binary_opname* MEDDLY::POST_IMAGE() {
-    return builtin_init::_POST_IMAGE;
-}
-MEDDLY::binary_opname* MEDDLY::TC_POST_IMAGE() {
-    return builtin_init::_TC_POST_IMAGE;
-}
-MEDDLY::binary_opname* MEDDLY::REACHABLE_STATES_DFS() {
-    return builtin_init::_FORWARD_DFS;
-}
-MEDDLY::binary_opname* MEDDLY::REACHABLE_STATES_BFS() {
-    return builtin_init::_FORWARD_BFS;
-}
-MEDDLY::binary_opname* MEDDLY::REVERSE_REACHABLE_DFS() {
-    return builtin_init::_BACKWARD_DFS;
-}
-MEDDLY::binary_opname* MEDDLY::REVERSE_REACHABLE_BFS() {
-    return builtin_init::_BACKWARD_BFS;
-}
-MEDDLY::binary_opname* MEDDLY::VM_MULTIPLY() {
-    return builtin_init::_VM_MULTIPLY;
-}
-MEDDLY::binary_opname* MEDDLY::MV_MULTIPLY() {
-    return builtin_init::_MV_MULTIPLY;
-}
-MEDDLY::binary_opname* MEDDLY::MM_MULTIPLY() {
-    return builtin_init::_MM_MULTIPLY;
-}
-
-// ******************************************************************
-// *                                                                *
-// *                front end:  numerical operations                *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::numerical_opname* MEDDLY::EXPLVECT_MATR_MULT() {
-    return builtin_init::_EXPLVECT_MATR_MULT;
-}
-MEDDLY::numerical_opname* MEDDLY::MATR_EXPLVECT_MULT() {
-    return builtin_init::_MATR_EXPLVECT_MULT;
-}
-
-// ******************************************************************
-// *                                                                *
-// *             front end:  saturation-like operations             *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::satpregen_opname* MEDDLY::SATURATION_FORWARD() {
-    return builtin_init::_SATURATION_FORWARD;
-}
-MEDDLY::satpregen_opname* MEDDLY::SATURATION_BACKWARD() {
-    return builtin_init::_SATURATION_BACKWARD;
-}
-MEDDLY::satotf_opname* MEDDLY::SATURATION_OTF_FORWARD() {
-    return builtin_init::_SATURATION_OTF_FORWARD;
-}
-MEDDLY::satimpl_opname* MEDDLY::SATURATION_IMPL_FORWARD() {
-    return builtin_init::_SATURATION_IMPL_FORWARD;
-}
-MEDDLY::sathyb_opname* MEDDLY::SATURATION_HYB_FORWARD() {
-    return builtin_init::_SATURATION_HYB_FORWARD;
-}
-MEDDLY::constrained_opname* MEDDLY::CONSTRAINED_BACKWARD_BFS() {
-    return builtin_init::_CONSTRAINED_BACKWARD_BFS;
-}
-MEDDLY::constrained_opname* MEDDLY::CONSTRAINED_FORWARD_DFS() {
-    return builtin_init::_CONSTRAINED_FORWARD_DFS;
-}
-MEDDLY::constrained_opname* MEDDLY::CONSTRAINED_BACKWARD_DFS() {
-    return builtin_init::_CONSTRAINED_BACKWARD_DFS;
-}
-MEDDLY::constrained_opname* MEDDLY::TRANSITIVE_CLOSURE_DFS() {
-    return builtin_init::_TRANSITIVE_CLOSURE_DFS;
+    CONSTRAINED_BACKWARD_BFS_done();
+    CONSTRAINED_FORWARD_DFS_done();
+    CONSTRAINED_BACKWARD_DFS_done();
+    TRANSITIVE_CLOSURE_DFS_done();
 }
 
 // ******************************************************************

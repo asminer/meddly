@@ -20,7 +20,7 @@
 #define MEDDLY_CT_ENTRY_TYPE_H
 
 #include "defines.h"
-#include "opname.h"
+#include "oper.h"
 #include <type_traits>
 
 namespace MEDDLY {

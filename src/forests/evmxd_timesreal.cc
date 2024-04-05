@@ -50,7 +50,7 @@ void MEDDLY::evmxd_timesreal
 ::createEdge(const int* const* vlist, const int* const* vplist,
   const float* terms, int N, dd_edge &e)
 {
-  binary_operation* unionOp = getOperation(PLUS, this, this, this);
+  binary_operation* unionOp = PLUS(this, this, this);
   MEDDLY_DCASSERT(unionOp);
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);

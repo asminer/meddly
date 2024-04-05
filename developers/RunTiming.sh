@@ -7,8 +7,9 @@
 # List of executables to run
 #
 
-RUNLIST="ddedge mark reduce unpacked"
+RUNLIST="comptab ddedge fids mark opids reduce unpacked"
 PID="$$"
+RUNDATE=`date +"%Y %h %d %H:%M:%S"`
 
 #
 # Check for a valid directory
@@ -143,7 +144,7 @@ printSummary() {
 textInfo() {
     printf "\n\nTiming tests for $VERSION (branch: $BRANCH):\n"
     printf "\tReleased $REVDATE\n"
-    printf "\tRun on `date`\n\n"
+    printf "\tRun on $RUNDATE\n\n"
 
     for r in $RUNLIST; do
         myPrint $r
@@ -188,6 +189,7 @@ primarily for tracking performance changes over time.
 </p>
 <table border=1>
 <tr>
+    <th rowspan=2>Test date</th>
     <th rowspan=2>Release date</th>
     <th rowspan=2>Version</th>
 EOF
@@ -217,13 +219,13 @@ EOF
     # Add new lines
     #
     echo "<tr>" >> $1
-    echo "</tr>" >> $1
-
+    echo "    <td>$RUNDATE</td>" >> $1
     echo "    <td>$REVDATE</td>" >> $1
     echo "    <td>$VERSION $BRANCH</td>" >> $1
     for r in $RUNLIST; do
         awk '{print "    <td>" $1 "</td>"}' report.$PID.$r.txt >> $1
     done
+    echo "</tr>" >> $1
 
     echo "</table>" >> $1
     echo "</body>" >> $1

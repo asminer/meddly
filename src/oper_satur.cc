@@ -16,17 +16,43 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "opname_satur.h"
-
+#include "oper_satur.h"
+#include "error.h"
+#include "forest.h"
+#include "dd_edge.h"
 
 // ******************************************************************
-// *                                                                *
-// *                   constrained_opname methods                   *
-// *                                                                *
+// *                  saturation_operation methods                  *
 // ******************************************************************
 
-MEDDLY::constrained_opname::constrained_opname(const char* n)
-  : specialized_opname(n)
+MEDDLY::saturation_operation::saturation_operation(const char* name,
+    unsigned et_slots, forest* arg, forest* res)
+    : operation(name, et_slots)
 {
+    argF = arg;
+    resF = res;
+
+    registerInForest(argF);
+    registerInForest(resF);
+}
+
+MEDDLY::saturation_operation::~saturation_operation()
+{
+    unregisterInForest(argF);
+    unregisterInForest(resF);
+}
+
+bool
+MEDDLY::saturation_operation::checkForestCompatibility() const
+{
+    auto o1 = argF->variableOrder();
+    auto o2 = resF->variableOrder();
+    return o1->is_compatible_with(*o2);
+}
+
+bool
+MEDDLY::saturation_operation::isReachable(const dd_edge& a, const dd_edge& c)
+{
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 

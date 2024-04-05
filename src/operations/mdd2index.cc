@@ -26,8 +26,9 @@
 // #define TRACE_ALL_OPS
 
 namespace MEDDLY {
-  class mdd2index_operation;
-  class mdd2index_opname;
+    class mdd2index_operation;
+
+    unary_list MDD2INDEX_cache;
 };
 
 // ******************************************************************
@@ -37,26 +38,34 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::mdd2index_operation : public unary_operation {
-  public:
-    mdd2index_operation(unary_opname* oc, forest* arg,
-      forest* res);
+    public:
+        mdd2index_operation(forest* arg, forest* res);
 
-    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
+        virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
 
-    void compute_r(int k, node_handle a, node_handle &bdn, long &bcard);
+        void compute_r(int k, node_handle a, node_handle &bdn, long &bcard);
 };
 
-MEDDLY::mdd2index_operation::mdd2index_operation(unary_opname* oc,
-  forest* arg, forest* res)
-  : unary_operation(oc, 1, arg, res)
+MEDDLY::mdd2index_operation::mdd2index_operation(forest* arg, forest* res)
+    : unary_operation(MDD2INDEX_cache, 1, arg, res)
 {
-  // answer[0] : node
-  // answer[1] : cardinality
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:NL");
-  et->setForestForSlot(0, arg);
-  et->setForestForSlot(2, res);
-  registerEntryType(0, et);
-  buildCTs();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkRanges(__FILE__, __LINE__,
+        range_type::BOOLEAN, range_type::INTEGER
+    );
+    checkLabelings(__FILE__, __LINE__,
+        edge_labeling::MULTI_TERMINAL, edge_labeling::INDEX_SET
+    );
+
+
+    // answer[0] : node
+    // answer[1] : cardinality
+    ct_entry_type* et = new ct_entry_type(MDD2INDEX_cache.getName(), "N:NL");
+    et->setForestForSlot(0, arg);
+    et->setForestForSlot(2, res);
+    registerEntryType(0, et);
+    buildCTs();
 }
 
 void
@@ -168,50 +177,32 @@ MEDDLY::mdd2index_operation
 
 // ******************************************************************
 // *                                                                *
-// *                     mdd2index_opname class                     *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::mdd2index_opname : public unary_opname {
-  public:
-    mdd2index_opname();
-    virtual unary_operation*
-      buildOperation(forest* ar, forest* res);
-};
-
-MEDDLY::mdd2index_opname::mdd2index_opname()
- : unary_opname("ConvertToIndexSet")
-{
-}
-
-MEDDLY::unary_operation*
-MEDDLY::mdd2index_opname
-::buildOperation(forest* arg, forest* res)
-{
-  if (0==arg || 0==res) return 0;
-
-  if (arg->getDomain() != res->getDomain())
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (arg->isForRelations() ||
-      arg->getRangeType() != range_type::BOOLEAN ||
-      arg->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL ||
-      res->isForRelations() ||
-      res->getRangeType() != range_type::INTEGER ||
-      res->getEdgeLabeling() != edge_labeling::INDEX_SET
-  ) throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  return new mdd2index_operation(this, arg, res);
-}
-
-// ******************************************************************
-// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeMDD2INDEX()
+MEDDLY::unary_operation*
+MEDDLY::CONVERT_TO_INDEX_SET(forest* arg, forest* res)
 {
-  return new mdd2index_opname;
+    if (!arg || !res) {
+        return nullptr;
+    }
+
+    unary_operation* uop =  MDD2INDEX_cache.find(arg, res);
+    if (uop) {
+        return uop;
+    }
+
+    return MDD2INDEX_cache.add(new mdd2index_operation(arg, res));
+}
+
+void MEDDLY::CONVERT_TO_INDEX_SET_init()
+{
+    MDD2INDEX_cache.reset("ConvertToIndexSet");
+}
+
+void MEDDLY::CONVERT_TO_INDEX_SET_done()
+{
+    MEDDLY_DCASSERT(MDD2INDEX_cache.isEmpty());
 }
 

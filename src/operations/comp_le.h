@@ -20,10 +20,13 @@
 #define MEDDLY_COMP_LE_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
 
-  /// Set up a binary_opname for the "less than equal" operator.
-  binary_opname* initializeLE();
+    /// The 'less or equal' operation builder.
+    binary_operation* LESS_THAN_EQUAL(forest* a, forest* b, forest* c);
+    void LESS_THAN_EQUAL_init();
+    void LESS_THAN_EQUAL_done();
 }
 
 #endif

@@ -97,12 +97,12 @@ void make_blank(const std::vector <forest*> &FA, bool sparse)
 
     show_sec(std::cout, T, 3, 3);
 
-    if (startReport(T, __FILE__)) {
+    if (startReport(T, __FILE__, "blank ", sparse ? "sparse" : "full")) {
         if (sparse) {
-            report  << "blank sparse $ Created " << DOTS * CHANGES
+            report  << "Created " << DOTS * CHANGES
                     << " blank sparse nodes" << std::endl;
         } else {
-            report  << "blank full $ Created " << DOTS * CHANGES
+            report  << "Created " << DOTS * CHANGES
                     << " blank full nodes" << std::endl;
         }
     }
@@ -172,12 +172,12 @@ void make_redundant(const std::vector <forest*> &FA, bool sparse)
 
     show_sec(std::cout, T, 3, 3);
 
-    if (startReport(T, __FILE__)) {
+    if (startReport(T, __FILE__, "rednt ", sparse ? "sparse" : "full")) {
         if (sparse) {
-            report  << "rednt sparse $ Created " << DOTS * CHANGES
+            report  << "Created " << DOTS * CHANGES
                     << " redundant sparse nodes" << std::endl;
         } else {
-            report  << "rednt full $ Created " << DOTS * CHANGES
+            report  << "Created " << DOTS * CHANGES
                     << " redundant full nodes" << std::endl;
         }
     }
@@ -218,7 +218,7 @@ void make_identity(const std::vector <forest*> &FA, bool sparse)
             //
             // Randomly choose identity index
             //
-            unsigned i = Equilikely(0, VARSIZE);
+            unsigned i = Equilikely(0, VARSIZE-1);
 
             //
             // recycle old in slot u,
@@ -249,12 +249,12 @@ void make_identity(const std::vector <forest*> &FA, bool sparse)
 
     show_sec(std::cout, T, 3, 3);
 
-    if (startReport(T, __FILE__)) {
+    if (startReport(T, __FILE__, "idnty ", sparse ? "sparse" : "full")) {
         if (sparse) {
-            report  << "idnty sparse $ Created " << DOTS * CHANGES
+            report  << "Created " << DOTS * CHANGES
                     << " identity sparse nodes" << std::endl;
         } else {
-            report  << "idnty full $ Created " << DOTS * CHANGES
+            report  << "Created " << DOTS * CHANGES
                     << " identity full nodes" << std::endl;
         }
     }

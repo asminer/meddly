@@ -20,10 +20,13 @@
 #define MEDDLY_MDD2INDEX_H
 
 namespace MEDDLY {
-    class unary_opname;
+    class forest;
+    class unary_operation;
 
-    /// Set up a unary_opname for the "convert to index set" operation.
-    unary_opname* initializeMDD2INDEX();
+    /// Builder for 'convert to index set' operations.
+    unary_operation* CONVERT_TO_INDEX_SET(forest* arg, forest* res);
+    void CONVERT_TO_INDEX_SET_init();
+    void CONVERT_TO_INDEX_SET_done();
 };
 
 #endif

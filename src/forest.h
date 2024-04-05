@@ -22,7 +22,6 @@
 #include "defines.h"
 #include "memstats.h"
 #include "varorder.h"
-#include "operators.h"
 #include "node_headers.h"
 #include "node_storage.h"
 #include "unpacked_node.h"
@@ -32,8 +31,7 @@
 
 #include "statset.h"
 
-#include <memory>
-#include <map>
+#include <vector>
 
 namespace MEDDLY {
     class domain;
@@ -1459,8 +1457,7 @@ class MEDDLY::forest {
   private:  // For operation registration
     friend class operation;
 
-    unsigned* opCount;
-    unsigned szOpCount;
+    std::vector <unsigned> opCount;
 
     /// Register an operation with this forest.
     /// Called only within operation.
@@ -1486,12 +1483,14 @@ class MEDDLY::forest {
         inline unsigned FID() const { return fid; }
 
         /// Returns the largest forest identifier ever seen.
-        static inline unsigned MaxFID() { return gfid; }
+        static inline unsigned MaxFID() {
+            return all_forests.size()-1;
+        }
 
         /// Find the forest with the given FID.
         /// If the forest has been deleted, this will be null.
         static inline forest* getForestWithID(unsigned id) {
-            if (id >= max_forests) return nullptr;
+            if (id > all_forests.size()) return nullptr;
             return all_forests[id];
         }
 
@@ -1509,16 +1508,12 @@ class MEDDLY::forest {
     // ------------------------------------------------------------
     private: // private members for the forest registry
     // ------------------------------------------------------------
-        // All forests
-        static forest** all_forests;
-        // Size of forests array
-        static unsigned max_forests;
+        /// "Registry" of all forests, ever.
+        static std::vector <forest*> all_forests;
 
-        // our ID
+        /// our ID
         unsigned fid;
 
-        // global ID
-        static unsigned gfid;
 
         friend class initializer_list;
 

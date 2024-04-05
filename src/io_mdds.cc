@@ -18,9 +18,9 @@
 
 #include "dd_edge.h"
 #include "forest.h"
-#include "io.h"
 #include "node_marker.h"
 
+#include "operators.h"
 #include "io_mdds.h"
 
 #include <vector>

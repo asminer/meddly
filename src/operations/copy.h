@@ -20,9 +20,13 @@
 #define MEDDLY_COPY_H
 
 namespace MEDDLY {
-    class unary_opname;
+    class forest;
+    class unary_operation;
 
-    unary_opname* initializeCopy();
+    /// Builder for 'copy' operations.
+    unary_operation* COPY(forest* arg, forest* res);
+    void COPY_init();
+    void COPY_done();
 };
 
 #endif

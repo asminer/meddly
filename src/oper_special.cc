@@ -25,8 +25,8 @@
 
 MEDDLY::
 specialized_operation::
-specialized_operation(specialized_opname* op, unsigned et_slots)
- : operation(op, et_slots)
+specialized_operation(const char* name, unsigned et_slots)
+    : operation(name, et_slots)
 {
 }
 
@@ -36,29 +36,29 @@ MEDDLY::specialized_operation::~specialized_operation()
 
 void MEDDLY::specialized_operation::compute(const dd_edge &arg, dd_edge &res)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::specialized_operation::compute(const dd_edge &arg, bool &res)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::specialized_operation::compute(const dd_edge &ar1,
   const dd_edge &ar2, dd_edge &res)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::specialized_operation::compute(double* y, const double* x)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::specialized_operation::compute(const dd_edge &ar1,
   const dd_edge &ar2, const dd_edge &ar3, dd_edge &res)
 {
-  throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH);
 }
 
 // ******************************************************************
@@ -67,14 +67,15 @@ void MEDDLY::specialized_operation::compute(const dd_edge &ar1,
 // *                                                                *
 // ******************************************************************
 
+/*
 void MEDDLY::destroyOperation(MEDDLY::specialized_operation* &op)
 {
-  if (!op) return;
-  if (!op->isMarkedForDeletion()) {
-    op->markForDeletion();
-    operation::removeStalesFromMonolithic();
-  }
-  delete op;
-  op = nullptr;
+    if (!op) return;
+    if (!op->isMarkedForDeletion()) {
+        op->markForDeletion();
+        operation::removeStalesFromMonolithic();
+    }
+    delete op;
+    op = nullptr;
 }
-
+*/

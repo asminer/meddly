@@ -20,10 +20,13 @@
 #define MEDDLY_DIFFERENCE_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
 
-  /// Set up a binary_opname for the "difference" operation.
-  binary_opname* initializeDifference();
+    /// The 'difference' operation builder.
+    binary_operation* DIFFERENCE(forest* a, forest* b, forest* c);
+    void DIFFERENCE_init();
+    void DIFFERENCE_done();
 }
 
 #endif

@@ -19,120 +19,113 @@
 #ifndef MEDDLY_OPS_BUILTIN_H
 #define MEDDLY_OPS_BUILTIN_H
 
-#include "defines.h"
+#include "oper.h"
+
 
 namespace MEDDLY {
-    class opname;
-    class unary_opname;
-    class binary_opname;
-    class numerical_opname;
-
-    class satpregen_opname;
-    class satotf_opname;
-    class satimpl_opname;
-    class sathyb_opname;
-    class constrained_opname;
-
-    class initializer_list;
 
     // ******************************************************************
     // *                                                                *
-    // *                    unary  operation handles                    *
+    // *                  "built-in"  unary operations                  *
     // *                                                                *
     // ******************************************************************
 
-    /// Unary operation.  Return the number of variable assignments
+    class unary_operation;
+
+    /// Return the number of variable assignments
     /// so that the function evaluates to non-zero.
-    unary_opname* CARDINALITY();
+    unary_operation* CARDINALITY(forest* arg, opnd_type res);
 
     /// For BOOLEAN forests, flip the return values.
-    unary_opname* COMPLEMENT();
+    unary_operation* COMPLEMENT(forest* arg, forest* res);
 
     /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
-    unary_opname* CONVERT_TO_INDEX_SET();
+    unary_operation* CONVERT_TO_INDEX_SET(forest* arg, forest* res);
 
     /// Copy a function across forests, with the same domain.
-    unary_opname* COPY();
+    unary_operation* COPY(forest* arg, forest* res);
 
     /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
-    unary_opname* CYCLE();
+    unary_operation* CYCLE(forest* arg, forest* res);
 
     /// Find the largest value returned by the function.
-    unary_opname* MAX_RANGE();
+    unary_operation* MAX_RANGE(forest* arg, opnd_type res);
 
     /// Find the smallest value returned by the function.
-    unary_opname* MIN_RANGE();
+    unary_operation* MIN_RANGE(forest* arg, opnd_type res);
 
     /// Randomly select one state from a set of states
-    unary_opname* SELECT();
+    unary_operation* SELECT(forest* arg, forest* res);
 
     // ******************************************************************
     // *                                                                *
-    // *                    binary operation handles                    *
+    // *                  "built-in" binary operations                  *
     // *                                                                *
     // ******************************************************************
+
+    class binary_operation;
 
     /// Set union operation for forests with range_type of BOOLEAN
-    binary_opname* UNION();
+    binary_operation* UNION(forest* a, forest* b, forest* c);
 
     /// Set intersection operation for forests with range_type of BOOLEAN
-    binary_opname* INTERSECTION();
+    binary_operation* INTERSECTION(forest* a, forest* b, forest* c);
 
     /// Set difference operation for forests with range_type of BOOLEAN
-    binary_opname* DIFFERENCE();
+    binary_operation* DIFFERENCE(forest* a, forest* b, forest* c);
 
     /// Combine two functions into a single one, where the operands are MDDs
     /// and the result is an MXD.  Specifically, for MDD operands f and g,
     /// produces MXD h where
     ///     h(xn, x'n, ..., x1, x'1) = f(xn, ..., x1) * g(x'n, ..., x'1).
     /// Works for BOOLEAN forests.
-    binary_opname* CROSS();
+    binary_operation* CROSS(forest* a, forest* b, forest* c);
 
     /// The minimum of two functions, with range_type INTEGER or REAL
-    binary_opname* MINIMUM();
+    binary_operation* MINIMUM(forest* a, forest* b, forest* c);
 
     /// The maximum of two functions, with range_type INTEGER or REAL
-    binary_opname* MAXIMUM();
+    binary_operation* MAXIMUM(forest* a, forest* b, forest* c);
 
     /// Add two functions, with range type INTEGER and REAL
-    binary_opname* PLUS();
+    binary_operation* PLUS(forest* a, forest* b, forest* c);
 
     /// Subtract two functions, with range type INTEGER and REAL
-    binary_opname* MINUS();
+    binary_operation* MINUS(forest* a, forest* b, forest* c);
 
     /// Multiply two functions, with range type INTEGER and REAL
-    binary_opname* MULTIPLY();
+    binary_operation* MULTIPLY(forest* a, forest* b, forest* c);
 
     /// Divide two functions, with range type INTEGER and REAL
-    binary_opname* DIVIDE();
+    binary_operation* DIVIDE(forest* a, forest* b, forest* c);
 
     /// Take the remainder of two functions, with range type INTEGER
-    binary_opname* MODULO();
+    binary_operation* MODULO(forest* a, forest* b, forest* c);
 
     /// Compare for equality, two functions with range type INTEGER or REAL
-    binary_opname* EQUAL();
+    binary_operation* EQUAL(forest* a, forest* b, forest* c);
 
     /// Compare for inequality, two functions with range type INTEGER or REAL
-    binary_opname* NOT_EQUAL();
+    binary_operation* NOT_EQUAL(forest* a, forest* b, forest* c);
 
     /// Compare for <, two functions with range type INTEGER or REAL
-    binary_opname* LESS_THAN();
+    binary_operation* LESS_THAN(forest* a, forest* b, forest* c);
 
     /// Compare for <=, two functions with range type INTEGER or REAL
-    binary_opname* LESS_THAN_EQUAL();
+    binary_operation* LESS_THAN_EQUAL(forest* a, forest* b, forest* c);
 
     /// Compare for >, two functions with range type INTEGER or REAL
-    binary_opname* GREATER_THAN();
+    binary_operation* GREATER_THAN(forest* a, forest* b, forest* c);
 
     /// Compare for >=, two functions with range type INTEGER or REAL
-    binary_opname* GREATER_THAN_EQUAL();
+    binary_operation* GREATER_THAN_EQUAL(forest* a, forest* b, forest* c);
 
     /** Plus operation used to compute transitive closure and further
         minimum witness. The first operand must be an EV+MxD and the second
         operand must be an EV+MDD. The result is an EV+MxD.
     */
-    binary_opname* PRE_PLUS();
-    binary_opname* POST_PLUS();
+    binary_operation* PRE_PLUS(forest* a, forest* b, forest* c);
+    binary_operation* POST_PLUS(forest* a, forest* b, forest* c);
 
     /** Image operations on a set-of-states with a transition function.
         The first operand must be the set-of-states and the second operand
@@ -145,54 +138,48 @@ namespace MEDDLY {
         REACHABLE_STATES_DFS, REACHABLE_STATES_BFS,
         REVERSE_REACHABLE_DFS, REVERSE_REACHABLE_BFS.
     */
-    binary_opname* PRE_IMAGE();
-    binary_opname* POST_IMAGE();
-    binary_opname* TC_POST_IMAGE();
-    binary_opname* REACHABLE_STATES_DFS();
-    binary_opname* REACHABLE_STATES_BFS();
-    binary_opname* REVERSE_REACHABLE_DFS();
-    binary_opname* REVERSE_REACHABLE_BFS();
+    binary_operation* PRE_IMAGE(forest* a, forest* b, forest* c);
+    binary_operation* POST_IMAGE(forest* a, forest* b, forest* c);
+    binary_operation* TC_POST_IMAGE(forest* a, forest* b, forest* c);
+    binary_operation* REACHABLE_STATES_DFS(forest* a, forest* b, forest* c);
+    binary_operation* REACHABLE_STATES_BFS(forest* a, forest* b, forest* c);
+    binary_operation* REVERSE_REACHABLE_DFS(forest* a, forest* b, forest* c);
+    binary_operation* REVERSE_REACHABLE_BFS(forest* a, forest* b, forest* c);
 
     /** Vector matrix multiply, where the first argument is vector (MDD),
         the second argument is a matrix (MXD),
         and the result is a vector (MDD).
     */
-    binary_opname* VM_MULTIPLY();
+    binary_operation* VM_MULTIPLY(forest* a, forest* b, forest* c);
 
     /** Matrix vector multiply, where the first argument is a matrix (MXD),
         the second argument is a vector (MDD),
         and the result is a vector (MDD).
     */
-    binary_opname* MV_MULTIPLY();
+    binary_operation* MV_MULTIPLY(forest* a, forest* b, forest* c);
 
     /** Matrix multiplication, where the first argument is a matrix (MXD),
         the second argument is a matrix (MXD),
         and the result is a matrix (MXD),
         such that, C[m][n] += A[m][i] * B[i][n], for all m, n and i.
     */
-    binary_opname* MM_MULTIPLY();
+    binary_operation* MM_MULTIPLY(forest* a, forest* b, forest* c);
+
 
     // ******************************************************************
     // *                                                                *
-    // *                   Named numerical operations                   *
+    // *                "built-in"  numerical operations                *
     // *                                                                *
     // ******************************************************************
 
-    /** Computes y = y + xA.
-        x and y are vectors, stored explicitly, and A is a matrix.
-        x_ind and y_ind specify how minterms are mapped to indexes
-        for vectors x and y, respectively.
-    */
-    numerical_opname* EXPLVECT_MATR_MULT();
-    // extern const numerical_opname* VECT_MATR_MULT; // renamed!
+    class numerical_operation;
+    class dd_edge;
 
-    /** Computes y = y + Ax.
-        x and y are vectors, stored explicitly, and A is a matrix.
-        x_ind and y_ind specify how minterms are mapped to indexes
-        for vectors x and y, respectively.
-    */
-    numerical_opname* MATR_EXPLVECT_MULT();
-    // extern const numerical_opname* MATR_VECT_MULT; // renamed!
+    numerical_operation* EXPLVECT_MATR_MULT(const dd_edge &xind,
+            const dd_edge &A, const dd_edge &yind);
+
+    numerical_operation* MATR_EXPLVECT_MULT(const dd_edge &xind,
+            const dd_edge &A, const dd_edge &yind);
 
     // ******************************************************************
     // *                                                                *
@@ -200,44 +187,54 @@ namespace MEDDLY {
     // *                                                                *
     // ******************************************************************
 
-    /** Forward reachability using saturation.
-        Transition relation is already known.
-    */
-    satpregen_opname* SATURATION_FORWARD();
+    class saturation_operation;
+    class pregen_relation;
+    class otf_relation;
+    class implicit_relation;
+    class hybrid_relation;
 
-    /** Backward reachability using saturation.
-        Transition relation is already known.
-    */
-    satpregen_opname* SATURATION_BACKWARD();
+    saturation_operation* SATURATION_FORWARD(forest* inF,
+            pregen_relation* nsf, forest* outf);
+    saturation_operation* SATURATION_BACKWARD(forest* inF,
+            pregen_relation* nsf, forest* outf);
 
-    /** Forward reachability using saturation.
-        Transition relation is not completely known,
-        will be built along with reachability set.
-    */
-    satotf_opname* SATURATION_OTF_FORWARD();
+    saturation_operation* SATURATION_OTF_FORWARD(forest* inF,
+            otf_relation* nsf, forest* outf);
+    saturation_operation* SATURATION_OTF_BACKWARD(forest* inF,
+            otf_relation* nsf, forest* outf);
 
-    /** Forward reachability using saturation.
-        Transition relation is specified implicitly.
-    */
-    satimpl_opname* SATURATION_IMPL_FORWARD();
+    saturation_operation* SATURATION_IMPL_FORWARD(forest* inF,
+            implicit_relation* nsf, forest* outf);
 
-    /** Forward reachability using saturation.
-        Allows hybrid representation of transition relation.
-    */
-    sathyb_opname* SATURATION_HYB_FORWARD();
+    saturation_operation* SATURATION_HYB_FORWARD(forest* inF,
+            hybrid_relation* nsf, forest* outf);
 
-    /** Minimum-witness operations.
-    */
-    constrained_opname* CONSTRAINED_BACKWARD_BFS();
-    constrained_opname* CONSTRAINED_FORWARD_DFS();
-    constrained_opname* CONSTRAINED_BACKWARD_DFS();
-    constrained_opname* TRANSITIVE_CLOSURE_DFS();
+
+    // ******************************************************************
+    // *                                                                *
+    // *               Constrained saturation operations                *
+    // *                                                                *
+    // ******************************************************************
+
+    class ternary_operation;
+
+    ternary_operation* CONSTRAINED_BACKWARD_BFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
+    ternary_operation* CONSTRAINED_FORWARD_DFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
+    ternary_operation* CONSTRAINED_BACKWARD_DFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
+    ternary_operation* TRANSITIVE_CLOSURE_DFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
+
 
     // ******************************************************************
     // *                                                                *
     // *                   Initialization  front-end                    *
     // *                                                                *
     // ******************************************************************
+
+    class initializer_list;
 
     /// Build the initializer for builtins.
     initializer_list* makeBuiltinInitializer(initializer_list* prev);

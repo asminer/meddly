@@ -209,14 +209,14 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
   //
   if (LOG) LOG->newPhase(mxd, "Building next-state function");
   dd_edge nsf(mxd);
-  satpregen_opname::pregen_relation* ensf = 0;
-  specialized_operation* sat = 0;
+  pregen_relation* ensf = nullptr;
+  saturation_operation* sat = nullptr;
 
   if ('s' == method) {
-    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd, 8*N);
+    ensf = new pregen_relation(mxd, 8*N);
   }
   if ('k' == method) {
-    ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd);
+    ensf = new pregen_relation(mxd);
   }
 
   if ('e' != method) {
@@ -271,11 +271,8 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
         if ('k'==method)  printf(" by levels\n");
         else              printf(" by events\n");
         fflush(stdout);
-        if (!SATURATION_FORWARD()) {
-          throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-        }
-        sat = SATURATION_FORWARD()->buildOperation(ensf);
-        if (0==sat) {
+        sat = SATURATION_FORWARD(mdd, ensf, mdd);
+        if (!sat) {
           throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
         }
         sat->compute(init_state, reachable);
@@ -311,7 +308,7 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
   operation::showAllComputeTables(meddlyout, 3);
 
   printf("Approx. %g reachable states\n", c);
-  destroyOperation(sat);
+  operation::destroy(sat);
   // or, don't, and let cleanup() take care of it?
 
   if (build_pdf) {

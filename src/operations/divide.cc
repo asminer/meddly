@@ -21,7 +21,7 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class divide_opname;
+    binary_list DIVIDE_cache;
 };
 
 
@@ -36,9 +36,13 @@ namespace MEDDLY {
 template <typename REAL>
 class divide_mdd : public generic_binary_mdd {
   public:
-    divide_mdd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res)
-      : generic_binary_mdd(opcode, arg1, arg2, res) { }
+    divide_mdd(forest* arg1, forest* arg2, forest* res)
+      : generic_binary_mdd(DIVIDE_cache, arg1, arg2, res)
+    {
+        checkDomains(__FILE__, __LINE__);
+        checkAllRelations(__FILE__, __LINE__, SET);
+        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+    }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
@@ -73,9 +77,13 @@ namespace MEDDLY {
 template <typename REAL>
 class divide_mxd : public generic_binbylevel_mxd {
   public:
-    divide_mxd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res)
-      : generic_binbylevel_mxd(opcode, arg1, arg2, res) { }
+    divide_mxd(forest* arg1, forest* arg2, forest* res)
+      : generic_binbylevel_mxd(DIVIDE_cache, arg1, arg2, res)
+    {
+        checkDomains(__FILE__, __LINE__);
+        checkAllRelations(__FILE__, __LINE__, RELATION);
+        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+    }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
@@ -101,74 +109,50 @@ bool divide_mxd<REAL>
 
 // ******************************************************************
 // *                                                                *
-// *                      divide_opname  class                      *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::divide_opname : public binary_opname {
-  public:
-    divide_opname();
-    virtual binary_operation* buildOperation(forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::divide_opname::divide_opname()
- : binary_opname("Divide")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::divide_opname::buildOperation(forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->isForRelations() != r->isForRelations()) ||
-    (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling())
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    switch (r->getRangeType()) {
-
-      case range_type::INTEGER:
-          if (r->isForRelations())
-            return new divide_mxd<int>(this, a1, a2, r);
-          else
-            return new divide_mdd<int>(this, a1, a2, r);
-
-      case range_type::REAL:
-          if (r->isForRelations())
-            return new divide_mxd<float>(this, a1, a2, r);
-          else
-            return new divide_mdd<float>(this, a1, a2, r);
-
-      default:
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
-
-  }
-
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-// ******************************************************************
-// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeDivide()
+MEDDLY::binary_operation* MEDDLY::DIVIDE(forest* a, forest* b, forest* c)
 {
-  return new divide_opname;
+    if (!a || !b || !c) return nullptr;
+
+    binary_operation* bop =  DIVIDE_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        switch (c->getRangeType()) {
+
+            case range_type::INTEGER:
+                if (c->isForRelations())
+                    return DIVIDE_cache.add(new divide_mxd<long>(a, b, c));
+                else
+                    return DIVIDE_cache.add(new divide_mdd<long>(a, b, c));
+
+            case range_type::REAL:
+                if (c->isForRelations())
+                    return DIVIDE_cache.add(new divide_mxd<float>(a, b, c));
+                else
+                    return DIVIDE_cache.add(new divide_mdd<float>(a, b, c));
+
+            default:
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+        }
+    }
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
+
+void MEDDLY::DIVIDE_init()
+{
+    DIVIDE_cache.reset("Minus");
+}
+
+void MEDDLY::DIVIDE_done()
+{
+    MEDDLY_DCASSERT(DIVIDE_cache.isEmpty());
+}
+
 

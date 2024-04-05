@@ -32,56 +32,24 @@
 // #define DEBUG_SPLIT
 
 namespace MEDDLY {
-  class saturation_opname;
-  class saturation_op;
-  class saturation_evplus_op;
+    class saturation_op;
+    class saturation_evplus_op;
 
-  class common_dfs;
+    class common_dfs;
 
-  class common_dfs_mt;
+    class common_dfs_mt;
 
-  class forwd_dfs_mt;
-  class bckwd_dfs_mt;
+    class forwd_dfs_mt;
+    class bckwd_dfs_mt;
 
-  class common_dfs_evplus;
+    class common_dfs_evplus;
 
-  class forwd_dfs_evplus;
+    class forwd_dfs_evplus;
 
-  class forwd_dfs_opname;
-  class bckwd_dfs_opname;
-
+    binary_list FWD_DFS_cache;
+    binary_list REV_DFS_cache;
 };
 
-
-// ******************************************************************
-// *                                                                *
-// *                    saturation_opname  class                    *
-// *                                                                *
-// ******************************************************************
-
-/** Simple class to keep compute table happy.
-*/
-class MEDDLY::saturation_opname : public unary_opname {
-  static saturation_opname* instance;
-  public:
-    saturation_opname();
-
-    static saturation_opname* getInstance();
-
-};
-
-MEDDLY::saturation_opname* MEDDLY::saturation_opname::instance = 0;
-
-MEDDLY::saturation_opname::saturation_opname()
- : unary_opname("Saturate")
-{
-}
-
-MEDDLY::saturation_opname* MEDDLY::saturation_opname::getInstance()
-{
-  if (0==instance) instance = new saturation_opname;
-  return instance;
-}
 
 // ******************************************************************
 // *                                                                *
@@ -92,7 +60,7 @@ MEDDLY::saturation_opname* MEDDLY::saturation_opname::getInstance()
 class MEDDLY::saturation_op : public unary_operation {
     common_dfs_mt* parent;
   public:
-    saturation_op(common_dfs_mt* p, forest* argF, forest* resF);
+    saturation_op(common_dfs_mt* p, unary_list &c, forest* argF, forest* resF);
     virtual ~saturation_op();
 
     void saturate(const dd_edge& in, dd_edge& out);
@@ -130,7 +98,7 @@ class MEDDLY::saturation_op : public unary_operation {
 class MEDDLY::saturation_evplus_op : public unary_operation {
     common_dfs_evplus* parent;
   public:
-    saturation_evplus_op(common_dfs_evplus* p, forest* argF, forest* resF);
+    saturation_evplus_op(common_dfs_evplus* p, unary_list &c, forest* argF, forest* resF);
     virtual ~saturation_evplus_op();
 
     void saturate(const dd_edge& in, dd_edge& out);
@@ -171,7 +139,7 @@ class MEDDLY::saturation_evplus_op : public unary_operation {
 
 class MEDDLY::common_dfs : public binary_operation {
   public:
-    common_dfs(binary_opname* opcode, forest* arg1,
+    common_dfs(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
   protected:
@@ -292,7 +260,7 @@ class MEDDLY::common_dfs : public binary_operation {
 
 class MEDDLY::common_dfs_mt : public common_dfs {
   public:
-    common_dfs_mt(binary_opname* opcode, forest* arg1,
+    common_dfs_mt(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
@@ -331,7 +299,7 @@ class MEDDLY::common_dfs_mt : public common_dfs {
 
 class MEDDLY::common_dfs_evplus : public common_dfs {
   public:
-    common_dfs_evplus(binary_opname* opcode, forest* arg1,
+    common_dfs_evplus(binary_list& opcode, forest* arg1,
       forest* arg2, forest* res);
 
     virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
@@ -373,21 +341,20 @@ class MEDDLY::common_dfs_evplus : public common_dfs {
 // ******************************************************************
 
 MEDDLY::saturation_op
-::saturation_op(common_dfs_mt* p, forest* argF, forest* resF)
-  : unary_operation(saturation_opname::getInstance(), 1, argF, resF)
+::saturation_op(common_dfs_mt* p, unary_list &c, forest* argF, forest* resF)
+  : unary_operation(c, 1, argF, resF)
 {
   parent = p;
 
-  const char* name = saturation_opname::getInstance()->getName();
   ct_entry_type* et;
 
   if (argF->isFullyReduced()) {
     // CT entry includes level info
-    et = new ct_entry_type(name, "NI:N");
+    et = new ct_entry_type(c.getName(), "NI:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(3, resF);
   } else {
-    et = new ct_entry_type(name, "N:N");
+    et = new ct_entry_type(c.getName(), "N:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(2, resF);
   }
@@ -466,21 +433,20 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
 // ******************************************************************
 
 MEDDLY::saturation_evplus_op
-::saturation_evplus_op(common_dfs_evplus* p, forest* argF, forest* resF)
-  : unary_operation(saturation_opname::getInstance(), 1, argF, resF)
+::saturation_evplus_op(common_dfs_evplus* p, unary_list &c, forest* argF, forest* resF)
+  : unary_operation(c, 1, argF, resF)
 {
   parent = p;
 
-  const char* name = saturation_opname::getInstance()->getName();
   ct_entry_type* et;
 
   if (argF->isFullyReduced()) {
     // CT entry includes level info
-    et = new ct_entry_type(name, "NI:LN");
+    et = new ct_entry_type(c.getName(), "NI:LN");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(4, resF);
   } else {
-    et = new ct_entry_type(name, "N:LN");
+    et = new ct_entry_type(c.getName(), "N:LN");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(3, resF);
   }
@@ -572,16 +538,21 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::common_dfs::common_dfs(binary_opname* oc, forest* a1,
+MEDDLY::common_dfs::common_dfs(binary_list& oc, forest* a1,
   forest* a2, forest* res)
 : binary_operation(oc, 1, a1, a2, res)
 {
-  splits = 0;
-  mddUnion = 0;
-  mxdIntersection = 0;
-  mxdDifference = 0;
-  freeqs = 0;
-  freebufs = 0;
+    checkDomains(__FILE__, __LINE__);
+    checkRelations(__FILE__, __LINE__, SET, RELATION, SET);
+    if (a1 != res) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+    splits = 0;
+    mddUnion = 0;
+    mxdIntersection = 0;
+    mxdDifference = 0;
+    freeqs = 0;
+    freebufs = 0;
 }
 
 
@@ -734,11 +705,11 @@ void MEDDLY::common_dfs::charbuf::resize(unsigned sz)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::common_dfs_mt::common_dfs_mt(binary_opname* oc, forest* a1,
+MEDDLY::common_dfs_mt::common_dfs_mt(binary_list& oc, forest* a1,
   forest* a2, forest* res)
 : common_dfs(oc, a1, a2, res)
 {
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "NN:N");
+  ct_entry_type* et = new ct_entry_type(oc.getName(), "NN:N");
   et->setForestForSlot(0, a1);
   et->setForestForSlot(1, a2);
   et->setForestForSlot(3, res);
@@ -750,13 +721,13 @@ void MEDDLY::common_dfs_mt
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
 {
   // Initialize operations
-  mddUnion = getOperation(UNION, resF, resF, resF);
+  mddUnion = UNION(resF, resF, resF);
   MEDDLY_DCASSERT(mddUnion);
 
-  mxdIntersection = getOperation(INTERSECTION, arg2F, arg2F, arg2F);
+  mxdIntersection = INTERSECTION(arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdIntersection);
 
-  mxdDifference = getOperation(DIFFERENCE, arg2F, arg2F, arg2F);
+  mxdDifference = DIFFERENCE(arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdDifference);
 
 #ifdef DEBUG_INITIAL
@@ -772,7 +743,8 @@ void MEDDLY::common_dfs_mt
   splitMxd(b.getNode());
 
   // Execute saturation operation
-  saturation_op *so = new saturation_op(this, arg1F, resF);
+  unary_list dummy("Saturation");
+  saturation_op *so = new saturation_op(this, dummy, arg1F, resF);
   so->saturate(a, c);
 
   // Cleanup
@@ -790,16 +762,14 @@ void MEDDLY::common_dfs_mt
 
 class MEDDLY::forwd_dfs_mt : public common_dfs_mt {
   public:
-    forwd_dfs_mt(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+    forwd_dfs_mt(forest* arg1, forest* arg2, forest* res);
   protected:
     virtual void saturateHelper(unpacked_node &mdd);
     node_handle recFire(node_handle mdd, node_handle mxd);
 };
 
-MEDDLY::forwd_dfs_mt::forwd_dfs_mt(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : common_dfs_mt(opcode, arg1, arg2, res)
+MEDDLY::forwd_dfs_mt::forwd_dfs_mt(forest* arg1, forest* arg2, forest* res)
+  : common_dfs_mt(FWD_DFS_cache, arg1, arg2, res)
 {
 }
 
@@ -1027,16 +997,14 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
 
 class MEDDLY::bckwd_dfs_mt : public common_dfs_mt {
   public:
-    bckwd_dfs_mt(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+    bckwd_dfs_mt(forest* arg1, forest* arg2, forest* res);
   protected:
     virtual void saturateHelper(unpacked_node& mdd);
     node_handle recFire(node_handle mdd, node_handle mxd);
 };
 
-MEDDLY::bckwd_dfs_mt::bckwd_dfs_mt(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : common_dfs_mt(opcode, arg1, arg2, res)
+MEDDLY::bckwd_dfs_mt::bckwd_dfs_mt(forest* arg1, forest* arg2, forest* res)
+  : common_dfs_mt(REV_DFS_cache, arg1, arg2, res)
 {
 }
 
@@ -1236,11 +1204,11 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::common_dfs_evplus::common_dfs_evplus(binary_opname* oc, forest* a1,
+MEDDLY::common_dfs_evplus::common_dfs_evplus(binary_list& oc, forest* a1,
   forest* a2, forest* res)
 : common_dfs(oc, a1, a2, res)
 {
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "NN:LN");
+  ct_entry_type* et = new ct_entry_type(oc.getName(), "NN:LN");
   et->setForestForSlot(0, a1);
   et->setForestForSlot(1, a2);
   et->setForestForSlot(4, res);
@@ -1253,13 +1221,13 @@ void MEDDLY::common_dfs_evplus
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
 {
   // Initialize operations
-  mddUnion = getOperation(UNION, resF, resF, resF);
+  mddUnion = UNION(resF, resF, resF);
   MEDDLY_DCASSERT(mddUnion);
 
-  mxdIntersection = getOperation(INTERSECTION, arg2F, arg2F, arg2F);
+  mxdIntersection = INTERSECTION(arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdIntersection);
 
-  mxdDifference = getOperation(DIFFERENCE, arg2F, arg2F, arg2F);
+  mxdDifference = DIFFERENCE(arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdDifference);
 
 #ifdef DEBUG_INITIAL
@@ -1275,7 +1243,8 @@ void MEDDLY::common_dfs_evplus
   splitMxd(b.getNode());
 
   // Execute saturation operation
-  saturation_evplus_op *so = new saturation_evplus_op(this, arg1F, resF);
+  unary_list dummy("Saturation");
+  saturation_evplus_op *so = new saturation_evplus_op(this, dummy, arg1F, resF);
   so->saturate(a, c);
 
   // Cleanup
@@ -1293,16 +1262,14 @@ void MEDDLY::common_dfs_evplus
 
 class MEDDLY::forwd_dfs_evplus : public common_dfs_evplus {
   public:
-  forwd_dfs_evplus(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+  forwd_dfs_evplus(forest* arg1, forest* arg2, forest* res);
   protected:
     virtual void saturateHelper(unpacked_node &mdd);
     void recFire(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd);
 };
 
-MEDDLY::forwd_dfs_evplus::forwd_dfs_evplus(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : common_dfs_evplus(opcode, arg1, arg2, res)
+MEDDLY::forwd_dfs_evplus::forwd_dfs_evplus(forest* arg1, forest* arg2,
+        forest* res) : common_dfs_evplus(FWD_DFS_cache, arg1, arg2, res)
 {
 }
 
@@ -1550,113 +1517,68 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
 
 // ******************************************************************
 // *                                                                *
-// *                     forwd_dfs_opname class                     *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::forwd_dfs_opname : public binary_opname {
-  public:
-    forwd_dfs_opname();
-    virtual binary_operation* buildOperation(forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::forwd_dfs_opname::forwd_dfs_opname()
- : binary_opname("ReachableDFS")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::forwd_dfs_opname::buildOperation(forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    a1->isForRelations()    ||
-    !a2->isForRelations()   ||
-    r->isForRelations()     ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  if (a1->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    return new forwd_dfs_mt(this, a1, a2, r);
-  }
-  else if (a1->getEdgeLabeling() == edge_labeling::EVPLUS) {
-    return new forwd_dfs_evplus(this, a1, a2, r);
-  }
-  else {
-    throw error(error::TYPE_MISMATCH);
-  }
-}
-
-
-
-// ******************************************************************
-// *                                                                *
-// *                     bckwd_dfs_opname class                     *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::bckwd_dfs_opname : public binary_opname {
-  public:
-    bckwd_dfs_opname();
-    virtual binary_operation* buildOperation(forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::bckwd_dfs_opname::bckwd_dfs_opname()
- : binary_opname("ReverseReachableDFS")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::bckwd_dfs_opname::buildOperation(forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (a1 != r)
-    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    a1->isForRelations()    ||
-    !a2->isForRelations()   ||
-    (a1->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ||
-    (a2->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  return new bckwd_dfs_mt(this, a1, a2, r);
-}
-
-// ******************************************************************
-// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeForwardDFS()
+MEDDLY::binary_operation* MEDDLY::REACHABLE_STATES_DFS(forest* a, forest* b,
+        forest* c)
 {
-  return new forwd_dfs_opname;
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  FWD_DFS_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if ( (b->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        return FWD_DFS_cache.add(new forwd_dfs_mt(a, b, c));
+    }
+    if (a->getEdgeLabeling() == edge_labeling::EVPLUS) {
+        return FWD_DFS_cache.add(new forwd_dfs_evplus(a, b, c));
+    }
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-MEDDLY::binary_opname* MEDDLY::initializeBackwardDFS()
+void MEDDLY::REACHABLE_STATES_DFS_init()
 {
-  return new bckwd_dfs_opname;
+    FWD_DFS_cache.reset("ReachableDFS");
+}
+
+void MEDDLY::REACHABLE_STATES_DFS_done()
+{
+    MEDDLY_DCASSERT(FWD_DFS_cache.isEmpty());
+}
+
+MEDDLY::binary_operation* MEDDLY::REVERSE_REACHABLE_DFS(forest* a, forest* b,
+        forest* c)
+{
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  REV_DFS_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if ( (b->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) ) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        return REV_DFS_cache.add(new bckwd_dfs_mt(a, b, c));
+    }
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::REVERSE_REACHABLE_DFS_init()
+{
+    REV_DFS_cache.reset("ReverseReachableDFS");
+}
+
+void MEDDLY::REVERSE_REACHABLE_DFS_done()
+{
+    MEDDLY_DCASSERT(REV_DFS_cache.isEmpty());
 }
 

@@ -86,11 +86,10 @@ void test_MT_full_Reductions(forest* f, const char* what)
 
     show_sec(std::cout, T, 3, 3);
 
-    if (startReport(T, __FILE__)) {
+    if (startReport(T, __FILE__, what, " MT")) {
         unsigned long N = NUMBATCHES;
         N *= BATCHSIZE;
-        report  << what << " MT $ "
-                << " Built " << N << ' ' << what
+        report  << " Built " << N << ' ' << what
                 << " MT nodes from full" << std::endl;
     }
 
@@ -145,11 +144,10 @@ void test_EV_full_Reductions(forest* f, const char* what)
 
     show_sec(std::cout, T, 3, 3);
 
-    if (startReport(T, __FILE__)) {
+    if (startReport(T, __FILE__, what, " EV")) {
         unsigned long N = NUMBATCHES;
         N *= BATCHSIZE;
-        report  << what << " EV $ "
-                << " Built " << N << ' ' << what
+        report  << " Built " << N << ' ' << what
                 << " EV nodes from full" << std::endl;
     }
 
@@ -165,7 +163,7 @@ int main(int argc, const char** argv)
     try {
         setReport(argc, argv);
 
-        std::cout   << "Timing experiments for building "
+        std::cout   << "\nTiming experiment: build and reduce "
                     << TOTAL << " nodes, in batches of " << BATCHSIZE << "\n\n";
 
         MEDDLY::initialize();

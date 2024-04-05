@@ -15,6 +15,7 @@ declare -r TIMETXT="time.$$.txt"
 #   (4) Result of the command
 #
 statName=(
+    'Run Date'
     'Version'
     'Released'
     '# Files'
@@ -22,6 +23,7 @@ statName=(
     '# Chars'
 )
 statCmd=(
+    "date +\"%Y %h %d %H:%M:%S\""
     "#e/libinfo | awk '{print \$3}'"
     "#e/libinfo 5"
     "ls #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc | wc -l"
@@ -29,6 +31,7 @@ statCmd=(
     "wc -c #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc | tail -n 1 | awk '{print \$1}'"
 )
 statPrint=(
+    "%s"
     "%s"
     "%s"
     "%'d"
@@ -112,23 +115,95 @@ showResults()
 #
 # Append results to html table
 #
-showHtml()
+appendHTML()
 {
-    printf "<tr>\n"
+    if [ ! "$1" ]; then
+        return
+    fi
+
+    if [ ! -f "$1" ]; then
+        echo "Initializing $1"
+        cat > $1 <<EOF
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+table {
+    border-collapse:collapse;
+}
+th {
+    padding-top:2px;
+    padding-bottom:2px;
+    padding-left:5px;
+    padding-right:5px;
+}
+td {
+    text-align:right;
+    padding-top:2px;
+    padding-bottom:2px;
+    padding-left:5px;
+    padding-right:5px;
+}
+</style>
+</head>
+
+<body>
+<p>
+Table of MEDDLY benchmark tests,
+primarily for comparing library versions.
+</p>
+<table border=1>
+<tr>
+    <th colspan=6>Source Information</th>
+    <th colspan=2>Constraint benchmarks</th>
+    <th colspan=3>Traditional reachability</th>
+    <th colspan=3>Saturation reachability</th>
+    <th colspan=2>Explicit reachability</th>
+</tr>
+EOF
+        echo "<tr>" >> $1
+        for i in ${!statName[@]}; do
+            echo "    <th>${statName[$i]}</th>" >> $1
+        done
+        for i in ${!benchName[@]}; do
+            echo "    <th>${benchName[$i]}</th>" >> $1
+        done
+        echo "</tr>" >> $1
+    fi
+
+    #
+    # Strip off the bottom </table> </body> </html> lines
+    #
+
+    mv -f $1 $1.old
+    grep -v "</table>" $1.old | grep -v "</body>" | grep -v "</html>" > $1
+
+    #
+    # Add new lines
+    #
+    echo "<tr>" >> $1
     for i in ${!statName[@]}; do
-        printf "    <td>${statPrint[$i]}</td>\n" "${statResult[$i]}"
+        printf "    <td>${statPrint[$i]}</td>\n" "${statResult[$i]}" >> $1
     done
     for i in ${!benchName[@]}; do
         if [ "TO" == "${benchPeak[$i]}" ]; then
-            printf "    <td>timeout</td>\n"
+            printf "    <td>timeout</td>\n" >> $1
         else
-            printf "    <td>%7.2f sec</td>\n" "${benchTime[$i]}"
+            printf "    <td>%7.2f sec</td>\n" "${benchTime[$i]}" >> $1
         fi
     done
 
-    printf "</tr>\n"
-}
+    echo "<tr>" >> $1
 
+    #
+    # Close off table
+    #
+    echo "</table>" >> $1
+    echo "</body>" >> $1
+    echo "</html>" >> $1
+
+    rm -f $1.old
+}
 
 #
 # Run with a timeout
@@ -229,6 +304,7 @@ while [ $# -gt 0 ]; do
     printf "\nUsage: $0 [options]\n\nOptions:\n";
     printf "\t-d <path>   Directory of version to test; otherwise . or ..\n"
     printf "\t-h <file>   Append output, in html format, to file.\n"
+    printf "\t            The file will be created if necessary.\n"
     printf "\t-t <file>   Write  output, in text format, to file.\n"
     printf "\n"
     exit 1
@@ -311,7 +387,5 @@ cleanup
 
 showResults | tee $TEXTFILE
 
-if [ "$HTMLFILE" ]; then
-    showHtml >> $HTMLFILE
-fi
+appendHTML $HTMLFILE
 

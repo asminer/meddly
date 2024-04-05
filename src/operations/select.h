@@ -20,10 +20,13 @@
 #define MEDDLY_SELECT_H
 
 namespace MEDDLY {
-    class unary_opname;
+    class forest;
+    class unary_operation;
 
-    /// Set up a unary_opname for the "select" operation.
-    unary_opname* initializeSelect();
+    /// Builder for 'select' operations.
+    unary_operation* SELECT(forest* arg, forest* res);
+    void SELECT_init();
+    void SELECT_done();
 };
 
 #endif

@@ -20,11 +20,15 @@
 #define MEDDLY_OPER_H
 
 #include "defines.h"
-#include "opname.h"
 #include "io.h"
 
+#include <vector>
+
+#ifdef HAVE_LIBGMP
+#include <gmp.h>
+#endif
+
 namespace MEDDLY {
-    class opname;
     class operation;
     class compute_table;
     class forest;
@@ -33,16 +37,31 @@ namespace MEDDLY {
     class ct_initializer;
     class ct_entry_type;
     class ct_entry_result;
+    class ct_object;
 
     void cleanup();
 
+
+    /// Argument and result types for apply operations.
+    enum class opnd_type {
+        FOREST      = 0,
+        BOOLEAN     = 1,
+        INTEGER     = 2,
+        REAL        = 3,
+        HUGEINT     = 4,
+        FLOATVECT   = 5,
+        DOUBLEVECT  = 6
+    };
+
     // ******************************************************************
-    // *                      Operation management                      *
+    // *                    Wrapper for GMP integers                    *
     // ******************************************************************
 
-    /// Safely destroy the given operation.
-    /// TBD: see if this can go in the operation destructor?
-    void destroyOperation(operation* &op);
+#ifdef HAVE_LIBGMP
+    ct_object& get_mpz_wrapper();
+    void unwrap(const ct_object &, mpz_t &value);
+#endif
+
 };
 
 // ******************************************************************
@@ -57,29 +76,25 @@ namespace MEDDLY {
 */
 class MEDDLY::operation {
         friend class initializer_list;
-        friend void destroyOperation(operation* &op);
     public:
         /** Constructor.
-                @param  n           Operation "name"
+                @param  n           Operation name, for debugging
                 @param  et_slots    Number of different compute table entry
                                     types used by this operation.
                                     Derived class constructors must register
                                     exactly this many entry types.
         */
-        operation(opname* n, unsigned et_slots);
+        operation(const char* n, unsigned et_slots);
+
+        /// Safely destroy the given operation.
+        static void destroy(operation* op);
 
     protected:
         virtual ~operation();
 
     public:
-
         /// Get the name of this operation; for display
-        inline const char* getName() const { return theOpName->getName(); }
-
-        /// Get the opname parent class that built us
-        inline const opname* getOpName() const { return theOpName; }
-
-
+        inline const char* getName() const { return name; }
 
         /** Are we marked for deletion?
             If so, all compute table entries for this operation
@@ -92,27 +107,8 @@ class MEDDLY::operation {
         void markForDeletion();
 
         //
-        // List of operations; used as operation cache in opname classes
-        //
-
-        inline void setNext(operation* n) { next = n; }
-        inline operation* getNext() const { return next; }
-
-        //
         // Used primarily by compute tables.
         //
-
-        /// Unique index for the operation
-        inline unsigned getIndex() const { return oplist_index; }
-
-        /// Find the operation with the given index.
-        inline static operation* getOpWithIndex(unsigned i) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, list_size);
-            return op_list[i];
-        }
-
-        /// How many operations are active?
-        inline static unsigned getOpListSize() { return list_size; }
 
         /// Set the first entry type ID;
         /// the remaining will come right after.
@@ -165,15 +161,46 @@ class MEDDLY::operation {
         void registerEntryType(unsigned slot, ct_entry_type* et);
         void buildCTs();
 
-        inline opname* getParent() { return theOpName; }
 
-    private:
+    // ------------------------------------------------------------
+    public:  // public  methods for the operation registry
+    // ------------------------------------------------------------
+        /// Unique ID > 0 for the operation.
+        inline unsigned getID() const { return oplist_index; }
+
+        /// Find the operation with the given ID.
+        inline static operation* getOpWithID(unsigned i) {
+#ifdef DEVELOPMENT_CODE
+            return op_list.at(i);
+#else
+            return op_list[i];
+#endif
+        }
+
+        /// How many operations are active?
+        inline static unsigned getOpListSize() {
+            return op_list.size();
+        }
+
+
+    // ------------------------------------------------------------
+    private: // private methods for the operation registry
+    // ------------------------------------------------------------
         // should be called during library init.
         static void initializeStatics();
 
         // should ONLY be called during library cleanup.
         static void destroyAllOps();
 
+        static void registerOperation(operation &o);
+        static void unregisterOperation(operation &o);
+
+    // ------------------------------------------------------------
+    private: // private members for the operation registry
+    // ------------------------------------------------------------
+        unsigned oplist_index;
+        static std::vector <operation*> op_list;
+        static std::vector <unsigned>   free_list;
 
     //
     // Members
@@ -201,31 +228,12 @@ class MEDDLY::operation {
         */
         unsigned num_etids;
 
-        /// Struct for CT searches.
-        // compute_table::entry_key* CTsrch;
-        // for cache of operations.
-        operation* next;
-
     private:
-
-    private:
-
-        opname* theOpName;
-        unsigned oplist_index;
+        const char* name;
         bool is_marked_for_deletion;
 
         // declared and initialized in meddly.cc
         static compute_table* Monolithic_CT;
-        // declared and initialized in meddly.cc
-        static operation** op_list;
-        // declared and initialized in meddly.cc
-        static unsigned* op_holes;
-        // declared and initialized in meddly.cc
-        static unsigned list_size;
-        // declared and initialized in meddly.cc
-        static unsigned list_alloc;
-        // declared and initialized in meddly.cc
-        static unsigned free_list;
 
         /**
             Starting slot for entry_types, assigned
@@ -240,5 +248,13 @@ class MEDDLY::operation {
 
 };
 
+#ifdef ALLOW_DEPRECATED_0_17_5
+namespace MEDDLY {
+    inline void destroyOperation(operation* op)
+    {
+        operation::destroy(op);
+    }
+};
+#endif
 
 #endif // #include guard

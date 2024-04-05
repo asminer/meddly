@@ -27,7 +27,7 @@
 #include "simple_model.h"
 #include "../timing/timer.h"
 
- #define TEST_HYB
+// #define TEST_HYB
 // #define DUMP_NSF
 // #define DUMP_REACHABLE
 
@@ -210,7 +210,7 @@ int main(int argc, const char** argv)
       #ifdef TEST_HYB
         MEDDLY::sathyb_opname::event** hyb_event  = buildHybridRelation(model, TRANS, PLACES, BOUNDS, inmdd, relmxd);
       #else
-        satimpl_opname::implicit_relation* T = new satimpl_opname::implicit_relation(inmdd,relmxd,inmdd);
+        implicit_relation* T = new implicit_relation(inmdd,relmxd,inmdd);
       #endif
 
       start.note_time();
@@ -222,7 +222,7 @@ int main(int argc, const char** argv)
 
       printf("\nNext-state function construction took %.4e seconds\n",
              start.get_last_seconds());
-      specialized_operation* sat = 0;
+      saturation_operation* sat = 0;
 
       #ifdef TEST_HYB
         printf("\nBuilding reachability set using saturation hybrid relation");
@@ -232,10 +232,7 @@ int main(int argc, const char** argv)
         sat = SATURATION_HYB_FORWARD()->buildOperation(IMPR);
       #else
         printf("\nBuilding reachability set using saturation implicit relation");
-        if (!SATURATION_IMPL_FORWARD()) {
-          throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-        }
-        sat = SATURATION_IMPL_FORWARD()->buildOperation(T);
+        sat = SATURATION_IMPL_FORWARD(inmdd, T, inmdd);
       #endif
 
       if (0==sat) {

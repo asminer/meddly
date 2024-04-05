@@ -21,13 +21,13 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class union_mdd;
-  class union_mxd;
+    class union_mdd;
+    class union_mxd;
 
-  class union_min_evplus;
-  class union_min_evplus_mxd;
+    class union_min_evplus;
+    class union_min_evplus_mxd;
 
-  class union_opname;
+    binary_list UNION_cache;
 };
 
 // ******************************************************************
@@ -37,19 +37,21 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::union_mdd : public generic_binary_mdd {
-  public:
-    union_mdd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+    public:
+        union_mdd(forest* arg1, forest* arg2, forest* res);
 
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
+        virtual bool checkTerminals(node_handle a, node_handle b,
+                node_handle& c);
 };
 
-MEDDLY::union_mdd::union_mdd(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mdd(opcode, arg1, arg2, res)
+MEDDLY::union_mdd::union_mdd(forest* arg1, forest* arg2, forest* res)
+  : generic_binary_mdd(UNION_cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::union_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -95,20 +97,21 @@ bool MEDDLY::union_mdd::checkTerminals(node_handle a, node_handle b, node_handle
 // ******************************************************************
 
 class MEDDLY::union_mxd : public generic_binary_mxd {
-  public:
-    union_mxd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+    public:
+        union_mxd(forest* arg1, forest* arg2, forest* res);
 
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-    virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
+        virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
+        virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
 };
 
-MEDDLY::union_mxd::union_mxd(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mxd(opcode, arg1, arg2, res)
+MEDDLY::union_mxd::union_mxd(forest* arg1, forest* arg2, forest* res)
+  : generic_binary_mxd(UNION_cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::union_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -281,25 +284,26 @@ MEDDLY::union_mxd::compute_ext(node_handle a, node_handle b)
 // ******************************************************************
 
 class MEDDLY::union_min_evplus : public generic_binary_evplus {
-  public:
-    union_min_evplus(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+    public:
+        union_min_evplus(forest* arg1, forest* arg2, forest* res);
 
-  protected:
-    virtual ct_entry_key* findResult(long aev, node_handle a,
-      long bev, node_handle b, long& cev, node_handle &c);
-    virtual void saveResult(ct_entry_key* key,
-      long aev, node_handle a, long bev, node_handle b, long cev, node_handle c);
+        virtual ct_entry_key* findResult(long aev, node_handle a,
+            long bev, node_handle b, long& cev, node_handle &c);
+        virtual void saveResult(ct_entry_key* key, long aev, node_handle a,
+            long bev, node_handle b, long cev, node_handle c);
 
-    virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
-      long& cev, node_handle& c);
+        virtual bool checkTerminals(long aev, node_handle a,
+            long bev, node_handle b, long& cev, node_handle& c);
 };
 
-MEDDLY::union_min_evplus::union_min_evplus(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_evplus(opcode, arg1, arg2, res)
+MEDDLY::union_min_evplus::union_min_evplus(forest* a, forest* b, forest* c)
+  : generic_binary_evplus(UNION_cache, a, b, c)
 {
-  operationCommutes();
+    operationCommutes();
+
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVPLUS);
 }
 
 MEDDLY::ct_entry_key* MEDDLY::union_min_evplus::findResult(long aev, node_handle a,
@@ -408,25 +412,27 @@ bool MEDDLY::union_min_evplus::checkTerminals(long aev, node_handle a, long bev,
 // ******************************************************************
 
 class MEDDLY::union_min_evplus_mxd : public generic_binary_evplus_mxd {
-  public:
-    union_min_evplus_mxd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+    public:
+        union_min_evplus_mxd(forest* arg1, forest* arg2, forest* res);
 
-  protected:
-    virtual ct_entry_key* findResult(long aev, node_handle a,
-      long bev, node_handle b, long& cev, node_handle &c);
-    virtual void saveResult(ct_entry_key* key,
-      long aev, node_handle a, long bev, node_handle b, long cev, node_handle c);
+        virtual ct_entry_key* findResult(long aev, node_handle a,
+            long bev, node_handle b, long& cev, node_handle &c);
+        virtual void saveResult(ct_entry_key* key, long aev, node_handle a,
+            long bev, node_handle b, long cev, node_handle c);
 
-    virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
-      long& cev, node_handle& c);
+        virtual bool checkTerminals(long aev, node_handle a,
+            long bev, node_handle b, long& cev, node_handle& c);
 };
 
-MEDDLY::union_min_evplus_mxd::union_min_evplus_mxd(binary_opname* opcode,
+MEDDLY::union_min_evplus_mxd::union_min_evplus_mxd(
   forest* arg1, forest* arg2, forest* res)
-  : generic_binary_evplus_mxd(opcode, arg1, arg2, res)
+  : generic_binary_evplus_mxd(UNION_cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVPLUS);
 }
 
 MEDDLY::ct_entry_key* MEDDLY::union_min_evplus_mxd::findResult(long aev, node_handle a,
@@ -530,69 +536,47 @@ bool MEDDLY::union_min_evplus_mxd::checkTerminals(long aev, node_handle a, long 
 
 // ******************************************************************
 // *                                                                *
-// *                       union_opname class                       *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::union_opname : public binary_opname {
-  public:
-    union_opname();
-    virtual binary_operation* buildOperation(forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::union_opname::union_opname()
- : binary_opname("Union")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::union_opname::buildOperation(forest *a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->isForRelations() != r->isForRelations()) ||
-    (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling())
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    if (r->isForRelations())
-      return new union_mxd(this, a1, a2, r);
-    else
-      return new union_mdd(this, a1, a2, r);
-  }
-
-  if (r->getEdgeLabeling() == edge_labeling::EVPLUS) {
-    if (r->isForRelations()) {
-      return new union_min_evplus_mxd(this, a1, a2, r);
-    }
-    else {
-      return new union_min_evplus(this, a1, a2, r);
-    }
-  }
-
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-// ******************************************************************
-// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeUnion()
+MEDDLY::binary_operation*
+MEDDLY::UNION(forest* a, forest* b, forest* c)
 {
-  return new union_opname;
+    if (!a || !b || !c) {
+        return nullptr;
+    }
+    binary_operation* bop =  UNION_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        if (c->isForRelations()) {
+            return UNION_cache.add(new union_mxd(a, b, c));
+        } else {
+            return UNION_cache.add(new union_mdd(a, b, c));
+        }
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::EVPLUS) {
+        if (c->isForRelations()) {
+            return UNION_cache.add(new union_min_evplus_mxd(a, b, c));
+        } else {
+            return UNION_cache.add(new union_min_evplus(a, b, c));
+        }
+    }
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::UNION_init()
+{
+    UNION_cache.reset("Union");
+}
+
+void MEDDLY::UNION_done()
+{
+    MEDDLY_DCASSERT(UNION_cache.isEmpty());
 }
 

@@ -208,14 +208,14 @@ int main(int argc, const char** argv)
     // Build next-state function
     if (LOG) LOG->newPhase(mxd, "Building next-state function");
     dd_edge nsf(mxd);
-    satpregen_opname::pregen_relation* ensf = 0;
-    specialized_operation* sat = 0;
+    pregen_relation* ensf = 0;
+    saturation_operation* sat = 0;
 
     if ('s' == method) {
-      ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd, 16);
+      ensf = new pregen_relation(mxd, 16);
     }
     if ('k' == method) {
-      ensf = new satpregen_opname::pregen_relation(mdd, mxd, mdd);
+      ensf = new pregen_relation(mxd);
     }
 
     if ('e' != method) {
@@ -267,10 +267,7 @@ int main(int argc, const char** argv)
         if ('k'==method)  printf(" by levels\n");
         else              printf(" by events\n");
         fflush(stdout);
-        if (!SATURATION_FORWARD()) {
-          throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
-        }
-        sat = SATURATION_FORWARD()->buildOperation(ensf);
+        sat = SATURATION_FORWARD(mdd, ensf, mdd);
         if (0==sat) {
           throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
         }

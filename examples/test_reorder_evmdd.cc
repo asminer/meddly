@@ -105,7 +105,7 @@ op_info* getOp(forest* f, operation* op)
 // Tests a evmdd operation on the elements provided.
 // This function assumes that each element[i] represents
 // an element in the given MTMDD.
-dd_edge test_evmdd(forest* evmdd, binary_handle opCode,
+dd_edge test_evmdd(forest* evmdd, binary_builtin opCode,
     int** element, element_type* terms, int nElements)
 {
   // A = first nElements/2 elements combined using +.

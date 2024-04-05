@@ -20,10 +20,13 @@
 #define MEDDLY_MODULO_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
 
-  /// Set up a binary_opname for the "modulo" operator.
-  binary_opname* initializeModulo();
+    /// The 'modulo' operation builder.
+    binary_operation* MODULO(forest* a, forest* b, forest* c);
+    void MODULO_init();
+    void MODULO_done();
 }
 
 #endif

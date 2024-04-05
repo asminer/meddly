@@ -4,7 +4,10 @@
 *.log
 *.trs
 .libs
+comptab
 ddedge
+fids
 mark
+opids
 reduce
 unpacked

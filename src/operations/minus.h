@@ -20,10 +20,13 @@
 #define MEDDLY_MINUS_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
 
-  /// Set up a binary_opname for the "minus" operation.
-  binary_opname* initializeMinus();
+    /// The 'minus' operation builder.
+    binary_operation* MINUS(forest* a, forest* b, forest* c);
+    void MINUS_init();
+    void MINUS_done();
 }
 
 #endif

@@ -21,17 +21,39 @@
 #include "ct_entry_result.h"
 #include "compute_table.h"
 #include "ct_initializer.h"
+#include "operations/mpz_object.h"  // for mpz wrapper
+
+// ******************************************************************
+// *                                                                *
+// *                     gmp  wrapper functions                     *
+// *                                                                *
+// ******************************************************************
+
+#ifdef HAVE_LIBGMP
+
+MEDDLY::ct_object& MEDDLY::get_mpz_wrapper()
+{
+    static MEDDLY::mpz_object foo;
+    return foo;
+}
+
+void MEDDLY::unwrap(const ct_object &x, mpz_t &value)
+{
+    using namespace MEDDLY;
+    const mpz_object &mx = static_cast <const mpz_object &> (x);
+    mx.copyInto(value);
+}
+
+#endif
+
 
 // ******************************************************************
 // *                       operation  statics                       *
 // ******************************************************************
 
 MEDDLY::compute_table* MEDDLY::operation::Monolithic_CT;
-MEDDLY::operation** MEDDLY::operation::op_list;
-unsigned* MEDDLY::operation::op_holes;
-unsigned MEDDLY::operation::list_size;
-unsigned MEDDLY::operation::list_alloc;
-unsigned MEDDLY::operation::free_list;
+std::vector <MEDDLY::operation*> MEDDLY::operation::op_list;
+std::vector <unsigned> MEDDLY::operation::free_list;
 
 // ******************************************************************
 // *                                                                *
@@ -39,47 +61,18 @@ unsigned MEDDLY::operation::free_list;
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::operation::operation(opname* n, unsigned et_slots)
+MEDDLY::operation::operation(const char* n, unsigned et_slots)
 {
 #ifdef DEBUG_CLEANUP
     fprintf(stdout, "Creating operation %p\n", this);
     fflush(stdout);
 #endif
-    theOpName = n;
+    name = n;
     num_etids = et_slots;
 
     is_marked_for_deletion = false;
-    next = nullptr;
 
-    //
-    // assign an index to this operation
-    //
-    if (free_list) {
-        oplist_index = free_list;
-        free_list = op_holes[free_list];
-    } else {
-        oplist_index = ++list_size;
-        if (list_size >= list_alloc) {
-            unsigned nla = list_alloc + 256;
-            op_list = (operation**) realloc(op_list, nla * sizeof(void*));
-            op_holes = (unsigned*) realloc(op_holes, nla * sizeof(unsigned));
-            if (0==op_list || 0==op_holes) {
-                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-            }
-            list_alloc = nla;
-            for (unsigned i=list_size; i<list_alloc; i++) {
-                op_list[i] = 0;
-                op_holes[i] = 0;
-            }
-        }
-        if (0==list_size) {
-            // Never use slot 0
-            list_size++;
-        }
-        oplist_index = list_size;
-        list_size++;
-    }
-    op_list[oplist_index] = this;
+    registerOperation(*this);
 
     //
     // Delay CT initialization!
@@ -137,18 +130,22 @@ MEDDLY::operation::~operation()
     delete[] CTresult;
     compute_table::unregisterOp(this, num_etids);
 
-    if (oplist_index) {
-        MEDDLY_DCASSERT(op_list[oplist_index] == this);
-        op_list[oplist_index] = 0;
-        op_holes[oplist_index] = free_list;
-        free_list = oplist_index;
-    }
+    unregisterOperation(*this);
 #ifdef DEBUG_CLEANUP
     fprintf(stdout, "Deleted operation %p %s\n", this, getName());
     fflush(stdout);
 #endif
 }
 
+void MEDDLY::operation::destroy(operation* op)
+{
+    if (!op) return;
+    if (!op->isMarkedForDeletion()) {
+        op->markForDeletion();
+        operation::removeStalesFromMonolithic();
+    }
+    delete op;
+}
 
 void MEDDLY::operation::removeStaleComputeTableEntries()
 {
@@ -211,7 +208,7 @@ void MEDDLY::operation::countAllNodeEntries(const forest* f, size_t* counts)
     if (Monolithic_CT) {
         Monolithic_CT->countNodeEntries(f, counts);
     }
-    for (unsigned i=0; i<list_size; i++) {
+    for (unsigned i=0; i<op_list.size(); i++) {
         if (op_list[i]) {
             op_list[i]->countCTEntries(f, counts);
         }
@@ -247,7 +244,7 @@ void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
         Monolithic_CT->show(s, verbLevel);
         return;
     }
-    for (unsigned i=0; i<list_size; i++) {
+    for (unsigned i=0; i<op_list.size(); i++) {
         if (op_list[i]) {
             op_list[i]->showComputeTable(s, verbLevel);
         }
@@ -257,10 +254,11 @@ void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
 void MEDDLY::operation::purgeAllMarked()
 {
     removeStalesFromMonolithic();
-    for (unsigned i=0; i<list_size; i++) {
+    for (unsigned i=0; i<op_list.size(); i++) {
         if (!op_list[i]) continue;
         if (op_list[i]->isMarkedForDeletion()) {
-            destroyOperation(op_list[i]);
+            destroy(op_list[i]);
+            op_list[i] = nullptr;
         }
     }
 }
@@ -361,38 +359,60 @@ void MEDDLY::operation::buildCTs()
 
 void MEDDLY::operation::initializeStatics()
 {
-  op_list = nullptr;
-  op_holes = nullptr;
-  list_size = 0;
-  list_alloc = 0;
-  free_list = 0;
-  Monolithic_CT = 0;
+    //
+    // Global operation registry
+    //
+    op_list.clear();
+    op_list.push_back(nullptr);
+    free_list.clear();
+
+    //
+    // Monolithic compute table
+    //
+    Monolithic_CT = nullptr;
 }
 
 void MEDDLY::operation::destroyAllOps()
 {
-  for (unsigned i=0; i<list_size; i++) delete op_list[i];
-  free(op_list);
-  free(op_holes);
-  initializeStatics();
+    unsigned i = op_list.size();
+    while (i) {
+        --i;
+#ifdef DEVELOPMENT_CODE
+        delete op_list.at(i);
+#else
+        delete op_list[i];
+#endif
+        MEDDLY_DCASSERT(nullptr == op_list[i]);
+    }
+    op_list.clear();
+    free_list.clear();
 }
 
-// ******************************************************************
-// *                                                                *
-// *                      front-end  functions                      *
-// *                                                                *
-// ******************************************************************
-
-void MEDDLY::destroyOperation(MEDDLY::operation* &op)
+void MEDDLY::operation::registerOperation(operation &o)
 {
-    if (!op) return;
-    opname* parent = op->getParent();
-    if (parent) parent->removeOperationFromCache(op);
-    if (!op->isMarkedForDeletion()) {
-        op->markForDeletion();
-        operation::removeStalesFromMonolithic();
+    if (free_list.size()) {
+        unsigned u = free_list.back();
+        free_list.pop_back();
+        MEDDLY_DCASSERT(nullptr == op_list.at(u));
+        o.oplist_index = u;
+        op_list[u] = &o;
+    } else {
+        o.oplist_index = op_list.size();
+        op_list.push_back(&o);
     }
-    delete op;
-    op = nullptr;
+}
+
+void MEDDLY::operation::unregisterOperation(operation &o)
+{
+    if (!o.oplist_index) return;
+    MEDDLY_DCASSERT(op_list[o.oplist_index] == &o);
+    op_list[o.oplist_index] = nullptr;
+    if (o.oplist_index == op_list.size()-1) {
+        // last operator, shrink
+        op_list.pop_back();
+    } else {
+        // Not last operator, add to free list
+        free_list.push_back(o.oplist_index);
+    }
 }
 

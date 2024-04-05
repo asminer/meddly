@@ -101,9 +101,7 @@
 // Static members
 //
 
-MEDDLY::forest** MEDDLY::forest::all_forests;
-unsigned MEDDLY::forest::max_forests;
-unsigned MEDDLY::forest::gfid;
+std::vector <MEDDLY::forest*> MEDDLY::forest::all_forests;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Static "constructors" and "destructors"
@@ -804,9 +802,9 @@ void MEDDLY::forest::removeStaleComputeTableEntries()
   if (operation::usesMonolithicComputeTable()) {
     operation::removeStalesFromMonolithic();
   } else {
-    for (unsigned i=0; i<szOpCount; i++)
+    for (unsigned i=0; i<opCount.size(); i++)
       if (opCount[i]) {
-        operation* op = operation::getOpWithIndex(i);
+        operation* op = operation::getOpWithID(i);
         op->removeStaleComputeTableEntries();
       }
   }
@@ -820,9 +818,9 @@ void MEDDLY::forest::removeAllComputeTableEntries()
     operation::removeStalesFromMonolithic();
     is_marked_for_deletion = false;
   } else {
-    for (unsigned i=0; i<szOpCount; i++)
+    for (unsigned i=0; i<opCount.size(); i++)
       if (opCount[i]) {
-        operation* op = operation::getOpWithIndex(i);
+        operation* op = operation::getOpWithID(i);
         op->removeAllComputeTableEntries();
       }
   }
@@ -830,26 +828,28 @@ void MEDDLY::forest::removeAllComputeTableEntries()
 
 void MEDDLY::forest::registerOperation(const operation* op)
 {
-  MEDDLY_DCASSERT(op->getIndex() >= 0);
-  if (op->getIndex() >= szOpCount) {
-    // need to expand
-    unsigned newSize = ((op->getIndex() / 16) +1 )*16; // expand in chunks of 16
-    unsigned* tmp = (unsigned*) realloc(opCount, newSize * sizeof(unsigned));
-    if (0==tmp) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    for ( ; szOpCount < newSize; szOpCount++) {
-      tmp[szOpCount] = 0;
+    MEDDLY_DCASSERT(op->getID() > 0);
+    if (op->getID() >= opCount.size()) {
+        // need to expand; do so in chunks of 16
+        const unsigned newSize = ((op->getID() / 16) +1 )*16;
+        opCount.resize(newSize, 0);
     }
-    opCount = tmp;
-  }
-  opCount[op->getIndex()] ++;
+#ifdef DEVELOPMENT_CODE
+    opCount.at(op->getID()) ++;
+#else
+    opCount[op->getID()] ++;
+#endif
 }
 
 void MEDDLY::forest::unregisterOperation(const operation* op)
 {
-  MEDDLY_DCASSERT(op->getIndex() >= 0);
-  MEDDLY_DCASSERT(szOpCount > op->getIndex());
-  MEDDLY_DCASSERT(opCount[op->getIndex()]>0);
-  opCount[op->getIndex()] --;
+    MEDDLY_DCASSERT(op->getID() >= 0);
+    MEDDLY_DCASSERT(opCount.at(op->getID())>0);
+#ifdef DEVELOPMENT_CODE
+    opCount.at(op->getID()) --;
+#else
+    opCount[op->getID()] --;
+#endif
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -858,46 +858,21 @@ void MEDDLY::forest::unregisterOperation(const operation* op)
 
 void MEDDLY::forest::initStatics()
 {
-    all_forests = new forest* [256];
-    max_forests = 256;
-    for (unsigned i=0; i<max_forests; i++) {
-        all_forests[i] = nullptr;
-    }
-    gfid = 0;
+    all_forests.clear();
+    all_forests.push_back(nullptr);
+    // reserve index 0 for 'no forest'
 }
 
 void MEDDLY::forest::freeStatics()
 {
-    delete[] all_forests;
-    max_forests = 0;
+    all_forests.clear();
 }
 
 void MEDDLY::forest::registerForest(forest* f)
 {
-    // Assign global ID to f
-    gfid++;
-    f->fid = gfid;
-
-    // Get slot for f
-    if (gfid >= max_forests) {
-        // enlarge array
-        unsigned newmax = max_forests * 2;
-        if (newmax > 1000000000) {
-            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-        }
-        forest** newall = new forest* [newmax];
-        unsigned i;
-        for (i=0; i<max_forests; i++) {
-            newall[i] = all_forests[i];
-        }
-        for ( ; i<newmax; i++) {
-            newall[i] = nullptr;
-        }
-        delete[] all_forests;
-        all_forests = newall;
-        max_forests = newmax;
-    }
-    all_forests[gfid] = f;
+    // Add f to the forest registry
+    f->fid = all_forests.size();
+    all_forests.push_back(f);
 
     // Register in the domain
     f->d->registerForest(f);
@@ -909,8 +884,12 @@ void MEDDLY::forest::registerForest(forest* f)
 void MEDDLY::forest::unregisterForest(forest* f)
 {
     // Remove from forest slot
-    if (f->fid <= max_forests) {
+    if (f->fid < all_forests.size()) {
+#ifdef DEVELOPMENT_CODE
+        all_forests.at(f->fid) = nullptr;
+#else
         all_forests[f->fid] = nullptr;
+#endif
     }
 
     // Unregister in the domain
@@ -1257,9 +1236,9 @@ void MEDDLY::forest::showComputeTable(output &s, int verbLevel) const
   if (operation::usesMonolithicComputeTable()) {
     operation::showMonolithicComputeTable(s, verbLevel);
   } else {
-    for (unsigned i=0; i<szOpCount; i++)
+    for (unsigned i=0; i<opCount.size(); i++)
       if (opCount[i]) {
-        operation* op = operation::getOpWithIndex(i);
+        operation* op = operation::getOpWithID(i);
         op->showComputeTable(s, verbLevel);
       }
   }
@@ -1404,13 +1383,6 @@ MEDDLY::forest
 #endif
 
     //
-    // Initialize array of operations
-    //
-    opCount = 0;
-    szOpCount = 0;
-
-
-    //
     // Initialize the root edges
     //
     roots = nullptr;
@@ -1462,9 +1434,6 @@ MEDDLY::forest::~forest()
     reportMemoryUsage(stdout, "\t", 9);
 #endif
 
-    // operations are deleted elsewhere...
-    free(opCount);
-
     unregisterDDEdges();
 
     // unique table
@@ -1482,9 +1451,9 @@ void MEDDLY::forest::markForDeletion()
     if (is_marked_for_deletion) return;
     is_marked_for_deletion = true;
     // deal with operations associated with this forest
-    for (unsigned i=0; i<szOpCount; i++)
+    for (unsigned i=0; i<opCount.size(); i++)
         if (opCount[i]) {
-            operation* op = operation::getOpWithIndex(i);
+            operation* op = operation::getOpWithID(i);
             op->markForDeletion();
         }
     unregisterDDEdges();

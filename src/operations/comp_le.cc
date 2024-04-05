@@ -21,7 +21,7 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class lessequal_opname;
+    binary_list LE_cache;
 };
 
 
@@ -36,9 +36,13 @@ namespace MEDDLY {
 template <typename T>
 class lessequal_mdd : public generic_binary_mdd {
   public:
-    lessequal_mdd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res)
-      : generic_binary_mdd(opcode, arg1, arg2, res) { }
+    lessequal_mdd(forest* arg1, forest* arg2, forest* res)
+      : generic_binary_mdd(LE_cache, arg1, arg2, res)
+    {
+        checkDomains(__FILE__, __LINE__);
+        checkAllRelations(__FILE__, __LINE__, SET);
+        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+    }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
@@ -77,9 +81,13 @@ namespace MEDDLY {
 template <typename T>
 class lessequal_mxd : public generic_binbylevel_mxd {
   public:
-    lessequal_mxd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res)
-      : generic_binbylevel_mxd(opcode, arg1, arg2, res) { }
+    lessequal_mxd(forest* arg1, forest* arg2, forest* res)
+      : generic_binbylevel_mxd(LE_cache, arg1, arg2, res)
+    {
+        checkDomains(__FILE__, __LINE__);
+        checkAllRelations(__FILE__, __LINE__, RELATION);
+        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+    }
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
@@ -103,70 +111,45 @@ bool lessequal_mxd<T>
 
 // ******************************************************************
 // *                                                                *
-// *                     lessequal_opname class                     *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::lessequal_opname : public binary_opname {
-  public:
-    lessequal_opname();
-    virtual binary_operation* buildOperation(forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::lessequal_opname::lessequal_opname()
- : binary_opname("Unequal")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::lessequal_opname::buildOperation(forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->isForRelations() != r->isForRelations()) ||
-    (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling())
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  bool use_reals = (
-    a1->getRangeType() == range_type::REAL || a2->getRangeType() == range_type::REAL
-  );
-  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    if (use_reals) {
-      if (r->isForRelations())
-        return new lessequal_mxd<float>(this, a1, a2, r);
-      else
-        return new lessequal_mdd<float>(this, a1, a2, r);
-    } else {
-      if (r->isForRelations())
-        return new lessequal_mxd<int>(this, a1, a2, r);
-      else
-        return new lessequal_mdd<int>(this, a1, a2, r);
-    }
-  }
-
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-// ******************************************************************
-// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeLE()
+MEDDLY::binary_operation* MEDDLY::LESS_THAN_EQUAL(forest* a, forest* b, forest* c)
 {
-  return new lessequal_opname;
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  LE_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            if (c->isForRelations())
+                return LE_cache.add(new lessequal_mxd<float>(a, b, c));
+            else
+                return LE_cache.add(new lessequal_mdd<float>(a, b, c));
+        } else {
+            if (c->isForRelations())
+                return LE_cache.add(new lessequal_mxd<long>(a, b, c));
+            else
+                return LE_cache.add(new lessequal_mdd<long>(a, b, c));
+        }
+    }
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::LESS_THAN_EQUAL_init()
+{
+    LE_cache.reset("LessEqual");
+}
+
+void MEDDLY::LESS_THAN_EQUAL_done()
+{
+    MEDDLY_DCASSERT(LE_cache.isEmpty());
 }
 

@@ -30,21 +30,21 @@
 // #define DEBUG_CARD
 
 namespace MEDDLY {
-  class card_int;
-  class card_mdd_int;
-  class card_mxd_int;
+    class card_int;
+    class card_mdd_int;
+    class card_mxd_int;
 
-  class card_real;
-  class card_mdd_real;
-  class card_mxd_real;
+    class card_real;
+    class card_mdd_real;
+    class card_mxd_real;
 
 #ifdef HAVE_LIBGMP
-  class card_mpz;
-  class card_mdd_mpz;
-  class card_mxd_mpz;
+    class card_mpz;
+    class card_mdd_mpz;
+    class card_mxd_mpz;
 #endif
 
-  class card_opname;
+    unary_list CARD_cache;
 };
 
 // ******************************************************************
@@ -63,28 +63,28 @@ namespace MEDDLY {
 
 //  Abstract base class: cardinality that returns an integer
 class MEDDLY::card_int : public unary_operation {
-public:
-  card_int(unary_opname* oc, forest* arg);
+    public:
+        card_int(forest* arg);
 
-protected:
-  static inline void overflow_acc(long &a, long x) {
-    a += x;
-    if (a < x) throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
-  }
-  static inline long overflow_mult(long a, long x) {
-    a *= x;
-    if (a < x) throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
-    return a;
-  }
+    protected:
+        static inline void overflow_acc(long &a, long x) {
+            a += x;
+            if (a < x) throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
+        }
+        static inline long overflow_mult(long a, long x) {
+            a *= x;
+            if (a < x) throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
+            return a;
+        }
 };
 
-MEDDLY::card_int::card_int(unary_opname* oc, forest* arg)
- : unary_operation(oc, 1, arg, opnd_type::INTEGER)
+MEDDLY::card_int::card_int(forest* arg)
+    : unary_operation(CARD_cache, 1, arg, opnd_type::INTEGER)
 {
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:L");
-  et->setForestForSlot(0, arg);
-  registerEntryType(0, et);
-  buildCTs();
+    ct_entry_type* et = new ct_entry_type(CARD_cache.getName(), "N:L");
+    et->setForestForSlot(0, arg);
+    registerEntryType(0, et);
+    buildCTs();
 }
 
 // ******************************************************************
@@ -95,13 +95,12 @@ MEDDLY::card_int::card_int(unary_opname* oc, forest* arg)
 
 //  Cardinality on MDDs, returning integer
 class MEDDLY::card_mdd_int : public card_int {
-public:
-  card_mdd_int(unary_opname* oc, forest* arg)
-    : card_int(oc, arg) { }
-  virtual void compute(const dd_edge &arg, long &res) {
-    res = compute_r(argF->getMaxLevelIndex(), arg.getNode());
-  }
-  long compute_r(int k, node_handle a);
+    public:
+        card_mdd_int(forest* arg) : card_int(arg) { }
+        virtual void compute(const dd_edge &arg, long &res) {
+            res = compute_r(argF->getMaxLevelIndex(), arg.getNode());
+        }
+        long compute_r(int k, node_handle a);
 };
 
 long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
@@ -158,13 +157,12 @@ long MEDDLY::card_mdd_int::compute_r(int k, node_handle a)
 
 //  Cardinality on MxDs, returning integer
 class MEDDLY::card_mxd_int : public card_int {
-public:
-  card_mxd_int(unary_opname* oc, forest* arg)
-    : card_int(oc, arg) { }
-  virtual void compute(const dd_edge &arg, long &res) {
-    res = compute_r(argF->getMaxLevelIndex(), arg.getNode());
-  }
-  long compute_r(int k, node_handle a);
+    public:
+        card_mxd_int(forest* arg) : card_int(arg) { }
+        virtual void compute(const dd_edge &arg, long &res) {
+            res = compute_r(argF->getMaxLevelIndex(), arg.getNode());
+        }
+        long compute_r(int k, node_handle a);
 };
 
 long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
@@ -226,17 +224,17 @@ long MEDDLY::card_mxd_int::compute_r(int k, node_handle a)
 
 //  Abstract base class: cardinality that returns a real
 class MEDDLY::card_real : public unary_operation {
-public:
-  card_real(unary_opname* oc, forest* arg);
+    public:
+        card_real(forest* arg);
 };
 
-MEDDLY::card_real::card_real(unary_opname* oc, forest* arg)
- : unary_operation(oc, 1, arg, opnd_type::REAL)
+MEDDLY::card_real::card_real(forest* arg)
+    : unary_operation(CARD_cache, 1, arg, opnd_type::REAL)
 {
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:D");
-  et->setForestForSlot(0, arg);
-  registerEntryType(0, et);
-  buildCTs();
+    ct_entry_type* et = new ct_entry_type(CARD_cache.getName(), "N:D");
+    et->setForestForSlot(0, arg);
+    registerEntryType(0, et);
+    buildCTs();
 }
 
 // ******************************************************************
@@ -247,13 +245,12 @@ MEDDLY::card_real::card_real(unary_opname* oc, forest* arg)
 
 //  Cardinality on MDDs, returning real
 class MEDDLY::card_mdd_real : public card_real {
-public:
-  card_mdd_real(unary_opname* oc, forest* arg)
-    : card_real(oc, arg) { }
-  virtual void compute(const dd_edge &arg, double &res) {
-    res = compute_r(argF->getMaxLevelIndex(), arg.getNode());
-  }
-  double compute_r(int ht, node_handle a);
+    public:
+        card_mdd_real(forest* arg) : card_real(arg) { }
+        virtual void compute(const dd_edge &arg, double &res) {
+            res = compute_r(argF->getMaxLevelIndex(), arg.getNode());
+        }
+        double compute_r(int ht, node_handle a);
 };
 
 double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
@@ -311,13 +308,12 @@ double MEDDLY::card_mdd_real::compute_r(int k, node_handle a)
 
 //  Cardinality on MxDs, returning real
 class MEDDLY::card_mxd_real : public card_real {
-public:
-  card_mxd_real(unary_opname* oc, forest* arg)
-    : card_real(oc, arg) { }
-  virtual void compute(const dd_edge &arg, double &res) {
-    res = compute_r(argF->getMaxLevelIndex(), arg.getNode());
-  }
-  double compute_r(int k, node_handle a);
+    public:
+        card_mxd_real(forest* arg) : card_real(arg) { }
+        virtual void compute(const dd_edge &arg, double &res) {
+            res = compute_r(argF->getMaxLevelIndex(), arg.getNode());
+        }
+        double compute_r(int k, node_handle a);
 };
 
 double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
@@ -384,17 +380,17 @@ double MEDDLY::card_mxd_real::compute_r(int k, node_handle a)
 
 //  Abstract base class: cardinality that returns large (mpz) integers.
 class MEDDLY::card_mpz : public unary_operation {
-public:
-  card_mpz(unary_opname* oc, forest* arg);
+    public:
+        card_mpz(forest* arg);
 };
 
-MEDDLY::card_mpz::card_mpz(unary_opname* oc, forest* arg)
- : unary_operation(oc, 1, arg, opnd_type::HUGEINT)
+MEDDLY::card_mpz::card_mpz(forest* arg)
+    : unary_operation(CARD_cache, 1, arg, opnd_type::HUGEINT)
 {
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:G");
-  et->setForestForSlot(0, arg);
-  registerEntryType(0, et);
-  buildCTs();
+    ct_entry_type* et = new ct_entry_type(CARD_cache.getName(), "N:G");
+    et->setForestForSlot(0, arg);
+    registerEntryType(0, et);
+    buildCTs();
 }
 
 #endif
@@ -409,14 +405,13 @@ MEDDLY::card_mpz::card_mpz(unary_opname* oc, forest* arg)
 
 /// Cardinality of MDDs, returning large (mpz) integers.
 class MEDDLY::card_mdd_mpz : public card_mpz {
-public:
-  card_mdd_mpz(unary_opname* oc, forest* arg)
-    : card_mpz(oc, arg) { }
-  virtual void compute(const dd_edge& a, ct_object &res) {
-    mpz_object& mcard = dynamic_cast <mpz_object &> (res);
-    compute_r(argF->getMaxLevelIndex(), a.getNode(), mcard);
-  }
-  void compute_r(int k, node_handle a, mpz_object &b);
+    public:
+        card_mdd_mpz(forest* arg) : card_mpz(arg) { }
+        virtual void compute(const dd_edge& a, ct_object &res) {
+            mpz_object& mcard = dynamic_cast <mpz_object &> (res);
+            compute_r(argF->getMaxLevelIndex(), a.getNode(), mcard);
+        }
+        void compute_r(int k, node_handle a, mpz_object &b);
 };
 
 void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
@@ -494,14 +489,13 @@ void MEDDLY::card_mdd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 
 /// Cardinality of MxDs, returning large (mpz) integers.
 class MEDDLY::card_mxd_mpz : public card_mpz {
-public:
-  card_mxd_mpz(unary_opname* oc, forest* arg)
-    : card_mpz(oc, arg) { }
-  virtual void compute(const dd_edge& a, ct_object &res) {
-    mpz_object& mcard = dynamic_cast <mpz_object &> (res);
-    compute_r(argF->getMaxLevelIndex(), a.getNode(), mcard);
-  }
-  void compute_r(int k, node_handle a, mpz_object &b);
+    public:
+        card_mxd_mpz(forest* arg) : card_mpz(arg) { }
+        virtual void compute(const dd_edge& a, ct_object &res) {
+            mpz_object& mcard = dynamic_cast <mpz_object &> (res);
+            compute_r(argF->getMaxLevelIndex(), a.getNode(), mcard);
+        }
+        void compute_r(int k, node_handle a, mpz_object &b);
 };
 
 void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
@@ -574,63 +568,52 @@ void MEDDLY::card_mxd_mpz::compute_r(int k, node_handle a, mpz_object &card)
 #endif
 
 
-
-// ******************************************************************
-// *                                                                *
-// *                       card_opname  class                       *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::card_opname : public unary_opname {
-  public:
-    card_opname();
-    virtual unary_operation*
-      buildOperation(forest* ar, opnd_type res);
-};
-
-MEDDLY::card_opname::card_opname()
- : unary_opname("Card")
-{
-}
-
-MEDDLY::unary_operation*
-MEDDLY::card_opname::buildOperation(forest* arg, opnd_type res)
-{
-  if (0==arg) return 0;
-  switch (res) {
-    case opnd_type::INTEGER:
-      if (arg->isForRelations())
-        return new card_mxd_int(this, arg);
-      else
-        return new card_mdd_int(this, arg);
-
-    case opnd_type::REAL:
-      if (arg->isForRelations())
-        return new card_mxd_real(this, arg);
-      else
-        return new card_mdd_real(this, arg);
-
-#ifdef HAVE_LIBGMP
-    case opnd_type::HUGEINT:
-      if (arg->isForRelations())
-        return new card_mxd_mpz(this, arg);
-      else
-        return new card_mdd_mpz(this, arg);
-#endif
-
-    default:
-      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-  }
-}
-
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeCardinality()
+MEDDLY::unary_operation* MEDDLY::CARDINALITY(forest* arg, opnd_type res)
 {
-  return new card_opname;
+    if (!arg) return nullptr;
+    unary_operation* uop =  CARD_cache.find(arg, res);
+    if (uop) {
+        return uop;
+    }
+
+    switch (res) {
+        case opnd_type::INTEGER:
+            if (arg->isForRelations())
+                return CARD_cache.add(new card_mxd_int(arg));
+            else
+                return CARD_cache.add(new card_mdd_int(arg));
+
+        case opnd_type::REAL:
+            if (arg->isForRelations())
+                return CARD_cache.add(new card_mxd_real(arg));
+            else
+                return CARD_cache.add(new card_mdd_real(arg));
+
+#ifdef HAVE_LIBGMP
+        case opnd_type::HUGEINT:
+            if (arg->isForRelations())
+                return CARD_cache.add(new card_mxd_mpz(arg));
+            else
+                return CARD_cache.add(new card_mdd_mpz(arg));
+#endif
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
 }
 
+void MEDDLY::CARDINALITY_init()
+{
+    CARD_cache.reset("Card");
+}
+
+void MEDDLY::CARDINALITY_done()
+{
+    MEDDLY_DCASSERT( CARD_cache.isEmpty() );
+}

@@ -21,9 +21,10 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class equal_evtimes;
+    // TBD: this operation is strange
+    class equal_evtimes;
 
-  class equal_opname;
+    binary_list EQUAL_cache;
 };
 
 
@@ -38,11 +39,13 @@ namespace MEDDLY {
 template <typename T>
 class equal_mdd : public generic_binary_mdd {
   public:
-    equal_mdd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res)
-      : generic_binary_mdd(opcode, arg1, arg2, res)
+    equal_mdd(forest* arg1, forest* arg2, forest* res)
+      : generic_binary_mdd(EQUAL_cache, arg1, arg2, res)
       {
         operationCommutes();
+        checkDomains(__FILE__, __LINE__);
+        checkAllRelations(__FILE__, __LINE__, SET);
+        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
       }
 
   protected:
@@ -80,11 +83,13 @@ namespace MEDDLY {
 template <typename T>
 class equal_mxd : public generic_binbylevel_mxd {
   public:
-    equal_mxd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res)
-      : generic_binbylevel_mxd(opcode, arg1, arg2, res)
+    equal_mxd(forest* arg1, forest* arg2, forest* res)
+      : generic_binbylevel_mxd(EQUAL_cache, arg1, arg2, res)
       {
         operationCommutes();
+        checkDomains(__FILE__, __LINE__);
+        checkAllRelations(__FILE__, __LINE__, RELATION);
+        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
       }
 
   protected:
@@ -115,19 +120,20 @@ bool equal_mxd<T>
 
 class MEDDLY::equal_evtimes : public generic_binary_evtimes {
   public:
-    equal_evtimes(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+    equal_evtimes(forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(float av, node_handle a, float bv, node_handle b,
       float &cv, node_handle& c);
 };
 
-MEDDLY::equal_evtimes::equal_evtimes(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_evtimes(opcode, arg1, arg2, res)
+MEDDLY::equal_evtimes::equal_evtimes(forest* arg1, forest* arg2, forest* res)
+  : generic_binary_evtimes(EQUAL_cache, arg1, arg2, res)
 {
   operationCommutes();
+  checkDomains(__FILE__, __LINE__);
+  checkAllRelations(__FILE__, __LINE__, RELATION);
+  checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVTIMES);
 }
 
 bool MEDDLY::equal_evtimes
@@ -149,81 +155,49 @@ bool MEDDLY::equal_evtimes
 
 // ******************************************************************
 // *                                                                *
-// *                       equal_opname class                       *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::equal_opname : public binary_opname {
-  public:
-    equal_opname();
-    virtual binary_operation* buildOperation(forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::equal_opname::equal_opname()
- : binary_opname("Equal")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::equal_opname::buildOperation(forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->isForRelations() != r->isForRelations()) ||
-    (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling())
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    bool use_reals = (
-      a1->getRangeType() == range_type::REAL || a2->getRangeType() == range_type::REAL
-    );
-    if (use_reals) {
-      if (r->isForRelations())
-        return new equal_mxd<float>(this, a1, a2, r);
-      else
-        return new equal_mdd<float>(this, a1, a2, r);
-    } else {
-      if (r->isForRelations())
-        return new equal_mxd<int>(this, a1, a2, r);
-      else
-        return new equal_mdd<int>(this, a1, a2, r);
-    }
-  }
-
-  if (r->getEdgeLabeling() == edge_labeling::EVTIMES) {
-    if (
-      (a1->getRangeType() != r->getRangeType()) ||
-      (a1->getRangeType() != r->getRangeType())
-    )
-    {
-      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
-    return new equal_evtimes(this, a1, a2, r);
-  }
-
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-// ******************************************************************
-// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeEQ()
+MEDDLY::binary_operation* MEDDLY::EQUAL(forest* a, forest* b, forest* c)
 {
-  return new equal_opname;
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  EQUAL_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            if (c->isForRelations())
+                return EQUAL_cache.add(new equal_mxd<float>(a, b, c));
+            else
+                return EQUAL_cache.add(new equal_mdd<float>(a, b, c));
+        } else {
+            if (c->isForRelations())
+                return EQUAL_cache.add(new equal_mxd<long>(a, b, c));
+            else
+                return EQUAL_cache.add(new equal_mdd<long>(a, b, c));
+        }
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::EVTIMES) {
+        return EQUAL_cache.add(new equal_evtimes(a, b, c));
+    }
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::EQUAL_init()
+{
+    EQUAL_cache.reset("Equal");
+}
+
+void MEDDLY::EQUAL_done()
+{
+    MEDDLY_DCASSERT(EQUAL_cache.isEmpty());
 }
 

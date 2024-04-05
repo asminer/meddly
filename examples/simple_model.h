@@ -50,7 +50,7 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
       @param  verb      Verbosity level.
 */
 void buildNextStateFunction(const char* const* events, unsigned nEvents,
-    MEDDLY::satpregen_opname::pregen_relation* pnsf, int verb);
+    MEDDLY::pregen_relation* pnsf, int verb);
 
 /** Use explicit search to build the reachability set.
       @param  events    Array of dimension \a nEvents.
@@ -70,9 +70,9 @@ void explicitReachset(const char* const* events, unsigned nEvents,
 
 void buildImplicitRelation(const int* const* events, int nEvents,
         int nPlaces, int bounds, MEDDLY::forest* mddF,
-        MEDDLY::forest* mxdF, MEDDLY::satimpl_opname::implicit_relation* T);
+        MEDDLY::forest* mxdF, MEDDLY::implicit_relation* T);
 
-MEDDLY::sathyb_opname::event** buildHybridRelation(const int* const* events,
+MEDDLY::hybrid_event** buildHybridRelation(const int* const* events,
         int nEvents, int nPlaces, int bounds,
         MEDDLY::forest* mddF, MEDDLY::forest* mxdF);
 

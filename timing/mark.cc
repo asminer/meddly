@@ -175,9 +175,8 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
     T.note_time();
     show_sec(std::cout, T, 3, 3);
 
-    if (startReport(T, __FILE__)) {
-        report  << name << " mark $ "
-                << "Marked " << name << marks << " times" << std::endl;
+    if (startReport(T, __FILE__, name, " mark")) {
+        report  << "Marked " << name << marks << " times" << std::endl;
     }
 
     std::cout << "        " << M.countMarked() << " marked nodes\n";
@@ -197,9 +196,8 @@ void markTest(const char* name, const dd_edge &E, const unsigned marks,
     T.note_time();
     show_sec(std::cout, T, 3, 3);
 
-    if (startReport(T, __FILE__)) {
-        report  << name << " count $ "
-                << "Counted nodes in " << name << counts << " times" << std::endl;
+    if (startReport(T, __FILE__, name, " count")) {
+        report  << "Counted nodes in " << name << counts << " times" << std::endl;
     }
 
     std::cout << "        " << eco << " non-zero edges\n";
@@ -275,6 +273,7 @@ void runWithArgs(unsigned N, unsigned marks, unsigned counts)
 
 int main(int argc, const char** argv)
 {
+    std::cout << "\nMark (of mark and sweep) timing tests\n\n";
     try {
         setReport(argc, argv);
 

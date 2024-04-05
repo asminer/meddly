@@ -24,475 +24,38 @@
 #include "../compute_table.h"
 #include "../oper_unary.h"
 #include "../oper_binary.h"
-#include "../oper_special.h"
-#include "../opname_satur.h"
+#include "../oper_satur.h"
 #include "../ops_builtin.h"
+#include "../sat_relations.h"
 
 #define DEBUG_FINALIZE
 // #define DEBUG_FINALIZE_SPLIT
 // #define DEBUG_EVENT_MASK
 
 namespace MEDDLY {
-  class saturation_by_events_opname;
   class saturation_by_events_op;
 
   class common_dfs_by_events_mt;
   class forwd_dfs_by_events_mt;
   class bckwd_dfs_by_events_mt;
-
-  class fb_saturation_opname;
-
 } // Namespace MEDDLY
 
 
 
 // ******************************************************************
 // *                                                                *
-// *                    satpregen_opname methods                    *
+// *                 saturation_by_events_op  class                 *
 // *                                                                *
 // ******************************************************************
 
-
-MEDDLY::satpregen_opname::satpregen_opname(const char* n)
- : specialized_opname(n)
-{
-}
-
-MEDDLY::satpregen_opname::~satpregen_opname()
-{
-}
-
-void
-MEDDLY::satpregen_opname::pregen_relation
-::setForests(forest* inf, forest* mxd, forest* outf)
-{
-  insetF = inf;
-  outsetF = outf;
-  if (0==insetF || 0==outsetF || 0==mxd) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-
-  // Check for same domain
-  if (
-    (insetF->getDomain() != mxd->getDomain()) ||
-    (outsetF->getDomain() != mxd->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  // for now, anyway, inset and outset must be same forest
-  if (insetF != outsetF)
-    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
-
-  // Check forest types
-  if (
-    insetF->isForRelations()    ||
-    !mxd->isForRelations()     ||
-    outsetF->isForRelations()   ||
-    (insetF->getRangeType() != mxd->getRangeType())        ||
-    (outsetF->getRangeType() != mxd->getRangeType())       ||
-    (insetF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)   ||
-    (outsetF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)  ||
-    (mxd->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)     ||
-    (outsetF->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  // Forests are good; set number of variables
-  K = mxd->getMaxLevelIndex();
-}
-
-MEDDLY::satpregen_opname::pregen_relation
-::pregen_relation(forest* inf, forest* mxd, forest* outf, unsigned nevents)
-{
-  setForests(inf, mxd, outf);
-
-  num_events = nevents;
-  if (num_events) {
-    events = new dd_edge[num_events];
-    next = new unsigned[num_events];
-    for (unsigned e=0; e<num_events; e++) {
-      events[e].attach(mxd);
-    }
-  } else {
-    events = 0;
-    next = 0;
-  }
-  last_event = 0;
-
-  level_index = new unsigned[K+1];
-  for (unsigned k=0; k<=K; k++) level_index[k] = 0;   // null pointer
-}
-
-MEDDLY::satpregen_opname::pregen_relation
-::pregen_relation(forest* inf, forest* mxd, forest* outf)
-{
-  setForests(inf, mxd, outf);
-
-  events = new dd_edge[K+1];
-  for (unsigned k=0; k<=K; k++) {
-      events[k].attach(mxd);
-  }
-
-  next = 0;
-  level_index = 0;
-
-  num_events = 0;
-  last_event = 0;
-}
-
-
-MEDDLY::satpregen_opname::pregen_relation
-::~pregen_relation()
-{
-  delete[] events;
-  delete[] next;
-  delete[] level_index;
-}
-
-void
-MEDDLY::satpregen_opname::pregen_relation
-::addToRelation(const dd_edge &r)
-{
-  MEDDLY_DCASSERT(mxdF);
-
-  if (r.getForest() != mxdF)  throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
-
-  int k = r.getLevel();
-  if (0==k) return;
-  if (k<0) k = -k;
-
-  if (0==level_index) {
-    // relation is "by levels"
-
-    apply(UNION, events[k], r, events[k]);
-
-  } else {
-    // relation is "by events"
-
-    if (isFinalized())            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-    if (last_event >= num_events) throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
-
-    events[last_event] = r;
-    next[last_event] = level_index[k];
-    level_index[k] = ++last_event;
-  }
-}
-
-
-void
-MEDDLY::satpregen_opname::pregen_relation
-::splitMxd(splittingOption split)
-{
-  if (split == None) return;
-  if (split == MonolithicSplit) {
-    unionLevels();
-    split = SplitOnly;
-  }
-
-  // For each level k, starting from the top level
-  //    MXD(k) is the matrix diagram at level k.
-  //    Calculate ID(k), the intersection of the diagonals of MXD(k).
-  //    Subtract ID(k) from MXD(k).
-  //    Add ID(k) to level(ID(k)).
-
-#ifdef DEBUG_FINALIZE_SPLIT
-  printf("Splitting events in finalize()\n");
-  printf("events array: [");
-  for (int i=0; i<=K; i++) {
-    if (i) printf(", ");
-    printf("%d", events[i]);
-  }
-  printf("]\n");
-#endif
-
-  // Initialize operations
-  binary_operation* mxdUnion = getOperation(UNION, mxdF, mxdF, mxdF);
-  MEDDLY_DCASSERT(mxdUnion);
-
-  binary_operation* mxdIntersection =
-    getOperation(INTERSECTION, mxdF, mxdF, mxdF);
-  MEDDLY_DCASSERT(mxdIntersection);
-
-  binary_operation* mxdDifference = getOperation(DIFFERENCE, mxdF, mxdF, mxdF);
-  MEDDLY_DCASSERT(mxdDifference);
-
-  dd_edge maxDiag(mxdF);
-
-  for (int k = int(K); k > 1; k--) {
-    if (0 == events[k].getNode()) continue;
-
-    MEDDLY_DCASSERT(ABS(events[k].getLevel() <= k));
-
-    // Initialize unpacked nodes
-    unpacked_node* Mu = (isLevelAbove(k, events[k].getLevel()))
-      ?   unpacked_node::newRedundant(mxdF, k, events[k].getNode(), FULL_ONLY)
-      :   mxdF->newUnpacked(events[k].getNode(), FULL_ONLY)
-    ;
-
-    unpacked_node* Mp = unpacked_node::New(mxdF);
-
-    // Read "rows"
-    for (unsigned i = 0; i < Mu->getSize(); i++) {
-      // Initialize column reader
-      if (isLevelAbove(-k, mxdF->getNodeLevel(Mu->down(i)))) {
-        Mp->initIdentity(mxdF, -k, i, Mu->down(i), FULL_ONLY);
-      } else {
-        mxdF->unpackNode(Mp, Mu->down(i), FULL_ONLY);
-      }
-
-      // Intersect along the diagonal
-      if (0==i) {
-        maxDiag.set( mxdF->linkNode(Mp->down(i)) );
-      } else {
-        dd_edge mpd(mxdF);
-        mpd.set( mxdF->linkNode(Mp->down(i)) );
-        mxdIntersection->computeTemp(maxDiag, mpd, maxDiag);
-      }
-    } // for i
-
-    // Cleanup
-    unpacked_node::Recycle(Mp);
-    unpacked_node::Recycle(Mu);
-
-    if (0 == maxDiag.getNode()) {
-#ifdef DEBUG_FINALIZE_SPLIT
-      printf("splitMxd: event %d, maxDiag %d\n", events[k], maxDiag);
-#endif
-      continue;
-    }
-
-    // Subtract maxDiag from events[k]
-    // Do this only for SplitOnly. Other cases are handled later.
-
-    if (split == SplitOnly) {
-      mxdDifference->computeTemp(events[k], maxDiag, events[k]);
-#ifdef DEBUG_FINALIZE_SPLIT
-      printf("SplitOnly: event %d = event %d - maxDiag %d\n",
-          events[k], tmp, maxDiag);
-#endif
-    }
-
-    // Add maxDiag to events[level(maxDiag)]
-    int maxDiagLevel = ABS(maxDiag.getLevel());
-
-    mxdUnion->computeTemp(maxDiag, events[maxDiagLevel], events[maxDiagLevel]);
-
-    // Subtract events[maxDiagLevel] from events[k].
-    // Do this only for SplitSubtract. SplitSubtractAll is handled later.
-    if (split == SplitSubtract) {
-      mxdDifference->computeTemp(events[k], events[maxDiagLevel], events[k]);
-
-#ifdef DEBUG_FINALIZE_SPLIT
-      printf("SplitSubtract: event %d = event %d - event[maxDiagLevel] %d\n",
-          events[k], tmp, maxDiag);
-#endif
-    }
-
-  } // for k
-
-  if (split == SplitSubtractAll) {
-    // Subtract event[i] from all event[j], where j > i.
-    for (int i = 1; i < K; i++) {
-      if (0==events[i].getNode()) continue;
-
-      for (int j = i + 1; j <= K; j++) {
-        if (0==events[j].getNode()) continue;
-
-        mxdDifference->computeTemp(events[j], events[i], events[j]);
-
-#ifdef DEBUG_FINALIZE_SPLIT
-        printf("SplitSubtractAll: event %d = event %d - event %d\n",
-              events[j], tmp, events[i]);
-#endif
-      } // for j
-    } // for i
-  }
-
-#ifdef DEBUG_FINALIZE_SPLIT
-  printf("After splitting events in finalize()\n");
-  printf("events array: [");
-  for (int i=0; i<=K; i++) {
-    if (i) printf(", ");
-    printf("%d", events[i]);
-  }
-  printf("]\n");
-#endif
-}
-
-// HERE!
-
-
-void
-MEDDLY::satpregen_opname::pregen_relation
-::unionLevels()
-{
-  if (K < 1) return;
-
-  binary_operation* mxdUnion = getOperation(UNION, mxdF, mxdF, mxdF);
-  MEDDLY_DCASSERT(mxdUnion);
-
-  dd_edge u(mxdF);
-  for (unsigned k=1; k<=K; k++) {
-    apply(UNION, u, events[k], u);
-    events[k].set(0);
-  }
-  events[u.getLevel()] = u;
-}
-
-
-void
-MEDDLY::satpregen_opname::pregen_relation
-::finalize(splittingOption split)
-{
-  if (0==level_index) {
-    // by levels
-    switch (split) {
-      case SplitOnly: printf("Split: SplitOnly\n"); break;
-      case SplitSubtract: printf("Split: SplitSubtract\n"); break;
-      case SplitSubtractAll: printf("Split: SplitSubtractAll\n"); break;
-      case MonolithicSplit: printf("Split: MonolithicSplit\n"); break;
-      default: printf("Split: None\n");
-    }
-    splitMxd(split);
-    if (split != None && split != MonolithicSplit) {
-#ifdef DEBUG_FINALIZE_SPLIT
-      // Union the elements, and then re-run.
-      // Result must be the same as before.
-      dd_edge* old_events = new dd_edge[K+1];
-      for(unsigned k = 0; k <= K; k++) {
-        old_events[k] = events[k];
-      }
-      splitMxd(MonolithicSplit);
-      binary_operation* mxdDifference =
-        getOperation(DIFFERENCE, mxdF, mxdF, mxdF);
-      MEDDLY_DCASSERT(mxdDifference);
-      for(unsigned k = 0; k <= K; k++) {
-        if (old_events[k] != events[k]) {
-          node_handle diff1 = mxdDifference->computeTemp(old_events[k], events[k]);
-          node_handle diff2 = mxdDifference->computeTemp(events[k], old_events[k]);
-          printf("error at level %d, n:k %d:%d, %d:%d\n",
-              k,
-              diff1, mxdF->getNodeLevel(diff1),
-              diff2, mxdF->getNodeLevel(diff2)
-              );
-          mxdF->unlinkNode(diff1);
-          mxdF->unlinkNode(diff2);
-        }
-      }
-
-      delete [] old_events;
-#endif
-    }
-    return;
-  }
-
-  //
-  // Still here?  Must be by events.
-  //
-
-#ifdef DEBUG_FINALIZE
-  printf("Finalizing pregen relation\n");
-  printf("%u events total\n", last_event);
-  printf("events array: [");
-  for (unsigned i=0; i<last_event; i++) {
-    if (i) printf(", ");
-    printf("%ld", long(events[i].getNode()));
-  }
-  printf("]\n");
-  printf("next array: [");
-  for (unsigned i=0; i<last_event; i++) {
-    if (i) printf(", ");
-    printf("%d", next[i]);
-  }
-  printf("]\n");
-  printf("level_index array: [%d", level_index[1]);
-  for (int i=2; i<=K; i++) {
-    printf(", %d", level_index[i]);
-  }
-  printf("]\n");
-#endif
-
-  //
-  // Convert from array of linked lists to contiguous array.
-  //
-  dd_edge* new_events = new dd_edge[last_event];
-  unsigned P = 0;
-  for (unsigned k=K; k; k--) {
-    unsigned L = level_index[k];
-    level_index[k] = P;
-    while (L) {
-      // L+1 is index of an element at level k
-      L--;
-      new_events[P++] = events[L];
-      L = next[L];
-    } // while L
-  }
-  level_index[0] = P;
-  delete[] events;
-  events = new_events;
-
-  // done with next pointers
-  delete[] next;
-  next = 0;
-
-#ifdef DEBUG_FINALIZE
-  printf("\nAfter finalization\n");
-  printf("events array: [");
-  for (unsigned i=0; i<last_event; i++) {
-    if (i) printf(", ");
-    printf("%ld", long(events[i].getNode()));
-  }
-  printf("]\n");
-  printf("level_index array: [%d", level_index[1]);
-  for (int i=2; i<=K; i++) {
-    printf(", %d", level_index[i]);
-  }
-  printf("]\n");
-#endif
-}
-
-// ******************************************************************
-// *                                                                *
-// *               saturation_by_events_opname  class               *
-// *                                                                *
-// ******************************************************************
-
-/** Simple class to keep compute table happy.
-*/
-class MEDDLY::saturation_by_events_opname : public unary_opname {
-  static saturation_by_events_opname* instance;
-  public:
-    saturation_by_events_opname();
-
-    static saturation_by_events_opname* getInstance();
-
-};
-
-MEDDLY::saturation_by_events_opname* MEDDLY::saturation_by_events_opname::instance = 0;
-
-MEDDLY::saturation_by_events_opname::saturation_by_events_opname()
- : unary_opname("Saturate_by_events")
-{
-}
-
-MEDDLY::saturation_by_events_opname* MEDDLY::saturation_by_events_opname::getInstance()
-{
-  if (0==instance) instance = new saturation_by_events_opname;
-  return instance;
-}
-
-// ******************************************************************
-// *                                                                *
-// *                      saturation_by_events_op  class                      *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::saturation_by_events_op : public unary_operation {
+class MEDDLY::saturation_by_events_op : public saturation_operation {
     common_dfs_by_events_mt* parent;
   public:
     saturation_by_events_op(common_dfs_by_events_mt* p,
-      forest* argF, forest* resF);
+        forest* argF, forest* resF);
     virtual ~saturation_by_events_op();
 
-    void saturate(const dd_edge& in, dd_edge& out);
+    virtual void compute(const dd_edge& in, dd_edge& out);
     node_handle saturate(node_handle mdd, int level);
 
   protected:
@@ -525,10 +88,10 @@ class MEDDLY::saturation_by_events_op : public unary_operation {
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::common_dfs_by_events_mt : public specialized_operation {
+class MEDDLY::common_dfs_by_events_mt : public saturation_operation {
   public:
-    common_dfs_by_events_mt(satpregen_opname* opcode,
-      satpregen_opname::pregen_relation* rel);
+    common_dfs_by_events_mt(const char* name, forest* inf,
+        pregen_relation* rel, forest* outf);
     virtual ~common_dfs_by_events_mt();
 
     virtual void compute(const dd_edge& a, dd_edge &c);
@@ -562,11 +125,8 @@ class MEDDLY::common_dfs_by_events_mt : public specialized_operation {
     binary_operation* mxdIntersection;
     binary_operation* mxdDifference;
 
-    satpregen_opname::pregen_relation* rel;
-
-    forest* arg1F;
-    forest* arg2F;
-    forest* resF;
+    pregen_relation* rel;
+    forest* relF;
 
   protected:
     class indexq {
@@ -679,21 +239,20 @@ class MEDDLY::common_dfs_by_events_mt : public specialized_operation {
 
 MEDDLY::saturation_by_events_op
 ::saturation_by_events_op(common_dfs_by_events_mt* p,
-  forest* argF, forest* resF)
-  : unary_operation(saturation_by_events_opname::getInstance(), 1, argF, resF)
+    forest* argF, forest* resF)
+  : saturation_operation("Pregen-sat", 1, argF, resF)
 {
   parent = p;
 
-  const char* name = saturation_by_events_opname::getInstance()->getName();
   ct_entry_type* et;
 
   if (argF->isFullyReduced()) {
     // CT entry includes level info
-    et = new ct_entry_type(name, "NI:N");
+    et = new ct_entry_type("Pregen-sat", "NI:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(3, resF);
   } else {
-    et = new ct_entry_type(name, "N:N");
+    et = new ct_entry_type("Pregen-sat", "N:N");
     et->setForestForSlot(0, argF);
     et->setForestForSlot(2, resF);
   }
@@ -706,7 +265,7 @@ MEDDLY::saturation_by_events_op::~saturation_by_events_op()
   removeAllComputeTableEntries();
 }
 
-void MEDDLY::saturation_by_events_op::saturate(const dd_edge& in, dd_edge& out)
+void MEDDLY::saturation_by_events_op::compute(const dd_edge& in, dd_edge& out)
 {
   out.set( saturate(in.getNode(), argF->getMaxLevelIndex()) );
 }
@@ -774,52 +333,68 @@ MEDDLY::saturation_by_events_op::saturate(node_handle mdd, int k)
 // *                                                                *
 // ******************************************************************
 
+
 MEDDLY::common_dfs_by_events_mt::common_dfs_by_events_mt(
-  satpregen_opname* opcode,
-  satpregen_opname::pregen_relation* relation)
-: specialized_operation(opcode, 1)
+  const char* name, forest* inF, pregen_relation* relation, forest* outF)
+: saturation_operation(name, 1, inF, outF)
 {
-  mddUnion = 0;
-  mxdIntersection = 0;
-  mxdDifference = 0;
-  freeqs = 0;
-  freebufs = 0;
-  rel = relation;
-  arg1F = rel->getInForest();
-  arg2F = rel->getRelForest();
-  resF = rel->getOutForest();
+    if (!inF || !relation || !outF) {
+        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    }
 
-  registerInForest(arg1F);
-  registerInForest(arg2F);
-  registerInForest(resF);
+    rel = relation;
+    relF = relation->getRelForest();
 
-  ct_entry_type* et = new ct_entry_type(opcode->getName(), "NN:N");
-  et->setForestForSlot(0, arg1F);
-  et->setForestForSlot(1, arg2F);
-  et->setForestForSlot(3, resF);
-  registerEntryType(0, et);
-  buildCTs();
+    // for now, anyway, inset and outset must be same forest
+    if (inF != outF) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+
+    // Check for same domain
+    if  (
+            (inF->getDomain() != relF->getDomain()) ||
+            (outF->getDomain() != relF->getDomain())
+        )
+    {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+
+    mddUnion = nullptr;
+    mxdIntersection = nullptr;
+    mxdDifference = nullptr;
+    freeqs = 0;
+    freebufs = 0;
+
+    registerInForest(relF);
+
+    ct_entry_type* et = new ct_entry_type(name, "NN:N");
+    et->setForestForSlot(0, argF);
+    et->setForestForSlot(1, relF);
+    et->setForestForSlot(3, resF);
+    registerEntryType(0, et);
+    buildCTs();
 }
 
 MEDDLY::common_dfs_by_events_mt::~common_dfs_by_events_mt()
 {
-  if (rel->autoDestroy()) delete rel;
-  unregisterInForest(arg1F);
-  unregisterInForest(arg2F);
-  unregisterInForest(resF);
+    unregisterInForest(relF);
+    delete rel;
 }
 
 void MEDDLY::common_dfs_by_events_mt
 ::compute(const dd_edge &a, dd_edge &c)
 {
   // Initialize operations
-  mddUnion = getOperation(UNION, resF, resF, resF);
+  mddUnion = UNION(resF, resF, resF);
   MEDDLY_DCASSERT(mddUnion);
 
-  mxdIntersection = getOperation(INTERSECTION, arg2F, arg2F, arg2F);
+  mxdIntersection = INTERSECTION(relF, relF, relF);
   MEDDLY_DCASSERT(mxdIntersection);
 
-  mxdDifference = getOperation(DIFFERENCE, arg2F, arg2F, arg2F);
+  mxdDifference = DIFFERENCE(relF, relF, relF);
   MEDDLY_DCASSERT(mxdDifference);
 
 #ifdef DEBUG_INITIAL
@@ -838,8 +413,8 @@ void MEDDLY::common_dfs_by_events_mt
     rel->finalize();
     printf("done.\n");
   }
-  saturation_by_events_op* so = new saturation_by_events_op(this, arg1F, resF);
-  so->saturate(a, c);
+  saturation_by_events_op* so = new saturation_by_events_op(this, argF, resF);
+  so->compute(a, c);
 
   // Cleanup
   while (freeqs) {
@@ -912,17 +487,16 @@ void MEDDLY::common_dfs_by_events_mt::charbuf::resize(unsigned sz)
 
 class MEDDLY::forwd_dfs_by_events_mt : public common_dfs_by_events_mt {
   public:
-    forwd_dfs_by_events_mt(satpregen_opname* opcode,
-    satpregen_opname::pregen_relation* rel);
+    forwd_dfs_by_events_mt(forest* inf, pregen_relation* relation,
+            forest* outf);
   protected:
     virtual void saturateHelper(unpacked_node& mdd);
     node_handle recFire(node_handle mdd, node_handle mxd);
 };
 
-MEDDLY::forwd_dfs_by_events_mt::forwd_dfs_by_events_mt(
-  satpregen_opname* opcode,
-  satpregen_opname::pregen_relation* rel)
-  : common_dfs_by_events_mt(opcode, rel)
+MEDDLY::forwd_dfs_by_events_mt::forwd_dfs_by_events_mt(forest* inf,
+    pregen_relation* rel, forest* outf)
+  : common_dfs_by_events_mt("SaturationFwd", inf, rel, outf)
 {
 }
 
@@ -936,16 +510,16 @@ void MEDDLY::forwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   dd_edge* events = rel->arrayForLevel(nb.getLevel());
   unpacked_node** Ru = new unpacked_node*[nEventsAtThisLevel];
   for (unsigned ei = 0; ei < nEventsAtThisLevel; ei++) {
-    Ru[ei] = unpacked_node::New(arg2F);
+    Ru[ei] = unpacked_node::New(relF);
     int eventLevel = events[ei].getLevel();
     MEDDLY_DCASSERT(ABS(eventLevel) == nb.getLevel());
     if (eventLevel<0) {
-      Ru[ei]->initRedundant(arg2F, nb.getLevel(), events[ei].getNode(), FULL_ONLY);
+      Ru[ei]->initRedundant(relF, nb.getLevel(), events[ei].getNode(), FULL_ONLY);
     } else {
-      arg2F->unpackNode(Ru[ei], events[ei].getNode(), FULL_ONLY);
+      relF->unpackNode(Ru[ei], events[ei].getNode(), FULL_ONLY);
     }
   }
-  unpacked_node* Rp = unpacked_node::New(arg2F);
+  unpacked_node* Rp = unpacked_node::New(relF);
 
   dd_edge nbdj(resF), newst(resF);
 
@@ -965,12 +539,12 @@ void MEDDLY::forwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       if (0 == Ru[ei]->down(i)) continue;  // row i of the event ei is empty
 
       // grab column (TBD: build these ahead of time?)
-      int dlevel = arg2F->getNodeLevel(Ru[ei]->down(i));
+      int dlevel = relF->getNodeLevel(Ru[ei]->down(i));
 
       if (dlevel == -nb.getLevel()) {
-        arg2F->unpackNode(Rp, Ru[ei]->down(i), SPARSE_ONLY);
+        relF->unpackNode(Rp, Ru[ei]->down(i), SPARSE_ONLY);
       } else {
-        Rp->initIdentity(arg2F, -nb.getLevel(), i, Ru[ei]->down(i), SPARSE_ONLY);
+        Rp->initIdentity(relF, -nb.getLevel(), i, Ru[ei]->down(i), SPARSE_ONLY);
       }
 
       for (unsigned jz=0; jz<Rp->getSize(); jz++) {
@@ -1023,12 +597,12 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
 {
   // termination conditions
   if (mxd == 0 || mdd == 0) return 0;
-  if (arg2F->isTerminalNode(mxd)) {
-    if (arg1F->isTerminalNode(mdd)) {
+  if (relF->isTerminalNode(mxd)) {
+    if (argF->isTerminalNode(mdd)) {
       return resF->handleForValue(1);
     }
     // mxd is identity
-    if (arg1F == resF)
+    if (argF == resF)
       return resF->linkNode(mdd);
   }
 
@@ -1042,13 +616,13 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
   printf("  node %3d ", mdd);
   arg1F->showNode(stdout, mdd, 1);
   printf("\n  node %3d ", mxd);
-  arg2F->showNode(stdout, mxd, 1);
+  relF->showNode(stdout, mxd, 1);
   printf("\n");
 #endif
 
   // check if mxd and mdd are at the same level
-  const int mddLevel = arg1F->getNodeLevel(mdd);
-  const int mxdLevel = arg2F->getNodeLevel(mxd);
+  const int mddLevel = argF->getNodeLevel(mdd);
+  const int mxdLevel = relF->getNodeLevel(mxd);
   const int rLevel = MAX(ABS(mxdLevel), mddLevel);
   const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
@@ -1056,11 +630,11 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
   dd_edge nbdj(resF), newst(resF);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New(arg1F);
+  unpacked_node *A = unpacked_node::New(argF);
   if (mddLevel < rLevel) {
-    A->initRedundant(arg1F, rLevel, mdd, FULL_ONLY);
+    A->initRedundant(argF, rLevel, mdd, FULL_ONLY);
   } else {
-    arg1F->unpackNode(A, mdd, FULL_ONLY);
+    argF->unpackNode(A, mdd, FULL_ONLY);
   }
 
   if (mddLevel > ABS(mxdLevel)) {
@@ -1079,22 +653,22 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::New(arg2F);
-    unpacked_node *Rp = unpacked_node::New(arg2F);
+    unpacked_node *Ru = unpacked_node::New(relF);
+    unpacked_node *Rp = unpacked_node::New(relF);
     if (mxdLevel < 0) {
-      Ru->initRedundant(arg2F, rLevel, mxd, SPARSE_ONLY);
+      Ru->initRedundant(relF, rLevel, mxd, SPARSE_ONLY);
     } else {
-      arg2F->unpackNode(Ru, mxd, SPARSE_ONLY);
+      relF->unpackNode(Ru, mxd, SPARSE_ONLY);
     }
 
     // loop over mxd "rows"
     for (unsigned iz=0; iz<Ru->getSize(); iz++) {
       unsigned i = Ru->index(iz);
       if (0==A->down(i))   continue;
-      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->down(iz)))) {
-        Rp->initIdentity(arg2F, rLevel, i, Ru->down(iz), SPARSE_ONLY);
+      if (isLevelAbove(-rLevel, relF->getNodeLevel(Ru->down(iz)))) {
+        Rp->initIdentity(relF, rLevel, i, Ru->down(iz), SPARSE_ONLY);
       } else {
-        arg2F->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
+        relF->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
       }
 
       // loop over mxd "columns"
@@ -1151,17 +725,16 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
 
 class MEDDLY::bckwd_dfs_by_events_mt : public common_dfs_by_events_mt {
   public:
-    bckwd_dfs_by_events_mt(satpregen_opname* opcode,
-    satpregen_opname::pregen_relation* rel);
+    bckwd_dfs_by_events_mt(forest* inf, pregen_relation* relation,
+            forest* outf);
   protected:
     virtual void saturateHelper(unpacked_node& mdd);
     node_handle recFire(node_handle mdd, node_handle mxd);
 };
 
-MEDDLY::bckwd_dfs_by_events_mt::bckwd_dfs_by_events_mt(
-  satpregen_opname* opcode,
-  satpregen_opname::pregen_relation* rel)
-  : common_dfs_by_events_mt(opcode, rel)
+MEDDLY::bckwd_dfs_by_events_mt::bckwd_dfs_by_events_mt(forest* inf,
+    pregen_relation* rel, forest* outf)
+  : common_dfs_by_events_mt("SaturationBack", inf, rel, outf)
 {
 }
 
@@ -1174,16 +747,16 @@ void MEDDLY::bckwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   dd_edge* events = rel->arrayForLevel(nb.getLevel());
   unpacked_node** Ru = new unpacked_node*[nEventsAtThisLevel];
   for (unsigned ei = 0; ei < nEventsAtThisLevel; ei++) {
-    Ru[ei] = unpacked_node::New(arg2F);
+    Ru[ei] = unpacked_node::New(relF);
     int eventLevel = events[ei].getLevel();
     MEDDLY_DCASSERT(ABS(eventLevel) == nb.getLevel());
     if (eventLevel<0) {
-      Ru[ei]->initRedundant(arg2F, nb.getLevel(), events[ei].getNode(), FULL_ONLY);
+      Ru[ei]->initRedundant(relF, nb.getLevel(), events[ei].getNode(), FULL_ONLY);
     } else {
-      arg2F->unpackNode(Ru[ei], events[ei].getNode(), FULL_ONLY);
+      relF->unpackNode(Ru[ei], events[ei].getNode(), FULL_ONLY);
     }
   }
-  unpacked_node* Rp = unpacked_node::New(arg2F);
+  unpacked_node* Rp = unpacked_node::New(relF);
 
   dd_edge nbdi(resF), newst(resF);
 
@@ -1204,12 +777,12 @@ void MEDDLY::bckwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       for (unsigned iz=0; iz<Ru[ei]->getSize(); iz++) {
         unsigned i = Ru[ei]->index(iz);
         // grab column (TBD: build these ahead of time?)
-        int dlevel = arg2F->getNodeLevel(Ru[ei]->down(iz));
+        int dlevel = relF->getNodeLevel(Ru[ei]->down(iz));
 
         if (dlevel == -nb.getLevel()) {
-          arg2F->unpackNode(Rp, Ru[ei]->down(iz), SPARSE_ONLY);
+          relF->unpackNode(Rp, Ru[ei]->down(iz), SPARSE_ONLY);
         } else {
-          Rp->initIdentity(arg2F, -nb.getLevel(), i, Ru[ei]->down(iz), SPARSE_ONLY);
+          Rp->initIdentity(relF, -nb.getLevel(), i, Ru[ei]->down(iz), SPARSE_ONLY);
         }
 
         for (unsigned jz=0; jz<Rp->getSize(); jz++) {
@@ -1264,12 +837,12 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_by_events_mt::recFire(node_handle mdd,
 {
   // termination conditions
   if (mxd == 0 || mdd == 0) return 0;
-  if (arg2F->isTerminalNode(mxd)) {
-    if (arg1F->isTerminalNode(mdd)) {
+  if (relF->isTerminalNode(mxd)) {
+    if (argF->isTerminalNode(mdd)) {
       return resF->handleForValue(1);
     }
     // mxd is identity
-    if (arg1F == resF)
+    if (argF == resF)
       return resF->linkNode(mdd);
   }
 
@@ -1279,8 +852,8 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_by_events_mt::recFire(node_handle mdd,
   if (0==Key) return result;
 
   // check if mxd and mdd are at the same level
-  const int mddLevel = arg1F->getNodeLevel(mdd);
-  const int mxdLevel = arg2F->getNodeLevel(mxd);
+  const int mddLevel = argF->getNodeLevel(mdd);
+  const int mxdLevel = relF->getNodeLevel(mxd);
   const int rLevel = MAX(ABS(mxdLevel), mddLevel);
   const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
@@ -1288,11 +861,11 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_by_events_mt::recFire(node_handle mdd,
   dd_edge nbdi(resF), newst(resF);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New(arg1F);
+  unpacked_node *A = unpacked_node::New(argF);
   if (mddLevel < rLevel) {
-    A->initRedundant(arg1F, rLevel, mdd, FULL_ONLY);
+    A->initRedundant(argF, rLevel, mdd, FULL_ONLY);
   } else {
-    arg1F->unpackNode(A, mdd, FULL_ONLY);
+    argF->unpackNode(A, mdd, FULL_ONLY);
   }
 
 
@@ -1310,21 +883,21 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_by_events_mt::recFire(node_handle mdd,
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::New(arg2F);
-    unpacked_node *Rp = unpacked_node::New(arg2F);
+    unpacked_node *Ru = unpacked_node::New(relF);
+    unpacked_node *Rp = unpacked_node::New(relF);
     if (mxdLevel < 0) {
-      Ru->initRedundant(arg2F, rLevel, mxd, SPARSE_ONLY);
+      Ru->initRedundant(relF, rLevel, mxd, SPARSE_ONLY);
     } else {
-      arg2F->unpackNode(Ru, mxd, SPARSE_ONLY);
+      relF->unpackNode(Ru, mxd, SPARSE_ONLY);
     }
 
     // loop over mxd "rows"
     for (unsigned iz=0; iz<Ru->getSize(); iz++) {
       unsigned i = Ru->index(iz);
-      if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->down(iz)))) {
-        Rp->initIdentity(arg2F, rLevel, i, Ru->down(iz), SPARSE_ONLY);
+      if (isLevelAbove(-rLevel, relF->getNodeLevel(Ru->down(iz)))) {
+        Rp->initIdentity(relF, rLevel, i, Ru->down(iz), SPARSE_ONLY);
       } else {
-        arg2F->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
+        relF->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
       }
 
       // loop over mxd "columns"
@@ -1368,58 +941,18 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_by_events_mt::recFire(node_handle mdd,
 
 // ******************************************************************
 // *                                                                *
-// *                   fb_saturation_opname class                   *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::fb_saturation_opname : public satpregen_opname {
-    bool forward;
-  public:
-    fb_saturation_opname(bool fwd);
-    virtual specialized_operation* buildOperation(arguments* a);
-};
-
-MEDDLY::fb_saturation_opname::fb_saturation_opname(bool fwd)
- : satpregen_opname(fwd ? "SaturationFwd" : "SaturationBack")
-{
-  forward = fwd;
-}
-
-MEDDLY::specialized_operation*
-MEDDLY::fb_saturation_opname::buildOperation(arguments* a)
-{
-  pregen_relation* rel = dynamic_cast<pregen_relation*>(a);
-  if (0==rel) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
-
-  //
-  // No sanity checks needed here; we did them already when constructing a.
-  //
-
-  MEDDLY::specialized_operation* op = 0;
-  if (forward)
-    op = new forwd_dfs_by_events_mt(this, rel);
-  else
-    op = new bckwd_dfs_by_events_mt(this, rel);
-
-  // Do we need to delete rel here?
-  // No, if needed, do this in the destructor for op.
-
-  return op;
-}
-
-// ******************************************************************
-// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::satpregen_opname* MEDDLY::initSaturationForward()
+MEDDLY::saturation_operation* MEDDLY::SATURATION_FORWARD(forest* inF,
+        pregen_relation* rel, forest* outF)
 {
-  return new fb_saturation_opname(true);
+    return new forwd_dfs_by_events_mt(inF, rel, outF);
 }
 
-MEDDLY::satpregen_opname* MEDDLY::initSaturationBackward()
+MEDDLY::saturation_operation* MEDDLY::SATURATION_BACKWARD(forest* inF,
+        pregen_relation* rel, forest* outF)
 {
-  return new fb_saturation_opname(false);
+    return new bckwd_dfs_by_events_mt(inF, rel, outF);
 }
-

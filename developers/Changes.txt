@@ -2,23 +2,96 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
+Next release:
+
+Make compute table interface easier to use for simple operations
+    (i.e., most of the time)
+
+    * compute table item class, like edge value class
+        type, and a union
+
+
+Next release:
+
+Reimplement operations.
+
+Depending on how that goes, maybe adjust the operation hierarchy?
+
+        some thoughts:
+            operation
+                |
+                +--- binary_operation
+                        |
+                        +---- binary skip levels
+                        |           inline void compute_top(
+                        |               const dd_edge &a,
+                        |               const dd_edge &b, dd_edge c)
+                        |
+                        |           node_handle compute(node_handle a,
+                        |               node_handle b)
+                        |
+                        +---- binary by levels (for quasi reduced results)
+                        |
+                        |           node_handle compute(int K,
+                        |               node_handle a, node_handle b)
+                        |
+                        +---- binary, EV, skip levels
+                        |
+                        |           compute(const edge_value &av,
+                        |               node_handle an, const edge_value &,
+                        |               node_handle bn, edge_value &ec,
+                        |               node_handle &cn)
+                        |
+                        |           We could use the same iface for MT
+                        |           using void edge values, see if there's
+                        |           overhead and if so keep them split.
+                        |
+                        +---- binary, EV, by levels
+
+
+Although, if we make compute tables easy enough to use, then
+the motivation for abstract apply operation implementation goes away.
+
+Ideal:
+    void union::compute(node_handle a, node_handle b, node_handle &c)
+    {
+        if (0==a) return b;
+        if (0==b) return a;
+        if (1==a) return 1;
+        if (1==b) return 1;
+        if (a==b) return a; // same forest only
+
+        commute_order(a, b);    // if we can commute, make sure a<b
+
+        ct_search key(entry0, a, b);
+
+        if (CT.find(key, c)) {
+          return;
+        }
+
+        // do computation
+
+        CT.add(key, c);
+
+    }
+
+
+
 Forest cleanup
-    -> replace expert_forest with forest in compute tables, operations
+    look at node reductions
+
+Operations
         -> split out and simplify (templates and functors) the
             apply_generic_mdd style classes
                 (goal is for 'check terminals' to be inlined, not virtual)
 
 
-(*) operation registry in a forest - timing test
-
 (*) node_storage::getDownPtr timing test
 
 (*) One version of node_storage::getDownPtr, using edge_value
 
-(*) binary operations:
 
-    * change interface to use edge_value, node_handle instead of dd_edge
-    * keep dd_edge version as inlined
+
 
 
 Go through examples/ directory,
@@ -83,3 +156,4 @@ Non-critical to do list (side quests)
 * universal quantification operation
     boolean only? or describe as "min value over these vars"?
 
+* interval decision diagrams?

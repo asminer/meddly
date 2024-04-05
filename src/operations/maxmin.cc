@@ -23,13 +23,13 @@
 #include "ct_entry_result.h"
 
 namespace MEDDLY {
-  class maximum_mdd;
-  class maximum_mxd;
-  class maximum_opname;
+    class maximum_mdd;
+    class maximum_mxd;
+    binary_list MAXIMUM_cache;
 
-  class minimum_mdd;
-  class minimum_mxd;
-  class minimum_opname;
+    class minimum_mdd;
+    class minimum_mxd;
+    binary_list MINIMUM_cache;
 };
 
 // ******************************************************************
@@ -39,19 +39,21 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::maximum_mdd : public generic_binary_mdd {
-  public:
-    maximum_mdd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+    public:
+        maximum_mdd(forest* arg1, forest* arg2, forest* res);
 
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
+    protected:
+        virtual bool checkTerminals(node_handle a, node_handle b,
+                node_handle& c);
 };
 
-MEDDLY::maximum_mdd::maximum_mdd(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mdd(opcode, arg1, arg2, res)
+MEDDLY::maximum_mdd::maximum_mdd(forest* arg1, forest* arg2, forest* res)
+    : generic_binary_mdd(MAXIMUM_cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::maximum_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -82,19 +84,21 @@ bool MEDDLY::maximum_mdd::checkTerminals(node_handle a, node_handle b, node_hand
 // ******************************************************************
 
 class MEDDLY::maximum_mxd : public generic_binary_mxd {
-  public:
-    maximum_mxd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+    public:
+        maximum_mxd(forest* arg1, forest* arg2, forest* res);
 
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
+    protected:
+        virtual bool checkTerminals(node_handle a, node_handle b,
+                node_handle& c);
 };
 
-MEDDLY::maximum_mxd::maximum_mxd(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mxd(opcode, arg1, arg2, res)
+MEDDLY::maximum_mxd::maximum_mxd(forest* arg1, forest* arg2, forest* res)
+    : generic_binary_mxd(MAXIMUM_cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::maximum_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -120,73 +124,26 @@ bool MEDDLY::maximum_mxd::checkTerminals(node_handle a, node_handle b, node_hand
 
 // ******************************************************************
 // *                                                                *
-// *                      maximum_opname class                      *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::maximum_opname : public binary_opname {
-  public:
-    maximum_opname();
-    virtual binary_operation* buildOperation(forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::maximum_opname::maximum_opname()
- : binary_opname("Maximum")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::maximum_opname::buildOperation(forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->isForRelations() != r->isForRelations()) ||
-    (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (r->getRangeType() == range_type::BOOLEAN)
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    if (r->isForRelations())
-      return new maximum_mxd(this, a1, a2, r);
-    else
-      return new maximum_mdd(this, a1, a2, r);
-  }
-
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-// ******************************************************************
-// *                                                                *
 // *                       minimum_mdd  class                       *
 // *                                                                *
 // ******************************************************************
 
 class MEDDLY::minimum_mdd : public generic_binary_mdd {
-  public:
-    minimum_mdd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+    public:
+        minimum_mdd(forest* arg1, forest* arg2, forest* res);
 
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
+    protected:
+        virtual bool checkTerminals(node_handle a, node_handle b,
+                node_handle& c);
 };
 
-MEDDLY::minimum_mdd::minimum_mdd(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mdd(opcode, arg1, arg2, res)
+MEDDLY::minimum_mdd::minimum_mdd(forest* arg1, forest* arg2, forest* res)
+    : generic_binary_mdd(MINIMUM_cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::minimum_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -217,19 +174,21 @@ bool MEDDLY::minimum_mdd::checkTerminals(node_handle a, node_handle b, node_hand
 // ******************************************************************
 
 class MEDDLY::minimum_mxd : public generic_binary_mxd {
-  public:
-    minimum_mxd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+    public:
+        minimum_mxd(forest* arg1, forest* arg2, forest* res);
 
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
+    protected:
+        virtual bool checkTerminals(node_handle a, node_handle b,
+                node_handle& c);
 };
 
-MEDDLY::minimum_mxd::minimum_mxd(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mxd(opcode, arg1, arg2, res)
+MEDDLY::minimum_mxd::minimum_mxd(forest* arg1, forest* arg2, forest* res)
+    : generic_binary_mxd(MINIMUM_cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::minimum_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -255,66 +214,63 @@ bool MEDDLY::minimum_mxd::checkTerminals(node_handle a, node_handle b, node_hand
 
 // ******************************************************************
 // *                                                                *
-// *                      minimum_opname class                      *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::minimum_opname : public binary_opname {
-  public:
-    minimum_opname();
-    virtual binary_operation* buildOperation(forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::minimum_opname::minimum_opname()
- : binary_opname("Minimum")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::minimum_opname::buildOperation(forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->isForRelations() != r->isForRelations()) ||
-    (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (r->getRangeType() == range_type::BOOLEAN)
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    if (r->isForRelations())
-      return new minimum_mxd(this, a1, a2, r);
-    else
-      return new minimum_mdd(this, a1, a2, r);
-  }
-
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-// ******************************************************************
-// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeMaximum()
+MEDDLY::binary_operation* MEDDLY::MAXIMUM(forest* a, forest* b, forest* c)
 {
-  return new maximum_opname;
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  MAXIMUM_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        if (c->isForRelations())
+            return MAXIMUM_cache.add(new maximum_mxd(a, b, c));
+        else
+            return MAXIMUM_cache.add(new maximum_mdd(a, b, c));
+    }
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
-MEDDLY::binary_opname* MEDDLY::initializeMinimum()
+void MEDDLY::MAXIMUM_init()
 {
-  return new minimum_opname;
+    MAXIMUM_cache.reset("Maximum");
+}
+
+void MEDDLY::MAXIMUM_done()
+{
+    MEDDLY_DCASSERT(MAXIMUM_cache.isEmpty());
+}
+
+MEDDLY::binary_operation* MEDDLY::MINIMUM(forest* a, forest* b, forest* c)
+{
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  MINIMUM_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        if (c->isForRelations())
+            return MINIMUM_cache.add(new minimum_mxd(a, b, c));
+        else
+            return MINIMUM_cache.add(new minimum_mdd(a, b, c));
+    }
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::MINIMUM_init()
+{
+    MINIMUM_cache.reset("Minimum");
+}
+
+void MEDDLY::MINIMUM_done()
+{
+    MEDDLY_DCASSERT(MINIMUM_cache.isEmpty());
 }
 

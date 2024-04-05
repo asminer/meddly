@@ -26,9 +26,9 @@
 // #define DEBUG_COPY_COMPUTE_ALL
 
 namespace MEDDLY {
-  class copy_MT;
+    class copy_MT;
 
-  class copy_opname;
+    unary_list COPY_cache;
 };
 
 // ******************************************************************
@@ -39,44 +39,49 @@ namespace MEDDLY {
 
 /// Abstract base class for copying between multi-terminal DDs.
 class MEDDLY::copy_MT : public unary_operation {
-  public:
-    copy_MT(unary_opname* oc, forest* arg, forest* res);
+    protected:
+        copy_MT(unary_list &cache, forest* arg, forest* res);
+        virtual node_handle compute_r(node_handle a) = 0;
 
-    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
-  protected:
-    virtual node_handle compute_r(node_handle a) = 0;
+        inline ct_entry_key*
+        findResult(node_handle a, node_handle &b)
+        {
+            ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+            MEDDLY_DCASSERT(CTsrch);
+            CTsrch->writeN(a);
+            CT0->find(CTsrch, CTresult[0]);
+            if (!CTresult[0]) return CTsrch;
+            b = resF->linkNode(CTresult[0].readN());
+            CT0->recycle(CTsrch);
+            return 0;
+        }
+        inline node_handle saveResult(ct_entry_key* Key,
+            node_handle a, node_handle b)
+        {
+            CTresult[0].reset();
+            CTresult[0].writeN(b);
+            CT0->addEntry(Key, CTresult[0]);
+            return b;
+        }
+    public:
+        virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
 
-    inline ct_entry_key*
-    findResult(node_handle a, node_handle &b)
-    {
-      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeN(a);
-      CT0->find(CTsrch, CTresult[0]);
-      if (!CTresult[0]) return CTsrch;
-      b = resF->linkNode(CTresult[0].readN());
-      CT0->recycle(CTsrch);
-      return 0;
-    }
-    inline node_handle saveResult(ct_entry_key* Key,
-      node_handle a, node_handle b)
-    {
-      CTresult[0].reset();
-      CTresult[0].writeN(b);
-      CT0->addEntry(Key, CTresult[0]);
-      return b;
-    }
+
 };
 
+
 MEDDLY::copy_MT
-:: copy_MT(unary_opname* oc, forest* arg, forest* res)
- : unary_operation(oc, 1, arg, res)
+:: copy_MT(unary_list &cache, forest* arg, forest* res)
+ : unary_operation(cache, 1, arg, res)
 {
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "N:N");
-  et->setForestForSlot(0, arg);
-  et->setForestForSlot(2, res);
-  registerEntryType(0, et);
-  buildCTs();
+    checkDomains(__FILE__, __LINE__);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+
+    ct_entry_type* et = new ct_entry_type(cache.getName(), "N:N");
+    et->setForestForSlot(0, arg);
+    et->setForestForSlot(2, res);
+    registerEntryType(0, et);
+    buildCTs();
 }
 
 void MEDDLY::copy_MT::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
@@ -93,26 +98,42 @@ void MEDDLY::copy_MT::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userF
 
 namespace MEDDLY {
 
-  template <typename RESULT>
-  class copy_MT_tmpl : public copy_MT {
-    public:
-      copy_MT_tmpl(unary_opname* N, forest* A, forest* R)
-        : copy_MT(N, A, R) { }
-    protected:
-      virtual node_handle compute_r(node_handle a) {
-        if (argF->getReductionRule() == resF->getReductionRule()) {
-          return computeSkip(-1, a);  // same skipping rule, ok
-        } else {
-          // need to visit every level...
-          return computeAll(-1, resF->getMaxLevelIndex(), a);
-        }
-      }
+    template <typename RESULT>
+    class copy_MT_tmpl : public copy_MT {
+        public:
+            copy_MT_tmpl(forest* A, forest* R)
+                : copy_MT(COPY_cache, A, R) { }
 
-      node_handle computeSkip(int in, node_handle a);
-      node_handle computeAll(int in, int k, node_handle a);
-  };
+            virtual node_handle compute_r(node_handle a)
+            {
+                if (argF->getReductionRule() == resF->getReductionRule()) {
+                    return computeSkip(-1, a);  // same skipping rule, ok
+                } else {
+                    // need to visit every level...
+                    return computeAll(-1, resF->getMaxLevelIndex(), a);
+                }
+            }
+
+            node_handle computeSkip(int in, node_handle a);
+            node_handle computeAll(int in, int k, node_handle a);
+
+        public:
+            static unary_list cache;
+
+            inline static unary_operation* build(forest* a, forest* r)
+            {
+                unary_operation* uop =  cache.find(a, r);
+                if (uop) {
+                    return uop;
+                }
+                return cache.add(new copy_MT_tmpl<RESULT>(a, r));
+            }
+    };
 
 };  // namespace MEDDLY
+
+template <typename RESULT>
+MEDDLY::unary_list MEDDLY::copy_MT_tmpl<RESULT>::cache;
 
 template <typename RESULT>
 MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handle a)
@@ -238,78 +259,80 @@ namespace MEDDLY {
 
   template <typename TYPE>
   class copy_MT2EV : public unary_operation {
-    public:
-      copy_MT2EV(unary_opname* oc, forest* arg, forest* res,
-        const char* pattern) : unary_operation(oc, 1, arg, res)
-      {
-        //
-        // Pattern should be of the form "N:xN" where x is the EV Type.
-        //
-        // entry[0]: mt node
-        // entry[1]: EV value (output)
-        // entry[2]: EV node (output)
-        //
-        ct_entry_type* et = new ct_entry_type(oc->getName(), pattern);
-        et->setForestForSlot(0, arg);
-        et->setForestForSlot(3, res);
-        registerEntryType(0, et);
-        buildCTs();
-      }
-
-      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag) {
-        node_handle b;
-        TYPE bev = Inf<TYPE>();
-        if (argF->getReductionRule() == resF->getReductionRule()) {
-          computeSkip(-1, arg.getNode(), b, bev);  // same skipping rule, ok
-        } else {
-          // need to visit every level...
-          computeAll(-1, resF->getMaxLevelIndex(), arg.getNode(), b, bev);
+      public:
+        copy_MT2EV(forest* arg, forest* res, const char* pattern)
+            : unary_operation(COPY_cache, 1, arg, res)
+        {
+            //
+            // Pattern should be of the form "N:xN" where x is the EV Type.
+            //
+            // entry[0]: mt node
+            // entry[1]: EV value (output)
+            // entry[2]: EV node (output)
+            //
+            ct_entry_type* et = new ct_entry_type(COPY_cache.getName(), pattern);
+            et->setForestForSlot(0, arg);
+            et->setForestForSlot(3, res);
+            registerEntryType(0, et);
+            buildCTs();
         }
-        res.set(b, bev);
-      }
-      void computeSkip(int in, node_handle a, node_handle &b, TYPE &bev);
-      void computeAll(int in, int k, node_handle a, node_handle &b, TYPE &bev);
+
+        virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
+        {
+            node_handle b;
+            TYPE bev = Inf<TYPE>();
+            if (argF->getReductionRule() == resF->getReductionRule()) {
+                computeSkip(-1, arg.getNode(), b, bev);  // same skipping rule, ok
+            } else {
+                // need to visit every level...
+                computeAll(-1, resF->getMaxLevelIndex(), arg.getNode(), b, bev);
+            }
+            res.set(b, bev);
+        }
+        void computeSkip(int in, node_handle a, node_handle &b, TYPE &bev);
+        void computeAll(int in, int k, node_handle a, node_handle &b, TYPE &bev);
 
     protected:
-      inline ct_entry_key*
-      inCache(node_handle a, node_handle &b, TYPE &bev)
-      {
-        ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-        MEDDLY_DCASSERT(CTsrch);
-        CTsrch->writeN(a);
-        CT0->find(CTsrch, CTresult[0]);
-        if (CTresult[0]) {
-          CTresult[0].read_ev(bev);
-          b = resF->linkNode(CTresult[0].readN());
-          CT0->recycle(CTsrch);
-          return 0;
+        inline ct_entry_key*
+        inCache(node_handle a, node_handle &b, TYPE &bev)
+        {
+            ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+            MEDDLY_DCASSERT(CTsrch);
+            CTsrch->writeN(a);
+            CT0->find(CTsrch, CTresult[0]);
+            if (CTresult[0]) {
+                CTresult[0].read_ev(bev);
+                b = resF->linkNode(CTresult[0].readN());
+                CT0->recycle(CTsrch);
+                return 0;
+            }
+            return CTsrch;
         }
-        return CTsrch;
-      }
 
-      inline void addToCache(ct_entry_key* Key,
-        node_handle a, node_handle b, long bev)
-      {
-        MEDDLY_DCASSERT(bev != Inf<long>());
-        CTresult[0].reset();
-        CTresult[0].writeL(bev);
-        CTresult[0].writeN(b);
-        CT0->addEntry(Key, CTresult[0]);
-      }
+        inline void addToCache(ct_entry_key* Key,
+            node_handle a, node_handle b, long bev)
+        {
+            MEDDLY_DCASSERT(bev != Inf<long>());
+            CTresult[0].reset();
+            CTresult[0].writeL(bev);
+            CTresult[0].writeN(b);
+            CT0->addEntry(Key, CTresult[0]);
+        }
 
-      inline void addToCache(ct_entry_key* Key,
-        node_handle a, node_handle b, float bev)
-      {
-        MEDDLY_DCASSERT(bev != Inf<float>());
-        CTresult[0].reset();
-        CTresult[0].writeF(bev);
-        CTresult[0].writeN(b);
-        CT0->addEntry(Key, CTresult[0]);
-      }
+        inline void addToCache(ct_entry_key* Key,
+            node_handle a, node_handle b, float bev)
+        {
+            MEDDLY_DCASSERT(bev != Inf<float>());
+            CTresult[0].reset();
+            CTresult[0].writeF(bev);
+            CTresult[0].writeN(b);
+            CT0->addEntry(Key, CTresult[0]);
+        }
 
   };
 
 };  // namespace MEDDLY
+
 
 template <typename TYPE>
 void MEDDLY::copy_MT2EV<TYPE>
@@ -445,8 +468,8 @@ namespace MEDDLY {
   template <typename TYPE, class OP>
   class copy_EV2MT : public unary_operation {
     public:
-      copy_EV2MT(unary_opname* oc, forest* arg, forest* res,
-        const char* pattern) : unary_operation(oc, 1, arg, res)
+      copy_EV2MT(forest* arg, forest* res, const char* pattern)
+          : unary_operation(COPY_cache, 1, arg, res)
       {
         //
         // Pattern should be of the form "xN:N"
@@ -455,7 +478,7 @@ namespace MEDDLY {
         // entry[1]: EV node
         // entry[2]: mt node (output)
         //
-        ct_entry_type* et = new ct_entry_type(oc->getName(), pattern);
+        ct_entry_type* et = new ct_entry_type(COPY_cache.getName(), pattern);
         et->setForestForSlot(1, arg);
         et->setForestForSlot(3, res);
         registerEntryType(0, et);
@@ -477,7 +500,6 @@ namespace MEDDLY {
       node_handle computeSkip(int in, TYPE ev, node_handle a);
       node_handle computeAll(int in, int k, TYPE ev, node_handle a);
 
-    protected:
       inline ct_entry_key*
       inCache(TYPE ev, node_handle a, node_handle &b)
       {
@@ -505,6 +527,7 @@ namespace MEDDLY {
   };
 
 };  // namespace MEDDLY
+
 
 template <typename TYPE, class OP>
 MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
@@ -646,12 +669,12 @@ namespace MEDDLY {
   template <typename INTYPE, typename OUTTYPE>
   class copy_EV2EV_fast : public unary_operation {
     public:
-      copy_EV2EV_fast(unary_opname* oc, forest* arg,
-        forest* res) : unary_operation(oc, 1, arg, res)
+      copy_EV2EV_fast(forest* arg, forest* res)
+        : unary_operation(COPY_cache, 1, arg, res)
       {
         // entry[0]: EV node
         // entry[1]: EV node
-        ct_entry_type* et = new ct_entry_type(oc->getName(), "N:N");
+        ct_entry_type* et = new ct_entry_type(COPY_cache.getName(), "N:N");
         et->setForestForSlot(0, arg);
         et->setForestForSlot(2, res);
         registerEntryType(0, et);
@@ -669,7 +692,6 @@ namespace MEDDLY {
 
       node_handle computeSkip(int in, node_handle a);
 
-    protected:
       inline ct_entry_key*
       findResult(node_handle a, node_handle &b)
       {
@@ -690,9 +712,11 @@ namespace MEDDLY {
         CT0->addEntry(Key, CTresult[0]);
         return b;
       }
+
   };
 
 };  // namespace MEDDLY
+
 
 template <typename INTYPE, typename OUTTYPE>
 MEDDLY::node_handle
@@ -754,8 +778,8 @@ namespace MEDDLY {
   template <typename INTYPE, class INOP, typename OUTTYPE>
   class copy_EV2EV_slow : public unary_operation {
     public:
-      copy_EV2EV_slow(unary_opname* oc, forest* arg, forest* res,
-        const char* pattern) : unary_operation(oc, 1, arg, res)
+      copy_EV2EV_slow(forest* arg, forest* res, const char* pattern)
+        : unary_operation(COPY_cache, 1, arg, res)
       {
         //
         // Pattern is of the form "xN:yN"
@@ -765,7 +789,7 @@ namespace MEDDLY {
         // entry[2]: EV value
         // entry[3]: EV node
         //
-        ct_entry_type* et = new ct_entry_type(oc->getName(), pattern);
+        ct_entry_type* et = new ct_entry_type(COPY_cache.getName(), pattern);
         et->setForestForSlot(1, arg);
         et->setForestForSlot(4, res);
         registerEntryType(0, et);
@@ -795,7 +819,6 @@ namespace MEDDLY {
       void computeAll(int in, int k, INTYPE av, node_handle an,
         OUTTYPE &bv, node_handle &bn);
 
-    protected:
       inline ct_entry_key*
       inCache(INTYPE av, node_handle an, OUTTYPE &bv, node_handle &bn)
       {
@@ -831,10 +854,10 @@ namespace MEDDLY {
         CT0->addEntry(Key, CTresult[0]);
       }
 
-
   };
 
 };  // namespace MEDDLY
+
 
 template <typename INTYPE, class INOP, typename OUTTYPE>
 void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
@@ -910,253 +933,287 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
 
 // ******************************************************************
 // *                                                                *
-// *                       copy_opname  class                       *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::copy_opname : public unary_opname {
-  public:
-    copy_opname();
-    virtual unary_operation*
-      buildOperation(forest* ar, forest* res);
-
-
-  private:
-    class PLUS {
-      public:
-        template <typename T>
-        static inline T apply(T a, T b) { return a+b; }
-        template <typename T>
-        static inline void redundant(T &ev) { ev = 0; }
-    };
-    class TIMES {
-      public:
-        template <typename T>
-        static inline T apply(T a, T b) { return a*b; }
-        template <typename T>
-        static inline void redundant(T &ev) { ev = 1; }
-    };
-};
-
-MEDDLY::copy_opname::copy_opname()
- : unary_opname("Copy")
-{
-}
-
-MEDDLY::unary_operation*
-MEDDLY::copy_opname
-::buildOperation(forest* arg, forest* res)
-{
-  if (0==arg || 0==res) return 0;
-
-  if (arg->getDomain() != res->getDomain())
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (arg->isForRelations() != res->isForRelations())
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  if (arg->isMultiTerminal() && res->isMultiTerminal())
-  {
-    //
-    // MT copies, handled by the new template class!
-    //
-    switch (res->getRangeType()) {
-      case range_type::BOOLEAN:
-        return new copy_MT_tmpl<bool>(this, arg, res);
-
-      case range_type::INTEGER:
-        return new copy_MT_tmpl<int>(this, arg, res);
-
-      case range_type::REAL:
-        return new copy_MT_tmpl<float>(this, arg, res);
-
-
-      default:  // any other types?
-        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-    };
-  }
-
-  //
-  // Must be at least one EV forest
-  //
-
-  if (arg->isMultiTerminal() &&
-    (res->isEVPlus() || res->isEVTimes()))
-  {
-    //
-    // MT to EV conversion
-    //
-    switch (res->getRangeType()) {
-      case range_type::INTEGER:
-        return new copy_MT2EV<long>(this, arg, res, "N:LN");
-
-      case range_type::REAL:
-        return new copy_MT2EV<float>(this, arg, res, "N:FN");
-
-      default:
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    };
-  }
-
-  if (res->isMultiTerminal() && (arg->isEVPlus() || arg->isIndexSet()))
-  {
-    //
-    // EV+ to MT conversion
-    //
-    switch (arg->getRangeType()) {
-      case range_type::INTEGER:
-        return new copy_EV2MT<long,PLUS>(this, arg, res, "LN:N");
-
-      case range_type::REAL:
-        return new copy_EV2MT<float,PLUS>(this, arg, res, "FN:N");
-
-      default:
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    };
-  }
-
-  if (res->isMultiTerminal() && arg->isEVTimes())
-  {
-    //
-    // EV* to MT conversion  (untested!)
-    //
-    switch (arg->getRangeType()) {
-      case range_type::INTEGER:
-        return new copy_EV2MT<long,TIMES>(this, arg, res, "LN:N");
-
-      case range_type::REAL:
-        return new copy_EV2MT<float,TIMES>(this, arg, res, "FN:N");
-
-      default:
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    };
-  }
-
-  //
-  // That's it for any MT arguments
-  //
-  if (res->isMultiTerminal() || arg->isMultiTerminal()) {
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-  }
-
-  //
-  // "fast" EV to EV copies (same RR, same operation, no info loss)
-  //
-  if (arg->getReductionRule() == res->getReductionRule()) {
-
-    if ( ((arg->isEVPlus() || arg->isIndexSet()) && res->isEVPlus())
-       || (arg->isEVTimes() && res->isEVTimes()) )
-    {
-
-      switch (arg->getRangeType()) {
-        case range_type::INTEGER:
-            switch (res->getRangeType()) {
-                case range_type::INTEGER:
-                    return new copy_EV2EV_fast<long,long>(this, arg, res);
-                case range_type::REAL:
-                    return new copy_EV2EV_fast<long,float>(this, arg, res);
-                default:
-                    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            };
-            break;    // in case anything falls through
-
-        case range_type::REAL:
-            switch (res->getRangeType()) {
-                case range_type::INTEGER:
-                    break;    // not safe to go from real -> integer this way
-                case range_type::REAL:
-                    return new copy_EV2EV_fast<float,float>(this, arg, res);
-                default:
-                    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            };
-            break;    // things may fall through
-
-        default:
-            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-      };
-    }
-
-  }
-
-  //
-  // Generic EV+ to EV, may be slow
-  //
-  if (arg->isEVPlus() || arg->isIndexSet()) {
-
-    switch (arg->getRangeType()) {
-
-      case range_type::INTEGER:
-          switch (res->getRangeType()) {
-            case range_type::INTEGER:
-                return new copy_EV2EV_slow<long,PLUS,long>(this, arg, res, "LN:LN");
-            case range_type::REAL:
-                return new copy_EV2EV_slow<long,PLUS,float>(this, arg, res, "LN:FN");
-            default:
-                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-          };
-
-      case range_type::REAL:
-          switch (res->getRangeType()) {
-            case range_type::INTEGER:
-                return new copy_EV2EV_slow<float,PLUS,long>(this, arg, res, "FN:LN");
-            case range_type::REAL:
-                return new copy_EV2EV_slow<float,PLUS,float>(this, arg, res, "FN:FN");
-            default:
-                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-          };
-
-      default:
-          throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
-  }
-
-  //
-  // Generic EV* to EV, may be slow
-  //
-  if (arg->isEVTimes()) {
-
-    switch (arg->getRangeType()) {
-
-      case range_type::INTEGER:
-          switch (res->getRangeType()) {
-            case range_type::INTEGER:
-                return new copy_EV2EV_slow<long,TIMES,long>(this, arg, res, "LN:LN");
-            case range_type::REAL:
-                return new copy_EV2EV_slow<long,TIMES,float>(this, arg, res, "LN:FN");
-            default:
-                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-          };
-
-      case range_type::REAL:
-          switch (res->getRangeType()) {
-            case range_type::INTEGER:
-                return new copy_EV2EV_slow<float,TIMES,long>(this, arg, res, "FN:LN");
-            case range_type::REAL:
-                return new copy_EV2EV_slow<float,TIMES,float>(this, arg, res, "FN:FN");
-            default:
-                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-          };
-
-      default:
-          throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
-  }
-
-  //
-  // Catch all for any other cases
-  //
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-
-}
-
-// ******************************************************************
-// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeCopy()
+namespace MEDDLY {
+    class PLUS {
+        public:
+            template <typename T>
+            static inline T apply(T a, T b) { return a+b; }
+            template <typename T>
+            static inline void redundant(T &ev) { ev = 0; }
+    };
+    class TIMES {
+        public:
+            template <typename T>
+            static inline T apply(T a, T b) { return a*b; }
+            template <typename T>
+            static inline void redundant(T &ev) { ev = 1; }
+    };
+};
+
+MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
 {
-  return new copy_opname;
+    if (!arg || !res) {
+        return nullptr;
+    }
+
+    unary_operation* uop =  COPY_cache.find(arg, res);
+    if (uop) {
+        return uop;
+    }
+
+    if (arg->isForRelations() != res->isForRelations()) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    if (arg->isMultiTerminal() && res->isMultiTerminal())
+    {
+        //
+        // MT copies, handled by the new template class!
+        //
+        switch (res->getRangeType()) {
+            case range_type::BOOLEAN:
+                return COPY_cache.add(
+                    new copy_MT_tmpl<bool>(arg, res)
+                );
+
+            case range_type::INTEGER:
+                return COPY_cache.add(
+                    new copy_MT_tmpl<int>(arg, res)
+                );
+
+            case range_type::REAL:
+                return COPY_cache.add(
+                    new copy_MT_tmpl<float>(arg, res)
+                );
+
+            default:  // any other types?
+                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+        };
+    }
+
+    //
+    // Must be at least one EV forest
+    //
+
+    if (arg->isMultiTerminal() &&
+        (res->isEVPlus() || res->isEVTimes()))
+    {
+        //
+        // MT to EV conversion
+        //
+        switch (res->getRangeType()) {
+            case range_type::INTEGER:
+                return COPY_cache.add(
+                    new copy_MT2EV<long>(arg, res, "N:LN")
+                );
+
+            case range_type::REAL:
+                return COPY_cache.add(
+                    new copy_MT2EV<float>(arg, res, "N:FN")
+                );
+
+            default:
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+        };
+    }
+
+    if (res->isMultiTerminal() && (arg->isEVPlus() || arg->isIndexSet()))
+    {
+        //
+        // EV+ to MT conversion
+        //
+        switch (arg->getRangeType()) {
+            case range_type::INTEGER:
+                return COPY_cache.add(
+                    new copy_EV2MT<long,PLUS>(arg, res, "LN:N")
+                );
+
+            case range_type::REAL:
+                return COPY_cache.add(
+                    new copy_EV2MT<float,PLUS>(arg, res, "FN:N")
+                );
+
+            default:
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+        };
+    }
+
+    if (res->isMultiTerminal() && arg->isEVTimes())
+    {
+        //
+        // EV* to MT conversion  (untested!)
+        //
+        switch (arg->getRangeType()) {
+            case range_type::INTEGER:
+                return COPY_cache.add(
+                    new copy_EV2MT<long,TIMES>(arg, res, "LN:N")
+                );
+
+            case range_type::REAL:
+                return COPY_cache.add(
+                    new copy_EV2MT<float,TIMES>(arg, res, "FN:N")
+                );
+
+            default:
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+        };
+    }
+
+    //
+    // That's it for any MT arguments
+    //
+    if (res->isMultiTerminal() || arg->isMultiTerminal()) {
+        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    }
+
+
+    //
+    // "fast" EV to EV copies (same RR, same operation, no info loss)
+    //
+    if (arg->getReductionRule() == res->getReductionRule()) {
+
+        if ( ((arg->isEVPlus() || arg->isIndexSet()) && res->isEVPlus())
+            || (arg->isEVTimes() && res->isEVTimes()) )
+        {
+
+            switch (arg->getRangeType()) {
+                case range_type::INTEGER:
+                    switch (res->getRangeType()) {
+                        case range_type::INTEGER:
+                            return COPY_cache.add(
+                                new copy_EV2EV_fast<long,long>(arg, res)
+                            );
+                        case range_type::REAL:
+                            return COPY_cache.add(
+                                new copy_EV2EV_fast<long,float>(arg, res)
+                            );
+                        default:
+                            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+                    };
+                    break;    // in case anything falls through
+
+                case range_type::REAL:
+                    switch (res->getRangeType()) {
+                        case range_type::INTEGER:
+                            break;
+                            // not safe to go from real -> integer c way
+                        case range_type::REAL:
+                            return COPY_cache.add(
+                                new copy_EV2EV_fast<float,float>(arg, res)
+                            );
+                        default:
+                            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+                    };
+                    break;    // things may fall through
+
+                default:
+                    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            };
+        }
+
+    }
+
+    //
+    // Generic EV+ to EV, may be slow
+    //
+    if (arg->isEVPlus() || arg->isIndexSet()) {
+
+        switch (arg->getRangeType()) {
+
+            case range_type::INTEGER:
+                switch (res->getRangeType()) {
+                    case range_type::INTEGER:
+                        return COPY_cache.add(
+                            new copy_EV2EV_slow<long,PLUS,long>(arg, res, "LN:LN")
+                        );
+                    case range_type::REAL:
+                        return COPY_cache.add(
+                            new copy_EV2EV_slow<long,PLUS,float>(arg, res, "LN:FN")
+                        );
+                    default:
+                        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+                };
+                break;
+
+            case range_type::REAL:
+                switch (res->getRangeType()) {
+                    case range_type::INTEGER:
+                        return COPY_cache.add(
+                            new copy_EV2EV_slow<float,PLUS,long>(arg, res, "FN:LN")
+                        );
+                    case range_type::REAL:
+                        return COPY_cache.add(
+                            new copy_EV2EV_slow<float,PLUS,float>(arg, res, "FN:FN")
+                        );
+                    default:
+                        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+                };
+                break;
+
+            default:
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+        }
+    }
+
+    //
+    // Generic EV* to EV, may be slow
+    //
+    if (arg->isEVTimes()) {
+
+        switch (arg->getRangeType()) {
+
+            case range_type::INTEGER:
+                switch (res->getRangeType()) {
+                    case range_type::INTEGER:
+                        return COPY_cache.add(
+                            new copy_EV2EV_slow<long,TIMES,long>(arg, res, "LN:LN")
+                        );
+                    case range_type::REAL:
+                        return COPY_cache.add(
+                            new copy_EV2EV_slow<long,TIMES,float>(arg, res, "LN:FN")
+                        );
+                    default:
+                        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+                };
+                break;
+
+            case range_type::REAL:
+                switch (res->getRangeType()) {
+                    case range_type::INTEGER:
+                        return COPY_cache.add(
+                            new copy_EV2EV_slow<float,TIMES,long>(arg, res, "FN:LN")
+                        );
+                    case range_type::REAL:
+                        return COPY_cache.add(
+                            new copy_EV2EV_slow<float,TIMES,float>(arg, res, "FN:FN")
+                        );
+                    default:
+                        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+                };
+                break;
+
+            default:
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+        }
+    }
+
+    //
+    // Catch all for any other cases
+    //
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::COPY_init()
+{
+    COPY_cache.reset("Copy");
+}
+
+void MEDDLY::COPY_done()
+{
+    MEDDLY_DCASSERT(COPY_cache.isEmpty());
 }
 

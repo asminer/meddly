@@ -294,10 +294,10 @@ struct MEDDLY::policies {
     policies();
 
     /// Constructor; sets reasonable defaults
-    policies(bool rel);
+    policies(set_or_rel rel);
 
     /// Set to hard-wired defaults
-    void useDefaults(bool rel);
+    void useDefaults(set_or_rel rel);
 
     //
     // Node storage helper methods

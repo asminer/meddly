@@ -30,16 +30,19 @@
 #include "relation_node.h"
 #include "memory.h"
 
+#include "compute_table.h"
 #include "operators.h"
 #include "ops_builtin.h"
-#include "opname.h"
-#include "opname_numer.h"
-#include "opname_satur.h"
 
 #include "oper.h"
 #include "oper_unary.h"
 #include "oper_binary.h"
+#include "oper_numer.h"
+#include "oper_satur.h"
+
 #include "oper_special.h"
+
+#include "sat_relations.h"
 
 #include "ct_initializer.h"
 

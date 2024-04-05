@@ -20,10 +20,13 @@
 #define MEDDLY_COMP_GT_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
 
-  /// Set up a binary_opname for the "greater than" operator.
-  binary_opname* initializeGT();
+    /// The 'greater than' operation builder.
+    binary_operation* GREATER_THAN(forest* a, forest* b, forest* c);
+    void GREATER_THAN_init();
+    void GREATER_THAN_done();
 }
 
 #endif

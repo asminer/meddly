@@ -20,13 +20,18 @@
 #define MEDDLY_MAXMIN_H
 
 namespace MEDDLY {
-  class binary_opname;
+    class forest;
+    class binary_operation;
 
-  /// Set up a binary_opname for the "maximum" operation.
-  binary_opname* initializeMaximum();
+    /// The 'maximum' operation builder.
+    binary_operation* MAXIMUM(forest* a, forest* b, forest* c);
+    void MAXIMUM_init();
+    void MAXIMUM_done();
 
-  /// Set up a binary_opname for the "minimum" operation.
-  binary_opname* initializeMinimum();
+    /// The 'minimum' operation builder.
+    binary_operation* MINIMUM(forest* a, forest* b, forest* c);
+    void MINIMUM_init();
+    void MINIMUM_done();
 }
 
 #endif

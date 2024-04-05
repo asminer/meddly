@@ -49,15 +49,15 @@ libmeddly_la_SOURCES = \
     node_storage.h          node_storage.cc \
     oper.h                  oper.cc \
     oper_binary.h           oper_binary.cc \
-    oper_special.h          oper_special.cc \
+    oper_numer.h            oper_numer.cc \
+    oper_satur.h            oper_satur.cc \
+    oper_ternary.h          oper_ternary.cc \
     oper_unary.h            oper_unary.cc \
     operators.h             operators.cc \
-    opname.h                opname.cc \
-    opname_numer.h          opname_numer.cc \
-    opname_satur.h          opname_satur.cc \
     ops_builtin.h           ops_builtin.cc \
     policies.h              policies.cc \
     relation_node.h         relation_node.cc \
+    sat_relations.h         sat_relations.cc \
     statset.h               statset.cc \
     terminal.h              terminal.cc \
     unique_table.h          unique_table.cc \
@@ -190,15 +190,14 @@ pkginclude_HEADERS = \
     node_storage.h \
     oper.h  \
     oper_binary.h  \
-    oper_special.h  \
+    oper_numer.h \
+    oper_ternary.h  \
     oper_unary.h  \
     operators.h \
-    opname.h  \
-    opname_numer.h  \
-    opname_satur.h  \
     ops_builtin.h \
     policies.h \
     relation_node.h \
+    sat_relations.h \
     revision.h \
     statset.h \
     terminal.h \

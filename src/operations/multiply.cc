@@ -21,12 +21,12 @@
 #include "apply_base.h"
 
 namespace MEDDLY {
-  class multiply_mdd;
-  class multiply_mxd;
-  class multiply_evplus;
-  class multiply_evtimes;
+    class multiply_mdd;
+    class multiply_mxd;
+    class multiply_evplus;
+    class multiply_evtimes;
 
-  class multiply_opname;
+    binary_list MULTIPLY_cache;
 };
 
 // ******************************************************************
@@ -37,18 +37,19 @@ namespace MEDDLY {
 
 class MEDDLY::multiply_mdd : public generic_binary_mdd {
   public:
-    multiply_mdd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+    multiply_mdd(forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::multiply_mdd::multiply_mdd(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mdd(opcode, arg1, arg2, res)
+MEDDLY::multiply_mdd::multiply_mdd(forest* arg1, forest* arg2, forest* res)
+    : generic_binary_mdd(MULTIPLY_cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::multiply_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -115,18 +116,19 @@ bool MEDDLY::multiply_mdd::checkTerminals(node_handle a, node_handle b, node_han
 
 class MEDDLY::multiply_mxd : public generic_binary_mxd {
   public:
-    multiply_mxd(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+    multiply_mxd(forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
 };
 
-MEDDLY::multiply_mxd::multiply_mxd(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mxd(opcode, arg1, arg2, res)
+MEDDLY::multiply_mxd::multiply_mxd(forest* arg1, forest* arg2, forest* res)
+    : generic_binary_mxd(MULTIPLY_cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 bool MEDDLY::multiply_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
@@ -193,19 +195,20 @@ bool MEDDLY::multiply_mxd::checkTerminals(node_handle a, node_handle b, node_han
 
 class MEDDLY::multiply_evplus : public generic_binary_evplus {
   public:
-    multiply_evplus(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+    multiply_evplus(forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(long aev, node_handle a, long bev, node_handle b,
       long& cev, node_handle& c);
 };
 
-MEDDLY::multiply_evplus::multiply_evplus(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_evplus(opcode, arg1, arg2, res)
+MEDDLY::multiply_evplus::multiply_evplus(forest* arg1, forest* arg2,
+    forest* res) : generic_binary_evplus(MULTIPLY_cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, arg1->isForRelations());
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVPLUS);
 }
 
 bool MEDDLY::multiply_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,
@@ -232,19 +235,20 @@ bool MEDDLY::multiply_evplus::checkTerminals(long aev, node_handle a, long bev, 
 
 class MEDDLY::multiply_evtimes : public generic_binary_evtimes {
   public:
-    multiply_evtimes(binary_opname* opcode, forest* arg1,
-      forest* arg2, forest* res);
+    multiply_evtimes(forest* arg1, forest* arg2, forest* res);
 
   protected:
     virtual bool checkTerminals(float aev, node_handle a, float bev, node_handle b,
       float& cev, node_handle& c);
 };
 
-MEDDLY::multiply_evtimes::multiply_evtimes(binary_opname* opcode,
-  forest* arg1, forest* arg2, forest* res)
-  : generic_binary_evtimes(opcode, arg1, arg2, res)
+MEDDLY::multiply_evtimes::multiply_evtimes(forest* arg1, forest* arg2,
+    forest* res) : generic_binary_evtimes(MULTIPLY_cache, arg1, arg2, res)
 {
-  operationCommutes();
+    operationCommutes();
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, arg1->isForRelations());
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVTIMES);
 }
 
 bool MEDDLY::multiply_evtimes::checkTerminals(float aev, node_handle a,
@@ -262,76 +266,53 @@ bool MEDDLY::multiply_evtimes::checkTerminals(float aev, node_handle a,
 }
 
 
-
-// ******************************************************************
-// *                                                                *
-// *                     multiply_opname  class                     *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::multiply_opname : public binary_opname {
-  public:
-    multiply_opname();
-    virtual binary_operation* buildOperation(forest* a1,
-      forest* a2, forest* r);
-};
-
-MEDDLY::multiply_opname::multiply_opname()
- : binary_opname("Multiply")
-{
-}
-
-MEDDLY::binary_operation*
-MEDDLY::multiply_opname::buildOperation(forest* a1, forest* a2,
-  forest* r)
-{
-  if (0==a1 || 0==a2 || 0==r) return 0;
-
-  if (
-    (a1->getDomain() != r->getDomain()) ||
-    (a2->getDomain() != r->getDomain())
-  )
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-
-  if (
-    (a1->isForRelations() != r->isForRelations()) ||
-    (a2->isForRelations() != r->isForRelations()) ||
-    (a1->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (a2->getEdgeLabeling() != r->getEdgeLabeling()) ||
-    (r->getRangeType() == range_type::BOOLEAN)
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  if (r->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-    if (r->isForRelations())
-      return new multiply_mxd(this, a1, a2, r);
-    else
-      return new multiply_mdd(this, a1, a2, r);
-  }
-
-  if (
-    (a1->getRangeType() != r->getRangeType()) ||
-    (a2->getRangeType() != r->getRangeType())
-  )
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-
-  if (r->getEdgeLabeling() == edge_labeling::EVPLUS)
-    return new multiply_evplus(this, a1, a2, r);
-
-  if (r->getEdgeLabeling() == edge_labeling::EVTIMES)
-    return new multiply_evtimes(this, a1, a2, r);
-
-  throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_opname* MEDDLY::initializeMultiply()
+MEDDLY::binary_operation* MEDDLY::MULTIPLY(forest* a, forest* b, forest* c)
 {
-  return new multiply_opname;
+    if (!a || !b || !c) return nullptr;
+
+    binary_operation* bop =  MULTIPLY_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        if (c->isForRelations())
+            return MULTIPLY_cache.add(new multiply_mxd(a, b, c));
+        else
+            return MULTIPLY_cache.add(new multiply_mdd(a, b, c));
+    }
+
+    if  (
+            (a->getRangeType() != b->getRangeType()) ||
+            (a->getRangeType() != c->getRangeType())
+        )
+    {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::EVPLUS)
+        return MULTIPLY_cache.add(new multiply_evplus(a, b, c));
+
+    if (c->getEdgeLabeling() == edge_labeling::EVTIMES)
+        return MULTIPLY_cache.add(new multiply_evtimes(a, b, c));
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
+
+void MEDDLY::MULTIPLY_init()
+{
+    MULTIPLY_cache.reset("Multiply");
+}
+
+void MEDDLY::MULTIPLY_done()
+{
+    MEDDLY_DCASSERT(MULTIPLY_cache.isEmpty());
+}
+
 

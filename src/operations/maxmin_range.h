@@ -19,14 +19,20 @@
 #ifndef MEDDLY_MAXMIN_RANGE_H
 #define MEDDLY_MAXMIN_RANGE_H
 
+#include "../oper.h"
+
 namespace MEDDLY {
-    class unary_opname;
+    class unary_operation;
 
-    /// Set up a unary_opname for the "maxrange" operation.
-    unary_opname* initializeMaxRange();
-
-    /// Set up a unary_opname for the "minrange" operation.
-    unary_opname* initializeMinRange();
+    /// Builder for 'maximum range' operations.
+    unary_operation* MAX_RANGE(forest* arg, opnd_type res);
+    void MAX_RANGE_init();
+    void MAX_RANGE_done();
+    ///
+    /// Builder for 'minimum range' operations.
+    unary_operation* MIN_RANGE(forest* arg, opnd_type res);
+    void MIN_RANGE_init();
+    void MIN_RANGE_done();
 }
 
 #endif

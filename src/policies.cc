@@ -30,12 +30,12 @@ MEDDLY::policies::policies()
     nodestor = nullptr; // should cause an exception later
 }
 
-MEDDLY::policies::policies(bool rel)
+MEDDLY::policies::policies(set_or_rel rel)
 {
     useDefaults(rel);
 }
 
-void MEDDLY::policies::useDefaults(bool rel)
+void MEDDLY::policies::useDefaults(set_or_rel rel)
 {
     reduction = rel
         ? reduction_rule::IDENTITY_REDUCED

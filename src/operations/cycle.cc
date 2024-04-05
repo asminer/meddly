@@ -24,9 +24,10 @@
 #include "../oper_unary.h"
 
 namespace MEDDLY {
-  class cycle_opname;
+    class cycle_opname;
+    class cycle_EV2EV;
 
-  class cycle_EV2EV;
+    unary_list CYCLE_cache;
 };
 
 // ******************************************************************
@@ -37,52 +38,55 @@ namespace MEDDLY {
 
 // Extract cycles (EV+MDD) from transitive closure (EV+MxD).
 class MEDDLY::cycle_EV2EV : public unary_operation {
-  public:
-    cycle_EV2EV(unary_opname* oc, forest* arg, forest* res);
+    public:
+        cycle_EV2EV(forest* arg, forest* res);
 
-    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
+        virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
 
   protected:
-    virtual void compute_r(long aev, node_handle a, int k, long& bev, node_handle& b);
+        virtual void compute_r(long aev, node_handle a, int k, long& bev, node_handle& b);
 
-    inline ct_entry_key*
-    findResult(long aev, node_handle a, long& bev, node_handle &b)
-    {
-      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeN(a);
-      CT0->find(CTsrch, CTresult[0]);
-      if (!CTresult[0]) return CTsrch;
-      bev = CTresult[0].readL();
-      b = resF->linkNode(CTresult[0].readN());
-      if (b != 0) {
-        bev += aev;
-      }
-      CT0->recycle(CTsrch);
-      return 0;
-    }
-    inline node_handle saveResult(ct_entry_key* Key,
-      long aev, node_handle a, long bev, node_handle b)
-    {
-      CTresult[0].reset();
-      CTresult[0].writeL(b == 0 ? 0L : bev - aev);
-      CTresult[0].writeN(b);
-      CT0->addEntry(Key, CTresult[0]);
-      return b;
-    }
+        inline ct_entry_key*
+        findResult(long aev, node_handle a, long& bev, node_handle &b)
+        {
+            ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+            MEDDLY_DCASSERT(CTsrch);
+            CTsrch->writeN(a);
+            CT0->find(CTsrch, CTresult[0]);
+            if (!CTresult[0]) return CTsrch;
+            bev = CTresult[0].readL();
+            b = resF->linkNode(CTresult[0].readN());
+            if (b != 0) {
+                bev += aev;
+            }
+            CT0->recycle(CTsrch);
+            return 0;
+        }
+        inline node_handle saveResult(ct_entry_key* Key,
+            long aev, node_handle a, long bev, node_handle b)
+        {
+            CTresult[0].reset();
+            CTresult[0].writeL(b == 0 ? 0L : bev - aev);
+            CTresult[0].writeN(b);
+            CT0->addEntry(Key, CTresult[0]);
+            return b;
+        }
 };
 
-MEDDLY::cycle_EV2EV::cycle_EV2EV(unary_opname* oc, forest* arg, forest* res)
-  : unary_operation(oc, 1, arg, res)
+MEDDLY::cycle_EV2EV::cycle_EV2EV(forest* arg, forest* res)
+  : unary_operation(CYCLE_cache, 1, arg, res)
 {
-  MEDDLY_DCASSERT(argF->isEVPlus() && argF->isForRelations());
-  MEDDLY_DCASSERT(resF->isEVPlus() && !resF->isForRelations());
+    checkDomains(__FILE__, __LINE__);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVPLUS);
+    if (!arg->isForRelations() || res->isForRelations()) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
 
-  ct_entry_type* et = new ct_entry_type(oc->getName(), "LN:LN");
-  et->setForestForSlot(1, arg);
-  et->setForestForSlot(4, res);
-  registerEntryType(0, et);
-  buildCTs();
+    ct_entry_type* et = new ct_entry_type(CYCLE_cache.getName(), "LN:LN");
+    et->setForestForSlot(1, arg);
+    et->setForestForSlot(4, res);
+    registerEntryType(0, et);
+    buildCTs();
 }
 
 void MEDDLY::cycle_EV2EV::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
@@ -164,41 +168,30 @@ void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, int k, long& bev, n
 
 // ******************************************************************
 // *                                                                *
-// *                         cycle_opname                           *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::cycle_opname : public unary_opname {
-public:
-  cycle_opname();
-  virtual unary_operation* buildOperation(forest* arg, forest* res);
-};
-
-MEDDLY::cycle_opname::cycle_opname()
-  : unary_opname("Extract cycles")
-{
-}
-
-MEDDLY::unary_operation* MEDDLY::cycle_opname::buildOperation(
-  forest* arg, forest* res)
-{
-  unary_operation* op = 0;
-  if (arg->isEVPlus() && arg->isForRelations() && res->isEVPlus() && !res->isForRelations()) {
-    op = new cycle_EV2EV(this, arg, res);
-  }
-  else {
-    throw error(error::NOT_IMPLEMENTED);
-  }
-  return op;
-}
-
-// ******************************************************************
-// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_opname* MEDDLY::initializeCycle()
+MEDDLY::unary_operation* MEDDLY::CYCLE(forest* arg, forest* res)
 {
-  return new cycle_opname;
+    if (!arg) return nullptr;
+    unary_operation* uop =  CYCLE_cache.find(arg, res);
+    if (uop) {
+        return uop;
+    }
+    if (arg->isEVPlus()) {
+        return CYCLE_cache.add(new cycle_EV2EV(arg, res));
+    }
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
+
+void MEDDLY::CYCLE_init()
+{
+    CYCLE_cache.reset("ExtractCycles");
+}
+
+void MEDDLY::CYCLE_done()
+{
+    MEDDLY_DCASSERT(CYCLE_cache.isEmpty());
+}
+

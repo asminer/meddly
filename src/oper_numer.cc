@@ -16,33 +16,20 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "defines.h"
-#include "opname_numer.h"
-#include "initializer.h"
+#include "oper_numer.h"
 
 // ******************************************************************
-// *                                                                *
-// *                    numerical_opname methods                    *
-// *                                                                *
+// *                  numerical_operation  methods                  *
 // ******************************************************************
 
-MEDDLY::numerical_opname::numerical_args
-::numerical_args(const dd_edge &xi, const dd_edge &a, const dd_edge &yi)
- : x_ind(xi), A(a), y_ind(yi)
+MEDDLY::
+numerical_operation::
+numerical_operation(const char* name, unsigned et_slots)
+    : operation(name, et_slots)
 {
 }
 
-MEDDLY::numerical_opname::numerical_args::~numerical_args()
-{
-}
-
-
-MEDDLY::numerical_opname::numerical_opname(const char* n)
- : specialized_opname(n)
-{
-}
-
-MEDDLY::numerical_opname::~numerical_opname()
+MEDDLY::numerical_operation::~numerical_operation()
 {
 }
 
