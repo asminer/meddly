@@ -25,7 +25,6 @@
 
 #include "node_marker.h"
 
-#include "opname.h"
 #include "oper_binary.h"
 #include "ops_builtin.h"
 #include "operators.h"

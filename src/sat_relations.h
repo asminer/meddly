@@ -19,10 +19,11 @@
 #ifndef MEDDLY_SAT_RELATIONS_H
 #define MEDDLY_SAT_RELATIONS_H
 
-#include "opname.h"
 #include "dd_edge.h"
 #include "error.h"
 #include "forest.h"
+#include "oper_unary.h"
+#include "oper_binary.h"
 
 #include <unordered_map>
 #include <map>

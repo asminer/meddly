@@ -33,9 +33,6 @@
 #include "compute_table.h"
 #include "operators.h"
 #include "ops_builtin.h"
-#include "opname.h"
-#include "opname_numer.h"
-#include "opname_satur.h"
 
 #include "oper.h"
 #include "oper_unary.h"

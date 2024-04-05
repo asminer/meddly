@@ -51,44 +51,6 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                common_transitive_closure  class                *
-// *                                                                *
-// ******************************************************************
-
-/*
-class MEDDLY::common_transitive_closure: public ternary_operation
-{
-protected:
-  forest* consF;
-  forest* tcF;
-  forest* transF;
-  forest* resF;
-
-  // Check if the variables orders of relevant forests are compatible
-  virtual bool checkForestCompatibility() const;
-
-public:
-  common_transitive_closure(ternary_list &c, unsigned slots,
-    forest* cons, forest* tc, forest* trans, forest* res);
-  ~common_transitive_closure();
-};
-*/
-
-/*
-class MEDDLY::transitive_closure_bfs_opname : public constrained_opname {
-public:
-  transitive_closure_bfs_opname();
-  virtual specialized_operation* buildOperation(forest* cons, forest* arg, forest* trans, forest* res);
-
-  virtual specialized_operation* buildOperation(arguments* a)
-  {
-    throw error::NOT_IMPLEMENTED;
-  }
-};
-*/
-
-// ******************************************************************
-// *                                                                *
 // *               transitive_closure_forwd_bfs class               *
 // *                                                                *
 // ******************************************************************
@@ -110,14 +72,6 @@ public:
   virtual void compute(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res);
 };
 
-/*
-class MEDDLY::transitive_closure_dfs_opname : public constrained_opname {
-public:
-  transitive_closure_dfs_opname();
-
-  virtual specialized_operation* buildOperation(arguments* a);
-};
-*/
 
 // ******************************************************************
 // *                                                                *
@@ -220,52 +174,6 @@ public:
 // ***********************************************************************
 // ***********************************************************************
 
-// ******************************************************************
-// *                                                                *
-// *               common_transitive_closure  methods               *
-// *                                                                *
-// ******************************************************************
-
-/*
-MEDDLY::common_transitive_closure::common_transitive_closure(ternary_list &c,
-  unsigned slots, forest* cons, forest* tc, forest* trans, forest* res)
-  : ternary_operation(code->getName(), slots, cons, tc, trans, res)
-{
-  MEDDLY_DCASSERT(cons->isEVPlus() && !cons->isForRelations());
-  MEDDLY_DCASSERT(tc->isEVPlus() && tc->isForRelations());
-  MEDDLY_DCASSERT(trans->isMultiTerminal() && trans->isForRelations());
-  MEDDLY_DCASSERT(res->isEVPlus() && res->isForRelations());
-
-  consF = cons;
-  tcF = tc;
-  transF = trans;
-  resF = res;
-
-  registerInForest(consF);
-  registerInForest(tcF);
-  registerInForest(transF);
-  registerInForest(resF);
-}
-
-MEDDLY::common_transitive_closure::~common_transitive_closure()
-{
-  unregisterInForest(consF);
-  unregisterInForest(tcF);
-  unregisterInForest(transF);
-  unregisterInForest(resF);
-}
-
-bool MEDDLY::common_transitive_closure::checkForestCompatibility() const
-{
-  auto o1 = consF->variableOrder();
-  auto o2 = tcF->variableOrder();
-  auto o3 = transF->variableOrder();
-  auto o4 = resF->variableOrder();
-  return o1->is_compatible_with(*o2)
-    && o1->is_compatible_with(*o3)
-    && o1->is_compatible_with(*o4);
-}
-*/
 
 // ******************************************************************
 // *                                                                *
@@ -350,29 +258,6 @@ void MEDDLY::transitive_closure_forwd_bfs::iterate(const dd_edge& a, const dd_ed
   }
 }
 
-// ******************************************************************
-// *                                                                *
-// *             transitive_closure_dfs_opname  methods             *
-// *                                                                *
-// ******************************************************************
-
-/*
-
-MEDDLY::transitive_closure_dfs_opname::transitive_closure_dfs_opname()
- : constrained_opname("Transitive Closure")
-{
-}
-
-MEDDLY::specialized_operation* MEDDLY::transitive_closure_dfs_opname::buildOperation(arguments* a)
-{
-  constrained_opname::constrained_args* args = dynamic_cast<constrained_opname::constrained_args*>(a);
-  return new transitive_closure_forwd_dfs(this,
-    args->consForest,
-    args->inForest,
-    args->relForest,
-    args->outForest);
-}
-*/
 
 // ******************************************************************
 // *                                                                *
@@ -1110,13 +995,6 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
-
-/*
-MEDDLY::constrained_opname* MEDDLY::initTransitiveClosureDFS()
-{
-  return new transitive_closure_dfs_opname();
-}
-*/
 
 MEDDLY::ternary_operation*
 MEDDLY::TRANSITIVE_CLOSURE_DFS(forest* consF, forest* inF,

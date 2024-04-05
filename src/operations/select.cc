@@ -21,7 +21,6 @@
 
 #include "../forest.h"
 #include "../oper_unary.h"
-#include "../opname.h"
 
 namespace MEDDLY {
     class select;

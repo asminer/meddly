@@ -227,50 +227,6 @@ namespace MEDDLY {
     ternary_operation* TRANSITIVE_CLOSURE_DFS(forest* consF, forest* inF,
             forest* relF, forest* outF);
 
-    // ******************************************************************
-
-    // OLD BELOW
-
-    /*
-    // class satpregen_opname;
-    class satotf_opname;
-    class satimpl_opname;
-    class sathyb_opname;
-    class constrained_opname;
-    */
-
-    /** Forward reachability using saturation.
-        Transition relation is already known.
-    */
-    // satpregen_opname* SATURATION_FORWARD();
-
-    /** Backward reachability using saturation.
-        Transition relation is already known.
-    */
-    // satpregen_opname* SATURATION_BACKWARD();
-
-    /** Forward reachability using saturation.
-        Transition relation is not completely known,
-        will be built along with reachability set.
-    */
-//     satotf_opname* SATURATION_OTF_FORWARD();
-
-    /** Forward reachability using saturation.
-        Transition relation is specified implicitly.
-    */
-    // satimpl_opname* SATURATION_IMPL_FORWARD();
-
-    /** Forward reachability using saturation.
-        Allows hybrid representation of transition relation.
-    */
-    // sathyb_opname* SATURATION_HYB_FORWARD();
-
-    /** Minimum-witness operations.
-    constrained_opname* CONSTRAINED_BACKWARD_BFS();
-    constrained_opname* CONSTRAINED_FORWARD_DFS();
-    constrained_opname* CONSTRAINED_BACKWARD_DFS();
-    constrained_opname* TRANSITIVE_CLOSURE_DFS();
-    */
 
     // ******************************************************************
     // *                                                                *

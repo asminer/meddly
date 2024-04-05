@@ -18,7 +18,6 @@
 
 
 #include "mtmxdint.h"
-#include "../opname.h"
 
 MEDDLY::mt_mxd_int::mt_mxd_int(domain *d, const policies &p, int* level_reduction_rule, int tv)
 : mtmxd_forest(d, range_type::INTEGER, p, level_reduction_rule)
