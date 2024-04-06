@@ -24,6 +24,8 @@
 #include "oper.h"
 #include <type_traits>
 
+#define OLD_TYPE_IFACE
+
 namespace MEDDLY {
     class ct_object;
     class ct_entry_type;
@@ -328,6 +330,7 @@ class MEDDLY::ct_entry_type {
         }
 
 
+#ifdef OLD_TYPE_IFACE
         /**
             Get the type for item i in the key.
             Automatically handles repetitions.
@@ -387,6 +390,25 @@ class MEDDLY::ct_entry_type {
                 return key_repeating[i].getForest();
             }
         }
+#else
+        /**
+            Get the type for item i in the key.
+            Automatically handles repetitions.
+              @param  i   Slot number, between 0 and getKeySize().
+              @return     Type info for slot i
+        */
+        inline const ct_itemtype& getKeyType(unsigned i) const {
+            if (i<key_fixed.size()) {
+                return key_fixed[i];
+            } else {
+                MEDDLY_DCASSERT(key_repeating.size());
+                i -= key_fixed.size();
+                i %= key_repeating.size();
+                return key_repeating[i];
+            }
+        }
+
+#endif
 
         /**
             Get the number of items in the result
@@ -398,7 +420,7 @@ class MEDDLY::ct_entry_type {
         */
         inline unsigned getResultBytes() const { return result_bytes; }
 
-
+#ifdef OLD_TYPE_IFACE
         /**
             Get the type for item i in the result.
               @param  i   Slot number, between 0 and getResultSize().
@@ -436,7 +458,18 @@ class MEDDLY::ct_entry_type {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, unsigned(result.size()));
             return result[i].getForest();
         }
-
+#else
+        /**
+            Get the type for item i in the result.
+              @param  i   Slot number, between 0 and getResultSize().
+        */
+        inline const ct_itemtype& getResultType(unsigned i) const
+        {
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__,
+                    0u, i, unsigned(result.size()));
+            return result[i];
+        }
+#endif
 
         /// Mark for deletion
         inline void markForDeletion() { is_marked_for_deletion = true; }
