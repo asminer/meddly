@@ -20,6 +20,41 @@
 #include "error.h"
 #include "forest.h"
 
+// #define DEBUG_ENTRY_TYPE
+
+// ******************************************************************
+// *                                                                *
+// *                       ct_itemtype methods                      *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::ct_itemtype::ct_itemtype(char c)
+{
+    nodeFor = nullptr;
+    switch (c) {
+        case 'N':   type = ct_typeID::NODE;         break;
+        case 'I':   type = ct_typeID::INTEGER;      break;
+        case 'L':   type = ct_typeID::LONG;         break;
+        case 'F':   type = ct_typeID::FLOAT;        break;
+        case 'D':   type = ct_typeID::DOUBLE;       break;
+        case 'G':   type = ct_typeID::GENERIC;      break;
+        default :   type = ct_typeID::ERROR;
+    }
+}
+
+char MEDDLY::ct_itemtype::getTypeChar() const
+{
+    switch (type) {
+        case ct_typeID::NODE    : return 'N';
+        case ct_typeID::INTEGER : return 'I';
+        case ct_typeID::LONG    : return 'L';
+        case ct_typeID::FLOAT   : return 'F';
+        case ct_typeID::DOUBLE  : return 'D';
+        case ct_typeID::GENERIC : return 'G';
+        default                 : return '?';
+    }
+}
+
 // **********************************************************************
 // *                                                                    *
 // *                         ct_object  methods                         *
@@ -131,6 +166,10 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
         throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
     }
 
+    unsigned len_ks_type = 0;
+    len_kr_type = 0;
+    len_r_type  = 0;
+
     if (saw_dot) {
         // "012.456:89"
         len_ks_type = dot_slot;
@@ -155,15 +194,24 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
     }
 
     //
-    // Build starting portion of key
+    // Build fixed, starting portion of key
     //
-    ks_bytes = 0;
+    fixed_bytes = 0;
+    if (len_ks_type) {
+        key_fixed.resize(len_ks_type);
+        for (unsigned i=0; i<len_ks_type; i++) {
+            key_fixed[i] = ct_itemtype(pattern[i]);
+            fixed_bytes += key_fixed[i].bytes();
+        }
+    }
+
+    /*
     if (len_ks_type) {
         ks_type = new ct_typeID[len_ks_type];
         ks_forest = new forest*[len_ks_type];
         for (unsigned i=0; i<len_ks_type; i++) {
             ks_type[i] = char2typeID(pattern[i]);
-            ks_bytes += bytes4typeID(ks_type[i]);
+            fixed_bytes += bytes4typeID(ks_type[i]);
             ks_forest[i] = 0;
         }
     } else {
@@ -171,6 +219,7 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
         ks_type = 0;
         ks_forest = 0;
     }
+    */
 
     //
     // Build repeating portion of key
@@ -205,10 +254,10 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
 #ifdef DEBUG_ENTRY_TYPE
     printf("Built entry type %s with pattern '%s'\n", name, pattern);
     printf("Key start: \"");
-    for (unsigned i=0; i<len_ks_type; i++) {
-        fputc(typeID2char(ks_type[i]), stdout);
+    for (unsigned i=0; i<key_fixed.size(); i++) {
+        fputc(key_fixed[i].getTypeChar(), stdout);
     }
-    printf("\"  (%u bytes)\n", ks_bytes);
+    printf("\"  (%u bytes)\n", fixed_bytes);
     printf("Key repeat: \"");
     for (unsigned i=0; i<len_kr_type; i++) {
         fputc(typeID2char(kr_type[i]), stdout);
@@ -236,8 +285,6 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name)
 
 MEDDLY::ct_entry_type::~ct_entry_type()
 {
-    delete[] ks_type;
-    delete[] ks_forest;
     delete[] kr_type;
     delete[] kr_forest;
     delete[] r_type;
@@ -248,14 +295,17 @@ MEDDLY::ct_entry_type::~ct_entry_type()
 
 void MEDDLY::ct_entry_type::setForestForSlot(unsigned i, forest* f)
 {
-    if (i<len_ks_type) {
+    if (i<key_fixed.size()) {
+        key_fixed[i].setForest(f);
+        /*
         if (ct_typeID::NODE != ks_type[i]) {
             throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
         }
         ks_forest[i] = f;
+        */
         return;
     }
-    i -= len_ks_type;
+    i -= key_fixed.size();
 
     if (len_kr_type) {
         // adjust for the .
@@ -292,9 +342,9 @@ void MEDDLY::ct_entry_type::setForestForSlot(unsigned i, forest* f)
 void MEDDLY::ct_entry_type::clearForestCTBits(bool* skipF, unsigned N) const
 {
     unsigned i;
-    for (i=0; i<len_ks_type; i++) {
-        forest* f = ks_forest[i];
-        if (0==f) continue;
+    for (i=0; i<key_fixed.size(); i++) {
+        forest* f = key_fixed[i].getForest();
+        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
@@ -321,9 +371,9 @@ void MEDDLY::ct_entry_type::clearForestCTBits(bool* skipF, unsigned N) const
 void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
 {
     unsigned i;
-    for (i=0; i<len_ks_type; i++) {
-        forest* f = ks_forest[i];
-        if (0==f) continue;
+    for (i=0; i<key_fixed.size(); i++) {
+        forest* f = key_fixed[i].getForest();
+        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();

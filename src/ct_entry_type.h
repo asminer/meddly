@@ -74,6 +74,16 @@ class MEDDLY::ct_itemtype {
             type = ct_typeID::ERROR;
             nodeFor = nullptr;
         }
+        /** Set type based on the following codes:
+                'N': node (in a forest)
+                'I': int
+                'L': long
+                'F': float
+                'D': double
+                'G': pointer to a ct_object
+        */
+        ct_itemtype(char code);
+
         ct_itemtype(forest* f) {
             type = ct_typeID::NODE;
             nodeFor = f;
@@ -110,10 +120,10 @@ class MEDDLY::ct_itemtype {
         inline ct_typeID getType() const {
             return type;
         }
+        char getTypeChar() const;
         inline forest* getForest() const {
             return nodeFor;
         }
-
         inline unsigned bytes() const {
             switch (type) {
                 case ct_typeID::NODE    : return sizeof(MEDDLY::node_handle);
@@ -125,6 +135,16 @@ class MEDDLY::ct_itemtype {
                 default                 : return 0;
             }
         }
+
+
+        inline void setForest(forest* f) {
+            if (type != ct_typeID::NODE) {
+                throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+            }
+            MEDDLY_DCASSERT(!nodeFor);
+            nodeFor = f;
+        }
+
 
     private:
         ct_typeID   type;
@@ -293,7 +313,8 @@ class MEDDLY::ct_entry_type {
               @return Total number of slots in the key.
         */
         inline unsigned getKeySize(unsigned reps) const {
-            return len_ks_type + (reps * len_kr_type);
+            // return len_ks_type + (reps * len_kr_type);
+            return key_fixed.size() + (reps * len_kr_type);
         }
 
         /**
@@ -305,7 +326,7 @@ class MEDDLY::ct_entry_type {
               @return Total number of bytes required for the key.
         */
         inline unsigned getKeyBytes(unsigned reps) const {
-            return ks_bytes + (reps * kr_bytes);
+            return fixed_bytes + (reps * kr_bytes);
         }
 
 
@@ -320,18 +341,15 @@ class MEDDLY::ct_entry_type {
         */
         inline void getKeyType(unsigned i, ct_typeID &t, forest* &f)
         const {
-            if (i<len_ks_type) {
-                MEDDLY_DCASSERT(ks_type);
-                MEDDLY_DCASSERT(ks_forest);
-
-                t = ks_type[i];
-                f = ks_forest[i];
+            if (i<key_fixed.size()) {
+                t = key_fixed[i].getType();
+                f = key_fixed[i].getForest();
             } else {
                 MEDDLY_DCASSERT(len_kr_type);
                 MEDDLY_DCASSERT(kr_type);
                 MEDDLY_DCASSERT(kr_forest);
 
-                i -= len_ks_type;
+                i -= key_fixed.size();
                 i %= len_kr_type;
                 t = kr_type[i];
                 f = kr_forest[i];
@@ -345,13 +363,12 @@ class MEDDLY::ct_entry_type {
               @param  i   Slot number, between 0 and getKeySize().
         */
         inline ct_typeID getKeyType(unsigned i) const {
-            if (i<len_ks_type) {
-                MEDDLY_DCASSERT(ks_type);
-                return ks_type[i];
+            if (i<key_fixed.size()) {
+                return key_fixed[i].getType();
             } else {
                 MEDDLY_DCASSERT(len_kr_type);
                 MEDDLY_DCASSERT(kr_type);
-                i -= len_ks_type;
+                i -= key_fixed.size();
                 i %= len_kr_type;
                 return kr_type[i];
             }
@@ -366,13 +383,12 @@ class MEDDLY::ct_entry_type {
                           is not 'N'.
         */
         inline forest* getKeyForest(unsigned i) const {
-            if (i<len_ks_type) {
-                MEDDLY_DCASSERT(ks_forest);
-                return ks_forest[i];
+            if (i<key_fixed.size()) {
+                return key_fixed[i].getForest();
             } else {
                 MEDDLY_DCASSERT(len_kr_type);
                 MEDDLY_DCASSERT(kr_forest);
-                i -= len_ks_type;
+                i -= key_fixed.size();
                 i %= len_kr_type;
                 return kr_forest[i];
             }
@@ -451,17 +467,20 @@ class MEDDLY::ct_entry_type {
         /// Name; for displaying CT entries
         const char* name;
 
+        /// Fixed, initial portion of the key.
+        std::vector <ct_itemtype> key_fixed;
+
         /// Starting portion of key pattern.
-        ct_typeID* ks_type;
+        // ct_typeID* ks_type;
 
         /// Forests in starting portion of key.
-        forest** ks_forest;
+        // forest** ks_forest;
 
         /// Length of ks_type and ks_forest arrays.
-        unsigned len_ks_type;
+        // unsigned len_ks_type;
 
         /// Total bytes in the starting portion of the key.
-        unsigned ks_bytes;
+        unsigned fixed_bytes;   // unsigned ks_bytes;
 
 
         /// Repeating portion of key pattern (or null for no repeats).
