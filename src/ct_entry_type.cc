@@ -20,6 +20,9 @@
 #include "error.h"
 #include "forest.h"
 
+#include "io.h"
+#include "operators.h"
+
 // #define DEBUG_ENTRY_TYPE
 
 // ******************************************************************
@@ -53,6 +56,19 @@ char MEDDLY::ct_itemtype::getTypeChar() const
         case ct_typeID::GENERIC : return 'G';
         default                 : return '?';
     }
+}
+
+void MEDDLY::ct_itemtype::show(output &s) const
+{
+    s.put(getTypeChar());
+    if (ct_typeID::NODE != type) return;
+    s.put("(f ");
+    if (nodeFor) {
+        s.put(nodeFor->FID());
+    } else {
+        s.put('0');
+    }
+    s.put(')');
 }
 
 // **********************************************************************
@@ -184,22 +200,24 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
     }
 
 #ifdef DEBUG_ENTRY_TYPE
-    printf("Built entry type %s with pattern '%s'\n", name, pattern);
-    printf("Key start: \"");
+    ostream_output sout(std::cout);
+    sout << "Built entry type " << name << " with pattern '"
+         << pattern << "'\n";
+    sout << "Key start: \"";
     for (unsigned i=0; i<key_fixed.size(); i++) {
-        fputc(key_fixed[i].getTypeChar(), stdout);
+        key_fixed[i].show(sout);
     }
-    printf("\"  (%u bytes)\n", fixed_bytes);
-    printf("Key repeat: \"");
+    sout << "\"  (" << fixed_bytes << " bytes)\n";
+    sout << "Key repeat: \"";
     for (unsigned i=0; i<key_repeating.size(); i++) {
-        fputc(typeID2char(kr_type[i]), stdout);
+        key_repeating[i].show(sout);
     }
-    printf("\"  (%u bytes)\n", repeating_bytes);
-    printf("Result: \"");
+    sout << "\"  (" << repeating_bytes << " bytes)\n";
+    sout << "Result: \"";
     for (unsigned i=0; i<result.size(); i++) {
-        fputc(typeID2char(r_type[i]), stdout);
+        result[i].show(sout);
     }
-    printf("\"  (%u bytes)\n", result_bytes);
+    sout << "\"  (" << result_bytes << " bytes)\n";
 #endif
 }
 
@@ -259,24 +277,24 @@ void MEDDLY::ct_entry_type::clearForestCTBits(bool* skipF, unsigned N) const
 {
     unsigned i;
     for (i=0; i<key_fixed.size(); i++) {
+        if (!key_fixed[i].hasForest()) continue;
         forest* f = key_fixed[i].getForest();
-        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
         skipF[ f->FID() ] = 1;
     }
     for (i=0; i<key_repeating.size(); i++) {
+        if (!key_repeating[i].hasForest()) continue;
         forest* f = key_repeating[i].getForest();
-        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
         skipF[ f->FID() ] = 1;
     }
     for (i=0; i<result.size(); i++) {
+        if (!result[i].hasForest()) continue;
         forest* f = result[i].getForest();
-        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
@@ -288,8 +306,8 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
 {
     unsigned i;
     for (i=0; i<key_fixed.size(); i++) {
+        if (!key_fixed[i].hasForest()) continue;
         forest* f = key_fixed[i].getForest();
-        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
@@ -297,8 +315,8 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
         }
     }
     for (i=0; i<key_repeating.size(); i++) {
+        if (!key_repeating[i].hasForest()) continue;
         forest* f = key_repeating[i].getForest();
-        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
@@ -306,8 +324,8 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
         }
     }
     for (i=0; i<result.size(); i++) {
+        if (!result[i].hasForest()) continue;
         forest* f = result[i].getForest();
-        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();

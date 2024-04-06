@@ -32,6 +32,7 @@ namespace MEDDLY {
     class compute_table;
 
     class forest;
+    class output;
 
     enum class ct_typeID {
         ERROR   = 0,
@@ -119,37 +120,63 @@ class MEDDLY::ct_itemtype {
             }
         }
 
+        /// Get the type of this item.
         inline ct_typeID getType() const {
             return type;
         }
+        /// Check if the item has the specified type.
         inline bool hasType(ct_typeID t) const {
             return t == type;
         }
-        inline unsigned getTypeInt() const {
-            return
-                static_cast<typename std::underlying_type<ct_typeID>::type>
-                    (type);
-        }
+        /// Get the type as a character;
+        /// for the old-style 'pattern' interface.
         char getTypeChar() const;
+
+        /// Make sure this is a node type item, and return its forest.
         inline forest* getForest() const {
+            MEDDLY_DCASSERT(ct_typeID::NODE == type);
             return nodeFor;
         }
+        /// Return the raw forest (no checks)
+        inline forest* rawForest() const {
+            return nodeFor;
+        }
+        /// Check if this item is associated with forest f.
         inline bool hasForest(const forest* f) const {
             return f == nodeFor;
         }
+        /// Check if this item has an associated forest.
+        inline bool hasForest() const {
+            return nodeFor;
+        }
+        /// Number of bytes required to store this item in a CT
         inline unsigned bytes() const {
-            switch (type) {
-                case ct_typeID::NODE    : return sizeof(MEDDLY::node_handle);
-                case ct_typeID::INTEGER : return sizeof(int);
-                case ct_typeID::LONG    : return sizeof(long);
-                case ct_typeID::FLOAT   : return sizeof(float);
-                case ct_typeID::DOUBLE  : return sizeof(double);
-                case ct_typeID::GENERIC : return sizeof(MEDDLY::ct_object*);
-                default                 : return 0;
-            }
+            static const unsigned sizes[] = {
+                0,                      // ERROR   = 0,
+                sizeof(node_handle),    // NODE    = 1,
+                sizeof(int),            // INTEGER = 2,
+                sizeof(long),           // LONG    = 3,
+                sizeof(float),          // FLOAT   = 4,
+                sizeof(double),         // DOUBLE  = 5,
+                sizeof(ct_object*)      // GENERIC = 6 // ct_object
+            };
+            return sizes[ getTypeInt() ];
+        }
+        /// Number of integer slots needed to store this item in a CT
+        inline unsigned intSlots() const {
+            static const unsigned sizes[] = {
+                0,                                  // ERROR   = 0,
+                sizeof(node_handle) / sizeof(int),  // NODE    = 1,
+                sizeof(int)         / sizeof(int),  // INTEGER = 2,
+                sizeof(long)        / sizeof(int),  // LONG    = 3,
+                sizeof(float)       / sizeof(int),  // FLOAT   = 4,
+                sizeof(double)      / sizeof(int),  // DOUBLE  = 5,
+                sizeof(ct_object*)  / sizeof(int)   // GENERIC = 6 // ct_object
+            };
+            return sizes[ getTypeInt() ];
         }
 
-
+        /// Set the forest; should be called when building an operation.
         inline void setForest(forest* f) {
             if (type != ct_typeID::NODE) {
                 throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
@@ -158,6 +185,17 @@ class MEDDLY::ct_itemtype {
             nodeFor = f;
         }
 
+    public:
+        void show(output &s) const;
+
+    protected:
+        inline unsigned getTypeInt() const {
+            unsigned u =
+                static_cast <typename std::underlying_type<ct_typeID>::type>
+                    (type);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, u, 7u);
+            return u;
+        }
 
     private:
         ct_typeID   type;
@@ -355,14 +393,14 @@ class MEDDLY::ct_entry_type {
         const {
             if (i<key_fixed.size()) {
                 t = key_fixed[i].getType();
-                f = key_fixed[i].getForest();
+                f = key_fixed[i].rawForest();
             } else {
                 MEDDLY_DCASSERT(key_repeating.size());
 
                 i -= key_fixed.size();
                 i %= key_repeating.size();
                 t = key_repeating[i].getType();
-                f = key_repeating[i].getForest();
+                f = key_repeating[i].rawForest();
             }
         }
 
@@ -393,12 +431,12 @@ class MEDDLY::ct_entry_type {
         */
         inline forest* getKeyForest(unsigned i) const {
             if (i<key_fixed.size()) {
-                return key_fixed[i].getForest();
+                return key_fixed[i].rawForest();
             } else {
                 MEDDLY_DCASSERT(key_repeating.size());
                 i -= key_fixed.size();
                 i %= key_repeating.size();
-                return key_repeating[i].getForest();
+                return key_repeating[i].rawForest();
             }
         }
 #else
@@ -445,7 +483,7 @@ class MEDDLY::ct_entry_type {
         {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, unsigned(result.size()));
             t = result[i].getType();
-            f = result[i].getForest();
+            f = result[i].rawForest();
         }
 
 
@@ -467,7 +505,7 @@ class MEDDLY::ct_entry_type {
         */
         inline forest* getResultForest(unsigned i) const {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, unsigned(result.size()));
-            return result[i].getForest();
+            return result[i].rawForest();
         }
 #else
         /**

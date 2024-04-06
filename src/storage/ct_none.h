@@ -221,7 +221,11 @@ namespace MEDDLY {
         const ct_entry_item* b = key->rawData();
         const unsigned klen = et->getKeySize(key->numRepeats());
         for (unsigned i=0; i<klen; i++) {
+#ifdef OLD_TYPE_IFACE
           const ct_typeID t = et->getKeyType(i);
+#else
+          const ct_typeID t = et->getKeyType(i).getType();
+#endif
           switch (t) {
               case ct_typeID::FLOAT:
                         if (a[i].F != b[i].F) return 0;
@@ -852,6 +856,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::updateEntry(ct_entry_key* key, const 
   //
 
   const ct_entry_type* et = key->getET();
+#ifdef OLD_TYPE_IFACE
   for (unsigned i=0; i<et->getResultSize(); i++) {
 #ifdef DEVELOPMENT_CODE
     ct_typeID t;
@@ -865,6 +870,14 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::updateEntry(ct_entry_key* key, const 
       f->uncacheNode( entry_result[i].N );
     }
   } // for i
+#else
+  for (unsigned i=0; i<et->getResultSize(); i++) {
+    const ct_itemtype &item = et->getResultType(i);
+    if (item.hasForest()) {
+        item.getForest()->uncacheNode( entry_result[i].N );
+    }
+  } // for i
+#endif
 
   //
   // increment cache counters for new result.
@@ -1186,7 +1199,11 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
       //
       const unsigned stop = et->getKeySize(reps);
       for (unsigned i=0; i<stop; i++) {
+#ifdef OLD_TYPE_IFACE
         if (f != et->getKeyForest(i)) continue;
+#else
+        if (! et->getKeyType(i).hasForest(f)) continue;
+#endif
         if (ptr[i].N > 0) {
           ++counts[ ptr[i].N ];
         }
@@ -1197,7 +1214,11 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
       // Count the result portion
       //
       for (unsigned i=0; i<et->getResultSize(); i++) {
+#ifdef OLD_TYPE_IFACE
         if (f != et->getResultForest(i)) continue;
+#else
+        if (! et->getResultType(i).hasForest(f)) continue;
+#endif
         if (ptr[i].N > 0) {
           ++counts[ ptr[i].N ];
         }
@@ -1438,7 +1459,11 @@ unsigned MEDDLY::ct_none<MONOLITHIC, CHAINED>
   const ct_entry_item* entry = key->rawData();
   const unsigned klen = et->getKeySize(key->numRepeats());
   for (unsigned i=0; i<klen; i++) {    // i initialized earlier
+#ifdef OLD_TYPE_IFACE
     const ct_typeID t = et->getKeyType(i);
+#else
+    const ct_typeID t = et->getKeyType(i).getType();
+#endif
     switch (t) {
         case ct_typeID::FLOAT:
                         MEDDLY_DCASSERT(sizeof(entry[i].F) == sizeof(entry[i].U));
@@ -1499,7 +1524,11 @@ unsigned MEDDLY::ct_none<MONOLITHIC, CHAINED>
 
   const unsigned klen = et->getKeySize(reps);
   for (unsigned i=0; i<klen; i++) {
+#ifdef OLD_TYPE_IFACE
     const ct_typeID t = et->getKeyType(i);
+#else
+    const ct_typeID t = et->getKeyType(i).getType();
+#endif
     switch (t) {
         case ct_typeID::FLOAT:
                         MEDDLY_DCASSERT(sizeof(entry[i].F) == sizeof(entry[i].U));
@@ -1552,6 +1581,7 @@ bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
   //
   // Key portion
   //
+#ifdef OLD_TYPE_IFACE
   for (unsigned i=0; i<klen; i++) {
 #ifdef DEVELOPMENT_CODE
     ct_typeID t;
@@ -1569,11 +1599,25 @@ bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
       }
     }
   } // for i
+#else
+  for (unsigned i=0; i<klen; i++) {
+    const ct_itemtype &item = et->getKeyType(i);
+    if (item.hasForest()) {
+      if (item.getForest()->isStaleEntry(entry[i].N)) {
+        return true;
+      } else {
+        item.getForest()->setCacheBit(entry[i].N);
+      }
+    }
+  } // for i
+#endif
+
   entry += klen;
 
   //
   // Result portion
   //
+#ifdef OLD_TYPE_IFACE
   for (unsigned i=0; i<et->getResultSize(); i++) {
 #ifdef DEVELOPMENT_CODE
     ct_typeID t;
@@ -1591,6 +1635,18 @@ bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
       }
     }
   } // for i
+#else
+  for (unsigned i=0; i<et->getResultSize(); i++) {
+    const ct_itemtype &item = et->getResultType(i);
+    if (item.hasForest()) {
+      if (item.getForest()->isStaleEntry(entry[i].N)) {
+        return true;
+      } else {
+        item.getForest()->setCacheBit(entry[i].N);
+      }
+    }
+  } // for i
+#endif
 
   return false;
 }
@@ -1606,6 +1662,7 @@ bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
   //
   // Check result portion for dead nodes - cannot use result in that case
   //
+#ifdef OLD_TYPE_IFACE
   for (unsigned i=0; i<et->getResultSize(); i++) {
 #ifdef DEVELOPMENT_CODE
     ct_typeID t;
@@ -1621,6 +1678,16 @@ bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
       }
     }
   } // for i
+#else
+  for (unsigned i=0; i<et->getResultSize(); i++) {
+    const ct_itemtype &item = et->getResultType(i);
+    if (item.hasForest()) {
+      if (item.getForest()->isDeadEntry(result[i].N)) {
+          return true;
+      }
+    }
+  } // for i
+#endif
   return false;
 }
 
@@ -1665,6 +1732,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
   // Key portion
   //
   const unsigned stop = et->getKeySize(reps);
+#ifdef OLD_TYPE_IFACE
   for (unsigned i=0; i<stop; i++) {
     ct_typeID t;
     forest* f;
@@ -1680,11 +1748,27 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
     }
     MEDDLY_DCASSERT( t != ct_typeID::NODE );
   } // for i
+#else
+  for (unsigned i=0; i<stop; i++) {
+    const ct_itemtype &item = et->getKeyType(i);
+    if (item.hasForest()) {
+      item.getForest()->uncacheNode( ptr[i].N );
+      continue;
+    }
+    if (item.hasType(ct_typeID::GENERIC)) {
+      delete ptr[i].G;
+      continue;
+    }
+    MEDDLY_DCASSERT(! item.hasType(ct_typeID::NODE) );
+  } // for i
+#endif
+
   ptr += stop;
 
   //
   // Result portion
   //
+#ifdef OLD_TYPE_IFACE
   for (unsigned i=0; i<et->getResultSize(); i++) {
     ct_typeID t;
     forest* f;
@@ -1700,6 +1784,20 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
     }
     MEDDLY_DCASSERT( t != ct_typeID::NODE );
   } // for i
+#else
+  for (unsigned i=0; i<et->getResultSize(); i++) {
+    const ct_itemtype &item = et->getResultType(i);
+    if (item.hasForest()) {
+      item.getForest()->uncacheNode( ptr[i].N );
+      continue;
+    }
+    if (item.hasType(ct_typeID::GENERIC)) {
+      delete ptr[i].G;
+      continue;
+    }
+    MEDDLY_DCASSERT(! item.hasType(ct_typeID::NODE) );
+  } // for i
+#endif
 
   slots = SHIFT + (et->isRepeating() ? 1 : 0);
   slots += stop;
@@ -1750,7 +1848,11 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
   unsigned stop = et->getKeySize(reps);
   for (unsigned i=0; i<stop; i++) {
       if (i) s << ", ";
+#ifdef OLD_TYPE_IFACE
       switch (et->getKeyType(i)) {
+#else
+      switch (et->getKeyType(i).getType()) {
+#endif
           case ct_typeID::NODE:
                         s.put(long(ptr[i].N));
                         break;
@@ -1777,7 +1879,11 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
   s << "): ";
   for (unsigned i=0; i<et->getResultSize(); i++) {
       if (i) s << ", ";
+#ifdef OLD_TYPE_IFACE
       switch (et->getResultType(i)) {
+#else
+      switch (et->getResultType(i).getType()) {
+#endif
           case ct_typeID::NODE:
                         s.put(long(ptr[i].N));
                         break;
@@ -1824,7 +1930,11 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
   for (unsigned i=0; i<stop; i++) {
       ct_entry_item item = key->rawData()[i];
       if (i) s << ", ";
+#ifdef OLD_TYPE_IFACE
       switch (et->getKeyType(i)) {
+#else
+      switch (et->getKeyType(i).getType()) {
+#endif
           case ct_typeID::NODE:
                         s.put(long(item.N));
                         break;
