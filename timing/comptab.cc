@@ -155,9 +155,18 @@ int main(int argc, const char** argv)
     try {
         setReport(argc, argv);
         MEDDLY::initialize();
+        forest* F = nullptr;
 
-        ct_entry_type cte("test_entry", "INN:N");
-        ct_entry_type ctr("test_repeating", "IN.IN:N");
+        // ct_entry_type cte("test_entry", "INN:N");
+        ct_entry_type cte("test_entry");
+        cte.set_fixed('I', F, F);
+        cte.set_result(F);
+
+        // ct_entry_type ctr("test_repeating", "IN.IN:N");
+        ct_entry_type ctr("test_repeating");
+        ctr.set_fixed('I', F);
+        ctr.set_repeat('I', F);
+        ctr.set_result(F);
 
         reqKeys(&cte);
         makeKeys(&cte);

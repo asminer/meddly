@@ -96,7 +96,6 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
 {
     name = _name;
     is_marked_for_deletion = false;
-
     updatable_result = false;
 
     bool saw_dot = false;
@@ -128,76 +127,31 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
             continue;
         }
     }
-
-    //
-    // Determine lengths for each portion
-    //
-
     if (!saw_colon) {
         throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
     }
-
-    unsigned len_ks_type = 0;
-    unsigned len_kr_type = 0;
-    unsigned len_r_type  = 0;
-
-    if (saw_dot) {
-        // "012.456:89"
-        len_ks_type = dot_slot;
-        MEDDLY_DCASSERT(colon_slot > dot_slot);
-        len_kr_type = (colon_slot - dot_slot) - 1;
-    } else {
-        // "01234:67"
-        len_ks_type = colon_slot;
-        len_kr_type = 0;
-    }
-    len_r_type = (length - colon_slot) - 1;
-
-    if (
-        (saw_dot && 0==len_kr_type)             // "foo.:bar" is bad
-        ||
-        (len_ks_type + len_kr_type == 0)        // no key?
-        ||
-        (len_r_type == 0)                       // no result?
-      )
-    {
-        throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+    if (!saw_dot) {
+        dot_slot = colon_slot;
     }
 
     //
-    // Build fixed, starting portion of key
+    // Build fixed, repeating, and result arrays
     //
-    fixed_bytes = 0;
-    if (len_ks_type) {
-        key_fixed.resize(len_ks_type);
-        for (unsigned i=0; i<len_ks_type; i++) {
-            key_fixed[i] = ct_itemtype(pattern[i]);
-            fixed_bytes += key_fixed[i].bytes();
-        }
+    for (unsigned i=0; i<dot_slot; i++) {
+        key_fixed.push_back(pattern[i]);
     }
+    countFixed();
 
-    //
-    // Build repeating portion of key
-    //
-    repeating_bytes = 0;
-    if (len_kr_type) {
-        key_repeating.resize(len_kr_type);
-        for (unsigned i=0; i<len_kr_type; i++) {
-            key_repeating[i] = ct_itemtype(pattern[i + dot_slot + 1]);
-            repeating_bytes += key_repeating[i].bytes();
-        }
+    for (unsigned i=1+dot_slot; i<colon_slot; i++) {
+        key_repeating.push_back(pattern[i]);
     }
+    countRepeating();
 
-    //
-    // Build result
-    //
-    MEDDLY_DCASSERT(len_r_type);
-    result_bytes = 0;
-    result.resize(len_r_type);
-    for (unsigned i=0; i<len_r_type; i++) {
-        result[i] = ct_itemtype(pattern[i + colon_slot + 1]);
-        result_bytes += result[i].bytes();
+    for (unsigned i=1+colon_slot; i<length; i++) {
+        result.push_back(pattern[i]);
     }
+    countResult();
+
 
 #ifdef DEBUG_ENTRY_TYPE
     ostream_output sout(std::cout);
@@ -230,7 +184,9 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name)
 
     updatable_result = false;
 
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    fixed_bytes = 0;
+    repeating_bytes = 0;
+    result_bytes = 0;
 }
 
 MEDDLY::ct_entry_type::~ct_entry_type()
@@ -331,6 +287,30 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
             f->sweepAllCacheBits();
             whichF[ f->FID() ] = 0;
         }
+    }
+}
+
+void MEDDLY::ct_entry_type::countFixed()
+{
+    fixed_bytes = 0;
+    for (unsigned i=0; i<key_fixed.size(); i++) {
+        fixed_bytes += key_fixed[i].bytes();
+    }
+}
+
+void MEDDLY::ct_entry_type::countRepeating()
+{
+    repeating_bytes = 0;
+    for (unsigned i=0; i<key_repeating.size(); i++) {
+        repeating_bytes += key_repeating[i].bytes();
+    }
+}
+
+void MEDDLY::ct_entry_type::countResult()
+{
+    result_bytes = 0;
+    for (unsigned i=0; i<result.size(); i++) {
+        result_bytes += result[i].bytes();
     }
 }
 
