@@ -152,14 +152,13 @@ class MEDDLY::ct_itemtype {
 };
 
 // ******************************************************************
-// TBD BELOW HERE
-
-// ******************************************************************
 // *                                                                *
 // *                         ct_object class                        *
 // *                                                                *
 // ******************************************************************
 
+// TBD move this
+//
 /** Generic objects in compute tables.
     Used for things other than dd_edges and simple types.
 */
@@ -301,7 +300,7 @@ class MEDDLY::ct_entry_type {
             Does this entry type allow repetitions in the key?
             I.e., was there a '.' in the pattern?
         */
-        inline bool isRepeating() const { return len_kr_type; }
+        inline bool isRepeating() const { return key_repeating.size(); }
 
 
         /**
@@ -313,8 +312,7 @@ class MEDDLY::ct_entry_type {
               @return Total number of slots in the key.
         */
         inline unsigned getKeySize(unsigned reps) const {
-            // return len_ks_type + (reps * len_kr_type);
-            return key_fixed.size() + (reps * len_kr_type);
+            return key_fixed.size() + (reps * key_repeating.size());
         }
 
         /**
@@ -326,7 +324,7 @@ class MEDDLY::ct_entry_type {
               @return Total number of bytes required for the key.
         */
         inline unsigned getKeyBytes(unsigned reps) const {
-            return fixed_bytes + (reps * kr_bytes);
+            return fixed_bytes + (reps * repeating_bytes);
         }
 
 
@@ -345,14 +343,12 @@ class MEDDLY::ct_entry_type {
                 t = key_fixed[i].getType();
                 f = key_fixed[i].getForest();
             } else {
-                MEDDLY_DCASSERT(len_kr_type);
-                MEDDLY_DCASSERT(kr_type);
-                MEDDLY_DCASSERT(kr_forest);
+                MEDDLY_DCASSERT(key_repeating.size());
 
                 i -= key_fixed.size();
-                i %= len_kr_type;
-                t = kr_type[i];
-                f = kr_forest[i];
+                i %= key_repeating.size();
+                t = key_repeating[i].getType();
+                f = key_repeating[i].getForest();
             }
         }
 
@@ -366,11 +362,10 @@ class MEDDLY::ct_entry_type {
             if (i<key_fixed.size()) {
                 return key_fixed[i].getType();
             } else {
-                MEDDLY_DCASSERT(len_kr_type);
-                MEDDLY_DCASSERT(kr_type);
+                MEDDLY_DCASSERT(key_repeating.size());
                 i -= key_fixed.size();
-                i %= len_kr_type;
-                return kr_type[i];
+                i %= key_repeating.size();
+                return key_repeating[i].getType();
             }
         }
 
@@ -386,23 +381,22 @@ class MEDDLY::ct_entry_type {
             if (i<key_fixed.size()) {
                 return key_fixed[i].getForest();
             } else {
-                MEDDLY_DCASSERT(len_kr_type);
-                MEDDLY_DCASSERT(kr_forest);
+                MEDDLY_DCASSERT(key_repeating.size());
                 i -= key_fixed.size();
-                i %= len_kr_type;
-                return kr_forest[i];
+                i %= key_repeating.size();
+                return key_repeating[i].getForest();
             }
         }
 
         /**
             Get the number of items in the result
         */
-        inline unsigned getResultSize() const { return len_r_type; }
+        inline unsigned getResultSize() const { return result.size(); }
 
         /**
             Get the number of bytes in the result
         */
-        inline unsigned getResultBytes() const { return r_bytes; }
+        inline unsigned getResultBytes() const { return result_bytes; }
 
 
         /**
@@ -414,12 +408,11 @@ class MEDDLY::ct_entry_type {
                           Otherwise, null.
         */
         inline void getResultType(unsigned i, ct_typeID &t, forest* &f)
-        const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, len_r_type);
-            MEDDLY_DCASSERT(r_type);
-            MEDDLY_DCASSERT(r_forest);
-            t = r_type[i];
-            f = r_forest[i];
+        const
+        {
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, unsigned(result.size()));
+            t = result[i].getType();
+            f = result[i].getForest();
         }
 
 
@@ -428,9 +421,8 @@ class MEDDLY::ct_entry_type {
               @param  i   Slot number, between 0 and getResultSize().
         */
         inline ct_typeID getResultType(unsigned i) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, len_r_type);
-            MEDDLY_DCASSERT(r_type);
-            return r_type[i];
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, unsigned(result.size()));
+            return result[i].getType();
         }
 
 
@@ -441,9 +433,8 @@ class MEDDLY::ct_entry_type {
                           is not 'N'.
         */
         inline forest* getResultForest(unsigned i) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, len_r_type);
-            MEDDLY_DCASSERT(r_forest);
-            return r_forest[i];
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, unsigned(result.size()));
+            return result[i].getForest();
         }
 
 
@@ -470,43 +461,20 @@ class MEDDLY::ct_entry_type {
         /// Fixed, initial portion of the key.
         std::vector <ct_itemtype> key_fixed;
 
-        /// Starting portion of key pattern.
-        // ct_typeID* ks_type;
-
-        /// Forests in starting portion of key.
-        // forest** ks_forest;
-
-        /// Length of ks_type and ks_forest arrays.
-        // unsigned len_ks_type;
-
         /// Total bytes in the starting portion of the key.
-        unsigned fixed_bytes;   // unsigned ks_bytes;
+        unsigned fixed_bytes;
 
-
-        /// Repeating portion of key pattern (or null for no repeats).
-        ct_typeID* kr_type;
-
-        /// Forests in repeating portion of key (or null).
-        forest** kr_forest;
-
-        /// Length of kr_type and kr_forest arrays (zero if no repeats).
-        unsigned len_kr_type;
+        /// Repeating portion of the key.
+        std::vector <ct_itemtype> key_repeating;
 
         /// Total bytes in the repeating portion of the key.
-        unsigned kr_bytes;
-
+        unsigned repeating_bytes;
 
         /// Result pattern
-        ct_typeID* r_type;
-
-        /// Forests in result
-        forest** r_forest;
-
-        /// Length of r_type and r_forest arrays.
-        unsigned len_r_type;
+        std::vector <ct_itemtype> result;
 
         /// Total bytes in the result.
-        unsigned r_bytes;
+        unsigned result_bytes;
 
         /// Can the result be changed later
         bool updatable_result;

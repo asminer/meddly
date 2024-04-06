@@ -71,51 +71,6 @@ MEDDLY::ct_object::~ct_object()
 
 // **********************************************************************
 // *                                                                    *
-// *                          Helper functions                          *
-// *                                                                    *
-// **********************************************************************
-
-inline unsigned bytes4typeID(MEDDLY::ct_typeID t)
-{
-    switch (t) {
-        case MEDDLY::ct_typeID::NODE    : return sizeof(MEDDLY::node_handle);
-        case MEDDLY::ct_typeID::INTEGER : return sizeof(int);
-        case MEDDLY::ct_typeID::LONG    : return sizeof(long);
-        case MEDDLY::ct_typeID::FLOAT   : return sizeof(float);
-        case MEDDLY::ct_typeID::DOUBLE  : return sizeof(double);
-        case MEDDLY::ct_typeID::GENERIC : return sizeof(MEDDLY::ct_object*);
-        default                         : return 0;
-    }
-}
-
-inline char typeID2char(MEDDLY::ct_typeID t)
-{
-    switch (t) {
-        case MEDDLY::ct_typeID::NODE    : return 'N';
-        case MEDDLY::ct_typeID::INTEGER : return 'I';
-        case MEDDLY::ct_typeID::LONG    : return 'L';
-        case MEDDLY::ct_typeID::FLOAT   : return 'F';
-        case MEDDLY::ct_typeID::DOUBLE  : return 'D';
-        case MEDDLY::ct_typeID::GENERIC : return 'G';
-        default                         : return '?';
-    }
-}
-
-inline MEDDLY::ct_typeID char2typeID(char c)
-{
-    switch (c) {
-        case 'N':   return MEDDLY::ct_typeID::NODE;
-        case 'I':   return MEDDLY::ct_typeID::INTEGER;
-        case 'L':   return MEDDLY::ct_typeID::LONG;
-        case 'F':   return MEDDLY::ct_typeID::FLOAT;
-        case 'D':   return MEDDLY::ct_typeID::DOUBLE;
-        case 'G':   return MEDDLY::ct_typeID::GENERIC;
-        default :   return MEDDLY::ct_typeID::ERROR;
-    }
-}
-
-// **********************************************************************
-// *                                                                    *
 // *                       ct_entry_type  methods                       *
 // *                                                                    *
 // **********************************************************************
@@ -167,8 +122,8 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
     }
 
     unsigned len_ks_type = 0;
-    len_kr_type = 0;
-    len_r_type  = 0;
+    unsigned len_kr_type = 0;
+    unsigned len_r_type  = 0;
 
     if (saw_dot) {
         // "012.456:89"
@@ -205,50 +160,27 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
         }
     }
 
-    /*
-    if (len_ks_type) {
-        ks_type = new ct_typeID[len_ks_type];
-        ks_forest = new forest*[len_ks_type];
-        for (unsigned i=0; i<len_ks_type; i++) {
-            ks_type[i] = char2typeID(pattern[i]);
-            fixed_bytes += bytes4typeID(ks_type[i]);
-            ks_forest[i] = 0;
-        }
-    } else {
-        // This is possible if the pattern begins with .
-        ks_type = 0;
-        ks_forest = 0;
-    }
-    */
-
     //
     // Build repeating portion of key
     //
-    kr_bytes = 0;
+    repeating_bytes = 0;
     if (len_kr_type) {
-        kr_type = new ct_typeID[len_kr_type];
-        kr_forest = new forest*[len_kr_type];
+        key_repeating.resize(len_kr_type);
         for (unsigned i=0; i<len_kr_type; i++) {
-            kr_type[i] = char2typeID(pattern[i + dot_slot + 1]);
-            kr_bytes += bytes4typeID(kr_type[i]);
-            kr_forest[i] = 0;
+            key_repeating[i] = ct_itemtype(pattern[i + dot_slot + 1]);
+            repeating_bytes += key_repeating[i].bytes();
         }
-    } else {
-        kr_type = 0;
-        kr_forest = 0;
     }
 
     //
     // Build result
     //
     MEDDLY_DCASSERT(len_r_type);
-    r_bytes = 0;
-    r_type = new ct_typeID[len_r_type];
-    r_forest = new forest*[len_r_type];
+    result_bytes = 0;
+    result.resize(len_r_type);
     for (unsigned i=0; i<len_r_type; i++) {
-        r_type[i] = char2typeID(pattern[i + colon_slot + 1]);
-        r_bytes += bytes4typeID(r_type[i]);
-        r_forest[i] = 0;
+        result[i] = ct_itemtype(pattern[i + colon_slot + 1]);
+        result_bytes += result[i].bytes();
     }
 
 #ifdef DEBUG_ENTRY_TYPE
@@ -259,15 +191,15 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
     }
     printf("\"  (%u bytes)\n", fixed_bytes);
     printf("Key repeat: \"");
-    for (unsigned i=0; i<len_kr_type; i++) {
+    for (unsigned i=0; i<key_repeating.size(); i++) {
         fputc(typeID2char(kr_type[i]), stdout);
     }
-    printf("\"  (%u bytes)\n", kr_bytes);
+    printf("\"  (%u bytes)\n", repeating_bytes);
     printf("Result: \"");
-    for (unsigned i=0; i<len_r_type; i++) {
+    for (unsigned i=0; i<result.size(); i++) {
         fputc(typeID2char(r_type[i]), stdout);
     }
-    printf("\"  (%u bytes)\n", r_bytes);
+    printf("\"  (%u bytes)\n", result_bytes);
 #endif
 }
 
@@ -285,10 +217,6 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name)
 
 MEDDLY::ct_entry_type::~ct_entry_type()
 {
-    delete[] kr_type;
-    delete[] kr_forest;
-    delete[] r_type;
-    delete[] r_forest;
 }
 
 #ifdef ALLOW_DEPRECATED_0_17_6
@@ -297,37 +225,25 @@ void MEDDLY::ct_entry_type::setForestForSlot(unsigned i, forest* f)
 {
     if (i<key_fixed.size()) {
         key_fixed[i].setForest(f);
-        /*
-        if (ct_typeID::NODE != ks_type[i]) {
-            throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
-        }
-        ks_forest[i] = f;
-        */
         return;
     }
     i -= key_fixed.size();
 
-    if (len_kr_type) {
+    if (key_repeating.size()) {
         // adjust for the .
         i--;
-        if (i<len_kr_type) {
-            if (ct_typeID::NODE != kr_type[i]) {
-                throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
-            }
-            kr_forest[i] = f;
+        if (i<key_repeating.size()) {
+            key_repeating[i].setForest(f);
             return;
         }
     }
 
-    i -= len_kr_type;
+    i -= key_repeating.size();
     // adjust for :
     i--;
 
-    if (i < len_r_type) {
-        if (ct_typeID::NODE != r_type[i]) {
-            throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
-        }
-        r_forest[i] = f;
+    if (i < result.size()) {
+        result[i].setForest(f);
         return;
     }
 
@@ -350,17 +266,17 @@ void MEDDLY::ct_entry_type::clearForestCTBits(bool* skipF, unsigned N) const
         f->clearAllCacheBits();
         skipF[ f->FID() ] = 1;
     }
-    for (i=0; i<len_kr_type; i++) {
-        forest* f = kr_forest[i];
-        if (0==f) continue;
+    for (i=0; i<key_repeating.size(); i++) {
+        forest* f = key_repeating[i].getForest();
+        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
         skipF[ f->FID() ] = 1;
     }
-    for (i=0; i<len_r_type; i++) {
-        forest* f = r_forest[i];
-        if (0==f) continue;
+    for (i=0; i<result.size(); i++) {
+        forest* f = result[i].getForest();
+        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
@@ -380,18 +296,18 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
             whichF[ f->FID() ] = 0;
         }
     }
-    for (i=0; i<len_kr_type; i++) {
-        forest* f = kr_forest[i];
-        if (0==f) continue;
+    for (i=0; i<key_repeating.size(); i++) {
+        forest* f = key_repeating[i].getForest();
+        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
             whichF[ f->FID() ] = 0;
         }
     }
-    for (i=0; i<len_r_type; i++) {
-        forest* f = r_forest[i];
-        if (0==f) continue;
+    for (i=0; i<result.size(); i++) {
+        forest* f = result[i].getForest();
+        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
