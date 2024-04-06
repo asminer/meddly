@@ -20,6 +20,7 @@
 #define MEDDLY_CT_ENTRY_TYPE_H
 
 #include "defines.h"
+#include "edge_value.h"
 #include "oper.h"
 #include <type_traits>
 
@@ -31,18 +32,23 @@ namespace MEDDLY {
     class forest;
 
     enum class ct_typeID {
-        ERROR = 0,
-        NODE = 1,
+        ERROR   = 0,
+        NODE    = 1,
         INTEGER = 2,
-        LONG = 3,
-        FLOAT = 4,
-        DOUBLE = 5,
+        LONG    = 3,
+        FLOAT   = 4,
+        DOUBLE  = 5,
         GENERIC = 6 // ct_object
     };
+
+    // TBD should this be unsigned?
     inline int intOf(ct_typeID t) {
         return static_cast<typename std::underlying_type<ct_typeID>::type>(t);
     }
 
+    class ct_itemtype;
+
+    // TBD move this because it is entry related
     union ct_entry_item {
         int I;
         unsigned int U;
@@ -55,6 +61,78 @@ namespace MEDDLY {
     };
 
 };
+
+// ******************************************************************
+// *                                                                *
+// *                        ct_itemtype class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::ct_itemtype {
+    public:
+        ct_itemtype() {
+            type = ct_typeID::ERROR;
+            nodeFor = nullptr;
+        }
+        ct_itemtype(forest* f) {
+            type = ct_typeID::NODE;
+            nodeFor = f;
+        }
+        ct_itemtype(ct_typeID t) {
+            MEDDLY_DCASSERT(t != ct_typeID::NODE);
+            type = t;
+            nodeFor = nullptr;
+        }
+        ct_itemtype(edge_type et) {
+            nodeFor = nullptr;
+            switch (et) {
+                case edge_type::INT:
+                    type = ct_typeID::INTEGER;
+                    break;
+
+                case edge_type::LONG:
+                    type = ct_typeID::LONG;
+                    break;
+
+                case edge_type::FLOAT:
+                    type = ct_typeID::FLOAT;
+                    break;
+
+                case edge_type::DOUBLE:
+                    type = ct_typeID::DOUBLE;
+                    break;
+
+                default:
+                    type = ct_typeID::ERROR;
+            }
+        }
+
+        inline ct_typeID getType() const {
+            return type;
+        }
+        inline forest* getForest() const {
+            return nodeFor;
+        }
+
+        inline unsigned bytes() const {
+            switch (type) {
+                case ct_typeID::NODE    : return sizeof(MEDDLY::node_handle);
+                case ct_typeID::INTEGER : return sizeof(int);
+                case ct_typeID::LONG    : return sizeof(long);
+                case ct_typeID::FLOAT   : return sizeof(float);
+                case ct_typeID::DOUBLE  : return sizeof(double);
+                case ct_typeID::GENERIC : return sizeof(MEDDLY::ct_object*);
+                default                 : return 0;
+            }
+        }
+
+    private:
+        ct_typeID   type;
+        forest      *nodeFor;
+};
+
+// ******************************************************************
+// TBD BELOW HERE
 
 // ******************************************************************
 // *                                                                *
@@ -90,6 +168,7 @@ class MEDDLY::ct_object {
 class MEDDLY::ct_entry_type {
         friend class compute_table;
     public:
+#ifdef ALLOW_DEPRECATED_0_17_6
         /** Constructor.
               @param  name    Name of the entry type; used only for displaying
                               CT entries (usually while debugging).
@@ -111,7 +190,6 @@ class MEDDLY::ct_entry_type {
               @throws INVALID_ARGUMENT if pattern is illegal
         */
         ct_entry_type(const char* name, const char* pattern);
-        ~ct_entry_type();
 
         /**
             Set the forest for 'N' items in the pattern.
@@ -119,6 +197,36 @@ class MEDDLY::ct_entry_type {
               @param  f   Forest.
         */
         void setForestForSlot(unsigned i, forest* f);
+#endif
+        /**
+            New constructor.
+
+              @param  name    Name of the entry type; used only for displaying
+                              CT entries (usually while debugging).
+
+            Use this constructor if you are going to specify the
+            key and result types using methods below:
+
+                set_fkey()      for setting the fixed portion of the key,
+                                if any.
+                set_rkey()      for setting the repeating portion of the key,
+                                if any.
+                set_result()    for setting the result portion of the key.
+        */
+        ct_entry_type(const char* name);
+        ~ct_entry_type();
+
+        inline void set_fkey(ct_itemtype a) { }
+        inline void set_fkey(ct_itemtype a, ct_itemtype b) { }
+        inline void append_fkey(ct_itemtype a) { }
+
+        inline void set_rkey(ct_itemtype a) { }
+        inline void set_rkey(ct_itemtype a, ct_itemtype b) { }
+        inline void append_rkey(ct_itemtype a) { }
+
+        inline void set_result(ct_itemtype a) { }
+        inline void set_result(ct_itemtype a, ct_itemtype b) { }
+        inline void append_result(ct_itemtype a) { }
 
         /** Clear CT bits for any forests this entry type uses.
               @param  skipF   If skipF[i] is true, then we do nothing

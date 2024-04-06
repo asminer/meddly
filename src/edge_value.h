@@ -85,6 +85,9 @@ class MEDDLY::edge_value {
         inline bool hasType(edge_type t) const {
             return (t == mytype);
         }
+        inline edge_type getType() const {
+            return mytype;
+        }
 
         //
         // Getters for the value

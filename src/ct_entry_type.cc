@@ -85,6 +85,7 @@ inline MEDDLY::ct_typeID char2typeID(char c)
 // *                                                                    *
 // **********************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_6
 MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
 {
     name = _name;
@@ -221,6 +222,18 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
 #endif
 }
 
+#endif // allow_deprecated_0_17_6
+
+MEDDLY::ct_entry_type::ct_entry_type(const char* _name)
+{
+    name = _name;
+    is_marked_for_deletion = false;
+
+    updatable_result = false;
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
 MEDDLY::ct_entry_type::~ct_entry_type()
 {
     delete[] ks_type;
@@ -230,6 +243,8 @@ MEDDLY::ct_entry_type::~ct_entry_type()
     delete[] r_type;
     delete[] r_forest;
 }
+
+#ifdef ALLOW_DEPRECATED_0_17_6
 
 void MEDDLY::ct_entry_type::setForestForSlot(unsigned i, forest* f)
 {
@@ -269,6 +284,10 @@ void MEDDLY::ct_entry_type::setForestForSlot(unsigned i, forest* f)
     // i is too large
     throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
 }
+
+#endif // allow_deprecated_0_17_6
+
+
 
 void MEDDLY::ct_entry_type::clearForestCTBits(bool* skipF, unsigned N) const
 {
