@@ -172,12 +172,15 @@ class MEDDLY::ct_entry_result {
             for (unsigned i=0; i<etype->getResultSize(); i++) {
 #ifdef OLD_TYPE_IFACE
                 forest* f = etype->getResultForest(i);
-#else
-                forest* f = etype->getResultType(i).getForest();
-#endif
                 if (f) {
                     f->cacheNode(build[i].N);
                 }
+#else
+                const ct_itemtype &item = etype->getResultType(i);
+                if (item.hasForest()) {
+                    item.getForest()->cacheNode(build[i].N);
+                }
+#endif
             }
         }
 

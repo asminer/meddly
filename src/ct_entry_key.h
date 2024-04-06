@@ -131,12 +131,15 @@ class MEDDLY::ct_entry_key {
             for (unsigned i=0; i<total_slots; i++) {
 #ifdef OLD_TYPE_IFACE
                 forest* f = etype->getKeyForest(i);
-#else
-                forest* f = etype->getKeyType(i).getForest();
-#endif
                 if (f) {
                     f->cacheNode(data[i].N);
                 }
+#else
+                const ct_itemtype &item = etype->getKeyType(i);
+                if (item.hasForest()) {
+                    item.getForest()->cacheNode(data[i].N);
+                }
+#endif
             }
         }
 

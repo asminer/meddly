@@ -24,7 +24,7 @@
 #include "oper.h"
 #include <type_traits>
 
-#define OLD_TYPE_IFACE
+// #define OLD_TYPE_IFACE
 
 namespace MEDDLY {
     class ct_object;
