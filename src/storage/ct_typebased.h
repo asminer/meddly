@@ -289,29 +289,39 @@ namespace MEDDLY {
       inline void setResult(int* respart, const ct_entry_result &res, const ct_entry_type* et) {
         const ct_entry_item* resdata = res.rawData();
         for (unsigned i=0; i<res.dataLength(); i++) {
+#ifdef OLD_TYPE_IFACE
             ct_typeID t = et->getResultType(i);
+#else
+            ct_typeID t = et->getResultType(i).getType();
+#endif
             switch (t) {
-                case ct_typeID::NODE:    *respart = resdata[i].N;
+                case ct_typeID::NODE:
+                            *respart = resdata[i].N;
                             respart++;
                             continue;
 
-                case ct_typeID::INTEGER: *respart = resdata[i].I;
+                case ct_typeID::INTEGER:
+                            *respart = resdata[i].I;
                             respart++;
                             continue;
 
-                case ct_typeID::FLOAT:   *((float*)respart) = resdata[i].F;
+                case ct_typeID::FLOAT:
+                            *((float*)respart) = resdata[i].F;
                             respart++;
                             continue;
 
-                case ct_typeID::DOUBLE:  *((double*)respart) = resdata[i].D;
+                case ct_typeID::DOUBLE:
+                            *((double*)respart) = resdata[i].D;
                             respart += sizeof(double) / sizeof(int);
                             continue;
 
-                case ct_typeID::LONG:    *((long*)respart) = resdata[i].L;
+                case ct_typeID::LONG:
+                            *((long*)respart) = resdata[i].L;
                             respart += sizeof(long) / sizeof(int);
                             continue;
 
-                case ct_typeID::GENERIC: *((ct_object**)respart) = resdata[i].G;
+                case ct_typeID::GENERIC:
+                            *((ct_object**)respart) = resdata[i].G;
                             respart += sizeof(ct_object*) / sizeof(int);
                             continue;
 
@@ -693,7 +703,11 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   //
   unsigned datalen = key->dataLength();
   for (unsigned i=0; i<datalen; i++) {
+#ifdef OLD_TYPE_IFACE
     ct_typeID t = et->getKeyType(i);
+#else
+    ct_typeID t = et->getKeyType(i).getType();
+#endif
     switch (t) {
         case ct_typeID::NODE:
                   temp_entry[tptr] = data[i].N;
@@ -735,27 +749,37 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     //
     res.reset();
     for (unsigned i=0; i<key->getET()->getResultSize(); i++) {
-      ct_typeID t = et->getResultType(i);
+#ifdef OLD_TYPE_IFACE
+      ct_typeID t = et->getKeyType(i);
+#else
+      ct_typeID t = et->getKeyType(i).getType();
+#endif
       switch (t) {
-          case ct_typeID::NODE:    res.writeN( *entry_result++ );
+          case ct_typeID::NODE:
+                      res.writeN( *entry_result++ );
                       continue;
 
-          case ct_typeID::INTEGER: res.writeI( *entry_result++ );
+          case ct_typeID::INTEGER:
+                      res.writeI( *entry_result++ );
                       continue;
 
-          case ct_typeID::FLOAT:   res.writeF( *((float*)entry_result) );
+          case ct_typeID::FLOAT:
+                      res.writeF( *((float*)entry_result) );
                       entry_result++;
                       continue;
 
-          case ct_typeID::DOUBLE:  res.writeD( *((double*)entry_result) );
+          case ct_typeID::DOUBLE:
+                      res.writeD( *((double*)entry_result) );
                       entry_result += sizeof(double) / sizeof(int);
                       continue;
 
-          case ct_typeID::LONG:    res.writeL( *((long*)entry_result) );
+          case ct_typeID::LONG:
+                      res.writeL( *((long*)entry_result) );
                       entry_result += sizeof(long) / sizeof(int);
                       continue;
 
-          case ct_typeID::GENERIC: res.writeG( *((ct_object**)entry_result) );
+          case ct_typeID::GENERIC:
+                      res.writeG( *((ct_object**)entry_result) );
                       entry_result += sizeof(ct_object*) / sizeof(int);
                       continue;
 
@@ -1020,6 +1044,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::updateEntry(ct_entry_key* key, c
   const ct_entry_type* et = key->getET();
   int* ptr = entry_result;
   for (unsigned i=0; i<et->getResultSize(); i++) {
+#ifdef OLD_TYPE_IFACE
     ct_typeID t;
     forest* f;
     et->getResultType(i, t, f);
@@ -1032,6 +1057,18 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::updateEntry(ct_entry_key* key, c
       MEDDLY_DCASSERT(ct_typeID::NODE != t);
       ptr += slots_for_type[intOf(t)];
     }
+#else
+    const ct_itemtype& item = et->getResultType(i);
+    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, item.getTypeInt(), 7u);
+    if (item.getForest()) {
+      MEDDLY_DCASSERT(item.hasType(ct_typeID::NODE));
+      item.getForest()->uncacheNode( *ptr );
+      ptr++;
+    } else {
+      MEDDLY_DCASSERT(!item.hasType(ct_typeID::NODE));
+      ptr += slots_for_type[item.getTypeInt()];
+    }
+#endif
   } // for i
 
   //
@@ -1376,6 +1413,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
       // Key portion
       //
       for (unsigned i=0; i<klen; i++) {
+#ifdef OLD_TYPE_IFACE
         ct_typeID t;
         forest* ef;
         et->getKeyType(i, t, ef);
@@ -1389,12 +1427,26 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
           }
         }
         entry += slots_for_type[intOf(t)];
+#else
+        const ct_itemtype& item = et->getKeyType(i);
+        if (item.hasForest(f)) {
+          if (*entry>0) {
+#ifdef DEBUG_VALIDATE_COUNTS
+            printf("\t%d++\n", *entry);
+#endif
+            ++counts[ *entry ];
+          }
+        }
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, item.getTypeInt(), 7u);
+        entry += slots_for_type[item.getTypeInt()];
+#endif
       } // for i
 
       //
       // Result portion
       //
       for (unsigned i=0; i<et->getResultSize(); i++) {
+#ifdef OLD_TYPE_IFACE
         ct_typeID t;
         forest* ef;
         et->getResultType(i, t, ef);
@@ -1408,6 +1460,19 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
           }
         }
         entry += slots_for_type[intOf(t)];
+#else
+        const ct_itemtype& item = et->getResultType(i);
+        if (item.hasForest(f)) {
+          if (*entry>0) {
+#ifdef DEBUG_VALIDATE_COUNTS
+            printf("\t%d++\n", *entry);
+#endif
+            ++counts[ *entry ];
+          }
+        }
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, item.getTypeInt(), 7u);
+        entry += slots_for_type[item.getTypeInt()];
+#endif
       } // for i
 
       //
@@ -1922,18 +1987,30 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   // Result portion
   //
   for (unsigned i=0; i<et->getResultSize(); i++) {
+#ifdef OLD_TYPE_IFACE
     ct_typeID t;
     forest* f;
     et->getResultType(i, t, f);
     MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, intOf(t), 7);
+#else
+    const ct_itemtype &item = et->getResultType(i);
+#endif
     //
     // Believe it or not, this switch statement is actually
     // more efficient than using two if's
     //
+#ifdef OLD_TYPE_IFACE
     switch (t) {
+#else
+    switch (item.getType()) {
+#endif
         case ct_typeID::NODE:
                         MEDDLY_DCASSERT(f);
+#ifdef OLD_TYPE_IFACE
                         f->uncacheNode( *ptr );
+#else
+                        item.getForest()->uncacheNode( *ptr );
+#endif
                         ptr++;
                         continue;
 
@@ -2006,7 +2083,11 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   for (unsigned i=0; i<stop; i++) {
       ct_entry_item item;
       if (i) s << ", ";
+#ifdef OLD_TYPE_IFACE
       switch (et->getKeyType(i)) {
+#else
+      switch (et->getKeyType(i).getType()) {
+#endif
           case ct_typeID::NODE:
                         item.N = *ptr;
                         s.put(long(item.N));
@@ -2045,7 +2126,11 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   for (unsigned i=0; i<et->getResultSize(); i++) {
       ct_entry_item item;
       if (i) s << ", ";
+#ifdef OLD_TYPE_IFACE
       switch (et->getResultType(i)) {
+#else
+      switch (et->getResultType(i).getType()) {
+#endif
           case ct_typeID::NODE:
                         item.N = *ptr;
                         s.put(long(item.N));

@@ -122,9 +122,20 @@ class MEDDLY::ct_itemtype {
         inline ct_typeID getType() const {
             return type;
         }
+        inline bool hasType(ct_typeID t) const {
+            return t == type;
+        }
+        inline unsigned getTypeInt() const {
+            return
+                static_cast<typename std::underlying_type<ct_typeID>::type>
+                    (type);
+        }
         char getTypeChar() const;
         inline forest* getForest() const {
             return nodeFor;
+        }
+        inline bool hasForest(const forest* f) const {
+            return f == nodeFor;
         }
         inline unsigned bytes() const {
             switch (type) {
