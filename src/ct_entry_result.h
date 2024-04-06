@@ -95,11 +95,7 @@ class MEDDLY::ct_entry_result {
             MEDDLY_DCASSERT(build);
             MEDDLY_DCASSERT(currslot < dataLength());
 
-#ifdef OLD_TYPE_IFACE
-            switch (etype->getResultType(currslot)) {
-#else
             switch (etype->getResultType(currslot).getType()) {
-#endif
                 case ct_typeID::INTEGER:
                     ev.get(build[currslot++].I);
                     break;
@@ -170,17 +166,10 @@ class MEDDLY::ct_entry_result {
         /// Increase cache counters for nodes in this portion of the entry.
         inline void cacheNodes() const {
             for (unsigned i=0; i<etype->getResultSize(); i++) {
-#ifdef OLD_TYPE_IFACE
-                forest* f = etype->getResultForest(i);
-                if (f) {
-                    f->cacheNode(build[i].N);
-                }
-#else
                 const ct_itemtype &item = etype->getResultType(i);
                 if (item.hasForest()) {
                     item.getForest()->cacheNode(build[i].N);
                 }
-#endif
             }
         }
 
@@ -189,21 +178,13 @@ class MEDDLY::ct_entry_result {
         {
             MEDDLY_DCASSERT(data);
             MEDDLY_DCASSERT(currslot < dataLength());
-#ifdef OLD_TYPE_IFACE
-            MEDDLY_DCASSERT(t == etype->getResultType(currslot));
-#else
             MEDDLY_DCASSERT(etype->getResultType(currslot).hasType(t));
-#endif
         }
         inline void WRITE_SLOT(ct_typeID t)
         {
             MEDDLY_DCASSERT(build);
             MEDDLY_DCASSERT(currslot < dataLength());
-#ifdef OLD_TYPE_IFACE
-            MEDDLY_DCASSERT(t == etype->getResultType(currslot));
-#else
             MEDDLY_DCASSERT(etype->getResultType(currslot).hasType(t));
-#endif
         }
 
 

@@ -24,8 +24,6 @@
 #include "oper.h"
 #include <type_traits>
 
-// #define OLD_TYPE_IFACE
-
 namespace MEDDLY {
     class ct_object;
     class ct_entry_type;
@@ -378,68 +376,6 @@ class MEDDLY::ct_entry_type {
             return fixed_bytes + (reps * repeating_bytes);
         }
 
-
-#ifdef OLD_TYPE_IFACE
-        /**
-            Get the type for item i in the key.
-            Automatically handles repetitions.
-              @param  i   Slot number, between 0 and getKeySize().
-
-              @param  t   On output, the type for item i.
-              @param  f   If t is 'N', the forest for item i.
-                          Otherwise, null.
-        */
-        inline void getKeyType(unsigned i, ct_typeID &t, forest* &f)
-        const {
-            if (i<key_fixed.size()) {
-                t = key_fixed[i].getType();
-                f = key_fixed[i].rawForest();
-            } else {
-                MEDDLY_DCASSERT(key_repeating.size());
-
-                i -= key_fixed.size();
-                i %= key_repeating.size();
-                t = key_repeating[i].getType();
-                f = key_repeating[i].rawForest();
-            }
-        }
-
-
-        /**
-            Get the type for item i in the key.
-            Automatically handles repetitions.
-              @param  i   Slot number, between 0 and getKeySize().
-        */
-        inline ct_typeID getKeyType(unsigned i) const {
-            if (i<key_fixed.size()) {
-                return key_fixed[i].getType();
-            } else {
-                MEDDLY_DCASSERT(key_repeating.size());
-                i -= key_fixed.size();
-                i %= key_repeating.size();
-                return key_repeating[i].getType();
-            }
-        }
-
-
-        /**
-            Get the forest for item i in the key.
-            Automatically handles repetitions.
-              @param  i   Slot number, between 0 and getKeySize().
-              @return     Forest for that slot, or 0 if the type
-                          is not 'N'.
-        */
-        inline forest* getKeyForest(unsigned i) const {
-            if (i<key_fixed.size()) {
-                return key_fixed[i].rawForest();
-            } else {
-                MEDDLY_DCASSERT(key_repeating.size());
-                i -= key_fixed.size();
-                i %= key_repeating.size();
-                return key_repeating[i].rawForest();
-            }
-        }
-#else
         /**
             Get the type for item i in the key.
             Automatically handles repetitions.
@@ -457,8 +393,6 @@ class MEDDLY::ct_entry_type {
             }
         }
 
-#endif
-
         /**
             Get the number of items in the result
         */
@@ -469,45 +403,6 @@ class MEDDLY::ct_entry_type {
         */
         inline unsigned getResultBytes() const { return result_bytes; }
 
-#ifdef OLD_TYPE_IFACE
-        /**
-            Get the type for item i in the result.
-              @param  i   Slot number, between 0 and getResultSize().
-
-              @param  t   On output, the type for item i.
-              @param  f   If t is 'N', the forest for item i.
-                          Otherwise, null.
-        */
-        inline void getResultType(unsigned i, ct_typeID &t, forest* &f)
-        const
-        {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, unsigned(result.size()));
-            t = result[i].getType();
-            f = result[i].rawForest();
-        }
-
-
-        /**
-            Get the type for item i in the result.
-              @param  i   Slot number, between 0 and getResultSize().
-        */
-        inline ct_typeID getResultType(unsigned i) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, unsigned(result.size()));
-            return result[i].getType();
-        }
-
-
-        /**
-            Get the forest for item i in the result.
-              @param  i   Slot number, between 0 and getResultSize().
-              @return     Forest for that slot, or 0 if the type
-                          is not 'N'.
-        */
-        inline forest* getResultForest(unsigned i) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, unsigned(result.size()));
-            return result[i].rawForest();
-        }
-#else
         /**
             Get the type for item i in the result.
               @param  i   Slot number, between 0 and getResultSize().
@@ -518,7 +413,6 @@ class MEDDLY::ct_entry_type {
                     0u, i, unsigned(result.size()));
             return result[i];
         }
-#endif
 
         /// Mark for deletion
         inline void markForDeletion() { is_marked_for_deletion = true; }

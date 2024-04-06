@@ -58,11 +58,7 @@ class MEDDLY::ct_entry_key {
         inline void writeEV(const edge_value &ev) {
             MEDDLY_DCASSERT(currslot < total_slots);
 
-#ifdef OLD_TYPE_IFACE
-            switch (etype->getKeyType(currslot)) {
-#else
             switch (etype->getKeyType(currslot).getType()) {
-#endif
                 case ct_typeID::INTEGER:
                     ev.get(data[currslot++].I);
                     break;
@@ -129,17 +125,10 @@ class MEDDLY::ct_entry_key {
         /// Increase cache counters for nodes in this portion of the entry.
         inline void cacheNodes() const {
             for (unsigned i=0; i<total_slots; i++) {
-#ifdef OLD_TYPE_IFACE
-                forest* f = etype->getKeyForest(i);
-                if (f) {
-                    f->cacheNode(data[i].N);
-                }
-#else
                 const ct_itemtype &item = etype->getKeyType(i);
                 if (item.hasForest()) {
                     item.getForest()->cacheNode(data[i].N);
                 }
-#endif
             }
         }
 
@@ -156,11 +145,7 @@ class MEDDLY::ct_entry_key {
         inline void WRITE_SLOT(ct_typeID t)
         {
             MEDDLY_DCASSERT(currslot < total_slots);
-#ifdef OLD_TYPE_IFACE
-            MEDDLY_DCASSERT(t == etype->getKeyType(currslot));
-#else
             MEDDLY_DCASSERT(etype->getKeyType(currslot).hasType(t));
-#endif
         }
 
 
