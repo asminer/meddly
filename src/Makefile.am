@@ -23,6 +23,7 @@ libmeddly_la_SOURCES = \
     ct_entry_result.h       ct_entry_result.cc \
     ct_entry_type.h         ct_entry_type.cc \
     ct_initializer.h        ct_initializer.cc \
+    ct_vector.h             ct_vector.cc \
     dd_edge.h               dd_edge.cc \
     defines.h               \
     domain.h                domain.cc \

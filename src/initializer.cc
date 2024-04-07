@@ -24,6 +24,7 @@
 #include "oper.h"
 #include "unpacked_node.h"
 #include "ct_initializer.h"
+#include "ct_vector.h"
 #include "ops_builtin.h"
 #include "memory_managers/init_managers.h"
 #include "storage/init_storage.h"
@@ -63,6 +64,7 @@ void MEDDLY::initializer_list::initializeLibrary(initializer_list* L)
     unpacked_node::initStatics();
     domain::initDomList();
     forest::initStatics();
+    ct_vector::initStatics();
 
     // Reverse the list
     initializer_list* reverse = nullptr;
@@ -123,8 +125,10 @@ void MEDDLY::initializer_list::cleanupLibrary()
         delete meddlyInitializers;
         meddlyInitializers = prev;
     }
+    // ^ should we traverse this list before clobbering forests, etc?
 
     unpacked_node::doneStatics();
+    ct_vector::doneStatics();
 
     isRunning = false;
 }
