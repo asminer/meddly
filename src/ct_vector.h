@@ -182,6 +182,10 @@ class MEDDLY::ct_vector {
             return data[u];
         }
 
+        inline unsigned getSize() const {
+            return size;
+        }
+
     private:
         const unsigned size;
         ct_item* data;

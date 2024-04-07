@@ -275,34 +275,34 @@ class MEDDLY::ct_entry_type {
             Use this constructor if you are going to specify the
             key and result types using methods below:
 
-                set_fixed()     for setting the fixed portion of the key,
+                setFixed()      for setting the fixed portion of the key,
                                 if any.
-                set_repeat()    for setting the repeating portion of the key,
+                setRepeat()     for setting the repeating portion of the key,
                                 if any.
-                set_result()    for setting the result portion of the key.
+                setResult()     for setting the result portion of the key.
         */
         ct_entry_type(const char* name);
         ~ct_entry_type();
 
-        inline void set_fixed(ct_itemtype a) {
+        inline void setFixed(ct_itemtype a) {
             key_fixed.resize(1);
             key_fixed[0] = a;
             countFixed();
         }
-        inline void set_fixed(ct_itemtype a, ct_itemtype b) {
+        inline void setFixed(ct_itemtype a, ct_itemtype b) {
             key_fixed.resize(2);
             key_fixed[0] = a;
             key_fixed[1] = b;
             countFixed();
         }
-        inline void set_fixed(ct_itemtype a, ct_itemtype b, ct_itemtype c) {
+        inline void setFixed(ct_itemtype a, ct_itemtype b, ct_itemtype c) {
             key_fixed.resize(3);
             key_fixed[0] = a;
             key_fixed[1] = b;
             key_fixed[2] = c;
             countFixed();
         }
-        inline void set_fixed(ct_itemtype a, ct_itemtype b,
+        inline void setFixed(ct_itemtype a, ct_itemtype b,
                 ct_itemtype c, ct_itemtype d)
         {
             key_fixed.resize(4);
@@ -312,40 +312,46 @@ class MEDDLY::ct_entry_type {
             key_fixed[3] = d;
             countFixed();
         }
-        inline void append_fixed(ct_itemtype a) {
+        inline void appendFixed(ct_itemtype a) {
             key_fixed.push_back(a);
+        }
+        inline void doneFixed() {
             countFixed();
         }
 
-        inline void set_repeat(ct_itemtype a) {
+        inline void setRepeat(ct_itemtype a) {
             key_repeating.resize(1);
             key_repeating[0] = a;
             countRepeating();
         }
-        inline void set_repeat(ct_itemtype a, ct_itemtype b) {
+        inline void setRepeat(ct_itemtype a, ct_itemtype b) {
             key_repeating.resize(2);
             key_repeating[0] = a;
             key_repeating[1] = b;
             countRepeating();
         }
-        inline void append_repeat(ct_itemtype a) {
+        inline void appendRepeat(ct_itemtype a) {
             key_repeating.push_back(a);
+        }
+        inline void doneRepeat() {
             countRepeating();
         }
 
-        inline void set_result(ct_itemtype a) {
+        inline void setResult(ct_itemtype a) {
             result.resize(1);
             result[0] = a;
             countResult();
         }
-        inline void set_result(ct_itemtype a, ct_itemtype b) {
+        inline void setResult(ct_itemtype a, ct_itemtype b) {
             result.resize(2);
             result[0] = a;
             result[1] = b;
             countResult();
         }
-        inline void append_result(ct_itemtype a) {
+        inline void appendResult(ct_itemtype a) {
             result.push_back(a);
+        }
+        inline void doneResult() {
             countResult();
         }
 

@@ -159,14 +159,14 @@ int main(int argc, const char** argv)
 
         // ct_entry_type cte("test_entry", "INN:N");
         ct_entry_type cte("test_entry");
-        cte.set_fixed('I', F, F);
-        cte.set_result(F);
+        cte.setFixed('I', F, F);
+        cte.setResult(F);
 
         // ct_entry_type ctr("test_repeating", "IN.IN:N");
         ct_entry_type ctr("test_repeating");
-        ctr.set_fixed('I', F);
-        ctr.set_repeat('I', F);
-        ctr.set_result(F);
+        ctr.setFixed('I', F);
+        ctr.setRepeat('I', F);
+        ctr.setResult(F);
 
         reqKeys(&cte);
         makeKeys(&cte);
