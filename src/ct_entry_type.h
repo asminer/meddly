@@ -42,11 +42,6 @@ namespace MEDDLY {
         GENERIC = 6 // ct_object
     };
 
-    // TBD should this be unsigned?
-    inline int intOf(ct_typeID t) {
-        return static_cast<typename std::underlying_type<ct_typeID>::type>(t);
-    }
-
     class ct_itemtype;
 
     // TBD move this because it is entry related
@@ -71,6 +66,7 @@ namespace MEDDLY {
 
 class MEDDLY::ct_itemtype {
     public:
+        /// Default constructor
         ct_itemtype() {
             type = ct_typeID::ERROR;
             nodeFor = nullptr;
@@ -85,15 +81,18 @@ class MEDDLY::ct_itemtype {
         */
         ct_itemtype(char code);
 
+        /// Set the type to 'node' and assign the forest.
         ct_itemtype(forest* f) {
             type = ct_typeID::NODE;
             nodeFor = f;
         }
+        /// Set the type from the actual type enum.
         ct_itemtype(ct_typeID t) {
             MEDDLY_DCASSERT(t != ct_typeID::NODE);
             type = t;
             nodeFor = nullptr;
         }
+        /// Set the type from an edge value type
         ct_itemtype(edge_type et) {
             nodeFor = nullptr;
             switch (et) {
@@ -184,6 +183,7 @@ class MEDDLY::ct_itemtype {
         }
 
     public:
+        /// Display; used for debugging
         void show(output &s) const;
 
     protected:
@@ -300,6 +300,16 @@ class MEDDLY::ct_entry_type {
             key_fixed[0] = a;
             key_fixed[1] = b;
             key_fixed[2] = c;
+            countFixed();
+        }
+        inline void set_fixed(ct_itemtype a, ct_itemtype b,
+                ct_itemtype c, ct_itemtype d)
+        {
+            key_fixed.resize(4);
+            key_fixed[0] = a;
+            key_fixed[1] = b;
+            key_fixed[2] = c;
+            key_fixed[3] = d;
             countFixed();
         }
         inline void append_fixed(ct_itemtype a) {
