@@ -113,7 +113,7 @@ MEDDLY::compute_table::~compute_table()
 {
 }
 
-void MEDDLY::compute_table::initialize()
+void MEDDLY::compute_table::initStatics()
 {
     free_keys = 0;
     //
@@ -125,7 +125,7 @@ void MEDDLY::compute_table::initialize()
     // zero that array?
 }
 
-void MEDDLY::compute_table::destroy()
+void MEDDLY::compute_table::doneStatics()
 {
     while (free_keys) {
         ct_entry_key* n = free_keys->next;

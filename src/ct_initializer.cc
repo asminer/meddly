@@ -69,7 +69,7 @@ void MEDDLY::ct_initializer::setup()
         operation::Monolithic_CT = ct_factory->create(the_settings);
     }
 
-    compute_table::initialize();
+    compute_table::initStatics();
 }
 
 void MEDDLY::ct_initializer::cleanup()
@@ -77,7 +77,7 @@ void MEDDLY::ct_initializer::cleanup()
     delete operation::Monolithic_CT;
     operation::Monolithic_CT = nullptr;
 
-    compute_table::destroy();
+    compute_table::doneStatics();
 }
 
 void MEDDLY::ct_initializer::setStaleRemoval(staleRemovalOption sro)

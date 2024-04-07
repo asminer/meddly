@@ -87,7 +87,6 @@ class MEDDLY::compute_table_style {
     Implementation is in compute_table.cc.
 */
 class MEDDLY::compute_table {
-        friend class operation;
     public:
         struct stats {
             unsigned long numEntries;
@@ -143,12 +142,13 @@ class MEDDLY::compute_table {
         /// Get performance stats for the table.
         inline const stats& getStats() { return perf; }
 
-        /// Initialize the entry registry
-        static void initialize();
-        /// Destroy the entry registry
-        static void destroy();
+// ********************************************************************
+//
+//   centralized key recycling; obsolete with ct_vectors.
+//
+// ********************************************************************
 
-
+    public:
         /**
             Start using an ct_entry_key for the given operation.
         */
@@ -169,7 +169,6 @@ class MEDDLY::compute_table {
             return k;
         }
 
-
         /**
             Done using an ct_entry_key.
         */
@@ -180,6 +179,17 @@ class MEDDLY::compute_table {
             }
         }
 
+    private:
+        static ct_entry_key* free_keys;
+
+
+// ********************************************************************
+//
+//   operation registry, and entry type registry.
+//
+// ********************************************************************
+
+    public:
         /// Find entry_type for operation and slot number.
         inline static const ct_entry_type* getEntryType(operation* op,
                 unsigned slot)
@@ -198,7 +208,39 @@ class MEDDLY::compute_table {
             return entryInfo[etid];
         }
 
+    protected:
+        friend class ct_initializer;
+        friend class operation;
 
+        /// Initialize the entry registry
+        static void initStatics();
+        /// Destroy the entry registry
+        static void doneStatics();
+
+        /** Register an operation.
+            Sets aside a number of entry_type slots for the operation.
+        */
+        static void registerOp(operation* op, unsigned num_ids);
+
+        /// Register an entry_type.
+        static void registerEntryType(unsigned etid, ct_entry_type* et);
+
+        /** Unregister an operation.
+            Frees the entry_type slots for the operation.
+        */
+        static void unregisterOp(operation* op, unsigned num_ids);
+
+    private:
+        static ct_entry_type** entryInfo;
+        static unsigned entryInfoAlloc;
+        static unsigned entryInfoSize;
+
+
+// ********************************************************************
+//
+//   Compute table operations
+//
+// ********************************************************************
     public:
         //
         // Overridden in different compute table implementations
@@ -247,7 +289,9 @@ class MEDDLY::compute_table {
         virtual void countNodeEntries(const forest* f, size_t* counts)
             const = 0;
 
+
     protected:
+
         inline static void setHash(ct_entry_key *k, unsigned h) {
             MEDDLY_DCASSERT(k);
             k->setHash(h);
@@ -259,19 +303,6 @@ class MEDDLY::compute_table {
         /// Start sweep phase for forests that could have entries in this table.
         void sweepForestCTBits(bool* whichF, unsigned n) const;
 
-        /** Register an operation.
-            Sets aside a number of entry_type slots for the operation.
-        */
-        static void registerOp(operation* op, unsigned num_ids);
-
-        /// Register an entry_type.
-        static void registerEntryType(unsigned etid, ct_entry_type* et);
-
-        /** Unregister an operation.
-            Frees the entry_type slots for the operation.
-        */
-        static void unregisterOp(operation* op, unsigned num_ids);
-
     protected:
         /// The maximum size of the hash table.
         unsigned maxSize;
@@ -279,18 +310,11 @@ class MEDDLY::compute_table {
         bool checkStalesOnFind;
         /// Do we try to eliminate stales during a "resize" operation
         bool checkStalesOnResize;
-        /// Global entry type, if we're an operation cache; otherwise 0.
+        /// Global entry type, if we're an operation cache; otherwise null.
         const ct_entry_type* global_et;
         /// Performance statistics
         stats perf;
 
-    private:
-        static ct_entry_type** entryInfo;
-        static unsigned entryInfoAlloc;
-        static unsigned entryInfoSize;
-
-    private:
-        static ct_entry_key* free_keys;
 };
 
 #endif
