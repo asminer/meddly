@@ -21,6 +21,7 @@
 
 #include "ct_entry_type.h"
 #include "forest.h"
+#include "hash_stream.h"
 
 namespace MEDDLY {
     class ct_item;
@@ -78,6 +79,21 @@ class MEDDLY::ct_item {
                 case edge_type::DOUBLE: setD(ev.getDouble());   return;
                 default:    // includes VOID
                     type = ct_typeID::ERROR;
+            }
+        }
+
+        /// Set item from a raw ct_entry_item
+        inline void set(ct_typeID t, ct_entry_item ci)
+        {
+            type = t;
+            switch (type) {
+                case ct_typeID::ERROR:      next = nullptr;         return;
+                case ct_typeID::NODE:       the_node = ci.N;        return;
+                case ct_typeID::INTEGER:    the_int = ci.I;         return;
+                case ct_typeID::LONG:       the_long = ci.L;        return;
+                case ct_typeID::FLOAT:      the_float = ci.F;       return;
+                case ct_typeID::DOUBLE:     the_double = ci.D;      return;
+                case ct_typeID::GENERIC:    the_generic = ci.G;     return;
             }
         }
 
@@ -140,10 +156,79 @@ class MEDDLY::ct_item {
         inline void get_ev(long &i)     const   { i = getL(); }
         inline void get_ev(float &f)    const   { f = getF(); }
 
+        // Get into a raw ct_entry_item
+        inline void get(ct_entry_item &ci) const
+        {
+            switch (type) {
+                case ct_typeID::NODE:       ci.N = the_node;        return;
+                case ct_typeID::INTEGER:    ci.I = the_int;         return;
+                case ct_typeID::LONG:       ci.L = the_long;        return;
+                case ct_typeID::FLOAT:      ci.F = the_float;       return;
+                case ct_typeID::DOUBLE:     ci.D = the_double;      return;
+                case ct_typeID::GENERIC:    ci.G = the_generic;     return;
+                default:
+                    MEDDLY_DCASSERT(false);
+            }
+        }
+
         // For recycling and such
         inline ct_item* getNext() const {
             MEDDLY_DCASSERT(type == ct_typeID::ERROR);
             return next;
+        }
+
+        inline ct_typeID getType() const { return type; }
+        inline bool hasType(ct_typeID t) const { return type == t; }
+
+    public: // Comparison
+
+        inline bool equals(ct_entry_item ci) const
+        {
+            //
+            // TBD: change test for float and double to 'close enough'?
+            // TBD: what about generic comparisons?
+            //      probably comparing pointers isn't enough?
+            //
+            switch (type) {
+                case ct_typeID::NODE:       return ci.N == the_node;
+                case ct_typeID::INTEGER:    return ci.I == the_int;
+                case ct_typeID::LONG:       return ci.L == the_long;
+                case ct_typeID::FLOAT:      return ci.F == the_float;
+                case ct_typeID::DOUBLE:     return ci.D == the_double;
+                case ct_typeID::GENERIC:    return ci.G == the_generic;
+                default:
+                    MEDDLY_DCASSERT(false);
+                    return false;
+            }
+        }
+
+    public: // Hashing
+
+        inline void hash(hash_stream &H) const
+        {
+            MEDDLY_DCASSERT(sizeof(the_int) == sizeof(raw[0]));
+            MEDDLY_DCASSERT(sizeof(the_node) == sizeof(raw[0]));
+            MEDDLY_DCASSERT(sizeof(the_float) == sizeof(raw[0]));
+
+            MEDDLY_DCASSERT(sizeof(the_long) == sizeof(raw));
+            MEDDLY_DCASSERT(sizeof(the_double) == sizeof(raw));
+            MEDDLY_DCASSERT(sizeof(the_generic) == sizeof(raw));
+
+            switch (type) {
+                case ct_typeID::FLOAT:
+                case ct_typeID::NODE:
+                case ct_typeID::INTEGER:
+                                            H.push(raw[0]);
+                                            return;
+
+                case ct_typeID::LONG:
+                case ct_typeID::DOUBLE:
+                case ct_typeID::GENERIC:
+                                            H.push(raw[0], raw[1]);
+                                            return;
+                default:
+                                            MEDDLY_DCASSERT(false);
+            }
         }
 
     private:
@@ -155,10 +240,14 @@ class MEDDLY::ct_item {
             double          the_double;
             ct_object*      the_generic;
             ct_item*        next;
+
+            unsigned        raw[2]; // for hashing
         };
         ct_typeID   type;
 };
 
+
+// ===========================================================================
 
 /**
     A vector of compute table items.
@@ -186,9 +275,24 @@ class MEDDLY::ct_vector {
             return size;
         }
 
+        inline void setHash(unsigned h) {
+            hashVal = h;
+#ifdef DEVELOPMENT_CODE
+            hasHashVal = true;
+#endif
+        }
+        inline unsigned getHash() const {
+            MEDDLY_DCASSERT(hasHashVal);
+            return hashVal;
+        }
+
     private:
         const unsigned size;
+        unsigned hashVal;
         ct_item* data;
+#ifdef DEVELOPMENT_CODE
+        bool hasHashVal;
+#endif
 
     private:
         friend class initializer_list;

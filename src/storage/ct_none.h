@@ -22,7 +22,9 @@
 
 #include "../node_storage.h"
 #include "../compute_table.h"
+#include "../ct_entry_key.h"
 #include "../ct_entry_result.h"
+#include "../ct_vector.h"
 #include "../ct_initializer.h"
 
 // **********************************************************************
@@ -40,6 +42,7 @@ namespace MEDDLY {
       ct_none(const ct_settings &s, operation* op, unsigned slot);
       virtual ~ct_none();
 
+    protected:
       /**
           Find an entry.
           Used by find() and updateEntry().
@@ -48,11 +51,29 @@ namespace MEDDLY {
       */
       ct_entry_item* findEntry(ct_entry_key* key);
 
+      /**
+          Find an entry.
+          Used by find() and updateEntry().
+            @param  key   Key to search for.
+            @return Pointer to the result portion of the entry, or null if not found.
+      */
+      ct_entry_item* findEntry(const ct_entry_type &ET, const ct_vector &key);
+
+    public:
+
       // required functions
 
       virtual void find(ct_entry_key* key, ct_entry_result &res);
       virtual void addEntry(ct_entry_key* key, const ct_entry_result& res);
       virtual void updateEntry(ct_entry_key* key, const ct_entry_result& res);
+
+      // new functions
+
+      virtual bool find(const ct_entry_type &ET, ct_vector &k, ct_vector &r);
+      virtual void addEntry(const ct_entry_type &ET, ct_vector &key,
+              const ct_vector &res);
+
+
       virtual void removeStales();
       virtual void removeAll();
       virtual void show(output &s, int verbLevel = 0);
@@ -140,6 +161,7 @@ namespace MEDDLY {
       // TBD - migrate to 64-bit hash
 
       static unsigned hash(const ct_entry_key* key);
+      static void hash(const ct_entry_type &ET, ct_vector &key);
       static unsigned hash(const ct_entry_type* et, const ct_entry_item* entry);
 
       inline void incMod(unsigned long &h) {
@@ -249,6 +271,7 @@ namespace MEDDLY {
       }
 
 
+
       /**
           Check if the key portion of an entry equals key and should be discarded.
             @param  entry   Complete entry in CT to check.
@@ -279,6 +302,74 @@ namespace MEDDLY {
         }
         return answer;
       }
+
+
+      /**
+            Check equality.
+            We advance pointer a and return the result portion if equal.
+            If unequal we return null.
+      */
+      static inline ct_entry_item* equal(ct_entry_item* a,
+              const ct_entry_type &ET, const ct_vector &key)
+        {
+            //
+            // Compare operator, if needed
+            //
+            if (MONOLITHIC) {
+                if (ET.getID() != (*a).U) return nullptr;
+                a++;
+            }
+            //
+            // compare size, ff needed
+            //
+            if (ET.isRepeating()) {
+                if (key.getSize() != (*a).U) return nullptr;
+                a++;
+            }
+            //
+            // Compare key portion only
+            //
+            for (unsigned i=0; i<key.getSize(); i++) {
+                MEDDLY_DCASSERT( ET.getKeyType(i).hasType(key[i].getType()) );
+                if (! key[i].equals(a[i])) return nullptr;
+            } // for i
+            return a + key.getSize();
+      }
+
+      /**
+          Check if the key portion of an entry equals key and should be discarded.
+            @param  entry   Complete entry in CT to check.
+            @param  key     Key to compare against.
+            @param  ET      Entry type
+            @param  discard On output: should this entry be discarded
+
+            @return Result portion of the entry, if they key portion matches;
+                    0 if the entry does not match the key.
+      */
+      inline ct_entry_item* checkEqualityAndStatus(ct_entry_item* entry,
+              const ct_entry_type &ET, const ct_vector &key, bool &discard)
+        {
+            ct_entry_item* answer
+                = equal( CHAINED ? (entry+1) : entry, ET, key);
+            if (answer)
+            {
+                //
+                // Equal.
+                //
+                discard = isDead(answer, &ET);
+            } else {
+                //
+                // Not equal.
+                //
+                if (checkStalesOnFind) {
+                    discard = isStale(entry);
+                } else {
+                    discard = false;
+                } // if checkStalesOnFind
+            }
+            return answer;
+        }
+
 
       /**
           Check if an entry is stale.
@@ -339,6 +430,7 @@ namespace MEDDLY {
 
 
     private:
+      /// TBD: use vector
       /// Hash table
       unsigned long* table;
 
@@ -617,6 +709,145 @@ inline MEDDLY::ct_entry_item* MEDDLY::ct_none<MONOLITHIC, CHAINED>
 // **********************************************************************
 
 template <bool MONOLITHIC, bool CHAINED>
+inline MEDDLY::ct_entry_item* MEDDLY::ct_none<MONOLITHIC, CHAINED>
+::findEntry(const ct_entry_type &ET, const ct_vector &key)
+{
+    // |-----------||--------|-------------|---------|
+    // | status    || active | recoverable | dead    |
+    // |-----------||--------|-------------|---------|
+    // | equal     || use    | use         | discard |
+    // |-----------||--------|-------------|---------|
+    // | not equal || keep   | discard     | discard |
+    // |-----------||--------|-------------|---------|
+    //
+    // if (equal)
+    //    if (dead) discard
+    //    else use
+    // else
+    //    if (!active) discard
+    //    else do nothing
+
+    unsigned chain;
+
+    ct_entry_item* answer = nullptr;
+    ct_entry_item* preventry = nullptr;
+    unsigned long hcurr = key.getHash() % tableSize;
+    unsigned long curr = table[hcurr];
+
+#ifdef DEBUG_CT_SEARCHES
+    ostream_output out(std::cout);
+    std::cout << "Searching for CT entry ";
+    showKey(out, key);
+#ifdef DEBUG_CT_SLOTS
+    std::cout << " in hash slot " << hcurr;
+#endif
+    std::cout << std::endl;
+#endif
+
+    for (chain=0; ; ) {
+
+        if (!curr) {
+            if (CHAINED) break;
+            if (++chain > maxCollisionSearch) break;
+            incMod(hcurr);
+            curr = table[hcurr];
+            continue;
+        } else {
+            if (CHAINED) chain++;
+        }
+
+#ifdef INTEGRATED_MEMMAN
+        ct_entry_item* entry = entries + curr;
+#else
+        ct_entry_item* entry = (ct_entry_item*) MMAN->getChunkAddress(curr);
+#endif
+
+        bool discard;
+        answer = checkEqualityAndStatus(entry, ET, key, discard);
+
+        if (discard) {
+            //
+            // Delete the entry.
+            //
+#ifdef DEBUG_CT
+            if (answer) std::cout << "Removing stale CT hit   ";
+            else        std::cout << "Removing stale CT entry ";
+            ostream_output out(std::cout);
+            showEntry(out, curr);
+#ifdef DEBUG_CT_SLOTS
+            std::cout << " handle " << curr << " in slot " << hcurr;
+#endif
+            std::cout << std::endl;
+#endif
+            if (CHAINED) {
+                if (preventry) {
+                    preventry[0].UL = entry[0].UL;
+                } else {
+                    table[hcurr] = entry[0].UL;
+                }
+            } else {
+                table[hcurr] = 0;
+            }
+
+            discardAndRecycle(curr);
+
+            if (answer) {
+                answer = nullptr;
+                // Since there can NEVER be more than one match
+                // in the table, we're done!
+                break;
+            }
+        } // if discard
+
+        if (answer) {
+            //
+            // "Hit"
+            //
+            if (CHAINED) {
+                //
+                // If the matching entry is not already at the front
+                // of the list, move it there
+                //
+                if (preventry) {
+                    preventry[0].UL = entry[0].UL;
+                    entry[0].UL = table[hcurr];
+                    table[hcurr] = curr;
+                }
+            }
+#ifdef DEBUG_CT
+            std::cout << "Found CT entry ";
+            ostream_output out(std::cout);
+            showEntry(out, curr);
+#ifdef DEBUG_CT_SLOTS
+            std::cout << " handle " << curr << " in slot " << hcurr;
+#endif
+            std::cout << std::endl;
+#endif
+            break;
+        } // if equal
+
+        //
+        // Advance
+        //
+        if (CHAINED) {
+            curr = entry[0].UL;
+            preventry = entry;
+        } else {
+            if (++chain > maxCollisionSearch) break;
+            incMod(hcurr);
+            curr = table[hcurr];
+        }
+
+    } // for chain
+
+    sawSearch(chain);
+
+    return answer;
+}
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_none<MONOLITHIC, CHAINED>
 ::find(ct_entry_key *key, ct_entry_result& res)
 {
@@ -868,6 +1099,242 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::updateEntry(ct_entry_key* key, const 
   // Overwrite result
   //
   setResult(entry_result, res, key->getET());
+}
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED>
+bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
+::find(const ct_entry_type &ET, ct_vector &key, ct_vector &res)
+{
+    //
+    // TBD - probably shouldn't hash the floats, doubles.
+    //
+
+    //
+    // Hash the key
+    //
+    hash(ET, key);
+
+    ct_entry_item* entry_result = findEntry(ET, key);
+    perf.pings++;
+    if (!entry_result) return false;
+
+    perf.hits++;
+    //
+    // Fill res
+    //
+    MEDDLY_DCASSERT(res.getSize() == ET.getResultSize());
+    for (unsigned i=0; i<ET.getResultSize(); i++) {
+        res[i].set(ET.getResultType(i).getType(), entry_result[i]);
+    }
+}
+
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED>
+void MEDDLY::ct_none<MONOLITHIC, CHAINED>::addEntry(const ct_entry_type &ET,
+        ct_vector &key, const ct_vector &res)
+{
+    if (!MONOLITHIC) {
+        if (&ET != global_et)
+            throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
+    }
+
+    //
+    // Increment cache counters for nodes in the entry
+    //
+    for (unsigned i=0; i<key.getSize(); i++) {
+        const ct_itemtype &item = ET.getKeyType(i);
+        if (item.hasForest()) {
+            item.getForest()->cacheNode(key[i].getN());
+        }
+    }
+    for (unsigned i=0; i<res.getSize(); i++) {
+        const ct_itemtype &item = ET.getResultType(i);
+        if (item.hasForest()) {
+            item.getForest()->cacheNode(res[i].getN());
+        }
+    }
+
+    unsigned long h = key.getHash() % tableSize;
+
+    //
+    // Allocate an entry
+    //
+
+    const unsigned num_slots =
+        key.getSize() +
+        + res.getSize()
+        + (CHAINED ? 1 : 0)
+        + (MONOLITHIC ? 1 : 0)
+        + (ET.isRepeating() ? 1 : 0)
+    ;
+    unsigned long curr = newEntry(num_slots);
+#ifdef INTEGRATED_MEMMAN
+    ct_entry_item* entry = entries + curr;
+#else
+    ct_entry_item* entry = (ct_entry_item*) MMAN->getChunkAddress(curr);
+#endif
+
+    //
+    // Copy into the entry
+    //
+    ct_entry_item* key_portion = entry + (CHAINED ? 1 : 0);
+    if (MONOLITHIC) {
+        (*key_portion).U = ET.getID();
+        key_portion++;
+    }
+    if (ET.isRepeating()) {
+        (*key_portion).U = key.getSize();
+        key_portion++;
+    }
+    ct_entry_item* res_portion = key_portion + key.getSize();
+    //
+    // copy key
+    //
+    for (unsigned i=0; i<key.getSize(); i++) {
+        key[i].get( key_portion[i] );
+    }
+    //
+    // copy result
+    //
+    for (unsigned i=0; i<res.getSize(); i++) {
+        res[i].get( res_portion[i] );
+    }
+
+    //
+    // Add entry to CT
+    //
+    if (CHAINED) {
+        // Add this to front of chain
+        entry[0].UL = table[h];
+        table[h] = curr;
+    } else {
+        setTable(h, curr);
+    }
+
+#ifdef DEBUG_CT
+    std::cout << "Added CT entry ";
+    ostream_output out(std::cout);
+    showEntry(out, curr);
+#ifdef DEBUG_CT_SLOTS
+    std::cout   << " handle " << curr << " ins slot " << h
+                << " (" << num_slots << " slots long";
+#endif
+    std::cout << std::endl;
+#endif
+
+    if (perf.numEntries < tableExpand) return;
+
+    //
+    // Time to GC and maybe resize the table
+    //
+    perf.resizeScans++;
+
+#ifdef DEBUG_SLOW
+    std::cout   << "Running GC in compute table (size "
+                << tableSize << ", entries " << perf.numEntries << ")\n";
+#endif
+
+    unsigned long list = 0;
+    if (CHAINED) {
+        list = convertToList(checkStalesOnResize);
+        if (perf.numEntries < tableSize) {
+            listToTable(list);
+#ifdef DEBUG_SLOW
+            std::cout   << "Done CT GC, no resizing (now entries "
+                        << perf.numEntries << ")\n";
+#endif
+            return;
+        }
+    } else {
+        scanForStales();
+        if (perf.numEntries < tableExpand / 4) {
+#ifdef DEBUG_SLOW
+            std::cout   << "Done CT GC, no resizing (now entries "
+                        << perf.numEntries << ")\n";
+#endif
+            return;
+        }
+    }
+
+    //
+    // Resize needed
+    //
+
+    unsigned long newsize = tableSize * 2;
+    if (newsize > maxSize) newsize = maxSize;
+
+    if (CHAINED) {
+        if (newsize != tableSize) {
+            //
+            // Enlarge table
+            //
+
+            unsigned long* newt = (unsigned long*)
+                realloc(table, newsize * sizeof(unsigned long));
+            if (!newt) {
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+            }
+
+            for (unsigned long i=tableSize; i<newsize; i++) newt[i] = 0;
+
+            MEDDLY_DCASSERT(newsize > tableSize);
+            mstats.incMemUsed( (newsize - tableSize) * sizeof(unsigned long) );
+            mstats.incMemAlloc( (newsize - tableSize) * sizeof(unsigned long) );
+
+            table = newt;
+            tableSize = newsize;
+        }
+
+        if (tableSize == maxSize) {
+            tableExpand = std::numeric_limits<int>::max();
+        } else {
+            tableExpand = 4*tableSize;
+        }
+        tableShrink = tableSize / 2;
+
+        listToTable(list);
+    } else {  // not CHAINED
+        if (newsize != tableSize) {
+            //
+            // Enlarge table
+            //
+            unsigned long* oldT = table;
+            unsigned long oldSize = tableSize;
+            tableSize = newsize;
+            table = (unsigned long*) malloc(newsize * sizeof(unsigned long));
+            if (!table) {
+                table = oldT;
+                tableSize = oldSize;
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+            }
+            for (unsigned long i=0; i<newsize; i++) table[i] = 0;
+
+            mstats.incMemUsed(newsize * sizeof(unsigned long));
+            mstats.incMemAlloc(newsize * sizeof(unsigned long));
+
+            rehashTable(oldT, oldSize);
+            free(oldT);
+
+            mstats.decMemUsed(oldSize * sizeof(unsigned long));
+            mstats.decMemAlloc(oldSize * sizeof(unsigned long));
+
+            if (tableSize == maxSize) {
+                tableExpand = std::numeric_limits<int>::max();
+            } else {
+                tableExpand = tableSize / 2;
+            }
+            tableShrink = tableSize / 8;
+        }
+    } // if CHAINED
+
+#ifdef DEBUG_SLOW
+    std::cout << "CT enlarged to size " << tableSize << std::endl;
+#endif
+
 }
 
 // **********************************************************************
@@ -1435,6 +1902,7 @@ unsigned MEDDLY::ct_none<MONOLITHIC, CHAINED>
     switch (t) {
         case ct_typeID::FLOAT:
                         MEDDLY_DCASSERT(sizeof(entry[i].F) == sizeof(entry[i].U));
+
         case ct_typeID::NODE:
                         MEDDLY_DCASSERT(sizeof(entry[i].N) == sizeof(entry[i].U));
         case ct_typeID::INTEGER:
@@ -1458,6 +1926,41 @@ unsigned MEDDLY::ct_none<MONOLITHIC, CHAINED>
   } // for i
 
   return H.finish();
+}
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED>
+void MEDDLY::ct_none<MONOLITHIC, CHAINED>
+::hash(const ct_entry_type &ET, ct_vector &key)
+{
+    hash_stream H;
+    H.start();
+    //
+    // Operator, if needed
+    //
+    if (MONOLITHIC) {
+        H.push(ET.getID());
+    }
+    //
+    // key size, if needed
+    //
+    if (ET.isRepeating()) {
+        H.push(key.getSize());
+    }
+
+    //
+    // Hash key
+    //
+    for (unsigned i=0; i<key.getSize(); i++) {
+        MEDDLY_DCASSERT(ET.getKeyType(i).hasType(key[i].getType()));
+        key[i].hash(H);
+    }
+
+    //
+    // Set hash
+    //
+    key.setHash( H.finish() );
 }
 
 // **********************************************************************

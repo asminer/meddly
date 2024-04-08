@@ -30,7 +30,7 @@ namespace MEDDLY {
     class ct_entry_key;
     class ct_entry_result;
 
-    class ct_object;
+    class ct_vector;
     class ct_initializer;
     struct ct_settings;
     class compute_table_style;
@@ -147,6 +147,8 @@ class MEDDLY::compute_table {
 //
 // ********************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_6
+
     public:
         /**
             Start using an ct_entry_key for the given operation.
@@ -181,6 +183,7 @@ class MEDDLY::compute_table {
     private:
         static ct_entry_key* free_keys;
 
+#endif
 
 // ********************************************************************
 //
@@ -250,16 +253,22 @@ class MEDDLY::compute_table {
     private:
         static std::vector <ct_entry_type*> entryInfo;
 
-
 // ********************************************************************
 //
 //   Compute table operations
 //
 // ********************************************************************
+
     public:
         //
         // Overridden in different compute table implementations
         //
+
+        // **********************************************************
+        //  OLD IFACE
+        // **********************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_6
 
         /** Find an entry in the compute table based on the key provided.
                 @param  key   Key to search for.
@@ -282,6 +291,33 @@ class MEDDLY::compute_table {
         */
         virtual void updateEntry(ct_entry_key* key, const ct_entry_result &res)
             = 0;
+
+#endif
+
+        // **********************************************************
+        //  NEW IFACE
+        // **********************************************************
+
+        /** Find an entry in the compute table based on the key provided.
+                @param  ET    Entry type we're looking for.
+                @param  key   Key to search for.
+                @param  res   Where to store the result, if found.
+                @return true, if a result was found; false otherwise.
+        */
+        virtual bool find(const ct_entry_type& ET, ct_vector &key,
+                ct_vector &res) = 0;
+
+        /**
+            Add an entry (key plus result) to the compute table.
+                @param  ET    Entry type we're adding.
+                @param  key   Key portion of the entry.
+                @param  res   Result portion of the entry.
+        */
+        virtual void addEntry(const ct_entry_type& ET, ct_vector &key,
+                const ct_vector &res) = 0;
+
+
+        // **********************************************************
 
         /** Remove all stale entries.
             Scans the table for entries that are no longer valid (i.e. they are
@@ -307,10 +343,12 @@ class MEDDLY::compute_table {
 
     protected:
 
+#ifdef ALLOW_DEPRECATED_0_17_6
         inline static void setHash(ct_entry_key *k, unsigned h) {
             MEDDLY_DCASSERT(k);
             k->setHash(h);
         }
+#endif
 
         /// Clear CT Bits in forests that could have entries in this table.
         void clearForestCTBits(bool* skipF, unsigned n) const;

@@ -39,6 +39,9 @@ MEDDLY::ct_item::ct_item()
 MEDDLY::ct_vector::ct_vector(unsigned sz) : size(sz)
 {
     data = useArray(size);
+#ifdef DEVELOPMENT_CODE
+    hasHashVal = false;
+#endif
 }
 
 MEDDLY::ct_vector::~ct_vector()
