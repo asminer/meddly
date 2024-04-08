@@ -60,9 +60,7 @@ MEDDLY::compute_table_style::create(const ct_settings &s,
 // **********************************************************************
 
 
-MEDDLY::ct_entry_type** MEDDLY::compute_table::entryInfo;
-unsigned MEDDLY::compute_table::entryInfoAlloc;
-unsigned MEDDLY::compute_table::entryInfoSize;
+std::vector<MEDDLY::ct_entry_type*> MEDDLY::compute_table::entryInfo;
 MEDDLY::ct_entry_key* MEDDLY::compute_table::free_keys;
 
 MEDDLY::compute_table::compute_table(const ct_settings &s,
@@ -119,10 +117,8 @@ void MEDDLY::compute_table::initStatics()
     //
     // Initialize entryInfo list
     //
-    entryInfo = 0;
-    entryInfoAlloc = 0;
-    entryInfoSize = 0;
-    // zero that array?
+    entryInfo.resize(1);
+    entryInfo[0] = nullptr; // not sure if we need to reserve etid 0
 }
 
 void MEDDLY::compute_table::doneStatics()
@@ -133,7 +129,7 @@ void MEDDLY::compute_table::doneStatics()
         free_keys = n;
     }
     // delete the items?  TBD
-    delete[] entryInfo;
+    entryInfo.resize(0);
 }
 
 void MEDDLY::compute_table::clearForestCTBits(bool* skipF, unsigned N) const
@@ -146,7 +142,7 @@ void MEDDLY::compute_table::clearForestCTBits(bool* skipF, unsigned N) const
     //
     // Monolithic cache.
     //
-    for (unsigned i=0; i<entryInfoSize; i++) {
+    for (unsigned i=0; i<entryInfo.size(); i++) {
         if (entryInfo[i]) {
             entryInfo[i]->clearForestCTBits(skipF, N);
         }
@@ -163,99 +159,29 @@ void MEDDLY::compute_table::sweepForestCTBits(bool* whichF, unsigned N) const
     //
     // Monolithic cache.
     //
-    for (unsigned i=0; i<entryInfoSize; i++) {
+    for (unsigned i=0; i<entryInfo.size(); i++) {
         if (entryInfo[i]) {
             entryInfo[i]->sweepForestCTBits(whichF, N);
         }
     }
 }
 
-void MEDDLY::compute_table::registerOp(operation* op, unsigned num_ids)
-{
-    if (0==op) return;
-    if (0==num_ids) return;
-
-#ifdef DEBUG_ENTRY_REGISTRY
-    printf("Requesting %u entry slots for operation %s\n",
-        num_ids, op->getName());
-#endif
-
-    if (1==num_ids) {
-        //
-        // Most common case, and easiest to find a hole.
-        //
-        for (unsigned i=0; i<entryInfoSize; i++) {
-            if (0==entryInfo[i]) {
-                op->setFirstETid(i);
-                return;
-            }
-        } // for i
-    } // if 1==num_ids
-
-    //
-    // No holes, or we want more than one slot so we didn't bother
-    // looking for holes.  Grab slots off the end
-    //
-    op->setFirstETid(entryInfoSize);
-    entryInfoSize += num_ids;
-
-    if (entryInfoSize > entryInfoAlloc) {
-        //
-        // Need to enlarge
-        //
-        ct_entry_type** net = new ct_entry_type* [entryInfoAlloc+256];
-        unsigned i;
-        for (i=0; i<entryInfoAlloc; i++) {
-            net[i] = entryInfo[i];
-        }
-        entryInfoAlloc += 256;
-        for (; i<entryInfoAlloc; i++) {
-            net[i] = 0;
-        }
-        delete[] entryInfo;
-        entryInfo = net;
-    }
-}
-
-void MEDDLY::compute_table::registerEntryType(unsigned etid, ct_entry_type* et)
-{
-    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, etid, entryInfoSize);
-    MEDDLY_DCASSERT(0==entryInfo[etid]);
-    entryInfo[etid] = et;
-    et->etID = etid;
-#ifdef DEBUG_ENTRY_REGISTRY
-    printf("Registering entry %s in slot %u\n", et->getName(), etid);
-    printf("Updated Table:\n");
-    for (unsigned i=0; i<entryInfoSize; i++) {
-        printf("    %2u: %s\n", i,
-                entryInfo[i] ? entryInfo[i]->getName() : " ");
-    }
-#endif
-}
-
 void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
 {
     if (0==op) return;
     if (0==num_ids) return;
-    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, op->getFirstETid(),
-        entryInfoSize);
     unsigned stopID = op->getFirstETid()+num_ids;
     for (unsigned i=op->getFirstETid(); i<stopID; i++) {
-        delete entryInfo[i];
+        delete entryInfo.at(i);
         entryInfo[i] = nullptr;
     }
     //
-    // decrement entryInfoSize if array ends in zeroes
+    // absorb trailing nulls (except slot 0) in entryInfo
     //
-    while (entryInfoSize && (0==entryInfo[entryInfoSize-1])) entryInfoSize--;
-#ifdef DEBUG_ENTRY_REGISTRY
-    printf("Unregistering %u slots for operation %s\n", num_ids, op->getName());
-    printf("Updated Table:\n");
-    for (unsigned i=0; i<entryInfoSize; i++) {
-        printf("    %2u: %s\n", i,
-                entryInfo[i] ? entryInfo[i]->getName() : " ");
+    while (entryInfo.size() > 1) {
+        if (entryInfo.back()) break;
+        entryInfo.pop_back();
     }
-#endif
 }
 
 

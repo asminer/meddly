@@ -27,7 +27,6 @@
 
 namespace MEDDLY {
     class operation;
-    class ct_entry_type;
     class ct_entry_key;
     class ct_entry_result;
 
@@ -197,15 +196,21 @@ class MEDDLY::compute_table {
             MEDDLY_DCASSERT(op);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, slot, op->getNumETids());
             unsigned etid = op->getFirstETid() + slot;
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, etid, entryInfoSize);
+#ifdef DEVELOPMENT_CODE
+            return entryInfo.at(etid);
+#else
             return entryInfo[etid];
+#endif
         }
 
         /// Find entry type for given entryID
         inline static const ct_entry_type* getEntryType(unsigned etid)
         {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, etid, entryInfoSize);
+#ifdef DEVELOPMENT_CODE
+            return entryInfo.at(etid);
+#else
             return entryInfo[etid];
+#endif
         }
 
     protected:
@@ -220,10 +225,22 @@ class MEDDLY::compute_table {
         /** Register an operation.
             Sets aside a number of entry_type slots for the operation.
         */
-        static void registerOp(operation* op, unsigned num_ids);
+        inline static void registerOp(operation* op, unsigned num_ids)
+        {
+            if (0==op) return;
+            if (0==num_ids) return;
+
+            op->setFirstETid(entryInfo.size());
+            entryInfo.resize(entryInfo.size() + num_ids, nullptr);
+        }
 
         /// Register an entry_type.
-        static void registerEntryType(unsigned etid, ct_entry_type* et);
+        inline static void registerEntryType(unsigned etid, ct_entry_type* et)
+        {
+            MEDDLY_DCASSERT(!entryInfo.at(etid));
+            entryInfo[etid] = et;
+            et->etID = etid;
+        }
 
         /** Unregister an operation.
             Frees the entry_type slots for the operation.
@@ -231,9 +248,7 @@ class MEDDLY::compute_table {
         static void unregisterOp(operation* op, unsigned num_ids);
 
     private:
-        static ct_entry_type** entryInfo;
-        static unsigned entryInfoAlloc;
-        static unsigned entryInfoSize;
+        static std::vector <ct_entry_type*> entryInfo;
 
 
 // ********************************************************************
