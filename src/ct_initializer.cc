@@ -40,7 +40,7 @@ MEDDLY::ct_initializer::ct_initializer(initializer_list* prev)
     setBuiltinStyle(MonolithicUnchainedHash);
     setMaxSize(16777216);
     setStaleRemoval(staleRemovalOption::Moderate);
-    //  setCompression(None);
+    // setCompression(compressionOption::None);
     setCompression(compressionOption::TypeBased);
 
     //
