@@ -1128,6 +1128,7 @@ bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
     for (unsigned i=0; i<ET.getResultSize(); i++) {
         res[i].set(ET.getResultType(i).getType(), entry_result[i]);
     }
+    return true;
 }
 
 

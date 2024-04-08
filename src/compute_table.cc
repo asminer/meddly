@@ -31,8 +31,9 @@
 // *                                                                    *
 // **********************************************************************
 
-MEDDLY::compute_table_style::compute_table_style()
+MEDDLY::compute_table_style::compute_table_style(bool um)
 {
+    uses_mono = um;
 }
 
 MEDDLY::compute_table_style::~compute_table_style()

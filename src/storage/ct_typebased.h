@@ -54,6 +54,16 @@ namespace MEDDLY {
       virtual void find(ct_entry_key* key, ct_entry_result &res);
       virtual void addEntry(ct_entry_key* key, const ct_entry_result& res);
       virtual void updateEntry(ct_entry_key* key, const ct_entry_result& res);
+
+      virtual bool find(const ct_entry_type &ET, ct_vector &k, ct_vector &r)
+      {
+          throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+      }
+      virtual void addEntry(const ct_entry_type &ET, ct_vector &k, const ct_vector &r)
+      {
+          throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+      }
+
       virtual void removeStales();
       virtual void removeAll();
       virtual void show(output &s, int verbLevel = 0);

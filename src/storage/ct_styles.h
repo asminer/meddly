@@ -32,10 +32,10 @@
 // **********************************************************************
 
 namespace MEDDLY {
-  class monolithic_chained_style;
-  class monolithic_unchained_style;
-  class operation_chained_style;
-  class operation_unchained_style;
+    class monolithic_chained_style;
+    class monolithic_unchained_style;
+    class operation_chained_style;
+    class operation_unchained_style;
 };
 
 // **********************************************************************
@@ -45,10 +45,9 @@ namespace MEDDLY {
 // **********************************************************************
 
 class MEDDLY::monolithic_chained_style : public compute_table_style {
-  public:
-    monolithic_chained_style();
-    virtual compute_table* create(const ct_settings &s) const;
-    virtual bool usesMonolithic() const;
+    public:
+        monolithic_chained_style();
+        virtual compute_table* create(const ct_settings &s) const;
 };
 
 // **********************************************************************
@@ -58,10 +57,9 @@ class MEDDLY::monolithic_chained_style : public compute_table_style {
 // **********************************************************************
 
 class MEDDLY::monolithic_unchained_style : public compute_table_style {
-  public:
-    monolithic_unchained_style();
-    virtual compute_table* create(const ct_settings &s) const;
-    virtual bool usesMonolithic() const;
+    public:
+        monolithic_unchained_style();
+        virtual compute_table* create(const ct_settings &s) const;
 };
 
 // **********************************************************************
@@ -71,11 +69,10 @@ class MEDDLY::monolithic_unchained_style : public compute_table_style {
 // **********************************************************************
 
 class MEDDLY::operation_chained_style : public compute_table_style {
-  public:
-    operation_chained_style();
-    virtual compute_table* create(const ct_settings &s,
-      operation* op, unsigned slot) const;
-    virtual bool usesMonolithic() const;
+    public:
+        operation_chained_style();
+        virtual compute_table* create(const ct_settings &s,
+            operation* op, unsigned slot) const;
 };
 
 // **********************************************************************
@@ -85,11 +82,10 @@ class MEDDLY::operation_chained_style : public compute_table_style {
 // **********************************************************************
 
 class MEDDLY::operation_unchained_style : public compute_table_style {
-  public:
-    operation_unchained_style();
-    virtual compute_table* create(const ct_settings &s,
-      operation* op, unsigned slot) const;
-    virtual bool usesMonolithic() const;
+    public:
+        operation_unchained_style();
+        virtual compute_table* create(const ct_settings &s,
+            operation* op, unsigned slot) const;
 };
 
 

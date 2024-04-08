@@ -46,8 +46,9 @@ namespace MEDDLY {
 /** Interface for building compute tables.
 */
 class MEDDLY::compute_table_style {
+        bool uses_mono;
     public:
-        compute_table_style();
+        compute_table_style(bool um);
         virtual ~compute_table_style();
 
         /** Build a new, monolithic table.
@@ -56,9 +57,7 @@ class MEDDLY::compute_table_style {
 
             Default throws an error.
         */
-        virtual compute_table* create(const ct_settings &s)
-            const;
-
+        virtual compute_table* create(const ct_settings &s) const;
 
         /**
             Build a new table for a single operation.
@@ -71,7 +70,9 @@ class MEDDLY::compute_table_style {
         /**
             Does this style build monolithic CTs?
         */
-        virtual bool usesMonolithic() const = 0;
+        inline bool usesMonolithic() const {
+            return uses_mono;
+        }
 };
 
 // ******************************************************************

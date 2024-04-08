@@ -56,25 +56,21 @@
 // **********************************************************************
 
 MEDDLY::monolithic_chained_style::monolithic_chained_style()
+    : compute_table_style(true)
 {
 }
 
 MEDDLY::compute_table*
 MEDDLY::monolithic_chained_style::create(const ct_settings &s) const
 {
-  switch (s.compression) {
-    case compressionOption::None:
-                                    return new ct_none<true, true>(s, 0, 0);
-    case compressionOption::TypeBased:
-                                    return new ct_typebased<true, true>(s, 0, 0);
-    default:
-                                    return 0;
-  }
-}
-
-bool MEDDLY::monolithic_chained_style::usesMonolithic() const
-{
-  return true;
+    switch (s.compression) {
+        case compressionOption::None:
+                return new ct_none<true, true>(s, 0, 0);
+        case compressionOption::TypeBased:
+                return new ct_typebased<true, true>(s, 0, 0);
+        default:
+                return 0;
+    }
 }
 
 // **********************************************************************
@@ -85,25 +81,21 @@ bool MEDDLY::monolithic_chained_style::usesMonolithic() const
 
 
 MEDDLY::monolithic_unchained_style::monolithic_unchained_style()
+    : compute_table_style(true)
 {
 }
 
 MEDDLY::compute_table*
 MEDDLY::monolithic_unchained_style::create(const ct_settings &s) const
 {
-  switch (s.compression) {
-    case compressionOption::None:
-                                    return new ct_none<true, false>(s, 0, 0);
-    case compressionOption::TypeBased:
-                                    return new ct_typebased<true, false>(s, 0, 0);
-    default:
-                                    return 0;
-  }
-}
-
-bool MEDDLY::monolithic_unchained_style::usesMonolithic() const
-{
-  return true;
+    switch (s.compression) {
+        case compressionOption::None:
+                return new ct_none<true, false>(s, 0, 0);
+        case compressionOption::TypeBased:
+                return new ct_typebased<true, false>(s, 0, 0);
+        default:
+                return 0;
+    }
 }
 
 // **********************************************************************
@@ -113,27 +105,22 @@ bool MEDDLY::monolithic_unchained_style::usesMonolithic() const
 // **********************************************************************
 
 MEDDLY::operation_chained_style::operation_chained_style()
+    : compute_table_style(false)
 {
 }
 
 MEDDLY::compute_table*
 MEDDLY::operation_chained_style::create(const ct_settings &s, operation* op, unsigned slot) const
 {
-  switch (s.compression) {
-    case compressionOption::None:
-                                    return new ct_none<false, true>(s, 0, 0);
-    case compressionOption::TypeBased:
-                                    return new ct_typebased<false, true>(s, 0, 0);
-    default:
-                                    return 0;
-  }
+    switch (s.compression) {
+        case compressionOption::None:
+                return new ct_none<false, true>(s, op, slot);
+        case compressionOption::TypeBased:
+                return new ct_typebased<false, true>(s, op, slot);
+        default:
+                return 0;
+    }
 }
-
-bool MEDDLY::operation_chained_style::usesMonolithic() const
-{
-  return false;
-}
-
 
 // **********************************************************************
 // *                                                                    *
@@ -143,25 +130,20 @@ bool MEDDLY::operation_chained_style::usesMonolithic() const
 
 
 MEDDLY::operation_unchained_style::operation_unchained_style()
+    : compute_table_style(false)
 {
 }
 
 MEDDLY::compute_table*
 MEDDLY::operation_unchained_style::create(const ct_settings &s, operation* op, unsigned slot) const
 {
-  switch (s.compression) {
-    case compressionOption::None:
-                                    return new ct_none<false, false>(s, 0, 0);
-    case compressionOption::TypeBased:
-                                    return new ct_typebased<false, false>(s, 0, 0);
-    default:
-                                    return 0;
-  }
+    switch (s.compression) {
+        case compressionOption::None:
+                return new ct_none<false, false>(s, op, slot);
+        case compressionOption::TypeBased:
+                return new ct_typebased<false, false>(s, op, slot);
+        default:
+                return 0;
+    }
 }
-
-bool MEDDLY::operation_unchained_style::usesMonolithic() const
-{
-  return false;
-}
-
 
