@@ -23,8 +23,6 @@
 
 // new grid class here
 
-// #define USE_SLOW_GET_CHUNK_ADDRESS
-
 namespace MEDDLY {
   class malloc_manager;
 };
@@ -57,9 +55,6 @@ class MEDDLY::malloc_manager : public memory_manager {
 
     virtual node_address requestChunk(size_t &numSlots);
     virtual void recycleChunk(node_address h, size_t numSlots);
-#ifdef USE_SLOW_GET_CHUNK_ADDRESS
-    virtual void* slowChunkAddress(node_address h) const;
-#endif
     virtual bool isValidHandle(node_address h) const;
 
     virtual void reportStats(output &s, const char* pad, bool human, bool details) const;
@@ -83,14 +78,11 @@ class MEDDLY::malloc_manager : public memory_manager {
 // ******************************************************************
 
 MEDDLY::malloc_manager::malloc_manager(const char* n, memstats &stats,
-  unsigned char gran) : memory_manager(n, stats)
+  unsigned char gran) : memory_manager(1, n, stats)
 {
   granularity = gran;
   bytes_allocd_not_freed = 0;
-#ifndef USE_SLOW_GET_CHUNK_ADDRESS
   setChunkBase(0);
-  setChunkMultiplier(1);
-#endif
 }
 
 // ******************************************************************
@@ -128,17 +120,6 @@ void MEDDLY::malloc_manager::recycleChunk(node_address h, size_t numSlots)
   decMemUsed(bytes);
   decMemAlloc(bytes);
 }
-
-// ******************************************************************
-
-#ifdef USE_SLOW_GET_CHUNK_ADDRESS
-
-void* MEDDLY::malloc_manager::slowChunkAddress(node_address h) const
-{
-  return (void*) h;
-}
-
-#endif
 
 // ******************************************************************
 

@@ -29,8 +29,6 @@
 #endif
 #endif
 
-// #define USE_SLOW_GET_CHUNK_ADDRESS
-
 namespace MEDDLY {
 
   // soon:
@@ -71,14 +69,6 @@ namespace MEDDLY {
       virtual bool lastSlotMustClearMSB() const {
         return true;
       }
-
-#ifdef USE_SLOW_GET_CHUNK_ADDRESS
-      virtual void* slowChunkAddress(node_address h) const {
-        MEDDLY_DCASSERT(data);
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1lu, h, data_alloc);
-        return data + h;
-      }
-#endif
 
       virtual bool isValidHandle(node_address h) const {
         return (h >= 1) && (h<data_alloc);
@@ -199,7 +189,7 @@ namespace MEDDLY {
 
 template <class INT>
 MEDDLY::hole_manager<INT>::hole_manager(const char* n, memstats &stats)
-  : memory_manager(n, stats)
+  : memory_manager(sizeof(INT), n, stats)
 {
   data = 0;
   data_alloc = 0;
@@ -207,10 +197,7 @@ MEDDLY::hole_manager<INT>::hole_manager(const char* n, memstats &stats)
 
   MSB = 1;
   MSB <<= (8*sizeof(INT) - 1);
-#ifndef USE_SLOW_GET_CHUNK_ADDRESS
   setChunkBase(data);
-  setChunkMultiplier(sizeof(INT));
-#endif
 }
 
 // ******************************************************************
@@ -347,9 +334,7 @@ bool MEDDLY::hole_manager<INT>::resize(size_t new_alloc)
   data_alloc = new_alloc;
   data = new_data;
 
-#ifndef USE_SLOW_GET_CHUNK_ADDRESS
   setChunkBase(data);
-#endif
 
   return true;
 }

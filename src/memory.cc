@@ -26,7 +26,7 @@
 
 MEDDLY::memory_manager_style::memory_manager_style(const char* n)
 {
-  name = n;
+    name = n;
 }
 
 MEDDLY::memory_manager_style::~memory_manager_style()
@@ -39,21 +39,16 @@ MEDDLY::memory_manager_style::~memory_manager_style()
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::memory_manager::memory_manager(const char* n, memstats &stats)
- : my_mem(stats)
+MEDDLY::memory_manager::memory_manager(unsigned chmult, const char* n,
+    memstats &stats) : my_mem(stats), chunk_multiplier(chmult)
 {
-  style_name = n;
-  chunk_base = 0;
-  chunk_multiplier = 0;
+    style_name = n;
+    chunk_base = 0;
+    MEDDLY_DCASSERT(chunk_multiplier);
 }
 
 MEDDLY::memory_manager::~memory_manager()
 {
 }
 
-void* MEDDLY::memory_manager::slowChunkAddress(node_address h) const
-{
-  MEDDLY_DCASSERT(0);
-  return 0;
-}
 
