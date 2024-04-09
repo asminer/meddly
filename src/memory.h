@@ -346,11 +346,11 @@ inline const char* MEDDLY::memory_manager::getStyleName() const
 
 inline void* MEDDLY::memory_manager::getChunkAddress(node_address h) const
 {
-  MEDDLY_DCASSERT(isValidHandle(h));
+    MEDDLY_DCASSERT(isValidHandle(h));
 
-  return chunk_multiplier
-    ?  chunk_base + chunk_multiplier * h
-    :  slowChunkAddress(h);
+    return chunk_multiplier
+        ?  chunk_base + chunk_multiplier * h
+        :  slowChunkAddress(h);
 }
 
 inline void MEDDLY::memory_manager::incMemUsed(size_t b)

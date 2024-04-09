@@ -40,14 +40,74 @@
 
 // #define DEBUG_VALIDATE_COUNTS
 
-#define INTEGRATED_MEMMAN
+// #define INTEGRATED_MEMMAN
 
-#include "../hash_stream.h"
+#ifndef INTEGRATED_MEMMAN
+#include "../memory.h"
+#endif
 
-#include <climits>
 #include "ct_typebased.h"
 #include "ct_none.h"
 
+
+#include <climits>
+
+#include "../hash_stream.h"
+#include "../ct_initializer.h"
+
+/*
+#include "../node_storage.h"
+#include "../compute_table.h"
+#include "../ct_entry_key.h"
+#include "../ct_entry_result.h"
+#include "../ct_vector.h"
+*/
+
+// ***************************************************************************
+// ***************************************************************************
+// ***************************************************************************
+// ***                                                                     ***
+// ***                    New templatized compute table                    ***
+// ***                                                                     ***
+// ***************************************************************************
+// ***************************************************************************
+// ***************************************************************************
+
+namespace MEDDLY {
+    template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
+    class ct_tmpl : public compute_table {
+        public:
+            ct_tmpl(const ct_settings &s, operation* op, unsigned slot);
+            virtual ~ct_tmpl();
+
+        private:
+            /// Hash table
+            std::vector <unsigned long> table;
+
+            /// When to next expand the table
+            unsigned long tableExpand;
+
+            /// When to next shrink the table
+            unsigned long tableShrink;
+
+    };
+};
+
+// **********************************************************************
+// *                                                                    *
+// *                        ct_template  methods                        *
+// *                                                                    *
+// **********************************************************************
+
+// ***************************************************************************
+// ***************************************************************************
+// ***************************************************************************
+// ***                                                                     ***
+// ***                             Front  ends                             ***
+// ***                                                                     ***
+// ***************************************************************************
+// ***************************************************************************
+// ***************************************************************************
 
 // **********************************************************************
 // *                                                                    *

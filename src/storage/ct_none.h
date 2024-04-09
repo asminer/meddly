@@ -402,7 +402,7 @@ namespace MEDDLY {
 #ifdef INTEGRATED_MEMMAN
             const ct_entry_item* entry = entries+L;
 #else
-            const ct_entry_item* entry = (const int*) MMAN->getChunkAddress(L);
+            const ct_entry_item* entry = (const ct_entry_item*) MMAN->getChunkAddress(L);
 #endif
             L = entry[0].U;
             s << "->" << L;
@@ -1454,7 +1454,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::removeAll()
 #ifdef INTEGRATED_MEMMAN
       const ct_entry_item* entry = entries + curr;
 #else
-      const ct_entry_item* entry = (const int*) MMAN->getChunkAddress(curr);
+      const ct_entry_item* entry = (const ct_entry_item*) MMAN->getChunkAddress(curr);
 #endif
       if (CHAINED) {
         table[i] = entry[0].UL;
@@ -1555,7 +1555,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
 #ifdef INTEGRATED_MEMMAN
         curr = entries[curr].UL;
 #else
-        const int* entry = (const int*) MMAN->getChunkAddress(curr);
+        const ct_entry_item* entry = (const ct_entry_item*) MMAN->getChunkAddress(curr);
         curr = entry[0].UL;
 #endif
       } else {
@@ -1671,7 +1671,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
 #ifdef INTEGRATED_MEMMAN
         curr = entries[curr].UL;
 #else
-        const int* entry = (const int*) MMAN->getChunkAddress(curr);
+        const ct_entry_item* entry = (const ct_entry_item*) MMAN->getChunkAddress(curr);
         curr = entry[0].UL;
 #endif
       } else {
@@ -2112,7 +2112,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
 #ifdef INTEGRATED_MEMMAN
   ct_entry_item* entry = entries + h;
 #else
-  ct_entry_item* entry = (ct_entry_item*) MMAN->getChunkAddress(table[h]);
+  ct_entry_item* entry = (ct_entry_item*) MMAN->getChunkAddress(h);
 #endif
 
   unsigned slots;

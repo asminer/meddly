@@ -107,7 +107,7 @@ namespace MEDDLY {
 #ifdef INTEGRATED_MEMMAN
             int* entry = entries + curr;
 #else
-            int* entry = (entry_item*) MMAN->getChunkAddress(curr);
+            int* entry = (int*) MMAN->getChunkAddress(curr);
 #endif
             int next = entry[0];
 
@@ -1734,7 +1734,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
 #ifdef INTEGRATED_MEMMAN
   int* entry = entries + h;
 #else
-  int* entry = (int*) MMAN->getChunkAddress(table[h]);
+  int* entry = (int*) MMAN->getChunkAddress(h);
 #endif
 
   unsigned slots;
