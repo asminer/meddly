@@ -1024,7 +1024,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::updateEntry(ct_entry_key* key, c
         } else {
             MEDDLY_DCASSERT(!item.hasType(ct_typeID::NODE));
         }
-        ptr += item.intSlots();
+        ptr += item.intslots();
     } // for i
 
     //
@@ -1354,7 +1354,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
             ++counts[ *entry ];
           }
         }
-        entry += item.intSlots();
+        entry += item.intslots();
       } // for i
 
       //
@@ -1370,7 +1370,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
             ++counts[ *entry ];
           }
         }
-        entry += item.intSlots();
+        entry += item.intslots();
       } // for i
 
       //
@@ -1649,10 +1649,10 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
             entry++;
         } else {
 #ifdef DEBUG_ISSTALE
-            printf("\tskipping key item %u, %u slots\n", i, item.intSlots());
+            printf("\tskipping key item %u, %u slots\n", i, item.intslots());
 #endif
             MEDDLY_DCASSERT(! item.hasType(ct_typeID::NODE));
-            entry += item.intSlots();
+            entry += item.intslots();
         }
     } // for i
 
@@ -1673,10 +1673,10 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
             entry++;
         } else {
 #ifdef DEBUG_ISSTALE
-            printf("\tskipping result item %u, %u slots\n", i, item.intSlots());
+            printf("\tskipping result item %u, %u slots\n", i, item.intslots());
 #endif
             MEDDLY_DCASSERT(! item.hasType(ct_typeID::NODE));
-            entry += item.intSlots();
+            entry += item.intslots();
         }
     } // for i
 
@@ -1706,11 +1706,11 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
             }
         } else {
 #ifdef DEBUG_ISDEAD
-            printf("\tskipping result item %u, %u slots\n", i, item.intSlots());
+            printf("\tskipping result item %u, %u slots\n", i, item.intslots());
 #endif
             MEDDLY_DCASSERT(! item.hasType(ct_typeID::NODE));
         }
-        result += item.intSlots();
+        result += item.intslots();
     } // for i
     return false;
 }

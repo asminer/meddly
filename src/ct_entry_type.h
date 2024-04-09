@@ -160,7 +160,7 @@ class MEDDLY::ct_itemtype {
             return sizes[ getTypeInt() ];
         }
         /// Number of integer slots needed to store this item in a CT
-        inline unsigned intSlots() const {
+        inline unsigned intslots() const {
             static const unsigned sizes[] = {
                 0,                                  // ERROR   = 0,
                 sizeof(node_handle) / sizeof(int),  // NODE    = 1,
@@ -410,6 +410,25 @@ class MEDDLY::ct_entry_type {
         */
         inline bool isRepeating() const { return key_repeating.size(); }
 
+        /**
+            Can we have a key of the given size?
+        */
+        inline bool canHaveKeySize(unsigned sz) const {
+            if (sz < key_fixed.size()) return false;
+            const unsigned rsize = sz - key_fixed.size();
+            if (rsize) {
+                // there's some leftover key after the fixed portion
+                // make sure it can be divided into the repeating portion.
+                if (key_repeating.size()) {
+                    return 0 == (rsize % key_repeating.size());
+                } else {
+                    // no repeating portion
+                    return false;
+                }
+            }
+            // no leftover key after the fixed portion
+            return true;
+        }
 
         /**
             Get the number of items in the key.
@@ -504,17 +523,26 @@ class MEDDLY::ct_entry_type {
         /// Total bytes in the starting portion of the key.
         unsigned fixed_bytes;
 
+        /// Number of integer slots required for the fixed key
+        unsigned fixed_intslots;
+
         /// Repeating portion of the key.
         std::vector <ct_itemtype> key_repeating;
 
         /// Total bytes in the repeating portion of the key.
         unsigned repeating_bytes;
 
+        /// Number of integer slots required for the repeating key
+        unsigned repeating_intslots;
+
         /// Result pattern
         std::vector <ct_itemtype> result;
 
         /// Total bytes in the result.
         unsigned result_bytes;
+
+        /// Number of integer slots required for the result
+        unsigned result_intslots;
 
         /// Can the result be changed later
         bool updatable_result;

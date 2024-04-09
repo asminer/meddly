@@ -185,8 +185,13 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name)
     updatable_result = false;
 
     fixed_bytes = 0;
+    fixed_intslots = 0;
+
     repeating_bytes = 0;
+    repeating_intslots = 0;
+
     result_bytes = 0;
+    result_intslots = 0;
 }
 
 MEDDLY::ct_entry_type::~ct_entry_type()
@@ -293,24 +298,30 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
 void MEDDLY::ct_entry_type::countFixed()
 {
     fixed_bytes = 0;
+    fixed_intslots = 0;
     for (unsigned i=0; i<key_fixed.size(); i++) {
         fixed_bytes += key_fixed[i].bytes();
+        fixed_intslots += key_fixed[i].intslots();
     }
 }
 
 void MEDDLY::ct_entry_type::countRepeating()
 {
     repeating_bytes = 0;
+    repeating_intslots = 0;
     for (unsigned i=0; i<key_repeating.size(); i++) {
         repeating_bytes += key_repeating[i].bytes();
+        repeating_intslots += key_repeating[i].intslots();
     }
 }
 
 void MEDDLY::ct_entry_type::countResult()
 {
     result_bytes = 0;
+    result_intslots = 0;
     for (unsigned i=0; i<result.size(); i++) {
         result_bytes += result[i].bytes();
+        result_intslots += result[i].intslots();
     }
 }
 
