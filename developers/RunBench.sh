@@ -247,6 +247,17 @@ runWithTimeout()
     done
 }
 
+#
+# Check for a valid directory
+#
+checkDir() {
+    if [ ! -d $1 ]; then
+        echo "Can't find `basename $1`/ directory; run this script in"
+        echo "the root directory or within developers/."
+        exit 1
+    fi
+}
+
 
 #
 # Clean up temp files
@@ -276,10 +287,19 @@ trap bailout INT
 #
 
 MPATH=""
+BPATH=""
 HTMLFILE=""
 TEXTFILE=""
+counter=""
 
 while [ $# -gt 0 ]; do
+    if [ "x$1" == "x-b" ]; then
+        BPATH=$2
+        shift
+        shift
+        continue
+    fi
+
     if [ "x$1" == "x-d" ]; then
         MPATH=$2
         shift
@@ -287,25 +307,9 @@ while [ $# -gt 0 ]; do
         continue
     fi
 
-    if [ "x$1" == "x-h" ]; then
-        HTMLFILE=$2
-        shift
-        shift
-        continue
-    fi
-
-    if [ "x$1" == "x-t" ]; then
-        TEXTFILE=$2
-        shift
-        shift
-        continue
-    fi
-
     printf "\nUsage: $0 [options]\n\nOptions:\n";
+    printf "\t-b <path>   Save benchmark info to the given directory.\n"
     printf "\t-d <path>   Directory of version to test; otherwise . or ..\n"
-    printf "\t-h <file>   Append output, in html format, to file.\n"
-    printf "\t            The file will be created if necessary.\n"
-    printf "\t-t <file>   Write  output, in text format, to file.\n"
     printf "\n"
     exit 1
 done
@@ -325,24 +329,28 @@ else
     SRCDIR="../src"
 fi
 
-if [ ! -d $EXDIR ]; then
-    echo "Didn't find examples directory (tried \"$EXDIR\")."
-    echo "Run this script in the root directory or within developers,"
-    echo "or use the -d switch."
-    exit 1
+if [ "$BPATH" ]; then
+    if [ ! -d $BPATH ]; then
+        echo "Didn't find benchmark directory \"$BPATH\"."
+        exit 1
+    fi
+
+    HTMLFILE="$BPATH/bench.html"
+    counter=0
+    if [ -f "$BPATH/bench.count" ]; then
+        read counter < "$BPATH/bench.count"
+    fi
+    counter=`printf "%03d\n" $[ counter + 1 ]`
+    TEXTFILE="$BPATH/bench.$counter.txt"
 fi
-if [ ! -d $SRCDIR ]; then
-    echo "Didn't find source directory (tried \"$EXDIR\")."
-    echo "Run this script in the root directory or within developers,"
-    echo "or use the -d switch."
-    exit 1
-fi
+
+checkDir $EXDIR
+checkDir $SRCDIR
 
 if [ ! -f $EXDIR/kanban ]; then
-  echo "Didn't find executable $EXDIR/kanban"
-  exit 1
+    echo "Didn't find executable $EXDIR/kanban"
+    exit 1
 fi
-
 
 if [ "$TEXTFILE" ]; then
     echo Writing text summary to file: $TEXTFILE
@@ -360,7 +368,7 @@ for i in ${!statName[@]}; do
     statResult[$i]=`echo "$cmd" | bash 2> /dev/null`
 done
 if [ ! "$MPATH" ]; then
-  branch=$(git status | head -n 1 | awk '{print $3}')
+    branch=$(git status | head -n 1 | awk '{print $3}')
 fi
 
 #
@@ -386,6 +394,8 @@ cleanup
 #
 
 showResults | tee $TEXTFILE
-
 appendHTML $HTMLFILE
+if [ "$counter" ]; then
+    echo "$counter" > $BPATH/bench.count
+fi
 

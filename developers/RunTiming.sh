@@ -41,17 +41,66 @@ ctrl_c() {
 trap ctrl_c INT
 
 #
+# Process command-line switches
+#
+
+BPATH=""
+MPATH=""
+while [ $# -gt 0 ]; do
+    if [ "x$1" == "x-b" ]; then
+        BPATH=$2
+        shift
+        shift
+        continue
+    fi
+
+    if [ "x$1" == "x-d" ]; then
+        MPATH=$2
+        shift
+        shift
+        continue
+    fi
+
+    printf "\nUsage: $0 [options]\n\nOptions:\n";
+    printf "\t-b <path>   Save benchmark info to the given directory.\n"
+    printf "\t-d <path>   Directory of version to test; otherwise . or ..\n"
+    printf "\n"
+    exit 1
+done
+
+#
 # Figure out where things are
 #
 
-EXDIR=examples
-TDIR=timing
-
-if [ ! -d $TDIR ]; then
+if [ "$MPATH" ]; then
+    EXDIR="$MPATH/examples"
+    TDIR="$MPATH/timing"
+elif [ -d "examples" ]; then
+    EXDIR=examples
+    TDIR=timing
+else
     EXDIR=../examples
     TDIR=../timing
-    SRCDIR=../src
 fi
+
+if [ "$BPATH" ]; then
+    if [ ! -d $BPATH ]; then
+        echo "Didn't find benchmark directory \"$BPATH\"."
+        exit 1
+    fi
+
+    HTMLFILE="$BPATH/timing.html"
+    counter=0
+    if [ -f "$BPATH/timing.count" ]; then
+        read counter < "$BPATH/timing.count"
+    fi
+    counter=`printf "%03d\n" $[ counter + 1 ]`
+    TEXTFILE="$BPATH/timing.$counter.txt"
+else
+    HTMLFILE=""
+    TEXTFILE=""
+fi
+
 checkDir $EXDIR
 checkDir $TDIR
 
@@ -60,42 +109,10 @@ checkDir $TDIR
 #
 declare -r VERSION=$($EXDIR/libinfo | awk '{print $3}')
 declare -r REVDATE=$($EXDIR/libinfo 5)
-declare -r BRANCH=$(git status | head -n 1 | awk '{print $3}')
+if [ ! "$MPATH" ]; then
+    declare -r BRANCH=$(git status | head -n 1 | awk '{print $3}')
+fi
 
-
-#
-# Process command-line switches
-#
-
-HTMLFILE=""
-TEXTFILE=""
-while [ $# -gt 0 ]; do
-  case "$1"
-  in
-      -h)
-          HTMLFILE=$2
-          echo Appending html to file: $2
-          shift
-          shift
-      ;;
-
-      -t)
-          TEXTFILE=$2
-          echo Writing text summary to file: $2
-          shift
-          shift
-      ;;
-
-      *)
-          printf "\nUsage: $0 [options]\n\nOptions:\n";
-          printf "\t-h <file>   Append output, in html table format, to file.\n"
-          printf "\t            Will create the file if needed.\n"
-          printf "\t-t <file>   Write  output, in text format, to file.\n"
-          printf "\n"
-          exit 1
-      ;;
-  esac
-done
 
 #
 # Make sure executables can be found
@@ -223,7 +240,9 @@ EOF
     echo "    <td>$REVDATE</td>" >> $1
     echo "    <td>$VERSION $BRANCH</td>" >> $1
     for r in $RUNLIST; do
-        awk '{print "    <td>" $1 "</td>"}' report.$PID.$r.txt >> $1
+        while read time other; do
+            printf "    <td> %3.3f </td>\n" "$time" >> $1
+        done < report.$PID.$r.txt
     done
     echo "</tr>" >> $1
 
@@ -237,6 +256,9 @@ EOF
 textInfo | tee $TEXTFILE
 
 appendHTML $HTMLFILE
+if [ "$counter" ]; then
+    echo "$counter" > $BPATH/timing.count
+fi
 
 cleanup
 
