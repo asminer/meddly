@@ -36,9 +36,9 @@ MEDDLY::ct_item::ct_item()
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::ct_vector::ct_vector(unsigned sz) : size(sz)
+MEDDLY::ct_vector::ct_vector(unsigned sz) : _size(sz)
 {
-    data = useArray(size);
+    data = useArray(_size);
 #ifdef DEVELOPMENT_CODE
     hasHashVal = false;
 #endif
@@ -46,7 +46,7 @@ MEDDLY::ct_vector::ct_vector(unsigned sz) : size(sz)
 
 MEDDLY::ct_vector::~ct_vector()
 {
-    recycleArray(data, size);
+    recycleArray(data, _size);
 }
 
 // ******************************************************************

@@ -315,17 +315,17 @@ namespace MEDDLY {
             // compare size, ff needed
             //
             if (ET.isRepeating()) {
-                if (key.getSize() != (*a).U) return nullptr;
+                if (key.size() != (*a).U) return nullptr;
                 a++;
             }
             //
             // Compare key portion only
             //
-            for (unsigned i=0; i<key.getSize(); i++) {
+            for (unsigned i=0; i<key.size(); i++) {
                 MEDDLY_DCASSERT( ET.getKeyType(i).hasType(key[i].getType()) );
                 if (! key[i].equals(a[i])) return nullptr;
             } // for i
-            return a + key.getSize();
+            return a + key.size();
       }
 
       /**
@@ -1063,7 +1063,7 @@ bool MEDDLY::ct_none<MONOLITHIC, CHAINED>
     //
     // Fill res
     //
-    MEDDLY_DCASSERT(res.getSize() == ET.getResultSize());
+    MEDDLY_DCASSERT(res.size() == ET.getResultSize());
     for (unsigned i=0; i<ET.getResultSize(); i++) {
         res[i].set(ET.getResultType(i).getType(), entry_result[i]);
     }
@@ -1085,13 +1085,13 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::addEntry(const ct_entry_type &ET,
     //
     // Increment cache counters for nodes in the entry
     //
-    for (unsigned i=0; i<key.getSize(); i++) {
+    for (unsigned i=0; i<key.size(); i++) {
         const ct_itemtype &item = ET.getKeyType(i);
         if (item.hasForest()) {
             item.getForest()->cacheNode(key[i].getN());
         }
     }
-    for (unsigned i=0; i<res.getSize(); i++) {
+    for (unsigned i=0; i<res.size(); i++) {
         const ct_itemtype &item = ET.getResultType(i);
         if (item.hasForest()) {
             item.getForest()->cacheNode(res[i].getN());
@@ -1105,8 +1105,8 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::addEntry(const ct_entry_type &ET,
     //
 
     const unsigned num_slots =
-        key.getSize() +
-        + res.getSize()
+        key.size() +
+        + res.size()
         + (CHAINED ? 1 : 0)
         + (MONOLITHIC ? 1 : 0)
         + (ET.isRepeating() ? 1 : 0)
@@ -1123,20 +1123,20 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::addEntry(const ct_entry_type &ET,
         key_portion++;
     }
     if (ET.isRepeating()) {
-        (*key_portion).U = key.getSize();
+        (*key_portion).U = key.size();
         key_portion++;
     }
-    ct_entry_item* res_portion = key_portion + key.getSize();
+    ct_entry_item* res_portion = key_portion + key.size();
     //
     // copy key
     //
-    for (unsigned i=0; i<key.getSize(); i++) {
+    for (unsigned i=0; i<key.size(); i++) {
         key[i].get( key_portion[i] );
     }
     //
     // copy result
     //
-    for (unsigned i=0; i<res.getSize(); i++) {
+    for (unsigned i=0; i<res.size(); i++) {
         res[i].get( res_portion[i] );
     }
 
@@ -1784,13 +1784,13 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
     // key size, if needed
     //
     if (ET.isRepeating()) {
-        H.push(key.getSize());
+        H.push(key.size());
     }
 
     //
     // Hash key
     //
-    for (unsigned i=0; i<key.getSize(); i++) {
+    for (unsigned i=0; i<key.size(); i++) {
         MEDDLY_DCASSERT(ET.getKeyType(i).hasType(key[i].getType()));
         key[i].hash(H);
     }

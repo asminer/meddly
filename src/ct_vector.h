@@ -39,35 +39,55 @@ class MEDDLY::ct_item {
 
     public: // Setters
 
+        // For recycling and such
+        inline void setNext(ct_item* n) {
+            next = n;
+            type = ct_typeID::ERROR;
+            slots = sizeof(next) / sizeof(unsigned);
+            MEDDLY_DCASSERT(slots<3);
+        }
+
         /// Set item to a node
         inline void setN(node_handle nh) {
-            type = ct_typeID::NODE;
             the_node = nh;
+            type = ct_typeID::NODE;
+            slots = sizeof(the_node) / sizeof(unsigned);
+            MEDDLY_DCASSERT(slots<3);
         }
         /// Set item from an integer
         inline void setI(int i) {
-            type = ct_typeID::INTEGER;
             the_int = i;
+            type = ct_typeID::INTEGER;
+            slots = sizeof(the_int) / sizeof(unsigned);
+            MEDDLY_DCASSERT(slots<3);
         }
         /// Set item from a long
         inline void setL(long L) {
-            type = ct_typeID::LONG;
             the_long = L;
+            type = ct_typeID::LONG;
+            slots = sizeof(the_long) / sizeof(unsigned);
+            MEDDLY_DCASSERT(slots<3);
         }
         /// Set item from a float
         inline void setF(float f) {
-            type = ct_typeID::FLOAT;
             the_float = f;
+            type = ct_typeID::FLOAT;
+            slots = sizeof(the_float) / sizeof(unsigned);
+            MEDDLY_DCASSERT(slots<3);
         }
         /// Set item from a double
         inline void setD(double d) {
-            type = ct_typeID::DOUBLE;
             the_double = d;
+            type = ct_typeID::DOUBLE;
+            slots = sizeof(the_double) / sizeof(unsigned);
+            MEDDLY_DCASSERT(slots<3);
         }
         /// Set item from a generic
         inline void setG(ct_object* g) {
-            type = ct_typeID::GENERIC;
             the_generic = g;
+            type = ct_typeID::GENERIC;
+            slots = sizeof(the_generic) / sizeof(unsigned);
+            MEDDLY_DCASSERT(slots<3);
         }
 
         /// Set item from an edge value
@@ -77,35 +97,27 @@ class MEDDLY::ct_item {
                 case edge_type::LONG:   setL(ev.getLong());     return;
                 case edge_type::FLOAT:  setF(ev.getFloat());    return;
                 case edge_type::DOUBLE: setD(ev.getDouble());   return;
-                default:    // includes VOID
-                    type = ct_typeID::ERROR;
+                default:                setNext(nullptr);
             }
         }
 
         /// Set item from a raw ct_entry_item
         inline void set(ct_typeID t, ct_entry_item ci)
         {
-            type = t;
-            switch (type) {
-                case ct_typeID::ERROR:      next = nullptr;         return;
-                case ct_typeID::NODE:       the_node = ci.N;        return;
-                case ct_typeID::INTEGER:    the_int = ci.I;         return;
-                case ct_typeID::LONG:       the_long = ci.L;        return;
-                case ct_typeID::FLOAT:      the_float = ci.F;       return;
-                case ct_typeID::DOUBLE:     the_double = ci.D;      return;
-                case ct_typeID::GENERIC:    the_generic = ci.G;     return;
+            switch (t) {
+                case ct_typeID::ERROR:      setNext(nullptr);   return;
+                case ct_typeID::NODE:       setN(ci.N);         return;
+                case ct_typeID::INTEGER:    setI(ci.I);         return;
+                case ct_typeID::LONG:       setL(ci.L);         return;
+                case ct_typeID::FLOAT:      setF(ci.F);         return;
+                case ct_typeID::DOUBLE:     setD(ci.D);         return;
+                case ct_typeID::GENERIC:    setG(ci.G);         return;
             }
         }
 
         // For templates
         inline void set_ev(long i)  { setL(i); }
         inline void set_ev(float f) { setF(f); }
-
-        // For recycling and such
-        inline void setNext(ct_item* n) {
-            type = ct_typeID::ERROR;
-            next = n;
-        }
 
     public: // Getters
         /// Get a node
@@ -169,6 +181,19 @@ class MEDDLY::ct_item {
                 default:
                     MEDDLY_DCASSERT(false);
             }
+        }
+
+        // Get into an array of unsigned.
+        // @return  the number of slots written.
+        inline unsigned getRaw(unsigned *e) const {
+            if (1==slots) {
+                e[0] = raw[0];
+                return 1;
+            }
+            MEDDLY_DCASSERT(2==slots);
+            e[0] = raw[0];
+            e[1] = raw[1];
+            return 2;
         }
 
         // For recycling and such
@@ -244,6 +269,7 @@ class MEDDLY::ct_item {
             unsigned        raw[2]; // for hashing
         };
         ct_typeID   type;
+        unsigned    slots;
 };
 
 
@@ -261,18 +287,18 @@ class MEDDLY::ct_vector {
         ~ct_vector();
 
         inline const ct_item& operator[](unsigned u) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, u, size);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, u, size());
             MEDDLY_DCASSERT(data);
             return data[u];
         }
         inline ct_item& operator[](unsigned u) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, u, size);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, u, size());
             MEDDLY_DCASSERT(data);
             return data[u];
         }
 
-        inline unsigned getSize() const {
-            return size;
+        inline unsigned size() const {
+            return _size;
         }
 
         inline void setHash(unsigned h) {
@@ -287,7 +313,7 @@ class MEDDLY::ct_vector {
         }
 
     private:
-        const unsigned size;
+        const unsigned _size;
         unsigned hashVal;
         ct_item* data;
 #ifdef DEVELOPMENT_CODE

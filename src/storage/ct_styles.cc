@@ -76,6 +76,61 @@ namespace MEDDLY {
             ct_tmpl(const ct_settings &s, operation* op, unsigned slot);
             virtual ~ct_tmpl();
 
+            // Required functions
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+            virtual void find(ct_entry_key* key, ct_entry_result &res);
+            virtual void addEntry(ct_entry_key* key,
+                const ct_entry_result& res);
+            virtual void updateEntry(ct_entry_key* key,
+                const ct_entry_result& res);
+#endif
+
+            virtual bool find(const ct_entry_type &ET, ct_vector &key,
+                    ct_vector &res);
+            virtual void addEntry(const ct_entry_type &ET, ct_vector &key,
+                    const ct_vector &res);
+
+            virtual void removeStales();
+            virtual void removeAll();
+            virtual void show(output &s, int verbLevel = 0);
+            virtual void countNodeEntries(const forest* f, size_t* counts)
+                const;
+
+        protected:
+            // Helper functions
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+            inline static void key2entry(const ct_entry_key& key,
+                    ct_entry_item* e)
+            {
+                MEDDLY_DCASSERT(!INTSLOTS);
+                const ct_entry_type* et = key.getET();
+                MEDDLY_DCASSERT(et);
+                const unsigned key_slots = et->getKeySize(key.numRepeats());
+                memcpy(e, key.rawData(), key_slots * sizeof(ct_entry_item));
+            }
+            static void key2entry(const ct_entry_key& key, unsigned* e);
+#endif
+            inline static void vector2entry(const ct_vector &v,
+                    ct_entry_item* e)
+            {
+                MEDDLY_DCASSERT(!INTSLOTS);
+                for (unsigned i=0; i<v.size(); i++)
+                {
+                    v[i].get(*e);
+                    e++;
+                }
+            }
+            inline static void vector2entry(const ct_vector &v, unsigned* e)
+            {
+                MEDDLY_DCASSERT(INTSLOTS);
+                for (unsigned i=0; i<v.size(); i++)
+                {
+                    e += v[i].getRaw(e);
+                }
+            }
+
         private:
             /// Hash table
             std::vector <unsigned long> table;
@@ -86,14 +141,120 @@ namespace MEDDLY {
             /// When to next shrink the table
             unsigned long tableShrink;
 
-    };
+            /// Manager for the entries
+            memory_manager* MMAN;
+
+            /// Our memory stats
+            memstats mstats;
+
+            /// Stats: count collisions
+            unsigned long collisions;
+    }; // class ct_tmpl
+
 };
+
+#define maxCollisionSearch 2
 
 // **********************************************************************
 // *                                                                    *
-// *                        ct_template  methods                        *
+// *                          ct_tmpl  methods                          *
 // *                                                                    *
 // **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
+MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>::ct_tmpl(
+    const ct_settings &s, operation* op, unsigned slot)
+    : compute_table(s, op, slot)
+{
+    if (MONOLITHIC) {
+        MEDDLY_DCASSERT(0==op);
+        MEDDLY_DCASSERT(0==slot);
+    } else {
+        MEDDLY_DCASSERT(op);
+    }
+
+    /*
+        Initialize memory management for entries.
+    */
+    MEDDLY_DCASSERT(s.MMS);
+    if (INTSLOTS) {
+        MMAN = s.MMS->initManager(sizeof(unsigned), 2, mstats);
+    } else {
+        MMAN = s.MMS->initManager(sizeof(ct_entry_item), 2, mstats);
+    }
+
+    /*
+        Initialize hash table
+    */
+    tableExpand = CHAINED ? 4*1024 : 512;
+    tableShrink = 0;
+    table.resize(1024, 0);
+
+    mstats.incMemUsed(table.size() * sizeof(unsigned long));
+    mstats.incMemAlloc(table.size() * sizeof(unsigned long));
+
+    collisions = 0;
+}
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
+MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>::~ct_tmpl()
+{
+    /*
+        Clean up memory manager for entries
+    */
+    delete MMAN;
+
+    /*
+        Update stats: important for global usage
+    */
+    mstats.zeroMemUsed();
+    mstats.zeroMemAlloc();
+
+    //
+    // table will be destroyed automatically
+}
+
+// **********************************************************************
+
+template <bool M, bool C, bool I>
+void MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key, unsigned* e)
+{
+    MEDDLY_DCASSERT(I);
+    const ct_entry_type* et = key.getET();
+    MEDDLY_DCASSERT(et);
+
+    //
+    // Copy the key into temp_entry
+    //
+    const ct_entry_item* data = key.rawData();
+    const unsigned datalen = key.dataLength();
+    for (unsigned i=0; i<datalen; i++) {
+        switch (et->getKeyType(i).getType())
+        {
+            case ct_typeID::NODE:
+            case ct_typeID::INTEGER:
+            case ct_typeID::FLOAT:
+                    MEDDLY_DCASSERT(sizeof(data[i].N]) == sizeof(data[i].U));
+                    MEDDLY_DCASSERT(sizeof(data[i].I]) == sizeof(data[i].U));
+                    MEDDLY_DCASSERT(sizeof(data[i].F]) == sizeof(data[i].U));
+                    *e = data[i].U;
+                    e++;
+                    continue;
+
+            case ct_typeID::LONG:
+                    *e = (data[i].UL >> 32);
+                    e++;
+                    *e = (data[i].UL & 0xffffffff);
+                    e++;
+                    continue;
+
+            default:
+                  MEDDLY_DCASSERT(0);
+        } // switch t
+    } // for i
+}
 
 // ***************************************************************************
 // ***************************************************************************
