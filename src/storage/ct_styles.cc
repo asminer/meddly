@@ -40,11 +40,7 @@
 
 // #define DEBUG_VALIDATE_COUNTS
 
-// #define INTEGRATED_MEMMAN
-
-#ifndef INTEGRATED_MEMMAN
 #include "../memory.h"
-#endif
 
 #include "ct_typebased.h"
 #include "ct_none.h"

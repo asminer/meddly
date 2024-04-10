@@ -89,11 +89,7 @@ namespace MEDDLY {
 
           if (0==table[i]) return;
 
-#ifdef INTEGRATED_MEMMAN
-          const ct_entry_item* entry = entries + table[i];
-#else
           const ct_entry_item* entry = (const ct_entry_item*) MMAN->getChunkAddress(table[i]);
-#endif
           if (!isStale(entry)) return;
 
 #ifdef DEBUG_CT_SCAN
@@ -117,11 +113,7 @@ namespace MEDDLY {
           ct_entry_item* preventry = 0;
 
           while (curr) {
-#ifdef INTEGRATED_MEMMAN
-            ct_entry_item* entry = entries + curr;
-#else
             ct_entry_item* entry = (ct_entry_item*) MMAN->getChunkAddress(curr);
-#endif
             unsigned long next = entry[0].UL;
 
             if (isStale(entry)) {
@@ -399,11 +391,8 @@ namespace MEDDLY {
         s << L;
         if (CHAINED) {
           while (L) {
-#ifdef INTEGRATED_MEMMAN
-            const ct_entry_item* entry = entries+L;
-#else
-            const ct_entry_item* entry = (const ct_entry_item*) MMAN->getChunkAddress(L);
-#endif
+            const ct_entry_item* entry =
+                (const ct_entry_item*) MMAN->getChunkAddress(L);
             L = entry[0].U;
             s << "->" << L;
           } // while L
@@ -443,23 +432,8 @@ namespace MEDDLY {
       /// When to next shrink the table
       unsigned long tableShrink;
 
-#ifdef INTEGRATED_MEMMAN
-      /// Memory space for entries
-      ct_entry_item*  entries;
-      /// Used entries
-      unsigned long entriesSize;
-      /// Memory allocated for entries
-      unsigned long entriesAlloc;
-
-      static const unsigned maxEntrySize = 15;
-      static const unsigned maxEntryBytes = sizeof(ct_entry_item) * maxEntrySize;
-
-      /// freeList[i] is list of all unused i-sized entries.
-      unsigned long* freeList;
-#else
-
+      /// Manager for CT entries
       memory_manager* MMAN;
-#endif
 
       /// Memory statistics
       memstats mstats;
@@ -495,26 +469,8 @@ MEDDLY::ct_none<MONOLITHIC, CHAINED>::ct_none(
   /*
       Initialize memory management for entries.
   */
-#ifdef INTEGRATED_MEMMAN
-  freeList = new unsigned long[1+maxEntrySize];
-  for (unsigned i=0; i<=maxEntrySize; i++) {
-    freeList[i] = 0;
-  }
-  mstats.incMemUsed( (1+maxEntrySize) * sizeof(unsigned long) );
-  mstats.incMemAlloc( (1+maxEntrySize) * sizeof(unsigned long) );
-
-  entriesAlloc = 1024;
-  entriesSize = 1;
-  entries = (ct_entry_item*) malloc(entriesAlloc * sizeof(ct_entry_item) );
-  if (0==entries) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  entries[0].L = 0;     // NEVER USED; set here for sanity.
-
-  mstats.incMemUsed( entriesSize * sizeof(ct_entry_item) );
-  mstats.incMemAlloc( entriesAlloc * sizeof(ct_entry_item) );
-#else
   MEDDLY_DCASSERT(s.MMS);
   MMAN = s.MMS->initManager(sizeof(ct_entry_item), 2, mstats);
-#endif
 
   /*
       Initialize hash table
@@ -545,12 +501,7 @@ MEDDLY::ct_none<MONOLITHIC, CHAINED>::~ct_none()
   /*
     Clean up memory manager for entries
   */
-#ifdef INTEGRATED_MEMMAN
-  free(entries);
-  delete[] freeList;
-#else
   delete MMAN;
-#endif
 
   /*
     Update stats: important for global usage
@@ -613,11 +564,7 @@ inline MEDDLY::ct_entry_item* MEDDLY::ct_none<MONOLITHIC, CHAINED>
       if (CHAINED) chain++;
     }
 
-#ifdef INTEGRATED_MEMMAN
-    ct_entry_item* entry = entries + curr;
-#else
     ct_entry_item* entry = (ct_entry_item*) MMAN->getChunkAddress(curr);
-#endif
 
     bool discard;
     answer = checkEqualityAndStatus(entry, key, discard);
@@ -756,11 +703,7 @@ inline MEDDLY::ct_entry_item* MEDDLY::ct_none<MONOLITHIC, CHAINED>
             if (CHAINED) chain++;
         }
 
-#ifdef INTEGRATED_MEMMAN
-        ct_entry_item* entry = entries + curr;
-#else
         ct_entry_item* entry = (ct_entry_item*) MMAN->getChunkAddress(curr);
-#endif
 
         bool discard;
         answer = checkEqualityAndStatus(entry, ET, key, discard);
@@ -910,11 +853,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::addEntry(ct_entry_key* key, const ct_
   ;
   unsigned long curr = newEntry(num_slots);
 
-#ifdef INTEGRATED_MEMMAN
-  ct_entry_item* entry = entries + curr;
-#else
   ct_entry_item* entry = (ct_entry_item*) MMAN->getChunkAddress(curr);
-#endif
 
   //
   // Copy into the entry
@@ -1173,11 +1112,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::addEntry(const ct_entry_type &ET,
         + (ET.isRepeating() ? 1 : 0)
     ;
     unsigned long curr = newEntry(num_slots);
-#ifdef INTEGRATED_MEMMAN
-    ct_entry_item* entry = entries + curr;
-#else
     ct_entry_item* entry = (ct_entry_item*) MMAN->getChunkAddress(curr);
-#endif
 
     //
     // Copy into the entry
@@ -1451,11 +1386,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::removeAll()
   for (unsigned long i=0; i<tableSize; i++) {
     while (table[i]) {
       unsigned long curr = table[i];
-#ifdef INTEGRATED_MEMMAN
-      const ct_entry_item* entry = entries + curr;
-#else
       const ct_entry_item* entry = (const ct_entry_item*) MMAN->getChunkAddress(curr);
-#endif
       if (CHAINED) {
         table[i] = entry[0].UL;
       } else {
@@ -1552,12 +1483,9 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
       showEntry(s, curr);
       s.put('\n');
       if (CHAINED) {
-#ifdef INTEGRATED_MEMMAN
-        curr = entries[curr].UL;
-#else
-        const ct_entry_item* entry = (const ct_entry_item*) MMAN->getChunkAddress(curr);
+        const ct_entry_item* entry =
+            (const ct_entry_item*) MMAN->getChunkAddress(curr);
         curr = entry[0].UL;
-#endif
       } else {
         curr = 0;
       }
@@ -1567,37 +1495,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
 
   if (--verbLevel < 1) return;
 
-#ifdef INTEGRATED_MEMMAN
-  if (0==freeList) {
-    s << "Free: null\n";
-  } else {
-    for (int i=1; i<=maxEntrySize; i++) {
-      if (freeList[i]) {
-        s << "freeList[" << i << "]: ";
-
-        int L = freeList[i];
-        s << L;
-        while (L) {
-          L = entries[L].UL;
-          s << "->" << L;
-        }
-        s << "\n";
-      }
-    }
-  }
-
-  if (0==entries) {
-    s << "Entries: null\n";
-  } else {
-    s << "Entries: [" << long(entries[0].L);
-    for (int i=1; i<entriesSize; i++) {
-      s << ", " << long(entries[i].L);
-    }
-    s << "]\n";
-  }
-#else
   if (MMAN) MMAN->dumpInternal(s);
-#endif
 
 }
 
@@ -1623,11 +1521,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
       // (unchained: done properly)
       //
 
-#ifdef INTEGRATED_MEMMAN
-      ct_entry_item* entry = entries + curr;
-#else
       ct_entry_item* entry = (ct_entry_item*) MMAN->getChunkAddress(curr);
-#endif
       const ct_entry_type* et = MONOLITHIC
         ?   getEntryType(entry[CHAINED ? 1 : 0].U)
         :   global_et;
@@ -1668,12 +1562,9 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
       // Next in the chain
       //
       if (CHAINED) {
-#ifdef INTEGRATED_MEMMAN
-        curr = entries[curr].UL;
-#else
-        const ct_entry_item* entry = (const ct_entry_item*) MMAN->getChunkAddress(curr);
+        const ct_entry_item* entry =
+            (const ct_entry_item*) MMAN->getChunkAddress(curr);
         curr = entry[0].UL;
-#endif
       } else {
         curr = 0;
       }
@@ -1693,11 +1584,7 @@ unsigned long MEDDLY::ct_none<MONOLITHIC, CHAINED>::convertToList(bool removeSta
   for (unsigned long i=0; i<tableSize; i++) {
     while (table[i]) {
       unsigned long curr = table[i];
-#ifdef INTEGRATED_MEMMAN
-      ct_entry_item* entry = entries + curr;
-#else
       ct_entry_item* entry = (ct_entry_item*) MMAN->getChunkAddress(curr);
-#endif
       table[i] = entry[0].UL;
       if (removeStales && isStale(entry)) {
 
@@ -1743,11 +1630,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::listToTable(unsigned long L)
   // showChain(stdout, L);
 #endif
   while (L) {
-#ifdef INTEGRATED_MEMMAN
-    ct_entry_item* entry = entries+L;
-#else
     ct_entry_item* entry = (ct_entry_item*) MMAN->getChunkAddress(L);
-#endif
     const unsigned long curr = L;
     L = entry[0].UL;
 
@@ -1791,11 +1674,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>::rehashTable(const unsigned long* oldT
   for (unsigned long i=0; i<oldS; i++) {
     unsigned long curr = oldT[i];
     if (0==curr) continue;
-#ifdef INTEGRATED_MEMMAN
-    const ct_entry_item* entry = entries + curr;
-#else
     const ct_entry_item* entry = (const ct_entry_item*) MMAN->getChunkAddress(curr);
-#endif
 
     const ct_entry_type* et = MONOLITHIC
       ?   getEntryType(entry[0].UL)
@@ -1820,51 +1699,9 @@ template <bool MONOLITHIC, bool CHAINED>
 MEDDLY::node_address MEDDLY::ct_none<MONOLITHIC, CHAINED>
 ::newEntry(unsigned size)
 {
-#ifdef INTEGRATED_MEMMAN
-  // check free list
-  if (size > maxEntrySize) {
-    fprintf(stderr, "MEDDLY error: request for compute table entry larger than max size\n");
-    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);  // best we can do
-  }
-  if (size<1) return 0;
-  perf.numEntries++;
-  if (freeList[size]) {
-    node_address h = freeList[size];
-    freeList[size] = entries[h].UL;
-#ifdef DEBUG_CTALLOC
-    fprintf(stderr, "Re-used entry %ld size %d\n", h, size);
-#endif
-    mstats.incMemUsed( size * sizeof(ct_entry_item) );
-    return h;
-  }
-  if (entriesSize + size > entriesAlloc) {
-    // Expand by a factor of 1.5
-    unsigned neA = entriesAlloc + (entriesAlloc/2);
-    ct_entry_item* ne = (ct_entry_item*) realloc(entries, neA * sizeof(ct_entry_item));
-    if (0==ne) {
-      fprintf(stderr,
-          "Error in allocating array of size %lu at %s, line %d\n",
-          neA * sizeof(int), __FILE__, __LINE__);
-      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    }
-    mstats.incMemAlloc( (entriesAlloc / 2) * sizeof(ct_entry_item) );
-    entries = ne;
-    entriesAlloc = neA;
-  }
-  MEDDLY_DCASSERT(entriesSize + size <= entriesAlloc);
-  node_address h = entriesSize;
-  entriesSize += size;
-#ifdef DEBUG_CTALLOC
-  fprintf(stderr, "New entry %lu size %u\n", h, size);
-#endif
-  mstats.incMemUsed( size * sizeof(ct_entry_item) );
-  return h;
-
-#else
   perf.numEntries++;
   size_t the_size = size;
   return MMAN->requestChunk(the_size);
-#endif
 }
 
 // **********************************************************************
@@ -2109,11 +1946,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
 {
   const int SHIFT = (MONOLITHIC ? 1 : 0) + (CHAINED ? 1 : 0);
 
-#ifdef INTEGRATED_MEMMAN
-  ct_entry_item* entry = entries + h;
-#else
   ct_entry_item* entry = (ct_entry_item*) MMAN->getChunkAddress(h);
-#endif
 
   unsigned slots;
 
@@ -2183,13 +2016,7 @@ void MEDDLY::ct_none<MONOLITHIC, CHAINED>
 #ifdef DEBUG_CTALLOC
   fprintf(stderr, "Recycling entry %lu size %u\n", h, slots);
 #endif
-#ifdef INTEGRATED_MEMMAN
-  entries[h].UL = freeList[slots];
-  freeList[slots] = h;
-  mstats.decMemUsed( slots * sizeof(ct_entry_item) );
-#else
   MMAN->recycleChunk(h, slots);
-#endif
   perf.numEntries--;
 }
 
@@ -2199,11 +2026,7 @@ template <bool MONOLITHIC, bool CHAINED>
 void MEDDLY::ct_none<MONOLITHIC, CHAINED>
 ::showEntry(output &s, unsigned long h) const
 {
-#ifdef INTEGRATED_MEMMAN
-  const ct_entry_item* entry = entries+h;
-#else
   const ct_entry_item* entry = (const ct_entry_item*) MMAN->getChunkAddress(h);
-#endif
 
   const ct_entry_type* et = MONOLITHIC
     ?   getEntryType(entry[CHAINED?1:0].U)
