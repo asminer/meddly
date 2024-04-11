@@ -42,6 +42,8 @@ class MEDDLY::ct_entry_result {
         /// Initialize after construction
         void initialize(const ct_entry_type* et);
 
+        inline const ct_entry_type* getET() const { return etype; }
+
         //
         // interface, for operations (reading).
         //

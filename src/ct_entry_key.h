@@ -168,6 +168,14 @@ class MEDDLY::ct_entry_key {
     protected:
         /// Used for linked-list of recycled search keys in compute_table
         ct_entry_key* next;
+
+    public:
+        //
+        // Stored data for CT misses,
+        // to save time for CT adds later.
+        //
+        unsigned long my_entry;
+        void* resptr;
 };
 
 

@@ -42,6 +42,9 @@ MEDDLY::ct_vector::ct_vector(unsigned sz) : _size(sz)
 #ifdef DEVELOPMENT_CODE
     hasHashVal = false;
 #endif
+
+    my_entry = 0;
+    resptr = nullptr;
 }
 
 MEDDLY::ct_vector::~ct_vector()

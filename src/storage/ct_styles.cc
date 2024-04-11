@@ -70,6 +70,66 @@
 // ***************************************************************************
 
 namespace MEDDLY {
+    /**
+        Template-based compute table implementation.
+        The template parameters:
+            @param  MONOLITHIC      If true, entries for several different
+                                    operations will be stored in one table.
+                                    That means each entry needs to store
+                                    the operation index.
+
+            @param  CHAINED         If true, we use hashing with chaining,
+                                    and each entry needs a next pointer.
+
+            @param  INTSLOTS        If true, we use unsigned integer slots
+                                    instead of unsigned long slots for
+                                    entries, and some items will require
+                                    two slots instead of one.
+
+        An entry is stored as follows.
+
+            +---------------------------------------+
+            |                                       |
+            |     next pointer  (unsigned long)     |
+            |                                       |
+            | Only needed when CHAINED is true.     |
+            |                                       |
+            +---------------------------------------+
+            |                                       |
+            |      operation index  (unsigned)      |
+            |                                       |
+            | Only needed when MONOLITHIC is true.  |
+            |                                       |
+            +---------------------------------------+
+            |                                       |
+            |          key size (unsigned)          |
+            |                                       |
+            | Only needed when the key has a        |
+            | repeatable portion; otherwise the key |
+            | size is fixed for the operation.      |
+            |                                       |
+            +---------------------------------------+
+            |                                       |
+            |               key items               |
+            |                                       |
+            | INTSLOTS true: each item requires one |
+            |   or two slots depending on its type. |
+            | INTSLOTS false: each item requires    |
+            |   one (larger) slot.                  |
+            |                                       |
+            +---------------------------------------+
+            |                                       |
+            |             result  items             |
+            |                                       |
+            | INTSLOTS true: each item requires one |
+            |   or two slots depending on its type. |
+            | INTSLOTS false: each item requires    |
+            |   one (larger) slot.                  |
+            |                                       |
+            +---------------------------------------+
+
+
+    */
     template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
     class ct_tmpl : public compute_table {
         public:
@@ -101,18 +161,25 @@ namespace MEDDLY {
             // Helper functions
 
 #ifdef ALLOW_DEPRECATED_0_17_6
-            inline static void key2entry(const ct_entry_key& key,
-                    ct_entry_item* e)
+            static ct_entry_item* key2entry(const ct_entry_key& key,
+                    ct_entry_item* e, hash_stream &H);
+            static unsigned* key2entry(const ct_entry_key& key, unsigned* e,
+                    hash_stream &H);
+
+            inline static ct_entry_item* result2entry(
+                    const ct_entry_result& res, ct_entry_item* e)
             {
                 MEDDLY_DCASSERT(!INTSLOTS);
-                const ct_entry_type* et = key.getET();
+                const ct_entry_type* et = res.getET();
                 MEDDLY_DCASSERT(et);
-                const unsigned key_slots = et->getKeySize(key.numRepeats());
-                memcpy(e, key.rawData(), key_slots * sizeof(ct_entry_item));
+                const unsigned res_slots = et->getResultSize();
+                memcpy(e, res.rawData(), res_slots * sizeof(ct_entry_item));
+                return e + res_slots;
             }
-            static void key2entry(const ct_entry_key& key, unsigned* e);
+            static unsigned* result2entry(const ct_entry_result& res,
+                    unsigned* e);
 #endif
-            inline static void vector2entry(const ct_vector &v,
+            inline static ct_entry_item* vector2entry(const ct_vector &v,
                     ct_entry_item* e)
             {
                 MEDDLY_DCASSERT(!INTSLOTS);
@@ -121,14 +188,38 @@ namespace MEDDLY {
                     v[i].get(*e);
                     e++;
                 }
+                return e;
             }
-            inline static void vector2entry(const ct_vector &v, unsigned* e)
+            inline static ct_entry_item* vector2entry(const ct_vector &v,
+                    ct_entry_item* e, hash_stream &H)
+            {
+                MEDDLY_DCASSERT(!INTSLOTS);
+                for (unsigned i=0; i<v.size(); i++)
+                {
+                    v[i].get(*e, H);
+                    e++;
+                }
+                return e;
+            }
+            inline static unsigned* vector2entry(const ct_vector &v,
+                    unsigned* e)
             {
                 MEDDLY_DCASSERT(INTSLOTS);
                 for (unsigned i=0; i<v.size(); i++)
                 {
                     e += v[i].getRaw(e);
                 }
+                return e;
+            }
+            inline static unsigned* vector2entry(const ct_vector &v,
+                    unsigned* e, hash_stream &H)
+            {
+                MEDDLY_DCASSERT(INTSLOTS);
+                for (unsigned i=0; i<v.size(); i++)
+                {
+                    e += v[i].getRaw(e, H);
+                }
+                return e;
             }
 
         private:
@@ -218,8 +309,147 @@ MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>::~ct_tmpl()
 
 // **********************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_6
+template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
+void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
+        ct_entry_result &res)
+{
+    MEDDLY_DCASSERT(key);
+    //
+    // Go ahead and start building an entry (the key portion anyway)
+    // as this makes searching for matches easier.
+    //
+
+    //
+    // (1) determine entry size, and allocate
+    //
+    const ct_entry_type* et = key->getET();
+    MEDDLY_DCASSERT(et);
+    const unsigned key_slots =
+        INTSLOTS  ? ( et->getKeyBytes(key->numRepeats()) / sizeof(unsigned) )
+                  : et->getKeySize(key->numRepeats());
+    const unsigned res_slots =
+        INTSLOTS  ? ( et->getResultBytes() / sizeof(unsigned) )
+                  : et->getResultSize();
+    size_t num_slots =
+          (CHAINED ? 1 : 0)
+        + (MONOLITHIC ? 1 : 0)
+        + (et->isRepeating() ? 1 : 0)
+        + key_slots
+        + res_slots
+    ;
+    key->my_entry = MMAN->requestChunk(num_slots);
+    perf.numEntries++;
+
+    //
+    // (2) build the entry, except for the result.
+    //     we hash it as we go.
+    //
+
+    hash_stream H;
+    H.start();
+    if (INTSLOTS) {
+        unsigned* entry = (unsigned*) MMAN->getChunkAddress(key->my_entry);
+        if (CHAINED) {
+            entry += 2;  // skip over NEXT pointer slots
+        }
+        if (MONOLITHIC) {
+            H.push(*entry = et->getID());
+            ++entry;
+        }
+        if (et->isRepeating()) {
+            H.push(*entry = key->numRepeats());
+            ++entry;
+        }
+        key->resptr = key2entry(key, entry, H);
+    } else {
+        ct_entry_item* entry =
+            (ct_entry_item*) MMAN->getChunkAddress(key->my_entry);
+        if (CHAINED) {
+            ++entry;    // skip over NEXT pointer
+        }
+        if (MONOLITHIC) {
+            H.push(entry->U = et->getID());
+            ++entry;
+        }
+        if (et->isRepeating()) {
+            H.push(entry->U = key->numRepeats());
+            ++entry;
+        }
+        key->resptr = key2entry(key, entry, H);
+    }
+
+    //
+    // (3) Save hash value, and search the table.
+    //
+    setHash(key, H.finish());
+    const unsigned hslot = key->getHash() % table.size();
+    // TBD: ^ unsigned long
+    // TBD: use a 64-bit hash
+}
+#endif
+
+// **********************************************************************
+// Helper functions
+// **********************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+
 template <bool M, bool C, bool I>
-void MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key, unsigned* e)
+MEDDLY::ct_entry_item* MEDDLY::ct_tmpl<M,C,I>::key2entry(
+        const ct_entry_key& key, ct_entry_item* e, hash_stream &H)
+{
+    MEDDLY_DCASSERT(!I);
+    const ct_entry_type* et = key.getET();
+    MEDDLY_DCASSERT(et);
+    const unsigned key_slots = et->getKeySize(key.numRepeats());
+    const ct_entry_item* data = key.rawData();
+
+    for (unsigned i=0; i<key_slots; i++) {
+        switch (et->getKeyType(i).getType())
+        {
+            case ct_typeID::NODE:
+            case ct_typeID::INTEGER:
+                    H.push(e->U = data[i].U);
+                    e++;
+                    continue;
+
+            case ct_typeID::LONG:
+                    e->UL = data[i].UL;
+                    H.push(unsigned(e->UL >> 32));
+                    H.push(unsigned(e->UL & 0xffffffff));
+                    e++;
+                    continue;
+
+            case ct_typeID::FLOAT:
+                    // don't hash
+                    e->F = data[i].F;
+                    e++;
+                    continue;
+
+            case ct_typeID::DOUBLE:
+                    // don't hash
+                    e->D = data[i].D;
+                    e++;
+                    continue;
+
+            default:
+                  MEDDLY_DCASSERT(0);
+        } // switch t
+    } // for i
+
+    return e;
+}
+
+#endif
+
+// **********************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+
+template <bool M, bool C, bool I>
+unsigned* MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key,
+        unsigned* e, hash_stream &H)
 {
     MEDDLY_DCASSERT(I);
     const ct_entry_type* et = key.getET();
@@ -235,15 +465,29 @@ void MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key, unsigned* e)
         {
             case ct_typeID::NODE:
             case ct_typeID::INTEGER:
+                    MEDDLY_DCASSERT(sizeof(data[i].N) == sizeof(data[i].U));
+                    MEDDLY_DCASSERT(sizeof(data[i].I) == sizeof(data[i].U));
+                    H.push(*e = data[i].U);
+                    e++;
+                    continue;
+
+            case ct_typeID::GENERIC:    // probably don't hash this way!
+            case ct_typeID::LONG:
+                    H.push(*e = (data[i].UL >> 32));
+                    e++;
+                    H.push(*e = (data[i].UL & 0xffffffff));
+                    e++;
+                    continue;
+
             case ct_typeID::FLOAT:
-                    MEDDLY_DCASSERT(sizeof(data[i].N]) == sizeof(data[i].U));
-                    MEDDLY_DCASSERT(sizeof(data[i].I]) == sizeof(data[i].U));
-                    MEDDLY_DCASSERT(sizeof(data[i].F]) == sizeof(data[i].U));
+                    // DON'T hash
+                    MEDDLY_DCASSERT(sizeof(data[i].F) == sizeof(data[i].U));
                     *e = data[i].U;
                     e++;
                     continue;
 
-            case ct_typeID::LONG:
+            case ct_typeID::DOUBLE:
+                    // DON'T hash
                     *e = (data[i].UL >> 32);
                     e++;
                     *e = (data[i].UL & 0xffffffff);
@@ -254,7 +498,61 @@ void MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key, unsigned* e)
                   MEDDLY_DCASSERT(0);
         } // switch t
     } // for i
+    return e;
 }
+
+#endif
+
+// **********************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+
+template <bool M, bool C, bool I>
+unsigned* MEDDLY::ct_tmpl<M,C,I>::result2entry(const ct_entry_result& res,
+        unsigned* e)
+{
+    MEDDLY_DCASSERT(I);
+    const ct_entry_type* et = res.getET();
+    MEDDLY_DCASSERT(et);
+
+    //
+    // Copy the result into temp_entry
+    //
+    const ct_entry_item* data = res.rawData();
+    const unsigned datalen = res.dataLength();
+    for (unsigned i=0; i<datalen; i++) {
+        switch (et->getResultType(i).getType())
+        {
+            case ct_typeID::NODE:
+            case ct_typeID::INTEGER:
+            case ct_typeID::FLOAT:
+                    MEDDLY_DCASSERT(sizeof(data[i].N) == sizeof(data[i].U));
+                    MEDDLY_DCASSERT(sizeof(data[i].I) == sizeof(data[i].U));
+                    MEDDLY_DCASSERT(sizeof(data[i].F) == sizeof(data[i].U));
+                    *e = data[i].U;
+                    e++;
+                    continue;
+
+            case ct_typeID::DOUBLE:
+            case ct_typeID::GENERIC:
+            case ct_typeID::LONG:
+                    MEDDLY_DCASSERT(sizeof(data[i].G) == sizeof(data[i].UL));
+                    MEDDLY_DCASSERT(sizeof(data[i].D) == sizeof(data[i].UL));
+                    *e = (data[i].UL >> 32);
+                    e++;
+                    *e = (data[i].UL & 0xffffffff);
+                    e++;
+                    continue;
+
+            default:
+                  MEDDLY_DCASSERT(0);
+        } // switch t
+    } // for i
+    return e;
+}
+
+#endif
+
 
 // ***************************************************************************
 // ***************************************************************************

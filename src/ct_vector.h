@@ -183,6 +183,50 @@ class MEDDLY::ct_item {
             }
         }
 
+        // Get into a raw ct_entry_item and update hash
+        inline void get(ct_entry_item &ci, hash_stream &H) const
+        {
+            switch (type) {
+                case ct_typeID::NODE:
+                        ci.N = the_node;
+                        H.push(raw[0]);
+                        return;
+
+                case ct_typeID::INTEGER:
+                        ci.I = the_int;
+                        H.push(raw[0]);
+                        return;
+
+                case ct_typeID::LONG:
+                        ci.L = the_long;
+                        H.push(raw[0]);
+                        H.push(raw[1]);
+                        return;
+
+                case ct_typeID::FLOAT:
+                        ci.F = the_float;
+                        // DON'T hash floats
+                        return;
+
+                case ct_typeID::DOUBLE:
+                        ci.D = the_double;
+                        // DON'T hash doubles
+                        return;
+
+                case ct_typeID::GENERIC:
+                        ci.G = the_generic;
+                        H.push(raw[0]);
+                        H.push(raw[1]);
+                        // TBD: probably want a virtual method for hashing
+                        // because pointer equality isn't the right thing.
+                        return;
+
+                default:
+                    MEDDLY_DCASSERT(false);
+            }
+        }
+
+
         // Get into an array of unsigned.
         // @return  the number of slots written.
         inline unsigned getRaw(unsigned *e) const {
@@ -194,6 +238,45 @@ class MEDDLY::ct_item {
             e[0] = raw[0];
             e[1] = raw[1];
             return 2;
+        }
+
+        // Get into an array of unsigned and update hash.
+        // @return  the number of slots written into the array.
+        inline unsigned getRaw(unsigned *e, hash_stream &H) const
+        {
+            switch (type) {
+                case ct_typeID::NODE:
+                case ct_typeID::INTEGER:
+                        H.push(e[0] = raw[0]);
+                        return 1;
+
+                case ct_typeID::LONG:
+                        H.push(e[0] = raw[0]);
+                        H.push(e[1] = raw[1]);
+                        return 2;
+
+                case ct_typeID::FLOAT:
+                        // DON'T hash floats
+                        e[0] = raw[0];
+                        return 1;
+
+                case ct_typeID::DOUBLE:
+                        // DON'T hash doubles
+                        e[0] = raw[0];
+                        e[1] = raw[1];
+                        return 2;
+
+                case ct_typeID::GENERIC:
+                        // TBD: probably want a virtual method for hashing
+                        // because pointer equality isn't the right thing.
+                        H.push(e[0] = raw[0]);
+                        H.push(e[1] = raw[1]);
+                        return 2;
+
+                default:
+                        MEDDLY_DCASSERT(false);
+            }
+            return 0;
         }
 
         // For recycling and such
@@ -319,6 +402,14 @@ class MEDDLY::ct_vector {
 #ifdef DEVELOPMENT_CODE
         bool hasHashVal;
 #endif
+
+    public:
+        //
+        // Stored data for CT misses,
+        // to save time for CT adds later.
+        //
+        unsigned long my_entry;
+        void* resptr;
 
     private:
         friend class initializer_list;

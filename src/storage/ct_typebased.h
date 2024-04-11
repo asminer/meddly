@@ -785,6 +785,8 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(ct_entry_key* key, cons
     // Add this to front of chain
     entry[0] = table[h];
     table[h] = curr;
+    // TBD: this is wrong when the number of entries
+    // exceeds what will fit into a single integer slot.
   } else {
     setTable(h, curr);
   }
