@@ -59,6 +59,11 @@
 #include "../ct_vector.h"
 */
 
+// Type for hash table indexes.
+// Use unsigned for 32-bit integers (4 billion max table size)
+// or unsigned long for 64-bit integers.
+typedef unsigned hslot_type;
+
 // ***************************************************************************
 // ***************************************************************************
 // ***************************************************************************
@@ -142,8 +147,6 @@ namespace MEDDLY {
             virtual void find(ct_entry_key* key, ct_entry_result &res);
             virtual void addEntry(ct_entry_key* key,
                 const ct_entry_result& res);
-            virtual void updateEntry(ct_entry_key* key,
-                const ct_entry_result& res);
 #endif
 
             virtual bool find(const ct_entry_type &ET, ct_vector &key,
@@ -222,9 +225,123 @@ namespace MEDDLY {
                 return e;
             }
 
+            //
+            //  Short vector equality check
+            //
+            template <class VT>
+            inline static bool equal_sw(const VT* a, const VT* b, unsigned N)
+            {
+                switch (N) {  // note: cases 12 - 2 fall through
+                    case 12:    if (a[11] != b[11]) return false;
+                    case 11:    if (a[10] != b[10]) return false;
+                    case 10:    if (a[9] != b[9]) return false;
+                    case  9:    if (a[8] != b[8]) return false;
+                    case  8:    if (a[7] != b[7]) return false;
+                    case  7:    if (a[6] != b[6]) return false;
+                    case  6:    if (a[5] != b[5]) return false;
+                    case  5:    if (a[4] != b[4]) return false;
+                    case  4:    if (a[3] != b[3]) return false;
+                    case  3:    if (a[2] != b[2]) return false;
+                    case  2:    if (a[1] != b[1]) return false;
+                    case  1:    return a[0] == b[0];
+                    case  0:    return true;
+                    default:    return (0==memcmp(a, b, N*sizeof(VT)));
+                };
+            }
+
+            //
+            // Chain management
+            //
+            inline static hslot_type getNext(const void* raw)
+            {
+                MEDDLY_DCASSERT(CHAINED);
+                if (INTSLOTS) {
+                    const unsigned* u = (const unsigned*) raw;
+                    if (sizeof(hslot_type) == sizeof(unsigned)) {
+                        return u[0];
+                    } else {
+                        hslot_type n = u[0];
+                        n <<= 32;
+                        n |= u[1];
+                        return n;
+                    }
+                } else {
+                    const ct_entry_item* ct = (const ct_entry_item*) raw;
+                    return ct[0].UL;
+                }
+            }
+            inline static void setNext(void* raw, hslot_type n)
+            {
+                MEDDLY_DCASSERT(CHAINED);
+                if (INTSLOTS) {
+                    unsigned* u = (unsigned*) raw;
+                    if (sizeof(hslot_type) == sizeof(unsigned)) {
+                        u[0] = n;
+                    } else {
+                        u[0] = (n >> 32);
+                        u[1] = n & 0xffffffff;
+                        return;
+                    }
+                } else {
+                    ct_entry_item* ct = (ct_entry_item*) raw;
+                    ct[0].UL = n;
+                }
+            }
+
+            /// Update stats: we just searched through c items
+            inline void sawSearch(unsigned c) {
+                if (c>=stats::searchHistogramSize) {
+                    perf.numLargeSearches++;
+                } else {
+                    perf.searchHistogram[c]++;
+                }
+                if (c>perf.maxSearchLength) perf.maxSearchLength = c;
+            }
+
+            //
+            // Should we discard a CT hit?
+            //
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+            /**
+                Copy the result portion of an entry, and check if it is dead.
+                    @param  ET      Entry type information
+                    @param  sres    Pointer to result portion of entry
+                    @param  dres    Where to copy the result
+             */
+            static bool isDead(const ct_entry_type &ET, const unsigned* sres,
+                    ct_entry_result &dres);
+            /**
+                Copy the result portion of an entry, and check if it is dead.
+                    @param  ET      Entry type information
+                    @param  sres    Pointer to result portion of entry
+                    @param  dres    Where to copy the result
+             */
+            static bool isDead(const ct_entry_type &ET, const ct_entry_item* sres,
+                    ct_entry_result &dres);
+#endif
+
+            //
+            // Should we discard a CT miss?
+            //
+#ifdef ALLOW_DEPRECATED_0_17_6
+            /**
+                See if an entry is stale.
+                    @param  e       Pointer to the entire entry
+                    @param  mark    Mark nodes in the entry
+             */
+            bool isStale(const unsigned* e, bool mark) const;
+            /**
+                See if an entry is stale.
+                    @param  e       Pointer to the entire entry
+                    @param  mark    Mark nodes in the entry
+             */
+            bool isStale(const ct_entry_item* e, bool mark) const;
+#endif
+
         private:
             /// Hash table
-            std::vector <unsigned long> table;
+            std::vector <hslot_type> table;
 
             /// When to next expand the table
             unsigned long tableExpand;
@@ -310,6 +427,7 @@ MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>::~ct_tmpl()
 // **********************************************************************
 
 #ifdef ALLOW_DEPRECATED_0_17_6
+
 template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
 void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
         ct_entry_result &res)
@@ -320,25 +438,51 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     // as this makes searching for matches easier.
     //
 
+    union genentry {
+        unsigned*       uptr;
+        ct_entry_item*  ctptr;
+        void*           vptr;
+    };
+
     //
     // (1) determine entry size, and allocate
     //
     const ct_entry_type* et = key->getET();
     MEDDLY_DCASSERT(et);
+
+    const unsigned chain_slots =
+        CHAINED ? (INTSLOTS ? sizeof(hslot_type) / sizeof(unsigned) : 1) : 0;
+
+    const unsigned op_slots = MONOLITHIC ? 1 : 0;
+
     const unsigned key_slots =
         INTSLOTS  ? ( et->getKeyBytes(key->numRepeats()) / sizeof(unsigned) )
                   : et->getKeySize(key->numRepeats());
+
     const unsigned res_slots =
         INTSLOTS  ? ( et->getResultBytes() / sizeof(unsigned) )
                   : et->getResultSize();
-    size_t num_slots =
-          (CHAINED ? 1 : 0)
-        + (MONOLITHIC ? 1 : 0)
+
+    const unsigned entry_slots =
+          op_slots
         + (et->isRepeating() ? 1 : 0)
         + key_slots
+    ;
+
+    const unsigned num_slots =
+          chain_slots
+        + entry_slots
         + res_slots
     ;
-    key->my_entry = MMAN->requestChunk(num_slots);
+
+    size_t slots = num_slots;
+
+    key->my_entry = MMAN->requestChunk(slots);
+    if (slots < num_slots) {
+        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+    }
+    genentry keyentry;
+    keyentry.vptr = MMAN->getChunkAddress(key->my_entry);
     perf.numEntries++;
 
     //
@@ -349,48 +493,232 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     hash_stream H;
     H.start();
     if (INTSLOTS) {
-        unsigned* entry = (unsigned*) MMAN->getChunkAddress(key->my_entry);
+        unsigned* e = keyentry.uptr;
         if (CHAINED) {
-            entry += 2;  // skip over NEXT pointer slots
+            e += sizeof(hslot_type)/sizeof(unsigned);
+            // skip over NEXT pointer slot(s)
         }
         if (MONOLITHIC) {
-            H.push(*entry = et->getID());
-            ++entry;
+            H.push(*e = et->getID());
+            ++e;
         }
         if (et->isRepeating()) {
-            H.push(*entry = key->numRepeats());
-            ++entry;
+            H.push(*e = key->numRepeats());
+            ++e;
         }
-        key->resptr = key2entry(key, entry, H);
+        key->result_shift = key2entry(key, e, H) - keyentry.uptr;
     } else {
-        ct_entry_item* entry =
-            (ct_entry_item*) MMAN->getChunkAddress(key->my_entry);
+        ct_entry_item* e = keyentry.ctptr;
         if (CHAINED) {
-            ++entry;    // skip over NEXT pointer
+            ++e;    // skip over NEXT pointer
         }
         if (MONOLITHIC) {
-            H.push(entry->U = et->getID());
-            ++entry;
+            H.push(e->U = et->getID());
+            ++e;
         }
         if (et->isRepeating()) {
-            H.push(entry->U = key->numRepeats());
-            ++entry;
+            H.push(e->U = key->numRepeats());
+            ++e;
         }
-        key->resptr = key2entry(key, entry, H);
+        key->result_shift = key2entry(key, e, H) - keyentry.ctptr;
     }
 
     //
-    // (3) Save hash value, and search the table.
+    // (3) Save hash value
     //
     setHash(key, H.finish());
-    const unsigned hslot = key->getHash() % table.size();
+    const hslot_type hslot = key->getHash() % table.size();
+    hslot_type hcurr = hslot;
     // TBD: ^ unsigned long
     // TBD: use a 64-bit hash
+
+    //
+    // (4) Search the table with the following policy.
+    //
+    //  equal:
+    //      dead:   discard and stop searching, return not found
+    //      !dead:  return as found
+    //
+    //  !equal:
+    //      stale:  discard and continue search
+    //      !stale: keep and continue search
+    //
+    //  We use one loop that does both linked list traversal
+    //  (for chained) or check next hash slots (for not chained).
+    //
+    perf.pings++;
+    unsigned chainlen;
+#ifdef DEVELOPMENT_CODE
+    hslot_type curr = table.at(hcurr);
+#else
+    hslot_type curr = table[hcurr];
+#endif
+    genentry currentry, preventry;
+    preventry.vptr = nullptr;
+    for (chainlen = 0; ; )
+    {
+        if (!curr) {
+            if (CHAINED) break;
+            // ^ we got to the end of the list
+
+            //
+            // Advance
+            //
+            ++chainlen;
+            if (chainlen > maxCollisionSearch) break;
+            // ^ we're not chained, only check the next few slots
+            // and break once we exceed that.
+            hcurr = (1+hcurr) % table.size();
+#ifdef DEVELOPMENT_CODE
+            curr = table.at(hcurr);
+#else
+            curr = table[hcurr];
+#endif
+            continue;
+        } else {
+            if (CHAINED) chainlen++;
+        }
+
+        //
+        // Get the next entry
+        //
+        currentry.vptr = MMAN->getChunkAddress(curr);
+
+        //
+        // Check if it is equal to the entry we built
+        //
+        if (INTSLOTS
+            ? equal_sw(currentry.uptr + chain_slots,
+                        keyentry.uptr + chain_slots, entry_slots)
+            : equal_sw(currentry.etptr + chain_slots,
+                        keyentry.etptr + chain_slots, entry_slots) )
+        {
+            //
+            // Equal, that's a CT hit.
+            // See if we can use the result.
+            //
+            if (INTSLOTS
+                ?   isDead(*et, currentry.uptr+chain_slots+entry_slots,  res)
+                :   isDead(*et, currentry.etptr+chain_slots+entry_slots, res)
+               )
+            {
+                //
+                // Nope.
+                // Delete this entry.
+                //
+                if (CHAINED) {
+                    hslot_type next = getNext(currentry.vptr);
+                    if (preventry.vptr) {
+                        setNext(preventry.vptr, next);
+                    } else {
+#ifdef DEVELOPMENT_CODE
+                        table.at(hcurr) = next;
+#else
+                        table[hcurr] = next;
+#endif
+                    }
+                } else {
+#ifdef DEVELOPMENT_CODE
+                    table.at(hcurr) = 0;
+#else
+                    table[hcurr] = 0;
+#endif
+                }
+
+                res.setInvalid();
+                sawSearch(chainlen);
+                deleteEntry(currentry);
+                return;
+            } else {
+                //
+                // Yes.
+                // Move to front if we're chained
+                //
+                if (CHAINED) {
+                    if (preventry.vptr) {
+                        setNext(preventry.vptr, getNext(currentry.vptr));
+                        setNext(currentry.vptr, table[hcurr]);
+                        table[hcurr] = curr;
+                    }
+                    // if preventry.vptr is null, then
+                    // we are already at the front.
+                }
+
+                res.reset();
+                res.setValid();
+                sawSearch(chainlen);
+                perf.hits++;
+                return;
+            }
+
+        }  // if equal
+
+        //
+        // Not equal.
+        // See if this entry is stale.
+        //
+        if (checkStalesOnFind && (INTSLOTS
+            ?   isStale(currentry.uptr, false)
+            :   isStale(currentry.etptr, false)
+           ))
+        {
+            //
+            // Stale; delete
+            //
+            if (CHAINED) {
+                hslot_type next = getNext(currentry.vptr);
+                if (preventry.vptr) {
+                    setNext(preventry.vptr, next);
+                } else {
+#ifdef DEVELOPMENT_CODE
+                    table.at(hcurr) = next;
+#else
+                    table[hcurr] = next;
+#endif
+                }
+            } else {
+#ifdef DEVELOPMENT_CODE
+                table.at(hcurr) = 0;
+#else
+                table[hcurr] = 0;
+#endif
+            }
+
+        }
+
+        //
+        // Advance
+        //
+        if (CHAINED) {
+            preventry.vptr = currentry.vptr;
+            curr = getNext(currentry.vptr);
+        } else {
+            ++chainlen;
+            if (chainlen > maxCollisionSearch) break;
+            hcurr = (1+hcurr) % table.size();
+#ifdef DEVELOPMENT_CODE
+            curr = table.at(hcurr);
+#else
+            curr = table[hcurr];
+#endif
+        }
+
+    } // for chainlen
+
+    //
+    // not found
+    //
+
+    sawSearch(chainlen);
+    res.setInvalid();
 }
+
 #endif
 
 // **********************************************************************
-// Helper functions
+//
+//      Helper methods
+//
 // **********************************************************************
 
 #ifdef ALLOW_DEPRECATED_0_17_6
@@ -406,6 +734,8 @@ MEDDLY::ct_entry_item* MEDDLY::ct_tmpl<M,C,I>::key2entry(
     const ct_entry_item* data = key.rawData();
 
     for (unsigned i=0; i<key_slots; i++) {
+        // zero out the entire slot, makes comparisons easier
+        e->UL = 0;
         switch (et->getKeyType(i).getType())
         {
             case ct_typeID::NODE:
@@ -553,6 +883,241 @@ unsigned* MEDDLY::ct_tmpl<M,C,I>::result2entry(const ct_entry_result& res,
 
 #endif
 
+// **********************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+
+template <bool M, bool C, bool I>
+bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
+        const unsigned* sres, ct_entry_result &dres)
+{
+    MEDDLY_DCASSERT(I);
+
+    MEDDLY_DCASSERT(sres);
+    ct_entry_item* data = dres.rawData();
+    MEDDLY_DCASSERT(dres.dataLength() == ET.getResultSize());
+
+    MEDDLY_DCASSERT(sizeof(data[0].N) == sizeof(data[0].U));
+    MEDDLY_DCASSERT(sizeof(data[0].I) == sizeof(data[0].U));
+    MEDDLY_DCASSERT(sizeof(data[0].F) == sizeof(data[0].U));
+
+    MEDDLY_DCASSERT(sizeof(data[0].G) == sizeof(data[0].UL));
+    MEDDLY_DCASSERT(sizeof(data[0].D) == sizeof(data[0].UL));
+
+    //
+    // Copy the entry result from sres into dres,
+    // and make sure it's not a dead entry while scanning it.
+    //
+    for (unsigned i=0; i<ET.getResultSize(); i++) {
+        const ct_itemtype &item = ET.getResultType(i);
+
+        switch (item.getType())
+        {
+            case ct_typeID::NODE:
+                    MEDDLY_DCASSERT(item.hasForest());
+                    if (item.getForest()->isDeadEntry(*sres)) {
+                        return true;
+                    }
+                    continue;
+
+            case ct_typeID::INTEGER:
+            case ct_typeID::FLOAT:
+                    data[i].U = *sres;
+                    sres++;
+                    continue;
+
+            case ct_typeID::DOUBLE:
+            case ct_typeID::GENERIC:
+            case ct_typeID::LONG:
+                    data[i].UL = *sres;
+                    sres++;
+                    data[i].UL <<= 32;
+                    data[i].UL |= *sres;
+                    sres++;
+                    continue;
+            default:
+                  MEDDLY_DCASSERT(0);
+        } // switch
+    }
+    return false;
+}
+
+#endif
+
+// **********************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+
+template <bool M, bool C, bool I>
+bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
+        const ct_entry_item* sres, ct_entry_result &dres)
+{
+    MEDDLY_DCASSERT(!I);
+
+    MEDDLY_DCASSERT(sres);
+    ct_entry_item* data = dres.rawData();
+    MEDDLY_DCASSERT(dres.dataLength() == ET.getResultSize());
+
+    //
+    // Copy the entry result from sres into dres,
+    // and make sure it's not a dead entry while scanning it.
+    //
+    for (unsigned i=0; i<ET.getResultSize(); i++) {
+        const ct_itemtype &item = ET.getResultType(i);
+        if (item.hasType(ct_typeID::NODE)) {
+            MEDDLY_DCASSERT(item.hasForest());
+            if (item.getForest()->isDeadEntry(sres[i].N)) {
+                return true;
+            }
+        }
+
+        data[i] = sres[i];
+
+    }
+    return false;
+}
+
+#endif
+
+// **********************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+
+template <bool M, bool C, bool I>
+bool MEDDLY::ct_tmpl<M,C,I>::isStale(const unsigned* entry, bool mark) const
+{
+    MEDDLY_DCASSERT(I);
+
+    //
+    // Ignore next pointer, if there is one
+    //
+    entry += C ? (sizeof(hslot_type) / sizeof(unsigned)) : 0;
+
+
+    //
+    // Get entry type and check if those are marked
+    // If monolithic, advance entry pointer
+    //
+    const ct_entry_type* et = M ? getEntryType(*entry++) : global_et;
+    MEDDLY_DCASSERT(et);
+    if (et->isMarkedForDeletion()) return true;
+
+    //
+    // Get entry size (advancing entry pointer if needed)
+    //
+    const unsigned reps = (et->isRepeating()) ? (*entry++) : 0;
+    const unsigned klen = et->getKeySize(reps);
+
+    //
+    // Check the key portion of the entry
+    //
+    for (unsigned i=0; i<klen; i++) {
+        const ct_itemtype &item = et->getKeyType(i);
+        if (item.hasForest()) {
+            if (item.getForest()->isStaleEntry(*entry)) {
+                return true;
+            } else {
+                // Indicate that this node is in some cache entry
+                if (mark) item.getForest()->setCacheBit(*entry);
+            }
+            entry++;
+        } else {
+            MEDDLY_DCASSERT(! item.hasType(ct_typeID::NODE));
+            entry += item.intslots();
+        }
+    } // for i
+
+    //
+    // Check result portion of the entry
+    //
+    for (unsigned i=0; i<et->getResultSize(); i++) {
+        const ct_itemtype &item = et->getResultType(i);
+        if (item.hasForest()) {
+            if (item.getForest()->isStaleEntry(*entry)) {
+                return true;
+            } else {
+                if (mark) item.getForest()->setCacheBit(*entry);
+            }
+            entry++;
+        } else {
+            MEDDLY_DCASSERT(! item.hasType(ct_typeID::NODE));
+            entry += item.intslots();
+        }
+    } // for i
+
+    return false;
+}
+
+#endif
+
+// **********************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+
+template <bool M, bool C, bool I>
+bool MEDDLY::ct_tmpl<M,C,I>::isStale(const ct_entry_item* entry, bool mark)
+    const
+{
+    MEDDLY_DCASSERT(I);
+
+    //
+    // Ignore next pointer, if there is one
+    //
+    if (C) entry++;
+
+    //
+    // Get entry type and check if those are marked
+    // If monolithic, advance entry pointer
+    //
+    const ct_entry_type* et = M ? getEntryType((entry++)->U) : global_et;
+    MEDDLY_DCASSERT(et);
+    if (et->isMarkedForDeletion()) return true;
+
+    //
+    // Get entry size (advancing entry pointer if needed)
+    //
+    const unsigned reps = (et->isRepeating()) ? ((entry++)->U) : 0;
+    const unsigned klen = et->getKeySize(reps);
+
+    //
+    // Check the key portion of the entry
+    //
+    for (unsigned i=0; i<klen; i++) {
+        const ct_itemtype &item = et->getKeyType(i);
+        if (item.hasForest()) {
+            if (item.getForest()->isStaleEntry(entry->N)) {
+                return true;
+            } else {
+                // Indicate that this node is in some cache entry
+                if (mark) item.getForest()->setCacheBit(entry->N);
+            }
+        } else {
+            MEDDLY_DCASSERT(! item.hasType(ct_typeID::NODE));
+        }
+        entry++;
+    } // for i
+
+    //
+    // Check result portion of the entry
+    //
+    for (unsigned i=0; i<et->getResultSize(); i++) {
+        const ct_itemtype &item = et->getResultType(i);
+        if (item.hasForest()) {
+            if (item.getForest()->isStaleEntry(entry->N)) {
+                return true;
+            } else {
+                if (mark) item.getForest()->setCacheBit(entry->N);
+            }
+        } else {
+            MEDDLY_DCASSERT(! item.hasType(ct_typeID::NODE));
+        }
+        entry++;
+    } // for i
+
+    return false;
+}
+
+#endif
 
 // ***************************************************************************
 // ***************************************************************************

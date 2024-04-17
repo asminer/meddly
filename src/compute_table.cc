@@ -185,4 +185,8 @@ void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
     }
 }
 
+void MEDDLY::compute_table::updateEntry(ct_entry_key*, const ct_entry_result &)
+{
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
 

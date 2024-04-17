@@ -163,6 +163,7 @@ class MEDDLY::ct_entry_result {
         inline operator bool() const { return is_valid; }
 
         inline const ct_entry_item* rawData() const { return build; }
+        inline ct_entry_item* rawData() { return build; }
         inline unsigned dataLength() const { return etype->getResultSize(); }
 
         /// Increase cache counters for nodes in this portion of the entry.

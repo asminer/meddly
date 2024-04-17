@@ -290,8 +290,7 @@ class MEDDLY::compute_table {
                 @param  key   Key portion of the entry.  Will be recycled.
                 @param  res   Updated result portion of the entry.
         */
-        virtual void updateEntry(ct_entry_key* key, const ct_entry_result &res)
-            = 0;
+        virtual void updateEntry(ct_entry_key* key, const ct_entry_result &res);
 
 #endif
 
