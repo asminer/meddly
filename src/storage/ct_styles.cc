@@ -59,10 +59,6 @@
 #include "../ct_vector.h"
 */
 
-// Type for hash table indexes.
-// Use unsigned for 32-bit integers (4 billion max table size)
-// or unsigned long for 64-bit integers.
-typedef unsigned hslot_type;
 
 // ***************************************************************************
 // ***************************************************************************
@@ -252,36 +248,28 @@ namespace MEDDLY {
             //
             // Chain management
             //
-            inline static hslot_type getNext(const void* raw)
+            inline static unsigned long getNext(const void* raw)
             {
                 MEDDLY_DCASSERT(CHAINED);
                 if (INTSLOTS) {
                     const unsigned* u = (const unsigned*) raw;
-                    if (sizeof(hslot_type) == sizeof(unsigned)) {
-                        return u[0];
-                    } else {
-                        hslot_type n = u[0];
-                        n <<= 32;
-                        n |= u[1];
-                        return n;
-                    }
+                    unsigned long n = u[0];
+                    n <<= 32;
+                    n |= u[1];
+                    return n;
                 } else {
                     const ct_entry_item* ct = (const ct_entry_item*) raw;
                     return ct[0].UL;
                 }
             }
-            inline static void setNext(void* raw, hslot_type n)
+            inline static void setNext(void* raw, unsigned long n)
             {
                 MEDDLY_DCASSERT(CHAINED);
                 if (INTSLOTS) {
                     unsigned* u = (unsigned*) raw;
-                    if (sizeof(hslot_type) == sizeof(unsigned)) {
-                        u[0] = n;
-                    } else {
-                        u[0] = (n >> 32);
-                        u[1] = n & 0xffffffff;
-                        return;
-                    }
+                    u[0] = (n >> 32);
+                    u[1] = n & 0xffffffff;
+                    return;
                 } else {
                     ct_entry_item* ct = (ct_entry_item*) raw;
                     ct[0].UL = n;
@@ -339,9 +327,20 @@ namespace MEDDLY {
             bool isStale(const ct_entry_item* e, bool mark) const;
 #endif
 
+            //
+            // batch deletion of table entries in array toDelete.
+            // These have already been removed from the table,
+            // but now we update reference counts and recycle
+            // the memory, and other bookkeeping tasks.
+            //
+            void batchDelete();
+
         private:
+            /// List of entries to delete
+            std::vector <unsigned long> toDelete;
+
             /// Hash table
-            std::vector <hslot_type> table;
+            std::vector <unsigned long> table;
 
             /// When to next expand the table
             unsigned long tableExpand;
@@ -451,12 +450,12 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     MEDDLY_DCASSERT(et);
 
     const unsigned chain_slots =
-        CHAINED ? (INTSLOTS ? sizeof(hslot_type) / sizeof(unsigned) : 1) : 0;
+        CHAINED ? (INTSLOTS ? sizeof(unsigned long)/sizeof(unsigned) : 1) : 0;
 
     const unsigned op_slots = MONOLITHIC ? 1 : 0;
 
     const unsigned key_slots =
-        INTSLOTS  ? ( et->getKeyBytes(key->numRepeats()) / sizeof(unsigned) )
+        INTSLOTS  ? ( et->getKeyBytes(key->numRepeats())/sizeof(unsigned) )
                   : et->getKeySize(key->numRepeats());
 
     const unsigned res_slots =
@@ -495,7 +494,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     if (INTSLOTS) {
         unsigned* e = keyentry.uptr;
         if (CHAINED) {
-            e += sizeof(hslot_type)/sizeof(unsigned);
+            e += sizeof(unsigned long)/sizeof(unsigned);
             // skip over NEXT pointer slot(s)
         }
         if (MONOLITHIC) {
@@ -527,9 +526,8 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     // (3) Save hash value
     //
     setHash(key, H.finish());
-    const hslot_type hslot = key->getHash() % table.size();
-    hslot_type hcurr = hslot;
-    // TBD: ^ unsigned long
+    const unsigned long hslot = key->getHash() % table.size();
+    unsigned long hcurr = hslot;
     // TBD: use a 64-bit hash
 
     //
@@ -549,15 +547,14 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     perf.pings++;
     unsigned chainlen;
 #ifdef DEVELOPMENT_CODE
-    hslot_type curr = table.at(hcurr);
+    unsigned long currhnd = table.at(hcurr);
 #else
-    hslot_type curr = table[hcurr];
+    unsigned long currhnd = table[hcurr];
 #endif
-    genentry currentry, preventry;
-    preventry.vptr = nullptr;
+    unsigned long prevhnd = 0;
     for (chainlen = 0; ; )
     {
-        if (!curr) {
+        if (!currhnd) {
             if (CHAINED) break;
             // ^ we got to the end of the list
 
@@ -570,9 +567,9 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
             // and break once we exceed that.
             hcurr = (1+hcurr) % table.size();
 #ifdef DEVELOPMENT_CODE
-            curr = table.at(hcurr);
+            currhnd = table.at(hcurr);
 #else
-            curr = table[hcurr];
+            currhnd = table[hcurr];
 #endif
             continue;
         } else {
@@ -582,7 +579,8 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
         //
         // Get the next entry
         //
-        currentry.vptr = MMAN->getChunkAddress(curr);
+        genentry currentry;
+        currentry.vptr = MMAN->getChunkAddress(currhnd);
 
         //
         // Check if it is equal to the entry we built
@@ -607,9 +605,10 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
                 // Delete this entry.
                 //
                 if (CHAINED) {
-                    hslot_type next = getNext(currentry.vptr);
-                    if (preventry.vptr) {
-                        setNext(preventry.vptr, next);
+                    unsigned long next = getNext(currentry.vptr);
+                    if (prevhnd) {
+                        void* prev = MMAN->getChunkAddress(prevhnd);
+                        setNext(prev, next);
                     } else {
 #ifdef DEVELOPMENT_CODE
                         table.at(hcurr) = next;
@@ -627,7 +626,8 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
 
                 res.setInvalid();
                 sawSearch(chainlen);
-                deleteEntry(currentry);
+                toDelete.push_back(currhnd);
+                batchDelete();
                 return;
             } else {
                 //
@@ -635,12 +635,13 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
                 // Move to front if we're chained
                 //
                 if (CHAINED) {
-                    if (preventry.vptr) {
-                        setNext(preventry.vptr, getNext(currentry.vptr));
+                    if (prevhnd) {
+                        void* prev = MMAN->getChunkAddress(prevhnd);
+                        setNext(prev, getNext(currentry.vptr));
                         setNext(currentry.vptr, table[hcurr]);
-                        table[hcurr] = curr;
+                        table[hcurr] = currhnd;
                     }
-                    // if preventry.vptr is null, then
+                    // if prev is null, then
                     // we are already at the front.
                 }
 
@@ -648,6 +649,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
                 res.setValid();
                 sawSearch(chainlen);
                 perf.hits++;
+                if (toDelete.size()) batchDelete();
                 return;
             }
 
@@ -666,9 +668,10 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
             // Stale; delete
             //
             if (CHAINED) {
-                hslot_type next = getNext(currentry.vptr);
-                if (preventry.vptr) {
-                    setNext(preventry.vptr, next);
+                unsigned long next = getNext(currentry.vptr);
+                if (prevhnd) {
+                    void* prev = MMAN->getChunkAddress(prevhnd);
+                    setNext(prev, next);
                 } else {
 #ifdef DEVELOPMENT_CODE
                     table.at(hcurr) = next;
@@ -683,23 +686,23 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
                 table[hcurr] = 0;
 #endif
             }
-
+            toDelete.push_back(currhnd);
         }
 
         //
         // Advance
         //
         if (CHAINED) {
-            preventry.vptr = currentry.vptr;
-            curr = getNext(currentry.vptr);
+            prevhnd = currhnd;
+            currhnd = getNext(currentry.vptr);
         } else {
             ++chainlen;
             if (chainlen > maxCollisionSearch) break;
             hcurr = (1+hcurr) % table.size();
 #ifdef DEVELOPMENT_CODE
-            curr = table.at(hcurr);
+            currhnd = table.at(hcurr);
 #else
-            curr = table[hcurr];
+            currhnd = table[hcurr];
 #endif
         }
 
@@ -711,6 +714,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
 
     sawSearch(chainlen);
     res.setInvalid();
+    if (toDelete.size()) batchDelete();
 }
 
 #endif
@@ -991,7 +995,7 @@ bool MEDDLY::ct_tmpl<M,C,I>::isStale(const unsigned* entry, bool mark) const
     //
     // Ignore next pointer, if there is one
     //
-    entry += C ? (sizeof(hslot_type) / sizeof(unsigned)) : 0;
+    entry += C ? (sizeof(unsigned long) / sizeof(unsigned)) : 0;
 
 
     //
@@ -1058,7 +1062,7 @@ template <bool M, bool C, bool I>
 bool MEDDLY::ct_tmpl<M,C,I>::isStale(const ct_entry_item* entry, bool mark)
     const
 {
-    MEDDLY_DCASSERT(I);
+    MEDDLY_DCASSERT(!I);
 
     //
     // Ignore next pointer, if there is one
@@ -1118,6 +1122,187 @@ bool MEDDLY::ct_tmpl<M,C,I>::isStale(const ct_entry_item* entry, bool mark)
 }
 
 #endif
+
+// **********************************************************************
+
+template <bool M, bool C, bool I>
+void MEDDLY::ct_tmpl<M,C,I>::batchDelete()
+{
+    MEDDLY_DCASSERT(toDelete.size());
+    for (unsigned h=0; h<toDelete.size(); h++) {
+        MEDDLY_DCASSERT(toDelete[h]);
+        const void* hptr = MMAN->getChunkAddress(toDelete[h]);
+        const unsigned* uptr = (unsigned*) hptr;
+        const ct_entry_item* ctptr = (ct_entry_item*) hptr;
+
+        //
+        // Skip over chained portion
+        //
+        if (C) {
+            if (I) {
+                uptr += sizeof(unsigned long) / sizeof(unsigned);
+            } else {
+                ++ctptr;
+            }
+        }
+
+        //
+        // Get operation and advance
+        //
+        const ct_entry_type* et = M
+            ?   getEntryType( I ? *uptr : ctptr->U )
+            :   global_et;
+        if (M) {
+            if (I) {
+                ++uptr;
+            } else {
+                ++ctptr;
+            }
+        }
+
+        //
+        // Get key size and advance
+        //
+        unsigned reps;
+        if (et->isRepeating()) {
+            if (I) {
+                reps = *uptr;
+                ++uptr;
+            } else {
+                reps = ctptr->U;
+                ++ctptr;
+            }
+        } else {
+            reps = 0;
+        }
+
+        //
+        // Go through key portion
+        //
+        const unsigned stop = et->getKeySize(reps);
+        for (unsigned i=0; i<stop; i++) {
+            const ct_itemtype &item = et->getKeyType(i);
+            switch (item.getType()) {
+                case ct_typeID::NODE:
+                    MEDDLY_DCASSERT(item.hasForest());
+                    if (I) {
+                        item.getForest()->uncacheNode( *uptr );
+                    } else {
+                        item.getForest()->uncacheNode( ctptr->N );
+                    }
+                    // FALL THROUGH
+
+                case ct_typeID::INTEGER:
+                case ct_typeID::FLOAT:
+                    if (I) {
+                        ++uptr;
+                    } else {
+                        ++ctptr;
+                    }
+                    continue;
+
+                case ct_typeID::GENERIC: {
+                    ct_object* P = I ? *((ct_object**)(uptr)) : ctptr->G;
+                    delete P;
+                    if (I) {
+                        uptr += sizeof(ct_object*) / sizeof(unsigned);
+                    } else {
+                        ++ctptr;
+                    }
+                    continue;
+                }
+
+                case ct_typeID::DOUBLE:
+                    if (I) {
+                        uptr += sizeof(double) / sizeof(unsigned);
+                    } else {
+                        ++ctptr;
+                    }
+                    continue;
+
+                case ct_typeID::LONG:
+                    if (I) {
+                        uptr += sizeof(long) / sizeof(unsigned);
+                    } else {
+                        ++ctptr;
+                    }
+                    continue;
+
+                default:
+                    MEDDLY_DCASSERT(0);
+            } // switch
+        } // for i
+
+        //
+        // Go through result portion
+        //
+        for (unsigned i=0; i<et->getResultSize(); i++) {
+            const ct_itemtype &item = et->getResultType(i);
+            switch (item.getType()) {
+                case ct_typeID::NODE:
+                    MEDDLY_DCASSERT(item.hasForest());
+                    if (I) {
+                        item.getForest()->uncacheNode( *uptr );
+                    } else {
+                        item.getForest()->uncacheNode( ctptr->N );
+                    }
+                    // FALL THROUGH
+
+                case ct_typeID::INTEGER:
+                case ct_typeID::FLOAT:
+                    if (I) {
+                        ++uptr;
+                    } else {
+                        ++ctptr;
+                    }
+                    continue;
+
+                case ct_typeID::GENERIC: {
+                    ct_object* P = I ? *((ct_object**)(uptr)) : ctptr->G;
+                    delete P;
+                    if (I) {
+                        uptr += sizeof(ct_object*) / sizeof(unsigned);
+                    } else {
+                        ++ctptr;
+                    }
+                    continue;
+                }
+
+                case ct_typeID::DOUBLE:
+                    if (I) {
+                        uptr += sizeof(double) / sizeof(unsigned);
+                    } else {
+                        ++ctptr;
+                    }
+                    continue;
+
+                case ct_typeID::LONG:
+                    if (I) {
+                        uptr += sizeof(long) / sizeof(unsigned);
+                    } else {
+                        ++ctptr;
+                    }
+                    continue;
+
+                default:
+                    MEDDLY_DCASSERT(0);
+            } // switch
+        } // for i
+
+        //
+        // Recycle the actual entry
+        //
+        const unsigned slots = I    ? (uptr - (unsigned*) hptr)
+                                    : (ctptr - (ct_entry_item*) hptr);
+
+        MMAN->recycleChunk(toDelete[h], slots);
+        toDelete[h] = 0;
+        perf.numEntries--;
+
+    } // for h
+
+    toDelete.resize(0);
+}
 
 // ***************************************************************************
 // ***************************************************************************
