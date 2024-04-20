@@ -153,6 +153,7 @@ namespace MEDDLY {
             virtual void addEntry(const ct_entry_type &ET, ct_vector &key,
                     const ct_vector &res);
 
+            // calls removeStaleEntries, then maybe shrinks table
             virtual void removeStales();
             virtual void removeAll();
             virtual void show(output &s, int verbLevel = 0);
@@ -161,6 +162,8 @@ namespace MEDDLY {
 
         protected:
             // Helper functions
+
+            void removeStaleEntries();
 
 #ifdef ALLOW_DEPRECATED_0_17_6
             static ct_entry_item* key2entry(const ct_entry_key& key,
@@ -403,16 +406,21 @@ namespace MEDDLY {
                 }
             }
 
-            //
-            // delete an entry.
-            //  @param  hnd         'pointer' (in the memory manager)
-            //                      to the entire entry. Will be set to 0.
-            //
-            //  @param  keyonly     true: it's just a key, no result
-            //                      false: it's a proper entry with both
-            //
+            /**
+               Delete an entry.
+                @param  hnd         'pointer' (in the memory manager)
+                                    to the entire entry. Will be set to 0.
+
+                @param  keyonly     true: it's just a key, no result
+                                    false: it's a proper entry with both
+            */
             void deleteEntry(unsigned long &hnd, bool keyonly);
 
+            /**
+                Resize the table.
+                    @param  newsz   New size to use
+            */
+            void resizeTable(unsigned long newsz);
 
         private:
             /// List of entries to delete
@@ -859,15 +867,188 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::addEntry(ct_entry_key* key,
     //
     // Is it time to GC / resize the table?
     //
+    if (perf.numEntries < tableExpand) return;
+    perf.resizeScans++;
 
+    //
+    // Clear CT bits for all forests we affect.
+    // Should be a no-op for forests that use reference counts.
+    //
+    const unsigned NF = forest::MaxFID()+1;
+    bool* skipF = new bool[NF];
+    for (unsigned i=0; i<NF; i++) {
+        skipF[i] = false;
+    }
+    clearForestCTBits(skipF, NF);
+    removeStaleEntries();
+    sweepForestCTBits(skipF, NF);
+    delete[] skipF;
+
+    //
+    // Do we still need to enlarge the table?
+    //
+    if (CHAINED) {
+        if (perf.numEntries < table.size()) return;
+    } else {
+        if (perf.numEntries < tableExpand / 4) return;
+    }
+    unsigned long newsize = table.size() * 2;
+    if (newsize > maxSize) newsize = maxSize;
+    if (newsize == table.size()) return;    // already max size
+
+    //
+    // Enlarge table
+    //
+    resizeTable(newsize);
+
+    //
+    // Update expand/shrink sizes
+    //
+    if (CHAINED) {
+        if (table.size() == maxSize) {
+            tableExpand = std::numeric_limits<int>::max();
+        } else {
+            tableExpand = 4*table.size();
+        }
+        tableShrink = table.size() / 2;
+    } else {
+        if (table.size() == maxSize) {
+            tableExpand = std::numeric_limits<int>::max();
+        } else {
+            tableExpand = table.size() / 2;
+        }
+        tableShrink = table.size() / 8;
+    }
+
+    // TBD HERE
 }
 
 #endif
 
 // **********************************************************************
+
+template <bool M, bool CHAINED, bool I>
+void MEDDLY::ct_tmpl<M, CHAINED, I>::removeStales()
+{
+    removeStaleEntries();
+
+    //
+    // Is it time to shrink the table?
+    //
+    if (perf.numEntries >= tableShrink) return;
+    unsigned long newsize = table.size() / 2;
+    if (newsize < 1024) newsize = 1024;
+    if (newsize == table.size()) return;
+
+    //
+    // Shrink table
+    //
+    resizeTable(newsize);
+
+    //
+    // Update expand/shrink sizes
+    //
+    if (CHAINED) {
+        tableExpand = 4*table.size();
+        if (1024 == table.size()) {
+            tableShrink = 0;
+        } else {
+            tableShrink = table.size() / 2;
+        }
+    } else {
+        tableExpand = table.size() / 2;
+        if (1024 == table.size()) {
+            tableShrink = 0;
+        } else {
+            tableShrink = table.size() / 8;
+        }
+    }
+}
+
+// **********************************************************************
+
+template <bool M, bool CHAINED, bool I>
+void MEDDLY::ct_tmpl<M,CHAINED,I>::removeAll()
+{
+    for (unsigned long i=0; i<table.size(); i++) {
+        while (table[i]) {
+            unsigned long curr = table[i];
+            if (CHAINED) {
+                table[i] = getNext(MMAN->getChunkAddress(curr));
+            } else {
+                table[i] = 0;
+            }
+            deleteEntry(curr, true);
+        } // while
+    } // for
+}
+
+// **********************************************************************
 //
 //      Helper methods
 //
+// **********************************************************************
+
+template <bool M, bool CHAINED, bool I>
+void MEDDLY::ct_tmpl<M, CHAINED, I>::removeStaleEntries()
+{
+    if (CHAINED) {
+        // Chained
+        for (unsigned long i=0; i<table.size(); i++) {
+            void* prev = nullptr;
+            unsigned long curr;
+            for (curr = table[i]; curr; ) {
+                void* entry = MMAN->getChunkAddress(curr);
+                unsigned long next = getNext(entry);
+
+                bool stale = I
+                    ? isStale( (const unsigned*) entry, true)
+                    : isStale( (const ct_entry_type*) entry, true);
+
+                if (stale) {
+                    // remove from list
+                    if (prev) {
+                        setNext(prev, next);
+                    } else {
+                        table[i] = next;
+                    }
+                    // add to list of entries to delete
+                    toDelete.push_back(curr);
+                }
+
+                // advance
+                prev = entry;
+                curr = next;
+            } // for curr
+
+            batchDelete();
+        } // for i
+
+        // End of chained
+    } else {
+        // Not chained
+        for (unsigned long i=0; i<table.size(); i++) {
+            if (!table[i]) continue;
+            void* entry = MMAN->getChunkAddress(table[i]);
+
+            if (I) {
+                if (! isStale( (const unsigned*) entry, true))
+                {
+                    continue;
+                }
+            } else {
+                if (! isStale( (const ct_entry_type*) entry, true))
+                {
+                    continue;
+                }
+            }
+            deleteEntry(table[i], true);
+            table[i] = 0;
+        } // for i
+        // End of not chained
+    }
+}
+
 // **********************************************************************
 
 #ifdef ALLOW_DEPRECATED_0_17_6
@@ -1445,6 +1626,13 @@ void MEDDLY::ct_tmpl<M,C,I>::deleteEntry(unsigned long &h, bool keyonly)
     h = 0;
 }
 
+// **********************************************************************
+
+template <bool M, bool CHAINED, bool I>
+void MEDDLY::ct_tmpl<M,CHAINED,I>::resizeTable(unsigned long newsz)
+{
+    // TBD!
+}
 
 // ***************************************************************************
 // ***************************************************************************
