@@ -422,6 +422,18 @@ namespace MEDDLY {
             */
             void resizeTable(unsigned long newsz);
 
+            /**
+                Compute the hash of an entry.
+                    @param  entry   Raw pointer to entire entry
+
+                    @return     Hashed value; still needs to be modded
+                                by hash table size.
+
+                TBD - switch to 64-bit hash
+             */
+            unsigned hashEntry(const void* entry) const;
+
+
         private:
             /// List of entries to delete
             std::vector <unsigned long> toDelete;
@@ -616,6 +628,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     // (3) Save hash value
     //
     setHash(key, H.finish());
+    MEDDLY_DCASSERT(key->getHash() == hashEntry(keyentry.vptr));
     const unsigned long hslot = key->getHash() % table.size();
     unsigned long hcurr = hslot;
     // TBD: use a 64-bit hash
@@ -919,8 +932,6 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::addEntry(ct_entry_key* key,
         }
         tableShrink = table.size() / 8;
     }
-
-    // TBD HERE
 }
 
 #endif
@@ -1631,7 +1642,153 @@ void MEDDLY::ct_tmpl<M,C,I>::deleteEntry(unsigned long &h, bool keyonly)
 template <bool M, bool CHAINED, bool I>
 void MEDDLY::ct_tmpl<M,CHAINED,I>::resizeTable(unsigned long newsz)
 {
-    // TBD!
+    //
+    // Allocate the new table
+    //
+    std::vector <unsigned long> oldtab(newsz, 0);
+    mstats.incMemUsed(oldtab.size() * sizeof(unsigned long));
+    mstats.incMemAlloc(oldtab.size() * sizeof(unsigned long));
+    table.swap(oldtab);
+
+    //
+    // Copy entries; requires re-hashing
+    //
+    if (CHAINED) {
+        for (unsigned long i=0; i<oldtab.size(); i++) {
+            while (oldtab[i]) {
+                // Remove from old
+                const unsigned long curr = oldtab[i];
+                const void* ptr = MMAN->getChunkAddress(curr);
+                oldtab[i] = getNext(ptr);
+                // Add to new
+                const unsigned long h = hashEntry(ptr) % table.size();
+                setNext(ptr, table[h]);
+                table[h] = curr;
+            }
+        } // for i
+    } else {
+        for (unsigned long i=0; i<oldtab.size(); i++) {
+            if (!oldtab[i]) continue;
+            const void* ptr = MMAN->getChunkAddress(oldtab[i]);
+            const unsigned long h = hashEntry(ptr) % table.size();
+            setTable(h, oldtab[i]);
+        } // for i
+    }
+
+    //
+    // account for deletion of old table
+    //
+    mstats.decMemUsed(oldtab.size() * sizeof(unsigned long));
+    mstats.decMemAlloc(oldtab.size() * sizeof(unsigned long));
+}
+
+// **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
+unsigned MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>
+            ::hashEntry(const void* entry) const
+{
+    hash_stream H;
+    H.start();
+
+    const unsigned* ue = (const unsigned*) entry;
+    const ct_entry_item* cte = (const ct_entry_item*) entry;
+
+    //
+    // Skip next pointer if chained
+    //
+    if (CHAINED) {
+        if (INTSLOTS) {
+            ue += sizeof(unsigned long) / sizeof(unsigned);
+        } else {
+            ++cte;
+        }
+    }
+
+    //
+    // Determine entry type
+    //
+    const ct_entry_type* et;
+    if (MONOLITHIC) {
+        if (INTSLOTS) {
+            H.push(*ue);
+            et = getEntryType(*ue);
+            ++ue;
+        } else {
+            H.push(cte->U);
+            et = getEntryType(cte->U);
+            ++cte;
+        }
+    } else {
+        et = global_et;
+    }
+    MEDDLY_DCASSERT(et);
+
+    //
+    // Determine key size
+    //
+    unsigned repeats;
+    if (et->isRepeating()) {
+        repeats = (INTSLOTS ? (*(ue++)) : (cte++)->U);;
+        H.push(repeats);
+    } else {
+        repeats = 0;
+    }
+    const unsigned key_slots = et->getKeySize(repeats);
+
+    //
+    // Loop over key portion
+    //
+    for (unsigned i=0; i<key_slots; i++) {
+        switch (et->getKeyType(i).getType())
+        {
+            case ct_typeID::NODE:
+            case ct_typeID::INTEGER:
+                    if (INTSLOTS) {
+                        H.push(*ue);
+                        ++ue;
+                    } else {
+                        H.push(cte->U);
+                        ++cte;
+                    }
+                    continue;
+
+            case ct_typeID::GENERIC:    // probably don't hash this way!
+            case ct_typeID::LONG:
+                    if (INTSLOTS) {
+                        H.push(ue[0], ue[1]);
+                        ue += 2;
+                    } else {
+                        H.push(cte->UL >> 32);
+                        H.push(cte->UL & 0xffffffff);
+                        ++cte;
+                    }
+                    continue;
+
+            case ct_typeID::FLOAT:
+                    // DON'T hash; just advance pointers
+                    if (INTSLOTS) {
+                        ++ue;
+                    } else {
+                        ++cte;
+                    }
+                    continue;
+
+            case ct_typeID::DOUBLE:
+                    // DON'T hash; just advance pointers
+                    if (INTSLOTS) {
+                        ue += 2;
+                    } else {
+                        ++cte;
+                    }
+                    continue;
+
+            default:
+                  MEDDLY_DCASSERT(0);
+        } // switch t
+    } // for i
+
+    return H.finish();
 }
 
 // ***************************************************************************
