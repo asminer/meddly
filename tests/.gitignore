@@ -10,6 +10,7 @@ bug_02
 check_xA
 chk_copy
 chk_cross
+chk_ct
 chk_evtimes_float
 ddedge
 domain_list

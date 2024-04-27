@@ -43,6 +43,7 @@
 #include "sat_relations.h"
 
 #include "ct_initializer.h"
+#include "ct_entry_result.h"
 
 #include "global_rebuilder.h"
 

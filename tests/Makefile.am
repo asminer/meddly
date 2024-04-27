@@ -12,6 +12,7 @@ noinst_PROGRAMS = \
     check_xA \
     chk_copy \
     chk_cross \
+    chk_ct \
     chk_evtimes_float \
     ddedge \
     domain_list \
@@ -32,6 +33,7 @@ TESTS = \
     check_xA \
     chk_copy \
     chk_cross \
+    chk_ct \
     chk_evtimes_float \
     ddedge \
     domain_list \
@@ -75,6 +77,9 @@ chk_copy_LDADD = ../src/libmeddly.la
 
 chk_cross_SOURCES = chk_cross.cc
 chk_cross_LDADD = ../src/libmeddly.la
+
+chk_ct_SOURCES = chk_ct.cc
+chk_ct_LDADD = ../src/libmeddly.la
 
 chk_evtimes_float_SOURCES = chk_evtimes_float.cc
 chk_evtimes_float_LDADD = ../src/libmeddly.la
