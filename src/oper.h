@@ -232,7 +232,6 @@ class MEDDLY::operation {
         const char* name;
         bool is_marked_for_deletion;
 
-        // declared and initialized in meddly.cc
         static compute_table* Monolithic_CT;
 
         /**

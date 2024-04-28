@@ -9,6 +9,20 @@ Make compute table interface easier to use for simple operations
     * compute table item class, like edge value class
         type, and a union
 
+Compute table entry types
+    * should have a compute table
+            + their own, for non-monolithic
+            + the global one, for monolithic
+
+    * allow ct entry registration directly in CTs
+
+    * ct entry registry: static in CT or not?
+            + if not, then non-monolithic CTs will
+              have single entry 'registry'
+
+    * eventually: remove CTs from operation base class
+    * eventually: remove entry registration from operation base class
+
 
 Compute table ideas
     *   ct_vector   packing and unpacking operations
@@ -80,6 +94,32 @@ Although, if we make compute tables easy enough to use, then
 the motivation for abstract apply operation implementation goes away.
 
 Ideal:
+    class union : public binary_operation {
+        // ...
+        private:
+            ct_entry_type* CTE;
+    };
+
+    union::union(owner, fa1, fa2, fres)
+        : binary_operation(owner, fa1, fa2, fres)
+    {
+        CTE = new ct_entry_type("union");
+        //        ^
+        //        This now also builds the CT (or uses the monolithic one)
+        //        for this entry and calls it automatically.
+        //        The entry is automatically registered with the CT.
+        CTE->setFixed(fa1, fa2);
+        CTE->setResult(fres);
+    }
+
+    union::~union()
+    {
+        delete CTE;
+        //     ^
+        //     unregisters with its CT automatically.
+        //     if the CT is not monolithic, it's also destroyed
+    }
+
     void union::compute(node_handle a, node_handle b, node_handle &c)
     {
         if (0==a) return b;
@@ -90,16 +130,20 @@ Ideal:
 
         commute_order(a, b);    // if we can commute, make sure a<b
 
-        ct_search key(entry0, a, b);
+        ct_vector key(2), result(1);
 
-        if (CT.find(key, c)) {
-          return;
+        key[0].setN(a);
+        key[1].setN(b);
+
+        if (CTE->find(key, result)) {
+            c = result[0].getN();
+            return;
         }
 
-        // do computation
+        // do computation with answer stored in c
 
-        CT.add(key, c);
-
+        result[0].setN(c);
+        CTE->addEntry(key, result);
     }
 
 

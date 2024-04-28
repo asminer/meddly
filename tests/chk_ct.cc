@@ -27,6 +27,37 @@ const int VARSIZE = 2;
 
 // #define DEBUG
 
+class myop : public MEDDLY::operation {
+    public:
+        myop(forest* f1, forest* f2);
+
+        virtual bool checkForestCompatibility() const {
+            return true;
+        }
+
+    public:
+        ct_entry_type* et0;
+        ct_entry_type* et1;
+        ct_entry_type* et2;
+};
+
+myop::myop(forest* F1, forest* F2) : operation("myop", 3)
+{
+    et0 = new ct_entry_type("test0", "IN:I");
+    et0->setForestForSlot(1, F1);
+    registerEntryType(0, et0);
+
+    et1 = new ct_entry_type("test1", "NN:I");
+    et1->setForestForSlot(0, F1);
+    et1->setForestForSlot(1, F1);
+    registerEntryType(1, et1);
+
+    et2 = new ct_entry_type("test2", "NN:I");
+    et2->setForestForSlot(0, F1);
+    et2->setForestForSlot(1, F2);
+    registerEntryType(2, et2);
+}
+
 void initEdges(forest* f, std::vector <dd_edge> &E)
 {
     ostream_output out(std::cout);
@@ -134,7 +165,8 @@ void addEntries(const ct_entry_type* CTE, compute_table* CT,
 int main(int argc, const char** argv)
 {
     try {
-        std::vector <dd_edge> E(100);
+        std::vector <dd_edge> E1(100);
+        std::vector <dd_edge> E2(100);
 
         int bounds[3];
         bounds[0] = bounds[1] = bounds[2] = VARSIZE;
@@ -142,19 +174,18 @@ int main(int argc, const char** argv)
         MEDDLY::initialize();
 
         domain *D = domain::createBottomUp(bounds, 3);
-        forest* F;
+        forest *F1, *F2;
         policies p;
         p.useDefaults(false);
-        F = forest::create(D, false, range_type::INTEGER,
+        F1 = forest::create(D, false, range_type::INTEGER,
+                        edge_labeling::MULTI_TERMINAL, p);
+        F2 = forest::create(D, false, range_type::INTEGER,
                         edge_labeling::MULTI_TERMINAL, p);
 
-        initEdges(F, E);
+        myop foo(F1, F2);
 
-        ct_entry_type* et = new ct_entry_type("test1", "IN:I");
-        et->setForestForSlot(1, F);
-        compute_table::registerEntryType(first_etid, et);
-
-        compute_table CT = ...
+        initEdges(F1, E1);
+        initEdges(F2, E2);
 
 
 

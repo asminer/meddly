@@ -281,7 +281,7 @@ class MEDDLY::ct_entry_type {
                                 if any.
                 setResult()     for setting the result portion of the key.
         */
-        ct_entry_type(const char* name);
+        ct_entry_type(const char* name=nullptr);
         ~ct_entry_type();
 
         inline void setFixed(ct_itemtype a) {
@@ -403,6 +403,10 @@ class MEDDLY::ct_entry_type {
         */
         inline const char* getName() const { return name; }
 
+        /**
+            Set the name; allows empty constructors.
+        */
+        inline void setName(const char* n) { name = n; }
 
         /**
             Does this entry type allow repetitions in the key?
