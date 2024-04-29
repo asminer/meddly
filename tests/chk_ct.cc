@@ -232,6 +232,22 @@ inline void show_entries(unsigned entries, unsigned adds, const char* ctname)
                 << "% retention)\n";
 }
 
+inline void check_new_hits(unsigned oldhits, unsigned newhits)
+{
+    if (oldhits == newhits) return;
+    if (newhits > oldhits) {
+        std::cout << "              too many hits?\n";
+        throw "old vs new mismatch";
+    }
+    // we can drop, but not by too many
+    unsigned retain = newhits * 100 / oldhits;
+    std::cout << "              (" << retain << "% retention)\n";
+
+    if (retain < 90) {
+        throw "not enough new hits?";
+    }
+}
+
 //
 // Run CT tests.
 //
@@ -334,8 +350,10 @@ void check_CT(bool monolithic)
 
     const unsigned nhit1 = checkEntries(foo->et0, foo->ct0(), E1);
     cout << "        " << setw(5) << nhit1 << " op1 entries matched\n";
+    check_new_hits(hits1, nhit1);
     const unsigned nhit2 = checkEntries(foo->et1, foo->ct1(), E1, E1);
     cout << "        " << setw(5) << nhit2 << " op2 entries matched\n";
+    check_new_hits(hits2, nhit2);
     const unsigned nhit3 = checkEntries(foo->et2, foo->ct2(), E1, E2);
     cout << "        " << setw(5) << nhit3 << " op3 entries matched\n";
 
@@ -353,18 +371,77 @@ void check_CT(bool monolithic)
 
 }
 
+bool setStyleNumber(unsigned i)
+{
+    switch (i) {
+        case 0:
+            std::cout << "Monolithic chained ";
+            ct_initializer::setBuiltinStyle(
+                    ct_initializer::MonolithicChainedHash);
+            return true;
+
+        case 1:
+            std::cout << "Monolithic unchained ";
+            ct_initializer::setBuiltinStyle(
+                    ct_initializer::MonolithicUnchainedHash);
+            return true;
+
+        case 2:
+            std::cout << "Operation chained ";
+            ct_initializer::setBuiltinStyle(
+                    ct_initializer::OperationChainedHash);
+            return false;
+
+        case 3:
+            std::cout << "Operation unchained ";
+            ct_initializer::setBuiltinStyle(
+                    ct_initializer::OperationUnchainedHash);
+            return false;
+
+        default:
+            throw "Bad style number";
+    }
+}
+
+void setCompressionNumber(unsigned i)
+{
+    switch (i) {
+        case 0:
+            std::cout << "(uncompressed)";
+            ct_initializer::setCompression(compressionOption::None);
+            return;
+
+        case 1:
+            std::cout << "(type compressed)";
+            ct_initializer::setCompression(compressionOption::TypeBased);
+            return;
+
+        default:
+            throw "Bad compression number";
+
+    }
+}
+
 int main(int argc, const char** argv)
 {
     using namespace std;
     try {
+        bool mono;
+        for (unsigned st=0; st<4; st++) {
+            for (unsigned cmp=0; cmp<2; cmp++) {
+                MEDDLY::initializer_list* IL = defaultInitializerList(nullptr);
+                cout << "=================================================================\n";
+                cout << "    Testing ";
+                mono = setStyleNumber(st);
+                setCompressionNumber(cmp);
+                cout << " style CTs\n";
+                cout << "=================================================================\n";
+                MEDDLY::initialize(IL);
+                check_CT(mono);
+                MEDDLY::cleanup();
 
-        // go through all CT styles
-        //
-        MEDDLY::initialize();
-
-        check_CT(true);
-
-        MEDDLY::cleanup();
+            } // compression
+        } // style
 
         cout << "Done\n";
         return 0;
