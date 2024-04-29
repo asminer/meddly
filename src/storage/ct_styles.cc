@@ -59,7 +59,7 @@
 #include "../ct_vector.h"
 */
 
-// #define USE_NEW_TEMPLATE
+#define USE_NEW_TEMPLATE
 
 // ***************************************************************************
 // ***************************************************************************
@@ -149,9 +149,15 @@ namespace MEDDLY {
 #endif
 
             virtual bool find(const ct_entry_type &ET, ct_vector &key,
-                    ct_vector &res);
+                    ct_vector &res)
+            {
+                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            }
             virtual void addEntry(const ct_entry_type &ET, ct_vector &key,
-                    const ct_vector &res);
+                    const ct_vector &res)
+            {
+                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            }
 
             // calls removeStaleEntries, then maybe shrinks table
             virtual void removeStales();
@@ -432,6 +438,28 @@ namespace MEDDLY {
                 TBD - switch to 64-bit hash
              */
             unsigned hashEntry(const void* entry) const;
+
+
+            /**
+                Display an entry.
+                Used for debugging, and by method(s) to display the entire CT.
+                    @param  s         Stream to write to.
+                    @param  h         Handle of the entry.
+            */
+            void showEntry(output &s, unsigned long h) const;
+
+            /// Display a chain
+            inline void showChain(output &s, unsigned long L) const
+            {
+                s << L;
+                if (CHAINED) {
+                    while (L) {
+                        L = getNext(MMAN->getChunkAddress(L));
+                        s << "->" << L;
+                    }
+                }
+                s << "\n";
+            }
 
 
         private:
@@ -995,6 +1023,105 @@ void MEDDLY::ct_tmpl<M,CHAINED,I>::removeAll()
 }
 
 // **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
+void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>
+    ::show(output &s, int verbLevel)
+{
+    if (verbLevel < 1) return;
+
+    if (MONOLITHIC) {
+        s << "Monolithic compute table\n";
+    } else {
+        s << "Compute table for " << global_et->getName() << " (index "
+          << long(global_et->getID()) << ")\n";
+    }
+
+    s.put("", 6);
+    s << "Current CT memory   :\t" << mstats.getMemUsed() << " bytes\n";
+    s.put("", 6);
+    s << "Peak    CT memory   :\t" << mstats.getPeakMemUsed() << " bytes\n";
+    s.put("", 6);
+    s << "Current CT alloc'd  :\t" << mstats.getMemAlloc() << " bytes\n";
+    s.put("", 6);
+    s << "Peak    CT alloc'd  :\t" << mstats.getPeakMemAlloc() << " bytes\n";
+    if (!CHAINED) {
+        s.put("", 6);
+        s << "Collisions          :\t" << long(collisions) << "\n";
+    }
+    s.put("", 6);
+    s << "Hash table size     :\t" << long(table.size()) << "\n";
+    s.put("", 6);
+    s << "Number of entries   :\t" << long(perf.numEntries) << "\n";
+
+    if (--verbLevel < 1) return;
+
+    s.put("", 6);
+    s << "Pings               :\t" << long(perf.pings) << "\n";
+    s.put("", 6);
+    s << "Hits                :\t" << long(perf.hits) << "\n";
+    s.put("", 6);
+    s << "Resize (GC) scans   :\t" << long(perf.resizeScans) << "\n";
+
+    if (--verbLevel < 1) return;
+
+    s.put("", 6);
+    s << "Search length histogram:\n";
+    for (unsigned i=0; i<stats::searchHistogramSize; i++) {
+        if (perf.searchHistogram[i]) {
+            s.put("", 10);
+            s.put(long(i), 3);
+            s << ": " << long(perf.searchHistogram[i]) << "\n";
+        }
+    }
+    if (perf.numLargeSearches) {
+        s.put("", 6);
+        s << "Searches longer than " << long(stats::searchHistogramSize-1)
+          << ": " << long(perf.numLargeSearches) << "\n";
+    }
+    s.put("", 6);
+    s << "Max search length: " << long(perf.maxSearchLength) << "\n";
+
+
+    if (--verbLevel < 1) return;
+
+    s << "Hash table:\n";
+
+    for (unsigned long i=0; i<table.size(); i++) {
+        if (0==table[i]) continue;
+        s << "table[";
+        s.put(long(i), 9);
+        s << "]: ";
+        showChain(s, table[i]);
+    }
+
+    if (--verbLevel < 1) return;
+
+    s << "\nHash table nodes:\n";
+
+    for (unsigned long i=0; i<table.size(); i++) {
+        unsigned long curr = table[i];
+        while (curr) {
+            s << "\tNode ";
+            s.put(long(curr), 9);
+            s << ":  ";
+            showEntry(s, curr);
+            s.put('\n');
+            if (CHAINED) {
+                curr = getNext(MMAN->getChunkAddress(curr));
+            } else {
+                curr = 0;
+            }
+        } // while curr
+    } // for i
+    s.put('\n');
+
+    if (--verbLevel < 1) return;
+
+    if (MMAN) MMAN->dumpInternal(s);
+}
+
+// **********************************************************************
 //
 //      Helper methods
 //
@@ -1014,7 +1141,7 @@ void MEDDLY::ct_tmpl<M, CHAINED, I>::removeStaleEntries()
 
                 bool stale = I
                     ? isStale( (const unsigned*) entry, true)
-                    : isStale( (const ct_entry_type*) entry, true);
+                    : isStale( (const ct_entry_item*) entry, true);
 
                 if (stale) {
                     // remove from list
@@ -1048,7 +1175,7 @@ void MEDDLY::ct_tmpl<M, CHAINED, I>::removeStaleEntries()
                     continue;
                 }
             } else {
-                if (! isStale( (const ct_entry_type*) entry, true))
+                if (! isStale( (const ct_entry_item*) entry, true))
                 {
                     continue;
                 }
@@ -1658,7 +1785,7 @@ void MEDDLY::ct_tmpl<M,CHAINED,I>::resizeTable(unsigned long newsz)
             while (oldtab[i]) {
                 // Remove from old
                 const unsigned long curr = oldtab[i];
-                const void* ptr = MMAN->getChunkAddress(curr);
+                void* ptr = MMAN->getChunkAddress(curr);
                 oldtab[i] = getNext(ptr);
                 // Add to new
                 const unsigned long h = hashEntry(ptr) % table.size();
@@ -1685,7 +1812,7 @@ void MEDDLY::ct_tmpl<M,CHAINED,I>::resizeTable(unsigned long newsz)
 // **********************************************************************
 
 template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
-unsigned MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>
+unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
             ::hashEntry(const void* entry) const
 {
     hash_stream H;
@@ -1791,6 +1918,99 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>
     return H.finish();
 }
 
+// **********************************************************************
+
+template <bool M, bool C, bool I>
+void MEDDLY::ct_tmpl<M, C, I>
+    ::showEntry(output &s, unsigned long h) const
+{
+    MEDDLY_DCASSERT(h);
+    const void* hptr = MMAN->getChunkAddress(h);
+    const unsigned* uptr = (unsigned*) hptr;
+    const ct_entry_item* ctptr = (ct_entry_item*) hptr;
+
+    //
+    // Skip over chained portion
+    //
+    if (C) {
+        if (I) {
+            uptr += sizeof(unsigned long) / sizeof(unsigned);
+        } else {
+            ++ctptr;
+        }
+    }
+
+    //
+    // Get operation and advance
+    //
+    const ct_entry_type* et = M
+        ?   getEntryType( I ? *uptr : ctptr->U )
+        :   global_et;
+    if (M) {
+        if (I) {
+            ++uptr;
+        } else {
+            ++ctptr;
+        }
+    }
+
+    //
+    // Get key size and advance
+    //
+    unsigned reps;
+    if (et->isRepeating()) {
+        if (I) {
+            reps = *uptr;
+            ++uptr;
+        } else {
+            reps = ctptr->U;
+            ++ctptr;
+        }
+    } else {
+        reps = 0;
+    }
+
+    //
+    // Display key portion
+    //
+
+    ct_item x;
+    s << "[" << et->getName() << "(";
+    const unsigned stop = et->getKeySize(reps);
+    for (unsigned i=0; i<stop; i++) {
+        if (i) s << ", ";
+
+        const ct_typeID tid = et->getKeyType(i).getType();
+        if (I) {
+            uptr = x.set(tid, uptr);
+        } else {
+            x.set(tid, *ctptr);
+            ++ctptr;
+        }
+        x.show(s);
+
+    } // for i
+
+    //
+    // Display result portion
+    //
+    s << "): ";
+
+    for (unsigned i=0; i<et->getResultSize(); i++) {
+        if (i) s << ", ";
+
+        const ct_typeID tid = et->getKeyType(i).getType();
+        if (I) {
+            uptr = x.set(tid, uptr);
+        } else {
+            x.set(tid, *ctptr);
+            ++ctptr;
+        }
+        x.show(s);
+    }
+    s << "]";
+}
+
 // ***************************************************************************
 // ***************************************************************************
 // ***************************************************************************
@@ -1858,7 +2078,7 @@ MEDDLY::monolithic_unchained_style::create(const ct_settings &s) const
         case compressionOption::TypeBased:
                 return new ct_tmpl<true, false, true>(s, 0, 0);
         default:
-                return 0;
+                return nullptr;
     }
 #else
     switch (s.compression) {
@@ -1867,7 +2087,7 @@ MEDDLY::monolithic_unchained_style::create(const ct_settings &s) const
         case compressionOption::TypeBased:
                 return new ct_typebased<true, false>(s, 0, 0);
         default:
-                return 0;
+                return nullptr;
     }
 #endif
 }
@@ -1893,7 +2113,7 @@ MEDDLY::operation_chained_style::create(const ct_settings &s, operation* op, uns
         case compressionOption::TypeBased:
             return new ct_tmpl<false, true, true>(s, op, slot);
         default:
-            return 0;
+            return nullptr;
     }
 #else
     switch (s.compression) {
@@ -1902,7 +2122,7 @@ MEDDLY::operation_chained_style::create(const ct_settings &s, operation* op, uns
         case compressionOption::TypeBased:
                 return new ct_typebased<false, true>(s, op, slot);
         default:
-                return 0;
+                return nullptr;
     }
 #endif
 }
@@ -1929,7 +2149,7 @@ MEDDLY::operation_unchained_style::create(const ct_settings &s, operation* op, u
         case compressionOption::TypeBased:
                 return new ct_tmpl<false, false, false>(s, op, slot);
         default:
-                return 0;
+                return nullptr;
     }
 #else
     switch (s.compression) {
@@ -1938,7 +2158,7 @@ MEDDLY::operation_unchained_style::create(const ct_settings &s, operation* op, u
         case compressionOption::TypeBased:
                 return new ct_typebased<false, false>(s, op, slot);
         default:
-                return 0;
+                return nullptr;
     }
 #endif
 }

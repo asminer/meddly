@@ -115,6 +115,42 @@ class MEDDLY::ct_item {
             }
         }
 
+        /// Set item from a compacted CT entry, and advance the pointer.
+        inline const unsigned* set(ct_typeID t, const unsigned* ptr)
+        {
+            MEDDLY_DCASSERT(sizeof(the_node) == sizeof(unsigned));
+            MEDDLY_DCASSERT(sizeof(the_int) == sizeof(unsigned));
+            MEDDLY_DCASSERT(sizeof(the_float) == sizeof(unsigned));
+
+            MEDDLY_DCASSERT(sizeof(the_long) == 2*sizeof(unsigned));
+            MEDDLY_DCASSERT(sizeof(the_double) == 2*sizeof(unsigned));
+            MEDDLY_DCASSERT(sizeof(the_generic) == 2*sizeof(unsigned));
+
+            type = t;
+            switch (t) {
+                case ct_typeID::ERROR:
+                        setNext(nullptr);
+                        return ptr;
+
+                case ct_typeID::NODE:
+                case ct_typeID::INTEGER:
+                case ct_typeID::FLOAT:
+                        raw[0] = ptr[0];
+                        slots = 1;
+                        return ptr+1;
+
+                case ct_typeID::LONG:
+                case ct_typeID::DOUBLE:
+                case ct_typeID::GENERIC:
+                        raw[0] = ptr[0];
+                        raw[1] = ptr[1];
+                        slots = 2;
+                        return ptr+2;
+            }
+            // fail safe
+            return nullptr;
+        }
+
         // For templates
         inline void set_ev(long i)  { setL(i); }
         inline void set_ev(float f) { setF(f); }
@@ -338,6 +374,10 @@ class MEDDLY::ct_item {
                                             MEDDLY_DCASSERT(false);
             }
         }
+
+    public: // displaying
+
+        void show(output &s) const;
 
     private:
         union {

@@ -30,6 +30,48 @@ MEDDLY::ct_item::ct_item()
     next = nullptr;
 }
 
+void MEDDLY::ct_item::show(output &s) const
+{
+    switch (type) {
+        case ct_typeID::NODE:
+            s.put(the_node);
+            s.put(" N");
+            return;
+
+        case ct_typeID::INTEGER:
+            s.put(the_int);
+            s.put(" I");
+            return;
+
+        case ct_typeID::LONG:
+            s.put(the_long);
+            s.put(" L");
+            return;
+
+        case ct_typeID::FLOAT:
+            s.put(the_float);
+            s.put(" F");
+            return;
+
+        case ct_typeID::DOUBLE:
+            s.put(the_double);
+            s.put(" D");
+            return;
+
+        case ct_typeID::GENERIC:
+            if (the_generic) {
+                the_generic->show(s);
+            } else {
+                s.put("null G");
+            }
+            return;
+
+        default:
+            MEDDLY_DCASSERT(false);
+    }
+
+}
+
 // ******************************************************************
 // *                                                                *
 // *                        ct_vector methods                       *

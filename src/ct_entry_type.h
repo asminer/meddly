@@ -216,6 +216,9 @@ class MEDDLY::ct_object {
         ct_object();
         virtual ~ct_object();
         virtual opnd_type getType() = 0;
+
+        // Default behavior: show 'this' pointer
+        virtual void show(output &s) const;
 };
 
 

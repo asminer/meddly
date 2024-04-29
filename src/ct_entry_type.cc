@@ -85,6 +85,13 @@ MEDDLY::ct_object::~ct_object()
 {
 }
 
+void MEDDLY::ct_object::show(output &s) const
+{
+    s.put_hex((unsigned long) this);
+    s.put(' ');
+    s.put('G');
+}
+
 // **********************************************************************
 // *                                                                    *
 // *                       ct_entry_type  methods                       *
