@@ -224,6 +224,14 @@ unsigned checkEntries(const ct_entry_type* CTE, compute_table* CT,
     return hits;
 }
 
+inline void show_entries(unsigned entries, unsigned adds, const char* ctname)
+{
+    unsigned retain = entries*1000 / adds;
+    std::cout   << "        " << std::setw(5) << entries << " entries in "
+                << ctname << " (" << retain/10 << "." << retain%10
+                << "% retention)\n";
+}
+
 //
 // Run CT tests.
 //
@@ -262,38 +270,37 @@ void check_CT(bool monolithic)
     // Add some CT entries
     //
 
-    unsigned add, entries1, entries2, entries3, hits1, hits2, hits3;
     myop* foo = new myop(F1, F2);
 
     cout << "    Creating CT entries\n";
-    add = addEntries(foo->et0, foo->ct0(), E1);
-    cout << "        " << setw(5) << add << " op1 entries added\n";
+    const unsigned add1 = addEntries(foo->et0, foo->ct0(), E1);
+    cout << "        " << setw(5) << add1 << " op1 entries added\n";
 
-    add = addEntries(foo->et1, foo->ct1(), E1, E1);
-    cout << "        " << setw(5) << add << " op2 entries added\n";
+    const unsigned add2 = addEntries(foo->et1, foo->ct1(), E1, E1);
+    cout << "        " << setw(5) << add2 << " op2 entries added\n";
 
-    add = addEntries(foo->et2, foo->ct2(), E1, E2);
-    cout << "        " << setw(5) << add << " op3 entries added\n";
+    const unsigned add3 = addEntries(foo->et2, foo->ct2(), E1, E2);
+    cout << "        " << setw(5) << add3 << " op3 entries added\n";
 
-    entries1 = foo->ct0()->getStats().numEntries;
-    entries2 = foo->ct1()->getStats().numEntries;
-    entries3 = foo->ct2()->getStats().numEntries;
+    const unsigned entries1 = foo->ct0()->getStats().numEntries;
+    const unsigned entries2 = foo->ct1()->getStats().numEntries;
+    const unsigned entries3 = foo->ct2()->getStats().numEntries;
 
     if (monolithic) {
-        cout << "        " << setw(5) << entries1 << " entries in CT\n";
+        show_entries(entries1, add1+add2+add3, "CT");
     } else {
-        cout << "        " << setw(5) << entries1 << " entries in op1 CT\n";
-        cout << "        " << setw(5) << entries2 << " entries in op2 CT\n";
-        cout << "        " << setw(5) << entries3 << " entries in op3 CT\n";
+        show_entries(entries1, add1, "op1 CT");
+        show_entries(entries2, add2, "op2 CT");
+        show_entries(entries3, add3, "op3 CT");
     }
 
     cout << "    Checking CT entries\n";
 
-    hits1 = checkEntries(foo->et0, foo->ct0(), E1);
+    const unsigned hits1 = checkEntries(foo->et0, foo->ct0(), E1);
     cout << "        " << setw(5) << hits1 << " op1 entries matched\n";
-    hits2 = checkEntries(foo->et1, foo->ct1(), E1, E1);
+    const unsigned hits2 = checkEntries(foo->et1, foo->ct1(), E1, E1);
     cout << "        " << setw(5) << hits2 << " op2 entries matched\n";
-    hits3 = checkEntries(foo->et2, foo->ct2(), E1, E2);
+    const unsigned hits3 = checkEntries(foo->et2, foo->ct2(), E1, E2);
     cout << "        " << setw(5) << hits3 << " op3 entries matched\n";
 
     if (monolithic) {
@@ -320,8 +327,29 @@ void check_CT(bool monolithic)
 
     //
     // Destroy forest 2 and re-count!
-    // TBD
     //
+    cout << "    Killing op3 forest\n";
+    forest::destroy(F2);
+    cout << "    Re-checking CT entries\n";
+
+    const unsigned nhit1 = checkEntries(foo->et0, foo->ct0(), E1);
+    cout << "        " << setw(5) << nhit1 << " op1 entries matched\n";
+    const unsigned nhit2 = checkEntries(foo->et1, foo->ct1(), E1, E1);
+    cout << "        " << setw(5) << nhit2 << " op2 entries matched\n";
+    const unsigned nhit3 = checkEntries(foo->et2, foo->ct2(), E1, E2);
+    cout << "        " << setw(5) << nhit3 << " op3 entries matched\n";
+
+    if (nhit3 != 0) throw "False matches on deleted forest?";
+
+    if (monolithic) {
+        const unsigned ment = foo->ct0()->getStats().numEntries;
+        cout << "        " << setw(5) << nhit1+nhit2+nhit3
+             << " total entries matched\n";
+        cout << "        " << setw(5) << ment
+             << " total entries now in CT\n";
+
+        if (ment != nhit1+nhit2+nhit3) throw "monolithic new hit count mismatch";
+    }
 
 }
 
