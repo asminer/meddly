@@ -35,6 +35,16 @@ class myop : public MEDDLY::operation {
             return true;
         }
 
+        inline compute_table* ct0() {
+            return CT[0];
+        }
+        inline compute_table* ct1() {
+            return CT[1];
+        }
+        inline compute_table* ct2() {
+            return CT[2];
+        }
+
     public:
         ct_entry_type* et0;
         ct_entry_type* et1;
@@ -56,6 +66,8 @@ myop::myop(forest* F1, forest* F2) : operation("myop", 3)
     et2->setForestForSlot(0, F1);
     et2->setForestForSlot(1, F2);
     registerEntryType(2, et2);
+
+    buildCTs();
 }
 
 void initEdges(forest* f, std::vector <dd_edge> &E)
@@ -76,11 +88,14 @@ void initEdges(forest* f, std::vector <dd_edge> &E)
 
 //
 // Add entries of type  IN:I
+// returns the number of entries added.
 //
-void addEntries(const ct_entry_type* CTE, compute_table* CT,
+unsigned addEntries(const ct_entry_type* CTE, compute_table* CT,
         const std::vector <dd_edge> &E)
 {
+    unsigned cnt=0;
     ct_entry_result res;
+    res.initialize(CTE);
     for (int i=0; i<E.size(); i++) {
         for (unsigned j=0; j<E.size(); j++) {
             ct_entry_key* key = compute_table::useEntryKey(CTE, 0);
@@ -94,9 +109,11 @@ void addEntries(const ct_entry_type* CTE, compute_table* CT,
             res.reset();
             res.writeI(i+E[j].getNode());
             CT->addEntry(key, res);
+            ++cnt;
         } // for j
     } // for i
 
+    return cnt;
 }
 
 //
@@ -108,6 +125,7 @@ unsigned checkEntries(const ct_entry_type* CTE, compute_table* CT,
 {
     unsigned hits = 0;
     ct_entry_result res;
+    res.initialize(CTE);
     for (int i=0; i<E.size(); i++) {
         for (unsigned j=0; j<E.size(); j++) {
             ct_entry_key* key = compute_table::useEntryKey(CTE, 0);
@@ -139,10 +157,12 @@ unsigned checkEntries(const ct_entry_type* CTE, compute_table* CT,
 //
 // Add entries of type  NN:I
 //
-void addEntries(const ct_entry_type* CTE, compute_table* CT,
+unsigned addEntries(const ct_entry_type* CTE, compute_table* CT,
         const std::vector <dd_edge> &E1, const std::vector <dd_edge> &E2)
 {
+    unsigned cnt = 0;
     ct_entry_result res;
+    res.initialize(CTE);
     for (unsigned i=0; i<E1.size(); i++) {
         for (unsigned j=0; j<E2.size(); j++) {
             ct_entry_key* key = compute_table::useEntryKey(CTE, 0);
@@ -154,44 +174,171 @@ void addEntries(const ct_entry_type* CTE, compute_table* CT,
             if (res) throw "Found result in CT; shouldn't have.";
 
             res.reset();
-            res.writeI(E1[i].getNode() + E2[i].getNode());
+            res.writeI(E1[i].getNode() + E2[j].getNode());
             CT->addEntry(key, res);
+
+            ++cnt;
         } // for j
     } // for i
 
+    return cnt;
 }
 
+//
+// Check entries of type  NN:I
+// Returns the number of CT hits
+//
+unsigned checkEntries(const ct_entry_type* CTE, compute_table* CT,
+        const std::vector <dd_edge> &E1, const std::vector <dd_edge> &E2)
+{
+    unsigned hits = 0;
+    ct_entry_result res;
+    res.initialize(CTE);
+    for (unsigned i=0; i<E1.size(); i++) {
+        for (unsigned j=0; j<E2.size(); j++) {
+            ct_entry_key* key = compute_table::useEntryKey(CTE, 0);
+
+            key->writeN(E1[i].getNode());
+            key->writeN(E2[j].getNode());
+
+            CT->find(key, res);
+            CT->recycle(key);
+
+            if (!res) continue;
+            int answer = res.readI();
+            if (answer != E1[i].getNode() + E2[j].getNode()) {
+                std::cerr << "Wrong CT entry.\n";
+                std::cerr << "    got     : " << E1[i].getNode()
+                          << ", " << E2[j].getNode()
+                          << " : " << answer << "\n";
+                std::cerr << "    expected: " << E1[i].getNode()
+                          << ", " << E2[j].getNode()
+                          << " : " << E1[i].getNode()+E2[j].getNode() << "\n";
+                throw "cache error";
+            }
+            hits++;
+
+        } // for j
+    } // for i
+
+    return hits;
+}
+
+//
+// Run CT tests.
+//
+void check_CT(bool monolithic)
+{
+    using namespace std;
+
+    //
+    // Set up domain
+    //
+    int bounds[3];
+    bounds[0] = bounds[1] = bounds[2] = VARSIZE;
+    domain *D = domain::createBottomUp(bounds, 3);
+
+    //
+    // Set up two (identical) forests
+    //
+    forest *F1, *F2;
+    policies p;
+    p.useDefaults(false);
+    F1 = forest::create(D, false, range_type::INTEGER,
+                        edge_labeling::MULTI_TERMINAL, p);
+    F2 = forest::create(D, false, range_type::INTEGER,
+                        edge_labeling::MULTI_TERMINAL, p);
+
+    //
+    // Make some dd_edges
+    //
+    vector <dd_edge> E1(100);
+    vector <dd_edge> E2(100);
+
+    initEdges(F1, E1);
+    initEdges(F2, E2);
+
+    //
+    // Add some CT entries
+    //
+
+    unsigned add, entries1, entries2, entries3, hits1, hits2, hits3;
+    myop* foo = new myop(F1, F2);
+
+    cout << "    Creating CT entries\n";
+    add = addEntries(foo->et0, foo->ct0(), E1);
+    cout << "        " << setw(5) << add << " op1 entries added\n";
+
+    add = addEntries(foo->et1, foo->ct1(), E1, E1);
+    cout << "        " << setw(5) << add << " op2 entries added\n";
+
+    add = addEntries(foo->et2, foo->ct2(), E1, E2);
+    cout << "        " << setw(5) << add << " op3 entries added\n";
+
+    entries1 = foo->ct0()->getStats().numEntries;
+    entries2 = foo->ct1()->getStats().numEntries;
+    entries3 = foo->ct2()->getStats().numEntries;
+
+    if (monolithic) {
+        cout << "        " << setw(5) << entries1 << " entries in CT\n";
+    } else {
+        cout << "        " << setw(5) << entries1 << " entries in op1 CT\n";
+        cout << "        " << setw(5) << entries2 << " entries in op2 CT\n";
+        cout << "        " << setw(5) << entries3 << " entries in op3 CT\n";
+    }
+
+    cout << "    Checking CT entries\n";
+
+    hits1 = checkEntries(foo->et0, foo->ct0(), E1);
+    cout << "        " << setw(5) << hits1 << " op1 entries matched\n";
+    hits2 = checkEntries(foo->et1, foo->ct1(), E1, E1);
+    cout << "        " << setw(5) << hits2 << " op2 entries matched\n";
+    hits3 = checkEntries(foo->et2, foo->ct2(), E1, E2);
+    cout << "        " << setw(5) << hits3 << " op3 entries matched\n";
+
+    if (monolithic) {
+        cout << "        " << setw(5) << hits1+hits2+hits3
+             << " total entries matched\n";
+    }
+
+    if (monolithic) {
+        if (hits1+hits2+hits3 != entries1) {
+            throw "monolithic CT hit count mismatch";
+        }
+    } else {
+        if (hits1 != entries1) {
+            throw "CT1 hit count mismatch";
+        }
+        if (hits2 != entries2) {
+            throw "CT2 hit count mismatch";
+        }
+        if (hits3 != entries3) {
+            throw "CT3 hit count mismatch";
+        }
+    }
+
+
+    //
+    // Destroy forest 2 and re-count!
+    // TBD
+    //
+
+}
 
 int main(int argc, const char** argv)
 {
+    using namespace std;
     try {
-        std::vector <dd_edge> E1(100);
-        std::vector <dd_edge> E2(100);
 
-        int bounds[3];
-        bounds[0] = bounds[1] = bounds[2] = VARSIZE;
-
+        // go through all CT styles
+        //
         MEDDLY::initialize();
 
-        domain *D = domain::createBottomUp(bounds, 3);
-        forest *F1, *F2;
-        policies p;
-        p.useDefaults(false);
-        F1 = forest::create(D, false, range_type::INTEGER,
-                        edge_labeling::MULTI_TERMINAL, p);
-        F2 = forest::create(D, false, range_type::INTEGER,
-                        edge_labeling::MULTI_TERMINAL, p);
-
-        myop foo(F1, F2);
-
-        initEdges(F1, E1);
-        initEdges(F2, E2);
-
-
-
-        std::cout << "Done\n";
+        check_CT(true);
 
         MEDDLY::cleanup();
+
+        cout << "Done\n";
         return 0;
     }
 
