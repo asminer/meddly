@@ -230,6 +230,8 @@ inline void show_entries(unsigned entries, unsigned adds, const char* ctname)
     std::cout   << "        " << std::setw(5) << entries << " entries in "
                 << ctname << " (" << retain/10 << "." << retain%10
                 << "% retention)\n";
+
+    if (retain < 800) throw "not enough hits?";
 }
 
 inline void check_new_hits(unsigned oldhits, unsigned newhits)
