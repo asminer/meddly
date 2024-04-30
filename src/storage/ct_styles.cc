@@ -1122,6 +1122,113 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>
 }
 
 // **********************************************************************
+
+template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
+void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>
+    ::countNodeEntries(const forest* f, size_t* counts) const
+{
+    for (unsigned long h=0; h<table.size(); h++) {
+        unsigned long curr = table[h];
+        while (curr) {
+            const void* entry = MMAN->getChunkAddress(curr);
+            const unsigned* ue = (const unsigned*) entry;
+            const ct_entry_item* cte = (const ct_entry_item*) entry;
+
+            //
+            // Skip over chained portion
+            //
+            if (CHAINED) {
+                if (INTSLOTS) {
+                    ue += sizeof(unsigned long) / sizeof(unsigned);
+                } else {
+                    ++cte;
+                }
+            }
+
+            //
+            // Get operation and advance
+            //
+            const ct_entry_type* et = MONOLITHIC
+                ?   getEntryType( INTSLOTS ? *ue : cte->U )
+                :   global_et;
+            if (MONOLITHIC) {
+                if (INTSLOTS) {
+                    ++ue;
+                } else {
+                    ++cte;
+                }
+            }
+
+            //
+            // Get key size and advance
+            //
+            unsigned reps;
+            if (et->isRepeating()) {
+                if (INTSLOTS) {
+                    reps = *ue;
+                    ++ue;
+                } else {
+                    reps = cte->U;
+                    ++cte;
+                }
+            } else {
+                reps = 0;
+            }
+
+            //
+            // Go through key portion
+            //
+            ct_item x;
+            const unsigned klen = et->getKeySize(reps);
+            for (unsigned i=0; i<klen; i++) {
+                const ct_itemtype &item = et->getKeyType(i);
+                if (INTSLOTS) {
+                    ue = x.set(item.getType(), ue);
+                } else {
+                    x.set(item.getType(), *cte);
+                    ++cte;
+                }
+
+                if (item.hasForest(f)) {
+                    if (x.getN() > 0) {
+                        ++counts[ x.getN() ];
+                    }
+                }
+            } // for i
+
+            //
+            // Go through result portion
+            //
+            for (unsigned i=0; i<et->getResultSize(); i++) {
+                const ct_itemtype &item = et->getResultType(i);
+                if (INTSLOTS) {
+                    ue = x.set(item.getType(), ue);
+                } else {
+                    x.set(item.getType(), *cte);
+                    ++cte;
+                }
+
+                if (item.hasForest(f)) {
+                    if (x.getN() > 0) {
+                        ++counts[ x.getN() ];
+                    }
+                }
+            } // for i
+
+            //
+            // Advance in chain
+            //
+            if (CHAINED) {
+                curr = getNext(entry);
+            } else {
+                curr = 0;
+            }
+        } // while curr
+    } // for h
+
+}
+
+// **********************************************************************
 //
 //      Helper methods
 //
