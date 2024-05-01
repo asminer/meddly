@@ -29,8 +29,9 @@
 #include "../ct_initializer.h"
 #include "../operators.h"
 
+// #define DEBUG_FIND
 
-#define USE_NEW_TEMPLATE
+// #define USE_NEW_TEMPLATE
 
 #ifndef USE_NEW_TEMPLATE
 #include "ct_typebased.h"
@@ -423,8 +424,10 @@ namespace MEDDLY {
                 Used for debugging, and by method(s) to display the entire CT.
                     @param  s         Stream to write to.
                     @param  h         Handle of the entry.
+                    @param  keyonly     true: we don't have a result yet
+                                        false: it's a proper entry with both
             */
-            void showEntry(output &s, unsigned long h) const;
+            void showEntry(output &s, unsigned long h, bool keyonly) const;
 
             /// Display a chain
             inline void showChain(output &s, unsigned long L) const
@@ -625,10 +628,12 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
             ++e;    // skip over NEXT pointer
         }
         if (MONOLITHIC) {
+            e->UL = 0;
             H.push(e->U = et->getID());
             ++e;
         }
         if (et->isRepeating()) {
+            e->UL = 0;
             H.push(e->U = key->numRepeats());
             ++e;
         }
@@ -643,6 +648,14 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     const unsigned long hslot = key->getHash() % table.size();
     unsigned long hcurr = hslot;
     // TBD: use a 64-bit hash
+
+#ifdef DEBUG_FIND
+    ostream_output out(std::cout);
+    out << "Searching for entry ";
+    showEntry(out, key->my_entry, true);
+    out << " at slot " << hcurr << "...\n";
+#endif
+
 
     //
     // (4) Search the table with the following policy.
@@ -696,6 +709,10 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
         genentry currentry;
         currentry.vptr = MMAN->getChunkAddress(currhnd);
 
+#ifdef DEBUG_FIND
+        out << "        trying node " << currhnd << "\n";
+#endif
+
         //
         // Check if it is equal to the entry we built
         //
@@ -743,6 +760,9 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
                 toDelete.push_back(currhnd);
                 batchDelete();
                 deleteEntry(key->my_entry, true);
+#ifdef DEBUG_FIND
+                out << "        equal but unusable\n";
+#endif
                 return;
             } else {
                 //
@@ -766,6 +786,9 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
                 perf.hits++;
                 batchDelete();
                 deleteEntry(key->my_entry, true);
+#ifdef DEBUG_FIND
+                out << "        equal and usable\n";
+#endif
                 return;
             }
 
@@ -831,6 +854,9 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     sawSearch(chainlen);
     res.setInvalid();
     batchDelete();
+#ifdef DEBUG_FIND
+    out << "        not found\n";
+#endif
 }
 
 #endif
@@ -1098,7 +1124,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>
             s << "\tNode ";
             s.put(long(curr), 9);
             s << ":  ";
-            showEntry(s, curr);
+            showEntry(s, curr, false);
             s.put('\n');
             if (CHAINED) {
                 curr = getNext(MMAN->getChunkAddress(curr));
@@ -1313,6 +1339,7 @@ MEDDLY::ct_entry_item* MEDDLY::ct_tmpl<M,C,I>::key2entry(
 
             case ct_typeID::INTEGER:
                     H.push(e->U = data[i].U);
+                    MEDDLY_DCASSERT( (e->UL >> 32) == 0 );
                     e++;
                     continue;
 
@@ -1427,7 +1454,7 @@ unsigned* MEDDLY::ct_tmpl<M,C,I>::result2entry(const ct_entry_result& res,
     const ct_entry_item* data = res.rawData();
     const unsigned datalen = res.dataLength();
     for (unsigned i=0; i<datalen; i++) {
-        const ct_itemtype &it = et->getKeyType(i);
+        const ct_itemtype &it = et->getResultType(i);
         switch (it.getType())
         {
             case ct_typeID::NODE:
@@ -2037,7 +2064,7 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
 
 template <bool M, bool C, bool I>
 void MEDDLY::ct_tmpl<M, C, I>
-    ::showEntry(output &s, unsigned long h) const
+    ::showEntry(output &s, unsigned long h, bool keyonly) const
 {
     MEDDLY_DCASSERT(h);
     const void* hptr = MMAN->getChunkAddress(h);
@@ -2111,17 +2138,21 @@ void MEDDLY::ct_tmpl<M, C, I>
     //
     s << "): ";
 
-    for (unsigned i=0; i<et->getResultSize(); i++) {
-        if (i) s << ", ";
+    if (keyonly) {
+        s << "temp";
+    } else {
+        for (unsigned i=0; i<et->getResultSize(); i++) {
+            if (i) s << ", ";
 
-        const ct_typeID tid = et->getResultType(i).getType();
-        if (I) {
-            uptr = x.set(tid, uptr);
-        } else {
-            x.set(tid, *ctptr);
-            ++ctptr;
+            const ct_typeID tid = et->getResultType(i).getType();
+            if (I) {
+                uptr = x.set(tid, uptr);
+            } else {
+                x.set(tid, *ctptr);
+                ++ctptr;
+            }
+            x.show(s);
         }
-        x.show(s);
     }
     s << "]";
 }
