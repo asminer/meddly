@@ -187,11 +187,11 @@ class MEDDLY::ct_itemtype {
         void show(output &s) const;
 
     protected:
-        inline unsigned getTypeInt() const {
-            unsigned u =
+        inline int getTypeInt() const {
+            int u =
                 static_cast <typename std::underlying_type<ct_typeID>::type>
                     (type);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, u, 7u);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, u, 7);
             return u;
         }
 

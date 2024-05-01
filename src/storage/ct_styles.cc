@@ -19,32 +19,7 @@
 
 #include "ct_styles.h"
 
-
-// #define DEBUG_SLOW
-
-// #define DEBUG_CT_SEARCHES
-// #define DEBUG_CT_SLOTS
-
-// #define DEBUG_REHASH
-// #define DEBUG_TABLE2LIST
-// #define DEBUG_LIST2TABLE
-// #define DEBUG_CTALLOC
-
-// #define DEBUG_ISDEAD
-// #define DEBUG_ISSTALE
-// #define DEBUG_REMOVESTALES
-// #define DEBUG_REMOVESTALES_DETAILS
-
-// #define DEBUG_CT_SCAN
-// #define DEBUG_CT
-
-// #define DEBUG_VALIDATE_COUNTS
-
 #include "../memory.h"
-
-
-#include <climits>
-
 #include "../hash_stream.h"
 #include "../node_storage.h"
 #include "../compute_table.h"
@@ -55,15 +30,7 @@
 #include "../operators.h"
 
 
-/*
-#include "../node_storage.h"
-#include "../compute_table.h"
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../ct_vector.h"
-*/
-
-// #define USE_NEW_TEMPLATE
+#define USE_NEW_TEMPLATE
 
 #ifndef USE_NEW_TEMPLATE
 #include "ct_typebased.h"
@@ -1528,7 +1495,8 @@ bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
         {
             case ct_typeID::NODE:
                     MEDDLY_DCASSERT(item.hasForest());
-                    if (item.getForest()->isDeadEntry(*sres)) {
+                    data[i].U = *sres;
+                    if (item.getForest()->isDeadEntry(data[i].N)) {
                         return true;
                     }
                     continue;
