@@ -25,7 +25,11 @@ using namespace MEDDLY;
 
 const int VARSIZE = 2;
 
+const unsigned EDGES = 3;   //100;
+
 // #define DEBUG
+
+// #define DEBUG_CT
 
 class myop : public MEDDLY::operation {
     public:
@@ -53,16 +57,16 @@ class myop : public MEDDLY::operation {
 
 myop::myop(forest* F1, forest* F2) : operation("myop", 3)
 {
-    et0 = new ct_entry_type("test0", "IN:I");
+    et0 = new ct_entry_type("op1", "IN:I");
     et0->setForestForSlot(1, F1);
     registerEntryType(0, et0);
 
-    et1 = new ct_entry_type("test1", "NN:I");
+    et1 = new ct_entry_type("op2", "NN:I");
     et1->setForestForSlot(0, F1);
     et1->setForestForSlot(1, F1);
     registerEntryType(1, et1);
 
-    et2 = new ct_entry_type("test2", "NN:I");
+    et2 = new ct_entry_type("op3", "NN:I");
     et2->setForestForSlot(0, F1);
     et2->setForestForSlot(1, F2);
     registerEntryType(2, et2);
@@ -134,6 +138,7 @@ unsigned checkEntries(const ct_entry_type* CTE, compute_table* CT,
             key->writeN(E[j].getNode());
 
             CT->find(key, res);
+            CT->doneKey(key);
             CT->recycle(key);
 
             if (!res) continue;
@@ -202,6 +207,7 @@ unsigned checkEntries(const ct_entry_type* CTE, compute_table* CT,
             key->writeN(E2[j].getNode());
 
             CT->find(key, res);
+            CT->doneKey(key);
             CT->recycle(key);
 
             if (!res) continue;
@@ -278,8 +284,8 @@ void check_CT(bool monolithic)
     //
     // Make some dd_edges
     //
-    vector <dd_edge> E1(100);
-    vector <dd_edge> E2(100);
+    vector <dd_edge> E1(EDGES);
+    vector <dd_edge> E2(EDGES);
 
     initEdges(F1, E1);
     initEdges(F2, E2);
@@ -326,6 +332,16 @@ void check_CT(bool monolithic)
              << " total entries matched\n";
     }
 
+#ifdef DEBUG_CT
+    ostream_output out(cout);
+    foo->ct0()->show(out, 5);
+    out << "Forest 1:\n";
+    F1->dump(out, SHOW_DETAILS);
+    out << "Forest 2:\n";
+    F2->dump(out, SHOW_DETAILS);
+    out << foo->ct0()->getStats().numEntries << " entries\n";
+#endif
+
     if (monolithic) {
         if (hits1+hits2+hits3 != entries1) {
             throw "monolithic CT hit count mismatch";
@@ -362,7 +378,7 @@ void check_CT(bool monolithic)
     if (nhit3 != 0) throw "False matches on deleted forest?";
 
     if (monolithic) {
-        const unsigned ment = foo->ct0()->getStats().numEntries;
+        unsigned ment = foo->ct0()->getStats().numEntries;
         cout << "        " << setw(5) << nhit1+nhit2+nhit3
              << " total entries matched\n";
         cout << "        " << setw(5) << ment

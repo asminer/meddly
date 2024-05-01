@@ -1531,11 +1531,10 @@ class MEDDLY::forest {
                 @param  s       File stream to write to.
                 @param  node    Node to display.
                 @param  flags   Switches to control output;
-                                see constants "SHOW_DETAILED", etc.
-
+                                see constants "SHOW_DETAILS", etc.
                 @return true, iff we displayed anything
         */
-        bool showNode(output &s, node_handle node, unsigned int flags = 0) const;
+        bool showNode(output &s, node_handle node, display_flags flags = 0) const;
 
 
         /** Show various stats for this forest.
@@ -1553,9 +1552,9 @@ class MEDDLY::forest {
             Display all nodes in the forest.
                 @param  s       File stream to write to
                 @param  flags   Switches to control output;
-                                see constants "SHOW_DETAILED", etc.
+                                see constants "SHOW_DETAILS", etc.
         */
-        void dump(output &s, unsigned int flags) const;
+        void dump(output &s, display_flags flags) const;
         void dumpInternal(output &s) const;
         void dumpUniqueTable(output &s) const;
         void validateIncounts(bool exact);

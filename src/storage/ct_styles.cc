@@ -42,14 +42,18 @@
 
 #include "../memory.h"
 
-#include "ct_typebased.h"
-#include "ct_none.h"
-
 
 #include <climits>
 
 #include "../hash_stream.h"
+#include "../node_storage.h"
+#include "../compute_table.h"
+#include "../ct_entry_key.h"
+#include "../ct_entry_result.h"
+#include "../ct_vector.h"
 #include "../ct_initializer.h"
+#include "../operators.h"
+
 
 /*
 #include "../node_storage.h"
@@ -59,7 +63,12 @@
 #include "../ct_vector.h"
 */
 
-#define USE_NEW_TEMPLATE
+// #define USE_NEW_TEMPLATE
+
+#ifndef USE_NEW_TEMPLATE
+#include "ct_typebased.h"
+#include "ct_none.h"
+#endif
 
 // ***************************************************************************
 // ***************************************************************************
@@ -146,6 +155,7 @@ namespace MEDDLY {
             virtual void find(ct_entry_key* key, ct_entry_result &res);
             virtual void addEntry(ct_entry_key* key,
                 const ct_entry_result& res);
+            virtual void doneKey(ct_entry_key* key);
 #endif
 
             virtual bool find(const ct_entry_type &ET, ct_vector &key,
@@ -181,6 +191,7 @@ namespace MEDDLY {
                     const ct_entry_result& res, ct_entry_item* e)
             {
                 MEDDLY_DCASSERT(!INTSLOTS);
+                res.cacheNodes();
                 const ct_entry_type* et = res.getET();
                 MEDDLY_DCASSERT(et);
                 const unsigned res_slots = et->getResultSize();
@@ -407,7 +418,7 @@ namespace MEDDLY {
             inline void batchDelete()
             {
                 while (toDelete.size()) {
-                    deleteEntry(toDelete.back(), true);
+                    deleteEntry(toDelete.back(), false);
                     toDelete.pop_back();
                 }
             }
@@ -461,6 +472,11 @@ namespace MEDDLY {
                 s << "\n";
             }
 
+            /// Convert unsigned pointer to node
+            static inline node_handle u2n(const unsigned* ptr)
+            {
+                return *((const node_handle*)ptr);
+            }
 
         private:
             /// List of entries to delete
@@ -868,12 +884,6 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::addEntry(ct_entry_key* key,
             throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
     }
 
-    //
-    // Increment cache counters for nodes in the key and result
-    //
-    key->cacheNodes();
-    res.cacheNodes();
-
     unsigned h = key->getHash() % table.size();
 
     //
@@ -959,6 +969,22 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::addEntry(ct_entry_key* key,
             tableExpand = table.size() / 2;
         }
         tableShrink = table.size() / 8;
+    }
+}
+
+#endif
+
+// **********************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+
+template <bool M, bool C, bool I>
+void MEDDLY::ct_tmpl<M,C,I>::doneKey(ct_entry_key* key)
+{
+    if (key) {
+        if (key->my_entry) {
+            deleteEntry(key->my_entry, true);
+        }
     }
 }
 
@@ -1311,9 +1337,13 @@ MEDDLY::ct_entry_item* MEDDLY::ct_tmpl<M,C,I>::key2entry(
     for (unsigned i=0; i<key_slots; i++) {
         // zero out the entire slot, makes comparisons easier
         e->UL = 0;
-        switch (et->getKeyType(i).getType())
+        const ct_itemtype &it = et->getKeyType(i);
+        switch (it.getType())
         {
             case ct_typeID::NODE:
+                    it.getForest()->cacheNode(data[i].N);
+                    // FALL THROUGH
+
             case ct_typeID::INTEGER:
                     H.push(e->U = data[i].U);
                     e++;
@@ -1366,9 +1396,13 @@ unsigned* MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key,
     const ct_entry_item* data = key.rawData();
     const unsigned datalen = key.dataLength();
     for (unsigned i=0; i<datalen; i++) {
-        switch (et->getKeyType(i).getType())
+        const ct_itemtype &it = et->getKeyType(i);
+        switch (it.getType())
         {
             case ct_typeID::NODE:
+                    it.getForest()->cacheNode(data[i].N);
+                    // FALL THROUGH
+
             case ct_typeID::INTEGER:
                     MEDDLY_DCASSERT(sizeof(data[i].N) == sizeof(data[i].U));
                     MEDDLY_DCASSERT(sizeof(data[i].I) == sizeof(data[i].U));
@@ -1426,9 +1460,13 @@ unsigned* MEDDLY::ct_tmpl<M,C,I>::result2entry(const ct_entry_result& res,
     const ct_entry_item* data = res.rawData();
     const unsigned datalen = res.dataLength();
     for (unsigned i=0; i<datalen; i++) {
-        switch (et->getResultType(i).getType())
+        const ct_itemtype &it = et->getKeyType(i);
+        switch (it.getType())
         {
             case ct_typeID::NODE:
+                    it.getForest()->cacheNode(data[i].N);
+                    // FALL THROUGH
+
             case ct_typeID::INTEGER:
             case ct_typeID::FLOAT:
                     MEDDLY_DCASSERT(sizeof(data[i].N) == sizeof(data[i].U));
@@ -1589,11 +1627,12 @@ bool MEDDLY::ct_tmpl<M,C,I>::isStale(const unsigned* entry, bool mark) const
     for (unsigned i=0; i<klen; i++) {
         const ct_itemtype &item = et->getKeyType(i);
         if (item.hasForest()) {
-            if (item.getForest()->isStaleEntry(*entry)) {
+            // convert to node type (signed)
+            if (item.getForest()->isStaleEntry(u2n(entry))) {
                 return true;
             } else {
                 // Indicate that this node is in some cache entry
-                if (mark) item.getForest()->setCacheBit(*entry);
+                if (mark) item.getForest()->setCacheBit(u2n(entry));
             }
             entry++;
         } else {
@@ -1608,10 +1647,10 @@ bool MEDDLY::ct_tmpl<M,C,I>::isStale(const unsigned* entry, bool mark) const
     for (unsigned i=0; i<et->getResultSize(); i++) {
         const ct_itemtype &item = et->getResultType(i);
         if (item.hasForest()) {
-            if (item.getForest()->isStaleEntry(*entry)) {
+            if (item.getForest()->isStaleEntry(u2n(entry))) {
                 return true;
             } else {
-                if (mark) item.getForest()->setCacheBit(*entry);
+                if (mark) item.getForest()->setCacheBit(u2n(entry));
             }
             entry++;
         } else {
@@ -1755,7 +1794,7 @@ void MEDDLY::ct_tmpl<M,C,I>::deleteEntry(unsigned long &h, bool keyonly)
             case ct_typeID::NODE:
                 MEDDLY_DCASSERT(item.hasForest());
                 if (I) {
-                    item.getForest()->uncacheNode( *uptr );
+                    item.getForest()->uncacheNode(u2n(uptr));
                 } else {
                     item.getForest()->uncacheNode( ctptr->N );
                 }
@@ -1812,7 +1851,7 @@ void MEDDLY::ct_tmpl<M,C,I>::deleteEntry(unsigned long &h, bool keyonly)
                 case ct_typeID::NODE:
                     MEDDLY_DCASSERT(item.hasForest());
                     if (I) {
-                        item.getForest()->uncacheNode( *uptr );
+                        item.getForest()->uncacheNode( u2n(uptr) );
                     } else {
                         item.getForest()->uncacheNode( ctptr->N );
                     }
@@ -1868,6 +1907,7 @@ void MEDDLY::ct_tmpl<M,C,I>::deleteEntry(unsigned long &h, bool keyonly)
 
     MMAN->recycleChunk(h, slots);
     perf.numEntries--;
+
     h = 0;
 }
 
@@ -2106,7 +2146,7 @@ void MEDDLY::ct_tmpl<M, C, I>
     for (unsigned i=0; i<et->getResultSize(); i++) {
         if (i) s << ", ";
 
-        const ct_typeID tid = et->getKeyType(i).getType();
+        const ct_typeID tid = et->getResultType(i).getType();
         if (I) {
             uptr = x.set(tid, uptr);
         } else {

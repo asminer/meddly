@@ -292,6 +292,12 @@ class MEDDLY::compute_table {
         */
         virtual void updateEntry(ct_entry_key* key, const ct_entry_result &res);
 
+
+        /**
+            Indicate that we are done with a key.
+            Might be needed if we do a find but then do NOT use addEntry.
+         */
+        virtual void doneKey(ct_entry_key* key) { };
 #endif
 
         // **********************************************************

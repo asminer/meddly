@@ -905,7 +905,7 @@ void MEDDLY::forest::unregisterForest(forest* f)
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 bool MEDDLY::forest
-::showNode(output &s, node_handle p, unsigned int flags) const
+::showNode(output &s, node_handle p, display_flags flags) const
 {
   /*
     Deal with cases where nothing will be displayed.
@@ -1006,7 +1006,7 @@ void MEDDLY::forest
 
 
 
-void MEDDLY::forest::dump(output &s, unsigned int flags) const
+void MEDDLY::forest::dump(output &s, display_flags flags) const
 {
   for (long p=0; p<=nodeHeaders.lastUsedHandle(); p++) {
     if (showNode(s, p, flags | SHOW_INDEX)) {
