@@ -54,6 +54,8 @@ namespace MEDDLY {
         float F;
         double D;
         ct_object* G;
+
+        unsigned raw[2];
     };
 
 };

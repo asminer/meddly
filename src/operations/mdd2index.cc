@@ -115,6 +115,9 @@ MEDDLY::mdd2index_operation
       bdn = resF->linkNode(CTresult[0].readN());
       bcard = CTresult[0].readL();
       CT0->recycle(CTsrch);
+#ifdef TRACE_ALL_OPS
+      printf("CT hit  mdd2index::compute(%d, %d) = %ld\n", k, a, bcard);
+#endif
       return;
     }
   }
@@ -173,6 +176,10 @@ MEDDLY::mdd2index_operation
     CTresult[0].writeL(bcard);
     CT0->addEntry(CTsrch, CTresult[0]);
   }
+
+#ifdef TRACE_ALL_OPS
+  printf("finish  mdd2index::compute(%d, %d) = %ld\n", k, a, bcard);
+#endif
 }
 
 // ******************************************************************

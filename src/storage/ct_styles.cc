@@ -635,13 +635,13 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
             ++e;    // skip over NEXT pointer
         }
         if (MONOLITHIC) {
-            e->UL = 0;
-            H.push(e->U = et->getID());
+            H.push(e->raw[0] = et->getID());
+            e->raw[1] = 0;
             ++e;
         }
         if (et->isRepeating()) {
-            e->UL = 0;
-            H.push(e->U = key->numRepeats());
+            H.push(e->raw[0] = key->numRepeats());
+            e->raw[1] = 0;
             ++e;
         }
         key->result_shift = key2entry(*key, e, H) - keyentry.ctptr;
@@ -1349,7 +1349,6 @@ MEDDLY::ct_entry_item* MEDDLY::ct_tmpl<M,C,I>::key2entry(
 
     for (unsigned i=0; i<key_slots; i++) {
         // zero out the entire slot, makes comparisons easier
-        e->UL = 0;
         const ct_itemtype &it = et->getKeyType(i);
         switch (it.getType())
         {
@@ -1358,21 +1357,24 @@ MEDDLY::ct_entry_item* MEDDLY::ct_tmpl<M,C,I>::key2entry(
                     // FALL THROUGH
 
             case ct_typeID::INTEGER:
-                    H.push(e->U = data[i].U);
-                    MEDDLY_DCASSERT( (e->UL >> 32) == 0 );
+                    H.push(e->raw[0] = data[i].U);
+                    e->raw[1] = 0;
                     e++;
                     continue;
 
             case ct_typeID::LONG:
                     e->UL = data[i].UL;
-                    H.push(unsigned(e->UL >> 32));
-                    H.push(unsigned(e->UL & 0xffffffff));
+                    H.push(e->raw[0]);
+                    H.push(e->raw[1]);
+                    MEDDLY_DCASSERT(e->raw[0] == (e->UL >> 32));
+                    MEDDLY_DCASSERT(e->raw[1] == (e->UL && 0xffffffff));
                     e++;
                     continue;
 
             case ct_typeID::FLOAT:
                     // don't hash
-                    e->F = data[i].F;
+                    e->raw[0] = data[i].U;
+                    e->raw[1] = 0;
                     e++;
                     continue;
 
@@ -1426,10 +1428,9 @@ unsigned* MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key,
 
             case ct_typeID::GENERIC:    // probably don't hash this way!
             case ct_typeID::LONG:
-                    H.push(*e = (data[i].UL >> 32));
-                    e++;
-                    H.push(*e = (data[i].UL & 0xffffffff));
-                    e++;
+                    H.push(e[0] = data[i].raw[0]);
+                    H.push(e[1] = data[i].raw[1]);
+                    e+=2;
                     continue;
 
             case ct_typeID::FLOAT:
@@ -1441,10 +1442,9 @@ unsigned* MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key,
 
             case ct_typeID::DOUBLE:
                     // DON'T hash
-                    *e = (data[i].UL >> 32);
-                    e++;
-                    *e = (data[i].UL & 0xffffffff);
-                    e++;
+                    e[0] = data[i].raw[0];
+                    e[1] = data[i].raw[1];
+                    e+=2;
                     continue;
 
             default:
@@ -1495,10 +1495,15 @@ unsigned* MEDDLY::ct_tmpl<M,C,I>::result2entry(const ct_entry_result& res,
             case ct_typeID::LONG:
                     MEDDLY_DCASSERT(sizeof(data[i].G) == sizeof(data[i].UL));
                     MEDDLY_DCASSERT(sizeof(data[i].D) == sizeof(data[i].UL));
+                    e[0] = data[i].raw[0];
+                    e[1] = data[i].raw[1];
+                    e+=2;
+/*
                     *e = (data[i].UL >> 32);
                     e++;
                     *e = (data[i].UL & 0xffffffff);
                     e++;
+                    */
                     continue;
 
             default:
@@ -1545,6 +1550,7 @@ bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
                     if (item.isDeadEntry(data[i].N)) {
                         return true;
                     }
+                    sres++;
                     continue;
 
             case ct_typeID::INTEGER:
@@ -1556,11 +1562,16 @@ bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
             case ct_typeID::DOUBLE:
             case ct_typeID::GENERIC:
             case ct_typeID::LONG:
+                    data[i].raw[0] = sres[0];
+                    data[i].raw[1] = sres[1];
+                    sres += 2;
+                    /*
                     data[i].UL = *sres;
                     sres++;
                     data[i].UL <<= 32;
                     data[i].UL |= *sres;
                     sres++;
+                    */
                     continue;
             default:
                   MEDDLY_DCASSERT(0);
@@ -2031,8 +2042,12 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
                         H.push(ue[0], ue[1]);
                         ue += 2;
                     } else {
+                        H.push(cte->raw[0]);
+                        H.push(cte->raw[1]);
+                        /*
                         H.push(cte->UL >> 32);
                         H.push(cte->UL & 0xffffffff);
+                        */
                         ++cte;
                     }
                     continue;
