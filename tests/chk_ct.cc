@@ -26,7 +26,7 @@ using namespace MEDDLY;
 const int VARSIZE = 2;
 
 // const unsigned EDGES = 3;
-const unsigned EDGES = 7;
+const unsigned EDGES = 100;
 
 // #define DEBUG
 

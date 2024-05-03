@@ -30,7 +30,7 @@
 #include "../operators.h"
 
 // #define DEBUG_FIND
-#define DEBUG_REHASH
+// #define DEBUG_REHASH
 
 #define USE_NEW_TEMPLATE
 
