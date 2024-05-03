@@ -602,6 +602,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     if (slots < num_slots) {
         throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
+    MEDDLY_DCASSERT(key->my_entry);
     genentry keyentry;
     keyentry.vptr = MMAN->getChunkAddress(key->my_entry);
     perf.numEntries++;
@@ -765,7 +766,6 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
                 sawSearch(chainlen);
                 toDelete.push_back(currhnd);
                 batchDelete();
-                deleteEntry(key->my_entry, true);
 #ifdef DEBUG_FIND
                 out << "        equal but unusable\n";
 #endif
