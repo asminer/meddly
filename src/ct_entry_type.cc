@@ -33,7 +33,7 @@
 
 MEDDLY::ct_itemtype::ct_itemtype(char c)
 {
-    nodeFor = nullptr;
+    nodeFID = 0;
     switch (c) {
         case 'N':   type = ct_typeID::NODE;         break;
         case 'I':   type = ct_typeID::INTEGER;      break;
@@ -63,11 +63,7 @@ void MEDDLY::ct_itemtype::show(output &s) const
     s.put(getTypeChar());
     if (ct_typeID::NODE != type) return;
     s.put("(f ");
-    if (nodeFor) {
-        s.put(nodeFor->FID());
-    } else {
-        s.put('0');
-    }
+    s.put(nodeFID);
     s.put(')');
 }
 
@@ -245,24 +241,24 @@ void MEDDLY::ct_entry_type::clearForestCTBits(bool* skipF, unsigned N) const
 {
     unsigned i;
     for (i=0; i<key_fixed.size(); i++) {
-        if (!key_fixed[i].hasForest()) continue;
-        forest* f = key_fixed[i].getForest();
+        forest* f = key_fixed[i].rawForest();
+        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
         skipF[ f->FID() ] = 1;
     }
     for (i=0; i<key_repeating.size(); i++) {
-        if (!key_repeating[i].hasForest()) continue;
-        forest* f = key_repeating[i].getForest();
+        forest* f = key_repeating[i].rawForest();
+        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
         skipF[ f->FID() ] = 1;
     }
     for (i=0; i<result.size(); i++) {
-        if (!result[i].hasForest()) continue;
-        forest* f = result[i].getForest();
+        forest* f = result[i].rawForest();
+        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
@@ -274,8 +270,8 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
 {
     unsigned i;
     for (i=0; i<key_fixed.size(); i++) {
-        if (!key_fixed[i].hasForest()) continue;
-        forest* f = key_fixed[i].getForest();
+        forest* f = key_fixed[i].rawForest();
+        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
@@ -283,8 +279,8 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
         }
     }
     for (i=0; i<key_repeating.size(); i++) {
-        if (!key_repeating[i].hasForest()) continue;
-        forest* f = key_repeating[i].getForest();
+        forest* f = key_repeating[i].rawForest();
+        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
@@ -292,14 +288,35 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
         }
     }
     for (i=0; i<result.size(); i++) {
-        if (!result[i].hasForest()) continue;
-        forest* f = result[i].getForest();
+        forest* f = result[i].rawForest();
+        if (!f) continue;
         MEDDLY_DCASSERT(f->FID() < N);
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
             whichF[ f->FID() ] = 0;
         }
     }
+}
+
+void MEDDLY::ct_entry_type::show(output &s) const
+{
+    s.put(name);
+    s.put(' ');
+    s.put('[');
+    unsigned i;
+    for (i=0; i<key_fixed.size(); i++) {
+        key_fixed[i].show(s);
+    }
+    s.put('.');
+    for (i=0; i<key_repeating.size(); i++) {
+        key_repeating[i].show(s);
+    }
+    s.put(':');
+    for (i=0; i<result.size(); i++) {
+        result[i].show(s);
+    }
+    s.put(']');
+    s.put('\n');
 }
 
 void MEDDLY::ct_entry_type::countFixed()

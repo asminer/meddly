@@ -170,8 +170,8 @@ class MEDDLY::ct_entry_result {
         inline void cacheNodes() const {
             for (unsigned i=0; i<etype->getResultSize(); i++) {
                 const ct_itemtype &item = etype->getResultType(i);
-                if (item.hasForest()) {
-                    item.getForest()->cacheNode(build[i].N);
+                if (item.hasNodeType()) {
+                    item.cacheNode(build[i].N);
                 }
             }
         }

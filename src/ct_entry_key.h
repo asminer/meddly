@@ -126,8 +126,8 @@ class MEDDLY::ct_entry_key {
         inline void cacheNodes() const {
             for (unsigned i=0; i<total_slots; i++) {
                 const ct_itemtype &item = etype->getKeyType(i);
-                if (item.hasForest()) {
-                    item.getForest()->cacheNode(data[i].N);
+                if (item.hasNodeType()) {
+                    item.cacheNode(data[i].N);
                 }
             }
         }

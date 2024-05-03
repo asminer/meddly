@@ -22,6 +22,7 @@
 #include "defines.h"
 #include "edge_value.h"
 #include "oper.h"
+#include "forest.h"
 #include <type_traits>
 
 namespace MEDDLY {
@@ -29,7 +30,6 @@ namespace MEDDLY {
     class ct_entry_type;
     class compute_table;
 
-    class forest;
     class output;
 
     enum class ct_typeID {
@@ -69,7 +69,7 @@ class MEDDLY::ct_itemtype {
         /// Default constructor
         ct_itemtype() {
             type = ct_typeID::ERROR;
-            nodeFor = nullptr;
+            nodeFID = 0;
         }
         /** Set type based on the following codes:
                 'N': node (in a forest)
@@ -84,17 +84,17 @@ class MEDDLY::ct_itemtype {
         /// Set the type to 'node' and assign the forest.
         ct_itemtype(forest* f) {
             type = ct_typeID::NODE;
-            nodeFor = f;
+            nodeFID = f ? f->FID() : 0;
         }
         /// Set the type from the actual type enum.
         ct_itemtype(ct_typeID t) {
             MEDDLY_DCASSERT(t != ct_typeID::NODE);
             type = t;
-            nodeFor = nullptr;
+            nodeFID = 0;
         }
         /// Set the type from an edge value type
         ct_itemtype(edge_type et) {
-            nodeFor = nullptr;
+            nodeFID = 0;
             switch (et) {
                 case edge_type::INT:
                     type = ct_typeID::INTEGER;
@@ -125,27 +125,33 @@ class MEDDLY::ct_itemtype {
         inline bool hasType(ct_typeID t) const {
             return t == type;
         }
+        /// Are we a node type (most common to check for)
+        inline bool hasNodeType() const {
+            return ct_typeID::NODE == type;
+        }
+
         /// Get the type as a character;
         /// for the old-style 'pattern' interface.
         char getTypeChar() const;
 
         /// Make sure this is a node type item, and return its forest.
-        inline forest* getForest() const {
-            MEDDLY_DCASSERT(ct_typeID::NODE == type);
-            return nodeFor;
-        }
+        // inline forest* getForest() const {
+            // MEDDLY_DCASSERT(ct_typeID::NODE == type);
+            // return forest::getForestWithID(nodeFID);
+        // }
         /// Return the raw forest (no checks)
         inline forest* rawForest() const {
-            return nodeFor;
+            return forest::getForestWithID(nodeFID);
         }
         /// Check if this item is associated with forest f.
         inline bool hasForest(const forest* f) const {
-            return f == nodeFor;
+            MEDDLY_DCASSERT(f);
+            return f->FID() == nodeFID;
         }
         /// Check if this item has an associated forest.
-        inline bool hasForest() const {
-            return nodeFor;
-        }
+        // inline bool hasForest() const {
+            // return nodeFor;
+        // }
         /// Number of bytes required to store this item in a CT
         inline unsigned bytes() const {
             static const unsigned sizes[] = {
@@ -178,8 +184,56 @@ class MEDDLY::ct_itemtype {
             if (type != ct_typeID::NODE) {
                 throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
             }
-            MEDDLY_DCASSERT(!nodeFor);
-            nodeFor = f;
+            MEDDLY_DCASSERT(0==nodeFID);
+            nodeFID = f ? f->FID() : 0;
+        }
+
+        /// Notify forest that the given node is being
+        /// added to a CT entry
+        inline void cacheNode(node_handle n) const
+        {
+            MEDDLY_DCASSERT(ct_typeID::NODE == type);
+            forest* f = forest::getForestWithID(nodeFID);
+            if (f) {
+                f->cacheNode(n);
+            }
+        }
+
+        /// Notify forest that the given node is being
+        /// removed as a CT entry
+        inline void uncacheNode(node_handle n) const
+        {
+            MEDDLY_DCASSERT(ct_typeID::NODE == type);
+            forest* f = forest::getForestWithID(nodeFID);
+            if (f) {
+                f->uncacheNode(n);
+            }
+        }
+
+        /// Check if a CT entry is dead
+        inline bool isDeadEntry(node_handle n) const
+        {
+            MEDDLY_DCASSERT(ct_typeID::NODE == type);
+            forest* f = forest::getForestWithID(nodeFID);
+            return f ? f->isDeadEntry(n) : true;
+        }
+
+        /// Check if a CT entry is stale.
+        /// If not, and if mark is true, we'll mark it.
+        inline bool isStaleEntry(node_handle n, bool mark) const
+        {
+            MEDDLY_DCASSERT(ct_typeID::NODE == type);
+            forest* f = forest::getForestWithID(nodeFID);
+            if (f) {
+                if (mark) {
+                    if (f->isStaleEntry(n)) return true;
+                    f->setCacheBit(n);
+                    return false;
+                } else {
+                    return f->isStaleEntry(n);
+                }
+            }
+            return true;
         }
 
     public:
@@ -197,7 +251,7 @@ class MEDDLY::ct_itemtype {
 
     private:
         ct_typeID   type;
-        forest      *nodeFor;
+        unsigned    nodeFID;
 };
 
 // ******************************************************************
@@ -511,6 +565,9 @@ class MEDDLY::ct_entry_type {
         inline bool isMarkedForDeletion() const {
             return is_marked_for_deletion;
         }
+
+        /// Display info, for debugging
+        void show(output &s) const;
 
     private:
         void countFixed();

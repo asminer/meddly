@@ -956,10 +956,9 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::updateEntry(ct_entry_key* key, c
     int* ptr = entry_result;
     for (unsigned i=0; i<et->getResultSize(); i++) {
         const ct_itemtype& item = et->getResultType(i);
-        if (item.hasForest()) {
-            item.getForest()->uncacheNode( *ptr );
-        } else {
-            MEDDLY_DCASSERT(!item.hasType(ct_typeID::NODE));
+
+        if (item.hasNodeType()) {
+            item.uncacheNode( *ptr );
         }
         ptr += item.intslots();
     } // for i
@@ -1473,22 +1472,18 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     //
     for (unsigned i=0; i<klen; i++) {
         const ct_itemtype &item = et->getKeyType(i);
-        if (item.hasForest()) {
+        if (item.hasNodeType()) {
 #ifdef DEBUG_ISSTALE
             printf("\tchecking key item %u\n", i);
 #endif
-            if (item.getForest()->isStaleEntry(*entry)) {
+            if (item.isStaleEntry(*entry, mark)) {
                 return YES_stale();
-            } else {
-                // Indicate that this node is in some cache entry
-                if (mark) item.getForest()->setCacheBit(*entry);
             }
             entry++;
         } else {
 #ifdef DEBUG_ISSTALE
             printf("\tskipping key item %u, %u slots\n", i, item.intslots());
 #endif
-            MEDDLY_DCASSERT(! item.hasType(ct_typeID::NODE));
             entry += item.intslots();
         }
     } // for i
@@ -1498,21 +1493,18 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     //
     for (unsigned i=0; i<et->getResultSize(); i++) {
         const ct_itemtype &item = et->getResultType(i);
-        if (item.hasForest()) {
+        if (item.hasNodeType()) {
 #ifdef DEBUG_ISSTALE
             printf("\tchecking result item %u\n", i);
 #endif
-            if (item.getForest()->isStaleEntry(*entry)) {
+            if (item.isStaleEntry(*entry, mark)) {
                 return YES_stale();
-            } else {
-                if (mark) item.getForest()->setCacheBit(*entry);
             }
             entry++;
         } else {
 #ifdef DEBUG_ISSTALE
             printf("\tskipping result item %u, %u slots\n", i, item.intslots());
 #endif
-            MEDDLY_DCASSERT(! item.hasType(ct_typeID::NODE));
             entry += item.intslots();
         }
     } // for i
@@ -1534,18 +1526,17 @@ bool MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     //
     for (unsigned i=0; i<et->getResultSize(); i++) {
         const ct_itemtype &item = et->getResultType(i);
-        if (item.hasForest()) {
+        if (item.hasNodeType()) {
 #ifdef DEBUG_ISDEAD
             printf("\tchecking result item %u\n", i);
 #endif
-            if (item.getForest()->isDeadEntry(*result)) {
+            if (item.isDeadEntry(*result)) {
                 return true;
             }
         } else {
 #ifdef DEBUG_ISDEAD
             printf("\tskipping result item %u, %u slots\n", i, item.intslots());
 #endif
-            MEDDLY_DCASSERT(! item.hasType(ct_typeID::NODE));
         }
         result += item.intslots();
     } // for i
@@ -1605,8 +1596,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     //
     switch (item.getType()) {
         case ct_typeID::NODE:
-                        MEDDLY_DCASSERT(item.hasForest());
-                        item.getForest()->uncacheNode( *ptr );
+                        item.uncacheNode( *ptr );
                         ptr++;
                         continue;
         case ct_typeID::INTEGER:
@@ -1643,8 +1633,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
     //
     switch (item.getType()) {
         case ct_typeID::NODE:
-                        MEDDLY_DCASSERT(item.hasForest());
-                        item.getForest()->uncacheNode( *ptr );
+                        item.uncacheNode( *ptr );
                         ptr++;
                         continue;
 

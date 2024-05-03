@@ -1435,7 +1435,7 @@ class MEDDLY::forest {
     // ------------------------------------------------------------
     private: // Private members for root edge registry
     // ------------------------------------------------------------
-        /// Registry of dd_edges
+        /// Registry of dd_edges (doubly-linked list)
         dd_edge* roots;
 
 

@@ -26,11 +26,16 @@ using namespace MEDDLY;
 const int VARSIZE = 2;
 
 // const unsigned EDGES = 3;
-const unsigned EDGES = 11;
+const unsigned EDGES = 7;
 
 // #define DEBUG
 
 // #define DEBUG_CT
+
+inline node_handle MAX(node_handle a, node_handle b)
+{
+    return (a>b) ? a : b;
+}
 
 class myop : public MEDDLY::operation {
     public:
@@ -62,17 +67,27 @@ myop::myop(forest* F1, forest* F2) : operation("myop", 3)
     et0->setForestForSlot(1, F1);
     registerEntryType(0, et0);
 
-    et1 = new ct_entry_type("op2", "NN:I");
+    et1 = new ct_entry_type("op2", "NN:N");
     et1->setForestForSlot(0, F1);
     et1->setForestForSlot(1, F1);
+    et1->setForestForSlot(3, F1);
     registerEntryType(1, et1);
 
-    et2 = new ct_entry_type("op3", "NN:I");
+    et2 = new ct_entry_type("op3", "NN:N");
     et2->setForestForSlot(0, F1);
     et2->setForestForSlot(1, F2);
+    et2->setForestForSlot(3, F2);
     registerEntryType(2, et2);
 
     buildCTs();
+
+    /*
+    ostream_output out(std::cout);
+    out << "Built entry types:\n";
+    et0->show(out);
+    et1->show(out);
+    et2->show(out);
+    */
 }
 
 void initEdges(forest* f, std::vector <dd_edge> &E)
@@ -82,9 +97,13 @@ void initEdges(forest* f, std::vector <dd_edge> &E)
     long terms[VARSIZE];
     terms[0] = 0;
     for (unsigned i=0; i<E.size(); i++) {
-        terms[1] = i+1;
         E[i].attach(f);
-        f->createEdgeForVar(1, false, terms, E[i]);
+        if (i) {
+            terms[1] = i+1;
+            f->createEdgeForVar(1, false, terms, E[i]);
+        } else {
+            f->createEdge(42L, E[i]);
+        }
 #ifdef DEBUG
         out << "Built edge #" << i << ": " << E[i] << "\n";
 #endif
@@ -161,7 +180,7 @@ unsigned checkEntries(const ct_entry_type* CTE, compute_table* CT,
 }
 
 //
-// Add entries of type  NN:I
+// Add entries of type  NN:N
 //
 unsigned addEntries(const ct_entry_type* CTE, compute_table* CT,
         const std::vector <node_handle> &N1,
@@ -181,7 +200,7 @@ unsigned addEntries(const ct_entry_type* CTE, compute_table* CT,
             if (res) throw "Found result in CT; shouldn't have.";
 
             res.reset();
-            res.writeI(N1[i] + N2[j]);
+            res.writeN(MAX(N1[i],N2[j]));
             CT->addEntry(key, res);
 
             ++cnt;
@@ -192,7 +211,7 @@ unsigned addEntries(const ct_entry_type* CTE, compute_table* CT,
 }
 
 //
-// Check entries of type  NN:I
+// Check entries of type  NN:N
 // Returns the number of CT hits
 //
 unsigned checkEntries(const ct_entry_type* CTE, compute_table* CT,
@@ -214,15 +233,16 @@ unsigned checkEntries(const ct_entry_type* CTE, compute_table* CT,
             CT->recycle(key);
 
             if (!res) continue;
-            int answer = res.readI();
-            if (answer != N1[i] + N2[j]) {
+            node_handle answer = res.readN();
+            node_handle max = MAX(N1[i], N2[j]);
+            if (answer != max) {
                 std::cerr << "Wrong CT entry.\n";
                 std::cerr << "    got     : " << N1[i]
                           << ", " << N2[j]
                           << " : " << answer << "\n";
                 std::cerr << "    expected: " << N1[i]
                           << ", " << N2[j]
-                          << " : " << N1[i]+N2[j] << "\n";
+                          << " : " << max << "\n";
                 throw "cache error";
             }
             hits++;
@@ -331,14 +351,12 @@ void check_CT(bool monolithic)
 
 #ifdef DEBUG_CT
     ostream_output out(cout);
-    if (monolithic) {
-        foo->ct0()->show(out, 5);
-        out << "Forest 1:\n";
-        F1->dump(out, SHOW_DETAILS);
-        out << "Forest 2:\n";
-        F2->dump(out, SHOW_DETAILS);
-        out << foo->ct0()->getStats().numEntries << " entries\n";
-    }
+    foo->ct2()->show(out, 5);
+    out << "Forest 1:\n";
+    F1->dump(out, SHOW_DETAILS);
+    out << "Forest 2:\n";
+    F2->dump(out, SHOW_DETAILS);
+    out << foo->ct2()->getStats().numEntries << " entries\n";
 #endif
 
 
@@ -376,8 +394,13 @@ void check_CT(bool monolithic)
     //
     // Destroy forest 2 and re-count!
     //
-    cout << "    Killing op3 forest\n";
+    cout << "    Killing op3 forest (FID " << F2->FID() << ")\n";
     forest::destroy(F2);
+#ifdef DEBUG_CT
+    cout << "Updated CT\n";
+    foo->ct2()->show(out, 5);
+    out << foo->ct2()->getStats().numEntries << " entries\n";
+#endif
     cout << "    Re-checking CT entries\n";
 
     const unsigned nhit1 = checkEntries(foo->et0, foo->ct0(), N1);
@@ -459,6 +482,8 @@ int main(int argc, const char** argv)
     using namespace std;
     try {
         bool mono;
+        // unsigned st=2;
+        // unsigned cmp=0;
         for (unsigned st=0; st<4; st++) {
             for (unsigned cmp=0; cmp<2; cmp++) {
                 MEDDLY::initializer_list* IL = defaultInitializerList(nullptr);
