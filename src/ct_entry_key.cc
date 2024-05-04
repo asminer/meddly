@@ -36,6 +36,7 @@ MEDDLY::ct_entry_key::ct_entry_key()
     // malloc: because realloc later
 
     my_entry = 0;
+    entry_slots = 0;
     result_shift = 0;
 }
 

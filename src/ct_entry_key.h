@@ -176,6 +176,7 @@ class MEDDLY::ct_entry_key {
         //
 
         unsigned long my_entry;
+        unsigned entry_slots;
         unsigned result_shift;
 };
 
