@@ -151,10 +151,8 @@ namespace MEDDLY {
             void removeStaleEntries();
 
 #ifdef ALLOW_DEPRECATED_0_17_6
-            static ct_entry_item* key2entry(const ct_entry_key& key,
-                    ct_entry_item* e, hash_stream &H);
-            static unsigned* key2entry(const ct_entry_key& key, unsigned* e,
-                    hash_stream &H);
+            ct_entry_item* key2entry(const ct_entry_key& key, ct_entry_item* e);
+            unsigned* key2entry(const ct_entry_key& key, unsigned* e);
 
             inline static ct_entry_item* result2entry(
                     const ct_entry_result& res, ct_entry_item* e)
@@ -452,6 +450,9 @@ namespace MEDDLY {
             }
 
         private:
+            /// Hashing array
+            std::vector <unsigned> HS;
+
             /// List of entries to delete
             std::vector <unsigned long> toDelete;
 
@@ -608,8 +609,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     //     we hash it as we go.
     //
 
-    hash_stream H;
-    H.start();
+    HS.resize(0);
     if (INTSLOTS) {
         unsigned* e = keyentry.uptr;
         if (CHAINED) {
@@ -617,36 +617,38 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
             // skip over NEXT pointer slot(s)
         }
         if (MONOLITHIC) {
-            H.push(*e = et->getID());
+            HS.push_back(*e = et->getID());
             ++e;
         }
         if (et->isRepeating()) {
-            H.push(*e = key->numRepeats());
+            HS.push_back(*e = key->numRepeats());
             ++e;
         }
-        key->result_shift = key2entry(*key, e, H) - keyentry.uptr;
+        key->result_shift = key2entry(*key, e) - keyentry.uptr;
     } else {
         ct_entry_item* e = keyentry.ctptr;
         if (CHAINED) {
             ++e;    // skip over NEXT pointer
         }
         if (MONOLITHIC) {
-            H.push(e->raw[0] = et->getID());
+            HS.push_back(e->raw[0] = et->getID());
             e->raw[1] = 0;
             ++e;
         }
         if (et->isRepeating()) {
-            H.push(e->raw[0] = key->numRepeats());
+            HS.push_back(e->raw[0] = key->numRepeats());
             e->raw[1] = 0;
             ++e;
         }
-        key->result_shift = key2entry(*key, e, H) - keyentry.ctptr;
+        key->result_shift = key2entry(*key, e) - keyentry.ctptr;
     }
 
     //
     // (3) Save hash value
     //
-    setHash(key, H.finish());
+
+
+    setHash(key, hash_stream::raw_hash(HS.data(), HS.size()));
     MEDDLY_DCASSERT(key->getHash() == hashEntry(keyentry.vptr));
     const unsigned long hslot = key->getHash() % table.size();
     unsigned long hcurr = hslot;
@@ -1343,7 +1345,7 @@ void MEDDLY::ct_tmpl<M, CHAINED, I>::removeStaleEntries()
 
 template <bool M, bool C, bool I>
 MEDDLY::ct_entry_item* MEDDLY::ct_tmpl<M,C,I>::key2entry(
-        const ct_entry_key& key, ct_entry_item* e, hash_stream &H)
+        const ct_entry_key& key, ct_entry_item* e)
 {
     MEDDLY_DCASSERT(!I);
     const ct_entry_type* et = key.getET();
@@ -1358,15 +1360,15 @@ MEDDLY::ct_entry_item* MEDDLY::ct_tmpl<M,C,I>::key2entry(
         {
             case ct_typeID::NODE:
             case ct_typeID::INTEGER:
-                    H.push(e->raw[0] = data[i].U);
+                    HS.push_back(e->raw[0] = data[i].U);
                     e->raw[1] = 0;
                     e++;
                     continue;
 
             case ct_typeID::LONG:
                     e->UL = data[i].UL;
-                    H.push(e->raw[0]);
-                    H.push(e->raw[1]);
+                    HS.push_back(e->raw[0]);
+                    HS.push_back(e->raw[1]);
                     MEDDLY_DCASSERT(e->raw[0] == (e->UL >> 32));
                     MEDDLY_DCASSERT(e->raw[1] == (e->UL && 0xffffffff));
                     e++;
@@ -1401,7 +1403,7 @@ MEDDLY::ct_entry_item* MEDDLY::ct_tmpl<M,C,I>::key2entry(
 
 template <bool M, bool C, bool I>
 unsigned* MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key,
-        unsigned* e, hash_stream &H)
+        unsigned* e)
 {
     MEDDLY_DCASSERT(I);
     const ct_entry_type* et = key.getET();
@@ -1420,14 +1422,14 @@ unsigned* MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key,
             case ct_typeID::INTEGER:
                     MEDDLY_DCASSERT(sizeof(data[i].N) == sizeof(data[i].U));
                     MEDDLY_DCASSERT(sizeof(data[i].I) == sizeof(data[i].U));
-                    H.push(*e = data[i].U);
+                    HS.push_back(*e = data[i].U);
                     e++;
                     continue;
 
             case ct_typeID::GENERIC:    // probably don't hash this way!
             case ct_typeID::LONG:
-                    H.push(e[0] = data[i].raw[0]);
-                    H.push(e[1] = data[i].raw[1]);
+                    HS.push_back(e[0] = data[i].raw[0]);
+                    HS.push_back(e[1] = data[i].raw[1]);
                     e+=2;
                     continue;
 

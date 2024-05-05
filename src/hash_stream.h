@@ -20,9 +20,10 @@
 #define MEDDLY_HASH_STREAM_H
 
 #include "error.h"
+#include <vector>
 
 namespace MEDDLY {
-  class hash_stream;
+    class hash_stream;
 };
 
 // #define DEBUG_HASH
@@ -34,33 +35,103 @@ namespace MEDDLY {
     http://burtleburtle.net/bob/hash/doobs.html
 */
 class MEDDLY::hash_stream {
-    unsigned z[3];
-    int slot;
-  public:
-    hash_stream() { }
-  protected:
-    inline static unsigned rot(unsigned x, int k) {
-      return (((x)<<(k)) | ((x)>>(32-(k))));
-    }
-    inline static void mix(unsigned &a, unsigned &b, unsigned &c) {
-        a -= c;  a ^= rot(c, 4);  c += b;
-        b -= a;  b ^= rot(a, 6);  a += c;
-        c -= b;  c ^= rot(b, 8);  b += a;
-        a -= c;  a ^= rot(c,16);  c += b;
-        b -= a;  b ^= rot(a,19);  a += c;
-        c -= b;  c ^= rot(b, 4);  b += a;
-    }
-    inline static void final_mix(unsigned &a, unsigned &b, unsigned &c) {
-        c ^= b; c -= rot(b,14);
-        a ^= c; a -= rot(c,11);
-        b ^= a; b -= rot(a,25);
-        c ^= b; c -= rot(b,16);
-        a ^= c; a -= rot(c,4);
-        b ^= a; b -= rot(a,14);
-        c ^= b; c -= rot(b,24);
-    }
-    inline void mix()   { mix(z[2], z[1], z[0]); }
-    inline void final_mix() { final_mix(z[2], z[1], z[0]); }
+    public:
+        //
+        // Hash an array of unsigneds
+        //
+        static inline unsigned raw_hash(const unsigned* k, int len)
+        {
+            unsigned a, b, c;
+            a = b = 0;
+            c = 0xdeadbeef;
+
+            // handle most of the key
+            while (len > 3)
+            {
+                a += *k++;
+                b += *k++;
+                c += *k++;
+                mix(a, b, c);
+                len -= 3;
+            }
+
+            // handle the last 3 uint32_t's
+            switch(len)
+            {
+                // all the case statements fall through
+                case 3: c += k[2];
+                case 2: b += k[1];
+                case 1: a += k[0];
+                case 0: // nothing left to add (shouldn't get to this case)
+                        final_mix(a,b,c);
+                        break;
+            }
+
+            return c;
+        }
+
+        //
+        // Hash an array of unsigneds, return an unsigned long
+        //
+        static inline unsigned long raw_hash64(const unsigned* k, int len)
+        {
+            unsigned a, b, c;
+            a = b = 0;
+            c = 0xdeadbeef;
+
+            // handle most of the key
+            while (len > 3)
+            {
+                a += *k++;
+                b += *k++;
+                c += *k++;
+                mix(a, b, c);
+                len -= 3;
+            }
+
+            // handle the last 3 uint32_t's
+            switch(len)
+            {
+                // all the case statements fall through
+                case 3: c += k[2];
+                case 2: b += k[1];
+                case 1: a += k[0];
+                case 0: // nothing left to add (shouldn't get to this case)
+                        final_mix(a,b,c);
+                        break;
+            }
+
+            unsigned long answer = b;
+            answer <<= 32;
+            answer |= c;
+            return answer;
+        }
+
+    protected:
+        inline static unsigned rot(unsigned x, int k) {
+            return (((x)<<(k)) | ((x)>>(32-(k))));
+        }
+        inline static void mix(unsigned &a, unsigned &b, unsigned &c)
+        {
+            a -= c;  a ^= rot(c, 4);  c += b;
+            b -= a;  b ^= rot(a, 6);  a += c;
+            c -= b;  c ^= rot(b, 8);  b += a;
+            a -= c;  a ^= rot(c,16);  c += b;
+            b -= a;  b ^= rot(a,19);  a += c;
+            c -= b;  c ^= rot(b, 4);  b += a;
+        }
+        inline static void final_mix(unsigned &a, unsigned &b, unsigned &c)
+        {
+            c ^= b; c -= rot(b,14);
+            a ^= c; a -= rot(c,11);
+            b ^= a; b -= rot(a,25);
+            c ^= b; c -= rot(b,16);
+            a ^= c; a -= rot(c,4);
+            b ^= a; b -= rot(a,14);
+            c ^= b; c -= rot(b,24);
+        }
+        inline void mix()   { mix(z[2], z[1], z[0]); }
+        inline void final_mix() { final_mix(z[2], z[1], z[0]); }
   public:
     inline void start(unsigned init) {
 #ifdef DEBUG_HASH
@@ -279,76 +350,9 @@ class MEDDLY::hash_stream {
       }
     }
 
-    //
-    // Hash an array of unsigneds
-    //
-    static inline unsigned raw_hash(const unsigned* k, int len) {
-        unsigned a, b, c;
-    //    a = b = c = 0xdeadbeef;
-        a = b = 0;
-        c = 0xdeadbeef;
-
-        // handle most of the key
-        while (len > 3)
-        {
-          a += *k++;
-          b += *k++;
-          c += *k++;
-          mix(a,b,c);
-          len -= 3;
-        }
-
-        // handle the last 3 uint32_t's
-        switch(len)
-        {
-          // all the case statements fall through
-          case 3: c += k[2];
-          case 2: b += k[1];
-          case 1: a += k[0];
-          case 0: // nothing left to add (shouldn't get to this case)
-                  final_mix(a,b,c);
-                  break;
-        }
-
-        return c;
-    }
-
-    //
-    // Hash an array of unsigneds, return an unsigned long
-    //
-    static inline unsigned long raw_hash64(const unsigned* k, int len) {
-        unsigned a, b, c;
-    //    a = b = c = 0xdeadbeef;
-        a = b = 0;
-        c = 0xdeadbeef;
-
-        // handle most of the key
-        while (len > 3)
-        {
-          a += *k++;
-          b += *k++;
-          c += *k++;
-          mix(a,b,c);
-          len -= 3;
-        }
-
-        // handle the last 3 uint32_t's
-        switch(len)
-        {
-          // all the case statements fall through
-          case 3: c += k[2];
-          case 2: b += k[1];
-          case 1: a += k[0];
-          case 0: // nothing left to add (shouldn't get to this case)
-                  final_mix(a,b,c);
-                  break;
-        }
-
-        unsigned long answer = b;
-        answer <<= 32;
-        answer |= c;
-        return answer;
-    }
+    private:
+        unsigned z[3];
+        int slot;
 };
 
 #endif // #include guard
