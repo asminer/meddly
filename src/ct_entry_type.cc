@@ -43,6 +43,7 @@ MEDDLY::ct_itemtype::ct_itemtype(char c)
         case 'G':   type = ct_typeID::GENERIC;      break;
         default :   type = ct_typeID::ERROR;
     }
+    typeUpdate();
 }
 
 char MEDDLY::ct_itemtype::getTypeChar() const
@@ -65,6 +66,43 @@ void MEDDLY::ct_itemtype::show(output &s) const
     s.put("(f ");
     s.put(nodeFID);
     s.put(')');
+}
+
+void MEDDLY::ct_itemtype::typeUpdate()
+{
+    switch (type) {
+        case ct_typeID::NODE    :
+                                    twoslots = sizeof(node_handle)>sizeof(int);
+                                    should_hash = true;
+                                    break;
+
+        case ct_typeID::INTEGER :
+                                    twoslots = false;
+                                    should_hash = true;
+                                    break;
+
+        case ct_typeID::LONG    :
+                                    twoslots = true;
+                                    should_hash = true;
+                                    break;
+
+        case ct_typeID::FLOAT   :
+                                    twoslots = sizeof(float) > sizeof(int);
+                                    should_hash = false;
+                                    break;
+        case ct_typeID::DOUBLE  :
+                                    twoslots = sizeof(double) > sizeof(int);
+                                    should_hash = false;
+                                    break;
+
+        case ct_typeID::GENERIC :
+                                    twoslots = true;
+                                    should_hash = false;
+                                    break;
+        default                 :
+                                    twoslots = false;
+                                    should_hash = false;
+    }
 }
 
 // **********************************************************************
@@ -187,13 +225,13 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name)
 
     updatable_result = false;
 
-    fixed_bytes = 0;
+    // fixed_bytes = 0;
     fixed_intslots = 0;
 
-    repeating_bytes = 0;
+    // repeating_bytes = 0;
     repeating_intslots = 0;
 
-    result_bytes = 0;
+    // result_bytes = 0;
     result_intslots = 0;
 }
 
@@ -321,30 +359,30 @@ void MEDDLY::ct_entry_type::show(output &s) const
 
 void MEDDLY::ct_entry_type::countFixed()
 {
-    fixed_bytes = 0;
+    // fixed_bytes = 0;
     fixed_intslots = 0;
     for (unsigned i=0; i<key_fixed.size(); i++) {
-        fixed_bytes += key_fixed[i].bytes();
+        // fixed_bytes += key_fixed[i].bytes();
         fixed_intslots += key_fixed[i].intslots();
     }
 }
 
 void MEDDLY::ct_entry_type::countRepeating()
 {
-    repeating_bytes = 0;
+    // repeating_bytes = 0;
     repeating_intslots = 0;
     for (unsigned i=0; i<key_repeating.size(); i++) {
-        repeating_bytes += key_repeating[i].bytes();
+        // repeating_bytes += key_repeating[i].bytes();
         repeating_intslots += key_repeating[i].intslots();
     }
 }
 
 void MEDDLY::ct_entry_type::countResult()
 {
-    result_bytes = 0;
+    // result_bytes = 0;
     result_intslots = 0;
     for (unsigned i=0; i<result.size(); i++) {
-        result_bytes += result[i].bytes();
+        // result_bytes += result[i].bytes();
         result_intslots += result[i].intslots();
     }
 }

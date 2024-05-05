@@ -262,6 +262,7 @@ namespace MEDDLY {
             //
             // Chain management
             //
+
             inline static unsigned long getNext(const void* raw)
             {
                 MEDDLY_DCASSERT(CHAINED);
@@ -283,7 +284,6 @@ namespace MEDDLY {
                     unsigned* u = (unsigned*) raw;
                     u[0] = (n >> 32);
                     u[1] = n & 0xffffffff;
-                    return;
                 } else {
                     ct_entry_item* ct = (ct_entry_item*) raw;
                     ct[0].UL = n;
@@ -417,7 +417,7 @@ namespace MEDDLY {
 
                 TBD - switch to 64-bit hash
              */
-            unsigned hashEntry(const void* entry) const;
+            unsigned hashEntry(const void* entry);
 
 
             /**
@@ -575,11 +575,11 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     const unsigned op_slots = MONOLITHIC ? 1 : 0;
 
     const unsigned key_slots =
-        INTSLOTS  ? ( et->getKeyBytes(key->numRepeats())/sizeof(unsigned) )
+        INTSLOTS  ? et->getKeyIntslots(key->numRepeats())
                   : et->getKeySize(key->numRepeats());
 
     const unsigned res_slots =
-        INTSLOTS  ? ( et->getResultBytes() / sizeof(unsigned) )
+        INTSLOTS  ? et->getResultIntslots()
                   : et->getResultSize();
 
     const unsigned entry_slots =
@@ -923,6 +923,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::addEntry(ct_entry_key* key,
     //
     // Recycle key
     //
+    key->my_entry = 0;
     recycle(key);
 
     //
@@ -1356,40 +1357,32 @@ MEDDLY::ct_entry_item* MEDDLY::ct_tmpl<M,C,I>::key2entry(
     for (unsigned i=0; i<key_slots; i++) {
         // zero out the entire slot, makes comparisons easier
         const ct_itemtype &it = et->getKeyType(i);
-        switch (it.getType())
-        {
-            case ct_typeID::NODE:
-            case ct_typeID::INTEGER:
-                    HS.push_back(e->raw[0] = data[i].U);
-                    e->raw[1] = 0;
-                    e++;
-                    continue;
 
-            case ct_typeID::LONG:
-                    e->UL = data[i].UL;
-                    HS.push_back(e->raw[0]);
-                    HS.push_back(e->raw[1]);
-                    MEDDLY_DCASSERT(e->raw[0] == (e->UL >> 32));
-                    MEDDLY_DCASSERT(e->raw[1] == (e->UL && 0xffffffff));
-                    e++;
-                    continue;
+        if (it.shouldBeHashed()) {
+            if (it.requiresTwoSlots()) {
+                e->UL = data[i].UL;
+                HS.push_back(e->raw[0]);
+                HS.push_back(e->raw[1]);
+                e++;
+                continue;
+            } else {
+                HS.push_back(e->U = data[i].U);
+                e->raw[1] = 0;
+                e++;
+                continue;
+            }
+        } else {
+            if (it.requiresTwoSlots()) {
+                e->UL = data[i].UL;
+                e++;
+                continue;
+            } else {
+                e->U = data[i].U;
+                e++;
+                continue;
+            }
+        }
 
-            case ct_typeID::FLOAT:
-                    // don't hash
-                    e->raw[0] = data[i].U;
-                    e->raw[1] = 0;
-                    e++;
-                    continue;
-
-            case ct_typeID::DOUBLE:
-                    // don't hash
-                    e->D = data[i].D;
-                    e++;
-                    continue;
-
-            default:
-                  MEDDLY_DCASSERT(0);
-        } // switch t
     } // for i
 
     return e;
@@ -1416,40 +1409,31 @@ unsigned* MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key,
     const unsigned datalen = key.dataLength();
     for (unsigned i=0; i<datalen; i++) {
         const ct_itemtype &it = et->getKeyType(i);
-        switch (it.getType())
-        {
-            case ct_typeID::NODE:
-            case ct_typeID::INTEGER:
-                    MEDDLY_DCASSERT(sizeof(data[i].N) == sizeof(data[i].U));
-                    MEDDLY_DCASSERT(sizeof(data[i].I) == sizeof(data[i].U));
-                    HS.push_back(*e = data[i].U);
-                    e++;
-                    continue;
 
-            case ct_typeID::GENERIC:    // probably don't hash this way!
-            case ct_typeID::LONG:
-                    HS.push_back(e[0] = data[i].raw[0]);
-                    HS.push_back(e[1] = data[i].raw[1]);
-                    e+=2;
-                    continue;
+        if (it.shouldBeHashed()) {
+            if (it.requiresTwoSlots()) {
+                HS.push_back(e[0] = data[i].raw[0]);
+                HS.push_back(e[1] = data[i].raw[1]);
+                e+=2;
+                continue;
+            } else {
+                HS.push_back(*e = data[i].U);
+                e++;
+                continue;
+            }
+        } else {
+            if (it.requiresTwoSlots()) {
+                e[0] = data[i].raw[0];
+                e[1] = data[i].raw[1];
+                e+=2;
+                continue;
+            } else {
+                *e = data[i].U;
+                e++;
+                continue;
+            }
+        }
 
-            case ct_typeID::FLOAT:
-                    // DON'T hash
-                    MEDDLY_DCASSERT(sizeof(data[i].F) == sizeof(data[i].U));
-                    *e = data[i].U;
-                    e++;
-                    continue;
-
-            case ct_typeID::DOUBLE:
-                    // DON'T hash
-                    e[0] = data[i].raw[0];
-                    e[1] = data[i].raw[1];
-                    e+=2;
-                    continue;
-
-            default:
-                  MEDDLY_DCASSERT(0);
-        } // switch t
     } // for i
     return e;
 }
@@ -1498,12 +1482,6 @@ unsigned* MEDDLY::ct_tmpl<M,C,I>::result2entry(const ct_entry_result& res,
                     e[0] = data[i].raw[0];
                     e[1] = data[i].raw[1];
                     e+=2;
-/*
-                    *e = (data[i].UL >> 32);
-                    e++;
-                    *e = (data[i].UL & 0xffffffff);
-                    e++;
-                    */
                     continue;
 
             default:
@@ -1565,13 +1543,6 @@ bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
                     data[i].raw[0] = sres[0];
                     data[i].raw[1] = sres[1];
                     sres += 2;
-                    /*
-                    data[i].UL = *sres;
-                    sres++;
-                    data[i].UL <<= 32;
-                    data[i].UL |= *sres;
-                    sres++;
-                    */
                     continue;
             default:
                   MEDDLY_DCASSERT(0);
@@ -1798,6 +1769,23 @@ void MEDDLY::ct_tmpl<M,C,I>::deleteEntry(unsigned long &h)
     const unsigned stop = et->getKeySize(reps);
     for (unsigned i=0; i<stop; i++) {
         const ct_itemtype &item = et->getKeyType(i);
+        if (item.hasNodeType()) {
+            if (I) {
+                item.uncacheNode(u2n(uptr));
+                uptr += item.intslots();
+            } else {
+                item.uncacheNode( ctptr->N );
+                ++ctptr;
+            }
+        } else {
+            if (I) {
+                uptr += item.intslots();
+            } else {
+                ++ctptr;
+            }
+        }
+
+        /*
         switch (item.getType()) {
             case ct_typeID::NODE:
                 if (I) {
@@ -1846,6 +1834,7 @@ void MEDDLY::ct_tmpl<M,C,I>::deleteEntry(unsigned long &h)
             default:
                 MEDDLY_DCASSERT(0);
         } // switch
+        */
     } // for i
 
     //
@@ -1853,6 +1842,23 @@ void MEDDLY::ct_tmpl<M,C,I>::deleteEntry(unsigned long &h)
     //
     for (unsigned i=0; i<et->getResultSize(); i++) {
         const ct_itemtype &item = et->getResultType(i);
+        if (item.hasNodeType()) {
+            if (I) {
+                item.uncacheNode(u2n(uptr));
+                uptr += item.intslots();
+            } else {
+                item.uncacheNode( ctptr->N );
+                ++ctptr;
+            }
+        } else {
+            if (I) {
+                uptr += item.intslots();
+            } else {
+                ++ctptr;
+            }
+        }
+
+    /*
         switch (item.getType()) {
             case ct_typeID::NODE:
                 if (I) {
@@ -1901,6 +1907,7 @@ void MEDDLY::ct_tmpl<M,C,I>::deleteEntry(unsigned long &h)
             default:
                 MEDDLY_DCASSERT(0);
         } // switch
+        */
     } // for i
 
     //
@@ -1967,10 +1974,9 @@ void MEDDLY::ct_tmpl<M,CHAINED,I>::resizeTable(unsigned long newsz)
 
 template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
 unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
-            ::hashEntry(const void* entry) const
+            ::hashEntry(const void* entry)
 {
-    hash_stream H;
-    H.start();
+    HS.resize(0);
 
     const unsigned* ue = (const unsigned*) entry;
     const ct_entry_item* cte = (const ct_entry_item*) entry;
@@ -1992,11 +1998,11 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
     const ct_entry_type* et;
     if (MONOLITHIC) {
         if (INTSLOTS) {
-            H.push(*ue);
+            HS.push_back(*ue);
             et = getEntryType(*ue);
             ++ue;
         } else {
-            H.push(cte->U);
+            HS.push_back(cte->U);
             et = getEntryType(cte->U);
             ++cte;
         }
@@ -2011,7 +2017,7 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
     unsigned repeats;
     if (et->isRepeating()) {
         repeats = (INTSLOTS ? (*(ue++)) : (cte++)->U);;
-        H.push(repeats);
+        HS.push_back(repeats);
     } else {
         repeats = 0;
     }
@@ -2021,6 +2027,36 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
     // Loop over key portion
     //
     for (unsigned i=0; i<key_slots; i++) {
+        const ct_itemtype &it = et->getKeyType(i);
+        if (!it.shouldBeHashed()) {
+            if (INTSLOTS) {
+                ue += it.intslots();
+            } else {
+                ++cte;
+            }
+            continue;
+        }
+        if (it.requiresTwoSlots()) {
+            if (INTSLOTS) {
+                HS.push_back(ue[0]);
+                HS.push_back(ue[1]);
+                ue += 2;
+            } else {
+                HS.push_back(cte->raw[0]);
+                HS.push_back(cte->raw[1]);
+                ++cte;
+            }
+        } else {
+            if (INTSLOTS) {
+                HS.push_back(*ue);
+                ++ue;
+            } else {
+                HS.push_back(cte->U);
+                ++cte;
+            }
+        }
+
+/*
         switch (et->getKeyType(i).getType())
         {
             case ct_typeID::NODE:
@@ -2042,10 +2078,6 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
                     } else {
                         H.push(cte->raw[0]);
                         H.push(cte->raw[1]);
-                        /*
-                        H.push(cte->UL >> 32);
-                        H.push(cte->UL & 0xffffffff);
-                        */
                         ++cte;
                     }
                     continue;
@@ -2071,9 +2103,11 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
             default:
                   MEDDLY_DCASSERT(0);
         } // switch t
+    */
+
     } // for i
 
-    return H.finish();
+    return hash_stream::raw_hash(HS.data(), HS.size());
 }
 
 // **********************************************************************

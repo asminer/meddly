@@ -616,14 +616,14 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   //
   // Allocate temporary space for key preprocessing.
   //
-  unsigned temp_bytes =
-    et->getKeyBytes( key->numRepeats() )
+  unsigned temp_slots =
+    et->getKeyIntslots( key->numRepeats() )
     +
-    (MONOLITHIC ? sizeof(int) : 0)
+    (MONOLITHIC ? 1 : 0)
     +
-    (et->isRepeating() ? sizeof(int) : 0);
+    (et->isRepeating() ? 1 : 0);
 
-  int* temp_entry = (int*) key->allocTempData(temp_bytes);
+  int* temp_entry = (int*) key->allocTempData(temp_slots * sizeof(int));
   const ct_entry_item* data = key->rawData();
 
   //
@@ -678,7 +678,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>
   //
   // Hash the key
   //
-  setHash(key, raw_hash(temp_entry, temp_bytes / sizeof(int)));
+  setHash(key, raw_hash(temp_entry, temp_slots));
 
   int* entry_result = findEntry(key);
   perf.pings++;
@@ -757,7 +757,8 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(ct_entry_key* key, cons
   //
 
   const unsigned num_slots =
-    ( key->numTempBytes() + key->getET()->getResultBytes() ) / sizeof(int)
+    key->numTempBytes() / sizeof(int)
+    + key->getET()->getResultIntslots()
     + (CHAINED ? 1 : 0)
   ;
   node_address curr = newEntry(num_slots);
@@ -1347,7 +1348,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::listToTable(int L)
       :   global_et;
     MEDDLY_DCASSERT(et);
     const unsigned reps = (et->isRepeating()) ? entry[ M+1 ] : 0;
-    const unsigned hashlength = M + (et->isRepeating() ? 1 : 0) + ( et->getKeyBytes(reps) / sizeof(int) );
+    const unsigned hashlength = M + (et->isRepeating() ? 1 : 0) + ( et->getKeyIntslots(reps) );
     const unsigned h = hash(entry + 1, hashlength);
 
     entry[0] = table[h];
@@ -1392,7 +1393,7 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::rehashTable(const int* oldT, uns
       :   global_et;
     MEDDLY_DCASSERT(et);
     const unsigned reps = (et->isRepeating()) ? entry[ M ] : 0;
-    const unsigned hashlength = M + (et->isRepeating() ? 1 : 0) + ( et->getKeyBytes(reps) / sizeof(int) );
+    const unsigned hashlength = M + (et->isRepeating() ? 1 : 0) + ( et->getKeyIntslots(reps) );
     unsigned h = hash(entry, hashlength);
 
     setTable(h, curr);

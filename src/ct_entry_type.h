@@ -72,6 +72,7 @@ class MEDDLY::ct_itemtype {
         ct_itemtype() {
             type = ct_typeID::ERROR;
             nodeFID = 0;
+            typeUpdate();
         }
         /** Set type based on the following codes:
                 'N': node (in a forest)
@@ -87,12 +88,14 @@ class MEDDLY::ct_itemtype {
         ct_itemtype(forest* f) {
             type = ct_typeID::NODE;
             nodeFID = f ? f->FID() : 0;
+            typeUpdate();
         }
         /// Set the type from the actual type enum.
         ct_itemtype(ct_typeID t) {
             MEDDLY_DCASSERT(t != ct_typeID::NODE);
             type = t;
             nodeFID = 0;
+            typeUpdate();
         }
         /// Set the type from an edge value type
         ct_itemtype(edge_type et) {
@@ -117,6 +120,7 @@ class MEDDLY::ct_itemtype {
                 default:
                     type = ct_typeID::ERROR;
             }
+            typeUpdate();
         }
 
         /// Get the type of this item.
@@ -136,11 +140,6 @@ class MEDDLY::ct_itemtype {
         /// for the old-style 'pattern' interface.
         char getTypeChar() const;
 
-        /// Make sure this is a node type item, and return its forest.
-        // inline forest* getForest() const {
-            // MEDDLY_DCASSERT(ct_typeID::NODE == type);
-            // return forest::getForestWithID(nodeFID);
-        // }
         /// Return the raw forest (no checks)
         inline forest* rawForest() const {
             return forest::getForestWithID(nodeFID);
@@ -150,11 +149,8 @@ class MEDDLY::ct_itemtype {
             MEDDLY_DCASSERT(f);
             return f->FID() == nodeFID;
         }
-        /// Check if this item has an associated forest.
-        // inline bool hasForest() const {
-            // return nodeFor;
-        // }
         /// Number of bytes required to store this item in a CT
+        /*
         inline unsigned bytes() const {
             static const unsigned sizes[] = {
                 0,                      // ERROR   = 0,
@@ -167,18 +163,18 @@ class MEDDLY::ct_itemtype {
             };
             return sizes[ getTypeInt() ];
         }
+        */
         /// Number of integer slots needed to store this item in a CT
         inline unsigned intslots() const {
-            static const unsigned sizes[] = {
-                0,                                  // ERROR   = 0,
-                sizeof(node_handle) / sizeof(int),  // NODE    = 1,
-                sizeof(int)         / sizeof(int),  // INTEGER = 2,
-                sizeof(long)        / sizeof(int),  // LONG    = 3,
-                sizeof(float)       / sizeof(int),  // FLOAT   = 4,
-                sizeof(double)      / sizeof(int),  // DOUBLE  = 5,
-                sizeof(ct_object*)  / sizeof(int)   // GENERIC = 6 // ct_object
-            };
-            return sizes[ getTypeInt() ];
+            return 1+twoslots;
+        }
+        /// Are two integer slots required
+        inline bool requiresTwoSlots() const {
+            return twoslots;
+        }
+        /// Should this type be hashed
+        inline bool shouldBeHashed() const {
+            return should_hash;
         }
 
         /// Set the forest; should be called when building an operation.
@@ -242,6 +238,7 @@ class MEDDLY::ct_itemtype {
         /// Display; used for debugging
         void show(output &s) const;
 
+        /*
     protected:
         inline int getTypeInt() const {
             int u =
@@ -250,10 +247,17 @@ class MEDDLY::ct_itemtype {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, u, 7);
             return u;
         }
+        */
+
+    protected:
+        void typeUpdate();
 
     private:
         ct_typeID   type;
         unsigned    nodeFID;
+
+        bool        twoslots;
+        bool        should_hash;
 };
 
 // ******************************************************************
@@ -506,6 +510,17 @@ class MEDDLY::ct_entry_type {
         }
 
         /**
+            Get the number of integer slots required for the key.
+              @param  reps  Number of repetitions.
+                            If this is not a repeating type,
+                            then this is ignored.
+
+              @return Total number of integer slots required for the key.
+        */
+        inline unsigned getKeyIntslots(unsigned reps) const {
+            return fixed_intslots + (reps * repeating_intslots);
+        }
+        /**
             Get the number of bytes in the key.
               @param  reps  Number of repetitions.
                             If this is not a repeating type,
@@ -513,9 +528,11 @@ class MEDDLY::ct_entry_type {
 
               @return Total number of bytes required for the key.
         */
+        /*
         inline unsigned getKeyBytes(unsigned reps) const {
             return fixed_bytes + (reps * repeating_bytes);
         }
+        */
 
         /**
             Get the type for item i in the key.
@@ -540,9 +557,14 @@ class MEDDLY::ct_entry_type {
         inline unsigned getResultSize() const { return result.size(); }
 
         /**
+            Get the number of integer slots in the result
+        */
+        inline unsigned getResultIntslots() const { return result_intslots; }
+
+        /**
             Get the number of bytes in the result
         */
-        inline unsigned getResultBytes() const { return result_bytes; }
+        // inline unsigned getResultBytes() const { return result_bytes; }
 
         /**
             Get the type for item i in the result.
@@ -587,7 +609,7 @@ class MEDDLY::ct_entry_type {
         std::vector <ct_itemtype> key_fixed;
 
         /// Total bytes in the starting portion of the key.
-        unsigned fixed_bytes;
+        // unsigned fixed_bytes;
 
         /// Number of integer slots required for the fixed key
         unsigned fixed_intslots;
@@ -605,7 +627,7 @@ class MEDDLY::ct_entry_type {
         std::vector <ct_itemtype> result;
 
         /// Total bytes in the result.
-        unsigned result_bytes;
+        // unsigned result_bytes;
 
         /// Number of integer slots required for the result
         unsigned result_intslots;
