@@ -31,6 +31,7 @@
 
 // #define DEBUG_FIND
 // #define DEBUG_REHASH
+// #define DEBUG_CT
 
 // #define USE_NEW_TEMPLATE
 

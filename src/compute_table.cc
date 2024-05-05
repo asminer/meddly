@@ -118,8 +118,9 @@ void MEDDLY::compute_table::initStatics()
     //
     // Initialize entryInfo list
     //
-    entryInfo.resize(1);
-    entryInfo[0] = nullptr; // not sure if we need to reserve etid 0
+    entryInfo.resize(0);
+    // entryInfo.resize(1);
+    // entryInfo[0] = nullptr; // not sure if we need to reserve etid 0
 }
 
 void MEDDLY::compute_table::doneStatics()
