@@ -32,7 +32,7 @@
 // #define DEBUG_FIND
 // #define DEBUG_REHASH
 
-#define USE_NEW_TEMPLATE
+// #define USE_NEW_TEMPLATE
 
 #ifndef USE_NEW_TEMPLATE
 #include "ct_typebased.h"

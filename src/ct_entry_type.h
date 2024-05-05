@@ -60,6 +60,8 @@ namespace MEDDLY {
 
 };
 
+// #define USE_FID
+
 // ******************************************************************
 // *                                                                *
 // *                        ct_itemtype class                       *
@@ -71,8 +73,7 @@ class MEDDLY::ct_itemtype {
         /// Default constructor
         ct_itemtype() {
             type = ct_typeID::ERROR;
-            nodeFID = 0;
-            typeUpdate();
+            typeUpdate(nullptr);
         }
         /** Set type based on the following codes:
                 'N': node (in a forest)
@@ -87,19 +88,16 @@ class MEDDLY::ct_itemtype {
         /// Set the type to 'node' and assign the forest.
         ct_itemtype(forest* f) {
             type = ct_typeID::NODE;
-            nodeFID = f ? f->FID() : 0;
-            typeUpdate();
+            typeUpdate(f);
         }
         /// Set the type from the actual type enum.
         ct_itemtype(ct_typeID t) {
             MEDDLY_DCASSERT(t != ct_typeID::NODE);
             type = t;
-            nodeFID = 0;
-            typeUpdate();
+            typeUpdate(nullptr);
         }
         /// Set the type from an edge value type
         ct_itemtype(edge_type et) {
-            nodeFID = 0;
             switch (et) {
                 case edge_type::INT:
                     type = ct_typeID::INTEGER;
@@ -120,7 +118,7 @@ class MEDDLY::ct_itemtype {
                 default:
                     type = ct_typeID::ERROR;
             }
-            typeUpdate();
+            typeUpdate(nullptr);
         }
 
         /// Get the type of this item.
@@ -142,28 +140,21 @@ class MEDDLY::ct_itemtype {
 
         /// Return the raw forest (no checks)
         inline forest* rawForest() const {
+#ifdef USE_FID
             return forest::getForestWithID(nodeFID);
+#else
+            return nodeF;
+#endif
         }
         /// Check if this item is associated with forest f.
         inline bool hasForest(const forest* f) const {
             MEDDLY_DCASSERT(f);
+#ifdef USE_FID
             return f->FID() == nodeFID;
+#else
+            return f == nodeF;
+#endif
         }
-        /// Number of bytes required to store this item in a CT
-        /*
-        inline unsigned bytes() const {
-            static const unsigned sizes[] = {
-                0,                      // ERROR   = 0,
-                sizeof(node_handle),    // NODE    = 1,
-                sizeof(int),            // INTEGER = 2,
-                sizeof(long),           // LONG    = 3,
-                sizeof(float),          // FLOAT   = 4,
-                sizeof(double),         // DOUBLE  = 5,
-                sizeof(ct_object*)      // GENERIC = 6 // ct_object
-            };
-            return sizes[ getTypeInt() ];
-        }
-        */
         /// Number of integer slots needed to store this item in a CT
         inline unsigned intslots() const {
             return 1+twoslots;
@@ -182,8 +173,22 @@ class MEDDLY::ct_itemtype {
             if (type != ct_typeID::NODE) {
                 throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
             }
-            MEDDLY_DCASSERT(0==nodeFID);
+#ifdef USE_FID
+            MEDDLY_DCASSERT(!nodeFID);
             nodeFID = f ? f->FID() : 0;
+#else
+            MEDDLY_DCASSERT(!nodeF);
+            nodeF = f;
+#endif
+        }
+
+        /// Invalidate our forest if it is f.
+        void invalidateForest(const forest* f) {
+#ifndef USE_FID
+            if (nodeF == f) {
+                nodeF = nullptr;
+            }
+#endif
         }
 
         /// Notify forest that the given node is being
@@ -191,10 +196,11 @@ class MEDDLY::ct_itemtype {
         inline void cacheNode(node_handle n) const
         {
             MEDDLY_DCASSERT(ct_typeID::NODE == type);
-            forest* f = forest::getForestWithID(nodeFID);
-            if (f) {
-                f->cacheNode(n);
-            }
+#ifdef USE_FID
+            forest* nodeF = forest::getForestWithID(nodeFID);
+#endif
+            MEDDLY_DCASSERT(nodeF);
+            nodeF->cacheNode(n);
         }
 
         /// Notify forest that the given node is being
@@ -202,9 +208,11 @@ class MEDDLY::ct_itemtype {
         inline void uncacheNode(node_handle n) const
         {
             MEDDLY_DCASSERT(ct_typeID::NODE == type);
-            forest* f = forest::getForestWithID(nodeFID);
-            if (f) {
-                f->uncacheNode(n);
+#ifdef USE_FID
+            forest* nodeF = forest::getForestWithID(nodeFID);
+#endif
+            if (nodeF) {
+                nodeF->uncacheNode(n);
             }
         }
 
@@ -212,8 +220,10 @@ class MEDDLY::ct_itemtype {
         inline bool isDeadEntry(node_handle n) const
         {
             MEDDLY_DCASSERT(ct_typeID::NODE == type);
-            forest* f = forest::getForestWithID(nodeFID);
-            return f ? f->isDeadEntry(n) : true;
+#ifdef USE_FID
+            forest* nodeF = forest::getForestWithID(nodeFID);
+#endif
+            return nodeF ? nodeF->isDeadEntry(n) : true;
         }
 
         /// Check if a CT entry is stale.
@@ -221,14 +231,16 @@ class MEDDLY::ct_itemtype {
         inline bool isStaleEntry(node_handle n, bool mark) const
         {
             MEDDLY_DCASSERT(ct_typeID::NODE == type);
-            forest* f = forest::getForestWithID(nodeFID);
-            if (f) {
+#ifdef USE_FID
+            forest* nodeF = forest::getForestWithID(nodeFID);
+#endif
+            if (nodeF) {
                 if (mark) {
-                    if (f->isStaleEntry(n)) return true;
-                    f->setCacheBit(n);
+                    if (nodeF->isStaleEntry(n)) return true;
+                    nodeF->setCacheBit(n);
                     return false;
                 } else {
-                    return f->isStaleEntry(n);
+                    return nodeF->isStaleEntry(n);
                 }
             }
             return true;
@@ -238,23 +250,16 @@ class MEDDLY::ct_itemtype {
         /// Display; used for debugging
         void show(output &s) const;
 
-        /*
     protected:
-        inline int getTypeInt() const {
-            int u =
-                static_cast <typename std::underlying_type<ct_typeID>::type>
-                    (type);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, u, 7);
-            return u;
-        }
-        */
-
-    protected:
-        void typeUpdate();
+        void typeUpdate(forest* f);
 
     private:
         ct_typeID   type;
+#ifdef USE_FID
         unsigned    nodeFID;
+#else
+        forest*     nodeF;
+#endif
 
         bool        twoslots;
         bool        should_hash;
@@ -289,12 +294,12 @@ class MEDDLY::ct_object {
 // ******************************************************************
 
 /**
-  Type information about entries.
-  Usually there is one type of entry for each operation,
-  but there could be more than one type.
+    Type information about entries.
+    Usually there is one type of entry for each operation,
+    but there could be more than one type.
 
-  These are built by operations and then registered
-  with the compute table.
+    These are built by operations and then registered
+    with the compute table.
 */
 class MEDDLY::ct_entry_type {
         friend class compute_table;
@@ -520,19 +525,6 @@ class MEDDLY::ct_entry_type {
         inline unsigned getKeyIntslots(unsigned reps) const {
             return fixed_intslots + (reps * repeating_intslots);
         }
-        /**
-            Get the number of bytes in the key.
-              @param  reps  Number of repetitions.
-                            If this is not a repeating type,
-                            then this is ignored.
-
-              @return Total number of bytes required for the key.
-        */
-        /*
-        inline unsigned getKeyBytes(unsigned reps) const {
-            return fixed_bytes + (reps * repeating_bytes);
-        }
-        */
 
         /**
             Get the type for item i in the key.
@@ -562,11 +554,6 @@ class MEDDLY::ct_entry_type {
         inline unsigned getResultIntslots() const { return result_intslots; }
 
         /**
-            Get the number of bytes in the result
-        */
-        // inline unsigned getResultBytes() const { return result_bytes; }
-
-        /**
             Get the type for item i in the result.
               @param  i   Slot number, between 0 and getResultSize().
         */
@@ -592,6 +579,9 @@ class MEDDLY::ct_entry_type {
 
         /// Display info, for debugging
         void show(output &s) const;
+
+        /// Update all of our items that forest f has been deleted
+        void invalidateForest(const forest* f);
 
     private:
         void countFixed();

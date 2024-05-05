@@ -55,6 +55,13 @@ class myop : public MEDDLY::operation {
             return CT[2];
         }
 
+        // TBD for now
+        inline void invalidateForest(forest* f) {
+            et0->invalidateForest(f);
+            et1->invalidateForest(f);
+            et2->invalidateForest(f);
+        }
+
     public:
         ct_entry_type* et0;
         ct_entry_type* et1;
@@ -395,6 +402,7 @@ void check_CT(bool monolithic)
     // Destroy forest 2 and re-count!
     //
     cout << "    Killing op3 forest (FID " << F2->FID() << ")\n";
+    foo->invalidateForest(F2);
     forest::destroy(F2);
 #ifdef DEBUG_CT
     cout << "Updated CT\n";
