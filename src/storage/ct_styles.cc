@@ -42,6 +42,8 @@
 
 #define HASH_EVERYTHING
 
+#define OLD_DEADCHECK
+
 // ***************************************************************************
 // ***************************************************************************
 // ***************************************************************************
@@ -296,6 +298,25 @@ namespace MEDDLY {
             //
 
 #ifdef ALLOW_DEPRECATED_0_17_6
+
+#ifdef OLD_DEADCHECK
+            /**
+                Check if the result portion of an entry is dead (unusable).
+                    @param  ET      Entry type information
+                    @param  sres    Pointer to result portion of entry
+             */
+            static bool isDead(const ct_entry_type &ET, const void* sres);
+
+            /**
+                Copy the result portion of an entry.
+                    @param  ET      Entry type information
+                    @param  sres    Pointer to result portion of entry
+                    @param  dres    Where to copy the result
+             */
+            static void fetchResult(const ct_entry_type &ET, const void* sres,
+                    ct_entry_result &dres);
+
+#else
             /**
                 Copy the result portion of an entry, and check if it is dead.
                     @param  ET      Entry type information
@@ -304,6 +325,7 @@ namespace MEDDLY {
              */
             static bool isDead(const ct_entry_type &ET, const void* sres,
                     ct_entry_result &dres);
+#endif
 
 #endif
 
@@ -635,7 +657,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     }
     MEDDLY_DCASSERT(key->my_entry);
 
-    genentry keyentry;
+    genentry keyentry, keyafterchain;
     keyentry.vptr = MMAN->getChunkAddress(key->my_entry);
 
     //
@@ -650,6 +672,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
             e += sizeof(unsigned long)/sizeof(unsigned);
             // skip over NEXT pointer slot(s)
         }
+        keyafterchain.uptr = e;
         if (MONOLITHIC) {
             *e = HSpush(et->getID());
             ++e;
@@ -664,6 +687,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
         if (CHAINED) {
             ++e;    // skip over NEXT pointer
         }
+        keyafterchain.ctptr = e;
         if (MONOLITHIC) {
             e->raw[0] = HSpush(et->getID());
             e->raw[1] = 0;
@@ -683,15 +707,9 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
 
 #ifdef HASH_EVERYTHING
     if (INTSLOTS) {
-        setHash(key, hash_stream::raw_hash(
-                        keyentry.uptr + chain_slots,
-                        entry_slots
-                ));
+        setHash(key, hash_stream::raw_hash(keyafterchain.uptr, entry_slots));
     } else {
-        setHash(key, hash_stream::raw_hash(
-                        (unsigned*) (keyentry.ctptr + chain_slots),
-                        2*entry_slots
-                ));
+        setHash(key, hash_stream::raw_hash(keyafterchain.uptr, 2*entry_slots));
     }
 #else
     setHash(key, hash32());
@@ -758,8 +776,15 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
         //
         // Get the next entry
         //
-        genentry currentry;
+        genentry currentry, currafterchain, currres;
         currentry.vptr = MMAN->getChunkAddress(currhnd);
+        if (INTSLOTS) {
+            currafterchain.uptr = currentry.uptr + chain_slots;
+            currres.uptr = currafterchain.uptr + entry_slots;
+        } else {
+            currafterchain.ctptr = currentry.ctptr + chain_slots;
+            currres.ctptr = currafterchain.ctptr + entry_slots;
+        }
 
 #ifdef DEBUG_FIND
         out << "        trying node " << currhnd << "\n";
@@ -769,19 +794,18 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
         // Check if it is equal to the entry we built
         //
         if (INTSLOTS
-            ? equal_sw(currentry.uptr + chain_slots,
-                        keyentry.uptr + chain_slots, entry_slots)
-            : equal_sw(currentry.ctptr + chain_slots,
-                        keyentry.ctptr + chain_slots, entry_slots) )
+            ? equal_sw(currafterchain.uptr, keyafterchain.uptr, entry_slots)
+            : equal_sw(currafterchain.ctptr, keyafterchain.ctptr, entry_slots) )
         {
             //
             // Equal, that's a CT hit.
             // See if we can use the result.
             //
-            if (INTSLOTS
-                ?   isDead(*et, currentry.uptr+chain_slots+entry_slots,  res)
-                :   isDead(*et, currentry.ctptr+chain_slots+entry_slots, res)
-               )
+#ifdef OLD_DEADCHECK
+            if (isDead(*et, currres.vptr))
+#else
+            if (isDead(*et, currres.vptr, res))
+#endif
             {
                 //
                 // Nope.
@@ -841,7 +865,13 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
 #endif
                 }
 
-                res.reset();
+                //
+                // Copy the result over
+                //
+#ifdef OLD_DEADCHECK
+                fetchResult(*et, currres.vptr, res);
+#endif
+                res.reset();    // rewind
                 res.setValid();
                 sawSearch(chainlen);
                 perf.hits++;
@@ -1518,7 +1548,82 @@ void MEDDLY::ct_tmpl<M,C,I>::result2entry(const ct_entry_result& res, void* e)
 
 // **********************************************************************
 
+#ifdef OLD_DEADCHECK
+
+template <bool M, bool C, bool I>
+bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET, const void* sres)
+{
+    MEDDLY_DCASSERT(sres);
+
+    const unsigned* ures = (const unsigned*) sres;
+    const ct_entry_item* ctres = (const ct_entry_item*) sres;
+
+    //
+    // Scan the entry result from sres, make sure there are no dead nodes.
+    //
+    for (unsigned i=0; i<ET.getResultSize(); i++) {
+        const ct_itemtype &item = ET.getResultType(i);
+        if (item.hasNodeType()) {
+            if (I) {
+                if (item.isDeadEntry(u2n(ures))) return true;
+                ++ures;
+                continue;
+            } else {
+                if (item.isDeadEntry(ctres->N)) return true;
+                ++ctres;
+                continue;
+            }
+        }
+        //
+        // Still here? not a node type.
+        //
+        if (I) {
+            ures += item.intslots();
+        } else {
+            ++ctres;
+        }
+    }
+    return false;
+}
+
+template <bool M, bool C, bool I>
+void MEDDLY::ct_tmpl<M,C,I>::fetchResult(const ct_entry_type &ET,
+        const void* sres, ct_entry_result &dres)
+{
+    MEDDLY_DCASSERT(sres);
+    ct_entry_item* data = dres.rawData();
+    MEDDLY_DCASSERT(dres.dataLength() == ET.getResultSize());
+
+    const unsigned* ures = (const unsigned*) sres;
+    const ct_entry_item* ctres = (const ct_entry_item*) sres;
+
+    //
+    // Copy the entry result from sres into dres.
+    //
+    for (unsigned i=0; i<ET.getResultSize(); i++) {
+        const ct_itemtype &item = ET.getResultType(i);
+        if (I) {
+            if (item.requiresTwoSlots()) {
+                data[i].raw[0] = ures[0];
+                data[i].raw[1] = ures[1];
+                ures += 2;
+            } else {
+                data[i].raw[0] = ures[0];
+                ures++;
+            }
+        } else {
+            data[i] = ctres[i];
+        }
+    }
+}
+
+#endif
+
+// **********************************************************************
+
 #ifdef ALLOW_DEPRECATED_0_17_6
+
+#ifndef OLD_DEADCHECK
 
 template <bool M, bool C, bool I>
 bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
@@ -1557,6 +1662,8 @@ bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
     }
     return false;
 }
+
+#endif
 
 #endif
 
