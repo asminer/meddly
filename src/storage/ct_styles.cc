@@ -153,21 +153,6 @@ namespace MEDDLY {
 
 #ifdef ALLOW_DEPRECATED_0_17_6
             void* key2entry(const ct_entry_key& key, void* e);
-
-            /*
-            inline static ct_entry_item* result2entry(
-                    const ct_entry_result& res, ct_entry_item* e)
-            {
-                MEDDLY_DCASSERT(!INTSLOTS);
-                res.cacheNodes();
-                const ct_entry_type* et = res.getET();
-                MEDDLY_DCASSERT(et);
-                const unsigned res_slots = et->getResultSize();
-                memcpy(e, res.rawData(), res_slots * sizeof(ct_entry_item));
-                return e + res_slots;
-            }
-            */
-
             static void result2entry(const ct_entry_result& res, void* e);
 #endif
             inline static ct_entry_item* vector2entry(const ct_vector &v,
@@ -313,16 +298,9 @@ namespace MEDDLY {
                     @param  sres    Pointer to result portion of entry
                     @param  dres    Where to copy the result
              */
-            static bool isDead(const ct_entry_type &ET, const unsigned* sres,
+            static bool isDead(const ct_entry_type &ET, const void* sres,
                     ct_entry_result &dres);
-            /**
-                Copy the result portion of an entry, and check if it is dead.
-                    @param  ET      Entry type information
-                    @param  sres    Pointer to result portion of entry
-                    @param  dres    Where to copy the result
-             */
-            static bool isDead(const ct_entry_type &ET, const ct_entry_item* sres,
-                    ct_entry_result &dres);
+
 #endif
 
             //
@@ -1502,55 +1480,6 @@ void MEDDLY::ct_tmpl<M,C,I>::result2entry(const ct_entry_result& res, void* e)
     } // for i
 }
 
-/*
-template <bool M, bool C, bool I>
-unsigned* MEDDLY::ct_tmpl<M,C,I>::result2entry(const ct_entry_result& res,
-        unsigned* e)
-{
-    MEDDLY_DCASSERT(I);
-    const ct_entry_type* et = res.getET();
-    MEDDLY_DCASSERT(et);
-
-    //
-    // Copy the result into temp_entry
-    //
-    const ct_entry_item* data = res.rawData();
-    const unsigned datalen = res.dataLength();
-    for (unsigned i=0; i<datalen; i++) {
-        const ct_itemtype &it = et->getResultType(i);
-        switch (it.getType())
-        {
-            case ct_typeID::NODE:
-                    it.cacheNode(data[i].N);
-                    // FALL THROUGH
-
-            case ct_typeID::INTEGER:
-            case ct_typeID::FLOAT:
-                    MEDDLY_DCASSERT(sizeof(data[i].N) == sizeof(data[i].U));
-                    MEDDLY_DCASSERT(sizeof(data[i].I) == sizeof(data[i].U));
-                    MEDDLY_DCASSERT(sizeof(data[i].F) == sizeof(data[i].U));
-                    *e = data[i].U;
-                    e++;
-                    continue;
-
-            case ct_typeID::DOUBLE:
-            case ct_typeID::GENERIC:
-            case ct_typeID::LONG:
-                    MEDDLY_DCASSERT(sizeof(data[i].G) == sizeof(data[i].UL));
-                    MEDDLY_DCASSERT(sizeof(data[i].D) == sizeof(data[i].UL));
-                    e[0] = data[i].raw[0];
-                    e[1] = data[i].raw[1];
-                    e+=2;
-                    continue;
-
-            default:
-                  MEDDLY_DCASSERT(0);
-        } // switch t
-    } // for i
-    return e;
-}
-*/
-
 #endif
 
 // **********************************************************************
@@ -1559,7 +1488,7 @@ unsigned* MEDDLY::ct_tmpl<M,C,I>::result2entry(const ct_entry_result& res,
 
 template <bool M, bool C, bool I>
 bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
-        const unsigned* sres, ct_entry_result &dres)
+        const void* sres, ct_entry_result &dres)
 {
     MEDDLY_DCASSERT(I);
 
@@ -1567,12 +1496,8 @@ bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
     ct_entry_item* data = dres.rawData();
     MEDDLY_DCASSERT(dres.dataLength() == ET.getResultSize());
 
-    MEDDLY_DCASSERT(sizeof(data[0].N) == sizeof(data[0].U));
-    MEDDLY_DCASSERT(sizeof(data[0].I) == sizeof(data[0].U));
-    MEDDLY_DCASSERT(sizeof(data[0].F) == sizeof(data[0].U));
-
-    MEDDLY_DCASSERT(sizeof(data[0].G) == sizeof(data[0].UL));
-    MEDDLY_DCASSERT(sizeof(data[0].D) == sizeof(data[0].UL));
+    const unsigned* ures = (const unsigned*) sres;
+    const ct_entry_item* ctres = (const ct_entry_item*) sres;
 
     //
     // Copy the entry result from sres into dres,
@@ -1580,67 +1505,23 @@ bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
     //
     for (unsigned i=0; i<ET.getResultSize(); i++) {
         const ct_itemtype &item = ET.getResultType(i);
-
-        switch (item.getType())
-        {
-            case ct_typeID::NODE:
-                    data[i].U = *sres;
-                    if (item.isDeadEntry(data[i].N)) {
-                        return true;
-                    }
-                    sres++;
-                    continue;
-
-            case ct_typeID::INTEGER:
-            case ct_typeID::FLOAT:
-                    data[i].U = *sres;
-                    sres++;
-                    continue;
-
-            case ct_typeID::DOUBLE:
-            case ct_typeID::GENERIC:
-            case ct_typeID::LONG:
-                    data[i].raw[0] = sres[0];
-                    data[i].raw[1] = sres[1];
-                    sres += 2;
-                    continue;
-            default:
-                  MEDDLY_DCASSERT(0);
-        } // switch
-    }
-    return false;
-}
-
-#endif
-
-// **********************************************************************
-
-#ifdef ALLOW_DEPRECATED_0_17_6
-
-template <bool M, bool C, bool I>
-bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
-        const ct_entry_item* sres, ct_entry_result &dres)
-{
-    MEDDLY_DCASSERT(!I);
-
-    MEDDLY_DCASSERT(sres);
-    ct_entry_item* data = dres.rawData();
-    MEDDLY_DCASSERT(dres.dataLength() == ET.getResultSize());
-
-    //
-    // Copy the entry result from sres into dres,
-    // and make sure it's not a dead entry while scanning it.
-    //
-    for (unsigned i=0; i<ET.getResultSize(); i++) {
-        const ct_itemtype &item = ET.getResultType(i);
+        if (I) {
+            if (item.requiresTwoSlots()) {
+                data[i].raw[0] = ures[0];
+                data[i].raw[1] = ures[1];
+                ures += 2;
+            } else {
+                data[i].raw[0] = ures[0];
+                ures++;
+            }
+        } else {
+            data[i] = ctres[i];
+        }
         if (item.hasNodeType()) {
-            if (item.isDeadEntry(sres[i].N)) {
+            if (item.isDeadEntry(data[i].N)) {
                 return true;
             }
         }
-
-        data[i] = sres[i];
-
     }
     return false;
 }
@@ -1836,57 +1717,6 @@ void MEDDLY::ct_tmpl<M,C,I>::deleteEntry(unsigned long &h)
                 ++ctptr;
             }
         }
-
-        /*
-        switch (item.getType()) {
-            case ct_typeID::NODE:
-                if (I) {
-                    item.uncacheNode(u2n(uptr));
-                } else {
-                    item.uncacheNode( ctptr->N );
-                }
-                // FALL THROUGH
-
-            case ct_typeID::INTEGER:
-            case ct_typeID::FLOAT:
-                if (I) {
-                    ++uptr;
-                } else {
-                    ++ctptr;
-                }
-                continue;
-
-            case ct_typeID::GENERIC: {
-                ct_object* P = I ? *((ct_object**)(uptr)) : ctptr->G;
-                delete P;
-                if (I) {
-                    uptr += sizeof(ct_object*) / sizeof(unsigned);
-                } else {
-                    ++ctptr;
-                }
-                continue;
-            }
-
-            case ct_typeID::DOUBLE:
-                if (I) {
-                    uptr += sizeof(double) / sizeof(unsigned);
-                } else {
-                    ++ctptr;
-                }
-                continue;
-
-            case ct_typeID::LONG:
-                if (I) {
-                    uptr += sizeof(long) / sizeof(unsigned);
-                } else {
-                    ++ctptr;
-                }
-                continue;
-
-            default:
-                MEDDLY_DCASSERT(0);
-        } // switch
-        */
     } // for i
 
     //
@@ -1909,57 +1739,6 @@ void MEDDLY::ct_tmpl<M,C,I>::deleteEntry(unsigned long &h)
                 ++ctptr;
             }
         }
-
-    /*
-        switch (item.getType()) {
-            case ct_typeID::NODE:
-                if (I) {
-                    item.uncacheNode( u2n(uptr) );
-                } else {
-                    item.uncacheNode( ctptr->N );
-                }
-                // FALL THROUGH
-
-            case ct_typeID::INTEGER:
-            case ct_typeID::FLOAT:
-                if (I) {
-                    ++uptr;
-                } else {
-                    ++ctptr;
-                }
-                continue;
-
-            case ct_typeID::GENERIC: {
-                ct_object* P = I ? *((ct_object**)(uptr)) : ctptr->G;
-                delete P;
-                if (I) {
-                    uptr += sizeof(ct_object*) / sizeof(unsigned);
-                } else {
-                    ++ctptr;
-                }
-                continue;
-            }
-
-            case ct_typeID::DOUBLE:
-                if (I) {
-                    uptr += sizeof(double) / sizeof(unsigned);
-                } else {
-                    ++ctptr;
-                }
-                continue;
-
-            case ct_typeID::LONG:
-                if (I) {
-                    uptr += sizeof(long) / sizeof(unsigned);
-                } else {
-                    ++ctptr;
-                }
-                continue;
-
-            default:
-                MEDDLY_DCASSERT(0);
-        } // switch
-        */
     } // for i
 
     //
@@ -2104,55 +1883,6 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
                 ++cte;
             }
         }
-
-/*
-        switch (et->getKeyType(i).getType())
-        {
-            case ct_typeID::NODE:
-            case ct_typeID::INTEGER:
-                    if (INTSLOTS) {
-                        H.push(*ue);
-                        ++ue;
-                    } else {
-                        H.push(cte->U);
-                        ++cte;
-                    }
-                    continue;
-
-            case ct_typeID::GENERIC:    // probably don't hash this way!
-            case ct_typeID::LONG:
-                    if (INTSLOTS) {
-                        H.push(ue[0], ue[1]);
-                        ue += 2;
-                    } else {
-                        H.push(cte->raw[0]);
-                        H.push(cte->raw[1]);
-                        ++cte;
-                    }
-                    continue;
-
-            case ct_typeID::FLOAT:
-                    // DON'T hash; just advance pointers
-                    if (INTSLOTS) {
-                        ++ue;
-                    } else {
-                        ++cte;
-                    }
-                    continue;
-
-            case ct_typeID::DOUBLE:
-                    // DON'T hash; just advance pointers
-                    if (INTSLOTS) {
-                        ue += 2;
-                    } else {
-                        ++cte;
-                    }
-                    continue;
-
-            default:
-                  MEDDLY_DCASSERT(0);
-        } // switch t
-    */
 
     } // for i
 
