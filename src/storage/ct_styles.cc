@@ -33,7 +33,7 @@
 // #define DEBUG_REHASH
 // #define DEBUG_CT
 
-// #define USE_NEW_TEMPLATE
+#define USE_NEW_TEMPLATE
 
 #ifndef USE_NEW_TEMPLATE
 #include "ct_typebased.h"
@@ -327,7 +327,6 @@ namespace MEDDLY {
             //
             // Should we discard a CT miss?
             //
-#ifdef ALLOW_DEPRECATED_0_17_6
             /**
                 See if an entry is stale.
                     @param  e       Pointer to the entire entry
@@ -340,7 +339,6 @@ namespace MEDDLY {
                     @param  mark    Mark nodes in the entry
              */
             bool isStale(const ct_entry_item* e, bool mark) const;
-#endif
 
             /**
                 Try to set table[h] to curr.
@@ -451,8 +449,33 @@ namespace MEDDLY {
             }
 
         private:
+            //
+            // Abstraction layer for hashing array
+            //
+            inline void HSreset() {
+                hsi = 0;
+            }
+            inline void HSreserve(unsigned sz) {
+                HS.reserve(sz);
+                hsi = 0;
+            }
+            inline unsigned HSpush(unsigned x) {
+#ifdef DEVELOPMENT_CODE
+                return HS.at(hsi++) = x;
+#else
+                return HS[hsi++] = x;
+#endif
+            }
+            inline unsigned hash32() {
+                return hash_stream::raw_hash(HS.data(), hsi);
+            }
+
+        private:
             /// Hashing array
             std::vector <unsigned> HS;
+
+            /// Current index in hashing array
+            unsigned hsi;
 
             /// List of entries to delete
             std::vector <unsigned long> toDelete;
@@ -610,7 +633,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     //     we hash it as we go.
     //
 
-    HS.resize(0);
+    HSreserve(num_slots);
     if (INTSLOTS) {
         unsigned* e = keyentry.uptr;
         if (CHAINED) {
@@ -618,11 +641,11 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
             // skip over NEXT pointer slot(s)
         }
         if (MONOLITHIC) {
-            HS.push_back(*e = et->getID());
+            *e = HSpush(et->getID());
             ++e;
         }
         if (et->isRepeating()) {
-            HS.push_back(*e = key->numRepeats());
+            *e = HSpush(key->numRepeats());
             ++e;
         }
         key->result_shift = key2entry(*key, e) - keyentry.uptr;
@@ -632,12 +655,12 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
             ++e;    // skip over NEXT pointer
         }
         if (MONOLITHIC) {
-            HS.push_back(e->raw[0] = et->getID());
+            e->raw[0] = HSpush(et->getID());
             e->raw[1] = 0;
             ++e;
         }
         if (et->isRepeating()) {
-            HS.push_back(e->raw[0] = key->numRepeats());
+            e->raw[0] = HSpush(key->numRepeats());
             e->raw[1] = 0;
             ++e;
         }
@@ -649,7 +672,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     //
 
 
-    setHash(key, hash_stream::raw_hash(HS.data(), HS.size()));
+    setHash(key, hash32());
     MEDDLY_DCASSERT(key->getHash() == hashEntry(keyentry.vptr));
     const unsigned long hslot = key->getHash() % table.size();
     unsigned long hcurr = hslot;
@@ -1362,12 +1385,12 @@ MEDDLY::ct_entry_item* MEDDLY::ct_tmpl<M,C,I>::key2entry(
         if (it.shouldBeHashed()) {
             if (it.requiresTwoSlots()) {
                 e->UL = data[i].UL;
-                HS.push_back(e->raw[0]);
-                HS.push_back(e->raw[1]);
+                HSpush(e->raw[0]);
+                HSpush(e->raw[1]);
                 e++;
                 continue;
             } else {
-                HS.push_back(e->U = data[i].U);
+                e->raw[0] = HSpush(data[i].U);
                 e->raw[1] = 0;
                 e++;
                 continue;
@@ -1413,12 +1436,12 @@ unsigned* MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key,
 
         if (it.shouldBeHashed()) {
             if (it.requiresTwoSlots()) {
-                HS.push_back(e[0] = data[i].raw[0]);
-                HS.push_back(e[1] = data[i].raw[1]);
+                e[0] = HSpush(data[i].raw[0]);
+                e[1] = HSpush(data[i].raw[1]);
                 e+=2;
                 continue;
             } else {
-                HS.push_back(*e = data[i].U);
+                *e = HSpush(data[i].U);
                 e++;
                 continue;
             }
@@ -1590,8 +1613,6 @@ bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
 
 // **********************************************************************
 
-#ifdef ALLOW_DEPRECATED_0_17_6
-
 template <bool M, bool C, bool I>
 bool MEDDLY::ct_tmpl<M,C,I>::isStale(const unsigned* entry, bool mark) const
 {
@@ -1651,11 +1672,7 @@ bool MEDDLY::ct_tmpl<M,C,I>::isStale(const unsigned* entry, bool mark) const
     return false;
 }
 
-#endif
-
 // **********************************************************************
-
-#ifdef ALLOW_DEPRECATED_0_17_6
 
 template <bool M, bool C, bool I>
 bool MEDDLY::ct_tmpl<M,C,I>::isStale(const ct_entry_item* entry, bool mark)
@@ -1710,8 +1727,6 @@ bool MEDDLY::ct_tmpl<M,C,I>::isStale(const ct_entry_item* entry, bool mark)
 
     return false;
 }
-
-#endif
 
 // **********************************************************************
 
@@ -1977,7 +1992,7 @@ template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
 unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
             ::hashEntry(const void* entry)
 {
-    HS.resize(0);
+    HSreset();
 
     const unsigned* ue = (const unsigned*) entry;
     const ct_entry_item* cte = (const ct_entry_item*) entry;
@@ -1999,12 +2014,10 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
     const ct_entry_type* et;
     if (MONOLITHIC) {
         if (INTSLOTS) {
-            HS.push_back(*ue);
-            et = getEntryType(*ue);
+            et = getEntryType(HSpush(*ue));
             ++ue;
         } else {
-            HS.push_back(cte->U);
-            et = getEntryType(cte->U);
+            et = getEntryType(HSpush(cte->U));
             ++cte;
         }
     } else {
@@ -2017,8 +2030,7 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
     //
     unsigned repeats;
     if (et->isRepeating()) {
-        repeats = (INTSLOTS ? (*(ue++)) : (cte++)->U);;
-        HS.push_back(repeats);
+        repeats = HSpush( (INTSLOTS ? (*(ue++)) : (cte++)->U) );
     } else {
         repeats = 0;
     }
@@ -2039,20 +2051,20 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
         }
         if (it.requiresTwoSlots()) {
             if (INTSLOTS) {
-                HS.push_back(ue[0]);
-                HS.push_back(ue[1]);
+                HSpush(ue[0]);
+                HSpush(ue[1]);
                 ue += 2;
             } else {
-                HS.push_back(cte->raw[0]);
-                HS.push_back(cte->raw[1]);
+                HSpush(cte->raw[0]);
+                HSpush(cte->raw[1]);
                 ++cte;
             }
         } else {
             if (INTSLOTS) {
-                HS.push_back(*ue);
+                HSpush(*ue);
                 ++ue;
             } else {
-                HS.push_back(cte->U);
+                HSpush(cte->U);
                 ++cte;
             }
         }
@@ -2108,7 +2120,7 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
 
     } // for i
 
-    return hash_stream::raw_hash(HS.data(), HS.size());
+    return hash32();
 }
 
 // **********************************************************************
