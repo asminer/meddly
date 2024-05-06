@@ -309,15 +309,22 @@ namespace MEDDLY {
             /**
                 See if an entry is stale.
                     @param  e       Pointer to the entire entry
-                    @param  mark    Mark nodes in the entry
+                    @param  mark    If true, mark nodes in the entry
              */
-            bool isStale(const unsigned* e, bool mark) const;
+            bool isStale(const void* e, bool mark) const;
+
             /**
                 See if an entry is stale.
                     @param  e       Pointer to the entire entry
                     @param  mark    Mark nodes in the entry
              */
-            bool isStale(const ct_entry_item* e, bool mark) const;
+            // bool isStale(const unsigned* e, bool mark) const;
+            /**
+                See if an entry is stale.
+                    @param  e       Pointer to the entire entry
+                    @param  mark    Mark nodes in the entry
+             */
+            // bool isStale(const ct_entry_item* e, bool mark) const;
 
             /**
                 Try to set table[h] to curr.
@@ -1531,6 +1538,127 @@ bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
 // **********************************************************************
 
 template <bool M, bool C, bool I>
+bool MEDDLY::ct_tmpl<M,C,I>::isStale(const void* entry, bool mark) const
+{
+    const unsigned* uptr = (const unsigned*) entry;
+    const ct_entry_item* ctptr = (const ct_entry_item*) entry;
+
+    //
+    // Skip over chained portion
+    //
+    if (C) {
+        if (I) {
+            uptr += sizeof(unsigned long) / sizeof(unsigned);
+        } else {
+            ++ctptr;
+        }
+    }
+
+    //
+    // Get entry type and check if those are marked
+    // If monolithic, advance entry pointer
+    //
+    const ct_entry_type* et = M
+        ?   getEntryType( I ? *uptr : ctptr->U )
+        :   global_et;
+    if (M) {
+        if (I) {
+            ++uptr;
+        } else {
+            ++ctptr;
+        }
+    }
+    MEDDLY_DCASSERT(et);
+    if (et->isMarkedForDeletion()) return true;
+
+    //
+    // Get key size and advance if needed
+    //
+    unsigned reps;
+    if (et->isRepeating()) {
+        if (I) {
+            reps = *uptr;
+            ++uptr;
+        } else {
+            reps = ctptr->U;
+            ++ctptr;
+        }
+    } else {
+        reps = 0;
+    }
+    const unsigned klen = et->getKeySize(reps);
+
+    //
+    // Check the key portion of the entry
+    //
+    for (unsigned i=0; i<klen; i++) {
+        const ct_itemtype &item = et->getKeyType(i);
+        if (item.hasNodeType()) {
+            //
+            // Check the node
+            //
+            if (I) {
+                if (item.isStaleEntry(u2n(uptr), mark)) {
+                    return true;
+                }
+                uptr++;
+            } else {
+                if (item.isStaleEntry(ctptr->N, mark)) {
+                    return true;
+                }
+                ctptr++;
+            }
+        } else {
+            //
+            // Some other type; skip
+            //
+            if (I) {
+                uptr += item.intslots();
+            } else {
+                ctptr++;
+            }
+        }
+    } // for i
+
+    //
+    // Check result portion of the entry
+    //
+    for (unsigned i=0; i<et->getResultSize(); i++) {
+        const ct_itemtype &item = et->getResultType(i);
+        if (item.hasNodeType()) {
+            //
+            // Check the node
+            //
+            if (I) {
+                if (item.isStaleEntry(u2n(uptr), mark)) {
+                    return true;
+                }
+                uptr++;
+            } else {
+                if (item.isStaleEntry(ctptr->N, mark)) {
+                    return true;
+                }
+                ctptr++;
+            }
+        } else {
+            //
+            // Some other type; skip
+            //
+            if (I) {
+                uptr += item.intslots();
+            } else {
+                ctptr++;
+            }
+        }
+    } // for i
+
+    return false;
+}
+
+// **********************************************************************
+
+/*
+template <bool M, bool C, bool I>
 bool MEDDLY::ct_tmpl<M,C,I>::isStale(const unsigned* entry, bool mark) const
 {
     MEDDLY_DCASSERT(I);
@@ -1644,6 +1772,7 @@ bool MEDDLY::ct_tmpl<M,C,I>::isStale(const ct_entry_item* entry, bool mark)
 
     return false;
 }
+*/
 
 // **********************************************************************
 
