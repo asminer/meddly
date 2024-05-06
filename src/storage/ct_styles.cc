@@ -684,13 +684,12 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
 #ifdef HASH_EVERYTHING
     if (INTSLOTS) {
         setHash(key, hash_stream::raw_hash(
-                        ((unsigned*) key->my_entry) + chain_slots,
+                        keyentry.uptr + chain_slots,
                         entry_slots
                 ));
     } else {
         setHash(key, hash_stream::raw_hash(
-                        (unsigned*)
-                        (((ct_entry_item*) key->my_entry) + chain_slots),
+                        (unsigned*) (keyentry.ctptr + chain_slots),
                         2*entry_slots
                 ));
     }
@@ -1263,9 +1262,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>
             // Go through key portion
             //
             ct_item x;
-            const unsigned klen = INTSLOTS
-                                    ? et->getKeyIntslots(reps)
-                                    : et->getKeySize(reps) ;
+            const unsigned klen = et->getKeySize(reps);
             for (unsigned i=0; i<klen; i++) {
                 const ct_itemtype &item = et->getKeyType(i);
                 if (INTSLOTS) {
@@ -1385,14 +1382,13 @@ void* MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key, void* e)
 {
     const ct_entry_type* et = key.getET();
     MEDDLY_DCASSERT(et);
-    const unsigned key_slots = I ? et->getKeyIntslots(key.numRepeats())
-                                 : et->getKeySize(key.numRepeats());
+    const unsigned keylen = et->getKeySize(key.numRepeats());
     const ct_entry_item* data = key.rawData();
 
     unsigned* ue = (unsigned*) e;
     ct_entry_item* cte = (ct_entry_item*) e;
 
-    for (unsigned i=0; i<key_slots; i++) {
+    for (unsigned i=0; i<keylen; i++) {
         const ct_itemtype &it = et->getKeyType(i);
 
 #ifndef HASH_EVERYTHING
@@ -1464,7 +1460,6 @@ void* MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key, void* e)
 template <bool M, bool C, bool I>
 void MEDDLY::ct_tmpl<M,C,I>::result2entry(const ct_entry_result& res, void* e)
 {
-    MEDDLY_DCASSERT(I);
     const ct_entry_type* et = res.getET();
     MEDDLY_DCASSERT(et);
 
@@ -1529,8 +1524,6 @@ template <bool M, bool C, bool I>
 bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
         const void* sres, ct_entry_result &dres)
 {
-    MEDDLY_DCASSERT(I);
-
     MEDDLY_DCASSERT(sres);
     ct_entry_item* data = dres.rawData();
     MEDDLY_DCASSERT(dres.dataLength() == ET.getResultSize());
@@ -1618,8 +1611,7 @@ bool MEDDLY::ct_tmpl<M,C,I>::isStale(const void* entry, bool mark) const
     } else {
         reps = 0;
     }
-    const unsigned klen = I ? et->getKeyIntslots(reps)
-                            : et->getKeySize(reps);
+    const unsigned klen = et->getKeySize(reps);
 
     //
     // Check the key portion of the entry
@@ -1742,9 +1734,8 @@ void MEDDLY::ct_tmpl<M,C,I>::deleteEntry(unsigned long &h)
     //
     // Go through key portion
     //
-    const unsigned stop = I ? et->getKeyIntslots(reps)
-                            : et->getKeySize(reps);
-    for (unsigned i=0; i<stop; i++) {
+    const unsigned klen = et->getKeySize(reps);
+    for (unsigned i=0; i<klen; i++) {
         const ct_itemtype &item = et->getKeyType(i);
         if (item.hasNodeType()) {
             if (I) {
@@ -1944,14 +1935,12 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
     } else {
         repeats = 0;
     }
-    const unsigned key_slots = INTSLOTS
-                                ? et->getKeyIntslots(repeats)
-                                : et->getKeySize(repeats);
+    const unsigned keylen = et->getKeySize(repeats);
 
     //
     // Loop over key portion
     //
-    for (unsigned i=0; i<key_slots; i++) {
+    for (unsigned i=0; i<keylen; i++) {
         const ct_itemtype &it = et->getKeyType(i);
         if (!it.shouldBeHashed()) {
             if (INTSLOTS) {
@@ -2045,9 +2034,8 @@ void MEDDLY::ct_tmpl<M, C, I>
 
     ct_item x;
     s << "[" << et->getName() << "(";
-    const unsigned stop = I ? et->getKeyIntslots(reps)
-                            : et->getKeySize(reps);
-    for (unsigned i=0; i<stop; i++) {
+    const unsigned klen = et->getKeySize(reps);
+    for (unsigned i=0; i<klen; i++) {
         if (i) s << ", ";
 
         const ct_typeID tid = et->getKeyType(i).getType();
