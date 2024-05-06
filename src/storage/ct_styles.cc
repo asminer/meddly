@@ -314,19 +314,6 @@ namespace MEDDLY {
             bool isStale(const void* e, bool mark) const;
 
             /**
-                See if an entry is stale.
-                    @param  e       Pointer to the entire entry
-                    @param  mark    Mark nodes in the entry
-             */
-            // bool isStale(const unsigned* e, bool mark) const;
-            /**
-                See if an entry is stale.
-                    @param  e       Pointer to the entire entry
-                    @param  mark    Mark nodes in the entry
-             */
-            // bool isStale(const ct_entry_item* e, bool mark) const;
-
-            /**
                 Try to set table[h] to curr.
                 If the slot is full, check ahead the next couple for empty.
                 If none are empty, then recycle current table[h]
@@ -819,10 +806,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
         // Not equal.
         // See if this entry is stale.
         //
-        if (checkStalesOnFind && (INTSLOTS
-            ?   isStale(currentry.uptr, false)
-            :   isStale(currentry.ctptr, false)
-           ))
+        if (checkStalesOnFind && isStale(currentry.vptr, false))
         {
             //
             // Stale; delete
@@ -1297,11 +1281,7 @@ void MEDDLY::ct_tmpl<M, CHAINED, I>::removeStaleEntries()
                 void* entry = MMAN->getChunkAddress(curr);
                 unsigned long next = getNext(entry);
 
-                bool stale = I
-                    ? isStale( (const unsigned*) entry, true)
-                    : isStale( (const ct_entry_item*) entry, true);
-
-                if (stale) {
+                if (isStale(entry, true)) {
                     // remove from list
                     if (preventry) {
                         setNext(preventry, next);
@@ -1329,19 +1309,12 @@ void MEDDLY::ct_tmpl<M, CHAINED, I>::removeStaleEntries()
         // Not chained
         for (unsigned long i=0; i<table.size(); i++) {
             if (!table[i]) continue;
-            void* entry = MMAN->getChunkAddress(table[i]);
 
-            if (I) {
-                if (! isStale( (const unsigned*) entry, true))
-                {
-                    continue;
-                }
-            } else {
-                if (! isStale( (const ct_entry_item*) entry, true))
-                {
-                    continue;
-                }
+            if (!isStale(MMAN->getChunkAddress(table[i]), true))
+            {
+                continue;
             }
+
             deleteEntry(table[i]);
             table[i] = 0;
         } // for i
@@ -1654,125 +1627,6 @@ bool MEDDLY::ct_tmpl<M,C,I>::isStale(const void* entry, bool mark) const
 
     return false;
 }
-
-// **********************************************************************
-
-/*
-template <bool M, bool C, bool I>
-bool MEDDLY::ct_tmpl<M,C,I>::isStale(const unsigned* entry, bool mark) const
-{
-    MEDDLY_DCASSERT(I);
-
-    //
-    // Ignore next pointer, if there is one
-    //
-    entry += C ? (sizeof(unsigned long) / sizeof(unsigned)) : 0;
-
-
-    //
-    // Get entry type and check if those are marked
-    // If monolithic, advance entry pointer
-    //
-    const ct_entry_type* et = M ? getEntryType(*entry++) : global_et;
-    MEDDLY_DCASSERT(et);
-    if (et->isMarkedForDeletion()) return true;
-
-    //
-    // Get entry size (advancing entry pointer if needed)
-    //
-    const unsigned reps = (et->isRepeating()) ? (*entry++) : 0;
-    const unsigned klen = et->getKeySize(reps);
-
-    //
-    // Check the key portion of the entry
-    //
-    for (unsigned i=0; i<klen; i++) {
-        const ct_itemtype &item = et->getKeyType(i);
-        if (item.hasNodeType()) {
-            // convert to node type (signed)
-            if (item.isStaleEntry(u2n(entry), mark)) {
-                return true;
-            }
-            entry++;
-        } else {
-            entry += item.intslots();
-        }
-    } // for i
-
-    //
-    // Check result portion of the entry
-    //
-    for (unsigned i=0; i<et->getResultSize(); i++) {
-        const ct_itemtype &item = et->getResultType(i);
-        if (item.hasNodeType()) {
-            if (item.isStaleEntry(u2n(entry), mark)) {
-                return true;
-            }
-            entry++;
-        } else {
-            entry += item.intslots();
-        }
-    } // for i
-
-    return false;
-}
-
-// **********************************************************************
-
-template <bool M, bool C, bool I>
-bool MEDDLY::ct_tmpl<M,C,I>::isStale(const ct_entry_item* entry, bool mark)
-    const
-{
-    MEDDLY_DCASSERT(!I);
-
-    //
-    // Ignore next pointer, if there is one
-    //
-    if (C) entry++;
-
-    //
-    // Get entry type and check if those are marked
-    // If monolithic, advance entry pointer
-    //
-    const ct_entry_type* et = M ? getEntryType((entry++)->U) : global_et;
-    MEDDLY_DCASSERT(et);
-    if (et->isMarkedForDeletion()) return true;
-
-    //
-    // Get entry size (advancing entry pointer if needed)
-    //
-    const unsigned reps = (et->isRepeating()) ? ((entry++)->U) : 0;
-    const unsigned klen = et->getKeySize(reps);
-
-    //
-    // Check the key portion of the entry
-    //
-    for (unsigned i=0; i<klen; i++) {
-        const ct_itemtype &item = et->getKeyType(i);
-        if (item.hasNodeType()) {
-            if (item.isStaleEntry(entry->N, mark)) {
-                return true;
-            }
-        }
-        entry++;
-    } // for i
-
-    //
-    // Check result portion of the entry
-    //
-    for (unsigned i=0; i<et->getResultSize(); i++) {
-        const ct_itemtype &item = et->getResultType(i);
-        if (item.hasNodeType()) {
-            if (item.isStaleEntry(entry->N, mark)) {
-                return true;
-            }
-        }
-        entry++;
-    } // for i
-
-    return false;
-}
-*/
 
 // **********************************************************************
 
