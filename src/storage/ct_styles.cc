@@ -776,99 +776,47 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
 #endif
 
         //
-        // Check if it is equal to the entry we built
+        // Check if it is equal to the entry we built,
+        // and if we need to remove the entry.
         //
-        if (INTSLOTS
-            ? equal_sw(currafterchain.uptr, keyafterchain.uptr, entry_slots)
-            : equal_sw(currafterchain.ctptr, keyafterchain.ctptr, entry_slots) )
-        {
-            //
-            // Equal, that's a CT hit.
-            // See if we can use the result.
-            //
-            if (isDead(*et, currres.vptr, res))
+        bool equal, remove;
+
+        if (INTSLOTS) {
+            if (equal_sw(currafterchain.uptr, keyafterchain.uptr, entry_slots))
             {
-                //
-                // Nope.
-                // Delete this entry.
-                //
-                if (CHAINED) {
-                    unsigned long next = getNext(currentry.vptr);
-                    if (prevhnd) {
-                        void* prev = MMAN->getChunkAddress(prevhnd);
-                        setNext(prev, next);
-                    } else {
-#ifdef DEVELOPMENT_CODE
-                        table.at(hcurr) = next;
-#else
-                        table[hcurr] = next;
-#endif
-                    }
-                } else {
-#ifdef DEVELOPMENT_CODE
-                    table.at(hcurr) = 0;
-#else
-                    table[hcurr] = 0;
-#endif
-                }
-
-                res.setInvalid();
-                sawSearch(chainlen);
-                toDelete.push_back(currhnd);
-                batchDelete();
-#ifdef DEBUG_FIND
-                out << "        equal but unusable\n";
-#endif
-                return;
+                equal = true;
+                remove = isDead(*et, currres.vptr, res);
             } else {
-                //
-                // Yes.
-                // Move to front if we're chained
-                //
-#ifdef DEBUG_FIND
-                out << "        equal and usable\n";
-#endif
-                if (CHAINED) {
-                    if (prevhnd) {
-                        void* prev = MMAN->getChunkAddress(prevhnd);
-                        setNext(prev, getNext(currentry.vptr));
-                        setNext(currentry.vptr, table[hcurr]);
-                        table[hcurr] = currhnd;
-#ifdef DEBUG_FIND
-                        out << "        moved to front\n";
-#endif
-                    }
-                    // if prev is null, then
-                    // we are already at the front.
-#ifdef DEBUG_FIND
-                        out << "        new chain: ";
-                        showChain(out, table[hcurr]);
-#endif
+                equal = false;
+                if (checkStalesOnFind) {
+                    remove = isStale(currentry.vptr, false);
+                } else {
+                    remove = false;
                 }
-
-                //
-                // Copy the result over
-                //
-                res.reset();    // rewind
-                res.setValid();
-                sawSearch(chainlen);
-                perf.hits++;
-                batchDelete();
-                MMAN->recycleChunk(key->my_entry, key->entry_slots);
-                key->entry_slots = 0;
-                return;
             }
+        } else {
+            if (equal_sw(currafterchain.ctptr, keyafterchain.ctptr, entry_slots))
+            {
+                equal = true;
+                remove = isDead(*et, currres.vptr, res);
+            } else {
+                equal = false;
+                if (checkStalesOnFind) {
+                    remove = isStale(currentry.vptr, false);
+                } else {
+                    remove = false;
+                }
+            }
+        }
 
-        }  // if equal
+#ifdef DEBUG_FIND
+        out << "            equal: " << (equal ? "yes" : "no")
+            << ", remove: " << (remove ? "yes\n" : "no\n");
+#endif
 
-        //
-        // Not equal.
-        // See if this entry is stale.
-        //
-        if (checkStalesOnFind && isStale(currentry.vptr, false))
-        {
+        if (remove) {
             //
-            // Stale; delete
+            // Remove the entry
             //
             if (CHAINED) {
                 unsigned long next = getNext(currentry.vptr);
@@ -890,13 +838,61 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
 #endif
             }
             toDelete.push_back(currhnd);
+
+            if (equal) {
+                //
+                // There's no hope of finding another equal entry,
+                // so stop searching.
+                //
+                break;
+            }
+        } // if remove
+
+        if (equal) {
+            //
+            // Move to front if we're chained
+            //
+            if (CHAINED) {
+                if (prevhnd) {
+                    void* prev = MMAN->getChunkAddress(prevhnd);
+                    setNext(prev, getNext(currentry.vptr));
+                    setNext(currentry.vptr, table[hcurr]);
+                    table[hcurr] = currhnd;
+#ifdef DEBUG_FIND
+                    out << "        moved to front\n";
+#endif
+                }
+                // if prev is null, then
+                // we are already at the front.
+#ifdef DEBUG_FIND
+                out << "        new chain: ";
+                showChain(out, table[hcurr]);
+#endif
+            }
+
+            //
+            // Set up the result portion
+            //
+            res.reset();    // rewind
+            res.setValid();
+            sawSearch(chainlen);
+            perf.hits++;
+            batchDelete();
+            MMAN->recycleChunk(key->my_entry, key->entry_slots);
+            key->entry_slots = 0;
+            return;
         }
 
         //
-        // Advance
+        // Advance to the next entry we need to check
         //
         if (CHAINED) {
-            prevhnd = currhnd;
+            //
+            // Advance previous, unless we removed the current entry
+            //
+            if (!remove) {
+                prevhnd = currhnd;
+            }
             currhnd = getNext(currentry.vptr);
         } else {
             ++chainlen;
@@ -908,6 +904,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
             currhnd = table[hcurr];
 #endif
         }
+
 
     } // for chainlen
 
