@@ -94,8 +94,8 @@ if [ "$BPATH" ]; then
     if [ -f "$BPATH/timing.count" ]; then
         read counter < "$BPATH/timing.count"
     fi
-    counter=`printf "%03d\n" $[ counter + 1 ]`
-    TEXTFILE="$BPATH/timing.$counter.txt"
+    counter="$[ counter + 1 ]"
+    TEXTFILE=`printf "%s/timing.%03d.txt" "$BPATH" "$counter"
 else
     HTMLFILE=""
     TEXTFILE=""

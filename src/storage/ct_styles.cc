@@ -40,9 +40,9 @@
 #include "ct_none.h"
 #endif
 
-#define HASH_EVERYTHING
+// #define HASH_EVERYTHING
 
-#define OLD_DEADCHECK
+// #define OLD_DEADCHECK
 
 // ***************************************************************************
 // ***************************************************************************

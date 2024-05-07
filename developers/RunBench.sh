@@ -340,8 +340,8 @@ if [ "$BPATH" ]; then
     if [ -f "$BPATH/bench.count" ]; then
         read counter < "$BPATH/bench.count"
     fi
-    counter=`printf "%03d\n" $[ counter + 1 ]`
-    TEXTFILE="$BPATH/bench.$counter.txt"
+    counter=$[ counter + 1 ]
+    TEXTFILE=`printf "%s/bench.%03d.txt" "$BPATH" "$counter"`
 fi
 
 checkDir $EXDIR
