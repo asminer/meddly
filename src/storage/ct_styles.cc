@@ -352,12 +352,14 @@ namespace MEDDLY {
 
                 @return true if equal, false if not equal.
             */
+            /*
             inline bool equalAndUsable(const ct_entry_type &ET,
                     void* entry, void* key, unsigned keylen,
                     ct_entry_result &dres, bool &discard)
             {
                 // TBD THIS?
             }
+            */
 
 
             /**
@@ -479,7 +481,9 @@ namespace MEDDLY {
             }
             inline void HSreserve(unsigned sz) {
 #ifndef HASH_EVERYTHING
-                HS.reserve(sz);
+                if (sz > HS.size()) {
+                    HS.resize(sz);
+                }
                 hsi = 0;
 #endif
             }
