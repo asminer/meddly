@@ -299,24 +299,6 @@ namespace MEDDLY {
 
 #ifdef ALLOW_DEPRECATED_0_17_6
 
-#ifdef OLD_DEADCHECK
-            /**
-                Check if the result portion of an entry is dead (unusable).
-                    @param  ET      Entry type information
-                    @param  sres    Pointer to result portion of entry
-             */
-            static bool isDead(const ct_entry_type &ET, const void* sres);
-
-            /**
-                Copy the result portion of an entry.
-                    @param  ET      Entry type information
-                    @param  sres    Pointer to result portion of entry
-                    @param  dres    Where to copy the result
-             */
-            static void fetchResult(const ct_entry_type &ET, const void* sres,
-                    ct_entry_result &dres);
-
-#else
             /**
                 Copy the result portion of an entry, and check if it is dead.
                     @param  ET      Entry type information
@@ -325,7 +307,6 @@ namespace MEDDLY {
              */
             static bool isDead(const ct_entry_type &ET, const void* sres,
                     ct_entry_result &dres);
-#endif
 
 #endif
 
@@ -805,11 +786,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
             // Equal, that's a CT hit.
             // See if we can use the result.
             //
-#ifdef OLD_DEADCHECK
-            if (isDead(*et, currres.vptr))
-#else
             if (isDead(*et, currres.vptr, res))
-#endif
             {
                 //
                 // Nope.
@@ -872,9 +849,6 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
                 //
                 // Copy the result over
                 //
-#ifdef OLD_DEADCHECK
-                fetchResult(*et, currres.vptr, res);
-#endif
                 res.reset();    // rewind
                 res.setValid();
                 sawSearch(chainlen);
@@ -1552,82 +1526,7 @@ void MEDDLY::ct_tmpl<M,C,I>::result2entry(const ct_entry_result& res, void* e)
 
 // **********************************************************************
 
-#ifdef OLD_DEADCHECK
-
-template <bool M, bool C, bool I>
-bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET, const void* sres)
-{
-    MEDDLY_DCASSERT(sres);
-
-    const unsigned* ures = (const unsigned*) sres;
-    const ct_entry_item* ctres = (const ct_entry_item*) sres;
-
-    //
-    // Scan the entry result from sres, make sure there are no dead nodes.
-    //
-    for (unsigned i=0; i<ET.getResultSize(); i++) {
-        const ct_itemtype &item = ET.getResultType(i);
-        if (item.hasNodeType()) {
-            if (I) {
-                if (item.isDeadEntry(u2n(ures))) return true;
-                ++ures;
-                continue;
-            } else {
-                if (item.isDeadEntry(ctres->N)) return true;
-                ++ctres;
-                continue;
-            }
-        }
-        //
-        // Still here? not a node type.
-        //
-        if (I) {
-            ures += item.intslots();
-        } else {
-            ++ctres;
-        }
-    }
-    return false;
-}
-
-template <bool M, bool C, bool I>
-void MEDDLY::ct_tmpl<M,C,I>::fetchResult(const ct_entry_type &ET,
-        const void* sres, ct_entry_result &dres)
-{
-    MEDDLY_DCASSERT(sres);
-    ct_entry_item* data = dres.rawData();
-    MEDDLY_DCASSERT(dres.dataLength() == ET.getResultSize());
-
-    const unsigned* ures = (const unsigned*) sres;
-    const ct_entry_item* ctres = (const ct_entry_item*) sres;
-
-    //
-    // Copy the entry result from sres into dres.
-    //
-    for (unsigned i=0; i<ET.getResultSize(); i++) {
-        const ct_itemtype &item = ET.getResultType(i);
-        if (I) {
-            if (item.requiresTwoSlots()) {
-                data[i].raw[0] = ures[0];
-                data[i].raw[1] = ures[1];
-                ures += 2;
-            } else {
-                data[i].raw[0] = ures[0];
-                ures++;
-            }
-        } else {
-            data[i] = ctres[i];
-        }
-    }
-}
-
-#endif
-
-// **********************************************************************
-
 #ifdef ALLOW_DEPRECATED_0_17_6
-
-#ifndef OLD_DEADCHECK
 
 template <bool M, bool C, bool I>
 bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
@@ -1666,8 +1565,6 @@ bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
     }
     return false;
 }
-
-#endif
 
 #endif
 
