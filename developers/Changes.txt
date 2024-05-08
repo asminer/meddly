@@ -2,6 +2,12 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
+ct_styles:
+    we're using unsigned long but the base class limits to unsigned
+    for things like table size.
+    Revert back to unsigned for now, see if that closes the speed gap.
+
+
 
 Make compute table interface easier to use for simple operations
     (i.e., most of the time)

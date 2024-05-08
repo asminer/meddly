@@ -1018,14 +1018,14 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::addEntry(ct_entry_key* key,
     //
     if (CHAINED) {
         if (table.size() == maxSize) {
-            tableExpand = std::numeric_limits<int>::max();
+            tableExpand = std::numeric_limits<unsigned>::max();
         } else {
             tableExpand = 4*table.size();
         }
         tableShrink = table.size() / 2;
     } else {
         if (table.size() == maxSize) {
-            tableExpand = std::numeric_limits<int>::max();
+            tableExpand = std::numeric_limits<unsigned>::max();
         } else {
             tableExpand = table.size() / 2;
         }
