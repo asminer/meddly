@@ -40,9 +40,7 @@
 #include "ct_none.h"
 #endif
 
-// #define HASH_EVERYTHING
-
-// #define OLD_DEADCHECK
+// #define HASHARRAY_SIMPLE
 
 // ***************************************************************************
 // ***************************************************************************
@@ -452,12 +450,17 @@ namespace MEDDLY {
             // Abstraction layer for hashing array
             //
             inline void HSreset() {
-#ifndef HASH_EVERYTHING
+#ifdef HASHARRAY_SIMPLE
+                HS.resize(0);
+#else
                 hsi = 0;
 #endif
             }
             inline void HSreserve(unsigned sz) {
-#ifndef HASH_EVERYTHING
+#ifdef HASHARRAY_SIMPLE
+                HS.reserve(sz);
+                HS.resize(0);
+#else
                 if (sz > HS.size()) {
                     HS.resize(sz);
                 }
@@ -465,7 +468,8 @@ namespace MEDDLY {
 #endif
             }
             inline unsigned HSpush(unsigned x) {
-#ifdef HASH_EVERYTHING
+#ifdef HASHARRAY_SIMPLE
+                HS.push_back(x);
                 return x;
 #else
 #ifdef DEVELOPMENT_CODE
@@ -475,17 +479,19 @@ namespace MEDDLY {
 #endif
 #endif
             }
-#ifndef HASH_EVERYTHING
             inline unsigned hash32() {
+#ifdef HASHARRAY_SIMPLE
+                return hash_stream::raw_hash(HS.data(), HS.size());
+#else
                 return hash_stream::raw_hash(HS.data(), hsi);
-            }
 #endif
+            }
 
         private:
-#ifndef HASH_EVERYTHING
             /// Hashing array
             std::vector <unsigned> HS;
 
+#ifndef HASHARRAY_SIMPLE
             /// Current index in hashing array
             unsigned hsi;
 #endif
@@ -684,15 +690,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     // (3) Save hash value
     //
 
-#ifdef HASH_EVERYTHING
-    if (INTSLOTS) {
-        setHash(key, hash_stream::raw_hash(keyafterchain.uptr, entry_slots));
-    } else {
-        setHash(key, hash_stream::raw_hash(keyafterchain.uptr, 2*entry_slots));
-    }
-#else
     setHash(key, hash32());
-#endif
     MEDDLY_DCASSERT(key->getHash() == hashEntry(keyentry.vptr));
     const unsigned hslot = key->getHash() % table.size();
     unsigned hcurr = hslot;
@@ -1402,9 +1400,7 @@ void* MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key, void* e)
     for (unsigned i=0; i<keylen; i++) {
         const ct_itemtype &it = et->getKeyType(i);
 
-#ifndef HASH_EVERYTHING
         if (it.shouldBeHashed()) {
-#endif
             if (it.requiresTwoSlots()) {
                 if (I) {
                     ue[0] = HSpush(data[i].raw[0]);
@@ -1429,7 +1425,6 @@ void* MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key, void* e)
                 }
                 continue;
             }
-#ifndef HASH_EVERYTHING
         } else {
             if (it.requiresTwoSlots()) {
                 if (I) {
@@ -1454,7 +1449,6 @@ void* MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key, void* e)
                 continue;
             }
         }
-#endif
 
     } // for i
 
@@ -1870,57 +1864,6 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
     }
     const ct_entry_type* et;
 
-#ifdef HASH_EVERYTHING
-
-    //
-    // Determine entry type
-    //
-    unsigned eptr = 0;
-    if (MONOLITHIC) {
-        if (INTSLOTS) {
-            et = getEntryType(ue[eptr++]);
-        } else {
-            et = getEntryType(cte[eptr++].U);
-        }
-    } else {
-        et = global_et;
-    }
-    //
-    // Determine entry size
-    //
-    unsigned repeats;
-    if (et->isRepeating()) {
-        repeats = INTSLOTS ? ue[eptr++] : cte[eptr++].U;
-    } else {
-        repeats = 0;
-    }
-    const unsigned key_slots = INTSLOTS
-                                ? et->getKeyIntslots(repeats)
-                                : et->getKeySize(repeats);
-
-    //
-    // Hash the whole key
-    //
-    if (INTSLOTS) {
-        return hash_stream::raw_hash(ue, key_slots + eptr);
-    } else {
-        return hash_stream::raw_hash((unsigned*) cte, 2*(key_slots + eptr));
-    }
-
-
-    if (INTSLOTS) {
-        //
-        // Determine entry size, and hash away
-        //
-        unsigned ueptr = 0;
-
-        return hash_stream::raw_hash(ue, key_slots + ueptr);
-    }
-
-
-
-#else
-
     //
     // Determine entry type
     //
@@ -1984,7 +1927,6 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
     } // for i
 
     return hash32();
-#endif
 }
 
 // **********************************************************************
