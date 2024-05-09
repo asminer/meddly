@@ -80,14 +80,21 @@ void MEDDLY::ct_initializer::cleanup()
     compute_table::doneStatics();
 }
 
+void MEDDLY::ct_initializer::setMemoryManager(const memory_manager_style* mms)
+{
+    the_settings.MMS = mms;
+}
+
+
 void MEDDLY::ct_initializer::setStaleRemoval(staleRemovalOption sro)
 {
     the_settings.staleRemoval = sro;
 }
 
-void MEDDLY::ct_initializer::setMaxSize(unsigned ms)
+void MEDDLY::ct_initializer::setMaxSize(unsigned long ms)
 {
     the_settings.maxSize = ms;
+    the_settings.allowHugeTables = (ms > 1000000000);
 }
 
 void MEDDLY::ct_initializer::setBuiltinStyle(builtinCTstyle cts)
@@ -127,9 +134,9 @@ void MEDDLY::ct_initializer::setCompression(compressionOption co)
     the_settings.compression = co;
 }
 
-void MEDDLY::ct_initializer::setMemoryManager(const memory_manager_style* mms)
+void MEDDLY::ct_initializer::setHugeTables(bool on)
 {
-    the_settings.MMS = mms;
+    the_settings.allowHugeTables = on;
 }
 
 MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(operation* op, unsigned slot)

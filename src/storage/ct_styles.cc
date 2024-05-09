@@ -58,6 +58,11 @@ namespace MEDDLY {
     /**
         Template-based compute table implementation.
         The template parameters:
+            @param  TTYPE           Type for the hash table entries.
+                                    In practice, either 'unsigned'
+                                    (limit of 4 billion entries)
+                                    or 'unsigned long'.
+
             @param  MONOLITHIC      If true, entries for several different
                                     operations will be stored in one table.
                                     That means each entry needs to store
@@ -75,7 +80,7 @@ namespace MEDDLY {
 
             +---------------------------------------+
             |                                       |
-            |        next pointer (unsigned)        |
+            |         next pointer  (TTYPE)         |
             |                                       |
             | Only needed when CHAINED is true.     |
             |                                       |
@@ -115,7 +120,7 @@ namespace MEDDLY {
 
 
     */
-    template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
+    template <class TTYPE, bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
     class ct_tmpl : public compute_table {
         public:
             ct_tmpl(const ct_settings &s, operation* op, unsigned slot);
@@ -254,26 +259,58 @@ namespace MEDDLY {
             // Chain management
             //
 
-            inline static unsigned getNext(const void* raw)
+            inline static TTYPE getNext(const void* raw)
             {
                 MEDDLY_DCASSERT(CHAINED);
+
+                union {
+                    TTYPE tt;
+                    unsigned u[2];
+                    unsigned long ul;
+                } thingy;
+
                 if (INTSLOTS) {
                     const unsigned* u = (const unsigned*) raw;
-                    return u[0];
+                    thingy.u[0] = u[0];
+                    if (sizeof(TTYPE) == sizeof(long)) {
+                        thingy.u[1] = u[1];
+                    }
+                    return thingy.tt;
                 } else {
                     const ct_entry_item* ct = (const ct_entry_item*) raw;
-                    return ct[0].U;
+                    if (sizeof(TTYPE) == sizeof(unsigned)) {
+                        thingy.u[0] = ct[0].U;
+                        return thingy.tt;
+                    }
+                    thingy.ul = ct[0].UL;
+                    return thingy.tt;
                 }
             }
-            inline static void setNext(void* raw, unsigned n)
+            inline static void setNext(void* raw, TTYPE n)
             {
                 MEDDLY_DCASSERT(CHAINED);
+
+                union {
+                    TTYPE tt;
+                    unsigned u[2];
+                    unsigned long ul;
+                } thingy;
+
+                thingy.tt = n;
+
                 if (INTSLOTS) {
                     unsigned* u = (unsigned*) raw;
-                    u[0] = n;
+                    u[0] = thingy.u[0];
+                    if (sizeof(TTYPE) == sizeof(long)) {
+                        u[1] = thingy.u[1];
+                    }
                 } else {
                     ct_entry_item* ct = (ct_entry_item*) raw;
-                    ct[0].U = n;
+                    if (sizeof(TTYPE) == sizeof(unsigned)) {
+                        ct[0].U = thingy.u[0];
+                    } else {
+                        ct[0].UL = thingy.ul;
+                    }
                 }
             }
 
@@ -343,10 +380,10 @@ namespace MEDDLY {
                 If none are empty, then recycle current table[h]
                 and overwrite it.
             */
-            inline void setTable(unsigned h, unsigned curr)
+            inline void setTable(TTYPE h, TTYPE curr)
             {
                 MEDDLY_DCASSERT(!CHAINED);
-                unsigned hfree = h;
+                TTYPE hfree = h;
                 //
                 // Look for a free slot
                 //
@@ -396,13 +433,13 @@ namespace MEDDLY {
                 @param  hnd         'pointer' (in the memory manager)
                                     to the entire entry. Will be set to 0.
             */
-            void deleteEntry(unsigned &hnd);
+            void deleteEntry(TTYPE &hnd);
 
             /**
                 Resize the table.
                     @param  newsz   New size to use
             */
-            void resizeTable(unsigned newsz);
+            void resizeTable(TTYPE newsz);
 
             /**
                 Compute the hash of an entry.
@@ -413,7 +450,7 @@ namespace MEDDLY {
 
                 TBD - switch to 64-bit hash
              */
-            unsigned hashEntry(const void* entry);
+            TTYPE hashEntry(const void* entry);
 
 
             /**
@@ -424,10 +461,10 @@ namespace MEDDLY {
                     @param  keyonly     true: we don't have a result yet
                                         false: it's a proper entry with both
             */
-            void showEntry(output &s, unsigned h, bool keyonly) const;
+            void showEntry(output &s, TTYPE h, bool keyonly) const;
 
             /// Display a chain
-            inline void showChain(output &s, unsigned L) const
+            inline void showChain(output &s, TTYPE L) const
             {
                 s << L;
                 if (CHAINED) {
@@ -444,6 +481,18 @@ namespace MEDDLY {
             {
                 return *((const node_handle*)ptr);
             }
+
+            /// Multiply and check for overflow
+            static inline TTYPE safemult(TTYPE sz, TTYPE a)
+            {
+                a *= sz;
+                if (a < sz) {
+                    // we overflowed
+                    return 0;
+                }
+                return a;
+            }
+
 
         private:
             //
@@ -497,16 +546,16 @@ namespace MEDDLY {
 #endif
 
             /// List of entries to delete
-            std::vector <unsigned> toDelete;
+            std::vector <TTYPE> toDelete;
 
             /// Hash table
-            std::vector <unsigned> table;
+            std::vector <TTYPE> table;
 
             /// When to next expand the table
-            unsigned tableExpand;
+            TTYPE tableExpand;
 
             /// When to next shrink the table
-            unsigned tableShrink;
+            TTYPE tableShrink;
 
             /// Manager for the entries
             memory_manager* MMAN;
@@ -526,8 +575,8 @@ namespace MEDDLY {
 // *                                                                    *
 // **********************************************************************
 
-template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
-MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>::ct_tmpl(
+template <class TTYPE, bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
+MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>::ct_tmpl(
     const ct_settings &s, operation* op, unsigned slot)
     : compute_table(s, op, slot)
 {
@@ -555,16 +604,16 @@ MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>::ct_tmpl(
     tableShrink = 0;
     table.resize(1024, 0);
 
-    mstats.incMemUsed(table.size() * sizeof(unsigned));
-    mstats.incMemAlloc(table.size() * sizeof(unsigned));
+    mstats.incMemUsed(table.size() * sizeof(TTYPE));
+    mstats.incMemAlloc(table.size() * sizeof(TTYPE));
 
     collisions = 0;
 }
 
 // **********************************************************************
 
-template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
-MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>::~ct_tmpl()
+template <class TT, bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
+MEDDLY::ct_tmpl<TT, MONOLITHIC, CHAINED, INTSLOTS>::~ct_tmpl()
 {
     /*
         Clean up memory manager for entries
@@ -585,9 +634,9 @@ MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>::~ct_tmpl()
 
 #ifdef ALLOW_DEPRECATED_0_17_6
 
-template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
-void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
-        ct_entry_result &res)
+template <class TTYPE, bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
+void MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
+    ::find(ct_entry_key* key, ct_entry_result &res)
 {
     MEDDLY_DCASSERT(key);
     const ct_entry_type* et = key->getET();
@@ -612,7 +661,10 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     // (1) determine entry size, and allocate
     //
 
-    const unsigned chain_slots = CHAINED ? 1 : 0;
+    const unsigned chain_slots = CHAINED
+            ? ( INTSLOTS ? sizeof(TTYPE)/sizeof(unsigned) : 1 )
+            : 0;
+
     const unsigned op_slots = MONOLITHIC ? 1 : 0;
 
     const unsigned key_slots =
@@ -654,8 +706,12 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     if (INTSLOTS) {
         unsigned* e = keyentry.uptr;
         if (CHAINED) {
-            e++;
             // skip over NEXT pointer slot(s)
+            if (sizeof(TTYPE) == sizeof(unsigned)) {
+                e++;
+            } else {
+                e += 2;
+            }
         }
         keyafterchain.uptr = e;
         if (MONOLITHIC) {
@@ -670,7 +726,8 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     } else {
         ct_entry_item* e = keyentry.ctptr;
         if (CHAINED) {
-            ++e;    // skip over NEXT pointer
+            // skip over NEXT pointer
+            ++e;
         }
         keyafterchain.ctptr = e;
         if (MONOLITHIC) {
@@ -692,9 +749,9 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
 
     setHash(key, hash32());
     MEDDLY_DCASSERT(key->getHash() == hashEntry(keyentry.vptr));
-    const unsigned hslot = key->getHash() % table.size();
-    unsigned hcurr = hslot;
-    // TBD: use a 64-bit hash
+    const TTYPE hslot = key->getHash() % table.size();
+    TTYPE hcurr = hslot;
+    // TBD: use a 64-bit hash when TTYPE is 64 bit
 
 #ifdef DEBUG_FIND
     ostream_output out(std::cout);
@@ -721,11 +778,11 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
     perf.pings++;
     unsigned chainlen;
 #ifdef DEVELOPMENT_CODE
-    unsigned currhnd = table.at(hcurr);
+    TTYPE currhnd = table.at(hcurr);
 #else
-    unsigned currhnd = table[hcurr];
+    TTYPE currhnd = table[hcurr];
 #endif
-    unsigned prevhnd = 0;
+    TTYPE prevhnd = 0;
     for (chainlen = 0; ; )
     {
         if (!currhnd) {
@@ -811,7 +868,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
             // Remove the entry
             //
             if (CHAINED) {
-                unsigned next = getNext(currentry.vptr);
+                TTYPE next = getNext(currentry.vptr);
                 if (prevhnd) {
                     void* prev = MMAN->getChunkAddress(prevhnd);
                     setNext(prev, next);
@@ -918,22 +975,10 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::find(ct_entry_key* key,
 
 #ifdef ALLOW_DEPRECATED_0_17_6
 
-inline unsigned safemult(unsigned sz, unsigned a, unsigned max)
-{
-    a *= sz;
-    if (a < sz) {
-        // we overflowed
-        return max;
-    }
-    if (a >= max) {
-        return max;
-    }
-    return a;
-}
 
-template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
-void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::addEntry(ct_entry_key* key,
-        const ct_entry_result& res)
+template <class TTYPE, bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
+void MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
+    ::addEntry(ct_entry_key* key, const ct_entry_result& res)
 {
     MEDDLY_DCASSERT(key);
     const ct_entry_type* et = key->getET();
@@ -943,7 +988,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::addEntry(ct_entry_key* key,
             throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
     }
 
-    unsigned h = key->getHash() % table.size();
+    TTYPE h = key->getHash() % table.size();
 
     //
     // Increment cache counters for nodes in the key
@@ -1009,8 +1054,10 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::addEntry(ct_entry_key* key,
     } else {
         if (perf.numEntries < tableExpand / 4) return;
     }
-    unsigned newsize = safemult(table.size(), 2, maxSize);
+    TTYPE newsize = safemult(table.size(), 2);
+    if (!newsize) newsize = maxSize;
     if (newsize == table.size()) return;    // already max size
+
 
     //
     // Enlarge table
@@ -1022,14 +1069,15 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::addEntry(ct_entry_key* key,
     //
     if (CHAINED) {
         if (table.size() == maxSize) {
-            tableExpand = std::numeric_limits<unsigned>::max();
+            tableExpand = std::numeric_limits<TTYPE>::max();
         } else {
-            tableExpand = safemult(table.size(), 4, std::numeric_limits<unsigned>::max());
+            tableExpand = safemult(table.size(), 4);
+            if (!tableExpand) tableExpand = std::numeric_limits<TTYPE>::max();
         }
         tableShrink = table.size() / 2;
     } else {
         if (table.size() == maxSize) {
-            tableExpand = std::numeric_limits<unsigned>::max();
+            tableExpand = std::numeric_limits<TTYPE>::max();
         } else {
             tableExpand = table.size() / 2;
         }
@@ -1043,8 +1091,8 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>::addEntry(ct_entry_key* key,
 
 #ifdef ALLOW_DEPRECATED_0_17_6
 
-template <bool M, bool C, bool I>
-void MEDDLY::ct_tmpl<M,C,I>::doneKey(ct_entry_key* key)
+template <class T, bool M, bool C, bool I>
+void MEDDLY::ct_tmpl<T,M,C,I>::doneKey(ct_entry_key* key)
 {
     if (key) {
         if (key->my_entry) {
@@ -1058,8 +1106,8 @@ void MEDDLY::ct_tmpl<M,C,I>::doneKey(ct_entry_key* key)
 
 // **********************************************************************
 
-template <bool M, bool CHAINED, bool I>
-void MEDDLY::ct_tmpl<M, CHAINED, I>::removeStales()
+template <class TTYPE, bool M, bool CHAINED, bool I>
+void MEDDLY::ct_tmpl<TTYPE, M, CHAINED, I>::removeStales()
 {
     removeStaleEntries();
 
@@ -1067,7 +1115,7 @@ void MEDDLY::ct_tmpl<M, CHAINED, I>::removeStales()
     // Is it time to shrink the table?
     //
     if (perf.numEntries >= tableShrink) return;
-    unsigned newsize = table.size() / 2;
+    TTYPE newsize = table.size() / 2;
     if (newsize < 1024) newsize = 1024;
     if (newsize == table.size()) return;
 
@@ -1098,12 +1146,12 @@ void MEDDLY::ct_tmpl<M, CHAINED, I>::removeStales()
 
 // **********************************************************************
 
-template <bool M, bool CHAINED, bool I>
-void MEDDLY::ct_tmpl<M,CHAINED,I>::removeAll()
+template <class TTYPE, bool M, bool CHAINED, bool I>
+void MEDDLY::ct_tmpl<TTYPE,M,CHAINED,I>::removeAll()
 {
-    for (unsigned i=0; i<table.size(); i++) {
+    for (TTYPE i=0; i<table.size(); i++) {
         while (table[i]) {
-            unsigned curr = table[i];
+            TTYPE curr = table[i];
             if (CHAINED) {
                 table[i] = getNext(MMAN->getChunkAddress(curr));
             } else {
@@ -1116,17 +1164,19 @@ void MEDDLY::ct_tmpl<M,CHAINED,I>::removeAll()
 
 // **********************************************************************
 
-template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
-void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>
+template <class TTYPE, bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
+void MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
     ::show(output &s, int verbLevel)
 {
     if (verbLevel < 1) return;
 
+    const char* chained = CHAINED ? "(chained)" : "(unchained)";
+
     if (MONOLITHIC) {
-        s << "Monolithic compute table\n";
+        s << "Monolithic " << chained << " compute table\n";
     } else {
-        s << "Compute table for " << global_et->getName() << " (index "
-          << long(global_et->getID()) << ")\n";
+        s << "Compute table " << chained << " for " << global_et->getName()
+          << " (index " << long(global_et->getID()) << ")\n";
     }
 
     s.put("", 6);
@@ -1179,7 +1229,7 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>
 
     s << "Hash table:\n";
 
-    for (unsigned i=0; i<table.size(); i++) {
+    for (TTYPE i=0; i<table.size(); i++) {
         if (0==table[i]) continue;
         s << "table[";
         s.put(long(i), 9);
@@ -1191,8 +1241,8 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>
 
     s << "\nHash table nodes:\n";
 
-    for (unsigned i=0; i<table.size(); i++) {
-        unsigned curr = table[i];
+    for (TTYPE i=0; i<table.size(); i++) {
+        TTYPE curr = table[i];
         while (curr) {
             s << "\tNode ";
             s.put(long(curr), 9);
@@ -1215,12 +1265,12 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>
 
 // **********************************************************************
 
-template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
-void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>
+template <class TTYPE, bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
+void MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
     ::countNodeEntries(const forest* f, size_t* counts) const
 {
-    for (unsigned h=0; h<table.size(); h++) {
-        unsigned curr = table[h];
+    for (TTYPE h=0; h<table.size(); h++) {
+        TTYPE curr = table[h];
         while (curr) {
             const void* entry = MMAN->getChunkAddress(curr);
             const unsigned* ue = (const unsigned*) entry;
@@ -1231,7 +1281,11 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>
             //
             if (CHAINED) {
                 if (INTSLOTS) {
-                    ++ue;
+                    if (sizeof(TTYPE) == sizeof(unsigned)) {
+                        ++ue;
+                    } else {
+                        ue += 2;
+                    }
                 } else {
                     ++cte;
                 }
@@ -1326,20 +1380,20 @@ void MEDDLY::ct_tmpl<MONOLITHIC,CHAINED,INTSLOTS>
 //
 // **********************************************************************
 
-template <bool M, bool CHAINED, bool I>
-void MEDDLY::ct_tmpl<M, CHAINED, I>::removeStaleEntries()
+template <class TTYPE, bool M, bool CHAINED, bool I>
+void MEDDLY::ct_tmpl<TTYPE, M, CHAINED, I>::removeStaleEntries()
 {
     if (CHAINED) {
         // Chained
         ostream_output out(std::cout);
-        for (unsigned i=0; i<table.size(); i++) {
+        for (TTYPE i=0; i<table.size(); i++) {
             if (!table[i]) continue;
 
             void* preventry = nullptr;
-            unsigned curr;
+            TTYPE curr;
             for (curr = table[i]; curr; ) {
                 void* entry = MMAN->getChunkAddress(curr);
-                unsigned next = getNext(entry);
+                TTYPE next = getNext(entry);
 
                 if (isStale(entry, true)) {
                     // remove from list
@@ -1367,7 +1421,7 @@ void MEDDLY::ct_tmpl<M, CHAINED, I>::removeStaleEntries()
         // End of chained
     } else {
         // Not chained
-        for (unsigned i=0; i<table.size(); i++) {
+        for (TTYPE i=0; i<table.size(); i++) {
             if (!table[i]) continue;
 
             if (!isStale(MMAN->getChunkAddress(table[i]), true))
@@ -1386,8 +1440,8 @@ void MEDDLY::ct_tmpl<M, CHAINED, I>::removeStaleEntries()
 
 #ifdef ALLOW_DEPRECATED_0_17_6
 
-template <bool M, bool C, bool I>
-void* MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key, void* e)
+template <class T, bool M, bool C, bool I>
+void* MEDDLY::ct_tmpl<T,M,C,I>::key2entry(const ct_entry_key& key, void* e)
 {
     const ct_entry_type* et = key.getET();
     MEDDLY_DCASSERT(et);
@@ -1462,8 +1516,9 @@ void* MEDDLY::ct_tmpl<M,C,I>::key2entry(const ct_entry_key& key, void* e)
 
 #ifdef ALLOW_DEPRECATED_0_17_6
 
-template <bool M, bool C, bool I>
-void MEDDLY::ct_tmpl<M,C,I>::result2entry(const ct_entry_result& res, void* e)
+template <class T, bool M, bool C, bool I>
+void MEDDLY::ct_tmpl<T,M,C,I>
+    ::result2entry(const ct_entry_result& res, void* e)
 {
     const ct_entry_type* et = res.getET();
     MEDDLY_DCASSERT(et);
@@ -1525,8 +1580,8 @@ void MEDDLY::ct_tmpl<M,C,I>::result2entry(const ct_entry_result& res, void* e)
 
 #ifdef ALLOW_DEPRECATED_0_17_6
 
-template <bool M, bool C, bool I>
-bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
+template <class T, bool M, bool C, bool I>
+bool MEDDLY::ct_tmpl<T,M,C,I>::isDead(const ct_entry_type &ET,
         const void* sres, ct_entry_result &dres)
 {
     MEDDLY_DCASSERT(sres);
@@ -1567,18 +1622,22 @@ bool MEDDLY::ct_tmpl<M,C,I>::isDead(const ct_entry_type &ET,
 
 // **********************************************************************
 
-template <bool M, bool C, bool I>
-bool MEDDLY::ct_tmpl<M,C,I>::isStale(const void* entry, bool mark) const
+template <class T, bool M, bool C, bool I>
+bool MEDDLY::ct_tmpl<T,M,C,I>::isStale(const void* entry, bool mark) const
 {
     const unsigned* uptr = (const unsigned*) entry;
     const ct_entry_item* ctptr = (const ct_entry_item*) entry;
 
     //
-    // Skip over chained portion
+    // Skip over next pointer
     //
     if (C) {
         if (I) {
-            ++uptr;
+            if (sizeof(T) == sizeof(unsigned)) {
+                ++uptr;
+            } else {
+                uptr += 2;
+            }
         } else {
             ++ctptr;
         }
@@ -1687,8 +1746,8 @@ bool MEDDLY::ct_tmpl<M,C,I>::isStale(const void* entry, bool mark) const
 
 // **********************************************************************
 
-template <bool M, bool C, bool I>
-void MEDDLY::ct_tmpl<M,C,I>::deleteEntry(unsigned &h)
+template <class TTYPE, bool M, bool C, bool I>
+void MEDDLY::ct_tmpl<TTYPE,M,C,I>::deleteEntry(TTYPE &h)
 {
     MEDDLY_DCASSERT(h);
     const void* hptr = MMAN->getChunkAddress(h);
@@ -1696,11 +1755,15 @@ void MEDDLY::ct_tmpl<M,C,I>::deleteEntry(unsigned &h)
     const ct_entry_item* ctptr = (ct_entry_item*) hptr;
 
     //
-    // Skip over chained portion
+    // Skip over next pointer
     //
     if (C) {
         if (I) {
-            ++uptr;
+            if (sizeof(TTYPE) == sizeof(unsigned)) {
+                ++uptr;
+            } else {
+                uptr += 2;
+            }
         } else {
             ++ctptr;
         }
@@ -1795,8 +1858,8 @@ void MEDDLY::ct_tmpl<M,C,I>::deleteEntry(unsigned &h)
 
 // **********************************************************************
 
-template <bool M, bool CHAINED, bool I>
-void MEDDLY::ct_tmpl<M,CHAINED,I>::resizeTable(unsigned newsz)
+template <class TTYPE, bool M, bool CHAINED, bool I>
+void MEDDLY::ct_tmpl<TTYPE,M,CHAINED,I>::resizeTable(TTYPE newsz)
 {
 #ifdef DEBUG_REHASH
     std::cout << "Resizing table, old size: " << table.size() << ", new size: " << newsz << "\n";
@@ -1804,32 +1867,32 @@ void MEDDLY::ct_tmpl<M,CHAINED,I>::resizeTable(unsigned newsz)
     //
     // Allocate the new table
     //
-    std::vector <unsigned> oldtab(newsz, 0);
-    mstats.incMemUsed(oldtab.size() * sizeof(unsigned));
-    mstats.incMemAlloc(oldtab.size() * sizeof(unsigned));
+    std::vector <TTYPE> oldtab(newsz, 0);
+    mstats.incMemUsed(oldtab.size() * sizeof(TTYPE));
+    mstats.incMemAlloc(oldtab.size() * sizeof(TTYPE));
     table.swap(oldtab);
 
     //
     // Copy entries; requires re-hashing
     //
     if (CHAINED) {
-        for (unsigned long i=0; i<oldtab.size(); i++) {
+        for (TTYPE i=0; i<oldtab.size(); i++) {
             while (oldtab[i]) {
                 // Remove from old
-                const unsigned curr = oldtab[i];
+                const TTYPE curr = oldtab[i];
                 void* ptr = MMAN->getChunkAddress(curr);
                 oldtab[i] = getNext(ptr);
                 // Add to new
-                const unsigned h = hashEntry(ptr) % table.size();
+                const TTYPE h = hashEntry(ptr) % table.size();
                 setNext(ptr, table[h]);
                 table[h] = curr;
             }
         } // for i
     } else {
-        for (unsigned i=0; i<oldtab.size(); i++) {
+        for (TTYPE i=0; i<oldtab.size(); i++) {
             if (!oldtab[i]) continue;
             const void* ptr = MMAN->getChunkAddress(oldtab[i]);
-            const unsigned h = hashEntry(ptr) % table.size();
+            const TTYPE h = hashEntry(ptr) % table.size();
             setTable(h, oldtab[i]);
         } // for i
     }
@@ -1837,14 +1900,14 @@ void MEDDLY::ct_tmpl<M,CHAINED,I>::resizeTable(unsigned newsz)
     //
     // account for deletion of old table
     //
-    mstats.decMemUsed(oldtab.size() * sizeof(unsigned));
-    mstats.decMemAlloc(oldtab.size() * sizeof(unsigned));
+    mstats.decMemUsed(oldtab.size() * sizeof(TTYPE));
+    mstats.decMemAlloc(oldtab.size() * sizeof(TTYPE));
 }
 
 // **********************************************************************
 
-template <bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
-unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
+template <class TTYPE, bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
+TTYPE MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
             ::hashEntry(const void* entry)
 {
     HSreset();
@@ -1857,7 +1920,11 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
     //
     if (CHAINED) {
         if (INTSLOTS) {
-            ++ue;
+            if (sizeof(TTYPE) == sizeof(unsigned)) {
+                ++ue;
+            } else {
+                ue += 2;
+            }
         } else {
             ++cte;
         }
@@ -1926,14 +1993,15 @@ unsigned MEDDLY::ct_tmpl<MONOLITHIC, CHAINED, INTSLOTS>
 
     } // for i
 
+    // TBD: use 64-bit when TTYPE is 64 bits
     return hash32();
 }
 
 // **********************************************************************
 
-template <bool M, bool C, bool I>
-void MEDDLY::ct_tmpl<M, C, I>
-    ::showEntry(output &s, unsigned h, bool keyonly) const
+template <class TTYPE, bool M, bool C, bool I>
+void MEDDLY::ct_tmpl<TTYPE, M, C, I>
+    ::showEntry(output &s, TTYPE h, bool keyonly) const
 {
     MEDDLY_DCASSERT(h);
     const void* hptr = MMAN->getChunkAddress(h);
@@ -1941,11 +2009,15 @@ void MEDDLY::ct_tmpl<M, C, I>
     const ct_entry_item* ctptr = (ct_entry_item*) hptr;
 
     //
-    // Skip over chained portion
+    // Skip over next pointer
     //
     if (C) {
         if (I) {
-            ++uptr;
+            if (sizeof(TTYPE) == sizeof(unsigned)) {
+                ++uptr;
+            } else {
+                uptr += 2;
+            }
         } else {
             ++ctptr;
         }
@@ -2053,9 +2125,17 @@ MEDDLY::monolithic_chained_style::create(const ct_settings &s) const
 #ifdef USE_NEW_TEMPLATE
     switch (s.compression) {
         case compressionOption::None:
-                return new ct_tmpl<true, true, false>(s, 0, 0);
+            if (s.allowHugeTables)
+                return new ct_tmpl<unsigned long, true, true, false>(s, 0, 0);
+            else
+                return new ct_tmpl<unsigned, true, true, false>(s, 0, 0);
+
         case compressionOption::TypeBased:
-                return new ct_tmpl<true, true, true>(s, 0, 0);
+            if (s.allowHugeTables)
+                return new ct_tmpl<unsigned long, true, true, true>(s, 0, 0);
+            else
+                return new ct_tmpl<unsigned, true, true, true>(s, 0, 0);
+
         default:
                 return 0;
     }
@@ -2089,9 +2169,17 @@ MEDDLY::monolithic_unchained_style::create(const ct_settings &s) const
 #ifdef USE_NEW_TEMPLATE
     switch (s.compression) {
         case compressionOption::None:
-                return new ct_tmpl<true, false, false>(s, 0, 0);
+            if (s.allowHugeTables)
+                return new ct_tmpl<unsigned long, true, false, false>(s, 0, 0);
+            else
+                return new ct_tmpl<unsigned, true, false, false>(s, 0, 0);
+
         case compressionOption::TypeBased:
-                return new ct_tmpl<true, false, true>(s, 0, 0);
+            if (s.allowHugeTables)
+                return new ct_tmpl<unsigned long, true, false, true>(s, 0, 0);
+            else
+                return new ct_tmpl<unsigned, true, false, true>(s, 0, 0);
+
         default:
                 return nullptr;
     }
@@ -2124,9 +2212,17 @@ MEDDLY::operation_chained_style::create(const ct_settings &s, operation* op, uns
 #ifdef USE_NEW_TEMPLATE
     switch (s.compression) {
         case compressionOption::None:
-            return new ct_tmpl<false, true, false>(s, op, slot);
+            if (s.allowHugeTables)
+                return new ct_tmpl<unsigned long, false, true, false>(s, op, slot);
+            else
+                return new ct_tmpl<unsigned, false, true, false>(s, op, slot);
+
         case compressionOption::TypeBased:
-            return new ct_tmpl<false, true, true>(s, op, slot);
+            if (s.allowHugeTables)
+                return new ct_tmpl<unsigned long, false, true, true>(s, op, slot);
+            else
+                return new ct_tmpl<unsigned, false, true, true>(s, op, slot);
+
         default:
             return nullptr;
     }
@@ -2160,9 +2256,17 @@ MEDDLY::operation_unchained_style::create(const ct_settings &s, operation* op, u
 #ifdef USE_NEW_TEMPLATE
     switch (s.compression) {
         case compressionOption::None:
-                return new ct_tmpl<false, false, false>(s, op, slot);
+            if (s.allowHugeTables)
+                return new ct_tmpl<unsigned long, false, false, false>(s, op, slot);
+            else
+                return new ct_tmpl<unsigned, false, false, false>(s, op, slot);
+
         case compressionOption::TypeBased:
-                return new ct_tmpl<false, false, false>(s, op, slot);
+            if (s.allowHugeTables)
+                return new ct_tmpl<unsigned long, false, false, false>(s, op, slot);
+            else
+                return new ct_tmpl<unsigned, false, false, false>(s, op, slot);
+
         default:
                 return nullptr;
     }

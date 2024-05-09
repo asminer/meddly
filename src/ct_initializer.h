@@ -62,14 +62,17 @@ struct MEDDLY::ct_settings {
         /// Memory manager to use for compute table entries
         const memory_manager_style *MMS;
         /// Maximum compute table size
-        std::size_t maxSize;
+        unsigned long maxSize;
         /// Stale removal policy
         staleRemovalOption staleRemoval;
         /// Compression policy
         compressionOption compression;
+        /// Allow for huge (more than 4 billion entries) tables?
+        bool allowHugeTables;
     public:
         ct_settings() {
             MMS = nullptr;
+            allowHugeTables = false;
         }
 };
 
@@ -125,10 +128,11 @@ class MEDDLY::ct_initializer : public initializer_list {
     // use these to change defaults, before library initialization
     public:
         static void setStaleRemoval(staleRemovalOption sro);
-        static void setMaxSize(unsigned ms);
+        static void setMaxSize(unsigned long ms);
         static void setBuiltinStyle(builtinCTstyle cts);
         static void setUserStyle(const compute_table_style*);
         static void setCompression(compressionOption co);
+        static void setHugeTables(bool on);
 
         // for convenience
         static compute_table* createForOp(operation* op, unsigned slot);

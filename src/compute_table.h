@@ -364,7 +364,7 @@ class MEDDLY::compute_table {
 
     protected:
         /// The maximum size of the hash table.
-        unsigned maxSize;
+        unsigned long maxSize;
         /// Do we try to eliminate stales during a "find" operation
         bool checkStalesOnFind;
         /// Do we try to eliminate stales during a "resize" operation

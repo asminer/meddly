@@ -3,9 +3,10 @@ Interface changes (aside from moving header files around)
 ======================================================================
 
 ct_styles:
-    we're using unsigned long but the base class limits to unsigned
-    for things like table size.
-    Revert back to unsigned for now, see if that closes the speed gap.
+    Add a flag to ct entry key if the entire key can be hashed
+        (no floats/doubles/pointers)
+    If so, use a faster 'hash everything' version :)
+
 
 
 
