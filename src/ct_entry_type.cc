@@ -383,16 +383,24 @@ void MEDDLY::ct_entry_type::invalidateForest(const forest* f)
 void MEDDLY::ct_entry_type::countFixed()
 {
     fixed_intslots = 0;
+    fixed_entirely_hashable = true;
     for (unsigned i=0; i<key_fixed.size(); i++) {
         fixed_intslots += key_fixed[i].intslots();
+        if (!key_fixed[i].shouldBeHashed()) {
+            fixed_entirely_hashable = false;
+        }
     }
 }
 
 void MEDDLY::ct_entry_type::countRepeating()
 {
     repeating_intslots = 0;
+    repeating_entirely_hashable = true;
     for (unsigned i=0; i<key_repeating.size(); i++) {
         repeating_intslots += key_repeating[i].intslots();
+        if (!key_repeating[i].shouldBeHashed()) {
+            repeating_entirely_hashable = false;
+        }
     }
 }
 

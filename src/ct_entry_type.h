@@ -527,6 +527,24 @@ class MEDDLY::ct_entry_type {
         }
 
         /**
+            Is the entire key hashable?
+                @param  reps    Number of repetitions.
+                                If this is not a repeating type,
+                                then this is ignored.
+                                (In practice, it only matters if
+                                there are zero repetitions,
+                                or more than that.)
+
+                @return true, if every key item is hashable
+                              (method shouldBeHashed() returns true).
+        */
+        inline bool isEntireKeyHashable(unsigned reps) const {
+            return fixed_entirely_hashable
+                    &&
+                    ( (0==reps) || repeating_entirely_hashable );
+        }
+
+        /**
             Get the type for item i in the key.
             Automatically handles repetitions.
               @param  i   Slot number, between 0 and getKeySize().
@@ -598,26 +616,23 @@ class MEDDLY::ct_entry_type {
         /// Fixed, initial portion of the key.
         std::vector <ct_itemtype> key_fixed;
 
-        /// Total bytes in the starting portion of the key.
-        // unsigned fixed_bytes;
-
         /// Number of integer slots required for the fixed key
         unsigned fixed_intslots;
+
+        /// Are all items in the fixed key, hashable?
+        bool fixed_entirely_hashable;
 
         /// Repeating portion of the key.
         std::vector <ct_itemtype> key_repeating;
 
-        /// Total bytes in the repeating portion of the key.
-        unsigned repeating_bytes;
-
         /// Number of integer slots required for the repeating key
         unsigned repeating_intslots;
 
+        /// Are all items in the repeating key, hashable?
+        bool repeating_entirely_hashable;
+
         /// Result pattern
         std::vector <ct_itemtype> result;
-
-        /// Total bytes in the result.
-        // unsigned result_bytes;
 
         /// Number of integer slots required for the result
         unsigned result_intslots;
@@ -627,6 +642,7 @@ class MEDDLY::ct_entry_type {
 
         /// For deleting all entries of this type
         bool is_marked_for_deletion;
+
 };
 
 #endif
