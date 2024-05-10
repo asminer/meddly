@@ -351,28 +351,6 @@ namespace MEDDLY {
              */
             bool isStale(const void* e, bool mark) const;
 
-            /**
-                Check if the key portion of an entry equals Key.
-                Check if the entry should be discarded (either dead or stale).
-
-                @param  ET      Entry type information
-                @param  entry   Complete entry in CT to check.
-                @param  key     Key to compare against.
-                @param  keylen  Length of key portion, in 'slots'.
-                @param  dres    Where to copy the result
-                @param  discard On output: should this entry be discarded
-
-                @return true if equal, false if not equal.
-            */
-            /*
-            inline bool equalAndUsable(const ct_entry_type &ET,
-                    void* entry, void* key, unsigned keylen,
-                    ct_entry_result &dres, bool &discard)
-            {
-                // TBD THIS?
-            }
-            */
-
 
             /**
                 Try to set table[h] to curr.
@@ -699,7 +677,9 @@ void MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
 
     //
     // (2) build the entry, except for the result.
-    //     we hash it as we go.
+    //     If the entire key is hashable, then we
+    //     hash everything all at once at the end;
+    //     otherwise, we hash it as we go.
     //
 
     HSreserve(num_slots);
@@ -714,13 +694,30 @@ void MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
             }
         }
         keyafterchain.uptr = e;
-        if (MONOLITHIC) {
-            *e = HSpush(et->getID());
-            ++e;
-        }
-        if (et->isRepeating()) {
-            *e = HSpush(key->numRepeats());
-            ++e;
+        if (et->isEntireKeyHashable(key->numRepeats())) {
+            //
+            // Copy operation and key size info
+            //
+            if (MONOLITHIC) {
+                *e = et->getID();
+                ++e;
+            }
+            if (et->isRepeating()) {
+                *e = key->numRepeats();
+                ++e;
+            }
+        } else {
+            //
+            // Copy and hash operation and key size info
+            //
+            if (MONOLITHIC) {
+                *e = HSpush(et->getID());
+                ++e;
+            }
+            if (et->isRepeating()) {
+                *e = HSpush(key->numRepeats());
+                ++e;
+            }
         }
         key->result_shift = (unsigned*) key2entry(*key, e) - keyentry.uptr;
     } else {
@@ -730,15 +727,34 @@ void MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
             ++e;
         }
         keyafterchain.ctptr = e;
-        if (MONOLITHIC) {
-            e->raw[0] = HSpush(et->getID());
-            e->raw[1] = 0;
-            ++e;
-        }
-        if (et->isRepeating()) {
-            e->raw[0] = HSpush(key->numRepeats());
-            e->raw[1] = 0;
-            ++e;
+        if (et->isEntireKeyHashable(key->numRepeats())) {
+            //
+            // Copy operation and key size info
+            //
+            if (MONOLITHIC) {
+                e->raw[0] = et->getID();
+                e->raw[1] = 0;
+                ++e;
+            }
+            if (et->isRepeating()) {
+                e->raw[0] = key->numRepeats();
+                e->raw[1] = 0;
+                ++e;
+            }
+        } else {
+            //
+            // Copy and hash operation and key size info
+            //
+            if (MONOLITHIC) {
+                e->raw[0] = HSpush(et->getID());
+                e->raw[1] = 0;
+                ++e;
+            }
+            if (et->isRepeating()) {
+                e->raw[0] = HSpush(key->numRepeats());
+                e->raw[1] = 0;
+                ++e;
+            }
         }
         key->result_shift = (ct_entry_item*) key2entry(*key, e) - keyentry.ctptr;
     }
@@ -747,7 +763,25 @@ void MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
     // (3) Save hash value
     //
 
-    setHash(key, hash32());
+    if (et->isEntireKeyHashable(key->numRepeats())) {
+        //
+        // Hash directly from the (entire) Key
+        //
+        if (INTSLOTS) {
+            setHash(key,
+                hash_stream::raw_hash(keyafterchain.uptr, entry_slots)
+            );
+        } else {
+            setHash(key,
+                hash_stream::raw_hash(keyafterchain.uptr, 2*entry_slots)
+            );
+        }
+    } else {
+        //
+        // Hash from the array we have set aside
+        //
+        setHash(key, hash32());
+    }
     MEDDLY_DCASSERT(key->getHash() == hashEntry(keyentry.vptr));
     const TTYPE hslot = key->getHash() % table.size();
     TTYPE hcurr = hslot;
@@ -1451,35 +1485,14 @@ void* MEDDLY::ct_tmpl<T,M,C,I>::key2entry(const ct_entry_key& key, void* e)
     unsigned* ue = (unsigned*) e;
     ct_entry_item* cte = (ct_entry_item*) e;
 
-    for (unsigned i=0; i<keylen; i++) {
-        const ct_itemtype &it = et->getKeyType(i);
 
-        if (it.shouldBeHashed()) {
-            if (it.requiresTwoSlots()) {
-                if (I) {
-                    ue[0] = HSpush(data[i].raw[0]);
-                    ue[1] = HSpush(data[i].raw[1]);
-                    ue+=2;
-                } else {
-                    cte->UL = data[i].UL;
-                    HSpush(cte->raw[0]);
-                    HSpush(cte->raw[1]);
-                    cte++;
-                }
-                continue;
-            } else {
-                if (I) {
-                    *ue = HSpush(data[i].U);
-                    ue++;
-                } else {
-                    cte->raw[0] = HSpush(data[i].U);
-                    cte->raw[1] = 0;
-                    // zero out the entire slot, makes comparisons easier
-                    cte++;
-                }
-                continue;
-            }
-        } else {
+    if (et->isEntireKeyHashable(key.numRepeats())) {
+        //
+        // Just copy the key over; no hashing
+        // (caller will hash everything at once)
+        //
+        for (unsigned i=0; i<keylen; i++) {
+            const ct_itemtype &it = et->getKeyType(i);
             if (it.requiresTwoSlots()) {
                 if (I) {
                     ue[0] = data[i].raw[0];
@@ -1502,9 +1515,67 @@ void* MEDDLY::ct_tmpl<T,M,C,I>::key2entry(const ct_entry_key& key, void* e)
                 }
                 continue;
             }
-        }
+        } // for i
+    } else {
+        //
+        // Copy the key over and hash as we go
+        //
+        for (unsigned i=0; i<keylen; i++) {
+            const ct_itemtype &it = et->getKeyType(i);
 
-    } // for i
+            if (it.shouldBeHashed()) {
+                // copy and hash
+                if (it.requiresTwoSlots()) {
+                    if (I) {
+                        ue[0] = HSpush(data[i].raw[0]);
+                        ue[1] = HSpush(data[i].raw[1]);
+                        ue+=2;
+                    } else {
+                        cte->UL = data[i].UL;
+                        HSpush(cte->raw[0]);
+                        HSpush(cte->raw[1]);
+                        cte++;
+                    }
+                    continue;
+                } else {
+                    if (I) {
+                        *ue = HSpush(data[i].U);
+                        ue++;
+                    } else {
+                        cte->raw[0] = HSpush(data[i].U);
+                        cte->raw[1] = 0;
+                        // zero out the entire slot, makes comparisons easier
+                        cte++;
+                    }
+                    continue;
+                }
+            } else {
+                // just copy
+                if (it.requiresTwoSlots()) {
+                    if (I) {
+                        ue[0] = data[i].raw[0];
+                        ue[1] = data[i].raw[1];
+                        ue+=2;
+                    } else {
+                        cte->UL = data[i].UL;
+                        cte++;
+                    }
+                    continue;
+                } else {
+                    if (I) {
+                        *ue = data[i].U;
+                        ue++;
+                    } else {
+                        cte->raw[0] = data[i].U;
+                        cte->raw[1] = 0;
+                        // zero out the entire slot, makes comparisons easier
+                        cte++;
+                    }
+                    continue;
+                }
+            }
+        } // for i
+    } // hash everything or not?
 
     if (I)  return ue;
     else    return cte;
@@ -1929,18 +2000,17 @@ TTYPE MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
             ++cte;
         }
     }
-    const ct_entry_type* et;
 
     //
-    // Determine entry type
+    // Determine entry type; do NOT advance pointer
     //
+    const ct_entry_type* et;
+    unsigned eind = 0;
     if (MONOLITHIC) {
         if (INTSLOTS) {
-            et = getEntryType(HSpush(*ue));
-            ++ue;
+            et = getEntryType(ue[eind++]);
         } else {
-            et = getEntryType(HSpush(cte->U));
-            ++cte;
+            et = getEntryType(cte[eind++].U);
         }
     } else {
         et = global_et;
@@ -1948,22 +2018,59 @@ TTYPE MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
     MEDDLY_DCASSERT(et);
 
     //
-    // Determine key size
+    // Determine key size; do NOT advance pointer
     //
     unsigned repeats;
     if (et->isRepeating()) {
-        repeats = HSpush( (INTSLOTS ? (*(ue++)) : (cte++)->U) );
+        repeats = INTSLOTS ? ue[eind++] : cte[eind++].U;
     } else {
         repeats = 0;
     }
-    const unsigned keylen = et->getKeySize(repeats);
+
+    //
+    // Hash the entire key and return, if we can!
+    //
+    if (et->isEntireKeyHashable(repeats)) {
+        if (INTSLOTS) {
+            eind += et->getKeyIntslots(repeats);
+            return hash_stream::raw_hash(ue, eind);
+        } else {
+            eind += et->getKeySize(repeats);
+            return hash_stream::raw_hash((unsigned*) cte, 2*eind);
+        }
+    }
+
+    //
+    // Still here? We can't hash the entire key,
+    // so do everything in pieces.
+    // Advance pointers to start of key.
+    //
+    if (INTSLOTS) {
+        ue += eind;
+    } else {
+        cte += eind;
+    }
+
+    //
+    // Hash operator and key size as needed
+    //
+    if (MONOLITHIC) {
+        HSpush(et->getID());
+    }
+    if (et->isRepeating()) {
+        HSpush(repeats);
+    }
 
     //
     // Loop over key portion
     //
+    const unsigned keylen = et->getKeySize(repeats);
     for (unsigned i=0; i<keylen; i++) {
         const ct_itemtype &it = et->getKeyType(i);
         if (!it.shouldBeHashed()) {
+            //
+            // Skip this one
+            //
             if (INTSLOTS) {
                 ue += it.intslots();
             } else {
@@ -1971,6 +2078,9 @@ TTYPE MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
             }
             continue;
         }
+        //
+        // Hash this one
+        //
         if (it.requiresTwoSlots()) {
             if (INTSLOTS) {
                 HSpush(ue[0]);
