@@ -694,7 +694,7 @@ class MEDDLY::ct_entry_type {
         static inline void unregisterEntry(ct_entry_type* et) {
             if (et) {
 #ifdef DEVELOPMENT_CODE
-                all_entries.at(et->etID) == nullptr;
+                all_entries.at(et->etID) = nullptr;
 #else
                 all_entries[et->etID] = nullptr;
 #endif
