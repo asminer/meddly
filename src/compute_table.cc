@@ -49,7 +49,7 @@ MEDDLY::compute_table_style::create(const ct_settings &s) const
 
 MEDDLY::compute_table*
 MEDDLY::compute_table_style::create(const ct_settings &s,
-      operation* op, unsigned slot) const
+      unsigned etid) const
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -61,11 +61,11 @@ MEDDLY::compute_table_style::create(const ct_settings &s,
 // **********************************************************************
 
 
-std::vector<MEDDLY::ct_entry_type*> MEDDLY::compute_table::entryInfo;
+// std::vector<MEDDLY::ct_entry_type*> MEDDLY::compute_table::entryInfo;
 MEDDLY::ct_entry_key* MEDDLY::compute_table::free_keys;
 
-MEDDLY::compute_table::compute_table(const ct_settings &s,
-  operation* op, unsigned slot)
+MEDDLY::compute_table::compute_table(const ct_settings &s, unsigned etid)
+    : global_etid(etid)
 {
     maxSize = s.maxSize;
     if (0==maxSize) {
@@ -97,15 +97,6 @@ MEDDLY::compute_table::compute_table(const ct_settings &s,
     }
     perf.resizeScans = 0;
 
-    //
-    // Global operation vs monolithic
-    //
-    if (op) {
-        global_et = getEntryType(op, slot);
-        MEDDLY_DCASSERT(global_et);
-    } else {
-        global_et = 0;
-    }
 }
 
 MEDDLY::compute_table::~compute_table()
@@ -118,7 +109,7 @@ void MEDDLY::compute_table::initStatics()
     //
     // Initialize entryInfo list
     //
-    entryInfo.resize(0);
+    // entryInfo.resize(0);
     // entryInfo.resize(1);
     // entryInfo[0] = nullptr; // not sure if we need to reserve etid 0
 }
@@ -131,43 +122,30 @@ void MEDDLY::compute_table::doneStatics()
         free_keys = n;
     }
     // delete the items?  TBD
-    entryInfo.resize(0);
+    // entryInfo.resize(0);
 }
 
-void MEDDLY::compute_table::clearForestCTBits(bool* skipF, unsigned N) const
+void MEDDLY::compute_table::clearForestCTBits(std::vector <bool> &skipF) const
 {
-    if (global_et) {
-        // Operation cache
-        global_et->clearForestCTBits(skipF, N);
-        return;
-    }
-    //
-    // Monolithic cache.
-    //
-    for (unsigned i=0; i<entryInfo.size(); i++) {
-        if (entryInfo[i]) {
-            entryInfo[i]->clearForestCTBits(skipF, N);
-        }
+    if (global_etid) {
+        const ct_entry_type* et = ct_entry_type::getEntryType(global_etid);
+        if (et) et->clearForestCTBits(skipF);
+    } else {
+        ct_entry_type::clearAllForestCTBits(skipF);
     }
 }
 
-void MEDDLY::compute_table::sweepForestCTBits(bool* whichF, unsigned N) const
+void MEDDLY::compute_table::sweepForestCTBits(std::vector <bool> &whichF) const
 {
-    if (global_et) {
-        // Operation cache
-        global_et->sweepForestCTBits(whichF, N);
-        return;
-    }
-    //
-    // Monolithic cache.
-    //
-    for (unsigned i=0; i<entryInfo.size(); i++) {
-        if (entryInfo[i]) {
-            entryInfo[i]->sweepForestCTBits(whichF, N);
-        }
+    if (global_etid) {
+        const ct_entry_type* et = ct_entry_type::getEntryType(global_etid);
+        if (et) et->sweepForestCTBits(whichF);
+    } else {
+        ct_entry_type::sweepAllForestCTBits(whichF);
     }
 }
 
+/*
 void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
 {
     if (0==op) return;
@@ -185,6 +163,7 @@ void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
         entryInfo.pop_back();
     }
 }
+*/
 
 void MEDDLY::compute_table::updateEntry(ct_entry_key*, const ct_entry_result &)
 {

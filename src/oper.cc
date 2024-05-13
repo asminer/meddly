@@ -104,7 +104,7 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     //
     // Allocate our slots
     //
-    compute_table::registerOp(this, et_slots);
+    // compute_table::registerOp(this, et_slots);
 }
 
 
@@ -128,7 +128,7 @@ MEDDLY::operation::~operation()
     // Don't delete the entries in etype, they're owned by compute_table.
     delete[] etype;
     delete[] CTresult;
-    compute_table::unregisterOp(this, num_etids);
+    // compute_table::unregisterOp(this, num_etids);
 
     unregisterOperation(*this);
 #ifdef DEBUG_CLEANUP
@@ -320,7 +320,7 @@ void MEDDLY::operation::registerEntryType(unsigned slot, ct_entry_type* et)
     MEDDLY_DCASSERT(etype);
     MEDDLY_DCASSERT(0==etype[slot]);
     etype[slot] = et;
-    compute_table::registerEntryType(first_etid + slot, et);
+    // compute_table::registerEntryType(first_etid + slot, et);
 }
 
 void MEDDLY::operation::buildCTs()
@@ -335,7 +335,7 @@ void MEDDLY::operation::buildCTs()
         }
     } else {
         for (unsigned i=0; i<num_etids; i++) {
-            CT[i] = ct_initializer::createForOp(this, i);
+            CT[i] = ct_initializer::createForOp(etype[i]);
         }
     }
 

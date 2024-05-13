@@ -6,22 +6,26 @@ Interface changes (aside from moving header files around)
 Make compute table interface easier to use for simple operations
     (i.e., most of the time)
 
-    * compute table item class, like edge value class
-        type, and a union
+Entry type registry within entry type class, pros:
+    * consistency with similar ideas for forests, etc.
+    * unique ID for lifetime of library, could have other uses
+    * 'easy' to automatically register / unregister
+
 
 Compute table entry types
     * should have a compute table
             + their own, for non-monolithic
             + the global one, for monolithic
 
-    * allow ct entry registration directly in CTs
-
-    * ct entry registry: static in CT or not?
-            + if not, then non-monolithic CTs will
-              have single entry 'registry'
 
     * eventually: remove CTs from operation base class
     * eventually: remove entry registration from operation base class
+
+
+Monolithic vs per operation compute tables
+    * Belong to CT interface instead of operation
+    * Interface should be 'attach a CT to this entry type'
+    * Do we want/need a registry of all CTs?
 
 
 Compute table ideas

@@ -65,6 +65,7 @@ void MEDDLY::initializer_list::initializeLibrary(initializer_list* L)
     domain::initDomList();
     forest::initStatics();
     ct_vector::initStatics();
+    ct_entry_type::initStatics();
 
     // Reverse the list
     initializer_list* reverse = nullptr;
@@ -129,6 +130,7 @@ void MEDDLY::initializer_list::cleanupLibrary()
 
     unpacked_node::doneStatics();
     ct_vector::doneStatics();
+    ct_entry_type::doneStatics();
 
     isRunning = false;
 }

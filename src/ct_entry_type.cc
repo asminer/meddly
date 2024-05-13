@@ -145,6 +145,7 @@ void MEDDLY::ct_object::show(output &s) const
 #ifdef ALLOW_DEPRECATED_0_17_6
 MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
 {
+    registerEntry(this);
     name = _name;
     is_marked_for_deletion = false;
     updatable_result = false;
@@ -230,6 +231,7 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
 
 MEDDLY::ct_entry_type::ct_entry_type(const char* _name)
 {
+    registerEntry(this);
     name = _name;
     is_marked_for_deletion = false;
 
@@ -247,6 +249,7 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name)
 
 MEDDLY::ct_entry_type::~ct_entry_type()
 {
+    unregisterEntry(this);
 }
 
 #ifdef ALLOW_DEPRECATED_0_17_6
@@ -285,42 +288,51 @@ void MEDDLY::ct_entry_type::setForestForSlot(unsigned i, forest* f)
 
 
 
-void MEDDLY::ct_entry_type::clearForestCTBits(bool* skipF, unsigned N) const
+void MEDDLY::ct_entry_type::clearForestCTBits(std::vector <bool> &skipF) const
 {
     unsigned i;
     for (i=0; i<key_fixed.size(); i++) {
         forest* f = key_fixed[i].rawForest();
         if (!f) continue;
-        MEDDLY_DCASSERT(f->FID() < N);
+        MEDDLY_DCASSERT(f->FID() < skipF.size());
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
-        skipF[ f->FID() ] = 1;
+        skipF[ f->FID() ] = true;
     }
     for (i=0; i<key_repeating.size(); i++) {
         forest* f = key_repeating[i].rawForest();
         if (!f) continue;
-        MEDDLY_DCASSERT(f->FID() < N);
+        MEDDLY_DCASSERT(f->FID() < skipF.size());
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
-        skipF[ f->FID() ] = 1;
+        skipF[ f->FID() ] = true;
     }
     for (i=0; i<result.size(); i++) {
         forest* f = result[i].rawForest();
         if (!f) continue;
-        MEDDLY_DCASSERT(f->FID() < N);
+        MEDDLY_DCASSERT(f->FID() < skipF.size());
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
-        skipF[ f->FID() ] = 1;
+        skipF[ f->FID() ] = true;
     }
 }
 
-void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
+void MEDDLY::ct_entry_type::clearAllForestCTBits(std::vector <bool> &skipF)
+{
+    for (unsigned i=1; i<all_entries.size(); i++) {
+        if (all_entries[i]) {
+            all_entries[i]->clearForestCTBits(skipF);
+        }
+    }
+}
+
+void MEDDLY::ct_entry_type::sweepForestCTBits(std::vector <bool> &whichF) const
 {
     unsigned i;
     for (i=0; i<key_fixed.size(); i++) {
         forest* f = key_fixed[i].rawForest();
         if (!f) continue;
-        MEDDLY_DCASSERT(f->FID() < N);
+        MEDDLY_DCASSERT(f->FID() < whichF.size());
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
             whichF[ f->FID() ] = 0;
@@ -329,7 +341,7 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
     for (i=0; i<key_repeating.size(); i++) {
         forest* f = key_repeating[i].rawForest();
         if (!f) continue;
-        MEDDLY_DCASSERT(f->FID() < N);
+        MEDDLY_DCASSERT(f->FID() < whichF.size());
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
             whichF[ f->FID() ] = 0;
@@ -338,13 +350,23 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
     for (i=0; i<result.size(); i++) {
         forest* f = result[i].rawForest();
         if (!f) continue;
-        MEDDLY_DCASSERT(f->FID() < N);
+        MEDDLY_DCASSERT(f->FID() < whichF.size());
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
             whichF[ f->FID() ] = 0;
         }
     }
 }
+
+void MEDDLY::ct_entry_type::sweepAllForestCTBits(std::vector <bool> &whichF)
+{
+    for (unsigned i=1; i<all_entries.size(); i++) {
+        if (all_entries[i]) {
+            all_entries[i]->sweepForestCTBits(whichF);
+        }
+    }
+}
+
 
 void MEDDLY::ct_entry_type::show(output &s) const
 {
@@ -410,5 +432,23 @@ void MEDDLY::ct_entry_type::countResult()
     for (unsigned i=0; i<result.size(); i++) {
         result_intslots += result[i].intslots();
     }
+}
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Entry registry static methods and members
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+std::vector <MEDDLY::ct_entry_type*> MEDDLY::ct_entry_type::all_entries;
+
+void MEDDLY::ct_entry_type::initStatics()
+{
+    all_entries.clear();
+    all_entries.push_back(nullptr);
+    // ^ reserve index 0 for 'no entry'
+}
+
+void MEDDLY::ct_entry_type::doneStatics()
+{
+    all_entries.clear();
 }
 

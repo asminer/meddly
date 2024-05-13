@@ -30,6 +30,7 @@ namespace MEDDLY {
     class ct_entry_key;
     class ct_entry_result;
 
+    class ct_entry_type;
     class ct_vector;
     class ct_initializer;
     struct ct_settings;
@@ -64,7 +65,7 @@ class MEDDLY::compute_table_style {
             Default throws an error.
         */
         virtual compute_table* create(const ct_settings &s,
-            operation* op, unsigned slot) const;
+                unsigned etid) const;
 
 
         /**
@@ -119,16 +120,12 @@ class MEDDLY::compute_table {
 
         /** Constructor.
                 @param  s       Settings for compute table.
-                @param  op      For MONOLITHIC tables, this should be 0;
-                                otherwise, a pointer to the operation specific
-                                to this table.
-                @param  slot    Ignored for MONOLITHIC tables.  For
-                                operation-specific tables, the (op, slot) pair
-                                completely identifies the kinds of entries
-                                in the table.
+                @param  etid    Which entry type we are tied to.
+                                For MONOLITHIC tables, this should be 0;
+                                otherwise, it is the unique ID for the
+                                ct_entry_type.
         */
-        compute_table(const ct_settings &s, operation* op,
-                unsigned slot);
+        compute_table(const ct_settings &s, unsigned etid);
 
         /** Destructor.
             Does NOT properly discard all table entries;
@@ -137,7 +134,7 @@ class MEDDLY::compute_table {
         virtual ~compute_table();
 
         /// Is this a per-operation compute table?
-        inline bool isOperationTable() const { return global_et; }
+        inline bool isOperationTable() const { return global_etid; }
 
         /// Get performance stats for the table.
         inline const stats& getStats() { return perf; }
@@ -192,6 +189,7 @@ class MEDDLY::compute_table {
 //
 // ********************************************************************
 
+/*
     public:
         /// Find entry_type for operation and slot number.
         inline static const ct_entry_type* getEntryType(operation* op,
@@ -216,6 +214,7 @@ class MEDDLY::compute_table {
             return entryInfo[etid];
 #endif
         }
+        */
 
     protected:
         friend class ct_initializer;
@@ -229,30 +228,30 @@ class MEDDLY::compute_table {
         /** Register an operation.
             Sets aside a number of entry_type slots for the operation.
         */
-        inline static void registerOp(operation* op, unsigned num_ids)
-        {
-            if (0==op) return;
-            if (0==num_ids) return;
-
-            op->setFirstETid(entryInfo.size());
-            entryInfo.resize(entryInfo.size() + num_ids, nullptr);
-        }
+        // inline static void registerOp(operation* op, unsigned num_ids)
+        // {
+            // if (0==op) return;
+            // if (0==num_ids) return;
+//
+            // op->setFirstETid(entryInfo.size());
+            // entryInfo.resize(entryInfo.size() + num_ids, nullptr);
+        // }
 
         /// Register an entry_type.
-        inline static void registerEntryType(unsigned etid, ct_entry_type* et)
-        {
-            MEDDLY_DCASSERT(!entryInfo.at(etid));
-            entryInfo[etid] = et;
-            et->etID = etid;
-        }
+        // inline static void registerEntryType(unsigned etid, ct_entry_type* et)
+        // {
+            // MEDDLY_DCASSERT(!entryInfo.at(etid));
+            // entryInfo[etid] = et;
+            // et->etID = etid;
+        // }
 
         /** Unregister an operation.
             Frees the entry_type slots for the operation.
         */
-        static void unregisterOp(operation* op, unsigned num_ids);
+        // static void unregisterOp(operation* op, unsigned num_ids);
 
-    private:
-        static std::vector <ct_entry_type*> entryInfo;
+    // private:
+        // static std::vector <ct_entry_type*> entryInfo;
 
 // ********************************************************************
 //
@@ -357,10 +356,10 @@ class MEDDLY::compute_table {
 #endif
 
         /// Clear CT Bits in forests that could have entries in this table.
-        void clearForestCTBits(bool* skipF, unsigned n) const;
+        void clearForestCTBits(std::vector <bool> &skipF) const;
 
         /// Start sweep phase for forests that could have entries in this table.
-        void sweepForestCTBits(bool* whichF, unsigned n) const;
+        void sweepForestCTBits(std::vector <bool> &whichF) const;
 
     protected:
         /// The maximum size of the hash table.
@@ -369,8 +368,8 @@ class MEDDLY::compute_table {
         bool checkStalesOnFind;
         /// Do we try to eliminate stales during a "resize" operation
         bool checkStalesOnResize;
-        /// Global entry type, if we're an operation cache; otherwise null.
-        const ct_entry_type* global_et;
+        /// Global entry type id, if we're an operation cache; otherwise 0.
+        const unsigned global_etid;
         /// Performance statistics
         stats perf;
 

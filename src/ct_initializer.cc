@@ -139,10 +139,11 @@ void MEDDLY::ct_initializer::setHugeTables(bool on)
     the_settings.allowHugeTables = on;
 }
 
-MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(operation* op, unsigned slot)
+MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(const ct_entry_type* et)
 {
+    MEDDLY_DCASSERT(et);
     if (ct_factory) {
-        return ct_factory->create(the_settings, op, slot);
+        return ct_factory->create(the_settings, et->getID());
     } else {
         return nullptr;
     }

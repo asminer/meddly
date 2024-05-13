@@ -72,7 +72,7 @@ class MEDDLY::operation_chained_style : public compute_table_style {
     public:
         operation_chained_style();
         virtual compute_table* create(const ct_settings &s,
-            operation* op, unsigned slot) const;
+            unsigned etid) const;
 };
 
 // **********************************************************************
@@ -85,7 +85,7 @@ class MEDDLY::operation_unchained_style : public compute_table_style {
     public:
         operation_unchained_style();
         virtual compute_table* create(const ct_settings &s,
-            operation* op, unsigned slot) const;
+            unsigned etid) const;
 };
 
 

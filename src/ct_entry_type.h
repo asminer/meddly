@@ -302,7 +302,7 @@ class MEDDLY::ct_object {
     with the compute table.
 */
 class MEDDLY::ct_entry_type {
-        friend class compute_table;
+//        friend class compute_table;
     public:
 #ifdef ALLOW_DEPRECATED_0_17_6
         /** Constructor.
@@ -423,6 +423,37 @@ class MEDDLY::ct_entry_type {
             countResult();
         }
 
+
+        /** Clear CT bits for any forests this entry type uses.
+              @param  skipF   If skipF[i] is true, then we do nothing
+                              for forests with ID i.  We set this to
+                              true after clearing forest with ID i to
+                              prevent clearing the bits twice.
+        */
+        void clearForestCTBits(std::vector <bool> &skipF) const;
+
+        /** Calls clearForestCTBits() for all registered entries.
+            @param  skipF   Passed to clearForestCTBits().
+        */
+        static void clearAllForestCTBits(std::vector <bool> &skipF);
+
+        /** Notify forests that we're done marking CT bits.
+            The forests can choose to start the sweep phase if they like.
+              @param  whichF  If whichF[i] is true, then we notify the
+                              forest with ID i, and set whichF[i] to false.
+                              This prevents notifying a forest twice.
+        */
+        void sweepForestCTBits(std::vector <bool> &whichF) const;
+
+        /** Calls sweepForestCTBits() for all registered entries.
+            @param  whichF   Passed to sweepForestCTBits().
+        */
+        static void sweepAllForestCTBits(std::vector <bool> &whichF);
+
+        //
+        // OLD
+        //
+
         /** Clear CT bits for any forests this entry type uses.
               @param  skipF   If skipF[i] is true, then we do nothing
                               for forests with ID i.  We set this to
@@ -431,7 +462,7 @@ class MEDDLY::ct_entry_type {
 
               @param  N       Size of in_use array, for sanity checks.
         */
-        void clearForestCTBits(bool* skipF, unsigned N) const;
+        // void clearForestCTBits(bool* skipF, unsigned N) const;
 
         /** Notify forests that we're done marking CT bits.
             The forests can choose to start the sweep phase if they like.
@@ -607,9 +638,6 @@ class MEDDLY::ct_entry_type {
         void countResult();
 
     private:
-        /// Unique ID, set by compute table
-        unsigned etID;
-
         /// Name; for displaying CT entries
         const char* name;
 
@@ -642,6 +670,49 @@ class MEDDLY::ct_entry_type {
 
         /// For deleting all entries of this type
         bool is_marked_for_deletion;
+
+
+    private:
+        //
+        // Registry of all CT entries
+        //
+
+        /// Unique ID, for the life of the library.
+        /// Guaranteed not to be 0.
+        unsigned etID;
+
+        /// Global registry of all entries
+        static std::vector <ct_entry_type*> all_entries;
+
+        static inline void registerEntry(ct_entry_type* et) {
+            if (et) {
+                et->etID = all_entries.size();
+                all_entries.push_back(et);
+            }
+        }
+
+        static inline void unregisterEntry(ct_entry_type* et) {
+            if (et) {
+#ifdef DEVELOPMENT_CODE
+                all_entries.at(et->etID) == nullptr;
+#else
+                all_entries[et->etID] = nullptr;
+#endif
+            }
+        }
+
+    public:
+        static void initStatics();
+        static void doneStatics();
+
+        static inline const ct_entry_type* getEntryType(unsigned etid)
+        {
+#ifdef DEVELOPMENT_CODE
+            return all_entries.at(etid);
+#else
+            return all_entries[etid];
+#endif
+        }
 
 };
 

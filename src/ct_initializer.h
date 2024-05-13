@@ -26,7 +26,7 @@ namespace MEDDLY {
     struct ct_settings;
     class ct_initializer;
     class compute_table;
-    class operation;
+    class ct_entry_type;
 
     class memory_manager_style;
     class compute_table_style;
@@ -135,7 +135,7 @@ class MEDDLY::ct_initializer : public initializer_list {
         static void setHugeTables(bool on);
 
         // for convenience
-        static compute_table* createForOp(operation* op, unsigned slot);
+        static compute_table* createForOp(const ct_entry_type* et);
 
     private:
         static ct_settings the_settings;

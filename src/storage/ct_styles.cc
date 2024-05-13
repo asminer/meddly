@@ -123,7 +123,7 @@ namespace MEDDLY {
     template <class TTYPE, bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
     class ct_tmpl : public compute_table {
         public:
-            ct_tmpl(const ct_settings &s, operation* op, unsigned slot);
+            ct_tmpl(const ct_settings &s, unsigned etid);
             virtual ~ct_tmpl();
 
             // Required functions
@@ -555,14 +555,12 @@ namespace MEDDLY {
 
 template <class TTYPE, bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
 MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>::ct_tmpl(
-    const ct_settings &s, operation* op, unsigned slot)
-    : compute_table(s, op, slot)
+    const ct_settings &s, unsigned etid) : compute_table(s, etid)
 {
     if (MONOLITHIC) {
-        MEDDLY_DCASSERT(0==op);
-        MEDDLY_DCASSERT(0==slot);
+        MEDDLY_DCASSERT(0==etid);
     } else {
-        MEDDLY_DCASSERT(op);
+        MEDDLY_DCASSERT(etid);
     }
 
     /*
@@ -620,7 +618,7 @@ void MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
     const ct_entry_type* et = key->getET();
     MEDDLY_DCASSERT(et);
     if (!MONOLITHIC) {
-        if (et != global_et)
+        if (et->getID() != global_etid)
             throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
     }
 
@@ -1018,7 +1016,7 @@ void MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
     const ct_entry_type* et = key->getET();
     MEDDLY_DCASSERT(et);
     if (!MONOLITHIC) {
-        if (et != global_et)
+        if (et->getID() != global_etid)
             throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
     }
 
@@ -1071,14 +1069,10 @@ void MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
     // Should be a no-op for forests that use reference counts.
     //
     const unsigned NF = forest::MaxFID()+1;
-    bool* skipF = new bool[NF];
-    for (unsigned i=0; i<NF; i++) {
-        skipF[i] = false;
-    }
-    clearForestCTBits(skipF, NF);
+    std::vector <bool> skipF(NF, false);
+    clearForestCTBits(skipF);
     removeStaleEntries();
-    sweepForestCTBits(skipF, NF);
-    delete[] skipF;
+    sweepForestCTBits(skipF);
 
     //
     // Do we still need to enlarge the table?
@@ -1209,8 +1203,14 @@ void MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
     if (MONOLITHIC) {
         s << "Monolithic " << chained << " compute table\n";
     } else {
-        s << "Compute table " << chained << " for " << global_et->getName()
-          << " (index " << long(global_et->getID()) << ")\n";
+        const ct_entry_type* et = ct_entry_type::getEntryType(global_etid);
+        if (et) {
+            s << "Compute table " << chained << " for " << et->getName()
+              << " (index " << long(global_etid) << ")\n";
+        } else {
+            s << "Compute table " << chained << " for null entry"
+              << " (index " << long(global_etid) << ")\n";
+        }
     }
 
     s.put("", 6);
@@ -1328,9 +1328,12 @@ void MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
             //
             // Get operation and advance
             //
-            const ct_entry_type* et = MONOLITHIC
-                ?   getEntryType( INTSLOTS ? *ue : cte->U )
-                :   global_et;
+            const ct_entry_type* et = ct_entry_type::getEntryType(
+                MONOLITHIC
+                    ?   (INTSLOTS ? *ue : cte->U)
+                    :   global_etid
+            );
+
             if (MONOLITHIC) {
                 if (INTSLOTS) {
                     ++ue;
@@ -1718,9 +1721,11 @@ bool MEDDLY::ct_tmpl<T,M,C,I>::isStale(const void* entry, bool mark) const
     // Get entry type and check if those are marked
     // If monolithic, advance entry pointer
     //
-    const ct_entry_type* et = M
-        ?   getEntryType( I ? *uptr : ctptr->U )
-        :   global_et;
+    const ct_entry_type* et = ct_entry_type::getEntryType(
+        M   ?   ( I ? *uptr : ctptr->U )
+            :   global_etid
+    );
+
     if (M) {
         if (I) {
             ++uptr;
@@ -1843,9 +1848,10 @@ void MEDDLY::ct_tmpl<TTYPE,M,C,I>::deleteEntry(TTYPE &h)
     //
     // Get operation and advance
     //
-    const ct_entry_type* et = M
-        ?   getEntryType( I ? *uptr : ctptr->U )
-        :   global_et;
+    const ct_entry_type* et = ct_entry_type::getEntryType(
+         M  ?   ( I ? *uptr : ctptr->U )
+            :   global_etid
+    );
     if (M) {
         if (I) {
             ++uptr;
@@ -2008,12 +2014,12 @@ TTYPE MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
     unsigned eind = 0;
     if (MONOLITHIC) {
         if (INTSLOTS) {
-            et = getEntryType(ue[eind++]);
+            et = ct_entry_type::getEntryType(ue[eind++]);
         } else {
-            et = getEntryType(cte[eind++].U);
+            et = ct_entry_type::getEntryType(cte[eind++].U);
         }
     } else {
-        et = global_et;
+        et = ct_entry_type::getEntryType(global_etid);
     }
     MEDDLY_DCASSERT(et);
 
@@ -2136,9 +2142,10 @@ void MEDDLY::ct_tmpl<TTYPE, M, C, I>
     //
     // Get operation and advance
     //
-    const ct_entry_type* et = M
-        ?   getEntryType( I ? *uptr : ctptr->U )
-        :   global_et;
+    const ct_entry_type* et = ct_entry_type::getEntryType(
+         M  ?   ( I ? *uptr : ctptr->U )
+            :   global_etid
+    );
     if (M) {
         if (I) {
             ++uptr;
@@ -2236,15 +2243,15 @@ MEDDLY::monolithic_chained_style::create(const ct_settings &s) const
     switch (s.compression) {
         case compressionOption::None:
             if (s.allowHugeTables)
-                return new ct_tmpl<unsigned long, true, true, false>(s, 0, 0);
+                return new ct_tmpl<unsigned long, true, true, false>(s, 0);
             else
-                return new ct_tmpl<unsigned, true, true, false>(s, 0, 0);
+                return new ct_tmpl<unsigned, true, true, false>(s, 0);
 
         case compressionOption::TypeBased:
             if (s.allowHugeTables)
-                return new ct_tmpl<unsigned long, true, true, true>(s, 0, 0);
+                return new ct_tmpl<unsigned long, true, true, true>(s, 0);
             else
-                return new ct_tmpl<unsigned, true, true, true>(s, 0, 0);
+                return new ct_tmpl<unsigned, true, true, true>(s, 0);
 
         default:
                 return 0;
@@ -2280,15 +2287,15 @@ MEDDLY::monolithic_unchained_style::create(const ct_settings &s) const
     switch (s.compression) {
         case compressionOption::None:
             if (s.allowHugeTables)
-                return new ct_tmpl<unsigned long, true, false, false>(s, 0, 0);
+                return new ct_tmpl<unsigned long, true, false, false>(s, 0);
             else
-                return new ct_tmpl<unsigned, true, false, false>(s, 0, 0);
+                return new ct_tmpl<unsigned, true, false, false>(s, 0);
 
         case compressionOption::TypeBased:
             if (s.allowHugeTables)
-                return new ct_tmpl<unsigned long, true, false, true>(s, 0, 0);
+                return new ct_tmpl<unsigned long, true, false, true>(s, 0);
             else
-                return new ct_tmpl<unsigned, true, false, true>(s, 0, 0);
+                return new ct_tmpl<unsigned, true, false, true>(s, 0);
 
         default:
                 return nullptr;
@@ -2317,21 +2324,22 @@ MEDDLY::operation_chained_style::operation_chained_style()
 }
 
 MEDDLY::compute_table*
-MEDDLY::operation_chained_style::create(const ct_settings &s, operation* op, unsigned slot) const
+MEDDLY::operation_chained_style::create(const ct_settings &s, unsigned etid)
+   const
 {
 #ifdef USE_NEW_TEMPLATE
     switch (s.compression) {
         case compressionOption::None:
             if (s.allowHugeTables)
-                return new ct_tmpl<unsigned long, false, true, false>(s, op, slot);
+                return new ct_tmpl<unsigned long, false, true, false>(s, etid);
             else
-                return new ct_tmpl<unsigned, false, true, false>(s, op, slot);
+                return new ct_tmpl<unsigned, false, true, false>(s, etid);
 
         case compressionOption::TypeBased:
             if (s.allowHugeTables)
-                return new ct_tmpl<unsigned long, false, true, true>(s, op, slot);
+                return new ct_tmpl<unsigned long, false, true, true>(s, etid);
             else
-                return new ct_tmpl<unsigned, false, true, true>(s, op, slot);
+                return new ct_tmpl<unsigned, false, true, true>(s, etid);
 
         default:
             return nullptr;
@@ -2361,21 +2369,22 @@ MEDDLY::operation_unchained_style::operation_unchained_style()
 }
 
 MEDDLY::compute_table*
-MEDDLY::operation_unchained_style::create(const ct_settings &s, operation* op, unsigned slot) const
+MEDDLY::operation_unchained_style::create(const ct_settings &s, unsigned etid)
+   const
 {
 #ifdef USE_NEW_TEMPLATE
     switch (s.compression) {
         case compressionOption::None:
             if (s.allowHugeTables)
-                return new ct_tmpl<unsigned long, false, false, false>(s, op, slot);
+                return new ct_tmpl<unsigned long, false, false, false>(s, etid);
             else
-                return new ct_tmpl<unsigned, false, false, false>(s, op, slot);
+                return new ct_tmpl<unsigned, false, false, false>(s, etid);
 
         case compressionOption::TypeBased:
             if (s.allowHugeTables)
-                return new ct_tmpl<unsigned long, false, false, false>(s, op, slot);
+                return new ct_tmpl<unsigned long, false, false, false>(s, etid);
             else
-                return new ct_tmpl<unsigned, false, false, false>(s, op, slot);
+                return new ct_tmpl<unsigned, false, false, false>(s, etid);
 
         default:
                 return nullptr;
