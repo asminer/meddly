@@ -213,17 +213,17 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
     for (unsigned i=0; i<key_fixed.size(); i++) {
         key_fixed[i].show(sout);
     }
-    sout << "\"  (" << fixed_bytes << " bytes)\n";
+    sout << "\"  (" << fixed_intslots << " intslots)\n";
     sout << "Key repeat: \"";
     for (unsigned i=0; i<key_repeating.size(); i++) {
         key_repeating[i].show(sout);
     }
-    sout << "\"  (" << repeating_bytes << " bytes)\n";
+    sout << "\"  (" << repeating_intslots << " intslots)\n";
     sout << "Result: \"";
     for (unsigned i=0; i<result.size(); i++) {
         result[i].show(sout);
     }
-    sout << "\"  (" << result_bytes << " bytes)\n";
+    sout << "\"  (" << result_intslots << " intslots)\n";
 #endif
 }
 
