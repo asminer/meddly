@@ -66,16 +66,18 @@ void MEDDLY::ct_initializer::setup()
     setMemoryManager(FREELISTS);
 
     if (ct_factory->usesMonolithic()) {
-        operation::Monolithic_CT = ct_factory->create(the_settings);
+        compute_table::initStatics( ct_factory->create(the_settings) );
+    //     operation::Monolithic_CT = ct_factory->create(the_settings);
+    } else {
+        compute_table::initStatics(nullptr);
     }
 
-    compute_table::initStatics();
 }
 
 void MEDDLY::ct_initializer::cleanup()
 {
-    delete operation::Monolithic_CT;
-    operation::Monolithic_CT = nullptr;
+    // delete operation::Monolithic_CT;
+    // operation::Monolithic_CT = nullptr;
 
     compute_table::doneStatics();
 }

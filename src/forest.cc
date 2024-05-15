@@ -35,6 +35,7 @@
 #include "operators.h"
 #include "node_marker.h"
 #include "logger.h"
+#include "compute_table.h"
 
 // for timestamps.
 // to do - check during configuration that these are present,
@@ -799,6 +800,9 @@ void MEDDLY::forest::unregisterDDEdges()
 
 void MEDDLY::forest::removeStaleComputeTableEntries()
 {
+    /*
+     TBD
+
   if (operation::usesMonolithicComputeTable()) {
     operation::removeStalesFromMonolithic();
   } else {
@@ -808,10 +812,13 @@ void MEDDLY::forest::removeStaleComputeTableEntries()
         op->removeStaleComputeTableEntries();
       }
   }
+  */
 }
 
 void MEDDLY::forest::removeAllComputeTableEntries()
 {
+    /*
+        TBD
   if (is_marked_for_deletion) return;
   if (operation::usesMonolithicComputeTable()) {
     is_marked_for_deletion = true;
@@ -824,6 +831,7 @@ void MEDDLY::forest::removeAllComputeTableEntries()
         op->removeAllComputeTableEntries();
       }
   }
+  */
 }
 
 void MEDDLY::forest::registerOperation(const operation* op)
@@ -1233,14 +1241,12 @@ void MEDDLY::forest::setLogger(logger* L, const char* name)
 
 void MEDDLY::forest::showComputeTable(output &s, int verbLevel) const
 {
-  if (operation::usesMonolithicComputeTable()) {
-    operation::showMonolithicComputeTable(s, verbLevel);
-  } else {
-    for (unsigned i=0; i<opCount.size(); i++)
-      if (opCount[i]) {
-        operation* op = operation::getOpWithID(i);
-        op->showComputeTable(s, verbLevel);
-      }
+  if (compute_table::showMonolithicComputeTable(s, verbLevel)) return;
+  for (unsigned i=0; i<opCount.size(); i++) {
+    if (opCount[i]) {
+      operation* op = operation::getOpWithID(i);
+      op->showComputeTable(s, verbLevel);
+    }
   }
 }
 

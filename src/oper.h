@@ -131,11 +131,13 @@ class MEDDLY::operation {
         void removeAllComputeTableEntries();
 
 
+        /*
         inline static bool usesMonolithicComputeTable() {
             return Monolithic_CT;
         }
         static void removeStalesFromMonolithic();
         static void removeAllFromMonolithic();
+        */
 
         static void countAllNodeEntries(const forest* f, size_t* counts);
         void countCTEntries(const forest* f, size_t* counts) const;
@@ -144,7 +146,7 @@ class MEDDLY::operation {
         // Display, for debugging
         //
 
-        static void showMonolithicComputeTable(output &, int verbLevel);
+        // static void showMonolithicComputeTable(output &, int verbLevel);
         static void showAllComputeTables(output &, int verbLevel);
         void showComputeTable(output &, int verbLevel) const;
 
@@ -232,7 +234,7 @@ class MEDDLY::operation {
         const char* name;
         bool is_marked_for_deletion;
 
-        static compute_table* Monolithic_CT;
+        // static compute_table* Monolithic_CT;
 
         /**
             Starting slot for entry_types, assigned
@@ -243,7 +245,7 @@ class MEDDLY::operation {
     friend class forest;
     friend class initializer_list;
 
-    friend class ct_initializer;
+    // friend class ct_initializer;
 
 };
 

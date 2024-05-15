@@ -20,6 +20,9 @@ TBD...
 * The registry of compute table entry types has been moved to
   class ```ct_entry_type```.
 
+* The monolithic compute table has been moved from class ```operation```
+  to class ```compute_table```.
+
 ### Implementation
 
 * New unified compute table implementation in file ```ct_styles.cc```,

@@ -56,13 +56,19 @@ MEDDLY::compute_table_style::create(const ct_settings &s,
 
 // **********************************************************************
 // *                                                                    *
-// *                       compute_table  methods                       *
+// *                       compute_table  statics                       *
 // *                                                                    *
 // **********************************************************************
 
-
+MEDDLY::compute_table* MEDDLY::compute_table::Monolithic_CT;
 // std::vector<MEDDLY::ct_entry_type*> MEDDLY::compute_table::entryInfo;
 MEDDLY::ct_entry_key* MEDDLY::compute_table::free_keys;
+
+// **********************************************************************
+// *                                                                    *
+// *                       compute_table  methods                       *
+// *                                                                    *
+// **********************************************************************
 
 MEDDLY::compute_table::compute_table(const ct_settings &s, unsigned etid)
     : global_etid(etid)
@@ -101,28 +107,6 @@ MEDDLY::compute_table::compute_table(const ct_settings &s, unsigned etid)
 
 MEDDLY::compute_table::~compute_table()
 {
-}
-
-void MEDDLY::compute_table::initStatics()
-{
-    free_keys = 0;
-    //
-    // Initialize entryInfo list
-    //
-    // entryInfo.resize(0);
-    // entryInfo.resize(1);
-    // entryInfo[0] = nullptr; // not sure if we need to reserve etid 0
-}
-
-void MEDDLY::compute_table::doneStatics()
-{
-    while (free_keys) {
-        ct_entry_key* n = free_keys->next;
-        delete free_keys;
-        free_keys = n;
-    }
-    // delete the items?  TBD
-    // entryInfo.resize(0);
 }
 
 void MEDDLY::compute_table::clearForestCTBits(std::vector <bool> &skipF) const
@@ -168,5 +152,28 @@ void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
 void MEDDLY::compute_table::updateEntry(ct_entry_key*, const ct_entry_result &)
 {
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::compute_table::initStatics(compute_table* mct)
+{
+#ifdef ALLOW_DEPRECATED_0_17_6
+    free_keys = nullptr;
+#endif
+
+    Monolithic_CT = mct;
+}
+
+void MEDDLY::compute_table::doneStatics()
+{
+#ifdef ALLOW_DEPRECATED_0_17_6
+    while (free_keys) {
+        ct_entry_key* n = free_keys->next;
+        delete free_keys;
+        free_keys = n;
+    }
+#endif
+
+    delete Monolithic_CT;
+    Monolithic_CT = nullptr;
 }
 

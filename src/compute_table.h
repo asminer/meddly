@@ -23,7 +23,7 @@
 #include "ct_entry_key.h"
 
 #include "forest.h"
-#include "oper.h"
+// #include "oper.h"   // needed?
 
 namespace MEDDLY {
     class operation;
@@ -186,6 +186,7 @@ class MEDDLY::compute_table {
 // ********************************************************************
 //
 //   operation registry, and entry type registry.
+//   Obsolete.
 //
 // ********************************************************************
 
@@ -215,15 +216,6 @@ class MEDDLY::compute_table {
 #endif
         }
         */
-
-    protected:
-        friend class ct_initializer;
-        friend class operation;
-
-        /// Initialize the entry registry
-        static void initStatics();
-        /// Destroy the entry registry
-        static void doneStatics();
 
         /** Register an operation.
             Sets aside a number of entry_type slots for the operation.
@@ -341,6 +333,7 @@ class MEDDLY::compute_table {
         /** Also for debugging.
             Examine all entries, and for each pointer to forest f node p,
             increment counts[p].
+            TBD - counts should be a vector
         */
         virtual void countNodeEntries(const forest* f, size_t* counts)
             const = 0;
@@ -372,6 +365,60 @@ class MEDDLY::compute_table {
         const unsigned global_etid;
         /// Performance statistics
         stats perf;
+
+    // ===================================================================
+    // Monolithic compute table members/methods
+    // ===================================================================
+
+    private:
+        /// Monolithic compute table
+        static compute_table* Monolithic_CT;
+
+    public:
+        /// Initialize the monolithic compute table.
+        /// Normally done automatically in ct_initializer::setup().
+        static void initStatics(compute_table* mct);
+        /// Destroy the monolithic compute table.
+        /// Normally done automatically in ct_initializer::cleanup().
+        static void doneStatics();
+
+        static inline compute_table* Monolithic() {
+            return Monolithic_CT;
+        }
+
+        inline static bool removeStalesFromMonolithic() {
+            if (Monolithic_CT) {
+                Monolithic_CT->removeStales();
+                return true;
+            }
+            return false;
+        }
+        inline static bool removeAllFromMonolithic() {
+            if (Monolithic_CT) {
+                Monolithic_CT->removeAll();
+                return true;
+            }
+            return false;
+        }
+        inline static bool showMonolithicComputeTable(output &s, int verbLevel)
+        {
+            if (Monolithic_CT) {
+                Monolithic_CT->show(s, verbLevel);
+                return true;
+            }
+            return false;
+        }
+        inline static bool countMonolithicNodeEntries(const forest* f, size_t* counts)
+        {
+            if (Monolithic_CT) {
+                Monolithic_CT->countNodeEntries(f, counts);
+                return true;
+            }
+            return false;
+        }
+
+        // friend class ct_initializer;
+//         friend class operation;
 
 };
 

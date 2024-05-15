@@ -51,7 +51,7 @@ void MEDDLY::unwrap(const ct_object &x, mpz_t &value)
 // *                       operation  statics                       *
 // ******************************************************************
 
-MEDDLY::compute_table* MEDDLY::operation::Monolithic_CT;
+// MEDDLY::compute_table* MEDDLY::operation::Monolithic_CT;
 std::vector <MEDDLY::operation*> MEDDLY::operation::op_list;
 std::vector <unsigned> MEDDLY::operation::free_list;
 
@@ -118,7 +118,7 @@ MEDDLY::operation::~operation()
 
     if (CT) {
         for (unsigned i=0; i<num_etids; i++) {
-            if (CT[i] != Monolithic_CT) {
+            if (CT[i]->isOperationTable()) {
                 delete CT[i];
             }
         }
@@ -142,7 +142,7 @@ void MEDDLY::operation::destroy(operation* op)
     if (!op) return;
     if (!op->isMarkedForDeletion()) {
         op->markForDeletion();
-        operation::removeStalesFromMonolithic();
+        // operation::removeStalesFromMonolithic(); // lazy update
     }
     delete op;
 }
@@ -161,7 +161,7 @@ void MEDDLY::operation::removeStaleComputeTableEntries()
         }
     }
     if (has_monolithic) {
-        Monolithic_CT->removeStales();
+        compute_table::removeStalesFromMonolithic();
     }
 }
 
@@ -187,6 +187,7 @@ void MEDDLY::operation::removeAllComputeTableEntries()
 #endif
 }
 
+/*
 void MEDDLY::operation::removeStalesFromMonolithic()
 {
     // DON'T make this inlined;
@@ -202,12 +203,11 @@ void MEDDLY::operation::removeAllFromMonolithic()
     // it requires compute_table.h
     if (Monolithic_CT) Monolithic_CT->removeAll();
 }
+*/
 
 void MEDDLY::operation::countAllNodeEntries(const forest* f, size_t* counts)
 {
-    if (Monolithic_CT) {
-        Monolithic_CT->countNodeEntries(f, counts);
-    }
+    compute_table::countMonolithicNodeEntries(f, counts);
     for (unsigned i=0; i<op_list.size(); i++) {
         if (op_list[i]) {
             op_list[i]->countCTEntries(f, counts);
@@ -229,6 +229,7 @@ void MEDDLY::operation::countCTEntries(const forest* f, size_t* counts)
 }
 
 
+/*
 void MEDDLY::operation::showMonolithicComputeTable(output &s, int verbLevel)
 {
     // DON'T make this inlined;
@@ -236,14 +237,11 @@ void MEDDLY::operation::showMonolithicComputeTable(output &s, int verbLevel)
     // it requires compute_table.h
     if (Monolithic_CT) Monolithic_CT->show(s, verbLevel);
 }
-
+*/
 
 void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
 {
-    if (Monolithic_CT) {
-        Monolithic_CT->show(s, verbLevel);
-        return;
-    }
+    if (compute_table::showMonolithicComputeTable(s, verbLevel)) return;
     for (unsigned i=0; i<op_list.size(); i++) {
         if (op_list[i]) {
             op_list[i]->showComputeTable(s, verbLevel);
@@ -253,7 +251,7 @@ void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
 
 void MEDDLY::operation::purgeAllMarked()
 {
-    removeStalesFromMonolithic();
+    compute_table::removeStalesFromMonolithic();
     for (unsigned i=0; i<op_list.size(); i++) {
         if (!op_list[i]) continue;
         if (op_list[i]->isMarkedForDeletion()) {
@@ -277,7 +275,7 @@ void MEDDLY::operation::showComputeTable(output &s, int verbLevel) const
         }
     }
     if (has_monolithic) {
-        Monolithic_CT->show(s, verbLevel);
+        compute_table::showMonolithicComputeTable(s, verbLevel);
     }
 }
 
@@ -329,9 +327,9 @@ void MEDDLY::operation::buildCTs()
 
     CT = new compute_table* [num_etids];
 
-    if (Monolithic_CT) {
+    if (compute_table::Monolithic()) {
         for (unsigned i=0; i<num_etids; i++) {
-            CT[i] = Monolithic_CT;
+            CT[i] = compute_table::Monolithic();
         }
     } else {
         for (unsigned i=0; i<num_etids; i++) {
@@ -369,7 +367,7 @@ void MEDDLY::operation::initializeStatics()
     //
     // Monolithic compute table
     //
-    Monolithic_CT = nullptr;
+    // Monolithic_CT = nullptr;
 }
 
 void MEDDLY::operation::destroyAllOps()
