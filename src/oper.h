@@ -107,21 +107,7 @@ class MEDDLY::operation {
         void markForDeletion();
 
         //
-        // Used primarily by compute tables.
-        //
-
-        /// Set the first entry type ID;
-        /// the remaining will come right after.
-        // inline void setFirstETid(unsigned slot) { first_etid = slot; }
-
-        /// Get the first entry type ID
-        // inline unsigned getFirstETid() const { return first_etid; }
-
-        /// Get the number of entry type IDs
-        // inline unsigned getNumETids() const { return num_etids; }
-
-        //
-        // CT operations
+        // CT operations (TBD: move)
         //
 
         /// Remove stale compute table entries for this operation.
@@ -131,13 +117,6 @@ class MEDDLY::operation {
         void removeAllComputeTableEntries();
 
 
-        /*
-        inline static bool usesMonolithicComputeTable() {
-            return Monolithic_CT;
-        }
-        static void removeStalesFromMonolithic();
-        static void removeAllFromMonolithic();
-        */
 
         static void countAllNodeEntries(const forest* f, size_t* counts);
         void countCTEntries(const forest* f, size_t* counts) const;
@@ -146,7 +125,6 @@ class MEDDLY::operation {
         // Display, for debugging
         //
 
-        // static void showMonolithicComputeTable(output &, int verbLevel);
         static void showAllComputeTables(output &, int verbLevel);
         void showComputeTable(output &, int verbLevel) const;
 
@@ -234,19 +212,9 @@ class MEDDLY::operation {
         const char* name;
         bool is_marked_for_deletion;
 
-        // static compute_table* Monolithic_CT;
-
-        /**
-            Starting slot for entry_types, assigned
-            by compute_table.
-        */
-        // unsigned first_etid;
 
     friend class forest;
     friend class initializer_list;
-
-    // friend class ct_initializer;
-
 };
 
 #ifdef ALLOW_DEPRECATED_0_17_5

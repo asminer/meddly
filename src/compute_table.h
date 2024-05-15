@@ -19,21 +19,25 @@
 #ifndef MEDDLY_COMPUTE_TABLE_H
 #define MEDDLY_COMPUTE_TABLE_H
 
-#include "ct_entry_type.h"
-#include "ct_entry_key.h"
+#include "defines.h"
 
-#include "forest.h"
-// #include "oper.h"   // needed?
+#ifdef ALLOW_DEPRECATED_0_17_6
+#include "ct_entry_key.h"
+#endif
 
 namespace MEDDLY {
     class operation;
+
+#ifdef ALLOW_DEPRECATED_0_17_6
     class ct_entry_key;
     class ct_entry_result;
+#endif
 
     class ct_entry_type;
     class ct_vector;
     class ct_initializer;
     struct ct_settings;
+
     class compute_table_style;
     class compute_table;
 };
@@ -183,67 +187,6 @@ class MEDDLY::compute_table {
 
 #endif
 
-// ********************************************************************
-//
-//   operation registry, and entry type registry.
-//   Obsolete.
-//
-// ********************************************************************
-
-/*
-    public:
-        /// Find entry_type for operation and slot number.
-        inline static const ct_entry_type* getEntryType(operation* op,
-                unsigned slot)
-        {
-            MEDDLY_DCASSERT(op);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, slot, op->getNumETids());
-            unsigned etid = op->getFirstETid() + slot;
-#ifdef DEVELOPMENT_CODE
-            return entryInfo.at(etid);
-#else
-            return entryInfo[etid];
-#endif
-        }
-
-        /// Find entry type for given entryID
-        inline static const ct_entry_type* getEntryType(unsigned etid)
-        {
-#ifdef DEVELOPMENT_CODE
-            return entryInfo.at(etid);
-#else
-            return entryInfo[etid];
-#endif
-        }
-        */
-
-        /** Register an operation.
-            Sets aside a number of entry_type slots for the operation.
-        */
-        // inline static void registerOp(operation* op, unsigned num_ids)
-        // {
-            // if (0==op) return;
-            // if (0==num_ids) return;
-//
-            // op->setFirstETid(entryInfo.size());
-            // entryInfo.resize(entryInfo.size() + num_ids, nullptr);
-        // }
-
-        /// Register an entry_type.
-        // inline static void registerEntryType(unsigned etid, ct_entry_type* et)
-        // {
-            // MEDDLY_DCASSERT(!entryInfo.at(etid));
-            // entryInfo[etid] = et;
-            // et->etID = etid;
-        // }
-
-        /** Unregister an operation.
-            Frees the entry_type slots for the operation.
-        */
-        // static void unregisterOp(operation* op, unsigned num_ids);
-
-    // private:
-        // static std::vector <ct_entry_type*> entryInfo;
 
 // ********************************************************************
 //
@@ -378,6 +321,7 @@ class MEDDLY::compute_table {
         /// Initialize the monolithic compute table.
         /// Normally done automatically in ct_initializer::setup().
         static void initStatics(compute_table* mct);
+
         /// Destroy the monolithic compute table.
         /// Normally done automatically in ct_initializer::cleanup().
         static void doneStatics();
@@ -416,10 +360,6 @@ class MEDDLY::compute_table {
             }
             return false;
         }
-
-        // friend class ct_initializer;
-//         friend class operation;
-
 };
 
 #endif

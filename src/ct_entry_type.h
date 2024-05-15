@@ -21,9 +21,8 @@
 
 #include "defines.h"
 #include "edge_value.h"
-#include "oper.h"
+#include "oper.h" // for  opnd_type in ct_object
 #include "forest.h"
-#include <type_traits>
 
 namespace MEDDLY {
     class ct_object;
@@ -302,7 +301,6 @@ class MEDDLY::ct_object {
     with the compute table.
 */
 class MEDDLY::ct_entry_type {
-//        friend class compute_table;
     public:
 #ifdef ALLOW_DEPRECATED_0_17_6
         /** Constructor.

@@ -100,11 +100,6 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     } else {
         CTresult = 0;
     }
-
-    //
-    // Allocate our slots
-    //
-    // compute_table::registerOp(this, et_slots);
 }
 
 
@@ -187,24 +182,6 @@ void MEDDLY::operation::removeAllComputeTableEntries()
 #endif
 }
 
-/*
-void MEDDLY::operation::removeStalesFromMonolithic()
-{
-    // DON'T make this inlined;
-    // we don't want it in the header file because
-    // it requires compute_table.h
-    if (Monolithic_CT) Monolithic_CT->removeStales();
-}
-
-void MEDDLY::operation::removeAllFromMonolithic()
-{
-    // DON'T make this inlined;
-    // we don't want it in the header file because
-    // it requires compute_table.h
-    if (Monolithic_CT) Monolithic_CT->removeAll();
-}
-*/
-
 void MEDDLY::operation::countAllNodeEntries(const forest* f, size_t* counts)
 {
     compute_table::countMonolithicNodeEntries(f, counts);
@@ -228,16 +205,6 @@ void MEDDLY::operation::countCTEntries(const forest* f, size_t* counts)
     }
 }
 
-
-/*
-void MEDDLY::operation::showMonolithicComputeTable(output &s, int verbLevel)
-{
-    // DON'T make this inlined;
-    // we don't want it in the header file because
-    // it requires compute_table.h
-    if (Monolithic_CT) Monolithic_CT->show(s, verbLevel);
-}
-*/
 
 void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
 {
@@ -318,7 +285,6 @@ void MEDDLY::operation::registerEntryType(unsigned slot, ct_entry_type* et)
     MEDDLY_DCASSERT(etype);
     MEDDLY_DCASSERT(0==etype[slot]);
     etype[slot] = et;
-    // compute_table::registerEntryType(first_etid + slot, et);
 }
 
 void MEDDLY::operation::buildCTs()
@@ -358,16 +324,11 @@ void MEDDLY::operation::buildCTs()
 void MEDDLY::operation::initializeStatics()
 {
     //
-    // Global operation registry
+    // Global operation registry (still needed?)
     //
     op_list.clear();
     op_list.push_back(nullptr);
     free_list.clear();
-
-    //
-    // Monolithic compute table
-    //
-    // Monolithic_CT = nullptr;
 }
 
 void MEDDLY::operation::destroyAllOps()
