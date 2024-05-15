@@ -112,13 +112,13 @@ class MEDDLY::operation {
 
         /// Set the first entry type ID;
         /// the remaining will come right after.
-        inline void setFirstETid(unsigned slot) { first_etid = slot; }
+        // inline void setFirstETid(unsigned slot) { first_etid = slot; }
 
         /// Get the first entry type ID
-        inline unsigned getFirstETid() const { return first_etid; }
+        // inline unsigned getFirstETid() const { return first_etid; }
 
         /// Get the number of entry type IDs
-        inline unsigned getNumETids() const { return num_etids; }
+        // inline unsigned getNumETids() const { return num_etids; }
 
         //
         // CT operations
@@ -238,7 +238,7 @@ class MEDDLY::operation {
             Starting slot for entry_types, assigned
             by compute_table.
         */
-        unsigned first_etid;
+        // unsigned first_etid;
 
     friend class forest;
     friend class initializer_list;

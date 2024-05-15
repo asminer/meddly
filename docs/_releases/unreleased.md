@@ -5,12 +5,20 @@ number: changes
 layout: single
 ---
 
+### Overview
+
+Most changes this release are to clean up the compute table interface,
+to make it easier to implement operations.
+TBD...
+
 ### Interface Changes
 
 * Added new object, ```ct_itemtype```, for type-checking compute table entries.
 
 * Existing object, ```ct_entry_type```, is now based on vectors of ```ct_itemtype``` objects.
 
+* The registry of compute table entry types has been moved to
+  class ```ct_entry_type```.
 
 ### Implementation
 

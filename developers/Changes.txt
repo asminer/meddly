@@ -6,10 +6,7 @@ Interface changes (aside from moving header files around)
 Make compute table interface easier to use for simple operations
     (i.e., most of the time)
 
-Entry type registry within entry type class, pros:
-    * consistency with similar ideas for forests, etc.
-    * unique ID for lifetime of library, could have other uses
-    * 'easy' to automatically register / unregister
+(done!) Entry type registry within entry type class
 
 
 Compute table entry types
@@ -27,6 +24,9 @@ Monolithic vs per operation compute tables
     * Interface should be 'attach a CT to this entry type'
     * Do we want/need a registry of all CTs?
 
+Operations:
+    * Get rid of global operation registry in favor of global
+      ct_entry_type registry, unless we can't?
 
 Compute table ideas
     *   ct_vector   packing and unpacking operations

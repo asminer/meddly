@@ -451,31 +451,6 @@ class MEDDLY::ct_entry_type {
         static void sweepAllForestCTBits(std::vector <bool> &whichF);
 
         //
-        // OLD
-        //
-
-        /** Clear CT bits for any forests this entry type uses.
-              @param  skipF   If skipF[i] is true, then we do nothing
-                              for forests with ID i.  We set this to
-                              true after clearing forest with ID i to
-                              prevent clearing the bits twice.
-
-              @param  N       Size of in_use array, for sanity checks.
-        */
-        // void clearForestCTBits(bool* skipF, unsigned N) const;
-
-        /** Notify forests that we're done marking CT bits.
-            The forests can choose to start the sweep phase if they like.
-              @param  whichF  If whichF[i] is true, then we notify the
-                              forest with ID i, and set whichF[i] to false.
-                              This prevents notifying a forest twice.
-
-              @param  N       Size of in_use array, for sanity checks.
-        */
-        void sweepForestCTBits(bool* skipF, unsigned N) const;
-
-
-        //
         // Inlines; mostly used by compute tables
         //
 
