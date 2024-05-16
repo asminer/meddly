@@ -766,11 +766,11 @@ void MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
         // Hash directly from the (entire) Key
         //
         if (INTSLOTS) {
-            setHash(key,
+            key->setHash(
                 hash_stream::raw_hash(keyafterchain.uptr, entry_slots)
             );
         } else {
-            setHash(key,
+            key->setHash(
                 hash_stream::raw_hash(keyafterchain.uptr, 2*entry_slots)
             );
         }
@@ -778,7 +778,7 @@ void MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
         //
         // Hash from the array we have set aside
         //
-        setHash(key, hash32());
+        key->setHash(hash32());
     }
     MEDDLY_DCASSERT(key->getHash() == hashEntry(keyentry.vptr));
     const TTYPE hslot = key->getHash() % table.size();

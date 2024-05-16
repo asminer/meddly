@@ -20,13 +20,11 @@
 #define MEDDLY_COMPUTE_TABLE_H
 
 #include "defines.h"
-
-#ifdef ALLOW_DEPRECATED_0_17_6
-#include "ct_entry_key.h"
-#endif
+#include "io.h"
 
 namespace MEDDLY {
     class operation;
+    class forest;
 
 #ifdef ALLOW_DEPRECATED_0_17_6
     class ct_entry_key;
@@ -155,32 +153,10 @@ class MEDDLY::compute_table {
         /**
             Start using an ct_entry_key for the given operation.
         */
-        inline static ct_entry_key* useEntryKey(const ct_entry_type* et,
-                unsigned repeats)
-        {
-            if (!et) return nullptr;
-            MEDDLY_DCASSERT( (0==repeats) || et->isRepeating() );
+        static ct_entry_key* useEntryKey(const ct_entry_type* et,
+                unsigned repeats);
 
-            ct_entry_key* k;
-            if (free_keys) {
-                k = free_keys;
-                free_keys = free_keys->next;
-            } else {
-                k = new ct_entry_key();
-            }
-            k->setup(et, repeats);
-            return k;
-        }
-
-        /**
-            Done using an ct_entry_key.
-        */
-        inline static void recycle(ct_entry_key* k) {
-            if (k) {
-                k->next = free_keys;
-                free_keys = k;
-            }
-        }
+        static void recycle(ct_entry_key* k);
 
     private:
         static ct_entry_key* free_keys;
@@ -282,14 +258,6 @@ class MEDDLY::compute_table {
             const = 0;
 
 
-    protected:
-
-#ifdef ALLOW_DEPRECATED_0_17_6
-        inline static void setHash(ct_entry_key *k, unsigned h) {
-            MEDDLY_DCASSERT(k);
-            k->setHash(h);
-        }
-#endif
 
         /// Clear CT Bits in forests that could have entries in this table.
         void clearForestCTBits(std::vector <bool> &skipF) const;

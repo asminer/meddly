@@ -132,8 +132,7 @@ class MEDDLY::ct_entry_key {
             }
         }
 
-    protected:
-        // protected interface, for compute_table.
+    public:
         inline void setHash(unsigned h) {
             hash_value = h;
 #ifdef DEVELOPMENT_CODE

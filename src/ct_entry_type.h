@@ -23,11 +23,15 @@
 #include "edge_value.h"
 #include "oper.h" // for  opnd_type in ct_object
 #include "forest.h"
+#include "compute_table.h"
 
 namespace MEDDLY {
     class ct_object;
     class ct_entry_type;
-    class compute_table;
+    class ct_entry_key;
+    class ct_entry_result;
+    class ct_vector;
+    // class compute_table;
 
     class output;
 
@@ -302,6 +306,14 @@ class MEDDLY::ct_object {
 */
 class MEDDLY::ct_entry_type {
     public:
+        ~ct_entry_type();
+
+        // ***************************************************************
+        //
+        // Methods for building the entry type.
+        //
+        // ***************************************************************
+
 #ifdef ALLOW_DEPRECATED_0_17_6
         /** Constructor.
               @param  name    Name of the entry type; used only for displaying
@@ -346,80 +358,153 @@ class MEDDLY::ct_entry_type {
                 setRepeat()     for setting the repeating portion of the key,
                                 if any.
                 setResult()     for setting the result portion of the key.
+
+                doneBuilding()  call once when we're done building.
         */
         ct_entry_type(const char* name=nullptr);
-        ~ct_entry_type();
 
         inline void setFixed(ct_itemtype a) {
+            MEDDLY_DCASSERT(!CT);
             key_fixed.resize(1);
             key_fixed[0] = a;
-            countFixed();
         }
         inline void setFixed(ct_itemtype a, ct_itemtype b) {
+            MEDDLY_DCASSERT(!CT);
             key_fixed.resize(2);
             key_fixed[0] = a;
             key_fixed[1] = b;
-            countFixed();
         }
         inline void setFixed(ct_itemtype a, ct_itemtype b, ct_itemtype c) {
+            MEDDLY_DCASSERT(!CT);
             key_fixed.resize(3);
             key_fixed[0] = a;
             key_fixed[1] = b;
             key_fixed[2] = c;
-            countFixed();
         }
         inline void setFixed(ct_itemtype a, ct_itemtype b,
                 ct_itemtype c, ct_itemtype d)
         {
+            MEDDLY_DCASSERT(!CT);
             key_fixed.resize(4);
             key_fixed[0] = a;
             key_fixed[1] = b;
             key_fixed[2] = c;
             key_fixed[3] = d;
-            countFixed();
         }
         inline void appendFixed(ct_itemtype a) {
+            MEDDLY_DCASSERT(!CT);
             key_fixed.push_back(a);
-        }
-        inline void doneFixed() {
-            countFixed();
         }
 
         inline void setRepeat(ct_itemtype a) {
+            MEDDLY_DCASSERT(!CT);
             key_repeating.resize(1);
             key_repeating[0] = a;
-            countRepeating();
         }
         inline void setRepeat(ct_itemtype a, ct_itemtype b) {
+            MEDDLY_DCASSERT(!CT);
             key_repeating.resize(2);
             key_repeating[0] = a;
             key_repeating[1] = b;
-            countRepeating();
         }
         inline void appendRepeat(ct_itemtype a) {
+            MEDDLY_DCASSERT(!CT);
             key_repeating.push_back(a);
-        }
-        inline void doneRepeat() {
-            countRepeating();
         }
 
         inline void setResult(ct_itemtype a) {
+            MEDDLY_DCASSERT(!CT);
             result.resize(1);
             result[0] = a;
-            countResult();
         }
         inline void setResult(ct_itemtype a, ct_itemtype b) {
+            MEDDLY_DCASSERT(!CT);
             result.resize(2);
             result[0] = a;
             result[1] = b;
-            countResult();
         }
         inline void appendResult(ct_itemtype a) {
+            MEDDLY_DCASSERT(!CT);
             result.push_back(a);
         }
-        inline void doneResult() {
-            countResult();
+
+        /// Call this (at least) once after setting the key and result items.
+        inline void doneBuilding() {
+            if (!CT) buildCT();
         }
+
+
+    public:
+        // ***************************************************************
+        //
+        // Convenience methods for use in operations
+        //
+        // ***************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+        /**
+            Find an entry in the compute table of this type.
+                @param  key     Key to search for.
+                @param  res     Where to store the result, if any.
+         */
+        inline void findCT(ct_entry_key* key, ct_entry_result &res) {
+            MEDDLY_DCASSERT(CT);
+            MEDDLY_DCASSERT(keyIsOurs(key));
+
+            CT->find(key, res);
+        }
+
+        /**
+            Add a compute table entry of this type.
+                @param  key   Key portion of the entry.  Will be recycled.
+                @param  res   Result portion of the entry.
+         */
+        inline void addCT(ct_entry_key* key, const ct_entry_result &res) {
+            MEDDLY_DCASSERT(CT);
+            MEDDLY_DCASSERT(keyIsOurs(key));
+
+            CT->addEntry(key, res);
+        }
+
+        inline compute_table* getCT() const {
+            return CT;
+        }
+
+#endif
+        //
+        // New interface
+        //
+
+        /** Find an entry in the compute table of this type.
+                @param  key   Key to search for.
+                @param  res   Where to store the result, if found.
+                @return true, if a result was found; false otherwise.
+        */
+        inline bool findCT(ct_vector &key, ct_vector &res)
+        {
+            MEDDLY_DCASSERT(CT);
+
+            return CT->find(*this, key, res);
+        }
+
+        /**
+            Add an entry (key plus result) to the compute table of this type.
+                @param  key   Key portion of the entry.
+                @param  res   Result portion of the entry.
+        */
+        inline void addEntry(ct_vector &key, const ct_vector &res)
+        {
+            MEDDLY_DCASSERT(CT);
+
+            CT->addEntry(*this, key, res);
+        }
+
+    public:
+        // ***************************************************************
+        //
+        // Methods primarily for compute tables
+        //
+        // ***************************************************************
 
 
         /** Clear CT bits for any forests this entry type uses.
@@ -605,12 +690,77 @@ class MEDDLY::ct_entry_type {
         /// Update all of our items that forest f has been deleted
         void invalidateForest(const forest* f);
 
-    private:
-        void countFixed();
-        void countRepeating();
-        void countResult();
+    public:
+        // ***************************************************************
+        //
+        // Registry of all entries: interface
+        //
+        // ***************************************************************
+
+        static void initStatics();
+        static void doneStatics();
+
+        static inline const ct_entry_type* getEntryType(unsigned etid)
+        {
+#ifdef DEVELOPMENT_CODE
+            return all_entries.at(etid);
+#else
+            return all_entries[etid];
+#endif
+        }
 
     private:
+        // ***************************************************************
+        //
+        // Registry of all entries: back end
+        //
+        // ***************************************************************
+
+
+        /// Unique ID, for the life of the library.
+        /// Guaranteed not to be 0.
+        unsigned etID;
+
+        /// Global registry of all entries
+        static std::vector <ct_entry_type*> all_entries;
+
+        static inline void registerEntry(ct_entry_type* et) {
+            if (et) {
+                et->etID = all_entries.size();
+                all_entries.push_back(et);
+            }
+        }
+
+        static inline void unregisterEntry(ct_entry_type* et) {
+            if (et) {
+#ifdef DEVELOPMENT_CODE
+                all_entries.at(et->etID) = nullptr;
+#else
+                all_entries[et->etID] = nullptr;
+#endif
+            }
+        }
+
+
+    private:
+        // ***************************************************************
+        //
+        // Helper methods and ugly details
+        //
+        // ***************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+        /// Make sure k has us as entry type.
+        bool keyIsOurs(const ct_entry_key *k) const;
+#endif
+
+        /// Set counts; build CT.
+        void buildCT();
+
+
+        /// Compute table to use for this entry
+        compute_table* CT;
+
         /// Name; for displaying CT entries
         const char* name;
 
@@ -643,49 +793,6 @@ class MEDDLY::ct_entry_type {
 
         /// For deleting all entries of this type
         bool is_marked_for_deletion;
-
-
-    private:
-        //
-        // Registry of all CT entries
-        //
-
-        /// Unique ID, for the life of the library.
-        /// Guaranteed not to be 0.
-        unsigned etID;
-
-        /// Global registry of all entries
-        static std::vector <ct_entry_type*> all_entries;
-
-        static inline void registerEntry(ct_entry_type* et) {
-            if (et) {
-                et->etID = all_entries.size();
-                all_entries.push_back(et);
-            }
-        }
-
-        static inline void unregisterEntry(ct_entry_type* et) {
-            if (et) {
-#ifdef DEVELOPMENT_CODE
-                all_entries.at(et->etID) = nullptr;
-#else
-                all_entries[et->etID] = nullptr;
-#endif
-            }
-        }
-
-    public:
-        static void initStatics();
-        static void doneStatics();
-
-        static inline const ct_entry_type* getEntryType(unsigned etid)
-        {
-#ifdef DEVELOPMENT_CODE
-            return all_entries.at(etid);
-#else
-            return all_entries[etid];
-#endif
-        }
 
 };
 

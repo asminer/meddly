@@ -16,8 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "error.h"
 #include "ct_initializer.h"
 #include "compute_table.h"
+#include "ct_entry_type.h"
 
 #include "storage/ct_styles.h"
 

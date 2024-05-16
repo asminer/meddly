@@ -18,9 +18,12 @@
 
 
 #include "defines.h"
+#include "error.h"
 
 #include "ct_initializer.h"
 #include "compute_table.h"
+#include "ct_entry_type.h"
+#include "ct_entry_key.h"
 
 // #define DEBUG_ENTRY_TYPE
 // #define DEBUG_ENTRY_REGISTRY
@@ -61,7 +64,6 @@ MEDDLY::compute_table_style::create(const ct_settings &s,
 // **********************************************************************
 
 MEDDLY::compute_table* MEDDLY::compute_table::Monolithic_CT;
-// std::vector<MEDDLY::ct_entry_type*> MEDDLY::compute_table::entryInfo;
 MEDDLY::ct_entry_key* MEDDLY::compute_table::free_keys;
 
 // **********************************************************************
@@ -108,6 +110,33 @@ MEDDLY::compute_table::compute_table(const ct_settings &s, unsigned etid)
 MEDDLY::compute_table::~compute_table()
 {
 }
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+MEDDLY::ct_entry_key*
+MEDDLY::compute_table::useEntryKey(const ct_entry_type* et, unsigned repeats)
+{
+            if (!et) return nullptr;
+            MEDDLY_DCASSERT( (0==repeats) || et->isRepeating() );
+
+            ct_entry_key* k;
+            if (free_keys) {
+                k = free_keys;
+                free_keys = free_keys->next;
+            } else {
+                k = new ct_entry_key();
+            }
+            k->setup(et, repeats);
+            return k;
+}
+
+void MEDDLY::compute_table::recycle(ct_entry_key* k)
+{
+            if (k) {
+                k->next = free_keys;
+                free_keys = k;
+            }
+}
+#endif
 
 void MEDDLY::compute_table::clearForestCTBits(std::vector <bool> &skipF) const
 {

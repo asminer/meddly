@@ -17,6 +17,8 @@
 */
 
 #include "ct_entry_type.h"
+#include "ct_entry_key.h"
+#include "ct_initializer.h"
 #include "error.h"
 #include "forest.h"
 
@@ -142,9 +144,23 @@ void MEDDLY::ct_object::show(output &s) const
 // *                                                                    *
 // **********************************************************************
 
+MEDDLY::ct_entry_type::~ct_entry_type()
+{
+    if (CT) {
+        if (CT->isOperationTable()) {
+            delete CT;
+        }
+        // otherwise CT is the monolithic table; don't delete it.
+    }
+    unregisterEntry(this);
+}
+
+
+
 #ifdef ALLOW_DEPRECATED_0_17_6
 MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
 {
+    CT = nullptr;
     registerEntry(this);
     name = _name;
     is_marked_for_deletion = false;
@@ -192,17 +208,19 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
     for (unsigned i=0; i<dot_slot; i++) {
         key_fixed.push_back(pattern[i]);
     }
-    countFixed();
 
     for (unsigned i=1+dot_slot; i<colon_slot; i++) {
         key_repeating.push_back(pattern[i]);
     }
-    countRepeating();
 
     for (unsigned i=1+colon_slot; i<length; i++) {
         result.push_back(pattern[i]);
     }
-    countResult();
+
+    //
+    // "Done" building
+    //
+    buildCT();
 
 
 #ifdef DEBUG_ENTRY_TYPE
@@ -226,33 +244,6 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
     sout << "\"  (" << result_intslots << " intslots)\n";
 #endif
 }
-
-#endif // allow_deprecated_0_17_6
-
-MEDDLY::ct_entry_type::ct_entry_type(const char* _name)
-{
-    registerEntry(this);
-    name = _name;
-    is_marked_for_deletion = false;
-
-    updatable_result = false;
-
-    // fixed_bytes = 0;
-    fixed_intslots = 0;
-
-    // repeating_bytes = 0;
-    repeating_intslots = 0;
-
-    // result_bytes = 0;
-    result_intslots = 0;
-}
-
-MEDDLY::ct_entry_type::~ct_entry_type()
-{
-    unregisterEntry(this);
-}
-
-#ifdef ALLOW_DEPRECATED_0_17_6
 
 void MEDDLY::ct_entry_type::setForestForSlot(unsigned i, forest* f)
 {
@@ -285,6 +276,26 @@ void MEDDLY::ct_entry_type::setForestForSlot(unsigned i, forest* f)
 }
 
 #endif // allow_deprecated_0_17_6
+
+MEDDLY::ct_entry_type::ct_entry_type(const char* _name)
+{
+    CT = nullptr;
+    registerEntry(this);
+    name = _name;
+    is_marked_for_deletion = false;
+
+    updatable_result = false;
+
+    // fixed_bytes = 0;
+    fixed_intslots = 0;
+
+    // repeating_bytes = 0;
+    repeating_intslots = 0;
+
+    // result_bytes = 0;
+    result_intslots = 0;
+}
+
 
 
 
@@ -402,38 +413,6 @@ void MEDDLY::ct_entry_type::invalidateForest(const forest* f)
     }
 }
 
-void MEDDLY::ct_entry_type::countFixed()
-{
-    fixed_intslots = 0;
-    fixed_entirely_hashable = true;
-    for (unsigned i=0; i<key_fixed.size(); i++) {
-        fixed_intslots += key_fixed[i].intslots();
-        if (!key_fixed[i].shouldBeHashed()) {
-            fixed_entirely_hashable = false;
-        }
-    }
-}
-
-void MEDDLY::ct_entry_type::countRepeating()
-{
-    repeating_intslots = 0;
-    repeating_entirely_hashable = true;
-    for (unsigned i=0; i<key_repeating.size(); i++) {
-        repeating_intslots += key_repeating[i].intslots();
-        if (!key_repeating[i].shouldBeHashed()) {
-            repeating_entirely_hashable = false;
-        }
-    }
-}
-
-void MEDDLY::ct_entry_type::countResult()
-{
-    result_intslots = 0;
-    for (unsigned i=0; i<result.size(); i++) {
-        result_intslots += result[i].intslots();
-    }
-}
-
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Entry registry static methods and members
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -450,5 +429,61 @@ void MEDDLY::ct_entry_type::initStatics()
 void MEDDLY::ct_entry_type::doneStatics()
 {
     all_entries.clear();
+}
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Private helpers
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+bool MEDDLY::ct_entry_type::keyIsOurs(const ct_entry_key *k) const
+{
+    MEDDLY_DCASSERT(k);
+    return k->getET() == this;
+}
+
+void MEDDLY::ct_entry_type::buildCT()
+{
+    MEDDLY_DCASSERT(!CT);
+
+    //
+    // Preprocess fixed portion of key
+    //
+    fixed_intslots = 0;
+    fixed_entirely_hashable = true;
+    for (unsigned i=0; i<key_fixed.size(); i++) {
+        fixed_intslots += key_fixed[i].intslots();
+        if (!key_fixed[i].shouldBeHashed()) {
+            fixed_entirely_hashable = false;
+        }
+    }
+
+    //
+    // Preprocess repeating portion of key
+    //
+    repeating_intslots = 0;
+    repeating_entirely_hashable = true;
+    for (unsigned i=0; i<key_repeating.size(); i++) {
+        repeating_intslots += key_repeating[i].intslots();
+        if (!key_repeating[i].shouldBeHashed()) {
+            repeating_entirely_hashable = false;
+        }
+    }
+
+    //
+    // Preprocess result
+    //
+    result_intslots = 0;
+    for (unsigned i=0; i<result.size(); i++) {
+        result_intslots += result[i].intslots();
+    }
+
+    //
+    // Build CT or use monolithic as appropriate
+    //
+    if (compute_table::Monolithic()) {
+        CT = compute_table::Monolithic();
+    } else {
+        CT = ct_initializer::createForOp(this);
+    }
 }
 

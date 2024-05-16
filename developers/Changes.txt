@@ -8,22 +8,12 @@ Make compute table interface easier to use for simple operations
 
 (done!) Entry type registry within entry type class
 (done!) Monolithic CT -> static in compute_table class
-
-
-Compute table entry types
-    * should have a compute table
-            + their own, for non-monolithic
-            + the global one, for monolithic
+(done!) Added CT to ct_entry_type, and inlined methods for find, add
 
 
     * eventually: remove CTs from operation base class
     * eventually: remove entry registration from operation base class
 
-
-Monolithic vs per operation compute tables
-    * Belong to CT interface instead of operation
-    * Interface should be 'attach a CT to this entry type'
-    * Do we want/need a registry of all CTs?
 
 Operations:
     * Get rid of global operation registry in favor of global

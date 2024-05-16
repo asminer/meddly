@@ -291,8 +291,16 @@ void MEDDLY::operation::buildCTs()
 {
     if (0==num_etids) return;
 
+    //
+    // TBD: for now; eventually remove!
     CT = new compute_table* [num_etids];
 
+    for (unsigned i=0; i<num_etids; i++) {
+        CT[i] = etype[i]->getCT();
+    }
+
+    /*
+    // OLD
     if (compute_table::Monolithic()) {
         for (unsigned i=0; i<num_etids; i++) {
             CT[i] = compute_table::Monolithic();
@@ -302,6 +310,7 @@ void MEDDLY::operation::buildCTs()
             CT[i] = ct_initializer::createForOp(etype[i]);
         }
     }
+    */
 
     //
     // Initialize CTresults
