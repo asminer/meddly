@@ -186,7 +186,7 @@ class MEDDLY::ct_itemtype {
         }
 
         /// Invalidate our forest if it is f.
-        void invalidateForest(const forest* f) {
+        inline void invalidateForest(const forest* f) {
 #ifndef USE_FID
             if (nodeF == f) {
                 nodeF = nullptr;
@@ -708,6 +708,12 @@ class MEDDLY::ct_entry_type {
             return all_entries[etid];
 #endif
         }
+
+        /**
+            Notify all items in all entries that forest f is invalid.
+            Should be called automatically when a forest is destroyed.
+         */
+        static void invalidateAllWithForest(const forest* f);
 
     private:
         // ***************************************************************

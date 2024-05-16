@@ -28,6 +28,8 @@
 #include <gmp.h>
 #endif
 
+#define OLD_CTS
+
 namespace MEDDLY {
     class operation;
     class compute_table;
@@ -187,10 +189,13 @@ class MEDDLY::operation {
     //
 
     protected:
+#ifdef OLD_CTS
         /// Compute table to use (for entry type 0), if any.
         compute_table* CT0;
         /// Array of compute tables, one per entry type.
         compute_table** CT;
+#endif
+
         /** Array of entry types.
             Owned by the compute_table class; we have
             these pointers for convenience.

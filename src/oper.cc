@@ -78,7 +78,9 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     // Delay CT initialization!
     // The derived class hasn't set up the entry types yet!
     //
+#ifdef OLD_CTS
     CT = 0;
+#endif
 
     //
     // Set up slots to save our entry_types.
@@ -111,15 +113,20 @@ MEDDLY::operation::~operation()
     fflush(stdout);
 #endif
 
+#ifdef OLD_CTS
     if (CT) {
+    /*
         for (unsigned i=0; i<num_etids; i++) {
             if (CT[i]->isOperationTable()) {
                 delete CT[i];
             }
         }
+    */
         delete[] CT;
         CT = nullptr;
     }
+#endif
+
     // Don't delete the entries in etype, they're owned by compute_table.
     delete[] etype;
     delete[] CTresult;
@@ -291,6 +298,7 @@ void MEDDLY::operation::buildCTs()
 {
     if (0==num_etids) return;
 
+#ifdef OLD_CTS
     //
     // TBD: for now; eventually remove!
     CT = new compute_table* [num_etids];
@@ -298,6 +306,11 @@ void MEDDLY::operation::buildCTs()
     for (unsigned i=0; i<num_etids; i++) {
         CT[i] = etype[i]->getCT();
     }
+    //
+    // Most operations use only one slot
+    //
+    CT0 = CT[0];
+#endif
 
     /*
     // OLD
@@ -319,10 +332,6 @@ void MEDDLY::operation::buildCTs()
         CTresult[i].initialize(etype[i]);
     }
 
-    //
-    // Most operations use only one slot
-    //
-    CT0 = CT[0];
 }
 
 

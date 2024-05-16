@@ -402,6 +402,7 @@ void MEDDLY::ct_entry_type::show(output &s) const
 
 void MEDDLY::ct_entry_type::invalidateForest(const forest* f)
 {
+#ifndef USE_FID
     for (unsigned i=0; i<key_fixed.size(); i++) {
         key_fixed[i].invalidateForest(f);
     }
@@ -411,6 +412,7 @@ void MEDDLY::ct_entry_type::invalidateForest(const forest* f)
     for (unsigned i=0; i<result.size(); i++) {
         result[i].invalidateForest(f);
     }
+#endif
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -429,6 +431,17 @@ void MEDDLY::ct_entry_type::initStatics()
 void MEDDLY::ct_entry_type::doneStatics()
 {
     all_entries.clear();
+}
+
+void MEDDLY::ct_entry_type::invalidateAllWithForest(const forest* f)
+{
+#ifndef USE_FID
+    for (unsigned i=1; i<all_entries.size(); i++) {
+        if (all_entries[i]) {
+            all_entries[i]->invalidateForest(f);
+        }
+    }
+#endif
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

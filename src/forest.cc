@@ -36,6 +36,7 @@
 #include "node_marker.h"
 #include "logger.h"
 #include "compute_table.h"
+#include "ct_entry_type.h"  // for invalidateAllWithForest
 
 // for timestamps.
 // to do - check during configuration that these are present,
@@ -180,6 +181,7 @@ void MEDDLY::forest::destroy(forest* &f)
     if (!initializer_list::libraryIsRunning()) {
         throw error(error::UNINITIALIZED, __FILE__, __LINE__);
     }
+    ct_entry_type::invalidateAllWithForest(f);
     f->markForDeletion();
     operation::purgeAllMarked();
     delete f;

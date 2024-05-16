@@ -13,7 +13,8 @@ Make compute table interface easier to use for simple operations
 
     * eventually: remove CTs from operation base class
     * eventually: remove entry registration from operation base class
-
+    * does the ct_entry_type need to know it's parent operation?
+      e.g., to mark an operation?
 
 Operations:
     * Get rid of global operation registry in favor of global
