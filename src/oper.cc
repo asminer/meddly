@@ -263,6 +263,7 @@ void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
 }
 */
 
+/*
 void MEDDLY::operation::purgeAllMarked()
 {
     compute_table::removeStalesFromMonolithic();
@@ -274,6 +275,7 @@ void MEDDLY::operation::purgeAllMarked()
         }
     }
 }
+*/
 
 /*
 void MEDDLY::operation::showComputeTable(output &s, int verbLevel) const

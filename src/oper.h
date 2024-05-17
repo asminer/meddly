@@ -135,8 +135,7 @@ class MEDDLY::operation {
         // void showComputeTable(output &, int verbLevel) const;
 
 
-        // TBD MOVE THIS HERE
-        static void purgeAllMarked();
+        // static void purgeAllMarked();
 
     protected:
         void registerInForest(forest* f);
