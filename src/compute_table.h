@@ -252,10 +252,9 @@ class MEDDLY::compute_table {
         /** Also for debugging.
             Examine all entries, and for each pointer to forest f node p,
             increment counts[p].
-            TBD - counts should be a vector
         */
-        virtual void countNodeEntries(const forest* f, size_t* counts)
-            const = 0;
+        virtual void countNodeEntries(const forest* f,
+                std::vector <unsigned long> &counts) const = 0;
 
 
 
@@ -320,7 +319,8 @@ class MEDDLY::compute_table {
             }
             return false;
         }
-        inline static bool countMonolithicNodeEntries(const forest* f, size_t* counts)
+        inline static bool countMonolithicNodeEntries(const forest* f,
+                std::vector<unsigned long> &counts)
         {
             if (Monolithic_CT) {
                 Monolithic_CT->countNodeEntries(f, counts);

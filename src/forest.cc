@@ -1129,14 +1129,14 @@ void MEDDLY::forest::validateCacheCounts() const
   printf("Validating cache counts for %ld handles\n", getLastNode());
 #endif
   const node_handle N = getLastNode()+1;
-  size_t* counts = new size_t[N];
 
 #ifdef SHOW_VALIDATE_CACHECOUNTS
   printf("  Counting...\n");
   fflush(stdout);
 #endif
-  for (node_handle i=0; i<N; i++) counts[i] = 0;
-  operation::countAllNodeEntries(this, counts);
+
+  std::vector <unsigned long> counts(N, 0);
+  ct_entry_type::countNodeEntries(this, counts);
 
 #ifdef SHOW_VALIDATE_CACHECOUNTS
   printf("  Validating...\n");
@@ -1159,7 +1159,6 @@ void MEDDLY::forest::validateCacheCounts() const
   );
 #endif
 
-  delete[] counts;
 #endif
 }
 

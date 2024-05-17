@@ -131,6 +131,12 @@ MEDDLY::operation::~operation()
     }
 #endif
 
+    for (unsigned i=0; i<num_etids; i++) {
+        if (etype[i]) {
+            etype[i]->markForDeletion();
+        }
+    }
+
     // Don't delete the entries in etype, they're owned by compute_table.
     delete[] etype;
     delete[] CTresult;
@@ -218,6 +224,7 @@ void MEDDLY::operation::removeAllComputeTableEntries()
 }
 */
 
+/*
 void MEDDLY::operation::countAllNodeEntries(const forest* f, size_t* counts)
 {
     compute_table::countMonolithicNodeEntries(f, counts);
@@ -227,7 +234,9 @@ void MEDDLY::operation::countAllNodeEntries(const forest* f, size_t* counts)
         }
     }
 }
+*/
 
+/*
 void MEDDLY::operation::countCTEntries(const forest* f, size_t* counts)
     const
 {
@@ -240,8 +249,9 @@ void MEDDLY::operation::countCTEntries(const forest* f, size_t* counts)
         }
     }
 }
+*/
 
-
+/*
 void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
 {
     if (compute_table::showMonolithicComputeTable(s, verbLevel)) return;
@@ -251,6 +261,7 @@ void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
         }
     }
 }
+*/
 
 void MEDDLY::operation::purgeAllMarked()
 {
@@ -264,6 +275,7 @@ void MEDDLY::operation::purgeAllMarked()
     }
 }
 
+/*
 void MEDDLY::operation::showComputeTable(output &s, int verbLevel) const
 {
     bool has_monolithic = false;
@@ -281,6 +293,7 @@ void MEDDLY::operation::showComputeTable(output &s, int verbLevel) const
         compute_table::showMonolithicComputeTable(s, verbLevel);
     }
 }
+*/
 
 
 //

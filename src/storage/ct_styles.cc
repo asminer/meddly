@@ -150,8 +150,8 @@ namespace MEDDLY {
             virtual void removeStales();
             virtual void removeAll();
             virtual void show(output &s, int verbLevel = 0);
-            virtual void countNodeEntries(const forest* f, size_t* counts)
-                const;
+            virtual void countNodeEntries(const forest* f,
+                    std::vector <unsigned long> &counts) const;
 
         protected:
             // Helper functions
@@ -1301,7 +1301,8 @@ void MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
 
 template <class TTYPE, bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
 void MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
-    ::countNodeEntries(const forest* f, size_t* counts) const
+    ::countNodeEntries(const forest* f, std::vector <unsigned long> &counts)
+    const
 {
     for (TTYPE h=0; h<table.size(); h++) {
         TTYPE curr = table[h];

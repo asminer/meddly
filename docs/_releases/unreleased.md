@@ -13,6 +13,9 @@ TBD...
 
 ### Interface Changes
 
+* ```operation::showAllComputeTables``` is now TBD
+
+
 * Added new object, ```ct_itemtype```, for type-checking compute table entries.
 
 * Existing object, ```ct_entry_type```, is now based on vectors of ```ct_itemtype``` objects.

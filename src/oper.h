@@ -124,15 +124,15 @@ class MEDDLY::operation {
 
 
 
-        static void countAllNodeEntries(const forest* f, size_t* counts);
-        void countCTEntries(const forest* f, size_t* counts) const;
+        // static void countAllNodeEntries(const forest* f, size_t* counts);
+//        void countCTEntries(const forest* f, size_t* counts) const;
 
         //
         // Display, for debugging
         //
 
-        static void showAllComputeTables(output &, int verbLevel);
-        void showComputeTable(output &, int verbLevel) const;
+        // static void showAllComputeTables(output &, int verbLevel);
+        // void showComputeTable(output &, int verbLevel) const;
 
 
         // TBD MOVE THIS HERE

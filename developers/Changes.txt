@@ -20,6 +20,9 @@ Make compute table interface easier to use for simple operations
     * does the ct_entry_type need to know it's parent operation?
       e.g., to mark an operation?
 
+    * Add a global CT registry in base CT class
+    * Move CT-related stuff from oper/ct_entry_type to CT
+
 
 Compute table ideas
     *   ct_vector   packing and unpacking operations

@@ -347,7 +347,7 @@ void runWithArgs(int N, char method, bool alternate)
 #endif
 
   printStats("MDD", mdd);
-  operation::showAllComputeTables(meddlyout, 3);
+  ct_entry_type::showAllComputeTables(meddlyout, 3);
   meddlyout.flush();
 
   /*
