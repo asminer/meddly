@@ -69,8 +69,6 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     name = n;
     num_etids = et_slots;
 
-    is_marked_for_deletion = false;
-
     registerOperation(*this);
 
     //
@@ -119,18 +117,15 @@ MEDDLY::operation::~operation()
 
 #ifdef OLD_CTS
     if (CT) {
-    /*
-        for (unsigned i=0; i<num_etids; i++) {
-            if (CT[i]->isOperationTable()) {
-                delete CT[i];
-            }
-        }
-    */
         delete[] CT;
         CT = nullptr;
     }
 #endif
 
+    //
+    // TBD: eventually operation destructors
+    // will destroy these
+    //
     for (unsigned i=0; i<num_etids; i++) {
         if (etype[i]) {
             etype[i]->markForDeletion();
@@ -149,15 +144,6 @@ MEDDLY::operation::~operation()
 #endif
 }
 
-void MEDDLY::operation::destroy(operation* op)
-{
-    if (!op) return;
-    if (!op->isMarkedForDeletion()) {
-        op->markForDeletion();
-        // operation::removeStalesFromMonolithic(); // lazy update
-    }
-    delete op;
-}
 
 void MEDDLY::operation::destroyAllWithForest(const forest* f)
 {
@@ -181,144 +167,10 @@ void MEDDLY::operation::destroyAllWithForest(const forest* f)
     }
 }
 
-/*
-
-void MEDDLY::operation::removeStaleComputeTableEntries()
-{
-    bool has_monolithic = false;
-    if (CT) {
-        for (unsigned i=0; i<num_etids; i++) {
-            if (0==CT[i]) continue;
-            if (CT[i]->isOperationTable()) {
-                CT[i]->removeStales();
-            } else {
-                has_monolithic = true;
-            }
-        }
-    }
-    if (has_monolithic) {
-        compute_table::removeStalesFromMonolithic();
-    }
-}
-
-void MEDDLY::operation::removeAllComputeTableEntries()
-{
-#ifdef DEBUG_CLEANUP
-    fprintf(stdout, "Removing entries for operation %p %s\n", this, getName());
-    fflush(stdout);
-#endif
-    if (is_marked_for_deletion) return;
-    is_marked_for_deletion = true;
-    for (unsigned i=0; i<num_etids; i++) {
-        etype[i]->markForDeletion();
-    }
-    removeStaleComputeTableEntries();
-    for (unsigned i=0; i<num_etids; i++) {
-        etype[i]->unmarkForDeletion();
-    }
-    is_marked_for_deletion = false;
-#ifdef DEBUG_CLEANUP
-    fprintf(stdout, "Removed entries for operation %p %s\n", this, getName());
-    fflush(stdout);
-#endif
-}
-*/
-
-/*
-void MEDDLY::operation::countAllNodeEntries(const forest* f, size_t* counts)
-{
-    compute_table::countMonolithicNodeEntries(f, counts);
-    for (unsigned i=0; i<op_list.size(); i++) {
-        if (op_list[i]) {
-            op_list[i]->countCTEntries(f, counts);
-        }
-    }
-}
-*/
-
-/*
-void MEDDLY::operation::countCTEntries(const forest* f, size_t* counts)
-    const
-{
-    if (CT) {
-        for (unsigned i=0; i<num_etids; i++) {
-            if (0==CT[i]) continue;
-            if (CT[i]->isOperationTable()) {
-                CT[i]->countNodeEntries(f, counts);
-            }
-        }
-    }
-}
-*/
-
-/*
-void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
-{
-    if (compute_table::showMonolithicComputeTable(s, verbLevel)) return;
-    for (unsigned i=0; i<op_list.size(); i++) {
-        if (op_list[i]) {
-            op_list[i]->showComputeTable(s, verbLevel);
-        }
-    }
-}
-*/
-
-/*
-void MEDDLY::operation::purgeAllMarked()
-{
-    compute_table::removeStalesFromMonolithic();
-    for (unsigned i=0; i<op_list.size(); i++) {
-        if (!op_list[i]) continue;
-        if (op_list[i]->isMarkedForDeletion()) {
-            destroy(op_list[i]);
-            op_list[i] = nullptr;
-        }
-    }
-}
-*/
-
-/*
-void MEDDLY::operation::showComputeTable(output &s, int verbLevel) const
-{
-    bool has_monolithic = false;
-    if (CT) {
-        for (unsigned i=0; i<num_etids; i++) {
-            if (0==CT[i]) continue;
-            if (CT[i]->isOperationTable()) {
-                CT[i]->show(s, verbLevel);
-            } else {
-                has_monolithic = true;
-            }
-        }
-    }
-    if (has_monolithic) {
-        compute_table::showMonolithicComputeTable(s, verbLevel);
-    }
-}
-*/
-
 
 //
 // Protected
 //
-
-void MEDDLY::operation::markForDeletion()
-{
-#ifdef DEBUG_CLEANUP
-    fprintf(stdout, "Marking operation %p %s for deletion\n", this, getName());
-    fflush(stdout);
-#endif
-    if (is_marked_for_deletion) return;
-    is_marked_for_deletion = true;
-    for (unsigned i=0; i<num_etids; i++) {
-        etype[i]->markForDeletion();
-    }
-    if (CT) {
-        for (unsigned i=0; i<num_etids; i++) {
-            if (CT[i] && CT[i]->isOperationTable()) CT[i]->removeStales();
-        }
-    }
-}
 
 void MEDDLY::operation::registerInForest(MEDDLY::forest* f)
 {
@@ -375,19 +227,6 @@ void MEDDLY::operation::buildCTs()
     CT0 = CT[0];
 #endif
 
-    /*
-    // OLD
-    if (compute_table::Monolithic()) {
-        for (unsigned i=0; i<num_etids; i++) {
-            CT[i] = compute_table::Monolithic();
-        }
-    } else {
-        for (unsigned i=0; i<num_etids; i++) {
-            CT[i] = ct_initializer::createForOp(etype[i]);
-        }
-    }
-    */
-
     //
     // Initialize CTresults
     //
@@ -405,7 +244,7 @@ void MEDDLY::operation::buildCTs()
 void MEDDLY::operation::initializeStatics()
 {
     //
-    // Global operation registry (still needed?)
+    // Global operation registry
     //
     op_list.clear();
     op_list.push_back(nullptr);

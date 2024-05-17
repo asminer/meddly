@@ -18,6 +18,8 @@ TBD...
 
 * ```operation::showAllComputeTables``` is now ```compute_table::showAll```
 
+* An ```operation``` object may now be deleted directly,
+  instead of using ```operation::destroy()```.
 
 * Added new object, ```ct_itemtype```, for type-checking compute table entries.
 
@@ -35,4 +37,6 @@ TBD...
   based on templates.
 
 * Added possibility for huge (more than 4 billion entries) compute tables.
+  This is a compute table setting, with a default of non-huge tables
+  to save memory.
 

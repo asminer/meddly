@@ -88,54 +88,24 @@ class MEDDLY::operation {
         */
         operation(const char* n, unsigned et_slots);
 
+        /** Destructor.
+            Safe to call directly now :)
+        */
+        virtual ~operation();
+
+#ifdef ALLOW_DEPRECATED_0_17_6
         /// Safely destroy the given operation.
-        static void destroy(operation* op);
+        inline static void destroy(operation* op) {
+            delete op;
+        }
+#endif
 
         /// Safely destroy all operations associated with the given forest.
         /// Called in forest destructor.
         static void destroyAllWithForest(const forest* f);
 
-    protected:
-        virtual ~operation();
-
-    public:
-        /// Get the name of this operation; for display
+        /// Get the name of this operation; for display / debugging
         inline const char* getName() const { return name; }
-
-        /** Are we marked for deletion?
-            If so, all compute table entries for this operation
-            will be removed.
-        */
-        inline bool isMarkedForDeletion() const {
-            return is_marked_for_deletion;
-        }
-
-        void markForDeletion();
-
-        //
-        // CT operations (TBD: move)
-        //
-
-        /// Remove stale compute table entries for this operation.
-        // void removeStaleComputeTableEntries();
-
-        /// Remove all compute table entries for this operation.
-        // void removeAllComputeTableEntries();
-
-
-
-        // static void countAllNodeEntries(const forest* f, size_t* counts);
-//        void countCTEntries(const forest* f, size_t* counts) const;
-
-        //
-        // Display, for debugging
-        //
-
-        // static void showAllComputeTables(output &, int verbLevel);
-        // void showComputeTable(output &, int verbLevel) const;
-
-
-        // static void purgeAllMarked();
 
     protected:
         void registerInForest(forest* f);
@@ -171,10 +141,10 @@ class MEDDLY::operation {
     // ------------------------------------------------------------
     private: // private methods for the operation registry
     // ------------------------------------------------------------
-        // should be called during library init.
+        /// Called during library initialization.
         static void initializeStatics();
 
-        // should ONLY be called during library cleanup.
+        /// Called during library cleanup.
         static void destroyAllOps();
 
         static void registerOperation(operation &o);
@@ -224,11 +194,7 @@ class MEDDLY::operation {
         const char* name;
         /// List of forest IDs associated with this operation.
         std::vector <unsigned> FList;
-        bool is_marked_for_deletion;
 
-
-    friend class forest;
-    friend class initializer_list;
 };
 
 #ifdef ALLOW_DEPRECATED_0_17_5
