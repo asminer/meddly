@@ -473,6 +473,7 @@ void MEDDLY::ct_entry_type::removeAllCTEntriesWithForest(const forest* f)
     }
 }
 
+/*
 void MEDDLY::ct_entry_type::countNodeEntries(const forest* f, std::vector <unsigned long> &counts)
 {
     compute_table::countMonolithicNodeEntries(f, counts);
@@ -494,6 +495,7 @@ void MEDDLY::ct_entry_type::showAllComputeTables(output &s, int verbLevel)
         all_entries[i]->CT->show(s, verbLevel);
     }
 }
+*/
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Private helpers

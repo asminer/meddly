@@ -1184,7 +1184,7 @@ class rubiks {
       printStats(out, "Mdd", mdd);
       printStats(out, "Mxd", mxd);
       printStats(out, "MtMxd", mtmxd);
-      MEDDLY::ct_entry_type::showAllComputeTables(out, 3);
+      MEDDLY::compute_table::showAll(out, 3);
       out.flush();
     }
 

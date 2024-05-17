@@ -305,7 +305,7 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
 
   double c;
   apply(CARDINALITY, reachable, c);
-  ct_entry_type::showAllComputeTables(meddlyout, 3);
+  compute_table::showAll(meddlyout, 3);
 
   printf("Approx. %g reachable states\n", c);
   operation::destroy(sat);

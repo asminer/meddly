@@ -1136,7 +1136,7 @@ void MEDDLY::forest::validateCacheCounts() const
 #endif
 
   std::vector <unsigned long> counts(N, 0);
-  ct_entry_type::countNodeEntries(this, counts);
+  compute_table::countAllNodeEntries(this, counts);
 
 #ifdef SHOW_VALIDATE_CACHECOUNTS
   printf("  Validating...\n");

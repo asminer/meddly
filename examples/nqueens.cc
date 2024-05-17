@@ -401,7 +401,7 @@ int main(int argc, const char** argv)
   }
   delete solutions;
   f->validateCacheCounts();
-  ct_entry_type::showAllComputeTables(myout, 3);
+  compute_table::showAll(myout, 3);
   if (LOG) {
     LOG->newPhase(f, "Cleanup");
     domain::destroy(d);

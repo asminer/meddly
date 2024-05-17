@@ -25,9 +25,6 @@
 #include "ct_entry_type.h"
 #include "ct_entry_key.h"
 
-// #define DEBUG_ENTRY_TYPE
-// #define DEBUG_ENTRY_REGISTRY
-
 // **********************************************************************
 // *                                                                    *
 // *                    compute_table_style  methods                    *
@@ -65,6 +62,9 @@ MEDDLY::compute_table_style::create(const ct_settings &s,
 
 MEDDLY::compute_table* MEDDLY::compute_table::Monolithic_CT;
 MEDDLY::ct_entry_key* MEDDLY::compute_table::free_keys;
+
+MEDDLY::compute_table* MEDDLY::compute_table::front;
+MEDDLY::compute_table* MEDDLY::compute_table::back;
 
 // **********************************************************************
 // *                                                                    *
@@ -105,10 +105,37 @@ MEDDLY::compute_table::compute_table(const ct_settings &s, unsigned etid)
     }
     perf.resizeScans = 0;
 
+    //
+    // Add to list of CTs
+    //
+    next = nullptr;
+    if (back) {
+        back->next = this;
+        prev = back;
+    } else {
+        back = this;
+        front = this;
+        prev = nullptr;
+    }
 }
 
 MEDDLY::compute_table::~compute_table()
 {
+    //
+    // Remove from list of CTs
+    //
+    if (next) {
+        next->prev = prev;
+    } else {
+        MEDDLY_DCASSERT(back == this);
+        back = prev;
+    }
+    if (prev) {
+        prev->next = next;
+    } else {
+        MEDDLY_DCASSERT(front == this);
+        front = next;
+    }
 }
 
 #ifdef ALLOW_DEPRECATED_0_17_6
@@ -158,38 +185,41 @@ void MEDDLY::compute_table::sweepForestCTBits(std::vector <bool> &whichF) const
     }
 }
 
-/*
-void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
-{
-    if (0==op) return;
-    if (0==num_ids) return;
-    unsigned stopID = op->getFirstETid()+num_ids;
-    for (unsigned i=op->getFirstETid(); i<stopID; i++) {
-        delete entryInfo.at(i);
-        entryInfo[i] = nullptr;
-    }
-    //
-    // absorb trailing nulls (except slot 0) in entryInfo
-    //
-    while (entryInfo.size() > 1) {
-        if (entryInfo.back()) break;
-        entryInfo.pop_back();
-    }
-}
-*/
-
 void MEDDLY::compute_table::updateEntry(ct_entry_key*, const ct_entry_result &)
 {
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
-void MEDDLY::compute_table::initStatics(compute_table* mct)
+
+void MEDDLY::compute_table::countAllNodeEntries(const forest* f,
+                std::vector <unsigned long> &counts)
+{
+    for (compute_table* ct = front; ct; ct=ct->next) {
+        ct->countNodeEntries(f, counts);
+    }
+}
+
+void MEDDLY::compute_table::showAll(output &s, int verbLevel)
+{
+    for (compute_table* ct = front; ct; ct=ct->next) {
+        ct->show(s, verbLevel);
+    }
+}
+
+void MEDDLY::compute_table::initStatics(const compute_table_style* ct_factory,
+        const ct_settings &the_settings)
 {
 #ifdef ALLOW_DEPRECATED_0_17_6
     free_keys = nullptr;
 #endif
 
-    Monolithic_CT = mct;
+    front = nullptr;
+    back = nullptr;
+    Monolithic_CT = nullptr;
+
+    if (ct_factory && ct_factory->usesMonolithic()) {
+        Monolithic_CT = ct_factory->create(the_settings);
+    }
 }
 
 void MEDDLY::compute_table::doneStatics()

@@ -995,7 +995,7 @@ int main(int argc, const char** argv)
     BASIC_STATS | EXTRA_STATS |
     STORAGE_STATS | HOLE_MANAGER_STATS
   );
-  ct_entry_type::showAllComputeTables(meddlyout, 3);
+  compute_table::showAll(meddlyout, 3);
 
   /*
     Write solutions to file

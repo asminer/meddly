@@ -13,7 +13,10 @@ TBD...
 
 ### Interface Changes
 
-* ```operation::showAllComputeTables``` is now TBD
+* The ```compute_table``` class now maintains a list of all compute
+    tables, mainly for garbage collection purposes.
+
+* ```operation::showAllComputeTables``` is now ```compute_table::showAll```
 
 
 * Added new object, ```ct_itemtype```, for type-checking compute table entries.

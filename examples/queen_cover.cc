@@ -382,7 +382,7 @@ int main(int argc, const char** argv)
     STORAGE_STATS | STORAGE_DETAILED |
     HOLE_MANAGER_STATS | HOLE_MANAGER_DETAILED
   );
-  ct_entry_type::showAllComputeTables(myout, 3);
+  compute_table::showAll(myout, 3);
 
   long c;
   apply(CARDINALITY, solutions, c);

@@ -645,7 +645,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
   // Show stats for rs construction
   printStats("MDD", mdd);
 
-  ct_entry_type::showAllComputeTables(meddlyout, 3);
+  compute_table::showAll(meddlyout, 3);
 
   double c;
   apply(CARDINALITY, reachableStates, c);

@@ -255,7 +255,7 @@ int main(int argc, const char** argv)
 
       double c;
       apply(CARDINALITY, reachable, c);
-      ct_entry_type::showAllComputeTables(meddlyout, 3);
+      compute_table::showAll(meddlyout, 3);
       printf("Approx. %g reachable states\n", c);
 
       /* Building Mxd From Implicit */

@@ -297,14 +297,14 @@ int main(int argc, const char** argv)
 #endif
       double c;
       apply(CARDINALITY, reachable, c);
-      ct_entry_type::showAllComputeTables(meddlyout, 3);
+      compute_table::showAll(meddlyout, 3);
       printf("Approx. %g reachable states\n", c);
 #ifdef HAVE_LIBGMP
     } else {
       mpz_t c;
       mpz_init(c);
       apply(CARDINALITY, reachable, c);
-      ct_entry_type::showAllComputeTables(meddlyout, 3);
+      compute_table::showAll(meddlyout, 3);
       printf("Exactly ");
       mpz_out_str(stdout, 10, c);
       printf(" states\n");

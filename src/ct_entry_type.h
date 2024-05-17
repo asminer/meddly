@@ -727,18 +727,6 @@ class MEDDLY::ct_entry_type {
         */
         static void removeAllCTEntriesWithForest(const forest* f);
 
-        /**
-            For debugging.
-            For a given forest f, count CT entries for each node in f.
-        */
-        static void countNodeEntries(const forest* f, std::vector <unsigned long> &counts);
-
-        /**
-            Display information about the monolithic and/or
-            per-entry compute tables.
-        */
-        static void showAllComputeTables(output &s, int verbLevel=0);
-
     private:
         // ***************************************************************
         //

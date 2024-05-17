@@ -264,6 +264,23 @@ class MEDDLY::compute_table {
         /// Start sweep phase for forests that could have entries in this table.
         void sweepForestCTBits(std::vector <bool> &whichF) const;
 
+        // **********************************************************
+        // Modify ALL compute tables
+        // **********************************************************
+
+        /**
+            For debugging.
+            For a given forest f, count CT entries for each node in f.
+        */
+        static void countAllNodeEntries(const forest* f,
+                std::vector <unsigned long> &counts);
+
+        /**
+            Display information about the monolithic and/or
+            per-entry compute tables.
+        */
+        static void showAll(output &s, int verbLevel=0);
+
     protected:
         /// The maximum size of the hash table.
         unsigned long maxSize;
@@ -285,9 +302,10 @@ class MEDDLY::compute_table {
         static compute_table* Monolithic_CT;
 
     public:
-        /// Initialize the monolithic compute table.
+        /// Initialize the monolithic compute table and whatnot.
         /// Normally done automatically in ct_initializer::setup().
-        static void initStatics(compute_table* mct);
+        static void initStatics(const compute_table_style* ct_factory,
+                const ct_settings &the_settings);
 
         /// Destroy the monolithic compute table.
         /// Normally done automatically in ct_initializer::cleanup().
@@ -328,6 +346,18 @@ class MEDDLY::compute_table {
             }
             return false;
         }
+
+    // ===================================================================
+    // Doubly-linked List of all compute tables
+    // ===================================================================
+
+    private:
+        compute_table* prev;
+        compute_table* next;
+
+        static compute_table* front;
+        static compute_table* back;
+
 };
 
 #endif
