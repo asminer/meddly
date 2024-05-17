@@ -175,6 +175,8 @@ void MEDDLY::operation::destroyAllWithForest(const forest* f)
     }
 }
 
+/*
+
 void MEDDLY::operation::removeStaleComputeTableEntries()
 {
     bool has_monolithic = false;
@@ -214,6 +216,7 @@ void MEDDLY::operation::removeAllComputeTableEntries()
     fflush(stdout);
 #endif
 }
+*/
 
 void MEDDLY::operation::countAllNodeEntries(const forest* f, size_t* counts)
 {

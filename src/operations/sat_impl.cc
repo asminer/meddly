@@ -794,7 +794,7 @@ MEDDLY::saturation_impl_by_events_op
 
 MEDDLY::saturation_impl_by_events_op::~saturation_impl_by_events_op()
 {
-  removeAllComputeTableEntries();
+  // removeAllComputeTableEntries();
 }
 
 

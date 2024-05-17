@@ -927,7 +927,7 @@ MEDDLY::saturation_hyb_by_events_op
 
 MEDDLY::saturation_hyb_by_events_op::~saturation_hyb_by_events_op()
 {
-  removeAllComputeTableEntries();
+  // removeAllComputeTableEntries();
 }
 
 

@@ -263,7 +263,7 @@ MEDDLY::saturation_by_events_op
 
 MEDDLY::saturation_by_events_op::~saturation_by_events_op()
 {
-  removeAllComputeTableEntries();
+  // removeAllComputeTableEntries();
 }
 
 void MEDDLY::saturation_by_events_op::compute(const dd_edge& in, dd_edge& out)

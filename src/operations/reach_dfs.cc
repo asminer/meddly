@@ -750,7 +750,7 @@ void MEDDLY::common_dfs_mt
 
   // Cleanup
   cleanup();
-  so->removeAllComputeTableEntries();
+  // so->removeAllComputeTableEntries();
   delete so;
 }
 
@@ -1250,7 +1250,7 @@ void MEDDLY::common_dfs_evplus
 
   // Cleanup
   cleanup();
-  so->removeAllComputeTableEntries();
+  // so->removeAllComputeTableEntries();
   delete so;
 }
 

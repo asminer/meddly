@@ -117,10 +117,10 @@ class MEDDLY::operation {
         //
 
         /// Remove stale compute table entries for this operation.
-        void removeStaleComputeTableEntries();
+        // void removeStaleComputeTableEntries();
 
         /// Remove all compute table entries for this operation.
-        void removeAllComputeTableEntries();
+        // void removeAllComputeTableEntries();
 
 
 

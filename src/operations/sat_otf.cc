@@ -262,7 +262,7 @@ MEDDLY::otfsat_by_events_op
 
 MEDDLY::otfsat_by_events_op::~otfsat_by_events_op()
 {
-  removeAllComputeTableEntries();
+  // removeAllComputeTableEntries();
 }
 
 void MEDDLY::otfsat_by_events_op::compute(const dd_edge& in, dd_edge& out)
