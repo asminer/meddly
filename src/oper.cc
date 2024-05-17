@@ -67,7 +67,6 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     fflush(stdout);
 #endif
     name = n;
-    num_etids = et_slots;
 
     registerOperation(*this);
 
@@ -75,9 +74,9 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     // Delay CT initialization!
     // The derived class hasn't set up the entry types yet!
     //
-#ifdef OLD_CTS
+#ifdef ALLOW_DEPRECATED_0_17_6
     CT = 0;
-#endif
+    num_etids = et_slots;
 
     //
     // Set up slots to save our entry_types.
@@ -99,6 +98,7 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     } else {
         CTresult = 0;
     }
+#endif
 
     //
     // Initialize list of forests
@@ -115,12 +115,11 @@ MEDDLY::operation::~operation()
     fflush(stdout);
 #endif
 
-#ifdef OLD_CTS
+#ifdef ALLOW_DEPRECATED_0_17_6
     if (CT) {
         delete[] CT;
         CT = nullptr;
     }
-#endif
 
     //
     // TBD: eventually operation destructors
@@ -135,7 +134,7 @@ MEDDLY::operation::~operation()
     // Don't delete the entries in etype, they're owned by compute_table.
     delete[] etype;
     delete[] CTresult;
-    // compute_table::unregisterOp(this, num_etids);
+#endif
 
     unregisterOperation(*this);
 #ifdef DEBUG_CLEANUP
@@ -201,6 +200,7 @@ void MEDDLY::operation::unregisterInForest(MEDDLY::forest* f)
     //
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_6
 void MEDDLY::operation::registerEntryType(unsigned slot, ct_entry_type* et)
 {
     MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, slot, num_etids);
@@ -213,7 +213,6 @@ void MEDDLY::operation::buildCTs()
 {
     if (0==num_etids) return;
 
-#ifdef OLD_CTS
     //
     // TBD: for now; eventually remove!
     CT = new compute_table* [num_etids];
@@ -225,7 +224,6 @@ void MEDDLY::operation::buildCTs()
     // Most operations use only one slot
     //
     CT0 = CT[0];
-#endif
 
     //
     // Initialize CTresults
@@ -233,8 +231,8 @@ void MEDDLY::operation::buildCTs()
     for (unsigned i=0; i<num_etids; i++) {
         CTresult[i].initialize(etype[i]);
     }
-
 }
+#endif
 
 
 //

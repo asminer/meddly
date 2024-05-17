@@ -28,8 +28,6 @@
 #include <gmp.h>
 #endif
 
-#define OLD_CTS
-
 namespace MEDDLY {
     class operation;
     class compute_table;
@@ -113,8 +111,10 @@ class MEDDLY::operation {
 
         virtual bool checkForestCompatibility() const = 0;
 
+#ifdef ALLOW_DEPRECATED_0_17_6
         void registerEntryType(unsigned slot, ct_entry_type* et);
         void buildCTs();
+#endif
 
 
     // ------------------------------------------------------------
@@ -162,12 +162,11 @@ class MEDDLY::operation {
     //
 
     protected:
-#ifdef OLD_CTS
+#ifdef ALLOW_DEPRECATED_0_17_6
         /// Compute table to use (for entry type 0), if any.
         compute_table* CT0;
         /// Array of compute tables, one per entry type.
         compute_table** CT;
-#endif
 
         //
         // TBD: remove all of these
@@ -189,6 +188,7 @@ class MEDDLY::operation {
             This gives the dimension of arrays CT and etype.
         */
         unsigned num_etids;
+#endif
 
     private:
         const char* name;
