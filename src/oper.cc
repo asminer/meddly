@@ -51,7 +51,6 @@ void MEDDLY::unwrap(const ct_object &x, mpz_t &value)
 // *                       operation  statics                       *
 // ******************************************************************
 
-// MEDDLY::compute_table* MEDDLY::operation::Monolithic_CT;
 std::vector <MEDDLY::operation*> MEDDLY::operation::op_list;
 std::vector <unsigned> MEDDLY::operation::free_list;
 
@@ -102,6 +101,11 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     } else {
         CTresult = 0;
     }
+
+    //
+    // Initialize list of forests
+    //
+    FList.clear();
 }
 
 
@@ -147,6 +151,28 @@ void MEDDLY::operation::destroy(operation* op)
         // operation::removeStalesFromMonolithic(); // lazy update
     }
     delete op;
+}
+
+void MEDDLY::operation::destroyAllWithForest(const forest* f)
+{
+    if (!f) return;
+    for (unsigned i=0; i<op_list.size(); i++) {
+        if (!op_list[i]) continue;
+        operation* op = op_list[i];
+        //
+        // Check if this operation uses f
+        //
+        bool uses_f = false;
+        for (unsigned j=0; j<op->FList.size(); j++) {
+            if (f->FID() != op->FList[j]) continue;
+            uses_f = true;
+            break;
+        }
+        if (!uses_f) continue;
+
+        delete op;
+        MEDDLY_DCASSERT(nullptr == op_list[i]);
+    }
 }
 
 void MEDDLY::operation::removeStaleComputeTableEntries()
@@ -278,12 +304,31 @@ void MEDDLY::operation::markForDeletion()
 
 void MEDDLY::operation::registerInForest(MEDDLY::forest* f)
 {
+    if (!f) return;
+#ifdef FOREST_OPN_REGISTRY
     if (f) f->registerOperation(this);
+#endif
+    //
+    // See if FList already contains this FID
+    //
+    for (unsigned i=0; i<FList.size(); i++) {
+        if (f->FID() == FList[i]) return;
+    }
+
+    //
+    // Nope, add it
+    //
+    FList.push_back(f->FID());
 }
 
 void MEDDLY::operation::unregisterInForest(MEDDLY::forest* f)
 {
+#ifdef FOREST_OPN_REGISTRY
     if (f) f->unregisterOperation(this);
+#endif
+    //
+    // It is safe to NOT update FList
+    //
 }
 
 void MEDDLY::operation::registerEntryType(unsigned slot, ct_entry_type* et)

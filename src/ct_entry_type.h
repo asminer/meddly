@@ -63,7 +63,7 @@ namespace MEDDLY {
 
 };
 
-#define USE_FID
+// #define USE_FID
 
 // ******************************************************************
 // *                                                                *
@@ -506,6 +506,11 @@ class MEDDLY::ct_entry_type {
         //
         // ***************************************************************
 
+        /**
+            Return true if the key or result of this entry
+            contains nodes in forest f.
+        */
+        bool hasForest(const forest* f) const;
 
         /** Clear CT bits for any forests this entry type uses.
               @param  skipF   If skipF[i] is true, then we do nothing
@@ -714,6 +719,13 @@ class MEDDLY::ct_entry_type {
             Should be called automatically when a forest is destroyed.
          */
         static void invalidateAllWithForest(const forest* f);
+
+
+        /**
+            Immediately remove ALL entries involving forest f.
+            Required for things like variable reordering.
+        */
+        static void removeAllCTEntriesWithForest(const forest* f);
 
     private:
         // ***************************************************************

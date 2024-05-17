@@ -91,6 +91,10 @@ class MEDDLY::operation {
         /// Safely destroy the given operation.
         static void destroy(operation* op);
 
+        /// Safely destroy all operations associated with the given forest.
+        /// Called in forest destructor.
+        static void destroyAllWithForest(const forest* f);
+
     protected:
         virtual ~operation();
 
@@ -196,6 +200,10 @@ class MEDDLY::operation {
         compute_table** CT;
 #endif
 
+        //
+        // TBD: remove all of these
+        //
+
         /** Array of entry types.
             Owned by the compute_table class; we have
             these pointers for convenience.
@@ -215,6 +223,8 @@ class MEDDLY::operation {
 
     private:
         const char* name;
+        /// List of forest IDs associated with this operation.
+        std::vector <unsigned> FList;
         bool is_marked_for_deletion;
 
 

@@ -181,9 +181,8 @@ void MEDDLY::forest::destroy(forest* &f)
     if (!initializer_list::libraryIsRunning()) {
         throw error(error::UNINITIALIZED, __FILE__, __LINE__);
     }
-    ct_entry_type::invalidateAllWithForest(f);
-    f->markForDeletion();
-    operation::purgeAllMarked();
+    // f->markForDeletion();
+    // operation::purgeAllMarked();
     delete f;
     f = nullptr;
 }
@@ -800,6 +799,23 @@ void MEDDLY::forest::unregisterDDEdges()
 // Operation registry methods
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+void MEDDLY::forest::removeAllComputeTableEntries()
+{
+    if (is_marked_for_deletion) return;
+    //
+    // Remove all compute table entries.
+    //
+    is_marked_for_deletion = true;
+    if (compute_table::Monolithic()) {
+        compute_table::Monolithic()->removeStales();
+    }
+    is_marked_for_deletion = false;
+    ct_entry_type::removeAllCTEntriesWithForest(this);
+}
+
+
+#ifdef FOREST_OPN_REGISTRY
+
 void MEDDLY::forest::removeStaleComputeTableEntries()
 {
     /*
@@ -812,25 +828,6 @@ void MEDDLY::forest::removeStaleComputeTableEntries()
       if (opCount[i]) {
         operation* op = operation::getOpWithID(i);
         op->removeStaleComputeTableEntries();
-      }
-  }
-  */
-}
-
-void MEDDLY::forest::removeAllComputeTableEntries()
-{
-    /*
-        TBD
-  if (is_marked_for_deletion) return;
-  if (operation::usesMonolithicComputeTable()) {
-    is_marked_for_deletion = true;
-    operation::removeStalesFromMonolithic();
-    is_marked_for_deletion = false;
-  } else {
-    for (unsigned i=0; i<opCount.size(); i++)
-      if (opCount[i]) {
-        operation* op = operation::getOpWithID(i);
-        op->removeAllComputeTableEntries();
       }
   }
   */
@@ -862,6 +859,8 @@ void MEDDLY::forest::unregisterOperation(const operation* op)
 #endif
 }
 
+#endif
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Forest registry methods
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -880,6 +879,9 @@ void MEDDLY::forest::freeStatics()
 
 void MEDDLY::forest::registerForest(forest* f)
 {
+#ifdef DEBUG_CLEANUP
+    std::cout << "Registering forest " << f << ", #" << all_forests.size() << "\n";
+#endif
     // Add f to the forest registry
     f->fid = all_forests.size();
     all_forests.push_back(f);
@@ -893,6 +895,9 @@ void MEDDLY::forest::registerForest(forest* f)
 
 void MEDDLY::forest::unregisterForest(forest* f)
 {
+#ifdef DEBUG_CLEANUP
+    std::cout << "Unregistering forest " << f << ", #" << f->fid << "\n";
+#endif
     // Remove from forest slot
     if (f->fid < all_forests.size()) {
 #ifdef DEVELOPMENT_CODE
@@ -1241,6 +1246,7 @@ void MEDDLY::forest::setLogger(logger* L, const char* name)
     if (theLogger) theLogger->logForestInfo(this, name);
 }
 
+#ifdef FOREST_OPN_REGISTRY
 void MEDDLY::forest::showComputeTable(output &s, int verbLevel) const
 {
   if (compute_table::showMonolithicComputeTable(s, verbLevel)) return;
@@ -1251,7 +1257,7 @@ void MEDDLY::forest::showComputeTable(output &s, int verbLevel) const
     }
   }
 }
-
+#endif
 
 void MEDDLY::forest::reportForestStats(output &s, const char* pad) const
 {
@@ -1265,7 +1271,8 @@ void MEDDLY::forest::reportForestStats(output &s, const char* pad) const
 
 void MEDDLY::forest::reorderVariables(const int* level2var)
 {
-  removeAllComputeTableEntries();
+    removeAllComputeTableEntries();
+
 
   // Create a temporary variable order
   // Support in-place update and avoid interfering other forests
@@ -1452,18 +1459,22 @@ MEDDLY::forest::~forest()
     delete nodeMan;
 
     unregisterForest(this);
+    ct_entry_type::invalidateAllWithForest(this);
+    operation::destroyAllWithForest(this);
 }
 
 void MEDDLY::forest::markForDeletion()
 {
     if (is_marked_for_deletion) return;
     is_marked_for_deletion = true;
+#ifdef FOREST_OPN_REGISTRY
     // deal with operations associated with this forest
     for (unsigned i=0; i<opCount.size(); i++)
         if (opCount[i]) {
             operation* op = operation::getOpWithID(i);
             op->markForDeletion();
         }
+#endif
     unregisterDDEdges();
 }
 

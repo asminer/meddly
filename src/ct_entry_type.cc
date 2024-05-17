@@ -225,19 +225,19 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
 
 #ifdef DEBUG_ENTRY_TYPE
     ostream_output sout(std::cout);
-    sout << "Built entry type " << name << " with pattern '"
+    sout << "Built #" << etID << " entry type " << name << " with pattern '"
          << pattern << "'\n";
-    sout << "Key start: \"";
+    sout << "        Key start: \"";
     for (unsigned i=0; i<key_fixed.size(); i++) {
         key_fixed[i].show(sout);
     }
     sout << "\"  (" << fixed_intslots << " intslots)\n";
-    sout << "Key repeat: \"";
+    sout << "        Key repeat: \"";
     for (unsigned i=0; i<key_repeating.size(); i++) {
         key_repeating[i].show(sout);
     }
     sout << "\"  (" << repeating_intslots << " intslots)\n";
-    sout << "Result: \"";
+    sout << "        Result: \"";
     for (unsigned i=0; i<result.size(); i++) {
         result[i].show(sout);
     }
@@ -297,6 +297,20 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name)
 }
 
 
+bool MEDDLY::ct_entry_type::hasForest(const forest* f) const
+{
+    unsigned i;
+    for (i=0; i<key_fixed.size(); i++) {
+        if (key_fixed[i].hasForest(f)) return true;
+    }
+    for (i=0; i<key_repeating.size(); i++) {
+        if (key_repeating[i].hasForest(f)) return true;
+    }
+    for (i=0; i<result.size(); i++) {
+        if (result[i].hasForest(f)) return true;
+    }
+    return false;
+}
 
 
 void MEDDLY::ct_entry_type::clearForestCTBits(std::vector <bool> &skipF) const
@@ -436,12 +450,27 @@ void MEDDLY::ct_entry_type::doneStatics()
 void MEDDLY::ct_entry_type::invalidateAllWithForest(const forest* f)
 {
 #ifndef USE_FID
-    for (unsigned i=1; i<all_entries.size(); i++) {
+    for (unsigned i=0; i<all_entries.size(); i++) {
         if (all_entries[i]) {
             all_entries[i]->invalidateForest(f);
         }
     }
 #endif
+}
+
+void MEDDLY::ct_entry_type::removeAllCTEntriesWithForest(const forest* f)
+{
+    for (unsigned i=0; i<all_entries.size(); i++) {
+        if (!all_entries[i]) continue;
+        if (!all_entries[i]->CT->isOperationTable()) continue;
+        if (!all_entries[i]->hasForest(f)) continue;
+
+        //
+        // Still here?
+        // We have an operation cache that uses forest f.
+        // Clear it.
+        all_entries[i]->CT->removeAll();
+    }
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
