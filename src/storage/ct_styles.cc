@@ -1019,6 +1019,7 @@ void MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
         if (et->getID() != global_etid)
             throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
     }
+    ct_entry_type::incEntries(et->getID());
 
     TTYPE h = key->getHash() % table.size();
 
@@ -1932,6 +1933,11 @@ void MEDDLY::ct_tmpl<TTYPE,M,C,I>::deleteEntry(TTYPE &h)
     perf.numEntries--;
 
     h = 0;
+
+    //
+    // Decrement entry counter in entry type.
+    //
+    ct_entry_type::decEntries(et->getID());
 }
 
 // **********************************************************************

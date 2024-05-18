@@ -33,14 +33,9 @@
 
 #include <vector>
 
-// #define FOREST_OPN_REGISTRY
-
 namespace MEDDLY {
     class domain;
 
-#ifdef FOREST_OPN_REGISTRY
-    class operation;
-#endif
     class forest;
     class node_marker;
     class node_storage;
@@ -1453,24 +1448,6 @@ class MEDDLY::forest {
     /// Remove all compute table entries associated with this forest.
     void removeAllComputeTableEntries();
 
-#ifdef FOREST_OPN_REGISTRY
-
-    /// Remove any stale compute table entries associated with this forest.
-    void removeStaleComputeTableEntries();
-
-  private:  // For operation registration
-    friend class operation;
-
-    std::vector <unsigned> opCount;
-
-    /// Register an operation with this forest.
-    /// Called only within operation.
-    void registerOperation(const operation* op);
-
-    /// Unregister an operation.
-    /// Called only within operation.
-    void unregisterOperation(const operation* op);
-#endif
 
 // ===================================================================
 //
@@ -1589,11 +1566,6 @@ class MEDDLY::forest {
                 @param  name    Name to use for the forest (for display only).
         */
         void setLogger(logger* L, const char* name);
-
-#ifdef FOREST_OPN_REGISTRY
-        /// Display the compute table(s)
-        void showComputeTable(output &s, int verbLevel) const;
-#endif
 
     // ------------------------------------------------------------
     protected: // protected methods for debugging

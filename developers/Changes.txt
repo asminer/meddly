@@ -14,14 +14,13 @@ Make compute table interface easier to use for simple operations
         is updated with registerInForest
 (done!) Add static method to destroy all operations of a forest
         and call this in forest destructor
+(done!) Add a global CT registry in base CT class;
+        move (some) related CT stuff there
+
 
     * eventually: remove CTs from operation base class
     * eventually: remove entry registration from operation base class
-    * does the ct_entry_type need to know it's parent operation?
-      e.g., to mark an operation?
 
-    * Add a global CT registry in base CT class
-    * Move CT-related stuff from oper/ct_entry_type to CT
 
 
 Compute table ideas
@@ -51,6 +50,10 @@ Compute table ideas
         (i.e., does that account for the time difference between
         ct_none and ct_typebased?)
 
+
+    * Add #entry count to ct_entry_type?
+      Then we can automatically delete when incoming count
+      is 0 and marked for destruction
 
 Next release:
 

@@ -25,6 +25,9 @@
 #include "forest.h"
 #include "compute_table.h"
 
+// #define ENTRY_COUNTER
+// #define DELETE_ON_ZERO
+
 namespace MEDDLY {
     class ct_object;
     class ct_entry_type;
@@ -679,6 +682,14 @@ class MEDDLY::ct_entry_type {
         /// Mark for deletion
         inline void markForDeletion() { is_marked_for_deletion = true; }
 
+        /// Mark for destroy
+        inline void markForDestroy() {
+            markForDeletion();
+            destroyWhenEmpty = true;
+#ifdef DELETE_ON_ZERO
+            if (0==numEntries) delete this;
+#endif
+        }
 
         /// Unmark for deletion
         inline void unmarkForDeletion() { is_marked_for_deletion = false; }
@@ -727,6 +738,35 @@ class MEDDLY::ct_entry_type {
         */
         static void removeAllCTEntriesWithForest(const forest* f);
 
+        /// Display info for all registered entries
+        static void showAll(output &s);
+
+        /// CT is adding another entry of type etid
+        static inline void incEntries(unsigned etid) {
+            MEDDLY_DCASSERT(all_entries.at(etid));
+#ifdef ENTRY_COUNTER
+            all_entries[etid]->numEntries++;
+#endif
+        }
+
+        /// CT is removing an entry of this type
+        static inline void decEntries(unsigned etid) {
+            MEDDLY_DCASSERT(all_entries.at(etid));
+#ifdef ENTRY_COUNTER
+            MEDDLY_DCASSERT(all_entries[etid]->numEntries);
+            all_entries[etid]->numEntries--;
+#ifdef DELETE_ON_ZERO
+            if (all_entries[etid]->destroyWhenEmpty) {
+                if (0==all_entries[etid]->numEntries) {
+                    delete all_entries[etid];
+                    MEDDLY_DCASSERT(nullptr == all_entries[etid]);
+                }
+            }
+#endif
+#endif
+        }
+
+
     private:
         // ***************************************************************
         //
@@ -746,6 +786,9 @@ class MEDDLY::ct_entry_type {
             if (et) {
                 et->etID = all_entries.size();
                 all_entries.push_back(et);
+#ifdef DEBUG_CLEANUP
+                std::cout << "registered ct entry " << et << ", #" << et->etID << "\n";
+#endif
             }
         }
 
@@ -755,6 +798,9 @@ class MEDDLY::ct_entry_type {
                 all_entries.at(et->etID) = nullptr;
 #else
                 all_entries[et->etID] = nullptr;
+#endif
+#ifdef DEBUG_CLEANUP
+                std::cout << "unregistered ct entry " << et << ", #" << et->etID << "\n";
 #endif
             }
         }
@@ -781,6 +827,11 @@ class MEDDLY::ct_entry_type {
 
         /// Name; for displaying CT entries
         const char* name;
+
+#ifdef ENTRY_COUNTER
+        /// How many entries of this type exist in some CT?
+        unsigned long numEntries;
+#endif
 
         /// Fixed, initial portion of the key.
         std::vector <ct_itemtype> key_fixed;
@@ -812,6 +863,8 @@ class MEDDLY::ct_entry_type {
         /// For deleting all entries of this type
         bool is_marked_for_deletion;
 
+        /// Delete this as soon as there are no entries
+        bool destroyWhenEmpty;
 };
 
 #endif

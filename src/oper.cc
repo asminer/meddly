@@ -122,12 +122,12 @@ MEDDLY::operation::~operation()
     }
 
     //
-    // TBD: eventually operation destructors
+    // Eventually operation destructors
     // will destroy these
     //
     for (unsigned i=0; i<num_etids; i++) {
         if (etype[i]) {
-            etype[i]->markForDeletion();
+            etype[i]->markForDestroy();
         }
     }
 

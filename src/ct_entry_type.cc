@@ -148,6 +148,7 @@ MEDDLY::ct_entry_type::~ct_entry_type()
 {
     if (CT) {
         if (CT->isOperationTable()) {
+            CT->removeAll();
             delete CT;
         }
         // otherwise CT is the monolithic table; don't delete it.
@@ -164,6 +165,11 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
     registerEntry(this);
     name = _name;
     is_marked_for_deletion = false;
+    destroyWhenEmpty = false;
+#ifdef ENTRY_COUNTER
+    numEntries = 0;
+#endif
+
     updatable_result = false;
 
     bool saw_dot = false;
@@ -283,6 +289,10 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name)
     registerEntry(this);
     name = _name;
     is_marked_for_deletion = false;
+    destroyWhenEmpty = false;
+#ifdef ENTRY_COUNTER
+    numEntries = 0;
+#endif
 
     updatable_result = false;
 
@@ -444,6 +454,11 @@ void MEDDLY::ct_entry_type::initStatics()
 
 void MEDDLY::ct_entry_type::doneStatics()
 {
+    for (unsigned i=0; i<all_entries.size(); i++) {
+        if (!all_entries[i]) continue;
+        delete all_entries[i];
+        MEDDLY_DCASSERT(!all_entries[i]);
+    }
     all_entries.clear();
 }
 
@@ -470,6 +485,22 @@ void MEDDLY::ct_entry_type::removeAllCTEntriesWithForest(const forest* f)
         // We have an operation cache that uses forest f.
         // Clear it.
         all_entries[i]->CT->removeAll();
+    }
+}
+
+void MEDDLY::ct_entry_type::showAll(output &s)
+{
+    for (unsigned i=0; i<all_entries.size(); i++) {
+        if (!all_entries[i]) continue;
+        s.put("Entry type #");
+        s.put(i);
+#ifdef ENTRY_COUNTER
+        s.put(", has ");
+        s.put(all_entries[i]->numEntries);
+        s.put(" entries");
+#endif
+        s.put(":    ");
+        all_entries[i]->show(s);
     }
 }
 

@@ -424,6 +424,12 @@ void check_CT(bool monolithic)
         if (ment != nhit1+nhit2+nhit3) throw "monolithic new hit count mismatch";
     }
 
+
+#ifdef DEBUG_CT
+    cout << "All CT entry types\n";
+    ct_entry_type::showAll(out);
+#endif
+
 }
 
 bool setStyleNumber(unsigned i)

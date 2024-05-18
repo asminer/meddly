@@ -113,10 +113,14 @@ MEDDLY::compute_table::compute_table(const ct_settings &s, unsigned etid)
         back->next = this;
         prev = back;
     } else {
-        back = this;
         front = this;
         prev = nullptr;
     }
+    back = this;
+
+#ifdef DEBUG_CLEANUP
+    std::cout << "new compute table " << this << "\n";
+#endif
 }
 
 MEDDLY::compute_table::~compute_table()
@@ -136,6 +140,10 @@ MEDDLY::compute_table::~compute_table()
         MEDDLY_DCASSERT(front == this);
         front = next;
     }
+
+#ifdef DEBUG_CLEANUP
+    std::cout << "done compute table " << this << "\n";
+#endif
 }
 
 #ifdef ALLOW_DEPRECATED_0_17_6
@@ -219,6 +227,9 @@ void MEDDLY::compute_table::initStatics(const compute_table_style* ct_factory,
 
     if (ct_factory && ct_factory->usesMonolithic()) {
         Monolithic_CT = ct_factory->create(the_settings);
+#ifdef DEBUG_CLEANUP
+        std::cout << "Created monolithic CT " << Monolithic_CT << "\n";
+#endif
     }
 }
 
@@ -232,7 +243,12 @@ void MEDDLY::compute_table::doneStatics()
     }
 #endif
 
-    delete Monolithic_CT;
-    Monolithic_CT = nullptr;
+    if (Monolithic_CT) {
+#ifdef DEBUG_CLEANUP
+        std::cout << "Destroying monolithic CT " << Monolithic_CT << "\n";
+#endif
+        delete Monolithic_CT;
+        Monolithic_CT = nullptr;
+    }
 }
 

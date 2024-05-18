@@ -814,53 +814,6 @@ void MEDDLY::forest::removeAllComputeTableEntries()
 }
 
 
-#ifdef FOREST_OPN_REGISTRY
-
-void MEDDLY::forest::removeStaleComputeTableEntries()
-{
-    /*
-     TBD
-
-  if (operation::usesMonolithicComputeTable()) {
-    operation::removeStalesFromMonolithic();
-  } else {
-    for (unsigned i=0; i<opCount.size(); i++)
-      if (opCount[i]) {
-        operation* op = operation::getOpWithID(i);
-        op->removeStaleComputeTableEntries();
-      }
-  }
-  */
-}
-
-void MEDDLY::forest::registerOperation(const operation* op)
-{
-    MEDDLY_DCASSERT(op->getID() > 0);
-    if (op->getID() >= opCount.size()) {
-        // need to expand; do so in chunks of 16
-        const unsigned newSize = ((op->getID() / 16) +1 )*16;
-        opCount.resize(newSize, 0);
-    }
-#ifdef DEVELOPMENT_CODE
-    opCount.at(op->getID()) ++;
-#else
-    opCount[op->getID()] ++;
-#endif
-}
-
-void MEDDLY::forest::unregisterOperation(const operation* op)
-{
-    MEDDLY_DCASSERT(op->getID() >= 0);
-    MEDDLY_DCASSERT(opCount.at(op->getID())>0);
-#ifdef DEVELOPMENT_CODE
-    opCount.at(op->getID()) --;
-#else
-    opCount[op->getID()] --;
-#endif
-}
-
-#endif
-
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Forest registry methods
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1245,19 +1198,6 @@ void MEDDLY::forest::setLogger(logger* L, const char* name)
     if (theLogger) theLogger->logForestInfo(this, name);
 }
 
-#ifdef FOREST_OPN_REGISTRY
-void MEDDLY::forest::showComputeTable(output &s, int verbLevel) const
-{
-  if (compute_table::showMonolithicComputeTable(s, verbLevel)) return;
-  for (unsigned i=0; i<opCount.size(); i++) {
-    if (opCount[i]) {
-      operation* op = operation::getOpWithID(i);
-      op->showComputeTable(s, verbLevel);
-    }
-  }
-}
-#endif
-
 void MEDDLY::forest::reportForestStats(output &s, const char* pad) const
 {
   // default - do nothing
@@ -1443,6 +1383,9 @@ MEDDLY::forest
 
 MEDDLY::forest::~forest()
 {
+#ifdef DEBUG_CLEANUP
+    std::cout << "Deleting forest " << this << ", #" << FID() << "\n";
+#endif
 #ifdef REPORT_ON_DESTROY
     printf("Destroying forest.  Stats:\n");
     reportMemoryUsage(stdout, "\t", 9);
@@ -1466,14 +1409,6 @@ void MEDDLY::forest::markForDeletion()
 {
     if (is_marked_for_deletion) return;
     is_marked_for_deletion = true;
-#ifdef FOREST_OPN_REGISTRY
-    // deal with operations associated with this forest
-    for (unsigned i=0; i<opCount.size(); i++)
-        if (opCount[i]) {
-            operation* op = operation::getOpWithID(i);
-            op->markForDeletion();
-        }
-#endif
     unregisterDDEdges();
 }
 
