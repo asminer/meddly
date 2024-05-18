@@ -25,8 +25,8 @@
 #include "forest.h"
 #include "compute_table.h"
 
-// #define ENTRY_COUNTER
-// #define DELETE_ON_ZERO
+#define ENTRY_COUNTER
+#define DELETE_ON_ZERO
 
 namespace MEDDLY {
     class ct_object;
@@ -687,7 +687,9 @@ class MEDDLY::ct_entry_type {
             markForDeletion();
             destroyWhenEmpty = true;
 #ifdef DELETE_ON_ZERO
-            if (0==numEntries) delete this;
+            if (0==numEntries) {
+                delete this;
+            }
 #endif
         }
 

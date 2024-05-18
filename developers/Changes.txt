@@ -51,9 +51,10 @@ Compute table ideas
         ct_none and ct_typebased?)
 
 
-    * Add #entry count to ct_entry_type?
-      Then we can automatically delete when incoming count
-      is 0 and marked for destruction
+    *  For each compute table, track:
+       list of forests with entries in the CT.
+       When destroying the CT, don't remove entries
+       if forests are already destroyed.
 
 Next release:
 

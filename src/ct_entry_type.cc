@@ -146,6 +146,9 @@ void MEDDLY::ct_object::show(output &s) const
 
 MEDDLY::ct_entry_type::~ct_entry_type()
 {
+    // Prevent "double deletion":
+    destroyWhenEmpty = false;
+
     if (CT) {
         if (CT->isOperationTable()) {
             CT->removeAll();
