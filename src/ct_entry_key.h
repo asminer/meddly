@@ -173,7 +173,6 @@ class MEDDLY::ct_entry_key {
         // Stored data for CT misses,
         // to save time for CT adds later.
         //
-
         unsigned long my_entry;
         unsigned entry_slots;
         unsigned result_shift;

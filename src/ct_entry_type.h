@@ -600,6 +600,16 @@ class MEDDLY::ct_entry_type {
         }
 
         /**
+            Get number of repetitions for a key of the given size.
+            Assumes canHaveKeySize() is true.
+        */
+        inline unsigned repeatsForKeySize(unsigned sz) const {
+            if (sz <= key_fixed.size()) return 0;
+            const unsigned rsize = sz - key_fixed.size();
+            return rsize / key_repeating.size();
+        }
+
+        /**
             Get the number of items in the key.
               @param  reps  Number of repetitions.
                             If this is not a repeating type,

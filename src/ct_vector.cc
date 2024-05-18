@@ -86,7 +86,6 @@ MEDDLY::ct_vector::ct_vector(unsigned sz) : _size(sz)
 #endif
 
     my_entry = 0;
-    resptr = nullptr;
 }
 
 MEDDLY::ct_vector::~ct_vector()

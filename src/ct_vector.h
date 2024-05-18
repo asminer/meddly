@@ -321,6 +321,8 @@ class MEDDLY::ct_item {
             return next;
         }
 
+    public: // Type checking
+
         inline ct_typeID getType() const { return type; }
         inline bool hasType(ct_typeID t) const { return type == t; }
 
@@ -389,6 +391,10 @@ class MEDDLY::ct_item {
             ct_object*      the_generic;
             ct_item*        next;
 
+            // For packing into compute table entries
+            unsigned long   UL;
+            unsigned        U;
+
             unsigned        raw[2]; // for hashing
         };
         ct_typeID   type;
@@ -449,7 +455,8 @@ class MEDDLY::ct_vector {
         // to save time for CT adds later.
         //
         unsigned long my_entry;
-        void* resptr;
+        unsigned entry_slots;
+        unsigned result_shift;
 
     private:
         friend class initializer_list;
