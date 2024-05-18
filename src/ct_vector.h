@@ -321,6 +321,20 @@ class MEDDLY::ct_item {
             return next;
         }
 
+        // ================================================================
+        // CT Entry encodings
+        // ================================================================
+        inline unsigned long rawUL() const {
+            return UL;
+        }
+        inline unsigned raw0() const {
+            return raw[0];
+        }
+        inline unsigned raw1() const {
+            return raw[1];
+        }
+
+
     public: // Type checking
 
         inline ct_typeID getType() const { return type; }
@@ -393,7 +407,6 @@ class MEDDLY::ct_item {
 
             // For packing into compute table entries
             unsigned long   UL;
-            unsigned        U;
 
             unsigned        raw[2]; // for hashing
         };

@@ -339,6 +339,16 @@ namespace MEDDLY {
 
 #endif
 
+            /**
+                Copy the result portion of an entry, and check if it is dead.
+                    @param  ET      Entry type information
+                    @param  sres    Pointer to result portion of entry
+                    @param  dres    Where to copy the result
+             */
+            static bool isDead(const ct_entry_type &ET, const void* sres,
+                    ct_vector &dres);
+
+
             //
             // Should we discard a CT miss?
             //
@@ -1277,7 +1287,248 @@ bool MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
         key.result_shift = (ct_entry_item*) key2entry(ET, key, e) - entry_ctptr;
     }
 
+    //
+    // (3) Save hash value
+    //
 
+    if (ET.isEntireKeyHashable(repeats)) {
+        //
+        // Hash directly from the (entire) Key
+        //
+        if (INTSLOTS) {
+            key.setHash(
+                hash_stream::raw_hash(entry_after_chain, entry_slots)
+            );
+        } else {
+            key.setHash(
+                hash_stream::raw_hash(entry_after_chain, 2*entry_slots)
+            );
+        }
+    } else {
+        //
+        // Hash from the array we have set aside
+        //
+        key.setHash(hash32());
+    }
+    MEDDLY_DCASSERT(key.getHash() == hashEntry(entry_vptr));
+    const TTYPE hslot = key.getHash() % table.size();
+    TTYPE hcurr = hslot;
+    // TBD: use a 64-bit hash when TTYPE is 64 bit
+
+#ifdef DEBUG_FIND
+    ostream_output out(std::cout);
+    out << "Searching for entry ";
+    showEntry(out, key.my_entry, true);
+    out << " at slot " << hcurr << "...\n";
+#endif
+
+
+    //
+    // (4) Search the table with the following policy.
+    //
+    //  equal:
+    //      dead:   discard and stop searching, return not found
+    //      !dead:  return as found
+    //
+    //  !equal:
+    //      stale:  discard and continue search
+    //      !stale: keep and continue search
+    //
+    //  We use one loop that does both linked list traversal
+    //  (for chained) or check next hash slots (for not chained).
+    //
+    perf.pings++;
+    unsigned chainlen;
+#ifdef DEVELOPMENT_CODE
+    TTYPE currhnd = table.at(hcurr);
+#else
+    TTYPE currhnd = table[hcurr];
+#endif
+    TTYPE prevhnd = 0;
+    for (chainlen = 0; ; )
+    {
+        if (!currhnd) {
+            if (CHAINED) break;
+            // ^ we got to the end of the list
+
+            //
+            // Advance
+            //
+            ++chainlen;
+            if (chainlen > maxCollisionSearch) break;
+            // ^ we're not chained, only check the next few slots
+            // and break once we exceed that.
+            hcurr = (1+hcurr) % table.size();
+#ifdef DEVELOPMENT_CODE
+            currhnd = table.at(hcurr);
+#else
+            currhnd = table[hcurr];
+#endif
+            continue;
+        } else {
+            if (CHAINED) chainlen++;
+        }
+
+        //
+        // Get the next entry
+        //
+        void* curr_vptr = MMAN->getChunkAddress(currhnd);
+        void* curr_after;
+        void* curr_res;
+        curr_vptr = MMAN->getChunkAddress(currhnd);
+        if (INTSLOTS) {
+            curr_after = ((unsigned*) curr_vptr) + chain_slots;
+            curr_res = ((unsigned*) curr_after) + entry_slots;
+        } else {
+            curr_after = ((ct_entry_item*) curr_vptr) + chain_slots;
+            curr_res = ((ct_entry_item*) curr_after) + entry_slots;
+        }
+
+#ifdef DEBUG_FIND
+        out << "        trying node " << currhnd << "\n";
+#endif
+
+        //
+        // Check if it is equal to the entry we built,
+        // and if we need to remove the entry.
+        //
+        bool equal, remove;
+
+        if (INTSLOTS) {
+            if (equal_sw((unsigned*) curr_after, entry_after_chain, entry_slots))
+            {
+                equal = true;
+                remove = isDead(ET, curr_res, res);
+            } else {
+                equal = false;
+                if (checkStalesOnFind) {
+                    remove = isStale(curr_vptr, false);
+                } else {
+                    remove = false;
+                }
+            }
+        } else {
+            if (equal_sw((ct_entry_item*) curr_after, (ct_entry_item*) entry_after_chain, entry_slots))
+            {
+                equal = true;
+                remove = isDead(ET, curr_res, res);
+            } else {
+                equal = false;
+                if (checkStalesOnFind) {
+                    remove = isStale(curr_vptr, false);
+                } else {
+                    remove = false;
+                }
+            }
+        }
+
+#ifdef DEBUG_FIND
+        out << "            equal: " << (equal ? "yes" : "no")
+            << ", remove: " << (remove ? "yes\n" : "no\n");
+#endif
+
+        if (remove) {
+            //
+            // Remove the entry
+            //
+            if (CHAINED) {
+                TTYPE next = getNext(curr_vptr);
+                if (prevhnd) {
+                    void* prev = MMAN->getChunkAddress(prevhnd);
+                    setNext(prev, next);
+                } else {
+#ifdef DEVELOPMENT_CODE
+                    table.at(hcurr) = next;
+#else
+                    table[hcurr] = next;
+#endif
+                }
+            } else {
+#ifdef DEVELOPMENT_CODE
+                table.at(hcurr) = 0;
+#else
+                table[hcurr] = 0;
+#endif
+            }
+            toDelete.push_back(currhnd);
+
+            if (equal) {
+                //
+                // There's no hope of finding another equal entry,
+                // so stop searching.
+                //
+                break;
+            }
+        } // if remove
+
+        if (equal) {
+            //
+            // Move to front if we're chained
+            //
+            if (CHAINED) {
+                if (prevhnd) {
+                    void* prev = MMAN->getChunkAddress(prevhnd);
+                    setNext(prev, getNext(curr_vptr));
+                    setNext(curr_vptr, table[hcurr]);
+                    table[hcurr] = currhnd;
+#ifdef DEBUG_FIND
+                    out << "        moved to front\n";
+#endif
+                }
+                // if prev is null, then
+                // we are already at the front.
+#ifdef DEBUG_FIND
+                out << "        new chain: ";
+                showChain(out, table[hcurr]);
+#endif
+            }
+
+            //
+            // Clean up
+            //
+            sawSearch(chainlen);
+            perf.hits++;
+            batchDelete();
+            MMAN->recycleChunk(key.my_entry, key.entry_slots);
+            key.entry_slots = 0;
+            return true;
+        }
+
+        //
+        // Advance to the next entry we need to check
+        //
+        if (CHAINED) {
+            //
+            // Advance previous, unless we removed the current entry
+            //
+            if (!remove) {
+                prevhnd = currhnd;
+            }
+            currhnd = getNext(curr_vptr);
+        } else {
+            ++chainlen;
+            if (chainlen > maxCollisionSearch) break;
+            hcurr = (1+hcurr) % table.size();
+#ifdef DEVELOPMENT_CODE
+            currhnd = table.at(hcurr);
+#else
+            currhnd = table[hcurr];
+#endif
+        }
+
+
+    } // for chainlen
+
+    //
+    // not found
+    //
+
+    sawSearch(chainlen);
+    batchDelete();
+#ifdef DEBUG_FIND
+    out << "        not found\n";
+#endif
+    return false;
 }
 
 // **********************************************************************
@@ -1828,66 +2079,22 @@ void* MEDDLY::ct_tmpl<T,M,C,I>::key2entry(const ct_entry_type &ET,
             const ct_itemtype &it = ET.getKeyType(i);
             MEDDLY_DCASSERT(it.hasType(key[i].getType()));
 
-
             if (it.requiresTwoSlots()) {
                 if (I) {
-                    ue[0] = data[i].raw[0];
-                    ue[1] = data[i].raw[1];
+                    ue[0] = key[i].raw0();
+                    ue[1] = key[i].raw1();
                     ue+=2;
                 } else {
-                    cte->UL = data[i].UL;
+                    cte->UL = key[i].rawUL();
                     cte++;
                 }
                 continue;
             } else {
                 if (I) {
-                    *ue = data[i].U;
+                    *ue = key[i].raw0();
                     ue++;
                 } else {
-                    cte->raw[0] = data[i].U;
-                    cte->raw[1] = 0;
-                    // zero out the entire slot, makes comparisons easier
-                    cte++;
-                }
-                continue;
-            }
-        } // for i
-    }
-
-    // keylen == key.size()
-    //
-
-    //
-    // OLD BELOW HERE
-    //
-    // const unsigned keylen = et->getKeySize(key.numRepeats());
-    // const ct_entry_item* data = key.rawData();
-
-
-
-    if (ET.isEntireKeyHashable(key.numRepeats())) {
-        //
-        // Just copy the key over; no hashing
-        // (caller will hash everything at once)
-        //
-        for (unsigned i=0; i<keylen; i++) {
-            const ct_itemtype &it = et->getKeyType(i);
-            if (it.requiresTwoSlots()) {
-                if (I) {
-                    ue[0] = data[i].raw[0];
-                    ue[1] = data[i].raw[1];
-                    ue+=2;
-                } else {
-                    cte->UL = data[i].UL;
-                    cte++;
-                }
-                continue;
-            } else {
-                if (I) {
-                    *ue = data[i].U;
-                    ue++;
-                } else {
-                    cte->raw[0] = data[i].U;
+                    cte->raw[0] = key[i].raw0();
                     cte->raw[1] = 0;
                     // zero out the entire slot, makes comparisons easier
                     cte++;
@@ -1899,18 +2106,19 @@ void* MEDDLY::ct_tmpl<T,M,C,I>::key2entry(const ct_entry_type &ET,
         //
         // Copy the key over and hash as we go
         //
-        for (unsigned i=0; i<keylen; i++) {
-            const ct_itemtype &it = et->getKeyType(i);
+        for (unsigned i=0; i<key.size(); i++) {
+            const ct_itemtype &it = ET.getKeyType(i);
+            MEDDLY_DCASSERT(it.hasType(key[i].getType()));
 
             if (it.shouldBeHashed()) {
                 // copy and hash
                 if (it.requiresTwoSlots()) {
                     if (I) {
-                        ue[0] = HSpush(data[i].raw[0]);
-                        ue[1] = HSpush(data[i].raw[1]);
+                        ue[0] = HSpush(key[i].raw0());
+                        ue[1] = HSpush(key[i].raw1());
                         ue+=2;
                     } else {
-                        cte->UL = data[i].UL;
+                        cte->UL = key[i].rawUL();
                         HSpush(cte->raw[0]);
                         HSpush(cte->raw[1]);
                         cte++;
@@ -1918,10 +2126,10 @@ void* MEDDLY::ct_tmpl<T,M,C,I>::key2entry(const ct_entry_type &ET,
                     continue;
                 } else {
                     if (I) {
-                        *ue = HSpush(data[i].U);
+                        *ue = HSpush(key[i].raw0());
                         ue++;
                     } else {
-                        cte->raw[0] = HSpush(data[i].U);
+                        cte->raw[0] = HSpush(key[i].raw0());
                         cte->raw[1] = 0;
                         // zero out the entire slot, makes comparisons easier
                         cte++;
@@ -1932,20 +2140,20 @@ void* MEDDLY::ct_tmpl<T,M,C,I>::key2entry(const ct_entry_type &ET,
                 // just copy
                 if (it.requiresTwoSlots()) {
                     if (I) {
-                        ue[0] = data[i].raw[0];
-                        ue[1] = data[i].raw[1];
+                        ue[0] = key[i].raw0();
+                        ue[1] = key[i].raw1();
                         ue+=2;
                     } else {
-                        cte->UL = data[i].UL;
+                        cte->UL = key[i].rawUL();
                         cte++;
                     }
                     continue;
                 } else {
                     if (I) {
-                        *ue = data[i].U;
+                        *ue = key[i].raw0();
                         ue++;
                     } else {
-                        cte->raw[0] = data[i].U;
+                        cte->raw[0] = key[i].raw0();
                         cte->raw[1] = 0;
                         // zero out the entire slot, makes comparisons easier
                         cte++;
@@ -1954,12 +2162,10 @@ void* MEDDLY::ct_tmpl<T,M,C,I>::key2entry(const ct_entry_type &ET,
                 }
             }
         } // for i
-    } // hash everything or not?
+    }
 
     if (I)  return ue;
     else    return cte;
-
-    // TBD
 }
 
 // **********************************************************************
@@ -2005,6 +2211,15 @@ bool MEDDLY::ct_tmpl<T,M,C,I>::isDead(const ct_entry_type &ET,
 }
 
 #endif
+
+// **********************************************************************
+
+template <class T, bool M, bool C, bool I>
+bool MEDDLY::ct_tmpl<T,M,C,I>::isDead(const ct_entry_type &ET,
+        const void* sres, ct_vector &dres)
+{
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
 
 // **********************************************************************
 
