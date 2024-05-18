@@ -160,50 +160,8 @@ namespace MEDDLY {
 
             void* key2entry(const ct_entry_type &ET, const ct_vector &key,
                     void* e);
-            /*
-            inline static ct_entry_item* vector2entry(const ct_vector &v,
-                    ct_entry_item* e)
-            {
-                MEDDLY_DCASSERT(!INTSLOTS);
-                for (unsigned i=0; i<v.size(); i++)
-                {
-                    v[i].get(*e);
-                    e++;
-                }
-                return e;
-            }
-            inline static ct_entry_item* vector2entry(const ct_vector &v,
-                    ct_entry_item* e, hash_stream &H)
-            {
-                MEDDLY_DCASSERT(!INTSLOTS);
-                for (unsigned i=0; i<v.size(); i++)
-                {
-                    v[i].get(*e, H);
-                    e++;
-                }
-                return e;
-            }
-            inline static unsigned* vector2entry(const ct_vector &v,
-                    unsigned* e)
-            {
-                MEDDLY_DCASSERT(INTSLOTS);
-                for (unsigned i=0; i<v.size(); i++)
-                {
-                    e += v[i].getRaw(e);
-                }
-                return e;
-            }
-            inline static unsigned* vector2entry(const ct_vector &v,
-                    unsigned* e, hash_stream &H)
-            {
-                MEDDLY_DCASSERT(INTSLOTS);
-                for (unsigned i=0; i<v.size(); i++)
-                {
-                    e += v[i].getRaw(e, H);
-                }
-                return e;
-            }
-            */
+            static void result2entry(const ct_entry_type &ET,
+                    const ct_vector& res, void* e);
 
             //
             //  Short vector equality check
@@ -1537,7 +1495,105 @@ template <class TTYPE, bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
 void MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
     ::addEntry(const ct_entry_type &ET, ct_vector &key, const ct_vector &res)
 {
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    if (!MONOLITHIC) {
+        if (ET.getID() != global_etid)
+            throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
+    }
+    MEDDLY_DCASSERT(res.size() == ET.getResultSize());
+
+    ct_entry_type::incEntries(ET.getID());
+
+    TTYPE h = key.getHash() % table.size();
+
+    //
+    // Increment cache counters for nodes in the key
+    //
+    for (unsigned i=0; i<key.size(); i++) {
+        const ct_itemtype &item = ET.getKeyType(i);
+        if (item.hasNodeType()) {
+            item.cacheNode(key[i].getN());
+        }
+    }
+
+    //
+    // Copy the result portion, and increment cache counters in the result
+    //
+    MEDDLY_DCASSERT(key.my_entry);
+    void* rawentry = MMAN->getChunkAddress(key.my_entry);
+    if (INTSLOTS) {
+        unsigned* entry = (unsigned*) rawentry;
+        result2entry(ET, res, entry + key.result_shift);
+    } else {
+        ct_entry_item* entry = (ct_entry_item*) rawentry;
+        result2entry(ET, res, entry + key.result_shift);
+    }
+
+    //
+    // Add to the CT
+    //
+    if (CHAINED) {
+        // Add this to front of chain
+        setNext(rawentry, table[h]);
+        table[h] = key.my_entry;
+    } else {
+        setTable(h, key.my_entry);
+    }
+    key.my_entry = 0;
+
+    //
+    // Is it time to GC / resize the table?
+    //
+    perf.numEntries++;
+    if (perf.numEntries < tableExpand) return;
+    perf.resizeScans++;
+
+    //
+    // Clear CT bits for all forests we affect.
+    // Should be a no-op for forests that use reference counts.
+    //
+    const unsigned NF = forest::MaxFID()+1;
+    std::vector <bool> skipF(NF, false);
+    clearForestCTBits(skipF);
+    removeStaleEntries();
+    sweepForestCTBits(skipF);
+
+    //
+    // Do we still need to enlarge the table?
+    //
+    if (CHAINED) {
+        if (perf.numEntries < table.size()) return;
+    } else {
+        if (perf.numEntries < tableExpand / 4) return;
+    }
+    TTYPE newsize = safemult(table.size(), 2);
+    if (!newsize) newsize = maxSize;
+    if (newsize == table.size()) return;    // already max size
+
+
+    //
+    // Enlarge table
+    //
+    resizeTable(newsize);
+
+    //
+    // Update expand/shrink sizes
+    //
+    if (CHAINED) {
+        if (table.size() == maxSize) {
+            tableExpand = std::numeric_limits<TTYPE>::max();
+        } else {
+            tableExpand = safemult(table.size(), 4);
+            if (!tableExpand) tableExpand = std::numeric_limits<TTYPE>::max();
+        }
+        tableShrink = table.size() / 2;
+    } else {
+        if (table.size() == maxSize) {
+            tableExpand = std::numeric_limits<TTYPE>::max();
+        } else {
+            tableExpand = table.size() / 2;
+        }
+        tableShrink = table.size() / 8;
+    }
 }
 
 // **********************************************************************
@@ -2170,6 +2226,55 @@ void* MEDDLY::ct_tmpl<T,M,C,I>::key2entry(const ct_entry_type &ET,
 
 // **********************************************************************
 
+template <class T, bool M, bool C, bool I>
+void MEDDLY::ct_tmpl<T,M,C,I>
+    ::result2entry(const ct_entry_type &ET, const ct_vector& res, void* e)
+{
+    //
+    // Copy the result and increment cache counts for any nodes
+    //
+    unsigned* ue = (unsigned*) e;
+    ct_entry_item* cte = (ct_entry_item*) e;
+
+    for (unsigned i=0; i<res.size(); i++) {
+        const ct_itemtype &it = ET.getResultType(i);
+        MEDDLY_DCASSERT(it.hasType(res[i].getType()));
+        if (it.hasNodeType()) {
+            MEDDLY_DCASSERT(!it.requiresTwoSlots());
+            it.cacheNode(res[i].getN());
+            if (I) {
+                *ue = res[i].raw0();
+                ++ue;
+            } else {
+                cte->U = res[i].raw0();
+                ++cte;
+            }
+            continue;
+        }
+
+        if (it.requiresTwoSlots()) {
+            if (I) {
+                ue[0] = res[i].raw0();
+                ue[1] = res[i].raw1();
+                ue+=2;
+            } else {
+                cte->UL = res[i].rawUL();
+                cte++;
+            }
+        } else {
+            if (I) {
+                *ue = res[i].raw0();
+                ++ue;
+            } else {
+                cte->U = res[i].raw0();
+                ++cte;
+            }
+        }
+    } // for i
+}
+
+// **********************************************************************
+
 #ifdef ALLOW_DEPRECATED_0_17_6
 
 template <class T, bool M, bool C, bool I>
@@ -2218,7 +2323,38 @@ template <class T, bool M, bool C, bool I>
 bool MEDDLY::ct_tmpl<T,M,C,I>::isDead(const ct_entry_type &ET,
         const void* sres, ct_vector &dres)
 {
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    MEDDLY_DCASSERT(sres);
+    MEDDLY_DCASSERT(dres.size() == ET.getResultSize());
+
+    const unsigned* ures = (const unsigned*) sres;
+    const ct_entry_item* ctres = (const ct_entry_item*) sres;
+
+    //
+    // Copy the entry result from sres into dres,
+    // and make sure it's not a dead entry while scanning it.
+    //
+    for (unsigned i=0; i<ET.getResultSize(); i++) {
+        const ct_itemtype &item = ET.getResultType(i);
+        if (I) {
+            dres[i].setType(item.getType());
+            if (item.requiresTwoSlots()) {
+                dres[i].raw0() = ures[0];
+                dres[i].raw1() = ures[1];
+                ures += 2;
+            } else {
+                dres[i].raw0() = ures[0];
+                ures++;
+            }
+        } else {
+            dres[i].set(item.getType(), ctres[i]);
+        }
+        if (item.hasNodeType()) {
+            if (item.isDeadEntry(dres[i].getN())) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 // **********************************************************************
