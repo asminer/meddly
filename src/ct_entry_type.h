@@ -469,6 +469,19 @@ class MEDDLY::ct_entry_type {
             CT->addEntry(key, res);
         }
 
+        /**
+            Done with a key.
+            Call this after an unsuccessful findCT(),
+            if we're not going to follow it with an addCT().
+        */
+        inline void noaddCT(ct_entry_key* key) {
+            MEDDLY_DCASSERT(CT);
+            MEDDLY_DCASSERT(keyIsOurs(key));
+
+            CT->doneKey(key);
+            CT->recycle(key);
+        }
+
         inline compute_table* getCT() const {
             return CT;
         }
@@ -495,11 +508,21 @@ class MEDDLY::ct_entry_type {
                 @param  key   Key portion of the entry.
                 @param  res   Result portion of the entry.
         */
-        inline void addEntry(ct_vector &key, const ct_vector &res)
+        inline void addCT(ct_vector &key, const ct_vector &res)
         {
             MEDDLY_DCASSERT(CT);
 
             CT->addEntry(*this, key, res);
+        }
+
+        /**
+            Done with a key.
+            Call this after an unsuccessful findCT(),
+            if we're not going to follow it with an addCT().
+        */
+        inline void noaddCT(ct_vector &key) {
+            MEDDLY_DCASSERT(CT);
+            CT->doneKey(key);
         }
 
     public:
@@ -717,6 +740,15 @@ class MEDDLY::ct_entry_type {
 
         /// Update all of our items that forest f has been deleted
         void invalidateForest(const forest* f);
+
+        /// Get current number of entries
+        inline unsigned long getNumEntries() const {
+#ifdef ENTRY_COUNTER
+            return numEntries;
+#else
+            return 0;
+#endif
+        }
 
     public:
         // ***************************************************************

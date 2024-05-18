@@ -141,6 +141,8 @@ namespace MEDDLY {
             virtual void addEntry(const ct_entry_type &ET, ct_vector &key,
                     const ct_vector &res);
 
+            virtual void doneKey(ct_vector &key);
+
             // calls removeStaleEntries, then maybe shrinks table
             virtual void removeStales();
             virtual void removeAll();
@@ -1593,6 +1595,17 @@ void MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
             tableExpand = table.size() / 2;
         }
         tableShrink = table.size() / 8;
+    }
+}
+
+// **********************************************************************
+
+template <class T, bool M, bool C, bool I>
+void MEDDLY::ct_tmpl<T,M,C,I>::doneKey(ct_vector &key)
+{
+    if (key.my_entry) {
+        MMAN->recycleChunk(key.my_entry, key.entry_slots);
+        key.my_entry = 0;
     }
 }
 

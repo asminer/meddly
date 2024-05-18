@@ -176,7 +176,7 @@ class MEDDLY::compute_table {
         //
 
         // **********************************************************
-        //  OLD IFACE
+        //  OLD INTERFACE
         // **********************************************************
 
 #ifdef ALLOW_DEPRECATED_0_17_6
@@ -211,10 +211,13 @@ class MEDDLY::compute_table {
 #endif
 
         // **********************************************************
-        //  NEW IFACE
+        //  NEW INTERFACE
         // **********************************************************
 
         /** Find an entry in the compute table based on the key provided.
+            An unsuccessful find() will add a temporary CT entry to \a key;
+            this will be utilized on a later call to addEntry(),
+            or should be recycled with a call to doneKey().
                 @param  ET    Entry type we're looking for.
                 @param  key   Key to search for.
                 @param  res   Where to store the result, if found.
@@ -232,6 +235,12 @@ class MEDDLY::compute_table {
         virtual void addEntry(const ct_entry_type& ET, ct_vector &key,
                 const ct_vector &res) = 0;
 
+        /**
+            Indicate that we are done with a key.
+            Use this whenever we do an unsuccessful find(),
+            NOT followed by addEntry().
+         */
+        virtual void doneKey(ct_vector &key) = 0;
 
         // **********************************************************
 

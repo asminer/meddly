@@ -45,16 +45,6 @@ class myop : public MEDDLY::operation {
             return true;
         }
 
-        inline compute_table* ct0() {
-            return CT[0];
-        }
-        inline compute_table* ct1() {
-            return CT[1];
-        }
-        inline compute_table* ct2() {
-            return CT[2];
-        }
-
     public:
         ct_entry_type* et0;
         ct_entry_type* et1;
@@ -114,8 +104,7 @@ void initEdges(forest* f, std::vector <dd_edge> &E)
 // Add entries of type  IN:I
 // returns the number of entries added.
 //
-unsigned addEntries(const ct_entry_type* CTE, compute_table* CT,
-        const std::vector <node_handle> &N)
+unsigned addEntries(ct_entry_type* CTE, const std::vector <node_handle> &N)
 {
     unsigned cnt=0;
     ct_entry_result res;
@@ -127,12 +116,12 @@ unsigned addEntries(const ct_entry_type* CTE, compute_table* CT,
             key->writeI(i);
             key->writeN(N[j]);
 
-            CT->find(key, res);
+            CTE->findCT(key, res);
             if (res) throw "Found result in CT; shouldn't have.";
 
             res.reset();
             res.writeI(i+N[j]);
-            CT->addEntry(key, res);
+            CTE->addCT(key, res);
             ++cnt;
         } // for j
     } // for i
@@ -142,11 +131,10 @@ unsigned addEntries(const ct_entry_type* CTE, compute_table* CT,
 
 //
 // Check entries of type  IN:I
-// Returns the number of CT hits
 //
-unsigned checkEntries(const ct_entry_type* CTE, compute_table* CT,
-        const std::vector <node_handle> &N)
+unsigned checkEntries(const char* name, ct_entry_type* CTE, const std::vector <node_handle> &N)
 {
+    using namespace std;
     unsigned hits = 0;
     ct_entry_result res;
     res.initialize(CTE);
@@ -157,9 +145,8 @@ unsigned checkEntries(const ct_entry_type* CTE, compute_table* CT,
             key->writeI(i);
             key->writeN(N[j]);
 
-            CT->find(key, res);
-            CT->doneKey(key);
-            CT->recycle(key);
+            CTE->findCT(key, res);
+            CTE->noaddCT(key);
 
             if (!res) continue;
             int answer = res.readI();
@@ -176,13 +163,20 @@ unsigned checkEntries(const ct_entry_type* CTE, compute_table* CT,
         } // for j
     } // for i
 
+    cout << "        " << setw(5) << hits << " " << name << " entries matched\n";
+    const unsigned actual = CTE->getNumEntries();
+
+    cout << "        " << setw(5) << actual << " " << name << " entries present\n";
+
+    if (hits != actual) throw "hit count mismatch";
+
     return hits;
 }
 
 //
 // Add entries of type  NN:N
 //
-unsigned addEntries(const ct_entry_type* CTE, compute_table* CT,
+unsigned addEntries(ct_entry_type* CTE,
         const std::vector <node_handle> &N1,
         const std::vector <node_handle> &N2)
 {
@@ -196,12 +190,12 @@ unsigned addEntries(const ct_entry_type* CTE, compute_table* CT,
             key->writeN(N1[i]);
             key->writeN(N2[j]);
 
-            CT->find(key, res);
+            CTE->findCT(key, res);
             if (res) throw "Found result in CT; shouldn't have.";
 
             res.reset();
             res.writeN(MAX(N1[i],N2[j]));
-            CT->addEntry(key, res);
+            CTE->addCT(key, res);
 
             ++cnt;
         } // for j
@@ -214,10 +208,12 @@ unsigned addEntries(const ct_entry_type* CTE, compute_table* CT,
 // Check entries of type  NN:N
 // Returns the number of CT hits
 //
-unsigned checkEntries(const ct_entry_type* CTE, compute_table* CT,
+unsigned checkEntries(const char* name, ct_entry_type* CTE,
         const std::vector <node_handle> &N1,
         const std::vector <node_handle> &N2)
 {
+    using namespace std;
+
     unsigned hits = 0;
     ct_entry_result res;
     res.initialize(CTE);
@@ -228,9 +224,8 @@ unsigned checkEntries(const ct_entry_type* CTE, compute_table* CT,
             key->writeN(N1[i]);
             key->writeN(N2[j]);
 
-            CT->find(key, res);
-            CT->doneKey(key);
-            CT->recycle(key);
+            CTE->findCT(key, res);
+            CTE->noaddCT(key);
 
             if (!res) continue;
             node_handle answer = res.readN();
@@ -250,6 +245,12 @@ unsigned checkEntries(const ct_entry_type* CTE, compute_table* CT,
         } // for j
     } // for i
 
+    cout << "        " << setw(5) << hits << " " << name << " entries matched\n";
+    const unsigned actual = CTE->getNumEntries();
+
+    cout << "        " << setw(5) << actual << " " << name << " entries present\n";
+
+    if (hits != actual) throw "hit count mismatch";
     return hits;
 }
 
@@ -328,26 +329,22 @@ void check_CT(bool monolithic)
     myop* foo = new myop(F1, F2);
 
     cout << "    Creating CT entries\n";
-    const unsigned add1 = addEntries(foo->et0, foo->ct0(), N1);
+    const unsigned add1 = addEntries(foo->et0, N1);
     cout << "        " << setw(5) << add1 << " op1 entries added\n";
 
-    const unsigned add2 = addEntries(foo->et1, foo->ct1(), N1, N1);
+    const unsigned add2 = addEntries(foo->et1, N1, N1);
     cout << "        " << setw(5) << add2 << " op2 entries added\n";
 
-    const unsigned add3 = addEntries(foo->et2, foo->ct2(), N1, N2);
+    const unsigned add3 = addEntries(foo->et2, N1, N2);
     cout << "        " << setw(5) << add3 << " op3 entries added\n";
 
-    const unsigned entries1 = foo->ct0()->getStats().numEntries;
-    const unsigned entries2 = foo->ct1()->getStats().numEntries;
-    const unsigned entries3 = foo->ct2()->getStats().numEntries;
+    const unsigned entries1 = foo->et0->getNumEntries();
+    const unsigned entries2 = foo->et1->getNumEntries();
+    const unsigned entries3 = foo->et2->getNumEntries();
 
-    if (monolithic) {
-        show_entries(entries1, add1+add2+add3, "CT");
-    } else {
-        show_entries(entries1, add1, "op1 CT");
-        show_entries(entries2, add2, "op2 CT");
-        show_entries(entries3, add3, "op3 CT");
-    }
+    show_entries(entries1, add1, "op1");
+    show_entries(entries2, add2, "op2");
+    show_entries(entries3, add3, "op3");
 
 #ifdef DEBUG_CT
     ostream_output out(cout);
@@ -362,34 +359,9 @@ void check_CT(bool monolithic)
 
     cout << "    Checking CT entries\n";
 
-    const unsigned hits1 = checkEntries(foo->et0, foo->ct0(), N1);
-    cout << "        " << setw(5) << hits1 << " op1 entries matched\n";
-    const unsigned hits2 = checkEntries(foo->et1, foo->ct1(), N1, N1);
-    cout << "        " << setw(5) << hits2 << " op2 entries matched\n";
-    const unsigned hits3 = checkEntries(foo->et2, foo->ct2(), N1, N2);
-    cout << "        " << setw(5) << hits3 << " op3 entries matched\n";
-
-    if (monolithic) {
-        cout << "        " << setw(5) << hits1+hits2+hits3
-             << " total entries matched\n";
-    }
-
-    if (monolithic) {
-        if (hits1+hits2+hits3 != entries1) {
-            throw "monolithic CT hit count mismatch";
-        }
-    } else {
-        if (hits1 != entries1) {
-            throw "CT1 hit count mismatch";
-        }
-        if (hits2 != entries2) {
-            throw "CT2 hit count mismatch";
-        }
-        if (hits3 != entries3) {
-            throw "CT3 hit count mismatch";
-        }
-    }
-
+    const unsigned hits1 = checkEntries("op1", foo->et0, N1);
+    const unsigned hits2 = checkEntries("op2", foo->et1, N1, N1);
+    checkEntries("op3", foo->et2, N1, N2);
 
     //
     // Destroy forest 2 and re-count!
@@ -403,27 +375,12 @@ void check_CT(bool monolithic)
 #endif
     cout << "    Re-checking CT entries\n";
 
-    const unsigned nhit1 = checkEntries(foo->et0, foo->ct0(), N1);
-    cout << "        " << setw(5) << nhit1 << " op1 entries matched\n";
-    check_new_hits(hits1, nhit1);
-    const unsigned nhit2 = checkEntries(foo->et1, foo->ct1(), N1, N1);
-    cout << "        " << setw(5) << nhit2 << " op2 entries matched\n";
-    check_new_hits(hits2, nhit2);
-    const unsigned nhit3 = checkEntries(foo->et2, foo->ct2(), N1, N2);
-    cout << "        " << setw(5) << nhit3 << " op3 entries matched\n";
+    const unsigned nhits1 = checkEntries("op1", foo->et0, N1);
+    const unsigned nhits2 = checkEntries("op2", foo->et1, N1, N1);
+    checkEntries("op3", foo->et2, N1, N2);
 
-    if (nhit3 != 0) throw "False matches on deleted forest?";
-
-    if (monolithic) {
-        unsigned ment = foo->ct0()->getStats().numEntries;
-        cout << "        " << setw(5) << nhit1+nhit2+nhit3
-             << " total entries matched\n";
-        cout << "        " << setw(5) << ment
-             << " total entries now in CT\n";
-
-        if (ment != nhit1+nhit2+nhit3) throw "monolithic new hit count mismatch";
-    }
-
+    check_new_hits(hits1, nhits1);
+    check_new_hits(hits2, nhits2);
 
 #ifdef DEBUG_CT
     cout << "All CT entry types\n";
