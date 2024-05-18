@@ -46,32 +46,37 @@ class myop : public MEDDLY::operation {
         }
 
     public:
-        ct_entry_type et0;
-        ct_entry_type et1;
-        ct_entry_type et2;
+        ct_entry_type* et0;
+        ct_entry_type* et1;
+        ct_entry_type* et2;
 };
 
-myop::myop(forest* F1, forest* F2)
-    : operation("myop"), et0("op1"), et1("op2"), et2("op3")
+myop::myop(forest* F1, forest* F2) : operation("myop", 3)
 {
-    et0.setFixed('I', F1);
-    et0.setResult('I');
-    et0.doneBuilding();
+    et0 = new ct_entry_type("op1", "IN:I");
+    et0->setForestForSlot(1, F1);
+    registerEntryType(0, et0);
 
-    et1.setFixed(F1, F1);
-    et1.setResult(F1);
-    et1.doneBuilding();
+    et1 = new ct_entry_type("op2", "NN:N");
+    et1->setForestForSlot(0, F1);
+    et1->setForestForSlot(1, F1);
+    et1->setForestForSlot(3, F1);
+    registerEntryType(1, et1);
 
-    et2.setFixed(F1, F2);
-    et2.setResult(F2);
-    et2.doneBuilding();
+    et2 = new ct_entry_type("op3", "NN:N");
+    et2->setForestForSlot(0, F1);
+    et2->setForestForSlot(1, F2);
+    et2->setForestForSlot(3, F2);
+    registerEntryType(2, et2);
+
+    buildCTs();
 
     /*
     ostream_output out(std::cout);
     out << "Built entry types:\n";
-    et0.show(out);
-    et1.show(out);
-    et2.show(out);
+    et0->show(out);
+    et1->show(out);
+    et2->show(out);
     */
 }
 
@@ -99,22 +104,24 @@ void initEdges(forest* f, std::vector <dd_edge> &E)
 // Add entries of type  IN:I
 // returns the number of entries added.
 //
-unsigned addEntries(ct_entry_type &CTE, const std::vector <node_handle> &N)
+unsigned addEntries(ct_entry_type* CTE, const std::vector <node_handle> &N)
 {
     unsigned cnt=0;
-    ct_vector key(2);
-    ct_vector res(1);
+    ct_entry_result res;
+    res.initialize(CTE);
     for (int i=0; i<N.size(); i++) {
         for (unsigned j=0; j<N.size(); j++) {
-            key[0].setI(i);
-            key[1].setN(N[j]);
+            ct_entry_key* key = compute_table::useEntryKey(CTE, 0);
 
-            if (CTE.findCT(key, res)) {
-                throw "Found result in CT; shouldn't have.";
-            }
+            key->writeI(i);
+            key->writeN(N[j]);
 
-            res[0].setI(i+N[j]);
-            CTE.addCT(key, res);
+            CTE->findCT(key, res);
+            if (res) throw "Found result in CT; shouldn't have.";
+
+            res.reset();
+            res.writeI(i+N[j]);
+            CTE->addCT(key, res);
             ++cnt;
         } // for j
     } // for i
@@ -125,23 +132,24 @@ unsigned addEntries(ct_entry_type &CTE, const std::vector <node_handle> &N)
 //
 // Check entries of type  IN:I
 //
-unsigned checkEntries(const char* name, ct_entry_type &CTE, const std::vector <node_handle> &N)
+unsigned checkEntries(const char* name, ct_entry_type* CTE, const std::vector <node_handle> &N)
 {
     using namespace std;
     unsigned hits = 0;
-    ct_vector key(2);
-    ct_vector res(1);
+    ct_entry_result res;
+    res.initialize(CTE);
     for (int i=0; i<N.size(); i++) {
         for (unsigned j=0; j<N.size(); j++) {
-            key[0].setI(i);
-            key[1].setN(N[j]);
+            ct_entry_key* key = compute_table::useEntryKey(CTE, 0);
 
-            if (!CTE.findCT(key, res)) {
-                CTE.noaddCT(key);
-                continue;
-            }
+            key->writeI(i);
+            key->writeN(N[j]);
 
-            int answer = res[0].getI();
+            CTE->findCT(key, res);
+            CTE->noaddCT(key);
+
+            if (!res) continue;
+            int answer = res.readI();
             if (answer != i + N[j]) {
                 std::cerr << "Wrong CT entry.\n";
                 std::cerr << "    got     : " << i << ", " << N[j]
@@ -151,11 +159,12 @@ unsigned checkEntries(const char* name, ct_entry_type &CTE, const std::vector <n
                 throw "cache error";
             }
             hits++;
+
         } // for j
     } // for i
 
     cout << "        " << setw(5) << hits << " " << name << " entries matched\n";
-    const unsigned actual = CTE.getNumEntries();
+    const unsigned actual = CTE->getNumEntries();
 
     cout << "        " << setw(5) << actual << " " << name << " entries present\n";
 
@@ -167,24 +176,26 @@ unsigned checkEntries(const char* name, ct_entry_type &CTE, const std::vector <n
 //
 // Add entries of type  NN:N
 //
-unsigned addEntries(ct_entry_type &CTE,
+unsigned addEntries(ct_entry_type* CTE,
         const std::vector <node_handle> &N1,
         const std::vector <node_handle> &N2)
 {
     unsigned cnt = 0;
-    ct_vector key(2);
-    ct_vector res(1);
+    ct_entry_result res;
+    res.initialize(CTE);
     for (unsigned i=0; i<N1.size(); i++) {
         for (unsigned j=0; j<N2.size(); j++) {
-            key[0].setN(N1[i]);
-            key[1].setN(N2[j]);
+            ct_entry_key* key = compute_table::useEntryKey(CTE, 0);
 
-            if (CTE.findCT(key, res)) {
-                throw "Found result in CT; shouldn't have.";
-            }
+            key->writeN(N1[i]);
+            key->writeN(N2[j]);
 
-            res[0].setN(MAX(N1[i],N2[j]));
-            CTE.addCT(key, res);
+            CTE->findCT(key, res);
+            if (res) throw "Found result in CT; shouldn't have.";
+
+            res.reset();
+            res.writeN(MAX(N1[i],N2[j]));
+            CTE->addCT(key, res);
 
             ++cnt;
         } // for j
@@ -197,26 +208,27 @@ unsigned addEntries(ct_entry_type &CTE,
 // Check entries of type  NN:N
 // Returns the number of CT hits
 //
-unsigned checkEntries(const char* name, ct_entry_type &CTE,
+unsigned checkEntries(const char* name, ct_entry_type* CTE,
         const std::vector <node_handle> &N1,
         const std::vector <node_handle> &N2)
 {
     using namespace std;
 
     unsigned hits = 0;
-    ct_vector key(2);
-    ct_vector res(1);
+    ct_entry_result res;
+    res.initialize(CTE);
     for (unsigned i=0; i<N1.size(); i++) {
         for (unsigned j=0; j<N2.size(); j++) {
-            key[0].setN(N1[i]);
-            key[1].setN(N2[j]);
+            ct_entry_key* key = compute_table::useEntryKey(CTE, 0);
 
-            if (!CTE.findCT(key, res)) {
-                CTE.noaddCT(key);
-                continue;
-            }
+            key->writeN(N1[i]);
+            key->writeN(N2[j]);
 
-            node_handle answer = res[0].getN();
+            CTE->findCT(key, res);
+            CTE->noaddCT(key);
+
+            if (!res) continue;
+            node_handle answer = res.readN();
             node_handle max = MAX(N1[i], N2[j]);
             if (answer != max) {
                 std::cerr << "Wrong CT entry.\n";
@@ -234,7 +246,7 @@ unsigned checkEntries(const char* name, ct_entry_type &CTE,
     } // for i
 
     cout << "        " << setw(5) << hits << " " << name << " entries matched\n";
-    const unsigned actual = CTE.getNumEntries();
+    const unsigned actual = CTE->getNumEntries();
 
     cout << "        " << setw(5) << actual << " " << name << " entries present\n";
 
@@ -326,9 +338,9 @@ void check_CT(bool monolithic)
     const unsigned add3 = addEntries(foo->et2, N1, N2);
     cout << "        " << setw(5) << add3 << " op3 entries added\n";
 
-    const unsigned entries1 = foo->et0.getNumEntries();
-    const unsigned entries2 = foo->et1.getNumEntries();
-    const unsigned entries3 = foo->et2.getNumEntries();
+    const unsigned entries1 = foo->et0->getNumEntries();
+    const unsigned entries2 = foo->et1->getNumEntries();
+    const unsigned entries3 = foo->et2->getNumEntries();
 
     show_entries(entries1, add1, "op1");
     show_entries(entries2, add2, "op2");
@@ -375,10 +387,6 @@ void check_CT(bool monolithic)
     ct_entry_type::showAll(out);
 #endif
 
-    //
-    // Don't delete foo;
-    // it will be cleaned up automatically by the library.
-    //
 }
 
 bool setStyleNumber(unsigned i)

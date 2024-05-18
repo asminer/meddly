@@ -45,6 +45,7 @@
 #include "ct_initializer.h"
 #include "ct_entry_key.h"
 #include "ct_entry_result.h"
+#include "ct_vector.h"
 
 #include "global_rebuilder.h"
 

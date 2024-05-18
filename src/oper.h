@@ -84,7 +84,7 @@ class MEDDLY::operation {
                                     Derived class constructors must register
                                     exactly this many entry types.
         */
-        operation(const char* n, unsigned et_slots);
+        operation(const char* n, unsigned et_slots=0);
 
         /** Destructor.
             Safe to call directly now :)
