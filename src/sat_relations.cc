@@ -213,7 +213,7 @@ void MEDDLY::pregen_relation::splitMxd(splittingOption split)
   for (int k = int(K); k > 1; k--) {
     if (0 == events[k].getNode()) continue;
 
-    MEDDLY_DCASSERT(ABS(events[k].getLevel() <= k));
+    MEDDLY_DCASSERT(ABS(events[k].getLevel()) <= k);
 
     // Initialize unpacked nodes
     unpacked_node* Mu = (isLevelAbove(k, events[k].getLevel()))
@@ -1563,7 +1563,8 @@ MEDDLY::implicit_relation::registerNode(bool is_event_top, relation_node* n)
 void
 MEDDLY::implicit_relation::show()
 {
-  rel_node_handle** event_list_copy = (rel_node_handle**)malloc((num_levels+1)*sizeof(rel_node_handle*));
+  rel_node_handle** event_list_copy = new rel_node_handle* [num_levels+1];
+  // (rel_node_handle**)malloc((num_levels+1)*sizeof(rel_node_handle*));
   if (0==event_list_copy) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   long total_events = 0;
   for(int i = 1;i<=num_levels;i++) total_events +=event_added[i];
@@ -1780,33 +1781,32 @@ MEDDLY::implicit_relation::getListOfNexts(int level, long i, relation_node **R)
 bool
 MEDDLY::implicit_relation::isUnionPossible(int level, long i, relation_node **R)
 {
-  if(lengthForLevel(level)==1)
-     return false;
+    if(lengthForLevel(level)==1) {
+        return false;
+    }
 
-  std::vector<int> jset(lengthForLevel(level), 0);
+    std::vector<int> jset(lengthForLevel(level), 0);
 
-   int last_j = 0;
-   for(int k=0;k<lengthForLevel(level);k++)
-    {
-    long key = R[k]->nextOf(i);
-    int flag = 0;
-    for(int m=0;m<last_j;m++)
-      if(jset[m]==key)
-        {
-          flag=1;
-          break;
+    int last_j = 0;
+    for(int k=0;k<lengthForLevel(level);k++) {
+        long key = R[k]->nextOf(i);
+        int flag = 0;
+        for(int m=0;m<last_j;m++) {
+            if(jset[m]==key) {
+                flag=1;
+                break;
+            }
         }
 
-      if(flag==0)
-        {
-          jset[k]=key;
-          last_j++;
+        if(flag==0) {
+            jset[k]=key;
+            last_j++;
         }
     }
-  if(lengthForLevel(level)==last_j)
-   return false;
-  else
-    return true;
+    if(lengthForLevel(level)==last_j)
+        return false;
+    else
+        return true;
 }
 
 // ******************************************************************
@@ -3087,32 +3087,34 @@ MEDDLY::hybrid_relation::getListOfNexts(int level, long i, relation_node **R)
 bool
 MEDDLY::hybrid_relation::isUnionPossible(int level, long i, relation_node **R)
 {
-  if(lengthForLevel(level)==1)
-     return false;
+    if(lengthForLevel(level)==1)
+        return false;
 
-   int* jset = (int*)malloc(lengthForLevel(level)*sizeof(int));
-   int last_j = 0;
-   for(int k=0;k<lengthForLevel(level);k++)
+    int* jset = (int*)malloc(lengthForLevel(level)*sizeof(int));
+    int last_j = 0;
+    for(int k=0;k<lengthForLevel(level);k++)
     {
-    long key = R[k]->nextOf(i);
-    int flag = 0;
-    for(int m=0;m<last_j;m++)
-      if(jset[m]==key)
+        long key = R[k]->nextOf(i);
+        int flag = 0;
+        for(int m=0;m<last_j;m++)
         {
-          flag=1;
-          break;
+            if(jset[m]==key)
+            {
+                flag=1;
+                break;
+            }
         }
 
-      if(flag==0)
+        if(flag==0)
         {
-          jset[k]=key;
-          last_j++;
+            jset[k]=key;
+            last_j++;
         }
     }
-  if(lengthForLevel(level)==last_j)
-   return false;
-  else
-    return true;
+    if(lengthForLevel(level)==last_j)
+        return false;
+    else
+        return true;
 }
 
 

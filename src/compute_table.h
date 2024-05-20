@@ -21,6 +21,7 @@
 
 #include "defines.h"
 #include "io.h"
+#include <vector>
 
 namespace MEDDLY {
     class operation;
