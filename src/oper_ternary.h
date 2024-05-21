@@ -28,6 +28,8 @@ namespace MEDDLY {
     class ternary_list;
 };
 
+#define INLINED_COMPUTE
+
 // ******************************************************************
 // *                                                                *
 // *                    ternary_operation  class                    *
@@ -138,17 +140,45 @@ class MEDDLY::ternary_operation : public operation {
         /**
             Checks forest comatability and then calls computeDDEdge().
         */
+#ifdef INLINED_COMPUTE
+        inline void compute(const dd_edge &ar1, const dd_edge &ar2,
+                const dd_edge &ar3, dd_edge &res)
+        {
+            if (!checkForestCompatibility()) {
+                throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+            }
+            computeDDEdge(ar1, ar2, ar3, res, true);
+        }
+        inline void computeTemp(const dd_edge &ar1, const dd_edge &ar2,
+                const dd_edge &ar3, dd_edge &res)
+        {
+            if (!checkForestCompatibility()) {
+                throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+            }
+            computeDDEdge(ar1, ar2, ar3, res, false);
+        }
+#else
         void compute(const dd_edge &ar1, const dd_edge &ar2,
                 const dd_edge &ar3, dd_edge &res);
         void computeTemp(const dd_edge &ar1, const dd_edge &ar2,
                 const dd_edge &ar3, dd_edge &res);
+#endif
 
         virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2,
                 const dd_edge &ar3, dd_edge &res, bool userFlag) = 0;
 
     protected:
         // Check if the variables orders of relevant forests are compatible
-        virtual bool checkForestCompatibility() const;
+        inline bool checkForestCompatibility() const
+        {
+            auto o1 = arg1F->variableOrder();
+            auto o2 = arg2F->variableOrder();
+            auto o3 = arg3F->variableOrder();
+            auto o4 = resF->variableOrder();
+            return  o1->is_compatible_with(*o2) &&
+                    o1->is_compatible_with(*o3) &&
+                    o1->is_compatible_with(*o4);
+        }
 
     protected:
         forest* arg1F;

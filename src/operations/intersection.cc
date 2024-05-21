@@ -172,7 +172,7 @@ MEDDLY::ct_entry_key* MEDDLY::inter_max_evplus::findResult(long aev, node_handle
 {
   ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
-  if (can_commute && a > b) {
+  if (canCommute() && a > b) {
     CTsrch->writeL(0);
     CTsrch->writeN(b);
     CTsrch->writeL(aev - bev);

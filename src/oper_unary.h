@@ -29,6 +29,7 @@ namespace MEDDLY {
     class forest;
 };
 
+#define INLINED_COMPUTE
 
 // ******************************************************************
 // *                                                                *
@@ -126,8 +127,29 @@ class MEDDLY::unary_operation : public operation {
         /**
             Checks forest comatability and then calls computeDDEdge().
         */
+#ifdef INLINED_COMPUTE
+        inline void compute(const dd_edge &arg, dd_edge &res)
+        {
+            if (!checkForestCompatibility()) {
+                throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+            }
+            computeDDEdge(arg, res, true);
+        }
+#else
         void compute(const dd_edge &arg, dd_edge &res);
+#endif
+
+#ifdef INLINED_COMPUTE
+        inline void computeTemp(const dd_edge &arg, dd_edge &res)
+        {
+            if (!checkForestCompatibility()) {
+                throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+            }
+            computeDDEdge(arg, res, false);
+        }
+#else
         void computeTemp(const dd_edge &arg, dd_edge &res);
+#endif
 
         virtual void compute(const dd_edge &arg, long &res);
         virtual void compute(const dd_edge &arg, double &res);
@@ -135,7 +157,16 @@ class MEDDLY::unary_operation : public operation {
         virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
 
     protected:
-        virtual bool checkForestCompatibility() const;
+        inline bool checkForestCompatibility() const
+        {
+            if (resultType == opnd_type::FOREST) {
+                auto o1 = argF->variableOrder();
+                auto o2 = resF->variableOrder();
+                return o1->is_compatible_with(*o2);
+            } else {
+                return true;
+            }
+        }
 
 
     protected:
@@ -147,7 +178,6 @@ class MEDDLY::unary_operation : public operation {
         unary_list& parent;
         unary_operation* next;
 
-        // friend void destroyOperation(unary_operation* &op);
         friend class unary_list;
 };
 

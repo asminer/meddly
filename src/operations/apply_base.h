@@ -76,7 +76,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
         {
             ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
             MEDDLY_DCASSERT(CTsrch);
-            if (can_commute && a > b) {
+            if (canCommute() && a > b) {
                 CTsrch->writeN(b);
                 CTsrch->writeN(a);
             } else {
@@ -134,7 +134,7 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
-      if (can_commute && a > b) {
+      if (canCommute() && a > b) {
         CTsrch->writeN(b);
         CTsrch->writeN(a);
       } else {
@@ -185,7 +185,7 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeI(k);
-      if (can_commute && a > b) {
+      if (canCommute() && a > b) {
         CTsrch->writeN(b);
         CTsrch->writeN(a);
       } else {
@@ -249,7 +249,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
-      if (can_commute && a > b) {
+      if (canCommute() && a > b) {
         CTsrch->writeL(bev);
         CTsrch->writeN(b);
         CTsrch->writeL(aev);
@@ -308,7 +308,7 @@ class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
-      if (can_commute && a > b) {
+      if (canCommute() && a > b) {
         CTsrch->writeL(bev);
         CTsrch->writeN(b);
         CTsrch->writeL(aev);
@@ -368,7 +368,7 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
-      if (can_commute && a > b) {
+      if (canCommute() && a > b) {
         CTsrch->writeF(bev);
         CTsrch->writeN(b);
         CTsrch->writeF(aev);

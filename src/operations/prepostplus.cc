@@ -66,7 +66,7 @@ MEDDLY::ct_entry_key* MEDDLY::prepostplus_evplus::findResult(long aev, node_hand
 {
   ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
-  MEDDLY_DCASSERT(!can_commute);
+  MEDDLY_DCASSERT(!canCommute());
   CTsrch->writeL(0);
   CTsrch->writeN(a);
   CTsrch->writeL(0);

@@ -56,6 +56,23 @@ MEDDLY::unary_operation::~unary_operation()
     parent.remove(this);
 }
 
+#ifndef INLINED_COMPUTE
+void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
+{
+    if (!checkForestCompatibility()) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+    computeDDEdge(arg, res, true);
+}
+
+void MEDDLY::unary_operation::computeTemp(const dd_edge &arg, dd_edge &res)
+{
+    if (!checkForestCompatibility()) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+    computeDDEdge(arg, res, false);
+}
+#endif
 
 void MEDDLY::unary_operation::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
 {
@@ -75,36 +92,6 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, double &res)
 void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void
-MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
-{
-    if (!checkForestCompatibility()) {
-        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-    }
-    computeDDEdge(arg, res, true);
-}
-
-void
-MEDDLY::unary_operation::computeTemp(const dd_edge &arg, dd_edge &res)
-{
-    if (!checkForestCompatibility()) {
-        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-    }
-    computeDDEdge(arg, res, false);
-}
-
-bool
-MEDDLY::unary_operation::checkForestCompatibility() const
-{
-    if (resultType == opnd_type::FOREST) {
-        auto o1 = argF->variableOrder();
-        auto o2 = resF->variableOrder();
-        return o1->is_compatible_with(*o2);
-    } else {
-        return true;
-    }
 }
 
 // ******************************************************************

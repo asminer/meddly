@@ -1078,7 +1078,7 @@ class MEDDLY::forest {
             return isForRelations() ? -int(getNumVariables()) : 0;
         }
 
-        /// returns 0 or -K, depending if it's a relation
+        /// returns K
         inline int getMaxLevelIndex() const {
             return int(getNumVariables());
         }

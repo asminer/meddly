@@ -311,7 +311,7 @@ MEDDLY::ct_entry_key* MEDDLY::union_min_evplus::findResult(long aev, node_handle
 {
   ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
-  if (can_commute && a > b) {
+  if (canCommute() && a > b) {
     CTsrch->writeL(0);
     CTsrch->writeN(b);
     CTsrch->writeL(aev - bev);
@@ -440,7 +440,7 @@ MEDDLY::ct_entry_key* MEDDLY::union_min_evplus_mxd::findResult(long aev, node_ha
 {
   ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
-  if (can_commute && a > b) {
+  if (canCommute() && a > b) {
     CTsrch->writeL(0);
     CTsrch->writeN(b);
     CTsrch->writeL(aev - bev);

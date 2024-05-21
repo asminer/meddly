@@ -39,7 +39,7 @@ namespace MEDDLY {
     class ct_entry_result;
     class ct_object;
 
-    void cleanup();
+    // void cleanup();
 
 
     /// Argument and result types for apply operations.
@@ -109,7 +109,7 @@ class MEDDLY::operation {
         void registerInForest(forest* f);
         void unregisterInForest(forest* f);
 
-        virtual bool checkForestCompatibility() const = 0;
+        // virtual bool checkForestCompatibility() const = 0;
 
 #ifdef ALLOW_DEPRECATED_0_17_6
         void registerEntryType(unsigned slot, ct_entry_type* et);

@@ -760,7 +760,6 @@ MEDDLY::generic_binbylevel_mxd
   forest* arg2, forest* res)
  : binary_operation(code, 1, arg1, arg2, res)
 {
-  can_commute = false;
   ct_entry_type* et = new ct_entry_type(code.getName(), "INN:N");
   et->setForestForSlot(1, arg1);
   et->setForestForSlot(2, arg2);
@@ -884,7 +883,6 @@ MEDDLY::generic_binary_ev::generic_binary_ev(binary_list& code,
   forest* arg1, forest* arg2, forest* res)
   : binary_operation(code, 1, arg1, arg2, res)
 {
-  can_commute = false;
 }
 
 MEDDLY::generic_binary_ev::~generic_binary_ev()
