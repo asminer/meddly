@@ -17,7 +17,7 @@
 */
 
 
-#define OLD_OPERATION
+// #define OLD_OPERATION
 
 #include "../defines.h"
 #include "intersection.h"
@@ -106,6 +106,7 @@ bool MEDDLY::inter_mdd::checkTerminals(node_handle a, node_handle b, node_handle
 class MEDDLY::inter_mdd : public binary_operation {
     public:
         inter_mdd(forest* arg1, forest* arg2, forest* res);
+        virtual ~inter_mdd();
 
         virtual void compute(const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
@@ -116,26 +117,31 @@ class MEDDLY::inter_mdd : public binary_operation {
         node_handle _compute(node_handle A, node_handle B, int L);
 
     private:
-        ct_entry_type ct;
+        ct_entry_type* ct;
 };
 
 // ******************************************************************
 
 MEDDLY::inter_mdd::inter_mdd(forest* arg1, forest* arg2, forest* res)
-  : binary_operation(INTER_cache, arg1, arg2, res),
-    ct("intersection")
+  : binary_operation(INTER_cache, arg1, arg2, res)
 {
+    ct = new ct_entry_type("intersection");
     // CT key:      node from forest arg1, node from forest arg2
     // CT result:   node from forest res
-    ct.setFixed(arg1, arg2);
-    ct.setResult(res);
-    ct.doneBuilding();
+    ct->setFixed(arg1, arg2);
+    ct->setResult(res);
+    ct->doneBuilding();
 
     operationCommutes();
 
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__, SET);
     checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+}
+
+MEDDLY::inter_mdd::~inter_mdd()
+{
+    ct->markForDestroy();
 }
 
 void MEDDLY::inter_mdd::compute(const edge_value &av, node_handle ap,
@@ -211,7 +217,7 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
     ct_vector res(1);
     key[0].setN(A);
     key[1].setN(B);
-    if (ct.findCT(key, res)) {
+    if (ct->findCT(key, res)) {
         return resF->linkNode(res[0].getN());
     }
 
@@ -277,7 +283,7 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
     // Save result in CT
     //
     res[0].setN(C);
-    ct.addCT(key, res);
+    ct->addCT(key, res);
 
     // TBD - quasi-reduced
     // return resF->makeRedundantsFrom(L, C);

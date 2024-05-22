@@ -308,9 +308,9 @@ class MEDDLY::ct_object {
     with the compute table.
 */
 class MEDDLY::ct_entry_type {
-    public:
         ~ct_entry_type();
 
+    public:
         // ***************************************************************
         //
         // Methods for building the entry type.

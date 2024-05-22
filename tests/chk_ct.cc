@@ -40,31 +40,36 @@ inline node_handle MAX(node_handle a, node_handle b)
 class myop : public MEDDLY::operation {
     public:
         myop(forest* f1, forest* f2);
+        ~myop();
 
         virtual bool checkForestCompatibility() const {
             return true;
         }
 
     public:
-        ct_entry_type et0;
-        ct_entry_type et1;
-        ct_entry_type et2;
+        ct_entry_type* et0;
+        ct_entry_type* et1;
+        ct_entry_type* et2;
 };
 
 myop::myop(forest* F1, forest* F2)
-    : operation("myop"), et0("op1"), et1("op2"), et2("op3")
+    : operation("myop")
 {
-    et0.setFixed('I', F1);
-    et0.setResult('I');
-    et0.doneBuilding();
+    et0 = new ct_entry_type("op1");
+    et1 = new ct_entry_type("op2");
+    et2 = new ct_entry_type("op3");
 
-    et1.setFixed(F1, F1);
-    et1.setResult(F1);
-    et1.doneBuilding();
+    et0->setFixed('I', F1);
+    et0->setResult('I');
+    et0->doneBuilding();
 
-    et2.setFixed(F1, F2);
-    et2.setResult(F2);
-    et2.doneBuilding();
+    et1->setFixed(F1, F1);
+    et1->setResult(F1);
+    et1->doneBuilding();
+
+    et2->setFixed(F1, F2);
+    et2->setResult(F2);
+    et2->doneBuilding();
 
     /*
     ostream_output out(std::cout);
@@ -73,6 +78,13 @@ myop::myop(forest* F1, forest* F2)
     et1.show(out);
     et2.show(out);
     */
+}
+
+myop::~myop()
+{
+    et0->markForDestroy();
+    et1->markForDestroy();
+    et2->markForDestroy();
 }
 
 void initEdges(forest* f, std::vector <dd_edge> &E)
@@ -317,18 +329,18 @@ void check_CT(bool monolithic)
     myop* foo = new myop(F1, F2);
 
     cout << "    Creating CT entries\n";
-    const unsigned add1 = addEntries(foo->et0, N1);
+    const unsigned add1 = addEntries(*foo->et0, N1);
     cout << "        " << setw(5) << add1 << " op1 entries added\n";
 
-    const unsigned add2 = addEntries(foo->et1, N1, N1);
+    const unsigned add2 = addEntries(*foo->et1, N1, N1);
     cout << "        " << setw(5) << add2 << " op2 entries added\n";
 
-    const unsigned add3 = addEntries(foo->et2, N1, N2);
+    const unsigned add3 = addEntries(*foo->et2, N1, N2);
     cout << "        " << setw(5) << add3 << " op3 entries added\n";
 
-    const unsigned entries1 = foo->et0.getNumEntries();
-    const unsigned entries2 = foo->et1.getNumEntries();
-    const unsigned entries3 = foo->et2.getNumEntries();
+    const unsigned entries1 = foo->et0->getNumEntries();
+    const unsigned entries2 = foo->et1->getNumEntries();
+    const unsigned entries3 = foo->et2->getNumEntries();
 
     show_entries(entries1, add1, "op1");
     show_entries(entries2, add2, "op2");
@@ -347,9 +359,9 @@ void check_CT(bool monolithic)
 
     cout << "    Checking CT entries\n";
 
-    const unsigned hits1 = checkEntries("op1", foo->et0, N1);
-    const unsigned hits2 = checkEntries("op2", foo->et1, N1, N1);
-    checkEntries("op3", foo->et2, N1, N2);
+    const unsigned hits1 = checkEntries("op1", *foo->et0, N1);
+    const unsigned hits2 = checkEntries("op2", *foo->et1, N1, N1);
+    checkEntries("op3", *foo->et2, N1, N2);
 
     //
     // Destroy forest 2 and re-count!
@@ -363,9 +375,9 @@ void check_CT(bool monolithic)
 #endif
     cout << "    Re-checking CT entries\n";
 
-    const unsigned nhits1 = checkEntries("op1", foo->et0, N1);
-    const unsigned nhits2 = checkEntries("op2", foo->et1, N1, N1);
-    checkEntries("op3", foo->et2, N1, N2);
+    const unsigned nhits1 = checkEntries("op1", *foo->et0, N1);
+    const unsigned nhits2 = checkEntries("op2", *foo->et1, N1, N1);
+    checkEntries("op3", *foo->et2, N1, N2);
 
     check_new_hits(hits1, nhits1);
     check_new_hits(hits2, nhits2);
