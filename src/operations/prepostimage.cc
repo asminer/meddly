@@ -2090,6 +2090,7 @@ printf("leq %d\n",leq );
 #ifdef TRACE_ALL_OPS
 printf("computed new tcXrel(<%ld, %d>, %d) = <%ld, %d>\n", ev, evmxd, mxd, resEv, resEvmdd);
 #endif
+if(evmxd!=-1&& mxd!=-1)
 saveResult(Key, evmxd, mxd, resEvmdd,eq,leq,above,geq);
 if(d)
 printf("SAVED!evmxd %d, mxd %d, resEvmdd%d,eq%d,leq%d,above%d,geq%d \n", evmxd, mxd, resEvmdd,eq,leq,above,geq);
