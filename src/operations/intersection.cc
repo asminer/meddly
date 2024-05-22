@@ -16,9 +16,19 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
+#define OLD_OPERATION
+
 #include "../defines.h"
 #include "intersection.h"
+
 #include "apply_base.h"
+#ifdef OLD_OPERATION
+// eventually: include apply_base
+#else
+#include "../oper_binary.h"
+#include "../ct_vector.h"
+#endif
 
 namespace MEDDLY {
     class inter_mdd;
@@ -28,12 +38,13 @@ namespace MEDDLY {
     binary_list INTER_cache;
 };
 
-
 // ******************************************************************
 // *                                                                *
 // *                        inter_mdd  class                        *
 // *                                                                *
 // ******************************************************************
+
+#ifdef OLD_OPERATION
 
 class MEDDLY::inter_mdd : public generic_binary_mdd {
     public:
@@ -90,7 +101,190 @@ bool MEDDLY::inter_mdd::checkTerminals(node_handle a, node_handle b, node_handle
   return false;
 }
 
+#else
 
+class MEDDLY::inter_mdd : public binary_operation {
+    public:
+        inter_mdd(forest* arg1, forest* arg2, forest* res);
+
+        virtual void compute(const edge_value &av, node_handle ap,
+                const edge_value &bv, node_handle bp,
+                int L,
+                edge_value &cv, node_handle &cp);
+
+    protected:
+        node_handle _compute(node_handle A, node_handle B, int L);
+
+    private:
+        ct_entry_type ct;
+};
+
+// ******************************************************************
+
+MEDDLY::inter_mdd::inter_mdd(forest* arg1, forest* arg2, forest* res)
+  : binary_operation(INTER_cache, arg1, arg2, res),
+    ct("intersection")
+{
+    // CT key:      node from forest arg1, node from forest arg2
+    // CT result:   node from forest res
+    ct.setFixed(arg1, arg2);
+    ct.setResult(res);
+    ct.doneBuilding();
+
+    operationCommutes();
+
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+}
+
+void MEDDLY::inter_mdd::compute(const edge_value &av, node_handle ap,
+                const edge_value &bv, node_handle bp,
+                int L,
+                edge_value &cv, node_handle &cp)
+{
+    MEDDLY_DCASSERT(av.isVoid());
+    MEDDLY_DCASSERT(bv.isVoid());
+    cv.set();
+    cp = _compute(ap, bp, L);
+}
+
+MEDDLY::node_handle
+MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
+{
+    //
+    // Check terminals
+    //
+    if (A==0 || B==0) {
+        // TBD: deal with quasi-reduced here
+        // e.g., return resF->makeRedundantsFrom(L, 0);
+        return 0;
+    }
+
+    if (arg1F->isTerminalNode(A)) {
+        //
+        // A is terminal 1 (0 case taken care of already)
+        //
+
+        if (arg2F->isTerminalNode(B)) {
+            terminal tt(true);
+            // TBD - quasi-reduced
+            return tt.getHandle();
+        }
+
+        //
+        // Return B if we can
+        //
+        if (arg2F == resF) {
+            return resF->linkNode(B);
+        }
+    }
+
+    if (arg2F->isTerminalNode(B)) {
+        //
+        // B is terminal 1; return A if we can
+        //
+        MEDDLY_DCASSERT(!arg2F->isTerminalNode(A));
+        if (arg1F == resF) {
+            return resF->linkNode(A);
+        }
+    }
+
+    if (A == B) {
+        if ((arg1F == arg2F) && (arg1F == resF)) {
+            return resF->linkNode(A);
+        }
+    }
+
+    MEDDLY_DCASSERT( canCommute() == (arg1F == arg2F) );
+
+    if (canCommute()) {
+        if (A > B) {
+            SWAP(A, B);
+        }
+    }
+
+    //
+    // Check compute table
+    //
+    ct_vector key(2);
+    ct_vector res(1);
+    key[0].setN(A);
+    key[1].setN(B);
+    if (ct.findCT(key, res)) {
+        return resF->linkNode(res[0].getN());
+    }
+
+    //
+    // Do computation
+    //
+
+    //
+    // Determine level information
+    //
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = arg2F->getNodeLevel(B);
+    const int Clevel = MAX(Alevel, Blevel);
+
+    //
+    // Initialize unpacked nodes
+    //
+    unpacked_node* Au = (Alevel < Clevel)
+        ?   unpacked_node::newRedundant(arg1F, Clevel, A, SPARSE_ONLY)
+        :   arg1F->newUnpacked(A, SPARSE_ONLY);
+
+    unpacked_node* Bu = (Blevel <Clevel)
+        ?   unpacked_node::newRedundant(arg2F, Clevel, B, SPARSE_ONLY)
+        :   arg2F->newUnpacked(B, SPARSE_ONLY);
+
+    unpacked_node* Cu = unpacked_node::newSparse(resF, Clevel,
+            MIN(Au->getSize(), Bu->getSize()));
+
+    //
+    // Build result node
+    //
+    unsigned za=0, zb=0, zc=0;
+    while ( (za < Au->getSize()) && (zb < Bu->getSize()) ) {
+        if (Au->index(za) < Bu->index(zb)) {
+            ++za;
+            continue;
+        }
+        if (Au->index(za) > Bu->index(zb)) {
+            ++zb;
+            continue;
+        }
+        MEDDLY_DCASSERT(Au->index(za) == Bu->index(zb));
+
+        const node_handle cd = _compute(Au->down(za), Bu->down(zb),
+                Cu->getLevel()-1);
+
+        if (cd) {
+            Cu->setSparse(zc++, Au->index(za), cd);
+        }
+        za++;
+        zb++;
+    }
+    Cu->resize(zc);
+
+    //
+    // Reduce / cleanup
+    //
+    unpacked_node::Recycle(Bu);
+    unpacked_node::Recycle(Au);
+    node_handle C = resF->createReducedNode(-1, Cu);
+
+    //
+    // Save result in CT
+    //
+    res[0].setN(C);
+    ct.addCT(key, res);
+
+    // TBD - quasi-reduced
+    // return resF->makeRedundantsFrom(L, C);
+    return C;
+}
+
+#endif
 
 // ******************************************************************
 // *                                                                *

@@ -74,7 +74,16 @@ void MEDDLY::binary_operation::compute(const dd_edge &ar1,
     if (!checkForestCompatibility()) {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
     }
-    computeDDEdge(ar1, ar2, res, true);
+    if (new_style) {
+        node_handle resp;
+        compute(ar1.getEdgeValue(), ar1.getNode(),
+                ar2.getEdgeValue(), ar2.getNode(),
+                resF->getMaxLevelIndex(),
+                res.setEdgeValue(), resp);
+        res.set(resp);
+    } else {
+        computeDDEdge(ar1, ar2, res, true);
+   }
 }
 
 void MEDDLY::binary_operation::computeTemp(const dd_edge &ar1,
