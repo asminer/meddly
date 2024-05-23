@@ -24,6 +24,7 @@ noinst_PROGRAMS = \
     kanban \
     nodestor \
     nqueens \
+    ops_set \
     refcount \
     sat_test
 
@@ -46,6 +47,7 @@ TESTS = \
     kanban \
     nodestor \
     nqueens \
+    ops_set \
     refcount \
     sat_test
 
@@ -118,6 +120,9 @@ nodestor_LDADD = ../src/libmeddly.la
 
 nqueens_SOURCES = nqueens.cc
 nqueens_LDADD = ../src/libmeddly.la
+
+ops_set_SOURCES = ops_set.cc
+ops_set_LDADD = ../src/libmeddly.la
 
 refcount_SOURCES = refcount.cc
 refcount_LDADD = ../src/libmeddly.la
