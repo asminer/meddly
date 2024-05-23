@@ -28,9 +28,6 @@ namespace MEDDLY {
     class binary_list;
 };
 
-// #define INLINED_COMPUTE
-#define INLINED_COMPATIBLE
-
 // ******************************************************************
 // *                                                                *
 // *                     binary_operation class                     *
@@ -143,45 +140,16 @@ class MEDDLY::binary_operation : public operation {
         /**
             Checks forest comatability and then calls computeDDEdge().
         */
-#ifdef INLINED_COMPUTE
-        inline void compute(const dd_edge &ar1, const dd_edge &ar2,
-                dd_edge &res)
-        {
-            if (!checkForestCompatibility()) {
-                throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-            }
-            if (new_style) {
-                node_handle resp;
-                compute(ar1.getEdgeValue(), ar1.getNode(),
-                        ar2.getEdgeValue(), ar2.getNode(),
-                        resF->getMaxLevelIndex(),
-                        res.setEdgeValue(), resp);
-                res.set(resp);
-            } else {
-                computeDDEdge(ar1, ar2, res, true);
-            }
-        }
-#else
         void compute(const dd_edge &ar1, const dd_edge &ar2,
                 dd_edge &res);
-#endif
 
-#ifdef INLINED_COMPUTE
-        inline void computeTemp(const dd_edge &ar1, const dd_edge &ar2,
-                dd_edge &res)
-        {
-            if (!checkForestCompatibility()) {
-                throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-            }
-            computeDDEdge(ar1, ar2, res, false);
-        }
-#else
+#ifdef ALLOW_DEPRECATED_0_17_6
         void computeTemp(const dd_edge &ar1, const dd_edge &ar2,
                 dd_edge &res);
-#endif
 
         virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2,
                 dd_edge &res, bool userFlag);
+#endif
 
         /**
             New virtual compute method.
@@ -199,7 +167,12 @@ class MEDDLY::binary_operation : public operation {
         virtual void compute(const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
                 int L,
-                edge_value &cv, node_handle &cp);
+                edge_value &cv, node_handle &cp)
+#ifndef ALLOW_DEPRECATED_0_17_6
+                = 0
+#endif
+                ;
+
 
     protected:
         inline bool canCommute() const {
@@ -211,7 +184,6 @@ class MEDDLY::binary_operation : public operation {
         }
 
         // Check if the variables orders of relevant forests are compatible
-#ifdef INLINED_COMPATIBLE
         inline bool checkForestCompatibility() const
         {
             auto o1 = arg1F->variableOrder();
@@ -219,9 +191,6 @@ class MEDDLY::binary_operation : public operation {
             auto o3 = resF->variableOrder();
             return o1->is_compatible_with(*o2) && o1->is_compatible_with(*o3);
         }
-#else
-        bool checkForestCompatibility() const;
-#endif
 
     protected:
         forest* arg1F;

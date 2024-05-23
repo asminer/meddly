@@ -132,8 +132,6 @@ MEDDLY::inter_mdd::inter_mdd(forest* arg1, forest* arg2, forest* res)
     ct->setResult(res);
     ct->doneBuilding();
 
-    operationCommutes();
-
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__, SET);
     checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
@@ -202,9 +200,11 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
         }
     }
 
-    MEDDLY_DCASSERT( canCommute() == (arg1F == arg2F) );
+    //
+    // Reorder A and B if they commute (same forest)
+    //
 
-    if (canCommute()) {
+    if (arg1F == arg2F) {
         if (A > B) {
             SWAP(A, B);
         }

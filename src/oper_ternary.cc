@@ -49,7 +49,6 @@ MEDDLY::ternary_operation::~ternary_operation()
     parent.remove(this);
 }
 
-#ifndef INLINED_COMPUTE
 void MEDDLY::ternary_operation::compute(const dd_edge &ar1,
         const dd_edge &ar2, const dd_edge &ar3, dd_edge &res)
 {
@@ -59,6 +58,8 @@ void MEDDLY::ternary_operation::compute(const dd_edge &ar1,
     computeDDEdge(ar1, ar2, ar3, res, true);
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_6
+
 void MEDDLY::ternary_operation::computeTemp(const dd_edge &ar1,
         const dd_edge &ar2, const dd_edge &ar3, dd_edge &res)
 {
@@ -67,6 +68,7 @@ void MEDDLY::ternary_operation::computeTemp(const dd_edge &ar1,
     }
     computeDDEdge(ar1, ar2, ar3, res, false);
 }
+
 #endif
 
 // ******************************************************************

@@ -29,8 +29,6 @@ namespace MEDDLY {
     class forest;
 };
 
-#define INLINED_COMPUTE
-
 // ******************************************************************
 // *                                                                *
 // *                     unary_operation  class                     *
@@ -127,34 +125,16 @@ class MEDDLY::unary_operation : public operation {
         /**
             Checks forest comatability and then calls computeDDEdge().
         */
-#ifdef INLINED_COMPUTE
-        inline void compute(const dd_edge &arg, dd_edge &res)
-        {
-            if (!checkForestCompatibility()) {
-                throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-            }
-            computeDDEdge(arg, res, true);
-        }
-#else
         void compute(const dd_edge &arg, dd_edge &res);
-#endif
 
-#ifdef INLINED_COMPUTE
-        inline void computeTemp(const dd_edge &arg, dd_edge &res)
-        {
-            if (!checkForestCompatibility()) {
-                throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-            }
-            computeDDEdge(arg, res, false);
-        }
-#else
+#ifdef ALLOW_DEPRECATED_0_17_6
         void computeTemp(const dd_edge &arg, dd_edge &res);
+        virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
 #endif
 
         virtual void compute(const dd_edge &arg, long &res);
         virtual void compute(const dd_edge &arg, double &res);
         virtual void compute(const dd_edge &arg, ct_object &c);
-        virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
 
     protected:
         inline bool checkForestCompatibility() const

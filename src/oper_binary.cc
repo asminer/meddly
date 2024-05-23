@@ -66,7 +66,6 @@ MEDDLY::binary_operation::~binary_operation()
     parent.remove(this);
 }
 
-#ifndef INLINED_COMPUTE
 
 void MEDDLY::binary_operation::compute(const dd_edge &ar1,
         const dd_edge &ar2, dd_edge &res)
@@ -86,6 +85,8 @@ void MEDDLY::binary_operation::compute(const dd_edge &ar1,
    }
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_6
+
 void MEDDLY::binary_operation::computeTemp(const dd_edge &ar1,
         const dd_edge &ar2, dd_edge &res)
 {
@@ -95,16 +96,6 @@ void MEDDLY::binary_operation::computeTemp(const dd_edge &ar1,
     computeDDEdge(ar1, ar2, res, false);
 }
 
-#endif
-#ifndef INLINED_COMPATIBLE
-bool MEDDLY::binary_operation::checkForestCompatibility() const
-{
-    auto o1 = arg1F->variableOrder();
-    auto o2 = arg2F->variableOrder();
-    auto o3 = resF->variableOrder();
-    return o1->is_compatible_with(*o2) && o1->is_compatible_with(*o3);
-}
-#endif
 
 void MEDDLY::binary_operation::computeDDEdge(const dd_edge &ar1,
         const dd_edge &ar2, dd_edge &res, bool userFlag)
@@ -112,13 +103,14 @@ void MEDDLY::binary_operation::computeDDEdge(const dd_edge &ar1,
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
-
 void MEDDLY::binary_operation::compute(const edge_value &av, node_handle ap,
         const edge_value &bv, node_handle bp, int L,
         edge_value &cv, node_handle &cp)
 {
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
+
+#endif
 
 // ******************************************************************
 // *                      binary_list  methods                      *

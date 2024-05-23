@@ -28,7 +28,6 @@ namespace MEDDLY {
     class ternary_list;
 };
 
-#define INLINED_COMPUTE
 
 // ******************************************************************
 // *                                                                *
@@ -140,32 +139,16 @@ class MEDDLY::ternary_operation : public operation {
         /**
             Checks forest comatability and then calls computeDDEdge().
         */
-#ifdef INLINED_COMPUTE
-        inline void compute(const dd_edge &ar1, const dd_edge &ar2,
-                const dd_edge &ar3, dd_edge &res)
-        {
-            if (!checkForestCompatibility()) {
-                throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-            }
-            computeDDEdge(ar1, ar2, ar3, res, true);
-        }
-        inline void computeTemp(const dd_edge &ar1, const dd_edge &ar2,
-                const dd_edge &ar3, dd_edge &res)
-        {
-            if (!checkForestCompatibility()) {
-                throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-            }
-            computeDDEdge(ar1, ar2, ar3, res, false);
-        }
-#else
         void compute(const dd_edge &ar1, const dd_edge &ar2,
                 const dd_edge &ar3, dd_edge &res);
+
+#ifdef ALLOW_DEPRECATED_0_17_6
         void computeTemp(const dd_edge &ar1, const dd_edge &ar2,
                 const dd_edge &ar3, dd_edge &res);
-#endif
 
         virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2,
                 const dd_edge &ar3, dd_edge &res, bool userFlag) = 0;
+#endif
 
     protected:
         // Check if the variables orders of relevant forests are compatible

@@ -56,7 +56,6 @@ MEDDLY::unary_operation::~unary_operation()
     parent.remove(this);
 }
 
-#ifndef INLINED_COMPUTE
 void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
 {
     if (!checkForestCompatibility()) {
@@ -65,6 +64,7 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
     computeDDEdge(arg, res, true);
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_6
 void MEDDLY::unary_operation::computeTemp(const dd_edge &arg, dd_edge &res)
 {
     if (!checkForestCompatibility()) {
@@ -72,12 +72,12 @@ void MEDDLY::unary_operation::computeTemp(const dd_edge &arg, dd_edge &res)
     }
     computeDDEdge(arg, res, false);
 }
-#endif
 
 void MEDDLY::unary_operation::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
+#endif
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, long &res)
 {
