@@ -39,11 +39,13 @@ namespace MEDDLY {
 */
 class MEDDLY::binary_operation : public operation {
     public:
+#ifdef ALLOW_DEPRECATED_0_17_6
         /**
             OLD constructor.
          */
         binary_operation(binary_list& owner, unsigned et_slots,
             forest* arg1, forest* arg2, forest* res);
+#endif
 
         /**
             NEW constructor.
@@ -175,6 +177,7 @@ class MEDDLY::binary_operation : public operation {
 
 
     protected:
+#ifdef ALLOW_DEPRECATED_0_17_6
         inline bool canCommute() const {
             return can_commute;
         }
@@ -182,6 +185,7 @@ class MEDDLY::binary_operation : public operation {
         inline void operationCommutes() {
             can_commute = (arg1F == arg2F);
         }
+#endif
 
         // Check if the variables orders of relevant forests are compatible
         inline bool checkForestCompatibility() const
@@ -200,8 +204,10 @@ class MEDDLY::binary_operation : public operation {
     private:
         binary_list& parent;
         binary_operation* next;
+#ifdef ALLOW_DEPRECATED_0_17_6
         bool can_commute;
         bool new_style;
+#endif
 
         friend class binary_list;
 };

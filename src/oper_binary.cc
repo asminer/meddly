@@ -24,6 +24,8 @@
 // *                    binary_operation methods                    *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_6
+
 MEDDLY::binary_operation::binary_operation(binary_list& owner,
     unsigned et_slots, forest* arg1, forest* arg2,
     forest* res) : operation(owner.getName(), et_slots), parent(owner)
@@ -35,10 +37,11 @@ MEDDLY::binary_operation::binary_operation(binary_list& owner,
     registerInForest(arg1F);
     registerInForest(arg2F);
     registerInForest(resF);
-
     can_commute = false;
     new_style = false;
 }
+
+#endif
 
 MEDDLY::binary_operation::binary_operation(binary_list& owner,
     forest* arg1, forest* arg2, forest* res)
@@ -52,8 +55,10 @@ MEDDLY::binary_operation::binary_operation(binary_list& owner,
     registerInForest(arg2F);
     registerInForest(resF);
 
+#ifdef ALLOW_DEPRECATED_0_17_6
     can_commute = false;
     new_style = true;
+#endif
 }
 
 
@@ -73,6 +78,7 @@ void MEDDLY::binary_operation::compute(const dd_edge &ar1,
     if (!checkForestCompatibility()) {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
     }
+#ifdef ALLOW_DEPRECATED_0_17_6
     if (new_style) {
         node_handle resp;
         compute(ar1.getEdgeValue(), ar1.getNode(),
@@ -83,6 +89,14 @@ void MEDDLY::binary_operation::compute(const dd_edge &ar1,
     } else {
         computeDDEdge(ar1, ar2, res, true);
    }
+#else
+    node_handle resp;
+    compute(ar1.getEdgeValue(), ar1.getNode(),
+            ar2.getEdgeValue(), ar2.getNode(),
+            resF->getMaxLevelIndex(),
+            res.setEdgeValue(), resp);
+    res.set(resp);
+#endif
 }
 
 #ifdef ALLOW_DEPRECATED_0_17_6
