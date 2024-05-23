@@ -119,7 +119,11 @@ MEDDLY::compute_table::compute_table(const ct_settings &s, unsigned etid)
     back = this;
 
 #ifdef DEBUG_CLEANUP
-    std::cout << "new compute table " << this << "\n";
+    if (isOperationTable()) {
+        std::cout << "new compute table " << this << ", for etid " << global_etid << "\n";
+    } else {
+        std::cout << "new compute table " << this << ", monolithic\n";
+    }
 #endif
 }
 
@@ -142,7 +146,11 @@ MEDDLY::compute_table::~compute_table()
     }
 
 #ifdef DEBUG_CLEANUP
-    std::cout << "done compute table " << this << "\n";
+    if (isOperationTable()) {
+        std::cout << "done compute table " << this << ", for etid " << global_etid << "\n";
+    } else {
+        std::cout << "done compute table " << this << ", monolithic\n";
+    }
 #endif
 }
 

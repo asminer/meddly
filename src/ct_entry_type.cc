@@ -150,11 +150,12 @@ MEDDLY::ct_entry_type::~ct_entry_type()
     destroyWhenEmpty = false;
 
     if (CT) {
-        if (CT->isOperationTable()) {
+        if (CT_is_ours) {
+            MEDDLY_DCASSERT(CT->isOperationTable());
             CT->removeAll();
             delete CT;
         }
-        // otherwise CT is the monolithic table; don't delete it.
+        CT = nullptr;
     }
     unregisterEntry(this);
 }
@@ -169,9 +170,7 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
     name = _name;
     is_marked_for_deletion = false;
     destroyWhenEmpty = false;
-#ifdef ENTRY_COUNTER
     numEntries = 0;
-#endif
 
     updatable_result = false;
 
@@ -293,9 +292,7 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name)
     name = _name;
     is_marked_for_deletion = false;
     destroyWhenEmpty = false;
-#ifdef ENTRY_COUNTER
     numEntries = 0;
-#endif
 
     updatable_result = false;
 
@@ -497,11 +494,9 @@ void MEDDLY::ct_entry_type::showAll(output &s)
         if (!all_entries[i]) continue;
         s.put("Entry type #");
         s.put(i);
-#ifdef ENTRY_COUNTER
         s.put(", has ");
         s.put(all_entries[i]->numEntries);
         s.put(" entries");
-#endif
         s.put(":    ");
         all_entries[i]->show(s);
     }
@@ -558,8 +553,10 @@ void MEDDLY::ct_entry_type::buildCT()
     //
     if (compute_table::Monolithic()) {
         CT = compute_table::Monolithic();
+        CT_is_ours = false;
     } else {
         CT = ct_initializer::createForOp(this);
+        CT_is_ours = true;
     }
 }
 

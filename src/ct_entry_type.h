@@ -25,7 +25,6 @@
 #include "forest.h"
 #include "compute_table.h"
 
-#define ENTRY_COUNTER
 #define DELETE_ON_ZERO
 
 namespace MEDDLY {
@@ -743,11 +742,7 @@ class MEDDLY::ct_entry_type {
 
         /// Get current number of entries
         inline unsigned long getNumEntries() const {
-#ifdef ENTRY_COUNTER
             return numEntries;
-#else
-            return 0;
-#endif
         }
 
     public:
@@ -788,15 +783,12 @@ class MEDDLY::ct_entry_type {
         /// CT is adding another entry of type etid
         static inline void incEntries(unsigned etid) {
             MEDDLY_DCASSERT(all_entries.at(etid));
-#ifdef ENTRY_COUNTER
             all_entries[etid]->numEntries++;
-#endif
         }
 
         /// CT is removing an entry of this type
         static inline void decEntries(unsigned etid) {
             MEDDLY_DCASSERT(all_entries.at(etid));
-#ifdef ENTRY_COUNTER
             MEDDLY_DCASSERT(all_entries[etid]->numEntries);
             all_entries[etid]->numEntries--;
 #ifdef DELETE_ON_ZERO
@@ -806,7 +798,6 @@ class MEDDLY::ct_entry_type {
                     MEDDLY_DCASSERT(nullptr == all_entries[etid]);
                 }
             }
-#endif
 #endif
         }
 
@@ -865,17 +856,18 @@ class MEDDLY::ct_entry_type {
         /// Set counts; build CT.
         void buildCT();
 
-
         /// Compute table to use for this entry
         compute_table* CT;
+
+        /// Do we 'own' the compute table?
+        /// I.e., is this an operation-specific (not monolithic) CT?
+        bool CT_is_ours;
 
         /// Name; for displaying CT entries
         const char* name;
 
-#ifdef ENTRY_COUNTER
         /// How many entries of this type exist in some CT?
         unsigned long numEntries;
-#endif
 
         /// Fixed, initial portion of the key.
         std::vector <ct_itemtype> key_fixed;
