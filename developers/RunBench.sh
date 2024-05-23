@@ -193,7 +193,7 @@ EOF
         fi
     done
 
-    echo "<tr>" >> $1
+    echo "</tr>" >> $1
 
     #
     # Close off table
