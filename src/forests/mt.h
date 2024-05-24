@@ -80,6 +80,7 @@ class MEDDLY::mt_forest :
         Enlarge variables to include all given minterms.
     */
     inline void enlargeVariables(const int* const* vlist, int N, bool primed) {
+      if (0==N) return;
       for (unsigned k=1; k<=getDomain()->getNumVariables(); k++) {
         int maxv = vlist[0][k];
         for (int i=1; i<N; i++) {

@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -31,9 +30,12 @@
 const unsigned VARS = 5;
 const unsigned DOM = 4;
 const unsigned POTENTIAL = 1024;    // DOM ^ VARS
-const unsigned SCARD = 256;
+const unsigned MINCARD = 16;
+const unsigned MAXCARD = 512;
 
 using namespace MEDDLY;
+
+// #define DEBUG_MINTERMS
 
 double Random(long newseed=0)
 {
@@ -154,37 +156,165 @@ void set_difference(const std::vector <bool> &A,
 }
 
 
+inline void fillMinterm(unsigned x, int* mt)
+{
+#ifdef DEBUG_MINTERMS
+    std::cout << std::hex << x << ": [";
+#endif
+    for (unsigned j=1; j<=VARS; j++) {
+        mt[j] = x % DOM;
+        x /= DOM;
+    }
+#ifdef DEBUG_MINTERMS
+    for (unsigned j=VARS; j; j--) {
+        if (j<VARS) std::cout << ", ";
+        std::cout << mt[j];
+    }
+    std::cout << "]\n";
+#endif
+}
+
+void set2mdd(const std::vector<bool> &S, forest *F, dd_edge &s)
+{
+    if (!F) throw "null forest";
+
+    // Determine S cardinality
+    unsigned card = 0;
+    for (unsigned i=0; i<S.size(); i++) {
+        if (S[i]) ++card;
+    }
+
+    // Special case - empty set
+    if (0==card) {
+        F->createEdge(false, s);
+        return;
+    }
+
+    // Convert set S to list of minterms
+    int** mtlist = new int* [card];
+    card = 0;
+    for (unsigned i=0; i<S.size(); i++) {
+        if (!S[i]) continue;
+        mtlist[card] = new int[VARS+1];
+        fillMinterm(i, mtlist[card]);
+        ++card;
+    }
+
+    F->createEdge(mtlist, card, s);
+}
+
+inline char getReductionType(forest* f)
+{
+    if (f->isFullyReduced())    return 'f';
+    if (f->isQuasiReduced())    return 'q';
+    if (f->isIdentityReduced()) return 'i';
+    throw "Unknown reduction type";
+}
+
+void test_pairs(unsigned scard, forest* f1, forest* f2, forest* fres)
+{
+    if (!f1) throw "null f1";
+    if (!f2) throw "null f2";
+    if (!fres) throw "null fres";
+
+    std::cout << "    " << getReductionType(f1) << getReductionType(f2)
+              << ':' << getReductionType(fres) << ' ';
+
+    std::vector <bool> Aset(POTENTIAL);
+    std::vector <bool> Bset(POTENTIAL);
+    std::vector <bool> AiBset(POTENTIAL);
+    std::vector <bool> AuBset(POTENTIAL);
+    std::vector <bool> AmBset(POTENTIAL);
+
+    for (unsigned i=0; i<16; i++) {
+        std::cout << '.';
+        randomizeSet(Aset, scard);
+        randomizeSet(Bset, scard);
+        set_intersection(Aset, Bset, AiBset);
+        set_union(Aset, Bset, AuBset);
+        set_difference(Aset, Bset, AmBset);
+
+        using namespace MEDDLY;
+
+        dd_edge Add(f1), Bdd(f2), AiBdd(fres), AuBdd(fres), AmBdd(fres);
+
+        set2mdd(Aset, f1, Add);
+        set2mdd(Bset, f2, Bdd);
+        set2mdd(AiBset, fres, AiBdd);
+        set2mdd(AuBset, fres, AuBdd);
+        set2mdd(AmBset, fres, AmBdd);
+
+        dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres);
+
+        apply(INTERSECTION, Add, Bdd, AiBsym);
+        apply(UNION, Add, Bdd, AuBsym);
+        apply(DIFFERENCE, Add, Bdd, AmBsym);
+
+        if (AiBsym != AiBdd) {
+            throw "intersection mismatch";
+        }
+        if (AuBsym != AuBdd) {
+            throw "union mismatch";
+        }
+        if (AmBsym != AmBdd) {
+            throw "difference mismatch";
+        }
+    }
+    std::cout << std::endl;
+}
+
 int main()
 {
+    using namespace MEDDLY;
+
     Random(11235);
 
-    std::vector <bool> aset(POTENTIAL), bset(POTENTIAL), cset(POTENTIAL);
+    try {
+        MEDDLY::initialize();
+        int bounds[VARS];
+        for (unsigned i=0; i<VARS; i++) {
+            bounds[i] = DOM;
+        }
+        domain* D = domain::createBottomUp(bounds, VARS);
 
-    randomizeSet(aset, SCARD);
-    randomizeSet(bset, SCARD);
+        policies p;
+        p.useDefaults(false);
 
+        forest* F1 = forest::create(D, false, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL, p);
 
-    std::cout << "A     = ";
-    showSet(std::cout, aset);
-    std::cout << "\n";
-    std::cout << "B     = ";
-    showSet(std::cout, bset);
-    std::cout << "\n";
+        p.setQuasiReduced();
 
-    std::cout << "A ^ B = ";
-    set_intersection(aset, bset, cset);
-    showSet(std::cout, cset);
-    std::cout << "\n";
+        forest* F2 = forest::create(D, false, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL, p);
 
-    std::cout << "A v B = ";
-    set_union(aset, bset, cset);
-    showSet(std::cout, cset);
-    std::cout << "\n";
+        for (unsigned i=MINCARD; i<=MAXCARD; i*=2) {
+            std::cout << "Testing sets of size " << i << " out of " << POTENTIAL << "\n";
 
-    std::cout << "A \\ B = ";
-    set_difference(aset, bset, cset);
-    showSet(std::cout, cset);
-    std::cout << "\n";
+            test_pairs(i, F1, F1, F1);
+            test_pairs(i, F1, F1, F2);
+            test_pairs(i, F1, F2, F1);
+            test_pairs(i, F1, F2, F2);
+            test_pairs(i, F2, F1, F1);
+            test_pairs(i, F2, F1, F2);
+            test_pairs(i, F2, F2, F1);
+            test_pairs(i, F2, F2, F2);
+        }
 
-    return 0;
+        MEDDLY::cleanup();
+        return 0;
+    }
+
+    catch (MEDDLY::error e) {
+        std::cerr   << "\nCaught meddly error " << e.getName()
+                    << "\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
+        return 1;
+    }
+    catch (const char* e) {
+        std::cerr << "\nCaught our own error: " << e << "\n";
+        return 2;
+    }
+    std::cerr << "\nSome other error?\n";
+    return 4;
 }

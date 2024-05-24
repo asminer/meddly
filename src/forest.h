@@ -1471,7 +1471,7 @@ class MEDDLY::forest {
         /// Find the forest with the given FID.
         /// If the forest has been deleted, this will be null.
         static inline forest* getForestWithID(unsigned id) {
-            if (id > all_forests.size()) return nullptr;
+            if (id >= all_forests.size()) return nullptr;
             return all_forests[id];
         }
 

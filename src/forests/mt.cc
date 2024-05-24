@@ -133,7 +133,7 @@ void MEDDLY::mt_forest::initStatics()
 
 void MEDDLY::mt_forest::enlargeStatics(int n)
 {
-  MEDDLY_DCASSERT(n>0);
+  MEDDLY_DCASSERT(n>=0);
   if (n>order_size) {
     order = (int*) realloc(order, n*sizeof(int));
     //terminals = (node_handle*) realloc(terminals, n*sizeof(node_handle));
