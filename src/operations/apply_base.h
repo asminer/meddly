@@ -55,7 +55,9 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     protected:
         node_handle compute(node_handle a, node_handle b);
         node_handle compute_normal(node_handle a, node_handle b);
+#ifdef ALLOW_EXTENSIBLE
         node_handle compute_ext(node_handle a, node_handle b);
+#endif
 
     protected:
         /// Check the compute table.
@@ -122,11 +124,15 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
   protected:
     node_handle compute(node_handle a, node_handle b);
     node_handle compute_normal(node_handle a, node_handle b);
+#ifdef ALLOW_EXTENSIBLE
     node_handle compute_ext(node_handle a, node_handle b);
+#endif
 
     node_handle compute_r(int i, int k, node_handle a, node_handle b);
     node_handle compute_r_normal(int i, int k, node_handle a, node_handle b);
+#ifdef ALLOW_EXTENSIBLE
     node_handle compute_r_ext(int i, int k, node_handle a, node_handle b);
+#endif
 
   protected:
     inline ct_entry_key*

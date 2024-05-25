@@ -34,6 +34,9 @@
 // #define TRACE_ALL_OPS
 // #define DEBUG_READ_DD
 
+// Turn off extensible nodes for now
+// #define ALLOW_EXTENSIBLE
+
 #include <limits>
 
 // Handy Constants

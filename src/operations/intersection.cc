@@ -299,7 +299,9 @@ class MEDDLY::inter_mxd : public generic_binary_mxd {
 
         virtual bool checkTerminals(node_handle a, node_handle b,
                 node_handle& c);
+#ifdef ALLOW_EXTENSIBLE
         virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
+#endif
 };
 
 MEDDLY::inter_mxd::inter_mxd(forest* arg1, forest* arg2, forest* res)
@@ -446,6 +448,7 @@ bool MEDDLY::inter_max_evplus::checkTerminals(long aev, node_handle a, long bev,
   return false;
 }
 
+#ifdef ALLOW_EXTENSIBLE
 MEDDLY::node_handle
 MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
 {
@@ -568,7 +571,7 @@ MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
   node_handle result = resF->createReducedNode(-1, C);
   return result;
 }
-
+#endif // ALLOW_EXTENSIBLE
 
 // ******************************************************************
 // *                                                                *

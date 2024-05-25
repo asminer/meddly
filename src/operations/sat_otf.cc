@@ -576,7 +576,11 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       MEDDLY_DCASSERT(!Ru[ei]->isExtensible());
       node_handle ei_i = (i < Ru[ei]->getSize())
                         ? Ru[ei]->down(i)
+#ifdef ALLOW_EXTENSIBLE
                         : (Ru[ei]->isExtensible() ? Ru[ei]->ext_d() : 0);
+#else
+                        : 0;
+#endif
       if (0 == ei_i) continue;
 
       // grab column (TBD: build these ahead of time?)
@@ -769,6 +773,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
       recFireHelper(i, rLevel, Ru->down(iz), A->down(i), Rp, nb);
     }
     // loop over the extensible portion of mxd (if any)
+#ifdef ALLOW_EXTENSIBLE
     MEDDLY_DCASSERT(!Ru->isExtensible());
     if (Ru->isExtensible()) {
       const node_handle pnode = Ru->ext_d();
@@ -777,6 +782,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
         recFireHelper(i, rLevel, pnode, A->down(i), Rp, nb);
       }
     }
+#endif
 #endif
 
     unpacked_node::Recycle(Rp);

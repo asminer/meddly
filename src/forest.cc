@@ -313,7 +313,9 @@ MEDDLY::node_handle MEDDLY::forest
   // if not rearrange it in ascending order of indices.
   if (nb.isSparse()) nb.sort();
 
+#ifdef ALLOW_EXTENSIBLE
   if (nb.isExtensible()) return createReducedExtensibleNodeHelper(in, nb);
+#endif
 
   // get sparse, truncated full sizes and check
   // for redundant / identity reductions.
@@ -461,6 +463,7 @@ MEDDLY::node_handle MEDDLY::forest
 }
 
 
+#ifdef ALLOW_EXTENSIBLE
 MEDDLY::node_handle MEDDLY::forest
 ::createReducedExtensibleNodeHelper(int in, unpacked_node &nb)
 {
@@ -560,6 +563,7 @@ MEDDLY::node_handle MEDDLY::forest
 
   return p;
 }
+#endif
 
 MEDDLY::node_handle MEDDLY::forest
 ::createImplicitNode(MEDDLY::relation_node &nb)

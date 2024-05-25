@@ -164,7 +164,9 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handl
   }
 
   // Handle extensible edge, if any
+#ifdef ALLOW_EXTENSIBLE
   if (A->isExtensible()) nb->markAsExtensible();
+#endif
 
   // Cleanup
   unpacked_node::Recycle(A);
@@ -235,7 +237,9 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
   }
 
   // Handle extensible edge, if any
+#ifdef ALLOW_EXTENSIBLE
   if (A->isExtensible()) nb->markAsExtensible();
+#endif
 
   // Cleanup
   unpacked_node::Recycle(A);

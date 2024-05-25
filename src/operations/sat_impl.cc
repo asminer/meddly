@@ -1070,7 +1070,11 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
       mdd, k, sz, mdd_level);
 #endif
 
+#ifdef ALLOW_EXTENSIBLE
   const node_handle ext_d = consDptrs->isExtensible() ? consDptrs->ext_d() : 0;
+#else
+  const node_handle ext_d = 0;
+#endif
 
   // Do computation
   for (int i=0; i<sz; i++) {
@@ -1151,7 +1155,11 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
   } else {
     argF->unpackNode(consDptrs, constraint, FULL_ONLY);
   }
+#ifdef ALLOW_EXTENSIBLE
   const node_handle cons_ext_d = consDptrs->isExtensible() ? consDptrs->ext_d() : 0;
+#else
+  const node_handle cons_ext_d = 0;
+#endif
 
   // Initialize mxd readers, note we might skip the unprimed level
   node_handle* events = rel->arrayForLevel(level);
@@ -1325,7 +1333,11 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   } else {
     argF->unpackNode(consDptrs, constraint, FULL_ONLY);
   }
+#ifdef ALLOW_EXTENSIBLE
   const node_handle cons_ext_d = consDptrs->isExtensible() ? consDptrs->ext_d() : 0;
+#else
+  const node_handle cons_ext_d = 0;
+#endif
 
   //Re-Think
   if (mddLevel > mxdLevel) {

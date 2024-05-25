@@ -732,11 +732,13 @@ void MEDDLY::simple_separated
         default:                assert(0);
     };
 
+#ifdef ALLOW_EXTENSIBLE
     if (is_extensible && getParent()->isExtensibleLevel(nr.getLevel())) {
         nr.markAsExtensible();
     } else {
         nr.markAsNotExtensible();
     }
+#endif
 
     // Make sure that when an extensible node is unpacked, the trailing edges
     // are filled correctly (regardless of the storage scheme of the unpacked node)

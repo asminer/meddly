@@ -371,9 +371,14 @@ namespace MEDDLY {
 
         // }
 
+#ifdef ALLOW_EXTENSIBLE
         bool add_extensible_edge = (F->isExtensibleLevel(k) && dontcares.getNode());
         unsigned z = 0; // number of nonzero edges in our sparse node
         unpacked_node* nb = unpacked_node::newSparse(F, k, lastV + (add_extensible_edge? 1: 0));
+#else
+        unsigned z = 0; // number of nonzero edges in our sparse node
+        unpacked_node* nb = unpacked_node::newSparse(F, k, lastV);
+#endif
 
         //
         // For each value v,
@@ -434,6 +439,7 @@ namespace MEDDLY {
           }
         } // for v
 
+#ifdef ALLOW_EXTENSIBLE
         if (add_extensible_edge) {
           nb->setSparse(z, ((z > 0)? nb->index(z-1)+1: 0), F->linkNode(dontcares));
           z++;
@@ -441,6 +447,7 @@ namespace MEDDLY {
         } else {
           nb->markAsNotExtensible();
         }
+#endif
 
         //
         // Cleanup
@@ -495,19 +502,23 @@ namespace MEDDLY {
             } else {
               // build redundant node
               unpacked_node* nb = 0;
+#ifdef ALLOW_EXTENSIBLE
               if (F->isExtensibleLevel(i)) {
                 nb = unpacked_node::newFull(F, -i, 1);
                 nb->setFull(0, next);
                 // link count should be unchanged
                 nb->markAsExtensible();
               } else {
+#endif
                 int sz = F->getLevelSize(-i);
                 nb = unpacked_node::newFull(F, -i, sz);
                 for (int v=0; v<sz; v++) {
                   nb->setFull(v, F->linkNode(next));
                 }
                 F->unlinkNode(next);
+#ifdef ALLOW_EXTENSIBLE
               }
+#endif
               nextpr = F->createReducedNode(-1, nb);
             }
           }
@@ -591,24 +602,30 @@ namespace MEDDLY {
               for (unsigned v=0; v<sz; v++) {
                 nb->setFull(v, F->linkNode(v == _vplist[i] ? next : nextpr));
               }
+#ifdef ALLOW_EXTENSIBLE
               if (F->isExtensibleLevel(i)) {
                 nb->markAsExtensible();
                 if (add_edge) nb->setFull(sz, F->linkNode(nextpr));
               }
+#endif
             } else {
               // Doesn't matter what happened below
 
+#ifdef ALLOW_EXTENSIBLE
               if (F->isExtensibleLevel(i)) {
                 nb = unpacked_node::newFull(F, i, 1);
                 nb->setFull(0, F->linkNode(nextpr));
                 nb->markAsExtensible();
               } else {
+#endif
                 unsigned sz = unsigned(F->getLevelSize(i));
                 nb = unpacked_node::newFull(F, i, sz);
                 for (unsigned v=0; v<sz; v++) {
                   nb->setFull(v, F->linkNode(nextpr));
                 }
+#ifdef ALLOW_EXTENSIBLE
               }
+#endif
             }
             F->unlinkNode(nextpr);
             next = F->createReducedNode(-1, nb);

@@ -1003,11 +1003,13 @@ void MEDDLY::best_storage
     default:            assert(0);
   };
 
+#ifdef ALLOW_EXTENSIBLE
   // if (is_extensible) nr.markAsExtensible(); else nr.markAsNotExtensible();
   if (is_extensible && parent->isExtensibleLevel(nr.getLevel()))
     nr.markAsExtensible();
   else
     nr.markAsNotExtensible();
+#endif
 
   // Make sure that when an extensible node is unpacked that the trailing edges
   // are filled correctly (regardless of the storage scheme of the unpacked node)

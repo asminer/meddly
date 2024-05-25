@@ -61,7 +61,11 @@ class MEDDLY::variable {
             return primed ? pr_bound : un_bound;
         }
         inline bool isExtensible() const {
+#ifdef ALLOW_EXTENSIBLE
             return is_extensible;
+#else
+            return false;
+#endif
         }
 
         /// Update our list of domains: add \a d.

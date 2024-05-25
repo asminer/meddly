@@ -612,9 +612,14 @@ class MEDDLY::unpacked_node {
         /// Does this node have an extensible edge?
         inline bool isExtensible() const
         {
+#ifdef ALLOW_EXTENSIBLE
             return is_extensible;
+#else
+            return false;
+#endif
         }
 
+#ifdef ALLOW_EXTENSIBLE
         /// Set this node as extensible
         inline void markAsExtensible()
         {
@@ -648,6 +653,7 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(isExtensible());
             return edgeval(size - 1);
         }
+#endif
 
     public:
         //
@@ -713,6 +719,7 @@ class MEDDLY::unpacked_node {
         /// be collapsed into the extensible edge.
         inline bool isTrim() const
         {
+#ifdef ALLOW_EXTENSIBLE
             if (!isExtensible()) return true;
             if (size < 2) {
                 // We have only the extensible edge.
@@ -730,6 +737,9 @@ class MEDDLY::unpacked_node {
             }
             // Still here? we can truncate edges.
             return false;
+#else
+            return true;
+#endif
         }
 
 
@@ -892,12 +902,14 @@ class MEDDLY::unpacked_node {
         /// Are we assuming full storage?
         bool is_full;
 
+#ifdef ALLOW_EXTENSIBLE
         /// Can this node be extensible?
         /// Determined by the parent forest.
         bool can_be_extensible;
 
         /// Is this node extensible?
         bool is_extensible;
+#endif
 
 #ifdef DEVELOPMENT_CODE
         /// only node pointers built by New() should be Recycle()d.
@@ -1134,6 +1146,7 @@ public:
         }
 
 
+#ifdef ALLOW_EXTENSIBLE
         /// Get the extensible edge value, as a long
         inline long ext_ei() const
         {
@@ -1147,6 +1160,7 @@ public:
             MEDDLY_DCASSERT(isExtensible());
             return ef(size - 1);
         }
+#endif
 
         /// Get the number of nonzeroes of this node (sparse nodes only).
         inline unsigned getNNZs() const

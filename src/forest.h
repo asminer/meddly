@@ -292,7 +292,9 @@ class MEDDLY::forest {
                                 indices if sparse.
                 @return         Handle to a node that encodes the same thing.
         */
+#ifdef ALLOW_EXTENSIBLE
         node_handle createReducedExtensibleNodeHelper(int in, unpacked_node &nb);
+#endif
 
 
         /** Create implicit node in the forest.

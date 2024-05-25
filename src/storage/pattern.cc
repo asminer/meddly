@@ -661,8 +661,10 @@ void MEDDLY::pattern_storage
 
   const node_handle tv = getParent()->getTransparentNode();
 
+#ifdef ALLOW_EXTENSIBLE
   MEDDLY_DCASSERT(getParent()->isExtensibleLevel(nr.getLevel()) == false);
   nr.markAsNotExtensible();
+#endif
 
   //pattern node is stored with size of unique pointers + the unique pointers + identifier for the pattern thus formed
 

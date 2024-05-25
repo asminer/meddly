@@ -101,7 +101,9 @@ class MEDDLY::union_mxd : public generic_binary_mxd {
         union_mxd(forest* arg1, forest* arg2, forest* res);
 
         virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
+#ifdef ALLOW_EXTENSIBLE
         virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
+#endif
 };
 
 MEDDLY::union_mxd::union_mxd(forest* arg1, forest* arg2, forest* res)
@@ -151,6 +153,7 @@ bool MEDDLY::union_mxd::checkTerminals(node_handle a, node_handle b, node_handle
   return false;
 }
 
+#ifdef ALLOW_EXTENSIBLE
 MEDDLY::node_handle
 MEDDLY::union_mxd::compute_ext(node_handle a, node_handle b)
 {
@@ -276,6 +279,7 @@ MEDDLY::union_mxd::compute_ext(node_handle a, node_handle b)
   node_handle result = resF->createReducedNode(-1, C);
   return result;
 }
+#endif
 
 // ******************************************************************
 // *                                                                *

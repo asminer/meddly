@@ -83,8 +83,10 @@ MEDDLY::unpacked_node::unpacked_node(const forest* f)
 
     level = 0;
 
+#ifdef ALLOW_EXTENSIBLE
     can_be_extensible = false;
     is_extensible = false;
+#endif
 
 #ifdef DEVELOPMENT_CODE
     can_be_recycled = false;
@@ -143,8 +145,12 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
     MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+#ifdef ALLOW_EXTENSIBLE
     is_extensible = f->isExtensibleLevel(k);
     resize( is_extensible ? 1 : unsigned(f->getLevelSize(k)) );
+#else
+    resize( unsigned(f->getLevelSize(k)) );
+#endif
     level = k;
 
     if (SPARSE_ONLY == fs) {
@@ -168,8 +174,12 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
     MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+#ifdef ALLOW_EXTENSIBLE
     is_extensible = f->isExtensibleLevel(k);
     resize( is_extensible ? 1 : unsigned(f->getLevelSize(k)) );
+#else
+    resize( unsigned(f->getLevelSize(k)) );
+#endif
     level = k;
 
     if (SPARSE_ONLY == fs) {
@@ -242,7 +252,9 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
 {
     if (details) {
         s << (isSparse() ? "nnzs: " : "size: ") << long(size);
+#ifdef ALLOW_EXTENSIBLE
         if (isExtensible()) s.put('*');
+#endif
         s.put(' ');
     }
     s << "down: " << (isSparse() ? '(' : '[');
@@ -257,7 +269,9 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
         parent->showEdge(s, _edge[z], _down[z]);
     }
 
+#ifdef ALLOW_EXTENSIBLE
     if (isExtensible()) s.put('*');
+#endif
 
     s.put( isSparse() ? ')' : ']' );
 
@@ -461,6 +475,7 @@ void MEDDLY::unpacked_node::computeHash()
 // remove all edges starting at the given index
 void MEDDLY::unpacked_node::trim()
 {
+#ifdef ALLOW_EXTENSIBLE
     if (isTrim()) return;
 
     //
@@ -493,6 +508,7 @@ void MEDDLY::unpacked_node::trim()
     }
 
     MEDDLY_DCASSERT(isExtensible() && isTrim());
+#endif
 }
 
 

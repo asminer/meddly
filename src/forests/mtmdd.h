@@ -179,7 +179,9 @@ namespace MEDDLY {
           for (unsigned v = 0; v<lastV; v++) {
               nb->setFull(v, F->linkNode(dontcares));
           }
+#ifdef ALLOW_EXTENSIBLE
           if (F->isExtensibleLevel(k)) nb->markAsExtensible();
+#endif
           node_handle built=F->createReducedNode(-1, nb);
           F->unlinkNode(dontcares);
           dontcares=built;
@@ -250,6 +252,7 @@ namespace MEDDLY {
 			      }
 		      }
 
+#ifdef ALLOW_EXTENSIBLE
           if (F->isExtensibleLevel(k)) {
             nb->resize(lastV+1);
             nb->setSparse(z, v, F->linkNode(zero));
@@ -257,6 +260,7 @@ namespace MEDDLY {
             v++;
             nb->markAsExtensible();
           }
+#endif
 
 		      F->unlinkNode(zero);
 		    }
@@ -330,7 +334,9 @@ namespace MEDDLY {
               for (int v=1; v<sz; v++) {
                 nb->setFull(v, F->linkNode(bottom));
               }
+#ifdef ALLOW_EXTENSIBLE
               if (F->isExtensibleLevel(i)) nb->markAsExtensible();
+#endif
               bottom = F->createReducedNode(-1, nb);
             } else {
               if(F->isQuasiReduced() && F->getTransparentNode()!=zero_terminal){
@@ -343,7 +349,9 @@ namespace MEDDLY {
                     nb->setFull(v, (v==_vlist[i] ? bottom : F->linkNode(zero)));
                 }
                 F->unlinkNode(zero);
+#ifdef ALLOW_EXTENSIBLE
                 if (F->isExtensibleLevel(i)) nb->markAsExtensible();
+#endif
                 bottom=F->createReducedNode(-1, nb);
               }
               else{

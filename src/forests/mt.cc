@@ -49,16 +49,17 @@ bool MEDDLY::mt_forest::isRedundant(const unpacked_node &nb) const
 {
   if (isQuasiReduced()) return false;
   if (nb.getLevel() < 0 && isIdentityReduced()) return false;
+#ifdef ALLOW_EXTENSIBLE
   if (nb.isExtensible()) {
     if (nb.getSize() == 1 && nb.ext_i() == 0) return true;
     return false;
-  } else {
-    if (nb.getSize() < getLevelSize(nb.getLevel())) return false;
-    const node_handle common = nb.down(0);
-    for (unsigned i=1; i<nb.getSize(); i++)
-      if (nb.down(i) != common) return false;
-    return true;
   }
+#endif
+  if (nb.getSize() < getLevelSize(nb.getLevel())) return false;
+  const node_handle common = nb.down(0);
+  for (unsigned i=1; i<nb.getSize(); i++)
+      if (nb.down(i) != common) return false;
+  return true;
 }
 
 bool MEDDLY::mt_forest::isIdentityEdge(const unpacked_node &nb, int i) const
@@ -95,27 +96,33 @@ MEDDLY::node_handle MEDDLY::mt_forest::_makeNodeAtLevel(int k, node_handle d)
       for (int i=0; i<sz; i++) {
         nb->setFull(i, linkNode( (i==si) ? sd : d ));
       }
+#ifdef ALLOW_EXTENSIBLE
       if (isExtensibleLevel(up)) {
         nb->markAsExtensible();
         if (add_edge) {
             nb->setFull(sz, linkNode(d));
         }
       }
+#endif
     } else {
       //
       // don't worry about identity reductions
 
+#ifdef ALLOW_EXTENSIBLE
       if (isExtensibleLevel(up)) {
         nb = unpacked_node::newFull(this, up, 1);
         nb->setFull(0, linkNode(d));
         nb->markAsExtensible();
       } else {
+#endif
         int sz = getLevelSize(up);
         nb = unpacked_node::newFull(this, up, sz);
         for (int i=0; i<sz; i++) {
           nb->setFull(i, linkNode(d));
         }
+#ifdef ALLOW_EXTENSIBLE
       }
+#endif
     }
 
     unlinkNode(d);
