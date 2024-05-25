@@ -249,6 +249,28 @@ class MEDDLY::forest {
         void deleteNode(node_handle p);
 
 
+        /**
+            Useful helper function.
+            Build a chain of redundant nodes from node p up to
+            a node at level L.
+            If the forest is fully-reduced, do nothing instead.
+                @param  p   Bottom node
+                @param  L   top level of redundant nodes
+                @return     A node that can be referenced at level L
+                            (i.e., definitely at level L if we're quasi
+                            reduced) with redundant nodes added down
+                            to node p.
+         */
+        inline node_handle makeRedundantsTo(node_handle p, int L)
+        {
+            MEDDLY_DCASSERT( ABS(L) >= ABS(getNodeLevel(p)) );
+            if (isFullyReduced()) return p;
+            if (0==p) return p;
+            int K = getNodeLevel(p);
+            if (K == L) return p;
+            return _makeRedundantsTo(p, K, L);
+        }
+
     // ------------------------------------------------------------
     protected:  // helpers for reducing nodes
     // ------------------------------------------------------------
@@ -337,6 +359,15 @@ class MEDDLY::forest {
                               identity node should be eliminated.
         */
         virtual bool isIdentityEdge(const unpacked_node &nb, int i) const = 0;
+
+
+        /**
+            Heavy implementation for makeRedundantsTo().
+                @param  p   Bottom node
+                @param  K   Level of node p
+                @param  L   Level of node we want
+         */
+        node_handle _makeRedundantsTo(node_handle p, int K, int L);
 
     // ------------------------------------------------------------
     protected: // Moving nodes around; called in derived classes for reordering

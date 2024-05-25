@@ -39,8 +39,6 @@ namespace MEDDLY {
     class ct_entry_result;
     class ct_object;
 
-    // void cleanup();
-
 
     /// Argument and result types for apply operations.
     enum class opnd_type {
@@ -108,8 +106,6 @@ class MEDDLY::operation {
     protected:
         void registerInForest(forest* f);
         void unregisterInForest(forest* f);
-
-        // virtual bool checkForestCompatibility() const = 0;
 
 #ifdef ALLOW_DEPRECATED_0_17_6
         void registerEntryType(unsigned slot, ct_entry_type* et);

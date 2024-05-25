@@ -633,6 +633,38 @@ void MEDDLY::forest::normalize(unpacked_node &nb, float& ev) const
   throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
+
+MEDDLY::node_handle
+MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
+{
+    MEDDLY_DCASSERT(L);
+    unpacked_node* U;
+    if (isMultiTerminal()) {
+        //
+        // Multi-terminal
+        //
+        while (K != L) {
+            if (isForRelations()) {
+                K = upLevel(K);
+            } else {
+                K++;
+            }
+            U = unpacked_node::newRedundant(this, K, p, FULL_ONLY);
+            p = createReducedNode(-1, U);
+        }
+    } else {
+        //
+        // Edge-valued
+        //
+
+        MEDDLY_DCASSERT(false);
+    }
+
+
+    return p;
+}
+
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Moving nodes around
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

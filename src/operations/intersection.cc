@@ -160,8 +160,6 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
     // Check terminals
     //
     if (A==0 || B==0) {
-        // TBD: deal with quasi-reduced here
-        // e.g., return resF->makeRedundantsFrom(L, 0);
         return 0;
     }
 
@@ -172,15 +170,14 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
 
         if (arg2F->isTerminalNode(B)) {
             terminal tt(true);
-            // TBD - quasi-reduced
-            return tt.getHandle();
+            return resF->makeRedundantsTo(tt.getHandle(), L);
         }
 
         //
         // Return B if we can
         //
         if (arg2F == resF) {
-            return resF->linkNode(B);
+            return resF->makeRedundantsTo(resF->linkNode(B), L);
         }
     }
 
@@ -190,13 +187,13 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
         //
         MEDDLY_DCASSERT(!arg2F->isTerminalNode(A));
         if (arg1F == resF) {
-            return resF->linkNode(A);
+            return resF->makeRedundantsTo(resF->linkNode(A), L);
         }
     }
 
     if (A == B) {
         if ((arg1F == arg2F) && (arg1F == resF)) {
-            return resF->linkNode(A);
+            return resF->makeRedundantsTo(resF->linkNode(A), L);
         }
     }
 
@@ -218,7 +215,7 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
     key[0].setN(A);
     key[1].setN(B);
     if (ct->findCT(key, res)) {
-        return resF->linkNode(res[0].getN());
+        return resF->makeRedundantsTo(resF->linkNode(res[0].getN()), L);
     }
 
     //
@@ -285,9 +282,7 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
     res[0].setN(C);
     ct->addCT(key, res);
 
-    // TBD - quasi-reduced
-    // return resF->makeRedundantsFrom(L, C);
-    return C;
+    return resF->makeRedundantsTo(C, L);
 }
 
 #endif
