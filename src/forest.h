@@ -48,6 +48,8 @@ namespace MEDDLY {
     class logger;
 };
 
+#define NEW_REDUCE
+
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -181,12 +183,20 @@ class MEDDLY::forest {
         */
         inline node_handle createReducedNode(int in, unpacked_node *un) {
             MEDDLY_DCASSERT(un);
+#ifdef NEW_REDUCE
+            edge_value ev;
+            node_handle node;
+            createReducedNode(un, ev, node, in);
+            MEDDLY_DCASSERT(ev.isVoid());
+            return node;
+#else
             node_handle q = createReducedHelper(in, *un);
 #ifdef TRACK_DELETIONS
             std::cerr << "Created node " << q << "\n";
 #endif
             unpacked_node::Recycle(un);
             return q;
+#endif
         }
 
 
@@ -237,12 +247,18 @@ class MEDDLY::forest {
                 T& ev, node_handle& node)
         {
             MEDDLY_DCASSERT(un);
+#ifdef NEW_REDUCE
+            edge_value _ev;
+            createReducedNode(un, _ev, node, in);
+            _ev.get(ev);
+#else
             normalize(*un, ev);
             node = createReducedHelper(in, *un);
 #ifdef TRACK_DELETIONS
             std::cerr << "Created node " << node << "\n";
 #endif
             unpacked_node::Recycle(un);
+#endif
         }
 
 
@@ -307,7 +323,9 @@ class MEDDLY::forest {
                 @param  un      Unpacked node.
                 @return         Handle to a node that encodes the same thing.
         */
+#ifndef NEW_REDUCE
         node_handle createReducedHelper(int in, unpacked_node &nb);
+#endif
 
         /** Apply reduction rule to the temporary extensible node and finalize it.
             Once a node is reduced, its contents cannot be modified.

@@ -234,7 +234,7 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     ostream_output out(std::cout);
     out << "Reducing unpacked node ";
     un->show(out, true);
-    out << "\n";
+    out << " in forest " << FID() << "\n";
 #endif
     //
     //
@@ -311,12 +311,13 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     validateDownPointers(*un);
 #endif
 #ifdef DEBUG_CREATE_REDUCED
-    ostream_output out(std::cout);
-    out << "Normalized to ";
+    /*
+    out << "    Normalized to ";
     ev.write(out);
     out << " -> ";
     un->show(out, true);
     out << "\n";
+    */
 #endif
 
 #ifdef ALLOW_EXTENSIBLE
@@ -345,7 +346,7 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
 
             if (1==nnz && in==long(un->index(0))) {
 #ifdef DEBUG_CREATE_REDUCED
-                out << "==> Identity node\n";
+                out << "    ===> Identity node\n";
 #endif
                 node = un->down(0);
                 unpacked_node::Recycle(un);
@@ -369,9 +370,9 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
             if (1==nnz && in>=0 && in<long(un->getSize()) && un->down(in))
             {
 #ifdef DEBUG_CREATE_REDUCED
-                out << "==> Identity node\n";
+                out << "    ===> Identity node\n";
 #endif
-                node = un->down(0);
+                node = un->down(in);
                 unpacked_node::Recycle(un);
                 return;
             }
@@ -404,7 +405,7 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
         }
         if (redundant) {
 #ifdef DEBUG_CREATE_REDUCED
-            out << "==> Redundant node\n";
+            out << "    ===> Redundant node\n";
 #endif
             unlinkAllDown(*un, 1);  // unlink all children but one
             unpacked_node::Recycle(un);
@@ -417,7 +418,7 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     //
     if (0==nnz) {
 #ifdef DEBUG_CREATE_REDUCED
-        out << "==> Transparent node\n";
+        out << "    ===> Transparent node\n";
 #endif
         // nothing to unlink
         node = getTransparentNode();
@@ -432,7 +433,7 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     node = unique->find(*un, getVarByLevel(un->getLevel()));
     if (node) {
 #ifdef DEBUG_CREATE_REDUCED
-        out << "==> Duplicate of " << node << "\n";
+        out << "    ===> Duplicate of node " << node << "\n";
 #endif
         // unlink all downward pointers
         unlinkAllDown(*un);
@@ -460,12 +461,6 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
         theLogger->addToActiveNodeCount(this, un->getLevel(), 1);
     }
 
-#ifdef DEBUG_CREATE_REDUCED
-    out << "==> New node " << node << "\n\t";
-    showNode(out, node, SHOW_DETAILS | SHOW_INDEX);
-    out << '\n';
-#endif
-
     //
     // Copy the temp node into long-term node storage
     //
@@ -477,6 +472,12 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     // add to the unique table
     //
     unique->add(un->hash(), node);
+
+#ifdef DEBUG_CREATE_REDUCED
+    out << "    ===> New node " << node << "\n\t";
+    showNode(out, node, SHOW_DETAILS | SHOW_INDEX);
+    out << '\n';
+#endif
 
     //
     // Sanity check: can we find the node we just created
@@ -569,10 +570,16 @@ void MEDDLY::forest::deleteNode(node_handle p)
 // Node packing helper methods
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-
+#ifndef NEW_REDUCE
 MEDDLY::node_handle MEDDLY::forest
 ::createReducedHelper(int in, unpacked_node &nb)
 {
+#ifdef DEBUG_CREATE_REDUCED
+    ostream_output out(std::cout);
+    out << "Reducing unpacked node ";
+    nb.show(out, true);
+    out << " in forest " << FID() << "\n";
+#endif
     nb.computeHash();
 
 #ifdef DEVELOPMENT_CODE
@@ -603,10 +610,7 @@ MEDDLY::node_handle MEDDLY::forest
     if (1==nnz && in==long(nb.index(0))) {
       if (isIdentityEdge(nb, 0)) {
 #ifdef DEBUG_CREATE_REDUCED
-        printf("Identity node ");
-        FILE_output s(stdout);
-        showNode(s, nb.down(0), SHOW_DETAILS | SHOW_INDEX);
-        printf("\n");
+        out << "    ===> Identity node\n";
 #endif
         return nb.down(0);
       }
@@ -618,10 +622,7 @@ MEDDLY::node_handle MEDDLY::forest
         // unlink downward pointers, except the one we're returning.
         unlinkAllDown(nb, 1);
 #ifdef DEBUG_CREATE_REDUCED
-        printf("Redundant node ");
-        FILE_output s(stdout);
-        showNode(s, nb.down(0), SHOW_DETAILS | SHOW_INDEX);
-        printf("\n");
+        out << "    ===> Redundant node\n";
 #endif
         return nb.down(0);
       }
@@ -639,10 +640,7 @@ MEDDLY::node_handle MEDDLY::forest
     if (1==nnz) {
       if (in < long(nb.getSize()) && isIdentityEdge(nb, in)) {
 #ifdef DEBUG_CREATE_REDUCED
-        printf("Identity node ");
-        FILE_output s(stdout);
-        showNode(s, nb.down(0), SHOW_DETAILS | SHOW_INDEX);
-        printf("\n");
+        out << "    ===> Identity node\n";
 #endif
         return nb.down(in);
       }
@@ -654,10 +652,7 @@ MEDDLY::node_handle MEDDLY::forest
         // unlink downward pointers, except the one we're returning.
         unlinkAllDown(nb, 1);
 #ifdef DEBUG_CREATE_REDUCED
-        printf("Redundant node ");
-        FILE_output s(stdout);
-        showNode(s, nb.down(0), SHOW_DETAILS | SHOW_INDEX);
-        printf("\n");
+        out << "    ===> Redundant node\n";
 #endif
         return nb.down(0);
       }
@@ -666,6 +661,9 @@ MEDDLY::node_handle MEDDLY::forest
 
   // Is this a transparent node?
   if (0==nnz) {
+#ifdef DEBUG_CREATE_REDUCED
+    out << "    ===> Transparent node\n";
+#endif
     // no need to unlink
     return getTransparentNode();
   }
@@ -673,6 +671,9 @@ MEDDLY::node_handle MEDDLY::forest
   // check for duplicates in unique table
   node_handle q = unique->find(nb, getVarByLevel(nb.getLevel()));
   if (q) {
+#ifdef DEBUG_CREATE_REDUCED
+    out << "    ===> Duplicate of node " << q << "\n";
+#endif
     // unlink all downward pointers
     unlinkAllDown(nb);
     return linkNode(q);
@@ -723,14 +724,14 @@ MEDDLY::node_handle MEDDLY::forest
   unpacked_node::Recycle(key);
 #endif
 #ifdef DEBUG_CREATE_REDUCED
-  printf("Created node ");
-  FILE_output s(stdout);
-  showNode(s, p, SHOW_DETAILS | SHOW_INDEX);
-  printf("\n");
+    out << "    ===> New node " << p << "\n\t";
+    showNode(out, p, SHOW_DETAILS | SHOW_INDEX);
+    out << '\n';
 #endif
 
   return p;
 }
+#endif // NEW_REDUCE
 
 #ifdef ALLOW_EXTENSIBLE
 MEDDLY::node_handle MEDDLY::forest

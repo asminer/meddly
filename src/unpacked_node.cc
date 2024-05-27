@@ -251,7 +251,8 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k, unsigned i,
 void MEDDLY::unpacked_node::show(output &s, bool details) const
 {
     if (details) {
-        s << (isSparse() ? "nnzs: " : "size: ") << long(size);
+        s << "level: " << level;
+        s << (isSparse() ? " nnzs: " : " size: ") << long(size);
 #ifdef ALLOW_EXTENSIBLE
         if (isExtensible()) s.put('*');
 #endif
