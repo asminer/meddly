@@ -226,6 +226,276 @@ MEDDLY::relation_node* MEDDLY::forest
     return implUT->getNode(rnh);
 }
 
+void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
+                node_handle &node, int in)
+{
+    MEDDLY_DCASSERT(un);
+#ifdef DEBUG_CREATE_REDUCED
+    ostream_output out(std::cout);
+    out << "Reducing unpacked node ";
+    un->show(out, true);
+    out << "\n";
+#endif
+    //
+    //
+    // Normalize the node.
+    //
+    //
+    unsigned minplusone = 0;
+    switch (edgeLabel) {
+        case edge_labeling::MULTI_TERMINAL:
+                ev.set();
+                break;
+
+        case edge_labeling::EVPLUS:
+        case edge_labeling::INDEX_SET:
+                MEDDLY_DCASSERT(isRangeType(range_type::INTEGER));
+                ev.set(0L);
+                for (unsigned i=0; i<un->getSize(); i++) {
+                    if (0 == un->down(i)) continue;
+                    if (minplusone) {
+                        if (un->edgeval(i).getLong() < ev.getLong()) {
+                            ev = un->edgeval(i);
+                        }
+                    } else {
+                        minplusone = i+1;
+                        ev = un->edgeval(i);
+                    }
+                }
+                if (ev.getLong()) {
+                    //
+                    // non-zero adjustment
+                    //
+                    for (unsigned i=0; i<un->getSize(); i++) {
+                        if (0 == un->down(i)) continue;
+                        un->subtractFromEdge(i, ev.getLong());
+                    }
+                }
+                break;
+
+        case edge_labeling::EVTIMES:
+                MEDDLY_DCASSERT(isRangeType(range_type::REAL));
+                ev.set(1.0f);
+                for (unsigned i=0; i<un->getSize(); i++) {
+                    if (0 == un->down(i)) continue;
+                    ev = un->edgeval(i);
+                    if (ev.getFloat()) break;
+                }
+                if (ev.getFloat()!= 1.0f) {
+                    //
+                    // non-zero adjustment
+                    //
+                    for (unsigned i=0; i<un->getSize(); i++) {
+                        if (0 == un->down(i)) continue;
+                        if (un->edgeval(i).equals(0.0f)) {
+                            MEDDLY_DCASSERT(un->down(i) == 0);
+                        } else {
+                            un->divideEdge(i, ev.getFloat());
+                        }
+                    }
+                }
+                break;
+
+        default:
+                MEDDLY_DCASSERT(false);
+    }
+
+    //
+    // check is the node is written in order,
+    // if not rearrange it in ascending order of indices.
+    //
+    if (un->isSparse()) {
+        un->sort();
+    }
+#ifdef DEVELOPMENT_CODE
+    validateDownPointers(*un);
+#endif
+#ifdef DEBUG_CREATE_REDUCED
+    ostream_output out(std::cout);
+    out << "Normalized to ";
+    ev.write(out);
+    out << " -> ";
+    un->show(out, true);
+    out << "\n";
+#endif
+
+#ifdef ALLOW_EXTENSIBLE
+//    if (un->isExtensible()) return createReducedExtensibleNodeHelper(in, *un);
+#endif
+
+    //
+    // Count nonzero entries and Eliminate identity patterns
+    //
+    unsigned nnz = 0;
+    if (un->isSparse()) {
+        //
+        // Temp node is sparse.
+        //
+        nnz = un->getSize();
+#ifdef DEVELOPMENT_CODE
+        for (unsigned z=0; z<nnz; z++) {
+            MEDDLY_DCASSERT(un->down(z)!=getTransparentNode());
+        } // for z
+#endif
+        if (isIdentityReduced() && un->getLevel() < 0)
+        {
+            //
+            // Identity node check
+            //
+
+            if (1==nnz && in==long(un->index(0))) {
+#ifdef DEBUG_CREATE_REDUCED
+                out << "==> Identity node\n";
+#endif
+                node = un->down(0);
+                unpacked_node::Recycle(un);
+                return;
+            }
+        } // isIdentityReduced()
+    } else {
+        //
+        // Temp node is full.
+        //
+        nnz = 0;
+        for (unsigned i=0; i<un->getSize(); i++) {
+            if (un->down(i)!=getTransparentNode()) nnz++;
+        } // for i
+
+        if (isIdentityReduced() && un->getLevel() < 0)
+        {
+            //
+            // Identity node check
+            //
+            if (1==nnz && in>=0 && in<long(un->getSize()) && un->down(in))
+            {
+#ifdef DEBUG_CREATE_REDUCED
+                out << "==> Identity node\n";
+#endif
+                node = un->down(0);
+                unpacked_node::Recycle(un);
+                return;
+            }
+        } // isIdentityReduced()
+    }
+
+    //
+    // Eliminate redundant patterns
+    //
+    if ( isFullyReduced() || (isIdentityReduced() && un->getLevel() > 0))
+    {
+        //
+        // Redundant node check
+        //
+        bool redundant = (nnz == getLevelSize(un->getLevel()));
+        if (redundant) {
+            node = un->down(0);
+            for (unsigned i=1; i<nnz; i++) {
+                if (un->down(i) == node) continue;
+                redundant = false;
+                break;
+            }
+        }
+        if (redundant && un->hasEdges()) {
+            for (unsigned i=1; i<nnz; i++) {
+                if (un->edgeval(i) == un->edgeval(0)) continue;
+                redundant = false;
+                break;
+            }
+        }
+        if (redundant) {
+#ifdef DEBUG_CREATE_REDUCED
+            out << "==> Redundant node\n";
+#endif
+            unlinkAllDown(*un, 1);  // unlink all children but one
+            unpacked_node::Recycle(un);
+            return;
+        }
+    } // isFullyReduced()
+
+    //
+    // Is this a transparent node?
+    //
+    if (0==nnz) {
+#ifdef DEBUG_CREATE_REDUCED
+        out << "==> Transparent node\n";
+#endif
+        // nothing to unlink
+        node = getTransparentNode();
+        unpacked_node::Recycle(un);
+        return;
+    }
+
+    //
+    // Check for a duplicate node in the unique table
+    //
+    un->computeHash();
+    node = unique->find(*un, getVarByLevel(un->getLevel()));
+    if (node) {
+#ifdef DEBUG_CREATE_REDUCED
+        out << "==> Duplicate of " << node << "\n";
+#endif
+        // unlink all downward pointers
+        unlinkAllDown(*un);
+        unpacked_node::Recycle(un);
+        linkNode(node);
+        return;
+    }
+
+    //
+    // This node is new. Grab a node handle we can use.
+    //
+    node = nodeHeaders.getFreeNodeHandle();
+    nodeHeaders.setNodeLevel(node, un->getLevel());
+    if (reachable) {
+        reachable->setMarked(node);
+        nodeHeaders.setInCacheBit(node);
+    } else {
+        MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(node));
+        MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(node));
+        linkNode(node);
+    }
+
+    stats.incActive(1);
+    if (theLogger && theLogger->recordingNodeCounts()) {
+        theLogger->addToActiveNodeCount(this, un->getLevel(), 1);
+    }
+
+#ifdef DEBUG_CREATE_REDUCED
+    out << "==> New node " << node << "\n\t";
+    showNode(out, node, SHOW_DETAILS | SHOW_INDEX);
+    out << '\n';
+#endif
+
+    //
+    // Copy the temp node into long-term node storage
+    //
+    nodeHeaders.setNodeAddress(node,
+        nodeMan->makeNode(node, *un, getPolicies().storage_flags)
+    );
+
+    //
+    // add to the unique table
+    //
+    unique->add(un->hash(), node);
+
+    //
+    // Sanity check: can we find the node we just created
+    //
+#ifdef DEVELOPMENT_CODE
+    unpacked_node* key = newUnpacked(node, SPARSE_ONLY);
+    key->computeHash();
+    MEDDLY_DCASSERT(key->hash() == un->hash());
+    node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
+    MEDDLY_DCASSERT(f == node);
+    unpacked_node::Recycle(key);
+#endif
+
+    //
+    // Cleanup
+    //
+    unpacked_node::Recycle(un);
+}
+
 void MEDDLY::forest::deleteNode(node_handle p)
 {
 #ifdef TRACK_DELETIONS
@@ -461,7 +731,6 @@ MEDDLY::node_handle MEDDLY::forest
 
   return p;
 }
-
 
 #ifdef ALLOW_EXTENSIBLE
 MEDDLY::node_handle MEDDLY::forest

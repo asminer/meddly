@@ -166,9 +166,12 @@ class MEDDLY::forest {
             This version should be used only for
             multi terminal forests.
             The unpacked node is recycled.
+                @param  un  Unpacked node; will be recycled.
+
                 @param  in  Incoming pointer index;
                             used for identity reductions.
-                @param  un  Temporary node; will be recycled.
+                            A value of -1 may be used to not
+                            attempt identity reductions.
 
                 @return     A node handle equivalent
                             to \a un, taking into account
@@ -185,6 +188,28 @@ class MEDDLY::forest {
             unpacked_node::Recycle(un);
             return q;
         }
+
+
+        /** Return a forest node equal to the one given.
+            The node is constructed as necessary.
+            The unpacked node is recycled.
+                @param  un  Unpacked node; will be recycled.
+
+                @param  ev  Output: edge value from normalizing
+                            the node. Will be void for multi-terminal.
+
+                @param  nh  Output: A node handle equivalent to
+                            \a un (when using edge value ev),
+                            taking into account the forest reduction rules
+                            and if a duplicate node exists.
+
+                @param  in  Incoming pointer index;
+                            used for identity reductions.
+                            A value of -1 may be used to not
+                            attempt identity reductions.
+        */
+        void createReducedNode(unpacked_node *un, edge_value &ev,
+                node_handle &node, int in=-1);
 
 
         /** Return a forest node equal to the one given.
