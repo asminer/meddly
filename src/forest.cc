@@ -238,13 +238,17 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
 #endif
     //
     //
-    // Normalize the node.
+    // Normalize the node and count nonzeroes.
     //
     //
     unsigned minplusone = 0;
+    unsigned nnz = 0;
     switch (edgeLabel) {
         case edge_labeling::MULTI_TERMINAL:
                 ev.set();
+                for (unsigned i=0; i<un->getSize(); i++) {
+                    if (un->down(i)) ++nnz;
+                }
                 break;
 
         case edge_labeling::EVPLUS:
@@ -253,6 +257,7 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
                 ev.set(0L);
                 for (unsigned i=0; i<un->getSize(); i++) {
                     if (0 == un->down(i)) continue;
+                    ++nnz;
                     if (minplusone) {
                         if (un->edgeval(i).getLong() < ev.getLong()) {
                             ev = un->edgeval(i);
@@ -275,29 +280,40 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
 
         case edge_labeling::EVTIMES:
                 MEDDLY_DCASSERT(isRangeType(range_type::REAL));
-                ev.set(1.0f);
+                ev.set(0.0f);
+                minplusone = 0;
                 for (unsigned i=0; i<un->getSize(); i++) {
                     if (0 == un->down(i)) continue;
-                    ev = un->edgeval(i);
-                    if (ev.getFloat()) break;
-                }
-                if (ev.getFloat()!= 1.0f) {
-                    //
-                    // non-zero adjustment
-                    //
-                    for (unsigned i=0; i<un->getSize(); i++) {
-                        if (0 == un->down(i)) continue;
-                        if (un->edgeval(i).equals(0.0f)) {
-                            MEDDLY_DCASSERT(un->down(i) == 0);
-                        } else {
-                            un->divideEdge(i, ev.getFloat());
+                    if (un->edgeval(i).getFloat()) {
+                        ++nnz;
+                        if (!minplusone) {
+                            ev = un->edgeval(i);
+                            minplusone = i+1;
                         }
+                    }
+                }
+                if (ev.getFloat()) {
+                    for (unsigned i=0; i<un->getSize(); i++) {
+                        un->divideEdge(i, ev.getFloat());
                     }
                 }
                 break;
 
         default:
                 MEDDLY_DCASSERT(false);
+    }
+
+    //
+    // Is this a transparent node?
+    //
+    if (0==nnz) {
+#ifdef DEBUG_CREATE_REDUCED
+        out << "    ===> Transparent node\n";
+#endif
+        // nothing to unlink
+        node = getTransparentNode();
+        unpacked_node::Recycle(un);
+        return;
     }
 
     //
@@ -310,41 +326,21 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
 #ifdef DEVELOPMENT_CODE
     validateDownPointers(*un);
 #endif
-#ifdef DEBUG_CREATE_REDUCED
-    /*
-    out << "    Normalized to ";
-    ev.write(out);
-    out << " -> ";
-    un->show(out, true);
-    out << "\n";
-    */
-#endif
 
 #ifdef ALLOW_EXTENSIBLE
 //    if (un->isExtensible()) return createReducedExtensibleNodeHelper(in, *un);
 #endif
 
     //
-    // Count nonzero entries and Eliminate identity patterns
+    // Eliminate identity patterns
     //
-    unsigned nnz = 0;
-    if (un->isSparse()) {
-        //
-        // Temp node is sparse.
-        //
-        nnz = un->getSize();
-#ifdef DEVELOPMENT_CODE
-        for (unsigned z=0; z<nnz; z++) {
-            MEDDLY_DCASSERT(un->down(z)!=getTransparentNode());
-        } // for z
-#endif
-        if (isIdentityReduced() && un->getLevel() < 0)
-        {
-            //
-            // Identity node check
-            //
+    if (1==nnz && isIdentityReduced() && un->getLevel() < 0) {
 
-            if (1==nnz && in==long(un->index(0))) {
+        //
+        // Check identity pattern
+        //
+        if (un->isSparse()) {
+            if (in == long(un->index(0))) {
 #ifdef DEBUG_CREATE_REDUCED
                 out << "    ===> Identity node\n";
 #endif
@@ -352,22 +348,8 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
                 unpacked_node::Recycle(un);
                 return;
             }
-        } // isIdentityReduced()
-    } else {
-        //
-        // Temp node is full.
-        //
-        nnz = 0;
-        for (unsigned i=0; i<un->getSize(); i++) {
-            if (un->down(i)!=getTransparentNode()) nnz++;
-        } // for i
-
-        if (isIdentityReduced() && un->getLevel() < 0)
-        {
-            //
-            // Identity node check
-            //
-            if (1==nnz && in>=0 && in<long(un->getSize()) && un->down(in))
+        } else {
+            if (in>=0 && in<long(un->getSize()) && un->down(in))
             {
 #ifdef DEBUG_CREATE_REDUCED
                 out << "    ===> Identity node\n";
@@ -376,8 +358,10 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
                 unpacked_node::Recycle(un);
                 return;
             }
-        } // isIdentityReduced()
-    }
+        }
+
+    } // check identity patterns
+
 
     //
     // Eliminate redundant patterns
@@ -412,19 +396,6 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
             return;
         }
     } // isFullyReduced()
-
-    //
-    // Is this a transparent node?
-    //
-    if (0==nnz) {
-#ifdef DEBUG_CREATE_REDUCED
-        out << "    ===> Transparent node\n";
-#endif
-        // nothing to unlink
-        node = getTransparentNode();
-        unpacked_node::Recycle(un);
-        return;
-    }
 
     //
     // Check for a duplicate node in the unique table

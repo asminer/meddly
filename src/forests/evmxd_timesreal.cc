@@ -40,9 +40,13 @@ MEDDLY::evmxd_timesreal::~evmxd_timesreal()
 
 void MEDDLY::evmxd_timesreal::createEdge(float val, dd_edge &e)
 {
-  createEdgeTempl<OP, float>(val, e);
+    if (val) {
+        createEdgeTempl<OP, float>(val, e);
+    } else {
+        e.set(0, 0.0f);
+    }
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+    validateIncounts(true);
 #endif
 }
 
@@ -104,7 +108,7 @@ void MEDDLY::evmxd_timesreal::showEdge(output &s, const edge_value &ev,
     } else {
         s.put('<');
         s.put(ev.getFloat());
-        s.put(", ");
+        s.put("f, ");
         if (d < 0) {
             s.put('w');
         } else {
@@ -123,20 +127,20 @@ void MEDDLY::evmxd_timesreal::normalize(unpacked_node &nb, float& ev) const
   for (unsigned i=0; i<nb.getSize(); i++) {
     if (0==nb.down(i)) continue;
     ev = nb.edgeval(i).getFloat();
-    if (!ev) continue;
-    index = int(i);
-    break;
+    if (!ev) {
+        nb.setFull(i, 0.0f, 0);
+        continue;
+    }
+    if (index < 0) {
+        index = int(i);
+    }
   }
   if (index < 0) {
       return; // this node will eventually be reduced to "0".
   }
   for (unsigned i=0; i<nb.getSize(); i++) {
     if (0==nb.down(i)) continue;
-    if (nb.edgeval(i).equals(float(0))) {
-      nb.setFull(i, 0.0f, 0);
-    } else {
-      nb.divideEdge(i, ev);
-    }
+    nb.divideEdge(i, ev);
   }
 }
 

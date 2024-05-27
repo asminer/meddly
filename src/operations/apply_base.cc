@@ -1193,6 +1193,11 @@ void MEDDLY::generic_binary_evtimes
 ::compute(float aev, node_handle a, float bev, node_handle b,
   float& cev, node_handle& c)
 {
+#ifdef TRACE_ALL_OPS
+   printf("computing %s(<%f, %d>, <%f, %d>)\n", getName(), aev, a, bev, b);
+   fflush(stdout);
+#endif
+
   // Compute for the unprimed levels.
   //
 

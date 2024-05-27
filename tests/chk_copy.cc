@@ -34,6 +34,8 @@
 #define CHECK_ALL_REALMDDS
 #define CHECK_ALL_REALMXDS
 
+// #define DEBUG_BUILD
+
 const int TERMS = 20;
 
 using namespace MEDDLY;
@@ -156,6 +158,15 @@ void buildRandomFunc(long s, int terms, dd_edge &out, FILE* fout)
 
     out += temp;
 
+#ifdef DEBUG_BUILD
+    FILE_output meddlyout(stdout);
+    printf("new term: ");
+    temp.show(meddlyout);
+    printf("\nnew func: ");
+    out.show(meddlyout);
+    printf("\n");
+#endif
+
   } // for i
 
   // cleanup
@@ -244,7 +255,13 @@ void testCopy(forest* srcF, forest* destF)
     for (int t=1; t<=TERMS; t++) {
 
       long save_seed = seed;
+#ifdef DEBUG_BUILD
+      printf("\n\nBuilding source\n");
+#endif
       buildRandomFunc(save_seed, t, srcE, nullptr);
+#ifdef DEBUG_BUILD
+      printf("\n\nBuilding destination\n");
+#endif
       buildRandomFunc(save_seed, t, destE, nullptr);
 
       if (srcF->getRangeType() == range_type::BOOLEAN) {
@@ -261,6 +278,10 @@ void testCopy(forest* srcF, forest* destF)
           apply(NOT_EQUAL, destE, zero, destE);
         }
       }
+
+#ifdef DEBUG_BUILD
+      printf("\n\nBuilding copy\n");
+#endif
 
       dd_edge copyE(destF);
       apply(COPY, srcE, copyE);
