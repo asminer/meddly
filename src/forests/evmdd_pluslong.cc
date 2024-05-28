@@ -52,7 +52,6 @@ void MEDDLY::evmdd_pluslong::createEdge(long val, dd_edge &e)
 void MEDDLY::evmdd_pluslong
 ::createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e)
 {
-  // binary_operation* unionOp = getOperation(PLUS, this, this, this);
   binary_operation* unionOp = 0;  // for now
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);
@@ -119,17 +118,6 @@ void MEDDLY::evmdd_pluslong
 ::evaluate(const dd_edge &f, const int* vlist, long &term) const
 {
   evaluateT<OP, long>(f, vlist, term);
-}
-
-
-bool MEDDLY::evmdd_pluslong::isRedundant(const unpacked_node &nb) const
-{
-  return isRedundantTempl<OP>(nb);
-}
-
-bool MEDDLY::evmdd_pluslong::isIdentityEdge(const unpacked_node &nb, int i) const
-{
-  return isIdentityEdgeTempl<OP>(nb, i);
 }
 
 void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
@@ -282,30 +270,6 @@ void MEDDLY::evmdd_pluslong::showEdge(output &s, const edge_value &ev,
     }
 }
 
-void MEDDLY::evmdd_pluslong::normalize(unpacked_node &nb, long& ev) const
-{
-  long minindex = -1;
-  for (unsigned i = 0; i < nb.getSize(); i++) {
-    if (0 == nb.down(i)) {
-      continue;
-    }
-    if ((minindex < 0) || (nb.edgeval(i).getLong() < ev)) {
-      minindex = i;
-      ev = nb.edgeval(i).getLong();
-    }
-  }
-  if (minindex < 0) {
-    // this node will eventually be reduced to "0"
-    ev = 0;
-    return;
-  }
-  for (unsigned i = 0; i < nb.getSize(); i++) {
-    if (0 == nb.down(i)) {
-      continue;
-    }
-    nb.subtractFromEdge(i, ev);
-  }
-}
 
 #ifdef ALLOW_DEPRECATED_0_17_3
 

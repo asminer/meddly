@@ -203,17 +203,6 @@ void MEDDLY::forest::unpackNode(MEDDLY::unpacked_node* un,
     un->resize( getLevelSize( un->getLevel() ) );
     MEDDLY_DCASSERT(getNodeAddress(node));
     nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
-    //
-    // OLD
-    //
-    /*
-    MEDDLY_DCASSERT(un);
-    const int level = getNodeLevel(node);
-    MEDDLY_DCASSERT(0 != level);
-    un->bind_to_forest(this, level, unsigned(getLevelSize(level)), true);
-    MEDDLY_DCASSERT(getNodeAddress(node));
-    nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
-    */
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -541,168 +530,6 @@ void MEDDLY::forest::deleteNode(node_handle p)
 // Node packing helper methods
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-#ifndef NEW_REDUCE
-MEDDLY::node_handle MEDDLY::forest
-::createReducedHelper(int in, unpacked_node &nb)
-{
-#ifdef DEBUG_CREATE_REDUCED
-    ostream_output out(std::cout);
-    out << "Reducing unpacked node ";
-    nb.show(out, true);
-    out << " in forest " << FID() << "\n";
-#endif
-    nb.computeHash();
-
-#ifdef DEVELOPMENT_CODE
-  validateDownPointers(nb);
-#endif
-
-  // check is the node is written in order,
-  // if not rearrange it in ascending order of indices.
-  if (nb.isSparse()) nb.sort();
-
-#ifdef ALLOW_EXTENSIBLE
-  if (nb.isExtensible()) return createReducedExtensibleNodeHelper(in, nb);
-#endif
-
-  // get sparse, truncated full sizes and check
-  // for redundant / identity reductions.
-  unsigned nnz = 0;
-  if (nb.isSparse()) {
-    // Reductions for sparse nodes
-    nnz = nb.getSize();
-#ifdef DEVELOPMENT_CODE
-    for (unsigned z=0; z<nnz; z++) {
-      MEDDLY_DCASSERT(nb.down(z)!=getTransparentNode());
-    } // for z
-#endif
-
-    // Check for identity nodes
-    if (1==nnz && in==long(nb.index(0))) {
-      if (isIdentityEdge(nb, 0)) {
-#ifdef DEBUG_CREATE_REDUCED
-        out << "    ===> Identity node\n";
-#endif
-        return nb.down(0);
-      }
-    }
-
-    // Check for redundant nodes
-    if (nnz == getLevelSize(nb.getLevel()) && !isExtensibleLevel(nb.getLevel())) {
-      if (isRedundant(nb)) {
-        // unlink downward pointers, except the one we're returning.
-        unlinkAllDown(nb, 1);
-#ifdef DEBUG_CREATE_REDUCED
-        out << "    ===> Redundant node\n";
-#endif
-        return nb.down(0);
-      }
-    }
-
-  } else {
-    // Reductions for full nodes
-    MEDDLY_DCASSERT(long(nb.getSize()) <= long(getLevelSize(nb.getLevel())));
-    nnz = 0;
-    for (unsigned i=0; i<nb.getSize(); i++) {
-      if (nb.down(i)!=getTransparentNode()) nnz++;
-    } // for i
-
-    // Check for identity nodes
-    if (1==nnz) {
-      if (in < long(nb.getSize()) && isIdentityEdge(nb, in)) {
-#ifdef DEBUG_CREATE_REDUCED
-        out << "    ===> Identity node\n";
-#endif
-        return nb.down(in);
-      }
-    }
-
-    // Check for redundant nodes
-    if (nnz == getLevelSize(nb.getLevel()) && !isExtensibleLevel(nb.getLevel())) {
-      if (isRedundant(nb)) {
-        // unlink downward pointers, except the one we're returning.
-        unlinkAllDown(nb, 1);
-#ifdef DEBUG_CREATE_REDUCED
-        out << "    ===> Redundant node\n";
-#endif
-        return nb.down(0);
-      }
-    }
-  }
-
-  // Is this a transparent node?
-  if (0==nnz) {
-#ifdef DEBUG_CREATE_REDUCED
-    out << "    ===> Transparent node\n";
-#endif
-    // no need to unlink
-    return getTransparentNode();
-  }
-
-  // check for duplicates in unique table
-  node_handle q = unique->find(nb, getVarByLevel(nb.getLevel()));
-  if (q) {
-#ifdef DEBUG_CREATE_REDUCED
-    out << "    ===> Duplicate of node " << q << "\n";
-#endif
-    // unlink all downward pointers
-    unlinkAllDown(nb);
-    return linkNode(q);
-  }
-
-  //
-  // Not eliminated by reduction rule.
-  // Not a duplicate.
-  //
-  // We need to create a new node for this.
-
-  // NOW is the best time to run the garbage collector, if necessary.
-#ifndef GC_OFF
-  // if (isTimeToGc()) garbageCollect();
-#endif
-
-  // Grab a new node
-    node_handle p = nodeHeaders.getFreeNodeHandle();
-    nodeHeaders.setNodeLevel(p, nb.getLevel());
-    if (reachable) {
-        reachable->setMarked(p);
-        nodeHeaders.setInCacheBit(p);
-    } else {
-        MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
-        MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
-    }
-
-  stats.incActive(1);
-  if (theLogger && theLogger->recordingNodeCounts()) {
-    theLogger->addToActiveNodeCount(this, nb.getLevel(), 1);
-  }
-
-  // All of the work is in nodeMan now :^)
-  nodeHeaders.setNodeAddress(p,
-          nodeMan->makeNode(p, nb, getPolicies().storage_flags)
-  );
-  linkNode(p);
-
-  // add to UT
-  unique->add(nb.hash(), p);
-
-#ifdef DEVELOPMENT_CODE
-  unpacked_node* key = newUnpacked(p, SPARSE_ONLY);
-  key->computeHash();
-  MEDDLY_DCASSERT(key->hash() == nb.hash());
-  node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
-  MEDDLY_DCASSERT(f == p);
-  unpacked_node::Recycle(key);
-#endif
-#ifdef DEBUG_CREATE_REDUCED
-    out << "    ===> New node " << p << "\n\t";
-    showNode(out, p, SHOW_DETAILS | SHOW_INDEX);
-    out << '\n';
-#endif
-
-  return p;
-}
-#endif // NEW_REDUCE
 
 #ifdef ALLOW_EXTENSIBLE
 MEDDLY::node_handle MEDDLY::forest
@@ -862,21 +689,6 @@ MEDDLY::node_handle MEDDLY::forest
   return p;
 }
 
-
-void MEDDLY::forest::normalize(unpacked_node &nb, int& ev) const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::normalize(unpacked_node &nb, long& ev) const
-{
-  throw error(error::TYPE_MISMATCH);
-}
-
-void MEDDLY::forest::normalize(unpacked_node &nb, float& ev) const
-{
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
 
 
 MEDDLY::node_handle

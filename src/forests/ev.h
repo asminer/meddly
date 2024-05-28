@@ -36,7 +36,6 @@ namespace MEDDLY {
     Derived classes probably want to build an OPERATION class
     that contains inlined static methods:
         void setEdge(void*, type v);
-        bool isIdentityEdge(const edge_value &);
 */
 class MEDDLY::ev_forest :
 #ifdef ALLOW_DEPRECATED_0_17_4
@@ -50,32 +49,6 @@ class MEDDLY::ev_forest :
       const policies &p, int* level_reduction_rule=NULL);
 
   public:
-
-    template <class OPERATION>
-    inline bool isRedundantTempl(const unpacked_node &nb) const {
-      if (isQuasiReduced()) return false;
-      if (nb.getLevel() < 0 && isIdentityReduced()) return false;
-      const unsigned rawsize = nb.getSize();
-      if (rawsize < unsigned(getLevelSize(nb.getLevel()))) return false;
-      node_handle common = nb.down(0);
-      for (unsigned i=1; i<rawsize; i++) {
-        if (nb.down(i) != common)  return false;
-      }
-      // This might be expensive, so split the loops to cheapest first
-      for (unsigned i=0; i<rawsize; i++) {
-        if (!OPERATION::isIdentityEdge(nb.edgeval(i))) return false;
-      }
-      return true;
-    }
-
-    template <class OPERATION>
-    inline bool isIdentityEdgeTempl(const unpacked_node &nb, int i) const {
-      if (nb.getLevel() > 0) return false;
-      if (!isIdentityReduced()) return false;
-      if (i<0) return false;
-      return (nb.down(unsigned(i)) != 0)
-          &&  OPERATION::isIdentityEdge(nb.edgeval(unsigned(i)));
-    }
 
   // ------------------------------------------------------------
   // Helpers for this and derived classes

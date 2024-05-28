@@ -45,32 +45,6 @@ MEDDLY::mt_forest::mt_forest(domain *d, bool rel,
     setVoidEdges();
 }
 
-bool MEDDLY::mt_forest::isRedundant(const unpacked_node &nb) const
-{
-  if (isQuasiReduced()) return false;
-  if (nb.getLevel() < 0 && isIdentityReduced()) return false;
-#ifdef ALLOW_EXTENSIBLE
-  if (nb.isExtensible()) {
-    if (nb.getSize() == 1 && nb.ext_i() == 0) return true;
-    return false;
-  }
-#endif
-  if (nb.getSize() < getLevelSize(nb.getLevel())) return false;
-  const node_handle common = nb.down(0);
-  for (unsigned i=1; i<nb.getSize(); i++)
-      if (nb.down(i) != common) return false;
-  return true;
-}
-
-bool MEDDLY::mt_forest::isIdentityEdge(const unpacked_node &nb, int i) const
-{
-  if (nb.getLevel() > 0) return false;
-  if (!isIdentityReduced()) return false;
-  if (i<0) return false;
-  return nb.down(i) != 0;
-}
-
-
 MEDDLY::node_handle MEDDLY::mt_forest::_makeNodeAtLevel(int k, node_handle d)
 {
   int dk = getNodeLevel(d);
@@ -188,6 +162,5 @@ void MEDDLY::mt_forest::mt_iterator::getValue(float &termVal) const
   MEDDLY_DCASSERT(index);
   terminal t(terminal_type::REAL, index[0]);
   termVal = t.getReal();
-  // termVal = float_Tencoder::handle2value(index[0]);
 }
 

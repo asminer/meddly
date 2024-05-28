@@ -32,9 +32,6 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
   public:
     class OP {
       public:
-        static inline bool isIdentityEdge(const edge_value& ev) {
-            return ev.equals(float(1.0));
-        }
         static inline double apply(double a, double b) {
           return a*b;
         }
@@ -52,9 +49,6 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
     virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
     virtual void evaluate(const dd_edge &f, const int* vlist, float &term) const;
 
-    virtual bool isRedundant(const unpacked_node &nb) const;
-    virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;
-
     virtual enumerator::iterator* makeFullIter() const {
       return new evtrmdd_iterator(this);
     }
@@ -62,7 +56,6 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
     virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
 
   protected:
-    virtual void normalize(unpacked_node &nb, float& ev) const;
 #ifdef ALLOW_DEPRECATED_0_17_3
     virtual const char* codeChars() const;
 #endif

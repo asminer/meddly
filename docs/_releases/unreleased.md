@@ -40,3 +40,6 @@ TBD...
   This is a compute table setting, with a default of non-huge tables
   to save memory.
 
+* Node reduction (in class ```forest```) is now a local operation;
+  helper virtual methods (```normalize```, ```isIdentityEdge```, etc)
+  have been removed.

@@ -89,17 +89,6 @@ void MEDDLY::evmxd_timesreal
   evaluateT<OP, float>(f, vlist, vplist, term);
 }
 
-
-bool MEDDLY::evmxd_timesreal::isRedundant(const unpacked_node &nb) const
-{
-  return isRedundantTempl<OP>(nb);
-}
-
-bool MEDDLY::evmxd_timesreal::isIdentityEdge(const unpacked_node &nb, int i) const
-{
-  return isIdentityEdgeTempl<OP>(nb, i);
-}
-
 void MEDDLY::evmxd_timesreal::showEdge(output &s, const edge_value &ev,
         node_handle d) const
 {
@@ -117,31 +106,6 @@ void MEDDLY::evmxd_timesreal::showEdge(output &s, const edge_value &ev,
         }
         s.put('>');
     }
-}
-
-
-void MEDDLY::evmxd_timesreal::normalize(unpacked_node &nb, float& ev) const
-{
-  ev = 0.0f;
-  int index = -1;
-  for (unsigned i=0; i<nb.getSize(); i++) {
-    if (0==nb.down(i)) continue;
-    ev = nb.edgeval(i).getFloat();
-    if (!ev) {
-        nb.setFull(i, 0.0f, 0);
-        continue;
-    }
-    if (index < 0) {
-        index = int(i);
-    }
-  }
-  if (index < 0) {
-      return; // this node will eventually be reduced to "0".
-  }
-  for (unsigned i=0; i<nb.getSize(); i++) {
-    if (0==nb.down(i)) continue;
-    nb.divideEdge(i, ev);
-  }
 }
 
 #ifdef ALLOW_DEPRECATED_0_17_3

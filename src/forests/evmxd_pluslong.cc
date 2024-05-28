@@ -86,17 +86,6 @@ void MEDDLY::evmxd_pluslong
   evaluateT<OP, long>(f, vlist, vplist, term);
 }
 
-
-bool MEDDLY::evmxd_pluslong::isRedundant(const unpacked_node &nb) const
-{
-  return isRedundantTempl<OP>(nb);
-}
-
-bool MEDDLY::evmxd_pluslong::isIdentityEdge(const unpacked_node &nb, int i) const
-{
-  return isIdentityEdgeTempl<OP>(nb, i);
-}
-
 void MEDDLY::evmxd_pluslong::showEdge(output &s, const edge_value &ev,
         node_handle d) const
 {
@@ -114,32 +103,6 @@ void MEDDLY::evmxd_pluslong::showEdge(output &s, const edge_value &ev,
         }
         s.put('>');
     }
-}
-
-
-void MEDDLY::evmxd_pluslong::normalize(unpacked_node &nb, long& ev) const
-{
-  long minindex = -1;
-  for (unsigned i = 0; i < nb.getSize(); i++) {
-    if (0 == nb.down(i)) {
-      continue;
-    }
-    if ((minindex < 0) || (nb.edgeval(i).getLong() < ev)) {
-      minindex = i;
-      ev = nb.edgeval(i).getLong();
-    }
-  }
-  if (minindex < 0) {
-    // this node will eventually be reduced to "0"
-    ev = 0;
-    return;
-  }
-  for (unsigned i = 0; i < nb.getSize(); i++) {
-    if (0 == nb.down(i)) {
-      continue;
-    }
-    nb.subtractFromEdge(i, ev);
-  }
 }
 
 #ifdef ALLOW_DEPRECATED_0_17_3

@@ -52,9 +52,6 @@ class MEDDLY::mt_forest :
     mt_forest(domain *d, bool rel, range_type t, const policies &p, int* level_reduction_rule=NULL);
 
   public:
-    virtual bool isRedundant(const unpacked_node &nb) const;
-    virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;
-
   // ------------------------------------------------------------
   // Helpers for this and derived classes
 
@@ -150,7 +147,6 @@ class MEDDLY::mt_forest :
         if (!e.isAttachedTo(this)) {
             throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
         }
-        // e.set(makeNodeAtTop(ENCODER::value2handle(term)));
         terminal t(term);
         e.set(makeNodeAtTop(t.getHandle()));
     }

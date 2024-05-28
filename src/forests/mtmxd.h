@@ -186,7 +186,6 @@ namespace MEDDLY {
           terminal t(term(start));
           return createEdgePath(k, unprimed(start), primed(start),
             t.getHandle()
-            // ENCODER::value2handle(term(start))
           );
         }
         //
@@ -198,7 +197,6 @@ namespace MEDDLY {
             accumulate += term(i);
           }
           terminal t(accumulate);
-          // return ENCODER::value2handle(accumulate);
           return t.getHandle();
         }
 

@@ -274,7 +274,10 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
     //
     unpacked_node::Recycle(Bu);
     unpacked_node::Recycle(Au);
-    node_handle C = resF->createReducedNode(-1, Cu);
+    edge_value dummy;
+    node_handle C;
+    resF->createReducedNode(Cu, dummy, C);
+    MEDDLY_DCASSERT(dummy.isVoid());
 
     //
     // Save result in CT

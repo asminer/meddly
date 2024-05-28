@@ -72,7 +72,6 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 
 namespace MEDDLY {
 
-  // template <class ENCODER, typename T>
   template <typename T>
   class mtmdd_edgemaker {
       mtmdd_forest* F;
@@ -135,7 +134,6 @@ namespace MEDDLY {
           terminal t(term(start));
           return createEdgePath(k, unprimed(start),
             t.getHandle()
-            // ENCODER::value2handle(term(start))
           );
         }
         //
@@ -147,7 +145,6 @@ namespace MEDDLY {
             accumulate += term(i);
           }
           terminal t(accumulate);
-          // return ENCODER::value2handle(accumulate);
           return t.getHandle();
         }
 
