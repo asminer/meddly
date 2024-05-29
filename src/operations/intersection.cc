@@ -22,9 +22,10 @@
 #include "../defines.h"
 #include "intersection.h"
 
-#include "apply_base.h"
+#include "apply_base.h" // remove this when we can
+
 #ifdef OLD_OPERATION
-// eventually: include apply_base
+#include "apply_base.h"
 #else
 #include "../oper_binary.h"
 #include "../ct_vector.h"

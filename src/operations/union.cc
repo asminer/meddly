@@ -16,9 +16,18 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// #define OLD_OPERATION
+
 #include "../defines.h"
 #include "union.h"
+#include "apply_base.h" // remove this when we can
+
+#ifdef OLD_OPERATION
 #include "apply_base.h"
+#else
+#include "../oper_binary.h"
+#include "../ct_vector.h"
+#endif
 
 namespace MEDDLY {
     class union_mdd;
@@ -35,6 +44,8 @@ namespace MEDDLY {
 // *                        union_mdd  class                        *
 // *                                                                *
 // ******************************************************************
+
+#ifdef OLD_OPERATION
 
 class MEDDLY::union_mdd : public generic_binary_mdd {
     public:
@@ -88,7 +99,172 @@ bool MEDDLY::union_mdd::checkTerminals(node_handle a, node_handle b, node_handle
   return false;
 }
 
+#else
 
+class MEDDLY::union_mdd : public binary_operation {
+    public:
+        union_mdd(forest* arg1, forest* arg2, forest* res);
+        virtual ~union_mdd();
+
+        virtual void compute(const edge_value &av, node_handle ap,
+                const edge_value &bv, node_handle bp,
+                int L,
+                edge_value &cv, node_handle &cp);
+
+    protected:
+        node_handle _compute(node_handle A, node_handle B, int L);
+
+    private:
+        ct_entry_type* ct;
+};
+
+// ******************************************************************
+
+MEDDLY::union_mdd::union_mdd(forest* arg1, forest* arg2, forest* res)
+  : binary_operation(UNION_cache, arg1, arg2, res)
+{
+    ct = new ct_entry_type("union");
+    // CT key:      node from forest arg1, node from forest arg2
+    // CT result:   node from forest res
+    ct->setFixed(arg1, arg2);
+    ct->setResult(res);
+    ct->doneBuilding();
+
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+}
+
+MEDDLY::union_mdd::~union_mdd()
+{
+    ct->markForDestroy();
+}
+
+void MEDDLY::union_mdd::compute(const edge_value &av, node_handle ap,
+                const edge_value &bv, node_handle bp,
+                int L,
+                edge_value &cv, node_handle &cp)
+{
+    MEDDLY_DCASSERT(av.isVoid());
+    MEDDLY_DCASSERT(bv.isVoid());
+    cv.set();
+    cp = _compute(ap, bp, L);
+}
+
+MEDDLY::node_handle
+MEDDLY::union_mdd::_compute(node_handle A, node_handle B, int L)
+{
+    //
+    // Check terminals
+    //
+    if (A < 0 || B < 0) {
+        terminal tt(true);
+        return resF->makeRedundantsTo(tt.getHandle(), L);
+    }
+
+    if (A == 0) {
+        if (B == 0) {
+            return 0;
+        }
+
+        //
+        // Return B if we can
+        //
+        if (arg2F == resF) {
+            return resF->makeRedundantsTo(resF->linkNode(B), L);
+        }
+    } // zero A
+
+    if (B == 0) {
+        //
+        // Return A if we can
+        //
+        MEDDLY_DCASSERT(A);
+        if (arg1F == resF) {
+            return resF->makeRedundantsTo(resF->linkNode(A), L);
+        }
+    } // zero B
+
+    if (A == B) {
+        if ((arg1F == arg2F) && (arg1F == resF)) {
+            return resF->makeRedundantsTo(resF->linkNode(A), L);
+        }
+    }
+
+    //
+    // Reorder A and B if they commute (same forest)
+    //
+
+    if (arg1F == arg2F) {
+        if (A > B) {
+            SWAP(A, B);
+        }
+    }
+
+    //
+    // Check compute table
+    //
+    ct_vector key(2);
+    ct_vector res(1);
+    key[0].setN(A);
+    key[1].setN(B);
+    if (ct->findCT(key, res)) {
+        return resF->makeRedundantsTo(resF->linkNode(res[0].getN()), L);
+    }
+
+    //
+    // Do computation
+    //
+
+    //
+    // Determine level information
+    //
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = arg2F->getNodeLevel(B);
+    const int Clevel = MAX(Alevel, Blevel);
+
+    //
+    // Initialize unpacked nodes
+    //
+    unpacked_node* Au = (Alevel < Clevel)
+        ?   unpacked_node::newRedundant(arg1F, Clevel, A, FULL_ONLY)
+        :   arg1F->newUnpacked(A, FULL_ONLY);
+
+    unpacked_node* Bu = (Blevel <Clevel)
+        ?   unpacked_node::newRedundant(arg2F, Clevel, B, FULL_ONLY)
+        :   arg2F->newUnpacked(B, FULL_ONLY);
+
+    MEDDLY_DCASSERT(Au->getSize() == Bu->getSize());
+
+    unpacked_node* Cu = unpacked_node::newFull(resF, Clevel, Au->getSize());
+
+    //
+    // Build result node
+    //
+    for (unsigned i=0; i<Cu->getSize(); i++) {
+        Cu->setFull(i, _compute(Au->down(i), Bu->down(i), Cu->getLevel()-1));
+    }
+
+    //
+    // Reduce / cleanup
+    //
+    unpacked_node::Recycle(Bu);
+    unpacked_node::Recycle(Au);
+    edge_value dummy;
+    node_handle C;
+    resF->createReducedNode(Cu, dummy, C);
+    MEDDLY_DCASSERT(dummy.isVoid());
+
+    //
+    // Save result in CT
+    //
+    res[0].setN(C);
+    ct->addCT(key, res);
+
+    return resF->makeRedundantsTo(C, L);
+}
+
+#endif
 
 // ******************************************************************
 // *                                                                *

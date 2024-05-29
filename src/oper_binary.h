@@ -175,6 +175,13 @@ class MEDDLY::binary_operation : public operation {
 #endif
                 ;
 
+#ifdef ALLOW_DEPRECATED_0_17_6
+        /**
+            During the transition, callers may need to know
+            which version of compute() to call.
+         */
+        inline bool useNewCompute() const { return new_style; }
+#endif
 
     protected:
 #ifdef ALLOW_DEPRECATED_0_17_6

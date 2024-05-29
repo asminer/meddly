@@ -284,6 +284,7 @@ class MEDDLY::forest {
          */
         inline node_handle makeRedundantsTo(node_handle p, int L)
         {
+            if (0==L) return p;
             MEDDLY_DCASSERT( ABS(L) >= ABS(getNodeLevel(p)) );
             if (isFullyReduced()) return p;
             if (0==p) return p;
