@@ -17,19 +17,13 @@
 */
 
 
-// #define OLD_OPERATION
-
 #include "../defines.h"
 #include "intersection.h"
 
 #include "apply_base.h" // remove this when we can
 
-#ifdef OLD_OPERATION
-#include "apply_base.h"
-#else
 #include "../oper_binary.h"
 #include "../ct_vector.h"
-#endif
 
 namespace MEDDLY {
     class inter_mdd;
@@ -44,65 +38,6 @@ namespace MEDDLY {
 // *                        inter_mdd  class                        *
 // *                                                                *
 // ******************************************************************
-
-#ifdef OLD_OPERATION
-
-class MEDDLY::inter_mdd : public generic_binary_mdd {
-    public:
-        inter_mdd(forest* arg1, forest* arg2, forest* res);
-
-        virtual bool checkTerminals(node_handle a, node_handle b,
-                node_handle& c);
-};
-
-MEDDLY::inter_mdd::inter_mdd(forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mdd(INTER_cache, arg1, arg2, res)
-{
-    operationCommutes();
-
-    checkDomains(__FILE__, __LINE__);
-    checkAllRelations(__FILE__, __LINE__, SET);
-    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-}
-
-bool MEDDLY::inter_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (a == 0 || b == 0) {
-    c = 0;
-    return true;
-  }
-  if (a==-1 && b==-1) {
-    c = -1;
-    return true;
-  }
-  if (a == -1) {
-    if (arg2F == resF) {
-      c = resF->linkNode(b);
-      return true;
-    } else {
-      return false;
-    }
-  }
-  if (a == b) {
-    if (arg1F == arg2F && arg1F == resF) {
-      c = resF->linkNode(b);
-      return true;
-    } else {
-      return false;
-    }
-  }
-  if (b == -1) {
-    if (arg1F == resF) {
-      c = resF->linkNode(a);
-      return true;
-    } else {
-      return false;
-    }
-  }
-  return false;
-}
-
-#else
 
 class MEDDLY::inter_mdd : public binary_operation {
     public:
@@ -288,8 +223,6 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
 
     return resF->makeRedundantsTo(C, L);
 }
-
-#endif
 
 // ******************************************************************
 // *                                                                *

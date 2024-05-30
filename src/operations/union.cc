@@ -16,18 +16,12 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// #define OLD_OPERATION
-
 #include "../defines.h"
 #include "union.h"
 #include "apply_base.h" // remove this when we can
 
-#ifdef OLD_OPERATION
-#include "apply_base.h"
-#else
 #include "../oper_binary.h"
 #include "../ct_vector.h"
-#endif
 
 namespace MEDDLY {
     class union_mdd;
@@ -44,62 +38,6 @@ namespace MEDDLY {
 // *                        union_mdd  class                        *
 // *                                                                *
 // ******************************************************************
-
-#ifdef OLD_OPERATION
-
-class MEDDLY::union_mdd : public generic_binary_mdd {
-    public:
-        union_mdd(forest* arg1, forest* arg2, forest* res);
-
-        virtual bool checkTerminals(node_handle a, node_handle b,
-                node_handle& c);
-};
-
-MEDDLY::union_mdd::union_mdd(forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mdd(UNION_cache, arg1, arg2, res)
-{
-    operationCommutes();
-
-    checkDomains(__FILE__, __LINE__);
-    checkAllRelations(__FILE__, __LINE__, SET);
-    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-}
-
-bool MEDDLY::union_mdd::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (a < 0 || b < 0) {
-    c = resF->handleForValue(true);
-    return true;
-  }
-  if (a == 0) {
-    if (b==0) {
-      c = 0;
-      return true;
-    }
-    if (arg2F == resF) {
-      c = resF->linkNode(b);
-      return true;
-    }
-    return false;
-  }
-  if (b == 0) {
-    if (arg1F == resF) {
-      c = resF->linkNode(a);
-      return true;
-    }
-    return false;
-  }
-  if (a == b) {
-    if (arg1F == arg2F && arg1F == resF) {
-      c = resF->linkNode(b);
-      return true;
-    }
-    return false;
-  }
-  return false;
-}
-
-#else
 
 class MEDDLY::union_mdd : public binary_operation {
     public:
@@ -263,8 +201,6 @@ MEDDLY::union_mdd::_compute(node_handle A, node_handle B, int L)
 
     return resF->makeRedundantsTo(C, L);
 }
-
-#endif
 
 // ******************************************************************
 // *                                                                *
