@@ -95,7 +95,7 @@ if [ "$BPATH" ]; then
         read counter < "$BPATH/timing.count"
     fi
     counter="$[ counter + 1 ]"
-    TEXTFILE=`printf "%s/timing.%03d.txt" "$BPATH" "$counter"
+    TEXTFILE=$(printf "%s/timing.%03d.txt" "$BPATH" "$counter")
 else
     HTMLFILE=""
     TEXTFILE=""
@@ -145,7 +145,7 @@ myPrint() {
     echo "$1 times"
     echo "======================================================================"
     while read time prog line; do
-        details=`awk -F$ '{print $2}' <<< $line`
+        details=$(awk -F$ '{print $2}' <<< $line)
         printf "    %7.3f ........ %s\n" "$time" "$details"
     done < report.$PID.$1.txt
     echo
@@ -153,7 +153,7 @@ myPrint() {
 
 printSummary() {
     while read time prog line; do
-        sumry=`awk -F$ '{print $1}' <<< $line`
+        sumry=$(awk -F$ '{print $1}' <<< $line)
         echo "    <th>$sumry</th>"
     done < report.$PID.$1.txt
 }
@@ -211,7 +211,7 @@ primarily for tracking performance changes over time.
     <th rowspan=2>Version</th>
 EOF
         for r in $RUNLIST; do
-            lines=`wc -l < report.$PID.$r.txt`
+            lines=$(wc -l < report.$PID.$r.txt)
             printf "    <th colspan=%d>$r</th>\n" "$lines" >> $1
         done
         echo "</tr>" >> $1
