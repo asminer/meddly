@@ -318,9 +318,14 @@ class MEDDLY::unpacked_node {
         */
         inline node_handle down(unsigned n) const
         {
-            MEDDLY_DCASSERT(_down);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            return _idev[n].down;
+#else
+            MEDDLY_DCASSERT(_down);
             return _down[n];
+#endif
         }
 
         /** Get a downward pointer.
@@ -332,9 +337,14 @@ class MEDDLY::unpacked_node {
         */
         inline node_handle down(int n) const
         {
-            MEDDLY_DCASSERT(_down);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            return _idev[n].down;
+#else
+            MEDDLY_DCASSERT(_down);
             return _down[n];
+#endif
         }
 
         /** Get the index of the nth non-zero pointer.
@@ -344,10 +354,15 @@ class MEDDLY::unpacked_node {
         */
         inline unsigned index(unsigned n) const
         {
-            MEDDLY_DCASSERT(_index);
             MEDDLY_DCASSERT(!is_full);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            return _idev[n].index;
+#else
+            MEDDLY_DCASSERT(_index);
             return _index[n];
+#endif
         }
 
         /** Get the index of the nth non-zero pointer.
@@ -357,10 +372,15 @@ class MEDDLY::unpacked_node {
         */
         inline unsigned index(int n) const
         {
-            MEDDLY_DCASSERT(_index);
             MEDDLY_DCASSERT(!is_full);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            return _idev[n].index;
+#else
+            MEDDLY_DCASSERT(_index);
             return _index[n];
+#endif
         }
 
         /** Get the nth edge value.
@@ -368,9 +388,14 @@ class MEDDLY::unpacked_node {
             @return     The edge value
         */
         inline const edge_value& edgeval(unsigned n) const {
-            MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            return _idev[n].edgeval;
+#else
+            MEDDLY_DCASSERT(_edge);
             return _edge[n];
+#endif
         }
 
         /** Get the nth edge value.
@@ -378,9 +403,14 @@ class MEDDLY::unpacked_node {
             @return     The edge value
         */
         inline const edge_value& edgeval(int n) const {
-            MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            return _idev[n].edgeval;
+#else
+            MEDDLY_DCASSERT(_edge);
             return _edge[n];
+#endif
         }
 
         /** Subtract from an edge value.
@@ -389,9 +419,14 @@ class MEDDLY::unpacked_node {
         */
         template <class T>
         inline void subtractFromEdge(unsigned n, T v) {
-            MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            _idev[n].edgeval.subtract(v);
+#else
+            MEDDLY_DCASSERT(_edge);
             _edge[n].subtract(v);
+#endif
         }
 
 
@@ -401,9 +436,14 @@ class MEDDLY::unpacked_node {
         */
         template <class T>
         inline void divideEdge(unsigned n, T v) {
-            MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            _idev[n].edgeval.divide(v);
+#else
+            MEDDLY_DCASSERT(_edge);
             _edge[n].divide(v);
+#endif
         }
 
         /// Get the nth edge value, as a long.
@@ -425,9 +465,14 @@ class MEDDLY::unpacked_node {
         */
         inline void setEdgeval(unsigned n, const edge_value &ev) {
             MEDDLY_DCASSERT(ev.hasType(the_edge_type));
-            MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            _idev[n].edgeval = ev;
+#else
+            MEDDLY_DCASSERT(_edge);
             _edge[n] = ev;
+#endif
         }
 
         /**
@@ -439,9 +484,14 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(!hasEdges());
             MEDDLY_DCASSERT(isFull());
-            MEDDLY_DCASSERT(_down);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            _idev[n].down = h;
+#else
+            MEDDLY_DCASSERT(_down);
             _down[n] = h;
+#endif
         }
 
         /**
@@ -454,11 +504,17 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(v.hasType(the_edge_type));
             MEDDLY_DCASSERT(isFull());
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            _idev[n].down = h;
+            _idev[n].edgeval = v;
+#else
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_edge);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             _down[n] = h;
             _edge[n] = v;
+#endif
         }
 
         /**
@@ -471,10 +527,16 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(E.isAttachedTo(parent));
             MEDDLY_DCASSERT(E.getEdgeValue().hasType(the_edge_type));
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            E.xferNode(_idev[n].down);
+            _idev[n].edgeval = E.getEdgeValue();
+#else
             E.xferNode(_down[n]);
             if (_edge) {
                 _edge[n] = E.getEdgeValue();
             }
+#endif
         }
 
 
@@ -487,11 +549,17 @@ class MEDDLY::unpacked_node {
         inline void setFull(unsigned n, const void* p, node_handle h)
         {
             MEDDLY_DCASSERT(isFull());
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            _idev[n].down = h;
+            _idev[n].edgeval.set(the_edge_type, p);
+#else
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_edge);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             _down[n] = h;
             _edge[n].set(the_edge_type, p);
+#endif
         }
 
 
@@ -505,11 +573,17 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(!hasEdges());
             MEDDLY_DCASSERT(isSparse());
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            _idev[n].index = i;
+            _idev[n].down = h;
+#else
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             _index[n] = i;
             _down[n] = h;
+#endif
         }
 
 
@@ -525,13 +599,20 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(v.hasType(the_edge_type));
             MEDDLY_DCASSERT(isSparse());
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            _idev[n].index = i;
+            _idev[n].down = h;
+            _idev[n].edgeval = v;
+#else
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
             MEDDLY_DCASSERT(_edge);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             _index[n] = i;
             _down[n] = h;
             _edge[n] = v;
+#endif
         }
 
 
@@ -545,14 +626,21 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(E.getEdgeValue().hasType(the_edge_type));
             MEDDLY_DCASSERT(isSparse());
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            _idev[n].index = i;
+            E.xferNode(_idev[n].down);
+            _idev[n].edgeval = E.getEdgeValue();
+#else
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             E.xferNode(_down[n]);
             _index[n] = i;
             if (_edge) {
                 _edge[n] = E.getEdgeValue();
             }
+#endif
         }
 
 
@@ -567,13 +655,20 @@ class MEDDLY::unpacked_node {
                 node_handle h)
         {
             MEDDLY_DCASSERT(isSparse());
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+#ifdef USE_STRUCT
+            MEDDLY_DCASSERT(_idev);
+            _idev[n].index = i;
+            _idev[n].down = h;
+            _idev[n].edgeval.set(the_edge_type, p);
+#else
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
             MEDDLY_DCASSERT(_edge);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             _index[n] = i;
             _down[n] = h;
             _edge[n].set(the_edge_type, p);
+#endif
         }
 
 
