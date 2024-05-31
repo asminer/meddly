@@ -68,14 +68,12 @@ MEDDLY::unpacked_node::unpacked_node(const forest* f)
     modparent = nullptr;
     pFID = 0;
 
-#ifndef USE_VECTOR
     _down = nullptr;
     _index = nullptr;
     _edge = nullptr;
 
     alloc = 0;
     size = 0;
-#endif
 
     extra_unhashed = nullptr;
     extra_unhashed_size = 0;
@@ -100,11 +98,9 @@ MEDDLY::unpacked_node::unpacked_node(const forest* f)
 
 MEDDLY::unpacked_node::~unpacked_node()
 {
-#ifndef USE_VECTOR
     delete[] _down;
     delete[] _index;
     delete[] _edge;
-#endif
 
     free(extra_unhashed);
     free(extra_hashed);
@@ -522,9 +518,7 @@ void MEDDLY::unpacked_node::trim()
 void MEDDLY::unpacked_node::sort()
 {
     if (!isSparse()) return;
-#ifndef USE_VECTOR
     MEDDLY_DCASSERT(_index);
-#endif
 
     //
     // First, scan indexes to see if we're already sorted,
@@ -597,16 +591,12 @@ bool MEDDLY::unpacked_node::isSorted() const
 
 void MEDDLY::unpacked_node::clear(unsigned low, unsigned high)
 {
-#ifndef USE_VECTOR
     CHECK_RANGE(__FILE__, __LINE__, 0u, low, alloc);
     CHECK_RANGE(__FILE__, __LINE__, 0u, high, alloc+1);
     MEDDLY_DCASSERT(_down);
-#endif
 
     if (hasEdges()) {
-#ifndef USE_VECTOR
         MEDDLY_DCASSERT(_edge);
-#endif
         for (unsigned i=low; i<high; i++) {
             parent->getTransparentEdge(_down[i], _edge[i]);
         }
@@ -804,7 +794,6 @@ void MEDDLY::unpacked_node::doneStatics()
 // Private helpers
 //
 
-#ifndef USE_VECTOR
 void MEDDLY::unpacked_node::expand(unsigned ns)
 {
     if (ns > alloc) {
@@ -831,7 +820,6 @@ void MEDDLY::unpacked_node::expand(unsigned ns)
     has_hash = false;
 #endif
 }
-#endif
 
 void MEDDLY::unpacked_node::showSingly(const unpacked_node* list)
 {
