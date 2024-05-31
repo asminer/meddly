@@ -720,7 +720,9 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
   unpacked_node::Recycle(B);
 
   saturateHelper(a, *T);
-  c = resF->createReducedNode(-1, T);
+  edge_value ev;
+  resF->createReducedNode(T, ev, c);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   saveResult(key, a, b, r, c);
 }
@@ -959,7 +961,9 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
   unpacked_node::Recycle(B);
 
   saturateHelper(a, *T);
-  c = resF->createReducedNode(-1, T);
+  edge_value ev;
+  resF->createReducedNode(T, ev, c);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   saveResult(key, a, b, r, c);
 }
@@ -1106,7 +1110,9 @@ void MEDDLY::constrained_saturation_mt::saturate(node_handle a, node_handle b, i
   unpacked_node::Recycle(B);
 
   parent->saturateHelper(a, *T);
-  c = resF->createReducedNode(-1, T);
+  edge_value ev;
+  resF->createReducedNode(T, ev, c);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   // save in compute table
   saveResult(key, a, b, level, c);
@@ -1558,7 +1564,9 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
   unpacked_node::Recycle(B);
 
   saturateHelper(aev, a, *T);
-  resF->createReducedNode(-1, T, cev, c);
+  edge_value ev;
+  resF->createReducedNode(T, ev, c);
+  cev = ev.getLong();
   MEDDLY_DCASSERT(cev >= 0);
 
   saveResult(key, aev, a, bev, b, r, cev, c);
@@ -1731,7 +1739,9 @@ void MEDDLY::constrained_saturation_evplus::saturate(int aev, node_handle a, int
   unpacked_node::Recycle(B);
 
   parent->saturateHelper(aev, a, *T);
-  resF->createReducedNode(-1, T, cev, c);
+  edge_value ev;
+  resF->createReducedNode(T, ev, c);
+  cev = ev.getLong();
   cev += bev;
 
   // save in compute table

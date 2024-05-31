@@ -135,7 +135,9 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
 
   // cleanup and Reduce
   unpacked_node::Recycle(A);
-  b = resF->createReducedNode(-1, C);
+  edge_value ev;
+  resF->createReducedNode(C, ev, b);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   // Add to compute table
   return saveResult(Key, a, b);
@@ -243,7 +245,10 @@ MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
 
   // reduce, save in CT
   unpacked_node::Recycle(A);
-  node_handle result = resF->createReducedNode(in, C);
+  edge_value ev;
+  node_handle result;
+  resF->createReducedNode(C, ev, result, in);
+  MEDDLY_DCASSERT(ev.isVoid());
   if (k<0 && 1==nnz) canSave = false;
   if (canSave) {
     CTresult[0].reset();

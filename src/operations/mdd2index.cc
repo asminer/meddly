@@ -164,11 +164,9 @@ MEDDLY::mdd2index_operation
   nb->setUHdata(&bcard);
   // memcpy(nb->UHdata(), &bcard, sizeof(bcard));
 
-  long dummy = 0;
-  node_handle bl;
-  resF->createReducedNode(-1, nb, dummy, bl);
-  bdn = bl;
-  MEDDLY_DCASSERT(0 == dummy);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, bdn);
+  MEDDLY_DCASSERT(0 == ev.getLong());
 
   // Add to compute table
   if (CTsrch) {

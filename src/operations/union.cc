@@ -388,7 +388,10 @@ MEDDLY::union_mxd::compute_ext(node_handle a, node_handle b)
   unpacked_node::Recycle(A);
 
   // reduce result
-  node_handle result = resF->createReducedNode(-1, C);
+  edge_value ev;
+  node_handle result;
+  resF->createReducedNode(C, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
   return result;
 }
 #endif

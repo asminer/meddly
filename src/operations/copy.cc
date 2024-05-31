@@ -172,7 +172,9 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handl
   unpacked_node::Recycle(A);
 
   // Reduce
-  b = resF->createReducedNode(in, nb);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, b, in);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   // Add to compute table
   return saveResult(Key, a, b);
@@ -245,7 +247,9 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
   unpacked_node::Recycle(A);
 
   // Reduce
-  b = resF->createReducedNode(in, nb);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, b, in);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   // Add to compute table
   if (Key) saveResult(Key, a, b);
@@ -383,7 +387,9 @@ void MEDDLY::copy_MT2EV<TYPE>
   unpacked_node::Recycle(A);
 
   // Reduce
-  resF->createReducedNode(in, nb, bev, b);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, b, in);
+  ev.get(bev);
 
   // Add to compute table
   addToCache(Key, a, b, bev);
@@ -456,7 +462,9 @@ void MEDDLY::copy_MT2EV<TYPE>
   unpacked_node::Recycle(A);
 
   // Reduce
-  resF->createReducedNode(in, nb, bev, b);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, b, in);
+  ev.get(bev);
 
   // Add to compute table
   if (Key) addToCache(Key, a, b, bev);
@@ -578,7 +586,9 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   unpacked_node::Recycle(A);
 
   // Reduce
-  b = resF->createReducedNode(in, nb);
+  edge_value bev;
+  resF->createReducedNode(nb, bev, b, in);
+  MEDDLY_DCASSERT(bev.isVoid());
 
   // Add to compute table
   addToCache(Key, ev, a, b);
@@ -655,7 +665,9 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   unpacked_node::Recycle(A);
 
   // Reduce
-  b = resF->createReducedNode(in, nb);
+  edge_value bev;
+  resF->createReducedNode(nb, bev, b, in);
+  MEDDLY_DCASSERT(bev.isVoid());
 
   // Add to compute table
   if (Key) addToCache(Key, ev, a, b);
@@ -763,9 +775,13 @@ MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
   unpacked_node::Recycle(A);
 
   // Reduce
+  edge_value ev;
+  resF->createReducedNode(nb, ev, b, in);
+#ifdef DEVELOPMENT_CODE
   OUTTYPE bv;
-  resF->createReducedNode(in, nb, bv, b);
+  ev.get(bv);
   // bv should be the redundant/identity value
+#endif
 
   // Add to compute table
   return saveResult(Key, a, b);
@@ -930,7 +946,9 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   unpacked_node::Recycle(A);
 
   // Reduce
-  resF->createReducedNode(in, nb, bv, bn);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, bn, in);
+  ev.get(bv);
 
   // Add to compute table
   if (Key) addToCache(Key, av, an, bv, bn);

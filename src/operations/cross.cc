@@ -117,7 +117,10 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
 
   // reduce, save in compute table
   unpacked_node::Recycle(A);
-  node_handle c = resF->createReducedNode(-1, C);
+  edge_value ev;
+  node_handle c;
+  resF->createReducedNode(C, ev, c);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   CTresult[0].reset();
   CTresult[0].writeN(c);
@@ -158,7 +161,10 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
 
   // reduce
   unpacked_node::Recycle(B);
-  node_handle c = resF->createReducedNode(int(in), C);
+  edge_value ev;
+  node_handle c;
+  resF->createReducedNode(C, ev, c, (int) in);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   // DON'T save in compute table
 

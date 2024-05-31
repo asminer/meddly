@@ -175,7 +175,10 @@ MEDDLY::generic_binary_mdd::compute_normal(node_handle a, node_handle b)
   unpacked_node::Recycle(A);
 
   // reduce and return result
-  node_handle result = resF->createReducedNode(-1, C);
+  edge_value ev;
+  node_handle result;
+  resF->createReducedNode(C, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
   return result;
 }
 
@@ -308,7 +311,10 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
   }
 
   // reduce and return result
-  node_handle result = resF->createReducedNode(-1, C);
+  edge_value ev;
+  node_handle result;
+  resF->createReducedNode(C, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
   return result;
 }
 
@@ -464,7 +470,9 @@ MEDDLY::generic_binary_mxd::compute_normal(node_handle a, node_handle b)
   unpacked_node::Recycle(A);
 
   // reduce and return result
-  result = resF->createReducedNode(-1, C);
+  edge_value ev;
+  resF->createReducedNode(C, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
   return result;
 }
 
@@ -587,7 +595,10 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   unpacked_node::Recycle(A);
 
   // reduce and return result
-  result = resF->createReducedNode(-1, C);
+  edge_value ev;
+  node_handle result;
+  resF->createReducedNode(C, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
   return result;
 }
 #endif // ALLOW_EXTENSIBLE
@@ -639,8 +650,10 @@ MEDDLY::generic_binary_mxd::compute_r_normal(int in, int k, node_handle a, node_
   unpacked_node::Recycle(A);
 
   // reduce
-  node_handle result = resF->createReducedNode(in, C);
-
+  edge_value ev;
+  node_handle result;
+  resF->createReducedNode(C, ev, result, in);
+  MEDDLY_DCASSERT(ev.isVoid());
   return result;
 }
 
@@ -751,7 +764,10 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
     C->shrink(nnz);
 
     // reduce
-    result = resF->createReducedNode(in, C);
+    edge_value ev;
+    node_handle result;
+    resF->createReducedNode(C, ev, result, in);
+    MEDDLY_DCASSERT(ev.isVoid());
   }
 
   // cleanup
@@ -870,7 +886,9 @@ MEDDLY::generic_binbylevel_mxd
   unpacked_node::Recycle(A);
 
   // reduce
-  result = resF->createReducedNode(in, C);
+  edge_value ev;
+  resF->createReducedNode(C, ev, result, in);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   // save result in compute table, when we can
   if (resultLevel<0 && 1==nnz) canSaveResult = false;
@@ -991,7 +1009,9 @@ void MEDDLY::generic_binary_evplus
   unpacked_node::Recycle(A);
 
   // Reduce
-  resF->createReducedNode(-1, nb, cev, c);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, c);
+  cev = ev.getLong();
 
   // Add to CT
   saveResult(Key, aev, a, bev, b, cev, c);
@@ -1088,7 +1108,9 @@ void MEDDLY::generic_binary_evplus_mxd
   unpacked_node::Recycle(A);
 
   // Reduce
-  resF->createReducedNode(-1, nb, cev, c);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, c);
+  cev = ev.getLong();
 
   // Add to CT
   saveResult(Key, aev, a, bev, b, cev, c);
@@ -1145,7 +1167,9 @@ void MEDDLY::generic_binary_evplus_mxd
   unpacked_node::Recycle(A);
 
   // reduce
-  resF->createReducedNode(in, C, cev, c);
+  edge_value ev;
+  resF->createReducedNode(C, ev, c, in);
+  cev = ev.getLong();
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, c);
@@ -1251,9 +1275,9 @@ void MEDDLY::generic_binary_evtimes
   unpacked_node::Recycle(A);
 
   // Reduce
-  node_handle cl;
-  resF->createReducedNode(-1, nb, cev, cl);
-  c = cl;
+  edge_value ev;
+  resF->createReducedNode(nb, ev, c);
+  cev = ev.getFloat();
 
 #ifndef DISABLE_CACHE
   // Add to CT
@@ -1323,7 +1347,7 @@ void MEDDLY::generic_binary_evtimes
   unpacked_node::Recycle(A);
 
   // Reduce
-  node_handle cl;
-  resF->createReducedNode(in, nb, cev, cl);
-  c = cl;
+  edge_value ev;
+  resF->createReducedNode(nb, ev, c, in);
+  cev = ev.getFloat();
 }
