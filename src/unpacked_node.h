@@ -36,6 +36,8 @@ namespace MEDDLY {
     struct unpacked_lists;
 }
 
+// #define USE_VECTOR
+
 // ******************************************************************
 // *                                                                *
 // *                      unpacked_node  class                      *
@@ -316,9 +318,19 @@ class MEDDLY::unpacked_node {
         */
         inline node_handle down(unsigned n) const
         {
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            return _down.at(n);
+#else
+            return _down[n];
+#endif
+
+#else
             MEDDLY_DCASSERT(_down);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             return _down[n];
+#endif
         }
 
         /** Get a downward pointer.
@@ -330,9 +342,19 @@ class MEDDLY::unpacked_node {
         */
         inline node_handle down(int n) const
         {
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            return _down.at(n);
+#else
+            return _down[n];
+#endif
+
+#else
             MEDDLY_DCASSERT(_down);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
             return _down[n];
+#endif
         }
 
         /** Get the index of the nth non-zero pointer.
@@ -342,10 +364,20 @@ class MEDDLY::unpacked_node {
         */
         inline unsigned index(unsigned n) const
         {
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            return _index.at(n);
+#else
+            return _index[n];
+#endif
+
+#else
             MEDDLY_DCASSERT(_index);
             MEDDLY_DCASSERT(!is_full);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             return _index[n];
+#endif
         }
 
         /** Get the index of the nth non-zero pointer.
@@ -355,10 +387,20 @@ class MEDDLY::unpacked_node {
         */
         inline unsigned index(int n) const
         {
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            return _index.at(n);
+#else
+            return _index[n];
+#endif
+
+#else
             MEDDLY_DCASSERT(_index);
             MEDDLY_DCASSERT(!is_full);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
             return _index[n];
+#endif
         }
 
         /** Get the nth edge value.
@@ -366,9 +408,19 @@ class MEDDLY::unpacked_node {
             @return     The edge value
         */
         inline const edge_value& edgeval(unsigned n) const {
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            return _edge.at(n);
+#else
+            return _edge[n];
+#endif
+
+#else
             MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             return _edge[n];
+#endif
         }
 
         /** Get the nth edge value.
@@ -376,9 +428,19 @@ class MEDDLY::unpacked_node {
             @return     The edge value
         */
         inline const edge_value& edgeval(int n) const {
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            return _edge.at(n);
+#else
+            return _edge[n];
+#endif
+
+#else
             MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
             return _edge[n];
+#endif
         }
 
         /** Subtract from an edge value.
@@ -387,9 +449,19 @@ class MEDDLY::unpacked_node {
         */
         template <class T>
         inline void subtractFromEdge(unsigned n, T v) {
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            _edge.at(n).subtract(v);
+#else
+            _edge[n].subtract(v);
+#endif
+
+#else
             MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             _edge[n].subtract(v);
+#endif
         }
 
 
@@ -399,9 +471,19 @@ class MEDDLY::unpacked_node {
         */
         template <class T>
         inline void divideEdge(unsigned n, T v) {
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            _edge.at(n).divide(v);
+#else
+            _edge[n].divide(v);
+#endif
+
+#else
             MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             _edge[n].divide(v);
+#endif
         }
 
         /// Get the nth edge value, as a long.
@@ -422,10 +504,20 @@ class MEDDLY::unpacked_node {
             @param  ev  New edge value
         */
         inline void setEdgeval(unsigned n, const edge_value &ev) {
+            MEDDLY_DCASSERT(ev.hasType(the_edge_type));
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            _edge.at(n) = ev;
+#else
+            _edge[n] = ev;
+#endif
+
+#else
             MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            MEDDLY_DCASSERT(ev.hasType(the_edge_type));
             _edge[n] = ev;
+#endif
         }
 
         /**
@@ -435,12 +527,21 @@ class MEDDLY::unpacked_node {
         */
         inline void setFull(unsigned n, node_handle h)
         {
-            MEDDLY_DCASSERT(_down);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             MEDDLY_DCASSERT(!hasEdges());
             MEDDLY_DCASSERT(isFull());
+#ifdef USE_VECTOR
 
+#ifdef DEVELOPMENT_CODE
+            _down.at(n) = h;
+#else
             _down[n] = h;
+#endif
+
+#else
+            MEDDLY_DCASSERT(_down);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            _down[n] = h;
+#endif
         }
 
         /**
@@ -451,14 +552,25 @@ class MEDDLY::unpacked_node {
         */
         inline void setFull(unsigned n, const edge_value &v, node_handle h)
         {
+            MEDDLY_DCASSERT(v.hasType(the_edge_type));
+            MEDDLY_DCASSERT(isFull());
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            _down.at(n) = h;
+            _edge.at(n) = v;
+#else
+            _down[n] = h;
+            _edge[n] = v;
+#endif
+
+#else
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            MEDDLY_DCASSERT(v.hasType(the_edge_type));
-            MEDDLY_DCASSERT(isFull());
-
             _down[n] = h;
             _edge[n] = v;
+#endif
         }
 
         /**
@@ -470,11 +582,23 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(E.isAttachedTo(parent));
             MEDDLY_DCASSERT(E.getEdgeValue().hasType(the_edge_type));
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            E.xferNode(_down.at(n));
+            _edge.at(n) = E.getEdgeValue();
+#else
+            E.xferNode(_down[n]);
+            _edge[n] = E.getEdgeValue();
+#endif
+
+#else
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
             E.xferNode(_down[n]);
             if (_edge) {
                 _edge[n] = E.getEdgeValue();
             }
+#endif
         }
 
 
@@ -486,13 +610,24 @@ class MEDDLY::unpacked_node {
         */
         inline void setFull(unsigned n, const void* p, node_handle h)
         {
+            MEDDLY_DCASSERT(isFull());
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            _down.at(n) = h;
+            _edge.at(n).set(the_edge_type, p);
+#else
+            _down[n] = h;
+            _edge[n].set(the_edge_type, p);
+#endif
+
+#else
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            MEDDLY_DCASSERT(isFull());
-
             _down[n] = h;
             _edge[n].set(the_edge_type, p);
+#endif
         }
 
 
@@ -504,14 +639,25 @@ class MEDDLY::unpacked_node {
         */
         inline void setSparse(unsigned n, unsigned i, node_handle h)
         {
+            MEDDLY_DCASSERT(!hasEdges());
+            MEDDLY_DCASSERT(isSparse());
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            _index.at(n) = i;
+            _down.at(n) = h;
+#else
+            _index[n] = i;
+            _down[n] = h;
+#endif
+
+#else
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            MEDDLY_DCASSERT(!hasEdges());
-            MEDDLY_DCASSERT(isSparse());
-
             _index[n] = i;
             _down[n] = h;
+#endif
         }
 
 
@@ -525,16 +671,29 @@ class MEDDLY::unpacked_node {
         inline void setSparse(unsigned n, unsigned i, const edge_value &v,
                 node_handle h)
         {
+            MEDDLY_DCASSERT(v.hasType(the_edge_type));
+            MEDDLY_DCASSERT(isSparse());
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            _index.at(n) = i;
+            _down.at(n) = h;
+            _edge.at(n) = v;
+#else
+            _index[n] = i;
+            _down[n] = h;
+            _edge[n] = v;
+#endif
+
+#else
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
             MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            MEDDLY_DCASSERT(v.hasType(the_edge_type));
-            MEDDLY_DCASSERT(isSparse());
-
             _index[n] = i;
             _down[n] = h;
             _edge[n] = v;
+#endif
         }
 
 
@@ -546,17 +705,30 @@ class MEDDLY::unpacked_node {
         */
         inline void setSparse(unsigned n, unsigned i, dd_edge &E)
         {
+            MEDDLY_DCASSERT(E.getEdgeValue().hasType(the_edge_type));
+            MEDDLY_DCASSERT(isSparse());
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            E.xferNode(_down.at(n));
+            _index.at(n) = i;
+            _edge.at(n) = E.getEdgeValue();
+#else
+            E.xferNode(_down[n]);
+            _index[n] = i;
+            _edge[n] = E.getEdgeValue();
+#endif
+
+#else
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            MEDDLY_DCASSERT(E.getEdgeValue().hasType(the_edge_type));
-            MEDDLY_DCASSERT(isSparse());
-
             E.xferNode(_down[n]);
             _index[n] = i;
             if (_edge) {
                 _edge[n] = E.getEdgeValue();
             }
+#endif
         }
 
 
@@ -570,15 +742,28 @@ class MEDDLY::unpacked_node {
         inline void setSparse(unsigned n, unsigned i, const void* p,
                 node_handle h)
         {
+            MEDDLY_DCASSERT(isSparse());
+#ifdef USE_VECTOR
+
+#ifdef DEVELOPMENT_CODE
+            _index.at(n) = i;
+            _down.at(n) = h;
+            _edge.at(n).set(the_edge_type, p);
+#else
+            _index[n] = i;
+            _down[n] = h;
+            _edge[n].set(the_edge_type, p);
+#endif
+
+#else
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
             MEDDLY_DCASSERT(_edge);
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            MEDDLY_DCASSERT(isSparse());
-
             _index[n] = i;
             _down[n] = h;
             _edge[n].set(the_edge_type, p);
+#endif
         }
 
 
@@ -675,7 +860,11 @@ class MEDDLY::unpacked_node {
         /// Get the size of this node.
         inline unsigned getSize() const
         {
+#ifdef USE_VECTOR
+            return _down.size();
+#else
             return size;
+#endif
         }
 
         /// Is this a sparse node?
@@ -758,8 +947,14 @@ class MEDDLY::unpacked_node {
 
         /// Change the size of a node
         inline void resize(unsigned ns) {
+#ifdef USE_VECTOR
+            _down.resize(ns);
+            _index.resize(ns);
+            _edge.resize(ns);
+#else
             size = ns;
             if (ns > alloc) expand(ns);
+#endif
         }
 
         inline void resize(int ns) {
@@ -770,8 +965,12 @@ class MEDDLY::unpacked_node {
         /// Shrink the size of a node
         inline void shrink(unsigned ns)
         {
-            MEDDLY_DCASSERT(ns <= size);
+            MEDDLY_DCASSERT(ns <= getSize());
+#ifdef USE_VECTOR
+            resize(ns);
+#else
             size = ns;
+#endif
         }
 
         /// Set the node as sparse.
@@ -865,6 +1064,16 @@ class MEDDLY::unpacked_node {
         /// Modifiable parent forest; required for writable nodes
         forest* modparent;
 
+#ifdef USE_VECTOR
+        /// Down pointers
+        std::vector <node_handle> _down;
+
+        /// Indexes, for sparse; otherwise unused
+        std::vector <unsigned> _index;
+
+        /// Edge values; or null if void edges
+        std::vector <edge_value> _edge;
+#else
         /// Down pointers
         node_handle* _down;
 
@@ -879,6 +1088,7 @@ class MEDDLY::unpacked_node {
 
         /// Used sizes of arrays
         unsigned size;
+#endif
 
         /// Extra header information that is not hashed
         void* extra_unhashed;
