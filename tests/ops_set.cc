@@ -403,11 +403,24 @@ inline char getReductionType(forest* f)
     throw "Unknown reduction type";
 }
 
+void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2)
+{
+    if (e1 == e2) return;
+
+    ostream_output out(std::cout);
+
+    out << "Mismatch on " << what << "\n";
+    out << "Expected DD:\n";
+    e1.showGraph(out);
+    out << "Obtained DD:\n";
+    e2.showGraph(out);
+
+    throw "mismatch";
+}
+
 void compare_sets(const std::vector <bool> &Aset,
         const std::vector <bool> &Bset, forest* f1, forest* f2, forest* fres)
 {
-    using namespace MEDDLY;
-
     std::vector <bool> AiBset(POTENTIAL);
     std::vector <bool> AuBset(POTENTIAL);
     std::vector <bool> AmBset(POTENTIAL);
@@ -435,34 +448,50 @@ void compare_sets(const std::vector <bool> &Aset,
     apply(DIFFERENCE, Add, Bdd, AmBsym);
     apply(COMPLEMENT, Add, cAsym);
 
-    /*
-    ostream_output out(std::cout);
-
-    out << "Add: " << Add << "\n";
-    out << "Bdd: " << Bdd << "\n";
-    out << "AuBsym: " << AuBsym << "\n";
-
-    out << "Forest " << fres->FID() << ":\n";
-    fres->dump(out, SHOW_DETAILS);
-
-    exit(1);
-    */
-
-    if (AiBsym != AiBdd) {
-        throw "intersection mismatch";
-    }
-    if (AuBsym != AuBdd) {
-        throw "union mismatch";
-    }
-    if (AmBsym != AmBdd) {
-        throw "difference mismatch";
-    }
-    if (cAsym != cABdd) {
-        throw "complement mismatch";
-    }
+    checkEqual("intersection", AiBsym, AiBdd);
+    checkEqual("union", AuBsym, AuBdd);
+    checkEqual("difference", AmBsym, AmBdd);
+    checkEqual("complement", cAsym, cABdd);
 }
 
-void test_pairs(unsigned scard, forest* f1, forest* f2, forest* fres)
+void compare_rels(const std::vector <bool> &Aset,
+        const std::vector <bool> &Bset, forest* f1, forest* f2, forest* fres)
+{
+    std::vector <bool> AiBset(POTENTIAL);
+    std::vector <bool> AuBset(POTENTIAL);
+    std::vector <bool> AmBset(POTENTIAL);
+    std::vector <bool> cAset(POTENTIAL);
+
+    dd_edge Add(f1), Bdd(f2), AiBdd(fres), AuBdd(fres), AmBdd(fres),
+                cABdd(fres);
+
+    set_intersection(Aset, Bset, AiBset);
+    set_union(Aset, Bset, AuBset);
+    set_difference(Aset, Bset, AmBset);
+    set_complement(Aset, cAset);
+
+    set2mxd(Aset, f1, Add);
+    set2mxd(Bset, f2, Bdd);
+    set2mxd(AiBset, fres, AiBdd);
+    set2mxd(AuBset, fres, AuBdd);
+    set2mxd(AmBset, fres, AmBdd);
+    set2mxd(cAset, fres, cABdd);
+
+    dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres), cAsym(fres);
+
+    apply(INTERSECTION, Add, Bdd, AiBsym);
+    apply(UNION, Add, Bdd, AuBsym);
+    apply(DIFFERENCE, Add, Bdd, AmBsym);
+    apply(COMPLEMENT, Add, cAsym);
+
+    checkEqual("intersection", AiBsym, AiBdd);
+    checkEqual("union", AuBsym, AuBdd);
+    checkEqual("difference", AmBsym, AmBdd);
+    checkEqual("complement", cAsym, cABdd);
+}
+
+
+void test_sets_over(unsigned scard, forest* f1, forest* f2, forest* fres)
 {
     if (!f1) throw "null f1";
     if (!f2) throw "null f2";
@@ -488,6 +517,43 @@ void test_pairs(unsigned scard, forest* f1, forest* f2, forest* fres)
 
         compare_sets(Aset, Bset, f1, f2, fres);
     }
+
+    std::cout << std::endl;
+}
+
+void test_rels_over(unsigned scard, forest* f1, forest* f2, forest* fres)
+{
+    if (!f1) throw "null f1";
+    if (!f2) throw "null f2";
+    if (!fres) throw "null fres";
+
+    std::cout << "    " << getReductionType(f1) << getReductionType(f2)
+              << ':' << getReductionType(fres) << ' ';
+
+    std::vector <bool> Aset(POTENTIAL);
+    std::vector <bool> Bset(POTENTIAL);
+
+    for (unsigned i=0; i<16; i++) {
+        std::cout << '.';
+        randomizeSet(Aset, scard);
+        randomizeSet(Bset, scard);
+
+        compare_rels(Aset, Bset, f1, f2, fres);
+    }
+    for (unsigned i=0; i<16; i++) {
+        std::cout << "x";
+        randomizeFully(Aset, scard);
+        randomizeFully(Bset, scard);
+
+        compare_rels(Aset, Bset, f1, f2, fres);
+    }
+    for (unsigned i=0; i<16; i++) {
+        std::cout << "i";
+        randomizeIdentity(Aset, scard);
+        randomizeIdentity(Bset, scard);
+
+        compare_rels(Aset, Bset, f1, f2, fres);
+    }
     std::cout << std::endl;
 }
 
@@ -505,33 +571,96 @@ int main()
         }
         domain* D = domain::createBottomUp(bounds, VARS);
 
+        //
+        // Test sets
+        //
+
         policies p;
         p.useDefaults(SET);
 
-        forest* F1 = forest::create(D, false, range_type::BOOLEAN,
+        forest* F1 = forest::create(D, SET, range_type::BOOLEAN,
                         edge_labeling::MULTI_TERMINAL, p);
 
         p.setQuasiReduced();
 
-        forest* F2 = forest::create(D, false, range_type::BOOLEAN,
+        forest* F2 = forest::create(D, SET, range_type::BOOLEAN,
                         edge_labeling::MULTI_TERMINAL, p);
 
         for (unsigned i=MINCARD; i<=MAXCARD; i*=2) {
             std::cout << "Testing sets of size " << i << " out of " << POTENTIAL << "\n";
 
-            test_pairs(i, F1, F1, F1);
-            test_pairs(i, F1, F1, F2);
-            test_pairs(i, F1, F2, F1);
-            test_pairs(i, F1, F2, F2);
-            test_pairs(i, F2, F1, F1);
-            test_pairs(i, F2, F1, F2);
-            test_pairs(i, F2, F2, F1);
-            test_pairs(i, F2, F2, F2);
+            test_sets_over(i, F1, F1, F1);
+            test_sets_over(i, F1, F1, F2);
+            test_sets_over(i, F1, F2, F1);
+            test_sets_over(i, F1, F2, F2);
+            test_sets_over(i, F2, F1, F1);
+            test_sets_over(i, F2, F1, F2);
+            test_sets_over(i, F2, F2, F1);
+            test_sets_over(i, F2, F2, F2);
         }
 
         //
-        // TBD: relations here
+        // Test relations
         //
+
+        p.useDefaults(RELATION);
+
+        p.setQuasiReduced();
+
+        forest* R1 = forest::create(D, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL, p);
+
+        p.setFullyReduced();
+
+        forest* R2 = forest::create(D, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL, p);
+
+        p.setIdentityReduced();
+
+        forest* R3 = forest::create(D, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL, p);
+
+
+        for (unsigned i=MINCARD; i<MAXCARD; i*=2) {
+            std::cout << "Testing relations of size " << i << " out of " << POTENTIAL << "\n";
+
+            test_rels_over(i, R1, R1, R1);
+            test_rels_over(i, R1, R1, R2);
+            test_rels_over(i, R1, R1, R3);
+
+            test_rels_over(i, R1, R2, R1);
+            test_rels_over(i, R1, R2, R2);
+            test_rels_over(i, R1, R2, R3);
+
+            test_rels_over(i, R1, R3, R1);
+            test_rels_over(i, R1, R3, R2);
+            test_rels_over(i, R1, R3, R3);
+        // ---
+            test_rels_over(i, R2, R1, R1);
+            test_rels_over(i, R2, R1, R2);
+            test_rels_over(i, R2, R1, R3);
+
+            test_rels_over(i, R2, R2, R1);
+            test_rels_over(i, R2, R2, R2);
+            test_rels_over(i, R2, R2, R3);
+
+            test_rels_over(i, R2, R3, R1);
+            test_rels_over(i, R2, R3, R2);
+            test_rels_over(i, R2, R3, R3);
+        // ---
+            test_rels_over(i, R3, R1, R1);
+            test_rels_over(i, R3, R1, R2);
+            test_rels_over(i, R3, R1, R3);
+
+            test_rels_over(i, R3, R2, R1);
+            test_rels_over(i, R3, R2, R2);
+            test_rels_over(i, R3, R2, R3);
+
+            test_rels_over(i, R3, R3, R1);
+            test_rels_over(i, R3, R3, R2);
+            test_rels_over(i, R3, R3, R3);
+        }
+
 
         MEDDLY::cleanup();
         return 0;

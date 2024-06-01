@@ -14,6 +14,53 @@ Updates to operation interface:
     * Allow (back) low-level interface
 
 
+NEW FILE
+oper_result.h:
+
+    enum class oper_result_type {
+        FOREST,
+        INTEGER,
+        LONG,
+        DOUBLE,
+        HUGEINT
+    };
+
+    // for everything other than FOREST
+    class oper_result {
+        public:
+            oper_result(oper_result_type t == FOREST);
+            oper_result(int v);
+            oper_result(long v);
+            oper_result(double v);
+#ifdef HAVE_GMP
+            oper_result(mpz_t v);
+#endif
+
+            // getters for the type
+
+            // getters for the value
+
+            inline void get(int &v) const;
+            inline void get(long &v) const;
+            inline void get(double &v) const;
+#ifdef HAVE_GMP
+            inline void get(mpz_t &v) const;
+#endif
+
+        private:
+            union {
+                int         res_int;
+                long        res_long;
+                double      res_double;
+                mpz_t       res_mpz;
+            };
+
+            oper_result_type mytype;
+    };
+
+
+
+
 unary:
 
     compute(edge_value inv, node_handle inp,
@@ -23,6 +70,13 @@ unary:
     compute(edge_value inv, node_handle inp, long &out);
     compute(edge_value inv, node_handle inp, double &out);
     compute(edge_value inv, node_handle inp, ct_object &out);
+
+    // TBD: do we want a wrapper object for non-dd compute results,
+    // something like:
+    compute(edge_value inv, node_handle inp, compute_result &out);
+    // or can we use ct_object here and expand it???
+
+
 
 binary:
     compute(edge_value av, node_handle ap, edge_value bv, node_handle bp,
@@ -39,6 +93,20 @@ Operation updates, to do:
     * eventually: remove entry registration from operation base class
 
 
+Unpacked matrix class (new):
+    * array of pointers to unpacked_node,
+      allocated in chunks of 16
+    * memory is recycled like in unpacked_node
+    * newUnpacked(forest* f, node_handle p, node_storage_flags rs);
+        // p is at an unprimed level
+        // rs determines storage for each row
+    * newRedundant(const forest* f, int k, const edge_value &ev,
+                    node_handle p, node_storage_flags);
+    * newIdentity(const forest* f, int k, const edge_value &ev,
+                    node_handle p, node_storage_flags);
+    * newBlank(forest* f, int k, node_storage_flags);
+
+    * reduce(edge_value &ev, node_handle &p);
 
 Compute table ideas
 
