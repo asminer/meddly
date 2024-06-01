@@ -113,7 +113,7 @@ void MEDDLY::binary_operation::computeTemp(const dd_edge &ar1,
         node_handle resp;
         compute(ar1.getEdgeValue(), ar1.getNode(),
                 ar2.getEdgeValue(), ar2.getNode(),
-                0,  // how to get level?
+                0,
                 res.setEdgeValue(), resp);
         res.set(resp);
     } else {

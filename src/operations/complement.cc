@@ -22,6 +22,8 @@
 
 #include "../ct_entry_key.h"
 #include "../ct_entry_result.h"
+
+#include "../ct_vector.h"
 #include "../compute_table.h"
 #include "../oper_unary.h"
 
@@ -32,6 +34,8 @@ namespace MEDDLY {
     unary_list COMPL_cache;
 };
 
+// #define OLD_COMP
+
 // #define DEBUG_MXD_COMPL
 
 // ******************************************************************
@@ -39,6 +43,8 @@ namespace MEDDLY {
 // *                        compl_mdd  class                        *
 // *                                                                *
 // ******************************************************************
+
+#ifdef OLD_COMP
 
 class MEDDLY::compl_mdd : public unary_operation {
     public:
@@ -143,6 +149,116 @@ MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
   return saveResult(Key, a, b);
 }
 
+#else
+
+class MEDDLY::compl_mdd : public unary_operation {
+    public:
+        compl_mdd(forest* arg, forest* res);
+        virtual ~compl_mdd();
+
+        virtual void compute(const edge_value &av, node_handle ap,
+                int L,
+                edge_value &cv, node_handle &cp);
+
+    protected:
+        node_handle _compute(node_handle A, int L);
+
+    private:
+        ct_entry_type* ct;
+};
+
+// ******************************************************************
+
+MEDDLY::compl_mdd::compl_mdd(forest* arg, forest* res)
+    : unary_operation(COMPL_cache, arg, res)
+{
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllRanges(__FILE__, __LINE__, range_type::BOOLEAN);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+
+    ct = new ct_entry_type("union");
+    ct->setFixed(arg);
+    ct->setResult(res);
+    ct->doneBuilding();
+}
+
+MEDDLY::compl_mdd::~compl_mdd()
+{
+    ct->markForDestroy();
+}
+
+void MEDDLY::compl_mdd::compute(const edge_value &av, node_handle ap,
+                int L,
+                edge_value &cv, node_handle &cp)
+{
+    MEDDLY_DCASSERT(av.isVoid());
+    cv.set();
+    cp = _compute(ap, L);
+}
+
+MEDDLY::node_handle MEDDLY::compl_mdd::_compute(node_handle A, int L)
+{
+    //
+    // Terminal cases
+    //
+    if (argF->isTerminalNode(A)) {
+        bool ta;
+        argF->getValueFromHandle(A, ta);
+        return resF->makeRedundantsTo(resF->handleForValue(!ta), L);
+    }
+
+    //
+    // Check compute table
+    //
+    ct_vector key(1);
+    ct_vector res(1);
+    key[0].setN(A);
+    if (ct->findCT(key, res)) {
+        return resF->makeRedundantsTo(resF->linkNode(res[0].getN()), L);
+    }
+
+    //
+    // Do computation
+    //
+
+    //
+    // Determine level information
+    //
+    const int Alevel = argF->getNodeLevel(A);
+
+    //
+    // Initialize unpacked nodes
+    //
+    unpacked_node* Au = argF->newUnpacked(A, FULL_ONLY);
+    unpacked_node* Cu = unpacked_node::newFull(resF, Alevel, Au->getSize());
+
+    //
+    // Build result node
+    //
+    for (unsigned i=0; i<Cu->getSize(); i++) {
+        Cu->setFull(i, _compute(Au->down(i), Cu->getLevel()-1));
+    }
+
+    //
+    // Reduce / cleanup
+    //
+    unpacked_node::Recycle(Au);
+    edge_value dummy;
+    node_handle C;
+    resF->createReducedNode(Cu, dummy, C);
+    MEDDLY_DCASSERT(dummy.isVoid());
+
+    //
+    // Save result in CT
+    //
+    res[0].setN(C);
+    ct->addCT(key, res);
+
+    return resF->makeRedundantsTo(C, L);
+}
+
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -278,7 +394,7 @@ MEDDLY::unary_operation* MEDDLY::COMPLEMENT(forest* arg, forest* res)
     if (arg->isForRelations()) {
         return COMPL_cache.add(new compl_mxd(arg, res));
     } else {
-        return COMPL_cache.add(new compl_mxd(arg, res));
+        return COMPL_cache.add(new compl_mdd(arg, res));
     }
 }
 

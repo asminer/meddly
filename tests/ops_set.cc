@@ -155,6 +155,17 @@ void set_difference(const std::vector <bool> &A,
     }
 }
 
+void set_complement(const std::vector <bool> &A, std::vector <bool> &C)
+{
+    if (A.size() != C.size()) {
+        throw "set difference size mismatch A,C";
+    }
+
+    for (unsigned i=0; i<C.size(); i++) {
+        C[i] = !A[i];
+    }
+}
+
 
 inline void fillMinterm(unsigned x, int* mt)
 {
@@ -225,6 +236,7 @@ void test_pairs(unsigned scard, forest* f1, forest* f2, forest* fres)
     std::vector <bool> AiBset(POTENTIAL);
     std::vector <bool> AuBset(POTENTIAL);
     std::vector <bool> AmBset(POTENTIAL);
+    std::vector <bool> cAset(POTENTIAL);
 
     for (unsigned i=0; i<16; i++) {
         std::cout << '.';
@@ -233,22 +245,26 @@ void test_pairs(unsigned scard, forest* f1, forest* f2, forest* fres)
         set_intersection(Aset, Bset, AiBset);
         set_union(Aset, Bset, AuBset);
         set_difference(Aset, Bset, AmBset);
+        set_complement(Aset, cAset);
 
         using namespace MEDDLY;
 
-        dd_edge Add(f1), Bdd(f2), AiBdd(fres), AuBdd(fres), AmBdd(fres);
+        dd_edge Add(f1), Bdd(f2), AiBdd(fres), AuBdd(fres), AmBdd(fres),
+                cABdd(fres);
 
         set2mdd(Aset, f1, Add);
         set2mdd(Bset, f2, Bdd);
         set2mdd(AiBset, fres, AiBdd);
         set2mdd(AuBset, fres, AuBdd);
         set2mdd(AmBset, fres, AmBdd);
+        set2mdd(cAset, fres, cABdd);
 
-        dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres);
+        dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres), cAsym(fres);
 
         apply(INTERSECTION, Add, Bdd, AiBsym);
         apply(UNION, Add, Bdd, AuBsym);
         apply(DIFFERENCE, Add, Bdd, AmBsym);
+        apply(COMPLEMENT, Add, cAsym);
 
         if (AiBsym != AiBdd) {
             throw "intersection mismatch";
@@ -258,6 +274,9 @@ void test_pairs(unsigned scard, forest* f1, forest* f2, forest* fres)
         }
         if (AmBsym != AmBdd) {
             throw "difference mismatch";
+        }
+        if (cAsym != cABdd) {
+            throw "complement mismatch";
         }
     }
     std::cout << std::endl;

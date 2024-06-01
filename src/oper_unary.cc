@@ -25,6 +25,8 @@
 // *                    unary_operation  methods                    *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_6
+
 MEDDLY::unary_operation::unary_operation(unary_list& owner,
     unsigned et_slots, forest* arg, forest* res)
     : operation(owner.getName(), et_slots), parent(owner)
@@ -35,6 +37,7 @@ MEDDLY::unary_operation::unary_operation(unary_list& owner,
 
     registerInForest(argF);
     registerInForest(resF);
+    new_style = false;
 }
 
 MEDDLY::unary_operation::unary_operation(unary_list& owner,
@@ -47,7 +50,26 @@ MEDDLY::unary_operation::unary_operation(unary_list& owner,
     resF = nullptr;
 
     registerInForest(argF);
+    new_style = false;
 }
+
+#endif
+
+MEDDLY::unary_operation::unary_operation(unary_list& owner,
+    forest* arg, forest* res) : operation(owner.getName()), parent(owner)
+{
+    argF = arg;
+    resultType = opnd_type::FOREST;
+    resF = res;
+
+    registerInForest(argF);
+    registerInForest(resF);
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+    new_style = true;
+#endif
+}
+
 
 MEDDLY::unary_operation::~unary_operation()
 {
@@ -61,7 +83,23 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
     if (!checkForestCompatibility()) {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
     }
-    computeDDEdge(arg, res, true);
+#ifdef ALLOW_DEPRECATED_0_17_6
+    if (new_style) {
+        node_handle resp;
+        compute(arg.getEdgeValue(), arg.getNode(),
+                resF->getMaxLevelIndex(),
+                res.setEdgeValue(), resp);
+        res.set(resp);
+    } else {
+        computeDDEdge(arg, res, true);
+    }
+#else
+    node_handle resp;
+    compute(arg.getEdgeValue(), arg.getNode(),
+            resF->getMaxLevelIndex(),
+            res.setEdgeValue(), resp);
+    res.set(resp);
+#endif
 }
 
 #ifdef ALLOW_DEPRECATED_0_17_6
@@ -70,7 +108,16 @@ void MEDDLY::unary_operation::computeTemp(const dd_edge &arg, dd_edge &res)
     if (!checkForestCompatibility()) {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
     }
-    computeDDEdge(arg, res, false);
+
+    if (new_style) {
+    } else {
+        computeDDEdge(arg, res, false);
+        node_handle resp;
+        compute(arg.getEdgeValue(), arg.getNode(),
+                0,
+                res.setEdgeValue(), resp);
+        res.set(resp);
+    }
 }
 
 void MEDDLY::unary_operation::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
@@ -90,6 +137,14 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, double &res)
 }
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
+{
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+// new compute methods
+
+void MEDDLY::unary_operation::compute(const edge_value &av, node_handle ap,
+                int L, edge_value &cv, node_handle &cp)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }

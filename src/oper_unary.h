@@ -40,11 +40,20 @@ namespace MEDDLY {
 */
 class MEDDLY::unary_operation : public operation {
     public:
+#ifdef ALLOW_DEPRECATED_0_17_6
+        /// Old constructor, returns DD
         unary_operation(unary_list& owner, unsigned et_slots,
             forest* arg, forest* res);
 
+        /// Old constructor, returns a number
         unary_operation(unary_list& owner, unsigned et_slots,
             forest* arg, opnd_type res);
+#endif
+        /// New constructor, returns DD
+        unary_operation(unary_list& owner, forest* arg, forest* res);
+
+        /// New constructor, returns a number
+        unary_operation(unary_list& owner, forest* arg, opnd_type res);
 
     protected:
         virtual ~unary_operation();
@@ -136,6 +145,22 @@ class MEDDLY::unary_operation : public operation {
         virtual void compute(const dd_edge &arg, double &res);
         virtual void compute(const dd_edge &arg, ct_object &c);
 
+        /**
+            New virtual compute method for DDs.
+                @param  av      Edge value for operand
+                @param  ap      Node for operand
+                @param  L       Level we want the result to be at.
+                                Ignored for some reduction rules (e.g.,
+                                fully reduced) but important for others
+                                (e.g., quasi reduced).
+                @param  cv      Edge value of result
+                @param  cp      Node for result
+         */
+        virtual void compute(const edge_value &av, node_handle ap,
+                int L,
+                edge_value &cv, node_handle &cp);
+
+
     protected:
         inline bool checkForestCompatibility() const
         {
@@ -157,6 +182,9 @@ class MEDDLY::unary_operation : public operation {
     private:
         unary_list& parent;
         unary_operation* next;
+#ifdef ALLOW_DEPRECATED_0_17_6
+        bool new_style;
+#endif
 
         friend class unary_list;
 };

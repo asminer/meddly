@@ -61,16 +61,16 @@ class MEDDLY::union_mdd : public binary_operation {
 MEDDLY::union_mdd::union_mdd(forest* arg1, forest* arg2, forest* res)
   : binary_operation(UNION_cache, arg1, arg2, res)
 {
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+
     ct = new ct_entry_type("union");
     // CT key:      node from forest arg1, node from forest arg2
     // CT result:   node from forest res
     ct->setFixed(arg1, arg2);
     ct->setResult(res);
     ct->doneBuilding();
-
-    checkDomains(__FILE__, __LINE__);
-    checkAllRelations(__FILE__, __LINE__, SET);
-    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 MEDDLY::union_mdd::~union_mdd()
