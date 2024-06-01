@@ -28,9 +28,11 @@
 #include "../src/meddly.h"
 
 const unsigned VARS = 5;
-const unsigned DOM = 4;
-const unsigned POTENTIAL = 1024;    // DOM ^ VARS
-const unsigned MINCARD = 16;
+const unsigned RELDOM = 2;
+const unsigned SETDOM = RELDOM * RELDOM;
+const unsigned SETBITS = 2;
+const unsigned POTENTIAL = 1024;    // SETDOM ^ VARS
+const unsigned MINCARD = 1;
 const unsigned MAXCARD = 512;
 
 using namespace MEDDLY;
@@ -173,8 +175,8 @@ inline void fillMinterm(unsigned x, int* mt)
     std::cout << std::hex << x << ": [";
 #endif
     for (unsigned j=1; j<=VARS; j++) {
-        mt[j] = x % DOM;
-        x /= DOM;
+        mt[j] = x % SETDOM;
+        x /= SETDOM;
     }
 #ifdef DEBUG_MINTERMS
     for (unsigned j=VARS; j; j--) {
@@ -184,6 +186,153 @@ inline void fillMinterm(unsigned x, int* mt)
     std::cout << "]\n";
 #endif
 }
+
+inline void fillMinterm(unsigned x, int* un, int* pr)
+{
+#ifdef DEBUG_MINTERMS
+    std::cout << std::hex << x << ": [";
+#endif
+    for (unsigned j=1; j<=VARS; j++) {
+        un[j] = x % RELDOM;
+        x /= RELDOM;
+        pr[j] = x % RELDOM;
+        x /= RELDOM;
+    }
+#ifdef DEBUG_MINTERMS
+    for (unsigned j=VARS; j; j--) {
+        if (j<VARS) std::cout << ", ";
+        std::cout << un[j] << "->" << pr[j];
+    }
+    std::cout << "]\n";
+#endif
+}
+
+inline unsigned whichMinterm(const int* mt)
+{
+    unsigned x=0;
+    for (unsigned j=VARS; j; j--) {
+        x <<= SETBITS;
+        x |= mt[j];
+    }
+    return x;
+}
+
+inline unsigned whichMinterm(const int* un, const int* pr)
+{
+    unsigned x=0;
+    for (unsigned j=VARS; j; j--) {
+        x <<= SETBITS;
+        x |= (un[j] << (SETBITS/2)) | pr[j];
+    }
+    return x;
+}
+
+void flipFullyElements(std::vector <bool> &elems, unsigned seed, unsigned k,
+        bool on)
+{
+    // Convert 'seed' to minterm
+    int tmp[VARS+1];
+    fillMinterm(seed, tmp);
+    // Replace variable k with all possible values in minterm,
+    // and convert back to unsigned
+    for (tmp[k]=0; tmp[k]<SETDOM; tmp[k]++) {
+        unsigned x = whichMinterm(tmp);
+        elems[x] = on;
+    }
+}
+
+void flipFullyElements(std::vector <bool> &elems, unsigned seed, unsigned k1,
+        unsigned k2, bool on)
+{
+    // Convert 'seed' to minterm
+    int tmp[VARS+1];
+    fillMinterm(seed, tmp);
+    // Replace variable k with all possible values in minterm,
+    // and convert back to unsigned
+    for (tmp[k1]=0; tmp[k1]<SETDOM; tmp[k1]++) {
+        for (tmp[k2]=0; tmp[k2]<SETDOM; tmp[k2]++) {
+            unsigned x = whichMinterm(tmp);
+            elems[x] = on;
+        }
+    }
+}
+
+
+void flipIdentityElements(std::vector <bool> &elems, unsigned seed,
+        unsigned k, bool on)
+{
+    // Convert 'seed' to minterm
+    int untmp[VARS+1];
+    int prtmp[VARS+1];
+    fillMinterm(seed, untmp, prtmp);
+    for (unsigned v=0; v<RELDOM; v++) {
+        untmp[k] = v;
+        prtmp[k] = v;
+        unsigned x = whichMinterm(untmp, prtmp);
+        elems[x] = on;
+    }
+}
+
+
+void flipIdentityElements(std::vector <bool> &elems, unsigned seed,
+        unsigned k1, unsigned k2, bool on)
+{
+    // Convert 'seed' to minterm
+    int untmp[VARS+1];
+    int prtmp[VARS+1];
+    fillMinterm(seed, untmp, prtmp);
+    for (unsigned v1=0; v1<RELDOM; v1++) {
+        untmp[k1] = v1;
+        prtmp[k1] = v1;
+        for (unsigned v2=0; v2<RELDOM; v2++) {
+            untmp[k2] = v2;
+            prtmp[k2] = v2;
+            unsigned x = whichMinterm(untmp, prtmp);
+            elems[x] = on;
+        }
+    }
+}
+
+
+void randomizeFully(std::vector <bool> &elems, unsigned card)
+{
+    for (unsigned i=0; i<elems.size(); i++) {
+        elems[i] = false;
+    }
+    for (unsigned i=0; i<card; i++) {
+        unsigned x = Equilikely(0, elems.size()-1);
+        unsigned k1 = Equilikely(1, VARS);
+        unsigned k2 = Equilikely(1, VARS);
+
+        if (k1 != k2) {
+            flipFullyElements(elems, x, k1, k2, true);
+        } else {
+            flipFullyElements(elems, x, k1, true);
+        }
+    }
+}
+
+
+void randomizeIdentity(std::vector <bool> &elems, unsigned card)
+{
+    for (unsigned i=0; i<elems.size(); i++) {
+        elems[i] = false;
+    }
+    for (unsigned i=0; i<card; i++) {
+        unsigned x = Equilikely(0, elems.size()-1);
+        unsigned k1 = Equilikely(1, VARS);
+        unsigned k2 = Equilikely(1, VARS);
+
+        if (k1 != k2) {
+            flipIdentityElements(elems, x, k1, k2, true);
+        } else {
+            flipIdentityElements(elems, x, k1, true);
+        }
+    }
+}
+
+
+
 
 void set2mdd(const std::vector<bool> &S, forest *F, dd_edge &s)
 {
@@ -214,12 +363,103 @@ void set2mdd(const std::vector<bool> &S, forest *F, dd_edge &s)
     F->createEdge(mtlist, card, s);
 }
 
+void set2mxd(const std::vector<bool> &S, forest *F, dd_edge &s)
+{
+    if (!F) throw "null forest";
+
+    // Determine S cardinality
+    unsigned card = 0;
+    for (unsigned i=0; i<S.size(); i++) {
+        if (S[i]) ++card;
+    }
+
+    // Special case - empty set
+    if (0==card) {
+        F->createEdge(false, s);
+        return;
+    }
+
+    // Convert set S to list of minterms
+    int** unlist = new int* [card];
+    int** prlist = new int* [card];
+    card = 0;
+    for (unsigned i=0; i<S.size(); i++) {
+        if (!S[i]) continue;
+        unlist[card] = new int[VARS+1];
+        prlist[card] = new int[VARS+1];
+        fillMinterm(i, unlist[card], prlist[card]);
+        ++card;
+    }
+
+    F->createEdge(unlist, prlist, card, s);
+}
+
+
 inline char getReductionType(forest* f)
 {
     if (f->isFullyReduced())    return 'f';
     if (f->isQuasiReduced())    return 'q';
     if (f->isIdentityReduced()) return 'i';
     throw "Unknown reduction type";
+}
+
+void compare_sets(const std::vector <bool> &Aset,
+        const std::vector <bool> &Bset, forest* f1, forest* f2, forest* fres)
+{
+    using namespace MEDDLY;
+
+    std::vector <bool> AiBset(POTENTIAL);
+    std::vector <bool> AuBset(POTENTIAL);
+    std::vector <bool> AmBset(POTENTIAL);
+    std::vector <bool> cAset(POTENTIAL);
+
+    dd_edge Add(f1), Bdd(f2), AiBdd(fres), AuBdd(fres), AmBdd(fres),
+                cABdd(fres);
+
+    set_intersection(Aset, Bset, AiBset);
+    set_union(Aset, Bset, AuBset);
+    set_difference(Aset, Bset, AmBset);
+    set_complement(Aset, cAset);
+
+    set2mdd(Aset, f1, Add);
+    set2mdd(Bset, f2, Bdd);
+    set2mdd(AiBset, fres, AiBdd);
+    set2mdd(AuBset, fres, AuBdd);
+    set2mdd(AmBset, fres, AmBdd);
+    set2mdd(cAset, fres, cABdd);
+
+    dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres), cAsym(fres);
+
+    apply(INTERSECTION, Add, Bdd, AiBsym);
+    apply(UNION, Add, Bdd, AuBsym);
+    apply(DIFFERENCE, Add, Bdd, AmBsym);
+    apply(COMPLEMENT, Add, cAsym);
+
+    /*
+    ostream_output out(std::cout);
+
+    out << "Add: " << Add << "\n";
+    out << "Bdd: " << Bdd << "\n";
+    out << "AuBsym: " << AuBsym << "\n";
+
+    out << "Forest " << fres->FID() << ":\n";
+    fres->dump(out, SHOW_DETAILS);
+
+    exit(1);
+    */
+
+    if (AiBsym != AiBdd) {
+        throw "intersection mismatch";
+    }
+    if (AuBsym != AuBdd) {
+        throw "union mismatch";
+    }
+    if (AmBsym != AmBdd) {
+        throw "difference mismatch";
+    }
+    if (cAsym != cABdd) {
+        throw "complement mismatch";
+    }
 }
 
 void test_pairs(unsigned scard, forest* f1, forest* f2, forest* fres)
@@ -233,51 +473,20 @@ void test_pairs(unsigned scard, forest* f1, forest* f2, forest* fres)
 
     std::vector <bool> Aset(POTENTIAL);
     std::vector <bool> Bset(POTENTIAL);
-    std::vector <bool> AiBset(POTENTIAL);
-    std::vector <bool> AuBset(POTENTIAL);
-    std::vector <bool> AmBset(POTENTIAL);
-    std::vector <bool> cAset(POTENTIAL);
 
     for (unsigned i=0; i<16; i++) {
         std::cout << '.';
         randomizeSet(Aset, scard);
         randomizeSet(Bset, scard);
-        set_intersection(Aset, Bset, AiBset);
-        set_union(Aset, Bset, AuBset);
-        set_difference(Aset, Bset, AmBset);
-        set_complement(Aset, cAset);
 
-        using namespace MEDDLY;
+        compare_sets(Aset, Bset, f1, f2, fres);
+    }
+    for (unsigned i=0; i<16; i++) {
+        std::cout << "x";
+        randomizeFully(Aset, scard);
+        randomizeFully(Bset, scard);
 
-        dd_edge Add(f1), Bdd(f2), AiBdd(fres), AuBdd(fres), AmBdd(fres),
-                cABdd(fres);
-
-        set2mdd(Aset, f1, Add);
-        set2mdd(Bset, f2, Bdd);
-        set2mdd(AiBset, fres, AiBdd);
-        set2mdd(AuBset, fres, AuBdd);
-        set2mdd(AmBset, fres, AmBdd);
-        set2mdd(cAset, fres, cABdd);
-
-        dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres), cAsym(fres);
-
-        apply(INTERSECTION, Add, Bdd, AiBsym);
-        apply(UNION, Add, Bdd, AuBsym);
-        apply(DIFFERENCE, Add, Bdd, AmBsym);
-        apply(COMPLEMENT, Add, cAsym);
-
-        if (AiBsym != AiBdd) {
-            throw "intersection mismatch";
-        }
-        if (AuBsym != AuBdd) {
-            throw "union mismatch";
-        }
-        if (AmBsym != AmBdd) {
-            throw "difference mismatch";
-        }
-        if (cAsym != cABdd) {
-            throw "complement mismatch";
-        }
+        compare_sets(Aset, Bset, f1, f2, fres);
     }
     std::cout << std::endl;
 }
@@ -292,12 +501,12 @@ int main()
         MEDDLY::initialize();
         int bounds[VARS];
         for (unsigned i=0; i<VARS; i++) {
-            bounds[i] = DOM;
+            bounds[i] = SETDOM;
         }
         domain* D = domain::createBottomUp(bounds, VARS);
 
         policies p;
-        p.useDefaults(false);
+        p.useDefaults(SET);
 
         forest* F1 = forest::create(D, false, range_type::BOOLEAN,
                         edge_labeling::MULTI_TERMINAL, p);
@@ -319,6 +528,10 @@ int main()
             test_pairs(i, F2, F2, F1);
             test_pairs(i, F2, F2, F2);
         }
+
+        //
+        // TBD: relations here
+        //
 
         MEDDLY::cleanup();
         return 0;

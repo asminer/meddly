@@ -707,7 +707,10 @@ MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
                 K++;
             }
             U = unpacked_node::newRedundant(this, K, p, FULL_ONLY);
-            p = createReducedNode(-1, U);
+            linkAllDown(*U, 1);
+            edge_value ev;
+            createReducedNode(U, ev, p);
+            MEDDLY_DCASSERT(ev.isVoid());
         }
     } else {
         //
