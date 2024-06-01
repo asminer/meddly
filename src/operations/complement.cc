@@ -34,8 +34,6 @@ namespace MEDDLY {
     unary_list COMPL_cache;
 };
 
-// #define OLD_COMP
-
 // #define DEBUG_MXD_COMPL
 
 // ******************************************************************
@@ -43,113 +41,6 @@ namespace MEDDLY {
 // *                        compl_mdd  class                        *
 // *                                                                *
 // ******************************************************************
-
-#ifdef OLD_COMP
-
-class MEDDLY::compl_mdd : public unary_operation {
-    public:
-        compl_mdd(forest* arg, forest* res);
-
-        virtual void computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag);
-
-        node_handle compute_r(node_handle a);
-
-        inline ct_entry_key*
-        findResult(node_handle a, node_handle &b)
-        {
-            ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-            MEDDLY_DCASSERT(CTsrch);
-            CTsrch->writeN(a);
-            CT0->find(CTsrch, CTresult[0]);
-            if (!CTresult[0]) return CTsrch;
-            b = resF->linkNode(CTresult[0].readN());
-            CT0->recycle(CTsrch);
-            return 0;
-        }
-        inline node_handle saveResult(ct_entry_key* Key,
-            node_handle a, node_handle b)
-        {
-            CTresult[0].reset();
-            CTresult[0].writeN(b);
-            CT0->addEntry(Key, CTresult[0]);
-            return b;
-        }
-};
-
-MEDDLY::compl_mdd::compl_mdd(forest* arg, forest* res)
-    : unary_operation(COMPL_cache, 1, arg, res)
-{
-    checkDomains(__FILE__, __LINE__);
-    checkAllRelations(__FILE__, __LINE__, SET);
-    checkAllRanges(__FILE__, __LINE__, range_type::BOOLEAN);
-    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-
-    ct_entry_type* et = new ct_entry_type(COMPL_cache.getName(), "N:N");
-    et->setForestForSlot(0, arg);
-    et->setForestForSlot(2, res);
-    registerEntryType(0, et);
-    buildCTs();
-}
-
-void MEDDLY::compl_mdd::computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag)
-{
-  node_handle result = compute_r(a.getNode());
-  const int num_levels = resF->getMaxLevelIndex();
-  if (userFlag && result != resF->getTransparentNode() && resF->isQuasiReduced() &&
-      resF->getNodeLevel(result) < num_levels) {
-    node_handle temp = ((mt_forest*)resF)->makeNodeAtLevel(num_levels, result);
-    resF->unlinkNode(result);
-    result = temp;
-  }
-  b.set(result);
-}
-
-MEDDLY::node_handle MEDDLY::compl_mdd::compute_r(node_handle a)
-{
-    // Check terminals
-    if (argF->isTerminalNode(a)) {
-        bool ta;
-        argF->getValueFromHandle(a, ta);
-        return argF->handleForValue(!ta);
-    }
-
-  // Check compute table
-  node_handle b;
-  ct_entry_key* Key = findResult(a, b);
-  if (0==Key) return b;
-
-  const int level = argF->getNodeLevel(a);
-  const unsigned size = unsigned(resF->getLevelSize(level));
-  bool addRedundentNode=(resF->isQuasiReduced() && level>1);
-
-  // Initialize unpacked nodes
-  unpacked_node* A = argF->newUnpacked(a, FULL_ONLY);
-  unpacked_node* C = unpacked_node::newFull(resF, level, size);
-
-  // recurse
-  for (unsigned i=0; i<size; i++) {
-
-    node_handle cdi = compute_r(A->down(i));
-
-    if(addRedundentNode && resF->isTerminalNode(cdi) && cdi!=resF->getTransparentNode()){
-    	cdi =((mt_forest*)resF)->makeNodeAtLevel(level-1, cdi);
-    }
-
-    C->setFull(i, cdi);
-
-  }
-
-  // cleanup and Reduce
-  unpacked_node::Recycle(A);
-  edge_value ev;
-  resF->createReducedNode(C, ev, b);
-  MEDDLY_DCASSERT(ev.isVoid());
-
-  // Add to compute table
-  return saveResult(Key, a, b);
-}
-
-#else
 
 class MEDDLY::compl_mdd : public unary_operation {
     public:
@@ -257,8 +148,6 @@ MEDDLY::node_handle MEDDLY::compl_mdd::_compute(node_handle A, int L)
 
     return resF->makeRedundantsTo(C, L);
 }
-
-#endif
 
 // ******************************************************************
 // *                                                                *
