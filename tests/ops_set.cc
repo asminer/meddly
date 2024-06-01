@@ -565,25 +565,26 @@ int main()
 
     try {
         MEDDLY::initialize();
-        int bounds[VARS];
-        for (unsigned i=0; i<VARS; i++) {
-            bounds[i] = SETDOM;
-        }
-        domain* D = domain::createBottomUp(bounds, VARS);
+        policies p;
 
         //
         // Test sets
         //
 
-        policies p;
+        int bs[VARS];
+        for (unsigned i=0; i<VARS; i++) {
+            bs[i] = SETDOM;
+        }
+        domain* Ds = domain::createBottomUp(bs, VARS);
+
         p.useDefaults(SET);
 
-        forest* F1 = forest::create(D, SET, range_type::BOOLEAN,
+        forest* F1 = forest::create(Ds, SET, range_type::BOOLEAN,
                         edge_labeling::MULTI_TERMINAL, p);
 
         p.setQuasiReduced();
 
-        forest* F2 = forest::create(D, SET, range_type::BOOLEAN,
+        forest* F2 = forest::create(Ds, SET, range_type::BOOLEAN,
                         edge_labeling::MULTI_TERMINAL, p);
 
         for (unsigned i=MINCARD; i<=MAXCARD; i*=2) {
@@ -603,21 +604,27 @@ int main()
         // Test relations
         //
 
+        int br[VARS];
+        for (unsigned i=0; i<VARS; i++) {
+            br[i] = RELDOM;
+        }
+        domain* Dr = domain::createBottomUp(br, VARS);
+
         p.useDefaults(RELATION);
 
         p.setQuasiReduced();
 
-        forest* R1 = forest::create(D, RELATION, range_type::BOOLEAN,
+        forest* R1 = forest::create(Dr, RELATION, range_type::BOOLEAN,
                         edge_labeling::MULTI_TERMINAL, p);
 
         p.setFullyReduced();
 
-        forest* R2 = forest::create(D, RELATION, range_type::BOOLEAN,
+        forest* R2 = forest::create(Dr, RELATION, range_type::BOOLEAN,
                         edge_labeling::MULTI_TERMINAL, p);
 
         p.setIdentityReduced();
 
-        forest* R3 = forest::create(D, RELATION, range_type::BOOLEAN,
+        forest* R3 = forest::create(Dr, RELATION, range_type::BOOLEAN,
                         edge_labeling::MULTI_TERMINAL, p);
 
 
