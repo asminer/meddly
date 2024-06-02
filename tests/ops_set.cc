@@ -32,14 +32,14 @@ const unsigned RELDOM = 2;
 const unsigned SETDOM = RELDOM * RELDOM;
 const unsigned SETBITS = 2;
 const unsigned POTENTIAL = 1024;    // SETDOM ^ VARS
-const unsigned MINCARD = 1;
-const unsigned MAXCARD = 512;
+const unsigned MAX_SET_CARD = 512;
+const unsigned MAX_REL_CARD = 64;
 
 using namespace MEDDLY;
 
 // #define DEBUG_MINTERMS
 
-// #define TEST_SETS
+#define TEST_SETS
 #define TEST_RELATIONS
 
 double Random(long newseed=0)
@@ -500,28 +500,28 @@ void test_sets_over(unsigned scard, forest* f1, forest* f2, forest* fres)
     if (!f2) throw "null f2";
     if (!fres) throw "null fres";
 
-    std::cout << "    " << getReductionType(f1) << getReductionType(f2)
+    std::cerr << "    " << getReductionType(f1) << getReductionType(f2)
               << ':' << getReductionType(fres) << ' ';
 
     std::vector <bool> Aset(POTENTIAL);
     std::vector <bool> Bset(POTENTIAL);
 
     for (unsigned i=0; i<16; i++) {
-        std::cout << '.';
+        std::cerr << '.';
         randomizeSet(Aset, scard);
         randomizeSet(Bset, scard);
 
         compare_sets(Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<16; i++) {
-        std::cout << "x";
+        std::cerr << "x";
         randomizeFully(Aset, scard);
         randomizeFully(Bset, scard);
 
         compare_sets(Aset, Bset, f1, f2, fres);
     }
 
-    std::cout << std::endl;
+    std::cerr << std::endl;
 }
 
 void test_rels_over(unsigned scard, forest* f1, forest* f2, forest* fres)
@@ -530,34 +530,34 @@ void test_rels_over(unsigned scard, forest* f1, forest* f2, forest* fres)
     if (!f2) throw "null f2";
     if (!fres) throw "null fres";
 
-    std::cout << "    " << getReductionType(f1) << getReductionType(f2)
+    std::cerr << "    " << getReductionType(f1) << getReductionType(f2)
               << ':' << getReductionType(fres) << ' ';
 
     std::vector <bool> Aset(POTENTIAL);
     std::vector <bool> Bset(POTENTIAL);
 
     for (unsigned i=0; i<16; i++) {
-        std::cout << '.';
+        std::cerr << '.';
         randomizeSet(Aset, scard);
         randomizeSet(Bset, scard);
 
         compare_rels(Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<16; i++) {
-        std::cout << "x";
+        std::cerr << "x";
         randomizeFully(Aset, scard);
         randomizeFully(Bset, scard);
 
         compare_rels(Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<16; i++) {
-        std::cout << "i";
+        std::cerr << "i";
         randomizeIdentity(Aset, scard);
         randomizeIdentity(Bset, scard);
 
         compare_rels(Aset, Bset, f1, f2, fres);
     }
-    std::cout << std::endl;
+    std::cerr << std::endl;
 }
 
 int main()
@@ -591,7 +591,7 @@ int main()
         forest* F2 = forest::create(Ds, SET, range_type::BOOLEAN,
                         edge_labeling::MULTI_TERMINAL, p);
 
-        for (unsigned i=MINCARD; i<=MAXCARD; i*=2) {
+        for (unsigned i=1; i<=MAX_SET_CARD; i*=2) {
             std::cout << "Testing sets of size " << i << " out of " << POTENTIAL << "\n";
 
             test_sets_over(i, F1, F1, F1);
@@ -634,7 +634,7 @@ int main()
                         edge_labeling::MULTI_TERMINAL, p);
 
 
-        for (unsigned i=MINCARD; i<MAXCARD; i*=2) {
+        for (unsigned i=1; i<=MAX_REL_CARD; i*=2) {
             std::cout << "Testing relations of size " << i << " out of " << POTENTIAL << "\n";
 
             test_rels_over(i, R1, R1, R1);
