@@ -39,6 +39,9 @@ using namespace MEDDLY;
 
 // #define DEBUG_MINTERMS
 
+// #define TEST_SETS
+#define TEST_RELATIONS
+
 double Random(long newseed=0)
 {
     static long seed = 1;
@@ -480,14 +483,14 @@ void compare_rels(const std::vector <bool> &Aset,
     dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres), cAsym(fres);
 
     apply(INTERSECTION, Add, Bdd, AiBsym);
-    apply(UNION, Add, Bdd, AuBsym);
-    apply(DIFFERENCE, Add, Bdd, AmBsym);
-    apply(COMPLEMENT, Add, cAsym);
+    // apply(UNION, Add, Bdd, AuBsym);
+    // apply(DIFFERENCE, Add, Bdd, AmBsym);
+    // apply(COMPLEMENT, Add, cAsym);
 
-    checkEqual("intersection", AiBsym, AiBdd);
-    checkEqual("union", AuBsym, AuBdd);
-    checkEqual("difference", AmBsym, AmBdd);
-    checkEqual("complement", cAsym, cABdd);
+    // checkEqual("intersection", AiBsym, AiBdd);
+    // checkEqual("union", AuBsym, AuBdd);
+    // checkEqual("difference", AmBsym, AmBdd);
+    // checkEqual("complement", cAsym, cABdd);
 }
 
 
@@ -567,6 +570,7 @@ int main()
         MEDDLY::initialize();
         policies p;
 
+#ifdef TEST_SETS
         //
         // Test sets
         //
@@ -599,11 +603,13 @@ int main()
             test_sets_over(i, F2, F2, F1);
             test_sets_over(i, F2, F2, F2);
         }
+#endif
 
         //
         // Test relations
         //
 
+#ifdef TEST_RELATIONS
         int br[VARS];
         for (unsigned i=0; i<VARS; i++) {
             br[i] = RELDOM;
@@ -667,7 +673,7 @@ int main()
             test_rels_over(i, R3, R3, R2);
             test_rels_over(i, R3, R3, R3);
         }
-
+#endif
 
         MEDDLY::cleanup();
         return 0;

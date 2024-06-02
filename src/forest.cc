@@ -720,6 +720,44 @@ MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
         MEDDLY_DCASSERT(false);
     }
 
+    return p;
+}
+
+
+MEDDLY::node_handle
+MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L)
+{
+    MEDDLY_DCASSERT(L>0);
+    MEDDLY_DCASSERT(K>=0);
+    unpacked_node* U;
+    unpacked_node* Upr;
+    edge_value ev;
+    if (isMultiTerminal()) {
+        //
+        // Multi-terminal
+        //
+        for (K++; K<=L; K++) {
+            U = unpacked_node::newFull(this, K, getLevelSize(K));
+
+            for (unsigned i=0; i<U->getSize(); i++) {
+                Upr = unpacked_node::newSparse(this, -K, 1);
+                Upr->setSparse(0, i, p);
+                node_handle h;
+                createReducedNode(Upr, ev, h);
+                MEDDLY_DCASSERT(ev.isVoid());
+                U->setFull(i, h);
+            }
+
+            createReducedNode(U, ev, p);
+            MEDDLY_DCASSERT(ev.isVoid());
+        } // for k
+    } else {
+        //
+        // Edge-valued
+        //
+
+        MEDDLY_DCASSERT(false);
+    }
 
     return p;
 }

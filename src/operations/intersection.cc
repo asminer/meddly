@@ -33,6 +33,10 @@ namespace MEDDLY {
     binary_list INTER_cache;
 };
 
+// #define TRACE
+
+// #define OLD_OPER
+
 // ******************************************************************
 // *                                                                *
 // *                        inter_mdd  class                        *
@@ -61,16 +65,16 @@ class MEDDLY::inter_mdd : public binary_operation {
 MEDDLY::inter_mdd::inter_mdd(forest* arg1, forest* arg2, forest* res)
   : binary_operation(INTER_cache, arg1, arg2, res)
 {
-    ct = new ct_entry_type("intersection");
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+
+    ct = new ct_entry_type("inter_mdd");
     // CT key:      node from forest arg1, node from forest arg2
     // CT result:   node from forest res
     ct->setFixed(arg1, arg2);
     ct->setResult(res);
     ct->doneBuilding();
-
-    checkDomains(__FILE__, __LINE__);
-    checkAllRelations(__FILE__, __LINE__, SET);
-    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 }
 
 MEDDLY::inter_mdd::~inter_mdd()
@@ -230,6 +234,8 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
 // *                                                                *
 // ******************************************************************
 
+#ifdef OLD_OPER
+
 class MEDDLY::inter_mxd : public generic_binary_mxd {
     public:
         inter_mxd(forest* arg1, forest* arg2, forest* res);
@@ -271,6 +277,329 @@ bool MEDDLY::inter_mxd::checkTerminals(node_handle a, node_handle b, node_handle
   }
   return false;
 }
+
+#else
+
+class MEDDLY::inter_mxd : public binary_operation {
+    public:
+        inter_mxd(forest* arg1, forest* arg2, forest* res);
+        virtual ~inter_mxd();
+
+        virtual void compute(const edge_value &av, node_handle ap,
+                const edge_value &bv, node_handle bp,
+                int L,
+                edge_value &cv, node_handle &cp);
+
+    protected:
+        node_handle _compute(node_handle A, node_handle B, int L);
+        node_handle _compute_primed(int in, node_handle A, node_handle B, int L);
+
+        inline node_handle makeChainTo(node_handle p, int L)
+        {
+            return identity_chains
+                    ? resF->makeIdentitiesTo(p, L)
+                    : resF->makeRedundantsTo(p, L);
+        }
+
+        inline unpacked_node* patternNode(forest* F, int L, int in,
+                node_handle A, node_storage_flags fs)
+        {
+            MEDDLY_DCASSERT(L<0);
+            if (F->isFullyReduced()) {
+                return unpacked_node::newRedundant(F, L, A, fs);
+            }
+            if (F->isIdentityReduced()) {
+                return unpacked_node::newIdentity(F, L, in, A, fs);
+            }
+            MEDDLY_DCASSERT(false);
+        }
+
+    private:
+        ct_entry_type* ct;
+
+        bool identity_chains;
+};
+
+// ******************************************************************
+
+MEDDLY::inter_mxd::inter_mxd(forest* arg1, forest* arg2, forest* res)
+  : binary_operation(INTER_cache, arg1, arg2, res)
+{
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__, RELATION);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+
+    ct = new ct_entry_type("inter_mxd");
+    // CT key:      node from forest arg1, node from forest arg2
+    // CT result:   node from forest res
+    ct->setFixed(arg1, arg2);
+    ct->setResult(res);
+    ct->doneBuilding();
+
+    // If either argument forest is identity reduced,
+    // then create identity chains when skipping levels;
+    // otherwise create redundant chains.
+    identity_chains = arg1->isIdentityReduced() || arg2->isIdentityReduced();
+}
+
+MEDDLY::inter_mxd::~inter_mxd()
+{
+    ct->markForDestroy();
+}
+
+void MEDDLY::inter_mxd::compute(const edge_value &av, node_handle ap,
+                const edge_value &bv, node_handle bp,
+                int L,
+                edge_value &cv, node_handle &cp)
+{
+    MEDDLY_DCASSERT(av.isVoid());
+    MEDDLY_DCASSERT(bv.isVoid());
+    MEDDLY_DCASSERT(L>=0);
+    cv.set();
+    cp = _compute(ap, bp, L);
+}
+
+MEDDLY::node_handle
+MEDDLY::inter_mxd::_compute(node_handle A, node_handle B, int L)
+{
+    MEDDLY_DCASSERT(L>=0);
+
+    //
+    // Check terminals
+    //
+    if (A==0 || B==0) {
+        return 0;
+    }
+
+    if (arg1F->isTerminalNode(A)) {
+        //
+        // A is terminal 1 (0 case taken care of already)
+        //
+
+        if (arg2F->isTerminalNode(B)) {
+            terminal tt(true);
+            return makeChainTo(tt.getHandle(), L);
+        }
+
+        //
+        // Return B if we can
+        //
+        if (arg2F == resF) {
+            return makeChainTo(resF->linkNode(B), L);
+        }
+    }
+
+    if (arg2F->isTerminalNode(B)) {
+        //
+        // B is terminal 1; return A if we can
+        //
+        MEDDLY_DCASSERT(!arg2F->isTerminalNode(A));
+        if (arg1F == resF) {
+            return makeChainTo(resF->linkNode(A), L);
+        }
+    }
+
+    if (A == B) {
+        if ((arg1F == arg2F) && (arg1F == resF)) {
+            return makeChainTo(resF->linkNode(A), L);
+        }
+    }
+
+#ifdef TRACE
+    std::cout << "inter_mxd::_compute(" << A << ", " << B << ", " << L << ")\n";
+#endif
+
+    //
+    // Reorder A and B if they commute (same forest)
+    //
+
+    if (arg1F == arg2F) {
+        if (A > B) {
+            SWAP(A, B);
+        }
+    }
+
+    //
+    // Check compute table
+    //
+    ct_vector key(2);
+    ct_vector res(1);
+    key[0].setN(A);
+    key[1].setN(B);
+    if (ct->findCT(key, res)) {
+        node_handle C = makeChainTo(resF->linkNode(res[0].getN()), L);
+#ifdef TRACE
+        std::cout << "\tCT hit " << res[0].getN() << "\n";
+        std::cout << "\tafter chain " << C << "\n";
+#endif
+        return C;
+    }
+
+    //
+    // Do computation
+    //
+
+    //
+    // Determine level information
+    //
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = arg2F->getNodeLevel(B);
+    const int Clevel = MAX(ABS(Alevel), ABS(Blevel));
+
+#ifdef TRACE
+    std::cout << "\t" << A << " level " << Alevel << "\n";
+    std::cout << "\t" << B << " level " << Blevel << "\n";
+    std::cout << "\tresult level " << Clevel << " before chain\n";
+#endif
+
+    //
+    // Initialize unpacked nodes
+    //
+    unpacked_node* Au = (Alevel != Clevel)
+        ?   unpacked_node::newRedundant(arg1F, Clevel, A, SPARSE_ONLY)
+        :   arg1F->newUnpacked(A, SPARSE_ONLY);
+
+    unpacked_node* Bu = (Blevel != Clevel)
+        ?   unpacked_node::newRedundant(arg2F, Clevel, B, SPARSE_ONLY)
+        :   arg2F->newUnpacked(B, SPARSE_ONLY);
+
+    unpacked_node* Cu = unpacked_node::newSparse(resF, Clevel,
+            MIN(Au->getSize(), Bu->getSize()));
+
+    //
+    // Build result node
+    //
+    unsigned za=0, zb=0, zc=0;
+    while ( (za < Au->getSize()) && (zb < Bu->getSize()) ) {
+        if (Au->index(za) < Bu->index(zb)) {
+            ++za;
+            continue;
+        }
+        if (Au->index(za) > Bu->index(zb)) {
+            ++zb;
+            continue;
+        }
+        MEDDLY_DCASSERT(Au->index(za) == Bu->index(zb));
+
+        const node_handle cd = _compute_primed(Au->index(za),
+                Au->down(za), Bu->down(zb),
+                forest::downLevel(Cu->getLevel())
+        );
+
+        if (cd) {
+            Cu->setSparse(zc++, Au->index(za), cd);
+        }
+        za++;
+        zb++;
+    }
+    Cu->resize(zc);
+
+    //
+    // Reduce / cleanup
+    //
+    unpacked_node::Recycle(Bu);
+    unpacked_node::Recycle(Au);
+    edge_value dummy;
+    node_handle C;
+    resF->createReducedNode(Cu, dummy, C);
+    MEDDLY_DCASSERT(dummy.isVoid());
+
+    //
+    // Save result in CT
+    //
+    res[0].setN(C);
+    ct->addCT(key, res);
+
+    C = makeChainTo(C, L);
+#ifdef TRACE
+    std::cout << "inter_mxd::_compute(" << A << ", " << B << ", " << L << ") = " << C << "\n\t";
+    ostream_output out(std::cout);
+    resF->showNode(out, C, SHOW_DETAILS);
+    out.put('\n');
+#endif
+    return C;
+}
+
+MEDDLY::node_handle
+MEDDLY::inter_mxd::_compute_primed(int in, node_handle A, node_handle B,
+        const int Clevel)
+{
+    MEDDLY_DCASSERT(Clevel<0);
+
+    //
+    // Determine level information
+    //
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = arg2F->getNodeLevel(B);
+#ifdef TRACE
+    std::cout << "inter_mxd::_compute_primed(" << in << ", " << A << ", " << B << ", " << Clevel << ")\n";
+    std::cout << "\t" << A << " level " << Alevel << "\n";
+    std::cout << "\t" << B << " level " << Blevel << "\n";
+#endif
+
+    //
+    // Initialize unpacked nodes
+    //
+    unpacked_node* Au = (Alevel != Clevel)
+        ?   patternNode(arg1F, Clevel, in, A, SPARSE_ONLY)
+        :   arg1F->newUnpacked(A, SPARSE_ONLY);
+
+    unpacked_node* Bu = (Blevel != Clevel)
+        ?   patternNode(arg2F, Clevel, in, B, SPARSE_ONLY)
+        :   arg2F->newUnpacked(B, SPARSE_ONLY);
+
+    unpacked_node* Cu = unpacked_node::newSparse(resF, Clevel,
+            MIN(Au->getSize(), Bu->getSize()));
+
+    //
+    // Build result node
+    //
+    unsigned za=0, zb=0, zc=0;
+    while ( (za < Au->getSize()) && (zb < Bu->getSize()) ) {
+        if (Au->index(za) < Bu->index(zb)) {
+            ++za;
+            continue;
+        }
+        if (Au->index(za) > Bu->index(zb)) {
+            ++zb;
+            continue;
+        }
+        MEDDLY_DCASSERT(Au->index(za) == Bu->index(zb));
+
+        const node_handle cd = _compute(
+                Au->down(za), Bu->down(zb),
+                forest::downLevel(Cu->getLevel())
+        );
+
+        if (cd) {
+            Cu->setSparse(zc++, Au->index(za), cd);
+        }
+        za++;
+        zb++;
+    }
+    Cu->resize(zc);
+
+    //
+    // Reduce / cleanup
+    //
+    unpacked_node::Recycle(Bu);
+    unpacked_node::Recycle(Au);
+    edge_value dummy;
+    node_handle C;
+    resF->createReducedNode(Cu, dummy, C);
+    MEDDLY_DCASSERT(dummy.isVoid());
+
+#ifdef TRACE
+    std::cout << "inter_mxd::_compute_primed(" << in << ", " << A << ", "
+              << B << ", " << Clevel << ") = " << C << "\n\t";
+    ostream_output out(std::cout);
+    resF->showNode(out, C, SHOW_DETAILS);
+    out.put('\n');
+#endif
+    return C;
+}
+
+#endif
 
 // ******************************************************************
 // *                                                                *

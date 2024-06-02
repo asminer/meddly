@@ -189,7 +189,7 @@ class MEDDLY::unpacked_node {
             return newIdentity(f, k, i, edge_value(_ev), node, fs);
         }
 
-        /** Create a zeroed-out full node */
+        /** Create a zeroed-out full node of a given size */
         template <class T>
         static inline unpacked_node* newFull(forest *f,
                 int levl, T tsz)

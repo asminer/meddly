@@ -293,6 +293,31 @@ class MEDDLY::forest {
             return _makeRedundantsTo(p, K, L);
         }
 
+        /**
+            Useful helper function.
+            Build a chain of identity (matrix) nodes from node p
+            (which must be at an unprimed level)
+            to a node at level L (also an unprimed level).
+            If the forest is identity-reduced, do nothing instead.
+                @param  p   Bottom node
+                @param  L   top level of identity nodes
+                @return     A node that can be referenced at level L
+                            (i.e., definitely at level L if we're quasi
+                            reduced) with identity nodes added down
+                            to node p.
+        */
+        inline node_handle makeIdentitiesTo(node_handle p, int L)
+        {
+            MEDDLY_DCASSERT(L>=0);
+            if (0==L) return p;
+            MEDDLY_DCASSERT(L>=getNodeLevel(p));
+            if (isIdentityReduced()) return p;
+            if (0==p) return p;
+            int K = ABS(getNodeLevel(p));
+            if (K == L) return p;
+            return _makeIdentitiesTo(p, K, L);
+        }
+
     // ------------------------------------------------------------
     protected:  // helpers for reducing nodes
     // ------------------------------------------------------------
@@ -325,6 +350,14 @@ class MEDDLY::forest {
                 @param  L   Level of node we want
          */
         node_handle _makeRedundantsTo(node_handle p, int K, int L);
+
+        /**
+            Heavy implementation for makeIdentitiesTo().
+                @param  p   Bottom node
+                @param  K   Level of node p
+                @param  L   Level of node we want
+         */
+        node_handle _makeIdentitiesTo(node_handle p, int K, int L);
 
     // ------------------------------------------------------------
     protected: // Moving nodes around; called in derived classes for reordering
