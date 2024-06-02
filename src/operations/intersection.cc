@@ -384,7 +384,7 @@ MEDDLY::inter_mxd::_compute(node_handle A, node_handle B, int L)
         //
         // Return B if we can
         //
-        if (arg2F == resF) {
+        if (arg1F->isFullyReduced() && (arg2F == resF)) {
             return makeChainTo(resF->linkNode(B), L);
         }
     }
@@ -394,7 +394,7 @@ MEDDLY::inter_mxd::_compute(node_handle A, node_handle B, int L)
         // B is terminal 1; return A if we can
         //
         MEDDLY_DCASSERT(!arg2F->isTerminalNode(A));
-        if (arg1F == resF) {
+        if (arg2F->isFullyReduced() && arg1F == resF) {
             return makeChainTo(resF->linkNode(A), L);
         }
     }
@@ -586,7 +586,7 @@ MEDDLY::inter_mxd::_compute_primed(int in, node_handle A, node_handle B,
     unpacked_node::Recycle(Au);
     edge_value dummy;
     node_handle C;
-    resF->createReducedNode(Cu, dummy, C);
+    resF->createReducedNode(Cu, dummy, C, in);
     MEDDLY_DCASSERT(dummy.isVoid());
 
 #ifdef TRACE

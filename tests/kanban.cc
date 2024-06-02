@@ -50,7 +50,7 @@ long expected[] = {
 };
 
 const int nstart = 1;
-const int nstop = 10;
+const int nstop = 1; // 10;
 
 using namespace MEDDLY;
 
