@@ -35,8 +35,6 @@ namespace MEDDLY {
 
 // #define TRACE
 
-// #define OLD_OPER
-
 // ******************************************************************
 // *                                                                *
 // *                        inter_mdd  class                        *
@@ -233,52 +231,6 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
 // *                        inter_mxd  class                        *
 // *                                                                *
 // ******************************************************************
-
-#ifdef OLD_OPER
-
-class MEDDLY::inter_mxd : public generic_binary_mxd {
-    public:
-        inter_mxd(forest* arg1, forest* arg2, forest* res);
-
-        virtual bool checkTerminals(node_handle a, node_handle b,
-                node_handle& c);
-#ifdef ALLOW_EXTENSIBLE
-        virtual MEDDLY::node_handle compute_ext(node_handle a, node_handle b);
-#endif
-};
-
-MEDDLY::inter_mxd::inter_mxd(forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mxd(INTER_cache, arg1, arg2, res)
-{
-    operationCommutes();
-
-    checkDomains(__FILE__, __LINE__);
-    checkAllRelations(__FILE__, __LINE__, RELATION);
-    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-}
-
-bool MEDDLY::inter_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (a == 0 || b == 0) {
-    c = 0;
-    return true;
-  }
-  if (a==-1 && b==-1) {
-    c = -1;
-    return true;
-  }
-  if (a == b) {
-    if (arg1F == arg2F && arg1F == resF) {
-      c = resF->linkNode(b);
-      return true;
-    } else {
-      return false;
-    }
-  }
-  return false;
-}
-
-#else
 
 class MEDDLY::inter_mxd : public binary_operation {
     public:
@@ -598,8 +550,6 @@ MEDDLY::inter_mxd::_compute_primed(int in, node_handle A, node_handle B,
 #endif
     return C;
 }
-
-#endif
 
 // ******************************************************************
 // *                                                                *
