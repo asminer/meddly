@@ -223,6 +223,10 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
     res[0].setN(C);
     ct->addCT(key, res);
 
+    if (Clevel == L) {
+        return C;
+    }
+
     return resF->makeRedundantsTo(C, L);
 }
 
@@ -445,6 +449,13 @@ MEDDLY::inter_mxd::_compute(node_handle A, node_handle B, int L)
         zb++;
     }
     Cu->resize(zc);
+#ifdef TRACE
+    std::cout << "inter_mxd::_compute(" << A << ", " << B << ", " << L
+              << ") = " << "\n\t";
+    ostream_output out(std::cout);
+    Cu->show(out, true);
+    std::cout << "\n";
+#endif
 
     //
     // Reduce / cleanup
@@ -455,6 +466,11 @@ MEDDLY::inter_mxd::_compute(node_handle A, node_handle B, int L)
     node_handle C;
     resF->createReducedNode(Cu, dummy, C);
     MEDDLY_DCASSERT(dummy.isVoid());
+#ifdef TRACE
+    std::cout << "\treduced to " << C << ": ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    std::cout << "\n";
+#endif
 
     //
     // Save result in CT
@@ -462,12 +478,15 @@ MEDDLY::inter_mxd::_compute(node_handle A, node_handle B, int L)
     res[0].setN(C);
     ct->addCT(key, res);
 
+    if (Clevel == L) {
+        return C;
+    }
+
     C = makeChainTo(C, L);
 #ifdef TRACE
-    std::cout << "inter_mxd::_compute(" << A << ", " << B << ", " << L << ") = " << C << "\n\t";
-    ostream_output out(std::cout);
+    std::cout << "\tchain to level " << L << " = " << C << ": ";
     resF->showNode(out, C, SHOW_DETAILS);
-    out.put('\n');
+    std::cout << "\n";
 #endif
     return C;
 }
@@ -530,6 +549,12 @@ MEDDLY::inter_mxd::_compute_primed(int in, node_handle A, node_handle B,
         zb++;
     }
     Cu->resize(zc);
+#ifdef TRACE
+    ostream_output out(std::cout);
+    std::cout << "\t";
+    Cu->show(out, true);
+    std::cout << "\n";
+#endif
 
     //
     // Reduce / cleanup
@@ -544,7 +569,6 @@ MEDDLY::inter_mxd::_compute_primed(int in, node_handle A, node_handle B,
 #ifdef TRACE
     std::cout << "inter_mxd::_compute_primed(" << in << ", " << A << ", "
               << B << ", " << Clevel << ") = " << C << "\n\t";
-    ostream_output out(std::cout);
     resF->showNode(out, C, SHOW_DETAILS);
     out.put('\n');
 #endif
