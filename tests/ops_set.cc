@@ -37,6 +37,7 @@ const unsigned MAX_REL_CARD = 64;
 
 using namespace MEDDLY;
 
+// #define DEBUG_MXDINTER
 // #define DEBUG_MINTERMS
 
 #define TEST_SETS
@@ -81,6 +82,31 @@ void showSet(std::ostream &out, const std::vector <bool> &elems)
     }
     out << " }";
 }
+
+void showRelMinterms(std::ostream &out, const std::vector <bool> &elems)
+{
+    out << "{ ";
+    bool printed = false;
+    for (unsigned i=0; i<elems.size(); i++) {
+        if (!elems[i]) continue;
+        if (printed) out << ",\n      ";
+        out << "[";
+        printed = true;
+
+        unsigned x = i;
+        for (unsigned j=1; j<=VARS; j++) {
+            unsigned un = x % RELDOM;
+            x /= RELDOM;
+            unsigned pr = x % RELDOM;
+            x /= RELDOM;
+            if (j>1) out << ", ";
+            out << un << "->" << pr;
+        }
+        out << "]";
+    }
+    out << " }";
+}
+
 
 void randomizeSet(std::vector <bool> &elems, unsigned card)
 {
@@ -364,6 +390,12 @@ void set2mdd(const std::vector<bool> &S, forest *F, dd_edge &s)
     }
 
     F->createEdge(mtlist, card, s);
+
+    // Cleanup
+    for (unsigned i=0; i<card; i++) {
+        delete[] mtlist[i];
+    }
+    delete[] mtlist;
 }
 
 void set2mxd(const std::vector<bool> &S, forest *F, dd_edge &s)
@@ -395,6 +427,14 @@ void set2mxd(const std::vector<bool> &S, forest *F, dd_edge &s)
     }
 
     F->createEdge(unlist, prlist, card, s);
+
+    // Cleanup
+    for (unsigned i=0; i<card; i++) {
+        delete[] unlist[i];
+        delete[] prlist[i];
+    }
+    delete[] unlist;
+    delete[] prlist;
 }
 
 
@@ -412,11 +452,11 @@ void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2)
 
     ostream_output out(std::cout);
 
-    out << "Mismatch on " << what << "\n";
+    out << "\nMismatch on " << what << "\n";
     out << "Expected DD:\n";
-    e1.showGraph(out);
-    out << "Obtained DD:\n";
     e2.showGraph(out);
+    out << "Obtained DD:\n";
+    e1.showGraph(out);
 
     throw "mismatch";
 }
@@ -482,12 +522,34 @@ void compare_rels(const std::vector <bool> &Aset,
 
     dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres), cAsym(fres);
 
+#ifdef DEBUG_MXDINTER
+    ostream_output out(std::cout);
+    std::cout << "==================================================================\n";
+    std::cout << "Intersecting\nA:  ";
+    showSet(std::cout, Aset);
+    std::cout << "\n =  ";
+    showRelMinterms(std::cout, Aset);
+    std::cout << "\n";
+    Add.showGraph(out);
+    std::cout << "B:  ";
+    showSet(std::cout, Bset);
+    std::cout << "\n =  ";
+    showRelMinterms(std::cout, Bset);
+    std::cout << "\n";
+    Bdd.showGraph(out);
+    std::cout << "A^B:";
+    showSet(std::cout, AiBset);
+    std::cout << "\n =  ";
+    showRelMinterms(std::cout, AiBset);
+    std::cout << "\n";
+#endif
+
     apply(INTERSECTION, Add, Bdd, AiBsym);
     // apply(UNION, Add, Bdd, AuBsym);
     // apply(DIFFERENCE, Add, Bdd, AmBsym);
     // apply(COMPLEMENT, Add, cAsym);
 
-    // checkEqual("intersection", AiBsym, AiBdd);
+    checkEqual("intersection", AiBsym, AiBdd);
     // checkEqual("union", AuBsym, AuBdd);
     // checkEqual("difference", AmBsym, AmBdd);
     // checkEqual("complement", cAsym, cABdd);

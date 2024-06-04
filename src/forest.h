@@ -276,20 +276,36 @@ class MEDDLY::forest {
             a node at level L.
             If the forest is fully-reduced, do nothing instead.
                 @param  p   Bottom node
-                @param  L   top level of redundant nodes
+                @param  K   Start redundant nodes above this level
+                @param  L   Stop redundant nodes here
                 @return     A node that can be referenced at level L
                             (i.e., definitely at level L if we're quasi
                             reduced) with redundant nodes added down
-                            to node p.
+                            to level K.
+
+            Illustration:
+
+            Level:      input:              output:
+
+            L               |                  [.]  (new redundant node)
+                            |                   |
+            ...             |                  [.]  (new redundant node)
+                            |                   |
+            K+1             |                  [.]  (new redundant node)
+                            |                   |
+            K               |                   |
+                            |                   |
+            ...             |                   |
+                            v                   v
+                            p                   p
          */
-        inline node_handle makeRedundantsTo(node_handle p, int L)
+        inline node_handle makeRedundantsTo(node_handle p, int K, int L)
         {
             if (0==L) return p;
-            MEDDLY_DCASSERT( ABS(L) >= ABS(getNodeLevel(p)) );
+            if (K==L) return p;
+            MEDDLY_DCASSERT( ABS(L) >= ABS(K) );
             if (isFullyReduced()) return p;
             if (0==p) return p;
-            int K = getNodeLevel(p);
-            if (K == L) return p;
             return _makeRedundantsTo(p, K, L);
         }
 
@@ -300,21 +316,42 @@ class MEDDLY::forest {
             to a node at level L (also an unprimed level).
             If the forest is identity-reduced, do nothing instead.
                 @param  p   Bottom node
-                @param  L   top level of identity nodes
+                @param  K   Start identity nodes above this level
+                @param  L   Stop identity nodes here
                 @return     A node that can be referenced at level L
                             (i.e., definitely at level L if we're quasi
                             reduced) with identity nodes added down
                             to node p.
+
+            Illustration:
+
+            Level:      input:              output:
+
+            L               |                  [.]  (new redundant node)
+                            |                   |
+            -L              |                  [.]  (new identity nodes)
+                            |                   |
+            ...             |                   |
+                            |                   |
+            K+1             |                  [.]  (new redundant node)
+                            |                   |
+            -(K+1)          |                  [.]  (new identity nodes)
+                            |                   |
+            K               |                   |
+                            |                   |
+            ...             |                   |
+                            v                   v
+                            p                   p
         */
-        inline node_handle makeIdentitiesTo(node_handle p, int L)
+        inline node_handle makeIdentitiesTo(node_handle p, int K, int L)
         {
             MEDDLY_DCASSERT(L>=0);
+            MEDDLY_DCASSERT(K>=0);
             if (0==L) return p;
-            MEDDLY_DCASSERT(L>=getNodeLevel(p));
+            if (K==L) return p;
+            MEDDLY_DCASSERT(L>=K);
             if (isIdentityReduced()) return p;
             if (0==p) return p;
-            int K = ABS(getNodeLevel(p));
-            if (K == L) return p;
             return _makeIdentitiesTo(p, K, L);
         }
 

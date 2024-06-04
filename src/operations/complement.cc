@@ -91,12 +91,17 @@ void MEDDLY::compl_mdd::compute(const edge_value &av, node_handle ap,
 MEDDLY::node_handle MEDDLY::compl_mdd::_compute(node_handle A, int L)
 {
     //
+    // Determine level information
+    //
+    const int Alevel = argF->getNodeLevel(A);
+
+    //
     // Terminal cases
     //
     if (argF->isTerminalNode(A)) {
         bool ta;
         argF->getValueFromHandle(A, ta);
-        return resF->makeRedundantsTo(resF->handleForValue(!ta), L);
+        return resF->makeRedundantsTo(resF->handleForValue(!ta), Alevel, L);
     }
 
     //
@@ -106,17 +111,12 @@ MEDDLY::node_handle MEDDLY::compl_mdd::_compute(node_handle A, int L)
     ct_vector res(1);
     key[0].setN(A);
     if (ct->findCT(key, res)) {
-        return resF->makeRedundantsTo(resF->linkNode(res[0].getN()), L);
+        return resF->makeRedundantsTo(resF->linkNode(res[0].getN()), Alevel, L);
     }
 
     //
     // Do computation
     //
-
-    //
-    // Determine level information
-    //
-    const int Alevel = argF->getNodeLevel(A);
 
     //
     // Initialize unpacked nodes
@@ -146,7 +146,7 @@ MEDDLY::node_handle MEDDLY::compl_mdd::_compute(node_handle A, int L)
     res[0].setN(C);
     ct->addCT(key, res);
 
-    return resF->makeRedundantsTo(C, L);
+    return resF->makeRedundantsTo(C, Alevel, L);
 }
 
 // ******************************************************************

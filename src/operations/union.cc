@@ -97,7 +97,7 @@ MEDDLY::union_mdd::_compute(node_handle A, node_handle B, int L)
     //
     if (A < 0 || B < 0) {
         terminal tt(true);
-        return resF->makeRedundantsTo(tt.getHandle(), L);
+        return resF->makeRedundantsTo(tt.getHandle(), 0, L);
     }
 
     if (A == 0) {
@@ -109,7 +109,8 @@ MEDDLY::union_mdd::_compute(node_handle A, node_handle B, int L)
         // Return B if we can
         //
         if (arg2F == resF) {
-            return resF->makeRedundantsTo(resF->linkNode(B), L);
+            return resF->linkNode(B);
+            // Don't need to make redundant chain b/c same forest
         }
     } // zero A
 
@@ -119,13 +120,13 @@ MEDDLY::union_mdd::_compute(node_handle A, node_handle B, int L)
         //
         MEDDLY_DCASSERT(A);
         if (arg1F == resF) {
-            return resF->makeRedundantsTo(resF->linkNode(A), L);
+            return resF->linkNode(A);
         }
     } // zero B
 
     if (A == B) {
         if ((arg1F == arg2F) && (arg1F == resF)) {
-            return resF->makeRedundantsTo(resF->linkNode(A), L);
+            return resF->linkNode(A);
         }
     }
 
@@ -140,6 +141,13 @@ MEDDLY::union_mdd::_compute(node_handle A, node_handle B, int L)
     }
 
     //
+    // Determine level information
+    //
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = arg2F->getNodeLevel(B);
+    const int Clevel = MAX(Alevel, Blevel);
+
+    //
     // Check compute table
     //
     ct_vector key(2);
@@ -147,19 +155,12 @@ MEDDLY::union_mdd::_compute(node_handle A, node_handle B, int L)
     key[0].setN(A);
     key[1].setN(B);
     if (ct->findCT(key, res)) {
-        return resF->makeRedundantsTo(resF->linkNode(res[0].getN()), L);
+        return resF->makeRedundantsTo(resF->linkNode(res[0].getN()), Clevel, L);
     }
 
     //
     // Do computation
     //
-
-    //
-    // Determine level information
-    //
-    const int Alevel = arg1F->getNodeLevel(A);
-    const int Blevel = arg2F->getNodeLevel(B);
-    const int Clevel = MAX(Alevel, Blevel);
 
     //
     // Initialize unpacked nodes
@@ -199,7 +200,7 @@ MEDDLY::union_mdd::_compute(node_handle A, node_handle B, int L)
     res[0].setN(C);
     ct->addCT(key, res);
 
-    return resF->makeRedundantsTo(C, L);
+    return resF->makeRedundantsTo(C, Clevel, L);
 }
 
 // ******************************************************************

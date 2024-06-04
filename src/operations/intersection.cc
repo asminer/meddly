@@ -108,14 +108,15 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
 
         if (arg2F->isTerminalNode(B)) {
             terminal tt(true);
-            return resF->makeRedundantsTo(tt.getHandle(), L);
+            return resF->makeRedundantsTo(tt.getHandle(), 0, L);
         }
 
         //
         // Return B if we can
         //
         if (arg2F == resF) {
-            return resF->makeRedundantsTo(resF->linkNode(B), L);
+            return resF->linkNode(B);
+            // no chain of redundants needed, same forest
         }
     }
 
@@ -125,13 +126,13 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
         //
         MEDDLY_DCASSERT(!arg2F->isTerminalNode(A));
         if (arg1F == resF) {
-            return resF->makeRedundantsTo(resF->linkNode(A), L);
+            return resF->linkNode(A);
         }
     }
 
     if (A == B) {
         if ((arg1F == arg2F) && (arg1F == resF)) {
-            return resF->makeRedundantsTo(resF->linkNode(A), L);
+            return resF->linkNode(A);
         }
     }
 
@@ -146,6 +147,13 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
     }
 
     //
+    // Determine level information
+    //
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = arg2F->getNodeLevel(B);
+    const int Clevel = MAX(Alevel, Blevel);
+
+    //
     // Check compute table
     //
     ct_vector key(2);
@@ -153,19 +161,12 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
     key[0].setN(A);
     key[1].setN(B);
     if (ct->findCT(key, res)) {
-        return resF->makeRedundantsTo(resF->linkNode(res[0].getN()), L);
+        return resF->makeRedundantsTo(resF->linkNode(res[0].getN()), Clevel, L);
     }
 
     //
     // Do computation
     //
-
-    //
-    // Determine level information
-    //
-    const int Alevel = arg1F->getNodeLevel(A);
-    const int Blevel = arg2F->getNodeLevel(B);
-    const int Clevel = MAX(Alevel, Blevel);
 
     //
     // Initialize unpacked nodes
@@ -223,11 +224,7 @@ MEDDLY::inter_mdd::_compute(node_handle A, node_handle B, int L)
     res[0].setN(C);
     ct->addCT(key, res);
 
-    if (Clevel == L) {
-        return C;
-    }
-
-    return resF->makeRedundantsTo(C, L);
+    return resF->makeRedundantsTo(C, Clevel, L);
 }
 
 // ******************************************************************
@@ -250,11 +247,11 @@ class MEDDLY::inter_mxd : public binary_operation {
         node_handle _compute(node_handle A, node_handle B, int L);
         node_handle _compute_primed(int in, node_handle A, node_handle B, int L);
 
-        inline node_handle makeChainTo(node_handle p, int L)
+        inline node_handle makeChainTo(node_handle p, int K, int L)
         {
             return identity_chains
-                    ? resF->makeIdentitiesTo(p, L)
-                    : resF->makeRedundantsTo(p, L);
+                    ? resF->makeIdentitiesTo(p, K, L)
+                    : resF->makeRedundantsTo(p, K, L);
         }
 
         inline unpacked_node* patternNode(forest* F, int L, int in,
@@ -334,14 +331,15 @@ MEDDLY::inter_mxd::_compute(node_handle A, node_handle B, int L)
 
         if (arg2F->isTerminalNode(B)) {
             terminal tt(true);
-            return makeChainTo(tt.getHandle(), L);
+            return makeChainTo(tt.getHandle(), 0, L);
         }
 
         //
         // Return B if we can
         //
         if (arg1F->isFullyReduced() && (arg2F == resF)) {
-            return makeChainTo(resF->linkNode(B), L);
+            return makeChainTo(resF->linkNode(B),
+                        ABS(arg2F->getNodeLevel(B)), L);
         }
     }
 
@@ -351,13 +349,15 @@ MEDDLY::inter_mxd::_compute(node_handle A, node_handle B, int L)
         //
         MEDDLY_DCASSERT(!arg2F->isTerminalNode(A));
         if (arg2F->isFullyReduced() && arg1F == resF) {
-            return makeChainTo(resF->linkNode(A), L);
+            return makeChainTo(resF->linkNode(A),
+                        ABS(arg1F->getNodeLevel(A)), L);
         }
     }
 
     if (A == B) {
         if ((arg1F == arg2F) && (arg1F == resF)) {
-            return makeChainTo(resF->linkNode(A), L);
+            return makeChainTo(resF->linkNode(A),
+                        ABS(arg1F->getNodeLevel(A)), L);
         }
     }
 
@@ -376,6 +376,13 @@ MEDDLY::inter_mxd::_compute(node_handle A, node_handle B, int L)
     }
 
     //
+    // Determine level information
+    //
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = arg2F->getNodeLevel(B);
+    const int Clevel = MAX(ABS(Alevel), ABS(Blevel));
+
+    //
     // Check compute table
     //
     ct_vector key(2);
@@ -383,7 +390,7 @@ MEDDLY::inter_mxd::_compute(node_handle A, node_handle B, int L)
     key[0].setN(A);
     key[1].setN(B);
     if (ct->findCT(key, res)) {
-        node_handle C = makeChainTo(resF->linkNode(res[0].getN()), L);
+        node_handle C = makeChainTo(resF->linkNode(res[0].getN()), Clevel, L);
 #ifdef TRACE
         std::cout << "\tCT hit " << res[0].getN() << "\n";
         std::cout << "\tafter chain " << C << "\n";
@@ -394,13 +401,6 @@ MEDDLY::inter_mxd::_compute(node_handle A, node_handle B, int L)
     //
     // Do computation
     //
-
-    //
-    // Determine level information
-    //
-    const int Alevel = arg1F->getNodeLevel(A);
-    const int Blevel = arg2F->getNodeLevel(B);
-    const int Clevel = MAX(ABS(Alevel), ABS(Blevel));
 
 #ifdef TRACE
     std::cout << "\t" << A << " level " << Alevel << "\n";
@@ -478,11 +478,7 @@ MEDDLY::inter_mxd::_compute(node_handle A, node_handle B, int L)
     res[0].setN(C);
     ct->addCT(key, res);
 
-    if (Clevel == L) {
-        return C;
-    }
-
-    C = makeChainTo(C, L);
+    C = makeChainTo(C, Clevel, L);
 #ifdef TRACE
     std::cout << "\tchain to level " << L << " = " << C << ": ";
     resF->showNode(out, C, SHOW_DETAILS);
