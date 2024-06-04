@@ -244,9 +244,6 @@ class MEDDLY::inter_mxd : public binary_operation {
                 edge_value &cv, node_handle &cp);
 
     protected:
-        node_handle _compute(node_handle A, node_handle B, int L);
-        node_handle _compute_primed(int in, node_handle A, node_handle B, int L);
-
         inline node_handle makeChainTo(node_handle p, int K, int L)
         {
             return identity_chains
@@ -266,6 +263,11 @@ class MEDDLY::inter_mxd : public binary_operation {
             }
             MEDDLY_DCASSERT(false);
         }
+
+    protected:
+        node_handle _compute(node_handle A, node_handle B, int L);
+        node_handle _compute_primed(int in, node_handle A, node_handle B,
+                int L);
 
     private:
         ct_entry_type* ct;
