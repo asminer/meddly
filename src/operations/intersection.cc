@@ -494,6 +494,8 @@ MEDDLY::inter_mxd::_compute_primed(int in, node_handle A, node_handle B,
         const int Clevel)
 {
     MEDDLY_DCASSERT(Clevel<0);
+    MEDDLY_DCASSERT(A!=0);
+    MEDDLY_DCASSERT(B!=0);
 
     //
     // Determine level information

@@ -38,6 +38,7 @@ const unsigned MAX_REL_CARD = 64;
 using namespace MEDDLY;
 
 // #define DEBUG_MXDINTER
+// #define DEBUG_MXDUNION
 // #define DEBUG_MINTERMS
 
 #define TEST_SETS
@@ -543,14 +544,35 @@ void compare_rels(const std::vector <bool> &Aset,
     showRelMinterms(std::cout, AiBset);
     std::cout << "\n";
 #endif
+#ifdef DEBUG_MXDUNION
+    ostream_output out(std::cout);
+    std::cout << "==================================================================\n";
+    std::cout << "Unioning\nA:  ";
+    showSet(std::cout, Aset);
+    std::cout << "\n =  ";
+    showRelMinterms(std::cout, Aset);
+    std::cout << "\n";
+    Add.showGraph(out);
+    std::cout << "B:  ";
+    showSet(std::cout, Bset);
+    std::cout << "\n =  ";
+    showRelMinterms(std::cout, Bset);
+    std::cout << "\n";
+    Bdd.showGraph(out);
+    std::cout << "AuB:";
+    showSet(std::cout, AuBset);
+    std::cout << "\n =  ";
+    showRelMinterms(std::cout, AuBset);
+    std::cout << "\n";
+#endif
 
     apply(INTERSECTION, Add, Bdd, AiBsym);
-    // apply(UNION, Add, Bdd, AuBsym);
+    apply(UNION, Add, Bdd, AuBsym);
     // apply(DIFFERENCE, Add, Bdd, AmBsym);
     // apply(COMPLEMENT, Add, cAsym);
 
     checkEqual("intersection", AiBsym, AiBdd);
-    // checkEqual("union", AuBsym, AuBdd);
+    checkEqual("union", AuBsym, AuBdd);
     // checkEqual("difference", AmBsym, AmBdd);
     // checkEqual("complement", cAsym, cABdd);
 }
