@@ -14,8 +14,8 @@
 
     You should have received a copy of the GNU Lesser General Public License
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
-*/
-int TimeLimit=15;
+ */
+int TimeLimit=60;
 #include "../defines.h"
 #include "cov.h"
 #include <typeinfo> // for "bad_cast" exception
@@ -31,14 +31,14 @@ int TimeLimit=15;
 #include "../opname_satur.h"
 #include "../ops_builtin.h"
 namespace MEDDLY {
-  class cov_by_events_opname;
-  class cov_by_events_op;
+class cov_by_events_opname;
+class cov_by_events_op;
 
-  class common_cov_by_events_mt;
-  class cov_by_events_mt;
+class common_cov_by_events_mt;
+class cov_by_events_mt;
 
-  class cov_opname;
-  class compareij;
+class cov_opname;
+class compareij;
 };
 
 // ******************************************************************
@@ -48,27 +48,27 @@ namespace MEDDLY {
 // ******************************************************************
 
 /** Simple class to keep compute table happy.
-*/
+ */
 class MEDDLY::cov_by_events_opname : public unary_opname {
-  static cov_by_events_opname* instance;
-  public:
-    cov_by_events_opname();
+static cov_by_events_opname* instance;
+public:
+cov_by_events_opname();
 
-    static cov_by_events_opname* getInstance();
+static cov_by_events_opname* getInstance();
 
 };
 
 MEDDLY::cov_by_events_opname* MEDDLY::cov_by_events_opname::instance = 0;
 
 MEDDLY::cov_by_events_opname::cov_by_events_opname()
- : unary_opname("Cov_by_events")
+        : unary_opname("Cov_by_events")
 {
 }
 
 MEDDLY::cov_by_events_opname* MEDDLY::cov_by_events_opname::getInstance()
 {
-  if (0==instance) instance = new cov_by_events_opname;
-  return instance;
+        if (0==instance) instance = new cov_by_events_opname;
+        return instance;
 }
 
 // ******************************************************************
@@ -78,36 +78,36 @@ MEDDLY::cov_by_events_opname* MEDDLY::cov_by_events_opname::getInstance()
 // ******************************************************************
 
 class MEDDLY::cov_by_events_op : public unary_operation {
-    common_cov_by_events_mt* parent;
-  public:
-    cov_by_events_op(common_cov_by_events_mt* p,
-      expert_forest* argF, expert_forest* resF);
-    virtual ~cov_by_events_op();
+common_cov_by_events_mt* parent;
+public:
+cov_by_events_op(common_cov_by_events_mt* p,
+                 expert_forest* argF, expert_forest* resF);
+virtual ~cov_by_events_op();
 
-    void RSBFSfly(const dd_edge& in, dd_edge& out, satotf_opname::otf_relation* rel,  markcmp* cij);
-    void Coverability(const dd_edge& in, dd_edge& out, satotf_opname::otf_relation* rel,  markcmp* cij);
+void RSBFSfly(const dd_edge& in, dd_edge& out, satotf_opname::otf_relation* rel,  markcmp* cij);
+void Coverability(const dd_edge& in, dd_edge& out, satotf_opname::otf_relation* rel,  markcmp* cij);
 
-  protected:
-    inline ct_entry_key*
-    findSaturateResult(node_handle a, int level, node_handle& b) {
-      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeN(a);
-      if (argF->isFullyReduced()) CTsrch->writeI(level);
-      CT0->find(CTsrch, CTresult[0]);
-      if (!CTresult[0]) return CTsrch;
-      b = resF->linkNode(CTresult[0].readN());
-      CT0->recycle(CTsrch);
-      return 0;
-    }
-    inline node_handle saveSaturateResult(ct_entry_key* Key,
-      node_handle a, node_handle b)
-    {
-      CTresult[0].reset();
-      CTresult[0].writeN(b);
-      CT0->addEntry(Key, CTresult[0]);
-      return b;
-    }
+protected:
+inline ct_entry_key*
+findSaturateResult(node_handle a, int level, node_handle& b) {
+        ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+        MEDDLY_DCASSERT(CTsrch);
+        CTsrch->writeN(a);
+        if (argF->isFullyReduced()) CTsrch->writeI(level);
+        CT0->find(CTsrch, CTresult[0]);
+        if (!CTresult[0]) return CTsrch;
+        b = resF->linkNode(CTresult[0].readN());
+        CT0->recycle(CTsrch);
+        return 0;
+}
+inline node_handle saveSaturateResult(ct_entry_key* Key,
+                                      node_handle a, node_handle b)
+{
+        CTresult[0].reset();
+        CTresult[0].writeN(b);
+        CT0->addEntry(Key, CTresult[0]);
+        return b;
+}
 };
 
 // ******************************************************************
@@ -117,155 +117,155 @@ class MEDDLY::cov_by_events_op : public unary_operation {
 // ******************************************************************
 
 class MEDDLY::common_cov_by_events_mt : public specialized_operation {
-  public:
-    common_cov_by_events_mt(satotf_opname* opcode,
-      satotf_opname::otf_relation* rel,markcmp* cij);
-    virtual ~common_cov_by_events_mt();
+public:
+common_cov_by_events_mt(satotf_opname* opcode,
+                        satotf_opname::otf_relation* rel,markcmp* cij);
+virtual ~common_cov_by_events_mt();
 
-    virtual void compute(const dd_edge& a, dd_edge &c/*,compareij *cij*/);
-    virtual void computeMXD(const dd_edge& a, dd_edge &c);
+virtual void compute(const dd_edge& a, dd_edge &c /*,compareij *cij*/);
+virtual void computeMXD(const dd_edge& a, dd_edge &c);
 
-    virtual void setComparefunction(compareij* cij);
+virtual void setComparefunction(compareij* cij);
 
-  protected:
-    inline ct_entry_key*
-    findResult(node_handle a, node_handle b, node_handle &c)
-    {
-      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
-      CTsrch->writeN(a);
-      CTsrch->writeN(b);
-      CT0->find(CTsrch, CTresult[0]);
-      if (!CTresult[0]) return CTsrch;
-      c = resF->linkNode(CTresult[0].readN());
-      CT0->recycle(CTsrch);
-      return 0;
-    }
-    inline node_handle saveResult(ct_entry_key* Key,
-      node_handle a, node_handle b, node_handle c)
-    {
-      CTresult[0].reset();
-      CTresult[0].writeN(c);
-      CT0->addEntry(Key, CTresult[0]);
-      return c;
-    }
+protected:
+inline ct_entry_key*
+findResult(node_handle a, node_handle b, node_handle &c)
+{
+        ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+        MEDDLY_DCASSERT(CTsrch);
+        CTsrch->writeN(a);
+        CTsrch->writeN(b);
+        CT0->find(CTsrch, CTresult[0]);
+        if (!CTresult[0]) return CTsrch;
+        c = resF->linkNode(CTresult[0].readN());
+        CT0->recycle(CTsrch);
+        return 0;
+}
+inline node_handle saveResult(ct_entry_key* Key,
+                              node_handle a, node_handle b, node_handle c)
+{
+        CTresult[0].reset();
+        CTresult[0].writeN(c);
+        CT0->addEntry(Key, CTresult[0]);
+        return c;
+}
 
-  public:
-    binary_operation* mddUnion;
-    binary_operation* mddImage;
-    binary_operation* mrcc;
-        markcmp* cij;
-  protected:
-    binary_operation* mxdIntersection;
-    binary_operation* mxdDifference;
+public:
+binary_operation* mddUnion;
+binary_operation* mddImage;
+binary_operation* mrcc;
+markcmp* cij;
+protected:
+binary_operation* mxdIntersection;
+binary_operation* mxdDifference;
 
-    satotf_opname::otf_relation* rel;
+satotf_opname::otf_relation* rel;
 
-    expert_forest* arg1F;
-    expert_forest* arg2F;
-    expert_forest* resF;
+expert_forest* arg1F;
+expert_forest* arg2F;
+expert_forest* resF;
 
-  protected:
-    class indexq {
-        static const int NULPTR = -1;
-        static const int NOTINQ = -2;
-        int* data;
-        unsigned size;
-        int head;
-        int tail;
-      public:
-        // used by parent for recycling
-        indexq* next;
-      public:
-        indexq();
-        ~indexq();
-        void resize(unsigned sz);
-        inline bool isEmpty() const {
-          return NULPTR == head;
+protected:
+class indexq {
+static const int NULPTR = -1;
+static const int NOTINQ = -2;
+int* data;
+unsigned size;
+int head;
+int tail;
+public:
+// used by parent for recycling
+indexq* next;
+public:
+indexq();
+~indexq();
+void resize(unsigned sz);
+inline bool isEmpty() const {
+        return NULPTR == head;
+}
+inline void add(int i) {
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, (unsigned)i, size);
+        if (NOTINQ != data[i]) return;
+        if (NULPTR == head) {
+                // empty list
+                head = i;
+        } else {
+                // not empty list
+                MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, (unsigned)tail, size);
+                data[tail] = i;
         }
-        inline void add(int i) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, (unsigned)i, size);
-          if (NOTINQ != data[i]) return;
-          if (NULPTR == head) {
-            // empty list
-            head = i;
-          } else {
-            // not empty list
-              MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, (unsigned)tail, size);
-            data[tail] = i;
-          }
-          tail = i;
-          data[i] = NULPTR;
+        tail = i;
+        data[i] = NULPTR;
+}
+inline int remove() {
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, (unsigned)head, size);
+        int ans = head;
+        head = data[head];
+        data[ans] = NOTINQ;
+        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, (unsigned)ans, size);
+        return ans;
+}
+};
+
+protected:
+class charbuf {
+public:
+char* data;
+unsigned size;
+charbuf* next;
+public:
+charbuf();
+~charbuf();
+void resize(unsigned sz);
+};
+
+private:
+indexq* freeqs;
+charbuf* freebufs;
+
+protected:
+inline indexq* useIndexQueue(unsigned sz) {
+        indexq* ans;
+        if (freeqs) {
+                ans = freeqs;
+                freeqs = freeqs->next;
+        } else {
+                ans = new indexq();
         }
-        inline int remove() {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, (unsigned)head, size);
-          int ans = head;
-          head = data[head];
-          data[ans] = NOTINQ;
-          MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, (unsigned)ans, size);
-          return ans;
+        MEDDLY_DCASSERT(ans);
+        ans->resize(sz);
+        ans->next = 0;
+        return ans;
+}
+inline void recycle(indexq* a) {
+        MEDDLY_DCASSERT(a);
+        MEDDLY_DCASSERT(a->isEmpty());
+        a->next = freeqs;
+        freeqs = a;
+}
+
+inline charbuf* useCharBuf(unsigned sz) {
+        charbuf* ans;
+        if (freebufs) {
+                ans = freebufs;
+                freebufs = freebufs->next;
+        } else {
+                ans = new charbuf();
         }
-    };
+        MEDDLY_DCASSERT(ans);
+        ans->resize(sz);
+        ans->next = 0;
+        return ans;
+}
+inline void recycle(charbuf* a) {
+        MEDDLY_DCASSERT(a);
+        a->next = freebufs;
+        freebufs = a;
+}
 
-  protected:
-    class charbuf {
-      public:
-        char* data;
-        unsigned size;
-        charbuf* next;
-      public:
-        charbuf();
-        ~charbuf();
-        void resize(unsigned sz);
-    };
-
-  private:
-    indexq* freeqs;
-    charbuf* freebufs;
-
-  protected:
-    inline indexq* useIndexQueue(unsigned sz) {
-      indexq* ans;
-      if (freeqs) {
-        ans = freeqs;
-        freeqs = freeqs->next;
-      } else {
-        ans = new indexq();
-      }
-      MEDDLY_DCASSERT(ans);
-      ans->resize(sz);
-      ans->next = 0;
-      return ans;
-    }
-    inline void recycle(indexq* a) {
-      MEDDLY_DCASSERT(a);
-      MEDDLY_DCASSERT(a->isEmpty());
-      a->next = freeqs;
-      freeqs = a;
-    }
-
-    inline charbuf* useCharBuf(unsigned sz) {
-      charbuf* ans;
-      if (freebufs) {
-        ans = freebufs;
-        freebufs = freebufs->next;
-      } else {
-        ans = new charbuf();
-      }
-      MEDDLY_DCASSERT(ans);
-      ans->resize(sz);
-      ans->next = 0;
-      return ans;
-    }
-    inline void recycle(charbuf* a) {
-      MEDDLY_DCASSERT(a);
-      a->next = freebufs;
-      freebufs = a;
-    }
-
-    inline virtual bool checkForestCompatibility() const {
-      return true;
-    }
+inline virtual bool checkForestCompatibility() const {
+        return true;
+}
 };
 
 // ******************************************************************
@@ -276,162 +276,203 @@ class MEDDLY::common_cov_by_events_mt : public specialized_operation {
 
 MEDDLY::cov_by_events_op
 ::cov_by_events_op(common_cov_by_events_mt* p,
-  expert_forest* argF, expert_forest* resF)
-  : unary_operation(cov_by_events_opname::getInstance(), 1, argF, resF)
+                   expert_forest* argF, expert_forest* resF)
+        : unary_operation(cov_by_events_opname::getInstance(), 1, argF, resF)
 {
-  parent = p;
+        parent = p;
 
-  const char* name = cov_by_events_opname::getInstance()->getName();
-  ct_entry_type* et;
+        const char* name = cov_by_events_opname::getInstance()->getName();
+        ct_entry_type* et;
 
-  if (argF->isFullyReduced()) {
-    // CT entry includes level info
-    et = new ct_entry_type(name, "NI:N");
-    et->setForestForSlot(0, argF);
-    et->setForestForSlot(3, resF);
-  } else {
-    et = new ct_entry_type(name, "N:N");
-    et->setForestForSlot(0, argF);
-    et->setForestForSlot(2, resF);
-  }
-  registerEntryType(0, et);
-  buildCTs();
+        if (argF->isFullyReduced()) {
+                // CT entry includes level info
+                et = new ct_entry_type(name, "NI:N");
+                et->setForestForSlot(0, argF);
+                et->setForestForSlot(3, resF);
+        } else {
+                et = new ct_entry_type(name, "N:N");
+                et->setForestForSlot(0, argF);
+                et->setForestForSlot(2, resF);
+        }
+        registerEntryType(0, et);
+        buildCTs();
 }
 
 MEDDLY::cov_by_events_op::~cov_by_events_op()
 {
-  removeAllComputeTableEntries();
+        removeAllComputeTableEntries();
 }
 
 
-void MEDDLY::cov_by_events_op::RSBFSfly(const dd_edge& init, dd_edge& reachableStates, satotf_opname::otf_relation* rel ,markcmp* cij)
+void MEDDLY::cov_by_events_op::RSBFSfly(const dd_edge& init, dd_edge& reachableStates, satotf_opname::otf_relation* rel,markcmp* cij)
 {
-  reachableStates=init;
-  dd_edge prevReachable(resF);
-  dd_edge front(resF);
-   while (prevReachable != reachableStates) {
-       prevReachable = reachableStates;
-       for(int level=1; level<argF->getNumVariables()+1; level++){
-           for (int ei = 0; ei < rel->getNumOfEvents(level); ei++) {
-               rel->rebuildEvent(level, ei);
-           }
-       }
-       for(int level=1; level<argF->getNumVariables()+1; level++){
-            int nEventsAtThisLevel = rel->getNumOfEvents(level);
-           for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
-             rel->rebuildEvent(level, ei);
-             const dd_edge& mxd = rel->getEvent(level, ei);
-             if (0==mxd.getNode()) {}
-             else{
-                 std::list<int>* shouldConfirm=new std::list<int>[argF->getNumVariables()+1];
-                 parent->mddImage->computeDDEdgeSC(reachableStates, mxd, front, true,shouldConfirm);
-                 for(int listidx=0;listidx<argF->getNumVariables()+1;listidx++){
-                     for (auto const &scidx: shouldConfirm[listidx]) {
-                         rel->confirm(listidx, int(scidx));
-                           cij->compare(int(scidx),int(scidx),listidx);
-                         printf("compare %d\n",listidx );
+        reachableStates=init;
+        dd_edge prevReachable(resF);
+        dd_edge front(resF);
+        while (prevReachable != reachableStates) {
+                prevReachable = reachableStates;
+                for(int level=1; level<argF->getNumVariables()+1; level++) {
+                        for (int ei = 0; ei < rel->getNumOfEvents(level); ei++) {
+                                rel->rebuildEvent(level, ei);
+                        }
+                }
+                for(int level=1; level<argF->getNumVariables()+1; level++) {
+                        int nEventsAtThisLevel = rel->getNumOfEvents(level);
+                        for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
+                                rel->rebuildEvent(level, ei);
+                                const dd_edge& mxd = rel->getEvent(level, ei);
+                                if (0==mxd.getNode()) {}
+                                else{
+                                        std::list<int>* shouldConfirm=new std::list<int>[argF->getNumVariables()+1];
+                                        parent->mddImage->computeDDEdgeSC(reachableStates, mxd, front, true,shouldConfirm);
+                                        for(int listidx=0; listidx<argF->getNumVariables()+1; listidx++) {
+                                                for (auto const &scidx: shouldConfirm[listidx]) {
+                                                        rel->confirm(listidx, int(scidx));
+                                                        cij->compare(int(scidx),int(scidx),listidx);
+                                                        printf("compare %d\n",listidx );
 
-                          getchar();
-                     }
-                 }
+                                                        getchar();
+                                                }
+                                        }
 
-                parent->mddUnion->computeDDEdge(reachableStates, front, reachableStates, true);
-                delete[]shouldConfirm;
-             }
-            }
-       }
-   }
+                                        parent->mddUnion->computeDDEdge(reachableStates, front, reachableStates, true);
+                                        delete[]shouldConfirm;
+                                }
+                        }
+                }
+        }
 }
 
 
 #include <chrono>
 using namespace std::chrono;
 
-void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reachableStates, satotf_opname::otf_relation* rel ,markcmp* cij)
+void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reachableStates, satotf_opname::otf_relation* rel,markcmp* cij)
 {
-  reachableStates=init;
-  dd_edge prevReachable(resF);
-  dd_edge front(resF);
-  int i=0;
-  bool first=true;
-   // while (prevReachable != reachableStates) {
-   auto start = high_resolution_clock::now();
-   do{
-       // first=false;
-       i++;
-       prevReachable = reachableStates;
-       for(int level=1; level<argF->getNumVariables()+1; level++){
-           for (int ei = 0; ei < rel->getNumOfEvents(level); ei++) {
-               rel->rebuildEvent(level, ei);
-           }
-       }
-       dd_edge urel(argF);
-       urel=rel->getMonolithicNSF();
-       ostream_output meddlyout(std::cout);
-       std::list<int>* shouldConfirms=new std::list<int>[argF->getNumVariables()+1];
-       dd_edge ffront(resF);
-       dd_edge efront(resF);
-       dd_edge lfront(resF);
-       int gfront=0;
-       ffront=init;
-       efront=init;
-       lfront=init;
+        reachableStates=init;
+        dd_edge prevReachable(resF);
+        dd_edge front(resF);
+        int i=0;
+        bool first=true;
+        ostream_output meddlyout(std::cout);
+        init.showGraph(meddlyout);
+       printf("init^^^");
+        // while (prevReachable != reachableStates) {
+        auto start = high_resolution_clock::now();
+        do{
 
-       // reachableStates.showGraph(meddlyout);
-       // printf("reachableStates^^BEFORE!\n");
-       // getchar();
+                // first=false;
+                i++;
+                prevReachable = reachableStates;
+                for(int level=1; level<argF->getNumVariables()+1; level++) {
+                        for (int ei = 0; ei < rel->getNumOfEvents(level); ei++) {
+                                rel->rebuildEvent(level, ei);
+                                // const dd_edge& mxd = rel->getEvent(level, ei);
+                                // mxd.showGraph(meddlyout);
+                                // printf("MXD %d ei!\n",ei );
+                                // getchar();
+                        }
+                }
+                // dd_edge urel(argF);
+                // urel=rel->getMonolithicNSF();
+                std::list<int>* shouldConfirms=new std::list<int>[argF->getNumVariables()+1];
+                dd_edge nfront(resF);
+                dd_edge efront(resF);
+                dd_edge lfront(resF);
+                dd_edge tlfront(resF);
+                int gfront=0;
+                nfront=init;
+                efront=init;
+                lfront=init;
+                tlfront=init;
 
-        parent->mrcc->computeDDEdgeSC(reachableStates, urel, ffront,efront, lfront,gfront, true,shouldConfirms,parent->cij);
+                // reachableStates.showGraph(meddlyout);
+                // printf("reachableStates^^BEFORE!\n");
+                // getchar();
+                // urel.showGraph(meddlyout);
+                // printf("transition relation^^\n" );
+                // getchar();
+                for(int level=1; level<argF->getNumVariables()+1; level++) {
+                        for (int ei = 0; ei < rel->getNumOfEvents(level); ei++) {
+                                const dd_edge& urel = rel->getEvent(level, ei);
+                                 urel.showGraph(meddlyout);
+                                printf("transition relation LVL %d %d^^\n",level,ei );
+                                 getchar();
+                                 reachableStates.showGraph(meddlyout);
+                                printf("reachableStates^^" );
+                                getchar();
+                                parent->mrcc->computeDDEdgeSC(reachableStates/*prevReachable*/, urel, nfront,efront, lfront,tlfront, gfront, true,shouldConfirms,parent->cij);
+                                prevReachable=reachableStates;
+                                long cardetest=0;
+                                if(gfront)
+                                        printf("gfront %d\n",gfront );
+                                // dd_edge etest(resF);
+                                // apply(EQUANT,ffront, etest);
+                                apply(CARDINALITY, nfront, cardetest);
+                                printf("CARD nfront %ld\n",cardetest );
+                                apply(CARDINALITY, lfront, cardetest);
+                                printf("CARD lfront %ld\n",cardetest );
+                                apply(CARDINALITY, tlfront, cardetest);
+                                printf("CARD tlfront %ld\n",cardetest );
+                                apply(CARDINALITY, efront, cardetest);
+                                printf("CARD efront %ld\n",cardetest );
+                                // getchar();
+                                // etest.showGraph(meddlyout);
+                                // printf("ETEST^^\n" );
+                                // efront.showGraph(meddlyout);
+                                // printf("EFRONT^^\n" );
+                                // getchar();
 
-        // long cardetest=0;
-        if(gfront)
-        printf("gfront %d\n",gfront );
-        // dd_edge etest(resF);
-        // apply(EQUANT,ffront, etest);
-        // apply(CARDINALITY, lfront, cardetest);
-        // printf("CARD lfront %ld\n",cardetest );
-        // apply(CARDINALITY, efront, cardetest);
-        // printf("CARD efront %ld\n",cardetest );
-        // getchar();
-        // etest.showGraph(meddlyout);
-        // printf("ETEST^^\n" );
-        // efront.showGraph(meddlyout);
-        // printf("EFRONT^^\n" );
-        // getchar();
+                                parent->mddUnion->computeDDEdge(reachableStates, nfront, reachableStates, true);
+                                // parent->mddUnion->computeDDEdgeOmega(reachableStates, ffront, reachableStates, true, parent->cij);
 
-        parent->mddUnion->computeDDEdge(reachableStates, ffront, reachableStates, true);
-        // reachableStates.showGraph(meddlyout);
-        // printf("reachableStates^^\n");
-        // getchar();
-        parent->mddUnion->computeDDEdge(reachableStates, efront, reachableStates, true);
-        parent->mddUnion->computeDDEdge(reachableStates, lfront, reachableStates, true);
+                                // reachableStates.showGraph(meddlyout);
+                                // printf("reachableStates^^\n");
+                                // getchar();
+                                parent->mddUnion->computeDDEdge(reachableStates, efront, reachableStates, true);
+                                parent->mddUnion->computeDDEdge(reachableStates, lfront, reachableStates, true);
+                                // reachableStates.showGraph(meddlyout);
+                                // printf("reachableStates^^\n");
+                                // long cardetest=0;
+                                apply(CARDINALITY, reachableStates, cardetest);
+                                printf("CARD reachset %ld\n",cardetest );
+                                // getchar();
+                                for(int listidx=0; listidx<argF->getNumVariables()+1; listidx++) {
+                                        for (auto const &scidx: shouldConfirms[listidx]) {
+                                                rel->confirm(listidx, int(scidx));
+                                                // printf("listidx %d, scidx %d\n",listidx, int(scidx) );
 
-        long cardier;
-        apply(CARDINALITY, reachableStates, cardier);
-        printf("CARD Reachability %ld\n",cardier );
-        for(int listidx=0;listidx<argF->getNumVariables()+1;listidx++){
-            for (auto const &scidx: shouldConfirms[listidx]) {
-                rel->confirm(listidx, int(scidx));
-            }
-        }
-        // reachableStates.showGraph(meddlyout);
-        // getchar();
-        delete[]shouldConfirms;
-        // printf("PR %d, F %d\n",prevReachable == reachableStates, first==true );
-        if(prevReachable == reachableStates&& first==true){
-            first=false;
-        }else if(prevReachable == reachableStates&& first==false){
-            first=true;
-        }
-        auto stop = high_resolution_clock::now();
-        auto duration = duration_cast<minutes>(stop - start);
-        if(duration.count()>TimeLimit){
-            printf("TimeOut\n" );
-            return;
-        }
+                                        }
+                                }
+                                // delete[]shouldConfirms;
 
-   }while (prevReachable != reachableStates || first==false);
-   printf("DONEDONE %d\n",i );
+                        }
+                }
+                // reachableStates.showGraph(meddlyout);
+                // printf("reachableStates^^\n");
+                long cardier;
+                apply(CARDINALITY, reachableStates, cardier);
+                printf("CARD Reachability %ld\n",cardier );
+                getchar();
+
+                // reachableStates.showGraph(meddlyout);
+                // getchar();
+                // delete[]shouldConfirms;
+                // printf("PR %d, F %d\n",prevReachable == reachableStates, first==true );
+                if(prevReachable == reachableStates&& first==true) {
+                        first=false;
+                }else if(prevReachable == reachableStates&& first==false) {
+                        first=true;
+                }
+                auto stop = high_resolution_clock::now();
+                auto duration = duration_cast<minutes>(stop - start);
+                if(duration.count()>TimeLimit) {
+                        printf("TimeOut\n" );
+                        return;
+                }
+
+        }while (prevReachable != reachableStates || first==false);
+        printf("DONEDONE %d\n",i );
 
 }
 
@@ -443,40 +484,40 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
 
 
 MEDDLY::common_cov_by_events_mt::common_cov_by_events_mt(
-  satotf_opname* opcode,
-  satotf_opname::otf_relation* relation,markcmp* _cij)
-: specialized_operation(opcode, 1)
+        satotf_opname* opcode,
+        satotf_opname::otf_relation* relation,markcmp* _cij)
+        : specialized_operation(opcode, 1)
 {
-  mddUnion = 0;
-  mddImage = 0;
-  mrcc=0;
-  mxdIntersection = 0;
-  mxdDifference = 0;
-  freeqs = 0;
-  freebufs = 0;
-  rel = relation;
-  cij=_cij;
-  arg1F = static_cast<expert_forest*>(rel->getInForest());
-  arg2F = static_cast<expert_forest*>(rel->getRelForest());
-  resF = static_cast<expert_forest*>(rel->getOutForest());
-  registerInForest(arg1F);
-  registerInForest(arg2F);
-  registerInForest(resF);
+        mddUnion = 0;
+        mddImage = 0;
+        mrcc=0;
+        mxdIntersection = 0;
+        mxdDifference = 0;
+        freeqs = 0;
+        freebufs = 0;
+        rel = relation;
+        cij=_cij;
+        arg1F = static_cast<expert_forest*>(rel->getInForest());
+        arg2F = static_cast<expert_forest*>(rel->getRelForest());
+        resF = static_cast<expert_forest*>(rel->getOutForest());
+        registerInForest(arg1F);
+        registerInForest(arg2F);
+        registerInForest(resF);
 
-  ct_entry_type* et = new ct_entry_type(opcode->getName(), "NN:N");
-  et->setForestForSlot(0, arg1F);
-  et->setForestForSlot(1, arg2F);
-  et->setForestForSlot(3, resF);
-  registerEntryType(0, et);
-  buildCTs();
+        ct_entry_type* et = new ct_entry_type(opcode->getName(), "NN:N");
+        et->setForestForSlot(0, arg1F);
+        et->setForestForSlot(1, arg2F);
+        et->setForestForSlot(3, resF);
+        registerEntryType(0, et);
+        buildCTs();
 }
 
 MEDDLY::common_cov_by_events_mt::~common_cov_by_events_mt()
 {
-  if (rel->autoDestroy()) delete rel;
-  unregisterInForest(arg1F);
-  unregisterInForest(arg2F);
-  unregisterInForest(resF);
+        if (rel->autoDestroy()) delete rel;
+        unregisterInForest(arg1F);
+        unregisterInForest(arg2F);
+        unregisterInForest(resF);
 }
 
 void MEDDLY::common_cov_by_events_mt
@@ -487,95 +528,95 @@ void MEDDLY::common_cov_by_events_mt
 void MEDDLY::common_cov_by_events_mt
 ::computeMXD(const dd_edge &a, dd_edge &c)
 {
-  // Initialize operations
-  mddUnion = getOperation(UNION, arg2F, arg2F, arg2F);
-  MEDDLY_DCASSERT(mddUnion);
+        // Initialize operations
+        mddUnion = getOperation(UNION, arg2F, arg2F, arg2F);
+        MEDDLY_DCASSERT(mddUnion);
 
-  mxdIntersection = getOperation(INTERSECTION, arg2F, arg2F, arg2F);
-  MEDDLY_DCASSERT(mxdIntersection);
+        mxdIntersection = getOperation(INTERSECTION, arg2F, arg2F, arg2F);
+        MEDDLY_DCASSERT(mxdIntersection);
 
-  mxdDifference = getOperation(DIFFERENCE, arg2F, arg2F, arg2F);
-  MEDDLY_DCASSERT(mxdDifference);
+        mxdDifference = getOperation(DIFFERENCE, arg2F, arg2F, arg2F);
+        MEDDLY_DCASSERT(mxdDifference);
 
-  mddImage=getOperation(POST_IMAGE, arg1F, arg2F, resF);
-  MEDDLY_DCASSERT(mddImage);
+        mddImage=getOperation(POST_IMAGE, arg1F, arg2F, resF);
+        MEDDLY_DCASSERT(mddImage);
 
-  dd_edge d(resF);
-  dd_edge e(resF);
-  dd_edge f(resF);
-  mrcc=getOperationW(MRC_POST_IMAGE,a,arg2F,c,d,e);
-  MEDDLY_DCASSERT(mrcc);
-  ostream_output meddlyout(std::cout);
+        dd_edge d(resF);
+        dd_edge e(resF);
+        dd_edge f(resF);
+        mrcc=getOperationW(MRC_POST_IMAGE,a,arg2F,c,d,e,f);
+        MEDDLY_DCASSERT(mrcc);
+        ostream_output meddlyout(std::cout);
 #ifdef DEBUG_INITIAL
-  printf("Calling saturate for states:\n");
-  a.showGraph(stdout);
+        printf("Calling saturate for states:\n");
+        a.showGraph(stdout);
 #endif
 #ifdef DEBUG_NSF
-  printf("Calling saturate for NSF:\n");
-  // b.showGraph(stdout);
+        printf("Calling saturate for NSF:\n");
+        // b.showGraph(stdout);
 #endif
 
-  // Execute saturation operation
-  cov_by_events_op* so = new cov_by_events_op(this, arg1F, resF);
-   so->Coverability(a,c,rel,cij);
+        // Execute saturation operation
+        cov_by_events_op* so = new cov_by_events_op(this, arg1F, resF);
+        so->Coverability(a,c,rel,cij);
 
-  // Cleanup
-  while (freeqs) {
-    indexq* t = freeqs;
-    freeqs = t->next;
-    delete t;
-  }
-  while (freebufs) {
-    charbuf* t = freebufs;
-    freebufs = t->next;
-    delete t;
-  }
-  delete so;
+        // Cleanup
+        while (freeqs) {
+                indexq* t = freeqs;
+                freeqs = t->next;
+                delete t;
+        }
+        while (freebufs) {
+                charbuf* t = freebufs;
+                freebufs = t->next;
+                delete t;
+        }
+        delete so;
 }
 
 
 void MEDDLY::common_cov_by_events_mt
 ::compute(const dd_edge &a, dd_edge &c)
 {
-    printf("MEDDLY::common_cov_by_events_mt\n" );
-  // Initialize operations
-  mddUnion = getOperation(UNION, resF, resF, resF);
-  MEDDLY_DCASSERT(mddUnion);
+        printf("MEDDLY::common_cov_by_events_mt\n" );
+        // Initialize operations
+        mddUnion = getOperation(UNION, resF, resF, resF);
+        MEDDLY_DCASSERT(mddUnion);
 
-  mxdIntersection = getOperation(INTERSECTION, arg2F, arg2F, arg2F);
-  MEDDLY_DCASSERT(mxdIntersection);
+        mxdIntersection = getOperation(INTERSECTION, arg2F, arg2F, arg2F);
+        MEDDLY_DCASSERT(mxdIntersection);
 
-  mxdDifference = getOperation(DIFFERENCE, arg2F, arg2F, arg2F);
-  MEDDLY_DCASSERT(mxdDifference);
+        mxdDifference = getOperation(DIFFERENCE, arg2F, arg2F, arg2F);
+        MEDDLY_DCASSERT(mxdDifference);
 
-  mddImage=getOperation(POST_IMAGE, arg1F, arg2F, resF);
-  MEDDLY_DCASSERT(mddImage);
-  ostream_output meddlyout(std::cout);
+        mddImage=getOperation(POST_IMAGE, arg1F, arg2F, resF);
+        MEDDLY_DCASSERT(mddImage);
+        ostream_output meddlyout(std::cout);
 #ifdef DEBUG_INITIAL
-  printf("Calling saturate for states:\n");
-  a.showGraph(stdout);
+        printf("Calling saturate for states:\n");
+        a.showGraph(stdout);
 #endif
 #ifdef DEBUG_NSF
-  printf("Calling saturate for NSF:\n");
-  // b.showGraph(stdout);
+        printf("Calling saturate for NSF:\n");
+        // b.showGraph(stdout);
 #endif
 
-  // Execute saturation operation
-  cov_by_events_op* so = new cov_by_events_op(this, arg1F, resF);
-  so->RSBFSfly(a,c,rel,cij);
+        // Execute saturation operation
+        cov_by_events_op* so = new cov_by_events_op(this, arg1F, resF);
+        so->RSBFSfly(a,c,rel,cij);
 
-  // Cleanup
-  while (freeqs) {
-    indexq* t = freeqs;
-    freeqs = t->next;
-    delete t;
-  }
-  while (freebufs) {
-    charbuf* t = freebufs;
-    freebufs = t->next;
-    delete t;
-  }
-  delete so;
+        // Cleanup
+        while (freeqs) {
+                indexq* t = freeqs;
+                freeqs = t->next;
+                delete t;
+        }
+        while (freebufs) {
+                charbuf* t = freebufs;
+                freebufs = t->next;
+                delete t;
+        }
+        delete so;
 }
 
 // ******************************************************************
@@ -584,24 +625,24 @@ void MEDDLY::common_cov_by_events_mt
 
 MEDDLY::common_cov_by_events_mt::indexq::indexq()
 {
-  data = 0;
-  size = 0;
-  head = NULPTR;
+        data = 0;
+        size = 0;
+        head = NULPTR;
 }
 
 MEDDLY::common_cov_by_events_mt::indexq::~indexq()
 {
-  free(data);
+        free(data);
 }
 
 void MEDDLY::common_cov_by_events_mt::indexq::resize(unsigned sz)
 {
-  if (sz <= size) return;
-  data = (int*) realloc(data, sz * sizeof(int));
-  if (0==data)
-    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        if (sz <= size) return;
+        data = (int*) realloc(data, sz * sizeof(int));
+        if (0==data)
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
 
-  for (; size < sz; size++) data[size] = NOTINQ;
+        for (; size < sz; size++) data[size] = NOTINQ;
 }
 
 // ******************************************************************
@@ -610,21 +651,21 @@ void MEDDLY::common_cov_by_events_mt::indexq::resize(unsigned sz)
 
 MEDDLY::common_cov_by_events_mt::charbuf::charbuf()
 {
-  data = 0;
-  size = 0;
+        data = 0;
+        size = 0;
 }
 
 MEDDLY::common_cov_by_events_mt::charbuf::~charbuf()
 {
-  free(data);
+        free(data);
 }
 
 void MEDDLY::common_cov_by_events_mt::charbuf::resize(unsigned sz)
 {
-  if (sz <= size) return;
-  data = (char*) realloc(data, sz * sizeof(char));
-  if (0==data)
-    throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        if (sz <= size) return;
+        data = (char*) realloc(data, sz * sizeof(char));
+        if (0==data)
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
 }
 
 // ******************************************************************
@@ -634,16 +675,16 @@ void MEDDLY::common_cov_by_events_mt::charbuf::resize(unsigned sz)
 // ******************************************************************
 
 class MEDDLY::cov_by_events_mt : public common_cov_by_events_mt {
-  public:
-    cov_by_events_mt(satotf_opname* opcode,
-    satotf_opname::otf_relation* rel, markcmp* cij);
-  protected:
+public:
+cov_by_events_mt(satotf_opname* opcode,
+                 satotf_opname::otf_relation* rel, markcmp* cij);
+protected:
 };
 
 MEDDLY::cov_by_events_mt::cov_by_events_mt(
-  satotf_opname* opcode,
-  satotf_opname::otf_relation* rel,markcmp* cij)
-  : common_cov_by_events_mt(opcode, rel,cij)
+        satotf_opname* opcode,
+        satotf_opname::otf_relation* rel,markcmp* cij)
+        : common_cov_by_events_mt(opcode, rel,cij)
 {
 
 }
@@ -655,65 +696,65 @@ MEDDLY::cov_by_events_mt::cov_by_events_mt(
 // ******************************************************************
 
 class MEDDLY::cov_opname : public satotf_opname {
-    bool forward;
-    markcmp* mcmp;
-  public:
-    cov_opname(bool fwd);
-    virtual specialized_operation* buildOperation(arguments* a);
-    virtual specialized_operation* buildOperationX(arguments* a,markcmp* a2);
+bool forward;
+markcmp* mcmp;
+public:
+cov_opname(bool fwd);
+virtual specialized_operation* buildOperation(arguments* a);
+virtual specialized_operation* buildOperationX(arguments* a,markcmp* a2);
 };
 
 MEDDLY::cov_opname::cov_opname(bool fwd)
- : satotf_opname(fwd ? "cov" : "cov")
+        : satotf_opname(fwd ? "cov" : "cov")
 {
-  forward = fwd;
+        forward = fwd;
 }
 
 MEDDLY::specialized_operation*
 MEDDLY::cov_opname::buildOperation(arguments* a)
 {
-  otf_relation* rel = dynamic_cast<otf_relation*>(a);
-  if (0==rel) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+        otf_relation* rel = dynamic_cast<otf_relation*>(a);
+        if (0==rel) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
 
-  //
-  // No sanity checks needed here; we did them already when constructing a.
-  //
+        //
+        // No sanity checks needed here; we did them already when constructing a.
+        //
 
-  MEDDLY::specialized_operation* op = 0;
-  if (forward)
-    op = new cov_by_events_mt(this, rel,0);
-  else {
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-  }
+        MEDDLY::specialized_operation* op = 0;
+        if (forward)
+                op = new cov_by_events_mt(this, rel,0);
+        else {
+                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+        }
 
-  // Do we need to delete rel here?
-  // No, if needed, do this in the destructor for op.
+        // Do we need to delete rel here?
+        // No, if needed, do this in the destructor for op.
 
-  return op;
+        return op;
 }
 
 
 MEDDLY::specialized_operation*
 MEDDLY::cov_opname::buildOperationX(arguments* a,markcmp* a2)
 {
-  otf_relation* rel = dynamic_cast<otf_relation*>(a);
-  if (0==rel) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
-  //
-  // No sanity checks needed here; we did them already when constructing a.
-  //
+        otf_relation* rel = dynamic_cast<otf_relation*>(a);
+        if (0==rel) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+        //
+        // No sanity checks needed here; we did them already when constructing a.
+        //
 
 
-  MEDDLY::specialized_operation* op = 0;
-  if (forward)
-    op = new cov_by_events_mt(this, rel,a2);
-  else {
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-  }
+        MEDDLY::specialized_operation* op = 0;
+        if (forward)
+                op = new cov_by_events_mt(this, rel,a2);
+        else {
+                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+        }
 
-  // Do we need to delete rel here?
-  // No, if needed, do this in the destructor for op.
+        // Do we need to delete rel here?
+        // No, if needed, do this in the destructor for op.
 
-  return op;
+        return op;
 }
 
 
@@ -725,6 +766,6 @@ MEDDLY::cov_opname::buildOperationX(arguments* a,markcmp* a2)
 
 MEDDLY::satotf_opname* MEDDLY::initCov()
 {
-    printf("This is COV!\n" );
-  return new cov_opname(true);
+        printf("This is COV!\n" );
+        return new cov_opname(true);
 }

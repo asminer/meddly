@@ -245,14 +245,14 @@ MEDDLY::binary_opname::getOperation(const dd_edge &a1, const dd_edge &a2,
 
 MEDDLY::binary_operation*
 MEDDLY::binary_opname::getOperationW(const dd_edge &a1, const dd_edge &a2,
-        const dd_edge &res, const dd_edge &res2,const dd_edge &res3/*, const dd_edge &res4*/)
+    const dd_edge &res, const dd_edge &res2,const dd_edge &res3, const dd_edge &res4)
 {
     binary_operation* match = nullptr;
     operation* prev = nullptr;
     operation* curr;
     for (curr = cache; curr; curr = curr->getNext()) {
         match = static_cast <binary_operation*> (curr);
-        if (match->matches(a1, a2, res,res2,res3/*,res4*/)) {
+        if (match->matches(a1, a2, res,res2,res3,res4)) {
             // Move to front, unless it's already there
             if (prev) {
                 prev->setNext(curr->getNext());

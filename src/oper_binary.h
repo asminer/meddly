@@ -42,7 +42,7 @@ class MEDDLY::binary_operation : public operation {
         binary_operation(binary_opname* code, unsigned et_slots,
             expert_forest* arg1, expert_forest* arg2, expert_forest* res);
         binary_operation(binary_opname* code, unsigned et_slots,
-            expert_forest* arg1, expert_forest* arg2, expert_forest* res,expert_forest* res2,expert_forest* res3);
+            expert_forest* arg1, expert_forest* arg2, expert_forest* res,expert_forest* res2,expert_forest* res3,expert_forest* res4);
 
     protected:
         virtual ~binary_operation();
@@ -51,7 +51,7 @@ class MEDDLY::binary_operation : public operation {
         bool matches(const dd_edge &arg1, const dd_edge &arg2,
                 const dd_edge &res) const;
         bool matches(const dd_edge &arg1, const dd_edge &arg2,
-                const dd_edge &res,const dd_edge &res2,const dd_edge &res3) const;
+                const dd_edge &res,const dd_edge &res2,const dd_edge &res3, const dd_edge& res4) const;
 
         // high-level front-end
 
@@ -68,7 +68,10 @@ class MEDDLY::binary_operation : public operation {
         virtual void computeDDEdgeSC(const dd_edge &ar1, const dd_edge &ar2,
                 dd_edge &res, dd_edge &res2, bool userFlag,std::list<int>* shouldConfirm){};
         virtual void computeDDEdgeSC(const dd_edge &ar1, const dd_edge &ar2,
-                dd_edge &res, dd_edge &res2, dd_edge &res3, int &res4, bool userFlag,std::list<int>* shouldConfirm, markcmp* cij){};
+                dd_edge &res, dd_edge &res2, dd_edge &res3,dd_edge& res4, int &res5, bool userFlag,std::list<int>* shouldConfirm, markcmp* cij){};
+        virtual void computeDDEdgeOmega(const dd_edge &ar1, const dd_edge &ar2,
+                dd_edge &res, bool userFlag,markcmp* cij){};
+
     protected:
         inline void operationCommutes() {
             can_commute = (arg1F == arg2F);
@@ -84,6 +87,7 @@ class MEDDLY::binary_operation : public operation {
         expert_forest* resF;
         expert_forest* resF2;
         expert_forest* resF3;
+        expert_forest* resF4;
         opnd_type resultType;
 };
 
