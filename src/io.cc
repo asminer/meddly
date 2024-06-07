@@ -192,6 +192,7 @@ size_t MEDDLY::istream_input::read(size_t bytes, unsigned char* buffer)
 
 MEDDLY::output::output()
 {
+    tabstops = 0;
 }
 
 MEDDLY::output::~output()
@@ -250,12 +251,30 @@ void MEDDLY::FILE_output::put(char x)
     if (EOF == fputc(x, outf)) {
         throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
     }
+    if ('\n' == x) {
+        for (unsigned i=0; i<indentation(); i++) {
+            fputs("    ", outf);
+        }
+    }
 }
 
 void MEDDLY::FILE_output::put(std::string x, int w)
 {
-    if (fprintf(outf, "%*s", w, x.c_str())<0) {
-        throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
+    // Check for newlines
+    bool newlines = false;
+    for (unsigned i=0; i<x.length(); i++) {
+        if ('\n' != x[i]) continue;
+        newlines = true;
+        break;
+    }
+    if (newlines) {
+        for (unsigned i=0; i<x.length(); i++) {
+            put(x[i]);
+        }
+    } else {
+        if (fprintf(outf, "%*s", w, x.c_str())<0) {
+            throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
+        }
     }
 }
 
@@ -328,14 +347,35 @@ MEDDLY::ostream_output::~ostream_output()
 void MEDDLY::ostream_output::put(char x)
 {
     out.put(x);
+    if ('\n' == x) {
+        for (unsigned i=0; i<indentation(); i++) {
+            out.put(' ');
+            out.put(' ');
+            out.put(' ');
+            out.put(' ');
+        }
+    }
     // TBD - what about errors?
 }
 
 void MEDDLY::ostream_output::put(std::string x, int w)
 {
-    out.width(w);
-    out << x;
-    // TBD - what about errors?
+    // Check for newlines
+    bool newlines = false;
+    for (unsigned i=0; i<x.length(); i++) {
+        if ('\n' != x[i]) continue;
+        newlines = true;
+        break;
+    }
+    if (newlines) {
+        for (unsigned i=0; i<x.length(); i++) {
+            put(x[i]);
+        }
+    } else {
+        out.width(w);
+        out << x;
+        // TBD - what about errors?
+    }
 }
 
 void MEDDLY::ostream_output::put(long x, int w)

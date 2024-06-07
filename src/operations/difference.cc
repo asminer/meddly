@@ -22,6 +22,7 @@
 
 #include "../oper_binary.h"
 #include "../ct_vector.h"
+#include "../operators.h"
 
 namespace MEDDLY {
     class diffr_mdd;
@@ -29,6 +30,8 @@ namespace MEDDLY {
 
     binary_list DIFFR_cache;
 };
+
+#define TRACE
 
 // #define OLD_OPER
 
@@ -296,16 +299,19 @@ class MEDDLY::diffr_mxd : public binary_operation {
             MEDDLY_DCASSERT(false);
         }
 
+
     private:
         ct_entry_type* ct;
 
         bool force_by_levels;
+
+        ostream_output out;
 };
 
 // ******************************************************************
 
 MEDDLY::diffr_mxd::diffr_mxd(forest* arg1, forest* arg2, forest* res)
-  : binary_operation(DIFFR_cache, arg1, arg2, res)
+  : binary_operation(DIFFR_cache, arg1, arg2, res), out(std::cout)
 {
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__, RELATION);
@@ -368,6 +374,7 @@ void MEDDLY::diffr_mxd::compute(const edge_value &av, node_handle ap,
     MEDDLY_DCASSERT(av.isVoid());
     MEDDLY_DCASSERT(bv.isVoid());
     cv.set();
+    out.indentation(0);
     cp = _compute(ap, bp, L);
 }
 
@@ -386,22 +393,24 @@ MEDDLY::diffr_mxd::_compute(node_handle A, node_handle B, int L)
 
     if (B < 0) {
         // A - 1 = 0
-        if ( !force_by_levels || 0==L ) {
+        if ( !arg2F->isIdentityReduced()  ||  arg1F->isIdentityReduced() || 0==L)
+        {
             return 0;
         }
     }
 
     if (B==0) {
-        if (A < 0) {
-            // 1 - 0 = 1
-            terminal tt(true);
-            return makeChainTo(tt.getHandle(), 0, L);
-        }
         // A - 0 = A
         // return A if we can (same forest as result)
         if (arg1F == resF) {
             return resF->linkNode(A);
             // Shouldn't need to make any chains b/c same forest
+        }
+        if (A < 0) {
+            // Treat the arg1F != resF case when A=1
+            // 1 - 0 = 1
+            terminal tt(true);
+            return makeChainTo(tt.getHandle(), 0, L);
         }
     }
 
@@ -421,10 +430,10 @@ MEDDLY::diffr_mxd::_compute(node_handle A, node_handle B, int L)
         : MAX(ABS(Alevel), ABS(Blevel));
 
 #ifdef TRACE
-    std::cout << "diffr_mxd::_compute(" << A << ", " << B << ", " << L << ")\n";
-    std::cout << "\t" << A << " level " << Alevel << "\n";
-    std::cout << "\t" << B << " level " << Blevel << "\n";
-    std::cout << "\tresult level " << Clevel << " before chain\n";
+    out << "diffr_mxd::_compute(" << A << ", " << B << ", " << L << ")\n";
+    out << A << " level " << Alevel << "\n";
+    out << B << " level " << Blevel << "\n";
+    out << "result level " << Clevel << " before chain\n";
 #endif
 
     //
@@ -443,8 +452,8 @@ MEDDLY::diffr_mxd::_compute(node_handle A, node_handle B, int L)
     if (ct->findCT(key, res)) {
         node_handle C = makeChainTo(resF->linkNode(res[0].getN()), Clevel, L);
 #ifdef TRACE
-        std::cout << "\tCT hit " << res[0].getN() << "\n";
-        std::cout << "\tafter chain " << C << "\n";
+        out << "CT hit " << res[0].getN() << "\n";
+        out << "after chain " << C << "\n";
 #endif
         return C;
     }
@@ -473,6 +482,10 @@ MEDDLY::diffr_mxd::_compute(node_handle A, node_handle B, int L)
     // Scan through (sparse) entries of A,
     // and subtract the corresponding entries in B.
     //
+#ifdef TRACE
+    out.indent_more();
+    out.put('\n');
+#endif
     unsigned zc = 0;
     for (unsigned z=0; z<Au->getSize(); z++) {
         const unsigned i = Au->index(z);
@@ -483,14 +496,13 @@ MEDDLY::diffr_mxd::_compute(node_handle A, node_handle B, int L)
         }
     }
     Cu->resize(zc);
-
-
 #ifdef TRACE
-    std::cout << "diffr_mxd::_compute(" << A << ", " << B << ", " << L
-              << ") = " << "\n\t";
-    ostream_output out(std::cout);
+    out.indent_less();
+    out.put('\n');
+    out << "diffr_mxd::_compute(" << A << ", " << B << ", " << L
+              << ") = " << "\n";
     Cu->show(out, true);
-    std::cout << "\n";
+    out << "\n";
 #endif
 
     //
@@ -503,9 +515,9 @@ MEDDLY::diffr_mxd::_compute(node_handle A, node_handle B, int L)
     resF->createReducedNode(Cu, dummy, C);
     MEDDLY_DCASSERT(dummy.isVoid());
 #ifdef TRACE
-    std::cout << "\treduced to " << C << ": ";
+    out << "reduced to " << C << ": ";
     resF->showNode(out, C, SHOW_DETAILS);
-    std::cout << "\n";
+    out << "\n";
 #endif
 
     //
@@ -516,9 +528,9 @@ MEDDLY::diffr_mxd::_compute(node_handle A, node_handle B, int L)
     C = makeChainTo(C, Clevel, L);
 
 #ifdef TRACE
-    std::cout << "\tchain to level " << L << " = " << C << ": ";
+    out << "chain to level " << L << " = " << C << ": ";
     resF->showNode(out, C, SHOW_DETAILS);
-    std::cout << "\n";
+    out << "\n";
 #endif
     return C;
 }
@@ -545,9 +557,9 @@ MEDDLY::diffr_mxd::_compute_primed(int in, node_handle A, node_handle B,
     const int Alevel = arg1F->getNodeLevel(A);
     const int Blevel = arg2F->getNodeLevel(B);
 #ifdef TRACE
-    std::cout << "diffr_mxd::_compute_primed(" << in << ", " << A << ", " << B << ", " << Clevel << ")\n";
-    std::cout << "\t" << A << " level " << Alevel << "\n";
-    std::cout << "\t" << B << " level " << Blevel << "\n";
+    out << "diffr_mxd::_compute_primed(" << in << ", " << A << ", " << B << ", " << Clevel << ")\n";
+    out << A << " level " << Alevel << "\n";
+    out << B << " level " << Blevel << "\n";
 #endif
 
     //
@@ -568,6 +580,10 @@ MEDDLY::diffr_mxd::_compute_primed(int in, node_handle A, node_handle B,
     // Scan through (sparse) entries of A,
     // and subtract the corresponding entries in B.
     //
+#ifdef TRACE
+    out.indent_more();
+    out.put('\n');
+#endif
     unsigned zc = 0;
     for (unsigned z=0; z<Au->getSize(); z++) {
         const unsigned i = Au->index(z);
@@ -578,12 +594,11 @@ MEDDLY::diffr_mxd::_compute_primed(int in, node_handle A, node_handle B,
         }
     }
     Cu->resize(zc);
-
 #ifdef TRACE
-    ostream_output out(std::cout);
-    std::cout << "\t";
+    out.indent_less();
+    out.put('\n');
     Cu->show(out, true);
-    std::cout << "\n";
+    out << "\n";
 #endif
 
     //
@@ -597,7 +612,7 @@ MEDDLY::diffr_mxd::_compute_primed(int in, node_handle A, node_handle B,
     MEDDLY_DCASSERT(dummy.isVoid());
 
 #ifdef TRACE
-    std::cout << "diffr_mxd::_compute_primed(" << in << ", " << A << ", "
+    out << "diffr_mxd::_compute_primed(" << in << ", " << A << ", "
               << B << ", " << Clevel << ") = " << C << "\n\t";
     resF->showNode(out, C, SHOW_DETAILS);
     out.put('\n');

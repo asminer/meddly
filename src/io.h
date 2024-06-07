@@ -204,9 +204,30 @@ class MEDDLY::istream_input : public MEDDLY::input {
     Abstract base class.
 */
 class MEDDLY::output {
+        unsigned tabstops;
     public:
         output();
         virtual ~output();
+
+        /// Increase the indentation level by one.
+        inline void indent_more() {
+            ++tabstops;
+        }
+
+        /// Decrease the indentation level by one.
+        inline void indent_less() {
+            if (tabstops) --tabstops;
+        }
+
+        /// Get the indentation level.
+        inline unsigned indentation() const {
+            return tabstops;
+        }
+
+        /// Set the indentation level.
+        inline void indentation(unsigned ts) {
+            tabstops = ts;
+        }
 
         /**
             Write exactly one character to the output stream.

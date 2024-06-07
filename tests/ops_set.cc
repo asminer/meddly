@@ -37,9 +37,7 @@ const unsigned MAX_REL_CARD = 64;
 
 using namespace MEDDLY;
 
-// #define DEBUG_MXDINTER
-// #define DEBUG_MXDUNION
-// #define DEBUG_MINTERMS
+#define DEBUG_MXDOPS
 
 #define TEST_SETS
 #define TEST_RELATIONS
@@ -201,40 +199,20 @@ void set_complement(const std::vector <bool> &A, std::vector <bool> &C)
 
 inline void fillMinterm(unsigned x, int* mt)
 {
-#ifdef DEBUG_MINTERMS
-    std::cout << std::hex << x << ": [";
-#endif
     for (unsigned j=1; j<=VARS; j++) {
         mt[j] = x % SETDOM;
         x /= SETDOM;
     }
-#ifdef DEBUG_MINTERMS
-    for (unsigned j=VARS; j; j--) {
-        if (j<VARS) std::cout << ", ";
-        std::cout << mt[j];
-    }
-    std::cout << "]\n";
-#endif
 }
 
 inline void fillMinterm(unsigned x, int* un, int* pr)
 {
-#ifdef DEBUG_MINTERMS
-    std::cout << std::hex << x << ": [";
-#endif
     for (unsigned j=1; j<=VARS; j++) {
         un[j] = x % RELDOM;
         x /= RELDOM;
         pr[j] = x % RELDOM;
         x /= RELDOM;
     }
-#ifdef DEBUG_MINTERMS
-    for (unsigned j=VARS; j; j--) {
-        if (j<VARS) std::cout << ", ";
-        std::cout << un[j] << "->" << pr[j];
-    }
-    std::cout << "]\n";
-#endif
 }
 
 inline unsigned whichMinterm(const int* mt)
@@ -447,7 +425,8 @@ inline char getReductionType(forest* f)
     throw "Unknown reduction type";
 }
 
-void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2)
+void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2,
+        const std::vector<bool> &set)
 {
     if (e1 == e2) return;
 
@@ -458,6 +437,13 @@ void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2)
     e2.showGraph(out);
     out << "Obtained DD:\n";
     e1.showGraph(out);
+
+    /*
+    std::cout << "Encoding set ";
+    showSet(std::cout, set);
+    std::cout << "\nMinterms\n    ";
+    showRelMinterms(std::cout, set);
+    */
 
     throw "mismatch";
 }
@@ -492,10 +478,10 @@ void compare_sets(const std::vector <bool> &Aset,
     apply(DIFFERENCE, Add, Bdd, AmBsym);
     apply(COMPLEMENT, Add, cAsym);
 
-    checkEqual("intersection", AiBsym, AiBdd);
-    checkEqual("union", AuBsym, AuBdd);
-    checkEqual("difference", AmBsym, AmBdd);
-    checkEqual("complement", cAsym, cABdd);
+    checkEqual("intersection", AiBsym, AiBdd, AiBset);
+    checkEqual("union", AuBsym, AuBdd, AuBset);
+    checkEqual("difference", AmBsym, AmBdd, AmBset);
+    checkEqual("complement", cAsym, cABdd, cAset);
 }
 
 void compare_rels(const std::vector <bool> &Aset,
@@ -523,47 +509,23 @@ void compare_rels(const std::vector <bool> &Aset,
 
     dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres), cAsym(fres);
 
-#ifdef DEBUG_MXDINTER
+#ifdef DEBUG_MXDOPS
     ostream_output out(std::cout);
     std::cout << "==================================================================\n";
-    std::cout << "Intersecting\nA:  ";
+    std::cout << "Sets:\n";
+    std::cout << "    A: ";
     showSet(std::cout, Aset);
-    std::cout << "\n =  ";
+    std::cout << "\n  = ";
     showRelMinterms(std::cout, Aset);
-    std::cout << "\n";
-    Add.showGraph(out);
-    std::cout << "B:  ";
+    std::cout << "\n    B: ";
     showSet(std::cout, Bset);
-    std::cout << "\n =  ";
+    std::cout << "\n  = ";
     showRelMinterms(std::cout, Bset);
-    std::cout << "\n";
-    Bdd.showGraph(out);
-    std::cout << "A^B:";
-    showSet(std::cout, AiBset);
-    std::cout << "\n =  ";
-    showRelMinterms(std::cout, AiBset);
-    std::cout << "\n";
-#endif
-#ifdef DEBUG_MXDUNION
-    ostream_output out(std::cout);
-    std::cout << "==================================================================\n";
-    std::cout << "Unioning\nA:  ";
-    showSet(std::cout, Aset);
-    std::cout << "\n =  ";
-    showRelMinterms(std::cout, Aset);
-    std::cout << "\n";
+    std::cout << "\nMXDs:\n";
+    std::cout << "    A:\n";
     Add.showGraph(out);
-    std::cout << "B:  ";
-    showSet(std::cout, Bset);
-    std::cout << "\n =  ";
-    showRelMinterms(std::cout, Bset);
-    std::cout << "\n";
+    std::cout << "    B:\n";
     Bdd.showGraph(out);
-    std::cout << "AuB:";
-    showSet(std::cout, AuBset);
-    std::cout << "\n =  ";
-    showRelMinterms(std::cout, AuBset);
-    std::cout << "\n";
 #endif
 
     apply(INTERSECTION, Add, Bdd, AiBsym);
@@ -571,9 +533,9 @@ void compare_rels(const std::vector <bool> &Aset,
     apply(DIFFERENCE, Add, Bdd, AmBsym);
     // apply(COMPLEMENT, Add, cAsym);
 
-    checkEqual("intersection", AiBsym, AiBdd);
-    checkEqual("union", AuBsym, AuBdd);
-    checkEqual("difference", AmBsym, AmBdd);
+    checkEqual("intersection", AiBsym, AiBdd, AiBset);
+    checkEqual("union", AuBsym, AuBdd, AuBset);
+    checkEqual("difference", AmBsym, AmBdd, AmBset);
     // checkEqual("complement", cAsym, cABdd);
 }
 
