@@ -33,8 +33,6 @@ namespace MEDDLY {
 
 // #define TRACE
 
-// #define OLD_OPER
-
 // ******************************************************************
 // *                                                                *
 // *                        diffr_mdd  class                        *
@@ -202,58 +200,6 @@ MEDDLY::diffr_mdd::_compute(node_handle A, node_handle B, int L)
 // *                        diffr_mxd  class                        *
 // *                                                                *
 // ******************************************************************
-
-#ifdef OLD_OPER
-
-class MEDDLY::diffr_mxd : public generic_binary_mxd {
-    public:
-        diffr_mxd(forest* arg1, forest* arg2, forest* res);
-        virtual bool checkTerminals(node_handle a, node_handle b,
-                node_handle& c);
-};
-
-
-MEDDLY::diffr_mxd::diffr_mxd(forest* arg1, forest* arg2, forest* res)
-  : generic_binary_mxd(DIFFR_cache, arg1, arg2, res)
-{
-    //  difference does NOT commute
-
-    checkDomains(__FILE__, __LINE__);
-    checkAllRelations(__FILE__, __LINE__, RELATION);
-    checkAllRanges(__FILE__, __LINE__, range_type::BOOLEAN);
-    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-}
-
-bool MEDDLY::diffr_mxd::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (a == 0) {
-    c = 0;
-    return true;
-  }
-  if (a == -1 && b == 0) {
-    c = -1;
-    return true;
-  }
-  if (a == b) {
-    if (arg1F == arg2F) {
-      c = 0;
-      return true;
-    } else {
-      return false;
-    }
-  }
-  if (b == 0) {
-    if (arg1F == resF) {
-      c = resF->linkNode(a);
-      return true;
-    } else {
-      return false;
-    }
-  }
-  return false;
-}
-
-#else
 
 class MEDDLY::diffr_mxd : public binary_operation {
     public:
@@ -649,8 +595,6 @@ MEDDLY::diffr_mxd::_compute_primed(int in, node_handle A, node_handle B,
     return C;
 
 }
-
-#endif
 
 // ******************************************************************
 // *                                                                *
