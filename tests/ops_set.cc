@@ -531,12 +531,12 @@ void compare_rels(const std::vector <bool> &Aset,
     apply(INTERSECTION, Add, Bdd, AiBsym);
     apply(UNION, Add, Bdd, AuBsym);
     apply(DIFFERENCE, Add, Bdd, AmBsym);
-    // apply(COMPLEMENT, Add, cAsym);
+    apply(COMPLEMENT, Add, cAsym);
 
     checkEqual("intersection", AiBsym, AiBdd, AiBset);
     checkEqual("union", AuBsym, AuBdd, AuBset);
     checkEqual("difference", AmBsym, AmBdd, AmBset);
-    // checkEqual("complement", cAsym, cABdd);
+    checkEqual("complement", cAsym, cABdd, cAset);
 }
 
 

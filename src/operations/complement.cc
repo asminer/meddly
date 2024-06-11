@@ -36,7 +36,7 @@ namespace MEDDLY {
 
 // #define DEBUG_MXD_COMPL
 
-#define OLD_OPER
+// #define OLD_OPER
 
 // ******************************************************************
 // *                                                                *
@@ -318,7 +318,7 @@ class MEDDLY::compl_mxd : public unary_operation {
         }
 
     protected:
-        inline identity_complement(node_handle p, int K, int L)
+        inline node_handle identity_complement(node_handle p, int K, int L)
         {
             MEDDLY_DCASSERT(L>=0);
             MEDDLY_DCASSERT(K>=0);
@@ -420,7 +420,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_compute(node_handle A, int L)
     //
     for (unsigned i=0; i<Cu->getSize(); i++) {
         Cu->setFull(i,
-            _compute_primed(int(i), Au->down(i), forest::downLevel(Alevel)
+            _compute_primed(int(i), Au->down(i), forest::downLevel(Alevel))
         );
     }
 
@@ -460,8 +460,8 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_compute_primed(int in,
     // Initialize unpacked nodes
     //
     unpacked_node* Au = (Alevel != Clevel)
-        ?   patternNode(arg1F, Clevel, in, A, FULL_ONLY)
-        :   arg1F->newUnpacked(A, FULL_ONLY);
+        ?   patternNode(argF, Clevel, in, A, FULL_ONLY)
+        :   argF->newUnpacked(A, FULL_ONLY);
 
     unpacked_node* Cu = unpacked_node::newFull(resF, Clevel, Au->getSize());
 
@@ -469,7 +469,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_compute_primed(int in,
     // Build result node
     //
     for (unsigned i=0; i<Cu->getSize(); i++) {
-        Cu->setFull(i, _compute(Au->down(i), forest::downLevel(Clevel));
+        Cu->setFull(i, _compute(Au->down(i), forest::downLevel(Clevel)));
     }
 
     //
@@ -496,21 +496,24 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_identity_complement(node_handle p,
     terminal ONE(true);
 
     for (K++; K<=L; K++) {
-        Uun = unpacked_node::newFull(this, K, getLevelSize(K));
+        Uun = unpacked_node::newFull(resF, K, resF->getLevelSize(K));
 
         for (unsigned i=0; i<Uun->getSize(); i++) {
-            Upr = unpacked_node::newFull(this, -K, Uun->getSize());
+            Upr = unpacked_node::newFull(resF, -K, Uun->getSize());
             for (unsigned j=0; j<Uun->getSize(); j++) {
                 Upr->setFull(j, ONE.getHandle());
+                // TBD might need a chain to ONE
+                //
+                // FIX THIS
             }
-            Upr->setFull(i, (i ? linkNode(p) : p));
+            Upr->setFull(i, (i ? resF->linkNode(p) : p));
             node_handle h;
-            createReducedNode(Upr, ev, h);
+            resF->createReducedNode(Upr, ev, h);
             MEDDLY_DCASSERT(ev.isVoid());
             Uun->setFull(i, h);
         }
 
-        createReducedNode(Uun, ev, p);
+        resF->createReducedNode(Uun, ev, p);
         MEDDLY_DCASSERT(ev.isVoid());
     } // for k
     return p;
