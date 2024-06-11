@@ -37,7 +37,7 @@ const unsigned MAX_REL_CARD = 64;
 
 using namespace MEDDLY;
 
-#define DEBUG_MXDOPS
+// #define DEBUG_MXDOPS
 
 #define TEST_SETS
 #define TEST_RELATIONS

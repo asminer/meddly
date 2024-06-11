@@ -31,7 +31,7 @@ namespace MEDDLY {
     binary_list DIFFR_cache;
 };
 
-#define TRACE
+// #define TRACE
 
 // #define OLD_OPER
 
@@ -392,10 +392,21 @@ MEDDLY::diffr_mxd::_compute(node_handle A, node_handle B, int L)
     }
 
     if (B < 0) {
-        // A - 1 = 0
-        if ( !arg2F->isIdentityReduced()  ||  arg1F->isIdentityReduced() || 0==L)
-        {
+        if (arg2F->isFullyReduced() || 0==L) {
+            // A -1 = 0
             return 0;
+        }
+        //
+        // Must be identity reduced, so B=I
+        //
+        MEDDLY_DCASSERT(arg2F->isIdentityReduced());
+        if (A < 0) {
+            if (arg1F->isIdentityReduced()) {
+                // I - I
+                return 0;
+            }
+
+            // 1 - I, need to compute it
         }
     }
 
@@ -410,7 +421,14 @@ MEDDLY::diffr_mxd::_compute(node_handle A, node_handle B, int L)
             // Treat the arg1F != resF case when A=1
             // 1 - 0 = 1
             terminal tt(true);
-            return makeChainTo(tt.getHandle(), 0, L);
+            if (0==L) return tt.getHandle();
+            if (arg1F->isIdentityReduced()) {
+                return resF->makeIdentitiesTo(tt.getHandle(), 0, L);
+            }
+            if (arg1F->isFullyReduced()) {
+                return resF->makeRedundantsTo(tt.getHandle(), 0, L);
+            }
+            MEDDLY_DCASSERT(false);
         }
     }
 
@@ -500,7 +518,12 @@ MEDDLY::diffr_mxd::_compute(node_handle A, node_handle B, int L)
     out.indent_less();
     out.put('\n');
     out << "diffr_mxd::_compute(" << A << ", " << B << ", " << L
-              << ") = " << "\n";
+              << ") done\n";
+    out << "  A: ";
+    Au->show(out, true);
+    out << "\n  B: ";
+    Bu->show(out, true);
+    out << "\n  C: ";
     Cu->show(out, true);
     out << "\n";
 #endif
@@ -597,6 +620,12 @@ MEDDLY::diffr_mxd::_compute_primed(int in, node_handle A, node_handle B,
 #ifdef TRACE
     out.indent_less();
     out.put('\n');
+    out << "diffr_mxd::_compute_primed(" << in << ", " << A << ", " << B << ", " << Clevel << ") done\n";
+    out << "  A: ";
+    Au->show(out, true);
+    out << "\n  B: ";
+    Bu->show(out, true);
+    out << "\n  C: ";
     Cu->show(out, true);
     out << "\n";
 #endif
