@@ -739,9 +739,10 @@ MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L)
         for (K++; K<=L; K++) {
             Uun = unpacked_node::newFull(this, K, getLevelSize(K));
 
+            // build primed level nodes
             for (unsigned i=0; i<Uun->getSize(); i++) {
                 Upr = unpacked_node::newSparse(this, -K, 1);
-                Upr->setSparse(0, i, p);
+                Upr->setSparse(0, i, (i ? linkNode(p) : p));
                 node_handle h;
                 createReducedNode(Upr, ev, h);
                 MEDDLY_DCASSERT(ev.isVoid());
