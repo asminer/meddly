@@ -17,16 +17,11 @@
 */
 
 #include "../defines.h"
-#include "../forests/mt.h"
 #include "complement.h"
-
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
 
 #include "../ct_vector.h"
 #include "../compute_table.h"
 #include "../oper_unary.h"
-#include "../operators.h"
 
 namespace MEDDLY {
     class compl_mdd;
@@ -36,6 +31,10 @@ namespace MEDDLY {
 };
 
 // #define TRACE
+
+#ifdef TRACE
+#include "../operators.h"
+#endif
 
 // ******************************************************************
 // *                                                                *

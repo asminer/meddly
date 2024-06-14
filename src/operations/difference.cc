@@ -22,7 +22,6 @@
 
 #include "../oper_binary.h"
 #include "../ct_vector.h"
-#include "../operators.h"
 
 namespace MEDDLY {
     class diffr_mdd;
@@ -32,6 +31,10 @@ namespace MEDDLY {
 };
 
 // #define TRACE
+
+#ifdef TRACE
+#include "../operators.h"
+#endif
 
 // ******************************************************************
 // *                                                                *
