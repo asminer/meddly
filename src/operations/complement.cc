@@ -35,10 +35,6 @@ namespace MEDDLY {
     unary_list COMPL_cache;
 };
 
-// #define DEBUG_MXD_COMPL
-
-// #define OLD_OPER
-
 // #define TRACE
 
 // ******************************************************************
@@ -159,120 +155,6 @@ MEDDLY::node_handle MEDDLY::compl_mdd::_compute(node_handle A, int L)
 // *                        compl_mxd  class                        *
 // *                                                                *
 // ******************************************************************
-
-#ifdef OLD_OPER
-
-class MEDDLY::compl_mxd : public unary_operation {
-    public:
-        compl_mxd(forest* arg, forest* res);
-
-        virtual void computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag);
-
-        node_handle compute_r(int in, int k, node_handle a);
-};
-
-MEDDLY::compl_mxd::compl_mxd(forest* arg, forest* res)
- : unary_operation(COMPL_cache, 1, arg, res)
-{
-    checkDomains(__FILE__, __LINE__);
-    checkAllRelations(__FILE__, __LINE__, RELATION);
-    checkAllRanges(__FILE__, __LINE__, range_type::BOOLEAN);
-    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-
-    ct_entry_type* et = new ct_entry_type(COMPL_cache.getName(), "IN:N");
-    et->setForestForSlot(1, arg);
-    et->setForestForSlot(3, res);
-    registerEntryType(0, et);
-    buildCTs();
-}
-
-void MEDDLY::compl_mxd::computeDDEdge(const dd_edge& a, dd_edge& b, bool userFlag)
-{
-  node_handle result = compute_r(-1, argF->getMaxLevelIndex(), a.getNode());
-  b.set(result);
-}
-
-MEDDLY::node_handle MEDDLY::compl_mxd::compute_r(int in, int k, node_handle a)
-{
-    // Check terminals
-    if ( (0==k) || (argF->isTerminalNode(a) && resF->isFullyReduced()) ) {
-        bool ta;
-        argF->getValueFromHandle(a, ta);
-        return argF->handleForValue(!ta);
-    }
-
-  // Check compute table
-  ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-  MEDDLY_DCASSERT(CTsrch);
-  CTsrch->writeI(k);
-  CTsrch->writeN(a);
-  CT0->find(CTsrch, CTresult[0]);
-  if (CTresult[0]) {
-    node_handle ans = CTresult[0].readN();
-#ifdef DEBUG_MXD_COMPL
-    fprintf(stderr, "\tin CT:   compl_mxd(%d, %d) : %d\n", ht, a, ans);
-#endif
-    CT0->recycle(CTsrch);
-    return resF->linkNode(ans);
-  }
-
-#ifdef DEBUG_MXD_COMPL
-  fprintf(stderr, "\tstarting compl_mxd(%d, %d)\n", ht, a);
-#endif
-
-  // Initialize unpacked node
-  const unsigned size = unsigned(resF->getLevelSize(k));
-  const int aLevel = argF->getNodeLevel(a);
-  MEDDLY_DCASSERT(!isLevelAbove(aLevel, k));
-  unpacked_node* A = unpacked_node::New(argF);
-  bool canSave = true;
-  if (aLevel == k) {
-    argF->unpackNode(A, a, FULL_ONLY);
-  } else if (k>0 || argF->isFullyReduced()) {
-    A->initRedundant(argF, k, a, FULL_ONLY);
-  } else {
-    MEDDLY_DCASSERT(in>=0);
-    A->initIdentity(argF, k, unsigned(in), a, FULL_ONLY);
-    canSave = false;
-  }
-  unpacked_node* C = unpacked_node::newFull(resF, k, size);
-
-  // recurse
-  int nextLevel = argF->downLevel(k);
-  unsigned nnz = 0;
-  bool addRedundentNode=(resF->isQuasiReduced() && (k>0 || k<-1));
-
-  // recurse
-  for (unsigned i=0; i<size; i++) {
-      node_handle cdi = compute_r(int(i), nextLevel, A->down(i));
-
-      if (cdi != resF->getTransparentNode()) nnz++;
-
-    if(addRedundentNode && resF->isTerminalNode(cdi) && cdi!=resF->getTransparentNode()){
-      cdi=((mt_forest*)resF)->makeNodeAtLevel(nextLevel, cdi);
-    }
-
-    C->setFull(i, cdi);
-  }
-
-  // reduce, save in CT
-  unpacked_node::Recycle(A);
-  edge_value ev;
-  node_handle result;
-  resF->createReducedNode(C, ev, result, in);
-  MEDDLY_DCASSERT(ev.isVoid());
-  if (k<0 && 1==nnz) canSave = false;
-  if (canSave) {
-    CTresult[0].reset();
-    CTresult[0].writeN(result);
-    CT0->addEntry(CTsrch, CTresult[0]);
-  } else {
-    CT0->recycle(CTsrch);
-  }
-  return result;
-}
-
-#else
 
 class MEDDLY::compl_mxd : public unary_operation {
     public:
@@ -590,8 +472,6 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_identity_complement(node_handle p,
     resF->unlinkNode(chain_to_one);
     return p;
 }
-
-#endif
 
 // ******************************************************************
 // *                                                                *
