@@ -26,6 +26,7 @@
 #include "../ct_vector.h"
 #include "../compute_table.h"
 #include "../oper_unary.h"
+#include "../operators.h"
 
 namespace MEDDLY {
     class compl_mdd;
@@ -37,6 +38,8 @@ namespace MEDDLY {
 // #define DEBUG_MXD_COMPL
 
 // #define OLD_OPER
+
+// #define TRACE
 
 // ******************************************************************
 // *                                                                *
@@ -330,12 +333,14 @@ class MEDDLY::compl_mxd : public unary_operation {
 
     private:
         ct_entry_type* ct;
+
+        ostream_output out;
 };
 
 // ******************************************************************
 
 MEDDLY::compl_mxd::compl_mxd(forest* arg, forest* res)
-    : unary_operation(COMPL_cache, arg, res)
+    : unary_operation(COMPL_cache, arg, res), out(std::cout)
 {
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__, RELATION);
@@ -359,6 +364,7 @@ void MEDDLY::compl_mxd::compute(const edge_value &av, node_handle ap,
 {
     MEDDLY_DCASSERT(av.isVoid());
     cv.set();
+    out.indentation(0);
     cp = _compute(ap, L);
 }
 
@@ -389,6 +395,13 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_compute(node_handle A, int L)
     // Determine level information
     //
     const int Alevel = argF->getNodeLevel(A);
+    const int Clevel = ABS(Alevel);
+
+#ifdef TRACE
+    out << "compl_mxd::_compute(" << A << ", " << L << ")\n";
+    out << A << " level " << Alevel << "\n";
+    out << "result level " << Clevel << " before chain\n";
+#endif
 
     //
     // Check compute table
@@ -397,12 +410,17 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_compute(node_handle A, int L)
     ct_vector res(1);
     key[0].setN(A);
     if (ct->findCT(key, res)) {
-        node_handle r = resF->linkNode(res[0].getN());
+        node_handle C = resF->linkNode(res[0].getN());
         if (argF->isIdentityReduced()) {
-            return identity_complement(r, Alevel, L);
+            C = identity_complement(C, Clevel, L);
         } else {
-            return resF->makeRedundantsTo(r, Alevel, L);
+            C = resF->makeRedundantsTo(C, Clevel, L);
         }
+#ifdef TRACE
+        out << "CT hit " << res[0].getN() << "\n";
+        out << "after chain " << C << "\n";
+#endif
+        return C;
     }
 
     //
@@ -412,17 +430,34 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_compute(node_handle A, int L)
     //
     // Initialize unpacked nodes
     //
-    unpacked_node* Au = argF->newUnpacked(A, FULL_ONLY);
-    unpacked_node* Cu = unpacked_node::newFull(resF, Alevel, Au->getSize());
+    unpacked_node* Au = (Alevel != Clevel)
+        ?   unpacked_node::newRedundant(argF, Clevel, A, FULL_ONLY)
+        :   argF->newUnpacked(A, FULL_ONLY);
+    unpacked_node* Cu = unpacked_node::newFull(resF, Clevel, Au->getSize());
 
     //
     // Build result node
     //
+#ifdef TRACE
+    out.indent_more();
+    out.put('\n');
+#endif
     for (unsigned i=0; i<Cu->getSize(); i++) {
         Cu->setFull(i,
-            _compute_primed(int(i), Au->down(i), forest::downLevel(Alevel))
+            _compute_primed(int(i), Au->down(i), forest::downLevel(Clevel))
         );
     }
+#ifdef TRACE
+    out.indent_less();
+    out.put('\n');
+    out << "compl_mxd::_compute(" << A << ", " << L
+              << ") done\n";
+    out << "  A: ";
+    Au->show(out, true);
+    out << "\n  C: ";
+    Cu->show(out, true);
+    out << "\n";
+#endif
 
     //
     // Reduce / cleanup
@@ -432,6 +467,11 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_compute(node_handle A, int L)
     node_handle C;
     resF->createReducedNode(Cu, dummy, C);
     MEDDLY_DCASSERT(dummy.isVoid());
+#ifdef TRACE
+    out << "reduced to " << C << ": ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    out << "\n";
+#endif
 
     //
     // Save result in CT
@@ -440,10 +480,17 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_compute(node_handle A, int L)
     ct->addCT(key, res);
 
     if (argF->isIdentityReduced()) {
-        return identity_complement(C, Alevel, L);
+        C = identity_complement(C, Clevel, L);
     } else {
-        return resF->makeRedundantsTo(C, Alevel, L);
+        C = resF->makeRedundantsTo(C, Clevel, L);
     }
+
+#ifdef TRACE
+    out << "chain to level " << L << " = " << C << ": ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    out << "\n";
+#endif
+    return C;
 }
 
 MEDDLY::node_handle MEDDLY::compl_mxd::_compute_primed(int in,
@@ -455,6 +502,10 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_compute_primed(int in,
     // Determine level information
     //
     const int Alevel = argF->getNodeLevel(A);
+#ifdef TRACE
+    out << "compl_mxd::_compute_primed(" << in << ", " << A << ", " << Clevel << ")\n";
+    out << A << " level " << Alevel << "\n";
+#endif
 
     //
     // Initialize unpacked nodes
@@ -468,9 +519,23 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_compute_primed(int in,
     //
     // Build result node
     //
+#ifdef TRACE
+    out.indent_more();
+    out.put('\n');
+#endif
     for (unsigned i=0; i<Cu->getSize(); i++) {
         Cu->setFull(i, _compute(Au->down(i), forest::downLevel(Clevel)));
     }
+#ifdef TRACE
+    out.indent_less();
+    out.put('\n');
+    out << "compl_mxd::_compute_primed(" << in << ", " << A << ", " << Clevel << ") done\n";
+    out << "  A: ";
+    Au->show(out, true);
+    out << "\n  C: ";
+    Cu->show(out, true);
+    out << "\n";
+#endif
 
     //
     // Reduce / cleanup
@@ -481,6 +546,12 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_compute_primed(int in,
     resF->createReducedNode(Cu, dummy, C, in);
     MEDDLY_DCASSERT(dummy.isVoid());
 
+#ifdef TRACE
+    out << "compl_mxd::_compute_primed(" << in << ", " << A << ", "
+              << Clevel << ") = " << C << "\n  ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    out.put('\n');
+#endif
     return C;
 }
 
@@ -494,6 +565,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_identity_complement(node_handle p,
     edge_value ev;
 
     terminal ONE(true);
+    node_handle chain_to_one = resF->makeRedundantsTo(ONE.getHandle(), 0, K);
 
     for (K++; K<=L; K++) {
         Uun = unpacked_node::newFull(resF, K, resF->getLevelSize(K));
@@ -501,10 +573,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_identity_complement(node_handle p,
         for (unsigned i=0; i<Uun->getSize(); i++) {
             Upr = unpacked_node::newFull(resF, -K, Uun->getSize());
             for (unsigned j=0; j<Uun->getSize(); j++) {
-                Upr->setFull(j, ONE.getHandle());
-                // TBD might need a chain to ONE
-                //
-                // FIX THIS
+                Upr->setFull(j, resF->linkNode(chain_to_one));
             }
             Upr->setFull(i, (i ? resF->linkNode(p) : p));
             node_handle h;
@@ -515,7 +584,10 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_identity_complement(node_handle p,
 
         resF->createReducedNode(Uun, ev, p);
         MEDDLY_DCASSERT(ev.isVoid());
+
+        chain_to_one = resF->makeRedundantsTo(chain_to_one, K-1, K);
     } // for k
+    resF->unlinkNode(chain_to_one);
     return p;
 }
 
