@@ -39,6 +39,12 @@ namespace MEDDLY {
 
   class satotf_opname;
 
+  /// Set up a binary_opname for coverability maintain CR.
+  binary_opname* initializeMRCPostImage();
+
+  /// Set up a binary_opname for coverability transitive closure.
+  binary_opname* initializeCOVTC();
+
   binary_opname* initializeMRCPostImage();
 }
 

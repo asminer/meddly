@@ -132,6 +132,7 @@ class MEDDLY::builtin_init : public initializer_list {
         static binary_opname* _PRE_IMAGE;
         static binary_opname* _POST_IMAGE;
         static binary_opname* _TC_POST_IMAGE;
+        static binary_opname* _COV_TC;
         static binary_opname* _MRC_POST_IMAGE;
         static binary_opname* _FORWARD_DFS;
         static binary_opname* _FORWARD_BFS;
@@ -192,6 +193,7 @@ MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_PLUS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_PRE_IMAGE;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_POST_IMAGE;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_TC_POST_IMAGE;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_COV_TC;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_MRC_POST_IMAGE;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_DFS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_FORWARD_BFS;
@@ -260,6 +262,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     _PRE_IMAGE      = nullptr;
     _POST_IMAGE     = nullptr;
     _TC_POST_IMAGE  = nullptr;
+    _COV_TC         = nullptr;
     _MRC_POST_IMAGE  = nullptr;
     _FORWARD_DFS    = nullptr;
     _FORWARD_BFS    = nullptr;
@@ -329,6 +332,7 @@ void MEDDLY::builtin_init::setup()
     _PRE_IMAGE      =   initializePreImage()        ;
     _POST_IMAGE     =   initializePostImage()       ;
     _TC_POST_IMAGE  =   initializeTCPostImage()     ;
+    _COV_TC         =   initializeCOVTC()           ;
     _MRC_POST_IMAGE =   initializeMRCPostImage()    ;
     _FORWARD_DFS    =   initializeForwardDFS()      ;
     _FORWARD_BFS    =   initializeForwardBFS()      ;
@@ -398,6 +402,7 @@ void MEDDLY::builtin_init::cleanup()
     mydelete(_PRE_IMAGE);
     mydelete(_POST_IMAGE);
     mydelete(_TC_POST_IMAGE);
+    mydelete(_COV_TC);
     mydelete(_MRC_POST_IMAGE);
     mydelete(_FORWARD_DFS);
     mydelete(_FORWARD_BFS);
@@ -534,6 +539,9 @@ MEDDLY::binary_opname* MEDDLY::POST_IMAGE() {
 }
 MEDDLY::binary_opname* MEDDLY::TC_POST_IMAGE() {
     return builtin_init::_TC_POST_IMAGE;
+}
+MEDDLY::binary_opname* MEDDLY::COV_TC(){
+    return builtin_init::_COV_TC;
 }
 MEDDLY::binary_opname* MEDDLY::MRC_POST_IMAGE() {
     return builtin_init::_MRC_POST_IMAGE;

@@ -36,6 +36,8 @@ namespace MEDDLY {
   class relXset_evplus;
   class setXrel_evplus;
   class tcXrel_evplus;
+  class covtcmxd;
+  class covtc;
 
   class image_op_mxd;
   class mrrc;
@@ -44,6 +46,7 @@ namespace MEDDLY {
   class postimage_opname;
 
   class transitive_closure_postimage_opname;
+  class covtc_opname;
   class maintain_reachabilityrelation_cover_opname;
 
   class VMmult_opname;
@@ -980,6 +983,93 @@ void MEDDLY::image_op_mxd::computeSC(node_handle a, node_handle b,node_handle& c
     }
 }
 
+class MEDDLY::covtcmxd : public binary_operation {
+  public:
+    covtcmxd(binary_opname* opcode, expert_forest* arg1,
+        expert_forest* arg2, expert_forest* res,binary_operation* acc);
+
+    inline ct_entry_key*
+    findResult(node_handle a, node_handle b, int above,node_handle &c)
+    {
+      ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
+      MEDDLY_DCASSERT(CTsrch);
+      CTsrch->writeN(a);
+      CTsrch->writeN(b);
+       CTsrch->writeI(above);
+      CT0->find(CTsrch, CTresult[0]);
+      if (!CTresult[0]) return CTsrch;
+      c = resF->linkNode(CTresult[0].readN());
+      CT0->recycle(CTsrch);
+      return 0;
+    }
+    inline node_handle saveResult(ct_entry_key* Key,
+        node_handle a, node_handle b, int above,node_handle c)
+    {
+      CTresult[0].reset();
+      CTresult[0].writeN(c);
+      CT0->addEntry(Key, CTresult[0]);
+      return c;
+    }
+    virtual void computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge &c, bool userFlag);
+    virtual void compute(node_handle a, node_handle b,node_handle& c);
+
+  protected:
+    binary_operation* accumulateOp;
+    virtual void compute_rec(node_handle a, node_handle b,node_handle& c, RV & above) = 0;
+
+    expert_forest* argV;
+    expert_forest* argM;
+};
+
+MEDDLY::covtcmxd::covtcmxd(binary_opname* oc, expert_forest* a1,
+    expert_forest* a2, expert_forest* res, binary_operation* acc)
+: binary_operation(oc, 1, a1, a2, res)
+{
+    accumulateOp = acc;
+
+    argV = a1;
+    argM = a2;
+    int above;
+  ct_entry_type* et = new ct_entry_type(oc->getName(), "NNI:N");
+  et->setForestForSlot(0, argV);
+  et->setForestForSlot(1, argM);
+  et->setForestForSlot(4, res);
+  registerEntryType(0, et);
+  buildCTs();
+}
+
+void MEDDLY::covtcmxd
+::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
+{
+    printf("INSIDE COVTCMXD computeDDEdge\n");
+  node_handle cnode;
+  if (a.getForest() == argV) {
+#ifdef TRACE_ALL_OPS
+    printf("computing top-level product(%d, %d)\n", a.getNode(), b.getNode());
+#endif
+    compute(a.getNode(), b.getNode(),cnode);
+#ifdef TRACE_ALL_OPS
+    printf("computed top-level product(%d, %d) = %d\n", a.getNode(), b.getNode(), cnode);
+#endif
+  } else {
+#ifdef TRACE_ALL_OPS
+    printf("computing top-level product(%d, %d)\n", b.getNode(), a.getNode());
+#endif
+    compute(b.getNode(), a.getNode(),cnode);
+#ifdef TRACE_ALL_OPS
+    printf("computed top-level product(%d, %d) = %d\n", b.getNode(), a.getNode(), cnode);
+#endif
+  }
+  c.set(cnode);
+}
+
+void MEDDLY::covtcmxd::compute(node_handle a, node_handle b,node_handle& c)
+{
+  MEDDLY_DCASSERT(accumulateOp);
+  printf("INSIDE COVTCMXD compute\n" );
+  RV above=E;
+  compute_rec(a, b,c,above);
+}
 
 // ******************************************************************
 // *                                                                *
@@ -1529,6 +1619,180 @@ void MEDDLY::tcXrel_evplus::processTerminals(long ev, node_handle evmxd, node_ha
   rval = evmddval * mxdval;
   resEv = ev;
   resEvmxd = resF->handleForValue(rval);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                         covtc  class                           *
+// *                                                                *
+// ******************************************************************
+
+
+class MEDDLY::covtc : public covtcmxd {
+  public:
+    covtc(binary_opname* opcode, expert_forest* tc,
+      expert_forest* trans, expert_forest* res, binary_operation* acc);
+
+  protected:
+      virtual void compute_rec(node_handle a, node_handle b, node_handle&c, RV& above);
+    virtual void processTerminals(node_handle evmxd, node_handle mxd, RV& above,node_handle& resEvmxd);
+};
+
+MEDDLY::covtc::covtc(binary_opname* oc,
+  expert_forest* tc, expert_forest* trans, expert_forest* res, binary_operation* acc)
+: covtcmxd(oc, tc, trans, res, acc)
+{
+}
+
+void MEDDLY::covtc::compute_rec(node_handle cr, node_handle e, node_handle&res, RV& above)
+{
+    printf("COVTC START\n" );
+//   // termination conditions
+  if (cr == 0 || e == 0) {
+    res=0;
+    return;
+  }
+  if (argM->isTerminalNode(e)) {
+    if (argV->isTerminalNode(cr)) {
+      processTerminals(cr, e, above, res);
+      return;
+    }
+
+  }
+//
+//   // check the cache
+  ct_entry_key* Key = findResult(cr,e, above,res);
+  if (0==Key) {
+    return;
+  }
+//
+  // check if mxd and evmdd are at the same level
+  const int crLevel = argV->getNodeLevel(cr);
+  const int eLevel = argM->getNodeLevel(e);
+  const int rLevel = MAX(ABS(eLevel), ABS(crLevel));
+  const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
+  unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
+
+  // Initialize cr reader
+  unpacked_node* A = isLevelAbove(rLevel, crLevel)
+    ? unpacked_node::newRedundant(argV, rLevel, 0L, cr, true)
+    : argV->newUnpacked(cr, FULL_ONLY);
+
+  for (unsigned i = 0; i < rSize; i++) {
+    int pLevel = argV->getNodeLevel(A->d(i));
+    unpacked_node* B = isLevelAbove(-rLevel, pLevel)
+      ? unpacked_node::newIdentity(argV, -rLevel, i, A->d(i), true)
+      : argV->newUnpacked(A->d(i), FULL_ONLY);
+
+    unpacked_node* D = unpacked_node::newFull(resF, -rLevel, rSize);
+    if (rLevel > ABS(eLevel)) {
+      //
+      // Skipped levels in the MXD,
+      // that's an important special case that we can handle quickly.
+      for (unsigned j = 0; j < rSize; j++) {
+        node_handle newstates = 0;
+        RV newabove=above;
+        if(i!=j){newabove=N;}
+        compute_rec( B->d(j), e, newstates,newabove);
+
+        D->d_ref(j) = newstates;
+      }
+    }
+    else {
+      //
+      // Need to process this level in the MXD.
+      MEDDLY_DCASSERT(ABS(eLevel) >= ABS(pLevel));
+
+      // clear out result (important!)
+      for (unsigned j = 0; j < rSize; j++) {
+        D->d_ref(j) = 0;
+      }
+
+      // Initialize mxd readers, note we might skip the unprimed level
+      unpacked_node *Ru = unpacked_node::New();
+      unpacked_node *Rp = unpacked_node::New();
+      if (eLevel < 0) {
+        Ru->initRedundant(argM, rLevel, e, false);
+      } else {
+        argM->unpackNode(Ru, e, SPARSE_ONLY);
+      }
+
+      dd_edge newstatesE(resF), djp(resF);
+
+      // loop over mxd "rows"
+      for (unsigned jz = 0; jz < Ru->getNNZs(); jz++) {
+        unsigned j = Ru->i(jz);
+        if (0 == B->d(j)) {
+          continue;
+        }
+
+        if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->d(jz)))) {
+          Rp->initIdentity(argM, rLevel, j, Ru->d(jz), false);
+        } else {
+          argM->unpackNode(Rp, Ru->d(jz), SPARSE_ONLY);
+        }
+
+        // loop over mxd "columns"
+        for (unsigned jpz = 0; jpz < Rp->getNNZs(); jpz++) {
+          unsigned jp = Rp->i(jpz);
+          // ok, there is an i->j "edge".
+          // determine new states to be added (recursively)
+          // and add them
+          RV newabove=above;
+          if(i!=j)newabove=N;
+          node_handle newstates = 0;
+          compute_rec(B->d(j), Rp->d(jpz), newstates,newabove);
+          if (0==newstates) {
+            continue;
+          }
+          if (0 == D->d(jp)) {
+            D->d_ref(jp) = newstates;
+            continue;
+          }
+          // there's new states and existing states; union them.
+          newstatesE.set(newstates);
+          djp.set(D->d(jp));
+          accumulateOp->computeTemp(newstatesE, djp, djp);
+          D->set_d(jp, djp);
+            } // for jpz
+
+        } // for jz
+
+      unpacked_node::recycle(Rp);
+      unpacked_node::recycle(Ru);
+    } // else
+
+    node_handle cnode = 0;
+    cnode=resF->createReducedNode(int(i), D);
+    C->d_ref(i) = cnode;
+
+    unpacked_node::recycle(B);
+  }
+
+  // cleanup mdd reader
+  unpacked_node::recycle(A);
+
+  res=resF->createReducedNode(-1, C);
+// #ifdef TRACE_ALL_OPS
+//   printf("computed new tcXrel(<%ld, %d>, %d) = <%ld, %d>\n", ev, evmxd, mxd, resEv, resEvmdd);
+// #endif
+  saveResult(Key, cr, e, above,res);
+}
+
+void MEDDLY::covtc::processTerminals( node_handle cr, node_handle e,RV& above, node_handle& res)
+{
+  long evmddval;
+  long mxdval;
+  long rval;
+  argV->getValueFromHandle(cr, evmddval);
+  argM->getValueFromHandle(e, mxdval);
+  rval = evmddval * mxdval;
+  if(above==E)
+  {
+      res=0;
+  }else{
+      res = resF->handleForValue(rval);
+  }
 }
 
 
@@ -2432,6 +2696,49 @@ MEDDLY::transitive_closure_postimage_opname::buildOperation(expert_forest* a1, e
   return new tcXrel_evplus(this, a1, a2, r, acc);
 }
 
+// ******************************************************************
+// *                                                                *
+// *                   covtc_opname class                           *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::covtc_opname : public binary_opname {
+  public:
+  covtc_opname();
+    virtual binary_operation* buildOperation(expert_forest* a1,
+      expert_forest* a2, expert_forest* r);
+};
+
+MEDDLY::covtc_opname::covtc_opname()
+ : binary_opname("Coverability Transitive Closure")
+{
+}
+
+MEDDLY::binary_operation*
+MEDDLY::covtc_opname::buildOperation(expert_forest* a1, expert_forest* a2,
+  expert_forest* r)
+{
+  if (0==a1 || 0==a2 || 0==r) return 0;
+
+  if (
+    (a1->getDomain() != r->getDomain()) ||
+    (a2->getDomain() != r->getDomain())
+  )
+    throw error(error::DOMAIN_MISMATCH);
+
+  if (
+    !a1->isForRelations()    ||
+    !a2->isForRelations()   ||
+    !r->isForRelations()   
+  )
+    throw error(error::TYPE_MISMATCH);
+
+  binary_opname* accop = UNION();
+  MEDDLY_DCASSERT(accop);
+  dd_edge er(r);
+  binary_operation* acc = accop->getOperation(er, er, er);
+  return new covtc(this, a1, a2, r, acc);
+}
 
 // ******************************************************************
 // *                                                                *
@@ -2623,6 +2930,11 @@ MEDDLY::binary_opname* MEDDLY::initializePostImage()
 MEDDLY::binary_opname* MEDDLY::initializeTCPostImage()
 {
   return new transitive_closure_postimage_opname;
+}
+
+MEDDLY::binary_opname* MEDDLY::initializeCOVTC()
+{
+  return new covtc_opname;
 }
 
 MEDDLY::binary_opname* MEDDLY::initializeMRCPostImage()

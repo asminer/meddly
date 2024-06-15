@@ -154,6 +154,7 @@ public:
 binary_operation* mddUnion;
 binary_operation* mddImage;
 binary_operation* mrcc;
+binary_operation* covtc;
 markcmp* cij;
 protected:
 binary_operation* mxdIntersection;
@@ -380,11 +381,13 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                 dd_edge efront(resF);
                 dd_edge lfront(resF);
                 dd_edge tlfront(resF);
+                dd_edge updatecovered(resF);
                 int gfront=0;
                 nfront=init;
                 efront=init;
                 lfront=init;
                 tlfront=init;
+                updatecovered=reachableStates;
 
                 // reachableStates.showGraph(meddlyout);
                 // printf("reachableStates^^BEFORE!\n");
@@ -445,7 +448,20 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                                         }
                                 }
                                 // delete[]shouldConfirms;
-
+                                dd_edge luniontl(resF);
+                                luniontl=lfront;
+                                parent->mddUnion->computeDDEdge(lfront, tlfront, luniontl, true);
+                                lfront.showGraph(meddlyout);
+                                printf("l front^^^" );
+                                tlfront.showGraph(meddlyout);
+                                printf("tl front ^^^" );
+                                luniontl.showGraph(meddlyout);
+                               printf("l union tl ^^^" );
+                               getchar();
+                                parent->covtc->computeDDEdge(reachableStates/*prevReachable*/, luniontl, updatecovered,true);
+                                updatecovered.showGraph(meddlyout);
+                               printf("updatecovered^^^ " );
+                               getchar();
                         }
                 }
                 // reachableStates.showGraph(meddlyout);
@@ -457,7 +473,7 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
 
                 // reachableStates.showGraph(meddlyout);
                 // getchar();
-                // delete[]shouldConfirms;
+                delete[]shouldConfirms;
                 // printf("PR %d, F %d\n",prevReachable == reachableStates, first==true );
                 if(prevReachable == reachableStates&& first==true) {
                         first=false;
@@ -491,6 +507,7 @@ MEDDLY::common_cov_by_events_mt::common_cov_by_events_mt(
         mddUnion = 0;
         mddImage = 0;
         mrcc=0;
+        covtc=0;
         mxdIntersection = 0;
         mxdDifference = 0;
         freeqs = 0;
@@ -546,6 +563,8 @@ void MEDDLY::common_cov_by_events_mt
         dd_edge f(resF);
         mrcc=getOperationW(MRC_POST_IMAGE,a,arg2F,c,d,e,f);
         MEDDLY_DCASSERT(mrcc);
+        covtc=getOperation(COV_TC, a,arg2F,c);
+        MEDDLY_DCASSERT(covtc);
         ostream_output meddlyout(std::cout);
 #ifdef DEBUG_INITIAL
         printf("Calling saturate for states:\n");

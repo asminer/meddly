@@ -154,6 +154,7 @@ namespace MEDDLY {
     binary_opname* REACHABLE_STATES_BFS();
     binary_opname* REVERSE_REACHABLE_DFS();
     binary_opname* REVERSE_REACHABLE_BFS();
+    binary_opname* COV_TC();
 
     /** Vector matrix multiply, where the first argument is vector (MDD),
         the second argument is a matrix (MXD),
