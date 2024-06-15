@@ -1758,7 +1758,8 @@ delete[] nst;
 
 void MEDDLY::mrrc::compute_recSC(node_handle evmxd, node_handle mxd, node_handle& resEvmdd,node_handle& eq,node_handle& leq,node_handle& tleq, int& geq,std::list<int>* shouldConfirm,markcmp* cmp,RV& above, RV& below)
 {
-bool d=false;
+    ostream_output meddlyout(std::cout);
+    bool d=true;
 if(d)
     printf("call compute_recSC for evmxd %d, mxd %d, above %d, below %d\n",evmxd,mxd,above,below );
 
@@ -2098,7 +2099,7 @@ for (unsigned i = 0; i < rSize; i++) {
                                                         unpacked_node* DTLEQ = unpacked_node::newFull(resF, -rLevel, rSize);
                                                         AddtoNH(DTLEQ,compareijresult,tleqnewstates);
                                                         node_handle tlnode=0;
-                                                        tlnode=resF->createReducedNode(int(compareijresult), DTLEQ);
+                                                        tlnode=resF->createReducedNode(int(jp), DTLEQ);
                                                         AddtoNH(CTLEQ,jp,tlnode);
                                                         if(d)
                                                         {
@@ -2169,7 +2170,7 @@ for (unsigned i = 0; i < rSize; i++) {
         printf("cleqnode %d\n",cleqnode );
         CLEQ->d_ref(i) = cleqnode;
 
-        ostream_output meddlyout(std::cout);
+        // ostream_output meddlyout(std::cout);
         unpacked_node::recycle(B);
 
 } //for i
