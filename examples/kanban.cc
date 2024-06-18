@@ -188,27 +188,32 @@ int main(int argc, const char** argv)
     delete[] sizes;
 
     // Initialize forests
-    policies p(false);
+    policies pmdd(false), pmxd(true);
     switch (node_del) {
         case 'm':
             printf("Using mark and sweep\n");
-            p.useReferenceCounts = false;
+            pmdd.useReferenceCounts = false;
+            pmxd.useReferenceCounts = false;
             break;
 
         case 'p':
             printf("Using pessimistic node deletion\n");
-            p.useReferenceCounts = true;
-            p.setPessimistic();
+            pmdd.useReferenceCounts = true;
+            pmxd.useReferenceCounts = true;
+            pmdd.setPessimistic();
+            pmxd.setPessimistic();
             break;
 
         default:
             printf("Using optimistic node deletion\n");
-            p.useReferenceCounts = true;
-            p.setOptimistic();
+            pmdd.useReferenceCounts = true;
+            pmxd.useReferenceCounts = true;
+            pmdd.setOptimistic();
+            pmxd.setOptimistic();
             break;
     }
-    forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
-    forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+    forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
+    forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmxd);
 
     // associate loggers
     FILE_output log;

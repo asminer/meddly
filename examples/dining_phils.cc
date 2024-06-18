@@ -500,19 +500,23 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
   assert(d != NULL);
 
   // Set up MDD options
-  policies pmdd(false);
+  policies pmdd(false), pmxd(true);
 
   if (sw.mark_sweep) {
     pmdd.useReferenceCounts = false;
+    pmxd.useReferenceCounts = false;
     printf("Using mark and sweep\n");
   } else {
     pmdd.useReferenceCounts = true;
+    pmxd.useReferenceCounts = true;
     if (sw.pessimistic) {
       printf("Using pessimistic node deletion\n");
       pmdd.setPessimistic();
+      pmxd.setPessimistic();
     } else {
       printf("Using optimistic node deletion\n");
       pmdd.setOptimistic();
+      pmxd.setOptimistic();
     }
   }
 
@@ -521,11 +525,6 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
     forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
   assert(mdd != NULL);
   mdd->setLogger(LOG, "MDD");
-
-  // Set up MXD options
-  policies pmxd(true);
-  if (sw.pessimistic) pmdd.setPessimistic();
-  else                pmdd.setOptimistic();
 
   // Create a MXD forest in domain (to store transition diagrams)
   forest* mxd =

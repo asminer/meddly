@@ -51,6 +51,22 @@ class MEDDLY::binary_operation : public operation {
             NEW constructor.
             Compute table entry information is managed 'by hand'
             in the derived class.
+                @param  owner   List that 'owns' this operation,
+                                so we can find an existing operation
+                                for the forest arguments and results.
+
+                @param  arg1    Forest containing the first argument
+                                of the binary operation.
+
+                @param  arg2    Forest containing the second argument
+                                of the binary operation. May equal or
+                                not arg1, and if unequal they must
+                                be "compatible" (same domain, same
+                                variable order).
+
+                @param  res     Forest that holds the result.
+                                Must be compatible with the argument
+                                forests.
         */
         binary_operation(binary_list& owner, forest* arg1, forest* arg2,
                 forest* res);
@@ -140,7 +156,8 @@ class MEDDLY::binary_operation : public operation {
 
     public:
         /**
-            Checks forest comatability and then calls computeDDEdge().
+            Checks forest comatability and then calls computeDDEdge() (OLD)
+            or the new virtual compute method (NEW).
         */
         void compute(const dd_edge &ar1, const dd_edge &ar2,
                 dd_edge &res);

@@ -49,11 +49,20 @@ class MEDDLY::unary_operation : public operation {
         unary_operation(unary_list& owner, unsigned et_slots,
             forest* arg, opnd_type res);
 #endif
-        /// New constructor, returns DD
+        /** New constructor for a unary op that returns a DD.
+            Compute table entry information is managed 'by hand'
+            in the derived class.
+                @param  owner   List that 'owns' this operation,
+                                so we can find an existing operation
+                                for the forest arguments and results.
+
+                @param  arg     Forest containing the argument.
+
+                @param  res     Forest containing the result.
+                                Must be compatible with the argument forest.
+        */
         unary_operation(unary_list& owner, forest* arg, forest* res);
 
-        /// New constructor, returns a number
-        unary_operation(unary_list& owner, forest* arg, opnd_type res);
 
     protected:
         virtual ~unary_operation();

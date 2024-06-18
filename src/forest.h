@@ -490,8 +490,12 @@ class MEDDLY::forest {
 
         /// Returns the in-count for a node.
         inline unsigned long getNodeInCount(node_handle p) const {
+#ifdef REFCOUNTS_ON
             MEDDLY_DCASSERT(deflt.useReferenceCounts);
             return nodeHeaders.getIncomingCount(p);
+#else
+            return 0;
+#endif
         }
 
 
@@ -500,11 +504,15 @@ class MEDDLY::forest {
                 @return p, for convenience.
         */
         inline node_handle linkNode(node_handle p) {
+#ifdef REFCOUNTS_ON
             if (deflt.useReferenceCounts) {
                 return nodeHeaders.linkNode(p);
             } else {
                 return p;
             }
+#else
+            return p;
+#endif
         }
 
         /** Increase the link count to this node.
@@ -512,12 +520,16 @@ class MEDDLY::forest {
                 @return the node handle, for convenience.
         */
         inline node_handle linkNode(const dd_edge &p) {
+#ifdef REFCOUNTS_ON
             MEDDLY_DCASSERT(p.isAttachedTo(this));
             if (deflt.useReferenceCounts) {
                 return nodeHeaders.linkNode(p.getNode());
             } else {
                 return p.getNode();
             }
+#else
+            return p.getNode();
+#endif
         }
 
         /** Decrease the link count to this node.
@@ -525,9 +537,11 @@ class MEDDLY::forest {
             Call this when another node releases its connection to this node.
         */
         inline void unlinkNode(node_handle p) {
+#ifdef REFCOUNTS_ON
             if (deflt.useReferenceCounts) {
                 nodeHeaders.unlinkNode(p);
             }
+#endif
         }
 
 
@@ -537,9 +551,11 @@ class MEDDLY::forest {
                 @param  p     Node we care about.
         */
         inline void cacheNode(node_handle p) {
+#ifdef REFCOUNTS_ON
             if (deflt.useReferenceCounts) {
                 nodeHeaders.cacheNode(p);
             }
+#endif
         }
 
         /** Decrease the cache count for this node.
@@ -548,9 +564,11 @@ class MEDDLY::forest {
                 @param  p     Node we care about.
         */
         inline void uncacheNode(node_handle p) {
+#ifdef REFCOUNTS_ON
             if (deflt.useReferenceCounts) {
                 nodeHeaders.uncacheNode(p);
             }
+#endif
         }
 
         /** Mark the node as belonging to some cache entry.
@@ -630,20 +648,24 @@ class MEDDLY::forest {
 
         /// Unlink down pointers in an  unpacked node.
         inline void unlinkAllDown(const unpacked_node &un, unsigned i=0) {
+#ifdef REFCOUNTS_ON
             if (deflt.useReferenceCounts) {
                 for ( ; i<un.getSize(); i++) {
                     nodeHeaders.unlinkNode(un.down(i));
                 }
             }
+#endif
         }
 
         /// Link down pointers in an  unpacked node.
         inline void linkAllDown(unpacked_node &un, unsigned i=0) {
+#ifdef REFCOUNTS_ON
             if (deflt.useReferenceCounts) {
                 for ( ; i<un.getSize(); i++) {
                     nodeHeaders.linkNode(un.down(i));
                 }
             }
+#endif
         }
 
 

@@ -119,7 +119,7 @@ Compute table ideas
 
 Next release:
 
-Reimplement operations.
+Finish Reimplementing operations.
 
 Depending on how that goes, maybe adjust the operation hierarchy?
 
@@ -227,7 +227,48 @@ Operations
 (*) One version of node_storage::getDownPtr, using edge_value
 
 
+======================================================================
+Operations and have they been reimplemented yet
+======================================================================
+cardinality.cc
+        NO      card_mdd_int
+        NO      card_mxd_int
+        NO      card_mdd_real
+        NO      card_mxd_real
+        NO      card_mdd_mpz
+        NO      card_mxd_mpz
 
+comp_eq.cc
+        NO      equal_mdd
+        NO      equal_mxd
+
+comp_ge.cc
+        NO      moreequal_mdd
+        NO      moreequal_mxd
+
+comp_gt.cc
+        NO      morethan_mdd
+        NO      morethan_mxd
+
+comp_le.cc
+        NO      lessequal_mdd
+        NO      lessequal_mxd
+
+comp_lt.cc
+        NO      lessthan_mdd
+        NO      lessthan_mxd
+
+comp_ne.cc
+        NO      unequal_mdd
+        NO      unequal_mxd
+
+complement.cc
+        YES     compl_mdd
+        YES     compl_mxd
+
+TBD...
+
+======================================================================
 
 
 Go through examples/ directory,

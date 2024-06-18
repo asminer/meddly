@@ -7,11 +7,18 @@ layout: single
 
 ### Overview
 
-Most changes this release are to clean up the compute table interface,
+Most changes this release are to clean up the compute table interface
+and the operation interfaces,
 to make it easier to implement operations.
-TBD...
+
 
 ### Interface Changes
+
+* The ```unary_operation``` and ```binary_operation``` interfaces
+  are changing; the old interface is still supported for now.
+  The main differences are new virtual compute() methods that are "low level" for speed
+  but also generic to minimize the number of overloaded compute() methods.
+  See files ```oper_binary.h``` and ```oper_unary.h``` for details.
 
 * The ```compute_table``` class now maintains a list of all compute
     tables, mainly for garbage collection purposes.
@@ -31,6 +38,7 @@ TBD...
 * The monolithic compute table has been moved from class ```operation```
   to class ```compute_table```.
 
+
 ### Implementation
 
 * New unified compute table implementation in file ```ct_styles.cc```,
@@ -43,3 +51,7 @@ TBD...
 * Node reduction (in class ```forest```) is now a local operation;
   helper virtual methods (```normalize```, ```isIdentityEdge```, etc)
   have been removed.
+
+* Boolean (MDD or MXD) Intersection, Union, Difference, and Complement operations
+  have been rewritten using the new compute table and operation interfaces.
+

@@ -84,7 +84,8 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
   // set up auxiliary mtmxd forest and edges
   domain* d = mxd->getDomain();
   forest* mtmxd = forest::create(d,
-    true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL
+    true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL,
+    mxd->getPolicies()
   );
   const unsigned nVars = d->getNumVariables();
   unsigned maxBound = 1;

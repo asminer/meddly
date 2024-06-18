@@ -23,6 +23,8 @@
 #include "config.h"
 #endif
 
+#define REFCOUNTS_ON
+
 // #define ALLOW_DEPRECATED_0_17_2  "11/11/2023"
 // #define ALLOW_DEPRECATED_0_17_3  "12/03/2023"
 // #define ALLOW_DEPRECATED_0_17_4  "12/19/2023"

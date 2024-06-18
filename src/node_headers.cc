@@ -159,9 +159,13 @@ MEDDLY::node_headers::node_headers(forest &P, memstats &ms, statset &ss)
 {
     addresses = nullptr;
     levels = nullptr;
+#ifdef REFCOUNTS_ON
     cache_counts = nullptr;
+#endif
     is_in_cache = nullptr;
+#ifdef REFCOUNTS_ON
     incoming_counts = nullptr;
+#endif
     implicit_bits = nullptr;
     is_reachable = nullptr;
     pessimistic = true;
@@ -186,9 +190,13 @@ MEDDLY::node_headers::~node_headers()
 {
     delete addresses;
     delete levels;
+#ifdef REFCOUNTS_ON
     delete cache_counts;
+#endif
     delete is_in_cache;
+#ifdef REFCOUNTS_ON
     delete incoming_counts;
+#endif
     delete implicit_bits;
     // DON'T delete is_reachable, we don't own it
     // delete is_reachable;
@@ -201,8 +209,12 @@ void MEDDLY::node_headers::initialize()
     addresses = new address_array(this);
     levels = new level_array(parent.getNumVariables(), this);
     if (parent.getPolicies().useReferenceCounts) {
+#ifdef REFCOUNTS_ON
         cache_counts = new counter_array(this);
         incoming_counts = new counter_array(this);
+#else
+        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+#endif
     } else {
         is_in_cache = new bitvector(this);
     }
@@ -435,8 +447,10 @@ void MEDDLY::node_headers::swapNodes(node_handle p, node_handle q,
     const size_t sq = size_t(q);
     if (addresses)                          addresses->swap(sp, sq);
     if (levels)                             levels->swap(sp, sq);
+#ifdef REFCOUNTS_ON
     if (cache_counts)                       cache_counts->swap(sp, sq);
     if (swap_incounts && incoming_counts)   incoming_counts->swap(sp, sq);
+#endif
     if (implicit_bits)                      implicit_bits->swap(sp, sq);
 }
 
@@ -467,9 +481,13 @@ void MEDDLY::node_headers
     if (flags & STORAGE_DETAILED) {
         show_num_bits(s, pad, "address   : ", addresses);
         show_num_bits(s, pad, "level     : ", levels);
+#ifdef REFCOUNTS_ON
         show_num_bits(s, pad, "#caches   : ", cache_counts);
+#endif
         show_num_bits(s, pad, "in_cache? : ", is_in_cache);
+#ifdef REFCOUNTS_ON
         show_num_bits(s, pad, "#incoming : ", incoming_counts);
+#endif
         show_num_bits(s, pad, "reachable?: ", is_reachable);
         show_num_bits(s, pad, "implicit? : ", implicit_bits);
     }
@@ -510,8 +528,10 @@ void MEDDLY::node_headers::showHeader(output &s, node_handle p) const
     }
     s.put( (getNodeLevel(p) < 0) ? '\'' : ' ' );
 
+#ifdef REFCOUNTS_ON
     show_element(s, " in: ", incoming_counts, p);
     show_element(s, " cc: ", cache_counts, p);
+#endif
     show_element(s, " reach: ", is_reachable, p);
     show_element(s, " cache: ", is_in_cache, p);
 }
@@ -548,8 +568,10 @@ void MEDDLY::node_headers::dumpInternal(output &s) const
 
     show_array(s, "Level  : ", levels, a_last, awidth);
     show_array(s, "Offset : ", addresses, a_last, awidth);
+#ifdef REFCOUNTS_ON
     show_array(s, "Incount: ", incoming_counts, a_last, awidth);
     show_array(s, "Cache  : ", cache_counts, a_last, awidth);
+#endif
 }
 
 // ******************************************************************
@@ -651,9 +673,13 @@ void MEDDLY::node_headers::expandHandleList()
 
     if (addresses)        addresses->expand(a_size);
     if (levels)           levels->expand(a_size);
+#ifdef REFCOUNTS_ON
     if (cache_counts)     cache_counts->expand(a_size);
+#endif
     if (is_in_cache)      is_in_cache->expand(a_size);
+#ifdef REFCOUNTS_ON
     if (incoming_counts)  incoming_counts->expand(a_size);
+#endif
     if (is_reachable)     is_reachable->expand(a_size);
     if (implicit_bits)    implicit_bits->expand(a_size);
 
@@ -709,9 +735,11 @@ void MEDDLY::node_headers::shrinkHandleList()
 
     if (addresses)        addresses->shrink(a_size);
     if (levels)           levels->shrink(a_size);
+#ifdef REFCOUNTS_ON
     if (cache_counts)     cache_counts->shrink(a_size);
-    if (is_in_cache)      is_in_cache->shrink(a_size);
     if (incoming_counts)  incoming_counts->shrink(a_size);
+#endif
+    if (is_in_cache)      is_in_cache->shrink(a_size);
     if (is_reachable)     is_reachable->shrink(a_size);
     if (implicit_bits)    implicit_bits->shrink(a_size);
 
@@ -734,8 +762,10 @@ void MEDDLY::node_headers::lastUnlink(node_handle p)
     //
 
     if (
+#ifdef REFCOUNTS_ON
         (cache_counts && (0==cache_counts->get(size_t(p))))
         ||
+#endif
         (is_in_cache && (0==is_in_cache->get(size_t(p))))
     ) {
         //
@@ -793,8 +823,10 @@ void MEDDLY::node_headers::lastUncache(node_handle p)
         // See if we're now completely disconnected
         // and if so, tell parent to recycle node storage
         if (
+#ifdef REFCOUNTS_ON
           (incoming_counts && (0==incoming_counts->get(size_t(p))))
           ||
+#endif
           (is_reachable && (0==is_reachable->get(size_t(p))))
         ) {
 #ifdef TRACK_UNREACHABLE_NODES

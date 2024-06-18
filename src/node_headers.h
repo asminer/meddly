@@ -185,10 +185,16 @@ class MEDDLY::node_headers : public array_watcher {
 
         /// Get the cache count for node p.
         inline unsigned long getNodeCacheCount(node_handle p) const {
+#ifdef REFCOUNTS_ON
             MEDDLY_DCASSERT(p>0);
             MEDDLY_DCASSERT(cache_counts);
             return cache_counts->get(size_t(p));
+#else
+            return 0;
+#endif
         }
+
+#ifdef REFCOUNTS_ON
 
 
         /// Increment the cache count for node p and return p.
@@ -224,6 +230,8 @@ class MEDDLY::node_headers : public array_watcher {
             lastUncache(p);
         }
 
+#endif
+
         // ----------------------------------------------------------
 
         /// Indicate that node p is (or might be) in some cache entry.
@@ -244,10 +252,16 @@ class MEDDLY::node_headers : public array_watcher {
 
         /// Get the incoming count for node p.
         inline unsigned long getIncomingCount(node_handle p) const {
+#ifdef REFCOUNTS_ON
             MEDDLY_DCASSERT(p>0);
             MEDDLY_DCASSERT(incoming_counts);
             return incoming_counts->get(size_t(p));
+#else
+            return 0;
+#endif
         }
+
+#ifdef REFCOUNTS_ON
 
         /// Increment the incoming count for node p and return p.
         inline node_handle linkNode(node_handle p) {
@@ -290,43 +304,14 @@ class MEDDLY::node_headers : public array_watcher {
             lastUnlink(p);
         }
 
+#endif
+
         // ----------------------------------------------------------
 
         /// Set the node marker for reachable nodes.
         inline void linkReachable(bitvector* R) {
             is_reachable = R;
         }
-
-        /*
-        /// Indicate that node p is (or might be) reachable in the forest.
-        inline void setReachableBit(node_handle p) {
-            if (p<1) return;    // terminal node
-            MEDDLY_DCASSERT(isActive(p));
-            MEDDLY_DCASSERT(reachable);
-            reachable->setMarked(p);
-        }
-
-        /// Mark a node
-        inline void setReachable(node_handle p) {
-            MEDDLY_DCASSERT(reachable);
-            reachable->mark(p);
-        }
-
-        /// Is a node marked?
-        inline bool isReachable(node_handle p) const {
-            return reachable->isMarked(p);
-        }
-
-        /// Clear reachable bit for all nodes
-        inline void clearAllReachableBits() {
-            MEDDLY_DCASSERT(reachable);
-            reachable->unmarkAll();
-        }
-
-        inline node_marker* getReachableMarker() {
-            return reachable;
-        }
-        */
 
         // ----------------------------------------------------------
 
@@ -456,9 +441,13 @@ class MEDDLY::node_headers : public array_watcher {
     private:
         address_array* addresses;
         level_array* levels;
+#ifdef REFCOUNTS_ON
         counter_array* cache_counts;
+#endif
         bitvector* is_in_cache;
+#ifdef REFCOUNTS_ON
         counter_array* incoming_counts;
+#endif
         bitvector* implicit_bits;
         bitvector* is_reachable;
 
