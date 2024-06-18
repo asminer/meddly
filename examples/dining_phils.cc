@@ -114,6 +114,7 @@ enum varorder {
 };
 
 struct switches {
+  bool mark_sweep;
   bool pessimistic;
   bool exact;
   char method;
@@ -124,6 +125,7 @@ struct switches {
 
 public:
   switches() {
+    mark_sweep = false;
     pessimistic = false;
     exact = false;
     method = 'b';
@@ -499,8 +501,20 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
 
   // Set up MDD options
   policies pmdd(false);
-  if (sw.pessimistic) pmdd.setPessimistic();
-  else                pmdd.setOptimistic();
+
+  if (sw.mark_sweep) {
+    pmdd.useReferenceCounts = false;
+    printf("Using mark and sweep\n");
+  } else {
+    pmdd.useReferenceCounts = true;
+    if (sw.pessimistic) {
+      printf("Using pessimistic node deletion\n");
+      pmdd.setPessimistic();
+    } else {
+      printf("Using optimistic node deletion\n");
+      pmdd.setOptimistic();
+    }
+  }
 
   // Create an MDD forest in this domain (to store states)
   forest* mdd =
@@ -749,7 +763,10 @@ int usage(const char* who)
   printf("\t-n<#phils>: set number of philosophers\n\n");
 
   printf("\t-exact:     display the exact number of states\n");
-  printf("\t-cs<cache>: set cache size (0 for library default)\n");
+  printf("\t-cs<cache>: set cache size (0 for library default)\n\n");
+
+  printf("\t-ms:        use mark and sweep node deletion\n");
+  printf("\t-opt:       use optimistic node deletion (default)\n");
   printf("\t-pess:      use pessimistic node deletion (lower mem usage)\n\n");
 
   printf("\t-bfs:       use traditional iterations (default)\n\n");
@@ -779,8 +796,18 @@ int main(int argc, char *argv[])
 
   for (int i=1; i<argc; i++) {
     const char* cmd = argv[i];
+    if (strcmp(cmd, "-opt") == 0) {
+      sw.mark_sweep = false;
+      sw.pessimistic = false;
+      continue;
+    }
     if (strcmp(cmd, "-pess") == 0) {
+      sw.mark_sweep = false;
       sw.pessimistic = true;
+      continue;
+    }
+    if (strcmp(cmd, "-ms") == 0) {
+      sw.mark_sweep = true;
       continue;
     }
     if (strncmp(cmd, "-cs", 3) == 0) {

@@ -74,6 +74,9 @@ int usage(const char* who)
   printf("\t--batch b: specify explicit batch size\n\n");
   printf("\t -l lfile: Write logging information to specified file\n\n");
   printf("\t-pdf: write the MDD representing the reachable states to Kanban.pdf\n\n");
+  printf("\t-ms: mark and sweep\n");
+  printf("\t-opt: optimistic reference counts\n");
+  printf("\t-pess: pessimistic reference counts\n");
   return 1;
 }
 
@@ -97,6 +100,7 @@ int main(int argc, const char** argv)
   const char* lfile = 0;
   bool build_pdf = false;
   bool approx_count = true;
+  char node_del = 'o';
 
   for (int i=1; i<argc; i++) {
     if (strcmp("-bfs", argv[i])==0) {
@@ -148,6 +152,18 @@ int main(int argc, const char** argv)
       build_pdf = true;
       continue;
     }
+    if (strcmp("-ms", argv[i])==0) {
+        node_del='m';
+        continue;
+    }
+    if (strcmp("-opt", argv[i])==0) {
+        node_del='o';
+        continue;
+    }
+    if (strcmp("-pess", argv[i])==0) {
+        node_del='p';
+        continue;
+    }
     N = atoi(argv[i]);
   }
 
@@ -172,7 +188,26 @@ int main(int argc, const char** argv)
     delete[] sizes;
 
     // Initialize forests
-    forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+    policies p(false);
+    switch (node_del) {
+        case 'm':
+            printf("Using mark and sweep\n");
+            p.useReferenceCounts = false;
+            break;
+
+        case 'p':
+            printf("Using pessimistic node deletion\n");
+            p.useReferenceCounts = true;
+            p.setPessimistic();
+            break;
+
+        default:
+            printf("Using optimistic node deletion\n");
+            p.useReferenceCounts = true;
+            p.setOptimistic();
+            break;
+    }
+    forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, p);
     forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 
     // associate loggers
