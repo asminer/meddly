@@ -266,6 +266,26 @@ complement.cc
         YES     compl_mdd
         YES     compl_mxd
 
+constrained.cc
+        NO
+
+copy.cc
+        NO
+
+cross.cc
+        NO      cross_bool
+
+cycle.cc
+        NO      cycle_EV2EV
+
+difference.cc
+        YES     diffr_mdd
+        YES     diffr_mxd
+
+divide.cc
+        NO      divide_mdd
+        NO      divide_mxd
+
 TBD...
 
 ======================================================================

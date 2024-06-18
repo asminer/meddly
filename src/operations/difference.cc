@@ -18,7 +18,6 @@
 
 #include "../defines.h"
 #include "difference.h"
-#include "apply_base.h" // remove this when we can
 
 #include "../oper_binary.h"
 #include "../ct_vector.h"
