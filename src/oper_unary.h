@@ -52,16 +52,12 @@ class MEDDLY::unary_operation : public operation {
         /** New constructor for a unary op that returns a DD.
             Compute table entry information is managed 'by hand'
             in the derived class.
-                @param  owner   List that 'owns' this operation,
-                                so we can find an existing operation
-                                for the forest arguments and results.
-
                 @param  arg     Forest containing the argument.
 
                 @param  res     Forest containing the result.
                                 Must be compatible with the argument forest.
         */
-        unary_operation(unary_list& owner, forest* arg, forest* res);
+        unary_operation(forest* arg, forest* res);
 
 
     protected:
@@ -189,7 +185,7 @@ class MEDDLY::unary_operation : public operation {
         opnd_type resultType;
 
     private:
-        unary_list& parent;
+        unary_list* parent;
         unary_operation* next;
 #ifdef ALLOW_DEPRECATED_0_17_6
         bool new_style;
@@ -221,6 +217,13 @@ class MEDDLY::unary_list {
 
         inline unary_operation* add(unary_operation* uop) {
             if (uop) {
+                if (uop->parent) {
+                    // REMOVE EVENTUALLY
+                    MEDDLY_DCASSERT(uop->parent == this);
+                } else {
+                    uop->parent = this;
+                    uop->setName(name);
+                }
                 uop->next = front;
                 front = uop;
             }

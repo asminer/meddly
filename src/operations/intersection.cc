@@ -61,7 +61,7 @@ class MEDDLY::inter_mdd : public binary_operation {
 // ******************************************************************
 
 MEDDLY::inter_mdd::inter_mdd(forest* arg1, forest* arg2, forest* res)
-  : binary_operation(INTER_cache, arg1, arg2, res)
+  : binary_operation(arg1, arg2, res)
 {
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__, SET);
@@ -278,7 +278,7 @@ class MEDDLY::inter_mxd : public binary_operation {
 // ******************************************************************
 
 MEDDLY::inter_mxd::inter_mxd(forest* arg1, forest* arg2, forest* res)
-  : binary_operation(INTER_cache, arg1, arg2, res)
+  : binary_operation(arg1, arg2, res)
 {
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__, RELATION);

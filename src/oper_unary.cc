@@ -29,8 +29,10 @@
 
 MEDDLY::unary_operation::unary_operation(unary_list& owner,
     unsigned et_slots, forest* arg, forest* res)
-    : operation(owner.getName(), et_slots), parent(owner)
+    : operation(owner.getName(), et_slots)
 {
+    parent = &owner;
+
     argF = arg;
     resultType = opnd_type::FOREST;
     resF = res;
@@ -42,9 +44,9 @@ MEDDLY::unary_operation::unary_operation(unary_list& owner,
 
 MEDDLY::unary_operation::unary_operation(unary_list& owner,
     unsigned et_slots, forest* arg, opnd_type res)
-    : operation(owner.getName(), et_slots), parent(owner)
+    : operation(owner.getName(), et_slots)
 {
-    parent = owner;
+    parent = &owner;
     argF = arg;
     resultType = res;
     resF = nullptr;
@@ -55,9 +57,11 @@ MEDDLY::unary_operation::unary_operation(unary_list& owner,
 
 #endif
 
-MEDDLY::unary_operation::unary_operation(unary_list& owner,
-    forest* arg, forest* res) : operation(owner.getName()), parent(owner)
+MEDDLY::unary_operation::unary_operation(forest* arg, forest* res)
+    : operation()
 {
+    parent = nullptr;
+
     argF = arg;
     resultType = opnd_type::FOREST;
     resF = res;
@@ -75,7 +79,7 @@ MEDDLY::unary_operation::~unary_operation()
 {
     unregisterInForest(argF);
     unregisterInForest(resF);
-    parent.remove(this);
+    if (parent) parent->remove(this);
 }
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)

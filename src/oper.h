@@ -75,7 +75,7 @@ namespace MEDDLY {
 class MEDDLY::operation {
         friend class initializer_list;
     public:
-        /** Constructor.
+        /** Constructor (OLD)
                 @param  n           Operation name, for debugging
                 @param  et_slots    Number of different compute table entry
                                     types used by this operation.
@@ -83,6 +83,10 @@ class MEDDLY::operation {
                                     exactly this many entry types.
         */
         operation(const char* n, unsigned et_slots=0);
+
+        /// New constructor.
+        operation();
+
 
         /** Destructor.
             Safe to call directly now :)
@@ -104,6 +108,13 @@ class MEDDLY::operation {
         inline const char* getName() const { return name; }
 
     protected:
+        /// Set the name after constructing.
+        inline void setName(const char* n) {
+            if (!n) return;
+            MEDDLY_DCASSERT(!name);
+            name = n;
+        }
+
         void registerInForest(forest* f);
         void unregisterInForest(forest* f);
 

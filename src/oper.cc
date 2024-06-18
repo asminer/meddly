@@ -106,6 +106,19 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     FList.clear();
 }
 
+MEDDLY::operation::operation()
+{
+    name = nullptr;
+    registerOperation(*this);
+    FList.clear();
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+    CT = nullptr;
+    etype = nullptr;
+    CTresult = nullptr;
+    num_etids = 0;
+#endif
+}
 
 
 MEDDLY::operation::~operation()

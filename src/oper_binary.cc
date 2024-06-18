@@ -30,8 +30,10 @@
 
 MEDDLY::binary_operation::binary_operation(binary_list& owner,
     unsigned et_slots, forest* arg1, forest* arg2,
-    forest* res) : operation(owner.getName(), et_slots), parent(owner)
+    forest* res) : operation(owner.getName(), et_slots)
 {
+    parent = &owner;
+
     arg1F = arg1;
     arg2F = arg2;
     resF = res;
@@ -45,10 +47,11 @@ MEDDLY::binary_operation::binary_operation(binary_list& owner,
 
 #endif
 
-MEDDLY::binary_operation::binary_operation(binary_list& owner,
-    forest* arg1, forest* arg2, forest* res)
-    : operation(owner.getName()), parent(owner)
+MEDDLY::binary_operation::binary_operation(forest* arg1, forest* arg2,
+        forest* res): operation()
 {
+    parent = nullptr;
+
     arg1F = arg1;
     arg2F = arg2;
     resF = res;
@@ -70,7 +73,7 @@ MEDDLY::binary_operation::~binary_operation()
     unregisterInForest(arg2F);
     unregisterInForest(resF);
 
-    parent.remove(this);
+    if (parent) parent->remove(this);
 }
 
 

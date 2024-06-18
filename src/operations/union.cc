@@ -61,7 +61,7 @@ class MEDDLY::union_mdd : public binary_operation {
 // ******************************************************************
 
 MEDDLY::union_mdd::union_mdd(forest* arg1, forest* arg2, forest* res)
-  : binary_operation(UNION_cache, arg1, arg2, res)
+  : binary_operation(arg1, arg2, res)
 {
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__, SET);
@@ -270,7 +270,7 @@ class MEDDLY::union_mxd : public binary_operation {
 // ******************************************************************
 
 MEDDLY::union_mxd::union_mxd(forest* arg1, forest* arg2, forest* res)
-  : binary_operation(UNION_cache, arg1, arg2, res)
+  : binary_operation(arg1, arg2, res)
 {
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__, RELATION);

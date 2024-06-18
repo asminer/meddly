@@ -51,10 +51,6 @@ class MEDDLY::binary_operation : public operation {
             NEW constructor.
             Compute table entry information is managed 'by hand'
             in the derived class.
-                @param  owner   List that 'owns' this operation,
-                                so we can find an existing operation
-                                for the forest arguments and results.
-
                 @param  arg1    Forest containing the first argument
                                 of the binary operation.
 
@@ -68,8 +64,7 @@ class MEDDLY::binary_operation : public operation {
                                 Must be compatible with the argument
                                 forests.
         */
-        binary_operation(binary_list& owner, forest* arg1, forest* arg2,
-                forest* res);
+        binary_operation(forest* arg1, forest* arg2, forest* res);
 
     protected:
         virtual ~binary_operation();
@@ -226,7 +221,7 @@ class MEDDLY::binary_operation : public operation {
         forest* resF;
 
     private:
-        binary_list& parent;
+        binary_list* parent;
         binary_operation* next;
 #ifdef ALLOW_DEPRECATED_0_17_6
         bool can_commute;
@@ -259,6 +254,13 @@ class MEDDLY::binary_list {
 
         inline binary_operation* add(binary_operation* bop) {
             if (bop) {
+                if (bop->parent) {
+                    // REMOVE EVENTUALLY
+                    MEDDLY_DCASSERT(bop->parent == this);
+                } else {
+                    bop->parent = this;
+                    bop->setName(name);
+                }
                 bop->next = front;
                 front = bop;
             }

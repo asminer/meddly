@@ -61,7 +61,7 @@ class MEDDLY::compl_mdd : public unary_operation {
 // ******************************************************************
 
 MEDDLY::compl_mdd::compl_mdd(forest* arg, forest* res)
-    : unary_operation(COMPL_cache, arg, res)
+    : unary_operation(arg, res)
 {
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__, SET);
@@ -221,7 +221,7 @@ class MEDDLY::compl_mxd : public unary_operation {
 // ******************************************************************
 
 MEDDLY::compl_mxd::compl_mxd(forest* arg, forest* res)
-    : unary_operation(COMPL_cache, arg, res), out(std::cout)
+    : unary_operation(arg, res), out(std::cout)
 {
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__, RELATION);

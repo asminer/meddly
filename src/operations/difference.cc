@@ -62,7 +62,7 @@ class MEDDLY::diffr_mdd : public binary_operation {
 // ******************************************************************
 
 MEDDLY::diffr_mdd::diffr_mdd(forest* arg1, forest* arg2, forest* res)
-  : binary_operation(DIFFR_cache, arg1, arg2, res)
+  : binary_operation(arg1, arg2, res)
 {
     ct = new ct_entry_type("difference");
     // CT key:      node from forest arg1, node from forest arg2
@@ -260,7 +260,7 @@ class MEDDLY::diffr_mxd : public binary_operation {
 // ******************************************************************
 
 MEDDLY::diffr_mxd::diffr_mxd(forest* arg1, forest* arg2, forest* res)
-  : binary_operation(DIFFR_cache, arg1, arg2, res), out(std::cout)
+  : binary_operation(arg1, arg2, res), out(std::cout)
 {
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__, RELATION);
