@@ -74,6 +74,7 @@ namespace MEDDLY {
 #include "operations/sat_pregen.h"
 #include "operations/sat_otf.h"
 #include "operations/cov.h"
+#include "operations/covr.h"
 #include "operations/sat_impl.h"
 #include "operations/sat_hyb.h"
 #include "operations/constrained.h"
@@ -109,6 +110,7 @@ class MEDDLY::builtin_init : public initializer_list {
         static unary_opname* _MAXRANGE;
         static unary_opname* _MINRANGE;
         static unary_opname* _SELECT;
+        static unary_opname* _EXTRACTFROM;
     public:
         static binary_opname* _UNION;
         static binary_opname* _INTERSECT;
@@ -170,6 +172,7 @@ MEDDLY::unary_opname* MEDDLY::builtin_init::_EQUANT;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_MAXRANGE;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_MINRANGE;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_SELECT;
+MEDDLY::unary_opname* MEDDLY::builtin_init::_EXTRACTFROM;
 
 MEDDLY::binary_opname* MEDDLY::builtin_init::_UNION;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_INTERSECT;
@@ -237,6 +240,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     _CYCLE      = nullptr;
     _EQUANT     = nullptr;
     _SELECT     = nullptr;
+    _EXTRACTFROM= nullptr;
     //
     // Binary ops
     //
@@ -306,6 +310,7 @@ void MEDDLY::builtin_init::setup()
     _MDD2INDEX  =   initializeMDD2INDEX()   ;
     _CYCLE      =   initializeCycle()       ;
     _SELECT     =   initializeSelect()      ;
+    _EXTRACTFROM=   initializeExtractFrom() ;
     //
     // Binary ops
     //
@@ -377,6 +382,7 @@ void MEDDLY::builtin_init::cleanup()
     mydelete(_CYCLE);
     mydelete(_EQUANT);
     mydelete(_SELECT);
+    mydelete(_EXTRACTFROM);
     //
     // Binary ops
     //
@@ -466,6 +472,9 @@ MEDDLY::unary_opname* MEDDLY::MIN_RANGE() {
 }
 MEDDLY::unary_opname* MEDDLY::SELECT() {
     return builtin_init::_SELECT;
+}
+MEDDLY::unary_opname* MEDDLY::EXTRACTFROM(){
+    return builtin_init::_EXTRACTFROM;
 }
 
 // ******************************************************************

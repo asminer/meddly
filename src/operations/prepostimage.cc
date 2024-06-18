@@ -1660,7 +1660,7 @@ void MEDDLY::covtc::compute_rec(node_handle cr, node_handle e, node_handle&res, 
 
   }
 //
-//   // check the cache
+  // check the cache
   ct_entry_key* Key = findResult(cr,e, above,res);
   if (0==Key) {
     return;
@@ -1675,7 +1675,7 @@ void MEDDLY::covtc::compute_rec(node_handle cr, node_handle e, node_handle&res, 
 
   // Initialize cr reader
   unpacked_node* A = isLevelAbove(rLevel, crLevel)
-    ? unpacked_node::newRedundant(argV, rLevel, 0L, cr, true)
+    ? unpacked_node::newRedundant(argV, rLevel, cr, true)
     : argV->newUnpacked(cr, FULL_ONLY);
 
   for (unsigned i = 0; i < rSize; i++) {
@@ -2729,7 +2729,7 @@ MEDDLY::covtc_opname::buildOperation(expert_forest* a1, expert_forest* a2,
   if (
     !a1->isForRelations()    ||
     !a2->isForRelations()   ||
-    !r->isForRelations()   
+    !r->isForRelations()
   )
     throw error(error::TYPE_MISMATCH);
 

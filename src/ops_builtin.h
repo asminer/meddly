@@ -67,6 +67,8 @@ namespace MEDDLY {
     /// Randomly select one state from a set of states
     unary_opname* SELECT();
 
+    unary_opname* EXTRACTFROM();
+
     // ******************************************************************
     // *                                                                *
     // *                    binary operation handles                    *

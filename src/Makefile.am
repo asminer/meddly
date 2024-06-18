@@ -119,6 +119,7 @@ libmeddly_la_SOURCES = \
     operations/sat_otf.h                operations/sat_otf.cc      \
 		operations/prepostimage.h           operations/prepostimage.cc \
     operations/cov.h                    operations/cov.cc      \
+		operations/covr.h                    operations/covr.cc      \
     operations/sat_pregen.h             operations/sat_pregen.cc   \
     operations/sccgraph.h               operations/sccgraph.cc     \
     operations/select.h                 operations/select.cc       \

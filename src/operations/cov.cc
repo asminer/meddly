@@ -155,6 +155,7 @@ binary_operation* mddUnion;
 binary_operation* mddImage;
 binary_operation* mrcc;
 binary_operation* covtc;
+unary_operation* covrExtractFrom;
 markcmp* cij;
 protected:
 binary_operation* mxdIntersection;
@@ -461,6 +462,14 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                                 parent->covtc->computeDDEdge(reachableStates/*prevReachable*/, luniontl, updatecovered,true);
                                 updatecovered.showGraph(meddlyout);
                                printf("updatecovered^^^ " );
+
+                               getchar();
+
+                               dd_edge efrom(resF);
+
+                               parent->covrExtractFrom->computeDDEdge(reachableStates,efrom,true);
+                               printf("covrExtractFrom^^^\n" );
+                               efrom.showGraph(meddlyout);
                                getchar();
                         }
                 }
@@ -508,6 +517,7 @@ MEDDLY::common_cov_by_events_mt::common_cov_by_events_mt(
         mddImage = 0;
         mrcc=0;
         covtc=0;
+        covrExtractFrom=0;
         mxdIntersection = 0;
         mxdDifference = 0;
         freeqs = 0;
@@ -565,6 +575,9 @@ void MEDDLY::common_cov_by_events_mt
         MEDDLY_DCASSERT(mrcc);
         covtc=getOperation(COV_TC, a,arg2F,c);
         MEDDLY_DCASSERT(covtc);
+        dd_edge efrom(resF);
+        covrExtractFrom=getOperation(EXTRACTFROM,a,efrom);
+        MEDDLY_DCASSERT(covrExtractFrom);
         ostream_output meddlyout(std::cout);
 #ifdef DEBUG_INITIAL
         printf("Calling saturate for states:\n");
@@ -710,7 +723,7 @@ MEDDLY::cov_by_events_mt::cov_by_events_mt(
 
 // ******************************************************************
 // *                                                                *
-// *                   fb_otf_bfs_opname class               *
+// *                       cov_opname class                         *
 // *                                                                *
 // ******************************************************************
 
