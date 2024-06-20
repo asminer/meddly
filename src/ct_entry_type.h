@@ -853,6 +853,9 @@ class MEDDLY::ct_entry_type {
         bool keyIsOurs(const ct_entry_key *k) const;
 #endif
 
+        /// Return true if the entry has some valid forest
+        bool hasValidForest() const;
+
         /// Set counts; build CT.
         void buildCT();
 

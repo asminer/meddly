@@ -152,7 +152,10 @@ MEDDLY::ct_entry_type::~ct_entry_type()
     if (CT) {
         if (CT_is_ours) {
             MEDDLY_DCASSERT(CT->isOperationTable());
-            CT->removeAll();
+            if (hasValidForest()) {
+                // We must carefully remove elements
+                CT->removeAll();
+            }
             delete CT;
         }
         CT = nullptr;
@@ -510,6 +513,20 @@ bool MEDDLY::ct_entry_type::keyIsOurs(const ct_entry_key *k) const
 {
     MEDDLY_DCASSERT(k);
     return k->getET() == this;
+}
+
+bool MEDDLY::ct_entry_type::hasValidForest() const
+{
+    for (unsigned i=0; i<key_fixed.size(); i++) {
+        if (key_fixed[i].rawForest()) return true;
+    }
+    for (unsigned i=0; i<key_repeating.size(); i++) {
+        if (key_repeating[i].rawForest()) return true;
+    }
+    for (unsigned i=0; i<result.size(); i++) {
+        if (result[i].rawForest()) return true;
+    }
+    return false;
 }
 
 void MEDDLY::ct_entry_type::buildCT()

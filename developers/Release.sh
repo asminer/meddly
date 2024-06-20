@@ -2,6 +2,7 @@
 #
 #
 
+DEFFILE="src/defines.h"
 REVFILE="src/revision.h"
 RELDIR="docs/_releases"
 UNRELNOTES="$RELDIR/unreleased.md"
@@ -12,9 +13,27 @@ NAVFILE="docs/_data/navigation.yml"
 #
 update_revision()
 {
+    printf "    updating $REVFILE\n"
     local rdate=`date +"%Y %B %d"`
-    printf "const char* MEDDLY_DATE = \"%s\";\n" "$rdate"
-    printf "const char* MEDDLY_VERS = \"%s\";\n" "$1"
+    printf "const char* MEDDLY_DATE = \"%s\";\nconst char* MEDDLY_VERS = \"%s\";\n" "$rdate" "$1" > ../$REVFILE
+    git add ../$REVFILE
+}
+
+#
+# Arg1: version
+#
+update_defines()
+{
+    printf "    updating $DEFFILE\n"
+    if [ ! -f "../$DEFFILE" ]; then
+        printf "\t$DEFFILE not found\n";
+        return
+    fi
+    local ddate=`date +"%m/%d/%Y"`
+    local versid=`tr '.' '_' <<< "$1"`
+    mv -f ../$DEFFILE ../$DEFFILE.old
+    sed "1,/=======/s/$versid.*/$versid  \"$ddate\"/" ../$DEFFILE.old > ../$DEFFILE
+    git add ../$DEFFILE
 }
 
 #
@@ -144,9 +163,8 @@ if [ "$version" != "$oldversion" ]; then
     mv -f ../configure.ac.new ../configure.ac
 fi
 
-printf "    updating $REVFILE\n"
-update_revision "$version" > ../$REVFILE
-
+update_revision "$version"
+update_defines "$version"
 
 printf "    creating $RELDIR/$version.md\n"
 update_docs "$version"  > ../$RELDIR/$version.md
@@ -164,7 +182,7 @@ printf "\nNext version will be $nextver\n"
 # Save changes
 #
 
-git add ../src/revision.h ../$RELDIR/$version.md ../$UNRELNOTES ../$NAVFILE ../configure.ac
+git add ../$RELDIR/$version.md ../$UNRELNOTES ../$NAVFILE ../configure.ac
 git commit -m "Updated for $version release"
 git push
 git push sourceforge

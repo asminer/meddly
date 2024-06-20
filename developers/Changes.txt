@@ -109,14 +109,6 @@ Unpacked matrix class (new):
 
     * reduce(edge_value &ev, node_handle &p);
 
-Compute table ideas
-
-
-
-    *  For each compute table, track:
-       list of forests with entries in the CT.
-       When destroying the CT, don't remove entries
-       if forests are already destroyed.
 
 Next release:
 
@@ -213,11 +205,6 @@ Ideal:
     }
 
 
-
-
-(*) node_storage::getDownPtr timing test
-
-(*) One version of node_storage::getDownPtr, using edge_value
 
 
 ======================================================================
