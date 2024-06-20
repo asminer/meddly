@@ -750,13 +750,6 @@ class MEDDLY::forest {
         */
         inline node_handle getDownPtr(node_handle p, int index) const {
             return nodeMan->getDownPtr(getNodeAddress(p), index);
-/*
-            edge_value ev = transparent_edge;
-            node_handle dn;
-            nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
-            MEDDLY_DCASSERT(ev.isVoid());
-            return dn;
-*/
         }
 
         /** For a given node, get a specified downward pointer.
@@ -778,7 +771,7 @@ class MEDDLY::forest {
             nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
         }
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+        // TBD: remove these older 'getDownPtr' methods
 
         /** For a given node, get a specified downward pointer.
 
@@ -841,7 +834,7 @@ class MEDDLY::forest {
             nodeMan->getDownPtr(getNodeAddress(p), index, v, dn);
             ev = v.getFloat();
         }
-#endif
+
 
         /** Check if an unpacked node duplicates one in the forest.
                 @param  p       Handle to a node in the forest.
