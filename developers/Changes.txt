@@ -2,6 +2,9 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
+Next to implement:
+    cardinality
+        as a use case for generic operation results :)
 
 Make compute table interface easier to use for simple operations
     (i.e., most of the time)
@@ -16,10 +19,30 @@ Updates to operation interface:
 
 NEW FILE?
 
-oper_result.h:
+oper_item.h:
 
-    enum class oper_result_type {
-        FOREST,
+    /*
+        Idea:
+        for unary, binary, etc. operations that operate on,
+        or return, something that is NOT a dd_edge.
+        For example: cardinality -> long, double, huge integer
+        Could have others, e.g., get the first SIZE elements of a set,
+        where SIZE could be a huge integer.
+
+        Note:
+        NOT used for edge values;
+        those are part of a dd_edge.
+        These are so we can pass one thing
+        (instead of overloading every time)
+        to APPLY
+
+        e.g.,
+            APPLY(const dd_edge &a, oper_item &result);
+            APPLY(const dd_edge &a, const oper_item &b, dd_edge &result);
+    */
+
+    enum class oper_item_type {
+        ERROR,
         INTEGER,
         LONG,
         DOUBLE,
@@ -27,14 +50,14 @@ oper_result.h:
     };
 
     // for everything other than FOREST
-    class oper_result {
+    class oper_item {
         public:
-            oper_result(oper_result_type t == FOREST);
-            oper_result(int v);
-            oper_result(long v);
-            oper_result(double v);
+            oper_item(oper_item_type t = ERROR);
+            oper_item(int v);
+            oper_item(long v);
+            oper_item(double v);
 #ifdef HAVE_GMP
-            oper_result(mpz_t v);
+            oper_item(mpz_t v);
 #endif
 
             // getters for the type
@@ -48,15 +71,24 @@ oper_result.h:
             inline void get(mpz_t &v) const;
 #endif
 
+    //
+    // TBD: should we include CT stuff here,
+    // i.e., things from ct_object?
+    // number of CT slots required
+    // how to stuff this into a CT
+    // how to extract this from a CT
+    // should it be hashed if part of a CT entry?
+    //
+
         private:
             union {
-                int         res_int;
-                long        res_long;
-                double      res_double;
-                mpz_t       res_mpz;
+                int         the_int;
+                long        the_long;
+                double      the_double;
+                mpz_t       the_mpz;
             };
 
-            oper_result_type mytype;
+            oper_item_type mytype;
     };
 
 
@@ -204,8 +236,19 @@ Ideal:
         CTE->addEntry(key, result);
     }
 
+======================================================================
 
+generic EV 'operator' for edges should provide:
 
+    // Combine edge values a and b, store result in c
+    static inline void apply(const edge_value &a, const edge_value &b,
+        edge_value &c);
+
+    // Combine edge values a and b, store result in a
+    static inline void update(edge_value &a, const edge_value &b);
+
+    // "Clear" an edge value; i.e., make it the identity element
+    static inline void clear(edge_value &a);
 
 ======================================================================
 Operations and have they been reimplemented yet
