@@ -14,7 +14,8 @@ Updates to operation interface:
     * Allow (back) low-level interface
 
 
-NEW FILE
+NEW FILE?
+
 oper_result.h:
 
     enum class oper_result_type {
@@ -213,14 +214,6 @@ Ideal:
 
 
 
-Forest cleanup
-    look at node reductions
-
-Operations
-        -> split out and simplify (templates and functors) the
-            apply_generic_mdd style classes
-                (goal is for 'check terminals' to be inlined, not virtual)
-
 
 (*) node_storage::getDownPtr timing test
 
@@ -267,10 +260,16 @@ complement.cc
         YES     compl_mxd
 
 constrained.cc
-        NO
+        NO      constrained_forwd_dfs_mt
+        NO      constrained_bckwd_dfs_mt
+        NO      constrained_bckwd_dfs_evplus
 
 copy.cc
-        NO
+        NO      copy_MT_tmpl
+        NO      copy_MT2EV
+        NO      copy_EV2MT
+        NO      copy_EV2EV_fast
+        NO      copy_EV2EV_slow
 
 cross.cc
         NO      cross_bool
@@ -286,7 +285,100 @@ divide.cc
         NO      divide_mdd
         NO      divide_mxd
 
-TBD...
+intersection.cc
+        YES     inter_mdd
+        YES     inter_mxd
+        NO      inter_max_evplus
+
+maxmin.cc
+        NO      maximum_mdd
+        NO      maximum_mxd
+        NO      minimum_mdd
+        NO      minimum_mxd
+
+maxmin_range.cc
+        NO      maxrange_int
+        NO      maxrange_real
+        NO      minrange_int
+        NO      minrange_real
+
+mdd2index.cc
+        NO      mdd2index_operation
+
+minus.cc
+        NO      minus_mdd
+        NO      minus_mxd
+        NO      minus_evplus
+        NO      minus_evtimes
+
+mm_mult.cc
+        NO      mm_mult_mt
+
+modulo.cc
+        NO      modulo_mdd
+        NO      modulo_mxd
+
+multiply.cc
+        NO      multiply_mdd
+        NO      multiply_mxd
+        NO      multiply_evplus
+        NO      multiply_evtimes
+
+plus.cc
+        NO      plus_mdd
+        NO      plus_mxd
+        NO      plus_evplus
+        NO      plus_evtimes
+
+prepostimage.cc
+        NO      mtmatr_mtvect
+        NO      mtmatr_evplusvect
+        NO      tcXrel_evplus
+
+prepostplus.cc
+        NO      preplus_evplus
+        NO      postplus_evplus
+
+reach_bfs.cc
+        NO      forwd_bfs_mt
+        NO      forwd_bfs_evplus
+        NO      bckwd_bfs_mt
+        NO      bckwd_bfs_evplus
+
+reach_dfs.cc
+        NO      forwd_dfs_mt
+        NO      forwd_dfs_evplus
+        NO      bckwd_dfs_mt
+
+sat_hyb.cc
+        NO      forwd_hyb_dfs_by_events_mt
+
+sat_impl.cc
+        NO      forwd_impl_dfs_by_events_mt
+
+sat_otf.cc
+        NO      forwd_otf_dfs_by_events_mt
+
+sat_pregen.cc
+        NO      forwd_dfs_by_events_mt
+        NO      bckwd_dfs_by_events_mt
+
+select.cc
+        NO      select_MT
+        NO      select_EVPlus
+
+transitive_closure.cc
+        NO      transitive_closure_forwd_dfs
+
+union.cc
+        YES     union_mdd
+        YES     union_mxd
+        NO      union_min_evplus
+        NO      union_min_evplus_mxd
+
+vect_matr.cc
+        N/A     VM_evplus_mt
+        N/A     MV_evplus_mt
 
 ======================================================================
 
@@ -299,19 +391,10 @@ Files that need updating / cleanup
 ------------------------------------------------------------
 defines.h
 enumerator.h            enumerator.cc
-forest.h                forest.cc
 hash_stream.h
 heap.h
 impl_unique_table.h     impl_unique_table.cc
 loggers.h               loggers.cc
-memory.h                memory.cc
-opname.h                opname.cc
-opname_numer.h          opname_numer.cc
-opname_satur.h          opname_satur.cc
-
-oper.h                  oper.cc
-oper_binary.h           oper_binary.cc
-oper_unary.h            oper_unary.cc
 
 relation_node.h         relation_node.cc
 
