@@ -221,10 +221,12 @@ class MEDDLY::edge_value {
             MEDDLY_DCASSERT(p);
             set( *((const double*) p) );
         }
-        inline void set(edge_type et, const void* p) {
-            switch (et) {
+        inline void setType(edge_type et) {
+            mytype = et;
+        }
+        inline void setRaw(const void* p) {
+            switch (mytype) {
                 case edge_type::VOID:
-                    setVoid(p);
                     return;
 
                 case edge_type::INT:
@@ -246,6 +248,10 @@ class MEDDLY::edge_value {
                 default:
                     throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
             }
+        }
+        inline void set(edge_type et, const void* p) {
+            setType(et);
+            setRaw(p);
         }
 
 

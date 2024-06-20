@@ -31,6 +31,8 @@ namespace MEDDLY {
     class memory_manager_style;
     class output;
     class unpacked_node;
+
+    class edge_value;
 };
 
 // ******************************************************************
@@ -213,27 +215,15 @@ class MEDDLY::node_storage {
         virtual node_handle getDownPtr(node_address addr, int index) const = 0;
 
         /** Get the specified outgoing edge for a node.
-            Fast if we just want one.
+            Reasonably if we just want one.
 
             @param  addr    Address of the node we care about
             @param  ind     Index of the pointer we want.
             @param  ev      Output: edge value at that index.
+                            Will be unchanged on transparent values.
             @param  dn      Output: downward pointer at that index.
         */
-        virtual void getDownPtr(node_address addr, int ind, int& ev,
-            node_handle& dn) const = 0;
-        virtual void getDownPtr(node_address addr, int ind, long& ev,
-            node_handle& dn) const = 0;
-
-        /** Get the specified outgoing edge for a node.
-            Fast if we just want one.
-
-            @param  addr    Address of the node we care about
-            @param  ind     Index of the pointer we want.
-            @param  ev      Output: edge value at that index.
-            @param  dn      Output: downward pointer at that index.
-        */
-        virtual void getDownPtr(node_address addr, int ind, float& ev,
+        virtual void getDownPtr(node_address addr, int ind, edge_value& ev,
             node_handle& dn) const = 0;
 
 
