@@ -33,13 +33,6 @@
 // #define DEBUG_REHASH
 // #define DEBUG_CT
 
-#define USE_NEW_TEMPLATE
-
-#ifndef USE_NEW_TEMPLATE
-#include "ct_typebased.h"
-#include "ct_none.h"
-#endif
-
 // #define HASHARRAY_SIMPLE
 
 // ***************************************************************************
@@ -2920,7 +2913,6 @@ MEDDLY::monolithic_chained_style::monolithic_chained_style()
 MEDDLY::compute_table*
 MEDDLY::monolithic_chained_style::create(const ct_settings &s) const
 {
-#ifdef USE_NEW_TEMPLATE
     switch (s.compression) {
         case compressionOption::None:
             if (s.allowHugeTables)
@@ -2937,16 +2929,6 @@ MEDDLY::monolithic_chained_style::create(const ct_settings &s) const
         default:
                 return 0;
     }
-#else
-    switch (s.compression) {
-        case compressionOption::None:
-                return new ct_none<true, true>(s, 0, 0);
-        case compressionOption::TypeBased:
-                return new ct_typebased<true, true>(s, 0, 0);
-        default:
-                return 0;
-    }
-#endif
 }
 
 // **********************************************************************
@@ -2964,7 +2946,6 @@ MEDDLY::monolithic_unchained_style::monolithic_unchained_style()
 MEDDLY::compute_table*
 MEDDLY::monolithic_unchained_style::create(const ct_settings &s) const
 {
-#ifdef USE_NEW_TEMPLATE
     switch (s.compression) {
         case compressionOption::None:
             if (s.allowHugeTables)
@@ -2981,16 +2962,6 @@ MEDDLY::monolithic_unchained_style::create(const ct_settings &s) const
         default:
                 return nullptr;
     }
-#else
-    switch (s.compression) {
-        case compressionOption::None:
-                return new ct_none<true, false>(s, 0, 0);
-        case compressionOption::TypeBased:
-                return new ct_typebased<true, false>(s, 0, 0);
-        default:
-                return nullptr;
-    }
-#endif
 }
 
 // **********************************************************************
@@ -3008,7 +2979,6 @@ MEDDLY::compute_table*
 MEDDLY::operation_chained_style::create(const ct_settings &s, unsigned etid)
    const
 {
-#ifdef USE_NEW_TEMPLATE
     switch (s.compression) {
         case compressionOption::None:
             if (s.allowHugeTables)
@@ -3025,16 +2995,6 @@ MEDDLY::operation_chained_style::create(const ct_settings &s, unsigned etid)
         default:
             return nullptr;
     }
-#else
-    switch (s.compression) {
-        case compressionOption::None:
-                return new ct_none<false, true>(s, op, slot);
-        case compressionOption::TypeBased:
-                return new ct_typebased<false, true>(s, op, slot);
-        default:
-                return nullptr;
-    }
-#endif
 }
 
 // **********************************************************************
@@ -3053,7 +3013,6 @@ MEDDLY::compute_table*
 MEDDLY::operation_unchained_style::create(const ct_settings &s, unsigned etid)
    const
 {
-#ifdef USE_NEW_TEMPLATE
     switch (s.compression) {
         case compressionOption::None:
             if (s.allowHugeTables)
@@ -3070,15 +3029,5 @@ MEDDLY::operation_unchained_style::create(const ct_settings &s, unsigned etid)
         default:
                 return nullptr;
     }
-#else
-    switch (s.compression) {
-        case compressionOption::None:
-                return new ct_none<false, false>(s, op, slot);
-        case compressionOption::TypeBased:
-                return new ct_typebased<false, false>(s, op, slot);
-        default:
-                return nullptr;
-    }
-#endif
 }
 
