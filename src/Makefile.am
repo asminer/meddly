@@ -144,9 +144,7 @@ libmeddly_la_SOURCES = \
     \
     storage/best.h              storage/best.cc \
     storage/bytepack.h          \
-    storage/ct_none.h           \
     storage/ct_styles.h         storage/ct_styles.cc \
-    storage/ct_typebased.h      \
     storage/init_storage.h      storage/init_storage.cc \
     storage/pattern.h           storage/pattern.cc \
     storage/simple.h            storage/simple.cc
