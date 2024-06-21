@@ -24,8 +24,8 @@
 
 MEDDLY::
 numerical_operation::
-numerical_operation(const char* name, unsigned et_slots)
-    : operation(name, et_slots)
+numerical_operation(const char* name)
+    : operation(name)
 {
 }
 

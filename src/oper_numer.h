@@ -37,7 +37,7 @@ namespace MEDDLY {
 */
 class MEDDLY::numerical_operation : public operation {
     public:
-        numerical_operation(const char* name, unsigned et_slots);
+        numerical_operation(const char* name);
     protected:
         virtual ~numerical_operation();
     public:
