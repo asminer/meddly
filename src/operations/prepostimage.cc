@@ -1041,7 +1041,7 @@ MEDDLY::covtcmxd::covtcmxd(binary_opname* oc, expert_forest* a1,
 void MEDDLY::covtcmxd
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
 {
-    printf("INSIDE COVTCMXD computeDDEdge\n");
+    // printf("INSIDE COVTCMXD computeDDEdge\n");
   node_handle cnode;
   if (a.getForest() == argV) {
 #ifdef TRACE_ALL_OPS
@@ -1066,7 +1066,7 @@ void MEDDLY::covtcmxd
 void MEDDLY::covtcmxd::compute(node_handle a, node_handle b,node_handle& c)
 {
   MEDDLY_DCASSERT(accumulateOp);
-  printf("INSIDE COVTCMXD compute\n" );
+  // printf("INSIDE COVTCMXD compute\n" );
   RV above=E;
   compute_rec(a, b,c,above);
 }
@@ -1646,7 +1646,7 @@ MEDDLY::covtc::covtc(binary_opname* oc,
 
 void MEDDLY::covtc::compute_rec(node_handle cr, node_handle e, node_handle&res, RV& above)
 {
-    printf("COVTC START\n" );
+    // printf("COVTC START\n" );
 //   // termination conditions
   if (cr == 0 || e == 0) {
     res=0;

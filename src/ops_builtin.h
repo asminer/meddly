@@ -69,6 +69,8 @@ namespace MEDDLY {
 
     unary_opname* EXTRACTFROM();
 
+    unary_opname* EXTRACTCOVERED();
+
     // ******************************************************************
     // *                                                                *
     // *                    binary operation handles                    *

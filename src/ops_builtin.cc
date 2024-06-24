@@ -111,6 +111,7 @@ class MEDDLY::builtin_init : public initializer_list {
         static unary_opname* _MINRANGE;
         static unary_opname* _SELECT;
         static unary_opname* _EXTRACTFROM;
+        static unary_opname* _EXTRACTCOVERED;
     public:
         static binary_opname* _UNION;
         static binary_opname* _INTERSECT;
@@ -173,6 +174,7 @@ MEDDLY::unary_opname* MEDDLY::builtin_init::_MAXRANGE;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_MINRANGE;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_SELECT;
 MEDDLY::unary_opname* MEDDLY::builtin_init::_EXTRACTFROM;
+MEDDLY::unary_opname* MEDDLY::builtin_init::_EXTRACTCOVERED;
 
 MEDDLY::binary_opname* MEDDLY::builtin_init::_UNION;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_INTERSECT;
@@ -241,6 +243,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     _EQUANT     = nullptr;
     _SELECT     = nullptr;
     _EXTRACTFROM= nullptr;
+    _EXTRACTCOVERED=nullptr;
     //
     // Binary ops
     //
@@ -311,6 +314,7 @@ void MEDDLY::builtin_init::setup()
     _CYCLE      =   initializeCycle()       ;
     _SELECT     =   initializeSelect()      ;
     _EXTRACTFROM=   initializeExtractFrom() ;
+    _EXTRACTCOVERED=initializeExtractCovered();
     //
     // Binary ops
     //
@@ -383,6 +387,7 @@ void MEDDLY::builtin_init::cleanup()
     mydelete(_EQUANT);
     mydelete(_SELECT);
     mydelete(_EXTRACTFROM);
+    mydelete(_EXTRACTCOVERED);
     //
     // Binary ops
     //
@@ -475,6 +480,9 @@ MEDDLY::unary_opname* MEDDLY::SELECT() {
 }
 MEDDLY::unary_opname* MEDDLY::EXTRACTFROM(){
     return builtin_init::_EXTRACTFROM;
+}
+MEDDLY::unary_opname* MEDDLY::EXTRACTCOVERED(){
+    return builtin_init::_EXTRACTCOVERED;
 }
 
 // ******************************************************************

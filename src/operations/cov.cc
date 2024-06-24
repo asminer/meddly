@@ -156,6 +156,7 @@ binary_operation* mddImage;
 binary_operation* mrcc;
 binary_operation* covtc;
 unary_operation* covrExtractFrom;
+unary_operation* covrExtractCover;
 markcmp* cij;
 protected:
 binary_operation* mxdIntersection;
@@ -470,6 +471,12 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                                parent->covrExtractFrom->computeDDEdge(reachableStates,efrom,true);
                                printf("covrExtractFrom^^^\n" );
                                efrom.showGraph(meddlyout);
+                               dd_edge eefrom(argF);
+                               eefrom=efrom;
+                               eefrom.showGraph(meddlyout);
+                               printf("eefrom^^^\n" );
+                               dd_edge ecovered(resF);
+                               parent->covrExtractCover->computeDDEdge(eefrom,ecovered,parent->cij,true);
                                getchar();
                         }
                 }
@@ -518,6 +525,7 @@ MEDDLY::common_cov_by_events_mt::common_cov_by_events_mt(
         mrcc=0;
         covtc=0;
         covrExtractFrom=0;
+        covrExtractCover=0;
         mxdIntersection = 0;
         mxdDifference = 0;
         freeqs = 0;
@@ -578,6 +586,8 @@ void MEDDLY::common_cov_by_events_mt
         dd_edge efrom(resF);
         covrExtractFrom=getOperation(EXTRACTFROM,a,efrom);
         MEDDLY_DCASSERT(covrExtractFrom);
+        covrExtractCover=getOperation(EXTRACTCOVERED,a,efrom);
+        MEDDLY_DCASSERT(covrExtractCover);
         ostream_output meddlyout(std::cout);
 #ifdef DEBUG_INITIAL
         printf("Calling saturate for states:\n");
