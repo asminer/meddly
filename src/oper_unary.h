@@ -20,6 +20,7 @@
 #define MEDDLY_OPER_UNARY_H
 
 #include "oper.h"
+#include "markcmp.h"
 
 namespace MEDDLY {
     class dd_edge;
@@ -65,7 +66,8 @@ class MEDDLY::unary_operation : public operation {
     virtual void compute(const dd_edge &arg, double &res);
     virtual void compute(const dd_edge &arg, ct_object &c);
     virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
-
+    virtual void computeDDEdge(const dd_edge &arg, dd_edge &res,markcmp* cij
+    , bool userFlag){};
   protected:
     virtual bool checkForestCompatibility() const;
 
