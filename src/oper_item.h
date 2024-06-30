@@ -37,55 +37,43 @@ namespace MEDDLY {
 
 /**
     Items (with types) for operations.
-
-    TBD: decide on philosophy for mpz_t values, maybe
-        () It's always just a wrapper, we never "own" the mpz_t
-           so use pointers (maybe mpz_ptr type?)
-        () Use something like the old mpz_object but with reference counts
  */
 class MEDDLY::oper_item {
     public:
-        oper_item(opnd_type t = FOREST);
-        oper_item(int v);
+        oper_item(opnd_type t = opnd_type::FOREST);
         oper_item(long v);
         oper_item(double v);
 #ifdef HAVE_GMP
         oper_item(mpz_ptr v);
 #endif
 
-        ~oper_item();
-
         //
         // getters for the type
         //
 
         inline opnd_type getType() const {
-            return type;
+            return mytype;
         }
         inline bool hasType(opnd_type t) const {
-            return t == type;
+            return t == mytype;
         }
 
         //
         // getters for the value
         //
 
-        inline void get(int &v) const {
+        inline long getInteger() const {
             MEDDLY_DCASSERT(hasType(opnd_type::INTEGER));
-            v = the_int;
+            return the_long;
         }
-        inline void get(long &v) const {
-            MEDDLY_DCASSERT(hasType(opnd_type::LONG));
-            v = the_long;
-        }
-        inline void get(double &v) const {
-            MEDDLY_DCASSERT(hasType(opnd_type::DOUBLE));
-            v = the_double;
+        inline double getReal(double &v) const {
+            MEDDLY_DCASSERT(hasType(opnd_type::REAL));
+            return the_double;
         }
 #ifdef HAVE_GMP
-        inline void get(mpz_t &v) const {
+        inline mpz_ptr getHugeint(mpz_t &v) const {
             MEDDLY_DCASSERT(hasType(opnd_type::HUGEINT));
-            mpz_set(v, the_mpz);
+            return the_mpz;
         }
 #endif
 
@@ -100,7 +88,6 @@ class MEDDLY::oper_item {
 
     private:
         union {
-            int         the_int;
             long        the_long;
             double      the_double;
 #ifdef HAVE_GMP

@@ -21,12 +21,15 @@
 #endif
 #include "../defines.h"
 #include "cardinality.h"
-#include "mpz_object.h"
 
+#include "mpz_object.h"
 #include "../ct_entry_key.h"
 #include "../ct_entry_result.h"
-#include "../compute_table.h"
+
+// #include "../compute_table.h"
+#include "../oper_item.h"
 #include "../oper_unary.h"
+#include "../ct_vector.h"
 
 // #define DEBUG_CARD
 
@@ -48,11 +51,197 @@ namespace MEDDLY {
     unary_list CARD_cache;
 };
 
+// #define TRACE
+
+#ifdef TRACE
+#include "../operators.h"
+#endif
+
+
 // ******************************************************************
 // *                                                                *
 // *                                                                *
 // *                        Card  operations                        *
 // *                                                                *
+// *                                                                *
+// ******************************************************************
+
+/*
+    Required methods for RTYPE classes (should be inlined):
+
+        /// Get the operand type
+        static opnd_type getOpndType();
+
+        /// Return the compute table letter for the type
+        static char getCTletter();
+
+        /// Sets result = val
+        static void set(oper_item &result, int val);
+
+        /// Sets result from a compute table item
+        static void set(oper_item &result, const ct_item &cached);
+
+        /// Sets a compute table item from the result
+        static void set(ct_item &cached, const oper_item &result);
+
+        /// Sets result *= scalar
+        static void scaleBy(oper_item &result, int scalar);
+
+        /// Sets result += val
+        static void addTo(oper_item &result, const oper_item &val);
+
+        /// Temporary value at level k
+        static oper_item& temp(int k);
+
+
+ */
+
+// ******************************************************************
+// *                                                                *
+// *                    card_mdd  template class                    *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class RTYPE>
+    class card_mdd : public unary_operation {
+        public:
+            card_mdd(forest* arg);
+            virtual ~card_mdd();
+
+            virtual void compute(int L, const edge_value &av, node_handle ap,
+                    oper_item &result);
+
+        protected:
+            void _compute(int L, node_handle A, oper_item &result);
+
+        private:
+            ct_entry_type* ct;
+#ifdef TRACE
+            ostream_output out;
+#endif
+    };
+};
+
+// ******************************************************************
+
+template <class RTYPE>
+MEDDLY::card_mdd<RTYPE>::card_mdd(forest* arg)
+    : unary_operation(arg, RTYPE::getOpndType())
+#ifdef TRACE
+      , out(std::cout)
+#endif
+{
+    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllRanges(__FILE__, __LINE__, range_type::BOOLEAN);
+
+    ct = new ct_entry_type("mdd_cardinality");
+    ct->setFixed(arg);
+    ct->setResult(RTYPE::getCTletter());
+    ct->doneBuilding();
+}
+
+template <class RTYPE>
+MEDDLY::card_mdd<RTYPE>::~card_mdd()
+{
+    ct->markForDestroy();
+}
+
+template <class RTYPE>
+void MEDDLY::card_mdd<RTYPE>::compute(int L, const edge_value &av,
+        node_handle ap, oper_item &result)
+{
+    MEDDLY_DCASSERT(result.hasType(RTYPE::getOpndType()));
+#ifdef TRACE
+    out.indentation(0);
+#endif
+    _compute(L, ap, result);
+}
+
+template <class RTYPE>
+void MEDDLY::card_mdd<RTYPE>::_compute(int L, node_handle A, oper_item &result)
+{
+    //
+    // Terminal cases
+    //
+    if (0==A) {
+        RTYPE::set(result, 0);
+        return;
+    }
+    if (0==L) {
+        RTYPE::set(result, 1);
+        return;
+    }
+
+    //
+    // Quickly deal with skipped levels
+    //
+    if (argF->getNodeLevel(A) < L) {
+        _compute(L-1, A, result);
+        RTYPE::scaleBy(result, argF->getLevelSize(L));
+        return;
+    }
+
+#ifdef TRACE
+    out << "card_mdd::_compute(" << L << ", " << A << ")\n";
+#endif
+
+    //
+    // Check compute table
+    //
+    ct_vector key(1);
+    ct_vector res(1);
+    key[0].setN(A);
+    if (ct->findCT(key, res)) {
+        RTYPE::set(result, res[0]);
+#ifdef TRACE
+        out << "  CT hit: ";
+        RTYPE::show(out, result);
+        out << '\n';
+#endif
+        return;
+    }
+
+    //
+    // Do computation
+    //
+    unpacked_node* Au = argF->newUnpacked(A, SPARSE_ONLY);
+
+#ifdef TRACE
+    out.indent_more();
+    out.put('\n');
+#endif
+    RTYPE::set(result, 0);
+    for (unsigned z=0; z<Au->getSize(); z++) {
+        _compute(L-1, Au->down(z), RTYPE::temp(L-1));
+        RTYPE::addTo(result, RTYPE::temp(L-1));
+    }
+#ifdef TRACE
+    out.indent_less();
+    out.put('\n');
+    out << "card_mdd::_compute(" << L << ", " << A << ") = ";
+    RTYPE::show(out, result);
+    out << '\n';
+#endif
+
+    //
+    // Cleanup
+    //
+    unpacked_node::Recycle(Au);
+
+    //
+    // Save result in CT
+    //
+    RTYPE::set(res[0], result);
+    ct->addCT(key, res);
+}
+
+// ******************************************************************
+// ******************************************************************
+// ******************************************************************
+// ******************************************************************
+// *                                                                *
+// *                       OLD IMPLEMENTATION                       *
 // *                                                                *
 // ******************************************************************
 

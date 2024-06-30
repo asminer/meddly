@@ -23,7 +23,8 @@
 #include "forest.h"
 
 namespace MEDDLY {
-    class ct_object;
+    class ct_object;    // TBD: remove
+    class oper_item;
     class unary_operation;
     class unary_list;
     class forest;
@@ -59,6 +60,14 @@ class MEDDLY::unary_operation : public operation {
         */
         unary_operation(forest* arg, forest* res);
 
+        /** New constructor for a unary op that returns a DD.
+            Compute table entry information is managed 'by hand'
+            in the derived class.
+                @param  arg     Forest containing the argument.
+
+                @param  res     Type of the result; should NOT be FOREST.
+        */
+        unary_operation(forest* arg, opnd_type res);
 
     protected:
         virtual ~unary_operation();
@@ -165,6 +174,14 @@ class MEDDLY::unary_operation : public operation {
                 int L,
                 edge_value &cv, node_handle &cp);
 
+        /**
+            New virtual compute method for all other result types.
+                @param  av      Edge value for operand
+                @param  ap      Node for operand
+                @param  res     Result of the operation is stored here.
+         */
+        virtual void compute(const edge_value &av, node_handle ap,
+                oper_item &res);
 
     protected:
         inline bool checkForestCompatibility() const

@@ -16,6 +16,14 @@ Updates to operation interface:
 
     * Allow (back) low-level interface
 
+TBD:
+    can we use ct_item in place of oper_item?
+
+    otherwise we will need
+
+        ct_item -> oper_item
+        oper_item -> ct_item
+
 
 NEW FILE?
 

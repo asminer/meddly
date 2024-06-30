@@ -253,13 +253,18 @@ class MEDDLY::diffr_mxd : public binary_operation {
 
         bool force_by_levels;
 
+#ifdef TRACE
         ostream_output out;
+#endif
 };
 
 // ******************************************************************
 
 MEDDLY::diffr_mxd::diffr_mxd(forest* arg1, forest* arg2, forest* res)
-  : binary_operation(arg1, arg2, res), out(std::cout)
+  : binary_operation(arg1, arg2, res)
+#ifdef TRACE
+    , out(std::cout)
+#endif
 {
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__, RELATION);
@@ -322,7 +327,9 @@ void MEDDLY::diffr_mxd::compute(const edge_value &av, node_handle ap,
     MEDDLY_DCASSERT(av.isVoid());
     MEDDLY_DCASSERT(bv.isVoid());
     cv.set();
+#ifdef TRACE
     out.indentation(0);
+#endif
     cp = _compute(ap, bp, L);
 }
 

@@ -153,6 +153,13 @@ void MEDDLY::unary_operation::compute(const edge_value &av, node_handle ap,
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
+void MEDDLY::unary_operation::compute(const edge_value &av, node_handle ap,
+                oper_item &res)
+{
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+
 // ******************************************************************
 // *                       unary_list methods                       *
 // ******************************************************************
