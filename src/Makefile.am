@@ -50,6 +50,7 @@ libmeddly_la_SOURCES = \
     node_storage.h          node_storage.cc \
     oper.h                  oper.cc \
     oper_binary.h           oper_binary.cc \
+    oper_item.h             oper_item.cc \
     oper_numer.h            oper_numer.cc \
     oper_satur.h            oper_satur.cc \
     oper_ternary.h          oper_ternary.cc \
