@@ -20,6 +20,7 @@
 #define MEDDLY_OPER_UNARY_H
 
 #include "oper.h"
+#include "oper_item.h"
 #include "forest.h"
 
 namespace MEDDLY {
@@ -176,12 +177,22 @@ class MEDDLY::unary_operation : public operation {
 
         /**
             New virtual compute method for all other result types.
+                @param  L       Level we want ap to be at.
                 @param  av      Edge value for operand
                 @param  ap      Node for operand
                 @param  res     Result of the operation is stored here.
          */
-        virtual void compute(const edge_value &av, node_handle ap,
+        virtual void compute(int L, const edge_value &av, node_handle ap,
                 oper_item &res);
+
+#ifdef HAVE_LIBGMP
+        inline void compute(const dd_edge &arg, mpz_ptr v) {
+            oper_item tmp(v);
+            compute(argF->getMaxLevelIndex(), arg.getEdgeValue(),
+                    arg.getNode(), tmp);
+        }
+#endif
+
 
     protected:
         inline bool checkForestCompatibility() const
@@ -347,7 +358,7 @@ namespace MEDDLY {
         uop->compute(a, c);
     }
 
-#ifdef __GMP_H__
+#ifdef HAVE_LIBGMP
     /** Apply a unary operator.
         For operators whose result is an arbitrary-precision integer
         (as supplied by the GNU MP library).
@@ -356,12 +367,10 @@ namespace MEDDLY {
             @param  c   Input: an initialized MP integer.
                         Output: the result, where \a c = \a op \a a.
     */
-    inline void apply(unary_builtin2 bu, const dd_edge &a, mpz_t &c)
+    inline void apply(unary_builtin2 bu, const dd_edge &a, mpz_ptr c)
     {
-        ct_object& x = get_mpz_wrapper();
         unary_operation* uop = bu(a.getForest(), opnd_type::HUGEINT);
-        uop->compute(a, x);
-        unwrap(x, c);
+        uop->compute(a, c);
     }
 #endif
 

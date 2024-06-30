@@ -26,21 +26,21 @@ MEDDLY::oper_item::oper_item(opnd_type t)
 
 MEDDLY::oper_item::oper_item(long v)
 {
-    mytype = opnd_type::INTEGER;
-    the_long = v;
+    mytype = opnd_type::FOREST;
+    init(v);
 }
 
 MEDDLY::oper_item::oper_item(double v)
 {
-    mytype = opnd_type::REAL;
-    the_double = v;
+    mytype = opnd_type::FOREST;
+    init(v);
 }
 
-#ifdef HAVE_GMP
+#ifdef HAVE_LIBGMP
 MEDDLY::oper_item::oper_item(mpz_ptr v)
 {
-    mytype = opnd_type::HUGEINT;
-    the_mpz = v;
+    mytype = opnd_type::FOREST;
+    init(v);
 }
 #endif
 

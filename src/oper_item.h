@@ -43,8 +43,31 @@ class MEDDLY::oper_item {
         oper_item(opnd_type t = opnd_type::FOREST);
         oper_item(long v);
         oper_item(double v);
-#ifdef HAVE_GMP
+#ifdef HAVE_LIBGMP
         oper_item(mpz_ptr v);
+#endif
+        //
+        // Delayed initialization
+        //
+
+        inline void init(long v) {
+            MEDDLY_DCASSERT(mytype == opnd_type::FOREST);
+            mytype = opnd_type::INTEGER;
+            the_long = v;
+        }
+
+        inline void init(double v) {
+            MEDDLY_DCASSERT(mytype == opnd_type::FOREST);
+            mytype = opnd_type::REAL;
+            the_double = v;
+        }
+
+#ifdef HAVE_LIBGMP
+        inline void init(mpz_ptr v) {
+            MEDDLY_DCASSERT(mytype == opnd_type::FOREST);
+            mytype = opnd_type::HUGEINT;
+            the_mpz = v;
+        }
 #endif
 
         //
@@ -66,12 +89,32 @@ class MEDDLY::oper_item {
             MEDDLY_DCASSERT(hasType(opnd_type::INTEGER));
             return the_long;
         }
-        inline double getReal(double &v) const {
+        inline double getReal() const {
             MEDDLY_DCASSERT(hasType(opnd_type::REAL));
             return the_double;
         }
-#ifdef HAVE_GMP
-        inline mpz_ptr getHugeint(mpz_t &v) const {
+#ifdef HAVE_LIBGMP
+        inline mpz_ptr getHugeint() const {
+            MEDDLY_DCASSERT(hasType(opnd_type::HUGEINT));
+            return the_mpz;
+        }
+#endif
+
+        //
+        // value access
+        //
+
+        inline long& integer() {
+            MEDDLY_DCASSERT(hasType(opnd_type::INTEGER));
+            return the_long;
+        }
+
+        inline double& real() {
+            MEDDLY_DCASSERT(hasType(opnd_type::REAL));
+            return the_double;
+        }
+#ifdef HAVE_LIBGMP
+        inline mpz_ptr hugeint() {
             MEDDLY_DCASSERT(hasType(opnd_type::HUGEINT));
             return the_mpz;
         }
@@ -90,7 +133,7 @@ class MEDDLY::oper_item {
         union {
             long        the_long;
             double      the_double;
-#ifdef HAVE_GMP
+#ifdef HAVE_LIBGMP
             mpz_ptr     the_mpz;
 #endif
         };

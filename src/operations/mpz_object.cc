@@ -33,16 +33,19 @@
 // ******************************************************************
 
 MEDDLY::mpz_object::mpz_object()
+    : ct_object(opnd_type::HUGEINT)
 {
     mpz_init(value);
 }
 
 MEDDLY::mpz_object::mpz_object(const mpz_t &v)
+    : ct_object(opnd_type::HUGEINT)
 {
     mpz_init_set(value, v);
 }
 
 MEDDLY::mpz_object::mpz_object(const mpz_object &x)
+    : ct_object(opnd_type::HUGEINT)
 {
     mpz_init_set(value, x.value);
 }
@@ -51,11 +54,6 @@ MEDDLY::mpz_object::mpz_object(const mpz_object &x)
 MEDDLY::mpz_object::~mpz_object()
 {
     mpz_clear(value);
-}
-
-MEDDLY::opnd_type MEDDLY::mpz_object::getType()
-{
-    return opnd_type::HUGEINT;
 }
 
 void MEDDLY::mpz_object::show(output &strm) const

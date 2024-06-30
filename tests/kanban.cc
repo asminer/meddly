@@ -50,7 +50,7 @@ long expected[] = {
 };
 
 const int nstart = 1;
-const int nstop = 1; // 10;
+const int nstop = 10;
 
 using namespace MEDDLY;
 
@@ -115,34 +115,50 @@ long buildReachset(int N, bool useSat)
 
 int main()
 {
-  MEDDLY::initialize();
+    try {
+        MEDDLY::initialize();
 
-  printf("Building Kanban reachability sets, using saturation\n");
-  for (int n=nstart; n<=nstop; n++) {
-    printf("N=%2d:  ", n);
-    fflush(stdout);
-    long c = buildReachset(n, true);
-    printf("%12ld states\n", c);
-    if (c != expected[n]) {
-      printf("Wrong number of states!\n");
-      return 1;
+        printf("Building Kanban reachability sets, using saturation\n");
+        for (int n=nstart; n<=nstop; n++) {
+            printf("N=%2d:  ", n);
+            fflush(stdout);
+            long c = buildReachset(n, true);
+            printf("%12ld states\n", c);
+            if (c != expected[n]) {
+                printf("Wrong number of states!\n");
+                return 1;
+            }
+        }
+
+        printf("Building Kanban reachability sets, using traditional iteration\n");
+        for (int n=nstart; n<=nstop; n++) {
+            printf("N=%2d:  ", n);
+            fflush(stdout);
+            long c = buildReachset(n, false);
+            printf("%12ld states\n", c);
+            if (c != expected[n]) {
+                printf("Wrong number of states!\n");
+                return 1;
+            }
+        }
+
+        MEDDLY::cleanup();
+        printf("Done\n");
+        return 0;
     }
-  }
 
-  printf("Building Kanban reachability sets, using traditional iteration\n");
-  for (int n=nstart; n<=nstop; n++) {
-    printf("N=%2d:  ", n);
-    fflush(stdout);
-    long c = buildReachset(n, false);
-    printf("%12ld states\n", c);
-    if (c != expected[n]) {
-      printf("Wrong number of states!\n");
-      return 1;
+    catch (MEDDLY::error e) {
+        fprintf(stderr,
+                "\nCaught meddly error '%s'\n    thrown in %s line %u\n",
+                e.getName(), e.getFile(), e.getLine()
+        );
+        return 1;
     }
-  }
-
-  MEDDLY::cleanup();
-  printf("Done\n");
-  return 0;
+    catch (const char* e) {
+        fprintf(stderr, "\nCaught our own error: %s\n", e);
+        return 2;
+    }
+    fprintf(stderr, "\nSome other error?\n");
+    return 4;
 }
 

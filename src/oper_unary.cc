@@ -74,6 +74,21 @@ MEDDLY::unary_operation::unary_operation(forest* arg, forest* res)
 #endif
 }
 
+MEDDLY::unary_operation::unary_operation(forest* arg, opnd_type res)
+    : operation()
+{
+    parent = nullptr;
+
+    argF = arg;
+    resultType = res;
+    resF = nullptr;
+
+    registerInForest(argF);
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+    new_style = true;
+#endif
+}
 
 MEDDLY::unary_operation::~unary_operation()
 {
@@ -132,12 +147,28 @@ void MEDDLY::unary_operation::computeDDEdge(const dd_edge &arg, dd_edge &res, bo
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, long &res)
 {
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    if (new_style) {
+        oper_item tmp(res);
+        compute(argF->getMaxLevelIndex(),
+                arg.getEdgeValue(), arg.getNode(),
+                tmp);
+        res = tmp.integer();
+    } else {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
 }
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, double &res)
 {
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    if (new_style) {
+        oper_item tmp(res);
+        compute(argF->getMaxLevelIndex(),
+                arg.getEdgeValue(), arg.getNode(),
+                tmp);
+        res = tmp.real();
+    } else {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
 }
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
@@ -153,8 +184,8 @@ void MEDDLY::unary_operation::compute(const edge_value &av, node_handle ap,
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::unary_operation::compute(const edge_value &av, node_handle ap,
-                oper_item &res)
+void MEDDLY::unary_operation::compute(int L, const edge_value &av,
+                node_handle ap, oper_item &res)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }

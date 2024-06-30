@@ -21,7 +21,6 @@
 
 #include "defines.h"
 #include "edge_value.h"
-#include "oper.h" // for  opnd_type in ct_object
 #include "forest.h"
 #include "compute_table.h"
 
@@ -269,28 +268,6 @@ class MEDDLY::ct_itemtype {
         bool        twoslots;
         bool        should_hash;
 };
-
-// ******************************************************************
-// *                                                                *
-// *                         ct_object class                        *
-// *                                                                *
-// ******************************************************************
-
-// TBD move this
-//
-/** Generic objects in compute tables.
-    Used for things other than dd_edges and simple types.
-*/
-class MEDDLY::ct_object {
-    public:
-        ct_object();
-        virtual ~ct_object();
-        virtual opnd_type getType() = 0;
-
-        // Default behavior: show 'this' pointer
-        virtual void show(output &s) const;
-};
-
 
 // ******************************************************************
 // *                                                                *
