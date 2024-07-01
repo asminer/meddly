@@ -21,31 +21,6 @@
 #include "ct_entry_result.h"
 #include "compute_table.h"
 #include "ct_initializer.h"
-#include "operations/mpz_object.h"  // for mpz wrapper
-
-// ******************************************************************
-// *                                                                *
-// *                     gmp  wrapper functions                     *
-// *                                                                *
-// ******************************************************************
-
-#ifdef HAVE_LIBGMP
-
-MEDDLY::ct_object& MEDDLY::get_mpz_wrapper()
-{
-    static MEDDLY::mpz_object foo;
-    return foo;
-}
-
-void MEDDLY::unwrap(const ct_object &x, mpz_t &value)
-{
-    using namespace MEDDLY;
-    const mpz_object &mx = static_cast <const mpz_object &> (x);
-    mx.copyInto(value);
-}
-
-#endif
-
 
 // ******************************************************************
 // *                       operation  statics                       *

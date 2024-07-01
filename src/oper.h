@@ -24,10 +24,6 @@
 
 #include <vector>
 
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
-#endif
-
 namespace MEDDLY {
     class operation;
     class compute_table;
@@ -37,8 +33,6 @@ namespace MEDDLY {
     class ct_initializer;
     class ct_entry_type;
     class ct_entry_result;
-    class ct_object;
-
 
     /// Argument and result types for apply operations.
     enum class opnd_type {
@@ -46,20 +40,8 @@ namespace MEDDLY {
         BOOLEAN     = 1,
         INTEGER     = 2,
         REAL        = 3,
-        HUGEINT     = 4,
-        FLOATVECT   = 5,
-        DOUBLEVECT  = 6
+        HUGEINT     = 4
     };
-
-    // ******************************************************************
-    // *                    Wrapper for GMP integers                    *
-    // ******************************************************************
-
-#ifdef HAVE_LIBGMP
-    ct_object& get_mpz_wrapper();
-    void unwrap(const ct_object &, mpz_t &value);
-#endif
-
 };
 
 // ******************************************************************

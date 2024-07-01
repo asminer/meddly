@@ -116,7 +116,6 @@ libmeddly_la_SOURCES = \
     operations/minus.h                  operations/minus.cc        \
     operations/mm_mult.h                operations/mm_mult.cc      \
     operations/modulo.h                 operations/modulo.cc       \
-    operations/mpz_object.h             operations/mpz_object.cc   \
     operations/multiply.h               operations/multiply.cc     \
     operations/plus.h                   operations/plus.cc         \
     operations/prepostimage.h           operations/prepostimage.cc \
