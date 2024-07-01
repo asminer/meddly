@@ -104,6 +104,7 @@ void showCard(const oper_item &x, const char* what)
     char* str = new char[digits];
     mpz_get_str(str, 10, x.getHugeint());
     cout << "Exactly " << str << ' ' << what << endl;
+    delete[] str;
     return;
 #endif
     throw "unknown cardinality type";
