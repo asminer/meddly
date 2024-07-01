@@ -413,7 +413,7 @@ class MEDDLY::ct_item {
         }
         */
 
-    public: // displaying
+    public: // miscellaneous
 
         void show(output &s) const;
 

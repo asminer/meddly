@@ -255,11 +255,10 @@ void MEDDLY::compute_table::doneStatics()
 #ifdef DEBUG_CLEANUP
         std::cout << "Destroying monolithic CT " << Monolithic_CT << "\n";
 #endif
-//        Monolithic_CT->removeAll();
-//
-//        ^ This shouldn't be necessary, since we're tearing down the
-//        entire library, which means we're deleting all forests.
-//
+        if (ct_entry_type::mightHaveCTObjects()) {
+            Monolithic_CT->removeAll();
+        }
+
         delete Monolithic_CT;
         Monolithic_CT = nullptr;
     }

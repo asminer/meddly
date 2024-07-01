@@ -26,6 +26,7 @@
 #include "../ct_entry_key.h"
 #include "../ct_entry_result.h"
 #include "../ct_vector.h"
+#include "../ct_generics.h"
 #include "../ct_initializer.h"
 #include "../operators.h"
 
@@ -2559,12 +2560,21 @@ void MEDDLY::ct_tmpl<TTYPE,M,C,I>::deleteEntry(TTYPE &h)
                 item.uncacheNode( ctptr->N );
                 ++ctptr;
             }
-        } else {
+            continue;
+        }
+        if (item.hasType(ct_typeID::GENERIC)) {
             if (I) {
-                uptr += item.intslots();
+                ct_item x;
+                x.set(ct_typeID::GENERIC, uptr);
+                delete x.getG();
             } else {
-                ++ctptr;
+                delete ctptr->G;
             }
+        }
+        if (I) {
+            uptr += item.intslots();
+        } else {
+            ++ctptr;
         }
     } // for i
 
@@ -2581,12 +2591,21 @@ void MEDDLY::ct_tmpl<TTYPE,M,C,I>::deleteEntry(TTYPE &h)
                 item.uncacheNode( ctptr->N );
                 ++ctptr;
             }
-        } else {
+            continue;
+        }
+        if (item.hasType(ct_typeID::GENERIC)) {
             if (I) {
-                uptr += item.intslots();
+                ct_item x;
+                x.set(ct_typeID::GENERIC, uptr);
+                delete x.getG();
             } else {
-                ++ctptr;
+                delete ctptr->G;
             }
+        }
+        if (I) {
+            uptr += item.intslots();
+        } else {
+            ++ctptr;
         }
     } // for i
 

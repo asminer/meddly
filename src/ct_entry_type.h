@@ -778,6 +778,12 @@ class MEDDLY::ct_entry_type {
 #endif
         }
 
+        /**
+            Check if ANY registered entry type uses a ct_object.
+            If so, we must clean the monolithic compute table.
+         */
+        static bool mightHaveCTObjects();
+
 
     private:
         // ***************************************************************
@@ -832,6 +838,9 @@ class MEDDLY::ct_entry_type {
 
         /// Return true if the entry has some valid forest
         bool hasValidForest() const;
+
+        /// Return true if an entry might have a ct_object
+        bool hasCTObject() const;
 
         /// Set counts; build CT.
         void buildCT();

@@ -131,7 +131,7 @@ MEDDLY::ct_entry_type::~ct_entry_type()
     if (CT) {
         if (CT_is_ours) {
             MEDDLY_DCASSERT(CT->isOperationTable());
-            if (hasValidForest()) {
+            if (hasValidForest() || hasCTObject()) {
                 // We must carefully remove elements
                 CT->removeAll();
             }
@@ -484,6 +484,16 @@ void MEDDLY::ct_entry_type::showAll(output &s)
     }
 }
 
+bool MEDDLY::ct_entry_type::mightHaveCTObjects()
+{
+    for (unsigned i=0; i<all_entries.size(); i++) {
+        if (!all_entries[i]) continue;
+        if (!all_entries[i]->numEntries) continue;
+        if (all_entries[i]->hasCTObject()) return true;
+    }
+    return false;
+}
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Private helpers
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -504,6 +514,20 @@ bool MEDDLY::ct_entry_type::hasValidForest() const
     }
     for (unsigned i=0; i<result.size(); i++) {
         if (result[i].rawForest()) return true;
+    }
+    return false;
+}
+
+bool MEDDLY::ct_entry_type::hasCTObject() const
+{
+    for (unsigned i=0; i<key_fixed.size(); i++) {
+        if (key_fixed[i].hasType(ct_typeID::GENERIC)) return true;
+    }
+    for (unsigned i=0; i<key_repeating.size(); i++) {
+        if (key_repeating[i].hasType(ct_typeID::GENERIC)) return true;
+    }
+    for (unsigned i=0; i<result.size(); i++) {
+        if (result[i].hasType(ct_typeID::GENERIC)) return true;
     }
     return false;
 }
