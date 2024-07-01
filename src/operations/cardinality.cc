@@ -84,7 +84,7 @@ namespace MEDDLY {
         static char getCTletter();
 
         /// Sets result = val
-        static void set(oper_item &result, int val);
+        static void set(oper_item &result, long val);
 
         /// Sets result from a compute table item
         static void set(oper_item &result, const ct_item &cached);
@@ -93,7 +93,7 @@ namespace MEDDLY {
         static void set(ct_item &cached, const oper_item &result);
 
         /// Sets result *= scalar
-        static void scaleBy(oper_item &result, int scalar);
+        static void scaleBy(oper_item &result, long scalar);
 
         /// Sets result += val
         static void addTo(oper_item &result, const oper_item &val);
@@ -186,7 +186,7 @@ void MEDDLY::card_mdd<RTYPE>::_compute(int L, node_handle A, oper_item &result)
     //
     // Quickly deal with skipped levels
     //
-    if (argF->getNodeLevel(A) < L) {
+    if (argF->getNodeLevel(A) != L) {
         _compute(L-1, A, result);
         RTYPE::scaleBy(result, argF->getLevelSize(L));
         return;
@@ -255,9 +255,146 @@ void MEDDLY::card_mdd<RTYPE>::_compute(int L, node_handle A, oper_item &result)
 // *                                                                *
 // ******************************************************************
 
-// TBD
+namespace MEDDLY {
+    template <class RTYPE>
+    class card_mxd : public unary_operation {
+        public:
+            card_mxd(forest* arg);
+            virtual ~card_mxd();
+
+            virtual void compute(int L, const edge_value &av, node_handle ap,
+                    oper_item &result);
+
+        protected:
+            void _compute(int L, node_handle A, oper_item &result);
+
+        private:
+            ct_entry_type* ct;
+#ifdef TRACE
+            ostream_output out;
+#endif
+    };
+};
 
 // ******************************************************************
+
+template <class RTYPE>
+MEDDLY::card_mxd<RTYPE>::card_mxd(forest* arg)
+    : unary_operation(arg, RTYPE::getOpndType())
+#ifdef TRACE
+      , out(std::cout)
+#endif
+{
+    ct = new ct_entry_type("mxd_cardinality");
+    ct->setFixed(arg);
+    ct->setResult(RTYPE::getCTletter());
+    ct->doneBuilding();
+}
+
+template <class RTYPE>
+MEDDLY::card_mxd<RTYPE>::~card_mxd()
+{
+    ct->markForDestroy();
+}
+
+template <class RTYPE>
+void MEDDLY::card_mxd<RTYPE>::compute(int L, const edge_value &av,
+        node_handle ap, oper_item &result)
+{
+    MEDDLY_DCASSERT(result.hasType(RTYPE::getOpndType()));
+#ifdef TRACE
+    out.indentation(0);
+#endif
+    _compute(L, ap, result);
+}
+
+template <class RTYPE>
+void MEDDLY::card_mxd<RTYPE>::_compute(int L, node_handle A, oper_item &result)
+{
+    //
+    // Terminal cases
+    //
+    if (0==A) {
+        RTYPE::set(result, 0);
+        return;
+    }
+    if (0==L) {
+        RTYPE::set(result, 1);
+        return;
+    }
+
+    const int Ldn = argF->downLevel(L);
+    //
+    // Quickly deal with skipped levels
+    //
+    if (argF->getNodeLevel(A) != L) {
+        _compute(Ldn, A, result);
+        //
+        // Unprimed level: multiply by variable size
+        // Primed level:   multiply by variable size if we're fully reduced
+        //
+        if (L>0 || argF->isFullyReduced()) {
+            RTYPE::scaleBy(result, argF->getLevelSize(L));
+        }
+        return;
+    }
+
+#ifdef TRACE
+    out << "card_mxd::_compute(" << L << ", " << A << ")\n";
+#endif
+
+    //
+    // Check compute table
+    //
+    ct_vector key(1);
+    ct_vector res(1);
+    key[0].setN(A);
+    if (ct->findCT(key, res)) {
+        RTYPE::set(result, res[0]);
+#ifdef TRACE
+        out << "  CT hit: ";
+        RTYPE::show(out, result);
+        out << '\n';
+#endif
+        return;
+    }
+
+    //
+    // Do computation
+    //
+    unpacked_node* Au = argF->newUnpacked(A, SPARSE_ONLY);
+
+#ifdef TRACE
+    out.indent_more();
+    out.put('\n');
+#endif
+    RTYPE::set(result, 0);
+    oper_item temp;
+    RTYPE::initTemp(temp);
+    for (unsigned z=0; z<Au->getSize(); z++) {
+        _compute(Ldn, Au->down(z), temp);
+        RTYPE::addTo(result, temp);
+    }
+    RTYPE::doneTemp(temp);
+#ifdef TRACE
+    out.indent_less();
+    out.put('\n');
+    out << "card_mxd::_compute(" << L << ", " << A << ") = ";
+    RTYPE::show(out, result);
+    out << '\n';
+#endif
+
+    //
+    // Cleanup
+    //
+    unpacked_node::Recycle(Au);
+
+    //
+    // Save result in CT
+    //
+    RTYPE::set(res[0], result);
+    ct->addCT(key, res);
+}
 
 
 // ******************************************************************
@@ -276,7 +413,7 @@ class MEDDLY::intcard {
             return 'L';
         }
 
-        static inline void set(oper_item &result, int val) {
+        static inline void set(oper_item &result, long val) {
             result.integer() = val;
         }
 
@@ -288,7 +425,7 @@ class MEDDLY::intcard {
             cached.setL(result.getInteger());
         }
 
-        static inline void scaleBy(oper_item &result, int scalar) {
+        static inline void scaleBy(oper_item &result, long scalar) {
             result.integer() *= scalar;
         }
 
@@ -325,7 +462,7 @@ class MEDDLY::realcard {
             return 'D';
         }
 
-        static inline void set(oper_item &result, int val) {
+        static inline void set(oper_item &result, long val) {
             result.real() = val;
         }
 
@@ -337,7 +474,7 @@ class MEDDLY::realcard {
             cached.setD(result.getReal());
         }
 
-        static inline void scaleBy(oper_item &result, int scalar) {
+        static inline void scaleBy(oper_item &result, long scalar) {
             result.real() *= scalar;
         }
 
@@ -377,7 +514,7 @@ class MEDDLY::mpzcard {
             return 'G';
         }
 
-        static inline void set(oper_item &result, int val) {
+        static inline void set(oper_item &result, long val) {
             mpz_set_si(result.hugeint(), val);
         }
 
@@ -392,7 +529,7 @@ class MEDDLY::mpzcard {
             cached.setG(G);
         }
 
-        static inline void scaleBy(oper_item &result, int scalar) {
+        static inline void scaleBy(oper_item &result, long scalar) {
             mpz_mul_si(result.hugeint(), result.hugeint(), scalar);
         }
 
@@ -413,9 +550,7 @@ class MEDDLY::mpzcard {
         }
 
         static inline void show(output &out, const oper_item &val) {
-            // TBD
-            //
-            // out.put(val.getReal());
+            // TBD; for debugging anyway
             out.put("hugeint");
         }
 };
@@ -958,42 +1093,58 @@ MEDDLY::unary_operation* MEDDLY::CARDINALITY(forest* arg, opnd_type res)
         return uop;
     }
 
+#ifdef OLD_CARD
     switch (res) {
         case opnd_type::INTEGER:
             if (arg->isForRelations())
                 return CARD_cache.add(new card_mxd_int(arg));
             else
-#ifdef OLD_CARD
                 return CARD_cache.add(new card_mdd_int(arg));
-#else
-                return CARD_cache.add(new card_mdd<intcard>(arg));
-#endif
 
         case opnd_type::REAL:
             if (arg->isForRelations())
                 return CARD_cache.add(new card_mxd_real(arg));
             else
-#ifdef OLD_CARD
                 return CARD_cache.add(new card_mdd_real(arg));
-#else
-                return CARD_cache.add(new card_mdd<realcard>(arg));
-#endif
 
 #ifdef HAVE_LIBGMP
         case opnd_type::HUGEINT:
             if (arg->isForRelations())
                 return CARD_cache.add(new card_mxd_mpz(arg));
             else
-#ifdef OLD_CARD
                 return CARD_cache.add(new card_mdd_mpz(arg));
-#else
-                return CARD_cache.add(new card_mdd<mpzcard>(arg));
-#endif
 #endif
 
         default:
             throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
+#else // OLD_CARD
+    switch (res) {
+        case opnd_type::INTEGER:
+            if (arg->isForRelations())
+                return CARD_cache.add(new card_mxd<intcard>(arg));
+            else
+                return CARD_cache.add(new card_mdd<intcard>(arg));
+
+        case opnd_type::REAL:
+            if (arg->isForRelations())
+                return CARD_cache.add(new card_mxd<realcard>(arg));
+            else
+                return CARD_cache.add(new card_mdd<realcard>(arg));
+
+#ifdef HAVE_LIBGMP
+        case opnd_type::HUGEINT:
+            if (arg->isForRelations())
+                return CARD_cache.add(new card_mxd<mpzcard>(arg));
+            else
+                return CARD_cache.add(new card_mdd<mpzcard>(arg));
+#endif
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+#endif // OLD_CARD
+
 }
 
 void MEDDLY::CARDINALITY_init()

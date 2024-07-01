@@ -193,6 +193,10 @@ class MEDDLY::unary_operation : public operation {
         }
 #endif
 
+        inline void compute(const dd_edge &arg, oper_item &res) {
+            compute(argF->getMaxLevelIndex(), arg.getEdgeValue(),
+                    arg.getNode(), res);
+        }
 
     protected:
         inline bool checkForestCompatibility() const
@@ -340,6 +344,19 @@ namespace MEDDLY {
     inline void apply(unary_builtin2 bu, const dd_edge &a, double &c)
     {
         unary_operation* uop = bu(a.getForest(), opnd_type::REAL);
+        uop->compute(a, c);
+    }
+
+    /** Apply a unary operator.
+        For operators whose result is a real.
+            @param  bu  Built-in unary operator (function)
+            @param  a   Operand.
+            @param  c   Output parameter: the result,
+                          where \a c = \a op \a a.
+    */
+    inline void apply(unary_builtin2 bu, const dd_edge &a, oper_item &c)
+    {
+        unary_operation* uop = bu(a.getForest(), c.getType());
         uop->compute(a, c);
     }
 

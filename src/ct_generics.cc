@@ -18,7 +18,7 @@
 
 #include "ct_generics.h"
 
-#define DEBUG_DESTROY
+// #define DEBUG_DESTROY
 
 // **********************************************************************
 // *                                                                    *
