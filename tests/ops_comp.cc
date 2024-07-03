@@ -106,14 +106,142 @@ void showRelMinterms(std::ostream &out, const std::vector <bool> &elems)
     out << " }";
 }
 
+void showSet(std::ostream &out, const std::vector <char> &elems)
+{
+    out << "{ ";
+    bool printed = false;
+    for (unsigned i=0; i<elems.size(); i++) {
+        if (!elems[i]) continue;
+        if (printed) out << ", ";
+        out << i << ":" << int(elems[i]);
+        printed = true;
+    }
+    out << " }";
+}
 
-void randomizeSet(std::vector <bool> &elems, unsigned card)
+void showRelMinterms(std::ostream &out, const std::vector <char> &elems)
+{
+    out << "{ ";
+    bool printed = false;
+    for (unsigned i=0; i<elems.size(); i++) {
+        if (!elems[i]) continue;
+        if (printed) out << ",\n      ";
+        out << "[";
+        printed = true;
+
+        unsigned x = i;
+        for (unsigned j=1; j<=VARS; j++) {
+            unsigned un = x % RELDOM;
+            x /= RELDOM;
+            unsigned pr = x % RELDOM;
+            x /= RELDOM;
+            if (j>1) out << ", ";
+            out << un << "->" << pr;
+        }
+        out << "]:" << int(elems[i]);
+    }
+    out << " }";
+}
+
+
+void EQ(const std::vector <char> &A, const std::vector <char> &B,
+        std::vector<bool> &C)
+{
+    if (A.size() != B.size()) {
+        throw "EQ size mismatch A,B";
+    }
+    if (A.size() != C.size()) {
+        throw "EQ size mismatch A,C";
+    }
+    for (unsigned i=0; i<C.size(); i++) {
+        C[i] = (A[i] == B[i]);
+    }
+}
+
+void NE(const std::vector <char> &A, const std::vector <char> &B,
+        std::vector<bool> &C)
+{
+    if (A.size() != B.size()) {
+        throw "NE size mismatch A,B";
+    }
+    if (A.size() != C.size()) {
+        throw "NE size mismatch A,C";
+    }
+    for (unsigned i=0; i<C.size(); i++) {
+        C[i] = (A[i] != B[i]);
+    }
+}
+
+void GE(const std::vector <char> &A, const std::vector <char> &B,
+        std::vector<bool> &C)
+{
+    if (A.size() != B.size()) {
+        throw "GE size mismatch A,B";
+    }
+    if (A.size() != C.size()) {
+        throw "GE size mismatch A,C";
+    }
+    for (unsigned i=0; i<C.size(); i++) {
+        C[i] = (A[i] >= B[i]);
+    }
+}
+
+void GT(const std::vector <char> &A, const std::vector <char> &B,
+        std::vector<bool> &C)
+{
+    if (A.size() != B.size()) {
+        throw "GT size mismatch A,B";
+    }
+    if (A.size() != C.size()) {
+        throw "GT size mismatch A,C";
+    }
+    for (unsigned i=0; i<C.size(); i++) {
+        C[i] = (A[i] > B[i]);
+    }
+}
+
+void LE(const std::vector <char> &A, const std::vector <char> &B,
+        std::vector<bool> &C)
+{
+    if (A.size() != B.size()) {
+        throw "LE size mismatch A,B";
+    }
+    if (A.size() != C.size()) {
+        throw "LE size mismatch A,C";
+    }
+    for (unsigned i=0; i<C.size(); i++) {
+        C[i] = (A[i] <= B[i]);
+    }
+}
+
+void LT(const std::vector <char> &A, const std::vector <char> &B,
+        std::vector<bool> &C)
+{
+    if (A.size() != B.size()) {
+        throw "LT size mismatch A,B";
+    }
+    if (A.size() != C.size()) {
+        throw "LT size mismatch A,C";
+    }
+    for (unsigned i=0; i<C.size(); i++) {
+        C[i] = (A[i] < B[i]);
+    }
+}
+
+void randomizeSet(std::vector <char> &elems, unsigned card, char vals)
 {
     //
-    // Fill array with card 1s, the rest 0s
+    // Fill array with card 1s, card 2s, etc.
     //
-    for (unsigned i=0; i<elems.size(); i++) {
-        elems[i] = (i < card);
+    unsigned i=0;
+    for (unsigned v=1; v<=vals; v++) {
+        for (unsigned j=0; j<card; j++) {
+            if (i>=elems.size()) break;
+            elems[i++] = v;
+        }
+    }
+    for (; i<elems.size(); i++) {
+        elems[i] = 0;
     }
 
     //
@@ -123,7 +251,7 @@ void randomizeSet(std::vector <bool> &elems, unsigned card)
         unsigned j = Equilikely(i, elems.size()-1);
         if (elems[i] != elems[j]) {
             // swap
-            bool t = elems[i];
+            char t = elems[i];
             elems[i] = elems[j];
             elems[j] = t;
         }
@@ -131,83 +259,6 @@ void randomizeSet(std::vector <bool> &elems, unsigned card)
 
 }
 
-unsigned set_cardinality(const std::vector <bool> &A)
-{
-    unsigned card = 0;
-    for (unsigned i=0; i<A.size(); i++) {
-        if (A[i]) ++card;
-    }
-    return card;
-}
-
-bool has_common_element(const std::vector <bool> &A,
-        const std::vector <bool> &B)
-{
-    if (A.size() != B.size()) {
-        throw "set intersection size mismatch A,B";
-    }
-
-    for (unsigned i=0; i<A.size(); i++) {
-        if (A[i] && B[i]) return true;
-    }
-    return false;
-}
-
-void set_intersection(const std::vector <bool> &A,
-        const std::vector <bool> &B, std::vector <bool> &C)
-{
-    if (A.size() != B.size()) {
-        throw "set intersection size mismatch A,B";
-    }
-    if (A.size() != C.size()) {
-        throw "set intersection size mismatch A,C";
-    }
-
-    for (unsigned i=0; i<C.size(); i++) {
-        C[i] = A[i] && B[i];
-    }
-}
-
-void set_union(const std::vector <bool> &A,
-        const std::vector <bool> &B, std::vector <bool> &C)
-{
-    if (A.size() != B.size()) {
-        throw "set union size mismatch A,B";
-    }
-    if (A.size() != C.size()) {
-        throw "set union size mismatch A,C";
-    }
-
-    for (unsigned i=0; i<C.size(); i++) {
-        C[i] = A[i] || B[i];
-    }
-}
-
-void set_difference(const std::vector <bool> &A,
-        const std::vector <bool> &B, std::vector <bool> &C)
-{
-    if (A.size() != B.size()) {
-        throw "set difference size mismatch A,B";
-    }
-    if (A.size() != C.size()) {
-        throw "set difference size mismatch A,C";
-    }
-
-    for (unsigned i=0; i<C.size(); i++) {
-        C[i] = B[i] ? false : A[i];
-    }
-}
-
-void set_complement(const std::vector <bool> &A, std::vector <bool> &C)
-{
-    if (A.size() != C.size()) {
-        throw "set difference size mismatch A,C";
-    }
-
-    for (unsigned i=0; i<C.size(); i++) {
-        C[i] = !A[i];
-    }
-}
 
 
 inline void fillMinterm(unsigned x, int* mt)
@@ -248,8 +299,8 @@ inline unsigned whichMinterm(const int* un, const int* pr)
     return x;
 }
 
-void flipFullyElements(std::vector <bool> &elems, unsigned seed, unsigned k,
-        bool on)
+void flipFullyElements(std::vector <char> &elems, unsigned seed, unsigned k,
+        char val)
 {
     // Convert 'seed' to minterm
     int tmp[VARS+1];
@@ -258,12 +309,12 @@ void flipFullyElements(std::vector <bool> &elems, unsigned seed, unsigned k,
     // and convert back to unsigned
     for (tmp[k]=0; tmp[k]<SETDOM; tmp[k]++) {
         unsigned x = whichMinterm(tmp);
-        elems[x] = on;
+        elems[x] = val;
     }
 }
 
-void flipFullyElements(std::vector <bool> &elems, unsigned seed, unsigned k1,
-        unsigned k2, bool on)
+void flipFullyElements(std::vector <char> &elems, unsigned seed, unsigned k1,
+        unsigned k2, char val)
 {
     // Convert 'seed' to minterm
     int tmp[VARS+1];
@@ -273,14 +324,14 @@ void flipFullyElements(std::vector <bool> &elems, unsigned seed, unsigned k1,
     for (tmp[k1]=0; tmp[k1]<SETDOM; tmp[k1]++) {
         for (tmp[k2]=0; tmp[k2]<SETDOM; tmp[k2]++) {
             unsigned x = whichMinterm(tmp);
-            elems[x] = on;
+            elems[x] = val;
         }
     }
 }
 
 
-void flipIdentityElements(std::vector <bool> &elems, unsigned seed,
-        unsigned k, bool on)
+void flipIdentityElements(std::vector <char> &elems, unsigned seed,
+        unsigned k, char val)
 {
     // Convert 'seed' to minterm
     int untmp[VARS+1];
@@ -290,13 +341,13 @@ void flipIdentityElements(std::vector <bool> &elems, unsigned seed,
         untmp[k] = v;
         prtmp[k] = v;
         unsigned x = whichMinterm(untmp, prtmp);
-        elems[x] = on;
+        elems[x] = val;
     }
 }
 
 
-void flipIdentityElements(std::vector <bool> &elems, unsigned seed,
-        unsigned k1, unsigned k2, bool on)
+void flipIdentityElements(std::vector <char> &elems, unsigned seed,
+        unsigned k1, unsigned k2, char val)
 {
     // Convert 'seed' to minterm
     int untmp[VARS+1];
@@ -309,45 +360,49 @@ void flipIdentityElements(std::vector <bool> &elems, unsigned seed,
             untmp[k2] = v2;
             prtmp[k2] = v2;
             unsigned x = whichMinterm(untmp, prtmp);
-            elems[x] = on;
+            elems[x] = val;
         }
     }
 }
 
 
-void randomizeFully(std::vector <bool> &elems, unsigned card)
+void randomizeFully(std::vector <char> &elems, unsigned card, unsigned vals)
 {
     for (unsigned i=0; i<elems.size(); i++) {
         elems[i] = false;
     }
+    unsigned v=0;
     for (unsigned i=0; i<card; i++) {
+        v = (v % vals)+1;
         unsigned x = Equilikely(0, elems.size()-1);
         unsigned k1 = Equilikely(1, VARS);
         unsigned k2 = Equilikely(1, VARS);
 
         if (k1 != k2) {
-            flipFullyElements(elems, x, k1, k2, true);
+            flipFullyElements(elems, x, k1, k2, v);
         } else {
-            flipFullyElements(elems, x, k1, true);
+            flipFullyElements(elems, x, k1, v);
         }
     }
 }
 
 
-void randomizeIdentity(std::vector <bool> &elems, unsigned card)
+void randomizeIdentity(std::vector <char> &elems, unsigned card, unsigned vals)
 {
     for (unsigned i=0; i<elems.size(); i++) {
         elems[i] = false;
     }
+    unsigned v=0;
     for (unsigned i=0; i<card; i++) {
+        v = (v % vals)+1;
         unsigned x = Equilikely(0, elems.size()-1);
         unsigned k1 = Equilikely(1, VARS);
         unsigned k2 = Equilikely(1, VARS);
 
         if (k1 != k2) {
-            flipIdentityElements(elems, x, k1, k2, true);
+            flipIdentityElements(elems, x, k1, k2, v);
         } else {
-            flipIdentityElements(elems, x, k1, true);
+            flipIdentityElements(elems, x, k1, v);
         }
     }
 }
@@ -355,56 +410,7 @@ void randomizeIdentity(std::vector <bool> &elems, unsigned card)
 
 
 
-void set2mdd(const std::vector<bool> &S1, const std::vector<bool> &S2,
-        bool s1prio, forest *F, dd_edge &s)
-{
-    if (!F) throw "null forest";
-    if (S1.size() != S2.size()) throw "size mismatch";
-
-    // Determine S cardinality
-    unsigned card = 0;
-
-    for (unsigned i=0; i<S1.size(); i++) {
-        if (S1[i] || S2[i]) ++card;
-    }
-
-    // Special case - empty set
-    if (0==card) {
-        F->createEdge(false, s);
-        return;
-    }
-
-    // Convert set S to list of minterms
-    int** mtlist = new int* [card];
-    long* vals = new long[card];
-    card = 0;
-    for (unsigned i=0; i<S1.size(); i++) {
-        if (S1[i] || S2[i]) {
-            mtlist[card] = new int[VARS+1];
-            fillMinterm(i, mtlist[card]);
-
-            if (s1prio) {
-                vals[card] = S1[i] ? 1 : 2;
-            } else {
-                vals[card] = S2[i] ? 2 : 1;
-            }
-
-            ++card;
-        }
-    }
-
-    F->createEdge(mtlist, vals, card, s);
-
-    // Cleanup
-    for (unsigned i=0; i<card; i++) {
-        delete[] mtlist[i];
-    }
-    delete[] mtlist;
-    delete[] vals;
-}
-
-/*
-void set2mxd(const std::vector<bool> &S, forest *F, dd_edge &s)
+void set2mdd(const std::vector<char> &S, forest *F, dd_edge &s)
 {
     if (!F) throw "null forest";
 
@@ -414,18 +420,59 @@ void set2mxd(const std::vector<bool> &S, forest *F, dd_edge &s)
         if (S[i]) ++card;
     }
 
-    // Special case - empty set
+    // Special case - zero function
     if (0==card) {
-        F->createEdge(false, s);
+        F->createEdge(0L, s);
+        return;
+    }
+
+    // Convert set S to list of minterms
+    int** mtlist = new int* [card];
+    long* vals = new long[card];
+    card = 0;
+    for (unsigned i=0; i<S.size(); i++) {
+        if (!S[i]) continue;
+        vals[card] = S[i];
+        mtlist[card] = new int[VARS+1];
+        fillMinterm(i, mtlist[card]);
+
+        ++card;
+    }
+
+    F->createEdge(mtlist, vals, card, s);
+
+    // Cleanup
+    for (unsigned i=0; i<card; i++) {
+        delete[] mtlist[i];
+    }
+    delete[] vals;
+    delete[] mtlist;
+}
+
+void set2mxd(const std::vector<char> &S, forest *F, dd_edge &s)
+{
+    if (!F) throw "null forest";
+
+    // Determine S cardinality
+    unsigned card = 0;
+    for (unsigned i=0; i<S.size(); i++) {
+        if (S[i]) ++card;
+    }
+
+    // Special case - zero function
+    if (0==card) {
+        F->createEdge(0L, s);
         return;
     }
 
     // Convert set S to list of minterms
     int** unlist = new int* [card];
     int** prlist = new int* [card];
+    long* vals = new long[card];
     card = 0;
     for (unsigned i=0; i<S.size(); i++) {
         if (!S[i]) continue;
+        vals[card] = S[i];
         unlist[card] = new int[VARS+1];
         prlist[card] = new int[VARS+1];
         fillMinterm(i, unlist[card], prlist[card]);
@@ -439,10 +486,11 @@ void set2mxd(const std::vector<bool> &S, forest *F, dd_edge &s)
         delete[] unlist[i];
         delete[] prlist[i];
     }
+    delete[] vals;
     delete[] unlist;
     delete[] prlist;
 }
-*/
+
 inline char getReductionType(forest* f)
 {
     if (f->isFullyReduced())    return 'f';
@@ -460,38 +508,16 @@ void test_sets_over(unsigned scard, forest* F)
 
     out << "\nGenerating random sets of size " << scard << "\n";
 
-    std::vector <bool> ones(POTENTIAL);
-    std::vector <bool> twos(POTENTIAL);
+    std::vector <char> Avec(POTENTIAL);
+    dd_edge Add(F);
 
-    randomizeSet(ones, scard);
-    randomizeSet(twos, scard);
+    randomizeSet(Avec, scard, 3);
 
-    dd_edge edge(F);
-
-    set2mdd(ones, twos, true, F, edge);
+    set2mdd(Avec, F, Add);
 
     out << "random set:\n";
-    edge.showGraph(out);
+    Add.showGraph(out);
 
-    if (has_common_element(ones, twos)) {
-        set2mdd(ones, twos, false, F, edge);
-        out << "alternate random set:\n";
-        edge.showGraph(out);
-    }
-
-    randomizeFully(ones, scard);
-    randomizeFully(twos, scard);
-
-    set2mdd(ones, twos, true, F, edge);
-
-    out << "random fully:\n";
-    edge.showGraph(out);
-
-    if (has_common_element(ones, twos)) {
-        set2mdd(ones, twos, false, F, edge);
-        out << "alternate random fully:\n";
-        edge.showGraph(out);
-    }
 }
 
 void test_sets(domain* D)
@@ -509,9 +535,11 @@ void test_sets(domain* D)
     forest* quasi = forest::create(D, SET, range_type::INTEGER,
                         edge_labeling::MULTI_TERMINAL, p);
 
-    test_sets_over(16, fully);
+    test_sets_over(1, fully);
+    test_sets_over(2, fully);
+    test_sets_over(4, fully);
+    test_sets_over(8, fully);
 
-    test_sets_over(16, quasi);
 }
 
 int main()
