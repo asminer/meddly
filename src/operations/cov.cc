@@ -15,7 +15,9 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
-int TimeLimit=60;
+ #include <climits>
+
+int TimeLimit=120;//INT_MAX;
 #include "../defines.h"
 #include "cov.h"
 #include <typeinfo> // for "bad_cast" exception
@@ -157,6 +159,8 @@ binary_operation* mrcc;
 binary_operation* covtc;
 unary_operation* covrExtractFrom;
 unary_operation* covrExtractCover;
+binary_operation* covrCoveredFrom;
+binary_operation* covrCoveredTo;
 markcmp* cij;
 protected:
 binary_operation* mxdIntersection;
@@ -356,15 +360,18 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
         dd_edge prevReachable(resF);
         dd_edge front(resF);
         int i=0;
-        bool first=true;
+        bool first=false;
         ostream_output meddlyout(std::cout);
+        bool debug=false;
+        if(debug){
         init.showGraph(meddlyout);
        printf("init^^^");
+        }
         // while (prevReachable != reachableStates) {
         auto start = high_resolution_clock::now();
         do{
 
-                // first=false;
+                first=false;
                 i++;
                 prevReachable = reachableStates;
                 for(int level=1; level<argF->getNumVariables()+1; level++) {
@@ -397,22 +404,32 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                 // urel.showGraph(meddlyout);
                 // printf("transition relation^^\n" );
                 // getchar();
-                for(int level=1; level<argF->getNumVariables()+1; level++) {
+                for(int level=1; level<argF->getNumVariables()+1; level++,gfront=0) {
                         for (int ei = 0; ei < rel->getNumOfEvents(level); ei++) {
                                 const dd_edge& urel = rel->getEvent(level, ei);
+                                printf("transition relation LVL %d %d^^\n",level,ei );
+
+                                if(debug){
                                  urel.showGraph(meddlyout);
                                 printf("transition relation LVL %d %d^^\n",level,ei );
                                  getchar();
                                  reachableStates.showGraph(meddlyout);
                                 printf("reachableStates^^" );
                                 getchar();
-                                parent->mrcc->computeDDEdgeSC(reachableStates/*prevReachable*/, urel, nfront,efront, lfront,tlfront, gfront, true,shouldConfirms,parent->cij);
-                                prevReachable=reachableStates;
+                                }
+                                parent->mrcc->computeDDEdgeSC(/*reachableStates*/prevReachable, urel, nfront,efront, lfront,tlfront, gfront, true,shouldConfirms,parent->cij);
+                                // prevReachable=reachableStates;
                                 long cardetest=0;
                                 if(gfront)
-                                        printf("gfront %d\n",gfront );
+                                {    printf("OMEGA FOUND\n" );
+                                first=true;
+
+                                // getchar();
+                                    }
+                                        // printf("gfront %d\n",gfront );
                                 // dd_edge etest(resF);
                                 // apply(EQUANT,ffront, etest);
+                                if(debug){
                                 apply(CARDINALITY, nfront, cardetest);
                                 printf("CARD nfront %ld\n",cardetest );
                                 apply(CARDINALITY, lfront, cardetest);
@@ -421,6 +438,7 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                                 printf("CARD tlfront %ld\n",cardetest );
                                 apply(CARDINALITY, efront, cardetest);
                                 printf("CARD efront %ld\n",cardetest );
+                                }
                                 // getchar();
                                 // etest.showGraph(meddlyout);
                                 // printf("ETEST^^\n" );
@@ -439,8 +457,11 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                                 // reachableStates.showGraph(meddlyout);
                                 // printf("reachableStates^^\n");
                                 // long cardetest=0;
+
+                                if(debug){
                                 apply(CARDINALITY, reachableStates, cardetest);
                                 printf("CARD reachset %ld\n",cardetest );
+                                }
                                 // getchar();
                                 for(int listidx=0; listidx<argF->getNumVariables()+1; listidx++) {
                                         for (auto const &scidx: shouldConfirms[listidx]) {
@@ -453,6 +474,7 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                                 dd_edge luniontl(resF);
                                 luniontl=lfront;
                                 parent->mddUnion->computeDDEdge(lfront, tlfront, luniontl, true);
+                                if(debug){
                                 lfront.showGraph(meddlyout);
                                 printf("l front^^^" );
                                 tlfront.showGraph(meddlyout);
@@ -460,42 +482,80 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                                 luniontl.showGraph(meddlyout);
                                printf("l union tl ^^^" );
                                getchar();
+                                }
                                 parent->covtc->computeDDEdge(reachableStates/*prevReachable*/, luniontl, updatecovered,true);
+                                if(debug){
                                 updatecovered.showGraph(meddlyout);
-                               printf("updatecovered^^^ " );
+                                printf("updatecovered^^^ " );
+                                }
+                               ///newly added to union the result with reachablestates
+                               parent->mddUnion->computeDDEdge(reachableStates, updatecovered, reachableStates, true);
 
-                               getchar();
+                               // getchar();
 
                                dd_edge efrom(resF);
 
                                parent->covrExtractFrom->computeDDEdge(reachableStates,efrom,true);
+                               if(debug){
                                printf("covrExtractFrom^^^\n" );
                                efrom.showGraph(meddlyout);
+                                }
                                dd_edge eefrom(argF);
                                eefrom=efrom;
+                               if(debug){
                                eefrom.showGraph(meddlyout);
                                printf("eefrom^^^\n" );
+                                }
                                dd_edge ecovered(resF);
                                parent->covrExtractCover->computeDDEdge(eefrom,ecovered,parent->cij,true);
-                               getchar();
+                               // getchar();
+                               efrom-=ecovered;
+                               long pcs=0;
+                                apply(CARDINALITY, efrom, pcs);
+                               printf("PCS %ld\n",pcs );
+                               if(debug){
+                               efrom.showGraph(meddlyout);
+                               printf("Efrom minus ecovered^^\n" );
+                                }
+
+                               // dd_edge coveredFrom(resF);
+                               // coveredFrom=init;
+                               // parent->covrCoveredFrom->computeDDEdge(reachableStates,efrom,coveredFrom,true);
+                               // parent->covrCoveredTo->computeDDEdge(reachableStates,efrom,coveredFrom,true);
+                               parent->covrCoveredFrom->computeDDEdge(reachableStates,efrom,reachableStates,true);
+                               parent->covrCoveredTo->computeDDEdge(reachableStates,efrom,reachableStates,true);
+                               // getchar();
+                               if(gfront){
+                                   // resF->showInfo(meddlyout,2);
+                                   resF->reportStats(meddlyout, "\t",
+                                     expert_forest::HUMAN_READABLE_MEMORY |
+                                     expert_forest::BASIC_STATS
+                                   );
+                                   auto stop = high_resolution_clock::now();
+                                   auto duration = duration_cast<microseconds>(stop - start);
+                                   printf("duration %ld sec \n", duration.count());
+
+                               }
+                               apply(CARDINALITY, reachableStates, cardetest);
+                               printf("CARD CR %ld\n",cardetest );
                         }
                 }
                 // reachableStates.showGraph(meddlyout);
                 // printf("reachableStates^^\n");
                 long cardier;
                 apply(CARDINALITY, reachableStates, cardier);
-                printf("CARD Reachability %ld\n",cardier );
-                getchar();
+                printf("i %d CARD CR %ld\n",i,cardier );
+                // getchar();
 
                 // reachableStates.showGraph(meddlyout);
                 // getchar();
                 delete[]shouldConfirms;
                 // printf("PR %d, F %d\n",prevReachable == reachableStates, first==true );
-                if(prevReachable == reachableStates&& first==true) {
-                        first=false;
-                }else if(prevReachable == reachableStates&& first==false) {
-                        first=true;
-                }
+                // if(prevReachable == reachableStates&& first==true) {
+                //         first=false;
+                // }else if(prevReachable == reachableStates&& first==false) {
+                //         first=true;
+                // }
                 auto stop = high_resolution_clock::now();
                 auto duration = duration_cast<minutes>(stop - start);
                 if(duration.count()>TimeLimit) {
@@ -503,7 +563,7 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                         return;
                 }
 
-        }while (prevReachable != reachableStates || first==false);
+        }while (prevReachable != reachableStates || first==true);
         printf("DONEDONE %d\n",i );
 
 }
@@ -526,6 +586,8 @@ MEDDLY::common_cov_by_events_mt::common_cov_by_events_mt(
         covtc=0;
         covrExtractFrom=0;
         covrExtractCover=0;
+        covrCoveredFrom=0;
+        covrCoveredTo=0;
         mxdIntersection = 0;
         mxdDifference = 0;
         freeqs = 0;
@@ -586,8 +648,15 @@ void MEDDLY::common_cov_by_events_mt
         dd_edge efrom(resF);
         covrExtractFrom=getOperation(EXTRACTFROM,a,efrom);
         MEDDLY_DCASSERT(covrExtractFrom);
-        covrExtractCover=getOperation(EXTRACTCOVERED,a,efrom);
+        dd_edge afrom(arg1F);
+        covrExtractCover=getOperation(EXTRACTCOVERED,afrom,efrom);
         MEDDLY_DCASSERT(covrExtractCover);
+        // dd_edge coveredFrom(resF);
+        covrCoveredFrom=getOperation(COVEREDFROM,a,afrom, c);
+        MEDDLY_DCASSERT(covrCoveredFrom);
+        // dd_edge coveredTo(resF);
+        covrCoveredTo=getOperation(COVEREDTO,a,afrom, c);
+        MEDDLY_DCASSERT(covrCoveredTo);
         ostream_output meddlyout(std::cout);
 #ifdef DEBUG_INITIAL
         printf("Calling saturate for states:\n");

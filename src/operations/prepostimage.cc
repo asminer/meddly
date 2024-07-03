@@ -974,6 +974,7 @@ void MEDDLY::image_op_mxd::computeSC(node_handle a, node_handle b,node_handle& c
       RV rvb;
       rva=E;
       rvb=E;
+      h=0;
       compute_recSC(a, b,c,d,e,f,h,shouldConfirm,cmp,rva,rvb);
 
     }
@@ -2023,7 +2024,7 @@ delete[] nst;
 void MEDDLY::mrrc::compute_recSC(node_handle evmxd, node_handle mxd, node_handle& resEvmdd,node_handle& eq,node_handle& leq,node_handle& tleq, int& geq,std::list<int>* shouldConfirm,markcmp* cmp,RV& above, RV& below)
 {
     ostream_output meddlyout(std::cout);
-    bool d=true;
+    bool d=false;
 if(d)
     printf("call compute_recSC for evmxd %d, mxd %d, above %d, below %d\n",evmxd,mxd,above,below );
 
@@ -2032,7 +2033,6 @@ if (mxd == 0 || evmxd == 0) {
         resEvmdd = 0;
         eq=0;
         leq=0;
-        geq=0;
         tleq=0;
         below=N;
         if(above==G) { below=G;}
@@ -2058,7 +2058,7 @@ ct_entry_key* Key = findResult( evmxd, mxd, resEvmdd,eq,leq,tleq,iabove,igeq);
 if (0==Key) {
         if(d)
             printf("FOUND IN CACHE  above %d node %d, transitionRel %d resEvmdd%d,eq%d,leq%d,\n",above,evmxd, mxd, resEvmdd,eq,leq );
-        if(igeq>0) geq=igeq;
+        geq=0;
         return;
 }
 
@@ -2135,7 +2135,6 @@ for (unsigned i = 0; i < rSize; i++) {
                         node_handle eqnewstates = 0;
                         node_handle leqnewstates = 0;
                         node_handle tleqnewstates = 0;
-                        int geq=0;
                         compute_recSC( B->d(j), mxd, newstates,eqnewstates,leqnewstates,tleqnewstates,geq,shouldConfirm,cmp,newabove,newbelow);
 
                         if(newstates!=0 || eqnewstates!=0 || leqnewstates!=0) {
@@ -2145,18 +2144,21 @@ for (unsigned i = 0; i < rSize; i++) {
                                 if(d)
                                 printf("IF LVL%d  cij %d i:%d , j: %d, above: %d, below:%d leqnewstates: %d \n",evmxdLevel,compareijresult,i,j, above,below,leqnewstates );
                                 if((leqnewstates!=0)&&((above==E&&compareijresult>0)||(above==L&&compareijresult>0))) {
-                                    geq=1;
+                                    // geq=1;
 
                                         if(compareijresult>=rSize) {
+                                                geq=1;
                                                 shouldConfirm[evmxdLevel].push_back(compareijresult);
-                                                if(d)
+                                                if(d){
                                                 printf("shouldConfirm [%d].pushback(%d) IfOmega\n",evmxdLevel,compareijresult );
                                                 printf("IF OMEGA2  set HERE!!\n" );
                                                 getchar();
+                                                }
                                         }else{
-                                                // if(d)
+                                                if(d){
                                                 printf("IF OMEGA2 inside HERE!!\n" );
                                                 getchar();
+                                                }
                                                 if(newstates!=0){
                                                     AddtoNH(D,j,newstates);
                                                     if(d)
@@ -2316,7 +2318,6 @@ for (unsigned i = 0; i < rSize; i++) {
                                 node_handle eqnewstates = 0;
                                 node_handle leqnewstates = 0;
                                 node_handle tleqnewstates = 0;
-                                int geq=0;
 
 
                                 compute_recSC( B->d(j), Rp->d(jpz), newstates,eqnewstates,leqnewstates,tleqnewstates,geq, shouldConfirm,cmp,newabove,newbelow);
@@ -2331,17 +2332,18 @@ for (unsigned i = 0; i < rSize; i++) {
                                 printf("ELSE LVL%d cij %d i:%d , j:%d,  jp: %d, above: %d, below:%d leqnewstates: %d \n",mxdLevel,compareijresult, i,j, jp, above,below,leqnewstates );
                                         // printf("LVL%d  cij %d i:%d , j: %d, above: %d, below:%d \n",evmxdLevel,compareijresult,i,j, above,below );
                                         if((leqnewstates!=0)&&((above==E&&compareijresult>0)||(above==L&&compareijresult>0))) {
-                                            geq=1;
+                                            // geq=1;
                                                 if(compareijresult>=rSize) {
+                                                        geq=1;
                                                         shouldConfirm[evmxdLevel].push_back(compareijresult);
                                                         if(d)
                                                         printf("shouldConfirm [%d].pushback(%d) ElseOmega!\n",mxdLevel,compareijresult );
                                                         // if(d)
-                                                        printf(" OMEGA2  set HERE!!\n" );
-                                                        getchar();
+                                                        // printf(" OMEGA2  set HERE!!\n" );
+                                                        // getchar();
                                                 }else{
                                                         // if(d)
-                                                        printf("ELSE OMEGA2 inside HERE %d !!\n",eqnewstates );
+                                                        // printf("ELSE OMEGA2 inside HERE %d !!\n",eqnewstates );
                                                         if(d)
                                                         printf("Omega part newstates%d,leqnewstates%d,eqnewstates%d\n",newstates,leqnewstates,eqnewstates );
                                                         getchar();
@@ -2452,7 +2454,7 @@ printf("leq %d\n",leq );
 printf("computed new tcXrel(<%ld, %d>, %d) = <%ld, %d>\n", ev, evmxd, mxd, resEv, resEvmdd);
 #endif
 if(evmxd!=-1&& mxd!=-1)
-saveResult(Key, evmxd, mxd, resEvmdd,eq,leq,tleq,above,geq);
+saveResult(Key, evmxd, mxd, resEvmdd,eq,leq,tleq,above,0/*,geq*/);
 if(d)
 printf("SAVED!evmxd %d, mxd %d, resEvmdd%d,eq%d,leq%d,above%d,geq%d \n", evmxd, mxd, resEvmdd,eq,leq,above,geq);
 }

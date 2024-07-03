@@ -25,7 +25,8 @@ namespace MEDDLY {
   unary_opname* initializeExtractFrom();
   unary_opname* initializeExtractCovered();
   class binary_opname;
-
+  binary_opname* initializeCoveredFrom();
+  binary_opname* initializeCoveredTo();
 }
 
 #endif

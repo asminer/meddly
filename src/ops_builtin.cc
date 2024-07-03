@@ -144,6 +144,8 @@ class MEDDLY::builtin_init : public initializer_list {
         static binary_opname* _VM_MULTIPLY;
         static binary_opname* _MV_MULTIPLY;
         static binary_opname* _MM_MULTIPLY;
+        static binary_opname* _COVEREDFROM;
+        static binary_opname* _COVEREDTO;
     public:
         static numerical_opname* _EXPLVECT_MATR_MULT;
         static numerical_opname* _MATR_EXPLVECT_MULT;
@@ -207,6 +209,8 @@ MEDDLY::binary_opname* MEDDLY::builtin_init::_BACKWARD_BFS;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_VM_MULTIPLY;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_MV_MULTIPLY;
 MEDDLY::binary_opname* MEDDLY::builtin_init::_MM_MULTIPLY;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_COVEREDFROM;
+MEDDLY::binary_opname* MEDDLY::builtin_init::_COVEREDTO;
 
 MEDDLY::numerical_opname* MEDDLY::builtin_init::_EXPLVECT_MATR_MULT;
 MEDDLY::numerical_opname* MEDDLY::builtin_init::_MATR_EXPLVECT_MULT;
@@ -278,6 +282,8 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     _VM_MULTIPLY    = nullptr;
     _MV_MULTIPLY    = nullptr;
     _MM_MULTIPLY    = nullptr;
+    _COVEREDFROM    = nullptr;
+    _COVEREDTO      = nullptr;
     //
     // Numerical ops
     //
@@ -350,6 +356,8 @@ void MEDDLY::builtin_init::setup()
     _VM_MULTIPLY    =   initializeVMmult()          ;
     _MV_MULTIPLY    =   initializeMVmult()          ;
     _MM_MULTIPLY    =   initializeMMMultiply()      ;
+    _COVEREDFROM    =   initializeCoveredFrom()     ;
+    _COVEREDTO      =   initializeCoveredTo()       ;
     //
     // Numerical ops
     //
@@ -422,6 +430,8 @@ void MEDDLY::builtin_init::cleanup()
     mydelete(_VM_MULTIPLY);
     mydelete(_MV_MULTIPLY);
     mydelete(_MM_MULTIPLY);
+    mydelete(_COVEREDFROM);
+    mydelete(_COVEREDTO);
     //
     // Numerical ops
     //
@@ -583,6 +593,12 @@ MEDDLY::binary_opname* MEDDLY::MV_MULTIPLY() {
 }
 MEDDLY::binary_opname* MEDDLY::MM_MULTIPLY() {
     return builtin_init::_MM_MULTIPLY;
+}
+MEDDLY::binary_opname* MEDDLY::COVEREDFROM() {
+    return builtin_init::_COVEREDFROM;
+}
+MEDDLY::binary_opname* MEDDLY::COVEREDTO() {
+    return builtin_init::_COVEREDTO;
 }
 
 // ******************************************************************

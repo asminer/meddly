@@ -178,6 +178,14 @@ namespace MEDDLY {
         such that, C[m][n] += A[m][i] * B[i][n], for all m, n and i.
     */
     binary_opname* MM_MULTIPLY();
+    
+    /** covered in from part.
+    */
+    binary_opname* COVEREDFROM();
+
+    /** covered in to part.
+    */
+    binary_opname* COVEREDTO();
 
     // ******************************************************************
     // *                                                                *
