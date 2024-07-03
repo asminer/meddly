@@ -96,12 +96,11 @@ libmeddly_la_SOURCES = \
     \
     operations/apply_base.h             operations/apply_base.cc  \
     operations/cardinality.h            operations/cardinality.cc  \
-    operations/comp_eq.h                operations/comp_eq.cc      \
+    operations/compare.h                operations/compare.cc      \
     operations/comp_ge.h                operations/comp_ge.cc      \
     operations/comp_gt.h                operations/comp_gt.cc      \
     operations/comp_le.h                operations/comp_le.cc      \
     operations/comp_lt.h                operations/comp_lt.cc      \
-    operations/comp_ne.h                operations/comp_ne.cc      \
     operations/complement.h             operations/complement.cc   \
     operations/constrained.h            operations/constrained.cc   \
     operations/copy.h                   operations/copy.cc         \
