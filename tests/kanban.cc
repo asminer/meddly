@@ -45,8 +45,8 @@ const char* kanban[] = {
 };
 
 long expected[] = {
-  1, 160, 4600, 58400, 454475, 2546432, 11261376,
-  41644800, 133865325, 384392800, 1005927208
+    1, 160, 4600, 58400, 454475, 2546432, 11261376,
+    41644800, 133865325, 384392800, 1005927208
 };
 
 const int nstart = 1;
@@ -56,61 +56,64 @@ using namespace MEDDLY;
 
 long buildReachset(int N, bool useSat)
 {
-  int sizes[16];
+    int sizes[16];
 
-  for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = domain::createBottomUp(sizes, 16);
+    for (int i=15; i>=0; i--) sizes[i] = N+1;
+    domain* d = domain::createBottomUp(sizes, 16);
 
-  // Build initial state
-  int* initial = new int[17];
-  for (int i=16; i; i--) initial[i] = 0;
-  initial[1] = initial[5] = initial[9] = initial[13] = N;
-  forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  dd_edge init_state(mdd);
-  mdd->createEdge(&initial, 1, init_state);
-  delete[] initial;
-
-#ifdef PROGRESS
-  fputc('i', stdout);
-  fflush(stdout);
-#endif
-
-  // Build next-state function
-  forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  dd_edge nsf(mxd);
-  buildNextStateFunction(kanban, 16, mxd, nsf);
+    // Build initial state
+    int* initial = new int[17];
+    for (int i=16; i; i--) initial[i] = 0;
+    initial[1] = initial[5] = initial[9] = initial[13] = N;
+    forest* mdd = forest::create(d, 0, range_type::BOOLEAN,
+            edge_labeling::MULTI_TERMINAL);
+    dd_edge init_state(mdd);
+    mdd->createEdge(&initial, 1, init_state);
+    delete[] initial;
 
 #ifdef PROGRESS
-  fputc('n', stdout);
-  fflush(stdout);
+    fputc('i', stdout);
+    fflush(stdout);
 #endif
 
-  dd_edge reachable(mdd);
-  if (useSat)
-    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
-  else
-    apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+    // Build next-state function
+    forest* mxd = forest::create(d, 1, range_type::BOOLEAN,
+            edge_labeling::MULTI_TERMINAL);
+    dd_edge nsf(mxd);
+    buildNextStateFunction(kanban, 16, mxd, nsf);
 
 #ifdef PROGRESS
-  fputc('r', stdout);
-  fflush(stdout);
+    fputc('n', stdout);
+    fflush(stdout);
 #endif
 
-  long c;
-  apply(CARDINALITY, reachable, c);
+    dd_edge reachable(mdd);
+    if (useSat) {
+        apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    } else {
+        apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+    }
 
 #ifdef PROGRESS
-  fputc('c', stdout);
-  fflush(stdout);
+    fputc('r', stdout);
+    fflush(stdout);
 #endif
 
-  domain::destroy(d);
+    long c;
+    apply(CARDINALITY, reachable, c);
 
 #ifdef PROGRESS
-  fputc(' ', stdout);
-  fflush(stdout);
+    fputc('c', stdout);
+    fflush(stdout);
 #endif
-  return c;
+
+    domain::destroy(d);
+
+#ifdef PROGRESS
+    fputc(' ', stdout);
+    fflush(stdout);
+#endif
+    return c;
 }
 
 int main()

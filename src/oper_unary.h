@@ -79,6 +79,8 @@ class MEDDLY::unary_operation : public operation {
         /// Make sure all three domains are the same.
         inline void checkDomains(const char* file, unsigned line) const
         {
+            MEDDLY_DCASSERT(argF);
+            MEDDLY_DCASSERT(resF);
             if  ( (argF->getDomain() != resF->getDomain()) )
             {
                 throw error(error::DOMAIN_MISMATCH, file, line);
@@ -88,9 +90,10 @@ class MEDDLY::unary_operation : public operation {
         inline void checkAllRelations(const char* file, unsigned line,
                 set_or_rel a) const
         {
+            MEDDLY_DCASSERT(argF);
             if  (
                     (argF->isForRelations() != a)  ||
-                    (resF->isForRelations() != a)
+                    (resF && resF->isForRelations() != a)
                 )
             {
                 throw error(error::TYPE_MISMATCH, file, line);
@@ -100,9 +103,10 @@ class MEDDLY::unary_operation : public operation {
         inline void checkAllLabelings(const char* file, unsigned line,
                 edge_labeling a) const
         {
+            MEDDLY_DCASSERT(argF);
             if  (
                     (argF->getEdgeLabeling() != a)  ||
-                    (resF->getEdgeLabeling() != a)
+                    (resF && resF->getEdgeLabeling() != a)
                 )
             {
                 throw error(error::TYPE_MISMATCH, file, line);
@@ -112,6 +116,8 @@ class MEDDLY::unary_operation : public operation {
         inline void checkLabelings(const char* file, unsigned line,
                 edge_labeling a, edge_labeling r) const
         {
+            MEDDLY_DCASSERT(argF);
+            MEDDLY_DCASSERT(resF);
             if  (
                     (argF->getEdgeLabeling() != a)  ||
                     (resF->getEdgeLabeling() != r)
@@ -124,9 +130,10 @@ class MEDDLY::unary_operation : public operation {
         inline void checkAllRanges(const char* file, unsigned line,
                 range_type rt) const
         {
+            MEDDLY_DCASSERT(argF);
             if  (
                     (argF->getRangeType() != rt)  ||
-                    (resF->getRangeType() != rt)
+                    (resF && resF->getRangeType() != rt)
                 )
             {
                 throw error(error::TYPE_MISMATCH, file, line);
@@ -136,6 +143,8 @@ class MEDDLY::unary_operation : public operation {
         inline void checkRanges(const char* file, unsigned line,
                 range_type a, range_type r) const
         {
+            MEDDLY_DCASSERT(argF);
+            MEDDLY_DCASSERT(resF);
             if  (
                     (argF->getRangeType() != a)  ||
                     (resF->getRangeType() != r)
@@ -155,10 +164,6 @@ class MEDDLY::unary_operation : public operation {
         void computeTemp(const dd_edge &arg, dd_edge &res);
         virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
 #endif
-
-        virtual void compute(const dd_edge &arg, long &res);
-        virtual void compute(const dd_edge &arg, double &res);
-        virtual void compute(const dd_edge &arg, ct_object &c);
 
         /**
             New virtual compute method for DDs.
@@ -185,6 +190,21 @@ class MEDDLY::unary_operation : public operation {
         virtual void compute(int L, const edge_value &av, node_handle ap,
                 oper_item &res);
 
+
+        inline void compute(const dd_edge &arg, long &res) {
+            oper_item tmp(res);
+            compute(argF->getMaxLevelIndex(), arg.getEdgeValue(),
+                    arg.getNode(), tmp);
+            res = tmp.getInteger();
+        }
+
+        inline void compute(const dd_edge &arg, double &res) {
+            oper_item tmp(res);
+            compute(argF->getMaxLevelIndex(), arg.getEdgeValue(),
+                    arg.getNode(), tmp);
+            res = tmp.getReal();
+        }
+
 #ifdef HAVE_LIBGMP
         inline void compute(const dd_edge &arg, mpz_ptr v) {
             oper_item tmp(v);
@@ -209,7 +229,6 @@ class MEDDLY::unary_operation : public operation {
                 return true;
             }
         }
-
 
     protected:
         forest* argF;
@@ -357,21 +376,6 @@ namespace MEDDLY {
     inline void apply(unary_builtin2 bu, const dd_edge &a, oper_item &c)
     {
         unary_operation* uop = bu(a.getForest(), c.getType());
-        uop->compute(a, c);
-    }
-
-    /** Apply a unary operator.
-        For operators whose result is a anything else.
-            @param  bu  Built-in unary operator (function)
-            @param  a   Operand.
-            @param  rt  Type of result
-            @param  c   Output parameter: the result,
-                          where \a c = \a op \a a.
-    */
-    inline void apply(unary_builtin2 bu, const dd_edge &a, opnd_type rt,
-            ct_object &c)
-    {
-        unary_operation* uop = bu(a.getForest(), rt);
         uop->compute(a, c);
     }
 

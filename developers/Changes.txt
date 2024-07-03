@@ -2,10 +2,6 @@
 Interface changes (aside from moving header files around)
 ======================================================================
 
-Next to implement:
-    cardinality
-        as a use case for generic operation results :)
-
 Make compute table interface easier to use for simple operations
     (i.e., most of the time)
 
@@ -16,122 +12,6 @@ Updates to operation interface:
 
     * Allow (back) low-level interface
 
-TBD:
-    can we use ct_item in place of oper_item?
-
-    otherwise we will need
-
-        ct_item -> oper_item
-        oper_item -> ct_item
-
-
-NEW FILE?
-
-oper_item.h:
-
-    /*
-        Idea:
-        for unary, binary, etc. operations that operate on,
-        or return, something that is NOT a dd_edge.
-        For example: cardinality -> long, double, huge integer
-        Could have others, e.g., get the first SIZE elements of a set,
-        where SIZE could be a huge integer.
-
-        Note:
-        NOT used for edge values;
-        those are part of a dd_edge.
-        These are so we can pass one thing
-        (instead of overloading every time)
-        to APPLY
-
-        e.g.,
-            APPLY(const dd_edge &a, oper_item &result);
-            APPLY(const dd_edge &a, const oper_item &b, dd_edge &result);
-    */
-
-    enum class oper_item_type {
-        ERROR,
-        INTEGER,
-        LONG,
-        DOUBLE,
-        HUGEINT
-    };
-
-    // for everything other than FOREST
-    class oper_item {
-        public:
-            oper_item(oper_item_type t = ERROR);
-            oper_item(int v);
-            oper_item(long v);
-            oper_item(double v);
-#ifdef HAVE_GMP
-            oper_item(mpz_t v);
-#endif
-
-            // getters for the type
-
-            // getters for the value
-
-            inline void get(int &v) const;
-            inline void get(long &v) const;
-            inline void get(double &v) const;
-#ifdef HAVE_GMP
-            inline void get(mpz_t &v) const;
-#endif
-
-    //
-    // TBD: should we include CT stuff here,
-    // i.e., things from ct_object?
-    // number of CT slots required
-    // how to stuff this into a CT
-    // how to extract this from a CT
-    // should it be hashed if part of a CT entry?
-    //
-
-        private:
-            union {
-                int         the_int;
-                long        the_long;
-                double      the_double;
-                mpz_t       the_mpz;
-            };
-
-            oper_item_type mytype;
-    };
-
-
-Hashing an mpz_t if needed:
-    size_t mpz_size(const mpz_t x);
-    const mp_libt_t* mpz_limbs_read(const mpz_t x);
-or
-    mp_limb_t mpz_getlimbn(const mpz_t x, mp_size_t n);
-    // ^ use 0 for least significant limb
-    // (i.e., maybe only hash this lsl?)
-
-
-unary:
-
-    compute(edge_value inv, node_handle inp,
-            int out_level,
-            edge_value &outv, node_handle &outp);
-
-    compute(edge_value inv, node_handle inp, long &out);
-    compute(edge_value inv, node_handle inp, double &out);
-    compute(edge_value inv, node_handle inp, ct_object &out);
-
-    // TBD: do we want a wrapper object for non-dd compute results,
-    // something like:
-    compute(edge_value inv, node_handle inp, compute_result &out);
-    // or can we use ct_object here and expand it???
-
-
-
-binary:
-    compute(edge_value av, node_handle ap, edge_value bv, node_handle bp,
-        int out_level,
-        edge_value &outv, node_handle &outp);
-
-
 
 Operation updates, to do:
     * re-implement operations using new CT interface
@@ -141,115 +21,11 @@ Operation updates, to do:
     * eventually: remove entry registration from operation base class
 
 
-Unpacked matrix class (new):
-    * array of pointers to unpacked_node,
-      allocated in chunks of 16
-    * memory is recycled like in unpacked_node
-    * newUnpacked(forest* f, node_handle p, node_storage_flags rs);
-        // p is at an unprimed level
-        // rs determines storage for each row
-    * newRedundant(const forest* f, int k, const edge_value &ev,
-                    node_handle p, node_storage_flags);
-    * newIdentity(const forest* f, int k, const edge_value &ev,
-                    node_handle p, node_storage_flags);
-    * newBlank(forest* f, int k, node_storage_flags);
-
-    * reduce(edge_value &ev, node_handle &p);
-
 
 Next release:
 
 Finish Reimplementing operations.
 
-Depending on how that goes, maybe adjust the operation hierarchy?
-
-        some thoughts:
-            operation
-                |
-                +--- binary_operation
-                        |
-                        +---- binary skip levels
-                        |           inline void compute_top(
-                        |               const dd_edge &a,
-                        |               const dd_edge &b, dd_edge c)
-                        |
-                        |           node_handle compute(node_handle a,
-                        |               node_handle b)
-                        |
-                        +---- binary by levels (for quasi reduced results)
-                        |
-                        |           node_handle compute(int K,
-                        |               node_handle a, node_handle b)
-                        |
-                        +---- binary, EV, skip levels
-                        |
-                        |           compute(const edge_value &av,
-                        |               node_handle an, const edge_value &,
-                        |               node_handle bn, edge_value &ec,
-                        |               node_handle &cn)
-                        |
-                        |           We could use the same iface for MT
-                        |           using void edge values, see if there's
-                        |           overhead and if so keep them split.
-                        |
-                        +---- binary, EV, by levels
-
-
-Although, if we make compute tables easy enough to use, then
-the motivation for abstract apply operation implementation goes away.
-
-Ideal:
-    class union : public binary_operation {
-        // ...
-        private:
-            ct_entry_type* CTE;
-    };
-
-    union::union(owner, fa1, fa2, fres)
-        : binary_operation(owner, fa1, fa2, fres)
-    {
-        CTE = new ct_entry_type("union");
-        //        ^
-        //        This now also builds the CT (or uses the monolithic one)
-        //        for this entry and calls it automatically.
-        //        The entry is automatically registered with the CT.
-        CTE->setFixed(fa1, fa2);
-        CTE->setResult(fres);
-    }
-
-    union::~union()
-    {
-        delete CTE;
-        //     ^
-        //     unregisters with its CT automatically.
-        //     if the CT is not monolithic, it's also destroyed
-    }
-
-    void union::compute(node_handle a, node_handle b, node_handle &c)
-    {
-        if (0==a) return b;
-        if (0==b) return a;
-        if (1==a) return 1;
-        if (1==b) return 1;
-        if (a==b) return a; // same forest only
-
-        commute_order(a, b);    // if we can commute, make sure a<b
-
-        ct_vector key(2), result(1);
-
-        key[0].setN(a);
-        key[1].setN(b);
-
-        if (CTE->find(key, result)) {
-            c = result[0].getN();
-            return;
-        }
-
-        // do computation with answer stored in c
-
-        result[0].setN(c);
-        CTE->addEntry(key, result);
-    }
 
 ======================================================================
 

@@ -145,37 +145,6 @@ void MEDDLY::unary_operation::computeDDEdge(const dd_edge &arg, dd_edge &res, bo
 }
 #endif
 
-void MEDDLY::unary_operation::compute(const dd_edge &arg, long &res)
-{
-    if (new_style) {
-        oper_item tmp(res);
-        compute(argF->getMaxLevelIndex(),
-                arg.getEdgeValue(), arg.getNode(),
-                tmp);
-        res = tmp.integer();
-    } else {
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
-}
-
-void MEDDLY::unary_operation::compute(const dd_edge &arg, double &res)
-{
-    if (new_style) {
-        oper_item tmp(res);
-        compute(argF->getMaxLevelIndex(),
-                arg.getEdgeValue(), arg.getNode(),
-                tmp);
-        res = tmp.real();
-    } else {
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
-}
-
-void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
 // new compute methods
 
 void MEDDLY::unary_operation::compute(const edge_value &av, node_handle ap,
