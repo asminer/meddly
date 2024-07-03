@@ -268,13 +268,7 @@ generic EV 'operator' for edges should provide:
 ======================================================================
 Operations and have they been reimplemented yet
 ======================================================================
-cardinality.cc
-        NO      card_mdd_int
-        NO      card_mxd_int
-        NO      card_mdd_real
-        NO      card_mxd_real
-        NO      card_mdd_mpz
-        NO      card_mxd_mpz
+cardinality.cc      YES
 
 comp_eq.cc
         NO      equal_mdd
@@ -300,9 +294,7 @@ comp_ne.cc
         NO      unequal_mdd
         NO      unequal_mxd
 
-complement.cc
-        YES     compl_mdd
-        YES     compl_mxd
+complement.cc       YES
 
 constrained.cc
         NO      constrained_forwd_dfs_mt
@@ -322,9 +314,7 @@ cross.cc
 cycle.cc
         NO      cycle_EV2EV
 
-difference.cc
-        YES     diffr_mdd
-        YES     diffr_mxd
+difference.cc       YES
 
 divide.cc
         NO      divide_mdd

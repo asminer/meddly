@@ -214,7 +214,7 @@ MEDDLY::mt_mxd_bool::unionOneMinterm(node_handle a,  int* from,  int* to, int le
   const int aLevel = getNodeLevel(a);
   const int bLevel = level;
   int resultLevel = ABS(topLevel(aLevel,bLevel));
-  int dwnLevel = downLevel(resultLevel);
+  int dwnLevel = MXD_levels::downLevel(resultLevel);
 
   if(aLevel < bLevel) {
     return unionOneMinterm(a, from, to, bLevel-1);
@@ -268,7 +268,7 @@ MEDDLY::mt_mxd_bool::unionOneMinterm_r(int in, int k, node_handle a,  int* from,
       else {
         for (unsigned j=0; j<resultSize; j++) {
             if(j == to[bLevel]) {
-                C->setFull(j, unionOneMinterm(a, from, to, downLevel(k)));
+                C->setFull(j, unionOneMinterm(a, from, to, MXD_levels::downLevel(k)));
             } else {
                 C->setFull(j, 0);
             }
@@ -284,15 +284,15 @@ MEDDLY::mt_mxd_bool::unionOneMinterm_r(int in, int k, node_handle a,  int* from,
   //if a in not at this level
   if( this->isFullyReduced() && (aLevel != k) )
   {
-    if(b_to == DONT_CARE) return unionOneMinterm(a, from, to, downLevel(k));
+    if(b_to == DONT_CARE) return unionOneMinterm(a, from, to, MXD_levels::downLevel(k));
     else if(b_to == DONT_CHANGE)
     {
-      C->setFull(in, unionOneMinterm(a, from, to, downLevel(k)));
+      C->setFull(in, unionOneMinterm(a, from, to, MXD_levels::downLevel(k)));
       return createReducedNode(-1,C);
     }
   } else if( this->isIdentityReduced() && (b_to == DONT_CHANGE) && (aLevel != k) )
   {
-    return unionOneMinterm(a, from, to, downLevel(k));
+    return unionOneMinterm(a, from, to, MXD_levels::downLevel(k));
   }
 
 
@@ -311,7 +311,7 @@ MEDDLY::mt_mxd_bool::unionOneMinterm_r(int in, int k, node_handle a,  int* from,
 
   for (unsigned j=0; j<resultSize; j++) {
     if(j==b_to) {
-        C->setFull(j, unionOneMinterm(A->down(j), from, to, downLevel(k)));
+        C->setFull(j, unionOneMinterm(A->down(j), from, to, MXD_levels::downLevel(k)));
     } else {
         C->setFull(j, linkNode(A->down(j)));
     }

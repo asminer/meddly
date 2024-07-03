@@ -463,7 +463,7 @@ MEDDLY::diffr_mxd::_compute(node_handle A, node_handle B, int L)
     for (unsigned z=0; z<Au->getSize(); z++) {
         const unsigned i = Au->index(z);
         const node_handle cd = _compute_primed(int(i), Au->down(z),
-                Bu->down(i), forest::downLevel(Clevel));
+                Bu->down(i), MXD_levels::downLevel(Clevel));
         if (cd) {
             Cu->setSparse(zc++, i, cd);
         }
@@ -566,7 +566,7 @@ MEDDLY::diffr_mxd::_compute_primed(int in, node_handle A, node_handle B,
     for (unsigned z=0; z<Au->getSize(); z++) {
         const unsigned i = Au->index(z);
         const node_handle cd = _compute(Au->down(z), Bu->down(i),
-                forest::downLevel(Clevel));
+                MXD_levels::downLevel(Clevel));
         if (cd) {
             Cu->setSparse(zc++, i, cd);
         }

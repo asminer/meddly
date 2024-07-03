@@ -94,7 +94,7 @@ void MEDDLY::node_marker::showByLevels(output &s) const
     const int lwid = (int) digits(For->getNumVariables());
     const int nwid = (int) digits(getSize());
 
-    for (int k=int(For->getNumVariables()); k; k = forest::downLevel(k)) {
+    for (int k=int(For->getNumVariables()); k; k = MXD_levels::downLevel(k)) {
 
         bool level_printed = false;
 

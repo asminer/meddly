@@ -34,9 +34,13 @@
 #include <vector>
 
 namespace MEDDLY {
+    class forest;
+
+    class MDD_levels;
+    class MXD_levels;
+
     class domain;
 
-    class forest;
     class node_marker;
     class node_storage;
     class unpacked_node;
@@ -47,6 +51,7 @@ namespace MEDDLY {
 
     class logger;
 };
+
 
 // ******************************************************************
 // *                                                                *
@@ -1211,9 +1216,9 @@ class MEDDLY::forest {
                 @param  k   Current level
                 @return Level immediately below level k
         */
-        static inline int downLevel(int k) {
-            return (k>0) ? (-k) : (-k-1);
-        }
+        // static inline int downLevel(int k) {
+            // return (k>0) ? (-k) : (-k-1);
+        // }
 
         /** Go "up a level" in a relation.
             Safest to use this, in case in later versions
@@ -1221,9 +1226,9 @@ class MEDDLY::forest {
                 @param  k   Current level
                 @return Level immediately above level k
         */
-        static inline int upLevel(int k) {
-            return (k<0) ? (-k) : (-k-1);
-        }
+        // static inline int upLevel(int k) {
+            // return (k<0) ? (-k) : (-k-1);
+        // }
 
 
         /// Can we have extensible nodes at level k?
@@ -2485,6 +2490,66 @@ class MEDDLY::forest {
 
 
 };
+
+// ******************************************************************
+// *                                                                *
+// *                        MDD_levels class                        *
+// *                                                                *
+// ******************************************************************
+
+/**
+    Small class for MDD level behavior,
+    used for template parameters in operations.
+ */
+class MEDDLY::MDD_levels {
+    public:
+
+        /// Go "down a level"
+        static inline int downLevel(int k) {
+            return k-1;
+        }
+
+        ///  Go "up a level"
+        static inline int upLevel(int k) {
+            return k+1;
+        }
+
+        /// Determine if a skipped level is fully reduced
+        static inline bool isFullyLevel(forest* f, int k) {
+            return true;
+        }
+};
+
+
+// ******************************************************************
+// *                                                                *
+// *                        MXD_levels class                        *
+// *                                                                *
+// ******************************************************************
+
+/**
+    Small class for MXD level behavior,
+    used for template parameters in operations.
+ */
+class MEDDLY::MXD_levels {
+    public:
+
+        /// Go "down a level"
+        static inline int downLevel(int k) {
+            return (k>0) ? (-k) : (-k-1);
+        }
+
+        ///  Go "up a level"
+        static inline int upLevel(int k) {
+            return (k<0) ? (-k) : (-k-1);
+        }
+
+        /// Determine if a skipped level is fully reduced
+        static inline bool isFullyLevel(forest* f, int k) {
+            return (k>0) || f->isFullyReduced();
+        }
+};
+
 
 
 

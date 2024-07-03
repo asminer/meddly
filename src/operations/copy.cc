@@ -212,9 +212,9 @@ MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node
   }
   int nextk;
   if (resF->isForRelations()) {
-    nextk = resF->downLevel(k);
+    nextk = MXD_levels::downLevel(k);
   } else {
-    nextk = k-1;
+    nextk = MDD_levels::downLevel(k);
   }
 
   // Initialize node reader
@@ -426,9 +426,9 @@ void MEDDLY::copy_MT2EV<TYPE>
   // What's below?
   int nextk;
   if (resF->isForRelations()) {
-    nextk = resF->downLevel(k);
+    nextk = MXD_levels::downLevel(k);
   } else {
-    nextk = k-1;
+    nextk = MDD_levels::downLevel(k);
   }
 
   // Initialize node reader
@@ -625,9 +625,9 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   // What's below?
   int nextk;
   if (resF->isForRelations()) {
-    nextk = resF->downLevel(k);
+    nextk = MXD_levels::downLevel(k);
   } else {
-    nextk = k-1;
+    nextk = MDD_levels::downLevel(k);
   }
 
   // Initialize node reader
@@ -906,9 +906,9 @@ void MEDDLY::copy_EV2EV_slow<INTYPE,INOP,OUTTYPE>
   // What's below?
   int nextk;
   if (resF->isForRelations()) {
-    nextk = resF->downLevel(k);
+    nextk = MXD_levels::downLevel(k);
   } else {
-    nextk = k-1;
+    nextk = MDD_levels::downLevel(k);
   }
 
   // Initialize node reader

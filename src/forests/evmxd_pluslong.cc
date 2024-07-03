@@ -181,14 +181,14 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_iterator::next()
       down = path[k].down(nzp[k]);
       MEDDLY_DCASSERT(down);
       const long ev = path[k].edgeval(nzp[k]).getLong();
-      acc_evs[downLevel(k)] = acc_evs[k] + ev;
+      acc_evs[MXD_levels::downLevel(k)] = acc_evs[k] + ev;
       break;
     }
     if (maxLevel == k) {
       level_change = k+1;
       return false;
     }
-    k = upLevel(k);
+    k = MXD_levels::upLevel(k);
   } // infinite loop
   level_change = k;
 
@@ -208,7 +208,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_iterator::first(int k, node_handle down)
 
   bool isFully = F->isFullyReduced();
 
-  for ( ; k; k = downLevel(k) ) {
+  for ( ; k; k = MXD_levels::downLevel(k) ) {
     MEDDLY_DCASSERT(down);
     int kdn = F->getNodeLevel(down);
     MEDDLY_DCASSERT(!isLevelAbove(kdn, k));
@@ -226,7 +226,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_iterator::first(int k, node_handle down)
     index[k] = path[k].index(0);
     down = path[k].down(0);
     const long ev = path[k].edgeval(0).getLong();
-    acc_evs[downLevel(k)] = acc_evs[k] + ev;
+    acc_evs[MXD_levels::downLevel(k)] = acc_evs[k] + ev;
   }
   // save the terminal value
   index[0] = down;
@@ -277,8 +277,8 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedrow_iter::next()
       MEDDLY_DCASSERT(down);
       level_change = k;
       const long ev = path[k].edgeval(nzp[k]).getLong();
-      acc_evs[downLevel(k)] = acc_evs[k] + ev;
-      if (first(downLevel(k), down)) return true;
+      acc_evs[MXD_levels::downLevel(k)] = acc_evs[k] + ev;
+      if (first(MXD_levels::downLevel(k), down)) return true;
     }
   } // for
 
@@ -318,14 +318,14 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedrow_iter::first(int k, node_handle dow
 
   //
   // Ok, set up the "column" node below
-  k = downLevel(k);
+  k = MXD_levels::downLevel(k);
   MEDDLY_DCASSERT(k<0);
 
   if (isLevelAbove(k, F->getNodeLevel(cdown))) {
     // Skipped level, we can be fast about this.
-    acc_evs[downLevel(k)] = acc_evs[k];
+    acc_evs[MXD_levels::downLevel(k)] = acc_evs[k];
     // first, recurse.
-    if (!first(downLevel(k), cdown)) return false;
+    if (!first(MXD_levels::downLevel(k), cdown)) return false;
     // Ok, there is a valid path.
     // Set up this level.
     nzp[k] = 0;
@@ -333,7 +333,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedrow_iter::first(int k, node_handle dow
       path[k].initRedundant(F, k, 0L, cdown, SPARSE_ONLY);
       index[k] = 0;
     } else {
-      index[k] = index[upLevel(k)];
+      index[k] = index[MXD_levels::upLevel(k)];
       path[k].initIdentity(F, k, index[k], 0L, cdown, SPARSE_ONLY);
     }
     return true;
@@ -346,8 +346,8 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedrow_iter::first(int k, node_handle dow
 
   for (unsigned z=0; z<path[k].getSize(); z++) {
     const long ev = path[k].edgeval(z).getLong();
-    acc_evs[downLevel(k)] = acc_evs[k] + ev;
-    if (first(downLevel(k), path[k].down(z))) {
+    acc_evs[MXD_levels::downLevel(k)] = acc_evs[k] + ev;
+    if (first(MXD_levels::downLevel(k), path[k].down(z))) {
       nzp[k] = z;
       index[k] = path[k].index(z);
       return true;
@@ -400,9 +400,9 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::next()
       down = path[k].down(nzp[k]);
       MEDDLY_DCASSERT(down);
       const long ev = path[k].edgeval(nzp[k]).getLong();
-      acc_evs[downLevel(k)] = acc_evs[k] + ev;
+      acc_evs[MXD_levels::downLevel(k)] = acc_evs[k] + ev;
       level_change = k;
-      if (first(downLevel(k), down)) return true;
+      if (first(MXD_levels::downLevel(k), down)) return true;
     }
   } // for
 
@@ -429,17 +429,17 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::first(int k, node_handle dow
     if (isLevelAbove(k, F->getNodeLevel(down))) {
       if (!F->isFullyReduced()) {
         // Identity node here - check index
-        if (index[k] != index[upLevel(k)]) return false;
+        if (index[k] != index[MXD_levels::upLevel(k)]) return false;
       }
-      acc_evs[downLevel(k)] = acc_evs[k];
-      return first(downLevel(k), down);
+      acc_evs[MXD_levels::downLevel(k)] = acc_evs[k];
+      return first(MXD_levels::downLevel(k), down);
     }
     long ev;
     int cdown;
     F->getDownPtr(down, index[k], ev, cdown);
     if (0==cdown) return false;
-    acc_evs[downLevel(k)] = acc_evs[k] + ev;
-    return first(downLevel(k), cdown);
+    acc_evs[MXD_levels::downLevel(k)] = acc_evs[k] + ev;
+    return first(MXD_levels::downLevel(k), cdown);
   }
 
   // Row node.  Find an index, if any,
@@ -448,12 +448,12 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::first(int k, node_handle dow
   int kdn = F->getNodeLevel(down);
   if (isLevelAbove(k, kdn)) {
     // Skipped level, handle quickly
-    int kpr = downLevel(k);
+    int kpr = MXD_levels::downLevel(k);
     if (isLevelAbove(kpr, F->getNodeLevel(kdn))) {
       // next level is also skipped.
       acc_evs[kpr] = acc_evs[k];
       // See if there is a valid path below.
-      if (!first(downLevel(kpr), down)) return false;
+      if (!first(MXD_levels::downLevel(kpr), down)) return false;
       // There's one below, set up the one at these levels.
       path[k].initRedundant(F, k, 0L, down, SPARSE_ONLY);
       if (F->isFullyReduced()) {
@@ -471,7 +471,7 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::first(int k, node_handle dow
     int cdown;
     F->getDownPtr(down, index[kpr], ev, cdown);
     if (0==cdown) return false;
-    acc_evs[downLevel(kpr)] = acc_evs[kpr] * ev;
+    acc_evs[MXD_levels::downLevel(kpr)] = acc_evs[kpr] * ev;
     if (!first(kpr, cdown)) return false;
     path[k].initRedundant(F, k, 0L, down, SPARSE_ONLY);
     nzp[k] = 0;
@@ -485,8 +485,8 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::first(int k, node_handle dow
   for (unsigned z=0; z<path[k].getSize(); z++) {
     index[k] = path[k].index(z);
     const long ev = path[k].edgeval(z).getLong();
-    acc_evs[downLevel(k)] = acc_evs[k] + ev;
-    if (first(downLevel(k), path[k].down(z))) {
+    acc_evs[MXD_levels::downLevel(k)] = acc_evs[k] + ev;
+    if (first(MXD_levels::downLevel(k), path[k].down(z))) {
       nzp[k] = z;
       return true;
     }

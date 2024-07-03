@@ -300,7 +300,7 @@ namespace MEDDLY {
           //
           if (0==batchP) continue;
 
-          node_handle total=createEdgePr(v, F->downLevel(k), start, batchP);
+          node_handle total=createEdgePr(v, MXD_levels::downLevel(k), start, batchP);
           if(total!=F->getTransparentNode()){
             nb->setSparse(z, v, total);
             z++;
@@ -357,7 +357,7 @@ namespace MEDDLY {
 
         dd_edge dontcares(F);
         if (batchP > start) {
-          dontcares.set( createEdgeUn(F->downLevel(k), start, batchP) );
+          dontcares.set( createEdgeUn(MXD_levels::downLevel(k), start, batchP) );
         }
 
         //
@@ -416,7 +416,7 @@ namespace MEDDLY {
           //
           dd_edge these(F);
           if (batchP > start) {
-            these.set( createEdgeUn(F->downLevel(k), start, batchP) );
+            these.set( createEdgeUn(MXD_levels::downLevel(k), start, batchP) );
           }
 
           //

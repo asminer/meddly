@@ -1175,7 +1175,7 @@ double MEDDLY::otf_relation::getArcCount(
   for (int k = 1; k < num_levels; k++) {
     node_handle current_node = confirmed_local_states.getNode();
     int current_level = resF->getNodeLevel(current_node);
-    int next_level = resF->upLevel(resF->upLevel(current_level));
+    int next_level = MXD_levels::upLevel(MXD_levels::upLevel(current_level));
     MEDDLY_DCASSERT(next_level >= 0);
     unpacked_node* node = unpacked_node::newFull(resF, next_level,
             unsigned(resF->getLevelSize(next_level))

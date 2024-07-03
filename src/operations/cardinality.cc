@@ -86,16 +86,16 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                    card_mdd  template class                    *
+// *                        card_templ class                        *
 // *                                                                *
 // ******************************************************************
 
 namespace MEDDLY {
-    template <class RTYPE>
-    class card_mdd : public unary_operation {
+    template <class DDTYPE, class RTYPE>
+    class card_templ : public unary_operation {
         public:
-            card_mdd(forest* arg);
-            virtual ~card_mdd();
+            card_templ(forest* arg);
+            virtual ~card_templ();
 
             virtual void compute(int L, const edge_value &av, node_handle ap,
                     oper_item &result);
@@ -113,150 +113,8 @@ namespace MEDDLY {
 
 // ******************************************************************
 
-template <class RTYPE>
-MEDDLY::card_mdd<RTYPE>::card_mdd(forest* arg)
-    : unary_operation(arg, RTYPE::getOpndType())
-#ifdef TRACE
-      , out(std::cout)
-#endif
-{
-    ct = new ct_entry_type("mdd_cardinality");
-    ct->setFixed(arg);
-    ct->setResult(RTYPE::getCTletter());
-    ct->doneBuilding();
-}
-
-template <class RTYPE>
-MEDDLY::card_mdd<RTYPE>::~card_mdd()
-{
-    ct->markForDestroy();
-}
-
-template <class RTYPE>
-void MEDDLY::card_mdd<RTYPE>::compute(int L, const edge_value &av,
-        node_handle ap, oper_item &result)
-{
-    MEDDLY_DCASSERT(result.hasType(RTYPE::getOpndType()));
-#ifdef TRACE
-    out.indentation(0);
-#endif
-    _compute(L, ap, result);
-}
-
-template <class RTYPE>
-void MEDDLY::card_mdd<RTYPE>::_compute(int L, node_handle A, oper_item &result)
-{
-    //
-    // Terminal cases
-    //
-    if (0==A) {
-        RTYPE::set(result, 0);
-        return;
-    }
-    if (0==L) {
-        RTYPE::set(result, 1);
-        return;
-    }
-
-    //
-    // Quickly deal with skipped levels
-    //
-    if (argF->getNodeLevel(A) != L) {
-        _compute(L-1, A, result);
-        RTYPE::scaleBy(result, argF->getLevelSize(L));
-        return;
-    }
-
-#ifdef TRACE
-    out << "card_mdd::_compute(" << L << ", " << A << ")\n";
-#endif
-
-    //
-    // Check compute table
-    //
-    ct_vector key(1);
-    ct_vector res(1);
-    key[0].setN(A);
-    if (ct->findCT(key, res)) {
-        RTYPE::set(result, res[0]);
-#ifdef TRACE
-        out << "  CT hit: ";
-        RTYPE::show(out, result);
-        out << '\n';
-#endif
-        return;
-    }
-
-    //
-    // Do computation
-    //
-    unpacked_node* Au = argF->newUnpacked(A, SPARSE_ONLY);
-
-#ifdef TRACE
-    out << "    node " << A << ": ";
-    Au->show(out, false);
-    out.indent_more();
-    out.put('\n');
-#endif
-    RTYPE::set(result, 0);
-    oper_item temp;
-    RTYPE::initTemp(temp);
-    for (unsigned z=0; z<Au->getSize(); z++) {
-        _compute(L-1, Au->down(z), temp);
-        RTYPE::addTo(result, temp);
-    }
-    RTYPE::doneTemp(temp);
-#ifdef TRACE
-    out.indent_less();
-    out.put('\n');
-    out << "card_mdd::_compute(" << L << ", " << A << ") = ";
-    RTYPE::show(out, result);
-    out << '\n';
-#endif
-
-    //
-    // Cleanup
-    //
-    unpacked_node::Recycle(Au);
-
-    //
-    // Save result in CT
-    //
-    RTYPE::set(res[0], result);
-    ct->addCT(key, res);
-}
-
-// ******************************************************************
-// *                                                                *
-// *                    card_mxd  template class                    *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-    template <class RTYPE>
-    class card_mxd : public unary_operation {
-        public:
-            card_mxd(forest* arg);
-            virtual ~card_mxd();
-
-            virtual void compute(int L, const edge_value &av, node_handle ap,
-                    oper_item &result);
-
-        protected:
-            void _compute(int L, node_handle A, oper_item &result);
-
-        private:
-            ct_entry_type* ct;
-#ifdef TRACE
-            ostream_output out;
-#endif
-    };
-};
-
-// ******************************************************************
-
-template <class RTYPE>
-MEDDLY::card_mxd<RTYPE>::card_mxd(forest* arg)
+template <class DDTYPE, class RTYPE>
+MEDDLY::card_templ<DDTYPE,RTYPE>::card_templ(forest* arg)
     : unary_operation(arg, RTYPE::getOpndType())
 #ifdef TRACE
       , out(std::cout)
@@ -268,14 +126,14 @@ MEDDLY::card_mxd<RTYPE>::card_mxd(forest* arg)
     ct->doneBuilding();
 }
 
-template <class RTYPE>
-MEDDLY::card_mxd<RTYPE>::~card_mxd()
+template <class DDTYPE, class RTYPE>
+MEDDLY::card_templ<DDTYPE, RTYPE>::~card_templ()
 {
     ct->markForDestroy();
 }
 
-template <class RTYPE>
-void MEDDLY::card_mxd<RTYPE>::compute(int L, const edge_value &av,
+template <class DDTYPE, class RTYPE>
+void MEDDLY::card_templ<DDTYPE, RTYPE>::compute(int L, const edge_value &av,
         node_handle ap, oper_item &result)
 {
     MEDDLY_DCASSERT(result.hasType(RTYPE::getOpndType()));
@@ -285,8 +143,9 @@ void MEDDLY::card_mxd<RTYPE>::compute(int L, const edge_value &av,
     _compute(L, ap, result);
 }
 
-template <class RTYPE>
-void MEDDLY::card_mxd<RTYPE>::_compute(int L, node_handle A, oper_item &result)
+template <class DDTYPE, class RTYPE>
+void MEDDLY::card_templ<DDTYPE, RTYPE>::_compute(int L, node_handle A,
+        oper_item &result)
 {
     //
     // Terminal cases
@@ -300,24 +159,20 @@ void MEDDLY::card_mxd<RTYPE>::_compute(int L, node_handle A, oper_item &result)
         return;
     }
 
-    const int Ldn = argF->downLevel(L);
+    const int Ldn = DDTYPE::downLevel(L);
     //
     // Quickly deal with skipped levels
     //
     if (argF->getNodeLevel(A) != L) {
         _compute(Ldn, A, result);
-        //
-        // Unprimed level: multiply by variable size
-        // Primed level:   multiply by variable size if we're fully reduced
-        //
-        if (L>0 || argF->isFullyReduced()) {
+        if (DDTYPE::isFullyLevel(argF, L)) {
             RTYPE::scaleBy(result, argF->getLevelSize(L));
         }
         return;
     }
 
 #ifdef TRACE
-    out << "card_mxd::_compute(" << L << ", " << A << ")\n";
+    out << "card_templ::_compute(" << L << ", " << A << ")\n";
 #endif
 
     //
@@ -358,7 +213,7 @@ void MEDDLY::card_mxd<RTYPE>::_compute(int L, node_handle A, oper_item &result)
 #ifdef TRACE
     out.indent_less();
     out.put('\n');
-    out << "card_mxd::_compute(" << L << ", " << A << ") = ";
+    out << "card_templ::_compute(" << L << ", " << A << ") = ";
     RTYPE::show(out, result);
     out << '\n';
 #endif
@@ -556,22 +411,22 @@ MEDDLY::unary_operation* MEDDLY::CARDINALITY(forest* arg, opnd_type res)
     switch (res) {
         case opnd_type::INTEGER:
             if (arg->isForRelations())
-                return CARD_cache.add(new card_mxd<intcard>(arg));
+                return CARD_cache.add(new card_templ<MXD_levels, intcard>(arg));
             else
-                return CARD_cache.add(new card_mdd<intcard>(arg));
+                return CARD_cache.add(new card_templ<MDD_levels, intcard>(arg));
 
         case opnd_type::REAL:
             if (arg->isForRelations())
-                return CARD_cache.add(new card_mxd<realcard>(arg));
+                return CARD_cache.add(new card_templ<MXD_levels, realcard>(arg));
             else
-                return CARD_cache.add(new card_mdd<realcard>(arg));
+                return CARD_cache.add(new card_templ<MDD_levels, realcard>(arg));
 
 #ifdef HAVE_LIBGMP
         case opnd_type::HUGEINT:
             if (arg->isForRelations())
-                return CARD_cache.add(new card_mxd<mpzcard>(arg));
+                return CARD_cache.add(new card_templ<MXD_levels, mpzcard>(arg));
             else
-                return CARD_cache.add(new card_mdd<mpzcard>(arg));
+                return CARD_cache.add(new card_templ<MDD_levels, mpzcard>(arg));
 #endif
 
         default:

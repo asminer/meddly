@@ -702,9 +702,9 @@ MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
         //
         while (K != L) {
             if (isForRelations()) {
-                K = upLevel(K);
+                K = MXD_levels::upLevel(K);
             } else {
-                K++;
+                K = MDD_levels::upLevel(K);
             }
             U = unpacked_node::newRedundant(this, K, p, FULL_ONLY);
             linkAllDown(*U, 1);
@@ -1288,14 +1288,12 @@ void MEDDLY::forest::validateDownPointers(const unpacked_node &nb) const
             break;
 
         case reduction_rule::QUASI_REDUCED:
-#ifdef DEVELOPMENT_CODE
             int nextLevel;
             if (isForRelations()) {
-                nextLevel = downLevel(nb.getLevel());
+                nextLevel = MXD_levels::downLevel(nb.getLevel());
             } else {
-                nextLevel = nb.getLevel()-1;
+                nextLevel = MDD_levels::downLevel(nb.getLevel());
             }
-#endif
             for (unsigned i=0; i<nb.getSize(); i++) {
                 if (nb.down(i)==getTransparentNode()) continue;
                 MEDDLY_DCASSERT(getNodeLevel(nb.down(i)) == nextLevel);

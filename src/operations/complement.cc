@@ -325,7 +325,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_compute(node_handle A, int L)
 #endif
     for (unsigned i=0; i<Cu->getSize(); i++) {
         Cu->setFull(i,
-            _compute_primed(int(i), Au->down(i), forest::downLevel(Clevel))
+            _compute_primed(int(i), Au->down(i), MXD_levels::downLevel(Clevel))
         );
     }
 #ifdef TRACE
@@ -405,7 +405,7 @@ MEDDLY::node_handle MEDDLY::compl_mxd::_compute_primed(int in,
     out.put('\n');
 #endif
     for (unsigned i=0; i<Cu->getSize(); i++) {
-        Cu->setFull(i, _compute(Au->down(i), forest::downLevel(Clevel)));
+        Cu->setFull(i, _compute(Au->down(i), MXD_levels::downLevel(Clevel)));
     }
 #ifdef TRACE
     out.indent_less();

@@ -441,7 +441,7 @@ MEDDLY::inter_mxd::_compute(node_handle A, node_handle B, int L)
 
         const node_handle cd = _compute_primed(Au->index(za),
                 Au->down(za), Bu->down(zb),
-                forest::downLevel(Cu->getLevel())
+                MXD_levels::downLevel(Cu->getLevel())
         );
 
         if (cd) {
@@ -539,7 +539,7 @@ MEDDLY::inter_mxd::_compute_primed(int in, node_handle A, node_handle B,
 
         const node_handle cd = _compute(
                 Au->down(za), Bu->down(zb),
-                forest::downLevel(Cu->getLevel())
+                MXD_levels::downLevel(Cu->getLevel())
         );
 
         if (cd) {

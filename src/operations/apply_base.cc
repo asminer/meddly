@@ -460,9 +460,9 @@ MEDDLY::generic_binary_mxd::compute_normal(node_handle a, node_handle b)
   // Do computation
   for (unsigned j=0; j<resultSize; j++) {
     C->setFull(j,
-        compute_r(j, resF->downLevel(resultLevel), A->down(j), B->down(j))
+        compute_r(j, MXD_levels::downLevel(resultLevel), A->down(j), B->down(j))
     );
-    // C->d_ref(j) = compute_r(j, resF->downLevel(resultLevel), A->down(j), B->down(j));
+    // C->d_ref(j) = compute_r(j, MXD_levels::downLevel(resultLevel), A->down(j), B->down(j));
   }
 
   // cleanup
@@ -486,7 +486,7 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
   int resultLevel = ABS(topLevel(aLevel, bLevel));
-  const int dwnLevel = resF->downLevel(resultLevel);
+  const int dwnLevel = MXD_levels::downLevel(resultLevel);
 
   MEDDLY_DCASSERT(resF->isExtensibleLevel(resultLevel));
 
@@ -872,7 +872,7 @@ MEDDLY::generic_binbylevel_mxd
   MEDDLY_DCASSERT(!B->isExtensible());
 
   // Do computation
-  int nextLevel = resF->downLevel(resultLevel);
+  int nextLevel = MXD_levels::downLevel(resultLevel);
   unsigned nnz = 0;
   for (unsigned j=0; j<resultSize; j++) {
     node_handle d = compute_r(j, nextLevel, A->down(j), B->down(j));
@@ -1093,7 +1093,7 @@ void MEDDLY::generic_binary_evplus_mxd
 //    long ev = Inf<long>();
     long ev = 0;
     node_handle ed = 0;
-    compute_r(i, resF->downLevel(resultLevel),
+    compute_r(i, MXD_levels::downLevel(resultLevel),
       aev + A->edge_long(i), A->down(i),
       bev + B->edge_long(i), B->down(i),
       ev, ed);

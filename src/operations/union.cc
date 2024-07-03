@@ -489,7 +489,7 @@ MEDDLY::union_mxd::_compute(node_handle A, node_handle B, int L)
     //
     for (unsigned i=0; i<Cu->getSize(); i++) {
         Cu->setFull(i, _compute_primed(i, Au->down(i), Bu->down(i),
-                    forest::downLevel(Clevel)));
+                    MXD_levels::downLevel(Clevel)));
     }
 #ifdef TRACE
     std::cout << "union_mxd::_compute(" << A << ", " << B << ", " << L
@@ -601,7 +601,7 @@ MEDDLY::union_mxd::_compute_primed(int in, node_handle A, node_handle B,
     for (unsigned i=0; i<Cu->getSize(); i++) {
         Cu->setFull(i,
             _compute(Au->down(i), Bu->down(i),
-                forest::downLevel(Cu->getLevel()))
+                MXD_levels::downLevel(Cu->getLevel()))
         );
     }
 
