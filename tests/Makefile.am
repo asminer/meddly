@@ -24,6 +24,7 @@ noinst_PROGRAMS = \
     kanban \
     nodestor \
     nqueens \
+    ops_comp \
     ops_set \
     refcount \
     sat_test
@@ -47,6 +48,7 @@ TESTS = \
     kanban \
     nodestor \
     nqueens \
+    ops_comp \
     ops_set \
     refcount \
     sat_test
@@ -88,7 +90,6 @@ chk_ct_LDADD = ../src/libmeddly.la
 chk_ct_old_SOURCES = chk_ct_old.cc
 chk_ct_old_LDADD = ../src/libmeddly.la
 
-
 chk_evtimes_float_SOURCES = chk_evtimes_float.cc
 chk_evtimes_float_LDADD = ../src/libmeddly.la
 
@@ -120,6 +121,9 @@ nodestor_LDADD = ../src/libmeddly.la
 
 nqueens_SOURCES = nqueens.cc
 nqueens_LDADD = ../src/libmeddly.la
+
+ops_comp_SOURCES = ops_comp.cc
+ops_comp_LDADD = ../src/libmeddly.la
 
 ops_set_SOURCES = ops_set.cc
 ops_set_LDADD = ../src/libmeddly.la

@@ -51,7 +51,7 @@ difference.cc       YES
 maxmin_range.cc     YES
 
 ======================================================================
-Operations and have they been reimplemented yet
+Operations that need updating
 ======================================================================
 
 comp_eq.cc
