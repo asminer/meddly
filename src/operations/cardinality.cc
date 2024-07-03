@@ -120,7 +120,7 @@ MEDDLY::card_templ<DDTYPE,RTYPE>::card_templ(forest* arg)
       , out(std::cout)
 #endif
 {
-    ct = new ct_entry_type("mxd_cardinality");
+    ct = new ct_entry_type("cardinality");
     ct->setFixed(arg);
     ct->setResult(RTYPE::getCTletter());
     ct->doneBuilding();

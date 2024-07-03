@@ -266,9 +266,17 @@ generic EV 'operator' for edges should provide:
     static inline void clear(edge_value &a);
 
 ======================================================================
+Completely reimplemented operations
+======================================================================
+
+cardinality.cc      YES
+complement.cc       YES
+difference.cc       YES
+maxmin_range.cc     YES
+
+======================================================================
 Operations and have they been reimplemented yet
 ======================================================================
-cardinality.cc      YES
 
 comp_eq.cc
         NO      equal_mdd
@@ -294,8 +302,6 @@ comp_ne.cc
         NO      unequal_mdd
         NO      unequal_mxd
 
-complement.cc       YES
-
 constrained.cc
         NO      constrained_forwd_dfs_mt
         NO      constrained_bckwd_dfs_mt
@@ -314,7 +320,6 @@ cross.cc
 cycle.cc
         NO      cycle_EV2EV
 
-difference.cc       YES
 
 divide.cc
         NO      divide_mdd
@@ -330,12 +335,6 @@ maxmin.cc
         NO      maximum_mxd
         NO      minimum_mdd
         NO      minimum_mxd
-
-maxmin_range.cc
-        NO      maxrange_int
-        NO      maxrange_real
-        NO      minrange_int
-        NO      minrange_real
 
 mdd2index.cc
         NO      mdd2index_operation

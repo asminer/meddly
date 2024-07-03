@@ -22,7 +22,12 @@
 #include "../ct_entry_key.h"
 #include "../ct_entry_result.h"
 #include "../compute_table.h"
+
+#include "../oper_item.h"
 #include "../oper_unary.h"
+#include "../ct_vector.h"
+#include "../ct_generics.h"
+
 
 namespace MEDDLY {
     class range_int;
@@ -34,10 +39,261 @@ namespace MEDDLY {
     class maxrange_real;
     class minrange_real;
 
+    class intrange;
+    class intmin;
+    class intmax;
+
+    class realrange;
+    class realmin;
+    class realmax;
+
     unary_list MAXRANGE_cache;
     unary_list MINRANGE_cache;
 };
 
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                        Range operations                        *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+/*
+    Required methods for RTYPE classes (should be inlined):
+
+        /// Get the operand type
+        static opnd_type getOpndType();
+
+        /// Return the compute table letter for the type
+        static char getCTletter();
+
+        /// Sets result from a compute table item
+        static void set(oper_item &result, const ct_item &cached);
+
+        /// Sets a compute table item from the result
+        static void set(ct_item &cached, const oper_item &result);
+
+        /// Initialize an item from a terminal
+        static void initItem(oper_item &result, node_handle term);
+
+        /// Update a result from another result
+        static void updateItem(oper_item &result, const oper_item &val);
+
+ */
+
+// ******************************************************************
+// *                                                                *
+// *                       range_templ  class                       *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class RTYPE>
+    class range_templ : public unary_operation {
+        public:
+            range_templ(forest* arg);
+            virtual ~range_templ();
+
+            virtual void compute(int L, const edge_value &av, node_handle ap,
+                    oper_item &result);
+
+        protected:
+            void _compute(node_handle A, oper_item &result);
+
+        private:
+            ct_entry_type* ct;
+#ifdef TRACE
+            ostream_output out;
+#endif
+    };
+};
+
+// ******************************************************************
+
+template <class RTYPE>
+MEDDLY::range_templ<RTYPE>::range_templ(forest* arg)
+    : unary_operation(arg, RTYPE::getOpndType())
+#ifdef TRACE
+      , out(std::cout)
+#endif
+{
+    ct = new ct_entry_type("range");
+    ct->setFixed(arg);
+    ct->setResult(RTYPE::getCTletter());
+    ct->doneBuilding();
+}
+
+template <class RTYPE>
+MEDDLY::range_templ<RTYPE>::~range_templ()
+{
+    ct->markForDestroy();
+}
+
+template <class RTYPE>
+void MEDDLY::range_templ<RTYPE>::compute(int L, const edge_value &av,
+        node_handle ap, oper_item &result)
+{
+    MEDDLY_DCASSERT(result.hasType(RTYPE::getOpndType()));
+#ifdef TRACE
+    out.indentation(0);
+#endif
+    _compute(ap, result);
+}
+
+template <class RTYPE>
+void MEDDLY::range_templ<RTYPE>::_compute(node_handle A, oper_item &r)
+{
+    //
+    // Terminal case
+    //
+    if (argF->isTerminalNode(A)) {
+        RTYPE::initItem(r, A);
+        return;
+    }
+
+    //
+    // Check compute table
+    //
+    ct_vector key(1);
+    ct_vector res(1);
+    key[0].setN(A);
+    if (ct->findCT(key, res)) {
+        RTYPE::set(r, res[0]);
+        return;
+    }
+
+    //
+    // Do computation
+    //
+    unpacked_node* Au = argF->newUnpacked(A, SPARSE_ONLY);
+    _compute(Au->down(0), r);
+    oper_item tmp(RTYPE::getOpndType());
+    for (unsigned i=1; i<Au->getSize(); i++) {
+        _compute(Au->down(i), tmp);
+        RTYPE::updateItem(r, tmp);
+    }
+
+    //
+    // Cleanup
+    //
+    unpacked_node::Recycle(Au);
+
+    //
+    // Save result in CT
+    //
+    RTYPE::set(res[0], r);
+    ct->addCT(key, res);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                     integer helper classes                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::intrange {
+    public:
+        static inline opnd_type getOpndType() {
+            return opnd_type::INTEGER;
+        }
+
+        static inline char getCTletter() {
+            return 'L';
+        }
+
+        static inline void set(oper_item &result, const ct_item &cached) {
+            result.integer() = cached.getL();
+        }
+
+        static inline void set(ct_item &cached, const oper_item &result) {
+            cached.setL(result.getInteger());
+        }
+
+        static inline void initItem(oper_item &result, node_handle term) {
+            terminal t;
+            t.setFromHandle(terminal_type::INTEGER, term);
+            result.integer() = t.getInteger();
+        }
+};
+
+class MEDDLY::intmin : public MEDDLY::intrange {
+    public:
+        static inline void updateItem(oper_item &result, const oper_item &val)
+        {
+            result.integer() = MIN(result.integer(), val.getInteger());
+        }
+
+};
+
+class MEDDLY::intmax : public MEDDLY::intrange {
+    public:
+        static inline void updateItem(oper_item &result, const oper_item &val)
+        {
+            result.integer() = MAX(result.integer(), val.getInteger());
+        }
+};
+
+// ******************************************************************
+// *                                                                *
+// *                      real helper  classes                      *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::realrange {
+    public:
+        static inline opnd_type getOpndType() {
+            return opnd_type::REAL;
+        }
+
+        static inline char getCTletter() {
+            return 'D';
+        }
+
+        static inline void set(oper_item &result, const ct_item &cached) {
+            result.real() = cached.getD();
+        }
+
+        static inline void set(ct_item &cached, const oper_item &result) {
+            cached.setD(result.getReal());
+        }
+
+        static inline void initItem(oper_item &result, node_handle term) {
+            terminal t;
+            t.setFromHandle(terminal_type::REAL, term);
+            result.real() = t.getReal();
+        }
+};
+
+class MEDDLY::realmin : public MEDDLY::realrange {
+    public:
+        static inline void updateItem(oper_item &result, const oper_item &val)
+        {
+            result.real() = MIN(result.real(), val.getReal());
+        }
+
+};
+
+class MEDDLY::realmax : public MEDDLY::realrange {
+    public:
+        static inline void updateItem(oper_item &result, const oper_item &val)
+        {
+            result.real() = MAX(result.real(), val.getReal());
+        }
+};
+
+// ******************************************************************
+// ******************************************************************
+// ******************************************************************
+// ******************************************************************
+// ******************************************************************
+//
+// OLD IMPLEMENTATION BELOW HERE
+//
+// ******************************************************************
+// ******************************************************************
+// ******************************************************************
+// ******************************************************************
 // ******************************************************************
 // *                                                                *
 // *                        range_int  class                        *
@@ -336,12 +592,12 @@ MEDDLY::unary_operation* MEDDLY::MAX_RANGE(forest* arg, opnd_type res)
         case opnd_type::INTEGER:
             if (range_type::INTEGER != arg->getRangeType())
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            return MAXRANGE_cache.add(new maxrange_int(arg));
+            return MAXRANGE_cache.add(new range_templ<intmax>(arg));
 
         case opnd_type::REAL:
             if (range_type::REAL != arg->getRangeType())
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            return MAXRANGE_cache.add(new maxrange_real(arg));
+            return MAXRANGE_cache.add(new range_templ<realmax>(arg));
 
         default:
             throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -377,12 +633,12 @@ MEDDLY::unary_operation* MEDDLY::MIN_RANGE(forest* arg, opnd_type res)
         case opnd_type::INTEGER:
             if (range_type::INTEGER != arg->getRangeType())
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            return MINRANGE_cache.add(new minrange_int(arg));
+            return MINRANGE_cache.add(new range_templ<intmin>(arg));
 
         case opnd_type::REAL:
             if (range_type::REAL != arg->getRangeType())
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            return MINRANGE_cache.add(new minrange_real(arg));
+            return MINRANGE_cache.add(new range_templ<realmin>(arg));
 
         default:
             throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
