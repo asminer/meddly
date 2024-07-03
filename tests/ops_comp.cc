@@ -40,7 +40,7 @@ using namespace MEDDLY;
 // #define DEBUG_MXDOPS
 
 #define TEST_SETS
-#define TEST_RELATIONS
+// #define TEST_RELATIONS
 
 double Random(long newseed=0)
 {
@@ -449,6 +449,43 @@ void set2mdd(const std::vector<char> &S, forest *F, dd_edge &s)
     delete[] mtlist;
 }
 
+
+void set2mdd(const std::vector<bool> &S, forest *F, dd_edge &s)
+{
+    if (!F) throw "null forest";
+
+    // Determine S cardinality
+    unsigned card = 0;
+    for (unsigned i=0; i<S.size(); i++) {
+        if (S[i]) ++card;
+    }
+
+    // Special case - zero function
+    if (0==card) {
+        F->createEdge(0L, s);
+        return;
+    }
+
+    // Convert set S to list of minterms
+    int** mtlist = new int* [card];
+    card = 0;
+    for (unsigned i=0; i<S.size(); i++) {
+        if (!S[i]) continue;
+        mtlist[card] = new int[VARS+1];
+        fillMinterm(i, mtlist[card]);
+
+        ++card;
+    }
+
+    F->createEdge(mtlist, card, s);
+
+    // Cleanup
+    for (unsigned i=0; i<card; i++) {
+        delete[] mtlist[i];
+    }
+    delete[] mtlist;
+}
+
 void set2mxd(const std::vector<char> &S, forest *F, dd_edge &s)
 {
     if (!F) throw "null forest";
@@ -499,64 +536,184 @@ inline char getReductionType(forest* f)
     throw "Unknown reduction type";
 }
 
-void test_sets_over(unsigned scard, forest* F)
+void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2,
+        const std::vector<bool> &set)
 {
-    //
-    // FOR NOW: just test random 'sets'
-    //
+    if (e1 == e2) return;
+
     ostream_output out(std::cout);
 
-    out << "\nGenerating random sets of size " << scard << "\n";
+    out << "\nMismatch on " << what << "\n";
+    out << "Expected DD:\n";
+    e2.showGraph(out);
+    out << "Obtained DD:\n";
+    e1.showGraph(out);
 
-    std::vector <char> Avec(POTENTIAL);
-    dd_edge Add(F);
+    /*
+    std::cout << "Encoding set ";
+    showSet(std::cout, set);
+    std::cout << "\nMinterms\n    ";
+    showRelMinterms(std::cout, set);
+    */
 
-    randomizeSet(Avec, scard, 3);
+    throw "mismatch";
+}
 
-    set2mdd(Avec, F, Add);
 
-    out << "random set:\n";
-    Add.showGraph(out);
+void compare_sets(const std::vector <char> &Aset,
+        const std::vector <char> &Bset, forest* f1, forest* f2, forest* fres)
+{
+    std::vector <bool> AeqBset(POTENTIAL);
+    std::vector <bool> AneBset(POTENTIAL);
+    std::vector <bool> AgtBset(POTENTIAL);
+    std::vector <bool> AgeBset(POTENTIAL);
+    std::vector <bool> AltBset(POTENTIAL);
+    std::vector <bool> AleBset(POTENTIAL);
 
+    dd_edge Add(f1), Bdd(f2),
+            AeqBdd(fres), AneBdd(fres),
+            AgtBdd(fres), AgeBdd(fres),
+            AltBdd(fres), AleBdd(fres);
+
+    EQ(Aset, Bset, AeqBset);
+    NE(Aset, Bset, AneBset);
+    GE(Aset, Bset, AgeBset);
+    GT(Aset, Bset, AgtBset);
+    LE(Aset, Bset, AleBset);
+    LT(Aset, Bset, AltBset);
+
+    set2mdd(Aset, f1, Add);
+    set2mdd(Bset, f2, Bdd);
+    set2mdd(AeqBset, fres, AeqBdd);
+    set2mdd(AneBset, fres, AneBdd);
+    set2mdd(AgtBset, fres, AgtBdd);
+    set2mdd(AgeBset, fres, AgeBdd);
+    set2mdd(AltBset, fres, AltBdd);
+    set2mdd(AleBset, fres, AleBdd);
+
+    dd_edge AeqBsym(fres), AneBsym(fres),
+            AgtBsym(fres), AgeBsym(fres),
+            AltBsym(fres), AleBsym(fres);
+
+    apply(EQUAL,                Add, Bdd, AeqBsym);
+    apply(NOT_EQUAL,            Add, Bdd, AneBsym);
+    apply(GREATER_THAN,         Add, Bdd, AgtBsym);
+    apply(GREATER_THAN_EQUAL,   Add, Bdd, AgeBsym);
+    apply(LESS_THAN,            Add, Bdd, AltBsym);
+    apply(LESS_THAN_EQUAL,      Add, Bdd, AleBsym);
+
+    checkEqual("equal",                 AeqBsym, AeqBdd, AeqBset);
+    checkEqual("not_equal",             AneBsym, AneBdd, AneBset);
+    checkEqual("greater_than",          AgtBsym, AgtBdd, AgtBset);
+    checkEqual("greater_than_equal",    AgeBsym, AgeBdd, AgeBset);
+    checkEqual("less_than",             AltBsym, AltBdd, AltBset);
+    checkEqual("less_than_equal",       AleBsym, AleBdd, AleBset);
+}
+
+
+void test_sets_over(unsigned scard, forest* f1, forest* f2, forest* fres)
+{
+    if (!f1) throw "null f1";
+    if (!f2) throw "null f2";
+    if (!fres) throw "null fres";
+
+    std::cerr << "    " << getReductionType(f1) << getReductionType(f2)
+              << ':' << getReductionType(fres) << ' ';
+
+    std::vector <char> Aset(POTENTIAL);
+    std::vector <char> Bset(POTENTIAL);
+
+    for (unsigned i=0; i<10; i++) {
+        std::cerr << '.';
+        randomizeSet(Aset, scard, 3);
+        randomizeSet(Bset, scard, 3);
+
+        compare_sets(Aset, Bset, f1, f2, fres);
+    }
+    for (unsigned i=0; i<10; i++) {
+        std::cerr << "x";
+        randomizeFully(Aset, scard, 3);
+        randomizeFully(Bset, scard, 3);
+
+        compare_sets(Aset, Bset, f1, f2, fres);
+    }
+
+    std::cerr << std::endl;
 }
 
 void test_sets(domain* D)
 {
-    using namespace MEDDLY;
     policies p;
-
     p.useDefaults(SET);
 
-    forest* fully = forest::create(D, SET, range_type::INTEGER,
-                        edge_labeling::MULTI_TERMINAL, p);
+    forest* in_fully = forest::create(D, SET, range_type::INTEGER,
+                    edge_labeling::MULTI_TERMINAL, p);
+
+    forest* out_fully = forest::create(D, SET, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL, p);
 
     p.setQuasiReduced();
 
-    forest* quasi = forest::create(D, SET, range_type::INTEGER,
-                        edge_labeling::MULTI_TERMINAL, p);
+    forest* in_quasi = forest::create(D, SET, range_type::INTEGER,
+                    edge_labeling::MULTI_TERMINAL, p);
 
-    test_sets_over(1, fully);
-    test_sets_over(2, fully);
-    test_sets_over(4, fully);
-    test_sets_over(8, fully);
+    forest* out_quasi = forest::create(D, SET, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL, p);
 
+
+    for (unsigned i=1; i<=MAX_SET_CARD; i*=2) {
+        std::cout << "Testing sets of size " << i << " out of " << POTENTIAL << "\n";
+
+        test_sets_over(i, in_fully, in_fully, out_fully);
+        test_sets_over(i, in_fully, in_fully, out_quasi);
+        test_sets_over(i, in_fully, in_quasi, out_fully);
+        test_sets_over(i, in_fully, in_quasi, out_quasi);
+        test_sets_over(i, in_quasi, in_fully, out_fully);
+        test_sets_over(i, in_quasi, in_fully, out_quasi);
+        test_sets_over(i, in_quasi, in_quasi, out_fully);
+        test_sets_over(i, in_quasi, in_quasi, out_quasi);
+    }
 }
 
 int main()
 {
-    using namespace MEDDLY;
-
     Random(112358);
 
     try {
         MEDDLY::initialize();
 
+        //
+        // Test sets
+        //
+
+#ifdef TEST_SETS
         int bs[VARS];
         for (unsigned i=0; i<VARS; i++) {
             bs[i] = SETDOM;
         }
         domain* Ds = domain::createBottomUp(bs, VARS);
+
         test_sets(Ds);
+
+        domain::destroy(Ds);
+#endif
+
+        //
+        // Test relations
+        //
+
+#ifdef TEST_RELATIONS
+        int br[VARS];
+        for (unsigned i=0; i<VARS; i++) {
+            br[i] = RELDOM;
+        }
+        domain* Dr = domain::createBottomUp(br, VARS);
+
+        test_rels(Dr);
+
+        domain::destroy(Dr);
+
+#endif
 
         MEDDLY::cleanup();
         return 0;

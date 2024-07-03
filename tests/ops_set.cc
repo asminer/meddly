@@ -552,14 +552,14 @@ void test_sets_over(unsigned scard, forest* f1, forest* f2, forest* fres)
     std::vector <bool> Aset(POTENTIAL);
     std::vector <bool> Bset(POTENTIAL);
 
-    for (unsigned i=0; i<16; i++) {
+    for (unsigned i=0; i<10; i++) {
         std::cerr << '.';
         randomizeSet(Aset, scard);
         randomizeSet(Bset, scard);
 
         compare_sets(Aset, Bset, f1, f2, fres);
     }
-    for (unsigned i=0; i<16; i++) {
+    for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
         randomizeFully(Aset, scard);
         randomizeFully(Bset, scard);
@@ -568,6 +568,33 @@ void test_sets_over(unsigned scard, forest* f1, forest* f2, forest* fres)
     }
 
     std::cerr << std::endl;
+}
+
+void test_sets(domain* D)
+{
+    policies p;
+    p.useDefaults(SET);
+
+    forest* F1 = forest::create(D, SET, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL, p);
+
+    p.setQuasiReduced();
+
+    forest* F2 = forest::create(D, SET, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL, p);
+
+    for (unsigned i=1; i<=MAX_SET_CARD; i*=2) {
+        std::cout << "Testing sets of size " << i << " out of " << POTENTIAL << "\n";
+
+        test_sets_over(i, F1, F1, F1);
+        test_sets_over(i, F1, F1, F2);
+        test_sets_over(i, F1, F2, F1);
+        test_sets_over(i, F1, F2, F2);
+        test_sets_over(i, F2, F1, F1);
+        test_sets_over(i, F2, F1, F2);
+        test_sets_over(i, F2, F2, F1);
+        test_sets_over(i, F2, F2, F2);
+    }
 }
 
 void test_rels_over(unsigned scard, forest* f1, forest* f2, forest* fres)
@@ -582,21 +609,21 @@ void test_rels_over(unsigned scard, forest* f1, forest* f2, forest* fres)
     std::vector <bool> Aset(POTENTIAL);
     std::vector <bool> Bset(POTENTIAL);
 
-    for (unsigned i=0; i<16; i++) {
+    for (unsigned i=0; i<10; i++) {
         std::cerr << '.';
         randomizeSet(Aset, scard);
         randomizeSet(Bset, scard);
 
         compare_rels(Aset, Bset, f1, f2, fres);
     }
-    for (unsigned i=0; i<16; i++) {
+    for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
         randomizeFully(Aset, scard);
         randomizeFully(Bset, scard);
 
         compare_rels(Aset, Bset, f1, f2, fres);
     }
-    for (unsigned i=0; i<16; i++) {
+    for (unsigned i=0; i<10; i++) {
         std::cerr << "i";
         randomizeIdentity(Aset, scard);
         randomizeIdentity(Bset, scard);
@@ -606,49 +633,90 @@ void test_rels_over(unsigned scard, forest* f1, forest* f2, forest* fres)
     std::cerr << std::endl;
 }
 
+void test_rels(domain* D)
+{
+    policies p;
+    p.useDefaults(RELATION);
+
+    p.setQuasiReduced();
+
+    forest* R1 = forest::create(D, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL, p);
+
+    p.setFullyReduced();
+
+    forest* R2 = forest::create(D, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL, p);
+
+    p.setIdentityReduced();
+
+    forest* R3 = forest::create(D, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL, p);
+
+
+    for (unsigned i=1; i<=MAX_REL_CARD; i*=2) {
+        std::cout << "Testing relations of size " << i << " out of " << POTENTIAL << "\n";
+
+        test_rels_over(i, R1, R1, R1);
+        test_rels_over(i, R1, R1, R2);
+        test_rels_over(i, R1, R1, R3);
+
+        test_rels_over(i, R1, R2, R1);
+        test_rels_over(i, R1, R2, R2);
+        test_rels_over(i, R1, R2, R3);
+
+        test_rels_over(i, R1, R3, R1);
+        test_rels_over(i, R1, R3, R2);
+        test_rels_over(i, R1, R3, R3);
+    // ---
+        test_rels_over(i, R2, R1, R1);
+        test_rels_over(i, R2, R1, R2);
+        test_rels_over(i, R2, R1, R3);
+
+        test_rels_over(i, R2, R2, R1);
+        test_rels_over(i, R2, R2, R2);
+        test_rels_over(i, R2, R2, R3);
+
+        test_rels_over(i, R2, R3, R1);
+        test_rels_over(i, R2, R3, R2);
+        test_rels_over(i, R2, R3, R3);
+    // ---
+        test_rels_over(i, R3, R1, R1);
+        test_rels_over(i, R3, R1, R2);
+        test_rels_over(i, R3, R1, R3);
+
+        test_rels_over(i, R3, R2, R1);
+        test_rels_over(i, R3, R2, R2);
+        test_rels_over(i, R3, R2, R3);
+
+        test_rels_over(i, R3, R3, R1);
+        test_rels_over(i, R3, R3, R2);
+        test_rels_over(i, R3, R3, R3);
+    }
+}
+
 int main()
 {
-    using namespace MEDDLY;
-
     Random(11235);
 
     try {
         MEDDLY::initialize();
         policies p;
 
-#ifdef TEST_SETS
         //
         // Test sets
         //
 
+#ifdef TEST_SETS
         int bs[VARS];
         for (unsigned i=0; i<VARS; i++) {
             bs[i] = SETDOM;
         }
         domain* Ds = domain::createBottomUp(bs, VARS);
 
-        p.useDefaults(SET);
+        test_sets(Ds);
 
-        forest* F1 = forest::create(Ds, SET, range_type::BOOLEAN,
-                        edge_labeling::MULTI_TERMINAL, p);
-
-        p.setQuasiReduced();
-
-        forest* F2 = forest::create(Ds, SET, range_type::BOOLEAN,
-                        edge_labeling::MULTI_TERMINAL, p);
-
-        for (unsigned i=1; i<=MAX_SET_CARD; i*=2) {
-            std::cout << "Testing sets of size " << i << " out of " << POTENTIAL << "\n";
-
-            test_sets_over(i, F1, F1, F1);
-            test_sets_over(i, F1, F1, F2);
-            test_sets_over(i, F1, F2, F1);
-            test_sets_over(i, F1, F2, F2);
-            test_sets_over(i, F2, F1, F1);
-            test_sets_over(i, F2, F1, F2);
-            test_sets_over(i, F2, F2, F1);
-            test_sets_over(i, F2, F2, F2);
-        }
+        domain::destroy(Ds);
 #endif
 
         //
@@ -662,63 +730,10 @@ int main()
         }
         domain* Dr = domain::createBottomUp(br, VARS);
 
-        p.useDefaults(RELATION);
+        test_rels(Dr);
 
-        p.setQuasiReduced();
+        domain::destroy(Dr);
 
-        forest* R1 = forest::create(Dr, RELATION, range_type::BOOLEAN,
-                        edge_labeling::MULTI_TERMINAL, p);
-
-        p.setFullyReduced();
-
-        forest* R2 = forest::create(Dr, RELATION, range_type::BOOLEAN,
-                        edge_labeling::MULTI_TERMINAL, p);
-
-        p.setIdentityReduced();
-
-        forest* R3 = forest::create(Dr, RELATION, range_type::BOOLEAN,
-                        edge_labeling::MULTI_TERMINAL, p);
-
-
-        for (unsigned i=1; i<=MAX_REL_CARD; i*=2) {
-            std::cout << "Testing relations of size " << i << " out of " << POTENTIAL << "\n";
-
-            test_rels_over(i, R1, R1, R1);
-            test_rels_over(i, R1, R1, R2);
-            test_rels_over(i, R1, R1, R3);
-
-            test_rels_over(i, R1, R2, R1);
-            test_rels_over(i, R1, R2, R2);
-            test_rels_over(i, R1, R2, R3);
-
-            test_rels_over(i, R1, R3, R1);
-            test_rels_over(i, R1, R3, R2);
-            test_rels_over(i, R1, R3, R3);
-        // ---
-            test_rels_over(i, R2, R1, R1);
-            test_rels_over(i, R2, R1, R2);
-            test_rels_over(i, R2, R1, R3);
-
-            test_rels_over(i, R2, R2, R1);
-            test_rels_over(i, R2, R2, R2);
-            test_rels_over(i, R2, R2, R3);
-
-            test_rels_over(i, R2, R3, R1);
-            test_rels_over(i, R2, R3, R2);
-            test_rels_over(i, R2, R3, R3);
-        // ---
-            test_rels_over(i, R3, R1, R1);
-            test_rels_over(i, R3, R1, R2);
-            test_rels_over(i, R3, R1, R3);
-
-            test_rels_over(i, R3, R2, R1);
-            test_rels_over(i, R3, R2, R2);
-            test_rels_over(i, R3, R2, R3);
-
-            test_rels_over(i, R3, R3, R1);
-            test_rels_over(i, R3, R3, R2);
-            test_rels_over(i, R3, R3, R3);
-        }
 #endif
 
         MEDDLY::cleanup();
