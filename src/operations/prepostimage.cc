@@ -2346,7 +2346,7 @@ for (unsigned i = 0; i < rSize; i++) {
                                                         // printf("ELSE OMEGA2 inside HERE %d !!\n",eqnewstates );
                                                         if(d)
                                                         printf("Omega part newstates%d,leqnewstates%d,eqnewstates%d\n",newstates,leqnewstates,eqnewstates );
-                                                        getchar();
+                                                        // getchar();
                                                         if(newstates!=0){
                                                             AddtoNH(D,jp,newstates);
                                                             if(d)
