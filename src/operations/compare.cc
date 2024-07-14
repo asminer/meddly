@@ -23,7 +23,7 @@
 #include "../oper_binary.h"
 #include "../ct_vector.h"
 
-#define TRACE
+// #define TRACE
 
 #ifdef TRACE
 #include "../operators.h"
@@ -188,8 +188,10 @@ MEDDLY::compare_op<DDTYPE,CTYPE>::_compute(int in, node_handle A,
     }
 
     if (arg1F->isTerminalNode(A) && arg2F->isTerminalNode(B)) {
-        terminal tt( CTYPE::compare(arg1F, A, arg2F, B) );
-        return resF->makeRedundantsTo(tt.getHandle(), 0, L);
+        if (0==L || !go_by_levels) {
+            terminal tt( CTYPE::compare(arg1F, A, arg2F, B) );
+            return resF->makeRedundantsTo(tt.getHandle(), 0, L);
+        }
     }
 
     //
