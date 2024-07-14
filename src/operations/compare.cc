@@ -29,6 +29,19 @@
 #include "../operators.h"
 #endif
 
+//
+// Operation instance caches
+//
+namespace MEDDLY {
+    binary_list EQUAL_cache;
+    binary_list NEQ_cache;
+
+    binary_list GT_cache;
+    binary_list GE_cache;
+
+    binary_list LT_cache;
+    binary_list LE_cache;
+};
 
 // ******************************************************************
 // *                                                                *
@@ -52,16 +65,9 @@
         /// I.e., does x ~ x always evaluate to true, or to false?
         static bool isReflexive();
 
-        /// Get the value of the terminal node.
-        /// The return type depends on if we're comparing integers, reals, etc.
-        static bool/int/float  getTerminalValue(const forest* F, node_handle n);
-
-        /// Compare values.
-        static bool compare(bool/int/float val1, bool/int/float val2);
-
-        /// Get the result for equal functions.
-        /// I.e., is
-        static bool
+        /// Compare terminals a and b.
+        static bool compare(const forest* fa, node_handle a,
+                            const forest* fb, node_handle b);
 
  */
 
@@ -72,7 +78,7 @@
 // ******************************************************************
 
 namespace MEDDLY {
-    template <class DDTYPE, class RTYPE>
+    template <class DDTYPE, class CTYPE>
     class compare_op : public binary_operation {
         public:
             compare_op(forest* arg1, forest* arg2, forest* res);
@@ -173,12 +179,7 @@ MEDDLY::compare_op<DDTYPE,CTYPE>::_compute(int in, node_handle A,
     }
 
     if (arg1F->isTerminalNode(A) && arg2F->isTerminalNode(B)) {
-        terminal tt(
-            CTYPE::compare(
-                CTYPE::getTerminalValue(arg1F, A),
-                CTYPE::getTerminalValue(arg2F, B)
-            )
-        );
+        terminal tt( CTYPE::compare(arg1F, A, arg2F, B) );
         return resF->makeRedundantsTo(tt.getHandle(), 0, L);
     }
 
@@ -317,6 +318,200 @@ MEDDLY::compare_op<DDTYPE,CTYPE>::_compute(int in, node_handle A,
 }
 
 // ******************************************************************
+// *                                                                *
+// *                         eq_templ class                         *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class RANGE>
+    class eq_templ {
+        inline static const char* name() {
+            return "==";
+        }
+
+        inline static bool isSymmetric() {
+            return true;    // x == y is the same as y == x
+        }
+
+        inline static bool isReflexive() {
+            return true;    // x == x is true
+        }
+
+        inline static bool compare(const forest* fa, node_handle a,
+                const forest* fb, node_handle b)
+        {
+            RANGE av, bv;
+            fa->getValueFromHandle(a, av);
+            fb->getValueFromHandle(b, bv);
+            return ( av == bv );
+        }
+    };
+
+};
+
+// ******************************************************************
+// *                                                                *
+// *                         ne_templ class                         *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class RANGE>
+    class ne_templ {
+        inline static const char* name() {
+            return "!=";
+        }
+
+        inline static bool isSymmetric() {
+            return true;    // x != y is the same as y != x
+        }
+
+        inline static bool isReflexive() {
+            return false;   // x != x is false
+        }
+
+        inline static bool compare(const forest* fa, node_handle a,
+                const forest* fb, node_handle b)
+        {
+            RANGE av, bv;
+            fa->getValueFromHandle(a, av);
+            fb->getValueFromHandle(b, bv);
+            return ( av != bv );
+        }
+    };
+};
+
+// ******************************************************************
+// *                                                                *
+// *                         gt_templ class                         *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class RANGE>
+    class gt_templ {
+        inline static const char* name() {
+            return ">";
+        }
+
+        inline static bool isSymmetric() {
+            return false;   // x > y is not the same as y > x
+        }
+
+        inline static bool isReflexive() {
+            return false;   // x > x is false
+        }
+
+        inline static bool compare(const forest* fa, node_handle a,
+                const forest* fb, node_handle b)
+        {
+            RANGE av, bv;
+            fa->getValueFromHandle(a, av);
+            fb->getValueFromHandle(b, bv);
+            return ( av > bv );
+        }
+    };
+};
+
+// ******************************************************************
+// *                                                                *
+// *                         ge_templ class                         *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class RANGE>
+    class ge_templ {
+        inline static const char* name() {
+            return ">=";
+        }
+
+        inline static bool isSymmetric() {
+            return false;   // x >= y is not the same as y >= x
+        }
+
+        inline static bool isReflexive() {
+            return true;    // x >= x is true
+        }
+
+        inline static bool compare(const forest* fa, node_handle a,
+                const forest* fb, node_handle b)
+        {
+            RANGE av, bv;
+            fa->getValueFromHandle(a, av);
+            fb->getValueFromHandle(b, bv);
+            return ( av >= bv );
+        }
+    };
+};
+
+// ******************************************************************
+// *                                                                *
+// *                         lt_templ class                         *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class RANGE>
+    class lt_templ {
+        inline static const char* name() {
+            return "<";
+        }
+
+        inline static bool isSymmetric() {
+            return false;   // x < y is not the same as y < x
+        }
+
+        inline static bool isReflexive() {
+            return false;   // x < x is false
+        }
+
+        inline static bool compare(const forest* fa, node_handle a,
+                const forest* fb, node_handle b)
+        {
+            RANGE av, bv;
+            fa->getValueFromHandle(a, av);
+            fb->getValueFromHandle(b, bv);
+            return ( av < bv );
+        }
+    };
+};
+
+// ******************************************************************
+// *                                                                *
+// *                         le_templ class                         *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class RANGE>
+    class le_templ {
+        inline static const char* name() {
+            return "<=";
+        }
+
+        inline static bool isSymmetric() {
+            return false;   // x <= y is not the same as y <= x
+        }
+
+        inline static bool isReflexive() {
+            return true;    // x <= x is true
+        }
+
+        inline static bool compare(const forest* fa, node_handle a,
+                const forest* fb, node_handle b)
+        {
+            RANGE av, bv;
+            fa->getValueFromHandle(a, av);
+            fb->getValueFromHandle(b, bv);
+            return ( av <= bv );
+        }
+    };
+};
+
+
+// ******************************************************************
 // ******************************************************************
 // ******************************************************************
 //
@@ -338,7 +533,6 @@ namespace MEDDLY {
     // TBD: this operation is strange
     class equal_evtimes;
 
-    binary_list EQUAL_cache;
 };
 
 
@@ -473,11 +667,6 @@ bool MEDDLY::equal_evtimes
 // ******************************************************************
 // ******************************************************************
 
-namespace MEDDLY {
-    binary_list NEQ_cache;
-};
-
-
 // ******************************************************************
 // *                                                                *
 // *                       unequal_mdd  class                       *
@@ -564,10 +753,6 @@ bool unequal_mxd<T>
 // ******************************************************************
 // ******************************************************************
 
-namespace MEDDLY {
-    binary_list GT_cache;
-};
-
 // ******************************************************************
 // *                                                                *
 // *                       morethan_mdd class                       *
@@ -651,10 +836,6 @@ bool morethan_mxd<T>
 // **                      GREATER  OR EQUAL                       **
 // ******************************************************************
 // ******************************************************************
-
-namespace MEDDLY {
-    binary_list GE_cache;
-};
 
 // ******************************************************************
 // *                                                                *
@@ -740,10 +921,6 @@ bool moreequal_mxd<T>
 // ******************************************************************
 // ******************************************************************
 
-namespace MEDDLY {
-    binary_list LT_cache;
-};
-
 // ******************************************************************
 // *                                                                *
 // *                       lessthan_mdd class                       *
@@ -827,10 +1004,6 @@ bool lessthan_mxd<T>
 // **                        LESS OR EQUAL                         **
 // ******************************************************************
 // ******************************************************************
-
-namespace MEDDLY {
-    binary_list LE_cache;
-};
 
 // ******************************************************************
 // *                                                                *
