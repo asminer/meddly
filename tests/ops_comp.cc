@@ -39,8 +39,8 @@ using namespace MEDDLY;
 
 // #define DEBUG_MXDOPS
 
-#define TEST_SETS
-// #define TEST_RELATIONS
+// #define TEST_SETS
+#define TEST_RELATIONS
 
 double Random(long newseed=0)
 {
@@ -516,7 +516,7 @@ void set2mxd(const std::vector<char> &S, forest *F, dd_edge &s)
         ++card;
     }
 
-    F->createEdge(unlist, prlist, card, s);
+    F->createEdge(unlist, prlist, vals, card, s);
 
     // Cleanup
     for (unsigned i=0; i<card; i++) {
@@ -527,6 +527,47 @@ void set2mxd(const std::vector<char> &S, forest *F, dd_edge &s)
     delete[] unlist;
     delete[] prlist;
 }
+
+void set2mxd(const std::vector<bool> &S, forest *F, dd_edge &s)
+{
+    if (!F) throw "null forest";
+
+    // Determine S cardinality
+    unsigned card = 0;
+    for (unsigned i=0; i<S.size(); i++) {
+        if (S[i]) ++card;
+    }
+
+    // Special case - empty set
+    if (0==card) {
+        F->createEdge(false, s);
+        return;
+    }
+
+    // Convert set S to list of minterms
+    int** unlist = new int* [card];
+    int** prlist = new int* [card];
+    card = 0;
+    for (unsigned i=0; i<S.size(); i++) {
+        if (!S[i]) continue;
+        unlist[card] = new int[VARS+1];
+        prlist[card] = new int[VARS+1];
+        fillMinterm(i, unlist[card], prlist[card]);
+        ++card;
+    }
+
+    F->createEdge(unlist, prlist, card, s);
+
+    // Cleanup
+    for (unsigned i=0; i<card; i++) {
+        delete[] unlist[i];
+        delete[] prlist[i];
+    }
+    delete[] unlist;
+    delete[] prlist;
+}
+
+
 
 inline char getReductionType(forest* f)
 {
@@ -595,19 +636,23 @@ void compare_sets(const std::vector <char> &Aset,
             AgtBsym(fres), AgeBsym(fres),
             AltBsym(fres), AleBsym(fres);
 
-    apply(EQUAL,                Add, Bdd, AeqBsym);
-    apply(NOT_EQUAL,            Add, Bdd, AneBsym);
-    apply(GREATER_THAN,         Add, Bdd, AgtBsym);
-    apply(GREATER_THAN_EQUAL,   Add, Bdd, AgeBsym);
-    apply(LESS_THAN,            Add, Bdd, AltBsym);
-    apply(LESS_THAN_EQUAL,      Add, Bdd, AleBsym);
+    apply(EQUAL,                        Add,        Bdd,    AeqBsym);
+    checkEqual("equal",                 AeqBsym,    AeqBdd, AeqBset);
 
-    checkEqual("equal",                 AeqBsym, AeqBdd, AeqBset);
-    checkEqual("not_equal",             AneBsym, AneBdd, AneBset);
-    checkEqual("greater_than",          AgtBsym, AgtBdd, AgtBset);
-    checkEqual("greater_than_equal",    AgeBsym, AgeBdd, AgeBset);
-    checkEqual("less_than",             AltBsym, AltBdd, AltBset);
-    checkEqual("less_than_equal",       AleBsym, AleBdd, AleBset);
+    apply(NOT_EQUAL,                    Add,        Bdd,    AneBsym);
+    checkEqual("not_equal",             AneBsym,    AneBdd, AneBset);
+
+    apply(GREATER_THAN,                 Add,        Bdd,    AgtBsym);
+    checkEqual("greater_than",          AgtBsym,    AgtBdd, AgtBset);
+
+    apply(GREATER_THAN_EQUAL,           Add,        Bdd,    AgeBsym);
+    checkEqual("greater_than_equal",    AgeBsym,    AgeBdd, AgeBset);
+
+    apply(LESS_THAN,                    Add,        Bdd,    AltBsym);
+    checkEqual("less_than",             AltBsym,    AltBdd, AltBset);
+
+    apply(LESS_THAN_EQUAL,              Add,        Bdd,    AleBsym);
+    checkEqual("less_than_equal",       AleBsym,    AleBdd, AleBset);
 }
 
 
@@ -646,6 +691,8 @@ void test_sets(domain* D)
     policies p;
     p.useDefaults(SET);
 
+    p.setFullyReduced();
+
     forest* in_fully = forest::create(D, SET, range_type::INTEGER,
                     edge_labeling::MULTI_TERMINAL, p);
 
@@ -662,7 +709,8 @@ void test_sets(domain* D)
 
 
     for (unsigned i=1; i<=MAX_SET_CARD; i*=2) {
-        std::cout << "Testing sets of size " << i << " out of " << POTENTIAL << "\n";
+        std::cout << "Testing sets of size " << i
+                  << " out of " << POTENTIAL << "\n";
 
         test_sets_over(i, in_fully, in_fully, out_fully);
         test_sets_over(i, in_fully, in_fully, out_quasi);
@@ -674,6 +722,175 @@ void test_sets(domain* D)
         test_sets_over(i, in_quasi, in_quasi, out_quasi);
     }
 }
+
+void compare_rels(const std::vector <char> &Aset,
+        const std::vector <char> &Bset, forest* f1, forest* f2, forest* fres)
+{
+    std::vector <bool> AeqBset(POTENTIAL);
+    std::vector <bool> AneBset(POTENTIAL);
+    std::vector <bool> AgtBset(POTENTIAL);
+    std::vector <bool> AgeBset(POTENTIAL);
+    std::vector <bool> AltBset(POTENTIAL);
+    std::vector <bool> AleBset(POTENTIAL);
+
+    dd_edge Add(f1), Bdd(f2),
+            AeqBdd(fres), AneBdd(fres),
+            AgtBdd(fres), AgeBdd(fres),
+            AltBdd(fres), AleBdd(fres);
+
+    EQ(Aset, Bset, AeqBset);
+    NE(Aset, Bset, AneBset);
+    GE(Aset, Bset, AgeBset);
+    GT(Aset, Bset, AgtBset);
+    LE(Aset, Bset, AleBset);
+    LT(Aset, Bset, AltBset);
+
+    set2mxd(Aset, f1, Add);
+    set2mxd(Bset, f2, Bdd);
+    set2mxd(AeqBset, fres, AeqBdd);
+    set2mxd(AneBset, fres, AneBdd);
+    set2mxd(AgtBset, fres, AgtBdd);
+    set2mxd(AgeBset, fres, AgeBdd);
+    set2mxd(AltBset, fres, AltBdd);
+    set2mxd(AleBset, fres, AleBdd);
+
+    dd_edge AeqBsym(fres), AneBsym(fres),
+            AgtBsym(fres), AgeBsym(fres),
+            AltBsym(fres), AleBsym(fres);
+
+    apply(EQUAL,                        Add,        Bdd,    AeqBsym);
+    checkEqual("equal",                 AeqBsym,    AeqBdd, AeqBset);
+
+    apply(NOT_EQUAL,                    Add,        Bdd,    AneBsym);
+    checkEqual("not_equal",             AneBsym,    AneBdd, AneBset);
+
+    apply(GREATER_THAN,                 Add,        Bdd,    AgtBsym);
+    checkEqual("greater_than",          AgtBsym,    AgtBdd, AgtBset);
+
+    apply(GREATER_THAN_EQUAL,           Add,        Bdd,    AgeBsym);
+    checkEqual("greater_than_equal",    AgeBsym,    AgeBdd, AgeBset);
+
+    apply(LESS_THAN,                    Add,        Bdd,    AltBsym);
+    checkEqual("less_than",             AltBsym,    AltBdd, AltBset);
+
+    apply(LESS_THAN_EQUAL,              Add,        Bdd,    AleBsym);
+    checkEqual("less_than_equal",       AleBsym,    AleBdd, AleBset);
+}
+
+
+void test_rels_over(unsigned scard, forest* f1, forest* f2, forest* fres)
+{
+    if (!f1) throw "null f1";
+    if (!f2) throw "null f2";
+    if (!fres) throw "null fres";
+
+    std::cerr << "    " << getReductionType(f1) << getReductionType(f2)
+              << ':' << getReductionType(fres) << ' ';
+
+    std::vector <char> Aset(POTENTIAL);
+    std::vector <char> Bset(POTENTIAL);
+
+    for (unsigned i=0; i<10; i++) {
+        std::cerr << '.';
+        randomizeSet(Aset, scard, 3);
+        randomizeSet(Bset, scard, 3);
+
+        compare_rels(Aset, Bset, f1, f2, fres);
+    }
+    for (unsigned i=0; i<10; i++) {
+        std::cerr << "x";
+        randomizeFully(Aset, scard, 3);
+        randomizeFully(Bset, scard, 3);
+
+        compare_rels(Aset, Bset, f1, f2, fres);
+    }
+    for (unsigned i=0; i<10; i++) {
+        std::cerr << "i";
+        randomizeIdentity(Aset, scard, 3);
+        randomizeIdentity(Bset, scard, 3);
+
+        compare_rels(Aset, Bset, f1, f2, fres);
+    }
+
+    std::cerr << std::endl;
+}
+void test_rels(domain* D)
+{
+    policies p;
+    p.useDefaults(RELATION);
+
+    p.setFullyReduced();
+
+    forest* in_fully = forest::create(D, RELATION, range_type::INTEGER,
+                    edge_labeling::MULTI_TERMINAL, p);
+
+    forest* out_fully = forest::create(D, RELATION, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL, p);
+
+    p.setQuasiReduced();
+
+    forest* in_quasi = forest::create(D, RELATION, range_type::INTEGER,
+                    edge_labeling::MULTI_TERMINAL, p);
+
+    forest* out_quasi = forest::create(D, RELATION, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL, p);
+
+    p.setIdentityReduced();
+
+    forest* in_ident = forest::create(D, RELATION, range_type::INTEGER,
+                    edge_labeling::MULTI_TERMINAL, p);
+
+    forest* out_ident = forest::create(D, RELATION, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL, p);
+
+
+
+    for (unsigned i=1; i<=MAX_REL_CARD; i*=2) {
+        std::cout << "Testing relations of size " << i
+                  << " out of " << POTENTIAL << "\n";
+
+        test_rels_over(i, in_fully, in_fully, out_fully);
+        test_rels_over(i, in_fully, in_fully, out_quasi);
+        test_rels_over(i, in_fully, in_fully, out_ident);
+
+        test_rels_over(i, in_fully, in_quasi, out_fully);
+        test_rels_over(i, in_fully, in_quasi, out_quasi);
+        test_rels_over(i, in_fully, in_quasi, out_ident);
+
+        test_rels_over(i, in_fully, in_ident, out_fully);
+        test_rels_over(i, in_fully, in_ident, out_quasi);
+        test_rels_over(i, in_fully, in_ident, out_ident);
+
+    //
+
+        test_rels_over(i, in_ident, in_fully, out_fully);
+        test_rels_over(i, in_ident, in_fully, out_quasi);
+        test_rels_over(i, in_ident, in_fully, out_ident);
+
+        test_rels_over(i, in_ident, in_quasi, out_fully);
+        test_rels_over(i, in_ident, in_quasi, out_quasi);
+        test_rels_over(i, in_ident, in_quasi, out_ident);
+
+        test_rels_over(i, in_ident, in_ident, out_fully);
+        test_rels_over(i, in_ident, in_ident, out_quasi);
+        test_rels_over(i, in_ident, in_ident, out_ident);
+
+    //
+
+        test_rels_over(i, in_quasi, in_fully, out_fully);
+        test_rels_over(i, in_quasi, in_fully, out_quasi);
+        test_rels_over(i, in_quasi, in_fully, out_ident);
+
+        test_rels_over(i, in_quasi, in_quasi, out_fully);
+        test_rels_over(i, in_quasi, in_quasi, out_quasi);
+        test_rels_over(i, in_quasi, in_quasi, out_ident);
+
+        test_rels_over(i, in_quasi, in_ident, out_fully);
+        test_rels_over(i, in_quasi, in_ident, out_quasi);
+        test_rels_over(i, in_quasi, in_ident, out_ident);
+    }
+}
+
 
 int main()
 {

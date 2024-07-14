@@ -23,7 +23,7 @@
 #include "../oper_binary.h"
 #include "../ct_vector.h"
 
-// #define TRACE
+#define TRACE
 
 #ifdef TRACE
 #include "../operators.h"
@@ -160,11 +160,18 @@ void MEDDLY::compare_op<DDTYPE, CTYPE>::compute(
 {
 #ifdef TRACE
     out.indentation(0);
+    out << "********************************************************\n";
+    out << "Starting top-level call to " << CTYPE::name() << " compute\n";
 #endif
     MEDDLY_DCASSERT(av.isVoid());
     MEDDLY_DCASSERT(bv.isVoid());
     cv.set();
     cp = _compute(-1, ap, bp, L);
+#ifdef TRACE
+    out.indentation(0);
+    out << "Finished top-level call to " << CTYPE::name() << " compute\n";
+    out << "********************************************************\n";
+#endif
 }
 
 template <class DDTYPE, class CTYPE>
@@ -206,7 +213,8 @@ MEDDLY::compare_op<DDTYPE,CTYPE>::_compute(int in, node_handle A,
         : DDTYPE::topLevel(Alevel, Blevel);
 
 #ifdef TRACE
-    out << CTYPE::name << "::_compute(" << A << ", " << B << ", " << L << ")\n";
+    out << CTYPE::name() << " compute("
+        << A << ", " << B << ", " << L << ")\n";
     out << A << " level " << Alevel << "\n";
     out << B << " level " << Blevel << "\n";
     out << "result level " << Clevel << " before chain\n";
@@ -231,8 +239,8 @@ MEDDLY::compare_op<DDTYPE,CTYPE>::_compute(int in, node_handle A,
                     resF->linkNode(res[0].getN()), Clevel, L)
             ;
 #ifdef TRACE
-            cout << "\tCT hit " << res[0].getN() << "\n";
-            cout << "\tafter chain " << C << "\n";
+            out << "\tCT hit " << res[0].getN() << "\n";
+            out << "\tafter chain " << C << "\n";
 #endif
             return C;
         }
@@ -276,7 +284,7 @@ MEDDLY::compare_op<DDTYPE,CTYPE>::_compute(int in, node_handle A,
 #ifdef TRACE
     out.indent_less();
     out.put('\n');
-    out << CTYPE::name() << "::_compute(" << A << ", " << B << ", " << L
+    out << CTYPE::name() << " compute(" << A << ", " << B << ", " << L
               << ") done\n";
     out << "  A: ";
     Au->show(out, true);
