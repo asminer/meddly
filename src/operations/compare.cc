@@ -302,7 +302,7 @@ MEDDLY::compare_op<DDTYPE,CTYPE>::_compute(int in, node_handle A,
     unpacked_node::Recycle(Au);
     edge_value dummy;
     node_handle C;
-    resF->createReducedNode(Cu, dummy, C);
+    resF->createReducedNode(Cu, dummy, C, in);
     MEDDLY_DCASSERT(dummy.isVoid());
 #ifdef TRACE
     out << "reduced to " << C << ": ";

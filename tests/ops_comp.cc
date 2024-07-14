@@ -577,25 +577,22 @@ inline char getReductionType(forest* f)
     throw "Unknown reduction type";
 }
 
-void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2,
-        const std::vector<bool> &set)
+void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
+        const dd_edge &e1, const dd_edge &e2, const std::vector<bool> &set)
 {
     if (e1 == e2) return;
 
     ostream_output out(std::cout);
 
     out << "\nMismatch on " << what << "\n";
-    out << "Expected DD:\n";
+    out << "Input A:\n";
+    in1.showGraph(out);
+    out << "Input B:\n";
+    in2.showGraph(out);
+    out << "Expected Output:\n";
     e2.showGraph(out);
-    out << "Obtained DD:\n";
+    out << "Obtained Output:\n";
     e1.showGraph(out);
-
-    /*
-    std::cout << "Encoding set ";
-    showSet(std::cout, set);
-    std::cout << "\nMinterms\n    ";
-    showRelMinterms(std::cout, set);
-    */
 
     throw "mismatch";
 }
@@ -636,23 +633,23 @@ void compare_sets(const std::vector <char> &Aset,
             AgtBsym(fres), AgeBsym(fres),
             AltBsym(fres), AleBsym(fres);
 
-    apply(EQUAL,                        Add,        Bdd,    AeqBsym);
-    checkEqual("equal",                 AeqBsym,    AeqBdd, AeqBset);
+    apply(EQUAL,        Add, Bdd, AeqBsym);
+    checkEqual("equal", Add, Bdd, AeqBsym, AeqBdd, AeqBset);
 
-    apply(NOT_EQUAL,                    Add,        Bdd,    AneBsym);
-    checkEqual("not_equal",             AneBsym,    AneBdd, AneBset);
+    apply(NOT_EQUAL,        Add, Bdd, AneBsym);
+    checkEqual("not_equal", Add, Bdd, AneBsym, AneBdd, AneBset);
 
-    apply(GREATER_THAN,                 Add,        Bdd,    AgtBsym);
-    checkEqual("greater_than",          AgtBsym,    AgtBdd, AgtBset);
+    apply(GREATER_THAN,        Add, Bdd, AgtBsym);
+    checkEqual("greater_than", Add, Bdd, AgtBsym, AgtBdd, AgtBset);
 
-    apply(GREATER_THAN_EQUAL,           Add,        Bdd,    AgeBsym);
-    checkEqual("greater_than_equal",    AgeBsym,    AgeBdd, AgeBset);
+    apply(GREATER_THAN_EQUAL,        Add, Bdd, AgeBsym);
+    checkEqual("greater_than_equal", Add, Bdd, AgeBsym, AgeBdd, AgeBset);
 
-    apply(LESS_THAN,                    Add,        Bdd,    AltBsym);
-    checkEqual("less_than",             AltBsym,    AltBdd, AltBset);
+    apply(LESS_THAN,        Add, Bdd, AltBsym);
+    checkEqual("less_than", Add, Bdd, AltBsym, AltBdd, AltBset);
 
-    apply(LESS_THAN_EQUAL,              Add,        Bdd,    AleBsym);
-    checkEqual("less_than_equal",       AleBsym,    AleBdd, AleBset);
+    apply(LESS_THAN_EQUAL,        Add, Bdd, AleBsym);
+    checkEqual("less_than_equal", Add, Bdd, AleBsym, AleBdd, AleBset);
 }
 
 
@@ -758,23 +755,23 @@ void compare_rels(const std::vector <char> &Aset,
             AgtBsym(fres), AgeBsym(fres),
             AltBsym(fres), AleBsym(fres);
 
-    apply(EQUAL,                        Add,        Bdd,    AeqBsym);
-    checkEqual("equal",                 AeqBsym,    AeqBdd, AeqBset);
+    apply(EQUAL,        Add, Bdd, AeqBsym);
+    checkEqual("equal", Add, Bdd, AeqBsym, AeqBdd, AeqBset);
 
-    apply(NOT_EQUAL,                    Add,        Bdd,    AneBsym);
-    checkEqual("not_equal",             AneBsym,    AneBdd, AneBset);
+    apply(NOT_EQUAL,        Add, Bdd, AneBsym);
+    checkEqual("not_equal", Add, Bdd, AneBsym, AneBdd, AneBset);
 
-    apply(GREATER_THAN,                 Add,        Bdd,    AgtBsym);
-    checkEqual("greater_than",          AgtBsym,    AgtBdd, AgtBset);
+    apply(GREATER_THAN,        Add, Bdd, AgtBsym);
+    checkEqual("greater_than", Add, Bdd, AgtBsym, AgtBdd, AgtBset);
 
-    apply(GREATER_THAN_EQUAL,           Add,        Bdd,    AgeBsym);
-    checkEqual("greater_than_equal",    AgeBsym,    AgeBdd, AgeBset);
+    apply(GREATER_THAN_EQUAL,        Add, Bdd, AgeBsym);
+    checkEqual("greater_than_equal", Add, Bdd, AgeBsym, AgeBdd, AgeBset);
 
-    apply(LESS_THAN,                    Add,        Bdd,    AltBsym);
-    checkEqual("less_than",             AltBsym,    AltBdd, AltBset);
+    apply(LESS_THAN,        Add, Bdd, AltBsym);
+    checkEqual("less_than", Add, Bdd, AltBsym, AltBdd, AltBset);
 
-    apply(LESS_THAN_EQUAL,              Add,        Bdd,    AleBsym);
-    checkEqual("less_than_equal",       AleBsym,    AleBdd, AleBset);
+    apply(LESS_THAN_EQUAL,        Add, Bdd, AleBsym);
+    checkEqual("less_than_equal", Add, Bdd, AleBsym, AleBdd, AleBset);
 }
 
 
