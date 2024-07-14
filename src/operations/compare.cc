@@ -19,7 +19,302 @@
 #include "../defines.h"
 #include "compare.h"
 
-// TBD
+#include "../oper_item.h"
+#include "../oper_binary.h"
+#include "../ct_vector.h"
+
+// #define TRACE
+
+#ifdef TRACE
+#include "../operators.h"
+#endif
+
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *         Massive template operation for all comparisons         *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+/*
+    Required methods for CTYPE classes (should be inlined):
+
+        /// Get the operation name, for display purposes
+        static const char* name();
+
+        /// Is the comparison relation symmetric?
+        /// Should be true for == and !=, false for the others.
+        static bool isSymmetric();
+
+        /// Is the comparison relation reflexive?
+        /// I.e., does x ~ x always evaluate to true, or to false?
+        static bool isReflexive();
+
+        /// Get the value of the terminal node.
+        /// The return type depends on if we're comparing integers, reals, etc.
+        static bool/int/float  getTerminalValue(const forest* F, node_handle n);
+
+        /// Compare values.
+        static bool compare(bool/int/float val1, bool/int/float val2);
+
+        /// Get the result for equal functions.
+        /// I.e., is
+        static bool
+
+ */
+
+// ******************************************************************
+// *                                                                *
+// *                        compare_op class                        *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class DDTYPE, class RTYPE>
+    class compare_op : public binary_operation {
+        public:
+            compare_op(forest* arg1, forest* arg2, forest* res);
+            virtual ~compare_op();
+
+            virtual void compute(const edge_value &av, node_handle ap,
+                    const edge_value &bv, node_handle bp,
+                    int L,
+                    edge_value &cv, node_handle &cp);
+
+        protected:
+            node_handle _compute(int in, node_handle A, node_handle B, int L);
+
+        private:
+            ct_entry_type* ct;
+#ifdef TRACE
+            ostream_output out;
+#endif
+            bool go_by_levels;
+    };
+};
+
+// ******************************************************************
+
+template <class DDTYPE, class CTYPE>
+MEDDLY::compare_op<DDTYPE,CTYPE>::compare_op(forest* arg1, forest* arg2,
+        forest* res) : binary_operation(arg1, arg2, res)
+#ifdef TRACE
+      , out(std::cout)
+#endif
+{
+    checkDomains(__FILE__, __LINE__);
+    if (res->isForRelations()) {
+        checkAllRelations(__FILE__, __LINE__, RELATION);
+    } else {
+        checkAllRelations(__FILE__, __LINE__, SET);
+    }
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+
+    if (arg1->getRangeType() != arg2->getRangeType()) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+    if (res->getRangeType() != range_type::BOOLEAN) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    //
+    // Do we need to recurse by levels?
+    // If either input is an identity-reduced relation, then YES.
+    //
+    go_by_levels = arg1->isIdentityReduced() || arg2->isIdentityReduced();
+
+    // Build compute table key and result types.
+    // If we recurse by levels, then we need the level as part of the key.
+    ct = new ct_entry_type(CTYPE::name());
+    if (go_by_levels) {
+        ct->setFixed('I', arg1, arg2);
+    } else {
+        ct->setFixed(arg1, arg2);
+    }
+    ct->setResult(res);
+    ct->doneBuilding();
+}
+
+template <class DDTYPE, class CTYPE>
+MEDDLY::compare_op<DDTYPE,CTYPE>::~compare_op()
+{
+    ct->markForDestroy();
+}
+
+template <class DDTYPE, class CTYPE>
+void MEDDLY::compare_op<DDTYPE, CTYPE>::compute(
+        const edge_value &av, node_handle ap,
+        const edge_value &bv, node_handle bp,
+        int L,
+        edge_value &cv, node_handle &cp)
+{
+#ifdef TRACE
+    out.indentation(0);
+#endif
+    MEDDLY_DCASSERT(av.isVoid());
+    MEDDLY_DCASSERT(bv.isVoid());
+    cv.set();
+    cp = _compute(-1, ap, bp, L);
+}
+
+template <class DDTYPE, class CTYPE>
+MEDDLY::node_handle
+MEDDLY::compare_op<DDTYPE,CTYPE>::_compute(int in, node_handle A,
+        node_handle B, int L)
+{
+    //
+    // Terminal cases
+    //
+    if (A == B && arg1F == arg2F) {
+        terminal tt(CTYPE::isReflexive());
+        return resF->makeRedundantsTo(tt.getHandle(), 0, L);
+    }
+
+    if (arg1F->isTerminalNode(A) && arg2F->isTerminalNode(B)) {
+        terminal tt(
+            CTYPE::compare(
+                CTYPE::getTerminalValue(arg1F, A),
+                CTYPE::getTerminalValue(arg2F, B)
+            )
+        );
+        return resF->makeRedundantsTo(tt.getHandle(), 0, L);
+    }
+
+    //
+    // Reorder A and B if the relation is symmetric,
+    // and they're in the same forest.
+    //
+
+    if (CTYPE::isSymmetric() && arg1F == arg2F) {
+        if (A > B) {
+            SWAP(A, B);
+        }
+    }
+
+    //
+    // Determine level information
+    //
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = arg2F->getNodeLevel(B);
+    const int Clevel = go_by_levels
+        ? L
+        : DDTYPE::topLevel(Alevel, Blevel);
+
+#ifdef TRACE
+    out << CTYPE::name << "::_compute(" << A << ", " << B << ", " << L << ")\n";
+    out << A << " level " << Alevel << "\n";
+    out << B << " level " << Blevel << "\n";
+    out << "result level " << Clevel << " before chain\n";
+#endif
+
+    //
+    // Check compute table
+    //
+    ct_vector key( go_by_levels ? 3 : 2);
+    ct_vector res(1);
+    if (Clevel > 0) {
+        if (go_by_levels) {
+            key[0].setI(L);
+            key[1].setN(A);
+            key[2].setN(B);
+        } else {
+            key[0].setN(A);
+            key[1].setN(B);
+        }
+        if (ct->findCT(key, res)) {
+            node_handle C = resF->makeRedundantsTo(
+                    resF->linkNode(res[0].getN()), Clevel, L)
+            ;
+#ifdef TRACE
+            cout << "\tCT hit " << res[0].getN() << "\n";
+            cout << "\tafter chain " << C << "\n";
+#endif
+            return C;
+        }
+    }
+
+    //
+    // Do computation
+    //
+
+    //
+    // Initialize unpacked nodes
+    //
+    unpacked_node* Au = (Alevel == Clevel)
+        ?   arg1F->newUnpacked(A, FULL_ONLY)
+        :   DDTYPE::isFullyLevel(arg1F, Clevel)
+            ?   unpacked_node::newRedundant(arg1F, Clevel, A, FULL_ONLY)
+            :   unpacked_node::newIdentity(arg1F, Clevel, in, A, FULL_ONLY);
+
+    unpacked_node* Bu = (Blevel == Clevel)
+        ?   arg2F->newUnpacked(B, FULL_ONLY)
+        :   DDTYPE::isFullyLevel(arg2F, Clevel)
+            ?   unpacked_node::newRedundant(arg2F, Clevel, B, FULL_ONLY)
+            :   unpacked_node::newIdentity(arg2F, Clevel, in, B, FULL_ONLY);
+
+    MEDDLY_DCASSERT(Au->getSize() == Bu->getSize());
+
+    unpacked_node* Cu = unpacked_node::newFull(resF, Clevel, Au->getSize());
+
+    //
+    // Build result node
+    //
+#ifdef TRACE
+    out.indent_more();
+    out.put('\n');
+#endif
+    for (unsigned i=0; i<Au->getSize(); i++) {
+        Cu->setFull(i, _compute_primed(int(i), Au->down(i),
+                Bu->down(i), DDTYPE::downLevel(Clevel))
+        );
+    }
+#ifdef TRACE
+    out.indent_less();
+    out.put('\n');
+    out << CTYPE::name() << "::_compute(" << A << ", " << B << ", " << L
+              << ") done\n";
+    out << "  A: ";
+    Au->show(out, true);
+    out << "\n  B: ";
+    Bu->show(out, true);
+    out << "\n  C: ";
+    Cu->show(out, true);
+    out << "\n";
+#endif
+
+    //
+    // Reduce / cleanup
+    //
+    unpacked_node::Recycle(Bu);
+    unpacked_node::Recycle(Au);
+    edge_value dummy;
+    node_handle C;
+    resF->createReducedNode(Cu, dummy, C);
+    MEDDLY_DCASSERT(dummy.isVoid());
+#ifdef TRACE
+    out << "reduced to " << C << ": ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    out << "\n";
+#endif
+
+    //
+    // Save result in CT
+    //
+    if (Clevel > 0) {
+        res[0].setN(C);
+        ct->addCT(key, res);
+    }
+    C = resF->makeRedundantsTo(C, Clevel, L);
+
+#ifdef TRACE
+    out << "chain to level " << L << " = " << C << ": ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    out << "\n";
+#endif
+    return C;
+}
 
 // ******************************************************************
 // ******************************************************************

@@ -2518,6 +2518,11 @@ class MEDDLY::MDD_levels {
         static inline bool isFullyLevel(forest* f, int k) {
             return true;
         }
+
+        /// Determine the top of two levels
+        static inline int topLevel(int k1, int k2) {
+            return MAX(k1, k2);
+        }
 };
 
 
@@ -2547,6 +2552,14 @@ class MEDDLY::MXD_levels {
         /// Determine if a skipped level is fully reduced
         static inline bool isFullyLevel(forest* f, int k) {
             return (k>0) || f->isFullyReduced();
+        }
+
+        /// Determine the top of two levels
+        static inline int topLevel(int k1, int k2) {
+            if (ABS(k1) == ABS(k2)) {
+                return MAX(k1, k2);
+            }
+            return (ABS(k1) > ABS(k2)) ? k1 : k2;
         }
 };
 
