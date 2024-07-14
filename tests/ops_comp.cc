@@ -462,7 +462,7 @@ void set2mdd(const std::vector<bool> &S, forest *F, dd_edge &s)
 
     // Special case - zero function
     if (0==card) {
-        F->createEdge(0L, s);
+        F->createEdge(false, s);
         return;
     }
 
