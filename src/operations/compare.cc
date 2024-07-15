@@ -23,7 +23,7 @@
 #include "../oper_binary.h"
 #include "../ct_vector.h"
 
-// #define TRACE
+#define TRACE
 
 #ifdef TRACE
 #include "../operators.h"
@@ -123,9 +123,12 @@ MEDDLY::compare_op<DDTYPE,CTYPE>::compare_op(forest* arg1, forest* arg2,
     if (arg1->getRangeType() != arg2->getRangeType()) {
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
+
+    /*
     if (res->getRangeType() != range_type::BOOLEAN) {
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
+    */
 
     //
     // Do we need to recurse by levels?
