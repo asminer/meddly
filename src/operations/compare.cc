@@ -80,7 +80,7 @@ namespace MEDDLY {
 // ******************************************************************
 
 namespace MEDDLY {
-    template <class DDTYPE, class CTYPE>
+    template <class CTYPE>
     class compare_op : public binary_operation {
         public:
             compare_op(forest* arg1, forest* arg2, forest* res);
@@ -92,7 +92,10 @@ namespace MEDDLY {
                     edge_value &cv, node_handle &cp);
 
         protected:
-            node_handle _compute(int in, node_handle A, node_handle B, int L);
+            node_handle _compute(node_handle A, node_handle B, int L);
+
+            node_handle _compute_un(node_handle A, node_handle B, int L);
+            node_handle _compute_pr(int in, node_handle A, node_handle B, int L);
 
         private:
             ct_entry_type* ct;
@@ -105,8 +108,8 @@ namespace MEDDLY {
 
 // ******************************************************************
 
-template <class DDTYPE, class CTYPE>
-MEDDLY::compare_op<DDTYPE,CTYPE>::compare_op(forest* arg1, forest* arg2,
+template <class CTYPE>
+MEDDLY::compare_op<CTYPE>::compare_op(forest* arg1, forest* arg2,
         forest* res) : binary_operation(arg1, arg2, res)
 #ifdef TRACE
       , out(std::cout)
@@ -123,12 +126,6 @@ MEDDLY::compare_op<DDTYPE,CTYPE>::compare_op(forest* arg1, forest* arg2,
     if (arg1->getRangeType() != arg2->getRangeType()) {
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
-
-    /*
-    if (res->getRangeType() != range_type::BOOLEAN) {
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
-    */
 
     //
     // Do we need to recurse by levels?
@@ -148,14 +145,14 @@ MEDDLY::compare_op<DDTYPE,CTYPE>::compare_op(forest* arg1, forest* arg2,
     ct->doneBuilding();
 }
 
-template <class DDTYPE, class CTYPE>
-MEDDLY::compare_op<DDTYPE,CTYPE>::~compare_op()
+template <class CTYPE>
+MEDDLY::compare_op<CTYPE>::~compare_op()
 {
     ct->markForDestroy();
 }
 
-template <class DDTYPE, class CTYPE>
-void MEDDLY::compare_op<DDTYPE, CTYPE>::compute(
+template <class CTYPE>
+void MEDDLY::compare_op<CTYPE>::compute(
         const edge_value &av, node_handle ap,
         const edge_value &bv, node_handle bp,
         int L,
@@ -169,7 +166,11 @@ void MEDDLY::compare_op<DDTYPE, CTYPE>::compute(
     MEDDLY_DCASSERT(av.isVoid());
     MEDDLY_DCASSERT(bv.isVoid());
     cv.set();
-    cp = _compute(-1, ap, bp, L);
+    if (resF->isForRelations()) {
+        cp = _compute_un(ap, bp, L);
+    } else {
+        cp = _compute(ap, bp, L);
+    }
 #ifdef TRACE
     out.indentation(0);
     out << "Finished top-level call to " << CTYPE::name() << " compute\n";
@@ -177,11 +178,164 @@ void MEDDLY::compare_op<DDTYPE, CTYPE>::compute(
 #endif
 }
 
-template <class DDTYPE, class CTYPE>
+//
+// SET VERSION
+//
+
+template <class CTYPE>
 MEDDLY::node_handle
-MEDDLY::compare_op<DDTYPE,CTYPE>::_compute(int in, node_handle A,
-        node_handle B, int L)
+MEDDLY::compare_op<CTYPE>::_compute(node_handle A, node_handle B, int L)
 {
+    MEDDLY_DCASSERT(!go_by_levels);
+    MEDDLY_DCASSERT(L >= 0);
+
+    //
+    // Terminal cases
+    //
+    if (A == B && arg1F == arg2F) {
+        terminal tt(CTYPE::isReflexive());
+        return resF->makeRedundantsTo(tt.getHandle(), 0, L);
+    }
+
+    if (arg1F->isTerminalNode(A) && arg2F->isTerminalNode(B)) {
+        if (0==L || !go_by_levels) {
+            terminal tt( CTYPE::compare(arg1F, A, arg2F, B) );
+            return resF->makeRedundantsTo(tt.getHandle(), 0, L);
+        }
+    }
+
+    //
+    // Reorder A and B if the relation is symmetric,
+    // and they're in the same forest.
+    //
+
+    if (CTYPE::isSymmetric() && arg1F == arg2F) {
+        if (A > B) {
+            SWAP(A, B);
+        }
+    }
+
+    //
+    // Determine level information
+    //
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = arg2F->getNodeLevel(B);
+    const int Clevel = MAX(Alevel, Blevel);
+
+    MEDDLY_DCASSERT(Alevel <= L);
+    MEDDLY_DCASSERT(Blevel <= L);
+
+#ifdef TRACE
+    out << CTYPE::name() << " compute("
+        << A << ", " << B << ", " << L << ")\n";
+    out << A << " level " << Alevel << "\n";
+    out << B << " level " << Blevel << "\n";
+    out << "result level " << Clevel << " before chain\n";
+#endif
+
+    //
+    // Check compute table
+    //
+    ct_vector key(2);
+    ct_vector res(1);
+    key[0].setN(A);
+    key[1].setN(B);
+    if (ct->findCT(key, res)) {
+        node_handle C = resF->makeRedundantsTo(
+                resF->linkNode(res[0].getN()), Clevel, L)
+            ;
+#ifdef TRACE
+        out << "\tCT hit " << res[0].getN() << "\n";
+        out << "\tafter chain " << C << "\n";
+#endif
+        return C;
+    }
+
+    //
+    // Do computation
+    //
+
+    //
+    // Initialize unpacked nodes
+    //
+    unpacked_node* Au = (Alevel == Clevel)
+        ?   arg1F->newUnpacked(A, FULL_ONLY)
+        :   unpacked_node::newRedundant(arg1F, Clevel, A, FULL_ONLY);
+
+    unpacked_node* Bu = (Blevel == Clevel)
+        ?   arg2F->newUnpacked(B, FULL_ONLY)
+        :   unpacked_node::newRedundant(arg2F, Clevel, B, FULL_ONLY);
+
+    MEDDLY_DCASSERT(Au->getSize() == Bu->getSize());
+
+    unpacked_node* Cu = unpacked_node::newFull(resF, Clevel, Au->getSize());
+
+    //
+    // Build result node
+    //
+#ifdef TRACE
+    out.indent_more();
+    out.put('\n');
+#endif
+    for (unsigned i=0; i<Au->getSize(); i++) {
+        Cu->setFull(i, _compute(Au->down(i), Bu->down(i), Clevel-1) );
+    }
+#ifdef TRACE
+    out.indent_less();
+    out.put('\n');
+    out << CTYPE::name() << " compute(" << A << ", " << B << ", " << L
+              << ") done\n";
+    out << "  A: ";
+    Au->show(out, true);
+    out << "\n  B: ";
+    Bu->show(out, true);
+    out << "\n  C: ";
+    Cu->show(out, true);
+    out << "\n";
+#endif
+
+    //
+    // Reduce / cleanup
+    //
+    unpacked_node::Recycle(Bu);
+    unpacked_node::Recycle(Au);
+    edge_value dummy;
+    node_handle C;
+    resF->createReducedNode(Cu, dummy, C);
+    MEDDLY_DCASSERT(dummy.isVoid());
+#ifdef TRACE
+    out << "reduced to " << C << ": ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    out << "\n";
+#endif
+
+    //
+    // Save result in CT
+    //
+    if (Clevel > 0) {
+        res[0].setN(C);
+        ct->addCT(key, res);
+    }
+    C = resF->makeRedundantsTo(C, Clevel, L);
+
+#ifdef TRACE
+    out << "chain to level " << L << " = " << C << ": ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    out << "\n";
+#endif
+    return C;
+}
+
+//
+// RELATION VERSION: unprimed levels
+//
+
+template <class CTYPE>
+MEDDLY::node_handle
+MEDDLY::compare_op<CTYPE>::_compute_un(node_handle A, node_handle B, int L)
+{
+    MEDDLY_DCASSERT(L >= 0);
+
     //
     // Terminal cases
     //
@@ -215,10 +369,13 @@ MEDDLY::compare_op<DDTYPE,CTYPE>::_compute(int in, node_handle A,
     const int Blevel = arg2F->getNodeLevel(B);
     const int Clevel = go_by_levels
         ? L
-        : DDTYPE::topLevel(Alevel, Blevel);
+        : MAX(ABS(Alevel), ABS(Blevel));
+    MEDDLY_DCASSERT(Clevel>0);
+    MEDDLY_DCASSERT(ABS(Alevel) <= L);
+    MEDDLY_DCASSERT(ABS(Blevel) <= L);
 
 #ifdef TRACE
-    out << CTYPE::name() << " compute("
+    out << CTYPE::name() << " compute_un("
         << A << ", " << B << ", " << L << ")\n";
     out << A << " level " << Alevel << "\n";
     out << B << " level " << Blevel << "\n";
@@ -230,25 +387,23 @@ MEDDLY::compare_op<DDTYPE,CTYPE>::_compute(int in, node_handle A,
     //
     ct_vector key( go_by_levels ? 3 : 2);
     ct_vector res(1);
-    if (Clevel > 0) {
-        if (go_by_levels) {
-            key[0].setI(L);
-            key[1].setN(A);
-            key[2].setN(B);
-        } else {
-            key[0].setN(A);
-            key[1].setN(B);
-        }
-        if (ct->findCT(key, res)) {
-            node_handle C = resF->makeRedundantsTo(
-                    resF->linkNode(res[0].getN()), Clevel, L)
-            ;
+    if (go_by_levels) {
+        key[0].setI(L);
+        key[1].setN(A);
+        key[2].setN(B);
+    } else {
+        key[0].setN(A);
+        key[1].setN(B);
+    }
+    if (ct->findCT(key, res)) {
+        node_handle C = resF->makeRedundantsTo(
+                resF->linkNode(res[0].getN()), Clevel, L)
+        ;
 #ifdef TRACE
-            out << "\tCT hit " << res[0].getN() << "\n";
-            out << "\tafter chain " << C << "\n";
+        out << "\tCT hit " << res[0].getN() << "\n";
+        out << "\tafter chain " << C << "\n";
 #endif
-            return C;
-        }
+        return C;
     }
 
     //
@@ -260,13 +415,130 @@ MEDDLY::compare_op<DDTYPE,CTYPE>::_compute(int in, node_handle A,
     //
     unpacked_node* Au = (Alevel == Clevel)
         ?   arg1F->newUnpacked(A, FULL_ONLY)
-        :   DDTYPE::isFullyLevel(arg1F, Clevel)
+        :   unpacked_node::newRedundant(arg1F, Clevel, A, FULL_ONLY);
+
+    unpacked_node* Bu = (Blevel == Clevel)
+        ?   arg2F->newUnpacked(B, FULL_ONLY)
+        :   unpacked_node::newRedundant(arg1F, Clevel, B, FULL_ONLY);
+
+    MEDDLY_DCASSERT(Au->getSize() == Bu->getSize());
+
+    unpacked_node* Cu = unpacked_node::newFull(resF, Clevel, Au->getSize());
+
+    //
+    // Build result node
+    //
+#ifdef TRACE
+    out.indent_more();
+    out.put('\n');
+#endif
+    for (unsigned i=0; i<Au->getSize(); i++) {
+        Cu->setFull(i,
+            _compute_pr(int(i), Au->down(i), Bu->down(i), -Clevel)
+        );
+    }
+#ifdef TRACE
+    out.indent_less();
+    out.put('\n');
+    out << CTYPE::name() << " compute_un(" << A << ", " << B << ", " << L
+              << ") done\n";
+    out << "  A: ";
+    Au->show(out, true);
+    out << "\n  B: ";
+    Bu->show(out, true);
+    out << "\n  C: ";
+    Cu->show(out, true);
+    out << "\n";
+#endif
+
+    //
+    // Reduce / cleanup
+    //
+    unpacked_node::Recycle(Bu);
+    unpacked_node::Recycle(Au);
+    edge_value dummy;
+    node_handle C;
+    resF->createReducedNode(Cu, dummy, C);
+    MEDDLY_DCASSERT(dummy.isVoid());
+#ifdef TRACE
+    out << "reduced to " << C << ": ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    out << "\n";
+#endif
+
+    //
+    // Save result in CT
+    //
+    res[0].setN(C);
+    ct->addCT(key, res);
+    C = resF->makeRedundantsTo(C, Clevel, L);
+
+#ifdef TRACE
+    out << "chain to level " << L << " = " << C << ": ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    out << "\n";
+#endif
+    return C;
+}
+
+
+template <class CTYPE>
+MEDDLY::node_handle
+MEDDLY::compare_op<CTYPE>::_compute_pr(int in, node_handle A, node_handle B,
+        int L)
+{
+    MEDDLY_DCASSERT(L < 0);
+
+    //
+    // Terminal cases
+    //
+    if (A == B && arg1F == arg2F) {
+        terminal tt(CTYPE::isReflexive());
+        return resF->makeRedundantsTo(tt.getHandle(), 0, L);
+    }
+
+    //
+    // Reorder A and B if the relation is symmetric,
+    // and they're in the same forest.
+    //
+
+    if (CTYPE::isSymmetric() && arg1F == arg2F) {
+        if (A > B) {
+            SWAP(A, B);
+        }
+    }
+
+    //
+    // Determine level information
+    //
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = arg2F->getNodeLevel(B);
+    const int Clevel = L;
+
+#ifdef TRACE
+    out << CTYPE::name() << " compute_pr("
+        << A << ", " << B << ", " << L << ")\n";
+    out << A << " level " << Alevel << "\n";
+    out << B << " level " << Blevel << "\n";
+    out << "result level " << Clevel << " before chain\n";
+#endif
+
+    //
+    // Do computation
+    //
+
+    //
+    // Initialize unpacked nodes
+    //
+    unpacked_node* Au = (Alevel == Clevel)
+        ?   arg1F->newUnpacked(A, FULL_ONLY)
+        :   MXD_levels::isFullyLevel(arg1F, Clevel)
             ?   unpacked_node::newRedundant(arg1F, Clevel, A, FULL_ONLY)
             :   unpacked_node::newIdentity(arg1F, Clevel, in, A, FULL_ONLY);
 
     unpacked_node* Bu = (Blevel == Clevel)
         ?   arg2F->newUnpacked(B, FULL_ONLY)
-        :   DDTYPE::isFullyLevel(arg2F, Clevel)
+        :   MXD_levels::isFullyLevel(arg1F, Clevel)
             ?   unpacked_node::newRedundant(arg2F, Clevel, B, FULL_ONLY)
             :   unpacked_node::newIdentity(arg2F, Clevel, in, B, FULL_ONLY);
 
@@ -282,14 +554,12 @@ MEDDLY::compare_op<DDTYPE,CTYPE>::_compute(int in, node_handle A,
     out.put('\n');
 #endif
     for (unsigned i=0; i<Au->getSize(); i++) {
-        Cu->setFull(i, _compute(int(i), Au->down(i),
-                Bu->down(i), DDTYPE::downLevel(Clevel))
-        );
+        Cu->setFull(i, _compute_un(Au->down(i), Bu->down(i), -Clevel-1) );
     }
 #ifdef TRACE
     out.indent_less();
     out.put('\n');
-    out << CTYPE::name() << " compute(" << A << ", " << B << ", " << L
+    out << CTYPE::name() << " compute_pr(" << A << ", " << B << ", " << L
               << ") done\n";
     out << "  A: ";
     Au->show(out, true);
@@ -315,22 +585,11 @@ MEDDLY::compare_op<DDTYPE,CTYPE>::_compute(int in, node_handle A,
     out << "\n";
 #endif
 
-    //
-    // Save result in CT
-    //
-    if (Clevel > 0) {
-        res[0].setN(C);
-        ct->addCT(key, res);
-    }
-    C = resF->makeRedundantsTo(C, Clevel, L);
-
-#ifdef TRACE
-    out << "chain to level " << L << " = " << C << ": ";
-    resF->showNode(out, C, SHOW_DETAILS);
-    out << "\n";
-#endif
     return C;
 }
+
+
+
 
 // ******************************************************************
 // *                                                                *
@@ -535,6 +794,8 @@ namespace MEDDLY {
 // ******************************************************************
 // ******************************************************************
 // ******************************************************************
+
+#ifdef  OLD_OPS
 
 #include "apply_base.h"
 
@@ -1104,6 +1365,8 @@ bool lessequal_mxd<T>
 
 };  // namespace MEDDLY
 
+#endif // OLD_OPS
+
 
 // ******************************************************************
 // *                                                                *
@@ -1145,28 +1408,30 @@ MEDDLY::binary_operation* MEDDLY::EQUAL(forest* a, forest* b, forest* c)
         if (use_reals) {
             if (c->isForRelations())
                 return EQUAL_cache.add(
-                    new compare_op<MXD_levels, eq_templ<float> > (a,b,c)
+                    new compare_op<eq_templ<float> > (a,b,c)
                 );
             else
                 return EQUAL_cache.add(
-                    new compare_op<MDD_levels, eq_templ<float> > (a,b,c)
+                    new compare_op<eq_templ<float> > (a,b,c)
                 );
         } else {
             if (c->isForRelations())
                 return EQUAL_cache.add(
-                    new compare_op<MXD_levels, eq_templ<long> > (a,b,c)
+                    new compare_op<eq_templ<long> > (a,b,c)
                 );
             else
                 return EQUAL_cache.add(
-                    new compare_op<MDD_levels, eq_templ<long> > (a,b,c)
+                    new compare_op<eq_templ<long> > (a,b,c)
                 );
         }
 #endif
     }
 
+    /*
     if (c->getEdgeLabeling() == edge_labeling::EVTIMES) {
         return EQUAL_cache.add(new equal_evtimes(a, b, c));
     }
+    */
 
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
@@ -1213,20 +1478,20 @@ MEDDLY::binary_operation* MEDDLY::NOT_EQUAL(forest* a, forest* b, forest* c)
         if (use_reals) {
             if (c->isForRelations())
                 return NEQ_cache.add(
-                    new compare_op<MXD_levels, ne_templ<float> > (a,b,c)
+                    new compare_op<ne_templ<float> > (a,b,c)
                 );
             else
                 return NEQ_cache.add(
-                    new compare_op<MDD_levels, ne_templ<float> > (a,b,c)
+                    new compare_op<ne_templ<float> > (a,b,c)
                 );
         } else {
             if (c->isForRelations())
                 return NEQ_cache.add(
-                    new compare_op<MXD_levels, ne_templ<long> > (a,b,c)
+                    new compare_op<ne_templ<long> > (a,b,c)
                 );
             else
                 return NEQ_cache.add(
-                    new compare_op<MDD_levels, ne_templ<long> > (a,b,c)
+                    new compare_op<ne_templ<long> > (a,b,c)
                 );
         }
 #endif
@@ -1277,20 +1542,20 @@ MEDDLY::binary_operation* MEDDLY::GREATER_THAN(forest* a, forest* b, forest* c)
         if (use_reals) {
             if (c->isForRelations())
                 return GT_cache.add(
-                    new compare_op<MXD_levels, gt_templ<float> > (a,b,c)
+                    new compare_op<gt_templ<float> > (a,b,c)
                 );
             else
                 return GT_cache.add(
-                    new compare_op<MDD_levels, gt_templ<float> > (a,b,c)
+                    new compare_op<gt_templ<float> > (a,b,c)
                 );
         } else {
             if (c->isForRelations())
                 return GT_cache.add(
-                    new compare_op<MXD_levels, gt_templ<long> > (a,b,c)
+                    new compare_op<gt_templ<long> > (a,b,c)
                 );
             else
                 return GT_cache.add(
-                    new compare_op<MDD_levels, gt_templ<long> > (a,b,c)
+                    new compare_op<gt_templ<long> > (a,b,c)
                 );
         }
 #endif
@@ -1341,20 +1606,20 @@ MEDDLY::binary_operation* MEDDLY::GREATER_THAN_EQUAL(forest* a, forest* b, fores
         if (use_reals) {
             if (c->isForRelations())
                 return GE_cache.add(
-                    new compare_op<MXD_levels, ge_templ<float> > (a,b,c)
+                    new compare_op<ge_templ<float> > (a,b,c)
                 );
             else
                 return GE_cache.add(
-                    new compare_op<MDD_levels, ge_templ<float> > (a,b,c)
+                    new compare_op<ge_templ<float> > (a,b,c)
                 );
         } else {
             if (c->isForRelations())
                 return GE_cache.add(
-                    new compare_op<MXD_levels, ge_templ<long> > (a,b,c)
+                    new compare_op<ge_templ<long> > (a,b,c)
                 );
             else
                 return GE_cache.add(
-                    new compare_op<MDD_levels, ge_templ<long> > (a,b,c)
+                    new compare_op<ge_templ<long> > (a,b,c)
                 );
         }
 #endif
@@ -1405,20 +1670,20 @@ MEDDLY::binary_operation* MEDDLY::LESS_THAN(forest* a, forest* b, forest* c)
         if (use_reals) {
             if (c->isForRelations())
                 return LT_cache.add(
-                    new compare_op<MXD_levels, lt_templ<float> > (a,b,c)
+                    new compare_op<lt_templ<float> > (a,b,c)
                 );
             else
                 return LT_cache.add(
-                    new compare_op<MDD_levels, lt_templ<float> > (a,b,c)
+                    new compare_op<lt_templ<float> > (a,b,c)
                 );
         } else {
             if (c->isForRelations())
                 return LT_cache.add(
-                    new compare_op<MXD_levels, lt_templ<long> > (a,b,c)
+                    new compare_op<lt_templ<long> > (a,b,c)
                 );
             else
                 return LT_cache.add(
-                    new compare_op<MDD_levels, lt_templ<long> > (a,b,c)
+                    new compare_op<lt_templ<long> > (a,b,c)
                 );
         }
 #endif
@@ -1469,20 +1734,20 @@ MEDDLY::binary_operation* MEDDLY::LESS_THAN_EQUAL(forest* a, forest* b, forest* 
         if (use_reals) {
             if (c->isForRelations())
                 return LE_cache.add(
-                    new compare_op<MXD_levels, le_templ<float> > (a,b,c)
+                    new compare_op<le_templ<float> > (a,b,c)
                 );
             else
                 return LE_cache.add(
-                    new compare_op<MDD_levels, le_templ<float> > (a,b,c)
+                    new compare_op<le_templ<float> > (a,b,c)
                 );
         } else {
             if (c->isForRelations())
                 return LE_cache.add(
-                    new compare_op<MXD_levels, le_templ<long> > (a,b,c)
+                    new compare_op<le_templ<long> > (a,b,c)
                 );
             else
                 return LE_cache.add(
-                    new compare_op<MDD_levels, le_templ<long> > (a,b,c)
+                    new compare_op<le_templ<long> > (a,b,c)
                 );
         }
 #endif
