@@ -23,7 +23,7 @@
 #include "../oper_binary.h"
 #include "../ct_vector.h"
 
-#define TRACE
+// #define TRACE
 
 #ifdef TRACE
 #include "../operators.h"
@@ -198,10 +198,8 @@ MEDDLY::compare_op<CTYPE>::_compute(node_handle A, node_handle B, int L)
     }
 
     if (arg1F->isTerminalNode(A) && arg2F->isTerminalNode(B)) {
-        if (0==L || !go_by_levels) {
-            terminal tt( CTYPE::compare(arg1F, A, arg2F, B) );
-            return resF->makeRedundantsTo(tt.getHandle(), 0, L);
-        }
+        terminal tt( CTYPE::compare(arg1F, A, arg2F, B) );
+        return resF->makeRedundantsTo(tt.getHandle(), 0, L);
     }
 
     //
@@ -339,6 +337,11 @@ MEDDLY::compare_op<CTYPE>::_compute_un(node_handle A, node_handle B, int L)
     //
     // Terminal cases
     //
+    if (0==A && 0==B) {
+        terminal tt(CTYPE::isReflexive());
+        return resF->makeRedundantsTo(tt.getHandle(), 0, L);
+    }
+
     if (A == B && arg1F == arg2F) {
         terminal tt(CTYPE::isReflexive());
         return resF->makeRedundantsTo(tt.getHandle(), 0, L);
@@ -492,6 +495,11 @@ MEDDLY::compare_op<CTYPE>::_compute_pr(int in, node_handle A, node_handle B,
     //
     // Terminal cases
     //
+    if (0==A && 0==B) {
+        terminal tt(CTYPE::isReflexive());
+        return resF->makeRedundantsTo(tt.getHandle(), 0, L);
+    }
+
     if (A == B && arg1F == arg2F) {
         terminal tt(CTYPE::isReflexive());
         return resF->makeRedundantsTo(tt.getHandle(), 0, L);
