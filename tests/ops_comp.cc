@@ -577,6 +577,16 @@ inline char getReductionType(forest* f)
     throw "Unknown reduction type";
 }
 
+inline const char* getReductionString(const dd_edge &e)
+{
+    const forest* f = e.getForest();
+    if (!f) return "null";
+    if (f->isFullyReduced())    return "fully";
+    if (f->isQuasiReduced())    return "quasi";
+    if (f->isIdentityReduced()) return "identity";
+    return "unknown";
+}
+
 void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
         const dd_edge &e1, const dd_edge &e2, const std::vector<bool> &set)
 {
@@ -585,13 +595,13 @@ void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
     ostream_output out(std::cout);
 
     out << "\nMismatch on " << what << "\n";
-    out << "Input A:\n";
+    out << "Input A (" << getReductionString(in1) << "):\n";
     in1.showGraph(out);
-    out << "Input B:\n";
+    out << "Input B (" << getReductionString(in2) << "):\n";
     in2.showGraph(out);
-    out << "Expected Output:\n";
+    out << "Expected Output (" << getReductionString(e2) << "):\n";
     e2.showGraph(out);
-    out << "Obtained Output:\n";
+    out << "Obtained Output (" << getReductionString(e1) << "):\n";
     e1.showGraph(out);
 
     throw "mismatch";

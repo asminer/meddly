@@ -546,7 +546,7 @@ MEDDLY::compare_op<CTYPE>::_compute_pr(int in, node_handle A, node_handle B,
 
     unpacked_node* Bu = (Blevel == Clevel)
         ?   arg2F->newUnpacked(B, FULL_ONLY)
-        :   MXD_levels::isFullyLevel(arg1F, Clevel)
+        :   MXD_levels::isFullyLevel(arg2F, Clevel)
             ?   unpacked_node::newRedundant(arg2F, Clevel, B, FULL_ONLY)
             :   unpacked_node::newIdentity(arg2F, Clevel, in, B, FULL_ONLY);
 
