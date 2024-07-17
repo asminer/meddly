@@ -193,12 +193,12 @@ MEDDLY::compare_op<CTYPE>::_compute(node_handle A, node_handle B, int L)
     // Terminal cases
     //
     if (A == B && arg1F == arg2F) {
-        terminal tt(CTYPE::isReflexive());
+        terminal tt(CTYPE::isReflexive(), resF->getTerminalType());
         return resF->makeRedundantsTo(tt.getHandle(), 0, L);
     }
 
     if (arg1F->isTerminalNode(A) && arg2F->isTerminalNode(B)) {
-        terminal tt( CTYPE::compare(arg1F, A, arg2F, B) );
+        terminal tt( CTYPE::compare(arg1F, A, arg2F, B), resF->getTerminalType() );
         return resF->makeRedundantsTo(tt.getHandle(), 0, L);
     }
 
@@ -338,18 +338,18 @@ MEDDLY::compare_op<CTYPE>::_compute_un(node_handle A, node_handle B, int L)
     // Terminal cases
     //
     if (0==A && 0==B) {
-        terminal tt(CTYPE::isReflexive());
+        terminal tt(CTYPE::isReflexive(), resF->getTerminalType());
         return resF->makeRedundantsTo(tt.getHandle(), 0, L);
     }
 
     if (A == B && arg1F == arg2F) {
-        terminal tt(CTYPE::isReflexive());
+        terminal tt(CTYPE::isReflexive(), resF->getTerminalType());
         return resF->makeRedundantsTo(tt.getHandle(), 0, L);
     }
 
     if (arg1F->isTerminalNode(A) && arg2F->isTerminalNode(B)) {
         if (0==L || !go_by_levels) {
-            terminal tt( CTYPE::compare(arg1F, A, arg2F, B) );
+            terminal tt( CTYPE::compare(arg1F, A, arg2F, B), resF->getTerminalType() );
             return resF->makeRedundantsTo(tt.getHandle(), 0, L);
         }
     }
@@ -373,6 +373,7 @@ MEDDLY::compare_op<CTYPE>::_compute_un(node_handle A, node_handle B, int L)
     const int Clevel = go_by_levels
         ? L
         : MAX(ABS(Alevel), ABS(Blevel));
+
     MEDDLY_DCASSERT(Clevel>0);
     MEDDLY_DCASSERT(ABS(Alevel) <= L);
     MEDDLY_DCASSERT(ABS(Blevel) <= L);
@@ -496,12 +497,12 @@ MEDDLY::compare_op<CTYPE>::_compute_pr(int in, node_handle A, node_handle B,
     // Terminal cases
     //
     if (0==A && 0==B) {
-        terminal tt(CTYPE::isReflexive());
+        terminal tt(CTYPE::isReflexive(), resF->getTerminalType());
         return resF->makeRedundantsTo(tt.getHandle(), 0, L);
     }
 
     if (A == B && arg1F == arg2F) {
-        terminal tt(CTYPE::isReflexive());
+        terminal tt(CTYPE::isReflexive(), resF->getTerminalType());
         return resF->makeRedundantsTo(tt.getHandle(), 0, L);
     }
 
