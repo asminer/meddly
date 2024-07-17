@@ -18,6 +18,8 @@
 */
 
 #include <cstdlib>
+#include <iostream>
+#include <iomanip>
 #include <string.h>
 #include <gmp.h>
 
