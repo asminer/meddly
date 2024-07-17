@@ -795,589 +795,6 @@ namespace MEDDLY {
 
 
 // ******************************************************************
-// ******************************************************************
-// ******************************************************************
-//
-// OLD IMPLEMENTATION HERE
-//
-// ******************************************************************
-// ******************************************************************
-// ******************************************************************
-
-#ifdef  OLD_OPS
-
-#include "apply_base.h"
-
-// ******************************************************************
-// ******************************************************************
-// **                            EQUAL                             **
-// ******************************************************************
-// ******************************************************************
-
-namespace MEDDLY {
-    // TBD: this operation is strange
-    class equal_evtimes;
-
-};
-
-
-// ******************************************************************
-// *                                                                *
-// *                        equal_mdd  class                        *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-template <typename T>
-class equal_mdd : public generic_binary_mdd {
-  public:
-    equal_mdd(forest* arg1, forest* arg2, forest* res)
-      : generic_binary_mdd(EQUAL_cache, arg1, arg2, res)
-      {
-        operationCommutes();
-        checkDomains(__FILE__, __LINE__);
-        checkAllRelations(__FILE__, __LINE__, SET);
-        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-      }
-
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-};
-
-template <typename T>
-bool equal_mdd<T>
-::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (a == b && arg1F == arg2F) {
-    c = resF->handleForValue(true);
-    return true;
-  }
-  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
-    T av, bv;
-    arg1F->getValueFromHandle(a, av);
-    arg2F->getValueFromHandle(b, bv);
-    c = resF->handleForValue( av == bv );
-    return true;
-  }
-  return false;
-}
-
-};  // namespace MEDDLY
-
-// ******************************************************************
-// *                                                                *
-// *                        equal_mxd  class                        *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-template <typename T>
-class equal_mxd : public generic_binbylevel_mxd {
-  public:
-    equal_mxd(forest* arg1, forest* arg2, forest* res)
-      : generic_binbylevel_mxd(EQUAL_cache, arg1, arg2, res)
-      {
-        operationCommutes();
-        checkDomains(__FILE__, __LINE__);
-        checkAllRelations(__FILE__, __LINE__, RELATION);
-        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-      }
-
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-};
-
-template <typename T>
-bool equal_mxd<T>
-::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
-    T av, bv;
-    arg1F->getValueFromHandle(a, av);
-    arg2F->getValueFromHandle(b, bv);
-    c = resF->handleForValue( av == bv );
-    return true;
-  }
-  return false;
-}
-
-};  // namespace MEDDLY
-
-// ******************************************************************
-// *                                                                *
-// *                      equal_evtimes  class                      *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::equal_evtimes : public generic_binary_evtimes {
-  public:
-    equal_evtimes(forest* arg1, forest* arg2, forest* res);
-
-  protected:
-    virtual bool checkTerminals(float av, node_handle a, float bv, node_handle b,
-      float &cv, node_handle& c);
-};
-
-MEDDLY::equal_evtimes::equal_evtimes(forest* arg1, forest* arg2, forest* res)
-  : generic_binary_evtimes(EQUAL_cache, arg1, arg2, res)
-{
-  operationCommutes();
-  checkDomains(__FILE__, __LINE__);
-  checkAllRelations(__FILE__, __LINE__, RELATION);
-  checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVTIMES);
-}
-
-bool MEDDLY::equal_evtimes
-::checkTerminals(float aev, node_handle a, float bev, node_handle b, float &cev, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) &&
-      arg2F->isTerminalNode(b)) {
-    if (a == b && ((aev == bev) || (isNan(aev) && isNan(bev)))) {
-      c = -1;
-      cev = 1.0;
-    } else {
-      c = 0;
-      cev = Nan();
-    }
-    return true;
-  }
-  return false;
-}
-
-// ******************************************************************
-// ******************************************************************
-// **                          NOT_EQUAL                           **
-// ******************************************************************
-// ******************************************************************
-
-// ******************************************************************
-// *                                                                *
-// *                       unequal_mdd  class                       *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-template <typename T>
-class unequal_mdd : public generic_binary_mdd {
-  public:
-    unequal_mdd(forest* arg1, forest* arg2, forest* res)
-      : generic_binary_mdd(NEQ_cache, arg1, arg2, res)
-      {
-        operationCommutes();
-        checkDomains(__FILE__, __LINE__);
-        checkAllRelations(__FILE__, __LINE__, SET);
-        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-      }
-
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-};
-
-template <typename T>
-bool unequal_mdd<T>
-::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
-    T av, bv;
-    arg1F->getValueFromHandle(a, av);
-    arg2F->getValueFromHandle(b, bv);
-    c = resF->handleForValue( av != bv );
-    return true;
-  }
-  return false;
-}
-
-};  // namespace MEDDLY
-
-// ******************************************************************
-// *                                                                *
-// *                       unequal_mxd  class                       *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-template <typename T>
-class unequal_mxd : public generic_binbylevel_mxd {
-  public:
-    unequal_mxd(forest* arg1, forest* arg2, forest* res)
-      : generic_binbylevel_mxd(NEQ_cache, arg1, arg2, res)
-      {
-        operationCommutes();
-        checkDomains(__FILE__, __LINE__);
-        checkAllRelations(__FILE__, __LINE__, RELATION);
-        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-      }
-
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-};
-
-template <typename T>
-bool unequal_mxd<T>
-::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
-    T av, bv;
-    arg1F->getValueFromHandle(a, av);
-    arg2F->getValueFromHandle(b, bv);
-    c = resF->handleForValue( av != bv );
-    return true;
-  }
-  return false;
-}
-
-};  // namespace MEDDLY
-
-// ******************************************************************
-// ******************************************************************
-// **                        GREATER  THAN                         **
-// ******************************************************************
-// ******************************************************************
-
-// ******************************************************************
-// *                                                                *
-// *                       morethan_mdd class                       *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-template <typename T>
-class morethan_mdd : public generic_binary_mdd {
-  public:
-    morethan_mdd(forest* arg1, forest* arg2, forest* res)
-      : generic_binary_mdd(GT_cache, arg1, arg2, res)
-    {
-        checkDomains(__FILE__, __LINE__);
-        checkAllRelations(__FILE__, __LINE__, SET);
-        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-    }
-
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-};
-
-template <typename T>
-bool morethan_mdd<T>
-::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
-    T av, bv;
-    arg1F->getValueFromHandle(a, av);
-    arg2F->getValueFromHandle(b, bv);
-    c = resF->handleForValue( av > bv );
-    return true;
-  }
-  return false;
-}
-
-};  // namespace MEDDLY
-
-// ******************************************************************
-// *                                                                *
-// *                       morethan_mxd class                       *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-template <typename T>
-class morethan_mxd : public generic_binbylevel_mxd {
-  public:
-    morethan_mxd(forest* arg1, forest* arg2, forest* res)
-      : generic_binbylevel_mxd(GT_cache, arg1, arg2, res)
-    {
-        checkDomains(__FILE__, __LINE__);
-        checkAllRelations(__FILE__, __LINE__, RELATION);
-        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-    }
-
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-};
-
-template <typename T>
-bool morethan_mxd<T>
-::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
-    T av, bv;
-    arg1F->getValueFromHandle(a, av);
-    arg2F->getValueFromHandle(b, bv);
-    c = resF->handleForValue( av > bv );
-    return true;
-  }
-  return false;
-}
-
-};  // namespace MEDDLY
-
-// ******************************************************************
-// ******************************************************************
-// **                      GREATER  OR EQUAL                       **
-// ******************************************************************
-// ******************************************************************
-
-// ******************************************************************
-// *                                                                *
-// *                      moreequal_mdd  class                      *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-template <typename T>
-class moreequal_mdd : public generic_binary_mdd {
-  public:
-    moreequal_mdd(forest* arg1, forest* arg2, forest* res)
-      : generic_binary_mdd(GE_cache, arg1, arg2, res)
-    {
-        checkDomains(__FILE__, __LINE__);
-        checkAllRelations(__FILE__, __LINE__, SET);
-        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-    }
-
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-};
-
-template <typename T>
-bool moreequal_mdd<T>
-::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
-    T av, bv;
-    arg1F->getValueFromHandle(a, av);
-    arg2F->getValueFromHandle(b, bv);
-    c = resF->handleForValue( av >= bv );
-    return true;
-  }
-  return false;
-}
-
-};  // namespace MEDDLY
-
-// ******************************************************************
-// *                                                                *
-// *                      moreequal_mxd  class                      *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-template <typename T>
-class moreequal_mxd : public generic_binbylevel_mxd {
-  public:
-    moreequal_mxd(forest* arg1, forest* arg2, forest* res)
-      : generic_binbylevel_mxd(GE_cache, arg1, arg2, res)
-    {
-        checkDomains(__FILE__, __LINE__);
-        checkAllRelations(__FILE__, __LINE__, RELATION);
-        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-    }
-
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-};
-
-template <typename T>
-bool moreequal_mxd<T>
-::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
-    T av, bv;
-    arg1F->getValueFromHandle(a, av);
-    arg2F->getValueFromHandle(b, bv);
-    c = resF->handleForValue( av >= bv );
-    return true;
-  }
-  return false;
-}
-
-};  // namespace MEDDLY
-
-// ******************************************************************
-// ******************************************************************
-// **                          LESS THAN                           **
-// ******************************************************************
-// ******************************************************************
-
-// ******************************************************************
-// *                                                                *
-// *                       lessthan_mdd class                       *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-template <typename T>
-class lessthan_mdd : public generic_binary_mdd {
-  public:
-    lessthan_mdd(forest* arg1, forest* arg2, forest* res)
-      : generic_binary_mdd(LT_cache, arg1, arg2, res)
-    {
-        checkDomains(__FILE__, __LINE__);
-        checkAllRelations(__FILE__, __LINE__, SET);
-        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-    }
-
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-};
-
-template <typename T>
-bool lessthan_mdd<T>
-::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
-    T av, bv;
-    arg1F->getValueFromHandle(a, av);
-    arg2F->getValueFromHandle(b, bv);
-    c = resF->handleForValue( av <  bv );
-    return true;
-  }
-  return false;
-}
-
-};  // namespace MEDDLY
-
-// ******************************************************************
-// *                                                                *
-// *                       lessthan_mxd class                       *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-template <typename T>
-class lessthan_mxd : public generic_binbylevel_mxd {
-  public:
-    lessthan_mxd(forest* arg1, forest* arg2, forest* res)
-      : generic_binbylevel_mxd(LT_cache, arg1, arg2, res)
-    {
-        checkDomains(__FILE__, __LINE__);
-        checkAllRelations(__FILE__, __LINE__, RELATION);
-        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-    }
-
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-};
-
-template <typename T>
-bool lessthan_mxd<T>
-::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
-    T av, bv;
-    arg1F->getValueFromHandle(a, av);
-    arg2F->getValueFromHandle(b, bv);
-    c = resF->handleForValue( av <  bv );
-    return true;
-  }
-  return false;
-}
-
-};  // namespace MEDDLY
-
-// ******************************************************************
-// ******************************************************************
-// **                        LESS OR EQUAL                         **
-// ******************************************************************
-// ******************************************************************
-
-// ******************************************************************
-// *                                                                *
-// *                      lessequal_mdd  class                      *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-template <typename T>
-class lessequal_mdd : public generic_binary_mdd {
-  public:
-    lessequal_mdd(forest* arg1, forest* arg2, forest* res)
-      : generic_binary_mdd(LE_cache, arg1, arg2, res)
-    {
-        checkDomains(__FILE__, __LINE__);
-        checkAllRelations(__FILE__, __LINE__, SET);
-        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-    }
-
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-};
-
-template <typename T>
-bool lessequal_mdd<T>
-::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (a == b) {
-    if (arg1F == arg2F) {
-      c = resF->handleForValue(true);
-      return true;
-    }
-  }
-  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
-    T av, bv;
-    arg1F->getValueFromHandle(a, av);
-    arg2F->getValueFromHandle(b, bv);
-    c = resF->handleForValue( av <= bv );
-    return true;
-  }
-  return false;
-}
-
-};  // namespace MEDDLY
-
-// ******************************************************************
-// *                                                                *
-// *                      lessequal_mxd  class                      *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-template <typename T>
-class lessequal_mxd : public generic_binbylevel_mxd {
-  public:
-    lessequal_mxd(forest* arg1, forest* arg2, forest* res)
-      : generic_binbylevel_mxd(LE_cache, arg1, arg2, res)
-    {
-        checkDomains(__FILE__, __LINE__);
-        checkAllRelations(__FILE__, __LINE__, RELATION);
-        checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-    }
-
-  protected:
-    virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c);
-};
-
-template <typename T>
-bool lessequal_mxd<T>
-::checkTerminals(node_handle a, node_handle b, node_handle& c)
-{
-  if (arg1F->isTerminalNode(a) && arg2F->isTerminalNode(b)) {
-    T av, bv;
-    arg1F->getValueFromHandle(a, av);
-    arg2F->getValueFromHandle(b, bv);
-    c = resF->handleForValue( av <= bv );
-    return true;
-  }
-  return false;
-}
-
-};  // namespace MEDDLY
-
-#endif // OLD_OPS
-
-
-// ******************************************************************
 // *                                                                *
 // *                                                                *
 // *                           Front ends                           *
@@ -1401,19 +818,6 @@ MEDDLY::binary_operation* MEDDLY::EQUAL(forest* a, forest* b, forest* c)
             a->getRangeType() == range_type::REAL ||
             b->getRangeType() == range_type::REAL
         );
-#ifdef OLD_OPS
-        if (use_reals) {
-            if (c->isForRelations())
-                return EQUAL_cache.add(new equal_mxd<float>(a, b, c));
-            else
-                return EQUAL_cache.add(new equal_mdd<float>(a, b, c));
-        } else {
-            if (c->isForRelations())
-                return EQUAL_cache.add(new equal_mxd<long>(a, b, c));
-            else
-                return EQUAL_cache.add(new equal_mdd<long>(a, b, c));
-        }
-#else
         if (use_reals) {
             if (c->isForRelations())
                 return EQUAL_cache.add(
@@ -1433,7 +837,6 @@ MEDDLY::binary_operation* MEDDLY::EQUAL(forest* a, forest* b, forest* c)
                     new compare_op<eq_templ<long> > (a,b,c)
                 );
         }
-#endif
     }
 
     /*
@@ -1471,19 +874,6 @@ MEDDLY::binary_operation* MEDDLY::NOT_EQUAL(forest* a, forest* b, forest* c)
             a->getRangeType() == range_type::REAL ||
             b->getRangeType() == range_type::REAL
         );
-#ifdef OLD_OPS
-        if (use_reals) {
-            if (c->isForRelations())
-                return NEQ_cache.add(new unequal_mxd<float>(a, b, c));
-            else
-                return NEQ_cache.add(new unequal_mdd<float>(a, b, c));
-        } else {
-            if (c->isForRelations())
-                return NEQ_cache.add(new unequal_mxd<long>(a, b, c));
-            else
-                return NEQ_cache.add(new unequal_mdd<long>(a, b, c));
-        }
-#else
         if (use_reals) {
             if (c->isForRelations())
                 return NEQ_cache.add(
@@ -1503,7 +893,6 @@ MEDDLY::binary_operation* MEDDLY::NOT_EQUAL(forest* a, forest* b, forest* c)
                     new compare_op<ne_templ<long> > (a,b,c)
                 );
         }
-#endif
     }
 
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
@@ -1535,19 +924,6 @@ MEDDLY::binary_operation* MEDDLY::GREATER_THAN(forest* a, forest* b, forest* c)
             a->getRangeType() == range_type::REAL ||
             b->getRangeType() == range_type::REAL
         );
-#ifdef OLD_OPS
-        if (use_reals) {
-            if (c->isForRelations())
-                return GT_cache.add(new morethan_mxd<float>(a, b, c));
-            else
-                return GT_cache.add(new morethan_mdd<float>(a, b, c));
-        } else {
-            if (c->isForRelations())
-                return GT_cache.add(new morethan_mxd<long>(a, b, c));
-            else
-                return GT_cache.add(new morethan_mdd<long>(a, b, c));
-        }
-#else
         if (use_reals) {
             if (c->isForRelations())
                 return GT_cache.add(
@@ -1567,7 +943,6 @@ MEDDLY::binary_operation* MEDDLY::GREATER_THAN(forest* a, forest* b, forest* c)
                     new compare_op<gt_templ<long> > (a,b,c)
                 );
         }
-#endif
     }
 
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
@@ -1599,19 +974,6 @@ MEDDLY::binary_operation* MEDDLY::GREATER_THAN_EQUAL(forest* a, forest* b, fores
             a->getRangeType() == range_type::REAL ||
             b->getRangeType() == range_type::REAL
         );
-#ifdef OLD_OPS
-        if (use_reals) {
-            if (c->isForRelations())
-                return GE_cache.add(new moreequal_mxd<float>(a, b, c));
-            else
-                return GE_cache.add(new moreequal_mdd<float>(a, b, c));
-        } else {
-            if (c->isForRelations())
-                return GE_cache.add(new moreequal_mxd<long>(a, b, c));
-            else
-                return GE_cache.add(new moreequal_mdd<long>(a, b, c));
-        }
-#else
         if (use_reals) {
             if (c->isForRelations())
                 return GE_cache.add(
@@ -1631,7 +993,6 @@ MEDDLY::binary_operation* MEDDLY::GREATER_THAN_EQUAL(forest* a, forest* b, fores
                     new compare_op<ge_templ<long> > (a,b,c)
                 );
         }
-#endif
     }
 
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
@@ -1663,19 +1024,6 @@ MEDDLY::binary_operation* MEDDLY::LESS_THAN(forest* a, forest* b, forest* c)
             a->getRangeType() == range_type::REAL ||
             b->getRangeType() == range_type::REAL
         );
-#ifdef OLD_OPS
-        if (use_reals) {
-            if (c->isForRelations())
-                return LT_cache.add(new lessthan_mxd<float>(a, b, c));
-            else
-                return LT_cache.add(new lessthan_mdd<float>(a, b, c));
-        } else {
-            if (c->isForRelations())
-                return LT_cache.add(new lessthan_mxd<long>(a, b, c));
-            else
-                return LT_cache.add(new lessthan_mdd<long>(a, b, c));
-        }
-#else
         if (use_reals) {
             if (c->isForRelations())
                 return LT_cache.add(
@@ -1695,7 +1043,6 @@ MEDDLY::binary_operation* MEDDLY::LESS_THAN(forest* a, forest* b, forest* c)
                     new compare_op<lt_templ<long> > (a,b,c)
                 );
         }
-#endif
     }
 
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
@@ -1727,19 +1074,6 @@ MEDDLY::binary_operation* MEDDLY::LESS_THAN_EQUAL(forest* a, forest* b, forest* 
             a->getRangeType() == range_type::REAL ||
             b->getRangeType() == range_type::REAL
         );
-#ifdef OLD_OPS
-        if (use_reals) {
-            if (c->isForRelations())
-                return LE_cache.add(new lessequal_mxd<float>(a, b, c));
-            else
-                return LE_cache.add(new lessequal_mdd<float>(a, b, c));
-        } else {
-            if (c->isForRelations())
-                return LE_cache.add(new lessequal_mxd<long>(a, b, c));
-            else
-                return LE_cache.add(new lessequal_mdd<long>(a, b, c));
-        }
-#else
         if (use_reals) {
             if (c->isForRelations())
                 return LE_cache.add(
@@ -1759,7 +1093,6 @@ MEDDLY::binary_operation* MEDDLY::LESS_THAN_EQUAL(forest* a, forest* b, forest* 
                     new compare_op<le_templ<long> > (a,b,c)
                 );
         }
-#endif
     }
 
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
