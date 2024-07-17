@@ -422,7 +422,7 @@ MEDDLY::compare_op<CTYPE>::_compute_un(node_handle A, node_handle B, int L)
 
     unpacked_node* Bu = (Blevel == Clevel)
         ?   arg2F->newUnpacked(B, FULL_ONLY)
-        :   unpacked_node::newRedundant(arg1F, Clevel, B, FULL_ONLY);
+        :   unpacked_node::newRedundant(arg2F, Clevel, B, FULL_ONLY);
 
     MEDDLY_DCASSERT(Au->getSize() == Bu->getSize());
 
