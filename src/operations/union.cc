@@ -27,6 +27,8 @@ namespace MEDDLY {
     class union_mdd;
     class union_mxd;
 
+    class union_mt;
+
     class union_min_evplus;
     class union_min_evplus_mxd;
 
@@ -34,6 +36,410 @@ namespace MEDDLY {
 };
 
 // #define TRACE
+
+#ifdef TRACE
+#include "../operators.h"
+#endif
+
+// ******************************************************************
+// *                                                                *
+// *                         union_mt class                         *
+// *                                                                *
+// ******************************************************************
+
+/**
+    Union operation for multi-terminal forests.
+*/
+
+class union_mt : public binary_operation {
+    public:
+        union_mt(forest* arg1, forest* arg2, forest* res);
+        virtual ~union_mt();
+
+        virtual void compute(const edge_value &av, node_handle ap,
+                const edge_value &bv, node_handle bp,
+                int L,
+                edge_value &cv, node_handle &cp);
+
+    private:
+        //
+        // Union, for MDD or MXD with the same behavior on
+        // primed and unprimed levels.
+        //
+        node_handle _compute(int in, node_handle A, node_handle B, int L);
+
+        //
+        // Union for MXD at unprimed levels.
+        //
+        node_handle _compute_un(node_handle A, node_handle B, int L);
+
+        //
+        // Union for MXD at primed levels,
+        //
+        node_handle _compute_pr(int in, node_handle A, node_handle B, int L);
+
+
+    private:
+        // inlined helpers
+
+        inline unpacked_node* unpackEdge(forest* F, int atL, int in,
+                node_handle A, int alevel, storage_flags fs)
+        {
+            MEDDLY_DCASSERT(F->getNodeLevel(A) == alevel);
+
+            if (alevel == atL) {
+                return F->newUnpacked(A, fs);
+            }
+            if (atL >= 0 || F->isFullyReduced()) {
+                return unpacked_node::newRedundant(F, atL, A, fs);
+            }
+            if (F->isIdentityReduced()) {
+                return unpacked_node::newIdentity(F, atL, in, A, fs);
+            }
+            std::cout << "unpackEdge fall through\n";
+            std::cout << "    atL: " << atL << "\n";
+            std::cout << "    A: " << A << "\n";
+            std::cout << "    a level: " << alevel << "\n";
+
+            MEDDLY_DCASSERT(false);
+
+            return nullptr;
+        }
+
+        inline static void count_reductions(const forest* F,
+                int &q, int &f, int &i)
+        {
+            if (F->isFullyReduced()) {
+                ++f;
+                return;
+            }
+            if (F->isIdentityReduced()) {
+                ++i;
+                return;
+            }
+            ++q;
+        }
+    private:
+        ct_entry_type* ct;
+
+#ifdef TRACE
+        ostream_output out;
+#endif
+
+        bool by_levels;
+        bool by_unprimed;
+};
+
+// ******************************************************************
+
+MEDDLY::unary_mt::unary_mt(forest* arg1, forest* arg2, forest* res)
+    : binary_operation(arg1, arg2, res)
+#ifdef TRACE
+      , out(std::cout)
+#endif
+{
+    checkDomains(__FILE__, __LINE__);
+    if (res->isForRelations()) {
+        checkAllRelations(__FILE__, __LINE__, RELATION);
+    } else {
+        checkAllRelations(__FILE__, __LINE__, SET);
+    }
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+
+    //
+    // Decide if we need to recurse by levels or not
+    //
+    int nq=0, nf=0, ni=0;
+    count_reductions(arg1F, nq, nf, ni);
+    count_reductions(arg2F, nq, nf, ni);
+
+    by_levels = (nf>0) && (ni>0);
+    by_unprimed = (ni>0);
+
+    ct = new ct_entry_type("union");
+    if (by_levels) {
+        ct->setFixed('I', arg1, arg2);
+    } else {
+        ct->setFixed(arg1, arg2);
+    }
+    ct->setResult(res);
+    ct->doneBuilding();
+}
+
+MEDDLY::union_mt::~union_mt()
+{
+    ct->markForDestroy();
+}
+
+void MEDDLY::union_mt::compute(const edge_value &av, node_handle ap,
+                const edge_value &bv, node_handle bp,
+                int L,
+                edge_value &cv, node_handle &cp)
+{
+#ifdef TRACE
+    out.indentation(0);
+    out << "********************************************************\n";
+    out << "Starting top-level call to union_mt::compute\n";
+#endif
+    MEDDLY_DCASSERT(av.isVoid());
+    MEDDLY_DCASSERT(bv.isVoid());
+    cv.set();
+
+    //
+    // Figure out which _compute we should call, based on
+    // the reduction rules of the input forests.
+    //
+    //  Cases with NO level skipping
+    //
+    //      quasi, quasi    :   _compute()
+    //      quasi, fully    :   _compute()
+    //      quasi, ident    :   _compute()
+    //      fully, quasi    :   _compute()
+    //      ident, quasi    :   _compute()
+    //
+    //  Cases with arbitrary level skipping allowed
+    //
+    //      fully, fully    :   _compute()
+    //
+    //  Cases with level skipping to top-most unprimed level
+    //
+    //      ident, ident    :   _compute_un()
+    //
+    //  Cases that must proceed by levels, and store levels
+    //  in the compute table entry
+    //
+    //      fully, ident    :   _compute_un()
+    //      ident, fully    :   _compute_un()
+    //
+
+    if (by_unprimed) {
+        cp = _compute_un(ap, bp, L);
+    } else {
+        cp = _compute(-1, ap, bp, L);
+    }
+
+#ifdef TRACE
+    out.indentation(0);
+    out << "Finished top-level call to union_mt::compute\n";
+    out << "********************************************************\n";
+#endif
+}
+
+//
+//  Recursion for cases that either
+//      * Never skip levels (at least one input is quasi-reduced).
+//        Result forest can be any reduction.
+//
+//      * Skip levels on fully-reduced inputs.
+//
+MEDDLY::node_handle
+MEDDLY::union_mt::_compute(int in, node_handle A, node_handle B, int L)
+{
+    //
+    // Check terminal cases
+    //
+
+    if (A == 0) {
+        // A is empty set
+        if (B == 0) {
+            return 0;
+        }
+        if (B < 0) {
+            terminal tt(true, resF->getResultType());
+            if (arg2F->isIdentityReduced()) {
+                return resF->makeIdentitiesTo(tt.getHandle(), 0, L);
+            } else {
+                return resF->makeRedundantsTo(tt.getHandle(), 0, L);
+            }
+        }
+
+        //
+        // Return B if we can
+        //
+        if (arg2F == resF) {
+            return resF->linkNode(B);
+            // Don't need to make redundant chain b/c same forest
+        }
+    } // zero A
+
+    if (B == 0) {
+        // B is empty set
+        if (A < 0) {
+            terminal tt(true, resF->getResultType());
+            if (arg1F->isIdentityReduced()) {
+                return resF->makeIdentitiesTo(tt.getHandle(), 0, L);
+            } else {
+                return resF->makeRedundantsTo(tt.getHandle(), 0, L);
+            }
+        }
+        //
+        // Return A if we can
+        //
+        MEDDLY_DCASSERT(A);
+        if (arg1F == resF) {
+            return resF->linkNode(A);
+        }
+    } // zero B
+
+    if (A == B) {
+        if ((arg1F == arg2F) && (arg1F == resF)) {
+            return resF->linkNode(A);
+        }
+    }
+
+    // Both terminal one
+    if (A < 0 && B < 0) {
+        // if both are identity, return an identity chain to 1
+        // otherwise, return a redundant chain to 1
+        // (if either one is quasi, the chain length will be 0)
+        terminal tt(true, resF->getResultType());
+        if (0==L) return tt.getHandle();
+        MEDDLY_DCASSERT(arg1F->isFullyReduced());
+        MEDDLY_DCASSERT(arg2F->isFullyReduced());
+        return resF->makeRedundantsTo(tt.getHandle(), 0, L);
+    }
+    // Just A is terminal one
+    if (A < 0) {
+        if (arg1F->isFullyReduced()) {
+            terminal tt(true, resF->getResultType());
+            return resF->makeRedundantsTo(tt.getHandle(), 0, L);
+        }
+    }
+    // Just B is terminal one
+    if (B < 0) {
+        if (arg2F->isFullyReduced()) {
+            terminal tt(true, resF->getResultType());
+            return resF->makeRedundantsTo(tt.getHandle(), 0, L);
+        }
+    }
+
+
+    //
+    // Reorder A and B if they commute (same forest)
+    //
+
+    if (arg1F == arg2F) {
+        if (A > B) {
+            SWAP(A, B);
+        }
+    }
+
+    //
+    // Determine level information
+    //
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = arg2F->getNodeLevel(B);
+    const int Clevel = resF->isForRelations()
+                        ? MXD_levels::topLevel(Alevel, Blevel)
+                        : MDD_levels::topLevel(Alevel, Blevel);
+
+#ifdef TRACE
+    out << "union_mt compute(" << in << ", "
+        << A << ", " << B << ", " << L << ")\n";
+    out << A << " level " << Alevel << "\n";
+    out << B << " level " << Blevel << "\n";
+    out << "result level " << Clevel << " before chain\n";
+#endif
+
+    //
+    // Check compute table
+    //
+    ct_vector key(2);
+    ct_vector res(1);
+    key[0].setN(A);
+    key[1].setN(B);
+    if (ct->findCT(key, res)) {
+        node_handle C = resF->makeRedundantsTo(
+                resF->linkNode(res[0].getN()), Clevel, L
+        );
+#ifdef TRACE
+        out << "\tCT hit " << res[0].getN() << "\n";
+        out << "\tafter chain " << C << "\n";
+#endif
+        return C;
+    }
+
+    //
+    // Do computation
+    //
+
+    //
+    // Initialize unpacked nodes
+    //
+    unpacked_node* Au = unpackEdge(arg1F, Clevel, in, A, Alevel, FULL_ONLY);
+    unpacked_node* Bu = unpackEdge(arg2F, Clevel, in, B, Blevel, FULL_ONLY);
+
+    MEDDLY_DCASSERT(Au->getSize() == Bu->getSize());
+
+    unpacked_node* Cu = unpacked_node::newFull(resF, Clevel, Au->getSize());
+
+    //
+    // Build result node
+    //
+#ifdef TRACE
+    out.indent_more();
+    out.put('\n');
+#endif
+    const int nextlevel = resF->isForRelations()
+            ? MXD_levels::downLevel(Clevel)
+            : MDD_levels::downLevel(Clevel);
+
+    unsigned nnzs = 0;
+    for (unsigned i=0; i<Cu->getSize(); i++) {
+        node_handle d = _compute(int(i), Au->down(i), Bu->down(i), nextlevel);
+        Cu->setFull(i, d);
+        if (d) ++nnzs;
+    }
+#ifdef TRACE
+    out.indent_less();
+    out.put('\n');
+    out << "union_mt compute(" << in << ", "
+        << A << ", " << B << ", " << L << ") done\n";
+    out << "  A: ";
+    Au->show(out, true);
+    out << "\n  B: ";
+    Bu->show(out, true);
+    out << "\n  C: ";
+    Cu->show(out, true);
+    out << "\n";
+#endif
+
+    //
+    // Reduce
+    //
+    edge_value dummy;
+    node_handle C;
+    resF->createReducedNode(Cu, dummy, C);
+    MEDDLY_DCASSERT(dummy.isVoid());
+#ifdef TRACE
+    out << "reduced to " << C << ": ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    out << "\n";
+#endif
+
+    //
+    // Save result in CT, if it is safe to do so.
+    // Unsafe results might change with different in values.
+    //
+    const bool unsafe =
+        Au->wasIdentity() || Bu->wasIdentity() ||
+        (resF->isIdentityReduced() && (Clevel<0) && (1==nnzs));
+
+    if (unsafe) {
+        ct->noaddCT(key);
+    } else {
+        res[0].setN(C);
+        ct->addCT(key, res);
+    }
+
+    //
+    // Cleanup
+    //
+    unpacked_node::Recycle(Bu);
+    unpacked_node::Recycle(Au);
+
+    return resF->makeRedundantsTo(C, Clevel, L);
+}
 
 // ******************************************************************
 // *                                                                *
@@ -147,7 +553,9 @@ MEDDLY::union_mdd::_compute(node_handle A, node_handle B, int L)
     //
     const int Alevel = arg1F->getNodeLevel(A);
     const int Blevel = arg2F->getNodeLevel(B);
-    const int Clevel = MAX(Alevel, Blevel);
+    const int Clevel = resF->isForRelations()
+                        ? MXD_levels::topLevel(Alevel, Blevel)
+                        : MDD_levels::topLevel(Alevel, Blevel);
 
     //
     // Check compute table
@@ -167,11 +575,11 @@ MEDDLY::union_mdd::_compute(node_handle A, node_handle B, int L)
     //
     // Initialize unpacked nodes
     //
-    unpacked_node* Au = (Alevel < Clevel)
+    unpacked_node* Au = (Alevel != Clevel)
         ?   unpacked_node::newRedundant(arg1F, Clevel, A, FULL_ONLY)
         :   arg1F->newUnpacked(A, FULL_ONLY);
 
-    unpacked_node* Bu = (Blevel <Clevel)
+    unpacked_node* Bu = (Blevel != Clevel)
         ?   unpacked_node::newRedundant(arg2F, Clevel, B, FULL_ONLY)
         :   arg2F->newUnpacked(B, FULL_ONLY);
 

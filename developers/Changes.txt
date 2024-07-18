@@ -45,10 +45,10 @@ generic EV 'operator' for edges should provide:
 Completely reimplemented operations
 ======================================================================
 
-cardinality.cc      YES
-complement.cc       YES
-difference.cc       YES
-maxmin_range.cc     YES
+cardinality.cc      YES*
+complement.cc       YES*
+difference.cc       YES*
+maxmin_range.cc     YES*
 
 ======================================================================
 Operations that need updating
@@ -181,8 +181,10 @@ transitive_closure.cc
         NO      transitive_closure_forwd_dfs
 
 union.cc
-        YES     union_mdd
-        YES     union_mxd
+        tbd     union_mt    (combines old union_mdd and union_mxd)
+
+        YES*    union_mdd
+        YES*    union_mxd
         NO      union_min_evplus
         NO      union_min_evplus_mxd
 

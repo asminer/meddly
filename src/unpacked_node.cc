@@ -143,6 +143,8 @@ void MEDDLY::unpacked_node::attach(const forest* f)
             throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
         }
     }
+
+    setRegular();
 }
 
 
@@ -173,6 +175,8 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
         }
         is_full = true;
     }
+
+    setRedundant();
 }
 
 void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
@@ -201,6 +205,8 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
             setFull(i, ev, node);
         }
     }
+
+    setRedundant();
 }
 
 
@@ -226,6 +232,8 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
 
         setSparse(0, i, node);
     }
+
+    setIdentity();
 }
 
 void MEDDLY::unpacked_node::initIdentity(const forest *f, int k, unsigned i,
@@ -249,6 +257,8 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k, unsigned i,
 
         setSparse(0, i, ev, node);
     }
+
+    setIdentity();
 }
 
 

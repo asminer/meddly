@@ -533,6 +533,32 @@ MEDDLY::compare_op<CTYPE>::_compute_pr(int in, node_handle A, node_handle B,
 #endif
 
     //
+    // Check compute table
+    //
+    /*
+    ct_vector key( go_by_levels ? 3 : 2);
+    ct_vector res(1);
+    if (go_by_levels) {
+        key[0].setI(L);
+        key[1].setN(A);
+        key[2].setN(B);
+    } else {
+        key[0].setN(A);
+        key[1].setN(B);
+    }
+    if (ct->findCT(key, res)) {
+        node_handle C = resF->makeRedundantsTo(
+                resF->linkNode(res[0].getN()), Clevel, L)
+        ;
+#ifdef TRACE
+        out << "\tCT hit " << res[0].getN() << "\n";
+        out << "\tafter chain " << C << "\n";
+#endif
+        return C;
+    }
+    */
+
+    //
     // Do computation
     //
 
@@ -562,8 +588,11 @@ MEDDLY::compare_op<CTYPE>::_compute_pr(int in, node_handle A, node_handle B,
     out.indent_more();
     out.put('\n');
 #endif
+    unsigned nnz = 0;
     for (unsigned i=0; i<Au->getSize(); i++) {
-        Cu->setFull(i, _compute_un(Au->down(i), Bu->down(i), -Clevel-1) );
+        node_handle d = _compute_un(Au->down(i), Bu->down(i), -Clevel-1);
+        Cu->setFull(i, d);
+        if (d) ++nnz;
     }
 #ifdef TRACE
     out.indent_less();
@@ -593,6 +622,24 @@ MEDDLY::compare_op<CTYPE>::_compute_pr(int in, node_handle A, node_handle B,
     resF->showNode(out, C, SHOW_DETAILS);
     out << "\n";
 #endif
+
+    //
+    // Save result in CT when it is safe to do so:
+    //  (1) A is not an identity node
+    //  (2) B is not an identity node
+    //  (3) Result cannot possibly be an identity node
+    //
+    /*
+    bool canSaveResult = !Au->wasIdentity() && !Bu->wasIdentity();
+    if (resF->isIdentityReduced() && (1==nnz)) canSaveResult = false;
+
+    if (canSaveResult) {
+        res[0].setN(C);
+        ct->addCT(key, res);
+    } else {
+        ct->noaddCT(key);
+    }
+    */
 
     return C;
 }

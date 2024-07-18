@@ -887,6 +887,16 @@ class MEDDLY::unpacked_node {
         void clear(unsigned low, unsigned high);
 
     public:
+        /// Was this node initialized from a redundant node
+        inline bool wasRedundant() const {
+            return orig_was_fully;
+        }
+        /// Was this node initialized from an identity node
+        inline bool wasIdentity() const {
+            return orig_was_identity;
+        }
+
+    public:
         //
         // Centralized per-forest (using FIDs) recycling
         //
@@ -943,6 +953,19 @@ class MEDDLY::unpacked_node {
 
         static void showSingly(const unpacked_node* list);
         static void showDoubly(const unpacked_node* list);
+
+    private:
+        inline void setRegular() {
+            orig_was_fully = orig_was_identity = false;
+        }
+        inline void setRedundant() {
+            orig_was_fully = true;
+            orig_was_identity = false;
+        }
+        inline void setIdentity() {
+            orig_was_fully = false;
+            orig_was_identity = true;
+        }
 
 #ifdef USE_STRUCT
     private:
@@ -1025,6 +1048,11 @@ class MEDDLY::unpacked_node {
 
         edge_type the_edge_type;
 
+        /// True iff this was expanded from a fully-reduced edge
+        bool orig_was_fully;
+
+        /// True iff this was expanded from an identity-reduced edge
+        bool orig_was_identity;
 
 // ===================================================================
 //
