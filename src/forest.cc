@@ -753,7 +753,7 @@ MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L, int in)
         }
 
         MEDDLY_DCASSERT(K>=0);
-        int Lstop = (L<0) ? MXD_levels::downLevel(L) : L;
+        const int Lstop = (L<0) ? MXD_levels::downLevel(L) : L;
 
         //
         // Proceed in unprimed, primed pairs
@@ -779,7 +779,7 @@ MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L, int in)
         // Add top identity node, if L is negative
         //
         if (L<0) {
-            MEDDLY_DCASSERT(MXD_levels::upLevel(K) == L);
+            MEDDLY_DCASSERT(-K == L);
             Upr = unpacked_node::newSparse(this, L, 1);
             MEDDLY_DCASSERT(in>=0);
             Upr->setSparse(0, unsigned(in), p);
