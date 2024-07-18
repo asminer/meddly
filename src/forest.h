@@ -52,6 +52,77 @@ namespace MEDDLY {
     class logger;
 };
 
+// ******************************************************************
+// *                                                                *
+// *                        MDD_levels class                        *
+// *                                                                *
+// ******************************************************************
+
+/**
+    Small class for MDD level behavior,
+    used for template parameters in operations.
+ */
+class MEDDLY::MDD_levels {
+    public:
+
+        /// Go "down a level"
+        static inline int downLevel(int k) {
+            return k-1;
+        }
+
+        ///  Go "up a level"
+        static inline int upLevel(int k) {
+            return k+1;
+        }
+
+        /// Determine the top of two levels
+        static inline int topLevel(int k1, int k2) {
+            return MAX(k1, k2);
+        }
+};
+
+
+// ******************************************************************
+// *                                                                *
+// *                        MXD_levels class                        *
+// *                                                                *
+// ******************************************************************
+
+/**
+    Small class for MXD level behavior,
+    used for template parameters in operations.
+ */
+class MEDDLY::MXD_levels {
+    public:
+
+        /// Go "down a level"
+        static inline int downLevel(int k) {
+            return (k>0) ? (-k) : (-k-1);
+        }
+
+        ///  Go "up a level"
+        static inline int upLevel(int k) {
+            return (k<0) ? (-k) : (-k-1);
+        }
+
+        /// Determine the top of two levels
+        static inline int topLevel(int k1, int k2) {
+            if (ABS(k1) == ABS(k2)) {
+                return MAX(k1, k2);
+            }
+            return (ABS(k1) > ABS(k2)) ? k1 : k2;
+        }
+
+        /// Determine the top unprimed level of two levels.
+        /// This is ABS(topLevel(k1, k2)) but computed more efficiently.
+        static inline int topUnprimed(int k1, int k2) {
+            return MAX(ABS(k1), ABS(k2));
+        }
+};
+
+
+
+
 
 // ******************************************************************
 // *                                                                *
@@ -316,17 +387,20 @@ class MEDDLY::forest {
 
         /**
             Useful helper function.
-            Build a chain of identity (matrix) nodes from node p
-            (which must be at an unprimed level)
-            to a node at level L (also an unprimed level).
+            Build a chain of redundant/identity nodes from node p
+            up to a node at level L.
             If the forest is identity-reduced, do nothing instead.
+
                 @param  p   Bottom node
-                @param  K   Start identity nodes above this level
-                @param  L   Stop identity nodes here
+                @param  K   Start adding nodes above this level
+                @param  L   Stop adding nodes here
+                @param  in  Index where root edge originates.
+                            Only needed if L is a primed level.
+
                 @return     A node that can be referenced at level L
                             (i.e., definitely at level L if we're quasi
-                            reduced) with identity nodes added down
-                            to node p.
+                            reduced) with redundant/identity nodes added down
+                            to level K.
 
             Illustration:
 
@@ -348,16 +422,18 @@ class MEDDLY::forest {
                             v                   v
                             p                   p
         */
-        inline node_handle makeIdentitiesTo(node_handle p, int K, int L)
+        inline node_handle makeIdentitiesTo(node_handle p, int K, int L, int in)
         {
-            MEDDLY_DCASSERT(L>=0);
-            MEDDLY_DCASSERT(K>=0);
             if (0==L) return p;
             if (K==L) return p;
-            MEDDLY_DCASSERT(L>=K);
-            if (isIdentityReduced()) return p;
+            MEDDLY_DCASSERT(MXD_levels::topLevel(L, K) == L);
             if (0==p) return p;
-            return _makeIdentitiesTo(p, K, L);
+            if (isIdentityReduced()) return p;
+            if (-K == L) {
+                // Just adding one redundant node
+                if (isFullyReduced()) return p;
+            }
+            return _makeIdentitiesTo(p, K, L, in);
         }
 
     // ------------------------------------------------------------
@@ -398,8 +474,9 @@ class MEDDLY::forest {
                 @param  p   Bottom node
                 @param  K   Level of node p
                 @param  L   Level of node we want
+                @param  in  Index of edge above level L
          */
-        node_handle _makeIdentitiesTo(node_handle p, int K, int L);
+        node_handle _makeIdentitiesTo(node_handle p, int K, int L, int in);
 
     // ------------------------------------------------------------
     protected: // Moving nodes around; called in derived classes for reordering
@@ -2490,87 +2567,6 @@ class MEDDLY::forest {
 
 
 };
-
-// ******************************************************************
-// *                                                                *
-// *                        MDD_levels class                        *
-// *                                                                *
-// ******************************************************************
-
-/**
-    Small class for MDD level behavior,
-    used for template parameters in operations.
- */
-class MEDDLY::MDD_levels {
-    public:
-
-        /// Go "down a level"
-        static inline int downLevel(int k) {
-            return k-1;
-        }
-
-        ///  Go "up a level"
-        static inline int upLevel(int k) {
-            return k+1;
-        }
-
-        /// Determine if a skipped level is fully reduced
-        static inline bool isFullyLevel(forest* f, int k) {
-            return true;
-        }
-
-        /// Determine the top of two levels
-        static inline int topLevel(int k1, int k2) {
-            return MAX(k1, k2);
-        }
-};
-
-
-// ******************************************************************
-// *                                                                *
-// *                        MXD_levels class                        *
-// *                                                                *
-// ******************************************************************
-
-/**
-    Small class for MXD level behavior,
-    used for template parameters in operations.
- */
-class MEDDLY::MXD_levels {
-    public:
-
-        /// Go "down a level"
-        static inline int downLevel(int k) {
-            return (k>0) ? (-k) : (-k-1);
-        }
-
-        ///  Go "up a level"
-        static inline int upLevel(int k) {
-            return (k<0) ? (-k) : (-k-1);
-        }
-
-        /// Determine if a skipped level is fully reduced
-        static inline bool isFullyLevel(forest* f, int k) {
-            return (k>0) || f->isFullyReduced();
-        }
-
-        /// Determine the top of two levels
-        static inline int topLevel(int k1, int k2) {
-            if (ABS(k1) == ABS(k2)) {
-                return MAX(k1, k2);
-            }
-            return (ABS(k1) > ABS(k2)) ? k1 : k2;
-        }
-
-        /// Determine the top unprimed level of two levels.
-        /// This is ABS(topLevel(k1, k2)) but computed more efficiently.
-        static inline int topUnprimed(int k1, int k2) {
-            return MAX(ABS(k1), ABS(k2));
-        }
-};
-
-
-
 
 // ===================================================================
 //

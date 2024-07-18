@@ -725,10 +725,12 @@ MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
 
 
 MEDDLY::node_handle
-MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L)
+MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L, int in)
 {
-    MEDDLY_DCASSERT(L>0);
-    MEDDLY_DCASSERT(K>=0);
+    MEDDLY_DCASSERT(!isIdentityReduced());
+    MEDDLY_DCASSERT(isForRelations());
+
+    MEDDLY_DCASSERT(L!=0);
     unpacked_node* Uun;
     unpacked_node* Upr;
     edge_value ev;
@@ -736,7 +738,27 @@ MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L)
         //
         // Multi-terminal
         //
-        for (K++; K<=L; K++) {
+
+        if (K<0) {
+            //
+            // Add a redundant layer
+            //
+            if ( !isFullyReduced() ) {
+                Uun = unpacked_node::newRedundant(this, -K, p, FULL_ONLY);
+                linkAllDown(*Uun, 1);
+                createReducedNode(Uun, ev, p);
+                MEDDLY_DCASSERT(ev.isVoid());
+            }
+            K = MXD_levels::upLevel(K);
+        }
+
+        MEDDLY_DCASSERT(K>=0);
+        int Lstop = (L<0) ? MXD_levels::downLevel(L) : L;
+
+        //
+        // Proceed in unprimed, primed pairs
+        //
+        for (K++; K<=Lstop; K++) {
             Uun = unpacked_node::newFull(this, K, getLevelSize(K));
 
             // build primed level nodes
@@ -752,6 +774,19 @@ MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L)
             createReducedNode(Uun, ev, p);
             MEDDLY_DCASSERT(ev.isVoid());
         } // for k
+
+        //
+        // Add top identity node, if L is negative
+        //
+        if (L<0) {
+            MEDDLY_DCASSERT(MXD_levels::upLevel(K) == L);
+            Upr = unpacked_node::newSparse(this, L, 1);
+            MEDDLY_DCASSERT(in>=0);
+            Upr->setSparse(0, unsigned(in), p);
+            createReducedNode(Upr, ev, p);
+            MEDDLY_DCASSERT(ev.isVoid());
+        }
+
     } else {
         //
         // Edge-valued

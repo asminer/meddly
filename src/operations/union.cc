@@ -242,7 +242,7 @@ MEDDLY::union_mt::_compute(int in, node_handle A, node_handle B, int L)
         if (B < 0) {
             terminal tt(true, resF->getTerminalType());
             if (arg2F->isIdentityReduced()) {
-                return resF->makeIdentitiesTo(tt.getHandle(), 0, L);
+                return resF->makeIdentitiesTo(tt.getHandle(), 0, L, in);
             } else {
                 return resF->makeRedundantsTo(tt.getHandle(), 0, L);
             }
@@ -262,7 +262,7 @@ MEDDLY::union_mt::_compute(int in, node_handle A, node_handle B, int L)
         if (A < 0) {
             terminal tt(true, resF->getTerminalType());
             if (arg1F->isIdentityReduced()) {
-                return resF->makeIdentitiesTo(tt.getHandle(), 0, L);
+                return resF->makeIdentitiesTo(tt.getHandle(), 0, L, in);
             } else {
                 return resF->makeRedundantsTo(tt.getHandle(), 0, L);
             }
@@ -630,7 +630,7 @@ class MEDDLY::union_mxd : public binary_operation {
             if (go_by_levels) return p;
             if (identity_chains) {
                 MEDDLY_DCASSERT(!redundant_chains);
-                return resF->makeIdentitiesTo(p, K, L);
+                return resF->makeIdentitiesTo(p, K, L, -1);
             }
             if (redundant_chains) {
                 return resF->makeRedundantsTo(p, K, L);
@@ -751,7 +751,7 @@ MEDDLY::union_mxd::_compute(node_handle A, node_handle B, int L)
         if (B < 0) {
             terminal tt(true);
             if (arg2F->isIdentityReduced()) {
-                return resF->makeIdentitiesTo(tt.getHandle(), 0, L);
+                return resF->makeIdentitiesTo(tt.getHandle(), 0, L, -1);
             } else {
                 return resF->makeRedundantsTo(tt.getHandle(), 0, L);
             }
@@ -771,7 +771,7 @@ MEDDLY::union_mxd::_compute(node_handle A, node_handle B, int L)
         if (A < 0) {
             terminal tt(true);
             if (arg1F->isIdentityReduced()) {
-                return resF->makeIdentitiesTo(tt.getHandle(), 0, L);
+                return resF->makeIdentitiesTo(tt.getHandle(), 0, L, -1);
             } else {
                 return resF->makeRedundantsTo(tt.getHandle(), 0, L);
             }
@@ -798,7 +798,7 @@ MEDDLY::union_mxd::_compute(node_handle A, node_handle B, int L)
         // (if either one is quasi, the chain length will be 0)
         terminal tt(true);
         if (arg1F->isIdentityReduced() && arg2F->isIdentityReduced()) {
-            return resF->makeIdentitiesTo(tt.getHandle(), 0, L);
+            return resF->makeIdentitiesTo(tt.getHandle(), 0, L, -1);
         } else {
             return resF->makeRedundantsTo(tt.getHandle(), 0, L);
         }
@@ -1309,14 +1309,17 @@ MEDDLY::UNION(forest* a, forest* b, forest* c)
     }
 
     if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-        return UNION_cache.add(new union_mt(a, b, c));
         /*
+        return UNION_cache.add(new union_mt(a, b, c));
+        */
+
+        // /*
         if (c->isForRelations()) {
             return UNION_cache.add(new union_mxd(a, b, c));
         } else {
             return UNION_cache.add(new union_mdd(a, b, c));
         }
-        */
+        // */
     }
 
     if (c->getEdgeLabeling() == edge_labeling::EVPLUS) {

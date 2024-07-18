@@ -45,7 +45,7 @@ generic EV 'operator' for edges should provide:
 Completely reimplemented operations
 ======================================================================
 
-cardinality.cc      YES*
+cardinality.cc      YES
 complement.cc       YES*
 difference.cc       YES*
 maxmin_range.cc     YES*
@@ -102,8 +102,8 @@ divide.cc
         NO      divide_mxd
 
 intersection.cc
-        YES     inter_mdd
-        YES     inter_mxd
+        YES*    inter_mdd
+        YES*    inter_mxd
         NO      inter_max_evplus
 
 maxmin.cc

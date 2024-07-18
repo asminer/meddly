@@ -247,7 +247,7 @@ class MEDDLY::inter_mxd : public binary_operation {
         inline node_handle makeChainTo(node_handle p, int K, int L)
         {
             return identity_chains
-                    ? resF->makeIdentitiesTo(p, K, L)
+                    ? resF->makeIdentitiesTo(p, K, L, -1)
                     : resF->makeRedundantsTo(p, K, L);
         }
 

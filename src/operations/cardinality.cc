@@ -91,7 +91,7 @@ namespace MEDDLY {
 // ******************************************************************
 
 namespace MEDDLY {
-    template <class DDTYPE, class RTYPE>
+    template <class RTYPE>
     class card_templ : public unary_operation {
         public:
             card_templ(forest* arg);
@@ -113,8 +113,8 @@ namespace MEDDLY {
 
 // ******************************************************************
 
-template <class DDTYPE, class RTYPE>
-MEDDLY::card_templ<DDTYPE,RTYPE>::card_templ(forest* arg)
+template <class RTYPE>
+MEDDLY::card_templ<RTYPE>::card_templ(forest* arg)
     : unary_operation(arg, RTYPE::getOpndType())
 #ifdef TRACE
       , out(std::cout)
@@ -126,14 +126,14 @@ MEDDLY::card_templ<DDTYPE,RTYPE>::card_templ(forest* arg)
     ct->doneBuilding();
 }
 
-template <class DDTYPE, class RTYPE>
-MEDDLY::card_templ<DDTYPE, RTYPE>::~card_templ()
+template <class RTYPE>
+MEDDLY::card_templ<RTYPE>::~card_templ()
 {
     ct->markForDestroy();
 }
 
-template <class DDTYPE, class RTYPE>
-void MEDDLY::card_templ<DDTYPE, RTYPE>::compute(int L, const edge_value &av,
+template <class RTYPE>
+void MEDDLY::card_templ<RTYPE>::compute(int L, const edge_value &av,
         node_handle ap, oper_item &result)
 {
     MEDDLY_DCASSERT(result.hasType(RTYPE::getOpndType()));
@@ -143,8 +143,8 @@ void MEDDLY::card_templ<DDTYPE, RTYPE>::compute(int L, const edge_value &av,
     _compute(L, ap, result);
 }
 
-template <class DDTYPE, class RTYPE>
-void MEDDLY::card_templ<DDTYPE, RTYPE>::_compute(int L, node_handle A,
+template <class RTYPE>
+void MEDDLY::card_templ<RTYPE>::_compute(int L, node_handle A,
         oper_item &result)
 {
     //
@@ -159,13 +159,16 @@ void MEDDLY::card_templ<DDTYPE, RTYPE>::_compute(int L, node_handle A,
         return;
     }
 
-    const int Ldn = DDTYPE::downLevel(L);
+    const int Ldn = argF->isForRelations()
+        ?   MXD_levels::downLevel(L)
+        :   MDD_levels::downLevel(L);
+
     //
     // Quickly deal with skipped levels
     //
     if (argF->getNodeLevel(A) != L) {
         _compute(Ldn, A, result);
-        if (DDTYPE::isFullyLevel(argF, L)) {
+        if (L>0 || !argF->isIdentityReduced()) {
             RTYPE::scaleBy(result, argF->getLevelSize(L));
         }
         return;
@@ -410,23 +413,14 @@ MEDDLY::unary_operation* MEDDLY::CARDINALITY(forest* arg, opnd_type res)
 
     switch (res) {
         case opnd_type::INTEGER:
-            if (arg->isForRelations())
-                return CARD_cache.add(new card_templ<MXD_levels, intcard>(arg));
-            else
-                return CARD_cache.add(new card_templ<MDD_levels, intcard>(arg));
+            return CARD_cache.add(new card_templ<intcard>(arg));
 
         case opnd_type::REAL:
-            if (arg->isForRelations())
-                return CARD_cache.add(new card_templ<MXD_levels, realcard>(arg));
-            else
-                return CARD_cache.add(new card_templ<MDD_levels, realcard>(arg));
+            return CARD_cache.add(new card_templ<realcard>(arg));
 
 #ifdef HAVE_LIBGMP
         case opnd_type::HUGEINT:
-            if (arg->isForRelations())
-                return CARD_cache.add(new card_templ<MXD_levels, mpzcard>(arg));
-            else
-                return CARD_cache.add(new card_templ<MDD_levels, mpzcard>(arg));
+            return CARD_cache.add(new card_templ<mpzcard>(arg));
 #endif
 
         default:

@@ -222,7 +222,7 @@ class MEDDLY::diffr_mxd : public binary_operation {
         inline node_handle makeChainTo(node_handle p, int K, int L)
         {
             if (arg1F->isIdentityReduced()) {
-                return resF->makeIdentitiesTo(p, K, L);
+                return resF->makeIdentitiesTo(p, K, L, -1);
             }
             if (arg1F->isFullyReduced() && !force_by_levels) {
                 return resF->makeRedundantsTo(p, K, L);
@@ -378,7 +378,7 @@ MEDDLY::diffr_mxd::_compute(node_handle A, node_handle B, int L)
             terminal tt(true);
             if (0==L) return tt.getHandle();
             if (arg1F->isIdentityReduced()) {
-                return resF->makeIdentitiesTo(tt.getHandle(), 0, L);
+                return resF->makeIdentitiesTo(tt.getHandle(), 0, L, -1);
             }
             if (arg1F->isFullyReduced()) {
                 return resF->makeRedundantsTo(tt.getHandle(), 0, L);
