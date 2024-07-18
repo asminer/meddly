@@ -2561,6 +2561,12 @@ class MEDDLY::MXD_levels {
             }
             return (ABS(k1) > ABS(k2)) ? k1 : k2;
         }
+
+        /// Determine the top unprimed level of two levels.
+        /// This is ABS(topLevel(k1, k2)) but computed more efficiently.
+        static inline int topUnprimed(int k1, int k2) {
+            return MAX(ABS(k1), ABS(k2));
+        }
 };
 
 
