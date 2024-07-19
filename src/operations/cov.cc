@@ -444,7 +444,7 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                                 auto stop = high_resolution_clock::now();
                                 auto duration = duration_cast<microseconds>(stop - start);
                                 printf("duration %ld microseconds \n", duration.count());
-                                getchar();
+                                // getchar();
                                     }
                                         // printf("gfront %d\n",gfront );
                                 // dd_edge etest(resF);
@@ -565,17 +565,17 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                                parent->covrCoveredTo->computeDDEdge(reachableStates,efrom,reachableStates,true);
                                 // }
                                // getchar();
-                               if(gfront){
-                                   // resF->showInfo(meddlyout,2);
-                                   resF->reportStats(meddlyout, "\t",
-                                     expert_forest::HUMAN_READABLE_MEMORY |
-                                     expert_forest::BASIC_STATS
-                                   );
-                                   auto stop = high_resolution_clock::now();
-                                   auto duration = duration_cast<microseconds>(stop - start);
-                                   printf("duration %ld microseconds \n", duration.count());
-
-                               }
+                               // if(gfront){
+                               //     // resF->showInfo(meddlyout,2);
+                               //     resF->reportStats(meddlyout, "\t",
+                               //       expert_forest::HUMAN_READABLE_MEMORY |
+                               //       expert_forest::BASIC_STATS
+                               //     );
+                               //     auto stop = high_resolution_clock::now();
+                               //     auto duration = duration_cast<microseconds>(stop - start);
+                               //     printf("duration %ld microseconds \n", duration.count());
+                               //
+                               // }
                                cardetest=0;
                                apply(CARDINALITY, reachableStates, cardetest);
                                printf("CARD CR %ld\n",cardetest );
