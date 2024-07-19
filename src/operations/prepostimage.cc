@@ -2137,7 +2137,7 @@ for (unsigned i = 0; i < rSize; i++) {
                         node_handle tleqnewstates = 0;
                         compute_recSC( B->d(j), mxd, newstates,eqnewstates,leqnewstates,tleqnewstates,geq,shouldConfirm,cmp,newabove,newbelow);
 
-                        if(newstates!=0 || eqnewstates!=0 || leqnewstates!=0) {
+                        if(newstates!=0 || eqnewstates!=0 || leqnewstates!=0||tleqnewstates!=0) {
                                 shouldConfirm[evmxdLevel].push_back(j);
                                 if(d)
                                 printf("shouldConfirm [%d].pushback(%d) If\n",evmxdLevel,j );
@@ -2174,17 +2174,28 @@ for (unsigned i = 0; i < rSize; i++) {
                                                 if(leqnewstates!=0){
 
                                                 AddtoNH(DLEQ,compareijresult,leqnewstates);
+
+                                                if(tleqnewstates!=0){
+
                                                 unpacked_node* DTLEQ = unpacked_node::newFull(resF, -rLevel, rSize);
+                                                for (unsigned j = 0; j < rSize; j++) {
+                                                        DTLEQ->d_ref(j) = 0;
+                                                }
+
                                                 AddtoNH(DTLEQ,compareijresult,tleqnewstates);
                                                 node_handle tlnode=0;
                                                 tlnode=resF->createReducedNode(int(compareijresult), DTLEQ);
                                                 AddtoNH(CTLEQ,j,tlnode);
-
+                                                if(d){
+                                                    printf("DTLEQ[%d]=%d\n",compareijresult,tleqnewstates );
+                                                    printf("CTLEQ[%d]=%d\n",j,tlnode );
+                                                    getchar();
+                                                }
+                                                }
                                                 if(d)
                                                 {
                                                     printf("DLEQ[%d]=%d\n",compareijresult,leqnewstates );
-                                                    printf("DTLEQ[%d]=%d\n",compareijresult,leqnewstates );
-                                                    printf("CTLEQ[%d]=%d\n",j,tlnode );
+
                                                 }
                                                 unpacked_node* DEQ = unpacked_node::newFull(resF, -rLevel, rSize);
                                                 AddtoNH(DEQ,compareijresult,eqnewstates);
@@ -2214,15 +2225,24 @@ for (unsigned i = 0; i < rSize; i++) {
 
                                                 AddtoNH(DLEQ,j,leqnewstates);
                                                 unpacked_node* DTLEQ = unpacked_node::newFull(resF, -rLevel, rSize);
+                                                for (unsigned j = 0; j < rSize; j++) {
+                                                        DTLEQ->d_ref(j) = 0;
+                                                }
+                                                if(tleqnewstates!=0){
                                                 AddtoNH(DTLEQ,j,tleqnewstates);
                                                 node_handle tlnode=0;
                                                 tlnode=resF->createReducedNode(int(j), DTLEQ);
                                                 AddtoNH(CTLEQ,j,tlnode);
+                                                if(d){
+                                                    printf("DTLEQ[%d]=%d\n",j,leqnewstates );
+                                                    printf("CTLEQ[%d]=%d\n",j,tlnode );
+                                                    getchar();
+                                                }
+                                                }
                                                 if(d)
                                                 {
                                                     printf("DLEQ[%d]=%d\n",j,leqnewstates );
-                                                    printf("DTLEQ[%d]=%d\n",j,leqnewstates );
-                                                    printf("CTLEQ[%d]=%d\n",j,tlnode );
+
                                                 }
                                         }
                                 }
@@ -2363,15 +2383,22 @@ for (unsigned i = 0; i < rSize; i++) {
                                                         if(leqnewstates!=0){
                                                         AddtoNH(DLEQ,compareijresult,leqnewstates);
                                                         unpacked_node* DTLEQ = unpacked_node::newFull(resF, -rLevel, rSize);
+                                                        if(tleqnewstates!=0){
                                                         AddtoNH(DTLEQ,compareijresult,tleqnewstates);
+
                                                         node_handle tlnode=0;
                                                         tlnode=resF->createReducedNode(int(jp), DTLEQ);
                                                         AddtoNH(CTLEQ,jp,tlnode);
+                                                        if(d){
+                                                            printf("DTLEQ[%d]=%d\n",compareijresult,tleqnewstates );
+                                                            printf("CTLEQ[%d]=%d\n",jp,tlnode );
+                                                            getchar();
+                                                        }
+                                                        }
                                                         if(d)
                                                         {
                                                             printf("DLEQ[%d]=%d\n",compareijresult,leqnewstates );
-                                                            printf("DTLEQ[%d]=%d\n",compareijresult,tleqnewstates );
-                                                            printf("CTLEQ[%d]=%d\n",jp,tlnode );
+
                                                         }
 
                                                         unpacked_node* DEQ = unpacked_node::newFull(resF, -rLevel, rSize);
@@ -2407,15 +2434,21 @@ for (unsigned i = 0; i < rSize; i++) {
                                                         printf("CAme to else AddtoNH ADDED!\n" );
                                                         AddtoNH(DLEQ,jp,leqnewstates);
                                                         unpacked_node* DTLEQ = unpacked_node::newFull(resF, -rLevel, rSize);
+                                                        if(tleqnewstates!=0){
                                                         AddtoNH(DTLEQ,jp,tleqnewstates);
                                                         node_handle tlnode=0;
                                                         tlnode=resF->createReducedNode(int(jp), DTLEQ);
                                                         AddtoNH(CTLEQ,jp,tlnode);
+                                                        if(d){
+                                                            printf("DTLEQ[%d]=%d\n",jp,tleqnewstates );
+                                                            printf("CTLEQ[%d]=%d\n",jp,tlnode );
+                                                            getchar();
+                                                        }
+                                                        }
                                                         if(d)
                                                         {
                                                             printf("DLEQ[%d]=%d\n",jp,leqnewstates );
-                                                            printf("DTLEQ[%d]=%d\n",jp,tleqnewstates );
-                                                            printf("CTLEQ[%d]=%d\n",jp,tlnode );
+
                                                         }
 
                                                 }
@@ -2432,22 +2465,30 @@ for (unsigned i = 0; i < rSize; i++) {
 
         node_handle cleqnode = 0;
         cleqnode=resF->createReducedNode(int(i), DLEQ);
-        if(d)
-        printf("cleqnode %d\n",cleqnode );
         CLEQ->d_ref(i) = cleqnode;
+
+        if(d)
+        printf("cleqnode %d %d %d \n",cleqnode, int(i),DLEQ );
 
         // ostream_output meddlyout(std::cout);
         unpacked_node::recycle(B);
+        // printf("remove B\n" );
 
 } //for i
 // cleanup mdd reader
 unpacked_node::recycle(A);
-
+// printf("remove A\n" );
 resEvmdd=resF->createReducedNode(-1, C);
+// printf("createReducedNode C\n" );
 eq=resF->createReducedNode(-1, CEQ);
+// printf("createReducedNode CEQ\n" );
 
 leq=resF->createReducedNode(-1, CLEQ);
+// printf("createReducedNode CLEQ\n" );
+
 tleq=resF->createReducedNode(-1, CTLEQ);
+// printf("createReducedNode CTLEQ\n" );
+
 if(d)
 printf("leq %d\n",leq );
 #ifdef TRACE_ALL_OPS
