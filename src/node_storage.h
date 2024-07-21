@@ -215,24 +215,6 @@ class MEDDLY::node_storage {
                 node_handle &down) const = 0;
 
 
-#ifdef ALLOW_DEPRECATED_SINGLETON
-
-        /** Determine if this is a singleton node.
-            Used for identity reductions.
-            @param  addr    Address of the node we care about
-            @param  down    Output:
-                            The singleton downward pointer, or undefined.
-
-            @return     If the node has only one non-zero downward pointer,
-                        then return the index for that pointer.
-                        Otherwise, return a negative value.
-        */
-        virtual int getSingletonIndex(node_address addr, node_handle &down)
-            const = 0;
-
-#endif
-
-
         /** Get the specified downward pointer for a node.
             Fast if we just want one.
             @param  addr    Address of the node we care about

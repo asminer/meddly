@@ -788,6 +788,24 @@ class MEDDLY::forest {
         }
 
 
+        /** Determine if this is a singleton node.
+            Used for identity reductions.
+            @param  p       Handle of node to look at
+
+            @param  index   On output:
+                            if we're a singleton node, the index of the
+                            only non-zero pointer;
+                            otherwise undefined.
+
+            @param  down    On output:
+                            if we're a singleton node, the only non-zero
+                            downward pointer;
+                            otherwise undefined.
+
+            @return     If the node is a singleton node
+                        (only one non-zero downward pointer),
+                        return true; otherwise return false.
+        */
         inline bool isSingletonNode(node_handle p, unsigned &index,
                 node_handle &down) const
         {
@@ -795,39 +813,6 @@ class MEDDLY::forest {
             return nodeMan->isSingletonNode(getNodeAddress(p), index, down);
         }
 
-#ifdef ALLOW_DEPRECATED_SINGLETON
-
-        /** Check and find the index of a single downward pointer.
-
-            @param  node    Node we care about
-            @param  down    Output:
-                            The singleton downward pointer, or undefined.
-
-            @return     If the node has only one non-zero downward pointer,
-                        then return the index for that pointer.
-                        Otherwise, return a negative value.
-        */
-        inline int getSingletonIndex(node_handle p, node_handle &down) const {
-            return nodeMan->getSingletonIndex(getNodeAddress(p), down);
-        }
-
-
-        /** Check and get a single downward pointer.
-
-            @param  node    Node we care about
-            @param  index   Index we're trying to match
-
-            @return     If the only non-zero downward pointer for
-                        this node happens at \a index, then return the pointer.
-                        Otherwise, return 0.
-        */
-        inline node_handle getSingletonDown(node_handle node, int index) const {
-            MEDDLY::node_handle down;
-            if (getSingletonIndex(node, down) == index) return down;
-            return 0;
-        }
-
-#endif
 
         /** For a given node, get a specified downward pointer.
 
