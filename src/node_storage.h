@@ -191,6 +191,32 @@ class MEDDLY::node_storage {
         */
         virtual bool isExtensible(node_address addr) const = 0;
 
+
+
+        /** Determine if this is a singleton node.
+            Used for identity reductions.
+            @param  addr    Address of the node we care about
+            @param  index   On output:
+                            if we're a singleton node, the index of the
+                            only non-zero pointer;
+                            otherwise undefined.
+
+
+            @param  down    On output:
+                            if we're a singleton node, the only non-zero
+                            downward pointer;
+                            otherwise undefined.
+
+            @return     If the node is a singleton node
+                        (only one non-zero downward pointer),
+                        return true; otherwise return false.
+        */
+        virtual bool isSingletonNode(node_address addr, unsigned &index,
+                node_handle &down) const = 0;
+
+
+#ifdef ALLOW_DEPRECATED_SINGLETON
+
         /** Determine if this is a singleton node.
             Used for identity reductions.
             @param  addr    Address of the node we care about
@@ -203,6 +229,8 @@ class MEDDLY::node_storage {
         */
         virtual int getSingletonIndex(node_address addr, node_handle &down)
             const = 0;
+
+#endif
 
 
         /** Get the specified downward pointer for a node.

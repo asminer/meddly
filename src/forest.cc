@@ -706,6 +706,10 @@ MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
             } else {
                 K = MDD_levels::upLevel(K);
             }
+
+            // TBD: if we're identity reduced,
+            // we only need to add nodes at the primed levels :)
+            //
             U = unpacked_node::newRedundant(this, K, p, FULL_ONLY);
             linkAllDown(*U, 1);
             edge_value ev;

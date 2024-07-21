@@ -143,7 +143,11 @@ class MEDDLY::simple_separated : public node_storage {
     virtual void fillUnpacked(unpacked_node &nr, node_address addr, node_storage_flags) const;
 
     virtual unsigned hashNode(int level, node_address addr) const;
+    virtual bool isSingletonNode(node_address addr, unsigned &index,
+            node_handle &down) const;
+#ifdef ALLOW_DEPRECATED_SINGLETON
     virtual int getSingletonIndex(node_address addr, node_handle &down) const;
+#endif
 
     virtual node_handle getDownPtr(node_address addr, int index) const;
     virtual void getDownPtr(node_address addr, int ind,
@@ -1039,6 +1043,45 @@ unsigned MEDDLY::simple_separated::hashNode(int level, node_address addr) const
 }
 
 
+bool MEDDLY::simple_separated
+::isSingletonNode(node_address addr, unsigned &ind, node_handle &down) const
+{
+    const node_handle* chunk = getChunkAddress(addr);
+    MEDDLY_DCASSERT(chunk);
+
+    const unsigned int raw_size = getRawSize(chunk);
+    if (isExtensible(raw_size)) return false;
+
+    const unsigned int size = getSize(raw_size);
+    const bool is_sparse = isSparse(raw_size);
+
+    if (is_sparse) {
+        //
+        // sparse node --- easy
+        //
+        if (size != 1) return false;
+        ind  = chunk[down_start + size];
+        down = chunk[0 + down_start];       // 0+ stops a compiler warning
+        return true;
+    }
+
+    //
+    // full node
+    //
+    const node_handle tv=getParent()->getTransparentNode();
+    const node_handle* dnptr = chunk + down_start;
+    for (ind=0; ind<size; ind++) {
+        if (tv==dnptr[ind]) continue;
+        if (ind+1 != size) return false;
+        down = dnptr[ind];
+        return true;
+    }
+    return false;
+}
+
+
+#ifdef ALLOW_DEPRECATED_SINGLETON
+
 int MEDDLY::simple_separated
 ::getSingletonIndex(node_address addr, node_handle &down) const
 {
@@ -1074,6 +1117,7 @@ int MEDDLY::simple_separated
   return -1;
 }
 
+#endif
 
 /// Extensible Index is the index of the last edge
 int

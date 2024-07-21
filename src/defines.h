@@ -27,6 +27,7 @@
 // #define ALLOW_DEPRECATED_0_17_3  "12/03/2023"
 // #define ALLOW_DEPRECATED_0_17_4  "12/19/2023"
 // #define ALLOW_DEPRECATED_0_17_5  "04/05/2024"
+#define ALLOW_DEPRECATED_SINGLETON
 #define ALLOW_DEPRECATED_0_17_6
 
 // ==================================================================

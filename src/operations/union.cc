@@ -41,7 +41,7 @@ namespace MEDDLY {
 #include "../operators.h"
 #endif
 
-#define NEW_UNION
+// #define NEW_UNION
 
 // ******************************************************************
 // *                                                                *
@@ -205,21 +205,25 @@ void MEDDLY::union_mt::compute(const edge_value &av, node_handle ap,
                 int L,
                 edge_value &cv, node_handle &cp)
 {
+    /*
 #ifdef TRACE
     out.indentation(0);
     out << "********************************************************\n";
     out << "Starting top-level call to union_mt::compute\n";
 #endif
+*/
     MEDDLY_DCASSERT(av.isVoid());
     MEDDLY_DCASSERT(bv.isVoid());
     cv.set();
     cp = _compute(-1, ap, bp, L);
 
+    /*
 #ifdef TRACE
     out.indentation(0);
     out << "Finished top-level call to union_mt::compute\n";
     out << "********************************************************\n";
 #endif
+*/
 }
 
 //
@@ -257,6 +261,11 @@ MEDDLY::union_mt::_compute(int in, node_handle A, node_handle B, int L)
             return resF->linkNode(B);
             // Don't need to make redundant chain b/c same forest
         }
+
+        //
+        // Call COPY operation here
+        //
+
     } // zero A
 
     if (B == 0) {
@@ -330,11 +339,24 @@ MEDDLY::union_mt::_compute(int in, node_handle A, node_handle B, int L)
 
 #ifdef TRACE
     out << "union_mt compute(" << in << ", "
-        << A << ", " << B << ", " << L << ")\n";
+        << A << ", " << B << ", " << L << ")";
+    if (by_levels) {
+        out << " by levels\n";
+    } else if (by_unprimed) {
+        out << " by unprimed\n";
+    } else {
+        out << " by topmost\n";
+    }
     out << A << " level " << Alevel << "\n";
     out << B << " level " << Blevel << "\n";
     out << "result level " << Clevel << " before chain\n";
 #endif
+
+    //
+    // TBD: fix cache:
+    //      (1) if we're going by levels, need to add the level number
+    //      (2) otherwise - some kind of issue to fix?
+    //
 
     //
     // Check compute table
@@ -350,6 +372,7 @@ MEDDLY::union_mt::_compute(int in, node_handle A, node_handle B, int L)
 #ifdef TRACE
         out << "\tCT hit " << res[0].getN() << "\n";
         out << "\tafter chain " << C << "\n";
+        out << "\tlevel is " << resF->getNodeLevel(C) << "\n";
 #endif
         return C;
     }

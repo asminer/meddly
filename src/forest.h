@@ -788,6 +788,15 @@ class MEDDLY::forest {
         }
 
 
+        inline bool isSingletonNode(node_handle p, unsigned index,
+                node_handle &down) const
+        {
+            if (p<=0) return false;
+            return nodeMan->isSingletonNode(getNodeAddress(p), index, down);
+        }
+
+#ifdef ALLOW_DEPRECATED_SINGLETON
+
         /** Check and find the index of a single downward pointer.
 
             @param  node    Node we care about
@@ -818,6 +827,7 @@ class MEDDLY::forest {
             return 0;
         }
 
+#endif
 
         /** For a given node, get a specified downward pointer.
 

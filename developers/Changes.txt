@@ -1,4 +1,9 @@
 
+Current goal:
+    * update COPY operation
+    * use COPY operation where it makes sense, e.g.,
+        terminal cases in cross-forest unions
+
 Interface changes (aside from moving header files around)
 ======================================================================
 
