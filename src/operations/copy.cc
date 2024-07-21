@@ -26,7 +26,7 @@
 #include "../oper_unary.h"
 #include "../ct_vector.h"
 
-#define USE_OLD_COPY
+// #define USE_OLD_COPY
 
 // #define DEBUG_COPY_COMPUTE_ALL
 
@@ -37,7 +37,7 @@ namespace MEDDLY {
     unary_list COPY_cache;
 };
 
-// #define TRACE
+#define TRACE
 
 #ifdef TRACE
 #include "../operators.h"
@@ -131,10 +131,10 @@ void MEDDLY::copy_MT::compute(const edge_value &av, node_handle ap,
 
     unsigned aplevel = argF->getNodeLevel(ap);
     if (argF->isIdentityReduced()) {
-        cp = argF->makeIdentitiesTo(cp, aplevel, L, -1);
+        cp = resF->makeIdentitiesTo(cp, aplevel, L, -1);
             // TBD: check for singletons
     } else {
-        cp = argF->makeRedundantsTo(cp, aplevel, L);
+        cp = resF->makeRedundantsTo(cp, aplevel, L);
     }
 }
 
@@ -167,7 +167,6 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(node_handle A)
     const int Alevel = argF->getNodeLevel(A);
 #ifdef TRACE
     out << "copy_MT::_compute(" << A << ")\n";
-    out << "  Alevel: " << Alevel << "\n";
 #endif
 
     //
@@ -189,6 +188,10 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(node_handle A)
     //
     unpacked_node* Au = argF->newUnpacked(A, SPARSE_ONLY);
     unpacked_node* Cu = unpacked_node::newSparse(resF, Alevel, Au->getSize());
+#ifdef TRACE
+    out << "A: ";
+    Au->show(out, true);
+#endif
 
     //
     // Build result node
@@ -202,24 +205,27 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(node_handle A)
             : MDD_levels::downLevel(Alevel);
 
     for (unsigned i=0; i<Cu->getSize(); i++) {
-        unsigned Audlevel = argF->getNodeLevel(Au->down(i));
+        int Audlevel = argF->getNodeLevel(Au->down(i));
         node_handle d = _compute(Au->down(i));
         if (argF->isIdentityReduced()) {
-            d = argF->makeIdentitiesTo(d, Audlevel, Cnextlevel, Au->index(i));
+            d = resF->makeIdentitiesTo(d, Audlevel, Cnextlevel, Au->index(i));
         } else {
-            d = argF->makeRedundantsTo(d, Audlevel, Cnextlevel);
+            d = resF->makeRedundantsTo(d, Audlevel, Cnextlevel);
         }
             // TBD: check for singletons
         Cu->setSparse(i, Au->index(i), d);
+#ifdef TRACE
+        out << "built chain from " << Audlevel << " to " << Cnextlevel << "\n";
+#endif
     }
 
 #ifdef TRACE
     out.indent_less();
     out.put('\n');
     out << "copy_MT::_compute(" << A << ") done\n";
-    out << "  A: ";
+    out << "A: ";
     Au->show(out, true);
-    out << "\n  C: ";
+    out << "\nC: ";
     Cu->show(out, true);
     out << "\n";
 #endif
