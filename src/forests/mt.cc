@@ -61,7 +61,15 @@ MEDDLY::node_handle MEDDLY::mt_forest::_makeNodeAtLevel(int k, node_handle d)
       // make identity reductions below as necessary
 
       node_handle sd;
-      int si = isTerminalNode(d) ? -1 : getSingletonIndex(d, sd);
+      unsigned indx;
+      int si;
+      if (isSingletonNode(d, indx, sd)) {
+        si = int(indx);
+      } else {
+        si = -1;
+        sd = 0;
+      }
+
       int sz = getLevelSize(up);
       MEDDLY_DCASSERT(si < sz);
       const bool add_edge = (si+1 == sz && isExtensibleLevel(up));

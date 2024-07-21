@@ -788,7 +788,7 @@ class MEDDLY::forest {
         }
 
 
-        inline bool isSingletonNode(node_handle p, unsigned index,
+        inline bool isSingletonNode(node_handle p, unsigned &index,
                 node_handle &down) const
         {
             if (p<=0) return false;

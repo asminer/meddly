@@ -38,6 +38,8 @@ to make it easier to implement operations.
 * The monolithic compute table has been moved from class ```operation```
   to class ```compute_table```.
 
+* New method ```forest::isSingletonNode``` replaces old
+    ```forest::getSingletonIndex``` and ```forest::getSingletonDown``` methods.
 
 ### Implementation
 

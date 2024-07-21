@@ -197,7 +197,10 @@ namespace MEDDLY {
         //         and if it is a primed node, it cannot be identity reduced.
         MEDDLY_DCASSERT(!isTerminalNode(ed));
         node_handle sd;
-        int si = getSingletonIndex(ed, sd);
+        unsigned si;
+        if (!isSingletonNode(ed, si, sd))  {
+            si = sz;
+        }
         for (unsigned i = 0; i < sz; i++) {
           nb->setFull(i, ev, linkNode( (si == i) ? sd : ed ) );
         }
