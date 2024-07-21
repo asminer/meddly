@@ -43,24 +43,6 @@ namespace MEDDLY {
 #include "../operators.h"
 #endif
 
-/*
-    Copy a function from one forest to another.
-    The forests must be over the same domain,
-    and must be both for SETS or both for RELATIONS.
-
-    Changes in reduction rule are handled as follows.
-
-        quasi -> anything   :   this is handled automatically
-                                by the reduction rules of the target forest.
-
-        fully -> quasi      :   copy and then add redundant nodes
-
-        identity -> quasi   :   copy and then add identity nodes
-                                (alternating redundant and singleton nodes)
-
-
- */
-
 // ******************************************************************
 // *                                                                *
 // *                         copy_MT  class                         *
@@ -78,7 +60,20 @@ class MEDDLY::copy_MT : public unary_operation {
                 edge_value &cv, node_handle &cp);
 
     protected:
-        node_handle _compute(int in, node_handle A, int L);
+
+        /*
+           Recursive copy.
+
+           This will correctly build a copy at the same level as
+           node A, but in the result forest.
+           It is the caller's responsibility to add any nodes
+           above this one, or to check if it is a singleton node
+           (if the target forest is identity reduced).
+
+           @param  A    Source node
+           @return      Target node, in a different forest
+           */
+        node_handle _compute(node_handle A);
 
     private:
         template <class RTYPE>
@@ -132,10 +127,18 @@ void MEDDLY::copy_MT::compute(const edge_value &av, node_handle ap,
 #endif
     MEDDLY_DCASSERT(av.isVoid());
     cv.set();
-    cp = _compute(-1, ap, L);
+    cp = _compute(ap);
+
+    unsigned aplevel = argF->getNodeLevel(ap);
+    if (argF->isIdentityReduced()) {
+        cp = argF->makeIdentitiesTo(cp, aplevel, L, -1);
+            // TBD: check for singletons
+    } else {
+        cp = argF->makeRedundantsTo(cp, aplevel, L);
+    }
 }
 
-MEDDLY::node_handle MEDDLY::copy_MT::_compute(int in, node_handle A, int L)
+MEDDLY::node_handle MEDDLY::copy_MT::_compute(node_handle A)
 {
     //
     // Terminal case
@@ -144,42 +147,18 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(int in, node_handle A, int L)
         //
         // Translate A to result forest terminal
         //
+        bool abool;
+        int aint;
+        float afloat;
         switch (resF->getTerminalType()) {
-            case terminal_type::BOOLEAN:
-                {
-                    bool aval;
-                    A = term2term(aval, A);
-                    break;
-                }
-
-            case terminal_type::INTEGER:
-                {
-                    int aval;
-                    A = term2term(aval, A);
-                    break;
-                }
-
-            case terminal_type::REAL:
-                {
-                    float aval;
-                    A = term2term(aval, A);
-                    break;
-                }
-
+            case terminal_type::BOOLEAN:    return term2term(abool, A);
+            case terminal_type::INTEGER:    return term2term(aint, A);
+            case terminal_type::REAL:       return term2term(afloat, A);
             default:
                 MEDDLY_DCASSERT(false);
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
         } // switch
-
-        //
-        // Add appropriate chain of nodes in result
-        //
-        if (argF->isIdentityReduced()) {
-            return resF->makeIdentitiesTo(A, 0, L, in);
-        } else {
-            return resF->makeRedundantsTo(A, 0, L);
-        }
     }
 
     //
@@ -187,8 +166,8 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(int in, node_handle A, int L)
     //
     const int Alevel = argF->getNodeLevel(A);
 #ifdef TRACE
-    out << "copy_MT::_compute(" << in << ", " << A << ", " << L << ")\n";
-    out << A << " level " << Alevel << "\n";
+    out << "copy_MT::_compute(" << A << ")\n";
+    out << "  Alevel: " << Alevel << "\n";
 #endif
 
     //
@@ -199,22 +178,11 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(int in, node_handle A, int L)
     key[0].setN(A);
     if (ct->findCT(key, res)) {
 #ifdef TRACE
-        out << "\tCT hit " << res[0].getN() << "\n";
-        out << "\tat level " << resF->getNodeLevel(res[0].getN()) << "\n";
+        out << "  CT hit " << res[0].getN() << "\n";
+        out << "  at level " << resF->getNodeLevel(res[0].getN()) << "\n";
 #endif
-        node_handle C = (argF->isIdentityReduced())
-            ?   resF->makeIdentitiesTo(resF->linkNode(res[0].getN()), Alevel, L, in)
-            :   resF->makeRedundantsTo(resF->linkNode(res[0].getN()), Alevel, L);
-#ifdef TRACE
-        out << "\tafter chain " << C << "\n";
-        out << "\tlevel is " << resF->getNodeLevel(C) << "\n";
-#endif
-        return C;
+        return resF->linkNode(res[0].getN());
     }
-
-    //
-    // Do computation
-    //
 
     //
     // Initialize unpacked nodes
@@ -229,20 +197,26 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(int in, node_handle A, int L)
     out.indent_more();
     out.put('\n');
 #endif
-    const int nextlevel = resF->isForRelations()
+    const int Cnextlevel = resF->isForRelations()
             ? MXD_levels::downLevel(Alevel)
             : MDD_levels::downLevel(Alevel);
 
     for (unsigned i=0; i<Cu->getSize(); i++) {
-        Cu->setSparse(i, Au->index(i),
-                _compute(int(Au->index(i)), Au->down(i), nextlevel)
-        );
+        unsigned Audlevel = argF->getNodeLevel(Au->down(i));
+        node_handle d = _compute(Au->down(i));
+        if (argF->isIdentityReduced()) {
+            d = argF->makeIdentitiesTo(d, Audlevel, Cnextlevel, Au->index(i));
+        } else {
+            d = argF->makeRedundantsTo(d, Audlevel, Cnextlevel);
+        }
+            // TBD: check for singletons
+        Cu->setSparse(i, Au->index(i), d);
     }
 
 #ifdef TRACE
     out.indent_less();
     out.put('\n');
-    out << "copy_MT::_compute(" << in << ", " << A << ", " << L << ") done\n";
+    out << "copy_MT::_compute(" << A << ") done\n";
     out << "  A: ";
     Au->show(out, true);
     out << "\n  C: ";
@@ -255,7 +229,7 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(int in, node_handle A, int L)
     //
     edge_value dummy;
     node_handle C;
-    resF->createReducedNode(Cu, dummy, C, in);
+    resF->createReducedNode(Cu, dummy, C);
     MEDDLY_DCASSERT(dummy.isVoid());
 #ifdef TRACE
     out << "reduced to " << C << ": ";
@@ -264,36 +238,16 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(int in, node_handle A, int L)
 #endif
 
     //
-    // Save result in CT, if it is safe to do so.
-    // Unsafe results might change with different in values,
-    // so we don't cache them.
+    // Save result in CT
     //
-    const bool unsafe =
-        (Alevel<0) &&
-            (
-                (argF->isIdentityReduced() && (1==Au->getSize()))
-                ||
-                (resF->isIdentityReduced() && (1==Cu->getSize()))
-            );
-
-    if (unsafe) {
-        ct->noaddCT(key);
-    } else {
-        res[0].setN(C);
-        ct->addCT(key, res);
-    }
+    res[0].setN(C);
+    ct->addCT(key, res);
 
     //
     // Cleanup
     //
     unpacked_node::Recycle(Au);
-
-    if (argF->isIdentityReduced()) {
-        return resF->makeIdentitiesTo(resF->linkNode(C), Alevel, L, in);
-    } else {
-        return resF->makeRedundantsTo(resF->linkNode(C), Alevel, L);
-    }
-
+    return C;
 }
 
 

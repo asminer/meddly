@@ -41,6 +41,10 @@ to make it easier to implement operations.
 * New method ```forest::isSingletonNode``` replaces old
     ```forest::getSingletonIndex``` and ```forest::getSingletonDown``` methods.
 
+* New methods ```forest::makeRedundantsTo``` and ```forest::makeIdentitiesTo```
+  should be used when converting between reduction types (typically
+  in operations).
+
 ### Implementation
 
 * New unified compute table implementation in file ```ct_styles.cc```,
