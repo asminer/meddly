@@ -43,6 +43,24 @@ namespace MEDDLY {
 #include "../operators.h"
 #endif
 
+/*
+    Copy a function from one forest to another.
+    The forests must be over the same domain,
+    and must be both for SETS or both for RELATIONS.
+
+    Changes in reduction rule are handled as follows.
+
+        quasi -> anything   :   this is handled automatically
+                                by the reduction rules of the target forest.
+
+        fully -> quasi      :   copy and then add redundant nodes
+
+        identity -> quasi   :   copy and then add identity nodes
+                                (alternating redundant and singleton nodes)
+
+
+ */
+
 // ******************************************************************
 // *                                                                *
 // *                         copy_MT  class                         *

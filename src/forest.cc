@@ -696,6 +696,7 @@ MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
 {
     MEDDLY_DCASSERT(L);
     unpacked_node* U;
+    bool first = true;
     if (isMultiTerminal()) {
         //
         // Multi-terminal
@@ -707,14 +708,50 @@ MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
                 K = MDD_levels::upLevel(K);
             }
 
-            // TBD: if we're identity reduced,
-            // we only need to add nodes at the primed levels :)
-            //
-            U = unpacked_node::newRedundant(this, K, p, FULL_ONLY);
-            linkAllDown(*U, 1);
-            edge_value ev;
-            createReducedNode(U, ev, p);
-            MEDDLY_DCASSERT(ev.isVoid());
+            if (first && isIdentityReduced() && K>0) {
+                /*
+                   If the original p node is a singleton node
+                   with index i at a primed level, then our
+                   "redundant" node at the unprimed level above it
+                   should instead have pointer i going to p's child.
+                   */
+                MEDDLY_DCASSERT(MXD_levels::upLevel(getNodeLevel(p)) == K);
+                // ^ At the time of writing, we don't allow
+                //   long edges to a primed level.
+
+                unsigned sind;
+                node_handle sdwn;
+                if (isSingletonNode(p, sind, sdwn)) {
+                    unsigned size = getLevelSize(K);
+                    U = unpacked_node::newFull(this, K, size);
+                    for (unsigned i=0; i<size; i++) {
+                        U->setFull(i, linkNode( (i==sind) ? sdwn : p ));
+                    }
+                    unlinkNode(p);
+
+                    edge_value ev;
+                    createReducedNode(U, ev, p);
+                    MEDDLY_DCASSERT(ev.isVoid());
+                    first = false;
+                    continue;
+                }
+            }
+            if (!isIdentityReduced() || K<0)
+            {
+                /*
+                   Build a redundant node.
+                   Necessary for quasi reduced always,
+                   and for identity reduced at primed levels
+                   (unprimed is fully reduced).
+                   */
+                U = unpacked_node::newRedundant(this, K, p, FULL_ONLY);
+                linkAllDown(*U, 1);
+                edge_value ev;
+                createReducedNode(U, ev, p);
+                MEDDLY_DCASSERT(ev.isVoid());
+            }
+
+            first = false;
         }
     } else {
         //

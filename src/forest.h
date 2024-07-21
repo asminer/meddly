@@ -350,6 +350,9 @@ class MEDDLY::forest {
             Useful helper function.
             Build a chain of redundant nodes from node p up to
             a node at level L.
+            More precisely, build a chain of nodes indicating
+            that the function does not depend on levels from
+            the one above K to level L.
             If the forest is fully-reduced, do nothing instead.
                 @param  p   Bottom node
                 @param  K   Start redundant nodes above this level
@@ -382,6 +385,7 @@ class MEDDLY::forest {
             MEDDLY_DCASSERT( ABS(L) >= ABS(K) );
             if (isFullyReduced()) return p;
             if (0==p) return p;
+
             return _makeRedundantsTo(p, K, L);
         }
 
