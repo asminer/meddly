@@ -26,12 +26,9 @@
 #include "../oper_unary.h"
 #include "../ct_vector.h"
 
-// #define USE_OLD_COPY
-
 // #define DEBUG_COPY_COMPUTE_ALL
 
 namespace MEDDLY {
-    class old_copy_MT;
     class copy_MT;
 
     unary_list COPY_cache;
@@ -132,7 +129,6 @@ void MEDDLY::copy_MT::compute(const edge_value &av, node_handle ap,
     unsigned aplevel = argF->getNodeLevel(ap);
     if (argF->isIdentityReduced()) {
         cp = resF->makeIdentitiesTo(cp, aplevel, L, -1);
-            // TBD: check for singletons
     } else {
         cp = resF->makeRedundantsTo(cp, aplevel, L);
     }
@@ -278,233 +274,6 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(node_handle A)
     unpacked_node::Recycle(Au);
     return C;
 }
-
-
-// ******************************************************************
-// *                                                                *
-// *                       old_copy_MT  class                       *
-// *                                                                *
-// ******************************************************************
-
-/// Abstract base class for copying between multi-terminal DDs.
-class MEDDLY::old_copy_MT : public unary_operation {
-    protected:
-        old_copy_MT(unary_list &cache, forest* arg, forest* res);
-        virtual node_handle compute_r(node_handle a) = 0;
-
-        inline ct_entry_key*
-        findResult(node_handle a, node_handle &b)
-        {
-            ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-            MEDDLY_DCASSERT(CTsrch);
-            CTsrch->writeN(a);
-            CT0->find(CTsrch, CTresult[0]);
-            if (!CTresult[0]) return CTsrch;
-            b = resF->linkNode(CTresult[0].readN());
-            CT0->recycle(CTsrch);
-            return 0;
-        }
-        inline node_handle saveResult(ct_entry_key* Key,
-            node_handle a, node_handle b)
-        {
-            CTresult[0].reset();
-            CTresult[0].writeN(b);
-            CT0->addEntry(Key, CTresult[0]);
-            return b;
-        }
-    public:
-        virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
-
-
-};
-
-
-MEDDLY::old_copy_MT
-:: old_copy_MT(unary_list &cache, forest* arg, forest* res)
- : unary_operation(cache, 1, arg, res)
-{
-    checkDomains(__FILE__, __LINE__);
-    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-
-    ct_entry_type* et = new ct_entry_type(cache.getName(), "N:N");
-    et->setForestForSlot(0, arg);
-    et->setForestForSlot(2, res);
-    registerEntryType(0, et);
-    buildCTs();
-}
-
-void MEDDLY::old_copy_MT::computeDDEdge(const dd_edge &arg, dd_edge &res,
-        bool userFlag)
-{
-  node_handle result = compute_r(arg.getNode());
-  res.set(result);
-}
-
-// ******************************************************************
-// *                                                                *
-// *                       copy_MT_tmpl class                       *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-    template <typename RESULT>
-    class copy_MT_tmpl : public old_copy_MT {
-        public:
-            copy_MT_tmpl(forest* A, forest* R)
-                : old_copy_MT(COPY_cache, A, R) { }
-
-            virtual node_handle compute_r(node_handle a)
-            {
-                if (argF->getReductionRule() == resF->getReductionRule()) {
-                    return computeSkip(-1, a);  // same skipping rule, ok
-                } else {
-                    // need to visit every level...
-                    return computeAll(-1, resF->getMaxLevelIndex(), a);
-                }
-            }
-
-            node_handle computeSkip(int in, node_handle a);
-            node_handle computeAll(int in, int k, node_handle a);
-
-        public:
-            static unary_list cache;
-
-            inline static unary_operation* build(forest* a, forest* r)
-            {
-                unary_operation* uop =  cache.find(a, r);
-                if (uop) {
-                    return uop;
-                }
-                return cache.add(new copy_MT_tmpl<RESULT>(a, r));
-            }
-    };
-
-};  // namespace MEDDLY
-
-template <typename RESULT>
-MEDDLY::unary_list MEDDLY::copy_MT_tmpl<RESULT>::cache;
-
-template <typename RESULT>
-MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeSkip(int in, node_handle a)
-{
-  // Check terminals
-  if (argF->isTerminalNode(a)) {
-    RESULT aTerm;
-    argF->getValueFromHandle(a, aTerm);
-    return resF->handleForValue(aTerm);
-  }
-
-  // Check compute table
-  node_handle b;
-  ct_entry_key* Key = findResult(a, b);
-  if (0==Key) return b;
-
-  // Initialize node reader
-  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
-
-  // Initialize node builder
-  const int level = argF->getNodeLevel(a);
-  unpacked_node* nb = unpacked_node::newSparse(resF, level, A->getSize());
-
-  // recurse
-  for (unsigned z=0; z<A->getSize(); z++) {
-      nb->setSparse(z, A->index(z), computeSkip(int(A->index(z)), A->down(z)));
-  }
-
-  // Handle extensible edge, if any
-#ifdef ALLOW_EXTENSIBLE
-  if (A->isExtensible()) nb->markAsExtensible();
-#endif
-
-  // Cleanup
-  unpacked_node::Recycle(A);
-
-  // Reduce
-  edge_value ev;
-  resF->createReducedNode(nb, ev, b, in);
-  MEDDLY_DCASSERT(ev.isVoid());
-
-  // Add to compute table
-  return saveResult(Key, a, b);
-}
-
-
-template <typename RESULT>
-MEDDLY::node_handle MEDDLY::copy_MT_tmpl<RESULT>::computeAll(int in, int k, node_handle a)
-{
-  // Check terminals
-  if (0==k) {
-    RESULT aTerm;
-    argF->getValueFromHandle(a, aTerm);
-    return resF->handleForValue(aTerm);
-  }
-
-  // 0 is 0 is 0, I think...
-  if (0==a) {
-    return 0;
-  }
-
-#ifdef DEBUG_COPY_COMPUTE_ALL
-  fprintf(stderr, "copy(%d, %d, %d)\n", in, k, a);
-#endif
-
-  // Get level number
-  const int aLevel = argF->getNodeLevel(a);
-
-  // Check compute table
-  node_handle b;
-  ct_entry_key* Key = 0;
-  if (k == aLevel && k>0) {
-    Key = findResult(a, b);
-    if (0==Key) return b;
-  }
-  int nextk;
-  if (resF->isForRelations()) {
-    nextk = MXD_levels::downLevel(k);
-  } else {
-    nextk = MDD_levels::downLevel(k);
-  }
-
-  // Initialize node reader
-  unpacked_node* A = unpacked_node::New(argF);
-  if (isLevelAbove(k, aLevel)) {
-    if (k<0 && argF->isIdentityReduced()) {
-      A->initIdentity(argF, k, unsigned(in), a, SPARSE_ONLY);
-    } else {
-      A->initRedundant(argF, k, a, SPARSE_ONLY);
-    }
-  } else {
-    argF->unpackNode(A, a, SPARSE_ONLY);
-  }
-
-  // Initialize node builder
-  unpacked_node* nb = unpacked_node::newSparse(resF, k, A->getSize());
-
-  // recurse
-  for (unsigned z=0; z<A->getSize(); z++) {
-      nb->setSparse(z, A->index(z),
-              computeAll(int(A->index(z)), nextk, A->down(z)));
-  }
-
-  // Handle extensible edge, if any
-#ifdef ALLOW_EXTENSIBLE
-  if (A->isExtensible()) nb->markAsExtensible();
-#endif
-
-  // Cleanup
-  unpacked_node::Recycle(A);
-
-  // Reduce
-  edge_value ev;
-  resF->createReducedNode(nb, ev, b, in);
-  MEDDLY_DCASSERT(ev.isVoid());
-
-  // Add to compute table
-  if (Key) saveResult(Key, a, b);
-  return b;
-}
-
 
 
 // ******************************************************************
@@ -1243,32 +1012,7 @@ MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
 
     if (arg->isMultiTerminal() && res->isMultiTerminal())
     {
-#ifdef USE_OLD_COPY
-        //
-        // MT copies, handled by the new template class!
-        //
-        switch (res->getRangeType()) {
-            case range_type::BOOLEAN:
-                return COPY_cache.add(
-                    new copy_MT_tmpl<bool>(arg, res)
-                );
-
-            case range_type::INTEGER:
-                return COPY_cache.add(
-                    new copy_MT_tmpl<int>(arg, res)
-                );
-
-            case range_type::REAL:
-                return COPY_cache.add(
-                    new copy_MT_tmpl<float>(arg, res)
-                );
-
-            default:  // any other types?
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-        };
-#else
         return COPY_cache.add(new copy_MT(arg, res));
-#endif
     }
 
     //
