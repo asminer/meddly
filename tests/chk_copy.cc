@@ -174,6 +174,28 @@ void buildRandomFunc(long s, int terms, dd_edge &out, FILE* fout)
     delete[] minterm;
 }
 
+void writeLongReduction(const forest* f)
+{
+    switch(f->getReductionRule()) {
+
+        case reduction_rule::FULLY_REDUCED:
+            printf("fully-reduced ");
+            break;
+
+        case reduction_rule::QUASI_REDUCED:
+            printf("quasi-reduced ");
+            break;
+
+        case reduction_rule::IDENTITY_REDUCED:
+            printf("identity-reduced ");
+            break;
+
+        default:
+            printf("unknown-reduced ");
+            break;
+    }
+}
+
 void writeType(const forest* f)
 {
     switch (f->getRangeType()) {
@@ -193,7 +215,6 @@ void writeType(const forest* f)
             printf("unk. ");
             break;
     }
-
     switch(f->getReductionRule()) {
 
         case reduction_rule::FULLY_REDUCED:
@@ -294,12 +315,15 @@ void testCopy(forest* srcF, forest* destF)
                 printf("failed!\n\n");
 
                 printf("Source (first forest):\n");
+                writeLongReduction(srcE.getForest());
                 srcE.showGraph(meddlyout);
 
                 printf("Destination (should get):\n");
+                writeLongReduction(destE.getForest());
                 destE.showGraph(meddlyout);
 
                 printf("Copy (built from source):\n");
+                writeLongReduction(copyE.getForest());
                 copyE.showGraph(meddlyout);
 
                 buildRandomFunc(save_seed, t, dummy, stdout);

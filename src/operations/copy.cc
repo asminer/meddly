@@ -37,7 +37,7 @@ namespace MEDDLY {
     unary_list COPY_cache;
 };
 
-#define TRACE
+// #define TRACE
 
 #ifdef TRACE
 #include "../operators.h"
@@ -204,19 +204,42 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(node_handle A)
             ? MXD_levels::downLevel(Alevel)
             : MDD_levels::downLevel(Alevel);
 
+    bool is_singleton = false;
+    unsigned sidx;
+    node_handle sdwn;
+
     for (unsigned i=0; i<Cu->getSize(); i++) {
         int Audlevel = argF->getNodeLevel(Au->down(i));
         node_handle d = _compute(Au->down(i));
+        node_handle dc;
         if (argF->isIdentityReduced()) {
-            d = resF->makeIdentitiesTo(d, Audlevel, Cnextlevel, Au->index(i));
+            dc = resF->makeIdentitiesTo(d, Audlevel, Cnextlevel, Au->index(i));
         } else {
-            d = resF->makeRedundantsTo(d, Audlevel, Cnextlevel);
+            dc = resF->makeRedundantsTo(d, Audlevel, Cnextlevel);
         }
-            // TBD: check for singletons
-        Cu->setSparse(i, Au->index(i), d);
 #ifdef TRACE
-        out << "built chain from " << Audlevel << " to " << Cnextlevel << "\n";
+        if (dc != d) {
+            out << "built chain from " << d << " to " << dc << "\n";
+        }
 #endif
+        d = dc;
+
+        //
+        // Check for singletons in the result
+        //
+        if (resF->isIdentityReduced()) {
+            is_singleton = (Audlevel < 0)
+                        ? resF->isSingletonNode(d, sidx, sdwn)
+                        : false;
+        }
+
+        if (is_singleton && Au->index(i) == sidx) {
+            // Singleton; skip it
+            Cu->setSparse(i, Au->index(i), resF->linkNode(sdwn));
+            resF->unlinkNode(d);
+        } else {
+            Cu->setSparse(i, Au->index(i), d);
+        }
     }
 
 #ifdef TRACE
