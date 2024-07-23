@@ -581,6 +581,13 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                                printf("CARD CR %ld\n",cardetest );
                                printf("number of nodes CR %ld\n",reachableStates.getNodeCount() );
                                printf("number of edge CR %ld\n",reachableStates.getEdgeCount() );
+
+                               auto stop = high_resolution_clock::now();
+                               auto duration = duration_cast<minutes>(stop - start);
+                               if(duration.count()>TimeLimit) {
+                                       printf("TimeOut\n" );
+                                       return;
+                               }
                         }
                 }
                 // reachableStates.showGraph(meddlyout);
