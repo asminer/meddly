@@ -363,7 +363,7 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
         bool first=false;
         ostream_output meddlyout(std::cout);
         bool debug=false;
-
+        bool printFirstOmega=true;
         // bool test=true;
         if(debug){
         init.showGraph(meddlyout);
@@ -432,18 +432,18 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                                 // printf("%d\n",lfront.getNode() );
                                 // printf("CARD lfront %ld\n",cardetest );
                                 if(gfront) first=true;
-                                if(lfront.getNode()>0 /*gfront||cardetest>0*/)
+                                if(lfront.getNode()>0 && printFirstOmega/*gfront||cardetest>0*/)
                                 {
 
                                  printf("OMEGA FOUND\n" );
-
-                                resF->reportStats(meddlyout, "\t",
-                                  expert_forest::HUMAN_READABLE_MEMORY |
-                                  expert_forest::BASIC_STATS
-                                );
+                                 printFirstOmega=false;
+                                // resF->reportStats(meddlyout, "\t",
+                                //   expert_forest::HUMAN_READABLE_MEMORY |
+                                //   expert_forest::BASIC_STATS
+                                // );
                                 auto stop = high_resolution_clock::now();
                                 auto duration = duration_cast<microseconds>(stop - start);
-                                printf("duration %ld microseconds \n", duration.count());
+                                printf("first omega in %ld microseconds \n", duration.count());
                                 // getchar();
                                     }
                                         // printf("gfront %d\n",gfront );
