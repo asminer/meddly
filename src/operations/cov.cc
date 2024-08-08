@@ -364,6 +364,11 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
         ostream_output meddlyout(std::cout);
         bool debug=false;
         bool printFirstOmega=true;
+        long peakCRNode=0, peakCREdge=0;
+        long peakMCSNode=0, peakMCSEdge=0;
+        long CRNode=0, CREdge=0;
+        long MCSNode=0, MCSEdge=0;
+        long cardCR=0,cardMCS=0;
         // bool test=true;
         if(debug){
         init.showGraph(meddlyout);
@@ -409,7 +414,7 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                 for(int level=1; level<argF->getNumVariables()+1; level++,gfront=0) {
                         for (int ei = 0; ei < rel->getNumOfEvents(level); ei++) {
                                 const dd_edge& urel = rel->getEvent(level, ei);
-                                printf("transition relation LVL %d %d^^\n",level,ei );
+                                // printf("transition relation LVL %d %d^^\n",level,ei );
 
                                 if(debug){
                                  urel.showGraph(meddlyout);
@@ -435,7 +440,7 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                                 if(lfront.getNode()>0 && printFirstOmega/*gfront||cardetest>0*/)
                                 {
 
-                                 printf("OMEGA FOUND\n" );
+                                 // printf("OMEGA FOUND\n" );
                                  printFirstOmega=false;
                                 // resF->reportStats(meddlyout, "\t",
                                 //   expert_forest::HUMAN_READABLE_MEMORY |
@@ -544,9 +549,14 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                                efrom-=ecovered;
                                long pcs=0;
                                 apply(CARDINALITY, efrom, pcs);
-                               printf("PCS %ld\n",pcs );
-                               printf("number of nodes %ld\n",efrom.getNodeCount() );
-                               printf("number of edge %ld\n",efrom.getEdgeCount() );
+                                cardMCS=pcs;
+                               // printf("PCS %ld\n",pcs );
+                               MCSNode=efrom.getNodeCount();
+                               MCSEdge=efrom.getEdgeCount();
+                               if(peakMCSEdge<MCSEdge) peakMCSEdge=MCSEdge;
+                               if(peakMCSNode<MCSNode) peakMCSNode=MCSNode;
+                               // printf("number of nodes %ld\n",efrom.getNodeCount() );
+                               // printf("number of edge %ld\n",efrom.getEdgeCount() );
 
                                // // printf("mddsize %d\n",efrom.getNodeCount()*sizeof(efrom) );
                                // printf("mddsize %ld\n",pcs*argF->getNumVariables()* sizeof(int));
@@ -578,14 +588,29 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                                // }
                                cardetest=0;
                                apply(CARDINALITY, reachableStates, cardetest);
-                               printf("CARD CR %ld\n",cardetest );
-                               printf("number of nodes CR %ld\n",reachableStates.getNodeCount() );
-                               printf("number of edge CR %ld\n",reachableStates.getEdgeCount() );
+                               // printf("CARD CR %ld\n",cardetest );
+                               // printf("number of nodes CR %ld\n",reachableStates.getNodeCount() );
+                               // printf("number of edge CR %ld\n",reachableStates.getEdgeCount() );
+                               cardCR=cardetest;
+                              CRNode=reachableStates.getNodeCount();
+                              CREdge=reachableStates.getEdgeCount();
+                              if(peakCREdge<CREdge) peakCREdge=CREdge;
+                              if(peakCRNode<CRNode) peakCRNode=CRNode;
 
                                auto stop = high_resolution_clock::now();
                                auto duration = duration_cast<minutes>(stop - start);
                                if(duration.count()>TimeLimit) {
-                                       printf("TimeOut\n" );
+                                    printf("CARD CR %ld\n",cardCR );
+                                     printf("CARD MCS %ld\n",cardMCS );
+                                   printf("number of nodes CR %ld\n",CRNode );
+                                   printf("number of edge CR %ld\n",CREdge );
+                                   printf("peak number of nodes CR %ld\n",peakCRNode );
+                                   printf("peak number of edge CR %ld\n",peakCREdge );
+                                   printf("peak number of nodes %ld\n",MCSNode );
+                                   printf("peak number of edge %ld\n",MCSEdge);
+                                   printf("number of nodes %ld\n",peakMCSNode );
+                                   printf("number of edge %ld\n",peakMCSEdge );
+                                       printf("TimeOut %ld\n",(duration_cast<seconds>(stop - start)).count() );
                                        return;
                                }
                         }
@@ -609,12 +634,32 @@ void MEDDLY::cov_by_events_op::Coverability(const dd_edge& init, dd_edge& reacha
                 auto stop = high_resolution_clock::now();
                 auto duration = duration_cast<minutes>(stop - start);
                 if(duration.count()>TimeLimit) {
-                        printf("TimeOut\n" );
+                    printf("CARD CR %ld\n",cardCR );
+                     printf("CARD MCS %ld\n",cardMCS );
+                    printf("number of nodes CR %ld\n",CRNode );
+                    printf("number of edge CR %ld\n",CREdge );
+                    printf("peak number of nodes CR %ld\n",peakCRNode );
+                    printf("peak number of edge CR %ld\n",peakCREdge );
+                    printf("peak number of nodes %ld\n",MCSNode );
+                    printf("peak number of edge %ld\n",MCSEdge);
+                    printf("number of nodes %ld\n",peakMCSNode );
+                    printf("number of edge %ld\n",peakMCSEdge );
+                        printf("TimeOut %ld\n",(duration_cast<seconds>(stop - start)).count() );
                         return;
                 }
                 // printf("prevReachable %d reachableStates\n",prevReachable == reachableStates );
         }while (prevReachable != reachableStates || first==true);
         printf("DONEDONE %d\n",i );
+        printf("CARD CR %ld\n",cardCR );
+         printf("CARD MCS %ld\n",cardMCS );
+        printf("number of nodes CR %ld\n",CRNode );
+        printf("number of edge CR %ld\n",CREdge );
+        printf("peak number of nodes CR %ld\n",peakCRNode );
+        printf("peak number of edge CR %ld\n",peakCREdge );
+        printf("peak number of nodes %ld\n",MCSNode );
+        printf("peak number of edge %ld\n",MCSEdge);
+        printf("number of nodes %ld\n",peakMCSNode );
+        printf("number of edge %ld\n",peakMCSEdge );
 
 }
 
