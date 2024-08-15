@@ -694,71 +694,64 @@ MEDDLY::node_handle MEDDLY::forest
 MEDDLY::node_handle
 MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
 {
+    if (!isMultiTerminal()) {
+        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    }
+
     MEDDLY_DCASSERT(L);
-    unpacked_node* U;
-    bool first = true;
-    if (isMultiTerminal()) {
-        //
-        // Multi-terminal
-        //
-        while (K != L) {
-            if (isForRelations()) {
-                K = MXD_levels::upLevel(K);
-            } else {
-                K = MDD_levels::upLevel(K);
-            }
+    unpacked_node* U = nullptr;
 
-            if (first && isIdentityReduced() && K>0) {
-                /*
-                   If the original p node is a singleton node
-                   with index i at a primed level, then our
-                   "redundant" node at the unprimed level above it
-                   should instead have pointer i going to p's child.
-                   */
-                MEDDLY_DCASSERT(MXD_levels::upLevel(getNodeLevel(p)) == K);
-                // ^ At the time of writing, we don't allow
-                //   long edges to a primed level.
+    //
+    // Multi-terminal
+    //
 
-                unsigned sind;
-                node_handle sdwn;
-                if (isSingletonNode(p, sind, sdwn)) {
-                    unsigned size = getLevelSize(K);
-                    U = unpacked_node::newFull(this, K, size);
-                    for (unsigned i=0; i<size; i++) {
-                        U->setFull(i, linkNode( (i==sind) ? sdwn : p ));
-                    }
-                    unlinkNode(p);
+    // Special case for identity reduced:
+    //   if p is at a primed level,
+    //   and K is the same level as p,
+    //   then we need to take care if p is a singleton node.
+    //
+    bool check_singleton = isIdentityReduced() && (K<0) && (getNodeLevel(p) == K);
 
-                    edge_value ev;
-                    createReducedNode(U, ev, p);
-                    MEDDLY_DCASSERT(ev.isVoid());
-                    first = false;
-                    continue;
+    while (K != L) {
+        if (isForRelations()) {
+            K = MXD_levels::upLevel(K);
+        } else {
+            K = MDD_levels::upLevel(K);
+        }
+
+        if (check_singleton) {
+            unsigned sind;
+            node_handle sdwn;
+            if (isSingletonNode(p, sind, sdwn)) {
+                unsigned size = getLevelSize(K);
+                U = unpacked_node::newFull(this, K, size);
+                for (unsigned i=0; i<size; i++) {
+                    U->setFull(i, linkNode( (i==sind) ? sdwn : p ));
                 }
-            }
-            if (!isIdentityReduced() || K<0)
-            {
-                /*
-                   Build a redundant node.
-                   Necessary for quasi reduced always,
-                   and for identity reduced at primed levels
-                   (unprimed is fully reduced).
-                   */
-                U = unpacked_node::newRedundant(this, K, p, FULL_ONLY);
-                linkAllDown(*U, 1);
+                unlinkNode(p);
+
                 edge_value ev;
                 createReducedNode(U, ev, p);
                 MEDDLY_DCASSERT(ev.isVoid());
+                check_singleton = false;
+                continue;
             }
-
-            first = false;
+            check_singleton = false;
         }
-    } else {
-        //
-        // Edge-valued
-        //
-
-        MEDDLY_DCASSERT(false);
+        if (!isIdentityReduced() || K<0)
+        {
+            /*
+               Build a redundant node.
+               Necessary for quasi reduced always,
+               and for identity reduced at primed levels
+               (unprimed is fully reduced).
+               */
+            U = unpacked_node::newRedundant(this, K, p, FULL_ONLY);
+            linkAllDown(*U, 1);
+            edge_value ev;
+            createReducedNode(U, ev, p);
+            MEDDLY_DCASSERT(ev.isVoid());
+        }
     }
 
     return p;
@@ -768,6 +761,9 @@ MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
 MEDDLY::node_handle
 MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L, int in)
 {
+    if (!isMultiTerminal()) {
+        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    }
     MEDDLY_DCASSERT(!isIdentityReduced());
     MEDDLY_DCASSERT(isForRelations());
 
@@ -775,65 +771,56 @@ MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L, int in)
     unpacked_node* Uun;
     unpacked_node* Upr;
     edge_value ev;
-    if (isMultiTerminal()) {
+    //
+    // Multi-terminal
+    //
+
+    if (K<0) {
         //
-        // Multi-terminal
+        // Add a redundant layer
         //
-
-        if (K<0) {
-            //
-            // Add a redundant layer
-            //
-            if ( !isFullyReduced() ) {
-                Uun = unpacked_node::newRedundant(this, -K, p, FULL_ONLY);
-                linkAllDown(*Uun, 1);
-                createReducedNode(Uun, ev, p);
-                MEDDLY_DCASSERT(ev.isVoid());
-            }
-            K = MXD_levels::upLevel(K);
-        }
-
-        MEDDLY_DCASSERT(K>=0);
-        const int Lstop = (L<0) ? MXD_levels::downLevel(L) : L;
-
-        //
-        // Proceed in unprimed, primed pairs
-        //
-        for (K++; K<=Lstop; K++) {
-            Uun = unpacked_node::newFull(this, K, getLevelSize(K));
-
-            // build primed level nodes
-            for (unsigned i=0; i<Uun->getSize(); i++) {
-                Upr = unpacked_node::newSparse(this, -K, 1);
-                Upr->setSparse(0, i, (i ? linkNode(p) : p));
-                node_handle h;
-                createReducedNode(Upr, ev, h);
-                MEDDLY_DCASSERT(ev.isVoid());
-                Uun->setFull(i, h);
-            }
-
+        if ( !isFullyReduced() ) {
+            Uun = unpacked_node::newRedundant(this, -K, p, FULL_ONLY);
+            linkAllDown(*Uun, 1);
             createReducedNode(Uun, ev, p);
             MEDDLY_DCASSERT(ev.isVoid());
-        } // for k
+        }
+        K = MXD_levels::upLevel(K);
+    }
 
-        //
-        // Add top identity node, if L is negative
-        //
-        if (L<0) {
-            MEDDLY_DCASSERT(-K == L);
-            Upr = unpacked_node::newSparse(this, L, 1);
-            MEDDLY_DCASSERT(in>=0);
-            Upr->setSparse(0, unsigned(in), p);
-            createReducedNode(Upr, ev, p);
+    MEDDLY_DCASSERT(K>=0);
+    const int Lstop = (L<0) ? MXD_levels::downLevel(L) : L;
+
+    //
+    // Proceed in unprimed, primed pairs
+    //
+    for (K++; K<=Lstop; K++) {
+        Uun = unpacked_node::newFull(this, K, getLevelSize(K));
+
+        // build primed level nodes
+        for (unsigned i=0; i<Uun->getSize(); i++) {
+            Upr = unpacked_node::newSparse(this, -K, 1);
+            Upr->setSparse(0, i, (i ? linkNode(p) : p));
+            node_handle h;
+            createReducedNode(Upr, ev, h);
             MEDDLY_DCASSERT(ev.isVoid());
+            Uun->setFull(i, h);
         }
 
-    } else {
-        //
-        // Edge-valued
-        //
+        createReducedNode(Uun, ev, p);
+        MEDDLY_DCASSERT(ev.isVoid());
+    } // for k
 
-        MEDDLY_DCASSERT(false);
+    //
+    // Add top identity node, if L is negative
+    //
+    if (L<0) {
+        MEDDLY_DCASSERT(-K == L);
+        Upr = unpacked_node::newSparse(this, L, 1);
+        MEDDLY_DCASSERT(in>=0);
+        Upr->setSparse(0, unsigned(in), p);
+        createReducedNode(Upr, ev, p);
+        MEDDLY_DCASSERT(ev.isVoid());
     }
 
     return p;

@@ -440,6 +440,59 @@ class MEDDLY::forest {
             return _makeIdentitiesTo(p, K, L, in);
         }
 
+        /**
+            Redirect illegal i-singleton edges if we're identity reduced.
+
+                @param  K   Level where this pointer originates.
+                            Used for sanity checks only
+                            (only if DEVELOPMENT_CODE is defined).
+
+                @param  i   Which child edge are we.
+
+                @param  p   Target node.
+
+                @return p   If we are allowed to point to p.
+                            This is always the case for forests that
+                            are not identity reduced and
+                            for nodes p that are not at a primed level.
+        */
+        inline node_handle redirectSingleton(
+#ifdef DEVELOPMENT_CODE
+                int K,
+#endif
+                unsigned i, node_handle p)
+        {
+            if (!isIdentityReduced()) return p;
+            if (getNodeLevel(p) >= 0) return p;
+
+            // check if p is a singleton node
+            unsigned pi;
+            node_handle pd;
+            if (isSingletonNode(p, pi, pd)) {
+                // p is a singleton node.
+                //  child pi points to pd.
+#ifdef DEVELOPMENT_CODE
+                MEDDLY_DCASSERT(getNodeLevel(p) == -K);
+#endif
+                if (i != pi) {
+                    return p;
+                }
+                // redirect
+                // and fix link counts
+#ifdef REFCOUNTS_ON
+                if (deflt.useReferenceCounts) {
+                    nodeHeaders.linkNode(pd);
+                    nodeHeaders.unlinkNode(p);
+                }
+#endif
+                return pd;
+            } else {
+                // p is not a singleton node.
+                return p;
+            }
+        }
+
+
     // ------------------------------------------------------------
     protected:  // helpers for reducing nodes
     // ------------------------------------------------------------
