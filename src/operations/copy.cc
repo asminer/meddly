@@ -200,10 +200,6 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(node_handle A)
             ? MXD_levels::downLevel(Alevel)
             : MDD_levels::downLevel(Alevel);
 
-    bool is_singleton = false;
-    unsigned sidx;
-    node_handle sdwn;
-
     for (unsigned i=0; i<Cu->getSize(); i++) {
         int Audlevel = argF->getNodeLevel(Au->down(i));
         node_handle d = _compute(Au->down(i));
@@ -218,24 +214,13 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(node_handle A)
             out << "built chain from " << d << " to " << dc << "\n";
         }
 #endif
-        d = dc;
-
-        //
-        // Check for singletons in the result
-        //
-        if (resF->isIdentityReduced()) {
-            is_singleton = (Audlevel < 0)
-                        ? resF->isSingletonNode(d, sidx, sdwn)
-                        : false;
-        }
-
-        if (is_singleton && Au->index(i) == sidx) {
-            // Singleton; skip it
-            Cu->setSparse(i, Au->index(i), resF->linkNode(sdwn));
-            resF->unlinkNode(d);
-        } else {
-            Cu->setSparse(i, Au->index(i), d);
-        }
+        d = resF->redirectSingleton(
+#ifdef DEVELOPMENT_CODE
+                Cu->getLevel(),
+#endif
+                Au->index(i), dc
+        );
+        Cu->setSparse(i, Au->index(i), d);
     }
 
 #ifdef TRACE
