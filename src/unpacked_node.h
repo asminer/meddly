@@ -36,6 +36,9 @@ namespace MEDDLY {
     struct unpacked_lists;
 }
 
+#define ALLOW_SET_FROM_DDEDGE
+#define ALLOW_SET_FROM_POINTER
+
 // #define USE_STRUCT
 
 // ******************************************************************
@@ -150,7 +153,11 @@ class MEDDLY::unpacked_node {
         {
             unpacked_node* U = New(f);
             MEDDLY_DCASSERT(U);
-            U->initRedundant(f, k, ev, node, fs);
+            if (ev.isVoid()) {
+                U->initRedundant(f, k, node, fs);
+            } else {
+                U->initRedundant(f, k, ev, node, fs);
+            }
             return U;
         }
 
@@ -511,12 +518,14 @@ class MEDDLY::unpacked_node {
             _idev[n].edgeval = v;
 #else
             MEDDLY_DCASSERT(_down);
-            MEDDLY_DCASSERT(_edge);
             _down[n] = h;
-            _edge[n] = v;
+            if (_edge) {
+                _edge[n] = v;
+            }
 #endif
         }
 
+#ifdef ALLOW_SET_FROM_DDEDGE
         /**
             Set a full edge from E, and destroy E.
                 @param  n       Which pointer
@@ -538,8 +547,10 @@ class MEDDLY::unpacked_node {
             }
 #endif
         }
+#endif
 
 
+#ifdef ALLOW_SET_FROM_POINTER
         /**
             Set a full edge.
                 @param  n       Which pointer
@@ -561,6 +572,7 @@ class MEDDLY::unpacked_node {
             _edge[n].set(the_edge_type, p);
 #endif
         }
+#endif
 
 
         /**
@@ -608,14 +620,16 @@ class MEDDLY::unpacked_node {
 #else
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
-            MEDDLY_DCASSERT(_edge);
             _index[n] = i;
             _down[n] = h;
-            _edge[n] = v;
+            if (_edge) {
+                _edge[n] = v;
+            }
 #endif
         }
 
 
+#ifdef ALLOW_SET_FROM_DDEDGE
         /**
             Set a sparse edge.
                 @param  n       Which nonzero edge
@@ -642,8 +656,10 @@ class MEDDLY::unpacked_node {
             }
 #endif
         }
+#endif
 
 
+#ifdef ALLOW_SET_FROM_POINTER
         /**
             Set a sparse edge.
                 @param  n       Which nonzero edge
@@ -670,6 +686,7 @@ class MEDDLY::unpacked_node {
             _edge[n].set(the_edge_type, p);
 #endif
         }
+#endif
 
 
 

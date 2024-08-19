@@ -193,23 +193,15 @@ void MEDDLY::copy_MT::_compute(node_handle A, edge_value& cv, node_handle &cp)
             //
             switch (resF->getEdgeType()) {
                 case edge_type::INT:
+                case edge_type::LONG:
                     argF->getValueFromHandle(A, aint);
                     resF->getEdgeForValue(aint, cv, cp);
                     return;
 
-                case edge_type::LONG:
-                    argF->getValueFromHandle(A, aint);
-                    resF->getEdgeForValue(long(aint), cv, cp);
-                    return;
-
                 case edge_type::FLOAT:
-                    argF->getValueFromHandle(A, afloat);
-                    resF->getEdgeForValue(afloat, cv, cp);
-                    return;
-
                 case edge_type::DOUBLE:
                     argF->getValueFromHandle(A, afloat);
-                    resF->getEdgeForValue(double(afloat), cv, cp);
+                    resF->getEdgeForValue(afloat, cv, cp);
                     return;
 
                 default:

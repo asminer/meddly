@@ -1038,6 +1038,13 @@ class MEDDLY::forest {
         }
 
         /**
+            Get the no-op edge value.
+        */
+        inline const edge_value& getNoOpEdge() const {
+            return noop_edge;
+        }
+
+        /**
             Is the given edge transparent?
             If so it may be "skipped" in a sparse node.
                 @param  ep    Node part of the edge to check
@@ -1143,7 +1150,7 @@ class MEDDLY::forest {
         {
             MEDDLY_DCASSERT(!isMultiTerminal());
 
-            v.set(constval);
+            v.setTempl(the_edge_type, constval);
 
             if (isEVTimes() && (0==constval)) {
                 p = 0;
@@ -1205,32 +1212,49 @@ class MEDDLY::forest {
             MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set();
+            noop_edge.set();
         }
         inline void setTransparentEdge(node_handle p, int v) {
             MEDDLY_DCASSERT(edge_type::INT == the_edge_type);
             MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
+            setNoOpEdgeval();
         }
         inline void setTransparentEdge(node_handle p, long v) {
             MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
             MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
+            setNoOpEdgeval();
         }
         inline void setTransparentEdge(node_handle p, float v) {
             MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
             MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
+            setNoOpEdgeval();
         }
         inline void setTransparentEdge(node_handle p, double v) {
             MEDDLY_DCASSERT(edge_type::DOUBLE == the_edge_type);
             MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
+            setNoOpEdgeval();
         }
 
+    // ------------------------------------------------------------
+    private:
+    // ------------------------------------------------------------
+
+        inline void setNoOpEdgeval() {
+            MEDDLY_DCASSERT(!isMultiTerminal());
+            if (isEVTimes()) {
+                noop_edge.setTempl(transparent_edge.getType(), 1);
+            } else {
+                noop_edge.setTempl(transparent_edge.getType(), 0);
+            }
+        }
 
     // ------------------------------------------------------------
     private: // transparent edge info
@@ -1241,6 +1265,9 @@ class MEDDLY::forest {
 
         /// Transparent edge value
         edge_value  transparent_edge;
+
+        /// Edge value for no-op (e.g., 0 for +, 1 for *)
+        edge_value  noop_edge;
 
         /// Edge type.
         edge_type the_edge_type;

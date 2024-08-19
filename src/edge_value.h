@@ -199,6 +199,34 @@ class MEDDLY::edge_value {
             ev_double = v;
         }
 
+        template <class V>
+        inline void setTempl(edge_type t, V v) {
+            mytype = t;
+            switch (mytype) {
+                case edge_type::VOID:
+                    return;
+
+                case edge_type::INT:
+                    ev_int = int(v);
+                    return;
+
+                case edge_type::LONG:
+                    ev_long = long(v);
+                    return;
+
+                case edge_type::FLOAT:
+                    ev_float = float(v);
+                    return;
+
+                case edge_type::DOUBLE:
+                    ev_double = double(v);
+                    return;
+
+                default:
+                    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+            }
+        }
+
         //
         // Setters, for low-level storage objects
         //
