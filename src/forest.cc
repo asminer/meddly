@@ -797,7 +797,7 @@ MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L, int in)
             node_handle h;
             createReducedNode(Upr, ev, h);
             MEDDLY_DCASSERT(ev == noop_edge);
-            Uun->setFull(i, h);
+            Uun->setFull(i, noop_edge, h);
         }
 
         createReducedNode(Uun, ev, p);
