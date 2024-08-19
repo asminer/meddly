@@ -45,6 +45,8 @@ namespace MEDDLY {
 // ******************************************************************
 
 /// New, hopefully faster, copy operation for multi-terminal DDs.
+/// The target forest can be multi-terminal or edge-valued :)
+///
 class MEDDLY::copy_MT : public unary_operation {
     public:
         copy_MT(forest* arg, forest* res);
@@ -83,14 +85,6 @@ class MEDDLY::copy_MT : public unary_operation {
                 out << ", " << p << ">";
             }
 #endif
-        }
-
-    private:
-        template <class RTYPE>
-        inline node_handle term2term(RTYPE &tmp, node_handle A) const
-        {
-            argF->getValueFromHandle(A, tmp);
-            return resF->handleForValue(tmp);
         }
 
     private:
@@ -172,15 +166,18 @@ void MEDDLY::copy_MT::_compute(node_handle A, edge_value& cv, node_handle &cp)
             cv.set();
             switch (resF->getTerminalType()) {
                 case terminal_type::BOOLEAN:
-                    cp = term2term(abool, A);
+                    argF->getValueFromHandle(A, abool);
+                    cp = resF->handleForValue(abool);
                     return;
 
                 case terminal_type::INTEGER:
-                    cp = term2term(aint, A);
+                    argF->getValueFromHandle(A, aint);
+                    cp = resF->handleForValue(aint);
                     return;
 
                 case terminal_type::REAL:
-                    cp = term2term(afloat, A);
+                    argF->getValueFromHandle(A, afloat);
+                    cp = resF->handleForValue(afloat);
                     return;
 
                 default:
@@ -335,217 +332,6 @@ void MEDDLY::copy_MT::_compute(node_handle A, edge_value& cv, node_handle &cp)
 }
 
 
-// ******************************************************************
-// *                                                                *
-// *                        copy_MT2EV class                        *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-  template <typename TYPE>
-  class copy_MT2EV : public unary_operation {
-      public:
-        copy_MT2EV(forest* arg, forest* res, const char* pattern)
-            : unary_operation(COPY_cache, 1, arg, res)
-        {
-            //
-            // Pattern should be of the form "N:xN" where x is the EV Type.
-            //
-            // entry[0]: mt node
-            // entry[1]: EV value (output)
-            // entry[2]: EV node (output)
-            //
-            ct_entry_type* et = new ct_entry_type(COPY_cache.getName(), pattern);
-            et->setForestForSlot(0, arg);
-            et->setForestForSlot(3, res);
-            registerEntryType(0, et);
-            buildCTs();
-        }
-
-        virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
-        {
-            node_handle b;
-            TYPE bev = Inf<TYPE>();
-            if (argF->getReductionRule() == resF->getReductionRule()) {
-                computeSkip(-1, arg.getNode(), b, bev);  // same skipping rule, ok
-            } else {
-                // need to visit every level...
-                computeAll(-1, resF->getMaxLevelIndex(), arg.getNode(), b, bev);
-            }
-            res.set(b, bev);
-        }
-        void computeSkip(int in, node_handle a, node_handle &b, TYPE &bev);
-        void computeAll(int in, int k, node_handle a, node_handle &b, TYPE &bev);
-
-    protected:
-        inline ct_entry_key*
-        inCache(node_handle a, node_handle &b, TYPE &bev)
-        {
-            ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-            MEDDLY_DCASSERT(CTsrch);
-            CTsrch->writeN(a);
-            CT0->find(CTsrch, CTresult[0]);
-            if (CTresult[0]) {
-                CTresult[0].read_ev(bev);
-                b = resF->linkNode(CTresult[0].readN());
-                CT0->recycle(CTsrch);
-                return 0;
-            }
-            return CTsrch;
-        }
-
-        inline void addToCache(ct_entry_key* Key,
-            node_handle a, node_handle b, long bev)
-        {
-            MEDDLY_DCASSERT(bev != Inf<long>());
-            CTresult[0].reset();
-            CTresult[0].writeL(bev);
-            CTresult[0].writeN(b);
-            CT0->addEntry(Key, CTresult[0]);
-        }
-
-        inline void addToCache(ct_entry_key* Key,
-            node_handle a, node_handle b, float bev)
-        {
-            MEDDLY_DCASSERT(bev != Inf<float>());
-            CTresult[0].reset();
-            CTresult[0].writeF(bev);
-            CTresult[0].writeN(b);
-            CT0->addEntry(Key, CTresult[0]);
-        }
-
-  };
-
-};  // namespace MEDDLY
-
-
-template <typename TYPE>
-void MEDDLY::copy_MT2EV<TYPE>
-::computeSkip(int in, node_handle a, node_handle &b, TYPE &bev)
-{
-  // Check terminals
-  if (argF->isTerminalNode(a)) {
-    MEDDLY_DCASSERT(a != argF->getTransparentNode());
-    if (argF->getRangeType() == range_type::BOOLEAN) {
-      bev = 0;
-    }
-    else {
-      argF->getValueFromHandle(a, bev);
-    }
-    terminal t(true);
-    b = t.getHandle();
-    return;
-  }
-
-  // Check compute table
-  ct_entry_key* Key = inCache(a, b, bev);
-  if (0==Key) return;
-
-  // Initialize sparse node reader
-  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
-
-  // Initialize node builder
-  const int level = argF->getNodeLevel(a);
-  unpacked_node* nb = unpacked_node::newSparse(resF, level, A->getSize());
-
-  // recurse
-  for (unsigned z=0; z<A->getSize(); z++) {
-    node_handle d;
-    TYPE dev = Inf<TYPE>();
-    computeSkip(int(A->index(z)), A->down(z), d, dev);
-    nb->setSparse(z, A->index(z), edge_value(dev), d);
-    // nb->i_ref(z) = A->index(z);
-    // nb->d_ref(z) = d;
-    // nb->setEdge(z, dev);
-  }
-
-  // Cleanup
-  unpacked_node::Recycle(A);
-
-  // Reduce
-  edge_value ev;
-  resF->createReducedNode(nb, ev, b, in);
-  ev.get(bev);
-
-  // Add to compute table
-  addToCache(Key, a, b, bev);
-}
-
-template <typename TYPE>
-void MEDDLY::copy_MT2EV<TYPE>
-::computeAll(int in, int k, node_handle a, node_handle &b, TYPE &bev)
-{
-  // Check terminals
-  if (0==k) {
-    MEDDLY_DCASSERT(a != argF->getTransparentNode());
-    if (argF->getRangeType() == range_type::BOOLEAN) {
-      bev = 0;
-    }
-    else {
-      argF->getValueFromHandle(a, bev);
-    }
-    terminal t(true);
-    b = t.getHandle();
-    return;
-  }
-
-  // Get level number
-  const int aLevel = argF->getNodeLevel(a);
-
-  // Check compute table
-  ct_entry_key* Key = 0;
-  if (k == aLevel && k>0) {
-    Key = inCache(a, b, bev);
-    if (0==Key) return;
-  }
-
-  // What's below?
-  int nextk;
-  if (resF->isForRelations()) {
-    nextk = MXD_levels::downLevel(k);
-  } else {
-    nextk = MDD_levels::downLevel(k);
-  }
-
-  // Initialize node reader
-  unpacked_node* A = unpacked_node::New(argF);
-  if (isLevelAbove(k, aLevel)) {
-    if (k<0 && argF->isIdentityReduced()) {
-      A->initIdentity(argF, k, unsigned(in), a, SPARSE_ONLY);
-    } else {
-      A->initRedundant(argF, k, a, SPARSE_ONLY);
-    }
-  } else {
-    argF->unpackNode(A, a, SPARSE_ONLY);
-  }
-
-  // Initialize node builder
-  unpacked_node* nb = unpacked_node::newSparse(resF, k, A->getSize());
-
-  // recurse
-  for (unsigned z=0; z<A->getSize(); z++) {
-    TYPE dev;
-    node_handle dn;
-    computeAll(int(A->index(z)), nextk, A->down(z), dn, dev);
-    nb->setSparse(z, A->index(z), edge_value(dev), dn);
-
-    // nb->i_ref(z) = A->index(z);
-    // computeAll(int(A->index(z)), nextk, A->down(z), nb->d_ref(z), dev);
-    // nb->setEdge(z, dev);
-  }
-
-  // Cleanup
-  unpacked_node::Recycle(A);
-
-  // Reduce
-  edge_value ev;
-  resF->createReducedNode(nb, ev, b, in);
-  ev.get(bev);
-
-  // Add to compute table
-  if (Key) addToCache(Key, a, b, bev);
-}
 
 // ******************************************************************
 // *                                                                *
@@ -1069,37 +855,14 @@ MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
 
-    // if (arg->isMultiTerminal() && res->isMultiTerminal())
+    //
+    // Source is MT?
+    //
     if (arg->isMultiTerminal())
     {
         return COPY_cache.add(new copy_MT(arg, res));
     }
 
-    //
-    // Must be at least one EV forest
-    //
-
-    if (arg->isMultiTerminal() &&
-        (res->isEVPlus() || res->isEVTimes()))
-    {
-        //
-        // MT to EV conversion
-        //
-        switch (res->getRangeType()) {
-            case range_type::INTEGER:
-                return COPY_cache.add(
-                    new copy_MT2EV<long>(arg, res, "N:LN")
-                );
-
-            case range_type::REAL:
-                return COPY_cache.add(
-                    new copy_MT2EV<float>(arg, res, "N:FN")
-                );
-
-            default:
-                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-        };
-    }
 
     if (res->isMultiTerminal() && (arg->isEVPlus() || arg->isIndexSet()))
     {

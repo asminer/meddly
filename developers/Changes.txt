@@ -1,9 +1,5 @@
 
 Current goal:
-    * Complete (get EV cases working)
-        forest::makeRedundantsTo
-        forest::makeIdentitiesTo
-
     * update COPY operation
     * use COPY operation where it makes sense, e.g.,
         terminal cases in cross-forest unions
