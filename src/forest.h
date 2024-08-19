@@ -1082,6 +1082,7 @@ class MEDDLY::forest {
             return the_terminal_type;
         }
 
+
         /**
             Convenience function.
             Based on the forest type, convert the desired value
@@ -1091,6 +1092,7 @@ class MEDDLY::forest {
         */
         template <typename T>
         inline node_handle handleForValue(T v) const {
+            MEDDLY_DCASSERT(isMultiTerminal());
             terminal t(v, the_terminal_type);
             return t.getHandle();
         }
@@ -1104,27 +1106,52 @@ class MEDDLY::forest {
         */
         template <typename T>
         inline void getValueFromHandle(node_handle n, T& v) const {
+            MEDDLY_DCASSERT(isMultiTerminal());
             MEDDLY_DCASSERT(n <= 0);
             terminal t(the_terminal_type, n);
             t.getValue(v);
         }
 
         inline bool getBooleanFromHandle(MEDDLY::node_handle n) const {
+            MEDDLY_DCASSERT(isMultiTerminal());
             bool v;
             getValueFromHandle(n, v);
             return v;
         }
 
         inline int getIntegerFromHandle(MEDDLY::node_handle n) const {
+            MEDDLY_DCASSERT(isMultiTerminal());
             int v;
             getValueFromHandle(n, v);
             return v;
         }
 
         inline float getRealFromHandle(MEDDLY::node_handle n) const {
+            MEDDLY_DCASSERT(isMultiTerminal());
             float v;
             getValueFromHandle(n, v);
             return v;
+        }
+
+        /**
+            Convenience function.
+            Build an edge for a constant value.
+        */
+        template <class T>
+        inline void getEdgeForValue(T constval, edge_value &v, node_handle &p)
+        const
+        {
+            MEDDLY_DCASSERT(!isMultiTerminal());
+
+            v.set(constval);
+
+            if (isEVTimes() && (0==constval)) {
+                p = 0;
+            } else {
+                terminal t;
+                t.setOmega();
+                p = t.getHandle();
+            }
         }
 
     // ------------------------------------------------------------
@@ -1175,26 +1202,31 @@ class MEDDLY::forest {
 
         inline void setTransparentEdge(node_handle p) {
             MEDDLY_DCASSERT(edge_type::VOID == the_edge_type);
+            MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set();
         }
         inline void setTransparentEdge(node_handle p, int v) {
             MEDDLY_DCASSERT(edge_type::INT == the_edge_type);
+            MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
         }
         inline void setTransparentEdge(node_handle p, long v) {
             MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
+            MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
         }
         inline void setTransparentEdge(node_handle p, float v) {
             MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
+            MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
         }
         inline void setTransparentEdge(node_handle p, double v) {
             MEDDLY_DCASSERT(edge_type::DOUBLE == the_edge_type);
+            MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
         }

@@ -152,3 +152,30 @@ void MEDDLY::edge_value::write(output &s) const
     }
 }
 
+void MEDDLY::edge_value::show(output &s) const
+{
+    switch (mytype) {
+        case edge_type::VOID:
+            return;
+
+        case edge_type::INT:
+            s.put(ev_int);
+            return;
+
+        case edge_type::LONG:
+            s.put(ev_long);
+            return;
+
+        case edge_type::FLOAT:
+            s.put(ev_float);
+            return;
+
+        case edge_type::DOUBLE:
+            s.put(ev_double);
+            return;
+
+        default:
+            MEDDLY_DCASSERT(false);
+    }
+}
+

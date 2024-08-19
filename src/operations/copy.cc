@@ -26,8 +26,6 @@
 #include "../oper_unary.h"
 #include "../ct_vector.h"
 
-// #define DEBUG_COPY_COMPUTE_ALL
-
 namespace MEDDLY {
     class copy_MT;
 
@@ -67,10 +65,25 @@ class MEDDLY::copy_MT : public unary_operation {
            above this one, or to check if it is a singleton node
            (if the target forest is identity reduced).
 
-           @param  A    Source node
-           @return      Target node, in a different forest
-           */
-        node_handle _compute(node_handle A);
+           @param   A   Source node
+
+           @param   cv  on output: edge value for copy
+           @param   cp  on output: target node for copy
+        */
+        void _compute(node_handle A, edge_value &cv, node_handle &cp);
+
+        void traceout(const edge_value &v, node_handle p) const
+        {
+#ifdef TRACE
+            if (v.isVoid()) {
+                out << p;
+            } else {
+                out << "<";
+                v.show(out);
+                out << ", " << p << ">";
+            }
+#endif
+        }
 
     private:
         template <class RTYPE>
@@ -102,11 +115,17 @@ MEDDLY::copy_MT::copy_MT(forest* arg, forest* res)
     } else {
         checkAllRelations(__FILE__, __LINE__, SET);
     }
-    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+    if (!arg->isMultiTerminal()) {
+        throw error(error::TYPE_MISMATCH);
+    }
 
     ct = new ct_entry_type("copy_mt");
     ct->setFixed(arg);
-    ct->setResult(res);
+    if (res->isMultiTerminal()) {
+        ct->setResult(res);
+    } else {
+        ct->setResult(res->getEdgeType(), res);
+    }
     ct->doneBuilding();
 }
 
@@ -124,7 +143,7 @@ void MEDDLY::copy_MT::compute(const edge_value &av, node_handle ap,
 #endif
     MEDDLY_DCASSERT(av.isVoid());
     cv.set();
-    cp = _compute(ap);
+    _compute(ap, cv, cp);
 
     unsigned aplevel = argF->getNodeLevel(ap);
     if (argF->isIdentityReduced()) {
@@ -134,7 +153,7 @@ void MEDDLY::copy_MT::compute(const edge_value &av, node_handle ap,
     }
 }
 
-MEDDLY::node_handle MEDDLY::copy_MT::_compute(node_handle A)
+void MEDDLY::copy_MT::_compute(node_handle A, edge_value& cv, node_handle &cp)
 {
     //
     // Terminal case
@@ -146,16 +165,59 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(node_handle A)
         bool abool;
         int aint;
         float afloat;
-        switch (resF->getTerminalType()) {
-            case terminal_type::BOOLEAN:    return term2term(abool, A);
-            case terminal_type::INTEGER:    return term2term(aint, A);
-            case terminal_type::REAL:       return term2term(afloat, A);
-            default:
-                MEDDLY_DCASSERT(false);
-                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+        if (resF->isMultiTerminal()) {
+            //
+            // Result is MT
+            //
+            cv.set();
+            switch (resF->getTerminalType()) {
+                case terminal_type::BOOLEAN:
+                    cp = term2term(abool, A);
+                    return;
 
-        } // switch
-    }
+                case terminal_type::INTEGER:
+                    cp = term2term(aint, A);
+                    return;
+
+                case terminal_type::REAL:
+                    cp = term2term(afloat, A);
+                    return;
+
+                default:
+                    MEDDLY_DCASSERT(false);
+                    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            } // switch
+        } else {
+            //
+            // Result is EV
+            //
+            switch (resF->getEdgeType()) {
+                case edge_type::INT:
+                    argF->getValueFromHandle(A, aint);
+                    resF->getEdgeForValue(aint, cv, cp);
+                    return;
+
+                case edge_type::LONG:
+                    argF->getValueFromHandle(A, aint);
+                    resF->getEdgeForValue(long(aint), cv, cp);
+                    return;
+
+                case edge_type::FLOAT:
+                    argF->getValueFromHandle(A, afloat);
+                    resF->getEdgeForValue(afloat, cv, cp);
+                    return;
+
+                case edge_type::DOUBLE:
+                    argF->getValueFromHandle(A, afloat);
+                    resF->getEdgeForValue(double(afloat), cv, cp);
+                    return;
+
+                default:
+                    MEDDLY_DCASSERT(false);
+                    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            } // switch
+        } // MT vs EV
+    } // A is terminal
 
     //
     // Determine level information
@@ -169,21 +231,30 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(node_handle A)
     // Check compute table
     //
     ct_vector key(1);
-    ct_vector res(1);
+    ct_vector res( resF->isMultiTerminal() ? 1 : 2 );
     key[0].setN(A);
     if (ct->findCT(key, res)) {
+        if (resF->isMultiTerminal()) {
+            cv.set();
+            cp = resF->linkNode(res[0].getN());
+        } else {
+            res[0].get(cv);
+            cp = resF->linkNode(res[1].getN());
+        }
 #ifdef TRACE
-        out << "  CT hit " << res[0].getN() << "\n";
-        out << "  at level " << resF->getNodeLevel(res[0].getN()) << "\n";
+        out << "  CT hit ";
+        traceout(cv, cp);
+        out << "\n";
+        out << "  at level " << resF->getNodeLevel(cp) << "\n";
 #endif
-        return resF->linkNode(res[0].getN());
+        return;
     }
 
     //
     // Initialize unpacked nodes
     //
-    unpacked_node* Au = argF->newUnpacked(A, SPARSE_ONLY);
-    unpacked_node* Cu = unpacked_node::newSparse(resF, Alevel, Au->getSize());
+    unpacked_node* Au = argF->newUnpacked(A, FULL_ONLY);
+    unpacked_node* Cu = unpacked_node::newFull(resF, Alevel, Au->getSize());
 #ifdef TRACE
     out << "A: ";
     Au->show(out, true);
@@ -202,10 +273,12 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(node_handle A)
 
     for (unsigned i=0; i<Cu->getSize(); i++) {
         int Audlevel = argF->getNodeLevel(Au->down(i));
-        node_handle d = _compute(Au->down(i));
+        edge_value v;
+        node_handle d;
+        _compute(Au->down(i), v, d);
         node_handle dc;
         if (argF->isIdentityReduced()) {
-            dc = resF->makeIdentitiesTo(d, Audlevel, Cnextlevel, Au->index(i));
+            dc = resF->makeIdentitiesTo(d, Audlevel, Cnextlevel, i);
         } else {
             dc = resF->makeRedundantsTo(d, Audlevel, Cnextlevel);
         }
@@ -218,9 +291,14 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(node_handle A)
 #ifdef DEVELOPMENT_CODE
                 Cu->getLevel(),
 #endif
-                Au->index(i), dc
+                i, dc
         );
-        Cu->setSparse(i, Au->index(i), d);
+        if (resF->isMultiTerminal()) {
+            MEDDLY_DCASSERT(v.isVoid());
+            Cu->setFull(i, d);
+        } else {
+            Cu->setFull(i, v, d);
+        }
     }
 
 #ifdef TRACE
@@ -237,27 +315,31 @@ MEDDLY::node_handle MEDDLY::copy_MT::_compute(node_handle A)
     //
     // Reduce
     //
-    edge_value dummy;
-    node_handle C;
-    resF->createReducedNode(Cu, dummy, C);
-    MEDDLY_DCASSERT(dummy.isVoid());
+    resF->createReducedNode(Cu, cv, cp);
 #ifdef TRACE
-    out << "reduced to " << C << ": ";
-    resF->showNode(out, C, SHOW_DETAILS);
+    out << "reduced to ";
+    traceout(cv, cp);
+    << ": ";
+    resF->showNode(out, cp, SHOW_DETAILS);
     out << "\n";
 #endif
 
     //
     // Save result in CT
     //
-    res[0].setN(C);
+    if (resF->isMultiTerminal()) {
+        MEDDLY_DCASSERT(cv.isVoid());
+        res[0].setN(cp);
+    } else {
+        res[0].set(cv);
+        res[1].setN(cp);
+    }
     ct->addCT(key, res);
 
     //
     // Cleanup
     //
     unpacked_node::Recycle(Au);
-    return C;
 }
 
 
@@ -995,7 +1077,8 @@ MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
 
-    if (arg->isMultiTerminal() && res->isMultiTerminal())
+    // if (arg->isMultiTerminal() && res->isMultiTerminal())
+    if (arg->isMultiTerminal())
     {
         return COPY_cache.add(new copy_MT(arg, res));
     }

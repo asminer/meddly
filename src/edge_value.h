@@ -425,6 +425,11 @@ class MEDDLY::edge_value {
         */
         void write(output &s) const;
 
+        /**
+            Display an edge value for human consumption.
+        */
+        void show(output &s) const;
+
     private:
         union {
             int     ev_int;
