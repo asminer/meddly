@@ -75,7 +75,6 @@ MEDDLY::mdd2index_operation
 {
   MEDDLY_DCASSERT(arg.getForest() == argF);
   MEDDLY_DCASSERT(res.getForest() == resF);
-  MEDDLY_DCASSERT(resF->handleForValue(false) == 0);
   MEDDLY_DCASSERT(argF->handleForValue(true) < 0);
   MEDDLY_DCASSERT(argF->handleForValue(false) == 0);
   node_handle down;

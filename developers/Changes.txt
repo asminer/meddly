@@ -1,5 +1,9 @@
 
 Current goal:
+    * Better centralized omega meanings
+    * Use 0 handle for "normal" omega, non-zeroes for special values
+        (could break lots of things)
+
     * update COPY operation
     * use COPY operation where it makes sense, e.g.,
         terminal cases in cross-forest unions

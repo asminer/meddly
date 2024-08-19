@@ -1155,11 +1155,14 @@ class MEDDLY::forest {
             if (isEVTimes() && (0==constval)) {
                 p = 0;
             } else {
-                terminal t;
-                t.setOmega();
-                p = t.getHandle();
+                p = -1;
             }
         }
+
+        //
+        // TBD:
+        //    getEdgeForInfinity
+        //
 
     // ------------------------------------------------------------
     protected: // methods to set edge info, for derived classes
