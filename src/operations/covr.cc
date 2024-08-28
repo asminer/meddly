@@ -226,8 +226,12 @@ public:
   covrExtractCoverMT(unary_opname* oc, expert_forest* arg, expert_forest* res);
 
   virtual void computeDDEdge(const dd_edge &arg, dd_edge &res,markcmp* cij, bool userFlag);
+  virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
+
   binary_operation* mddUnion;
    void compute_r( node_handle a,node_handle b,RV above,markcmp* _cij, node_handle& c);
+   void compute_r( node_handle a,node_handle b,RV above, node_handle& c);
+
 
 protected:
   virtual void compute_r( node_handle a,int k, node_handle& b){};
@@ -270,6 +274,158 @@ MEDDLY::covrExtractCoverMT::covrExtractCoverMT(unary_opname* oc, expert_forest* 
  mddUnion=getOperation(UNION, er,er,er);
  MEDDLY_DCASSERT(mddUnion);
 }
+void MEDDLY::covrExtractCoverMT::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
+{
+    node_handle bnode = 0;
+    RV above=E;
+    bool debug=false;
+    //////
+    ostream_output meddlyout(std::cout);
+
+    compute_r( arg.getNode(),arg.getNode(),above,  bnode);
+    res.set(bnode);
+    if(debug){
+    res.showGraph(meddlyout);
+    printf("RESULT COVR EXTRACTCOVERED\n" );
+    }
+
+}
+void MEDDLY::covrExtractCoverMT::compute_r( node_handle a,node_handle b,RV above, node_handle& res)
+{
+    bool debug=false;
+    if(debug){
+   ostream_output meddlyout(std::cout);
+   printf("covrExtractCoverMT a %d b %d\n",a,b );
+    }
+   if(a==0||b==0){
+       res=0;
+       return;
+   }
+   if(argF->isTerminalNode(a)&&argF->isTerminalNode(b)){
+       if(debug){
+       printf("terminal %d %d\n",a,b );
+        }
+       if(a==0||b==0) res=0;
+       else if(above==L){
+            long aval;
+            argF->getValueFromHandle(a, aval);
+            long bval;
+            argF->getValueFromHandle(b, bval);
+            res=resF->handleForValue(aval*bval);
+            if(debug){
+            printf("res%d\n",aval*bval );
+            }
+       }else{
+           res=0;
+       }
+       return;
+   }
+   //check the cache
+   int iabove=above;
+   ct_entry_key* Key=findResult(a,b,above,res);
+   if(0==Key){
+       return;
+   }
+
+   const int aLevel=argF->getNodeLevel(a);
+   const int bLevel=argF->getNodeLevel(b);
+   const int rLevel=MAX(ABS(aLevel),ABS(bLevel));
+   if (aLevel<0||bLevel<0){
+       printf("ERROR a %d b %d aLevel %d bLevel %d\n",a,b,aLevel,bLevel );
+   }
+   const unsigned rSize= unsigned(resF->getLevelSize(rLevel));
+   unpacked_node* C=unpacked_node::newFull(resF,rLevel,rSize);
+   for (unsigned j = 0; j < rSize; j++) {
+     C->d_ref(j) = 0;
+   }
+   unpacked_node* A=argF->newUnpacked(a,FULL_ONLY);
+   // A->show(meddlyout,true);
+   // printf("\n a^^^\n" );
+   unpacked_node* B = argF->newUnpacked(b, FULL_ONLY);
+   // B->show(meddlyout,true);
+   // printf("\n b^^^\n" );
+
+   //////////////////////////////
+   for(unsigned i=0; i<rSize; i++){
+       // printf("i %d\n",i );
+       if(rLevel>aLevel){
+           if(debug){
+           printf("INSIDE if\n" );
+            }
+           dd_edge newstatesE(resF), djp(resF);
+           for(unsigned j=0; j<rSize; j++){
+               RV nabove=above;
+               int compareij=-1;
+               if(i<j) compareij=1;
+               else if (i>j) compareij=-1;
+               else compareij=0;
+               // int compareij=cmp->compare(i,j,rLevel);
+               if(i==j);
+               else if(compareij>0){
+                   if(above==L||above==E){nabove=L;}
+                   else nabove=N;
+               }else {nabove=N;}
+               node_handle newstates=0;
+               // printf("rec call if\n" );
+               compute_r(a,B->d(j),nabove, newstates);
+               if(newstates==0){continue;}
+               newstatesE.set(newstates);
+               djp.set(C->d(i));
+               mddUnion->computeTemp(newstatesE, djp, djp);
+               C->set_d(i, djp);
+           }
+       }
+       else{
+           dd_edge newstatesE(resF), djp(resF);
+
+           for(unsigned j=0; j<rSize; j++){
+               if(debug){
+               printf("ELSE a %d b %d i%d j %d rLevel %d rsize %d\n",a,b,i,j,rLevel,rSize );
+                }
+               if(0==B->d(j)){
+                   continue;
+               }
+               RV nabove=above;
+               // int compareij=cmp->compare(i,j,rLevel);
+               int compareij=-1;
+               if(i<j) compareij=1;
+               else if (i>j) compareij=-1;
+               else compareij=0;
+               if(i==j);
+               else if(compareij>0){
+                   if(above==L||above==E){nabove=L;}
+                   else nabove=N;
+               }else {nabove=N;}
+               node_handle newstates=0;
+               // printf("i %d, j %d\n",i,j );
+               // printf("rec call else %d, %d \n",A->d(i),B->d(j) );
+               compute_r(A->d(i),B->d(j),nabove, newstates);
+               if(newstates==0){
+                   if(debug){
+                   printf("ZERO\n" );
+                    }
+                   continue;
+               }
+               if(debug){
+               printf(" NOT ZERO\n" );
+                }
+               newstatesE.set(newstates);
+               djp.set(C->d(i));
+               mddUnion->computeTemp(newstatesE, djp, djp);
+               C->set_d(i, djp);
+           }
+       }
+   }
+
+
+   unpacked_node::recycle(A);
+   unpacked_node::recycle(B);
+   res=resF->createReducedNode(-1,C);
+   saveResult(Key, a,b,above,res);
+}
+
+
+
 void MEDDLY::covrExtractCoverMT::computeDDEdge(const dd_edge &arg, dd_edge &res,markcmp* _cij, bool userFlag)
 {
 
