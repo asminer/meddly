@@ -121,8 +121,61 @@ class MEDDLY::MXD_levels {
 };
 
 
+// ******************************************************************
+// *                                                                *
+// *                       EdgeOp_plus  class                       *
+// *                                                                *
+// ******************************************************************
 
+namespace MEDDLY {
+    /**
+        Small template class for EV+ behavior on edges.
+    */
+    template <class TYPE>
+    class EdgeOp_plus {
+        public:
+            /// Clear an edge value.
+            static inline void clear(edge_value &v)
+            {
+                v.set(TYPE(0));
+            }
+            /// Accumulate an edge value: a += b
+            static inline void accumulate(edge_value &a, const edge_value &b)
+            {
+                TYPE bv;
+                b.get(bv);
+                a.add(bv);
+            }
+    };
+};
 
+// ******************************************************************
+// *                                                                *
+// *                       EdgeOp_times class                       *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    /**
+      Small template class for EV+ behavior on edges.
+    */
+    template <class TYPE>
+    class EdgeOp_times {
+        public:
+            /// Clear an edge value.
+            static inline void clear(edge_value &v)
+            {
+                v.set(TYPE(1));
+            }
+            /// Accumulate an edge value: a *= b
+            static inline void accumulate(edge_value &a, const edge_value &b)
+            {
+                TYPE bv;
+                b.get(bv);
+                a.multiply(bv);
+            }
+    };
+};
 
 // ******************************************************************
 // *                                                                *
