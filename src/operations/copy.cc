@@ -28,6 +28,7 @@
 
 namespace MEDDLY {
     class copy_MT;
+    class copy_EV_fast;
 
     unary_list COPY_cache;
 };
@@ -332,6 +333,243 @@ void MEDDLY::copy_MT::_compute(node_handle A, edge_value& cv, node_handle &cp)
 }
 
 
+// ******************************************************************
+// *                                                                *
+// *                       copy_EV_fast class                       *
+// *                                                                *
+// ******************************************************************
+
+/// Fast copy operation for EV: no 'push down' required.
+/// Requires the same operation and no information loss.
+///
+class MEDDLY::copy_EV_fast : public unary_operation {
+    public:
+        copy_EV_fast(forest* arg, forest* res);
+        virtual ~copy_EV_fast();
+
+        virtual void compute(const edge_value &av, node_handle ap,
+                int L,
+                edge_value &cv, node_handle &cp);
+
+    protected:
+
+        /*
+           Recursive copy.
+
+           This will correctly build a copy at the same level as
+           node A, but in the result forest.
+           It is the caller's responsibility to add any nodes
+           above this one, or to check if it is a singleton node
+           (if the target forest is identity reduced).
+
+           @param   A   Source node
+
+           @param   cv  on output: edge value for copy
+           @param   cp  on output: target node for copy
+        */
+        void _compute(node_handle A, node_handle &cp);
+
+        void traceout(const edge_value &v, node_handle p) const
+        {
+#ifdef TRACE
+            if (v.isVoid()) {
+                out << p;
+            } else {
+                out << "<";
+                v.show(out);
+                out << ", " << p << ">";
+            }
+#endif
+        }
+
+    private:
+        ct_entry_type* ct;
+
+#ifdef TRACE
+        ostream_output out;
+#endif
+};
+
+// ******************************************************************
+
+MEDDLY::copy_EV_fast::copy_EV_fast(forest* arg, forest* res)
+    : unary_operation(arg, res)
+#ifdef TRACE
+      , out(std::cout)
+#endif
+{
+    checkDomains(__FILE__, __LINE__);
+    if (res->isForRelations()) {
+        checkAllRelations(__FILE__, __LINE__, RELATION);
+    } else {
+        checkAllRelations(__FILE__, __LINE__, SET);
+    }
+    if (arg->isMultiTerminal() || res->isMultiTerminal()) {
+        throw error(error::TYPE_MISMATCH);
+    }
+
+    ct = new ct_entry_type("copy_ev_fast");
+    ct->setFixed(arg);
+    ct->setResult(res);
+    ct->doneBuilding();
+}
+
+MEDDLY::copy_EV_fast::~copy_EV_fast()
+{
+    ct->markForDestroy();
+}
+
+void MEDDLY::copy_EV_fast::compute(const edge_value &av, node_handle ap,
+                int L,
+                edge_value &cv, node_handle &cp)
+{
+#ifdef TRACE
+    out.indentation(0);
+#endif
+    MEDDLY_DCASSERT(!av.isVoid());
+    _compute(ap, cp);
+
+    unsigned aplevel = argF->getNodeLevel(ap);
+    if (argF->isIdentityReduced()) {
+        cp = resF->makeIdentitiesTo(cp, aplevel, L, -1);
+    } else {
+        cp = resF->makeRedundantsTo(cp, aplevel, L);
+    }
+
+    cv = edge_value(resF->getEdgeType(), av);
+}
+
+void MEDDLY::copy_EV_fast::_compute(node_handle A, node_handle &cp)
+{
+    //
+    // Terminal case
+    //
+    if (argF->isTerminalNode(A)) {
+        //
+        // TBD: will we ever need to translate terminal nodes?
+        //
+        cp = A;
+        return;
+    } // A is terminal
+
+    //
+    // Determine level information
+    //
+    const int Alevel = argF->getNodeLevel(A);
+#ifdef TRACE
+    out << "copy_EV_fast::_compute(" << A << ")\n";
+#endif
+
+    //
+    // Check compute table
+    //
+    ct_vector key(1);
+    ct_vector res(1);
+    key[0].setN(A);
+    if (ct->findCT(key, res)) {
+        cp = resF->linkNode(res[0].getN());
+#ifdef TRACE
+        out << "  CT hit ";
+        traceout(cv, cp);
+        out << "\n";
+        out << "  at level " << resF->getNodeLevel(cp) << "\n";
+#endif
+        return;
+    }
+
+    //
+    // Initialize unpacked nodes
+    //
+    unpacked_node* Au = argF->newUnpacked(A, SPARSE_ONLY);
+    unpacked_node* Cu = unpacked_node::newSparse(resF, Alevel, Au->getSize());
+#ifdef TRACE
+    out << "A: ";
+    Au->show(out, true);
+#endif
+
+    //
+    // Build result node
+    //
+#ifdef TRACE
+    out.indent_more();
+    out.put('\n');
+#endif
+    const int Cnextlevel = resF->isForRelations()
+            ? MXD_levels::downLevel(Alevel)
+            : MDD_levels::downLevel(Alevel);
+
+    for (unsigned z=0; z<Cu->getSize(); z++) {
+        int Audlevel = argF->getNodeLevel(Au->down(z));
+        node_handle d;
+        _compute(Au->down(z), d);
+        node_handle dc;
+        if (argF->isIdentityReduced()) {
+            dc = resF->makeIdentitiesTo(d, Audlevel, Cnextlevel, Au->index(z));
+        } else {
+            dc = resF->makeRedundantsTo(d, Audlevel, Cnextlevel);
+        }
+#ifdef TRACE
+        if (dc != d) {
+            out << "built chain from " << d << " to " << dc << "\n";
+        }
+#endif
+        d = resF->redirectSingleton(
+#ifdef DEVELOPMENT_CODE
+                Cu->getLevel(),
+#endif
+                Au->index(z), dc
+        );
+        edge_value v(resF->getEdgeType(), Au->edgeval(z));
+        Cu->setSparse(z, Au->index(z), v, d);
+    }
+
+#ifdef TRACE
+    out.indent_less();
+    out.put('\n');
+    out << "copy_EV_fast::_compute(" << A << ") done\n";
+    out << "A: ";
+    Au->show(out, true);
+    out << "\nC: ";
+    Cu->show(out, true);
+    out << "\n";
+#endif
+
+    //
+    // Reduce
+    //
+    edge_value cv;
+    resF->createReducedNode(Cu, cv, cp);
+#ifdef TRACE
+    out << "reduced to ";
+    traceout(cv, cp);
+    << ": ";
+    resF->showNode(out, cp, SHOW_DETAILS);
+    out << "\n";
+#endif
+    MEDDLY_DCASSERT(cv == resF->getNoOpEdge());
+
+    //
+    // Save result in CT
+    //
+    res[0].setN(cp);
+    ct->addCT(key, res);
+
+    //
+    // Cleanup
+    //
+    unpacked_node::Recycle(Au);
+}
+
+
+// ******************************************************************
+// ******************************************************************
+// ******************************************************************
+// ******************************************************************
+// *                                                                *
+// *                           OLD  STUFF                           *
+// *                                                                *
+// ******************************************************************
+
 
 // ******************************************************************
 // *                                                                *
@@ -535,119 +773,6 @@ MEDDLY::node_handle  MEDDLY::copy_EV2MT<TYPE,OP>
   // Add to compute table
   if (Key) addToCache(Key, ev, a, b);
   return b;
-}
-
-// ******************************************************************
-// *                                                                *
-// *                     copy_EV2EV_fast  class                     *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-
-  // 1-1 mapping between input edges and output edges
-  template <typename INTYPE, typename OUTTYPE>
-  class copy_EV2EV_fast : public unary_operation {
-    public:
-      copy_EV2EV_fast(forest* arg, forest* res)
-        : unary_operation(COPY_cache, 1, arg, res)
-      {
-        // entry[0]: EV node
-        // entry[1]: EV node
-        ct_entry_type* et = new ct_entry_type(COPY_cache.getName(), "N:N");
-        et->setForestForSlot(0, arg);
-        et->setForestForSlot(2, res);
-        registerEntryType(0, et);
-        buildCTs();
-      }
-
-      virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag) {
-        INTYPE av;
-        node_handle bn;
-        arg.getEdgeValue(av);
-        bn = computeSkip(-1, arg.getNode());
-        OUTTYPE bv = av;
-        res.set(bn, bv);
-      }
-
-      node_handle computeSkip(int in, node_handle a);
-
-      inline ct_entry_key*
-      findResult(node_handle a, node_handle &b)
-      {
-        ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-        MEDDLY_DCASSERT(CTsrch);
-        CTsrch->writeN(a);
-        CT0->find(CTsrch, CTresult[0]);
-        if (!CTresult[0]) return CTsrch;
-        b = resF->linkNode(CTresult[0].readN());
-        CT0->recycle(CTsrch);
-        return 0;
-      }
-      inline node_handle saveResult(ct_entry_key* Key,
-        node_handle a, node_handle b)
-      {
-        CTresult[0].reset();
-        CTresult[0].writeN(b);
-        CT0->addEntry(Key, CTresult[0]);
-        return b;
-      }
-
-  };
-
-};  // namespace MEDDLY
-
-
-template <typename INTYPE, typename OUTTYPE>
-MEDDLY::node_handle
-MEDDLY::copy_EV2EV_fast<INTYPE,OUTTYPE>::computeSkip(int in, node_handle a)
-{
-  // Check terminals
-  if (argF->isTerminalNode(a)) {
-      terminal t(a != 0);
-      return t.getHandle();
-  }
-
-  // Check compute table
-  node_handle b;
-  ct_entry_key* Key = findResult(a, b);
-  if (0==Key) return b;
-
-  // Initialize node reader
-  unpacked_node* A = argF->newUnpacked(a, SPARSE_ONLY);
-
-  // Initialize node builder
-  const int level = argF->getNodeLevel(a);
-  unpacked_node* nb = unpacked_node::newSparse(resF, level, A->getSize());
-
-  // recurse
-  for (unsigned z=0; z<A->getSize(); z++) {
-    INTYPE av;
-    A->edgeval(z).get(av);
-    OUTTYPE bv = av;
-    nb->setSparse(z, A->index(z), edge_value(bv),
-        computeSkip(int(A->index(z)), A->down(z))
-    );
-
-    //nb->i_ref(z) = A->index(z);
-    //nb->d_ref(z) = computeSkip(int(A->index(z)), A->down(z));
-    //nb->setEdge(z, bv);
-  }
-
-  // Cleanup
-  unpacked_node::Recycle(A);
-
-  // Reduce
-  edge_value ev;
-  resF->createReducedNode(nb, ev, b, in);
-#ifdef DEVELOPMENT_CODE
-  OUTTYPE bv;
-  ev.get(bv);
-  // bv should be the redundant/identity value
-#endif
-
-  // Add to compute table
-  return saveResult(Key, a, b);
 }
 
 
@@ -915,49 +1040,27 @@ MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
 
 
     //
-    // "fast" EV to EV copies (same RR, same operation, no info loss)
+    // "fast" EV to EV copies (same operation, no info loss)
     //
-    if (arg->getReductionRule() == res->getReductionRule()) {
-
-        if ( ((arg->isEVPlus() || arg->isIndexSet()) && res->isEVPlus())
+    if ( ((arg->isEVPlus() || arg->isIndexSet()) && res->isEVPlus())
             || (arg->isEVTimes() && res->isEVTimes()) )
-        {
+    {
+        switch (arg->getRangeType()) {
+            case range_type::INTEGER:
+                return COPY_cache.add(
+                        new copy_EV_fast(arg, res)
+                        );
 
-            switch (arg->getRangeType()) {
-                case range_type::INTEGER:
-                    switch (res->getRangeType()) {
-                        case range_type::INTEGER:
-                            return COPY_cache.add(
-                                new copy_EV2EV_fast<long,long>(arg, res)
+            case range_type::REAL:
+                if (res->getRangeType() == range_type::REAL) {
+                    return COPY_cache.add(
+                            new copy_EV_fast(arg, res)
                             );
-                        case range_type::REAL:
-                            return COPY_cache.add(
-                                new copy_EV2EV_fast<long,float>(arg, res)
-                            );
-                        default:
-                            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-                    };
-                    break;    // in case anything falls through
+                }
 
-                case range_type::REAL:
-                    switch (res->getRangeType()) {
-                        case range_type::INTEGER:
-                            break;
-                            // not safe to go from real -> integer c way
-                        case range_type::REAL:
-                            return COPY_cache.add(
-                                new copy_EV2EV_fast<float,float>(arg, res)
-                            );
-                        default:
-                            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-                    };
-                    break;    // things may fall through
-
-                default:
-                    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            };
-        }
-
+            default:
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+        }; // switch
     }
 
     //

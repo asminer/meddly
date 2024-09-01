@@ -61,3 +61,5 @@ to make it easier to implement operations.
 * Boolean (MDD or MXD) Intersection, Union, Difference, and Complement operations
   have been rewritten using the new compute table and operation interfaces.
 
+* Copy operations have been rewritten using the new compute table
+  and operation interfaces.
