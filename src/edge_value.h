@@ -178,6 +178,30 @@ class MEDDLY::edge_value {
                     throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
             }
         }
+        template <class T>
+        inline void copyInto(T &val) const {
+            switch (mytype) {
+                case edge_type::INT:
+                    val = T(ev_int);
+                    return;
+
+                case edge_type::LONG:
+                    val = T(ev_long);
+                    return;
+
+                case edge_type::FLOAT:
+                    val = T(ev_float);
+                    return;
+
+                case edge_type::DOUBLE:
+                    val = T(ev_double);
+                    return;
+
+                default:
+                    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+            }
+        }
+
         //
         // Setters
         //

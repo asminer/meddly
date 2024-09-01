@@ -139,12 +139,14 @@ namespace MEDDLY {
             {
                 v.set(TYPE(0));
             }
-            /// Accumulate an edge value: a += b
-            static inline void accumulate(edge_value &a, const edge_value &b)
+            /// Accumulate an edge value
+            static inline edge_value accumulate(const edge_value &a,
+                    const edge_value &b)
             {
-                TYPE bv;
+                TYPE av, bv;
+                a.get(av);
                 b.get(bv);
-                a.add(bv);
+                return edge_value(av+bv);
             }
     };
 };
@@ -168,11 +170,13 @@ namespace MEDDLY {
                 v.set(TYPE(1));
             }
             /// Accumulate an edge value: a *= b
-            static inline void accumulate(edge_value &a, const edge_value &b)
+            static inline edge_value accumulate(const edge_value &a,
+                    const edge_value &b)
             {
-                TYPE bv;
+                TYPE av, bv;
+                a.get(av);
                 b.get(bv);
-                a.multiply(bv);
+                return edge_value(av*bv);
             }
     };
 };
@@ -1206,9 +1210,9 @@ class MEDDLY::forest {
             v.setTempl(the_edge_type, constval);
 
             if (isEVTimes() && (0==constval)) {
-                p = 0;
+                p = OMEGA_ZERO;
             } else {
-                p = -1;
+                p = OMEGA_NORMAL;
             }
         }
 
