@@ -63,6 +63,9 @@ class MEDDLY::edge_value {
         /// Initializes to DOUBLE
         edge_value(double v);
 
+        /// Conversion
+        edge_value(edge_type newtype, const edge_value &v);
+
         //
         // Getters for the type
         //

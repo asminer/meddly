@@ -54,6 +54,37 @@ MEDDLY::edge_value::edge_value(double v)
     set(v);
 }
 
+MEDDLY::edge_value::edge_value(edge_type newtype, const edge_value &v)
+{
+    switch (v.getType()) {
+        case edge_type::VOID:
+            if (edge_type::VOID == newtype) {
+                set();
+                return;
+            }
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+
+        case edge_type::INT:
+            setTempl(newtype, v.getInt());
+            return;
+
+        case edge_type::LONG:
+            setTempl(newtype, v.getLong());
+            return;
+
+        case edge_type::FLOAT:
+            setTempl(newtype, v.getFloat());
+            return;
+
+        case edge_type::DOUBLE:
+            setTempl(newtype, v.getDouble());
+            return;
+
+        default:
+            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    }
+}
+
 
 void MEDDLY::edge_value::read(input &s)
 {
