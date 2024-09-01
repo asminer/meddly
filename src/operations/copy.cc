@@ -27,6 +27,7 @@
 #include "../ct_vector.h"
 
 namespace MEDDLY {
+    class copy_inforest;
     class copy_MT;
     class copy_EV_fast;
 
@@ -38,6 +39,46 @@ namespace MEDDLY {
 #ifdef TRACE
 #include "../operators.h"
 #endif
+
+// ******************************************************************
+// *                                                                *
+// *                      copy_inforest  class                      *
+// *                                                                *
+// ******************************************************************
+
+/// Copy within a forest.
+/// Provided for uniformity and because users mignt not
+/// know any better.
+///
+class MEDDLY::copy_inforest : public unary_operation {
+    public:
+        copy_inforest(forest* f);
+        virtual ~copy_inforest();
+
+        virtual void compute(const edge_value &av, node_handle ap,
+                int L,
+                edge_value &cv, node_handle &cp);
+};
+
+// ******************************************************************
+
+MEDDLY::copy_inforest::copy_inforest(forest* f)
+    : unary_operation(f, f)
+{
+}
+
+MEDDLY::copy_inforest::~copy_inforest()
+{
+}
+
+void MEDDLY::copy_inforest::compute(const edge_value &av, node_handle ap,
+                int L,
+                edge_value &cv, node_handle &cp)
+{
+    cv = av;
+    ap = resF->linkNode(cp);
+}
+
 
 // ******************************************************************
 // *                                                                *
@@ -914,6 +955,9 @@ MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
     //
     // Super fast case: same forests
     //
+    if (arg == res) {
+        return COPY_cache.add(new copy_inforest(res));
+    }
 
     //
     // Source is MT?
