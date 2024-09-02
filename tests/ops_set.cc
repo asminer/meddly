@@ -39,7 +39,7 @@ using namespace MEDDLY;
 
 // #define DEBUG_MXDOPS
 
-// #define TEST_SETS
+#define TEST_SETS
 #define TEST_RELATIONS
 
 double Random(long newseed=0)

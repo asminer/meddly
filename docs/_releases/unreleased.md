@@ -45,6 +45,10 @@ to make it easier to implement operations.
   should be used when converting between reduction types (typically
   in operations).
 
+* New method ```forest::redirectSingleton``` should be used
+  to eliminate illegal edges to singleton nodes in identity reduced forests
+  (works for all reduction types).
+
 ### Implementation
 
 * New unified compute table implementation in file ```ct_styles.cc```,

@@ -210,7 +210,6 @@ class MEDDLY::intmin : public MEDDLY::intrange {
         {
             result.integer() = MIN(result.integer(), val.getInteger());
         }
-
 };
 
 class MEDDLY::intmax : public MEDDLY::intrange {
@@ -258,7 +257,6 @@ class MEDDLY::realmin : public MEDDLY::realrange {
         {
             result.real() = MIN(result.real(), val.getReal());
         }
-
 };
 
 class MEDDLY::realmax : public MEDDLY::realrange {

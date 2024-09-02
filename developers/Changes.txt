@@ -4,7 +4,6 @@ Current goal:
     * Use 0 handle for "normal" omega, non-zeroes for special values
         (could break lots of things)
 
-    * update COPY operation
     * use COPY operation where it makes sense, e.g.,
         terminal cases in cross-forest unions
 
@@ -66,9 +65,13 @@ Completely reimplemented operations
 ======================================================================
 
 cardinality.cc      YES
-complement.cc       YES*
-difference.cc       YES*
-maxmin_range.cc     YES*
+copy                YES
+
+complement.cc       yes*
+difference.cc       yes*
+intersection.cc     yes*
+maxmin_range.cc     YES
+union.cc            yes*
 
 ======================================================================
 Operations that need updating
@@ -102,13 +105,6 @@ constrained.cc
         NO      constrained_forwd_dfs_mt
         NO      constrained_bckwd_dfs_mt
         NO      constrained_bckwd_dfs_evplus
-
-copy.cc
-        NO      copy_MT_tmpl
-        NO      copy_MT2EV
-        NO      copy_EV2MT
-        NO      copy_EV2EV_fast
-        NO      copy_EV2EV_slow
 
 cross.cc
         NO      cross_bool
