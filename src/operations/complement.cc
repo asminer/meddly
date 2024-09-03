@@ -32,7 +32,7 @@ namespace MEDDLY {
     unary_list COMPL_cache;
 };
 
-// #define NEW_COMPL
+#define NEW_COMPL
 
 // #define TRACE
 
@@ -72,16 +72,18 @@ class MEDDLY::compl_mt : public unary_operation {
                 @param  p   Diagonal pointer
                 @param  K   Start the pattern above this level
                 @param  L   Stop the pattern at this level
+                @param  in  Incoming edge index; needed only if L is primed
         */
-        node_handle _identity_complement(node_handle p, int K, int L);
+        node_handle _identity_complement(node_handle p, int K, int L,
+                unsigned in);
 
-        inline node_handle identity_complement(node_handle p, int K, int L)
+        inline node_handle identity_complement(node_handle p, int K, int L,
+                unsigned in)
         {
             if (0==L) return p;
             if (K==L) return p;
-            MEDDLY_DCASSERT(L>=K);
-            MEDDLY_DCASSERT(ABS(L)>=ABS(K));
-            return _identity_complement(p, K, L);
+            MEDDLY_DCASSERT(MXD_levels::topLevel(L, K) == L);
+            return _identity_complement(p, K, L, in);
         }
 
     private:
@@ -127,9 +129,11 @@ void MEDDLY::compl_mt::compute(const edge_value &av, node_handle ap,
     cv.set();
     _compute(ap, cp);
 
+    MEDDLY_DCASSERT(L>=0);
+
     int aplevel = argF->getNodeLevel(ap);
     if (argF->isIdentityReduced()) {
-        cp = identity_complement(cp, aplevel, L);
+        cp = identity_complement(cp, aplevel, L, 0);
     } else {
         cp = resF->makeRedundantsTo(cp, aplevel, L);
     }
@@ -197,7 +201,7 @@ void MEDDLY::compl_mt::_compute(node_handle A, node_handle &C)
         _compute(Au->down(i), d);
         node_handle dc;
         if (argF->isIdentityReduced()) {
-            dc = identity_complement(d, Audlevel, Cnextlevel);
+            dc = identity_complement(d, Audlevel, Cnextlevel, i);
         } else {
             dc = resF->makeRedundantsTo(d, Audlevel, Cnextlevel);
         }
@@ -250,30 +254,34 @@ void MEDDLY::compl_mt::_compute(node_handle A, node_handle &C)
 }
 
 MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
-    int K, int L)
+    int K, int L, unsigned in)
 {
-    //
-    // TBD: need to check for singleton edges at the bottom,
-    // but only if K<0
-    //
-    // look at forest::makeIdentitiesTo
-    //
-    // maybe add this to forest? to build generic patterns
-    //  [ p q q q ]
-    //  [ q p q q ]
-    //  [ q q p q ]
-    //  [ q q q p ]
-    //
-    MEDDLY_DCASSERT(L>0);
-    MEDDLY_DCASSERT(K>=0);
+    MEDDLY_DCASSERT(L!=0);
     unpacked_node* Uun;
     unpacked_node* Upr;
-    edge_value ev;
+    edge_value voidedge;
+    voidedge.set();
+
+    if (K<0) {
+        //
+        // Add a redundant layer as needed;
+        // this also handles the only case when we need to check
+        // if p is a singleton node :)
+        //
+        p = resF->makeRedundantsTo(p, K, MXD_levels::upLevel(K));
+        K = MXD_levels::upLevel(K);
+    }
+
+    MEDDLY_DCASSERT(K>=0);
+    const int Lstop = (L<0) ? MXD_levels::downLevel(L) : L;
 
     terminal ONE(true);
     node_handle chain_to_one = resF->makeRedundantsTo(ONE.getHandle(), 0, K);
 
-    for (K++; K<=L; K++) {
+    //
+    // Proceed in unprimed, primed pairs
+    //
+    for (K++; K<=Lstop; K++) {
         Uun = unpacked_node::newFull(resF, K, resF->getLevelSize(K));
 
         for (unsigned i=0; i<Uun->getSize(); i++) {
@@ -282,17 +290,35 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
                 Upr->setFull(j, resF->linkNode(chain_to_one));
             }
             Upr->setFull(i, (i ? resF->linkNode(p) : p));
+            resF->unlinkNode(chain_to_one);
             node_handle h;
-            resF->createReducedNode(Upr, ev, h);
-            MEDDLY_DCASSERT(ev.isVoid());
+            resF->createReducedNode(Upr, voidedge, h);
+            MEDDLY_DCASSERT(voidedge.isVoid());
             Uun->setFull(i, h);
         }
 
-        resF->createReducedNode(Uun, ev, p);
-        MEDDLY_DCASSERT(ev.isVoid());
+        resF->createReducedNode(Uun, voidedge, p);
+        MEDDLY_DCASSERT(voidedge.isVoid());
 
+        resF->unlinkNode(chain_to_one);
         chain_to_one = resF->makeRedundantsTo(chain_to_one, K-1, K);
     } // for k
+
+    //
+    // Add top primed node, if L is negative
+    //
+    if (L<0) {
+        MEDDLY_DCASSERT(-K == L);
+        Upr = unpacked_node::newFull(resF, -K, resF->getLevelSize(-K));
+        for (unsigned j=0; j<Upr->getSize(); j++) {
+            Upr->setFull(j, resF->linkNode(chain_to_one));
+        }
+        Upr->setFull(in, p);
+        resF->unlinkNode(chain_to_one);
+        resF->createReducedNode(Upr, voidedge, p);
+        MEDDLY_DCASSERT(voidedge.isVoid());
+    }
+
     resF->unlinkNode(chain_to_one);
     return p;
 }
