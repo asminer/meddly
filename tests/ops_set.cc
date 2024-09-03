@@ -457,7 +457,7 @@ void compare_sets(const std::vector <bool> &Aset,
     std::vector <bool> cAset(POTENTIAL);
 
     dd_edge Add(f1), Bdd(f2), AiBdd(fres), AuBdd(fres), AmBdd(fres),
-                cABdd(fres);
+                cABdd(fres), ccABdd(fres);
 
     set_intersection(Aset, Bset, AiBset);
     set_union(Aset, Bset, AuBset);
@@ -470,18 +470,22 @@ void compare_sets(const std::vector <bool> &Aset,
     set2mdd(AuBset, fres, AuBdd);
     set2mdd(AmBset, fres, AmBdd);
     set2mdd(cAset, fres, cABdd);
+    set2mdd(Aset, fres, ccABdd);
 
-    dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres), cAsym(fres);
+    dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres),
+            cAsym(fres), ccAsym(fres);
 
     apply(INTERSECTION, Add, Bdd, AiBsym);
     apply(UNION, Add, Bdd, AuBsym);
     apply(DIFFERENCE, Add, Bdd, AmBsym);
     apply(COMPLEMENT, Add, cAsym);
+    apply(COMPLEMENT, cAsym, ccAsym);
 
     checkEqual("intersection", AiBsym, AiBdd, AiBset);
     checkEqual("union", AuBsym, AuBdd, AuBset);
     checkEqual("difference", AmBsym, AmBdd, AmBset);
     checkEqual("complement", cAsym, cABdd, cAset);
+    checkEqual("complement^2", ccAsym, ccABdd, Aset);
 }
 
 void compare_rels(const std::vector <bool> &Aset,
@@ -493,7 +497,7 @@ void compare_rels(const std::vector <bool> &Aset,
     std::vector <bool> cAset(POTENTIAL);
 
     dd_edge Add(f1), Bdd(f2), AiBdd(fres), AuBdd(fres), AmBdd(fres),
-                cABdd(fres);
+                cABdd(fres), ccABdd(fres);
 
     set_intersection(Aset, Bset, AiBset);
     set_union(Aset, Bset, AuBset);
@@ -506,8 +510,10 @@ void compare_rels(const std::vector <bool> &Aset,
     set2mxd(AuBset, fres, AuBdd);
     set2mxd(AmBset, fres, AmBdd);
     set2mxd(cAset, fres, cABdd);
+    set2mxd(Aset, fres, ccABdd);
 
-    dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres), cAsym(fres);
+    dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres),
+            cAsym(fres), ccAsym(fres);
 
 #ifdef DEBUG_MXDOPS
     ostream_output out(std::cout);
@@ -532,11 +538,13 @@ void compare_rels(const std::vector <bool> &Aset,
     apply(UNION, Add, Bdd, AuBsym);
     apply(DIFFERENCE, Add, Bdd, AmBsym);
     apply(COMPLEMENT, Add, cAsym);
+    apply(COMPLEMENT, cAsym, ccAsym);
 
     checkEqual("intersection", AiBsym, AiBdd, AiBset);
     checkEqual("union", AuBsym, AuBdd, AuBset);
     checkEqual("difference", AmBsym, AmBdd, AmBset);
     checkEqual("complement", cAsym, cABdd, cAset);
+    checkEqual("complement^2", ccAsym, ccABdd, Aset);
 }
 
 
