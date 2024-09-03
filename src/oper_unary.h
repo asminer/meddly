@@ -86,7 +86,16 @@ class MEDDLY::unary_operation : public operation {
                 throw error(error::DOMAIN_MISMATCH, file, line);
             }
         }
-        /// Make sure the arguments set/relation status matches
+        /// Make sure the arguments set/relation status match each other
+        inline void checkAllRelations(const char* file, unsigned line) const
+        {
+            MEDDLY_DCASSERT(argF);
+            if  (argF->isForRelations() != resF->isForRelations())
+            {
+                throw error(error::TYPE_MISMATCH, file, line);
+            }
+        }
+        /// Make sure the arguments set/relation status matches a
         inline void checkAllRelations(const char* file, unsigned line,
                 set_or_rel a) const
         {

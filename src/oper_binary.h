@@ -83,6 +83,17 @@ class MEDDLY::binary_operation : public operation {
                 throw error(error::DOMAIN_MISMATCH, file, line);
             }
         }
+        /// Make sure the arguments set/relation status match each other
+        inline void checkAllRelations(const char* file, unsigned line) const
+        {
+            if  (
+                    (arg1F->isForRelations() != resF->isForRelations())  ||
+                    (arg2F->isForRelations() != resF->isForRelations())
+                )
+            {
+                throw error(error::TYPE_MISMATCH, file, line);
+            }
+        }
         /// Make sure the arguments set/relation status matches
         inline void checkAllRelations(const char* file, unsigned line,
                 set_or_rel a) const

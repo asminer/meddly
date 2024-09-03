@@ -146,11 +146,7 @@ MEDDLY::copy_MT::copy_MT(forest* arg, forest* res)
 #endif
 {
     checkDomains(__FILE__, __LINE__);
-    if (res->isForRelations()) {
-        checkAllRelations(__FILE__, __LINE__, RELATION);
-    } else {
-        checkAllRelations(__FILE__, __LINE__, SET);
-    }
+    checkAllRelations(__FILE__, __LINE__);
     if (!arg->isMultiTerminal()) {
         throw error(error::TYPE_MISMATCH);
     }
@@ -181,7 +177,7 @@ void MEDDLY::copy_MT::compute(const edge_value &av, node_handle ap,
     cv.set();
     _compute(ap, cv, cp);
 
-    unsigned aplevel = argF->getNodeLevel(ap);
+    int aplevel = argF->getNodeLevel(ap);
     if (argF->isIdentityReduced()) {
         cp = resF->makeIdentitiesTo(cp, aplevel, L, -1);
     } else {
@@ -253,7 +249,6 @@ void MEDDLY::copy_MT::_compute(node_handle A, edge_value& cv, node_handle &cp)
     //
     // Determine level information
     //
-    const int Alevel = argF->getNodeLevel(A);
 #ifdef TRACE
     out << "copy_MT::_compute(" << A << ")\n";
 #endif
@@ -285,6 +280,7 @@ void MEDDLY::copy_MT::_compute(node_handle A, edge_value& cv, node_handle &cp)
     // Initialize unpacked nodes
     //
     unpacked_node* Au = argF->newUnpacked(A, FULL_ONLY);
+    const int Alevel = argF->getNodeLevel(A);
     unpacked_node* Cu = unpacked_node::newFull(resF, Alevel, Au->getSize());
 #ifdef TRACE
     out << "A: ";
@@ -440,11 +436,7 @@ MEDDLY::copy_EV_fast::copy_EV_fast(forest* arg, forest* res)
 #endif
 {
     checkDomains(__FILE__, __LINE__);
-    if (res->isForRelations()) {
-        checkAllRelations(__FILE__, __LINE__, RELATION);
-    } else {
-        checkAllRelations(__FILE__, __LINE__, SET);
-    }
+    checkAllRelations(__FILE__, __LINE__);
     if (arg->isMultiTerminal() || res->isMultiTerminal()) {
         throw error(error::TYPE_MISMATCH);
     }
@@ -470,7 +462,7 @@ void MEDDLY::copy_EV_fast::compute(const edge_value &av, node_handle ap,
     MEDDLY_DCASSERT(!av.isVoid());
     _compute(ap, cp);
 
-    unsigned aplevel = argF->getNodeLevel(ap);
+    int aplevel = argF->getNodeLevel(ap);
     if (argF->isIdentityReduced()) {
         cp = resF->makeIdentitiesTo(cp, aplevel, L, -1);
     } else {
@@ -496,7 +488,6 @@ void MEDDLY::copy_EV_fast::_compute(node_handle A, node_handle &cp)
     //
     // Determine level information
     //
-    const int Alevel = argF->getNodeLevel(A);
 #ifdef TRACE
     out << "copy_EV_fast::_compute(" << A << ")\n";
 #endif
@@ -522,6 +513,7 @@ void MEDDLY::copy_EV_fast::_compute(node_handle A, node_handle &cp)
     // Initialize unpacked nodes
     //
     unpacked_node* Au = argF->newUnpacked(A, SPARSE_ONLY);
+    const int Alevel = argF->getNodeLevel(A);
     unpacked_node* Cu = unpacked_node::newSparse(resF, Alevel, Au->getSize());
 #ifdef TRACE
     out << "A: ";
@@ -677,11 +669,7 @@ MEDDLY::copy_EV<EdgeOp>::copy_EV(forest* arg, forest* res)
 #endif
 {
     checkDomains(__FILE__, __LINE__);
-    if (res->isForRelations()) {
-        checkAllRelations(__FILE__, __LINE__, RELATION);
-    } else {
-        checkAllRelations(__FILE__, __LINE__, SET);
-    }
+    checkAllRelations(__FILE__, __LINE__);
     if (arg->isMultiTerminal()) {
         throw error(error::TYPE_MISMATCH);
     }
@@ -712,7 +700,7 @@ void MEDDLY::copy_EV<EdgeOp>::compute(const edge_value &av, node_handle ap,
 #endif
     _compute(av, ap, cv, cp);
 
-    unsigned aplevel = argF->getNodeLevel(ap);
+    int aplevel = argF->getNodeLevel(ap);
     if (argF->isIdentityReduced()) {
         cp = resF->makeIdentitiesTo(cp, aplevel, L, -1);
     } else {
@@ -803,7 +791,6 @@ void MEDDLY::copy_EV<EdgeOp>::_compute(edge_value av, node_handle ap,
     //
     // Determine level information
     //
-    const int Alevel = argF->getNodeLevel(ap);
 #ifdef TRACE
     out << "copy_EV::_compute(";
     traceout(av, ap);
@@ -839,6 +826,7 @@ void MEDDLY::copy_EV<EdgeOp>::_compute(edge_value av, node_handle ap,
     // Initialize unpacked nodes
     //
     unpacked_node* Au = argF->newUnpacked(ap, FULL_ONLY);
+    const int Alevel = argF->getNodeLevel(ap);
     unpacked_node* Cu = unpacked_node::newFull(resF, Alevel, Au->getSize());
 #ifdef TRACE
     out << "A: ";
