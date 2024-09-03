@@ -65,9 +65,9 @@ Completely reimplemented operations
 ======================================================================
 
 cardinality.cc      YES
+complement.cc       YES
 copy                YES
 
-complement.cc       yes*
 difference.cc       yes*
 intersection.cc     yes*
 maxmin_range.cc     YES
