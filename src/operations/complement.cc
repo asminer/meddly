@@ -32,6 +32,8 @@ namespace MEDDLY {
     unary_list COMPL_cache;
 };
 
+// #define NEW_COMPL
+
 // #define TRACE
 
 #ifdef TRACE
@@ -75,11 +77,10 @@ class MEDDLY::compl_mt : public unary_operation {
 
         inline node_handle identity_complement(node_handle p, int K, int L)
         {
-            MEDDLY_DCASSERT(L>=0);
-            MEDDLY_DCASSERT(K>=0);
             if (0==L) return p;
             if (K==L) return p;
             MEDDLY_DCASSERT(L>=K);
+            MEDDLY_DCASSERT(ABS(L)>=ABS(K));
             return _identity_complement(p, K, L);
         }
 
@@ -100,7 +101,7 @@ MEDDLY::compl_mt::compl_mt(forest* arg, forest* res)
 #endif
 {
     checkDomains(__FILE__, __LINE__);
-    checkAllRelations(__FILE__, __LINE__, SET);
+    checkAllRelations(__FILE__, __LINE__);
     checkAllRanges(__FILE__, __LINE__, range_type::BOOLEAN);
     checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 
@@ -748,11 +749,15 @@ MEDDLY::unary_operation* MEDDLY::COMPLEMENT(forest* arg, forest* res)
         return uop;
     }
 
+#ifdef NEW_COMPL
+    return COMPL_cache.add(new compl_mt(arg, res));
+#else
     if (arg->isForRelations()) {
         return COMPL_cache.add(new compl_mxd(arg, res));
     } else {
         return COMPL_cache.add(new compl_mdd(arg, res));
     }
+#endif
 }
 
 void MEDDLY::COMPLEMENT_init()

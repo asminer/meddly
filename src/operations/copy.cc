@@ -19,10 +19,6 @@
 #include "../defines.h"
 #include "copy.h"
 
-#include "../ct_entry_key.h"        // remove when we can
-#include "../ct_entry_result.h"     // remove when we can
-#include "../compute_table.h"       // remove when we can
-
 #include "../oper_unary.h"
 #include "../ct_vector.h"
 
