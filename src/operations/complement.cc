@@ -54,8 +54,18 @@ class MEDDLY::compl_mt : public unary_operation {
                 edge_value &cv, node_handle &cp);
 
     protected:
-        /// Build complement of A, put result in C.
-        /// The level of C will be the level of A, or lower.
+        /*
+           Recursive complement.
+
+           This will correctly build the complement of node A,
+           at the same level as node A, in the result forest.
+           It is the caller's responsibility to add any nodes
+           above A, or to check if it is a singleton node
+           (if the target forest is identity reduced).
+
+           @param   A   Source node
+           @param   C   on output: complement of A
+        */
         void _compute(node_handle A, node_handle &C);
 
         /*
