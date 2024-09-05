@@ -105,8 +105,8 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
 #ifdef ALLOW_DEPRECATED_0_17_6
     if (new_style) {
         node_handle resp;
-        compute(arg.getEdgeValue(), arg.getNode(),
-                resF->getMaxLevelIndex(),
+        compute(resF->getMaxLevelIndex(), ~0,
+                arg.getEdgeValue(), arg.getNode(),
                 res.setEdgeValue(), resp);
         res.set(resp);
     } else {
@@ -132,8 +132,8 @@ void MEDDLY::unary_operation::computeTemp(const dd_edge &arg, dd_edge &res)
     } else {
         computeDDEdge(arg, res, false);
         node_handle resp;
-        compute(arg.getEdgeValue(), arg.getNode(),
-                0,
+        compute(argF->getMaxLevelIndex(), ~0,
+                arg.getEdgeValue(), arg.getNode(),
                 res.setEdgeValue(), resp);
         res.set(resp);
     }
@@ -147,14 +147,14 @@ void MEDDLY::unary_operation::computeDDEdge(const dd_edge &arg, dd_edge &res, bo
 
 // new compute methods
 
-void MEDDLY::unary_operation::compute(const edge_value &av, node_handle ap,
-                int L, edge_value &cv, node_handle &cp)
+void MEDDLY::unary_operation::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap, edge_value &cv, node_handle &cp)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::unary_operation::compute(int L, const edge_value &av,
-                node_handle ap, oper_item &res)
+void MEDDLY::unary_operation::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap, oper_item &res)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }

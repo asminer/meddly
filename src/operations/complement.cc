@@ -49,8 +49,8 @@ class MEDDLY::compl_mt : public unary_operation {
         compl_mt(forest* arg, forest* res);
         virtual ~compl_mt();
 
-        virtual void compute(const edge_value &av, node_handle ap,
-                int L,
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 edge_value &cv, node_handle &cp);
 
     protected:
@@ -126,8 +126,8 @@ MEDDLY::compl_mt::~compl_mt()
     ct->markForDestroy();
 }
 
-void MEDDLY::compl_mt::compute(const edge_value &av, node_handle ap,
-                int L,
+void MEDDLY::compl_mt::compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 edge_value &cv, node_handle &cp)
 {
 #ifdef TRACE

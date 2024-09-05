@@ -51,8 +51,8 @@ class MEDDLY::copy_inforest : public unary_operation {
         copy_inforest(forest* f);
         virtual ~copy_inforest();
 
-        virtual void compute(const edge_value &av, node_handle ap,
-                int L,
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 edge_value &cv, node_handle &cp);
 };
 
@@ -67,9 +67,8 @@ MEDDLY::copy_inforest::~copy_inforest()
 {
 }
 
-void MEDDLY::copy_inforest::compute(const edge_value &av, node_handle ap,
-                int L,
-                edge_value &cv, node_handle &cp)
+void MEDDLY::copy_inforest::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap, edge_value &cv, node_handle &cp)
 {
     cv = av;
     ap = resF->linkNode(cp);
@@ -90,8 +89,8 @@ class MEDDLY::copy_MT : public unary_operation {
         copy_MT(forest* arg, forest* res);
         virtual ~copy_MT();
 
-        virtual void compute(const edge_value &av, node_handle ap,
-                int L,
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 edge_value &cv, node_handle &cp);
 
     protected:
@@ -162,9 +161,8 @@ MEDDLY::copy_MT::~copy_MT()
     ct->markForDestroy();
 }
 
-void MEDDLY::copy_MT::compute(const edge_value &av, node_handle ap,
-                int L,
-                edge_value &cv, node_handle &cp)
+void MEDDLY::copy_MT::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap, edge_value &cv, node_handle &cp)
 {
 #ifdef TRACE
     out.indentation(0);
@@ -380,8 +378,8 @@ class MEDDLY::copy_EV_fast : public unary_operation {
         copy_EV_fast(forest* arg, forest* res);
         virtual ~copy_EV_fast();
 
-        virtual void compute(const edge_value &av, node_handle ap,
-                int L,
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 edge_value &cv, node_handle &cp);
 
     protected:
@@ -448,9 +446,8 @@ MEDDLY::copy_EV_fast::~copy_EV_fast()
     ct->markForDestroy();
 }
 
-void MEDDLY::copy_EV_fast::compute(const edge_value &av, node_handle ap,
-                int L,
-                edge_value &cv, node_handle &cp)
+void MEDDLY::copy_EV_fast::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap, edge_value &cv, node_handle &cp)
 {
 #ifdef TRACE
     out.indentation(0);
@@ -608,8 +605,8 @@ namespace MEDDLY {
             copy_EV(forest* arg, forest* res);
             virtual ~copy_EV();
 
-            virtual void compute(const edge_value &av, node_handle ap,
-                    int L,
+            virtual void compute(int L, unsigned in,
+                    const edge_value &av, node_handle ap,
                     edge_value &cv, node_handle &cp);
 
         protected:
@@ -687,9 +684,8 @@ MEDDLY::copy_EV<EdgeOp>::~copy_EV()
 }
 
 template <class EdgeOp>
-void MEDDLY::copy_EV<EdgeOp>::compute(const edge_value &av, node_handle ap,
-                int L,
-                edge_value &cv, node_handle &cp)
+void MEDDLY::copy_EV<EdgeOp>::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap, edge_value &cv, node_handle &cp)
 {
 #ifdef TRACE
     out.indentation(0);

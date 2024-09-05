@@ -176,55 +176,69 @@ class MEDDLY::unary_operation : public operation {
 
         /**
             New virtual compute method for DDs.
-                @param  av      Edge value for operand
-                @param  ap      Node for operand
-                @param  L       Level we want the result to be at.
+
+                @param  L       Level where incoming edges originate.
+                                I.e., the level of the node that is
+                                calling compute() on its children.
+                                If we are operating on root nodes,
+                                use L = number of levels + 1.
                                 Ignored for some reduction rules (e.g.,
                                 fully reduced) but important for others
                                 (e.g., quasi reduced).
+
+                @param  in      Incoming edge index.
+                                Important only for identity-reduced
+                                relations when L is positive.
+                                Use ~0 if there is no edge index.
+
+                @param  av      Edge value for operand
+                @param  ap      Node for operand, must be below L.
+
                 @param  cv      Edge value of result
-                @param  cp      Node for result
+                @param  cp      Node for result, will be below L.
          */
-        virtual void compute(const edge_value &av, node_handle ap,
-                int L,
+        virtual void compute(
+                int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 edge_value &cv, node_handle &cp);
 
         /**
             New virtual compute method for all other result types.
-                @param  L       Level we want ap to be at.
+                @param  L       Level where incoming edges originate.
+                @param  in      Incoming edge index.
                 @param  av      Edge value for operand
                 @param  ap      Node for operand
                 @param  res     Result of the operation is stored here.
          */
-        virtual void compute(int L, const edge_value &av, node_handle ap,
-                oper_item &res);
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap, oper_item &res);
 
 
         inline void compute(const dd_edge &arg, long &res) {
             oper_item tmp(res);
-            compute(argF->getMaxLevelIndex(), arg.getEdgeValue(),
-                    arg.getNode(), tmp);
+            compute(argF->getMaxLevelIndex(), ~0,
+                    arg.getEdgeValue(), arg.getNode(), tmp);
             res = tmp.getInteger();
         }
 
         inline void compute(const dd_edge &arg, double &res) {
             oper_item tmp(res);
-            compute(argF->getMaxLevelIndex(), arg.getEdgeValue(),
-                    arg.getNode(), tmp);
+            compute(argF->getMaxLevelIndex(), ~0,
+                    arg.getEdgeValue(), arg.getNode(), tmp);
             res = tmp.getReal();
         }
 
 #ifdef HAVE_LIBGMP
         inline void compute(const dd_edge &arg, mpz_ptr v) {
             oper_item tmp(v);
-            compute(argF->getMaxLevelIndex(), arg.getEdgeValue(),
-                    arg.getNode(), tmp);
+            compute(argF->getMaxLevelIndex(), ~0,
+                    arg.getEdgeValue(), arg.getNode(), tmp);
         }
 #endif
 
         inline void compute(const dd_edge &arg, oper_item &res) {
-            compute(argF->getMaxLevelIndex(), arg.getEdgeValue(),
-                    arg.getNode(), res);
+            compute(argF->getMaxLevelIndex(), ~0,
+                    arg.getEdgeValue(), arg.getNode(), res);
         }
 
     protected:

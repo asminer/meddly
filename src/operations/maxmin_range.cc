@@ -82,8 +82,8 @@ namespace MEDDLY {
             range_templ(forest* arg);
             virtual ~range_templ();
 
-            virtual void compute(int L, const edge_value &av, node_handle ap,
-                    oper_item &result);
+            virtual void compute(int L, unsigned in,
+                    const edge_value &av, node_handle ap, oper_item &result);
 
         protected:
             void _compute(node_handle A, oper_item &result);
@@ -118,8 +118,8 @@ MEDDLY::range_templ<RTYPE>::~range_templ()
 }
 
 template <class RTYPE>
-void MEDDLY::range_templ<RTYPE>::compute(int L, const edge_value &av,
-        node_handle ap, oper_item &result)
+void MEDDLY::range_templ<RTYPE>::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap, oper_item &result)
 {
     MEDDLY_DCASSERT(result.hasType(RTYPE::getOpndType()));
 #ifdef TRACE

@@ -261,7 +261,7 @@ void MEDDLY::union_mt::_compute(unsigned in, int L,
         edge_value bv, cv;
         bv.set();
         MEDDLY_DCASSERT(copy_arg2res);
-        copy_arg2res->compute(bv, B, Blevel, cv, C);
+        copy_arg2res->compute(Blevel, ~0, bv, B, cv, C);    // TBD
         if (arg2F->isIdentityReduced()) {
             C = resF->makeIdentitiesTo(C, Blevel, Clevel, in);
         } else {
@@ -278,7 +278,7 @@ void MEDDLY::union_mt::_compute(unsigned in, int L,
         edge_value av, cv;
         av.set();
         MEDDLY_DCASSERT(copy_arg1res);
-        copy_arg1res->compute(av, A, Alevel, cv, C);
+        copy_arg1res->compute(Alevel, ~0, av, A, cv, C); // TBD
         if (arg1F->isIdentityReduced()) {
             C = resF->makeIdentitiesTo(C, Alevel, Clevel, in);
         } else {

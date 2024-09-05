@@ -97,8 +97,8 @@ namespace MEDDLY {
             card_templ(forest* arg);
             virtual ~card_templ();
 
-            virtual void compute(int L, const edge_value &av, node_handle ap,
-                    oper_item &result);
+            virtual void compute(int L, unsigned in,
+                    const edge_value &av, node_handle ap, oper_item &result);
 
         protected:
             void _compute(int L, node_handle A, oper_item &result);
@@ -133,8 +133,8 @@ MEDDLY::card_templ<RTYPE>::~card_templ()
 }
 
 template <class RTYPE>
-void MEDDLY::card_templ<RTYPE>::compute(int L, const edge_value &av,
-        node_handle ap, oper_item &result)
+void MEDDLY::card_templ<RTYPE>::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap, oper_item &result)
 {
     MEDDLY_DCASSERT(result.hasType(RTYPE::getOpndType()));
 #ifdef TRACE
