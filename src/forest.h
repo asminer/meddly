@@ -412,7 +412,8 @@ class MEDDLY::forest {
             the one above K to level L.
             If the forest is fully-reduced, do nothing instead.
                 @param  p   Bottom node
-                @param  K   Start redundant nodes above this level
+                @param  K   Start redundant nodes above this level.
+                            Usually this is the same level as p.
                 @param  L   Stop redundant nodes here
                 @return     A node that can be referenced at level L
                             (i.e., definitely at level L if we're quasi
@@ -425,15 +426,18 @@ class MEDDLY::forest {
 
             L               |                  [.]  (new redundant node)
                             |                   |
+                            |                   |
             ...             |                  [.]  (new redundant node)
+                            |                   |
                             |                   |
             K+1             |                  [.]  (new redundant node)
                             |                   |
+                            |                   |
             K               |                   |
                             |                   |
-            ...             |                   |
                             v                   v
-                            p                   p
+            p.lvl           p                   p
+
          */
         inline node_handle makeRedundantsTo(node_handle p, int K, int L)
         {
@@ -489,20 +493,23 @@ class MEDDLY::forest {
             if (K==L) return p;
             MEDDLY_DCASSERT(MXD_levels::topLevel(L, K) == L);
             if (0==p) return p;
-            if (isIdentityReduced()) return p;
-            if (-K == L) {
-                // Just adding one redundant node
-                if (isFullyReduced()) return p;
+            if (isIdentityReduced()) {
+                //
+                // A bit extra in case p is a singleton node
+                //
+                if (K<0) p = _makeRedundantsTo(p, K, -K);
+                return p;
+            }
+            if (isFullyReduced() && (K<0) && (-K == L)) {
+                // Just adding one redundant node;
+                // that's a no-op for fully reduced
+                return p;
             }
             return _makeIdentitiesTo(p, K, L, in);
         }
 
         /**
             Redirect illegal i-singleton edges if we're identity reduced.
-
-                @param  K   Level where this pointer originates.
-                            Used for sanity checks only
-                            (only if DEVELOPMENT_CODE is defined).
 
                 @param  i   Which child edge are we.
 
@@ -513,11 +520,7 @@ class MEDDLY::forest {
                             are not identity reduced and
                             for nodes p that are not at a primed level.
         */
-        inline node_handle redirectSingleton(
-#ifdef DEVELOPMENT_CODE
-                int K,
-#endif
-                unsigned i, node_handle p)
+        inline node_handle redirectSingleton(unsigned i, node_handle p)
         {
             if (!isIdentityReduced()) return p;
             if (getNodeLevel(p) >= 0) return p;
@@ -528,9 +531,6 @@ class MEDDLY::forest {
             if (isSingletonNode(p, pi, pd)) {
                 // p is a singleton node.
                 //  child pi points to pd.
-#ifdef DEVELOPMENT_CODE
-                MEDDLY_DCASSERT(getNodeLevel(p) == -K);
-#endif
                 if (i != pi) {
                     return p;
                 }

@@ -177,11 +177,10 @@ class MEDDLY::unary_operation : public operation {
         /**
             New virtual compute method for DDs.
 
-                @param  L       Level where incoming edges originate.
-                                I.e., the level of the node that is
-                                calling compute() on its children.
-                                If we are operating on root nodes,
-                                use L = number of levels + 1.
+                @param  L       Recursion level.
+                                If all forests are quasi-reduced,
+                                then this is the top level of the
+                                operand and result.
                                 Ignored for some reduction rules (e.g.,
                                 fully reduced) but important for others
                                 (e.g., quasi reduced).
@@ -204,7 +203,7 @@ class MEDDLY::unary_operation : public operation {
 
         /**
             New virtual compute method for all other result types.
-                @param  L       Level where incoming edges originate.
+                @param  L       Recursion level.
                 @param  in      Incoming edge index.
                 @param  av      Edge value for operand
                 @param  ap      Node for operand

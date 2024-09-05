@@ -219,9 +219,6 @@ void MEDDLY::compl_mt::_compute(node_handle A, node_handle &C)
         }
 #endif
         d = resF->redirectSingleton(
-#ifdef DEVELOPMENT_CODE
-                Cu->getLevel(),
-#endif
                 i, dc
         );
         Cu->setFull(i, d);

@@ -95,6 +95,10 @@ class MEDDLY::copy_MT : public unary_operation {
 
     protected:
 
+        /// Implement compute(), recursively.
+        void _compute(int L, unsigned in,
+                node_handle A, edge_value &cv, node_handle &cp);
+
         /*
            Recursive copy.
 
@@ -109,7 +113,7 @@ class MEDDLY::copy_MT : public unary_operation {
            @param   cv  on output: edge value for copy
            @param   cp  on output: target node for copy
         */
-        void _compute(node_handle A, edge_value &cv, node_handle &cp);
+        // void _compute(node_handle A, edge_value &cv, node_handle &cp);
 
         void traceout(const edge_value &v, node_handle p) const
         {
@@ -169,6 +173,8 @@ void MEDDLY::copy_MT::compute(int L, unsigned in,
 #endif
     MEDDLY_DCASSERT(av.isVoid());
     cv.set();
+    _compute(L, in, ap, cv, cp);
+    /*
     _compute(ap, cv, cp);
 
     int aplevel = argF->getNodeLevel(ap);
@@ -177,8 +183,218 @@ void MEDDLY::copy_MT::compute(int L, unsigned in,
     } else {
         cp = resF->makeRedundantsTo(cp, aplevel, L);
     }
+    */
 }
 
+void MEDDLY::copy_MT::_compute(int L, unsigned in,
+        node_handle A, edge_value& cv, node_handle &cp)
+{
+    //
+    // Terminal case
+    //
+    if (argF->isTerminalNode(A)) {
+        //
+        // Translate A to result forest terminal
+        //
+        bool abool;
+        int aint;
+        float afloat;
+        if (resF->isMultiTerminal()) {
+            //
+            // Result is MT
+            //
+            cv.set();
+            switch (resF->getTerminalType()) {
+                case terminal_type::BOOLEAN:
+                    argF->getValueFromHandle(A, abool);
+                    cp = resF->handleForValue(abool);
+                    break;
+
+                case terminal_type::INTEGER:
+                    argF->getValueFromHandle(A, aint);
+                    cp = resF->handleForValue(aint);
+                    break;
+
+                case terminal_type::REAL:
+                    argF->getValueFromHandle(A, afloat);
+                    cp = resF->handleForValue(afloat);
+                    break;
+
+                default:
+                    MEDDLY_DCASSERT(false);
+                    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            } // switch
+        } else {
+            //
+            // Translate A to result forest edge value
+            //
+            switch (resF->getEdgeType()) {
+                case edge_type::INT:
+                case edge_type::LONG:
+                    argF->getValueFromHandle(A, aint);
+                    resF->getEdgeForValue(aint, cv, cp);
+                    break;
+
+                case edge_type::FLOAT:
+                case edge_type::DOUBLE:
+                    argF->getValueFromHandle(A, afloat);
+                    resF->getEdgeForValue(afloat, cv, cp);
+                    break;
+
+                default:
+                    MEDDLY_DCASSERT(false);
+                    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            } // switch
+        } // MT vs EV
+        //
+        // Add nodes up to level L.
+        //
+        if (argF->isIdentityReduced()) {
+            cp = resF->makeIdentitiesTo(cp, 0, L, in);
+        } else {
+            cp = resF->makeRedundantsTo(cp, 0, L);
+        }
+        return;
+    } // A is terminal
+
+    //
+    // Determine level information
+    //
+#ifdef TRACE
+    out << "copy_MT::_compute(" << A << ")\n";
+#endif
+
+    //
+    // Check compute table
+    //
+    ct_vector key(1);
+    ct_vector res( resF->isMultiTerminal() ? 1 : 2 );
+    key[0].setN(A);
+    if (ct->findCT(key, res)) {
+        //
+        // compute table 'hit'
+        //
+        if (resF->isMultiTerminal()) {
+            cv.set();
+            cp = resF->linkNode(res[0].getN());
+        } else {
+            res[0].get(cv);
+            cp = resF->linkNode(res[1].getN());
+        }
+#ifdef TRACE
+        out << "  CT hit ";
+        traceout(cv, cp);
+        out << "\n";
+        out << "  at level " << resF->getNodeLevel(cp) << "\n";
+#endif
+        //
+        // done: compute table 'hit'
+        //
+    } else {
+        //
+        // compute table 'miss'; do computation
+        //
+
+        //
+        // Initialize unpacked nodes
+        //
+        unpacked_node* Au = argF->newUnpacked(A, FULL_ONLY);
+        const int Alevel = argF->getNodeLevel(A);
+        unpacked_node* Cu = unpacked_node::newFull(resF, Alevel, Au->getSize());
+#ifdef TRACE
+        out << "A: ";
+        Au->show(out, true);
+        out.indent_more();
+        out.put('\n');
+#endif
+        const int Cnextlevel = resF->isForRelations()
+            ? MXD_levels::downLevel(Alevel)
+            : MDD_levels::downLevel(Alevel);
+
+        //
+        // Recurse over child edges
+        //
+        for (unsigned i=0; i<Cu->getSize(); i++) {
+            edge_value v;
+            node_handle d;
+            _compute(Cnextlevel, i, Au->down(i), v, d);
+            if (resF->isMultiTerminal()) {
+                MEDDLY_DCASSERT(v.isVoid());
+                Cu->setFull(i, d);
+            } else {
+                Cu->setFull(i, v, d);
+            }
+        }
+
+#ifdef TRACE
+        out.indent_less();
+        out.put('\n');
+        out << "copy_MT::_compute(" << A << ") done\n";
+        out << "A: ";
+        Au->show(out, true);
+        out << "\nC: ";
+        Cu->show(out, true);
+        out << "\n";
+#endif
+
+        //
+        // Reduce
+        //
+        resF->createReducedNode(Cu, cv, cp);
+#ifdef TRACE
+        out << "reduced to ";
+        traceout(cv, cp);
+        << ": ";
+        resF->showNode(out, cp, SHOW_DETAILS);
+        out << "\n";
+#endif
+
+        //
+        // Add to CT
+        //
+        if (resF->isMultiTerminal()) {
+            MEDDLY_DCASSERT(cv.isVoid());
+            res[0].setN(cp);
+        } else {
+            res[0].set(cv);
+            res[1].setN(cp);
+        }
+        ct->addCT(key, res);
+
+        //
+        // Cleanup
+        //
+        unpacked_node::Recycle(Au);
+        // Cu is recycled when we reduce it :)
+
+        //
+        // done: compute table 'miss'
+        //
+    }
+
+    //
+    // Adjust result for singletons, added identities/redundants.
+    // Do this for both CT hits and misses.
+    //
+    const int Clevel = resF->getNodeLevel(cp);
+    if (Clevel == L) {
+        //
+        // We don't need to add identities or redundants;
+        // just check if we need to avoid a singleton.
+        //
+        cp = resF->redirectSingleton(in, cp);
+        return;
+    }
+
+    if (argF->isIdentityReduced()) {
+        cp = resF->makeIdentitiesTo(cp, Clevel, L, in);
+    } else {
+        cp = resF->makeRedundantsTo(cp, Clevel, L);
+    }
+}
+
+/// OLD
+/*
 void MEDDLY::copy_MT::_compute(node_handle A, edge_value& cv, node_handle &cp)
 {
     //
@@ -362,7 +578,7 @@ void MEDDLY::copy_MT::_compute(node_handle A, edge_value& cv, node_handle &cp)
     //
     unpacked_node::Recycle(Au);
 }
-
+*/
 
 // ******************************************************************
 // *                                                                *
@@ -540,9 +756,6 @@ void MEDDLY::copy_EV_fast::_compute(node_handle A, node_handle &cp)
         }
 #endif
         d = resF->redirectSingleton(
-#ifdef DEVELOPMENT_CODE
-                Cu->getLevel(),
-#endif
                 Au->index(z), dc
         );
         edge_value v(resF->getEdgeType(), Au->edgeval(z));
@@ -853,9 +1066,6 @@ void MEDDLY::copy_EV<EdgeOp>::_compute(edge_value av, node_handle ap,
         }
 #endif
         d = resF->redirectSingleton(
-#ifdef DEVELOPMENT_CODE
-                Cu->getLevel(),
-#endif
                 i, dc
         );
         if (resF->isMultiTerminal()) {

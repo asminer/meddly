@@ -114,9 +114,8 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
     }
 #else
     node_handle resp;
-    compute(arg.getEdgeValue(), arg.getNode(),
-            resF->getMaxLevelIndex(),
-            res.setEdgeValue(), resp);
+    compute(resF->getMaxLevelIndex(), ~0,
+            arg.getEdgeValue(), arg.getNode(), res.setEdgeValue(), resp);
     res.set(resp);
 #endif
 }
