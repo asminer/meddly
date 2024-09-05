@@ -30,7 +30,7 @@ namespace MEDDLY {
     unary_list COPY_cache;
 };
 
-// #define TRACE
+#define TRACE
 
 #ifdef TRACE
 #include "../operators.h"
@@ -115,7 +115,7 @@ class MEDDLY::copy_MT : public unary_operation {
         */
         // void _compute(node_handle A, edge_value &cv, node_handle &cp);
 
-        void traceout(const edge_value &v, node_handle p) const
+        void traceout(const edge_value &v, node_handle p)
         {
 #ifdef TRACE
             if (v.isVoid()) {
@@ -344,7 +344,7 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
 #ifdef TRACE
         out << "reduced to ";
         traceout(cv, cp);
-        << ": ";
+        out << ": ";
         resF->showNode(out, cp, SHOW_DETAILS);
         out << "\n";
 #endif
@@ -616,7 +616,7 @@ class MEDDLY::copy_EV_fast : public unary_operation {
         */
         void _compute(node_handle A, node_handle &cp);
 
-        void traceout(const edge_value &v, node_handle p) const
+        void traceout(const edge_value &v, node_handle p)
         {
 #ifdef TRACE
             if (v.isVoid()) {
@@ -710,9 +710,7 @@ void MEDDLY::copy_EV_fast::_compute(node_handle A, node_handle &cp)
     if (ct->findCT(key, res)) {
         cp = resF->linkNode(res[0].getN());
 #ifdef TRACE
-        out << "  CT hit ";
-        traceout(cv, cp);
-        out << "\n";
+        out << "  CT hit " << cp << "\n";
         out << "  at level " << resF->getNodeLevel(cp) << "\n";
 #endif
         return;
@@ -781,7 +779,7 @@ void MEDDLY::copy_EV_fast::_compute(node_handle A, node_handle &cp)
 #ifdef TRACE
     out << "reduced to ";
     traceout(cv, cp);
-    << ": ";
+    out << ": ";
     resF->showNode(out, cp, SHOW_DETAILS);
     out << "\n";
 #endif
@@ -842,7 +840,7 @@ namespace MEDDLY {
             void _compute(edge_value av, node_handle ap,
                     edge_value &cv, node_handle &cp);
 
-            void traceout(const edge_value &v, node_handle p) const
+            void traceout(const edge_value &v, node_handle p)
             {
 #ifdef TRACE
                 if (v.isVoid()) {
@@ -1096,7 +1094,7 @@ void MEDDLY::copy_EV<EdgeOp>::_compute(edge_value av, node_handle ap,
 #ifdef TRACE
     out << "reduced to ";
     traceout(cv, cp);
-    << ": ";
+    out << ": ";
     resF->showNode(out, cp, SHOW_DETAILS);
     out << "\n";
 #endif
