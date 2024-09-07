@@ -30,7 +30,7 @@ namespace MEDDLY {
     unary_list COPY_cache;
 };
 
-#define TRACE
+// #define TRACE
 
 #ifdef TRACE
 #include "../operators.h"
@@ -260,6 +260,7 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
     //
     // Determine level information
     //
+    const int Alevel = argF->getNodeLevel(A);
 #ifdef TRACE
     out << "copy_MT::_compute(" << A << ")\n";
 #endif
@@ -299,7 +300,6 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
         // Initialize unpacked nodes
         //
         unpacked_node* Au = argF->newUnpacked(A, FULL_ONLY);
-        const int Alevel = argF->getNodeLevel(A);
         unpacked_node* Cu = unpacked_node::newFull(resF, Alevel, Au->getSize());
 #ifdef TRACE
         out << "A: ";
@@ -386,10 +386,15 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
         return;
     }
 
+    //
+    // Add nodes but only from Alevel;
+    // if Clevel is below Alevel it means nodes were eliminated
+    // in the result forest.
+    //
     if (argF->isIdentityReduced()) {
-        cp = resF->makeIdentitiesTo(cp, Clevel, L, in);
+        cp = resF->makeIdentitiesTo(cp, Alevel, L, in);
     } else {
-        cp = resF->makeRedundantsTo(cp, Clevel, L);
+        cp = resF->makeRedundantsTo(cp, Alevel, L);
     }
 }
 
