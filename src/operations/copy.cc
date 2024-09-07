@@ -396,22 +396,6 @@ class MEDDLY::copy_EV_fast : public unary_operation {
         void _compute(int L, unsigned in,
                 node_handle ap, node_handle &cp);
 
-        /*
-           Recursive copy.
-
-           This will correctly build a copy at the same level as
-           node A, but in the result forest.
-           It is the caller's responsibility to add any nodes
-           above this one, or to check if it is a singleton node
-           (if the target forest is identity reduced).
-
-           @param   A   Source node
-
-           @param   cv  on output: edge value for copy
-           @param   cp  on output: target node for copy
-        */
-        // void _compute(node_handle A, node_handle &cp);
-
         void traceout(const edge_value &v, node_handle p)
         {
 #ifdef TRACE
@@ -467,15 +451,6 @@ void MEDDLY::copy_EV_fast::compute(int L, unsigned in,
     MEDDLY_DCASSERT(!av.isVoid());
     _compute(L, in, ap, cp);
     cv = edge_value(resF->getEdgeType(), av);
-
-    /*
-    int aplevel = argF->getNodeLevel(ap);
-    if (argF->isIdentityReduced()) {
-        cp = resF->makeIdentitiesTo(cp, aplevel, L, -1);
-    } else {
-        cp = resF->makeRedundantsTo(cp, aplevel, L);
-    }
-    */
 }
 
 void MEDDLY::copy_EV_fast::_compute(int L, unsigned in,
@@ -624,124 +599,6 @@ void MEDDLY::copy_EV_fast::_compute(int L, unsigned in,
         cp = resF->makeRedundantsTo(cp, Alevel, L);
     }
 }
-
-/*
-void MEDDLY::copy_EV_fast::_compute(node_handle A, node_handle &cp)
-{
-    //
-    // Terminal case
-    //
-    if (argF->isTerminalNode(A)) {
-        //
-        // TBD: will we ever need to translate terminal nodes?
-        //
-        cp = A;
-        return;
-    } // A is terminal
-
-    //
-    // Determine level information
-    //
-#ifdef TRACE
-    out << "copy_EV_fast::_compute(" << A << ")\n";
-#endif
-
-    //
-    // Check compute table
-    //
-    ct_vector key(1);
-    ct_vector res(1);
-    key[0].setN(A);
-    if (ct->findCT(key, res)) {
-        cp = resF->linkNode(res[0].getN());
-#ifdef TRACE
-        out << "  CT hit " << cp << "\n";
-        out << "  at level " << resF->getNodeLevel(cp) << "\n";
-#endif
-        return;
-    }
-
-    //
-    // Initialize unpacked nodes
-    //
-    unpacked_node* Au = argF->newUnpacked(A, SPARSE_ONLY);
-    const int Alevel = argF->getNodeLevel(A);
-    unpacked_node* Cu = unpacked_node::newSparse(resF, Alevel, Au->getSize());
-#ifdef TRACE
-    out << "A: ";
-    Au->show(out, true);
-#endif
-
-    //
-    // Build result node
-    //
-#ifdef TRACE
-    out.indent_more();
-    out.put('\n');
-#endif
-    const int Cnextlevel = resF->isForRelations()
-            ? MXD_levels::downLevel(Alevel)
-            : MDD_levels::downLevel(Alevel);
-
-    for (unsigned z=0; z<Cu->getSize(); z++) {
-        int Audlevel = argF->getNodeLevel(Au->down(z));
-        node_handle d;
-        _compute(Au->down(z), d);
-        node_handle dc;
-        if (argF->isIdentityReduced()) {
-            dc = resF->makeIdentitiesTo(d, Audlevel, Cnextlevel, Au->index(z));
-        } else {
-            dc = resF->makeRedundantsTo(d, Audlevel, Cnextlevel);
-        }
-#ifdef TRACE
-        if (dc != d) {
-            out << "built chain from " << d << " to " << dc << "\n";
-        }
-#endif
-        d = resF->redirectSingleton(
-                Au->index(z), dc
-        );
-        edge_value v(resF->getEdgeType(), Au->edgeval(z));
-        Cu->setSparse(z, Au->index(z), v, d);
-    }
-
-#ifdef TRACE
-    out.indent_less();
-    out.put('\n');
-    out << "copy_EV_fast::_compute(" << A << ") done\n";
-    out << "A: ";
-    Au->show(out, true);
-    out << "\nC: ";
-    Cu->show(out, true);
-    out << "\n";
-#endif
-
-    //
-    // Reduce
-    //
-    edge_value cv;
-    resF->createReducedNode(Cu, cv, cp);
-#ifdef TRACE
-    out << "reduced to ";
-    traceout(cv, cp);
-    out << ": ";
-    resF->showNode(out, cp, SHOW_DETAILS);
-    out << "\n";
-#endif
-    MEDDLY_DCASSERT(cv == resF->getNoOpEdge());
-
-    //
-    // Save result in CT
-    //
-    res[0].setN(cp);
-    ct->addCT(key, res);
-
-    //
-    // Cleanup
-    //
-    unpacked_node::Recycle(Au);
-}
-*/
 
 // ******************************************************************
 // *                                                                *
