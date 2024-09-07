@@ -489,6 +489,14 @@ void MEDDLY::copy_EV_fast::_compute(int L, unsigned in,
         // TBD: will we ever need to translate terminal nodes?
         //
         cp = A;
+        //
+        // Add nodes up to level L.
+        //
+        if (argF->isIdentityReduced()) {
+            cp = resF->makeIdentitiesTo(cp, 0, L, in);
+        } else {
+            cp = resF->makeRedundantsTo(cp, 0, L);
+        }
         return;
     } // A is terminal
 
